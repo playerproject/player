@@ -1607,45 +1607,97 @@ typedef struct player_fiducial_fov
 } __attribute__ ((packed)) player_fiducial_fov_t;
 
 
-/** [Configuration: exchange message.] 
+/** [Configuration: fiducial messaging.]
     
-    NOTE: This config is currently supported only by the Stage fiducial
-    driver (stg_fidicial).
+    NOTE: These configs are currently supported only by the Stage
+    fiducial driver (stg_fidicial), but are intended to be a general
+    interface for addressable, peer-to-peer messaging.
 
     The fiducial sensor can attempt to send a message to a target
     using the PLAYER_FIDUCIAL_SEND_MSG request. If target_id is -1,
     the message is broadcast to all targets. The device replies with
     an ACK if the message was sent OK, but receipt by the target is
-    not guaranteed. The power field sets a percentage of maximum
-    transmit power. If the consume flag is set, the message is
-    transmitted just once. If it is unset, the message is transmitted
-    repeatedly (at device-dependent intervals).
+    not guaranteed. The intensity field sets a transmit power in
+    device-dependent units. If the consume flag is set, the message is
+    transmitted just once. If it is unset, the message may transmitted
+    repeatedly (at device-dependent intervals, if at all).
     
     Send a PLAYER_FIDUCIAL_RECV_MSG request to obtain the last message
     recieved from the indicated target. If the consume flag is set,
     the message is deleted from the device's buffer, if unset, the
     same message can be retreived multiple times until a new message
     arrives. The power field indicates the intensity of the recieved
-    message, as a percentage of maximum.
+    messag, again in device-dependent units.
 
     Similarly, the PLAYER_FIDUCIAL_EXCHANGE_MSG request sends a
-    message, then returns any reply received from the
-    target. Depending on the device, this could be a reflection of the
-    sent message.
+    message, then returns the most recently received
+    message. Depending on the device and the situation, this could be
+    a reflection of the sent message, a reply from the target of the
+    sent message, or a message received from an unrelated sender.
 */
 
-/** Fiducial send message packet */
-typedef struct player_fiducial_msg
+/** Fiducial message packet */
+typedef struct
 {
-   /** Packet subtype. Must be PLAYER_FIDUCIAL_SEND_MSG or
-       PLAYER_FIDUCIAL_EXCHANGE_MSG. */
-  uint8_t subtype;
+  /** the fiducial ID of the intended target. */
   int32_t target_id;
+  /** the raw data of the message */
   uint8_t bytes[PLAYER_FIDUCIAL_MAX_MSG_LEN];
+  /** the length of the message in bytes.*/
   uint8_t len; 
-  uint16_t power;
-  uint8_t consume;
+  /** the power to transmit, or the intensity of a received message.
+      0-255 in device-dependent units.*/
+  uint8_t intensity; 
 } __attribute__ ((packed)) player_fiducial_msg_t;
+
+/** Fiducial receive message request. The server replies with a
+    player_fiducial_msg_t */
+typedef struct
+{
+  /**  Must be PLAYER_FIDUCIAL_RECV_MSG.*/
+  uint8_t subtype;  
+  
+  /** If non-zero, empty the buffer when getting the message. If
+      zero, leave the message in the buffer */
+  uint8_t consume;
+}  __attribute__ ((packed)) player_fiducial_msg_rx_req_t;
+
+/** Fiducial send message request. The server replies with ACK/NACK
+    only.*/
+typedef struct
+{
+  /**  Must be PLAYER_FIDUCIAL_SEND_MSG. */
+  uint8_t subtype;  
+  
+  /** If non-zero, send the message just once. If zero, the device may
+      send the message repeatedly. */
+  uint8_t consume;
+  
+  /** The message to send. */
+  player_fiducial_msg_t msg;
+}  __attribute__ ((packed)) player_fiducial_msg_tx_req_t;
+
+/** Fiducial exchange mesaage request. The device sends the message,
+then replies with the last message received, which may be (but is not
+guaranteed to be) be a reply to the sent message.*/
+
+typedef struct 
+{ 
+  /** Must be PLAYER_FIDUCIAL_EXCHANGE_MSG. */
+  uint8_t subtype;
+  
+  /**  The message to send */
+  player_fiducial_msg_t msg;
+  
+  /** If non-zero, send the message just once. If zero, the device may
+      send the message repeatedly. */
+  uint8_t consume_send;
+  
+  /** If non-zero, empty the buffer when getting the message. If
+      zero, leave the message in the buffer */
+  uint8_t consume_reply;
+}  __attribute__ ((packed)) player_fiducial_msg_txrx_req_t; 
+  
 
 /*************************************************************************
  ** end section
