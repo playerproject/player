@@ -83,9 +83,11 @@ int AMCLFiducial::Load(ConfigFile* cf, int section)
   this->laser_pose.v[2] = cf->ReadTupleAngle(section, "laser_pose", 2, 0);
 
   this->range_max = cf->ReadLength(section, "laser_range_max", 8.192);
-  this->range_var = cf->ReadLength(section, "laser_range_var", 0.10);
-  this->angle_var = (M_PI/180.0) * cf->ReadInt(section, "laser_angle_var", 1 );
+  this->range_var = cf->ReadLength(section, "laser_range_var", 0.1);
+  this->angle_var = (M_PI/360.0) * cf->ReadInt(section, "laser_angle_var", 1 );
   this->range_bad = cf->ReadFloat(section, "laser_range_bad", 0.10);
+  this->angle_bad = cf->ReadFloat(section, "laser_angle_bad", 0.03);
+
 
   this->time.tv_sec = 0;
   this->time.tv_usec = 0;
@@ -393,7 +395,7 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
 
   for (i = 0; i < data->fiducial_count; i++)
   {
-    obs_range = data->fiducials[i][0];
+    obs_range = data->fiducials[i][0] + 0.05;
     obs_bearing = data->fiducials[i][1];
     obs_id = (int) data->fiducials[i][2];
 
@@ -429,21 +431,14 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
         
         v = self->angle_var;
         b = obs_bearing - map_bearing;
-        pb = self->range_bad + (1 - self->range_bad) * exp(-(b*b)/(2*v*v));
+        pb = self->angle_bad + (1 - self->angle_bad) * exp(-(b*b)/(2*v*v));
         
       }
 
       //gives the fiducial range greater weight
       p *= pz;
-      p *= pz;
-      p *= pz;
-      p *= pz;
-      p *= pz;
-      p *= pz;
       
       //bearing a little less
-      p *= pb;
-      p *= pb;
       p *= pb;
       p *= pb;
       p *= pb;

@@ -119,6 +119,9 @@ class AMCLFiducial : public AMCLSensor
   // Probability of bad range readings
   private: double range_bad;
 
+  // Probability of bad angle readings
+  private: double angle_bad;
+
 #ifdef INCLUDE_RTKGUI
   // Setup the GUI
   private: virtual void SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
