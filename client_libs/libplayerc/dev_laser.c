@@ -43,6 +43,7 @@
  * CVS: $Id$
  **************************************************************************/
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -110,7 +111,7 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
   data->range_count = ntohs(data->range_count);
   data->range_res = ntohs(data->range_res);
 
-  assert(data->range_count <= ARRAYSIZE(device->scan));
+  assert(data->range_count <= sizeof(device->scan) / sizeof(device->scan[0]));
   
   device->range_res = data->range_res;  
   rr = (double) data->range_res;

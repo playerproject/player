@@ -33,6 +33,7 @@
 #include <sys/mman.h>
 #include <sys/file.h>
 
+#include "playercommon.h"
 #include "stagetime.h"
 
 

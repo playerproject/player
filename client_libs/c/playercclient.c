@@ -48,6 +48,7 @@
  */
 
 #include "playercclient.h"
+#include <assert.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -55,6 +56,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
+
+#ifndef MIN
+  #define MIN(a,b) ((a < b) ? (a) : (b))
+#endif
+#ifndef MAX
+  #define MAX(a,b) ((a > b) ? (a) : (b))
+#endif
 
 /*
  * use this to turn off debug ouput.
@@ -617,7 +625,7 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
       fprintf(stderr,"WARNING: server's message is too big (%d bytes > %d). "
               "Truncating data.\n", hdr->size, payloadlen);
 
-  mincnt = min(hdr->size, payloadlen);
+  mincnt = MIN(hdr->size, payloadlen);
 
   readcnt = 0;
   while(readcnt < mincnt)
@@ -634,7 +642,7 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
   while(readcnt < hdr->size)
   {
     if((thisreadcnt = read((*conn).sock,dummy,
-                           min(PLAYER_MAX_MESSAGE_SIZE,hdr->size-readcnt))) <= 0)
+                           MIN(PLAYER_MAX_MESSAGE_SIZE,hdr->size-readcnt))) <= 0)
     {
       if(player_debug_level(-1) >= 2)
         perror("player_read(): read() errored while reading excess bytes.");

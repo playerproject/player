@@ -29,6 +29,7 @@
 #include <stdlib.h> // for exit(3)
 #include <string.h> // for memset(3)
 
+#include <playercommon.h>
 #include <playerqueue.h>
 
 //#include <playertime.h>

@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,56 +21,21 @@
  */
 
 /*
+ * Desc: Some useful macros
  * $Id$
- * 
- * DO NOT MODIFY THIS FILE!
- * Modify playercommon.h.in instead.
- *
- * common standard types and some generic size stuff.
- * also, debugging stuff.
  */
 
 #ifndef _PLAYERCOMMON_H
 #define _PLAYERCOMMON_H
 
-/*****************************************************************************/
-/* Don't touch these.  They are replaced during the configure with the right
- * values for the build system.  That way, the installed version of this
- * header will be usable by anyone */
-#undef HAVE_STDINT_H
-#undef HAVE_STRINGS_H
-#undef WORDS_BIGENDIAN
-#undef PLAYER_BIG_MESSAGES
-/*****************************************************************************/
-
-/* the largest possible message that the server will currently send
- * or receive */
-#ifdef PLAYER_BIG_MESSAGES
-#define PLAYER_MAX_MESSAGE_SIZE 2097152 /*2MB*/
-#else
-#define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
-#endif
-
-
-/* make sure we get the various types like 'uint8_t' */
-#include <sys/types.h>
-#if HAVE_STDINT_H
-  #include <stdint.h>
-#endif
-
 /* one of the following will define PATH_MAX */
-#include <limits.h> 
+#include <limits.h>
 #include <sys/param.h>
 
-#ifndef MIN
-  #define MIN(a,b) ((a < b) ? (a) : (b))
-#endif
-#ifndef MAX
-  #define MAX(a,b) ((a > b) ? (a) : (b))
-#endif
+#define MAX_FILENAME_SIZE PATH_MAX
 
-//cygwin doesn't appear to have them 
-//typedef unsigned int size_t; 
+//cygwin doesn't appear to have them
+//typedef unsigned int size_t;
 //typedef unsigned int uint32_t;
 //typedef unsigned short uint16_t;
 //typedef unsigned char uint8_t;
@@ -85,19 +50,6 @@
  */
 //#define MALLOC_CHECK_ 2
 
-/* now, then.  we'll all use the following (ISO-endorsed) types:
- *
- * int8_t  : signed 1 byte  (char)
- * int16_t : signed 2 bytes (short)
- * int32_t : signed 4 bytes (int)
- * int64_t : signed 8 bytes (long)
- * 
- * uint8_t  : unsigned 1 byte  (unsigned char)
- * uint16_t : unsigned 2 bytes (unsigned short)
- * uint32_t : unsigned 4 bytes (unsigned int)
- * uint64_t : unsigned 8 bytes (unsigned long)
- */
-
 /*
  * the following macros can be used to get the first char, short, or int
  * out of an unstructured buffer (such as a void* that contains a struct
@@ -110,23 +62,9 @@
 #define GETFIRSTUINT32(x) (*((uint32_t*)x))
 #define GETFIRSTINT32(x)  (*((int32_t*)x))
 
-/*
- * 64-bit conversion macros
- */
-#if WORDS_BIGENDIAN
-  #define htonll(n) (n)
-#else
-  #define htonll(n) ((((unsigned long long) htonl(n)) << 32) + htonl((n) >> 32))
-#endif
-
-#if WORDS_BIGENDIAN
-  #define ntohll(n) (n)
-#else
-  #define ntohll(n) ((((unsigned long long)ntohl(n)) << 32) + ntohl((n) >> 32))
-#endif
-
-
-#define MAX_FILENAME_SIZE PATH_MAX
+#define LOBYTE(w) ((uint8_t) (w & 0xFF))
+#define HIBYTE(w) ((uint8_t) ((w >> 8) & 0xFF))
+#define MAKEUINT16(lo, hi) ((((uint16_t) (hi)) << 8) | ((uint16_t) (lo)))
 
 ////////////////////////////////////////////////////////////////////////////////
 // Maths stuff
@@ -136,23 +74,21 @@
 #endif
 
 // Convert radians to degrees
-//
 #define RTOD(r) ((r) * 180 / M_PI)
 
 // Convert degrees to radians
-//
 #define DTOR(d) ((d) * M_PI / 180)
 
 // Normalize angle to domain -pi, pi
-//
 #define NORMALIZE(z) atan2(sin(z), cos(z))
-
-#define LOBYTE(w) ((uint8_t) (w & 0xFF))
-#define HIBYTE(w) ((uint8_t) ((w >> 8) & 0xFF))
-#define MAKEUINT16(lo, hi) ((((uint16_t) (hi)) << 8) | ((uint16_t) (lo)))
 
 #ifndef BOOL
 	#define BOOL int
+#endif
+
+#ifndef __cplusplus
+  #define true 1
+  #define false 0
 #endif
 
 #ifndef TRUE
@@ -175,7 +111,6 @@
 #endif
 
 // Macro for checking array bounds
-//
 #define ASSERT_INDEX(index, array) \
     assert((size_t) (index) >= 0 && (size_t) (index) < sizeof(array) / sizeof(array[0]));
 
@@ -183,15 +118,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Misc useful stuff
 
-#define min(a, b) ((a) < (b) ? (a) : (b))
-#define max(a, b) ((a) > (b) ? (a) : (b))
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Error, msg, trace macros
+#ifndef MIN
+  #define MIN(a,b) ((a < b) ? (a) : (b))
+#endif
+#ifndef MAX
+  #define MAX(a,b) ((a > b) ? (a) : (b))
+#endif
 
 #include <assert.h>
-
 #define VERIFY(m) assert(m)
 
 

@@ -46,10 +46,19 @@
  * client-side map device 
  */
 
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 
 #include <playerclient.h>
+
+#ifndef MIN
+  #define MIN(a,b) ((a < b) ? (a) : (b))
+#endif
+#ifndef MAX
+  #define MAX(a,b) ((a > b) ? (a) : (b))
+#endif
+
 
 MapProxy::MapProxy( PlayerClient *pc, unsigned short index,
     unsigned char access)

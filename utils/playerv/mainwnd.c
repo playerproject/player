@@ -25,6 +25,7 @@
  ***************************************************************************/
 
 #include <assert.h>
+#include <math.h>
 #include <stdlib.h>
 #include "playerv.h"
 

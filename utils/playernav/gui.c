@@ -1,5 +1,6 @@
 #include <math.h>
 
+#include "playercommon.h"
 #include "playernav.h"
 
 // flag and index for robot currently being moved by user (if any)

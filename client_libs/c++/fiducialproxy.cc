@@ -47,6 +47,8 @@
  */
 
 #include <playerclient.h>
+#include <math.h>
+#include <assert.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <stdio.h>

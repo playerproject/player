@@ -43,6 +43,7 @@
  */
 
 #include <playerclient.h>
+#include <assert.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -128,6 +129,10 @@ BumperProxy::FillData(player_msghdr_t hdr, const char *buffer)
     bumpers[i] = ((player_bumper_data_t *)buffer)->bumpers[i];
 }
 
+#ifndef MIN
+  #define MIN(a,b) ((a < b) ? (a) : (b))
+#endif
+
 // interface that all proxies SHOULD provide
 void 
 BumperProxy::Print()
@@ -135,7 +140,7 @@ BumperProxy::Print()
   printf("#Bumper(%d:%d) - %c\n", m_device_id.code, 
          m_device_id.index, access);
   printf("%d\n", bumper_count);
-  for (int i = min(bumper_count, PLAYER_BUMPER_MAX_SAMPLES) - 1; i >= 0; i--)
+  for (int i = MIN(bumper_count, PLAYER_BUMPER_MAX_SAMPLES) - 1; i >= 0; i--)
     putchar((bumpers[i]) ? '1' : '0');
   puts(" ");
 }
