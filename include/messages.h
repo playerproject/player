@@ -522,14 +522,6 @@ typedef struct
   player_vision_blob_elt_t 
           blobs[VISION_MAX_BLOBS_PER_CHANNEL*VISION_NUM_CHANNELS];
 } __attribute__ ((packed)) player_vision_data_t;
-
-// Player needs 2 bytes to store the packet length
-//typedef struct
-//{
-  //uint16_t size;
-  //player_vision_data_t data;
-//} __attribute__ ((packed)) player_internal_vision_data_t;
-//
 /*************************************************************************/
 
 

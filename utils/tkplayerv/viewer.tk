@@ -47,8 +47,6 @@ set MAX_RANGE 8000.0
 set host $PLAYER_DEFAULT_HOST
 set port $PLAYER_DEFAULT_PORT
 
-set ACTS_CHANNELS {red green blue magenta yellow cyan}
-
 set USAGE "USAGE: viewer.tk -- \[-h <host>\] \[-p <port>\] \[-s <size>\]\n  -h <host> : hostname/IP where Player is running (default: $host)\n  -p <port> : TCP port where Player is running (default: $port)\n -s <size> : width/height (in pixels) of the sensor display (default: $CANVAS_HEIGHT)"
 
 # this will be our robot object
@@ -590,7 +588,7 @@ proc displayData {} {
   global CANVAS_CONV_FACTOR PI
   global laser_angles sonar_angles
   global robot
-  global ACTS_CHANNELS PI
+  global PI VISION_NUM_CHANNELS
 
   # read one round of data
   if {[catch {player_read robot} err]} {
@@ -614,7 +612,7 @@ proc displayData {} {
   if {$display_vision && [llength [array names robot vision,0,numblobs]]} {
     # draw the first n channels.
     set j 0
-    while {$j < [llength $ACTS_CHANNELS]} {
+    while {$j < $VISION_NUM_CHANNELS} {
       set i 0
       while {$i < $robot(vision,$j,numblobs)} {
         #puts "$j:$i: (x,y) : ($robot(vision,$j,$i,x),$robot(vision,$j,$i,y))"
@@ -625,7 +623,7 @@ proc displayData {} {
                  $robot(vision,$j,$i,right) $robot(vision,$j,$i,bottom)\
                  $robot(vision,$j,$i,left)  $robot(vision,$j,$i,bottom)\
                  $robot(vision,$j,$i,left)  $robot(vision,$j,$i,top) \
-                 -width 2 -fill [lindex $ACTS_CHANNELS $j]]\
+                 -width 2 -fill $robot(vision,$j,$i,color)]\
           [.vision_panel.canvas create polygon \
                  [expr $robot(vision,$j,$i,x) - 2] \
                  [expr $robot(vision,$j,$i,y) - 2] \
@@ -635,7 +633,7 @@ proc displayData {} {
                  [expr $robot(vision,$j,$i,y) + 2] \
                  [expr $robot(vision,$j,$i,x) - 2] \
                  [expr $robot(vision,$j,$i,y) + 2] \
-                 -fill [lindex $ACTS_CHANNELS $j]]]
+                 -fill $robot(vision,$j,$i,color)]]
         incr i
       }
       incr j

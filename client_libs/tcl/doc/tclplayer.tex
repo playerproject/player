@@ -260,9 +260,10 @@ where non-zero {\tt state} will enable the motors, and zero will disable them.
 
 \section{The {\tt sonar} device}
 \subsection{Data}
-Data from the {\tt sonar} device is stored in $n$ array entries, where each
-entry is a range reading from a separate transducer:
+Data from the {\tt sonar} device is stored in $n$ array 
+entries, where each entry is a range reading from a separate transducer:
 \begin{itemize}
+\item {\tt \$obj(sonar,count)} : the number of range readings
 \item {\tt \$obj(sonar,\$i)} : the $i^{th}$ sonar's range (in mm)
 \end{itemize}
 
@@ -310,6 +311,8 @@ $i \in [0,31]$) are stored as follows:
 \begin{itemize}
 \item {\tt \$obj(vision,\$i,numblobs)} : the number of blobs detected on
 channel $i$
+\item {\tt \$obj(vision,\$i,\$j,color)} : the color of the $j^{th}$ blob on
+channel $i$ (as a Tk-format 6-digit hexadecimal color string: \#RRGGBB)
 \item {\tt \$obj(vision,\$i,\$j,area)} : the area of the $j^{th}$ blob on
 channel $i$ (in pixels)
 \item {\tt \$obj(vision,\$i,\$j,x)} : the $x$ coordinate of the center of the 
