@@ -40,7 +40,7 @@ player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h \
 include_HEADERS = player.h playerconfig.h playercommon.h playerqueue.h 
 
 # Install these to $prefix/include/player/ so plugin drivers can use them
-pkginclude_HEADERS = driver.h drivertable.h devicetable.h device.h configfile.h playertime.h
+pkginclude_HEADERS = driver.h drivertable.h devicetable.h device.h configfile.h playertime.h error.h
 
 
 #
