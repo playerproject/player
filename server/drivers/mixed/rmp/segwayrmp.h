@@ -69,7 +69,7 @@ class SegwayRMP : public CDevice
     static CDevice* Instance(ConfigFile* cf, int section);
 
     // Constructor	  
-    SegwayRMP(ConfigFile* cf, int section);
+    SegwayRMP();
     ~SegwayRMP();
 
     // Setup/shutdown routines.
@@ -80,6 +80,9 @@ class SegwayRMP : public CDevice
     player_segwayrmp_data_t data;
 
   private:
+
+    void ProcessConfigFile(ConfigFile* cf, int section);
+
     static CDevice* instance;
 
     const char* portname;

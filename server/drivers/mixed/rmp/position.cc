@@ -60,7 +60,7 @@ CDevice* SegwayRMPPosition_Init(char* interface, ConfigFile* cf, int section)
     code = PLAYER_POSITION3D_CODE;
   else
   {
-    PLAYER_ERROR1("driver \"segwayrmpposition\" does not support "
+    PLAYER_ERROR1("driver \"rmpposition\" does not support "
                   "interface \"%s\"\n", interface);
     return (NULL);
   }
@@ -71,15 +71,14 @@ CDevice* SegwayRMPPosition_Init(char* interface, ConfigFile* cf, int section)
 // a driver registration function
 void SegwayRMPPosition_Register(DriverTable* table)
 {
-  table->AddDriver("segwayrmpposition", PLAYER_ALL_MODE, 
+  table->AddDriver("rmpposition", PLAYER_ALL_MODE, 
                    SegwayRMPPosition_Init);
 }
 
 SegwayRMPPosition::SegwayRMPPosition(uint16_t code, 
                                      ConfigFile* cf, 
                                      int section)
-        : CDevice(sizeof(player_position3d_data_t), 
-                  sizeof(player_position3d_cmd_t), 10, 10)
+        : CDevice(sizeof(player_position3d_data_t),0, 10, 10)
 {
   this->interface_code = code;
   assert(this->segwayrmp = SegwayRMP::Instance(cf,section));
@@ -93,12 +92,9 @@ int
 SegwayRMPPosition::Setup()
 {
   player_position3d_data_t data3d;
-  player_position3d_cmd_t cmd3d;
 
   memset(&data3d,0,sizeof(data3d));
-  memset(&cmd3d,0,sizeof(cmd3d));
 
-  PutCommand(this,(unsigned char*)&cmd3d,sizeof(cmd3d));
   PutData((unsigned char*)&data3d,sizeof(data3d),0,0);
 
   if(this->segwayrmp->Subscribe(this))
@@ -112,9 +108,13 @@ SegwayRMPPosition::Setup()
 int
 SegwayRMPPosition::Shutdown()
 {
+  int retval;
+
+  retval = this->segwayrmp->Unsubscribe(this);
+
   StopThread();
 
-  return(this->segwayrmp->Unsubscribe(this));
+  return(retval);
 }
 
 void
@@ -122,6 +122,12 @@ SegwayRMPPosition::Main()
 {
   player_segwayrmp_data_t data;
   uint32_t time_sec, time_usec;
+  unsigned char buffer[256];
+  size_t buffer_len;
+  void* client;
+  player_device_id_t id;
+  unsigned short reptype;
+  struct timeval time;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -146,6 +152,19 @@ SegwayRMPPosition::Main()
                     interface_code);
       pthread_exit(NULL);
     }
+
+    if((buffer_len = GetConfig(&id, &client,
+                               (void*)buffer, sizeof(buffer))) > 0)
+    {
+      // pass requests on to the underlying device
+      if((buffer_len= this->segwayrmp->Request(&id,client,(void*)buffer,
+                                               buffer_len,&reptype,&time,
+					       (void*)buffer,
+					       sizeof(buffer))) < 0)
+        PutReply(client, PLAYER_MSGTYPE_RESP_NACK);
+      else
+        PutReply(&id,client,reptype,&time,(void*)buffer,buffer_len);
+    }
   }
 }
 
@@ -154,18 +173,16 @@ SegwayRMPPosition::PutCommand(void* client, unsigned char* src, size_t len)
 {
   player_segwayrmp_cmd_t cmd;
 
-  Lock();
   cmd.code = this->interface_code;
   if(this->interface_code==PLAYER_POSITION_CODE)
   {
     cmd.position_cmd = *((player_position_cmd_t*)src);
-    this->segwayrmp->PutCommand(client, (unsigned char*)&src, sizeof(cmd));
+    this->segwayrmp->PutCommand(client, (unsigned char*)&cmd, sizeof(cmd));
   }
   else if(this->interface_code==PLAYER_POSITION3D_CODE)
   {
     cmd.position3d_cmd = *((player_position3d_cmd_t*)src);
-    this->segwayrmp->PutCommand(client, (unsigned char*)&src, sizeof(cmd));
+    this->segwayrmp->PutCommand(client, (unsigned char*)&cmd, sizeof(cmd));
   }
-  Unlock();
 }
 

@@ -380,6 +380,8 @@ int CDevice::Unsubscribe(void *client)
   else if ( subscriptions == 1) 
   {
     shutdownResult = Shutdown();
+    // to release anybody that's still waiting, in order to allow shutdown
+    DataAvailable();
     if (shutdownResult == 0 ) 
       subscriptions--;
     /* do we want to unsubscribe even though the shutdown went bad? */
@@ -489,15 +491,22 @@ CDevice::Request(player_device_id_t* device, void* requester,
 void 
 CDevice::DataAvailable(void)
 {
+  pthread_mutex_lock(&condMutex);
   pthread_cond_broadcast(&cond);
+  pthread_mutex_unlock(&condMutex);
 }
 
 // Waits on the condition variable associated with this device.
 void 
 CDevice::Wait(void)
 {
+  // need to push this cleanup function, cause if a thread is cancelled while
+  // in pthread_cond_wait(), it will immediately relock the mutex.  thus we
+  // need to unlock ourselves before exiting.
+  pthread_cleanup_push((void(*)(void*))pthread_mutex_unlock,(void*)&condMutex);
   pthread_mutex_lock(&condMutex);
   pthread_cond_wait(&cond,&condMutex);
   pthread_mutex_unlock(&condMutex);
+  pthread_cleanup_pop(1);
 }
 
