@@ -79,7 +79,7 @@ int main(int argc, char** argv)
   // COLLISION AVOID
   int avoidcount = 0;
   bool obs = false;
-  unsigned short minfrontdistance = 450;
+  unsigned short minfrontdistance = 600;
 
   // VISUAL SERVO / COLLECT
   unsigned int minarea = 1;
@@ -133,19 +133,24 @@ int main(int argc, char** argv)
     if(obs || avoidcount || pp.stalls)
     {
       // OBSTACLE AVOIDANCE
-      newspeed = 0; //-150;
+      newspeed = -50;
 
       /* once we start avoiding, continue avoiding for 2 seconds */
       /* (we run at about 10Hz, so 20 loop iterations is about 2 sec) */
       if(!avoidcount)
       {
-        avoidcount = 15;
+        avoidcount = 25;
         randcount = 0;
 
         if(sp[1]+sp[15] < sp[7]+sp[8])
           newturnrate = -40;
         else
           newturnrate = 40;
+        randint = (rand() % 10);
+
+        // 20% of the time, go the "wrong" way
+        if(randint < 2)
+          newturnrate = -newturnrate;
       }
       avoidcount--;
     }
