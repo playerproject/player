@@ -139,7 +139,7 @@ test_fiducial(PlayerClient* client, int index)
 
     printf( " (%d) ", id );
 
-    if( id > 0 )
+    if( id >= 0 )
       PASS();
     else
       FAIL();
@@ -177,7 +177,7 @@ test_fiducial(PlayerClient* client, int index)
     if( fp.SendMessage(&msg,true) < 0 )
       {
 	FAIL();
-	puts( "Messaging not supported" );
+	puts( "Looks like messaging is not supported." );
       }
     else
     {

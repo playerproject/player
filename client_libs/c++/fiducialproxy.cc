@@ -247,7 +247,7 @@ int FiducialProxy::SetId( int id )
 }
 
 // Get the fiducial identification value displayed by this device (if supported)
-// returns the ID or -1 on errorx
+// returns the ID or -1 on error
 int FiducialProxy::GetId( void )
 { 
   int len;
