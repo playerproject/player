@@ -112,21 +112,6 @@ int CStageDevice::Shutdown()
   return 0;
 };
 
-///////////////////////////////////////////////////////////////////////////
-// Read data from the device and mark the data area as empty
-//
-/*
-size_t CStageDevice::ConsumeData(unsigned char *data, size_t size)
-{
-  size_t result = GetData( data, size );
-  
-  // tell stage and other clients that this data has been read
-  if( result == m_info->data_avail ) // the fetch worked OK
-    m_info->data_avail = 0;
-  
-  return result;
-}
-*/
 
 ///////////////////////////////////////////////////////////////////////////
 // Read data from the device
@@ -187,7 +172,8 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size,
   memcpy(data, device_data, data_avail);
 
   // TODO: should this still be here?
-  m_info->data_avail = 0;// consume this data for testing purposes
+  // no! and it wasted a good hour of my time.... - RTV
+  //m_info->data_avail = 0;// consume this data for testing purposes
 
   // store the timestamp in the device, because other devices may
   // wish to read it

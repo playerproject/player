@@ -56,6 +56,10 @@ CDevice::CDevice(size_t datasize, size_t commandsize,
   assert(device_reqqueue);
   assert(device_repqueue);
 
+  // don't forget to make changes to both constructors!
+  // it took me a few hours to figure out that the subscription
+  // counter needs to be zeroed in the other constuctor - it produced
+  // a very nasty heisenbug. boo.
   subscriptions = 0;
 
   pthread_mutex_init(&accessMutex,NULL);
@@ -74,6 +78,12 @@ CDevice::CDevice()
   device_data = device_command = NULL;
   device_reqqueue = device_repqueue = NULL;
  
+  // don't forget to make changes to both constructors!
+  // it took me a few hours to figure out that the subscription
+  // counter needs to be zeroed in the other constuctor - it produced
+  // a very nasty heisenbug. boo.
+  subscriptions = 0;
+
   // this may be unnecessary, but what the hell...
   pthread_mutex_init(&accessMutex,NULL);
   pthread_mutex_init(&setupMutex,NULL);
