@@ -13,7 +13,7 @@
 #endif
 
 // Basic blobfinder test
-int test_blobfinder(playerc_client_t *client, int robot, int index)
+int test_blobfinder(playerc_client_t *client, int index)
 {
   int t, i;
   void *rdevice;
@@ -21,7 +21,7 @@ int test_blobfinder(playerc_client_t *client, int robot, int index)
 
   printf("device [blobfinder] index [%d]\n", index);
 
-  device = playerc_blobfinder_create(client, robot, index);
+  device = playerc_blobfinder_create(client, index);
 
   TEST("subscribing (read)");
   if (playerc_blobfinder_subscribe(device, PLAYER_READ_MODE) == 0)

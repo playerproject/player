@@ -10,7 +10,7 @@
 
 
 // Basic ptz test
-int test_ptz(playerc_client_t *client, int robot, int index)
+int test_ptz(playerc_client_t *client, int index)
 {
   int t;
   void *rdevice;
@@ -18,7 +18,7 @@ int test_ptz(playerc_client_t *client, int robot, int index)
 
   printf("device [ptz] index [%d]\n", index);
 
-  device = playerc_ptz_create(client, robot, index);
+  device = playerc_ptz_create(client, index);
 
   TEST("subscribing (read)");
   if (playerc_ptz_subscribe(device, PLAYER_ALL_MODE) == 0)

@@ -38,14 +38,14 @@ PyObject *comms_new(PyObject *self, PyObject *args)
 {
   pyclient_t *clientob;
   pycomms_t *pycomms;
-  int robot, index;
+  int index;
 
-  if (!PyArg_ParseTuple(args, "Oii", &clientob, &robot, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &clientob, &index))
     return NULL;
 
   pycomms = PyObject_New(pycomms_t, &comms_type);
   pycomms->client = clientob->client;
-  pycomms->comms = playerc_comms_create(clientob->client, robot, index);
+  pycomms->comms = playerc_comms_create(clientob->client, index);
   pycomms->comms->info.user_data = pycomms;
 
   /* Add callback for post-processing incoming data */

@@ -35,14 +35,14 @@ PyObject *power_new(PyObject *self, PyObject *args)
 {
   pyclient_t *pyclient;
   power_object_t *pypower;
-  int robot, index;
+  int index;
 
-  if (!PyArg_ParseTuple(args, "Oii", &pyclient, &robot, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   pypower = PyObject_New(power_object_t, &power_type);
   pypower->client = pyclient->client;
-  pypower->power = playerc_power_create(pyclient->client, robot, index);
+  pypower->power = playerc_power_create(pyclient->client, index);
   pypower->power->info.user_data = pypower;
     
   return (PyObject*) pypower;

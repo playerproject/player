@@ -39,7 +39,7 @@ void laser_draw(laser_t *laser);
 
 // Create a laser device
 laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                      int robot, int index, const char *drivername, int subscribe)
+                      int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
@@ -47,7 +47,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   
   laser = malloc(sizeof(laser_t));
 
-  laser->proxy = playerc_laser_create(client, robot, index);
+  laser->proxy = playerc_laser_create(client, index);
   laser->drivername = strdup(drivername);
   laser->datatime = 0;
 

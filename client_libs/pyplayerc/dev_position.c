@@ -40,14 +40,14 @@ PyObject *position_new(PyObject *self, PyObject *args)
 {
   pyclient_t *pyclient;
   position_object_t *pyposition;
-  int robot, index;
+  int index;
 
-  if (!PyArg_ParseTuple(args, "Oii", &pyclient, &robot, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   pyposition = PyObject_New(position_object_t, &position_type);
   pyposition->client = pyclient->client;
-  pyposition->position = playerc_position_create(pyclient->client, robot, index);
+  pyposition->position = playerc_position_create(pyclient->client, index);
   pyposition->position->info.user_data = pyposition;
   pyposition->px = PyFloat_FromDouble(0);
   pyposition->py = PyFloat_FromDouble(0);

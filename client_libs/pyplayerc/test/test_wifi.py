@@ -9,10 +9,9 @@ import playerc
 def test_wifi(client, index):
     """Test the wifi device."""
 
-    device = playerc.wifi(client, 0, index)
+    device = playerc.wifi(client, index)
     device.subscribe('r')
 
-    
     for i in range(3):
 
         while client.read() != device:

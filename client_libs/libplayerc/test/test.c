@@ -14,7 +14,7 @@ int main(int argc, const char *argv[])
 {
   playerc_client_t *client;
   const char *host;
-  int port, robot;
+  int port;
   int all;
   int i;
   char *arg;
@@ -24,7 +24,6 @@ int main(int argc, const char *argv[])
   // Default host, port
   host = "localhost";
   port = 6665;
-  robot = 0;
   all = 1;
 
   // Read program options (host and port).
@@ -36,8 +35,6 @@ int main(int argc, const char *argv[])
       host = val;
     else if (strcmp(opt, "-p") == 0)
       port = atoi(val);
-    else if (strcmp(opt, "-r") == 0)
-      robot = atoi(val);
   }
 
   // If there are individual device arguments, dont do all tests.
@@ -105,62 +102,62 @@ int main(int argc, const char *argv[])
     {
       // Blobfinder device
       case PLAYER_BLOBFINDER_CODE:
-        test_blobfinder(client, robot, client->ids[i].index);
+        test_blobfinder(client, client->ids[i].index);
         break;
 
       // Broadcast device
       case PLAYER_COMMS_CODE:
-        test_comms(client, robot, client->ids[i].index);
+        test_comms(client, client->ids[i].index);
         break;
 
       // Fiducial detector
       case PLAYER_FIDUCIAL_CODE:
-        test_fiducial(client, robot, client->ids[i].index);
+        test_fiducial(client, client->ids[i].index);
         break;
 
       // GPS device
       case PLAYER_GPS_CODE:
-        test_gps(client, robot, client->ids[i].index);
+        test_gps(client, client->ids[i].index);
         break;
 
       // Laser device
       case PLAYER_LASER_CODE:
-        test_laser(client, robot, client->ids[i].index);
+        test_laser(client, client->ids[i].index);
         break;
 
       // Localize device
       case PLAYER_LOCALIZE_CODE:
-        test_localize(client, robot, client->ids[i].index);
+        test_localize(client, client->ids[i].index);
         break;
 
       // Position device
       case PLAYER_POSITION_CODE:
-        test_position(client, robot, client->ids[i].index);
+        test_position(client, client->ids[i].index);
         break;
 
       // Power device
       case PLAYER_POWER_CODE:
-        test_power(client, robot, client->ids[i].index);
+        test_power(client, client->ids[i].index);
         break;
 
       // PTZ device
       case PLAYER_PTZ_CODE:
-        test_ptz(client, robot, client->ids[i].index);
+        test_ptz(client, client->ids[i].index);
         break;
 
       // Sonar device
       case PLAYER_SONAR_CODE:
-        test_sonar(client, robot, client->ids[i].index);
+        test_sonar(client, client->ids[i].index);
         break;
 
       // Truth device
       case PLAYER_TRUTH_CODE:
-        test_truth(client, robot, client->ids[i].index);
+        test_truth(client, client->ids[i].index);
         break;
 
       // WiFi device
       case PLAYER_WIFI_CODE:
-        test_wifi(client, robot, client->ids[i].index);
+        test_wifi(client, client->ids[i].index);
         break;
 
       default:

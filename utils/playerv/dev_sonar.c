@@ -42,7 +42,7 @@ void sonar_nodraw(sonar_t *sonar);
 
 // Create a sonar device
 sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                      int robot, int index, const char *drivername, int subscribe)
+                      int index, const char *drivername, int subscribe)
 {
   int i;
   char label[64];
@@ -50,7 +50,7 @@ sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   sonar_t *sonar;
   
   sonar = malloc(sizeof(sonar_t));
-  sonar->proxy = playerc_sonar_create(client, robot, index);
+  sonar->proxy = playerc_sonar_create(client, index);
   sonar->drivername = strdup(drivername);
   sonar->datatime = 0;
 

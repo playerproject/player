@@ -10,7 +10,7 @@
 
 
 // Basic comms device test
-int test_comms(playerc_client_t *client, int robot, int index)
+int test_comms(playerc_client_t *client, int index)
 {
   int i, len;
   char msg[128];
@@ -27,7 +27,7 @@ int test_comms(playerc_client_t *client, int robot, int index)
   }
   PASS();
 
-  comms = playerc_comms_create(client, robot, index);
+  comms = playerc_comms_create(client, index);
 
   TEST("subscribing (read/write)");
   if (playerc_comms_subscribe(comms, PLAYER_ALL_MODE) != 0)

@@ -227,7 +227,6 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
     
   header.stx = PLAYER_STXX;
   header.type = PLAYER_MSGTYPE_CMD;
-  header.robot = device->robot;
   header.device = device->code;
   header.device_index = device->index;
   header.size = len;
@@ -248,7 +247,6 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
   {
     req_header.stx = PLAYER_STXX;
     req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.robot = 0;
     req_header.device = PLAYER_PLAYER_CODE;    
     req_header.device_index = 0;
     req_header.size = req_len;
@@ -257,7 +255,6 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
   {
     req_header.stx = PLAYER_STXX;
     req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.robot = deviceinfo->robot;
     req_header.device = deviceinfo->code;
     req_header.device_index = deviceinfo->index;
     req_header.size = req_len;
@@ -464,7 +461,6 @@ int playerc_client_get_devlist(playerc_client_t *client)
   {
     client->ids[i].code = ntohs(config.devices[i].code);
     client->ids[i].index = ntohs(config.devices[i].index);
-    client->ids[i].robot = ntohs(config.devices[i].robot);
   }
   client->id_count = config.device_count;
 
@@ -486,7 +482,6 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
     req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
     req.id.code = htons(client->ids[i].code);
     req.id.index = htons(client->ids[i].index);
-    req.id.robot = htons(client->ids[i].robot);
 
     len = playerc_client_request(client, NULL,
                                  &req, sizeof(req), &rep, sizeof(rep));
@@ -507,16 +502,15 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
 
 
 // Subscribe to a device
-int playerc_client_subscribe(playerc_client_t *client, int robot, int code, int index,
+int playerc_client_subscribe(playerc_client_t *client, int code, int index,
                              int access, char *drivername, size_t len)
 {
   player_device_req_t req;
   player_device_resp_t rep;
 
   req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  req.id.robot = htons(robot);
-  req.id.code = htons(code);
-  req.id.index = htons(index);
+  req.code = htons(code);
+  req.index = htons(index);
   req.access = access;
 
   if (playerc_client_request(client, NULL, &req, sizeof(req), &rep, sizeof(rep)) < 0)
@@ -536,15 +530,14 @@ int playerc_client_subscribe(playerc_client_t *client, int robot, int code, int 
 
 
 // Unsubscribe from a device
-int playerc_client_unsubscribe(playerc_client_t *client, int robot, int code, int index)
+int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
 {
   player_device_req_t req;
   player_device_resp_t rep;
 
   req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  req.id.robot = htons(robot);
-  req.id.code = htons(code);
-  req.id.index = htons(index);
+  req.code = htons(code);
+  req.index = htons(index);
   req.access = PLAYER_CLOSE_MODE;
 
   if (playerc_client_request(client, NULL, &req, sizeof(req), &rep, sizeof(rep)) < 0)
@@ -688,7 +681,6 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
   // Do the network byte re-ordering 
   header->stx = htons(header->stx);
   header->type = htons(header->type);
-  header->robot = htons(header->robot);
   header->device = htons(header->device);
   header->device_index = htons(header->device_index);
   header->size = htonl(header->size);
@@ -708,7 +700,6 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
   // Now undo the network byte re-ordering 
   header->stx = ntohs(header->stx);
   header->type = ntohs(header->type);
-  header->robot = ntohs(header->robot);  
   header->device = ntohs(header->device);
   header->device_index = ntohs(header->device_index);
   header->size = ntohl(header->size);
