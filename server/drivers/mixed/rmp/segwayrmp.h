@@ -24,43 +24,6 @@
 #include "device.h"
 #include "configfile.h"
 
-// Both of these can be changed via the configuration file; please do NOT
-// change them here!
-#define RMP_DEFAULT_MAX_XSPEED 500   // mm/sec
-#define RMP_DEFAULT_MAX_YAWSPEED 40  // deg/sec
-
-// Number of RMP read cycles, without new speed commands from clients,
-// after which we'll stop the robot (for safety).  The read loop
-// seems to run at about 50Hz, or 20ms per cycle.
-#define RMP_TIMEOUT_CYCLES 20 // about 400ms
-
-
-/* REMOVE
-// Format for data provided by the underlying segway rmp driver.  It's not
-// for direct external consumption.  Rather, the SegwayRMPPosition and
-// SegwayRMPPower drivers (and maybe others) will get the bits that they want
-// and send them on to clients.  Essentially, this is the union of all data
-// that the RMP can provide.  The underlying driver will byteswap everything
-// before it goes in, so that the other drivers don't have to.
-typedef struct
-{
-} __attribute__ ((packed)) player_segwayrmp_data_t;
-
-// Format for commands accepted by the underlying segway rmp driver. 
-// The SegwayRMPPosition will put them in.  Essentially, this is the union of 
-// all commands that the RMP can accept.  The SegwayRMPPosition driver can
-// just forward the commands without byteswapping; the underlying driver will
-// do that.
-typedef struct
-{
-  // flag to tell the underlying driver which of the two commands to use.
-  // should be either PLAYER_POSITION_CODE or PLAYER_POSITION3D_CODE.
-  uint16_t code; 
-  player_position_cmd_t position_cmd;
-  player_position3d_cmd_t position3d_cmd;
-} __attribute__ ((packed)) player_segwayrmp_cmd_t;
-*/
-
 
 // Forward declarations
 class rmp_frame_t;
@@ -83,20 +46,14 @@ class SegwayRMP : public Driver
     // Supported interfaces
     player_device_id_t position_id;
     player_position_data_t position_data;
-    player_position_cmd_t position_cmd;
 
     player_device_id_t position3d_id;
     player_position3d_data_t position3d_data;
-    player_position3d_cmd_t position3d_cmd;
   
     player_device_id_t power_id;
     player_power_data_t power_data;
 
   private:
-
-    void ProcessConfigFile(ConfigFile* cf, int section);
-
-    static Driver* instance;
 
     const char* portname;
     const char* caniotype;

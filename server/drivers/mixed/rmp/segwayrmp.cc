@@ -35,6 +35,16 @@
 #include "segwayrmp.h"
 
 
+// Both of these can be changed via the configuration file; please do NOT
+// change them here!
+#define RMP_DEFAULT_MAX_XSPEED 500   // mm/sec
+#define RMP_DEFAULT_MAX_YAWSPEED 40  // deg/sec
+
+// Number of RMP read cycles, without new speed commands from clients,
+// after which we'll stop the robot (for safety).  The read loop
+// seems to run at about 50Hz, or 20ms per cycle.
+#define RMP_TIMEOUT_CYCLES 20 // about 400ms
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // A factory creation function
