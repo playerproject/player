@@ -305,9 +305,13 @@ void CBroadcastDevice::SendPacket(unsigned char *packet, size_t size)
 //
 size_t CBroadcastDevice::RecvPacket(unsigned char *packet, size_t size)
 {
+#ifdef PLAYER_LINUX
     size_t addr_len = sizeof(m_read_addr);    
+#else
+    int addr_len = (int)sizeof(m_read_addr);    
+#endif
     size_t packet_len = recvfrom(m_read_socket, (char*)packet, size,
-                                 0, (sockaddr*) &m_read_addr, (int*)&addr_len);
+                                 0, (sockaddr*) &m_read_addr, &addr_len);
     if ((int) packet_len < 0)
     {
         if (errno == EAGAIN)
