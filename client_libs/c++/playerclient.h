@@ -1638,4 +1638,78 @@ public:
  ** end section
  *****************************************************************************/
 
+
+/*****************************************************************************
+ ** begin section MComProxy
+ *****************************************************************************/
+
+/*  MComProxy class by Matt Brewer <mbrewer@andrew.cmu.edu> at 
+ *  UMass Amherst 2002 (updated for player 1.3 by reed)
+ */                      
+
+// this is from the player server (server/drivers/mcom/ in the source tree)
+//#include "player_mcom_types.h"
+
+class MComProxy : public ClientProxy {
+
+public:
+    /** These members contain the results of the last command.
+     *  @note It's better to use the LastData() method. */   
+    //@{
+    player_mcom_data_t data;
+    int type;
+    char channel[MCOM_CHANNEL_LEN];
+    //@}
+
+public:
+    MComProxy(PlayerClient* pc, unsigned short index, unsigned char access = 'c') : ClientProxy(pc,PLAYER_MCOM_CODE,index,access){}
+
+    /** Read and remove the most recent buffer in 'channel' with type 'type'.
+     *  The result can be read with LastData().
+     */
+    int Pop(int type, char channel[MCOM_CHANNEL_LEN]);
+
+    /** Read the most recent buffer in 'channel' with type 'type'.
+     *  The result can be read with LastData() after the next call to
+     *  PlayerClient::Read().
+     */
+    int Read(int type, char channel[MCOM_CHANNEL_LEN]);
+
+    /* Read the most recent buffer in 'channel' with type 'type'.
+     *  The result is placed in 'result'
+    int Read(int type, char channel[MCOM_CHANNEL_LEN], char result[MCOM_DATA_LEN]);
+     */
+
+    /** Push a message 'dat' into channel 'channel' with message type 'type'. */
+    int Push(int type, char channel[MCOM_CHANNEL_LEN], char dat[MCOM_DATA_LEN]);
+
+    /** Clear all messages of type 'type' on channel 'channel' */
+    int Clear(int type, char channel[MCOM_CHANNEL_LEN]);
+
+    /** Get the results of the last command (Pop or Read). Call
+     * PlayerClient::Read() before using these.
+     */
+    // @{
+    char* LastData() {
+        return data.data;
+    }
+    int LastMsgType() {
+        return type;
+    }
+    char* LastChannel() {
+        return channel;
+    }
+    // @}
+
+
+
+
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    void Print();
+};
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
 #endif

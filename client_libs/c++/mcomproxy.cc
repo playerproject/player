@@ -35,7 +35,7 @@ int MComProxy::Push(int type, char * channelQ,char* dat){
   strcpy(cfg.channel,channelQ);
   cfg.data.full=true;
   memcpy(cfg.data.data,dat,MCOM_DATA_LEN);
-  int r = client->Request(m_device_id, (const char*)&cfg, sizeof(cfg));
+  int r = client->Request(PLAYER_MCOM_CODE, index, (const char*)&cfg, sizeof(cfg));
   if(r < 0) {
       printf("mcomproxy: error (%d) sending request\n", r);
       return r;
@@ -52,7 +52,7 @@ int MComProxy::Read(int type, char * channelQ){
     cfg.type=htons(type);
     strcpy(cfg.channel,channelQ);
     player_mcom_return_t reply;
-    int r = client->Request(m_device_id,
+    int r = client->Request(PLAYER_MCOM_CODE, index, 
             (const char*)&cfg, sizeof(cfg), &hdr, 
             (char*)&reply, sizeof(reply));
     if(r < 0)
@@ -75,7 +75,7 @@ int MComProxy::Pop(int type, char* channelQ){
   cfg.type=htons(type);
   strcpy(cfg.channel,channelQ);
   player_mcom_return_t reply;
-  int r = client->Request(m_device_id,
+  int r = client->Request(PLAYER_MCOM_CODE, index,
 		      (const char*)&cfg, sizeof(cfg), &hdr , 
               (char*)&reply, sizeof(reply));
   if(r < 0)
@@ -96,7 +96,7 @@ int MComProxy::Clear(int type, char * channelQ){
   cfg.command = PLAYER_MCOM_CLEAR_REQ;
   cfg.type=htons(type);
   strcpy(cfg.channel,channelQ);
-  return client->Request(m_device_id,
+  return client->Request(PLAYER_MCOM_CODE,index,
 			 (const char*)&cfg,sizeof(cfg));
 }
 

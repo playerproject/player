@@ -1,6 +1,7 @@
 SUBDIRS = . test
 
-AM_CPPFLAGS = -I$(top_srcdir)/server -I$(srcdir)/../c
+AM_CPPFLAGS = -I$(top_srcdir)/server -I$(srcdir)/../c -I$(top_srcdir)/server/drivers/mcom
+
 
 lib_LIBRARIES = libplayerclient.a
 
@@ -27,12 +28,13 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               truthproxy.cc \
                               blobfinderproxy.cc \
                               wifiproxy.cc \
-			      irproxy.cc \
-			      powerproxy.cc \
+                              irproxy.cc \
+                              powerproxy.cc \
                               bumperproxy.cc \
-			      dioproxy.cc \
+                              dioproxy.cc \
                               audioproxy.cc \
-                              waveformproxy.cc
+                              waveformproxy.cc \
+                              mcomproxy.cc 
                               #bpsproxy.cc
                               #bpsproxy.h
 

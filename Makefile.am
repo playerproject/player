@@ -1,4 +1,4 @@
-SUBDIRS = server client_libs utils config examples
+SUBDIRS = client_libs server utils config examples
 
 dist-hook:
 	mkdir -p $(top_distdir)/doc

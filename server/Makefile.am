@@ -1,9 +1,8 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(top_builddir)/replace
+AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage
 
-player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@ \
-			@LIBOBJS@
+player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@ @LIBOBJS@
 
 #
 # Note to everybody: please do NOT break the following assignment onto
@@ -14,11 +13,7 @@ player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTKGUI
 
 player_LDFLAGS = @RTKGUI_EXTRA_LDFLAGS@
 
-
-#@LIBOBJS@
-
 bin_PROGRAMS = player
-
 
 lib_LIBRARIES = libplayerqueue.a 
 

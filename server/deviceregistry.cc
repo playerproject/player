@@ -42,7 +42,7 @@ extern DriverTable* driverTable;
 extern PlayerTime* GlobalTime;
 
 /* prototype device-specific init funcs */
-#ifdef INCLUDE_SICK
+#ifdef INCLUDE_SICKLMS200
 void SickLMS200_Register(DriverTable* table);
 #endif
 
@@ -64,11 +64,11 @@ void LaserVisualBarcode_Register(DriverTable* table);
 void LaserCSpace_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_SONY
+#ifdef INCLUDE_SONYEVID30
 void SonyEVID30_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_UDPBCAST
+#ifdef INCLUDE_UDPBROADCAST
 void UDPBroadcast_Register(DriverTable* table);
 #endif
 
@@ -86,7 +86,7 @@ void P2OSPosition_Register(DriverTable* table);
 void P2OSSonar_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_WIFI
+#ifdef INCLUDE_LINUXWIFI
 void LinuxWiFi_Register(DriverTable *table);
 #endif
 
@@ -132,6 +132,9 @@ void Waveaudio_Register(DriverTable* table);
 void RegularMCL_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_LIFOMCOM
+void LifoMCom_Register(DriverTable* table);
+#endif
 
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
@@ -157,6 +160,7 @@ player_interface_t interfaces[] = {
   {PLAYER_IR_CODE, PLAYER_IR_STRING, "reb_ir"},
   {PLAYER_WAVEFORM_CODE, PLAYER_WAVEFORM_STRING, "wave_audio"},
   {PLAYER_LOCALIZATION_CODE, PLAYER_LOCALIZATION_STRING, "regular_mcl"},
+  {PLAYER_MCOM_CODE, PLAYER_MCOM_STRING, "lifomcom"},
   {0,NULL,NULL}
 };
 
@@ -187,7 +191,7 @@ lookup_interface(char* name, player_interface_t* interface)
 void
 register_devices()
 {
-#ifdef INCLUDE_SICK
+#ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
 #endif
 
@@ -209,11 +213,11 @@ register_devices()
   LaserCSpace_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_SONY
+#ifdef INCLUDE_SONYEVID30
   SonyEVID30_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_UDPBCAST
+#ifdef INCLUDE_UDPBROADCAST
   UDPBroadcast_Register(driverTable);
 #endif
 
@@ -243,7 +247,7 @@ register_devices()
   RWIPower_Register(driverTable);
 #endif
   
-#ifdef INCLUDE_WIFI
+#ifdef INCLUDE_LINUXWIFI
   LinuxWiFi_Register(driverTable);
 #endif
 
@@ -275,6 +279,10 @@ register_devices()
 
 #ifdef INCLUDE_LOCALIZATION
   RegularMCL_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LIFOMCOM
+  LifoMCom_Register(driverTable);
 #endif
 }
 

@@ -77,6 +77,7 @@
 #define PLAYER_WIFI_CODE	   ((uint16_t)23)  // wifi card status
 #define PLAYER_WAVEFORM_CODE	   ((uint16_t)24)  // fetch raw waveforms
 #define PLAYER_LOCALIZATION_CODE   ((uint16_t)25)  // localization
+#define PLAYER_MCOM_CODE           ((uint16_t)26)  // multicoms
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -106,6 +107,7 @@
 #define PLAYER_WIFI_STRING           "wifi"
 #define PLAYER_WAVEFORM_STRING       "waveform"
 #define PLAYER_LOCALIZATION_STRING   "localization"
+#define PLAYER_MCOM_STRING           "mcom"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -642,7 +644,7 @@ typedef struct player_position_position_mode_req
 /** To set the robot's odometry to a particular state, use this request: */
 typedef struct player_position_set_odom_req
 {
-  /** subtype; must be PLAYER_SET_ODOM_REQ */
+  /** subtype; must be PLAYER_POSITION_SET_ODOM_REQ */
   uint8_t subtype; 
   /** X and Y (in mm?) */
   int32_t x, y;
@@ -1874,6 +1876,85 @@ typedef struct player_localization_map_data
   /** map data */
   uint8_t data[PLAYER_MAX_REQREP_SIZE - 4];
 } __attribute__ ((packed)) player_localization_map_data_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section mcom
+ *************************************************************************/
+
+/*  MCom device by Matthew Brewer <mbrewer@andrew.cmu.edu> (updated for 1.3 by 
+ *  Reed Hedges <reed@zerohour.net>) at the Laboratory for Perceptual 
+ *  Robotics, Dept. of Computer Science, University of Massachusetts,
+ *  Amherst.
+ */
+
+/** [Synopsis] The {\tt mcom} interface is designed for exchanging information 
+ between clients.  A client sends a message of a given "type" and
+ "channel". This device stores adds the message to that channel's stack.
+ A second client can then request data of a given "type" and "channel".
+ Push, Pop, Read, and Clear operations are defined, but their semantics can 
+ vary, based on the stack discipline of the underlying driver.  For example, 
+ the {\tt lifo\_mcom} driver enforces a last-in-first-out stack. */
+
+/** [Constants] */
+/** size of the data field in messages */
+#define MCOM_DATA_LEN           128     
+#define MCOM_COMMAND_BUFFER_SIZE    (sizeof(player_mcom_config_t))
+#define MCOM_DATA_BUFFER_SIZE   0       // we don't actually need any "data", 
+                                        // just "configuration" commands aro used.
+/** number of buffers to keep per channel */
+#define MCOM_N_BUFS             10      
+/** size of channel name */
+#define MCOM_CHANNEL_LEN        8       
+
+/** request ids */
+#define PLAYER_MCOM_PUSH_REQ    0
+#define PLAYER_MCOM_POP_REQ     1
+#define PLAYER_MCOM_READ_REQ    2
+#define PLAYER_MCOM_CLEAR_REQ   3
+
+/** [Data] The {\tt mcom} interface returns no data. */
+
+/** [Command] The {\tt mcom} interface accepts no commands. */
+
+/** [Configuration] */
+
+/** A piece of data. */
+typedef struct player_mcom_data
+{
+    /** a flag */
+    char full;  
+    /** the data */
+    char data[MCOM_DATA_LEN];
+} __attribute__ ((packed)) player_mcom_data_t;
+
+
+/** Config requests sent to server. */
+typedef struct player_mcom_config
+{
+    /** Which request.  Should be one of the defined request ids. */
+    uint16_t command;
+    /** The "type" of the data. */
+    uint16_t type;
+    /** The name of the channel. */
+    char channel[MCOM_CHANNEL_LEN];
+    /** The data. */
+    player_mcom_data_t data;
+} __attribute__ ((packed)) player_mcom_config_t;
+
+/** Config replies from server. */
+typedef struct player_mcom_return
+{
+    /** The "type" of the data */
+    uint16_t type;
+    /** The name of the channel. */
+    char channel[MCOM_CHANNEL_LEN];
+    /** The data. */
+    player_mcom_data_t data;
+} __attribute__ ((packed)) player_mcom_return_t;
 
 /*************************************************************************
  ** end section
