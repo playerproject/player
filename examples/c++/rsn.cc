@@ -92,7 +92,7 @@ int main(int argc, char **argv)
   PlayerClient robot(host,port);
   PositionProxy pp(&robot,0,'a');
   MoteProxy mp(&robot,myindex,'a');
-  SonarProxy sp(&robot, 0, 'a');
+  FRFProxy sp(&robot, 0, 'a');
 
   int speed = 900, turnrate = 25, cc;
   char buf[10];

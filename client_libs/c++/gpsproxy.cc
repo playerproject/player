@@ -26,7 +26,7 @@
  * client-side GPS device 
  */
 
-#include <gpsproxy.h>
+#include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
 #ifdef PLAYER_SOLARIS

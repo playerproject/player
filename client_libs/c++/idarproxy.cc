@@ -26,7 +26,7 @@
  * client-side sonar device 
  */
 
-#include <idarproxy.h>
+#include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <math.h>

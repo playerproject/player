@@ -4,7 +4,7 @@
  * a demo to show how to use the multi client.
  */
 
-#include <playermulticlient.h>
+#include <playerclient.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>

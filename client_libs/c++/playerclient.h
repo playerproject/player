@@ -32,31 +32,65 @@
 #include <player.h>       /* from the server; gives message types */
 #include <playercclient.h>  /* pure C networking building blocks */
 
-#include <laserproxy.h>  /* support for the laser device */
-#include <sonarproxy.h>  /* support for the sonar device */
-#include <miscproxy.h>  /* support for the misc device */
-#include <positionproxy.h>  /* support for the position device */
-#include <ptzproxy.h>  /* support for the ptz device */
-#include <gripperproxy.h>  /* support for the gripper device */
-#include <speechproxy.h>  /* support for the speech device */
-#include <laserbeaconproxy.h>  /* support for the laserbeacon device */
-#include <visionproxy.h>  /* support for the vision device */
-#include <truthproxy.h>  /* support for the truth device */
-#include <gpsproxy.h>  /* support for the GPS device */
-#include <bpsproxy.h>  /* support for the BPS device */
-#include <broadcastproxy.h> /* support for the broadcast device */
-#include <moteproxy.h> /* support for the broadcast device */
-#include <rwi_positionproxy.h> /* support for the RWI position device */
-#include <rwi_sonarproxy.h> /* support for the RWI sonar device */
-#include <rwi_laserproxy.h> /* support for the RWI laser device */
-#include <rwi_bumperproxy.h> /* support for the RWI bumper device */
-//#include <rwi_joystickproxy.h> /* support for the RWI joystick device */
-#include <rwi_powerproxy.h> /* support for the RWI power device */
+#include <sys/time.h>
+#include <sys/poll.h>
+#include <string.h>
 
-//#include <occupancyproxy.h>  /* support for guess which device */
-#include <idarproxy.h>  /* support for the IDAR device */
-#include <idarturretproxy.h>  /* support for the IDARTurret device */
-#include <descartesproxy.h>  /* support for the IDAR device */
+// forward declaration for friending
+class PlayerClient;
+
+
+/* Base class for all proxy devices.
+ */
+class ClientProxy
+{
+  // GCC 3.0 requires this new syntax
+  friend class PlayerClient; // ANSI C++ syntax?
+  // friend PlayerClient; // syntax deprecated
+
+ 
+  public:         
+    PlayerClient* client;  // our controlling client object
+
+    // if this generic proxy is not subclassed, the most recent 
+    // data and header get copied in here. that way we can use this
+    // base class on it's own as a generic proxy
+    unsigned char last_data[4096];
+    player_msghdr_t last_header;
+
+    unsigned char access;   // 'r', 'w', or 'a' (others?)
+    unsigned short device; // the name by which we identify this kind of device
+    unsigned short index;  // which device we mean
+
+    struct timeval timestamp;  // time at which this data was sensed
+    struct timeval senttime;   // time at which this data was sent
+    struct timeval receivedtime; // time at which this data was received
+
+    /* Constructor.
+        The constructor will try to get access to the device
+        (unless \p req_device is 0 or \p req_access is 'c').
+    */
+    ClientProxy(PlayerClient* pc, 
+		unsigned short req_device,
+		unsigned short req_index,
+		unsigned char req_access = 'c' );
+
+    // destructor will try to close access to the device
+    virtual ~ClientProxy();
+
+    unsigned char GetAccess() { return(access); };  
+
+    // methods for changin access mode
+    int ChangeAccess(unsigned char req_access, 
+                     unsigned char* grant_access=NULL );
+    int Close() { return(ChangeAccess('c')); }
+
+    // interface that all proxies must provide
+    virtual void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    virtual void Print();
+};
 
 // keep a linked list of proxies that we've got open
 class ClientProxyNode
@@ -240,5 +274,829 @@ class PlayerClient
     void RemoveProxy(ClientProxy* proxy);
 };
 
+
+class PlayerMultiClient
+{
+  private:
+    // dynamically managed array of our clients
+    PlayerClient** clients;
+    //int num_clients;
+    int size_clients;
+
+    // dynamically managed array of structs that we'll give to poll(2)
+    struct pollfd* ufds;
+    int size_ufds;
+    int num_ufds;
+
+  public:
+    // constructor
+    PlayerMultiClient();
+    
+    // destructor
+    ~PlayerMultiClient();
+
+    // how many clients are we managing?
+    int GetNumClients( void ){ return num_ufds; };
+
+    // return a client pointer from a host and port, zero if not connected 
+    // to that address
+    PlayerClient* GetClient( char* host, int port );
+
+    // return a client pointer from an address and port, zero if not connected 
+    // to that address
+    PlayerClient* GetClient( struct in_addr* addr, int port );
+    
+    // add a client to our watch list
+    void AddClient(PlayerClient* client);
+    
+    // remove a client from the watch list
+    void RemoveClient(PlayerClient* client);
+
+    // read from one client (the first available)
+    //
+    // Returns:
+    //    0 if everything went OK
+    //   -1 if something went wrong (you should probably close the connection!)
+    //
+    int Read();
+
+    // same as Read(), but reads everything off the socket so we end
+    // up with the freshest data, subject to N maximum reads
+    int ReadLatest( int max_reads );
+};
+
+/** The {\tt CommsProxy} class controls the {\tt broadcast} device.
+    Data may be read one message at a time from the incoming broadcast
+    queue using the {\tt Read} method.
+    Data may be written one message at a time to the outgoing broadcast
+    queue using the {\tt Write} method.
+    Note that outgoing messages are not actually sent to the server
+    until the {\tt Flush} method is called.
+ */
+class CommsProxy : public ClientProxy
+{
+  /** Proxy constructor.
+      Leave the access field empty to start unconnected.
+      You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
+  */
+  public: CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access ='c');
+
+  /** Read a message from the incoming queue.
+      Returns the number of bytes read, or -1 if the queue is empty.
+  */
+  public: int Read(void *msg, int len);
+
+  /** Write a message to the outgoing queue.
+      Returns the number of bytes written, or -1 if the queue is full.
+  */
+  public: int Write(void *msg, int len);
+
+  // interface that all proxies must provide
+  protected: void FillData(player_msghdr_t hdr, const char* buffer);
+    
+  // interface that all proxies SHOULD provide
+  protected: void Print();
+};
+
+
+class DescartesProxy : public ClientProxy
+{
+
+  public:
+    // the latest position data
+    int xpos,ypos,theta;
+    unsigned char bumpers[2];
+   
+    // the client calls this method to make a new proxy
+    //   leave access empty to start unconnected
+    DescartesProxy(PlayerClient* pc, unsigned short index, 
+                  unsigned char access ='c'):
+            ClientProxy(pc,PLAYER_DESCARTES_CODE,index,access) {}
+
+    // these methods are the user's interface to this device
+
+    // send a movement command
+    //
+    // Returns:
+    //   0 if everything's ok
+    //   -1 otherwise (that's bad)
+    int Move(short speed, short heading, short distance );
+
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
+
+    // fill in the arguments with the current position
+    void GetPos( double* x, double* y, double* th );
+};
+
+/** The {\tt GpsProxy} class is used to control the {\tt gps} device.
+    The latest pose data is stored in three class attributes.  The robot
+    can be ``teleported'' with the {\tt Warp()} method
+  */
+class GpsProxy : public ClientProxy
+{
+
+  public:
+    // the latest GPS data
+
+    /** The latest global pose (in mm, mm, and degrees, respectively)
+     */
+    int xpos,ypos,heading;
+   
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
+    GpsProxy(PlayerClient* pc, unsigned short index, 
+              unsigned char access='c') :
+            ClientProxy(pc,PLAYER_GPS_CODE,index,access) {}
+
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
+};
+
+/* gripper stuff */
+#define GRIPopen   1
+#define GRIPclose  2
+#define GRIPstop   3
+#define LIFTup     4
+#define LIFTdown   5
+#define LIFTstop   6
+#define GRIPstore  7
+#define GRIPdeploy 8
+#define GRIPhalt   15
+#define GRIPpress  16
+#define LIFTcarry  17
+
+/** The {\tt GripperProxy} class is used to control the {\tt gripper} device.
+    The latest gripper data held in a handful of class attributes.
+    A single method provides user control.
+*/
+class GripperProxy : public ClientProxy
+{
+
+  public:
+    // the latest gripper data
+    unsigned char state,beams;
+
+    /** These boolean variables indicate the state of the gripper
+     */
+    bool outer_break_beam,inner_break_beam,
+         paddles_open,paddles_closed,paddles_moving,
+         gripper_error,lift_up,lift_down,lift_moving,
+         lift_error;
+
+    // the client calls this method to make a new proxy
+    //   leave access empty to start unconnected
+    GripperProxy(PlayerClient* pc, unsigned short index, 
+                 unsigned char access='c') :
+            ClientProxy(pc,PLAYER_GRIPPER_CODE,index,access) {}
+
+    // these methods are the user's interface to this device
+
+    /** Send a gripper command.  Look in the gripper manual for details
+        on the command and argument.\\
+        Returns 0 if everything's ok, and  -1 otherwise (that's bad).
+    */
+    int SetGrip(unsigned char cmd, unsigned char arg=0);
+
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
+};
+
+class IDARProxy : public ClientProxy
+{
+  public:
+  
+  // the client calls this method to make a new proxy
+  //   leave access empty to start unconnected
+  IDARProxy(PlayerClient* pc, unsigned short index, 
+	    unsigned char access = 'c');
+  
+  // interface that all proxies must provide
+  // reads the receive buffers from player
+  //void FillData(player_msghdr_t hdr, const char* buffer);
+  
+  // interface that all proxies SHOULD provide
+  void Print();
+  
+  // tx parameter is optional; defaults to 0
+  int SendMessage( idartx_t* tx );
+  
+  // get message and transmission details 
+  int GetMessage( idarrx_t* rx );  
+
+  // send and get a message
+  int SendGetMessage( idartx_t* tx, idarrx_t* rx );  
+
+  // pretty print a message
+  void PrintMessage(idarrx_t* rx); 
+};
+
+class IDARTurretProxy : public ClientProxy
+{
+  public:
+  
+  // the client calls this method to make a new proxy
+  //   leave access empty to start unconnected
+  IDARTurretProxy(PlayerClient* pc, unsigned short index, 
+	    unsigned char access = 'c');
+  
+  // interface that all proxies must provide
+  // reads the receive buffers from player
+  //void FillData(player_msghdr_t hdr, const char* buffer);
+  
+  // interface that all proxies SHOULD provide
+  void Print();
+  
+  // tx parameter is optional; defaults to 0
+  int SendMessages( player_idarturret_config_t* conf );
+  
+  // get message and transmission details 
+  int GetMessages( player_idarturret_reply_t* reply );  
+
+  // send and get in one operation for efficiency
+  int SendGetMessages( player_idarturret_config_t* conf,
+		       player_idarturret_reply_t* reply );
+
+  // pretty print a message
+  void PrintMessages( player_idarturret_reply_t* reply ); 
+
+  void PrintMessage( idarrx_t* msg );
+};
+
+
+/** The {\tt FiducialProxy} class is used to control the
+    {\tt fiducial} device.
+    The latest set of detected beacons is stored in the
+    {\tt beacons} array.
+    The {\tt fiducial} device may be configured using
+    the {\tt SetBits()} and {\tt SetThresh()} methods.
+*/
+class FiducialProxy : public ClientProxy
+{
+
+  public:
+    // the latest laser beacon data
+
+    /** The latest laser beacon data.
+        Each beacon has the following information:
+        \begin{verbatim}
+        uint8_t id;
+        uint16_t range;
+        int16_t bearing;
+        int16_t orient;
+        \end{verbatim}
+        where {\tt range} is measured in mm, and {\tt bearing} and
+        {\tt orient} are measured in degrees.
+     */
+    player_fiducial_item_t beacons[PLAYER_FIDUCIAL_MAX_SAMPLES];
+
+    /** The number of beacons detected
+     */
+    unsigned short count;
+
+    /** The current bit count of the fiducial device.
+        See the Player manual for information on this setting.
+      */
+    unsigned char bit_count;
+
+    /** The current bit size (in mm) of the fiducial device.
+        See the Player manual for information on this setting.
+      */
+    unsigned short bit_size;
+
+    /** The current zero threshold of the fiducial device.
+        See the Player manual for information on this setting.
+      */
+    unsigned short zero_thresh;
+
+    /** The current one threshold of the fiducial device.
+        See the Player manual for information on this setting.
+      */
+    unsigned short one_thresh;
+   
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
+    FiducialProxy(PlayerClient* pc, unsigned short index,
+                     unsigned char access='c'):
+            ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access) {}
+
+    // these methods are the user's interface to this device
+
+    /** Set the bit properties of the beacons.
+        Set {\tt bit\_count} to the number of bits in your beacons
+        (usually 5 or 8).
+        Set {\tt bit\_size} to the width of each bit (in mm).\\
+        Returns the 0 on success, or -1 of there is a problem.
+     */
+    int SetBits(unsigned char bit_count, unsigned short bit_size);
+
+    /** Set the identification thresholds.
+        Thresholds must be in the range 0--99.
+        See the Player manual for a full discussion of these settings.\\
+        Returns the 0 on success, or -1 of there is a problem.
+     */
+    int SetThresh(unsigned short zero_thresh, unsigned short one_thresh);
+
+    /** Get the current configuration.
+        Fills the current device configuration into the corresponding
+        class attributes.\\
+        Returns the 0 on success, or -1 of there is a problem.
+     */
+    int GetConfig();
+    
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
+};
+
+/** The {\tt SRFProxy} class is used to control the {\tt srf} device.
+    The latest scan data is held in two arrays: {\tt ranges} and {\tt
+    intensity}.  The srf scan range, resolution and so on can be
+    configured using the {\tt Configure()} method.
+*/
+class SRFProxy : public ClientProxy
+{
+
+  public:
+
+    // the latest srf scan data
+    
+    /** Scan range for the latest set of data.
+        Angles are measured in units of $0.01^{\circ}$,
+        in the range -9000 ($-90^{\circ}$) to
+        +9000 ($+90^{\circ}$).
+    */
+    short min_angle; short max_angle;
+
+    /** Scan resolution for the latest set of data.
+        Resolution is measured in units of $0.01^{\circ}$.
+        Valid values are: 25, 50, and 100.
+    */
+    unsigned short resolution;
+
+    /** Whether or not reflectance values are returned.
+      */
+    bool intensity;
+
+    /// The number of range measurements in the latest set of data.
+    unsigned short range_count;
+
+    /// The range values (in mm).
+    unsigned short ranges[PLAYER_MAX_SRF_SAMPLES];
+
+    // TODO: haven't verified that intensities work yet:
+    /// The reflected intensity values (arbitrary units in range 0-7).
+    unsigned char intensities[PLAYER_MAX_SRF_SAMPLES];
+
+    // What is this?
+    unsigned short min_right,min_left;
+   
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
+    SRFProxy(PlayerClient* pc, unsigned short index, 
+               unsigned char access='c'):
+        ClientProxy(pc,PLAYER_SRF_CODE,index,access) {}
+
+    // these methods are the user's interface to this device
+
+    // returns the local rectangular coordinate of the i'th beam strike
+    int CartesianCoordinate( int i, int *x, int *y );
+
+    // configure the srf scan.
+    /** Configure the srf scan pattern.
+        Angles {\tt min\_angle} and {\tt max\_angle} are measured in
+        units of $0.1^{\circ}$, in the range -9000
+        ($-90^{\circ}$) to +9000 ($+90^{\circ}$).  {\tt
+        resolution} is also measured in units of $0.1^{\circ}$; valid
+        values are: 25 ($0.25^{\circ}$), 50 ($0.5^{\circ}$) and $100
+        (1^{\circ}$).  Set {\tt intensity} to {\tt true} to enable
+        intensity measurements, or {\tt false} to disable.\\
+        Returns the 0 on success, or -1 of there is a problem.
+    */
+    int Configure(short min_angle, short max_angle, 
+                  unsigned short resolution, bool intensity);
+
+    /** Get the current srf configuration; it is read into the
+        relevant class attributes.\\
+        Returns the 0 on success, or -1 of there is a problem.
+      */
+    int GetConfigure();
+
+    /** Range access operator.
+        This operator provides an alternate way of access the range data.
+        For example, given a {\tt SRFProxy} named {\tt lp}, the following
+        expressions are equivalent: \verb+lp.ranges[0]+ and \verb+lp[0]+.
+    */
+    unsigned short operator [](unsigned int index)
+    { 
+      if(index < sizeof(ranges))
+        return(ranges[index]);
+      else 
+        return(0);
+    } 
+    
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
+};
+
+
+#define MAX_RX_BUF_SIZE 1024
+
+class MoteProxy : public ClientProxy
+{
+    public: MoteProxy(PlayerClient* pc, unsigned short index, 
+		      unsigned char access ='c');
+
+    public: int Sendto(int src, int dest, char* msg, int len);
+
+    public: int TransmitRaw(char *msg, uint16_t len);
+
+    public: int RecieveRaw(char* msg, uint16_t len, double *rssi);
+
+    public: int Sendto(int to, char* msg, int len);
+
+    public: int SetStrength(uint8_t str);
+
+    public: int GetStrength(void);
+
+    public: int RecieveFrom(int from, char* msg, int len);
+
+    public: inline float GetRSSI(void);
+
+    // interface that all proxies must provide
+    protected: void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    protected: void Print();
+    
+    private: player_mote_data_t *rx_data;
+
+    private: player_mote_data_t *rx_queue;
+
+    private: player_mote_config_t m_config;
+
+    private: char r_flag;
+
+    private: unsigned char msg_q_index;
+};
+
+
+/** The {\tt PositionProxy} class is used to control the {\tt position} device.
+    The latest position data is contained in the attributes {\tt xpos, ypos}, etc.
+ */
+class PositionProxy : public ClientProxy
+{
+
+  public:
+    /// Robot pose (according to odometry) in mm, mm, degrees.
+    int xpos,ypos; unsigned short theta;
+
+    /// Robot speed in mm/sec, degrees/sec.
+    short speed, turnrate;
+
+    /// Compass value (only valid if the compass is installed).
+    //unsigned short compass;
+
+    /// Stall flag: 1 if the robot is stalled and 0 otherwise.
+    unsigned char stall;
+   
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
+    PositionProxy(PlayerClient* pc, unsigned short index,
+                  unsigned char access ='c') :
+        ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
+
+    // these methods are the user's interface to this device
+
+    /** Send a motor command.
+        Specify the linear and angular speed in mm/s and degrees/sec,
+        respectively.\\
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
+    int SetSpeed(short speed, short turnrate);
+
+    /** Enable/disable the motors.
+        Set {\tt state} to 0 to disable (default) or 1 to enable.
+        Be VERY careful with this method!  Your robot is likely to run across the
+        room with the charger still attached.
+        
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
+    int SetMotorState(unsigned char state);
+    
+    /** Select velocity control mode for the Pioneer 2.
+        Set {\tt mode} to 0 for direct wheel velocity control (default),
+        or 1 for separate translational and rotational control.
+        
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
+    int SelectVelocityControl(unsigned char mode);
+   
+    /** Reset odometry to (0,0,0).
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
+    int ResetOdometry();
+
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
+};
+
+
+/** The {\tt PtzProxy} class is used to control the {\tt ptz} device.
+    The state of the camera can be read from the {\tt pan, tilt, zoom}
+    attributes and changed using the {\tt SetCam()} method.
+ */
+class PtzProxy : public ClientProxy
+{
+
+  public:
+    /// Pan and tilt values (degrees).
+    short pan, tilt;
+
+    /// Zoom value (0 -- 1024, where 0 is wide angle and 1024 is telephoto).
+    unsigned short zoom;
+   
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
+    PtzProxy(PlayerClient* pc, unsigned short index, unsigned char access='c'):
+            ClientProxy(pc,PLAYER_PTZ_CODE,index,access) {}
+
+    // these methods are the user's interface to this device
+
+    /** Change the camera state.
+        Specify the new {\tt pan} and {\tt tilt} values (degrees)
+        and the new {\tt zoom} value (0 -- 1024).
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
+    int SetCam(short pan, short tilt, unsigned short zoom);
+
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
+};
+
+/** The {\tt FRFProxy} class is used to control the {\tt frf} device.
+    The most recent frf range measuremts can be read from the {\tt range}
+    attribute, or using the the {\tt []} operator.
+ */
+class FRFProxy : public ClientProxy
+{
+
+  public:
+    /** The number of frf readings received.
+     */
+    unsigned short range_count;
+
+    /** The latest frf scan data.
+        Range is measured in mm.
+     */
+    unsigned short ranges[PLAYER_MAX_FRF_SAMPLES];
+
+    /** Positions of frfs
+     */
+    player_frf_geom_t frf_pose;
+   
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
+    */
+    FRFProxy(PlayerClient* pc, unsigned short index, 
+               unsigned char access = 'c') :
+            ClientProxy(pc,PLAYER_FRF_CODE,index,access)
+    { bzero(&frf_pose,sizeof(frf_pose)); }
+
+    // these methods are the user's interface to this device
+    
+    /** Enable/disable the frfs.
+        Set {\tt state} to 1 to enable, 0 to disable.
+        Note that when frfs are disabled the client will still receive frf
+        data, but the ranges will always be the last value read from the frfs
+        before they were disabled.\\
+        Returns 0 on success, -1 if there is a problem.
+     */
+    int SetFRFState(unsigned char state);
+
+    int GetFRFGeom();
+
+    /** Range access operator.
+        This operator provides an alternate way of access the range data.
+        For example, given a {\tt FRFProxy} named {\tt sp}, the following
+        expressions are equivalent: \verb+sp.ranges[0]+ and \verb+sp[0]+.
+     */
+    unsigned short operator [](unsigned int index) 
+    { 
+      if(index < sizeof(ranges))
+        return(ranges[index]);
+      else 
+        return(0);
+    }
+
+    /** Get the pose of a particular frf.
+        This is a convenience function that returns the pose of any
+        frf on a Pioneer2DX robot.  It will {\em not} return valid
+        poses for other configurations.
+    */
+    void GetFRFPose(int s, double* px, double* py, double* pth);
+    
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
+};
+
+/** The {\tt SpeechProxy} class is used to control the
+    {\tt speech} device.
+    Use the {\tt say} method to send things to say.
+*/
+class SpeechProxy : public ClientProxy
+{
+
+  public:
+   
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
+    SpeechProxy(PlayerClient* pc, unsigned short index, 
+                unsigned char access='c'):
+            ClientProxy(pc,PLAYER_SPEECH_CODE,index,access) {}
+
+    // these methods are the user's interface to this device
+
+    /** Send a phrase to say.
+        The phrase is an ASCII string.
+        Returns the 0 on success, or -1 of there is a problem.
+    */
+    int Say(char* str);
+};
+
+// Convert radians to degrees
+//
+#ifndef RTOD
+#define RTOD(r) ((r) * 180 / M_PI)
+#endif
+
+// Convert degrees to radians
+//
+#ifndef DTOR
+#define DTOR(d) ((d) * M_PI / 180)
+#endif
+
+// Normalize angle to domain -pi, pi
+//
+#ifndef NORMALIZE
+#define NORMALIZE(z) atan2(sin(z), cos(z))
+#endif
+
+/** The {\tt TruthProxy} gets and sets the {\em true} pose of a truth
+    device [worldfile tag: truth()]. This may be different from the
+    pose returned by a device such as GPS or Position. If you want to
+    log what happened in an experiment, this is the device to
+    use. 
+
+    Setting the position of a truth device moves its parent, so you
+    can put a truth device on robot and teleport it around the place. 
+ */
+class TruthProxy : public ClientProxy
+{
+  
+  public:
+
+  /** These vars store the current device pose (x,y,a) as
+      (m,m,radians). The values are updated at regular intervals as
+      data arrives. You can read these values directly but setting
+      them does NOT change the device's pose!. Use {\tt
+      TruthProxy::SetPose()} for that.  
+*/
+  double x, y, a; 
+
+
+  /** Constructor.
+      Leave the access field empty to start unconnected.
+      You can change the access later using 
+      {\tt PlayerProxy::RequestDeviceAccess}.
+  */
+  TruthProxy(PlayerClient* pc, unsigned short index, 
+             unsigned char access = 'c') :
+    ClientProxy(pc,PLAYER_TRUTH_CODE,index,access) {};
+
+    
+  // interface that all proxies must provide
+  void FillData(player_msghdr_t hdr, const char* buffer);
+    
+  // interface that all proxies SHOULD provide
+  void Print();
+
+  /** Query Player about the current pose - requests the pose from the
+      server, then fills in values for the arguments
+      (m,m,radians). Usually you'll just read the {\tt x,y,a}
+      attributes but this function allows you to get pose direct from
+      the server if you need too. Returns 0 on success, -1 if there is
+      a problem.  
+  */
+  int GetPose( double *px, double *py, double *pa );
+
+  /** Request a change in pose (m,m,radians). Returns 0 on success, -1
+      if there is a problem.  
+  */
+  int SetPose( double px, double py, double pa );
+};
+
+
+class Blob
+{
+  public:
+    unsigned int area;
+    unsigned char x;
+    unsigned char y;
+    unsigned char left;
+    unsigned char right;
+    unsigned char top;
+    unsigned char bottom;
+};
+
+
+/** The {\tt BlobfinderProxy} class is used to control the {\tt vision} device.
+    It contains no methods.  The latest color blob data is stored in
+    {\tt blobs}, a dynamically allocated 2-D array, indexed by color
+    channel.
+*/
+class BlobfinderProxy : public ClientProxy
+{
+
+  public:
+    // the latest vision data
+
+    /** Array containing the number of blobs detected on each channel 
+     */ 
+    char num_blobs[PLAYER_BLOBFINDER_MAX_CHANNELS];
+
+    /** Array containing the latest blob data.
+        Each blob contains the following information:
+        \begin{verbatim}
+        unsigned int area;
+        unsigned char x;
+        unsigned char y;
+        unsigned char left;
+        unsigned char right;
+        unsigned char top;
+        unsigned char bottom;
+        \end{verbatim}
+     */
+    Blob* blobs[PLAYER_BLOBFINDER_MAX_CHANNELS];
+   
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
+    BlobfinderProxy(PlayerClient* pc, unsigned short index, 
+                unsigned char access='c');
+    ~BlobfinderProxy();
+
+    // these methods are the user's interface to this device
+
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
+};
 
 #endif

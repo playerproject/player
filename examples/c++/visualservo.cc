@@ -87,8 +87,8 @@ int main(int argc, char** argv)
 
   /* Connect to the Player server */
   PlayerClient robot(host,port);
-  SonarProxy sp(&robot,0,'r');
-  VisionProxy vp(&robot,0,'r');
+  FRFProxy sp(&robot,0,'r');
+  BlobfinderProxy vp(&robot,0,'r');
 
   /* request read access on the sonars and all access to the wheels */
   PositionProxy pp(&robot,0,'a');
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
            sp[4] < minfrontdistance ||
            sp[5] < minfrontdistance);
 
-    if(obs || avoidcount || pp.stalls)
+    if(obs || avoidcount || pp.stall)
     {
       newspeed = 0; //-150;
 

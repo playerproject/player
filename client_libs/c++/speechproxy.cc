@@ -26,7 +26,7 @@
  * client-side speech device 
  */
 
-#include <speechproxy.h>
+#include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
 #ifdef PLAYER_SOLARIS
@@ -47,7 +47,7 @@ int SpeechProxy::Say(char* str)
 
   bzero(cmd.string,sizeof(cmd.string));
   if(str)
-    strncpy((char*)(cmd.string),str,SPEECH_MAX_STRING_LEN);
+    strncpy((char*)(cmd.string),str,PLAYER_SPEECH_MAX_STRING_LEN);
 
   return(client->Write(PLAYER_SPEECH_CODE,index,
                        (const char*)&cmd,sizeof(cmd)));

@@ -26,7 +26,8 @@
  * client-side position device 
  */
 
-#include <descartesproxy.h>
+#include <playerclient.h>
+
 #include <netinet/in.h>
 #include <string.h>
 #ifdef PLAYER_SOLARIS

@@ -23,32 +23,32 @@
 /*
  * $Id$
  *
- * client-side vision device 
+ * client-side blobfinder device 
  */
 
-#include <visionproxy.h>
+#include <playerclient.h>
 #include <netinet/in.h>
 
-VisionProxy::VisionProxy(PlayerClient* pc, unsigned short index, 
+BlobfinderProxy::BlobfinderProxy(PlayerClient* pc, unsigned short index, 
             unsigned char access ):
-            ClientProxy(pc,PLAYER_VISION_CODE,index,access)
+            ClientProxy(pc,PLAYER_BLOBFINDER_CODE,index,access)
 {
   // zero everything
   bzero(num_blobs,sizeof(num_blobs));
   bzero(blobs,sizeof(blobs)); 
 }
 
-VisionProxy::~VisionProxy()
+BlobfinderProxy::~BlobfinderProxy()
 {
   // delete Blob structures
-  for(int i=0;i<VISION_NUM_CHANNELS;i++)
+  for(int i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
   {
     if(blobs[i])
       delete blobs[i];
   }
 }
 
-void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
+void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
   static bool firsttime = true;
 
@@ -59,20 +59,20 @@ void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
     firsttime = false;
   }
 
-  if(hdr.size > sizeof(player_vision_data_t))
+  if(hdr.size > sizeof(player_blobfinder_data_t))
   {
     if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected less than %d bytes of vision data, but "
+      fprintf(stderr,"WARNING: expected less than %d bytes of blobfinder data, but "
               "received %d. Unexpected results may ensue.\n",
-              sizeof(player_vision_data_t),hdr.size);
+              sizeof(player_blobfinder_data_t),hdr.size);
   }
-  // fill the special vision buffer.
+  // fill the special blobfinder buffer.
 
   int tmp_numblobs,tmp_index;
-  for(int i=0;i<VISION_NUM_CHANNELS;i++)
+  for(int i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
   {
-    tmp_numblobs = ntohs(((player_vision_data_t*)buffer)->header[i].num);
-    tmp_index = ntohs(((player_vision_data_t*)buffer)->header[i].index);
+    tmp_numblobs = ntohs(((player_blobfinder_data_t*)buffer)->header[i].num);
+    tmp_index = ntohs(((player_blobfinder_data_t*)buffer)->header[i].index);
 
     if(tmp_numblobs <= 0)
     {
@@ -88,7 +88,7 @@ void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
         if(!(blobs[i] = new Blob[tmp_numblobs]))
         {
           if(player_debug_level(-1)>=0)
-            fputs("VisionProxy::FillData(): new failed.  Out of memory?",
+            fputs("BlobfinderProxy::FillData(): new failed.  Out of memory?",
                   stderr);
           return;
         }
@@ -96,19 +96,19 @@ void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
       for(int j=0;j<tmp_numblobs;j++)
       {
         blobs[i][j].area = 
-                ntohl(((player_vision_data_t*)buffer)->blobs[tmp_index+j].area);
+                ntohl(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].area);
         blobs[i][j].x = 
-                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].x);
+                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].x);
         blobs[i][j].y = 
-                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].y);
+                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].y);
         blobs[i][j].left = 
-                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].left);
+                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].left);
         blobs[i][j].right = 
-                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].right);
+                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].right);
         blobs[i][j].top = 
-                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].top);
+                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].top);
         blobs[i][j].bottom = 
-                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].bottom);
+                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].bottom);
       }
       num_blobs[i] = tmp_numblobs;
     }
@@ -116,10 +116,10 @@ void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 }
 
 // interface that all proxies SHOULD provide
-void VisionProxy::Print()
+void BlobfinderProxy::Print()
 {
-  printf("#Vision(%d:%d) - %c\n", device, index, access);
-  for(int i=0;i<VISION_NUM_CHANNELS;i++)
+  printf("#Blobfinder(%d:%d) - %c\n", device, index, access);
+  for(int i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
   {
     if(num_blobs[i])
     {

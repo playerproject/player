@@ -26,7 +26,7 @@
  * client-side beacon device 
  */
 
-#include <laserbeaconproxy.h>
+#include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
 #ifdef PLAYER_SOLARIS
@@ -34,66 +34,66 @@
 #endif
 
 // Set the bit properties
-int LaserbeaconProxy::SetBits(unsigned char tmp_bit_count, 
+int FiducialProxy::SetBits(unsigned char tmp_bit_count, 
                               unsigned short tmp_bit_size)
 {
   if(!client)
     return(-1);
 
-  player_laserbeacon_config_t config;
+  player_laserbarcode_config_t config;
 
   // read existing config.
   if(GetConfig() < 0)
     return(-1);
   
-  config.subtype = PLAYER_LASERBEACON_SET_CONFIG;
+  config.subtype = PLAYER_LASERBARCODE_SET_CONFIG;
   config.bit_count = tmp_bit_count;
   config.bit_size = htons(tmp_bit_size);
   config.zero_thresh = htons(zero_thresh);
   config.one_thresh = htons(one_thresh);
   
-  return(client->Request(PLAYER_LASERBEACON_CODE,index,
+  return(client->Request(PLAYER_FIDUCIAL_CODE,index,
                          (const char*)&config, sizeof(config)));
 }
 
 // Set the bit thresholds
-int LaserbeaconProxy::SetThresh(unsigned short tmp_zero_thresh, 
+int FiducialProxy::SetThresh(unsigned short tmp_zero_thresh, 
                                 unsigned short tmp_one_thresh)
 {
   if(!client)
     return(-1);
 
-  player_laserbeacon_config_t config;
+  player_laserbarcode_config_t config;
 
   // read existing config.
   if(GetConfig() < 0)
     return(-1);
   
-  config.subtype = PLAYER_LASERBEACON_SET_CONFIG;
+  config.subtype = PLAYER_LASERBARCODE_SET_CONFIG;
   config.bit_count = bit_count;
   config.bit_size = htons(bit_size);
   config.zero_thresh = htons(tmp_zero_thresh);
   config.one_thresh = htons(tmp_one_thresh);
 
-  return(client->Request(PLAYER_LASERBEACON_CODE,index,
+  return(client->Request(PLAYER_FIDUCIAL_CODE,index,
                          (const char*)&config, sizeof(config)));
 }
 
-void LaserbeaconProxy::FillData(player_msghdr_t hdr, const char* buffer)
+void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
-  player_laserbeacon_data_t *data = (player_laserbeacon_data_t*) buffer;
+  player_fiducial_data_t *data = (player_fiducial_data_t*) buffer;
   
-  if(hdr.size != sizeof(player_laserbeacon_data_t))
+  if(hdr.size != sizeof(player_fiducial_data_t))
   {
     if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of laserbeacon data, but "
+      fprintf(stderr,"WARNING: expected %d bytes of fiducial data, but "
               "received %d. Unexpected results may ensue.\n",
-              sizeof(player_laserbeacon_data_t),hdr.size);
+              sizeof(player_fiducial_data_t),hdr.size);
   }
 
   count = ntohs(data->count);
   bzero(beacons,sizeof(beacons));
-  for(unsigned short i = 0; i < count && i < PLAYER_MAX_LASERBEACONS; i++)
+  for(unsigned short i = 0; i < count && i < PLAYER_FIDUCIAL_MAX_SAMPLES; i++)
   {
     
     beacons[i].id = data->beacon[i].id;
@@ -104,13 +104,13 @@ void LaserbeaconProxy::FillData(player_msghdr_t hdr, const char* buffer)
 }
 
 // interface that all proxies SHOULD provide
-void LaserbeaconProxy::Print()
+void FiducialProxy::Print()
 {
-  printf("#Laserbeacon(%d:%d) - %c\n", device, index, access);
+  printf("#Fiducial(%d:%d) - %c\n", device, index, access);
   puts("#count");
   printf("%d\n", count);
   puts("#id\trange\tbear\torient");
-  for(unsigned short i=0;i<count && i<PLAYER_MAX_LASERBEACONS;i++)
+  for(unsigned short i=0;i<count && i<PLAYER_FIDUCIAL_MAX_SAMPLES;i++)
     printf("%u\t%u\t%d\t%d\n", beacons[i].id, beacons[i].range, 
            beacons[i].bearing, beacons[i].orient);
 }
@@ -120,14 +120,14 @@ void LaserbeaconProxy::Print()
   class attributes.\\
   Returns the 0 on success, or -1 of there is a problem.
  */
-int LaserbeaconProxy::GetConfig()
+int FiducialProxy::GetConfig()
 {
-  player_laserbeacon_config_t config;
+  player_laserbarcode_config_t config;
   player_msghdr_t hdr;
 
-  config.subtype = PLAYER_LASERBEACON_GET_CONFIG;
+  config.subtype = PLAYER_LASERBARCODE_GET_CONFIG;
 
-  if(client->Request(PLAYER_LASERBEACON_CODE,index,
+  if(client->Request(PLAYER_FIDUCIAL_CODE,index,
                          (const char*)&config, sizeof(config.subtype),
                          &hdr, (char*)&config,sizeof(config)) < 0)
     return(-1);

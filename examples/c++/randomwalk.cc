@@ -131,8 +131,8 @@ int main(int argc, char** argv)
   }
 
 
-  LaserProxy lp(&robot,0);
-  SonarProxy sp(&robot,0);
+  SRFProxy lp(&robot,0);
+  FRFProxy sp(&robot,0);
   PositionProxy pp(&robot,0,'a');
 
   if(pp.GetAccess() == 'e') {
@@ -185,7 +185,7 @@ int main(int argc, char** argv)
                 (sp.ranges[5] < minfrontdistance) );    
     }
 
-    if(obs || avoidcount || pp.stalls)
+    if(obs || avoidcount || pp.stall)
     {
       newspeed = avoidspeed; 
 

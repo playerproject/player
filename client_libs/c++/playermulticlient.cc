@@ -26,7 +26,7 @@
  * multiclient extension to the c++ client.
  */
 
-#include <playermulticlient.h>
+#include <playerclient.h>
 #include <string.h>  // for memcpy
 
 // constructor

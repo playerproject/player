@@ -26,7 +26,7 @@
 
 PlayerClient* robot;
 PositionProxy* pp;
-SonarProxy* sp;
+FRFProxy* sp;
 
 bool turnOnMotors = false;
 char host[256] = "localhost";
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 
   /* Request sensor data */
   pp = new PositionProxy(robot,0,'a');
-  sp = new SonarProxy(robot,0,'r');
+  sp = new FRFProxy(robot,0,'r');
     
   if(turnOnMotors && pp->SetMotorState(1))
     exit(0);
