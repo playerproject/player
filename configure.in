@@ -34,6 +34,8 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
+
+dnl FreeBSD always invokes Tcl with a version, so i'll pick a reasonable one
 case $target in
 *-*-freebsd*) AC_CHECK_PROG([TCLPKGFILE], [tclsh8.0], [pkgIndex.tcl], [])
               TCLSH=tclsh8.0;;
