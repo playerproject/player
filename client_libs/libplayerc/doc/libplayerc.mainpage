@@ -1,0 +1,143 @@
+
+
+/** \mainpage libplayerc client library reference
+
+libplayerc is a client library for the Player robot device server.  It
+is written in C to maximize portability, and in the expectation that
+users will write bindings for other languages (such as Python and
+Java) against this library; Python bindings for libplayerc are already
+available.
+
+Users reading this manual should also read the Player Server Manual.
+
+
+\section usage General usage
+
+libplayerc is based on a device <i>proxy</i> model, in which the client
+maintains a local proxy for each of the devices on the remote server.
+Thus, for example, one can create local proxies for the <tt>position</tt>
+and <tt>laser</tt> devices.  There is also a special <tt>client</tt> proxy,
+used to control the Player server itself.
+
+Programs using libplayerc will generally have the following structure:
+
+\include simpleclient.c
+
+This example can be built using the commands:
+<PRE>
+$ gcc -c simple.c -o simple.o
+$ gcc -lm -lplayerc simple.o -o simple
+</PRE>
+
+Make sure that <tt>playerc.h</tt> is installed somewhere in you
+include path, and that <tt>libplayerc.a</tt> is in your library path.
+
+<P>
+The above program can be broken into six steps, as follows.
+
+<ul>
+
+<li> Create and connect a client proxy.
+
+<P>
+<PRE>
+client = playerc_client_create(NULL, "localhost", 6665);
+playerc_client_connect(client);
+</PRE>
+The <TT>create</TT> function creates a new client proxy and returns a
+pointer to be used in future function calls (<TT>localhost</TT> should be
+replaced with the network host name of the robot).  The <TT>connect</TT>
+function notifies the Player server that a new client wishes to
+recieve data.
+
+
+<li> Create and subscribe a device proxy.
+
+<P>
+<PRE>
+position = playerc_position_create(client, 0);
+playerc_position_subscribe(position, PLAYER_ALL_MODE);
+</PRE>
+The <TT>create</TT> function creates a new position device proxy and
+returns a pointer to be used in future function calls.  The <TT>subscribe</TT> function notifies the Player server that the client is
+using the position device, and that the client expects to both send
+commands and recieve data (<TT>PLAYER_MODE_ALL</TT>).
+
+<li> Configure the device, send commands.
+
+<P>
+<PRE>
+playerc_position_enable(position, 1);
+playerc_position_set_speed(position, 0, 0, 0.1);
+</PRE>
+The <TT>enable</TT> function sends a configuration request to the server,
+changing the robot's motor state from <TT>off</TT> to <TT>on</TT>, thereby
+allowing the robot to move.  The <TT>setspeed</TT> function sends a new
+motor speed, in this case commanding the robot to turn on the spot.
+
+
+<P>
+Note that most Player devices will accept both asynchronous
+<EM>command</EM> and synchronous <EM>configuration</EM> requests.
+Sending commands is analogous using the standard Unix <TT>write</TT>
+device interface, while sending configuration requests is analogous to
+using the <TT>ioctl</TT> interface.  For the most part,
+<TT>libplayerc</TT> hides the distinction between these two
+interfaces.  Users should be aware, however, that while commands are
+always handled promptly by the server, configuration requests may take
+significant time to complete.  If possible, configuration requests
+should therefore be restricted to the initialization phase of the
+program.
+
+
+<li> Read data from the device.
+
+<P>
+<PRE>
+playerc_client_read(client);
+printf("position : %f %f %f\n", position-&gt;px, ... );
+</PRE>
+The <TT>read</TT> function blocks until new data arrives from the Player
+server.  This data may be from one of the subscribed devices, or it
+may be from the server itself (which sends regular synchronization
+messages to all of its clients).  The <TT>read</TT> function inspects the
+incoming data and automatically updates the elements in the
+appropriate device proxy.  This function also returns a pointer to the
+proxy that was updated, so that user programs may, if desired, trigger
+appropriate events on the arrival of different kinds of data.
+
+
+<li> Unsubscribe and destroy the device proxy.
+
+<P>
+<PRE>
+playerc_position_unsubscribe(position);
+playerc_position_destroy(position);
+</PRE>
+The <TT>unsubscribe</TT> function tells the Player server that the client
+is no longer using this device.  The <TT>destroy</TT> function then frees
+the memory associated with the device proxy; the <TT>device</TT> pointer
+is now invalid and should be not be re-used.
+
+
+<li> Disconnect and destroy the client proxy.
+
+<P>
+<PRE>
+playerc_client_disconnect(client);
+playerc_client_destroy(client);
+</PRE>
+The <TT>disconnect</TT> function tells the server that the client is
+shutting down.  The <TT>destroy</TT> function then frees the memory
+associated with the client proxy; the <TT>client</TT> pointer is now
+invalid and should be not be re-used.
+
+</ul>
+
+
+\section ref Proxy reference
+
+Detailed information for each proxy can be found on the <a
+href="modules.html">modules</a> page.
+
+*/
