@@ -83,8 +83,7 @@ int main(int argc, char** argv)
 
   // VISUAL SERVO / COLLECT
   unsigned int minarea = 1;
-  unsigned int closearea = 4000;
-  unsigned int sortofclosearea = 3000;
+  unsigned int closearea = 1000;
 
   // HOMING
   int home_x = 7000;
@@ -211,7 +210,7 @@ int main(int argc, char** argv)
       int err = 80 - vp.blobs[channel][0].x;
       if(abs(err) > 0)
       {
-        newturnrate = (int)(err / 3.0);
+        newturnrate = (int)(err / 2.5);
       }
       else
         newturnrate = 0;
@@ -219,22 +218,20 @@ int main(int argc, char** argv)
       //gp.Print();
       // COLLECT
       if(vp.blobs[channel][0].area > closearea)
+        newspeed = 50;
+      else
+        newspeed = 200;
+
+      if(gp.paddles_open)
       {
-        if(gp.paddles_open)
+        if(gp.inner_break_beam || gp.outer_break_beam)
         {
           newspeed = 0;
           gp.SetGrip(GRIPclose,0);
         }
         else
-        {
-          newspeed = 100;
           gp.SetGrip(GRIPopen,0);
-        }
       }
-      else if(vp.blobs[channel][0].area > sortofclosearea)
-        newspeed = 50;
-      else
-        newspeed = 200;
     }
     else
     {
