@@ -364,6 +364,16 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
 // Destructor
 ReadLog::~ReadLog()
 {
+  // Free allocated metadata slots
+  for(int i=0;i<this->provide_count;i++)
+  {
+    if(this->provide_metadata[i])
+    {
+      free(this->provide_metadata[i]);
+      this->provide_metadata[i] = NULL;
+    }
+  }
+  
   return;
 }
 
@@ -421,7 +431,7 @@ int ReadLog::Shutdown()
     fclose(this->file);
   this->gzfile = NULL;
   this->file = NULL;
-  
+
   return 0;
 }
 
@@ -705,13 +715,12 @@ int ReadLog::ProcessLogConfig()
 // Process generic requests
 int ReadLog::ProcessOtherConfig()
 {
-  int i,j;
+  int i;
   player_device_id_t id;
   char src[PLAYER_MAX_REQREP_SIZE];
   void *client;
   struct timeval time;
   size_t len;
-  size_t replen;
   
   // Check for request on all interfaces
   for (i = 0; i < this->provide_count; i++)
@@ -728,24 +737,11 @@ int ReadLog::ProcessOtherConfig()
     if((id.code == PLAYER_SONAR_CODE) && 
        (((player_sonar_geom_t*)src)->subtype == PLAYER_SONAR_GET_GEOM_REQ))
     {
-      player_sonar_geom_t* geom = 
-              (player_sonar_geom_t*)this->provide_metadata[i];
-      assert(geom);
-      player_sonar_geom_t rep;
-      rep.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-      rep.pose_count = htons(geom->pose_count);
-      for(j=0;j<geom->pose_count;j++)
-      {
-        rep.poses[j][0] = htons(geom->poses[j][0]);
-        rep.poses[j][1] = htons(geom->poses[j][1]);
-        rep.poses[j][2] = htons(geom->poses[j][2]);
-      }
-      replen = sizeof(uint8_t) + sizeof(uint16_t) + 
-              (geom->pose_count * 3 * sizeof(int16_t));
-
+      // NOTE: sonar geometry is *already* byteswapped in provide_metadata
       // TODO: handle timestamps more intelligently here.
       if (this->PutReply(id, client, PLAYER_MSGTYPE_RESP_ACK, 
-                         (void*)&rep, replen, NULL) != 0)
+                         this->provide_metadata[i], 
+                         sizeof(player_sonar_geom_t), NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
     }
     // we don't handle any other requests
@@ -1123,13 +1119,19 @@ int ReadLog::ParseSonar(player_device_id_t id, int linenum,
 {
   int i;
   int idx = -1;
+  int curr; 
+  unsigned short pose_count, range_count;
+  player_sonar_data_t data;
+  player_sonar_geom_t* geom;
+
+  memset(&data,0,sizeof(data));
 
   // finding matching id in provide_ids, to get the right slot in
   // provide_metadata.
   for(i=0;i<this->provide_count;i++)
   {
-    // we already know it's sonar, just check index and port
-    if((this->provide_ids[i].index == id.index) && 
+    if((this->provide_ids[i].code == id.code) &&
+       (this->provide_ids[i].index == id.index) && 
        (this->provide_ids[i].port == id.port))
     {
       idx = i;
@@ -1143,10 +1145,61 @@ int ReadLog::ParseSonar(player_device_id_t id, int linenum,
     return -1;
   }
 
+  if (token_count < 8)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
 
-  // parse and cache sonar geom into this->provide_metadata[idx]
+  // parse, byteswap, and cache sonar geom into this->provide_metadata[idx]
+  geom = (player_sonar_geom_t*)this->provide_metadata[idx];
+  assert(geom);
+  curr = 6;
+  geom->pose_count = NUINT16(atoi(tokens[curr]));
+  curr++;
+  for(pose_count=0; 
+      pose_count < ntohs(geom->pose_count); 
+      pose_count++)
+  {
+    if((curr + 2) >= token_count)
+      break;
+    geom->poses[pose_count][0] = NINT16(M_MM(atof(tokens[curr])));
+    geom->poses[pose_count][1] = NINT16(M_MM(atof(tokens[curr+1])));
+    geom->poses[pose_count][2] = NINT16(RAD_DEG(atof(tokens[curr+2])));
+    curr += 3;
+  }
+
+  if(pose_count != ntohs(geom->pose_count))
+  {
+    PLAYER_ERROR2("pose count mismatch at %s:%d", this->filename, linenum);
+    return -1;
+  }
 
   // parse and put sonar data
+  if(curr >= token_count)
+  {
+    PLAYER_ERROR2("incomplete line (no range data) at %s:%d", this->filename, linenum);
+    return -1;
+  }
+  data.range_count = NUINT16(atoi(tokens[curr]));
+  curr++;
+  for(range_count=0;
+      range_count < ntohs(data.range_count);
+      range_count++)
+  {
+    if(curr >= token_count)
+      break;
+    data.ranges[range_count] = NUINT16(M_MM(atof(tokens[curr])));
+    curr++;
+  }
+
+  if(range_count != ntohs(data.range_count))
+  {
+    PLAYER_ERROR2("range count mismatch at %s:%d", this->filename, linenum);
+    return -1;
+  }
+
+  this->PutData(id, &data, sizeof(data), &time);
 
   return 0;
 }
