@@ -1,12 +1,3 @@
-/* This file was obtained from the nomadics respository on
-   Sourceforge. I understand that it was released under the GPL by the
-   copyright holders. Anyone with more information about the licensing
-   of this code, please contact Richard Vaughan (vaughan@sfu.ca).
-   
-   $Header$ 
-   
-*/
-
 /*
  * Nclient.h
  *
@@ -17,6 +8,7 @@
  *
  */
 
+/* $Header$ */
 
 #ifndef _HOST_CLIENT_NCLIENT_H_
 #define _HOST_CLIENT_NCLIENT_H_
