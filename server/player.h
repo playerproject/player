@@ -1819,23 +1819,23 @@ This interface has no commands.
 @par Configuration requests
 
 This interface has no configuration requests.
-
-    
+ 
 @{
 */
 
-/// @name Image dimensions
-/// @{
+/** Image dimensions. */
 #define PLAYER_CAMERA_IMAGE_WIDTH 640
 #define PLAYER_CAMERA_IMAGE_HEIGHT 480
 #define PLAYER_CAMERA_IMAGE_SIZE (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
-/// @}
 
-/// @name Compression methods
-/// @{
+/** Image data formats. */
+#define PLAYER_CAMERA_FORMAT_GREY8  1
+#define PLAYER_CAMERA_FORMAT_RGB565 2
+#define PLAYER_CAMERA_FORMAT_RGB888 3
+
+/** Compression methods. */
 #define PLAYER_CAMERA_COMPRESS_RAW 0
 #define PLAYER_CAMERA_COMPRESS_JPEG 1
-/// @}
 
 /** Data returned by camera. */
 typedef struct player_camera_data
@@ -1845,6 +1845,9 @@ typedef struct player_camera_data
 
   /** Image depth (bits-per-pixel) (8, 16, 24, 32). */
   uint8_t depth;
+
+  /** Image format (must be compatable with depth). */
+  uint8_t format;
 
   /** Image compression; PLAYER_CAMERA_COMPRESS_RAW indicates no
       compression. */

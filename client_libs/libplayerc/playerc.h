@@ -64,7 +64,7 @@ extern "C" {
 
   
 /***************************************************************************
- * Useful constants (re-defined here so SWIG can pick them up easily
+ * Useful constants (re-defined here so SWIG can pick them up easily)
  **************************************************************************/
 
 /** The device access modes */
@@ -545,6 +545,9 @@ typedef struct
 
   /** Image depth (8, 16, 24). */
   uint8_t depth;
+
+  /** Image format (e.g., RGB888). */
+  uint8_t format;
 
   /** Image compression method. */
   uint8_t compression;

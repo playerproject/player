@@ -178,21 +178,25 @@ int CameraV4L::Setup()
   {
     fg_set_format(this->fg, VIDEO_PALETTE_GREY);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_GREY );
+    this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
   }
   else if (this->depth == 16)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB565 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB565 );
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB565;
   }
   else if (this->depth == 24)
   {
-    fg_set_format(this->fg, VIDEO_PALETTE_RGB24 );
+    fg_set_format(this->fg, VIDEO_PALETTE_RGB24 );    
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB24 );
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
   }
   else if (this->depth == 32)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB32 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB32 );
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
   }
   else
   {
@@ -318,6 +322,7 @@ void CameraV4L::WriteData()
   this->data.width = htons(this->width);
   this->data.height = htons(this->height);
   this->data.depth = this->depth;
+  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
 
   // Set the image pixels
   assert((size_t) this->frame->size <= sizeof(this->data.image));
