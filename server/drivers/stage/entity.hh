@@ -46,43 +46,42 @@ class CRootEntity;
 // The basic moveable object class
 class CEntity
 {
-  // Minimal constructor Requires a pointer to the library entry for
-  // this type, a pointer to the world, and a parent
-public: CEntity(  char* name, char* type, char* color, CEntity* parent );
+public: 
 
-public: static CEntity* Creator( char* name, char* type, 
-				 char* color, CEntity* parent )
+  // Constructor - create a model from a description packet
+  CEntity( player_stage_model_t* model );
+  
+  // Creator function: a static wrapper for the constructor
+  static CEntity* Creator( player_stage_model_t* model )
   {
-    return( new CEntity( name, type, color, parent ) );
+    return( new CEntity( model ) );
   };
-
+  
+  // Destructor
+  virtual ~CEntity();
+  
+    
   // a linked list of other entities attached to this one
-public: CEntity* child_list;
-public: CEntity* prev;
-public: CEntity* next;
-protected:  void AddChild( CEntity* child );
+  CEntity* child_list;
+  CEntity* prev;
+  CEntity* next;
+  void AddChild( CEntity* child );
+  
+  // completely destroys all children of this entity
+  int DeleteChildren();
 
-
-
-  // everyone shares these vars 
-public:
-  //static double ppm; 
+  // everyone shares these static vars 
   static CMatrix* matrix;
   static bool enable_gui;
-
-public: 
   static double simtime; // the simulation time in seconds
   static double timestep; // the duration of one update in seconds
-
-public:
-  static CRootEntity* root; // global reference to the base object
-
-  // Destructor
-  public: virtual ~CEntity();
-
-  //int Subs(){ return sub_count; };
-  //int sub_count;
-
+  static CRootEntity* root; // pointer to the base object  
+  static GHashTable* ents;   // associate model instances with an id number  
+  
+  // get a pointer to the entity with this id.
+  CEntity* GetEntity( int id )
+  { return( (CEntity*)g_hash_table_lookup( ents, (gpointer)id ) ); }
+  
   // SUBCLASS INTERFACE ------------------------------------------
 protected:
   stage_buffer_t buffer_data;
@@ -223,8 +222,11 @@ public: void FamilyUnsubscribe();
   // return a pointer to this or a child if it matches the worldfile section
   CEntity* FindSectionEntity( int section );
     
-  // a unique name for this model instance, used as an ID
+  // a unique name for this model instance
   public: char name[PLAYER_MAX_DEVICE_STRING_LEN];
+
+  // a unique integer id for this entity
+public: int id; 
 
   // the worldfile token that caused this entity to be created
   // it is set in the constructor (which is called by the library) 

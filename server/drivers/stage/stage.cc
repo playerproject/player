@@ -50,6 +50,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h> /* for exit(2) */
+#include <glib.h>
 
 #include "device.h"
 #include "entity.hh"
@@ -97,11 +98,11 @@ extern rtk_app_t *app; // the RTK/GTK application
 // devices must be added here.
 
 stage_libitem_t library_items[] = { 
-  { "box", "black", (CFP)CEntity::Creator},
-  { "puck", "green", (CFP)CPuck::Creator},
-  { "sonar", "red", (CFP)CSonarModel::Creator},
-  { "idar", "blue", (CFP)CIdarModel::Creator },
-  { "position", "purple", (CFP)CPositionModel::Creator },
+  { "box", (CFP)CEntity::Creator},
+  //  { "puck", (CFP)CPuck::Creator},
+  // { "sonar", (CFP)CSonarModel::Creator},
+  //{ "idar", (CFP)CIdarModel::Creator },
+  //{ "position", (CFP)CPositionModel::Creator },
   /*
     { "bitmap", "blue", (CFP)CBitmap::Creator},
   { "laser", "blue", (CFP)CLaserDevice::Creator},
@@ -125,7 +126,7 @@ stage_libitem_t library_items[] = {
   // { "bps", BpsType, (CFP)CBpsDevice::Creator},
   */
 
-  {NULL, NULL, NULL } // marks the end of the array
+  {NULL, NULL } // marks the end of the array
 };  
 
 
@@ -170,6 +171,13 @@ public:
   int GuiEntityPropertyChange( CEntity* ent, stage_prop_id_t prop );
   int GuiUpdate( void );
   
+  // associate strings with model creator functions;
+  GHashTable* creators;
+
+  // keep track of the number of models we have created. this is used
+  // to give them unique, sequential ids. root is always id 0 
+  int model_count;
+
   // mutex to manage access to model data
   pthread_mutex_t mutex; 
   // manipulate the mutex
@@ -201,7 +209,23 @@ StageDevice::StageDevice()
   // catch clock start/stop commands
   signal(SIGUSR1, CatchSigUsr1 );
  
+  model_count = 0;
+
+  // make a hash table to store associations between strings and
+  // creator functions
+  creators = g_hash_table_new( g_str_hash, g_str_equal );
   
+  // push the array into the hash table
+  for( int item = 0; char* token = (char*)library_items[item].token; item++ )
+    {
+      g_hash_table_insert( creators, token, (gpointer)library_items[item].fp );
+
+#if PLAYER_ENABLE_TRACE
+      printf( "Stage registered model \"%s\" (%d)\n", token, item );
+#endif
+    }
+    
+
   // parse arguments
   for( int a=1; a<argc; a++ )
     {
@@ -217,7 +241,7 @@ StageDevice::StageDevice()
     }
 
   // create the root object
-  CEntity::root = new CRootEntity( library_items );
+  CEntity::root = new CRootEntity();
   
 #ifdef INCLUDE_RTK2
   // bring up the GUI
@@ -252,6 +276,7 @@ StageDeviceInit()
 {
   return((CDevice*)(new StageDevice()));
 }
+
 
 // our thread method    
 void StageDevice::Main( void )
@@ -288,7 +313,7 @@ void StageDevice::Main( void )
     // Make data available
     player_stage_data_t data;
     data.interval_ms = htonl((int)(update_interval * 1000.0));
-    data.model_count = htonl(CEntity::root->NumModels()-1);
+    data.model_count = htonl(model_count);
     //printf( "putting data" );
     PutData((uint8_t*) &data, sizeof(data), 0,0 );
 
@@ -335,6 +360,7 @@ int StageDevice::HandleConfigRequests()
   void *client;
   char buffer[PLAYER_MAX_REQREP_SIZE];
   bool ok = true;
+
   
   while ((len = GetConfig(&client, &buffer, sizeof(buffer))) > 0)
     {
@@ -355,20 +381,63 @@ int StageDevice::HandleConfigRequests()
 	      
 	      printf( "received create model request for:\n"
 		      "type %s name %s  parent %d at (%.2f %.2f %.2f)\n",
-		      model->type, model->name, model->parent, 
+		      model->type, model->name, model->parent_id, 
 		      model->px, model->py, model->pa );
 	      
-	      this->ModelLock();
-	      assert( CEntity::root->CreateModel( model ) == 0 );
-	      this->ModelUnlock();
+	      CreatorFunctionPtr creator = NULL;
+	      
+	      // find the creator func for this string
+	      if( !(creator = (CFP)g_hash_table_lookup(creators, model->type)))
+		{
+		  // failed to find a creator function
+		  PLAYER_ERROR( "No creator function found for model token"
+				" \"%s\". Create model failed.", 
+				model->type );
+		  
+		  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+		    PLAYER_ERROR("PutReply() failed");
+		}
+	      else // we found a creator ok, so create away
+		{
+		  this->ModelLock();
+		  
+		  // assign this model the next id
+		  model->id = ++model_count;
+		  
+		  CEntity* ent = NULL;
+		  
+		  assert( ent = (*creator)(model) ); 
+		  
+		  // need to do startup outside the constructor to allow for
+		  // full polymorphism
+		  if( ent->Startup() == -1 ) // if startup fails
+		    {
+		      PRINT_WARN3( "Startup failed for model %s:%s at %p",
+				   model->name, model->type, ent );
+		      delete ent;
+		      return -1;
+		    }
+		  
+		  // now start the GUI repn for this entity
+		  if( ent->RtkStartup( canvas ) == -1 )
+		    {
+		      PRINT_WARN3( "Gui startup failed for model %s:%s at %p",
+				   model->name, model->type, ent );
+		      delete ent; // destructor calls CEntity::Shutdown()
+		      return -1;
+		    }
+		  
+		  this->ModelUnlock();
 
-	      if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-			   model, sizeof(player_stage_model_t)) != 0 )
-		PLAYER_ERROR("PutReply() failed responding to "
-			     "PLAYER_STAGE_CREATE_MODEL");
+		  
+		  if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
+			       model, sizeof(player_stage_model_t)) != 0 )
+		    PLAYER_ERROR("PutReply() failed responding to "
+				 "PLAYER_STAGE_CREATE_MODEL");
+		}
 	    }
-	  break;
-	  
+	      break;
+	      
 	case PLAYER_STAGE_DESTROY_MODEL:
 	  {
 	    PLAYER_TRACE0( "received config PLAYER_STAGE_DESTROY_MODEL" );
@@ -378,7 +447,7 @@ int StageDevice::HandleConfigRequests()
 	      (player_stage_model_t*)buffer;
 	    
 	    this->ModelLock();
-	    CEntity::root->DestroyModel( model->id );
+	    delete CEntity::root->GetEntity( model->id );
 	    this->ModelUnlock();
 	    
 	    if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK ) != 0 )
@@ -389,9 +458,9 @@ int StageDevice::HandleConfigRequests()
 	  
 	case PLAYER_STAGE_DESTROY_ALL:
 	  PLAYER_TRACE0( "received config PLAYER_STAGE_DESTROY_ALL" );
-
+	  
 	  this->ModelLock();
-	  CEntity::root->DestroyAll();
+	  CEntity::root->DeleteChildren();
 	  this->ModelUnlock();
 
 	  if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK ) != 0 )

@@ -41,24 +41,22 @@
 
 #define PLAYER_STAGE_ROOT_NAME "root"
 
+#define ROOTDEF {PLAYER_STAGE_CREATE_MODEL, "root", "root", 0, -1, 0.0, 0.0, 0.9}    
+
+player_stage_model_t root_model = { PLAYER_STAGE_CREATE_MODEL, 
+				    "root", 
+				    "root", 
+				    0, 
+				    -1, 
+				    0.0, 0.0, 0.9 };    
+
 // constructor
-CRootEntity::CRootEntity( const stage_libitem_t items[] )
-  : CEntity( PLAYER_STAGE_ROOT_NAME, "root", "red", NULL )    
+CRootEntity::CRootEntity()
+  : CEntity( &root_model )    
 {
   PRINT_DEBUG( "Creating root model" );
   
   CEntity::root = this; // phear me!
-
-  // init the storage for created models
-  // the hash keys will be char strings
-  //ents =  g_hash_table_new( g_str_hash, g_str_equal );
- 
-  // the hash keys will be integers
-  ents =  g_hash_table_new( g_int_hash, g_int_equal() );
-  
-  // add myself to the hash table
-  
-  g_hash_table_insert( ents, 0, this );
 
   size_x = 10.0; // a 10m world by default
   size_y = 10.0;
@@ -81,18 +79,6 @@ CRootEntity::CRootEntity( const stage_libitem_t items[] )
 		size_x, size_y, ppm );
   
   assert( matrix = new CMatrix( size_x, size_y, ppm, 1) );
-  
-  this->libitems = items;
-  
-  // count all the items in the library array
-  libitems_count = 0;
-  for( stage_libitem_t* item = (stage_libitem_t*)items; item->token; item++ )
-    {
-      PRINT_DEBUG4( "counting library item %d : %s %s %p", 
-		    libitems_count, item->token, item->colorstr, item->fp );
-      
-      libitems_count++;
-    }
   
   stage_gui_config_t default_gui;
   strncpy( default_gui.token, STG_DEFAULT_GUI, STG_TOKEN_MAX);
@@ -175,151 +161,4 @@ int CRootEntity::Property( int con, stage_prop_id_t property,
   return CEntity::Property( con, property, value, len, reply  );
 }
 
-
-
-// look in the array for an item with matching token and return a pointer to it
-stage_libitem_t* CRootEntity::FindItemWithToken( const stage_libitem_t* items, 
-					     int count, char* token )
-{
-  for( int c=0; c<count; c++ )
-    if( strcmp( items[c].token, token ) == 0 )
-      return (stage_libitem_t*)&(items[c]);
-  
-  return NULL; // didn't find the token
-}
-
-// destroy all my children and their descendents
-int CRootEntity::DestroyAll() 
-{
-  CHILDLOOP(ch)
-    DestroyModel( ch->name );
-
-  return 0;
-}
-
-
-int CRootEntity::DestroyModel( char* name )
-{
-  
-  // look up the pointer
-  CEntity* ent = (CEntity*)g_hash_table_lookup( ents, (gpointer)name );
-  PLAYER_TRACE2("destroying model %s (%p)", name, ent );
-  
-  if( ent ) // if it's no good, don't kill it.
-    {
-      // recursively destroy its children
-      for( CEntity* ch = ent->child_list; ch; ch = ch->next )
-	DestroyModel( ch->name );
-      
-      ent->Shutdown();
-      ent->RtkShutdown();
-      
-      // remove this entity from it's parent's childlist
-      STAGE_LIST_REMOVE( ent->m_parent_entity->child_list, ent)
-	
-      // forget about it
-      g_hash_table_remove( ents, (gpointer)name );
-
-      delete ent;
-    }
-
-  return 0;
-}
-
-// create an instance of an entity given a worldfile token
-int CRootEntity::CreateModel( player_stage_model_t* model )
-{
-  assert( model );
-
-  static int model_count = 0;
-
-  // look up this token in the library
-  stage_libitem_t* libit = FindItemWithToken( model->type );
-  
-  CEntity* ent;
-  
-  if( libit == NULL )
-    {
-      PRINT_ERR1( "requested model type '%s' is not in the library", 
-		  model->type );
-      return -1;
-    }
-  
-  if( libit->fp == NULL )
-  {
-    PRINT_ERR1( "requested model type '%s' doesn't have a creator function", 
-		model->type );
-    return -1;
-  }
-  
-  
-  PRINT_DEBUG3( "creating a %s model with name \"%s\" with parent \"%s\"",
-		model->type, model->name, model->parent );
-  
-  // if it has a valid parent, look up the parent's address
-  CEntity* parentPtr = GetEnt( model->parent);
-
-  if( !parentPtr )
-    {
-      PRINT_ERR1( "No model exists with name \"%s\"",
-		  model->parent );
-      return -1;
-    }
-  
-   // create an entity through the creator callback fucntion  
-   // which calls the constructor
-   ent = (*libit->fp)( model->name, 
-		       model->type, 
-		       (char*)libit->colorstr, 
-		       parentPtr ); 
-
-   assert( ent );
-
-   // set the pose of the new entity
-   ent->SetPose( model->px, model->py, model->pa );
-
-   // associate this id with this entity
-
-   //int* key = (int*)g_new(int, 1);
-   //*key = model->id;
-   g_hash_table_insert( ents, model->id, ent);
-   PRINT_WARN1( "inserting model %d name \"%s\" into hash table", 
-		model->id, model->name );
-
-   // need to do some startup outside the constructor to allow for
-   // full polymorphism
-   if( ent->Startup() == -1 ) // if startup fails
-     {
-       PRINT_WARN3( "Startup failed for model %s:%s at %p",
-		    model->name, model->type, ent );
-       delete ent;
-       return -1;
-     }
-
-   // now start the GUI repn for this entity
-   if( ent->RtkStartup(this->canvas) == -1 )
-     {
-       PRINT_WARN3( "Gui startup failed for model %s:%s at %p",
-		    model->name, model->type, ent );
-       delete ent; // destructor calls CEntity::Shutdown()
-       return -1;
-     }
-        
-
-     if( ent ) PRINT_DEBUG3(  "Startup successful for model %s:%s at %p",
-			    model->name, model->type, ent );
-     return 0; //success
- } 
-
- void CRootEntity::Print( void )
- {
-   PRINT_MSG("[Library contents:");
-
-   int i;
-   for( i=0; i<libitems_count; i++ )
-     printf( "\n\t%s:%s:%p", 
-	     libitems[i].token, libitems[i].colorstr, libitems[i].fp );
-   
-   puts( "]" );
- }
 

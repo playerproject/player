@@ -20,7 +20,21 @@
 #include <unistd.h>
 #include <stdint.h> // for portable int types eg. uint32_t
 
-   class CEntity;
+// forward declaration of the base class for all models
+class CEntity;
+
+// pointer to a function that returns a new  entity
+typedef CEntity*(*CreatorFunctionPtr)( player_stage_model_t* model );
+
+typedef CreatorFunctionPtr CFP; // abbreviation
+
+// associate a world file token with a model creator function (and a color).
+// an array of these is passed to root's constructor
+typedef struct 
+{
+  const char* token;
+  CreatorFunctionPtr fp;
+} stage_libitem_t;
 
 
    typedef struct timeval stage_timeval_t;

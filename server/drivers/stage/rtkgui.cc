@@ -298,7 +298,7 @@ int RtkGuiUpdate( void )
   last_update = CEntity::simtime;
 
   // when the root object is smaller than the window, keep it centered
-  // and scaled to fit the canvas  
+  // and scaled to fit the canvas 
   if( CEntity::simtime - last_fit > rtkgui_fit_interval )
     {
       
@@ -397,7 +397,7 @@ void RenderMatrix( )
 
 int RtkGuiEntityPropertyChange( CEntity* ent, stage_prop_id_t prop )
 {
-  PRINT_DEBUG2( "setting prop %d on ent %s", (prop), ent->name );
+  //PRINT_DEBUG2( "setting prop %d on ent %s", (prop), ent->name );
 
   assert(ent);
   assert( prop < STG_PROPERTY_COUNT );
@@ -413,7 +413,7 @@ int RtkGuiEntityPropertyChange( CEntity* ent, stage_prop_id_t prop )
       // these require just moving the figure
     case STG_PROP_ENTITY_POSE:
       ent->GetPose( px, py, pa );
-      PRINT_DEBUG3( "moving figure to %.2f %.2f %.2f", px,py,pa );
+      //PRINT_DEBUG3( "moving figure to %.2f %.2f %.2f", px,py,pa );
       rtk_fig_origin(ent->fig, px, py, pa );
       break;
 

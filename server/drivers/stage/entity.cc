@@ -47,45 +47,69 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/file.h>
-
 #include <iostream>
+#include <glib.h>
 
-//#include "sio.h" 
 #include "entity.hh"
 #include "raytrace.hh"
 #include "gui.hh"
 
-
 // init the static vars shared by all entities
- // everyone shares these vars 
 CMatrix* CEntity::matrix = NULL;
 bool CEntity::enable_gui = true;
 CRootEntity* CEntity::root = NULL;
 double CEntity::simtime = 0.0; // start the clock at zero time
 double CEntity::timestep = 0.01; // default 10ms update
 
+// hash table for storing id-to-pointer mappings
+GHashTable* CEntity::ents = g_hash_table_new( NULL, NULL );
+
 ///////////////////////////////////////////////////////////////////////////
 // main constructor
 // Requires a pointer to the parent and a pointer to the world.
-CEntity::CEntity( char* name, char* type, char* color, CEntity* parent )
+
+CEntity::CEntity( player_stage_model_t* model )
 {
+ assert( model );
+
+  PRINT_DEBUG4( "creating a %s model %d:\"%s\" with parent %d",
+		model->type, model->id, model->name, model->parent_id );
+
+  this->id = model->id;
+  this->m_parent_entity = NULL;
+  
+  // if a valid parent was specified look up the parent's address
+  if( model->parent_id >= 0 && 
+      !(this->m_parent_entity = GetEntity( model->parent_id ) ) )
+    {
+      PRINT_ERR1( "Failed to find a parent. No model exists with id %d",
+		  model->parent_id );
+      return;
+    }
+  
+  // set my starting pose
+  this->SetPose( model->px, model->py, model->pa );
+
+  // record my ID so others can find me by it
+  g_hash_table_insert( ents, (gpointer)model->id, this );
+  
+  PRINT_WARN2( "inserting model %d name \"%s\" into hash table",
+	       model->id, model->name );
+  
   fig_count = 0;
-
-  assert( name );
-  assert( strlen(name) > 0 );
-  strncpy(this->name, name, PLAYER_MAX_DEVICE_STRING_LEN );
-
-  assert(type);
-  assert( strlen(name) > 0 );
-  strncpy(this->type, type, PLAYER_MAX_DEVICE_STRING_LEN );
-
-  this->m_parent_entity = parent;
+  
+  if( model->name )
+    strncpy(this->name, model->name, PLAYER_MAX_DEVICE_STRING_LEN );
+  
+  if( model->type )
+    strncpy(this->type, model->type, PLAYER_MAX_DEVICE_STRING_LEN );
+  
   
   // TODO = inherit our parent's color by default
   //if( m_parent_entity )
   //color = m_parent_entity->color;
   //else
-  this->color = ::LookupColor(color); 
+  this->color = ::LookupColor( "red" ); 
   
   // init the child list data
   // do this early - ie. before calling any functions that access our children
@@ -194,7 +218,32 @@ CEntity::~CEntity()
 {
   CHILDLOOP(ch)
     delete ch;
+
+  this->RtkShutdown();
+  this->Shutdown();
+  
+  // remove this entity from it's parent's childlist
+  STAGE_LIST_REMOVE( m_parent_entity->child_list, this);
+
+  PLAYER_WARN( "removing ent %d from hash table", id );
+  // forget about me
+  g_hash_table_remove( ents, (gpointer)id );
 }
+
+// destroy all my children and their descendents
+int CEntity::DeleteChildren() 
+{
+  CEntity* ch = this->child_list;
+  while( ch )
+    {
+      CEntity* doomed = ch;
+      ch = ch->next;
+      delete doomed;
+    }
+
+  return 0;
+}
+
 
 void CEntity::AddChild( CEntity* child )
 {

@@ -30,15 +30,15 @@ libstage_a_SOURCES = \
 	stage.h \
 	stage.cc \
 	stagetime.cc \
-	stagetime.hh \
-	stg_puck.cc \
-	stg_puck.hh \
-	stg_position.cc \
-	stg_position.hh \
-	stg_idar.cc \
-	stg_idar.hh \
-	stg_sonar.cc \
-	stg_sonar.hh
+	stagetime.hh 
+#	stg_puck.cc \
+#	stg_puck.hh \
+#	stg_position.cc \
+#	stg_position.hh \
+#	stg_idar.cc \
+#       stg_idar.hh \
+#	stg_sonar.cc \
+#	stg_sonar.hh
 
 bin_PROGRAMS = stage
 AM_CPPFLAGS += -I$(top_builddir)/client_libs/c++ -I$(top_builddir)/client_libs/c

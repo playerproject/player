@@ -122,7 +122,7 @@ int main(int argc, char **argv)
     
     int line = worldfile.ReadInt(model, "line", -1);
     const char* type =  worldfile.GetEntityType(model);
-    const char* name =  worldfile.ReadString(model, "name", "unknown" );
+    const char* name =  worldfile.ReadString(model, "name", "<no name>" );
     int parent = worldfile.GetEntityParent(model);
     double px = worldfile.ReadTupleLength( model, "pose", 0, 0.0 );
     double py = worldfile.ReadTupleLength( model, "pose", 1, 0.0 );

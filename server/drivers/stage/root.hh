@@ -31,42 +31,15 @@
 
 #include "entity.hh"
 
-// pointer to a function that returns a new  entity
-typedef CEntity*(*CreatorFunctionPtr)( char* name, char* type, 
-				       char* color, CEntity *parent );
-
-typedef CreatorFunctionPtr CFP; // abbreviation
-
-// associate a world file token with a model creator function (and a color).
-// an array of these is passed to root's constructor
-typedef struct 
-{
-  const char* token;
-  const char* colorstr;
-  CreatorFunctionPtr fp;
-} stage_libitem_t;
-
-
 class CRootEntity : public CEntity
 {
   // Constructor takes a database of model types
-public: CRootEntity(  const stage_libitem_t items[] );
+public: CRootEntity( void );
   
   // Startup routine
 private: int CreateMatrix( void );
 
   double ppm; // passed into CMatrix creator
-
-
-private:
-  // an array of [token,color,creator_function] structures
-  // the position in the array is used as a type number
-  const stage_libitem_t* libitems;
-  int libitems_count;
-
-  // associate model instances with an id number
-  GHashTable* ents;
-
   
 public:
   
@@ -76,14 +49,6 @@ public:
   // print the items on stdout
   void Print(void);
   
-  // returns a pointer the matching item, or NULL if none is found
-  stage_libitem_t* FindItemWithToken( const stage_libitem_t* items, 
-				      int count, char* token );
-  
-  // as above, but uses data members as arguments
-  stage_libitem_t* FindItemWithToken( char* token  )
-  { return FindItemWithToken( this->libitems, this->libitems_count, token ); };
-  
   void AddDevice( const char* token, 
 		  const char* colorstr, 
 		  CreatorFunctionPtr creator );
@@ -92,15 +57,10 @@ public:
   int CreateModel( player_stage_model_t* model );
   
   // remove an entity and its children from the sim
-  int DestroyModel( char* name );
+  int DestroyModel();
 
   // destroy all my children and their descendents
   int DestroyAll();
-
-  CEntity* GetEnt( char* name )
-  {
-    return( (CEntity*)g_hash_table_lookup( ents, (gpointer)name ) ); 
-  };
 
   // Update the device
 public: 
