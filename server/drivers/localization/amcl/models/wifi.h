@@ -42,6 +42,10 @@ typedef struct
 {
   // Pointer to the map map
   map_t *map;
+
+  // Observed levels
+  int level_count;
+  int levels[MAP_WIFI_MAX_LEVELS];
   
 } wifi_t;
 
@@ -52,14 +56,8 @@ wifi_t *wifi_alloc(map_t *map);
 // Free an sensor model
 void wifi_free(wifi_t *sensor);
 
-// Set the wifi level readings that will be used.
-void wifi_set_level(wifi_t *sensor, int index, int level);
-
-// Prepare to update the distribution using the sensor model.
-void wifi_sensor_init(wifi_t *self);
-
-// Finish updating the distribution using the sensor model.
-void wifi_sensor_term(wifi_t *self);
+// Set the observed wifi levels
+void wifi_set_levels(wifi_t *self, int level_count, int levels[]);
 
 // The sensor model function
 double wifi_sensor_model(wifi_t *self, pf_vector_t pose);

@@ -33,7 +33,7 @@ typedef struct
   double occ_dist;
 
   // Wifi levels
-  double wifi_levels[MAP_WIFI_MAX_LEVELS];
+  int wifi_levels[MAP_WIFI_MAX_LEVELS];
 
 } map_cell_t;
 

@@ -171,7 +171,10 @@ int map_load_wifi(map_t *map, const char *filename, int index)
       if (!MAP_VALID(map, i, j))
         continue;
 
-      level = ch - 100;
+      if (ch == 0)
+        level = 0;
+      else
+        level = ch * 100 / 255 - 100;
 
       cell = map->cells + MAP_INDEX(map, i, j);
       cell->wifi_levels[index] = level;
