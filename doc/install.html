@@ -1,0 +1,177 @@
+
+/**
+@page install Installation
+
+In principle Player should build on most modern Unix-like
+distributions using the standard GNU autoconf dance:
+
+@verbatim
+$ ./configure
+$ make install
+@endverbatim
+
+In practice, this will probably install a fairly minimal set of
+drivers, so read on for more detailed installation instructions.
+
+
+@section install_prepare Preparing your system (recommended)
+
+The default install path for many source packages (Player included)
+is:
+
+@verbatim
+/usr/local
+/usr/local/bin
+/usr/local/include
+/usr/local/lib
+@endverbatim
+
+In some Linux distributions, however, these paths are not searched by
+default, leading to problems when compiling and linking.  We therefore
+recommend that you configure your system with the following additional
+paths (added to your .bashrc script, for example):
+
+@verbatim
+export PATH=/usr/local/bin:$PATH
+export CPATH=/usr/local/include:$CPATH
+export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
+@endverbatim
+
+The first line sets the executable path; the second sets the path for
+C and C++ header files; the third line sets the library search path.
+You will also need to set two more paths:
+
+@verbatim
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+export PYTHONPATH=/usr/local/lib/python2.3/site-packages:$PYTHONPATH
+@endverbatim 
+
+The first line sets the pkg-config path (a neat utility for mananging
+source dependencies); the second line is for Python extensions (the
+version number should match the version of Python you have installed;
+type "python -V" if in doubt).
+
+
+@section install_gazebo Installing Gazebo (optional)
+
+If you plan to work with the <a
+href="http://playerstage.sourceforge.net/gazebo/gazebo.html">Gazebo</a>
+simulation package, you need to install Gazebo @b before installing
+Player.  Follow the installation instructions in the Gazebo <a
+href="http://playerstage.sourceforge.net/doc/doc.html">manual</a>.
+
+
+@section install_rtk Installing RTK (recommended)
+
+Some Player utilities use the RTK library (available from the Player
+website) for managing GUI functionality.  This package should be
+installed @b before installing Player.  The RTK source tarball is
+installed as follows:
+
+@verbatim
+$ tar xvzf librtk-src-<version>.tar.gz
+$ cd librtk-src-<version>
+$ ./configure
+@endverbatim
+
+Check the output of the configure script to make sure the
+package will be installed in a sensible place.  Now build and
+install:
+
+@verbatim
+$ make
+$ su
+$ make install
+$ exit
+@endverbatim
+
+
+@section install_root Standard installation
+
+The Player source tarball is installed as follows:
+
+@verbatim
+$ tar xvzf player-<version>.tar.gz
+$ cd player-<version>
+$ ./configure
+@endverbatim
+
+Note the final output of the configure script: it will tell you
+what will be built, and where it will be installed.
+Once you are satisfied, build and install the package:
+
+@verbatim
+$ make
+$ su
+$ make install
+$ exit
+@endverbatim
+
+Player is now ready to run.
+
+
+@section install_local Local installation (does not require root access)
+
+Some users prefer to install Player in their home directory (e.g.,
+/home/[username]/local) rather than in a system directory.  This is
+useful if you are working on shared machines and/or lack root access.
+Naturally, local installs can make it a bit tricky for Player (and
+other packages) to find the right headers, libs and so on.  Here,
+then, is the recommended way to do it:
+ 
+- Pick a spot for "local" installs; for me it is
+ "/home/[username]/local".  The install scripts will create relevant
+ subdirs under this, such as:
+@verbatim
+/home/[username]/local/bin
+/home/[username]/local/include
+/home/[username]/local/lib
+@endverbatim
+ 
+- Set up the necessary compiler paths in your .bashrc (or whatever)
+  script; e.g.:
+@verbatim
+export PATH=~/local/bin:$PATH
+export CPATH=~/local/include:$CPATH
+export LIBRARY_PATH=~/local/lib:$LIBRARY_PATH
+@endverbatim
+The first line sets the executable path; the second sets the path for C
+and C++ header files; the third line sets the library search path.
+ 
+- Set up some additional paths in your .bashrc (or whatever):
+@verbatim
+export PKG_CONFIG_PATH=~/local/lib/pkgconfig:$PKG_CONFIG_PATH
+export PYTHONPATH=~/local/lib/python2.3/site-packages:$PYTHONPATH
+@endverbatim 
+The first line sets the pkg-config path (for applications using
+pkg-config, which will be everything in the Player/Stage/Gazebo
+project pretty soon); the second line is for Python extensions (the
+version number should match the version of Python you have installed;
+type "python -V" if in doubt).
+
+- Build RTK using the "--prefix" argument:
+@verbatim
+$ ./configure --prefix=/home/[username]/local
+$ make install
+@endverbatim
+Note the final output of the configure script: it should tell
+you that RTK will be installed in your home directory.
+
+- Build Player using the "--prefix" argument:
+@verbatim
+$ ./configure --prefix=/home/[username]/local
+$ make install
+@endverbatim
+Note the final output of the configure script: it should find your
+local installation of RTK and tell you that Player will be installed
+in your home directory.
+ 
+Everything should now work seamlessly, and your locally installed
+packages will be used in preference to any system-wide defaults.
+
+
+@section install_problems Problem-solving
+
+TODO
+
+*/
