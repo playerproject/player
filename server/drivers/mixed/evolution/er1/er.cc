@@ -128,7 +128,7 @@ Driver* ER_Init(ConfigFile* cf, int section)
 void 
 ER_Register(DriverTable* table)
 {
-  table->AddDriver("er1_position", ER_Init);
+  table->AddDriver("er1", ER_Init);
 }
 
 ER::ER(ConfigFile* cf, int section) 

@@ -68,10 +68,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   player_device_id_t* ids;
   int num_ids;
 
-  // zero blobfinder and gyro ids, so that we'll know later whether to ask
-  // for gyro and camera data.
-  this->blobfinder_id.code = this->gyro_id.code = 0;
-
+  // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(player_device_id_t));
   memset(&this->sonar_id, 0, sizeof(player_device_id_t));
   memset(&this->aio_id, 0, sizeof(player_device_id_t));
@@ -83,6 +80,8 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   memset(&this->gyro_id, 0, sizeof(player_device_id_t));
   memset(&this->blobfinder_id, 0, sizeof(player_device_id_t));
   memset(&this->sound_id, 0, sizeof(player_device_id_t));
+
+  this->position_subscriptions = this->sonar_subscriptions = 0;
 
   // Parse devices section
   if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
@@ -267,10 +266,6 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   this->psos_fd = -1;
 
   this->sent_gripper_cmd = false;
-}
-
-P2OS::~P2OS()
-{
 }
 
 int P2OS::Setup()
@@ -651,11 +646,6 @@ P2OS::Subscribe(player_device_id_t id)
       case PLAYER_SONAR_CODE:
         this->sonar_subscriptions++;
         break;
-	/*
-      default:
-        PLAYER_ERROR1("got subscription for unknown interface %d", id.code);
-        assert(false);
-	*/
     }
   }
 

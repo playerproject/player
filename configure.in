@@ -5,12 +5,9 @@ AC_INIT(server/main.cc)
 
 AC_CANONICAL_SYSTEM
 
-dnl Define this so that we can refer to it twice below
-define(PLAYER_VERSION,1.5.2)
-
 dnl Initialize automake with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AM_INIT_AUTOMAKE(player,PLAYER_VERSION)
+AM_INIT_AUTOMAKE(player,1.6)
 
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET

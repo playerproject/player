@@ -196,7 +196,6 @@ class P2OS : public Driver
   public:
 
     P2OS(ConfigFile* cf, int section);
-    ~P2OS();
 
     int Subscribe(player_device_id_t id);
     int Unsubscribe(player_device_id_t id);

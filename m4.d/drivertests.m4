@@ -135,16 +135,16 @@ PLAYER_ADD_DRIVER([logfile],[drivers/shell],[yes],[zlib.h],[],[-lz])
 
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[no],[asm/ioctls.h],[],[])
+PLAYER_ADD_DRIVER([er1],[drivers/mixed/evolution/er1],[no],[asm/ioctls.h],[],[])
 
-PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[np],[],[],[])
+PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
 	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
-PLAYER_ADD_DRIVER([sickpls],[drivers/laser],[no],[],[],[])
+PLAYER_ADD_DRIVER([sickpls],[drivers/laser],[yes],[],[],[])
 if  test "x$enable_sickpls" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
@@ -162,7 +162,7 @@ fi
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[no],[],[],[])
+PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[yes],[],[],[])
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
@@ -174,13 +174,13 @@ PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[no],[],[],[])
+PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([flockofbirds],[drivers/position/ascension],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[no],[],[],[])
+PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])
 
@@ -225,9 +225,9 @@ PLAYER_ADD_DRIVER([aodv],[drivers/wifi],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([iwspy],[drivers/wifi],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[no],[],[],[])
+PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([khepera],[drivers/mixed/khepera],[no],[],[],[])
+PLAYER_ADD_DRIVER([khepera],[drivers/mixed/khepera],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[yes],[],[],[])
 

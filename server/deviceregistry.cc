@@ -171,13 +171,7 @@ void P2OS_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_RFLEX
-void RFLEXPower_Register(DriverTable* table);
-void RFLEXaio_Register(DriverTable* table);
-void RFLEXdio_Register(DriverTable* table);
-void RFLEXPosition_Register(DriverTable* table);
-void RFLEXSonar_Register(DriverTable* table);
-void RFLEXbumper_Register(DriverTable* table);
-void RFLEXIr_Register(DriverTable* table);
+void RFLEX_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_LINUXWIFI
@@ -197,14 +191,11 @@ void LinuxJoystick_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_REB
-void REBPosition_Register(DriverTable *table);
-void REBIR_Register(DriverTable *table);
-void REBPower_Register(DriverTable *table);
+void REB_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_KHEPERA
-void KheperaPosition_Register(DriverTable *table);
-void KheperaIR_Register(DriverTable *table);
+void Khepera_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_FIXEDTONES
@@ -577,13 +568,7 @@ register_devices()
 #endif
   
 #ifdef INCLUDE_RFLEX
-  RFLEXPower_Register(driverTable);
-  RFLEXaio_Register(driverTable);
-  RFLEXdio_Register(driverTable);
-  RFLEXPosition_Register(driverTable);
-  RFLEXSonar_Register(driverTable);
-  RFLEXbumper_Register(driverTable);
-  RFLEXIr_Register(driverTable); 
+  RFLEX_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SONYEVID30
@@ -652,14 +637,11 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_REB
-  REBPosition_Register(driverTable);
-  REBIR_Register(driverTable);
-  REBPower_Register(driverTable);
+  REB_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_KHEPERA
-  KheperaPosition_Register(driverTable);
-  KheperaIR_Register(driverTable);
+  Khepera_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ISENSE
