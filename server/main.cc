@@ -145,6 +145,32 @@ extern player_interface_t interfaces[];
 // Returns true on success and false on failure.
 bool LoadPlugin(const char* pluginname, const char* cfgfile);
 
+/** @addtogroup userguide */
+/** @{ */
+/** @defgroup commandline Command line options
+
+The Player server is run as follows:
+
+@verbatim
+$ player [options] <configfile>
+@endverbatim
+
+where [options] is one or more of the following:
+
+- -h             : Print usage message.
+- -t {tcp | udp} : transport protocol to use.  Default: tcp.
+- -p <port>      : port where Player will listen. Default: 6665.
+- -s <path>      : use memory-mapped IO with Stage through the devices in this directory.
+- -g <id>        : connect to Gazebo server with id <id>.
+- -r <logfile>   : read data from <logfile> (readlog driver).
+- -k <key>       : require client authentication with the given key.
+
+Note that only one of -s, -g and -r can be specified at any given time.
+
+*/
+/** @} */
+
+ 
 /* Usage statement */
 void
 Usage()
