@@ -27,8 +27,11 @@
   "       -v   : verbose mode; print Player device state on stdout\n" \
   "       -3d  : connect to position3d interface (instead of position)\n" \
   "       -c   : continuously send commands\n" \
+  "       -n   : dont send commands or enable motors (debugging)\n" \
   "       -k   : use keyboard control\n" \
   "       -udp : use UDP instead of TCP\n" \
+  "       -speed     : maximum linear speed (mm/sec)\n" \
+  "       -turnspeed : maximum angular speed (deg/sec)\n" \
   "       <host:port> : connect to a Player on this host and port\n"
 
 
@@ -60,6 +63,9 @@ bool threed = false;
 
 // should we continuously send commands?
 bool always_command = false;
+
+// are we in debug mode (dont send commands)?
+bool debug_mode = false;
 
 // use the keyboard instead of the joystick?
 bool use_keyboard = false;
@@ -126,8 +132,8 @@ struct js_event {
 // define the speed limits for the robot
 
 // at full joystick depression you'll go this fast
-#define MAX_SPEED    500 // mm/second
-#define MAX_TURN    60 // degrees/second
+int max_speed = 500; // mm/second
+int max_turn = 60; // degrees/second
 
 // this is the speed that the camera will pan when you press the
 // hatswitches in degrees/sec
@@ -142,8 +148,8 @@ struct js_event {
 #define PERCENT(X)          (X * 100.0 / AXIS_MAX)
 #define PERCENT_POSITIVE(X) (((PERCENT(X)) + 100.0) / 2.0)
 #define KNORMALIZE(X)       (((X * 1024.0 / AXIS_MAX)+1024.0) / 2.0)
-#define NORMALIZE_SPEED(X)  ( X * MAX_SPEED / AXIS_MAX )
-#define NORMALIZE_TURN(X)  ( X * MAX_TURN / AXIS_MAX )
+#define NORMALIZE_SPEED(X)  ( X * max_speed / AXIS_MAX )
+#define NORMALIZE_TURN(X)  ( X * max_turn / AXIS_MAX )
 
 struct controller
 {
@@ -162,7 +168,7 @@ void joystick_handler(struct controller* cont)
   
   int buttons_state = 0;
 
-  puts("Reading from joystick");
+  //puts("Reading from joystick");
 
   // loop around a joystick read
   for(;;)
@@ -502,14 +508,16 @@ void Client::Update( struct controller* cont )
   if(cont->dirty || always_command) // if the joystick sent a command
   {
     stopped = false;
-    // send the speed commands
-    if(!threed)
+    if(!debug_mode)
     {
-      pp->SetSpeed( cont->speed, cont->turnrate);
-      printf("%d %d\n", cont->speed, cont->turnrate);
+      // send the speed commands
+      if(!threed)
+        pp->SetSpeed( cont->speed, cont->turnrate);
+      else
+        pp3->SetSpeed( cont->speed, cont->turnrate);
     }
     else
-      pp3->SetSpeed( cont->speed, cont->turnrate);
+      printf("%d %d\n", cont->speed, cont->turnrate);
     lastcommand = curr;
   }
   else if(((curr.tv_sec + (curr.tv_usec / 1e6)) -
@@ -518,11 +526,16 @@ void Client::Update( struct controller* cont )
   {
     if(!stopped)
     {
-      if(!threed)
-        pp->SetSpeed(0,0);
-      else
-        pp3->SetSpeed(0,0);
       cont->speed = cont->turnrate = 0;
+      if(!debug_mode)
+      {
+        if(!threed)
+          pp->SetSpeed(0,0);
+        else
+          pp3->SetSpeed(0,0);
+      }
+      else
+	printf("%d %d\n", cont->speed, cont->turnrate);
       stopped = true;
     }
   }
@@ -557,17 +570,39 @@ int main(int argc, char** argv)
         }
       }
       else if( strcmp( argv[i], "-v" ) == 0 )
-	g_verbose = true;
+        g_verbose = true;
       else if( strcmp( argv[i], "-3d" ) == 0 )
-	threed = true;
+        threed = true;
       else if( strcmp( argv[i], "-c" ) == 0 )
-	always_command = true;
+        always_command = true;
+      else if( strcmp( argv[i], "-n" ) == 0 )
+        debug_mode = true;
       else if( strcmp( argv[i], "-k" ) == 0 )
-	use_keyboard = true;
+        use_keyboard = true;
+      else if( strcmp( argv[i], "-speed" ) == 0 )
+      {
+        if(i++ < argc)
+          max_speed = atoi(argv[i]);
+        else
+        {
+          puts(USAGE);
+          exit(-1);
+        }
+      }
+      else if( strcmp( argv[i], "-turnspeed" ) == 0 )
+      {
+        if(i++ < argc)
+          max_turn = atoi(argv[i]);
+        else
+        {
+          puts(USAGE);
+          exit(-1);
+        }
+      }
       else if( strcmp( argv[i], "-udp" ) == 0 )
-	protocol = PLAYER_TRANSPORT_UDP;
+        protocol = PLAYER_TRANSPORT_UDP;
       else
-	puts( USAGE ); // malformed arg - print usage hints
+        puts( USAGE ); // malformed arg - print usage hints
     }
 
   // if no Players were requested, we assume localhost:6665
