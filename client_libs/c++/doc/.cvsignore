@@ -1,1 +1,14 @@
 *.log *.dvi *.aux *.ps *.pdf *.h.tex
+GpsProxy.tex
+ClientProxy.tex
+PlayerClient.tex
+CommsProxy.tex
+GripperProxy.tex
+FiducialProxy.tex
+LaserProxy.tex
+PositionProxy.tex
+PtzProxy.tex
+SonarProxy.tex
+TruthProxy.tex
+BlobfinderProxy.tex
+cppclient.toc
