@@ -98,9 +98,11 @@ if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
     AC_CHECK_HEADER($header, 
                     enable_$1=yes,
                     enable_$1=no
-                    failed_header_check=yes
-                    break,)
+                    failed_header_check=yes,)
   done
+  if test "x$failed_header_check" = "xyes"; then
+    enable_$1=no
+  fi
 fi
 if test "x$enable_$1" = "xyes"; then
   AC_DEFINE([INCLUDE_]name_caps, 1, [include the $1 driver])
