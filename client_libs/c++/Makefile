@@ -11,7 +11,7 @@ PWD=$(shell pwd)
 INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
-      positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
+      p2_positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
       laserbeaconproxy.o visionproxy.o  \
       gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o \
       rwi_positionproxy.o rwi_sonarproxy.o rwi_laserproxy.o rwi_bumperproxy.o \
@@ -43,8 +43,8 @@ $(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	$(LN) -s $(PWD)/laserproxy.h ../../include
 	$(RM) -f ../../include/miscproxy.h 
 	$(LN) -s $(PWD)/miscproxy.h ../../include
-	$(RM) -f ../../include/positionproxy.h 
-	$(LN) -s $(PWD)/positionproxy.h ../../include
+	$(RM) -f ../../include/p2_positionproxy.h 
+	$(LN) -s $(PWD)/p2_positionproxy.h ../../include
 	$(RM) -f ../../include/ptzproxy.h 
 	$(LN) -s $(PWD)/ptzproxy.h ../../include
 	$(RM) -f ../../include/sonarproxy.h 
@@ -104,7 +104,7 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 laserbeaconproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 laserproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 miscproxy.h $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 positionproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 p2_positionproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 ptzproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 sonarproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 speechproxy.h $(INSTALL_INCLUDE)
@@ -132,7 +132,7 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/laserbeaconproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/laserproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/miscproxy.h
-	$(RM) -f $(INSTALL_INCLUDE)/positionproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/p2_positionproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/ptzproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/sonarproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/speechproxy.h
@@ -164,7 +164,7 @@ clean:
 	$(RM) -f ../../include/laserbeaconproxy.h 
 	$(RM) -f ../../include/laserproxy.h 
 	$(RM) -f ../../include/miscproxy.h 
-	$(RM) -f ../../include/positionproxy.h 
+	$(RM) -f ../../include/p2_positionproxy.h 
 	$(RM) -f ../../include/ptzproxy.h 
 	$(RM) -f ../../include/sonarproxy.h 
 	$(RM) -f ../../include/speechproxy.h 

@@ -26,7 +26,7 @@
  * client-side position device 
  */
 
-#include <positionproxy.h>
+#include <p2_positionproxy.h>
 #include <netinet/in.h>
 #include <string.h>
 #ifdef PLAYER_SOLARIS
@@ -38,7 +38,7 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PositionProxy::SetSpeed(short speed, short turnrate)
+int P2PositionProxy::SetSpeed(short speed, short turnrate)
 {
   if(!client)
     return(-1);
@@ -57,7 +57,7 @@ int PositionProxy::SetSpeed(short speed, short turnrate)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PositionProxy::SetMotorState(unsigned char state)
+int P2PositionProxy::SetMotorState(unsigned char state)
 {
   if(!client)
     return(-1);
@@ -79,7 +79,7 @@ int PositionProxy::SetMotorState(unsigned char state)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PositionProxy::SelectVelocityControl(unsigned char mode)
+int P2PositionProxy::SelectVelocityControl(unsigned char mode)
 {
   if(!client)
     return(-1);
@@ -98,7 +98,7 @@ int PositionProxy::SelectVelocityControl(unsigned char mode)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PositionProxy::ResetOdometry()
+int P2PositionProxy::ResetOdometry()
 {
   if(!client)
     return(-1);
@@ -111,7 +111,7 @@ int PositionProxy::ResetOdometry()
                          sizeof(buffer)));
 }
 
-void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
+void P2PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
   if(hdr.size != sizeof(player_position_data_t))
   {
@@ -131,7 +131,7 @@ void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 }
 
 // interface that all proxies SHOULD provide
-void PositionProxy::Print()
+void P2PositionProxy::Print()
 {
   printf("#Position(%d:%d) - %c\n", device, index, access);
   puts("#xpos\typos\ttheta\tspeed\tturn\tcompass\tstalls");

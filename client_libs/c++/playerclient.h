@@ -35,7 +35,7 @@
 #include <laserproxy.h>  /* support for the laser device */
 #include <sonarproxy.h>  /* support for the sonar device */
 #include <miscproxy.h>  /* support for the misc device */
-#include <positionproxy.h>  /* support for the position device */
+#include <p2_positionproxy.h>  /* support for the P2OS position device */
 #include <ptzproxy.h>  /* support for the ptz device */
 #include <gripperproxy.h>  /* support for the gripper device */
 #include <speechproxy.h>  /* support for the speech device */

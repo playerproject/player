@@ -26,8 +26,8 @@
  * client-side position device 
  */
 
-#ifndef POSITIONPROXY_H
-#define POSITIONPROXY_H
+#ifndef P2_POSITIONPROXY_H
+#define P2_POSITIONPROXY_H
 
 #include <clientproxy.h>
 #include <playerclient.h>
@@ -35,7 +35,7 @@
 /** The {\tt PositionProxy} class is used to control the {\tt position} device.
     The latest position data is contained in the attributes {\tt xpos, ypos}, etc.
  */
-class PositionProxy : public ClientProxy
+class P2PositionProxy : public ClientProxy
 {
 
   public:
@@ -56,8 +56,8 @@ class PositionProxy : public ClientProxy
         You can change the access later using
         {\tt PlayerProxy::RequestDeviceAccess()}.
     */
-    PositionProxy(PlayerClient* pc, unsigned short index,
-                  unsigned char access ='c') :
+    P2PositionProxy(PlayerClient* pc, unsigned short index,
+                    unsigned char access ='c') :
         ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
 
     // these methods are the user's interface to this device
