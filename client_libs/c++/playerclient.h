@@ -169,6 +169,9 @@ class PlayerClient
 
     // request a round of data (only valid when in request/reply mode)
     int RequestData();
+
+    // authenticate
+    int Authenticate(char* key);
     
     // proxy list management methods
 

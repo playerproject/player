@@ -59,23 +59,28 @@ class CDeviceSubscription
 
 class CClientData 
 {
-  CDeviceSubscription* requested;
-  int numsubs;
-  pthread_mutex_t access;
-  //pthread_mutex_t requesthandling;
+  private:
+    CDeviceSubscription* requested;
+    int numsubs;
+    pthread_mutex_t access;
+    char auth_key[PLAYER_KEYLEN];
 
-  void MotorStop();
-  void PrintRequested(char*);
-  
-  void RemoveBlanks();  
-  void RemoveRequests();
-  void UpdateRequested(player_device_req_t req);
-  bool CheckPermissions(unsigned short code, unsigned short index);
-  unsigned char FindPermission( unsigned short code, unsigned short index);
-  void Unsubscribe( unsigned short code, unsigned short index );
-  int Subscribe( unsigned short code, unsigned short index );
+    void MotorStop();
+    void PrintRequested(char*);
+
+    bool CheckAuth(player_msghdr_t hdr, unsigned char* payload,
+                   unsigned int payload_size);
+
+    void RemoveBlanks();  
+    void RemoveRequests();
+    void UpdateRequested(player_device_req_t req);
+    bool CheckPermissions(unsigned short code, unsigned short index);
+    unsigned char FindPermission( unsigned short code, unsigned short index);
+    void Unsubscribe( unsigned short code, unsigned short index );
+    int Subscribe( unsigned short code, unsigned short index );
 
  public:
+    bool auth_pending;
   int client_index;
   //int writeThreadId, readThreadId;
   pthread_t writeThread, readThread;
@@ -86,7 +91,7 @@ class CClientData
 
   int socket;
 
-  CClientData();
+  CClientData(char* key);
   ~CClientData();
 
   //void HandleRequests( unsigned char *buffer, int readcnt );

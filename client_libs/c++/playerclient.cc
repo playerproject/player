@@ -162,7 +162,6 @@ int PlayerClient::Request(unsigned short device,
                         replyhdr, reply, replylen));
 }
 
-
 // request access to a device, meant for use by client-side device
 // proxy constructors
 //
@@ -230,7 +229,22 @@ int PlayerClient::RequestData()
   return(Request(PLAYER_PLAYER_CODE, 0, (char*)&this_ioctl, sizeof(this_ioctl)));
 }
 
-    
+// authenticate
+int PlayerClient::Authenticate(char* key)
+{
+  player_device_ioctl_t this_ioctl;
+  player_device_auth_req_t this_req;
+  char payload[sizeof(this_ioctl)+sizeof(this_req)];
+
+  this_ioctl.subtype = htons(PLAYER_PLAYER_AUTH_REQ);
+  strncpy(this_req.auth_key,key,sizeof(this_req.auth_key));
+
+  memcpy(payload,&this_ioctl,sizeof(this_ioctl));
+  memcpy(payload+sizeof(this_ioctl),&this_req,sizeof(this_req));
+
+  return(Request(PLAYER_PLAYER_CODE, 0, payload, sizeof(payload),NULL,0,0));
+}
+
 // proxy list management methods
 
 // add a proxy to the list

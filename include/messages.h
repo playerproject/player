@@ -114,6 +114,8 @@
 #define PLAYER_IDENT_STRING "Player v."
 #define PLAYER_IDENT_STRLEN 32
 
+#define PLAYER_KEYLEN 32
+
 /* generic message header */
 typedef struct
 {
@@ -164,12 +166,17 @@ typedef struct
   uint16_t frequency;
 } __attribute__ ((packed)) player_device_datafreq_req_t;
 
+/* the format of an authentication request */
+typedef struct
+{
+  char auth_key[PLAYER_KEYLEN];
+} __attribute__ ((packed)) player_device_auth_req_t;
 
-/* the various configuration commands */
-#define PLAYER_PLAYER_DEV_REQ      ((uint16_t)1)
+#define PLAYER_PLAYER_DEV_REQ     ((uint16_t)1)
 #define PLAYER_PLAYER_DATA_REQ     ((uint16_t)2)
 #define PLAYER_PLAYER_DATAMODE_REQ ((uint16_t)3)
 #define PLAYER_PLAYER_DATAFREQ_REQ ((uint16_t)4)
+#define PLAYER_PLAYER_AUTH_REQ     ((uint16_t)5)
 
 /*************************************************************************/
 

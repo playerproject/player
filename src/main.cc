@@ -348,6 +348,8 @@ void *client_writer(void* arg)
   pthread_cleanup_push(delete_func,data);
   for(;;)
   {
+    if(clientData->auth_pending)
+      continue;
     size = clientData->BuildMsg( data, data_buffer_size );
           
     pthread_mutex_lock(&(clientData->socketwrite));
@@ -669,6 +671,7 @@ int main( int argc, char *argv[] )
   bool use_stage = false;
   unsigned int j;
   struct sockaddr_in listener;
+  char auth_key[PLAYER_KEYLEN] = "";
   //struct sockaddr_in sender;
 #ifdef PLAYER_LINUX
   socklen_t sender_len;
@@ -682,16 +685,22 @@ int main( int argc, char *argv[] )
 
   pthread_mutex_init(&clients_mutex,NULL);
 
+  // make a copy of argv, so that strtok in parse_device_string
+  // doesn't screw with it 
+  char *new_argv[argc];
+  for(int i=0;i<argc;i++)
+    new_argv[i] = strdup(argv[i]);
+
   printf("** Player v%s ** ", PLAYER_VERSION);
   fflush(stdout);
 
   for( int i = 1; i < argc; i++ ) 
   {
-    if(!strcmp(argv[i],"-stage"))
+    if(!strcmp(new_argv[i],"-stage"))
     {
       if(++i<argc) 
       {
-	strncpy(arenaFile, argv[i], sizeof(arenaFile));
+	strncpy(arenaFile, new_argv[i], sizeof(arenaFile));
 	use_stage = true;
 	printf("[Stage]");
       }
@@ -701,11 +710,25 @@ int main( int argc, char *argv[] )
 	exit(-1);
       }
     }
-    else if(!strcmp(argv[i], "-port"))
+    else if(!strcmp(new_argv[i], "-key"))
     {
       if(++i<argc) 
       { 
-	global_playerport = atoi(argv[i]);
+        strncpy(auth_key,new_argv[i],sizeof(auth_key));
+        // just in case...
+        auth_key[sizeof(auth_key)-1] = '\0';
+      }
+      else 
+      {
+	Usage();
+	exit(-1);
+      }
+    }
+    else if(!strcmp(new_argv[i], "-port"))
+    {
+      if(++i<argc) 
+      { 
+	global_playerport = atoi(new_argv[i]);
 	
 	printf("[Port %d]", global_playerport);
       }
@@ -715,7 +738,7 @@ int main( int argc, char *argv[] )
 	exit(-1);
       }
     }
-    else if(!strcmp(argv[i], "-sane"))
+    else if(!strcmp(new_argv[i], "-sane"))
     {
       for(int i=0;i<ARRAYSIZE(sane_spec);i++)
       {
@@ -727,9 +750,9 @@ int main( int argc, char *argv[] )
       }
       already_sane = true;
     }
-    else if((i+1)<argc && argv[i+1][0] != '-')
+    else if((i+1)<argc && new_argv[i+1][0] != '-')
     {
-      if(parse_device_string(argv[i],argv[i+1]) < 0)
+      if(parse_device_string(new_argv[i],new_argv[i+1]) < 0)
       {
         Usage();
         exit(-1);
@@ -739,7 +762,7 @@ int main( int argc, char *argv[] )
     }
     else
     {
-      if(parse_device_string(argv[i],NULL) < 0)
+      if(parse_device_string(new_argv[i],NULL) < 0)
       {
         Usage();
         exit(-1);
@@ -759,6 +782,25 @@ int main( int argc, char *argv[] )
       }
     }
   }
+
+  // get rid of our argv copy
+  for(int i = 0;i<argc;i++)
+    free(new_argv[i]);
+
+  // pretty up our entry in the process table (and also hide the auth_key)
+  char buffer[32];
+  if(!use_stage)
+    sprintf(buffer,"Player [Port %d]",global_playerport);
+  else
+    sprintf(buffer,"Player [Port %d] [Stage]",global_playerport);
+  int len = 0;
+  for(int i=0;i<argc;i++)
+    len += strlen(argv[i])+1;
+  len--;
+  bzero(argv[0],len);
+  if(len<(int)sizeof(buffer))
+    argv[0] = (char*)realloc(argv[0],sizeof(buffer));
+  strcpy(argv[0],buffer);
 
   puts( "" ); // newline, flush
   
@@ -836,7 +878,7 @@ int main( int argc, char *argv[] )
 
   while(1) 
   {
-    clientData = new CClientData;
+    clientData = new CClientData(auth_key);
 
     /* block here */
     if((clientData->socket = accept(player_sock,(struct sockaddr *)NULL, 
