@@ -17,10 +17,10 @@ playerv_SOURCES = playerv.c \
                   dev_laser.c \
                   dev_position.c \
                   dev_ptz.c \
-		  dev_sonar.c \
+								  dev_sonar.c \
                   error.h \
                   opt.c \
                   opt.h
 
-playerv_LDADD = -L$(top_builddir)/rtk2 -L$(top_builddir)/client_libs/libplayerc -lrtk -lplayerc 
-playerv_LDFLAGS = `gtk-config --libs gtk gthread`
+playerv_LDADD = -L$(top_builddir)/rtk2 -L$(top_builddir)/client_libs/libplayerc -lrtk -lplayerc $(LIBJPEG)
+playerv_LDFLAGS = `gtk-config --libs gtk gthread` 

@@ -257,6 +257,12 @@ AC_SUBST(ISENSE_LIB)
 AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
 
+dnl RTK2 uses libjpeg to export images.
+AC_CHECK_HEADER(jpeglib.h,
+  AC_DEFINE(HAVE_JPEGLIB_H,1,[include jpeg support])
+  LIBJPEG="-ljpeg",,)
+AC_SUBST(LIBJPEG)
+
 dnl Optionally build the python client.
 AC_CHECK_HEADERS(python2.2/Python.h,
   WITH_PYTHON="1",,)
