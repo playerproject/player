@@ -51,15 +51,37 @@ set ACTS_NUM_CHANNELS 32
 set ACTS_HEADER_SIZE [expr 2*$ACTS_NUM_CHANNELS]
 set ACTS_BLOB_SIZE 10
 
+set PLAYER_IDENT_STRLEN 32
+set PLAYER_STX 0x7858
+
+set PLAYER_MSGTYPE_DATA 0x7264 
+set PLAYER_MSGTYPE_CMD  0x7263
+set PLAYER_MSGTYPE_REQ  0x7271
+set PLAYER_MSGTYPE_RESP 0x7272
+
+set PLAYER_MISC_CODE    0x706d
+set PLAYER_GRIPPER_CODE 0x7067 
+set PLAYER_POSITION_CODE 0x7070
+set PLAYER_SONAR_CODE   0x7073 
+set PLAYER_LASER_CODE   0x736c
+set PLAYER_VISION_CODE  0x6176
+set PLAYER_PTZ_CODE     0x737a
+set PLAYER_PLAYER_CODE  0x7273
+
+set PLAYER_PLAYER_DEV_REQ  0x6472
+set PLAYER_PLAYER_DATA_REQ 0x6470
+
 proc connectToRobot {robot} {
-  global sock port host
+  global sock port host PLAYER_IDENT_STRLEN
   puts "connectToRobot:robot:$robot"
 
   set sock [socket $robot $port]
   fconfigure $sock -blocking 1 -translation binary
   # make it request/reply
-  requestFromRobot "xy[binary format S 2]r[binary format c 1]"
+  # requestFromRobot "xy[binary format S 2]r[binary format c 1]"
   set host $robot
+  # print out who we're talking to
+  puts "Connected to [read $sock $PLAYER_IDENT_STRLEN]"
 }
 proc disconnectFromRobot {} {
   global sock
@@ -70,26 +92,33 @@ proc disconnectFromRobot {} {
   set sock -1
 }
 proc requestFromRobot {req} {
-  global sock host
+  global sock host PLAYER_STX PLAYER_PLAYER_CODE PLAYER_PLAYER_CODE \
+         PLAYER_PLAYER_DATA_REQ PLAYER_MSGTYPE_REQ
+
+  set zero16 [binary format S 0]
+  set zero32 [binary format I 0]
+  set size [binary format I [string length $req]]
   if {$sock == -1} {
     error "ERROR: robot connection not set up"
   }
   set isdevicerequest 0
 
-  #puts -nonewline "Requesting \"$req\" (length: [string length $req])"
-  if {[string index $req 0] == "x"} {
-    puts -nonewline $sock $req
-  } else {
-    set isdevicerequest 1
-    puts -nonewline $sock "dr[binary format S [string length $req]]$req"
+  puts -nonewline "Requesting \"$req\" (length: [string length $req])"
+  #if {[string index $req 0] == "x"} {
+    #puts -nonewline $sock $req
+  #} else {
+    #set isdevicerequest 1
+    #puts -nonewline $sock "dr[binary format S [string length $req]]$req"
+#
+    #if {[string first vr $req] != -1 || 
+        #[string first va $req] != -1 ||
+        #[string first vw $req] != -1} {
+        #puts "Since you want vision, i'll xhost the robot for you."
+        #catch {exec xhost $host}
+    #}
+  #}
 
-    if {[string first vr $req] != -1 || 
-        [string first va $req] != -1 ||
-        [string first vw $req] != -1} {
-        puts "Since you want vision, i'll xhost the robot for you."
-        catch {exec xhost $host}
-    }
-  }
+  puts -nonewline $sock "${PLAYER_STX}${PLAYER_MSGTYPE_REQ}${PLAYER_PLAYER_CODE}${zero16}${zero32}${zero32}${zero32}${zero32}${zero32}${size}${req}"
   flush $sock
 
   if {$isdevicerequest} {

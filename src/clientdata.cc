@@ -31,6 +31,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <sys/time.h>
 
 #include <devicetable.h>
 #include <clientdata.h>
@@ -63,159 +64,121 @@ CClientData::CClientData()
   pthread_mutex_init( &socketwrite, NULL ); 
 }
 
-void CClientData::HandleRequests( unsigned char *buffer,  int readcnt ) 
+void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,  
+                                 unsigned int payload_size) 
 {
   bool request=false;
-  int size = ntohs(*(unsigned short*)(buffer+2));
-  int j;
+  //unsigned int i;
+  unsigned int j;
   CDevice* devicep;
+  player_device_ioctl_t player_ioctl;
   player_device_req_t req;
+  //player_msghdr_t reply_hdr;
 
   static unsigned char reply[REQUEST_BUFFER_SIZE];
 
   bzero(reply,sizeof(reply));
 
-
-  if(debug)
-  {
-    printf("request: %c%c:%d:",buffer[0],buffer[1],size);
-    for(j=0;j<size;j++)
-      printf("%.2x ",buffer[2+sizeof(unsigned short)+j]);
-    puts("");
-  }
-
   pthread_mutex_lock( &requesthandling );
   
-  switch(buffer[0]) 
+  switch(hdr.type)
   {
-    case 'd':
+    case PLAYER_MSGTYPE_REQ:
       /* request message */
       request = true;
-      for(j=0;j<size;j+=2)
+      // if it's for us, handle it here
+      if(hdr.device == PLAYER_PLAYER_CODE)
       {
-        //UpdateRequested(buffer+2+sizeof(unsigned short)+j);
-        req.code = buffer[2+sizeof(unsigned short)+j];
-        req.index = 0;
-        req.access = buffer[2+sizeof(unsigned short)+j+1];
-        UpdateRequested(req);
-      }
-      break;
-    case 'c':
-      /* command message */
-      if(CheckPermissions(buffer[1],0))
-      {
-        // check if we can write to this device
-        if((deviceTable->GetDeviceAccess(buffer[1],0) == 'w') ||
-           (deviceTable->GetDeviceAccess(buffer[1],0) == 'a'))
-        
+        // ignore the device_index.  can we have more than one player?
+        // is the payload big enough?
+        if(payload_size < sizeof(player_device_ioctl_t))
         {
-          // make sure we've got a non-NULL pointer
-          if((devicep = deviceTable->GetDevice(buffer[1],0)))
-          {
-            devicep->GetLock()->PutCommand(devicep,
-                            &buffer[2+sizeof(unsigned short)],size);
-          }
-          else
-          {
-            printf("HandleRequests(): found NULL pointer for device '%c'\n",
-                            (char)buffer[1]);
-          }
+          printf("HandleRequests(): Player device got small ioctl: %d\n",
+                          payload_size);
+          return;
         }
-        else
-	  printf("You can't send commands to %c\n", (char) buffer[1]);
-      }
-      else 
-      {
-	printf("No permissions to command %c\n", buffer[1]);
-      }
-      break;
-    case 'x':
-      /* expert command */
-      
-      //printf("GOT EXPERT COMMAND: %c%c\n",buffer[0],buffer[1]);
 
-      // see if this is a configuration request for the server
-      // itself
-      if(buffer[1] == 'y')
-      {
         /* lock here so the writer thread won't interfere while
          * we change these values in the ClientData object */
         pthread_mutex_lock( &access );
-        // switch on the first char of the payload
-        switch(buffer[2+sizeof(unsigned short)])
+        
+        // what sort of ioctl is it?
+        memcpy(&player_ioctl,payload,sizeof(player_device_ioctl_t));
+        switch(player_ioctl.subtype)
         {
-          case 'd':
-            /* send data packet: no args */
-            if (size-1 != 0)
+          case PLAYER_PLAYER_DEV_REQ:
+            if((payload_size - sizeof(player_device_ioctl_t)) < 
+                            sizeof(player_device_req_t))
             {
-              puts("Arg to data packet request is wrong size; ignoring");
-              break;
+              printf("HandleRequests(): got small player_device_req_t: %d\n",
+                              payload_size-sizeof(player_device_ioctl_t));
+              return;
             }
-            if(mode != REQUESTREPLY)
-              puts("WARNING: got request for data when not in "
-                              "request/reply mode");
-            else
-              pthread_mutex_unlock( &datarequested);
-            break;
-          case 'r':
-            /* data transfer mode change request:
-             *   0 = continuous (default)
-             *   1 = request/reply
-             */
-            if (size-1 != sizeof(char))
+            for(j=sizeof(player_device_ioctl_t);
+                j<payload_size-(sizeof(player_device_req_t)-1);
+                j+=sizeof(player_device_req_t))
             {
-              puts("Arg to data transfer mode change is wrong size; ignoring");
-              break;
+              memcpy(&req,payload+j,sizeof(player_device_req_t));
+              UpdateRequested(req);
             }
-            if(buffer[2+sizeof(unsigned short)+sizeof(char)])
-            {
-              /* changet to request/reply */
-              mode = REQUESTREPLY;
-              pthread_mutex_unlock(&datarequested);
-              pthread_mutex_lock(&datarequested);
-            }
-            else
-            {
-              /* change to continuous mode */
-              mode = CONTINUOUS;
-              pthread_mutex_unlock(&datarequested);
-            }
-            break;
-          case 'f':
-            /* change frequency of data update */
-            if (size-1 != sizeof(unsigned short))
-            {
-              puts("Arg to frequency change request is wrong size; ignoring");
-              break;
-            }
-            frequency = 
-                    ntohs(*(unsigned short*)&buffer[2+sizeof(unsigned short)
-                                    +sizeof(char)]);
+            if(j != (payload_size-(sizeof(player_device_req_t)-1)))
+              puts("HandleRequests(): garbage following player DR ioctl");
             break;
           default:
-            printf("Unknown server expert command %c\n", 
-                            buffer[2+sizeof(unsigned short)]);
+            printf("Unknown server ioctl %x\n", player_ioctl.subtype);
             break;
         }
         pthread_mutex_unlock( &access );
       }
       else
       {
+        // it's for another device.  hand it off.
+        
         // pass the config request on the proper device
         // make sure we've got a non-NULL pointer
-        if((devicep = deviceTable->GetDevice(buffer[1],0)))
+        if((devicep = deviceTable->GetDevice(hdr.device,hdr.device_index)))
         {
-          devicep->GetLock()->PutConfig(devicep,
-                          &buffer[2+sizeof(unsigned short)],size);
+          devicep->GetLock()->PutConfig(devicep,payload,payload_size);
         }
         else
-          puts("HandleRequests(): Unknown config request");
+          printf("HandleRequests(): got REQ for unkown device: %x:%x\n",
+                          hdr.device,hdr.device_index);
+      }
+    case PLAYER_MSGTYPE_CMD:
+      /* command message */
+      if(CheckPermissions(hdr.device,hdr.device_index))
+      {
+        // check if we can write to this device
+        if((deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'w') ||
+           (deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'a'))
+        
+        {
+          // make sure we've got a non-NULL pointer
+          if((devicep = deviceTable->GetDevice(hdr.device,hdr.device_index)))
+          {
+            devicep->GetLock()->PutCommand(devicep,payload,payload_size);
+          }
+          else
+          {
+            printf("HandleRequests(): found NULL pointer for device %x:%x\n",
+                            hdr.device,hdr.device_index);
+          }
+        }
+        else
+	  printf("You can't send commands to %x:%x\n",
+                            hdr.device,hdr.device_index);
+      }
+      else 
+      {
+        printf("No permissions to commands %x:%x\n",
+                        hdr.device,hdr.device_index);
       }
       break;
     default:
-      printf("HandleRequests(): Unknown request %c\n", buffer[0]);
+      printf("HandleRequests(): Unknown message type %x\n", hdr.type);
       break;
   }
+  /*
   if (request)
   {
     reply[0]='r';
@@ -236,6 +199,7 @@ void CClientData::HandleRequests( unsigned char *buffer,  int readcnt )
     }
     pthread_mutex_unlock(&socketwrite);
   }
+  */
 
   pthread_mutex_unlock( &requesthandling );
 }
@@ -467,12 +431,16 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
 {
   unsigned short size, totalsize=0;
   CDevice* devicep;
+  player_msghdr_t hdr;
+  struct timeval curr;
   
   /* make sure that we are not changing format */
   pthread_mutex_lock( &requesthandling );
 
   pthread_mutex_lock( &access );
 
+  hdr.stx = PLAYER_STX;
+  hdr.type = PLAYER_MSGTYPE_DATA;
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
     if(thisub->access=='a' || thisub->access=='r') 
@@ -482,10 +450,14 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
       {
         if((devicep = deviceTable->GetDevice(thisub->code,thisub->index)))
         {
-          data[totalsize] = (unsigned char)(thisub->code);
+          hdr.device = thisub->code;
+          hdr.device_index = thisub->index;
+          hdr.timestamp = 0;
+          hdr.reserved = 0;
+          
           size = devicep->GetLock()->GetData(devicep, 
-                                             &data[totalsize+3], 
-                                             maxsize-totalsize-3);
+                                             data+totalsize+sizeof(hdr),
+                                             maxsize-totalsize-sizeof(hdr));
 
           // *** HACK -- ahoward
           // Skip this data if it is zero length
@@ -496,8 +468,11 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
               continue;
           }
           
-          *(unsigned short *)&data[totalsize+1] = htons ( size );
-          totalsize+=size+3;
+          hdr.size = htons(size);
+          gettimeofday(&curr,NULL);
+          hdr.time=(uint64_t)((curr.tv_sec * 1000.0)+(curr.tv_usec / 1000.0));
+          memcpy(data+totalsize,&hdr,sizeof(hdr));
+          totalsize += sizeof(hdr) + size;
         }
         else
         {
