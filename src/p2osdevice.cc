@@ -421,8 +421,8 @@ int CP2OSDevice::Setup()
   // now, based on robot type, find the right set of parameters
   for(i=0;i<PLAYER_NUM_ROBOT_TYPES;i++)
   {
-    if(!strcasecmp(PlayerRobotParams[i].General.Class,type) && 
-       !strcasecmp(PlayerRobotParams[i].General.Subclass,subtype))
+    if(!strcasecmp(PlayerRobotParams[i].Class,type) && 
+       !strcasecmp(PlayerRobotParams[i].Subclass,subtype))
     {
       param_idx = i;
       break;
@@ -782,10 +782,10 @@ CP2OSDevice::Main()
               geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
               for (int i = 0; i < PLAYER_NUM_SONAR_SAMPLES; i++)
               {
-                double *pose = PlayerRobotParams[param_idx].Sonar.pose[i];
-                geom.pose[i][0] = htons((short) (pose[0]));
-                geom.pose[i][1] = htons((short) (pose[1]));
-                geom.pose[i][2] = htons((short) (pose[2]));
+                sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
+                geom.pose[i][0] = htons((short) (pose.x));
+                geom.pose[i][1] = htons((short) (pose.y));
+                geom.pose[i][2] = htons((short) (pose.th));
               }
 
               if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
@@ -940,7 +940,7 @@ CP2OSDevice::Main()
       //printf("speedDemand: %d\t turnRateDemand: %d\n",
       //speedDemand, turnRateDemand);
       rotational_term = (M_PI/180.0) * turnRateDemand /
-        PlayerRobotParams[param_idx].ConvFactors.DiffConvFactor;
+        PlayerRobotParams[param_idx].DiffConvFactor;
       leftvel = (speedDemand - rotational_term);
       rightvel = (speedDemand + rotational_term);
       if(fabs(leftvel) > MOTOR_MAX_SPEED)
@@ -978,9 +978,9 @@ CP2OSDevice::Main()
       motorcommand[0] = VEL2;
       motorcommand[1] = 0x3B;
       motorcommand[2] = (char)(rightvel /
-                               PlayerRobotParams[param_idx].ConvFactors.Vel2Divisor);
+                               PlayerRobotParams[param_idx].Vel2Divisor);
       motorcommand[3] = (char)(leftvel /
-                               PlayerRobotParams[param_idx].ConvFactors.Vel2Divisor);
+                               PlayerRobotParams[param_idx].Vel2Divisor);
     }
     else
     {

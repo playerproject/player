@@ -36,8 +36,7 @@
  *    pion1m.p
  *    pion1x.p
  *    pionat.p
- *    psos1m.p
- *    psos1x.p
+ *    robocup.p
 */
 
 #ifndef _ROBOT_PARAMS_H
@@ -46,50 +45,37 @@
 
 void initialize_robot_params(void);
 
-#define PLAYER_NUM_ROBOT_TYPES 13
+#define PLAYER_NUM_ROBOT_TYPES 12
 
 
 typedef struct
 {
+  double x;
+  double y;
+  double th;
+} sonar_pose_t;
+
+
+typedef struct
+{
+  double AngleConvFactor; // 
   char* Class;
+  double DiffConvFactor; // 
+  double DistConvFactor; // 
+  int FrontBuffer; // 
+  int Holonomic; // 
+  double MaxRVelocity; // 
+  double MaxVelocity; // 
+  int QuickBuffer; // 
+  double RangeConvFactor; // 
+  double RobotDiagonal; // 
+  double RobotRadius; // 
+  int SideBuffer; // 
+  int SonarNum; // 
   char* Subclass;
-  double RobotRadius; // radius in mm
-  double RobotDiagonal; // half-height to diagonal of octagon
-  int Holonomic; // turns in own radius
-  double MaxRVelocity; // degrees per second
-  double MaxVelocity; // mm per second
-  int HasMoveCommand; // has built in move command
-} RobotParams_General_t;
-
-typedef struct
-{
-  double AngleConvFactor; // radians per angular unit (2PI/4096)
-  double DistConvFactor; // mm returned by P2
-  double VelConvFactor; // mm/sec returned by P2
-  double RangeConvFactor; // sonar range returned in mm
-  double DiffConvFactor; // ratio of angular velocity to wheel velocity difference
-  double Vel2Divisor; // divisor for sending VEL2 commands to the robot
-} RobotParams_ConvFactors_t;
-
-typedef struct
-{
-  int TableSensingIR; // if the robot has upwards facing table sensing IR
-  int FrontBumpers; // if the robot has a front bump ring
-  int RearBumpers; // if the robot has a rear bump ring
-} RobotParams_Accessories_t;
-
-typedef struct
-{
-  int SonarNum; // Number of sonar on the robot
-  double pose[16][3]; // Pose of each sonar relative to robot (m, m, degrees).
-} RobotParams_Sonar_t;
-
-typedef struct
-{
-  RobotParams_General_t General;
-  RobotParams_ConvFactors_t ConvFactors;
-  RobotParams_Accessories_t Accessories;
-  RobotParams_Sonar_t Sonar;
+  double Vel2Divisor; // 
+  double VelConvFactor; // 
+  sonar_pose_t sonar_pose[24];
 } RobotParams_t;
 
 
