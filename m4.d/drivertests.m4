@@ -182,11 +182,11 @@ AC_SUBST(LASERFIDUCIAL_LIBSPATH)
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
 AC_ARG_ENABLE(amcl,
-[  --enable-amcl           Compile the amcl driver],,enable_amcl=no)
+[  --enable-amcl           Compile the amcl driver],,enable_amcl=yes)
 if test "x$enable_amcl" = "xyes"; then
-  AC_CHECK_HEADER(gsl/gsl_version.h,,
-    AC_MSG_ERROR([The GNU Scientific Library (gsl) is required to build the
-                  amcl driver; pass --disable-amcl to configure.]))
+  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,enable_amcl=no)
+fi
+if test "x$enable_amcl" = "xyes"; then
   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
   AMCL_LIB="libamcl.a"
   AMCL_LIBPATH="drivers/localization/amcl/libamcl.a"
