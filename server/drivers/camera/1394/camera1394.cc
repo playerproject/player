@@ -26,6 +26,61 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_camera1394 camera1394
+
+The camera1394 driver captures images from IEEE1394 (Firewire, iLink)
+cameras.  
+
+@par Interfaces
+- @ref player_interface_camera
+
+@par Supported configuration requests
+
+None
+
+
+@par Configuration file options
+
+- port 0
+  - The 1394 port the camera is attached to.
+
+- node 0
+  - The node within the port
+
+- framerate 15
+  - Requested frame rate (frames/second)
+
+- mode "320x240_yuv422"
+  - Capture mode (size and color layour).  Valid modes are:
+    - "320x240_yuv"
+    - "640x480_rgb"
+    - "640x480_mono"
+  - Currently, all of these modes will produce 8-bit monochrome images.
+  
+- force_raw 0
+  - Force the driver to use (slow) memory capture instead of DMA transfer
+  (for buggy 1394 drivers).
+  
+- save 0
+  - Debugging option: set this to write each frame as an image file on disk.
+
+  
+@par Example 
+
+@verbatim
+driver
+(
+  name "camera1394"
+  provides ["camera:0"]
+)
+@endverbatim
+
+
+*/
+/** @} */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
@@ -148,9 +203,6 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   // The node inside the port
   this->node = cf->ReadInt(section, "node", 0);
 
-  // Force into raw mode
-  this->forceRaw = cf->ReadInt(section, "force_raw", 0);
-
   // Video frame rate
   fps = cf->ReadFloat(section, "framerate", 15);
   if (fps < 3.75)
@@ -173,39 +225,41 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   // number of options available. At 640x480, a camera can capture at
   // _RGB or _MONO or _MONO16.  
   const char* str;
-  str =  cf->ReadString(section, "camera_mode", "mode_160x120_yuv444");
-  if (0==strcmp(str,"mode_160x120_yuv444"))
+  str =  cf->ReadString(section, "mode", "320x240_yuv422");
+  /*
+  if (0==strcmp(str,"160x120_yuv444"))
   {
     this->mode = MODE_160x120_YUV444;
     this->frameSize = 160 * 120 * 2; // Is this correct?
   }
-  else if (0==strcmp(str,"mode_320x240_yuv422"))
+  */
+  if (0==strcmp(str,"320x240_yuv422"))
   {
     this->mode = MODE_320x240_YUV422;
     this->frameSize = 320 * 240 * 2;
   }
   /*
-  else if (0==strcmp(str,"mode_640x480_yuv411"))
+  else if (0==strcmp(str,"640x480_yuv411"))
   {
     this->mode = MODE_640x480_YUV411;
   }
-  else if (0==strcmp(str,"mode_640x480_yuv422"))
+  else if (0==strcmp(str,"640x480_yuv422"))
   {
     this->mode = MODE_640x480_YUV422;
   }
   */
-  else if (0==strcmp(str,"mode_640x480_rgb"))
+  else if (0==strcmp(str,"640x480_rgb"))
   {
     this->mode = MODE_640x480_RGB;
     this->frameSize = 640 * 480 * 3;
   }
-  else if (0==strcmp(str,"mode_640x480_mono"))
+  else if (0==strcmp(str,"640x480_mono"))
   {
     this->mode = MODE_640x480_MONO;
     this->frameSize = 640 * 480 * 1;
   }
   /*
-  else if (0==strcmp(str,"mode_640x480_mono16"))
+  else if (0==strcmp(str,"640x480_mono16"))
   {
     this->mode = MODE_640x480_MONO16;
     assert(false);
@@ -217,6 +271,9 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }
+  
+  // Force into raw mode
+  this->forceRaw = cf->ReadInt(section, "force_raw", 0);
 
   // Create a frame buffer
   this->frame = new unsigned char[this->frameSize];  
