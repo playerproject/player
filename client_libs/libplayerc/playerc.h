@@ -732,7 +732,7 @@ int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double
 typedef struct
 {
   // Destination IP address
-  char ip[16];
+  char ip[32];
  
   // Link properties
   int link, level, noise;
