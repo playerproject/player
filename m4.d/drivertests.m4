@@ -110,7 +110,8 @@ PLAYER_ADD_DRIVER([logfile],[drivers/shell],[yes],[zlib.h],[],[-lz])
 
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[yes],[],[],[])
+dnl  disabled - doesn't compile on OSx - uses non-portable <asm/*> includes - rtv
+PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],[],[],[])
 
@@ -208,7 +209,9 @@ PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
+dnl  disabled because it uses CBAUD which is pre-POSIX and doesn't
+dnl  exist on OSX - rtv 2004.05.12
+PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[no],[],[],[])
 

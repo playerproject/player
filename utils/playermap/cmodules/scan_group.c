@@ -28,7 +28,10 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
-#include <values.h>
+
+//#include <values.h>
+#include <limits.h> // POSIX replacement - rtv
+#include <float.h>  //  "
 
 #include "scan.h"
 
