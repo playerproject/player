@@ -359,7 +359,7 @@ void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set)
     cluster->cov.m[2][2] = -2 * log(sqrt(cluster->m[2] * cluster->m[2] +
                                          cluster->m[3] * cluster->m[3]));
 
-    printf("cluster %d %d (%f %f %f)\n", i, cluster->count,
+    printf("cluster %d %d %f (%f %f %f)\n", i, cluster->count, cluster->weight,
            cluster->mean.v[0], cluster->mean.v[1], cluster->mean.v[2]);
     pf_matrix_fprintf(cluster->cov, stdout, "%e");
   }
