@@ -34,6 +34,11 @@
 #include "canio.h"
 #include "canio_kvaser.h"
 
+// Both of these can be changed via the configuration file; please do NOT
+// change them here!
+#define RMP_DEFAULT_MAX_XSPEED 500   // mm/sec
+#define RMP_DEFAULT_MAX_YAWSPEED 40  // deg/sec
+
 #define RMP_CAN_ID_SHUTDOWN	0x0412
 #define RMP_CAN_ID_COMMAND	0x0413
 #define RMP_CAN_ID_MSG1		0x0400
@@ -181,6 +186,8 @@ class SegwayRMP : public CDevice
     player_power_data_t power_data;
 
   private: 
+    int max_xspeed, max_yawspeed;
+
     bool firstread;
 
     DualCANIO *canio;
@@ -254,9 +261,17 @@ SegwayRMP::SegwayRMP(uint16_t code, ConfigFile* cf, int section)
     : CDevice(sizeof(player_position3d_data_t), 
               sizeof(player_position3d_cmd_t), 10, 10)
 {
-  interface_code = code;
-  canio = NULL;
-  caniotype = cf->ReadString(section, "canio", "kvaser");
+  this->interface_code = code;
+  this->canio = NULL;
+  this->caniotype = cf->ReadString(section, "canio", "kvaser");
+  this->max_xspeed = cf->ReadInt(section, "max_xspeed", 
+                                 RMP_DEFAULT_MAX_XSPEED);
+  if(this->max_xspeed < 0)
+    this->max_xspeed = -this->max_xspeed;
+  this->max_yawspeed = cf->ReadInt(section, "max_yawspeed", 
+                                   RMP_DEFAULT_MAX_YAWSPEED);
+  if(this->max_yawspeed < 0)
+    this->max_yawspeed = -this->max_yawspeed;
 }
 
 SegwayRMP::~SegwayRMP()
@@ -273,24 +288,24 @@ SegwayRMP::Setup()
   memset(&cmd,0,sizeof(cmd));
   memset(&cmd3d,0,sizeof(cmd));
 
-  if(interface_code == PLAYER_POSITION_CODE)
+  if(this->interface_code == PLAYER_POSITION_CODE)
     PutCommand((void*)this,(unsigned char*)&cmd,sizeof(cmd));
-  else if(interface_code == PLAYER_POSITION_CODE)
+  else if(this->interface_code == PLAYER_POSITION_CODE)
     PutCommand((void*)this,(unsigned char*)&cmd3d,sizeof(cmd3d));
 
-  printf("CAN bus initializing...");
+  printf("segwayrmp: CAN bus initializing...");
   fflush(stdout);
 
-  if(!strcmp(caniotype, "kvaser"))
-    assert(canio = new CANIOKvaser);
+  if(!strcmp(this->caniotype, "kvaser"))
+    assert(this->canio = new CANIOKvaser);
   else
   {
-    PLAYER_ERROR1("Unknown CAN I/O type: \"%s\"", caniotype);
+    PLAYER_ERROR1("Unknown CAN I/O type: \"%s\"", this->caniotype);
     return(-1);
   }
 
   // start the CAN at 500 kpbs
-  if(canio->Init(BAUD_500K) < 0) 
+  if(this->canio->Init(BAUD_500K) < 0) 
   {
     PLAYER_ERROR("error on CAN Init");
     return(-1);
@@ -299,13 +314,15 @@ SegwayRMP::Setup()
   // Initialize odometry
   this->odom_x = this->odom_y = this->odom_yaw = 0.0;
 
-  last_xspeed = last_yawspeed = 0;
-  motor_enabled = false;
-  firstread = true;
+  this->last_xspeed = this->last_yawspeed = 0;
+  this->motor_enabled = false;
+  this->firstread = true;
 
   StartThread();
 
   puts("done.");
+  printf("segwayrmp: max_xspeed: %d\tmax_yawspeed: %d\n",
+         this->max_xspeed, this->max_yawspeed);
 
   return(0);
 }
@@ -867,6 +884,17 @@ SegwayRMP::MakeVelocityCommand(CanPacket* pkt,
   // 8mph is 3576.32 mm/s
   // so then mm/s -> counts = (1176/3576.32) = 0.32882963
 
+  if(xspeed > this->max_xspeed)
+  {
+    PLAYER_WARN2("xspeed thresholded! (%d > %d)", xspeed, this->max_xspeed);
+    xspeed = this->max_xspeed;
+  }
+  else if(xspeed < -this->max_xspeed)
+  {
+    PLAYER_WARN2("xspeed thresholded! (%d < %d)", xspeed, -this->max_xspeed);
+    xspeed = -this->max_xspeed;
+  }
+
   int16_t trans = (int16_t) rint((double)xspeed * RMP_COUNT_PER_MM_PER_S);
 
   if(trans > RMP_MAX_TRANS_VEL_COUNT)
@@ -875,6 +903,17 @@ SegwayRMP::MakeVelocityCommand(CanPacket* pkt,
     trans = -RMP_MAX_TRANS_VEL_COUNT;
 
   last_xspeed = trans;
+
+  if(yawspeed > this->max_yawspeed)
+  {
+    PLAYER_WARN2("yawspeed thresholded! (%d > %d)", yawspeed, this->max_yawspeed);
+    yawspeed = this->max_yawspeed;
+  }
+  else if(yawspeed < -this->max_yawspeed)
+  {
+    PLAYER_WARN2("yawspeed thresholded! (%d < %d)", yawspeed, -this->max_yawspeed);
+    yawspeed = -this->max_yawspeed;
+  }
 
   // rotational RMP command \in [-1024, 1024]
   // this is ripped from rmi_demo... to go from deg/s^2 to counts
