@@ -33,7 +33,7 @@
 #include "lifomcom.h"
 
 #ifdef MCOM_PLUGIN
-// todo dl stuff here
+// todo dll stuff here
 #endif
 
 
@@ -46,17 +46,6 @@ LifoMCom::LifoMCom(char* interface, ConfigFile* cf, int section) :
   CDevice(sizeof(player_mcom_data_t), 0, 20, 20)
 {
 }
-
-int LifoMCom::Setup(){
-    StartThread(); 
-    return 0;
-}
-
-int LifoMCom::Shutdown(){
-    StopThread(); 
-    return 0;
-}
-
 
 
 CDevice* LifoMCom_Init(char* interface, ConfigFile* cf, int section)
@@ -76,54 +65,60 @@ void LifoMCom_Register(DriverTable* t) {
     t->AddDriver("lifomcom", PLAYER_ALL_MODE, LifoMCom_Init);
 }
 
-void LifoMCom::Main() 
-{
-    void* client;
-    player_mcom_config_t cfg;
-//    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-    while(1){
-        pthread_testcancel();
-        int l = GetConfig(&client,(void *)&cfg, sizeof(cfg));
-        if(l > 0) {
+// called by player with config requests
+int LifoMCom::PutConfig(player_device_id_t* device, void* client, void* data, size_t len) {
+    printf("PutConfig\n");
 
-            // arguments to PutReply are: (void* client, ushort replytype, struct timeval* ts, void* data, size_t datalen)
-            switch(cfg.command){
-                case PLAYER_MCOM_PUSH_REQ:
-	                cfg.type=ntohs(cfg.type);
-//	                printf("player mcom: now pushing \"%s\" (%i) on %s\n", cfg.data.data, cfg.type, cfg.channel);
-	                Data.Push(cfg.data,cfg.type,cfg.channel);
-	                PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
-	                break;
-                case PLAYER_MCOM_POP_REQ:
-                    cfg.type=ntohs(cfg.type);
-                    player_mcom_return_t ret;
-                    ret.data=Data.Pop(cfg.type,cfg.channel);
-//                    printf("player mcom: popped \"%s\" (%i) off %s.\n",ret.data.data,cfg.type,cfg.channel);
-                    ret.type=htons(cfg.type);
-                    strcpy(ret.channel,cfg.channel);
-                    PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &ret ,sizeof(ret));
-                    break;
-                case PLAYER_MCOM_READ_REQ:
-                    cfg.type=ntohs(cfg.type);
-                    ret.data=Data.Read(cfg.type,cfg.channel);
-                    ret.type=htons(cfg.type);
-                    strcpy(ret.channel,cfg.channel);
-//                    printf("player mcom: reading \"%s\" (%i) from %s\n", ret.data.data, cfg.type, cfg.channel);
-                    PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &ret ,sizeof(ret));
-                    break;
-                case PLAYER_MCOM_CLEAR_REQ:
-                    cfg.type=ntohs(cfg.type);
-//                    printf("player mcom: clearing all %i from %s\n", cfg.type, cfg.channel);
-                    Data.Clear(cfg.type,cfg.channel);
-                    PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL ,0);
-                    break;
-                default:
-                    printf("Error: message %d to MCOM Device not recognized\n", cfg.command);
-                    PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL,0);	
-              }
-          }
-      }
+    assert(len == sizeof(player_mcom_config_t));
+    player_mcom_config_t* cfg = (player_mcom_config_t*)data;
+    cfg->type = ntohs(cfg->type);
+
+    // arguments to PutReply are: (void* client, ushort replytype, struct timeval* ts, void* data, size_t datalen)
+    printf("Switch\n");
+    switch(cfg->command) {
+        case PLAYER_MCOM_PUSH_REQ:
+            Data.Push(cfg->data, cfg->type, cfg->channel);
+            PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+            return 0;
+        case PLAYER_MCOM_POP_REQ:
+            player_mcom_return_t ret;
+            ret.data = Data.Pop(cfg->type, cfg->channel);
+            if(ret.data.full) {
+                ret.type = htons(cfg->type);
+                strcpy(ret.channel, cfg->channel);
+                PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &ret ,sizeof(ret));
+                return 0;
+            } else {
+                PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0);
+                return 0;
+            }
+            break;
+        case PLAYER_MCOM_READ_REQ:
+            ret.data = Data.Read(cfg->type, cfg->channel);
+            if(ret.data.full) {
+                ret.type = htons(cfg->type);
+                strcpy(ret.channel, cfg->channel);
+                Unlock();
+                PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &ret ,sizeof(ret));
+                return 0;
+            } else {
+                Unlock();
+                PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0);
+                return 0;
+            }
+            break;
+        case PLAYER_MCOM_CLEAR_REQ:
+            Data.Clear(cfg->type, cfg->channel);
+            PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL ,0);
+            return 0;
+        default:
+            printf("Error: message %d to MCOM Device not recognized\n", cfg->command);
+            PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL,0);	
+            return 0;
+    }
+    return 0;
 }
+
 
 
 
@@ -131,7 +126,7 @@ LifoMCom::Buffer::Buffer() {
     top = 0;
     for(int x = 0 ; x < MCOM_N_BUFS; x++) {
         dat[x].full=0;
-        strcpy(dat[x].data,"NOTHING");
+        strcpy(dat[x].data,"(EMPTY)");
     }
 }
 
@@ -150,7 +145,7 @@ player_mcom_data_t LifoMCom::Buffer::Pop(){
     player_mcom_data_t ret;
     ret=dat[top];
     dat[top].full=0;
-    strcpy(dat[top].data,"NULL");
+    strcpy(dat[top].data,"(EMPTY)");
     top-=1;
     if(top<0)
         top+=MCOM_N_BUFS;
@@ -230,7 +225,7 @@ player_mcom_data_t LifoMCom::LinkList::Pop(int type, char channel[MCOM_CHANNEL_L
         if(p->buf.type!=type || strcmp(p->buf.channel,channel)){
             return ret;
         }else{
-            ret=p->buf.Pop();
+            ret = p->buf.Pop();
 /*if(ret.full==0){
 printf("deleting buffer (it's empty)\n");
 if(p==top)
