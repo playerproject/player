@@ -108,6 +108,9 @@ INSTALL = install
 MKDIR = mkdir
 RMDIR = rmdir
 LN = ln
+SED = sed
+MV = mv
+CHMOD = chmod
 AR = ar
 MAKEDEP = makedepend
 
