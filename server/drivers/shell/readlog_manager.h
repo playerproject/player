@@ -95,9 +95,17 @@ class ReadLogManager
   private: int ParsePosition(CDevice *device, int linenum,
                              int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
+  // Parse position3d data
+  private: int ParsePosition3d(CDevice *device, int linenum,
+                               int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
+
   // Parse wifi data
   private: int ParseWifi(CDevice *device, int linenum,
                          int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
+
+  // Parse gps data
+  private: int ParseGps(CDevice *device, int linenum,
+                        int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // File to read data from
   private: char *filename;
