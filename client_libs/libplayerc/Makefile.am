@@ -13,13 +13,14 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_comms.c \
                        dev_fiducial.c \
                        dev_laser.c \
+								       dev_localize.c \
                        dev_gps.c \
                        dev_sonar.c \
                        dev_position.c \
                        dev_ptz.c \
+											 dev_power.c \
                        dev_truth.c \
                        dev_wifi.c \
-								       dev_localize.c \
                        error.c \
                        error.h
 
