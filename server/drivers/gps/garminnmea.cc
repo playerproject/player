@@ -897,7 +897,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
     arcseconds *= -1;
 
   lat = arcseconds / 3600.0;
-  data.latitude = htonl((int32_t)rint(lat * 60 * 60 * 60));
+  data.latitude = htonl((int32_t)rint(lat * 1e7));
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
@@ -917,7 +917,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
     arcseconds *= -1;
 
   lon = arcseconds / 3600.0;
-  data.longitude = htonl((int32_t)rint(lon * 60 * 60 * 60));
+  data.longitude = htonl((int32_t)rint(lon * 1e7));
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);

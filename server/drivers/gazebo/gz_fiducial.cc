@@ -61,9 +61,8 @@ class GzFiducial : public Driver
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Data
-  public: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-                                 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+  // Get new data
+  public: virtual void Update();
 
   // Commands
   public: virtual void PutCommand(player_device_id_t id,
@@ -84,8 +83,8 @@ class GzFiducial : public Driver
   // Gazebo Interface
   private: gz_fiducial_t *iface;
 
-  // Timestamp on last data update
-  private: uint32_t tsec, tusec;
+  // Timestamp of last data update
+  private: double datatime;
 };
 
 
@@ -127,7 +126,7 @@ GzFiducial::GzFiducial(ConfigFile* cf, int section)
   // Create an interface
   this->iface = gz_fiducial_alloc();
 
-  this->tsec = this->tusec = 0;
+  this->datatime = -1;
     
   return;
 }
@@ -153,7 +152,7 @@ int GzFiducial::Setup()
 
   // Add ourselves to the update list
   GzClient::AddDriver(this);
-
+  
   return 0;
 }
 
@@ -173,50 +172,42 @@ int GzFiducial::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Data
-size_t GzFiducial::GetData(void* client, unsigned char* dest, size_t len,
-                           uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+void GzFiducial::Update()
 {
   int i;
   gz_fiducial_fid_t *fid;
   player_fiducial_data_t data;
-  uint32_t tsec, tusec;
+  struct timeval ts;
   
   gz_fiducial_lock(this->iface, 1);
-
-  for (i = 0; i < this->iface->data->fid_count; i++)
+  if( this->iface->data->time > this->datatime )
   {
-    fid = this->iface->data->fids + i;
+    this->datatime = this->iface->data->time;
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod (this->iface->data->time, 1) * 1e6);
 
-    if (i >= PLAYER_FIDUCIAL_MAX_SAMPLES)
-      break;
+    for (i = 0; i < this->iface->data->fid_count; i++)
+    {
+      fid = this->iface->data->fids + i;
 
-    data.fiducials[i].id = htons((int) fid->id);
-    data.fiducials[i].pos[0] = htonl((int) (fid->pose[0] * 1000.0));
-    data.fiducials[i].pos[1] = htonl((int) (fid->pose[1] * 1000.0));
-    data.fiducials[i].rot[2] = htonl((int) (fid->pose[2] * 1000.0));
-  }
-  data.count = htons(i);
+      if (i >= PLAYER_FIDUCIAL_MAX_SAMPLES)
+        break;
+
+      data.fiducials[i].id = htons((int) fid->id);
+      data.fiducials[i].pos[0] = htonl((int) (fid->pose[0] * 1000.0));
+      data.fiducials[i].pos[1] = htonl((int) (fid->pose[1] * 1000.0));
+      data.fiducials[i].rot[2] = htonl((int) (fid->pose[2] * 1000.0));
+    }
+    data.count = htons(i);
+
+    this->PutData( &data, sizeof(data), &ts );
   
-  assert(len >= sizeof(data));
-  memcpy(dest, &data, sizeof(data));
-
-  tsec = (int) (this->iface->data->time);
-  tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+  }
 
   gz_fiducial_unlock(this->iface);
 
-  // signal that new data is available
-  if (tsec != this->tsec || tusec != this->tusec)
-    DataAvailable();
-  this->tsec = tsec;
-  this->tusec = tusec;
+  return;
 
-  if (timestamp_sec)
-    *timestamp_sec = tsec;
-  if (timestamp_usec)
-    *timestamp_usec = tusec;
-
-  return sizeof(data);
 }
 
 
@@ -225,7 +216,8 @@ size_t GzFiducial::GetData(void* client, unsigned char* dest, size_t len,
 void GzFiducial::PutCommand(player_device_id_t id,
                             void* src, size_t len,
                             struct timeval* timestamp)
-{  
+{
+
   return;
 }
 
