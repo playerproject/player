@@ -1345,9 +1345,9 @@ void VFH_Class::PutPose()
   data.ypos = (int32_t)rint(this->odom_pose[1]);
   data.yaw = (int32_t)rint(this->odom_pose[2]);
 
-  data.xspeed = (int32_t)rint(this->odom_vel[0] * 1000.0);
-  data.yspeed = (int32_t)rint(this->odom_vel[1] * 1000.0);
-  data.yawspeed = (int32_t)rint(this->odom_vel[2] * M_PI / 180);
+  data.xspeed = (int32_t)rint(this->odom_vel[0]);
+  data.yspeed = (int32_t)rint(this->odom_vel[1]);
+  data.yawspeed = (int32_t)rint(this->odom_vel[2]);
 
 
 /*
