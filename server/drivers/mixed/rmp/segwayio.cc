@@ -1,8 +1,10 @@
 #include <math.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <sys/time.h>
 
 #include "segwayio.h"
+SegwayIO * SegwayIO::instance(NULL);
 
 /* Takes a CAN packet from the RMP and parses it into a
  * rmp_frame_t struct.  sets the ready bitfield 

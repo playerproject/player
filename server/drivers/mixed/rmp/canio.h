@@ -31,7 +31,7 @@ struct can_packet_t
 
   char * toString() {
     static char buf[256];
-    sprintf(buf, "id:%04X %02X %02X %02X %02X %02X %02X %02X %02X",
+    sprintf(buf, "id:%04lX %02X %02X %02X %02X %02X %02X %02X %02X",
 	    id, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], 
 	    msg[6], msg[7]);
 
