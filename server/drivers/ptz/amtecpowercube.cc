@@ -39,14 +39,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
+#include <math.h>
 
 #include <device.h>
 #include <drivertable.h>
 #include <player.h>
 
-#define DEFAULT_AMTEC_PORT "/dev/ttyS0"
+#define AMTEC_DEFAULT_PORT "/dev/ttyS0"
+#define AMTEC_DEFAULT_VEL_DEG_PER_SEC 40
+#define AMTEC_DEFAULT_MIN_PAN_DEG -90
+#define AMTEC_DEFAULT_MAX_PAN_DEG 90
 
-#define AMTEC_SLEEP_TIME_USEC 100000
+#define AMTEC_SLEEP_TIME_USEC 20000
 
 // start, end, and escape chars
 #define AMTEC_STX       0x02
@@ -70,11 +74,15 @@
 #define AMTEC_CMD_SET_ISTEP    0x0d
 
 // parameter IDs
-#define AMTEC_PARAM_GET_POS   0x3c
+#define AMTEC_PARAM_ACT_POS   0x3c
+#define AMTEC_PARAM_MIN_POS   0x45
+#define AMTEC_PARAM_MAX_POS   0x46
 
 // motion IDs
-#define AMTEC_MOTION_FRAMP      0x04
-#define AMTEC_MOTION_FRAMP_ACK  0x14
+#define AMTEC_MOTION_FRAMP       4
+#define AMTEC_MOTION_FRAMP_ACK  14
+#define AMTEC_MOTION_FSTEP_ACK  16
+#define AMTEC_MOTION_FVEL_ACK   17
 
 class AmtecPowerCube:public CDevice 
 {
@@ -82,20 +90,28 @@ class AmtecPowerCube:public CDevice
     // this function will be run in a separate thread
     virtual void Main();
     bool fd_blocking;
+    int return_to_home;
+    int target_vel_degpersec;
+    int minpan, maxpan;
 
     int SendCommand(int id, unsigned char* cmd, size_t len);
     int WriteData(unsigned char *buf, size_t len);
 
     int GetAbsPanTilt(short* pan, short* tilt);
-    int SetAbsPan(short pan);
-    int SetAbsTilt(short tilt);
+    int SetAbsPan(short oldpan, short pan);
+    int SetAbsTilt(short oldtilt, short tilt);
     int Home();
+    int Halt();
     int Reset();
 
     int AwaitAnswer(unsigned char* buf, size_t len);
     int AwaitETX(unsigned char* buf, size_t len);
     int ReadAnswer(unsigned char* buf, size_t len);
     size_t ConvertBuffer(unsigned char* buf, size_t len);
+
+    float BytesToFloat(unsigned char *bytes);
+    void FloatToBytes(unsigned char *bytes, float f);
+    void Uint16ToBytes(unsigned char *bytes, unsigned short s);
 
   public:
     int fd; // amtec device file descriptor
@@ -141,7 +157,10 @@ AmtecPowerCube::AmtecPowerCube(char* interface, ConfigFile* cf, int section) :
   PutData((unsigned char*)&data,sizeof(data),0,0);
   PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 
-  serial_port = cf->ReadString(section, "port", DEFAULT_AMTEC_PORT);
+  serial_port = cf->ReadString(section, "port", AMTEC_DEFAULT_PORT);
+  return_to_home = cf->ReadInt(section, "home", 0);
+  target_vel_degpersec = cf->ReadInt(section, "speed",
+                                  AMTEC_DEFAULT_VEL_DEG_PER_SEC);
 }
 
 int 
@@ -181,6 +200,36 @@ AmtecPowerCube::Home()
   unsigned char cmd[1];
 
   cmd[0] = AMTEC_CMD_HOME;
+  if(SendCommand(AMTEC_MODULE_PAN,cmd,1) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+  if(SendCommand(AMTEC_MODULE_TILT,cmd,1) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+  return(0);
+}
+
+int 
+AmtecPowerCube::Halt()
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[1];
+
+  cmd[0] = AMTEC_CMD_HALT;
   if(SendCommand(AMTEC_MODULE_PAN,cmd,1) < 0)
   {
     PLAYER_ERROR("SendCommand() failed");
@@ -300,7 +349,13 @@ AmtecPowerCube::Shutdown()
 
   StopThread();
 
-  // TODO: put the unit back to home
+  // stop the unit
+  if(Halt())
+    PLAYER_WARN("Halt() failed.");
+
+  // maybe return it to home
+  if(return_to_home && Home())
+    PLAYER_WARN("Home() failed.");
 
   if(close(fd))
     PLAYER_ERROR1("close() failed:%s",strerror(errno));
@@ -313,22 +368,24 @@ AmtecPowerCube::Shutdown()
 // The following methods are based on some found in CARMEN.  Thanks to the
 // authors.
 
-// NOTE: this only works on little-endian machines (the Amtec protocol also
-// uses little-endian).
+// NOTE: these conversion methods only work on little-endian machines
+// (the Amtec protocol also uses little-endian).
 float
-BytesToFloat(unsigned char *bytes)
+AmtecPowerCube::BytesToFloat(unsigned char *bytes)
 {
   float f;
   memcpy((void*)&f, bytes, 4);
   return(f);
 }
-
-// NOTE: this only works on little-endian machines (the Amtec protocol also
-// uses little-endian).
 void
-FloatToBytes(unsigned char *bytes, float f)
+AmtecPowerCube::FloatToBytes(unsigned char *bytes, float f)
 {
   memcpy(bytes, (void*)&f, 4);
+}
+void
+AmtecPowerCube::Uint16ToBytes(unsigned char *bytes, unsigned short s)
+{
+  memcpy(bytes, (void*)&s, 2);
 }
 
 int 
@@ -557,7 +614,7 @@ AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
   unsigned char cmd[2];
 
   cmd[0] = AMTEC_CMD_GET_EXT;
-  cmd[1] = AMTEC_PARAM_GET_POS;
+  cmd[1] = AMTEC_PARAM_ACT_POS;
 
   // get the pan
   if(SendCommand(AMTEC_MODULE_PAN, cmd, 2) < 0)
@@ -572,7 +629,8 @@ AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
     return(-1);
   }
 
-  *pan = (short)(RTOD(BytesToFloat(buf+4)));
+  // reverse pan angle, to increase ccw, then normalize
+  *pan = -(short)RTOD(NORMALIZE(BytesToFloat(buf+4)));
   //printf("pan: %d\n", *pan);
   
   // get the tilt
@@ -595,19 +653,30 @@ AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
 }
 
 int
-AmtecPowerCube::SetAbsPan(short pan)
+AmtecPowerCube::SetAbsPan(short oldpan, short pan)
 {
   unsigned char buf[AMTEC_MAX_CMDSIZE];
   unsigned char cmd[8];
   float newpan;
+  unsigned short time;
 
   newpan = DTOR(pan);
 
+  // compute time, in milliseconds, to achieve given target velocity
+  time = (unsigned short)rint(((double)abs(pan - oldpan) / 
+                               (double)target_vel_degpersec)
+                              *1000.0);
+
   cmd[0] = AMTEC_CMD_SET_MOTION;
-  cmd[1] = AMTEC_MOTION_FRAMP_ACK;
+  /*
+  cmd[1] = AMTEC_MOTION_FSTEP_ACK;
+  FloatToBytes(cmd+2,newpan);
+  Uint16ToBytes(cmd+6,time);
+  */
+  cmd[1] = AMTEC_MOTION_FVEL_ACK;
   FloatToBytes(cmd+2,newpan);
   printf("sending pan command: %d (%f)\n", pan, newpan);
-  if(SendCommand(AMTEC_MODULE_PAN,cmd,6) < 0)
+  if(SendCommand(AMTEC_MODULE_PAN,cmd,8) < 0)
     return(-1);
   if(ReadAnswer(buf,sizeof(buf)) < 0)
     return(-1);
@@ -616,7 +685,7 @@ AmtecPowerCube::SetAbsPan(short pan)
 }
 
 int
-AmtecPowerCube::SetAbsTilt(short tilt)
+AmtecPowerCube::SetAbsTilt(short oldtilt, short tilt)
 {
   unsigned char buf[AMTEC_MAX_CMDSIZE];
   unsigned char cmd[8];
@@ -643,17 +712,21 @@ AmtecPowerCube::Main()
   short newpan, newtilt;
   short currpan, currtilt;
 
-  lastpan = lasttilt = 0;
-
   // first things first.  reset and home the unit.
   if(Reset() < 0)
   {
     PLAYER_ERROR("Reset() failed; bailing.");
     pthread_exit(NULL);
   }
-  if(Home() < 0)
+  if(return_to_home && (Home() < 0))
   {
     PLAYER_ERROR("Home() failed; bailing.");
+    pthread_exit(NULL);
+  }
+
+  if(GetAbsPanTilt(&lastpan,&lasttilt) < 0)
+  {
+    PLAYER_ERROR("GetAbsPanTilt() failed; bailing.");
     pthread_exit(NULL);
   }
 
@@ -662,14 +735,14 @@ AmtecPowerCube::Main()
     pthread_testcancel();
 
     GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
-    newpan = (short)ntohs(command.pan);
+    // reverse pan angle, to increase ccw
+    newpan = -(short)ntohs(command.pan);
     newtilt = (short)ntohs(command.tilt);
-    printf("newpan: %d\tnewtilt: %d\n", newpan, newtilt);
 
     if(newpan != lastpan)
     {
       // send new pan position
-      if(SetAbsPan(newpan))
+      if(SetAbsPan(lastpan,newpan))
       {
         PLAYER_ERROR("SetAbsPan() failed(); bailing.");
         pthread_exit(NULL);
@@ -681,7 +754,7 @@ AmtecPowerCube::Main()
     if(newtilt != lasttilt)
     {
       // send new tilt position
-      if(SetAbsTilt(newtilt))
+      if(SetAbsTilt(lasttilt,newtilt))
       {
         PLAYER_ERROR("SetAbsTilt() failed(); bailing.");
         pthread_exit(NULL);
