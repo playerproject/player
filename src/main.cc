@@ -192,9 +192,9 @@ void Interrupt( int dummy )
   //        the cleanup stuff that exit() does.  seem to fix the problem for
   //        some reason.  the fflush() is just to be sure all the data on
   //        the sockets is pushed out.  - BPG
-  //exit(0);
-  fflush(NULL);
-  _exit(0);
+  exit(0);
+  //fflush(NULL);
+  //_exit(0);
 }
 
 /* used to name incoming client connections */
@@ -241,7 +241,6 @@ int MatchDeviceName( const struct dirent* ent )
   // device names are > 2 chars long,; . and .. are not
   return( strlen( ent->d_name ) > 2 );
 }
-
 
 #ifdef INCLUDE_STAGE
 // looks int the directory for device entries, creates the devices

@@ -1,6 +1,0 @@
-- device timestamps aren't stored anywhere yet (one global time is updated)
-
-- can't handle multiple client connections (global namespace problem)
-
-- can't store data for more than one device of a given kind
-

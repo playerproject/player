@@ -63,7 +63,7 @@ ifdef INCLUDE_STAGE
 endif
 ifdef INCLUDE_AUDIO
   OBS += audiodevice.o
-  EXTRA_LIBS = -lrfftw -lfftw
+  EXTRA_LIBS += -lrfftw -lfftw
 endif
 ifdef INCLUDE_LASERBEACON
   OBS += laserdevice.o laserbeacondevice.o

@@ -29,6 +29,21 @@
 #include <netdb.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
+/* consumes the SYNCH packet */
+int player_read_synch(player_connection_t* conn)
+{
+  player_msghdr_t hdr;
+  if(player_read(conn, &hdr, NULL, 0) == -1)
+    return(-1);
+
+  if(hdr.type != PLAYER_MSGTYPE_SYNCH)
+  {
+    fprintf(stderr, "player_read_synch(): received wrong message type\n");
+    return(-1);
+  }
+  return(0);
+}
+
 /*
  * read laser data into designated buffer.
  *

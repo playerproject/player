@@ -178,55 +178,73 @@ int PlayerClient::Read()
   ClientProxy* thisproxy;
   
   if(!Connected())
-    {
-      fprintf(stderr,"ERROR PlayerClient not connected\n" );
-      return(-1);
-    }
-  // read as many times as necessary
-  for(int numreads = CountReadProxies();numreads;numreads--)
+  {
+    fprintf(stderr,"ERROR PlayerClient not connected\n" );
+    return(-1);
+  }
+  
+  // read until we get a SYNCH packet
+  for(;;)
   {
     if(player_read(&conn, &hdr, buffer, sizeof(buffer)))
     {
-      // mark this client as having fresh data
-      fresh = true;
-
       if(player_debug_level(-1) >= 2)
         fputs("WARNING: player_read() errored\n", stderr);
       return(-1);
     }
-    gettimeofday(&curr,NULL);
-
-    // update timestamp
-    if ((int) hdr.timestamp_usec > this->timestamp.tv_usec ||
-        (int) hdr.timestamp_sec > this->timestamp.tv_sec)
+    // is this the SYNCH packet?
+    if(hdr.type == PLAYER_MSGTYPE_SYNCH)
     {
+      //puts("GOT SYNCH PACKET");
+      break;
+    }
+    else if(hdr.type == PLAYER_MSGTYPE_DATA)
+    {
+      // mark this client as having fresh data
+      fresh = true;
+
+      gettimeofday(&curr,NULL);
+
+      // update timestamp
+      if ((int) hdr.timestamp_usec > this->timestamp.tv_usec ||
+          (int) hdr.timestamp_sec > this->timestamp.tv_sec)
+      {
         this->timestamp.tv_sec = hdr.timestamp_sec;
         this->timestamp.tv_usec = hdr.timestamp_usec;
+      }
+
+      //printf( "PlayerClient::Read() %d reads: (X,%d,%d)\n",
+      //    numreads, hdr.device, hdr.device_index );
+
+      if(!(thisproxy = GetProxy(hdr.device,hdr.device_index)))
+      {
+        if(player_debug_level(-1) >= 3)
+          fprintf(stderr,"WARNING: read unexpected data for device %d:%d\n",
+                  hdr.device, hdr.device_index);
+        continue;
+      }
+
+      // put the data in the object
+      if(hdr.size)
+        thisproxy->FillData(hdr,buffer);
+
+      // fill in the timestamps
+      thisproxy->timestamp.tv_sec = hdr.timestamp_sec;
+      thisproxy->timestamp.tv_usec = hdr.timestamp_usec;
+      thisproxy->senttime.tv_sec = hdr.time_sec;
+      thisproxy->senttime.tv_usec = hdr.time_usec;
+      //printf("setting receivedtime: %ld %ld\n", curr.tv_sec,curr.tv_usec);
+      thisproxy->receivedtime.tv_sec = curr.tv_sec;
+      thisproxy->receivedtime.tv_usec = curr.tv_usec;
     }
-
-    //printf( "PlayerClient::Read() %d reads: (X,%d,%d)\n",
-    //    numreads, hdr.device, hdr.device_index );
-
-    if(!(thisproxy = GetProxy(hdr.device,hdr.device_index)))
+    else
     {
-      if(player_debug_level(-1) >= 3)
-        fprintf(stderr,"WARNING: read unexpected data for device %d:%d\n",
-                hdr.device, hdr.device_index);
-      continue;
+      if(player_debug_level(-1)>=3)
+      {
+        fprintf(stderr,"PlayerClient::Read(): received unexpected message"
+                "type: %d\n", hdr.type);
+      }
     }
-
-    // put the data in the object
-    if(hdr.size)
-      thisproxy->FillData(hdr,buffer);
-    
-    // fill in the timestamps
-    thisproxy->timestamp.tv_sec = hdr.timestamp_sec;
-    thisproxy->timestamp.tv_usec = hdr.timestamp_usec;
-    thisproxy->senttime.tv_sec = hdr.time_sec;
-    thisproxy->senttime.tv_usec = hdr.time_usec;
-    //printf("setting receivedtime: %ld %ld\n", curr.tv_sec,curr.tv_usec);
-    thisproxy->receivedtime.tv_sec = curr.tv_sec;
-    thisproxy->receivedtime.tv_usec = curr.tv_usec;
   }
 
   return(0);
@@ -410,21 +428,6 @@ void PlayerClient::RemoveProxy(ClientProxy* proxy)
       }
     }
   }
-}
-
-// count devices with access 'r' or 'a'
-int PlayerClient::CountReadProxies()
-{
-  int numreads = 0;
-
-  for(ClientProxyNode* thisnode=proxies;thisnode;thisnode=thisnode->next)
-  {
-    if(thisnode->proxy && 
-       (thisnode->proxy->access == 'a' || thisnode->proxy->access == 'r'))
-      numreads++;
-  }
-
-  return(numreads);
 }
 
 // get the pointer to the proxy for the given device and index

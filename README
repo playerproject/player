@@ -1,9 +1,9 @@
 Player - one hell of a robot server
 ----------------------------------
 This is the Player device server, developed in the USC Robotics Research
-Labs, and released under the GNU Public License (GPL).  The Player homepage
-is at:
-  http://robotics.usc.edu/player
+Lab and HRL Labs, and released under the GNU Public License (GPL).  The 
+Player homepage is at:
+  http://playerstage.sourceforge.net
 
 Contents
 -------------
@@ -41,38 +41,37 @@ Build
 Install 
 --------------------
 - to install everything (server binary, client libraries and headers,
-    and examples) in the selected install directory (default is
-    /usr/local/player-<version>):
+    and examples) in the selected install directory (default is 
+    $(HOME)/player-<version>):
 
-      # make install
+      $ make install
 
   the executable server itself will install (by default) as 
-  /usr/local/player-<version>/bin/player.
+  $(HOME)/player-<version>/bin/player.
 
-- if you want to install somewhere else (like in your own home directory), 
+- if you want to install somewhere else (like in /usr/local)
     change INSTALL_BASE in Makefile.common
 
 Uninstall
 --------------------
 - to uninstall everything (server binary, client libraries and headers,
-    and examples) from wherever it was installed (you need to be root, 
-    of course):
+    and examples) from wherever it was installed:
 
-      # make uninstall
+      $ make uninstall
 
 Clean
 --------------------
 - to clean up (remove all binaries, etc.).  doesn't uninstall from
     the system.
 
-      # make clean
+      $ make clean
     
 
 Further Info
 ------------
 - now you've got Player installed.  but, how to use it? user manual
   is in ./doc.  for further info and updates, check:
-      http://robotics.usc.edu/player
+      http://playerstage.sourceforge.net
 
 
                     - brian gerkey (gerkey@robotics.usc.edu)

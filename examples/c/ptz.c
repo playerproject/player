@@ -114,6 +114,8 @@ int main(int argc, char **argv)
   {
     if(player_read_ptz(&conn, &ptzdata))
       exit(1);
+    if(player_read_synch(&conn))
+      exit(1);
 
     player_print_ptz(ptzdata);
 
