@@ -258,7 +258,7 @@ SickPLS::SickPLS(char* interface, ConfigFile* cf, int section)
   this->scan_min_segment = 0;
   this->scan_max_segment = 360;
   this->intensity = true;
-  this->range_res = 1;
+  this->range_res = 10;
   this->invert = cf->ReadInt(section, "invert", 0);
 
   this->port_rate = cf->ReadInt(section, "rate", DEFAULT_LASER_PORT_RATE);
@@ -312,7 +312,11 @@ int SickPLS::Setup()
       PLAYER_ERROR("connection failed");
       return 1;
     }
-    
+    PLAYER_MSG0("laser operating at 9600; changing to 38400");
+      if (SetLaserSpeed(38400))
+        return 1;
+      if (ChangeTermSpeed(38400))
+        return 1;
   }
 
   puts("laser ready");
@@ -773,7 +777,7 @@ int SickPLS::SetLaserMode()
   // This could take a while...
   //
   PLAYER_TRACE0("waiting for acknowledge");
-  len = ReadFromLaser(packet, sizeof(packet), true, 1000);
+  len = ReadFromLaser(packet, sizeof(packet), true, -1);
   if (len < 0)
     RETURN_ERROR(1, "error reading from laser")
       else if (len < 1)
@@ -801,6 +805,9 @@ int SickPLS::SetLaserSpeed(int speed)
 {
   ssize_t len;
   uint8_t packet[20];
+
+  if (SetLaserMode() != 0)
+    RETURN_ERROR(1,"request for config mode failed");
 
   packet[0] = 0x20;
   packet[1] = (speed == 9600 ? 0x42 : (speed == 38400 ? 0x40 : 0x48));
