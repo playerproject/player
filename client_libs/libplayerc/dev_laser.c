@@ -109,6 +109,7 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
 int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double max_angle,
                               int resolution, int intensity)
 {
+  int len;
   player_laser_config_t config;
 
   config.subtype = PLAYER_LASER_SET_CONFIG;
@@ -117,9 +118,13 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
   config.resolution = htons(resolution);
   config.intensity = (intensity ? 1 : 0);
 
-  return playerc_client_request(device->info.client, &device->info,
-                                (char*) &config, sizeof(config),
-                                (char*) &config, sizeof(config));    
+  len = playerc_client_request(device->info.client, &device->info,
+                               (char*) &config, sizeof(config),
+                               (char*) &config, sizeof(config));
+  if (len < 0)
+    return -1;
+
+  return 0;
 }
 
 
@@ -127,14 +132,23 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
 int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double *max_angle,
                               int *resolution, int *intensity)
 {
+  int len;
   player_laser_config_t config;
 
   config.subtype = PLAYER_LASER_GET_CONFIG;
 
-  if (playerc_client_request(device->info.client, &device->info,
-                             &config, sizeof(config), &config, sizeof(config)) != 0)
+  len = playerc_client_request(device->info.client, &device->info,
+                             &config, sizeof(config), &config, sizeof(config));
+  if (len < 0)
     return -1;
 
+  if (len != sizeof(config))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
+    return -1;
+  }
+  
+  
   *min_angle = (short) ntohs(config.min_angle) / 100.0 * M_PI / 180;
   *max_angle = (short) ntohs(config.max_angle) / 100.0 * M_PI / 180;
   *resolution = ntohs(config.resolution);

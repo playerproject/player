@@ -60,29 +60,29 @@ class PlayerQueue
 
     // constructor for Stage; creates a PlayerQueue with a chunk of memory
     // already set aside
-    PlayerQueue(unsigned char* tmpqueue, int tmpqueuelen);
+    PlayerQueue(void* tmpqueue, int tmpqueuelen);
 
     // push a new element on the queue.  returns the index of the new
     // element in the queue, or -1 if the queue is full
     int Push(void* client, unsigned short type, struct timeval* ts,
-             unsigned char* data, int size);
+             void* data, int size);
 
     // another form of Push, this one doesn't set the client pointer
-    int Push(unsigned char* data, int size);
+    int Push(void* data, int size);
 
     // pop an element off the queue. returns the size of the element,
     // or -1 if the queue is empty
-    int Pop(void** client, unsigned char* data, int size);
+    int Pop(void** client, void* data, int size);
     
     // another form of Pop, this one doesn't set the client pointer
-    int Pop(unsigned char* data, int size);
+    int Pop(void* data, int size);
 
     // a slightly different kind of Pop, this one searches the queue for an
     // element in which the client pointer matches the one provided.  Pops
     // the first such element and returns its size, or -1 if no such element
     // is found
     int Match(void* client, unsigned short* type, struct timeval* ts,
-              unsigned char* data, int size);
+              void* data, int size);
 
     // clear the queue; returns 0 on success; -1 on failure
     int Flush();

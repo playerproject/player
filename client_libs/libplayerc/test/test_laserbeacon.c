@@ -14,6 +14,7 @@
 int test_laserbeacon(playerc_client_t *client, int index)
 {
   int t, i;
+  int bit_count; double bit_width;
   playerc_laserbeacon_t *laserbeacon;
 
   printf("device [laserbeacon] index [%d]\n", index);
@@ -27,6 +28,24 @@ int test_laserbeacon(playerc_client_t *client, int index)
     return -1;
   }
   PASS();
+    
+  TEST("set configuration");
+  if (playerc_laserbeacon_set_config(laserbeacon, 5, 0.05) == 0)
+    PASS();
+  else
+    FAIL();
+
+  TEST("get configuration");
+  if (playerc_laserbeacon_get_config(laserbeacon, &bit_count, &bit_width) == 0)
+    PASS();
+  else
+    FAIL();
+
+  TEST("check configuration sanity");
+  if (bit_count != 5 || bit_width != 0.05)
+    FAIL();
+  else
+    PASS();
 
   for (t = 0; t < 10; t++)
   {

@@ -331,8 +331,13 @@ int playerc_laserbeacon_subscribe(playerc_laserbeacon_t *device, int access);
 // Un-subscribe from the laserbeacon device
 int playerc_laserbeacon_unsubscribe(playerc_laserbeacon_t *device);
 
-// Configure the laserbeacon device
-int playerc_laserbeacon_configure(playerc_laserbeacon_t *device, int bit_count, double bit_width);
+// Set the device configuration
+int playerc_laserbeacon_set_config(playerc_laserbeacon_t *device,
+                                   int bit_count, double bit_width);
+
+// Get the device configuration
+int playerc_laserbeacon_get_config(playerc_laserbeacon_t *device,
+                                   int *bit_count, double *bit_width);
 
 
 /***************************************************************************
