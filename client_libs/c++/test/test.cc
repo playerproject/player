@@ -153,6 +153,9 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "localize") == 0 || strcmp(device, "all") == 0)
       test_localize(&client, index);
 
+    if(strcmp(device, "audiodsp") == 0 || strcmp(device, "all") == 0)
+      test_audiodsp(&client, index);
+
     // BPS device
     /*
     if(strcmp(device, "bps") == 0 || strcmp(device, "all") == 0)

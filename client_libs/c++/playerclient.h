@@ -1700,6 +1700,56 @@ class AudioProxy : public ClientProxy
  *****************************************************************************/
 
 /*****************************************************************************
+ ** begin section AudioDSPProxy
+ *****************************************************************************/
+
+/** The {\tt AudioDSPProxy} class controls an {\tt acoustics} device.
+ */
+class AudioDSPProxy : public ClientProxy 
+{
+
+  public:
+    /** Format code of each sample */
+    int16_t sampleFormat;
+
+    /** Rate at which to sample (Hz) */
+    uint16_t sampleRate;
+
+    /** Number of channels */
+    uint8_t channels;
+
+    uint16_t freq[5];
+    uint16_t amp[5];
+
+    /** Constructor.
+      Leave the access field empty to start unconnected.
+     */
+    AudioDSPProxy (PlayerClient* pc, unsigned short index,
+                unsigned char access ='c')
+            : ClientProxy(pc,PLAYER_AUDIODSP_CODE,index,access) {}
+
+    int Configure(uint8_t channels, uint16_t sampleRate, 
+        int16_t sampleFormat=0xFFFFFFFF );
+
+    int GetConfigure();
+
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    /// Play a fixed-frequency tone
+    int PlayTone(unsigned short freq, unsigned short amp, unsigned int dur);
+    int PlayChirp(unsigned short freq, unsigned short amp, unsigned int dur,
+        const unsigned char bitString[], unsigned short bitStringLen);
+    int Replay();
+
+    /// Print the current data.
+    void Print ();
+};
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+/*****************************************************************************
  ** begin section BumperProxy
  *****************************************************************************/
 

@@ -549,6 +549,7 @@ CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num
 
         // devices not implemented
         case PLAYER_AUDIO_CODE:   
+        case PLAYER_AUDIODSP_CODE:
         case PLAYER_AIO_CODE:
         case PLAYER_DIO_CODE:
           printf("Device type %d not yet implemented in Stage\n", 

@@ -302,6 +302,7 @@ int PlayerClient::Read()
     }
     else
     {
+      printf("else\n");
       if(player_debug_level(-1)>=3)
       {
         fprintf(stderr,"PlayerClient::Read(): received unexpected message"
