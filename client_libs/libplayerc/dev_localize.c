@@ -177,6 +177,109 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
 }
 
 
+// Retrieve the occupancy map info.  The info is written into the proxy
+// structure.
+int playerc_localize_get_map_info(playerc_localize_t *device)
+{
+  int i, j;
+  int ni, nj;
+  int sx, sy;
+  int si, sj;
+  int len;
+  size_t reqlen;
+  player_localize_map_info_t info;
+  player_localize_map_data_t data;
+  
+  // Get the map header
+  info.subtype = PLAYER_LOCALIZE_GET_MAP_INFO_REQ;
+  reqlen = sizeof(info.subtype);
+  len = playerc_client_request(device->info.client, &device->info,
+                               &info, reqlen, &info, sizeof(info));
+  if (len < 0)
+    return -1;
+  if (len != sizeof(info))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(info));
+    return -1;
+  }
+
+  device->map_size_x = ntohl(info.width);
+  device->map_size_y = ntohl(info.height);
+  device->map_scale = 1000.0 / ((double) (int32_t) ntohl(info.scale));
+
+  device->map_tile_x = 0;
+  device->map_tile_y = 0;
+
+  // Allocate space for the map
+  if (device->map_cells)
+    free(device->map_cells);
+  device->map_cells = malloc(device->map_size_x * device->map_size_y * sizeof(device->map_cells[0]));
+
+  return 0;
+}
+
+
+// Retrieve a tile from occupancy map.  The map is written into the proxy
+// structure.
+int playerc_localize_get_map_tile(playerc_localize_t *device)
+{
+  int i, j;
+  int ni, nj;
+  int sx, sy;
+  int si, sj;
+  int len;
+  size_t reqlen;
+  player_localize_map_info_t info;
+  player_localize_map_data_t data;
+
+  // Already loaded
+  if (device->map_tile_y >= device->map_size_y)
+    return -1;
+      
+  // Tile size
+  sx = (int) sqrt(sizeof(data.data));
+  sy = sx;
+  assert(sx * sy < sizeof(data.data));
+
+  i = device->map_tile_x;
+  j = device->map_tile_y;
+  
+  // Get the map data in tiles
+  si = MIN(sx, device->map_size_x - i);
+  sj = MIN(sy, device->map_size_y - j);
+
+  data.subtype = PLAYER_LOCALIZE_GET_MAP_DATA_REQ;
+  data.col = htonl(i);
+  data.row = htonl(j);
+  data.width = htonl(si);
+  data.height = htonl(sj); 
+  reqlen = sizeof(data) - sizeof(data.data);
+    
+  len = playerc_client_request(device->info.client, &device->info,
+                               &data, reqlen, &data, sizeof(data));
+  if (len < 0)
+    return -1;
+  if (len < reqlen + si * sj)
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d < %d)", len, reqlen + si * sj);
+    return -1;
+  }
+
+  for (nj = 0; nj < sj; nj++)
+    for (ni = 0; ni < si; ni++)
+      device->map_cells[(i + ni) + (j + nj) * device->map_size_x] = data.data[ni + nj * si];
+
+  device->map_tile_x += sx;
+  if (device->map_tile_x >= device->map_size_x)
+  {
+    device->map_tile_x = 0;
+    device->map_tile_y += sy;
+  }
+  
+  return 0;
+}
+
+
 // Retrieve the occupancy map.  The map is written into the proxy
 // structure.
 int playerc_localize_get_map(playerc_localize_t *device)
@@ -223,6 +326,8 @@ int playerc_localize_get_map(playerc_localize_t *device)
     {
       si = MIN(sx, device->map_size_x - i);
       sj = MIN(sy, device->map_size_y - j);
+
+      printf("%d %d\n", i, j);
       
       data.subtype = PLAYER_LOCALIZE_GET_MAP_DATA_REQ;
       data.col = htonl(i);

@@ -742,10 +742,13 @@ typedef struct _playerc_localize_t
 
   /** Map dimensions (cells). */
   int map_size_x, map_size_y;
-
+  
   /** Map scale (m/cell). */
   double map_scale;
 
+  /** Next map tile to read. */
+  int map_tile_x, map_tile_y;
+  
   /** Map data (empty = -1, unknown = 0, occupied = +1). */
   int8_t *map_cells;
 
@@ -778,7 +781,15 @@ int playerc_localize_unsubscribe(playerc_localize_t *device);
 /** Set the the robot pose (mean and covariance). */
 int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3][3]);
 
-/** Retrieve the occupancy map.  The map is written into the proxy
+/** Retrieve the occupancy map info.  The info is written into the proxy
+    structure. */
+int playerc_localize_get_map_info(playerc_localize_t *device);
+
+/** Retrieve a tile from occupancy map.  The map is written into the proxy
+    structure. */
+int playerc_localize_get_map_tile(playerc_localize_t *device);
+
+/** Retrieve the entire occupancy map.  The map is written into the proxy
    structure. */
 int playerc_localize_get_map(playerc_localize_t *device);
 
