@@ -286,6 +286,8 @@ Trogdor::Main()
       PLAYER_ERROR("failed to get odometry");
       pthread_exit(NULL);
     }
+
+    UpdateOdom(ltics,rtics);
   }
 }
 
@@ -429,6 +431,7 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
 void
 Trogdor::UpdateOdom(int ltics, int rtics)
 {
+  // TODO: fill this in
 }
 
 // Validate XOR checksum
