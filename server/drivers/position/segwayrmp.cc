@@ -18,23 +18,53 @@
  *
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+
 #include "player.h"
 #include "device.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
+#define DEFAULT_SEGWAYRMP_PORT "/dev/can0"
+
+// copied from can.h
+#define CAN_MSG_LENGTH 8
+
+struct canmsg_t 
+{       
+  short           flags;
+  int             cob;
+  unsigned long   id;
+  unsigned long   timestamp;
+  unsigned int    length;
+  char            data[CAN_MSG_LENGTH];
+} __attribute__ ((packed));
+
+
+
 // Driver for robotic Segway
 class SegwayRMP : public CDevice
 {
-  // Constructor
-  public: SegwayRMP(char* interface, ConfigFile* cf, int section);
+  private: 
+    // name of can port
+    const char* can_port;
+    // file descriptor to can port
+    int can_fd;
+    // Main function for device thread.
+    virtual void Main();
 
-  // Setup/shutdown routines.
-  public: virtual int Setup();
-  public: virtual int Shutdown();
+  public: 
+    // Constructor	  
+    SegwayRMP(char* interface, ConfigFile* cf, int section);
 
-  // Main function for device thread.
-  private: virtual void Main();
+    // Setup/shutdown routines.
+    virtual int Setup();
+    virtual int Shutdown();
 };
 
 // Initialization function
@@ -60,16 +90,51 @@ SegwayRMP::SegwayRMP(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_position_data_t), 
               sizeof(player_position_cmd_t), 0, 0)
 {
+  can_port = cf->ReadString(section, "port", DEFAULT_SEGWAYRMP_PORT);
+  can_fd=-1;
 }
 
 int
 SegwayRMP::Setup()
 {
-  return(-1);
+  if(can_fd >= 0)
+    close(can_fd);
+
+  if((can_fd = open(can_port, O_RDWR)) < 0)
+  {
+    PLAYER_ERROR2("couldn't open CAN port %s: %s", can_port,strerror(errno));
+    return(-1);
+  }
+  printf("opened port %s\n", can_port);
+  StartThread();
+  return(0);
 }
 
 int
 SegwayRMP::Shutdown()
 {
-  return(-1);
+  StopThread();
+  if(can_fd >= 0)
+    close(can_fd);
+  return(0);
+}
+
+// Main function for device thread.
+void 
+SegwayRMP::Main()
+{
+  canmsg_t msg;
+  int numread;
+
+  for(;;)
+  {
+    puts("calling read");
+    if((numread = read(can_fd,(void*)&msg, sizeof(msg))) < 0)
+    {
+      PLAYER_ERROR1("read errored: %s",strerror(errno));
+      pthread_exit(NULL);
+    }
+
+    printf("read %d bytes\n", numread);
+  }
 }
