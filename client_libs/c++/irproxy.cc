@@ -58,6 +58,7 @@ IRProxy::IRProxy(PlayerClient *pc, unsigned short index,
   ClientProxy(pc, PLAYER_IR_CODE, index, access) 
 {
   memset(&ir_pose, 0, sizeof(ir_pose));
+  GetIRPose();
 
   // now set up default M & B values for the IRs
   for (int i =0;i < PLAYER_IR_MAX_SAMPLES; i++) {
@@ -226,9 +227,9 @@ IRProxy::CalcStdDev(int w, unsigned  short range)
 void
 IRProxy::Print()
 {
-  printf("#REB IR(%d:%d) - %c\n", m_device_id.code,
+  printf("#IR(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
-  for (int i = 0;i < PLAYER_IR_MAX_SAMPLES; i++) {
+  for (int i = 0;i < ir_pose.pose_count; i++) {
     printf("IR%d:\tR=%d\tV=%d\tSTD=%g\n", i, ranges[i], voltages[i], 
 	   stddev[i]);
   }
