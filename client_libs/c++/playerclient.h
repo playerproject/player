@@ -869,19 +869,22 @@ class FiducialProxy : public ClientProxy
   
   /**  Attempt to send a message to a fiducial. See the Player manual
        for details of the message packet. Use a target_id of -1 to
-       broadcast. Note: these message functions use configs that are
-       probably only supported by Stage-1.4 (or later) fiducial
-       driver.
+       broadcast. If consume is true, the message is sent only
+       once. If false, the message may be sent multiple times, but
+       this is device dependent. Note: these message functions use
+       configs that are probably only supported by Stage-1.4 (or
+       later) fiducial driver.
   */
 
-  int SendMessage( player_fiducial_msg_t* msg );
-
-  /** Read the last message received from a fiducial. The packet is
-      completely filled in by the. If consume is true, the message is
-      deleted ffom the device on reading. If false, the message is
-      kept and can be read again. Note: these message functions use
-      configs that are probably only supported by Stage-1.4 (or later)
-      fiducial driver.
+  int SendMessage( player_fiducial_msg_t* msg, bool consume );
+  
+  /* Read a message received by the device. If a message is available,
+     the recv_msg packet is filled in and 0 is returned.  no message can
+     be retrieved from the device, returns -1. If consume is true, the
+     message is deleted from the device on reading. If false, the
+     message is kept and can be read again. Note: these message
+     functions use configs that are probably only supported by Stage-1.4
+     (or later) fiducial driver.
   */
 
   int RecvMessage( player_fiducial_msg_t* msg, bool consume );
