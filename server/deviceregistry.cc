@@ -140,8 +140,8 @@ void RegularMCL_Register(DriverTable* table);
 void AdaptiveMCL_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_MCOM
-void MCom_Register(DriverTable* table);
+#ifdef INCLUDE_LIFOMCOM
+void LifoMCom_Register(DriverTable* table);
 #endif
 
 /* this array lists the interfaces that Player knows how to load, along with
@@ -168,7 +168,7 @@ player_interface_t interfaces[] = {
   {PLAYER_IR_CODE, PLAYER_IR_STRING, "reb_ir"},
   {PLAYER_WAVEFORM_CODE, PLAYER_WAVEFORM_STRING, "wave_audio"},
   {PLAYER_LOCALIZE_CODE, PLAYER_LOCALIZE_STRING, "regular_mcl"},
-  {PLAYER_MCOM_CODE, PLAYER_MCOM_STRING, "mcom"},
+  {PLAYER_MCOM_CODE, PLAYER_MCOM_STRING, "lifomcom"},
   {0,NULL,NULL}
 };
 
@@ -297,8 +297,8 @@ register_devices()
   AdaptiveMCL_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_MCOM
-  MCom_Register(driverTable);
+#ifdef INCLUDE_LIFOMCOM
+  LifoMCom_Register(driverTable);
 #endif
 }
 

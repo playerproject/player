@@ -13,7 +13,7 @@ int
 test_mcom(PlayerClient* client, int index)
 {
   unsigned char access;
-  MComProxy mcom(client,index);
+  MComProxy mcom(client,index,'c',robot);
 
   printf("device [mcom] index [%d]\n", index);
 

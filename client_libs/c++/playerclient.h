@@ -1700,7 +1700,7 @@ public:
     //@}
 
 public:
-    MComProxy(PlayerClient* pc, unsigned short index, unsigned char access = 'c') : ClientProxy(pc,PLAYER_MCOM_CODE,index,access){}
+    MComProxy(PlayerClient* pc, unsigned short index, unsigned char access = 'c', unsigned short robot=0) : ClientProxy(pc,PLAYER_MCOM_CODE,index,access,robot){}
 
     /** Read and remove the most recent buffer in 'channel' with type 'type'.
      *  The result can be read with LastData().
