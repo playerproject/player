@@ -1,6 +1,6 @@
 /***************************************************************************
  * Desc: Test program for the Player C++ client
- * Author: Andrew Howard, Brian Gerkey
+ * Author: Andrew Howard, Brian Gerkey, Richard Vaughan
  * Date: 28 May 2002
  * CVS: $Id$
  **************************************************************************/

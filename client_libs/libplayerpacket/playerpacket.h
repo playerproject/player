@@ -69,7 +69,14 @@ extern "C" {
 			    double* sensor_width, double* sensor_height,
 			    double* target_width, double* target_height );
   
+  void FiducialFovPack( player_fiducial_fov_t* fov, int setflag,
+			double min_range, double max_range, 
+			double view_angle );
 
+  
+  void FiducialFovUnpack( player_fiducial_fov_t* fov,
+			  double* min_range, double* max_range, 
+			  double* view_angle );
 
 #ifdef __cplusplus
 }
