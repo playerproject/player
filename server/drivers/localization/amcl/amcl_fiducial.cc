@@ -84,12 +84,11 @@ int AMCLFiducial::Load(ConfigFile* cf, int section)
 
   this->range_max = cf->ReadLength(section, "laser_range_max", 8.192);
   this->range_var = cf->ReadLength(section, "laser_range_var", 0.10);
+  this->angle_var = (M_PI/180.0) * cf->ReadInt(section, "laser_angle_var", 1 );
   this->range_bad = cf->ReadFloat(section, "laser_range_bad", 0.10);
 
   this->time.tv_sec = 0;
   this->time.tv_usec = 0;
-
-  PLAYER_WARN( "Load successful" );
 
   return 0;
 }
@@ -109,7 +108,6 @@ int AMCLFiducial::read_map_file(const char* map_filename)
     //parse fiducial config file
 	int num_landmarks;
     fscanf( map_file, "%d\n", &(num_landmarks) );
-//    printf( "%d\n", num_landmarks );
 
     int x = num_landmarks;
 	this->fmap = fiducial_map_alloc();
@@ -125,7 +123,6 @@ int AMCLFiducial::read_map_file(const char* map_filename)
 		this->fmap->fiducials[i][0] = (double) x / 1000.0;
         fscanf( map_file, "%d\n", &(y) );
 		this->fmap->fiducials[i][1] = (double) y / 1000.0;
-//        printf( "%d %f %f %f\n", i, this->fmap->fiducials[i][2] , this->fmap->fiducials[i][0], this->fmap->fiducials[i][1] );
     }
 	return 0;
 }
@@ -165,8 +162,6 @@ int AMCLFiducial::Setup(void)
     PLAYER_ERROR("unable to subscribe to fiducial device");
     return -1;
   }
-
-  PLAYER_WARN( "Setup Success" );
 
   return 0;
 }
@@ -346,8 +341,8 @@ AMCLSensorData *AMCLFiducial::GetData(void)
   // Read and byteswap the range data
   for (i = 0; i < ndata->fiducial_count; i++)
   {
-    double x = ((int16_t) ntohs(data.fiducials[i].pos[0]))/ 1000.0;
-    double y = ((int16_t) ntohs(data.fiducials[i].pos[1]))/ 1000.0;
+    double x = ((int16_t) ntohl(data.fiducials[i].pos[0]))/ 1000.0;
+    double y = ((int16_t) ntohl(data.fiducials[i].pos[1]))/ 1000.0;
     
     r = hypot( y, x );
     b = atan2( y, x );
@@ -383,8 +378,9 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
   AMCLFiducial *self;
   int i;
   double z, c, pz;
+  double b, v, pb;
   double p;
-  double map_range;
+  double map_range, map_bearing;
   double obs_range, obs_bearing;
   int obs_id;
   
@@ -394,9 +390,6 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
   pose = pf_vector_coord_add(self->laser_pose, pose);
 
   p = 1.0;
-
-  if( self->fmap )
-  {
 
   for (i = 0; i < data->fiducial_count; i++)
   {
@@ -419,10 +412,12 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
 
       // Compute the range according to the map
       map_range = fiducial_map_calc_range( self->fmap, pose.v[0], pose.v[1],                               pose.v[2] + obs_bearing, self->range_max + 1.0, obs_id, id);
+      map_bearing = fiducial_map_calc_bearing( self->fmap, pose.v[0], pose.v[1], pose.v[2], self->range_max + 1.0, obs_id, id );
 
       if (obs_range >= self->range_max && map_range >= self->range_max)
       {
         pz = 1.0;
+        pb = 1.0;
       }
       else
       {
@@ -431,16 +426,25 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
         c = self->range_var;
         z = obs_range - map_range;
         pz = self->range_bad + (1 - self->range_bad) * exp(-(z*z)/(2*c*c));
+        
+        v = self->angle_var;
+        b = obs_bearing - map_bearing;
+        pb = self->range_bad + (1 - self->range_bad) * exp(-(b*b)/(2*v*v));
+        
       }
 
+      //gives the fiducial range greater weight
       p *= pz;
+      p *= pz;
+      p *= pz;
+      p *= pz;
+      
+      //bearing a little less
+      p *= pb;
+      p *= pb;
+      p *= pb;
+      
     }
-  }
-  
-  }
-  else
-  {
-//    PLAYER_WARN( "fmap is undefined" );
   }
   //printf("%e\n", p);
   //assert(p >= 0);
@@ -470,7 +474,6 @@ void AMCLFiducial::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
   {
 	x[0] = '0' + (char) ((int) fmap->fiducials[i][2] / 10);
 	x[1] = '0' + (char) ((int) fmap->fiducials[i][2] % 10);
-  	printf( "mx: %f my: %f\n", fmap->fiducials[i][0], fmap->fiducials[i][1] );
      rtk_fig_ellipse(this->map_fig, fmap->fiducials[i][0], fmap->fiducials[i][1], 0, 0.1, 0.1, 1 );
 	 rtk_fig_text( this->map_fig, fmap->fiducials[i][0], fmap->fiducials[i][1]+0.2, 0, x );
   
@@ -559,5 +562,18 @@ AMCLFiducialMap* fiducial_map_alloc(void)
 }
 
 
+double fiducial_map_calc_bearing( AMCLFiducialMap *fmap, double ox, double oy, double oa, double max_range, int id, int k)
+{
 
-
+  double b = atan2( fmap->fiducials[k][1]-oy, fmap->fiducials[k][0] -ox) - oa;
+  if( b > M_PI  )
+  {
+    b -= 2*M_PI;
+  }
+  if( b < -M_PI  )
+  {
+    b += 2*M_PI;
+  }
+        
+  return b;
+}
