@@ -50,10 +50,11 @@
 #include "stg_time.h"
 
 // init static vars
-char* Stage1p4::world_file = STG_DEFAULT_WORLDFILE;
+const char* Stage1p4::worldfile_name = STG_DEFAULT_WORLDFILE;
 stg_client_t* Stage1p4::stage_client = NULL;
 ConfigFile* Stage1p4::config = NULL;
 CWorldFile Stage1p4::wf;
+char* Stage1p4::world_name;
 
 // declare Player's emergency stop function (defined in main.cc)
 void Interrupt( int dummy );
@@ -88,21 +89,9 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
       
       PLAYER_TRACE1( "attempting to resolve Stage model \"%s\"", model_name );
       
-      // now look up the Stage worldfile section number for this device
-      // (note - this is NOT our Player config file section number)
-
-      this->model = NULL;
-
-      if( this->stage_client )
-	{	  
-	  for( int i=1; i<this->stage_client->model_count; i++ )
-	    if( strcmp( model_name, this->stage_client->models[i]->name) == 0)
-	      {
-		this->model =this->stage_client->models[i];
-		break;
-	      }
-	}
-      
+      this->model = stg_client_get_model( Stage1p4::stage_client,
+					  Stage1p4::world_name, 
+					  model_name );
       if( this->model  == NULL )
 	PLAYER_ERROR1( "device %s can't find a Stage model with the same name",
 		       model_name );
@@ -112,27 +101,15 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
 
 int Stage1p4::Setup()
 { 
-  stg_subscription_t sub;
-  sub.id = this->model->id;
-  sub.prop = this->subscribe_prop;
-  sub.status = STG_SUB_SUBSCRIBED;
-
-  stg_fd_msg_write( this->stage_client->pollfd.fd, 
-		    STG_MSG_SUBSCRIBE, &sub, sizeof(sub) );
-  
+  puts( "SUBSCRIBING" );
+  stg_model_subscribe( this->model, this->subscribe_prop, 0.1 );  
   return 0;
 };
 
 int Stage1p4::Shutdown()
 { 
-  stg_subscription_t sub;
-  sub.id = this->model->id;
-  sub.prop = this->subscribe_prop;
-  sub.status = STG_SUB_UNSUBSCRIBED;
-
-  stg_fd_msg_write( this->stage_client->pollfd.fd, 
-		    STG_MSG_SUBSCRIBE, &sub, sizeof(sub) );
-  
+  puts( "UNSUBSCRIBING" );
+  stg_model_unsubscribe( this->model, this->subscribe_prop );  
   return 0;
 };
 
@@ -141,7 +118,10 @@ int Stage1p4::Shutdown()
 Stage1p4::~Stage1p4()
 {
   if( this->stage_client )
-    stg_client_free( this->stage_client );
+ {
+   stg_client_destroy( this->stage_client );
+   this->stage_client = NULL;
+ }
 }
 
 // END CLASS

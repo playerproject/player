@@ -25,7 +25,8 @@ x *  You should have received a copy of the GNU General Public License
 
 #include "device.h"
 #include "configfile.h"
-#include <stagecpp.hh> // from the Stage 1.4 distro
+#include "stage.h"
+#include "worldfile.h"
 
 class Stage1p4 : public CDevice
 {
@@ -33,14 +34,15 @@ class Stage1p4 : public CDevice
 
   static ConfigFile* config;
   static CWorldFile wf;
-  static char* world_file; // filename
+  static const char* worldfile_name; // filename
   static stg_client_t* stage_client;
-  
+  static char* world_name;
+
   stg_model_t* model; // points inside the shared client to our
 		      // individual model data
   
   // the property we automatically subscribe to on Setup();
-  stg_prop_id_t subscribe_prop;
+  stg_id_t subscribe_prop;
 
   Stage1p4(char* interface, ConfigFile* cf, int section, 
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen);
