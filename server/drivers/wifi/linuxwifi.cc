@@ -249,21 +249,19 @@ LinuxWiFi::Setup()
     return -1;
   }
   
-  char *reqbuf = new char[sizeof(reqbuf) *2];
-  memset(reqbuf, 0, sizeof(reqbuf));
+  struct iw_range reqbuf;
   
   // set the data part of the request
-  req->u.data.pointer = (caddr_t) reqbuf;
-  req->u.data.length = sizeof(reqbuf);
+  req->u.data.pointer = (caddr_t)&reqbuf;
+  req->u.data.length = sizeof(struct iw_range);
   req->u.data.flags = 0;
   
-  delete [] reqbuf;
-
   // get range info... get it here because we set a flag on 
   // how it returns, so we know how to update
-  if (ioctl(sfd, SIOCGIWRANGE, req) >= 0) {
+  if(ioctl(sfd, SIOCGIWRANGE, req) >= 0) 
+  {
     has_range = true;
-    memcpy((char *) range, reqbuf, sizeof(struct iw_range));
+    memcpy((char *) range, &reqbuf, sizeof(struct iw_range));
   }
 
   return 0;
