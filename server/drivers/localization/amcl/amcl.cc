@@ -483,8 +483,10 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   
   // Create the sensor data queue
   this->q_len = 0;
+  this->q_start = 0;
   this->q_size = 20000;
   this->q_data = new AMCLSensorData*[this->q_size];
+  memset(this->q_data,0,sizeof(AMCLSensorData*)*this->q_size);
 
   // Particle filter settings
   this->pf = NULL;
@@ -658,7 +660,7 @@ void AdaptiveMCL::Push(AMCLSensorData *data)
 
   this->q_data[i] = data;
 
-  this->Unlock();  
+  this->Unlock();
   return;
 }
 

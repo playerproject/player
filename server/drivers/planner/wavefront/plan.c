@@ -65,6 +65,7 @@ void plan_free(plan_t *plan)
   if (plan->cells)
     free(plan->cells);
   free(plan->queue);
+  free(plan->waypoints);
   free(plan);
 
   return;
