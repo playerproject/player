@@ -191,6 +191,7 @@ AC_OUTPUT(Makefile
           server/drivers/waveform/Makefile 
           server/drivers/comms/Makefile 
           server/drivers/blobfinder/Makefile 
+          server/drivers/blobfinder/cmvision/Makefile
           server/drivers/wifi/Makefile 
           server/drivers/speech/Makefile 
           server/drivers/mixed/p2os/Makefile 
