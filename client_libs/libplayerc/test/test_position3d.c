@@ -36,7 +36,7 @@ int test_position3d(playerc_client_t *client, int index)
   printf("position3d geom: [%6.3f %6.3f %6.3f] [%6.3f %6.3f]\n",
          device->pose[0], device->pose[1], device->pose[2], device->size[0], device->size[1]);
   
-  for (t = 0; t < 3; t++)
+  for (t = 0; t < 3000; t++)
   {
     TEST1("reading data (attempt %d)", t);
 

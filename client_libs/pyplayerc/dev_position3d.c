@@ -176,9 +176,9 @@ static PyObject *position3d_str(PyObject *self)
   snprintf(str, sizeof(str),
            "position3d %02d %013.3f"
            " %+09.3f %+09.3f %+09.3f"
+           " %+09.4f %+09.4f %+09.4f"
            " %+09.3f %+09.3f %+09.3f"
-           " %+09.3f %+09.3f %+09.3f"
-           " %+09.3f %+09.3f %+09.3f"
+           " %+09.4f %+09.4f %+09.4f"
            " %d",
            
            pyposition3d->position3d->info.index,
