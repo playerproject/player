@@ -408,7 +408,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             entry = driverTable->GetDriverEntry((char*) deviceIO->drivername);
             if (!entry)
             { 
-              PLAYER_WARN("Player support for %s device unavailable.", deviceIO->drivername);
+              PLAYER_WARN1("Player support for %s device unavailable.", deviceIO->drivername);
             }
             else
             {
@@ -436,7 +436,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             entry = driverTable->GetDriverEntry((char*) deviceIO->drivername);
             if (!entry)
             {
-              PLAYER_WARN("Player support for %s device unavailable.", deviceIO->drivername);
+              PLAYER_WARN1("Player support for %s device unavailable.", deviceIO->drivername);
             }
             else
             {
@@ -459,7 +459,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           }
           else
           {
-            PLAYER_WARN("Player device %s not recognized.", deviceIO->drivername);
+            PLAYER_WARN1("Player device %s not recognized.", deviceIO->drivername);
           }
         }
         break;
