@@ -71,12 +71,7 @@ class CMVisionBF:public Driver
     const char* colorfile;
     int camera_index;
 
-    int header_len; // length of incoming packet header
-    int header_elt_len; // length of each header element
-    int blob_size;  // size of each incoming blob
-
     CMVision *vision;
-
     capture *cap;
 
   public:
@@ -113,10 +108,6 @@ CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
   // first, get the necessary args
   colorfile = cf->ReadString(section, "colorfile", "");
   camera_index = cf->ReadInt(section, "camera_index", 0);
-  
-  header_len = CMV_HEADER_SIZE;
-  blob_size = CMV_BLOB_SIZE;
-  header_elt_len = header_len / PLAYER_BLOBFINDER_MAX_CHANNELS;
 }
     
 int
@@ -155,11 +146,13 @@ CMVisionBF::Setup()
 
   //vision->enable(CMV_DENSITY_MERGE);
 
+  /* REMOVE
   player_blobfinder_data_t dummy;
   memset(&dummy,0,sizeof(dummy));
   // zero the data buffer
   PutData((unsigned char*)&dummy,
           sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),NULL);
+  */
 
   puts("done.");	
 
@@ -190,9 +183,9 @@ CMVisionBF::Shutdown()
 void
 CMVisionBF::Main()
 {
-  int num_blobs;
-  int i,j;
+  int ch;
   CMVision::region *r=NULL;
+  player_blobfinder_blob_t *blob;
   rgb c;
 
   // we'll transform the data into this structured buffer
@@ -200,137 +193,94 @@ CMVisionBF::Main()
 
   /* loop and read */
   for(;;)
+  {
+    // clean our buffers
+    memset(&local_data,0,sizeof(local_data));
+
+    int nwidth = ((captureCamera*)cap)->Width();
+    int nheight = ((captureCamera*)cap)->Height();
+    if ((width!=nwidth)!=(height!=nheight))
     {
-      // clean our buffers
-      memset(&local_data,0,sizeof(local_data));
-
-      int nwidth = ((captureCamera*)cap)->Width();
-      int nheight = ((captureCamera*)cap)->Height();
-      if ((width!=nwidth)!=(height!=nheight))
-      {
-        width = nwidth;
-        height = nheight;
-        vision->initialize(width,height);
-      }
-      
-      // put in some stuff that doesnt change (almost...)
-      local_data.width = htons(this->width);
-      local_data.height = htons(this->height);
-      
-      /* test if we are supposed to cancel */
-      pthread_testcancel();
-
-      //get the current frame and process it
-      if (!vision->processFrame((image_pixel*)cap->captureFrame()))
-      {
-        fprintf(stderr,"Frame error.\n");
-        continue; //no frame processed
-      }
-      
-      // put image time in blob struct
-      //local_data.time_sec = htonl((uint32_t)(cap->getFrameTime()/1e9));
-      //local_data.time_usec = htonl((cap->getFrameTime()/1000)%1000000);
-
-      for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
-      {
-        //determine the index of the first entry for this channel
-        if (i==0)
-          local_data.header[i].index = 0;
-        else
-          local_data.header[i].index = ntohs(local_data.header[i-1].index) +
-                  ntohs(local_data.header[i-1].num);
-        local_data.header[i].index = 
-                htons(local_data.header[i].index);
-
-        //number of entries in this channel
-        local_data.header[i].num = vision->numRegions(i);
-        if (local_data.header[i].num>CMV_MAX_BLOBS_PER_CHANNEL)
-          local_data.header[i].num=CMV_MAX_BLOBS_PER_CHANNEL;
-
-        local_data.header[i].num = 
-                htons(local_data.header[i].num);
-      }
-
-      /* sum up the data we expect */
-      num_blobs=0;
-      for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
-	num_blobs += ntohs(local_data.header[i].num);
-      
-     
-      for(i=0;i<num_blobs;i++)
-	{
-	  // Figure out the blob channel number
-	  int ch = 0;
-	  for (j = 0; j < PLAYER_BLOBFINDER_MAX_CHANNELS; j++)
-	    {
-	      if (i >= ntohs(local_data.header[j].index) &&
-		  i < ntohs(local_data.header[j].index) + 
-		  ntohs(local_data.header[j].num))
-		{
-		  ch = j;
-		  break;
-		}
-	    }
-
-	  /*
-	  if (i>=ntohs(local_data.header[j].index) + 
-	      ntohs(local_data.header[j].num))
-	    fprintf(stderr,"Blob index out of bounds.\n");
-	  */
-	  
-	  // set the descriptive color
-	  c=vision->getColorVisual(ch);
-	  j=int(c.red)<<16 | int(c.green)<<8 | int(c.blue);
-	  local_data.blobs[i].color = htonl(j);
-	  
-	  //grab the region for this blob
-	  if (ntohs(local_data.header[ch].index)==i) //new color
-	    r=vision->getRegions(ch);
-	  else
-	    r=(r==NULL)?r:r->next;
-	  
-	  // stage puts the range in here to simulate stereo vision. we
-	  // can't do that (yet?) so set the range to zero - rtv
-	  local_data.blobs[i].range = 0;
-	  
-	  if (r!=NULL)
-	    {
-	      // get the area first
-	      local_data.blobs[i].area = r->area;
-	      local_data.blobs[i].area = htonl(local_data.blobs[i].area);
-	      
-	      // convert the other entries to byte-swapped shorts
-	      local_data.blobs[i].x = uint16_t(r->cen_x+.5);
-	      local_data.blobs[i].x = htons(local_data.blobs[i].x);
-	      
-	      local_data.blobs[i].y = uint16_t(r->cen_y+.5);
-	      local_data.blobs[i].y = htons(local_data.blobs[i].y);
-	      
-	      local_data.blobs[i].left = r->x1;
-	      local_data.blobs[i].left = htons(local_data.blobs[i].left);
-	      
-	      local_data.blobs[i].right = r->x2;
-	      local_data.blobs[i].right = htons(local_data.blobs[i].right);
-	      
-	      local_data.blobs[i].top = r->y1;
-	      local_data.blobs[i].top = htons(local_data.blobs[i].top);
-	      
-	      local_data.blobs[i].bottom = r->y2;
-	      local_data.blobs[i].bottom = htons(local_data.blobs[i].bottom);
-	    }
-	  else
-	    fprintf(stderr,"Got a NULL region: #%d on channel %d, %d of %d\n",
-		    i,ch,i-ntohs(local_data.header[ch].index)+1,ntohs(local_data.header[ch].num));
-	}
-      
-      /* test if we are supposed to cancel */
-      pthread_testcancel();
-      
-      /* got the data. now fill it in */
-      PutData((unsigned char*)&local_data, 
-	      (PLAYER_BLOBFINDER_HEADER_SIZE + 
-	       num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),NULL);
+      width = nwidth;
+      height = nheight;
+      vision->initialize(width,height);
     }
+      
+    // put in some stuff that doesnt change (almost...)
+    local_data.width = htons(this->width);
+    local_data.height = htons(this->height);
+      
+    /* test if we are supposed to cancel */
+    pthread_testcancel();
+
+    //get the current frame and process it
+    if (!vision->processFrame((image_pixel*)cap->captureFrame()))
+    {
+      fprintf(stderr,"Frame error.\n");
+      continue; //no frame processed
+    }
+      
+    // put image time in blob struct
+    //local_data.time_sec = htonl((uint32_t)(cap->getFrameTime()/1e9));
+    //local_data.time_usec = htonl((cap->getFrameTime()/1000)%1000000);
+
+    local_data.blob_count = 0;
+        
+    for (ch = 0; ch < CMV_MAX_COLORS; ch++)
+    {
+      // Get the descriptive color
+      c=vision->getColorVisual(ch);
+	  
+      // Grab the regions for this color
+      for (r = vision->getRegions(ch); r != NULL; r = r->next)
+      {
+        if (local_data.blob_count >= PLAYER_BLOBFINDER_MAX_BLOBS)
+          break;
+            
+        blob = local_data.blobs + local_data.blob_count++;
+
+        blob->color = int(c.red)<<16 | int(c.green)<<8 | int(c.blue);
+        blob->color = htonl(blob->color);
+                
+        // stage puts the range in here to simulate stereo vision. we
+        // can't do that (yet?) so set the range to zero - rtv
+        blob->range = 0;
+
+        // get the area first
+        blob->area = r->area;
+        blob->area = htonl(blob->area);
+	      
+        // convert the other entries to byte-swapped shorts
+        blob->x = uint16_t(r->cen_x+.5);
+        blob->x = htons(blob->x);
+	      
+        blob->y = uint16_t(r->cen_y+.5);
+        blob->y = htons(blob->y);
+	      
+        blob->left = r->x1;
+        blob->left = htons(blob->left);
+	      
+        blob->right = r->x2;
+        blob->right = htons(blob->right);
+	      
+        blob->top = r->y1;
+        blob->top = htons(blob->top);
+	      
+        blob->bottom = r->y2;
+        blob->bottom = htons(blob->bottom);
+      }
+    }
+    local_data.blob_count = htons(local_data.blob_count);
+
+    /* REMOVE
+       fprintf(stderr,"Got a NULL region: #%d on channel %d, %d of %d\n",
+       i,ch,i-ntohs(local_data.header[ch].index)+1,ntohs(local_data.header[ch].num));
+    */
+      
+    /* got the data. now fill it in */
+    PutData(&local_data, sizeof(local_data) - sizeof(local_data.blobs) +
+            ntohs(local_data.blob_count) * sizeof(local_data.blobs[0]), NULL);
+  }
 
   pthread_exit(NULL);
 }

@@ -77,6 +77,63 @@ typedef enum
 #define DEFAULT_ACTS_HEIGHT 120
 /********************************************************************/
 
+
+/** The maximum number of unique color classes. */
+#define ACTS_MAX_CHANNELS 32
+
+/** The maximum number of blobs for each color class. */
+#define ACTS_MAX_BLOBS_PER_CHANNEL 10
+
+/** The maximum number of blobs in total. */
+#define ACTS_MAX_BLOBS ACTS_MAX_CHANNELS * ACTS_MAX_BLOBS_PER_CHANNEL
+
+/** Blob index entry. */
+typedef struct acts_header_elt
+{
+  /** Offset of the first blob for this channel. */
+  uint16_t index;
+
+  /** Number of blobs for this channel. */
+  uint16_t num;
+  
+} acts_header_elt_t;
+
+
+/** Structure describing a single blob. */
+typedef struct acts_blob_elt
+{
+  /** A descriptive color for the blob (useful for gui's).  The color
+      is stored as packed 32-bit RGB, i.e., 0x00RRGGBB. */
+  uint32_t color;
+
+  /** The blob area (pixels). */
+  uint32_t area;
+
+  /** The blob centroid (image coords). */
+  uint16_t x, y;
+
+  /** Bounding box for the blob (image coords). */
+  uint16_t left, right, top, bottom;
+  
+} acts_blob_elt_t;
+
+
+/** The list of detected blobs. */
+typedef struct acts_data
+{
+  /** The image dimensions. */
+  uint16_t width, height;
+
+  /** An index into the list of blobs (blobs are indexed by channel). */
+  acts_header_elt_t header[ACTS_MAX_CHANNELS];
+
+  /** The list of blobs. */
+  acts_blob_elt_t blobs[ACTS_MAX_BLOBS];
+  
+} acts_data_t;
+
+
+
 class Acts:public Driver 
 {
   private:
@@ -120,7 +177,7 @@ class Acts:public Driver
     char heightstring[128];
 
     // Descriptive colors for each channel.
-    uint32_t colors[PLAYER_BLOBFINDER_MAX_CHANNELS];
+    uint32_t colors[ACTS_MAX_CHANNELS];
 
   public:
     int sock;               // socket to ACTS
@@ -242,7 +299,7 @@ Acts::Acts( ConfigFile* cf, int section)
       blob_size = ACTS_BLOB_SIZE_1_2;
       break;
   }
-  header_elt_len = header_len / PLAYER_BLOBFINDER_MAX_CHANNELS;
+  header_elt_len = header_len / ACTS_MAX_CHANNELS;
   memset(portnumstring, 0, sizeof(portnumstring));
   snprintf(portnumstring,sizeof(portnumstring),"%d",portnum);
   
@@ -254,7 +311,7 @@ Acts::Acts( ConfigFile* cf, int section)
 
 
   // Get the descriptive colors.
-  for (ch = 0; ch < PLAYER_BLOBFINDER_MAX_CHANNELS; ch++)
+  for (ch = 0; ch < ACTS_MAX_CHANNELS; ch++)
   {
     color = cf->ReadTupleColor(section, "colors", ch, 0xFFFFFFFF);
     if (color == 0xFFFFFFFF)
@@ -319,11 +376,13 @@ Acts::Setup()
   printf("ACTS vision server connection initializing...");
   fflush(stdout);
 
+  /* REMOVE
   player_blobfinder_data_t dummy;
   memset(&dummy,0,sizeof(dummy));
   // zero the data buffer
   PutData((unsigned char*)&dummy,
           sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),NULL);
+  */
 
   i = 0;
   acts_args[i++] = acts_bin_name;
@@ -575,13 +634,20 @@ Acts::Main()
   int numread;
   int num_blobs;
   int i;
-
-  // we'll transform the data into this structured buffer
+  
+  // we'll convert the data into this structured buffer
+  acts_data_t acts_data;
+  
+  // we'll write the data from this buffer
   player_blobfinder_data_t local_data;
 
+  acts_blob_elt_t *src;
+  player_blobfinder_blob_t *dst;
+
+  // AH: this can't be very safe (buffer sizes)
   // first, we'll read into these two temporary buffers
-  uint8_t acts_hdr_buf[sizeof(local_data.header)];
-  uint8_t acts_blob_buf[sizeof(local_data.blobs)];
+  uint8_t acts_hdr_buf[sizeof(acts_data.header)];
+  uint8_t acts_blob_buf[sizeof(acts_data.blobs)];
 
   char acts_request_packet = ACTS_REQUEST_PACKET;
 
@@ -592,11 +658,12 @@ Acts::Main()
   for(;;)
   {
     // clean our buffers
+    memset(&acts_data,0,sizeof(acts_data));
     memset(&local_data,0,sizeof(local_data));
     
     // put in some stuff that doesnt change
-    local_data.width = htons(this->width);
-    local_data.height = htons(this->height);
+    acts_data.width = htons(this->width);
+    acts_data.height = htons(this->height);
     
     /* test if we are supposed to cancel */
     pthread_testcancel();
@@ -605,7 +672,7 @@ Acts::Main()
     if(write(sock,&acts_request_packet,sizeof(acts_request_packet)) == -1)
     {
       perror("RunVisionThread: write() failed sending ACTS_REQUEST_PACKET;"
-                      "exiting.");
+             "exiting.");
       break;
     }
 
@@ -618,52 +685,52 @@ Acts::Main()
     else if(numread != header_len)
     {
       fprintf(stderr,"RunVisionThread: something went wrong\n"
-             "              expected %d bytes of header, but only got %d\n", 
-             header_len,numread);
+              "              expected %d bytes of header, but only got %d\n", 
+              header_len,numread);
       break;
     }
 
     /* convert the header, if necessary */
     if(acts_version == ACTS_VERSION_1_0)
     {
-      for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
+      for(i=0;i<ACTS_MAX_CHANNELS;i++)
       {
         // convert 2-byte ACTS 1.0 encoded entries to byte-swapped integers
         // in a structured array
-        local_data.header[i].index = 
-                htons(acts_hdr_buf[header_elt_len*i]-1);
-        local_data.header[i].num = 
-                htons(acts_hdr_buf[header_elt_len*i+1]-1);
+        acts_data.header[i].index = 
+          htons(acts_hdr_buf[header_elt_len*i]-1);
+        acts_data.header[i].num = 
+          htons(acts_hdr_buf[header_elt_len*i+1]-1);
       }
     }
     else
     {
-      for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
+      for(i=0;i<ACTS_MAX_CHANNELS;i++)
       {
         // convert 4-byte ACTS 1.2/2.0 encoded entries to byte-swapped integers
         // in a structured array
-        local_data.header[i].index = acts_hdr_buf[header_elt_len*i]-1;
-        local_data.header[i].index = 
-                local_data.header[i].index << 6;
-        local_data.header[i].index |= 
-                acts_hdr_buf[header_elt_len*i+1]-1;
-        local_data.header[i].index = 
-                htons(local_data.header[i].index);
+        acts_data.header[i].index = acts_hdr_buf[header_elt_len*i]-1;
+        acts_data.header[i].index = 
+          acts_data.header[i].index << 6;
+        acts_data.header[i].index |= 
+          acts_hdr_buf[header_elt_len*i+1]-1;
+        acts_data.header[i].index = 
+          htons(acts_data.header[i].index);
 
-        local_data.header[i].num = acts_hdr_buf[header_elt_len*i+2]-1;
-        local_data.header[i].num = 
-                local_data.header[i].num << 6;
-        local_data.header[i].num |= 
-                acts_hdr_buf[header_elt_len*i+3]-1;
-        local_data.header[i].num = 
-                htons(local_data.header[i].num);
+        acts_data.header[i].num = acts_hdr_buf[header_elt_len*i+2]-1;
+        acts_data.header[i].num = 
+          acts_data.header[i].num << 6;
+        acts_data.header[i].num |= 
+          acts_hdr_buf[header_elt_len*i+3]-1;
+        acts_data.header[i].num = 
+          htons(acts_data.header[i].num);
       }
     }
 
     /* sum up the data we expect */
     num_blobs=0;
-    for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
-      num_blobs += ntohs(local_data.header[i].num);
+    for(i=0;i<ACTS_MAX_CHANNELS;i++)
+      num_blobs += ntohs(acts_data.header[i].num);
 
     /* read in the blob data */
     if((numread = read(sock,acts_blob_buf,num_blobs*blob_size)) == -1)
@@ -674,8 +741,8 @@ Acts::Main()
     else if(numread != num_blobs*blob_size)
     {
       fprintf(stderr,"RunVisionThread: something went wrong\n"
-             "              expected %d bytes of blob data, but only got %d\n", 
-             num_blobs*blob_size,numread);
+              "              expected %d bytes of blob data, but only got %d\n", 
+              num_blobs*blob_size,numread);
       break;
     }
 
@@ -688,39 +755,35 @@ Acts::Main()
 
         // TODO: put a descriptive color in here (I'm not sure where
         // to get it from).
-        local_data.blobs[i].color = htonl(0xFF0000);
+        acts_data.blobs[i].color = htonl(0xFF0000);
         
-        // stage puts the range in here to simulate stereo vision. we
-        // can't do that (yet?) so set the range to zero - rtv
-        local_data.blobs[i].range = 0;
-
         // get the 4-byte area first
-        local_data.blobs[i].area = 0;
+        acts_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
         {
-          local_data.blobs[i].area = local_data.blobs[i].area << 6;
-          local_data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
+          acts_data.blobs[i].area = acts_data.blobs[i].area << 6;
+          acts_data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
         }
-        local_data.blobs[i].area = htonl(local_data.blobs[i].area);
+        acts_data.blobs[i].area = htonl(acts_data.blobs[i].area);
 
         // convert the other 6 one-byte entries to byte-swapped shorts
-        local_data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].x = htons(local_data.blobs[i].x);
+        acts_data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].x = htons(acts_data.blobs[i].x);
 
-        local_data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].y = htons(local_data.blobs[i].y);
+        acts_data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].y = htons(acts_data.blobs[i].y);
 
-        local_data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].left = htons(local_data.blobs[i].left);
+        acts_data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].left = htons(acts_data.blobs[i].left);
 
-        local_data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].right = htons(local_data.blobs[i].right);
+        acts_data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].right = htons(acts_data.blobs[i].right);
 
-        local_data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].top = htons(local_data.blobs[i].top);
+        acts_data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].top = htons(acts_data.blobs[i].top);
 
-        local_data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].bottom = htons(local_data.blobs[i].bottom);
+        acts_data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].bottom = htons(acts_data.blobs[i].bottom);
       }
     }
     else
@@ -732,10 +795,10 @@ Acts::Main()
 
         // Figure out the blob channel number
         int ch = 0;
-        for (int j = 0; j < PLAYER_BLOBFINDER_MAX_CHANNELS; j++)
+        for (int j = 0; j < ACTS_MAX_CHANNELS; j++)
         {
-          if (i >= ntohs(local_data.header[j].index) &&
-              i < ntohs(local_data.header[j].index) + ntohs(local_data.header[j].num))
+          if (i >= ntohs(acts_data.header[j].index) &&
+              i < ntohs(acts_data.header[j].index) + ntohs(acts_data.header[j].num))
           {
             ch = j;
             break;
@@ -744,63 +807,75 @@ Acts::Main()
 
         // Put in a descriptive color.
         if (ch < (int) (sizeof(colors) / sizeof(colors[0])))
-          local_data.blobs[i].color = htonl(colors[ch]);            
+          acts_data.blobs[i].color = htonl(colors[ch]);            
         else
-          local_data.blobs[i].color = htonl(0xFF0000);
-
-        // stage puts the range in here to simulate stereo vision. we
-        // can't do that (yet?) so set the range to zero - rtv
-        local_data.blobs[i].range = 0;
-
+          acts_data.blobs[i].color = htonl(0xFF0000);
+        
         // get the 4-byte area first
-        local_data.blobs[i].area = 0;
+        acts_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
         {
-          local_data.blobs[i].area = local_data.blobs[i].area << 6;
-          local_data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
+          acts_data.blobs[i].area = acts_data.blobs[i].area << 6;
+          acts_data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
         }
-        local_data.blobs[i].area = htonl(local_data.blobs[i].area);
+        acts_data.blobs[i].area = htonl(acts_data.blobs[i].area);
         
         // convert the other 6 two-byte entries to byte-swapped shorts
-        local_data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].x = local_data.blobs[i].x << 6;
-        local_data.blobs[i].x |= acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].x = htons(local_data.blobs[i].x);
+        acts_data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].x = acts_data.blobs[i].x << 6;
+        acts_data.blobs[i].x |= acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].x = htons(acts_data.blobs[i].x);
 
-        local_data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].y = local_data.blobs[i].y << 6;
-        local_data.blobs[i].y |= acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].y = htons(local_data.blobs[i].y);
+        acts_data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].y = acts_data.blobs[i].y << 6;
+        acts_data.blobs[i].y |= acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].y = htons(acts_data.blobs[i].y);
 
-        local_data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].left = local_data.blobs[i].left << 6;
-        local_data.blobs[i].left |= acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].left = htons(local_data.blobs[i].left);
+        acts_data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].left = acts_data.blobs[i].left << 6;
+        acts_data.blobs[i].left |= acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].left = htons(acts_data.blobs[i].left);
 
-        local_data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].right = local_data.blobs[i].right << 6;
-        local_data.blobs[i].right |= acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].right = htons(local_data.blobs[i].right);
+        acts_data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].right = acts_data.blobs[i].right << 6;
+        acts_data.blobs[i].right |= acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].right = htons(acts_data.blobs[i].right);
 
-        local_data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].top = local_data.blobs[i].top << 6;
-        local_data.blobs[i].top |= acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].top = htons(local_data.blobs[i].top);
+        acts_data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].top = acts_data.blobs[i].top << 6;
+        acts_data.blobs[i].top |= acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].top = htons(acts_data.blobs[i].top);
 
-        local_data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].bottom = local_data.blobs[i].bottom << 6;
-        local_data.blobs[i].bottom |= acts_blob_buf[tmpptr++] - 1;
-        local_data.blobs[i].bottom = htons(local_data.blobs[i].bottom);
+        acts_data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].bottom = acts_data.blobs[i].bottom << 6;
+        acts_data.blobs[i].bottom |= acts_blob_buf[tmpptr++] - 1;
+        acts_data.blobs[i].bottom = htons(acts_data.blobs[i].bottom);
       }
     }
     
-    /* test if we are supposed to cancel */
-    pthread_testcancel();
+    // Convert data to interface format
+    local_data.width = acts_data.width;
+    local_data.height = acts_data.height;
+    local_data.blob_count = htons(num_blobs);
+      
+    for (i = 0; i < num_blobs; i++)
+    {
+      src = acts_data.blobs + i;
+      dst = local_data.blobs + i;
+      dst->id = htons(0);
+      dst->color = src->color;
+      dst->x = src->x;
+      dst->y = src->y;
+      dst->left = src->left;
+      dst->right = src->right;
+      dst->top = src->top;
+      dst->bottom = src->bottom;
+      dst->range = htons(0);
+    }
 
     /* got the data. now fill it in */
-    PutData((unsigned char*)&local_data, 
-                (PLAYER_BLOBFINDER_HEADER_SIZE + 
-                 num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),NULL);
+    PutData(&local_data, sizeof(local_data) - sizeof(local_data.blobs) +
+            ntohs(local_data.blob_count) * sizeof(local_data.blobs[0]), NULL);
   }
 
   pthread_cleanup_pop(1);

@@ -76,7 +76,7 @@ captureCamera::captureCamera(int camera_index) : capture()
   // Do some byte swapping
   this->width = ntohs(data.width);
   this->height = ntohs(data.height); 
-  this->depth = data.depth;
+  this->depth = data.bpp;
 
     
   this->image_size = ntohl(data.image_size); 

@@ -66,8 +66,7 @@ driver
 @endverbatim
 
 
-@todo Change this driver to use OpenCV instead of GDAL, and add
-support for color images.
+@todo Add support for color images.
 
 */
 /** @} */
@@ -79,7 +78,8 @@ support for color images.
 #include <netinet/in.h>   // for htons(3)
 #include <math.h>
 
-#include <gdal_priv.h>
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
 
 #include "player.h"
 #include "device.h"
@@ -155,10 +155,7 @@ ImageSeq::ImageSeq(ConfigFile *cf, int section)
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
 int ImageSeq::Setup()
-{
-  // Register all known drivers for GDAL
-  GDALAllRegister();
-  
+{  
   // Start at frame 0
   this->frame = 0;
     
@@ -216,42 +213,23 @@ void ImageSeq::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Load an image
-/// @todo Change this to use OpenCV for image loading
 int ImageSeq::LoadImage(const char *filename)
 {
-  int i, bandCount;
-  GDALDataset *dataSet;
-  GDALRasterBand *band;
+  int i;
+  char *src;
+  uint8_t *dst;
+  IplImage *image;
   
-  dataSet = (GDALDataset*) GDALOpen(filename, GA_ReadOnly);
-  if (!dataSet)
-    return -1;
+  // Load image; currently forces the image to mono
+  image = cvLoadImage(filename, 0);
 
-  bandCount = dataSet->GetRasterCount();
-
-  // For one band, assume this is an greyscale image
-  if (bandCount == 1)
-  {
-    this->data.width = dataSet->GetRasterXSize();
-    this->data.height = dataSet->GetRasterYSize();
-    this->data.bpp = 8;
-    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
-    this->data.image_size = this->data.width * this->data.height * this->data.bpp / 8;
-  }
-
-  // For three bands, assume this is an RGB image
-  else if (bandCount == 3)
-  {
-    // TODO
-    PLAYER_ERROR("unsupported image format");
-    return -1;
-  }
-  else
-  {
-    PLAYER_ERROR("unsupported image format");
-    return -1;
-  }
-
+  this->data.width = image->width;
+  this->data.height = image->height;
+  this->data.bpp = 8;
+  this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+  this->data.image_size = this->data.width * this->data.height;
+  
   // Check image size
   if (this->data.image_size > PLAYER_CAMERA_IMAGE_SIZE)
   {
@@ -259,17 +237,12 @@ int ImageSeq::LoadImage(const char *filename)
     return -1;
   }
 
-  for (i = 0; i < bandCount; i++)
+  // Copy the pixels
+  for (i = 0; i < image->height; i++)
   {
-    // Get a pointer to each raster band of the data
-    band = dataSet->GetRasterBand(i + 1);
-
-    // Fill image with all the raster information
-    band->RasterIO(GF_Read, 0, 0,
-                   dataSet->GetRasterXSize(),
-                   dataSet->GetRasterYSize(),
-                   this->data.image + i,
-                   this->data.width, this->data.height, GDT_Byte, 1, 0);
+    src = image->imageData + i * image->widthStep;
+    dst = this->data.image + i * this->data.width;
+    memcpy(dst, src, this->data.width);
   }
   
   return 0;
@@ -288,7 +261,7 @@ void ImageSeq::WriteData()
   this->data.height = htons(this->data.height);
   this->data.bpp = this->data.bpp;
   this->data.format = this->data.format;
-  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+  this->data.compression = this->data.compression;
   this->data.image_size = htonl(this->data.image_size);
       
   PutData(&this->data, size, NULL);
