@@ -8,7 +8,7 @@ resolution 0.02
 size [10.0 10.0]
 name "Player driver test"
 
-test 1
+#test 1
 
 # GUI settings
 #
@@ -20,20 +20,11 @@ gui
 )
 
 # load a bitmapped environment from a file
-wall
-(
-  #bitmap "test.pnm" 
-  bitmap "/homes/vaughan/PS/HEAD/stage/worlds/cave.pnm" 
-  color "blue"
-)
-
-#entity
+#wall
 #(
-#  color "purple"
-#  name "cavebot"
-#  bitmap "test.pnm"
-#  pose [ 1 1 0 ]
-#  size [ 0.7 0.4 ]
+  #bitmap "test.pnm" 
+ # bitmap "/home/vaughan/PS/HEAD/stage/worlds/cave.pnm" 
+  #color "blue"
 #)
 
 sonarbot
@@ -42,15 +33,15 @@ sonarbot
 
    name "sonarbot"
 
-   transducer_count 8
-   transducer[0] [0.1 0.0   0.0 0.02 0.03]
-   transducer[1] [0.1 0.1  45.0 0.02 0.03]
-   transducer[2] [0.0 0.1  90.0 0.02 0.03]
-   transducer[3] [-0.1 0.1 135.0 0.02 0.03]
-   transducer[4] [-0.1 0.0 180.0 0.02 0.03]
-   transducer[5] [-0.1 -0.1 225.0 0.02 0.03]
-   transducer[6] [0.0 -0.1 270.0 0.02 0.03]
-   transducer[7] [0.1 -0.1 315.0 0.02 0.03]
+   ranger_count 8
+   ranger[0] [0.1 0.0     0.0 0.02 0.03 0.2 5.0 45.0 0.0 ]
+   ranger[1] [0.1 0.1    45.0 0.02 0.03 0.2 5.0 45.0 0.0 ]
+   ranger[2] [0.0 0.1    90.0 0.02 0.03 0.2 5.0 45.0 0.0 ]
+   ranger[3] [-0.1 0.1  135.0 0.02 0.03 0.2 5.0 45.0 0.0 ]
+   ranger[4] [-0.1 0.0  180.0 0.02 0.03 0.2 5.0 45.0 0.0 ]
+   ranger[5] [-0.1 -0.1 225.0 0.02 0.03 0.2 5.0 45.0 0.0 ]
+   ranger[6] [0.0 -0.1  270.0 0.02 0.03 0.2 5.0 45.0 0.0 ]
+   ranger[7] [0.1 -0.1  315.0 0.02 0.03 0.2 5.0 45.0 0.0 ]
 
    pose [ 3 3 0 ]
 )
@@ -68,10 +59,10 @@ define swarmbot bar
 
   neighbor 1
 
-  indicatorlight( color "red"    pose [0.03 0 0] light_interval 200 ) 
-  indicatorlight( color "green"  pose [0 0.03 0] light_interval 400 ) 
-  indicatorlight( color "blue"   pose [-0.03 0 0] light_interval 600 ) 
-  indicatorlight( color "yellow" pose [0 -0.03 0] light_interval 800 ) 
+  #indicatorlight( color "red"    pose [0.03 0 0] light_interval 200 ) 
+  #indicatorlight( color "green"  pose [0 0.03 0] light_interval 400 ) 
+  #indicatorlight( color "blue"   pose [-0.03 0 0] light_interval 600 ) 
+  #indicatorlight( color "yellow" pose [0 -0.03 0] light_interval 800 ) 
 )
 
 swarmbot( name "swarm1" pose [4 3 0] color "red" )
