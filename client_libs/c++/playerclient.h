@@ -581,26 +581,6 @@ class FiducialProxy : public ClientProxy
     /** The number of beacons detected
      */
     unsigned short count;
-
-    /** The current bit count of the fiducial device.
-        See the Player manual for information on this setting.
-      */
-    unsigned char bit_count;
-
-    /** The current bit size (in mm) of the fiducial device.
-        See the Player manual for information on this setting.
-      */
-    unsigned short bit_size;
-
-    /** The current zero threshold of the fiducial device.
-        See the Player manual for information on this setting.
-      */
-    unsigned short zero_thresh;
-
-    /** The current one threshold of the fiducial device.
-        See the Player manual for information on this setting.
-      */
-    unsigned short one_thresh;
    
     /** Constructor.
         Leave the access field empty to start unconnected.
@@ -610,30 +590,6 @@ class FiducialProxy : public ClientProxy
     FiducialProxy(PlayerClient* pc, unsigned short index,
                      unsigned char access='c'):
             ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access) {}
-
-    // these methods are the user's interface to this device
-
-    /** Set the bit properties of the beacons.
-        Set {\tt bit\_count} to the number of bits in your beacons
-        (usually 5 or 8).
-        Set {\tt bit\_size} to the width of each bit (in mm).\\
-        Returns the 0 on success, or -1 of there is a problem.
-     */
-    int SetBits(unsigned char bit_count, unsigned short bit_size);
-
-    /** Set the identification thresholds.
-        Thresholds must be in the range 0--99.
-        See the Player manual for a full discussion of these settings.\\
-        Returns the 0 on success, or -1 of there is a problem.
-     */
-    int SetThresh(unsigned short zero_thresh, unsigned short one_thresh);
-
-    /** Get the current configuration.
-        Fills the current device configuration into the corresponding
-        class attributes.\\
-        Returns the 0 on success, or -1 of there is a problem.
-     */
-    int GetConfig();
     
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);

@@ -46,10 +46,6 @@ playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index)
   memset(device, 0, sizeof(playerc_fiducial_t));
   playerc_device_init(&device->info, client, PLAYER_FIDUCIAL_CODE, index,
                       (playerc_putdata_fn_t) playerc_fiducial_putdata);
-
-  device->pose[0] = 0.0;
-  device->pose[1] = 0.0;
-  device->pose[2] = 0.0;
   
   return device;
 }
@@ -119,67 +115,10 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device)
   device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
   device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
   device->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
+  device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
+  device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
+  device->fiducial_size[0] = ((int16_t) ntohs(config.fiducial_size[0])) / 1000.0;
+  device->fiducial_size[1] = ((int16_t) ntohs(config.fiducial_size[1])) / 1000.0;
 
-  return 0;
-}
-
-
-// Set the device configuration
-int playerc_fiducial_set_config(playerc_fiducial_t *device,
-                           int bit_count, double bit_width)
-{
-  int len;
-  player_fiducial_laserbarcode_config_t config;
-
-  // Get the current device configuration.
-  config.subtype = PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG;
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype),
-                               &config, sizeof(config));
-  if (len < 0)
-    return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
-
-  // Change the bit size and the number of bits
-  config.subtype = PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG;
-  config.bit_count = bit_count;
-  config.bit_size = htons((uint16_t)(bit_width * 1000));
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config), &config, sizeof(config));
-  if (len < 0)
-    return -1;
-
-  // TODO: check for a NACK
-
-  return 0;
-}
-
-
-// Get the device configuration
-int playerc_fiducial_get_config(playerc_fiducial_t *device,
-                           int *bit_count, double *bit_width)
-{
-  int len;
-  player_fiducial_laserbarcode_config_t config;
-
-  // Get the current device configuration.
-  config.subtype = PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG;
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
-  if (len < 0)
-    return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
-
-  *bit_count = config.bit_count;
-  *bit_width = ntohs(config.bit_size) / 1000.0;
-  
   return 0;
 }

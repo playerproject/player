@@ -515,8 +515,12 @@ typedef struct
   playerc_device_t info;
 
   // Geometry in robot cs.  These values are filled in by
-  // playerc_fiducial_get_geom().
+  // playerc_fiducial_get_geom().  [pose] is the detector pose in the
+  // robot cs, [size] is the detector size, [fiducial_size] is the
+  // fiducial size.
   double pose[3];
+  double size[2];
+  double fiducial_size[2];
   
   // List of detected beacons.
   int fiducial_count;
@@ -540,18 +544,6 @@ int playerc_fiducial_unsubscribe(playerc_fiducial_t *device);
 // Get the laser geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
 int playerc_fiducial_get_geom(playerc_fiducial_t *device);
-
-// Set the device configuration.
-// bit_count : the number of bits in the barcode.
-// bit_width : the width of each bit in the barcode.
-int playerc_fiducial_set_config(playerc_fiducial_t *device,
-                                int bit_count, double bit_width);
-
-// Get the device configuration.
-// bit_count : the number of bits in the barcode.
-// bit_width : the width of each bit in the barcode.
-int playerc_fiducial_get_config(playerc_fiducial_t *device,
-                                int *bit_count, double *bit_width);
 
 
 /***************************************************************************
