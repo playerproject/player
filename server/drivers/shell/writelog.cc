@@ -113,6 +113,7 @@ class WriteLog: public Driver
   private: void WriteFiducial(player_fiducial_data_t *data);
 
   // File to read data from
+  private: char default_filename[1024];
   private: const char *filename;
   private: FILE *file;
 
@@ -163,9 +164,22 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   char name[64];
   player_interface_t iface;
   WriteLogDevice *device;
+  time_t t;
+  struct tm *ts;
   
   this->file = NULL;
-  this->filename = cf->ReadString(section, "filename", "writelog.log");
+
+  // Construct default filename from date and time.  Note that we use
+  // the system time, *not* the Player time.  I think that this is the
+  // correct semantics for working with simulators.
+  time(&t);
+  ts = localtime(&t);
+  strftime(this->default_filename, sizeof(this->default_filename),
+           "writelog_%Y_%m_%d_%H_%M.log", ts);
+
+  // Let user override default filename
+  this->filename = cf->ReadString(section, "filename", this->default_filename);
+  
   if(cf->ReadInt(section, "enable", 1) > 0)
     this->enable_default = true;
   else
