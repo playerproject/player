@@ -69,6 +69,10 @@
 // Incremental navigation driver
 class INav : public CDevice
 {
+  ///////////////////////////////////////////////////////////////////////////
+  // Top half methods; these methods run in the server thread
+  ///////////////////////////////////////////////////////////////////////////
+
   // Constructor
   public: INav(char* interface, ConfigFile* cf, int section);
 
@@ -83,12 +87,6 @@ class INav : public CDevice
   // Set up the GUI
   private: int SetupGUI();
   private: int ShutdownGUI();
-
-  // Draw the map
-  private: void DrawMap();
-
-  // Draw the robot
-  private: void DrawRobot();
 #endif
 
   // Set up the odometry device.
@@ -98,6 +96,10 @@ class INav : public CDevice
   // Set up the laser device.
   private: int SetupLaser();
   private: int ShutdownLaser();
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Bottom half methods; these methods run in the device thread
+  ///////////////////////////////////////////////////////////////////////////
 
   // Main function for device thread.
   private: virtual void Main();
@@ -109,19 +111,19 @@ class INav : public CDevice
   private: void UpdateControl();
 
   // Check for new odometry data
-  private: int GetOdom();
+  private: int GetOdomData();
 
   // Check for new laser data
-  private: int GetLaser();
-
-  // Check for new commands from server
-  private: void GetCommand();
+  private: int GetLaserData();
 
   // Send commands to underlying position device
-  private: void PutCommand();
+  private: void PutOdomCmd();
 
-  // Write the pose data (the data going back to the client).
-  private: void PutPose();
+  // Check for new commands from server
+  private: void GetServerCmd();
+
+  // Send new data to server
+  private: void PutServerData();
 
   // Process requests.  Returns 1 if the configuration has changed.
   private: int HandleRequests();
@@ -131,6 +133,14 @@ class INav : public CDevice
 
   // Handle motor power requests
   private: void HandlePower(void *client, void *req, int reqlen);
+
+#ifdef INCLUDE_RTKGUI
+  // Draw the map
+  private: void DrawMap();
+
+  // Draw the robot
+  private: void DrawRobot();
+#endif
 
   // Odometry device info
   private: CDevice *odom;
@@ -349,8 +359,10 @@ int INav::SetupGUI()
 
   this->canvas = rtk_canvas_create(this->app);
   rtk_canvas_title(this->canvas, "IncrementalNav");
-  rtk_canvas_size(this->canvas, this->map->size_x * 2, this->map->size_y * 2);
-  rtk_canvas_scale(this->canvas, this->map->scale / 2, this->map->scale / 2);
+  //rtk_canvas_size(this->canvas, this->map->size_x * 2, this->map->size_y * 2);
+  //rtk_canvas_scale(this->canvas, this->map->scale / 2, this->map->scale / 2);
+  rtk_canvas_size(this->canvas, 400, 400);
+  rtk_canvas_scale(this->canvas, 0.01, 0.01);
 
   this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
   this->robot_fig = rtk_fig_create(this->canvas, NULL, 0);
@@ -391,7 +403,6 @@ int INav::SetupOdom()
   player_position_geom_t geom;
   player_device_id_t id;
 
-  id.robot = this->device_id.robot;
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
 
@@ -450,7 +461,6 @@ int INav::SetupLaser()
   player_laser_geom_t geom;
   player_device_id_t id;
 
-  id.robot = this->device_id.robot;
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
 
@@ -526,7 +536,7 @@ void INav::Main()
       // Re-draw the map occasionally
       if (update - map_update >= 10)
       {
-        this->DrawMap();
+        // TESTING this->DrawMap();
         map_update = update;
         rtk_canvas_render(this->canvas);      
       }
@@ -547,22 +557,22 @@ void INav::Main()
     this->HandleRequests();
 
     // Check for new commands
-    this->GetCommand();
+    this->GetServerCmd();
 
     // Check for new odometric data.  If there is new data, update the
     // controller.
-    if (this->GetOdom())
+    if (this->GetOdomData())
     {
       this->UpdateControl();
-      this->PutCommand();
+      this->PutOdomCmd();
     }
     
     // Check for new laser data.  If there is new data, update the
     // incremental pose estimate.
-    if (this->GetLaser())
+    if (this->GetLaserData())
     {
       this->UpdatePose();
-      this->PutPose();
+      this->PutServerData();
       update++;
     }
   }
@@ -637,9 +647,8 @@ void INav::UpdateControl()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new odometry data
-int INav::GetOdom()
+int INav::GetOdomData()
 {
-  int i;
   size_t size;
   player_position_data_t data;
   uint32_t timesec, timeusec;
@@ -679,7 +688,7 @@ int INav::GetOdom()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new laser data
-int INav::GetLaser()
+int INav::GetLaserData()
 {
   int i;
   size_t size;
@@ -702,7 +711,7 @@ int INav::GetLaser()
   b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
   db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
   this->laser_count = ntohs(data.range_count);
-  assert(this->laser_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
+  assert(this->laser_count < (int) (sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0])));
 
   // Read and byteswap the range data
   for (i = 0; i < this->laser_count; i++)
@@ -718,28 +727,8 @@ int INav::GetLaser()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Check for new commands from the server
-void INav::GetCommand()
-{
-  player_position_cmd_t cmd;
-
-  if (CDevice::GetCommand(&cmd, sizeof(cmd)) == 0)
-  {
-    this->goal_pose = this->inc_pose;
-  }
-  else
-  {
-    this->goal_pose.v[0] = ((int32_t) ntohl(cmd.xpos)) / 1000.0;
-    this->goal_pose.v[1] = ((int32_t) ntohl(cmd.ypos)) / 1000.0;
-    this->goal_pose.v[2] = ((int32_t) ntohl(cmd.yaw)) / 180 * M_PI;
-  }
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Send commands to the underlying position device
-void INav::PutCommand()
+void INav::PutOdomCmd()
 {
   player_position_cmd_t cmd;
 
@@ -760,8 +749,28 @@ void INav::PutCommand()
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Check for new commands from the server
+void INav::GetServerCmd()
+{
+  player_position_cmd_t cmd;
+
+  if (CDevice::GetCommand(&cmd, sizeof(cmd)) == 0)
+  {
+    this->goal_pose = this->inc_pose;
+  }
+  else
+  {
+    this->goal_pose.v[0] = ((int32_t) ntohl(cmd.xpos)) / 1000.0;
+    this->goal_pose.v[1] = ((int32_t) ntohl(cmd.ypos)) / 1000.0;
+    this->goal_pose.v[2] = ((int32_t) ntohl(cmd.yaw)) / 180 * M_PI;
+  }
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
-void INav::PutPose()
+void INav::PutServerData()
 {
   uint32_t timesec, timeusec;
   player_position_data_t data;

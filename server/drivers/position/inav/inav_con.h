@@ -14,42 +14,46 @@ extern "C" {
 #endif
 
 #include "inav_vector.h"
+#include "inav_kdtree.h"
 #include "inav_map.h"
 
 // Forward declarations
 struct _rtk_fig_t;
 
-
-// Controller parameters
+// Robot configuration
 typedef struct
 {
-  // Parameter set id (for diagnostics)
-  int id;
+  // Robot pose and velocity
+  inav_vector_t pose, vel;
   
-  // Weights for goal seeking and obstacle avoidance
-  double kg, ko;
-
-  // PD gain terms for each axis
-  double pd[3][2];
-
-} icon_param_t;
+} icon_config_t;
 
 
-// Predicted path description
+// Robot actions
 typedef struct
 {
-  // Controller settings
-  icon_param_t param;
+  // Commanded velocities
+  double vel[2];
   
-  // Predicted poses
-  int pose_count;
-  inav_vector_t poses[100];
+} icon_action_t;
 
-  // Evaluated path cost
-  double cost;
+
+// A single node in the tree
+typedef struct _icon_node_t
+{
+  // Index of parent, first child, and next sibling
+  struct _icon_node_t *parent;
+  struct _icon_node_t *sibling_next;
+  struct _icon_node_t *child_first, *child_last;
+
+  // Robot configuration
+  icon_config_t config;
+
+  // Action that will get the robot to this configuration
+  icon_action_t action;
   
-} icon_path_t;
-
+} icon_node_t;
+  
 
 
 // Controller data
@@ -61,14 +65,15 @@ typedef struct
   // Evaluation time interval
   double dt;
 
-  // Pivot point
-  double pivot;
-
   // Min obstacle distance (for collision detection)
   double min_dist;
 
-  // Robot limits
+  // Control limits
   inav_vector_t robot_min_vel, robot_max_vel;
+
+  // Possible actions
+  int action_count;
+  icon_action_t *actions;
 
   // Goal pose (global cs)
   inav_vector_t goal_pose;
@@ -79,15 +84,12 @@ typedef struct
   // Robot velocity (robot cs)
   inav_vector_t robot_vel;
 
-  // Current robot control velocity (robot cs)
-  inav_vector_t control;
+  // The plan tree (RRT)
+  int node_count, node_max_count;
+  icon_node_t *nodes;
 
-  // Predicted paths
-  int path_count;
-  icon_path_t paths[100];
-
-  // Selected path
-  icon_path_t *best_path;
+  // A kd-tree representation of the plan tree
+  inav_kdtree_t *kdtree;
   
 } icon_t;
 
@@ -110,6 +112,15 @@ void icon_set_robot(icon_t *icon, double pose[3], double vel[3]);
 
 // Compute the control velocities (robot cs)
 void icon_get_control(icon_t *icon, double control[3]);
+
+// Compute the new configuration based on this action
+icon_config_t icon_model_robot(icon_t *self, icon_config_t config, icon_action_t action);
+
+// Initialize the tree
+void icon_rrt_init(icon_t *self);
+
+// Generate the tree
+void icon_rrt_update(icon_t *self, int point_count, double duration);
 
 
 /**************************************************************************
