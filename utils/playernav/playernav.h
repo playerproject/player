@@ -7,7 +7,6 @@
 
 #include <playerc.h>
 
-#define DEFAULT_DISPLAY_WIDTH 1000
 #define MIN_DISPLAY_WIDTH 10
 
 #define MAX_HOSTNAME_LEN 256
@@ -32,8 +31,6 @@ typedef struct
   GtkBox* hbox;
   GtkScrolledWindow* map_window;
   GnomeCanvas* map_canvas;
-  // aspect ratio of map (width / height)
-  double aspect;
   // proxy for map
   playerc_map_t* mapdev;
   // scrollbar for zooming
@@ -43,6 +40,7 @@ typedef struct
   size_t num_robots;
   char* hostnames[MAX_NUM_ROBOTS];
   int ports[MAX_NUM_ROBOTS];
+  double initial_zoom;
   pose_t robot_poses[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_items[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_labels[MAX_NUM_ROBOTS];
@@ -89,7 +87,7 @@ void fini_player(playerc_mclient_t* mclient,
                  int num_bots);
 
 /* Parse command line arguments, of the form host:port */
-int parse_args(int argc, char** argv, int* num_bots, 
-               char** hostnames, int* ports);
+int parse_args(int argc, char** argv, int* num_bots, char** hostnames,
+               int* ports, double* zoom);
 
 #endif
