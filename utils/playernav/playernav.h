@@ -7,7 +7,7 @@
 
 #include <playerc.h>
 
-#define DEFAULT_DISPLAY_WIDTH 800
+#define DEFAULT_DISPLAY_WIDTH 1000
 #define MIN_DISPLAY_WIDTH 10
 
 #define MAX_HOSTNAME_LEN 256
