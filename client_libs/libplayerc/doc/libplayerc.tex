@@ -8,7 +8,7 @@
 
 \usepackage{tabularx}
 
-\def\VERSION {1.2}
+\def\VERSION {1.3}
 \def\DEFAULTPORT {6665}
 \def\HOMEPAGE {{\tt http://playerstage.sourceforge.net}}
 \def\libplayerc {{\tt libplayerc} }
@@ -76,12 +76,37 @@ document.  The default Player installation will build and install the
 following files:
 \begin{quote}
 \begin{verbatim}
-$(HOME)/player-1.2/include/playerc/playerc.h
-$(HOME)/player-1.2/lib/playerc/libplayerc.a
+$(HOME)/player-1.3/include/playerc/playerc.h
+$(HOME)/player-1.3/lib/playerc/libplayerc.a
 \end{verbatim}
 \end{quote}
 Make sure these directories are in your include and library paths,
 respectively.
+
+
+\section{Differences between versions 1.2 and 1.3}
+
+(Users who are familiar with version 1.2 of \libplayerc should read
+this section; new users may safely ignore it).
+
+The Player server has been substantially re-written to support a more
+general interface/driver model for devices.  A device {\em interface}
+describes the kinds of interactions a device allows, while a device
+{\em driver} handles the low-level hardware interaction.  Thus one may
+use the same interface to control many different pieces of hardware,
+each of which has a specific driver.
+
+This change has two important consequences for the \libplayerc client
+library:
+\begin{itemize}
+\item Client-side {\em proxies} now correspond to server-side {\em
+interfaces}.  Thus, for example, a {\tt position} proxy on the client
+connects to a {\tt position} interface on the server.
+\item Some proxy names have changed to bring them into line with the
+new server naming conventions.
+\end{itemize}
+See the {\em Player User Manual} for more details on the new
+interface/driver model.
 
 
 \section{Bugs}
@@ -311,10 +336,13 @@ internal use and should not be manipulated directly.
 \chapter{Device Reference}
 \label{chap.devices}
 
-This chapter contains information on the various proxies offered by
-\libplayerc.  It is not intended to provide a complete reference for
-all of the devices offered by Player, and should be read in
-conjunction with the Player User Manual.
+This chapter contains information on the various types of proxies
+offered by \libplayerc: each type of proxy corresponds to one of the
+{\em interface} types offered by the Player server.  Note that this
+section is not intended to provide a complete reference for all of the
+devices offered by Player, and should be read in conjunction with the
+Player User Manual.
+
 
 \section{Units}
 
@@ -328,14 +356,16 @@ seconds) for all measurements.
 \noindent
 \begin{tabularx}{\columnwidth}{lX}
 \hline
-{\tt bps} & Beacon-based positioning system: determines the absolute pose
-of the robot using pre-placed beacons.  {\bf Experimental.}\\
-{\tt broadcast} & Broadcast device: sends and receives packets between Player
-clients.\\
-{\tt laser} & Laser device: an interface to scanning laser range-finders
+%{\tt bps} & Beacon-based positioning system: determines the absolute pose
+%of the robot using pre-placed beacons.  {\bf Experimental.}\\
+{\tt blobfinder} & Color-blob detector: an interface to a color blob detectors such as the
+ACTS vision system.\\
+{\tt comms} & Broadcast communications device: sends and receives packets between Player
+clients via the server.\\
+{\tt laser} & Laser device: interface for scanning laser range-finders
 such as the SICK LMS200.\\
-{\tt lbd} & Laser beacon detector: detects retro-reflective bar-codes in
-the laser scan.\\
+{\tt fiducial} & Fiducial detector: detects fiducials (beacons) placed in the
+environment.\\
 {\tt position} & Position device: for control of a mobile robot platform.\\
 {\tt ptz} & Pan-tilt-zoom device: an interface to a pan-tilt-zoom camera
 head such as the Sony EVID30 \\
@@ -343,47 +373,80 @@ head such as the Sony EVID30 \\
 such as those built into a mobile robot base.\\
 {\tt truth} & Truth device: allows clients to get and set the pose of
 objects in the Stage simulator.  {\bf Simulator only.}\\
-{\tt vision} & Vision device: an interface to a color blob detector (the
-ACTS vision system).\\
 \hline
 \end{tabularx}
 
 
+%\newpage
+%\section{The {\tt bps} proxy}
+%
+%{\bf *** This device is experimental and is subject to change. ***}
+%
+%\noindent The {\tt bps} proxy provides an interface to the beacon positioning
+%system.  This device attempts to localize the robot with respect to
+%beacons that have been emplaced in the environment.  See the Player
+%User Manual for a complete description of this device.  The proxy
+%supports the following functions:
+%\begin{quote}
+%\lstinputlisting{bps.f.tex}
+%\end{quote}
+%The {\tt create} function returns a pointer to a {\tt playerc\_bps\_t}
+%structure, which has the following elements.
+%\begin{quote}
+%\lstinputlisting{bps.t.tex}
+%\end{quote}
+
+
 \newpage
-\section{The {\tt bps} proxy}
+\section{The {\tt blobfinder} proxy}
 
-{\bf *** This device is experimental and is subject to change. ***}
-
-\noindent The {\tt bps} proxy provides an interface to the beacon positioning
-system.  This device attempts to localize the robot with respect to
-beacons that have been emplaced in the environment.  See the Player
-User Manual for a complete description of this device.  The proxy
-supports the following functions:
+The {\tt blobfinder} proxy provides an interface to color blob
+detectors such as the ACTS vision system.  See the Player User Manual
+for a complete description of the drivers that support this interface.
+The proxy has the following functions:
 \begin{quote}
-\lstinputlisting{bps.f.tex}
+\lstinputlisting{blobfinder.f.tex}
 \end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_bps\_t}
+The {\tt create} function returns a pointer to a {\tt playerc\_blobfinder\_t}
 structure, which has the following elements.
 \begin{quote}
-\lstinputlisting{bps.t.tex}
+\lstinputlisting{blobfinder.t.tex}
 \end{quote}
 
 
 \newpage
-\section{The {\tt broadcast} proxy}
+\section{The {\tt comms} proxy}
 
-The {\tt broadcast} proxy provides an interface to the network
-broadcast device.  This device broadcasts messages any message sent to
-it onto the local network, and returns the messages broadcast by other
-robots.  Note that this device use broadcast UDP sockets, and
-therefore offers no guarantee that messages will be delivered, or that
-they will be delivered in the order in which they are transmitted.
-The broadcast proxy supports the following functions:
+The {\tt comms} proxy provides an interface to the network broadcast
+device.  This device broadcasts any message sent to it onto the local
+network, and returns the messages broadcast by other robots.  This
+device use broadcast UDP sockets, and therefore offers no guarantee
+that messages will be delivered, or that they will be delivered in the
+order in which they are transmitted.  The comms proxy supports the
+following functions:
 \begin{quote}
-\lstinputlisting{broadcast.f.tex}
+\lstinputlisting{comms.f.tex}
 \end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_broadcast\_t}
+The {\tt create} function returns a pointer to a {\tt playerc\_comms\_t}
 structure; this structure is opaque and should not be manipulated directly.
+
+
+\newpage
+\section{The {\tt fiducial} proxy}
+
+The {\tt fiducial} proxy provides an interface to a fiducial detector.
+This device looks for fiducials (markers or beacons) in the laser
+scan, and determines their identity, range, bearing and orientation.
+See the Player User Manual for a complete description of the various
+drivers that support the fiducial interface.
+\begin{quote}
+\lstinputlisting{fiducial.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_lbd\_t}
+structure, which has the following elements.
+\begin{quote}
+\lstinputlisting{fiducial.t.tex}
+\end{quote}
 
 
 \newpage
@@ -419,23 +482,6 @@ structure, which has the following elements.
 Note that the intensity values will only be filled if intensity information
 is enabled (using the {\tt set\_config} function).
 
-
-\newpage
-\section{The {\tt lbd} proxy}
-
-The {\tt lbd} proxy provides an interface to the laser beacon
-detector.  This device looks for retro-reflective barcodes in the
-laser scan, and determines their identity, range, bearing and
-orientation.  See the Player User Manual for a complete description of
-this device.  The proxy supports the following functions:
-\begin{quote}
-\lstinputlisting{lbd.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_lbd\_t}
-structure, which has the following elements.
-\begin{quote}
-\lstinputlisting{lbd.t.tex}
-\end{quote}
 
 
 \newpage
@@ -504,22 +550,6 @@ structure, which has the following elements:
 \lstinputlisting{truth.t.tex}
 \end{quote}
 
-
-\newpage
-\section{The {\tt vision} proxy}
-
-The {\tt vision} proxy provides an interface to the ACTS vision system
-(a color blob detector).  See the Player User Manual for a complete
-description of this device.  The proxy supports the following
-functions:
-\begin{quote}
-\lstinputlisting{vision.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_vision\_t}
-structure, which has the following elements.
-\begin{quote}
-\lstinputlisting{vision.t.tex}
-\end{quote}
 
 
 \appendix
