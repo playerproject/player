@@ -42,8 +42,8 @@ int PositionProxy::SetSpeed(int speed, int turnrate)
 
   player_position_cmd_t cmd;
 
-  cmd.xspeed = htonl(speed);
-  cmd.yawspeed = htonl(turnrate);
+  cmd.xspeed = (int)htonl(speed);
+  cmd.yawspeed = (int)htonl(turnrate);
 
   return(client->Write(PLAYER_POSITION_CODE,index,
                        (const char*)&cmd,sizeof(cmd)));
