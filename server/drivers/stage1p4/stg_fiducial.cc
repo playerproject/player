@@ -47,7 +47,7 @@ StgFiducial::StgFiducial(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgFiducial with interface %s", interface );
 
-  this->subscribe_prop = STG_MOD_NEIGHBORS;
+  this->subscribe_prop = STG_PROP_FIDUCIALDATA;
 }
 
 CDevice* StgFiducial_Init(char* interface, ConfigFile* cf, int section)
@@ -76,57 +76,45 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
   PLAYER_TRACE2(" STG_FIDUCIAL GETDATA section %d -> model %d",
 		model->section, model->id );
   
-  stg_model_property_wait( model, this->subscribe_prop );
-  
-  stg_property_t* prop = stg_model_property( model, this->subscribe_prop );
-  
-  stg_neighbor_t *nbors = (stg_neighbor_t*)prop->data;
-  
-  size_t ncount = prop->len / sizeof(stg_neighbor_t);
-  
-  printf( "I see %d bytes - that's %d neighbors\n", 
-	  prop->len, ncount );
-  
-  if( ncount > 0 )
+  stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
+
+  if( prop )
     {
-      player_fiducial_data_t pdata;
-      memset( &pdata, 0, sizeof(pdata) );
+      stg_fiducial_t *fids = (stg_fiducial_t*)prop->data;
       
-      pdata.count = htons((uint16_t)ncount);
+      size_t fcount = prop->len / sizeof(stg_fiducial_t);
       
-      for( int i=0; i<(int)ncount; i++ )
+      if( fcount > 0 )
 	{
-	  pdata.fiducials[i].id = htons((int16_t)nbors[i].id);
-	  pdata.fiducials[i].pose[0] = htons((int16_t)(nbors[i].range*1000.0));
-	  pdata.fiducials[i].pose[1] = htons((int16_t)RTOD(nbors[i].bearing));
-	  pdata.fiducials[i].pose[2] = htons((int16_t)RTOD(nbors[i].orientation));
-	  // ignore uncertainty for now
+	  player_fiducial_data_t pdata;
+	  memset( &pdata, 0, sizeof(pdata) );
+	  
+	  pdata.count = htons((uint16_t)fcount);
+	  
+	  for( int i=0; i<(int)fcount; i++ )
+	    {
+	      pdata.fiducials[i].id = htons((int16_t)fids[i].id);
+	      pdata.fiducials[i].pose[0] = htons((int16_t)(fids[i].range*1000.0));
+	      pdata.fiducials[i].pose[1] = htons((int16_t)RTOD(fids[i].bearing));
+	      pdata.fiducials[i].pose[2] = htons((int16_t)RTOD(fids[i].geom.a));
+	      
+	      // player can't handle per-fiducial size.
+	      // we leave uncertainty (upose) at zero
+	    }
+	  
+	  // publish this data
+	  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
 	}
-      
-      // publish this data
-      CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
     }
   else
     CDevice::PutData( NULL, 0, 0,0 ); // time gets filled in
   
-  
-
-  //TEST
-  /*    const char* str = "hello world";
-    stg_los_msg_t msg;
-    memset( &msg, 0, sizeof(msg) );
-    msg.id = 2; // sonarbot?
-    memcpy( &msg.bytes, str, strlen(str));
-    msg.len = strlen(str);
-    stg_model_send_los_msg( this->stage_client, this->model->stage_id, &msg );
-  */
-
   // now inherit the standard data-getting behavior 
   return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
 }
 
 int StgFiducial::PutConfig(player_device_id_t* device, void* client, 
-				    void* data, size_t len)
+			   void* data, size_t len)
 {
   // switch on the config type (first byte)
   uint8_t* buf = (uint8_t*)data;
@@ -134,150 +122,33 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
     {  
     case PLAYER_FIDUCIAL_GET_GEOM:
       {	
-	stg_model_property_refresh( model, STG_MOD_ORIGIN );
-	stg_model_property_refresh( model, STG_MOD_SIZE );
-	
-	stg_property_t* prop_size = 
-	  stg_model_property( model, STG_MOD_SIZE );
-	
-	stg_property_t* prop_org = 
-	  stg_model_property( model, STG_MOD_ORIGIN );
-	
-	stg_size_t* sz = (stg_size_t*)prop_size->data;
-	stg_pose_t *org = (stg_pose_t*)prop_org->data;
-	
-	assert( sz );
-	assert( org );
-	assert( prop_size->len == sizeof(stg_size_t) );
-	assert( prop_org->len == sizeof(stg_pose_t) );
+	PLAYER_TRACE0( "requesting fiducial geom" );
 
+	// just get the model's geom - Stage doesn't have separate
+	// fiducial geom yet
+	stg_geom_t geom;
+	if( stg_model_prop_get( this->model, STG_PROP_GEOM, &geom,sizeof(geom)))
+	  PLAYER_ERROR( "error requesting STG_PROP_GEOM" );
+	else
+	  PLAYER_TRACE0( "got fiducial geom OK" );
+      
 	// fill in the geometry data formatted player-like
 	player_fiducial_geom_t pgeom;
-	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * org->x));
-	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * org->y));
-	pgeom.pose[2] = ntohs((uint16_t)RTOD(org->a));
+	pgeom.pose[0] = htons((uint16_t)(1000.0 * geom.pose.x));
+	pgeom.pose[1] = htons((uint16_t)(1000.0 * geom.pose.y));
+	pgeom.pose[2] = htons((uint16_t)RTOD( geom.pose.a));
 	
-	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sz->x)); 
-	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sz->y)); 
+	pgeom.size[0] = htons((uint16_t)(1000.0 * geom.size.x)); 
+	pgeom.size[1] = htons((uint16_t)(1000.0 * geom.size.y)); 
 	
 	pgeom.fiducial_size[0] = ntohs((uint16_t)100);
 	pgeom.fiducial_size[1] = ntohs((uint16_t)100);
 
 	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		      &pgeom, sizeof(pgeom) )  != 0 )
-	  PLAYER_ERROR("PutReply() failed");
+		      &pgeom, sizeof(pgeom) ) != 0 )
+	  PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_GEOM");      
       }
       break;
-      
-      /*
-    case PLAYER_FIDUCIAL_SEND_MSG:
-      {
-	assert( len == sizeof( player_fiducial_msg_tx_req_t) );
-
-	player_fiducial_msg_tx_req_t* p_msg = 
-	  (player_fiducial_msg_tx_req_t*)data;
-	
-	stg_los_msg_t s_msg;
-	memset( &s_msg, 0, sizeof(s_msg) );
-	
-	s_msg.id = (int32_t)ntohl(p_msg->msg.target_id);
-	s_msg.power = p_msg->msg.intensity;
-	//s_msg.consume = p_msg->consume;
-	s_msg.len = (size_t)p_msg->msg.len;
-
-	//printf( "sending message len %d\n", s_msg.len );
-
-	if( s_msg.len > STG_LOS_MSG_MAX_LEN ) s_msg.len = STG_LOS_MSG_MAX_LEN;
-	memcpy( &s_msg.bytes, p_msg->msg.bytes, s_msg.len );
-	
-	stg_prop_id_t propid;
-	
-	if( p_msg->consume )
-	  propid = STG_MOD_LOS_MSG_CONSUME;
-	else
-	  propid = STG_MOD_LOS_MSG;
-	
-	if( stg_client_property_set(  this->stage_client, model->stage_id,
-				      propid, (void*)&s_msg, sizeof(s_msg))
-	    < 0 )
-	  {
-	    PLAYER_ERROR( "failed to send fiducial message" );
-	    return -1;
-	  }
-	
-	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) 
-	    != 0 )
-	  PLAYER_ERROR("PutReply() failed");;
-      }
-      break;
-
-    case PLAYER_FIDUCIAL_RECV_MSG:
-      {
-	assert( len == sizeof(player_fiducial_msg_rx_req_t ) );
-	
-	player_fiducial_msg_rx_req_t* req = 
-	  (player_fiducial_msg_rx_req_t*)data;
-	
-	stg_los_msg_t* s_msg;
-	size_t len;
-	stg_prop_id_t prop;
-	
-	if( req->consume )
-	  prop = STG_MOD_LOS_MSG_CONSUME;
-	else
-	  prop = STG_MOD_LOS_MSG;
-	  
-	//puts( "GETTING MESSAGE" );
-	
-	stg_client_property_get( this->stage_client, model->stage_id, prop );
-	
-	//printf( "message is %d bytes\n", len );
-
-	if( len == 0 )
-	  {
-	    //puts( "no message to receive" );
-	    
-	    if( PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, 
-			  NULL, NULL, 0 ) != 0 )
-	      PLAYER_ERROR("PutReply() failed");
-	  }
-	else if( len == sizeof(stg_los_msg_t) )
-	  { 
-	    // convert the message from Stage to Player format
-	    player_fiducial_msg_t reply;
-	    
-	    reply.target_id = htonl( (int32_t)s_msg->id );
-	    reply.intensity = (uint8_t)s_msg->power;
-	    reply.len = (uint8_t)s_msg->len;
-	    memcpy( reply.bytes, s_msg->bytes, s_msg->len );
-
-	    //printf( "copied message (%s)\n", reply.bytes );
-
-	    free( s_msg );
-	    
-	    if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL,
-			  &reply, sizeof(player_fiducial_msg_t) ) != 0 )
-	      PLAYER_ERROR("PutReply() failed");
-	  }
-	else
-	  {
-	    // failed
-	    printf( "error: got wrong message size from Stage (%d/%d bytes)\n",
-		    len, sizeof(stg_los_msg_t) );
-	    
-	    if( PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK,
-			  NULL, NULL, 0 ) != 0 )
-	      PLAYER_ERROR("PutReply() failed");
-	  }	    
-      }
-      break;
-
-    case PLAYER_FIDUCIAL_EXCHANGE_MSG:
-      {
-	// TODO
-      }
-
-      */
 
     default:
       {
