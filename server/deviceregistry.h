@@ -34,7 +34,6 @@ typedef struct
 {
   uint16_t code;
   char* name;
-  char* default_driver;
 } player_interface_t;
 
 /* this function registers available devices */
