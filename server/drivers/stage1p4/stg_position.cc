@@ -19,6 +19,8 @@
  * $Id$
  */
 
+#include <stdlib.h>
+
 #include "playercommon.h"
 #include "drivertable.h"
 #include "player.h"
@@ -87,16 +89,24 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 
   // request position data from Stage
 
-  stg_pose_t pose;
-  stg_model_get_pose( this->stage_client, this->stage_id, &pose );
+  stg_pose_t* pose;
+  size_t plen;
+  assert( stg_get_property( this->stage_client, this->stage_id, 
+			    STG_PROP_POSE,
+			    (void**)&pose, &plen ) == 0 );
+  
+  assert( plen == sizeof(stg_pose_t) );
+  
   
   PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose.x, pose.y, pose.a );
 
   memset( &position_data, 0, sizeof(position_data) );
   // pack the data into player format
-  position_data.xpos = ntohl((int32_t)(1000.0 * pose.x));
-  position_data.ypos = ntohl((int32_t)(1000.0 * pose.y));
-  position_data.yaw = ntohl((int32_t)(RTOD(pose.a)));
+  position_data.xpos = ntohl((int32_t)(1000.0 * pose->x));
+  position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
+  position_data.yaw = ntohl((int32_t)(RTOD(pose->a)));
+  
+  free(pose);
 
   // publish this data
   CDevice::PutData( &position_data, sizeof(position_data), 0,0 ); // time gets filled in
@@ -119,7 +129,9 @@ void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
   vel.y = ((double)((int32_t)ntohl(pcmd->yspeed))) / 1000.0;
   vel.a = DTOR((double)((int32_t)ntohl(pcmd->yawspeed)));
   
-  stg_model_set_velocity(this->stage_client, this->stage_id, &vel );
+  assert( stg_set_property( this->stage_client, this->stage_id,
+			    STG_PROP_VELOCITY, (void**)&vel, sizeof(vel) ) 
+	  == 0 );
   
   // we ignore position for now.
 
@@ -142,23 +154,37 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
     {  
     case PLAYER_POSITION_GET_GEOM_REQ:
       {
-	stg_pose_t org;
-	stg_model_get_origin( this->stage_client, this->stage_id, &org );
+	stg_pose_t* org = NULL;
+	size_t len = 0;
+	assert( stg_get_property( this->stage_client, this->stage_id, 
+				  STG_PROP_ORIGIN,
+				  (void**)&org, &len ) == 0 );
 	
-	stg_size_t sz;
-	stg_model_get_size( this->stage_client, this->stage_id, &sz );
+	assert( len == sizeof(stg_pose_t) );
+	
+	stg_size_t* sz = NULL;
+	len = 0;
+	assert( stg_get_property( this->stage_client, this->stage_id, 
+				  STG_PROP_SIZE,
+				  (void**)&sz, &len ) == 0 );
+	
+	assert( sz );
+	assert( len == sizeof(stg_size_t) );
 	
 	// fill in the geometry data formatted player-like
 	player_position_geom_t pgeom;
-	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * org.x));
-	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * org.y));
-	pgeom.pose[2] = ntohs((uint16_t)RTOD(org.a));
+	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * org->x));
+	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * org->y));
+	pgeom.pose[2] = ntohs((uint16_t)RTOD(org->a));
 	
-	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sz.x)); 
-	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sz.y)); 
+	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sz->x)); 
+	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sz->y)); 
 	
 	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		  &pgeom, sizeof(pgeom) );
+
+	free( org );
+	free( sz );
       }
       break;
       

@@ -72,15 +72,19 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
 	      this->section, this->stage_id );
   
   stg_neighbor_t *nbors;
-  int count = 0;
-  stg_model_get_neighbors( this->stage_client, this->stage_id, &nbors, &count );
+  size_t ncount = 0;
+  assert( stg_get_property( this->stage_client, this->stage_id, 
+			    STG_PROP_NEIGHBORS,
+			    (void**)&nbors, &ncount ) == 0 );
+  
+  ncount /= sizeof(stg_neighbor_t);
   
   player_fiducial_data_t pdata;
   memset( &pdata, 0, sizeof(pdata) );
   
-  pdata.count = htons((uint16_t)count);
+  pdata.count = htons((uint16_t)ncount);
   
-  for( int i=0; i<count; i++ )
+  for( int i=0; i<(int)ncount; i++ )
     {
       pdata.fiducials[i].id = htons((int16_t)nbors[i].id);
       pdata.fiducials[i].pose[0] = htons((int16_t)(nbors[i].range*1000.0));
@@ -89,7 +93,8 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
       // ignore uncertainty for now
     }
       
-  free( nbors );
+  if( nbors )
+    free( nbors );
 
   // publish this data
   CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
@@ -121,23 +126,35 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
     {  
     case PLAYER_FIDUCIAL_GET_GEOM:
       {
-	stg_pose_t org;
-	stg_model_get_origin( this->stage_client, this->stage_id, &org );
+	stg_pose_t* org;
+	size_t len;
+	assert( stg_get_property( this->stage_client, this->stage_id, 
+				  STG_PROP_ORIGIN,
+				  (void**)&org, &len ) == 0 );
 	
-	stg_size_t sz;
-	stg_model_get_size( this->stage_client, this->stage_id, &sz );
+	assert( len == sizeof(stg_pose_t) );
 	
+	stg_size_t* sz;	
+	assert( stg_get_property( this->stage_client, this->stage_id, 
+				  STG_PROP_SIZE,
+				  (void**)&sz, &len ) == 0 );
+	
+	assert( len == sizeof(stg_size_t) );
+
 	// fill in the geometry data formatted player-like
 	player_fiducial_geom_t pgeom;
-	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * org.x));
-	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * org.y));
-	pgeom.pose[2] = ntohs((uint16_t)RTOD(org.a));
+	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * org->x));
+	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * org->y));
+	pgeom.pose[2] = ntohs((uint16_t)RTOD(org->a));
 	
-	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sz.x)); 
-	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sz.y)); 
+	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sz->x)); 
+	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sz->y)); 
 	
 	pgeom.fiducial_size[0] = ntohs((uint16_t)100);
 	pgeom.fiducial_size[1] = ntohs((uint16_t)100);
+
+	free(org);
+	free(sz);
 
 	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		      &pgeom, sizeof(pgeom) )  != 0 )
