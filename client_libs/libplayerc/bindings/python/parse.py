@@ -5,15 +5,6 @@ import string
 import sys
 
 
-prefixes = ['playerc_client',
-            'playerc_device_info',
-            'playerc_joystick',
-            'playerc_position',
-            'playerc_position3d',
-            'playerc_laser']
-
-
-
 class Rule:
 
     def __init__(self):
@@ -36,6 +27,7 @@ def compile_comment():
     rule = Rule()
     rule.type = 'comment'
     rule.patterns += [re.compile('/\*.*?\*/', re.DOTALL)]
+    rule.patterns += [re.compile('//.*')]
 
     return [rule]
 
@@ -118,12 +110,12 @@ def compile(prefix):
     rule.replacements += [rep]
 
     rep = Replace()
-    rep.src = re.compile('\(*\s*%s_t\s*\*\w*\s*\)' % prefix)
+    rep.src = re.compile('\(*\s*%s_t\s*\*\s*\w*\s*\)' % prefix)
     rep.dst = '()'
     rule.replacements += [rep]
 
     rep = Replace()
-    rep.src = re.compile('\(*\s*%s_t\s*\*\w*\s*,\s*' % prefix)
+    rep.src = re.compile('\(*\s*%s_t\s*\*\s*\w*\s*,\s*' % prefix)
     rep.dst = '('
     rule.replacements += [rep]
 
@@ -132,24 +124,28 @@ def compile(prefix):
     return rules
 
 
+def extract_prefixes(instream):
+    """Extract class prefixes."""
 
-def parse_file(filename, rules):
+    src = re.compile('playerc_\w*_create')
+    constructors = src.findall(instream)
 
-    file = open(filename, 'r')
+    prefixes = []
+    for c in constructors:
+        prefixes += [c[:-7]]
 
-    stream = ''
-    while 1:
-        line = file.readline()
-        if not line:
-            break
-        stream += line
+    return prefixes
+
+
+def parse_file(instream, rules):
+    """Apply replacement rules."""
 
     outstream = ''
     current_struct = None
     
-    while stream:
+    while instream:
 
-        line = stream
+        line = instream
         m = None
         
         for rule in rules:
@@ -166,15 +162,18 @@ def parse_file(filename, rules):
             
             # Parse comment blocks
             if rule.type == 'comment':
-                stream = stream[m.end():]
+                #print instream[m.start():m.end()]
+                instream = instream[m.end():]
                 outstream += func
                 break
 
             # Parse function name and args
             (name, sig) = string.split(func, '(', 1)
+            tokens = string.split(name)
+            (rval, name) = (string.join(tokens[:-1]), tokens[-1])
             sig = '(' + sig
-
-            #print name, sig
+            
+            #print '%s | %s | %s' % (rval, name, sig)
 
             # Apply replacement rules to name
             for rep in rule.replacements:
@@ -190,37 +189,49 @@ def parse_file(filename, rules):
                     continue
                 sig = sig[:mm.start()] + rep.dst + sig[mm.end():]
                 
-            #print name, sig
+            print rval, name, sig
 
             outstream += rule.head
-            outstream += name
-            outstream += sig
+            outstream += '%s %s %s' % (rval, name, sig)
             outstream += rule.foot
             
-            stream = stream[m.end():]
+            instream = instream[m.end():]
             
             break
 
         # If no rule matches
         if not m:
-            outstream += stream[:1]
-            stream = stream[1:]
+            outstream += instream[:1]
+            instream = instream[1:]
 
     return outstream
     
 
+
+
 if __name__ == '__main__':
 
     infilename = sys.argv[1]
-    #outfilename = sys.argv[2]
+    outfilename = sys.argv[2]
 
+    # Read in the entire file
+    file = open(infilename, 'r')
+    instream = file.read()
+
+    # Extract "class prefixes" from the header
+    prefixes = extract_prefixes(instream)
+
+    #prefixes = ['playerc_log']
+
+    # Compute the grammar
     rules = []
     rules += compile_comment()
-
     for prefix in prefixes:
+        print 'prefix: %s' % prefix
         rules += compile(prefix)
 
-    outstream = parse_file(infilename, rules)
+    # Parse the file and appy replacement rules
+    outstream = parse_file(instream, rules)
 
     # Do some final replacements
     for prefix in prefixes:
@@ -234,5 +245,6 @@ if __name__ == '__main__':
 
     outstream = guff + outstream
 
-    print outstream
+    file = open(outfilename, 'w+')
+    file.write(outstream)
 
