@@ -59,7 +59,7 @@
 #include <time.h>
 #include <sys/time.h>
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
 
 #include <playercommon.h>
 #include <laserdevice.h>
@@ -86,13 +86,11 @@
 //
 CLaserDevice::CLaserDevice(char *port) 
 {
-    data = new unsigned char[LASER_DATA_BUFFER_SIZE];
+    // *** REMOVE data = new unsigned char[LASER_DATA_BUFFER_SIZE];
     config = new unsigned char[LASER_CONFIG_BUFFER_SIZE];
-
     config_size = 0;
 
-    data_swapped = false;
-    bzero(data, LASER_DATA_BUFFER_SIZE);
+    memset(&m_data, 0, sizeof(m_data));
   
     strcpy( LASER_SERIAL_PORT, port );
     // just in case...
@@ -103,15 +101,10 @@ CLaserDevice::CLaserDevice(char *port)
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by client thread)
 //
-size_t CLaserDevice::GetData( unsigned char *dest, size_t maxsize ) 
+size_t CLaserDevice::GetData( unsigned char *dest, size_t destsize ) 
 {
-    if(!data_swapped)
-    {
-        for(int i=0;i<LASER_DATA_BUFFER_SIZE;i+=sizeof(unsigned short))
-            *(unsigned short*)&data[i] = htons(*(unsigned short*)&data[i]);
-        data_swapped = true;
-    }
-    memcpy( dest, data, LASER_DATA_BUFFER_SIZE );
+    ASSERT(destsize >= LASER_DATA_BUFFER_SIZE);
+    memcpy(dest, &m_data, LASER_DATA_BUFFER_SIZE);
     return(LASER_DATA_BUFFER_SIZE);
 }
 
@@ -119,10 +112,10 @@ size_t CLaserDevice::GetData( unsigned char *dest, size_t maxsize )
 ////////////////////////////////////////////////////////////////////////////////
 // Put data in buffer (called by device thread)
 //
-void CLaserDevice::PutData( unsigned char *src, size_t maxsize )
+void CLaserDevice::PutData( unsigned char *src, size_t srcsize )
 {
-    memcpy( data, src, LASER_DATA_BUFFER_SIZE );
-    data_swapped = false;
+    ASSERT(srcsize == LASER_DATA_BUFFER_SIZE);
+    memcpy(&m_data, src, srcsize);
 }
 
 
@@ -157,11 +150,54 @@ size_t CLaserDevice::GetConfig(unsigned char *dest, size_t maxsize)
     }
 
     player_laser_config_t *c = (player_laser_config_t*) config;
-    min_segment = ntohs(c->min_segment);
-    max_segment = ntohs(c->max_segment);
-    intensity = c->intensity;
+
+    m_intensity = c->intensity;
+    m_scan_res = ntohs(c->resolution);
+    int min_angle = (short) ntohs(c->min_angle);
+    int max_angle = (short) ntohs(c->max_angle);
+
+    PLAYER_TRACE2("%d %d", min_angle, max_angle);
+
+    // For high res, drop the scan range down to 100 degrees.
+    // The angles must be interpreted differently too.
+    //
+    if (m_scan_res == 25)
+    {
+        m_scan_width = 100;
+        m_scan_min_segment = (min_angle + 5000) / m_scan_res;
+        m_scan_max_segment = (max_angle + 5000) / m_scan_res;
+
+        if (m_scan_min_segment < 0)
+            m_scan_min_segment = 0;
+        if (m_scan_min_segment > 400)
+            m_scan_min_segment = 400;
+
+        if (m_scan_max_segment < 0)
+            m_scan_max_segment = 0;
+        if (m_scan_max_segment > 400)
+            m_scan_max_segment = 400;
+    }
+    else if (m_scan_res == 50 || m_scan_res == 100)
+    {
+        m_scan_width = 180;
+        m_scan_min_segment = (min_angle + 9000) / m_scan_res;
+        m_scan_max_segment = (max_angle + 9000) / m_scan_res;
+
+        if (m_scan_min_segment < 0)
+            m_scan_min_segment = 0;
+        if (m_scan_min_segment > 360)
+            m_scan_min_segment = 360;
+
+        if (m_scan_max_segment < 0)
+            m_scan_max_segment = 0;
+        if (m_scan_max_segment > 360)
+            m_scan_max_segment = 360;
+    }
+    else
+        PLAYER_ERROR("invalid laser configuration");
+    
     PLAYER_MSG3("new scan range [%d %d], intensity [%d]",
-         (int) min_segment, (int) max_segment, (int) intensity);
+                (int) m_scan_min_segment, (int) m_scan_max_segment, (int) m_intensity);
     
     config_size = 0;
     return 1;
@@ -178,7 +214,6 @@ void CLaserDevice::PutConfig( unsigned char *src, size_t maxsize)
         PLAYER_ERROR("config request too big; ignoring");
         return;
     }
-
     memcpy(config, src, maxsize);
     config_size = maxsize;
 }
@@ -189,11 +224,13 @@ void CLaserDevice::PutConfig( unsigned char *src, size_t maxsize)
 //
 int CLaserDevice::Setup()
 {   
-    // Set scan range to default
+    // Set default configuration
     //
-    min_segment = 0;
-    max_segment = 360;
-    intensity = false;
+    m_scan_width = 180;
+    m_scan_res = 50;
+    m_scan_min_segment = 0;
+    m_scan_max_segment = 360;
+    m_intensity = false;
 
     printf("Laser connection initializing...");
     fflush(stdout);
@@ -225,9 +262,18 @@ int CLaserDevice::Setup()
             return 1;
     }
 
+    // Display the laser type
+    //
+    char type[64];
+    if (GetLaserType(type, sizeof(type)))
+        return 1;
+    PLAYER_MSG1("SICK laser type [%s]", (char*) type);
+
     // Configure the laser
     //
-    if (SetLaserConfig())
+    if (SetLaserRes(m_scan_width, m_scan_res))
+        return 1;
+    if (SetLaserConfig(m_intensity))
         return 1;
 
     CloseTerm();
@@ -304,7 +350,7 @@ int CLaserDevice::Main()
     //
     for (int retry = 0; retry < MAX_RETRIES; retry++)
     {
-        if (RequestLaserData() == 0)
+        if (RequestLaserData(m_scan_min_segment, m_scan_max_segment) == 0)
             break;
         else if (retry >= MAX_RETRIES)
             RETURN_ERROR(1, "laser not responding; exiting laser thread");
@@ -325,16 +371,34 @@ int CLaserDevice::Main()
             // Change any config settings
             //
             if (SetLaserMode() == 0)
-                SetLaserConfig();
+            {
+                SetLaserRes(m_scan_width, m_scan_res);
+                SetLaserConfig(m_intensity);
+            }
 
             // Issue a new request for data
             //
-            RequestLaserData();
+            RequestLaserData(m_scan_min_segment, m_scan_max_segment);
         }
         
         // Process incoming data
         //
-        ProcessLaserData();
+        player_laser_data_t data;
+        if (ReadLaserData(data.ranges, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
+        {
+            // Prepare packet and byte swap
+            //
+            data.min_angle = htons(m_scan_min_segment * m_scan_res - m_scan_width * 50);
+            data.max_angle = htons(m_scan_max_segment * m_scan_res - m_scan_width * 50);
+            data.resolution = htons(m_scan_res);
+            data.range_count = htons(m_scan_max_segment - m_scan_min_segment + 1);
+            for (int i = 0; i < m_scan_max_segment - m_scan_min_segment + 1; i++)
+                data.ranges[i] = htons(data.ranges[i]);
+
+            // Make data available
+            //
+            GetLock()->PutData(this, (uint8_t*) &data, sizeof(data));
+        }
     }
 
     CloseTerm();
@@ -511,10 +575,55 @@ int CLaserDevice::SetLaserSpeed(int speed)
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Get the laser type
+//
+int CLaserDevice::GetLaserType(char *buffer, size_t bufflen)
+{
+    ssize_t len;
+    uint8_t packet[512];
+
+    packet[0] = 0x3A;
+    len = 1;
+
+    PLAYER_TRACE0("sending get type request to laser");
+    if (WriteToLaser(packet, len) < 0)
+        return 1;
+
+    // Wait for laser to return data
+    // This could take a while...
+    //
+    PLAYER_TRACE0("waiting for reply");
+    usleep(200000);
+
+    len = ReadFromLaser(packet, sizeof(packet), false, 200);
+    if (len < 0)
+        return 1;
+    else if (len < 1)
+        RETURN_ERROR(1, "no reply from laser")
+    else if (packet[0] == NACK)
+        RETURN_ERROR(1, "request denied by laser")
+    else if (packet[0] != 0xBA)
+        RETURN_ERROR(1, "unexpected packet type");
+
+    // NULL terminate the return string
+    //
+    ASSERT((size_t) len + 1 < sizeof(packet));
+    packet[len + 1] = 0;
+
+    // Copy to buffer
+    //
+    ASSERT(bufflen >= (size_t) len - 1);
+    strcpy(buffer, (char*) (packet + 1));
+
+    return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Set the laser configuration
 // Returns 0 on success
 //
-int CLaserDevice::SetLaserConfig()
+int CLaserDevice::SetLaserConfig(bool intensity)
 {
     ssize_t len;
     uint8_t packet[512];
@@ -544,14 +653,6 @@ int CLaserDevice::SetLaserConfig()
 
     PLAYER_TRACE0("get configuration request ok");
 
-    // *** TESTING ***
-    //
-    /*
-    for (int i = 0; i < len; i++)
-        printf("%02X ", (int) packet[i]);
-    printf("\n");
-    */
-
     // Modify the configuration and send it back
     //
     packet[0] = 0x77;
@@ -576,16 +677,54 @@ int CLaserDevice::SetLaserConfig()
     else if (packet[0] != 0xF7)
         RETURN_ERROR(1, "unexpected packet type");
 
-    // *** TESTING ***
-    //
-    /*
-    for (int i = 0; i < len; i++)
-        printf("%02X ", (int) packet[i]);
-    printf("\n");
-    */
-
     PLAYER_TRACE0("set configuration request ok");
 
+    return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Change the resolution of the laser
+// Valid widths are: 100, 180 (degrees)
+// Valid resolitions are: 25, 50, 100 (1/100 degree)
+//
+int CLaserDevice::SetLaserRes(int width, int res)
+{
+    ssize_t len;
+    uint8_t packet[512];
+
+    len = 0;
+    packet[len++] = 0x3B;
+    packet[len++] = (width & 0xFF);
+    packet[len++] = (width >> 8);
+    packet[len++] = (res & 0xFF);
+    packet[len++] = (res >> 8);
+
+    PLAYER_TRACE0("sending set variant request to laser");
+    if (WriteToLaser(packet, len) < 0)
+        return 1;
+
+    // Wait for laser to return data
+    // This could take a while...
+    //
+    PLAYER_TRACE0("waiting for reply");
+    usleep(200000);
+
+    len = ReadFromLaser(packet, sizeof(packet), false, 200);
+    if (len < 0)
+        return 1;
+    else if (len < 1)
+        RETURN_ERROR(1, "no reply from laser")
+    else if (packet[0] == NACK)
+        RETURN_ERROR(1, "request denied by laser")
+    else if (packet[0] != 0xBB)
+        RETURN_ERROR(1, "unexpected packet type");
+
+    // See if the request was accepted
+    //
+    if (packet[1] == 0)
+        RETURN_ERROR(1, "variant request ignored");
+        
     return 0;
 }
 
@@ -594,7 +733,7 @@ int CLaserDevice::SetLaserConfig()
 // Request data from the laser
 // Returns 0 on success
 //
-int CLaserDevice::RequestLaserData()
+int CLaserDevice::RequestLaserData(int min_segment, int max_segment)
 {
     ssize_t len = 0;
     uint8_t packet[20];
@@ -647,28 +786,21 @@ int CLaserDevice::RequestLaserData()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Process data from the incoming data stream
-// Returns 0 on success
+// Read range data from laser
 //
-int CLaserDevice::ProcessLaserData()
+int CLaserDevice::ReadLaserData(uint16_t *data, size_t datalen)
 {
-    uint8_t raw_data[LASER_DATA_BUFFER_SIZE + 7];
-    uint8_t final_data[LASER_DATA_BUFFER_SIZE] = {0};
+    uint8_t raw_data[1024];
 
     // Read a packet from the laser
     //
     int len = ReadFromLaser(raw_data, sizeof(raw_data));
     if (len == 0)
-        return 0;
+    {
+        PLAYER_TRACE0("empty packet");
+        return 1;
+    }
 
-    // Dump the packet
-    //
-    /*
-    for (int i = 0; i < 6; i++)
-        printf("%X ", (int) (raw_data[i]));
-    printf("\n");
-    */
-    
     // Process raw packets
     //
     if (raw_data[0] == 0xB0)
@@ -677,46 +809,38 @@ int CLaserDevice::ProcessLaserData()
         //
         //int units = raw_data[2] >> 6;
         int count = (int) raw_data[1] | ((int) (raw_data[2] & 0x3F) << 8);
-        ASSERT(count < LASER_DATA_BUFFER_SIZE);
-        
+        ASSERT((size_t) count <= datalen);
+
         // Strip the status info and shift everything down a few bytes
         // to remove packet header.
         //
         for (int i = 0; i < count; i++)
         {
             int src = 2 * i + 3;
-            int dest = 2 * i;
-            final_data[dest + 0] = raw_data[src + 0];
-            final_data[dest + 1] = raw_data[src + 1];
+            data[i] = raw_data[src + 0] | (raw_data[src + 1] << 8);
         }
-    
-        GetLock()->PutData(this, final_data, 2 * count);
     }
     else if (raw_data[0] == 0xB7)
     {
         // Determine which values were returned
         //
-        int first = ((int) raw_data[1] | ((int) raw_data[2] << 8)) - 1;
+        //int first = ((int) raw_data[1] | ((int) raw_data[2] << 8)) - 1;
         //int last =  ((int) raw_data[3] | ((int) raw_data[4] << 8)) - 1;
         
         // Determine the number of values returned
         //
         //int units = raw_data[6] >> 6;
         int count = (int) raw_data[5] | ((int) (raw_data[6] & 0x3F) << 8);
-        ASSERT(count < LASER_DATA_BUFFER_SIZE);
-       
+        ASSERT((size_t) count <= datalen);
+
         // Strip the status info and shift everything down a few bytes
         // to remove packet header.
         //
         for (int i = 0; i < count; i++)
         {
             int src = 2 * i + 7;
-            int dest = 2 * (i + first);
-            final_data[dest + 0] = raw_data[src + 0];
-            final_data[dest + 1] = raw_data[src + 1];
+            data[i] = raw_data[src + 0] | (raw_data[src + 1] << 8);
         }
-    
-        GetLock()->PutData(this, final_data, 2 * count);
     }
     else
         RETURN_ERROR(1, "unexpected packet type");

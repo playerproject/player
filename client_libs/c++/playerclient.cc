@@ -68,7 +68,7 @@ PlayerClient::PlayerClient()
                              LASER_DATA_BUFFER_SIZE,
                              LASER_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_LASER_CODE,0);
-  laser = ((player_laser_data_t*)(thisentry->data))->ranges;
+  laser = (player_laser_data_t*)(thisentry->data);
 
   // the zeroth sonar device
   devicedatatable->AddDevice(PLAYER_SONAR_CODE, 0, 'c',
@@ -206,6 +206,10 @@ void PlayerClient::ByteSwapData(void* data, player_msghdr_t hdr)
       player_laser_data_t* templaser;
       templaser = (player_laser_data_t*)data;
       minlaser = 8000;
+      templaser->resolution = ntohs(templaser->resolution);
+      templaser->min_angle = ntohs(templaser->min_angle);
+      templaser->max_angle = ntohs(templaser->max_angle);
+      templaser->range_count = ntohs(templaser->range_count);
       for(int j=0;j<PLAYER_NUM_LASER_SAMPLES;j++)
       {
         templaser->ranges[j] = ntohs(templaser->ranges[j]);
@@ -620,22 +624,24 @@ int PlayerClient::ChangeVelocityControl(velocity_mode_t mode)
 
 /*
  * Set the laser configuration
- * Use min_ and max_segment to specify a restricted scan.
+ * Use <scan_res> [25, 50, 100] to specify the scan resolution (1/100 degree).
+ * Use <min_angle> and <max_angle> to specify the scan width (1/100 degrees).
+ * Valid range is -9000 to +9000.
  * Set intensity to true to get intensity data in the top three bits
  * of the range scan data.
  *
  * Returns 0 on success; non-zero otherwise
  */
-int PlayerClient::SetLaserConfig(int min_segment, int max_segment, 
-                bool intensity)
+int PlayerClient::SetLaserConfig(int scan_res, int min_angle, int max_angle, bool intensity)
 {
   player_msghdr_t replyhdr;
   char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
 
   player_laser_config_t payload;
 
-  payload.min_segment = htons(min_segment);
-  payload.max_segment = htons(max_segment);
+  payload.resolution = htons((uint16_t) scan_res);
+  payload.min_angle = htons((int16_t) min_angle);
+  payload.max_angle = htons((int16_t) max_angle);
   payload.intensity = intensity;
 
   return(player_request(&conn, PLAYER_LASER_CODE, 0,

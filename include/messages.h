@@ -33,7 +33,7 @@
 
 /* need to put this stuff somewhere else? maybe run-time config? */
 #define PLAYER_NUM_SONAR_SAMPLES 16
-#define PLAYER_NUM_LASER_SAMPLES 361
+#define PLAYER_NUM_LASER_SAMPLES 401
 
 /* the message start signifier */
 #define PLAYER_STXX ((uint16_t) 0x5878)
@@ -241,27 +241,40 @@ typedef struct
  */
 
 /*
- * the laser data packet
+   the laser data packet
+   
+   <min_angle> and <max_angle> specify the start and end angles
+   (in units of 0.01 degrees).  Valid range is -9000 to +9000.
+   <resolution> specifies the resolution (in units of 0.01 degrees).
+   Valid resolutions are 25, 50, 100.
+   <samples> indicates the total nuumber of samples.
+   <ranges> are in mm and start from <min_angle>.
  */
 typedef struct
 {
-  /* laser samples start at 0 on the right and increase counterclockwise
-     (like the unit circle) */
+  int16_t min_angle;
+  int16_t max_angle;
+  uint16_t resolution;
+  uint16_t range_count;
   uint16_t ranges[PLAYER_NUM_LASER_SAMPLES];
 } __attribute__ ((packed)) player_laser_data_t;
 
 /*
- * the laser configuration packet
- */
+   the laser configuration packet
+
+   <min_angle> and <max_angle> specify the start and end angles
+   (in units of 0.01 degrees).  Valid range is -9000 to +9000.
+   <resolution> specifies the resolution (in units of 0.01 degrees).
+   Valid resolutions are 25, 50, 100.
+   If <intensity> is set reflection intensity values will be returned
+   in the top 3 bits of the range data.
+*/
 typedef struct
 {
-    /* laser takes a maximum of 361 samples; to take a partial scan,
-       set the min and max segment values. */
-    uint16_t min_segment;
-    uint16_t max_segment;
-    /* Laser can return intensity values in the top 3 bits of the range
-       readings; set intensity = 1 to enable this feature. */
-    uint8_t  intensity;
+  int16_t min_angle;
+  int16_t max_angle;
+  uint16_t resolution;
+  uint8_t  intensity;
 } __attribute__ ((packed)) player_laser_config_t;
 
 #define LASER_DATA_BUFFER_SIZE ((int)sizeof(player_laser_data_t))

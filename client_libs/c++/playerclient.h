@@ -101,13 +101,14 @@ class PlayerClient
      unsigned short* newzoom;
 
      unsigned short *sonar;
-     unsigned short *laser;
+     // *** REMOVE unsigned short *laser;
      
      // data structures to hold sensor readings FROM robot
      player_position_data_t* position;
      player_ptz_data_t* ptz;
      player_misc_data_t* misc;
      vision_data* vision;
+     player_laser_data_t *laser;
      player_laserbeacon_data_t* laserbeacon;
 
      // processed data
@@ -181,13 +182,15 @@ class PlayerClient
 
      /*
       * Set the laser configuration
-      * Use min_ and max_segment to specify a restricted scan.
+      * Use <scan_res> [25, 50, 100] to specify the scan resolution (1/100 degree).
+      * Use <min_angle> and <max_angle> to specify the scan width (1/100 degrees).
+      * Valid range is -9000 to +9000.
       * Set intensity to true to get intensity data in the top three bits
       * of the range scan data.
       *
       * Returns 0 on success; non-zero otherwise
       */
-     int SetLaserConfig(int min_segment, int max_segment, bool intensity);
+     int SetLaserConfig(int scan_res, int min_angle, int max_angle, bool intensity);
 
      /*
       * Set the laser beacon configuration
