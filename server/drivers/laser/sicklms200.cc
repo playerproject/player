@@ -527,11 +527,7 @@ int SickLMS200::CheckScanConfig()
 // Returns 0 on success
 int SickLMS200::OpenTerm()
 {
-#if PLAYER_LINUX
   this->laser_fd = ::open(this->device_name, O_RDWR | O_SYNC , S_IRUSR | S_IWUSR );
-#else
-  this->laser_fd = ::open(this->device_name, O_RDWR, S_IRUSR | S_IWUSR );
-#endif
   if (this->laser_fd < 0)
   {
     PLAYER_ERROR2("unable to open serial port [%s]; [%s]",

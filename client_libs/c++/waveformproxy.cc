@@ -31,6 +31,10 @@
  * - configurable output device (dump to file, etc).  
  */
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include <playerclient.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -38,10 +42,13 @@
 #include <sys/ioctl.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/soundcard.h>
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
+
+#if HAVE_SYS_SOUNDCARD_H
+  #include <sys/soundcard.h>
+#endif
 
 WaveformProxy::~WaveformProxy()   
 { 
@@ -117,6 +124,7 @@ int WaveformProxy::ConfigureDSP()
   int status;   /* return status of system calls */
   int r=0;
   
+#if HAVE_SYS_SOUNDCARD_H
   OpenDSPforWrite();
 
   /* set sampling parameters */
@@ -149,6 +157,10 @@ int WaveformProxy::ConfigureDSP()
   }
 
   //close(fd);
+#else
+  PLAYER_ERROR("no soundcard support compiled in");
+  r=1;
+#endif
  
   return r;
 }

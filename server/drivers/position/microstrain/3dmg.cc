@@ -272,11 +272,7 @@ int MicroStrain3DMG::OpenPort()
   char firmware[32];
   
   // Open the port
-#if PLAYER_LINUX
   this->fd = open(this->port_name, O_RDWR | O_SYNC , S_IRUSR | S_IWUSR );
-#else
-  this->fd = open(this->port_name, O_RDWR, S_IRUSR | S_IWUSR );
-#endif
   if (this->fd < 0)
   {
     PLAYER_ERROR2("unable to open serial port [%s]; [%s]",

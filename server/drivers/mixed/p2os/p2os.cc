@@ -191,13 +191,8 @@ int P2OS::Setup()
   printf("P2OS connection initializing (%s)...",psos_serial_port);
   fflush(stdout);
 
-#if PLAYER_LINUX
   if((psos_fd = open(psos_serial_port, 
                      O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
-#else
-  if((psos_fd = open(psos_serial_port, 
-                     O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
-#endif
   {
     perror("P2OS::Setup():open():");
     return(1);
