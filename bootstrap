@@ -2,7 +2,7 @@
 
 # Run the player bootstrap
 set -x
-aclocal-1.7
+aclocal
 autoheader
-automake-1.7 --gnu --add-missing
+automake --gnu --add-missing
 autoconf
