@@ -259,7 +259,7 @@ def make_text(file, section, block):
 
 def make_defines(file, section, blocks, index):
 
-    maxchars = 20
+    maxchars = 30
 
     file.write('\\begin{center}')
     file.write('\\begin{footnotesize}')
@@ -296,7 +296,7 @@ def make_defines(file, section, blocks, index):
 def make_struct(file, section, blocks, index):
     """Generate a class entry."""
 
-    maxchars = 20
+    maxchars = 30
 
     block = blocks[index]
 
@@ -347,11 +347,9 @@ def make_class(file, section, block):
 def make_method(file, section, block):
     """Generate method blocks."""
 
-    #file.write('\\begin{small}')
     file.write('\\begin{verbatim}\n')
     file.write(block.code)
     file.write('\\end{verbatim}\n')
-    #file.write('\\end{small}')
     file.write('\\vspace*{-0.5em}\n')
     file.write('%s\n' % block.desc)
     file.write('\\vspace*{0.5em}\n')
