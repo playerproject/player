@@ -80,6 +80,7 @@
 #define PLAYER_MCOM_CODE           ((uint16_t)26)  // multicoms
 #define PLAYER_SOUND_CODE	   ((uint16_t)27) // sound file playback
 #define PLAYER_AUDIODSP_CODE          ((uint16_t)28)   // audio dsp I/O
+#define PLAYER_AUDIOMIXER_CODE          ((uint16_t)29)   // audio I/O
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -112,6 +113,7 @@
 #define PLAYER_MCOM_STRING           "mcom"
 #define PLAYER_SOUND_STRING	    "sound"
 #define PLAYER_AUDIODSP_STRING      "audiodsp"
+#define PLAYER_AUDIOMIXER_STRING    "audiomixer"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -1193,6 +1195,56 @@ typedef struct player_audiodsp_config
 
 } __attribute__ ((packed)) player_audiodsp_config_t;
 
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section audiomixer
+ *************************************************************************/
+#define PLAYER_AUDIOMIXER_SET_MASTER 0x01
+#define PLAYER_AUDIOMIXER_SET_PCM    0x02
+#define PLAYER_AUDIOMIXER_SET_LINE   0x03
+#define PLAYER_AUDIOMIXER_SET_MIC    0x04
+#define PLAYER_AUDIOMIXER_SET_IGAIN  0x05
+#define PLAYER_AUDIOMIXER_SET_OGAIN  0x06
+
+/** [Synopsis]
+The {\tt audiomixer} interface is used to control sound levels. */
+
+/** [Configuration: get levels] */
+/**
+The {\tt audiomixe} interface provides accepts a configuration request which
+returns the current state of the mixer levels.
+*/
+typedef struct player_audiomixer_config
+{
+  uint8_t subtype;
+  uint16_t masterLeft, masterRight;
+  uint16_t pcmLeft, pcmRight;
+  uint16_t lineLeft, lineRight;
+  uint16_t micLeft, micRight;
+  uint16_t iGain, oGain;
+
+} __attribute__ ((packed)) player_audiomixer_config_t;
+
+/** [Command] */
+/** The {\tt audiomixer} interface accepts commands to set the left and
+right volume levels of various channels. The channel may be 
+PLAYER_AUDIOMIXER_MASTER for the master volume, PLAYER_AUDIOMIXER_PCM for the
+PCM volume, PLAYER_AUDIOMIXER_LINE for the line in volume, 
+PLAYER_AUDIOMIXER_MIC for the microphone volume, PLAYER_AUDIOMIXER_IGAIN for 
+the input gain, and PLAYER_AUDIOMIXER_OGAIN for the output gain.
+*/
+
+typedef struct player_audiomixer_cmd
+{
+  uint8_t subtype;
+
+  uint16_t left;
+  uint16_t right;
+
+} __attribute__ ((packed)) player_audiomixer_cmd_t;
 /*************************************************************************
  ** end section
  *************************************************************************/

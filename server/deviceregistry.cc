@@ -117,6 +117,11 @@ void FixedTones_Register(DriverTable* table);
 void Acoustics_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_MIXER
+void Mixer_Register(DriverTable* table);
+#endif
+
+
 #ifdef INCLUDE_RWI
 void RWIBumper_Register(DriverTable* table);
 void RWILaser_Register(DriverTable* table);
@@ -185,6 +190,7 @@ player_interface_t interfaces[] = {
   {PLAYER_LOCALIZE_CODE, PLAYER_LOCALIZE_STRING, "amcl"},
   {PLAYER_MCOM_CODE, PLAYER_MCOM_STRING, "lifomcom"},
   {PLAYER_SOUND_CODE, PLAYER_SOUND_STRING, "p2os_sound"},
+  {PLAYER_AUDIOMIXER_CODE, PLAYER_AUDIOMIXER_STRING, "mixer"},
   {0,NULL,NULL}
 };
 
@@ -271,6 +277,11 @@ register_devices()
 #ifdef INCLUDE_ACOUSTICS
   Acoustics_Register(driverTable);
 #endif
+
+#ifdef INCLUDE_MIXER
+  Mixer_Register(driverTable);
+#endif
+
 
 #ifdef INCLUDE_RWI
   RWIPosition_Register(driverTable);
