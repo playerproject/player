@@ -30,5 +30,6 @@ echo "Creating tarball $DISTRO.tgz, excluding CVS directories"
 /bin/tar hcvzf $DISTRO.tgz $DISTRO --exclude "*CVS" --exclude "\.#*" --exclude "*distro.sh" --exclude "*copyright_header" --exclude "*java*" --exclude "*python*" --exclude "newc++*" --exclude "*player-manual*"
 echo "Removing version link $DISTRO"
 rm -f $DISTRO
+mv $DISTRO.tgz $DIRECTORY
 echo "File $DISTRO.tgz contains $SOFTWARE v.$VERSION"
 echo "Done." 
