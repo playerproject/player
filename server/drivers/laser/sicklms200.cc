@@ -83,7 +83,7 @@ Driver for the SICK LMS200 scanning laser range-finder.
     - resolution 100 : 1 degree increments, 181 readings @ 10Hz (38400) or 75Hz (500000).
 
 - range_res 1
-  - Range resolution.  Valid valies are:
+  - Range resolution.  Valid values are:
     - range_res 1 : 1mm precision, 8.192m max range.
     - range_res 10 : 10mm precision, 81.92m max range.
     - range_res 100 : 100mm precision, 819.2m max range.
@@ -322,8 +322,7 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
 
   if (!this->can_do_hi_speed && this->port_rate > 38400)
   {
-    PLAYER_ERROR("sicklms200: requested hi speed serial, but no support compiled in.
-Defaulting to 38400 bps.");
+    PLAYER_ERROR("sicklms200: requested hi speed serial, but no support compiled in. Defaulting to 38400 bps.");
     this->port_rate = 38400;
   }
 
