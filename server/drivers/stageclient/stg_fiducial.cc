@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 1
 
 #include "playercommon.h"
@@ -46,11 +46,6 @@ StgFiducial::StgFiducial(char* interface, ConfigFile* cf, int section )
   : Stage1p4( interface, cf, section, sizeof(player_fiducial_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgFiducial with interface %s", interface );
-
-  //this->subscribe_prop = STG_PROP_FIDUCIALDATA;
-   
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_DATA));
-
 }
 
 CDevice* StgFiducial_Init(char* interface, ConfigFile* cf, int section)

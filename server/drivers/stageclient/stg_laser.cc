@@ -54,10 +54,6 @@ StgLaser::StgLaser(char* interface, ConfigFile* cf, int section )
   : Stage1p4( interface, cf, section, sizeof(player_laser_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgLaser with interface %s", interface );
-  
-  //this->subscribe_prop = STG_PROP_LASERDATA;
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_DATA));
-
 }
 
 CDevice* StgLaser_Init(char* interface, ConfigFile* cf, int section)

@@ -53,5 +53,5 @@ class Stage1p4 : public CDevice
   // the property we automatically subscribe to on Setup();
   //stg_id_t subscribe_prop;
 
-  GList* subscribe_list;
+  //GList* subscribe_list;
 };

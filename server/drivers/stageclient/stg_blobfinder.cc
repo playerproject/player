@@ -50,10 +50,6 @@ StgBlobfinder::StgBlobfinder(char* interface, ConfigFile* cf, int section )
   : Stage1p4( interface, cf, section, sizeof(player_blobfinder_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgBlobfinder with interface %s", interface );
-
-  //this->subscribe_prop = STG_PROP_BLOBDATA;
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_DATA));
-   
 }
 
 CDevice* StgBlobfinder_Init(char* interface, ConfigFile* cf, int section)

@@ -1,4 +1,4 @@
-SUBDIRS = stage
+SUBDIRS =
 
 configdir = $(prefix)/share/player/config
 

@@ -52,8 +52,6 @@ StgSonar::StgSonar(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgSonar with interface %s", interface );
   
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_DATA));
-    
   power_on = 1; // enabled by default
 }
 
