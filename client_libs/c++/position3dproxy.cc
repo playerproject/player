@@ -75,6 +75,32 @@ int Position3DProxy::SetSpeed(int xspeed, int yspeed, int yawspeed)
   return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
 }
+    
+// send a motor command
+//
+// Returns:
+//   0 if everything's ok
+//   -1 otherwise (that's bad)
+int Position3DProxy::SetSpeed(int xspeed, int yspeed, int zspeed,int yawspeed)
+{
+  if(!client)
+    return(-1);
+
+  player_position3d_cmd_t cmd;
+  memset(&cmd, 0, sizeof(cmd));
+
+  cmd.xpos = cmd.ypos = cmd.zpos = 0;
+  cmd.roll = cmd.pitch = cmd.yaw = 0;
+  cmd.xspeed = (int32_t)htonl(xspeed);
+  cmd.yspeed = (int32_t)htonl(yspeed);
+  cmd.zspeed = (int32_t)htonl(zspeed);
+  cmd.rollspeed = 0;
+  cmd.pitchspeed = 0;
+  cmd.yawspeed = (int32_t)htonl(yawspeed);
+
+  return(client->Write(m_device_id,
+                       (const char*)&cmd,sizeof(cmd)));
+}
 
 void Position3DProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {

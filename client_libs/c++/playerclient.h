@@ -1257,7 +1257,7 @@ class Position3DProxy : public ClientProxy
 
   /// Robot speeds in mm/sec, deg/sec
   int xspeed, yspeed, zspeed;
-  double rollspeed, pitchspeed, yawspeed;
+  int rollspeed, pitchspeed, yawspeed;
 
   /// Stall flag: 1 if the robot is stalled and 0 otherwise.
   unsigned char stall;
@@ -1276,7 +1276,7 @@ class Position3DProxy : public ClientProxy
       -1 otherwise.
   */
   int SetSpeed(int xspeed, int yspeed, int yawspeed);
-
+  int SetSpeed(int xspeed, int yspeed,int zspeed, int yawspeed);
   /** Same as the previous SetSpeed(), but doesn't take the sideways speed 
       (so use this one for non-holonomic robots). */
   int SetSpeed(int xspeed, int yawspeed)
