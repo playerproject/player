@@ -149,13 +149,10 @@ GzFactory::~GzFactory()
 // Set up the device (called by server thread).
 int GzFactory::Setup()
 {
-  printf ("Opening factory \n");
-
   // Open the interface
   if (gz_factory_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
 
-  printf( "Opening factory complete\n");
   return 0;
 }
 
@@ -164,10 +161,8 @@ int GzFactory::Setup()
 // Shutdown the device (called by server thread).
 int GzFactory::Shutdown()
 {
-  printf("Shuting down factory\n");
   gz_factory_close(this->iface);
   
-  printf("Shuting down factory complete\n");
   return 0;
 }
 
@@ -176,7 +171,6 @@ int GzFactory::Shutdown()
 // Check for new data
 void GzFactory::Update()
 {
-  printf ("Updating factory\n");
   return;
 }
 
