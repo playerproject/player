@@ -90,8 +90,14 @@ class WriteLog: public CDevice
   // Write position data to file
   private: void WritePosition(player_position_data_t *data);
 
+  // Write position3d data to file
+  private: void WritePosition3d(player_position3d_data_t *data);
+
   // Write wifi data to file
   private: void WriteWiFi(player_wifi_data_t *data);
+
+  // Write GPS data to file
+  private: void WriteGps(player_gps_data_t *data);
 
   // File to read data from
   private: const char *filename;
@@ -369,8 +375,14 @@ void WriteLog::Write(void *data, size_t size,
     case PLAYER_POSITION_CODE:
       this->WritePosition((player_position_data_t*) data);
       break;
+    case PLAYER_POSITION3D_CODE:
+      this->WritePosition3d((player_position3d_data_t*) data);
+      break;
     case PLAYER_LASER_CODE:
       this->WriteLaser((player_laser_data_t*) data);
+      break;
+    case PLAYER_GPS_CODE:
+      this->WriteGps((player_gps_data_t*) data);
       break;
   }
 
@@ -390,6 +402,7 @@ void WriteLog::Write(void *data, size_t size,
 
 ////////////////////////////////////////////////////////////////////////////
 // Unit conversion macros
+#define CM_M(x) ((x) / 100.0)
 #define MM_M(x) ((x) / 1000.0)
 #define DEG_RAD(x) ((x) * M_PI / 180.0)
 
@@ -417,8 +430,40 @@ void WriteLog::WriteLaser(player_laser_data_t *data)
 void WriteLog::WritePosition(player_position_data_t *data)
 {
   fprintf(this->file, "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
-          MM_M(HINT32(data->xpos)), MM_M(HINT32(data->ypos)), DEG_RAD(HINT32(data->yaw)),
-          MM_M(HINT32(data->xspeed)), MM_M(HINT32(data->yspeed)), DEG_RAD(HINT32(data->yspeed)),
+          MM_M(HINT32(data->xpos)),
+          MM_M(HINT32(data->ypos)),
+          DEG_RAD(HINT32(data->yaw)),
+          MM_M(HINT32(data->xspeed)),
+          MM_M(HINT32(data->yspeed)),
+          DEG_RAD(HINT32(data->yawspeed)),
+          data->stall);
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Write position3d data to file
+void WriteLog::WritePosition3d(player_position3d_data_t *data)
+{
+  fprintf(this->file,
+          "%+.4f %+.4f %+.4f "
+          "%+.4f %+.4f %+.4f "
+          "%+.4f %+.4f %+.4f "
+          "%+.4f %+.4f %+.4f "
+          "%d",
+          MM_M(HINT32(data->xpos)),
+          MM_M(HINT32(data->ypos)),
+          MM_M(HINT32(data->zpos)),
+          DEG_RAD(HINT32(data->roll) / 3600.0),
+          DEG_RAD(HINT32(data->pitch) / 3600.0),
+          DEG_RAD(HINT32(data->yaw) / 3600.0),
+          MM_M(HINT32(data->xspeed)),
+          MM_M(HINT32(data->yspeed)),
+          MM_M(HINT32(data->zspeed)),
+          DEG_RAD(HINT32(data->rollspeed) / 3600.0),
+          DEG_RAD(HINT32(data->pitchspeed) / 3600.0),
+          DEG_RAD(HINT32(data->yawspeed) / 3600.0),
           data->stall);
 
   return;
@@ -440,6 +485,33 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
             HUINT16(data->links[i].level),
             HUINT16(data->links[i].noise));
 
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Write GPS data to file
+void WriteLog::WriteGps(player_gps_data_t *data)
+{
+  fprintf(this->file,
+          "%.3f "
+          "%.6f %.6f %.6f "
+          "%.3f %.3f "
+          "%.3f %.3f %.3f "
+          "%d %d",
+          (double) (uint32_t) HINT32(data->time_sec) +
+          (double) (uint32_t) HINT32(data->time_sec) * 1e-6,
+          (double) HINT32(data->latitude) / (60 * 60 * 60),
+          (double) HINT32(data->longitude) / (60 * 60 * 60),
+          MM_M(HINT32(data->altitude)),
+          CM_M(HINT32(data->utm_e)),
+          CM_M(HINT32(data->utm_n)), 
+          (double) HINT16(data->hdop) / 10,
+          MM_M(HINT32(data->err_horz)),
+          MM_M(HINT32(data->err_vert)),
+          (int) data->quality,
+          (int) data->num_sats);
+  
   return;
 }
 
