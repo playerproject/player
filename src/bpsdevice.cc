@@ -97,28 +97,12 @@ int CBpsDevice::Setup()
     this->laserbeacon->GetLock()->Subscribe(this->laserbeacon);
 
     // Initialise some stuff
+    this->gain = 0.01;
+    this->laser_px = this->laser_py = this->laser_pa = 0;
     memset(this->beacon, 0, sizeof(this->beacon));
     this->odo_px = this->odo_py = this->odo_pa = 0;
     this->org_px = this->org_py = this->org_pa = 0;
-
-    // *** TESTING
-    // Put some stuff in the map here
-    this->beacon[1].isset = true;
-    this->beacon[1].px = 2;
-    this->beacon[1].py = 0.5;
-    this->beacon[1].pa = 0;
-    this->beacon[2].isset = true;
-    this->beacon[2].px = 4;
-    this->beacon[2].py = 2;
-    this->beacon[2].pa = M_PI/2;
-    this->beacon[3].isset = true;
-    this->beacon[3].px = 6;
-    this->beacon[3].py = 0.5;
-    this->beacon[3].pa = M_PI;
-    this->beacon[4].isset = true;
-    this->beacon[4].px = 8;
-    this->beacon[4].py = 2;
-    this->beacon[4].pa = -M_PI/2;
+    this->err = 0;
 
     // Hack to get around mutex on GetData
     player_bps_data_t bps_data;
@@ -167,7 +151,7 @@ size_t CBpsDevice::GetData(unsigned char *dest, size_t maxsize)
         this->odo_py = ((int) ntohl(position_data.ypos)) / 1000.0;
         this->odo_pa = ntohs(position_data.theta) * M_PI / 180;
 
-        PLAYER_TRACE3("odometry : %f %f %f", this->odo_px, this->odo_py, this->odo_pa);
+        //PLAYER_TRACE3("odometry : %f %f %f", this->odo_px, this->odo_py, this->odo_pa);
     }
         
     // Get the beacon data
@@ -190,7 +174,15 @@ size_t CBpsDevice::GetData(unsigned char *dest, size_t maxsize)
             double r = ntohs(laserbeacon_data.beacon[i].range) / 1000.0;
             double b = ((short) ntohs(laserbeacon_data.beacon[i].bearing)) * M_PI / 180.0;
             double o = ((short) ntohs(laserbeacon_data.beacon[i].orient)) * M_PI / 180.0;
-            ProcessBeacon(id, r, b, o);
+            
+            err = ProcessBeacon(id, r, b, o);
+    
+            // Totally bogus filter on error term
+            if (err >= 0)
+            {
+                double tc = 0.5;
+                this->err = (1 - tc) * this->err + tc * err;
+            }
         }
     }
     
@@ -206,6 +198,7 @@ size_t CBpsDevice::GetData(unsigned char *dest, size_t maxsize)
     data.px = htonl((int) (gx * 1000));
     data.py = htonl((int) (gy * 1000));
     data.pa = htonl((int) (ga * 180 / M_PI));
+    data.err = htonl((int) (this->err * 1e6));
 
     // Copy results
     ASSERT(maxsize >= sizeof(data));
@@ -253,23 +246,55 @@ size_t CBpsDevice::GetConfig(unsigned char *dest, size_t maxsize)
 //
 void CBpsDevice::PutConfig( unsigned char *src, size_t maxsize) 
 {
-    /*
-    if (maxsize != sizeof(player_laserbeacon_config_t))
+    if (maxsize == sizeof(player_bps_setgain_t))
+    {
+        player_bps_setgain_t *setgain = (player_bps_setgain_t*) src;
+        if (setgain->subtype != PLAYER_BPS_SUBTYPE_SETGAIN)
+        {
+            PLAYER_ERROR("config packet has incorrect subtype");
+            return;
+        }
+        this->gain = ntohl(setgain->gain) / 1e6;
+    }
+    else if (maxsize == sizeof(player_bps_setlaser_t))
+    {
+        player_bps_setlaser_t *setlaser = (player_bps_setlaser_t*) src;
+        if (setlaser->subtype != PLAYER_BPS_SUBTYPE_SETLASER)
+        {
+            PLAYER_ERROR("config packet has incorrect subtype");
+            return;
+        }
+
+        this->laser_px = (int) ntohl(setlaser->px) / 1000.0;
+        this->laser_py = (int) ntohl(setlaser->py) / 1000.0;
+        this->laser_pa = (int) ntohl(setlaser->pa) * M_PI / 180.0;
+
+        PLAYER_TRACE3("set laser to %f %f %f",
+                      this->laser_px, this->laser_py, this->laser_pa);
+    }
+    else if (maxsize == sizeof(player_bps_setbeacon_t))
+    {
+        player_bps_setbeacon_t *setbeacon = (player_bps_setbeacon_t*) src;
+        if (setbeacon->subtype != PLAYER_BPS_SUBTYPE_SETBEACON)
+        {
+            PLAYER_ERROR("config packet has incorrect subtype");
+            return;
+        }
+
+        int id = setbeacon->id;
+        this->beacon[id].isset = true;
+        this->beacon[id].px = (int) ntohl(setbeacon->px) / 1000.0;
+        this->beacon[id].py = (int) ntohl(setbeacon->py) / 1000.0;
+        this->beacon[id].pa = (int) ntohl(setbeacon->pa) * M_PI / 180.0;
+        this->beacon[id].ux = (int) ntohl(setbeacon->ux) / 1000.0;
+        this->beacon[id].uy = (int) ntohl(setbeacon->uy) / 1000.0;
+        this->beacon[id].ua = (int) ntohl(setbeacon->ua) * M_PI / 180.0;
+
+        PLAYER_TRACE4("set beacon %d to %f %f %f", id,
+                      this->beacon[id].px, this->beacon[id].py, this->beacon[id].pa);
+    }
+    else
         PLAYER_ERROR("config packet size is incorrect");
-    
-    player_laserbeacon_config_t *beacon_config = (player_laserbeacon_config_t*) src;
-
-    // Number of bits and size of each bit
-    //
-    m_max_bits = beacon_config->bit_count;
-    m_max_bits = max(m_max_bits, 3);
-    m_max_bits = min(m_max_bits, 8);
-    m_bit_width = ntohs(beacon_config->bit_size) / 1000.0;
-    m_zero_thresh = ntohs(beacon_config->zero_thresh) / 100.0;
-    m_one_thresh = ntohs(beacon_config->one_thresh) / 100.0;
-
-    PLAYER_TRACE2("bits %d, width %f", m_max_bits, m_bit_width);
-    */
 }
 
 
@@ -279,14 +304,99 @@ void CBpsDevice::PutConfig( unsigned char *src, size_t maxsize)
 // the beacon (in global cs) and the true pose of the beacon (in global cs)
 // by shifting the origin of the odometric cs. 
 //
-void CBpsDevice::ProcessBeacon(int id, double r, double b, double o)
+double CBpsDevice::ProcessBeacon(int id, double r, double b, double o)
 {
-    double step = 0.01;
-
     assert(id > 0 && id <= 255);
     if (!this->beacon[id].isset)
-        return;
+        return -1;
 
+    PLAYER_TRACE4("beacon in laser cs: %d %f %f %f", id, r * cos(b), r * sin(b), o);
+    
+    // Get robot pose in odometric cs
+    double ox = this->odo_px;
+    double oy = this->odo_py;
+    double oa = this->odo_pa;
+    
+    // Compute robot pose in global cs
+    double rx = this->org_px + ox * cos(this->org_pa) - oy * sin(this->org_pa);
+    double ry = this->org_py + ox * sin(this->org_pa) + oy * cos(this->org_pa);
+    double ra = this->org_pa + oa;
+    PLAYER_TRACE3("robot in global cs : %f %f %f", rx, ry, ra);
+
+    // Compute laser pose in global cs
+    double lx = rx + this->laser_px * cos(ra) - this->laser_py * sin(ra);
+    double ly = ry + this->laser_px * sin(ra) + this->laser_py * cos(ra);
+    double la = ra + this->laser_pa;
+    PLAYER_TRACE3("laser in global cs : %f %f %f", lx, ly, la);
+    
+    // Compute measured beacon pose in global cs
+    double ax = lx + r * cos(ra + b);
+    double ay = ly + r * sin(ra + b);
+    double aa = la + o;
+    PLAYER_TRACE4("beacon in global cs: %d %f %f %f", id, ax, ay, aa);
+    
+    // Get true beacon pose in global cs
+    double bx = this->beacon[id].px;
+    double by = this->beacon[id].py;
+    double ba = this->beacon[id].pa;
+    PLAYER_TRACE4("true beacon pose   : %d %f %f %f", id, bx, by, ba);
+
+    // Compute difference in pose
+    // The angle is normalize to domain [-pi, pi]
+    double cx = ax - bx;
+    double cy = ay - by;
+    double ca = atan2(sin(aa - ba), cos(aa - ba));
+
+    // Compute weights
+    double kx = 1;
+    double ky = 1;
+    double ka = 1;
+        
+    // Compute weighted error
+    double err = kx * cx * cx + ky * cy * cy + ka * ca * ca;
+
+    // Compute partials wrt laser pose
+    double derr_dax = kx * cx;
+    double derr_day = ky * cy;
+    double derr_daa = ka * ca;
+    double dax_dlx = 1;
+    double dax_dly = 0;
+    double dax_dla = -r * sin(la + b);
+    double day_dlx = 0;
+    double day_dly = 1;
+    double day_dla = +r * cos(la + b);
+    double daa_dlx = 0;
+    double daa_dly = 0;
+    double daa_dla = 1;
+
+    // Compute full derivatives wrt laser pose
+    double derr_dlx = derr_dax * dax_dlx + derr_day * day_dlx + derr_daa * daa_dlx;
+    double derr_dly = derr_dax * dax_dly + derr_day * day_dly + derr_daa * daa_dly;
+    double derr_dla = derr_dax * dax_dla + derr_day * day_dla + derr_daa * daa_dla;
+
+    // Compute new laser pose in global cs
+    lx -= this->gain * derr_dlx;
+    ly -= this->gain * derr_dly;
+    la -= this->gain * derr_dla;
+
+    // Compute new robot pose in global cs
+    ra = la - this->laser_pa;
+    rx = lx - this->laser_px * cos(ra) + this->laser_py * sin(ra);
+    ry = ly - this->laser_px * sin(ra) - this->laser_py * cos(ra);
+
+    PLAYER_TRACE3("robot in global cs : %f %f %f", rx, ry, ra);
+
+    // Compute odometric origin needed to yield this pose
+    this->org_pa = ra - oa;
+    this->org_px = rx - ox * cos(this->org_pa) + oy * sin(this->org_pa);
+    this->org_py = ry - ox * sin(this->org_pa) - oy * cos(this->org_pa);
+
+    PLAYER_TRACE3("org = %f %f %f", this->org_px, this->org_py, this->org_pa);
+    PLAYER_TRACE1("err = %f", err);
+
+    return err;
+
+    /*
     PLAYER_TRACE4("beacon in las cs: %d %f %f %f", id, r * cos(b), r * sin(b), o);
     
     // Get origin of odometrics cs in global cs
@@ -354,11 +464,12 @@ void CBpsDevice::ProcessBeacon(int id, double r, double b, double o)
     double derr_doa = derr_dax * dax_doa + derr_day * day_doa + derr_daa * daa_doa;
 
     // Shift the odometric origin to reduce the error term
-    this->org_px -= step * derr_dox;
-    this->org_py -= step * derr_doy;
-    this->org_pa -= step * derr_doa;
+    this->org_px -= this->gain * derr_dox;
+    this->org_py -= this->gain * derr_doy;
+    this->org_pa -= this->gain * derr_doa;
 
     PLAYER_TRACE3("org = %f %f %f", this->org_px, this->org_py, this->org_pa);
     PLAYER_TRACE1("err = %f", err);
+    */
 }
 

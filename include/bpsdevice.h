@@ -77,7 +77,7 @@ class CBpsDevice : public CDevice
     public: virtual void PutConfig(unsigned char *, size_t maxsize);
 
     // Process a single beacon
-    private: void ProcessBeacon(int id, double r, double b, double o);
+    private: double ProcessBeacon(int id, double r, double b, double o);
     
     // Lock object for synchronization
     private: CLock lock;
@@ -93,11 +93,18 @@ class CBpsDevice : public CDevice
     private: uint32_t position_sec, position_usec;
     private: uint32_t beacon_sec, beacon_usec;
 
+    // Gain term
+    private: double gain;
+    
+    // Pose of laser relative to robot
+    private: double laser_px, laser_py, laser_pa;
+    
     // List of true beacon poses
     private: struct
     {
         bool isset;
         double px, py, pa;
+        double ux, uy, ua;
     } beacon[256];
     
     // Pose of odometric origin in global cs
@@ -105,6 +112,9 @@ class CBpsDevice : public CDevice
     
     // Current odometric pose
     private: double odo_px, odo_py, odo_pa;
+
+    // Current error value
+    private: double err;
 };
 
 
