@@ -358,7 +358,7 @@ int Acoustics::SetConfiguration(int len, void* client, unsigned char buffer[])
   // Attempts to set the format and rate of each sample along with
   // the number of channels to use.
   if( this->SetSampleFormat( ntohs(config.sampleFormat)) == 0 &&
-      this->SetChannels( ntohs(config.channels)) == 0 && 
+      this->SetChannels(config.channels) == 0 && 
       this->SetSampleRate( ntohs(config.sampleRate)) == 0 )
   {
     // Create the audio buffer
@@ -532,7 +532,7 @@ int Acoustics::ListenForTones()
   {
     int i,k;
 
-    int frequency[this->N/2];
+    int frequency[(this->N/2)+1];
     int amplitude[this->N/2];
 
     // We will just do a Fourer transform over the first 1024 samples.
