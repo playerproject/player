@@ -529,7 +529,7 @@ int InertiaCube2::UpdatePosition()
   double time;
   
   // Get the position device data.
-  size = this->position->GetData((unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->position->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
   time = (double) timesec + ((double) timeusec) * 1e-6;
 
   // Dont do anything if this is old data.
