@@ -28,7 +28,9 @@
 
 //#define VERBOSE
 
+// suck in the version string from the file in the top level directory
 #include "../VERSION"
+
 #define READ_BUFFER_SIZE 128
 
 #include <stdio.h>
