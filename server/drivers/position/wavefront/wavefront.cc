@@ -260,7 +260,7 @@ Wavefront::GetCommand()
     this->target_x = new_x;
     this->target_y = new_y;
     this->target_a = new_a;
-    printf("new goal: %f, %f, %f\n", target_x, target_y, target_a);
+    //printf("new goal: %f, %f, %f\n", target_x, target_y, target_a);
     this->new_goal = true;
   }
 }
@@ -283,8 +283,8 @@ Wavefront::GetLocalizeData()
   this->localize_x = ((int)ntohl(data.hypoths[0].mean[0]))/1e3;
   this->localize_y = ((int)ntohl(data.hypoths[0].mean[1]))/1e3;
   this->localize_a = DTOR((int)ntohl(data.hypoths[0].mean[2])/3600.0);
-  printf("GetLocalizeData: %f, %f, %f\n",
-         localize_x,localize_y,RTOD(localize_a));
+  //printf("GetLocalizeData: %f, %f, %f\n",
+         //localize_x,localize_y,RTOD(localize_a));
 }
 
 void
@@ -300,8 +300,8 @@ Wavefront::GetPositionData()
   this->position_x = ((int)ntohl(data.xpos))/1e3;
   this->position_y = ((int)ntohl(data.ypos))/1e3;
   this->position_a = DTOR(ntohl(data.yaw));
-  printf("GetPositionData: %f, %f, %f\n",
-         position_x,position_y,RTOD(position_a));
+  //printf("GetPositionData: %f, %f, %f\n",
+         //position_x,position_y,RTOD(position_a));
 }
 
 void
@@ -324,14 +324,20 @@ Wavefront::LocalizeToPosition(double* px, double* py, double* pa,
                               double lx, double ly, double la)
 {
   double offset_x, offset_y, offset_a;
+  double lx_rot, ly_rot;
 
-  offset_x = - this->localize_x + this->position_x;
-  offset_y = - this->localize_y + this->position_y;
-  offset_a = - this->localize_a + this->position_a;
+  offset_a = NORMALIZE(this->position_a - this->localize_a);
+  lx_rot = this->localize_x * cos(offset_a) - this->localize_y * sin(offset_a);
+  ly_rot = this->localize_x * sin(offset_a) + this->localize_y * cos(offset_a);
 
-  *px = offset_x + lx * cos(offset_a) - ly * sin(offset_a);
-  *py = offset_y + lx * sin(offset_a) + ly * cos(offset_a);
-  *pa = offset_a + la;
+  offset_x = - lx_rot + this->position_x;
+  offset_y = - ly_rot + this->position_y;
+
+  //printf("offset: %f, %f, %f\n", offset_x, offset_y, RTOD(offset_a));
+
+  *px = lx * cos(offset_a) - ly * sin(offset_a) + offset_x;
+  *py = lx * sin(offset_a) + ly * cos(offset_a) + offset_y;
+  *pa = la + offset_a;
 }
 
 void
@@ -388,7 +394,7 @@ void Wavefront::Main()
         // TODO: deal with angle
         LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, 
                            this->waypoint_x, this->waypoint_y, 0.0);
-        printf("w_odom: %f, %f, %f\n", wx_odom, wy_odom, wa_odom);
+        //printf("w_odom: %f, %f, %f\n", wx_odom, wy_odom, RTOD(wa_odom));
         // hand down next waypoint
         PutPositionCommand(wx_odom, wy_odom, wa_odom);
       }
@@ -405,6 +411,7 @@ void Wavefront::Main()
                  (this->localize_x - this->target_x)) +
                 ((this->localize_y - this->target_y) *
                  (this->localize_y - this->target_y)));
+    //printf("distance to goal: %f\n", dist);
     if(dist < this->dist_eps)
     {
       // we're at the final target, so stop
@@ -423,6 +430,7 @@ void Wavefront::Main()
                    (this->localize_x - this->waypoint_x)) +
                   ((this->localize_y - this->waypoint_y) *
                    (this->localize_y - this->waypoint_y)));
+      //printf("distance to next waypoint: %f\n", dist);
       // TODO: check angle
       if(dist < this->dist_eps)
       {
@@ -436,12 +444,12 @@ void Wavefront::Main()
           continue;
         }
       }
-      printf("waypoint: %f, %f\n", this->waypoint_x,this->waypoint_y);
+      //printf("waypoint: %f, %f\n", this->waypoint_x,this->waypoint_y);
       // transform to odometric frame
       // TODO: deal with angle
       LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, 
                          this->waypoint_x, this->waypoint_y, 0.0);
-      printf("w_odom: %f, %f, %f\n", wx_odom, wy_odom, wa_odom);
+      //printf("w_odom: %f, %f, %f\n", wx_odom, wy_odom, wa_odom);
       // hand down next waypoint
       PutPositionCommand(wx_odom, wy_odom, wa_odom);
     }
