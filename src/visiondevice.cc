@@ -472,6 +472,10 @@ CVisionDevice::Main()
         // to get it from).
         local_data.blobs[i].color = htonl(0xFF0000);
         
+	// stage puts the range in here to simulate stereo vision. we
+	// can't do that (yet?) so set the range to zero - rtv
+	local_data.blobs[i].range = 0;
+
         // get the 4-byte area first
         local_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
@@ -511,6 +515,10 @@ CVisionDevice::Main()
         // TODO: put a descriptive color in here (I'm not sure where
         // to get it from).
         local_data.blobs[i].color = htonl(0xFF0000);
+
+	// stage puts the range in here to simulate stereo vision. we
+	// can't do that (yet?) so set the range to zero - rtv
+	local_data.blobs[i].range = 0;
 
         // get the 4-byte area first
         local_data.blobs[i].area = 0;

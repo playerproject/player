@@ -520,7 +520,10 @@ typedef struct
 
   /* Bounding box for the blob (image coords). */
   uint16_t left, right, top, bottom;
-  
+
+  /* Range in mm to the blob center */
+  uint16_t range;
+
 } __attribute__ ((packed)) player_vision_blob_elt_t;
 
 #define VISION_BLOB_SIZE sizeof(player_vision_blob_elt_t)
@@ -536,7 +539,6 @@ typedef struct
           blobs[VISION_MAX_BLOBS_PER_CHANNEL*VISION_NUM_CHANNELS];
 } __attribute__ ((packed)) player_vision_data_t;
 /*************************************************************************/
-
 
 
 /*************************************************************************/
