@@ -49,7 +49,7 @@ void print_usage()
   printf("A visualization tool for the Player robot device server.\n");
   printf("Usage  : playerv [-h <hostname>] [-p <port>]\n");
   printf("                 [--<device>:<index>] [--<device>:<index>] ... \n");
-  printf("Example: playerv -p 6665 --position:0 --laser:0\n");
+  printf("Example: playerv -p 6665 --position:0 --srf:0\n");
   printf("\n");
 }
 
