@@ -31,15 +31,12 @@
 #define _PLAYERCOMMON_H
 
 /* make sure we get the various types like 'uint8_t' */
-#ifdef PLAYER_SOLARIS
-  #include <sys/types.h>   // solaris puts them here
-#endif
+#if defined PLAYER_SOLARIS
 
-#ifdef PLAYER_LINUX
-  #include <stdint.h>      // linux puts them here
-#endif
+#include <sys/types.h>   // solaris puts them here
 
-#ifdef PLAYER_CYGWIN
+#elif defined PLAYER_CYGWIN
+
 #include <sys/types.h>   // so does cygwin
 
 //cygwin doesn't appear to have them 
@@ -53,6 +50,10 @@ typedef char int8_t;
 
 // INT_MAX is more portable - limits.h
 #define MAXINT INT_MAX 
+
+#else
+
+#include <stdint.h>      // linux puts them here
 
 #endif
 
