@@ -930,7 +930,8 @@ typedef struct player_laser_data
   /** Angular resolution (in units of 0.01 degrees).  */
   uint16_t resolution;
 
-  /* TODO: put range resolution here. */
+  /** range resolution.  ranges should be multipled by this. */
+  uint16_t range_res;
 
   /** Number of range/intensity readings.  */
   uint16_t range_count;
@@ -1004,6 +1005,9 @@ typedef struct player_laser_config
   /** Scan resolution (in units of 0.01 degrees).  Valid resolutions
       are 25, 50, 100.  */
   uint16_t resolution;
+
+  /** Range Resolution.  Valid: 1, 10, 100 (For mm, cm, dm). */
+  uint16_t range_res;
 
   /** Enable reflection intensity data. */
   uint8_t  intensity;

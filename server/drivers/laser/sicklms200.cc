@@ -419,10 +419,11 @@ void SickLMS200::Main()
       data.max_angle = htons(this->scan_max_segment * this->scan_res - this->scan_width * 50);
       data.resolution = htons(this->scan_res);
       data.range_count = htons(this->scan_max_segment - this->scan_min_segment + 1);
+      data.range_res = htons((uint16_t) this->range_res);
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
         data.intensity[i] = ((data.ranges[i] >> 13) & 0x000E);
-        data.ranges[i] = htons((uint16_t) (((data.ranges[i] & 0x1FFF) * this->range_res) & 0xFFFF));
+	data.ranges[i] = htons((uint16_t) (data.ranges[i] & 0x1FFF));
       }
 
       // Make data available
@@ -461,6 +462,7 @@ int SickLMS200::UpdateConfig()
         this->scan_res = ntohs(config.resolution);
         this->min_angle = (short) ntohs(config.min_angle);
         this->max_angle = (short) ntohs(config.max_angle);
+	this->range_res = ntohs(config.range_res);
 
         if (this->CheckScanConfig() == 0)
         {
@@ -490,7 +492,8 @@ int SickLMS200::UpdateConfig()
         config.resolution = htons(this->scan_res);
         config.min_angle = htons((short) this->min_angle);
         config.max_angle = htons((short) this->max_angle);
-        
+        config.range_res = htons(this->range_res);
+
         if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
                     sizeof(config)) != 0)
           PLAYER_ERROR("PutReply() failed");
@@ -578,7 +581,7 @@ int SickLMS200::CheckScanConfig()
   if (!(this->range_res == 1 || this->range_res == 10 || this->range_res == 100))
     return -1;
   
-  return -1;
+  return 0;
 }
 
 
@@ -930,7 +933,7 @@ int SickLMS200::SetLaserConfig(bool intensity)
     packet[7] = 0x01;
 
   PLAYER_TRACE0("sending set configuration request to laser");
-  printf("LASER: SLC: sending set config request\n");
+  printf("LASER: SLC: sending set config request range_res: %d\n", this->range_res);
   if (WriteToLaser(packet, len) < 0)
     return 1;
 

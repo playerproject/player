@@ -104,7 +104,7 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
                            player_laser_data_t *data, size_t len)
 {
   int i;
-  double r, b, db;
+  double r, b, db, rr;
 
   assert(sizeof(*data) <= len);
   
@@ -112,14 +112,18 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
   data->max_angle = ntohs(data->max_angle);
   data->resolution = ntohs(data->resolution);
   data->range_count = ntohs(data->range_count);
+  data->range_res = ntohs(data->range_res);
 
   assert(data->range_count <= ARRAYSIZE(device->scan));
   
+  device->range_res = data->range_res;
+  rr = (double) data->range_res;
   b = data->min_angle / 100.0 * M_PI / 180.0;
   db = data->resolution / 100.0 * M_PI / 180.0;    
   for (i = 0; i < data->range_count; i++)
   {
-    r = ((uint16_t) ntohs(data->ranges[i])) / 1000.0;
+    r = ((uint16_t) ntohs(data->ranges[i]))*rr;
+    r /= 1000.0;
     assert(r >= 0);
     device->scan[i][0] = r;
     device->scan[i][1] = b;
@@ -136,7 +140,7 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
 
 // Configure the laser.
 int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double max_angle,
-                              int resolution, int intensity)
+                              int resolution, int range_res, int intensity)
 {
   int len;
   player_laser_config_t config;
@@ -146,6 +150,7 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
   config.max_angle = htons((unsigned int) (int) (max_angle * 180.0 / M_PI * 100));
   config.resolution = htons(resolution);
   config.intensity = (intensity ? 1 : 0);
+  config.range_res = htons((uint16_t)range_res);
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config), &config, sizeof(config));
@@ -160,7 +165,7 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
 
 // Get the laser configuration.
 int playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double *max_angle,
-                             int *resolution, int *intensity)
+                             int *resolution, int *range_res, int *intensity)
 {
   int len;
   player_laser_config_t config;
@@ -181,7 +186,7 @@ int playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double 
   *max_angle = (short) ntohs(config.max_angle) / 100.0 * M_PI / 180;
   *resolution = ntohs(config.resolution);
   *intensity = (config.intensity ? 1 : 0);
-
+  *range_res = (int) ntohs(config.range_res);
   return 0;
 }
 
