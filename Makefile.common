@@ -47,20 +47,14 @@ CC = gcc
 # INSTALL_BASE (e.g. '/usr/local/player0.8c'). change INSTALL_BASE 
 # if you want to install somewhere else, but try to leave the version 
 # identifier on there; makes things easier. 
+# You can also specify the INSTALL_BASE from the make command line, eg:
+# make install -e INSTALL_BASE=~/playerstage/player
 #
 PWD=$(shell pwd)
 
-# Use this for a /usr/local installation
 INSTALL_BASE = /usr/local/player
 
-# Use this for a $(HOME) installation
-# INSTALL_BASE = $(HOME)/playerstage
-
-# RTV - added a dash between INSTALL_BASE and PLAYER_VERSION to make the name
-# format more conventional; i.e. foosoft-1.0 rather than foosoft1.0
-
 INSTALL_PREFIX=$(INSTALL_BASE)-$(PLAYER_VERSION)
-
 INSTALL_BIN = $(INSTALL_PREFIX)/bin
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 INSTALL_LIB = $(INSTALL_PREFIX)/lib
