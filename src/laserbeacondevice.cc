@@ -126,6 +126,7 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
         beacon_data.beacon[i].bearing = htons(beacon_data.beacon[i].bearing);
         beacon_data.beacon[i].orient = htons(beacon_data.beacon[i].orient);
     }
+    PLAYER_TRACE1("setting beacon count: %u",beacon_data.count);
     beacon_data.count = htons(beacon_data.count);
     
     // Copy results

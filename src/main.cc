@@ -376,6 +376,21 @@ parse_device_string(char* str1, char* str2)
     return(0);
 #endif
   }
+  // WARNING! the string compare is a bit fragile; must look for 'laserbeacon'
+  // before looking for 'laser'...
+  else if(!strncmp(PLAYER_LASERBEACON_STRING,str1+1,
+                   strlen(PLAYER_LASERBEACON_STRING)))
+  {
+#ifdef INCLUDE_LASERBEACON
+    tmpdevice = new CLaserBeaconDevice(argc,argv); 
+    deviceTable->AddDevice(PLAYER_LASERBEACON_CODE, index, 
+                           PLAYER_READ_MODE, tmpdevice);
+#else
+    fputs("\nWarning: Support for laserbeacon device was not included at compile time.\n",
+          stderr);
+    return(0);
+#endif
+  }
   else if(!strncmp(PLAYER_LASER_STRING,str1+1,strlen(PLAYER_LASER_STRING)))
   {
 #ifdef INCLUDE_LASER
@@ -420,19 +435,6 @@ parse_device_string(char* str1, char* str2)
                            PLAYER_ALL_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for audio device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_LASERBEACON_STRING,str1+1,
-                   strlen(PLAYER_LASERBEACON_STRING)))
-  {
-#ifdef INCLUDE_LASERBEACON
-    tmpdevice = new CLaserBeaconDevice(argc,argv); 
-    deviceTable->AddDevice(PLAYER_LASERBEACON_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for laserbeacon device was not included at compile time.\n",
           stderr);
     return(0);
 #endif
