@@ -195,6 +195,12 @@ void GzPosition_Register(DriverTable *table);
 void GzLaser_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_STAGE1P4
+void StgLaser_Register(DriverTable *table);
+void StgPosition_Register(DriverTable *table);
+void StgSimulation_Register(DriverTable *table);
+#endif
+
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
  *
@@ -227,6 +233,7 @@ player_interface_t interfaces[] = {
   {PLAYER_POSITION3D_CODE, PLAYER_POSITION3D_STRING, "segwayrmp"},
   {PLAYER_TRUTH_CODE, PLAYER_TRUTH_STRING, "passthrough"},
   {PLAYER_GPS_CODE, PLAYER_GPS_STRING, "garminnmea"},
+  {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING, "stg_simulation"},
   {0,NULL,NULL}
 };
 
@@ -429,5 +436,11 @@ register_devices()
 #ifdef INCLUDE_GAZEBO
   GzPosition_Register(driverTable);
   GzLaser_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_STAGE1P4
+  StgLaser_Register(driverTable);
+  StgPosition_Register(driverTable);
+  StgSimulation_Register(driverTable);
 #endif
 }
