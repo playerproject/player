@@ -182,9 +182,6 @@ PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])
 
-dnl TODO: remove udpbroadcast
-PLAYER_ADD_DRIVER([udpbroadcast],[drivers/comms],[no],[],[],[])
-
 PLAYER_ADD_DRIVER([lasercspace],[drivers/laser],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],[linux/wireless.h],[],[])
@@ -192,11 +189,11 @@ PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],[linux/wireless.h],[],[])
 PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[no],[rfftw.h],[],
                   ["-lrfftw -lfftw"])
 
-PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[no],
+PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[yes],
                   ["gsl/gsl_fft_real.h sys/soundcard.h"],[],
                   ["-lgsl -lgslcblas"])
 
-PLAYER_ADD_DRIVER([mixer],[drivers/audiomixer],[no],[sys/soundcard.h],[],[])
+PLAYER_ADD_DRIVER([mixer],[drivers/audiomixer],[yes],[sys/soundcard.h],[],[])
 
 dnl where's Mobility?
 AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],

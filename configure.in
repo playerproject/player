@@ -331,7 +331,6 @@ AC_OUTPUT(Makefile
           server/drivers/ptz/Makefile 
           server/drivers/laser/Makefile 
           server/drivers/waveform/Makefile 
-          server/drivers/comms/Makefile 
           server/drivers/blobfinder/Makefile 
           server/drivers/blobfinder/cmvision/Makefile
           server/drivers/blobfinder/upcbarcode/Makefile

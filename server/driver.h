@@ -199,6 +199,10 @@ class Driver
     /// the command).
     virtual void ClearCommand(player_device_id_t id);
 
+    /// Convenient short form, no id
+    void ClearCommand(void)
+    { ClearCommand(this->device_id); }
+
     /// Write configuration request to driver.
     virtual int PutConfig(player_device_id_t id, void *client, 
                           void* src, size_t len,

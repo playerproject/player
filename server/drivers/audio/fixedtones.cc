@@ -105,14 +105,7 @@ class FixedTones:public Driver
 
 Driver* FixedTones_Init( ConfigFile* cf, int section)
 {
-  if(strcmp( PLAYER_AUDIO_STRING))
-  {
-    PLAYER_ERROR1("driver \"fixedtones\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new FixedTones( cf, section)));
+  return((Driver*)(new FixedTones( cf, section)));
 }
 
 // a driver registration function
@@ -123,7 +116,8 @@ FixedTones_Register(DriverTable* table)
 }
 
 FixedTones::FixedTones( ConfigFile* cf, int section) :
-  Driver(cf, section, AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
+  Driver(cf, section, PLAYER_AUDIO_CODE, PLAYER_ALL_MODE, 
+         AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
 {
   fd=-1;
 }
@@ -249,14 +243,14 @@ FixedTones::Main()
   memset( command, 0, AUDIO_COMMAND_BUFFER_SIZE);
   memset( zero, 255, AUDIO_COMMAND_BUFFER_SIZE);
   memset(data,0,AUDIO_DATA_BUFFER_SIZE);
-  PutData(data, sizeof(data),0,0);
-  PutCommand(this,zero, sizeof(zero));
+  PutData(data, sizeof(data),NULL);
+  PutCommand(zero, sizeof(zero),NULL);
 
   while(1) 
   {
     pthread_testcancel();
-    GetCommand(command, sizeof(command));
-    PutCommand(this,zero, sizeof(zero));
+    GetCommand(command, sizeof(command),NULL);
+    PutCommand(zero, sizeof(zero),NULL);
     
     if(command[0]!=255) 
     {
@@ -276,7 +270,7 @@ FixedTones::Main()
           {
 	    data[i]=0;
 	  }	
-	  PutData(data, sizeof(data),0,0);
+	  PutData(data, sizeof(data),NULL);
 	  
 	  openDSPforWrite();
 	  pthread_testcancel();
@@ -337,7 +331,7 @@ FixedTones::Main()
 	cnt += sizeof(short);
       }
       
-      PutData(data, sizeof(data),0,0);
+      PutData(data, sizeof(data),NULL);
       usleep(100000);
     }
   }

@@ -45,8 +45,6 @@ class Mixer : public Driver
     int Setup();
     int Shutdown();
 
-    size_t GetCommand(void* dest, size_t maxsize);
-
   private:
 
     // Open or close the device
@@ -100,18 +98,6 @@ int Mixer::Shutdown()
   return 0;
 }
 
-size_t Mixer::GetCommand(void* dest, size_t maxsize)
-{
-  int retval = device_used_commandsize;
-
-  if(device_used_commandsize)
-  {
-    memcpy(dest,device_command,device_used_commandsize);
-    device_used_commandsize = 0;
-  }
-  return(retval);
-}
-
 void Mixer::Main()
 {
   void* client;
@@ -128,14 +114,15 @@ void Mixer::Main()
     pthread_testcancel();
 
     // Set/Get the configuration
-    while((len = GetConfig(&client, &configBuffer, sizeof(configBuffer))) > 0)
+    while((len = GetConfig(&client, &configBuffer, 
+                           sizeof(configBuffer),NULL)) > 0)
     {
       player_audiomixer_config_t config;
 
       if( len != 1 )
       {
         PLAYER_ERROR2("config request len is invalid (%d != %d)",len,1);
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         continue;
       }
@@ -162,14 +149,15 @@ void Mixer::Main()
       this->Read(SOUND_MIXER_OGAIN,vol);
       config.oGain= htons( vol );
 
-      if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config,
-            sizeof(config)) != 0)
+      if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                   &config, sizeof(config), NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
     }
 
     // Get the next command
     memset(&cmdBuffer,0,sizeof(cmdBuffer));
-    len = this->GetCommand(&cmdBuffer,sizeof(cmdBuffer));
+    len = this->GetCommand(&cmdBuffer,sizeof(cmdBuffer),NULL);
+    this->ClearCommand();
 
     // Process the command
     switch(cmdBuffer[0])
