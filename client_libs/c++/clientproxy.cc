@@ -86,7 +86,7 @@ ClientProxy::~ClientProxy()
 
 // methods for changing access mode
 int ClientProxy::ChangeAccess(unsigned char req_access, 
-                              unsigned char* grant_access=NULL )
+                              unsigned char* grant_access )
 			      
 {
   unsigned char our_grant_access = access;

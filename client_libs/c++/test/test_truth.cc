@@ -26,7 +26,7 @@ test_truth(PlayerClient* client, int index)
 
   double rx=0, ry=0, rth=0;
   
-  for(int t = 0; t < 3; t++)
+  for(int t = 0; t < 300; t++)
     {
       TEST1("reading data (attempt %d)", t);
       
