@@ -84,6 +84,7 @@
 
 // Gazebo stuff
 #if INCLUDE_GAZEBO
+#include <gazebo.h>
 #include "gz_client.h"
 #include "gz_time.h"
 #endif
@@ -165,7 +166,7 @@ where [options] is one or more of the following:
 - -t {tcp | udp} : transport protocol to use.  Default: tcp.
 - -p &lt;port&gt;      : port where Player will listen. Default: 6665.
 - -s &lt;path&gt;      : use memory-mapped IO with Stage through the devices in this directory.
-- -g &lt;id&gt;        : connect to Gazebo server with id &lt;id&gt;.
+- -g &lt;id&gt;        : connect to Gazebo server with id &lt;id&gt; (an integer).
 - -r &lt;logfile&gt;   : read data from &lt;logfile&gt; (readlog driver).
 - -f &lt;speed&gt;     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).
 - -k &lt;key&gt;       : require client authentication with the given key.

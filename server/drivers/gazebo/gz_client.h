@@ -30,11 +30,6 @@
 #define GZ_CLIENT_H
 
 
-// Forward declarations
-typedef struct gz_client gz_client_t;
-typedef struct gz_sim gz_sim_t;
-
-
 // Gazebo client handling; the class is just for namespacing purposes.
 class GzClient
 {

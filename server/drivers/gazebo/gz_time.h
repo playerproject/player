@@ -31,9 +31,6 @@
 
 #include "playertime.h"
 
-// Forward declarations
-typedef struct gz_sim gz_sim_t;
-
 
 // Incremental navigation driver
 class GzTime : public PlayerTime
