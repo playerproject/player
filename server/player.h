@@ -688,12 +688,16 @@ typedef struct
    * (mm, mm, degrees). */
   uint16_t pose[3];
 
+  /* Size of the detector in units of (mm, mm) */
+  uint16_t size[2];  
+  
   /* Dimensions of the fiducials in units of (mm, mm). */
-  uint16_t size[2];
+  uint16_t fiducial_size[2];
   
 } __attribute__ ((packed)) player_fiducial_geom_t;
 
-/* laserbarcode configuration packet. */
+/* REMOVE? */
+/* Fiducial configuration packet. */
 typedef struct
 {
   /* Packet subtype.  Set to PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG to set the

@@ -353,8 +353,13 @@ int LaserCSpace::PutConfig(player_device_id_t* device, void *client, void *data,
 {
   uint8_t subtype;
 
-  subtype = ((uint8_t*) data)[0];
-  
+  if (len < 1)
+  {
+    PLAYER_ERROR("empty requestion; ignoring");
+    return 0;
+  }
+
+  subtype = ((uint8_t*) data)[0];  
   switch (subtype)
   {
     case PLAYER_LASER_GET_GEOM:
