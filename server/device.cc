@@ -693,7 +693,7 @@ int CDevice::GetReply(player_device_id_t* device, void* client,
 
 
 // New-style: Read configuration reply from device
-int CDevice::GetReplyEx(player_device_id_t id, void* client, 
+int CDevice::GetReplyEx(player_device_id_t id, player_device_id_t *src_id, void* client, 
                         unsigned short* type, struct timeval* ts, 
                         void* data, size_t len)
 {
@@ -702,7 +702,7 @@ int CDevice::GetReplyEx(player_device_id_t id, void* client,
 
   // Use old-style single interface
   if (!new_style)
-    return GetReply(&id, client, type, ts, data, len);
+    return GetReply(src_id, client, type, ts, data, len);
 
   // Find the matching entry in the device table
   entry = deviceTable->GetDeviceEntry(id);

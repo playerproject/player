@@ -258,8 +258,9 @@ class CDevice
                          unsigned short* type, struct timeval* ts, 
                          void* data, size_t len);
 
-    // New-style: Read configuration reply from device
-    virtual int GetReplyEx(player_device_id_t id, void* client, 
+    // New-style: Read configuration reply from device;
+    // The src_id field is a legacy hack for p2os-syle request/reply tom-foolery.
+    virtual int GetReplyEx(player_device_id_t id, player_device_id_t *src_id, void* client, 
                            unsigned short* type, struct timeval* ts, 
                            void* data, size_t len);
 
