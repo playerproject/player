@@ -11,7 +11,7 @@
   "       -m       : turn on motors (be CAREFUL!)"
 
 // our robot
-CRobot robot;
+PlayerClient robot;
 bool turnOnMotors = false;
 
 /* easy little command line argument parser */
@@ -66,7 +66,9 @@ int main(int argc, char **argv)
   if(robot.Connect())
     exit(1);
 
-  if(robot.Request("lrpa"))
+  if(robot.RequestDeviceAccess(PLAYER_LASER_CODE, PLAYER_READ_MODE))
+    exit(1);
+  if(robot.RequestDeviceAccess(PLAYER_POSITION_CODE, PLAYER_WRITE_MODE))
     exit(1);
 
   /* maybe turn on the motors */
@@ -101,8 +103,8 @@ int main(int argc, char **argv)
       l=150; 
     if (r>150) 
       r=150;
-    robot.newspeed = r+l;
-    robot.newturnrate = r-l;
+    *robot.newspeed = r+l;
+    *robot.newturnrate = r-l;
     //printf("speed: %d\t turn: %d\n", robot.newspeed, robot.newturnrate);
 
     /* write commands to robot */

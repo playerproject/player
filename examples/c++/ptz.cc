@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-CRobot robot;
+PlayerClient robot;
 
 /* parse command-line args */
 void
@@ -58,11 +58,11 @@ int main(int argc, char **argv)
 
   /* Connect to Player server */
   if(robot.Connect())
-    exit(0);
+    exit(1);
 
   /* Request sensor data */
-  if(robot.Request( "za"))
-    exit(0);
+  if(robot.RequestDeviceAccess(PLAYER_PTZ_CODE, PLAYER_ALL_MODE) == -1)
+    exit(1);
 
   int dir = 1;
   for(;;)
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 
     if(robot.ptz->pan > 80 || robot.ptz->pan < -80)
     {
-      robot.newpan = dir*70;
+      *robot.newpan = dir*70;
       robot.Write();
       for(int i=0;i<10;i++)
       {
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
       robot.Print();
       dir = -dir;
     }
-    robot.newpan = robot.ptz->pan + dir * 5;
+    *robot.newpan = robot.ptz->pan + dir * 5;
     robot.Write();
   }
 

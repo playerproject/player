@@ -15,10 +15,6 @@
 #define radians(deg) deg*(M_PI/180.0)
 #define degrees(rad) rad*(180.0/M_PI)
 
-#define min(a,b) (a < b) ? a : b
-#define max(a,b) (a > b) ? a : b
-#define sign(a) (a >= 0.0) ? 1 : -1
-
 #define USAGE \
   "USAGE: goto [-x <x>] [-y <y>] [-h <host>] [-p <port>] [-m]\n" \
   "       -x <x>: set the X coordinate of the target to <x>\n"\
@@ -27,7 +23,7 @@
   "       -p <port>: connect to Player on this TCP port\n" \
   "       -m       : turn on motors (be CAREFUL!)"
 
-CRobot robot;
+PlayerClient  robot;
 bool turnOnMotors = false;
 char host[256] = "localhost";
 pthread_mutex_t dataAccessMutex;
@@ -73,23 +69,23 @@ GotoThread(void* arg)
     pthread_mutex_lock(&commandAccessMutex);
     if(fabs(degrees(angle)) > 10.0)
     {
-      robot.newturnrate = (short)((angle/M_PI) * 40.0);
-      robot.newturnrate = (short)(min(robot.newturnrate,40.0));
-      robot.newturnrate = (short)(max(robot.newturnrate,-40.0));
+      *robot.newturnrate = (short)((angle/M_PI) * 40.0);
+      *robot.newturnrate = (short)(min(*robot.newturnrate,40.0));
+      *robot.newturnrate = (short)(max(*robot.newturnrate,-40.0));
     }
     else
-      robot.newturnrate = (short)0.0;
+      *robot.newturnrate = (short)0.0;
 
     if(dist > 50.0)
     {
-      robot.newspeed = (short)((dist/500.0) * 200.0);
-      robot.newspeed = (short)(min(robot.newspeed,200.0));
-      robot.newspeed = (short)(max(robot.newspeed,-200.0));
+      *robot.newspeed = (short)((dist/500.0) * 200.0);
+      *robot.newspeed = (short)(min(*robot.newspeed,200.0));
+      *robot.newspeed = (short)(max(*robot.newspeed,-200.0));
     }
     else
-      robot.newspeed = (short)0.0;
+      *robot.newspeed = (short)0.0;
 
-    if(!robot.newspeed)
+    if(!*robot.newspeed)
       gotodone = 1;
 
     pthread_mutex_unlock(&commandAccessMutex);
@@ -130,7 +126,7 @@ SonarObstacleAvoidThread(void* arg)
     {
       avoid = 1;
       //puts("AVOID");
-      robot.newspeed = -100;
+      *robot.newspeed = -100;
     }
     else if((robot.sonar[2] < min_front_dist) ||
             (robot.sonar[3] < min_front_dist) ||
@@ -139,15 +135,15 @@ SonarObstacleAvoidThread(void* arg)
     {
       //puts("AVOID");
       //avoid = 1;
-      robot.newspeed = 0;
+      *robot.newspeed = 0;
     }
 
     if(avoid)
     {
       if((robot.sonar[0] + robot.sonar[1]) < (robot.sonar[6] + robot.sonar[7]))
-	robot.newturnrate = 30;
+	*robot.newturnrate = 30;
       else
-	robot.newturnrate = -30;
+	*robot.newturnrate = -30;
     }
 
     pthread_mutex_unlock(&commandAccessMutex);
@@ -248,11 +244,13 @@ int main(int argc, char **argv)
     exit(0);
 
   /* Request sensor data */
-  if(robot.Request( "pasr" , 4))
-    exit(0);
+  if(robot.RequestDeviceAccess(PLAYER_POSITION_CODE,PLAYER_ALL_MODE))
+    exit(1);
+  if(robot.RequestDeviceAccess(PLAYER_SONAR_CODE,PLAYER_READ_MODE))
+    exit(1);
     
-  if(turnOnMotors && robot.ChangeMotorState(1))
-    exit(0);
+  //if(turnOnMotors && robot.ChangeMotorState(1))
+    //exit(0);
 
   if(startthread(&SonarObstacleAvoidThread,NULL))
   {
@@ -282,8 +280,6 @@ int main(int argc, char **argv)
     pthread_mutex_unlock(&commandAccessMutex);
   }
     
-  /* close everything */
-  robot.Request( "pcsc" , 4 );
   return(0);
 }
 

@@ -10,9 +10,9 @@ RMDIR = rmdir
 
 INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples/c++
 
-CFLAGS = -g -O2 -Wall 
-INCLUDES = -I../../client_libs/c++ -I/usr/local/player/include 
-LIBDIRS = -L../../client_libs/c++ -L/usr/local/player/lib 
+CFLAGS = -g -Wall 
+INCLUDES = -I../../client_libs/c++ -I../../client_libs/c -I../../include -I$(INSTALL_PREFIX)/include -I/usr/local/player/include
+LIBDIRS = -L../../client_libs/c++ -L$(INSTALL_PREFIX)/lib -L/usr/local/player/lib
 LIBS = $(LIBDIRS) -lplayerclient
 
 BINARIES = randomwalk \
@@ -23,9 +23,6 @@ BINARIES = randomwalk \
            example_from_manual
 
 all: $(BINARIES)
-
-testGolem:  clienttest.cc
-	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
 
 example_from_manual: example_from_manual.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
@@ -45,10 +42,12 @@ goto: goto.cc
 ptz: ptz.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
 
+test: test.cc
+	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
+
 install: $(BINARIES)
 	$(MKDIR) -p $(INSTALL_EXAMPLES)
 	$(INSTALL) -m 644 Makefile $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 clienttest.cc $(INSTALL_EXAMPLES)
 	$(INSTALL) -m 644 example_from_manual.cc $(INSTALL_EXAMPLES)
 	$(INSTALL) -m 644 randomwalk.cc $(INSTALL_EXAMPLES)
 	$(INSTALL) -m 644 sonarobstacleavoid.cc $(INSTALL_EXAMPLES)
@@ -64,7 +63,6 @@ install: $(BINARIES)
 
 uninstall: 
 	$(RM) -f $(INSTALL_EXAMPLES)/Makefile 
-	$(RM) -f $(INSTALL_EXAMPLES)/clienttest.cc 
 	$(RM) -f $(INSTALL_EXAMPLES)/example_from_manual.cc 
 	$(RM) -f $(INSTALL_EXAMPLES)/randomwalk.cc 
 	$(RM) -f $(INSTALL_EXAMPLES)/sonarobstacleavoid.cc 
@@ -79,4 +77,4 @@ uninstall:
 	$(RM) -f $(INSTALL_EXAMPLES)/ptz 
 
 clean:
-	$(RM) -f testGolem *.o $(BINARIES)
+	$(RM) -f *.o $(BINARIES) test
