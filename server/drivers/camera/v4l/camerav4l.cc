@@ -271,6 +271,7 @@ int CameraV4L::Setup()
     fg_set_format(this->fg, VIDEO_PALETTE_YUV420P);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_YUV420P );
     this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
+    this->depth = 8;
   }
   else
   {
@@ -391,23 +392,26 @@ void CameraV4L::HandleGetGeom(void *client, void *request, int len)
 // Update the device data (the data going back to the client).
 void CameraV4L::WriteData()
 {
-  size_t size;
-  //printf("%d %06d\n", this->tsec, this->tusec);
+  size_t image_size, size;
 
+  // Compute size of image
+  image_size = this->width * this->height * this->depth / 8;
+  
   // Set the image properties
   this->data.width = htons(this->width);
   this->data.height = htons(this->height);
   this->data.depth = this->depth;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+  this->data.image_size = htonl(image_size);
 
-  // Set the image pixels
-  assert((size_t) this->frame->size <= sizeof(this->data.image));
+  assert(image_size <= sizeof(this->data.image));
+  assert(image_size <= (size_t) this->frame->size);
+  
+  // Copy the image pixels
+  memcpy(this->data.image, this->frame->data, image_size);
 
-  this->data.image_size = htonl(this->frame->size);
-  memcpy(this->data.image, this->frame->data, this->frame->size);
-
-  // Copy data to server.
-  size = sizeof(this->data) - sizeof(this->data.image) + this->frame->size;
+  // Copy data to server
+  size = sizeof(this->data) - sizeof(this->data.image) + image_size;
 
   struct timeval timestamp;
   timestamp.tv_sec = this->tsec;
