@@ -181,15 +181,38 @@ void GzLaser::PutCommand(void* client, unsigned char* src, size_t len)
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
 int GzLaser::PutConfig(player_device_id_t* device, void* client, void* data, size_t len)
 {
-  // TODO
+  uint8_t subtype;
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-    PLAYER_ERROR("PutReply() failed");
-  
+  subtype = ((uint8_t*) data)[0];
+  switch (subtype)
+  {
+    case PLAYER_LASER_GET_GEOM:
+    {
+      player_laser_geom_t rep;
+
+      // TODO: get geometry from somewhere
+      rep.subtype = PLAYER_LASER_GET_GEOM;
+      rep.pose[0] = htons((int) (0.0));
+      rep.pose[1] = htons((int) (0.0));
+      rep.pose[2] = htons((int) (0.0));
+      rep.size[0] = htons((int) (0.0));
+      rep.size[1] = htons((int) (0.0));
+
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &rep, sizeof(rep)) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    }
+
+    default:
+    {
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    }
+  }
   return 0;
 }
