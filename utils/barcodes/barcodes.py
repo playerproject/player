@@ -69,6 +69,7 @@ def main(options):
     for id in bitmasks.keys():
         outfile = mangle_xfig(template, id, bitmasks[id])
         os.system('fig2dev -L ps %s bc-%s.ps' % (outfile, id))
+        os.system('ps2pdf bc-%s.ps' % (id))
 
     return
 
@@ -80,6 +81,6 @@ def main(options):
 if __name__ == '__main__':
 
     options = {}
-    options['template'] = 'upc-4-4-0.fig'
+    options['template'] = sys.argv[1] #'upc-4-4-0.fig'
 
     main(options)
