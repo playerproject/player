@@ -251,7 +251,7 @@ dnl
 dnl -reed
 dnl
 AC_LANG_SAVE
-AC_LANG(C++)
+AC_LANG_CPLUSPLUS
 PLAYER_ADD_DRIVER([service_adv_lsd], [drivers/service_adv], [yes],
     [servicediscovery/servicedirectory.hh], [], [-lservicediscovery])
 AC_LANG_RESTORE
