@@ -1,2 +1,1 @@
-SUBDIRS = c++
-#libplayerc 
+SUBDIRS = c++ libplayerc 
