@@ -32,6 +32,9 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 #include <string.h>
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>
+#endif
 
 /** The {\tt SonarProxy} class is used to control the {\tt sonar} device.
     The most recent sonar range measuremts can be read from the {\tt range}
