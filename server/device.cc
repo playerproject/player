@@ -407,17 +407,37 @@ CDevice::DummyMain(void *devicep)
   sigblock(SIGTERM);
 #endif
 
+  // Install a cleanup function
+  pthread_cleanup_push(&DummyMainQuit, devicep);
+
   // Run the overloaded Main() in the subclassed device.
   ((CDevice*)devicep)->Main();
+
+  // Run, the uninstall cleanup function
+  pthread_cleanup_pop(1);
   
   return NULL;
 }
+
+/* Dummy main cleanup (just calls real main cleanup) */
+void
+CDevice::DummyMainQuit(void *devicep)
+{
+  // Run the overloaded MainCleanup() in the subclassed device.
+  ((CDevice*)devicep)->MainQuit();
+}
+
 
 void
 CDevice::Main() 
 {
   fputs("ERROR: You have called Run(), but didn't provide your own Main()!", 
         stderr);
+}
+
+void
+CDevice::MainQuit() 
+{
 }
 
 // A helper method for internal use; e.g., when one device wants to make a

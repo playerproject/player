@@ -169,6 +169,10 @@ class CDevice
     //
     virtual void Main();
 
+    // Cleanup function for device thread (called when main exits)
+    //
+    virtual void MainQuit();
+
     // A helper method for internal use; e.g., when one device wants to make a
     // request of another device
     virtual int Request(player_device_id_t* device, void* requester, 
@@ -180,7 +184,12 @@ class CDevice
     // Dummy main (just calls real main).  This is used to simplify thread
     // creation.
     //
-    static void* DummyMain(void *laserdevice);
+    static void* DummyMain(void *device);
+
+    // Dummy main cleanup (just calls real main cleanup).  This is
+    // used to simplify thread termination.
+    //
+    static void DummyMainQuit(void *device);
 
     // these methods are used to lock and unlock the various buffers and
     // queues; they are implemented with mutexes in CDevice and overridden
