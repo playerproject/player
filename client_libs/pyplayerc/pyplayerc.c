@@ -489,6 +489,9 @@ extern PyObject *gps_new(PyObject *self, PyObject *args);
 extern PyTypeObject laser_type;
 extern PyObject *laser_new(PyObject *self, PyObject *args);
 
+extern PyTypeObject localize_type;
+extern PyObject *localize_new(PyObject *self, PyObject *args);
+
 extern PyTypeObject position_type;
 extern PyObject *position_new(PyObject *self, PyObject *args);
 
@@ -510,14 +513,15 @@ static PyMethodDef module_methods[] =
 {
   {"mclient", mclient_new, METH_VARARGS},
   {"client", client_new, METH_VARARGS},
-  {"laser", laser_new, METH_VARARGS},
-  {"position", position_new, METH_VARARGS},
-  {"power", power_new, METH_VARARGS},
-  {"ptz", ptz_new, METH_VARARGS},
+  {"comms", comms_new, METH_VARARGS},
   {"blobfinder", blobfinder_new, METH_VARARGS},
   {"fiducial", fiducial_new, METH_VARARGS},
   {"gps", gps_new, METH_VARARGS},
-  {"comms", comms_new, METH_VARARGS},
+  {"laser", laser_new, METH_VARARGS},
+  {"localize", localize_new, METH_VARARGS},
+  {"position", position_new, METH_VARARGS},
+  {"power", power_new, METH_VARARGS},
+  {"ptz", ptz_new, METH_VARARGS},
   {"truth", truth_new, METH_VARARGS},
   {"wifi", wifi_new, METH_VARARGS},
   {NULL, NULL}
@@ -531,13 +535,15 @@ void initplayerc(void)
   /* Finish initialization of type objects here */
   mclient_type.ob_type = &PyType_Type;
   client_type.ob_type = &PyType_Type;
-  laser_type.ob_type = &PyType_Type;
-  position_type.ob_type = &PyType_Type;
-  power_type.ob_type = &PyType_Type;
-  ptz_type.ob_type = &PyType_Type;
+  comms_type.ob_type = &PyType_Type;
   blobfinder_type.ob_type = &PyType_Type;
   fiducial_type.ob_type = &PyType_Type;
   gps_type.ob_type = &PyType_Type;
+  laser_type.ob_type = &PyType_Type;
+  localize_type.ob_type = &PyType_Type;
+  position_type.ob_type = &PyType_Type;
+  power_type.ob_type = &PyType_Type;
+  ptz_type.ob_type = &PyType_Type;
   wifi_type.ob_type = &PyType_Type;
     
   moduleob = Py_InitModule("playerc", module_methods);

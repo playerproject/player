@@ -121,22 +121,24 @@ void wifi_update(wifi_t *wifi)
 void wifi_draw(wifi_t *wifi)
 {
   int i;
-  char text[64];
+  char ntext[64], text[1024];
 
   rtk_fig_show(wifi->fig, 1);      
   rtk_fig_clear(wifi->fig);
-
-  // TODO: get text origin from somewhere
   
-  // Draw in the wifi reading
-  rtk_fig_color_rgb32(wifi->fig, COLOR_WIFI);
-
+  text[0] = 0;
   for (i = 0; i < wifi->proxy->link_count; i++)
   {
-    snprintf(text, sizeof(text), "Wifi: %d %d %d",
-             wifi->proxy->links[i].qual, wifi->proxy->links[i].level, wifi->proxy->links[i].noise);
-    rtk_fig_text(wifi->fig, +1, +1, 0, text);
+    snprintf(ntext, sizeof(ntext), "%s %02d %02d %02d\n",
+             wifi->proxy->links[i].ip, wifi->proxy->links[i].qual,
+             wifi->proxy->links[i].level, wifi->proxy->links[i].noise);
+    strcat(text, ntext);
   }
+
+  // Draw in the wifi reading
+  // TODO: get text origin from somewhere
+  rtk_fig_color_rgb32(wifi->fig, COLOR_WIFI);
+  rtk_fig_text(wifi->fig, +1, +1, 0, text);
 
   return;
 }

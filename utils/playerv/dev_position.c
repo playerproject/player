@@ -270,8 +270,8 @@ void position_servo_vel(position_t *self)
     return;
   }
   
-  min_vr = -0.10; max_vr = 0.30;
-  min_va = -M_PI/8; max_va = +M_PI/8;
+  min_vr = -0.10; max_vr = 0.50;
+  min_va = -M_PI/4; max_va = +M_PI/4;
 
   kr = max_vr / 1.00;
   ka = max_va / 1.00;
