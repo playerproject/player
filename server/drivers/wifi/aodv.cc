@@ -152,7 +152,8 @@ size_t Aodv::GetData(void* client,unsigned char *dest, size_t maxsize,
 
     link = data.links + link_count++;
     strncpy(link->ip, ip, sizeof(link->ip));
-    link->link = htons(qual);
+    link->qual_type = PLAYER_WIFI_QUAL_UNKNOWN;
+    link->qual = htons(qual);
     link->level = htons(level);
     link->noise = htons(noise);
   }
