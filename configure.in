@@ -42,7 +42,7 @@ AM_CONDITIONAL(WITH_GUI, test x$with_gui = xyes)
 
 dnl client tests are not compiled unless the user asks for them
 AC_ARG_WITH(tests, [  --with-tests            Build tests],,
-with_tests=no)
+with_tests=yes)
 AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
 
 dnl use the old compiler
