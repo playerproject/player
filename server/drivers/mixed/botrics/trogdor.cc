@@ -361,6 +361,22 @@ Trogdor::Main()
     final_lvel = (int)rint(command_lvel / TROGDOR_MPS_PER_TICK);
     final_rvel = (int)rint(command_rvel / TROGDOR_MPS_PER_TICK);
 
+    /* to account for our bad low-level PID motor controller */
+    if(abs(final_rvel) > 0 && abs(final_rvel) < TROGDOR_MIN_WHEELSPEED_TICKS)
+    {
+      if(final_rvel > 0)
+        final_rvel = TROGDOR_MIN_WHEELSPEED_TICKS;
+      else
+        final_rvel = -TROGDOR_MIN_WHEELSPEED_TICKS;
+    }
+    if(abs(final_lvel) > 0 && abs(final_lvel) < TROGDOR_MIN_WHEELSPEED_TICKS)
+    {
+      if(final_lvel > 0)
+        final_lvel = TROGDOR_MIN_WHEELSPEED_TICKS;
+      else
+        final_lvel = -TROGDOR_MIN_WHEELSPEED_TICKS;
+    }
+
     if((final_lvel != last_final_lvel) ||
        (final_rvel != last_final_rvel))
     {
@@ -722,11 +738,11 @@ Trogdor::UpdateOdom(int ltics, int rtics)
   // account for transient errors in tick values by ignoring changes that
   // suggest that we've move farther than physically possible (seems that we 
   // sometimes get zeros)
-  //if(d_delta > 10*(TROGDOR_MAX_WHEELSPEED * (TROGDOR_DELAY_US/1e6)))
-  //{
-    //PLAYER_WARN("Invalid odometry change; ignoring");
-    //return;
-  //}
+  if(d_delta > 100*(TROGDOR_MAX_WHEELSPEED * (TROGDOR_DELAY_US/1e6)))
+  {
+    PLAYER_WARN("Invalid odometry change; ignoring");
+    return;
+  }
   
   // MAJOR HACK! The check above is too strict, for some reason.  Since the
   // problem comes from one or the other encoder returning 0 ticks (always
