@@ -323,6 +323,7 @@ int LaserCSpace::UpdateLaser()
   for (i = 0; i < this->data.range_count; i++)
     this->data.ranges[i] = htons(this->data.ranges[i]);
   this->data.range_count = htons(this->data.range_count);
+  this->data.range_res = this->laser_data.range_res;
 
   return 1;
 }
