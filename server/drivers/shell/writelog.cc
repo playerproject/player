@@ -46,6 +46,7 @@ The writelog driver takes as input a list of devices to log data from.
 The driver with the <b>highest data rate</b> should be placed first in the list.
 The writelog driver can will log data from the following interfaces:
 
+- @ref player_interface_blobfinder
 - @ref player_interface_camera
 - @ref player_interface_fiducial
 - @ref player_interface_gps
@@ -148,6 +149,9 @@ class WriteLog: public Driver
 
   // Write data to file
   private: void Write(WriteLogDevice *device, void *data, size_t size, struct timeval time);
+
+  // Write blobfinder data to file
+  private: void WriteBlobfinder(player_blobfinder_data_t *data);
 
   // Write camera data to file
   private: void WriteCamera(player_camera_data_t *data);
@@ -539,6 +543,9 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
   // Write the data
   switch (iface.code)
   {
+    case PLAYER_BLOBFINDER_CODE:
+      this->WriteBlobfinder((player_blobfinder_data_t*) data);
+      break;
     case PLAYER_CAMERA_CODE:
       this->WriteCamera((player_camera_data_t*) data);
       if (this->cameraSaveImages)
@@ -571,6 +578,11 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
     case PLAYER_WIFI_CODE:
       this->WriteWiFi((player_wifi_data_t*) data);
       break;
+    case PLAYER_PLAYER_CODE:
+      break;
+    default:
+      PLAYER_WARN1("unsupported interface type [%s]", ::lookup_interface_name(0, iface.code));
+      break;
   }
 
   fprintf(this->file, "\n");
@@ -597,6 +609,37 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
 #define CM_M(x) ((x) / 100.0)
 #define MM_M(x) ((x) / 1000.0)
 #define DEG_RAD(x) ((x) * M_PI / 180.0)
+
+
+
+////////////////////////////////////////////////////////////////////////////
+// Write blobfinder data to file
+void WriteLog::WriteBlobfinder(player_blobfinder_data_t *data)
+{
+  // format: width height count [id color area x y left right top bottom range] ...
+
+  fprintf(this->file, " %d %d %d",
+          HUINT16(data->width),
+          HUINT16(data->height),
+          HUINT16(data->blob_count));
+
+  for(int i=0; i < HUINT16(data->blob_count); i++)
+  {
+    fprintf(this->file, " %d %d %d %d %d %d %d %d %d %f",
+            HINT16(data->blobs[i].id),
+            HUINT32(data->blobs[i].color),
+            HUINT32(data->blobs[i].area),
+            HUINT16(data->blobs[i].x),
+            HUINT16(data->blobs[i].y),
+            HUINT16(data->blobs[i].left),
+            HUINT16(data->blobs[i].right),
+            HUINT16(data->blobs[i].top),
+            HUINT16(data->blobs[i].bottom),
+            MM_M(HUINT16(data->blobs[i].range)));
+  }
+  
+  return;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -666,6 +709,63 @@ void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *da
   }
   
   fclose(file);
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Write fiducial data to file
+void WriteLog::WriteFiducial(player_fiducial_data_t *data)
+{
+  // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw> <ux> <uy> <uz> etc] ...
+  fprintf(this->file, "%d", HUINT16(data->count));
+  for(int i=0;i<HUINT16(data->count);i++)
+  {
+    fprintf(this->file, " %d"
+            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f"
+            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
+            HINT16(data->fiducials[i].id),
+            MM_M(HINT32(data->fiducials[i].pos[0])),
+            MM_M(HINT32(data->fiducials[i].pos[1])),
+            MM_M(HINT32(data->fiducials[i].pos[2])),
+            MM_M(HINT32(data->fiducials[i].rot[0])),
+            MM_M(HINT32(data->fiducials[i].rot[1])),
+            MM_M(HINT32(data->fiducials[i].rot[2])),
+            MM_M(HINT32(data->fiducials[i].upos[0])),
+            MM_M(HINT32(data->fiducials[i].upos[1])),
+            MM_M(HINT32(data->fiducials[i].upos[2])),
+            MM_M(HINT32(data->fiducials[i].urot[0])),
+            MM_M(HINT32(data->fiducials[i].urot[1])),
+            MM_M(HINT32(data->fiducials[i].urot[2])));
+  }
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Write GPS data to file
+void WriteLog::WriteGps(player_gps_data_t *data)
+{
+  fprintf(this->file,
+          "%.3f "
+          "%.6f %.6f %.6f "
+          "%.3f %.3f "
+          "%.3f %.3f %.3f "
+          "%d %d",
+          (double) (uint32_t) HINT32(data->time_sec) +
+          (double) (uint32_t) HINT32(data->time_sec) * 1e-6,
+          (double) HINT32(data->latitude) / (60 * 60 * 60),
+          (double) HINT32(data->longitude) / (60 * 60 * 60),
+          MM_M(HINT32(data->altitude)),
+          CM_M(HINT32(data->utm_e)),
+          CM_M(HINT32(data->utm_n)), 
+          (double) HINT16(data->hdop) / 10,
+          MM_M(HINT32(data->err_horz)),
+          MM_M(HINT32(data->err_vert)),
+          (int) data->quality,
+          (int) data->num_sats);
   
   return;
 }
@@ -805,33 +905,6 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
 
 
 ////////////////////////////////////////////////////////////////////////////
-// Write GPS data to file
-void WriteLog::WriteGps(player_gps_data_t *data)
-{
-  fprintf(this->file,
-          "%.3f "
-          "%.6f %.6f %.6f "
-          "%.3f %.3f "
-          "%.3f %.3f %.3f "
-          "%d %d",
-          (double) (uint32_t) HINT32(data->time_sec) +
-          (double) (uint32_t) HINT32(data->time_sec) * 1e-6,
-          (double) HINT32(data->latitude) / (60 * 60 * 60),
-          (double) HINT32(data->longitude) / (60 * 60 * 60),
-          MM_M(HINT32(data->altitude)),
-          CM_M(HINT32(data->utm_e)),
-          CM_M(HINT32(data->utm_n)), 
-          (double) HINT16(data->hdop) / 10,
-          MM_M(HINT32(data->err_horz)),
-          MM_M(HINT32(data->err_vert)),
-          (int) data->quality,
-          (int) data->num_sats);
-  
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////
 // Write truth data to file
 void WriteLog::WriteTruth(player_truth_data_t *data)
 {
@@ -843,33 +916,4 @@ void WriteLog::WriteTruth(player_truth_data_t *data)
   return;
 }
 
-
-////////////////////////////////////////////////////////////////////////////
-// Write fiducial data to file
-void WriteLog::WriteFiducial(player_fiducial_data_t *data)
-{
-  // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw> <ux> <uy> <uz> etc] ...
-  fprintf(this->file, "%d", HUINT16(data->count));
-  for(int i=0;i<HUINT16(data->count);i++)
-  {
-    fprintf(this->file, " %d"
-            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f"
-            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
-            HINT16(data->fiducials[i].id),
-            MM_M(HINT32(data->fiducials[i].pos[0])),
-            MM_M(HINT32(data->fiducials[i].pos[1])),
-            MM_M(HINT32(data->fiducials[i].pos[2])),
-            MM_M(HINT32(data->fiducials[i].rot[0])),
-            MM_M(HINT32(data->fiducials[i].rot[1])),
-            MM_M(HINT32(data->fiducials[i].rot[2])),
-            MM_M(HINT32(data->fiducials[i].upos[0])),
-            MM_M(HINT32(data->fiducials[i].upos[1])),
-            MM_M(HINT32(data->fiducials[i].upos[2])),
-            MM_M(HINT32(data->fiducials[i].urot[0])),
-            MM_M(HINT32(data->fiducials[i].urot[1])),
-            MM_M(HINT32(data->fiducials[i].urot[2])));
-  }
-  
-  return;
-}
 

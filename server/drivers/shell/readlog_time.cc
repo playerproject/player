@@ -30,17 +30,18 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "readlog_manager.h"
 #include "readlog_time.h"
 
+
+////////////////////////////////////////////////////////////////////////////////
+// The global time for readlog
+struct timeval ReadLogTime_time;
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 ReadLogTime::ReadLogTime()
 {
-  this->manager = ReadLogManager_Get();
-  assert(this->manager != NULL);
   return;
 }
 
@@ -56,11 +57,7 @@ ReadLogTime::~ReadLogTime()
 ////////////////////////////////////////////////////////////////////////////////
 // Get the simulator time
 int ReadLogTime::GetTime(struct timeval* time)
-{  
-  time->tv_sec = this->manager->server_time / 1000000;
-  time->tv_usec = this->manager->server_time % 1000000;
-
-  //printf("%d.%06d\n", (uint32_t) time->tv_sec, (uint32_t) time->tv_usec);
-    
+{
+  *time = ReadLogTime_time;    
   return 0;
 }
