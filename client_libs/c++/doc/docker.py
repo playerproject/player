@@ -168,30 +168,30 @@ def make_tex(filename, section, blocks):
 
     for block in blocks:
         if block.type == 'class':
-            make_class(texfile, block)
+            make_class(texfile, section, block)
 
     texfile.write('\\subsection*{Attributes}')
     for block in blocks:            
         if block.type == 'data':
-            make_data(texfile, block)
+            make_data(texfile, section, block)
             
     texfile.write('\\subsection*{Methods}')
     for block in blocks:
         if block.type == 'method':
-            make_method(texfile, block)
+            make_method(texfile, section, block)
 
     return
 
 
-def make_class(file, block):
+def make_class(file, section, block):
     """Generate a class entry."""
 
-    file.write('\\section{class %s}\n\n' % block.classname);
+    file.write('\\section{%s}\n\n' % section.name);
     file.write('%s\n' % block.desc)
     return
 
 
-def make_method(file, block):
+def make_method(file, section, block):
     """Generate method blocks."""
 
     #file.write('\\begin{small}')
@@ -206,7 +206,7 @@ def make_method(file, block):
     return
 
 
-def make_data(file, block):
+def make_data(file, section, block):
     """Generate data blocks."""
 
     file.write('\\begin{verbatim}\n')
