@@ -87,6 +87,7 @@
 #define PLAYER_POSITION3D_CODE     ((uint16_t)30)  // 3-D position
 #define PLAYER_SIMULATION_CODE     ((uint16_t)31)  // simulators
 #define PLAYER_SERVICE_ADV_CODE    ((uint16_t)32)  // LAN service advertisement
+#define PLAYER_BLINKENLIGHT_CODE   ((uint16_t)33)  // blinking lights 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -123,6 +124,7 @@
 #define PLAYER_POSITION3D_STRING    "position3d"
 #define PLAYER_SERVICE_ADV_STRING   "service_adv"
 #define PLAYER_SIMULATION_STRING    "simulation"
+#define PLAYER_BLINKENLIGHT_STRING  "blinkenlight"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -1489,6 +1491,38 @@ typedef struct player_waveform_data
  *************************************************************************/
 
 /*************************************************************************
+ ** begin section blinkenlight
+ *************************************************************************/
+
+/** [Synopsis] The {\tt blinkenlight} interface is used to switch on
+    and off a flashing indicator light, and to set it's flash
+    period.*/
+
+/** [Data] */
+/**
+   The {\tt blinkenlight} data provides the current state of the
+  indicator light.*/
+typedef struct player_blinkenlight_data
+{
+  /** zero: disabled, non-zero: enabled */
+  uint8_t enable;
+  /** flash period (one whole on-off cycle) in milliseconds. */
+  uint16_t period_ms;
+} __attribute__ ((packed)) player_blinkenlight_data_t;
+
+/** [Command] */
+/**
+   The {\tt blinkenlight} command sets the current state of the
+  indicator light. It uses the same packet as the data.*/
+typedef player_blinkenlight_data_t player_blinkenlight_cmd_t;
+
+/** [Config] This interface accepts no configuration requests */
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
  ** begin section fiducial
  *************************************************************************/
 
@@ -1679,7 +1713,8 @@ typedef struct
 
 /** Fiducial exchange mesaage request. The device sends the message,
 then replies with the last message received, which may be (but is not
-guaranteed to be) be a reply to the sent message.*/
+guaranteed to be) be a reply to the sent message. NOTE: this is not
+yet supported by Stage-1.4.*/
 
 typedef struct 
 { 
@@ -1698,7 +1733,6 @@ typedef struct
   uint8_t consume_reply;
 }  __attribute__ ((packed)) player_fiducial_msg_txrx_req_t; 
   
-
 /*************************************************************************
  ** end section
  *************************************************************************/
