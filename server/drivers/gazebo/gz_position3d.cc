@@ -189,17 +189,17 @@ void GzPosition3d::Update()
     data.ypos = htonl((int) (this->iface->data->pos[1]* 1000));
     data.zpos = htonl((int) (this->iface->data->pos[2]* 1000));
 
-    data.roll = htonl((int) (this->iface->data->rot[0] * 180 / M_PI *3600));
-    data.pitch = htonl((int) (this->iface->data->rot[1] * 180 / M_PI *3600));
-    data.yaw = htonl((int) (this->iface->data->rot[2] * 180 / M_PI *3600));
+    data.roll = htonl((int) (this->iface->data->rot[0] * 1000));
+    data.pitch = htonl((int) (this->iface->data->rot[1] * 1000));
+    data.yaw = htonl((int) (this->iface->data->rot[2] * 1000));
 
     data.xspeed = htonl((int) (this->iface->data->vel_pos[0]* 1000));
     data.yspeed = htonl((int) (this->iface->data->vel_pos[1]* 1000));
     data.zspeed = htonl((int) (this->iface->data->vel_pos[2]* 1000));
 
-    data.rollspeed = htonl((int) (this->iface->data->vel_rot[0] * 180 / M_PI *3600));
-    data.pitchspeed = htonl((int) (this->iface->data->vel_rot[1] * 180 / M_PI *3600));
-    data.yawspeed = htonl((int) (this->iface->data->vel_rot[2] * 180 / M_PI *3600));
+    data.rollspeed = htonl((int) (this->iface->data->vel_rot[0] * 1000));
+    data.pitchspeed = htonl((int) (this->iface->data->vel_rot[1] * 1000));
+    data.yawspeed = htonl((int) (this->iface->data->vel_rot[2] * 1000));
 
     data.stall = (uint8_t) this->iface->data->stall;
 
@@ -222,12 +222,12 @@ void GzPosition3d::PutCommand(void* client, unsigned char* src, size_t len)
   cmd = (player_position3d_cmd_t*) src;
 
   gz_position_lock(this->iface, 1);
-  this->iface->data->cmd_vel_pos[0] = ((int) ntohl(cmd->xspeed))/1000.0;
-  this->iface->data->cmd_vel_pos[1] = ((int) ntohl(cmd->yspeed))/1000.0;
-  this->iface->data->cmd_vel_pos[2] = ((int) ntohl(cmd->zspeed))/1000.0;
-  this->iface->data->cmd_vel_rot[0] = ((int) ntohl(cmd->rollspeed)) * M_PI / 180/3600.0;
-  this->iface->data->cmd_vel_rot[1] = ((int) ntohl(cmd->pitchspeed)) * M_PI / 180/3600.0;
-  this->iface->data->cmd_vel_rot[2] = ((int) ntohl(cmd->yawspeed)) * M_PI / 180.0/3600.0;  
+  this->iface->data->cmd_vel_pos[0] = ((int) ntohl(cmd->xspeed)) / 1000.0;
+  this->iface->data->cmd_vel_pos[1] = ((int) ntohl(cmd->yspeed)) / 1000.0;
+  this->iface->data->cmd_vel_pos[2] = ((int) ntohl(cmd->zspeed)) / 1000.0;
+  this->iface->data->cmd_vel_rot[0] = ((int) ntohl(cmd->rollspeed)) / 1000.0;
+  this->iface->data->cmd_vel_rot[1] = ((int) ntohl(cmd->pitchspeed)) / 1000.0;
+  this->iface->data->cmd_vel_rot[2] = ((int) ntohl(cmd->yawspeed)) / 1000.0;
   gz_position_unlock(this->iface);
     
   return;
