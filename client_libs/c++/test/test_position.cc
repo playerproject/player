@@ -55,68 +55,68 @@ test_position(PlayerClient* client, int index)
   }
   PASS();
 
- //   TEST("moving forward");
-//    if(pp.SetSpeed(100,0) < 0)
-//    {
-//      FAIL();
-//      return(-1);
-//    }
-//    sleep(3);
-//    PASS();
+  TEST("moving forward");
+  if(pp.SetSpeed(100,0) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  sleep(3);
+  PASS();
 
-//    TEST("moving backward");
-//    if(pp.SetSpeed(-100,0) < 0)
-//    {
-//      FAIL();
-//      return(-1);
-//    }
-//    sleep(3);
-//    PASS();
+  TEST("moving backward");
+  if(pp.SetSpeed(-100,0) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  sleep(3);
+  PASS();
 
-//    TEST("moving left");
-//    if(pp.SetSpeed(0,100,0) < 0)
-//    {
-//      FAIL();
-//      return(-1);
-//    }
-//    sleep(3);
-//    PASS();
+  TEST("moving left");
+  if(pp.SetSpeed(0,100,0) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  sleep(3);
+  PASS();
 
-//    TEST("moving right");
-//    if(pp.SetSpeed(0,-100,0) < 0)
-//    {
-//      FAIL();
-//      return(-1);
-//    }
-//    sleep(3);
-//    PASS();
+  TEST("moving right");
+  if(pp.SetSpeed(0,-100,0) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  sleep(3);
+  PASS();
 
-//    TEST("turning right");
-//    if(pp.SetSpeed(0,-25) < 0)
-//    {
-//      FAIL();
-//      return(-1);
-//    }
-//    sleep(3);
-//    PASS();
+  TEST("turning right");
+  if(pp.SetSpeed(0,-25) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  sleep(3);
+  PASS();
 
-//    TEST("turning left");
-//    if(pp.SetSpeed(0,25) < 0)
-//    {
-//      FAIL();
-//      return(-1);
-//    }
-//    sleep(3);
-//    PASS();
+  TEST("turning left");
+  if(pp.SetSpeed(0,25) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  sleep(3);
+  PASS();
 
-//    TEST("stopping");
-//    if(pp.SetSpeed(0,0) < 0)
-//    {
-//      FAIL();
-//      return(-1);
-//    }
-//    sleep(3);
-//    PASS();
+  TEST("stopping");
+  if(pp.SetSpeed(0,0) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  sleep(3);
+  PASS();
 
   TEST("changing to position control mode");
   if(pp.SelectPositionMode(1) < 0)
@@ -136,8 +136,8 @@ test_position(PlayerClient* client, int index)
   sleep(1);
   PASS();
 
-  TEST("moving to [1000 0 0]");
-  if(pp.GoTo( 1000, 0, 0) < 0)
+  TEST("moving to [500 0 0]");
+  if(pp.GoTo( 500, 0, 0) < 0)
   {
     FAIL();
     return(-1);
@@ -145,10 +145,10 @@ test_position(PlayerClient* client, int index)
   sleep(5);
   PASS();
 
-  getchar();
+  //getchar();
 
-  TEST("moving to [1000 0 -90]");
-  if(pp.GoTo( 1000, 0, -90) < 0)
+  TEST("moving to [500 0 -90]");
+  if(pp.GoTo( 500, 0, -90) < 0)
   {
     FAIL();
     return(-1);
@@ -156,7 +156,7 @@ test_position(PlayerClient* client, int index)
   sleep(5);
   PASS();
 
-  getchar();
+  //getchar();
 
 
   TEST("moving to [0.0 0.0 0.0]");
@@ -168,7 +168,7 @@ test_position(PlayerClient* client, int index)
   sleep(5);
   PASS();
       
-  getchar();
+  //getchar();
 
   TEST("changing back to velocity control mode");
   if(pp.SelectPositionMode(0) < 0)
