@@ -94,6 +94,7 @@
 #define PLAYER_MAP_CODE            ((uint16_t)42)  // get a map
 #define PLAYER_HUD_CODE            ((uint16_t)43)  // get a HUD interface
 #define PLAYER_PLANNER_CODE        ((uint16_t)44)  // 2D motion planner
+#define PLAYER_LOG_CODE            ((uint16_t)45)  // log read/write control
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
@@ -137,6 +138,7 @@
 #define PLAYER_MAP_STRING           "map"
 #define PLAYER_HUD_STRING           "hud"
 #define PLAYER_PLANNER_STRING       "planner"
+#define PLAYER_LOG_STRING           "log"
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
@@ -2994,6 +2996,67 @@ typedef struct player_planner_waypoints_req
   player_planner_waypoint_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
 } __attribute__ ((packed)) player_planner_waypoints_req_t;
 
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section log
+ *************************************************************************/
+/** [Synopsis] The {\tt log} interface provides start/stop control of
+               data logging/playback. */
+
+/** [Data] The {\tt log} interface produces no data */
+
+/** [Command] The {\tt log} interface accepts no commands */
+
+/** [Constants] */
+/** The subtypes for config reqeusts */
+#define PLAYER_LOG_SET_WRITE_STATE_REQ 1
+#define PLAYER_LOG_SET_READ_STATE_REQ 2
+#define PLAYER_LOG_GET_STATE_REQ 3
+
+/** Types of log devices */
+#define PLAYER_LOG_TYPE_READ 1
+#define PLAYER_LOG_TYPE_WRITE 2
+
+/** [Configuration: Set logging state] */
+/** Start/stop data logging */
+typedef struct player_log_set_write_state
+{
+  /** Request type: must be PLAYER_LOG_SET_WRITE_STATE_REQ */
+  uint8_t subtype;
+
+  /** State: 0=disabled, 1=enabled */
+  uint8_t state;
+} __attribute__ ((packed)) player_log_set_write_state_t;
+
+/** [Configuration: Set playback state] */
+/** Start/stop data playback */
+typedef struct player_log_set_read_state
+{
+  /** Request type: must be PLAYER_LOG_SET_READ_STATE_REQ */
+  uint8_t subtype;
+
+  /** State: 0=disabled, 1=enabled */
+  uint8_t state;
+} __attribute__ ((packed)) player_log_set_read_state_t;
+
+/** [Configuration: Get state] */
+/** Find out whether logging/playback is enabled or disabled */
+typedef struct player_log_get_state
+{
+  /** Request type: must be PLAYER_LOG_GET_STATE_REQ */
+  uint8_t subtype;
+
+  /** The type of log device, either PLAYER_LOG_TYPE_READ or
+      PLAYER_LOG_TYPE_WRITE */
+  uint8_t type;
+
+  /** Logging/playback state: 0=disabled, 1=enabled */
+  uint8_t state;
+} __attribute__ ((packed)) player_log_get_state_t;
 
 /*************************************************************************
  ** end section

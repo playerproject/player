@@ -1,12 +1,8 @@
-if WITH_GNOMECANVAS
-PLAYERNAV = playernav
-endif
-
 AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/server @GNOMECANVAS_CFLAGS@
 
-bin_PROGRAMS = $(PLAYERNAV)
-
-all: playernav
+if WITH_GNOMECANVAS
+bin_PROGRAMS = playernav
+endif
 
 playernav_SOURCES =  playernav.c gui.c playernav.h player.c parse.c
 

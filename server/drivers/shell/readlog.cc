@@ -114,6 +114,14 @@ ReadLog::ReadLog(int code, ConfigFile* cf, int section)
   // Get the part of the log file we wish to read
   this->read_id.code = code;
   this->read_id.index = cf->ReadInt(section, "index", 0);
+
+  if(code == PLAYER_LOG_CODE)
+  {
+    if(cf->ReadInt(section, "enable", 1) > 0)
+      this->manager->enable = true;
+    else
+      this->manager->enable = false;
+  }
   
   return;
 }
@@ -131,9 +139,14 @@ ReadLog::~ReadLog()
 // Initialize driver
 int ReadLog::Setup()
 {
-  // Subscribe to the underlying reader
-  if (this->manager->Subscribe(this->read_id, this) != 0)
-    return -1;
+  // Subscribe to the underlying reader, unless we're the 'log' device,
+  // which doesn't produce any data, but rather allows the client to
+  // start/stop data playback.
+  if(this->device_id.code != PLAYER_LOG_CODE)
+  {
+    if(this->manager->Subscribe(this->read_id, this) != 0)
+      return -1;
+  }
 
   // Clear the data buffer
   this->PutData(NULL, 0, 0, 0);
@@ -158,8 +171,69 @@ int ReadLog::Shutdown()
 int ReadLog::PutConfig(player_device_id_t* device, void* client,
                        void* data, size_t len)
 {
-  if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-    PLAYER_ERROR("PutReply() failed");
+  player_log_set_read_state_t sreq;
+  player_log_get_state_t greq;
+  uint8_t subtype;
+
+  if(len < sizeof(sreq.subtype))
+  {
+    PLAYER_WARN2("request was too small (%d < %d)",
+                  len, sizeof(sreq.subtype));
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+  }
+
+  subtype = ((player_log_set_read_state_t*)data)->subtype;
+  switch(subtype)
+  {
+    case PLAYER_LOG_SET_READ_STATE_REQ:
+      if(len != sizeof(sreq))
+      {
+        PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      sreq = *((player_log_set_read_state_t*)data);
+      if(sreq.state)
+      {
+        puts("ReadLog: start playback");
+        this->manager->enable = true;
+      }
+      else
+      {
+        puts("ReadLog: stop playback");
+        this->manager->enable = false;
+      }
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    case PLAYER_LOG_GET_STATE_REQ:
+      if(len != sizeof(greq.subtype))
+      {
+        PLAYER_WARN2("request wrong size (%d != %d)", 
+                     len, sizeof(greq.subtype));
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      greq = *((player_log_get_state_t*)data);
+      greq.type = PLAYER_LOG_TYPE_READ;
+      if(this->manager->enable)
+        greq.state = 1;
+      else
+        greq.state = 0;
+
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
+                        &greq, sizeof(greq)) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    default:
+      PLAYER_WARN1("got request of unknown subtype %u", subtype);
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+  }
 
   return 0;
 }
