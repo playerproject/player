@@ -98,6 +98,7 @@
 #define PLAYER_ENERGY_CODE         ((uint16_t)46)  // energy consumption & charging
 #define PLAYER_MOTOR_CODE          ((uint16_t)47)  // motor interface
 #define PLAYER_POSITION2D_CODE     ((uint16_t)48)  // 2-D position
+#define PLAYER_JOYSTICK_CODE       ((uint16_t)49)  // Joytstick
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
@@ -145,10 +146,10 @@
 #define PLAYER_HUD_STRING            "hud"
 #define PLAYER_PLANNER_STRING        "planner"
 #define PLAYER_LOG_STRING            "log"
-
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 #define PLAYER_CAMERA_STRING          "camera"
+#define PLAYER_JOYSTICK_STRING        "joystick"
 
 /* The maximum number of devices the server will support. */
 #define PLAYER_MAX_DEVICES 256
@@ -2898,11 +2899,36 @@ typedef struct
  * Joystick Device
  */
 
+/*************************************************************************
+ ** begin section power
+ *************************************************************************/
+
+/** [Synopsis]
+  The {\tt power} interface provides access to a robot's power subsystem. */
+
+/** [Data] */
 typedef struct
 {
-  uint8_t  xpos, ypos;
-  uint8_t  button0, button1;
+  /** Current joystick position (unscaled) */
+  uint8_t xpos, ypos;
+
+  /** Scaling factors */
+  uint16_t xscale, yscale;
+
+  /** Button states (bitmask) */
+  uint16_t buttons;
+  
 } __attribute__ ((packed)) player_joystick_data_t;
+
+
+/** [Commands] This interface accepts no commands */
+
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+
 /*************************************************************************/
 
 /*************************************************************************/

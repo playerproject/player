@@ -8,6 +8,7 @@ comms \
 fiducial \
 gazebo \
 gps \
+joystick \
 laser \
 localization \
 map \

@@ -124,10 +124,10 @@ int main(int argc, const char *argv[])
       case PLAYER_GPS_CODE:
         test_gps(client, client->ids[i].index);
         break;
-
-      // map device
-      case PLAYER_MAP_CODE:
-        test_map(client, client->ids[i].index);
+        
+      // Joystick device
+      case PLAYER_JOYSTICK_CODE:
+        test_joystick(client, client->ids[i].index);
         break;
 
       // log device
@@ -143,6 +143,11 @@ int main(int argc, const char *argv[])
       // Localization device
       case PLAYER_LOCALIZE_CODE:
         test_localize(client, client->ids[i].index);
+        break;
+
+      // map device
+      case PLAYER_MAP_CODE:
+        test_map(client, client->ids[i].index);
         break;
 
       // Position device
