@@ -30,15 +30,9 @@
 #define PLAYER_H
 
 #include <playercommon.h>
-#include <defaults.h>
 #include <stdint.h>
 
 /*********************************************************/
-
-/* need to put this stuff somewhere else? maybe run-time config? */
-#define PLAYER_NUM_SONAR_SAMPLES  24
-#define PLAYER_NUM_LASER_SAMPLES  401
-#define PLAYER_NUM_BUMPER_SAMPLES 32
 
 /* the message start signifier */
 #define PLAYER_STXX ((uint16_t) 0x5878)
@@ -56,66 +50,57 @@
  * and command-line parsing) */
 #define PLAYER_MAX_DEVICE_STRING_LEN 64
 
-typedef struct 
-{
-  uint16_t code;
-  char* name;
-  char* default_driver;
-} player_interface_t;
+/* the currently assigned interface codes */
+#define PLAYER_PLAYER_CODE         ((uint16_t)1)   // the server itself
+#define PLAYER_POWER_CODE          ((uint16_t)2)   // power subsystem
+#define PLAYER_GRIPPER_CODE        ((uint16_t)3)   // gripper
+#define PLAYER_POSITION_CODE       ((uint16_t)4)   // device that moves about
+#define PLAYER_FRF_CODE            ((uint16_t)5)   // fixed range-finder
+#define PLAYER_SRF_CODE            ((uint16_t)6)   // scanning range-finder
+#define PLAYER_BLOBFINDER_CODE     ((uint16_t)7)   // visual blobfinder
+#define PLAYER_PTZ_CODE            ((uint16_t)8)   // pan-tilt-zoom unit
+#define PLAYER_AUDIO_CODE          ((uint16_t)9)   // audio I/O
+#define PLAYER_FIDUCIAL_CODE       ((uint16_t)10)  // fiducial detector
+#define PLAYER_COMMS_CODE          ((uint16_t)11)  // inter-Player radio I/O
+#define PLAYER_SPEECH_CODE         ((uint16_t)12)  // speech I/O
+#define PLAYER_GPS_CODE            ((uint16_t)13)  // GPS unit
+#define PLAYER_BUMPER_CODE         ((uint16_t)14)  // bumper array
+#define PLAYER_TRUTH_CODE          ((uint16_t)15)  // ground-truth (via Stage)
+#define PLAYER_IDARTURRET_CODE     ((uint16_t)16)  // ranging + comms
+#define PLAYER_IDAR_CODE           ((uint16_t)17)  // ranging + comms
+// Descartes should be subsumed by position
+#define PLAYER_DESCARTES_CODE      ((uint16_t)18)  // the Descartes platform
+// Mote should be subsumed by comms?
+#define PLAYER_MOTE_CODE           ((uint16_t)19)  // the USC Mote
+#define PLAYER_DIO_CODE            ((uint16_t)20)  // digital I/O
+#define PLAYER_AIO_CODE            ((uint16_t)21)  // analog I/O
+
+// no interface has yet been defined for BPS-like things
+//#define PLAYER_BPS_CODE            ((uint16_t)16)
 
 /* the currently assigned device strings */
 #define PLAYER_PLAYER_STRING         "player"
-#define PLAYER_MISC_STRING           "misc"
+#define PLAYER_POWER_STRING          "power"
 #define PLAYER_GRIPPER_STRING        "gripper"
 #define PLAYER_POSITION_STRING       "position"
-#define PLAYER_SONAR_STRING          "sonar"
-#define PLAYER_LASER_STRING          "laser"
-#define PLAYER_VISION_STRING         "vision"
+#define PLAYER_FRF_STRING            "frf"
+#define PLAYER_SRF_STRING            "srf"
+#define PLAYER_BLOBFINDER_STRING     "blobfinder"
 #define PLAYER_PTZ_STRING            "ptz"
 #define PLAYER_AUDIO_STRING          "audio"
-#define PLAYER_LASERBEACON_STRING    "laserbeacon"
-#define PLAYER_BROADCAST_STRING      "broadcast"
+#define PLAYER_FIDUCIAL_STRING       "fiducial"
+#define PLAYER_COMMS_STRING          "comms"
 #define PLAYER_SPEECH_STRING         "speech"
 #define PLAYER_GPS_STRING            "gps"
-#define PLAYER_BPS_STRING            "bps"
-#define PLAYER_DESCARTES_STRING      "descartes"
-#define PLAYER_IDAR_STRING           "idar"
+#define PLAYER_BUMPER_STRING         "bumper"
+#define PLAYER_TRUTH_STRING          "truth"
 #define PLAYER_IDARTURRET_STRING     "idarturret"
+#define PLAYER_IDAR_STRING           "idar"
+#define PLAYER_DESCARTES_STRING      "descartes"
 #define PLAYER_MOTE_STRING           "mote"
-#define PLAYER_RWI_POSITION_STRING   "rwi_position"
-#define PLAYER_RWI_SONAR_STRING      "rwi_sonar"
-#define PLAYER_RWI_LASER_STRING      "rwi_laser"
-#define PLAYER_RWI_BUMPER_STRING     "rwi_bumpers"
-#define PLAYER_RWI_JOYSTICK_STRING   "rwi_joystick"
-#define PLAYER_RWI_POWER_STRING      "rwi_power"
-
-/* the currently assigned device codes */
-#define PLAYER_PLAYER_CODE         ((uint16_t)1)
-#define PLAYER_MISC_CODE           ((uint16_t)2)
-#define PLAYER_GRIPPER_CODE        ((uint16_t)3)
-#define PLAYER_POSITION_CODE       ((uint16_t)4)
-#define PLAYER_SONAR_CODE          ((uint16_t)5)
-#define PLAYER_LASER_CODE          ((uint16_t)6)
-#define PLAYER_VISION_CODE         ((uint16_t)7)
-#define PLAYER_PTZ_CODE            ((uint16_t)8)
-#define PLAYER_AUDIO_CODE          ((uint16_t)9)
-#define PLAYER_LASERBEACON_CODE    ((uint16_t)10)
-#define PLAYER_BROADCAST_CODE      ((uint16_t)11)
-#define PLAYER_SPEECH_CODE         ((uint16_t)12)
-#define PLAYER_GPS_CODE            ((uint16_t)13)
-#define PLAYER_OCCUPANCY_CODE      ((uint16_t)14) // broken?
-#define PLAYER_TRUTH_CODE          ((uint16_t)15)
-#define PLAYER_BPS_CODE            ((uint16_t)16) // broken?
-#define PLAYER_IDAR_CODE           ((uint16_t)17)
-#define PLAYER_DESCARTES_CODE      ((uint16_t)18)
-#define PLAYER_MOTE_CODE           ((uint16_t)19)
-#define PLAYER_RWI_POSITION_CODE   ((uint16_t)20)
-#define PLAYER_RWI_SONAR_CODE      ((uint16_t)21)
-#define PLAYER_RWI_LASER_CODE      ((uint16_t)22)
-#define PLAYER_RWI_BUMPER_CODE     ((uint16_t)23)
-#define PLAYER_RWI_JOYSTICK_CODE   ((uint16_t)24)
-#define PLAYER_RWI_POWER_CODE      ((uint16_t)25)
-#define PLAYER_IDARTURRET_CODE     ((uint16_t)26)
+#define PLAYER_DIO_STRING            "dio"
+#define PLAYER_AIO_STRING            "aio"
+//#define PLAYER_BPS_STRING            "bps"
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -224,115 +209,20 @@ typedef struct
 #define PLAYER_PLAYER_DATAMODE_REQ ((uint16_t)3)
 #define PLAYER_PLAYER_DATAFREQ_REQ ((uint16_t)4)
 #define PLAYER_PLAYER_AUTH_REQ     ((uint16_t)5)
-
 /*************************************************************************/
 
 /*************************************************************************/
 /*
- * Position Device
+ * Power interface
  */
-
-/* Position device command buffer */
 typedef struct
 {
-  int16_t speed, sidespeed, turnrate;
-} __attribute__ ((packed)) player_position_cmd_t;
+  uint16_t  charge;
+} __attribute__ ((packed)) player_power_data_t;
 
-/* Position device data buffer */
-typedef struct 
-{
-  int32_t xpos,ypos;
-  uint16_t theta;
-  int16_t speed, sidespeed, turnrate;
-  uint16_t compass;
-  uint8_t stalls;
-} __attribute__ ((packed)) player_position_data_t;
-
-
-/* the various configuration commands 
- * NOTE: these must not be the same as any other P2OS device! */
-#define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)1)
-#define PLAYER_POSITION_VELOCITY_CONTROL_REQ  ((uint8_t)2)
-#define PLAYER_POSITION_RESET_ODOM_REQ        ((uint8_t)3)
-#define PLAYER_POSITION_GET_GEOM_REQ          ((uint8_t)4)
-
-typedef struct
-{
-  uint8_t request; // one of the above request types
-  uint8_t value;  // value for the request (usually 0 or 1)
-} __attribute__ ((packed)) player_position_config_t;
-
-
-/* Packet for getting the sonar geometry. */
-typedef struct
-{
-  /* Packet subtype.  Must be PLAYER_SONAR_GET_GEOM. */
-  uint8_t subtype;
-
-  /* Pose of the robot base, in the robot cs (mm, mm, degrees). */
-  uint16_t pose[3];
-
-  /* Dimensions of the base (mm, mm, degrees). */
-  uint16_t size[2];
-  
-} __attribute__ ((packed)) player_position_geom_t;
-
- 
+// TODO: what does this do?
+#define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
 /*************************************************************************/
-
-
-/*************************************************************************/
-/*
- * Sonar Device
- */
-
-/* the sonar data packet */
-typedef struct
-{
-  /* The number of valid range readings. */
-  uint16_t range_count;
-  
-  /* start at the front left sonar and number clockwise */
-  uint16_t ranges[PLAYER_NUM_SONAR_SAMPLES];
-  
-} __attribute__ ((packed)) player_sonar_data_t;
-
-
-/* Packet for configuring the sonar. */
-typedef struct
-{
-  /* Packet subtype.  Must be PLAYER_SONAR_POWER_REQ. */
-  uint8_t subtype;
-
-  /* Turn sonars on or off. */
-  uint8_t arg;
-  
-} __attribute__ ((packed)) player_sonar_config_t;
-
-
-/* Packet for getting the sonar geometry. */
-typedef struct
-{
-  /* Packet subtype.  Must be PLAYER_SONAR_GET_GEOM. */
-  uint8_t subtype;
-
-  /* The number of valid poses. */
-  uint16_t pose_count;
-
-  /* Pose of each sonar, in robot cs (mm, mm, degrees). */
-  int16_t poses[PLAYER_NUM_SONAR_SAMPLES][3];
-  
-} __attribute__ ((packed)) player_sonar_geom_t;
-
-
-/* the various configuration commands 
- * NOTE: these must not be the same as any other P2OS device! */
-#define PLAYER_SONAR_POWER_REQ      ((uint8_t)11)
-#define PLAYER_SONAR_GET_GEOM_REQ   ((uint8_t)12)
-
-
-/*************************************************************************/
-
 
 /*************************************************************************/
 /*
@@ -351,39 +241,93 @@ typedef struct
 {
   uint8_t state, beams;
 } __attribute__ ((packed)) player_gripper_data_t;
+/*************************************************************************/
 
+/*************************************************************************/
+/*
+ * Position interface
+ */
 
+/* Position device command buffer */
+typedef struct
+{
+  int32_t xpos, ypos, zpos;
+  int32_t yaw, pitch, roll;
+  int32_t xspeed, yspeed, zspeed;
+  int32_t yawspeed, pitchspeed, rollspeed;
+} __attribute__ ((packed)) player_position_cmd_t;
+
+/* Position device data buffer */
+typedef struct 
+{
+  int32_t xpos, ypos, zpos;
+  int32_t yaw, pitch, roll;
+  int32_t xspeed, yspeed, zspeed;
+  int32_t yawspeed, pitchspeed, rollspeed;
+  uint8_t stall;
+} __attribute__ ((packed)) player_position_data_t;
+
+/* the various configuration commands */
+#define PLAYER_POSITION_GET_GEOM_REQ          ((uint8_t)1)
+
+/* Packet for getting the position geometry. */
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_POSITION_GET_GEOM_REQ. */
+  uint8_t subtype;
+
+  /* Pose of the robot base, in the robot cs (mm, mm, degrees). */
+  uint16_t pose[3];
+
+  /* Dimensions of the base (mm, mm). */
+  uint16_t size[2];
+} __attribute__ ((packed)) player_position_geom_t;
 /*************************************************************************/
 
 
 /*************************************************************************/
 /*
- * Miscellaneous Device
+ * Fixed range-finder (FRF) interface
  */
+#define PLAYER_MAX_FRF_SAMPLES 32
 
-/* miscellaneous data packet */
+/* the frf data packet */
 typedef struct
 {
-  uint8_t frontbumpers, rearbumpers; /* bitfields; panels number clockwise */
-  uint8_t voltage;  /* battery voltage in decivolts */
-  uint8_t analog;
-  uint8_t digin;
-} __attribute__ ((packed)) player_misc_data_t;
+  /* The number of valid range readings. */
+  uint16_t range_count;
+  
+  /* for the Pioneer, start at the front left sonar and number clockwise */
+  uint16_t ranges[PLAYER_MAX_FRF_SAMPLES];
+} __attribute__ ((packed)) player_frf_data_t;
 
+#define PLAYER_FRF_GET_GEOM_REQ   ((uint8_t)1)
 
+/* Packet for getting the FRF geometry. */
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_FRF_GET_GEOM_REQ. */
+  uint8_t subtype;
+
+  /* The number of valid poses. */
+  uint16_t pose_count;
+
+  /* Pose of each sonar, in robot cs (mm, mm, degrees). */
+  int16_t poses[PLAYER_MAX_FRF_SAMPLES][3];
+} __attribute__ ((packed)) player_frf_geom_t;
 /*************************************************************************/
-
 
 /*************************************************************************/
 /*
- * Laser Device
+ * Scanning range-finder (SRF) interface
  */
 
-/* The laser data packet. */
+#define PLAYER_MAX_SRF_SAMPLES  401
+
+/* The srf data packet. */
 typedef struct
 {
-  /* Start and end angles for the laser scan (in units of 0.01
-   * degrees). */
+  /* Start and end angles for the srf scan (in units of 0.01 degrees). */
   int16_t min_angle;
   int16_t max_angle;
 
@@ -394,27 +338,39 @@ typedef struct
    * readings.  Reflectivity data is stored in the top three bits of
    * each range reading.  */
   uint16_t range_count;
-  uint16_t ranges[PLAYER_NUM_LASER_SAMPLES];
-  
-} __attribute__ ((packed)) player_laser_data_t;
+  uint16_t ranges[PLAYER_MAX_SRF_SAMPLES];
+} __attribute__ ((packed)) player_srf_data_t;
 
 
 /* Laser request subtypes. */
-#define PLAYER_LASER_SET_CONFIG 0x01
-#define PLAYER_LASER_GET_CONFIG 0x02
-#define PLAYER_LASER_GET_GEOM   0x03
-#define PLAYER_LASER_POWER_REQ  0x04
+#define PLAYER_SRF_GET_GEOM   0x01
+#define PLAYER_SRF_SET_CONFIG 0x02
+#define PLAYER_SRF_GET_CONFIG 0x03
 
-
-/* Laser configuration packet. */
+/* SRF geometry packet. */
 typedef struct
 {
-  /* The packet subtype.  Set this to PLAYER_LASER_SET_CONFIG to set
-   * the laser configuration; or set to PLAYER_LASER_GET_CONFIG to get
+  /* The packet subtype.  Must be PLAYER_SRF_GET_GEOM. */
+  uint8_t subtype;
+
+  /* SRF pose, in robot cs (mm, mm, radians). */
+  int16_t pose[3];
+
+  /* SRF dimensions (mm, mm). */
+  int16_t size[2];
+  
+} __attribute__ ((packed)) player_srf_geom_t;
+
+
+/* SRF configuration packet. */
+typedef struct
+{
+  /* The packet subtype.  Set this to PLAYER_SRF_SET_CONFIG to set
+   * the laser configuration; or set to PLAYER_SRF_GET_CONFIG to get
    * the laser configuration.  */
   uint8_t subtype;
 
-  /* Start and end angles for the laser scan (in units of 0.01
+  /* Start and end angles for the srf scan (in units of 0.01
    * degrees).  Valid range is -9000 to +9000.  */
   int16_t min_angle;
   int16_t max_angle;
@@ -425,31 +381,64 @@ typedef struct
 
   /* Enable reflection intensity data. */
   uint8_t  intensity;
-  
-} __attribute__ ((packed)) player_laser_config_t;
-
-
-/* Laser geometry packet. */
-typedef struct
-{
-  /* The packet subtype.  Must be PLAYER_LASER_GET_GEOM. */
-  uint8_t subtype;
-
-  /* Laser pose, in robot cs (mm, mm, radians). */
-  int16_t pose[3];
-
-  /* Laser dimensions (mm, mm). */
-  int16_t size[2];
-  
-} __attribute__ ((packed)) player_laser_geom_t;
-
-
+} __attribute__ ((packed)) player_srf_config_t;
 /*************************************************************************/
-
 
 /*************************************************************************/
 /*
- * PTZ Device
+ * Blobfinder interface
+ */
+
+// TODO: move data format to a flat list of blobs
+
+#define PLAYER_BLOBFINDER_MAX_CHANNELS 32
+#define PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL 10
+
+typedef struct
+{
+  uint16_t index, num;
+} __attribute__ ((packed)) player_blobfinder_header_elt_t;
+
+#define PLAYER_BLOBFINDER_HEADER_SIZE \
+  (2*sizeof(uint16_t) + sizeof(player_blobfinder_header_elt_t)*PLAYER_BLOBFINDER_MAX_CHANNELS)
+
+typedef struct
+{
+  /* A descriptive color for the blob (useful for gui's).
+   * The color is stored as packed 32-bit RGB, i.e., 0x00RRGGBB. */
+  uint32_t color;
+
+  /* The blob area (pixels). */
+  uint32_t area;
+
+  /* The blob centroid (image coords). */
+  uint16_t x, y;
+
+  /* Bounding box for the blob (image coords). */
+  uint16_t left, right, top, bottom;
+
+  /* Range in mm to the blob center */
+  uint16_t range;
+} __attribute__ ((packed)) player_blobfinder_blob_elt_t;
+
+#define PLAYER_BLOBFINDER_BLOB_SIZE sizeof(player_blobfinder_blob_elt_t)
+
+typedef struct
+{
+  /* The image dimensions. */
+  uint16_t width, height;
+
+  /* The blobs (indexed by channel). */
+  player_blobfinder_header_elt_t header[PLAYER_BLOBFINDER_MAX_CHANNELS];
+  player_blobfinder_blob_elt_t 
+          blobs[PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL*
+                PLAYER_BLOBFINDER_MAX_CHANNELS];
+} __attribute__ ((packed)) player_blobfinder_data_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * PTZ interface
  */
 
 /*
@@ -471,145 +460,105 @@ typedef struct
   int16_t tilt; /* -25 to 25 degrees. increases up */
   uint16_t zoom; /* 0 to 1023. 0 is wide, 1023 is telefoto */
 } __attribute__ ((packed)) player_ptz_data_t;
-
 /*************************************************************************/
 
+/**************************************************************************
+ * The Audio interface
+ */
+//TODO: fill out the data and command formats
+
+#define AUDIO_DATA_BUFFER_SIZE 20
+#define AUDIO_COMMAND_BUFFER_SIZE 3*sizeof(short)
+/*************************************************************************/
 
 /*************************************************************************/
 /*
- * Vision Device
+ * Fiducial interface
  */
 
-/*
- * vision data packet (it's more or less an ACTS v1.2 packet):
- *   128 - 5248 bytes of ACTS data, which is:
- *     128 bytes of header (4 bytes per channel)
- *     sequence of 16-byte blob data (maximum 10 per channel), which is:
- *        check the ACTS manual...
- * NOTE: 
- *   in the CVisionDevice 'data' buffer, there is also an extra leading
- *   short, representing size of ACTS data to follow; this size is NOT 
- *   sent over the network.
- */
+#define PLAYER_FIDUCIAL_MAX_SAMPLES 32
 
-/* ACTS size stuff; this stuff is only used between ACTS and Player */
-#define ACTS_NUM_CHANNELS 32
-#define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  
-#define ACTS_HEADER_SIZE_1_2 4*ACTS_NUM_CHANNELS  
-#define ACTS_BLOB_SIZE_1_0 10
-#define ACTS_BLOB_SIZE_1_2 16
-#define ACTS_MAX_BLOBS_PER_CHANNEL 10
-
-/* Vision device info; this defines Player's external interface */
-#define VISION_NUM_CHANNELS ACTS_NUM_CHANNELS
-#define VISION_MAX_BLOBS_PER_CHANNEL ACTS_MAX_BLOBS_PER_CHANNEL
-
+/* The fiducial data packet (one fiducial). */
 typedef struct
 {
-  uint16_t index, num;
-} __attribute__ ((packed)) player_vision_header_elt_t;
+  /* The fiducial id.  Fiducials that cannot be identified get id 0. */
+  uint8_t id;
 
-#define VISION_HEADER_SIZE \
-  (2*sizeof(uint16_t) + sizeof(player_vision_header_elt_t)*VISION_NUM_CHANNELS)
-
-typedef struct
-{
-  /* A descriptive color for the blob (useful for gui's).
-   * The color is stored as packed 32-bit RGB, i.e., 0x00RRGGBB. */
-  uint32_t color;
-
-  /* The blob area (pixels). */
-  uint32_t area;
-
-  /* The blob centroid (image coords). */
-  uint16_t x, y;
-
-  /* Bounding box for the blob (image coords). */
-  uint16_t left, right, top, bottom;
-
-  /* Range in mm to the blob center */
+  /* Fiducial range (in mm) relative to the detector. */
   uint16_t range;
 
-} __attribute__ ((packed)) player_vision_blob_elt_t;
+  /* Fiducial bearing and orientation (in degrees) relative to detector. */
+  int16_t bearing;
+  int16_t orient;
+} __attribute__ ((packed)) player_fiducial_item_t;
 
-#define VISION_BLOB_SIZE sizeof(player_vision_blob_elt_t)
 
+/* The fiducial data packet (all fiducials). */
+typedef struct 
+{
+  /* List of detected fiducials */
+  uint16_t count;
+  player_fiducial_item_t beacon[PLAYER_FIDUCIAL_MAX_SAMPLES];
+} __attribute__ ((packed)) player_fiducial_data_t;
+
+
+/* Request packet subtypes */
+#define PLAYER_FIDUCIAL_GET_GEOM   0x01
+
+/* Fiducial geometry packet. */
 typedef struct
 {
-  /* The image dimensions. */
-  uint16_t width, height;
+  /* Packet subtype.  Must be PLAYER_FIDUCIAL_GET_GEOM. */
+  uint8_t subtype;
 
-  /* The blobs (indexed by channel). */
-  player_vision_header_elt_t header[VISION_NUM_CHANNELS];
-  player_vision_blob_elt_t 
-          blobs[VISION_MAX_BLOBS_PER_CHANNEL*VISION_NUM_CHANNELS];
-} __attribute__ ((packed)) player_vision_data_t;
+  /* Pose of the detector, in the robot cs (mm, mm, degrees). */
+  uint16_t pose[3];
+} __attribute__ ((packed)) player_fiducial_geom_t;
 /*************************************************************************/
-
 
 /*************************************************************************/
 /*
- * Broadcast device
+ * Comms interface
  */
 
 /* Request packet sub-types */
-#define PLAYER_BROADCAST_SUBTYPE_SEND 1
-#define PLAYER_BROADCAST_SUBTYPE_RECV 2
+#define PLAYER_COMMS_SUBTYPE_SEND 0x01
+#define PLAYER_COMMS_SUBTYPE_RECV 0x02
 
-/* Broadcast request/reply packet. */
+/* Comms request/reply packet. */
 typedef struct
 {
-  /* Packet subtype.  Set to PLAYER_BROADCAST_SUBTYPE_SEND to send a
-   * broadcast messages.  Set to PLAYER_BROADCAST_SUBTYPE_RECV to read
+  /* Packet subtype.  Set to PLAYER_COMMS_SUBTYPE_SEND to send a
+   * broadcast messages.  Set to PLAYER_COMMS_SUBTYPE_RECV to read
    * the next message in the incoming message queue. */
   uint8_t subtype;
 
   /* The message to send, or the message that was received*/
   uint8_t data[PLAYER_MAX_REQREP_SIZE - 1];
-  
-} __attribute__ ((packed)) player_broadcast_msg_t;
-
-
+} __attribute__ ((packed)) player_comms_msg_t;
 /*************************************************************************/
-
 
 /*************************************************************************/
 /*
- * Speech Device
+ * Speech interface
  */
+
 /* queue size */
-#define SPEECH_MAX_STRING_LEN 256
-#define SPEECH_MAX_QUEUE_LEN 4
+#define PLAYER_SPEECH_MAX_STRING_LEN 256
+#define PLAYER_SPEECH_MAX_QUEUE_LEN 4
 
 /*
- * Speech data packet:
- *   uint8_t dummy: a dummy byte (because i think a device that returns
- *                  no data won't work very well right now - should fix
- *                  that)
+ * Speech command packet: ASCII string to say
  */
 typedef struct
 {
-  uint8_t dummy;
-} __attribute__ ((packed)) player_speech_data_t;
-
-/*
- * Speech command packet:
- *   ASCII string to say  (max length is in defaults.h)
- */
-typedef struct
-{
-  uint8_t string[SPEECH_MAX_STRING_LEN];
+  uint8_t string[PLAYER_SPEECH_MAX_STRING_LEN];
 } __attribute__ ((packed)) player_speech_cmd_t;
-
 /*************************************************************************/
-
 
 /*************************************************************************/
 /*
- * GPS Device
- *
- *   A global positioning device.
- *   Use the config command to teleport the robot in the simulator.
+ * GPS interface
  */
 
 /*
@@ -622,89 +571,197 @@ typedef struct
   int32_t xpos,ypos;
   int32_t heading;
 } __attribute__ ((packed)) player_gps_data_t;
-
-
-
 /*************************************************************************/
-
 
 /*************************************************************************/
 /*
- * Laser beacon device
+ * Bumper interface
  */
 
-/* The laser beacon data packet (one beacon). */
+#define PLAYER_MAX_BUMPER_SAMPLES 32
+
 typedef struct
 {
-  /* The beacon id.  Beacons that cannot be identified get id 0. */
-  uint8_t id;
+  /* the number of valid bumper readings */
+  uint8_t bumper_count;
 
-  /* Beacon range (in mm) relative to the laser. */
-  uint16_t range;
+  /* array of bumper values */
+  uint8_t bumpers[PLAYER_MAX_BUMPER_SAMPLES];
+} __attribute__ ((packed)) player_bumper_data_t;
 
-  /* Beacon bearing and orientation (in degrees) relative to laser. */
-  int16_t bearing;
-  int16_t orient;
-  
-} __attribute__ ((packed)) player_laserbeacon_item_t;
-
-
-#define PLAYER_MAX_LASERBEACONS 32
-
-/* The laser beacon data packet (all beacons). */
-typedef struct 
-{
-  /* List of detected beacons */
-  uint16_t count;
-  player_laserbeacon_item_t beacon[PLAYER_MAX_LASERBEACONS];
-  
-} __attribute__ ((packed)) player_laserbeacon_data_t;
-
-
-/* Request packet subtypes */
-#define PLAYER_LASERBEACON_SET_CONFIG 0x01
-#define PLAYER_LASERBEACON_GET_CONFIG 0x02
-#define PLAYER_LASERBEACON_GET_GEOM   0x03
-
-
-/* Laser beacon geometry packet. */
-typedef struct
-{
-  /* Packet subtype.  Must be PLAYER_LASERBEACON_GET_GEOM. */
-  uint8_t subtype;
-
-  /* Pose of the robot base, in the robot cs (mm, mm, degrees). */
-  uint16_t pose[3];
-
-} __attribute__ ((packed)) player_laserbeacon_geom_t;
-
-
-/* Laser beacon configuration packet. */
-typedef struct
-{
-  /* Packet subtype.  Set to PLAYER_LASERBEACON_SET_CONFIG to set the
-   *  device configuration.  Set to PLAYER_LASERBEACON_GET_CONFIG to
-   *  get the device configuration. */
-  uint8_t subtype;
-
-  /* The number of bits in the beacon, including start and end
-   * markers. */
-  uint8_t bit_count;
-
-  /* The width of each bit, in mm. */
-  uint16_t bit_size;
-
-  /* Bit detection thresholds.  <zero_thresh> is the minimum threshold
-   * for declaring a bit is zero (0-100).  <one_thresh> is the minimum
-   * threshold for declaring a bit is one (0-100). */
-  uint16_t zero_thresh;
-  uint16_t one_thresh;
-
-} __attribute__ ((packed)) player_laserbeacon_config_t;
-
-
+// TODO: what do these do?
+#define PLAYER_BUMPER_POWER_REQ             ((uint8_t)13)
+#define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)14)
 /*************************************************************************/
 
+/*************************************************************************/
+/*
+ * Truth device, used for getting and setting data about entities in Stage.
+ */
+
+/* Data packet with current state of truth object. */
+typedef struct
+{
+  /* Object pose in world cs (mm, mm, degrees). */
+  int32_t px, py, pa; 
+
+} __attribute__ ((packed)) player_truth_data_t;
+
+/* Request packet subtypes. */
+#define PLAYER_TRUTH_GET_POSE 0x00
+#define PLAYER_TRUTH_SET_POSE 0x01
+
+/* Config packet for setting state of truth object. */
+typedef struct
+{
+  /* Packet subtype.  Use PLAYER_TRUTH_GET_POSE to get the pose.  Use
+  * PLAYER_TRUTH_SET_POSE to set the pose. */
+  uint8_t subtype;
+  
+  /* Object pose in world cs (mm, mm, degrees). */
+  int32_t px, py, pa; 
+
+} __attribute__ ((packed)) player_truth_pose_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * IDAR device - HRL's infrared data and ranging turret
+ */
+
+#define IDARBUFLEN 16   // idar message max in bytes
+#define RAYS_PER_SENSOR 5 // resolution
+
+#define IDAR_TRANSMIT 0
+#define IDAR_RECEIVE 1
+#define IDAR_RECEIVE_NOFLUSH 2
+#define IDAR_TRANSMIT_RECEIVE 3
+
+typedef struct
+{
+  unsigned char mesg[IDARBUFLEN];
+  uint8_t len; //0-IDARBUFLEN
+  uint8_t intensity; //0-255
+} __attribute__ ((packed)) idartx_t;
+
+typedef struct
+{
+  unsigned char mesg[IDARBUFLEN];
+  uint8_t len; //0-255
+  uint8_t intensity; //0-255
+  uint8_t reflection; // true/false
+  uint32_t timestamp_sec;
+  uint32_t timestamp_usec;
+  uint16_t range; // mm
+} __attribute__ ((packed)) idarrx_t; 
+
+// IDRAR config packet - 
+// has room for a message in case this is a transmit command
+// we use config because it is consumed by default
+// and the messages must only be sent once
+typedef  struct
+{
+  uint8_t instruction;
+  idartx_t tx;
+} __attribute__ ((packed)) player_idar_config_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * IDARTurret device - a collection of IDARs with a combined interface
+ */
+
+#define PLAYER_IDARTURRET_IDAR_COUNT 8
+
+// define structures to get and receive messages from a collection of
+// IDARs in one go.
+
+typedef struct
+{
+  idarrx_t rx[ PLAYER_IDARTURRET_IDAR_COUNT ];
+} __attribute__ ((packed)) player_idarturret_reply_t;
+
+typedef  struct
+{
+  uint8_t instruction;
+  idartx_t tx[ PLAYER_IDARTURRET_IDAR_COUNT ];
+} __attribute__ ((packed)) player_idarturret_config_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * Descartes Device - a small holonomic robot with bumpers
+ */
+
+/* command buffer */
+typedef struct
+{
+  int16_t speed, heading, distance; // UNITS: mm/sec, degrees, mm
+} __attribute__ ((packed)) player_descartes_config_t;
+
+/* data buffer */
+typedef struct 
+{
+  int32_t xpos,ypos; // mm, mm
+  int16_t theta; //  degrees
+  uint8_t bumpers[2]; // booleans
+} __attribute__ ((packed)) player_descartes_data_t;
+
+// no commands or replies for descartes
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * Mote radio device
+ */
+
+#define MAX_MOTE_DATA_SIZE 32
+#define MAX_MOTE_Q_LEN     10
+
+typedef struct
+{
+  uint8_t len;
+  uint8_t buf[MAX_MOTE_DATA_SIZE];
+  float   rssi;
+} __attribute__ ((packed)) player_mote_data_t;
+
+typedef struct
+{
+  uint8_t strength;
+} __attribute__ ((packed)) player_mote_config_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * DIO interface
+ */
+
+// TODO: add command
+
+/* DIO data packet */
+typedef struct
+{
+  uint8_t count; // number of samples
+  uint32_t digin; // bitfield
+} __attribute__ ((packed)) player_dio_data_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * AIO interface
+ */
+
+#define PLAYER_MAX_AIO_SAMPLES 8
+
+// TODO: add command
+
+/* AIO data packet */
+typedef struct
+{
+  uint8_t count;
+  int32_t anin[PLAYER_MAX_AIO_SAMPLES];
+} __attribute__ ((packed)) player_aio_data_t;
+/*************************************************************************/
 
 /*************************************************************************/
 /*
@@ -764,197 +821,7 @@ typedef struct
   int32_t ux, uy, ua;
   
 } __attribute__ ((packed)) player_bps_beacon_t;
-
-
 /*************************************************************************/
-
-
-/*************************************************************************/
-/*
- * IDAR device - HRL's infrared data and ranging turret
- */
-
-#define IDARBUFLEN 16   // idar message max in bytes
-#define RAYS_PER_SENSOR 5 // resolution
-
-#define IDAR_TRANSMIT 0
-#define IDAR_RECEIVE 1
-#define IDAR_RECEIVE_NOFLUSH 2
-#define IDAR_TRANSMIT_RECEIVE 3
-
-typedef struct
-{
-  unsigned char mesg[IDARBUFLEN];
-  uint8_t len; //0-IDARBUFLEN
-  uint8_t intensity; //0-255
-} __attribute__ ((packed)) idartx_t;
-
-typedef struct
-{
-  unsigned char mesg[IDARBUFLEN];
-  uint8_t len; //0-255
-  uint8_t intensity; //0-255
-  uint8_t reflection; // true/false
-  uint32_t timestamp_sec;
-  uint32_t timestamp_usec;
-  uint16_t range; // mm
-} __attribute__ ((packed)) idarrx_t; 
-
-// IDRAR config packet - 
-// has room for a message in case this is a transmit command
-// we use config because it is consumed by default
-// and the messages must only be sent once
-typedef  struct
-{
-  uint8_t instruction;
-  idartx_t tx;
-} __attribute__ ((packed)) player_idar_config_t;
-
-/*************************************************************************/
-/*
- * IDARTurret device - a collection of IDARs with a combined interface
- */
-
-#define PLAYER_IDARTURRET_IDAR_COUNT 8
-
-// define structures to get and receive messages from a collection of
-// IDARs in one go.
-
-typedef struct
-{
-  idarrx_t rx[ PLAYER_IDARTURRET_IDAR_COUNT ];
-} __attribute__ ((packed)) player_idarturret_reply_t;
-
-typedef  struct
-{
-  uint8_t instruction;
-  idartx_t tx[ PLAYER_IDARTURRET_IDAR_COUNT ];
-} __attribute__ ((packed)) player_idarturret_config_t;
-
-
-/*************************************************************************/
-/*
- * Descartes Device - a small holonomic robot with bumpers
- */
-
-/* command buffer */
-typedef struct
-{
-  int16_t speed, heading, distance; // UNITS: mm/sec, degrees, mm
-} __attribute__ ((packed)) player_descartes_config_t;
-
-/* data buffer */
-typedef struct 
-{
-  int32_t xpos,ypos; // mm, mm
-  int16_t theta; //  degrees
-  uint8_t bumpers[2]; // booleans
-} __attribute__ ((packed)) player_descartes_data_t;
-
-// no commands or replies for descartes
-
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * Truth device, used for getting and setting data about entities in Stage.
- */
-
-/* Data packet with current state of truth object. */
-typedef struct
-{
-  /* Object pose in world cs (mm, mm, degrees). */
-  int32_t px, py, pa; 
-
-} __attribute__ ((packed)) player_truth_data_t;
-
-/* Request packet subtypes. */
-#define PLAYER_TRUTH_GET_POSE 0
-#define PLAYER_TRUTH_SET_POSE 1
-
-/* Config packet for setting state of truth object. */
-typedef struct
-{
-  /* Packet subtype.  Use PLAYER_TRUTH_GET_POSE to get the pose.  Use
-  * PLAYER_TRUTH_SET_POSE to set the pose. */
-  uint8_t subtype;
-  
-  /* Object pose in world cs (mm, mm, degrees). */
-  int32_t px, py, pa; 
-
-} __attribute__ ((packed)) player_truth_pose_t;
-
-
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * Occupancy device, exports the world background as an occupancy grid
- */
-
-typedef struct
-{
-  uint16_t width, height, ppm;
-  uint32_t num_pixels;
-  //uint16_t num_truths;
-} __attribute__ ((packed)) player_occupancy_data_t;
-
-typedef struct
-{
-  uint16_t x, y, color;
-} __attribute__ ((packed)) pixel_t;
-
-/**************************************************************************
- * the Audio device; recognizes and generates fixed-frequency tones with
- * sound hardware
- */
-#define AUDIO_DATA_BUFFER_SIZE 20
-#define AUDIO_COMMAND_BUFFER_SIZE 3*sizeof(short)
-/**************************************************************************/
-
-
-
-/*************************************************************************
-*
-*  Mote radio device
-* 
-*/
-
-#define MAX_MOTE_DATA_SIZE 32
-#define MAX_MOTE_Q_LEN     10
-
-typedef struct
-{
-  uint8_t len;
-  uint8_t buf[MAX_MOTE_DATA_SIZE];
-  float   rssi;
-} __attribute__ ((packed)) player_mote_data_t;
-
-typedef struct
-{
-  uint8_t strength;
-} __attribute__ ((packed)) player_mote_config_t;
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * Bumper Device
- */
-
-typedef struct
-{
-  /* the number of valid bits (starting from the right) */
-  uint8_t  bumper_count;
-
-  /* bitfield */
-  uint32_t bumpfield;
-} __attribute__ ((packed)) player_bumper_data_t;
-
-#define PLAYER_BUMPER_POWER_REQ             ((uint8_t)13)
-#define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)14)
-
-/*************************************************************************/
-
 
 /*************************************************************************/
 /*
@@ -968,23 +835,9 @@ typedef struct
 } __attribute__ ((packed)) player_joystick_data_t;
 /*************************************************************************/
 
-
 /*************************************************************************/
 /*
- * Power Device
- */
-
-typedef struct
-{
-  uint16_t  charge;
-} __attribute__ ((packed)) player_power_data_t;
-
-#define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
-
-/*************************************************************************/
-/*************************************************************************/
-/*
- * RWI Devices
+ * RWI drivers
  *
  * All RWI devices use the same struct for sending config commands.
  * The request numbers are found near the devices to which they
@@ -996,7 +849,87 @@ typedef struct
   uint8_t   request;
   uint8_t   value;
 } __attribute__ ((packed)) player_rwi_config_t;
+/*************************************************************************/
 
 /*************************************************************************/
+/*
+ * The p2os_sonar driver
+ */
+
+/* the various configuration commands 
+ * NOTE: these must not be the same as any other P2OS device! */
+#define PLAYER_P2OS_SONAR_POWER_REQ      ((uint8_t)2)
+
+/* Packet for configuring the Pioneer sonar. */
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_P2OS_SONAR_POWER_REQ. */
+  uint8_t subtype;
+
+  /* Turn sonars on or off. */
+  uint8_t arg;
+} __attribute__ ((packed)) player_p2os_sonar_config_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * The p2os_position driver
+ */
+#define PLAYER_P2OS_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
+#define PLAYER_P2OS_POSITION_VELOCITY_CONTROL_REQ  ((uint8_t)3)
+#define PLAYER_P2OS_POSITION_RESET_ODOM_REQ        ((uint8_t)4)
+
+// 
+typedef struct
+{
+  uint8_t request; // one of the above request types
+  uint8_t value;  // value for the request (usually 0 or 1)
+} __attribute__ ((packed)) player_p2os_position_config_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * The acts driver
+ */
+
+#define ACTS_NUM_CHANNELS 32
+#define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  
+#define ACTS_HEADER_SIZE_1_2 4*ACTS_NUM_CHANNELS  
+#define ACTS_BLOB_SIZE_1_0 10
+#define ACTS_BLOB_SIZE_1_2 16
+#define ACTS_MAX_BLOBS_PER_CHANNEL 10
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * The laserbarcode driver
+ */
+
+#define PLAYER_LASERBARCODE_SET_CONFIG 0x02
+#define PLAYER_LASERBARCODE_GET_CONFIG 0x03
+
+/* laserbarcode configuration packet. */
+typedef struct
+{
+  /* Packet subtype.  Set to PLAYER_LASERBARCODE_SET_CONFIG to set the
+   *  device configuration.  Set to PLAYER_LASERBARCODE_GET_CONFIG to
+   *  get the device configuration. */
+  uint8_t subtype;
+
+  /* The number of bits in the beacon, including start and end
+   * markers. */
+  uint8_t bit_count;
+
+  /* The width of each bit, in mm. */
+  uint16_t bit_size;
+
+  /* Bit detection thresholds.  <zero_thresh> is the minimum threshold
+   * for declaring a bit is zero (0-100).  <one_thresh> is the minimum
+   * threshold for declaring a bit is one (0-100). */
+  uint16_t zero_thresh;
+  uint16_t one_thresh;
+} __attribute__ ((packed)) player_laserbarcode_config_t;
+/*************************************************************************/
+
 
 #endif /* PLAYER_H */

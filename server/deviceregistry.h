@@ -24,6 +24,21 @@
  * $Id$
  */
 
+// available interfaces are stored in an array of these, defined in
+// deviceregistry.cc
+typedef struct 
+{
+  uint16_t code;
+  char* name;
+  char* default_driver;
+} player_interface_t;
 
 /* this function registers available devices */
 void register_devices();
+
+/* 
+ * looks through the array of available interfaces for one which the given
+ * name.  if found, interface is filled out (the caller must provide storage)
+ * and zero is returned.  otherwise, -1 is returned.
+ */
+int lookup_interface(char* name, player_interface_t* interface);

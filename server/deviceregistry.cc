@@ -28,7 +28,10 @@
 #  include <config.h>
 #endif
 
+#include <string.h>
+
 #include <device.h>
+#include <deviceregistry.h>
 
 #include <drivertable.h>
 // this table holds all the currently *available* drivers
@@ -47,7 +50,10 @@ void LaserBarcode_Register(DriverTable* table);
 void SonyEVID30_Register(DriverTable* table);
 void UDPBroadcast_Register(DriverTable* table);
 void P2OSGripper_Register(DriverTable* table);
-void P2OSMisc_Register(DriverTable* table);
+void P2OSPower_Register(DriverTable* table);
+void P2OSaio_Register(DriverTable* table);
+void P2OSdio_Register(DriverTable* table);
+void P2OSBumper_Register(DriverTable* table);
 void P2OSPosition_Register(DriverTable* table);
 void P2OSSonar_Register(DriverTable* table);
 
@@ -69,19 +75,41 @@ CDevice* RWISonar_Init(int argc, char *argv[]);
  * NOTE: the last element *must* be NULL
  */
 player_interface_t interfaces[] = { 
-  {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sicklms200"},
-  {PLAYER_VISION_CODE, PLAYER_VISION_STRING, "acts"},
+  {PLAYER_SRF_CODE, PLAYER_SRF_STRING, "sicklms200"},
+  {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "acts"},
   {PLAYER_SPEECH_CODE, PLAYER_SPEECH_STRING, "festival"},
   {PLAYER_AUDIO_CODE, PLAYER_AUDIO_STRING, "fixedtones"},
-  {PLAYER_LASERBEACON_CODE, PLAYER_LASERBEACON_STRING, "laserbarcode"},
+  {PLAYER_FIDUCIAL_CODE, PLAYER_FIDUCIAL_STRING, "laserbarcode"},
   {PLAYER_PTZ_CODE, PLAYER_PTZ_STRING, "sonyevid30"},
-  {PLAYER_BROADCAST_CODE, PLAYER_BROADCAST_STRING, "udpbroadcast"},
+  {PLAYER_COMMS_CODE, PLAYER_COMMS_STRING, "udpbroadcast"},
   {PLAYER_GRIPPER_CODE, PLAYER_GRIPPER_STRING, "p2os_gripper"},
-  {PLAYER_MISC_CODE, PLAYER_MISC_STRING, "p2os_misc"},
+  {PLAYER_POWER_CODE, PLAYER_POWER_STRING, "p2os_power"},
+  {PLAYER_BUMPER_CODE, PLAYER_BUMPER_STRING, "p2os_bumper"},
+  {PLAYER_AIO_CODE, PLAYER_AIO_STRING, "p2os_aio"},
+  {PLAYER_DIO_CODE, PLAYER_DIO_STRING, "p2os_dio"},
   {PLAYER_POSITION_CODE, PLAYER_POSITION_STRING, "p2os_position"},
-  {PLAYER_SONAR_CODE, PLAYER_SONAR_STRING, "p2os_sonar"},
+  {PLAYER_FRF_CODE, PLAYER_FRF_STRING, "p2os_sonar"},
   {0,NULL,NULL}
 };
+
+/* 
+ * looks through the array of available interfaces for one which the given
+ * name.  if found, interface is filled out (the caller must provide storage)
+ * and zero is returned.  otherwise, -1 is returned.
+ */
+int
+lookup_interface(char* name, player_interface_t* interface)
+{
+  for(int i=0; interfaces[i].code; i++)
+  {
+    if(!strcmp(name, interfaces[i].name))
+    {
+      *interface = interfaces[i];
+      return(0);
+    }
+  }
+  return(-1);
+}
 
 /*
  * this function will be called at startup.  all available devices should
@@ -98,7 +126,10 @@ register_devices()
   SonyEVID30_Register(driverTable);
   UDPBroadcast_Register(driverTable);
   P2OSGripper_Register(driverTable);
-  P2OSMisc_Register(driverTable);
+  P2OSPower_Register(driverTable);
+  P2OSaio_Register(driverTable);
+  P2OSdio_Register(driverTable);
+  P2OSBumper_Register(driverTable);
   P2OSPosition_Register(driverTable);
   P2OSSonar_Register(driverTable);
 

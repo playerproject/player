@@ -49,7 +49,6 @@
 #include <netdb.h> /* for gethostbyaddr(3) */
 
 #include <socket_util.h> /* for create_and_bind_socket() */
-#include <defaults.h>  /* for device defaults */
 #include <deviceregistry.h> /* for register_devices() */
 #include <configfile.h> /* for config file parser */
 
@@ -337,15 +336,13 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
       {
         // create a generic simulated stage IO device for these types:
         case PLAYER_PLAYER_CODE: 
-        case PLAYER_MISC_CODE:
         case PLAYER_POSITION_CODE:
-        case PLAYER_SONAR_CODE:
-        case PLAYER_LASER_CODE:
-        case PLAYER_VISION_CODE:  
+        case PLAYER_FRF_CODE:
+        case PLAYER_SRF_CODE:
+        case PLAYER_BLOBFINDER_CODE:  
         case PLAYER_PTZ_CODE:     
-        case PLAYER_LASERBEACON_CODE: 
+        case PLAYER_FIDUCIAL_CODE: 
         case PLAYER_TRUTH_CODE:
-        case PLAYER_OCCUPANCY_CODE:
         case PLAYER_GPS_CODE:
         case PLAYER_GRIPPER_CODE:
         case PLAYER_IDAR_CODE:
@@ -363,7 +360,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         }
         break;
 	  
-        case PLAYER_BROADCAST_CODE:   
+        case PLAYER_COMMS_CODE:   
           // Create broadcast device as per normal
           //
           // FIXME: apparently deviceIO->local is *not* currently being set
@@ -391,7 +388,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             {
               // add it to the instantiated device table
               deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
-                              (*(entry->initfunc))(PLAYER_BROADCAST_STRING,
+                              (*(entry->initfunc))(PLAYER_COMMS_STRING,
                                                    &configFile, section));
  
               // add this port to our listening list
@@ -400,6 +397,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           }
           break;
 
+          /*
         case PLAYER_BPS_CODE:   
           // Create broadcast device as per normal
           
@@ -425,9 +423,14 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             }
           }
           break;
+          */
 
           // devices not implemented
         case PLAYER_AUDIO_CODE:   
+        case PLAYER_POWER_CODE:
+        case PLAYER_AIO_CODE:
+        case PLAYER_DIO_CODE:
+        case PLAYER_BUMPER_CODE:
           printf("Device type %d not yet implemented in Stage\n", 
                  deviceIO->player_id.code);
           break;
@@ -557,14 +560,11 @@ parse_config_file(char* fname)
 
     driver = NULL;
     // find the default driver for this interface
-    for(int j = 0; interfaces[j].code; j++)
+    player_interface_t tmpint;
+    if(lookup_interface(interface, &tmpint) == 0)
     {
-      if(!strcmp(interface, interfaces[j].name))
-      {
-        driver = interfaces[j].default_driver;
-        code = interfaces[j].code;
-        break;
-      }
+      driver = tmpint.default_driver;
+      code = tmpint.code;
     }
     if(!driver)
     {

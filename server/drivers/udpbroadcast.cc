@@ -53,6 +53,9 @@ extern PlayerTime* GlobalTime;
 #include "drivertable.h"
 #include "player.h"
 
+#define DEFAULT_BROADCAST_IP "10.255.255.255"
+#define DEFAULT_BROADCAST_PORT 6013
+
 class UDPBroadcast : public CDevice
 {
   // Constructor
@@ -139,7 +142,7 @@ class UDPBroadcast : public CDevice
 // Init function
 CDevice* UDPBroadcast_Init(char* interface, ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BROADCAST_STRING))
+  if(strcmp(interface, PLAYER_COMMS_STRING))
   {
     PLAYER_ERROR1("driver \"udpbroadcast\" does not support interface \"%s\"\n",
                   interface);
@@ -171,7 +174,6 @@ UDPBroadcast::UDPBroadcast(char* interface, ConfigFile* cf, int section) :
   this->port = cf->ReadInt(section, "port", DEFAULT_BROADCAST_PORT);
 
   PLAYER_TRACE2("broadcasting on %s:%d", this->addr, this->port);
-  printf("broadcasting on %s:%d", this->addr, this->port);
 }
 
 
@@ -260,15 +262,15 @@ int UDPBroadcast::Shutdown()
 int UDPBroadcast::PutConfig(player_device_id_t* id, void *client, 
                                 void *data, size_t len)
 {
-  player_broadcast_msg_t *request;
-  player_broadcast_msg_t reply;
+  player_comms_msg_t *request;
+  player_comms_msg_t reply;
   int replen;
 
-  request = (player_broadcast_msg_t*) data;
+  request = (player_comms_msg_t*) data;
 
   switch (request->subtype)
   {
-    case PLAYER_BROADCAST_SUBTYPE_SEND:
+    case PLAYER_COMMS_SUBTYPE_SEND:
     {
       // Write the message to the broadcast socket, and give client an ACK.
       SendPacket(request->data, len);
@@ -276,7 +278,7 @@ int UDPBroadcast::PutConfig(player_device_id_t* id, void *client,
         PLAYER_ERROR("PutReply() failed");
       break;
     }
-    case PLAYER_BROADCAST_SUBTYPE_RECV:
+    case PLAYER_COMMS_SUBTYPE_RECV:
     {
       // Pop the next waiting packet from the queue and send it back
       // to the client.  If there are no waiting packets, send a NACK.
@@ -308,7 +310,7 @@ void
 UDPBroadcast::Main() 
 {
   int len;
-  player_broadcast_msg_t msg;
+  player_comms_msg_t msg;
   
   PLAYER_TRACE0("thread running");
 

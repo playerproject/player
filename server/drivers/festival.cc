@@ -138,7 +138,7 @@ Festival::Festival(char* interface, ConfigFile* cf, int section) :
   strncpy(festival_libdir_value,
           cf->ReadString(section, "libdir", DEFAULT_FESTIVAL_LIBDIR),
           sizeof(festival_libdir_value));
-  queuelen = cf->ReadInt(section, "queuelen", SPEECH_MAX_QUEUE_LEN);
+  queuelen = cf->ReadInt(section, "queuelen", PLAYER_SPEECH_MAX_QUEUE_LEN);
 
   queue = new PlayerQueue(queuelen);
   assert(queue);

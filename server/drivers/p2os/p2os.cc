@@ -115,8 +115,8 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
                  reqqueue, reqqueuelen,
                  repqueue, repqueuelen);
 
-    ((player_p2os_cmd_t*)device_command)->position.speed = 0;
-    ((player_p2os_cmd_t*)device_command)->position.turnrate = 0;
+    ((player_p2os_cmd_t*)device_command)->position.xspeed = 0;
+    ((player_p2os_cmd_t*)device_command)->position.yawspeed = 0;
 
     ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
     ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
@@ -528,7 +528,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   id.port = global_playerport;
   id.index = 0;
 
-  id.code = PLAYER_SONAR_CODE;
+  id.code = PLAYER_FRF_CODE;
   CDevice* sonarp = deviceTable->GetDevice(id);
   if(sonarp)
   {
@@ -536,12 +536,36 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
     sonarp->data_timestamp_usec = this->data_timestamp_usec;
   }
 
-  id.code = PLAYER_MISC_CODE;
-  CDevice* miscp = deviceTable->GetDevice(id);
-  if(miscp)
+  id.code = PLAYER_POWER_CODE;
+  CDevice* powerp = deviceTable->GetDevice(id);
+  if(powerp)
   {
-    miscp->data_timestamp_sec = this->data_timestamp_sec;
-    miscp->data_timestamp_usec = this->data_timestamp_usec;
+    powerp->data_timestamp_sec = this->data_timestamp_sec;
+    powerp->data_timestamp_usec = this->data_timestamp_usec;
+  }
+
+  id.code = PLAYER_BUMPER_CODE;
+  CDevice* bumperp = deviceTable->GetDevice(id);
+  if(bumperp)
+  {
+    bumperp->data_timestamp_sec = this->data_timestamp_sec;
+    bumperp->data_timestamp_usec = this->data_timestamp_usec;
+  }
+
+  id.code = PLAYER_AIO_CODE;
+  CDevice* aio = deviceTable->GetDevice(id);
+  if(aio)
+  {
+    aio->data_timestamp_sec = this->data_timestamp_sec;
+    aio->data_timestamp_usec = this->data_timestamp_usec;
+  }
+
+  id.code = PLAYER_DIO_CODE;
+  CDevice* dio = deviceTable->GetDevice(id);
+  if(dio)
+  {
+    dio->data_timestamp_sec = this->data_timestamp_sec;
+    dio->data_timestamp_usec = this->data_timestamp_usec;
   }
 
   id.code = PLAYER_POSITION_CODE;
@@ -592,7 +616,7 @@ P2OS::Main()
   id.port = global_playerport;
   id.index = 0;
 
-  id.code = PLAYER_SONAR_CODE;
+  id.code = PLAYER_FRF_CODE;
   CDevice* sonarp = deviceTable->GetDevice(id);
   id.code = PLAYER_POSITION_CODE;
   CDevice* positionp = deviceTable->GetDevice(id);
@@ -669,8 +693,8 @@ P2OS::Main()
 
         // overwrite existing motor commands to be zero
         player_position_cmd_t position_cmd;
-        position_cmd.speed = 0;
-        position_cmd.turnrate = 0;
+        position_cmd.xspeed = 0;
+        position_cmd.yawspeed = 0;
         positionp->PutCommand((unsigned char*)(&position_cmd), 
                               sizeof(position_cmd));
       
@@ -694,10 +718,10 @@ P2OS::Main()
     {
       switch(id.code)
       {
-        case PLAYER_SONAR_CODE:
+        case PLAYER_FRF_CODE:
           switch(config[0])
           {
-            case PLAYER_SONAR_POWER_REQ:
+            case PLAYER_P2OS_SONAR_POWER_REQ:
               /*
                * 1 = enable sonars
                * 0 = disable sonar
@@ -721,7 +745,7 @@ P2OS::Main()
                 PLAYER_ERROR("failed to PutReply");
               break;
 
-            case PLAYER_SONAR_GET_GEOM_REQ:
+            case PLAYER_FRF_GET_GEOM_REQ:
               /* Return the sonar geometry. */
               if(config_size != 1)
               {
@@ -732,10 +756,10 @@ P2OS::Main()
                 break;
               }
 
-              player_sonar_geom_t geom;
-              geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+              player_frf_geom_t geom;
+              geom.subtype = PLAYER_FRF_GET_GEOM_REQ;
               geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
-              for (int i = 0; i < PLAYER_NUM_SONAR_SAMPLES; i++)
+              for (int i = 0; i < PLAYER_MAX_FRF_SAMPLES; i++)
               {
                 sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
                 geom.poses[i][0] = htons((short) (pose.x));
@@ -758,7 +782,7 @@ P2OS::Main()
         case PLAYER_POSITION_CODE:
           switch(config[0])
           {
-            case PLAYER_POSITION_MOTOR_POWER_REQ:
+            case PLAYER_P2OS_POSITION_MOTOR_POWER_REQ:
               /* motor state change request 
                *   1 = enable motors
                *   0 = disable motors (default)
@@ -782,7 +806,7 @@ P2OS::Main()
                 PLAYER_ERROR("failed to PutReply");
               break;
 
-            case PLAYER_POSITION_VELOCITY_CONTROL_REQ:
+            case PLAYER_P2OS_POSITION_VELOCITY_CONTROL_REQ:
               /* velocity control mode:
                *   0 = direct wheel velocity control (default)
                *   1 = separate translational and rotational control
@@ -805,7 +829,7 @@ P2OS::Main()
                 PLAYER_ERROR("failed to PutReply");
               break;
 
-            case PLAYER_POSITION_RESET_ODOM_REQ:
+            case PLAYER_P2OS_POSITION_RESET_ODOM_REQ:
               /* reset position to 0,0,0: no args */
               if(config_size-1 != 0)
               {
@@ -870,14 +894,14 @@ P2OS::Main()
     GetCommand((unsigned char*)&command, sizeof(command));
 
     newmotorspeed = false;
-    if( speedDemand != (short) ntohs(command.position.speed));
+    if( speedDemand != (short) ntohs(command.position.xspeed));
     newmotorspeed = true;
-    speedDemand = (short) ntohs(command.position.speed);
+    speedDemand = (short) ntohs(command.position.xspeed);
 
     newmotorturn = false;
-    if(turnRateDemand != (short) ntohs(command.position.turnrate));
+    if(turnRateDemand != (short) ntohs(command.position.yawspeed));
     newmotorturn = true;
-    turnRateDemand = (short) ntohs(command.position.turnrate);
+    turnRateDemand = (short) ntohs(command.position.yawspeed);
 
     newgrippercommand = false;
     if(gripperCmd != command.gripper.cmd || 
