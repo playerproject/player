@@ -211,7 +211,7 @@ PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[no],[],[],[])
 
 dnl  disabled because it uses CBAUD which is pre-POSIX and doesn't
 dnl  exist on OSX - rtv 2004.05.12
-PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[no],[],[],[])
+PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[no],[],[],[])
 
