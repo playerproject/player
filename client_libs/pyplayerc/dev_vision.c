@@ -20,10 +20,11 @@
 /* Python wrapper for vision type */
 typedef struct
 {
-    PyObject_HEAD
-    playerc_client_t *client;
-    playerc_vision_t *vision;
-    PyObject *blobs;
+  PyObject_HEAD
+  playerc_client_t *client;
+  playerc_vision_t *vision;
+  PyObject *width, *height;
+  PyObject *blobs;
 } vision_object_t;
 
 /* Local declarations */
@@ -46,7 +47,9 @@ PyObject *vision_new(PyObject *self, PyObject *args)
   visionob->client = clientob->client;
   visionob->vision = playerc_vision_create(clientob->client, index);
   visionob->vision->info.user_data = visionob;
-  visionob->blobs =  PyList_New(0);
+  visionob->width = PyInt_FromLong(0);
+  visionob->height = PyInt_FromLong(0);
+  visionob->blobs = PyList_New(0);
 
   /* Add callback for post-processing incoming data */
   playerc_client_addcallback(clientob->client, (playerc_device_t*) visionob->vision,
@@ -65,7 +68,11 @@ static void vision_del(PyObject *self)
   playerc_client_delcallback(visionob->client, (playerc_device_t*) visionob->vision,
                              (playerc_callback_fn_t) vision_onread,
                              (void*) visionob);    
+
   Py_DECREF(visionob->blobs);
+  Py_DECREF(visionob->width);
+  Py_DECREF(visionob->height);
+  
   playerc_vision_destroy(visionob->vision);
   PyObject_Del(self);
 }
@@ -82,6 +89,16 @@ static PyObject *vision_getattr(PyObject *self, char *attrname)
   if (strcmp(attrname, "datatime") == 0)
   {
     result = PyFloat_FromDouble(visionob->vision->info.datatime);
+  }
+  else if (strcmp(attrname, "width") == 0)
+  {
+    Py_INCREF(visionob->width);
+    result = visionob->width;
+  }
+  else if (strcmp(attrname, "height") == 0)
+  {
+    Py_INCREF(visionob->height);
+    result = visionob->height;
   }
   else if (strcmp(attrname, "blobs") == 0)
   {
@@ -133,10 +150,14 @@ static void vision_onread(vision_object_t *visionob)
   playerc_vision_blob_t *blob;
 
   thread_acquire();
-    
+
+  Py_DECREF(visionob->width);
+  Py_DECREF(visionob->height);
+  visionob->width = PyInt_FromLong(visionob->vision->width);
+  visionob->height = PyInt_FromLong(visionob->vision->height);
+  
   Py_DECREF(visionob->blobs);
   visionob->blobs = PyList_New(visionob->vision->blob_count);
-    
   for (i = 0; i < visionob->vision->blob_count; i++)
   {
     blob = visionob->vision->blobs + i;
