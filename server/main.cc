@@ -894,15 +894,20 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     printf("invoking player_driver_init()...");
     fflush(stdout);
     initfunc = (PluginInitFn)lt_dlsym(handle,"player_driver_init");
-    if((error = lt_dlerror()) != NULL)
-    {
-      printf("failed: %s\n", error);
-      return(false);
-    }
-    if((*initfunc)(driverTable) != 0)
+    if( !initfunc )
     {
       puts("failed");
-      PLAYER_ERROR1("error loading plugin: %s", lt_dlerror());
+      PLAYER_ERROR1("failed to resolve player_driver_init: %s\n", 
+		    lt_dlerror() );
+      return(false);
+    }
+
+    int initfunc_result = 0;
+    if( (initfunc_result = (*initfunc)(driverTable)) != 0)
+    {
+      puts("failed");
+      PLAYER_ERROR1("error returned by player_driver_init: %d", 
+		   initfunc_result );
       return(false);
     }
     puts("success");
