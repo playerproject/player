@@ -76,7 +76,8 @@ int test_localize(playerc_client_t *client, int index)
     {
       PASS();
 
-      printf("localize: [%d] ", device->hypoth_count);
+      printf("localize: [%d %14.3f] [%d] ",
+             device->pending_count, device->pending_time, device->hypoth_count);
       for (i = 0; i < device->hypoth_count; i++)
         printf("[%6.3f, %6.3f %6.3f] ",
                device->hypoths[i].mean[0], device->hypoths[i].mean[1], device->hypoths[i].mean[2]);

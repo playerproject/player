@@ -15,7 +15,7 @@ bitmap
 
 position
 (
-  name "robot" port 6665 pose [12.190 2.410 0.689]
+  name "robot" port 6665 pose [3.220 2.140 0.689]
   laser () 
 )
 

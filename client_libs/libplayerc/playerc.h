@@ -886,6 +886,12 @@ typedef struct
   // Map data (empty = -1, unknown = 0, occupied = +1)
   int8_t *map_cells;
 
+  // The number of pending (unprocessed) sensor readings
+  int pending_count;
+
+  // The timestamp on the last reading processed
+  double pending_time;
+
   // List of possible poses
   int hypoth_count;
   playerc_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];

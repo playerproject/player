@@ -106,6 +106,9 @@ void playerc_localize_putdata(playerc_localize_t *device, player_msghdr_t *heade
   assert(len >= sizeof(*data) - sizeof(data->hypoths));
   
   // Byte-swap the data
+  data->pending_count = ntohs(data->pending_count);
+  data->pending_time_sec = ntohl(data->pending_time_sec);
+  data->pending_time_usec = ntohl(data->pending_time_usec);  
   data->hypoth_count = ntohl(data->hypoth_count);
   for (i = 0; i < data->hypoth_count; i++)
   {
@@ -122,6 +125,8 @@ void playerc_localize_putdata(playerc_localize_t *device, player_msghdr_t *heade
   scale[2] = 3600 * 180 / M_PI;
   
   // Read the data; unit conversion
+  device->pending_count = data->pending_count;
+  device->pending_time = data->pending_time_sec + 1e-6 * data->pending_time_usec;
   for (i = 0; i < data->hypoth_count; i++)
   {
     device->hypoths[i].weight = data->hypoths[i].alpha * (1e-6);
