@@ -195,8 +195,12 @@ void PlayerMultiClient::RemoveClient(PlayerClient* client)
 int PlayerMultiClient::Read()
 {
   // clear the fresh flags in the client objects
+  //
+  // Why would we do this?  Fresh flags should be cleared by the user.
+#if 0
   for( int c=0; c<num_ufds; c++ )
     clients[c]->fresh = false;
+#endif
   
   int num_to_read, retval;
 
@@ -220,7 +224,11 @@ int PlayerMultiClient::Read()
         return(retval);
       
       // set the fresh flag
+      //
+      // Don't do this here; it's handled in PlayerClient::Read()
+#if 0
       clients[i]->fresh = true;
+#endif
     }
     else if(ufds[i].revents)
     {
@@ -276,8 +284,12 @@ PlayerClient* PlayerMultiClient::GetClient( struct in_addr* addr, int port )
 int PlayerMultiClient::ReadLatest( int max_reads )
 {
   // clear the fresh flags in the client objects
+  //
+  // Why would we do this?  Fresh flags should be cleared by the user.
+#if 0
   for( int c=0; c<num_ufds; c++ )
     clients[c]->fresh = false;
+#endif
   
   int total_reads = 0;
   int num_to_read = 1, retval = 0;
@@ -300,7 +312,11 @@ int PlayerMultiClient::ReadLatest( int max_reads )
 	  if(ufds[i].revents & POLLIN)
 	    {
 	      // set the fresh flag
+              //
+              // Don't do this here; it's handled in PlayerClient::Read()
+#if 0
 	      clients[i]->fresh = true;
+#endif
 	      
 	      //printf("reading from: %d 0x%x\n", i,ufds[i].events);
 	      if((retval = clients[i]->Read()) == -1)

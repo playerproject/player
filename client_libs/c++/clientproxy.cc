@@ -74,6 +74,7 @@ ClientProxy::ClientProxy(PlayerClient* pc,
   receivedtime.tv_sec = 0;
   receivedtime.tv_usec = 0;
   valid = false;
+  fresh = false;
 
   /*
   memset(&last_data,0,sizeof(last_data));

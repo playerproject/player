@@ -47,7 +47,6 @@
  * the core functions for a pure C client for Player
  */
 
-#include "playercclient.h"
 #include <assert.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -57,6 +56,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
+
+#include "playercclient.h"
+#include "replace.h"  // for poll(2)
 
 #ifndef MIN
   #define MIN(a,b) ((a < b) ? (a) : (b))
@@ -809,5 +811,30 @@ int player_write(player_connection_t* conn,
 
   free(buffer);
   return(0);
+}
+
+// Test to see if there is pending data.
+int player_peek(player_connection_t *conn, int timeout)
+{
+  int count;
+  struct pollfd fd;
+  
+  fd.fd = conn->sock;
+  fd.events = POLLIN | POLLHUP;
+  fd.revents = 0;
+
+  // Wait for incoming data 
+  count = poll(&fd, 1, timeout);
+  if (count < 0)
+  {
+    perror("poll failed");
+    return(-1);
+  }
+  if(count > 0 && (fd.revents & POLLHUP))
+  {
+    printf("player_peek(): socket disconnected");
+    return(-1);
+  }
+  return count;
 }
 

@@ -109,6 +109,17 @@ them named:
 - radio (integer)
   - Default: 0
   - Nonzero if a radio modem is being used; zero for a direct serial link.
+- bumpstall (integer)
+  - Default: -1
+  - Determine whether a bumper-equipped robot stalls when its bumpers are 
+    pressed.  Allowed values are:
+      - -1 : Don't change anything; the bumper-stall behavior will
+             be determined by the BumpStall value stored in the robot's
+             FLASH.
+      - 0 : Don't stall.
+      - 1 : Stall on front bumper contact.
+      - 2 : Stall on rear bumper contact.
+      - 3 : Stall on either bumper contact.
 - joystick (integer)
   - Default: 0
   - Use direct joystick control
@@ -351,6 +362,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   ::initialize_robot_params();
   
   // Read config file options
+  this->bumpstall = cf->ReadInt(section,"bumpstall",-1);
   this->psos_serial_port = cf->ReadString(section,"port",DEFAULT_P2OS_PORT);
   this->radio_modemp = cf->ReadInt(section, "radio", 0);
   this->joystickp = cf->ReadInt(section, "joystick", 0);
@@ -738,6 +750,31 @@ int P2OS::Setup()
     accel_packet.Build(accel_command, 4);
     this->SendReceive(&accel_packet);
   }
+
+  // if requested, change bumper-stall behavior
+  // 0 = don't stall
+  // 1 = stall on front bumper contact
+  // 2 = stall on rear bumper contact
+  // 3 = stall on either bumper contact
+  if(this->bumpstall >= 0)
+  {
+    if(this->bumpstall > 3)
+      PLAYER_ERROR1("ignoring bumpstall value %d; should be 0, 1, 2, or 3",
+                    this->bumpstall);
+    else
+    {
+      PLAYER_MSG1(1, "setting bumpstall to %d", this->bumpstall);
+      P2OSPacket bumpstall_packet;;
+      unsigned char bumpstall_command[4];
+      bumpstall_command[0] = BUMP_STALL;
+      bumpstall_command[1] = ARGINT;
+      bumpstall_command[2] = (unsigned char)this->bumpstall;
+      bumpstall_command[3] = 0;
+      bumpstall_packet.Build(bumpstall_command, 4);
+      this->SendReceive(&bumpstall_packet);
+    }
+  }
+  
 
   // zero position command buffer
   player_position_cmd_t zero;

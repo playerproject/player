@@ -143,6 +143,12 @@ class ClientProxy
      */
     bool valid;
 
+    /** Flag set if data has just been read into this device.
+        If you use it, you must set it to false yourself after examining
+        the data.
+        */ 
+    bool fresh;
+
     /** the last message header and body will be copied here by
         StoreData(), so that it's available for later use. */
     // functionality currently disabled, until it is fixed to handle
@@ -285,8 +291,9 @@ class PlayerClient
     //void SetReserved(int res) { reserved = res; }
     //int GetReserved() { return(reserved); }
 
-    /** Flag set if data has just been read into this client.  If you
-        use it, you must set it to false yourself after examining the data.
+    /** Flag set if data has just been read into one or more of this clients'
+        open devices.  If you use it, you must set it to false yourself
+        after examining the data.
         */ 
     bool fresh; 
 
@@ -360,16 +367,34 @@ class PlayerClient
     bool Connected() { return((conn.sock >= 0) ? true : false); }
 
     /**
-    This method will read one round of data; that is, it will read until a 
-    SYNC packet is received from the server.  Depending on which data delivery
-    mode is in use, new data may or may not be received for each open device.
-    The data that is received for each device device will be processed by the
-    appropriate device proxy and stored there for access by your program.
-    If no errors occurred 0 is returned.  Otherwise, -1 is returned and
-    diagnostic information is printed to @p stderr (you should probably
-    close the connection!).
+     Check whether there is data waiting on the connection, blocking
+     for up to @p timeout milliseconds (set to 0 to not block).
+
+     Returns:
+       - 0 if there is no data waiting
+       - 1 if there is data waiting
+       - -1 if something went wrong
     */
-    int Read();
+    int Peek(int timeout=0);
+
+    /**
+    Use this method to read data from the server, blocking until at
+    least one message is received.  Use @ref PlayerClient::Peek() to check
+    whether any data is currently waiting.
+    
+    If @p await_sync is true, Read() will read one round of data; that
+    is, it will read until a SYNC packet is received from the server.
+    If @p await_sync is false, then Read() will return after reading
+    one message, which could be either a data message or a SYNC.
+
+    Depending on which data delivery mode is in use, new data may or may
+    not be received for each open device.  The data that is received for
+    each device device will be processed by the appropriate device proxy
+    and stored there for access by your program.  If no errors occurred
+    0 is returned.  Otherwise, -1 is returned and diagnostic information
+    is printed to @p stderr (you should probably close the connection!).
+    */
+    int Read(bool await_sync=true, ClientProxy** dev=NULL);
     
     /** Write a command to the server.  This method is @b not intended for
         direct use.  Rather, device proxies should implement higher-level 

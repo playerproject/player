@@ -196,6 +196,18 @@ int player_request_device_access(player_connection_t* conn,
                                  char* driver_name,
                                  int driver_name_len);
 
+/** @brief Test to see if there is pending data on the connection.
+
+   Checks whether there is data waiting on the connection, blocking for up to 
+   @p timeout milliseconds (set to 0 to not block).
+
+Returns:
+  - 0 if there is no data waiting
+  - 1 if there is data waiting
+  - -1 if something went wrong
+*/
+int player_peek(player_connection_t *conn, int timeout);
+
 /** @brief Read from the indicated connection.
 
  Put the data in buffer, up to bufferlen.
