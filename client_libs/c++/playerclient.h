@@ -2613,7 +2613,7 @@ class SpeechRecognitionProxy : public ClientProxy
  ** begin section SimulationProxy
  *****************************************************************************/
 
-/** [Synopsis] The {\tt simulation} proxy provides an interface to a simulator.
+/** [Synopsis] The @ref player_interface_simulation proxy provides an interface to a simulator.
  */
 
 class SimulationProxy : public ClientProxy

@@ -52,6 +52,8 @@ VFH_Algorithm::VFH_Algorithm( double cell_size,
       Last_Picked_Angle(Picked_Angle),
       last_chosen_speed(0)
 {
+  this->Last_Binary_Hist = NULL;
+  this->Hist = NULL;
     if ( SAFETY_DIST_0MS == SAFETY_DIST_1MS )
     {
         // For the simple case of a fixed safety_dist, keep things simple.
@@ -66,6 +68,10 @@ VFH_Algorithm::VFH_Algorithm( double cell_size,
 
 VFH_Algorithm::~VFH_Algorithm()
 {
+  if(this->Hist)
+    delete[] Hist;
+  if(this->Last_Binary_Hist)
+    delete[] Last_Binary_Hist;
 }
 
 int 
