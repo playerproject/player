@@ -65,32 +65,177 @@ void P2OS_Register(DriverTable* table)
 
 P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
 {
-  // Create a position interface
-  if(cf->ReadDeviceId(section, 0, PLAYER_POSITION_CODE, &this->position_id) != 0)
-  {
-    this->SetError(-1);
-    return;
-  }
-  if (this->AddInterface(this->position_id, PLAYER_ALL_MODE,
-                         sizeof(player_position_data_t),
-                         sizeof(player_position_cmd_t), 1, 1) != 0)
+  player_device_id_t* ids;
+  int num_ids;
+
+  // zero blobfinder and gyro ids, so that we'll know later whether to ask
+  // for gyro and camera data.
+  this->blobfinder_id.code = this->gyro_id.code = 0;
+
+  // Parse devices section
+  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
   {
     this->SetError(-1);    
     return;
   }
 
-  // Create a sonar interface
-  if(cf->ReadDeviceId(section, 1, PLAYER_SONAR_CODE, &this->sonar_id) != 0)
+  // Do we create a robot position interface?
+  if(cf->ReadDeviceId(&(this->position_id), ids, 
+                      num_ids, PLAYER_POSITION_CODE,0) == 0)
+  {
+    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
+                          sizeof(player_position_data_t),
+                          sizeof(player_position_cmd_t), 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a compass position interface?
+  if(cf->ReadDeviceId(&(this->compass_id), ids, 
+                      num_ids, PLAYER_POSITION_CODE,1) == 0)
+  {
+    if(this->AddInterface(this->compass_id, PLAYER_READ_MODE,
+                          sizeof(player_position_data_t), 0, 0, 0) != 0)
+    {
+      this->SetError(-1);
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a gyro position interface?
+  if(cf->ReadDeviceId(&(this->gyro_id), ids, 
+                      num_ids, PLAYER_POSITION_CODE,2) == 0)
+  {
+    if(this->AddInterface(this->gyro_id, PLAYER_READ_MODE,
+                          sizeof(player_position_data_t), 0, 0, 0) != 0)
+    {
+      this->SetError(-1);
+      free(ids);
+      return;
+    }
+  }
+
+
+  // Do we create a sonar interface?
+  if(cf->ReadDeviceId(&(this->sonar_id), ids, 
+                      num_ids, PLAYER_SONAR_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->sonar_id, PLAYER_READ_MODE,
+                          sizeof(player_sonar_data_t),0,1,1) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+
+  // Do we create an aio interface?
+  if(cf->ReadDeviceId(&(this->aio_id), ids, 
+                      num_ids, PLAYER_AIO_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->aio_id, PLAYER_READ_MODE,
+                          sizeof(player_aio_data_t), 0, 0, 0) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a dio interface?
+  if(cf->ReadDeviceId(&(this->dio_id), ids, 
+                      num_ids, PLAYER_DIO_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->dio_id, PLAYER_READ_MODE,
+                          sizeof(player_dio_data_t), 0, 0, 0) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a gripper interface?
+  if(cf->ReadDeviceId(&(this->gripper_id), ids, 
+                      num_ids, PLAYER_GRIPPER_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->gripper_id, PLAYER_ALL_MODE,
+                          sizeof(player_gripper_data_t), 
+                          sizeof(player_gripper_cmd_t), 0, 0) != 0)
+    {
+      this->SetError(-1);
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a bumper interface?
+  if(cf->ReadDeviceId(&(this->bumper_id), ids, 
+                      num_ids, PLAYER_BUMPER_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->bumper_id, PLAYER_READ_MODE,
+                          sizeof(player_bumper_data_t), 0, 0, 0) != 0)
+    {
+      this->SetError(-1);
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a power interface?
+  if(cf->ReadDeviceId(&(this->power_id), ids, 
+                      num_ids, PLAYER_POWER_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->power_id, PLAYER_READ_MODE,
+                          sizeof(player_power_data_t), 0, 0, 0) != 0)
+    {
+      this->SetError(-1);
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a blobfinder interface?
+  if(cf->ReadDeviceId(&(this->blobfinder_id), ids, 
+                      num_ids, PLAYER_BLOBFINDER_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->blobfinder_id, PLAYER_READ_MODE,
+                          sizeof(player_blobfinder_data_t), 0, 1, 1) != 0)
+    {
+      this->SetError(-1);
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a sound interface?
+  if(cf->ReadDeviceId(&(this->sound_id), ids, 
+                      num_ids, PLAYER_SOUND_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->sound_id, PLAYER_WRITE_MODE,
+                          0, sizeof(player_sound_cmd_t), 0, 0) != 0)
+    {
+      this->SetError(-1);
+      free(ids);
+      return;
+    }
+  }
+
+  // check for unused ids
+  if(cf->UnusedIds(section,ids,num_ids))
   {
     this->SetError(-1);
+    free(ids);
     return;
   }
-  if (this->AddInterface(this->sonar_id, PLAYER_READ_MODE,
-                         sizeof(player_sonar_data_t),0,1,1) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
+
+  // we're done with the list of ids now.
+  free(ids);
 
   // build the table of robot parameters.
   ::initialize_robot_params();
@@ -107,45 +252,9 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
                                           MOTOR_DEF_MAX_TURNSPEED);
   this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
 
-  this->cmucamp = 0;		// If p2os_cmucam is used, this will be overridden
-  this->gyrop = 0;		// If p2os_gyro is used, this will be overridden
-  
   this->psos_fd = -1;
 
-#if 0
-  SetupBuffers((unsigned char*)data, sizeof(player_p2os_data_t),
-               (unsigned char*)command, sizeof(player_p2os_cmd_t),
-               reqqueue, reqqueuelen,
-               repqueue, repqueuelen);
-
-    ((player_p2os_cmd_t*)device_command)->position.xspeed = 0;
-    ((player_p2os_cmd_t*)device_command)->position.yawspeed = 0;
-
-    ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
-    ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
-
-    ((player_p2os_cmd_t*)device_command)->sound.index = 0;
-
-    p2os_subscriptions = 0;
-
-    pthread_mutex_init(&p2os_accessMutex,NULL);
-    pthread_mutex_init(&p2os_setupMutex,NULL);
-
-    // every sub-device gets its own queue object (but they all point to the
-    // same chunk of memory)
-    
-    // every sub-device needs to get its various pointers set up
-    SetupBuffers((unsigned char*)data, sizeof(player_p2os_data_t),
-                 (unsigned char*)command, sizeof(player_p2os_cmd_t),
-                 reqqueue, reqqueuelen,
-                 repqueue, repqueuelen);
-
-  strncpy(psos_serial_port,
-          cf->ReadString(section, "port", psos_serial_port),
-          sizeof(psos_serial_port));
-  radio_modemp = cf->ReadInt(section, "radio", radio_modemp);
-  joystickp = cf->ReadInt(section, "joystick", joystickp);
-#endif
+  this->sent_gripper_cmd = false;
 }
 
 P2OS::~P2OS()
@@ -455,10 +564,10 @@ int P2OS::Setup()
     this->SendReceive(&js_packet);
   }
 
-  if(this->cmucamp)
+  if(this->blobfinder_id.code)
     CMUcamReset();
 
-  if(this->gyrop)
+  if(this->gyro_id.code)
   {
     // request that gyro data be sent each cycle
     P2OSPacket gyro_packet;
@@ -581,6 +690,54 @@ P2OS::PutData(void)
                   (void*)&(this->p2os_data.sonar), 
                   sizeof(player_sonar_data_t),
                   NULL);
+  
+  // put aio data
+  Driver::PutData(this->aio_id, 
+                  (void*)&(this->p2os_data.aio), 
+                  sizeof(player_aio_data_t),
+                  NULL);
+
+  // put dio data
+  Driver::PutData(this->dio_id, 
+                  (void*)&(this->p2os_data.dio), 
+                  sizeof(player_dio_data_t),
+                  NULL);
+
+  // put gripper data
+  Driver::PutData(this->gripper_id, 
+                  (void*)&(this->p2os_data.gripper), 
+                  sizeof(player_gripper_data_t),
+                  NULL);
+
+  // put bumper data
+  Driver::PutData(this->bumper_id, 
+                  (void*)&(this->p2os_data.bumper), 
+                  sizeof(player_bumper_data_t),
+                  NULL);
+
+  // put power data
+  Driver::PutData(this->power_id, 
+                  (void*)&(this->p2os_data.power), 
+                  sizeof(player_power_data_t),
+                  NULL);
+
+  // put compass data
+  Driver::PutData(this->compass_id, 
+                  (void*)&(this->p2os_data.compass), 
+                  sizeof(player_position_data_t),
+                  NULL);
+
+  // put gyro data
+  Driver::PutData(this->gyro_id, 
+                  (void*)&(this->p2os_data.gyro), 
+                  sizeof(player_position_data_t),
+                  NULL);
+
+  // put blobfinder data
+  Driver::PutData(this->blobfinder_id, 
+                  (void*)&(this->p2os_data.blobfinder), 
+                  sizeof(player_blobfinder_data_t),
+                  NULL);
 }
 
 void 
@@ -588,7 +745,6 @@ P2OS::Main()
 {
   int last_sonar_subscrcount=0;
   int last_position_subscrcount=0;
-  //int last_cmucam_subscrcount=0;
 
   for(;;)
   {
@@ -622,15 +778,10 @@ P2OS::Main()
     }
     last_position_subscrcount = this->position_subscriptions;
 
-#if 0
-    // we want to turn on the cmucam blob tracking if someone just subscribed, 
-    // and turn them off (reset) if the last subscriber just unsubscribed.
-    if(cmucamp)
+    // The Amigo board seems to drop commands once in a while.  This is
+    // a hack to restart the serial reads if that happens.
+    if(this->blobfinder_id.code)
     {
-      last_cmucam_subscrcount = cmucamp->subscriptions;
-
-      // The Amigo board seems to drop commands once in a while.  This is
-      // a hack to restart the serial reads if that happens.
       struct timeval now_tv;
       GlobalTime->GetTime(&now_tv);
       if (now_tv.tv_sec > lastblob_tv.tv_sec) 
@@ -654,7 +805,6 @@ P2OS::Main()
         GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
       }
     }
-#endif
     
     // handle pending config requests
     this->HandleConfig();
@@ -709,7 +859,7 @@ P2OS::SendReceive(P2OSPacket* pkt)
             packet.packet[3] == SERAUX2)
     {
       // This is an AUX2 serial packet
-      if(this->cmucamp)
+      if(blobfinder_id.code)
       {
         /* It is an extended SIP (blobfinder) packet, so process it */
         /* Be sure to pass data size too (packet[2])! */
@@ -760,18 +910,21 @@ P2OS::SendReceive(P2OSPacket* pkt)
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
             packet.packet[3] == GYROPAC)
     {
-      /* It's a set of gyro measurements */
-      this->sippacket->ParseGyro(&packet.packet[2]);
-      this->sippacket->Fill(&(this->p2os_data));
-      this->PutData();
+      if(this->gyro_id.code)
+      {
+        /* It's a set of gyro measurements */
+        this->sippacket->ParseGyro(&packet.packet[2]);
+        this->sippacket->Fill(&(this->p2os_data));
+        this->PutData();
 
-      /* Now, the manual says that we get one gyro packet each cycle,
-       * right before the standard SIP.  So, we'll call SendReceive() 
-       * again (with no packet to send) to get the standard SIP.  There's 
-       * a definite danger of infinite recursion here if the manual
-       * is wrong.
-       */
-      this->SendReceive(NULL);
+        /* Now, the manual says that we get one gyro packet each cycle,
+         * right before the standard SIP.  So, we'll call SendReceive() 
+         * again (with no packet to send) to get the standard SIP.  There's 
+         * a definite danger of infinite recursion here if the manual
+         * is wrong.
+         */
+        this->SendReceive(NULL);
+      }
     }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
             (packet.packet[3] == 0x20))
@@ -1133,114 +1286,115 @@ P2OS::HandleConfig(void)
     }
   }
 
-#if 0
   // check for blobfinder requests
-      case PLAYER_BLOBFINDER_CODE:
-          switch(config[0])
-          {
-            case PLAYER_BLOBFINDER_SET_COLOR_REQ:
-              // Set the tracking color (RGB max/min values)
+  if((config_size = this->GetConfig(this->blobfinder_id, &client, 
+                                    (void*)config, sizeof(config),NULL)) > 0)
+  {
+    switch(config[0])
+    {
+      case PLAYER_BLOBFINDER_SET_COLOR_REQ:
+        // Set the tracking color (RGB max/min values)
 
-              if(config_size != sizeof(player_blobfinder_color_config_t))
-              {
-                puts("Arg to blobfinder color request wrong size; ignoring");
-                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-                            NULL, NULL, 0))
-                  PLAYER_ERROR("failed to PutReply");
-                break;
-              }
-              player_blobfinder_color_config_t color_config;
-              color_config = *((player_blobfinder_color_config_t*)config);
-
-              CMUcamTrack( (short)ntohs(color_config.rmin),
-                           (short)ntohs(color_config.rmax), 
-                           (short)ntohs(color_config.gmin),
-                           (short)ntohs(color_config.gmax),
-                           (short)ntohs(color_config.bmin),
-                           (short)ntohs(color_config.bmax) );
-
-              //printf("Color Tracking parameter updated.\n");
-
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-
-            case PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ:
-              // Set the imager control params
-              if(config_size != sizeof(player_blobfinder_imager_config_t))
-              {
-                puts("Arg to blobfinder imager request wrong size; ignoring");
-                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-                            NULL, NULL, 0))
-                  PLAYER_ERROR("failed to PutReply");
-                break;
-              }
-              player_blobfinder_imager_config_t imager_config;
-              imager_config = *((player_blobfinder_imager_config_t*)config);
-
-              P2OSPacket cam_packet;
-              unsigned char cam_command[50];
-              int np;
-
-              np=3;
-              
-              CMUcamStopTracking();	// Stop the current tracking.
-
-              cam_command[0] = TTY3;
-              cam_command[1] = ARGSTR;
-              np += sprintf((char*)&cam_command[np], "CR ");
-
-              if ((short)ntohs(imager_config.brightness) >= 0)
-                np += sprintf((char*)&cam_command[np], " 6 %d",
-                              ntohs(imager_config.brightness));
-
-              if ((short)ntohs(imager_config.contrast) >= 0)
-                np += sprintf((char*)&cam_command[np], " 5 %d",
-                              ntohs(imager_config.contrast));
-
-              if (imager_config.autogain >= 0)
-                if (imager_config.autogain == 0)
-                  np += sprintf((char*)&cam_command[np], " 19 32");
-                else
-                  np += sprintf((char*)&cam_command[np], " 19 33");
-
-              if (imager_config.colormode >= 0)
-                if (imager_config.colormode == 3)
-                  np += sprintf((char*)&cam_command[np], " 18 36");
-                else if (imager_config.colormode == 2)
-                  np += sprintf((char*)&cam_command[np], " 18 32");
-                else if (imager_config.colormode == 1)
-                  np += sprintf((char*)&cam_command[np], " 18 44");
-                else
-                  np += sprintf((char*)&cam_command[np], " 18 40");
-
-              if (np > 6)
-              {
-                sprintf((char*)&cam_command[np], "\r");
-                cam_command[2] = strlen((char *)&cam_command[3]);
-                cam_packet.Build(cam_command, (int)cam_command[2]+3);
-                SendReceive(&cam_packet);
-
-                printf("Blobfinder imager parameters updated.\n");
-                printf("       %s\n", &cam_command[3]);
-              } else
-                printf("Blobfinder imager parameters NOT updated.\n");
-
-              CMUcamTrack(); 	// Restart tracking
- 
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-
-            default:
-              PLAYER_WARN("unknown config request to blobfinder interface");
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-          }
+        if(config_size != sizeof(player_blobfinder_color_config_t))
+        {
+          puts("Arg to blobfinder color request wrong size; ignoring");
+          if(PutReply(this->blobfinder_id, client, 
+                      PLAYER_MSGTYPE_RESP_NACK, NULL))
+            PLAYER_ERROR("failed to PutReply");
           break;
-#endif
+        }
+        player_blobfinder_color_config_t color_config;
+        color_config = *((player_blobfinder_color_config_t*)config);
 
+        CMUcamTrack( (short)ntohs(color_config.rmin),
+                     (short)ntohs(color_config.rmax), 
+                     (short)ntohs(color_config.gmin),
+                     (short)ntohs(color_config.gmax),
+                     (short)ntohs(color_config.bmin),
+                     (short)ntohs(color_config.bmax) );
+
+        //printf("Color Tracking parameter updated.\n");
+
+        if(PutReply(this->blobfinder_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
+          PLAYER_ERROR("failed to PutReply");
+        break;
+
+      case PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ:
+        // Set the imager control params
+        if(config_size != sizeof(player_blobfinder_imager_config_t))
+        {
+          puts("Arg to blobfinder imager request wrong size; ignoring");
+          if(PutReply(this->blobfinder_id, client, 
+                      PLAYER_MSGTYPE_RESP_NACK, NULL))
+            PLAYER_ERROR("failed to PutReply");
+          break;
+        }
+        player_blobfinder_imager_config_t imager_config;
+        imager_config = *((player_blobfinder_imager_config_t*)config);
+
+        P2OSPacket cam_packet;
+        unsigned char cam_command[50];
+        int np;
+
+        np=3;
+
+        CMUcamStopTracking();	// Stop the current tracking.
+
+        cam_command[0] = TTY3;
+        cam_command[1] = ARGSTR;
+        np += sprintf((char*)&cam_command[np], "CR ");
+
+        if ((short)ntohs(imager_config.brightness) >= 0)
+          np += sprintf((char*)&cam_command[np], " 6 %d",
+                        ntohs(imager_config.brightness));
+
+        if ((short)ntohs(imager_config.contrast) >= 0)
+          np += sprintf((char*)&cam_command[np], " 5 %d",
+                        ntohs(imager_config.contrast));
+
+        if (imager_config.autogain >= 0)
+          if (imager_config.autogain == 0)
+            np += sprintf((char*)&cam_command[np], " 19 32");
+          else
+            np += sprintf((char*)&cam_command[np], " 19 33");
+
+        if (imager_config.colormode >= 0)
+          if (imager_config.colormode == 3)
+            np += sprintf((char*)&cam_command[np], " 18 36");
+          else if (imager_config.colormode == 2)
+            np += sprintf((char*)&cam_command[np], " 18 32");
+          else if (imager_config.colormode == 1)
+            np += sprintf((char*)&cam_command[np], " 18 44");
+          else
+            np += sprintf((char*)&cam_command[np], " 18 40");
+
+        if (np > 6)
+        {
+          sprintf((char*)&cam_command[np], "\r");
+          cam_command[2] = strlen((char *)&cam_command[3]);
+          cam_packet.Build(cam_command, (int)cam_command[2]+3);
+          SendReceive(&cam_packet);
+
+          printf("Blobfinder imager parameters updated.\n");
+          printf("       %s\n", &cam_command[3]);
+        } else
+          printf("Blobfinder imager parameters NOT updated.\n");
+
+        CMUcamTrack(); 	// Restart tracking
+
+        if(PutReply(this->blobfinder_id, client, 
+                    PLAYER_MSGTYPE_RESP_ACK, NULL))
+          PLAYER_ERROR("failed to PutReply");
+        break;
+
+      default:
+        PLAYER_WARN("unknown config request to blobfinder interface");
+        if(PutReply(this->blobfinder_id, client, 
+                    PLAYER_MSGTYPE_RESP_NACK, NULL))
+          PLAYER_ERROR("failed to PutReply");
+        break;
+    }
+  }
 }
 
 void
@@ -1390,9 +1544,78 @@ P2OS::HandlePositionCommand(player_position_cmd_t position_cmd)
 }
 
 void
+P2OS::HandleGripperCommand(player_gripper_cmd_t gripper_cmd)
+{
+  bool newgrippercommand;
+  unsigned char gripcommand[4];
+  P2OSPacket grippacket;
+
+  if(!this->sent_gripper_cmd)
+    newgrippercommand = true;
+  else
+  {
+    newgrippercommand = false;
+    if(gripper_cmd.cmd != this->last_gripper_cmd.cmd || 
+       gripper_cmd.arg != this->last_gripper_cmd.arg)
+    {
+      newgrippercommand = true;
+    }
+  }
+
+  if(newgrippercommand)
+  {
+    //puts("sending gripper command");
+    // gripper command 
+    gripcommand[0] = GRIPPER;
+    gripcommand[1] = ARGINT;
+    gripcommand[2] = gripper_cmd.cmd & 0x00FF;
+    gripcommand[3] = (gripper_cmd.cmd & 0xFF00) >> 8;
+    grippacket.Build(gripcommand, 4);
+    SendReceive(&grippacket);
+
+    // pass extra value to gripper if needed 
+    if(gripper_cmd.cmd == GRIPpress || gripper_cmd.cmd == LIFTcarry ) 
+    {
+      gripcommand[0] = GRIPPERVAL;
+      gripcommand[1] = ARGINT;
+      gripcommand[2] = gripper_cmd.arg & 0x00FF;
+      gripcommand[3] = (gripper_cmd.arg & 0xFF00) >> 8;
+      grippacket.Build(gripcommand, 4);
+      SendReceive(&grippacket);
+    }
+
+    this->sent_gripper_cmd = true;
+    this->last_gripper_cmd = gripper_cmd;
+  }
+}
+
+void
+P2OS::HandleSoundCommand(player_sound_cmd_t sound_cmd)
+{
+  unsigned char soundcommand[4];
+  P2OSPacket soundpacket;
+  unsigned short soundindex;
+
+  soundindex = ntohs(sound_cmd.index);
+
+  if(!this->sent_sound_cmd || (soundindex != this->last_sound_cmd.index))
+  {
+    soundcommand[0] = SOUND;
+    soundcommand[1] = ARGINT;
+    soundcommand[2] = soundindex & 0x00FF;
+    soundcommand[3] = (soundindex & 0xFF00) >> 8;
+    soundpacket.Build(soundcommand,4);
+    SendReceive(&soundpacket);
+    fflush(stdout);
+
+    this->last_sound_cmd.index = soundindex;
+  }
+}
+
+void
 P2OS::GetCommand(void)
 {
-  // get and send the latest motor command (always send it)
+  // get and send the latest motor command
   player_position_cmd_t position_cmd;
   if(Driver::GetCommand(this->position_id,(void*)&position_cmd,
                         sizeof(player_position_cmd_t),NULL) > 0)
@@ -1400,64 +1623,19 @@ P2OS::GetCommand(void)
     this->HandlePositionCommand(position_cmd);
   }
 
-#if 0
-    newgrippercommand = false;
-    if(gripperCmd != command.gripper.cmd || 
-       gripperArg != command.gripper.arg)
-    {
-      newgrippercommand = true;
-    }
-    gripperCmd = command.gripper.cmd;
-    gripperArg = command.gripper.arg;
+  // get and send the latest gripper command, if it's new
+  player_gripper_cmd_t gripper_cmd;
+  if(Driver::GetCommand(this->gripper_id,(void*)&gripper_cmd,
+                        sizeof(player_gripper_cmd_t),NULL) > 0)
+  {
+    this->HandleGripperCommand(gripper_cmd);
+  }
 
-    /* check for sound play command */
-    newsoundplay = false;
-    if (soundp && command.sound.index) {
-      newsoundplay = true;
-      soundindex = ntohs(command.sound.index);
-    }
-    
-
-    if(newgrippercommand)
-    {
-      //puts("sending gripper command");
-      // gripper command 
-      gripcommand[0] = GRIPPER;
-      gripcommand[1] = ARGINT;
-      gripcommand[2] = gripperCmd & 0x00FF;
-      gripcommand[3] = (gripperCmd & 0xFF00) >> 8;
-      grippacket.Build( gripcommand, 4);
-      SendReceive(&grippacket);
-
-      // pass extra value to gripper if needed 
-      if(gripperCmd == GRIPpress || gripperCmd == LIFTcarry ) 
-      {
-        gripcommand[0] = GRIPPERVAL;
-        gripcommand[1] = ARGINT;
-        gripcommand[2] = gripperArg & 0x00FF;
-        gripcommand[3] = (gripperArg & 0xFF00) >> 8;
-        grippacket.Build( gripcommand, 4);
-        SendReceive(&grippacket);
-      }
-    }
-
-    // send sound play command down
-    if (newsoundplay) {
-      soundcommand[0] = SOUND;
-      soundcommand[1] = ARGINT;
-      soundcommand[2] = soundindex & 0x00FF;
-      soundcommand[3] = (soundindex & 0xFF00) >> 8;
-      soundpacket.Build(soundcommand,4);
-      SendReceive(&soundpacket);
-      //printf("Playing sound: %hu\n", soundindex);
-      fflush(stdout);
-      // now reset command to 0
-      player_sound_cmd_t sound_cmd;
-      sound_cmd.index = 0;
-      // TODO: who should really be the client here?
-      soundp->PutCommand(this,(unsigned char*)(&sound_cmd), 
-                         sizeof(sound_cmd));
-      soundindex = 0;
-    }
-#endif
+  // get and send the latest sound command, if it's new
+  player_sound_cmd_t sound_cmd;
+  if(Driver::GetCommand(this->sound_id,(void*)&sound_cmd,
+                        sizeof(player_sound_cmd_t),NULL) > 0)
+  {
+    this->HandleSoundCommand(sound_cmd);
+  }
 }

@@ -129,15 +129,6 @@ typedef struct
   player_position_data_t gyro;
 } __attribute__ ((packed)) player_p2os_data_t;
 
-#if 0
-typedef struct
-{
-  player_position_cmd_t position;
-  player_gripper_cmd_t gripper;
-  player_sound_cmd_t sound;
-} __attribute__ ((packed)) player_p2os_cmd_t;
-#endif
-
 // this is here because we need the above typedef's before including it.
 #include <sip.h>
 
@@ -150,7 +141,23 @@ class P2OS : public Driver
     
     player_device_id_t position_id;
     player_device_id_t sonar_id;
+    player_device_id_t aio_id;
+    player_device_id_t dio_id;
+    player_device_id_t gripper_id;
+    player_device_id_t bumper_id;
+    player_device_id_t power_id;
+    player_device_id_t compass_id;
+    player_device_id_t gyro_id;
+    player_device_id_t blobfinder_id;
+    player_device_id_t sound_id;
 
+    // bookkeeping to only send new gripper I/O commands
+    bool sent_gripper_cmd;
+    player_gripper_cmd_t last_gripper_cmd;
+
+    // bookkeeping to only send new sound I/O commands
+    bool sent_sound_cmd;
+    player_sound_cmd_t last_sound_cmd;
 
     int position_subscriptions;
     int sonar_subscriptions;
@@ -167,6 +174,8 @@ class P2OS : public Driver
     void GetCommand(void);
     void PutData(void);
     void HandlePositionCommand(player_position_cmd_t position_cmd);
+    void HandleGripperCommand(player_gripper_cmd_t gripper_cmd);
+    void HandleSoundCommand(player_sound_cmd_t sound_cmd);
 
     int param_idx;  // index in the RobotParams table for this robot
     int direct_wheel_vel_control; // false -> separate trans and rot vel
@@ -181,8 +190,6 @@ class P2OS : public Driver
     // Bound the command velocities
     bool use_vel_band; 
 
-    int cmucamp; // is the cmucam driver active (used in the cfg file)?
-    int gyrop; // is the gyro driver active (used in the cfg file)?
     int radio_modemp; // are we using a radio modem?
     int joystickp; // are we using a joystick?
 
