@@ -59,6 +59,7 @@
 #define PLAYER_READ_MODE 'r'
 #define PLAYER_WRITE_MODE 'w'
 #define PLAYER_ALL_MODE 'a'
+#define PLAYER_CLOSE_MODE 'c'
 
 /* the largest possible message that the server will currently send
  * or receive */
@@ -135,16 +136,16 @@ typedef struct
 /* Position device data buffer */
 typedef struct 
 {
-  int32_t x,y;
+  int32_t xpos,ypos;
   uint16_t theta;
   int16_t speed, turnrate;
   uint16_t compass;
-  uint8_t stall;
+  uint8_t stalls;
 } __attribute__ ((packed)) player_position_data_t;
 
 #define POSITION_DATA_BUFFER_SIZE sizeof(player_position_data_t)
 #define POSITION_COMMAND_BUFFER_SIZE sizeof(player_position_cmd_t)
-#define POSITION_CONFIG_BUFFER_SIZE 0
+#define POSITION_CONFIG_BUFFER_SIZE 32
  
 /*************************************************************************/
 

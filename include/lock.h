@@ -36,6 +36,7 @@
 // For size_t
 //
 #include <stddef.h>
+#include <playercommon.h>
 
 // getting around circular inclusion
 class CDevice;
@@ -63,7 +64,7 @@ public:
   virtual int Subscribe(CDevice *);
   virtual int Unsubscribe(CDevice *);
 
-  virtual size_t GetData(CDevice *, unsigned char *, size_t);
+  virtual size_t GetData(CDevice *, unsigned char *, size_t, uint64_t* );
   virtual void PutData(CDevice *, unsigned char *, size_t);
 
   virtual void GetCommand(CDevice *, unsigned char *, size_t );
