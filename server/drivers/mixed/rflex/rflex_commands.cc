@@ -349,6 +349,8 @@ static void parseMotReport( unsigned char *buffer )
    opcode = buffer[4];
    length = buffer[5];
 
+	// allocate bumper storage if we havent already
+	// must be a better place to do this but it works
    if (status.num_bumpers== 0 && rflex_configs.bumper_count > 0)
    {
        status.bumpers = new char[rflex_configs.bumper_count];
@@ -369,21 +371,22 @@ static void parseMotReport( unsigned char *buffer )
 
    // on the b21r the bump packets are address 0x40 -> 0x4D, there are some other dio packets
    // but dont know what they do so we throw them away
-   if ((address & 0xF0) != 0x40)
-   {
-       fprintf(stderr,"Bump Data doesnt appear to come from a bump panel, address: %2X \n",address);
-       break;
-   }
 
-	// Use the last byte of the address as the bumper index, print error and ignore if its too high
-   if ((address & 0xF) > status.num_bumpers)
-   {
-       fprintf(stderr,"More bumpers than specified in config: %d\n",address & 0xf);
-       break;
-   }
+	// check if the dio packet came from a bumper packet
+	if ((address < rflex_configs.bumper_address) || (address >= rflex_configs.power_offset+status.num_bumpers))
+	{
+    	// not bumper
+		fprintf(stderr,"(dio)");
+    	break;
+	}
+	else
+	{
+		// is bumper
+		// assign low data byte to the bumpers (16 bit DIO data, low 4 bits give which corners or the panel are 'bumped')
+	 	status.bumpers[address - rflex_configs.bumper_address] = data & 0x0F;
 
-   // assign low data byte to the bumpers (16 bit DIO data, low 4 bits give which corners or the panel are 'bumped')
-   status.bumpers[address & 0xF] = data & 0xFF;
+	}
+
 
      break;
    default:

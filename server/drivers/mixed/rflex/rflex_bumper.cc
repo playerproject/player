@@ -61,21 +61,22 @@ CDevice* RFLEXbumper_Init(char* interface, ConfigFile* cf, int section)
  * deffinition
  */
 void RFLEXbumper::GetOptions(ConfigFile *cf,int section,rflex_config_t * rflex_configs){
-  int x;
-  Lock();
+	int x;
+	Lock();
   
-  rflex_configs->bumper_count = 
-    cf->ReadInt(section, "bumper_count",0);
-  rflex_configs->bumper_def = new player_bumper_define_t[rflex_configs->bumper_count];
-  for(x=0;x<rflex_configs->bumper_count;++x)
-  {
-	rflex_configs->bumper_def[x].x_offset = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x,0)); //mm
-	rflex_configs->bumper_def[x].y_offset = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+1,0)); //mm
-	rflex_configs->bumper_def[x].th_offset = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+2,0)); //deg
-	rflex_configs->bumper_def[x].length = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+3,0)); //mm
-	rflex_configs->bumper_def[x].radius = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+4,0));	//mm  	
+	rflex_configs->bumper_count = 
+	cf->ReadInt(section, "bumper_count",0);
+	rflex_configs->bumper_def = new player_bumper_define_t[rflex_configs->bumper_count];
+  	for(x=0;x<rflex_configs->bumper_count;++x)
+	{
+		rflex_configs->bumper_def[x].x_offset = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x,0)); //mm
+		rflex_configs->bumper_def[x].y_offset = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+1,0)); //mm
+		rflex_configs->bumper_def[x].th_offset = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+2,0)); //deg
+		rflex_configs->bumper_def[x].length = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+3,0)); //mm
+		rflex_configs->bumper_def[x].radius = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+4,0));	//mm  	
 	}
-  Unlock();
+	rflex_configs->bumper_address = cf->ReadInt(section, "rflex_bumper_address",DEFAULT_RFLEX_BUMPER_ADDRESS);
+	Unlock();
 }  
 
 
