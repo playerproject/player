@@ -410,7 +410,7 @@ void WriteLog::Main(void)
       device = this->devices + i;
       
       // Read data from underlying device
-      size = device->device->GetData(this, (unsigned char*) data, maxsize, &tsec, &tusec);
+      size = device->device->GetDataEx(device->id, this, (unsigned char*) data, maxsize, &tsec, &tusec);
       assert(size < maxsize);
 
       // Check for new data
@@ -593,9 +593,9 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
   for (i = 0; i < ntohs(data->link_count); i++)
     fprintf(this->file, "%s %d %d %d ",
             data->links[i].ip,
-            HUINT16(data->links[i].qual),
-            HUINT16(data->links[i].level),
-            HUINT16(data->links[i].noise));
+            HINT16(data->links[i].qual),
+            HINT16(data->links[i].level),
+            HINT16(data->links[i].noise));
 
   return;
 }
