@@ -177,7 +177,7 @@ void *client_reader(void* arg)
   {
     hdr.stx = 0;
     /* wait for the STX */
-    while(hdr.stx != PLAYER_STX)
+    while(ntohs(hdr.stx) != PLAYER_STXX)
     {
       //printf("looking for STX:%x:\n",PLAYER_STX);
       if((readcnt = read(cd->socket,&(hdr.stx),sizeof(hdr.stx))) <= 0)
@@ -204,8 +204,10 @@ void *client_reader(void* arg)
     hdr.type = ntohs(hdr.type);
     hdr.device = ntohs(hdr.device);
     hdr.device_index = ntohs(hdr.device_index);
-    hdr.time = ntohl(hdr.time);
-    hdr.timestamp = ntohl(hdr.timestamp);
+    hdr.time_sec = ntohl(hdr.time_sec);
+    hdr.time_usec = ntohl(hdr.time_usec);
+    hdr.timestamp_sec = ntohl(hdr.timestamp_sec);
+    hdr.timestamp_usec = ntohl(hdr.timestamp_usec);
     hdr.size = ntohl(hdr.size);
     //puts("got HDR");
 

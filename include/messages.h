@@ -36,7 +36,7 @@
 #define PLAYER_NUM_LASER_SAMPLES 361
 
 /* the message start signifier */
-#define PLAYER_STX MAKEUINT16('x','X')
+#define PLAYER_STXX ((uint16_t) 0x5878)
 
 /* the player message types */
 #define PLAYER_MSGTYPE_DATA  ((uint16_t)1)
@@ -83,8 +83,10 @@ typedef struct
   uint16_t type;    /* message type */
   uint16_t device;  /* what kind of device */
   uint16_t device_index; /* which device of that kind */
-  uint64_t time;  /* server's current time */
-  uint64_t timestamp; /* time when the current data/response was generated */
+  uint32_t time_sec;  /* server's current time (seconds since epoch) */
+  uint32_t time_usec; /* server's current time (microseconds since epoch) */
+  uint32_t timestamp_sec;  /* time when the current data/response was generated */
+  uint32_t timestamp_usec; /* time when the current data/response was generated */
   uint32_t reserved;  /* for extension */
   uint32_t size;  /* size in bytes of the payload to follow */
 } __attribute__ ((packed)) player_msghdr_t;

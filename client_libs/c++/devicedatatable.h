@@ -39,16 +39,19 @@ class DeviceDataEntry
     unsigned short device; // the name by which we identify this kind of device
     unsigned short index;  // which device we mean
     unsigned char access;   // 'r', 'w', or 'a' (others?)
-    unsigned long long timestamp;  // time at which this data was sensed
-    unsigned long long senttime;  // time at which this data was sent
-    unsigned long long rectime;  // time at which this data was receive
+    unsigned long timestamp_sec;  // time at which this data was sensed
+    unsigned long timestamp_usec;  // time at which this data was sensed
+    unsigned long senttime_sec;  // time at which this data was sent
+    unsigned long senttime_usec;  // time at which this data was sent
+    unsigned long rectime_sec;  // time at which this data was receive
+    unsigned long rectime_usec;  // time at which this data was receive
     void* data;           // buffer for incoming data
     void* command;        // buffer for outgoing commands
     int datasize;         // size of databuffer
     int commandsize;      // size of command buffer
     DeviceDataEntry* next;  // next in list
 
-    DeviceDataEntry() { data = NULL; command = NULL; next = NULL; timestamp=0; }
+    DeviceDataEntry() { data = NULL; command = NULL; next = NULL; timestamp_sec=0; timestamp_usec = 0;}
     ~DeviceDataEntry() { if(data) free(data); if(command) free(command); }
 };
 

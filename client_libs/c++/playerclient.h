@@ -138,6 +138,12 @@ class PlayerClient
 
      /* query the current device access */
      uint8_t QueryDeviceAccess(uint16_t device, uint16_t index);
+
+     /* query the current read timestamps on a device */
+     int QueryDeviceTimestamp(uint16_t device, uint16_t index,
+                              uint32_t *sense_time_sec, uint32_t *sense_time_usec,
+                              uint32_t *sent_time_sec, uint32_t *sent_time_usec,
+                              uint32_t *recv_time_sec, uint32_t *recv_time_usec);
      
      /* write ALL commands to server */
      int Write();

@@ -170,6 +170,31 @@ uint8_t PlayerClient::QueryDeviceAccess(uint16_t device, uint16_t index)
   return devicedatatable->GetDeviceAccess(device, index);  
 }
 
+/* query the current read timestamp on a device */
+int PlayerClient::QueryDeviceTimestamp(uint16_t device, uint16_t index,
+                                       uint32_t *sense_time_sec, uint32_t *sense_time_usec,
+                                       uint32_t *sent_time_sec, uint32_t *sent_time_usec,
+                                       uint32_t *recv_time_sec, uint32_t *recv_time_usec)
+{
+    DeviceDataEntry *entry = devicedatatable->GetDeviceEntry(device, index);
+    if (entry == NULL)
+        return 1;
+
+    if (sense_time_sec)
+        *sense_time_sec = entry->timestamp_sec;
+    if (sense_time_usec)
+        *sense_time_usec = entry->timestamp_usec;
+    if (sent_time_sec)
+        *sent_time_sec = entry->senttime_sec;
+    if (sent_time_usec)
+        *sent_time_usec = entry->senttime_usec;
+    if (recv_time_sec)
+        *recv_time_sec = entry->rectime_sec;
+    if (recv_time_usec)
+        *recv_time_usec = entry->rectime_usec;
+    
+    return 0;
+}
 
 // byte-swap incoming data as necessary
 void PlayerClient::ByteSwapData(void* data, player_msghdr_t hdr)
@@ -303,10 +328,12 @@ int PlayerClient::Read()
     FillData(thisentry->data,buffer, hdr);
     
     // fill in the timestamp
-    thisentry->timestamp = hdr.timestamp;
-    thisentry->senttime = hdr.time;
-    thisentry->rectime = (uint64_t)((((uint64_t)curr.tv_sec) * 1000000) + 
-                                      (uint64_t)curr.tv_usec);
+    thisentry->timestamp_sec = hdr.timestamp_sec;
+    thisentry->timestamp_usec = hdr.timestamp_usec;
+    thisentry->senttime_sec = hdr.time_sec;
+    thisentry->senttime_usec = hdr.time_usec;
+    thisentry->rectime_sec = curr.tv_sec;
+    thisentry->rectime_usec = curr.tv_usec;
 
     // byte-swap it
     ByteSwapData(thisentry->data,hdr);
@@ -329,23 +356,23 @@ void PlayerClient::Print()
       switch(thisentry->device)
       {
         case PLAYER_LASER_CODE:
-          printf("Laser %d data (timestamp:%Lu):\n", 
-                          thisentry->index,thisentry->timestamp);
+          printf("Laser %d data (timestamp:%lu):\n", 
+                          thisentry->index,thisentry->timestamp_sec);
           for(int i=0;i<PLAYER_NUM_LASER_SAMPLES;i++)
             printf("  laser(%d):%d\n", i, 
                          ((player_laser_data_t*)(thisentry->data))->ranges[i]);
           break;
         case PLAYER_SONAR_CODE:
-          printf("Sonar %d data (timestamp:%Lu):\n", 
-                          thisentry->index, thisentry->timestamp);
+          printf("Sonar %d data (timestamp:%lu):\n", 
+                          thisentry->index, thisentry->timestamp_sec);
           for(int i=0;i<PLAYER_NUM_SONAR_SAMPLES;i++)
             printf("  sonar(%d):%d\n", i, 
                          ((player_sonar_data_t*)(thisentry->data))->ranges[i]);
           break;
         case PLAYER_POSITION_CODE:
-          printf("Position %d data (timestamp:%Lu:%Lu:%Lu):\n", 
-                          thisentry->index,thisentry->timestamp,
-                          thisentry->senttime, thisentry->rectime);
+          printf("Position %d data (timestamp:%lu:%lu:%lu):\n", 
+                          thisentry->index,thisentry->timestamp_sec,
+                          thisentry->senttime_sec, thisentry->rectime_sec);
           printf("  (x,y,theta) : (%d,%d,%d)\n",
                     ((player_position_data_t*)(thisentry->data))->xpos,
                     ((player_position_data_t*)(thisentry->data))->ypos,
@@ -358,24 +385,24 @@ void PlayerClient::Print()
                     ((player_position_data_t*)(thisentry->data))->stalls);
           break;
         case PLAYER_PTZ_CODE:
-          printf("PTZ %d data (timestamp:%Lu):\n", 
-                          thisentry->index, thisentry->timestamp);
+          printf("PTZ %d data (timestamp:%lu):\n", 
+                          thisentry->index, thisentry->timestamp_sec);
           printf("  pan:%d\ttilt:%d\tzoom:%d\n",
                     ((player_ptz_data_t*)(thisentry->data))->pan,
                     ((player_ptz_data_t*)(thisentry->data))->tilt,
                     ((player_ptz_data_t*)(thisentry->data))->zoom);
           break;
         case PLAYER_MISC_CODE:
-          printf("Misc %d data (timestamp:%Lu):\n", 
-                          thisentry->index, thisentry->timestamp);
+          printf("Misc %d data (timestamp:%lu):\n", 
+                          thisentry->index, thisentry->timestamp_sec);
           printf("  frontbumpers:%d\trearbumpers:%d\tvoltage:%d\n",
                     ((player_misc_data_t*)(thisentry->data))->frontbumpers,
                     ((player_misc_data_t*)(thisentry->data))->rearbumpers,
                     ((player_misc_data_t*)(thisentry->data))->voltage);
           break;
         case PLAYER_VISION_CODE:
-          printf("Vision %d data (timestamp:%Lu):\n", 
-                          thisentry->index, thisentry->timestamp);
+          printf("Vision %d data (timestamp:%lu):\n", 
+                          thisentry->index, thisentry->timestamp_sec);
           for(int i=0;i<ACTS_NUM_CHANNELS;i++)
           {
             if(((vision_data*)(thisentry->data))->NumBlobs[i])

@@ -33,6 +33,7 @@
 #include <lock.h>
 #include <errors.h>
 #include <sys/time.h>
+#include <netinet/in.h>
 
 
 CLock::CLock() 
@@ -79,15 +80,17 @@ int CLock::Shutdown( CDevice *obj )
 }
 
 size_t CLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize,
-                uint64_t* timestamp) 
+                uint32_t* timestamp_sec, uint32_t* timestamp_usec) 
 {
   int size;
 
   pthread_mutex_lock( &setupDataMutex );
   pthread_mutex_lock( &dataAccessMutex );
   size = obj->GetData(dest, maxsize);
-  if(timestamp)
-    *timestamp = obj->data_timestamp;
+  if(timestamp_sec)
+    *timestamp_sec = htonl(obj->data_timestamp_sec);
+  if(timestamp_usec)
+    *timestamp_usec = htonl(obj->data_timestamp_usec);
   pthread_mutex_unlock( &dataAccessMutex );
   pthread_mutex_unlock( &setupDataMutex );
   return(size);
@@ -99,8 +102,8 @@ void CLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize)
   gettimeofday(&curr,NULL);
   pthread_mutex_lock( &dataAccessMutex );
   obj->PutData(dest, maxsize);
-  obj->data_timestamp = htonll((uint64_t)((((uint64_t)curr.tv_sec) * 1000000) + 
-                                      (uint64_t)curr.tv_usec));
+  obj->data_timestamp_sec = curr.tv_sec;
+  obj->data_timestamp_usec = curr.tv_usec;
   pthread_mutex_unlock( &dataAccessMutex );
   if (firstdata) 
   {

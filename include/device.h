@@ -45,7 +45,6 @@ class CLock;
 class CDevice 
 {
   public:
-    uint64_t data_timestamp;
     virtual ~CDevice() {};
 
     virtual int Setup() = 0;
@@ -57,6 +56,9 @@ class CDevice
     virtual size_t GetConfig( unsigned char *, size_t ) = 0;
     virtual void PutConfig( unsigned char * , size_t) = 0;
     virtual CLock* GetLock( void ) = 0;
+
+    uint32_t data_timestamp_sec;
+    uint32_t data_timestamp_usec;
 };
 
 #endif

@@ -246,7 +246,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   /* if it's a request, then we must generate a reply */
   if(request)
   {
-    reply_hdr.stx = PLAYER_STX;
+    reply_hdr.stx = htons(PLAYER_STXX);
     reply_hdr.type = htons(PLAYER_MSGTYPE_RESP);
     reply_hdr.device = htons(hdr.device);
     reply_hdr.device_index = htons(hdr.device_index);
@@ -278,9 +278,11 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     }
 
     gettimeofday(&curr,NULL);
-    reply_hdr.time= htonll((uint64_t)((((uint64_t)curr.tv_sec) * 1000000) + 
-                                        (uint64_t)curr.tv_usec));
-    reply_hdr.timestamp=reply_hdr.time;
+    reply_hdr.time_sec = htonl(curr.tv_sec);
+    reply_hdr.time_usec = htonl(curr.tv_usec);
+
+    reply_hdr.timestamp_sec = reply_hdr.time_sec;
+    reply_hdr.timestamp_usec = reply_hdr.time_usec;
     memcpy(reply,&reply_hdr,sizeof(player_msghdr_t));
 
     pthread_mutex_lock(&socketwrite);
@@ -530,7 +532,7 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
 
   pthread_mutex_lock( &access );
 
-  hdr.stx = PLAYER_STX;
+  hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_DATA);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
@@ -549,7 +551,7 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
           size = devicep->GetLock()->GetData(devicep, 
                                              data+totalsize+sizeof(hdr),
                                              maxsize-totalsize-sizeof(hdr),
-                                             &(hdr.timestamp));
+                                             &(hdr.timestamp_sec), &(hdr.timestamp_usec));
           //puts("CClientData::BuildMsg() called GetData");
 
           // *** HACK -- ahoward
@@ -563,8 +565,8 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
           
           hdr.size = htonl(size);
           gettimeofday(&curr,NULL);
-          hdr.time= htonll((uint64_t)((((uint64_t)curr.tv_sec) * 1000000) + 
-                                        (uint64_t)curr.tv_usec));
+          hdr.time_sec = htonl(curr.tv_sec);
+          hdr.time_usec = htonl(curr.tv_usec);
           memcpy(data+totalsize,&hdr,sizeof(hdr));
           totalsize += sizeof(hdr) + size;
         }

@@ -147,12 +147,14 @@ int player_request(player_connection_t* conn,
                     (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)));
     return(-1);
   }
-  hdr.stx = PLAYER_STX;
+  hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_REQ);
   hdr.device = htons(device);
   hdr.device_index = htons(device_index);
-  hdr.time = 0;
-  hdr.timestamp = 0;
+  hdr.time_sec = 0;
+  hdr.time_usec = 0;
+  hdr.timestamp_sec = 0;
+  hdr.timestamp_usec = 0;
   hdr.reserved = 0;
   hdr.size = htonl(payloadlen);
 
@@ -237,12 +239,12 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 {
   /*time_t timesec;*/
   int mincnt; 
-  int readcnt;
+  int readcnt = 0;
   char dummy[PLAYER_MAX_MESSAGE_SIZE];
 
   hdr->stx = 0;
   /* wait for the STX */
-  while(hdr->stx != PLAYER_STX)
+  while(ntohs(hdr->stx) != PLAYER_STXX)
   {
     if((readcnt = read((*conn).sock,&(hdr->stx),sizeof(hdr->stx))) <= 0)
     {
@@ -265,8 +267,10 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   hdr->type = ntohs(hdr->type);
   hdr->device = ntohs(hdr->device);
   hdr->device_index = ntohs(hdr->device_index);
-  hdr->time = ntohll(hdr->time);
-  hdr->timestamp = ntohll(hdr->timestamp);
+  hdr->time_sec = ntohl(hdr->time_sec);
+  hdr->time_usec = ntohl(hdr->time_usec);
+  hdr->timestamp_sec = ntohl(hdr->timestamp_sec);
+  hdr->timestamp_usec = ntohl(hdr->timestamp_usec);
   hdr->size = ntohl(hdr->size);
   /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
   /*timesec = (time_t)(hdr->time / 1000);*/
@@ -563,12 +567,14 @@ int player_write(player_connection_t* conn,
     return(-1);
   }
 
-  hdr.stx = PLAYER_STX;
+  hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_CMD);
   hdr.device = htons(device);
   hdr.device_index = htons(device_index);
-  hdr.time = 0;
-  hdr.timestamp = 0;
+  hdr.time_sec = 0;
+  hdr.time_usec = 0;
+  hdr.timestamp_sec = 0;
+  hdr.timestamp_usec = 0;
   hdr.reserved = 0;
   hdr.size = htonl(commandlen);
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
