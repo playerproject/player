@@ -73,8 +73,9 @@ localize_t *localize_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
 
   // Construct figures
   localize->map_fig = rtk_fig_create(mainwnd->canvas, NULL, 90);
-  localize->hypoth_fig = rtk_fig_create(mainwnd->canvas, localize->map_fig, 95);
   rtk_fig_movemask(localize->map_fig, RTK_MOVE_TRANS);
+  localize->hypoth_fig = rtk_fig_create(mainwnd->canvas, localize->map_fig, 95);
+  rtk_fig_movemask(localize->hypoth_fig, RTK_MOVE_TRANS);
 
   // Default magnification for the map (1/8th full size)
   localize->map_mag = 8;
@@ -150,9 +151,9 @@ void localize_update(localize_t *localize)
   {
     // Show the figures
     rtk_fig_show(localize->map_fig, rtk_menuitem_ischecked(localize->showmap_item));
-    rtk_fig_show(localize->hypoth_fig, 1);        
+    rtk_fig_show(localize->hypoth_fig, 1);
 
-    // Draw in the localize hypothesis if it has been changed.
+    // Draw in the hypothesis if it has been changed.
     if (localize->proxy->info.datatime != localize->datatime)
 	    localize_draw_hypoth(localize);
     localize->datatime = localize->proxy->info.datatime;
@@ -198,14 +199,12 @@ void localize_reset_pose(localize_t *localize)
 // Draw the map
 void localize_draw_map(localize_t *localize)
 {
-  int i, j, mag;
+  int i, j, mag, index;
   double scale;
   uint16_t col;
-  uint16_t *image;
+  uint32_t *image;
   int size_x, size_y;
   int ssize_x, ssize_y;
-  int csize_x, csize_y;
-  double cscale_x, cscale_y;
 
   mag = localize->map_mag;
   scale = localize->proxy->map_scale;
@@ -215,25 +214,19 @@ void localize_draw_map(localize_t *localize)
   size_y = localize->proxy->map_size_y;
 
   // Scaled map dimensions
-  ssize_x = (int) ((double) size_x / mag + 0.5);
-  ssize_y = (int) ((double) size_y / mag + 0.5);
+  ssize_x = (int) ceil((double) size_x / mag);
+  ssize_y = (int) ceil((double) size_y / mag);
 
-  // Canvas dimensions
-  rtk_canvas_get_size(localize->map_fig->canvas, &csize_x, &csize_y);
-  rtk_canvas_get_scale(localize->map_fig->canvas, &cscale_x, &cscale_y);
-  
   // Set the initial pose of the map
   rtk_fig_origin(localize->map_fig,
-                 -csize_x / 2 * cscale_x + ssize_x * scale / 2,
-                 +csize_y / 2 * cscale_y - ssize_y * scale / 2, 0);
+                 -ssize_x * scale / 2 - 1.0,
+                 +ssize_y * scale / 2 + 1.0, 0);
+  
 
   // Construct an image representing the map
-  image = malloc(ssize_x * ssize_y * sizeof(uint16_t));
+  image = calloc(ssize_x * ssize_y, sizeof(uint32_t));
 
-  for (j = 0; j < ssize_y; j++)
-    for (i = 0; i < ssize_x; i++)
-      image[i + j * ssize_x] = 255;
-  
+  // Generate an averaged image
   for (j = 0; j < size_y; j++)
   {
     for (i = 0; i < size_x; i++)
@@ -250,8 +243,9 @@ void localize_draw_map(localize_t *localize)
           col = 0;
           break;
       }
-      if (col < image[i / mag + j / mag * ssize_x])
-        image[i / mag + j / mag * ssize_x] = col;
+      index = i / mag + j / mag * ssize_x;
+      assert(index >= 0 && index < ssize_x * ssize_y);
+      image[index] += col;
     }
   }
 
@@ -263,10 +257,12 @@ void localize_draw_map(localize_t *localize)
   {
     for (i = 0; i < ssize_x; i++)
     {
-      col = image[i + j * ssize_x];
-      rtk_fig_color(localize->map_fig, col, col, col);
+      col = image[i + j * ssize_x] / (mag * mag);
+      
+      rtk_fig_color(localize->map_fig, col / 255.0, col / 255.0, col / 255.0);
       rtk_fig_rectangle(localize->map_fig,
-                        (i - ssize_x / 2) * scale, (j - ssize_y / 2) * scale, 0, scale, scale, 1);
+                        (i - ssize_x / 2 + 0.5) * scale, (j - ssize_y / 2 + 0.5) * scale, 0,
+                        scale, scale, 1);
     }
   }
       

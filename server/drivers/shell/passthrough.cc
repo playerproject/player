@@ -70,7 +70,7 @@ class PassThrough:public CDevice
     PassThrough(const char* hostname, int port,
                 player_device_id_t id, char* interface, 
                 ConfigFile* cf, int section);
-    ~PassThrough();
+    virtual ~PassThrough();
     virtual int Setup();
     virtual int Shutdown();
 };
@@ -138,7 +138,6 @@ PassThrough::CloseConnection()
 
 PassThrough::~PassThrough()
 {
-  CloseConnection();
   free(this->remote_data);
   free(this->remote_command);
   free(this->remote_config);

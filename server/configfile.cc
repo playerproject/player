@@ -119,6 +119,7 @@ bool ConfigFile::Load(const char *filename)
   if (!LoadTokens(file, 0))
   {
     //DumpTokens();
+    fclose(file);
     return false;
   }
 
@@ -126,6 +127,7 @@ bool ConfigFile::Load(const char *filename)
   if (!ParseTokens())
   {
     //DumpTokens();
+    fclose(file);
     return false;
   }
 
@@ -137,6 +139,7 @@ bool ConfigFile::Load(const char *filename)
     DumpMacros();
     DumpEntities();
     DumpProperties();
+    fclose(file);
     return false;
   }
   
@@ -157,6 +160,7 @@ bool ConfigFile::Load(const char *filename)
     this->unit_angle = 1;
   
   //DumpTokens();
+  fclose(file);  
   return true;
 }
 
@@ -1480,13 +1484,12 @@ uint32_t ConfigFile::ReadColor(int entity, const char *name, uint32_t value)
 // Always returns an absolute path.
 // If the filename is entered as a relative path, we prepend
 // the world files path to it.
-// Known bug: will leak memory everytime it is called (but its not called often,
-// so I cant be bothered fixing it).
 const char *ConfigFile::ReadFilename(int entity, const char *name, const char *value)
 {
   int property = GetProperty(entity, name);
   if (property < 0)
     return value;
+
   const char *filename = GetPropertyValue(property, 0);
   
   if( filename[0] == '/' || filename[0] == '~' )
@@ -1504,8 +1507,11 @@ const char *ConfigFile::ReadFilename(int entity, const char *name, const char *v
     strcat( fullpath, "/" ); 
     strcat( fullpath, filename );
     assert(strlen(fullpath) + 1 < PATH_MAX);
+
+    SetPropertyValue(property, 0, fullpath);
+    
+    free(fullpath);
     free(tmp);
-    return fullpath;
   }
   else
   {
@@ -1521,10 +1527,17 @@ const char *ConfigFile::ReadFilename(int entity, const char *name, const char *v
     strcat( fullpath, "/" ); 
     strcat( fullpath, filename );
     assert(strlen(fullpath) + 1 < PATH_MAX);
-    free(tmp);
 
-    return fullpath;
+    SetPropertyValue(property, 0, fullpath);
+    
+    free(fullpath);
+    free(tmp);
   }
+
+  filename = GetPropertyValue(property, 0);
+  assert(filename[0] == '/' || filename[0] == '~');
+
+  return filename;
 }
 
 
@@ -1552,6 +1565,7 @@ void ConfigFile::WriteTupleString(int entity, const char *name,
   */
   SetPropertyValue(property, index, value);  
 }
+
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a float from a tuple
