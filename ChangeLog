@@ -1,3 +1,1754 @@
+2003-04-19 10:32  gerkey
+
+	* configure.in: changed version to 1.3.2rc1
+
+2003-04-19 10:26  gerkey
+
+	* m4.d/drivertests.m4: fixed amcl gsl test
+
+2003-04-18 19:13  gerkey
+
+	* server/drivers/blobfinder/cmvision/P2CMV.cc: added some better
+	error-handling to cmvision driver's Setup()
+
+2003-04-18 19:09  gerkey
+
+	* m4.d/drivertests.m4: fixed up amcl driver test
+
+2003-04-18 19:04  inspectorg
+
+	* client_libs/libplayerc/doc/libplayerc.tex, m4.d/drivertests.m4:
+	Removed bogus localization driver
+
+2003-04-18 18:55  inspectorg
+
+	* client_libs/libplayerc/: playerc.h, doc/libplayerc.tex:
+	Docmentation tweaks
+
+2003-04-18 18:52  gerkey
+
+	* client_libs/c++/doc/cppclient.tex,
+	client_libs/c++/test/test_position.cc,
+	client_libs/tcl/doc/tclplayer.tex, player-manual/player.tex:
+	incremented version numbers on client docs
+
+2003-04-18 18:49  gerkey
+
+	* server/player.h: fixed (bug) in player.h
+
+2003-04-18 18:49  gerkey
+
+	* player-manual/interfaces/.cvsignore: added ignorance
+
+2003-04-18 18:48  gerkey
+
+	* player-manual/drivers/: amcl.tex, cmvision.tex, mcl.tex,
+	passthrough.tex: added placeholders of driver docs
+
+2003-04-18 18:48  gerkey
+
+	* player-manual/drivers/passthrough.tex: file passthrough.tex was
+	initially added on branch release-1-3-patches.
+
+2003-04-18 18:48  gerkey
+
+	* player-manual/drivers/cmvision.tex: file cmvision.tex was
+	initially added on branch release-1-3-patches.
+
+2003-04-18 18:48  gerkey
+
+	* player-manual/drivers/mcl.tex: file mcl.tex was initially added
+	on branch release-1-3-patches.
+
+2003-04-18 18:48  gerkey
+
+	* player-manual/drivers/amcl.tex: file amcl.tex was initially added
+	on branch release-1-3-patches.
+
+2003-04-18 18:45  inspectorg
+
+	* client_libs/libplayerc/doc/: Makefile, libplayerc.tex: Added
+	place-holder for localize driver
+
+2003-04-18 18:34  inspectorg
+
+	* client_libs/libplayerc/client.c,
+	client_libs/libplayerc/test/test.cfg,
+	client_libs/libplayerc/test/test_position.c,
+	server/drivers/localization/amcl/amcl.cc: Tweaks
+
+2003-04-18 18:22  gerkey
+
+	* server/drivers/shell/passthrough.cc: changed passthrough driver
+	so that it waits for a packet from the remote server before
+	returning from Setup()
+
+2003-04-18 18:20  gerkey
+
+	* server/drivers/shell/passthrough.cc: changed passthrough driver
+	so that it waits for a data packet from the remote server before
+	returning from Setup().
+
+2003-04-18 17:25  inspectorg
+
+	* server/main.cc: Fixed some bugs in the AMCL support
+
+2003-04-18 17:24  inspectorg
+
+	* server/main.cc: Fixed stage clause on startup
+
+2003-04-18 17:17  gerkey
+
+	* server/drivers/localization/: amcl/.cvsignore,
+	amcl/map/.cvsignore, amcl/models/.cvsignore, amcl/pf/.cvsignore,
+	mcl/.cvsignore: added ignorance
+
+2003-04-18 16:43  inspectorg
+
+	* client_libs/libplayerc/test/test_localize.c: file test_localize.c
+	was initially added on branch release-1-3-patches.
+
+2003-04-18 16:43  inspectorg
+
+	* client_libs/libplayerc/test/test.cfg: file test.cfg was initially
+	added on branch release-1-3-patches.
+
+2003-04-18 16:43  inspectorg
+
+	* client_libs/libplayerc/test/cave.pnm: file cave.pnm was initially
+	added on branch release-1-3-patches.
+
+2003-04-18 16:43  inspectorg
+
+	* client_libs/libplayerc/dev_localize.c,
+	client_libs/libplayerc/test/Makefile.am,
+	client_libs/libplayerc/test/cave.pnm,
+	client_libs/libplayerc/test/test.c,
+	client_libs/libplayerc/test/test.cfg,
+	client_libs/libplayerc/test/test.world,
+	client_libs/libplayerc/test/test_localize.c,
+	server/drivers/localization/amcl/amcl.cc,
+	server/drivers/localization/amcl/map/map.h,
+	server/drivers/localization/amcl/map/map_draw.c,
+	server/drivers/localization/amcl/map/map_store.c,
+	server/drivers/localization/amcl/pf/pf.c,
+	server/drivers/localization/amcl/pf/pf.h,
+	utils/playerv/dev_localize.c: Fixed some bugs in the AMCL support
+
+2003-04-18 16:26  gerkey
+
+	* client_libs/libplayerc/playerc.h: added MIN and MAX
+
+2003-04-18 16:16  gerkey
+
+	* configure.in, m4.d/drivertests.m4: changed driver printout stuff
+
+2003-04-18 15:21  gerkey
+
+	* configure.in, m4.d/drivertests.m4: added output of drivers NOT
+	included to configure script
+
+2003-04-18 12:04  inspectorg
+
+	* utils/playerv/dev_localize.c: file dev_localize.c was initially
+	added on branch release-1-3-patches.
+
+2003-04-18 12:04  inspectorg
+
+	* configure.in, client_libs/libplayerc/Makefile.am,
+	client_libs/libplayerc/dev_localization.c,
+	client_libs/libplayerc/dev_localize.c,
+	client_libs/libplayerc/error.c, client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/utils.c, m4.d/drivertests.m4,
+	server/deviceregistry.cc, server/main.cc, server/player.h,
+	server/playercommon.h.in, utils/playerv/Makefile.am,
+	utils/playerv/dev_localization.c, utils/playerv/dev_localize.c,
+	utils/playerv/playerv.h, utils/playerv/registry.c: Patched in AMCL
+	driver
+
+2003-04-18 12:03  inspectorg
+
+	* server/drivers/localization/mcl/: action_model.nb,
+	sensor_model.nb: Moved mcl nb files
+
+2003-04-18 12:01  inspectorg
+
+	* server/drivers/localization/: mcl/Makefile.am,
+	mcl/action_model.cc, mcl/action_model.h, mcl/clustering.cc,
+	mcl/clustering.h, mcl/mcl_types.h, mcl/regular_mcl.cc,
+	mcl/regular_mcl.h, mcl/sensor_model.cc, mcl/sensor_model.h,
+	mcl/world_model.cc, mcl/world_model.h, Makefile.am,
+	action_model.cc, action_model.h, action_model.nb, clustering.cc,
+	clustering.h, mcl_types.h, regular_mcl.cc, regular_mcl.h,
+	sensor_model.cc, sensor_model.h, sensor_model.nb, world_model.cc,
+	world_model.h: Moved mcl files
+
+2003-04-18 12:01  inspectorg
+
+	* server/drivers/localization/amcl/: Makefile.am, amcl.cc,
+	map/Makefile.am, map/map.c, map/map.h, map/map_draw.c,
+	map/map_range.c, map/map_store.c, models/Makefile.am,
+	models/laser.c, models/laser.h, models/odometry.c,
+	models/odometry.h, pf/Makefile.am, pf/gsl_discrete.c, pf/pf.c,
+	pf/pf.h, pf/pf_draw.c, pf/pf_kdtree.c, pf/pf_kdtree.h, pf/pf_pdf.c,
+	pf/pf_pdf.h, pf/pf_vector.c, pf/pf_vector.h: Added amcl
+
+2003-04-18 11:38  inspectorg
+
+	* client_libs/libplayerc/: dev_localization.c, dev_localize.c:
+	Renamed localization proxy
+
+2003-04-16 18:25  gerkey
+
+	* replace/.cvsignore: added more ignorance
+
+2003-04-16 18:24  gerkey
+
+	* server/: dirname.c, poll.c, replace.h, scandir.c: moved function
+	replacements elsewhere
+
+2003-04-16 18:23  gerkey
+
+	* replace/: Makefile.am, dirname.c, dummy.c, poll.c, replace.h,
+	scandir.c: moved function replacements to a different directory
+
+2003-04-16 18:22  gerkey
+
+	* Makefile.am, configure.in, client_libs/c++/Makefile.am,
+	client_libs/c++/bumperproxy.cc, client_libs/c++/playerclient.h,
+	client_libs/c++/playermulticlient.cc,
+	client_libs/libplayerc/Makefile.am,
+	client_libs/libplayerc/client.c, client_libs/libplayerc/mclient.c,
+	client_libs/libplayerc/playerc.h, m4.d/drivertests.m4,
+	server/Makefile.am, server/drivers/blobfinder/cmvision/Makefile.am,
+	server/drivers/mixed/reb/reb.cc,
+	server/drivers/waveform/waveaudio.cc: small fixes
+
+2003-04-16 13:43  gerkey
+
+	* server/drivers/blobfinder/cmvision/.cvsignore: file .cvsignore
+	was initially added on branch release-1-3-patches.
+
+2003-04-16 13:43  gerkey
+
+	* server/drivers/blobfinder/cmvision/.cvsignore: added cvsignore
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/colors.txt: file colors.txt
+	was initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/cmvision.h: file cmvision.h
+	was initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/Readme.CMVision: file
+	Readme.CMVision was initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/capture.h: file capture.h was
+	initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/cmvision.cc: file cmvision.cc
+	was initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/capture.cc: file capture.cc
+	was initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/COPYING: file COPYING was
+	initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/Makefile.am: file Makefile.am
+	was initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/COPYING.LIB: file COPYING.LIB
+	was initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* server/drivers/blobfinder/cmvision/P2CMV.cc: file P2CMV.cc was
+	initially added on branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* config/washu_b21r.cfg: file washu_b21r.cfg was initially added on
+	branch release-1-3-patches.
+
+2003-04-16 13:42  gerkey
+
+	* configure.in, config/washu_b21r.cfg, examples/c++/forage.cc,
+	m4.d/drivertests.m4, server/deviceregistry.cc,
+	server/drivers/blobfinder/Makefile.am,
+	server/drivers/blobfinder/cmvision/COPYING,
+	server/drivers/blobfinder/cmvision/COPYING.LIB,
+	server/drivers/blobfinder/cmvision/Makefile.am,
+	server/drivers/blobfinder/cmvision/P2CMV.cc,
+	server/drivers/blobfinder/cmvision/Readme.CMVision,
+	server/drivers/blobfinder/cmvision/capture.cc,
+	server/drivers/blobfinder/cmvision/capture.h,
+	server/drivers/blobfinder/cmvision/cmvision.cc,
+	server/drivers/blobfinder/cmvision/cmvision.h,
+	server/drivers/blobfinder/cmvision/colors.txt,
+	server/drivers/laser/sicklms200.cc,
+	server/drivers/mixed/rwi/Makefile.am,
+	server/drivers/mixed/rwi/rwi_bumperdevice.cc,
+	server/drivers/mixed/rwi/rwi_laserdevice.cc,
+	server/drivers/mixed/rwi/rwi_positiondevice.cc,
+	server/drivers/mixed/rwi/rwi_positiondevice.h,
+	server/drivers/mixed/rwi/rwi_sonardevice.cc,
+	server/drivers/mixed/rwi/rwidevice.cc: incorporated Andy
+	Martignoni's patch, which does the following:
+	
+	   - updates RWI drivers to work in with 1.3 way, and allows for
+	     specification of Mobility's location
+	
+	   - adds CMVision driver
+	
+	also changed the type of laser range data from int16_t to uint16_t,
+	so as to get allow greater ranges.
+
+2003-04-08 17:43  rtv
+
+	* server/drivers/stage/stagedevice.cc: world file loading for stage
+	devices
+
+2003-04-08 17:43  rtv
+
+	* config/stage.cfg: test config file for stage mode
+
+2003-04-08 17:43  rtv
+
+	* config/stage.cfg: file stage.cfg was initially added on branch
+	stage-dynamic-server.
+
+2003-04-07 12:12  rtv
+
+	* client_libs/c++/playerclient.h, client_libs/c++/truthproxy.cc,
+	client_libs/c++/test/test_truth.cc, server/player.h: added ability
+	to get/set fiducial ID to truth device interface and c++ client
+
+2003-04-06 16:34  inspectorg
+
+	* configure.in, m4.d/drivertests.m4, server/deviceregistry.cc,
+	server/drivers/Makefile.am: Added preliminary drivers for Gazebo
+	position and laser interfaces
+
+2003-04-01 15:48  rtv
+
+	* client_libs/c++/Makefile.am, client_libs/c++/fiducialproxy.cc,
+	client_libs/c++/playerclient.h, client_libs/c++/test/test.h,
+	client_libs/c++/test/test_fiducialfinder.cc,
+	client_libs/libplayerpacket/playerpacket.c,
+	client_libs/libplayerpacket/playerpacket.h, server/player.h,
+	server/drivers/Makefile.am: added config features to fiducial
+	interface
+
+2003-03-18 15:29  inspectorg
+
+	* server/drivers/laser/sicklms200.cc: Tweaks to improve inav
+	initialization and stuck states
+
+2003-03-16 21:39  inspectorg
+
+	* client_libs/libplayerc/dev_power.c: Fixed code/index swap
+
+2003-03-12 10:16  gerkey
+
+	* server/: player.h, player.h: changed laser data to unsigned
+
+2003-03-11 18:32  rtv
+
+	* configure.in: switched default install to /usr/local
+
+2003-03-11 16:31  rtv
+
+	* TODO, configure.in, client_libs/c++/idarproxy.cc,
+	client_libs/c++/playerclient.h, server/clientmanager.cc,
+	utils/playerv/dev_fiducial.c, utils/playerv/dev_position.c: changed
+	version number from 1.3 to 1.4 in anticipation of new minor release
+
+2003-03-08 14:14  gerkey
+
+	* client_libs/c++/playerclient.h: fixed constructors for mcom and
+	waveform
+
+2003-03-08 13:04  inspectorg
+
+	* configure.in: Changed RTK version number
+
+2003-03-08 13:03  gerkey
+
+	* configure.in: increment version numbers, ahead of a new minor
+	release
+
+2003-03-08 12:51  gerkey
+
+	* client_libs/c++/: playerclient.h, doc/.cvsignore,
+	doc/cppclient.tex, playerclient.h, doc/.cvsignore,
+	doc/cppclient.tex: added docs for mcomproxy
+
+2003-03-08 12:48  gerkey
+
+	* server/: drivertable.cc, drivertable.h, main.cc, Makefile.am,
+	drivertable.cc, drivertable.h, main.cc: added driver list to help
+	output
+
+2003-03-08 11:10  gerkey
+
+	* server/: main.cc, main.cc: fixed for mcom's new name
+
+2003-03-08 10:27  gerkey
+
+	* player-manual/interfaces/: .cvsignore, .cvsignore: foo
+
+2003-03-08 10:25  gerkey
+
+	* player-manual/interfaces/.cvsignore: more ignorance
+
+2003-03-08 10:24  gerkey
+
+	* client_libs/c++/test/test_mcom.cc: added mcom test
+
+2003-03-08 10:23  gerkey
+
+	* client_libs/c++/playerclient.h,
+	client_libs/c++/test/test_mcom.cc, m4.d/drivertests.m4,
+	player-manual/player.tex, player-manual/drivers/lifo_mcom.tex,
+	server/deviceregistry.cc, server/player.h: changed mcom driver to
+	lifomcom driver
+
+2003-03-08 10:22  gerkey
+
+	* Makefile.am, configure.in, client_libs/c++/Makefile.am,
+	client_libs/c++/mcomproxy.cc, client_libs/c++/playerclient.h,
+	client_libs/c++/test/Makefile.am, client_libs/c++/test/test.cc,
+	client_libs/c++/test/test.h, config/usc_pioneer.cfg,
+	m4.d/drivertests.m4, player-manual/player.tex, server/Makefile.am,
+	server/deviceregistry.cc, server/main.cc, server/player.h,
+	server/drivers/Makefile.am: added/tweaked mcom interface and
+	lifomcom driver
+
+2003-03-08 10:17  gerkey
+
+	* player-manual/drivers/lifo_mcom.tex: newly added
+
+2003-03-08 10:17  gerkey
+
+	* player-manual/drivers/lifo_mcom.tex: file lifo_mcom.tex was
+	initially added on branch release-1-3-patches.
+
+2003-03-08 10:12  gerkey
+
+	* server/drivers/mcom/lifomcom.cc: file lifomcom.cc was initially
+	added on branch release-1-3-patches.
+
+2003-03-08 10:12  gerkey
+
+	* server/drivers/mcom/lifomcom.h: file lifomcom.h was initially
+	added on branch release-1-3-patches.
+
+2003-03-08 10:12  gerkey
+
+	* server/drivers/mcom/: .cvsignore, Makefile.am, lifomcom.cc,
+	lifomcom.h, Makefile.am, lifomcom.cc, lifomcom.h, mcomdevice.cc,
+	mcomdevice.h: changed name to lifomcom
+
+2003-03-08 00:01  gerkey
+
+	* client_libs/c++/doc/.cvsignore: foo
+
+2003-03-07 23:59  gerkey
+
+	* configure.in, client_libs/c++/Makefile.am,
+	client_libs/c++/playerclient.h, client_libs/c++/test/Makefile.am,
+	client_libs/c++/test/test.cc, client_libs/c++/test/test.h,
+	config/usc_pioneer.cfg, m4.d/drivertests.m4,
+	server/deviceregistry.cc, server/main.cc, server/player.h,
+	server/drivers/Makefile.am, server/drivers/mcom/.cvsignore,
+	server/drivers/mcom/Makefile.am, server/drivers/mcom/mcomdevice.cc,
+	server/drivers/mcom/mcomdevice.h, client_libs/c++/mcomproxy.cc,
+	client_libs/c++/test/test_mcom.cc: applied Reed's patch adding mcom
+	device
+
+2003-03-06 23:22  gerkey
+
+	* client_libs/c++/doc/.cvsignore: added WaveformProxy.tex to
+	cvsignore
+
+2003-03-06 23:21  gerkey
+
+	* server/drivers/localization/.cvsignore: merged in .cvsignore
+
+2003-03-06 23:19  gerkey
+
+	* configure.in, m4.d/drivertests.m4, server/Makefile.am,
+	server/deviceregistry.cc, server/devicetable.h, server/player.h,
+	server/drivers/Makefile.am, server/drivers/comms/Makefile.am,
+	server/drivers/laser/Makefile.am,
+	server/drivers/mixed/rwi/Makefile.am,
+	server/drivers/ptz/Makefile.am, server/drivers/shell/.cvsignore,
+	server/drivers/shell/Makefile.am,
+	server/drivers/shell/passthrough.cc: merged in passthrough driver,
+	and added PLAYER_ADD_DRIVER macro to drivertests.m4 while I was at
+	it
+
+2003-02-28 16:07  inspectorg
+
+	* client_libs/pyplayerc/pyplayerc.c: Python tweaks
+
+2003-02-26 18:12  rtv
+
+	* server/drivers/stage/playerpacket.c: file playerpacket.c was
+	initially added on branch stage-dynamic-server.
+
+2003-02-26 18:12  rtv
+
+	* server/drivers/stage/: playerpacket.c, playerpacket.h: moved
+	these files from libplayerpacket for simplicity
+
+2003-02-26 18:12  rtv
+
+	* server/drivers/stage/playerpacket.h: file playerpacket.h was
+	initially added on branch stage-dynamic-server.
+
+2003-02-26 18:11  rtv
+
+	* client_libs/Makefile.am, examples/c++/sonarobstacleavoid.cc,
+	server/main.cc, server/drivers/stage/Makefile.am,
+	server/drivers/stage/stagedevice.cc,
+	server/drivers/stage/stagetime.h: now connects and gets some data.
+	working on removing entity on shutdown
+
+2003-02-26 17:33  inspectorg
+
+	* client_libs/libplayerc/dev_position.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/pyplayerc/dev_position.c, utils/playerv/dev_position.c:
+	Added some options
+
+2003-02-25 15:46  inspectorg
+
+	* utils/playerv/dev_position.c: Fixed display bug when commanding
+
+2003-02-25 15:43  inspectorg
+
+	* client_libs/pyplayerc/dev_position.c,
+	utils/playerv/dev_position.c: Added position control command
+
+2003-02-24 16:19  inspectorg
+
+	* client_libs/libplayerc/dev_position.c, server/clientdata.cc,
+	server/device.cc, server/device.h,
+	server/drivers/stage/psdevice.cc,
+	server/drivers/stage/stagedevice.cc,
+	utils/playerv/dev_localization.c: Whoops: changed PutCommand arg
+	back to char*
+
+2003-02-21 17:41  inspectorg
+
+	* m4.d/drivertests.m4: Tweaks to build scripts
+
+2003-02-21 17:32  inspectorg
+
+	* configure.in, client_libs/libplayerc/dev_position.c,
+	client_libs/libplayerc/playerc.h, m4.d/drivertests.m4,
+	server/device.cc, server/device.h, utils/playerv/dev_position.c,
+	utils/playerv/playerv.h: Added controller to inav
+
+2003-02-20 14:22  inspectorg
+
+	* server/drivers/localization/amcl/amcl.cc: Added GUI to inav
+
+2003-02-20 13:10  inspectorg
+
+	* server/drivers/localization/amcl/amcl.cc: Added some model
+	parameters
+
+2003-02-20 00:41  inspectorg
+
+	* server/drivers/localization/amcl/: amcl.cc, pf/pf_draw.c: Changed
+	amcl to use queue model
+
+2003-02-19 17:34  inspectorg
+
+	* server/: deviceregistry.cc, drivers/localization/amcl/amcl.cc,
+	drivers/localization/amcl/map/map_store.c: Tweaks to get AMCL
+	working on real bot
+
+2003-02-18 12:53  inspectorg
+
+	* client_libs/: libplayerc/client.c, libplayerc/playerc.h,
+	pyplayerc/pyplayerc.c: Corrected byte-swapped timestamp
+
+2003-02-17 15:05  gerkey
+
+	* m4.d/drivertests.m4,
+	server/drivers/localization/amcl/map/Makefile.am,
+	server/drivers/localization/amcl/models/Makefile.am,
+	server/drivers/localization/amcl/pf/Makefile.am: tweaked amcl
+	Makefile.ams to include *.h in distros
+
+2003-02-17 09:43  inspectorg
+
+	* client_libs/libplayerc/client.c,
+	client_libs/libplayerc/playerc.h,
+	server/drivers/localization/amcl/models/odometry.c: Fixing mem
+	leaks
+
+2003-02-17 09:42  inspectorg
+
+	* m4.d/drivertests.m4: Fixed fixedtones/wifi driver test
+
+2003-02-16 19:21  gerkey
+
+	* configure.in, m4.d/drivertests.m4, server/deviceregistry.cc,
+	server/drivers/comms/Makefile.am, server/drivers/laser/Makefile.am,
+	server/drivers/localization/amcl/amcl.cc,
+	server/drivers/mixed/rwi/Makefile.am,
+	server/drivers/ptz/Makefile.am: cleaned up driver tests
+
+2003-02-16 15:01  inspectorg
+
+	* server/drivers/localization/amcl/: amcl.cc, models/odometry.c,
+	models/odometry.h: Fixed memory leak in odometry model
+
+2003-02-16 14:08  gerkey
+
+	* configure.in, server/main.cc, server/playercommon.h.in: small
+	tweaks to build setup; removed variable-arg macros, cause gcc 2.x
+	doesn't support them
+
+2003-02-14 02:56  gerkey
+
+	* configure.in, player-manual/player.tex, server/Makefile.am,
+	server/playercommon.h.in: added check for endianess in htonll and
+	nothll defs
+
+2003-02-14 02:01  gerkey
+
+	* configure.in, m4.d/drivertests.m4, server/Makefile.am,
+	server/main.cc: tweaked driver build setup
+
+2003-02-13 23:48  gerkey
+
+	* configure.in: added endian-ness check
+
+2003-02-13 12:05  gerkey
+
+	* server/drivers/blobfinder/acts.cc: tweaked ACTS arg parsing; made
+	contrast and brightness floats
+
+2003-02-13 12:01  gerkey
+
+	* server/drivers/blobfinder/acts.cc: tweaked ACTS arg parsing; made
+	contrast and brightness floats
+
+2003-02-12 10:59  inspectorg
+
+	* server/: main.cc, drivers/localization/amcl/Makefile.am,
+	drivers/localization/amcl/amcl.cc,
+	drivers/localization/amcl/models/laser.c: Added config stuff
+	(horrible hack) from stage
+
+2003-02-12 10:59  inspectorg
+
+	* server/drivers/stage/: psdevice.cc, psdevice.h: Changed char* to
+	void*
+
+2003-02-11 21:19  inspectorg
+
+	* server/drivers/localization/amcl/: amcl.cc, models/laser.c:
+	Tweaks to model (broken)?
+
+2003-02-11 16:38  inspectorg
+
+	* client_libs/libplayerc/dev_localization.c,
+	client_libs/libplayerc/playerc.h, server/player.h,
+	server/playercommon.h.in, server/drivers/localization/amcl/amcl.cc,
+	server/drivers/localization/amcl/models/laser.c,
+	server/drivers/localization/amcl/models/laser.h,
+	server/drivers/localization/amcl/pf/pf.c,
+	utils/playerv/dev_localization.c: Changed covariance values to
+	int64_t
+
+2003-02-11 10:46  gerkey
+
+	* server/: playercommon.h.in, drivers/fiducial/laserbarcode.cc,
+	drivers/fiducial/laserfeature.cc, drivers/laser/lasercspace.cc,
+	playercommon.h.in, drivers/fiducial/laserbarcode.cc,
+	drivers/fiducial/laserfeature.cc, drivers/laser/lasercspace.cc:
+	removed defs and refs for ASSERT()
+
+2003-02-10 17:05  gerkey
+
+	* server/drivers/mixed/p2os/: p2os.cc, p2os.h, sip.cc: tweaked P2OS
+	baud rate handling
+
+2003-02-10 12:53  gerkey
+
+	* server/drivers/localization/amcl/: .cvsignore, map/.cvsignore,
+	models/.cvsignore, pf/.cvsignore: added .cvsignore files
+
+2003-02-10 12:50  gerkey
+
+	* server/drivers/mixed/p2os/: p2os.cc, p2os.h: added ability to
+	handle different baud rates on P2OS connection
+
+2003-02-09 18:19  gerkey
+
+	* m4.d/drivertests.m4, server/Makefile.am, server/clientdata.cc,
+	server/configfile.cc, server/device.h, server/devicetable.cc,
+	server/devicetable.h, server/main.cc: new stage interaction model,
+	works a little
+
+2003-02-09 18:19  gerkey
+
+	* server/drivers/localization/amcl/: .cvsignore, map/.cvsignore,
+	models/.cvsignore, pf/.cvsignore: file .cvsignore was initially
+	added on branch stage-dynamic-server.
+
+2003-02-09 18:19  gerkey
+
+	* server/drivers/localization/amcl/: .cvsignore, map/.cvsignore,
+	models/.cvsignore, pf/.cvsignore: added cvsignore files
+
+2003-02-09 18:17  gerkey
+
+	* server/drivers/stage/: Makefile.am, psdevice.cc, psdevice.h,
+	stage.h, stagedevice.cc, stagedevice.h, stagetime.cc, stagetime.h:
+	new stage interation model, kind of working
+
+2003-02-09 17:38  inspectorg
+
+	* client_libs/libplayerc/dev_localization.c,
+	utils/playerv/dev_localization.c: Working AMCL; still needs some
+	tweaking
+
+2003-02-09 17:37  inspectorg
+
+	* server/drivers/localization/amcl/: amcl.cc, map/map.c, map/map.h,
+	map/map_range.c, models/laser.c, models/laser.h, models/odometry.c,
+	pf/Makefile.am, pf/gsl_discrete.c, pf/pf.c, pf/pf.h, pf/pf_draw.c,
+	pf/pf_pdf.c, pf/pf_vector.c, pf/pf_vector.h: Work AMCL; still needs
+	some tweaking
+
+2003-02-07 23:52  inspectorg
+
+	* configure.in, client_libs/libplayerc/client.c,
+	client_libs/libplayerc/dev_localization.c,
+	client_libs/libplayerc/playerc.h, client_libs/libplayerc/utils.c,
+	m4.d/drivertests.m4, server/Makefile.am, server/device.h,
+	server/deviceregistry.cc, server/main.cc, server/player.h,
+	server/playercommon.h.in,
+	server/drivers/localization/mcl/regular_mcl.cc,
+	utils/playerv/dev_localization.c, utils/playerv/playerv.h,
+	utils/playerv/registry.c: Added support for RTK-based GUI for
+	debugging complex drivers
+
+2003-02-07 23:51  inspectorg
+
+	* server/drivers/localization/amcl/: Makefile.am, amcl.cc,
+	map/Makefile.am, map/map.c, map/map.h, map/map_draw.c,
+	map/map_store.c, models/laser.c, models/laser.h, models/odometry.c,
+	models/odometry.h, pf/Makefile.am, pf/pf.h, pf/pf_draw.c,
+	pf/pf_pdf.c, pf/pf_pdf.h, pf/pf_vector.c, pf/pf_vector.h: Now with
+	odometry model
+
+2003-02-06 15:02  inspectorg
+
+	* configure.in, m4.d/drivertests.m4, server/Makefile.am,
+	server/deviceregistry.cc, server/drivers/localization/Makefile.am,
+	server/drivers/localization/amcl/amcl.cc,
+	server/drivers/localization/mcl/Makefile.am: Added adaptive MCL
+	skeleton
+
+2003-02-06 14:52  inspectorg
+
+	* server/drivers/localization/amcl/: Makefile.am, amcl.cc,
+	map/Makefile.am, map/map.c, map/map.h, map/map_draw.c,
+	map/map_range.c, map/map_store.c, models/Makefile.am,
+	models/laser.c, models/laser.h, models/odometry.c,
+	models/odometry.h, pf/Makefile.am, pf/pf.c, pf/pf.h, pf/pf_draw.c,
+	pf/pf_kdtree.c, pf/pf_kdtree.h, pf/pf_pdf.c, pf/pf_pdf.h,
+	pf/pf_vector.c, pf/pf_vector.h: Added skeleton for AdaptiveMCL
+	driver
+
+2003-02-06 11:37  jazzfunk
+
+	* server/drivers/mixed/reb/reb.cc: fixed a short<->int bug in the
+	command section
+
+2003-02-05 15:05  gerkey
+
+	* server/drivers/mixed/p2os/: p2os.cc, p2os.h, sip.cc, sip.h: added
+	set_odom request to p2os driver
+
+2003-02-05 14:33  gerkey
+
+	* server/drivers/shell/.cvsignore: add .cvsignore files
+
+2003-02-05 14:32  gerkey
+
+	* server/drivers/mixed/p2os/: p2os.cc, sip.cc, sip.h: added
+	set_odom config support to p2os_position driver
+
+2003-02-05 12:07  inspectorg
+
+	* client_libs/libplayerc/client.c: Fixed libplayerc request/reply
+	bug
+
+2003-02-05 11:58  inspectorg
+
+	* client_libs/libplayerc/test/test.c,
+	client_libs/libplayerc/test/test.world, utils/playerv/dev_laser.c,
+	utils/playerv/registry.c: Fixed playerv robot id bug
+
+2003-02-05 11:32  inspectorg
+
+	* client_libs/libplayerc/client.c,
+	client_libs/libplayerc/dev_blobfinder.c,
+	client_libs/libplayerc/dev_comms.c,
+	client_libs/libplayerc/dev_fiducial.c,
+	client_libs/libplayerc/dev_gps.c,
+	client_libs/libplayerc/dev_laser.c,
+	client_libs/libplayerc/dev_localization.c,
+	client_libs/libplayerc/dev_position.c,
+	client_libs/libplayerc/dev_power.c,
+	client_libs/libplayerc/dev_ptz.c,
+	client_libs/libplayerc/dev_sonar.c,
+	client_libs/libplayerc/dev_truth.c,
+	client_libs/libplayerc/dev_wifi.c, client_libs/libplayerc/device.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/test.c,
+	client_libs/libplayerc/test/test.h,
+	client_libs/libplayerc/test/test.world,
+	client_libs/libplayerc/test/test_blobfinder.c,
+	client_libs/libplayerc/test/test_comms.c,
+	client_libs/libplayerc/test/test_fiducial.c,
+	client_libs/libplayerc/test/test_gps.c,
+	client_libs/libplayerc/test/test_laser.c,
+	client_libs/libplayerc/test/test_position.c,
+	client_libs/libplayerc/test/test_power.c,
+	client_libs/libplayerc/test/test_ptz.c,
+	client_libs/libplayerc/test/test_sonar.c,
+	client_libs/libplayerc/test/test_truth.c,
+	client_libs/libplayerc/test/test_wifi.c,
+	client_libs/pyplayerc/dev_blobfinder.c,
+	client_libs/pyplayerc/dev_comms.c,
+	client_libs/pyplayerc/dev_fiducial.c,
+	client_libs/pyplayerc/dev_gps.c, client_libs/pyplayerc/dev_laser.c,
+	client_libs/pyplayerc/dev_position.c,
+	client_libs/pyplayerc/dev_power.c, client_libs/pyplayerc/dev_ptz.c,
+	client_libs/pyplayerc/dev_truth.c,
+	client_libs/pyplayerc/dev_wifi.c,
+	client_libs/pyplayerc/test/test_wifi.py,
+	examples/libplayerc/simple.c, utils/playerv/dev_blobfinder.c,
+	utils/playerv/dev_fiducial.c, utils/playerv/dev_laser.c,
+	utils/playerv/dev_localization.c, utils/playerv/dev_position.c,
+	utils/playerv/dev_power.c, utils/playerv/dev_ptz.c,
+	utils/playerv/dev_sonar.c, utils/playerv/mainwnd.c,
+	utils/playerv/playerv.c, utils/playerv/playerv.h,
+	utils/playerv/registry.c: Updated libplayerc, pyplayerc and playerv
+	for single port patch
+
+2003-02-04 19:00  gerkey
+
+	* client_libs/c/playercclient.c,
+	client_libs/c++/blobfinderproxy.cc, client_libs/c++/clientproxy.cc,
+	client_libs/c++/commsproxy.cc, client_libs/c++/idarturretproxy.cc,
+	client_libs/c++/moteproxy.cc, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h, client_libs/c++/test/test.cc,
+	client_libs/c++/test/test.h,
+	client_libs/c++/test/test_broadcast.cc,
+	client_libs/c++/test/test_bumper.cc,
+	client_libs/c++/test/test_dio.cc,
+	client_libs/c++/test/test_fiducialfinder.cc,
+	client_libs/c++/test/test_gps.cc,
+	client_libs/c++/test/test_gripper.cc,
+	client_libs/c++/test/test_laser.cc,
+	client_libs/c++/test/test_lbd.cc,
+	client_libs/c++/test/test_misc.cc,
+	client_libs/c++/test/test_position.cc,
+	client_libs/c++/test/test_position_control.cc,
+	client_libs/c++/test/test_power.cc,
+	client_libs/c++/test/test_ptz.cc,
+	client_libs/c++/test/test_sonar.cc,
+	client_libs/c++/test/test_speech.cc,
+	client_libs/c++/test/test_truth.cc,
+	client_libs/c++/test/test_vision.cc,
+	client_libs/c++/test/test_wifi.cc, client_libs/libplayerc/client.c,
+	client_libs/libplayerc/test/Makefile.am, server/clientdata.cc,
+	server/clientmanager.cc, server/main.cc,
+	server/drivers/shell/passthrough.cc: finished single-port mods;
+	libplayerc and tclplayer are variously broken
+
+2003-02-04 13:49  gerkey
+
+	* client_libs/c/Makefile.am, client_libs/c/playercclient.c,
+	client_libs/c/playercclient.h, client_libs/c++/audioproxy.cc,
+	client_libs/c++/blobfinderproxy.cc, client_libs/c++/bumperproxy.cc,
+	client_libs/c++/clientproxy.cc, client_libs/c++/commsproxy.cc,
+	client_libs/c++/descartesproxy.cc, client_libs/c++/dioproxy.cc,
+	client_libs/c++/fiducialproxy.cc, client_libs/c++/gpsproxy.cc,
+	client_libs/c++/gripperproxy.cc, client_libs/c++/idarproxy.cc,
+	client_libs/c++/idarturretproxy.cc, client_libs/c++/irproxy.cc,
+	client_libs/c++/laserproxy.cc, client_libs/c++/moteproxy.cc,
+	client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	client_libs/c++/positionproxy.cc, client_libs/c++/powerproxy.cc,
+	client_libs/c++/ptzproxy.cc, client_libs/c++/sonarproxy.cc,
+	client_libs/c++/speechproxy.cc, client_libs/c++/truthproxy.cc,
+	client_libs/c++/waveformproxy.cc, client_libs/c++/wifiproxy.cc,
+	server/clientdata.cc, server/device.cc, server/devicetable.cc,
+	server/main.cc, server/player.h,
+	server/drivers/fiducial/laserbar.cc,
+	server/drivers/fiducial/laserbarcode.cc,
+	server/drivers/fiducial/laservisualbarcode.cc,
+	server/drivers/laser/lasercspace.cc,
+	server/drivers/mixed/p2os/p2os.cc,
+	server/drivers/shell/passthrough.cc: many changes to move to
+	single-port Player interface
+
+2003-01-29 16:40  inspectorg
+
+	* configure.in, m4.d/drivertests.m4, server/Makefile.am,
+	server/deviceregistry.cc: inav driver (map) mostly in place
+
+2003-01-29 11:23  inspectorg
+
+	* configure.in, m4.d/drivertests.m4, server/Makefile.am,
+	server/drivers/position/Makefile.am: Added start of incremental nav
+	driver
+
+2003-01-28 20:54  inspectorg
+
+	* client_libs/: libplayerc/client.c, libplayerc/mclient.c,
+	libplayerc/playerc.h, pyplayerc/pyplayerc.c: Changed multi-client
+
+2003-01-28 19:51  gerkey
+
+	* server/: devicetable.h, drivers/shell/passthrough.cc: added
+	ability to passthrough driver to report the remote driver name
+
+2003-01-28 17:03  gerkey
+
+	* Makefile.am, configure.in, client_libs/c++/clientproxy.cc,
+	client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	m4.d/drivertests.m4, server/Makefile.am, server/deviceregistry.cc,
+	server/player.h, server/drivers/Makefile.am,
+	server/drivers/shell/Makefile.am,
+	server/drivers/shell/passthrough.cc: added passthrough driver
+
+2003-01-28 12:11  gerkey
+
+	* server/drivers/mixed/p2os/p2os.cc: removed extraneous printf
+
+2003-01-27 16:32  gerkey
+
+	* server/drivers/mixed/p2os/: p2os.cc, p2os.h: added Boyoon's
+	joystick patch
+
+2003-01-13 16:22  boyoon
+
+	* server/drivers/localization/mcl/: regular_mcl.cc, regular_mcl.h:
+	modified to update hypothesis at the same speed with other player
+	devices using extrapolation.
+
+2003-01-13 14:03  inspectorg
+
+	* utils/playerv/: Makefile.am, dev_power.c, playerv.h, registry.c:
+	Added power interface
+
+2003-01-13 11:05  gerkey
+
+	* server/: clientmanager.cc, clientmanager.cc: added Dave's fix
+	about counting client connections in RemoveBlanks()
+
+2003-01-13 10:41  inspectorg
+
+	* client_libs/libplayerc/: dev_power.c, playerc.h: Tweaks
+
+2003-01-13 10:40  inspectorg
+
+	* client_libs/pyplayerc/: Makefile.am, dev_blobfinder.c,
+	dev_fiducial.c, dev_laser.c, dev_position.c, dev_power.c,
+	dev_ptz.c, dev_wifi.c, pyplayerc.c, setup.py: Added power interface
+
+2003-01-13 10:28  inspectorg
+
+	* client_libs/libplayerc/: Makefile.am, dev_power.c, playerc.h,
+	test/Makefile.am, test/test.c, test/test_power.c: Added power
+	interface
+
+2003-01-09 15:40  gerkey
+
+	* m4.d/drivertests.m4: added check for linux/wireless.h before
+	building linuxwifi
+
+2003-01-09 11:21  inspectorg
+
+	* client_libs/pyplayerc/: dev_gps.c, dev_truth.c: Fixed name
+	problem
+
+2003-01-08 23:52  inspectorg
+
+	* client_libs/pyplayerc/: Makefile.am, dev_comms.c, dev_gps.c,
+	dev_truth.c, pyplayerc.c, pyplayerc.h, setup.py: Added some more
+	interfaces
+
+2003-01-08 19:04  rtv
+
+	* client_libs/c++/fiducialproxy.cc: fixed Print to handle -1
+	unknown ID and print pose errors
+
+2003-01-08 18:39  rtv
+
+	* client_libs/libplayerpacket/: playerpacket.c, playerpacket.h:
+	more fiducialfinder support
+
+2003-01-08 16:39  rtv
+
+	* client_libs/libplayerpacket/: playerpacket.c, playerpacket.h:
+	added parsing fiducial geom requests
+
+2003-01-04 11:57  gerkey
+
+	* client_libs/libplayerc/dev_wifi.c,
+	server/drivers/wifi/linuxwifi.cc: small fixes to linuxwifi and
+	dev_wifi
+
+2002-12-20 13:29  jazzfunk
+
+	* client_libs/c++/: Makefile.am, commsproxy.cc, irproxy.cc,
+	playerclient.h, positionproxy.cc, wifiproxy.cc: misc updates for IR
+	and POS proxy.	also updated the WiFi proxy to take advantage of
+	the newer driver version...
+
+2002-12-20 13:27  jazzfunk
+
+	* server/: player.h, drivers/wifi/aodv.cc,
+	drivers/wifi/linuxwifi.cc, drivers/wifi/iwspy.cc: updated the wifi
+	driver interface to take into account the MAC address of the card
+	and the current access point/cell. Also looks at the operating mode
+	and the type of quality info returned. changed a name in the link
+	structure, from link to "qual" to be more accurate... updated
+	aodv.cc and iwspy.cc to use the new name.
+	
+	the linuxwifi driver reimplements most things using the wireless
+	extensions ioctls, or falls back to the old method of reading
+	/proc/net/wireless, which wont get all the new info....  MAC
+	address is read using an ioctl and give as a configuration reply.
+
+2002-12-16 14:24  gerkey
+
+	* PORTSTATUS, PORTSTATUS: fixes for FreeBSD build
+
+2002-12-09 21:34  jazzfunk
+
+	* server/drivers/mixed/reb/: reb.cc, reb.h, reb_ir.cc,
+	reb_params.cc, reb_params.h: backlog of updates.  fixed precision
+	of odometry (now keeping track of sub-milli position)...  sped
+	things up with LPRSerCom...
+
+2002-12-09 20:59  jazzfunk
+
+	* PORTSTATUS: updated bitsy arm status
+
+2002-12-09 20:26  boyoon
+
+	* server/drivers/wifi/linuxwifi.cc: link_count is an integer type,
+	so htonl() shoould be used instead of htons().
+
+2002-12-09 19:46  boyoon
+
+	* server/drivers/localization/mcl/world_model.cc: included a
+	missing header file <cstring>
+
+2002-12-09 18:33  boyoon
+
+	* client_libs/libplayerc/dev_localization.c,
+	server/drivers/localization/mcl/mcl_types.h,
+	server/drivers/localization/mcl/regular_mcl.cc,
+	server/drivers/localization/mcl/regular_mcl.h: modified to send
+	only necessary field for configuration request instead of sending a
+	whole structure.
+
+2002-12-09 16:27  rtv
+
+	* client_libs/c++/test/: Makefile.am, test.cc, test.h,
+	test_fiducialfinder.cc: added test for fiducialfinder
+
+2002-12-07 18:44  boyoon
+
+	* config/regular_mcl.cfg, server/main.cc,
+	server/drivers/localization/mcl/mcl_types.h,
+	server/drivers/localization/mcl/regular_mcl.cc,
+	server/drivers/localization/mcl/regular_mcl.h: Now all computations
+	for the MCL device is done in Player side. The MCL device in Stage
+	is nothing but a simple wrapper for visualization.
+
+2002-12-07 18:37  boyoon
+
+	* server/drivers/stage/psdevice.cc: fixed a bug in the constructor.
+
+2002-12-05 20:48  gerkey
+
+	* server/main.cc: little tweak
+
+2002-12-05 20:18  gerkey
+
+	* server/drivers/stage/: psdevice.cc, psdevice.h: added PSDevice
+	class
+
+2002-12-05 20:17  gerkey
+
+	* server/: Makefile.am, main.cc,
+	drivers/localization/mcl/Makefile.am,
+	drivers/localization/mcl/regular_mcl.cc,
+	drivers/localization/mcl/regular_mcl.h, drivers/stage/Makefile.am,
+	drivers/stage/stagedevice.h: added PSDevice class, converted
+	regular_mcl driver to use it
+
+2002-12-05 17:09  boyoon
+
+	* server/drivers/localization/mcl/clustering.cc: replaced isinf()
+	with finite()
+
+2002-12-05 13:50  gerkey
+
+	* Makefile.am, configure.in, client_libs/libplayerc/error.c,
+	client_libs/libplayerc/playerc.h, m4.d/drivertests.m4,
+	server/drivers/localization/mcl/Makefile.am: more libplayerc tweaks
+
+2002-12-05 13:42  gerkey
+
+	* server/drivers/localization/mcl/.cvsignore: foo
+
+2002-12-05 13:42  gerkey
+
+	* server/drivers/localization/Makefile.am: added back for directory
+	recursion
+
+2002-12-05 13:41  gerkey
+
+	* server/drivers/localization/: Makefile.am, action_model.cc,
+	action_model.h, action_model.nb, clustering.cc, clustering.h,
+	mcl_types.h, regular_mcl.cc, regular_mcl.h, sensor_model.cc,
+	sensor_model.h, sensor_model.nb, world_model.cc, world_model.h,
+	mcl/Makefile.am, mcl/action_model.cc, mcl/action_model.h,
+	mcl/action_model.nb, mcl/clustering.cc, mcl/clustering.h,
+	mcl/mcl_types.h, mcl/regular_mcl.cc, mcl/regular_mcl.h,
+	mcl/sensor_model.cc, mcl/sensor_model.h, mcl/sensor_model.nb,
+	mcl/world_model.cc, mcl/world_model.h: moved mcl code to subdir
+
+2002-12-05 13:35  gerkey
+
+	* client_libs/libplayerc/error.h: tweaked libplayerc's error.h
+	macros to use accessor function
+
+2002-12-05 11:58  gerkey
+
+	* configure.in: fixed up pyplayerc build
+
+2002-12-05 11:35  inspectorg
+
+	* configure.in, client_libs/libplayerc/error.c,
+	client_libs/libplayerc/error.h, client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/test.h,
+	client_libs/pyplayerc/dev_fiducial.c,
+	client_libs/pyplayerc/dev_laser.c,
+	client_libs/pyplayerc/dev_position.c,
+	client_libs/pyplayerc/dev_wifi.c,
+	client_libs/pyplayerc/pyplayerc.c, utils/playerv/dev_blobfinder.c,
+	utils/playerv/dev_fiducial.c, utils/playerv/dev_laser.c,
+	utils/playerv/dev_localization.c, utils/playerv/dev_position.c,
+	utils/playerv/dev_ptz.c, utils/playerv/dev_sonar.c,
+	utils/playerv/playerv.c: libplayerc no londer exports symbols
+
+2002-12-04 16:47  gerkey
+
+	* replace/.cvsignore, server/drivers/localization/.cvsignore: foo
+
+2002-12-04 16:42  gerkey
+
+	* Makefile.am, client_libs/c++/Makefile.am,
+	client_libs/c++/playerclient.h, client_libs/libplayerc/Makefile.am,
+	client_libs/libplayerc/client.c, client_libs/libplayerc/error.c,
+	client_libs/libplayerc/mclient.c, client_libs/libplayerc/playerc.h,
+	replace/Makefile.am: works on OSX.1
+
+2002-12-04 16:03  gerkey
+
+	* replace/replace.h: add <sys/types.h>
+
+2002-12-04 15:55  gerkey
+
+	* configure.in: setup to build replace Makefile
+
+2002-12-04 15:55  gerkey
+
+	* client_libs/c++/: Makefile.am, playerclient.h,
+	playermulticlient.cc: changed to not need poll.h at client build
+	time
+
+2002-12-04 15:48  gerkey
+
+	* server/: dirname.c, poll.c, replace.h, scandir.c: moved to
+	replace
+
+2002-12-04 15:48  gerkey
+
+	* server/Makefile.am: setup for libreplace.a
+
+2002-12-04 15:22  gerkey
+
+	* replace/: Makefile.am, dirname.c, dummy.c, poll.c, replace.h,
+	scandir.c: added files to build replace lib
+
+2002-12-04 15:14  rtv
+
+	* client_libs/c++/commsproxy.cc, client_libs/c++/playerclient.h,
+	client_libs/libplayerc/dev_localization.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/Makefile.am, examples/c++/forage.cc,
+	examples/c++/goto.cc, examples/c++/laserobstacleavoid.cc,
+	server/clientmanager.cc, server/main.cc, server/replace.h,
+	server/scandir.c: server works in OSX - almost a clean compile
+	now...
+
+2002-12-04 14:58  inspectorg
+
+	* client_libs/libplayerc/playerc.h, utils/playerv/dev_laser.c:
+	Laser display tweak
+
+2002-12-04 13:32  boyoon
+
+	* server/drivers/localization/: action_model.cc, clustering.cc:
+	fixed a bug in the action model
+
+2002-12-04 11:43  gerkey
+
+	* m4.d/drivertests.m4, server/deviceregistry.cc: fixed lasercspace
+	build
+
+2002-12-04 11:33  gerkey
+
+	* m4.d/drivertests.m4, server/deviceregistry.cc: fixed lasercspace
+	compilation
+
+2002-12-04 10:19  gerkey
+
+	* client_libs/c++/doc/cppclient.tex,
+	client_libs/libplayerc/doc/libplayerc.tex,
+	client_libs/tcl/doc/tclplayer.tex, player-manual/player.tex:
+	incremented manual version numbers
+
+2002-12-04 00:03  gerkey
+
+	* player-manual/interfaces/: aio.tex, audio.tex, blobfinder.tex,
+	bumper.tex, comms.tex, dio.tex, fiducial.tex, gps.tex, gripper.tex,
+	ir.tex, laser.tex, player.tex, position.tex, power.tex, ptz.tex,
+	sonar.tex, speech.tex, truth.tex, wifi.tex: removed autogenerated
+	files
+
+2002-12-04 00:02  gerkey
+
+	* client_libs/c++/commsproxy.cc, client_libs/c++/playerclient.h,
+	client_libs/c++/test/test_broadcast.cc,
+	client_libs/c++/test/test_position.cc, m4.d/drivertests.m4,
+	player-manual/Makefile, player-manual/player.tex,
+	player-manual/interfaces/aio.tex,
+	player-manual/interfaces/audio.tex,
+	player-manual/interfaces/blobfinder.tex,
+	player-manual/interfaces/bumper.tex,
+	player-manual/interfaces/comms.tex,
+	player-manual/interfaces/dio.tex,
+	player-manual/interfaces/fiducial.tex,
+	player-manual/interfaces/gps.tex,
+	player-manual/interfaces/gripper.tex,
+	player-manual/interfaces/ir.tex,
+	player-manual/interfaces/laser.tex,
+	player-manual/interfaces/position.tex,
+	player-manual/interfaces/power.tex,
+	player-manual/interfaces/ptz.tex,
+	player-manual/interfaces/sonar.tex,
+	player-manual/interfaces/speech.tex,
+	player-manual/interfaces/truth.tex,
+	player-manual/interfaces/wifi.tex, server/player.h,
+	server/codetools/makedoc/makedoc.py,
+	server/codetools/makedoc/makedoc2.py,
+	server/drivers/comms/udpbroadcast.cc,
+	server/drivers/localization/Makefile.am: merged in changes from
+	release-1-3-patches branch
+
+2002-12-03 23:44  gerkey
+
+	* m4.d/drivertests.m4, server/player.h,
+	server/codetools/makedoc/makedoc.py,
+	server/codetools/makedoc/makedoc2.py,
+	server/drivers/localization/Makefile.am: put bandaids on makedoc
+	tools and tweaked player.h;  just about ready for 1.3.1 release
+
+2002-12-03 23:43  gerkey
+
+	* player-manual/: Makefile, player.tex: fixed up docs
+
+2002-12-03 23:43  gerkey
+
+	* player-manual/interfaces/: aio.tex, audio.tex, blobfinder.tex,
+	bumper.tex, comms.tex, dio.tex, fiducial.tex, gps.tex, gripper.tex,
+	ir.tex, laser.tex, position.tex, power.tex, ptz.tex, sonar.tex,
+	speech.tex, truth.tex, wifi.tex: removed auto-generated files
+
+2002-12-03 19:57  gerkey
+
+	* configure.in, client_libs/c++/commsproxy.cc,
+	client_libs/c++/playerclient.h, client_libs/c++/doc/Makefile,
+	client_libs/c++/test/test_broadcast.cc, server/player.h,
+	server/drivers/comms/udpbroadcast.cc: fixed udpbcast device and c++
+	comms proxy
+
+2002-12-03 19:33  rtv
+
+	* client_libs/: c++/test/test_position.cc,
+	libplayerpacket/Makefile.am, libplayerpacket/playerpacket.c: fixed
+	potential bug in libplayerpacket and added the header file to the
+	install list. stopped position test from failing when odometry
+	fails to be set.
+
+2002-12-02 22:59  boyoon
+
+	* configure.in, client_libs/libplayerc/Makefile.am,
+	client_libs/libplayerc/dev_localization.c,
+	client_libs/libplayerc/playerc.h, client_libs/libplayerc/utils.c,
+	config/Makefile.am, config/PHE-05cm.pnm.gz, config/regular_mcl.cfg,
+	m4.d/drivertests.m4, server/Makefile.am, server/deviceregistry.cc,
+	server/main.cc, server/player.h, server/drivers/Makefile.am,
+	server/drivers/localization/Makefile.am,
+	server/drivers/localization/action_model.cc,
+	server/drivers/localization/action_model.h,
+	server/drivers/localization/action_model.nb,
+	server/drivers/localization/clustering.cc,
+	server/drivers/localization/clustering.h,
+	server/drivers/localization/mcl_types.h,
+	server/drivers/localization/regular_mcl.cc,
+	server/drivers/localization/regular_mcl.h,
+	server/drivers/localization/sensor_model.cc,
+	server/drivers/localization/sensor_model.h,
+	server/drivers/localization/sensor_model.nb,
+	server/drivers/localization/world_model.cc,
+	server/drivers/localization/world_model.h,
+	utils/playerv/Makefile.am, utils/playerv/dev_localization.c,
+	utils/playerv/playerv.h, utils/playerv/registry.c: added
+	localization device
+
+2002-11-29 11:17  gerkey
+
+	* configure.in: fixed socklen_t check
+
+2002-11-29 11:11  gerkey
+
+	* configure.in: added back AC_CANONICAL_SYSTEM
+
+2002-11-29 10:14  gerkey
+
+	* .cvsignore: added acinclude.m4 to ignore list
+
+2002-11-29 10:13  gerkey
+
+	* server/: clientmanager.cc, main.cc: switched header inclusion
+	order for OSX build
+
+2002-11-29 10:02  gerkey
+
+	* configure.in, client_libs/c++/waveformproxy.cc,
+	server/drivers/laser/sicklms200.cc,
+	server/drivers/mixed/p2os/p2os.cc,
+	server/drivers/position/microstrain/3dmg.cc,
+	server/drivers/ptz/sonyevid30.cc: added check for O_SYNC and
+	removed check for system type
+
+2002-11-29 09:10  gerkey
+
+	* client_libs/libplayerpacket/.cvsignore, examples/c++/.cvsignore:
+	foo
+
+2002-11-29 09:06  gerkey
+
+	* acinclude.m4, bootstrap, configure.in, mkacinclude.sh,
+	m4.d/drivertests.m4, server/Makefile.am, server/clientmanager.cc,
+	server/deviceregistry.cc, server/playercommon.h.in,
+	server/drivers/Makefile.am, server/drivers/acts.cc,
+	server/drivers/aodv.cc, server/drivers/festival.cc,
+	server/drivers/fixedtones.cc, server/drivers/iwspy.cc,
+	server/drivers/laserbar.cc, server/drivers/laserbarcode.cc,
+	server/drivers/lasercspace.cc, server/drivers/laserfeature.cc,
+	server/drivers/laservisualbarcode.cc, server/drivers/linuxwifi.cc,
+	server/drivers/sicklms200.cc, server/drivers/sonyevid30.cc,
+	server/drivers/udpbroadcast.cc, server/drivers/waveaudio.cc,
+	server/drivers/audio/.cvsignore, server/drivers/audio/Makefile.am,
+	server/drivers/audio/fixedtones.cc,
+	server/drivers/blobfinder/.cvsignore,
+	server/drivers/blobfinder/Makefile.am,
+	server/drivers/blobfinder/acts.cc, server/drivers/comms/.cvsignore,
+	server/drivers/comms/Makefile.am,
+	server/drivers/comms/udpbroadcast.cc,
+	server/drivers/fiducial/.cvsignore,
+	server/drivers/fiducial/Makefile.am,
+	server/drivers/fiducial/laserbar.cc,
+	server/drivers/fiducial/laserbarcode.cc,
+	server/drivers/fiducial/laserfeature.cc,
+	server/drivers/fiducial/laservisualbarcode.cc,
+	server/drivers/laser/.cvsignore, server/drivers/laser/Makefile.am,
+	server/drivers/laser/lasercspace.cc,
+	server/drivers/laser/sicklms200.cc,
+	server/drivers/mixed/.cvsignore, server/drivers/mixed/Makefile.am,
+	server/drivers/mixed/p2os/.cvsignore,
+	server/drivers/mixed/p2os/Makefile.am,
+	server/drivers/mixed/p2os/p2os.cc,
+	server/drivers/mixed/p2os/p2os.h,
+	server/drivers/mixed/p2os/p2os_aio.cc,
+	server/drivers/mixed/p2os/p2os_bumper.cc,
+	server/drivers/mixed/p2os/p2os_dio.cc,
+	server/drivers/mixed/p2os/p2os_gripper.cc,
+	server/drivers/mixed/p2os/p2os_position.cc,
+	server/drivers/mixed/p2os/p2os_power.cc,
+	server/drivers/mixed/p2os/p2os_sonar.cc,
+	server/drivers/mixed/p2os/packet.cc,
+	server/drivers/mixed/p2os/packet.h,
+	server/drivers/mixed/p2os/robot_params.cc,
+	server/drivers/mixed/p2os/robot_params.h,
+	server/drivers/mixed/p2os/sip.cc, server/drivers/mixed/p2os/sip.h,
+	server/drivers/mixed/reb/.cvsignore,
+	server/drivers/mixed/reb/Makefile.am,
+	server/drivers/mixed/reb/reb.cc, server/drivers/mixed/reb/reb.h,
+	server/drivers/mixed/reb/reb_ir.cc,
+	server/drivers/mixed/reb/reb_params.cc,
+	server/drivers/mixed/reb/reb_params.h,
+	server/drivers/mixed/reb/reb_position.cc,
+	server/drivers/mixed/reb/reb_power.cc,
+	server/drivers/mixed/rwi/.cvsignore,
+	server/drivers/mixed/rwi/Makefile.am,
+	server/drivers/mixed/rwi/rwi_bumperdevice.cc,
+	server/drivers/mixed/rwi/rwi_bumperdevice.h,
+	server/drivers/mixed/rwi/rwi_laserdevice.cc,
+	server/drivers/mixed/rwi/rwi_laserdevice.h,
+	server/drivers/mixed/rwi/rwi_positiondevice.cc,
+	server/drivers/mixed/rwi/rwi_positiondevice.h,
+	server/drivers/mixed/rwi/rwi_powerdevice.cc,
+	server/drivers/mixed/rwi/rwi_powerdevice.h,
+	server/drivers/mixed/rwi/rwi_sonardevice.cc,
+	server/drivers/mixed/rwi/rwi_sonardevice.h,
+	server/drivers/mixed/rwi/rwidevice.cc,
+	server/drivers/mixed/rwi/rwidevice.h,
+	server/drivers/position/.cvsignore,
+	server/drivers/position/Makefile.am,
+	server/drivers/position/isense/.cvsignore,
+	server/drivers/position/isense/Makefile.am,
+	server/drivers/position/isense/inertiacube2.cc,
+	server/drivers/position/microstrain/.cvsignore,
+	server/drivers/position/microstrain/3dmg.cc,
+	server/drivers/position/microstrain/Makefile.am,
+	server/drivers/ptz/.cvsignore, server/drivers/ptz/Makefile.am,
+	server/drivers/ptz/sonyevid30.cc, server/drivers/speech/.cvsignore,
+	server/drivers/speech/Makefile.am,
+	server/drivers/speech/festival.cc,
+	server/drivers/waveform/.cvsignore,
+	server/drivers/waveform/Makefile.am,
+	server/drivers/waveform/waveaudio.cc,
+	server/drivers/wifi/.cvsignore, server/drivers/wifi/Makefile.am,
+	server/drivers/wifi/aodv.cc, server/drivers/wifi/iwspy.cc,
+	server/drivers/wifi/linuxwifi.cc: new driver file layout
+
+2002-11-27 14:08  inspectorg
+
+	* server/: player.h, drivers/iwspy.cc: [no log message]
+
+2002-11-27 09:23  inspectorg
+
+	* configure.in, server/Makefile.am, server/deviceregistry.cc,
+	server/drivers/Makefile.am, server/drivers/iwspy.cc: Added iwspy
+	driver
+
+2002-11-26 17:56  inspectorg
+
+	* configure.in, client_libs/c++/wifiproxy.cc,
+	client_libs/libplayerc/dev_wifi.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/test_wifi.c,
+	client_libs/pyplayerc/dev_wifi.c, server/Makefile.am,
+	server/deviceregistry.cc, server/player.h,
+	server/drivers/Makefile.am, server/drivers/aodv.cc,
+	server/drivers/linuxwifi.cc: Added AODV driver
+
+2002-11-26 09:50  jazzfunk
+
+	* server/Makefile.am: @REB_LIBPATH@ got removed from dependencies
+	somewhere...
+
+2002-11-26 08:23  inspectorg
+
+	* client_libs/pyplayerc/dev_wifi.c: [no log message]
+
+2002-11-25 23:59  gerkey
+
+	* configure.in: fixed quoting
+
+2002-11-25 19:09  inspectorg
+
+	* server/drivers/linuxwifi.cc: Fixed WiFi driver
+
+2002-11-21 18:36  rtv
+
+	* client_libs/c++/playerclient.h, client_libs/c++/waveformproxy.cc,
+	examples/c++/waveformread.cc, server/drivers/fixedtones.cc,
+	server/drivers/waveaudio.cc: added TEST_TONE to waveaudio driver.
+	waveform interface seems to work ok, but i havent tested real
+	sampling and playback cos i only have one machine to hand
+
+2002-11-21 17:26  rtv
+
+	* player-manual/: player.tex, drivers/waveaudio.tex: added docs for
+	the sound-capture device
+
+2002-11-21 17:10  rtv
+
+	* configure.in: added options to control python client build (as it
+	seems broken right now)
+
+2002-11-21 14:44  rtv
+
+	* configure.in: added test for soundcard.h in waveaudio options
+
+2002-11-21 14:21  rtv
+
+	* configure.in: reordered for easier-to-read configure --help
+
+2002-11-21 14:00  rtv
+
+	* client_libs/c++/waveformproxy.cc, server/drivers/waveaudio.cc:
+	added rudimentary support for raw digital waveforms. The waveform
+	interface fetches raw samples. the waveaudio driver grabs waveforms
+	from the soundcard. the waveformproxy writes waveforms to the
+	soundcard
+
+2002-11-21 13:57  rtv
+
+	* configure.in, client_libs/c++/Makefile.am,
+	client_libs/c++/playerclient.h, client_libs/c++/waveformproxy.cc,
+	examples/c++/Makefile.am, examples/c++/waveformread.cc,
+	server/Makefile.am, server/deviceregistry.cc, server/player.h,
+	server/drivers/Makefile.am, server/drivers/waveaudio.cc: added
+	rudimentary support for raw digital waveforms. The waveform
+	interface fetches raw samples. the waveaudio driver grabs waveforms
+	from the soundcard. the waveformproxy writes waveforms to the
+	soundcard
+
+2002-11-20 18:54  inspectorg
+
+	* client_libs/libplayerc/: Makefile.am, dev_wifi.c, playerc.h,
+	utils.c, test/Makefile.am, test/test.c, test/test_wifi.c: Added
+	WiFi support
+
+2002-11-20 18:53  inspectorg
+
+	* client_libs/pyplayerc/: Makefile.am, pyplayerc.c, setup.py,
+	test/test.py, test/test_wifi.py: Added wifi test
+
+2002-11-20 16:30  rtv
+
+	* configure.in: tweaked comments
+
+2002-11-20 16:22  inspectorg
+
+	* client_libs/pyplayerc/test/test.py: Added python lib tests
+
+2002-11-20 16:13  rtv
+
+	* configure.in, server/drivers/udpbroadcast.cc: added checking for
+	socklen_t type to help compile on BSD systems (including OSX)
+
+2002-11-20 14:25  inspectorg
+
+	* server/: device.cc, device.h: Changed PutData to use void*
+
+2002-11-20 14:12  rtv
+
+	* client_libs/c++/playerclient.h, client_libs/c++/positionproxy.cc,
+	client_libs/c++/test/test.cc,
+	client_libs/c++/test/test_position.cc,
+	client_libs/c++/test/test_position_control.cc,
+	client_libs/libplayerpacket/playerpacket.c,
+	server/drivers/stage/stagedevice.cc: replaced values.h and MAXINT
+	with limits.h and INT_MAX for more up-to-date portability
+
+2002-11-19 17:34  rtv
+
+	* client_libs/libplayerc/dev_position.c: positiondevice was sending
+	garbage in command position fields
+
+2002-11-19 15:31  rtv
+
+	* client_libs/c++/test/: Makefile.am, test.cc, test_position.cc,
+	test_position_control.cc: added tests for position interface in
+	position control mode
+
+2002-11-19 15:30  rtv
+
+	* client_libs/libplayerpacket/playerpacket.c: bugfix in
+	PositionDataPack
+
+2002-11-19 13:45  inspectorg
+
+	* configure.in, server/Makefile.am, server/deviceregistry.cc,
+	server/drivers/Makefile.am: Added skeleton for MicroStrain driver
+
+2002-11-18 21:27  jazzfunk
+
+	* player-manual/drivers/reb_.tex: fixed some typos
+
+2002-11-18 21:14  jazzfunk
+
+	* player-manual/drivers/reb_.tex: ome docs about the REB drivers
+
+2002-11-18 19:59  rtv
+
+	* configure.in, client_libs/c/playercclient.h,
+	client_libs/c++/test/Makefile.am, client_libs/c++/test/test.cc,
+	client_libs/libplayerpacket/playerpacket.c,
+	client_libs/libplayerpacket/playerpacket.h: test
+
+2002-11-18 19:12  rtv
+
+	* client_libs/: Makefile.am, c/playercclient.h, c++/Makefile.am,
+	c++/commsproxy.cc, c++/positionproxy.cc, c++/test/Makefile.am,
+	c++/test/test.cc, c++/test/test.h, c++/test/test_position.cc,
+	libplayerpacket/Makefile.am, libplayerpacket/playerpacket.c,
+	libplayerpacket/playerpacket.h: beginnings of a C library for
+	packing and unpacking Player message structures
+
+2002-11-13 19:59  rtv
+
+	* client_libs/c++/test/test_position.cc: cleaned up debug output
+
+2002-11-13 19:56  rtv
+
+	* client_libs/c++/: playerclient.h, positionproxy.cc,
+	test/test_position.cc: added goto function to positionproxy for
+	position control. added position control tests to test_position
+
+2002-11-12 15:00  gerkey
+
+	* configure.in, client_libs/c/Makefile.am,
+	client_libs/c++/Makefile.am, client_libs/c++/test/Makefile.am,
+	client_libs/libplayerc/Makefile.am,
+	client_libs/libplayerc/test/Makefile.am, examples/c++/Makefile.am,
+	examples/libplayerc/Makefile.am, server/Makefile.am,
+	server/drivers/Makefile.am, server/drivers/stage/Makefile.am,
+	utils/playerjoy/Makefile.am, utils/playerv/Makefile.am,
+	utils/tkviewer/viewer.tk: changed cross-compile setup
+
+2002-11-11 23:20  gerkey
+
+	* server/clientdata.cc: made player print out the correct port when
+	a client dies
+
+2002-11-11 22:30  gerkey
+
+	* server/playercommon.h.in: slight tweak
+
+2002-11-11 22:16  gerkey
+
+	* configure.in, client_libs/pyplayerc/setup.py,
+	examples/c++/.cvsignore, server/.cvsignore, server/clientdata.cc,
+	server/clientmanager.cc, server/device.cc,
+	server/deviceregistry.cc, server/deviceregistry.h, server/main.cc,
+	server/playercommon.h.in, server/playerqueue.cc,
+	server/drivers/acts.cc, server/drivers/festival.cc,
+	server/drivers/sicklms200.cc, server/drivers/sonyevid30.cc,
+	utils/playerv/playerv.c, utils/playerv/registry.c: cleaned up
+	config/build env
+
+2002-11-11 18:48  gerkey
+
+	* .cvsignore, configure.in, client_libs/c++/doc/.cvsignore,
+	server/.cvsignore, server/Makefile.am, server/playercommon.h,
+	server/playercommon.h.in: made playercommon.h autogenerated
+
+2002-11-10 19:44  inspectorg
+
+	* utils/playerv/playerv.c: [no log message]
+
+2002-11-09 21:09  gerkey
+
+	* client_libs/c++/audioproxy.cc, examples/c++/audiowrite.cc,
+	server/drivers/fixedtones.cc: got audio sampling working iPAQ
+
+2002-11-09 17:18  gerkey
+
+	* examples/c++/: Makefile.am, audioread.cc, audiowrite.cc: added
+	audio examples
+
+2002-11-09 17:17  gerkey
+
+	* client_libs/c++/: Makefile.am, audioproxy.cc, playerclient.h:
+	added audioproxy.cc
+
+2002-11-08 13:21  gerkey
+
+	* configure.in, client_libs/c/Makefile.am,
+	client_libs/c++/Makefile.am, client_libs/c++/test/Makefile.am,
+	client_libs/libplayerc/Makefile.am,
+	client_libs/libplayerc/test/Makefile.am,
+	client_libs/libplayerc/test/test_blobfinder.c,
+	client_libs/libplayerc/test/test_fiducial.c,
+	examples/c++/Makefile.am, examples/libplayerc/Makefile.am,
+	utils/playerjoy/Makefile.am, utils/playerv/Makefile.am: changed up
+	configuration for cross-compiling server and clients
+
+2002-11-08 11:29  gerkey
+
+	* configure.in: pretty printing
+
+2002-11-08 03:59  gerkey
+
+	* server/playercommon.h: header swap for cross-compiling to ipaq
+
+2002-11-02 23:38  inspectorg
+
+	* client_libs/pyplayerc/: dev_fiducial.c, pyplayerc.c: Fixed to
+	python client
+
+2002-11-02 23:04  inspectorg
+
+	* configure.in, client_libs/c++/doc/Makefile,
+	server/codetools/makedoc/makedoc2.py: Change rtk path
+
+2002-11-02 23:03  gerkey
+
+	* server/drivers/linuxwifi.cc: took out debug
+
+2002-11-02 22:39  gerkey
+
+	* ChangeLog: updated
+
+2002-11-02 22:39  inspectorg
+
+	* client_libs/libplayerc/test/test_ptz.c: [no log message]
+
 2002-11-02 22:29  gerkey
 
 	* player-manual/player.tex: took out draft
@@ -143,9 +1894,7 @@
 
 2002-11-02 14:05  gerkey
 
-	* client_libs/c++/powerproxy.cc,
-	client_libs/c++/test/test_power.cc, server/drivers/p2os/sip.cc:
-	small fixes
+	* client_libs/c++/: powerproxy.cc, test/test_power.cc: small fixes
 
 2002-11-02 13:50  gerkey
 
@@ -384,9 +2133,7 @@
 	client_libs/libplayerc/dev_sonar.c,
 	client_libs/libplayerc/dev_truth.c, client_libs/tcl/Makefile.am,
 	server/Makefile.am, server/drivers/sicklms200.cc,
-	server/drivers/sonyevid30.cc, server/drivers/p2os/p2os.cc,
-	server/drivers/p2os/p2os_sonar.cc, server/drivers/p2os/sip.cc:
-	working on FreeBSD
+	server/drivers/sonyevid30.cc: working on FreeBSD
 
 2002-10-30 12:32  inspectorg
 
@@ -510,9 +2257,8 @@
 	client_libs/pyplayerc/.cvsignore, client_libs/tcl/.cvsignore,
 	examples/c++/.cvsignore, examples/libplayerc/.cvsignore,
 	player-manual/.cvsignore, server/.cvsignore,
-	server/drivers/isense/.cvsignore, utils/playerjoy/.cvsignore,
-	utils/playerv/.cvsignore, client_libs/c++/doc/.cvsignore: tweaked
-	.cvsignore files
+	utils/playerjoy/.cvsignore, utils/playerv/.cvsignore,
+	client_libs/c++/doc/.cvsignore: tweaked .cvsignore files
 
 2002-10-28 10:45  gerkey
 
@@ -527,11 +2273,10 @@
 	client_libs/pyplayerc/.cvsignore, client_libs/tcl/.cvsignore,
 	config/.cvsignore, examples/.cvsignore, examples/c++/.cvsignore,
 	examples/libplayerc/.cvsignore, server/.cvsignore,
-	server/drivers/.cvsignore, server/drivers/p2os/.cvsignore,
-	server/drivers/reb/.cvsignore, server/drivers/rwi/.cvsignore,
-	server/drivers/stage/.cvsignore, utils/.cvsignore,
-	utils/playerjoy/.cvsignore, utils/playerv/.cvsignore,
-	utils/tkviewer/.cvsignore: added .cvsignore files
+	server/drivers/.cvsignore, server/drivers/stage/.cvsignore,
+	utils/.cvsignore, utils/playerjoy/.cvsignore,
+	utils/playerv/.cvsignore, utils/tkviewer/.cvsignore: added
+	.cvsignore files
 
 2002-10-28 10:21  gerkey
 
@@ -581,13 +2326,8 @@
 
 2002-10-22 13:29  gerkey
 
-	* client_libs/c++/positionproxy.cc, server/drivers/p2os/sip.cc,
-	server/drivers/p2os/sip.h: applied Josh's patch to SIP parser for
-	ARM byte-alignment; fixed byteswapping in C++ client
-
-2002-10-17 16:56  gerkey
-
-	* server/drivers/p2os/sip.cc: fixed sonar array overwrite
+	* client_libs/c++/positionproxy.cc: applied Josh's patch to SIP
+	parser for ARM byte-alignment; fixed byteswapping in C++ client
 
 2002-10-16 09:41  gerkey
 
@@ -614,11 +2354,6 @@
 	positionproxy for the REB stuff.  trimmed up irproxy as well.  took
 	out some #defines in playerclient.h and also changed the return of
 	PowerProxy::Charge() so that it works now
-
-2002-10-01 13:16  jazzfunk
-
-	* server/drivers/reb/: reb.cc, reb.h, reb_ir.cc: updated it to work
-	with LPRSerCom on the Kameleon
 
 2002-09-22 11:35  inspectorg
 
@@ -736,8 +2471,7 @@
 
 2002-09-10 16:55  gerkey
 
-	* client_libs/c++/positionproxy.cc,
-	client_libs/libplayerc/dev_position.c, server/drivers/p2os/p2os.cc:
+	* client_libs/: c++/positionproxy.cc, libplayerc/dev_position.c:
 	some byte-swapping fixes for position speeds
 
 2002-09-10 16:50  gerkey
@@ -835,19 +2569,10 @@
 
 	* server/drivers/udpbroadcast.cc: slight change of type
 
-2002-09-09 17:01  gerkey
-
-	* server/drivers/isense/inertiacube2.cc: added client pointer to
-	GetData call
-
 2002-09-09 16:52  gerkey
 
 	* server/: clientdata.cc, device.cc, device.h: added
 	CDevice::GetNumData() and its now used in CClientData::BuildMsg()
-
-2002-09-09 16:46  gerkey
-
-	* server/drivers/p2os/: robot_params.cc, robot_params.h: new params
 
 2002-09-09 12:59  uid70980
 
@@ -856,21 +2581,7 @@
 	server/drivers/lasercspace.cc, server/drivers/laserfeature.cc,
 	server/drivers/laserreflector.cc,
 	server/drivers/laservisualbarcode.cc, server/drivers/sonyevid30.cc,
-	server/drivers/wifi.cc, server/drivers/p2os/p2os.cc,
-	server/drivers/p2os/p2os_aio.cc,
-	server/drivers/p2os/p2os_bumper.cc,
-	server/drivers/p2os/p2os_dio.cc,
-	server/drivers/p2os/p2os_gripper.cc,
-	server/drivers/p2os/p2os_position.cc,
-	server/drivers/p2os/p2os_power.cc,
-	server/drivers/p2os/p2os_sonar.cc, server/drivers/reb/reb.cc,
-	server/drivers/reb/reb_ir.cc, server/drivers/reb/reb_position.cc,
-	server/drivers/reb/reb_power.cc,
-	server/drivers/rwi/rwi_laserdevice.cc,
-	server/drivers/rwi/rwi_laserdevice.h,
-	server/drivers/rwi/rwi_positiondevice.cc,
-	server/drivers/rwi/rwi_sonardevice.cc,
-	server/drivers/stage/stagedevice.cc,
+	server/drivers/wifi.cc, server/drivers/stage/stagedevice.cc,
 	server/drivers/stage/stagedevice.h: added client pointers to
 	GetData and PutCommand in the device API
 
@@ -888,12 +2599,8 @@
 
 2002-09-08 12:22  gerkey
 
-	* server/: Makefile.am, deviceregistry.cc, main.cc, player.h,
-	drivers/p2os/p2os.cc, drivers/reb/reb.cc, drivers/reb/reb.h,
-	drivers/reb/reb_ir.cc, drivers/reb/reb_params.h,
-	drivers/reb/reb_position.cc, drivers/reb/reb_power.cc,
-	drivers/rwi/rwi_bumperdevice.cc: various changes in order to unify
-	device interfaces
+	* server/: Makefile.am, deviceregistry.cc, main.cc, player.h:
+	various changes in order to unify device interfaces
 
 2002-09-08 12:20  gerkey
 
@@ -938,20 +2645,14 @@
 	examples/Makefile.am, examples/c++/Makefile.am, server/Makefile.am,
 	server/clientdata.cc, server/deviceregistry.cc, server/player.h,
 	server/playerqueue.cc, server/drivers/Makefile.am,
-	server/drivers/wifi.cc, server/drivers/p2os/Makefile.am,
-	server/drivers/reb/Makefile.am, server/drivers/reb/reb.cc,
-	server/drivers/reb/reb.h, server/drivers/reb/reb_ir.cc,
-	server/drivers/reb/reb_params.cc, server/drivers/reb/reb_params.h,
-	server/drivers/reb/reb_position.cc,
-	server/drivers/reb/reb_power.cc, server/drivers/rwi/Makefile.am,
-	server/drivers/stage/Makefile.am: Many changes here.  From most
-	general to least: - Changed the configure scripts to allow
-	selectively compiling devices in the player server, as well as
-	being able to specify compiling the server for cross compilation
-	using the LART ARM cross compiler.  This affects configure.in and
-	all the Makefile.am's under server/.  Note that if you run
-	"./bootstrap" it will comple things exactly as before (all the
-	preexsiting devices default to being compiled).  However, for
+	server/drivers/wifi.cc, server/drivers/stage/Makefile.am: Many
+	changes here.  From most general to least: - Changed the configure
+	scripts to allow selectively compiling devices in the player
+	server, as well as being able to specify compiling the server for
+	cross compilation using the LART ARM cross compiler.  This affects
+	configure.in and all the Makefile.am's under server/.  Note that if
+	you run "./bootstrap" it will comple things exactly as before (all
+	the preexsiting devices default to being compiled).  However, for
 	example, if you don't want to compile the SICK device, you'd run
 	"./bootstrap --without-sick".  The stage device is always compiled
 	though.
@@ -1105,8 +2806,7 @@
 2002-08-28 11:49  gerkey
 
 	* server/: device.cc, drivers/acts.cc, drivers/festival.cc,
-	drivers/fixedtones.cc, drivers/p2os/p2os.cc: took out
-	pthread_set_canceltype()
+	drivers/fixedtones.cc: took out pthread_set_canceltype()
 
 2002-08-28 11:46  inspectorg
 
@@ -1131,9 +2831,8 @@
 	client_libs/c++/positionproxy.cc, client_libs/c++/sonarproxy.cc,
 	client_libs/libplayerc/dev_fiducial.c,
 	client_libs/libplayerc/dev_position.c, server/player.h,
-	server/drivers/acts.cc, server/drivers/laserbarcode.cc,
-	server/drivers/p2os/p2os.cc: renamed config requests to make them
-	part of the device interface
+	server/drivers/acts.cc, server/drivers/laserbarcode.cc: renamed
+	config requests to make them part of the device interface
 
 2002-08-26 20:32  inspectorg
 
@@ -1165,11 +2864,6 @@
 
 	* client_libs/pyplayerc/: dev_blobfinder.c, dev_vision.c,
 	pyplayerc.c, setup.py: Some file re-organization
-
-2002-08-23 10:57  inspectorg
-
-	* server/drivers/isense/inertiacube2.cc: Added config file option
-	for compass setting
 
 2002-08-23 10:57  inspectorg
 
@@ -1217,12 +2911,7 @@
 
 2002-08-21 21:12  inspectorg
 
-	* server/drivers/: laservisualbarcode.cc, isense/inertiacube2.cc:
-	Changed stuff
-
-2002-08-21 21:12  inspectorg
-
-	* server/drivers/p2os/sip.cc: Fixed some casting problems
+	* server/drivers/laservisualbarcode.cc: Changed stuff
 
 2002-08-21 21:10  inspectorg
 
@@ -1263,7 +2952,6 @@
 	server/player.h, server/playercommon.h, server/playerqueue.cc,
 	server/drivers/acts.cc, server/drivers/festival.cc,
 	server/drivers/sicklms200.cc, server/drivers/sonyevid30.cc,
-	server/drivers/p2os/p2os.cc, server/drivers/p2os/packet.cc,
 	server/drivers/stage/stage.h: changes for solaris port
 
 2002-08-21 11:15  gerkey
@@ -1274,17 +2962,14 @@
 2002-08-21 09:32  inspectorg
 
 	* server/drivers/Makefile.am, server/drivers/laservisualbarcode.cc,
-	server/drivers/isense/Makefile.am,
-	server/drivers/isense/inertiacube2.cc, configure.in,
-	server/Makefile.am, server/deviceregistry.cc: Added InterSense IMU
-	driver
+	configure.in, server/Makefile.am, server/deviceregistry.cc: Added
+	InterSense IMU driver
 
 2002-08-20 18:51  gerkey
 
 	* server/: Makefile.am, clientdata.h, drivers/Makefile.am,
-	drivers/acts.cc, drivers/fixedtones.cc, drivers/p2os/Makefile.am,
-	drivers/rwi/Makefile.am, drivers/stage/Makefile.am: added -Wall to
-	Makfile.am's and fixed some compiler warnings
+	drivers/acts.cc, drivers/fixedtones.cc, drivers/stage/Makefile.am:
+	added -Wall to Makfile.am's and fixed some compiler warnings
 
 2002-08-20 16:17  gerkey
 
@@ -1394,8 +3079,6 @@
 	examples/c++/visualservo.cc, server/deviceregistry.cc,
 	server/main.cc, server/player.h, server/drivers/laserbarcode.cc,
 	server/drivers/laserreflector.cc, server/drivers/sicklms200.cc,
-	server/drivers/p2os/p2os.cc, server/drivers/p2os/p2os.h,
-	server/drivers/p2os/p2os_sonar.cc, server/drivers/p2os/sip.h,
 	utils/playerv/dev_frf.c, utils/playerv/dev_srf.c,
 	utils/playerv/playerv.h, utils/playerv/registry.c: Renamed srf and
 	frf back to laser and sonar (havent changed file names).  Changed
@@ -1452,9 +3135,8 @@
 	client_libs/libplayerc/dev_fiducial.c,
 	client_libs/libplayerc/playerc.h,
 	client_libs/libplayerc/test/test_fiducial.c, server/player.h,
-	server/drivers/laserbarcode.cc, server/drivers/p2os/p2os.cc,
-	server/drivers/p2os/sip.h, utils/playerv/dev_fiducial.c: Made some
-	macro and structure name changes
+	server/drivers/laserbarcode.cc, utils/playerv/dev_fiducial.c: Made
+	some macro and structure name changes
 
 2002-08-16 13:18  inspectorg
 
@@ -1504,18 +3186,8 @@
 	client_libs/c++/test/test_lbd.cc,
 	client_libs/c++/test/test_sonar.cc,
 	client_libs/c++/test/test_vision.cc, config/usc_pioneer.cfg,
-	server/deviceregistry.cc, server/drivers/rwi/rwi_bumperdevice.cc,
-	server/drivers/rwi/rwi_bumperdevice.h,
-	server/drivers/rwi/rwi_laserdevice.cc,
-	server/drivers/rwi/rwi_laserdevice.h,
-	server/drivers/rwi/rwi_positiondevice.cc,
-	server/drivers/rwi/rwi_positiondevice.h,
-	server/drivers/rwi/rwi_powerdevice.cc,
-	server/drivers/rwi/rwi_powerdevice.h,
-	server/drivers/rwi/rwi_sonardevice.cc,
-	server/drivers/rwi/rwi_sonardevice.h,
-	server/drivers/rwi/rwidevice.cc, server/drivers/rwi/rwidevice.h:
-	update more code to the new device namespace
+	server/deviceregistry.cc: update more code to the new device
+	namespace
 
 2002-08-15 18:00  gerkey
 
@@ -1528,29 +3200,16 @@
 	server/player.h, server/drivers/acts.cc,
 	server/drivers/festival.cc, server/drivers/laserbarcode.cc,
 	server/drivers/sicklms200.cc, server/drivers/sonyevid30.cc,
-	server/drivers/udpbroadcast.cc, server/drivers/p2os/Makefile.am,
-	server/drivers/p2os/p2os.cc, server/drivers/p2os/p2os.h,
-	server/drivers/p2os/p2os_position.cc,
-	server/drivers/p2os/p2os_sonar.cc, server/drivers/p2os/sip.cc,
-	server/drivers/p2os/sip.h: moved to the new device interface/driver
-	namespace
+	server/drivers/udpbroadcast.cc: moved to the new device
+	interface/driver namespace
 
 2002-08-15 17:58  gerkey
 
 	* configure.in: added --with-glibc21
 
-2002-08-15 17:57  gerkey
-
-	* server/drivers/p2os/p2os_misc.cc: split misc dev into 4 parts
-
 2002-08-15 17:56  gerkey
 
 	* server/defaults.h: moved the defaults into the deriver code
-
-2002-08-15 17:55  gerkey
-
-	* server/drivers/p2os/: p2os_aio.cc, p2os_bumper.cc, p2os_dio.cc,
-	p2os_power.cc: split old misc device into 4 parts
 
 2002-08-15 17:54  gerkey
 
@@ -1611,15 +3270,8 @@
 	server/drivers/festival.cc, server/drivers/fixedtones.cc,
 	server/drivers/laserbarcode.cc, server/drivers/sicklms200.cc,
 	server/drivers/sonyevid30.cc, server/drivers/udpbroadcast.cc,
-	server/drivers/p2os/Makefile.am, server/drivers/p2os/p2os.cc,
-	server/drivers/p2os/p2os.h, server/drivers/p2os/p2os_gripper.cc,
-	server/drivers/p2os/p2os_misc.cc,
-	server/drivers/p2os/p2os_position.cc,
-	server/drivers/p2os/p2os_sonar.cc, server/drivers/p2os/sip.h,
-	server/drivers/rwi/Makefile.am, server/drivers/rwi/rwidevice.cc,
-	server/drivers/rwi/rwidevice.h, server/drivers/stage/Makefile.am,
-	server/drivers/stage/stage.h: added config file support and
-	separated interface from driver
+	server/drivers/stage/Makefile.am, server/drivers/stage/stage.h:
+	added config file support and separated interface from driver
 
 2002-08-13 23:37  inspectorg
 
@@ -1658,20 +3310,8 @@
 2002-08-13 17:00  gerkey
 
 	* configure.in, server/Makefile.am, server/deviceregistry.cc,
-	server/drivers/Makefile.am, server/drivers/p2os/Makefile.am,
-	server/drivers/rwi/Makefile.am,
-	server/drivers/rwi/rwi_bumperdevice.cc,
-	server/drivers/rwi/rwi_bumperdevice.h,
-	server/drivers/rwi/rwi_laserdevice.cc,
-	server/drivers/rwi/rwi_laserdevice.h,
-	server/drivers/rwi/rwi_positiondevice.cc,
-	server/drivers/rwi/rwi_positiondevice.h,
-	server/drivers/rwi/rwi_powerdevice.cc,
-	server/drivers/rwi/rwi_powerdevice.h,
-	server/drivers/rwi/rwi_sonardevice.cc,
-	server/drivers/rwi/rwi_sonardevice.h,
-	server/drivers/rwi/rwidevice.h, server/drivers/stage/Makefile.am:
-	fixed conditional compilation
+	server/drivers/Makefile.am, server/drivers/stage/Makefile.am: fixed
+	conditional compilation
 
 2002-08-12 19:01  gerkey
 
@@ -1711,28 +3351,8 @@
 	server/drivers/Makefile.am, server/drivers/acts.cc,
 	server/drivers/festival.cc, server/drivers/laserbarcode.cc,
 	server/drivers/sicklms200.cc, server/drivers/sonyevid30.cc,
-	server/drivers/udpbroadcast.cc, server/drivers/p2os/Makefile.am,
-	server/drivers/p2os/p2os.cc, server/drivers/p2os/p2os.h,
-	server/drivers/p2os/p2os_gripper.cc,
-	server/drivers/p2os/p2os_misc.cc,
-	server/drivers/p2os/p2os_position.cc,
-	server/drivers/p2os/p2os_sonar.cc, server/drivers/p2os/packet.cc,
-	server/drivers/p2os/packet.h, server/drivers/p2os/robot_params.cc,
-	server/drivers/p2os/robot_params.h, server/drivers/p2os/sip.cc,
-	server/drivers/p2os/sip.h, server/drivers/rwi/Makefile.am,
-	server/drivers/rwi/rwi_bumperdevice.cc,
-	server/drivers/rwi/rwi_bumperdevice.h,
-	server/drivers/rwi/rwi_laserdevice.cc,
-	server/drivers/rwi/rwi_laserdevice.h,
-	server/drivers/rwi/rwi_positiondevice.cc,
-	server/drivers/rwi/rwi_positiondevice.h,
-	server/drivers/rwi/rwi_powerdevice.cc,
-	server/drivers/rwi/rwi_powerdevice.h,
-	server/drivers/rwi/rwi_sonardevice.cc,
-	server/drivers/rwi/rwi_sonardevice.h,
-	server/drivers/rwi/rwidevice.cc, server/drivers/rwi/rwidevice.h,
-	server/drivers/stage/Makefile.am, server/drivers/stage/stage.h,
-	server/drivers/stage/stagedevice.cc,
+	server/drivers/udpbroadcast.cc, server/drivers/stage/Makefile.am,
+	server/drivers/stage/stage.h, server/drivers/stage/stagedevice.cc,
 	server/drivers/stage/stagedevice.h,
 	server/drivers/stage/stagetime.cc,
 	server/drivers/stage/stagetime.h: new directory structure
