@@ -9,6 +9,7 @@ docdir = $(prefix)/doc
 install-data-hook:
 	mkdir -p $(DESTDIR)$(prefix)/doc
 	cp $(top_srcdir)/doc/*.ps $(DESTDIR)$(prefix)/doc
+	cp $(top_srcdir)/server/drivers/localization/mcl/*.nb $(DESTDIR)$(prefix)/doc
 
 uninstall-local:
 	rm -f $(DESTDIR)$(docdir)/*
