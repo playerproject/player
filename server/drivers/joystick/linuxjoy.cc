@@ -34,6 +34,8 @@
 
 The linuxjoystick driver reads data from a standard Linux joystick and
 provides the data via the @ref player_interface_joystick interface.
+This driver can also control a position device by converting joystick
+positions to velocity commands.
 
 @par Compile-time dependencies
 
@@ -45,7 +47,9 @@ provides the data via the @ref player_interface_joystick interface.
 
 @par Requires
 
-- None
+- @ref player_interface_position : if present, joystick positions will be
+  interpreted as velocities and sent as commands to this position device.
+  See also max_xspeed and max_yawspeed options below.
 
 @par Configuration requests
 
@@ -56,6 +60,30 @@ provides the data via the @ref player_interface_joystick interface.
 - port (string)
   - Default: "/dev/js0"
   - The joystick to be used.
+- axes (integer tuple)
+  - Default: [0 1]
+  - Which joystick axes to call the "X" and "Y" axes, respectively.
+- axis_maxima (integer tuple)
+  - Default: [32767 32767]
+  - Maximum absolute values attainable on the X and Y axes, respectively.
+- axis_minima (integer tuple)
+  - Default: [0 0]
+  - Minimum values on the X and Y axes, respectively.  Anything smaller
+    in absolute value than this limit will be reported as zero.
+    Useful for implementing a dead zone on a touchy joystick.
+- max_xspeed (length / sec)
+  - Default: 0.5 m/sec
+  - The maximum translational velocity to be used when commanding a
+    position device.
+- max_yawspeed (angle / sec)
+  - Default: 30 deg/sec
+  - The maximum rotational velocity to be used when commanding a
+    position device.
+- timeout (float)
+  - Default: 5.0
+  - Time (in seconds) since receiving a new joystick event after which
+    the underlying position device will be stopped, for safety.  Set to
+    0.0 for no timeout.
 
 @par Example 
 
@@ -67,6 +95,10 @@ driver
   port "/dev/js0"
 )
 @endverbatim
+
+@todo
+Add support for continuously sending commands, which might be needed for 
+position devices that use watchdog timers.
 
 @par Authors
 
@@ -85,23 +117,27 @@ Andrew Howard
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <fcntl.h>
+#include <math.h>
+
+#include "replace.h" // for poll(2)
 
 #include "playercommon.h"
 #include "drivertable.h"
 #include "driver.h"
+#include "devicetable.h"
 #include "error.h"
 #include "player.h"
+#include "playertime.h"
+
+extern PlayerTime *GlobalTime;
 
 #define XAXIS 0
 #define YAXIS 1
-#define XAXIS2 2
-#define YAXIS2 3
-#define PAN    4
-#define TILT   5
-#define XAXIS4 6
-#define YAXIS4 7
 
+#define MAX_XSPEED 0.5
+#define MAX_YAWSPEED DTOR(30.0)
 #define AXIS_MAX ((int16_t) 32767)
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -127,11 +163,25 @@ class LinuxJoystick : public Driver
   // Check for new configuration requests
   private: void CheckConfig();
 
+  // Put new position command
+  private: void PutPositionCommand();
+
   // Joystick device
   private: const char *dev;
   private: int fd;
   private: int16_t xpos, ypos;
   private: uint16_t buttons;
+  private: int xaxis_max, yaxis_max;
+  private: int xaxis_min, yaxis_min;
+  private: double timeout;
+  private: struct timeval lastread;
+
+  // These are used when we send commands to a position device
+  private: bool command_position;
+  private: double max_xspeed, max_yawspeed;
+  private: int xaxis, yaxis;
+  private: player_device_id_t position_id;
+  private: Driver* position;
 
   // Joystick
   private: player_joystick_data_t joy_data;
@@ -168,8 +218,27 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_JOYSTICK_CODE, PLAYER_READ_MODE,
              sizeof(player_joystick_data_t), 0, 10, 10)
 {
-  // Ethernet interface to monitor
   this->dev = cf->ReadString(section, "port", "/dev/js0");
+  this->xaxis = cf->ReadTupleInt(section,"axes", 0, XAXIS);
+  this->yaxis = cf->ReadTupleInt(section,"axes", 1, YAXIS);
+  this->xaxis_max = cf->ReadTupleInt(section, "axis_maxima", 0, AXIS_MAX);
+  this->yaxis_max = cf->ReadTupleInt(section, "axis_maxima", 1, AXIS_MAX);
+  this->xaxis_min = cf->ReadTupleInt(section, "axis_minima", 0, 0);
+  this->yaxis_min = cf->ReadTupleInt(section, "axis_minima", 1, 0);
+
+  this->command_position = false;
+  // Do we talk to a position device?
+  if(cf->GetTupleCount(section, "requires"))
+  {
+    if(cf->ReadDeviceId(&(this->position_id), section, "requires", 
+                        PLAYER_POSITION_CODE, -1, NULL) == 0)
+    {
+      this->command_position = true;
+      this->max_xspeed = cf->ReadLength(section, "max_xspeed", MAX_XSPEED);
+      this->max_yawspeed = cf->ReadAngle(section, "max_yawspeed", MAX_YAWSPEED);
+      this->timeout = cf->ReadFloat(section, "timeout", 5.0);
+    }
+  }
 
   return;
 }
@@ -186,6 +255,41 @@ int LinuxJoystick::Setup()
                   this->dev, strerror(errno));
     return -1;
   }
+
+  this->lastread.tv_sec = this->lastread.tv_usec = 0;
+
+  // If we're asked, open the position device
+  if(this->command_position)
+  {
+    player_position_power_config_t motorconfig;
+    unsigned short reptype;
+    player_position_cmd_t cmd;
+
+    if(!(this->position = deviceTable->GetDriver(this->position_id)))
+    {
+      PLAYER_ERROR("unable to open position device");
+      return(-1);
+    }
+    if(this->position->Subscribe(this->position_id) != 0)
+    {
+      PLAYER_ERROR("unable to subscribe to position device");
+      return(-1);
+    }
+
+    // Enable the motors
+    motorconfig.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+    motorconfig.value = 1;
+    this->position->Request(this->position_id, this, 
+                            &motorconfig, sizeof(motorconfig), NULL,
+                            &reptype, NULL, 0, NULL);
+    if(reptype != PLAYER_MSGTYPE_RESP_ACK)
+      PLAYER_WARN("failed to enable motors");
+
+    // Stop the robot
+    memset(&cmd,0,sizeof(cmd));
+    this->position->PutCommand(this->position_id,
+                               (unsigned char*)&cmd,sizeof(cmd),NULL);
+  }
   
   // Start the device thread; spawns a new thread and executes
   // LinuxJoystick::Main(), which contains the main loop for the driver.
@@ -201,6 +305,9 @@ int LinuxJoystick::Shutdown()
 {
   // Stop and join the driver thread
   this->StopThread();
+
+  if(this->command_position)
+    this->position->Unsubscribe(this->position_id);
 
   // Close the joystick
   close(this->fd);
@@ -230,6 +337,10 @@ void LinuxJoystick::Main()
     
     // Write outgoing data
     this->RefreshData();
+
+    // Send new commands to position device
+    if(this->command_position)
+      this->PutPositionCommand();
   }
   return;
 }
@@ -239,44 +350,59 @@ void LinuxJoystick::Main()
 // Read the joystick
 void LinuxJoystick::ReadJoy()
 {
+  struct pollfd fd;
   struct js_event event;
+  int count;
   
-  //puts("Reading from joystick");
+  fd.fd = this->fd;
+  fd.events = POLLIN | POLLHUP;
+  fd.revents = 0;
 
-  // get the next event from the joystick
-  read(this->fd, &event, sizeof(struct js_event));
-
-  //printf( "value % d type %u  number %u state %X \n", 
-  //        event.value, event.type, event.number, this->joy_data.buttons );
-
-  // Update buttons
-  if ((event.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON)
+  count = poll(&fd, 1, 10);
+  if (count < 0)
+    PLAYER_ERROR1("poll returned error [%s]", strerror(errno));
+  else if(count > 0)
   {
-    if (event.value)
-      this->buttons |= (1 << event.number);
-    else
-      this->buttons &= ~(1 << event.number);
-  }
-            
-  // ignore the startup events
-  if (event.type & JS_EVENT_INIT)
-    return;
+    // get the next event from the joystick
+    read(this->fd, &event, sizeof(struct js_event));
 
-  switch( event.type )
-  {
-    case JS_EVENT_AXIS:
+    //printf( "value % d type %u  number %u state %X \n", 
+    //        event.value, event.type, event.number, this->joy_data.buttons );
+
+    // Update buttons
+    if ((event.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON)
     {
-      switch( event.number )
-      {
-        case XAXIS:
-          this->xpos = event.value;
-          break;
-        case YAXIS:
-          this->ypos = event.value;
-          break;
-      }
-    }	  
-    break;
+      if (event.value)
+        this->buttons |= (1 << event.number);
+      else
+        this->buttons &= ~(1 << event.number);
+    }
+
+    // ignore the startup events
+    if (event.type & JS_EVENT_INIT)
+      return;
+
+    switch( event.type )
+    {
+      case JS_EVENT_AXIS:
+        {
+          if(event.number == this->xaxis)
+          {
+            this->xpos = event.value;
+            if(abs(this->xpos) < this->xaxis_min)
+              this->xpos = 0;
+            GlobalTime->GetTime(&this->lastread);
+          }
+          else if(event.number == this->yaxis)
+          {
+            this->ypos = event.value;
+            if(abs(this->ypos) < this->yaxis_min)
+              this->ypos = 0;
+            GlobalTime->GetTime(&this->lastread);
+          }
+        }	  
+        break;
+    }
   }
       
   return;
@@ -292,8 +418,8 @@ void LinuxJoystick::RefreshData()
   // Do byte reordering
   this->joy_data.xpos = htons(this->xpos);
   this->joy_data.ypos = htons(this->ypos);
-  this->joy_data.xscale = htons(AXIS_MAX);
-  this->joy_data.yscale = htons(AXIS_MAX);
+  this->joy_data.xscale = htons(this->xaxis_max);
+  this->joy_data.yscale = htons(this->yaxis_max);
   this->joy_data.buttons = htons(this->buttons);
   this->PutData(&this->joy_data, sizeof(this->joy_data), NULL);
 
@@ -317,4 +443,56 @@ void LinuxJoystick::CheckConfig()
   return;
 }
 
+void LinuxJoystick::PutPositionCommand()
+{
+  double scaled_x, scaled_y;
+  double xspeed, yawspeed;
+  player_position_cmd_t cmd;
+  struct timeval curr;
+  double diff;
 
+  scaled_x = this->xpos / (double) this->xaxis_max;
+  scaled_y = this->ypos / (double) this->yaxis_max;
+
+  // sanity check
+  if((scaled_x > 1.0) || (scaled_x < -1.0))
+  {
+    PLAYER_ERROR2("X position (%d) outside of axis max (+-%d); ignoring", 
+                  this->xpos, this->xaxis_max);
+    return;
+  }
+  if((scaled_y > 1.0) || (scaled_y < -1.0))
+  {
+    PLAYER_ERROR2("Y position (%d) outside of axis max (+-%d); ignoring", 
+                  this->ypos, this->yaxis_max);
+    return;
+  }
+
+  // Note that joysticks use X for side-to-side and Y for forward-back, and
+  // also that their axes are backwards with respect to intuitive driving
+  // controls.
+  xspeed = -scaled_y * this->max_xspeed;
+  yawspeed = -scaled_x * this->max_yawspeed;
+
+  // Make sure we've gotten a joystick fairly recently.
+  GlobalTime->GetTime(&curr);
+  diff = (curr.tv_sec - curr.tv_usec/1e6) -
+          (this->lastread.tv_sec - this->lastread.tv_usec/1e6);
+  if(this->timeout && (diff > this->timeout) && (xspeed || yawspeed))
+  {
+    PLAYER_WARN("Timeout on joystick; stopping robot");
+    xspeed = yawspeed = 0.0;
+  }
+
+
+  PLAYER_MSG2(2,"sending speeds: (%f,%f)", xspeed, yawspeed);
+
+  memset(&cmd,0,sizeof(cmd));
+  cmd.xspeed = htonl((int)rint(xspeed*1e3));
+  cmd.yawspeed = htonl((int)rint(RTOD(yawspeed)));
+  cmd.type=0;
+  cmd.state=1;
+
+  this->position->PutCommand(this->position_id,
+                             (unsigned char*)&cmd,sizeof(cmd),NULL);
+}
