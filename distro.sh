@@ -22,12 +22,12 @@ echo "Removing old version link $DISTRO"
 rm -f $DISTRO
 echo "Creating new version link $DISTRO"
 ln -s $DIRECTORY $DISTRO
-echo "Making clean"
-cd $DISTRO && make clean && cd ..
+#echo "Making clean"
+#cd $DISTRO && make clean && cd ..
 echo "Removing any exisiting tarball $DISTRO.tgz"
 /bin/rm -f $DISTRO.tgz
 echo "Creating tarball $DISTRO.tgz, excluding CVS directories"
-/bin/tar hcvzf $DISTRO.tgz $DISTRO --exclude "*CVS" --exclude "*tex"
+/bin/tar hcvzf $DISTRO.tgz $DISTRO --exclude "*CVS" --exclude "*tex" --exclude "*distro.sh"
 echo "Removing version link $DISTRO"
 rm -f $DISTRO
 echo "File $DISTRO.tgz contains $SOFTWARE v.$VERSION"
