@@ -534,11 +534,11 @@ class RobotMapper:
         self.robot_fig.bgcolor((255, 255, 255, 128))
         self.robot_fig.polygon((0, 0, 0), self.curr_scan.get_free())
 
-        # Draw the hit points
-        self.robot_fig.fgcolor((0, 0, 0, 255))
-        for (s, w) in self.curr_scan.get_hits():
-            if w > 0:
-                self.robot_fig.circle(s, 0.05)
+##         # Draw the hit points
+##         self.robot_fig.fgcolor((0, 0, 0, 255))
+##         for (s, w) in self.curr_scan.get_hits():
+##             if w > 0:
+##                 self.robot_fig.circle(s, 0.05)
 
         # Draw the robot body
         self.robot_fig.fgcolor((172, 0, 0, 255))
@@ -549,18 +549,18 @@ class RobotMapper:
 
         self.robot_fig.elevate(1000)
 
-        # Draw the neighborhood
-        self.nhood_fig.clear()
-        self.nhood_fig.fgcolor((255, 0, 0, 255))
-        self.nhood_fig.bgcolor((255, 0, 0, 128))
-        for patch in self.curr_nhood:
-            self.nhood_fig.circle(patch.pose[:2], 0.40)
+##         # Draw the neighborhood
+##         self.nhood_fig.clear()
+##         self.nhood_fig.fgcolor((255, 0, 0, 255))
+##         self.nhood_fig.bgcolor((255, 0, 0, 128))
+##         for patch in self.curr_nhood:
+##             self.nhood_fig.circle(patch.pose[:2], 0.40)
 
-        # Draw the local scan group
-        self.nhood_fig.bgcolor((255, 0, 0, 64))
-        for c in self.curr_local_group.get_free():
-            self.nhood_fig.polygon((0, 0, 0), c)
-        for (s, w) in self.curr_local_group.get_hits():
-            self.nhood_fig.circle((s[0], s[1]), 0.05)
+##         # Draw the local scan group
+##         self.nhood_fig.bgcolor((255, 0, 0, 64))
+##         for c in self.curr_local_group.get_free():
+##             self.nhood_fig.polygon((0, 0, 0), c)
+##         for (s, w) in self.curr_local_group.get_hits():
+##             self.nhood_fig.circle((s[0], s[1]), 0.05)
 
         return
