@@ -79,9 +79,9 @@ class AMCLOdom : public AMCLSensor
   // Current data timestamp
   private: uint32_t tsec, tusec;
   
-  // Last odometric value used to update filter
-  private: pf_vector_t last_pose;
-
+  // Drift model
+  private: pf_matrix_t drift;
+  
   // PDF used to generate action samples
   private: pf_pdf_gaussian_t *action_pdf;
 

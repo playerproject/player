@@ -57,7 +57,20 @@ int AMCLOdom::Load(ConfigFile* cf, int section)
 
   this->tsec = 0;
   this->tusec = 0;
-  this->last_pose = pf_vector_zero();
+
+  this->drift = pf_matrix_zero();
+
+  this->drift.m[0][0] = cf->ReadTupleFloat(section, "odom_drift[0]", 0, 0.20);
+  this->drift.m[0][1] = cf->ReadTupleFloat(section, "odom_drift[0]", 1, 0.00);
+  this->drift.m[0][2] = cf->ReadTupleFloat(section, "odom_drift[0]", 2, 0.00);  
+
+  this->drift.m[1][0] = cf->ReadTupleFloat(section, "odom_drift[1]", 0, 0.00);
+  this->drift.m[1][1] = cf->ReadTupleFloat(section, "odom_drift[1]", 1, 0.20);
+  this->drift.m[1][2] = cf->ReadTupleFloat(section, "odom_drift[1]", 2, 0.00);  
+
+  this->drift.m[2][0] = cf->ReadTupleFloat(section, "odom_drift[2]", 0, 0.20);
+  this->drift.m[2][1] = cf->ReadTupleFloat(section, "odom_drift[2]", 1, 0.00);
+  this->drift.m[2][2] = cf->ReadTupleFloat(section, "odom_drift[2]", 2, 0.20);  
 
   return 0;
 }
@@ -147,57 +160,10 @@ AMCLSensorData *AMCLOdom::GetData(void)
   ndata->pose = pose;
   ndata->delta = pf_vector_zero();
 
-  this->last_pose = pose;
   this->tsec = tsec;
   this->tusec = tusec;
     
   return ndata;
-
-  /* MOVE
-  // Compute change in pose
-  delta = pf_vector_coord_sub(pose, this->last_pose);
-
-  // HACK: fix
-  double min_dr = 0.20;
-  double min_da = M_PI / 6;
-
-  // Make sure we have moved a reasonable distance
-  if (fabs(delta.v[0]) > min_dr || fabs(delta.v[1]) > min_dr || fabs(delta.v[2]) > min_da)
-  {
-    ndata = new AMCLOdomData;
-
-    ndata->sensor = this;
-    ndata->tsec = tsec;
-    ndata->tusec = tusec;
-    ndata->pose = pose;
-    ndata->delta = delta;
-
-    this->last_pose = pose;
-
-    return ndata;
-  }
-
-  return NULL;
-  */
-  
-  /* TESTING
-     double valid_dist, valid_yaw;
-     valid_dist = 1.0;
-     valid_yaw = M_PI;
-
-     // Check for jumps in odometry.  This shouldnt happen, but the P2OS
-     // driver doesnt always produce correct odometry on the P2AT.
-     if (fabs(diff.v[0]) > valid_dist || fabs(diff.v[1]) > valid_dist || fabs(diff.v[2]) > valid_yaw)
-     {
-     PLAYER_WARN3("invalid odometry change [%f %f %f]; ignoring",
-     diff.v[0], diff.v[1], diff.v[2]);
-     *tsec = this->tsec;
-     *tusec = this->tusec;
-     this->last_pose = this->pose;
-     return false;
-     }
-  
-  */
 }
 
 
@@ -219,11 +185,14 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
          
   // See how far the robot has moved
   x = ndata->delta;
-
-  // HACK - FIX
-  ux = 0.2 * x.v[0];
-  uy = 0.2 * x.v[1];
-  ua = fabs(0.2 * x.v[2]) + fabs(0.2 * x.v[0]);
+  
+  // Odometric drift model
+  // This could probably be improved
+  ux = this->drift.m[0][0] * x.v[0];
+  uy = this->drift.m[1][1] * x.v[1];
+  ua = this->drift.m[2][0] * fabs(x.v[0])
+    + this->drift.m[2][1] * fabs(x.v[1])
+    + this->drift.m[2][2] * fabs(x.v[2]);
 
   cx = pf_matrix_zero();
   cx.m[0][0] = ux * ux;

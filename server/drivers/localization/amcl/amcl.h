@@ -197,6 +197,9 @@ class AdaptiveMCL : public CDevice
   // Last odometric pose value used to update filter
   private: pf_vector_t pf_odom_pose;
 
+  // Minimum update distances
+  private: double min_dr, min_da;
+
 #ifdef INCLUDE_RTKGUI
   // RTK stuff; for testing only
   private: int enable_gui;
