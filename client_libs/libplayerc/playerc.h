@@ -471,6 +471,10 @@ int playerc_blobfinder_subscribe(playerc_blobfinder_t *device, int access);
 /** Un-subscribe from the blobfinder device. */
 int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
 
+/** @internal Parse data from incoming packet */
+void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *header,
+                                player_blobfinder_data_t *data, size_t len);
+
 
 /** @} */
 /**************************************************************************/
@@ -888,11 +892,17 @@ typedef struct
   /** Number of points in the scan. */
   int scan_count;
 
+  /** Start bearing of the scan (radians). */
+  double scan_start;
+
   /** Angular resolution of the scan (radians). */
   double scan_res;
 
   /** Range resolution multiplier */
   int range_res;
+
+  /** Raw range data; range (m). */
+  double ranges[PLAYERC_LASER_MAX_SAMPLES];
 
   /** Scan data; range (m) and bearing (radians). */
   double scan[PLAYERC_LASER_MAX_SAMPLES][2];
