@@ -86,6 +86,12 @@ class RegularMCL : public PSDevice
 	// Motion sensor data
 	pose_t p_odometry;			// previous odometry reading
 
+	// MCL result
+	player_localization_data_t mcl_data;	// result
+	pthread_mutex_t mcl_mutex;		// for synchronization
+	void LockHypothesis(void) { pthread_mutex_lock(&mcl_mutex); }
+	void UnlockHypothesis(void) { pthread_mutex_unlock(&mcl_mutex); }
+
     protected:
 
 	// Main function for device thread
@@ -132,6 +138,10 @@ class RegularMCL : public PSDevice
 	// When the last client unsubscribes from a device
 	virtual int Shutdown(void);
 
+	// When the server thread requested data
+	virtual size_t GetData(void* client, unsigned char* dest, size_t len,
+			       uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+
 
 #ifdef INCLUDE_STAGE
 
@@ -148,7 +158,7 @@ class RegularMCL : public PSDevice
 	void LoadStageConfiguration(void);
 
 	// send the current data set to Stage for visualization
-	void SendStageData(void);
+	void SendStageData(player_localization_data_t& data);
 
 	// send a command 'stop update' to Stage
 	inline void StopStageUpdate(void);

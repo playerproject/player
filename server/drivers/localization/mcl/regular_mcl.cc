@@ -182,14 +182,14 @@ int RegularMCL::Setup(void)
 					    this->config.am_a3,
 					    this->config.am_a4);
 
-    // initialize particles
-    this->Reset();
-
     // wait until the sensors are ready
     while (this->distance_device->GetNumData(this) == 0)
 	usleep(10000);
     while (this->motion_device->GetNumData(this) == 0)
 	usleep(10000);
+
+    // initialize particles
+    this->Reset();
 
     // done
     cerr << "RegularMCL is ready." << endl;
@@ -234,6 +234,71 @@ int RegularMCL::Shutdown(void)
 }
 
 
+// When the server thread requested data
+size_t RegularMCL::GetData(void* client, unsigned char* dest, size_t len,
+			   uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+{
+    // read the latest hypothesis
+    pose_t p_odometry;
+    player_localization_data_t data;
+    this->LockHypothesis();
+    data = this->mcl_data;
+    p_odometry = this->p_odometry;
+    this->UnlockHypothesis();
+
+    // add the odometry offset
+    pose_t c_odometry;
+    if (this->ReadOdometry(c_odometry)) {
+	int32_t ox = (int32_t)(c_odometry.x - p_odometry.x);
+	int32_t oy = (int32_t)(c_odometry.y - p_odometry.y);
+	int32_t oa = (int32_t)(c_odometry.a - p_odometry.a);
+	for (uint32_t i=0; i<data.num_hypothesis; i++) {
+	    data.hypothesis[i].mean[0] += ox;
+	    data.hypothesis[i].mean[1] += oy;
+	    data.hypothesis[i].mean[2] += oa;
+	}
+    }
+
+#ifdef INCLUDE_STAGE
+    if (use_stage) {
+	// Send visualization data to Stage
+	this->SendStageData(data);
+    }
+#endif
+
+    // byte swapping
+    int num = (int)data.num_hypothesis;
+    data.num_hypothesis = htonl(data.num_hypothesis);
+    for (int i=0; i<num; i++) {
+	data.hypothesis[i].alpha = htonl(data.hypothesis[i].alpha);
+	data.hypothesis[i].mean[0] = (int32_t)htonl(data.hypothesis[i].mean[0]);
+	data.hypothesis[i].mean[1] = (int32_t)htonl(data.hypothesis[i].mean[1]);
+	data.hypothesis[i].mean[2] = (int32_t)htonl(data.hypothesis[i].mean[2]);
+	data.hypothesis[i].cov[0][0] = (int32_t)htonl(data.hypothesis[i].cov[0][0]);
+	data.hypothesis[i].cov[0][1] = (int32_t)htonl(data.hypothesis[i].cov[0][1]);
+	data.hypothesis[i].cov[0][2] = (int32_t)htonl(data.hypothesis[i].cov[0][2]);
+	data.hypothesis[i].cov[1][0] = (int32_t)htonl(data.hypothesis[i].cov[1][0]);
+	data.hypothesis[i].cov[1][1] = (int32_t)htonl(data.hypothesis[i].cov[1][1]);
+	data.hypothesis[i].cov[1][2] = (int32_t)htonl(data.hypothesis[i].cov[1][2]);
+	data.hypothesis[i].cov[2][0] = (int32_t)htonl(data.hypothesis[i].cov[2][0]);
+	data.hypothesis[i].cov[2][1] = (int32_t)htonl(data.hypothesis[i].cov[2][1]);
+	data.hypothesis[i].cov[2][2] = (int32_t)htonl(data.hypothesis[i].cov[2][2]);
+    }
+
+    // store the result
+    len = sizeof(data);
+    memcpy((void*)dest, (void*)&data, len);
+
+    // set the stamp
+    struct timeval time;
+    GlobalTime->GetTime(&time);
+    *timestamp_sec = time.tv_sec;
+    *timestamp_usec = time.tv_usec;
+
+    return len;
+}
+
+
 // main update function
 void RegularMCL::Main(void)
 {
@@ -268,7 +333,9 @@ void RegularMCL::Main(void)
 	    {
 		player_localization_data_t data;
 		HypothesisConstruction(data);
-		PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
+		this->LockHypothesis();
+		this->mcl_data = data;
+		this->UnlockHypothesis();
 	    }
 	    else
 	    {
@@ -287,20 +354,12 @@ void RegularMCL::Main(void)
 		//
 		//////////////////////////////////////////////////////////////////
 
-		// remember the current odometry information
+		// store the latest result in a local storage
+		this->LockHypothesis();
+		this->mcl_data = data;
 		this->p_odometry = c_odometry;
-
-		// Make data available
-		PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
-
+		this->UnlockHypothesis();
 	    }
-
-#ifdef INCLUDE_STAGE
-	    if (use_stage) {
-		// Send visualization data to Stage
-		this->SendStageData();
-	    }
-#endif
 
 	    // remember when MCL is performed last time
 	    last = current;
@@ -732,30 +791,30 @@ void RegularMCL::HypothesisConstruction(player_localization_data_t& data)
     this->clustering->cluster(this->particles);
 
     // Prepare packet and byte swap
-    int n = 0;
+    uint32_t n = 0;
     for (int i=0; i<PLAYER_LOCALIZATION_MAX_HYPOTHESIS; i++)
     {
 	if (this->clustering->pi[i] > 0.0) {
-	    data.hypothesis[n].alpha = htonl((uint32_t)(this->clustering->pi[i] * 1000000000));
+	    data.hypothesis[n].alpha = (uint32_t)(this->clustering->pi[i] * 1000000000);
 
-	    data.hypothesis[n].mean[0] = htonl((int32_t)(this->clustering->mean[i][0]));
-	    data.hypothesis[n].mean[1] = htonl((int32_t)(this->clustering->mean[i][1]));
-	    data.hypothesis[n].mean[2] = htonl((int32_t)(this->clustering->mean[i][2]));
+	    data.hypothesis[n].mean[0] = (int32_t)(this->clustering->mean[i][0]);
+	    data.hypothesis[n].mean[1] = (int32_t)(this->clustering->mean[i][1]);
+	    data.hypothesis[n].mean[2] = (int32_t)(this->clustering->mean[i][2]);
 
-	    data.hypothesis[n].cov[0][0] = htonl((int32_t)(this->clustering->cov[i][0][0]));
-	    data.hypothesis[n].cov[0][1] = htonl((int32_t)(this->clustering->cov[i][0][1]));
-	    data.hypothesis[n].cov[0][2] = htonl((int32_t)(this->clustering->cov[i][0][2]));
-	    data.hypothesis[n].cov[1][0] = htonl((int32_t)(this->clustering->cov[i][1][0]));
-	    data.hypothesis[n].cov[1][1] = htonl((int32_t)(this->clustering->cov[i][1][1]));
-	    data.hypothesis[n].cov[1][2] = htonl((int32_t)(this->clustering->cov[i][1][2]));
-	    data.hypothesis[n].cov[2][0] = htonl((int32_t)(this->clustering->cov[i][2][0]));
-	    data.hypothesis[n].cov[2][1] = htonl((int32_t)(this->clustering->cov[i][2][1]));
-	    data.hypothesis[n].cov[2][2] = htonl((int32_t)(this->clustering->cov[i][2][2]));
+	    data.hypothesis[n].cov[0][0] = (int32_t)(this->clustering->cov[i][0][0]);
+	    data.hypothesis[n].cov[0][1] = (int32_t)(this->clustering->cov[i][0][1]);
+	    data.hypothesis[n].cov[0][2] = (int32_t)(this->clustering->cov[i][0][2]);
+	    data.hypothesis[n].cov[1][0] = (int32_t)(this->clustering->cov[i][1][0]);
+	    data.hypothesis[n].cov[1][1] = (int32_t)(this->clustering->cov[i][1][1]);
+	    data.hypothesis[n].cov[1][2] = (int32_t)(this->clustering->cov[i][1][2]);
+	    data.hypothesis[n].cov[2][0] = (int32_t)(this->clustering->cov[i][2][0]);
+	    data.hypothesis[n].cov[2][1] = (int32_t)(this->clustering->cov[i][2][1]);
+	    data.hypothesis[n].cov[2][2] = (int32_t)(this->clustering->cov[i][2][2]);
 
 	    n++;
 	}
     }
-    data.num_hypothesis = htonl(n);
+    data.num_hypothesis = n;
 }
 
 
@@ -786,33 +845,28 @@ void RegularMCL::LoadStageConfiguration(void)
 
 
 // send the current data set to Stage for visualization
-void RegularMCL::SendStageData(void)
+void RegularMCL::SendStageData(player_localization_data_t& data)
 {
     // it is an update request
     this->stage_command.command = MCL_CMD_UPDATE;
 
     // hypothesis set
-    int n = 0;
-    for (int i=0; i<PLAYER_LOCALIZATION_MAX_HYPOTHESIS; i++)
-    {
-	if (this->clustering->pi[i] > 0.0) {
-	    stage_command.hypothesis[n].alpha = this->clustering->pi[i];
-	    stage_command.hypothesis[n].mean[0] = this->clustering->mean[i][0];
-	    stage_command.hypothesis[n].mean[1] = this->clustering->mean[i][1];
-	    stage_command.hypothesis[n].mean[2] = this->clustering->mean[i][2];
-	    stage_command.hypothesis[n].cov[0][0] = this->clustering->cov[i][0][0];
-	    stage_command.hypothesis[n].cov[0][1] = this->clustering->cov[i][0][1];
-	    stage_command.hypothesis[n].cov[0][2] = this->clustering->cov[i][0][2];
-	    stage_command.hypothesis[n].cov[1][0] = this->clustering->cov[i][1][0];
-	    stage_command.hypothesis[n].cov[1][1] = this->clustering->cov[i][1][1];
-	    stage_command.hypothesis[n].cov[1][2] = this->clustering->cov[i][1][2];
-	    stage_command.hypothesis[n].cov[2][0] = this->clustering->cov[i][2][0];
-	    stage_command.hypothesis[n].cov[2][1] = this->clustering->cov[i][2][1];
-	    stage_command.hypothesis[n].cov[2][2] = this->clustering->cov[i][2][2];
-	    n++;
-	}
+    stage_command.num_hypothesis = data.num_hypothesis;
+    for (uint32_t i=0; i<data.num_hypothesis; i++) {
+	stage_command.hypothesis[i].alpha = data.hypothesis[i].alpha / 1000000000.0;
+	stage_command.hypothesis[i].mean[0] = data.hypothesis[i].mean[0];
+	stage_command.hypothesis[i].mean[1] = data.hypothesis[i].mean[1];
+	stage_command.hypothesis[i].mean[2] = data.hypothesis[i].mean[2];
+	stage_command.hypothesis[i].cov[0][0] = data.hypothesis[i].cov[0][0];
+	stage_command.hypothesis[i].cov[0][1] = data.hypothesis[i].cov[0][1];
+	stage_command.hypothesis[i].cov[0][2] = data.hypothesis[i].cov[0][2];
+	stage_command.hypothesis[i].cov[1][0] = data.hypothesis[i].cov[1][0];
+	stage_command.hypothesis[i].cov[1][1] = data.hypothesis[i].cov[1][1];
+	stage_command.hypothesis[i].cov[1][2] = data.hypothesis[i].cov[1][2];
+	stage_command.hypothesis[i].cov[2][0] = data.hypothesis[i].cov[2][0];
+	stage_command.hypothesis[i].cov[2][1] = data.hypothesis[i].cov[2][1];
+	stage_command.hypothesis[i].cov[2][2] = data.hypothesis[i].cov[2][2];
     }
-    stage_command.num_hypothesis = n;
 
     // particle set
     stage_command.num_particles = (this->config.num_particles < MCL_MAX_PARTICLES) ?
@@ -823,9 +877,9 @@ void RegularMCL::SendStageData(void)
 
     // send data
     size_t size = sizeof(bool) +		// stage_command.request
-		  sizeof(uint32_t) +	// stage_command.num_hypothesis
+		  sizeof(uint32_t) +		// stage_command.num_hypothesis
 		  sizeof(mcl_hypothesis_t) * PLAYER_LOCALIZATION_MAX_HYPOTHESIS +
-		  sizeof(uint32_t) +	// stage_command.num_particles
+		  sizeof(uint32_t) +		// stage_command.num_particles
 		  sizeof(particle_t) * stage_command.num_particles;
     PutStageCommand((void*)this, (unsigned char*)&stage_command, size);
 }
