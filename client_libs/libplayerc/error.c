@@ -53,7 +53,8 @@
 char playerc_errorstr[1024];
 
 // Use this function to read the error string
-char *playerc_error_str()
+const char *playerc_error_str()
 {
   return playerc_errorstr;
 }
+
