@@ -135,7 +135,7 @@ else
   dnl pkg-config is available, so we use it	
   dnl add prefix to the pkg-config path in case RTK or Stage was
   dnl installed there and the user didn't add it manually 
-  PKG_CONFIG_PATH=$prefix/lib/pkgconfig:$PKG_CONFIG_PATH
+  export PKG_CONFIG_PATH=$prefix/lib/pkgconfig:$PKG_CONFIG_PATH
   AC_MSG_RESULT([pkg-config searching for librtk2.pc in $PKG_CONFIG_PATH]) 
 
   PKG_CHECK_MODULES(RTK, librtk2 >= 2.2,
