@@ -10,6 +10,10 @@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
+WITH_PYTHON = @WITH_PYTHON@
+
+
+ifeq ($(WITH_PYTHON), 1)
 
 all:
 	python setup.py build
@@ -23,4 +27,18 @@ install:
 
 distdir:
 	echo 'NOT IMPLEMENTED'
+
+else
+
+all:
+
+clean:
+
+install:
+
+distdir:
+
+endif
+
+
 
