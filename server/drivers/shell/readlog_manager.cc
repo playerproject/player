@@ -40,9 +40,13 @@
 #include "player.h"
 #include "device.h"
 #include "deviceregistry.h"
+#include "clientmanager.h"
 
 #include "readlog_manager.h"
 
+// Pointer to the clientmanager, so we can reset timestamps in the clients,
+// should the logfile be rewound.
+extern ClientManager* clientmanager;
 
 ////////////////////////////////////////////////////////////////////////////
 // Pointer to the one-and-only manager
@@ -127,6 +131,12 @@ int ReadLogManager::Startup()
 
   // Playback enabled by default
   this->enable = true;
+
+  // Rewind not requested by default
+  this->rewind_requested = false;
+
+  // Autorewind not on by default
+  this->autorewind = false;
 
   return 0;
 }
@@ -239,11 +249,57 @@ void ReadLogManager::Main()
       usleep(10000);
       continue;
     }
-    else
+
+    // If a client has requested that we rewind, then do so
+    if(this->rewind_requested)
+    {
+      // back up to the beginning of the file
+      if(gzseek(this->file,0,SEEK_SET) < 0)
+      {
+        // oh well, warn the user and keep going
+        PLAYER_WARN1("while rewinding logfile, gzseek() failed: %s",
+                     strerror(errno));
+      }
+      else
+      {
+        linenum = 0;
+
+        // reset the time
+        this->server_time = 0;
+
+        // reset time-of-last-write in all clients
+        //
+        // FIXME: It's not really thread-safe to call this here, because it
+        //        writes to a bunch of fields that are also being read and/or
+        //        written in the server thread.  But I'll be damned if I'm
+        //        going to add a mutex just for this.
+        clientmanager->ResetClientTimestamps();
+
+        // reset the flag
+        this->rewind_requested = false;
+
+        puts("ReadLog: logfile rewound");
+
+        continue;
+      }
+    }
 
     // Read a line from the file
-    if (gzgets(this->file, line, sizeof(line)) == NULL)
-      break;
+    if(gzgets(this->file, line, sizeof(line)) == NULL)
+    {
+      // File is done, so just loop forever, unless we're on auto-rewind,
+      // or until a client requests rewind.
+      while(!this->autorewind && !this->rewind_requested)
+      {
+        usleep(100000);
+        pthread_testcancel();
+        this->server_time += 100000;
+      }
+
+      // request a rewind and start again
+      this->rewind_requested = true;
+      continue;
+    }
 
     linenum += 1;
 
@@ -282,6 +338,7 @@ void ReadLogManager::Main()
           free(this->format);
           this->format = strdup(tokens[3]);
         }
+        continue;
       }
     }
 
@@ -309,17 +366,8 @@ void ReadLogManager::Main()
     }
   }
 
-  // File is done, so just loop forever
-  while (1)
-  {
-    usleep(100000);
-    pthread_testcancel();
-    this->server_time += 100000;
-  }
-
   return;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////
 // Signed int conversion macros

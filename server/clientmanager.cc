@@ -344,6 +344,16 @@ int ClientManager::GetIndex(ClientData* ptr)
   return(retval);
 }
 
+// Reset 'last_write' field to 0.0 in each client.  Used when playing back
+// data from a logfile and a client requests the logfile be rewound.
+void
+ClientManager::ResetClientTimestamps(void)
+{
+  int i;
+  for(i=0;i<num_clients;i++)
+    clients[i]->last_write = 0.0;
+}
+
 /*************************************************************************
  * ClientManagerTCP
  *************************************************************************/

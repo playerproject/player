@@ -121,6 +121,14 @@ class ReadLogManager
   // get/set it.
   public: bool enable;
 
+  // Has a client requested that we rewind?  It's public, so that an
+  // instance of ReaLog can set it.
+  public: bool rewind_requested;
+
+  // Should we auto-rewind?  This is set in the log devie in the .cfg
+  // file, and defaults to false
+  public: bool autorewind;
+
   // Subscribed device list
   private: int device_count;
   private: CDevice *devices[1024];

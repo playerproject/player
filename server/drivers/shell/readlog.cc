@@ -121,6 +121,11 @@ ReadLog::ReadLog(int code, ConfigFile* cf, int section)
       this->manager->enable = true;
     else
       this->manager->enable = false;
+
+    if(cf->ReadInt(section, "autorewind", 0) > 0)
+      this->manager->autorewind = true;
+    else
+      this->manager->autorewind = false;
   }
   
   return;
@@ -171,6 +176,7 @@ int ReadLog::Shutdown()
 int ReadLog::PutConfig(player_device_id_t* device, void* client,
                        void* data, size_t len)
 {
+  player_log_set_read_rewind_t rreq;
   player_log_set_read_state_t sreq;
   player_log_get_state_t greq;
   uint8_t subtype;
@@ -235,6 +241,23 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
                         &greq, sizeof(greq)) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
+    case PLAYER_LOG_SET_READ_REWIND_REQ:
+      if(len != sizeof(rreq.subtype))
+      {
+        PLAYER_WARN2("request wrong size (%d != %d)", 
+                     len, sizeof(rreq.subtype));
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+
+      // set the appropriate flag in the manager
+      this->manager->rewind_requested = true;
+
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+
     default:
       PLAYER_WARN1("got request of unknown subtype %u", subtype);
       if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)

@@ -52,6 +52,7 @@ typedef struct
   GtkBox* hbox;
   GtkFrame* label_frame;
   GtkLabel* label;
+  GtkButton* rewindbutton;
   GtkButton* playbutton;
   GtkButton* stopbutton;
   GtkButton* quitbutton;
@@ -154,6 +155,7 @@ void
 init_gui(gui_data_t* gui_data, int argc, char** argv)
 {
   char titlebuf[2*MAX_HOSTNAME_LEN];
+
   g_type_init();
   gtk_init(&argc, &argv);
 
@@ -174,18 +176,34 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   update_status_label(gui_data);
 
   /* create the buttons */
-  g_assert((gui_data->playbutton = 
-            (GtkButton*)gtk_button_new_with_label("gtk-execute")));
+  if(gui_data->log->type == PLAYER_LOG_TYPE_READ)
+  {
+    g_assert((gui_data->rewindbutton = 
+              (GtkButton*)gtk_button_new_with_label("gtk-go-back")));
+    g_assert((gui_data->playbutton = 
+              (GtkButton*)gtk_button_new_with_label("gtk-execute")));
+  }
+  else
+  {
+    gui_data->rewindbutton = NULL;
+    g_assert((gui_data->playbutton = 
+              (GtkButton*)gtk_button_new_with_label("gtk-save")));
+  }
   g_assert((gui_data->stopbutton = 
             (GtkButton*)gtk_button_new_with_label("gtk-stop")));
   g_assert((gui_data->quitbutton = 
             (GtkButton*)gtk_button_new_with_label("gtk-quit")));
 
+  if(gui_data->log->type == PLAYER_LOG_TYPE_READ)
+    gtk_button_set_use_stock(gui_data->rewindbutton,TRUE);
   gtk_button_set_use_stock(gui_data->playbutton,TRUE);
   gtk_button_set_use_stock(gui_data->stopbutton,TRUE);
   gtk_button_set_use_stock(gui_data->quitbutton,TRUE);
 
   /* hook them up to callbacks */
+  if(gui_data->log->type == PLAYER_LOG_TYPE_READ)
+    gtk_signal_connect(GTK_OBJECT(gui_data->rewindbutton), "clicked",
+                       (GtkSignalFunc)(button_callback),(void*)gui_data);
   gtk_signal_connect(GTK_OBJECT(gui_data->playbutton), "clicked",
                      (GtkSignalFunc)(button_callback),(void*)gui_data);
   gtk_signal_connect(GTK_OBJECT(gui_data->stopbutton), "clicked",
@@ -194,6 +212,9 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
                      (GtkSignalFunc)(button_callback),(void*)gui_data);
 
   /* pack them */
+  if(gui_data->log->type == PLAYER_LOG_TYPE_READ)
+    gtk_box_pack_start(gui_data->hbox, (GtkWidget*)gui_data->rewindbutton, 
+                       FALSE, FALSE, 0);
   gtk_box_pack_start(gui_data->hbox, (GtkWidget*)gui_data->playbutton, 
                      FALSE, FALSE, 0);
   gtk_box_pack_start(gui_data->hbox, (GtkWidget*)gui_data->stopbutton, 
@@ -267,6 +288,21 @@ button_callback(GtkWidget *widget, gpointer data)
         fprintf(stderr, "Error: Failed to start logging\n");
         quit = 1;
       }
+    }
+  }
+  else if((GtkButton*)widget == gui_data->rewindbutton)
+  {
+    if(gui_data->log->type == PLAYER_LOG_TYPE_READ)
+    {
+      if(playerc_log_set_read_rewind(gui_data->log) < 0)
+      {
+        fprintf(stderr, "Error: Failed to rewind playback\n");
+        quit = 1;
+      }
+    }
+    else
+    {
+      puts("Warning: Can't rewind while writing");
     }
   }
   else if((GtkButton*)widget == gui_data->stopbutton)

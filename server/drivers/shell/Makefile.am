@@ -1,6 +1,6 @@
 noinst_LIBRARIES = @PASSTHROUGH_LIB@ @LOGFILE_LIB@
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/client_libs/c
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace -I$(top_srcdir)/client_libs/c
 
 EXTRA_LIBRARIES = libpassthrough.a liblogfile.a
 

@@ -141,3 +141,20 @@ int playerc_log_set_read_state(playerc_log_t* device, int state)
   }
   return(0);
 }
+
+// Rewind playback
+int playerc_log_set_read_rewind(playerc_log_t* device)
+{
+  player_log_set_read_rewind_t req;
+
+  req.subtype = PLAYER_LOG_SET_READ_REWIND_REQ;
+
+  if(playerc_client_request(device->info.client, &device->info,
+                            &req, sizeof(req),
+                            &req, sizeof(req)) < 0)
+  {
+    PLAYERC_ERR("failed to rewind data playback");
+    return(-1);
+  }
+  return(0);
+}
