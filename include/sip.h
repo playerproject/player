@@ -29,8 +29,7 @@
 #ifndef _SIP_H
 #define _SIP_H
 
-//#include <values.h> // not portable
-#include <limits.h> // use this instead says Mr.POSIX 
+#include <limits.h>
 
 #include <messages.h>
 #include <p2osdevice.h>
@@ -39,6 +38,7 @@ class CSIP
 {
  private:
   int PositionChange( unsigned short, unsigned short );
+  int param_idx; // index of our robot's data in the parameter table
 
  public:
   bool lwstall, rwstall;
@@ -55,13 +55,12 @@ class CSIP
   void PrintSonars();
   void Fill( player_p2os_data_t* data,  struct timeval timeBegan_tv);
 
-  CSIP() {
+  CSIP(int idx) 
+  {
+    param_idx = idx;
     for(int i=0;i<(int)PLAYER_NUM_SONAR_SAMPLES;i++) 
       sonars[i] = 0;
 
-    //xpos = MAXINT;
-    //ypos = MAXINT; 
-    // more portable definitions:
     xpos = INT_MAX;
     ypos = INT_MAX;
   }
