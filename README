@@ -1,8 +1,9 @@
 Player - one hell of a robot server
 ----------------------------------
-This is the Player device server, developed at the USC Robotics Research
-Lab and HRL Labs (with help from many other places), and released under the 
-GNU General Public License (GPL).  The Player homepage is:
+This is the Player device server, developed at the Stanford AI Lab, the
+USC Robotics Research Lab, the Simon Fraser Autonomy Lab (with help from
+many other places), and released under the GNU General Public License
+(GPL).  The Player homepage is:
 
   http://playerstage.sourceforge.net
 
@@ -26,4 +27,4 @@ examples included in this directory (e.g., config.simulation, config.p2os).
 Feel free to contribute scripts for other common configurations.
 
 
-                    - brian gerkey (gerkey@robotics.usc.edu)
+                    - brian gerkey (gerkey@ai.stanford.edu)
