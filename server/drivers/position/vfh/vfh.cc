@@ -33,6 +33,7 @@ class VFH_Class : public CDevice
 
   private:
     bool Goal_Behind;
+    bool active_goal;
     
     // Set up the truth device (optional).
     int SetupTruth();
@@ -181,6 +182,9 @@ void VFH_Register(DriverTable* table)
 // Set up the device (called by server thread).
 int VFH_Class::Setup() {
   player_position_cmd_t cmd;
+
+  this->active_goal = false;
+  this->goal_x = this->goal_y = this->goal_t = 0;
   
   // Initialise the underlying truth device.
   if(this->SetupTruth() != 0)
@@ -640,6 +644,7 @@ void VFH_Class::Main()
   struct timeval stime, time;
   int gt, ct;
   bool newodom,newtruth;
+  double angdiff;
 
   sleeptime.tv_sec = 0;
   sleeptime.tv_nsec = 1000000L;
@@ -689,17 +694,39 @@ void VFH_Class::Main()
     // Read client command
     this->GetCommand();
 
+    if(!this->active_goal)
+    {
+      //puts("VFH: no active goal");
+      continue;
+    }
+
     // gettimeofday(&time, 0);
     // printf("Before VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
 
     dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
                 pow((goal_y - this->odom_pose[1]),2));
+
+    /*
+    printf("VFH: goal : %d,%d,%d\n",
+           this->goal_x, this->goal_y, this->goal_t);
+    printf("VFH: pose: %f,%f,%f\n",
+           this->odom_pose[0], this->odom_pose[1], this->odom_pose[2]);
     
-    if (dist > 500)
+    printf("VFH: dist: %f\n", dist);
+           */
+    if((dist < 500) && 
+       fabs(RTOD(NORMALIZE(DTOR(goal_t)-DTOR(this->odom_pose[2])))) < 10)
+    {
+      //puts("VFH: goal reached");
+      this->active_goal = false;
+      this->speed = this->turnrate = 0;
+      PutCommand();
+    }
+    else if (dist > 500)
     {
       Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]), (goal_x - this->odom_pose[0]))
-        * 180 / M_PI - this->odom_pose[2];
-      
+              * 180 / M_PI - this->odom_pose[2];
+
       while (Desired_Angle > 360.0)
       {
         Desired_Angle -= 360.0;
@@ -718,8 +745,9 @@ void VFH_Class::Main()
     else
     {
       // At goal, stop
-//      goal_t = 90;
+      //      goal_t = 90;
 
+      /*
       gt = goal_t % 360;
       if (gt > 180)
         gt -= 360;
@@ -732,13 +760,32 @@ void VFH_Class::Main()
         speed = 0;
         turnrate = MAX_TURNRATE;
       } else if (((gt - ct) < -10) &&
-		((gt - ct) >= -180)) {
+                 ((gt - ct) >= -180)) {
         speed = 0;
         turnrate = -1 * MAX_TURNRATE;
       } else {
         speed = 0;
         turnrate = 0;
       }
+      */
+
+      angdiff = this->goal_t - this->odom_pose[2];
+      if(angdiff > 180)
+        angdiff -= 360.0;
+      else if(angdiff < -180)
+        angdiff += 360.0;
+
+      speed = 0;
+      if(fabs(angdiff) > 10)
+      {
+        if(angdiff > 0)
+          turnrate = MAX_TURNRATE;
+        else
+          turnrate = -MAX_TURNRATE;
+      }
+      else
+        turnrate = 0;
+
       this->PutCommand();
     }
     // gettimeofday(&time, 0);
@@ -749,14 +796,22 @@ void VFH_Class::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new commands from the server
-void VFH_Class::GetCommand() {
+void VFH_Class::GetCommand() 
+{
   player_position_cmd_t cmd;
+  int x,y,t;
 
   if (CDevice::GetCommand(&cmd, sizeof(cmd)) != 0) {
-    goal_x = ntohl(cmd.xpos);
-    goal_y = ntohl(cmd.ypos);
-    goal_t = ntohl(cmd.yaw);
-//    printf("Received command to go to: (%d, %d, %d)\n", goal_x, goal_y, goal_t);
+    x = (int)ntohl(cmd.xpos);
+    y = (int)ntohl(cmd.ypos);
+    t = (int)ntohl(cmd.yaw);
+    if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
+    {
+      this->active_goal = true;
+      this->goal_x = x;
+      this->goal_y = y;
+      this->goal_t = t;
+    }
   }
 }
 
