@@ -125,30 +125,13 @@ void Dummy_Register(DriverTable* table)
 Dummy::Dummy(ConfigFile* cf, int section)
     : Driver(cf, section)
 {
-  int num_ids;
-  player_device_id_t *ids;
+  // Look for our default device id
+  if (cf->ReadDeviceId(&this->local_id, section, "outputs", 0, -1, NULL) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
   
-  // Parse out the device id's
-  if ((num_ids = cf->ParseDeviceIds(section, &ids)) < 0)
-  {
-    this->SetError(-1);
-    return;
-  }
-
-  // We can only support one interface at a time
-  if (cf->ReadDeviceId(&this->local_id, ids, num_ids, -1, 0) < 0)
-  {
-    PLAYER_ERROR("no interfaces specified");
-    this->SetError(-1);
-    return;
-  }
-  if (cf->UnusedIds(section, ids, num_ids))
-  {
-    PLAYER_WARN("dummy driver support one interface at a time");
-  }
-
-  free(ids);
-
   // Add our interface
   if (this->AddInterface(this->local_id, PLAYER_ALL_MODE, PLAYER_MAX_MESSAGE_SIZE,
                          this->cmd_len, 10, 10) != 0)
@@ -175,6 +158,7 @@ Dummy::Dummy(ConfigFile* cf, int section)
       data->width = htons(w);
       data->height = htons(h);
       data->depth = 24;
+      data->format = PLAYER_CAMERA_FORMAT_RGB888;
       data->compression = PLAYER_CAMERA_COMPRESS_RAW;
       data->image_size = htonl(w * h * 3);
 

@@ -57,6 +57,7 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
                size_t datasize, size_t commandsize, 
                size_t reqqueuelen, size_t repqueuelen)
 {
+  /*
   player_device_id_t* ids;
   int num_ids;
 
@@ -87,6 +88,14 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
     return;
   }
   free(ids);
+  */
+
+  // Look for our default device id
+  if (cf->ReadDeviceId(&this->device_id, section, "outputs", interface, -1, NULL) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
 
   // Create an interface 
   if (this->AddInterface(this->device_id, access,
