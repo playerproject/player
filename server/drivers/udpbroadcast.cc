@@ -594,7 +594,13 @@ void UDPBroadcast::SendPacket(void *packet, size_t size)
 // Receive a packet
 int UDPBroadcast::RecvPacket(void *packet, size_t size)
 {
-  size_t addr_len = sizeof(this->read_addr);    
+  // BAD HACK - this is an indirect test for SunOS, older versions (e.g., 5.6)
+  // which require the last arg to recvfrom() to be signed
+#if HAVE_STDINT_H
+  socklen_t addr_len = sizeof(this->read_addr);    
+#else
+  int addr_len = sizeof(this->read_addr);    
+#endif
   int packet_len = recvfrom(this->read_socket, (char*)packet, size,
                             0, (sockaddr*) &this->read_addr, &addr_len);
   if (packet_len < 0)

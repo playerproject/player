@@ -313,7 +313,8 @@ int ClientManager::Accept()
 {
   int num_connects;
   CClientData *clientData;
-  socklen_t sender_len;
+  //socklen_t sender_len;
+  int sender_len;
 
   if((num_connects = poll(accept_ufds,num_accept_ufds,0)) < 0)
   {
