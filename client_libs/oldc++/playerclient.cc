@@ -27,7 +27,7 @@
  */
 
 #include <string.h>
-#include <playerclient.h>
+#include <oldplayerclient.h>
 #include <unistd.h> // for close(2)
 #include <netinet/in.h> // for ntohs(3)
 #include <sys/time.h> // for ntohs(3)

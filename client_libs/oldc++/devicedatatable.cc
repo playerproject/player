@@ -27,9 +27,9 @@
  * in C++ client
  */
 
-#include <devicedatatable.h>
+#include <olddevicedatatable.h>
 #include <messages.h>
-#include <playerclient.h>
+#include <oldplayerclient.h>
 
 // initialize the table
 DeviceDataTable::DeviceDataTable()
