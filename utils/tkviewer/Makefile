@@ -28,9 +28,9 @@ clean:
 install:
 	$(MKDIR) -p $(INSTALL_UTILS)
 	$(INSTALL) -m 755 viewer.tk $(INSTALL_UTILS)
-	$(INSTALL) -m 644 README $(INSTALL_UTILS)/README.tkplayerv
+	$(INSTALL) -m 644 README $(INSTALL_UTILS)/README.tkviewer
 
 uninstall:
 	$(RM) -f $(INSTALL_UTILS)/viewer.tk
-	$(RM) -f $(INSTALL_UTILS)/README.tkplayerv
+	$(RM) -f $(INSTALL_UTILS)/README.tkviewer
 
