@@ -33,6 +33,13 @@
  * So the overall architecture is similar to the p2osdevice, where this class
  * handles the data gathering tasks for the Position, IR and power devices.
  *
+ * Note that we have actually made our own version of the SerCom program that
+ * runs on the Kameleon.  Our version runs faster than K-Teams, so we
+ * can reliably get new data at around 10 Hz.  (K-Team SerCom barfed for us
+ * faster than about 2 Hz!)  Our SerCom, called LPRSerCom, also handles turning
+ * the IRs on and off, so we don't have to worry about that in the player server.
+ * If you would like a copy of LPRSerCom, then send me email: sweeney (at) cs.umass.edu
+ *
  * Our robots use a StrongARM SA110 for the compute power, so we have
  * to minimize the use of floating point, since the ARM can only emulate
  * it.
@@ -67,7 +74,7 @@ extern int global_playerport; // used to get at devices
 
 // we need to debug different things at different times
 //#define DEBUG_POS
-//#define DEBUG_SERIAL
+#define DEBUG_SERIAL
 #define DEBUG_CONFIG
 
 // useful macros
@@ -108,6 +115,8 @@ extern struct timeval		REB::last_power_update;
 extern int			REB::pos_update_period;
 extern int			REB::locks;
 extern int			REB::slocks;
+extern struct pollfd		REB::write_pfd;
+extern struct pollfd		REB::read_pfd;
 
 REB::REB(char *interface, ConfigFile *cf, int section)
 {
@@ -143,10 +152,14 @@ REB::REB(char *interface, ConfigFile *cf, int section)
     this->pos_subscriptions = 0;
     this->power_subscriptions = 0;
 
-    GlobalTime->GetTime(&this->last_pos_update);
+    //set up the poll parameters... used for the comms
+    // over the serial port to the Kam
+    write_pfd.events = POLLOUT;
+    read_pfd.events = POLLIN;
 
     // we want to stagger our writes to the serial port
     // so we are doing some rudimentary scheduling
+    GlobalTime->GetTime(&this->last_pos_update);
     this->last_ir_update = this->last_pos_update;
     if (this->last_ir_update.tv_usec < 
 	this->last_ir_update.tv_usec+REB_IR_UPDATE_PERIOD*1000) {
@@ -184,7 +197,8 @@ REB::REB(char *interface, ConfigFile *cf, int section)
   subscriptions = 0;
 }
 
-void REB::Lock()
+void 
+REB::Lock()
 {
   // keep track of our locks cuz we seem to lose one
   // somewhere somehow
@@ -192,24 +206,33 @@ void REB::Lock()
   pthread_mutex_lock(&reb_accessMutex);
 }
 
-void REB::Unlock()
+void 
+REB::Unlock()
 {
   locks--;
   pthread_mutex_unlock(&reb_accessMutex);
 }
 
-void REB::SetupLock()
+void 
+REB::SetupLock()
 {
   slocks++;
   pthread_mutex_lock(&reb_setupMutex);
 }
-void REB::SetupUnlock()
+
+void 
+REB::SetupUnlock()
 {
   slocks--;
   pthread_mutex_unlock(&reb_setupMutex);
 }
 
-int REB::Setup()
+/* called the first time a client connects
+ *
+ * returns: 0 on success
+ */
+int 
+REB::Setup()
 {
   struct termios oldtio;
   struct termios params;
@@ -222,6 +245,10 @@ int REB::Setup()
     perror("REB::Setup():open()");
     return(1);
   }	
+
+  // set the poll params
+  write_pfd.fd = reb_fd;
+  read_pfd.fd = reb_fd;
   
   bzero(&params, sizeof(params));  
   tcgetattr(this->reb_fd, &oldtio); /* save current serial port settings */
@@ -235,22 +262,11 @@ int REB::Setup()
    
   tcflush(this->reb_fd, TCIFLUSH);
   tcsetattr(this->reb_fd, TCSANOW, &params);
-   
-  // restart the control software on the REB
-  printf("REB: sending restart...");
-  fflush(stdout);
-  write_serial(REB_RESTART_COMMAND, strlen(REB_RESTART_COMMAND));
 
-  // we need to read 4 complete lines from REB
-  char buf[256];
-  read_serial_until(buf, sizeof(buf), CRLF, strlen(CRLF));
-  read_serial_until(buf, sizeof(buf), CRLF, strlen(CRLF));
-  read_serial_until(buf, sizeof(buf), CRLF, strlen(CRLF));
-  read_serial_until(buf, sizeof(buf), CRLF, strlen(CRLF));
-  printf("done\n");
-  
+  //  Restart();
+
   // so no IRs firing
-  StopIR();
+  SetIRState(REB_IR_STOP);
 
   this->param_index =0;
   this->motors_enabled = false;
@@ -267,13 +283,17 @@ int REB::Setup()
   return(0);
 }
 
+
 int REB::Shutdown()
 {
   printf("REB: SHUTDOWN\n");
+
+  StopThread();
+
   SetSpeed(REB_MOTOR_LEFT, 0);
   SetSpeed(REB_MOTOR_RIGHT, 0);
 
-  StopIR();
+  SetIRState(REB_IR_STOP);
   // zero these out or we may have problems
   // next time we connect
   player_reb_cmd_t cmd;
@@ -284,7 +304,6 @@ int REB::Shutdown()
 
   //  PutCommand((uint8_t *)&cmd, sizeof(cmd));
 
-  StopThread();
 
   if (locks > 0) {
     printf("REB: %d LOCKS STILL EXIST\n", locks);
@@ -444,11 +463,12 @@ REB::Main()
     if(ir) {
       if(!this->ir_subscriptions && ir->subscriptions) {
 	// then someone just subbed to IR
-	StartIR();
+	SetIRState(REB_IR_START);
 	
       } else if(this->ir_subscriptions && !(ir->subscriptions)) {
 	// then last person stopped sub from IR..
-	StopIR();
+	SetIRState(REB_IR_STOP);
+	
       }
       
       this->ir_subscriptions = ir->subscriptions;
@@ -717,6 +737,8 @@ REB::Main()
       }
     }
     
+    pthread_testcancel();
+
     // now lets get new data...
     UpdateData();
 
@@ -742,6 +764,7 @@ REB::StopThread()
   if(pthread_join(thread,&dummy))
     perror("REB::StopThread:pthread_join()");
 }
+
 
 /* this will read a new config command and interpret it
  *
@@ -788,9 +811,9 @@ REB::ReadConfig()
 #endif
 
 	if (powreq->state) {
-	  StartIR();
+	  SetIRState(REB_IR_START);
 	} else {
-	  StopIR();
+	  SetIRState(REB_IR_STOP);
 	}
 	
 	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
@@ -1161,49 +1184,59 @@ REB::UpdateData()
 {
   player_reb_data_t d;
     
-  struct timeval curr;
-  int timems;
-  GlobalTime->GetTime(&curr);
+    struct timeval curr, end;
+  //  int timems;
 
   Lock();
   memcpy(&d, this->data, sizeof(player_reb_data_t));
   Unlock();
 
   // get time since last ir update in ms
-  timems = (curr.tv_sec - last_ir_update.tv_sec)*1000 +
-    (curr.tv_usec - last_ir_update.tv_usec)/1000;
+  //timems = (curr.tv_sec - last_ir_update.tv_sec)*1000 +
+  //    (curr.tv_usec - last_ir_update.tv_usec)/1000;
   
   // we dont want to update IR during position mode moves
   // because it uses a lot of b/w on the serial port... FIX
-  if (this->ir_subscriptions && timems >= REB_IR_UPDATE_PERIOD &&
-      this->velocity_mode) {
-    Lock();
-    UpdateIRData(&d);
-    Unlock();
-    
-    last_ir_update = curr;
-  }
 
-  timems = (curr.tv_sec - last_power_update.tv_sec)*1000 +
-    (curr.tv_usec - last_power_update.tv_usec)/1000;
+  //  if (this->ir_subscriptions && timems >= REB_IR_UPDATE_PERIOD) {
 
-  if (this->power_subscriptions && timems >= REB_POWER_UPDATE_PERIOD) {
-    Lock();
-    UpdatePowerData(&d);
-    Unlock();
-    last_power_update = curr;
-  }
+  Lock();
+  //  GlobalTime->GetTime(&curr);
+  UpdateIRData(&d);
+  //  GlobalTime->GetTime(&end);
+  Unlock();
+  //  printf("REB: IR PER=%d us\n", (end.tv_sec - curr.tv_sec)*1000000 +
+  //	 (end.tv_usec - curr.tv_usec));
 
-  timems = (curr.tv_sec - last_pos_update.tv_sec)*1000 +
-    (curr.tv_usec - last_pos_update.tv_usec)/1000;
+  //    last_ir_update = curr;
+    //  }
 
-  if (this->pos_subscriptions && timems >= this->pos_update_period) {
-    Lock();
-    UpdatePosData(&d);
-    Unlock();
+  //    timems = (curr.tv_sec - last_power_update.tv_sec)*1000 +
+  //    (curr.tv_usec - last_power_update.tv_usec)/1000;
+    //    printf("REB: power=%d timems=%d\n", power_subscriptions, timems);
+  //   if (this->power_subscriptions && timems >= REB_POWER_UPDATE_PERIOD) {
+  Lock();
+  UpdatePowerData(&d);
+  Unlock();
 
-    last_pos_update = curr;
-  }
+    //  last_power_update = curr;
+    //  }
+
+    //  timems = (curr.tv_sec - last_pos_update.tv_sec)*1000 +
+    //    (curr.tv_usec - last_pos_update.tv_usec)/1000;
+
+
+    //  if (this->pos_subscriptions && timems >= this->pos_update_period) {
+  Lock();
+  //  GlobalTime->GetTime(&curr);
+  UpdatePosData(&d);
+  //  GlobalTime->GetTime(&end);
+  Unlock();
+  //  printf("REB: POS PER=%d us\n", (end.tv_sec - curr.tv_sec)*1000000 +
+  //	 (end.tv_usec - curr.tv_usec));
+  
+    //    last_pos_update = curr;
+    //  }
   
   PutData((unsigned char *)&d, sizeof(d), 0 ,0);
 }
@@ -1220,41 +1253,22 @@ void
 REB::UpdateIRData(player_reb_data_t * d)
 {
   // then we can take a reading
-  uint16_t volts[4];
-  int which;
+  uint16_t volts[PLAYER_IR_MAX_SAMPLES];
   struct timeval curr;
+  char buf[64];
 
-  GlobalTime->GetTime(&curr);
+  ReadAllIR(volts);
   
-  if ( (curr.tv_sec - this->last_ir.tv_sec)*1000 + 
-       (curr.tv_usec - this->last_ir.tv_usec)/1000 >= 
-       REB_IR_UPDATE_PERIOD) {
-
-    // we only use 4 IRs at a time.  so collect their
-    // data, then turn them off and turn the others on
-    for (int i =0; i < 4; i++) {
-      which = this->ir_sequence + 2*i;
-      // these are in units of 4 mV
-      volts[i] = ReadAD(which);
-      
-      // now turn into mV units
-      volts[i] *= 4;
-      d->ir.voltages[which] = htons(volts[i]);
-      
-      // now turn this IR off
-      ConfigAD(which, REB_AD_OFF);
-    }
+  for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
+    // these are in units of 4 mV
+    //    volts[i] = ReadAD(i);
     
-    // now get two new IRs
-    this->ir_sequence++;
-    this->ir_sequence %= 2;
-    
-    for (int i =0; i < 4; i++) {
-      ConfigAD(this->ir_sequence + 2*i, REB_AD_ON);
-    }
-
-    last_ir =curr;
-  }    
+    // now turn into mV units
+    volts[i] *= 4;
+    d->ir.voltages[i] = htons(volts[i]);
+    //    printf("REB: IR%d=%d\n", i, volts[i]);
+  }
+  
 }
 
 /* this will update the POWER data.. basically just the battery level for now
@@ -1450,42 +1464,6 @@ REB::UpdatePosData(player_reb_data_t *d)
 }
   
 
-/* this will start the IR reading sequence
- *
- * returns:
- */
-void
-REB::StartIR()
-{
-  // now lets start the IR sequence..
-  // turn on evens
-  this->ir_sequence = 0;
-  for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
-    if (!i%2) {
-      ConfigAD(i,REB_AD_ON);
-    } else {
-      ConfigAD(i, REB_AD_OFF);
-    }
-  }
-  
-  // record last IR reading
-  GlobalTime->GetTime(&this->last_ir);
-}
-
-/* this will stop the sequence and turn off IRs
- *
- * returns:
- */
-void
-REB::StopIR()
-{
-  printf("REB: StopIR\n");
-  for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
-    ConfigAD(i, REB_AD_OFF);
-  }
-  
-  this->ir_sequence = -1;
-}
 
 /* this will reset odometry -- the counters on the encoders and 
  * the integrated position estimates
@@ -1532,8 +1510,8 @@ REB::SetOdometry(int x, int y, short theta)
 int
 REB::write_serial(char *buf, int len)
 {
-  int num, t,i;
-
+  int num, t,i, pret;
+  
 #ifdef DEBUG_SERIAL
   printf("WRITE: len=%d: ", len);
   for (i =0; i < len; i++) {
@@ -1552,6 +1530,19 @@ REB::write_serial(char *buf, int len)
   
   num = 0;
   while (num < len) {
+
+    // wait for channel so we can write
+    pret = poll(&write_pfd, 1, 1000);
+    
+    if (pret < 0) {
+      fprintf(stderr, "REB: write_serial: poll returned error\n");
+      perror("write_serial");
+      exit(-1);
+    } else if (pret == 0) {
+      fprintf(stderr, "REB: write_serial: poll timed out!\n");
+      return -1;
+    }
+
     t = write(this->reb_fd, buf+num, len-num);
     if (t < 0) {
       switch(errno) {
@@ -1586,14 +1577,27 @@ REB::write_serial(char *buf, int len)
 int
 REB::read_serial_until(char *buf, int len, char *flag, int flen)
 {
-  int num=0,t;
+  int num=0,t, pret;
   
 #ifdef DEBUG_SERIAL
   printf("RSU before while flag len=%d len=%d\n", flen, len);
 #endif
   
   while (num < len-1) {
-    //    t = read(s, buf+num, len-num);
+
+    // wait for channel to have data first...
+    pret = poll(&read_pfd, 1, 2000);
+    
+    if (pret < 0) {
+      perror("read_serial_until");
+      exit(-1);
+    } else if (pret == 0) {
+      fprintf(stderr, "REB: read_serial_until timed out!\n");
+      return -1;
+    }
+
+
+    // now we can read
     t = read(this->reb_fd, buf+num, 1);
 
 #ifdef DEBUG_SERIAL
@@ -1649,16 +1653,92 @@ REB::write_command(char *buf, int len, int maxsize)
 {
   static int total=0;
   int ret;
- 
-  total += write_serial(buf, len);
-  
-  //usleep(200);
-  usleep(0);
-  ret = read_serial_until(buf, maxsize, CRLF, strlen(CRLF));
-  
-  total += ret;
+  char rbuf[256];
+  int rcount=0;
+  assert(maxsize < 256);
 
+  while (1) {
+    ret = read_serial_until(rbuf, 256, REB_COMMAND_PROMPT, strlen(REB_COMMAND_PROMPT));
+
+    total += write_serial(buf, len);
+
+    do {
+      rcount=0;
+      ret = read_serial_until(rbuf, maxsize, CRLF, strlen(CRLF));
+    } while (rbuf[0] != tolower(buf[0]) && rcount++ < 2 && ret >= 0);
+
+    if (ret < 0) {
+      Restart();
+      continue;
+    }
+
+    total += ret;
+    break;
+  }
+
+  memcpy(buf, rbuf, maxsize);
   return ret;
+}
+
+/* this sends the restart command to the Kam
+ *
+ * returns: 
+ */
+void
+REB::Restart()
+{
+  char buf;
+  int ret=0,pret=0;
+  
+  struct pollfd pfd;
+
+  pfd.fd = this->reb_fd;
+  pfd.events = POLLIN;
+
+  printf("REB: flushing read channel: ");
+  fflush(stdout);
+  do {
+    pret = poll(&pfd, 1, 2000);
+
+    if (pret) {
+      ret = read(this->reb_fd, &buf, 1);
+      if (ret) {
+	if (isalnum(buf)) {
+	  printf("%c", buf);
+	} else {
+	  printf("%02x", buf);
+	}
+      }
+    } else {
+      printf("timed out");
+      break;
+    }
+  } while (ret);
+  printf("\n");
+  
+
+  // restart the control software on the REB
+  printf("REB: sending restart...");
+
+  fflush(stdout);
+  write_serial(REB_RESTART_COMMAND, strlen(REB_RESTART_COMMAND));
+
+  printf("done\n");
+}
+
+/* sets the state of the IR. REB_IR_START (true) turns
+ * them on, REB_IR_STOP (False) turns em off
+ *
+ * returns: 
+ */
+void
+REB::SetIRState(int action)
+{
+  char buf[64];
+ 
+  sprintf(buf, "Y,%c\r", action ? '1' : '0');
+
+  write_command(buf, strlen(buf), sizeof(buf));
 }
 
 /* this will configure the AD channel given.
@@ -1687,8 +1767,34 @@ REB::ReadAD(int channel)
 
   sprintf(buf, "I,%d\r", channel);
   write_command(buf, strlen(buf), sizeof(buf));
-
+  
   return atoi(&buf[2]);
+}
+
+/* reads all the IR values at once.  stores them
+ * in the uint16_t array given as arg ir
+ *
+ * returns: 
+ */
+void
+REB::ReadAllIR(uint16_t *ir)
+{
+  char buf[64];
+  int ret;
+
+  sprintf(buf, "W\r");
+  ret = write_command(buf, strlen(buf), sizeof(buf));
+    
+  int p=0;
+  for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
+    // find the first comma
+    while (buf[p++] != ',') {
+      if (p >= strlen(buf)) {
+	return;
+      }
+    }
+    ir[i] = atoi(&buf[p]);
+  }
 }
 
 /* this will set the desired speed for the given motor mn

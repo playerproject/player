@@ -40,6 +40,7 @@
 
 #include <pthread.h>
 #include <sys/time.h>
+#include <sys/poll.h>
 #include <errno.h>
 #include <device.h>
 #include <playercommon.h>
@@ -68,14 +69,18 @@
 
 #define REB_POS_UPDATE_PERIOD_VEL 50 //200
 #define REB_POS_UPDATE_PERIOD_POS 700
-#define REB_IR_UPDATE_PERIOD 50 //200
+#define REB_IR_UPDATE_PERIOD 200
 #define REB_POWER_UPDATE_PERIOD 2000
 
 #define REB_POS_MODE_STRAIGHT 0
 #define REB_POS_MODE_ROTATION 1
 
+#define REB_IR_START 1
+#define REB_IR_STOP 0
+
 #define CRLF "\r\n"
 #define REB_RESTART_COMMAND "restart\r\n"
+#define REB_COMMAND_PROMPT ":\r\n"
 
 #ifndef ABS
 #define ABS(x) ((x) < 0 ? -(x) : (x))
@@ -114,14 +119,15 @@ public:
   
   virtual void PutData(unsigned char *, size_t maxsize,
 		       uint32_t timestamp_sec, uint32_t timestamp_usec);
-  
+
+  void Restart();
+
   void ReadConfig();
-  
+
   void SetOdometry(int, int, short);
   
   // handle IR
-  void StartIR(void);
-  void StopIR(void);
+  void SetIRState(int);
 
   void UpdateData(void);
 
@@ -133,6 +139,7 @@ public:
   // this handles the A/D device which deals with IR for us
   void ConfigAD(int, int);
   unsigned short ReadAD(int);
+  void ReadAllIR(uint16_t * ir);
 
   // this handles motor control
   void SetSpeed(int, int );
@@ -207,6 +214,8 @@ private:
   static bool initdone;
   
   static int locks, slocks;
+
+  static struct pollfd write_pfd, read_pfd;
 
 protected:
 
