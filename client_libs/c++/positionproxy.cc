@@ -245,7 +245,7 @@ int PositionProxy::SetOdometry( double x, double y, double theta)
   config.x = (int32_t)htonl((int)rint(x*1e3));
   config.y = (int32_t)htonl((int)rint(y*1e3));
   config.theta = (int32_t)htonl((int)rint(RTOD(theta)));
-  printf("theta: %d\n", (int)ntohl(config.theta));
+  //printf("theta: %d\n", (int)ntohl(config.theta));
   
   return(client->Request(m_device_id,(const char*)&config,
                          sizeof(config)));

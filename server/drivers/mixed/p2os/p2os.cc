@@ -1070,11 +1070,11 @@ P2OS::Main()
 
               if(sippacket)
               {
-                sippacket->x_offset = ntohl(set_odom_req.x) -
+                sippacket->x_offset = ((int)ntohl(set_odom_req.x)) -
                   sippacket->xpos;
-                sippacket->y_offset = ntohl(set_odom_req.y) -
+                sippacket->y_offset = ((int)ntohl(set_odom_req.y)) -
                   sippacket->ypos;
-                sippacket->angle_offset = ntohs(set_odom_req.theta) -
+                sippacket->angle_offset = ((int)ntohl(set_odom_req.theta)) -
                   sippacket->angle;
               }
 
