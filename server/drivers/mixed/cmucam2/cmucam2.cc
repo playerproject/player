@@ -22,11 +22,74 @@
 
 /*
  * $Id$
- *   by: Pouya Bastani      2004/05/1
- *   the P2 vision device.  it takes pan tilt zoom commands for the
- *   sony PTZ camera (if equipped), and returns color blob data gathered
- *   from CMUCAM2, which this device spawns and then talks to.
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_cmucam2 cmucam2
+
+The cmucam2 driver connects over a serial port to a CMUCam2. Presents a
+@ref player_interface_blobfinder interface and a @ref player_interface_ptz
+interface and can track multiple color blobs.  This driver is rudimentary
+but working. Color tracking parameters are defined in Player's config file
+(see below for an example).
+
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_blobfinder : the blobs detected by the CMUCam2
+- @ref player_interface_ptz : control of the servos that pan and tilt
+  the CMUCam2
+
+@par Requires
+
+- none
+
+@par Supported configuration requests
+
+- The @ref player_interface_ptz interface supports:
+  - PLAYER_PTZ_AUTOSERVO
+
+@par Configuration file options
+
+- devicepath (string)
+  - Default: NULL
+  - Serial port where the CMUCam2 is connected
+- num_blobs (integer)
+  - Default: 1
+  - Number of colors to track; you must also include this many color%d options
+- color%d (float tuple)
+  - Default: none
+  - Each color%d is a tuple [rmin rmax gmin gmax bmin bmax] of min/max
+    values for red, green, and blue, which defines a region in RGB space
+    that the CMUCam2 will track.
+  
+@par Example 
+
+@verbatim
+driver
+(
+  name "cmucam2"
+  provides ["blobfinder:0" "ptz:0"]
+  devicepath "/dev/ttyS1"
+  num_blobs 2
+  # values must be between 40 and 240 (!)
+  color0 [  red_min red_max blue_min blue_max green_min green_max] )
+  # values must be between 40 and 240 (!)
+  color1 [  red_min red_max blue_min blue_max green_min green_max] )  
+)
+@endverbatim
+
+@par Authors
+
+Pouya Bastani, Richard Vaughan
+*/
+/** @} */
+
 
 #if HAVE_CONFIG_H
   #include <config.h>
