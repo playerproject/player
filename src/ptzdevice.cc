@@ -46,22 +46,23 @@
 
 void *RunPtzThread(void *ptzdevice);
 
-CPtzDevice::CPtzDevice(int argc, char** argv)
+CPtzDevice::CPtzDevice(int argc, char** argv) :
+  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
-  data = new player_ptz_data_t;
-  command = new player_ptz_cmd_t;
+  //data = new player_ptz_data_t;
+  //command = new player_ptz_cmd_t;
 
   ptz_fd = -1;
   command_pending1 = false;
   command_pending2 = false;
 
-  data->pan = 0;
-  data->tilt = 0;
-  data->zoom = 0;
+  ((player_ptz_data_t*)device_data)->pan = 0;
+  ((player_ptz_data_t*)device_data)->tilt = 0;
+  ((player_ptz_data_t*)device_data)->zoom = 0;
 
-  command->pan = 0;
-  command->tilt = 0;
-  command->zoom = 0;
+  ((player_ptz_cmd_t*)device_command)->pan = 0;
+  ((player_ptz_cmd_t*)device_command)->tilt = 0;
+  ((player_ptz_cmd_t*)device_command)->zoom = 0;
 
   strncpy(ptz_serial_port,DEFAULT_PTZ_PORT,sizeof(ptz_serial_port));
   for(int i=0;i<argc;i++)
@@ -669,6 +670,7 @@ void *RunPtzThread(void *ptzdevice)
   }
 }
 
+/*
 size_t CPtzDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
   *((player_ptz_data_t*)dest) = *data;
@@ -692,6 +694,7 @@ void CPtzDevice::PutCommand( unsigned char *src, size_t size)
   else
     *command = *((player_ptz_cmd_t*)src);
 }
+*/
 size_t CPtzDevice::GetConfig( unsigned char *dest, size_t maxsize)
 {
   return(0);

@@ -85,7 +85,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 //
-CLaserDevice::CLaserDevice(int argc, char** argv)
+CLaserDevice::CLaserDevice(int argc, char** argv) :
+  CDevice(sizeof(player_laser_data_t),0,1,1)
 {
   strncpy(m_laser_name,DEFAULT_LASER_PORT,sizeof(m_laser_name));
   for(int i=0;i<argc;i++)
@@ -108,46 +109,8 @@ CLaserDevice::CLaserDevice(int argc, char** argv)
 
   m_config_size = 0;
   memset(&m_config, 0, sizeof(m_config));
-  memset(&m_data, 0, sizeof(m_data));
+  //memset(&m_data, 0, sizeof(m_data));
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Get data from buffer (called by client thread)
-//
-size_t CLaserDevice::GetData( unsigned char *dest, size_t destsize ) 
-{
-    assert( destsize >= sizeof( player_laser_data_t) );
-    memcpy(dest, &m_data, sizeof( player_laser_data_t ) );
-    return(sizeof( player_laser_data_t ));
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Put data in buffer (called by device thread)
-//
-void CLaserDevice::PutData( unsigned char *src, size_t srcsize )
-{
-    assert(srcsize == sizeof( player_laser_data_t ));
-    memcpy(&m_data, src, srcsize);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Get command from buffer (called by device thread)
-//
-void CLaserDevice::GetCommand( unsigned char *dest, size_t maxsize ) 
-{
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Put command in buffer (called by client thread)
-//
-void CLaserDevice::PutCommand( unsigned char *src, size_t maxsize) 
-{
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get configuration from buffer (called by device thread)

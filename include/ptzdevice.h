@@ -94,11 +94,11 @@ class CPtzDevice:public CDevice
 
   virtual CLock* GetLock( void ){ return &lock; };
 
-  virtual size_t GetData( unsigned char *, size_t maxsize );
-  virtual void PutData( unsigned char *, size_t maxsize );
+  //virtual size_t GetData( unsigned char *, size_t maxsize );
+  //virtual void PutData( unsigned char *, size_t maxsize );
 
-  virtual void GetCommand( unsigned char *, size_t maxsize );
-  virtual void PutCommand( unsigned char *, size_t maxsize);
+  //virtual void GetCommand( unsigned char *, size_t maxsize );
+  //virtual void PutCommand( unsigned char *, size_t maxsize);
 
   virtual size_t GetConfig( unsigned char *, size_t maxsize);
   virtual void PutConfig( unsigned char *, size_t maxsize);

@@ -31,7 +31,7 @@
 
 size_t CSonarDevice::GetData( unsigned char *dest, size_t maxsize)
 {
-  *((player_sonar_data_t*)dest) = data->sonar;
+  *((player_sonar_data_t*)dest) = ((player_p2os_data_t*)device_data)->sonar;
   return( sizeof(player_sonar_data_t) );
 }
 

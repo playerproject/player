@@ -35,6 +35,7 @@
 
 #include <stddef.h> /* for size_t */
 #include <playercommon.h>
+#include <playerqueue.h>
 
 extern bool debug;
 extern bool experimental;
@@ -45,24 +46,56 @@ class CLock;
 class CDevice 
 {
   public:
+    // buffers for data and command
+    static unsigned char* device_data;
+    static unsigned char* device_command;
+
+    static size_t device_datasize;
+    static size_t device_commandsize;
+
+    // queues for incoming requests and outgoing replies
+    static PlayerQueue* device_reqqueue;
+    static PlayerQueue* device_repqueue;
+
     virtual ~CDevice() {};
+
+    CDevice() {/*puts("Warning: called default CDevice() constructor");*/};
+
+    // this is the main constructor, used by most non-Stage devices.
+    // storage will be allocated by this constructor
+    CDevice(size_t datasize, size_t commandsize, 
+            int reqqueuelen, int repqueuelen);
+    
+    // this is the other constructor, used mostly by Stage devices.
+    // storage must be pre-allocated
+    CDevice(unsigned char* data, size_t datasize, 
+            unsigned char* command, size_t commandsize, 
+            unsigned char* reqqueue, int reqqueuelen, 
+            unsigned char* repqueue, int repqueuelen);
 
     virtual int Setup() = 0;
     virtual int Shutdown() = 0;
-    virtual size_t GetData( unsigned char *, size_t ) = 0;    
-    virtual void PutData(unsigned char *, size_t ) = 0;
-    virtual void GetCommand( unsigned char *, size_t ) = 0;
-    virtual void PutCommand( unsigned char * , size_t ) = 0;
-    virtual size_t GetConfig( unsigned char *, size_t ) = 0;
-    virtual void PutConfig( unsigned char * , size_t) = 0;
+    virtual size_t GetData( unsigned char *, size_t );
+    virtual void PutData(unsigned char *, size_t );
+    // TODO: swap in size_t return version
+    //virtual size_t GetCommand( unsigned char *, size_t );
+    virtual void GetCommand( unsigned char *, size_t );
+    virtual void PutCommand( unsigned char * , size_t );
+    
+    virtual size_t GetConfig( unsigned char *, size_t);
+    virtual void PutConfig( unsigned char * , size_t);
+
+    virtual size_t GetReply( unsigned char *, size_t);
+    virtual void PutReply(unsigned char * , size_t);
+
     virtual CLock* GetLock( void ) = 0;
 
     virtual size_t ConsumeData( unsigned char * data, size_t sz ) 
-      {
-	puts( "PLAYER WARNING: ConsumeData() not implemented"
-	      " for this device. Calling GetData() instead" );
-	return GetData( data, sz );
-      }
+    {
+      puts( "PLAYER WARNING: ConsumeData() not implemented"
+            " for this device. Calling GetData() instead" );
+      return GetData( data, sz );
+    }
 
     // to record the time at which the device gathered the data
     uint32_t data_timestamp_sec;

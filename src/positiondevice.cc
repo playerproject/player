@@ -33,13 +33,14 @@
 
 CPositionDevice::~CPositionDevice()
 {
-  command->position.speed = 0;
-  command->position.turnrate = 0;
+  ((player_p2os_cmd_t*)device_command)->position.speed = 0;
+  ((player_p2os_cmd_t*)device_command)->position.turnrate = 0;
 }
 
 size_t CPositionDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
-  *((player_position_data_t*)dest) = data->position;
+  *((player_position_data_t*)dest) = 
+          ((player_p2os_data_t*)device_data)->position;
   return( sizeof( player_position_data_t) );
 }
 
@@ -51,6 +52,7 @@ void CPositionDevice::PutCommand( unsigned char *src, size_t size )
     printf("expected %d; got %d\n", sizeof(player_position_cmd_t),size);
   }
   else
-    command->position = *((player_position_cmd_t*)src);
+    ((player_p2os_cmd_t*)device_command)->position = 
+            *((player_position_cmd_t*)src);
 }
 

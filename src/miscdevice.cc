@@ -34,7 +34,7 @@
 
 size_t CMiscDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
-  *((player_misc_data_t*)dest) = data->misc;
+  *((player_misc_data_t*)dest) = ((player_p2os_data_t*)device_data)->misc;
   return( sizeof( player_misc_data_t ));
 }
 

@@ -77,10 +77,8 @@ class CBpsDevice : public CDevice
     public: void Main();
     
     // Client interface
-    public: virtual size_t GetData(unsigned char *, size_t maxsize);
+    //public: virtual size_t GetData(unsigned char *, size_t maxsize);
     public: virtual void PutData(unsigned char *, size_t maxsize);
-    public: virtual void GetCommand(unsigned char *, size_t maxsize);
-    public: virtual void PutCommand(unsigned char *, size_t maxsize);
     public: virtual size_t GetConfig(unsigned char *, size_t maxsize);
     public: virtual void PutConfig(unsigned char *, size_t maxsize);
 
@@ -152,7 +150,7 @@ class CBpsDevice : public CDevice
     private: double odo_px, odo_py, odo_pa;
 
     // Current bps data
-    private: player_bps_data_t data;
+    //private: player_bps_data_t data;
 };
 
 

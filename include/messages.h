@@ -101,9 +101,12 @@
  * or receive */
 #define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
 
-/* maxium size of the devices incoming and outgoing configuration queues */
-#define PLAYER_MAX_CONFIG_QUEUE_LENGTH 4
- 
+/* maximum size for request/reply.
+ * this is a convenience so that the PlayerQueue can used fixed size elements.
+ * need to think about this a little
+ */
+#define PLAYER_MAX_REQREP_SIZE 1024 /*1KB*/
+
 /* the default player port */
 #define PLAYER_PORTNUM 6665
 
@@ -421,8 +424,8 @@ typedef struct
 
 typedef struct
 {
-  player_vision_header_elt_t header[VISION_NUM_CHANNELS];
-  player_vision_blob_elt_t blobs[VISION_NUM_CHANNELS];
+  player_vision_header_elt_t header[VISION_MAX_BLOBS_PER_CHANNEL*VISION_NUM_CHANNELS];
+  player_vision_blob_elt_t blobs[VISION_MAX_BLOBS_PER_CHANNEL*VISION_NUM_CHANNELS];
 } __attribute__ ((packed)) player_vision_data_t;
 
 // Player needs 2 bytes to store the packet length

@@ -69,8 +69,6 @@ extern int global_playerport; // used to get at devices
 
 /* these are necessary to make the static fields visible to the linker */
 extern pthread_t      CP2OSDevice::thread;
-extern player_p2os_data_t* CP2OSDevice::data;
-extern player_p2os_cmd_t* CP2OSDevice::command;
 extern unsigned char* CP2OSDevice::config;
 extern int            CP2OSDevice::config_size;
 extern CLock*         CP2OSDevice::lock;
@@ -90,7 +88,8 @@ extern int           CP2OSDevice::param_idx;
 
 void *RunPsosThread( void *p2osdevice );
 
-CP2OSDevice::CP2OSDevice(int argc, char** argv)
+CP2OSDevice::CP2OSDevice(int argc, char** argv) :
+  CDevice(sizeof(player_p2os_data_t),sizeof(player_p2os_cmd_t),1,1)
 {
   static bool robotparamsdone = false;
 
@@ -100,10 +99,12 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
     initialize_robot_params();
     robotparamsdone = true;
   }
+  /*
   if(!data)
     data = new player_p2os_data_t;
   if(!command)
     command = new player_p2os_cmd_t;
+   */
   if(!config)
   {
     config = new unsigned char[P2OS_CONFIG_BUFFER_SIZE];
@@ -116,11 +117,11 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
   arena_initialized_command_buffer = false;
   arena_initialized_data_buffer = false;
 
-  command->position.speed = 0;
-  command->position.turnrate = 0;
+  ((player_p2os_cmd_t*)device_command)->position.speed = 0;
+  ((player_p2os_cmd_t*)device_command)->position.turnrate = 0;
 
-  command->gripper.cmd = GRIPstore;
-  command->gripper.arg = 0x00;
+  ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
+  ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
 
   // install defaults
   strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
@@ -480,13 +481,9 @@ int CP2OSDevice::Shutdown()
   return(0);
 }
 
-size_t CP2OSDevice::GetData( unsigned char* dest, size_t maxsize)
-{
-  return(0);
-}
 void CP2OSDevice::PutData( unsigned char* src, size_t maxsize)
 {
-  *data = *((player_p2os_data_t*)src);
+  *((player_p2os_data_t*)device_data) = *((player_p2os_data_t*)src);
   
   // need to fill in the timestamps on all P2OS devices
   // NOTE: all these fields are already byte-swapped; that happened
@@ -524,13 +521,6 @@ void CP2OSDevice::PutData( unsigned char* src, size_t maxsize)
   }
 }
 
-void CP2OSDevice::GetCommand( unsigned char* dest, size_t maxsize)
-{
-  *((player_p2os_cmd_t*)dest) = *command;
-}
-void CP2OSDevice::PutCommand( unsigned char* src, size_t maxsize)
-{
-}
 size_t CP2OSDevice::GetConfig( unsigned char* dest, size_t maxsize)
 {
   if(config_size)
