@@ -39,99 +39,38 @@
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
 BroadcastProxy::BroadcastProxy(PlayerClient* pc, unsigned short index, unsigned char access)
-        : ClientProxy(pc, PLAYER_BROADCAST_CODE, index, access)
+    : ClientProxy(pc, PLAYER_BROADCAST_CODE, index, access)
 {
-    memset(&this->cmd, 0, sizeof(this->cmd));
-    memset(&this->data, 0, sizeof(this->data));
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a message from the incoming queue
-// Returns the number of bytes read
-// Returns -1 if there are no available messages
-int BroadcastProxy::Read(char *msg, int len)
+int BroadcastProxy::Read(void *msg, int len)
 {
-  if (this->data.len <= 0)
-    return -1; 
-
-  // Get the next message in the queue
-  uint16_t _len = ntohs(*((uint16_t*) this->data.buffer));
-  uint8_t *_msg = this->data.buffer + sizeof(_len);
-
-  PLAYER_TRACE1("read queue %d bytes", this->data.len);
-    
-  // Make copy of message
-  assert(len >= _len);
-  memcpy(msg, _msg, _len);
-
-  PLAYER_TRACE2("read msg [%s] from queue %d bytes", _msg, _len);
-
-  // Now move everything in the queue down
-  memmove(this->data.buffer, this->data.buffer + _len + sizeof(_len),
-          this->data.len - _len - sizeof(_len));
-  this->data.len -= _len + sizeof(_len);
-
-  PLAYER_TRACE0("done moving queue");
-
-  return _len;
+  // TODO
+  return -1;
 }
 
  
 ///////////////////////////////////////////////////////////////////////////
 // Write a message to the outgoing queue
-// Returns the number of bytes written
-// Returns -1 if the queue is full
-int BroadcastProxy::Write(char *msg, int len)
+int BroadcastProxy::Write(void *msg, int len)
 {
-    // Check for overflow
-    if (this->cmd.len + len + sizeof(len) > sizeof(this->cmd.buffer))
-        return -1;
-
-    PLAYER_TRACE2("wrote msg [%s] to queue %d bytes", msg, len);
-    
-    uint16_t xlen = htons(len);
-    memcpy(this->cmd.buffer + this->cmd.len, &xlen, sizeof(len));
-    memcpy(this->cmd.buffer + this->cmd.len + sizeof(len), msg, len);
-    this->cmd.len += len + sizeof(len);
-
-    return len;
+  // TODO
+  return -1;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Flush the outgoing message queue
-int BroadcastProxy::Flush()
-{
-    PLAYER_TRACE1("wrote %d bytes", this->cmd.len);
-    
-    // Do some byte swapping
-    this->cmd.len = htons(this->cmd.len);
-
-    // Write our command
-    if (this->client->Write(PLAYER_BROADCAST_CODE, this->index,
-                            (char*) &this->cmd, ntohs(this->cmd.len) + sizeof(this->cmd.len)) < 0)
-        return -1;
-
-    // Reset the command buffer
-    this->cmd.len = 0;
-
-    return 0;
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-// Update the incoming queue
+// Update the incoming queue (does nothing)
 void BroadcastProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
-    this->data.len = ntohs(((player_broadcast_data_t*) buffer)->len);
-    PLAYER_TRACE1("fill %d bytes", this->data.len);
-    memcpy(this->data.buffer, buffer + sizeof(this->data.len), this->data.len);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Debugging function
+// Debugging function (does nothing)
 void BroadcastProxy::Print()
 {
 }
