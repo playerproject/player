@@ -150,10 +150,7 @@ class VFH_Class : public CDevice
 
     // Minimum turning radius at different speeds, in millimeters
     int *Min_Turning_Radius;
-    int Init(double cell_width, int window_diameter, int sector_angle,
-                double robot_radius, double safety_dist, int max_speed, 
-		int max_turnrate, int min_turnrate, double binary_hist_low, 
-		double binary_hist_high, double u1, double u2); 
+    int Init();
     int VFH_Allocate();
     int Update_VFH();
 
@@ -179,7 +176,8 @@ class VFH_Class : public CDevice
 };
 
 // Initialization function
-CDevice* VFH_Init(char* interface, ConfigFile* cf, int section) {
+CDevice* VFH_Init(char* interface, ConfigFile* cf, int section) 
+{
   if (strcmp(interface, PLAYER_POSITION_STRING) != 0) { 
     PLAYER_ERROR1("driver \"vfh\" does not support interface \"%s\"\n", interface);
     return (NULL);
@@ -206,6 +204,7 @@ int VFH_Class::Setup()
 
   this->active_goal = false;
   this->goal_x = this->goal_y = this->goal_t = 0;
+
   
   // Initialise the underlying truth device.
   if(this->SetupTruth() != 0)
@@ -218,6 +217,10 @@ int VFH_Class::Setup()
   // Initialise the laser.
   if (this->SetupLaser() != 0)
     return -1;
+
+  // FIXME
+  // Allocate and intialize
+  this->Init();
 
   // Start the driver thread.
   this->StartThread();
@@ -278,7 +281,8 @@ int VFH_Class::SetupTruth()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the underlying truth device.
-int VFH_Class::ShutdownTruth() {
+int VFH_Class::ShutdownTruth() 
+{
 
   if(this->truth)
     this->truth->Unsubscribe(this);
@@ -287,7 +291,8 @@ int VFH_Class::ShutdownTruth() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the underlying odom device.
-int VFH_Class::SetupOdom() {
+int VFH_Class::SetupOdom() 
+{
   uint8_t req;
   size_t replen;
   unsigned short reptype;
@@ -332,12 +337,17 @@ int VFH_Class::SetupOdom() {
   this->odom_geom_size[0] = (int16_t) geom.size[0] / 1000.0;
   this->odom_geom_size[1] = (int16_t) geom.size[1] / 1000.0;
 
+  // take the bigger of the two dimensions and halve to get a radius
+  this->ROBOT_RADIUS = MAX(geom.size[0],geom.size[1]);
+  this->ROBOT_RADIUS /= 2.0;
+
   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the underlying odom device.
-int VFH_Class::ShutdownOdom() {
+int VFH_Class::ShutdownOdom() 
+{
 
   // Stop the robot before unsubscribing
   this->speed = 0;
@@ -914,7 +924,7 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
   cell_size = cf->ReadLength(section, "cell_size", 0.1) * 1000.0;
   window_diameter = cf->ReadInt(section, "window_diameter", 61);
   sector_angle = cf->ReadInt(section, "sector_angle", 5);
-  robot_radius = cf->ReadLength(section, "robot_radius", 0.25) * 1000.0;
+  //robot_radius = cf->ReadLength(section, "robot_radius", 0.25) * 1000.0;
   safety_dist = cf->ReadLength(section, "safety_dist", 0.1) * 1000.0;
   max_speed = (int) rint(1000 * cf->ReadLength(section, "max_speed", 0.2));
   max_turnrate = (int) rint(RTOD(cf->ReadAngle(section, "max_turnrate", DTOR(40))));
@@ -923,15 +933,21 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
   obs_cutoff = cf->ReadLength(section, "obs_cutoff", free_space_cutoff);
   weight_desired_dir = cf->ReadLength(section, "weight_desired_dir", 5.0);
   weight_current_dir = cf->ReadLength(section, "weight_current_dir", 3.0);
+
+  this->CELL_WIDTH = cell_size;
+  this->WINDOW_DIAMETER = window_diameter;
+  this->SECTOR_ANGLE = sector_angle;
+  this->SAFETY_DIST = safety_dist;
+  this->MAX_SPEED = max_speed;
+  this->MIN_TURNRATE = min_turnrate;
+  this->MAX_TURNRATE = max_turnrate;
+  this->Binary_Hist_Low = free_space_cutoff;
+  this->Binary_Hist_High = obs_cutoff;
+  this->U1 = weight_desired_dir;
+  this->U2 = weight_current_dir;
   
   this->dist_eps = cf->ReadLength(section, "distance_epsilon", 0.5);
   this->ang_eps = cf->ReadAngle(section, "angle_epsilon", DTOR(10.0));
-
-  // Allocate and intialize with defaults, for now
-  this->Init(cell_size, window_diameter, sector_angle, robot_radius,
-		  safety_dist, max_speed, max_turnrate, min_turnrate,
-		  free_space_cutoff, obs_cutoff, weight_desired_dir,
-		  weight_current_dir);
 
   this->truth = NULL;
   this->truth_index = cf->ReadInt(section, "truth_index", -1);
@@ -966,18 +982,6 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////
 // VFH Code
 
@@ -986,7 +990,8 @@ VFH_Class::~VFH_Class() {
   return;
 }
 
-int VFH_Class::VFH_Allocate() {
+int VFH_Class::VFH_Allocate() 
+{
   vector<float> temp_vec;
   vector<int> temp_vec3;
   vector<vector<int> > temp_vec2;
@@ -1026,11 +1031,7 @@ int VFH_Class::VFH_Allocate() {
   return(1);
 }
 
-int VFH_Class::Init(double cell_width, int window_diameter, 
-                    int sector_angle, double robot_radius,
-                    double safety_dist, int max_speed, int max_turnrate,
-                    int min_turnrate, double binary_hist_low, double
-                    binary_hist_high, double u1, double u2) 
+int VFH_Class::Init()
 {
   int x, y, i;
   float plus_dir, neg_dir, plus_sector, neg_sector;
@@ -1040,16 +1041,19 @@ int VFH_Class::Init(double cell_width, int window_diameter,
 
   Goal_Behind = 0;
 
+  /*
   CELL_WIDTH = cell_width;
   WINDOW_DIAMETER = window_diameter;
   SECTOR_ANGLE = sector_angle;
   ROBOT_RADIUS = robot_radius;
   SAFETY_DIST = safety_dist;
+  */
 
   CENTER_X = (int)floor(WINDOW_DIAMETER / 2.0);
   CENTER_Y = CENTER_X;
   HIST_SIZE = (int)rint(360.0 / SECTOR_ANGLE);
 
+  /*
   MAX_SPEED = max_speed;
   MAX_TURNRATE = max_turnrate;
   MIN_TURNRATE = min_turnrate;
@@ -1059,6 +1063,7 @@ int VFH_Class::Init(double cell_width, int window_diameter,
 
   U1 = u1;
   U2 = u2;
+  */
 
   printf("CELL_WIDTH: %1.1f\tWINDOW_DIAMETER: %d\tSECTOR_ANGLE: %d\tROBOT_RADIUS: %1.1f\tSAFETY_DIST: %1.1f\tMAX_SPEED: %d\tMAX_TURNRATE: %d\tFree Space Cutoff: %1.1f\tObs Cutoff: %1.1f\tWeight Desired Dir: %1.1f\tWeight Current_Dir:%1.1f\n", CELL_WIDTH, WINDOW_DIAMETER, SECTOR_ANGLE, ROBOT_RADIUS, SAFETY_DIST, MAX_SPEED, MAX_TURNRATE, Binary_Hist_Low, Binary_Hist_High, U1, U2);
 
@@ -1196,7 +1201,8 @@ int VFH_Class::Init(double cell_width, int window_diameter,
   return(1);
 }
 
-int VFH_Class::Update_VFH() {
+int VFH_Class::Update_VFH() 
+{
   int print = 0;
 
 /*
@@ -1250,11 +1256,13 @@ int VFH_Class::Update_VFH() {
   return(1);
 }
 
-float VFH_Class::Delta_Angle(int a1, int a2) {
+float VFH_Class::Delta_Angle(int a1, int a2) 
+{
   return(Delta_Angle((float)a1, (float)a2));
 }
 
-float VFH_Class::Delta_Angle(float a1, float a2) {
+float VFH_Class::Delta_Angle(float a1, float a2) 
+{
   float diff;
 
   diff = a2 - a1;
@@ -1268,7 +1276,8 @@ float VFH_Class::Delta_Angle(float a1, float a2) {
   return(diff);
 }
 
-int VFH_Class::Read_Min_Turning_Radius_From_File(char *filename) {
+int VFH_Class::Read_Min_Turning_Radius_From_File(char *filename) 
+{
   int temp, i;
 
   ifstream infile(filename);
@@ -1282,7 +1291,8 @@ int VFH_Class::Read_Min_Turning_Radius_From_File(char *filename) {
   return(1);
 }
 
-void VFH_Class::Print_Cells_Dir() {
+void VFH_Class::Print_Cells_Dir() 
+{
   int x, y;
 
   printf("\nCell Directions:\n");
@@ -1295,7 +1305,8 @@ void VFH_Class::Print_Cells_Dir() {
   }
 }
 
-void VFH_Class::Print_Cells_Mag() {
+void VFH_Class::Print_Cells_Mag() 
+{
   int x, y;
 
   printf("\nCell Magnitudes:\n");
@@ -1308,7 +1319,8 @@ void VFH_Class::Print_Cells_Mag() {
   }
 }
 
-void VFH_Class::Print_Cells_Dist() {
+void VFH_Class::Print_Cells_Dist() 
+{
   int x, y;
 
   printf("\nCell Distances:\n");
@@ -1321,7 +1333,8 @@ void VFH_Class::Print_Cells_Dist() {
   }
 }
 
-void VFH_Class::Print_Cells_Sector() {
+void VFH_Class::Print_Cells_Sector() 
+{
   int x, y;
   unsigned int i;
 
@@ -1341,7 +1354,8 @@ void VFH_Class::Print_Cells_Sector() {
   }
 }
 
-void VFH_Class::Print_Cells_Enlargement_Angle() {
+void VFH_Class::Print_Cells_Enlargement_Angle() 
+{
   int x, y;
 
   printf("\nEnlargement Angles:\n");
@@ -1354,7 +1368,8 @@ void VFH_Class::Print_Cells_Enlargement_Angle() {
   }
 }
 
-void VFH_Class::Print_Hist() {
+void VFH_Class::Print_Hist() 
+{
   int x;
   printf("Histogram:\n");
   printf("****************\n");
@@ -1365,7 +1380,8 @@ void VFH_Class::Print_Hist() {
   printf("\n\n");
 }
 
-int VFH_Class::Calculate_Cells_Mag() {
+int VFH_Class::Calculate_Cells_Mag() 
+{
   int x, y;
 
 /*
@@ -1393,7 +1409,8 @@ for(x=0;x<=360;x++) {
   return(1);
 }
 
-int VFH_Class::Build_Primary_Polar_Histogram() {
+int VFH_Class::Build_Primary_Polar_Histogram() 
+{
   int x, y;
   unsigned int i;
 
@@ -1420,7 +1437,8 @@ int VFH_Class::Build_Primary_Polar_Histogram() {
   return(1);
 }
 
-int VFH_Class::Build_Binary_Polar_Histogram() {
+int VFH_Class::Build_Binary_Polar_Histogram() 
+{
   int x;
 
   for(x=0;x<HIST_SIZE;x++) {
@@ -1440,7 +1458,8 @@ int VFH_Class::Build_Binary_Polar_Histogram() {
   return(1);
 }
 
-int VFH_Class::Build_Masked_Polar_Histogram(int speed) {
+int VFH_Class::Build_Masked_Polar_Histogram(int speed) 
+{
   int x, y;
   float center_x_right, center_x_left, center_y, dist_r, dist_l;
   float theta, phi_b, phi_l, phi_r, total_dist, angle;
@@ -1501,7 +1520,8 @@ int VFH_Class::Build_Masked_Polar_Histogram(int speed) {
   return(1);
 }
 
-int VFH_Class::Bisect_Angle(int angle1, int angle2) {
+int VFH_Class::Bisect_Angle(int angle1, int angle2) 
+{
   float a;
   int angle;
 
@@ -1517,7 +1537,8 @@ int VFH_Class::Bisect_Angle(int angle1, int angle2) {
   return(angle);
 }
 
-int VFH_Class::Select_Candidate_Angle() {
+int VFH_Class::Select_Candidate_Angle() 
+{
   unsigned int i;
   float weight, min_weight;
 
@@ -1543,7 +1564,8 @@ int VFH_Class::Select_Candidate_Angle() {
   return(1);
 }
 
-int VFH_Class::Select_Direction() {
+int VFH_Class::Select_Direction() 
+{
   int start, i, left;
   float angle, new_angle;
   vector<pair<int,int> > border;
@@ -1622,7 +1644,8 @@ int VFH_Class::Select_Direction() {
   return(1);
 }
 
-int VFH_Class::Set_Motion() { 
+int VFH_Class::Set_Motion() 
+{
   //int i;
 
   // This happens if all directions blocked, so just spin in place
