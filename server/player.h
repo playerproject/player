@@ -2969,7 +2969,7 @@ interface. */
 
 /** [Constants] */
 /** The maximum number of remote hosts to report on */
-#define PLAYER_WIFI_MAX_LINKS 16
+#define PLAYER_WIFI_MAX_LINKS 32
 
 /** link quality is in dBm */
 #define PLAYER_WIFI_QUAL_DBM		1
