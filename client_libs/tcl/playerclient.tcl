@@ -23,11 +23,7 @@
 # Tcl client utilities for Player
 #
 
-package provide Tclplayer 1.0
-
-# we'll make variables from these names
-set player_base_varname "pc"
-set player_base_varnum 0
+package provide Tclplayer 1.3
 
 # the default TCP port for Player
 set PLAYER_DEFAULT_PORT 6665
@@ -62,62 +58,91 @@ set PLAYER_DATAMODE_PUSH_NEW 2
 set PLAYER_DATAMODE_PULL_NEW 3 
 
 # device codes
-set PLAYER_PLAYER_CODE         1
-set PLAYER_MISC_CODE           2
-set PLAYER_GRIPPER_CODE        3
-set PLAYER_POSITION_CODE       4
-set PLAYER_SONAR_CODE          5
-set PLAYER_LASER_CODE          6
-set PLAYER_VISION_CODE         7
-set PLAYER_PTZ_CODE            8
-set PLAYER_AUDIO_CODE          9
-set PLAYER_LASERBEACON_CODE   10
-set PLAYER_BROADCAST_CODE     11
-set PLAYER_SPEECH_CODE        12
-set PLAYER_GPS_CODE           13
-set PLAYER_BPS_CODE           16
+set PLAYER_PLAYER_CODE         1   # the server itself
+set PLAYER_POWER_CODE          2   # power subsystem
+set PLAYER_GRIPPER_CODE        3   # gripper
+set PLAYER_POSITION_CODE       4   # device that moves about
+set PLAYER_SONAR_CODE          5   # fixed range-finder
+set PLAYER_LASER_CODE          6   # scanning range-finder
+set PLAYER_BLOBFINDER_CODE     7   # visual blobfinder
+set PLAYER_PTZ_CODE            8   # pan-tilt-zoom unit
+set PLAYER_AUDIO_CODE          9   # audio I/O
+set PLAYER_FIDUCIAL_CODE       10  # fiducial detector
+set PLAYER_COMMS_CODE          11  # inter-Player radio I/O
+set PLAYER_SPEECH_CODE         12  # speech I/O
+set PLAYER_GPS_CODE            13  # GPS unit
+set PLAYER_BUMPER_CODE         14  # bumper array
+set PLAYER_TRUTH_CODE          15  # ground-truth (via Stage)
+set PLAYER_IDARTURRET_CODE     16  # ranging + comms
+set PLAYER_IDAR_CODE           17  # ranging + comms
+# Descartes should be subsumed by position
+set PLAYER_DESCARTES_CODE      18  # the Descartes platform
+# Mote should be subsumed by comms?
+set PLAYER_MOTE_CODE           19  # the USC Mote
+set PLAYER_DIO_CODE            20  # digital I/O
+set PLAYER_AIO_CODE            21  # analog I/O
+set PLAYER_IR_CODE             22  # IR array
+set PLAYER_WIFI_CODE	       23  # wifi card status
 
 set PLAYER_PLAYER_STRING         "player"
-set PLAYER_MISC_STRING           "misc"
+set PLAYER_POWER_STRING          "power"
 set PLAYER_GRIPPER_STRING        "gripper"
 set PLAYER_POSITION_STRING       "position"
 set PLAYER_SONAR_STRING          "sonar"
 set PLAYER_LASER_STRING          "laser"
-set PLAYER_VISION_STRING         "vision"
+set PLAYER_BLOBFINDER_STRING     "blobfinder"
 set PLAYER_PTZ_STRING            "ptz"
 set PLAYER_AUDIO_STRING          "audio"
-set PLAYER_LASERBEACON_STRING    "laserbeacon"
-set PLAYER_BROADCAST_STRING      "broadcast"
+set PLAYER_FIDUCIAL_STRING       "fiducial"
+set PLAYER_COMMS_STRING          "comms"
 set PLAYER_SPEECH_STRING         "speech"
 set PLAYER_GPS_STRING            "gps"
-set PLAYER_BPS_STRING            "bps"
+set PLAYER_BUMPER_STRING         "bumper"
+set PLAYER_TRUTH_STRING          "truth"
+set PLAYER_IDARTURRET_STRING     "idarturret"
+set PLAYER_IDAR_STRING           "idar"
+set PLAYER_DESCARTES_STRING      "descartes"
+set PLAYER_MOTE_STRING           "mote"
+set PLAYER_DIO_STRING            "dio"
+set PLAYER_AIO_STRING            "aio"
+set PLAYER_IR_STRING             "ir"
+set PLAYER_WIFI_STRING           "wifi"
 
 # access modes
 set PLAYER_READ_MODE   "r"
 set PLAYER_WRITE_MODE  "w"
 set PLAYER_ALL_MODE    "a"
 set PLAYER_CLOSE_MODE  "c"
+set PLAYER_ERROR_MODE  "e"
 
 #
 # Device-specific values
 #
 
-# the player device
-set PLAYER_PLAYER_DEV_REQ      1
-set PLAYER_PLAYER_DATA_REQ     2
-set PLAYER_PLAYER_DATAMODE_REQ 3
-set PLAYER_PLAYER_DATAFREQ_REQ 4
-set PLAYER_PLAYER_AUTH_REQ     5
+# the player device requests
+set PLAYER_PLAYER_DEVLIST_REQ     1
+set PLAYER_PLAYER_DRIVERINFO_REQ  2
+set PLAYER_PLAYER_DEV_REQ         3
+set PLAYER_PLAYER_DATA_REQ        4
+set PLAYER_PLAYER_DATAMODE_REQ    5
+set PLAYER_PLAYER_DATAFREQ_REQ    6
+set PLAYER_PLAYER_AUTH_REQ        7
 
 # the position device
-set PLAYER_POSITION_MOTOR_POWER_REQ       1
-set PLAYER_POSITION_VELOCITY_CONTROL_REQ  2
-set PLAYER_POSITION_RESET_ODOM_REQ        3
+set PLAYER_POSITION_GET_GEOM_REQ          1
+set PLAYER_POSITION_MOTOR_POWER_REQ       2
+set PLAYER_POSITION_VELOCITY_MODE_REQ     3
+set PLAYER_POSITION_RESET_ODOM_REQ        4
+set PLAYER_POSITION_POSITION_MODE_REQ     5
+set PLAYER_POSITION_SPEED_PID_REQ         6
+set PLAYER_POSITION_POSITION_PID_REQ      7
+set PLAYER_POSITION_SPEED_PROF_REQ        8
+set PLAYER_POSITION_SET_ODOM_REQ          9
 
 # the vision device
 set VISION_NUM_CHANNELS 32
 set VISION_HEADER_SIZE [expr 4+4*$VISION_NUM_CHANNELS]
-set VISION_BLOB_SIZE 20
+set VISION_BLOB_SIZE 22
 
 # the sonar device
 set PLAYER_NUM_SONAR_SAMPLES  16
@@ -252,7 +277,7 @@ proc player_name_to_code {name} {
 proc player_connect {args} {
   global PLAYER_IDENT_STRLEN PLAYER_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL_NEW\
          PLAYER_PLAYER_DATAMODE_REQ PLAYER_DEFAULT_HOST \
-         PLAYER_DEFAULT_PORT player_base_varname player_base_varnum
+         PLAYER_DEFAULT_PORT
 
   set USAGE "Usage: player_connect \[-reqrep\] obj \[host\] \[port\]"
     
