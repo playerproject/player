@@ -33,7 +33,9 @@
 #include <sys/ioctl.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <linux/soundcard.h>
+// replaced linux/soundcard for portability, but only tested on Linux - rtv
+#include <sys/soundcard.h> 
+// #include <linux/soundcard.h> 
 #include <rfftw.h>
 #include <stdio.h>
 #include <math.h>

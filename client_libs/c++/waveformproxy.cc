@@ -23,23 +23,31 @@
 /*
  * $Id$
  *
- * client-side sonar device 
+ * reads raw sample data from a waveform interface. Supports writing
+ * the wave to the DSP device - works for playing sounds captured with
+ * waveaudio driver.
+ *
+ * TODO:
+ * - configurable output device (dump to file, etc).  
  */
 
 #include <playerclient.h>
-#include <netinet/in.h>
- #include <unistd.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <linux/soundcard.h>
+#include <sys/soundcard.h>
 #include <stdio.h>
 #include <math.h>
-#include <sys/time.h> 
 #include <unistd.h>
-   
+
+WaveformProxy::~WaveformProxy()   
+{ 
+  if(this->fd > 0 ) close(this->fd);
+}
+
 void WaveformProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
   if(hdr.size != sizeof(player_waveform_data_t))
@@ -50,17 +58,22 @@ void WaveformProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_waveform_data_t),hdr.size);
   }
 
-  this->bitrate = 
-    (unsigned int)ntohl(((player_waveform_data_t*)buffer)->rate);
-  this->depth = 
-    (unsigned short)ntohs(((player_waveform_data_t*)buffer)->depth); 
-  this->last_samples = 
-    (unsigned int)ntohl(((player_waveform_data_t*)buffer)->samples);
+  player_waveform_data_t* data = (player_waveform_data_t*)buffer;
 
+  printf( "rate: %d depth: %d samples: %d\n", 
+	  (unsigned int)ntohl(data->rate),
+	  (unsigned short)ntohs(data->depth),
+	  (unsigned int)ntohl(data->samples) );
   
-  memcpy( (void*)this->buffer, 
-	  ((player_waveform_data_t*)buffer)->data, 
-	  this->last_samples );
+
+  this->bitrate = 
+    (unsigned int)ntohl(data->rate);
+  this->depth = 
+    (unsigned short)ntohs(data->depth); 
+  this->last_samples = 
+    (unsigned int)ntohl(data->samples);
+  
+  memcpy( (void*)this->buffer, data->data, this->last_samples );
 }
 
 // interface that all proxies SHOULD provide
@@ -71,12 +84,20 @@ void WaveformProxy::Print()
   printf("Bitrate: %d bps Depth: %d bits Last samples: %d\n", 
 	 this->bitrate, this->depth, this->last_samples );
 
-  //for( int s=0; s< this->last_samples; s++ )
-  // printf( "%d ", this->buffer[s] );
-  //puts("");
-
-  PlaybackBuffer();
+  /*
+    for( int s=0; s< this->last_samples; s++ )
+    printf( "%d ", this->buffer[s] );
+    puts("");
+  */
+  
 }
+
+// Play the waveform through the DSP
+void WaveformProxy::Play()
+{
+  write(fd, this->buffer, this->last_samples );
+}
+
 
 void 
 WaveformProxy::OpenDSPforWrite() 
@@ -126,12 +147,9 @@ int WaveformProxy::ConfigureDSP()
     perror("SOUND_PCM_WRITE_WRITE ioctl failed");return 0;
     r=-1;
   }
-  
+
+  //close(fd);
+ 
   return r;
 }
 
-
-void WaveformProxy::PlaybackBuffer()
-{
-  write(fd, this->buffer, this->last_samples );
-}
