@@ -36,7 +36,7 @@ pf_pdf_gaussian_t *pf_pdf_gaussian_alloc(pf_vector_t x, pf_matrix_t cx)
 
   // Decompose the convariance matrix into a rotation
   // matrix and a diagonal matrix.
-  pf_matrix_svd(&pdf->cr, &cd, pdf->cx);
+  pf_matrix_unitary(&pdf->cr, &cd, pdf->cx);
   pdf->cd.v[0] = sqrt(cd.m[0][0]);
   pdf->cd.v[1] = sqrt(cd.m[1][1]);
   pdf->cd.v[2] = sqrt(cd.m[2][2]);
@@ -102,6 +102,9 @@ pf_vector_t pf_pdf_gaussian_sample(pf_pdf_gaussian_t *pdf)
 
 /**************************************************************************
  * Discrete
+ * Note that GSL v1.3 and earlier contains a bug in the discrete
+ * random generator.  A patched version of the the generator is included
+ * in gsl_discrete.c.
  *************************************************************************/
 
 

@@ -271,45 +271,55 @@ void pf_calc_stats(pf_t *pf, pf_vector_t *mean, pf_matrix_t *cov)
   int i, j, k;
   pf_sample_set_t *set;
   pf_sample_t *sample;
+  double r;
+  double n;
   double m[4];
+  double c[2][2];
 
   set = pf->sets + pf->current_set;
 
+  n = 0.0;
+  
   // Initialise mean to zero
   for (j = 0; j < 4; j++)
     m[j] = 0.0;
 
   // Initialize covariance
-  for (j = 0; j < 3; j++)
-    for (k = 0; k < 3; k++)
-      cov->m[j][k] = 0;
+  for (j = 0; j < 2; j++)
+    for (k = 0; k < 2; k++)
+      c[j][k] = 0.0;
   
   for (i = 0; i < set->sample_count; i++)
   {
     sample = set->samples + i;
 
     // Compute mean
+    n += sample->weight;
     m[0] += sample->weight * sample->pose.v[0];
     m[1] += sample->weight * sample->pose.v[1];
     m[2] += sample->weight * cos(sample->pose.v[2]);
     m[3] += sample->weight * sin(sample->pose.v[2]);
 
-    // TODO: do the angle calculation correctly
-    // Compute covariance
-    for (j = 0; j < 3; j++)
-      for (k = 0; k < 3; k++)
-        cov->m[j][k] += sample->weight * sample->pose.v[j] * sample->pose.v[k];
+    // Compute covariance in linear components
+    for (j = 0; j < 2; j++)
+      for (k = 0; k < 2; k++)
+        c[j][k] += sample->weight * sample->pose.v[j] * sample->pose.v[k];
   }
 
-  mean->v[0] = m[0];
-  mean->v[1] = m[1];
+  mean->v[0] = m[0] / n;
+  mean->v[1] = m[1] / n;
   mean->v[2] = atan2(m[3], m[2]);
 
-  // Finalize covariance; this is a biased estimate, but N is pretty
-  // large.
-  for (j = 0; j < 3; j++)
-    for (k = 0; k < 3; k++)
-      cov->m[j][k] = cov->m[j][k] - mean->v[j] * mean->v[k];
+  *cov = pf_matrix_zero();
+
+  // Covariance in linear compontents
+  for (j = 0; j < 2; j++)
+    for (k = 0; k < 2; k++)
+      cov->m[j][k] = c[j][k] / n - mean->v[j] * mean->v[k];
+
+  // Covariance in angular components; I think this is the correct
+  // formular for circular statistics.
+  cov->m[2][2] = -2 * log(sqrt(m[2] * m[2] + m[3] * m[3]));
   
   return;
 }

@@ -93,6 +93,9 @@ void pf_calc_stats(pf_t *pf, pf_vector_t *mean, pf_matrix_t *cov);
 // Display the sample set
 void pf_draw_samples(pf_t *pf, struct _rtk_fig_t *fig, int max_samples);
 
+// Draw the statistics
+void pf_draw_stats(pf_t *pf, struct _rtk_fig_t *fig);
+
 #ifdef __cplusplus
 }
 #endif

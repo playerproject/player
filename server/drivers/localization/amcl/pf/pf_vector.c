@@ -8,7 +8,9 @@
 
 #include <math.h>
 #include <gsl/gsl_matrix.h>
+#include <gsl/gsl_eigen.h>
 #include <gsl/gsl_linalg.h>
+
 #include "pf_vector.h"
 
 
@@ -22,6 +24,35 @@ pf_vector_t pf_vector_zero()
   c.v[2] = 0.0;
   
   return c;
+}
+
+
+// Check for NAN or INF in any component
+int pf_vector_finite(pf_vector_t a)
+{
+  int i;
+  
+  for (i = 0; i < 3; i++)
+    if (!finite(a.v[i]))
+      return 0;
+  
+  return 1;
+}
+
+
+// Print a vector
+void pf_vector_fprintf(pf_vector_t a, FILE *file, const char *fmt)
+{
+  int i;
+
+  for (i = 0; i < 3; i++)
+  {
+    fprintf(file, fmt, a.v[i]);
+    fprintf(file, " ");
+  }
+  fprintf(file, "\n");
+
+  return;     
 }
 
 
@@ -87,7 +118,39 @@ pf_matrix_t pf_matrix_zero()
     for (j = 0; j < 3; j++)
       c.m[i][j] = 0.0;
         
-  return;
+  return c;
+}
+
+
+// Check for NAN or INF in any component
+int pf_matrix_finite(pf_matrix_t a)
+{
+  int i, j;
+  
+  for (i = 0; i < 3; i++)
+    for (j = 0; j < 3; j++)
+      if (!finite(a.m[i][j]))
+        return 0;
+  
+  return 1;
+}
+
+
+// Print a matrix
+void pf_matrix_fprintf(pf_matrix_t a, FILE *file, const char *fmt)
+{
+  int i, j;
+
+  for (i = 0; i < 3; i++)
+  {
+    for (j = 0; j < 3; j++)
+    {
+      fprintf(file, fmt, a.m[i][j]);
+      fprintf(file, " ");
+    }
+    fprintf(file, "\n");
+  }
+  return;     
 }
 
 
@@ -132,40 +195,38 @@ pf_matrix_t pf_matrix_inverse(pf_matrix_t a, double *det)
 
 // Decompose a covariance matrix [a] into a rotation matrix [r] and a diagonal
 // matrix [d] such that a = r d r^T.
-// TODO: there may be a better way of doing this.
-void pf_matrix_svd(pf_matrix_t *r, pf_matrix_t *d, pf_matrix_t a)
+void pf_matrix_unitary(pf_matrix_t *r, pf_matrix_t *d, pf_matrix_t a)
 {
   int i, j;
-  gsl_matrix *u, *v;
-  gsl_vector *s;
-  gsl_vector *work;
-  
-  u = gsl_matrix_alloc(3, 3);
-  v = gsl_matrix_alloc(3, 3);
-  s = gsl_vector_alloc(3);
-  work = gsl_vector_alloc(3);
+  gsl_matrix *aa;
+  gsl_vector *eval;
+  gsl_matrix *evec;
+  gsl_eigen_symmv_workspace *w;
+
+  aa = gsl_matrix_alloc(3, 3);
+  eval = gsl_vector_alloc(3);
+  evec = gsl_matrix_alloc(3, 3);
 
   for (i = 0; i < 3; i++)
     for (j = 0; j < 3; j++)
-      gsl_matrix_set(u, i, j, a.m[i][j]);
-  
-  gsl_linalg_SV_decomp(u, v, s, work);
+      gsl_matrix_set(aa, i, j, a.m[i][j]);
 
-  for (i = 0; i < 3; i++)
-    for (j = 0; j < 3; j++)
-      r->m[i][j] = gsl_matrix_get(u, i, j);
+  // Compute eigenvectors/values
+  w = gsl_eigen_symmv_alloc(3);
+  gsl_eigen_symmv(aa, eval, evec, w);
+  gsl_eigen_symmv_free(w);
 
+  *d = pf_matrix_zero();
   for (i = 0; i < 3; i++)
+  {
+    d->m[i][i] = gsl_vector_get(eval, i);
     for (j = 0; j < 3; j++)
-      d->m[i][j] = 0;
+      r->m[i][j] = gsl_matrix_get(evec, i, j);
+  }
   
-  for (i = 0; i < 3; i++)
-    d->m[i][i] = gsl_vector_get(s, i);
-  
-  gsl_vector_free(work);
-  gsl_vector_free(s);
-  gsl_matrix_free(v);
-  gsl_matrix_free(u);  
+  gsl_matrix_free(evec);
+  gsl_vector_free(eval);
+  gsl_matrix_free(aa);
   
   return;
 }
