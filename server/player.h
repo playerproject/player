@@ -761,6 +761,17 @@ typedef struct
 
 #define PLAYER_BUMPER_MAX_SAMPLES 32
 
+/*  defines the geometry of a single bumper */
+typedef struct 
+{
+  /* the local pose of a single bumper in mm */
+  int16_t x_offset, y_offset, th_offset;   
+  /* length of the sensor in mm  */
+  uint16_t length; 
+  /* radius of curvature in mm - zero for straight lines */
+  uint16_t radius; 
+} __attribute__ ((packed)) player_bumper_define_t;
+
 typedef struct
 {
   /* the number of valid bumper readings */
@@ -769,6 +780,21 @@ typedef struct
   /* array of bumper values */
   uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
 } __attribute__ ((packed)) player_bumper_data_t;
+
+
+/* Packet for getting the sensor geometries of a bumper device. */
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_BUMPER_GET_GEOM_REQ. */
+  uint8_t subtype;
+
+  /* The number of valid bumper definitions. */
+  uint16_t bumper_count;
+
+  /* geometry of each bumper */
+  player_bumper_define_t bumper_def[PLAYER_BUMPER_MAX_SAMPLES];
+} __attribute__ ((packed)) player_bumper_geom_t;
+
 
 #define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)1)
 /*************************************************************************/
