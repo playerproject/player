@@ -50,6 +50,34 @@
  * uint64_t : unsigned 8 bytes (unsigned long)
  */
 
+/* 
+ * there's no system-standard method for byte-swapping 64-bit quantities
+ * (at least none that i could find), so here's a little macro
+ */
+/* but only if we need to swap */
+#ifdef PLAYER_SOLARIS
+  #define htonll(x) x
+  #define ntohll(x) x
+#else
+  /* supporting bit masks */
+  #define PLAYER_MASK_1in8   0xff00000000000000ULL
+  #define PLAYER_MASK_2in8   0x00ff000000000000ULL
+  #define PLAYER_MASK_3in8   0x0000ff0000000000ULL
+  #define PLAYER_MASK_4in8   0x000000ff00000000ULL
+  #define PLAYER_MASK_5in8   0x00000000ff000000ULL
+  #define PLAYER_MASK_6in8   0x0000000000ff0000ULL
+  #define PLAYER_MASK_7in8   0x000000000000ff00ULL
+  #define PLAYER_MASK_8in8   0x00000000000000ffULL
+  
+  #define htonll(x)  ((uint64_t)\
+           (((x & PLAYER_MASK_8in8) << 56) | ((x & PLAYER_MASK_7in8) << 40) | \
+            ((x & PLAYER_MASK_6in8) << 24) | ((x & PLAYER_MASK_5in8) <<  8) | \
+            ((x & PLAYER_MASK_4in8) >>  8) | ((x & PLAYER_MASK_3in8) >> 24) | \
+            ((x & PLAYER_MASK_2in8) >> 40) | ((x & PLAYER_MASK_1in8) >> 56)))
+  #define ntohll(x) htonll(x)
+#endif
+
+
 #define MAX_FILENAME_SIZE 256 // space for a relatively long pathname
 
 ////////////////////////////////////////////////////////////////////////////////
