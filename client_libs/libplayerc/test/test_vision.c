@@ -8,15 +8,13 @@
 #include "test.h"
 #include "playerc.h"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 // Basic vision test
 int test_vision(playerc_client_t *client, int index)
 {
   int t, i;
-  playerc_laser_t *device;
-
-  double min, max;
-  int resolution, intensity;
+  playerc_vision_t *device;
 
   printf("device [vision] index [%d]\n", index);
 
@@ -37,6 +35,12 @@ int test_vision(playerc_client_t *client, int index)
       break;
     }
     PASS();
+
+    printf("vision: [%d] ", device->blob_count);
+    for (i = 0; i < MIN(3, device->blob_count); i++)
+      printf("[%d %d %d %d] ", device->blobs[i].channel, device->blobs[i].x,
+             device->blobs[i].y, device->blobs[i].area);
+    printf("\n");
   }
   
   TEST("unsubscribing");

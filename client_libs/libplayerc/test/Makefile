@@ -9,8 +9,8 @@ include ../../../Makefile.common
 .SUFFIXES: .c .o
 
 TEST = test
-OBS = test.o test_position.o test_laser.o test_laserbeacon.o test_broadcast.o \
-			test_vision.o
+OBS = test.o test_broadcast.o test_laser.o test_lbd.o  \
+			test_position.o test_vision.o
 
 INCLUDES = -I. -I.. -I../../../include
 CFLAGS = -g3 -Wall $(INCLUDES)
@@ -42,13 +42,12 @@ test_broadcast.o: ../../../include/messages.h ../../../include/playercommon.h
 test_broadcast.o: ../../../include/defaults.h
 test.o: ../playerc.h ../../../include/player.h ../../../include/messages.h
 test.o: ../../../include/playercommon.h ../../../include/defaults.h test.h
-test_laserbeacon.o: test.h ../playerc.h ../../../include/player.h
-test_laserbeacon.o: ../../../include/messages.h
-test_laserbeacon.o: ../../../include/playercommon.h
-test_laserbeacon.o: ../../../include/defaults.h
 test_laser.o: test.h ../playerc.h ../../../include/player.h
 test_laser.o: ../../../include/messages.h ../../../include/playercommon.h
 test_laser.o: ../../../include/defaults.h
+test_lbd.o: test.h ../playerc.h ../../../include/player.h
+test_lbd.o: ../../../include/messages.h ../../../include/playercommon.h
+test_lbd.o: ../../../include/defaults.h
 test_position.o: test.h ../playerc.h ../../../include/player.h
 test_position.o: ../../../include/messages.h ../../../include/playercommon.h
 test_position.o: ../../../include/defaults.h

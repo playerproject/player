@@ -50,8 +50,8 @@ typedef struct
 
 
 // Local functions
-void playerc_client_dispatch(playerc_client_t *client,
-                             player_msghdr_t *header, char *data, int len);
+void *playerc_client_dispatch(playerc_client_t *client,
+                              player_msghdr_t *header, void *data, int len);
 int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
                               char *data, int len);
 int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header,
@@ -143,7 +143,7 @@ int playerc_client_disconnect(playerc_client_t *client)
 
 
 // Read and process a packet (blocking)
-int playerc_client_read(playerc_client_t *client)
+void *playerc_client_read(playerc_client_t *client)
 {
   player_msghdr_t header;
   int len;
@@ -154,36 +154,34 @@ int playerc_client_read(playerc_client_t *client)
   // Read a packet (header and data) 
   len = playerc_client_readpacket(client, &header, data, len);
   if (len < 0)
-    return -1;
+    return NULL;
 
   // Catch and ignore sync messages
   if (header.type == PLAYER_MSGTYPE_SYNCH)
-    return 0;
+    return client;
   
   // Check the return type 
   if (header.type != PLAYER_MSGTYPE_DATA)
   {
     PLAYERC_WARN1("unexpected message type [%d]", header.type);
-    return -1;
+    return NULL;
   }
 
   // Dispatch
-  playerc_client_dispatch(client, &header, data, len);
-
-  return 0;
+  return playerc_client_dispatch(client, &header, data, len);
 }
 
 
 // Dispatch a packet
-void playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
-                             char *data, int len)
+void *playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
+                              void *data, int len)
 {
   int i, j;
   playerc_device_t *device;
 
   // We get zero-length packets sometimes
   if (len == 0)
-    return;
+    return NULL;
   
   // Look for a device proxy to handle this data 
   for (i = 0; i < client->device_count; i++)
@@ -201,14 +199,17 @@ void playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
       // Call any additional registered callbacks 
       for (j = 0; j < device->callback_count; j++)
         (*device->callback[j]) (device->callback_data[j]);
+
+      return device;
     }
   }
+  return NULL;
 }
 
 
 // Write a command
 int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
-                         char *cmd, int len)
+                         void *cmd, int len)
 {
   player_msghdr_t header;
 
