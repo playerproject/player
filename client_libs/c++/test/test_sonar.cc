@@ -39,7 +39,7 @@ test_sonar(PlayerClient* client, int index)
   }
   sleep(1);
   PASS();
-  for(int i=0;i<PLAYER_SONAR_MAX_SAMPLES;i++)
+  for(int i=0;i<sp.sonar_pose.pose_count;i++)
   {
     printf("Sonar[%d]: (%d,%d,%d)\n", i, 
            sp.sonar_pose.poses[i][0],
