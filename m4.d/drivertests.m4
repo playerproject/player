@@ -233,11 +233,13 @@ PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
 
 dnl Service Discovery
-AC_LANG_SAVE
-AC_LANG(C++)
+dnl Don't need to do the language setting here, since C++ checking was done
+dnl earlier, seeing as Player is written in C++.
+dnl AC_LANG_SAVE
+dnl AC_LANG(C++)
 PLAYER_ADD_DRIVER([service_adv_lsd], [drivers/service_adv], [yes],
     [servicediscovery/servicedirectory.hh], [], [-lservicediscovery])
-AC_LANG_RESTORE
+dnl AC_LANG_RESTORE
 
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
