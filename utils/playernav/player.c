@@ -35,6 +35,11 @@ init_player(playerc_client_t** clients,
       fprintf(stderr, "Failed to set data frequency\n");
       return(NULL);
     }
+    if(playerc_client_datamode(clients[i],PLAYER_DATAMODE_PUSH_ALL) < 0)
+    {
+      fprintf(stderr, "Failed to set data mode\n");
+      return(NULL);
+    }
     assert(maps[i] = playerc_map_create(clients[i], 0));
     if(playerc_map_subscribe(maps[i],PLAYER_READ_MODE) < 0)
     {

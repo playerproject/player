@@ -12,7 +12,7 @@
 
 #define MAX_HOSTNAME_LEN 256
 
-#define DATA_FREQ 10
+#define DATA_FREQ 2
 #define MAX_NUM_ROBOTS 8
 
 #define ROBOT_RADIUS 0.3
