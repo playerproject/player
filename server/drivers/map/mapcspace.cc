@@ -187,9 +187,9 @@ MapCspace::GetMap()
   player_map_info_t info;
   struct timeval ts;
   info.subtype = PLAYER_MAP_GET_INFO_REQ;
-  if((replen = mapdevice->Request(&map_id, this, &info, 
-                                  sizeof(info.subtype), &reptype, 
-                                  &ts, &info, sizeof(info))) == 0)
+  if((replen = mapdevice->Request(map_id, this, 
+                                  &info, sizeof(info.subtype), NULL,
+                                  &reptype, &info, sizeof(info), &ts)) == 0)
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
@@ -231,9 +231,10 @@ MapCspace::GetMap()
 
     reqlen = sizeof(data_req) - sizeof(data_req.data);
 
-    if((replen = mapdevice->Request(&map_id, this, &data_req, reqlen,
-                                    &reptype, &ts, &data_req, 
-                                    sizeof(data_req))) == 0)
+    if((replen = mapdevice->Request(map_id, this, 
+                                    &data_req, reqlen, NULL,
+                                    &reptype, &data_req, 
+                                    sizeof(data_req), &ts)) == 0)
     {
       PLAYER_ERROR("failed to get map info");
       return(-1);
@@ -357,7 +358,7 @@ MapCspace::PutConfig(player_device_id_t* device, void* client,
   if(len < 1)
   {
     PLAYER_WARN("got zero length configuration request; ignoring");
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     Unlock();
     return(0);
@@ -374,7 +375,7 @@ MapCspace::PutConfig(player_device_id_t* device, void* client,
       break;
     default:
       PLAYER_ERROR("got unknown config request; ignoring");
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }
@@ -396,7 +397,7 @@ MapCspace::HandleGetMapInfo(void *client, void *request, int len)
   if(len != reqlen)
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -404,7 +405,7 @@ MapCspace::HandleGetMapInfo(void *client, void *request, int len)
   if(this->mapdata == NULL)
   {
     PLAYER_ERROR("NULL map data");
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -416,7 +417,7 @@ MapCspace::HandleGetMapInfo(void *client, void *request, int len)
   info.height = htonl((uint32_t) (this->size_y));
 
   // Send map info to the client
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &info, sizeof(info)) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &info, sizeof(info),NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -438,7 +439,7 @@ MapCspace::HandleGetMapData(void *client, void *request, int len)
   if(len != reqlen)
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -484,9 +485,9 @@ MapCspace::HandleGetMapData(void *client, void *request, int len)
   }
     
   // Send map info to the client
-  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &data, 
+  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &data, 
               sizeof(data) - sizeof(data.data) + 
-              ntohl(data.width) * ntohl(data.height)) != 0)
+              ntohl(data.width) * ntohl(data.height),NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
   return;
 }

@@ -41,7 +41,7 @@ typedef struct
   void* client;  // pointer to the client who is expecting a reply
   player_device_id_t device;  // the device from which the reply comes
   unsigned short type;    // player message type (only really used for replies)
-  struct timeval timestamp;  // time that configuration was made (only replies)
+  struct timeval timestamp;  // time that configuration request/reply was made
   int size;             // size (in bytes) of the request/reply
   unsigned char data[PLAYER_MAX_REQREP_SIZE]; // the request/reply
 } __attribute__ ((packed)) playerqueue_elt_t;
@@ -78,7 +78,8 @@ class PlayerQueue
 
     // pop an element off the queue. returns the size of the element,
     // or -1 if the queue is empty
-    int Pop(player_device_id_t* device, void** client, void* data, int size);
+    int Pop(player_device_id_t* device, void** client, 
+            struct timeval* ts, void* data, int size);
     
     // another form of Pop, this one doesn't set the client pointer
     int Pop(void* data, int size);

@@ -70,11 +70,14 @@ class GzGripper : public Driver
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, player_device_id_t* device, void* client,
-                                void* req, size_t reqlen);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo id
   private: char *gz_id;
@@ -170,7 +173,7 @@ int GzGripper::Shutdown()
 void GzGripper::Update()
 {
   player_gripper_data_t data;
-  uint32_t tsec, tusec;
+  struct timeval ts;
 
   gz_gripper_lock(this->iface, 1);
 
@@ -178,8 +181,8 @@ void GzGripper::Update()
   {
     this->datatime = this->iface->data->time;
     
-    tsec = (int) (this->iface->data->time);
-    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
     // break beams are now implemented
     data.beams = 0;
@@ -202,7 +205,7 @@ void GzGripper::Update()
     data.state |= this->iface->data->lift_moving ? 0x40 : 0x00;
     data.state |= this->iface->data->lift_error ? 0x80 : 0x00;
     
-    this->PutData(&data, sizeof(data), tsec, tusec);    
+    this->PutData(&data, sizeof(data), &ts);
   }
 
   gz_gripper_unlock(this->iface);
@@ -213,7 +216,9 @@ void GzGripper::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzGripper::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
+void GzGripper::PutCommand(player_device_id_t id,
+                           void* src, size_t len,
+                           struct timeval* timestamp)
 {
   player_gripper_cmd_t *cmd;
     
@@ -232,12 +237,14 @@ void GzGripper::PutCommand(player_device_id_t id, void* client, unsigned char* s
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzGripper::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* req, size_t req_len)
+int GzGripper::PutConfig(player_device_id_t id, void *client, 
+                         void* src, size_t len,
+                         struct timeval* timestamp)
 {
-  switch (((char*) req)[0])
+  switch (((char*) src)[0])
   {
     default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }

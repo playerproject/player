@@ -99,7 +99,9 @@ public:
     LifoMCom(ConfigFile* cf, int section);
 
     // Called when we recieve a config request; overrides Driver::PutConfig
-    virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+    virtual int PutConfig(player_device_id_t id, void *client, 
+                          void* src, size_t len,
+                          struct timeval* timestamp);
 
     // These do nothing but are abstract in Driver, so here they are
     virtual int Setup() {

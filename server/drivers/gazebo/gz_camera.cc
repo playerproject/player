@@ -179,7 +179,7 @@ int GzCamera::Shutdown()
 void GzCamera::Update()
 {
   size_t size;
-  uint32_t tsec, tusec;
+  struct timeval ts;
   char filename[256];
   
   gz_camera_lock(this->iface, 1);
@@ -187,8 +187,8 @@ void GzCamera::Update()
   if (this->iface->data->time > this->datatime)
   {
     this->datatime = this->iface->data->time;
-    tsec = (int) (this->iface->data->time);
-    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
     // Set the image properties
     this->data.width = htons(this->iface->data->width);
@@ -202,7 +202,7 @@ void GzCamera::Update()
 
     // Send data to server
     size = sizeof(this->data) - sizeof(this->data.image) + this->iface->data->image_size;
-    this->PutData(&this->data, size, tsec, tusec);
+    this->PutData(&this->data, size, &ts);
 
     // Save frames
     if (this->save)

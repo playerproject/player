@@ -136,7 +136,7 @@ PassThrough::CloseConnection()
 {
   if(this->conn.sock >=0)
     player_disconnect(&this->conn);
-  PutData(NULL,0,0,0);
+  PutData(NULL,0,NULL);
 }
 
 PassThrough::~PassThrough()
@@ -157,7 +157,7 @@ PassThrough::Setup()
 
   // zero out the buffers
   //PutData(NULL,0,0,0);
-  PutCommand(NULL,NULL,0);
+  PutCommand(NULL,0,NULL);
 
   printf("Passthrough connecting to server at %s:%d...", this->remote_hostname,
          this->remote_id.port);
@@ -215,8 +215,10 @@ PassThrough::Setup()
        (hdr.device == this->remote_id.code) &&
        (hdr.device_index == this->remote_id.index))
     {
-      PutData(this->remote_data,hdr.size,
-              hdr.timestamp_sec,hdr.timestamp_usec);
+      struct timeval ts;
+      ts.tv_sec = hdr.timestamp_sec;
+      ts.tv_usec = hdr.timestamp_usec;
+      PutData(this->remote_data,hdr.size, &ts);
       break;
     }
   }
@@ -249,7 +251,7 @@ PassThrough::Main()
   {
     // did we get a config request?
     if((len_config = 
-        GetConfig(&id,&client,this->remote_config,PLAYER_MAX_PAYLOAD_SIZE)) > 0)
+        GetConfig(id,&client,this->remote_config,PLAYER_MAX_PAYLOAD_SIZE,NULL)) > 0)
     {
       // send it
       if(player_request(&this->conn,this->remote_id.code,
@@ -266,12 +268,12 @@ PassThrough::Main()
       ts.tv_usec = replyhdr.timestamp_usec;
 
       // return the reply
-      PutReply(&id,client,replyhdr.type,&ts,this->remote_reply,replyhdr.size);
+      PutReply(id,client,replyhdr.type,this->remote_reply,replyhdr.size,&ts);
     }
 
     // did we get a new command to send?
-    if((len_command = GetCommand((unsigned char*)this->remote_command,
-                         PLAYER_MAX_PAYLOAD_SIZE)) > 0)
+    if((len_command = GetCommand((void*)this->remote_command,
+                                 PLAYER_MAX_PAYLOAD_SIZE,NULL)) > 0)
     {
       if(player_write(&this->conn,this->remote_id.code,
                       this->remote_id.index,
@@ -298,8 +300,10 @@ PassThrough::Main()
        (hdr.device == this->remote_id.code) &&
        (hdr.device_index == this->remote_id.index))
     {
-      PutData(this->local_id, this->remote_data,hdr.size,
-              hdr.timestamp_sec,hdr.timestamp_usec);
+      struct timeval ts;
+      ts.tv_sec = hdr.timestamp_sec;
+      ts.tv_usec = hdr.timestamp_usec;
+      PutData(this->local_id, this->remote_data,hdr.size,&ts);
     }
   }
 }

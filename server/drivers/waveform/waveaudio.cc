@@ -199,7 +199,7 @@ Waveaudio::Main()
     
     // clear the export buffer
     memset(&data,0,sizeof(data));
-    PutData(&data, sizeof(data),0,0);
+    PutData(&data, sizeof(data),NULL);
     
     openDSPforRead();
     
@@ -251,7 +251,7 @@ Waveaudio::Main()
 	  ntohl(data.samples) );
 	*/
 	
-	PutData(&data, sizeof(data),0,0);
+	PutData(&data, sizeof(data),NULL);
       }
 }
 

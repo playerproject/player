@@ -103,6 +103,7 @@ class UPCBarcode : public Driver
 
   // Camera stuff
   private: int camera_index;
+  private: player_device_id_t camera_id;
   private: Driver *camera;
   private: double camera_time;
   private: player_camera_data_t camera_data;
@@ -163,13 +164,11 @@ UPCBarcode::UPCBarcode( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int UPCBarcode::Setup()
 {
-  player_device_id_t id;
-
   // Subscribe to the camera.
-  id.code = PLAYER_CAMERA_CODE;
-  id.index = this->camera_index;
-  id.port = this->device_id.port;
-  this->camera = deviceTable->GetDriver(id);
+  this->camera_id.code = PLAYER_CAMERA_CODE;
+  this->camera_id.index = this->camera_index;
+  this->camera_id.port = this->device_id.port;
+  this->camera = deviceTable->GetDriver(this->camera_id);
   if (!this->camera)
   {
     PLAYER_ERROR("unable to locate suitable camera device");
@@ -236,7 +235,7 @@ int UPCBarcode::HandleRequests()
   char request[PLAYER_MAX_REQREP_SIZE];
   int len;
   
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {
@@ -246,7 +245,7 @@ int UPCBarcode::HandleRequests()
         break;
       */
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -260,7 +259,7 @@ int UPCBarcode::HandleRequests()
 // TODO
 void UPCBarcode::HandleGetGeom(void *client, void *request, int len)
 {
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -272,13 +271,13 @@ void UPCBarcode::HandleGetGeom(void *client, void *request, int len)
 int UPCBarcode::UpdateCamera()
 {
   size_t size;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
 
   // Get the camera data.
-  size = this->camera->GetData(this, (unsigned char*) &this->camera_data,
-                               sizeof(this->camera_data), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  size = this->camera->GetData(this->camera_id, (void*)&this->camera_data,
+                               sizeof(this->camera_data), &timestamp);
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
 
   // Dont do anything if this is old data.
   if (fabs(time - this->camera_time) < 0.001)
@@ -573,7 +572,7 @@ void UPCBarcode::WriteData()
 {
   int i;
   int blob_count, channel_count, channel;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   blob_t *blob;
   player_blobfinder_data_t data;
 
@@ -617,11 +616,11 @@ void UPCBarcode::WriteData()
   }
   
   // Compute the data timestamp (from camera).
-  timesec = (uint32_t) this->camera_time;
-  timeusec = (uint32_t) (fmod(this->camera_time, 1.0) * 1e6);
+  timestamp.tv_sec = (uint32_t) this->camera_time;
+  timestamp.tv_usec = (uint32_t) (fmod(this->camera_time, 1.0) * 1e6);
   
   // Copy data to server.
-  PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
+  PutData((unsigned char*) &data, sizeof(data), &timestamp);
   
   return;
 }

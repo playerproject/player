@@ -26,6 +26,11 @@
  * Uses CMVision to retrieve the blob data
  */
 
+/*
+ * TODO: remove the whole capture interface, and just call GetData directly
+ * on the underlying camera device.
+ */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
@@ -154,7 +159,7 @@ CMVisionBF::Setup()
   memset(&dummy,0,sizeof(dummy));
   // zero the data buffer
   PutData((unsigned char*)&dummy,
-          sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
+          sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),NULL);
 
   puts("done.");	
 
@@ -324,7 +329,7 @@ CMVisionBF::Main()
       /* got the data. now fill it in */
       PutData((unsigned char*)&local_data, 
 	      (PLAYER_BLOBFINDER_HEADER_SIZE + 
-	       num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),0,0);
+	       num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),NULL);
     }
 
   pthread_exit(NULL);

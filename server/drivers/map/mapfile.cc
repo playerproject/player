@@ -200,7 +200,7 @@ MapFile::PutConfig(player_device_id_t* device, void* client,
   if(len < 1)
   {
     PLAYER_WARN("got zero length configuration request; ignoring");
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     Unlock();
     return(0);
@@ -217,7 +217,7 @@ MapFile::PutConfig(player_device_id_t* device, void* client,
       break;
     default:
       PLAYER_ERROR("got unknown config request; ignoring");
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }
@@ -239,7 +239,7 @@ MapFile::HandleGetMapInfo(void *client, void *request, int len)
   if(len != reqlen)
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -247,7 +247,7 @@ MapFile::HandleGetMapInfo(void *client, void *request, int len)
   if(this->mapdata == NULL)
   {
     PLAYER_ERROR("NULL map data");
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -259,7 +259,7 @@ MapFile::HandleGetMapInfo(void *client, void *request, int len)
   info.height = htonl((uint32_t) (this->size_y));
 
   // Send map info to the client
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &info, sizeof(info)) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &info, sizeof(info), NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -281,7 +281,7 @@ MapFile::HandleGetMapData(void *client, void *request, int len)
   if(len != reqlen)
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -327,9 +327,9 @@ MapFile::HandleGetMapData(void *client, void *request, int len)
   }
     
   // Send map info to the client
-  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &data, 
+  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &data, 
               sizeof(data) - sizeof(data.data) + 
-              ntohl(data.width) * ntohl(data.height)) != 0)
+              ntohl(data.width) * ntohl(data.height),NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
   return;
 }

@@ -85,7 +85,10 @@ class Device
   unsigned char *command;
 
   // Timestamp for most recent data
-  uint32_t data_time_sec, data_time_usec;
+  struct timeval data_timestamp;
+
+  // Timestamp for most recent command
+  struct timeval command_timestamp;
 
   // Queues for incoming requests and outgoing replies
   PlayerQueue* reqqueue;

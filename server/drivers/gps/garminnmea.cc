@@ -926,7 +926,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   data.utm_e = htonl((int32_t) rint(utm_e * 100));
   data.utm_n = htonl((int32_t) rint(utm_n * 100));
 
-  PutData(&data,sizeof(player_gps_data_t),0,0);
+  PutData(&data,sizeof(player_gps_data_t),NULL);
 
   return 0;
 }

@@ -55,8 +55,8 @@ int AMCLOdom::Load(ConfigFile* cf, int section)
 {
   this->odom_index = cf->ReadInt(section, "odom_index", 0);
 
-  this->tsec = 0;
-  this->tusec = 0;
+  this->time.tv_sec = 0;
+  this->time.tv_usec = 0;
 
   this->drift = pf_matrix_zero();
 
@@ -88,13 +88,11 @@ int AMCLOdom::Unload(void)
 // Set up the underlying odom driver.
 int AMCLOdom::Setup(void)
 {
-  player_device_id_t id;
-  
   // Subscribe to the odometry driver
-  id.port = global_playerport;
-  id.code = PLAYER_POSITION_CODE;
-  id.index = this->odom_index;
-  this->driver = deviceTable->GetDriver(id);
+  this->odom_id.port = global_playerport;
+  this->odom_id.code = PLAYER_POSITION_CODE;
+  this->odom_id.index = this->odom_index;
+  this->driver = deviceTable->GetDriver(this->odom_id);
   if (!this->driver)
   {
     PLAYER_ERROR("unable to locate suitable position driver");
@@ -127,22 +125,25 @@ int AMCLOdom::Shutdown(void)
 AMCLSensorData *AMCLOdom::GetData(void)
 {
   size_t size;
-  uint32_t tsec, tusec;
+  struct timeval timestamp;
   pf_vector_t pose;
   player_position_data_t data;
   AMCLOdomData *ndata;
 
   // Get the odom device data.
-  size = this->driver->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
+  size = this->driver->GetData(this->odom_id, 
+                               (void*) &data, 
+                               sizeof(data), &timestamp);
   if (size == 0)
     return NULL;
 
   // See if this is a new reading
-  if (tsec == this->tsec && tusec == this->tusec)
+  if((timestamp.tv_sec == this->time.tv_sec) && 
+     (timestamp.tv_usec == this->time.tv_usec))
     return NULL;
 
-  double ta = (double) tsec + ((double) tusec) * 1e-6;
-  double tb = (double) this->tsec + ((double) this->tusec) * 1e-6;  
+  double ta = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
+  double tb = (double) this->time.tv_sec + ((double) this->time.tv_usec) * 1e-6;  
   if (ta - tb < 0.100)  // HACK
     return NULL;
 
@@ -162,14 +163,13 @@ AMCLSensorData *AMCLOdom::GetData(void)
   ndata = new AMCLOdomData;
 
   ndata->sensor = this;
-  ndata->tsec = tsec;
-  ndata->tusec = tusec;
+  ndata->tsec = timestamp.tv_sec;
+  ndata->tusec = timestamp.tv_usec;
 
   ndata->pose = pose;
   ndata->delta = pf_vector_zero();
 
-  this->tsec = tsec;
-  this->tusec = tusec;
+  this->time = timestamp;
     
   return ndata;
 }

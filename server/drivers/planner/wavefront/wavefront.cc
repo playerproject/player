@@ -66,6 +66,8 @@ class Wavefront : public Driver
     bool newData;
 
     // bookkeeping
+    player_device_id_t position_id;
+    player_device_id_t localize_id;
     int position_index;
     int localize_index;
     double map_res;
@@ -140,8 +142,9 @@ class Wavefront : public Driver
     virtual int Setup();
     virtual int Shutdown();
 
-    int PutConfig(player_device_id_t* device, void* client,
-                  void* request, size_t len);
+    int PutConfig(player_device_id_t id, void *client, 
+                  void* src, size_t len,
+                  struct timeval* timestamp);
 };
 
 
@@ -188,8 +191,8 @@ Wavefront::Setup()
 
   memset(&cmd,0,sizeof(cmd));
   memset(&data,0,sizeof(data));
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
-  PutData((unsigned char*)&data,sizeof(data),0,0);
+  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+  PutData((unsigned char*)&data,sizeof(data),NULL);
 
   this->stopped = true;
   this->target_x = this->target_y = this->target_a = 0.0;
@@ -271,7 +274,7 @@ Wavefront::GetCommand()
   double new_x, new_y, new_a;
   double eps = 1e-3;
 
-  Driver::GetCommand((unsigned char*)&cmd,sizeof(cmd));
+  Driver::GetCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
 
   new_x = ((int)ntohl(cmd.gx))/1e3;
   new_y = ((int)ntohl(cmd.gy))/1e3;
@@ -292,12 +295,7 @@ void
 Wavefront::GetLocalizeData()
 {
   player_localize_data_t data;
-#ifdef __CYGWIN__
-  uint32_t timesec, timeusec;
-#else
-  unsigned int timesec, timeusec;
-#endif
-  //double timediff;
+  struct timeval timestamp;
   double lx,ly,la;
   double dist;
   double lx_sum, ly_sum;
@@ -306,17 +304,17 @@ Wavefront::GetLocalizeData()
   //struct timeval curr;
 
   memset(&data,0,sizeof(data));
-  if(!this->localize->GetData(this,(unsigned char*)&data,sizeof(data),
-                              &timesec, &timeusec) || !data.hypoth_count)
+  if(!this->localize->GetData(this->localize_id,(void*)&data,sizeof(data),
+                              &timestamp) || !data.hypoth_count)
     return;
 
   // is this new data?
-  if((this->localize_timesec == timesec) && 
-     (this->localize_timeusec == timeusec))
+  if((this->localize_timesec == timestamp.tv_sec) && 
+     (this->localize_timeusec == timestamp.tv_usec))
     return;
 
-  this->localize_timesec = timesec;
-  this->localize_timeusec = timeusec;
+  this->localize_timesec = timestamp.tv_sec;
+  this->localize_timeusec = timestamp.tv_usec;
 
   // just take the first hypothesis, on the assumption that it's the
   // highest weight.
@@ -377,23 +375,19 @@ void
 Wavefront::GetPositionData()
 {
   player_position_data_t data;
-#ifdef __CYGWIN__
-  uint32_t timesec, timeusec;
-#else
-  unsigned int timesec, timeusec;
-#endif
+  struct timeval timestamp;
 
-  if(!this->position->GetData(this,(unsigned char*)&data,sizeof(data),
-                              &timesec, &timeusec))
+  if(!this->position->GetData(this->position_id,(void*)&data,sizeof(data),
+                              &timestamp))
     return;
 
   // is this new data?
-  if((this->position_timesec == timesec) && 
-     (this->position_timeusec == timeusec))
+  if((this->position_timesec == timestamp.tv_sec) && 
+     (this->position_timeusec == timestamp.tv_usec))
     return;
 
-  this->position_timesec = timesec;
-  this->position_timeusec = timeusec;
+  this->position_timesec = timestamp.tv_sec;
+  this->position_timeusec = timestamp.tv_usec;
 
   this->position_x = ((int)ntohl(data.xpos))/1e3;
   this->position_y = ((int)ntohl(data.ypos))/1e3;
@@ -447,12 +441,13 @@ Wavefront::PutPlannerData()
     struct timeval time;
     GlobalTime->GetTime(&time);
 
-    PutData((unsigned char*)&data,sizeof(data),
-        time.tv_sec, time.tv_usec);
+    PutData((unsigned char*)&data,sizeof(data),&time);
   } else {
     /* use the localizer's timestamp */
-    PutData((unsigned char*)&data,sizeof(data),
-        this->localize_timesec, this->localize_timeusec);
+    struct timeval ts;
+    ts.tv_sec = this->localize_timesec;
+    ts.tv_usec = this->localize_timeusec;
+    PutData((unsigned char*)&data,sizeof(data),&ts);
   }
 }
 
@@ -469,7 +464,7 @@ Wavefront::PutPositionCommand(double x, double y, double a)
   cmd.type=1;
   cmd.state=1;
 
-  this->position->PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  this->position->PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
 }
 
 void
@@ -582,8 +577,8 @@ void Wavefront::Main()
       {
         this->curr_waypoint = 0;
 
-        double wx,wy;
         /*
+           double wx,wy;
            for(int i=0;plan_get_waypoint(this->plan,i++,&wx,&wy);)
            printf("waypoint %d: %f,%f\n", i, wx, wy);
            */
@@ -677,17 +672,16 @@ void Wavefront::Main()
 int 
 Wavefront::SetupPosition()
 {
-  player_device_id_t id;
   player_position_geom_t geom;
   struct timeval ts;
   unsigned short reptype;
 
-  id.code = PLAYER_POSITION_CODE;
-  id.index = this->position_index;
-  id.port = this->device_id.port;
+  this->position_id.code = PLAYER_POSITION_CODE;
+  this->position_id.index = this->position_index;
+  this->position_id.port = this->device_id.port;
 
   // Subscribe to the position device.
-  if(!(this->position = deviceTable->GetDriver(id)))
+  if(!(this->position = deviceTable->GetDriver(this->position_id)))
   {
     PLAYER_ERROR("unable to locate suitable position device");
     return(-1);
@@ -700,9 +694,10 @@ Wavefront::SetupPosition()
 
   // Get the robot's geometry, and infer the radius
   geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-  if(this->position->Request(&id, this, &geom, sizeof(geom.subtype),
-                             &reptype, &ts, &geom, sizeof(geom)) <
-     sizeof(player_position_geom_t))
+  if(this->position->Request(this->position_id, this, 
+                             &geom, sizeof(geom.subtype), NULL,
+                             &reptype, &geom, sizeof(geom), &ts) <
+     (int)sizeof(player_position_geom_t))
   {
     PLAYER_ERROR("failed to get robot geometry");
     return(-1);
@@ -721,14 +716,12 @@ Wavefront::SetupPosition()
 int 
 Wavefront::SetupLocalize()
 {
-  player_device_id_t id;
-
-  id.code = PLAYER_LOCALIZE_CODE;
-  id.index = this->localize_index;
-  id.port = this->device_id.port;
+  this->localize_id.code = PLAYER_LOCALIZE_CODE;
+  this->localize_id.index = this->localize_index;
+  this->localize_id.port = this->device_id.port;
 
   // Subscribe to the localize device.
-  if(!(this->localize = deviceTable->GetDriver(id)))
+  if(!(this->localize = deviceTable->GetDriver(this->localize_id)))
   {
     PLAYER_ERROR("unable to locate suitable localize device");
     return(-1);
@@ -788,9 +781,9 @@ Wavefront::SetupMap()
   player_map_info_t info;
   struct timeval ts;
   info.subtype = PLAYER_MAP_GET_INFO_REQ;
-  if((replen = mapdevice->Request(&map_id, this, &info, 
-                                  sizeof(info.subtype), &reptype, 
-                                  &ts, &info, sizeof(info))) <= 0)
+  if((replen = mapdevice->Request(map_id, this, 
+                                  &info, sizeof(info.subtype), NULL,
+                                  &reptype, &info, sizeof(info),&ts)) <= 0)
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
@@ -835,9 +828,9 @@ Wavefront::SetupMap()
 
     reqlen = sizeof(data_req) - sizeof(data_req.data);
 
-    if((replen = mapdevice->Request(&map_id, this, &data_req, reqlen,
-                                    &reptype, &ts, &data_req, 
-                                    sizeof(data_req))) == 0)
+    if((replen = mapdevice->Request(map_id, this, 
+                                    &data_req, reqlen, NULL,
+                                    &reptype, &data_req, sizeof(data_req),&ts)) == 0)
     {
       PLAYER_ERROR("failed to get map info");
       return(-1);
@@ -877,6 +870,7 @@ Wavefront::SetupMap()
   fflush(NULL);
   plan_update_cspace(this->plan);
   puts("done.");
+  return(0);
 }
 
 
@@ -894,8 +888,9 @@ Wavefront::ShutdownLocalize()
 }
 
 int 
-Wavefront::PutConfig(player_device_id_t* device, void* client,
-                     void* request, size_t len)
+Wavefront::PutConfig(player_device_id_t id, void *client, 
+                     void* src, size_t len,
+                     struct timeval* timestamp)
 {
   player_planner_waypoints_req_t reply;
   double wx,wy;
@@ -906,7 +901,7 @@ Wavefront::PutConfig(player_device_id_t* device, void* client,
   memset(&reply,0,sizeof(player_planner_waypoints_req_t));
   if(len > 0)
   {
-    switch(((unsigned char*)request)[0])
+    switch(((unsigned char*)src)[0])
     {
       case PLAYER_PLANNER_GET_WAYPOINTS_REQ:
         // return the list of waypoints
@@ -933,15 +928,16 @@ Wavefront::PutConfig(player_device_id_t* device, void* client,
                 (PLAYER_PLANNER_MAX_WAYPOINTS - ntohs(reply.count)) * 
                 sizeof(player_planner_waypoint_t);
 
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
-                    (void*)&reply, replylen))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                    (void*)&reply, replylen,NULL))
           PLAYER_ERROR("PutReply() failed");
         break;
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
   }
   //Unlock();
+  return(0);
 }

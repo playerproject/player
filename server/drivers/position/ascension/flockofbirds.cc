@@ -369,13 +369,7 @@ class FlockOfBirds_Device : public Driver
 // initialization function
 Driver* FlockOfBirds_Init( ConfigFile* cf, int section)
 {
-	if(strcmp( PLAYER_POSITION3D_STRING))
-	{
-		PLAYER_ERROR1("driver \"flockofbirds\" does not support interface \"%s\"\n", interface);
-    		return(NULL);
-  	}
-  	else
-    		return static_cast<Driver*> (new FlockOfBirds_Device( cf, section));
+  return static_cast<Driver*> (new FlockOfBirds_Device( cf, section));
 }
 
 
@@ -383,11 +377,13 @@ Driver* FlockOfBirds_Init( ConfigFile* cf, int section)
 void 
 FlockOfBirds_Register(DriverTable* table)
 {
-	table->AddDriver("flockofbirds",  FlockOfBirds_Init);
+  table->AddDriver("flockofbirds",  FlockOfBirds_Init);
 }
 
-FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section) :
-	Driver(sizeof(player_position3d_data_t),sizeof(player_position3d_cmd_t),1,1)
+FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section)
+        : Driver(cf, section, PLAYER_POSITION3D_CODE, PLAYER_ALL_MODE,
+                 sizeof(player_position3d_data_t),
+                 sizeof(player_position3d_cmd_t),1,1)
 {
 	fob = NULL;
 	
@@ -418,8 +414,8 @@ FlockOfBirds_Device::Setup()
 	bzero(&data,sizeof(data));
 	bzero(&cmd,sizeof(cmd));
 
-  	PutData((unsigned char*)&data,sizeof(data),0,0);
-  	PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  	PutData((void*)&data,sizeof(data),NULL);
+  	PutCommand((void*)&cmd,sizeof(cmd),NULL);
 
 	// start the thread to talk with the camera
 	StartThread();
@@ -453,7 +449,7 @@ FlockOfBirds_Device::HandleConfig(void *client, unsigned char *buffer, size_t le
 	//bool success = false;
 
 	// we dont support any config, so just NACK them all
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK)) {
+	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
 		  PLAYER_ERROR("PTU46: Failed to PutReply\n");
 		  return -1;
 	}
@@ -475,7 +471,7 @@ FlockOfBirds_Device::Main()
   while(1) 
   {
 	pthread_testcancel();
-    	GetCommand((unsigned char*)&command, sizeof(player_position3d_cmd_t));
+    	GetCommand((void*)&command, sizeof(player_position3d_cmd_t),NULL);
     	pthread_testcancel();
 
 	// update the position data
@@ -495,11 +491,11 @@ FlockOfBirds_Device::Main()
 		data.pitch = htonl(static_cast<long> ((PosData[4] < 0 ? (PosData[4] + 360) : PosData[4]) * 3600));
 		data.roll = htonl(static_cast<long> ((PosData[5] < 0 ? (PosData[5] + 360) : PosData[5]) * 3600));*/
 
-		PutData((unsigned char*)&data, sizeof(player_position3d_data_t),0,0);
+		PutData((void*)&data, sizeof(player_position3d_data_t),NULL);
 	}    
 
     	// check for config requests 
-    	if ((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer))) > 0) 
+    	if ((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer),NULL)) > 0) 
 	{
         	if (HandleConfig(client, (uint8_t *)buffer, buffer_len) < 0) 
 			fprintf(stderr, "FlockOfBirds: error handling config request\n");

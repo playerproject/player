@@ -167,7 +167,7 @@ int ReadLog::Setup()
   }
 
   // Clear the data buffer
-  this->PutData(NULL, 0, 0, 0);
+  this->PutData(NULL, 0, NULL);
     
   return 0;
 }
@@ -196,7 +196,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
 
   if(device->code != PLAYER_LOG_CODE)
   {
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return(0);
   }
@@ -205,7 +205,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
   {
     PLAYER_WARN2("request was too small (%d < %d)",
                   len, sizeof(sreq.subtype));
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
@@ -216,7 +216,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
       if(len != sizeof(sreq))
       {
         PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -231,7 +231,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
         puts("ReadLog: stop playback");
         this->manager->enable = false;
       }
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     case PLAYER_LOG_GET_STATE_REQ:
@@ -239,7 +239,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
       {
         PLAYER_WARN2("request wrong size (%d != %d)", 
                      len, sizeof(greq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -250,8 +250,8 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
       else
         greq.state = 0;
 
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
-                        &greq, sizeof(greq)) != 0)
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+                        &greq, sizeof(greq),NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     case PLAYER_LOG_SET_READ_REWIND_REQ:
@@ -259,7 +259,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
       {
         PLAYER_WARN2("request wrong size (%d != %d)", 
                      len, sizeof(rreq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -267,13 +267,13 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
       // set the appropriate flag in the manager
       this->manager->rewind_requested = true;
 
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
 
     default:
       PLAYER_WARN1("got request of unknown subtype %u", subtype);
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }

@@ -562,8 +562,8 @@ PTU46_Device::PTU46_Device( ConfigFile* cf, int section) :
   data.pan = data.tilt = data.zoom = data.panspeed = data.tiltspeed = 0;
   cmd.pan = cmd.tilt = cmd.zoom = cmd.panspeed = data.tiltspeed = 0;
 
-  PutData((unsigned char*)&data,sizeof(data),0,0);
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutData((void*)&data,sizeof(data),NULL);
+  PutCommand((void*)&cmd,sizeof(cmd),NULL);
 
 	MoveMode = PLAYER_PTZ_POSITION_CONTROL;
 
@@ -598,7 +598,7 @@ PTU46_Device::Setup()
   
 
   // zero the command buffer
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
 
   // start the thread to talk with the camera
   StartThread();
@@ -635,7 +635,7 @@ PTU46_Device::HandleConfig(void *client, unsigned char *buffer, size_t len)
 	// could be usig in future to set power mode etc of pan tilt unit
 	// and acceleration etc, for now respond NACK to any request
 
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK)) {
+	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
 	  PLAYER_ERROR("PTU46: Failed to PutReply\n");
 	}
 	break;
@@ -659,13 +659,13 @@ PTU46_Device::HandleConfig(void *client, unsigned char *buffer, size_t len)
 
 	if (success)
 	{
-		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK)) {
+		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL)) {
 		  PLAYER_ERROR("PTU46: Failed to PutReply\n");
 		}
 	}
 	else
 	{
-		if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK)) {
+		if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
 		  PLAYER_ERROR("PTU46: Failed to PutReply\n");
 		}
 	}
@@ -692,7 +692,7 @@ PTU46_Device::Main()
   
   while(1) {
     pthread_testcancel();
-    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t),NULL);
     pthread_testcancel();
 
 
@@ -765,11 +765,13 @@ PTU46_Device::Main()
     
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
+    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
     
 
     // check for config requests 
-    if ((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer))) > 0) {
+    if((buffer_len = 
+        GetConfig(&client, (void *)buffer, sizeof(buffer), NULL)) > 0) 
+    {
       
       if (HandleConfig(client, (uint8_t *)buffer, buffer_len) < 0) {
 		fprintf(stderr, "PTU46: error handling config request\n");

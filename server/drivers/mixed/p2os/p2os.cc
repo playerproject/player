@@ -57,17 +57,6 @@ extern PlayerTime* GlobalTime;
 #include <devicetable.h>
 extern int global_playerport; // used to get at devices
 
-/* here we calculate our conversion factors.
- *  0x370 is max value for the PTZ pan command, and in the real
- *    world, it has +- 25.0 range.
- *  0x12C is max value for the PTZ tilt command, and in the real
- *    world, it has +- 100.0 range.
- */
-#define PTZ_PAN_MAX 100.0
-#define PTZ_TILT_MAX 25.0
-#define PTZ_PAN_CONV_FACTOR (0x370 / PTZ_PAN_MAX)
-#define PTZ_TILT_CONV_FACTOR (0x12C / PTZ_TILT_MAX)
-
 /* these are necessary to make the static fields visible to the linker */
 extern pthread_t       P2OS::thread;
 //extern struct timeval  P2OS::timeBegan_tv;

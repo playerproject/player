@@ -23,10 +23,10 @@ captureCamera::captureCamera(int camera_index) : capture()
   //     cout << "captureCamera::captureCamera() index "<<this->camera_index<<" port "<<  this->camera_port<<endl;
 
   // Subscribe to the camera.
-  id.code = PLAYER_CAMERA_CODE;
-  id.index = this->camera_index;
-  id.port = global_playerport;
-  this->camera = deviceTable->GetDriver(id);
+  camera_id.code = PLAYER_CAMERA_CODE;
+  camera_id.index = this->camera_index;
+  camera_id.port = global_playerport;
+  this->camera = deviceTable->GetDriver(camera_id);
   if (!this->camera)
   {
     PLAYER_ERROR("unable to locate suitable camera device");
@@ -43,13 +43,11 @@ captureCamera::captureCamera(int camera_index) : capture()
   // get an image to find it's configuration
   //this->camera->Wait();
   size_t size;
-  uint32_t timesec, timeusec;
-  double time;
+  struct timeval timestamp;
   this->camera->Update();
   // Get the camera data.
-  size = this->camera->GetData(this, (unsigned char*) &data,
-			       sizeof(data), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  size = this->camera->GetData(this->camera_id, (unsigned char*) &data,
+			       sizeof(data), &timestamp);
 
   // Do some byte swapping
   this->width = ntohs(data.width);
@@ -80,16 +78,16 @@ bool captureCamera::initialize(int nwidth,int nheight)
 
 unsigned char *captureCamera::captureFrame()
 {
-     uint32_t tSec,tUSec;
+     struct timeval timestamp;
      size_t size;
      double t;
      int w,h;
 
      //this->camera->Update(); //?
      this->camera->Wait();
-     size = this->camera->GetData(this, (unsigned char*) &data,
-				  sizeof(data), &tSec, &tUSec);
-     t = (double) tSec + ((double) tUSec) * 1e-6;
+     size = this->camera->GetData(this->camera_id, (unsigned char*) &data,
+				  sizeof(data), &timestamp);
+     t = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
      // Dont do anything if this is old data.
      if (0)//(fabs(t - this->camera_time) < 0.001)
 	  {

@@ -256,7 +256,7 @@ void Iwspy::Main()
     data.link_count = htons(data.link_count);
 
     // Send data
-    PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
+    PutData((uint8_t*) &data, sizeof(data), &time);
   }
   return;
 }

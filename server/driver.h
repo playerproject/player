@@ -60,9 +60,6 @@ class Driver
     // locking mechanism (and overrides locking methods)
     pthread_mutex_t accessMutex;
 
-    // this mutex is used to mutually exclude calls to Setup and Shutdown
-    pthread_mutex_t setupMutex;
-    
     // the driver's thread
     pthread_t driverthread;
 
@@ -95,7 +92,6 @@ class Driver
     // at startup, before any clients subscribe. The "alwayson" parameter in
     // the config file can be used to turn this feature on as well (in which
     // case this flag will be set to reflect that setting)
-    // WARNING: this feature is experimental and may be removed in the future
     bool alwayson;
 
     // Last error value; useful for returning error codes from
@@ -109,7 +105,7 @@ class Driver
      */
     Driver(ConfigFile *cf, int section, int interface, uint8_t access,
            size_t datasize, size_t commandsize, 
-           int reqqueuelen, int repqueuelen);
+           size_t reqqueuelen, size_t repqueuelen);
 
     /** Constructor for multiple-interface drivers.  Use
         AddInterface() to specify interfaces.
@@ -130,7 +126,7 @@ class Driver
     /// Set/reset error code
     void SetError(int code) {this->error = code;}
 
-    /// these are used to control subscriptions to the driver; a driver MAY
+    /// These are used to control subscriptions to the driver; a driver MAY
     /// override them, but usually won't (P2OS being the main exception).
     /// The client pointer acts an identifier for drivers that need to maintain
     /// their own client lists (such as the broadcast driver).  It's a void*
@@ -146,11 +142,10 @@ class Driver
     virtual int Shutdown() = 0;
 
 
-    // This method is called by Player on each driver after all drivers have
-    // been loaded, and immediately before entering the main loop, so override
-    // it in your driver subclass if you need to do some last minute setup with
-    // Player all set up and ready to go
-    // WANRING: this feature is experimental and may be removed in the future
+    /// This method is called by Player on each driver after all drivers have
+    /// been loaded, and immediately before entering the main loop, so override
+    /// it in your driver subclass if you need to do some last minute setup with
+    /// Player all set up and ready to go.
     virtual void Prepare() {}
 
     /// This method is called once per loop (in Linux, probably either 50Hz or 
@@ -168,102 +163,93 @@ class Driver
     /// Write data to the driver; @a id specifies the interface to write to.
     virtual void PutData(player_device_id_t id,
                          void* src, size_t len,
-                         uint32_t timestamp_sec, uint32_t timestamp_usec);
-        
+                         struct timeval* timestamp);
+
+    /// Convenient short form, for single-interface drivers
+    void PutData(void* src, size_t len,
+                 struct timeval* timestamp)
+    { PutData(this->device_id,src,len,timestamp); }
+
     /// Read data from the driver; @a id specifies the interface to be read.
-    virtual size_t GetData(player_device_id_t id, void* client,  
+    virtual size_t GetData(player_device_id_t id,
                            void* dest, size_t len,
-                           uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+                           struct timeval* timestamp);
 
     /// Write a new command to the driver; @a id specifies the interface to be written.
-    virtual void PutCommand(player_device_id_t id, void* client,
-                            void* src, size_t len);
+    virtual void PutCommand(player_device_id_t id,
+                            void* src, size_t len,
+                            struct timeval* timestamp);
+
+    /// Convenient short form, single interface
+    void PutCommand(void* src, size_t len, struct timeval* timestamp)
+    { PutCommand(this->device_id,src,len,timestamp); }
+
 
     /// Read the current command for the driver; @a id specifies the interface to be read.
-    virtual size_t GetCommand(player_device_id_t id, void* dest, size_t len);
+    virtual size_t GetCommand(player_device_id_t id,
+                              void* dest, size_t len,
+                              struct timeval* timestamp);
 
-    /// Clear the current command buffer for interface @id.
+    /// Convenient short form, single-interface drivers
+    size_t GetCommand(void* dest, size_t len,
+                      struct timeval* timestamp)
+    { return GetCommand(this->device_id,dest,len,timestamp); }
+
+    /// Clear the current command buffer for interface @id (i.e., consume
+    /// the command).
     virtual void ClearCommand(player_device_id_t id);
 
     /// Write configuration request to driver.
-    /// The @a src_id field is a legacy hack for p2os-syle request/reply tom-foolery.
-    virtual int PutConfig(player_device_id_t id, player_device_id_t *src_id,
-                          void *client, void *data, size_t len);
+    virtual int PutConfig(player_device_id_t id, void *client, 
+                          void* src, size_t len,
+                          struct timeval* timestamp);
 
     /// Get next configuration request for driver.
-    /// The src_id field is a legacy hack for p2os-syle request/reply tom-foolery.    
-    virtual size_t GetConfig(player_device_id_t id, player_device_id_t *src_id,
-                             void **client, void *data, size_t len);
+    virtual int GetConfig(player_device_id_t id, void **client, 
+                          void* dest, size_t len,
+                          struct timeval* timestamp);
+
+    /// Convenient short form, no id
+    int GetConfig(void** client, void* dest, size_t len, 
+                  struct timeval* timestamp)
+    { return GetConfig(this->device_id,client,dest,len,timestamp); }
 
     /// Write configuration reply to driver.
-    virtual int PutReply(player_device_id_t id, player_device_id_t *src_id,
-                         void* client, unsigned short type, struct timeval* ts, 
-                         void* data, size_t len);
+    virtual int PutReply(player_device_id_t id, void* client, 
+                         unsigned short type, 
+                         void* src, size_t len,
+                         struct timeval* timestamp);
+
+    /// Convenient short form: no id
+    int PutReply(void* client, 
+                 unsigned short type, 
+                 void* src, size_t len,
+                 struct timeval* timestamp)
+    { return PutReply(this->device_id,client,type,src,len,timestamp); }
+
+    /// Convenient short form: empty reply
+    int PutReply(player_device_id_t id, void* client, unsigned short type,
+                 struct timeval* timestamp)
+    { return PutReply(id,client,type,NULL,0,timestamp); }
+
+    /// Convenient short form: no id, empty reply
+    int PutReply(void* client, unsigned short type,
+                 struct timeval* timestamp)
+    { return PutReply(this->device_id,client,type,NULL,0,timestamp); }
 
     /// Read configuration reply from driver;
-    /// The src_id field is a legacy hack for p2os-syle request/reply tom-foolery.
-    virtual int GetReply(player_device_id_t id, player_device_id_t *src_id, void* client, 
-                         unsigned short* type, struct timeval* ts, 
-                         void* data, size_t len);
+    virtual int GetReply(player_device_id_t id, void* client, 
+                         unsigned short* type, 
+                         void* dest, size_t len,
+                         struct timeval* timestamp);
 
-    ///////////////////////////////////////////////////////////////////////////////////
-    // Deprecated functions (safe to call, but not safe to overload)
-
-    // Write new data to the driver
-    void PutData(void* src, size_t len,
-                 uint32_t timestamp_sec, uint32_t timestamp_usec);
-
-    // Read new data from the driver
+#if 0
     size_t GetNumData(void* client);
-    size_t GetData(void* client, unsigned char* dest, size_t len,
-                   uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+#endif
 
-    // Write a new command to the driver
-    void PutCommand(void* client, unsigned char* src, size_t len);
-
-    // Read the current command for the driver
-    size_t GetCommand(void* dest, size_t len);
-
-    // Write configuration request to driver
-    int PutConfig(player_device_id_t* driver, void* client, 
-                  void* data, size_t len);
-
-    // Read configuration request from driver
-    size_t GetConfig(player_device_id_t* device, void** client, 
-                     void *data, size_t len);
-
-    // Write configuration reply to driver
-    int PutReply(player_device_id_t* driver, void* client, 
-                 unsigned short type, struct timeval* ts, 
-                 void* data, size_t len);
-
-    // Read configuration reply from driver
-    virtual int GetReply(player_device_id_t* driver, void* client, 
-                         unsigned short* type, struct timeval* ts, 
-                         void* data, size_t len);
-
-    // Convenient short form
-    size_t GetConfig(void** client, void* data, size_t len);
-
-    // Convenient short form
-    int PutReply(void* client, unsigned short type);
-
-    // Convenient short form
-    int PutReply(void* client, unsigned short type, struct timeval* ts, 
-                 void* data, size_t len);
-
-    // End deprecated functions
-    ///////////////////////////////////////////////////////////////////////////////////
-    
-    /* start a thread that will invoke Main() */
-    virtual void StartThread();
-
-    /* cancel (and wait for termination) of the thread */
-    virtual void StopThread();
-    
     // Main function for driver thread
     //
-    virtual void Main();
+    virtual void Main(void);
 
     // Cleanup function for driver thread (called when main exits)
     //
@@ -271,10 +257,12 @@ class Driver
 
     // A helper method for internal use; e.g., when one driver wants to make a
     // request of another driver.
-    virtual int Request(player_device_id_t* device, void* requester, 
+    virtual int Request(player_device_id_t id, void* requester, 
                         void* request, size_t reqlen,
-                        unsigned short* reptype, struct timeval* ts,
-                        void* reply, size_t replen);
+                        struct timeval* req_timestamp,
+                        unsigned short* reptype, 
+                        void* reply, size_t replen,
+                        struct timeval* rep_timestamp);
 
     // Waits on the condition variable associated with this driver.
     // This method is called by other drivers to wait for new data.
@@ -291,11 +279,17 @@ class Driver
     //
     static void DummyMainQuit(void *driver);
 
+    /* start a thread that will invoke Main() */
+    void StartThread(void);
+
+    /* cancel (and wait for termination) of the thread */
+    void StopThread(void);
+
     // these methods are used to lock and unlock the various buffers and
     // queues; they are implemented with mutexes in Driver and overridden
     // in CStageDriver
-    virtual void Lock();
-    virtual void Unlock();
+    virtual void Lock(void);
+    virtual void Unlock(void);
 
 };
 

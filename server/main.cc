@@ -984,19 +984,19 @@ bool
 ParseConfigFile(char* fname, int** ports, int* num_ports, 
                   ClientData*** alwayson_devices, int* num_alwayson_devices)
 {
-  DriverEntry* entry;
-  Driver* tmpdriver;
-  char interface[PLAYER_MAX_DEVICE_STRING_LEN];
-  char* colon;
-  char* colon2;
-  int index;
-  char* driver;
-  const char *pluginname;  
+  //DriverEntry* entry;
+  //Driver* tmpdriver;
+  //char interface[PLAYER_MAX_DEVICE_STRING_LEN];
+  //char* colon;
+  //char* colon2;
+  //int index;
+  //char* driver;
+  //const char *pluginname;  
   //void* handle;
-  int code = 0;
+  //int code = 0;
   int port = global_playerport;
   char robotname[PLAYER_MAX_DEVICE_STRING_LEN];
-  bool firstdevice=true;
+  //bool firstdevice=true;
 
   robotname[0]='\0';
 

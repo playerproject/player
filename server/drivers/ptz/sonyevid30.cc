@@ -178,8 +178,8 @@ SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
   data.pan = data.tilt = data.zoom = 0;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
-  PutData((unsigned char*)&data,sizeof(data),0,0);
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutData((void*)&data,sizeof(data),NULL);
+  PutCommand((void*)&cmd,sizeof(cmd),NULL);
 
   strncpy(ptz_serial_port,
           cf->ReadString(section, "port", DEFAULT_PTZ_PORT),
@@ -269,7 +269,7 @@ SonyEVID30::Setup()
   puts("Done.");
 
   // zero the command buffer
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutCommand((void*)&cmd,sizeof(cmd),NULL);
 
   // start the thread to talk with the camera
   StartThread();
@@ -739,11 +739,11 @@ SonyEVID30::HandleConfig(void *client, unsigned char *buffer, size_t len)
     // check whether command or inquiry...
     if (cfg->config[0] == VISCA_COMMAND_CODE) {
       if (SendCommand(cfg->config, length) < 0) {
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK)) {
+	if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
 	  PLAYER_ERROR("SONYEVI: Failed to PutReply\n");
 	}
       } else {
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK)) {
+	if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL)) {
 	  PLAYER_ERROR("SONYEVI: Failed to PutReply\n");
 	}
       }
@@ -752,8 +752,8 @@ SonyEVID30::HandleConfig(void *client, unsigned char *buffer, size_t len)
       length = SendRequest(cfg->config, length, cfg->config);
       cfg->length = htons(length);
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
-		   cfg, sizeof(player_ptz_generic_config_t))) {
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		   cfg, sizeof(player_ptz_generic_config_t), NULL)) {
 	PLAYER_ERROR("SONYEVI: Failed to PutReply\n");
       }
     }
@@ -790,7 +790,7 @@ SonyEVID30::Main()
   
   while(1) {
     pthread_testcancel();
-    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    GetCommand((void*)&command, sizeof(player_ptz_cmd_t),NULL);
     pthread_testcancel();
     
     if(pandemand != (short)ntohs((unsigned short)(command.pan)))
@@ -876,14 +876,16 @@ SonyEVID30::Main()
     
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
+    PutData((void*)&data, sizeof(player_ptz_data_t),NULL);
     
     newpantilt = false;
     newzoom = false;
     
 
     // check for config requests 
-    if ((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer))) > 0) {
+    if((buffer_len = 
+        GetConfig(&client,(void*)buffer,sizeof(buffer),NULL)) > 0) 
+    {
       
       if (HandleConfig(client, (uint8_t *)buffer, buffer_len) < 0) {
 	fprintf(stderr, "SONYEVI: error handling config request\n");

@@ -54,7 +54,7 @@ class WriteLogDevice
 {
   public: player_device_id_t id;
   public: Driver *device;
-  public: uint32_t tsec, tusec;
+  public: struct timeval time;
 };
 
 
@@ -202,8 +202,8 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
     device->id.code = iface.code;
     device->id.index = index;
     device->device = NULL;
-    device->tsec = 0;
-    device->tusec = 0;
+    device->time.tv_sec = 0;
+    device->time.tv_usec = 0;
   }
 
   // See which device we should wait on
@@ -310,7 +310,7 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
   {
     PLAYER_WARN2("request was too small (%d < %d)",
                   len, sizeof(sreq.subtype));
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
@@ -321,7 +321,7 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
       if(len != sizeof(sreq))
       {
         PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -336,7 +336,7 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
         puts("WriteLog: stop logging");
         this->enable = false;
       }
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     case PLAYER_LOG_GET_STATE_REQ:
@@ -344,7 +344,7 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
       {
         PLAYER_WARN2("request wrong size (%d != %d)", 
                      len, sizeof(greq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -355,13 +355,13 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
       else
         greq.state = 0;
 
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
-                        &greq, sizeof(greq)) != 0)
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+                        &greq, sizeof(greq),NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     default:
       PLAYER_WARN1("got request of unknown subtype %u", subtype);
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }
@@ -376,7 +376,7 @@ void WriteLog::Main(void)
 {
   int i;
   size_t size, maxsize;
-  uint32_t tsec, tusec;
+  struct timeval ts;
   void *data;
   WriteLogDevice *device;
   
@@ -410,17 +410,17 @@ void WriteLog::Main(void)
       device = this->devices + i;
       
       // Read data from underlying device
-      size = device->device->GetData(device->id, this, (unsigned char*) data, maxsize, &tsec, &tusec);
+      size = device->device->GetData(device->id, (void*) data, maxsize, &ts);
       assert(size < maxsize);
 
       // Check for new data
-      if (device->tsec == tsec && device->tusec == tusec)
+      if((device->time.tv_sec == ts.tv_sec) && 
+         (device->time.tv_usec == ts.tv_usec))
         continue;
-      device->tsec = tsec;
-      device->tusec = tusec;
+      device->time = ts;
   
       // Write data to file
-      this->Write(data, size, &device->id, tsec, tusec);
+      this->Write(data, size, &device->id, ts.tv_sec,ts.tv_usec);
     }
 
     // Write the sync packet

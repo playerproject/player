@@ -79,11 +79,13 @@ class VFH_Class : public Driver
     
     // Truth device info
     Driver *truth;
+    player_device_id_t truth_id;
     int truth_index;
     double truth_time;
 
     // Odometry device info
     Driver *odom;
+    player_device_id_t odom_id;
     int odom_index;
     double odom_time;
     double dist_eps;
@@ -105,6 +107,7 @@ class VFH_Class : public Driver
 
     // Laser device info
     Driver *laser;
+    player_device_id_t laser_id;
     int laser_index;
     double laser_time;
 
@@ -145,7 +148,7 @@ int VFH_Class::Setup()
   player_position_cmd_t cmd;
 
   memset(&cmd,0,sizeof(cmd));
-  Driver::PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  Driver::PutCommand((void*)&cmd,sizeof(cmd),NULL);
 
   this->active_goal = false;
   this->goal_x = this->goal_y = this->goal_t = 0;
@@ -196,7 +199,6 @@ int VFH_Class::Shutdown() {
 int VFH_Class::SetupTruth() 
 {
   //struct timeval ts;
-  player_device_id_t id;
   
   // if the user didn't specify a truth device, don't do anything
   if(this->truth_index < 0)
@@ -204,12 +206,12 @@ int VFH_Class::SetupTruth()
 
 // EDIT?
 //  id.robot = this->device_id.robot;
-  id.port = this->device_id.port;
-  id.code = PLAYER_TRUTH_CODE;
-  id.index = this->truth_index;
+  this->truth_id.port = this->device_id.port;
+  this->truth_id.code = PLAYER_TRUTH_CODE;
+  this->truth_id.index = this->truth_index;
 
 
-  if(!(this->truth = deviceTable->GetDriver(id)))
+  if(!(this->truth = deviceTable->GetDriver(this->truth_id)))
   {
     PLAYER_ERROR("unable to locate suitable truth device");
     return -1;
@@ -243,15 +245,14 @@ int VFH_Class::SetupOdom()
   unsigned short reptype;
   struct timeval ts;
   player_position_geom_t geom;
-  player_device_id_t id;
 
 // EDIT?
 //  id.robot = this->device_id.robot;
-  id.port = this->device_id.port;
-  id.code = PLAYER_POSITION_CODE;
-  id.index = this->odom_index;
+  this->odom_id.port = this->device_id.port;
+  this->odom_id.code = PLAYER_POSITION_CODE;
+  this->odom_id.index = this->odom_index;
 
-  this->odom = deviceTable->GetDriver(id);
+  this->odom = deviceTable->GetDriver(this->odom_id);
   if (!this->odom)
   {
     PLAYER_ERROR("unable to locate suitable position device");
@@ -266,8 +267,9 @@ int VFH_Class::SetupOdom()
 
   // Get the odometry geometry
   req = PLAYER_POSITION_GET_GEOM_REQ;
-  replen = this->odom->Request(&this->odom->device_id, this, &req, sizeof(req),
-                               &reptype, &ts, &geom, sizeof(geom));
+  replen = this->odom->Request(this->odom_id, this, 
+                               &req, sizeof(req), NULL,
+                               &reptype, &geom, sizeof(geom),&ts);
 
   geom.pose[0] = ntohs(geom.pose[0]);
   geom.pose[1] = ntohs(geom.pose[1]);
@@ -314,15 +316,14 @@ int VFH_Class::SetupLaser() {
   unsigned short reptype;
   struct timeval ts;
   player_laser_geom_t geom;
-  player_device_id_t id;
 
 // EDIT ?
 //  id.robot = this->device_id.robot;
-  id.port = this->device_id.port;
-  id.code = PLAYER_LASER_CODE;
-  id.index = this->laser_index;
+  this->laser_id.port = this->device_id.port;
+  this->laser_id.code = PLAYER_LASER_CODE;
+  this->laser_id.index = this->laser_index;
 
-  this->laser = deviceTable->GetDriver(id);
+  this->laser = deviceTable->GetDriver(this->laser_id);
   if (!this->laser)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
@@ -336,8 +337,9 @@ int VFH_Class::SetupLaser() {
 
   // Get the laser geometry
   req = PLAYER_LASER_GET_GEOM;
-  replen = this->laser->Request(&this->laser->device_id, this, &req, sizeof(req),
-                                &reptype, &ts, &geom, sizeof(geom));
+  replen = this->laser->Request(this->laser_id, 
+                                this, &req, sizeof(req),NULL,
+                                &reptype, &geom, sizeof(geom), &ts);
 
   geom.pose[0] = ntohs(geom.pose[0]);
   geom.pose[1] = ntohs(geom.pose[1]);
@@ -366,14 +368,15 @@ int VFH_Class::GetOdom() {
   //int i;
   size_t size;
   player_position_data_t data;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
 
   // Get the odom device data.
-  size = this->odom->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->odom->GetData(this->odom_id,(void*) &data, sizeof(data), 
+                             &timestamp);
   if (size == 0)
     return 0;
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
 
   // Dont do anything if this is old data.
   if (time - this->odom_time < 0.001)
@@ -406,14 +409,15 @@ int VFH_Class::GetTruth()
   //int i;
   size_t size;
   player_truth_data_t data;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
 
   // Get the truth device data.
-  size = this->truth->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->truth->GetData(this->truth_id,(void*) &data, 
+                              sizeof(data), &timestamp);
   if (size == 0)
     return 0;
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
 
   // Dont do anything if this is old data.
   if (time - this->truth_time < 0.001)
@@ -438,15 +442,16 @@ int VFH_Class::GetLaser() {
   int i;
   size_t size;
   player_laser_data_t data;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
   double r, b, db, range_res;
 
   // Get the laser device data.
-  size = this->laser->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->laser->GetData(this->laser_id,(void*) &data, sizeof(data), 
+                              &timestamp);
   if (size == 0)
     return 0;
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
 
   // Dont do anything if this is old data.
   if (time - this->laser_time < 0.001)
@@ -561,7 +566,7 @@ void VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate ) {
   cmd.yspeed = htonl(cmd.yspeed);
   cmd.yawspeed = htonl(cmd.yawspeed);
 
-  this->odom->PutCommand(this, (unsigned char*) &cmd, sizeof(cmd));
+  this->odom->PutCommand(this->odom_id, (void*) &cmd, sizeof(cmd),NULL);
 
   return;
 }
@@ -573,8 +578,10 @@ void VFH_Class::HandlePower(void *client, void *req, int reqlen)
   unsigned short reptype;
   struct timeval ts;
 
-  this->odom->Request(&this->odom->device_id, this, req, reqlen, &reptype, &ts, NULL, 0);
-  if (PutReply(client, reptype, &ts, NULL, 0) != 0)
+  this->odom->Request(this->odom_id, this, 
+                      req, reqlen, NULL,
+                      &reptype, NULL, 0, &ts);
+  if (PutReply(client, reptype, &ts) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -593,7 +600,7 @@ void VFH_Class::HandleGetGeom(void *client, void *req, int reqlen)
   geom.size[0] = htons((int) (this->odom_geom_size[0] * 1000));
   geom.size[1] = htons((int) (this->odom_geom_size[1] * 1000));
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom), NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -607,7 +614,7 @@ int VFH_Class::HandleRequests()
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
 
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     printf( "VFH Got a request\n");
     switch (request[0])
@@ -621,7 +628,7 @@ int VFH_Class::HandleRequests()
         break;
 
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -803,7 +810,7 @@ void VFH_Class::GetCommand()
   player_position_cmd_t cmd;
   int x,y,t;
 
-  if(Driver::GetCommand(&cmd, sizeof(cmd)) != 0) 
+  if(Driver::GetCommand(&cmd, sizeof(cmd),NULL) != 0) 
   {
     // Velocity mode
     if (cmd.type == 0)
@@ -848,7 +855,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
              sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
   //double size;
-  double cell_size, robot_radius, safety_dist, free_space_cutoff, obs_cutoff;
+  double cell_size, safety_dist, free_space_cutoff, obs_cutoff;
   double weight_desired_dir, weight_current_dir;
   int window_diameter, sector_angle, max_speed, max_turnrate, min_turnrate;
 
@@ -953,7 +960,7 @@ VFH_Class::~VFH_Class() {
 // Update the device data (the data going back to the client).
 void VFH_Class::PutPose()
 {
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   player_position_data_t data;
 
   data.xpos = (int32_t)rint(this->odom_pose[0]);
@@ -972,11 +979,11 @@ void VFH_Class::PutPose()
   // don't byteswap velocities; they're already in network byteorder
 
   // Compute timestamp
-  timesec = (uint32_t) this->odom_time;
-  timeusec = (uint32_t) (fmod(this->odom_time, 1.0) * 1e6);
+  timestamp.tv_sec = (uint32_t) this->odom_time;
+  timestamp.tv_usec = (uint32_t) (fmod(this->odom_time, 1.0) * 1e6);
 
   // Copy data to server.
-  PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
+  PutData((void*) &data, sizeof(data), &timestamp);
 
   return;
 }

@@ -511,7 +511,10 @@ int ReadLogManager::ParseLaser(Driver *device, int linenum,
     data.range_res = NUINT16(1);
   }
 
-  device->PutData(&data, sizeof(data), tsec, tusec);
+  struct timeval ts;
+  ts.tv_sec = tsec;
+  ts.tv_usec = tusec;
+  device->PutData(&data, sizeof(data), &ts);
 
   return 0;
 }
@@ -538,7 +541,10 @@ int ReadLogManager::ParsePosition(Driver *device, int linenum,
   data.yawspeed = NINT32(RAD_DEG(atof(tokens[11])));
   //data.stall = atoi(tokens[12]);
 
-  device->PutData(&data, sizeof(data), tsec, tusec);
+  struct timeval ts;
+  ts.tv_sec = tsec;
+  ts.tv_usec = tusec;
+  device->PutData(&data, sizeof(data), &ts);
 
   return 0;
 }
@@ -575,7 +581,10 @@ int ReadLogManager::ParsePosition3d(Driver *device, int linenum,
   
   data.stall = atoi(tokens[18]);
 
-  device->PutData(&data, sizeof(data), tsec, tusec);
+  struct timeval ts;
+  ts.tv_sec = tsec;
+  ts.tv_usec = tusec;
+  device->PutData(&data, sizeof(data), &ts);
 
   return 0;
 }
@@ -614,7 +623,10 @@ int ReadLogManager::ParseWifi(Driver *device, int linenum,
   }
   data.link_count = htons(data.link_count);
 
-  device->PutData(&data, sizeof(data), tsec, tusec);
+  struct timeval ts;
+  ts.tv_sec = tsec;
+  ts.tv_usec = tusec;
+  device->PutData(&data, sizeof(data), &ts);
 
   return 0;
 }
@@ -650,7 +662,10 @@ int ReadLogManager::ParseGps(Driver *device, int linenum,
   data.quality = atoi(tokens[15]);
   data.num_sats = atoi(tokens[16]);
 
-  device->PutData(&data, sizeof(data), tsec, tusec);
+  struct timeval ts;
+  ts.tv_sec = tsec;
+  ts.tv_usec = tusec;
+  device->PutData(&data, sizeof(data), &ts);
 
   return 0;
 }

@@ -64,11 +64,14 @@ class GzPosition : public Driver
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, player_device_id_t* device, void* client,
-                                void* req, size_t reqlen);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Handle geometry requests
   private: void HandleGetGeom(void *client, void *req, int reqlen);
@@ -170,7 +173,7 @@ int GzPosition::Shutdown()
 void GzPosition::Update()
 {
   player_position_data_t data;
-  uint32_t tsec, tusec;
+  struct timeval ts;
 
   gz_position_lock(this->iface, 1);
 
@@ -178,8 +181,8 @@ void GzPosition::Update()
   {
     this->datatime = this->iface->data->time;
     
-    tsec = (int) (this->iface->data->time);
-    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
     data.xpos = htonl((int) (this->iface->data->pos[0] * 1000));
     data.ypos = htonl((int) (this->iface->data->pos[1] * 1000));
@@ -191,7 +194,7 @@ void GzPosition::Update()
 
     data.stall = (uint8_t) this->iface->data->stall;
 
-    this->PutData(&data, sizeof(data), tsec, tusec);    
+    this->PutData(&data, sizeof(data), &ts);
   }
 
   gz_position_unlock(this->iface);
@@ -202,7 +205,9 @@ void GzPosition::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzPosition::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
+void GzPosition::PutCommand(player_device_id_t id,
+                            void* src, size_t len,
+                            struct timeval* timestamp)
 {
   player_position_cmd_t *cmd;
     
@@ -221,20 +226,22 @@ void GzPosition::PutCommand(player_device_id_t id, void* client, unsigned char* 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzPosition::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* req, size_t req_len)
+int GzPosition::PutConfig(player_device_id_t id, void *client, 
+                          void* src, size_t len,
+                          struct timeval* timestamp)
 {
-  switch (((char*) req)[0])
+  switch (((char*) src)[0])
   {
     case PLAYER_POSITION_GET_GEOM_REQ:
-      HandleGetGeom(client, req, req_len);
+      HandleGetGeom(client, src, len);
       break;
 
     case PLAYER_POSITION_MOTOR_POWER_REQ:
-      HandleMotorPower(client, req, req_len);
+      HandleMotorPower(client, src, len);
       break;
 
     default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }
@@ -257,7 +264,7 @@ void GzPosition::HandleGetGeom(void *client, void *req, int reqlen)
   geom.size[0] = htons((int) (0.53 * 1000));
   geom.size[1] = htons((int) (0.38 * 1000));
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
   
   return;
@@ -277,7 +284,7 @@ void GzPosition::HandleMotorPower(void *client, void *req, int reqlen)
   this->iface->data->cmd_enable_motors = power->value;
   gz_position_unlock(this->iface);
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
   
   return;

@@ -774,8 +774,11 @@ void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
   }
   data.hypoth_count = htonl(data.hypoth_count);
 
+  struct timeval timestamp;
+  timestamp.tv_sec = tsec;
+  timestamp.tv_usec = tusec;
   // Copy data to server
-  ((Driver*) this)->PutData((char*) &data, datalen, tsec, tusec);
+  ((Driver*) this)->PutData((char*) &data, datalen, &timestamp);
   
   return;
 }
@@ -836,8 +839,11 @@ void AdaptiveMCL::PutDataPosition(uint32_t tsec, uint32_t tusec, pf_vector_t del
   data.ypos = htonl(data.ypos);
   data.yaw = htonl(data.yaw);
   
+  struct timeval timestamp;
+  timestamp.tv_sec = tsec;
+  timestamp.tv_usec = tusec;
   // Copy data to server
-  ((Driver*) this)->PutData((char*) &data, sizeof(data), tsec, tusec);
+  ((Driver*) this)->PutData((char*) &data, sizeof(data), &timestamp);
   
   return;
 }
@@ -851,7 +857,7 @@ int AdaptiveMCL::HandleRequests(void)
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
   
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {
@@ -859,7 +865,7 @@ int AdaptiveMCL::HandleRequests(void)
         HandleSetPose(client, request, len);
         break;
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -884,7 +890,7 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   if (len != reqlen)
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -908,7 +914,7 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   this->pf_init = false;
 
   // Give them an ack
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;

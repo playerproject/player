@@ -78,6 +78,7 @@ extern PlayerTime* GlobalTime;
 
 #include "playercommon.h"
 #include "drivertable.h"
+#include "driver.h"
 #include "player.h"
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
@@ -203,20 +204,13 @@ class SickPLS : public Driver
 // a factory creation function
 Driver* SickPLS_Init( ConfigFile* cf, int section)
 {
-  if(strcmp( PLAYER_LASER_STRING))
-  {
-    PLAYER_ERROR1("driver \"sickpls\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new SickPLS( cf, section)));
+  return((Driver*)(new SickPLS( cf, section)));
 }
 
 // a driver registration function
 void SickPLS_Register(DriverTable* table)
 {
-  table->AddDriver("sickpls", PLAYER_READ_MODE, SickPLS_Init);
+  table->AddDriver("sickpls", SickPLS_Init);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -237,7 +231,8 @@ void SickPLS_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickPLS::SickPLS( ConfigFile* cf, int section)
-    : Driver(cf, section, sizeof(player_laser_data_t),0,10,10)
+    : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_READ_MODE,
+             sizeof(player_laser_data_t),0,10,10)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -426,7 +421,7 @@ void SickPLS::Main()
       }
 
       // Make data available
-      PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
+      PutData((uint8_t*) &data, sizeof(data), &time);
     }
   }
 }
@@ -442,7 +437,7 @@ int SickPLS::UpdateConfig()
   player_laser_config_t config;
   player_laser_geom_t geom;
   
-  while ((len = GetConfig(&client, &buffer, sizeof(buffer))) > 0)
+  while ((len = GetConfig(&client, &buffer, sizeof(buffer), NULL)) > 0)
   {
     switch (buffer[0])
     {
@@ -451,7 +446,7 @@ int SickPLS::UpdateConfig()
         if (len != sizeof(player_laser_config_t))
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -465,13 +460,14 @@ int SickPLS::UpdateConfig()
 
         if (this->CheckScanConfig() == 0)
         {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                      &config, sizeof(config),NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           return 1;
         }
         else
         {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
         }
         break;
@@ -482,7 +478,7 @@ int SickPLS::UpdateConfig()
         if (len != 1)
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -493,8 +489,8 @@ int SickPLS::UpdateConfig()
         config.max_angle = htons((short) this->max_angle);
         config.range_res = htons(this->range_res);
 
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
-                    sizeof(config)) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                    &config, sizeof(config), NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -504,7 +500,7 @@ int SickPLS::UpdateConfig()
         if (len != 1)
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -515,15 +511,15 @@ int SickPLS::UpdateConfig()
         geom.size[0] = htons((short) (this->size[0] * 1000));
         geom.size[1] = htons((short) (this->size[1] * 1000));
         
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-                    sizeof(geom)) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                    &geom, sizeof(geom),NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
 
       default:
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }

@@ -68,10 +68,14 @@ class GzHUD : public Driver
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo device id
   private: char *gz_id;
@@ -175,7 +179,9 @@ void GzHUD::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzHUD::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
+void GzHUD::PutCommand(player_device_id_t id,
+                       void* src, size_t len,
+                       struct timeval* timestamp)
 {  
   return;
 }
@@ -183,9 +189,11 @@ void GzHUD::PutCommand(player_device_id_t id, void* client, unsigned char* src, 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzHUD::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* data, size_t len)
+int GzHUD::PutConfig(player_device_id_t id, void *client, 
+                     void* src, size_t len,
+                     struct timeval* timestamp)
 {
-  player_hud_config_t *cfg = (player_hud_config_t*)(data);
+  player_hud_config_t *cfg = (player_hud_config_t*)(src);
   gz_hud_draw_t *hud;
 
   gz_hud_lock(this->iface,1);
@@ -228,7 +236,7 @@ int GzHUD::PutConfig(player_device_id_t id, player_device_id_t* device, void* cl
 
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
@@ -261,7 +269,7 @@ int GzHUD::PutConfig(player_device_id_t id, player_device_id_t* device, void* cl
 
   gz_hud_unlock(this->iface);
 
-  PutReply(client, PLAYER_MSGTYPE_RESP_ACK);
+  PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL);
 
   return 0;
 }

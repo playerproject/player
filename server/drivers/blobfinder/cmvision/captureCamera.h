@@ -29,13 +29,13 @@ class captureCamera : public capture
 *************************/
    private: 
      int camera_index;
+     player_device_id_t camera_id;
      Driver *camera;
      bool camera_open;
      int width,height,depth,image_size;
      //unsigned char * current_rgb;
      unsigned char * YUV;
      player_camera_data_t data;
-     player_device_id_t id;
      double camera_time;
   
  public: 

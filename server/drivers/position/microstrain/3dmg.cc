@@ -245,7 +245,7 @@ void MicroStrain3DMG::Main()
       
       data.stall = 0;
 
-      this->PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
+      this->PutData((void*) &data, sizeof(data), &time);
     }
     else
       assert(false);

@@ -69,10 +69,14 @@ class GzPower : public Driver
                                  uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 
   // Commands
-  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo device id
   private: char *gz_id;
@@ -202,7 +206,9 @@ size_t GzPower::GetData(void* client, unsigned char* dest, size_t len,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzPower::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
+void GzPower::PutCommand(player_device_id_t id,
+                         void* src, size_t len,
+                         struct timeval* timestamp)
 {  
   return;
 }
@@ -210,16 +216,18 @@ void GzPower::PutCommand(player_device_id_t id, void* client, unsigned char* src
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzPower::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* data, size_t len)
+int GzPower::PutConfig(player_device_id_t id, void *client, 
+                       void* src, size_t len,
+                       struct timeval* timestamp)
 {
   uint8_t subtype;
 
-  subtype = ((uint8_t*) data)[0];
+  subtype = ((uint8_t*) src)[0];
   switch (subtype)
   {
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }

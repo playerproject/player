@@ -411,12 +411,12 @@ int Camera1394::HandleRequests()
   char request[PLAYER_MAX_REQREP_SIZE];
   int len;
   
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -505,7 +505,10 @@ void Camera1394::WriteData()
     size = sizeof(this->data) - sizeof(this->data.image) + this->camera.dma_frame_size;
   }
 
-  PutData((void*) &this->data, size, this->tsec, this->tusec);
+  struct timeval timestamp;
+  timestamp.tv_sec = this->tsec;
+  timestamp.tv_usec = this->tusec;
+  PutData((void*) &this->data, size, &timestamp);
 
   return;
 }

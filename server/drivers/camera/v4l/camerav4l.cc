@@ -273,7 +273,7 @@ int CameraV4L::HandleRequests()
   char request[PLAYER_MAX_REQREP_SIZE];
   int len;
   
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {
@@ -282,7 +282,7 @@ int CameraV4L::HandleRequests()
         break;
 
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -298,7 +298,7 @@ void CameraV4L::HandleGetGeom(void *client, void *request, int len)
 
   // TODO
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -325,7 +325,10 @@ void CameraV4L::WriteData()
   
   // Copy data to server.
   size = sizeof(this->data) - sizeof(this->data.image) + this->frame->size;
-  PutData((void*) &this->data, size, this->tsec, this->tusec);
+  struct timeval timestamp;
+  timestamp.tv_sec = this->tsec;
+  timestamp.tv_usec = this->tusec;
+  PutData((void*) &this->data, size, &timestamp);
 
   return;
 }

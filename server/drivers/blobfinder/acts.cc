@@ -323,7 +323,7 @@ Acts::Setup()
   memset(&dummy,0,sizeof(dummy));
   // zero the data buffer
   PutData((unsigned char*)&dummy,
-          sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
+          sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),NULL);
 
   i = 0;
   acts_args[i++] = acts_bin_name;
@@ -800,7 +800,7 @@ Acts::Main()
     /* got the data. now fill it in */
     PutData((unsigned char*)&local_data, 
                 (PLAYER_BLOBFINDER_HEADER_SIZE + 
-                 num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),0,0);
+                 num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),NULL);
   }
 
   pthread_cleanup_pop(1);

@@ -60,11 +60,12 @@ class LaserBar : public Driver
   public: virtual int Shutdown();
 
   // Data configuration.
-  public: virtual size_t GetData(void*,unsigned char *, size_t maxsize,
-                                 uint32_t* timestamp_sec,
-                                 uint32_t* timestamp_usec);
-  public: virtual int PutConfig(player_device_id_t* device, void *client, 
-                                void *data, size_t len);
+  public: virtual size_t GetData(player_device_id_t id,
+                                 void* dest, size_t len,
+                                 struct timeval* timestamp);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void *src, size_t len,
+                                struct timeval* timestamp);
 
   // Handle geometry requests.
   private: void HandleGetGeom(void *client, void *request, int len);
@@ -88,6 +89,7 @@ class LaserBar : public Driver
   
   // Pointer to laser to get data from.
   private: int laser_index;
+  private: player_device_id_t laser_id;
   private: Driver *laser_driver;
 
   // Reflector properties.
@@ -98,7 +100,7 @@ class LaserBar : public Driver
   private: player_laser_data_t ldata;
 
   // Local copy of the current fiducial data.
-  private: uint32_t data_time_sec, data_time_usec;
+  private: struct timeval ftimestamp;
   private: player_fiducial_data_t fdata;
 };
 
@@ -138,12 +140,11 @@ int LaserBar::Setup()
 {
   // Get the pointer to the laser.  If index was not overridden by an
   // argument in the constructor, then we use this driver's index.
-  player_device_id_t id;
-  id.port = this->device_id.port;
-  id.code = PLAYER_LASER_CODE;
-  id.index = this->laser_index;
+  this->laser_id.port = this->device_id.port;
+  this->laser_id.code = PLAYER_LASER_CODE;
+  this->laser_id.index = this->laser_index;
   
-  if (!(this->laser_driver = deviceTable->GetDriver(id)))
+  if (!(this->laser_driver = deviceTable->GetDriver(this->laser_id)))
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
@@ -173,21 +174,26 @@ int LaserBar::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by server thread).
-size_t LaserBar::GetData(void* client,unsigned char *dest, size_t maxsize,
-                               uint32_t* time_sec, uint32_t* time_usec)
+size_t 
+LaserBar::GetData(player_device_id_t id,
+                  void* dest, size_t len,
+                  struct timeval* timestamp)
 {
   int i;
   size_t laser_size;
-  uint32_t laser_time_sec, laser_time_usec;
+  struct timeval laser_timestamp;
   
   // Get the laser data.
-  laser_size = this->laser_driver->GetData(this, (uint8_t*) &this->ldata, sizeof(this->ldata),
-                                           &laser_time_sec, &laser_time_usec);
+  laser_size = this->laser_driver->GetData(this->laser_id, 
+                                           (void*) &this->ldata, 
+                                           sizeof(this->ldata),
+                                           &laser_timestamp);
   assert(laser_size <= sizeof(this->ldata));
   
   // If the laser doesnt have new data, just return a copy of our old
   // data.
-  if (laser_time_sec != this->data_time_sec || laser_time_usec != this->data_time_usec)
+  if ((laser_timestamp.tv_sec != this->ftimestamp.tv_sec) || 
+      (laser_timestamp.tv_usec != this->ftimestamp.tv_usec))
   {
     // Do some byte swapping
     this->ldata.resolution = ntohs(this->ldata.resolution);
@@ -212,15 +218,13 @@ size_t LaserBar::GetData(void* client,unsigned char *dest, size_t maxsize,
   }
 
   // Copy results
-  assert(maxsize >= sizeof(this->fdata));
+  assert(len >= sizeof(this->fdata));
   memcpy(dest, &this->fdata, sizeof(this->fdata));
 
   // Copy the laser timestamp
-  *time_sec = laser_time_sec;
-  *time_usec = laser_time_usec;
+  *timestamp = laser_timestamp;
 
-  this->data_time_sec = laser_time_sec;
-  this->data_time_usec = laser_time_usec;
+  this->ftimestamp = laser_timestamp;
   
   return (sizeof(this->fdata));
 }
@@ -228,7 +232,10 @@ size_t LaserBar::GetData(void* client,unsigned char *dest, size_t maxsize,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by server thread)
-int LaserBar::PutConfig(player_device_id_t* device, void *client, void *data, size_t len) 
+int 
+LaserBar::PutConfig(player_device_id_t id, void *client, 
+                    void *src, size_t len,
+                    struct timeval* timestamp)
 {
  int subtype;
 
@@ -238,17 +245,17 @@ int LaserBar::PutConfig(player_device_id_t* device, void *client, void *data, si
     return 0;
   }
   
-  subtype = ((uint8_t*) data)[0];
+  subtype = ((uint8_t*) src)[0];
   switch (subtype)
   {
     case PLAYER_FIDUCIAL_GET_GEOM:
     {
-      HandleGetGeom(client, data, len);
+      HandleGetGeom(client, src, len);
       break;
     }
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
@@ -269,12 +276,13 @@ void LaserBar::HandleGetGeom(void *client, void *request, int len)
   player_fiducial_geom_t fgeom;
     
   // Get the geometry from the laser
-  replen = this->laser_driver->Request(&this->laser_driver->device_id, this, request, len,
-                                       &reptype, &ts, &lgeom, sizeof(lgeom));
+  replen = this->laser_driver->Request(this->laser_id, this, 
+                                       request, len, NULL,
+                                       &reptype, &lgeom, sizeof(lgeom), &ts);
   if (replen <= 0 || replen != sizeof(lgeom))
   {
     PLAYER_ERROR("unable to get geometry from laser device");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
@@ -286,7 +294,7 @@ void LaserBar::HandleGetGeom(void *client, void *request, int len)
   fgeom.fiducial_size[0] = ntohs((int) (this->reflector_width * 1000));
   fgeom.fiducial_size[1] = ntohs((int) (this->reflector_width * 1000));
     
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ts, &fgeom, sizeof(fgeom)) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &fgeom, sizeof(fgeom),&ts) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;

@@ -71,8 +71,8 @@ int AMCLLaser::Load(ConfigFile* cf, int section)
   this->range_var = cf->ReadLength(section, "laser_range_var", 0.10);
   this->range_bad = cf->ReadFloat(section, "laser_range_bad", 0.10);
 
-  this->tsec = 0;
-  this->tusec = 0;
+  this->time.tv_sec = 0;
+  this->time.tv_usec = 0;
 
   return 0;
 }
@@ -97,7 +97,6 @@ int AMCLLaser::Setup(void)
   //uint16_t reptype;
   //player_laser_geom_t geom;
   //struct timeval tv;
-  player_device_id_t id;
 
   if(this->SetupMap() < 0)
   {
@@ -106,11 +105,11 @@ int AMCLLaser::Setup(void)
   }
 
   // Subscribe to the Laser device
-  id.port = global_playerport;
-  id.code = PLAYER_LASER_CODE;
-  id.index = this->laser_index;
+  this->laser_id.port = global_playerport;
+  this->laser_id.code = PLAYER_LASER_CODE;
+  this->laser_id.index = this->laser_index;
 
-  this->driver = deviceTable->GetDriver(id);
+  this->driver = deviceTable->GetDriver(this->laser_id);
   if (!this->driver)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
@@ -181,9 +180,9 @@ AMCLLaser::SetupMap(void)
   player_map_info_t info;
   struct timeval ts;
   info.subtype = PLAYER_MAP_GET_INFO_REQ;
-  if((replen = mapdriver->Request(&map_id, this, &info, 
-                                          sizeof(info.subtype), &reptype, 
-                                          &ts, &info, sizeof(info))) == 0)
+  if((replen = mapdriver->Request(map_id, this, 
+                                  &info, sizeof(info.subtype), NULL,
+                                  &reptype, &info, sizeof(info), &ts)) == 0)
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
@@ -226,9 +225,10 @@ AMCLLaser::SetupMap(void)
 
     reqlen = sizeof(data_req) - sizeof(data_req.data);
 
-    if((replen = mapdriver->Request(&map_id, this, &data_req, reqlen,
-                                            &reptype, &ts, &data_req, 
-                                            sizeof(data_req))) == 0)
+    if((replen = mapdriver->Request(map_id, this, 
+                                    &data_req, reqlen, NULL,
+                                    &reptype, 
+                                    &data_req, sizeof(data_req), &ts)) == 0)
     {
       PLAYER_ERROR("failed to get map info");
       return(-1);
@@ -286,24 +286,25 @@ AMCLSensorData *AMCLLaser::GetData(void)
   int i;
   size_t size;
   player_laser_data_t data;
-  uint32_t tsec, tusec;
+  struct timeval timestamp;
   double r, b, db, res;
   AMCLLaserData *ndata;
 
   // Get the laser device data.
-  size = this->driver->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
+  size = this->driver->GetData(this->laser_id, (void*) &data, 
+                               sizeof(data), &timestamp);
   if (size == 0)
     return NULL;
-  if (tsec == this->tsec && tusec == this->tusec)
+  if((timestamp.tv_sec == this->time.tv_sec) && 
+     (timestamp.tv_usec == this->time.tv_usec))
     return NULL;
 
-  double ta = (double) tsec + ((double) tusec) * 1e-6;
-  double tb = (double) this->tsec + ((double) this->tusec) * 1e-6;  
+  double ta = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
+  double tb = (double) this->time.tv_sec + ((double) this->time.tv_usec) * 1e-6;  
   if (ta - tb < 0.100)  // HACK
     return NULL;
 
-  this->tsec = tsec;
-  this->tusec = tusec;
+  this->time = timestamp;
   
   b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
   db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
@@ -312,8 +313,8 @@ AMCLSensorData *AMCLLaser::GetData(void)
   ndata = new AMCLLaserData;
 
   ndata->sensor = this;
-  ndata->tsec = tsec;
-  ndata->tusec = tusec;
+  ndata->tsec = timestamp.tv_sec;
+  ndata->tusec = timestamp.tv_usec;
   
   ndata->range_count = ntohs(data.range_count);
   assert((size_t) ndata->range_count < sizeof(ndata->ranges) / sizeof(ndata->ranges[0]));

@@ -96,12 +96,14 @@ class GzLaser : public Driver
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(player_device_id_t id, 
-                                    void *client, unsigned char *src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, player_device_id_t *dummy,
-                                  void *client, void *data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo device id
   private: char *gz_id;
@@ -199,7 +201,7 @@ void GzLaser::Update()
 {
   int i;
   player_laser_data_t data;
-  uint32_t tsec, tusec;
+  struct timeval ts;
   double range_res, angle_res;
   
   gz_laser_lock(this->iface, 1);
@@ -207,8 +209,8 @@ void GzLaser::Update()
   if (this->iface->data->time > this->datatime)
   {
     this->datatime = this->iface->data->time;
-    tsec = (int) (this->iface->data->time);
-    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
     // Pick the rage resolution to use (1, 10, 100)
     if (this->iface->data->max_range <= 8.192)
@@ -234,7 +236,7 @@ void GzLaser::Update()
       data.intensity[i] = (uint8_t) (int) this->iface->data->intensity[i];
     }
 
-    this->PutData(&data, sizeof(data), tsec, tusec);
+    this->PutData(&data, sizeof(data), &ts);
   }
 
   gz_laser_unlock(this->iface);
@@ -245,8 +247,9 @@ void GzLaser::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzLaser::PutCommand(player_device_id_t id, 
-                           void* client, unsigned char* src, size_t len)
+void GzLaser::PutCommand(player_device_id_t id,
+                         void* src, size_t len,
+                         struct timeval* timestamp)
 {  
   return;
 }
@@ -254,12 +257,13 @@ void GzLaser::PutCommand(player_device_id_t id,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzLaser::PutConfig(player_device_id_t id, player_device_id_t *dummy,
-                         void *client, void *data, size_t len)
+int GzLaser::PutConfig(player_device_id_t id, void *client, 
+                       void* src, size_t len,
+                       struct timeval* timestamp)
 {
   uint8_t subtype;
 
-  subtype = ((uint8_t*) data)[0];
+  subtype = ((uint8_t*) src)[0];
   switch (subtype)
   {
     case PLAYER_LASER_GET_GEOM:
@@ -274,14 +278,14 @@ int GzLaser::PutConfig(player_device_id_t id, player_device_id_t *dummy,
       rep.size[0] = htons((int) (0.0));
       rep.size[1] = htons((int) (0.0));
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &rep, sizeof(rep)) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &rep, sizeof(rep),NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
 
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }

@@ -52,8 +52,8 @@ Device::Device(player_device_id_t id, Driver *device, unsigned char access)
     this->driver->device_id = id;
   }
     
-  this->data_time_sec = 0;
-  this->data_time_usec = 0;
+  memset(&this->data_timestamp,0,sizeof(struct timeval));
+  memset(&this->command_timestamp,0,sizeof(struct timeval));
   this->data_size = 0;
   this->data = NULL;
   this->command_size = 0;

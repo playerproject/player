@@ -98,10 +98,6 @@ class SrvAdv_LSD : public Driver {
 
 
 Driver* SrvAdv_LSD_Init( ConfigFile* cf, int section) {
-    if(strcmp( PLAYER_SERVICE_ADV_STRING)) {
-        PLAYER_ERROR1("driver \"service_adv_lsd\" does not support interface \"%s\"\n", interface);
-        return(0);
-    }
     SrvAdv_LSD* dev = new SrvAdv_LSD( cf, section);
     return dev;
 }
@@ -120,8 +116,8 @@ SrvAdv_LSD::~SrvAdv_LSD() {
 
 // Constructor
 SrvAdv_LSD::SrvAdv_LSD( ConfigFile* configFile, int configSection)
-    : 
-    Driver(cf, section, 0,0,0,0)
+    : Driver(configFile, configSection, 
+             PLAYER_SERVICE_ADV_CODE, PLAYER_READ_MODE, 0,0,0,0)
 {
     alwayson = true;      // since there is no client interface
 
@@ -141,7 +137,7 @@ SrvAdv_LSD::SrvAdv_LSD( ConfigFile* configFile, int configSection)
 void SrvAdv_LSD::Prepare() {
 
     // add a tag for each device in the device table
-    for(DriverEntry* dev = deviceTable->GetFirstEntry(); dev != 0; dev = deviceTable->GetNextEntry(dev)) {
+    for(Device* dev = deviceTable->GetFirstDevice(); dev != 0; dev = deviceTable->GetNextDevice(dev)) {
         char* devname = lookup_interface_name(0, dev->id.code);
         if(devname) {
             char deviceTag[512];

@@ -68,11 +68,14 @@ class GzFactory : public Driver
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, player_device_id_t* dummy,
-                                  void* client, void* req, size_t reqlen);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo id
   private: char *gz_id;
@@ -179,7 +182,9 @@ void GzFactory::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzFactory::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
+void GzFactory::PutCommand(player_device_id_t id,
+                           void* src, size_t len,
+                           struct timeval* timestamp)
 {
   player_speech_cmd_t *cmd;
     
@@ -196,12 +201,14 @@ void GzFactory::PutCommand(player_device_id_t id, void* client, unsigned char* s
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzFactory::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* req, size_t req_len)
+int GzFactory::PutConfig(player_device_id_t id, void *client, 
+                         void* src, size_t len,
+                         struct timeval* timestamp)
 {
-  switch (((char*) req)[0])
+  switch (((char*) src)[0])
   {
     default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }

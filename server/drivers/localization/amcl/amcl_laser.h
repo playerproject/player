@@ -77,10 +77,11 @@ class AMCLLaser : public AMCLSensor
   // Device info
   private: int map_index;
   private: int laser_index;
+  private: player_device_id_t laser_id;
   private: Driver *driver;
 
   // Current data timestamp
-  private: uint32_t tsec, tusec;
+  private: struct timeval time;
 
   // The laser map
   private: map_t *map;

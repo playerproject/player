@@ -277,7 +277,7 @@ void LinuxJoystick::RefreshData()
   this->joy_data.xscale = htons(AXIS_MAX);
   this->joy_data.yscale = htons(AXIS_MAX);
   this->joy_data.buttons = htons(this->buttons);
-  this->PutData(this->joy_id, &this->joy_data, sizeof(this->joy_data), 0, 0);
+  this->PutData(this->joy_id, &this->joy_data, sizeof(this->joy_data), NULL);
 
   return;
 }
@@ -288,12 +288,11 @@ void LinuxJoystick::RefreshData()
 void LinuxJoystick::CheckConfig()
 {
   void *client;
-  player_device_id_t dummy;
   unsigned char buffer[PLAYER_MAX_REQREP_SIZE];
   
-  while (this->GetConfig(this->joy_id, &dummy, &client, &buffer, sizeof(buffer)) > 0)
+  while(this->GetConfig(this->joy_id, &client, &buffer, sizeof(buffer), NULL) > 0)
   {
-    if (this->PutReply(this->joy_id, &dummy, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+    if (this->PutReply(this->joy_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 

@@ -1730,7 +1730,7 @@ int ConfigFile::ReadDeviceId(int section, int index,
   const char *str;
   char s[128];
   int port, ind;
-  CEntity *entity;
+  //CEntity *entity;
 
   // Look for interfaces tag
   str = this->ReadTupleString(section, "devices", index, NULL);

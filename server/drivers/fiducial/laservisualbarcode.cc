@@ -159,16 +159,19 @@ class LaserVisualBarcode : public Driver
   // Laser stuff.
   private: int laser_index;
   private: Driver *laser;
+  private: player_device_id_t laser_id;
   private: double laser_time;
 
   // PTZ stuff
   private: int ptz_index;
   private: Driver *ptz;
+  private: player_device_id_t ptz_id;
   private: double ptz_time;
 
   // Blobfinder stuff.
   private: int blobfinder_index;
   private: Driver *blobfinder;
+  private: player_device_id_t blobfinder_id;
   private: double blobfinder_time;
 
   // List of currently tracked fiducials.
@@ -249,13 +252,12 @@ LaserVisualBarcode::LaserVisualBarcode( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserVisualBarcode::Setup()
 {
-  player_device_id_t id;
   
   // Subscribe to the laser.
-  id.code = PLAYER_LASER_CODE;
-  id.index = this->laser_index;
-  id.port = this->device_id.port;
-  this->laser = deviceTable->GetDriver(id);
+  this->laser_id.code = PLAYER_LASER_CODE;
+  this->laser_id.index = this->laser_index;
+  this->laser_id.port = this->device_id.port;
+  this->laser = deviceTable->GetDriver(this->laser_id);
   if (!this->laser)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
@@ -268,10 +270,10 @@ int LaserVisualBarcode::Setup()
   }
 
   // Subscribe to the PTZ.
-  id.code = PLAYER_PTZ_CODE;
-  id.index = this->ptz_index;
-  id.port = this->device_id.port;
-  this->ptz = deviceTable->GetDriver(id);
+  this->ptz_id.code = PLAYER_PTZ_CODE;
+  this->ptz_id.index = this->ptz_index;
+  this->ptz_id.port = this->device_id.port;
+  this->ptz = deviceTable->GetDriver(this->ptz_id);
   if (!this->ptz)
   {
     PLAYER_ERROR("unable to locate suitable PTZ device");
@@ -284,10 +286,10 @@ int LaserVisualBarcode::Setup()
   }
 
   // Subscribe to the blobfinder.
-  id.code = PLAYER_BLOBFINDER_CODE;
-  id.index = this->blobfinder_index;
-  id.port = this->device_id.port;
-  this->blobfinder = deviceTable->GetDriver(id);
+  this->blobfinder_id.code = PLAYER_BLOBFINDER_CODE;
+  this->blobfinder_id.index = this->blobfinder_index;
+  this->blobfinder_id.port = this->device_id.port;
+  this->blobfinder = deviceTable->GetDriver(this->blobfinder_id);
   if (!this->blobfinder)
   {
     PLAYER_ERROR("unable to locate suitable blobfinder device");
@@ -364,7 +366,7 @@ int LaserVisualBarcode::HandleRequests()
   char request[PLAYER_MAX_REQREP_SIZE];
   int len;
   
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {
@@ -373,7 +375,7 @@ int LaserVisualBarcode::HandleRequests()
         break;
 
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -393,12 +395,13 @@ void LaserVisualBarcode::HandleGetGeom(void *client, void *request, int len)
   player_fiducial_geom_t fgeom;
     
   // Get the geometry from the laser
-  replen = this->laser->Request(&this->laser->device_id, this, request, len,
-                                &reptype, &ts, &lgeom, sizeof(lgeom));
+  replen = this->laser->Request(this->laser_id, this, 
+                                request, len, NULL,
+                                &reptype, &lgeom, sizeof(lgeom), &ts);
   if (replen <= 0 || replen != sizeof(lgeom))
   {
     PLAYER_ERROR("unable to get geometry from laser device");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
@@ -410,7 +413,7 @@ void LaserVisualBarcode::HandleGetGeom(void *client, void *request, int len)
   fgeom.fiducial_size[0] = ntohs((int) (this->barwidth * 1000));
   fgeom.fiducial_size[1] = ntohs((int) (this->barwidth * 1000));
     
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ts, &fgeom, sizeof(fgeom)) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &fgeom, sizeof(fgeom), &ts) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -424,12 +427,13 @@ int LaserVisualBarcode::UpdateLaser()
   int i;
   player_laser_data_t data;
   size_t size;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
   
   // Get the laser data.
-  size = this->laser->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  size = this->laser->GetData(this->laser_id,(void*)&data, 
+                              sizeof(data), &timestamp);
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
   
   // Dont do anything if this is old data.
   if (time == this->laser_time)
@@ -658,12 +662,13 @@ int LaserVisualBarcode::UpdatePtz()
 {
   player_ptz_data_t data;
   size_t size;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
   
   // Get the ptz data.
-  size = this->ptz->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  size = this->ptz->GetData(this->ptz_id,(void*)&data, sizeof(data), 
+                            &timestamp);
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
   
   // Dont do anything if this is old data.
   if (time == this->ptz_time)
@@ -781,7 +786,7 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
   cmd.pan = htons(((int16_t) (pan * 180 / M_PI)));
   cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
   cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
-  this->ptz->PutCommand(this,(unsigned char*) &cmd, sizeof(cmd));
+  this->ptz->PutCommand(this->ptz_id,(void*) &cmd, sizeof(cmd),NULL);
 
   // Compute the dimensions of the image at the range of the target fiducial.
   this->zoomwidth = 2 * r * tan(data->zoom * M_PI / 180 / 2);
@@ -800,12 +805,13 @@ int LaserVisualBarcode::UpdateBlobfinder()
   player_blobfinder_header_elt_t *channel;
   player_blobfinder_blob_elt_t *blob;
   size_t size;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
   
   // Get the blobfinder data.
-  size = this->blobfinder->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  size = this->blobfinder->GetData(this->blobfinder_id,(void*)&data, 
+                                   sizeof(data), &timestamp);
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
   
   // Dont do anything if this is old data.
   if (time == this->blobfinder_time)
@@ -993,7 +999,7 @@ void LaserVisualBarcode::UpdateData()
 {
   int i;
   double r, b, o;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   fiducial_t *fiducial;
   player_fiducial_data_t data;
 
@@ -1021,11 +1027,11 @@ void LaserVisualBarcode::UpdateData()
   data.count = htons(data.count);
   
   // Compute the data timestamp (from laser).
-  timesec = (uint32_t) this->laser_time;
-  timeusec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
+  timestamp.tv_sec = (uint32_t) this->laser_time;
+  timestamp.tv_usec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
   
   // Copy data to server.
-  PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
+  PutData((void*) &data, sizeof(data), &timestamp);
 }
 
 

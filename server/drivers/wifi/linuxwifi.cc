@@ -416,8 +416,7 @@ LinuxWiFi::PutConfig(player_device_id_t *device, void *client,
     printf("LINUXWIFI: got other REQ\n");
   }
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-	       buf, sizeof(buf))) {
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, buf, sizeof(buf), NULL)) {
     PLAYER_ERROR("LinuxWiFi: failed to put reply");
     return -1;
   }
