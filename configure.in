@@ -37,10 +37,14 @@ AC_C_BIGENDIAN
 dnl Check for library functions
 AC_CHECK_LIB(z, gzopen)
 
+dnl Change default installation prefix from /usr/local to user's home
+dnl AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
+
 dnl where's RTK?
 AC_ARG_WITH(rtk, [  --with-rtk=dir          Location of RTK],
 RTK_DIR=$with_rtk,
-RTK_DIR="${HOME}/librtk-2.2")
+dnl RTK_DIR="${HOME}/librtk-2.2")
+RTK_DIR=$prefix )
 AC_SUBST(RTK_DIR)
 
 dnl RTK2 uses libjpeg to export images.
@@ -57,7 +61,7 @@ else
   with_rtk=no
   AC_MSG_RESULT(no)
   AC_MSG_WARN([***************************************************])
-  AC_MSG_WARN([Couldn't find RTK, so I won't build RTK-based GUIs])
+  AC_MSG_WARN([Couldn't find RTK so I won't build RTK-based GUIs])
   AC_MSG_WARN([Maybe you should download and install RTK?])
   AC_MSG_WARN([If you have RTK installed, try --with-rtk=path])
   AC_MSG_WARN([***************************************************])
@@ -85,8 +89,6 @@ case $host in
 esac
 AC_SUBST(TCLSH)
 
-dnl Change default installation prefix from /usr/local to user's home
-AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
 
 dnl client tests are compiled by default
 AC_ARG_ENABLE(tests, [  --enable-tests          Don't build client tests],,
@@ -220,6 +222,15 @@ AC_MSG_RESULT([on a $host system, with the following tools:])
 AC_MSG_RESULT([    C   compiler: $CC $CFLAGS])
 AC_MSG_RESULT([    C++ compiler: $CXX $CXXFLAGS])
 AC_MSG_RESULT([])
+if test $RTK_DIR = "NONE"; then
+  AC_MSG_RESULT([Player will NOT build RTK-based components.])
+  AC_MSG_RESULT([])	
+else
+  AC_MSG_RESULT([Player will build RTK-based components using:])
+  AC_MSG_RESULT([    $RTK_DIR/include/rtk.h])
+  AC_MSG_RESULT([    $RTK_DIR/lib/librtk.a])
+  AC_MSG_RESULT([])
+fi
 AC_MSG_RESULT([The following device drivers will be included:])
 for player_lib in $PLAYER_DRIVER_LIBS; do
   if test -n $player_lib; then
@@ -228,7 +239,18 @@ for player_lib in $PLAYER_DRIVER_LIBS; do
 done
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Player will be installed in:])
-AC_MSG_RESULT([    $prefix])
+AC_MSG_RESULT([    $prefix/])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([You can specify a different installation directory like this:])
+AC_MSG_RESULT([    ./configure --prefix=<install dir>])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([You can specify an RTK installation like this:])
+AC_MSG_RESULT([    ./configure --with-rtk=<RTK prefix dir>])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([To see the other configuration options, do:])
+AC_MSG_RESULT([    ./configure --help])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([When you're satisfied with the configuration, type 'make install'. ])
 AC_MSG_RESULT([])
 
 foo=bar
