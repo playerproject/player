@@ -46,6 +46,8 @@ int main(int argc, char **argv)
   playerc_client_t *client;
   rtk_app_t *app;  
   mainwnd_t *mainwnd;
+  imagewnd_t *imagewnd;
+
   opt_t *opt;
   const char *host;
   int port;
@@ -55,6 +57,8 @@ int main(int argc, char **argv)
   position_t *position;
   laser_t *laser[2];
   laserbeacon_t *laserbeacon[2];
+  ptz_t *ptz;
+  vision_t *vision;
 
   printf("PlayerViewer %s\n", PLAYER_VERSION);
 
@@ -91,9 +95,14 @@ int main(int argc, char **argv)
   // Create gui
   app = rtk_app_create();
 
-  // Create a window for the raw image
-  mainwnd = mainwnd_create(app);
+  // Create a window for most of the sensor data
+  mainwnd = mainwnd_create(app, host, port);
   if (!mainwnd)
+    return -1;
+
+  // Create a window for the raw image
+  imagewnd = imagewnd_create(app);
+  if (!imagewnd)
     return -1;
 
   // Create the property table
@@ -109,7 +118,9 @@ int main(int argc, char **argv)
   laser[1] = laser_create(mainwnd, opt, client, 1);
   laserbeacon[0] = laserbeacon_create(mainwnd, opt, client, 0);
   laserbeacon[1] = laserbeacon_create(mainwnd, opt, client, 1);
-
+  ptz = ptz_create(mainwnd, imagewnd, opt, client, 0);
+  vision = vision_create(mainwnd, imagewnd, opt, client, 0);
+  
   // Print out a list of unused options.
   opt_warn_unused(opt);
 
@@ -133,19 +144,24 @@ int main(int argc, char **argv)
     laser_update(laser[1]);
     laserbeacon_update(laserbeacon[0]);
     laserbeacon_update(laserbeacon[1]);
+    ptz_update(ptz);
+    vision_update(vision);
   }
   
   // Stop the gui
   rtk_app_stop(app);
 
   // Destroy devices
+  vision_destroy(vision);
+  ptz_destroy(ptz);
   laserbeacon_destroy(laserbeacon[1]);
   laserbeacon_destroy(laserbeacon[0]);
   laser_destroy(laser[1]);
   laser_destroy(laser[0]);
   position_destroy(position);
 
-  // Destroy the main window
+  // Destroy the windows
+  imagewnd_destroy(imagewnd);
   mainwnd_destroy(mainwnd);
 
   // Destroy the gui

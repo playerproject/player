@@ -44,14 +44,14 @@
 #define COLOR_POSITION_CONTROL   0xFF0000
 #define COLOR_LASER_SCAN         0x0000C0
 #define COLOR_LASERBEACON_BEACON 0x0000C0
-
-
+#define COLOR_PTZ_DATA           0x00C000
+#define COLOR_PTZ_CMD            0x00C000
 
 /***************************************************************************
  * Top-level GUI elements
  ***************************************************************************/
 
-// Window containing the sensor data.
+// Main window displaying sensor stuff
 typedef struct
 {
   // The rtk canvas
@@ -70,8 +70,8 @@ typedef struct
 } mainwnd_t;
 
 
-// Create the image window
-mainwnd_t *mainwnd_create(rtk_app_t *app);
+// Create the main window
+mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port);
 
 // Destroy the main window
 void mainwnd_destroy(mainwnd_t *wnd);
@@ -79,6 +79,22 @@ void mainwnd_destroy(mainwnd_t *wnd);
 // Update the window
 // Returns 1 if the program should quit.
 int mainwnd_update(mainwnd_t *wnd);
+
+
+// Window to show image stuff.
+typedef struct
+{
+  // The rtk canvas
+  rtk_canvas_t *canvas;
+
+} imagewnd_t;
+
+
+// Create the image window
+imagewnd_t *imagewnd_create(rtk_app_t *app, const char *host, int port);
+
+// Destroy the image window
+void imagewnd_destroy(imagewnd_t *wnd);
 
 
 // Window containing tabular data.
@@ -179,7 +195,7 @@ typedef struct
   rtk_fig_t *beacon_fig;
   
   // LaserBeacon device proxy
-  playerc_laserbeacon_t *proxy;
+  playerc_lbd_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
@@ -196,6 +212,76 @@ void laserbeacon_destroy(laserbeacon_t *laserbeacon);
 
 // Update a laserbeacon device
 void laserbeacon_update(laserbeacon_t *laserbeacon);
+
+
+/***************************************************************************
+ * PTZ device
+ ***************************************************************************/
+
+// PTZ device info
+typedef struct
+{
+  // Ptz device proxy
+  playerc_ptz_t *proxy;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *enable_item;
+
+  // Figures
+  rtk_fig_t *data_fig;
+  rtk_fig_t *cmd_fig;
+  
+  // Timestamp on most recent data
+  double datatime;
+  
+} ptz_t;
+
+
+// Create a ptz device
+ptz_t *ptz_create(mainwnd_t *mainwnd, imagewnd_t *imagewnd, opt_t *opt,
+                        playerc_client_t *client, int index);
+
+// Destroy a ptz device
+void ptz_destroy(ptz_t *ptz);
+
+// Update a ptz device
+void ptz_update(ptz_t *ptz);
+
+
+/***************************************************************************
+ * Vision device
+ ***************************************************************************/
+
+// Vision device info
+typedef struct
+{
+  // Vision device proxy
+  playerc_vision_t *proxy;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+
+  // Figure for drawing the vision scan
+  rtk_fig_t *image_fig;
+  
+  // Timestamp on most recent data
+  double datatime;
+  
+} vision_t;
+
+
+// Create a vision device
+vision_t *vision_create(mainwnd_t *mainwnd, imagewnd_t *imagewnd, opt_t *opt,
+                        playerc_client_t *client, int index);
+
+// Destroy a vision device
+void vision_destroy(vision_t *vision);
+
+// Update a vision device
+void vision_update(vision_t *vision);
 
 
 
