@@ -55,25 +55,12 @@ int StgTime::GetTime(struct timeval* time)
 {
   PRINT_DEBUG( "get time" );
   
-  // handle any packets coming in from Stage - there might be a new
-  // time in the pipe
-  if( this->client )
+  if( this->client ) // get the time from the Stage client
     {
-      PRINT_DEBUG( "stg_time checking for new data" );
-
-      stg_msg_t* msg = NULL;      
-      while( (msg = stg_client_read( client )) )
-	{
-	  //puts( "a message!" );
-	  stg_client_handle_message( client, msg );
-	  free( msg );
-	}
-      
-      PRINT_DEBUG( "stg_time done checking" );
       time->tv_sec =  (long)client->stagetime;
       time->tv_usec =  (long)(fmod( client->stagetime, 1.0) * 1000000.0);
     }
-  else // no time data available yet. 
+  else // no time data available
     memset( time, 0, sizeof(struct timeval) );
   
   PRINT_DEBUG2( "time now %d sec %d usec", time->tv_sec, time->tv_usec );

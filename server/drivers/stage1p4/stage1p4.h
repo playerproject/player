@@ -31,23 +31,35 @@ x *  You should have received a copy of the GNU General Public License
 class Stage1p4 : public CDevice
 {
  public:
-
-  static ConfigFile* config;
-  static CWorldFile wf;
-  static const char* worldfile_name; // filename
-  static stg_client_t* stage_client;
-  static char* world_name;
-
-  stg_model_t* model; // points inside the shared client to our
-		      // individual model data
-  
-  // the property we automatically subscribe to on Setup();
-  stg_id_t subscribe_prop;
-
   Stage1p4(char* interface, ConfigFile* cf, int section, 
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen);
   virtual ~Stage1p4();
   
   virtual int Setup();
-  virtual int Shutdown();
+  virtual int Shutdown(); 
+  virtual void Update();
+
+ protected:
+
+  static ConfigFile* config;
+  static CWorldFile wf;
+  static char worldfile_name[MAXPATHLEN]; // filename
+  static stg_client_t* stage_client;
+  static char* world_name;
+  static bool init;
+  static pthread_mutex_t reply_mutex; // used to block until a device until a reply is received
+  static pthread_mutex_t model_mutex; // used to protect the model tree data
+
+  stg_model_t* model; // points inside the shared stg_client_t to our
+		      // individual model data
+  
+  // the property we automatically subscribe to on Setup();
+  stg_id_t subscribe_prop;
+
+
+  void ModelsLock(){ pthread_mutex_lock( &model_mutex ); }
+  void ModelsUnlock(){ pthread_mutex_unlock( &model_mutex ); }
+
+  //void AwaitReply(){ pthread_mutex_lock( &reply_mutex ) 
+  //	     pthread_mutex_w  };
 };
