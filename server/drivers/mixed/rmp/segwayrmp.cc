@@ -39,6 +39,11 @@
 #define RMP_DEFAULT_MAX_XSPEED 500   // mm/sec
 #define RMP_DEFAULT_MAX_YAWSPEED 40  // deg/sec
 
+// Number of RMP read cycles, without new speed commands from clients,
+// after which we'll stop the robot (for safety).  The read loop
+// seems to run at about 50Hz, or 20ms per cycle.
+#define RMP_TIMEOUT_CYCLES 20 // about 400ms
+
 #define RMP_CAN_ID_SHUTDOWN	0x0412
 #define RMP_CAN_ID_COMMAND	0x0413
 #define RMP_CAN_ID_MSG1		0x0400
@@ -186,6 +191,8 @@ class SegwayRMP : public CDevice
     player_power_data_t power_data;
 
   private: 
+    int timeout_counter;
+
     int max_xspeed, max_yawspeed;
 
     bool firstread;
@@ -317,6 +324,7 @@ SegwayRMP::Setup()
   this->last_xspeed = this->last_yawspeed = 0;
   this->motor_enabled = false;
   this->firstread = true;
+  this->timeout_counter = 0;
 
   StartThread();
 
@@ -405,20 +413,34 @@ SegwayRMP::Main()
         continue;
     }
 
+    // start with the last commanded values
+    xspeed = this->last_xspeed;
+    yawspeed = this->last_yawspeed;
+   
     // Get a new command
     if(interface_code == PLAYER_POSITION_CODE)
     {
-      GetCommand((unsigned char *)&cmd, sizeof(cmd));
-      // convert to host order; let MakeVelocityCommand do the rest
-      xspeed = ntohl(cmd.xspeed);
-      yawspeed = ntohl(cmd.yawspeed);
+      if(GetCommand((unsigned char *)&cmd, sizeof(cmd)))
+      {
+        // convert to host order; let MakeVelocityCommand do the rest
+        xspeed = ntohl(cmd.xspeed);
+        yawspeed = ntohl(cmd.yawspeed);
+        timeout_counter=0;
+      }
+      else
+        timeout_counter++;
     }
     else if(interface_code == PLAYER_POSITION3D_CODE)
     {
-      GetCommand((unsigned char *)&cmd3d, sizeof(cmd3d));
-      // convert to host order; let MakeVelocityCommand do the rest
-      xspeed = ntohl(cmd3d.xspeed);
-      yawspeed = ntohl(cmd3d.yawspeed);
+      if(GetCommand((unsigned char *)&cmd3d, sizeof(cmd3d)))
+      {
+        // convert to host order; let MakeVelocityCommand do the rest
+        xspeed = ntohl(cmd3d.xspeed);
+        yawspeed = ntohl(cmd3d.yawspeed);
+        timeout_counter=0;
+      }
+      else
+        timeout_counter++;
     }
     else
     {
@@ -427,6 +449,24 @@ SegwayRMP::Main()
       yawspeed = 0;
     }
 
+    // zero the command buffer, so that we can timeout if a client doesn't
+    // send commands for a while
+    Lock();
+    this->device_used_commandsize = 0; 
+    Unlock();
+
+    if(timeout_counter >= RMP_TIMEOUT_CYCLES)
+    {
+      if(xspeed || yawspeed)
+      {
+        PLAYER_WARN("timeout exceeded without new commands; stopping robot");
+        xspeed = 0;
+        yawspeed = 0;
+      }
+      // set it to the limit, to prevent overflow, but keep the robot
+      // stopped until a new command comes in.
+      timeout_counter = RMP_TIMEOUT_CYCLES;
+    }
 
     if(!motor_enabled) 
     {
@@ -848,15 +888,34 @@ SegwayRMP::Write(CanPacket& pkt)
 void
 SegwayRMP::MakeStatusCommand(CanPacket* pkt, uint16_t cmd, uint16_t val)
 {
+  int16_t trans,rot;
+
   pkt->id = RMP_CAN_ID_COMMAND;
   pkt->PutSlot(2, cmd);
   //  pkt.PutSlot(3, val);
   pkt->PutByte(6, val);
   pkt->PutByte(7, val);
 
+  trans = (int16_t) rint((double)this->last_xspeed * 
+                         (double)RMP_COUNT_PER_MM_PER_S);
+
+  if(trans > RMP_MAX_TRANS_VEL_COUNT)
+    trans = RMP_MAX_TRANS_VEL_COUNT;
+  else if(trans < -RMP_MAX_TRANS_VEL_COUNT)
+    trans = -RMP_MAX_TRANS_VEL_COUNT;
+
+  rot = (int16_t) rint((double)this->last_yawspeed * 
+                       (double)RMP_COUNT_PER_DEG_PER_SS);
+
+  if(rot > RMP_MAX_ROT_VEL_COUNT)
+    rot = RMP_MAX_ROT_VEL_COUNT;
+  else if(rot < -RMP_MAX_ROT_VEL_COUNT)
+    rot = -RMP_MAX_ROT_VEL_COUNT;
+
+
   // put in the last speed commands as well
-  pkt->PutSlot(0,(uint16_t)last_xspeed);
-  pkt->PutSlot(1,(uint16_t)last_yawspeed);
+  pkt->PutSlot(0,(uint16_t)trans);
+  pkt->PutSlot(1,(uint16_t)rot);
   
   if(cmd) 
   {
@@ -895,43 +954,40 @@ SegwayRMP::MakeVelocityCommand(CanPacket* pkt,
     xspeed = -this->max_xspeed;
   }
 
-  int16_t trans = (int16_t) rint((double)xspeed * RMP_COUNT_PER_MM_PER_S);
+  this->last_xspeed = xspeed;
+
+  int16_t trans = (int16_t) rint((double)xspeed * 
+                                 (double)RMP_COUNT_PER_MM_PER_S);
 
   if(trans > RMP_MAX_TRANS_VEL_COUNT)
     trans = RMP_MAX_TRANS_VEL_COUNT;
   else if(trans < -RMP_MAX_TRANS_VEL_COUNT)
     trans = -RMP_MAX_TRANS_VEL_COUNT;
 
-  last_xspeed = trans;
-
   if(yawspeed > this->max_yawspeed)
   {
-    PLAYER_WARN2("yawspeed thresholded! (%d > %d)", yawspeed, this->max_yawspeed);
+    PLAYER_WARN2("yawspeed thresholded! (%d > %d)", 
+                 yawspeed, this->max_yawspeed);
     yawspeed = this->max_yawspeed;
   }
   else if(yawspeed < -this->max_yawspeed)
   {
-    PLAYER_WARN2("yawspeed thresholded! (%d < %d)", yawspeed, -this->max_yawspeed);
+    PLAYER_WARN2("yawspeed thresholded! (%d < %d)", 
+                 yawspeed, -this->max_yawspeed);
     yawspeed = -this->max_yawspeed;
   }
+  this->last_yawspeed = yawspeed;
 
   // rotational RMP command \in [-1024, 1024]
   // this is ripped from rmi_demo... to go from deg/s^2 to counts
   // deg/s^2 -> count = 1/0.013805056
-  int16_t rot = (int16_t) rint((double)yawspeed * RMP_COUNT_PER_DEG_PER_SS);
+  int16_t rot = (int16_t) rint((double)yawspeed * 
+                               (double)RMP_COUNT_PER_DEG_PER_SS);
 
   if(rot > RMP_MAX_ROT_VEL_COUNT)
     rot = RMP_MAX_ROT_VEL_COUNT;
   else if(rot < -RMP_MAX_ROT_VEL_COUNT)
     rot = -RMP_MAX_ROT_VEL_COUNT;
-
-  last_yawspeed = rot;
-  
-  /*
-  if (rot || trans) {
-    printf("SEGWAYIO: trans: %d rot: %d\n", trans_command, rot_command);
-  }
-  */
 
   pkt->PutSlot(0, (uint16_t)trans);
   pkt->PutSlot(1, (uint16_t)rot);
