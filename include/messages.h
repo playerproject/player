@@ -421,20 +421,32 @@ typedef struct
 /*
  * GPS Device
  *
- *   A global positioning device.  Ideas for the future:
- *     - orientation (for now, use the compass in the position device)
- *     - variance
- *     - commandable (for warping)
+ *   A global positioning device.
+ *   Use the config command to teleport the robot in the simulator.
  */
 
 /*
  * GPS data packet:
- *   xpos, ypos: current global position.
+ *   xpos, ypos: current global position (in mm).
+ *   heading: current global heading (in degrees).
  */
 typedef struct
 {
   int32_t xpos,ypos;
+  int32_t heading;
 } __attribute__ ((packed)) player_gps_data_t;
+
+
+/*
+ * GPS config packet:
+ *   xpos, ypos: new global position (in mm).
+ *   heading: new global heading (in degrees).
+ */
+typedef struct
+{
+  int32_t xpos,ypos;
+  int32_t heading;
+} __attribute__ ((packed)) player_gps_config_t;
 
 /*************************************************************************/
 
