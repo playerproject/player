@@ -60,9 +60,9 @@
 
 // Use this for regular c-bindings;
 // e.g. playerc_client_connect(client, ...)
-%include "../../playerc.h"
+//%include "../../playerc.h"
 
 // Use this for object-oriented bindings;
 // e.g., client.connect(...)
 // This file is created by running ../parse_header.py
-//%include "playerc_oo.i"
+%include "playerc_oo.i"

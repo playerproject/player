@@ -11,11 +11,7 @@ EXTRA_DIST = playerc.i setup.py
 
 # Generate a OO interface file for libplayerc
 #playerc_oo.i: ../../playerc.h
-#	python parse2.py ../../playerc.h > playerc_oo.i
-
-# use this target to update the bindings
-#playerc_wrap.c: playerc.i playerc_oo.i ../../playerc.h
-#	swig -I../.. -I$(top_srcdir)/server -python playerc.i
+#	python parse.py ../../playerc.h > playerc_oo.i
 
 # use distutils to build
 pythonbuild:

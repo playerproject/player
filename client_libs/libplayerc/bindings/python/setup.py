@@ -5,6 +5,7 @@ from distutils.core import setup, Extension
 module = Extension('_playerc',
                    sources = ['playerc.i'],
                    include_dirs = ['../..', '../../../../server'],
+                   extra_compile_args = ['-DSWIG_COBJECT_TYPES'],
                    library_dirs = ['../..'],
                    libraries = ['playerc'])
 
