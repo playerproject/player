@@ -454,8 +454,9 @@ void Wavefront::Main()
   {
     pthread_testcancel();
 
-    GetPositionData();
+    this->Localize->Wait();
     GetLocalizeData();
+    GetPositionData();
     GetCommand();
 
     // if localize gets too far behind, stop the robot to let it catch up
