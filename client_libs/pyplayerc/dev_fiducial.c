@@ -195,24 +195,6 @@ static PyObject *fiducial_unsubscribe(PyObject *self, PyObject *args)
 }
 
 
-/* Configure fiducial
-   (bit_count, bit_width)
-*/
-static PyObject *fiducial_set_config(PyObject *self, PyObject *args)
-{
-  int bit_count;
-  double bit_width;
-  fiducial_object_t *fiducialob;
-    
-  if (!PyArg_ParseTuple(args, "id", &bit_count, &bit_width))
-    return NULL;
-  fiducialob = (fiducial_object_t*) self;
-
-  return PyInt_FromLong(playerc_fiducial_set_config(fiducialob->fiducial,
-                                                    bit_count, bit_width));
-}
-
-
 /* Assemble python fiducial type
  */
 PyTypeObject fiducial_type = 
@@ -241,7 +223,6 @@ static PyMethodDef fiducial_methods[] =
 {
   {"subscribe", fiducial_subscribe, METH_VARARGS},
   {"unsubscribe", fiducial_unsubscribe, METH_VARARGS},  
-  {"set_config", fiducial_set_config, METH_VARARGS},
   {NULL, NULL}
 };
 
