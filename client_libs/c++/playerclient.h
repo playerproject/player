@@ -269,6 +269,13 @@ class PlayerClient
        */
     struct timeval timestamp;
 
+    /** List of ids for available devices. This list is villed in by 
+     * GetDeviceList()
+     */
+    int id_count;
+    player_device_id_t ids[PLAYER_MAX_DEVICES];
+    char drivernames[PLAYER_MAX_DEVICES][PLAYER_MAX_DEVICE_STRING_LEN];
+
     // constructors
     
     /** Make a client and connect it as indicated.
@@ -406,6 +413,10 @@ class PlayerClient
     void AddProxy(ClientProxy* proxy);
     // remove a proxy from the list
     void RemoveProxy(ClientProxy* proxy);
+
+    // Get the list of available device ids. The data is written into the
+    // proxy structure rather than retured to the caller.
+    int GetDeviceList(); 
 };
 
 

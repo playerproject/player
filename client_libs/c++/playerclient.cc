@@ -588,3 +588,73 @@ ClientProxy* PlayerClient::GetProxy(player_device_id_t id)
 }
 
 
+// Get the list of available device ids. The data is written into the
+// proxy structure rather than retured to the caller.
+int PlayerClient::GetDeviceList()
+{
+  int i;
+ 
+  player_device_id_t id;
+  player_msghdr_t hdr;
+  player_device_devlist_t config;
+
+  player_device_driverinfo_t req;
+  player_device_driverinfo_t rep;
+
+
+  config.subtype = htons(PLAYER_PLAYER_DEVLIST_REQ);
+  id.code=PLAYER_PLAYER_CODE;
+  id.index=0;
+
+  // Request the list of devices
+  this->Request(id, (const char*)&config, sizeof(config), &hdr,
+      (char *)&config, sizeof(config));
+
+  if (hdr.size <0)             
+    return -1;
+
+  if (hdr.size != sizeof(config))
+  {
+    PLAYER_ERROR2("Device list reply has incorrect length (%d!=%d)", hdr.size, sizeof(config)); 
+    return -1;
+  }
+
+  // Do some byte swapping
+  config.device_count = ntohs(config.device_count);
+  for (i = 0; i < config.device_count; i++)
+  {
+    this->ids[i].code = ntohs(config.devices[i].code);
+    this->ids[i].index = ntohs(config.devices[i].index);
+    this->ids[i].port = ntohs(config.devices[i].port);
+  }
+  this->id_count = config.device_count;
+
+
+   // Get the driver info for all devices. 
+  for (i=0; i < this->id_count; i++)
+  {
+    req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
+    req.id.code = htons(this->ids[i].code);
+    req.id.index = htons(this->ids[i].index);
+    req.id.port = htons(this->ids[i].port);
+
+    // Get the device's info
+    this->Request(id, (const char*)&req, sizeof(req), &hdr,
+        (char *)&rep, sizeof(rep));
+
+    if (hdr.size < 0)
+      return -1;
+
+    if (hdr.size != sizeof(rep))
+    {
+      PLAYER_ERROR2("reply to driverinfo request has incorrect length (%d != %d)",
+          hdr.size, sizeof(rep));
+      return -1;
+    }
+
+    strcpy(this->drivernames[i], rep.driver_name);
+  }
+ 
+  return 0;
+}
+
