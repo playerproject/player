@@ -1,7 +1,7 @@
 #
 # $Id$
 #
-
+ 
 .SUFFIXES: .cc .o
 
 SERVERNAME = player
@@ -19,7 +19,7 @@ RMDIR = rmdir
 INSTALL_BIN = $(INSTALL_PREFIX)/bin
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
-OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o main.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenapositiondevice.o arenalaserdevice.o arenasonardevice.o arenavisiondevice.o arenalock.o ptzdevice.o arenaptzdevice.o devicetable.o
+OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o main.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenapositiondevice.o arenalaserdevice.o arenasonardevice.o arenavisiondevice.o arenalock.o ptzdevice.o arenaptzdevice.o devicetable.o stagedevice.o
 
 all: $(SERVERNAME)
 
@@ -87,9 +87,7 @@ main.o: ../include/visiondevice.h ../include/positiondevice.h
 main.o: ../include/gripperdevice.h ../include/miscdevice.h
 main.o: ../include/ptzdevice.h ../include/clientdata.h
 main.o: ../include/devicetable.h ../include/counter.h ../include/nodevice.h
-main.o: ../include/arenalaserdevice.h ../include/arenalock.h
-main.o: ../include/arenasonardevice.h ../include/arenapositiondevice.h
-main.o: ../include/arenavisiondevice.h ../include/arenaptzdevice.h
+main.o: ../include/stagedevice.hh ../include/arenalock.h
 miscdevice.o: ../include/miscdevice.h ../include/p2osdevice.h
 miscdevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
 miscdevice.o: ../include/packet.h ../include/sip.h
@@ -109,6 +107,8 @@ sip.o: ../include/offsets.h ../include/lock.h ../include/packet.h
 sonardevice.o: ../include/sonardevice.h ../include/p2osdevice.h
 sonardevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
 sonardevice.o: ../include/packet.h ../include/sip.h
+stagedevice.o: ../include/stagedevice.hh ../include/device.h
+stagedevice.o: ../include/offsets.h ../include/lock.h ../include/arenalock.h
 visiondevice.o: ../include/visiondevice.h ../include/lock.h
 visiondevice.o: ../include/device.h ../include/offsets.h
 visiondevice.o: ../include/pubsub_util.h

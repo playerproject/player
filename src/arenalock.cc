@@ -107,7 +107,10 @@ void CArenaLock::GetCommand( CDevice *obj , unsigned char *dest )
 }
 void CArenaLock::PutConfig( CDevice *obj,  unsigned char *dest,int size ) 
 {
-  puts( "Warning: attempt to put data in Arena mode" );
+  Lock();
+  //puts( "AL: put config" );
+  obj->PutConfig( dest,size );
+  Unlock();
 }
 
 int CArenaLock::GetConfig( CDevice *obj , unsigned char *dest ) 

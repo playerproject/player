@@ -34,16 +34,54 @@
  * this file defines buffer sizes, offsets, and such
  */
 
+
+// Notes on stage/player shared memory format.
+//
+// Each device is allocateed a block of shared memory.
+// This block is subdivided into 4 parts:
+//      info buffer -- flags (subscribed, new data, new command, new configuration)
+//      data buffer
+//      command buffer
+//      config buffer
+// The info buffer is identical for all devices.  It contains the following flags:
+//      subscribe : WR : 1 if client has subscribed to device; 0 otherwise
+//      data      : RW : 1 if there is new data available; 0 otherwise
+//      command   : WR : 1 if there is a new command available; 0 otherwise
+//      config    : WR : 1 if there is a new configuration  available; 0 otherwise
+// Flags marked WR are written by player and read by stage.
+// Flags marked RW are written by stage and read by player.
+//
+// As at 29 Nov, only the laser supports this format.
+//
+// ahoward
+
+
+// Info buffer format
+// Each simulated device is allocated a block of shared memory.
+//
+#define INFO_BUFFER_SIZE    4
+#define INFO_SUBSCRIBE_FLAG 0
+#define INFO_DATA_FLAG      1
+#define INFO_COMMAND_FLAG   2
+#define INFO_CONFIG_FLAG    3
+
+
 /* laser stuff */
 /*
  * laser data packet is:
  *   361 unsigned shorts, each representing a range sample in mm. 
  *     kasper says the laser give samples from right to left.
  */
+#define LASER_SERIAL_PORT_NAME_SIZE 256  // space for a big pathname
 #define LASER_NUM_SAMPLES 361
 #define LASER_DATA_BUFFER_SIZE (int)(LASER_NUM_SAMPLES*sizeof(unsigned short))
+#define LASER_COMMAND_BUFFER_SIZE 0
 #define LASER_CONFIG_BUFFER_SIZE 32
-#define LASER_SERIAL_PORT_NAME_SIZE 256  // space for a big pathname
+#define LASER_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
+                              + LASER_DATA_BUFFER_SIZE \
+                              + LASER_COMMAND_BUFFER_SIZE \
+                              + LASER_CONFIG_BUFFER_SIZE
+
 
 /* vision stuff */
 /*
@@ -168,7 +206,7 @@
 #define P2OS_COMMAND_START P2OS_DATA_START + P2OS_DATA_BUFFER_SIZE
 #define SONAR_DATA_START P2OS_COMMAND_START + P2OS_COMMAND_BUFFER_SIZE
 #define LASER_DATA_START SONAR_DATA_START + SONAR_DATA_BUFFER_SIZE
-#define PTZ_COMMAND_START LASER_DATA_START + LASER_DATA_BUFFER_SIZE
+#define PTZ_COMMAND_START LASER_DATA_START + LASER_TOTAL_BUFFER_SIZE
 #define PTZ_DATA_START PTZ_COMMAND_START + PTZ_COMMAND_BUFFER_SIZE
 #define ACTS_DATA_START PTZ_DATA_START + PTZ_DATA_BUFFER_SIZE
 

@@ -28,7 +28,7 @@
 
 //#define VERBOSE
 
-#define PLAYER_VERSION "0.7.4a"
+#define PLAYER_VERSION "0.7.4b"
 #define READ_BUFFER_SIZE 128
 
 #include <stdio.h>
@@ -59,7 +59,8 @@
 #include <sys/mman.h> // for mmap
 #include <fcntl.h>
 
-#include <arenalaserdevice.h>
+#include "stagedevice.hh"
+//*** old - remove #include <arenalaserdevice.h>
 #include <arenasonardevice.h>
 #include <arenapositiondevice.h>
 #include <arenavisiondevice.h>
@@ -94,7 +95,8 @@ caddr_t arenaIO; // the address for memory mapped IO to arena
 
 CCounter num_threads;
 
-CLaserDevice* laserDevice =  NULL;
+//*** old -- remove CLaserDevice* laserDevice =  NULL;
+CDevice *laserDevice = NULL;
 CSonarDevice* sonarDevice = NULL;
 CVisionDevice* visionDevice = NULL;
 CPositionDevice* positionDevice = NULL;
@@ -404,7 +406,11 @@ int main( int argc, char *argv[] )
 #endif
 
     // use the arena type devices
-    laserDevice =    new CArenaLaserDevice(laserserialport);
+    //*** old, remove laserDevice =    new CArenaLaserDevice(laserserialport);
+    laserDevice = new CStageDevice(arenaIO + LASER_DATA_START,
+                                   LASER_DATA_BUFFER_SIZE,
+                                   LASER_COMMAND_BUFFER_SIZE,
+                                   LASER_CONFIG_BUFFER_SIZE); 
     sonarDevice =    new CArenaSonarDevice(p2osport);
     positionDevice = new CArenaPositionDevice(p2osport);
     visionDevice =  new 
