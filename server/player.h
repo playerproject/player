@@ -86,6 +86,7 @@
 #define PLAYER_AUDIOMIXER_CODE     ((uint16_t)29)  // audio I/O
 #define PLAYER_POSITION3D_CODE     ((uint16_t)30)  // 3-D position
 #define PLAYER_SIMULATION_CODE     ((uint16_t)31)  // simulators
+#define PLAYER_SERVICE_ADV_CODE    ((uint16_t)32)  // LAN service advertisement
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -120,6 +121,7 @@
 #define PLAYER_AUDIODSP_STRING      "audiodsp"
 #define PLAYER_AUDIOMIXER_STRING    "audiomixer"
 #define PLAYER_POSITION3D_STRING    "position3d"
+#define PLAYER_SERVICE_ADV_STRING   "service_adv"
 #define PLAYER_SIMULATION_STRING    "simulation"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"

@@ -18,6 +18,7 @@ install-data-hook:
 	cp $(top_srcdir)/doc/README $(DESTDIR)$(prefix)/share/doc/README.player
 	mkdir -p $(DESTDIR)$(prefix)/man/man1
 	cp $(top_srcdir)/doc/player.1 $(DESTDIR)$(prefix)/man/man1
+
 #cp $(top_srcdir)/server/drivers/localization/mcl/*.nb $(DESTDIR)$(prefix)/share/doc
 
 # need to figure out a safe way to do this

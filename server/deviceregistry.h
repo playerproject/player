@@ -54,3 +54,11 @@ int lookup_interface(char* name, player_interface_t* interface);
  */
 int
 lookup_interface_code(int code, player_interface_t* interface);
+
+/*
+ * looks through the array of interfaces, starting at startpos, for the first
+ * entry that has the given code, and returns the name.
+ * returns 0 if the device is not found.
+ */
+char*
+lookup_device_name(unsigned int startpos, int code);

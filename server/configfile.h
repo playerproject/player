@@ -255,7 +255,7 @@ class ConfigFile
   public: int AddEntity(int parent, const char *type);
 
   // Dump the entity list for debugging
-  private: void DumpEntities();
+  public: void DumpEntities();
 
   // Clear the property list
   private: void ClearProperties();
@@ -276,7 +276,7 @@ class ConfigFile
   private: const char *GetPropertyValue(int property, int index);
 
   // Dump the property list for debugging
-  private: void DumpProperties();
+  public: void DumpProperties();
 
   // Look up the color in a data based (transform color name -> color value).
   private: uint32_t LookupColor(const char *name);
