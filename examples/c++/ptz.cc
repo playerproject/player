@@ -77,7 +77,8 @@ int main(int argc, char **argv)
     if(zp.pan > 80 || zp.pan < -80)
     {
       newpan = dir*70;
-      zp.SetCam(newpan,zp.tilt,zp.zoom);
+    //  zp.SetCam(newpan,zp.tilt,zp.zoom);
+    zp.SetCam(zp.pan,newpan,zp.zoom);
       for(int i=0;i<10;i++)
       {
         if(robot.Read())
@@ -87,7 +88,7 @@ int main(int argc, char **argv)
       dir = -dir;
     }
     newpan = zp.pan + dir * 5;
-    zp.SetCam(newpan,zp.tilt,zp.zoom);
+    zp.SetCam(zp.pan,newpan,zp.zoom);
   }
 
   return(0);

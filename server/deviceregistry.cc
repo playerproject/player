@@ -57,6 +57,7 @@ void ClodBuster_Register(DriverTable* table);
 #ifdef INCLUDE_TROGDOR
 void Trogdor_Register(DriverTable* table);
 #endif
+
 #ifdef INCLUDE_WAVEFRONT
 void Wavefront_Register(DriverTable* table);
 #endif
@@ -264,6 +265,14 @@ void GzPtz_Register(DriverTable *table);
 
 #ifdef INCLUDE_GAZEBO_TRUTH
 void GzTruth_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_GAZEBO_GRIPPER
+void GzGripper_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_GAZEBO_SONARS
+void GzSonars_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
@@ -615,6 +624,14 @@ register_devices()
 
 #ifdef INCLUDE_GAZEBO_TRUTH
   GzTruth_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_GAZEBO_GRIPPER
+  GzGripper_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_GAZEBO_SONARS
+  GzSonars_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
