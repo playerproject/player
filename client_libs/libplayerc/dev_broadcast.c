@@ -108,6 +108,8 @@ int playerc_broadcast_recv(playerc_broadcast_t *device, void *msg, int len)
                                    &req, reqlen, &rep, sizeof(rep));
   if (replen < 0)
     return replen;
+  if (replen == 0)
+    return 0;
   if (replen > len)
   {
     PLAYERC_ERR2("message too long; %d > %d bytes.", replen, sizeof(len));

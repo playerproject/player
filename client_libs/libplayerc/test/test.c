@@ -68,6 +68,10 @@ int main(int argc, const char *argv[])
     if (strcmp(device, "broadcast") == 0 || strcmp(device, "all") == 0)
       test_broadcast(client, index);
 
+    // GPS device
+    if (strcmp(device, "gps") == 0 || strcmp(device, "all") == 0)
+      test_gps(client, index);
+
     // Laser device
     if (strcmp(device, "laser") == 0 || strcmp(device, "all") == 0)
       test_laser(client, index);

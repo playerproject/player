@@ -25,6 +25,9 @@ int test_bps(playerc_client_t *client, int index);
 // Basic broadcast test
 int test_broadcast(playerc_client_t *client, int index);
 
+// Basic test for GPS device.
+int test_gps(playerc_client_t *client, int index);
+
 // Basic laser test
 int test_laser(playerc_client_t *client, int index);
 

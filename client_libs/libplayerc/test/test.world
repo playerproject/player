@@ -1,0 +1,23 @@
+
+# Desc: Test world file with a fully loaded robot.
+# Author: Andrew Howard, Richard Vaughan
+# Date: 4 Jun 2002
+# CVS: $Id$
+
+environment
+(
+  file "cave.pnm"
+  scale 0.03
+  resolution 0.03
+)
+
+position
+(
+  name "robot" port 6665 pose [1 2 90]
+  player ()
+  broadcast ()
+  gps () truth ()
+  sonar ()
+  laser (lbd()) 
+  ptz (vision())
+)
