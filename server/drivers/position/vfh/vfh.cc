@@ -894,7 +894,7 @@ int VFH_Class::Update_VFH() {
     Print_Hist();
   }
 
-  speed += 5;
+  speed += 20;
   if (speed > MAX_SPEED) {
     speed = MAX_SPEED;
   }
@@ -1298,7 +1298,7 @@ int VFH_Class::Set_Motion() {
 
   // This happens if all directions blocked, so just spin in place
   if (speed <= 0) {
-    turnrate = 20;
+    turnrate = 40;
     speed = 0;
   } else {
 //  printf("Picked %f\n", Picked_Angle);
@@ -1315,9 +1315,9 @@ int VFH_Class::Set_Motion() {
         turnrate = -1 * MAX_TURNRATE;
       }
 
-      if (abs(turnrate) > (0.9 * MAX_TURNRATE)) {
-        speed = 0;
-      }
+//      if (abs(turnrate) > (0.9 * MAX_TURNRATE)) {
+//        speed = 0;
+//      }
     }
   }
 
