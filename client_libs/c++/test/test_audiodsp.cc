@@ -3,7 +3,9 @@
 #include "test.h"
 #include <unistd.h>
 #include <math.h>
-#include <linux/soundcard.h>
+//#include <linux/soundcard.h>
+// pasted in from <linux/soundcard.h>:
+#define AFMT_S16_LE              0x00000010      /* Little endian signed 16*/
 
 int
 test_audiodsp(PlayerClient* client, int index)
