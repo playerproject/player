@@ -154,7 +154,7 @@ class ConfigFile
                                   const char *name,
                                   int index, 
                                   uint32_t value);
-  
+
   // Get the number of entities.
   public: int GetEntityCount();
 
