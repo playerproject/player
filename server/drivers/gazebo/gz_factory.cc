@@ -115,8 +115,8 @@ void GzFactory_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-//    : CDevice(sizeof(player_factory_data_t), sizeof(player_factory_cmd_t), 10, 10)
 GzFactory::GzFactory(char* interface, ConfigFile* cf, int section)
+  : CDevice(0, sizeof(player_speech_cmd_t), 10, 10)
 {
     // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
