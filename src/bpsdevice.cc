@@ -375,7 +375,7 @@ void CBpsDevice::PutData(unsigned char *src, size_t maxsize,
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by client thread)
 //
-void CBpsDevice::PutConfig( unsigned char *src, size_t maxsize) 
+int CBpsDevice::PutConfig( unsigned char *src, size_t maxsize) 
 {
     if (maxsize == sizeof(player_bps_setgain_t))
     {
@@ -383,7 +383,7 @@ void CBpsDevice::PutConfig( unsigned char *src, size_t maxsize)
         if (setgain->subtype != PLAYER_BPS_SUBTYPE_SETGAIN)
         {
             PLAYER_ERROR("config packet has incorrect subtype");
-            return;
+            return(-1);
         }
         this->gain = ntohl(setgain->gain) / 1e6;
     }
@@ -393,7 +393,7 @@ void CBpsDevice::PutConfig( unsigned char *src, size_t maxsize)
         if (setlaser->subtype != PLAYER_BPS_SUBTYPE_SETLASER)
         {
             PLAYER_ERROR("config packet has incorrect subtype");
-            return;
+            return(-1);
         }
 
         this->laser_px = (int) ntohl(setlaser->px) / 1000.0;
@@ -409,7 +409,7 @@ void CBpsDevice::PutConfig( unsigned char *src, size_t maxsize)
         if (setbeacon->subtype != PLAYER_BPS_SUBTYPE_SETBEACON)
         {
             PLAYER_ERROR("config packet has incorrect subtype");
-            return;
+            return(-1);
         }
 
         int id = setbeacon->id;
@@ -426,6 +426,8 @@ void CBpsDevice::PutConfig( unsigned char *src, size_t maxsize)
     }
     else
         PLAYER_ERROR("config packet size is incorrect");
+
+    return(0);
 }
 
 

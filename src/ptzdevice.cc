@@ -34,7 +34,6 @@
 #include <termios.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>  /* for sigblock */
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
 #ifdef PLAYER_SOLARIS
@@ -599,11 +598,6 @@ void *RunPtzThread(void *ptzdevice)
   CPtzDevice *zd = (CPtzDevice *) ptzdevice;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-
-#ifdef PLAYER_LINUX
-  sigblock(SIGINT);
-  sigblock(SIGALRM);
-#endif
 
   while(1) 
   {

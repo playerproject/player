@@ -174,7 +174,7 @@ class CP2OSDevice:public CDevice
     virtual void PutData(unsigned char *, size_t maxsize,
                          uint32_t timestamp_sec, uint32_t timestamp_usec);
     virtual size_t GetConfig( unsigned char *, size_t maxsize);
-    virtual void PutConfig( unsigned char *, size_t maxsize);
+    virtual int PutConfig( unsigned char *, size_t maxsize);
 
     int SendReceive(CPacket* pkt); //, bool already_have_lock);
     void ResetRawPositions();

@@ -54,7 +54,6 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
-#include <signal.h>  /* for sigblock */
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
 #include <playertime.h>
@@ -108,103 +107,75 @@ CLaserDevice::CLaserDevice(int argc, char** argv) :
               argv[i]);
   }
 
-  m_config_size = 0;
-  memset(&m_config, 0, sizeof(m_config));
+  //m_config_size = 0;
+  //memset(&m_config, 0, sizeof(m_config));
   //memset(&m_data, 0, sizeof(m_data));
 }
-
+    
 ////////////////////////////////////////////////////////////////////////////////
-// Get configuration from buffer (called by device thread)
-//
-size_t CLaserDevice::GetConfig(unsigned char *dest, size_t maxsize) 
+// Check for new config request, and fill in private fields appropriately
+// returns Pointer to the client expecting the reply if there was a 
+// request, NULL otherwise
+CClientData* CLaserDevice::ParseConfig()
 {
-  Lock();
+  player_laser_config_t config;
+  CClientData* client = NULL;
 
-  if (m_config_size == 0)
+  // was there a request?
+  if(GetConfig(&client, (unsigned char*)&config, sizeof(config)))
   {
-    Unlock();
-    return 0;
+    m_intensity = config.intensity;
+    m_scan_res = ntohs(config.resolution);
+    int min_angle = (short) ntohs(config.min_angle);
+    int max_angle = (short) ntohs(config.max_angle);
+
+    PLAYER_TRACE2("%d %d", min_angle, max_angle);
+
+    // For high res, drop the scan range down to 100 degrees.
+    // The angles must be interpreted differently too.
+    //
+    if (m_scan_res == 25)
+    {
+      m_scan_width = 100;
+      m_scan_min_segment = (min_angle + 5000) / m_scan_res;
+      m_scan_max_segment = (max_angle + 5000) / m_scan_res;
+
+      if (m_scan_min_segment < 0)
+        m_scan_min_segment = 0;
+      if (m_scan_min_segment > 400)
+        m_scan_min_segment = 400;
+
+      if (m_scan_max_segment < 0)
+        m_scan_max_segment = 0;
+      if (m_scan_max_segment > 400)
+        m_scan_max_segment = 400;
+    }
+    else if (m_scan_res == 50 || m_scan_res == 100)
+    {
+      m_scan_width = 180;
+      m_scan_min_segment = (min_angle + 9000) / m_scan_res;
+      m_scan_max_segment = (max_angle + 9000) / m_scan_res;
+
+      if (m_scan_min_segment < 0)
+        m_scan_min_segment = 0;
+      if (m_scan_min_segment > 360)
+        m_scan_min_segment = 360;
+
+      if (m_scan_max_segment < 0)
+        m_scan_max_segment = 0;
+      if (m_scan_max_segment > 360)
+        m_scan_max_segment = 360;
+    }
+    else
+      PLAYER_ERROR("invalid laser configuration");
+
+    PLAYER_MSG3("new scan range [%d %d], intensity [%d]",
+                (int) m_scan_min_segment, 
+                (int) m_scan_max_segment, 
+                (int) m_intensity);
   }
 
-  m_intensity = m_config.intensity;
-  m_scan_res = m_config.resolution;
-  int min_angle = (short) m_config.min_angle;
-  int max_angle = (short) m_config.max_angle;
-
-  PLAYER_TRACE2("%d %d", min_angle, max_angle);
-
-  // For high res, drop the scan range down to 100 degrees.
-  // The angles must be interpreted differently too.
-  //
-  if (m_scan_res == 25)
-  {
-    m_scan_width = 100;
-    m_scan_min_segment = (min_angle + 5000) / m_scan_res;
-    m_scan_max_segment = (max_angle + 5000) / m_scan_res;
-
-    if (m_scan_min_segment < 0)
-      m_scan_min_segment = 0;
-    if (m_scan_min_segment > 400)
-      m_scan_min_segment = 400;
-
-    if (m_scan_max_segment < 0)
-      m_scan_max_segment = 0;
-    if (m_scan_max_segment > 400)
-      m_scan_max_segment = 400;
-  }
-  else if (m_scan_res == 50 || m_scan_res == 100)
-  {
-    m_scan_width = 180;
-    m_scan_min_segment = (min_angle + 9000) / m_scan_res;
-    m_scan_max_segment = (max_angle + 9000) / m_scan_res;
-
-    if (m_scan_min_segment < 0)
-      m_scan_min_segment = 0;
-    if (m_scan_min_segment > 360)
-      m_scan_min_segment = 360;
-
-    if (m_scan_max_segment < 0)
-      m_scan_max_segment = 0;
-    if (m_scan_max_segment > 360)
-      m_scan_max_segment = 360;
-  }
-  else
-    PLAYER_ERROR("invalid laser configuration");
-
-  PLAYER_MSG3("new scan range [%d %d], intensity [%d]",
-              (int) m_scan_min_segment, (int) m_scan_max_segment, (int) m_intensity);
-
-  m_config_size = 0;
-
-  Unlock();
-  return sizeof(m_config);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Put configuration in buffer (called by client thread)
-//
-void CLaserDevice::PutConfig( unsigned char *src, size_t maxsize) 
-{
-  Lock();
-
-  if (maxsize != sizeof(m_config))
-  {
-    PLAYER_ERROR("config request has incorrect size; ignoring");
-    Unlock();
-    return;
-  }
-
-  memcpy(&m_config, src, maxsize);
-  m_config_size = maxsize;
-
-  // Byte-swap the configuration data
-  //
-  m_config.resolution = ntohs(m_config.resolution);
-  m_config.min_angle = ntohs(m_config.min_angle);
-  m_config.max_angle = ntohs(m_config.max_angle);
-
-  Unlock();
+  return(client);
 }
 
 
@@ -325,11 +296,6 @@ int CLaserDevice::Main()
     
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
-#ifdef PLAYER_LINUX
-    sigblock(SIGINT);
-    sigblock(SIGALRM);
-#endif
-        
     // Ask the laser to send data
     //
     for (int retry = 0; retry < MAX_RETRIES; retry++)
@@ -350,22 +316,33 @@ int CLaserDevice::Main()
 
         // Look for configuration requests
         //
-        if(GetConfig(NULL, 0))
+        CClientData* client;
+        if((client = ParseConfig()))
         {
-            // Change any config settings
-            //
-            if (SetLaserMode())
-                PLAYER_ERROR("request for config mode failed");
-            else
-            {
-                SetLaserRes(m_scan_width, m_scan_res);
-                SetLaserConfig(m_intensity);
-            }
+          // Change any config settings
+          //
+          if (SetLaserMode())
+          {
+            PLAYER_ERROR("request for config mode failed");
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+              PLAYER_ERROR("failed to PutReply");
+          }
+          else
+          {
+            SetLaserRes(m_scan_width, m_scan_res);
+            SetLaserConfig(m_intensity);
+          }
 
-            // Issue a new request for data
-            //
-            if (RequestLaserData(m_scan_min_segment, m_scan_max_segment))
-                PLAYER_ERROR("request for laser data failed");
+          // Issue a new request for data
+          //
+          if (RequestLaserData(m_scan_min_segment, m_scan_max_segment))
+          {
+            PLAYER_ERROR("request for laser data failed");
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+              PLAYER_ERROR("failed to PutReply");
+          }
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+            PLAYER_ERROR("failed to PutReply");
         }
 
         // Get the time at which we started reading

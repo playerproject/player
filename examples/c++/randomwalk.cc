@@ -109,10 +109,12 @@ int main(int argc, char** argv)
   /* request read access on the sonars and all access to the wheels */
   PositionProxy pp(&robot,0,'a');
 
+  /*
   if (use_laser)
     lp.ChangeAccess('r');
   else
     sp.ChangeAccess('r');
+    */
 
   /* maybe turn on the motors */
   if(turnOnMotors && pp.SetMotorState(1))

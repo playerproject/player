@@ -44,11 +44,13 @@
 #define PLAYER_STXX ((uint16_t) 0x5878)
 
 /* the player message types */
-#define PLAYER_MSGTYPE_DATA   ((uint16_t)1)
-#define PLAYER_MSGTYPE_CMD    ((uint16_t)2)
-#define PLAYER_MSGTYPE_REQ    ((uint16_t)3)
-#define PLAYER_MSGTYPE_RESP   ((uint16_t)4)
-#define PLAYER_MSGTYPE_SYNCH  ((uint16_t)5)
+#define PLAYER_MSGTYPE_DATA      ((uint16_t)1)
+#define PLAYER_MSGTYPE_CMD       ((uint16_t)2)
+#define PLAYER_MSGTYPE_REQ       ((uint16_t)3)
+#define PLAYER_MSGTYPE_RESP_ACK  ((uint16_t)4)
+#define PLAYER_MSGTYPE_SYNCH     ((uint16_t)5)
+#define PLAYER_MSGTYPE_RESP_NACK ((uint16_t)6)
+#define PLAYER_MSGTYPE_RESP_ERR  ((uint16_t)7)
 
 /* strings to match the currently assigned devices (used for pretty-printing 
  * and command-line parsing) */
@@ -96,6 +98,7 @@
 #define PLAYER_WRITE_MODE 'w'
 #define PLAYER_ALL_MODE 'a'
 #define PLAYER_CLOSE_MODE 'c'
+#define PLAYER_ERROR_MODE 'e'
 
 /* the largest possible message that the server will currently send
  * or receive */

@@ -40,7 +40,6 @@
 #include <unistd.h>
 #include <math.h>
 #include <stdlib.h>  /* for abs() */
-#include <signal.h>  /* for sigblock */
 #include <netinet/in.h>
 
 #include <p2osdevice.h>
@@ -634,7 +633,7 @@ size_t CP2OSDevice::GetConfig( unsigned char* dest, size_t maxsize)
 
   return(size);
 }
-void CP2OSDevice::PutConfig( unsigned char* src, size_t size)
+int CP2OSDevice::PutConfig( unsigned char* src, size_t size)
 {
   Lock();
 
@@ -647,6 +646,7 @@ void CP2OSDevice::PutConfig( unsigned char* src, size_t size)
   }
 
   Unlock();
+  return(0);
 }
 
 void *RunPsosThread( void *p2osdevice ) 
@@ -677,11 +677,6 @@ void *RunPsosThread( void *p2osdevice )
 
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;
-
-#ifdef PLAYER_LINUX
-  sigblock(SIGINT);
-  sigblock(SIGALRM);
-#endif
 
   GlobalTime->GetTime(&pd->timeBegan_tv);
 
