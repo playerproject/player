@@ -92,3 +92,4 @@ void RWIBumperProxy::Print()
 		putchar((bumpfield & (1 << i)) ? '1' : '0');
 	puts(" ");
 }
+

@@ -64,7 +64,6 @@ void TruthProxy::Print()
 // Get the object pose - sends a request and waits for a reply
 int TruthProxy::GetPose( double *px, double *py, double *pa )
 {
-  int len;
   player_truth_pose_t config;
   player_msghdr_t hdr;
   
