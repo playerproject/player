@@ -237,7 +237,7 @@ void SIP::Parse( unsigned char *buffer )
   sonarreadings = buffer[cnt];
   cnt += sizeof(unsigned char);
 
-  //printf("%hu:", sonarreadings);
+  //printf("%hu sonar readings:\n", sonarreadings);
   for(unsigned char i = 0;i < sonarreadings;i++) {
     sonars[buffer[cnt]]=   (unsigned short)
       rint((buffer[cnt+1] | (buffer[cnt+2] << 8)) *
