@@ -40,19 +40,22 @@
 
 #include <pthread.h>
 #include <sys/time.h>
-#include <sys/poll.h>
 #include <errno.h>
+
+// for poll
+#include <replace/replace.h>
+//#include <sys/poll.h>
+
 #include <device.h>
 #include <playercommon.h>
 #include <player.h>
 #include <drivertable.h>
 #include <reb_params.h>
 
+
 #define REB_CONFIG_BUFFER_SIZE 1024
 #define REB_BAUDRATE B38400
 #define REB_DEFAULT_SERIAL_PORT "/dev/ttySA1"
-
-#define REB_WIFI_INFO_FILE "/proc/net/wireless"
 
 #define REB_MOTOR_RIGHT 0
 #define REB_MOTOR_LEFT 2
@@ -62,15 +65,10 @@
 #define REB_AD_OFF 0
 #define REB_AD_ON 1
 
-#define REB_FIXED_FACTOR 1000000
+#define REB_FIXED_FACTOR 10000
 
 #define REB_MAX_ACC 100
 #define REB_MIN_ACC 10
-
-#define REB_POS_UPDATE_PERIOD_VEL 50 //200
-#define REB_POS_UPDATE_PERIOD_POS 700
-#define REB_IR_UPDATE_PERIOD 200
-#define REB_POWER_UPDATE_PERIOD 2000
 
 #define REB_POS_MODE_STRAIGHT 0
 #define REB_POS_MODE_ROTATION 1
@@ -155,6 +153,19 @@ public:
   void ConfigSpeedPID(int, int, int, int);
   void ConfigSpeedProfile(int, int, int);
 
+protected:
+
+  void Lock();
+  void Unlock();
+  
+  void SetupLock();
+  void SetupUnlock();
+  
+  /* start a thread that will invoke Main() */
+  virtual void StartThread();
+  /* cancel (and wait for termination) of the thread */
+  virtual void StopThread();
+
 private:
 
   int write_serial(char *, int);
@@ -189,7 +200,10 @@ private:
   
   static struct timeval last_position; // last position update
   static bool refresh_last_position;
-  
+  static int last_lpos, last_rpos;
+  static int last_x_f, last_y_f;
+  static double last_theta;
+
   static struct timeval last_pos_update; // time of last pos update
   static struct timeval last_power_update;
   static struct timeval last_ir_update;
@@ -217,18 +231,6 @@ private:
 
   static struct pollfd write_pfd, read_pfd;
 
-protected:
-
-  void Lock();
-  void Unlock();
-  
-  void SetupLock();
-  void SetupUnlock();
-  
-  /* start a thread that will invoke Main() */
-  virtual void StartThread();
-  /* cancel (and wait for termination) of the thread */
-  virtual void StopThread();
   
 };
 
