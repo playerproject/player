@@ -24,3 +24,5 @@ MComProxy.tex
 LocalizeProxy.tex
 PlayerMultiClient.tex
 SoundProxy.tex
+AudioDSPProxy.tex
+AudioMixerProxy.tex
