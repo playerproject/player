@@ -23,8 +23,8 @@ examples:
 
 .PHONY: utils
 utils:
-	cd rtk2 && make all
-	cd utils && make all
+	cd rtk2 && make -i all
+	cd utils && make -i all
 
 dep:
 	cd src && make dep
@@ -32,8 +32,7 @@ dep:
 	cd examples && make dep
 	cd utils && make dep
 
-install: install_server install_client_libs install_doc\
-         install_utils
+install: install_server install_client_libs install_utils install_doc
 
 install_server:
 	cd src && make install
@@ -45,7 +44,7 @@ install_examples:
 	cd examples && make -i install
 
 install_utils:
-	cd utils && make install
+	cd utils && make -i install
 
 install_doc:
 	$(MKDIR) -p $(INSTALL_DOC)
