@@ -61,8 +61,6 @@ class PlayerClient
    private:
      player_connection_t conn;
      
-     // this table is used to keep track of which devices we have open
-     DeviceDataTable* devicedatatable;
 
      // Input and output broadcast messages
      //
@@ -85,6 +83,9 @@ class PlayerClient
      void ByteSwapCommands(void* cmd, uint16_t device);
 
    public:
+     
+     // this table is used to keep track of which devices we have open
+     DeviceDataTable* devicedatatable;
      
      // the host and port to which we'll connect (by default)
      char host[MAX_FILENAME_SIZE];
@@ -161,6 +162,13 @@ class PlayerClient
       *      jerky
       */
      int ChangeVelocityControl(velocity_mode_t mode);
+
+     /*
+      * Change the update frequency at which this client receives data
+      *
+      * Returns 0 on success; non-zero otherwise
+      */
+     int SetFrequency(unsigned short freq);
 
      /*
       * Set the laser configuration

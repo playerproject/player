@@ -70,6 +70,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   player_device_ioctl_t player_ioctl;
   player_device_req_t req;
   player_device_datamode_req_t datamode;
+  player_device_datafreq_req_t datafreq;
   player_msghdr_t reply_hdr;
   struct timeval curr;
   unsigned int real_payloadsize;
@@ -175,6 +176,17 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                               "request/reply mode");
             else
               pthread_mutex_unlock( &datarequested);
+            break;
+          case PLAYER_PLAYER_DATAFREQ_REQ:
+            if(real_payloadsize != sizeof(unsigned short))
+            {
+              printf("HandleRequests(): got wrong size "
+                     "arg for update frequency change: %d\n",real_payloadsize);
+              break;
+            }
+            memcpy(&datafreq,payload+sizeof(player_device_ioctl_t),
+                            sizeof(player_device_datafreq_req_t));
+            frequency = ntohs(datafreq.frequency);
             break;
           default:
             printf("Unknown server ioctl %x\n", player_ioctl.subtype);

@@ -30,6 +30,7 @@
 #include <playerclient.h>
 #include <unistd.h> // for close(2)
 #include <netinet/in.h> // for ntohs(3)
+#include <sys/time.h> // for ntohs(3)
 
 
 PlayerClient::PlayerClient()
@@ -274,6 +275,7 @@ int PlayerClient::Read()
   int numtoread = 0;
   player_msghdr_t hdr;
   char buffer[PLAYER_MAX_MESSAGE_SIZE];
+  struct timeval curr;
 
   // count up how many devices from which we should expect data
   for(thisentry = devicedatatable->head; thisentry; thisentry = thisentry->next)
@@ -288,6 +290,8 @@ int PlayerClient::Read()
   {
     if(player_read(&conn, &hdr, buffer, sizeof(buffer)))
       return(-1);
+    gettimeofday(&curr,NULL);
+
     if(!(thisentry = devicedatatable->GetDeviceEntry(hdr.device, 
                                                      hdr.device_index)))
     {
@@ -300,6 +304,9 @@ int PlayerClient::Read()
     
     // fill in the timestamp
     thisentry->timestamp = hdr.timestamp;
+    thisentry->senttime = hdr.time;
+    thisentry->rectime = (uint64_t)((((uint64_t)curr.tv_sec) * 1000000) + 
+                                      (uint64_t)curr.tv_usec);
 
     // byte-swap it
     ByteSwapData(thisentry->data,hdr);
@@ -336,8 +343,9 @@ void PlayerClient::Print()
                          ((player_sonar_data_t*)(thisentry->data))->ranges[i]);
           break;
         case PLAYER_POSITION_CODE:
-          printf("Position %d data (timestamp:%Lu):\n", 
-                          thisentry->index,thisentry->timestamp);
+          printf("Position %d data (timestamp:%Lu:%Lu:%Lu):\n", 
+                          thisentry->index,thisentry->timestamp,
+                          thisentry->senttime, thisentry->rectime);
           printf("  (x,y,theta) : (%d,%d,%d)\n",
                     ((player_position_data_t*)(thisentry->data))->xpos,
                     ((player_position_data_t*)(thisentry->data))->ypos,
@@ -631,6 +639,30 @@ int PlayerClient::ChangeMotorState(unsigned char state)
   payload[1] = state;
   return(player_request(&conn, PLAYER_POSITION_CODE, 0,
                           payload, sizeof(payload),
+                          &replyhdr, replybuffer, sizeof(replybuffer)));
+
+}
+
+/*
+ * Change the update frequency at which this client receives data
+ *
+ * Returns 0 on success; non-zero otherwise
+ */
+int PlayerClient::SetFrequency(unsigned short freq)
+{
+  player_device_ioctl_t hdr;
+  player_device_datafreq_req_t payload;
+  char buffer[sizeof(hdr)+sizeof(payload)];
+
+  player_msghdr_t replyhdr;
+  char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
+
+  hdr.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
+  payload.frequency = htons(freq);
+  memcpy(buffer,&hdr,sizeof(hdr));
+  memcpy(buffer+sizeof(hdr),&payload,sizeof(payload));
+  return(player_request(&conn, PLAYER_PLAYER_CODE, 0,
+                          buffer, sizeof(buffer),
                           &replyhdr, replybuffer, sizeof(replybuffer)));
 
 }

@@ -117,6 +117,13 @@ typedef struct
   uint8_t mode;
 } __attribute__ ((packed)) player_device_datamode_req_t;
 
+/* the format of a "frequency change" ioctl to Player */
+typedef struct
+{
+  // frequency in Hz
+  uint16_t frequency;
+} __attribute__ ((packed)) player_device_datafreq_req_t;
+
 #define PLAYER_PLAYER_DEV_REQ      ((uint16_t)1)
 #define PLAYER_PLAYER_DATA_REQ     ((uint16_t)2)
 #define PLAYER_PLAYER_DATAMODE_REQ ((uint16_t)3)
