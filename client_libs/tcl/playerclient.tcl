@@ -57,6 +57,7 @@ set PLAYER_PTZ_CODE            8
 set PLAYER_AUDIO_CODE          9
 set PLAYER_LASERBEACON_CODE   10
 set PLAYER_BROADCAST_CODE     11
+set PLAYER_SPEECH_CODE        12
 
 # access modes
 set PLAYER_READ_MODE   "r"
