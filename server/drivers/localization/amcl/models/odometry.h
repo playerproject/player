@@ -47,6 +47,9 @@ odometry_t *odometry_alloc(map_t *map, double robot_radius);
 // Free an sensor model
 void odometry_free(odometry_t *sensor);
 
+// Build a list of all empty cells in c-space
+int odometry_init_cspace(odometry_t *self);
+
   
 // Prepare to initialize the distribution; pose is the robot's initial
 // pose estimate.

@@ -19,74 +19,75 @@
  *
  */
 /**************************************************************************
- * Desc: Sensor model the laser sensor.
+ * Desc: Sensor model the sonar sensor.
  * Author: Andrew Howard
  * Date: 15 Dec 2002
  * CVS: $Id$
+ * Notes:
+ *   This is just a sketch of the sensor model; much work needs to be done
+ * to make this model genuinely useful.
  *************************************************************************/
 
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
-#include "laser.h"
+#include "sonar.h"
 
-#define LASER_MAX_RANGES 401
 
 // Pre-compute the range sensor probabilities
-void laser_precompute(laser_t *self);
+void sonar_precompute(sonar_t *self);
 
 
 // Create an sensor model
-laser_t *laser_alloc(map_t *map, pf_vector_t laser_pose)
+sonar_t *sonar_alloc(map_t *map, int pose_count, pf_vector_t *poses)
 {
-  laser_t *self;
+  int i;
+  sonar_t *self;
 
-  self = calloc(1, sizeof(laser_t));
+  self = calloc(1, sizeof(sonar_t));
 
   self->map = map;
-  self->laser_pose = laser_pose;
 
-  self->range_cov = 0.05 * 0.05;
-  self->range_bad = 0.20;
+  self->pose_count = pose_count;
+  assert(self->pose_count < sizeof(self->poses) / sizeof(self->poses[0]));
+  for (i = 0; i < self->pose_count; i++)
+    self->poses[i] = poses[i];
 
-  laser_precompute(self);
-    
+  self->range_cov = 0.20 * 0.20;
+  self->range_bad = 0.50;
+
   self->range_count = 0;
-  self->ranges = calloc(LASER_MAX_RANGES, sizeof(laser_range_t));
+
+  // Precompute the sensor model
+  sonar_precompute(self);
   
   return self;
 }
 
 
 // Free an sensor model
-void laser_free(laser_t *self)
+void sonar_free(sonar_t *self)
 {
   free(self->lut_probs);
-  free(self->ranges);
   free(self);
   return;
 }
 
 
 // Clear all existing range readings
-void laser_clear_ranges(laser_t *self)
+void sonar_clear_ranges(sonar_t *self)
 {
   self->range_count = 0;
   return;
 }
 
 
-// Set the laser range readings that will be used.
-void laser_add_range(laser_t *self, double range, double bearing)
+// Set the sonar range readings that will be used.
+void sonar_add_range(sonar_t *self, double range)
 {
-  laser_range_t *beam;
-  
-  assert(self->range_count < LASER_MAX_RANGES);
-  beam = self->ranges + self->range_count++;
-  beam->range = range;
-  beam->bearing = bearing;
-
+  assert(self->range_count < SONAR_MAX_RANGES);
+  self->ranges[self->range_count++] = range;
   return;
 }
 
@@ -95,14 +96,14 @@ void laser_add_range(laser_t *self, double range, double bearing)
 // We use a two-dimensional array over (model_range, obs_range).
 // currently, only the difference (obs_range - model_range) is significant,
 // so this is somewhat inefficient.
-void laser_precompute(laser_t *self)
+void sonar_precompute(sonar_t *self)
 {
   double max;
   double c, z, p;
   double mrange, orange;
   int i, j;
   
-  // Laser max range and resolution
+  // Sonar max range and resolution
   max = 8.00;
   self->lut_res = 0.01;
   
@@ -136,7 +137,7 @@ void laser_precompute(laser_t *self)
 
 
 // Determine the probability for the given range reading
-inline double laser_sensor_prob(laser_t *self, double obs_range, double map_range)
+inline double sonar_sensor_prob(sonar_t *self, double obs_range, double map_range)
 {
   int i, j;
 
@@ -156,25 +157,27 @@ inline double laser_sensor_prob(laser_t *self, double obs_range, double map_rang
 
 
 // Determine the probability for the given pose
-double laser_sensor_model(laser_t *self, pf_vector_t pose)
+double sonar_sensor_model(sonar_t *self, pf_vector_t pose)
 {
   int i;
   double p;
-  double map_range;
-  laser_range_t *obs;
-
-  // Take account of the laser pose relative to the robot
-  pose = pf_vector_coord_add(self->laser_pose, pose);
+  double map_range, obs_range;
+  pf_vector_t spose;
 
   p = 1.0;
   
   for (i = 0; i < self->range_count; i++)
   {
-    obs = self->ranges + i;
-    map_range = map_calc_range(self->map,
-                               pose.v[0], pose.v[1], pose.v[2] + obs->bearing, 8.0);
+    // Get the observed range
+    obs_range = self->ranges[i];
 
-    p *= laser_sensor_prob(self, obs->range, map_range);
+    // Compute the sonar pose in absolue coordinates
+    spose = pf_vector_coord_add(self->poses[i], pose);
+
+    map_range = map_calc_range(self->map,
+                               spose.v[0], spose.v[1], spose.v[2], 8.0);
+
+    p *= sonar_sensor_prob(self, obs_range, map_range);
   }
 
   //printf("%e\n", p);
