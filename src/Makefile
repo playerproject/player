@@ -85,7 +85,9 @@ arenalock.o: ../include/device.h ../include/lock.h ../include/playercommon.h
 arenalock.o: ../include/arenalock.h ../include/errors.h
 audiodevice.o: ../include/audiodevice.h ../include/lock.h ../include/device.h
 audiodevice.o: ../include/playercommon.h
-broadcastdevice.o: ../include/broadcastdevice.hh
+broadcastdevice.o: ../include/broadcastdevice.hh ../include/lock.h
+broadcastdevice.o: ../include/device.h ../include/playercommon.h
+broadcastdevice.o: ../include/messages.h
 clientdata.o: ../include/devicetable.h ../include/device.h ../include/lock.h
 clientdata.o: ../include/playercommon.h ../include/clientdata.h
 clientdata.o: ../include/messages.h ../include/counter.h ../include/packet.h

@@ -64,8 +64,19 @@ class PlayerClient
      // this table is used to keep track of which devices we have open
      DeviceDataTable* devicedatatable;
 
+     // Input and output broadcast messages
+     //
+     player_broadcast_cmd_t* broadcast_cmd;
+     player_broadcast_data_t* broadcast_data;
+     
+     // Array of pointers received messages
+     // The actual data is stored in 'broadcast_data'.
+     //
+     int broadcast_msg_count;
+     player_broadcast_cmd_t* broadcast_msg[64];
+
      // copy commands before writing them, to allow for transformation
-     void FillCommand(void* dest, void* src, uint16_t device);
+     int FillCommand(void* dest, void* src, uint16_t device);
      // this method is used to possible transform incoming data
      void FillData(void* dest, void* src, player_msghdr_t hdr);
      // byte-swap incoming data as necessary
@@ -97,8 +108,6 @@ class PlayerClient
      player_misc_data_t* misc;
      vision_data* vision;
      player_laserbeacon_data_t* laserbeacon_data;
-     player_broadcast_data_t* broadcast_data;
-     player_broadcast_cmd_t* broadcast_cmd;
 
      // processed data
      unsigned short minfrontsonar;
@@ -171,6 +180,16 @@ class PlayerClient
       * Returns 0 on success; non-zero otherwise
       */
      int ChangeMotorState(unsigned char state);
+
+     // Set the broadcast message for this player
+     // Returns the length of the message sent (0 if message is too long).
+     //
+     size_t SetBroadcastMsg(const void *msg, size_t len);
+     
+     // Get the n'th broadcast message that was received by the last read
+     // Returns the length of the message (0 if no messsage).
+     //
+     size_t GetBroadcastMsg(int n, void *msg, size_t maxlen);
 };
 
 #endif

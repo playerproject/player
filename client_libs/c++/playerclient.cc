@@ -26,6 +26,7 @@
  * the C++ client
  */
 
+#include <string.h>
 #include <playerclient.h>
 #include <unistd.h> // for close(2)
 #include <netinet/in.h> // for ntohs(3)
@@ -113,6 +114,7 @@ PlayerClient::PlayerClient()
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_BROADCAST_CODE,0);
   broadcast_data = (player_broadcast_data_t*)(thisentry->data);
   broadcast_cmd = (player_broadcast_cmd_t*)(thisentry->command);
+  broadcast_msg_count = 0;
 }
 
 PlayerClient::~PlayerClient()
@@ -235,13 +237,6 @@ void PlayerClient::ByteSwapData(void* data, player_msghdr_t hdr)
         }
         break;
     }
-    case PLAYER_BROADCAST_CODE:
-    {
-        player_broadcast_data_t* temp;
-        temp = (player_broadcast_data_t*) data;
-        temp->len = ntohs(temp->len);
-        break;
-    }
     default:
       //don't know it.  oh well.
       break;
@@ -266,13 +261,6 @@ void PlayerClient::ByteSwapCommands(void* cmd, uint16_t device)
       tempptz->tilt = htons(tempptz->tilt);
       tempptz->zoom = htons(tempptz->zoom);
       break;
-    case PLAYER_BROADCAST_CODE:
-    {
-        player_broadcast_cmd_t* temp;
-        temp = (player_broadcast_cmd_t*) cmd;
-        temp->len = htons(temp->len);
-        break;   
-    }
     default:
       // no byte-swapping to be done.  oh well.
       break;
@@ -471,6 +459,27 @@ void PlayerClient::FillData(void* dest, void* src, player_msghdr_t hdr)
         }
       }
       break;
+    case PLAYER_BROADCAST_CODE:
+    {
+        // Copy the raw packet
+        memcpy(dest,src,hdr.size);
+        // Extract separate messages from packet
+        player_broadcast_data_t* data = (player_broadcast_data_t*) dest;
+        broadcast_msg_count = 0;
+        int offset = 0;
+        while (true)
+        {
+            uint8_t *msg = data->buffer + offset;
+            int len = ntohs(*(uint16_t*) msg);
+            if (len == 0)
+                break;
+            offset += 2 + len;
+            broadcast_msg[broadcast_msg_count++] = (player_broadcast_cmd_t*) msg;
+            if (broadcast_msg_count >= ARRAYSIZE(broadcast_msg))
+                break;
+        }
+        break;
+    }
     default:
       // no transformations to be done; just copy
       ASSERT(hdr.size < PLAYER_MAX_MESSAGE_SIZE);
@@ -480,7 +489,7 @@ void PlayerClient::FillData(void* dest, void* src, player_msghdr_t hdr)
 }
 
 // this method is used to possible transform outgoing commands
-void PlayerClient::FillCommand(void* dest, void* src, uint16_t device)
+int PlayerClient::FillCommand(void* dest, void* src, uint16_t device)
 {
   int datasize,commandsize;
 
@@ -489,11 +498,25 @@ void PlayerClient::FillCommand(void* dest, void* src, uint16_t device)
   
   switch(device)
   {
+    case PLAYER_BROADCAST_CODE:
+    {
+      // Broadcast commands have a variable length
+      player_broadcast_cmd_t* tempsrc = (player_broadcast_cmd_t*) src;
+      commandsize = tempsrc->len + 2;
+      memcpy(dest, src, commandsize);
+      // Byte swap
+      player_broadcast_cmd_t* tempdest = (player_broadcast_cmd_t*) dest;
+      tempdest->len = htons(tempdest->len);
+      // Now reset the source message so it doesnt get sent again
+      memset(src, 0, commandsize);
+      break;
+    }
     default:
       // no transformations to be done; just copy
       memcpy(dest, src, commandsize);
       break;
   }
+  return commandsize;
 }
 
 /* write one device's commands to server */
@@ -506,10 +529,10 @@ int PlayerClient::Write(uint16_t device, uint16_t index)
   if(!(thisentry = devicedatatable->GetDeviceEntry(device,index)))
     return(-1);
 
-  FillCommand(buffer, thisentry->command, device);
+  int commandsize = FillCommand(buffer, thisentry->command, device);
   ByteSwapCommands(buffer, device);
 
-  return(player_write(&conn, device, index, buffer, thisentry->commandsize));
+  return(player_write(&conn, device, index, buffer, commandsize));
 }
 
 
@@ -610,4 +633,29 @@ int PlayerClient::ChangeMotorState(unsigned char state)
                           payload, sizeof(payload),
                           &replyhdr, replybuffer, sizeof(replybuffer)));
 
+}
+
+
+// Set the broadcast message for this player
+//
+size_t PlayerClient::SetBroadcastMsg(const void *msg, size_t len)
+{
+    if (len > sizeof(broadcast_cmd->msg))
+        return 0;
+    
+    broadcast_cmd->len = len;
+    memcpy(broadcast_cmd->msg, msg, len);
+    return len;
+}
+
+
+// Get the n'th broadcast message that was received by the last read
+//
+size_t PlayerClient::GetBroadcastMsg(int n, void *msg, size_t maxlen)
+{
+    if (n < 0 || n >= broadcast_msg_count)
+        return 0;
+    size_t len = min(broadcast_msg[n]->len, maxlen);
+    memcpy(msg, broadcast_msg[n]->msg, len);
+    return len;
 }

@@ -46,7 +46,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-//#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 
 #include <stdio.h>
 #include <string.h>
@@ -173,8 +173,38 @@ int CBroadcastDevice::Shutdown()
 // Get incoming data
 //
 size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize)
-{
-    return RecvPacket(data, maxsize);
+{    
+    size_t len = 0;
+    
+    // Read all the currently queued packets
+    // and concatenate them into a broadcast data packet.
+    //
+    while (true)
+    {
+        size_t max_bytes = sizeof(m_data.buffer) - 2 - len;
+        size_t bytes = RecvPacket(m_data.buffer + len, max_bytes);
+        if (bytes == 0)
+            break;
+        else if (bytes == max_bytes)
+        {
+            printf("Warning: broadcast packet overrun; packets have been discarded\n");
+            break;
+        }
+        len += bytes;
+    }
+
+    // Add an end marker to the data packet
+    //
+    ASSERT(len < sizeof(m_data.buffer) - 2);
+    memset(m_data.buffer + len, 0, 2);
+    len += 2;
+    
+    // Copy the data
+    //
+    ASSERT(len <= maxsize);
+    memcpy(data, &m_data, len);
+
+    return len;
 }
 
 
@@ -197,9 +227,43 @@ void CBroadcastDevice::GetCommand(unsigned char *, size_t maxsize)
 ///////////////////////////////////////////////////////////////////////////
 // Send data
 //
-void CBroadcastDevice::PutCommand(unsigned char *data, size_t maxsize)
+void CBroadcastDevice::PutCommand(unsigned char *cmd, size_t maxsize)
 {
-    SendPacket(data, maxsize);
+    // Compute the total length of the packet to send over UDP
+    // Equals the size of the header + body.
+    //
+    size_t len = 2 + ntohs(((player_broadcast_cmd_t*) cmd)->len);
+    SendPacket(cmd, len);
+
+    /*
+    size_t totalsize = sizeof(m_cmd);
+
+    // Copy command to local variable
+    //
+    ASSERT(totalsize <= maxsize);
+    memcpy(&m_cmd, cmd, totalsize);
+
+    // Do some byte-swapping
+    //
+    m_cmd.bufflen = ntohs(m_cmd.bufflen);
+    ASSERT(m_cmd.bufflen <= sizeof(m_cmd.buffer));
+
+    // Parse the command packet,
+    // extract and send messages
+    //
+    for (int offset = 0; offset < m_cmd.bufflen;)
+    {
+        uint8_t *msg = m_cmd.buffer + offset;
+        int len = ntohs(*((uint16_t*) msg));
+        if (len == 0)
+            break;
+
+        SendPacket(msg, len);
+
+        PLAYER_TRACE1("sent msg of len %d", (int) len);
+        offset += len;
+    }
+    */
 }
 
 
