@@ -204,6 +204,8 @@ PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[no],[],[],[])
 
+PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])

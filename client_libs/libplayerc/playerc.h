@@ -1065,6 +1065,9 @@ int playerc_ptz_unsubscribe(playerc_ptz_t *device);
 /** Set the pan, tilt and zoom values. */
 int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom);
 
+/** Set the pan, tilt and zoom values. (and speed) */
+int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zoom, double panspeed, double tiltspeed);
+
 /***************************************************************************
  ** end section
  **************************************************************************/ 
