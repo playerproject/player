@@ -25,13 +25,14 @@
 
 #include "playernav.h"
 
-#define USAGE "USAGE: playernav <host:port> [<host:port>...]"
+#define USAGE "USAGE: playernav [-fps <dumprate>] <host:port> [<host:port>...]"
 
 // flag and index for robot currently being moved by user (if any)
 int robot_moving_p;
 int robot_moving_idx;
 
 double dumpfreq;
+int dumpp;
 
 static void
 _interrupt_callback(int signum)
@@ -113,7 +114,7 @@ player_read_func(gpointer* arg)
   }
 
   // dump screenshot
-  if(dumpfreq > 0)
+  if(dumpp)
   {
     gettimeofday(&curr,NULL);
     diff = (curr.tv_sec + curr.tv_usec/1e6) - (last.tv_sec + last.tv_usec/1e6);
@@ -138,6 +139,8 @@ main(int argc, char** argv)
   gui_data_t gui_data;
 
   memset(&gui_data, 0, sizeof(gui_data));
+
+  dumpfreq = 5.0;
 
   if(parse_args(argc-1, argv+1, &(gui_data.num_robots), 
                 gui_data.hostnames, gui_data.ports) < 0)
