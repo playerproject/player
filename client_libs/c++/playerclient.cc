@@ -308,8 +308,8 @@ int PlayerClient::RequestDeviceAccess(unsigned short device,
                                       unsigned short index,
                                       unsigned char req_access,
                                       unsigned char* grant_access,
-                                      char* driver_name = NULL,
-                                      int driver_name_len = 0)
+                                      char* driver_name,
+                                      int driver_name_len)
 {
   int retval;
 
