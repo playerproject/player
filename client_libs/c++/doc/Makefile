@@ -14,9 +14,6 @@ include ../../../Makefile.common
 # Name for the manual we are creating
 MANNAME = cppclient
 
-# The place to put it when we are done
-MANPATH = ../../../doc
-
 # Header files to scan
 MANFILES = ../positionproxy.h ../sonarproxy.h ../miscproxy.h \
            ../ptzproxy.h ../visionproxy.h ../laserproxy.h \
@@ -30,10 +27,6 @@ manual:
 	./docker.py $(MANFILES)
 	latex $(MANNAME)
 	dvips -t letter -f $(MANNAME).dvi > $(MANNAME).ps	
-	#ps2pdf $(MANNAME).ps
-	$(MKDIR) -p $(MANPATH)
-	#cp $(MANNAME).pdf $(MANPATH)
-	cp $(MANNAME).ps $(MANPATH)
 
 # Clean up everything
 clean:

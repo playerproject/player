@@ -23,6 +23,9 @@
  * Date: 28 Mar 2002
  * CVS: $Id$
  *************************************************************************/
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
 
 #include <signal.h>
 #include <stdio.h>
@@ -71,7 +74,7 @@ int main(int argc, char **argv)
   sonar_t *sonar;
   vision_t *vision;
 
-  printf("PlayerViewer %s\n", PLAYER_VERSION);
+  printf("PlayerViewer %s\n", VERSION);
 
   // Initialise rtk lib
   rtk_init(&argc, &argv);

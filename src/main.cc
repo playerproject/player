@@ -30,6 +30,10 @@
 //#define VERBOSE
 //#define DEBUG
 
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <dirent.h>
 #include <dlfcn.h>
 #include <stdio.h>
