@@ -149,14 +149,7 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(c_r, pthread_create, 
-[LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
-
-dnl Because we're using libtool to build some client libs, we need to define
-dnl LTLIBOBJS to have everything that LIBOBJS has, but with extensions of .lo,
-dnl instead of .o.  Here is some voodoo from the Autotools book that does it.
-Xsed="sed -e s/^X//"
-LTLIBOBJS=`echo X"$LIBOBJS" |\$Xsed -e "s,\. [^.]* ,.lo,g;s,\. [^.]* ,.lo,g;s,\.[^.]*$,.lo,"`
-AC_SUBST(LTLIBOBJS)
+             [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 
 dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile
