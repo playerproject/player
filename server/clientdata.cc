@@ -1152,6 +1152,7 @@ ClientDataTCP::Read()
 int 
 ClientDataTCP::Write(size_t len)
 {
+  static bool warned=false;
   int byteswritten;
 
   if(len>0)
@@ -1175,10 +1176,17 @@ ClientDataTCP::Write(size_t len)
               totalwritebuffer+byteswritten, 
               leftover_size);
 
-      PLAYER_WARN1("%d bytes leftover on write() to client", leftover_size);
+      if(!warned)
+      {
+        PLAYER_WARN1("%d bytes leftover on write() to client", leftover_size);
+        warned = true;
+      }
     }
     else
+    {
       leftover_size=0;
+      warned = false;
+    }
   }
   return(0);
 }
