@@ -128,8 +128,10 @@ MapFile::Setup()
   guchar* p;
   int rowstride, n_channels, bps;
   GError* error = NULL;
-  int i,j;
-  int occ;
+  int i,j,k;
+  double occ;
+  int color_sum;
+  double color_avg;
 
   // Initialize glib
   g_type_init();
@@ -163,15 +165,18 @@ MapFile::Setup()
     for (i = 0; i < this->size_x; i++)
     {
       p = pixels + j*rowstride + i*n_channels*bps;
+      color_sum = 0;
+      for(k=0;k<n_channels;k++)
+        color_sum += *(p + (k * bps));
+      color_avg = color_sum / (double)n_channels;
 
-      // HACK
-      if(!this->negate)
-        occ = 100 - 100 * (*p / 255);
+      if(this->negate)
+        occ = color_avg / 255.0;
       else
-        occ = 100 - 100 * ((255 - *p) / 255);
-      if(occ > 90)
+        occ = (255 - color_avg) / 255.0;
+      if(occ > 0.95)
         this->mapdata[MAP_IDX(this,i,this->size_y - j)] = +1;
-      else if(occ < 10)
+      else if(occ < 0.1)
         this->mapdata[MAP_IDX(this,i,this->size_y - j)] = -1;
       else
         this->mapdata[MAP_IDX(this,i,this->size_y - j)] = 0;
