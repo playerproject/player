@@ -116,6 +116,7 @@ int robot_moving_idx;
 
 double dumpfreq;
 int dumpp;
+int showparticlesp;
 
 static void
 _interrupt_callback(int signum)
@@ -134,6 +135,7 @@ player_read_func(gpointer* arg)
   static struct timeval last = {0, 0};
   struct timeval curr;
   double diff;
+  gboolean onmap;
 
   // read new data
   if(playerc_mclient_read(gui_data->mclient,10) < 0)
@@ -150,14 +152,16 @@ player_read_func(gpointer* arg)
       robot_pose.py = gui_data->localizes[i]->hypoths[0].mean[1];
       robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean[2];
 
+      // is the robot localized within the map?
+      onmap = ((fabs(robot_pose.px) <
+                (gui_data->mapdev->width * 
+                 gui_data->mapdev->resolution / 2.0)) ||
+               (fabs(robot_pose.py) <
+                (gui_data->mapdev->height * 
+                 gui_data->mapdev->resolution / 2.0)));
       // if it's off the map, put it in the middle
-      if((fabs(robot_pose.px) >=
-          (gui_data->mapdev->width * gui_data->mapdev->resolution / 2.0)) ||
-         (fabs(robot_pose.py) >=
-          (gui_data->mapdev->height * gui_data->mapdev->resolution / 2.0)))
-      {
+      if(!onmap)
         robot_pose.px = robot_pose.py = 0.0;
-      }
 
       // don't draw the new pose if the user is in the middle of moving the
       // robot
@@ -170,6 +174,12 @@ player_read_func(gpointer* arg)
         {
           //printf("moving robot %d\n", i);
           move_item(gui_data->robot_items[i],robot_pose,1);
+
+          if(onmap && showparticlesp)
+          {
+            playerc_localize_get_particles(gui_data->localizes[i]);
+            draw_particles(gui_data,i);
+          }
         }
       }
 
@@ -194,6 +204,9 @@ player_read_func(gpointer* arg)
         draw_waypoints(gui_data,i);
       }
     }
+
+    // raise the robot's canvas item, so that the user can select it
+    gnome_canvas_item_raise_to_top(gui_data->robot_items[i]);
   }
 
   // dump screenshot

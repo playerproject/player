@@ -2788,6 +2788,7 @@ This interface accepts no commands.
 #define PLAYER_LOCALIZE_SET_POSE_REQ           ((uint8_t)1)
 #define PLAYER_LOCALIZE_GET_CONFIG_REQ         ((uint8_t)2)
 #define PLAYER_LOCALIZE_SET_CONFIG_REQ         ((uint8_t)3)
+#define PLAYER_LOCALIZE_GET_PARTICLES_REQ      ((uint8_t)4)
 
 /** @brief Hypothesis format.
 
@@ -2853,6 +2854,32 @@ typedef struct player_localize_config
    * filters). */
   uint32_t num_particles;
 } __PACKED__ player_localize_config_t;
+
+#define PLAYER_LOCALIZE_PARTICLES_MAX 100
+
+typedef struct player_localize_particle
+{
+  /** The particle's pose (mm, mm, arc-seconds) */
+  int32_t pose[3];
+  /** The weight coefficient for linear combination (alpha * 1e6). */
+  uint32_t alpha;
+} __PACKED__ player_localize_particle_t;
+
+/** @brief Configuration request: Get particles.
+ 
+@todo Fill this in. */
+typedef struct player_localize_get_particles
+{
+  uint8_t subtype;
+  /** The best (?) pose (mm, mm, arc-seconds). */
+  int32_t mean[3];
+  /** The variance of the best (?) pose (mm^2) */
+  uint64_t variance;
+  /** The number of particles included */
+  uint32_t num_particles;
+  /** The particles */
+  player_localize_particle_t particles[PLAYER_LOCALIZE_PARTICLES_MAX];
+} __PACKED__ player_localize_get_particles_t;
 
 /** @} */
 /** @} */

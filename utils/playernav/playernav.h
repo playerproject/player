@@ -47,6 +47,7 @@ typedef struct
   GnomeCanvasItem* robot_labels[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_goals[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_paths[MAX_NUM_ROBOTS];
+  GnomeCanvasItem* robot_particles[MAX_NUM_ROBOTS];
   playerc_mclient_t* mclient;
   playerc_client_t* clients[MAX_NUM_ROBOTS];
   playerc_map_t* maps[MAX_NUM_ROBOTS];
@@ -70,6 +71,7 @@ void item_to_meters(GnomeCanvasItem* item,
                     double* dx, double* dy, 
                     double ix, double iy);
 void draw_waypoints(gui_data_t* gui_data, int idx);
+void draw_particles(gui_data_t* gui_data, int idx);
 void dump_screenshot(gui_data_t* gui_data);
 
 playerc_mclient_t* init_player(playerc_client_t** clients,
