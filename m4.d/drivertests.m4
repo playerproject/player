@@ -252,9 +252,13 @@ if test "x$with_inav" = "xyes"; then
   AC_DEFINE(INCLUDE_INAV, 1, [[include the INAV driver]])
   INAV_LIB="libinav.a"
   INAV_LIBPATH="drivers/position/inav/libinav.a"
+  INAV_EXTRA_LIB="-lgsl -lgslcblas"
+  IMAP_LIB="libimap.a"
 fi
 AC_SUBST(INAV_LIB)
 AC_SUBST(INAV_LIBPATH)
+AC_SUBST(INAV_EXTRA_LIB)
+AC_SUBST(IMAP_LIB)
 
 ])
 
