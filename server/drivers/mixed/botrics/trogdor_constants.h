@@ -46,6 +46,9 @@
 /* there's some funky timing loop constant for converting to/from speeds */
 #define TROGDOR_MPS_PER_TICK   (TROGDOR_M_PER_TICK * 300.0)
 
+/* assuming that the counts can use the full space of a signed 32-bit int */
+#define TROGDOR_MAX_TICS 2147483648U
+
 /* for safety */
 #define TROGDOR_MAX_XSPEED       1.0
 #define TROGDOR_MAX_YAWSPEED     DTOR(60.0)
