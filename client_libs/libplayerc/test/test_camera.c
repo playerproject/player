@@ -51,7 +51,7 @@ int test_camera(playerc_client_t *client, int index)
       usize = device->image_size;
       
       printf("camera: [w %d h %d d %d] [%d/%d bytes]\n", 
-             device->width, device->height, device->depth, csize, usize);
+             device->width, device->height, device->bpp, csize, usize);
 
       snprintf(filename, sizeof(filename), "camera_%03d.ppm", t);
       printf("camera: saving [%s]\n", filename);
@@ -98,7 +98,7 @@ void test_camera_save(playerc_camera_t *device, const char *filename)
       pix = device->image[i];
       fputc(pix, file);
     }
-    else if (device->format == PLAYER_CAMERA_FORMAT_GREY8)
+    else if (device->format == PLAYER_CAMERA_FORMAT_MONO8)
     {
       pix = device->image[i];
       fputc(pix, file);

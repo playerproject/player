@@ -234,9 +234,9 @@ int ImageSeq::LoadImage(const char *filename)
   {
     this->data.width = dataSet->GetRasterXSize();
     this->data.height = dataSet->GetRasterYSize();
-    this->data.depth = 8;
-    this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
-    this->data.image_size = this->data.width * this->data.height * this->data.depth / 8;
+    this->data.bpp = 8;
+    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+    this->data.image_size = this->data.width * this->data.height * this->data.bpp / 8;
   }
 
   // For three bands, assume this is an RGB image
@@ -286,7 +286,8 @@ void ImageSeq::WriteData()
 
   this->data.width = htons(this->data.width);
   this->data.height = htons(this->data.height);
-  this->data.depth = this->data.depth;
+  this->data.bpp = this->data.bpp;
+  this->data.format = this->data.format;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
   this->data.image_size = htonl(this->data.image_size);
       

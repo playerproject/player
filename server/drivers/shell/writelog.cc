@@ -652,7 +652,7 @@ void WriteLog::WriteCamera(player_camera_data_t *data)
   // Image format
   fprintf(this->file, "%d %d %d %d %d %d " ,
           HUINT16(data->width), HUINT16(data->height),
-          data->depth, data->format, data->compression,
+          data->bpp, data->format, data->compression,
           HUINT32(data->image_size));
   
   // Check image size
@@ -697,7 +697,7 @@ void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *da
     fprintf(file, "P6\n%d %d\n%d\n", HUINT16(data->width), HUINT16(data->height), 255);
     fwrite(data->image, 1, HUINT32(data->image_size), file);
   }
-  else if (data->format == PLAYER_CAMERA_FORMAT_GREY8)
+  else if (data->format == PLAYER_CAMERA_FORMAT_MONO8)
   {
     // Write pgm header
     fprintf(file, "P5\n%d %d\n%d\n", HUINT16(data->width), HUINT16(data->height), 255);

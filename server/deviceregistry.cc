@@ -319,6 +319,10 @@ void GzSonars_Register(DriverTable *table);
 void GzHUD_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_GAZEBO_STEREO
+void GzStereo_Register(DriverTable *table);
+#endif
+
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
 void ServiceAdvLSD_Register(DriverTable* table);
@@ -750,6 +754,10 @@ register_devices()
 
 #ifdef INCLUDE_GAZEBO_HUD
   GzHUD_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_GAZEBO_STEREO
+  GzStereo_Register(driverTable);
 #endif
 
 

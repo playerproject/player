@@ -832,7 +832,7 @@ int LaserVisualBW::UpdateCamera()
   // Do some byte swapping
   this->camera_data.width = ntohs(this->camera_data.width);
   this->camera_data.height = ntohs(this->camera_data.height); 
-  this->camera_data.depth = this->camera_data.depth;
+  this->camera_data.bpp = this->camera_data.bpp;
 
   best_id = -1;
   
@@ -886,29 +886,29 @@ int LaserVisualBW::ExtractSymbols(int x, int symbol_max_count, int symbols[])
   double kernel[] = {+1, +2, 0, -2, -1};
 
   // GREY
-  if (this->camera_data.depth == 8)
+  if (this->camera_data.bpp == 8)
   {
-    off = x * this->camera_data.depth / 8;
-    inc = this->camera_data.width * this->camera_data.depth / 8;
+    off = x * this->camera_data.bpp / 8;
+    inc = this->camera_data.width * this->camera_data.bpp / 8;
   }
 
   // RGB24, use G channel
-  else if (this->camera_data.depth == 24)
+  else if (this->camera_data.bpp == 24)
   {
-    off = x * this->camera_data.depth / 8 + 1;
-    inc = this->camera_data.width * this->camera_data.depth / 8;
+    off = x * this->camera_data.bpp / 8 + 1;
+    inc = this->camera_data.width * this->camera_data.bpp / 8;
   }
 
   // RGB32, use G channel
-  else if (this->camera_data.depth == 32)
+  else if (this->camera_data.bpp == 32)
   {
-    off = x * this->camera_data.depth / 8 + 1;
-    inc = this->camera_data.width * this->camera_data.depth / 8;
+    off = x * this->camera_data.bpp / 8 + 1;
+    inc = this->camera_data.width * this->camera_data.bpp / 8;
   }
 
   else
   {
-    PLAYER_ERROR1("no support for image depth %d", this->camera_data.depth);
+    PLAYER_ERROR1("no support for image depth %d", this->camera_data.bpp);
     return 0;
   }
 

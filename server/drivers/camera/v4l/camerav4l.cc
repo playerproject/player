@@ -270,7 +270,7 @@ int CameraV4L::Setup()
   {
     fg_set_format(this->fg, VIDEO_PALETTE_GREY);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_GREY );
-    this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
+    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
   }
   else if (strcasecmp(this->palette, "RGB565") == 0)
   {
@@ -298,7 +298,7 @@ int CameraV4L::Setup()
     // planer-to-rgb conversion.
     fg_set_format(this->fg, VIDEO_PALETTE_YUV420P);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_YUV420P );
-    this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
+    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
     this->depth = 8;
   }
   else
@@ -428,7 +428,7 @@ void CameraV4L::WriteData()
   // Set the image properties
   this->data.width = htons(this->width);
   this->data.height = htons(this->height);
-  this->data.depth = this->depth;
+  this->data.bpp = this->depth;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
   this->data.image_size = htonl(image_size);
 

@@ -546,8 +546,8 @@ typedef struct
   /** Image dimensions (pixels). */
   int width, height;
 
-  /** Image depth (8, 16, 24). */
-  int depth;
+  /** Image bits-per-pixel (8, 16, 24). */
+  int bpp;
 
   /** Image format (e.g., RGB888). */
   uint8_t format;
