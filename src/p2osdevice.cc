@@ -430,11 +430,11 @@ void *RunPsosThread( void *p2osdevice )
   player_p2os_cmd_t command;
   unsigned char config[P2OS_CONFIG_BUFFER_SIZE];
   unsigned char motorcommand[4];
-  //unsigned char gripcommand[4];
+  unsigned char gripcommand[4];
   CPacket motorpacket; 
-  //CPacket grippacket; 
+  CPacket grippacket; 
   short speedDemand=0, turnRateDemand=0;
-  short gripperDemand;
+  char gripperCmd=0,gripperArg=0;
   bool newmotorspeed, newmotorturn;
   bool newgrippercommand;
   double leftvel, rightvel;
@@ -644,12 +644,15 @@ void *RunPsosThread( void *p2osdevice )
     turnRateDemand = (short) ntohs(command.position.turnrate);
 
     newgrippercommand = false;
-    if(gripperDemand != (short) ntohs(command.gripper.cmd));
+    if(gripperCmd != command.gripper.cmd || 
+       gripperArg != command.gripper.arg)
+    {
       newgrippercommand = true;
-    gripperDemand = (short) ntohs(command.gripper.arg);
+    }
+    gripperCmd = command.gripper.cmd;
+    gripperArg = command.gripper.arg;
 
     /* NEXT, write commands */
-
     if(pd->direct_wheel_vel_control)
     {
       // do direct wheel velocity control here
@@ -742,31 +745,26 @@ void *RunPsosThread( void *p2osdevice )
     motorpacket.Build( motorcommand, 4);
     pd->SendReceive(&motorpacket);//,false);
 
-    /*
-     * gripper control is disabled for now...
-     */
-
-    /*
     if(newgrippercommand)
     {
+      //puts("sending gripper command");
       // gripper command 
       gripcommand[0] = GRIPPER;
       gripcommand[1] = 0x3B;
-      *(unsigned short*)&gripcommand[2] = gripperDemand >> 8;
+      *(unsigned short*)&gripcommand[2] = gripperCmd;
       grippacket.Build( gripcommand, 4);
-      grippacket.Send(pd->psos_fd);
+      pd->SendReceive(&grippacket);
 
       // pass extra value to gripper if needed 
-      if(gripperDemand >> 8 == GRIPpress || gripperDemand >> 8 == LIFTcarry ) 
+      if(gripperCmd == GRIPpress || gripperCmd == LIFTcarry ) 
       {
         gripcommand[0] = GRIPPERVAL;
         gripcommand[1] = 0x3B;
-        *(unsigned short*)&gripcommand[2] = gripperDemand & 0x0F;
+        *(unsigned short*)&gripcommand[2] = (unsigned short)gripperArg;
         grippacket.Build( gripcommand, 4);
-        grippacket.Send(pd->psos_fd);
+        pd->SendReceive(&grippacket);
       }
     }
-    */
   }
   pthread_exit(NULL);
 }
