@@ -58,6 +58,10 @@ void MapFile_Register(DriverTable* table);
 void MapCspace_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_MAPSUBSAMPLE
+void MapSubsample_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_AMTECPOWERCUBE
 void AmtecPowerCube_Register(DriverTable* table);
 #endif
@@ -487,6 +491,10 @@ register_devices()
 
 #ifdef INCLUDE_MAPCSPACE
   MapCspace_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_MAPSUBSAMPLE
+  MapSubsample_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_AMTECPOWERCUBE
