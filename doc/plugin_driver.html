@@ -99,41 +99,35 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
                size_t reqqueuelen, size_t repqueuelen);
 @endverbatim
 
-The arguments are:
-
-- @c cf : Pointer to the configuration file used to load driver options.
-- @c section : Section of the config file pertaining to this driver.
-- @c interface : Player interface code; e.g., PLAYER_POSITION_CODE.  These
-  are defined in player.h .
-- @c access : Allowed access mode; e.g., PLAYER_READ_MODE.  These are
-  defined in player.h .
-- @c datasize : the size (in bytes) of the buffer to be allocated to 
-  hold the current data from the driver
-- @c cmdsize : the size (in bytes) of the buffer to be allocated to 
-  hold the current command for the driver
-- @c reqqueuelen : the length (in number of elements) of the queue to
-  be allocated to hold incoming configuration requests for the driver
-- @c repqueuelen : the length (in number of elements) of the queue to
-  be allocated to hold outgoing configuration replies from the driver
-
-All requested buffers and queues will be allocated by the Driver
-constructor.  The example driver, which supports the position
-interface and has configuration queues of size 10, has a constructor
-that begins:
+This constructor will establish the buffers and queues that allow the
+Player server to interface with the driver.  The preamble for the
+example driver, for example, looks like this:
 
 @verbatim 
 ExampleDriver::ExampleDriver(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_READ_MODE,
+    : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
              sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
  ...
 }
 @endverbatim
 
-Note that the @c cf and @c section parameters are passed in by the
-server; the driver can use these values to access driver-specific
-options stored in the Player configuration file.  Thus, for example,
-the driver constructor can read the value of some setting "foo":
+The preamble indicates that this driver:
+
+- Supports the position interface (indicated by @c
+  PLAYER_POSITION_CODE);
+- Allows read/write access from clients (@c PLAYER_ALL_MODE);
+- Has a data buffer large enough to accomodate a
+  standard position interface data packet (@c sizeof(player_position_data_t));
+- Has a command buffer large enough to accomodate a
+  standard position interface command packet (@c sizeof(player_position_cmd_t));
+- Can queue up to 10 incoming configuration requests and 10 outgoing
+  configuration replies.
+
+The @c cf and @c section parameters are passed in by the server; these
+values to access driver-specific options stored in the Player
+configuration file.  Thus, for example, the driver constructor can
+read the value of some setting "foo":
 
 @verbatim
 this->foop = cf->ReadInt(section, "foo", 0);
@@ -215,6 +209,20 @@ follows:
 Note that your driver must respond, one way or another, to each and
 every request.  Failing to respond to requests will cause client
 programs to "hang" when talking to the driver.
+
+The overloaded Main() must also be capable of graceful termination
+(i.e., the function should exit cleanly when the user kills the
+server).  This can be achieved by calling
+
+@verbatim
+pthread_testcancel();
+@endverbatim
+
+from within the main loop.  This function checks to see if the driver
+thread should terminate, and if so, immediates exits Main().  If
+additional cleanup is required, drivers can also overload
+Driver::MainQuit(), which is guaranteed to be called on thread
+termination.
 
 
 @subsection plugin_drivers_simple_instant Instantiation
