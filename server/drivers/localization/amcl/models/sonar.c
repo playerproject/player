@@ -55,7 +55,8 @@ sonar_t *sonar_alloc(map_t *map, int pose_count, pf_vector_t *poses)
     self->poses[i] = poses[i];
 
   self->range_cov = 0.20 * 0.20;
-  self->range_bad = 0.50;
+  self->range_bad = 0.20;
+  self->range_max = 2.0;
 
   self->range_count = 0;
 
@@ -170,6 +171,10 @@ double sonar_sensor_model(sonar_t *self, pf_vector_t pose)
   {
     // Get the observed range
     obs_range = self->ranges[i];
+
+    // Ignore long range readings
+    if (obs_range > self->range_max)
+      continue;
 
     // Compute the sonar pose in absolue coordinates
     spose = pf_vector_coord_add(self->poses[i], pose);

@@ -87,6 +87,10 @@ typedef struct
 // Incremental navigation driver
 class AdaptiveMCL : public CDevice
 {
+  ///////////////////////////////////////////////////////////////////////////
+  // Top half methods; these methods run in the server thread
+  ///////////////////////////////////////////////////////////////////////////
+
   // Constructor
   public: AdaptiveMCL(char* interface, ConfigFile* cf, int section);
 
@@ -128,12 +132,21 @@ class AdaptiveMCL : public CDevice
   private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
                                   uint32_t* time_sec, uint32_t* time_usec);
 
+  ///////////////////////////////////////////////////////////////////////////
+  // Middle methods: these methods facilitate communication between the top
+  // and bottom halfs.
+  ///////////////////////////////////////////////////////////////////////////
+
   // Push data onto the filter queue
   private: void Push(amcl_sensor_data_t *data);
 
   // Pop data from the filter queue
   private: int Pop(amcl_sensor_data_t *data);
 
+  ///////////////////////////////////////////////////////////////////////////
+  // Bottom half methods; these methods run in the device thread
+  ///////////////////////////////////////////////////////////////////////////
+  
   // Main function for device thread.
   private: virtual void Main(void);
 
@@ -142,6 +155,14 @@ class AdaptiveMCL : public CDevice
 
   // Update the filter with new sensor data
   private: void UpdateFilter(amcl_sensor_data_t *data);
+
+#ifdef INCLUDE_RTKGUI
+  // Draw the current best pose estimate
+  private: void DrawPoseEst();
+
+  // Draw the sonar values
+  private: void DrawSonarData(amcl_sensor_data_t *data);
+#endif
 
   // Process requests.  Returns 1 if the configuration has changed.
   private: int HandleRequests(void);
@@ -157,6 +178,10 @@ class AdaptiveMCL : public CDevice
 
   // Handle map data request
   private: void HandleGetMapData(void *client, void *request, int len);
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Properties
+  ///////////////////////////////////////////////////////////////////////////
 
   // Odometry device info
   private: CDevice *odom;
@@ -223,6 +248,8 @@ class AdaptiveMCL : public CDevice
   private: rtk_canvas_t *canvas;
   private: rtk_fig_t *map_fig;
   private: rtk_fig_t *pf_fig;
+  private: rtk_fig_t *robot_fig;
+  private: rtk_fig_t *sonar_fig;
 #endif
 };
 
@@ -469,11 +496,18 @@ int AdaptiveMCL::SetupGUI(void)
   rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
 
   this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
-  this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 0);
-  
+  this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 5);
+
   // Draw the map
   map_draw_occ(this->map, this->map_fig);
   //map_draw_cspace(this->map, this->map_fig);
+
+  this->robot_fig = rtk_fig_create(this->canvas, NULL, 9);
+  this->sonar_fig = rtk_fig_create(this->canvas, this->robot_fig, 10);
+
+  // Draw the robot
+  rtk_fig_color(this->robot_fig, 0.7, 0, 0);
+  rtk_fig_rectangle(this->robot_fig, 0, 0, 0, 0.40, 0.20, 0);
 
   rtk_app_main_init(this->app);
 
@@ -485,6 +519,8 @@ int AdaptiveMCL::SetupGUI(void)
 // Shut down the GUI
 int AdaptiveMCL::ShutdownGUI(void)
 {
+  rtk_fig_destroy(this->sonar_fig);
+  rtk_fig_destroy(this->robot_fig);
   rtk_fig_destroy(this->map_fig);
   rtk_fig_destroy(this->pf_fig);
   rtk_canvas_destroy(this->canvas);
@@ -599,9 +635,9 @@ int AdaptiveMCL::SetupSonar(void)
   
   for (i = 0; i < this->sonar_pose_count; i++)
   {
-    this->sonar_poses[i].v[0] = ((int16_t) ntohl(geom.poses[i][0])) / 1000.0;
-    this->sonar_poses[i].v[1] = ((int16_t) ntohl(geom.poses[i][1])) / 1000.0;
-    this->sonar_poses[i].v[2] = ((int16_t) ntohl(geom.poses[i][2])) * M_PI / 180.0;
+    this->sonar_poses[i].v[0] = ((int16_t) ntohs(geom.poses[i][0])) / 1000.0;
+    this->sonar_poses[i].v[1] = ((int16_t) ntohs(geom.poses[i][1])) / 1000.0;
+    this->sonar_poses[i].v[2] = ((int16_t) ntohs(geom.poses[i][2])) * M_PI / 180.0;
   }
 
   return 0;
@@ -959,18 +995,6 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
   pf_init(this->pf, (pf_init_model_fn_t) odometry_init_model, this->odom_model);
   
   odometry_init_term(this->odom_model);
-
-#ifdef INCLUDE_RTKGUI
-  // Draw the samples
-  if (this->enable_gui)
-  {
-    rtk_fig_clear(this->pf_fig);
-    rtk_fig_color(this->pf_fig, 1, 0, 0);
-    pf_draw_samples(this->pf, this->pf_fig, 1000);
-    pf_draw_stats(this->pf, this->pf_fig);
-    rtk_canvas_render(this->canvas);
-  }
-#endif
   
   this->Lock();
   
@@ -981,6 +1005,20 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
                 this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
   
   this->Unlock();
+
+#ifdef INCLUDE_RTKGUI
+  // Draw the samples
+  if (this->enable_gui)
+  {
+    DrawPoseEst();
+    
+    rtk_fig_clear(this->pf_fig);
+    rtk_fig_color(this->pf_fig, 1, 0, 0);
+    pf_draw_samples(this->pf, this->pf_fig, 1000);
+    pf_draw_stats(this->pf, this->pf_fig);
+    rtk_canvas_render(this->canvas);
+  }
+#endif
 
   return;
 }
@@ -1042,6 +1080,9 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   // Draw the samples
   if (this->enable_gui)
   {
+    DrawPoseEst();
+    DrawSonarData(data);
+    
     rtk_fig_clear(this->pf_fig);
     rtk_fig_color(this->pf_fig, 1, 0, 0);
     pf_draw_samples(this->pf, this->pf_fig, 1000);
@@ -1052,6 +1093,49 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 
   return;
 }
+
+
+#ifdef INCLUDE_RTKGUI
+
+////////////////////////////////////////////////////////////////////////////////
+// Draw the current best pose estimate
+void AdaptiveMCL::DrawPoseEst()
+{
+  this->Lock();
+  rtk_fig_origin(this->robot_fig, this->pf_pose_mean.v[0],
+                 this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
+  this->Unlock();
+  
+  return;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Draw the sonar values
+void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
+{
+  int i;
+  double r, b, ax, ay, bx, by;
+  
+  rtk_fig_clear(this->sonar_fig);
+  rtk_fig_color_rgb32(this->sonar_fig, 0xC0C080);
+  
+  for (i = 0; i < data->srange_count; i++)
+  {
+    r = data->sranges[i];
+    b = this->sonar_poses[i].v[2];
+
+    ax = this->sonar_poses[i].v[0];
+    ay = this->sonar_poses[i].v[1];
+
+    bx = ax + r * cos(b);
+    by = ay + r * sin(b);
+    
+    rtk_fig_line(this->sonar_fig, ax, ay, bx, by);
+  }
+  return;
+}
+
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////

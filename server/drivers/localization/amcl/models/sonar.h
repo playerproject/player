@@ -34,6 +34,9 @@ typedef struct
   // Probability of spurious range readings
   double range_bad;
 
+  // Maximum valid range value
+  double range_max;
+
   // Pre-computed sonar sensor model
   int lut_size;
   double lut_res;
