@@ -156,9 +156,10 @@ size_t CLaserDevice::GetConfig(unsigned char *dest, size_t maxsize)
         RETURN_ERROR(0, "config data has incorrect length");
     }
 
-    min_segment = ((player_laser_config_t*) config)->min_segment;
-    max_segment = ((player_laser_config_t*) config)->max_segment;
-    intensity = ((player_laser_config_t*) config)->intensity;
+    player_laser_config_t *c = (player_laser_config_t*) config;
+    min_segment = ntohs(c->min_segment);
+    max_segment = ntohs(c->max_segment);
+    intensity = c->intensity;
     PLAYER_MSG3("new scan range [%d %d], intensity [%d]",
          (int) min_segment, (int) max_segment, (int) intensity);
     
