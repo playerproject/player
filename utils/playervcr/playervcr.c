@@ -412,6 +412,7 @@ button_callback(GtkWidget *widget, gpointer data)
     // Can only change filename when logging is off
     if(!gui_data->log->state)
     {
+      gint result;
       g_assert((dialog = 
                 (GtkDialog*)gtk_dialog_new_with_buttons("My dialog", 
                                                         gui_data->main_window, 
@@ -429,7 +430,7 @@ button_callback(GtkWidget *widget, gpointer data)
       gtk_container_add(GTK_CONTAINER (dialog->vbox), (GtkWidget*)entry);
       gtk_widget_show((GtkWidget*)entry);
       gtk_widget_show((GtkWidget*)label);
-      gint result = gtk_dialog_run(dialog);
+      result = gtk_dialog_run(dialog);
       switch (result)
       {
         case GTK_RESPONSE_ACCEPT:
