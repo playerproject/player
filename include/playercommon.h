@@ -33,7 +33,24 @@
 /* make sure we get the various types like 'uint8_t' */
 #ifdef PLAYER_SOLARIS
   #include <sys/types.h>   // solaris puts them here
-#else
+#endif
+
+#ifdef PLAYER_CYGWIN
+#include <sys/types.h>   // so does cygwin
+
+typedef unsigned int size_t; // can't find this type in the headers!
+typedef unsigned int uint32_t;
+typedef unsigned short uint16_t;
+typedef unsigned char uint8_t;
+typedef int int32_t;
+typedef short int16_t;
+typedef char int8_t;
+
+#define MAXINT INT_MAX
+
+#endif
+
+#ifdef PLAYER_LINUX
   #include <stdint.h>      // linux puts them here
 #endif
 

@@ -76,10 +76,10 @@ CClientData::CClientData(char* key, int myport)
   writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
   replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
 
-  bzero(readbuffer, PLAYER_MAX_MESSAGE_SIZE);
-  bzero(writebuffer, PLAYER_MAX_MESSAGE_SIZE);
-  bzero(replybuffer, PLAYER_MAX_MESSAGE_SIZE);
-  bzero(&hdrbuffer, sizeof(player_msghdr_t));
+  bzero((char*)readbuffer, PLAYER_MAX_MESSAGE_SIZE);
+  bzero((char*)writebuffer, PLAYER_MAX_MESSAGE_SIZE);
+  bzero((char*)replybuffer, PLAYER_MAX_MESSAGE_SIZE);
+  bzero((char*)&hdrbuffer, sizeof(player_msghdr_t));
 
   readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
   readcnt = 0;
@@ -137,7 +137,7 @@ bool CClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
     return(false);
   }
 
-  bzero(&tmpreq,sizeof(tmpreq));
+  bzero((char*)&tmpreq,sizeof(tmpreq));
   memcpy(&tmpreq,payload+sizeof(player_device_ioctl_t),
          real_payloadsize);
   tmpreq.auth_key[sizeof(tmpreq.auth_key)-1] = '\0';
@@ -165,7 +165,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   unsigned int real_payloadsize;
 
   // clean the buffer every time for all-day freshness
-  bzero(replybuffer, PLAYER_MAX_MESSAGE_SIZE);
+  bzero((char*)replybuffer, PLAYER_MAX_MESSAGE_SIZE);
 
   // debug output; leave it here
 #if 0

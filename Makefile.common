@@ -76,7 +76,12 @@ PLAYER_PLATFORM = -DPLAYER_LINUX
 # for Solaris (Sparc), uncomment the following 2 lines
 #PLAYER_PLATFORM = -DPLAYER_SOLARIS
 #PLATFORM_LIBS = -lxnet
-#######################################
+
+# for Win32+Cygwin use this definition:
+# note: this doesn't work yet, but i'm fiddling with it - RTV
+#PLAYER_PLATFORM = -DPLAYER_CYGWIN
+
+####################################### 
 
 #######################################
 # Device support
