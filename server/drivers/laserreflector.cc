@@ -27,10 +27,8 @@
 //
 // Theory of operation
 //
-// Parses a laser scan to find the regions of constant depth that are
-// also retro-reflective.  Will work with either flat or cylindrical
-// markers with appropriate options, but will only return sensible
-// orientation information on the flat markers.
+// Parses a laser scan to find retro-reflective markers.  Currently only
+// cylindrical markers are supported.
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -68,6 +66,10 @@ class LaserReflector : public CDevice
   public: virtual int PutConfig(player_device_id_t* device, void *client, 
                                 void *data, size_t len);
 
+  // Handle geometry requests.
+  private: void HandleGetGeom(void *client, void *request, int len);
+
+
   // Analyze the laser data and pick out reflectors.
   private: void Find();
 
@@ -84,13 +86,10 @@ class LaserReflector : public CDevice
   // Add a item into the fiducial list.
   private: void Add(double pr, double pb, double po,
                     double ur, double ub, double uo);
-
-  // Device pose relative to robot.
-  private: double pose[3];
   
   // Pointer to laser to get data from.
   private: int laser_index;
-  private: CDevice *laser;
+  private: CDevice *laser_device;
 
   // Reflector properties.
   private: double reflector_width;
@@ -128,14 +127,9 @@ void LaserReflector_Register(DriverTable* table)
 LaserReflector::LaserReflector(char* interface, ConfigFile* cf, int section)
     : CDevice(0, 0, 0, 1)
 {
-  // Device pose relative to robot.
-  this->pose[0] = 0;
-  this->pose[1] = 0;
-  this->pose[2] = 0;
-
   // If laser_index is not overridden by an argument here, then we'll
   // use the device's own index, which we can get in Setup() below.
-  this->laser_index = cf->ReadInt(section, "laser_index", -1);
+  this->laser_index = cf->ReadInt(section, "laser_index", 0);
 
   // Default reflector properties.
   this->reflector_width = cf->ReadLength(section, "width", 0.08);
@@ -157,24 +151,18 @@ int LaserReflector::Setup()
   else
     id.index = this->device_id.index;
   
-  if (!(this->laser = deviceTable->GetDevice(id)))
+  if (!(this->laser_device = deviceTable->GetDevice(id)))
   {
-    PLAYER_ERROR("unable to locate suitable SRF device");
+    PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
   }
     
   // Subscribe to the laser device, but fail if it fails
-  if (this->laser->Subscribe(this) != 0)
+  if (this->laser_device->Subscribe(this) != 0)
   {
-    PLAYER_ERROR("unable to subscribe to SRF device");
+    PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
   }
-
-  // Get the laser geometry.
-  // TODO: no support for this at the moment.
-  this->pose[0] = 0.10;
-  this->pose[1] = 0;
-  this->pose[2] = 0;
 
   return 0;
 }
@@ -185,7 +173,7 @@ int LaserReflector::Setup()
 int LaserReflector::Shutdown()
 {
   // Unsubscribe from the laser device
-  this->laser->Unsubscribe(this);
+  this->laser_device->Unsubscribe(this);
 
   return 0;
 }
@@ -194,14 +182,14 @@ int LaserReflector::Shutdown()
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by server thread).
 size_t LaserReflector::GetData(void* client,unsigned char *dest, size_t maxsize,
-                               uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+                               uint32_t* time_sec, uint32_t* time_usec)
 {
   int i;
   size_t laser_size;
   uint32_t laser_time_sec, laser_time_usec;
   
   // Get the laser data.
-  laser_size = this->laser->GetData(this,(unsigned char*) &this->ldata, sizeof(this->ldata),
+  laser_size = this->laser_device->GetData(this, (uint8_t*) &this->ldata, sizeof(this->ldata),
                                     &laser_time_sec, &laser_time_usec);
   assert(laser_size <= sizeof(this->ldata));
   
@@ -240,8 +228,8 @@ size_t LaserReflector::GetData(void* client,unsigned char *dest, size_t maxsize,
   memcpy(dest, &this->fdata, sizeof(this->fdata));
 
   // Copy the laser timestamp
-  *timestamp_sec = this->laser->data_timestamp_sec;
-  *timestamp_usec = this->laser->data_timestamp_usec;
+  *time_sec = laser_time_sec;
+  *time_usec = laser_time_usec;
   
   return (sizeof(this->fdata));
 }
@@ -252,7 +240,6 @@ size_t LaserReflector::GetData(void* client,unsigned char *dest, size_t maxsize,
 int LaserReflector::PutConfig(player_device_id_t* device, void *client, void *data, size_t len) 
 {
   int subtype;
-  player_fiducial_geom_t geom;
 
   if (len < 1)
   {
@@ -265,20 +252,7 @@ int LaserReflector::PutConfig(player_device_id_t* device, void *client, void *da
   {
     case PLAYER_FIDUCIAL_GET_GEOM:
     {
-      if (len != 1)
-      {
-        PLAYER_ERROR2("request len is invalid (%d != %d)", len, 1);
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-
-      geom.pose[0] = htons((short) (this->pose[0] * 1000));
-      geom.pose[1] = htons((short) (this->pose[1] * 1000));
-      geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
-              
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
-        PLAYER_ERROR("PutReply() failed");
+      HandleGetGeom(client, data, len);
       break;
     }
     default:
@@ -290,6 +264,41 @@ int LaserReflector::PutConfig(player_device_id_t* device, void *client, void *da
   }
   
   return (0);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Handle geometry requests.
+void LaserReflector::HandleGetGeom(void *client, void *request, int len)
+{
+  unsigned short reptype;
+  struct timeval ts;
+  int replen;
+  player_laser_geom_t lgeom;
+  player_fiducial_geom_t fgeom;
+    
+  // Get the geometry from the laser
+  replen = this->laser_device->Request(&this->laser_device->device_id, this, request, len,
+                                       &reptype, &ts, &lgeom, sizeof(lgeom));
+  if (replen <= 0 || replen != sizeof(lgeom))
+  {
+    PLAYER_ERROR("unable to get geometry from laser device");
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+  }
+
+  fgeom.pose[0] = lgeom.pose[0];
+  fgeom.pose[1] = lgeom.pose[1];
+  fgeom.pose[2] = lgeom.pose[2];
+  fgeom.size[0] = lgeom.size[0];
+  fgeom.size[1] = lgeom.size[1];
+  fgeom.fiducial_size[0] = ntohs((int) (this->reflector_width * 1000));
+  fgeom.fiducial_size[1] = ntohs((int) (this->reflector_width * 1000));
+    
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ts, &fgeom, sizeof(fgeom)) != 0)
+    PLAYER_ERROR("PutReply() failed");
+
+  return;
 }
 
 
