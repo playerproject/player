@@ -88,6 +88,8 @@ PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[no],
 	["-I$CANLIB_DIR/include"],
 	["-L$CANLIB_DIR/canlib -lcanlib"])
 
+PLAYER_ADD_DRIVER([garminnmea],[drivers/gps],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],[],[],
