@@ -169,3 +169,4 @@ CRWIBumperDevice::Main()
 	// should not reach this point
 	pthread_exit(NULL);
 }
+

@@ -389,7 +389,6 @@ int player_read_header(player_connection_t* conn, player_msghdr_t* hdr )
 int player_read_payload(player_connection_t* conn, char* payload, size_t payloadlen)
 {
   int readcnt=0,thisreadcnt;
-  char dummy[PLAYER_MAX_MESSAGE_SIZE];
 
   if(conn->sock < 0)
     return(-1);

@@ -29,7 +29,7 @@
 #include <string.h>
 
 extern pthread_mutex_t  CRWIDevice::rwi_counter_mutex;
-extern unsigned int     CRWIDevice::rwi_device_count = 0;
+extern unsigned int     CRWIDevice::rwi_device_count;
 
 #ifdef USE_MOBILITY
 extern mbyClientHelper *CRWIDevice::helper;
@@ -119,3 +119,4 @@ CRWIDevice::RWIConnect (CORBA::Object_ptr *corba_ptr, const char *path) const
 	}
 }
 #endif				// USE_MOBILITY
+
