@@ -32,26 +32,34 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+/** The {\tt BpsProxy} class is used to control the {\tt bps} device.
+    The current robot pose can be read from the {\tt px, py, pa} attributes.
+    Use the {\tt AddBeacon} method to indicate the location of beacons.
+ */
 class BpsProxy : public ClientProxy
 {
 
   public:
-    // the latest BPS data
-    //
-    // global position
+
+    /// Current robot pose (global coordinates) in mm, mm, degrees.
     int px, py, pa;
-    // associated uncertainty
+
+    /// Uncertainty associated with the current pose in mm, mm, degrees.
     int ux, uy, ua;
+
     // error
     int err;
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
-    BpsProxy(PlayerClient* pc, unsigned short index, 
-              unsigned char access='c') :
+    /** Proxy constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
+    */
+    BpsProxy(PlayerClient* pc, unsigned short index, unsigned char access='c') :
             ClientProxy(pc,PLAYER_BPS_CODE,index,access) {}
 
-    // these methods are the user's interface to this device
+    /** Add a beacon to the {\tt BPS} device's internal map.
+        The beacon pose (global coordinates) must be specified in mm, mm, degrees.
+    */
     int AddBeacon(char id, int px, int py, int pa);
 
     // interface that all proxies must provide

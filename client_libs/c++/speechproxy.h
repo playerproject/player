@@ -32,24 +32,30 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+/** The {\tt SpeechProxy} class is used to control the
+    {\tt speech} device.
+    Use the {\tt say} method to send things to say.
+*/
 class SpeechProxy : public ClientProxy
 {
 
   public:
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
     SpeechProxy(PlayerClient* pc, unsigned short index, 
                 unsigned char access='c'):
             ClientProxy(pc,PLAYER_SPEECH_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 
-    // send a speech string
-    //
-    // Returns:
-    //   0 if everything's ok
-    //   -1 otherwise (that's bad)
+    /** Send a phrase to say.
+        The phrase is an ASCII string.
+        Returns the 0 on success, or -1 of there is a problem.
+    */
     int Say(char* str);
 };
 

@@ -49,16 +49,41 @@ class Blob
     unsigned char bottom;
 };
 
+
+/** The {\tt VisionProxy} class is used to control the {\tt vision} device.
+    It contains no methods.  The latest color blob data is stored in
+    {\tt blobs}, a dynamically allocated 2-D array, indexed by color
+    channel.
+*/
 class VisionProxy : public ClientProxy
 {
 
   public:
     // the latest vision data
+
+    /** Array containing the latest blob data.
+        Each blob contains the following information:
+        \begin{verbatim}
+        unsigned int area;
+        unsigned char x;
+        unsigned char y;
+        unsigned char left;
+        unsigned char right;
+        unsigned char top;
+        unsigned char bottom;
+        \end{verbatim}
+        The number of blobs in each channel is given by
+        {\tt num\_blobs}, i.e. the number of blobs in channel
+        {\tt i} is {\tt num\_blobs[i]}.
+     */
     char num_blobs[ACTS_NUM_CHANNELS];
     Blob* blobs[ACTS_NUM_CHANNELS];
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
     VisionProxy(PlayerClient* pc, unsigned short index, 
                 unsigned char access='c');
     ~VisionProxy();

@@ -32,53 +32,63 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+/** The {\tt PositionProxy} class is used to control the {\tt position} device.
+    The latest position data is contained in the attributes {\tt xpos, ypos}, etc.
+ */
 class PositionProxy : public ClientProxy
 {
 
   public:
-    // the latest position data
-    int xpos,ypos;
-    unsigned short theta;
+    /// Robot pose (according to odometry) in mm, mm, degrees.
+    int xpos,ypos; unsigned short theta;
+
+    /// Robot speed in mm/sec, degrees/sec.
     short speed, turnrate;
+
+    /// Compass value (only valid if the compass is installed).
     unsigned short compass;
+
+    /// Stall flag: 1 if the robot is stalled and 0 otherwise.
     unsigned char stalls;
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
-    PositionProxy(PlayerClient* pc, unsigned short index, 
-                  unsigned char access ='c'):
-            ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
+    PositionProxy(PlayerClient* pc, unsigned short index,
+                  unsigned char access ='c') :
+        ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 
-    // send a motor command
-    //
-    // Returns:
-    //   0 if everything's ok
-    //   -1 otherwise (that's bad)
+    /** Send a motor command.
+        Specify the linear and angular speed in mm/s and degrees/sec,
+        respectively.\\
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
     int SetSpeed(short speed, short turnrate);
 
-    // enable/disable the motors
-    //
-    // Returns:
-    //   0 if everything's ok
-    //   -1 otherwise (that's bad)
+    /** Enable/disable the motors.
+        Set {\tt state} to 0 to disable (default) or 1 to enable.
+        Be VERY careful with this method!  Your robot is likely to run across the
+        room with the charger still attached.
+        
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
     int SetMotorState(unsigned char state);
     
-    // select velocity control mode for the Pioneer 2
-    //   0 = direct wheel velocity control (default)
-    //   1 = separate translational and rotational control
-    //
-    // Returns:
-    //   0 if everything's ok
-    //   -1 otherwise (that's bad)
+    /** Select velocity control mode for the Pioneer 2.
+        Set {\tt mode} to 0 for direct wheel velocity control (default),
+        or 1 for separate translational and rotational control.
+        
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
     int SelectVelocityControl(unsigned char mode);
    
-    // reset odometry to (0,0,0)
-    //
-    // Returns:
-    //   0 if everything's ok
-    //   -1 otherwise (that's bad)
+    /** Reset odometry to (0,0,0).
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
     int ResetOdometry();
 
     // interface that all proxies must provide

@@ -32,22 +32,35 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+/** The {\tt BroadcastProxy} class controls the {\tt broadcast} device.
+    Data may be read one message at a time from the incoming broadcast
+    queue using the {\tt Read} method.
+    Data may be written one message at a time to the outgoing broadcast
+    queue using the {\tt Write} method.
+    Note that outgoing messages are not actually sent to the server
+    until the {\tt Flush} method is called.
+ */
 class BroadcastProxy : public ClientProxy
 {
-    // Constructor
+    /** Proxy constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
+    */
     public: BroadcastProxy(PlayerClient* pc, unsigned short index, unsigned char access ='c');
 
-    // Read a message from the incoming queue
-    // Returns the number of bytes read
-    // Returns -1 if there are no available messages
+    /** Read a message from the incoming queue.
+        Returns the number of bytes read, or -1 if the queue is empty.
+    */
     public: int Read(char *msg, int len);
 
-    // Write a message to the outgoing queue
-    // Returns the number of bytes written
-    // Returns -1 if the queue is full
+    /** Write a message to the outgoing queue.
+        Returns the number of bytes written, or -1 if the queue is full.
+    */
     public: int Write(char *msg, int len);
 
-    // Flush the outgoing message queue
+    /** Flush the outgoing message queue.
+        Returns the 0 on success, or -1 of there is a problem.
+    */
     public: int Flush();
 
     // interface that all proxies must provide
