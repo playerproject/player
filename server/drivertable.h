@@ -39,14 +39,14 @@ class DriverTable;
 class ConfigFile;
 
 
-// Function signature for driver factory functions
+/// @brief Function signature for driver factory functions
 typedef Driver* (*DriverInitFn) (ConfigFile *cf, int section);
 
-// Function signature for plugin initialization functions
+/// @brief Function signature for plugin initialization functions
 typedef int (*PluginInitFn) (DriverTable* table);
 
 
-// Info about a driver
+/// @brief Info about an individual driver class
 class DriverEntry
 {
   public:
@@ -64,7 +64,10 @@ class DriverEntry
 };
 
 
-// List of available drivers
+/// @brief List of available driver classes.
+///
+/// This class maintains a list of driver names and factory functions;
+/// it is used to instantiate drivers at run-time.
 class DriverTable
 {
   private:
@@ -78,21 +81,27 @@ class DriverTable
   DriverTable();
   ~DriverTable();
 
-  // how many drivers we have
-  int Size() { return(numdrivers); }
-
-  // add a new driver to the table (new-style)
+  /// @brief Add a driver class to the table
+  /// @param name Driver name (as it appears in the configuration file).
+  /// @param initfunc Driver factory function.
   int AddDriver(char* name, DriverInitFn initfunc);
 
-  // sort drivers, based on name.  the return value points at newly
-  // malloc()ed memory, which the user should free().
-  char** SortDrivers();
-
-  // matches on the driver name
+  /// @brief Lookup a driver entry by name
+  /// @param name Driver name.
   DriverEntry* GetDriverEntry(const char* name);
-   
-  // get the ith driver name; returns NULL if there is no such driver
+
+  /// @brief Get the number of registered driver classes.
+  int Size() { return(numdrivers); }
+
+  /// @brief Lookup a driver name by index.
+  /// @param idx Index in list.
+  /// @returns Returns NULL if there is no matching driver.
   char* GetDriverName(int idx);
+
+  /// @brief Sort drivers, based on name.
+  /// @returns Returns a pointer to newly malloc()ed memory, which the
+  /// user should free().
+  char** SortDrivers();
 };
 
 #endif
