@@ -3,7 +3,7 @@
  *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
  *                      gerkey@usc.edu    kaspers@robotics.usc.edu
  *
- *  MCom device by Matthew Brewer <mbrewer@andrew.cmu.edu> (updated for 1.3 by 
+ *  LifoMCom device by Matthew Brewer <mbrewer@andrew.cmu.edu> (updated for 1.3 by 
  *  Reed Hedges <reed@zerohour.net>) at the Laboratory for Perceptual 
  *  Robotics, Dept. of Computer Science, University of Massachusetts,
  *  Amherst.
@@ -48,7 +48,7 @@
 
 
 
-class MCom : public CDevice 
+class LifoMCom : public CDevice 
 {
 private:
 
@@ -98,7 +98,7 @@ private:
 
 public:
 
-    MCom(char* interface, ConfigFile* cf, int section);
+    LifoMCom(char* interface, ConfigFile* cf, int section);
     virtual void Main();
     virtual int Setup();
     virtual int Shutdown();
@@ -107,10 +107,10 @@ public:
 
 
 
-CDevice* MCom_Init(char* interface, ConfigFile* cf, int section);
+CDevice* LifoMCom_Init(char* interface, ConfigFile* cf, int section);
 
 // a driver registration function
-void MCom_Register(DriverTable* table);
+void LifoMCom_Register(DriverTable* table);
 
 
 
