@@ -4,6 +4,12 @@
 //     the app gets a continuous streams of GTK events, which makes X suck
 //     up the whole CPU.
 //
+//     UPDATE: this happens whether or not direct rendering support is on.
+//
+//     UPDATE: changing to a non-antialiased canvas helps, but not much
+//
+//     UPDATE: restarting X on my laptop fixes it (!)
+//
 //   * Make initial window size / zoom fit the whole map.
 //
 //   * Make the zoom work better / look nicer
