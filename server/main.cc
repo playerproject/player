@@ -475,12 +475,7 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
                                     (char*)(deviceIO->robotname),
                                     PLAYER_ALL_MODE, dev) < 0)
                                     */
-          if(deviceTable->AddDevice(deviceIO->player_id, 
-                                    PLAYER_ALL_MODE, dev) < 0)
-          {
-            //exit(-1);
-          }
-	  
+          
           // add this port to our listening list
           StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
         }
