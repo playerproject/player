@@ -76,10 +76,10 @@ class GzPtz : public CDevice
   //                                void* req, size_t reqlen);
 
   // Handle geometry requests.
-// private: void HandleGetGeom(void *client, void *req, int reqlen);
+  // private: void HandleGetGeom(void *client, void *req, int reqlen);
 
   // Gazebo id
-  private: const char *gz_id;
+  private: char *gz_id;
 
   // Gazebo client object
   private: gz_client_t *client;
@@ -119,10 +119,12 @@ void GzPtz_Register(DriverTable* table)
 GzPtz::GzPtz(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_ptz_data_t), sizeof(player_ptz_cmd_t), 10, 10)
 {
-
-  // Get the id of the device in Gazebo
-  this->gz_id = cf->ReadString(section, "gz_id", 0);
-
+  // Get the id of the device in Gazebo.
+  // TODO: fix potential buffer overflow
+  this->gz_id = (char*) calloc(1024, sizeof(char));
+  strcat(this->gz_id, GzClient::prefix_id);
+  strcat(this->gz_id, cf->ReadString(section, "gz_id", ""));
+  
   // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
   
@@ -168,15 +170,15 @@ int GzPtz::Shutdown()
 // Data
 size_t GzPtz::GetData(void* client, unsigned char* dest, size_t len,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec)
-  {
-   player_ptz_data_t data;
+{
+  player_ptz_data_t data;
 
-   data.pan =htons ((int) (this->iface->data->pan * 180/M_PI));
-  data.tilt =htons ((int) (this->iface->data->tilt * 180 /M_PI));
-  data.zoom =htons ((int) (this->iface->data->zoom * 180 / M_PI));
-  // printf("GetDatalen=%d\n",len);
-  // assert(len >= sizeof(data));
-  // The new header size seems to give in a size way bigger than whats expected here. So it always seems to exit on this assert.
+  data.pan = htons ((int) (this->iface->data->pan * 180 / M_PI));
+  data.tilt = htons ((int) (this->iface->data->tilt * 180 / M_PI));
+  data.zoom = htons ((int) (this->iface->data->zoom * 180 / M_PI));
+
+  assert(len >= sizeof(data));
+
   memcpy(dest, &data, sizeof(data));
 
   if (timestamp_sec)
@@ -193,12 +195,13 @@ size_t GzPtz::GetData(void* client, unsigned char* dest, size_t len,
 void GzPtz::PutCommand(void* client, unsigned char* src, size_t len)
 {
   player_ptz_cmd_t *cmd;
-  // printf("PutCommandlen=%d\n",len);
-  //  assert(len >= sizeof(player_ptz_cmd_t));
+
+  assert(len >= sizeof(player_ptz_cmd_t));
+
   cmd = (player_ptz_cmd_t*) src;
-  //  printf("pan=%d, tilt=%d,zoom=%d",cmd->pan,cmd->tilt,cmd->zoom);
-  this->iface->data->cmd_pan = ((int) ntohs(cmd->pan)) * M_PI/180;
-  this->iface->data->cmd_tilt = ((int) ntohs(cmd->tilt)) * M_PI/180;
+
+  this->iface->data->cmd_pan = ((int) ntohs(cmd->pan)) * M_PI / 180;
+  this->iface->data->cmd_tilt = ((int) ntohs(cmd->tilt)) * M_PI / 180;
   this->iface->data->cmd_zoom = (int) ntohs(cmd->zoom);
   
   return;

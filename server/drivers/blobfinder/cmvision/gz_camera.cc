@@ -81,7 +81,7 @@ CMGzCamera::~CMGzCamera()
 int CMGzCamera::Setup()
 { 
   // Open the interface
-  if (gz_camera_open(this->iface, this->client, this->gz_id,this->width*this->height*3) != 0)
+  if (gz_camera_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
   
   return 0;
