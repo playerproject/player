@@ -599,6 +599,8 @@ void UPCBarcode::WriteData()
     for (i = 0; i < this->blob_count; i++)
     {
       blob = this->blobs + i;
+      if (blob->id != channel)
+        continue;
 
       data.blobs[blob_count].color = 0;  // TODO
       data.blobs[blob_count].area = htonl((int) ((blob->bx - blob->ax) * (blob->by - blob->ay)));
