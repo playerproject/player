@@ -10,7 +10,7 @@ dnl determine system type.  this is used in a couple of places to infer the
 dnl types of arguments to some networking library functions.  if/when we 
 dnl upgrade to newer Autotools, this can probably go away.
 AC_CANONICAL_SYSTEM
-case $target in
+case $host in
 *-*-solaris*) AC_DEFINE(PLAYER_SOLARIS,1,[building for Solaris]);;
 *-*-linux*) AC_DEFINE(PLAYER_LINUX,1,[building for Linux]);;
 esac
@@ -26,6 +26,7 @@ AC_PROG_MAKE_SET
 
 dnl Generate a configuration header called <config.h> and put all the C
 dnl preprocessor defines in there.
+dnl
 dnl Also create playercommon.h, replacing a couple of C defines with the right
 dnl values.  That way, playercommon.h will be installed in a good working
 dnl state.
@@ -316,15 +317,13 @@ AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)
 AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(stdint.h sys/types.h strings.h)
+AC_CHECK_HEADERS(stdint.h strings.h)
 
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(scandir poll dirname)
 AC_CHECK_FUNCS(cfmakeraw sigblock)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
-AC_CHECK_LIB(rt, sem_wait)
-AC_CHECK_LIB(posix4, sem_wait)
 AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(c_r, pthread_create, 
 [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])

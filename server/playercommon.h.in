@@ -34,18 +34,12 @@
 /* Don't touch these.  They are replaced during the configure with the right
  * values for the build system.  That way, the installed version of this
  * header will be usable by anyone */
-#undef HAVE_SYS_TYPES_H
 #undef HAVE_STDINT_H
+#undef HAVE_STRINGS_H
 /*****************************************************************************/
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 /* make sure we get the various types like 'uint8_t' */
-#if HAVE_SYS_TYPES_H
-  #include <sys/types.h>
-#endif
+#include <sys/types.h>
 #if HAVE_STDINT_H
   #include <stdint.h>
 #endif

@@ -23,11 +23,9 @@
 /*
  * $Id$
  */
-#if HAVE_SYS_TYPES_H
-  #include <sys/types.h>  /* for types */
-#endif
+#include <sys/types.h>  /* for types */
 #if HAVE_STDINT_H
-  #include <stdint.h>  /* for types */
+  #include <stdint.h>  /* for types in Linux */
 #endif
 
 // available interfaces are stored in an array of these, defined in

@@ -26,6 +26,12 @@
  *  various methods for managing data pertaining to clients, like
  *  reader and writer threads, permission lists, etc.
  */
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -40,12 +46,6 @@
 #include <devicetable.h>
 #include <clientdata.h>
 #include <clientmanager.h>
-
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
-
-//#include <iostream> //some debug output it easier using stream IO
 
 #include <playertime.h>
 extern PlayerTime* GlobalTime;

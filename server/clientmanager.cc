@@ -26,9 +26,9 @@
  *  class to hold info about the client reader and writer threads
  */
 
-#include "clientmanager.h"
-#include "device.h"
-
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 #if HAVE_STRINGS_H
   #include <strings.h>
 #endif
@@ -43,6 +43,10 @@
 #include <unistd.h>  // for fnctl(2)
 
 #include <sys/time.h>  // temporary
+
+#include "clientmanager.h"
+#include "device.h"
+
 
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
