@@ -9,7 +9,9 @@
 
 /** @defgroup player_util_playermap playermap
 
-playermap is currently disabled.  Please check back later.
+playermap development has been temporarily moved outside the main
+tree.  Look on the <a href="http://robotics.usc.edu/~ahoward/pmap">pmap</a> 
+webpage for mapping utilities.
 
 */
 
