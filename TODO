@@ -4,14 +4,11 @@ $Id$
 ------------
 - update .cfg files
 - document .cfg syntax
-- document all drivers
-- document all interfaces
-- document ASYNC data mode
 - test on Solaris
-- document driver API
 - document plugin building procedure (mention libtool)
-- roll client lib docs into Player package
 - check compatibility with librtk 2.3.0
+- double-check log rewind/playback control
+
 
 NEXT RELEASE:
 -------------
