@@ -3016,6 +3016,7 @@ typedef struct player_planner_waypoints_req
 #define PLAYER_LOG_SET_WRITE_STATE_REQ 1
 #define PLAYER_LOG_SET_READ_STATE_REQ 2
 #define PLAYER_LOG_GET_STATE_REQ 3
+#define PLAYER_LOG_SET_READ_REWIND_REQ 4
 
 /** Types of log devices */
 #define PLAYER_LOG_TYPE_READ 1
@@ -3042,6 +3043,15 @@ typedef struct player_log_set_read_state
   /** State: 0=disabled, 1=enabled */
   uint8_t state;
 } __attribute__ ((packed)) player_log_set_read_state_t;
+
+/** [Configuration: Rewind playback] */
+/** Rewind log playback to beginning of logfile; does not affect playback
+    state (i.e., whether it is started or stopped */
+typedef struct player_log_set_read_rewind
+{
+  /** Request type: must be PLAYER_LOG_SET_READ_REWIND_REQ */
+  uint8_t subtype;
+} __attribute__ ((packed)) player_log_set_read_rewind_t;
 
 /** [Configuration: Get state] */
 /** Find out whether logging/playback is enabled or disabled */

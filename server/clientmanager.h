@@ -87,6 +87,10 @@ class ClientManager
 
     // get the index corresponding to a ClientData pointer
     int GetIndex(ClientData* ptr);
+
+    // Reset 'last_write' field to 0.0 in each client.  Used when playing back
+    // data from a logfile and a client requests the logfile be rewound.
+    void ResetClientTimestamps(void);
 };
 
 class ClientManagerTCP : public ClientManager

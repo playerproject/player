@@ -49,12 +49,21 @@ int test_log(playerc_client_t *client, int index)
   }
   else
   {
+    TEST("rewinding logfile");
+    if(playerc_log_set_read_rewind(device) != 0)
+    {
+      FAIL();
+      return -1;
+    }
+    PASS();
+
     TEST("starting playback");
     if(playerc_log_set_read_state(device,1) != 0)
     {
       FAIL();
       return -1;
     }
+    PASS();
   }
 
   TEST("getting log state");

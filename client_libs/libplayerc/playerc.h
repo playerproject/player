@@ -786,6 +786,9 @@ int playerc_log_set_write_state(playerc_log_t* device, int state);
 /** Start/stop playback */
 int playerc_log_set_read_state(playerc_log_t* device, int state);
 
+/** Rewind playback */
+int playerc_log_set_read_rewind(playerc_log_t* device);
+
 /** Get logging/playback state; the result is written into the proxy */
 int playerc_log_get_state(playerc_log_t* device);
 
