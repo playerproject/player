@@ -128,7 +128,7 @@ void LaserBarcode_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserBarcode::LaserBarcode(char* interface, ConfigFile* cf, int section)
-    : CDevice(0, 0, 0, 1)
+    : CDevice(sizeof(player_fiducial_data_t), 0, 10, 10)
 {
   // The default laser device to use
   this->laser_index = cf->ReadInt(section, "laser", 0);
@@ -183,7 +183,6 @@ int LaserBarcode::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-//
 int LaserBarcode::Shutdown()
 {
   // Stop the driver thread.
@@ -244,8 +243,6 @@ int LaserBarcode::ReadLaser()
 
   return 0;
 }
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
