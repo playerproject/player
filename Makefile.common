@@ -49,7 +49,12 @@ CC = gcc
 # identifier on there; makes things easier. 
 #
 PWD=$(shell pwd)
+
+# Use this for a /usr/local installation
 INSTALL_BASE = /usr/local/player
+
+# Use this for a $(HOME) installation
+# INSTALL_BASE = $(HOME)/playerstage
 
 # RTV - added a dash between INSTALL_BASE and PLAYER_VERSION to make the name
 # format more conventional; i.e. foosoft-1.0 rather than foosoft1.0
