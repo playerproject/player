@@ -23,8 +23,7 @@
 /*
  * $Id$
  * 
- *   class for encapsulating all the data pertaining to the client reader
- *   and writer threads
+ *   class for encapsulating all the data pertaining to the clients
  */
 
 #ifndef _CLIENTMANAGER_H
@@ -37,29 +36,28 @@
 class ClientManager
 {
   private:
-    pthread_t readthread;
-    pthread_t writethread;
-    
-
     // dynamically managed array of structs that we'll give to poll(2)
+    // when trying to read from clients
     struct pollfd* ufds;
-
-  public:
+    
     // dynamically managed array of our clients
     int num_clients;
     int size_clients;
     CClientData** clients;
 
-    // ClientReaderThread locks these two:
-    pthread_mutex_t rthread_client_mutex;
-    //pthread_mutex_t ufd_mutex;
-    
-    // ClientWriterThread locks this one:
-    pthread_mutex_t wthread_client_mutex;
+    // dynamically managed array of structs that we'll give to poll(2)
+    // when trying to accept new connections
+    struct pollfd* accept_ufds;
+    int* accept_ports;
+    int num_accept_ufds;
 
-    
+    // authorization key to be used for clients
+    char client_auth_key[PLAYER_KEYLEN];
+
+  public:
     // constructor
-    ClientManager();
+    ClientManager(struct pollfd* listen_ufds, int* ports,
+                  int numfds, char* auth_key);
 
     // destructor
     ~ClientManager();
@@ -67,12 +65,15 @@ class ClientManager
     // add a client to our watch list
     void AddClient(CClientData* client);
 
-    // mark a client for deletion
-    void MarkClientForDeletion(int idx, bool have_lock);
-    // remove a client
-    void RemoveClient(int idx, bool have_locks);
-    void RemoveBlanks(bool have_locks);
+    // Update the ClientManager
+    int Update();
 
+    // mark a client for deletion
+    void MarkClientForDeletion(int idx);
+    // remove a client
+    void RemoveBlanks();
+
+    int Accept();
     int Read();
     int Write();
 
