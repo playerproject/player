@@ -31,7 +31,6 @@
 #include <sys/types.h>  /* for socket(2) */
 #include <unistd.h> /* for close(2), fcntl(2), getpid(2) */
 #include <sys/socket.h>  /* for socket(2) */
-#include <fcntl.h>  /* for fcntl(2) */
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h> /* for system(3) */
