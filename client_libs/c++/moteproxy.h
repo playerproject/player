@@ -11,11 +11,6 @@ class MoteProxy : public ClientProxy
     public: MoteProxy(PlayerClient* pc, unsigned short index, 
 		      unsigned char access ='c');
 
-    /** Read messeges
-        Returns the number of bytes read, or -1 on error
-    */
-    public: int Read(char *msg, uint16_t len);
-   
     public: int Sendto(int src, int dest, char* msg, int len);
 
     public: int TransmitRaw(char *msg, uint16_t len);
@@ -39,11 +34,14 @@ class MoteProxy : public ClientProxy
     protected: void Print();
     
     private: player_mote_data_t *rx_data;
-    private: player_mote_data_t *tx_data;
+
+    private: player_mote_data_t *rx_queue;
 
     private: player_mote_config_t m_config;
 
-    private: unsigned char new_data;
+    private: char r_flag;
+
+    private: unsigned char msg_q_index;
 };
 
 #endif

@@ -16,26 +16,26 @@ MoteProxy::MoteProxy(PlayerClient* pc, unsigned short index, unsigned char acces
         : ClientProxy(pc, PLAYER_MOTE_CODE, index, access)
 {
   memset(&this->m_config, 0, sizeof(this->m_config));
-  rx_data = (player_mote_data_t*) malloc(sizeof(player_mote_data_t));
-  tx_data = (player_mote_data_t*) malloc(sizeof(player_mote_data_t));
-  new_data = 0;
+  rx_queue = (player_mote_data_t*)malloc(sizeof(player_mote_data_t)
+					*MAX_MOTE_Q_LEN); 
+  rx_data = NULL;
+  r_flag = TRUE;
+  msg_q_index = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 // Write a message to mote radio
-// Returns the number of bytes written
-// Returns -1 if the queue is full
 int MoteProxy::TransmitRaw(char *msg, uint16_t len)
 {
+  player_mote_data_t tx_data;
+
   if(!client)
     return(-1);
 
-  tx_data->len = len;
-  tx_data->src = 0;
-  tx_data->dest = 1;
-  memcpy(tx_data->buf, msg, len);
-
-  return(client->Write(PLAYER_MOTE_CODE,index,(const char*)tx_data,
+  tx_data.len = len;
+  memcpy(tx_data.buf, msg, len);
+  
+  return(client->Write(PLAYER_MOTE_CODE,index,(const char*)&tx_data,
                          sizeof(player_mote_data_t)));
 }
 
@@ -65,14 +65,17 @@ int MoteProxy::RecieveRaw(char* msg, uint16_t len, double *rssi)
   if(!client){
     return(-1);
   }
-
-  if(new_data){
-    new_data = FALSE;
+  if(rx_data){
+    len = rx_data->len;
     memcpy(msg, rx_data->buf, len);
     *rssi = rx_data->rssi;
-    return rx_data->len;
+    rx_data++;
+    msg_q_index++;
+    if(msg_q_index == MAX_MOTE_Q_LEN || rx_data->len == 0){
+      rx_data = NULL;
+    }
+    return len;
   }
-
   return 0;
 }
 
@@ -90,10 +93,10 @@ inline float MoteProxy::GetRSSI(void)
 // Update the incoming queue
 void MoteProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
-  if( (((player_mote_data_t*)buffer)->len != 0)){
-    new_data = TRUE;
-    memcpy(rx_data, buffer, sizeof(player_mote_data_t));
-  }
+  
+  memcpy(rx_queue, buffer, MAX_MOTE_Q_LEN * sizeof(player_mote_data_t));
+  rx_data = rx_queue;
+  msg_q_index = 0;
 }
 
 
@@ -104,8 +107,8 @@ void MoteProxy::Print()
   if(!client)
     return;
   rx_data->buf[rx_data->len] = 0;
-  printf("%s, src %d, dest %d, len %d\n", 
-	 rx_data->buf, rx_data->src, rx_data->dest, rx_data->len);
+  printf("%s, len %d\n", 
+	 rx_data->buf, rx_data->len);
 }
 
 

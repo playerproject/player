@@ -171,7 +171,7 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
   // Copy the data
   memcpy(data, m_data_buffer, data_avail);
 
-  //m_info->data_avail = 0;// consume this data for testing purposes
+  m_info->data_avail = 0;// consume this data for testing purposes
 
   // Copy the timestamp
   data_timestamp_sec = m_info->data_timestamp_sec;
@@ -187,11 +187,12 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
 void CStageDevice::PutCommand(unsigned char *command, size_t len)
 {
 #ifdef DEBUG
-  printf( "P: StageDevice::PutCommand (%d,%d,%d) info at %p, command at %p\n", 
+  printf( "P: StageDevice::PutCommand (%d,%d,%d) info at %p,"
+	  " command at %p\n", 
           m_info->player_id.port, 
           m_info->player_id.type, 
           m_info->player_id.index, 
-          m_info, command );
+          m_info, command);
   fflush( stdout );
 #endif
 
