@@ -40,6 +40,17 @@ void sig_quit(int signum)
 }
 
 
+// Print the usage string
+void print_usage()
+{
+  printf("A visualization tool for the Player robot device server.\n");
+  printf("Usage  : playerv [-h <hostname>] [-p <port>]\n");
+  printf("                 [--<device>:<index>] [--<device>:<index>] ... \n");
+  printf("Example: playerv -p 6665 --position:0 --laser:0\n");
+  printf("\n");
+}
+
+
 // Main
 int main(int argc, char **argv)
 {
@@ -61,6 +72,11 @@ int main(int argc, char **argv)
   vision_t *vision;
 
   printf("PlayerViewer %s\n", PLAYER_VERSION);
+  if (argc <= 2)
+  {
+    print_usage();
+    return -1;
+  }
 
   // Initialise rtk lib
   rtk_init(&argc, &argv);
@@ -72,7 +88,10 @@ int main(int argc, char **argv)
   // Load program options
   opt = opt_init(argc, argv, NULL);
   if (!opt)
+  {
+    print_usage();
     return -1;
+  }
 
   // Pick out some important program options
   rate = opt_get_int(opt, "gui", "rate", 10);
