@@ -175,6 +175,8 @@ private:
   static player_p2os_data_t* data;
   static player_p2os_cmd_t* command;
 
+  static int last_client_id;
+
   /*
    * in this order:
    *   char: command (e.g., 'm' for motors enable)

@@ -67,6 +67,7 @@ extern CDeviceTable* deviceTable;
 #define MOTOR_MAX_TURNRATE 100
 
 //extern bool experimental;
+extern bool player_gerkey;
 
 /* these are necessary to make the static fields visible to the linker */
 extern pthread_t      CP2OSDevice::thread;
@@ -78,6 +79,7 @@ extern CLock*         CP2OSDevice::lock;
 extern struct timeval CP2OSDevice::timeBegan_tv;
 extern bool           CP2OSDevice::direct_wheel_vel_control;
 extern int            CP2OSDevice::psos_fd; 
+extern int            CP2OSDevice::last_client_id; 
 extern char           CP2OSDevice::psos_serial_port[];
 extern char           CP2OSDevice::num_loops_since_rvel;
 //extern pthread_mutex_t CP2OSDevice::serial_mutex;
@@ -136,6 +138,9 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
   subscrcount = 0;
 
   //pthread_mutex_init(&serial_mutex,NULL);
+  //
+
+  last_client_id = -1;
 }
 
 CP2OSDevice::~CP2OSDevice()
@@ -373,6 +378,9 @@ int CP2OSDevice::Shutdown()
   //pthread_mutex_unlock(&serial_mutex);
   delete sippacket;
   sippacket = NULL;
+
+  last_client_id = -1;
+
   return(0);
 }
 
@@ -498,6 +506,8 @@ void *RunPsosThread( void *p2osdevice )
 
         // reset odometry
         pd->ResetRawPositions();
+
+        pd->last_client_id = -1;
       }
       else if(last_position_subscrcount && !(positionp->subscrcount))
       {
@@ -603,8 +613,25 @@ void *RunPsosThread( void *p2osdevice )
       pd->config_size = 0;
     }
 
+    /* wait a bit, randomly, to encourage different clients' access */
+    /*
+    int rand_int = (int)(50000.0*rand()/(RAND_MAX+1.0));
+    usleep(rand_int);
+    */
+
     /* read the clients' commands from the common buffer */
     pd->GetLock()->GetCommand(pd,(unsigned char*)&command, sizeof(command));
+
+    if(player_gerkey)
+    {
+      struct timeval curr;
+      gettimeofday(&curr,NULL);
+      fprintf(stderr,"%f %d\n", curr.tv_sec + curr.tv_usec / 1000000.0,
+              pd->last_client_id);
+      //fprintf(stderr,"%d %d\n", 
+              //(short)ntohs(command.position.speed),
+              //(short)ntohs(command.position.turnrate));
+    }
 
     newmotorspeed = false;
     if( speedDemand != (short) ntohs(command.position.speed));

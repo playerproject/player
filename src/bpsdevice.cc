@@ -148,7 +148,9 @@ int CBpsDevice::Setup()
     this->laser_px = this->laser_py = this->laser_pa = 0;
     memset(this->beacon, 0, sizeof(this->beacon));
     this->max_frames = 8;
-    this->max_obs = 16;
+    //this->max_obs = 16;
+    // BPG
+    this->max_obs = 1;
     assert(this->max_obs * this->max_frames < ARRAYSIZE(this->obs));
 
     this->odo_px = this->odo_py = this->odo_pa = 0;
@@ -253,30 +255,7 @@ void CBpsDevice::Main()
         // Now sleep for a while so we dont use all the cpu cycles
         usleep(10);
     
-        // Get the odometry data
-        player_position_data_t posdata;
-        this->position->GetLock()->GetData(this->position, (uint8_t*) &posdata,
-                                           sizeof(posdata), &sec, &usec);
 
-        // If odometry data is new, process it...
-        if (!(sec == this->position_sec && usec == this->position_usec))
-        {
-            PLAYER_TRACE2("odometry time : %u.%06u", sec, usec);
-            
-            this->position_sec = sec;
-            this->position_usec = usec;
-
-            // Compute odometric pose in SI units
-            double ox = ((int) ntohl(posdata.xpos)) / 1000.0;
-            double oy = ((int) ntohl(posdata.ypos)) / 1000.0;
-            double oa = ntohs(posdata.theta) * M_PI / 180;
-
-            // Process this odometry measurement
-            ProcessOdometry(ox, oy, oa);
-            
-            // Update our data
-            GetLock()->PutData(this, NULL, 0);
-        }
                 
         // Get the beacon data
         player_laserbeacon_data_t lbdata;
@@ -292,6 +271,10 @@ void CBpsDevice::Main()
             this->beacon_sec = sec;
             this->beacon_usec = usec;
 
+            if(!ntohs(lbdata.count))
+              this->err = 1;
+            else
+              this->err = 0;
             for (int i = 0; i < ntohs(lbdata.count); i++)
             {
                 int id = lbdata.beacon[i].id;
@@ -306,6 +289,32 @@ void CBpsDevice::Main()
                 // Now process this beacon measurement
                 ProcessBeacon(id, r, b, o);
             }
+        }
+        
+        // Get the odometry data
+        player_position_data_t posdata;
+        this->position->GetLock()->GetData(this->position, (uint8_t*) &posdata,
+                                           sizeof(posdata), &sec, &usec);
+        
+        // If odometry data is new, process it...
+        if (!(sec == this->position_sec && usec == this->position_usec))
+        {
+            PLAYER_TRACE2("odometry time : %u.%06u", sec, usec);
+            
+            this->position_sec = sec;
+            this->position_usec = usec;
+
+            // Compute odometric pose in SI units
+            double ox = ((int) ntohl(posdata.xpos)) / 1000.0;
+            double oy = ((int) ntohl(posdata.ypos)) / 1000.0;
+            double oa = ntohs(posdata.theta) * M_PI / 180;
+
+            // Process this odometry measurement
+            // BPG
+            //ProcessOdometry(ox, oy, oa);
+            
+            // Update our data
+            GetLock()->PutData(this, NULL, 0);
         }
     }
 }
@@ -338,7 +347,10 @@ void CBpsDevice::PutData(unsigned char *src, size_t maxsize)
     this->data.px = htonl((int) (gx * 1000));
     this->data.py = htonl((int) (gy * 1000));
     this->data.pa = htonl((int) (ga * 180 / M_PI));
-    this->data.err = 0; // TODO htonl((int) (this->err * 1e6));
+    //this->data.err = 0; // TODO htonl((int) (this->err * 1e6));
+    // BPG
+    this->data.err = htonl((int) (this->err * 1e6));
+
 }
 
 

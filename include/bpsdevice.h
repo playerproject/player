@@ -103,6 +103,8 @@ class CBpsDevice : public CDevice
     private: FILE *dumpfile;
 #endif
       
+    // BPG
+    private: double err;
     // Lock object for synchronization
     private: CLock lock;
 

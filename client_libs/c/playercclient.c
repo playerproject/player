@@ -355,6 +355,13 @@ int player_write(player_connection_t* conn,
                  uint16_t device, uint16_t device_index,
                  const char* command, size_t commandlen)
 {
+  return(_player_write(conn,device,device_index,command,commandlen,0));
+}
+
+int _player_write(player_connection_t* conn, 
+                 uint16_t device, uint16_t device_index,
+                 const char* command, size_t commandlen, int reserved)
+{
   char buffer[PLAYER_MAX_MESSAGE_SIZE];
   player_msghdr_t hdr;
 
@@ -376,7 +383,7 @@ int player_write(player_connection_t* conn,
   hdr.time_usec = 0;
   hdr.timestamp_sec = 0;
   hdr.timestamp_usec = 0;
-  hdr.reserved = 0;
+  hdr.reserved = htonl(reserved);
   hdr.size = htonl(commandlen);
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
   memcpy(buffer+sizeof(player_msghdr_t),command,commandlen);

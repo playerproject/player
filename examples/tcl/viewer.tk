@@ -182,6 +182,18 @@ proc toggle_motor_state {} {
 
   player_change_motor_state robot $motor_state
 }
+
+proc config_laser {wide_or_narrow} {
+  if {![string compare $wide_or_narrow narrow]} {
+    player_config_laser robot -5000 5000 25 1
+  } else {
+    player_config_laser robot -9000 9000 50 1
+  }
+}
+
+proc config_lbd {numbits} {
+  player_set_laserbeacon_bits robot $numbits
+}
 #########################################################################
 
 #########################################################################
@@ -455,12 +467,27 @@ proc createRobotPanel {} {
   checkbutton .robot_panel.bumper_check \
     -variable display_bumpers -text "Display Bumpers"
 
+  button .robot_panel.laser_wide -text "Wide Laser" \
+    -command "config_laser wide"
+  button .robot_panel.laser_narrow -text "Narrow Laser" \
+    -command "config_laser narrow"
+
+  button .robot_panel.lbd_fivebit -text "5-bit beacon" \
+    -command "config_lbd 5"
+  button .robot_panel.lbd_eightbit -text "8-bit beacon" \
+    -command "config_lbd 8"
+
 
   grid configure .robot_panel.canvas -column 0 -row 0 -columnspan 4
   grid configure .robot_panel.sonar_check -column 0 -row 1
   grid configure .robot_panel.laser_check -column 1 -row 1
   grid configure .robot_panel.lb_check -column 2 -row 1
   grid configure .robot_panel.bumper_check -column 3 -row 1
+
+  grid configure .robot_panel.laser_wide -column 0 -row 2
+  grid configure .robot_panel.laser_narrow -column 1 -row 2
+  grid configure .robot_panel.lbd_fivebit -column 2 -row 2
+  grid configure .robot_panel.lbd_eightbit -column 3 -row 2
 }
 
 proc gridAll {} {

@@ -45,6 +45,7 @@
 #include <truthproxy.h>  /* support for the truth device */
 #include <occupancyproxy.h>  /* support for guess which device */
 #include <gpsproxy.h>  /* support for the GPS device */
+#include <bpsproxy.h>  /* support for the BPS device */
 
 // keep a linked list of proxies that we've got open
 class ClientProxyNode
@@ -66,6 +67,8 @@ class PlayerClient
 
     // count devices with access 'r' or 'a'
     int CountReadProxies();
+
+    int reserved;
     
     // get the pointer to the proxy for the given device and index
     //
@@ -80,6 +83,9 @@ class PlayerClient
 
     // are we connected?
     bool connected;
+
+    void SetReserved(int res) { reserved = res; }
+    int GetReserved() { return(reserved); }
 
     // constructors
     // 

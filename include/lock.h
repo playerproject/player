@@ -74,6 +74,9 @@ public:
 
   virtual size_t GetConfig(CDevice *, unsigned char *, size_t );
   virtual void PutConfig(CDevice *, unsigned char *, size_t);
+
+  void LockDataMutex() { pthread_mutex_lock(&dataAccessMutex); }
+  void UnlockDataMutex() { pthread_mutex_unlock(&dataAccessMutex); }
 };
 
 #endif

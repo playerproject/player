@@ -97,6 +97,9 @@ player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 //#include <truthdevice.h>
 #endif
 
+// enable "special" extensions
+bool player_gerkey = false;
+
 size_t ioSize = 0; // size of the IO buffer
 
 CDeviceTable* deviceTable = new CDeviceTable();
@@ -546,6 +549,11 @@ int main( int argc, char *argv[] )
 	Usage();
 	exit(-1);
       }
+    }
+    else if(!strcmp(new_argv[i], "-gerkey"))
+    {
+      puts("Gerkey extensions enabled....");
+      player_gerkey = true;
     }
     else if(!strcmp(new_argv[i], "-port"))
     {
