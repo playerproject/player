@@ -1,12 +1,14 @@
-
 dnl Find Gazebo
 AC_DEFUN([GAZEBO_FIND],[
 
 dnl Include Gazebo?
 AC_ARG_ENABLE(gazebo,
-[  --disable-gazebo           Don't compile the Gazebo driver],
-disable_reason="disabled by user",
+[  --disable-gazebo           Don't compile the Gazebo driver],,
 enable_gazebo=yes)
+
+if test "x$enable_gazebo"="xno"; then
+  gazebo_disable_reason="disabled by user"
+fi
 
 dnl What version do we support?
 GAZEBO_MIN_VERSION="0.4.0"
@@ -16,14 +18,39 @@ if test "x$enable_gazebo" = "xyes"; then
   if test "x$have_pkg_config" = "xyes" ; then
     PKG_CHECK_MODULES(GAZEBO,gazebo >= $GAZEBO_MIN_VERSION, 
 	  enable_gazebo=yes, 
-    enable_gazebo=no 
-    disable_reason="could not find gazebo >= $GAZEBO_MIN_VERSION")
+    enable_gazebo=no; 
+    gazebo_disable_reason="could not find Gazebo >= $GAZEBO_MIN_VERSION")
   else
-    enable_gazebo=no
-    disable_reason="pkg-config unavailable; maybe you should install it"
+    enable_gazebo=no;
+    gazebo_disable_reason="pkg-config unavailable; maybe you should install it"
   fi
 fi
+
+dnl If gazebo is not built; make sure the correct messages are
+dnl printed
+if test "x$enable_gazebo" = "xyes"; then
+  PLAYER_DRIVERS="$PLAYER_DRIVERS gazebo"
+else
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:gazebo -- $gazebo_disable_reason"
+fi
+
+dnl Set up the necessary vars
+if test "x$enable_gazebo" = "xyes"; then
+  AC_DEFINE(INCLUDE_GAZEBO, 1, [include the $1 driver])
+  GAZEBO_LIB=libgazebo.a
+  GAZEBO_LIB_PATH=gazebo/$GAZEBO_LIB
+  GAZEBO_EXTRA_CPPFLAGS=$GAZEBO_CFLAGS
+  GAZEBO_EXTRA_LIB=$GAZEBO_LIBS
+fi
+
+AC_SUBST(GAZEBO_LIB)
+PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $GAZEBO_LIB"
+PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $GAZEBO_LIBPATH"
+AC_SUBST(GAZEBO_EXTRA_CPPFLAGS)
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_EXTRA_LIB"
+
 ])
+
 
 dnl Test to see if a particular Gazebo driver is available
 AC_DEFUN([GAZEBO_TEST_DRIVER], [
@@ -44,8 +71,9 @@ fi
 
 
 dnl This macro does all the Gazebo tests
-AC_DEFUN([GAZEBO_TESTS],[
+AC_DEFUN([GAZEBO_DRIVERTESTS],[
 
+dnl Test individual drivers
 GAZEBO_TEST_DRIVER([camera],[camera])
 GAZEBO_TEST_DRIVER([factory],[factory])
 GAZEBO_TEST_DRIVER([fiducial],[fiducial])
@@ -59,12 +87,4 @@ GAZEBO_TEST_DRIVER([truth],[truth])
 GAZEBO_TEST_DRIVER([gripper],[gripper])
 GAZEBO_TEST_DRIVER([sonars],[sonars])
 
-
-dnl The call to AC_CHECK_LIB above *should* append the gazebo linker flags
-dnl to LIBS, but for some reason it doesn't, so we'll manually add them to
-dnl PLAYER_DRIVER_EXTRA_LIBS
-if test "x$enable_gazebo" = "xyes"; then
-  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_LIBS"
-fi
 ])
-

@@ -97,7 +97,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 
   client->qfirst = 0;
   client->qlen = 0;
-  client->qsize = sizeof(client->qitems, client->qitems[0]);
+  client->qsize = sizeof(client->qitems) / sizeof(client->qitems[0]);
 
   client->datatime = 0;
   
