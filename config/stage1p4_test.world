@@ -5,7 +5,7 @@
 # the resolution of Stage's raytrace model in meters
 #
 resolution 0.02
-size [10.0 10.0]
+size [5 5]
 name "Player driver test"
 
 #test 1
@@ -23,7 +23,7 @@ gui
 define background wall
 (
   # this object should have a bounding box added
-  border 1
+  border "true"
 
   # this object should not have a direction-indicating nose
   nose "false"
@@ -36,7 +36,7 @@ define background wall
   size [-1 -1]
 
   # TODO - add origin munging to match the size-munging above
-  origin [5 5 0]
+  origin [2.5 2.5 0]
 
 )
 
@@ -47,6 +47,15 @@ background
 ) 
 
 
+bug
+( 
+   name "bug"
+   size [0.8 0.4]
+   pose [ 1 0.5 0 ]
+   bitmap "bug.pnm"
+   color "orange"
+   nose "false"
+)
 
 sonarbot
 (
@@ -81,10 +90,10 @@ define swarmbot bar
 
   neighbor 1
 
-  #indicatorlight( color "red"    pose [0.03 0 0] light_interval 200 ) 
-  #indicatorlight( color "green"  pose [0 0.03 0] light_interval 400 ) 
-  #indicatorlight( color "blue"   pose [-0.03 0 0] light_interval 600 ) 
-  #indicatorlight( color "yellow" pose [0 -0.03 0] light_interval 800 ) 
+  indicatorlight( color "red"    pose [0.03 0 0] light_interval 200 ) 
+  indicatorlight( color "green"  pose [0 0.03 0] light_interval 400 ) 
+  indicatorlight( color "blue"   pose [-0.03 0 0] light_interval 600 ) 
+  indicatorlight( color "yellow" pose [0 -0.03 0] light_interval 800 ) 
 )
 
 swarmbot( name "swarm1" pose [4 3 0] color "red" )
