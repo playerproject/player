@@ -130,7 +130,7 @@ PLAYER_ADD_DRIVER([gazebo],[drivers/gazebo],[yes],[$GAZEBO_HEADER],
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cmucam2],[drivers/blobfinder/cmucam2],[yes],[],[],[])
+PLAYER_ADD_DRIVER([cmucam2],[drivers/blobfinder/cmucam2],[no],[],[],[])
 
 dnl PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],

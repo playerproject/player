@@ -64,7 +64,7 @@ class Cmucam2:public CDevice
     Cmucam2(char* interface, ConfigFile* cf, int section);
 
     virtual void Main();
-    virtual void MainQuit(void);
+  
     int Setup();
     int Shutdown();
 };
@@ -133,6 +133,7 @@ Cmucam2::Setup()
   if(fd<0)                     // if not successful, stop
     return 0; 
   cam.power(fd, 1);
+  printf("Camera is ON.");
 
   /* now spawn reading thread */
   StartThread();
@@ -140,18 +141,14 @@ Cmucam2::Setup()
   return(0);
 }
 
-void Cmucam2::MainQuit()
-{
-}
 int
 Cmucam2::Shutdown()
 {
-  // TODO shutdown the camera nicely and close the file descriptor here
   StopThread();
+  cam.stop_tracking(fd);
   cam.power(fd, 0);                   // shutdown the camera
-  //cam.stop_tracking(fd);
   cam.close_port(fd);                 // close the serial port
-  printf("stopping\n");               
+  printf("Camera is OFF.\n");               
   return(0);
 }
 
@@ -159,9 +156,6 @@ Cmucam2::Shutdown()
 void
 Cmucam2::Main()
 {
-  printf("rmin: %d\n", color[0].rmin);
-  // int num_blobs = 1;
-
   // we'll transform the data into this structured buffer
   player_blobfinder_data_t local_data;
   memset( &local_data, 0, sizeof(local_data) );
