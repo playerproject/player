@@ -10,7 +10,8 @@ include ../../Makefile.common
 
 LIB = libplayerc.a
 OBS = mclient.o client.o device.o error.o \
-			dev_position.o dev_laser.o dev_laserbeacon.o dev_broadcast.o
+			dev_position.o dev_laser.o dev_laserbeacon.o dev_broadcast.o \
+			dev_vision.o
 
 TEST = test
 TEST_OBS = test.o test_position.o

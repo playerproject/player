@@ -22,8 +22,8 @@ int test_laser(playerc_client_t *client, int index)
 
   laser = playerc_laser_create(client, index);
 
-  TEST("subscribing (read/write)");
-  if (playerc_laser_subscribe(laser, PLAYER_ALL_MODE) == 0)
+  TEST("subscribing (read)");
+  if (playerc_laser_subscribe(laser, PLAYER_READ_MODE) == 0)
     PASS();
   else
     FAIL();

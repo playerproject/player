@@ -9,7 +9,8 @@ include ../../../Makefile.common
 .SUFFIXES: .c .o
 
 TEST = test
-OBS = test.o test_position.o test_laser.o test_laserbeacon.o test_broadcast.o
+OBS = test.o test_position.o test_laser.o test_laserbeacon.o test_broadcast.o \
+			test_vision.o
 
 INCLUDES = -I. -I.. -I../../../include
 CFLAGS = -g3 -Wall $(INCLUDES)
@@ -51,3 +52,6 @@ test_laser.o: ../../../include/defaults.h
 test_position.o: test.h ../playerc.h ../../../include/player.h
 test_position.o: ../../../include/messages.h ../../../include/playercommon.h
 test_position.o: ../../../include/defaults.h
+test_vision.o: test.h ../playerc.h ../../../include/player.h
+test_vision.o: ../../../include/messages.h ../../../include/playercommon.h
+test_vision.o: ../../../include/defaults.h
