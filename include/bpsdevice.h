@@ -56,8 +56,13 @@
 #include "device.h"
 #include "messages.h"
 
+
+// Forward declare some structures
+struct CBpsFrame;
+struct CBpsObs;
+
+
 // The bps device class
-//
 class CBpsDevice : public CDevice
 {
     // Constructor
@@ -79,9 +84,25 @@ class CBpsDevice : public CDevice
     public: virtual size_t GetConfig(unsigned char *, size_t maxsize);
     public: virtual void PutConfig(unsigned char *, size_t maxsize);
 
-    // Process a single beacon
-    private: double ProcessBeacon(int id, double r, double b, double o);
-    
+    // Estimateion functions
+    private: void ProcessOdometry(double ox, double oy, double oa);
+    private: void ProcessBeacon(int id, double r, double b, double o);
+    private: double UpdateEstimate();
+    private: double ComputeForce(CBpsObs *obs);
+    private: CBpsFrame *AllocFrame();
+    private: CBpsObs *AllocObs(CBpsFrame *a_frame, CBpsFrame *b_frame);
+    private: CBpsFrame *CreateFrame();
+    private: void DestroyFrame(CBpsFrame *frame);
+    private: CBpsObs *CreateObs();
+    private: void DestroyObs(CBpsObs *obs);
+
+#ifdef INCLUDE_SELFTEST
+    // Self-test functions
+    private: void Test(const char *filename);
+    private: void Dump();
+    private: FILE *dumpfile;
+#endif
+      
     // Lock object for synchronization
     private: CLock lock;
 
@@ -112,15 +133,21 @@ class CBpsDevice : public CDevice
         double px, py, pa;
         double ux, uy, ua;
     } beacon[256];
+
+    // Limits
+    private: int max_frames, max_obs;
     
-    // Pose of odometric origin in global cs
-    private: double org_px, org_py, org_pa;
-    
+    // Frame list
+    private: int frame_count;
+    private: CBpsFrame* frames[64];
+    private: int obs_count;
+    private: CBpsObs* obs[256];
+
+    // Current frame
+    private: CBpsFrame *current;
+
     // Current odometric pose
     private: double odo_px, odo_py, odo_pa;
-
-    // Current error value
-    private: double err;
 
     // Current bps data
     private: player_bps_data_t data;
