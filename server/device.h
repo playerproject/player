@@ -57,7 +57,13 @@ class CDevice
     // this mutex is used to mutually exclude calls to Setup and Shutdown
     pthread_mutex_t setupMutex;
     
+    // the device's thread
     pthread_t devicethread;
+
+    // A condition variable (and accompanying mutex) that can be used to
+    // signal other devices that are waiting on this one.
+    pthread_cond_t cond;
+    pthread_mutex_t condMutex;
     
     // did we allocate memory, or did someone else?
     bool allocp;
@@ -79,7 +85,12 @@ class CDevice
     // queues for incoming requests and outgoing replies
     PlayerQueue* device_reqqueue;
     PlayerQueue* device_repqueue;
-    
+
+    // signal that new data is available (calls pthread_cond_broadcast()
+    // on this device's condition variable, which will release other
+    // devices that are waiting on this one).
+    void DataAvailable(void);
+
   public:
     // who we are (currently set by CDeviceTable::AddDevice(); not a great
     // place)
@@ -171,14 +182,18 @@ class CDevice
 
     // Cleanup function for device thread (called when main exits)
     //
-    virtual void MainQuit();
+    virtual void MainQuit(void);
 
     // A helper method for internal use; e.g., when one device wants to make a
-    // request of another device
+    // request of another device.
     virtual int Request(player_device_id_t* device, void* requester, 
                         void* request, size_t reqlen,
                         unsigned short* reptype, struct timeval* ts,
                         void* reply, size_t replen);
+
+    // Waits on the condition variable associated with this device.
+    // This method is called by other devices to wait for new data.
+    void Wait(void);
 
   protected:
     // Dummy main (just calls real main).  This is used to simplify thread

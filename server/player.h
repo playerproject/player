@@ -1029,6 +1029,8 @@ typedef struct player_laser_power_config
 
 /** [Constants]
  */
+#define PLAYER_BLOBFINDER_SET_COLOR_REQ             ((uint8_t)1)
+#define PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ     ((uint8_t)2)
 
 /** The maximum number of unique color classes. */
 #define PLAYER_BLOBFINDER_MAX_CHANNELS 32
@@ -1104,6 +1106,57 @@ typedef struct player_blobfinder_data
 
 #define PLAYER_BLOBFINDER_BLOB_SIZE sizeof(player_blobfinder_blob_elt_t)
 
+
+/** [Configuration: Set tracking color] */
+/**
+For some sensors (ie CMUcam), simple blob tracking tracks only one color.
+To set the tracking color, send a request with the format below, 
+including the RGB color ranges (max and min).  Values of -1
+will cause the track color to be automatically set to the current
+window color.  This is useful for setting the track color by holding
+the tracking object in front of the lens.
+*/
+typedef struct player_blobfinder_color_config
+{ 
+  
+  /** Must be PLAYER_BLOBFINDER_SET_COLOR_REQ. */
+  uint8_t subtype;
+  /** RGB minimum and max values (0-255) **/
+  int16_t rmin, rmax;
+  int16_t gmin, gmax;
+  int16_t bmin, bmax;
+} __attribute__ ((packed)) player_blobfinder_color_config_t;
+
+
+/** [Configuration: Set imager params] */
+/**
+Imaging sensors that do blob tracking generally have some sorts of
+image quality parameters that you can tweak.  The following ones
+are implemented here:
+   brightness  (0-255)
+   contrast    (0-255)
+   auto gain   (0=off, 1=on)
+   color mode  (0=RGB/AutoWhiteBalance Off,  1=RGB/AutoWhiteBalance On,
+                2=YCrCB/AWB Off, 3=YCrCb/AWB On)
+To set the params, send a request with the format below.  Any
+values set to -1 will be left unchanged.
+*/
+typedef struct player_blobfinder_imager_config
+{ 
+   /** Must be PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ. */
+   uint8_t subtype;
+
+   // Contrast & Brightness: (0-255)  -1=no change.
+   int16_t brightness;
+   int16_t contrast;
+
+   // Color Mode:  ( 0=RGB/AutoWhiteBalance Off,  1=RGB/AutoWhiteBalance On,
+   //                2=YCrCB/AWB Off, 3=YCrCb/AWB On)  -1=no change.
+   int8_t  colormode;
+
+   // AutoGain:   0=off, 1=on.  -1=no change.
+   int8_t  autogain;
+} __attribute__ ((packed)) player_blobfinder_imager_config_t;
 
 /** [Command]
     This device accepts no commands.

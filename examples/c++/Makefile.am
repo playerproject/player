@@ -4,6 +4,7 @@ LDADD = $(top_builddir)/client_libs/c++/libplayerclient.a
 noinst_PROGRAMS = randomwalk \
 	          visualservo \
                   sonarobstacleavoid \
+                  getcolor \
 	          goto \
 	          ptz \
 	          laserobstacleavoid \
@@ -27,6 +28,7 @@ audiowrite_SOURCES = audiowrite.cc
 randomwalk_SOURCES =  randomwalk.cc
 visualservo_SOURCES = visualservo.cc
 sonarobstacleavoid_SOURCES = sonarobstacleavoid.cc
+getcolor_SOURCES = getcolor.cc
 goto_SOURCES = goto.cc
 ptz_SOURCES = ptz.cc
 laserobstacleavoid_SOURCES = laserobstacleavoid.cc

@@ -98,6 +98,10 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "lookup") == 0 || strcmp(device, "all") == 0)
       test_lookup(&client, index);
     
+    // Blobfinder device
+    if(strcmp(device, "blobfinder") == 0 || strcmp(device, "all") == 0)
+      test_blobfinder(&client, index);
+    
     // Laser device
     if(strcmp(device, "laser") == 0 || strcmp(device, "all") == 0)
       test_laser(&client, index);

@@ -102,6 +102,7 @@ void P2OSBumper_Register(DriverTable* table);
 void P2OSPosition_Register(DriverTable* table);
 void P2OSSonar_Register(DriverTable* table);
 void P2OSSound_Register(DriverTable* table);
+void P2OSCMUcam_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_LINUXWIFI
@@ -300,6 +301,7 @@ register_devices()
   P2OSPosition_Register(driverTable);
   P2OSSonar_Register(driverTable);
   P2OSSound_Register(driverTable);
+  P2OSCMUcam_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FIXEDTONES

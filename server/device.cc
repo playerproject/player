@@ -81,6 +81,8 @@ CDevice::CDevice(size_t datasize, size_t commandsize,
 
   pthread_mutex_init(&accessMutex,NULL);
   pthread_mutex_init(&setupMutex,NULL);
+  pthread_mutex_init(&condMutex,NULL);
+  pthread_cond_init(&cond,NULL);
   
   // remember that we allocated the memory, so we can later free it
   allocp = true;
@@ -107,6 +109,8 @@ CDevice::CDevice()
   // this may be unnecessary, but what the hell...
   pthread_mutex_init(&accessMutex,NULL);
   pthread_mutex_init(&setupMutex,NULL);
+  pthread_mutex_init(&condMutex,NULL);
+  pthread_cond_init(&cond,NULL);
 
   data_timestamp_sec = data_timestamp_usec = 0;
   
@@ -144,6 +148,13 @@ CDevice::~CDevice()
     delete device_repqueue;
     device_repqueue=NULL;
   }
+
+  /*
+  pthread_mutex_destroy(&accessMutex);
+  pthread_mutex_destroy(&setupMutex);
+  pthread_mutex_destroy(&condMutex);
+  pthread_cond_destroy(&cond);
+  */
 }
 
 // this method is used by devices that allocate their own storage, but wish to
@@ -305,6 +316,9 @@ void CDevice::PutData(void* src, size_t len,
   // store the amount we copied, for later reference
   device_used_datasize = len;
   Unlock();
+  
+  // signal that new data is available
+  DataAvailable();
 }
 
 size_t CDevice::GetCommand( void* dest, size_t len)
@@ -467,3 +481,23 @@ CDevice::Request(player_device_id_t* device, void* requester,
 
   return(size);
 }
+    
+// Signal that new data is available (calls pthread_cond_broadcast()
+// on this device's condition variable, which will release other
+// devices that are waiting on this one).  Usually call this method from 
+// PutData().
+void 
+CDevice::DataAvailable(void)
+{
+  pthread_cond_broadcast(&cond);
+}
+
+// Waits on the condition variable associated with this device.
+void 
+CDevice::Wait(void)
+{
+  pthread_mutex_lock(&condMutex);
+  pthread_cond_wait(&cond,&condMutex);
+  pthread_mutex_unlock(&condMutex);
+}
+

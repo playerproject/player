@@ -177,3 +177,94 @@ void BlobfinderProxy::Print()
   }
 }
 
+
+/* Auto-set version of SetTrackingColor().  Without any params, it set's the
+** tracking color to the current sensor window.  This is useful for, say,
+** holding the object to be tracked in front of the camera and letting the
+** imager automatically figure out the appropriate RGB max and min values.  */
+int BlobfinderProxy::SetTrackingColor()
+{
+   return SetTrackingColor(-1, -1, -1, -1, -1, -1);
+}
+
+
+/* Manually set the RGB max and min values for the color to track.
+** Values range between 0 and 255.  Setting any of the values to 
+** -1 will result in auto-setting of tracking color. */
+int BlobfinderProxy::SetTrackingColor(int rmin, int rmax, int gmin,
+                                      int gmax, int bmin, int bmax)
+{
+   if (!client)
+      return (-1);
+
+   player_blobfinder_color_config_t config;
+
+   config.subtype = PLAYER_BLOBFINDER_SET_COLOR_REQ;
+   config.rmin = htons(rmin);
+   config.rmax = htons(rmax);
+   config.gmin = htons(gmin);
+   config.gmax = htons(gmax);
+   config.bmin = htons(bmin);
+   config.bmax = htons(bmax);
+
+   return(client->Request(m_device_id,(const char*)&config,
+                         sizeof(config)));
+}
+
+
+/* Set the imager contrast.  (0-255)*/
+int BlobfinderProxy::SetContrast(int contrast)
+{
+   return SetImagerParams(contrast, -1, -1, -1);
+}
+
+
+/* Set the imager brightness.  (0-255)*/
+int BlobfinderProxy::SetBrightness(int brightness)
+{
+   return SetImagerParams(-1, brightness, -1, -1);
+}
+
+
+/* Set the colormode:
+**               (0=RGB/AutoWhiteBalance Off,  1=RGB/AutoWhiteBalance On,
+**                2=YCrCB/AWB Off, 3=YCrCb/AWB On)
+*/
+int BlobfinderProxy::SetColorMode(int colormode)
+{
+   return SetImagerParams(-1, -1, -1, colormode);
+}
+
+
+/* Set the imager autogain. (0=off, 1=on) */
+int BlobfinderProxy::SetAutoGain(int autogain)
+{
+   return SetImagerParams(-1, -1, autogain, -1);
+}
+
+
+/* Set the imager configuration for the blobfinder device.  This includes:
+**       brightness  (0-255)
+**       contrast    (0-255)
+**       auto gain   (0=off, 1=on)
+**       color mode  (0=RGB/AutoWhiteBalance Off,  1=RGB/AutoWhiteBalance On,
+**                2=YCrCB/AWB Off, 3=YCrCb/AWB On)
+** Any values set to -1 will be left unchanged. */
+int BlobfinderProxy::SetImagerParams(int contrast, int brightness,
+                                     int autogain, int colormode)
+{
+   if (!client)
+      return (-1);
+
+   player_blobfinder_imager_config_t config;
+
+   config.subtype = PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ;
+   config.brightness = htons(brightness);
+   config.contrast = htons(contrast);
+   config.colormode = (unsigned char)colormode;
+   config.autogain = (unsigned char)autogain;
+
+   return(client->Request(m_device_id,(const char*)&config,
+                         sizeof(config)));
+
+}

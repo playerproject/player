@@ -153,7 +153,7 @@ PassThrough::Setup()
   player_msghdr_t hdr;
 
   // zero out the buffers
-  PutData(NULL,0,0,0);
+  //PutData(NULL,0,0,0);
   PutCommand(NULL,NULL,0);
 
   printf("Passthrough connecting to server at %s:%d...", this->remote_hostname,

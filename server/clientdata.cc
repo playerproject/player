@@ -118,8 +118,7 @@ bool ClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
   if((payload_size < sizeof(tmpreq.subtype)) || 
      (payload_size > sizeof(player_device_auth_req_t)))
   {
-    printf("CheckAuth(): Player device got wrong size ioctl: %d\n",
-           payload_size);
+    PLAYER_WARN1("got wrong size ioctl: %d", payload_size);
     return(false);
   }
 
@@ -188,7 +187,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     }
     else
     {
-      fputs("Warning: failed authentication; closing connection.\n", stderr);
+      PLAYER_WARN("failed authentication; closing connection");
       return(-1);
     }
   }
@@ -211,8 +210,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           // is the payload big enough?
           if(payload_size < sizeof(req.subtype))
           {
-            printf("HandleRequests(): Player device got small ioctl: %d\n",
-                   payload_size);
+            PLAYER_WARN1("got small ioctl: %d", payload_size);
 
             requesttype = PLAYER_MSGTYPE_RESP_NACK;
             break;
@@ -243,8 +241,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               devicerequest = true;
               if(payload_size < sizeof(player_device_req_t))
               {
-                printf("HandleRequests(): got small player_device_req_t: %d\n",
-                       payload_size);
+                PLAYER_WARN1("got small player_device_req_t: %d", payload_size);
                 requesttype = PLAYER_MSGTYPE_RESP_NACK;
                 break;
               }
@@ -257,8 +254,8 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             case PLAYER_PLAYER_DATAMODE_REQ:
               if(payload_size != sizeof(player_device_datamode_req_t))
               {
-                printf("HandleRequests(): got wrong size "
-                       "player_device_datamode_req_t: %d\n",payload_size);
+                PLAYER_WARN1("got wrong size player_device_datamode_req_t: %d",
+                             payload_size);
                 requesttype = PLAYER_MSGTYPE_RESP_NACK;
                 break;
               }
@@ -291,9 +288,8 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                   requesttype = PLAYER_MSGTYPE_RESP_ACK;
                   break;
                 default:
-                  printf("Player warning: unknown I/O mode requested (%d)."
-                         "Ignoring request\n",
-                         datamode.mode);
+                  PLAYER_WARN1("unknown I/O mode requested (%d)."
+                         "Ignoring request", datamode.mode);
                   requesttype = PLAYER_MSGTYPE_RESP_NACK;
                   break;
               }
@@ -302,15 +298,15 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               // this ioctl takes no args
               if(payload_size != sizeof(player_device_data_req_t))
               {
-                printf("HandleRequests(): got wrong size "
-                       "arg for player_data_req: %d\n",payload_size);
+                PLAYER_WARN1("got wrong size arg for "
+                              "player_data_req: %d",payload_size);
                 requesttype = PLAYER_MSGTYPE_RESP_NACK;
                 break;
               }
               if((mode != PLAYER_DATAMODE_PULL_ALL) &&
                  (mode != PLAYER_DATAMODE_PULL_NEW))
               {
-                puts("WARNING: got request for data when not in "
+                PLAYER_WARN("got request for data when not in "
                      "request/reply mode");
                 requesttype = PLAYER_MSGTYPE_RESP_NACK;
               }
@@ -323,8 +319,8 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             case PLAYER_PLAYER_DATAFREQ_REQ:
               if(payload_size != sizeof(player_device_datafreq_req_t))
               {
-                printf("HandleRequests(): got wrong size "
-                       "arg for update frequency change: %d\n",payload_size);
+                PLAYER_WARN1("got wrong size arg for update frequency "
+                             "change: %d",payload_size);
                 requesttype = PLAYER_MSGTYPE_RESP_NACK;
                 break;
               }
@@ -333,7 +329,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
             case PLAYER_PLAYER_AUTH_REQ:
-              fputs("Warning: unnecessary authentication request.\n",stderr);
+              PLAYER_WARN("unnecessary authentication request");
               requesttype = PLAYER_MSGTYPE_RESP_NACK;
               break;
             case PLAYER_PLAYER_NAMESERVICE_REQ:
@@ -344,7 +340,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               break;
 
             default:
-              printf("Unknown server ioctl %x\n", subtype);
+              PLAYER_WARN1("Unknown server ioctl %x", subtype);
               requesttype = PLAYER_MSGTYPE_RESP_NACK;
               break;
           }
@@ -372,15 +368,15 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             }
             else
             {
-              printf("HandleRequests(): got REQ for unkown device: %x:%x\n",
-                     id.code,id.index);
+              PLAYER_WARN2("got request for unkown device: %x:%x",
+                           id.code,id.index);
               requesttype = PLAYER_MSGTYPE_RESP_ERR;
             }
           }
           else
           {
-            printf("No permissions to configure %x:%x\n",
-                   id.code,id.index);
+            PLAYER_WARN2("No permissions to configure %x:%x",
+                         id.code,id.index);
             requesttype = PLAYER_MSGTYPE_RESP_ERR;
           }
         }
@@ -401,19 +397,19 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               devicep->PutCommand(this,payload,payload_size);
             }
             else
-              printf("HandleRequests(): found NULL pointer for device %x:%x\n",
-                     id.code,id.index);
+              PLAYER_WARN2("found NULL pointer for device %x:%x",
+                           id.code,id.index);
           }
           else
-            printf("You can't send commands to %x:%x\n",
-                   id.code,id.index);
+            PLAYER_WARN2("You can't send commands to %x:%x",
+                         id.code,id.index);
         }
         else 
-          printf("No permissions to command %x:%x\n",
-                 id.code,id.index);
+          PLAYER_WARN2("No permissions to command %x:%x",
+                       id.code,id.index);
         break;
       default:
-        printf("HandleRequests(): Unknown message type %x\n", hdr.type);
+        PLAYER_WARN1("Unknown message type %x", hdr.type);
         break;
     }
   }
@@ -476,7 +472,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     reply_hdr.size = htonl(replysize);
 
     if(GlobalTime->GetTime(&curr) == -1)
-      fputs("ClientData::HandleRequests(): GetTime() failed!!!!\n", stderr);
+      PLAYER_ERROR("GetTime() failed!!!!");
     reply_hdr.time_sec = htonl(curr.tv_sec);
     reply_hdr.time_usec = htonl(curr.tv_usec);
 
@@ -724,10 +720,10 @@ void ClientData::UpdateRequested(player_device_req_t req)
         break;
       case PLAYER_CLOSE_MODE:
       case PLAYER_ERROR_MODE:
-        printf("Device \"%x:%x\" already closed\n", req.code,req.index);
+        PLAYER_WARN2("Device \"%x:%x\" already closed", req.code,req.index);
         break;
       default:
-        printf("Unknown access permission \"%c\"\n", req.access);
+        PLAYER_WARN1("Unknown access permission \"%c\"", req.access);
         break;
     }
   }
@@ -757,7 +753,7 @@ void ClientData::UpdateRequested(player_device_req_t req)
           thisub->access=PLAYER_ERROR_MODE;
         break;
       default:
-        printf("Unknown access \"%c\"\n", req.access);
+        PLAYER_WARN1("Unknown access \"%c\"", req.access);
     }
   }
   /* IGNORE */
@@ -838,8 +834,8 @@ ClientData::BuildMsg()
         // make sure we've got a good pointer
         if(!(devicep = deviceTable->GetDevice(thisub->id)))
         {
-          printf("BuildMsg(): found NULL pointer for device \"%x:%x\"\n",
-                          thisub->id.code, thisub->id.index);
+          PLAYER_WARN2("found NULL pointer for device \"%x:%x\"",
+                       thisub->id.code, thisub->id.index);
           continue;
         }
 
@@ -884,7 +880,7 @@ ClientData::BuildMsg()
           hdr.size = htonl(size);
 
           if(GlobalTime->GetTime(&curr) == -1)
-            fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
+            PLAYER_ERROR("GetTime() failed!!!!");
           hdr.time_sec = htonl(curr.tv_sec);
           hdr.time_usec = htonl(curr.tv_usec);
 
@@ -897,8 +893,8 @@ ClientData::BuildMsg()
       }
       else
       {
-        printf("BuildMsg(): Unknown device \"%d:%d\"\n",
-                        thisub->id.code,thisub->id.index);
+        PLAYER_WARN2("Unknown device \"%d:%d\"",
+                     thisub->id.code,thisub->id.index);
       }
     }
   }
@@ -912,7 +908,7 @@ ClientData::BuildMsg()
   hdr.size = 0;
 
   if(GlobalTime->GetTime(&curr) == -1)
-    fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
+    PLAYER_ERROR("GetTime() failed!!!!");
   hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
   hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
 
@@ -937,8 +933,8 @@ int ClientData::Subscribe(player_device_id_t id)
   }
   else
   {
-    printf("Subscribe(): Unknown device \"%d:%d\" - subscribe cancelled\n", 
-                    id.code,id.index);
+    PLAYER_WARN2("Unknown device \"%d:%d\" - subscribe cancelled", 
+                 id.code,id.index);
     return(1);
   }
 }
@@ -954,8 +950,8 @@ void ClientData::Unsubscribe(player_device_id_t id)
   }
   else
   {
-    printf("Unsubscribe(): Unknown device \"%d:%d\" - unsubscribe cancelled\n", 
-                    id.code,id.index);
+    PLAYER_WARN2("Unknown device \"%d:%d\" - unsubscribe cancelled", 
+                 id.code,id.index);
   }
 }
 
@@ -1083,7 +1079,7 @@ ClientDataTCP::Read()
         // make sure it's not too big
         if(hdrbuffer.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
         {
-          printf("WARNING: client's message is too big (%d bytes). Ignoring\n",
+          PLAYER_WARN1("client's message is too big (%d bytes). Ignoring",
                  hdrbuffer.size);
           readcnt = 0;
           readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
@@ -1091,7 +1087,7 @@ ClientDataTCP::Read()
         // ...or too small
         else if(!hdrbuffer.size)
         {
-          puts("WARNING: client sent zero-length message.\n");
+          PLAYER_WARN("client sent zero-length message.");
           readcnt = 0;
           readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
         }
@@ -1125,10 +1121,10 @@ ClientDataTCP::Read()
       }
       break;
     case PLAYER_READ_ERROR:
-      fputs("ClientData:Read(): i'm in an error read state!\n",stderr);
+      PLAYER_ERROR("in an error read state!");
       break;
     default:
-      fputs("ClientData:Read(): i'm in an unknown read state!\n",stderr);
+      PLAYER_ERROR("in an unknown read state!");
       break;
   }
  
@@ -1171,8 +1167,7 @@ ClientDataTCP::Write(size_t len)
               totalwritebuffer+byteswritten, 
               leftover_size);
 
-      fprintf(stderr, "WARNING: %d bytes leftover on write() to client\n", 
-              leftover_size);
+      PLAYER_WARN1("%d bytes leftover on write() to client", leftover_size);
     }
     else
       leftover_size=0;

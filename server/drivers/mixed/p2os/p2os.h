@@ -51,6 +51,8 @@
 #define P2OS_CYCLETIME_USEC 50000
 
 /* p2os constants */
+
+/* Command numbers */
 #define SYNC0 0
 #define SYNC1 1
 #define SYNC2 2
@@ -68,11 +70,26 @@
 #define VEL2 32
 #define GRIPPER 33
 #define GRIPPERVAL 36
-#define TTY2 42
-#define GETAUX 43
+#define TTY2 42		// Added in AmigOS 1.2
+#define GETAUX 43	// Added in AmigOS 1.2
 #define JOYDRIVE 47
+#define TTY3 66		// Added in AmigOS 1.3
+#define GETAUX2 67	// Added in AmigOS 1.3
 #define SOUND 90
 #define PLAYLIST 91
+
+/* Server Information Packet (SIP) types */
+#define STATUSSTOPPED	0x32
+#define STATUSMOVING	0x33
+#define	ENCODER		0x90
+#define SERAUX		0xB0
+#define SERAUX2		0xB8	// Added in AmigOS 1.3
+//#define PLAYLIST	0xD0
+
+/* Argument types */
+#define ARGINT		0x3B	// Positive int (LSB, MSB)
+#define ARGNINT		0x1B	// Negative int (LSB, MSB)
+#define ARGSTR		0x2B	// String (Note: 1st byte is length!!)
 
 /* gripper stuff */
 #define GRIPopen   1
@@ -87,6 +104,12 @@
 #define GRIPpress  16
 #define LIFTcarry  17
 
+/* CMUcam stuff */
+#define CMUCAM_IMAGE_WIDTH	80
+#define CMUCAM_IMAGE_HEIGHT	143
+#define CMUCAM_MESSAGE_LEN	10
+
+
 #define P2OS_CONFIG_BUFFER_SIZE 256
 
 #define DEFAULT_P2OS_PORT "/dev/ttyS0"
@@ -100,6 +123,7 @@ typedef struct
   player_bumper_data_t bumper;
   player_dio_data_t dio;
   player_aio_data_t aio;
+  player_blobfinder_data_t blobfinder;
 } __attribute__ ((packed)) player_p2os_data_t;
 
 typedef struct
@@ -150,6 +174,7 @@ class P2OS:public CDevice
     static int joystickp; // are we using a joystick?
 
     static struct timeval timeBegan_tv;
+    struct timeval lastblob_tv;
 
     // did we initialize the common data segments yet?
     static bool initdone;
@@ -157,6 +182,8 @@ class P2OS:public CDevice
   protected:
     static player_p2os_data_t* data;
     static player_p2os_cmd_t* command;
+
+    static int cmucam; // is the cmucam driver active (used in the cfg file)?
 
     void Lock();
     void Unlock();
@@ -183,6 +210,11 @@ class P2OS:public CDevice
 
     virtual void PutData(unsigned char *, size_t maxsize,
                          uint32_t timestamp_sec, uint32_t timestamp_usec);
+
+    void CMUcamReset();
+    void CMUcamTrack(int rmin=0, int rmax=0, int gmin=0,
+                          int gmax=0, int bmin=0, int bmax=0);
+    void CMUcamStopTracking();
 };
 
 
