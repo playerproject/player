@@ -37,10 +37,10 @@
 //
 CStageDevice::CStageDevice(void *buffer, size_t data_len, size_t command_len, size_t config_len)
 {
-    m_info_buffer = (BYTE*) buffer;
+    m_info = (PlayerStageInfo*) buffer;
     m_info_len = INFO_BUFFER_SIZE;
     
-    m_data_buffer = (BYTE*) m_info_buffer + m_info_len;
+    m_data_buffer = (BYTE*) buffer + m_info_len;
     m_data_len = data_len;
 
     m_command_buffer = (BYTE*) m_data_buffer + data_len;
@@ -49,7 +49,7 @@ CStageDevice::CStageDevice(void *buffer, size_t data_len, size_t command_len, si
     m_config_buffer = (BYTE*) m_command_buffer + command_len;
     m_config_len = config_len;
 
-    TRACE4("creating device at addr: %p %p %p %p", m_info_buffer, m_data_buffer,
+    TRACE4("creating device at addr: %p %p %p %p", m_info, m_data_buffer,
         m_command_buffer, m_config_buffer);
 }
 
@@ -59,11 +59,16 @@ CStageDevice::CStageDevice(void *buffer, size_t data_len, size_t command_len, si
 //
 int CStageDevice::Setup()
 {
+    /* *** TESTING -- this doesnt work right now
+    // See if device is available
+    //
+    if (!m_info->available)
+        return 1;
+    */
+    
     // Set the subscribed flag
     //
-    TRACE0("subscribing");
-    m_info_buffer[INFO_SUBSCRIBE_FLAG] = 1;
-    TRACE0("subscribed");
+    m_info->subscribed = 1;
     return 0;
 }
 
@@ -75,7 +80,7 @@ int CStageDevice::Shutdown()
 {
     // Reset the subscribed flag
     //
-    m_info_buffer[INFO_SUBSCRIBE_FLAG] = 0;
+    m_info->subscribed = 0;
     return 0;
 };
 
@@ -85,20 +90,16 @@ int CStageDevice::Shutdown()
 //
 size_t CStageDevice::GetData(unsigned char *data, size_t size)
 {
-    TRACE0("begin");
-    ASSERT(size >= m_data_len);
-
     // See if there is any data
     //
-    if (m_info_buffer[INFO_DATA_FLAG] != 0)
-    {
-        // Copy the data
-        //
-        memcpy(data, m_data_buffer, m_data_len);
-    }
-
-    TRACE0("end");
-    return m_data_len;
+    size_t data_len = m_info->data_len;
+    ASSERT(data_len <= m_data_len);
+    ASSERT(data_len <= size);
+    
+    // Copy the data
+    //
+    memcpy(data, m_data_buffer, data_len);
+    return data_len;
 }
 
 
@@ -107,17 +108,15 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
 //
 void CStageDevice::PutCommand(unsigned char *command, size_t len)
 {
-    TRACE0("begin");
     ASSERT(len <= m_command_len);
     
     // Copy the command
-    //
+    // 
     memcpy(m_command_buffer, command, len);
 
     // Set flag to indicate command has been set
     //
-    m_info_buffer[INFO_COMMAND_FLAG] = 1;
-    TRACE0("end");
+    m_info->command_len = len;
 }
 
 
@@ -126,7 +125,6 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
 //
 void CStageDevice::PutConfig(unsigned char *config, size_t len)
 {
-    TRACE0("begin");
     ASSERT(len <= m_config_len);
     
     // Copy the data
@@ -135,7 +133,6 @@ void CStageDevice::PutConfig(unsigned char *config, size_t len)
 
     // Set flag to indicate config has been changed
     //
-    m_info_buffer[INFO_CONFIG_FLAG] = 1;
-    TRACE0("end");
+    m_info->config_len = len;
 }
 
