@@ -13,7 +13,7 @@ EXTRA_DIST = playermap.in playermap.glade $(MAPPER_FILES)
 
 # Use distutils to build the Python stuff
 pythonbuild: $(MAPPER_FILES)
-	sed 's.GLADEFILE.$(prefix)/share/playermap.' playermap.in > playermap
+	sed -e "s+GLADEFILE+$(prefix)/share/playermap+" playermap.in > playermap
 	@PYTHON_INTERP@ $(srcdir)/setup.py build
 
 # Do our own cleaning
