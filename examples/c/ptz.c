@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     exit(1);
 
   /* Request sensor data */
-  if(player_request_device_access(&conn, PLAYER_PTZ_CODE, 0, 'a',NULL) == -1)
+  if(player_request_device_access(&conn, PLAYER_PTZ_CODE, 0, 'a',NULL,NULL,0) == -1)
     exit(1);
 
   dir = 1;

@@ -102,9 +102,9 @@ int main(int argc, char **argv)
     exit(1);
 
   /* request read access on the laser and write access to the wheels */
-  if(player_request_device_access(&conn, PLAYER_LASER_CODE, 0, 'r',NULL) == -1)
+  if(player_request_device_access(&conn, PLAYER_LASER_CODE, 0, 'r',NULL,NULL,0) == -1)
     exit(1);
-  if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'w',NULL) == -1)
+  if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'w',NULL,NULL,0) == -1)
     exit(1);
 
   /* maybe turn on the motors */
