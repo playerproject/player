@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+
+#
+#  Player - One Hell of a Robot Server
+#  Copyright (C) 2003 Brian Gerkey <gerkey@robotics.stanford.edu>
+#                      
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+#
+# playerconf - a little utility to aid in configuring a player build.  It
+#              uses the dialog utility to ask a question regarding each
+#              possible --enable/disable and --with/without configure script
+#              option
+#
+# $Id$
+#
+
+import os
+import string
+
+os.system('rm -f config.cache')
+
+def inputbox(comment,extras):
+  """Pops up an inputbox and returns (0/1,val)"""
+  tmpfname='prefix.tmp'
+  ret=os.system('dialog ' + extras + ' --inputbox "' + comment + ' (leave empty to use default)." 0 0 2> ' + tmpfname)
+  f=os.open(tmpfname,os.O_RDONLY)
+  val=os.read(f,256)
+  os.unlink(tmpfname)
+  return (ret,val)
+
+os.system('dialog --msgbox "Welcome to playerconf.  Please answer the following questions to configure your build of player." 0 0')
+
+configstring = './configure'
+
+(ret,val) = inputbox('Installation prefix', '--nocancel')
+if len(val) > 0:
+  configstring += ' --prefix=' + val
+
+configout = os.popen('configure --help')
+lines = configout.read().split('\n')
+
+go = 0
+for l in lines:
+  if l == '--enable and --with options recognized:':
+    go = 1
+    continue
+  elif not go or len(l) == 0:
+    continue
+  else:
+    # Munge the comment strings so that the ask an intuitive positive question
+    # NOTE: this procedure is brittle, making certain assumptions of how
+    #       the comment strings are phrased
+    tokens = l.split()
+    default = tokens[0].split('-')[2]
+    tmp = tokens[0].split('-')[3]
+    idx = string.find(tmp,'=')
+    option = tmp
+    val=''
+    valname=''
+    if idx >= 0:
+      option = tmp[:idx]
+      valname = tmp[idx+1:]
+    comment = string.join(tokens[1:])
+    if comment.split()[0] == "Don't":
+      comment = string.join(comment.split()[1:])
+      comment = string.upper(comment[0]) + comment[1:]
+    idx = string.find(comment,'without')
+    if idx >= 0:
+      comment = comment[:idx] + 'with ' + string.join(comment[idx:].split()[1:])
+    dialogstr = 'dialog '
+    if default == 'enable' or default == 'with':
+      dialogstr += '--defaultno '
+    if len(valname) > 0:
+      (ret,val) = inputbox(comment,'--ok-label Yes --cancel-label No')
+    else:
+      dialogstr += '--yesno "' + comment + '?" 0 0'
+      ret = os.system(dialogstr)
+    if ret == 0:
+      if string.find(default,'with') >= 0:
+        configstring += ' --with-' + option
+      else:
+        configstring += ' --enable-' + option
+    else:
+      if string.find(default,'with') >= 0:
+        configstring += ' --without-' + option
+      else:
+        configstring += ' --disable-' + option
+    if len(val) > 0:
+      configstring += '=' + val
+
+os.system('''dialog --msgbox "Configuration complete.  Press Enter to run the configure script, then type 'make' to build" 0 0''')
+
+os.system(configstring)
