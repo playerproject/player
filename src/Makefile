@@ -15,7 +15,8 @@ DEVICELIBNAME = libplayerdevice.a
 
 INCLUDES = -I../include
 
-CFLAGS = -g -Wall $(PLAYER_PLATFORM)
+#CFLAGS = -g -Wall $(PLAYER_PLATFORM)
+CFLAGS = -O3 -Wall $(PLAYER_PLATFORM)
 LIBDIRS = -L.
 LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm
 
