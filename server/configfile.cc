@@ -1067,6 +1067,7 @@ bool ConfigFile::ParseTokenTuple(int entity, int property, int *index, int *line
         *index = i;
         return true;
       case TokenSpace:
+      case TokenEOL:
         break;
       default:
         PARSE_ERR("syntax error 5", *line);
