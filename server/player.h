@@ -472,7 +472,6 @@ typedef struct
  *************************************************************************/
 
 /** [Synopsis]
-
     The laser interface provides access to a single-origin scanning range
     sensor, such as a SICK laser range-finder.
 */
@@ -531,11 +530,12 @@ typedef struct player_laser_data
     This device accepts no commands.
 */
 
-/** [Configuration]
-    The laser interface accepts the following configuration requests.
+/** [Configuration: get geometry]
+    The laser geometry (position and size) can be queried using
+    the PLAYER_LASER_GET_GEOM request.
 */
 
-/** Get the laser geometry. */
+/** Request/reply packet for getting laser geometry. */
 typedef struct player_laser_geom
 {
   /** The packet subtype.  Must be PLAYER_LASER_GET_GEOM. */
@@ -550,7 +550,25 @@ typedef struct player_laser_geom
 } __attribute__ ((packed)) player_laser_geom_t;
 
 
-/** Set or get the laser configuration. */
+/** [Configuration: get/set scan properties]
+
+    The scan configuration can be queried using the
+    PLAYER_LASER_GET_CONFIG request and modified using
+    the PLAYER_LASER_SET_CONFIG request.
+
+    The sicklms200 driver, for example, is usually configured to scan
+    a swath of $180^{\circ}$ with a resolution of $0.5^{\circ}$, to
+    generate a total of 361 readings.  At this aperture, the laser
+    generates a new scan every 200ms or so, for a data rate of 5Hz.
+    This rate can be raised by reducing the aperture to encompass less
+    than the full $180^{\circ}$, or by lowering the resolution to
+    $1^{\circ}$.
+    
+    Read the documentation for your driver to determine what
+    configuration values are permissible.
+ */
+
+/** Request/reply packet for getting and setting the laser configuration. */
 typedef struct player_laser_config
 {
   /** The packet subtype.  Set this to PLAYER_LASER_SET_CONFIG to set
