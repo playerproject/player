@@ -562,7 +562,7 @@ PTU46_Device::PTU46_Device( ConfigFile* cf, int section) :
   data.pan = data.tilt = data.zoom = data.panspeed = data.tiltspeed = 0;
   cmd.pan = cmd.tilt = cmd.zoom = cmd.panspeed = data.tiltspeed = 0;
 
-  PutData((void*)&data,sizeof(data),NULL);
+  //PutData((void*)&data,sizeof(data),NULL);
   PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
 	MoveMode = PLAYER_PTZ_POSITION_CONTROL;
