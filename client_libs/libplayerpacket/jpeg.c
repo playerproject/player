@@ -3,6 +3,9 @@
  * $Id$
  * $Source$
  * $Log$
+ * Revision 1.3  2004/11/22 23:10:16  gerkey
+ * made libjpeg optional in libplayerpacket
+ *
  * Revision 1.2  2004/09/25 23:51:41  rtv
  * added static DataAvailable method to device class
  *
@@ -17,15 +20,24 @@
  *
  */
 
-//#include "config.h" // to see if libjpeg was found
-//#if HAVE_LIBJPEG
+#if HAVE_CONFIG_H
+  #include "config.h"
+#endif
+
+#if HAVE_JPEGLIB_H
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-
 #include <jpeglib.h>
-#include "jpeg.h"
+#include <jerror.h>
+#include <setjmp.h>
+struct my_error_mgr {
+	struct jpeg_error_mgr pub;
+	jmp_buf setjmp_buffer;
+};
+
+typedef struct my_error_mgr *my_error_ptr;
 
 /*--------------
   A hack to hijack JPEG's innards to write into a memory buffer
@@ -270,5 +282,6 @@ jpeg_decompress_from_file(unsigned char *dst, char *file, int size, int *w, int 
   fclose(infile);
 }
 
-
-//#endif // HAVE_LIBJPEG
+#else
+  #warning "libjpeg not available, so JPEG support is not included in libplayerpacket"
+#endif // HAVE_LIBJPEG

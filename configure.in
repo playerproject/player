@@ -23,8 +23,7 @@ dnl
 dnl Also create playerconfig.h, replacing a couple of C defines with the right
 dnl values.  This will be included by player.h
 dnl
-dnl AC_CONFIG_HEADERS([config.h server/playerconfig.h])
-AM_CONFIG_HEADER([config.h server/playerconfig.h])
+AC_CONFIG_HEADERS([config.h server/playerconfig.h])
 
 dnl I can't find a way to do @prefix@ substitution in server/prefix.h that
 dnl works in more than one version of autotools.  Fix this later.
@@ -275,7 +274,7 @@ AM_CONDITIONAL(INCLUDE_RTKGUI, test x$enable_rtkgui = xyes)
 # -----------------------------------------------------------------------
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h linux/joystick.h)
+AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h linux/joystick.h jpeglib.h)
 
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t 
