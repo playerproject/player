@@ -108,9 +108,9 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom)
 {
   player_ptz_cmd_t cmd;
 
-  cmd.pan = htons((short) (pan * 180 / M_PI));
-  cmd.tilt = htons((short) (tilt * 180 / M_PI));
-  cmd.zoom = htons((short) (zoom * 180 / M_PI));
+  cmd.pan = htons((uint16_t) (int16_t) (pan * 180 / M_PI));
+  cmd.tilt = htons((uint16_t) (int16_t) (tilt * 180 / M_PI));
+  cmd.zoom = htons((uint16_t) (int16_t) (zoom * 180 / M_PI));
 
 	// set speed = 0 by default
 	cmd.panspeed = 0;
@@ -119,18 +119,17 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom)
   return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }
 
+
 // Set the pan, tilt and zoom values with speed as well.
 int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zoom, double panspeed, double tiltspeed)
 {
   player_ptz_cmd_t cmd;
 
-  cmd.pan = htons((short) (pan * 180 / M_PI));
-  cmd.tilt = htons((short) (tilt * 180 / M_PI));
-  cmd.zoom = htons((short) (zoom * 180 / M_PI));
-  cmd.panspeed = htons((short) (panspeed * 180 / M_PI));
-  cmd.tiltspeed = htons((short) (tiltspeed * 180 / M_PI));
-  
-
+  cmd.pan = htons((uint16_t) (int16_t) (pan * 180 / M_PI));
+  cmd.tilt = htons((uint16_t) (int16_t) (tilt * 180 / M_PI));
+  cmd.zoom = htons((uint16_t) (int16_t) (zoom * 180 / M_PI));
+  cmd.panspeed = htons((uint16_t) (int16_t) (panspeed * 180 / M_PI));
+  cmd.tiltspeed = htons((uint16_t) (int16_t) (tiltspeed * 180 / M_PI));
 
   return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }
