@@ -47,6 +47,9 @@ const char *GzClient::prefix_id = "";
 // Initialize 
 int GzClient::Init(int serverid, const char *prefixid)
 {
+  // TODO: pipe errors into player?
+  gz_error_init(1, 9);
+  
   GzClient::client = gz_client_alloc();
 
   if (gz_client_connect_wait(GzClient::client, serverid, GZ_CLIENT_ID_PLAYER) != 0)

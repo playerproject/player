@@ -1193,7 +1193,8 @@ int main( int argc, char *argv[] )
       }
       else
       {
-        gz_serverid = 0;
+        Usage();
+        exit(-1);
       }
     }
     else if(!strcmp(argv[i], "--gazebo-prefix"))
