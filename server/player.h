@@ -216,11 +216,11 @@ typedef struct
 /** [Constants]
   */
 /** The device access modes */
-#define PLAYER_READ_MODE 'r'
-#define PLAYER_WRITE_MODE 'w'
-#define PLAYER_ALL_MODE 'a'
-#define PLAYER_CLOSE_MODE 'c'
-#define PLAYER_ERROR_MODE 'e'
+#define PLAYER_READ_MODE 114   // 'r'
+#define PLAYER_WRITE_MODE 119  // 'w'
+#define PLAYER_ALL_MODE 97     // 'a'
+#define PLAYER_CLOSE_MODE 99   // 'c'
+#define PLAYER_ERROR_MODE 101  // 'e'
 
 /** The valid data delivery modes */
 #define PLAYER_DATAMODE_PUSH_ALL 0
