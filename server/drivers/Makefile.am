@@ -1,2 +1,3 @@
-SUBDIRS = mcom shell position waveform comms ptz laser fiducial audio wifi \
-          speech blobfinder stage mixed localization
+SUBDIRS = position waveform comms ptz laser fiducial audio wifi speech \
+          blobfinder stage mixed localization shell mcom \
+          audiodsp audiomixer
