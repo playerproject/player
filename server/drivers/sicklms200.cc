@@ -146,7 +146,7 @@ class SickLMS200 : public CDevice
     double size[2];
     
     // Name of device used to communicate with the laser
-    char device_name[MAX_FILENAME_SIZE];
+    const char *device_name;
     
     // laser device file descriptor
     int laser_fd;           
@@ -180,8 +180,7 @@ CDevice* SickLMS200_Init(char* interface, ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void 
-SickLMS200_Register(DriverTable* table)
+void SickLMS200_Register(DriverTable* table)
 {
   table->AddDriver("sicklms200", PLAYER_READ_MODE, SickLMS200_Init);
 }
@@ -206,16 +205,15 @@ SickLMS200_Register(DriverTable* table)
 SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
   : CDevice(sizeof(player_laser_data_t),0,10,10)
 {
-  // Laser geometry; should read from config file or command line.
-  this->pose[0] = 0.10;
-  this->pose[1] = 0;
-  this->pose[2] = 0;
+  // Laser geometry.
+  this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
+  this->pose[1] = cf->ReadTupleLength(section, "pose", 1, 0.0);;
+  this->pose[2] = cf->ReadTupleLength(section, "pose", 2, 0.0);;
   this->size[0] = 0.15;
   this->size[1] = 0.15;
-  
-  strncpy(this->device_name,
-          cf->ReadString(section, "port", DEFAULT_LASER_PORT),
-          sizeof(this->device_name));
+
+  // Default serial port
+  this->device_name = cf->ReadString(section, "port", DEFAULT_LASER_PORT);
 }
 
 
@@ -356,8 +354,8 @@ void SickLMS200::Main()
       data.range_count = htons(this->scan_max_segment - this->scan_min_segment + 1);
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
+        data.intensity[i] = ((data.ranges[i] >> 13) & 0x000E);
         data.ranges[i] = htons((data.ranges[i] & 0x1FFF));
-        data.intensity[i] = (data.ranges[i] >> 13);
       }
 
       // Make data available

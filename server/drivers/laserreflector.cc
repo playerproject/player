@@ -68,8 +68,7 @@ class LaserReflector : public CDevice
                                 void *data, size_t len);
 
   // Analyze the laser data and pick out reflectors.
-  private: void Find(const player_laser_data_t *laserdata,
-                     player_fiducial_data_t *beacondata);
+  private: void Find();
 
   // Test a patch to see if it has valid moments.
   private: bool TestMoments(double mn, double mr, double mb, double mrr, double mbb);
@@ -77,14 +76,12 @@ class LaserReflector : public CDevice
   // Find the line of best fit for the given segment of the laser
   // scan.  Fills in the pose and pose uncertainty of the reflector
   // (range, bearing, orientation).
-  private: void FitCircle(const player_laser_data_t *laserdata,
-                            int first, int last,
-                            double *pr, double *pb, double *po,
-                            double *ur, double *ub, double *uo);
+  private: void FitCircle(int first, int last,
+                          double *pr, double *pb, double *po,
+                          double *ur, double *ub, double *uo);
 
-  // Add a item into the beacon list.
-  private: void Add(player_fiducial_data_t *beacondata,
-                    double pr, double pb, double po,
+  // Add a item into the fiducial list.
+  private: void Add(double pr, double pb, double po,
                     double ur, double ub, double uo);
 
   // Device pose relative to robot.
@@ -98,10 +95,10 @@ class LaserReflector : public CDevice
   private: double reflector_width;
   
   // Local copy of the current laser data.
-  private: player_laser_data_t laserdata;
+  private: player_laser_data_t ldata;
 
-  // Local copy of the current beacon data.
-  private: player_fiducial_data_t fiducialdata;
+  // Local copy of the current fiducial data.
+  private: player_fiducial_data_t fdata;
 };
 
 
@@ -130,9 +127,8 @@ void LaserReflector_Register(DriverTable* table)
 LaserReflector::LaserReflector(char* interface, ConfigFile* cf, int section)
     : CDevice(0, 0, 0, 1)
 {
-  // TODO: how can we get the geometry from the laser?
   // Device pose relative to robot.
-  this->pose[0] = 0.10;
+  this->pose[0] = 0;
   this->pose[1] = 0;
   this->pose[2] = 0;
 
@@ -141,7 +137,7 @@ LaserReflector::LaserReflector(char* interface, ConfigFile* cf, int section)
   this->laser_index = cf->ReadInt(section, "laser_index", -1);
 
   // Default reflector properties.
-  this->reflector_width = 0.08;
+  this->reflector_width = cf->ReadLength(section, "width", 0.08);
 }
 
 
@@ -155,25 +151,29 @@ int LaserReflector::Setup()
   id.port = this->device_id.port;
   id.code = PLAYER_LASER_CODE;
   
-  if(this->laser_index >= 0)
+  if (this->laser_index >= 0)
     id.index = this->laser_index;
   else
     id.index = this->device_id.index;
   
-  printf("LaserReflector:Setup(%d:%d:%d)\n", id.code,id.index,id.port);
-  
-  if(!(this->laser = deviceTable->GetDevice(id)))
+  if (!(this->laser = deviceTable->GetDevice(id)))
   {
-    fputs("LaserReflector:Setup(): couldn't find laser device\n",stderr);
+    PLAYER_ERROR("unable to locate suitable SRF device");
     return(-1);
   }
     
   // Subscribe to the laser device, but fail if it fails
-  if(this->laser->Subscribe(this) != 0)
+  if (this->laser->Subscribe(this) != 0)
   {
-    fputs("LaserReflector:Setup(): couldn't setup laser device\n",stderr);
+    PLAYER_ERROR("unable to subscribe to SRF device");
     return(-1);
   }
+
+  // Get the laser geometry.
+  // TODO: no support for this at the moment.
+  this->pose[0] = 0.10;
+  this->pose[1] = 0;
+  this->pose[2] = 0;
 
   return 0;
 }
@@ -200,56 +200,55 @@ size_t LaserReflector::GetData(unsigned char *dest, size_t maxsize,
   uint32_t laser_time_sec, laser_time_usec;
   
   // Get the laser data.
-  laser_size = this->laser->GetData((unsigned char*) &this->laserdata, sizeof(this->laserdata),
+  laser_size = this->laser->GetData((unsigned char*) &this->ldata, sizeof(this->ldata),
                                     &laser_time_sec, &laser_time_usec);
-  assert(laser_size <= sizeof(this->laserdata));
+  assert(laser_size <= sizeof(this->ldata));
   
   // If the laser doesnt have new data, just return a copy of our old
   // data.
   if (laser_time_sec == this->data_timestamp_sec &&
       laser_time_usec == this->data_timestamp_usec)
   {
-    assert(maxsize >= sizeof(this->fiducialdata));
-    memcpy(dest, &this->fiducialdata, sizeof(this->fiducialdata));
-    return (sizeof(this->fiducialdata));
+    assert(maxsize >= sizeof(this->fdata));
+    memcpy(dest, &this->fdata, sizeof(this->fdata));
+    return (sizeof(this->fdata));
   }
 
   // Do some byte swapping
-  this->laserdata.resolution = ntohs(this->laserdata.resolution);
-  this->laserdata.min_angle = ntohs(this->laserdata.min_angle);
-  this->laserdata.max_angle = ntohs(this->laserdata.max_angle);
-  this->laserdata.range_count = ntohs(this->laserdata.range_count);
-  for (i = 0; i < this->laserdata.range_count; i++)
-    this->laserdata.ranges[i] = ntohs(this->laserdata.ranges[i]);
+  this->ldata.resolution = ntohs(this->ldata.resolution);
+  this->ldata.min_angle = ntohs(this->ldata.min_angle);
+  this->ldata.max_angle = ntohs(this->ldata.max_angle);
+  this->ldata.range_count = ntohs(this->ldata.range_count);
+  for (i = 0; i < this->ldata.range_count; i++)
+    this->ldata.ranges[i] = ntohs(this->ldata.ranges[i]);
 
   // Analyse the laser data
-  this->Find(&this->laserdata, &this->fiducialdata);
+  this->Find();
 
-  // Do some byte-swapping on the beacon data.
-  for (i = 0; i < this->fiducialdata.count; i++)
+  // Do some byte-swapping on the fiducial data.
+  for (i = 0; i < this->fdata.count; i++)
   {
-    this->fiducialdata.fiducials[i].pose[0] = htons(this->fiducialdata.fiducials[i].pose[0]);
-    this->fiducialdata.fiducials[i].pose[1] = htons(this->fiducialdata.fiducials[i].pose[1]);
-    this->fiducialdata.fiducials[i].pose[2] = htons(this->fiducialdata.fiducials[i].pose[2]);
+    this->fdata.fiducials[i].pose[0] = htons(this->fdata.fiducials[i].pose[0]);
+    this->fdata.fiducials[i].pose[1] = htons(this->fdata.fiducials[i].pose[1]);
+    this->fdata.fiducials[i].pose[2] = htons(this->fdata.fiducials[i].pose[2]);
   }
-  this->fiducialdata.count = htons(this->fiducialdata.count);
+  this->fdata.count = htons(this->fdata.count);
 
   // Copy results
-  assert(maxsize >= sizeof(this->fiducialdata));
-  memcpy(dest, &this->fiducialdata, sizeof(this->fiducialdata));
+  assert(maxsize >= sizeof(this->fdata));
+  memcpy(dest, &this->fdata, sizeof(this->fdata));
 
   // Copy the laser timestamp
   *timestamp_sec = this->laser->data_timestamp_sec;
   *timestamp_usec = this->laser->data_timestamp_usec;
   
-  return (sizeof(this->fiducialdata));
+  return (sizeof(this->fdata));
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by server thread)
-int LaserReflector::PutConfig(player_device_id_t* device, void *client, 
-                              void *data, size_t len) 
+int LaserReflector::PutConfig(player_device_id_t* device, void *client, void *data, size_t len) 
 {
   int subtype;
   player_fiducial_geom_t geom;
@@ -295,8 +294,7 @@ int LaserReflector::PutConfig(player_device_id_t* device, void *client,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analyze the laser data to find reflectors.
-void LaserReflector::Find(const player_laser_data_t *laserdata,
-                          player_fiducial_data_t *fiducialdata)
+void LaserReflector::Find()
 {
   int i;
   int h;
@@ -305,8 +303,8 @@ void LaserReflector::Find(const player_laser_data_t *laserdata,
   double pr, pb, po;
   double ur, ub, uo;
 
-  // Empty the beacon list.
-  fiducialdata->count = 0;
+  // Empty the fiducial list.
+  this->fdata.count = 0;
   
   // Initialise patch statistics.
   mn = 0.0;
@@ -316,11 +314,11 @@ void LaserReflector::Find(const player_laser_data_t *laserdata,
   mbb = 0.0;
     
   // Look for a candidate patch in scan.
-  for (i = 0; i < laserdata->range_count; i++)
+  for (i = 0; i < this->ldata.range_count; i++)
   {
-    r = (double) (laserdata->ranges[i] & 0x1FFF) / 1000;
-    b = (double) (laserdata->min_angle + i * laserdata->resolution) / 100.0 * M_PI / 180;
-    h = (int) (laserdata->ranges[i] >> 13);
+    r = (double) (this->ldata.ranges[i]) / 1000;
+    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) / 100.0 * M_PI / 180;
+    h = (int) (this->ldata.intensity[i]);
 
     // If there is a reflection...
     if (h > 0)
@@ -345,10 +343,10 @@ void LaserReflector::Find(const player_laser_data_t *laserdata,
       if (this->TestMoments(mn, mr, mb, mrr, mbb))
       {
         // Do a best fit to determine the pose of the reflector.
-        this->FitCircle(laserdata, i - (int) mn, i - 1, &pr, &pb, &po, &ur, &ub, &uo);
+        this->FitCircle(i - (int) mn, i - 1, &pr, &pb, &po, &ur, &ub, &uo);
 
-        // Fill in the beacon data structure.
-        this->Add(fiducialdata, pr, pb, po, ur, ub, uo);
+        // Fill in the fiducial data structure.
+        this->Add(pr, pb, po, ur, ub, uo);
       }
       
       mn = 0.0;
@@ -368,7 +366,7 @@ bool LaserReflector::TestMoments(double mn, double mr, double mb, double mrr, do
 {
   double dr, db;
   
-  printf("Testing moments %.0f %f %f %f %f\n", mn, mr, mb, mrr, mbb);
+  //printf("Testing moments %.0f %f %f %f %f\n", mn, mr, mb, mrr, mbb);
 
   if (mn < 2.0)
     return false;
@@ -388,9 +386,8 @@ bool LaserReflector::TestMoments(double mn, double mr, double mb, double mrr, do
 ////////////////////////////////////////////////////////////////////////////////
 // Find the line of best fit for the given segment of the laser scan.
 // Fills in the pose and pose uncertainty of the reflector (range,
-// bearing, orientation).  This one works for cylindrical beacons.
-void LaserReflector::FitCircle(const player_laser_data_t *laserdata,
-                               int first, int last,
+// bearing, orientation).  This one works for cylindrical fiducials.
+void LaserReflector::FitCircle(int first, int last,
                                double *pr, double *pb, double *po,
                                double *ur, double *ub, double *uo)
 {
@@ -404,8 +401,8 @@ void LaserReflector::FitCircle(const player_laser_data_t *laserdata,
 
   for (i = first; i <= last; i++)
   {
-    r = (double) (laserdata->ranges[i] & 0x1FFF) / 1000;
-    b = (double) (laserdata->min_angle + i * laserdata->resolution) / 100.0 * M_PI / 180;
+    r = (double) (this->ldata.ranges[i]) / 1000;
+    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) / 100.0 * M_PI / 180;
 
     if (r < mr)
       mr = r;
@@ -422,7 +419,7 @@ void LaserReflector::FitCircle(const player_laser_data_t *laserdata,
 
   // TODO: put in proper uncertainty estimates.
   *ur = 0.02;  
-  *ub = laserdata->resolution / 100.0 * M_PI / 180;
+  *ub = this->ldata.resolution / 100.0 * M_PI / 180;
   *uo = 1e6;
   
   return;
@@ -430,22 +427,21 @@ void LaserReflector::FitCircle(const player_laser_data_t *laserdata,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Add a item into the beacon list.
-void LaserReflector::Add(player_fiducial_data_t *fiducialdata,
-                         double pr, double pb, double po,
+// Add a item into the fiducial list.
+void LaserReflector::Add(double pr, double pb, double po,
                          double ur, double ub, double uo)
 
 {
-  player_fiducial_item_t *beacon;
+  player_fiducial_item_t *fiducial;
 
-  printf("adding %f %f %f\n", pr, pb, po);
+  //printf("adding %f %f %f\n", pr, pb, po);
   
-  assert(fiducialdata->count < ARRAYSIZE(fiducialdata->fiducials));
-  beacon = fiducialdata->fiducials + fiducialdata->count++;
-  beacon->id = 0;
-  beacon->pose[0] = (uint16_t) (int) (pr * 1000);
-  beacon->pose[1] = (int16_t) (int) (pb * 180 / M_PI);
-  beacon->pose[2] = (int16_t) (int) (po * 180 / M_PI);
+  assert(this->fdata.count < ARRAYSIZE(this->fdata.fiducials));
+  fiducial = this->fdata.fiducials + this->fdata.count++;
+  fiducial->id = (int16_t) -1;
+  fiducial->pose[0] = (int16_t) (int) (pr * 1000);
+  fiducial->pose[1] = (int16_t) (int) (pb * 180 / M_PI);
+  fiducial->pose[2] = (int16_t) (int) (po * 180 / M_PI);
 
   return;
 }

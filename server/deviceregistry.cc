@@ -48,6 +48,7 @@ void Acts_Register(DriverTable* table);
 void Festival_Register(DriverTable* table);
 void LaserReflector_Register(DriverTable* table);
 void LaserBarcode_Register(DriverTable* table);
+void LaserVisualBarcode_Register(DriverTable* table);
 void SonyEVID30_Register(DriverTable* table);
 void UDPBroadcast_Register(DriverTable* table);
 void P2OSGripper_Register(DriverTable* table);
@@ -125,6 +126,7 @@ register_devices()
   Festival_Register(driverTable);
   LaserReflector_Register(driverTable);
   LaserBarcode_Register(driverTable);
+  LaserVisualBarcode_Register(driverTable);
   SonyEVID30_Register(driverTable);
   UDPBroadcast_Register(driverTable);
   P2OSGripper_Register(driverTable);
