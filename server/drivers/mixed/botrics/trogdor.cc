@@ -25,9 +25,10 @@
  *
  * Driver for the so-called "Trogdor" robots, made by Botrics.  They're
  * small, very fast robots that carry SICK lasers (talk to the laser over a
- * normal serial port using the sicklms200 driver).  Some of this code is
- * borrowed and/or adapted from the 'cerebellum' module of CARMEN; thanks
- * to the authors of that module.
+ * normal serial port using the sicklms200 driver).  
+ *
+ * Some of this code is borrowed and/or adapted from the 'cerebellum'
+ * module of CARMEN; thanks to the authors of that module.
  */
 
 #if HAVE_CONFIG_H
@@ -76,6 +77,9 @@ class Trogdor : public CDevice
     
     // bookkeeping
     bool fd_blocking;
+    double px, py, pa;  // integrated odometric pose (m,m,rad)
+    int last_ltics, last_rtics;
+    bool odom_initialized;
 
     // methods for internal use
     int WriteBuf(unsigned char* s, size_t len);
@@ -126,17 +130,6 @@ Trogdor::Trogdor(char* interface, ConfigFile* cf, int section) :
   CDevice(sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
 {
   fd = -1;
-  player_position_data_t data;
-  player_position_cmd_t cmd;
-
-  data.xpos = data.ypos = data.yaw = 0;
-  data.xspeed = data.yspeed = data.yawspeed = 0;
-  cmd.xpos = cmd.ypos = cmd.yaw = 0;
-  cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
-
-  PutData((unsigned char*)&data,sizeof(data),0,0);
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
-
   this->serial_port = cf->ReadString(section, "port", TROGDOR_DEFAULT_PORT);
 }
 
@@ -147,9 +140,15 @@ Trogdor::Setup()
   int flags;
   int ltics,rtics,lvel,rvel;
   player_position_cmd_t cmd;
+  player_position_data_t data;
 
   cmd.xpos = cmd.ypos = cmd.yaw = 0;
   cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
+  data.xpos = data.ypos = data.yaw = 0;
+  data.xspeed = data.yspeed = data.yawspeed = 0;
+
+  this->px = this->py = this->pa = 0.0;
+  this->odom_initialized = false;
 
   printf("Botrics Trogdor connection initializing (%s)...", serial_port);
   fflush(stdout);
@@ -249,6 +248,7 @@ Trogdor::Setup()
 
   // zero the command buffer
   PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutData((unsigned char*)&data,sizeof(data),0,0);
 
   // start the thread to talk with the robot
   StartThread();
@@ -290,6 +290,7 @@ Trogdor::Main()
 {
   player_position_cmd_t command;
   player_position_data_t data;
+  double lvel_mps, rvel_mps;
   int lvel, rvel;
   int ltics, rtics;
   double rotational_term, command_lvel, command_rvel;
@@ -340,8 +341,8 @@ Trogdor::Main()
 
     // TODO: sanity check on per-wheel speeds
 
-    if(SetVelocity((int)rint(command_lvel / (150.0 * TROGDOR_M_PER_TICK)),
-                   (int)rint(command_rvel / (150.0 * TROGDOR_M_PER_TICK))) < 0)
+    if(SetVelocity((int)rint(command_lvel / TROGDOR_MPS_PER_TICK),
+                   (int)rint(command_rvel / TROGDOR_MPS_PER_TICK)) < 0)
     {
       PLAYER_ERROR("failed to set velocity");
       pthread_exit(NULL);
@@ -355,12 +356,21 @@ Trogdor::Main()
 
     UpdateOdom(ltics,rtics);
 
-    // TODO: PutData()
-    data.xpos = data.ypos = data.yaw = 0;
-    data.xspeed = data.yspeed = data.yawspeed = 0;
+    data.xpos = htonl((int32_t)rint(this->px * 1e3));
+    data.ypos = htonl((int32_t)rint(this->py * 1e3));
+    data.yaw = htonl((int32_t)rint(RTOD(this->pa)));
+
+    data.yspeed = 0;
+    lvel_mps = lvel / TROGDOR_MPS_PER_TICK;
+    rvel_mps = rvel / TROGDOR_MPS_PER_TICK;
+    data.xspeed = htonl((int32_t)rint(1e3 * (lvel_mps + rvel_mps) / 2.0));
+    data.yawspeed = htonl((int32_t)rint(RTOD((rvel_mps-lvel_mps) / 
+                                             TROGDOR_AXLE_LENGTH)));
+
     PutData((unsigned char*)&data,sizeof(data),0,0);
 
-    // we don't handle any configs yet
+    // handle configs
+    // TODO: break this out into a separate method
     if((config_size = GetConfig(&client,(void*)config,sizeof(config))) > 0)
     {
       switch(config[0])
@@ -369,7 +379,7 @@ Trogdor::Main()
           /* Return the robot geometry. */
           if(config_size != 1)
           {
-            puts("Arg get robot geom is wrong size; ignoring");
+            PLAYER_WARN("Get robot geom config is wrong size; ignoring");
             if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
               PLAYER_ERROR("failed to PutReply");
             break;
@@ -389,6 +399,7 @@ Trogdor::Main()
             PLAYER_ERROR("failed to PutReply");
           break;
         default:
+          PLAYER_WARN1("received unknown config type %d\n", config[0]);
           PutReply(client, PLAYER_MSGTYPE_RESP_NACK);
       }
     }
@@ -555,7 +566,60 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
 void
 Trogdor::UpdateOdom(int ltics, int rtics)
 {
-  // TODO: fill this in
+  int ltics_delta, rtics_delta;
+  double l_delta, r_delta, a_delta, d_delta;
+  double inner_radius;
+
+  if(!this->odom_initialized)
+  {
+    last_ltics = ltics;
+    last_rtics = rtics;
+    this->odom_initialized = true;
+    return;
+  }
+
+  ltics_delta = ltics - last_ltics;
+  rtics_delta = rtics - last_rtics;
+
+  /* what's this for? */
+  /*
+  if (left_delta_tick > SHRT_MAX/2)
+    left_delta_tick += SHRT_MIN;
+  if (left_delta_tick < -SHRT_MAX/2)
+    left_delta_tick -= SHRT_MIN;
+  if (right_delta_tick > SHRT_MAX/2)
+    right_delta_tick += SHRT_MIN;
+  if (right_delta_tick < -SHRT_MAX/2)
+    right_delta_tick -= SHRT_MIN;
+   */
+
+  l_delta = ltics_delta * TROGDOR_M_PER_TICK;
+  r_delta = rtics_delta * TROGDOR_M_PER_TICK;
+
+  if(fabs(r_delta - l_delta) < .001) 
+    a_delta = 0.0;
+  else
+  {
+    if(fabs(l_delta) > 0) 
+    {
+      inner_radius = (l_delta * TROGDOR_AXLE_LENGTH) / (r_delta - l_delta);
+      a_delta = l_delta / inner_radius;  
+    } 
+    else
+    {
+      inner_radius = (r_delta * TROGDOR_AXLE_LENGTH) / (l_delta - r_delta);
+      a_delta = r_delta / inner_radius;
+    } 
+  }
+
+  d_delta = (l_delta + r_delta) / 2.0;
+
+  this->px += d_delta * cos(this->pa);
+  this->py += d_delta * sin(this->pa);
+  this->pa += a_delta;
+
+  this->last_ltics = ltics;
+  this->last_rtics = rtics;
 }
 
 // Validate XOR checksum
