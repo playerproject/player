@@ -323,8 +323,10 @@ proc toggle_sonar {} {
   global PLAYER_SONAR_CODE PLAYER_READ_MODE PLAYER_CLOSE_MODE
   if {$display_sonar} {
     requestDeviceAccess $PLAYER_SONAR_CODE 0 $PLAYER_READ_MODE
+    ChangeSonarState 1
   } else {
     requestDeviceAccess $PLAYER_SONAR_CODE 0 $PLAYER_CLOSE_MODE
+    ChangeSonarState 0
   }
 }
 proc toggle_laser {} {
@@ -658,7 +660,7 @@ proc displayData {} {
   # display the laser device data
   #
   if {$display_laser} {
-    set laser_points {}
+    set laser_points [list 0 0]
     foreach index [lsort -integer [array names laser]] {
       set dist [expr $laser($index) * $CANVAS_CONV_FACTOR]
       set x [expr -$dist * $laser_angles($index,sin)]
@@ -667,6 +669,7 @@ proc displayData {} {
       lappend laser_points $x $y
     }
 
+    lappend laser_points 0 0
     set obslist [concat $obslist \
       [eval .robot_panel.canvas create line $laser_points -fill red]]
   }
@@ -678,6 +681,7 @@ proc startRobot {} {
   global PLAYER_ALL_MODE
 
   connectToRobot $host
+  ChangeSonarState 0
   # try to connect to ptz, position, and misc (but ignore errors)
   catch {requestDeviceAccess $PLAYER_POSITION_CODE 0 $PLAYER_ALL_MODE}
   catch {requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE}

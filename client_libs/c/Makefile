@@ -10,6 +10,8 @@ RMDIR = rmdir
 LN = ln
 AR = ar
 
+MAKEDEP = makedepend
+
 LIBNAME = libplayercclient.a
 
 INSTALL_LIB = $(INSTALL_PREFIX)/lib
@@ -25,7 +27,11 @@ all: $(LIBNAME)
 $(LIBNAME): $(OBJECTS)
 	ar cr $@ $(OBJECTS)
 
-%.o: %.c playercclient.h
+dep:
+	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.c 2>/dev/null
+	$(RM) -f Makefile.bak
+
+%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 install: $(LIBNAME)
@@ -40,3 +46,11 @@ uninstall:
 
 clean:
 	$(RM) -f $(LIBNAME) $(OBJECTS)
+# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
+
+helpers.o: playercclient.h ../../include/messages.h
+helpers.o: ../../include/playercommon.h
+playercclient.o: playercclient.h ../../include/messages.h
+playercclient.o: ../../include/playercommon.h
+print.o: playercclient.h ../../include/messages.h
+print.o: ../../include/playercommon.h

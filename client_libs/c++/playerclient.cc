@@ -602,7 +602,7 @@ int PlayerClient::ChangeVelocityControl(velocity_mode_t mode)
   player_msghdr_t replyhdr;
   char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
 
-  payload[0] = 'v';
+  payload[0] = PLAYER_POSITION_VELOCITY_CONTROL_REQ;
   if(mode == DIRECTWHEELVELOCITY)
     payload[1] = 0;
   else if(mode == SEPARATETRANSROT)
@@ -684,7 +684,7 @@ int PlayerClient::ChangeMotorState(unsigned char state)
   player_msghdr_t replyhdr;
   char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
 
-  payload[0] = 'm';
+  payload[0] = PLAYER_POSITION_MOTOR_POWER_REQ;
   payload[1] = state;
   return(player_request(&conn, PLAYER_POSITION_CODE, 0,
                           payload, sizeof(payload),
@@ -701,7 +701,7 @@ int PlayerClient::ChangeSonarState(unsigned char state)
   player_msghdr_t replyhdr;
   char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
 
-  payload[0] = 's';
+  payload[0] = PLAYER_SONAR_POWER_REQ;
   payload[1] = state;
   return(player_request(&conn, PLAYER_POSITION_CODE, 0,
                           payload, sizeof(payload),

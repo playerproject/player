@@ -25,7 +25,7 @@
  * 
  * helper functions to make the C client a bit easier to use.
  */
-#include <playercclient.h>
+#include "playercclient.h"
 #include <netdb.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
