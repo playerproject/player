@@ -90,63 +90,43 @@ void AdaptiveMCL_Register(DriverTable* table)
 AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
     : Driver(cf, section)
 {
-  player_device_id_t* ids;
-  int num_ids;
-
-  memset(&this->localize_id, 0, sizeof(player_device_id_t));
-  memset(&this->position_id, 0, sizeof(player_device_id_t));
-
-  // Parse devices section
-  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
   int i;
   double u[3];
   AMCLSensor *sensor;
 
+  memset(&this->localize_id, 0, sizeof(player_device_id_t));
+  memset(&this->position_id, 0, sizeof(player_device_id_t));
+
   // Do we create a localize interface?
-  if(cf->ReadDeviceId(&(this->localize_id), ids, num_ids,
-                      PLAYER_LOCALIZE_CODE, 0) == 0)
+  if(cf->ReadDeviceId(&(this->localize_id), section, "provides",
+                      PLAYER_LOCALIZE_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->localize_id, PLAYER_READ_MODE, 
                           sizeof(player_localize_data_t), 0, 100, 100) != 0)
     {
       this->SetError(-1);    
-      free(ids);
       return;
     }
   }
 
   // Do we create a position interface?
-  if(cf->ReadDeviceId(&(this->position_id), ids, num_ids,
-                      PLAYER_POSITION_CODE, 0) == 0)
+  if(cf->ReadDeviceId(&(this->position_id), section, "provides",
+                      PLAYER_POSITION_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->position_id, PLAYER_READ_MODE, 
                           sizeof(player_position_data_t), 0, 100, 100) != 0)
     {
       this->SetError(-1);    
-      free(ids);
       return;
     }
   }
-
-  // check for unused ids
-  if(cf->UnusedIds(section,ids,num_ids))
-  {
-    this->SetError(-1);
-    free(ids);
-    return;
-  }
-
-  free(ids);
 
   this->init_sensor = -1;
   this->action_sensor = -1;
   this->sensor_count = 0;
 
+  /// @todo Use "requires"
+  
   // Create odometry sensor
   if (cf->ReadInt(section, "odom_index", -1) >= 0)
   {

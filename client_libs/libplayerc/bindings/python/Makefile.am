@@ -16,7 +16,7 @@ EXTRA_DIST = playerc.i setup.py parse.py
 
 # Generate a OO interface file for libplayerc
 playerc_oo.i: ../../playerc.h
-	cd $(srcdir) && python parse.py ../../playerc.h playerc_oo.i && touch playerc.i && cd $(python_builddir)
+	cd $(srcdir) && python parse.py ../../playerc.h $(python_builddir)/playerc_oo.i && touch playerc.i && cd $(python_builddir)
 
 # Use distutils to build.  Note the trick here to enable VPATH (and
 # distcheck) builds: we jump into the source tree to build the module,

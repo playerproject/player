@@ -574,6 +574,10 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
   }
 
   fprintf(this->file, "\n");
+
+  // Flush the data (some drivers produce a lot of data; we dont want
+  // it to back up and slow us down later).
+  fflush(this->file);
   
   return;
 }

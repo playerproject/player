@@ -59,7 +59,9 @@ I/O subsystem within this driver is modular, so that it should be pretty
 straightforward to add support for other CAN cards.
 
 
-@par Interfaces
+@par Provides
+
+The RMP driver provides the following device interfaces.
 
 - @ref player_interface_position
   - This interface returns odometry data, and accepts velocity commands.
@@ -96,8 +98,8 @@ straightforward to add support for other CAN cards.
 @verbatim
 driver
 (
-  driver segwayrmp
-  devices ["position:0" "position3d:0" "power:0"]
+  name "segwayrmp"
+  provides ["position:0" "position3d:0" "power:0"]
 )
 @endverbatim
 */
@@ -151,22 +153,12 @@ void SegwayRMP_Register(DriverTable* table)
 SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
     : Driver(cf, section)
 {
-  player_device_id_t* ids;
-  int num_ids;
-
   memset(&this->position_id.code, 0, sizeof(player_device_id_t));
   memset(&this->position3d_id.code, 0, sizeof(player_device_id_t));
 
-  // Parse devices section
-  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
   // Do we create a position interface?
-  if(cf->ReadDeviceId(&(this->position_id), ids, num_ids, 
-                      PLAYER_POSITION_CODE, 0) == 0)
+  if(cf->ReadDeviceId(&(this->position_id), section, "provides", 
+                      PLAYER_POSITION_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
                           sizeof(player_position_data_t),
@@ -178,8 +170,8 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
   }
 
   // Do we create a position3d interface?
-  if(cf->ReadDeviceId(&(this->position3d_id), ids, num_ids, 
-                      PLAYER_POSITION3D_CODE, 0) == 0)
+  if(cf->ReadDeviceId(&(this->position3d_id), section, "provides", 
+                      PLAYER_POSITION3D_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->position3d_id, PLAYER_ALL_MODE,
                           sizeof(player_position3d_data_t),
@@ -191,12 +183,11 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
   }
 
   // Do we create a power interface?
-  if(cf->ReadDeviceId(&(this->power_id), ids, num_ids, 
-                      PLAYER_POWER_CODE, 0) == 0)
+  if(cf->ReadDeviceId(&(this->power_id), section, "provides", 
+                      PLAYER_POWER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->power_id, PLAYER_READ_MODE,
-                          sizeof(player_power_data_t),
-                          0, 1, 1) != 0)
+                          sizeof(player_power_data_t), 0, 1, 1) != 0)
     {
       this->SetError(-1);    
       return;
