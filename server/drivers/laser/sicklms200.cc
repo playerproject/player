@@ -169,6 +169,9 @@ class SickLMS200 : public CDevice
     // laser device file descriptor
     int laser_fd;           
 
+    // Starup delay
+    int startup_delay;
+  
     // Scan width and resolution.
     int scan_width, scan_res;
 
@@ -190,8 +193,9 @@ class SickLMS200 : public CDevice
     // readings)
     int invert;
 
-  bool can_do_hi_speed;
-  int port_rate;
+    bool can_do_hi_speed;
+    int port_rate;
+  
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct old_serial;
 #endif
@@ -247,6 +251,7 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
   this->device_name = cf->ReadString(section, "port", DEFAULT_LASER_PORT);
 
   // Set default configuration
+  this->startup_delay = cf->ReadInt(section, "delay", 0);
   this->scan_width = 180;
   this->scan_res = cf->ReadInt(section, "resolution", 50);
   this->min_angle = -9000;
@@ -287,6 +292,10 @@ int SickLMS200::Setup()
   if (OpenTerm())
     return 1;
 
+  // Some Pioneers only power laser after the terminal is opened; wait
+  // for the laser to initialized
+  sleep(this->startup_delay);
+  
   // Start out at 38400 with non-blocking io
   if (ChangeTermSpeed(38400))
     return 1;
