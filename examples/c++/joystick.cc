@@ -1,5 +1,5 @@
 /*
- * joystick.cc - control some player devices with a joystick
+ * joystick.cc - control position and ptz devices with a joystick
  * 
  * $Id$
  */
