@@ -193,7 +193,8 @@ PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[no],)
 
 PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[no],)
 
-PLAYER_ADD_DRIVER([mcl],[drivers/localization/mcl],[no],)
+dnl Deprecated
+dnl PLAYER_ADD_DRIVER([mcl],[drivers/localization/mcl],[no],)
 
 PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],["-lgsl -lgslcblas"],[gsl/gsl_version.h])
 
