@@ -32,7 +32,7 @@ define background bg
   mouseable "false"
 
   # a negative number will make this object the maximum
-  # possible size in that axis. Here we fill the world
+  # possible size in that axis. Here we fill the whole world
   size [-1 -1]
 
   # TODO - add origin munging to match the size-munging above
@@ -49,8 +49,8 @@ background
 
 ant
 ( 
-   pose [ 1.360 0.373 -3.887 ]
-   size [0.5 0.3]
+   pose [ 1.000 1.000 0.000 ]	
+   size [0.05 0.02]
    bitmap "ant2.pnm"
    color "black"
    nose "false"
@@ -64,6 +64,7 @@ bug
    color "orange"
    nose "false"
    name "orange_bug" # override the default name 
+
 )
 
 sonarbot
@@ -81,7 +82,6 @@ sonarbot
    ranger[7] [0.1 -0.1  315.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
 
    pose [ 0.890 2.686 -1.253 ]
-
 ) 
 
 define indicatorlight light
@@ -101,9 +101,35 @@ define swarmbot sb
   indicatorlight( color "green"  pose [0.000 0.030 0.000] light_interval 400) 
   indicatorlight( color "blue"   pose [-0.030 0.000 0.000] light_interval 600) 
   indicatorlight( color "yellow" pose [0.000 -0.030 0.000] light_interval 800) 
+
+  velocity [ 0 0 1 ]
 )
 	
-swarmbot( pose [4.238 3.642 0.154] color "red" )
-swarmbot( pose [3.826 3.677 -0.806] color "green"  )
-swarmbot( pose [4.119 4.169 0.290] color "blue"  )
-swarmbot( pose [3.660 4.350 -1.730] color "magenta" )
+swarmbot( pose [4.413 3.882 55.214] color "red" )
+swarmbot( pose [3.771 4.007 27.154] color "green"  )
+swarmbot( pose [3.945 4.572 53.180] color "blue"  )
+swarmbot( pose [4.660 3.825 3.814] color "red" )
+swarmbot( pose [3.533 4.447 55.914] color "green"  )
+swarmbot( pose [4.256 4.059 30.220] color "blue"  )
+swarmbot( pose [4.577 3.670 33.034] color "red" )
+swarmbot( pose [3.304 4.108 27.544] color "green"  )
+swarmbot( pose [4.073 3.995 4.250] color "blue"  )
+swarmbot( pose [4.657 3.500 29.144] color "red" )
+swarmbot( pose [3.322 3.925 17.334] color "green"  )
+swarmbot( pose [3.963 4.206 28.030] color "blue"  )
+swarmbot( pose [4.330 3.468 29.204] color "red" )
+swarmbot( pose [3.425 3.636 6.444] color "green"  )
+swarmbot( pose [4.211 4.288 28.550] color "blue"  )
+swarmbot( pose [4.366 3.651 56.304] color "red" )
+swarmbot( pose [3.395 4.291 55.564] color "green"  )
+swarmbot( pose [4.495 4.087 47.170] color "blue"  )
+swarmbot( pose [4.146 3.587 52.644] color "red" )
+swarmbot( pose [3.634 4.200 31.684] color "green"  )
+swarmbot( pose [4.476 4.361 43.140] color "blue"  )
+swarmbot( pose [4.166 3.823 29.524] color "red" )
+swarmbot( pose [3.670 3.842 17.254] color "green"  )
+swarmbot( pose [4.211 4.517 24.450] color "blue"  )
+swarmbot( pose [3.926 3.679 32.504] color "red" )
+swarmbot( pose [3.496 4.025 55.154] color "green"  )
+swarmbot( pose [3.991 4.398 56.090] color "blue"  )
+
