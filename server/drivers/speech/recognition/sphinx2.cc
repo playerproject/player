@@ -212,11 +212,11 @@ Sphinx2::~Sphinx2()
 
 int Sphinx2::Setup()
 {
-  int argc = 70;
+  int argc = 72;
 
   // Here are all the available options. Maybe at some point this will
   // become config file options...
-  const char *argv[70] = {
+  const char *argv[72] = {
                   "-hmmdir", this->hmmDir,
                   "-hmmdirlist", this->hmmDir,
                   "-cbdir", this->hmmDir,
@@ -250,7 +250,8 @@ int Sphinx2::Setup()
                   "-fwdflatbeam", "1e-08",
                   "-fwdflatnwbeam", "0.0003",
                   "-bestpath", "TRUE",
-                  "-8bsen", "TRUE"
+                  "-8bsen", "TRUE",
+                  "-maxwpf", "1"
                  };
 
   /* Initialize recognition engine */
@@ -260,11 +261,6 @@ int Sphinx2::Setup()
   this->audioDev = ad_open_sps(SAMPLE_RATE);
   if (this->audioDev  == NULL)
     PLAYER_ERROR("ad_open() failed\n");
-
-  this->continuousModule = cont_ad_init (this->audioDev, ad_read); 
-
-  if (this->continuousModule == NULL)
-    PLAYER_ERROR("cont_ad_init failed\n");
 
   /* now spawn reading thread */
   StartThread();
@@ -302,6 +298,11 @@ void Sphinx2::Main()
   short audioBuff[4096];
   player_speech_recognition_data_t data;
 
+  this->continuousModule = cont_ad_init (this->audioDev, ad_read); 
+
+  if (this->continuousModule == NULL)
+    PLAYER_ERROR("cont_ad_init failed\n");
+
   if (ad_start_rec( this->audioDev ) <0)
     PLAYER_ERROR("ad_start_rec failed\n");
 
@@ -321,14 +322,14 @@ void Sphinx2::Main()
     // Await data for next utterance
     if ((sampleCount = cont_ad_read(this->continuousModule, audioBuff, 4096)) == 0)
     {
-      usleep(200000);
+      usleep(100000);
       continue;
     }
 
     if (sampleCount < 0)
     {
       PLAYER_ERROR("cont_ad_read failed\n");
-      continue;
+//      continue;
     }
 
     //Non-zero amount of data received; start recognition of new utterance.
@@ -336,7 +337,7 @@ void Sphinx2::Main()
     if (uttproc_begin_utt (NULL) < 0)
     {
       PLAYER_ERROR("uttproc_begin_utt failed\n");
-      continue;
+ //     continue;
     }
 
     uttproc_rawdata (audioBuff, sampleCount, 0);
@@ -353,7 +354,7 @@ void Sphinx2::Main()
       if ((sampleCount = cont_ad_read (this->continuousModule, audioBuff, 4096)) < 0)
       {
         PLAYER_ERROR("cont_ad_read failed\n");
-        break;
+  //      break;
       }
 
       if (sampleCount == 0) {
@@ -372,8 +373,8 @@ void Sphinx2::Main()
       remainingFrames = uttproc_rawdata (audioBuff, sampleCount, 0);
 
       // If no work to be done, sleep a bit
-      //if ((rem == 0) && (amp == 0))
-      // sleep_msec (20);
+      if ((remainingFrames == 0) && (sampleCount == 0))
+        usleep(20000);
     }
 
      // Utterance ended; flush any accumulated, unprocessed A/D data and stop
@@ -390,7 +391,7 @@ void Sphinx2::Main()
     if (uttproc_result (&frames, &hypothesis, 1) < 0)
     {
       PLAYER_ERROR("uttproc_result failed\n");
-      continue;
+      //continue;
     }
 
     strncpy(data.text, hypothesis, SPEECH_RECOGNITION_TEXT_LEN);
