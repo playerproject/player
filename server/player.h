@@ -2439,7 +2439,7 @@ sensors. */
 
 /** [Constants] */
 /** Maximum number of samples */
-#define PLAYER_IR_MAX_SAMPLES 8
+#define PLAYER_IR_MAX_SAMPLES 32
 /** config requests */
 #define PLAYER_IR_POSE_REQ   ((uint8_t)1)
 #define PLAYER_IR_POWER_REQ  ((uint8_t)2)
@@ -2478,7 +2478,7 @@ typedef struct player_ir_pose_req
   /** subtype; must be PLAYER_IR_POSE_REQ */
   uint8_t subtype; 
   /** the poses */
-  player_ir_pose_t poses[PLAYER_IR_MAX_SAMPLES];
+  player_ir_pose_t poses;
 } __attribute__ ((packed)) player_ir_pose_req_t;
 
 

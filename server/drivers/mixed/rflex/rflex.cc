@@ -307,6 +307,16 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
     bumperp->data_timestamp_usec = this->data_timestamp_usec;
   }
 
+  id.code = PLAYER_IR_CODE;
+  pthread_testcancel();
+  CDevice* ir = deviceTable->GetDevice(id);
+  pthread_testcancel();
+  if(ir)
+  {
+    ir->data_timestamp_sec = this->data_timestamp_sec;
+    ir->data_timestamp_usec = this->data_timestamp_usec;
+  }
+
   id.code = PLAYER_AIO_CODE;
   pthread_testcancel();
   CDevice* aio = deviceTable->GetDevice(id);
@@ -354,6 +364,7 @@ RFLEX::Main()
 	int last_sonar_subscrcount;
 	int last_position_subscrcount;
 	int last_bumper_subscrcount;
+	int last_ir_subscrcount;
 
 	player_device_id_t id;
 
@@ -366,10 +377,13 @@ RFLEX::Main()
 	CDevice* positionp = deviceTable->GetDevice(id);
 	id.code = PLAYER_BUMPER_CODE;
 	CDevice* bumperp = deviceTable->GetDevice(id);
+	id.code = PLAYER_IR_CODE;
+	CDevice* irp = deviceTable->GetDevice(id);
 
 	last_sonar_subscrcount = 0;
 	last_position_subscrcount = 0;
 	last_bumper_subscrcount = 0;
+	last_ir_subscrcount = 0;
 
 	GlobalTime->GetTime(&timeBegan_tv);
 	while(1)
@@ -391,6 +405,18 @@ RFLEX::Main()
 		if(bumperp)
 		{
 			last_bumper_subscrcount = bumperp->subscriptions;
+		}
+
+		// we want to turn on the ir if someone just subscribed, and turn
+		// it off if the last subscriber just unsubscribed.
+		if(sonarp)
+		{
+			if(!last_ir_subscrcount && irp->subscriptions)
+				rflex_ir_on(rflex_fd);
+			else if(last_ir_subscrcount && !(irp->subscriptions))
+				rflex_ir_off(rflex_fd);
+			
+			last_ir_subscrcount = irp->subscriptions;
 		}
 
 
@@ -529,6 +555,63 @@ RFLEX::Main()
 				// Arent any request other than geometry
 				default:
 					puts("Bumper got unknown config request");
+					if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+						PLAYER_ERROR("failed to PutReply");
+					break;
+				}
+				break;
+
+			case PLAYER_IR_CODE:
+				switch(config[0])
+				{
+				case PLAYER_IR_POSE_REQ:
+					/* Return the ir geometry. */
+					if(config_size != 1)
+					{
+						puts("Arg get bumper geom is wrong size; ignoring");
+						if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+							PLAYER_ERROR("failed to PutReply");
+						break;
+					}
+
+					// Assemble geometry structure for sending
+					//printf("sending geometry to client, posecount = %d\n", rflex_configs.ir_poses.pose_count);
+					player_ir_pose_req geom;
+					geom.subtype = PLAYER_IR_POSE_REQ;
+					geom.poses.pose_count = htons((short) rflex_configs.ir_poses.pose_count);
+					for (i = 0; i < rflex_configs.ir_poses.pose_count; i++){
+						geom.poses.poses[i][0] = htons((short) rflex_configs.ir_poses.poses[i][0]); //mm
+						geom.poses.poses[i][1] = htons((short) rflex_configs.ir_poses.poses[i][1]); //mm
+						geom.poses.poses[i][2] = htons((short) rflex_configs.ir_poses.poses[i][2]); //deg
+					}
+
+					// Send
+					if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)))
+						PLAYER_ERROR("failed to PutReply");
+					break;
+				case PLAYER_IR_POWER_REQ:
+					/* Return the ir geometry. */
+					if(config_size != 1)
+					{
+						puts("Arg get ir geom is wrong size; ignoring");
+						if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+							PLAYER_ERROR("failed to PutReply");
+						break;
+					}
+
+					if (config[1] == 0)
+						rflex_ir_off(rflex_fd);
+					else
+						rflex_ir_on(rflex_fd);
+										
+					// Send
+					if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+						PLAYER_ERROR("failed to PutReply");
+					break;
+	
+				// Arent any request other than geometry and power
+				default:
+					puts("Ir got unknown config request");
 					if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
 						PLAYER_ERROR("failed to PutReply");
 					break;
@@ -685,7 +768,7 @@ RFLEX::Main()
 			rflex_stop_robot(rflex_fd,(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));
 		
 		/* Get data from robot */
-		update_everything(data,sonarp,bumperp);
+		update_everything(data,sonarp,bumperp,irp);
 		pthread_testcancel();
 		PutData((unsigned char*) data,sizeof(data),0,0);
 		pthread_testcancel();
@@ -742,9 +825,10 @@ void RFLEX::set_odometry(long mm_x, long mm_y, short deg_theta) {
   rad_odo_theta=DEG2RAD_CONV(deg_theta);
 }
 
-void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *bumperp) {
+void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *bumperp, CDevice * irp) {
   int arb_ranges[rflex_configs.num_sonars];
   char abumper_ranges[rflex_configs.bumper_count];
+  unsigned char air_ranges[rflex_configs.ir_poses.pose_count];
 
   static int initialized = 0;
 
@@ -758,7 +842,7 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *
   int arb_new_range_position;
   int arb_new_bearing_position;
   double mm_displacement;
-  short a_num_sonars, a_num_bumpers;
+  short a_num_sonars, a_num_bumpers, a_num_ir;
 
   int batt,brake;
 
@@ -829,6 +913,30 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *
    }
 
 
+  // if someone is subscribed to irs copy internal data to device
+   if(irp->subscriptions)
+   {
+       a_num_ir=rflex_configs.ir_poses.pose_count;
+
+       pthread_testcancel();
+	   // first make sure our internal state is up to date
+       rflex_update_ir(rflex_fd, a_num_ir, air_ranges);
+       pthread_testcancel();
+
+       d->ir.range_count = a_num_ir;
+	   for (int i = 0; i < a_num_ir; ++i)
+	   {
+	   		d->ir.voltages[i] = htons(air_ranges[i]);
+			// using power law mapping of form range = (a*voltage)^b
+			int range = (int) (pow(rflex_configs.ir_a[i] *((double) air_ranges[i]),rflex_configs.ir_b[i]));
+			// check for min and max ranges, < min = 0 > max = max
+			range = range < rflex_configs.ir_min_range ? 0 : range;
+			range = range > rflex_configs.ir_max_range ? rflex_configs.ir_max_range : range;
+	   		d->ir.ranges[i] = htons(range);		
+	   }
+   }
+
+
   //this would get the battery,time, and brake state (if we cared)
   //update system (battery,time, and brake)
   rflex_update_system(rflex_fd,&batt,&brake);
@@ -858,6 +966,11 @@ void RFLEX::set_config_defaults(){
   rflex_configs.num_sonars_possible_per_bank=0;
   rflex_configs.num_sonars_in_bank=NULL;
   rflex_configs.mmrad_sonar_poses=NULL;
+  rflex_configs.ir_poses.pose_count = 0;
+  rflex_configs.ir_poses.pose_count = 0;
+  rflex_configs.ir_base_bank = 0;
+  rflex_configs.ir_bank_count = 0;
+  rflex_configs.ir_count = NULL;
 }
 
 

@@ -170,10 +170,10 @@ PTU46::PTU46(char * port, int rate)
 	tcsetattr(fd, TCSANOW, &newtio);
 	
 	// now set up the pan tilt camera
-	Write("\n?"); // display version info (also clears any bad inputon serial port)
 	Write("ft "); // terse feedback
 	Write("ed "); // disable echo
 	Write("ci "); // position mode
+	Write(" r "); // reset pan-tilt unit (also clears any bad input on serial port)
 	
 	
 	// delay here so data has arrived at serial port so we can flush it

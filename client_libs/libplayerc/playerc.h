@@ -71,6 +71,7 @@ extern "C" {
 #define PLAYERC_FIDUCIAL_MAX_SAMPLES    PLAYER_FIDUCIAL_MAX_SAMPLES
 #define PLAYERC_SONAR_MAX_SAMPLES       PLAYER_SONAR_MAX_SAMPLES
 #define PLAYERC_BUMPER_MAX_SAMPLES		PLAYER_BUMPER_MAX_SAMPLES
+#define PLAYERC_IR_MAX_SAMPLES		    PLAYER_IR_MAX_SAMPLES
 #define PLAYERC_BLOBFINDER_MAX_BLOBS    64
 #define PLAYERC_WIFI_MAX_LINKS          PLAYER_WIFI_MAX_LINKS
 
@@ -1175,6 +1176,53 @@ int playerc_bumper_unsubscribe(playerc_bumper_t *device);
 /** Get the bumper geometry.  The writes the result into the proxy
     rather than returning it to the caller. */
 int playerc_bumper_get_geom(playerc_bumper_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
+/***************************************************************************
+ ** begin section ir
+ **************************************************************************/
+
+/** [Synopsis] The {\tt ir} proxy provides an interface to the
+ir sensors built into robots such as the RWI B21R. */
+
+/** [Data] */
+
+
+
+/** Ir proxy data. */
+typedef struct _playerc_ir_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  // data
+  player_ir_data_t ranges;
+  
+  // config
+  player_ir_pose_t poses;
+
+} playerc_ir_t;
+
+/** [Methods] */
+
+/** Create a ir proxy. */
+playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index);
+
+/** Destroy a ir proxy. */
+void playerc_ir_destroy(playerc_ir_t *device);
+
+/** Subscribe to the ir device. */
+int playerc_ir_subscribe(playerc_ir_t *device, int access);
+
+/** Un-subscribe from the ir device. */
+int playerc_ir_unsubscribe(playerc_ir_t *device);
+
+/** Get the ir geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_ir_get_geom(playerc_ir_t *device);
 
 /***************************************************************************
  ** end section

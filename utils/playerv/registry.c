@@ -87,6 +87,13 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fnupdate = (fnupdate_t) sonar_update;
       break;
 
+    case PLAYER_IR_CODE:
+      device->proxy = ir_create(mainwnd, opt, client, 
+                                   device->index, device->drivername, device->subscribe);
+      device->fndestroy = (fndestroy_t) ir_destroy;
+      device->fnupdate = (fnupdate_t) ir_update;
+      break;
+
      case PLAYER_BUMPER_CODE:
        device->proxy = bumper_create(mainwnd, opt, client,
                                     device->index, device->drivername, device->subscribe);

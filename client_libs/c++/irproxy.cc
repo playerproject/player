@@ -113,11 +113,15 @@ IRProxy::GetIRPose()
   req.subtype = PLAYER_IR_POSE_REQ;
   
   if ((client->Request(m_device_id, (const char *)&req,
-		       sizeof(req), &hdr, (char *)&ir_pose,
-		       sizeof(ir_pose)) < 0) ||
+		       sizeof(req.subtype), &hdr, (char *)&req,
+		       sizeof(req)) < 0) ||
       hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
     return -1;
   }
+
+   ir_pose = req.poses;
+
+	ir_pose.pose_count = ntohs(ir_pose.pose_count);
 
   // now change the byte ordering
   for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
@@ -168,6 +172,7 @@ IRProxy::SetStdDevParams(int which, double m, double b)
 void
 IRProxy::FillData(player_msghdr_t hdr, const char *buffer)
 {
+
   unsigned short new_range;
 
   if (hdr.size != sizeof(player_ir_data_t)) {
@@ -177,12 +182,13 @@ IRProxy::FillData(player_msghdr_t hdr, const char *buffer)
 
   for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
     new_range = ntohs(((player_ir_data_t *)buffer)->ranges[i]);
+      voltages[i] = ntohs( ((player_ir_data_t *)buffer)->voltages[i] );
  
     // if range is 0, then this is from real IR data
     // so we do a regression.  otherwise, its been done
     // for us by stage
+
     if (new_range == 0) {
-      voltages[i] = ntohs( ((player_ir_data_t *)buffer)->voltages[i] );
       // calc range in mm
       new_range = (unsigned short) rint(exp( (log( (double)voltages[i] ) - params[i][IRPROXY_B_PARAM] ) /
 					     params[i][IRPROXY_M_PARAM]));

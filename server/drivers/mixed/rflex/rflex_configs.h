@@ -73,10 +73,25 @@ typedef struct rflex_config_t{
   long sonar_echo_delay;
   long sonar_ping_delay;
   long sonar_set_delay;
+  
+  // bumper configs
   unsigned short bumper_count;
   int bumper_address;
   player_bumper_define_t * bumper_def;
+
+  // power configs
   int power_offset;
+  
+  // ir configs
+  player_ir_pose_t ir_poses;
+  int ir_base_bank;
+  int ir_bank_count;
+  int * ir_count; 
+  double * ir_a; 
+  double * ir_b; 
+  int ir_min_range;
+  int ir_max_range;
+  
 }  rflex_config_t;
 
 //notice - every file that includes this header gets a GLOBAL rflex_configs!!

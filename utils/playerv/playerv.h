@@ -55,6 +55,8 @@
 #define COLOR_PTZ_CMD            0x00C000
 #define COLOR_SONAR              0xC0C080
 #define COLOR_SONAR_SCAN         0xC0C080
+#define COLOR_IR                 0xC0C080
+#define COLOR_IR_SCAN            0xC00080
 #define COLOR_WIFI               0x000000
 #define COLOR_BUMPER             0xC080C0
 #define COLOR_BUMPER_ACTIVE      0x00FF00
@@ -397,6 +399,43 @@ void sonar_destroy(sonar_t *sonar);
 
 // Update a sonar device
 void sonar_update(sonar_t *sonar);
+
+
+/***************************************************************************
+ * IR device
+ ***************************************************************************/
+
+// IR device info
+typedef struct
+{
+  // Driver name
+  char *drivername;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+
+  // Figures for drawing the sonar scan
+  rtk_fig_t *scan_fig[PLAYERC_IR_MAX_SAMPLES];
+  
+  // Sonar device proxy
+  playerc_ir_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+  
+} ir_t;
+
+
+// Create a ir device
+ir_t *ir_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                      int index,  const char *drivername, int subscribe);
+
+// Destroy a sonar device
+void ir_destroy(ir_t *ir);
+
+// Update a sonar device
+void ir_update(ir_t *ir);
 
  /***************************************************************************
   * Bumper device
