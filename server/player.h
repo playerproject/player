@@ -89,6 +89,7 @@
 #define PLAYER_SERVICE_ADV_CODE    ((uint16_t)32)  // LAN service advertisement
 #define PLAYER_BLINKENLIGHT_CODE   ((uint16_t)33)  // blinking lights 
 #define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo)
+#define PLAYER_NOMAD_CODE          ((uint16_t)41)   // Nomad robot
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -126,6 +127,8 @@
 #define PLAYER_SERVICE_ADV_STRING   "service_adv"
 #define PLAYER_SIMULATION_STRING    "simulation"
 #define PLAYER_BLINKENLIGHT_STRING  "blinkenlight"
+#define PLAYER_NOMAD_STRING         "nomad"
+
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 #define PLAYER_CAMERA_STRING          "camera"
@@ -2696,6 +2699,59 @@ typedef struct player_mcom_return
     /** The data. */
     player_mcom_data_t data;
 } __attribute__ ((packed)) player_mcom_return_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section nomad
+ *************************************************************************/
+/** [Synopsis]
+   The {\tt nomad} interface affords control of a Nomad 200 robot.
+ */
+/** [Constants] */
+#define NOMAD_SONAR_COUNT 16
+#define NOMAD_BUMPER_COUNT 16
+#define NOMAD_IR_COUNT 16
+#define NOMAD_RADIUS_MM 400 // TODO: measure the Nomad to get this exactly right
+#define NOMAD_CONFIG_BUFFER_SIZE 256 // this should be bigger than the biggest config we could receive
+
+/** [Data]
+The {\tt nomad} interface provides a pose estimate and sonar range readings.
+The format is: */
+typedef struct player_nomad_data
+{
+  /** X and Y position, in mm */
+  int32_t x, y;
+  /** heading, in degrees */
+  int32_t a; 
+  /** velocities (units?)*/
+  int32_t vel_trans, vel_steer, vel_turret; 
+
+  /** sonar range sensors: range in mm */
+  uint16_t sonar[NOMAD_SONAR_COUNT];
+  /** infrared range sensors: range in mm */
+  uint16_t ir[NOMAD_IR_COUNT];
+  /** bump sensors: zero - no contact, non-zero - contact */
+  uint8_t bumper[NOMAD_BUMPER_COUNT];
+
+} __attribute__ ((packed)) player_nomad_data_t;
+  
+/** [Commands]
+   Move the Nomad.
+*/
+
+typedef struct player_nomad_cmd
+{
+   /** velocities (units?)*/
+  int32_t vel_trans, vel_steer, vel_turret; 
+} __attribute__ ((packed)) player_nomad_cmd_t;
+
+/** [Configs]
+    This interface accepts no configs
+*/
+
 
 /*************************************************************************
  ** end section

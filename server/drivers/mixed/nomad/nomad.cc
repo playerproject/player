@@ -24,8 +24,10 @@
  * $Id$
  * 
  * Driver for the Nomadics Nomad 200 robot. Should be easily adapted for other Nomads.
- * Authors: Richard Vaughan (vaughan@sfu.ca)
- * Based on Brian Gerkey et al's P2OS driver.
+ * Authors: Richard Vaughan (vaughan@sfu.ca), Pawel Zebrowski (pzebrows@sfu.ca)
+ *
+ * Notes: this driver is an example of an alternative way to implement
+ * a multi-interface driver. It is quite different to the P2OS driver.
  * 
  */
 
@@ -45,10 +47,9 @@
 #include <netinet/in.h>
 #include <termios.h>
 
-#include "mother.h"
-
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
+
 
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
@@ -58,15 +59,28 @@ extern CDeviceTable* deviceTable;
 extern int global_playerport; // used to get at devices
 
 #define NOMAD_DEFAULT_SERIAL_PORT "/dev/ttyS0"
-#define NOMAD_SONAR_COUNT 16
-#define NOMAD_RADIUS_MM 400 // TODO: measure the Nomad to get this exactly right
-#define NOMAD_CONFIG_BUFFER_SIZE 256 // this should be bigger than the biggest config we could receive
+
+// this is the old 'official' Nomad interface code from Nomadics
+// released GPL when Nomadics went foom.
+#include "Nclient.h"
+
+/////////////////////////////////////////////////////////////////////////
+// converts tens of inches to millimeters
+int inchesToMM(int inches)
+{
+	return (int)(inches * 2.54);
+}
+
+/////////////////////////////////////////////////////////////////////////
+// converts millimeters to tens of inches
+int mmToInches(int mm)
+{
+	return (int)(mm / 2.54);
+}
+
 
 class Nomad:public CDevice 
 {
-  // did we initialize the common data segments yet?
-  static bool initdone;
-
   public:
 
   Nomad(char* interface, ConfigFile* cf, int section);
@@ -77,17 +91,13 @@ class Nomad:public CDevice
   
   virtual int Setup();
   virtual int Shutdown();
-
 };
 
-// declare the static members (this is an ugly requirement of C++ )
-
-bool Nomad::initdone = FALSE;
 
 // a factory creation function
 CDevice* Nomad_Init(char* interface, ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp(interface, PLAYER_NOMAD_STRING))
     {
       PLAYER_ERROR1("driver \"nomad\" does not support interface \"%s\"\n",
 		    interface);
@@ -110,16 +120,7 @@ Nomad::Nomad(char* interface, ConfigFile* cf, int section)
   : CDevice( sizeof(player_position_data_t), 
 	     sizeof(player_position_cmd_t), 1, 1 )
 {
-  if(!initdone)
-    {
-      initdone = TRUE;
-    }
-  else
-    {
-      
-      
-    }
-  
+
 }
 
 Nomad::~Nomad()
@@ -132,9 +133,32 @@ int Nomad::Setup()
   printf("Nomad Setup..");
   fflush(stdout);
   
-  connectToRobot();
-  initRobot();
+  printf( "connecting to %s:%d\n", SERVER_MACHINE_NAME, SERV_TCP_PORT );
+  
+  // connect to the robot (connection parameters specified in a 
+  // supplementary file, i believe)
+  //connect_robot(1,MODEL_N200, SERVER_MACHINE_NAME, SERV_TCP_PORT );
+  connect_robot(1);
+  
+  // set the robot timeout, in seconds.  The robot will stop if no commands
+  // are sent before the timeout expires.
+  conf_tm(5);
 
+  // zero all counters
+  zr();
+  
+  // set the robots acceleration for translation, steering, and turret
+  // ac (translation acc, steering acc, turret ac), which is measure 
+  // in 0.1inches/s/s, where the maximum is 300 = 30inches/s/s for 
+  // all axes.
+  ac(300, 300, 300);
+  
+  // set the robots maximum speed in each axis
+  // sp(translation speed, steering speed, turret speed)
+  // measured in 0.1inches/s for translation and 0.1deg/s for steering
+  // and turret.  Maximum values are (200, 450, 450)
+  sp(200, 450, 450);
+  
   /* now spawn reading thread */
   StartThread();
 
@@ -164,129 +188,52 @@ Nomad::Main()
 
       // first, check if there is a new config command
       if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
-	{
-	  switch(id.code)
-	    {
-	    case PLAYER_SONAR_CODE:
-	      switch(config[0])
-		{
-		case PLAYER_SONAR_GET_GEOM_REQ:
-		  /* Return the sonar geometry. */
-		  if(config_size != 1)
-		    {
-		      puts("Arg get sonar geom is wrong size; ignoring");
-		      if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-				  NULL, NULL, 0))
-			PLAYER_ERROR("failed to PutReply");
-		      break;
-		    }
-		  
-		  player_sonar_geom_t geom;
-		  geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-		  geom.pose_count = NOMAD_SONAR_COUNT;
-		  for (int i = 0; i < PLAYER_SONAR_MAX_SAMPLES; i++)
-		    {
-		      // todo - get the geometry properly
-		      geom.poses[i][0] = htons((short) 0);
-		      geom.poses[i][1] = htons((short) 0);
-		      geom.poses[i][2] = htons((short) 360/NOMAD_SONAR_COUNT * i);
-		    }
-		  
-		  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-			      sizeof(geom)))
-		    PLAYER_ERROR("failed to PutReply");
-		  break;
-		default:
-		  puts("Sonar got unknown config request");
-		  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-			      NULL, NULL, 0))
-		    PLAYER_ERROR("failed to PutReply");
-		  break;
-		}
-	      break;
-	      
-	    case PLAYER_POSITION_CODE:
-          switch(config[0])
-	    {
-            case PLAYER_POSITION_GET_GEOM_REQ:
-	      {
-		/* Return the robot geometry. */
-		if(config_size != 1)
-		  {
-		    puts("Arg get robot geom is wrong size; ignoring");
-		    if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-				NULL, NULL, 0))
-		      PLAYER_ERROR("failed to PutReply");
-		    break;
-		  }
-		
-		// TODO : get values from somewhere.
-		player_position_geom_t geom;
-		geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-		geom.pose[0] = htons((short) (0)); // x offset
-		geom.pose[1] = htons((short) (0)); // y offset
-		geom.pose[2] = htons((short) (0)); // a offset
-		geom.size[0] = htons((short) (2 * NOMAD_RADIUS_MM )); // x size
-		geom.size[1] = htons((short) (2 * NOMAD_RADIUS_MM )); // y size
-		
-		if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-			    sizeof(geom)))
-		  PLAYER_ERROR("failed to PutReply");
-		break;
-	      }
-            default:
-              puts("Position got unknown config request");
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-                          NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-	    }
-          break;
-	  
-	    default:
-	      printf("Nomad: got unknown config request \"%c\"\n",
-		     config[0]);
-	      
-	      if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-		PLAYER_ERROR("failed to PutReply");
-	      break;
-	    }
-	}
+	switch( config[0] )
+	  {
+	  default:
+	    puts("Position got unknown config request");
+	    if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
+			NULL, NULL, 0))
+	      PLAYER_ERROR("failed to PutReply");
+	    break;
+	  }
       
       /* read the latest data from the robot */
       //printf( "read data from robot" );
-      readRobot();
-
-
+      gs();
+      
       /* read the latest Player client commands */
-      player_position_cmd_t command;
+      player_nomad_cmd_t command;
       GetCommand((unsigned char*)&command, sizeof(command));
       
       /* write the command to the robot */      
-      int v = ntohl(command.xspeed);
-      int w = ntohl(command.yawspeed);
-      int turret = ntohl(command.yspeed);
-      printf( "command: v:%d w:%d turret:%d\n", v,w,turret ); 
-      setSpeed( v, w, turret );
-      //setSpeed( 0, v );
+      int v = ntohl(command.vel_trans);
+      int w = ntohl(command.vel_steer);
+      int turret = ntohl(command.vel_turret);
+      printf( "command: vel_trans:%d vel_steer:%d turret:%d\n", v,w,turret ); 
 
-      player_position_data_t pos;
-      memset(&pos,0,sizeof(pos));
+      // set the speed
+      vm(mmToInches(v), w*10, turret*10);
 
-      pos.xpos = xPos();
-      pos.ypos = yPos();
-      pos.yaw = theta();
-      pos.xspeed = speed();
-      pos.yawspeed = turnrate();
-      
-      pos.xpos = htonl(pos.xpos);
-      pos.ypos = htonl(pos.ypos);
-      pos.yaw = htonl(pos.yaw);
-      pos.xspeed = htonl(pos.xspeed);
-      //pos.yspeed = htonl(pos.yspeed); 
-      pos.yawspeed = htonl(pos.yawspeed);
+      player_nomad_data_t data;
+      memset(&data,0,sizeof(data));
 
-      PutData((uint8_t*)&pos, sizeof(pos), 0,0 );
+      data.x = inchesToMM( State[ STATE_CONF_X ] );
+      data.y = inchesToMM( State[ STATE_CONF_Y ] );
+      data.y = inchesToMM( State[ STATE_CONF_STEER ] );
+      data.vel_trans = inchesToMM( State[ STATE_VEL_TRANS ] );
+      data.vel_steer = State[ STATE_VEL_STEER ] / 10;
+      data.vel_turret = State[ STATE_VEL_TURRET ] / 10;
+
+	
+      data.x = htonl(data.x);
+      data.y = htonl(data.y);
+      data.a = htonl(data.a);
+      data.vel_trans = htonl(data.vel_trans);
+      data.vel_trans = htonl(data.vel_steer);
+      data.vel_turret = htonl(data.vel_turret);
+
+      PutData((uint8_t*)&data, sizeof(data), 0,0 );
       
       usleep(1);
 
