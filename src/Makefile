@@ -117,7 +117,7 @@ main.o: main.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -c $<
 
 
-install: $(SERVERNAME)
+install: all
 	$(MKDIR) -p $(INSTALL_BIN)
 	$(INSTALL) -m 755 $(SERVERNAME) $(INSTALL_BIN)
 	$(MKDIR) -p $(INSTALL_INCLUDE)
@@ -127,6 +127,7 @@ install: $(SERVERNAME)
 	$(INSTALL) -m 644 ../include/defaults.h $(INSTALL_INCLUDE)/defaults.h
 	$(INSTALL) -m 644 ../include/playerqueue.h $(INSTALL_INCLUDE)/playerqueue.h
 	$(INSTALL) -m 644 ../include/stage.h $(INSTALL_INCLUDE)/stage.h
+	$(MKDIR) -p $(INSTALL_LIB)
 	$(INSTALL) -m 644 libplayerqueue.a $(INSTALL_LIB)/libplayerqueue.a
 
 uninstall:

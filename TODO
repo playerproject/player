@@ -2,56 +2,26 @@ $Id$
 
 TOMORROW:
 --------
+- Generalize gripper control to allow for any gripper, and modify command
+    and data specifications to be more natural
+
+- Add context-sensitive support for thread creation
+
+- Create another device-table (or augment the current one), so as to remove
+    as many device-specific #ifdef's from main.cc as possible.
 
 NOW:
 ----
-- make "safe_printf()" or something like that for device drivers to use.  
-     maybe just expose a global mutex.
-
-- fix make problem on Solaris.  something about 'ifdef' it doesn't like
-
 - add some kind of config file to Player.   need to specify
     mappings from devices to ports and things like that.  still take
     command-line args, though.
-
-- acts on old robots (tanis&milka) takes a LONG time to start up the
-    first time (presumably before it's swapped in); Golem hangs.  wait
-    longer?
-
-- add conditionals for connecting to 2-AT's.  should be easypeasyjapaneasy.
 
 - what to do when a client disconnects? should 'zero' all relevant
     command buffers for safety.  if other clients want to overwrite, they
     can.
 
-- gripper: new control loop that monitors current condition, and commands
-    according to client's desired setting
-     - maybe should have control loop in client_reader....no, that
-         would suck.  need to keep control within RunPsosThread,
-         just multiplex between that and motor control.
-
 LATER:
 ------
-- make GenericLock class with virtual Lock() and Unlock() methods,
-    then make StageLock and PlayerLock inherit from it.  also
-    add member of type GenericLock* to CDevice class; new it
-    with the right type (Stage or Player) at constructiont time.
-
-- compass: check newer P2OS versions for compass 
-      compatibility.
-   - version 1.B (on fly) seems to work fine.  just
-      need to calibrate compass.
-   - try version 1.D, if it works, upgrade everyone and
-      calibrate all compii
-   - MORE COMPLEX....not all compass are the same.  maybe
-      need old P2OS with old compass.  fuck activmedia. fuck
-      them with a great big dick.
-  
-- remove non-portable pthread behavior.  should be confined to:
-      + pthread_kill_other_threads_np(). GONE
-      - unlocking mutex owned by other thread.  probably just
-          CClientData::datareqeusted for request/reply mode.  need
-          different idea.
 
 - P2OS stuff:
     - do error-checking on calls to:
@@ -78,6 +48,16 @@ LATENT:
 
 DONE:
 ------
++ remove non-portable pthread behavior.  should be confined to:
+      + pthread_kill_other_threads_np(). GONE
+      + unlocking mutex owned by other thread.  GONE
+
++ add conditionals for connecting to 2-AT's.  should be easypeasyjapaneasy.
+
++ acts on old robots (tanis&milka) takes a LONG time to start up the
+    first time (presumably before it's swapped in); Golem hangs.  wait
+    longer?
+
 + update Java client?  nah, get the Danes to do it.
 
 + change all 'a', 'r', and 'w' to the appropriate PLAYER_*_MODE
