@@ -425,7 +425,6 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   this->action_sensor = -1;
   this->sensor_count = 0;
 
-  /// @todo Use "requires"
   player_device_id_t odom_id;
   player_device_id_t laser_id;
   
