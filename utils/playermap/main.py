@@ -92,14 +92,13 @@ def makemap(gladepath, logfilename, options):
                     gtk.main_iteration_do()
                 gui_time = time.time()
 
-##                 # Save canvas
-##                 if save_request and logtime - savetime > 0.400:
-##                     filename = 'map-%05d.png' % saveframe
-##                     #print 'saving', filename
-##                     #mainwin.canvas.save(filename)
-##                     save_request = 0
-##                     saveframe += 1
-##                     savetime = logtime
+                # Save canvas
+                if logtime - savetime > 0.500:
+                    filename = 'map-%05d.png' % saveframe
+                    print 'saving', filename
+                    mainwin.canvas.save(filename, 640, 480)
+                    saveframe += 1
+                    savetime = logtime
 
                 # Rotate the map
                 if mainwin.rotate:
@@ -145,6 +144,7 @@ def makemap(gladepath, logfilename, options):
 
             # Process log data in batches (saves a lot of time)
             while 1:
+                
                 # Process log data
                 data = logfile.read_entry()
                 if not data:

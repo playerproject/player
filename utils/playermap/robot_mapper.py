@@ -220,8 +220,9 @@ class RobotMapper:
                 continue
 
             # Robot must lie within certain angle of patch
-            if angle > self.patch_angle:
-                continue
+            # TESTING
+            #if angle > self.patch_angle:
+            #    continue
 
             # If all criteria are met, choose closest patch as switch patch
             if dist < min_dist:
@@ -240,6 +241,10 @@ class RobotMapper:
                 new_patch.pose = (0, 0, 0)
             else:
                 new_patch.pose = geom.coord_add(pose, patch.pose)
+
+                # TESTING
+                new_patch.pose = (new_patch.pose[0], new_patch.pose[1], new_patch.pose[2] - 0.01)
+                
             new_patch.odom_pose = odom_pose
             new_patch.odom_dist = odom_dist
             new_patch.scan = laser_scan
@@ -252,6 +257,11 @@ class RobotMapper:
                 link.scan_w = 1.0
                 link.scan_pose_ba = geom.coord_sub(link.patch_b.pose, link.patch_a.pose)
                 link.scan_pose_ab = geom.coord_sub(link.patch_a.pose, link.patch_b.pose)
+
+                # TESTING
+                if npatch == patch:
+                    link.child = 1
+                
                 link.draw()
 
             # Add this new patch to the neighborhood
@@ -530,8 +540,10 @@ class RobotMapper:
         #'fit: %d %d %f' % (self.fit_consts, self.fit_steps, self.fit_err))
 
         # Draw the free space polygon
-        self.robot_fig.fgcolor((255, 255, 255, 128))
-        self.robot_fig.bgcolor((255, 255, 255, 128))
+        self.robot_fig.line_width_pixels(2)
+        self.robot_fig.fgcolor((0, 0, 255, 255))
+        #self.robot_fig.bgcolor((255, 255, 255, 128))
+        self.robot_fig.bgcolor((255, 255, 255, 0))
         self.robot_fig.polygon((0, 0, 0), self.curr_scan.get_free())
 
 ##         # Draw the hit points

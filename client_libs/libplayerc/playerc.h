@@ -467,6 +467,56 @@ int  playerc_bps_get_beacon(playerc_bps_t *device, int id,
 
 
 /***************************************************************************
+ ** begin section camera
+ **************************************************************************/
+
+/** [Synposis] The {\tt camera} proxy can be used to get images from a
+    camera. */
+
+/** [Data] */
+
+/** Camera proxy data. */
+typedef struct _playerc_camera_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Image dimensions (pixels). */
+  uint16_t width, height;
+
+  /** Image depth (8, 16, 24). */
+  uint8_t depth;
+
+  /** Size of image data (bytes) */
+  uint32_t image_size;
+  
+  /** Image data (packed format). */
+  uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
+    
+} playerc_camera_t;
+
+
+/** [Methods] */
+
+/** Create a camera proxy. */
+playerc_camera_t *playerc_camera_create(playerc_client_t *client, int index);
+
+/** Destroy a camera proxy. */
+void playerc_camera_destroy(playerc_camera_t *device);
+
+/** Subscribe to the camera device. */
+int playerc_camera_subscribe(playerc_camera_t *device, int access);
+
+/** Un-subscribe from the camera device. */
+int playerc_camera_unsubscribe(playerc_camera_t *device);
+
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
+
+/***************************************************************************
  ** begin section comms
  **************************************************************************/
 

@@ -105,6 +105,11 @@ int main(int argc, const char *argv[])
         test_blobfinder(client, client->ids[i].index);
         break;
 
+      // Camera device
+      case PLAYER_CAMERA_CODE:
+        test_camera(client, client->ids[i].index);
+        break;
+
       // Broadcast device
       case PLAYER_COMMS_CODE:
         test_comms(client, client->ids[i].index);
