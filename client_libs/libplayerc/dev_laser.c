@@ -99,7 +99,7 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
   db = data->resolution / 100.0 * M_PI / 180.0;    
   for (i = 0; i < data->range_count; i++)
   {
-    r = ntohs(data->ranges[i]) / 1000.0;
+    r = ((int16_t) ntohs(data->ranges[i])) / 1000.0;
     device->scan[i][0] = r;
     device->scan[i][1] = b;
     device->point[i][0] = r * cos(b);
