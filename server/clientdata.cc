@@ -522,7 +522,9 @@ void ClientData::RemoveRequests()
     // Stop position devices if we're the last one to use it (safety)
     if((thissub->access != PLAYER_CLOSE_MODE) && 
        (thissub->id.code == PLAYER_POSITION_CODE) &&
-       (thissub->devicep->subscriptions == 1))
+       (((thissub->access == PLAYER_ALL_MODE) &&
+         (thissub->devicep->subscriptions == 2)) ||
+        (thissub->devicep->subscriptions == 1)))
       MotorStop();
     
     switch(thissub->access) 
