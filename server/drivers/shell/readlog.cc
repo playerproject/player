@@ -67,6 +67,7 @@ The readlog driver can provide the following device interfaces.
 - @ref player_interface_blobfinder
 - @ref player_interface_camera
 - @ref player_interface_gps
+- @ref player_interface_joystick
 - @ref player_interface_laser
 - @ref player_interface_position
 - @ref player_interface_position3d
@@ -160,6 +161,14 @@ class ReadLog: public Driver
   private: int ParseCamera(player_device_id_t id, int linenum,
                           int token_count, char **tokens, struct timeval time);
 
+  // Parse gps data
+  private: int ParseGps(player_device_id_t id, int linenum,
+                        int token_count, char **tokens, struct timeval time);
+
+  // Parse joystick data
+  private: int ParseJoystick(player_device_id_t id, int linenum,
+                        int token_count, char **tokens, struct timeval time);
+
   // Parse laser data
   private: int ParseLaser(player_device_id_t id, int linenum,
                           int token_count, char **tokens, struct timeval time);
@@ -175,10 +184,6 @@ class ReadLog: public Driver
   // Parse wifi data
   private: int ParseWifi(player_device_id_t id, int linenum,
                          int token_count, char **tokens, struct timeval time);
-
-  // Parse gps data
-  private: int ParseGps(player_device_id_t id, int linenum,
-                        int token_count, char **tokens, struct timeval time);
 
   // List of provided devices
   private: int provide_count;
@@ -607,6 +612,8 @@ int ReadLog::ParseData(player_device_id_t id, int linenum,
     return this->ParseCamera(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_GPS_CODE)
     return this->ParseGps(id, linenum, token_count, tokens, time);
+  else if (id.code == PLAYER_JOYSTICK_CODE)
+    return this->ParseJoystick(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_LASER_CODE)
     return this->ParseLaser(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_POSITION_CODE)
@@ -709,6 +716,67 @@ int ReadLog::ParseCamera(player_device_id_t id, int linenum,
 
   free(data);
   
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Parse GPS data
+int ReadLog::ParseGps(player_device_id_t id, int linenum,
+                      int token_count, char **tokens, struct timeval time)
+{
+  player_gps_data_t data;
+
+  if (token_count < 17)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+
+  data.time_sec = NUINT32((int) atof(tokens[6]));
+  data.time_usec = NUINT32((int) fmod(atof(tokens[6]), 1.0));
+
+  data.latitude = NINT32((int) (60 * 60 * 60 * atof(tokens[7])));
+  data.longitude = NINT32((int) (60 * 60 * 60 * atof(tokens[8])));
+  data.altitude = NINT32(M_MM(atof(tokens[9])));
+
+  data.utm_e = NINT32(CM_MM(atof(tokens[10])));
+  data.utm_n = NINT32(CM_MM(atof(tokens[11])));
+
+  data.hdop = NINT16((int) (10 * atof(tokens[12])));
+  data.err_horz = NUINT32(M_MM(atof(tokens[13])));
+  data.err_vert = NUINT32(M_MM(atof(tokens[14])));
+
+  data.quality = atoi(tokens[15]);
+  data.num_sats = atoi(tokens[16]);
+
+  this->PutData(id, &data, sizeof(data), &time);
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Parse joystick data
+int ReadLog::ParseJoystick(player_device_id_t id, int linenum,
+                      int token_count, char **tokens, struct timeval time)
+{
+  player_joystick_data_t data;
+
+  if (token_count < 11)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+
+  data.xpos = NINT16((short) atoi(tokens[6]));
+  data.ypos = NINT16((short) atoi(tokens[7]));
+  data.xscale = NINT16((short) atoi(tokens[8]));
+  data.yscale = NINT16((short) atoi(tokens[9]));
+  data.buttons = NUINT16((unsigned short) (unsigned int) atoi(tokens[10]));
+
+  this->PutData(id, &data, sizeof(data), &time);
+
   return 0;
 }
 
@@ -881,42 +949,6 @@ int ReadLog::ParseWifi(player_device_id_t id, int linenum,
     data.link_count++;
   }
   data.link_count = htons(data.link_count);
-
-  this->PutData(id, &data, sizeof(data), &time);
-
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////
-// Parse GPS data
-int ReadLog::ParseGps(player_device_id_t id, int linenum,
-                      int token_count, char **tokens, struct timeval time)
-{
-  player_gps_data_t data;
-
-  if (token_count < 17)
-  {
-    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
-    return -1;
-  }
-
-  data.time_sec = NUINT32((int) atof(tokens[6]));
-  data.time_usec = NUINT32((int) fmod(atof(tokens[6]), 1.0));
-
-  data.latitude = NINT32((int) (60 * 60 * 60 * atof(tokens[7])));
-  data.longitude = NINT32((int) (60 * 60 * 60 * atof(tokens[8])));
-  data.altitude = NINT32(M_MM(atof(tokens[9])));
-
-  data.utm_e = NINT32(CM_MM(atof(tokens[10])));
-  data.utm_n = NINT32(CM_MM(atof(tokens[11])));
-
-  data.hdop = NINT16((int) (10 * atof(tokens[12])));
-  data.err_horz = NUINT32(M_MM(atof(tokens[13])));
-  data.err_vert = NUINT32(M_MM(atof(tokens[14])));
-
-  data.quality = atoi(tokens[15]);
-  data.num_sats = atoi(tokens[16]);
 
   this->PutData(id, &data, sizeof(data), &time);
 

@@ -495,7 +495,7 @@ void WriteLog::Main(void)
       this->Write(device, data, size, time);
     }
 
-    // Write the sync packet
+    /// @todo Write the sync packet at 10Hz; it's just a heartbeat
     this->Write(NULL, NULL, 0, time);
   }
 

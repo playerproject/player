@@ -390,11 +390,15 @@ int SimpleShape::HandleRequests()
 bool SimpleShape::UpdateCamera()
 {
   size_t size;
-
+  
   // Get the camera data.
   size = this->camera->GetData(this->camera_id, &this->cameraData,
                                sizeof(this->cameraData), &this->cameraTime);
+  if (size == 0)
+    return false;
   
+  printf("%d %d %d\n", size, this->cameraTime.tv_sec, this->cameraTime.tv_usec);
+           
   // Do some byte swapping
   this->cameraData.width = ntohs(this->cameraData.width);
   this->cameraData.height = ntohs(this->cameraData.height);
@@ -491,7 +495,10 @@ void SimpleShape::ProcessImage()
 
   width = this->cameraData.width;
   height = this->cameraData.height;
-  
+
+  printf("format %d %d %d\n", this->cameraData.width, this->cameraData.height,
+         this->cameraData.format);
+    
   // Create input and output image if it doesnt exist
   size = cvSize(width, height);
   if (this->inpImage == NULL)
