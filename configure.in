@@ -253,6 +253,3 @@ AC_MSG_RESULT([    ./configure --help])
 AC_MSG_RESULT([])
 AC_MSG_RESULT([When you're satisfied with the configuration, type 'make install'. ])
 AC_MSG_RESULT([])
-
-foo=bar
-foo="$foo bat"
