@@ -97,21 +97,22 @@ int PlannerProxy::GetWaypoints()
   memset(&config, 0, sizeof(config));
   config.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
 
-  int len = client->Request(m_device_id, (const char*)&config, 
+  if (client->Request(m_device_id, (const char*)&config, 
                         sizeof(config.subtype), &hdr, (char *)&config, 
-                        sizeof(config));
-  
-   if (len < 0)
+                        sizeof(config)) < 0)
+  {
+    PLAYER_ERROR("failed to get waypoints");
     return -1;
+  }
 
-  /*if (len == 0)
+  if (hdr.size == 0)
   {
     PLAYER_ERROR("got unexpected zero-length reply");
     return -1;
   }
 
   this->waypointCount = (int)ntohs(config.count);
-  */
+  
   for (int i=0; i<this->waypointCount; i++)
   {
     this->waypoints[i][0] = ((int)ntohl(config.waypoints[i].x)) / 1e3;
@@ -132,7 +133,7 @@ void PlannerProxy::FillData( player_msghdr_t hdr, const char *buffer)
     if (player_debug_level(-1) >= 1)
       fprintf(stderr,"WARNING: expected %d bytes of position data, but "
           "received %d. Unexpected results may ensue.\n",
-          sizeof(player_position_data_t),hdr.size);
+          sizeof(player_planner_data_t),hdr.size);
 
   }
 
