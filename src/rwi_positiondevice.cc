@@ -183,12 +183,12 @@ CRWIPositionDevice::Main()
 		// puts y before x)
 		tmp_y = odo_data->position[0] + odo_correct_y;
 		tmp_x = odo_data->position[1] + odo_correct_x;
-		cos_theta = cos(odo_correct_theta);
-		sin_theta = sin(odo_correct_theta);
+		cos_theta = cos(-odo_correct_theta);
+		sin_theta = sin(-odo_correct_theta);
 		
-		data.ypos = htonl((int32_t) ((cos_theta*tmp_x - sin_theta*tmp_y)
+		data.xpos = htonl((int32_t) ((cos_theta*tmp_x - sin_theta*tmp_y)
 		                             * 1000.0));
-		data.xpos = htonl((int32_t) ((sin_theta*tmp_x + cos_theta*tmp_y)
+		data.ypos = htonl((int32_t) ((sin_theta*tmp_x + cos_theta*tmp_y)
 		                             * 1000.0));
 		degrees = (int16_t)
 		           RTOD(NORMALIZE(odo_data->position[2] + odo_correct_theta));
@@ -258,8 +258,7 @@ CRWIPositionDevice::PositionCommand(const int16_t speed,
     position.velocity.length(2);
 
     position.velocity[0] = speed / 1000.0;
-    // player measures angles mathematically backwards
-    position.velocity[1] = -DTOR(rot_speed);
+    position.velocity[1] = DTOR(rot_speed);
 
     base_state->new_sample(position, 0);
 #endif				// USE_MOBILITY
@@ -279,7 +278,6 @@ CRWIPositionDevice::ResetOdometry()
     // yes, this looks backwards, but RWI puts Y before X
     odo_correct_y = -odo_data->position[0];
     odo_correct_x = -odo_data->position[1];
-    // player measures angles mathematically backwards
-    odo_correct_theta = odo_data->position[2];
+    odo_correct_theta = -odo_data->position[2];
 #endif				// USE_MOBILITY
 }
