@@ -107,6 +107,9 @@ player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
 
+// true if we're connecting to Stage instead of a real robot
+bool use_stage = false;
+
 // enable "special" extensions
 bool player_gerkey = false;
 
@@ -177,8 +180,11 @@ void Interrupt( int dummy )
     delete deviceTable;
   }
 
-  printf("** Player [port %d] quitting **\n", global_playerport );
-
+  if( use_stage )
+    puts("** Player quitting **" );
+  else
+    printf("** Player [port %d] quitting **\n", global_playerport );
+  
 
   // HACK - for some reason, a SIGINT (e.g., Ctrl-C) while a client is
   //        subscribed to the vision device causes a segfault on the following
@@ -702,7 +708,6 @@ parse_config_file(char* fname)
 int main( int argc, char *argv[] )
 {
   bool special_config = false;
-  bool use_stage = false;
   struct sockaddr_in listener;
   char auth_key[PLAYER_KEYLEN] = "";
   //struct sockaddr_in sender;
