@@ -76,6 +76,7 @@
 #define PLAYER_BROADCAST_STRING      "broadcast"
 #define PLAYER_SPEECH_STRING         "speech"
 #define PLAYER_GPS_STRING            "gps"
+#define PLAYER_BPS_STRING            "bps"
 
 /* the currently assigned device codes */
 #define PLAYER_PLAYER_CODE         ((uint16_t)1)
@@ -93,6 +94,7 @@
 #define PLAYER_GPS_CODE           ((uint16_t)13) // broken?
 #define PLAYER_OCCUPANCY_CODE     ((uint16_t)14) // broken?
 #define PLAYER_TRUTH_CODE         ((uint16_t)15)
+#define PLAYER_BPS_CODE           ((uint16_t)16) // broken?
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -488,6 +490,42 @@ typedef struct
 } __attribute__ ((packed)) player_laserbeacon_config_t;
 
  
+/*************************************************************************/
+
+
+/*************************************************************************/
+/*
+ * BPS Device
+ *
+ *   A global positioning device using laser beacons (hence *B*PS)
+ *   Dont forget to specify the beacon positions (using the setbeacon request).
+ */
+
+/*
+ * PPS data packet:
+ *   px, py: current global position (in mm).
+ *   pa: current global heading (in degrees).
+ */
+typedef struct
+{
+  int32_t px, py, pa;
+} __attribute__ ((packed)) player_bps_data_t;
+
+
+/*
+ * BPS request packet: set the pose of a beacon.
+ * subtype : must by 1
+ * id : beacon id
+ * px, py, pa : beacon pose (mm, mm, degrees)
+ */
+typedef struct
+{
+  uint8_t subtype;
+  uint8_t id;
+  int32_t px, py, pa;
+} __attribute__ ((packed)) player_bps_setbeacon_t;
+
+
 /*************************************************************************/
 
 
