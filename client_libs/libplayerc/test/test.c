@@ -76,6 +76,10 @@ int main(int argc, const char *argv[])
     if (strcmp(device, "position") == 0 || strcmp(device, "all") == 0)
       test_position(client, index);
 
+    // PTZ device
+    if (strcmp(device, "ptz") == 0 || strcmp(device, "all") == 0)
+      test_ptz(client, index);
+
     // Vision device
     if (strcmp(device, "vision") == 0 || strcmp(device, "all") == 0)
       test_vision(client, index);

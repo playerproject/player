@@ -13,8 +13,8 @@
 int test_laser(playerc_client_t *client, int index)
 {
   int t, i;
+  void *rdevice;
   playerc_laser_t *device;
-  void *read;
 
   double min, max;
   int resolution, intensity;
@@ -58,10 +58,10 @@ int test_laser(playerc_client_t *client, int index)
     TEST1("reading data (attempt %d)", t);
 
     do
-      read = playerc_client_read(client);
-    while (read == client);
+      rdevice = playerc_client_read(client);
+    while (rdevice == client);
     
-    if (read == device)
+    if (rdevice == device)
     {
       PASS();
       printf("laser: [%d] ", device->scan_count);

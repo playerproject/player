@@ -14,6 +14,7 @@
 int test_vision(playerc_client_t *client, int index)
 {
   int t, i;
+  void *rdevice;
   playerc_vision_t *device;
 
   printf("device [vision] index [%d]\n", index);
@@ -29,18 +30,25 @@ int test_vision(playerc_client_t *client, int index)
   for (t = 0; t < 10; t++)
   {
     TEST1("reading data (attempt %d)", t);
-    if (playerc_client_read(client) != 0)
+
+    do
+      rdevice = playerc_client_read(client);
+    while (rdevice == client);
+    
+    if (rdevice == device)
+    {
+      PASS();
+      printf("vision: [%d] ", device->blob_count);
+      for (i = 0; i < MIN(3, device->blob_count); i++)
+        printf("[%d %d %d %d] ", device->blobs[i].channel, device->blobs[i].x,
+               device->blobs[i].y, device->blobs[i].area);
+      printf("\n");
+    }
+    else
     {
       FAIL();
       break;
     }
-    PASS();
-
-    printf("vision: [%d] ", device->blob_count);
-    for (i = 0; i < MIN(3, device->blob_count); i++)
-      printf("[%d %d %d %d] ", device->blobs[i].channel, device->blobs[i].x,
-             device->blobs[i].y, device->blobs[i].area);
-    printf("\n");
   }
   
   TEST("unsubscribing");
