@@ -85,6 +85,8 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   rtk_fig_movemask(self->control_fig, RTK_MOVE_TRANS);
   self->path_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 2);
 
+  self->goal_px = self->goal_py = self->goal_pa = 0.0;
+  
   return self;
 }
 
@@ -203,7 +205,7 @@ void position_nodraw(position_t *self)
 void position_servo_pos(position_t *self)
 {
   double rx, ry, ra;
-  double gx, gy, ga;
+  //double gx, gy, ga;
   
   // Only servo if we are subscribed and have enabled commands.
   if (self->proxy->info.subscribed &&
@@ -223,21 +225,32 @@ void position_servo_pos(position_t *self)
   {
     // Get goal pose in robot cs
     rtk_fig_get_origin(self->control_fig, &rx, &ry, &ra);
+
+    // Compute goal point in position cs
+    self->goal_px = self->proxy->px + rx * cos(self->proxy->pa) - ry * sin(self->proxy->pa);
+    self->goal_py = self->proxy->py + rx * sin(self->proxy->pa) + ry * cos(self->proxy->pa);
+    self->goal_pa = self->proxy->pa + ra;
+
+    printf("goal %.3f %.3f %.0f\n", self->goal_px, self->goal_py, self->goal_pa * 180 / M_PI);
+
+    // Set the new goal pose
+    playerc_position_set_cmd_pose(self->proxy, self->goal_px, self->goal_py, self->goal_pa);
   }
   else
   { 
     // Reset the goal figure
-    rx = ry = ra = 0;
-    rtk_fig_origin(self->control_fig, rx, ry, ra);
+    //rx = ry = ra = 0;
   }
 
-  // Compute goal point in position cs
-  gx = self->proxy->px + rx * cos(self->proxy->pa) - ry * sin(self->proxy->pa);
-  gy = self->proxy->py + rx * sin(self->proxy->pa) + ry * cos(self->proxy->pa);
-  ga = self->proxy->pa + ra;
+  // Compute goal point in robot cs
+  rx = (self->goal_px - self->proxy->px) * cos(self->proxy->pa)
+    + (self->goal_py - self->proxy->py) * sin(self->proxy->pa);
+  ry = - (self->goal_px - self->proxy->px) * sin(self->proxy->pa)
+    + (self->goal_py - self->proxy->py) * cos(self->proxy->pa);
+  ra = self->goal_pa - self->proxy->pa;
 
-  // Set the new goal pose
-  playerc_position_set_cmd_pose(self->proxy, gx, gy, ga);
+  // Move the goal figure
+  rtk_fig_origin(self->control_fig, rx, ry, ra);
 
   // Dont draw the path
   rtk_fig_clear(self->path_fig);
@@ -321,6 +334,7 @@ void position_servo_vel(position_t *self)
     rtk_fig_line(self->path_fig, 0, 0, -d, 0);
     rtk_fig_line(self->path_fig, -d, 0, rx, ry);
   }
+  return;
 }
 
 
