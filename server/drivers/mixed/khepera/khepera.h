@@ -86,7 +86,8 @@ typedef struct {
 } __attribute__ ((packed)) player_khepera_cmd_t;
 */
 
-typedef struct {
+typedef struct player_khepera_geom
+{
 	char * PortName;
 	double scale;
 	player_ir_pose_t ir;

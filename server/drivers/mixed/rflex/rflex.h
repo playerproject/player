@@ -71,7 +71,7 @@ enum
 #define B_ETX                         0x03
 #define B_ESC                         0x1b
 
-typedef struct
+typedef struct player_rflex_data
 {
   player_position_data_t position;
   player_sonar_data_t sonar;

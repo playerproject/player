@@ -117,7 +117,7 @@
 
 #define DEFAULT_P2OS_PORT "/dev/ttyS0"
 
-typedef struct
+typedef struct player_p2os_data
 {
   player_position_data_t position;
   player_sonar_data_t sonar;

@@ -99,7 +99,7 @@ extern "C" {
 
 /** @addtogroup player_clientlib_libplayerc libplayerc */
 /** @{ */
-/** @defgroup player_clientlib_core Core functionality */
+/** @defgroup player_clientlib_libplayerc_core Core functionality */
 /** @{ */
 
 

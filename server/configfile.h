@@ -24,6 +24,10 @@
  * $Id$
  */
 
+/** @defgroup configfile Configuration file syntax 
+@{
+*/
+
 #ifndef CONFFILE_H
 #define CONFFILE_H
 
@@ -516,5 +520,5 @@ class ConfigFile
   private: double unit_angle;
 };
 
-
+/** @} */
 #endif

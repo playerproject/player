@@ -84,7 +84,7 @@
 
 #define DEFAULT_CLODBUSTER_PORT "/dev/ttyUSB0" // This has to be USB - serial port.
 
-typedef struct
+typedef struct clodbuster_encoder_data
 { 
   uint32_t time_count;
   int32_t left,right;
