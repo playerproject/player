@@ -5,16 +5,16 @@ AM_CPPFLAGS = -I$(top_srcdir)/server
 lib_LIBRARIES = libplayerc.a
 
 libplayerc_a_SOURCES = client.c \
-                       dev_broadcast.c \
-                       dev_gps.c \
                        device.c \
-                       dev_laser.c \
-                       dev_lbd.c \
+                       dev_blobfinder.c \
+                       dev_comms.c \
+                       dev_fiducial.c \
+                       dev_frf.c \
+                       dev_gps.c \
+                       dev_srf.c \
                        dev_position.c \
                        dev_ptz.c \
-                       dev_sonar.c \
                        dev_truth.c \
-                       dev_vision.c \
                        error.c \
                        error.h \
                        mclient.c \
