@@ -32,7 +32,10 @@ class RFLEXPower: public RFLEX
            RFLEX(interface, cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+   void GetOptions(ConfigFile * cf, int section, rflex_config_t * rflex_configs);
+
 };
+
 
 CDevice* RFLEXPower_Init(char* interface, ConfigFile* cf, int section)
 {
@@ -43,10 +46,22 @@ CDevice* RFLEXPower_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else{
-    CDevice* tmp=((CDevice*)(new RFLEXPower(interface, cf, section)));
-    return tmp;
+    RFLEXPower * tmp= new RFLEXPower(interface, cf, section);
+	tmp->GetOptions(cf,section,&rflex_configs);
+    return static_cast<CDevice *> (tmp);
   }
 }
+
+/* read out all of our configuration stuff into the config structure
+ * for detauls on what each of these settings does, check the structure
+ * deffinition
+ */
+void RFLEXPower::GetOptions(ConfigFile *cf,int section,rflex_config_t * rflex_configs){
+	Lock(); 
+	rflex_configs->power_offset = cf->ReadInt(section, "rflex_power_offset",DEFAULT_RFLEX_POWER_OFFSET);
+	Unlock();
+}  
+
 
 // a driver registration function
 void 

@@ -53,6 +53,9 @@
 
 #define DEFAULT_RFLEX_PORT "/dev/ttyS0"
 
+#define DEFAULT_RFLEX_BUMPER_ADDRESS 0x40
+#define DEFAULT_RFLEX_POWER_OFFSET 0
+
 #define MAX_NUM_LOOPS                 30
 #define B_STX                         0x02
 #define B_ETX                         0x03

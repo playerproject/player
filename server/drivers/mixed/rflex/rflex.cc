@@ -832,10 +832,7 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *
   //this would get the battery,time, and brake state (if we cared)
   //update system (battery,time, and brake)
   rflex_update_system(rflex_fd,&batt,&brake);
-	d->power.charge = htons(static_cast<uint16_t> (batt/10));
-	FILE * ftemp = fopen("volt.dmp","a");
-	fprintf(ftemp,"%02.02f\n",static_cast<float>(batt)/100.0);
-	fclose(ftemp);
+	d->power.charge = htons(static_cast<uint16_t> (batt/10) + rflex_configs.power_offset);
 }
 
 //default is for ones that don't need any configuration
