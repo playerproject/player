@@ -129,7 +129,7 @@ Andrew Howard, Richard Vaughan, Kasper Stoy
 #include <unistd.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <sys/ioctl.h>
-#include <playertime.h>
+
 
 #undef HAVE_HI_SPEED_SERIAL
 #ifdef HAVE_LINUX_SERIAL_H
@@ -139,13 +139,14 @@ Andrew Howard, Richard Vaughan, Kasper Stoy
   #endif
 #endif
 
-extern PlayerTime* GlobalTime;
-
+#include "playertime.h"
 #include "playercommon.h"
 #include "drivertable.h"
 #include "driver.h"
 #include "error.h"
 #include "player.h"
+#include "replace.h"
+extern PlayerTime* GlobalTime;
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
 #define DEFAULT_LASER_PORT_RATE 38400
@@ -748,9 +749,7 @@ int SickLMS200::OpenTerm()
   if( tcgetattr( this->laser_fd, &term ) < 0 )
     RETURN_ERROR(1, "Unable to get serial port attributes");
   
-#if HAVE_CFMAKERAW
   cfmakeraw( &term );
-#endif
   cfsetispeed( &term, B9600 );
   cfsetospeed( &term, B9600 );
   
@@ -830,9 +829,7 @@ int SickLMS200::ChangeTermSpeed(int speed)
       if( tcgetattr( this->laser_fd, &term ) < 0 )
         RETURN_ERROR(1, "unable to get device attributes");
         
-#if HAVE_CFMAKERAW
       cfmakeraw( &term );
-#endif
       cfsetispeed( &term, B9600 );
       cfsetospeed( &term, B9600 );
         
@@ -845,9 +842,7 @@ int SickLMS200::ChangeTermSpeed(int speed)
       if( tcgetattr( this->laser_fd, &term ) < 0 )
         RETURN_ERROR(1, "unable to get device attributes");
         
-#if HAVE_CFMAKERAW
       cfmakeraw( &term );
-#endif
       cfsetispeed( &term, B38400 );
       cfsetospeed( &term, B38400 );
         
@@ -882,9 +877,7 @@ int SickLMS200::ChangeTermSpeed(int speed)
       if( tcgetattr( this->laser_fd, &term ) < 0 )
         RETURN_ERROR(1, "unable to get device attributes");    
 
-#if HAVE_CFMAKERAW
       cfmakeraw( &term );
-#endif
       cfsetispeed( &term, B38400 );
       cfsetospeed( &term, B38400 );
     

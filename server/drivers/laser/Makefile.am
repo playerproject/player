@@ -1,6 +1,6 @@
 noinst_LIBRARIES = @SICKLMS200_LIB@ @LASERCSPACE_LIB@ @SICKPLS_LIB@
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server 
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
 EXTRA_LIBRARIES = libsicklms200.a liblasercspace.a libsickpls.a
 

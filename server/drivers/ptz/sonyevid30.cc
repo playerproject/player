@@ -102,12 +102,11 @@ Brian Gerkey
 #include <unistd.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
-#include <driver.h>
-#include <error.h>
-#include <drivertable.h>
-#include <player.h>
-
-#include <replace.h>
+#include "driver.h"
+#include "error.h"
+#include "drivertable.h"
+#include "player.h"
+#include "replace.h"
 
 #define PTZ_SLEEP_TIME_USEC 100000
 
@@ -275,9 +274,7 @@ SonyEVID30::Setup()
     return(-1);
   }
   
-#if HAVE_CFMAKERAW
   cfmakeraw(&term);
-#endif
   cfsetispeed(&term, B9600);
   cfsetospeed(&term, B9600);
   

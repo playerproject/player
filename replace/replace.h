@@ -102,6 +102,11 @@ int scandir(const char *dir, struct dirent ***namelist,
   #endif
 #endif
 
+#if !HAVE_CFMAKERAW
+  #include <termios.h>
+  void cfmakeraw (struct termios *t);
+#endif // !HAVE_CFMAKERAW
+
 #ifdef __cplusplus
 }
 #endif

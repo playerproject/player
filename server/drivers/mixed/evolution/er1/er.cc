@@ -114,15 +114,15 @@ David Feil-Seifer
 #include <unistd.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
-
-#include <driver.h>
-#include <drivertable.h>
-#include <devicetable.h>
-#include <player.h>
-
 #include <sys/ioctl.h>
 #include <asm/ioctls.h> /* not portable - fails in OS X  - rtv*/
+
+#include "driver.h"
+#include "drivertable.h"
+#include "devicetable.h"
+#include "player.h"
 #include "error.h"
+#include "replace.h"
 #include "er_constants.h"
 
 static void StopRobot(void* erdev);

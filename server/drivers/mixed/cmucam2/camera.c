@@ -1,5 +1,5 @@
 #include "camera.h"
-#include <poll.h>
+#include "replace.h"
 
 /************************************************************************
 			    *** WRITE CHECK ***
@@ -200,10 +200,7 @@ int open_port(char *devicepath)
         return -1;
    }
   
-#if HAVE_CFMAKERAW
    cfmakeraw( &term );
-#endif
-   
    cfsetispeed( &term, B115200 );                   // set baudrate to 115200
    cfsetospeed( &term, B115200 );                          
   

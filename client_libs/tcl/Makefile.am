@@ -1,7 +1,8 @@
-tcllibdir = $(libdir)/tclPlayer
-tcllib_DATA = playerclient.tcl @TCLPKGFILE@
+# The Tcl library is not installed, because it's way out of date
+#tcllibdir = $(libdir)/tclPlayer
+#tcllib_DATA = playerclient.tcl @TCLPKGFILE@
 
-EXTRA_DIST = playerclient.tcl @TCLPKGFILE@
+EXTRA_DIST = playerclient.tcl
 
 
 pkgIndex.tcl: playerclient.tcl

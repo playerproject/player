@@ -1,7 +1,7 @@
 
 noinst_LIBRARIES = @CMUCAM2_LIB@ 
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
 EXTRA_LIBRARIES = libcmucam2.a 
 

@@ -177,11 +177,11 @@ Brian Gerkey, Kasper Stoy, James McKenna
 #include <netinet/in.h>
 #include <termios.h>
 
-#include <p2os.h>
-#include <packet.h>
-#include <error.h>
-
-#include <playertime.h>
+#include "p2os.h"
+#include "packet.h"
+#include "error.h"
+#include "replace.h"
+#include "playertime.h"
 extern PlayerTime* GlobalTime;
 
 Driver*
@@ -430,9 +430,7 @@ int P2OS::Setup()
     return(1);
   }
 
-#if HAVE_CFMAKERAW
   cfmakeraw( &term );
-#endif
   cfsetispeed(&term, bauds[currbaud]);
   cfsetospeed(&term, bauds[currbaud]);
   
