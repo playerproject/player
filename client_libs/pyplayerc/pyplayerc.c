@@ -457,7 +457,7 @@ static PyObject *client_get_devlist(PyObject *self, PyObject *args)
   int i;
   int result;
   pyclient_t *pyclient;
-  player_device_id_t *id;
+  playerc_device_info_t *devinfo;
   PyObject *idob;
 
   pyclient = (pyclient_t*) self;
@@ -474,14 +474,14 @@ static PyObject *client_get_devlist(PyObject *self, PyObject *args)
 
   // Build the available device list.
   Py_DECREF(pyclient->idlist);
-  pyclient->idlist = PyTuple_New(pyclient->client->id_count);
-  for (i = 0; i < pyclient->client->id_count; i++)
+  pyclient->idlist = PyTuple_New(pyclient->client->devinfo_count);
+  for (i = 0; i < pyclient->client->devinfo_count; i++)
   {
-    id = pyclient->client->ids + i;
+    devinfo = pyclient->client->devinfos + i;
     idob = PyTuple_New(3);
-    PyTuple_SetItem(idob, 0, PyInt_FromLong(id->code));
-    PyTuple_SetItem(idob, 1, PyInt_FromLong(id->index));
-    PyTuple_SetItem(idob, 2, PyString_FromString(playerc_lookup_name(id->code)));
+    PyTuple_SetItem(idob, 0, PyInt_FromLong(devinfo->code));
+    PyTuple_SetItem(idob, 1, PyInt_FromLong(devinfo->index));
+    PyTuple_SetItem(idob, 2, PyString_FromString(playerc_lookup_name(devinfo->code)));
     PyTuple_SetItem(pyclient->idlist, i, idob);
   }
 
