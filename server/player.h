@@ -776,6 +776,13 @@ typedef struct player_position_waypoints_req
   /** subtype: must be of PLAYER_POSITION_GET_WAYPOINTS_REQ */
   uint8_t subtype;
 
+  /** Did the planner find a valid path to the goal? */
+  uint8_t path_valid;
+
+  /** The current goal (mm,mm,deg) */
+  int32_t goal[3];
+  
+  /** Number of waypoints to follow */
   uint16_t count;
   player_position_waypoint_t waypoints[PLAYER_POSITION_MAX_WAYPOINTS];
 } __attribute__ ((packed)) player_position_waypoints_req_t;

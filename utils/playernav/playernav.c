@@ -2,11 +2,11 @@
 #include <assert.h>
 #include <signal.h>
 #include <string.h>
+#include <math.h>
 
 #include "playernav.h"
 
 #define USAGE "USAGE: playernav <host:port> [<host:port>...]"
-
 
 // global quit flag
 char quit;
@@ -20,14 +20,15 @@ _interrupt_callback(int signum)
 int
 main(int argc, char** argv)
 {
-  int i,j;
+  int i;
+  int count;
+  double epsilon=1e-3;
 
   pose_t robot_pose;
 
   gui_data_t gui_data;
 
-  gui_data.num_robots = 0;
-  memset(gui_data.new_goals, 0, sizeof(gui_data.new_goals));
+  memset(&gui_data, 0, sizeof(gui_data));
 
   if(parse_args(argc-1, argv+1, &(gui_data.num_robots), 
                 gui_data.hostnames, gui_data.ports) < 0)
@@ -65,6 +66,7 @@ main(int argc, char** argv)
 
   gtk_widget_show((GtkWidget*)(gui_data.main_window));
 
+  count=0;
   while(!quit)
   {
     // non-blocking GTK event servicing
@@ -89,8 +91,8 @@ main(int argc, char** argv)
         gui_data.localizes[i]->info.fresh = 0;
       }
 
-      // if a new goal was set, retrieve the waypoints in the plan
-      if(gui_data.new_goals[i] && !gui_data.positions[i]->waypoint_count)
+      // every once in a while, get the latest path from each robot
+      if(!(count % (DATA_FREQ * 10 * gui_data.num_robots)))
       {
         if(playerc_position_get_waypoints(gui_data.positions[i]) < 0)
         {
@@ -98,20 +100,18 @@ main(int argc, char** argv)
           quit=1;
           break;
         }
-        if(gui_data.positions[i]->waypoint_count)
+        // if we got a valid path, for the current goal, then draw it
+        if(gui_data.positions[i]->path_valid &&
+           (fabs(gui_data.positions[i]->gx - gui_data.goals[i][0]) 
+            < epsilon) &&
+           (fabs(gui_data.positions[i]->gy - gui_data.goals[i][1]) 
+            < epsilon))
         {
-          printf("got %d waypoints for robot %d:\n", 
-                 gui_data.positions[i]->waypoint_count,i);
-          for(j=0;j<gui_data.positions[i]->waypoint_count;j++)
-          {
-            printf("  %d: (%.3f,%.3f)\n", j, 
-                   gui_data.positions[i]->waypoints[j][0],
-                   gui_data.positions[i]->waypoints[j][1]);
-          }
-          gui_data.new_goals[i] = FALSE;
+          draw_waypoints(&gui_data,i);
         }
       }
     }
+    count++;
   }
 
   fini_player(gui_data.mclient,
