@@ -28,6 +28,7 @@ typedef struct
 typedef struct
 {
   GtkWindow* main_window;
+  GtkBox* vbox;
   GtkBox* hbox;
   GtkScrolledWindow* map_window;
   GnomeCanvas* map_canvas;
