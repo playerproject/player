@@ -48,7 +48,7 @@ uninstall:
 manual:
 	cd tex && make install
 
-distro: manual
+distro: clean manual
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` `awk '{print substr($$3,2,length($$3)-2);}' $(PWD)/VERSION`
 
 
