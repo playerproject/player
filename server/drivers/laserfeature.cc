@@ -68,6 +68,12 @@ class LaserFeature : public CDevice
   // updated.
   private: int UpdateLaser();
 
+  // Write laser data to a file (testing).
+  private: int WriteLaser();
+
+  // Read laser data from a file (testing).
+  private: int ReadLaser();
+
   // Segment the scan into straight-line segments.
   private: void SegmentLaser();
 
@@ -84,7 +90,6 @@ class LaserFeature : public CDevice
   // Handle geometry requests.
   private: void HandleGetGeom(void *client, void *req, int reqlen);
 
-
   // Device pose relative to robot.
   private: double pose[3];
 
@@ -93,6 +98,9 @@ class LaserFeature : public CDevice
   private: CDevice *laser_device;
   private: player_laser_data_t laser_data;
   private: uint32_t laser_timesec, laser_timeusec;
+
+  // TESTING
+  private: FILE *laser_file;
 
   // Fiducila stuff (the data we generate).
   private: player_fiducial_data_t data;
@@ -168,6 +176,10 @@ int LaserFeature::Setup()
   this->pose[0] = 0.10;
   this->pose[1] = 0;
   this->pose[2] = 0;
+
+  // TESTING
+  this->laser_file = fopen("laser.log", "w+");
+  assert(this->laser_file);
   
   return 0;
 }
@@ -180,6 +192,9 @@ int LaserFeature::Shutdown()
   // Unsubscribe from devices.
   this->laser_device->Unsubscribe(this);
 
+  // TESTING
+  fclose(this->laser_file);
+  
   return 0;
 }
 
@@ -229,10 +244,55 @@ int LaserFeature::UpdateLaser()
   for (i = 0; i < this->laser_data.range_count; i++)
     this->laser_data.ranges[i] = ntohs(this->laser_data.ranges[i]);
 
+  //this->ReadLaser();
+  this->WriteLaser();
+    
   // Segment the scan into straight-line segments.
   this->SegmentLaser();
   
   return 1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Write laser data to a file (testing).
+int LaserFeature::WriteLaser()
+{
+  int i;
+  
+  fprintf(this->laser_file, "%d %d %d %d ",
+          this->laser_data.resolution,
+          this->laser_data.min_angle,
+          this->laser_data.max_angle,
+          this->laser_data.range_count);
+    
+  for (i = 0; i < this->laser_data.range_count; i++)
+    fprintf(this->laser_file, "%d ", this->laser_data.ranges[i]);
+
+  fprintf(this->laser_file, "\n");
+  
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Read laser data from a file (testing).
+int LaserFeature::ReadLaser()
+{
+  int i;
+
+  fscanf(this->laser_file, "%hd %hd %hd %hd ",
+         &this->laser_data.resolution,
+         &this->laser_data.min_angle,
+         &this->laser_data.max_angle,
+         &this->laser_data.range_count);
+    
+  for (i = 0; i < this->laser_data.range_count; i++)
+    fscanf(this->laser_file, "%hd ", &this->laser_data.ranges[i]);
+
+  fscanf(this->laser_file, "\n");
+
+  return 0;
 }
 
 
