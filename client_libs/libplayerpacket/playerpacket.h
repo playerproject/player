@@ -53,6 +53,15 @@ extern "C" {
   void PositionSetOdomReqUnpack( player_position_set_odom_req_t* req,
 				 double* x, double* y, double* a );
   
+  void FiducialGeomPack(  player_fiducial_geom_t* geom,
+			  double px, double py, double pth,
+			  double sensor_width, double sensor_height,
+			  double target_width, double target_height );
+  
+  void FiducialGeomUnpack(  player_fiducial_geom_t* geom,
+			    double* px, double* py, double* pth,
+			    double* sensor_width, double* sensor_height,
+			    double* target_width, double* target_height );
   
 #ifdef __cplusplus
 }
