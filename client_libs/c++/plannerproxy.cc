@@ -72,14 +72,15 @@ int PlannerProxy::SetCmdPose( double gx, double gy, double ga, int /*state*/)
   if (!client)
     return -1;
 
+
   player_planner_cmd_t cmd;
-  memset (&cmd, 0, sizeof(player_planner_cmd_t));
+  memset (&cmd, 0, sizeof(cmd));
 
   cmd.gx = (int32_t)htonl((int) (gx * 1000.0));
   cmd.gy = (int32_t)htonl((int) (gy * 1000.0));
   cmd.ga = (int32_t)htonl((int) (ga * 180.0 / M_PI));
 
-  return (client->Write( m_device_id, (const char*)&cmd, sizeof(player_planner_cmd_t)));
+  return (client->Write( m_device_id, (const char*)&cmd, sizeof(cmd)));
 }
 
 
@@ -87,26 +88,31 @@ int PlannerProxy::SetCmdPose( double gx, double gy, double ga, int /*state*/)
 // returning it to the caller.
 int PlannerProxy::GetWaypoints()
 {
-  int i;
-  int len;
+  if (!client)
+    return (-1);
+
   player_planner_waypoints_req_t config;
+  player_msghdr_t hdr;
 
   memset(&config, 0, sizeof(config));
   config.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
 
-  len = client->Request(m_device_id, (const char*)&config, sizeof(config));
+  int len = client->Request(m_device_id, (const char*)&config, 
+                        sizeof(config.subtype), &hdr, (char *)&config, 
+                        sizeof(config));
   
    if (len < 0)
     return -1;
 
-  if (len == 0)
+  /*if (len == 0)
   {
     PLAYER_ERROR("got unexpected zero-length reply");
     return -1;
   }
 
   this->waypointCount = (int)ntohs(config.count);
-  for (i=0; i<this->waypointCount; i++)
+  */
+  for (int i=0; i<this->waypointCount; i++)
   {
     this->waypoints[i][0] = ((int)ntohl(config.waypoints[i].x)) / 1e3;
     this->waypoints[i][1] = ((int)ntohl(config.waypoints[i].y)) / 1e3;
@@ -120,6 +126,7 @@ int PlannerProxy::GetWaypoints()
 // Process incoming data
 void PlannerProxy::FillData( player_msghdr_t hdr, const char *buffer)
 {
+
   if (hdr.size != sizeof(player_planner_data_t))
   {
     if (player_debug_level(-1) >= 1)
