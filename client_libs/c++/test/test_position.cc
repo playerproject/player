@@ -55,178 +55,224 @@ test_position(PlayerClient* client, int index)
   if( pp.SetOdometry(ox, oy, oa) < 0 )
     {
       FAIL();
-      return(-1);
-    }
-  
-  printf("\n - initial \t[%d %d %u]\n"
-	 " - requested \t[%d %d %u]\n", 
-	 pp.xpos, pp.ypos, pp.theta, 
-	 ox, oy, oa );
-  
-  
-  for( int s=0; s<10; s++ )
-    {
-      client->Read();
-      printf( " - reading \t[%d %d %u]\r", 
-	      pp.xpos, pp.ypos, pp.theta );
-      fflush(stdout);
-    }
-  
-  puts("");
-
-  if( pp.xpos != ox || pp.ypos != oy || pp.theta != oa )
-    {
-      FAIL();
       //return(-1);
     }
   else
-    PASS();
+    {
+      printf("\n - initial \t[%d %d %u]\n"
+	     " - requested \t[%d %d %u]\n", 
+	     pp.xpos, pp.ypos, pp.theta, 
+	     ox, oy, oa );
+      
+      
+      for( int s=0; s<10; s++ )
+	{
+	  client->Read();
+	  printf( " - reading \t[%d %d %u]\r", 
+		  pp.xpos, pp.ypos, pp.theta );
+	  fflush(stdout);
+	}
+  
+      puts("");
+      
+      if( pp.xpos != ox || pp.ypos != oy || pp.theta != oa )
+	{
+	  FAIL();
+	  //return(-1);
+	}
+      else
+	PASS();
+    }
   
   TEST("resetting odometry");
   if(pp.ResetOdometry() < 0)
   {
     FAIL();
-    return(-1);
+    //return(-1);
   }
-  sleep(1);
-  PASS();
+  else
+    {
+      sleep(1);
+      PASS();
+    }
 
   TEST("enabling motors");
   if(pp.SetMotorState(1) < 0)
   {
     FAIL();
-    return(-1);
+    //return(-1);
   }
-  PASS();
+  else
+    PASS();
 
   TEST("moving forward");
   if(pp.SetSpeed(100,0) < 0)
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
-  sleep(3);
-  PASS();
-
+  else
+    {
+      sleep(3);
+      PASS();
+    }
+  
   TEST("moving backward");
   if(pp.SetSpeed(-100,0) < 0)
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
-  sleep(3);
-  PASS();
-
+  else
+    {
+      sleep(3);
+      PASS();
+    }
+  
   TEST("moving left");
   if(pp.SetSpeed(0,100,0) < 0)
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
-  sleep(3);
-  PASS();
-
+  else
+    {
+      sleep(3);
+      PASS();
+    }
+  
   TEST("moving right");
   if(pp.SetSpeed(0,-100,0) < 0)
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
-  sleep(3);
-  PASS();
-
+  else
+    {
+      sleep(3);
+      PASS();
+    }
+  
   TEST("turning right");
   if(pp.SetSpeed(0,-25) < 0)
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
-  sleep(3);
-  PASS();
+  else
+    {
+      sleep(3);
+      PASS();
+    }
 
   TEST("turning left");
   if(pp.SetSpeed(0,25) < 0)
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
-  sleep(3);
-  PASS();
+  else
+    {
+      sleep(3);
+      PASS();
+    }
 
   TEST("moving left and anticlockwise (testing omnidrive)");
   if( pp.SetSpeed( 0, 100, 45 ) < 0 )
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
-  sleep(3);
-  PASS();
-
-
+  else
+    {
+      sleep(3);
+      PASS();
+    }
+  
+  
   TEST("moving right and clockwise (testing omnidrive)");
   if( pp.SetSpeed( 0, -100, -45 ) < 0 )
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
-  sleep(3);
-  PASS();
-
+  else
+    {
+      sleep(3);
+      PASS();
+    }
+  
   TEST("stopping");
   if(pp.SetSpeed(0,0) < 0)
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
-  sleep(3);
-  PASS();
+  else
+    {
+      sleep(3);
+      PASS();
+    }
+
 
   TEST("disabling motors");
   if(pp.SetMotorState(0) < 0)
   {
     FAIL();
-    return(-1);
+    //return(-1);
   }
-  sleep(1);
-  PASS();
-
+  else
+    {
+      sleep(1);
+      PASS();
+    }
+  
   TEST("changing to separate velocity control");
   if(pp.SelectVelocityControl(1) < 0)
   {
     FAIL();
-    return(-1);
+    //return(-1);
   }
-  sleep(1);
-  PASS();
-
+  else
+    { 
+      sleep(1);
+      PASS();
+    }
+  
   TEST("changing to direct wheel velocity control");
   if(pp.SelectVelocityControl(0) < 0)
   {
     FAIL();
-    return(-1);
+    //return(-1);
   }
-  sleep(1);
-  PASS();
-
+  else
+    {
+      sleep(1);
+      PASS();
+    }
+  
   TEST("resetting odometry");
   if(pp.ResetOdometry() < 0)
-  {
-    FAIL();
-    return(-1);
-  }
-  sleep(1);
-  PASS();
-
+    {
+      FAIL();
+      //return(-1);
+    }
+  else
+    {
+      sleep(1);
+      PASS();
+    }
+  
   TEST("unsubscribing");
   if((pp.ChangeAccess(PLAYER_CLOSE_MODE,&access) < 0) ||
      (access != PLAYER_CLOSE_MODE))
-  {
-    FAIL();
-    return -1;
-  }
+    {
+      FAIL();
+      return -1;
+    }
 
   PASS();
-
+  
   return(0);
 }
 

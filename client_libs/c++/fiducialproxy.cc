@@ -173,7 +173,7 @@ int FiducialProxy::GetFOV()
 			(const char*)&fov, sizeof(fov.subtype),
 			&hdr, (char*)&fov, sizeof(fov) );
   
-  if( len == -1 )
+  if( len < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK )
     {
       puts( "fiducial config FOV request failed" );
       return(-1);
@@ -204,7 +204,7 @@ int FiducialProxy::SetFOV( double min_range,
 			(const char*)&fov, sizeof(fov),
 			&hdr, (char*)&fov, sizeof(fov) );
   
-  if( len == -1 )
+  if( len < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK )
     {
       puts( "fiducial config FOV request failed" );
       return(-1);
