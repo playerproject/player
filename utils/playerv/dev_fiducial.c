@@ -153,9 +153,14 @@ void fiducial_draw(fiducial_t *fiducial)
   {
     fdata = fiducial->proxy->fiducials + i;
 
+    /*
     ox = fdata->range * cos(fdata->bearing);
     oy = fdata->range * sin(fdata->bearing);
     oa = fdata->orient;
+    */
+    ox = fdata->pos[0];
+    oy = fdata->pos[1];
+    oa = fdata->rot[2];
     
     rtk_fig_rectangle(fiducial->fig, ox, oy, oa, wx, wy, 0);
     rtk_fig_arrow(fiducial->fig, ox, oy, oa, 0.20, 0.10);
