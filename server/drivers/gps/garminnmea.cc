@@ -21,22 +21,78 @@
 
 /*
  * $Id$
- *
- * Device driver for the Garmin geko 201 handheld GPS unit.  Interacts with
- * the unit by speaking NMEA over a serial line.  As such, this driver may
- * work with other Garmin units, and (likely with some modification) other
- * NMEA-compliant GPS units.
- *
- * The driver may also attempt to read DGPS RTCM corrections from a
- * multi-cast network address, and forward these corrections to the
- * GPS unit.  The dgps_server utility (found in player/utils/dgps_server)
- * may be used to gather and broadcast the DGPS RTCM corrections.
- *
- * NMEA and proprietary Garmin codes can be found at
- * http://home.mira.net/~gnb/gps/nmea.html
- *
- * Authors: Brian Gerkey, Andrew Howard
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_garminnmea garminnmea
+
+ 
+Device driver for the Garmin geko 201 handheld GPS unit.  Interacts with
+the unit by speaking NMEA over a serial line.  As such, this driver may
+work with other Garmin units, and (likely with some modification) other
+NMEA-compliant GPS units.
+ 
+The driver may also attempt to read DGPS RTCM corrections from a
+multi-cast network address, and forward these corrections to the
+GPS unit.  The @ref player_util_dgps_server utility may be used to gather
+and broadcast the DGPS RTCM corrections.
+ 
+NMEA and proprietary Garmin codes can be found at
+http://home.mira.net/~gnb/gps/nmea.html
+
+@par Compile-time dependencies
+
+- none
+
+@par Requires
+
+- none
+
+@par Provides
+
+- @ref player_interface_gps
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS0"
+  - Serial port where the GPS unit is connected
+- baud (integer)
+  - Default: 4800
+  - Speed of serial connection to the GPS unit
+- dgps_enable (integer)
+  - Default: 1
+  - Enable/disable listening for DGPS corrections via UDP multicast
+    (use @ref player_util_dgps_server to send the corrections)
+- dgps_group (string)
+  - Default: "225.0.0.43"
+  - Multicast group on which to listen for DGPS corrections</td></tr>
+- dgps_port (integer)
+  - Default: 7778
+  - UDP port on which to listen for DGPS corrections
+
+@par Example
+
+@verbatim
+driver
+(
+  name "garminnmea"
+  provides ["gps:0"]
+  port "/dev/ttyS1"
+)
+@endverbatim
+
+@par Authors
+
+Brian Gerkey, Andrew Howard
+
+*/
+/** @} */
 
 
 #if HAVE_CONFIG_H

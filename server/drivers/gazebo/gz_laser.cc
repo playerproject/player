@@ -31,19 +31,30 @@
 /** @{ */
 /** @defgroup player_driver_gz_laser gz_laser
 
+
 The gz_laser driver is used to access Gazebo models that support the
 libgazebo laser interface (such as the SickLMS200 model).
 
-@par Interfaces
+@par Compile-time dependencies
+
+- Gazebo
+
+@par Provides
+
 - @ref player_interface_laser
 
-@par Supported configuration requests
+@par Requires
 
-None
+- none
+
+@par Configuration requests
+
+- none
 
 @par Configuration file options
 
-- gz_id ""
+- gz_id (string)
+  - Default: ""
   - ID of the Gazebo model.
       
 @par Example 
@@ -56,6 +67,10 @@ driver
   gz_id "laser1"
 )
 @endverbatim
+
+@par Authors
+
+Andrew Howard
 */
 /** @} */
 

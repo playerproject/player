@@ -31,11 +31,15 @@
 /** @{ */
 /** @defgroup player_driver_gz_stereo gz_stereo
 
+
 The gz_stereo driver is used to access Gazebo models that support the
 libgazebo stereo interface (such as the StereoHead model).
 
+@par Compile-time dependencies
 
-@par Interfaces
+- Gazebo
+
+@par Provides
 
 This driver provides four named camera interfaces:
 
@@ -54,16 +58,22 @@ This driver provides four named camera interfaces:
     each pixel recording the horizontal disparity in the rectified image.
 
 
-@par Supported configuration requests
+@par Requires
 
-None
+- none
+
+@par Configuration requests
+
+- none
 
 @par Configuration file options
 
-- gz_id ""
+- gz_id (string)
+  - Default: ""
   - ID of the Gazebo model.
 
-- save 0
+- save (integer)
+  - Default: 0
   - Save images to disk (for debugging).
       
 @par Example 
@@ -76,6 +86,10 @@ driver
   gz_id "stereo1"
 )
 @endverbatim
+
+@par Authors
+
+Andrew Howard
 */
 /** @} */
 

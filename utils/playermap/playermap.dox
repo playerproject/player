@@ -1,0 +1,16 @@
+/* document playermap here, because Doxygen can't read Python (at least
+ * not without running an input filter, and I don't feel like messing with
+ * that right now).
+ */
+
+/** @addtogroup utils Utilities */
+
+/** @{ */
+
+/** @defgroup player_util_playermap playermap
+
+playermap is currently disabled.  Please check back later.
+
+*/
+
+/** @} */

@@ -30,40 +30,56 @@
 /** @{ */
 /** @defgroup player_driver_camera1394 camera1394
 
+
 The camera1394 driver captures images from IEEE1394 (Firewire, iLink)
 cameras.  
 
-@par Interfaces
+@par Compile-time dependencies
+
+- libraw1394
+- libdc1394_control
+
+@par Provides
+
 - @ref player_interface_camera
 
-@par Supported configuration requests
+@par Requires
 
-None
+- none
 
+@par Configuration requests
+
+- none
 
 @par Configuration file options
 
-- port 0
+- port (integer)
+  - Default: 0
   - The 1394 port the camera is attached to.
 
-- node 0
+- node (integer)
+  - Default: 0
   - The node within the port
 
-- framerate 15
+- framerate (float)
+  - Default: 15
   - Requested frame rate (frames/second)
 
-- mode "320x240_yuv422"
+- mode (string)
+  - Default: "320x240_yuv422"
   - Capture mode (size and color layour).  Valid modes are:
     - "320x240_yuv"
     - "640x480_rgb"
     - "640x480_mono"
   - Currently, all of these modes will produce 8-bit monochrome images.
   
-- force_raw 0
+- force_raw (integer)
+  - Default: 0
   - Force the driver to use (slow) memory capture instead of DMA transfer
   (for buggy 1394 drivers).
   
-- save 0
+- save (integer)
+  - Default: 0
   - Debugging option: set this to write each frame as an image file on disk.
 
   
@@ -77,6 +93,9 @@ driver
 )
 @endverbatim
 
+@par Authors
+
+Nate Koenig, Andrew Howard
 
 */
 /** @} */

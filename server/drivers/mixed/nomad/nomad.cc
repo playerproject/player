@@ -35,36 +35,48 @@
 /** @{ */
 /** @defgroup player_driver_nomad nomad
 
+
 The nomad driver controls the Nomadics NOMAD200 robot, and should be
 easily modified to support close relatives.
 
-This driver uses the Nomad-specific "nomad" interface to talk over a
-serial port to a robot running Nomadics' robot server program. The
-nomad interface gives access to most of the Nomad's
-functionality. This driver also has a set of companion drivers that
-provide generic (i.e. not robot-specific) Player interfaces. These
-are: nomad_position (provides player_interface_position) and
-nomad_sonar (provides player_interface_sonar). The companion drivers
-rely on the nomad driver to talk to the robot, so you MUST instantiate
-a nomad device in your config file, followed by the devices using the
-companion drivers. See below for an example config file umentation for
-the companion drivers for example configfiles.
+This driver uses the Nomad-specific @ref player_interface_nomad
+interface to talk over a serial port to a robot running Nomadics'
+robot server program. The nomad interface gives access to most of
+the Nomad's functionality. This driver also has a set of companion
+drivers that provide generic (i.e. not robot-specific) Player
+interfaces. These are: @ref player_driver_nomad_position (provides @ref
+player_interface_position) and @ref player_driver_nomad_sonar (provides
+@ref player_interface_sonar). The companion drivers rely on the nomad
+driver to talk to the robot, so you MUST instantiate a nomad device in
+your config file, followed by the devices using the companion drivers. See
+below for an example config file umentation for the companion drivers
+for example configfiles.
 
+@par Compile-time dependencies
 
-@par Interfaces
+- none
+
+@par Provides
+
 - @ref player_interface_nomad
 
-@par Supported configuration requests
+@par Requires
 
-- [none]
+- none
+
+@par Configuration requests
+
+- none
   
 @par Configuration file options
 
-- serial_device "/dev/ttyS0"
+- serial_device (string)
+  - Default: "/dev/ttyS0"
   - the serial port to which the Nomad is connected. This should match the setting on 
     the robot.
 
-- serial_speed  9600
+- serial_speed (integer)
+  - Default: 9600
   - sets the speed (baud rate) of the serial port. This should match the setting on the robot.
 
 @par Example 
@@ -81,22 +93,22 @@ driver
 driver
 (
   name "nomad_position"
-  requires[ "nomad:0" ]
-  provides[ "position:0" ]
+  requires ["nomad:0"]
+  provides ["position:0"]
 )
 
 driver
 (
   name "nomad_sonar"
-  requires[ "nomad:0" ]
-  provides[ "sonar:0" ]
+  requires ["nomad:0"]
+  provides ["sonar:0"]
 )
 
 @endverbatim
 
 @par Authors
 
-Richard Vaughan (vaughan@sfu.ca), Pawel Zebrowski (pzebrows@sfu.ca)
+Richard Vaughan, Pawel Zebrowski
 
 */
 /** @} */

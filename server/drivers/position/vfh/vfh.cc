@@ -16,6 +16,18 @@
 #include "drivertable.h"
 #include "vfh_algorithm.h"
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_vfh vfh
+
+The vfh driver implements the Vector Field Histogram goal-seeking 
+obstacle-avoidance algorithm.  This driver works very well for local 
+navigation.
+
+*/
+
+/** } */
+
 class VFH_Class : public Driver 
 {
   public:

@@ -17,6 +17,91 @@
 //
 //   * Make the zoom work better / look nicer
 
+/** @addtogroup utils Utilities */
+/** @{ */
+/** @defgroup player_util_playernav playernav
+
+@par Synopsis
+
+playernav is a GUI client that provides control over @ref
+player_interface_localize and @ref player_interface_planner devices.
+It allows you to set your robots' localization hypotheses by dragging
+and dropping them in the map.  You can set global goals the same way,
+and see the planned paths and the robots' progress toward the goals.
+You can think of playernav as an Operator Control Unit (OCU).  playernav
+can also be used just to view a map.
+
+playernav requires libgnomecanvas.
+
+@par Usage
+
+playernav is installed alongside player in $prefix/bin, so if player is
+in your PATH, then playernav should also be.  Command-line usage is:
+@verbatim
+$ playernav [-fps <dumprate>] <host:port> [<host:port>...]
+@endverbatim
+Where the options are:
+- -fps &lt;dumprate&gt; : when requested, dump screenshots at this rate in Hz (default: 5Hz)
+
+playernav will connect to Player at each host:port combination given on
+the command line.  For each one, playernav will attempt to subscribe to
+the following devices:
+- @ref player_interface_localize :0
+- @ref player_interface_planner :0
+
+Additionally, playernav will attempt to subscribe to the following device
+on the first server:
+- @ref player_interface_map :0
+
+If the subscription to the map fails, playernav will exit.  If other
+subscriptions fail, you'll be warned, but playernav will continue.  So,
+for example, if you just want to view a map, point playernav at a server
+with @ref player_interface_map :0 defined.  Of course, if subscription
+to @ref player_interface_localize :0 or @ref player_interface_planner
+:0 fails for a robot, then you will not be able to localize or command,
+respectively, that robot.
+
+When playernav starts, a window will pop up, displaying the map.
+Use the scrollbars on the right and bottom to pan the window.  Use the
+scrollbar on the left to zoom the window.  An icon representing each
+robot will be shown.  Pass the pointer over a robot to see its
+host:port address.  
+
+Use the "File:Capture stills" menu item to enable / disable dumping
+screenshots; they will be saved at the rate set on the command line
+(5Hz default).  Beware that dumping screenshots requires significant
+processing and will seriously degrade performance of other jobs running
+on the same machine.  In particular, if one or more of the player servers
+is running on the same machine, their localization systems may fall behind
+the incoming data, which will have deleterious consequences.
+
+@par Localizing and commanding robots
+
+To set the localization hypothesis for a robot, drag and drop the robot
+with the left mouse button to the desired position.  Then click the
+left button again to set the desired orientation.  You should see the
+robot's icon move to assume a similar pose (it won't be exactly the same
+pose, but rather whatever estimate the localization system provides).
+As the robot moves, its estimated pose will be updated in playernav.
+
+To set a goal for a robot, drag and drop the robot with the right mouse
+button to the desired position.  Then click the right button again to set
+the desired orientation.  You should see a path from the robot to the
+goal, with waypoints shown (if you do not see a path, then the planner
+probably failed to find one).  You will then see the robot follow the
+path to the goal, with subsegments disappearing as waypoints are reached.
+
+You can set new localization hypotheses and target at any time, even
+while the robot is moving.
+
+@par Screenshots
+
+@image html playernav-example.jpg "Screenshot of playernav with three robots moving toward goals"
+
+*/
+
+/** @} */
+
 #include <assert.h>
 #include <signal.h>
 #include <string.h>
