@@ -80,11 +80,19 @@ int player_request(player_connection_t* conn,
 
 /*
  * issue a single device request (special case of player_request())
+ *
+ * if grant_access is non-NULL, then the actual granted access will
+ * be written there.
+ *
+ *   Returns:
+ *      0 if everything went OK
+ *     -1 if something went wrong (you should probably close the connection!)
  */
 int player_request_device_access(player_connection_t* conn,
                                  uint16_t device,
                                  uint16_t device_index,
-                                 uint8_t access);
+                                 uint8_t req_access,
+                                 uint8_t* grant_access);
 
 /*
  * read from the indicated connection.  put the data in buffer, up to
