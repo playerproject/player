@@ -31,7 +31,7 @@
 
 #include <playercclient.h>
 #include <messages.h>
-#include <devicedatatable.h>
+#include <olddevicedatatable.h>
 
 typedef enum
 {
