@@ -118,9 +118,9 @@ void Position3DProxy::FillData(player_msghdr_t hdr, const char* buffer)
   ypos = (int)ntohl(buf->ypos);
   zpos = (int)ntohl(buf->zpos);
 
-  roll = (unsigned int)ntohl(buf->roll) / 3600;
-  pitch = (unsigned int)ntohl(buf->pitch) / 3600;
-  yaw = (unsigned int)ntohl(buf->yaw) / 3600;
+  roll = (double)ntohl(buf->roll) / 3600.0;
+  pitch = (double)ntohl(buf->pitch) / 3600.0;
+  yaw = (double)ntohl(buf->yaw) / 3600.0;
 
   xspeed = (int)ntohl(buf->xspeed);
   yspeed = (int)ntohl(buf->yspeed);
