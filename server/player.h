@@ -566,6 +566,8 @@ typedef struct player_position_geom
 On some robots, the motor power can be turned on and off from software.
 To do so, send a request with the format given below, and with the
 appropriate {\tt state} (zero for motors off and non-zero for motors on).
+The server will reply with a zero-length acknowledgement.
+
 Be VERY careful with this command!  You are very likely to start the robot 
 running across the room at high speed with the battery charger still attached.
 */
@@ -582,7 +584,8 @@ typedef struct player_position_power_config
 Some robots offer different velocity control modes.
 It can be changed by sending a request with the format given below,
 including the appropriate mode.  No matter which mode is used, the external
-client interface to the {\tt position} device remains the same. */
+client interface to the {\tt position} device remains the same.   The server 
+will reply with a zero-length acknowledgement*/
 typedef struct player_position_velocitymode_config
 {
   /** subtype; must be PLAYER_POSITION_VELOCITY_MODE_REQ */
@@ -609,7 +612,8 @@ For the {\tt reb_position} driver, 0 is direct velocity control, 1 is for
 
 /** [Configuration: Reset odometry] */
 /** To reset the robot's odometry to $(x,y,\theta) = (0,0,0)$, use the
- following request: */
+ following request.  The server will reply with a zero-length 
+ acknowledgement. */
 typedef struct player_position_resetodom_config
 {
   /** subtype; must be PLAYER_POSITION_RESET_ODOM_REQ */
@@ -674,51 +678,70 @@ typedef struct player_position_speed_prof_req
  ** end section
  *************************************************************************/
 
-/*************************************************************************/
-/*
- * Fixed range-finder (sonar) interface
- */
-#define PLAYER_SONAR_MAX_SAMPLES 32
+/*************************************************************************
+ ** begin section sonar
+ *************************************************************************/
+/** [Synopsis]
+The {\tt sonar} interface provides access to a collection of fixed range 
+sensors, such as a sonar array. */
 
-/* the sonar data packet */
-typedef struct
+/** [Constants] */
+/** maximum number of sonar samples in a data packet */
+#define PLAYER_SONAR_MAX_SAMPLES 32
+/** request types */
+#define PLAYER_SONAR_GET_GEOM_REQ   ((uint8_t)1)
+#define PLAYER_SONAR_POWER_REQ      ((uint8_t)2)
+
+/** [Data] */
+/**
+The {\tt sonar} interface returns up to 32 range readings from a robot's 
+sonars.  The format is: */
+typedef struct player_sonar_data
 {
-  /* The number of valid range readings. */
+  /** The number of valid range readings. */
   uint16_t range_count;
   
-  /* for the Pioneer, start at the front left sonar and number clockwise */
+  /** The range readings */
   uint16_t ranges[PLAYER_SONAR_MAX_SAMPLES];
   
 } __attribute__ ((packed)) player_sonar_data_t;
 
-// the request types
-#define PLAYER_SONAR_GET_GEOM_REQ   ((uint8_t)1)
-#define PLAYER_SONAR_POWER_REQ      ((uint8_t)2)
+/** [Commands] This interface accepts no commands. */
 
-/* Packet for getting the sonar geometry. */
-typedef struct
+/** [Configuration: Query geometry] */
+/** To query the geometry of the sonar transducers, use the request given
+ below, but only fill in the subtype.  The server will reply with the other 
+ fields filled in. */
+typedef struct player_sonar_geom
 {
-  /* Packet subtype.  Must be PLAYER_SONAR_GET_GEOM_REQ. */
+  /** Subtype.  Must be PLAYER_SONAR_GET_GEOM_REQ. */
   uint8_t subtype;
 
-  /* The number of valid poses. */
+  /** The number of valid poses. */
   uint16_t pose_count;
 
-  /* Pose of each sonar, in robot cs (mm, mm, degrees). */
+  /** Pose of each sonar, in robot cs (mm, mm, degrees). */
   int16_t poses[PLAYER_SONAR_MAX_SAMPLES][3];
   
 } __attribute__ ((packed)) player_sonar_geom_t;
 
-/* Packet for powering on/off the sonars. */
-typedef struct
+/** [Configuration: Sonar power] */
+/** On some robots, the sonars can be turned on and off from software.  To do
+    so, issue a request of the form given below.  The server will reply with
+    a zero-length acknowledgement. */
+typedef struct player_sonar_power_config
 {
-  /* Packet subtype.  Must be PLAYER_P2OS_SONAR_POWER_REQ. */
+  /** Packet subtype.  Must be PLAYER_P2OS_SONAR_POWER_REQ. */
   uint8_t subtype;
 
-  /* Turn power off (0) or on (>0) */
+  /** Turn power off (0) or on (>0) */
   uint8_t value;
+
 } __attribute__ ((packed)) player_sonar_power_config_t;
-/*************************************************************************/
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 
 /*************************************************************************
