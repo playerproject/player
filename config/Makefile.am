@@ -7,7 +7,9 @@ config_DATA = usc_pioneer.cfg \
 	      PHE-05cm.pnm.gz \
               vfh.cfg \
 	      gazebo.cfg \
-	      segwayrmp.cfg
+	      segwayrmp.cfg\
+              gazebo_blobfinder.cfg\
+              colors.txt
 
 EXTRA_DIST = usc_pioneer.cfg \
              umass_reb.cfg \
@@ -16,5 +18,6 @@ EXTRA_DIST = usc_pioneer.cfg \
 	     PHE-05cm.pnm.gz \
              vfh.cfg \
 	     gazebo.cfg \
-	     segwayrmp.cfg
-
+	     segwayrmp.cfg\
+             gazebo_blobfinder.cfg\
+             colors.txt
