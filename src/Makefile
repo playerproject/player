@@ -23,7 +23,7 @@ LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm
 INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
                    $(INCLUDE_POSITION) $(INCLUDE_GRIPPER) $(INCLUDE_MISC) \
                    $(INCLUDE_MISC) $(INCLUDE_PTZ) $(INCLUDE_STAGE) \
-                   $(INCLUDE_AUDIO) $(INCLUDE_LASERBEACON) \
+                   $(INCLUDE_AUDIO) $(INCLUDE_LASERBEACON) $(INCLUDE_BPS) \
                    $(INCLUDE_BROADCAST) $(INCLUDE_SPEECH)
 
 #
@@ -68,6 +68,9 @@ ifdef INCLUDE_AUDIO
 endif
 ifdef INCLUDE_LASERBEACON
   OBS += laserdevice.o laserbeacondevice.o
+endif
+ifdef INCLUDE_BPS
+  OBS += laserdevice.o laserbeacondevice.o bpsdevice.o
 endif
 ifdef INCLUDE_BROADCAST
   OBS += broadcastdevice.o 

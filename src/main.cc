@@ -79,6 +79,9 @@
 #ifdef INCLUDE_SPEECH
 #include <speechdevice.h>
 #endif
+#ifdef INCLUDE_BPS
+#include <bpsdevice.h>
+#endif
 
 #include <clientdata.h>
 #include <devicetable.h>
@@ -134,7 +137,8 @@ char* sane_spec[] = { "-misc:0",
                       "-audio:0",
                       "-laserbeacon:0",
                       "-broadcast:0",
-                      "-speech:0" };
+                      "-speech:0",
+                      "-bps:0"};
 
 /* Usage statement */
 void
@@ -448,7 +452,7 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
 	  fflush( stdout );
 #endif
 	  break;
-	      
+      
 	case 0:
 #ifdef VERBOSE
 	  printf( "Player ignoring Stage device type %d\n", 
@@ -466,6 +470,14 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
 	}
     }
 
+#ifdef INCLUDE_BPS
+  // HACK -- Create BPS as per normal; it will use other simulated devices
+  // The stage versus non-stage initialization needs some re-thinking.
+  // ahoward
+  deviceTable->AddDevice(PLAYER_BPS_CODE, 0, 
+                         PLAYER_READ_MODE, new CBpsDevice(0, NULL));
+#endif
+  
 #ifdef DEBUG  
   printf( "finished creating stage devices\n" );
   fflush( stdout );
@@ -657,6 +669,18 @@ parse_device_string(char* str1, char* str2)
   {
     fputs("GPS device is not yet implemented in Player.\n",stderr);
     return(-1);
+  }
+  else if(!strncmp(PLAYER_BPS_STRING,str1+1,strlen(PLAYER_BPS_STRING)))
+  {
+#ifdef INCLUDE_BPS
+    tmpdevice = new CBpsDevice(argc,argv);
+    deviceTable->AddDevice(PLAYER_BPS_CODE, index, 
+                           PLAYER_READ_MODE, tmpdevice);
+#else
+    fputs("\nWarning: Support for bps device was not included at compile time.\n",
+          stderr);
+    return(0);
+#endif
   }
   else
   {
