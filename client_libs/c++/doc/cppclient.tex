@@ -14,7 +14,7 @@
 % add nifty DRAFT watermark thingy in PS
 %\usepackage{draftcopy}
 
-\def\VERSION {1.2}
+\def\VERSION {1.3}
 \def\DEFAULTPORT {6665}
 
 \begin{document}
@@ -138,61 +138,20 @@ the C++ client library.
 
 % From here on in, mostly include auto-generated files.
 \chapter{Class Reference}
-
-\section{The Device Proxy Classes}
-Access to a device is provided by a device-specific proxy class.  These
-classes all inherit from the {\tt ClientProxy} class which defines an
-interface for device proxies.  As such, a few methods are common to all
-devices and we explain them here.
-
-The constructors for the various proxies all take the same forms:
-\begin{itemize}
-\item {\tt DeviceProxy(PlayerClient* pc, unsigned short index)} : Create
-    device proxy but do not request access to the device.
-\item {\tt DeviceProxy(PlayerClient* pc, unsigned short index, 
-    unsigned char access)} : Create device proxy and request {\tt access}
-    access to it (should be {\tt r}, {\tt w}, or {\tt a}).
-\end{itemize}
-The pointer {\tt pc} must refer to an already connected 
-{\tt PlayerClient} proxy.  The {\tt index} indicates which one of the
-devices to use (usually 0).  Note that the request executed by the second
-form of the constructor can fail, but the constructor cannot indicate the
-failure.  Thus, if you use the second form, you should verify that the
-current access is identical to your requested access using the method:
-
-{\tt unsigned char GetAccess()}
-
-\noindent  An access of {\tt e} indicates that some device-related error 
-occurred (e.g., the device could not be initialized due to a hardware problem).
-
-If you use the first form of the constructor to create a device proxy with 
-no access, you can request access using the method {\tt ChangeAccess()}, 
-which takes two forms:
-\begin{itemize}
-\item {\tt int ChangeAccess(unsigned char req\_access)}
-\item {\tt int ChangeAccess(unsigned char req\_access, unsigned char* 
-        grant\_access)}
-\end{itemize}
-In the second case, the actual granted access is returned in 
-{\tt grant\_access}.  In either case, 0 is returned if all went well
-and -1 is returned if a low-level (i.e., not device-related) error 
-occurred.  In addition to requesting initial device access, this method
-can be used at any time to request a change of access to a device.
-
-Most device proxy classes also provide a method for printing out their
-current state:
-
-{\tt void Print()}
-
-\noindent  This method prints to {\tt stdout} device-specific data
-in a format that (hopefully) lends itself to automatic processing and
-plotting.
-
 % Auto generated proxy references
+\input{PlayerClient}
 
+\newpage
+\input{PlayerMultiClient}
+
+\newpage
+\input{ClientProxy}
 
 \newpage
 \input{BlobfinderProxy}
+
+\newpage
+\input{BumperProxy}
 
 \newpage 
 \input{CommsProxy}
@@ -207,10 +166,16 @@ plotting.
 \input{GripperProxy}
 
 \newpage
+\input{IRProxy}
+
+\newpage
 \input{LaserProxy}
 
 \newpage
 \input{PositionProxy}
+
+\newpage
+\input{PowerProxy}
 
 \newpage
 \input{PtzProxy}
@@ -219,9 +184,13 @@ plotting.
 \input{SonarProxy}
 
 \newpage
+\input{SpeechProxy}
+
+\newpage
 \input{TruthProxy}
 
 \newpage
+\input{WiFiProxy}
 
 \end{document}
 

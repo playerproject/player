@@ -35,7 +35,7 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PositionProxy::SetSpeed(int speed, int turnrate)
+int PositionProxy::SetSpeed(int speed, int sidespeed, int turnrate)
 {
   if(!client)
     return(-1);
@@ -43,6 +43,7 @@ int PositionProxy::SetSpeed(int speed, int turnrate)
   player_position_cmd_t cmd;
 
   cmd.xspeed = (int)htonl(speed);
+  cmd.yspeed = (int)htonl(sidespeed);
   cmd.yawspeed = (int)htonl(turnrate);
 
   return(client->Write(PLAYER_POSITION_CODE,index,
@@ -323,10 +324,10 @@ void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 
   xpos = (int)ntohl(((player_position_data_t*)buffer)->xpos);
   ypos = (int)ntohl(((player_position_data_t*)buffer)->ypos);
-  theta = ntohl(((player_position_data_t*)buffer)->yaw);
-  speed = (short)ntohl(((player_position_data_t*)buffer)->xspeed);
-  turnrate = (short)ntohl(((player_position_data_t*)buffer)->yawspeed);
-  //compass = ntohs(((player_position_data_t*)buffer)->compass);
+  theta = (int)ntohl(((player_position_data_t*)buffer)->yaw);
+  speed = (int)ntohl(((player_position_data_t*)buffer)->xspeed);
+  sidespeed = (int)ntohl(((player_position_data_t*)buffer)->yspeed);
+  turnrate = (int)ntohl(((player_position_data_t*)buffer)->yawspeed);
   stall = ((player_position_data_t*)buffer)->stall;
 }
 

@@ -47,11 +47,13 @@ void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
   bzero(beacons,sizeof(beacons));
   for(unsigned short i = 0; i < count && i < PLAYER_FIDUCIAL_MAX_SAMPLES; i++)
   {
-    
-    beacons[i].id = data->fiducials[i].id;
-    beacons[i].pose[0] = ntohs(data->fiducials[i].pose[0]);
+    beacons[i].id = ntohs(data->fiducials[i].id);
+    beacons[i].pose[0] = (short)ntohs(data->fiducials[i].pose[0]);
     beacons[i].pose[1] = (short)ntohs(data->fiducials[i].pose[1]);
     beacons[i].pose[2] = (short) ntohs(data->fiducials[i].pose[2]);
+    beacons[i].upose[0] = (short)ntohs(data->fiducials[i].upose[0]);
+    beacons[i].upose[1] = (short)ntohs(data->fiducials[i].upose[1]);
+    beacons[i].upose[2] = (short) ntohs(data->fiducials[i].upose[2]);
   }
 }
 

@@ -66,8 +66,12 @@ void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
               "received %d. Unexpected results may ensue.\n",
               sizeof(player_blobfinder_data_t),hdr.size);
   }
+ 
+  // get the dimensions
+  width = ntohs(((player_blobfinder_data_t*)buffer)->width);
+  height = ntohs(((player_blobfinder_data_t*)buffer)->height);
+ 
   // fill the special blobfinder buffer.
-
   int tmp_numblobs,tmp_index;
   for(int i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
   {
@@ -95,6 +99,8 @@ void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
       }
       for(int j=0;j<tmp_numblobs;j++)
       {
+        blobs[i][j].color = 
+                ntohl(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].color);
         blobs[i][j].area = 
                 ntohl(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].area);
         blobs[i][j].x = 
@@ -109,6 +115,8 @@ void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
                 ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].top);
         blobs[i][j].bottom = 
                 ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].bottom);
+        blobs[i][j].range = 
+                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].range);
       }
       num_blobs[i] = tmp_numblobs;
     }

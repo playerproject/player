@@ -18,9 +18,11 @@ MANFILES = ../playerclient.h
 MAKEDOC = ../../../server/codetools/makedoc/makedoc.py
 
 # Build the manual
-manual: 
+manual: $(MANNAME).ps
+
+$(MANNAME).ps: *.tex
 	$(MAKEDOC) $(MANFILES)
-	latex $(MANNAME)
+	latex $(MANNAME) && latex $(MANNAME)
 	dvips -t letter -f $(MANNAME).dvi > $(MANNAME).ps	
 
 # Clean up everything

@@ -35,7 +35,7 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PtzProxy::SetCam(short pan, short tilt, unsigned short zoom)
+int PtzProxy::SetCam(short pan, short tilt, short zoom)
 {
   if(!client)
     return(-1);
@@ -62,7 +62,7 @@ void PtzProxy::FillData(player_msghdr_t hdr, const char* buffer)
 
   pan = (short)ntohs(((player_ptz_data_t*)buffer)->pan);
   tilt = (short)ntohs(((player_ptz_data_t*)buffer)->tilt);
-  zoom = ntohs(((player_ptz_data_t*)buffer)->zoom);
+  zoom = (short)ntohs(((player_ptz_data_t*)buffer)->zoom);
 }
 
 // interface that all proxies SHOULD provide
