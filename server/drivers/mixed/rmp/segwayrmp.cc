@@ -267,6 +267,17 @@ SegwayRMP::~SegwayRMP()
 int
 SegwayRMP::Setup()
 {
+  player_position_cmd_t cmd;
+  player_position3d_cmd_t cmd3d;
+
+  memset(&cmd,0,sizeof(cmd));
+  memset(&cmd3d,0,sizeof(cmd));
+
+  if(interface_code == PLAYER_POSITION_CODE)
+    PutCommand((void*)this,(unsigned char*)&cmd,sizeof(cmd));
+  else if(interface_code == PLAYER_POSITION_CODE)
+    PutCommand((void*)this,(unsigned char*)&cmd3d,sizeof(cmd3d));
+
   printf("CAN bus initializing...");
   fflush(stdout);
 
@@ -379,22 +390,28 @@ SegwayRMP::Main()
 
     // Get a new command
     if(interface_code == PLAYER_POSITION_CODE)
-      GetCommand((unsigned char *)&cmd, sizeof(cmd));
-    else if(interface_code == PLAYER_POSITION3D_CODE)
-      GetCommand((unsigned char *)&cmd3d, sizeof(cmd3d));
-    else
-      PLAYER_ERROR1("can't format data into interface %d", interface_code);
-
-    if(motor_enabled) 
     {
-      //      printf("SEGWAYRMP: motors_enabled xs: %d ys: %d\n",
-      //	     ntohl(cmd.xspeed), ntohl(cmd.yspeed));
-
+      GetCommand((unsigned char *)&cmd, sizeof(cmd));
       // convert to host order; let MakeVelocityCommand do the rest
       xspeed = ntohl(cmd.xspeed);
       yawspeed = ntohl(cmd.yawspeed);
     }
-    else 
+    else if(interface_code == PLAYER_POSITION3D_CODE)
+    {
+      GetCommand((unsigned char *)&cmd3d, sizeof(cmd3d));
+      // convert to host order; let MakeVelocityCommand do the rest
+      xspeed = ntohl(cmd3d.xspeed);
+      yawspeed = ntohl(cmd3d.yawspeed);
+    }
+    else
+    {
+      PLAYER_ERROR1("can't parse commands for interface %d", interface_code);
+      xspeed = 0;
+      yawspeed = 0;
+    }
+
+
+    if(!motor_enabled) 
     {
       xspeed = 0;
       yawspeed = 0;
@@ -624,6 +641,10 @@ SegwayRMP::Read()
   rmp_frame_t data_frame[2];
   int delta_lin_raw, delta_ang_raw;
   double delta_lin, delta_ang;
+  double tmp;
+  
+  //static struct timeval last;
+  //struct timeval curr;
 
   data_frame[0].ready = 0;
   data_frame[1].ready = 0;
@@ -650,6 +671,12 @@ SegwayRMP::Read()
         // from channel 1.
         if(channel == 1)
         {
+          //gettimeofday(&curr,NULL);
+          //printf("diff: %lf\n",
+                 //(curr.tv_sec + (curr.tv_usec / 1e6)) -
+                 //(last.tv_sec + (last.tv_usec / 1e6)));
+          //last = curr;
+
           // Get the new linear and angular encoder values and compute
           // odometry.  Note that we do the same thing here, regardless of 
           // whether we're presenting 2D or 3D position info.
@@ -664,7 +691,8 @@ SegwayRMP::Read()
           this->last_raw_yaw = data_frame[channel].yaw;
 
           delta_lin = (double)delta_lin_raw / (double)RMP_COUNT_PER_M;
-          delta_ang = (double)delta_ang_raw / (double)RMP_COUNT_PER_REV;
+          delta_ang = DTOR((double)delta_ang_raw / 
+                           (double)RMP_COUNT_PER_REV * 360.0);
                   
           // First-order odometry integration
           this->odom_x += delta_lin * cos(this->odom_yaw);
@@ -679,9 +707,9 @@ SegwayRMP::Read()
           // Are we presenting 2D or 3D info?
           if(interface_code == PLAYER_POSITION_CODE)
           {
-            position_data.xpos = htonl(((int32_t)this->odom_x * 1000));
-            position_data.ypos = htonl(((int32_t)this->odom_y * 1000));
-            position_data.yaw = htonl(((int32_t)(this->odom_yaw / M_PI * 180)));
+            position_data.xpos = htonl((int32_t)(this->odom_x * 1000.0));
+            position_data.ypos = htonl((int32_t)(this->odom_y * 1000.0));
+            position_data.yaw = htonl((int32_t)RTOD(this->odom_yaw));
 
             /*
             printf("old %f %f : new %f %f : delta %f %f : odom %.2f %.2f %.2f\n",
@@ -714,21 +742,27 @@ SegwayRMP::Read()
           }
           else if(interface_code == PLAYER_POSITION3D_CODE)
           {
-            position3d_data.xpos = htonl(((int32_t)this->odom_x * 1000));
-            position3d_data.ypos = htonl(((int32_t)this->odom_y * 1000));
+            position3d_data.xpos = htonl((int32_t)(this->odom_x * 1000.0));
+            position3d_data.ypos = htonl((int32_t)(this->odom_y * 1000.0));
             // this robot doesn't fly
             position3d_data.zpos = 0;
             
-            position3d_data.roll = 
-                    htonl((int32_t)rint((double)data_frame[channel].roll /
-                                        (double)RMP_COUNT_PER_DEG
-                                        * 3600.0));
-            position3d_data.pitch = 
-                    htonl((int32_t)rint((double)data_frame[channel].pitch /
-                                        (double)RMP_COUNT_PER_DEG
-                                        * 3600.0));
+            // normalize angles to [0,360]
+            tmp = NORMALIZE(DTOR((double)data_frame[channel].roll /
+                                 (double)RMP_COUNT_PER_DEG));
+            if(tmp < 0)
+              tmp += 2*M_PI;
+            position3d_data.roll = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
+            
+            // normalize angles to [0,360]
+            tmp = NORMALIZE(DTOR((double)data_frame[channel].pitch /
+                                 (double)RMP_COUNT_PER_DEG));
+            if(tmp < 0)
+              tmp += 2*M_PI;
+            position3d_data.pitch = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
+
             position3d_data.yaw = 
-                    htonl(((int32_t)(this->odom_yaw / M_PI * 180 * 3600.0)));
+                    htonl(((int32_t)(RTOD(this->odom_yaw) * 3600.0)));
             
             // combine left and right wheel velocity to get foreward velocity
             // change from counts/s into mm/s
@@ -753,9 +787,9 @@ SegwayRMP::Read()
             // inverse, since the RMP reports clockwise angular velocity as
             // positive.
             position3d_data.yawspeed = 
-                    htonl((int32_t)-rint((double)data_frame[channel].yaw_dot / 
-                                         (double)RMP_COUNT_PER_DEG_PER_S
-                                         * 3600.0));
+                    htonl((int32_t)(-rint((double)data_frame[channel].yaw_dot / 
+                                          (double)RMP_COUNT_PER_DEG_PER_S
+                                          * 3600.0)));
 
             position3d_data.stall = 0;
           }
