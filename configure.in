@@ -188,18 +188,6 @@ fi
 AC_SUBST(LINUXWIFI_LIB)
 AC_SUBST(LINUXWIFI_LIBPATH)
 
-dnl the following must use --with to be built
-AC_ARG_WITH(reb,
-[  --with-reb              Compile the reb drivers],,
-with_reb=no)
-if test "x$with_reb" = "xyes"; then
-  AC_DEFINE(INCLUDE_REB, 1, [[include the REB driver]])
-  REB_LIB="libreb.a"
-  REB_LIBPATH="drivers/reb/libreb.a"
-fi
-AC_SUBST(REB_LIB)
-AC_SUBST(REB_LIBPATH)
-
 
 dnl check for the fftw library (by way of one of its headers) and compile
 dnl the fixed tones driver if its found
@@ -245,9 +233,22 @@ AC_SUBST(ISENSE_LIB)
 AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
 
+dnl the following must use --with to be built
+AC_ARG_WITH(reb,
+[  --with-reb              Compile the reb drivers],,
+with_reb=no)
+if test "x$with_reb" = "xyes"; then
+  AC_DEFINE(INCLUDE_REB, 1, [[include the REB driver]])
+  REB_LIB="libreb.a"
+  REB_LIBPATH="drivers/reb/libreb.a"
+fi
+AC_SUBST(REB_LIB)
+AC_SUBST(REB_LIBPATH)
+
+
 dnl optionally compile MicroStrain IMU drivers - disabled by default
 AC_ARG_WITH(microstrain,
-[  --with-microstrain         Compile in the MicroStrain IMU drivers],,
+[  --with-microstrain      Compile the MicroStrain IMU drivers],,
 with_microstrain=no)
 if test "x$with_microstrain" = "xyes"; then
   AC_DEFINE(INCLUDE_MICROSTRAIN, 1, [[include the MICROSTRAIN driver]])
@@ -259,7 +260,7 @@ AC_SUBST(MICROSTRAIN_LIBPATH)
 
 dnl optionally compile the audio waveform driver - disabled by default
 AC_ARG_WITH(waveaudio,
-[  --with-waveaudio        Compile in the wave audio driver],,
+[  --with-waveaudio        Compile the wave audio driver],,
 with_waveaudio=no)
 if test "x$with_waveaudio" = "xyes"; then
   AC_DEFINE(INCLUDE_WAVEAUDIO, 1, [[include the WAVEAUDIO driver]])
