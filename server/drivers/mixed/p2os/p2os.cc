@@ -130,6 +130,8 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
     ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
     ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
 
+    ((player_p2os_cmd_t*)device_command)->sound.index = 0;
+
     p2os_subscriptions = 0;
 
     pthread_mutex_init(&p2os_accessMutex,NULL);
@@ -1230,7 +1232,7 @@ P2OS::Main()
 
     /* check for sound play command */
     newsoundplay = false;
-    if (command.sound.index) {
+    if (soundp && command.sound.index) {
       newsoundplay = true;
       soundindex = ntohs(command.sound.index);
     }
