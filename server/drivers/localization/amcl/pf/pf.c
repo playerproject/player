@@ -10,6 +10,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "playercommon.h"
+
 #include "pf.h"
 #include "pf_pdf.h"
 #include "pf_kdtree.h"
@@ -17,7 +19,10 @@
 
 // Compute the required number of samples, given that there are k bins
 // with samples in them.
-int pf_resample_limit(pf_t *pf, int k);
+static int pf_resample_limit(pf_t *pf, int k);
+
+// Re-compute the cluster statistics for a sample set
+static void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set);
 
 
 // Create a new filter
@@ -57,6 +62,13 @@ pf_t *pf_alloc(int min_samples, int max_samples)
       sample->pose.v[2] = 0.0;
       sample->weight = 1.0 / max_samples;
     }
+
+    // HACK: is 3 times max_samples enough?
+    set->kdtree = pf_kdtree_alloc(3 * max_samples);
+
+    set->cluster_count = 0;
+    set->cluster_max_count = 100;
+    set->clusters = calloc(set->cluster_max_count, sizeof(pf_cluster_t));
   }
 
   return pf;
@@ -69,7 +81,11 @@ void pf_free(pf_t *pf)
   int i;
   
   for (i = 0; i < 2; i++)
+  {
+    free(pf->sets[i].clusters);
+    pf_kdtree_free(pf->sets[i].kdtree);
     free(pf->sets[i].samples);
+  }
   free(pf);
   
   return;
@@ -85,6 +101,9 @@ void pf_init(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
 
   set = pf->sets + pf->current_set;
 
+  // Create the kd tree for adaptive sampling
+  pf_kdtree_clear(set->kdtree);
+
   set->sample_count = pf->max_samples;
 
   // Compute the new sample poses
@@ -93,26 +112,16 @@ void pf_init(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
     sample = set->samples + i;
     sample->weight = 1.0 / pf->max_samples;
     sample->pose = (*init_fn) (init_data);
+
+    // Add sample to histogram
+    pf_kdtree_insert(set->kdtree, sample->pose, sample->weight);
   }
+
+  // Re-compute cluster statistics
+  pf_cluster_stats(pf, set);
   
   return;
 }
-
-
-/* REMOVE
-// Get a particular sample
-pf_sample_t *pf_get_sample(pf_t *pf, int i)
-{
-  pf_sample_set_t *set;
-
-  set = pf->sets + pf->current_set;
-
-  if (i < 0 || i >= set->sample_count)
-    return NULL;
-
-  return set->samples + i;
-}
-*/
 
 
 // Update the filter with some new action
@@ -155,14 +164,25 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
     total += sample->weight;
   }
   
-  //printf("sensor total %e\n", total);
-  assert(total > 0);
-    
-  // Normalize weights
-  for (i = 0; i < set->sample_count; i++)
+  if (total > 0.0)
   {
-    sample = set->samples + i;
-    sample->weight /= total;
+    // Normalize weights
+    for (i = 0; i < set->sample_count; i++)
+    {
+      sample = set->samples + i;
+      sample->weight /= total;
+    }
+  }
+  else
+  {
+    PLAYER_WARN("pdf has zero probability");
+
+    // Handle zero total
+    for (i = 0; i < set->sample_count; i++)
+    {
+      sample = set->samples + i;
+      sample->weight = 1.0 / set->sample_count;
+    }
   }
   
   return;
@@ -178,7 +198,6 @@ void pf_update_resample(pf_t *pf)
   pf_sample_set_t *set_a, *set_b;
   pf_sample_t *sample_a, *sample_b;
   pf_pdf_discrete_t *pdf;
-  pf_kdtree_t *tree;
 
   set_a = pf->sets + pf->current_set;
   set_b = pf->sets + (pf->current_set + 1) % 2;
@@ -198,7 +217,7 @@ void pf_update_resample(pf_t *pf)
   pdf = pf_pdf_discrete_alloc(set_a->sample_count, randlist);
 
   // Create the kd tree for adaptive sampling
-  tree = pf_kdtree_alloc();
+  pf_kdtree_clear(set_b->kdtree);
 
   // Draw samples from set a to create set b.
   total = 0;
@@ -210,16 +229,19 @@ void pf_update_resample(pf_t *pf)
 
     //printf("%d %f\n", i, sample_a->weight);
     assert(sample_a->weight > 0);
-    
+
+    // Add sample to list
     sample_b = set_b->samples + set_b->sample_count++;
     sample_b->pose = sample_a->pose;
     sample_b->weight = 1.0;
     total += sample_b->weight;
 
-    pf_kdtree_insert(tree, sample_b->pose);
+    // Add sample to histogram
+    pf_kdtree_insert(set_b->kdtree, sample_b->pose, sample_b->weight);
 
+    // See if we have enough samples yet
     if (set_b->sample_count >= pf->min_samples)
-      if (set_b->sample_count > pf_resample_limit(pf, tree->node_count))
+      if (set_b->sample_count > pf_resample_limit(pf, set_b->kdtree->leaf_count))
         break;
   }
 
@@ -227,7 +249,6 @@ void pf_update_resample(pf_t *pf)
   //printf("samples %d\n", set_b->sample_count);
   //printf("tree %d\n", tree->node_count);
 
-  pf_kdtree_free(tree);
   pf_pdf_discrete_free(pdf);
   free(randlist);
   
@@ -237,6 +258,9 @@ void pf_update_resample(pf_t *pf)
     sample_b = set_b->samples + i;
     sample_b->weight /= total;
   }
+
+  // Re-compute cluster statistics
+  pf_cluster_stats(pf, set_b);
 
   // Use the newly created sample set
   pf->current_set = (pf->current_set + 1) % 2;
@@ -249,7 +273,6 @@ void pf_update_resample(pf_t *pf)
 // with samples in them.  This is taken directly from Fox et al.
 int pf_resample_limit(pf_t *pf, int k)
 {
-  //double z, err;
   double a, b, c, x;
   int n;
 
@@ -267,64 +290,115 @@ int pf_resample_limit(pf_t *pf, int k)
 }
 
 
-// Compute the distributions statistics (mean and covariance).
-// Assumes sample weights are normalized.
-void pf_calc_stats(pf_t *pf, pf_vector_t *mean, pf_matrix_t *cov)
+// Re-compute the cluster statistics for a sample set
+void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set)
 {
-  int i, j, k;
-  pf_sample_set_t *set;
+  int i, j, k, c;
   pf_sample_t *sample;
-  //double r;
-  double n;
-  double m[4];
-  double c[2][2];
+  pf_cluster_t *cluster;
 
-  set = pf->sets + pf->current_set;
-
-  n = 0.0;
+  // Cluster the samples
+  pf_kdtree_cluster(set->kdtree);
   
-  // Initialise mean to zero
-  for (j = 0; j < 4; j++)
-    m[j] = 0.0;
+  // Initialize cluster stats
+  set->cluster_count = 0;
 
-  // Initialize covariance
-  for (j = 0; j < 2; j++)
-    for (k = 0; k < 2; k++)
-      c[j][k] = 0.0;
+  for (i = 0; i < set->cluster_max_count; i++)
+  {
+    cluster = set->clusters + i;
+    cluster->count = 0;
+    cluster->weight = 0;
+    cluster->mean = pf_vector_zero();
+    cluster->cov = pf_matrix_zero();
+
+    for (j = 0; j < 4; j++)
+      cluster->m[j] = 0.0;
+    for (j = 0; j < 2; j++)
+      for (k = 0; k < 2; k++)
+        cluster->c[j][k] = 0.0;
+  }
   
+  // Compute cluster stats
   for (i = 0; i < set->sample_count; i++)
   {
     sample = set->samples + i;
 
+    //printf("%d %f %f %f\n", i, sample->pose.v[0], sample->pose.v[1], sample->pose.v[2]);
+
+    // Get the cluster label for this sample
+    c = pf_kdtree_get_cluster(set->kdtree, sample->pose);
+    assert(c >= 0);
+    if (c >= set->cluster_max_count)
+      continue;
+    if (c + 1 > set->cluster_count)
+      set->cluster_count = c + 1;
+    
+    cluster = set->clusters + c;
+
+    cluster->count += 1;
+    cluster->weight += sample->weight;
+
     // Compute mean
-    n += sample->weight;
-    m[0] += sample->weight * sample->pose.v[0];
-    m[1] += sample->weight * sample->pose.v[1];
-    m[2] += sample->weight * cos(sample->pose.v[2]);
-    m[3] += sample->weight * sin(sample->pose.v[2]);
+    cluster->m[0] += sample->weight * sample->pose.v[0];
+    cluster->m[1] += sample->weight * sample->pose.v[1];
+    cluster->m[2] += sample->weight * cos(sample->pose.v[2]);
+    cluster->m[3] += sample->weight * sin(sample->pose.v[2]);
 
     // Compute covariance in linear components
     for (j = 0; j < 2; j++)
       for (k = 0; k < 2; k++)
-        c[j][k] += sample->weight * sample->pose.v[j] * sample->pose.v[k];
+        cluster->c[j][k] += sample->weight * sample->pose.v[j] * sample->pose.v[k];
   }
 
-  mean->v[0] = m[0] / n;
-  mean->v[1] = m[1] / n;
-  mean->v[2] = atan2(m[3], m[2]);
+  // Normalize
+  for (i = 0; i < set->cluster_count; i++)
+  {
+    cluster = set->clusters + i;
+        
+    cluster->mean.v[0] = cluster->m[0] / cluster->weight;
+    cluster->mean.v[1] = cluster->m[1] / cluster->weight;
+    cluster->mean.v[2] = atan2(cluster->m[3], cluster->m[2]);
 
-  *cov = pf_matrix_zero();
+    cluster->cov = pf_matrix_zero();
 
-  // Covariance in linear compontents
-  for (j = 0; j < 2; j++)
-    for (k = 0; k < 2; k++)
-      cov->m[j][k] = c[j][k] / n - mean->v[j] * mean->v[k];
+    // Covariance in linear compontents
+    for (j = 0; j < 2; j++)
+      for (k = 0; k < 2; k++)
+        cluster->cov.m[j][k] = cluster->c[j][k] / cluster->weight -
+          cluster->mean.v[j] * cluster->mean.v[k];
 
-  // Covariance in angular components; I think this is the correct
-  // formular for circular statistics.
-  cov->m[2][2] = -2 * log(sqrt(m[2] * m[2] + m[3] * m[3]));
-  
+    // Covariance in angular components; I think this is the correct
+    // formula for circular statistics.
+    cluster->cov.m[2][2] = -2 * log(sqrt(cluster->m[2] * cluster->m[2] +
+                                         cluster->m[3] * cluster->m[3]));
+
+    //printf("cluster %d %d %f (%f %f %f)\n", i, cluster->count, cluster->weight,
+    //       cluster->mean.v[0], cluster->mean.v[1], cluster->mean.v[2]);
+    //pf_matrix_fprintf(cluster->cov, stdout, "%e");
+  }
+
   return;
+}
+
+
+// Get the statistics for a particular cluster.
+int pf_get_cluster_stats(pf_t *pf, int clabel, double *weight,
+                         pf_vector_t *mean, pf_matrix_t *cov)
+{
+  pf_sample_set_t *set;
+  pf_cluster_t *cluster;
+
+  set = pf->sets + pf->current_set;
+
+  if (clabel >= set->cluster_count)
+    return 0;
+  cluster = set->clusters + clabel;
+
+  *weight = cluster->weight;
+  *mean = cluster->mean;
+  *cov = cluster->cov;
+
+  return 1;
 }
 
 

@@ -13,8 +13,9 @@
 
 #include "map.h"
 
-// Extract a single range reading from the map.  Unknown cells are
-// treated as empty.
+// Extract a single range reading from the map.  Unknown cells and/or
+// out-of-bound cells are treated as occupied, which makes it easy to
+// use Stage bitmap files.
 double map_calc_range(map_t *map, double ox, double oy, double oa, double max_range)
 {
   int i, j;
@@ -38,11 +39,11 @@ double map_calc_range(map_t *map, double ox, double oy, double oa, double max_ra
         if (MAP_VALID(map, i, j))
         {
           cell = map->cells + MAP_INDEX(map, i, j);
-          //if (cell->occ_state == 0)
-          //  return -1;
-          if (cell->occ_state == +1)
+          if (cell->occ_state >= 0)
             return sqrt((i - ai) * (i - ai) + (j - aj) * (j - aj)) * map->scale;
         }
+        else
+            return sqrt((i - ai) * (i - ai) + (j - aj) * (j - aj)) * map->scale;          
       }
     }
     else
@@ -53,11 +54,11 @@ double map_calc_range(map_t *map, double ox, double oy, double oa, double max_ra
         if (MAP_VALID(map, i, j))
         {
           cell = map->cells + MAP_INDEX(map, i, j);
-          //if (cell->occ_state == 0)
-          //  return -1;
-          if (cell->occ_state == +1)
+          if (cell->occ_state >= 0)
             return sqrt((i - ai) * (i - ai) + (j - aj) * (j - aj)) * map->scale;
         }
+        else
+          return sqrt((i - ai) * (i - ai) + (j - aj) * (j - aj)) * map->scale;
       }
     }
   }
@@ -77,11 +78,11 @@ double map_calc_range(map_t *map, double ox, double oy, double oa, double max_ra
         if (MAP_VALID(map, i, j))
         {
           cell = map->cells + MAP_INDEX(map, i, j);
-          //if (cell->occ_state == 0)
-          //  return -1;
-          if (cell->occ_state == +1)
+          if (cell->occ_state >= 0)
             return sqrt((i - ai) * (i - ai) + (j - aj) * (j - aj)) * map->scale;
         }
+        else
+          return sqrt((i - ai) * (i - ai) + (j - aj) * (j - aj)) * map->scale;
       }
     }
     else
@@ -92,11 +93,11 @@ double map_calc_range(map_t *map, double ox, double oy, double oa, double max_ra
         if (MAP_VALID(map, i, j))
         {
           cell = map->cells + MAP_INDEX(map, i, j);
-          //if (cell->occ_state == 0)
-          //  return -1;
-          if (cell->occ_state == +1)
+          if (cell->occ_state >= 0)
             return sqrt((i - ai) * (i - ai) + (j - aj) * (j - aj)) * map->scale;
         }
+        else
+          return sqrt((i - ai) * (i - ai) + (j - aj) * (j - aj)) * map->scale;
       }
     }
   }
