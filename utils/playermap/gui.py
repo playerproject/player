@@ -124,3 +124,12 @@ class MainWin:
     def on_root_event(self, fig, event, pos, dummy):
 
         return
+
+
+def do_yield():
+    """Process gui events"""
+    
+    while gtk.events_pending():
+        gtk.main_iteration_do()
+
+    return

@@ -27,12 +27,11 @@ import rtk3
 
 import geom
 import map
+import gui
 
 from cmodules import scan
 from cmodules import grid
 from cmodules import relax
-
-
 
 
 
@@ -176,15 +175,29 @@ class TeamMapper:
         ngrid = grid.grid(grid_size[0], grid_size[1], grid_scale)
         ngrid.set_model(10, -1, 100, -20)
 
+        fig = rtk3.Fig(self.root_fig)
+
         # Add scan data to grid
         for i in range(len(self.map.patches)):
+
             patch = self.map.patches[i]
-            print 'generating %d of %d scans\r' % (i, len(self.map.patches)),
+
+            print 'generating %d of %d patches\r' % (i, len(self.map.patches)),
             sys.stdout.flush()
+
             for (rpose, ranges) in patch.ranges:
                 npose = geom.coord_add(rpose, patch.pose)
                 npose = geom.coord_sub(npose, grid_pose)
-                ngrid.add_ranges_slow(npose, ranges)
+                #ngrid.add_ranges_slow(npose, ranges)
+                ngrid.add_ranges_fast(npose, ranges)
+
+            # Display the grid
+            im = ngrid.draw()
+            fig.clear()
+            fig.image(grid_pose[:2], grid_size, im[0], im[1])
+
+            # HACK
+            gui.do_yield()
 
         # Save the occupancy grid
         print 'saved occ grid [%s]' % filename
