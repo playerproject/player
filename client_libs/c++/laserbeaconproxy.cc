@@ -128,7 +128,7 @@ int LaserbeaconProxy::GetConfig()
   config.subtype = PLAYER_LASERBEACON_SUBTYPE_GETCONFIG;
 
   if(client->Request(PLAYER_LASERBEACON_CODE,index,
-                         (const char*)&config, sizeof(config),
+                         (const char*)&config, sizeof(config.subtype),
                          &hdr, (char*)&config,sizeof(config)) < 0)
     return(-1);
 

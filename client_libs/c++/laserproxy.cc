@@ -74,7 +74,7 @@ int LaserProxy::GetConfigure()
   config.subtype = PLAYER_LASER_GET_CONFIG;
 
   if(client->Request(PLAYER_LASER_CODE,index,
-                     (const char*)&config, sizeof(config),
+                     (const char*)&config, sizeof(config.subtype),
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
 

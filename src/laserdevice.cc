@@ -260,20 +260,21 @@ int CLaserDevice::UpdateConfig()
 
   while ((len = GetConfig(&client, &config, sizeof(config))) > 0)
   {
-    if (len != sizeof(config))
-    {
-      // This is an invalid configuration
-      PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      continue;
-    }
-    
     switch (config.subtype)
     {
       // Process set config requests.
       case PLAYER_LASER_SET_CONFIG:
       {
+        if (len != sizeof(config))
+        {
+          // This is an invalid configuration
+          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 
+                        sizeof(config));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+    
         this->intensity = config.intensity;
         this->scan_res = ntohs(config.resolution);
         this->min_angle = (short) ntohs(config.min_angle);
@@ -333,6 +334,24 @@ int CLaserDevice::UpdateConfig()
       // Process get config requests
       case PLAYER_LASER_GET_CONFIG:
       {
+        if (len != sizeof(config.subtype))
+        {
+          // This is an invalid configuration
+          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 
+                        sizeof(config.subtype));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        if (len != sizeof(config))
+        {
+          // This is an invalid configuration
+          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 
+                        sizeof(config));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
         config.intensity = this->intensity;
         config.resolution = htons(this->scan_res);
         config.min_angle = htons((short) this->min_angle);
@@ -1016,7 +1035,7 @@ int64_t CLaserDevice::GetTime()
 /* demo of how to make a shared object for Player to load at runtime */
 #if 0
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern CDeviceTable* availableDeviceTable;
 extern int global_playerport;
 
 /* need the extern to avoid C++ name-mangling  */
@@ -1024,8 +1043,8 @@ extern "C" {
 void _init(void)
 {
   puts("Laser device initializing");
-  deviceTable->AddDevice(global_playerport,PLAYER_LASER_CODE,0, 
-                         PLAYER_READ_MODE, new CLaserDevice(0,NULL));
+  availableDeviceTable->AddDevice(PLAYER_LASER_CODE, PLAYER_READ_MODE,
+                                  PLAYER_LASER_STRING,CLaserDevice::Init);
   puts("Laser device done");
 }
 

@@ -133,6 +133,10 @@ set PLAYER_BPS_SUBTYPE_SETGAIN 1
 set PLAYER_BPS_SUBTYPE_SETLASER 2
 set PLAYER_BPS_SUBTYPE_SETBEACON 3
 
+# the laserbeacon device
+set PLAYER_LASERBEACON_SUBTYPE_SETCONFIG 1
+set PLAYER_LASERBEACON_SUBTYPE_GETCONFIG 2
+
 #########################################################################
 
 #
@@ -899,8 +903,12 @@ proc player_config_laser {obj min_angle max_angle resolution \
 
 proc player_config_laserbeacon {obj bit_count bit_size zero_thresh \
                                 one_thresh {index 0}} {
+  global PLAYER_LASERBEACON_SUBTYPE_GETCONFIG
+  global PLAYER_LASERBEACON_SUBTYPE_SETCONFIG
+
   player_req $obj laserbeacon $index \
-       "[binary format cSSS $bit_count $bit_size $zero_thresh $one_thresh]"
+       "[binary format ccSSS $PLAYER_LASERBEACON_SUBTYPE_SETCONFIG \
+                             $bit_count $bit_size $zero_thresh $one_thresh]"
   return
 }
 

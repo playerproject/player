@@ -66,7 +66,6 @@
 #include <string.h> /* for strlen(3),strchr(3) */
 #include <stdlib.h> /* for atoi(3) */
 
-#include <deviceregistry.h> /* for device headers */
 #include <devicetable.h> /* for CDeviceTable */
 // this table holds all the currently *available* device types
 // (it's declared in main.cc)
