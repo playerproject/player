@@ -154,6 +154,24 @@ static PyObject *mclient_getattr(PyObject *self, char *attrname)
   return result;
 }
 
+// Add a client
+static PyObject *mclient_addclient(PyObject *self, PyObject *args)
+{
+  int result;
+  pyclient_t* pyclient;
+  mpyclient_t *mpyclient;
+  mpyclient = (mpyclient_t*) self;
+
+  if (!PyArg_ParseTuple(args, "O", (PyObject**)&pyclient))
+    return NULL;
+
+  thread_release();
+  result = playerc_mclient_addclient(mpyclient->mclient, pyclient->client);
+  thread_acquire();
+    
+  return PyInt_FromLong(result);
+}
+
 
 // Peek our clients
 static PyObject *mclient_peek(PyObject *self, PyObject *args)
@@ -224,6 +242,7 @@ static PyMethodDef mclient_methods[] =
 {
   {"peek", mclient_peek, METH_VARARGS},
   {"read", mclient_read, METH_VARARGS},
+  {"addclient", mclient_addclient, METH_VARARGS},
   {NULL, NULL}
 };
 
@@ -415,6 +434,22 @@ static PyObject *client_read(PyObject *self, PyObject *args)
   }
 }
 
+static PyObject *client_setdatafreq(PyObject *self, PyObject *args)
+{
+  int result;
+  pyclient_t *pyclient;
+  pyclient = (pyclient_t*) self;
+  int freq;
+
+  if (!PyArg_ParseTuple(args, "i", &freq))
+    return NULL;
+
+  thread_release();
+  result = playerc_client_datafreq(pyclient->client,freq);
+  thread_acquire();
+
+  return PyInt_FromLong(result);
+}
 
 // Query the device list.
 static PyObject *client_get_devlist(PyObject *self, PyObject *args)
@@ -485,6 +520,7 @@ static PyMethodDef client_methods[] =
   {"peek", client_peek, METH_VARARGS},
   {"read", client_read, METH_VARARGS},
   {"get_devlist", client_get_devlist, METH_VARARGS},
+  {"set_datafreq", client_setdatafreq, METH_VARARGS},
   {NULL, NULL}
 };
 

@@ -215,6 +215,8 @@ int playerc_client_disconnect(playerc_client_t *client);
 
 // Change the server's data delivery mode.
 int playerc_client_datamode(playerc_client_t *client, int mode);
+// Change the server's data delivery frequency (freq is in Hz)
+int playerc_client_datafreq(playerc_client_t *client, int freq);
 
 // Add/remove a device proxy (private)
 int playerc_client_adddevice(playerc_client_t *client, struct _playerc_device_t *device);
@@ -301,6 +303,11 @@ typedef struct _playerc_device_t
 
   /** Data timestamp, i.e., the time at which the data was generated (s). */
   double datatime;
+
+  /** Freshness flag.  Set to 1 whenever data is dispatched to this proxy.
+      Useful with the mclient, but the user must manually set it to 0 after 
+      using the data */
+  int fresh;
 
   // Standard callbacks for this device (private).
   playerc_putdata_fn_t putdata;
