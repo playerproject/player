@@ -242,7 +242,8 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
   {
     req_header.stx = PLAYER_STXX;
     req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.device = PLAYER_PLAYER_CODE;
+    req_header.robot = 0;
+    req_header.device = PLAYER_PLAYER_CODE;    
     req_header.device_index = 0;
     req_header.size = req_len;
   }
@@ -250,6 +251,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
   {
     req_header.stx = PLAYER_STXX;
     req_header.type = PLAYER_MSGTYPE_REQ;
+    req_header.robot = deviceinfo->robot;
     req_header.device = deviceinfo->code;
     req_header.device_index = deviceinfo->index;
     req_header.size = req_len;
@@ -594,14 +596,11 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
   // Do the network byte re-ordering 
   header->stx = htons(header->stx);
   header->type = htons(header->type);
+  header->robot = htons(header->robot);
   header->device = htons(header->device);
   header->device_index = htons(header->device_index);
   header->size = htonl(header->size);
   
-  // TODO: add the necessary infrastructure to specify and store the robot
-  // id somewhere
-  header->robot = htons(0);
-    
   bytes = send(client->sock, header, sizeof(player_msghdr_t), 0);
   if (bytes < 0)
   {
@@ -617,6 +616,7 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
   // Now undo the network byte re-ordering 
   header->stx = ntohs(header->stx);
   header->type = ntohs(header->type);
+  header->robot = ntohs(header->robot);  
   header->device = ntohs(header->device);
   header->device_index = ntohs(header->device_index);
   header->size = ntohl(header->size);
