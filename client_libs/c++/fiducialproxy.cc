@@ -163,23 +163,22 @@ int FiducialProxy::GetConfigure()
 // rather than returning it to the caller.
 int FiducialProxy::GetFOV()
 {
-  int len;
+ 
   player_fiducial_fov_t fov;
   player_msghdr_t hdr;
 
   fov.subtype = PLAYER_FIDUCIAL_GET_FOV;
   
-  len = client->Request(m_device_id,
-			(const char*)&fov, sizeof(fov.subtype),
-			&hdr, (char*)&fov, sizeof(fov) );
+  int result = client->Request(m_device_id,
+			       (const char*)&fov, sizeof(fov.subtype),
+			       &hdr, (char*)&fov, sizeof(fov) );
   
-  if( len < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK )
+  if( result < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK )
     {
       puts( "fiducial config FOV request failed" );
       return(-1);
     }
 
-  
   FiducialFovUnpack( &fov, 
 		     &this->min_range, &this->max_range, &this->view_angle );
 
@@ -224,41 +223,74 @@ int FiducialProxy::SetFOV( double min_range,
   driver.
 */
 
-int FiducialProxy::SendMessage( player_fiducial_msg_t* msg )
+int FiducialProxy::SendMessage( player_fiducial_msg_t* msg, bool consume )
 {
-  int len;
-  player_msghdr_t hdr;
-  
-  msg->subtype = PLAYER_FIDUCIAL_SEND_MSG;
-  
-  // byteswap the fields
-  msg->target_id = (int32_t)htonl(msg->target_id);
-  msg->power = (uint16_t)htons(msg->power);
-  // the other fields are single-byte
+  // build the transmit request
+  player_fiducial_msg_tx_req_t tx_req;
+  tx_req.subtype = PLAYER_FIDUCIAL_SEND_MSG;
+  tx_req.consume = (uint8_t)consume;
 
+  // copy the message into the send struct, byteswapping fields
+  tx_req.msg.target_id = (int32_t)htonl(msg->target_id);
+  tx_req.msg.intensity = (uint16_t)htons(msg->intensity);
+  memcpy( tx_req.msg.bytes, msg->bytes, PLAYER_FIDUCIAL_MAX_MSG_LEN );
+  tx_req.msg.len = msg->len;
+  
   printf( "sending message of %d bytes\n", msg->len );
-
-  len = client->Request(m_device_id,
-			(const char*)msg, sizeof(player_fiducial_msg_t) );
   
-  if( len == -1 )
+  player_msghdr_t hdr;
+  if( client->Request(m_device_id,
+		      (const char*)&tx_req, sizeof(tx_req),
+		      &hdr, NULL, 0 ) < 0 )
     {
-      puts( "fiducial send message request failed" );
+      puts( "error: fiducial send message request failed" );
       return(-1);
     }
   
+  if( hdr.type != PLAYER_MSGTYPE_RESP_ACK )
+    {
+    puts( "error: fiducial send message request received NACK" );
+    return(-1);
+  }
+
   return 0; // OK
 }
 
-/* Read the last message received from a fiducial. The packet is
-   completely filled in by the. If consume is true, the message is
-   deleted ffom the device on reading. If false, the message is
-   kept and can be read again. Note: these message functions use
-   configs that are probably only supported by Stage-1.4 (or later)
-   fiducial driver.
+/* Read a message received by the device. If a message is available,
+   the recv_msg packet is filled in and 0 is returned.  no message can
+   be retrieved from the device, returns -1. If consume is true, the
+   message is deleted from the device on reading. If false, the
+   message is kept and can be read again. Note: these message
+   functions use configs that are probably only supported by Stage-1.4
+   (or later) fiducial driver.
 */
 
-int FiducialProxy::RecvMessage( player_fiducial_msg_t* msg, bool consume )
-{
-  return 0; // ok
+int FiducialProxy::RecvMessage( player_fiducial_msg_t* recv_msg, 
+				bool consume )
+{ 
+  assert(recv_msg);
+  
+  player_fiducial_msg_rx_req_t rx_req;
+  rx_req.subtype = PLAYER_FIDUCIAL_RECV_MSG;
+  rx_req.consume = (uint8_t)consume;
+  
+  printf( "requesting receive message\n" );
+  
+  player_msghdr_t hdr;
+  if( client->Request(m_device_id,
+		      (const char*)&rx_req, 
+		      sizeof(player_fiducial_msg_rx_req_t),
+		      &hdr, (char*)recv_msg,  
+		      sizeof(player_fiducial_msg_t)) < 0 )
+     {
+       puts( "error: fiducial recv message request failed" );
+       return(-1);
+     }
+  
+  // Stage replies with NACK if the request failed, for example if no
+  // message was available
+  if(  hdr.type != PLAYER_MSGTYPE_RESP_ACK )
+      return(-1);
+  
+  return 0; // OK
 }
