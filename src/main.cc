@@ -27,8 +27,8 @@
  * client reader/writer threads.
  */
 
-//#define VERBOSE
-//#define DEBUG
+#define VERBOSE
+#define DEBUG
 
 #include <dirent.h>
 #include <dlfcn.h>
@@ -238,7 +238,7 @@ int MatchDeviceName( const struct dirent* ent )
 #ifdef INCLUDE_STAGE
 // looks int the directory for device entries, creates the devices
 // and fills an array with unique port numbers
-struct timeval* CreateStageDevices( char* directory, int** ports, int* num_ports )
+stage_clock_t* CreateStageDevices( char* directory, int** ports, int* num_ports )
 {
 #ifdef VERBOSE
   printf( "Searching for Stage devices\n" );
@@ -442,27 +442,29 @@ struct timeval* CreateStageDevices( char* directory, int** ports, int* num_ports
   }
   
     
-  struct timeval * stage_tv = 0;    
+  //struct timeval * stage_tv = 0;    
  
-  if( (stage_tv = 
-       (struct timeval*)mmap( NULL, sizeof(struct timeval),
-                              PROT_READ | PROT_WRITE, 
-                              MAP_SHARED, tfd, (off_t)0 ) )
+  stage_clock_t *clock = 0;
+
+  if( (clock = (stage_clock_t*)mmap( NULL, sizeof(struct timeval),
+				     PROT_READ | PROT_WRITE, 
+				     MAP_SHARED, tfd, (off_t)0 ) )
       == MAP_FAILED )
-  {
-    perror( "Failed to map clock memory" );
-    exit( -1 );
-  }
- 
+    {
+      perror( "Failed to map clock memory" );
+      exit( -1 );
+    }
+  
   close( tfd ); // can close fd once mapped
 
+  
 #ifdef DEBUG  
   printf( "finished creating stage devices\n" );
   fflush( stdout );
 #endif
-
+  
  
-  return( stage_tv );
+  return( clock );
 }
 
 //#ifdef INCLUDE_BPS
@@ -888,8 +890,8 @@ int main( int argc, char *argv[] )
     // returns pointer to the timeval struct
     // and creates the ports array and array length with the port numbers
     // deduced from the stageIO filenames
-    struct timeval* simtimep = CreateStageDevices( stage_io_directory, 
-                                                   &ports, &num_ufds );
+    stage_clock_t * sclock = CreateStageDevices( stage_io_directory, 
+						 &ports, &num_ufds );
     
     //printf( "created %d ports (1: %d 2: %d...)\n",
     //    num_ufds, ports[0], ports[1] );
@@ -923,8 +925,8 @@ int main( int argc, char *argv[] )
 #endif
 
     // set up the stagetime object
-    assert( simtimep );
-    assert( GlobalTime = (PlayerTime*)(new StageTime(simtimep)) );
+    assert( sclock );
+    assert( GlobalTime = (PlayerTime*)(new StageTime( sclock )) );
   }  
 
 #endif // INCLUDE_STAGE  

@@ -32,7 +32,7 @@
 /* get types and device-specific packet formats */
 #include <messages.h>
 #include <sys/time.h> // for struct timeval
-
+#include <semaphore.h> // for sem_t
 
 // the largest number of unique ports player can bind
 // this is only used for a temporary buffer
@@ -62,6 +62,8 @@
 
 typedef struct player_stage_info
 {
+  sem_t lock; // POSIX semaphore used to protect this structure
+
   player_id_t player_id;  // identify this entity to Player
   uint32_t len;           // total size of this struct + all the buffers
   uint8_t subscribed;     // the number of Players connected to this device
@@ -87,4 +89,13 @@ typedef struct player_stage_info
 
 } __attribute__ ((packed)) player_stage_info_t;
 
+
+
+typedef struct stage_clock
+{
+  sem_t lock; // POSIX semaphore used to protect this structure
+  struct timeval time;
+}  __attribute__ ((packed)) stage_clock_t;
+
 #endif // _STAGE_H
+

@@ -29,9 +29,9 @@
 #ifndef _SIP_H
 #define _SIP_H
 
-//#include <values.h> // deprecated
-#include <limits.h> // 
-#include <float.h>  // use these instead
+//#include <values.h> // not portable
+#include <limits.h> // use this instead says Mr.POSIX 
+
 #include <messages.h>
 #include <p2osdevice.h>
 
@@ -59,8 +59,11 @@ class CSIP
     for(int i=0;i<(int)PLAYER_NUM_SONAR_SAMPLES;i++) 
       sonars[i] = 0;
 
-    xpos = MAXINT;
-    ypos = MAXINT;
+    //xpos = MAXINT;
+    //ypos = MAXINT; 
+    // more portable definitions:
+    xpos = INT_MAX;
+    ypos = INT_MAX;
   }
 };
 

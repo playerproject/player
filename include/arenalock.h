@@ -30,26 +30,24 @@
 #ifndef _ARENALOCK_H
 #define _ARENALOCK_H
 
-#include <lock.h>
-#include <device.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
+#include <semaphore.h>
+#include "lock.h"
 
-class CArenaLock : public CLock{
+class CArenaLock : public CLock
+{
  private:
-  int semid, semKey;
 
-  struct sembuf lock_ops[1];
-  struct sembuf unlock_ops[1];
-
+  sem_t* m_lock; // this points into a device's shared memory
 
  public:
 
-  int Lock( void );
-  int Unlock( void );
+  bool Lock( void );
+  bool Unlock( void );
 
   CArenaLock( void );
   ~CArenaLock( void );
+
+  bool InstallSemaphore( sem_t* sem);
 
   virtual int Setup( CDevice *obj ); 
   virtual int Shutdown( CDevice *obj ); 

@@ -31,20 +31,23 @@
 #define _STAGETIME_H
 
 #include <sys/time.h>
-#include <playertime.h>
-#include <arenalock.h>
+#include "playertime.h"
+#include "arenalock.h"
+#include "stage.h"
 
 class StageTime : public PlayerTime
 {
   private:
     // the location in shared memory of the time feed
     struct timeval* simtimep;
+
     // we'll use this to lock shared memory to read the time feed
     CArenaLock stagelock;
 
   public:
-    StageTime(struct timeval* thissimtimep) { simtimep = thissimtimep; }
-    ~StageTime() { }
+    StageTime( stage_clock_t* clock );
+    ~StageTime() { } // empty destructor
+
     int GetTime(struct timeval* time);
 
 };
