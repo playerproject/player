@@ -254,7 +254,7 @@ void position_servo_pos(position_t *self)
     printf("goal %.3f %.3f %.0f\n", self->goal_px, self->goal_py, self->goal_pa * 180 / M_PI);
 
     // Set the new goal pose
-    playerc_position_set_cmd_pose(self->proxy, self->goal_px, self->goal_py, self->goal_pa);
+    playerc_position_set_cmd_pose(self->proxy, self->goal_px, self->goal_py, self->goal_pa, 1);
   }
   else
   { 
@@ -352,7 +352,7 @@ void position_servo_vel(position_t *self)
   //printf("%f %f\n", vr, va);
       
   // Set the new speed
-  playerc_position_set_speed(self->proxy, vr, 0, va);
+  playerc_position_set_cmd_vel(self->proxy, vr, 0, va, 1);
 
   // Draw in the path
   d = 0.30;
