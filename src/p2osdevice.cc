@@ -634,6 +634,9 @@ CP2OSDevice::Main()
   int last_sonar_subscrcount;
   int last_position_subscrcount;
 
+  //unsigned char configreq[4];
+  //CPacket configpacket;
+
   CDevice* sonarp = deviceTable->GetDevice(global_playerport,PLAYER_SONAR_CODE,0);
   CDevice* positionp = deviceTable->GetDevice(global_playerport,PLAYER_POSITION_CODE,0);
 
@@ -643,6 +646,15 @@ CP2OSDevice::Main()
   GlobalTime->GetTime(&timeBegan_tv);
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
+
+  // request the current configuration
+  /*
+  configreq[0] = 18;
+  configreq[1] = 0x3B;
+  configpacket.Build(configreq,2);
+  puts("sending CONFIGpac");
+  SendReceive(&configpacket);
+  */
 
   for(;;)
   {
@@ -953,6 +965,7 @@ CP2OSDevice::Main()
         SendReceive(&grippacket);
       }
     }
+
   }
   pthread_exit(NULL);
 }
@@ -1004,6 +1017,7 @@ CP2OSDevice::SendReceive(CPacket* pkt) //, bool already_have_lock)
     {
       /* It is a server packet, so process it */
       sippacket->Parse( &packet.packet[3] );
+      //sippacket->Print();
       sippacket->Fill(&data, timeBegan_tv );
 
       PutData((unsigned char*)&data, sizeof(data),0,0);
@@ -1016,6 +1030,11 @@ CP2OSDevice::SendReceive(CPacket* pkt) //, bool already_have_lock)
       /* It is a vision packet from the old Cognachrome system*/
 
       /* we don't understand these yet, so ignore */
+    }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
+            (packet.packet[3] == 0x20))
+    {
+      //printf("got a CONFIGpac:%d\n",packet.size);
     }
     else 
     {

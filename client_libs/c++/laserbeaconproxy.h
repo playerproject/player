@@ -55,10 +55,32 @@ class LaserbeaconProxy : public ClientProxy
         \end{verbatim}
         where {\tt range} is measured in mm, and {\tt bearing} and
         {\tt orient} are measured in degrees.
-        The number of beacons detected is stored in {\tt count}.
+     */
+    player_laserbeacon_item_t beacons[PLAYER_MAX_LASERBEACONS];
+
+    /** The number of beacons detected
      */
     unsigned short count;
-    player_laserbeacon_item_t beacons[PLAYER_MAX_LASERBEACONS];
+
+    /** The current bit count of the laserbeacon device.
+        See the Player manual for information on this setting.
+      */
+    unsigned char bit_count;
+
+    /** The current bit size (in mm) of the laserbeacon device.
+        See the Player manual for information on this setting.
+      */
+    unsigned short bit_size;
+
+    /** The current zero threshold of the laserbeacon device.
+        See the Player manual for information on this setting.
+      */
+    unsigned short zero_thresh;
+
+    /** The current one threshold of the laserbeacon device.
+        See the Player manual for information on this setting.
+      */
+    unsigned short one_thresh;
    
     /** Constructor.
         Leave the access field empty to start unconnected.
@@ -85,6 +107,13 @@ class LaserbeaconProxy : public ClientProxy
         Returns the 0 on success, or -1 of there is a problem.
      */
     int SetThresh(unsigned short zero_thresh, unsigned short one_thresh);
+
+    /** Get the current configuration.
+        Fills the current device configuration into the corresponding
+        class attributes.\\
+        Returns the 0 on success, or -1 of there is a problem.
+     */
+    int GetConfig();
     
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);

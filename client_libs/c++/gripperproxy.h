@@ -71,7 +71,7 @@ class GripperProxy : public ClientProxy
     // Returns:
     //   0 if everything's ok
     //   -1 otherwise (that's bad)
-    int SetGrip(unsigned char cmd, unsigned char arg);
+    int SetGrip(unsigned char cmd, unsigned char arg=0);
 
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);

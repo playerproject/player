@@ -217,7 +217,7 @@ int player_disconnect(player_connection_t* conn)
  * is the size of the buffer (player_request() will not overrun your buffer)
  *
  *   Returns:
- *      0 if everything went OK
+ *      0 if everything's OK
  *     -1 if something went wrong (you should probably close the connection!)
  */
 int player_request(player_connection_t* conn, 
@@ -275,12 +275,10 @@ int player_request(player_connection_t* conn,
   }
 
   /* did they want the reply? */
-  if(replyhdr && reply && replylen >= hdr.size)
-  {
+  if(replyhdr)
     *replyhdr = hdr;
+  if(reply && replylen >= hdr.size)
     memcpy(reply,buffer,replyhdr->size);
-    replylen = replyhdr->size;
-  }
 
   return(0);
 }

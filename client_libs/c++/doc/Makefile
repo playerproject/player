@@ -19,9 +19,9 @@ MANPATH = ../../../doc
 
 # Header files to scan
 MANFILES = ../positionproxy.h ../sonarproxy.h ../miscproxy.h \
-					 ../ptzproxy.h ../visionproxy.h ../laserproxy.h \
-					 ../laserbeaconproxy.h ../speechproxy.h \
-					 ../broadcastproxy.h ../bpsproxy.h
+           ../ptzproxy.h ../visionproxy.h ../laserproxy.h \
+           ../laserbeaconproxy.h ../speechproxy.h \
+           ../broadcastproxy.h ../bpsproxy.h ../gpsproxy.h
 
 
 # Build the manual
