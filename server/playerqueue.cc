@@ -223,13 +223,8 @@ PlayerQueue::Match(player_device_id_t* device, void* client,
 {
   int tmpsize;
 
-  if (!queue) {
-    /*
-    fprintf(stderr, "PlayerQueue::Match(): trying to match from "
-	    "non-allocated queue\n");
-            */
+  if (!queue) 
     return -1;
-  }
 
   // look for the one we want
   for(int i=0;i<len;i++)
