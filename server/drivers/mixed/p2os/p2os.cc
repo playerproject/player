@@ -1166,14 +1166,20 @@ P2OS::Main()
                 break;
               }
 
-              // TODO : get values from somewhere.
               player_position_geom_t geom;
               geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+              // TODO: figure out this offset somehow; it's not given in
+              //       the Saphira parameters
               geom.pose[0] = htons((short) (-100));
               geom.pose[1] = htons((short) (0));
               geom.pose[2] = htons((short) (0));
-              geom.size[0] = htons((short) (2 * 250));
-              geom.size[1] = htons((short) (2 * 225));
+              // get dimensions from the parameter table
+              //geom.size[0] = htons((short) (2 * 250));
+              //geom.size[1] = htons((short) (2 * 225));
+              geom.size[0] = 
+                      htons((short)PlayerRobotParams[param_idx].RobotLength);
+              geom.size[1] = 
+                      htons((short)PlayerRobotParams[param_idx].RobotWidth);
 
               if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
                           sizeof(geom)))

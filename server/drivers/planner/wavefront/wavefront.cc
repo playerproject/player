@@ -170,8 +170,7 @@ Wavefront::Wavefront(char* interface, ConfigFile* cf, int section)
   this->safety_dist = cf->ReadLength(section,"safety_dist", 0.25);
   this->max_radius = cf->ReadLength(section,"max_radius",1.0);
   this->dist_penalty = cf->ReadFloat(section,"dist_penalty",1.0);
-  this->dist_eps = cf->ReadLength(section,"distance_epsilon", 
-                                 3*this->robot_radius);
+  this->dist_eps = cf->ReadLength(section,"distance_epsilon", 0.5);
   this->ang_eps = cf->ReadAngle(section,"angle_epsilon",DTOR(10));
 }
 
