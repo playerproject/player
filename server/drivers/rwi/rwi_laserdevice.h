@@ -35,11 +35,6 @@ public:
 		             0,  /* laser device takes no commands */
 		             1,1)
 		{}
-
-	static CDevice *Init (int argc, char *argv[])
-	{
-		return((CDevice *)(new CRWILaserDevice(argc, argv)));
-	}
 	
 	virtual int Setup ();
 	virtual int Shutdown ();

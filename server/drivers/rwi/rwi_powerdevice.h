@@ -36,11 +36,6 @@ public:
 		             1,1)
 		{}
 
-	static CDevice *Init (int argc, char *argv[])
-	{
-		return((CDevice *)(new CRWIPowerDevice(argc, argv)));
-	}
-	
 	virtual int Setup ();
 	virtual int Shutdown ();
 	

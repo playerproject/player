@@ -30,11 +30,6 @@ class CRWISonarDevice: public CRWIDevice {
 public:
 	CRWISonarDevice (int argc, char *argv[]);
 
-	static CDevice *Init (int argc, char *argv[])
-	{
-		return((CDevice *)(new CRWISonarDevice(argc, argv)));
-	}
-	
 	virtual int Setup ();
 	virtual int Shutdown ();
 	

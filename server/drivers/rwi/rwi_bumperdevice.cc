@@ -26,6 +26,13 @@
 #include <netinet/in.h>
 #include <string.h>
 
+// a factory creation function
+CDevice* RWIBumper_Init(int argc, char *argv[])
+{
+  return((CDevice *)(new CRWIBumperDevice(argc, argv)));
+}
+	
+
 CRWIBumperDevice::CRWIBumperDevice(int argc, char **argv)
     : CRWIDevice(argc, argv,
                  sizeof(player_bumper_data_t),
