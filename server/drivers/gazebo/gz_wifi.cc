@@ -150,7 +150,10 @@ int GzWifi::Setup()
   // Open the interface
   if (gz_wifi_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
-  
+
+  // Add ourselves to the update list
+  GzClient::AddDriver(this);
+
   return 0;
 }
 
@@ -159,6 +162,9 @@ int GzWifi::Setup()
 // Shutdown the device (called by server thread).
 int GzWifi::Shutdown()
 {
+  // Remove ourselves to the update list
+  GzClient::DelDriver(this);
+
   gz_wifi_close(this->iface);
 
   return 0;
@@ -183,13 +189,13 @@ void GzWifi::Update()
     // data.bitrate=this->iface->data->bitrate;
     //   printf("Link COunt : %d\n",data.link_count);
     for(int i=0;i<data.link_count;i++)
-      {      
-	data.links[i].qual=htons(0x0001);
-	memcpy(data.links[i].ip,this->iface->data->links[i].ip,32);
+    {      
+      data.links[i].qual=htons(0x0001);
+      memcpy(data.links[i].ip,this->iface->data->links[i].ip,32);
 
-	data.links[i].level=(uint16_t)htons((uint16_t)(this->iface->data->links[i].level));
+      data.links[i].level=(uint16_t)htons((uint16_t)(this->iface->data->links[i].level));
 
-      }
+    }
     // printf("\n");
     
     this->PutData(&data, sizeof(data), tsec, tusec);

@@ -271,6 +271,10 @@ void CameraCompress_Register(DriverTable* table);
 #endif
 
 
+#ifdef INCLUDE_GAZEBO_SIM
+void GzSim_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_GAZEBO_CAMERA
 void GzCamera_Register(DriverTable *table);
 #endif
@@ -370,7 +374,7 @@ void NomadSonar_Register(DriverTable *driverTable);
  * NOTE: the last element *must* be NULL
  */
 player_interface_t interfaces[] = {
-  {PLAYER_NULL_CODE, PLAYER_NULL_STRING, ""},
+  {PLAYER_NULL_CODE, PLAYER_NULL_STRING, "null"},
   {PLAYER_LOG_CODE, PLAYER_LOG_STRING, "writelog"},
   {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sicklms200"},
   {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "acts"},
@@ -392,6 +396,7 @@ player_interface_t interfaces[] = {
   {PLAYER_WAVEFORM_CODE, PLAYER_WAVEFORM_STRING, "wave_audio"},
   {PLAYER_LOCALIZE_CODE, PLAYER_LOCALIZE_STRING, "amcl"},
   {PLAYER_MCOM_CODE, PLAYER_MCOM_STRING, "lifomcom"},
+  {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING, "null"},
   {PLAYER_SOUND_CODE, PLAYER_SOUND_STRING, "p2os_sound"},
   {PLAYER_AUDIOMIXER_CODE, PLAYER_AUDIOMIXER_STRING, "mixer"},
   {PLAYER_POSITION3D_CODE, PLAYER_POSITION3D_STRING, "segwayrmp"},
@@ -709,6 +714,10 @@ register_devices()
 
 #ifdef INCLUDE_CAMERACOMPRESS
   CameraCompress_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_GAZEBO_SIM
+  GzSim_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_GAZEBO_CAMERA

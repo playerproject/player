@@ -161,6 +161,13 @@ int playerc_client_connect(playerc_client_t *client)
     return -1;
   }
 
+  // Default to async data mode
+  if (playerc_client_datamode(client, PLAYERC_DATAMODE_PUSH_ASYNC) != 0)
+  {
+    PLAYERC_ERR("unable to set push_async data mode");
+    return -1;
+  }
+
   // PLAYERC_MSG3("[%s] connected on [%s:%d]", banner, client->hostname, client->port);
   return 0;
 }

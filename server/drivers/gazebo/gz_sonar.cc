@@ -164,6 +164,9 @@ int GzSonar::Setup()
   // Open the interface
   if (gz_sonar_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
+  
+  // Add ourselves to the update list
+  GzClient::AddDriver(this);
 
   return 0;
 }
@@ -173,6 +176,9 @@ int GzSonar::Setup()
 // Shutdown the device (called by server thread).
 int GzSonar::Shutdown()
 {
+  // Remove ourselves to the update list
+  GzClient::DelDriver(this);
+
   gz_sonar_close(this->iface);
   
   return 0;

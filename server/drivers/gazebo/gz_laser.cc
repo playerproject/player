@@ -196,6 +196,9 @@ int GzLaser::Setup()
   // Open the interface
   if (gz_laser_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
+
+  // Add ourselves to the update list
+  GzClient::AddDriver(this);
   
   return 0;
 }
@@ -205,6 +208,9 @@ int GzLaser::Setup()
 // Shutdown the device (called by server thread).
 int GzLaser::Shutdown()
 {
+  // Remove ourselves to the update list
+  GzClient::DelDriver(this);
+
   gz_laser_close(this->iface);
 
   return 0;
@@ -219,7 +225,7 @@ void GzLaser::Update()
   player_laser_data_t data;
   struct timeval ts;
   double range_res, angle_res;
-  
+
   gz_laser_lock(this->iface, 1);
 
   if (this->iface->data->time > this->datatime)

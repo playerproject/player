@@ -28,8 +28,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
-
-#define PLAYER_ENABLE_MSG 1
+#include <string.h>
 
 #include "player.h"
 #include "error.h"
@@ -39,16 +38,22 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Data
+const char *GzClient::prefix_id = "";
 gz_client_t *GzClient::client = NULL;
 gz_sim_t *GzClient::sim = NULL;
-const char *GzClient::prefix_id = "";
+int GzClient::driverCount = 0;
+Driver *GzClient::drivers[1024];
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize 
 int GzClient::Init(int serverid, const char *prefixid)
-{  
+{
+  if (prefixid != NULL)
+    GzClient::prefix_id = prefixid;
+
   GzClient::client = gz_client_alloc();
+  assert(GzClient::client);
 
 #ifdef GZ_CLIENT_ID_PLAYER
   // Use version 0.5.0
@@ -61,25 +66,24 @@ int GzClient::Init(int serverid, const char *prefixid)
 #endif
 
   GzClient::sim = gz_sim_alloc();
+  assert(GzClient::sim);
+
   if (gz_sim_open(GzClient::sim, GzClient::client, "default") != 0)
     return -1;
-
+  
 #ifdef LIBGAZEBO_VERSION
   // Check that version numbers match
-  if (((gz_data_t*) GzClient::sim->iface->mmap)->version != LIBGAZEBO_VERSION)
+  if (GzClient::sim->data->head.version != LIBGAZEBO_VERSION)
   {
     PLAYER_ERROR2("libgazebo mismatch: Gazebo is using v%03X, Player is using v%03X\n"
-                  "Try re-building Player",                
-                  ((gz_data_t*) GzClient::sim->iface->mmap)->version, LIBGAZEBO_VERSION);
+                  "Try re-building Player",
+                  GzClient::sim->data->head.version, LIBGAZEBO_VERSION);
     return -1;
   }
 #else
   PLAYER_WARN("libgazebo has no version number\n"
               "Consider upgrading Gazebo and then re-building Player");
 #endif
-
-  if (prefixid != NULL)
-    GzClient::prefix_id = prefixid;
 
   return 0;
 }
@@ -100,6 +104,39 @@ int GzClient::Fini()
   GzClient::client = NULL;
   
   return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Add a driver to the list of known Gazebo drivers.
+void GzClient::AddDriver(Driver *driver)
+{
+  assert(GzClient::driverCount < (int) (sizeof(GzClient::drivers) / sizeof(GzClient::drivers[0])));
+  GzClient::drivers[GzClient::driverCount++] = driver;
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Remove a driver to the list of known Gazebo drivers.
+void GzClient::DelDriver(Driver *driver)
+{
+  int i;
+
+  for (i = 0; i < GzClient::driverCount; i++)
+  {
+    if (GzClient::drivers[i] == driver)
+    {
+      GzClient::driverCount--;
+      memmove(GzClient::drivers + i,
+              GzClient::drivers + i + 1,
+              (GzClient::driverCount - i) * sizeof(GzClient::drivers[0]));
+      break;
+    }
+  }
+  
+  return;
 }
 
 

@@ -29,24 +29,45 @@
 #ifndef GZ_CLIENT_H
 #define GZ_CLIENT_H
 
+// Forward declarations
+class Driver;
 
-// Gazebo client handling; the class is just for namespacing purposes.
+
+/// @brief Gazebo client handler
+///
+/// This class handles the Gazebo client object, and acts as a shared
+/// data-structure for all Gazebo related drivers.  Note that there
+/// can only be one instance of this class (it is entirely static).
 class GzClient
 {
-  // Initialize 
+  /// Initialize 
   public: static int Init(int serverid, const char *prefixid);
 
-  // Finalize
+  /// Finalize
   public: static int Fini();
 
-  // The one and only gazebo client
+  /// @brief Add a driver to the list of known Gazebo drivers.
+  public: static void AddDriver(Driver *driver);
+
+  /// @brief Remove a driver to the list of known Gazebo drivers.
+  public: static void DelDriver(Driver *driver);
+
+  /// The prefix used for all gazebo ID's
+  public: static const char *prefix_id;
+
+  /// The one and only gazebo client
   public: static gz_client_t *client;
 
-  // The simulator control interface
+  /// The simulator control interface
   public: static gz_sim_t *sim;
 
-  // The prefix used for all gazebo ID's
-  public: static const char *prefix_id;
+  /// List of all known Gazebo drivers.
+  /// The GzSim driver (if present) will use this list to update
+  /// Gazebo drivers when new data becomes available.  If the GzSim
+  /// driver is not present, drivers will be updated at the server's
+  /// native rate (default 10Hz).
+  public: static int driverCount;
+  public: static Driver *drivers[1024];
 };
 
 #endif
