@@ -95,7 +95,6 @@ define indicatorlight light
 (
   nose "no"
   size [0.02 0.02]
-  light "blink"
   matrix_render "false"
 )
 
@@ -106,6 +105,8 @@ sub
    bitmap "submarine.pnm"
    nose "no"
    color "red"
+   indicatorlight( color "green" pose [0.5 0.000 0.000] light [1 500] ) 
+   indicatorlight( color "blue" pose [-0.5 0.000 0.000] light [1 500] ) 
 )
 
 define swarmbot sb
@@ -114,39 +115,39 @@ define swarmbot sb
 
   neighbor 1
 
-  indicatorlight( color "red"    pose [0.030 0.000 0.000] light [0 200] ) 
-  indicatorlight( color "green"  pose [0.000 0.030 0.000] light [0 400]) 
-  indicatorlight( color "blue"   pose [-0.030 0.000 0.000] light [0 600]) 
-  indicatorlight( color "yellow" pose [0.000 -0.030 0.000] light [0 800]) 
+  indicatorlight( color "red"    pose [0.030 0.000 0.000] light [1 200] ) 
+  indicatorlight( color "green"  pose [0.000 0.030 0.000] light [1 400]) 
+  indicatorlight( color "blue"   pose [-0.030 0.000 0.000] light [1 800]) 
+  indicatorlight( color "magenta" pose [0.000 -0.030 0.000] light [1 1600]) 
 
-  #velocity [ 0 0 1 ]
+  velocity [ 0 0 1 ]
 )
 	
-swarmbot( pose [4.413 3.882 74.934] color "red" )
-swarmbot( pose [3.771 4.007 46.834] color "green"  )
-swarmbot( pose [3.945 4.572 72.780] color "blue"  )
-swarmbot( pose [4.660 3.825 23.374] color "red" )
-swarmbot( pose [3.533 4.447 75.454] color "green"  )
-swarmbot( pose [4.256 4.059 49.700] color "blue"  )
-swarmbot( pose [4.577 3.670 52.404] color "red" )
-swarmbot( pose [3.304 4.108 46.944] color "green"  )
-swarmbot( pose [4.073 3.995 23.600] color "blue"  )
-swarmbot( pose [4.657 3.500 48.404] color "red" )
-swarmbot( pose [3.322 3.925 36.554] color "green"  )
-swarmbot( pose [3.963 4.206 47.160] color "blue"  )
-swarmbot( pose [4.330 3.468 48.294] color "red" )
-swarmbot( pose [3.425 3.636 25.444] color "green"  )
-swarmbot( pose [4.211 4.288 47.480] color "blue"  )
-swarmbot( pose [4.366 3.651 75.194] color "red" )
-swarmbot( pose [3.395 4.291 74.364] color "green"  )
-swarmbot( pose [4.495 4.087 65.890] color "blue"  )
-swarmbot( pose [4.146 3.587 71.264] color "red" )
-swarmbot( pose [3.634 4.200 50.194] color "green"  )
-swarmbot( pose [4.476 4.361 61.560] color "blue"  )
-swarmbot( pose [4.166 3.823 47.874] color "red" )
-swarmbot( pose [3.670 3.842 35.514] color "green"  )
-swarmbot( pose [4.211 4.517 42.580] color "blue"  )
-swarmbot( pose [3.926 3.679 50.534] color "red" )
-swarmbot( pose [3.496 4.025 73.054] color "green"  )
-swarmbot( pose [3.991 4.398 73.880] color "blue"  )
+swarmbot( pose [4.422 3.873 74.934] color "red" )
+swarmbot( pose [3.459 4.364 46.834] color "green"  )
+swarmbot( pose [4.752 4.627 72.780] color "blue"  )
+swarmbot( pose [4.678 3.706 23.374] color "red" )
+swarmbot( pose [3.249 4.722 75.454] color "green"  )
+swarmbot( pose [4.357 4.306 49.700] color "blue"  )
+swarmbot( pose [4.531 3.514 52.404] color "red" )
+swarmbot( pose [2.965 4.365 46.944] color "green"  )
+swarmbot( pose [4.651 4.288 23.600] color "blue"  )
+swarmbot( pose [4.767 3.454 48.404] color "red" )
+swarmbot( pose [3.084 4.117 36.554] color "green"  )
+swarmbot( pose [4.165 4.444 47.160] color "blue"  )
+swarmbot( pose [4.541 3.248 48.294] color "red" )
+swarmbot( pose [3.462 4.718 25.444] color "green"  )
+swarmbot( pose [4.349 4.554 47.480] color "blue"  )
+swarmbot( pose [4.384 3.633 75.194] color "red" )
+swarmbot( pose [3.028 4.584 74.364] color "green"  )
+swarmbot( pose [4.550 4.481 65.890] color "blue"  )
+swarmbot( pose [4.238 3.459 71.264] color "red" )
+swarmbot( pose [3.341 4.530 50.194] color "green"  )
+swarmbot( pose [4.513 4.691 61.560] color "blue"  )
+swarmbot( pose [4.166 3.777 47.874] color "red" )
+swarmbot( pose [3.386 4.099 35.514] color "green"  )
+swarmbot( pose [4.303 4.755 42.580] color "blue"  )
+swarmbot( pose [3.990 3.569 50.534] color "red" )
+swarmbot( pose [3.248 4.300 73.054] color "green"  )
+swarmbot( pose [4.156 4.636 73.880] color "blue"  )
 
