@@ -14,7 +14,6 @@ MANNAME = cppclient
 
 # Header files to scan
 MANFILES = ../playerclient.h
-
 MAKEDOC = ../../../server/codetools/makedoc/makedoc.py
 
 # Build the manual
@@ -24,6 +23,10 @@ $(MANNAME).ps: *.tex
 	$(MAKEDOC) $(MANFILES)
 	latex $(MANNAME) && latex $(MANNAME)
 	dvips -t letter -f $(MANNAME).dvi > $(MANNAME).ps	
+
+# Dummy target to make the interfaces
+interfaces: $(MANFILES)
+	$(MAKEDOC) $(MANFILES)
 
 # Clean up everything
 clean:
