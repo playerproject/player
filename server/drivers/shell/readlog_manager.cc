@@ -108,9 +108,9 @@ int ReadLogManager::Startup()
 {
   // Reset the time
   this->server_time = 0;
-  
+
   // Open the file
-  this->file = fopen(this->filename, "r");
+  this->file = gzopen(this->filename, "r");
   if (this->file == NULL)
   {
     PLAYER_ERROR2("unable to open [%s]: %s\n", this->filename, strerror(errno));
@@ -138,7 +138,7 @@ int ReadLogManager::Shutdown()
     PLAYER_WARN("error joining device thread");
 
   // Close the file
-  fclose(this->file);
+  gzclose(this->file);
   this->file = NULL;
   
   return 0;
@@ -230,7 +230,7 @@ void ReadLogManager::Main()
     pthread_testcancel();
 
     // Read a line from the file
-    if (fgets(line, sizeof(line), this->file) == NULL)
+    if (gzgets(this->file, line, sizeof(line)) == NULL)
       break;
 
     linenum += 1;
@@ -266,7 +266,7 @@ void ReadLogManager::Main()
     {
       // HACK
       //usleep(100000);
-      usleep(1000);
+      usleep(10000);
       continue;
     }
     else

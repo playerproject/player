@@ -34,6 +34,8 @@
 #define READLOG_MANAGER_H
 
 #include <stdio.h>
+#include <zlib.h>
+
 #include "device.h"
 
 
@@ -99,7 +101,7 @@ class ReadLogManager
 
   // File to read data from
   private: char *filename;
-  private: FILE *file;
+  private: gzFile file;
 
   // Subscribed device list
   private: int device_count;
