@@ -338,8 +338,13 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
             continue;
 
         width = sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
-        if (width < min_width || width > max_width)
+        if (width < min_width)
             continue;
+        if (width > max_width)
+        {
+            ai = -1;
+            continue;
+        }
 
         // Assign an id to the beacon
         //
