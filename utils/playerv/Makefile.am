@@ -16,6 +16,7 @@ playerv_SOURCES = playerv.c \
                   dev_position.c \
                   dev_ptz.c \
                   dev_sonar.c \
+		  dev_localization.c \
                   error.h \
                   opt.c \
                   opt.h
