@@ -832,7 +832,7 @@ sensors, such as a sonar array. */
 
 /** [Constants] */
 /** maximum number of sonar samples in a data packet */
-#define PLAYER_SONAR_MAX_SAMPLES 32
+#define PLAYER_SONAR_MAX_SAMPLES 64
 /** request types */
 #define PLAYER_SONAR_GET_GEOM_REQ   ((uint8_t)1)
 #define PLAYER_SONAR_POWER_REQ      ((uint8_t)2)
