@@ -244,7 +244,7 @@ def make_tex(filename, section, blocks):
 def make_section(file, section):
     """Generate a section entry."""
 
-    file.write('\\section{%s}\n\n' % section.name);
+    file.write('\\section{%s} \label{sect:%s}\n\n' % (section.name,section.name));
     return
 
 
