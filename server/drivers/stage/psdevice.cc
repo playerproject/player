@@ -51,30 +51,20 @@ PSDevice::SetupStageBuffers(player_stage_info_t* info,
 	  lockfd, lockbyte ); 
 #endif
 
-  void* data_buffer;
-  size_t data_len;
-  void* command_buffer;
-  size_t command_len;
-
   m_info = info;
   m_info_len = sizeof(player_stage_info_t);
   
-  data_buffer = (uint8_t*)((caddr_t)m_info + sizeof( player_stage_info_t) );
-  data_len = m_info->data_len;
+  stage_device_data = (uint8_t*)((caddr_t)m_info + sizeof( player_stage_info_t) );
+  stage_device_datasize = m_info->data_len;
   
-  command_buffer = (uint8_t*)((caddr_t)data_buffer + m_info->data_len );
-  command_len = m_info->command_len;
+  stage_device_command = (uint8_t*)((caddr_t)stage_device_data + m_info->data_len );
+  stage_device_commandsize = m_info->command_len;
 
-  SetupBuffers((unsigned char*)data_buffer, data_len,
-               (unsigned char*)command_buffer, command_len,
-               (unsigned char*)NULL, 0,
-               (unsigned char*)NULL, 0);
-  
   InstallLock(lockfd, lockbyte);
 
 #ifdef DEBUG
   PLAYER_TRACE4("creating device at addr: %p %p %p", 
-                m_info, data_buffer, command_buffer);
+                m_info, stage_device_data, stage_device_command);
   fflush( stdout );
 #endif
 }
@@ -125,7 +115,7 @@ PSDevice::PutStageCommand(void* client, unsigned char* command, size_t len)
   // Check for overflows
   if(len > stage_device_commandsize)
     PLAYER_ERROR("invalid command length; ignoring command");
-    
+
   // Copy the command
   memcpy(stage_device_command, command, len);
 
