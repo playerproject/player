@@ -156,7 +156,10 @@ class SickLMS200 : public CDevice
 
     // Get the time (in ms)
     int64_t GetTime();
-    
+
+  // Gets the error message from the SICK
+  int GetLaserError(uint8_t *data, int len);
+
   protected:
 
     // Laser pose in robot cs.
@@ -195,7 +198,8 @@ class SickLMS200 : public CDevice
 
     bool can_do_hi_speed;
     int port_rate;
-  
+    int current_rate;  
+
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct old_serial;
 #endif
@@ -263,6 +267,7 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
   this->invert = cf->ReadInt(section, "invert", 0);
 
   this->port_rate = cf->ReadInt(section, "rate", DEFAULT_LASER_PORT_RATE);
+  this->current_rate = this->port_rate;
 
 #ifdef HAVE_HI_SPEED_SERIAL
   this->can_do_hi_speed = true;
@@ -557,6 +562,27 @@ int SickLMS200::UpdateConfig()
         break;
       }
 
+    case PLAYER_LASER_ERROR_CONFIG:
+      {
+
+	printf("LASER: ERROR REQUEST\n");
+	player_laser_error_config_t *cfg = (player_laser_error_config_t *)buffer;
+	if (GetLaserError(cfg->data, PLAYER_LASER_ERROR_MSG_LENGTH) < 0) {
+	  printf("LASER: ERROR GETTING ERROR MESSAGE!\n");
+	  if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0) {
+	    PLAYER_ERROR("PutReply() Failed");
+	    break;
+	  }
+	} else {
+	  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, cfg, 
+		       sizeof(player_laser_error_config_t)) != 0) {
+	    PLAYER_ERROR("PutReply() Failed");
+	    break;
+	  }
+	}
+      }
+      break;
+
       default:
       {
         if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
@@ -683,6 +709,8 @@ int SickLMS200::ChangeTermSpeed(int speed)
 {
   struct termios term;
 
+  current_rate = speed;
+
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct serial;
 
@@ -776,10 +804,13 @@ int SickLMS200::ChangeTermSpeed(int speed)
     fprintf(stderr, "sicklms200: unknown speed %d\n", speed);
   }
 
-    
+
+
   return 0;
 }
 
+
+  
 
 ////////////////////////////////////////////////////////////////////////////////
 // Put the laser into configuration mode
@@ -866,6 +897,60 @@ int SickLMS200::SetLaserSpeed(int speed)
   printf("LASER: SLS: request OK\n");
   return 0;
 }
+
+// Request info about latest error from laser
+int
+SickLMS200::GetLaserError(uint8_t *data, int data_len)
+{
+  int pkt_len = 2048;
+  uint8_t pkt[2048];
+  
+  ssize_t len=0;
+
+  printf("LASER: GetLaserError\n");
+  
+  // make the "Request for Error Telegram"
+  pkt[len++] = 0x32;
+
+  if (WriteToLaser(pkt, len) < 0) {
+    fprintf(stderr, "LASER: GetLaserError: error writing 0x32 packet\n");
+    return -1;
+  }
+
+  printf("LASER: GLE: waiting for 0x32 reply\n");
+  len = ReadFromLaser(pkt, pkt_len, false, -1);
+
+  if (len < 0) {
+    return -1;
+  } else if (len < 1) {
+    RETURN_ERROR(-1, "no reply from laser");
+  } else if (pkt[0] == NACK) {
+    RETURN_ERROR(-1, "request denied by laser");
+  } else if (pkt[0] != 0xB2) {
+    RETURN_ERROR(-1, "did not get back 0xB2 packet");
+  }
+
+  printf("LASER: GLE: reply OK\n");
+
+  if (data_len < len + 1) {
+    fprintf(stderr, "LASER: error return data larger than data length (%d/%d) -- TRUNCATING\n",
+	    len, data_len);
+    len = data_len-1;
+  }
+
+  if (len >= pkt_len) {
+    printf("LASER: GLE: pkt_len too short! TRUNCATING\n");
+    len = pkt_len-1;
+  }
+
+  pkt[len] = '\0';
+
+  memcpy(data, pkt, len);
+
+  return 0;
+}
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1189,11 +1274,50 @@ ssize_t SickLMS200::WriteToLaser(uint8_t *data, ssize_t len)
   // Make sure both input and output queues are empty
   //
   tcflush(this->laser_fd, TCIOFLUSH);
+
+  ssize_t bytes = 0;
+  struct timeval start, end;
+
+#ifdef HAVE_HI_SPEED_SERIAL
+  // have to write one char at a time, because if we're
+  // high speed, then must take no longer than 55 us between
+  // chars
+
+  int ret;
+  if (current_rate > 38400) {
+    //printf("LASER: writing %d bytes\n", 6+len);
+    for (int i =0; i < 6 + len; i++) {
+      do {
+	gettimeofday(&start, NULL);
+	ret = ::write(this->laser_fd, buffer + i, 1);
+      } while (!ret);
+      if (ret > 0) {
+	bytes += ret;
+      }
+
+      // need to do this sort of busy wait to ensure the right timing
+      // although I've noticed you will get some anamolies that are
+      // in the ms range; this could be a problem...
+      int usecs; 
+      do {
+	gettimeofday(&end, NULL);
+	usecs= (end.tv_sec - start.tv_sec)*1000000 +
+	  (end.tv_usec - start.tv_usec);
+      } while (usecs < 60);
+
+      //printf("usecs: %d bytes=%02X\n", (end.tv_sec - start.tv_sec)*1000000 +
+      //     (end.tv_usec - start.tv_usec), *(buffer + i));
+      
+    }
+  } else {
+    bytes = ::write( this->laser_fd, buffer, 4 + len + 2);
+  }
+#else
     
   // Write the data to the port
   //
-  ssize_t bytes = ::write( this->laser_fd, buffer, 4 + len + 2);
-
+  bytes = ::write( this->laser_fd, buffer, 4 + len + 2);
+#endif
   // Make sure the queue is drained
   // Synchronous IO doesnt always work
   //
