@@ -2421,7 +2421,7 @@ public:
    // Image dimensions (pixels)
    uint16_t width, height;
 
-   // Sime of the image (bytes)
+   // Size of the image (bytes)
    uint32_t imageSize;
 
    // Image data
@@ -2429,6 +2429,12 @@ public:
 
    // interface that all proxies must provide
    void FillData(player_msghdr_t hdr, const char* buffer);
+
+   // What is the compression type
+   uint8_t compression;
+   
+   // decompress the image
+   void Decompress();
 
    // prints out basic statistics of the camera
    void Print();
