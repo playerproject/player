@@ -73,6 +73,7 @@ int32_t Position3DProxy::SetSpeed(double xspeed, double yspeed, double zspeed,
   cmd.rollspeed  = htonl(static_cast<int32_t>(rint(rollspeed*1e3)));
   cmd.pitchspeed = htonl(static_cast<int32_t>(rint(pitchspeed*1e3)));
   cmd.yawspeed   = htonl(static_cast<int32_t>(rint(yawspeed*1e3)));
+  cmd.state = 1;
 
   return(client->Write(m_device_id,
                        reinterpret_cast<char*>(&cmd),
@@ -102,6 +103,7 @@ Position3DProxy::GoTo(double x, double y, double z,
   cmd.roll   = htonl(static_cast<int32_t>(rint(roll*1e3)));
   cmd.pitch  = htonl(static_cast<int32_t>(rint(pitch*1e3)));
   cmd.yaw    = htonl(static_cast<int32_t>(rint(yaw*1e3)));
+  cmd.state = 1;
 
   return(client->Write(m_device_id,
                        reinterpret_cast<char*>(&cmd),
