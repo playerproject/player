@@ -142,12 +142,18 @@ CMVisionBF::Setup()
     }
 
   if (colorfile[0])
+  {
+    if (!vision->loadOptions(colorfile))
     {
-      if (!vision->loadOptions(colorfile))
-	PLAYER_ERROR("Error loading color file");
+      PLAYER_ERROR("Error loading color file");
+      return(-1);
     }
+  }
   else
+  {
     PLAYER_ERROR("No color file => No blobs");
+    return(-1);
+  }
 
   //vision->enable(CMV_DENSITY_MERGE);
 
