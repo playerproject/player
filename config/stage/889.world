@@ -61,13 +61,12 @@ define charger model
   size [ 1 1 ]
 
  color "green"
- energy_capacity -1.0  # infinite
- energy_charge_rate 30.0 # will transfer 10 Joules per second (Watts)
- energy_probe_range 0.0
+ energy.capacity -1.0  # infinite
+ energy.return 30.0 # will transfer 30 Joules per second (Watts)
+ energy.range 0.0
 
- obstacle_return 0
- 
- fiducial_id 1
+ obstacle.return 0
+ fiducial.return 1
 )
 
 charger( pose [ 19.772 14.950 0.000 ] )
