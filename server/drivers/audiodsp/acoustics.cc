@@ -34,13 +34,10 @@
 #include <math.h>
 #include <netinet/in.h>
 #include <gsl/gsl_fft_real.h>
-#include <playertime.h>
 
 #include "playercommon.h"
 #include "drivertable.h"
 #include "player.h"
-
-extern PlayerTime* GlobalTime;
 
 #define DEFAULT_DEVICE "/dev/dsp"
 #define MIN_FREQUENCY 800
@@ -86,13 +83,14 @@ class Acoustics : public CDevice
 
     // Create a sine wave
     void CreateSine(unsigned short freq, unsigned short amp, 
-        unsigned int duration, char** buffer, unsigned int* bufferSize);
+        unsigned int duration, char* buffer, unsigned int bufferSize);
 
     // Create a BPSK chirp
     void CreateChirp(unsigned char mseq[],unsigned short mseqSize, 
         unsigned short freq, unsigned short amp, unsigned int pulseTime, 
-        char** buffer, unsigned int* bufSize );
+        char* buffer, unsigned int bufSize );
 
+    unsigned int CalcBuffSize( unsigned int duration );
 
     int audioFD; // File descriptor for the device
     const char* deviceName; // Name of the device( ex: "/dev/dsp" )
@@ -104,17 +102,20 @@ class Acoustics : public CDevice
     char* audioBuffer; // The buffer used to hold audio data
     float bytesPerSample; // The number of bytes per sample
 
+    char* waveCreatBuff; // A buffer used to create sound waves
+
     unsigned short* peakFreq; // List of peak frequencies
     unsigned short* peakAmp; // List of peak frequency amplitudes
     int N; // The length(in bytes) of the audio buffer to process
     short nHighestPeaks; // Number of peaks to find
     player_audiodsp_data_t data; // The data to return to the user
-    struct timeval eventTime; // The time the data was captured
-
 };
 
 Acoustics::Acoustics(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_audiodsp_data_t),sizeof(player_audiodsp_cmd_t),1,1)
+  : CDevice(sizeof(player_audiodsp_data_t),sizeof(player_audiodsp_cmd_t),1,1),
+  audioFD(-1),deviceName(NULL),openFlag(-1),channels(1),sampleFormat(16),
+  sampleRate(8000),audioBuffSize(4096),audioBuffer(NULL),bytesPerSample(1),
+  peakFreq(NULL),peakAmp(NULL),N(1024),nHighestPeaks(5)
 {
   deviceName = cf->ReadString(section,"device",DEFAULT_DEVICE);
 }
@@ -139,10 +140,10 @@ void Acoustics_Register(DriverTable* table)
 int Acoustics::Setup()
 {
 
-  N=1024;
-  nHighestPeaks = 5;
-  peakFreq = new unsigned short[nHighestPeaks];
-  peakAmp = new unsigned short[nHighestPeaks];
+  this->N=1024;
+  this->nHighestPeaks = 5;
+  this->peakFreq = new unsigned short[this->nHighestPeaks];
+  this->peakAmp = new unsigned short[this->nHighestPeaks];
 
   puts("audio ready");
 
@@ -155,7 +156,11 @@ int Acoustics::Shutdown()
   StopThread();
   this->CloseDevice();
 
+  delete [] this->peakFreq;
+  delete [] this->peakAmp;
+
   puts("Acoustics has been shutdown");
+  return 0;
 }
 
 size_t Acoustics::GetCommand(void* dest, size_t maxsize)
@@ -172,17 +177,18 @@ size_t Acoustics::GetCommand(void* dest, size_t maxsize)
 
 int Acoustics::OpenDevice( int flag )
 {
+  assert(flag==O_RDONLY || flag==O_WRONLY);
 
   // We don't need to reopen the device if the flag is the same
-  if( openFlag != flag )
+  if( this->openFlag != flag )
   {
-    openFlag = flag;
+    this->openFlag = flag;
 
     // First close the device
     close(audioFD);
 
     // Then open it again with the new flag
-    if( (audioFD = open(deviceName,openFlag)) == -1 )
+    if( (audioFD = open(deviceName,this->openFlag)) == -1 )
     {
       PLAYER_ERROR1("failed to open audio device %s",deviceName);
       return -1;
@@ -195,23 +201,24 @@ int Acoustics::OpenDevice( int flag )
 
 int Acoustics::CloseDevice()
 {
-  openFlag = -1;
+  this->openFlag = -1;
   return close(audioFD);
 }
 
 void Acoustics::Main()
 {
-  int len;
-  void *client;
+  int len=0;
+  void *client=NULL;
   unsigned char configBuffer[PLAYER_MAX_REQREP_SIZE];
   unsigned char cmdBuffer[sizeof(player_audiodsp_cmd)];
-  char* playBuffer;
-  unsigned int playBufferSize;
+  char* playBuffer = NULL;
+  unsigned int playBufferSize = 0;
 
   player_audiodsp_cmd_t audioCmd;
-  playBuffer = NULL;
 
   sleep(1);
+
+  cmdBuffer[0]=0x0;
 
   while(true)
   {
@@ -248,57 +255,74 @@ void Acoustics::Main()
     switch(cmdBuffer[0])
     {
       case PLAYER_AUDIODSP_PLAY_TONE:
-        memcpy(&audioCmd, cmdBuffer, sizeof(audioCmd));
+        {
+          memcpy(&audioCmd, cmdBuffer, sizeof(audioCmd));
 
-        // Create a tone
-        this->CreateSine(ntohs(audioCmd.frequency), ntohs(audioCmd.amplitude), 
-            ntohl(audioCmd.duration), &playBuffer, &playBufferSize);
+          playBufferSize = this->CalcBuffSize( ntohl(audioCmd.duration) );
+          if( playBuffer ) delete [] playBuffer;
+          playBuffer = new char[playBufferSize];
 
-        // Play the sound
-        this->PlayBuffer(playBuffer,playBufferSize);
-        break;
+          // Create a tone
+          this->CreateSine(ntohs(audioCmd.frequency), ntohs(audioCmd.amplitude), 
+              ntohl(audioCmd.duration), playBuffer, playBufferSize);
+
+          // Play the sound
+          this->PlayBuffer(playBuffer,playBufferSize);
+          break;
+        }
 
       case PLAYER_AUDIODSP_PLAY_CHIRP:
-        memcpy(&audioCmd, cmdBuffer, sizeof(audioCmd));
-        // Create a chirp
-        this->CreateChirp(audioCmd.bitString,ntohs(audioCmd.bitStringLen),
-            ntohs(audioCmd.frequency), ntohs(audioCmd.amplitude), 
-            ntohl(audioCmd.duration), &playBuffer, &playBufferSize);
+        {
+          memcpy(&audioCmd, cmdBuffer, sizeof(audioCmd));
 
-        // Play the chirp
-        this->PlayBuffer(playBuffer,playBufferSize);
-        break;
+          playBufferSize = ntohs(audioCmd.bitStringLen)*
+            this->CalcBuffSize(ntohl(audioCmd.duration));
+
+          if( playBuffer ) delete [] playBuffer;
+          playBuffer = new char[playBufferSize];
+
+          // Create a chirp
+          this->CreateChirp(audioCmd.bitString,ntohs(audioCmd.bitStringLen),
+              ntohs(audioCmd.frequency), ntohs(audioCmd.amplitude), 
+              ntohl(audioCmd.duration), playBuffer, playBufferSize);
+
+          // Play the chirp
+          this->PlayBuffer(playBuffer,playBufferSize);
+          break;
+        }
 
         // Replay the last buffer
       case PLAYER_AUDIODSP_REPLAY:
-        memcpy(&audioCmd, cmdBuffer, sizeof(audioCmd));
-        this->PlayBuffer(playBuffer,playBufferSize);
-        break;
+        {
+          memcpy(&audioCmd, cmdBuffer, sizeof(audioCmd));
+          this->PlayBuffer(playBuffer,playBufferSize);
+          break;
+        }
 
         // The default is to listen for tones and report the findings
       default:
         {
-          // Get the time at which we started reading
-          // This will be a pretty good estimate of when the phenomena occured
-          GlobalTime->GetTime(&eventTime);
- 
+
           // Get the most significant frequencies
           if( !ListenForTones() )
           {
-            for (int i=0; i<nHighestPeaks; i++) 
+            for (int i=0; i<this->nHighestPeaks; i++) 
             {
-              data.freq[i]=htons((unsigned short)((peakFreq[i]*sampleRate)/N));
-              data.amp[i]=htons((unsigned short)peakAmp[i]);
+              this->data.freq[i]=htons((unsigned short)((this->peakFreq[i]*this->sampleRate)/this->N));
+              this->data.amp[i]=htons((unsigned short)this->peakAmp[i]);
             }
 
             // Return the data to the user
-            PutData((uint8_t*)&data, sizeof(data),0,0);
+            PutData((uint8_t*)&this->data, sizeof(this->data),0,0);
           }
 
           break;
         }
     }
   }
+
+  if( playBuffer ) 
+    delete [] playBuffer;
 }
 
 int Acoustics::SetConfiguration(int len, void* client, unsigned char buffer[])
@@ -372,30 +396,30 @@ int Acoustics::SetSampleFormat( int _format )
 {
   int result=0;
 
-  sampleFormat = _format;
+  this->sampleFormat = _format;
 
   // Try to set the sample format
-  if (ioctl(audioFD,SNDCTL_DSP_SETFMT, &sampleFormat) == -1 )
+  if (ioctl(this->audioFD, SNDCTL_DSP_SETFMT, &this->sampleFormat) == -1 )
   {
     PLAYER_ERROR1("error setting sample format: %d",_format);
-    sampleFormat=255;
+    this->sampleFormat=255;
 
-    if(ioctl(audioFD,SNDCTL_DSP_SETFMT, &sampleFormat) == -1 )
+    if(ioctl(this->audioFD,SNDCTL_DSP_SETFMT, &this->sampleFormat) == -1 )
       result = -1;
   }
 
   // Check if we were able to set the specified format
-  if( !result && sampleFormat != _format )
+  if( !result && this->sampleFormat != _format )
   {
-    PLAYER_WARN2("specified format %d set to %d",_format,sampleFormat);
+    PLAYER_WARN2("specified format %d set to %d",_format,this->sampleFormat);
   }
 
   // Get the bytes per sample
-  switch( sampleFormat )
+  switch( this->sampleFormat )
   {
     // Formats with 4 bits per sample
     case AFMT_IMA_ADPCM:
-      bytesPerSample = 0.5;
+      this->bytesPerSample = 0.5;
       break;
 
     // Formats with 8 bits per sample
@@ -403,7 +427,7 @@ int Acoustics::SetSampleFormat( int _format )
     case AFMT_A_LAW:
     case AFMT_U8:
     case AFMT_S8:
-      bytesPerSample = 1.0;
+      this->bytesPerSample = 1.0;
       break;
 
     // Formats with 16 bits per sample
@@ -411,10 +435,10 @@ int Acoustics::SetSampleFormat( int _format )
     case AFMT_S16_BE:
     case AFMT_U16_LE:
     case AFMT_U16_BE:
-      bytesPerSample = 2.0;
+      this->bytesPerSample = 2.0;
       break;
     default:
-      bytesPerSample = 2.0;
+      this->bytesPerSample = 2.0;
       break;
   }
 
@@ -425,19 +449,19 @@ int Acoustics::SetSampleRate( int _sampleRate )
 {
   int result = 0;
 
-  sampleRate = _sampleRate;
+  this->sampleRate = _sampleRate;
 
   // Try to set the sample rate
-  if( ioctl(audioFD, SNDCTL_DSP_SPEED, &sampleRate) == -1 )
+  if( ioctl(audioFD, SNDCTL_DSP_SPEED, &this->sampleRate) == -1 )
   {
-    PLAYER_ERROR1("error setting sample rate:%d",sampleRate);
+    PLAYER_ERROR1("error setting sample rate:%d",this->sampleRate);
     result = 1;
   }
 
   // Check if the sample rate was set properly
-  if( sampleRate != _sampleRate ) 
+  if( this->sampleRate != _sampleRate ) 
   {
-    PLAYER_WARN2("specified rate:%d set to: %d",_sampleRate, sampleRate);
+    PLAYER_WARN2("specified rate:%d set to: %d",_sampleRate, this->sampleRate);
   }
 
   return result;
@@ -447,10 +471,10 @@ int Acoustics::SetChannels( unsigned short _channels )
 {
   int result = 0;
 
-  channels = _channels;
+  this->channels = _channels;
 
   // Try to set the number of channels
-  if( ioctl(audioFD, SNDCTL_DSP_CHANNELS, &channels) == -1)
+  if( ioctl(audioFD, SNDCTL_DSP_CHANNELS, &this->channels) == -1)
   {
     PLAYER_ERROR("error setting the number of channels");
     result = 1;
@@ -466,23 +490,23 @@ int Acoustics::SetBufferSize(int _size)
   // If size==0, then calc. the proper size.
   if( _size <= 0 )
   {
-    ioctl( audioFD, SNDCTL_DSP_GETBLKSIZE, &audioBuffSize);
-    if( audioBuffSize < 1)
+    ioctl( audioFD, SNDCTL_DSP_GETBLKSIZE, &this->audioBuffSize);
+    if( this->audioBuffSize < 1)
     {
       PLAYER_ERROR("failed to calculate audio buffer size");
       result = -1;
     }
 
   } else {
-    audioBuffSize = _size;
+    this->audioBuffSize = _size;
   }
 
-  if( !result && audioBuffSize > 0 )
+  if( !result && this->audioBuffSize > 0 )
   {
-    if( audioBuffer )
-      delete audioBuffer;
+    if( this->audioBuffer )
+      delete [] this->audioBuffer;
 
-    audioBuffer = new char[audioBuffSize];
+    this->audioBuffer = new char[this->audioBuffSize];
   } else
     result = -1;
 
@@ -498,26 +522,26 @@ int Acoustics::ListenForTones()
   {
     int i,k;
 
-    int frequency[N/2];
-    int amplitude[N/2];
+    int frequency[this->N/2];
+    int amplitude[this->N/2];
 
     // We will just do a Fourer transform over the first 1024 samples.
-    double* fft = new double[N];
-    if( bytesPerSample == 2 )
+    double* fft = new double[this->N];
+    if( this->bytesPerSample == 2 )
     {
-      char* index = audioBuffer;
-      for(i=0;i<N;i++)
+      char* index = this->audioBuffer;
+      for(i=0;i<this->N;i++)
       {
-        switch( sampleFormat )
+        switch( this->sampleFormat )
         {
           case AFMT_S16_LE:
           case AFMT_U16_LE:
-            fft[i] = (short)((*(index+1)&0xFF) << 8 | ( (*index)&0xFF ));
+            fft[i] = (short)( ( (*(index+1))&0xFF) << 8 | ( (*index)&0xFF ));
             break;
 
           case AFMT_S16_BE:
           case AFMT_U16_BE:
-            fft[i] = (short)( ((*index)&0xFF) << 8 | *(index+1)&0xFF);
+            fft[i] = (short)( ((*index)&0xFF) << 8 | (*(index+1))&0xFF);
             break;
         }
 
@@ -525,38 +549,38 @@ int Acoustics::ListenForTones()
       }
 
     } else {
-      char* index = audioBuffer;
-      for(i=0;i<N;i++)     
+      char* index = this->audioBuffer;
+      for(i=0;i<this->N;i++)     
       {
         fft[i] = (*index);
         index++;
       }
     }
     
-    gsl_fft_real_radix2_transform(fft,1,N);
+    gsl_fft_real_radix2_transform(fft,1,this->N);
 
     // Convert to power spectrum
-    for (k = 1; k < (N+1)/2; ++k)  /* (k < N/2 rounded up) */
-      frequency[k] = (int)((fft[k]*fft[k] + fft[N-k]*fft[N-k])/1000);
-    if (N % 2 == 0) /* N is even,  Nyquist freq. */
-      frequency[N/2] = (int)((fft[N/2]*fft[N/2])/1000);  
+    for (k = 1; k < (this->N+1)/2; ++k)  /* (k < N/2 rounded up) */
+      frequency[k] = (int)((fft[k]*fft[k] + fft[this->N-k]*fft[this->N-k])/1000);
+    if (this->N % 2 == 0) /* N is even,  Nyquist freq. */
+      frequency[this->N/2] = (int)((fft[this->N/2]*fft[this->N/2])/1000);  
 
     // I think this does a bit of smoothing
     amplitude[0]=frequency[0]+frequency[1]/2;
-    for (k = 1; k < (N-1)/2; ++k)  /* (k < N/2 rounded up) */ 
+    for (k = 1; k < (this->N-1)/2; ++k)  /* (k < N/2 rounded up) */ 
       amplitude[k] = (frequency[k-1]+frequency[k+1])/2+frequency[k];
-    amplitude[(N-1)/2]=frequency[(N-3)/2]/2+frequency[(N-1)/2];
+    amplitude[(this->N-1)/2]=frequency[(this->N-3)/2]/2+frequency[(this->N-1)/2];
 
     // Initialize the peak data
-    for (i=0; i<nHighestPeaks; i++) 
+    for (i=0; i<this->nHighestPeaks; i++) 
     {
-      peakFreq[i]=0;
-      peakAmp[i]=0;
+      this->peakFreq[i]=0;
+      this->peakAmp[i]=0;
     }
 
-    for (i=MIN_FREQUENCY*N/sampleRate; i<(N-1)/2; i++) 
+    for (i=MIN_FREQUENCY*this->N/this->sampleRate; i<(this->N-1)/2; i++) 
     {
-      if(amplitude[i] > peakAmp[nHighestPeaks-1]) 
+      if(amplitude[i] > this->peakAmp[this->nHighestPeaks-1]) 
       {
         if((amplitude[i] >= amplitude[i-1]) && (amplitude[i]>amplitude[i+1])) 
         {
@@ -574,20 +598,20 @@ int Acoustics::ListenForTones()
 
 void Acoustics::InsertPeak(int f,int a) 
 {
-  int i=nHighestPeaks-1;
+  int i=this->nHighestPeaks-1;
   int j;
 
-  while (peakAmp[i-1]<a && i>0) {
+  while (this->peakAmp[i-1]<a && i>0) {
     i--;
   }
 
-  for (j=nHighestPeaks-1; j>i; j--) {
-    peakAmp[j]=peakAmp[j-1];
-    peakFreq[j]=peakFreq[j-1];
+  for (j=this->nHighestPeaks-1; j>i; j--) {
+    this->peakAmp[j]=this->peakAmp[j-1];
+    this->peakFreq[j]=this->peakFreq[j-1];
   }
 
-  peakAmp[i]=(unsigned short)(a);
-  peakFreq[i]=(unsigned short)(f);
+  this->peakAmp[i]=(unsigned short)(a);
+  this->peakFreq[i]=(unsigned short)(f);
 }
 
 int Acoustics::PlayBuffer(char* buffer,unsigned int size)
@@ -618,7 +642,7 @@ int Acoustics::Record()
 {
   int result = this->OpenDevice(O_RDONLY);
 
-  if( !result && read(audioFD, audioBuffer, audioBuffSize) != audioBuffSize)
+  if( !result && read(audioFD, this->audioBuffer, this->audioBuffSize) != this->audioBuffSize)
   {
     PLAYER_WARN("did not read specified amount from audio device");
     result = -1;
@@ -630,37 +654,35 @@ int Acoustics::Record()
 
 void Acoustics::CreateChirp(unsigned char mseq[], unsigned short mseqSize, 
     unsigned short freq, unsigned short amp, unsigned int pulseTime, 
-    char** buffer, unsigned int* bufSize )
+    char* buffer, unsigned int bufSize )
 {
   unsigned int i;
   unsigned int pulseBufSize;
   char* oneBuffer = NULL;
   char* zeroBuffer = NULL;
 
-  // Create one carrier pulse
-  CreateSine(freq,amp,pulseTime,&oneBuffer,&pulseBufSize);
-
-  // Create the zero buffer
+  // Create the two buffers
+  pulseBufSize = this->CalcBuffSize( pulseTime );
+  oneBuffer = new char[pulseBufSize];
   zeroBuffer=new char[pulseBufSize];
-  memcpy(zeroBuffer,oneBuffer,pulseBufSize*sizeof(char));
 
+  // Create one carrier pulse
+  CreateSine(freq,amp,pulseTime,oneBuffer,pulseBufSize);
+
+  // Make the zero buffer 180 degrees out of phase from the one buffer
+  memcpy(zeroBuffer,oneBuffer,pulseBufSize);
   for(i=0;i<pulseBufSize;i++)
   {
     zeroBuffer[i]*=-1;
   }
 
-  if( *buffer != NULL ) delete *buffer;
-
-  *bufSize = mseqSize*pulseBufSize;
-  *buffer = new char[*bufSize];
-
   for(i=0;i<mseqSize;i++)
   {
     if(mseq[i])
     {
-      memcpy(*buffer+pulseBufSize*i,zeroBuffer,pulseBufSize);
+      memcpy(buffer+pulseBufSize*i,zeroBuffer,pulseBufSize);
     } else {
-      memcpy(*buffer+pulseBufSize*i,oneBuffer,pulseBufSize);
+      memcpy(buffer+pulseBufSize*i,oneBuffer,pulseBufSize);
     }
 
   }
@@ -674,7 +696,7 @@ void Acoustics::CreateChirp(unsigned char mseq[], unsigned short mseqSize,
 
 // This function might behave badly when the durations is too small....
 void Acoustics::CreateSine(unsigned short freq, unsigned short amp, 
-    unsigned int duration, char** buffer, unsigned int* bufferSize)
+    unsigned int duration, char* buffer, unsigned int bufferSize)
 {
   unsigned int i;
 
@@ -682,37 +704,37 @@ void Acoustics::CreateSine(unsigned short freq, unsigned short amp,
   double phase = 0;
 
   unsigned int numSamples = (unsigned int)((duration/1000.0)*this->sampleRate);
-  *bufferSize =(unsigned int)(numSamples*this->bytesPerSample*this->channels); 
-  short audio;
 
-  if( *buffer != NULL ) delete *buffer;
-  
-  *buffer = new char[*bufferSize];
+  short audio;
 
   // Calculate the first full wave
   for(phase=0,i=0;phase<2*M_PI&&i<numSamples;phase+=omega,i++)
   {
     audio=(short)(amp*sin(phase));
 
-    if(channels==1)
+    if(this->channels==1)
     {
-      (*buffer)[2*i+1]=audio&0xff;
-      (*buffer)[2*i]=(audio>>8)&0xff;
+      buffer[2*i]=(audio>>8)&0xff;
+      buffer[2*i+1]=audio&0xff;
     } else {
-      (*buffer)[4*i]=audio&0xff;
-      (*buffer)[4*i+1]=audio>>8;
-      (*buffer)[4*i+2]=audio&0xff;
-      (*buffer)[4*i+3]=audio>>8;
+      buffer[4*i]=audio&0xff;
+      buffer[4*i+1]=audio>>8;
+      buffer[4*i+2]=audio&0xff;
+      buffer[4*i+3]=audio>>8;
     }
   }
 
   // Get the rest of the data
   unsigned int bytesPerCopy = i*this->channels*2;
-  for(unsigned int j=bytesPerCopy;j<*bufferSize;j+=bytesPerCopy)
+  for(unsigned int j=bytesPerCopy;j<bufferSize;j+=bytesPerCopy)
   {
-    memcpy(*buffer+j,*buffer,bytesPerCopy);
+    memcpy(buffer+j,buffer,bytesPerCopy);
   }
 
 }
 
-
+unsigned int Acoustics::CalcBuffSize( unsigned int duration )
+{
+  unsigned int numSamples = (unsigned int)((duration/1000.0)*this->sampleRate);
+  return (unsigned int)(numSamples*this->bytesPerSample*this->channels); 
+}
