@@ -118,7 +118,7 @@ public:
   short khtons(short in);
   short ntokhs(short in);
 
-  void ReadConfig();
+ // void ReadConfig();
 
   int ResetOdometry();
   

@@ -60,8 +60,9 @@ Device::Device(player_device_id_t id, Driver *device, unsigned char access)
   this->command_size = 0;
   this->command_used_size = 0;
   this->command = NULL;
-  this->reqqueue = NULL;
-  this->repqueue = NULL;
+  //this->reqqueue = NULL;
+  //this->repqueue = NULL;
+  //this->msgqueue = NULL;
 
   this->allocp = false;
 
@@ -94,10 +95,12 @@ Device::~Device()
 
   // always delete the queues; they're smart enough to know whether their
   // memory was pre-allocated.
-  if (this->reqqueue)
+ /* if (this->reqqueue)
     delete this->reqqueue;
   if (this->repqueue)
     delete this->repqueue;
+  if (this->msgqueue)
+    delete this->msgqueue;*/
 
   return;
 }
@@ -105,20 +108,22 @@ Device::~Device()
 
 // Initialize the buffers for this interface
 void Device::SetupBuffers(size_t datasize, size_t commandsize,
-                          size_t reqqueuelen, size_t repqueuelen)
+                          size_t reqqueuelen, size_t repqueuelen, size_t msgqueuelen)
 {
   this->data_size = datasize;
   this->data = new unsigned char[datasize];
   this->command_size = commandsize;
   this->command = new unsigned char[commandsize];
 
-  this->reqqueue = new PlayerQueue(reqqueuelen);
+  /*this->reqqueue = new PlayerQueue(reqqueuelen);
   this->repqueue = new PlayerQueue(repqueuelen);
+  this->msgqueue = new PlayerQueue(msgqueuelen);*/
 
   assert(this->data);
   assert(this->command);
-  assert(this->reqqueue);
+ /* assert(this->reqqueue);
   assert(this->repqueue);
+  assert(this->msgqueue);*/
 
   this->allocp = true;
 
@@ -128,13 +133,21 @@ void Device::SetupBuffers(size_t datasize, size_t commandsize,
 void Device::SetupBuffers(void* data, size_t datasize, 
                           void* command, size_t commandsize, 
                           void* reqqueue, int reqqueuelen, 
-                          void* repqueue, int repqueuelen)
+                          void* repqueue, int repqueuelen,
+						  void* msgqueue, int msgqueuelen)
 {
   this->data = (unsigned char*)data;
   this->data_size = datasize;
   this->command = (unsigned char*)command;
   this->command_size = commandsize;
-  this->reqqueue = new PlayerQueue(reqqueue, reqqueuelen);
+ /* this->reqqueue = new PlayerQueue(reqqueue, reqqueuelen);
   this->repqueue = new PlayerQueue(repqueue, repqueuelen);
+  this->msgqueue = new PlayerQueue(msgqueue, msgqueuelen);*/
+
+  assert(this->data);
+  assert(this->command);
+/*  assert(this->reqqueue);
+  assert(this->repqueue);
+  assert(this->msgqueue);*/
 }
 

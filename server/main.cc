@@ -1469,7 +1469,8 @@ int main( int argc, char *argv[] )
     ClientData* clientdata;
     player_device_req_t req;
 
-    assert((clientdata = (ClientData*)new ClientDataTCP("",device->id.port)));
+    clientdata = new ClientDataTCP("",device->id.port);
+    assert(clientdata);
         
     // to indicate that this one is a dummy
     clientdata->socket = -1;

@@ -81,6 +81,10 @@ int playerc_client_pop(playerc_client_t *client,
                        player_msghdr_t *header, void *data, int *len);
 void *playerc_client_dispatch(playerc_client_t *client,
                               player_msghdr_t *header, void *data, int len);
+void *playerc_client_dispatch_geom(playerc_client_t *client,
+                              player_msghdr_t *header, void *data, int len);
+void *playerc_client_dispatch_config(playerc_client_t *client,
+                              player_msghdr_t *header, void *data, int len);
 
 
 // Create a player client
@@ -280,23 +284,25 @@ void *playerc_client_read(playerc_client_t *client)
     if (playerc_client_readpacket(client, &header, client->data, &len) < 0)
       return NULL;
   }
-
-  // Catch and ignore sync messages
-  if (header.type == PLAYER_MSGTYPE_SYNCH)
+  
+  switch(header.type)
   {
-    client->datatime = header.timestamp_sec + header.timestamp_usec * 1e-6;
-    return client->id;
+  	case PLAYER_MSGTYPE_SYNCH:
+	    client->datatime = header.timestamp_sec + header.timestamp_usec * 1e-6;
+    	return client->id;
+	
+	case PLAYER_MSGTYPE_GEOM:
+		return playerc_client_dispatch_geom(client, &header, client->data, len);
+  
+  	case PLAYER_MSGTYPE_CONFIG:
+		return playerc_client_dispatch_config(client, &header, client->data, len);  
+  
+  	case PLAYER_MSGTYPE_DATA:
+		return playerc_client_dispatch(client, &header, client->data, len);
   }
   
-  // Check the return type 
-  if (header.type != PLAYER_MSGTYPE_DATA)
-  {
-    PLAYERC_WARN1("unexpected message type [%d]", header.type);
-    return NULL;
-  }
-
-  // Dispatch
-  return playerc_client_dispatch(client, &header, client->data, len);
+	PLAYERC_WARN1("unexpected message type [%d]", header.type);
+	return NULL;
 }
 
 
@@ -804,6 +810,68 @@ void *playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
       // Call any additional registered callbacks 
       for (j = 0; j < device->callback_count; j++)
         (*device->callback[j]) (device->callback_data[j]);
+
+      return device->id;
+    }
+  }
+  return NULL;
+}
+
+// Dispatch a packet
+void *playerc_client_dispatch_geom(playerc_client_t *client, player_msghdr_t *header,
+                              void *data, int len)
+{
+  int i;
+  playerc_device_t *device;
+
+  // We get zero-length packets sometimes
+  if (len == 0)
+    return NULL;
+  
+  // Look for a device proxy to handle this data 
+  for (i = 0; i < client->device_count; i++)
+  {
+    device = client->device[i];
+        
+    if (device->code == header->device && device->index == header->device_index)
+    {
+      // Call the registerd handler for this device 
+      if (device->putgeom)
+	      (*device->putgeom) (device, (char*) header, data, len);
+
+      // mark as fresh
+      device->freshgeom = 1;
+
+      return device->id;
+    }
+  }
+  return NULL;
+}
+
+// Dispatch a packet
+void *playerc_client_dispatch_config(playerc_client_t *client, player_msghdr_t *header,
+                              void *data, int len)
+{
+  int i;
+  playerc_device_t *device;
+
+  // We get zero-length packets sometimes
+  if (len == 0)
+    return NULL;
+  
+  // Look for a device proxy to handle this data 
+  for (i = 0; i < client->device_count; i++)
+  {
+    device = client->device[i];
+        
+    if (device->code == header->device && device->index == header->device_index)
+    {
+      // Call the registerd handler for this device 
+      if (device->putconfig)
+	      (*device->putconfig) (device, (char*) header, data, len);
+
+      // mark as fresh
+      device->freshconfig = 1;
 
       return device->id;
     }

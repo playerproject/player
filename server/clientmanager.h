@@ -107,6 +107,12 @@ class ClientManager
     // Reset 'last_write' field to 0.0 in each client.  Used when playing back
     // data from a logfile and a client requests the logfile be rewound.
     void ResetClientTimestamps(void);
+    
+    // Writes a message to the appropriate client queue's
+    // if client == NULL then message is sent to all client subscribed to the client
+    void PutMsg(uint16_t type, uint16_t device, uint16_t device_index, 
+                uint32_t timestamp_sec, uint32_t timestamp_usec,
+		uint32_t size, unsigned char * data, ClientData * client=NULL);
 };
 
 class ClientManagerTCP : public ClientManager
@@ -132,5 +138,7 @@ class ClientManagerUDP : public ClientManager
     virtual int Write();
 
 };
+
+extern ClientManager * clientmanager;
 
 #endif

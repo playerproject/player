@@ -62,7 +62,7 @@ playerc_map_t *playerc_map_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_map_t));
   memset(device, 0, sizeof(playerc_map_t));
   playerc_device_init(&device->info, client, PLAYER_MAP_CODE, index,
-                      (playerc_putdata_fn_t) NULL);
+                      (playerc_putdata_fn_t) NULL,NULL,NULL);
     
   return device;
 }

@@ -117,6 +117,28 @@ void SonarProxy::FillData(player_msghdr_t hdr, const char* buffer)
   }
 }
 
+void 
+SonarProxy::FillGeom(player_msghdr_t hdr, const char* buffer)
+{
+  if(hdr.size != sizeof(player_sonar_geom_t))
+  {
+    if(player_debug_level(-1) >= 1)
+      fprintf(stderr,"WARNING: expected %d bytes of sonar geom, but "
+              "received %d. Unexpected results may ensue.\n",
+              sizeof(player_sonar_geom_t),hdr.size);
+  }
+  player_sonar_geom_t * sonar_pose = (player_sonar_geom_t*)buffer;
+
+  pose_count = ntohs(sonar_pose->pose_count);
+  for(int i=0;i<pose_count;i++)
+  {
+    poses[i][0] = ((short)ntohs(sonar_pose->poses[i][0])) / 1e3;
+    poses[i][1] = ((short)ntohs(sonar_pose->poses[i][1])) / 1e3;
+    poses[i][2] = DTOR((short)ntohs(sonar_pose->poses[i][2]));
+  }
+}
+
+
 // interface that all proxies SHOULD provide
 void SonarProxy::Print()
 {

@@ -50,13 +50,11 @@
 
 extern PlayerTime* GlobalTime;
 extern DeviceTable* deviceTable;
-extern ClientManager* clientmanager;
+//extern ClientManager* clientmanager;
 
 // Default constructor for single-interface drivers.  Specify the
 // interface code and buffer sizes.
-Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
-               size_t datasize, size_t commandsize, 
-               size_t reqqueuelen, size_t repqueuelen)
+Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access)
 {
   error = 0;
   
@@ -68,8 +66,7 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
   }
 
   // Create an interface 
-  if (this->AddInterface(this->device_id, access,
-                         datasize, commandsize, reqqueuelen, repqueuelen) != 0)
+  if (this->AddInterface(this->device_id, access) != 0)
   {
     this->SetError(-1);    
     return;
@@ -109,9 +106,7 @@ Driver::~Driver()
 
 // Add an interface
 int 
-Driver::AddInterface(player_device_id_t id, unsigned char access,
-                     size_t datasize, size_t commandsize,
-                     size_t reqqueuelen, size_t repqueuelen)
+Driver::AddInterface(player_device_id_t id, unsigned char access)
 {
   Device *device;
 
@@ -125,33 +120,7 @@ Driver::AddInterface(player_device_id_t id, unsigned char access,
   // Get the device and initialize it
   device = deviceTable->GetDevice(id);
   assert(device != NULL);
-  device->SetupBuffers(datasize, commandsize, reqqueuelen, repqueuelen);
-
-  return 0;
-}
-
-// Add an interface, with pre-allocated memory
-int 
-Driver::AddInterface(player_device_id_t id, unsigned char access,
-                     void* data, size_t datasize, 
-                     void* command, size_t commandsize, 
-                     void* reqqueue, int reqqueuelen, 
-                     void* repqueue, int repqueuelen)
-{
-  Device *device;
-
-  // Add ourself to the device table
-  if (deviceTable->AddDevice(id, access, this) != 0)
-  {
-    PLAYER_ERROR("failed to add interface");
-    return -1;
-  }
-
-  // Get the device and initialize it
-  device = deviceTable->GetDevice(id);
-  assert(device != NULL);
-  device->SetupBuffers(data, datasize, command, commandsize, 
-                       reqqueue, reqqueuelen, repqueue, repqueuelen);
+//  device->SetupBuffers(datasize, commandsize, reqqueuelen, repqueuelen, msgqueuelen);
 
   return 0;
 }
@@ -160,10 +129,19 @@ Driver::AddInterface(player_device_id_t id, unsigned char access,
 // New-style PutData; [id] specifies the interface to be written
 void 
 Driver::PutData(player_device_id_t id,
-                void* src, size_t len,
+                unsigned char* src, size_t len,
                 struct timeval* timestamp)
 {
-  Device *device;
+	assert(src);
+	Lock();
+	if (timestamp)
+	clientmanager->PutMsg(PLAYER_MSGTYPE_DATA, id.code, id.index,timestamp->tv_sec,
+		timestamp->tv_usec, len, src, NULL);
+	else
+	clientmanager->PutMsg(PLAYER_MSGTYPE_DATA, id.code, id.index,0,
+		0, len, src, NULL);
+	Unlock();
+/*  Device *device;
   struct timeval ts;
   
   // If the timestamp is not set, fill it out with the current time
@@ -192,7 +170,7 @@ Driver::PutData(player_device_id_t id,
   Unlock();
   
   // signal that new data is available
-  DataAvailable();
+  DataAvailable();*/
 }
 
 
@@ -227,7 +205,7 @@ Driver::GetData(player_device_id_t id,
 
 
 // New-style: Write a new command to the device
-void 
+/*void 
 Driver::PutCommand(player_device_id_t id,
                    void* src, size_t len,
                    struct timeval* timestamp)
@@ -258,11 +236,11 @@ Driver::PutCommand(player_device_id_t id,
   Unlock();
 
   return;
-}
+}*/
 
 
 // New-style: Read the current command for the device
-size_t 
+/*size_t 
 Driver::GetCommand(player_device_id_t id,
                    void* dest, size_t len,
                    struct timeval* timestamp)
@@ -291,10 +269,10 @@ Driver::GetCommand(player_device_id_t id,
   
   return(size);
 }
-
+*/
 
 // New-style: Clear the current command buffer
-void
+/*void
 Driver::ClearCommand(player_device_id_t id)
 {
   Device *device;
@@ -313,16 +291,16 @@ Driver::ClearCommand(player_device_id_t id)
 
   return;
 }
-
+*/
 
 // New-style: Write configuration request to device
-int 
+/*int 
 Driver::PutConfig(player_device_id_t id, void* client, 
                   void* src, size_t len,
                   struct timeval* timestamp)
 {
   Device *device;
-  int retval;
+  int retval = 0;
   struct timeval ts;
 
   if(timestamp)
@@ -339,18 +317,19 @@ Driver::PutConfig(player_device_id_t id, void* client,
   }
 
   // Push onto request queue
-  Lock();
-  retval = device->reqqueue->Push(&id, client, PLAYER_MSGTYPE_REQ, 
-                                  &ts, src, len);
-  Unlock();
+  //Lock();
+  //retval = device->reqqueue->Push(&id, client, PLAYER_MSGTYPE_REQ, 
+  //                                &ts, src, len);
+  //Unlock();
+  // **** need to sen dmessage here ****
 
   if(retval < 0)
     return(-1);
   else
     return(0);
-}
+}*/
 
-
+/*
 // New-style: Get next configuration request for device
 int 
 Driver::GetConfig(player_device_id_t id, void **client, 
@@ -373,18 +352,13 @@ Driver::GetConfig(player_device_id_t id, void **client,
 
   // Pop device from request queue
   Lock();
-  if((size = device->reqqueue->Pop(&id, client, timestamp, dest, len)) < 0)
-  {
-    Unlock();
-    return(0);
-  }
   Unlock();
   
   return(size);
 }
-
+*/
 // New-style: Write configuration reply to device
-int 
+/*int 
 Driver::PutReply(player_device_id_t id, void* client, 
                  unsigned short type, 
                  void* src, size_t len,
@@ -392,7 +366,7 @@ Driver::PutReply(player_device_id_t id, void* client,
 {
   Device *device;
   struct timeval ts;
-  int retval;
+  int retval = 0;
 
   // Fill in the time structure if not supplies
   if(timestamp)
@@ -412,17 +386,18 @@ Driver::PutReply(player_device_id_t id, void* client,
   }
 
   Lock();
-  retval = device->repqueue->Push(&id, client, type, &ts, src, len);
+  //retval = device->repqueue->Push(&id, client, type, &ts, src, len);
+  // **** need to get from message queue
   Unlock();
 
   if(retval < 0)
     return retval;
   else
     return 0;
-}
+}*/
 
 // New-style: Read configuration reply from device
-int 
+/*int 
 Driver::GetReply(player_device_id_t id, void* client, 
                  unsigned short* type, 
                  void* dest, size_t len,
@@ -440,13 +415,80 @@ Driver::GetReply(player_device_id_t id, void* client,
   }
 
   Lock();
-  size = device->repqueue->Match(&id, client, type, timestamp, dest, len);
+  //size = device->repqueue->Match(&id, client, type, timestamp, dest, len);
+  size=0;
+  // **** need to get this from msg queue?
   Unlock();
 
   return size;
 }
+*/
+// New-style: Write general msg to device
+int 
+Driver::PutMsg(player_device_id_t id, ClientData* client, 
+                 unsigned short type, 
+                 void* src, size_t len,
+                 struct timeval* timestamp)
+{
+  Device *device;
+  struct timeval ts;
+  int retval = 0;
 
+  // Fill in the time structure if not supplies
+  if(timestamp)
+    ts = *timestamp;
+  else
+    GlobalTime->GetTime(&ts);
 
+  // Find the matching device in the device table
+  device = deviceTable->GetDevice(id);
+  if (device == NULL)
+  {
+    // Ignore, on the assumption that this id refers to an interface
+    // supported by the driver but not requested by the user.  This allows
+    // the driver to always PutReply() to all its supported interfaces,
+    // without checking whether the user wants to use them.
+    return(0);
+  }
+
+  Lock();
+	clientmanager->PutMsg(type, id.code, id.index,ts.tv_sec,
+		ts.tv_usec, len, (unsigned char *)src, client);
+  Unlock();
+
+  if(retval < 0)
+    return retval;
+  else
+    return 0;
+}
+
+// New-style: Read configuration reply from device
+/*int 
+Driver::GetMsg(player_device_id_t id, void* client, 
+                 unsigned short* type, 
+                 void* dest, size_t len,
+                 struct timeval* timestamp)
+{
+  int size;
+  Device *device;
+
+  // Find the matching device in the device table
+  device = deviceTable->GetDevice(id);
+  if (device == NULL)
+  {
+    PLAYER_ERROR("interface not found; did you AddInterface()?");
+    assert(false);
+  }
+
+  Lock();
+  //size = device->msgqueue->Match(&id, client, type, timestamp, dest, len);
+  size = 0;
+  // **** need to use new message queue ****
+  Unlock();
+
+  return size;
+}
+*/
 
 void Driver::Lock()
 {
@@ -565,7 +607,7 @@ Driver::MainQuit()
 
 // A helper method for internal use; e.g., when one device wants to make a
 // request of another device
-int
+/*int
 Driver::Request(player_device_id_t id, void* requester, 
                 void* request, size_t reqlen,
                 struct timeval* req_timestamp,
@@ -591,7 +633,7 @@ Driver::Request(player_device_id_t id, void* requester,
   }
 
   return(size);
-}
+}*/
     
 // Signal that new data is available (calls pthread_cond_broadcast()
 // on this device's condition variable, which will release other

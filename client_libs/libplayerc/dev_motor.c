@@ -65,7 +65,7 @@ playerc_motor_t *playerc_motor_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_motor_t));
   memset(device, 0, sizeof(playerc_motor_t));
   playerc_device_init(&device->info, client, PLAYER_MOTOR_CODE, index,
-                      (playerc_putdata_fn_t) playerc_motor_putdata);
+                      (playerc_putdata_fn_t) playerc_motor_putdata,NULL,NULL);
 
   
   return device;

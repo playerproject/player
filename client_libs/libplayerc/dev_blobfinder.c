@@ -65,7 +65,7 @@ playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int in
   device = malloc(sizeof(playerc_blobfinder_t));
   memset(device, 0, sizeof(playerc_blobfinder_t));
   playerc_device_init(&device->info, client, PLAYER_BLOBFINDER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_blobfinder_putdata);
+                      (playerc_putdata_fn_t) playerc_blobfinder_putdata,NULL,NULL);
     
   return device;
 }

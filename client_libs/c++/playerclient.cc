@@ -266,11 +266,13 @@ int PlayerClient::Read(bool await_sync, ClientProxy** dev)
   {
     if(player_read(&conn, &hdr, buffer, PLAYER_MAX_MESSAGE_SIZE))
     {
+      printf("read error\n");
       if(player_debug_level(-1) >= 2)
         fputs("WARNING: player_read() errored\n", stderr);
       delete[] buffer;
       return(-1);
     }
+    printf("Player Header type: %d\n",hdr.type);
     gettimeofday(&curr,NULL);
     // is this the SYNCH packet?
     if(hdr.type == PLAYER_MSGTYPE_SYNCH)
@@ -337,6 +339,50 @@ int PlayerClient::Read(bool await_sync, ClientProxy** dev)
       // tell the caller which device got new data
       if(dev)
         *dev = thisproxy;
+    }
+    else if(hdr.type == PLAYER_MSGTYPE_GEOM)
+    {
+      player_device_id_t id;
+      id.code=hdr.device;
+      id.index=hdr.device_index;
+      if(!(thisproxy = GetProxy(id)))
+      {
+        if(player_debug_level(-1) >= 3)
+          fprintf(stderr,"WARNING: read unexpected geometry for device %d:%d\n",
+                  hdr.device,hdr.device_index);
+        continue;
+      }
+
+      thisproxy->Lock();
+
+      // let the device-specific proxy parse it
+      thisproxy->FillGeom(hdr,buffer);
+	  thisproxy->FreshGeom = true;
+
+      thisproxy->Unlock();
+
+    }
+    else if(hdr.type == PLAYER_MSGTYPE_CONFIG)
+    {
+      player_device_id_t id;
+      id.code=hdr.device;
+      id.index=hdr.device_index;
+      if(!(thisproxy = GetProxy(id)))
+      {
+        if(player_debug_level(-1) >= 3)
+          fprintf(stderr,"WARNING: read unexpected geometry for device %d:%d\n",
+                  hdr.device,hdr.device_index);
+        continue;
+      }
+
+      thisproxy->Lock();
+
+      // let the device-specific proxy parse it
+      thisproxy->FillConfig(hdr,buffer);
+	  thisproxy->FreshConfig = true;
+
+      thisproxy->Unlock();
+
     }
     else
     {

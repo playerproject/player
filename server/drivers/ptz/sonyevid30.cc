@@ -218,8 +218,7 @@ SonyEVID30_Register(DriverTable* table)
 }
 
 SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
-         sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
 {
   ptz_fd = -1;
   command_pending1 = false;

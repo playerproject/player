@@ -1,6 +1,6 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -Wall @GAZEBO_EXTRA_CPPFLAGS@ -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace
+AM_CPPFLAGS = -Wall @GAZEBO_EXTRA_CPPFLAGS@ -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace -g
 
 if INCLUDE_RTKGUI
 RTKGUI_LIBS=-L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@
@@ -21,29 +21,26 @@ player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 #
 player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ $(top_builddir)/client_libs/libplayerpacket/libplayerpacket.a @PLAYER_DRIVER_EXTRA_LIBS@ $(RTKGUI_LIBS) $(top_builddir)/replace/libreplace.a 
 
-player_LDFLAGS = -Wl --export-dynamic
+player_LDFLAGS = -Wl -export-dynamic
 
 
 bin_PROGRAMS = player
 
 
-lib_LIBRARIES = libplayerqueue.a
-
-libplayerqueue_a_SOURCES = playerqueue.cc
-
 player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h \
                  device.cc device.h drivertable.cc drivertable.h \
-								 devicetable.cc devicetable.h deviceregistry.cc \
-								 deviceregistry.h clientmanager.cc wallclocktime.cc main.cc \
-                 playerqueue.cc configfile.cc playercommon.h \
-                 player.h playerconfig.h playerqueue.h  \
+		 devicetable.cc devicetable.h deviceregistry.cc \
+		 deviceregistry.h clientmanager.cc wallclocktime.cc main.cc \
+                 configfile.cc playercommon.h \
+                 player.h playerconfig.h \
                  clientdata.h clientmanager.h socket_util.h \
                  wallclocktime.h playertime.h configfile.h \
-								 timer.cc timer.h error.cc error.h
+		 timer.cc timer.h error.cc error.h \
+                 message.h message.cc
 
 
 # Install these to $prefix/include so clients and plugins can use them
-include_HEADERS = player.h playerconfig.h playercommon.h playerqueue.h 
+include_HEADERS = player.h playerconfig.h playercommon.h
 
 # Install these to $prefix/include/player/ so plugin drivers can use them
 pkginclude_HEADERS = driver.h drivertable.h devicetable.h device.h configfile.h playertime.h error.h

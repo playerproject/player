@@ -66,7 +66,7 @@ playerc_localize_t *playerc_localize_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_localize_t));
   memset(device, 0, sizeof(playerc_localize_t));
   playerc_device_init(&device->info, client, PLAYER_LOCALIZE_CODE, index,
-                      (playerc_putdata_fn_t) playerc_localize_putdata);
+                      (playerc_putdata_fn_t) playerc_localize_putdata,NULL,NULL);
     
   return device;
 }

@@ -55,6 +55,8 @@
 // Local declarations
 void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *header,
                               player_position_data_t *data, size_t len);
+void playerc_position_putgeom(playerc_position_t *device, player_msghdr_t *header,
+                              player_position_geom_t *data, size_t len);
 
 
 // Create a new position proxy
@@ -65,7 +67,8 @@ playerc_position_t *playerc_position_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_position_t));
   memset(device, 0, sizeof(playerc_position_t));
   playerc_device_init(&device->info, client, PLAYER_POSITION_CODE, index,
-                      (playerc_putdata_fn_t) playerc_position_putdata);
+                      (playerc_putdata_fn_t) playerc_position_putdata,
+                      (playerc_putdata_fn_t) playerc_position_putgeom,NULL);
 
   
   return device;
@@ -112,6 +115,25 @@ void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *heade
   device->stall = data->stall;
 }
 
+// Process incoming geom
+void playerc_position_putgeom(playerc_position_t *device, player_msghdr_t *header,
+                              player_position_geom_t *data, size_t len)
+{
+
+  if (len != sizeof(player_position_geom_t))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_position_geom_t));
+    return -1;
+  }
+
+  device->pose[0] = ((int16_t) ntohs(data->pose[0])) / 1000.0;
+  device->pose[1] = ((int16_t) ntohs(data->pose[1])) / 1000.0;
+  device->pose[2] = ((int16_t) ntohs(data->pose[2])) * M_PI / 180;
+  device->size[0] = ((int16_t) ntohs(data->size[0])) / 1000.0;
+  device->size[1] = ((int16_t) ntohs(data->size[1])) / 1000.0;
+
+
+}
 
 // Enable/disable the motors
 int playerc_position_enable(playerc_position_t *device, int enable)
@@ -142,17 +164,9 @@ int playerc_position_get_geom(playerc_position_t *device)
                                &config, sizeof(config.subtype), &config, sizeof(config));
   if (len < 0)
     return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
 
-  device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
-  device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
-  device->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
-  device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
-  device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
+   while(device->info.freshgeom == 0)
+   		playerc_client_read(device->info.client);
 
   return 0;
 }

@@ -33,6 +33,9 @@ typedef struct {
   unsigned char * lcd_data;
   int num_ir;
   unsigned char * ir_ranges;
+  int home_bearing;
+  int home_bearing_found;
+  
 } rflex_status_t;
 
 
@@ -387,6 +390,39 @@ static void parseDioReport( unsigned char *buffer )
    			timeStamp = convertBytes2UInt32(&(buffer[6]));
    			address = buffer[10];
    			data = convertBytes2UInt16(&(buffer[11]));
+
+			// Check for the heading home event;
+			if(rflex_configs.heading_home_address == address)
+			{
+				if(status.home_bearing_found)
+					break;
+				static bool found_first = false;
+				static int first_home_bearing = 0;
+				if (found_first)
+				{
+					if ((first_home_bearing - status.bearing) > 0.785* rflex_configs.odo_angle_conversion)
+					{
+						first_home_bearing=first_home_bearing-rflex_configs.odo_angle_conversion*2*M_PI;
+					}
+					else if ((first_home_bearing - status.bearing) < 0.785* rflex_configs.odo_angle_conversion)
+					{
+						first_home_bearing=first_home_bearing+rflex_configs.odo_angle_conversion*2*M_PI;
+					}
+					if (abs(first_home_bearing - status.bearing) > 0.01 * rflex_configs.odo_angle_conversion)
+					{
+						rflex_configs.home_on_start = false;
+						status.home_bearing=status.bearing > first_home_bearing? status.bearing:first_home_bearing;
+						status.home_bearing_found = true;
+						printf("Home bearing found %d\n",status.home_bearing);
+					}
+				}
+				else
+				{
+						first_home_bearing=status.bearing;
+						found_first = true;		
+				}
+				break;
+			}
 
 
 			if(BUMPER_ADDR == rflex_configs.bumper_style)
@@ -757,7 +793,10 @@ void rflex_update_status(int fd, int *distance,  int *bearing,
   clear_incoming_data(fd);
 
   *distance = status.distance;
-  *bearing = status.bearing;
+  if(status.home_bearing_found)
+	  *bearing = status.bearing-status.home_bearing;
+  else
+	  *bearing = status.bearing;
   *t_vel = status.t_vel;
   *r_vel = status.r_vel;
 }
@@ -790,7 +829,12 @@ int rflex_update_sonar(int fd,int num_sonars, int * ranges){
   y=0;
   for(x=0;x<rflex_configs.num_sonar_banks;x++)
     for(y=0;y<rflex_configs.num_sonars_in_bank[x];y++)
-      ranges[i++]=status.ranges[x*rflex_configs.num_sonars_possible_per_bank+y];
+	{
+      ranges[i]=status.ranges[x*rflex_configs.num_sonars_possible_per_bank+y];
+	  if (ranges[i] > rflex_configs.sonar_max_range)
+	  	ranges[i] = rflex_configs.sonar_max_range;
+	  i++;
+	 }
   if (i<num_sonars){
     fprintf(stderr,"Requested %d sonar only %d supported\n",num_sonars,y);
     num_sonars = y;
@@ -917,6 +961,7 @@ void rflex_initialize(int fd, int trans_acceleration,
 		for (int i = 0; i < status.num_bumpers; ++i)
 			status.bumpers[i] = 0;
 	}
+	status.home_bearing_found=false;
 	
 }
 

@@ -43,6 +43,7 @@
 #include <clientmanager.h>
 
 #include <playertime.h>
+#include "message.h"
 extern PlayerTime* GlobalTime;
 
 extern DeviceTable* deviceTable;
@@ -139,25 +140,25 @@ bool ClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
 int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,  
                                 size_t payload_size) 
 {
-  unsigned short requesttype = 0;
-  bool devlistrequest=false;
-  bool driverinforequest=false;
-  bool nameservicerequest=false;
-  bool devicerequest=false;
-  Driver* driver;
-  player_device_req_t req;
-  player_device_resp_t resp;
-  player_device_datamode_req_t datamode;
-  player_device_datafreq_req_t datafreq;
-  player_msghdr_t reply_hdr;
-  size_t replysize;
-  struct timeval curr;
+	unsigned short requesttype = 0;
+	bool devlistrequest=false;
+	bool driverinforequest=false;
+	bool nameservicerequest=false;
+	bool devicerequest=false;
+	Driver* driver;
+	player_device_req_t req;
+	player_device_resp_t resp;
+	player_device_datamode_req_t datamode;
+	player_device_datafreq_req_t datafreq;
+	player_msghdr_t reply_hdr;
+	size_t replysize;
+	struct timeval curr;
 
-  if(GlobalTime->GetTime(&curr) == -1)
-    PLAYER_ERROR("GetTime() failed!!!!");
+	if(GlobalTime->GetTime(&curr) == -1)
+		PLAYER_ERROR("GetTime() failed!!!!");
 
-  // clean the buffer every time for all-day freshness
-  memset((char*)replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
+	// clean the buffer every time for all-day freshness
+  	memset((char*)replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
 
   // debug output; leave it here
 #if 0
@@ -180,309 +181,284 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   }
 #endif
 
-  if(auth_pending)
-  {
-    if(CheckAuth(hdr,payload,payload_size))
-    {
-      auth_pending = false;
-      requesttype = PLAYER_MSGTYPE_RESP_ACK;
-    }
-    else
-    {
-      PLAYER_WARN("failed authentication; closing connection");
-      return(-1);
-    }
-  }
-  else
-  {
-    player_device_id_t id;
-    id.port = port;
-    id.code = hdr.device;
-    id.index = hdr.device_index;
+	if(auth_pending)
+  	{
+    	if(CheckAuth(hdr,payload,payload_size))
+    	{
+      		auth_pending = false;
+      		requesttype = PLAYER_MSGTYPE_RESP_ACK;
+    	}
+    	else
+    	{
+      		PLAYER_WARN("failed authentication; closing connection");
+      		return(-1);
+    	}
+  	}
+  	else
+  	{
+    	player_device_id_t id;
+    	id.port = port;
+    	id.code = hdr.device;
+    	id.index = hdr.device_index;
 
-    switch(hdr.type)
-    {
-      case PLAYER_MSGTYPE_REQ:
-        /* request message */
-        //request = true;
         // if it's for us, handle it here
-        if(hdr.device == PLAYER_PLAYER_CODE)
+		if(hdr.device == PLAYER_PLAYER_CODE && hdr.type == PLAYER_MSGTYPE_REQ)
         {
-          // ignore the device_index.  can we have more than one player?
-          // is the payload big enough?
-          if(payload_size < sizeof(req.subtype))
-          {
-            PLAYER_WARN1("got small ioctl: %d", payload_size);
+          	// ignore the device_index.  can we have more than one player?
+          	// is the payload big enough?
+          	if(payload_size < sizeof(req.subtype))
+          	{
+            	PLAYER_WARN1("got small ioctl: %d", payload_size);
 
-            requesttype = PLAYER_MSGTYPE_RESP_NACK;
-            break;
-          }
+            	requesttype = PLAYER_MSGTYPE_RESP_NACK;
+          	}
+			else
+			{
+          		// what sort of ioctl is it?
+          		unsigned short subtype = 
+                	  ntohs(((player_device_req_t*)payload)->subtype);
+          		switch(subtype)
+          		{
+            		// Process device list requests.
+            		case PLAYER_PLAYER_DEVLIST_REQ:
+              			devlistrequest = true;
+              			HandleListRequest((player_device_devlist_t*) payload,
+                                	(player_device_devlist_t*) (replybuffer + sizeof(player_msghdr_t)));
+              			requesttype = PLAYER_MSGTYPE_RESP_ACK;
+              			break;
 
-          // what sort of ioctl is it?
-          unsigned short subtype = 
-                  ntohs(((player_device_req_t*)payload)->subtype);
-          switch(subtype)
-          {
-            // Process device list requests.
-            case PLAYER_PLAYER_DEVLIST_REQ:
-              devlistrequest = true;
-              HandleListRequest((player_device_devlist_t*) payload,
-                                (player_device_devlist_t*) (replybuffer + sizeof(player_msghdr_t)));
-              requesttype = PLAYER_MSGTYPE_RESP_ACK;
-              break;
+              		// Process driver info requests.
+            		case PLAYER_PLAYER_DRIVERINFO_REQ:
+              			driverinforequest = true;
+              			HandleDriverInfoRequest((player_device_driverinfo_t*) payload,
+                                    	  (player_device_driverinfo_t*) (replybuffer + sizeof(player_msghdr_t)));
+              			requesttype = PLAYER_MSGTYPE_RESP_ACK;
+              			break;
 
-              // Process driver info requests.
-            case PLAYER_PLAYER_DRIVERINFO_REQ:
-              driverinforequest = true;
-              HandleDriverInfoRequest((player_device_driverinfo_t*) payload,
-                                      (player_device_driverinfo_t*) (replybuffer + sizeof(player_msghdr_t)));
-              requesttype = PLAYER_MSGTYPE_RESP_ACK;
-              break;
+            		case PLAYER_PLAYER_DEV_REQ:
+              			devicerequest = true;
+              			if(payload_size < sizeof(player_device_req_t))
+              			{
+                			PLAYER_WARN1("got small player_device_req_t: %d", payload_size);
+                			requesttype = PLAYER_MSGTYPE_RESP_NACK;
+                			break;
+              			}
+              			req = *((player_device_req_t*)payload);
+              			req.code = ntohs(req.code);
+              			req.index = ntohs(req.index);
+              			UpdateRequested(req);
+              			requesttype = PLAYER_MSGTYPE_RESP_ACK;
+              			break;
 
-            case PLAYER_PLAYER_DEV_REQ:
-              devicerequest = true;
-              if(payload_size < sizeof(player_device_req_t))
-              {
-                PLAYER_WARN1("got small player_device_req_t: %d", payload_size);
-                requesttype = PLAYER_MSGTYPE_RESP_NACK;
-                break;
-              }
-              req = *((player_device_req_t*)payload);
-              req.code = ntohs(req.code);
-              req.index = ntohs(req.index);
-              UpdateRequested(req);
-              requesttype = PLAYER_MSGTYPE_RESP_ACK;
-              break;
-            case PLAYER_PLAYER_DATAMODE_REQ:
-              if(payload_size != sizeof(player_device_datamode_req_t))
-              {
-                PLAYER_WARN1("got wrong size player_device_datamode_req_t: %d",
-                             payload_size);
-                requesttype = PLAYER_MSGTYPE_RESP_NACK;
-                break;
-              }
-              datamode = *((player_device_datamode_req_t*)payload);
-              switch(datamode.mode)
-              {
-                case PLAYER_DATAMODE_PULL_NEW:
-                  /* change to update request/reply */
-                  datarequested=false;
-                  mode = PLAYER_DATAMODE_PULL_NEW;
-                  requesttype = PLAYER_MSGTYPE_RESP_ACK;
-                  break;
-                case PLAYER_DATAMODE_PULL_ALL:
-                  /* change to request/reply */
-                  //puts("changing to REQUESTREPLY");
-                  datarequested=false;
-                  mode = PLAYER_DATAMODE_PULL_ALL;
-                  requesttype = PLAYER_MSGTYPE_RESP_ACK;
-                  break;
-                case PLAYER_DATAMODE_PUSH_ALL:
-                  /* change to continuous mode */
-                  //puts("changing to CONTINUOUS");
-                  mode = PLAYER_DATAMODE_PUSH_ALL;
-                  requesttype = PLAYER_MSGTYPE_RESP_ACK;
-                  break;
-                case PLAYER_DATAMODE_PUSH_NEW:
-                  /* change to update mode (doesn't re-send old data)*/
-                  //puts("changing to UPDATE");
-                  mode = PLAYER_DATAMODE_PUSH_NEW;
-                  requesttype = PLAYER_MSGTYPE_RESP_ACK;
-                  break;
-                case PLAYER_DATAMODE_PUSH_ASYNC:
-                  mode = PLAYER_DATAMODE_PUSH_ASYNC;
-                  requesttype = PLAYER_MSGTYPE_RESP_ACK;
-                  break;
-                default:
-                  PLAYER_WARN1("unknown I/O mode requested (%d)."
-                         "Ignoring request", datamode.mode);
-                  requesttype = PLAYER_MSGTYPE_RESP_NACK;
-                  break;
-              }
-              break;
-            case PLAYER_PLAYER_DATA_REQ:
-              // this ioctl takes no args
-              if(payload_size != sizeof(player_device_data_req_t))
-              {
-                PLAYER_WARN1("got wrong size arg for "
-                              "player_data_req: %d",payload_size);
-                requesttype = PLAYER_MSGTYPE_RESP_NACK;
-                break;
-              }
-              if((mode != PLAYER_DATAMODE_PULL_ALL) &&
-                 (mode != PLAYER_DATAMODE_PULL_NEW))
-              {
-                PLAYER_WARN("got request for data when not in "
-                     "request/reply mode");
-                requesttype = PLAYER_MSGTYPE_RESP_NACK;
-              }
-              else
-              {
-                datarequested = true;
-                requesttype = PLAYER_MSGTYPE_RESP_ACK;
-              }
-              break;
-            case PLAYER_PLAYER_DATAFREQ_REQ:
-              if(payload_size != sizeof(player_device_datafreq_req_t))
-              {
-                PLAYER_WARN1("got wrong size arg for update frequency "
-                             "change: %d",payload_size);
-                requesttype = PLAYER_MSGTYPE_RESP_NACK;
-                break;
-              }
-              datafreq = *((player_device_datafreq_req_t*)payload);
-              frequency = ntohs(datafreq.frequency);
-              requesttype = PLAYER_MSGTYPE_RESP_ACK;
-              break;
-            case PLAYER_PLAYER_AUTH_REQ:
-              PLAYER_WARN("unnecessary authentication request");
-              requesttype = PLAYER_MSGTYPE_RESP_NACK;
-              break;
-            case PLAYER_PLAYER_NAMESERVICE_REQ:
-              nameservicerequest = true;
-              HandleNameserviceRequest((player_device_nameservice_req_t*)payload,
-                                       (player_device_nameservice_req_t*) (replybuffer + sizeof(player_msghdr_t)));
-              requesttype = PLAYER_MSGTYPE_RESP_ACK;
-              break;
+            		case PLAYER_PLAYER_DATAMODE_REQ:
+              			if(payload_size != sizeof(player_device_datamode_req_t))
+              			{
+                			PLAYER_WARN1("got wrong size player_device_datamode_req_t: %d",
+                            	 payload_size);
+                			requesttype = PLAYER_MSGTYPE_RESP_NACK;
+                			break;
+              			}
+              			datamode = *((player_device_datamode_req_t*)payload);
+              			switch(datamode.mode)
+              			{
+                			case PLAYER_DATAMODE_PULL_NEW:
+                  				/* change to update request/reply */
+                  				datarequested=false;
+                  				mode = PLAYER_DATAMODE_PULL_NEW;
+                  				requesttype = PLAYER_MSGTYPE_RESP_ACK;
+                  				break;
 
-            default:
-              PLAYER_WARN1("Unknown server ioctl %x", subtype);
-              requesttype = PLAYER_MSGTYPE_RESP_NACK;
-              break;
-          }
+		                	case PLAYER_DATAMODE_PULL_ALL:
+        		          		/* change to request/reply */
+                  				//puts("changing to REQUESTREPLY");
+                  				datarequested=false;
+                  				mode = PLAYER_DATAMODE_PULL_ALL;
+                  				requesttype = PLAYER_MSGTYPE_RESP_ACK;
+                  				break;
+
+                			case PLAYER_DATAMODE_PUSH_ALL:
+                  				/* change to continuous mode */
+                  				//puts("changing to CONTINUOUS");
+                  				mode = PLAYER_DATAMODE_PUSH_ALL;
+                  				requesttype = PLAYER_MSGTYPE_RESP_ACK;
+                  				break;
+
+							case PLAYER_DATAMODE_PUSH_NEW:
+								/* change to update mode (doesn't re-send old data)*/
+								//puts("changing to UPDATE");
+								mode = PLAYER_DATAMODE_PUSH_NEW;
+								requesttype = PLAYER_MSGTYPE_RESP_ACK;
+								break;
+
+		                	case PLAYER_DATAMODE_PUSH_ASYNC:
+								mode = PLAYER_DATAMODE_PUSH_ASYNC;
+								requesttype = PLAYER_MSGTYPE_RESP_ACK;
+								break;
+
+					    	default:
+                  				PLAYER_WARN1("unknown I/O mode requested (%d)."
+                         			"Ignoring request", datamode.mode);
+                  				requesttype = PLAYER_MSGTYPE_RESP_NACK;
+                  				break;
+              			}
+              			break;
+            		case PLAYER_PLAYER_DATA_REQ:
+              			// this ioctl takes no args
+              			if(payload_size != sizeof(player_device_data_req_t))
+              			{
+                			PLAYER_WARN1("got wrong size arg for "
+                            	  "player_data_req: %d",payload_size);
+                			requesttype = PLAYER_MSGTYPE_RESP_NACK;
+                			break;
+              			}
+              			if((mode != PLAYER_DATAMODE_PULL_ALL) &&
+                 			(mode != PLAYER_DATAMODE_PULL_NEW))
+              			{
+                			PLAYER_WARN("got request for data when not in "
+                     			"request/reply mode");
+                			requesttype = PLAYER_MSGTYPE_RESP_NACK;
+              			}
+              			else
+              			{
+                			datarequested = true;
+                			requesttype = PLAYER_MSGTYPE_RESP_ACK;
+              			}
+              			break;
+            		case PLAYER_PLAYER_DATAFREQ_REQ:
+              			if(payload_size != sizeof(player_device_datafreq_req_t))
+              			{
+                			PLAYER_WARN1("got wrong size arg for update frequency "
+                            	 "change: %d",payload_size);
+                			requesttype = PLAYER_MSGTYPE_RESP_NACK;
+                			break;
+              			}
+              			datafreq = *((player_device_datafreq_req_t*)payload);
+              			frequency = ntohs(datafreq.frequency);
+              			requesttype = PLAYER_MSGTYPE_RESP_ACK;
+              			break;
+            		case PLAYER_PLAYER_AUTH_REQ:
+						PLAYER_WARN("unnecessary authentication request");
+						requesttype = PLAYER_MSGTYPE_RESP_NACK;
+						break;
+	            	case PLAYER_PLAYER_NAMESERVICE_REQ:
+						nameservicerequest = true;
+						HandleNameserviceRequest((player_device_nameservice_req_t*)payload,
+                    						   (player_device_nameservice_req_t*) (replybuffer + sizeof(player_msghdr_t)));
+						requesttype = PLAYER_MSGTYPE_RESP_ACK;
+						break;
+
+            		default:
+              			PLAYER_WARN1("Unknown server ioctl %x", subtype);
+              			requesttype = PLAYER_MSGTYPE_RESP_NACK;
+              			break;
+          		}
+			}
         }
         else
         {
-          // it's for another device.  hand it off.
-          //
+			// it's for another device.  hand it off.
+			printf("Perm: %d %d %d %d\n",hdr.type,PLAYER_MSGTYPE_CMD,CheckOpenPermissions(id),CheckWritePermissions(id));
 
-          // make sure we've opened this one, in any mode
-          if(CheckOpenPermissions(id))
-          {
-            // pass the config request on the proper device
-            // make sure we've got a non-NULL pointer
-            if((driver = deviceTable->GetDriver(id)))
-            {
-              // try to push it on the request queue
-              if(driver->PutConfig(id,this,payload,payload_size,&curr))
-              {
-                // queue was full
-                requesttype = PLAYER_MSGTYPE_RESP_ERR;
-              }
-              else
-                requesttype = 0;
-            }
-            else
-            {
-              PLAYER_WARN2("got request for unkown device: %x:%x",
+          	// make sure we've opened this one, in any mode
+          	if((CheckOpenPermissions(id) && !(hdr.type == PLAYER_MSGTYPE_CMD)) || CheckWritePermissions(id))
+          	{
+            	// pass the config request on the proper device
+            	// make sure we've got a non-NULL pointer
+            	if((driver = deviceTable->GetDriver(id)))
+            	{
+	      			// create the 'message' class and pass onto driver
+	      			Message New(hdr,payload,hdr.size, this);
+              		driver->InQueue.AddMessage(New);
+                	requesttype = PLAYER_MSGTYPE_RESP_ACK;
+            	}
+            	else
+            	{
+              		PLAYER_WARN2("got request for unknown device: %x:%x",
                            id.code,id.index);
-              requesttype = PLAYER_MSGTYPE_RESP_ERR;
-            }
-          }
-          else
-          {
-            PLAYER_WARN2("No permissions to configure %x:%x",
-                         id.code,id.index);
-            requesttype = PLAYER_MSGTYPE_RESP_ERR;
-          }
-        }
-        break;
-      case PLAYER_MSGTYPE_CMD:
-
-        /* command message */
-        if(CheckWritePermissions(id))
-        {
-          // make sure we've got a non-NULL pointer
-          if((driver = deviceTable->GetDriver(id)))
-          {
-            driver->PutCommand(id,payload,payload_size,&curr);
-          }
-          else
-            PLAYER_WARN2("found NULL pointer for device %x:%x",
-                         id.code,id.index);
-        }
-        else 
-          PLAYER_WARN2("No permissions to command %x:%x",
-                       id.code,id.index);
-        break;
-      default:
-        PLAYER_WARN1("Unknown message type %x", hdr.type);
-        break;
-    }
-  }
-
-  /* if it's a request, then we must generate a reply */
-  if(requesttype)
-  {
-    reply_hdr.stx = htons(PLAYER_STXX);
-    reply_hdr.type = htons(requesttype);
-    reply_hdr.device = htons(hdr.device);
-    reply_hdr.device_index = htons(hdr.device_index);
-    reply_hdr.reserved = (uint32_t)0;
-
-    /* if it was a player device list request... */
-    if(devlistrequest)
-    {
-      replysize = sizeof(player_device_devlist_t);
-    }
-    /* if it was a player device list request... */
-    else if(driverinforequest)
-    {
-      replysize = sizeof(player_device_driverinfo_t);
-    }
-    /* if it was a player nameservice request... */
-    else if(nameservicerequest)
-    {
-      replysize = sizeof(player_device_nameservice_req_t);
-    }
-    /* if it was a player device request, then the reply should
-     * reflect what permissions were granted for the indicated devices */
-    else if(devicerequest)
-    {
-      resp.subtype = ((player_device_req_t*)payload)->subtype;
-      resp.code = ((player_device_req_t*)payload)->code;
-      resp.index = ((player_device_req_t*)payload)->index;
-
-      player_device_id_t id;
-      id.port = port; 
-      id.code = ntohs(resp.code);
-      id.index = ntohs(resp.index);
-      resp.access = FindPermission(id);
-
-      memset(resp.driver_name, 0, sizeof(resp.driver_name));
-      char* drivername;
-      if((drivername = deviceTable->GetDriverName(id)))
-        strncpy((char*)resp.driver_name, drivername, sizeof(resp.driver_name));
-
-      memcpy(replybuffer+sizeof(player_msghdr_t),&resp,
-             sizeof(player_device_resp_t));
-
-      replysize = sizeof(player_device_resp_t);
-    }
-    /* otherwise, leave it empty */
-    else
-    {
-      //memcpy(replybuffer+sizeof(player_msghdr_t),payload,payload_size);
-      replysize = 0;
+              		requesttype = PLAYER_MSGTYPE_RESP_ERR;
+            	}
+          	}
+          	else
+          	{
+            	PLAYER_WARN2("No permissions to configure %x:%x",
+                     id.code,id.index);
+            	requesttype = PLAYER_MSGTYPE_RESP_ERR;
+          	}
+		}
     }
 
-    reply_hdr.size = htonl(replysize);
+  	/* if it's a request, then we must generate a reply */
+  	if(requesttype)
+  	{
+		reply_hdr.stx = htons(PLAYER_STXX);
+		reply_hdr.type = htons(requesttype);
+		reply_hdr.device = htons(hdr.device);
+		reply_hdr.device_index = htons(hdr.device_index);
+		reply_hdr.reserved = (uint32_t)0;
 
-    if(GlobalTime->GetTime(&curr) == -1)
-      PLAYER_ERROR("GetTime() failed!!!!");
-    reply_hdr.time_sec = htonl(curr.tv_sec);
-    reply_hdr.time_usec = htonl(curr.tv_usec);
+		/* if it was a player device list request... */
+		if(devlistrequest)
+		{
+		  replysize = sizeof(player_device_devlist_t);
+		}
+		/* if it was a player device list request... */
+		else if(driverinforequest)
+		{
+		  replysize = sizeof(player_device_driverinfo_t);
+		}
+		/* if it was a player nameservice request... */
+		else if(nameservicerequest)
+		{
+		  replysize = sizeof(player_device_nameservice_req_t);
+		}
+		/* if it was a player device request, then the reply should
+		 * reflect what permissions were granted for the indicated devices */
+		else if(devicerequest)
+		{
+		  resp.subtype = ((player_device_req_t*)payload)->subtype;
+		  resp.code = ((player_device_req_t*)payload)->code;
+		  resp.index = ((player_device_req_t*)payload)->index;
 
-    reply_hdr.timestamp_sec = reply_hdr.time_sec;
-    reply_hdr.timestamp_usec = reply_hdr.time_usec;
-    memcpy(replybuffer,&reply_hdr,sizeof(player_msghdr_t));
+		  player_device_id_t id;
+		  id.port = port; 
+		  id.code = ntohs(resp.code);
+		  id.index = ntohs(resp.index);
+		  resp.access = FindPermission(id);
 
-    FillWriteBuffer(replybuffer,0,replysize+sizeof(player_msghdr_t));
-    if(Write(replysize+sizeof(player_msghdr_t)) < 0)
-      return(-1);
-  }
+		  memset(resp.driver_name, 0, sizeof(resp.driver_name));
+		  char* drivername;
+		  if((drivername = deviceTable->GetDriverName(id)))
+    		strncpy((char*)resp.driver_name, drivername, sizeof(resp.driver_name));
 
-  return(0);
+		  memcpy(replybuffer+sizeof(player_msghdr_t),&resp,
+        		 sizeof(player_device_resp_t));
+
+		  replysize = sizeof(player_device_resp_t);
+		}
+		/* otherwise, leave it empty */
+		else
+		{
+		  //memcpy(replybuffer+sizeof(player_msghdr_t),payload,payload_size);
+		  replysize = 0;
+		}
+
+		reply_hdr.size = htonl(replysize);
+
+		if(GlobalTime->GetTime(&curr) == -1)
+		  PLAYER_ERROR("GetTime() failed!!!!");
+		reply_hdr.time_sec = htonl(curr.tv_sec);
+		reply_hdr.time_usec = htonl(curr.tv_usec);
+
+		reply_hdr.timestamp_sec = reply_hdr.time_sec;
+		reply_hdr.timestamp_usec = reply_hdr.time_usec;
+		memcpy(replybuffer,&reply_hdr,sizeof(player_msghdr_t));
+
+		FillWriteBuffer(replybuffer,0,replysize+sizeof(player_msghdr_t));
+		if(Write(replysize+sizeof(player_msghdr_t)) < 0)
+		  return(-1);
+  	}
+
+  	return(0);
 }
 
 ClientData::~ClientData() 
@@ -516,14 +492,15 @@ void ClientData::RemoveRequests()
 
   while(thissub)
   {
+  	// Remove...this should be done in the driver
     // Stop position devices if we're the last one to use it (safety)
-    if(((thissub->access != PLAYER_CLOSE_MODE) &&
+/*    if(((thissub->access != PLAYER_CLOSE_MODE) &&
         (thissub->access != PLAYER_ERROR_MODE)) && 
        (thissub->id.code == PLAYER_POSITION_CODE) &&
        (((thissub->access == PLAYER_ALL_MODE) &&
          (thissub->driver->subscriptions == 2)) ||
         (thissub->driver->subscriptions == 1)))
-      MotorStop();
+      MotorStop();*/
     
     switch(thissub->access) 
     {
@@ -540,28 +517,6 @@ void ClientData::RemoveRequests()
     thissub = tmpsub;
   }
   requested = NULL;
-}
-
-void ClientData::MotorStop() 
-{
-  player_position_cmd_t command;
-  Driver* driver;
-  player_device_id_t id;
-  struct timeval curr;
-
-  GlobalTime->GetTime(&curr);
-
-  // TODO: fix this for single-port action
-  id.port = port;
-  id.code = PLAYER_POSITION_CODE;
-  id.index = 0;
-
-  command.xspeed = command.yspeed = command.yawspeed = 0;
-
-  if((driver = deviceTable->GetDriver(id)))
-  {
-    driver->PutCommand(id, (void*)&command, sizeof(command), &curr);
-  }
 }
 
 
@@ -1060,7 +1015,7 @@ ClientDataTCP::Read()
         hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
         hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
         hdrbuffer.size = ntohl(hdrbuffer.size);
-
+	
         // make sure it's not too big
         if(hdrbuffer.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
         {
@@ -1115,7 +1070,9 @@ ClientDataTCP::Read()
  
 
   if(msgready)
-    return(HandleRequests(hdrbuffer,readbuffer, hdrbuffer.size));
+	{
+	    return(HandleRequests(hdrbuffer,readbuffer, hdrbuffer.size));
+	}
   else
     return(0);
 }

@@ -34,6 +34,7 @@
 #include <sys/socket.h>  // for sendto(2)
 
 #include <player.h>
+#include "message.h"
 
 // Forward declarations
 class Driver;
@@ -83,7 +84,6 @@ class ClientData
     player_read_state_t readstate;
     unsigned int readcnt;
 
-    void MotorStop();
     void PrintRequested(char*);
 
     bool CheckAuth(player_msghdr_t hdr, unsigned char* payload,
@@ -116,6 +116,7 @@ class ClientData
     size_t leftover_size; // bytes of totalwritebuffer that remain to be sent
     CDeviceSubscription* requested;
     int numsubs;
+    MessageQueue OutQueue;
     unsigned char *replybuffer;
     unsigned char *totalwritebuffer; // data messages are then added here, for
                                      // one efficient write(2)

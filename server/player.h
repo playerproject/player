@@ -49,6 +49,8 @@
 #define PLAYER_MSGTYPE_SYNCH     ((uint16_t)5)
 #define PLAYER_MSGTYPE_RESP_NACK ((uint16_t)6)
 #define PLAYER_MSGTYPE_RESP_ERR  ((uint16_t)7)
+#define PLAYER_MSGTYPE_GEOM      ((uint16_t)8)
+#define PLAYER_MSGTYPE_CONFIG    ((uint16_t)9)
 
 /* strings to match the currently assigned devices (used for pretty-printing 
  * and command-line parsing) */

@@ -460,9 +460,21 @@ typedef struct _playerc_device_t
       proxy.  Useful with the multi-client, but the user must manually
       set it to 0 after using the data. */
   int fresh;
+  /** Freshness flag.  Set to 1 whenever data is dispatched to this
+      proxy.  Useful with the multi-client, but the user must manually
+      set it to 0 after using the data. */
+  int freshgeom;
+  /** Freshness flag.  Set to 1 whenever data is dispatched to this
+      proxy.  Useful with the multi-client, but the user must manually
+      set it to 0 after using the data. */
+  int freshconfig;
 
   /**  Standard callbacks for this device.  @internal */
   playerc_putdata_fn_t putdata;
+  /**  Standard callbacks for this device.  @internal */
+  playerc_putdata_fn_t putgeom;
+  /**  Standard callbacks for this device.  @internal */
+  playerc_putdata_fn_t putconfig;
 
   /** Extra user data for this device. @internal */
   void *user_data;
@@ -475,9 +487,11 @@ typedef struct _playerc_device_t
 } playerc_device_t;
 
 
-/** @brief Initialise the device. @internal */
+/** @brief Initialise the device. Additional callbacks for geom and config @internal */
 void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
-                         int code, int index, playerc_putdata_fn_t putdata);
+                         int code, int index, playerc_putdata_fn_t putdata,
+			             playerc_putdata_fn_t putgeom,
+			             playerc_putdata_fn_t putconfig);
 
 /** @brief Finalize the device. @internal */
 void playerc_device_term(playerc_device_t *device);
@@ -953,6 +967,9 @@ typedef struct
   double pose[3];
   double size[2];
   
+  /** Is intesity data returned. */
+  int intensity_on;
+
   /** Number of points in the scan. */
   int scan_count;
 
@@ -1002,6 +1019,14 @@ pointer for all putdata functions and fix.
 */
 void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
                            player_laser_data_t *data, size_t len);
+
+
+void playerc_laser_putgeom(playerc_laser_t *device, player_msghdr_t *header,
+                           player_laser_geom_t *data, size_t len);
+
+
+void playerc_laser_putconfig(playerc_laser_t *device, player_msghdr_t *header,
+                           player_laser_config_t *data, size_t len);
 
 /** @brief Configure the laser.
 

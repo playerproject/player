@@ -147,8 +147,7 @@ Dummy::Dummy(ConfigFile* cf, int section)
   }
   
   // Add our interface
-  if (this->AddInterface(this->local_id, PLAYER_ALL_MODE, PLAYER_MAX_MESSAGE_SIZE,
-                         this->cmd_len, 10, 10) != 0)
+  if (this->AddInterface(this->local_id, PLAYER_ALL_MODE) != 0)
   {
     this->SetError(-1);
     return;

@@ -61,7 +61,7 @@ playerc_log_t *playerc_log_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_log_t));
   memset(device, 0, sizeof(playerc_log_t));
   playerc_device_init(&device->info, client, PLAYER_LOG_CODE, index,
-                      (playerc_putdata_fn_t) NULL);
+                      (playerc_putdata_fn_t) NULL,NULL,NULL);
     
   return device;
 }

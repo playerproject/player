@@ -393,6 +393,45 @@ ClientManager::DataAvailable(void)
   pthread_mutex_unlock(&this->condMutex);
 }
 
+
+void
+ClientManager::PutMsg(uint16_t type, uint16_t device, uint16_t device_index, 
+                uint32_t timestamp_sec, uint32_t timestamp_usec,
+		uint32_t size, unsigned char * data, ClientData * client)
+{
+
+	player_msghdr hdr;
+	hdr.stx = htons(PLAYER_STXX);
+	hdr.type=htons(type);
+	hdr.device=htons(device);
+	hdr.device_index=htons(device_index);
+	hdr.timestamp_sec=htonl(timestamp_sec);
+	hdr.timestamp_usec=htonl(timestamp_usec);
+	hdr.size=htonl(size); // size of message data
+	
+	// if client != Null we just send to that client
+	if (client != NULL)
+	{
+		Message New(hdr,data,size);
+		client->OutQueue.AddMessage(New);
+	}
+	else if (clients)
+	{
+		Message NewMessage(hdr,data,size);
+		for (int i =0; i < num_clients; ++i)
+		{
+			for(CDeviceSubscription* thissub=clients[i]->requested;thissub;thissub=thissub->next)
+			{
+				if(thissub->id.code == device && thissub->id.index == device_index)
+				{
+					clients[i]->OutQueue.AddMessage(NewMessage);
+					break;
+				}
+			}
+		}
+	}
+}
+
 /*************************************************************************
  * ClientManagerTCP
  *************************************************************************/
@@ -515,143 +554,99 @@ ClientManagerTCP::Read()
 int
 ClientManagerTCP::Write()
 {
-  struct timeval curr;
+	struct timeval curr;
   
-  if(GlobalTime->GetTime(&curr) == -1)
-    fputs("ClientManager::Write(): GetTime() failed!!!!\n", stderr);
+	if(GlobalTime->GetTime(&curr) == -1)
+    		fputs("ClientManager::Write(): GetTime() failed!!!!\n", stderr);
+	
+	for(int i=0;i<num_clients;i++)
+	{
+    	// if this is a dummy, skip it.
+		if(clients[i]->socket < 0)
+			continue;
 
-  for(int i=0;i<num_clients;i++)
-  {
-    // if this is a dummy, skip it.
-    if(clients[i]->socket < 0)
-      continue;
+		// if we're waiting for an authorization on this client, then skip it
+		if(clients[i]->auth_pending)
+			continue;
 
-    // if we're waiting for an authorization on this client, then skip it
-    if(clients[i]->auth_pending)
-      continue;
+		// if this client has data waiting to be sent, try to send it
+    	if(clients[i]->leftover_size)
+    	{
+      		if(clients[i]->Write(clients[i]->leftover_size) < 0)
+        		MarkClientForDeletion(i);
 
-    // if this client has data waiting to be sent, try to send it
-    if(clients[i]->leftover_size)
-    {
-      if(clients[i]->Write(clients[i]->leftover_size) < 0)
-        MarkClientForDeletion(i);
+      		// even if the Write() succeeded, skip this client for this round
+      		continue;
+    	}
 
-      // even if the Write() succeeded, skip this client for this round
-      continue;
-    }
+		// Process all outgoing messages for client
+		unsigned int MessageSize = 0;
+		MessageQueueElement * el;
+		while ((el=clients[i]->OutQueue.Pop()))
+		{
+			clients[i]->FillWriteBuffer(el->msg.GetData(),MessageSize,el->msg.GetSize());
+			MessageSize += el->msg.GetSize();
+			delete el;
+		}
 
-    // look for pending replies intended for this client.  we only need to 
-    // look in the devices to which this client is subscribed, thus we
-    // iterate through the client's own subscription list.
-    for(CDeviceSubscription* thisub = clients[i]->requested;
-        thisub;
-        thisub = thisub->next)
-    {
-      unsigned short type;
-      int replysize;
-      struct timeval ts;
-
-      // if this client has built up leftover outgoing data as a result of a
-      // previous reply not getting sent, don't add any more replies.
-      if(clients[i]->leftover_size)
-        break;
-
-      // is this a valid device
-      if(thisub->driver)
-      {
-        // does this device have a reply ready for this client?
-        if((replysize = thisub->driver->GetReply(thisub->id, clients[i], &type,
-                  clients[i]->replybuffer+sizeof(player_msghdr_t), 
-                  PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t),&ts)) >= 0)
+       	if(MessageSize > 0 && clients[i]->Write(MessageSize) < 0)
         {
-          // build up and send the reply
-          player_msghdr_t reply_hdr;
-
-          reply_hdr.stx = htons(PLAYER_STXX);
-          reply_hdr.type = htons(type);
-
-          // TODO: check that this routing info is correct
-          reply_hdr.device = htons(thisub->id.code);
-          reply_hdr.device_index = htons(thisub->id.index);
-          
-          reply_hdr.reserved = (uint32_t)0;
-          reply_hdr.size = htonl(replysize);
-
-          if(GlobalTime->GetTime(&curr) == -1)
-            fputs("ClientWriterThread(): GetTime() failed!!!!\n", stderr);
-          reply_hdr.time_sec = htonl(curr.tv_sec);
-          reply_hdr.time_usec = htonl(curr.tv_usec);
-          reply_hdr.timestamp_sec = htonl(ts.tv_sec);
-          reply_hdr.timestamp_usec = htonl(ts.tv_usec);
-
-          memcpy(clients[i]->replybuffer,&reply_hdr,
-                 sizeof(player_msghdr_t));
-
-          clients[i]->FillWriteBuffer(clients[i]->replybuffer,
-                                      0,
-                                      replysize+sizeof(player_msghdr_t));
-
-          if(clients[i]->Write(replysize+sizeof(player_msghdr_t)) < 0)
-          {
-            // dump this client
+			printf("error Writing data to client\n");
+        	// dump this client
             MarkClientForDeletion(i);
             // break out of device loop
             break;
-          }
-        }
-      }
-    }
+      	}
 
-    // if this client has built up leftover outgoing data as a result of a
-    // reply not getting sent, don't add any data
-    if(clients[i]->leftover_size)
-      continue;
+		// if this client has built up leftover outgoing data as a result of a
+    	// reply not getting sent, don't add any data
+    	if(clients[i]->leftover_size)
+      		continue;
 
-    // rtv - had to fix a dumb rounding error here. This code is
-    // producing intervals like 0.09999-recurring seconds instead of
-    // 0.1 second, so updates were being skipped. I added a
-    // microsecond (*) when testing the elapsed interval. The bug was
-    // probably not a problem when using the real-time clock, but
-    // shows up when working with a simulator where time comes in
-    // discrete chunks. This was a beast to figure out since printf
-    // was rounding up the numbers to print them out!
-    
-    double curr_seconds = curr.tv_sec+(curr.tv_usec/1000000.0);
-    
-    
-    // is it time to write?
-    bool time_to_write = 
-            ((curr_seconds + 0.000001) - clients[i]->last_write) >=  // *
-            (1.0/clients[i]->frequency);
+    	// rtv - had to fix a dumb rounding error here. This code is
+    	// producing intervals like 0.09999-recurring seconds instead of
+    	// 0.1 second, so updates were being skipped. I added a
+    	// microsecond (*) when testing the elapsed interval. The bug was
+    	// probably not a problem when using the real-time clock, but
+    	// shows up when working with a simulator where time comes in
+    	// discrete chunks. This was a beast to figure out since printf
+    	// was rounding up the numbers to print them out!
 
-    if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ASYNC) ||
-       (((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
-         (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
-        time_to_write) ||
-       (((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
-         (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW)) &&
-        (clients[i]->datarequested)))
-    {
-      size_t msglen = clients[i]->BuildMsg(time_to_write || 
-                                           clients[i]->datarequested);
-      if(clients[i]->Write(msglen) == -1)
-        MarkClientForDeletion(i);
-      else
-      {
-        if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
-           (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
-          clients[i]->last_write = curr_seconds;
-        else
-          clients[i]->datarequested = false;
-      }
-    }
-  }
+    	double curr_seconds = curr.tv_sec+(curr.tv_usec/1000000.0);
 
 
-  // remove any clients that we marked
-  RemoveBlanks();
+    	// is it time to write?
+    	bool time_to_write = 
+            	((curr_seconds + 0.000001) - clients[i]->last_write) >=  // *
+            	(1.0/clients[i]->frequency);
 
-  return(0);
+    	if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ASYNC) ||
+    	   (((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+        	 (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
+        	time_to_write) ||
+    	   (((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
+        	 (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW)) &&
+        	(clients[i]->datarequested)))
+    	{
+			size_t msglen = clients[i]->BuildMsg(time_to_write || 
+                                			   clients[i]->datarequested);
+			if(clients[i]->Write(msglen) == -1)
+				MarkClientForDeletion(i);
+			else
+			{
+				if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+			   		(clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
+			  		clients[i]->last_write = curr_seconds;
+				else
+			  		clients[i]->datarequested = false;
+			}
+    	}
+  	}
+
+	// remove any clients that we marked
+  	RemoveBlanks();
+
+  	return(0);
 }
 
 /*************************************************************************
@@ -807,6 +802,14 @@ ClientManagerUDP::Read()
   return(0);
 }
 
+// need to fix this once TCP version is all go
+int ClientManagerUDP::Write()
+{
+	return 0;
+}
+
+#if 0
+
 int
 ClientManagerUDP::Write()
 {
@@ -950,3 +953,4 @@ ClientManagerUDP::Write()
 
   return(0);
 }
+#endif

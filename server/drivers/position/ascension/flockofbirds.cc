@@ -439,9 +439,7 @@ FlockOfBirds_Register(DriverTable* table)
 }
 
 FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section)
-        : Driver(cf, section, PLAYER_POSITION3D_CODE, PLAYER_ALL_MODE,
-                 sizeof(player_position3d_data_t),
-                 sizeof(player_position3d_cmd_t),1,1)
+        : Driver(cf, section, PLAYER_POSITION3D_CODE, PLAYER_ALL_MODE)
 {
 	fob = NULL;
 	

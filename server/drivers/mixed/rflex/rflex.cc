@@ -321,6 +321,15 @@ extern PlayerTime* GlobalTime;
 
 extern int               RFLEX::joy_control;
 
+// help function to rotate sonar positions
+void SonarRotate(double heading, double x1, double y1, double t1, double *x2, double *y2, double *t2)
+{
+	*t2 = t1 - heading;
+	*x2 = x1*cos(heading) + y1*sin(heading);
+	*y2 = -x1*sin(heading) + y1*cos(heading);
+}
+
+
 //NOTE - this is accessed as an extern variable by the other RFLEX objects
 rflex_config_t rflex_configs;
 
@@ -392,7 +401,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
                       PLAYER_SONAR_CODE, -1, "sonar2") == 0)
   {
     if(this->AddInterface(this->sonar_id_2, PLAYER_READ_MODE,
-                          sizeof(player_sonar_data_t), 0, 1, 1) != 0)
+                          sizeof(player_sonar_data_t), 0, 1, 1, 1) != 0)
     {
       this->SetError(-1);    
       return;
@@ -494,6 +503,12 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   rflex_configs.radPsec2_rot_acceleration=
     cf->ReadFloat(section, "default_rot_acceleration",0.1);
 
+  // absolute heading options
+  rflex_configs.heading_home_address = 
+  	cf->ReadInt(section, "rflex_heading_home_address",0);
+  rflex_configs.home_on_start = 
+  	cf->ReadInt(section, "rflex_home_on_start",0);
+
   // use rflex joystick for position
   rflex_configs.use_joystick |= cf->ReadInt(section, "rflex_joystick",0);
   rflex_configs.joy_pos_ratio = cf->ReadFloat(section, "rflex_joy_pos_ratio",0);
@@ -511,6 +526,8 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
           cf->ReadInt(section, "num_sonars",24);
   rflex_configs.sonar_age=
           cf->ReadInt(section, "sonar_age",1);
+  rflex_configs.sonar_max_range=
+          cf->ReadInt(section, "sonar_max_range",3000);
   rflex_configs.num_sonar_banks=
           cf->ReadInt(section, "num_sonar_banks",8);
   rflex_configs.num_sonars_possible_per_bank=
@@ -1132,14 +1149,23 @@ RFLEX::Main()
     }
 
 
-    if(this->position_subscriptions || rflex_configs.use_joystick)
+    if(this->position_subscriptions || rflex_configs.use_joystick || rflex_configs.home_on_start)
     {
       /* read the clients' commands from the common buffer */
       GetCommand(this->position_id,(unsigned char*)&command, 
                  sizeof(command), NULL);
+				 
 
       newmotorspeed = false;
       newmotorturn = false;
+
+	  if (rflex_configs.home_on_start)
+	  {
+	  	command.yawspeed = htonl(10);
+		command.type=0;
+		newmotorturn=true;
+	  }
+
       //the long casts are necicary (ntohl returns unsigned - we need signed)
       if(mmPsec_speedDemand != (long) ntohl(command.xspeed))
       {
@@ -1175,6 +1201,7 @@ RFLEX::Main()
       rflex_stop_robot(rflex_fd,(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));
 
     /* Get data from robot */
+	static long LastYaw = 0;
     player_rflex_data_t rflex_data;
     memset(&rflex_data,0,sizeof(player_rflex_data_t));
     update_everything(&rflex_data);
@@ -1188,6 +1215,29 @@ RFLEX::Main()
             (void*)&rflex_data.sonar,
             sizeof(player_sonar_data_t),
             NULL);
+	// Here we check if the robot has changed Yaw...
+	// If it has we need to update the geometry as well
+	if (rflex_data.position.yaw != LastYaw)
+	{
+		// Transmit new sonar geometry
+		double NewGeom[3];
+	
+        player_sonar_geom_t geom;
+        geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+        geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+        for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
+        {
+		  SonarRotate(rad_odo_theta, rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].x,rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].y,rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].t,NewGeom,&NewGeom[1],&NewGeom[2]);
+          geom.poses[i][0] = htons((short) NewGeom[0]);
+          geom.poses[i][1] = htons((short) NewGeom[1]);
+          geom.poses[i][2] = htons((short) RAD2DEG_CONV(NewGeom[2]));
+        }
+		PutMsg(this->sonar_id_2, NULL, PLAYER_MSGTYPE_GEOM,
+			(void*)&geom, sizeof(player_sonar_geom_t),
+			NULL);
+	}
+	LastYaw = rflex_data.position.yaw;
+			
     PutData(this->sonar_id_2,
             (void*)&rflex_data.sonar2,
             sizeof(player_sonar_data_t),
@@ -1396,6 +1446,8 @@ void RFLEX::set_config_defaults(){
   rflex_configs.mmPsec2_trans_acceleration=500.0;
   rflex_configs.radPsec2_rot_acceleration=500.0;
   rflex_configs.use_joystick=false;
+  rflex_configs.home_on_start=false;
+  rflex_configs.heading_home_address=0;
   rflex_configs.joy_pos_ratio=0;
   rflex_configs.joy_ang_ratio=0;
   

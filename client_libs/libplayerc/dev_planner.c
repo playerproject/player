@@ -66,7 +66,7 @@ playerc_planner_t *playerc_planner_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_planner_t));
   memset(device, 0, sizeof(playerc_planner_t));
   playerc_device_init(&device->info, client, PLAYER_PLANNER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_planner_putdata);
+                      (playerc_putdata_fn_t) playerc_planner_putdata,NULL,NULL);
 
   
   return device;

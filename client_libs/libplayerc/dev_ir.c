@@ -57,6 +57,8 @@
 // Local declarations
 void playerc_ir_putdata(playerc_ir_t *device, player_msghdr_t *header,
                            player_ir_data_t *data, size_t len);
+void playerc_ir_putgeom(playerc_ir_t *device, player_msghdr_t *header,
+                           player_ir_pose_t *data, size_t len);
 
 // Create a new ir proxy
 playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index)
@@ -66,7 +68,8 @@ playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_ir_t));
   memset(device, 0, sizeof(playerc_ir_t));
   playerc_device_init(&device->info, client, PLAYER_IR_CODE, index,
-                      (playerc_putdata_fn_t) playerc_ir_putdata);
+                      (playerc_putdata_fn_t) playerc_ir_putdata,
+                      (playerc_putdata_fn_t) playerc_ir_putgeom,NULL);
     
   return device;
 }
@@ -112,7 +115,26 @@ void playerc_ir_putdata(playerc_ir_t *device, player_msghdr_t *header,
   }
 }
 
+// Process incoming geom
+void playerc_ir_putgeom(playerc_ir_t *device, player_msghdr_t *header,
+                           player_ir_pose_t *data, size_t len)
+{
+	int i;
+  if (len != sizeof(player_ir_pose_t))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_ir_pose_t));
+    return;
+  }
 
+  device->poses.pose_count = htons(data->pose_count);
+  for (i = 0; i < device->poses.pose_count; i++)
+  {
+    device->poses.poses[i][0] = ((int16_t) ntohs(data->poses[i][0])); //mm
+    device->poses.poses[i][1] = ((int16_t) ntohs(data->poses[i][1])); //mm
+    device->poses.poses[i][2] = ((int16_t) ntohs(data->poses[i][2])); //deg
+  }
+}
+  
 // Get the ir geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
 int playerc_ir_get_geom(playerc_ir_t *device)
@@ -126,19 +148,8 @@ int playerc_ir_get_geom(playerc_ir_t *device)
                                &config, sizeof(config.subtype), &config, sizeof(config));
   if (len < 0)
     return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
-
-  device->poses.pose_count = htons(config.poses.pose_count);
-  for (i = 0; i < device->poses.pose_count; i++)
-  {
-    device->poses.poses[i][0] = ((int16_t) ntohs(config.poses.poses[i][0])); //mm
-    device->poses.poses[i][1] = ((int16_t) ntohs(config.poses.poses[i][1])); //mm
-    device->poses.poses[i][2] = ((int16_t) ntohs(config.poses.poses[i][2])); //deg
-  }
+   while(device->info.freshgeom == 0)
+   		playerc_client_read(device->info.client);
 
   return 0;
 }

@@ -34,7 +34,8 @@
 
 #include <stddef.h> /* for size_t */
 #include "playercommon.h"
-#include "playerqueue.h"
+#include "message.h"
+#include <player.h>
 
 extern bool debug;
 extern bool experimental;
@@ -92,6 +93,10 @@ class Driver
     /// constructors
     int error;
 
+	/// Queue for all incoming messages for this driver
+	MessageQueue InQueue; // queue for all incoming requests
+
+
   public:
 
     /// @brief Constructor for single-interface drivers.
@@ -100,13 +105,7 @@ class Driver
     /// @param section Current section in configuration file
     /// @param interface Player interface code; e.g., PLAYER_POSITION_CODE
     /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
-    /// @param datasize Maximum size of the data packet.
-    /// @param commandsize Maximum size of the command packet.
-    /// @param reqqueuelen Length of the request queue.
-    /// @param repqueuelen Length of the reply queue.
-    Driver(ConfigFile *cf, int section, int interface, uint8_t access,
-           size_t datasize, size_t commandsize, 
-           size_t reqqueuelen, size_t repqueuelen);
+    Driver(ConfigFile *cf, int section, int interface, uint8_t access);
 
     /// @brief Constructor for multiple-interface drivers.
     ///
@@ -122,34 +121,9 @@ class Driver
     ///
     /// @param id Player device id.
     /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
-    /// @param datasize Maximum size of the data packet.
-    /// @param commandsize Maximum size of the command packet.
-    /// @param reqqueuelen Length of the request queue.
-    /// @param repqueuelen Length of the reply queue.
     /// @returns Returns 0 on success
-    int AddInterface(player_device_id_t id, unsigned char access,
-                     size_t datasize, size_t commandsize,
-                     size_t reqqueuelen, size_t repqueuelen);
+    int AddInterface(player_device_id_t id, unsigned char access);
     
-    /// @brief Add a new-style interface, with pre-allocated memory.
-    ///
-    /// @param id Player device id.
-    /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
-    /// @param data Pointer to pre-allocated data storage.
-    /// @param datasize Maximum size of the data packet.
-    /// @param command Pointer to pre-allocated command storage.
-    /// @param commandsize Maximum size of the command packet.
-    /// @param reqqueue Pointer to pre-allocated request queue storage.
-    /// @param reqqueuelen Length of the request queue.
-    /// @param repqueue Pointer to pre-allocated reply queue storage.
-    /// @param repqueuelen Length of the reply queue.
-    /// @returns Returns 0 on success
-    int AddInterface(player_device_id_t id, unsigned char access,
-                     void* data, size_t datasize, 
-                     void* command, size_t commandsize, 
-                     void* reqqueue, int reqqueuelen, 
-                     void* repqueue, int repqueuelen);
-
     /// @brief Set/reset error code
     void SetError(int code) {this->error = code;}
 
@@ -285,13 +259,13 @@ class Driver
     /// @param src Pointer to data source buffer.
     /// @param len Length of the data (bytes).
     /// @param timestamp Data timestamp; if NULL, the current server time will be used.
-    virtual void PutData(player_device_id_t id, void* src, size_t len,
-                         struct timeval* timestamp);
+    virtual void PutData(player_device_id_t id, unsigned char* src, size_t len,
+                        struct timeval* timestamp);
 
     /// @brief Write data to the driver (short form).
     ///
     /// Convenient short form of PutData() for single-interface drivers.
-    void PutData(void* src, size_t len, struct timeval* timestamp)
+    void PutData(unsigned char* src, size_t len, struct timeval* timestamp)
       { PutData(this->device_id,src,len,timestamp); }
 
     /// @brief Read data from the driver.
@@ -302,9 +276,9 @@ class Driver
     /// @param len Size of the data destination buffer (bytes).
     /// @param timestamp If non-null, will be filled with the data timestamp.
     /// @returns Returns the number of bytes written to the destination buffer.
-    virtual size_t GetData(player_device_id_t id,
-                           void* dest, size_t len,
-                           struct timeval* timestamp);
+     virtual size_t GetData(player_device_id_t id,
+                            void* dest, size_t len,
+                            struct timeval* timestamp);
 
     /// @brief Write a new command to the driver.
     ///
@@ -313,9 +287,9 @@ class Driver
     /// @param src Pointer to command source buffer.
     /// @param len Length of the command (bytes).
     /// @param timestamp Command timestamp; if NULL, the current server time will be used.
-    virtual void PutCommand(player_device_id_t id,
-                            void* src, size_t len,
-                            struct timeval* timestamp);
+//     virtual void PutCommand(player_device_id_t id,
+//                             void* src, size_t len,
+//                             struct timeval* timestamp);
 
     /// @brief Read the current command for the driver
     ///
@@ -325,29 +299,29 @@ class Driver
     /// @param len Length of the destination buffer (bytes).
     /// @param timestamp If non-null, will be filled with the command timestamp.
     /// @returns Returns the number of bytes written to the destination buffer.
-    virtual size_t GetCommand(player_device_id_t id,
-                              void* dest, size_t len,
-                              struct timeval* timestamp);
+//     virtual size_t GetCommand(player_device_id_t id,
+//                               void* dest, size_t len,
+//                               struct timeval* timestamp);
 
     /// @brief Read the current command (short form).
     ///
     /// Convenient short form for single-interface drivers.
-    size_t GetCommand(void* dest, size_t len,
-                      struct timeval* timestamp)
-      { return GetCommand(this->device_id,dest,len,timestamp); }
+//     size_t GetCommand(void* dest, size_t len,
+//                       struct timeval* timestamp)
+//       { return GetCommand(this->device_id,dest,len,timestamp); }
 
     /// @brief Clear the current command buffer
     ///
     /// This method is called by drivers to "consume" commands.
     /// @param id Specifies the device to be cleared .    
-    virtual void ClearCommand(player_device_id_t id);
+//    virtual void ClearCommand(player_device_id_t id);
 
     /// @brief Clear the current command buffer
     ///
     /// Convenient short form of ClearCommand(), for single-interface
     /// drivers.
-    void ClearCommand(void)
-      { ClearCommand(this->device_id); }
+//    void ClearCommand(void)
+//      { ClearCommand(this->device_id); }
 
     /// @brief Write configuration request to the request queue.
     ///
@@ -359,9 +333,9 @@ class Driver
     /// @param len Length of the source buffer (bytes).
     /// @param timestamp Command timestamp; if NULL, the current server time will be used.
     /// @returns Returns 0 on success (queues may overflow, generating an error).
-    virtual int PutConfig(player_device_id_t id, void *client, 
-                          void* src, size_t len,
-                          struct timeval* timestamp);
+//    virtual int PutConfig(player_device_id_t id, void *client, 
+//                          void* src, size_t len,
+//                          struct timeval* timestamp);
 
     /// @brief Read the next configuration request from the request queue.
     /// 
@@ -374,16 +348,16 @@ class Driver
     /// @param timestamp If non-null, will be filled with the request timestamp.
     /// @returns Returns 0 if there are no pending requests, otherwise returns the
     /// number of bytes written to the destination buffer.
-    virtual int GetConfig(player_device_id_t id, void **client, 
-                          void* dest, size_t len,
-                          struct timeval* timestamp);
+//    virtual int GetConfig(player_device_id_t id, void **client, 
+//                          void* dest, size_t len,
+//                          struct timeval* timestamp);
 
     /// @brief Read the next configuration request from the request queue.
     ///
     /// Convenient short form of GetConfig(), for single-interface drivers.
-    int GetConfig(void** client, void* dest, size_t len, 
-                  struct timeval* timestamp)
-      { return GetConfig(this->device_id,client,dest,len,timestamp); }
+//    int GetConfig(void** client, void* dest, size_t len, 
+//                  struct timeval* timestamp)
+//      { return GetConfig(this->device_id,client,dest,len,timestamp); }
 
     /// @brief Write configuration reply to the reply queue.
     ///
@@ -395,34 +369,34 @@ class Driver
     /// @param len Length of the source buffer (bytes).
     /// @param timestamp Command timestamp; if NULL, the current server time will be used.
     /// @returns Returns 0 on success (queues may overflow, generating an error).
-    virtual int PutReply(player_device_id_t id, void* client, 
-                         unsigned short type, 
-                         void* src, size_t len,
-                         struct timeval* timestamp);
+//    virtual int PutReply(player_device_id_t id, void* client, 
+//                         unsigned short type, 
+//                         void* src, size_t len,
+//                         struct timeval* timestamp);
 
     /// @brief Write configuration reply to the reply queue.
     ///
     /// Convenient short form of PutReply() for single-interface
     /// drivers.
-    int PutReply(void* client, 
-                 unsigned short type, 
-                 void* src, size_t len,
-                 struct timeval* timestamp)
-      { return PutReply(this->device_id,client,type,src,len,timestamp); }
+//    int PutReply(void* client, 
+//                 unsigned short type, 
+//                 void* src, size_t len,
+//                 struct timeval* timestamp)
+//      { return PutReply(this->device_id,client,type,src,len,timestamp); }
 
     /// @brief Write configuration reply to the reply queue.
     ///
     /// Convenient short form of PutReply(): empty reply
-    int PutReply(player_device_id_t id, void* client, unsigned short type,
-                 struct timeval* timestamp)
-      { return PutReply(id,client,type,NULL,0,timestamp); }
+//    int PutReply(player_device_id_t id, void* client, unsigned short type,
+//                 struct timeval* timestamp)
+//      { return PutReply(id,client,type,NULL,0,timestamp); }
 
     /// @brief Write configuration reply to the reply queue.
     ///
     /// Convenient short form of PutReply(): empty reply for single-interface drivers.
-    int PutReply(void* client, unsigned short type,
-                 struct timeval* timestamp)
-      { return PutReply(this->device_id,client,type,NULL,0,timestamp); }
+//    int PutReply(void* client, unsigned short type,
+//                 struct timeval* timestamp)
+//      { return PutReply(this->device_id,client,type,NULL,0,timestamp); }
 
     /// @brief Read configuration reply from reply queue
     ///
@@ -434,20 +408,33 @@ class Driver
     /// @param len Size of the destination buffer (bytes).
     /// @param timestamp If non-null, will be filled with the data timestamp.
     /// @returns Returns the number of bytes written to the destination buffer.
-    virtual int GetReply(player_device_id_t id, void* client, 
-                         unsigned short* type, 
-                         void* dest, size_t len,
-                         struct timeval* timestamp);
+//    virtual int GetReply(player_device_id_t id, void* client, 
+//                         unsigned short* type, 
+//                         void* dest, size_t len,
+//                         struct timeval* timestamp);
 
+    /// Write generic msg to driver.
+    virtual int PutMsg(player_device_id_t id, ClientData* client, 
+                         unsigned short type, 
+                         void* src, size_t len = 0,
+                         struct timeval* timestamp = NULL);
+
+    /// Read generic msg from driver;
+//    virtual int GetMsg(player_device_id_t id, void* client, 
+//                         unsigned short* type, 
+//                         void* dest, size_t len,
+//                         struct timeval* timestamp);
+
+// **** still need this helper, but it needs re written
     /// A helper method for internal use; e.g., when one driver wants to make a
     /// request of another driver.
-    virtual int Request(player_device_id_t id, void* requester, 
+   /* virtual int Request(player_device_id_t id, void* requester, 
                         void* request, size_t reqlen,
                         struct timeval* req_timestamp,
                         unsigned short* reptype, 
                         void* reply, size_t replen,
                         struct timeval* rep_timestamp);
-
+*/
   protected:
     // these methods are used to lock and unlock the various buffers and
     // queues; they are implemented with mutexes in Driver and overridden
@@ -456,6 +443,7 @@ class Driver
     virtual void Unlock(void);
 
 };
+
 
 
 #endif

@@ -439,9 +439,7 @@ void BumperSafe::GetCommand()
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 BumperSafe::BumperSafe( ConfigFile* cf, int section)
-        : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
-                 sizeof(player_position_data_t),
-                 sizeof(player_position_cmd_t),10,10)
+        : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
 {
 	Blocked = false;
 

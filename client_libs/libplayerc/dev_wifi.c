@@ -65,7 +65,7 @@ playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index)
   self = malloc(sizeof(playerc_wifi_t));
   memset(self, 0, sizeof(playerc_wifi_t));
   playerc_device_init(&self->info, client, PLAYER_WIFI_CODE, index,
-                      (playerc_putdata_fn_t) playerc_wifi_putdata);
+                      (playerc_putdata_fn_t) playerc_wifi_putdata,NULL,NULL);
   
   return self;
 }
