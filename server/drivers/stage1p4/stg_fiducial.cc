@@ -40,14 +40,14 @@ public:
 
   virtual int PutConfig(player_device_id_t* device, void* client, 
 			void* data, size_t len);
-  virtual int Setup(){ this->StageSubscribe( STG_MOD_NEIGHBORS ); return 0;};
-  virtual int Shutdown(){ this->StageUnsubscribe( STG_MOD_NEIGHBORS ); return 0;};
 };
 
 StgFiducial::StgFiducial(char* interface, ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, sizeof(player_fiducial_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgFiducial with interface %s", interface );
+
+  this->subscribe_prop = STG_MOD_NEIGHBORS;
 }
 
 CDevice* StgFiducial_Init(char* interface, ConfigFile* cf, int section)
@@ -73,40 +73,44 @@ void StgFiducial_Register(DriverTable* table)
 size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  stg_model_t* model = &Stage1p4::models[this->section];
-
   PLAYER_TRACE2(" STG_FIDUCIAL GETDATA section %d -> model %d",
-		this->section, model->stage_id );
+		model->section, model->id );
   
-  this->WaitForData( model->stage_id, STG_MOD_NEIGHBORS );
+  stg_model_property_wait( model, this->subscribe_prop );
   
-  // copy sonar data from Stage    
-  stg_property_t* prop = model->props[STG_MOD_NEIGHBORS];
+  stg_property_t* prop = stg_model_property( model, this->subscribe_prop );
   
   stg_neighbor_t *nbors = (stg_neighbor_t*)prop->data;
   
   size_t ncount = prop->len / sizeof(stg_neighbor_t);
   
-  //printf( "I see %d bytes - that's %d neighbors\n", 
-  //  prop->len, ncount );
-
-  player_fiducial_data_t pdata;
-  memset( &pdata, 0, sizeof(pdata) );
+  printf( "I see %d bytes - that's %d neighbors\n", 
+	  prop->len, ncount );
   
-  pdata.count = htons((uint16_t)ncount);
-  
-  for( int i=0; i<(int)ncount; i++ )
+  if( ncount > 0 )
     {
-      pdata.fiducials[i].id = htons((int16_t)nbors[i].id);
-      pdata.fiducials[i].pose[0] = htons((int16_t)(nbors[i].range*1000.0));
-      pdata.fiducials[i].pose[1] = htons((int16_t)RTOD(nbors[i].bearing));
-      pdata.fiducials[i].pose[2] = htons((int16_t)RTOD(nbors[i].orientation));
-      // ignore uncertainty for now
-    }
+      player_fiducial_data_t pdata;
+      memset( &pdata, 0, sizeof(pdata) );
       
-  // publish this data
-  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+      pdata.count = htons((uint16_t)ncount);
+      
+      for( int i=0; i<(int)ncount; i++ )
+	{
+	  pdata.fiducials[i].id = htons((int16_t)nbors[i].id);
+	  pdata.fiducials[i].pose[0] = htons((int16_t)(nbors[i].range*1000.0));
+	  pdata.fiducials[i].pose[1] = htons((int16_t)RTOD(nbors[i].bearing));
+	  pdata.fiducials[i].pose[2] = htons((int16_t)RTOD(nbors[i].orientation));
+	  // ignore uncertainty for now
+	}
+      
+      // publish this data
+      CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+    }
+  else
+    CDevice::PutData( NULL, 0, 0,0 ); // time gets filled in
   
+  
+
   //TEST
   /*    const char* str = "hello world";
     stg_los_msg_t msg;
@@ -124,48 +128,37 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
 int StgFiducial::PutConfig(player_device_id_t* device, void* client, 
 				    void* data, size_t len)
 {
-  stg_model_t* model = &Stage1p4::models[this->section];
-
-  // rather than push the request onto the request queue, we'll handle
-  // it right away
-  
   // switch on the config type (first byte)
   uint8_t* buf = (uint8_t*)data;
   switch( buf[0] )
     {  
     case PLAYER_FIDUCIAL_GET_GEOM:
-      {
-	stg_pose_t org;
-	stg_size_t sz;	
-	size_t len;
-	/*	assert( stg_get_property( this->stage_client, model->stage_id, 
-				  STG_MOD_ORIGIN,
-				  (void**)&org, &len ) == 0 );
+      {	
+	stg_model_property_refresh( model, STG_MOD_ORIGIN );
+	stg_model_property_refresh( model, STG_MOD_SIZE );
 	
-	assert( len == sizeof(stg_pose_t) );
+	stg_property_t* prop_size = 
+	  stg_model_property( model, STG_MOD_SIZE );
 	
-	assert( stg_get_property( this->stage_client, this->model->stage_id, 
-				  STG_MOD_SIZE,
-				  (void**)&sz, &len ) == 0 );
+	stg_property_t* prop_org = 
+	  stg_model_property( model, STG_MOD_ORIGIN );
 	
-	assert( len == sizeof(stg_size_t) );
-	*/
-
-	org.x = 0;
-	org.y = 0;
-	org.a = 0;
-
-	sz.x = 0.5;
-	sz.y = 0.5;
+	stg_size_t* sz = (stg_size_t*)prop_size->data;
+	stg_pose_t *org = (stg_pose_t*)prop_org->data;
+	
+	assert( sz );
+	assert( org );
+	assert( prop_size->len == sizeof(stg_size_t) );
+	assert( prop_org->len == sizeof(stg_pose_t) );
 
 	// fill in the geometry data formatted player-like
 	player_fiducial_geom_t pgeom;
-	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * org.x));
-	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * org.y));
-	pgeom.pose[2] = ntohs((uint16_t)RTOD(org.a));
+	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * org->x));
+	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * org->y));
+	pgeom.pose[2] = ntohs((uint16_t)RTOD(org->a));
 	
-	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sz.x)); 
-	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sz.y)); 
+	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sz->x)); 
+	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sz->y)); 
 	
 	pgeom.fiducial_size[0] = ntohs((uint16_t)100);
 	pgeom.fiducial_size[1] = ntohs((uint16_t)100);
@@ -176,6 +169,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
       }
       break;
       
+      /*
     case PLAYER_FIDUCIAL_SEND_MSG:
       {
 	assert( len == sizeof( player_fiducial_msg_tx_req_t) );
@@ -203,8 +197,8 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	else
 	  propid = STG_MOD_LOS_MSG;
 	
-	if( stg_set_property(  this->stage_client, model->stage_id,
-			       propid, (void*)&s_msg, sizeof(s_msg))
+	if( stg_client_property_set(  this->stage_client, model->stage_id,
+				      propid, (void*)&s_msg, sizeof(s_msg))
 	    < 0 )
 	  {
 	    PLAYER_ERROR( "failed to send fiducial message" );
@@ -234,11 +228,9 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	  prop = STG_MOD_LOS_MSG;
 	  
 	//puts( "GETTING MESSAGE" );
-
-	assert( stg_get_property( this->stage_client, model->stage_id, 
-				  prop, 
-				  (void**)&s_msg, &len ) == 0 );
-
+	
+	stg_client_property_get( this->stage_client, model->stage_id, prop );
+	
 	//printf( "message is %d bytes\n", len );
 
 	if( len == 0 )
@@ -284,6 +276,9 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
       {
 	// TODO
       }
+
+      */
+
     default:
       {
 	printf( "Warning: stg_fiducial doesn't support config id %d\n", buf[0] );

@@ -27,41 +27,25 @@ x *  You should have received a copy of the GNU General Public License
 #include "configfile.h"
 #include <stagecpp.hh> // from the Stage 1.4 distro
 
-#define DEFAULT_STG_WORLDFILE "default.world"
-#define DEFAULT_STG_HOST "localhost"
-
-
 class Stage1p4 : public CDevice
 {
  public:
-  int section; // world file section and model identifier
-  
+
   static ConfigFile* config;
   static CWorldFile wf;
   static char* world_file; // filename
   static stg_client_t* stage_client;
-  static stg_model_t* models;
-  static int models_count;
-  static stg_id_t world_id;
-  static double time;
-  static int stage_port;
-  static char* stage_host; 
-  static stg_property_t *stage_time;
   
+  stg_model_t* model; // points inside the shared client to our
+		      // individual model data
+  
+  // the property we automatically subscribe to on Setup();
+  stg_prop_id_t subscribe_prop;
+
   Stage1p4(char* interface, ConfigFile* cf, int section, 
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen);
   virtual ~Stage1p4();
-
-  stg_client_t* CreateStageClient( char* host, int port, char* world );
-
-  int DestroyStageClient( stg_client_t* cli );
-  void CheckForData( void );
-  void WaitForData( stg_id_t model, stg_prop_id_t datatype );
-  void StageSubscribe( stg_prop_id_t data );
-  void StageUnsubscribe( stg_prop_id_t data );
   
-  // most subclasses should override these - see stg_sonar for example
-  virtual int Setup(){ return 0; };
-  virtual int Shutdown(){ return 0; };
-
+  virtual int Setup();
+  virtual int Shutdown();
 };

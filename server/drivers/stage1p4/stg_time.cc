@@ -26,15 +26,17 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+//#define DEBUG
+
 #include "stage1p4.h"
 #include "stg_time.h"
 #include "math.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-StgTime::StgTime( Stage1p4* stage )
+StgTime::StgTime( struct _stg_client* cli )
 {
-  this->stage = stage;
+  this->cli = cli;
   return;
 }
 
@@ -51,22 +53,23 @@ StgTime::~StgTime()
 // Get the simulator time
 int StgTime::GetTime(struct timeval* time)
 {
-  //puts( "get time" );
+  PRINT_DEBUG( "get time" );
   
   // handle any packets coming in from Stage - there might be a new
   // time in the pipe
-  stage->CheckForData();
+  if( this->cli )
+    {
+      PRINT_DEBUG( "stg_time checking for new data" );
+      stg_client_read( this->cli );
+      PRINT_DEBUG( "stg_time done checking" );
 
-  double seconds = 0.0;
+      time->tv_sec =  (long)cli->world->time;
+      time->tv_usec =  (long)(fmod( cli->world->time, 1.0) * 1000000.0);
+    }
+  else // no time data available yet. 
+    memset( time, 0, sizeof(struct timeval) );
   
-  // if any time data has been received from Stage, use it
-  if( Stage1p4::stage_time )    
-    seconds = *(double*)Stage1p4::stage_time->data;
-  
-  time->tv_sec =  (long)floor(seconds);
-  time->tv_usec =  (long)floor(fmod(seconds, 1.0) * 1e6);
-  
-  //printf( "time now %d sec %d usec\n", time->tv_sec, time->tv_usec );
+  PRINT_DEBUG2( "time now %d sec %d usec", time->tv_sec, time->tv_usec );
   
   return 0;
 }

@@ -111,7 +111,7 @@ define swarmbot sb
 (
   size [0.1 0.1]
 
-  neighbor 1
+  neighbor 1	
 
   indicatorlight( color "red"    pose [0.030 0.000 0.000] light [1 200] ) 
   indicatorlight( color "green"  pose [0.000 0.030 0.000] light [1 400]) 
@@ -121,9 +121,9 @@ define swarmbot sb
   velocity [ 0 0 1 ]
 )
 	
-swarmbot( pose [4.422 3.873 116.134] color "red" )
-swarmbot( pose [3.459 4.364 88.634] color "green"  )
-swarmbot( pose [4.752 4.627 115.580] color "blue"  )
+#swarmbot( pose [4.422 3.873 116.134] color "red" )
+#swarmbot( pose [3.459 4.364 88.634] color "green"  )
+#swarmbot( pose [4.752 4.627 115.580] color "blue"  )
 #swarmbot( pose [4.678 3.706 23.374] color "red" )
 #swarmbot( pose [3.249 4.722 75.454] color "green"  )
 #swarmbot( pose [4.357 4.306 49.700] color "blue"  )

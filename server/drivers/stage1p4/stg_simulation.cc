@@ -41,8 +41,6 @@ class StgSimulation:public Stage1p4
 public:
   StgSimulation(char* interface, ConfigFile* cf, int section);
 
-  //virtual int Setup(){this->StageSubscribe(STG_MOD_SIMULATION); return 0;};
-  //virtual int Shutdown(){this->StageUnsubscribe(STG_MOD_SIMULATION); return 0;};
 };
 
 StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section ) 
@@ -59,15 +57,11 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
   
   if( Stage1p4::stage_client == NULL )
     {
-      // steal the global clock - a bit aggressive, but a simple approach
-      if( GlobalTime ) delete GlobalTime;
-      assert( (GlobalTime = new StgTime(this) ));
-      
-      Stage1p4::stage_port = 
+      const int stage_port = 
 	config->ReadInt(section, "port", STG_DEFAULT_SERVER_PORT);
       
-      Stage1p4::stage_host = 
-	(char*)config->ReadString(section, "host", DEFAULT_STG_HOST);
+      const char* stage_host = 
+	config->ReadString(section, "host", STG_DEFAULT_HOST);
       
       // initialize the bitmap library
       pnm_init( &global_argc, global_argv );
@@ -75,52 +69,44 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
       printf( "Stage1p4: Creating client to Stage server on %s:%d\n", 
 	      stage_host, stage_port );
       
-      Stage1p4::stage_client = 
-	stg_client_create( stage_host, stage_port, STG_TOS_SUBSCRIPTION );
+      Stage1p4::stage_client = stg_client_create( stage_host, stage_port );
       assert(Stage1p4::stage_client);
-
-      // make another client for configuration requests
-      //Stage1p4::stage_config_client = 
-      //	stg_client_create( stage_host, stage_port, STG_TOS_SUBSCRIPTION );
-      //assert(Stage1p4::stage_config_client);
       
       // load a worldfile
       Stage1p4::world_file = 
-	(char*)config->ReadString(section, "worldfile", DEFAULT_STG_WORLDFILE);
-
+	(char*)config->ReadString(section, "worldfile", STG_DEFAULT_WORLDFILE);
+      
       // create a passel of Stage models based on the worldfile
       PLAYER_TRACE1( "Uploading world from \"%s\"", world_file );      
-      //CWorldFile wf;
       Stage1p4::wf.Load( Stage1p4::world_file );
+
       // this function from libstagecpp does a lot of work turning the
       // worldfile into a series of model creation and configuration
       // requests. It creates an array of model records
-      Stage1p4::wf.Upload( Stage1p4::stage_client, 
-			   &Stage1p4::models, 
-			   &Stage1p4::models_count );
-
-
-      // subscribe to the clock from the world we just created
-      stg_property_t* reply = 
-	stg_send_property( Stage1p4::stage_client,
-			   Stage1p4::models[0].stage_id, // world id
-			   STG_WORLD_TIME, 
-			   STG_SUBSCRIBE,
-			   NULL, 0 );
+      Stage1p4::wf.Upload( Stage1p4::stage_client );
       
-      if( !(reply && (reply->action == STG_SUBSCRIBE) && *reply->data == (char)1 ))
-	{
-	  PLAYER_ERROR( "stage1p4: time subscription failed" );
-	  exit(-1);
-	}
 
-      stg_property_free(reply);
-
-      // catch USR2 signal. getting this signal makes us SAVE the
-      // world state.
-      // TODO - use a network command
-      //if( signal( SIGUSR2, catch_sigusr2 ) == SIG_ERR )
-      //PLAYER_ERROR( "stage1p4 failed to install SAVE signal handler." );
+      PRINT_WARN1( "TIME SUBSCRIBE world id %d", 
+      	   Stage1p4::stage_client->world->id );
+      
+      stg_subscription_t sub;
+      sub.id =  Stage1p4::stage_client->world->id;
+      sub.prop = STG_MOD_TIME;
+      sub.status = STG_SUB_SUBSCRIBED;
+      
+      stg_fd_msg_write( Stage1p4::stage_client->pollfd.fd, 
+			STG_MSG_SUBSCRIBE, &sub, sizeof(sub) );
+      
+      PRINT_WARN( "waiting for clock data" );
+      while( Stage1p4::stage_client->world->time == 0.0 )
+	stg_client_read( Stage1p4::stage_client );
+      
+      PRINT_WARN1( "time %.6f - clock ok ",  
+		   Stage1p4::stage_client->world->time );
+      
+      // steal the global clock - a bit aggressive, but a simple approach
+      if( GlobalTime ) delete GlobalTime;
+      assert( (GlobalTime = new StgTime( Stage1p4::stage_client ) ));
     } 
   
 }

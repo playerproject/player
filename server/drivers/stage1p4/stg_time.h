@@ -30,22 +30,24 @@
 #define STG_TIME_H
 
 #include "playertime.h"
+//#include "stage.h"
 
-class Stage1p4;
+struct _stg_client;
 
 // Incremental navigation driver
 class StgTime : public PlayerTime
 {
   // Constructor
-  public: StgTime( Stage1p4* stage);
+  public: StgTime( struct _stg_client* cli );
 
   // Destructor
   public: virtual ~StgTime();
 
   // Get the simulator time
   public: int GetTime(struct timeval* time);
-
-  Stage1p4* stage;
+  
+ private:
+  struct _stg_client* cli;
 };
 
 #endif

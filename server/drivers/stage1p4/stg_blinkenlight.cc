@@ -38,11 +38,6 @@ public:
 
   // overrride PutCommand
   virtual void PutCommand(void* client, unsigned char* src, size_t len);
-
-  virtual int Setup(){this->StageSubscribe(STG_MOD_BLINKENLIGHT); return 0;};
-  virtual int Shutdown(){this->StageUnsubscribe(STG_MOD_BLINKENLIGHT); return 0;};
-  
-  protected:
 };
 
 
@@ -56,6 +51,7 @@ StgBlinkenlight::StgBlinkenlight(char* interface, ConfigFile* cf, int section )
   
   PLAYER_TRACE1( "constructing StgBlinkenlight with interface %s", interface );
   
+  this->subscribe_prop = STG_MOD_BLINKENLIGHT;
 }
 
 CDevice* StgBlinkenlight_Init(char* interface, ConfigFile* cf, int section)
@@ -82,16 +78,15 @@ void StgBlinkenlight_Register(DriverTable* table)
 size_t StgBlinkenlight::GetData(void* client, unsigned char* dest, size_t len,
 			    uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  stg_model_t* model = &Stage1p4::models[this->section];
-
   PLAYER_MSG2(" STG_BLINKENLIGHT GETDATA section %d -> model %d",
-	      this->section, model->stage_id );
-    
-  this->WaitForData( model->stage_id, STG_MOD_RANGERS );
+	      model->section, model->d );
   
-  stg_blinkenlight_t* bl = (stg_blinkenlight_t*)
-    model->props[STG_MOD_BLINKENLIGHT]->data;
-  size_t blen = model->props[STG_MOD_BLINKENLIGHT]->len;
+  stg_model_property_wait( model, this->subscribe_prop );
+  
+  stg_property_t* prop = stg_model_property( model, this->subscribe_prop );
+  
+  stg_blinkenlight_t* bl = (stg_blinkenlight_t*)prop->data;
+  size_t blen = prop->len;
   
   assert(bl);
   assert( blen == sizeof(stg_blinkenlight_t) );
@@ -122,10 +117,10 @@ void  StgBlinkenlight::PutCommand(void* client, unsigned char* src, size_t len)
   sb.enable = (int)pcmd->enable;
   sb.period_ms = (uint16_t)ntohs(pcmd->period_ms);
   
-  assert( stg_set_property( this->stage_client, 
-			    Stage1p4::models[this->section].stage_id,
-			    STG_MOD_BLINKENLIGHT, 
-			    (void*)&sb, sizeof(sb) ) 
+  assert( stg_model_property_set_ex( model, 0.0,
+				     STG_MOD_BLINKENLIGHT, 
+				     STG_PR_POST,
+				     (void*)&sb, sizeof(sb) ) 
 	  == 0 );
 }
 

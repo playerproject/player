@@ -19,7 +19,7 @@
  * $Id$
  */
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
 #define PLAYER_ENABLE_MSG 1
 
 #include "playercommon.h"
@@ -41,9 +41,6 @@ public:
   virtual int PutConfig(player_device_id_t* device, void* client, 
 			void* data, size_t len);
 
-  virtual int Setup(){ this->StageSubscribe(STG_MOD_RANGERS); return 0;};
-  virtual int Shutdown(){ this->StageUnsubscribe(STG_MOD_RANGERS); return 0;};
-
 private:
   // stage has no concept of sonar off/on, so we implement that here
   // to support the sonar power config.
@@ -54,6 +51,8 @@ StgSonar::StgSonar(char* interface, ConfigFile* cf, int section )
   : Stage1p4( interface, cf, section, sizeof(player_sonar_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgSonar with interface %s", interface );
+
+  this->subscribe_prop = STG_MOD_RANGERS;
     
   power_on = 1; // enabled by default
 }
@@ -81,17 +80,17 @@ void StgSonar_Register(DriverTable* table)
 size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {  
-  stg_model_t* model = &Stage1p4::models[this->section];
-  
   PLAYER_TRACE2(" STG_SONAR GETDATA section %d -> model %d",
-		this->section, model->stage_id );
-  
-  this->WaitForData(model->stage_id, STG_MOD_RANGERS );
-  
-  stg_property_t* prop = model->props[STG_MOD_RANGERS];
+		model->section, model->id );
+
+  stg_model_property_wait( model, this->subscribe_prop );
+  stg_property_t* prop = stg_model_property( model, this->subscribe_prop );
   
   stg_ranger_t *rangers = (stg_ranger_t*)prop->data;
   size_t rcount = prop->len / sizeof(stg_ranger_t);
+
+  PLAYER_TRACE2( "i see %d bytes of ranger data: %d ranger readings", 
+		 prop->len, rcount );
   
   // limit the number of samples to Player's maximum
   if( rcount > PLAYER_SONAR_MAX_SAMPLES )
@@ -118,26 +117,29 @@ size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
 int StgSonar::PutConfig(player_device_id_t* device, void* client, 
 			void* data, size_t len)
 {
-  stg_model_t* model = &Stage1p4::models[this->section];
-  
   // switch on the config type (first byte)
   uint8_t* buf = (uint8_t*)data;
   switch( buf[0] )
     {  
     case PLAYER_SONAR_GET_GEOM_REQ:
-      {  
-	this->WaitForData( model->stage_id, STG_MOD_RANGERS );
-
-	//printf( "i see %d bytes of ranger data\n", 
-	//this->model->props[STG_MOD_RANGERS]->len );
-
-	stg_ranger_t *rangers = 
-	  (stg_ranger_t*)model->props[STG_MOD_RANGERS]->data;
-	size_t rcount = 
-	  model->props[STG_MOD_RANGERS]->len / sizeof(stg_ranger_t);
-
-	assert( rangers );
-	assert( rcount > 0 );
+      { 
+	stg_model_property_refresh( model, this->subscribe_prop );
+	
+	stg_property_t* prop = 
+	  stg_model_property( model, this->subscribe_prop );
+	
+	//while( prop->len < sizeof(stg_ranger_t) )
+	//{
+	//printf( "i see %d bytes of ranger data\n", prop->len );
+	//stg_client_property_wait( Stage1p4::stage_client, model, 
+	//		    this->subscribe_prop );
+	//}	  
+	       
+	stg_ranger_t *rangers = (stg_ranger_t*)prop->data;
+	size_t rcount = prop->len / sizeof(stg_ranger_t);
+	
+	//assert( rangers );
+	//assert( rcount > 0 );
 	  
 	// convert the ranger data into Player-format sonar poses
 	
