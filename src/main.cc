@@ -173,33 +173,33 @@ void *client_reader(void* arg)
     /* wait for the STX */
     while(hdr.stx != PLAYER_STX)
     {
-      printf("looking for STX:%x:\n",PLAYER_STX);
-      if((readcnt = read(cd->socket,&(hdr.stx),sizeof(uint16_t))) <= 0)
+      //printf("looking for STX:%x:\n",PLAYER_STX);
+      if((readcnt = read(cd->socket,&(hdr.stx),sizeof(hdr.stx))) <= 0)
       {
         // client must be gone. fuck 'em
-        perror("client_reader(): read() while waiting for STX");
+        //perror("client_reader(): read() while waiting for STX");
         delete cd;
       }
-      printf("got:%x:\n",hdr.stx);
+      //printf("got:%x:\n",hdr.stx);
     }
-    puts("got STX");
+    //puts("got STX");
 
     /* get the rest of the header */
     if((readcnt += read(cd->socket,
                         &(hdr.type),
-                        sizeof(player_msghdr_t)-sizeof(uint16_t))) != 
+                        sizeof(player_msghdr_t)-sizeof(hdr.stx))) != 
                     sizeof(player_msghdr_t))
     {
-      perror("client_reader(): read() while reading header");
+      //perror("client_reader(): read() while reading header");
       delete cd;
     }
-    //hdr.type = ntohs(hdr.type);
-    //hdr.device = ntohs(hdr.device);
+
+    // byte-swap as necessary
     hdr.device_index = ntohs(hdr.device_index);
     hdr.time = ntohl(hdr.time);
     hdr.timestamp = ntohl(hdr.timestamp);
     hdr.size = ntohl(hdr.size);
-    puts("got HDR");
+    //puts("got HDR");
 
     /* get the payload */
     if(hdr.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
@@ -212,7 +212,7 @@ void *client_reader(void* arg)
                       "only got %d\n", hdr.size, readcnt);
       delete cd;
     }
-    puts("got payload");
+    //puts("got payload");
 
     cd->HandleRequests(hdr,buffer, hdr.size);
   } 

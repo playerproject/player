@@ -35,16 +35,16 @@
 
 void CSIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv) 
 {
-  struct timeval timeNow_tv;
-  unsigned int timeNow;
+  //struct timeval timeNow_tv;
+  //unsigned int timeNow;
   
-  gettimeofday(&timeNow_tv, NULL );
-  timeNow = 
-    (unsigned int) ((timeNow_tv.tv_sec - timeBegan_tv.tv_sec ) * 1000 + 
-		    ( timeNow_tv.tv_usec - timeBegan_tv.tv_usec ) / 1000.0);
+  //gettimeofday(&timeNow_tv, NULL );
+  //timeNow = 
+    //(unsigned int) ((timeNow_tv.tv_sec - timeBegan_tv.tv_sec ) * 1000 + 
+		    //( timeNow_tv.tv_usec - timeBegan_tv.tv_usec ) / 1000.0);
   
   /* time and position */
-  data->position.time = htonl((unsigned int)timeNow);
+  //data->position.time = htonl((unsigned int)timeNow);
   data->position.x = htonl((unsigned int)xpos); 
   data->position.y = htonl((unsigned int)ypos); 
   data->position.theta = htons((unsigned short)angle);
