@@ -224,7 +224,7 @@ void joystick_handler(struct controller* cont)
             //puts( "turn left" );
 
             // set the robot turn rate
-            cont->turnrate = (int)NORMALIZE_TURN(-event.value);
+            cont->turnrate = NORMALIZE_TURN(-event.value);
             cont->dirty = true;
             break;
 
@@ -236,7 +236,7 @@ void joystick_handler(struct controller* cont)
             //puts( "backwards" );
 
             // set the robot velocity
-            cont->speed = (int)NORMALIZE_SPEED(-event.value);
+            cont->speed = NORMALIZE_SPEED(-event.value);
             cont->dirty = true;
 
             break;
@@ -249,7 +249,7 @@ void joystick_handler(struct controller* cont)
             //puts( "zoom out" );
             //else
             //puts( "zoom in" );
-            cont->zoom = (int)KNORMALIZE(-event.value);
+            cont->zoom = KNORMALIZE(-event.value);
             cont->dirty = true;
 
             break;
@@ -500,6 +500,9 @@ void Client::Update( struct controller* cont )
     stopped = false;
     if(!debug_mode)
     {
+
+      printf("%f %f\n", cont->speed, cont->turnrate);
+      
       // send the speed commands
       if(!threed)
         pp->SetSpeed( cont->speed, cont->turnrate);
