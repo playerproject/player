@@ -116,13 +116,22 @@ AC_SUBST(PYTHON_INTERP)
 
 dnl do we have pkg-config?
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+if test "PKG_CONFIG" = "no"; then
+  AC_MSG_RESULT([pkg-config not available.])
+fi
 
 dnl Set up RTK2 for the various GUIs 
 dnl we do it before configuring drivers in case they have GUI bits
+dnl The logic is:
+dnl   --with-rtk set or no pkg-config => try the hard way
+dnl   --with-rtk not set and have pkg-config => try pkg-config; if that fails,
+dnl                                             try the hard way
+AC_ARG_WITH(rtk, [  --with-rtk=dir          Location of RTK],
+RTK_DIR=$with_rtk RTK_USE_PKG_CONFIG="no", RTK_DIR=$prefix RTK_USE_PKG_CONFIG=$PKG_CONFIG)
 
 dnl if pkg-config is not available we find RTK the hard way  
-if test "$PKG_CONFIG" = "no" ; then
-    AC_MSG_RESULT([pkg-config not available. Using --with-rtk and --prefix to find libRTK2.])  
+if test "$RTK_USE_PKG_CONFIG" = "no"; then
+    AC_MSG_RESULT([Using --with-rtk and --prefix to find libRTK2.])  
     dnl This macro is defined in m4.d/rtktests.m4
     RTK_CHECK
     dnl we set the vars that pkg-config would have created
@@ -142,9 +151,22 @@ else
     with_rtk=yes
     AC_DEFINE(INCLUDE_RTK2,1,[building optional RTK GUI components]),
     with_rtk=no
-    AC_MSG_WARN([no suitable RTK was found. ])
-  ) 
+    AC_MSG_WARN([no suitable RTK was found])
+  )
   AM_CONDITIONAL(WITH_RTK, test x$with_rtk = xyes)
+
+  dnl Didnt find it; try one more time the old fashioned way
+  if test "$with_rtk" = "no"; then
+    AC_MSG_RESULT([Using --with-rtk and --prefix to find libRTK2.])  
+    dnl This macro is defined in m4.d/rtktests.m4
+    RTK_CHECK
+    dnl we set the vars that pkg-config would have created
+    dnl TODO - remove these duplicate vars
+    RTK_CFLAGS=$RTK_CPPFLAGS
+    RTK_LIBS=$RTK_LDADD
+    AC_SUBST(RTK_CFLAGS)
+    AC_SUBST(RTK_CLIBS)
+  fi
 
   dnl lots of drivers use CPP flags instead of CFLAGS because that's 
   dnl what gets set in RTK_CHECK - rtv
@@ -153,11 +175,22 @@ else
   AC_SUBST(RTK_CPPFLAGS)
 fi
 
+
 dnl ************************************************************************
 dnl Start of macros from m4.d (in addition to RTK_CHECK, used above)
 dnl ************************************************************************
 
+dnl Look for Gazebo
+GAZEBO_FIND
+
+dnl Do the standard driver tests (including gazebo)
 PLAYER_DRIVERTESTS
+
+dnl Do some additional gazebo tests (may omit some gazebo drivers)
+if test "x$enable_gazebo" = "xyes"; then
+   GAZEBO_TESTS
+fi
+
 
 dnl ************************************************************************
 dnl End of macros from m4.d

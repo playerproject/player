@@ -56,7 +56,7 @@
   #include "capturev4l.h"
 #endif
 
-#if INCLUDE_GAZEBO
+#if INCLUDE_GAZEBO_CAMERA
   #include "captureGazebo.h"
   #include "gz_cam_init.h"
 #endif
@@ -210,7 +210,7 @@ CMVisionBF::Setup()
   {
     //#if HAVE_GAZEBO
 
-#if INCLUDE_GAZEBO
+#if INCLUDE_GAZEBO_CAMERA
     cap = new captureGazebo(gz_interface,gz_cf,gz_section);
 #else
     PLAYER_ERROR("Sorry, support for capture from a Gazebo camera was not "
