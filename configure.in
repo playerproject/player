@@ -282,9 +282,7 @@ AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
 
 dnl Optionally build the python client.
-PYTHON_VERSION=2.2
-AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,
-  with_python=yes,with_python=no,)
+AC_CHECK_PROG(with_python, python, yes, no)
 AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
 AC_SUBST(PYTHON_VERSION)
 
