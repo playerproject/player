@@ -75,6 +75,7 @@ The readlog driver can provide the following device interfaces.
 - @ref player_interface_laser
 - @ref player_interface_position
 - @ref player_interface_position3d
+- @ref player_interface_truth
 - @ref player_interface_wifi
 
 The driver also provides an interface for controlling the playback:
@@ -206,6 +207,10 @@ class ReadLog: public Driver
 
   // Parse position3d data
   private: int ParsePosition3d(player_device_id_t id, int linenum,
+                               int token_count, char **tokens, struct timeval time);
+
+  // Parse truth data
+  private: int ParseTruth(player_device_id_t id, int linenum,
                                int token_count, char **tokens, struct timeval time);
 
   // Parse wifi data
@@ -786,6 +791,8 @@ int ReadLog::ParseData(player_device_id_t id, int linenum,
     return this->ParsePosition(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_POSITION3D_CODE)
     return this->ParsePosition3d(id, linenum, token_count, tokens, time);
+  else if (id.code == PLAYER_TRUTH_CODE)
+    return this->ParseTruth(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_WIFI_CODE)
     return this->ParseWifi(id, linenum, token_count, tokens, time);
 
@@ -1115,6 +1122,32 @@ int ReadLog::ParsePosition3d(player_device_id_t id, int linenum,
   data.yawspeed = NINT32(1000 * atof(tokens[17]));
   
   data.stall = atoi(tokens[18]);
+
+  this->PutData(id, &data, sizeof(data), &time);
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse truth data
+int ReadLog::ParseTruth(player_device_id_t id, int linenum,
+                             int token_count, char **tokens, struct timeval time)
+{
+ player_truth_data_t data;
+
+  if (token_count < 11)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+  
+  data.pos[0] = NINT32(M_MM(atof(tokens[6])));
+  data.pos[1] = NINT32(M_MM(atof(tokens[7])));
+  data.pos[2] = NINT32(M_MM(atof(tokens[8])));
+
+  data.rot[0] = NINT32(M_MM(atof(tokens[9])));
+  data.rot[1] = NINT32(M_MM(atof(tokens[10])));
+  data.rot[2] = NINT32(M_MM(atof(tokens[11])));
 
   this->PutData(id, &data, sizeof(data), &time);
 
