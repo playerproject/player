@@ -31,11 +31,8 @@
 #include <errno.h>
 #include <string.h>
 #include <math.h>
+#include <netinet/in.h>
 #include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -46,6 +43,7 @@
 #include "drivertable.h"
 
 #include "gazebo.h"
+#include "gz_client.h"
 
 
 // Incremental navigation driver
@@ -76,17 +74,24 @@ class GzPosition : public CDevice
   private: void HandleGetGeom(void *client, void *req, int reqlen);
 
   // Gazebo id
-  private: const char *gz_id;
+  private: int gz_id;
 
-  // MMap file
-  private: int mmap_fd;
-  private: gz_position_t *mmap;
+  // Gazebo client object
+  private: gz_client_t *client;
+  
+  // Gazebo Interface
+  private: gz_position_t *iface;
 };
 
 
 // Initialization function
 CDevice* GzPosition_Init(char* interface, ConfigFile* cf, int section)
 {
+  if (GzClient::client == NULL)
+  {
+    PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
+    return (NULL);
+  }
   if (strcmp(interface, PLAYER_POSITION_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"gz_position\" does not support interface \"%s\"\n", interface);
@@ -111,8 +116,14 @@ GzPosition::GzPosition(char* interface, ConfigFile* cf, int section)
 {
 
   // Get the id of the device in Gazebo
-  this->gz_id = cf->ReadString(section, "gz_id", 0);
+  this->gz_id = cf->ReadInt(section, "gz_id", 0);
+
+  // Get the globally defined  Gazebo client (one per instance of Player)
+  this->client = GzClient::client;
   
+  // Create an interface
+  this->iface = gz_position_alloc();
+
   return;
 }
 
@@ -121,6 +132,7 @@ GzPosition::GzPosition(char* interface, ConfigFile* cf, int section)
 // Destructor
 GzPosition::~GzPosition()
 {
+  gz_position_free(this->iface); 
   return;
 }
 
@@ -129,28 +141,10 @@ GzPosition::~GzPosition()
 // Set up the device (called by server thread).
 int GzPosition::Setup()
 {
-  char filename[128];
-
-  snprintf(filename, sizeof(filename), "/tmp/gazebo.%s.mmap", this->gz_id);
-  printf("opening %s\n", filename);
-
-  // Open the mmap file
-  this->mmap_fd = ::open(filename, O_RDWR);
-  if (this->mmap_fd <= 0)
-  {
-    PLAYER_ERROR1("error opening device file: %s", strerror(errno));
+  // Open the interface
+  if (gz_position_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
-  }
 
-  // Map the mmap file
-  this->mmap = (gz_position_t*) ::mmap(0, sizeof(gz_position_t), PROT_READ | PROT_WRITE,
-                                       MAP_SHARED, this->mmap_fd, 0);
-  if ((int) this->mmap <= 0)
-  {
-    PLAYER_ERROR1("error mapping device file: %s", strerror(errno));
-    exit(1);
-  }
-  
   return 0;
 }
 
@@ -159,12 +153,8 @@ int GzPosition::Setup()
 // Shutdown the device (called by server thread).
 int GzPosition::Shutdown()
 {
-  ::munmap(this->mmap, sizeof(gz_position_t));
-  ::close(this->mmap_fd);
-
-  this->mmap = NULL;
-  this->mmap_fd = 0;
-
+  gz_position_close(this->iface);
+  
   return 0;
 }
 
@@ -176,17 +166,17 @@ size_t GzPosition::GetData(void* client, unsigned char* dest, size_t len,
 {
   player_position_data_t data;
 
-  data.xpos = htonl((int) (this->mmap->odom_pose[0] * 1000));
-  data.ypos = htonl((int) (this->mmap->odom_pose[1] * 1000));
-  data.yaw = htonl((int) (this->mmap->odom_pose[2] * 180 / M_PI));
+  data.xpos = htonl((int) (this->iface->data->odom_pose[0] * 1000));
+  data.ypos = htonl((int) (this->iface->data->odom_pose[1] * 1000));
+  data.yaw = htonl((int) (this->iface->data->odom_pose[2] * 180 / M_PI));
   
   assert(len >= sizeof(data));
   memcpy(dest, &data, sizeof(data));
 
   if (timestamp_sec)
-    *timestamp_sec = (int) (this->mmap->time);
+    *timestamp_sec = (int) (this->iface->data->time);
   if (timestamp_usec)
-    *timestamp_usec = (int) (fmod(this->mmap->time, 1) * 1e6);
+    *timestamp_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
   return sizeof(data);
 }
@@ -201,9 +191,9 @@ void GzPosition::PutCommand(void* client, unsigned char* src, size_t len)
   assert(len >= sizeof(player_position_cmd_t));
   cmd = (player_position_cmd_t*) src;
 
-  this->mmap->cmd_vel[0] = ((int) ntohl(cmd->xspeed)) / 1000.0;
-  this->mmap->cmd_vel[1] = ((int) ntohl(cmd->yspeed)) / 1000.0;
-  this->mmap->cmd_vel[2] = ((int) ntohl(cmd->yawspeed)) * M_PI / 180;
+  this->iface->data->cmd_vel[0] = ((int) ntohl(cmd->xspeed)) / 1000.0;
+  this->iface->data->cmd_vel[1] = ((int) ntohl(cmd->yspeed)) / 1000.0;
+  this->iface->data->cmd_vel[2] = ((int) ntohl(cmd->yawspeed)) * M_PI / 180;
   
   return;
 }

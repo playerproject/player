@@ -31,11 +31,8 @@
 #include <errno.h>
 #include <string.h>
 #include <math.h>
+#include <netinet/in.h>
 #include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -131,6 +128,8 @@ GzLaser::GzLaser(char* interface, ConfigFile* cf, int section)
 // Destructor
 GzLaser::~GzLaser()
 {
+  gz_laser_free(this->iface);
+  
   return;
 }
 
