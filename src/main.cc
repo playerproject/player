@@ -47,6 +47,7 @@
 #include <pubsub_util.h> /* for create_and_bind_socket() */
 #include <defaults.h>  /* for device defaults */
 #include <deviceregistry.h> /* for register_devices() */
+#include <configfile.h> /* for config file parser */
 
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
@@ -92,6 +93,9 @@ PlayerTime* GlobalTime;
 // keep track of the pointers to our various clients.
 // that way we can cancel them at Shutdown
 ClientManager* clientmanager;
+
+// use this object to parse config files and command line args
+ConfigFile configFile;
 
 // for use in other places (cliendata.cc, for example)
 char playerversion[] = PLAYER_VERSION;
@@ -520,17 +524,60 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   
   // set up the stagetime object
   assert( clock );
-  assert( GlobalTime = (PlayerTime*)(new StageTime( clock, tfd )) );
+  
+  // GlobalTime is initialized in Main(), so we'll delete and reassign it here
+  if(GlobalTime)
+    delete GlobalTime;
+  assert(GlobalTime = (PlayerTime*)(new StageTime(clock, tfd)));
 
   return( clock );
 }
 #endif // INCLUDE_STAGE
 
-/* placeholder for a future configuration file parser */
-int
+bool
 parse_config_file(char* fname)
 {
-  return(-1);
+  CDeviceEntry* entry;
+  CDevice* tmpdevice;
+  char* devname;
+  
+  // parse the file
+  if(!configFile.Load(fname))
+    return(false);
+
+  // load each device specified in the file
+  //for(int i = 0; i < configFile.GetEntityCount(); i++)
+  for(int i = 1; i < configFile.GetEntityCount(); i++)
+  {
+    if(configFile.entities[i].type < 0)
+      continue;
+
+    devname = (char*)(configFile.entities[i].type);
+    printf(":%s:\n", devname);
+
+    /* look for the indicated device in the available device table */
+    if(!(entry = availableDeviceTable->GetDeviceEntry(devname)))
+    {
+      fprintf(stderr,"\nError: couldn't instantiate requested device \"%s\";\n"
+              "  Perhaps support for it was not compiled into this binary?\n", 
+              devname+1);
+      return(false);
+    }
+    else
+    {
+      player_device_id_t id;
+      id = entry->id;
+      id.port = global_playerport;
+      //id.index = index;
+      id.index = 0;
+
+      //tmpdevice = (*(entry->initfunc))(argc,argv);
+      tmpdevice = (*(entry->initfunc))(0,NULL);
+      deviceTable->AddDevice(id, entry->access, tmpdevice);
+    }
+  }
+
+  return(true);
 }
 
 int main( int argc, char *argv[] )
@@ -538,6 +585,10 @@ int main( int argc, char *argv[] )
   bool special_config = false;
   struct sockaddr_in listener;
   char auth_key[PLAYER_KEYLEN] = "";
+
+  // setup the clock;  if we end up using Stage, we'll delete this one
+  // and reassign it
+  assert(GlobalTime = (PlayerTime*)(new WallclockTime()));
 
   // Register the default available devices in the availableDeviceTable.  
   //
@@ -639,7 +690,7 @@ int main( int argc, char *argv[] )
     {
       if(++i<argc)
       {
-        if(parse_config_file(argv[i])<0)
+        if(!parse_config_file(argv[i]))
           exit(-1);
         special_config = true;
       }
@@ -688,8 +739,8 @@ int main( int argc, char *argv[] )
   // doesn't work use the sane spec
   if(!special_config && !use_stage)
   {
-    if(parse_config_file(DEFAULT_PLAYER_CONFIGFILE)<0)
-    {
+    //if(!parse_config_file(DEFAULT_PLAYER_CONFIGFILE))
+    //{
       for(int i=0;sane_spec[i];i++)
       {
         if(parse_device_string(sane_spec[i],NULL) < 0)
@@ -698,7 +749,7 @@ int main( int argc, char *argv[] )
                   "device \"%s\"\n", sane_spec[i]);
         }
       }
-    }
+    //}
   }
 
   puts( "" ); // newline, flush

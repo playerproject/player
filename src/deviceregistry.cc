@@ -229,12 +229,6 @@ parse_device_string(char* str1, char* str2)
   CDeviceEntry* entry;
   char devicename[PLAYER_MAX_DEVICE_STRING_LEN];
 
-  // if we haven't initialized the PlayerTime pointer yet, do it now,
-  // because it might be referenced by CDevice::PutData(), which can be
-  // called by a device's constructor
-  if(!GlobalTime)
-    GlobalTime = (PlayerTime*)(new WallclockTime());
-
   // did we get a valid device option string?
   if(!str1 || (str1[0] != '-') || (strlen(str1) < 2))
     return(-1);

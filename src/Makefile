@@ -24,7 +24,7 @@ LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm -ldl
 # definitely build the device-independent objects
 #
 OBS = clientdata.o pubsub_util.o devicetable.o device.o deviceregistry.o\
-      clientmanager.o wallclocktime.o main.o playerqueue.o
+      clientmanager.o wallclocktime.o main.o playerqueue.o configfile.o
 
 #
 # only build the device-specific objects that we need (duplicate objects
