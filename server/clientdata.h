@@ -29,6 +29,10 @@
 #ifndef _CLIENTDATA_H
 #define _CLIENTDATA_H
 
+#include <sys/types.h>  // for sendto(2)
+#include <netinet/in.h>   /* for sockaddr_in type */
+#include <sys/socket.h>  // for sendto(2)
+
 #include <player.h>
 
 // get around circular inclusion;
@@ -64,17 +68,12 @@ typedef enum
   PLAYER_READ_ERROR,
 } player_read_state_t;
 
-
-class CClientData 
+class ClientData 
 {
-  private:
+  protected:
     char auth_key[PLAYER_KEYLEN];
     unsigned char *readbuffer;
     unsigned char *writebuffer;  // individual data messages are written here
-    unsigned char *totalwritebuffer; // data messages are then added here, for
-                                     // one efficient write(2)
-    size_t totalwritebuffersize; // size of currently allocated buffer
-    player_msghdr_t hdrbuffer;
     
     // added this so Player can manage multiple robots in Stage mode
     int port;
@@ -116,19 +115,30 @@ class CClientData
     CDeviceSubscription* requested;
     int numsubs;
     unsigned char *replybuffer;
+    unsigned char *totalwritebuffer; // data messages are then added here, for
+                                     // one efficient write(2)
+    size_t totalwritebuffersize; // size of currently allocated buffer
+    player_msghdr_t hdrbuffer;
     bool auth_pending;
     unsigned char mode;
     unsigned short frequency;  // Hz
     bool datarequested;
     bool markedfordeletion;
 
+    // used to address outgoing data in UDP mode.
+    struct sockaddr_in clientaddr;
+    int clientaddr_len;
+
+    // used to identify the client in UDP mode.
+    uint16_t client_id;
+
     // this is used decide when to write
     double last_write;
 
     int socket;
 
-    CClientData(char* key, int port);
-    ~CClientData();
+    ClientData(char* key, int port);
+    virtual ~ClientData();
 
     // Loop through all devices currently open for this client, get data from
     // them, and assemble the results into totalwritebuffer.  Returns the
@@ -142,7 +152,7 @@ class CClientData
     int HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                         size_t payload_size);
 
-    int Read();
+    virtual int Read() = 0;
     
     // Try to write() len bytes from totalwritebuffer, which should have been
     // filled with FillWriteBuffer().  If fewer than len bytes are written, 
@@ -150,10 +160,23 @@ class CClientData
     // their length is recorded in leftover_size.  Returns 0 on success (which
     // includes writing fewer than len bytes) and -1 on error (e.g., if the 
     // other end of the socket was closed).
-    int Write(size_t len);
-
-    int WriteIdentString();
+    virtual int Write(size_t len) = 0;
 };
 
+class ClientDataTCP : public ClientData
+{
+  public:
+    ClientDataTCP(char* key, int port) : ClientData(key, port) {};
+    virtual int Read();
+    virtual int Write(size_t len);
+};
+
+class ClientDataUDP : public ClientData
+{
+  public:
+    ClientDataUDP(char* key, int port) : ClientData(key, port) {};
+    virtual int Read();
+    virtual int Write(size_t len);
+};
 
 #endif

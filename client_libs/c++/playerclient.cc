@@ -53,8 +53,11 @@
 #include <netdb.h> // for gethostbyname(3)
 
 // just make a client, and connect, if instructed
-PlayerClient::PlayerClient(const char* hostname, int port )
+PlayerClient::PlayerClient(const char* hostname,
+                           const int port,
+                           const int protocol)
 {
+  conn.protocol = protocol;
   destroyed = false;
   // so we know we're not connected
   conn.sock = -1;
@@ -85,8 +88,11 @@ PlayerClient::PlayerClient(const char* hostname, int port )
 
 // alternate constructor using a binary IP instead of a hostname
 // just make a client, and connect, if instructed
-PlayerClient::PlayerClient(const struct in_addr* hostaddr, const int port)
+PlayerClient::PlayerClient(const struct in_addr* hostaddr, 
+                           const int port, 
+                           const int protocol)
 {
+  conn.protocol = protocol;
   destroyed = false;
   // so we know we're not connected
   conn.sock = -1;
@@ -327,11 +333,8 @@ int PlayerClient::Write(player_device_id_t device_id,
   if(!Connected())
     return(-1);
 
-  if(!GetReserved())
-    return(player_write(&conn,device_id.code,device_id.index,
-                        command,commandlen));
-  else
-    return(_player_write(&conn,device_id.code,device_id.index,command,commandlen,GetReserved()));
+  return(player_write(&conn,device_id.code,device_id.index,
+                      command,commandlen));
 }
 
 int PlayerClient::Request(player_device_id_t device_id,

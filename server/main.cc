@@ -129,18 +129,19 @@ void
 Usage()
 {
   puts("");
-  fprintf(stderr, "USAGE:\nplayer [-h] [-p <port>] [-s <path>] [-d <shlib>] "
-          "[-k <key>] [<configfile>]\n\n");
-  fprintf(stderr, "  -h            : Print this message.\n");
-  fprintf(stderr, "  -p <port>     : TCP port where Player will listen. "
+  fprintf(stderr, "USAGE:  player [options] [<configfile>]\n\n");
+  fprintf(stderr, "Where [options] can be:\n");
+  fprintf(stderr, "  -h             : Print this message.\n");
+  fprintf(stderr, "  -t {tcp | udp} : transport protocol to use.  Default: tcp\n");
+  fprintf(stderr, "  -p <port>      : port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
-  fprintf(stderr, "  -s <path>     : use memory-mapped IO with Stage "
-          "through the devices in\n                  this directory\n");
-  fprintf(stderr, "  -d <shlib>    : load the the indicated shared library\n");
-  fprintf(stderr, "  -k <key>      : require client authentication with the "
+  fprintf(stderr, "  -s <path>      : use memory-mapped IO with Stage "
+          "through the devices in\n                   this directory\n");
+  fprintf(stderr, "  -d <shlib>     : load the the indicated shared library\n");
+  fprintf(stderr, "  -k <key>       : require client authentication with the "
           "given key\n");
-  fprintf(stderr, "  <configfile>  : load the the indicated config file\n");
-  fprintf(stderr, "\nAvailable drivers:\n");
+  fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
+  fprintf(stderr, "\nThe following drivers were compiled into Player:\n");
   for(int i=0;i<driverTable->Size();i++)
     fprintf(stderr, "  %s\n", driverTable->GetDriverName(i));
   fprintf(stderr,"\n\nPart of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
@@ -274,7 +275,8 @@ MatchDeviceName( const struct dirent* ent )
 // looks in the directory for device entries, creates the devices
 // and fills an array with unique port numbers
 void
-CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num_ufds )
+CreateStageDevices(char *directory, int **ports, struct pollfd **ufds, 
+                   int *num_ufds, int protocol)
 {
 #ifdef VERBOSE
   printf( "Searching for Stage devices\n" );
@@ -621,7 +623,7 @@ CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num
 #endif      
       // setup the socket to listen on
       if(((*ufds)[i].fd = create_and_bind_socket(&listener,1, (*ports)[i], 
-                                               SOCK_STREAM,200)) == -1)
+                                               protocol,200)) == -1)
       {
         fputs("create_and_bind_socket() failed; quitting", stderr);
         exit(-1);
@@ -645,7 +647,7 @@ CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num
     {
       if(((*ufds)[curr_ufd].fd = 
           create_and_bind_socket(&listener,1,curr_port,
-                                 SOCK_STREAM,200)) == -1)
+                                 protocol,200)) == -1)
       {
         if(!curr_ufd)
         {
@@ -801,6 +803,7 @@ int main( int argc, char *argv[] )
   int *ports = NULL;
   struct pollfd *ufds = NULL;
   int num_ufds = 0;
+  int protocol = PLAYER_TRANSPORT_TCP;
 
   // Register the available drivers in the driverTable.  
   //
@@ -891,6 +894,27 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
+    else if(!strcmp(argv[i], "-t"))
+    {
+      if(++i<argc) 
+      { 
+        if(!strcmp(argv[i], "tcp"))
+          protocol = PLAYER_TRANSPORT_TCP;
+        else if(!strcmp(argv[i], "udp"))
+          protocol = PLAYER_TRANSPORT_UDP;
+        else
+        {
+          printf("\nUnknown transport protocol \"%s\"\n", argv[i]);
+          Usage();
+          exit(-1);
+        }
+      }
+      else 
+      {
+        Usage();
+        exit(-1);
+      }
+    }
     else if(!strcmp(argv[i], "-gerkey"))
     {
       printf("[gerkey]");
@@ -950,6 +974,8 @@ int main( int argc, char *argv[] )
       exit(-1);
     }
   }
+
+  printf(" [%s]", (protocol == PLAYER_TRANSPORT_TCP) ? "TCP" : "UDP");
 
   puts( "" ); // newline, flush
 
@@ -1025,7 +1051,7 @@ int main( int argc, char *argv[] )
     // returns pointer to the timeval struct
     // and creates the ports array and array length with the port numbers
     // deduced from the stageIO filenames
-    CreateStageDevices( stage_io_directory, &ports, &ufds, &num_ufds);
+    CreateStageDevices( stage_io_directory, &ports, &ufds, &num_ufds, protocol);
 #endif
   }
   else if (configfile != NULL)
@@ -1035,17 +1061,14 @@ int main( int argc, char *argv[] )
       exit(-1);
 
     num_ufds = 1;
-    if(!(ufds = new struct pollfd[num_ufds]) || !(ports = new int[num_ufds]))
-    {
-      perror("new failed for pollfds or ports");
-      exit(-1);
-    }
+    assert((ufds = new struct pollfd[num_ufds]) && 
+           (ports = new int[num_ufds]));
 
     struct sockaddr_in listener;
 
     // setup the socket to listen on
     if((ufds[0].fd = create_and_bind_socket(&listener,1,global_playerport,
-                                            SOCK_STREAM,200)) == -1)
+                                            protocol,200)) == -1)
     {
       fputs("create_and_bind_socket() failed; quitting", stderr);
       exit(-1);
@@ -1059,14 +1082,25 @@ int main( int argc, char *argv[] )
   if(!(deviceTable->Size()))
   {
     if( use_stage )
-      PLAYER_WARN("No devices instantiated; no valid Player devices in worldfile?");
+      PLAYER_ERROR("No devices instantiated; no valid Player devices in worldfile?");
     else
-      PLAYER_WARN("No devices instantiated; perhaps you should supply " 
+      PLAYER_ERROR("No devices instantiated; perhaps you should supply " 
                   "a configuration file?");
+    exit(-1);
   }
 
   // create the client manager object.
-  clientmanager = new ClientManager(ufds, ports, num_ufds, auth_key);
+  if(protocol == PLAYER_TRANSPORT_TCP)
+    clientmanager = (ClientManager*)(new ClientManagerTCP(ufds, ports, 
+                                                          num_ufds, auth_key));
+  else if(protocol == PLAYER_TRANSPORT_UDP)
+    clientmanager = (ClientManager*)(new ClientManagerUDP(ufds, ports, 
+                                                          num_ufds, auth_key));
+  else
+  {
+    PLAYER_ERROR("Unknown transport protocol");
+    exit(-1);
+  }
 
   // main loop: sleep the shortest amount possible, periodically updating
   // the clientmanager.

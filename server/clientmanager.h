@@ -35,7 +35,7 @@
 
 class ClientManager
 {
-  private:
+  protected:
     // dynamically managed array of structs that we'll give to poll(2)
     // when trying to read from clients
     struct pollfd* ufds;
@@ -43,7 +43,11 @@ class ClientManager
     // dynamically managed array of our clients
     int num_clients;
     int size_clients;
-    CClientData** clients;
+    ClientData** clients;
+
+    // counter used to generate quasi-unique client IDs.  obviously, it can
+    // roll over, but only after 64K clients have connected.
+    uint16_t curr_client_id;
 
     // dynamically managed array of structs that we'll give to poll(2)
     // when trying to accept new connections
@@ -60,10 +64,10 @@ class ClientManager
                   int numfds, char* auth_key);
 
     // destructor
-    ~ClientManager();
+    virtual ~ClientManager();
     
     // add a client to our watch list
-    void AddClient(CClientData* client);
+    void AddClient(ClientData* client);
 
     // Update the ClientManager
     int Update();
@@ -73,12 +77,38 @@ class ClientManager
     // remove a client
     void RemoveBlanks();
 
-    int Accept();
-    int Read();
-    int Write();
+    // These 3 methods are the primary interface to the ClientManager.
+    // They must be implemented by any subclass.
+    virtual int Accept() = 0;
+    virtual int Read() = 0;
+    virtual int Write() = 0;
 
-    // get the index corresponding to a CClientData pointer
-    int GetIndex(CClientData* ptr);
+    // get the index corresponding to a ClientData pointer
+    int GetIndex(ClientData* ptr);
+};
+
+class ClientManagerTCP : public ClientManager
+{
+  public:
+    ClientManagerTCP(struct pollfd* listen_ufds, int* ports,
+                     int numfds, char* auth_key) :
+            ClientManager(listen_ufds,ports,numfds,auth_key) {}
+    virtual int Accept();
+    virtual int Read();
+    virtual int Write();
+};
+
+class ClientManagerUDP : public ClientManager
+{
+  public:
+    ClientManagerUDP(struct pollfd* listen_ufds, int* ports,
+                     int numfds, char* auth_key) :
+            ClientManager(listen_ufds,ports,numfds,auth_key) {}
+
+    virtual int Accept();
+    virtual int Read();
+    virtual int Write();
+
 };
 
 #endif

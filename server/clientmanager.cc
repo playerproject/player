@@ -48,8 +48,11 @@
 #include "device.h"
 
 
+// the externed vars are declared in main.cc
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
+extern char playerversion[];
+extern bool use_stage;
 
 /* used to name incoming client connections */
 int
@@ -81,45 +84,26 @@ make_dotted_ip_address(char* dest, int len, uint32_t addr)
 ClientManager::ClientManager(struct pollfd* listen_ufds, int* ports,
                              int numfds, char* auth_key)
 {
-  // allocate space for accept_ufds
-  if(!(accept_ufds = new struct pollfd[numfds]) || 
-     !(accept_ports = new int[numfds]))
-  {
-    fputs("ClientManager::ClientManager(): new failed. "
-          "Out of memory? bailing\n", stderr);
-    exit(1);
-  }
+  int initial_size=8;
 
-  // store the ufds and ports for accepting new connections
-  memcpy(accept_ufds, listen_ufds, sizeof(struct pollfd)*numfds);
-  memcpy(accept_ports, ports, sizeof(int)*numfds);
-  num_accept_ufds = numfds;
+  curr_client_id=1;
 
   strncpy(client_auth_key, auth_key,sizeof(client_auth_key));
   // just in case...
   client_auth_key[sizeof(client_auth_key)-1] = '\0';
 
-  // initialize both arrays to this size; we'll double it each time
-  // we need more space later
-  int initial_size = 8;
+  assert(accept_ports = new int[numfds]);
+  memcpy(accept_ports, ports, sizeof(int)*numfds);
+  assert(accept_ufds = new struct pollfd[numfds]);
+  memcpy(accept_ufds, listen_ufds, sizeof(struct pollfd)*numfds);
+  num_accept_ufds = numfds;
 
-  if(!(clients = new CClientData*[initial_size]))
-  {
-    fputs("ClientManager::ClientManager(): new failed. "
-          "Out of memory? bailing\n", stderr);
-    exit(1);
-  }
-  bzero((char*)clients,sizeof(CClientData*)*initial_size);
+  assert(clients = new ClientData*[initial_size]);
+  bzero((char*)clients,sizeof(ClientData*)*initial_size);
+  assert(ufds = new struct pollfd[initial_size]);
+  bzero((char*)ufds,sizeof(struct pollfd)*initial_size);
   size_clients = initial_size;
   num_clients = 0;
-
-  if(!(ufds = new struct pollfd[initial_size]))
-  {
-    fputs("ClientManager::ClientManager(): new failed. "
-          "Out of memory? bailing \n", stderr);
-    exit(1);
-  }
-  bzero((char*)ufds,sizeof(struct pollfd)*initial_size);
 }
 
 // destructor
@@ -144,8 +128,9 @@ ClientManager::~ClientManager()
 }
 
 // add a client to our watch list
-void ClientManager::AddClient(CClientData* client)
+void ClientManager::AddClient(ClientData* client)
 {
+  int retval;
   if(!client)
     return;
 
@@ -155,10 +140,10 @@ void ClientManager::AddClient(CClientData* client)
   if(num_clients >= size_clients)
   {
     //puts("allocating more room for clients");
-    CClientData** tmp_clients;
+    ClientData** tmp_clients;
 
     // allocate twice as much space
-    if(!(tmp_clients = new CClientData*[2*size_clients]))
+    if(!(tmp_clients = new ClientData*[2*size_clients]))
     {
       fputs("ClientManager::AddClient(): new failed. Out of memory? bailing",
             stderr);
@@ -166,10 +151,10 @@ void ClientManager::AddClient(CClientData* client)
     }
 
     // zero it
-    bzero((char*)tmp_clients,sizeof(CClientData*)*2*size_clients);
+    bzero((char*)tmp_clients,sizeof(ClientData*)*2*size_clients);
 
     // copy existing data
-    memcpy(tmp_clients,clients,sizeof(CClientData*)*num_clients);
+    memcpy(tmp_clients,clients,sizeof(ClientData*)*num_clients);
 
     // kill the old array
     delete clients;
@@ -212,10 +197,26 @@ void ClientManager::AddClient(CClientData* client)
     
   // try to write the ident string to the client, and kill the client if
   // it fails
-  if(client->WriteIdentString() == -1)
+  unsigned char data[PLAYER_IDENT_STRLEN];
+  // write back an identifier string
+  if(use_stage)
+    sprintf((char*)data, "%s%s (stage)", PLAYER_IDENT_STRING, playerversion);
+  else
+    sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
+  bzero(((char*)data)+strlen((char*)data),
+        PLAYER_IDENT_STRLEN-strlen((char*)data));
+
+  client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);
+  retval= client->Write(PLAYER_IDENT_STRLEN);
+
+  if(retval < 0)
   {
-    MarkClientForDeletion(num_clients-1);
-    RemoveBlanks();
+    if(errno != EAGAIN)
+    {
+      PLAYER_ERROR1("%s",strerror(errno));
+      MarkClientForDeletion(num_clients-1);
+      RemoveBlanks();
+    }
   }
 }
 
@@ -296,8 +297,8 @@ void ClientManager::RemoveBlanks()
   num_clients = i;
 }
 
-// get the index corresponding to a CClientData pointer
-int ClientManager::GetIndex(CClientData* ptr)
+// get the index corresponding to a ClientData pointer
+int ClientManager::GetIndex(ClientData* ptr)
 {
   int retval = -1;
   for(int i=0;i<num_clients;i++)
@@ -312,11 +313,14 @@ int ClientManager::GetIndex(CClientData* ptr)
   return(retval);
 }
 
-// accept new connections
-int ClientManager::Accept()
+/*************************************************************************
+ * ClientManagerTCP
+ *************************************************************************/
+int
+ClientManagerTCP::Accept()
 {
   int num_connects;
-  CClientData *clientData;
+  ClientData *clientData;
   socklen_t sender_len;
 
   if((num_connects = poll(accept_ufds,num_accept_ufds,0)) < 0)
@@ -336,7 +340,7 @@ int ClientManager::Accept()
     if(accept_ufds[i].revents & POLLIN)
     {
       num_connects--;
-      clientData = new CClientData(client_auth_key,accept_ports[i]);
+      clientData = new ClientDataTCP(client_auth_key, accept_ports[i]);
 
       struct sockaddr_in cliaddr;
       sender_len = sizeof(cliaddr);
@@ -381,8 +385,8 @@ int ClientManager::Accept()
   }
   return(0);
 }
-
-int ClientManager::Read()
+int
+ClientManagerTCP::Read()
 {
   int num_to_read;
 
@@ -427,7 +431,8 @@ int ClientManager::Read()
   return(0);
 }
 
-int ClientManager::Write()
+int
+ClientManagerTCP::Write()
 {
   struct timeval curr;
   
@@ -529,38 +534,316 @@ int ClientManager::Write()
       continue;
 
     // is it time to write?
-    if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
-       (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
+    if((((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+         (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
+        (((curr.tv_sec+(curr.tv_usec/1000000.0))- clients[i]->last_write) >= 
+         (1.0/clients[i]->frequency))) ||
+       (((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
+         (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW)) &&
+        (clients[i]->datarequested)))
     {
-      /*
-      if(((curr.tv_sec+(curr.tv_usec/1000000.0))-
-          clients[i]->last_write) + 0.005 >= 
-         (1.0/clients[i]->frequency))
-         */
-      if(((curr.tv_sec+(curr.tv_usec/1000000.0))-
-          clients[i]->last_write) >= 
-         (1.0/clients[i]->frequency))
-      {
-        size_t msglen = clients[i]->BuildMsg();
-        if(clients[i]->Write(msglen) == -1)
-        {
-          // write must have errored. dump it
-          MarkClientForDeletion(i);
-        }
-        else
-          clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
-      }
-    }
-    else if(((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
-             (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW))&&
-            (clients[i]->datarequested))
-    {
-      clients[i]->datarequested = false;
       size_t msglen = clients[i]->BuildMsg();
       if(clients[i]->Write(msglen) == -1)
-      {
-        // write must have errored. dump it
         MarkClientForDeletion(i);
+      else
+      {
+        if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+           (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
+          clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
+        else
+          clients[i]->datarequested = false;
+      }
+    }
+  }
+
+
+  // remove any clients that we marked
+  RemoveBlanks();
+
+  return(0);
+}
+
+/*************************************************************************
+ * ClientManagerUDP
+ *************************************************************************/
+int ClientManagerUDP::Accept()
+{
+  // UDP doesn't have an accept step
+  return(0);
+}
+
+int
+ClientManagerUDP::Read()
+{
+  int num_to_read;
+  int numread;
+  unsigned char buf[PLAYER_MAX_MESSAGE_SIZE];
+  char senderaddr[256];
+  struct sockaddr_in sender;
+  socklen_t senderlen = sizeof(sender);
+  ClientData *clientData;
+  player_msghdr_t hdr;
+
+  // poll the fds that we're listening on, with smallest possible timeout,
+  // just so that we yield the processor.
+  if((num_to_read = poll(accept_ufds,num_accept_ufds,1)) == -1)
+  {
+    if(errno != EINTR)
+    {
+      PLAYER_ERROR1("%s", strerror(errno));
+      return(-1);
+    }
+  }
+
+  // call the corresponding Read() for each one that's ready
+  for(int i=0;i<num_accept_ufds && num_to_read>0;i++)
+  {
+    clientData=NULL;
+    // is this one ready to read?
+    if(accept_ufds[i].revents & POLLIN)
+    {
+      num_to_read--;
+
+      // Read to get the sender's address, but leave the message on the queue, 
+      // so that it can be read by the appropriate client object.
+      if((numread = recvfrom(accept_ufds[i].fd,(void*)&hdr,sizeof(hdr),
+                             MSG_PEEK,(struct sockaddr*)&sender,
+                             &senderlen)) < 0)
+      {
+        PLAYER_ERROR1("%s",strerror(errno));
+        return(-1);
+      }
+
+      make_dotted_ip_address(senderaddr, sizeof(senderaddr),
+                             sender.sin_addr.s_addr);
+
+      // if the client ID (the first 2 bytes of reserved) is 0, then this 
+      // must be a new client
+      if((ntohs(hdr.stx) == PLAYER_STXX) &&
+         (ntohs(hdr.reserved >> 16) == 0) &&
+         (ntohs(hdr.type) == PLAYER_MSGTYPE_REQ) &&
+         (ntohs(hdr.device) == PLAYER_PLAYER_CODE) &&
+         (ntohs(hdr.device_index) == 0) &&
+         (ntohl(hdr.size) == 0))
+      {
+        // no existing client object; create a new one
+        clientData = new ClientDataUDP(client_auth_key, accept_ports[i]);
+        memcpy(&clientData->clientaddr,&sender,senderlen);
+        clientData->clientaddr_len = senderlen;
+        clientData->socket = accept_ufds[i].fd;
+        clientData->client_id = curr_client_id++;
+
+        /* got new conn */
+
+        char clientIp[64];
+        if(make_dotted_ip_address(clientIp, sizeof(clientIp), 
+                                  sender.sin_addr.s_addr))
+        {
+          // couldn't get the ip
+          printf("** Player [port %d] client accepted on socket %d **\n",
+                 accept_ports[i],  clientData->socket);
+        }
+        else
+          printf("** Player [port %d] client accepted from %s "
+                 "on socket %d **\n", 
+                 accept_ports[i], clientIp, clientData->socket);
+
+        // add it to the manager's list
+        AddClient(clientData);
+
+        // send a zero-length ACK so that the client knows his own ID
+        struct timeval curr;
+        GlobalTime->GetTime(&curr);
+        hdr.type = htons(PLAYER_MSGTYPE_RESP_ACK);
+        hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
+        hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
+        hdr.reserved = htons(clientData->client_id) << 16;
+
+        clientData->FillWriteBuffer((unsigned char*)&hdr,0,sizeof(hdr));
+        if(clientData->Write(sizeof(hdr)) < 0)
+        {
+          PLAYER_ERROR1("%s", strerror(errno));
+          return(-1);
+        }
+        // consume the message
+        if((numread = recvfrom(accept_ufds[i].fd,&buf,sizeof(buf),
+                               0, NULL, NULL)) < 0)
+        {
+          PLAYER_ERROR1("%s",strerror(errno));
+          return(-1);
+        }
+        continue;
+      }
+
+      // is there an object for this client yet?
+      for(int j=0; j<num_clients && clients[j]; j++)
+      {
+        if(clients[j]->client_id == ntohs(hdr.reserved >> 16))
+        {
+          clientData=clients[j];
+          break;
+        }
+      }
+
+      if(!clientData)
+      {
+        PLAYER_WARN("client sent message with invalid client ID");
+        // consume the message
+        if((numread = recvfrom(accept_ufds[i].fd,&buf,sizeof(buf),
+                               0, NULL, NULL)) < 0)
+        {
+          PLAYER_ERROR1("%s",strerror(errno));
+          return(-1);
+        }
+        continue;
+      }
+      
+      if((clientData->Read()) == -1)
+      {
+        //MarkClientForDeletion(i);
+        clientData->markedfordeletion = true;
+      }
+    }
+    else if(accept_ufds[i].revents)
+    {
+      if(!(accept_ufds[i].revents & POLLHUP))
+        printf("ClientManager::Read() got strange revent 0x%x for "
+               "port %d\n", accept_ufds[i].revents,accept_ports[i]);
+    }
+  }
+
+  RemoveBlanks();
+  return(0);
+}
+
+int
+ClientManagerUDP::Write()
+{
+  struct timeval curr;
+  player_msghdr_t* hdrp;
+  size_t totalmsgsize, msgsize, p;
+  
+  if(GlobalTime->GetTime(&curr) == -1)
+    fputs("ClientManager::Write(): GetTime() failed!!!!\n", stderr);
+
+  for(int i=0;i<num_clients;i++)
+  {
+    // if we're waiting for an authorization on this client, then skip it
+    if(clients[i]->auth_pending)
+      continue;
+
+    // look for pending replies intended for this client.  we only need to 
+    // look in the devices to which this client is subscribed, thus we
+    // iterate through the client's own subscription list.
+    for(CDeviceSubscription* thisub = clients[i]->requested;
+        thisub;
+        thisub = thisub->next)
+    {
+      unsigned short type;
+      int replysize;
+      struct timeval ts;
+      player_device_id_t id;
+      bzero(&id,sizeof(id));
+
+      // is this a valid device
+      if(thisub->devicep)
+      {
+        // does this device have a reply ready for this client?
+        if((replysize = thisub->devicep->GetReply(&id, clients[i], &type, &ts,
+                  clients[i]->replybuffer+sizeof(player_msghdr_t), 
+                  PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))) >= 0)
+        {
+          // build up and send the reply
+          player_msghdr_t reply_hdr;
+
+          reply_hdr.stx = htons(PLAYER_STXX);
+          reply_hdr.type = htons(type);
+
+          // if the device code is 0 (which is invalid), then the device
+          // didn't specify it, so assume that the identifying info in the
+          // subscription entry is correct
+          if(!id.code)
+          {
+            reply_hdr.device = htons(thisub->id.code);
+            reply_hdr.device_index = htons(thisub->id.index);
+          }
+          else
+          {
+            reply_hdr.device = htons(id.code);
+            reply_hdr.device_index = htons(id.index);
+          }
+          reply_hdr.reserved = (uint32_t)0;
+          reply_hdr.size = htonl(replysize);
+
+          if(GlobalTime->GetTime(&curr) == -1)
+            fputs("ClientWriterThread(): GetTime() failed!!!!\n", stderr);
+          reply_hdr.time_sec = htonl(curr.tv_sec);
+          reply_hdr.time_usec = htonl(curr.tv_usec);
+          reply_hdr.timestamp_sec = htonl(ts.tv_sec);
+          reply_hdr.timestamp_usec = htonl(ts.tv_usec);
+
+          memcpy(clients[i]->replybuffer,&reply_hdr,
+                 sizeof(player_msghdr_t));
+
+          clients[i]->FillWriteBuffer(clients[i]->replybuffer,
+                                      0,
+                                      replysize+sizeof(player_msghdr_t));
+
+          if(clients[i]->Write(replysize+sizeof(player_msghdr_t)) < 0)
+          {
+            // dump this client
+            MarkClientForDeletion(i);
+            // break out of device loop
+            break;
+          }
+        }
+      }
+    }
+
+    // if this client has built up leftover outgoing data as a result of a
+    // reply not getting sent, don't add any data
+    if(clients[i]->leftover_size)
+      continue;
+    
+    // is it time to write?
+    if((((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+         (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
+        (((curr.tv_sec+(curr.tv_usec/1000000.0))- clients[i]->last_write) >= 
+         (1.0/clients[i]->frequency))) ||
+       (((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
+         (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW)) &&
+        (clients[i]->datarequested)))
+    {
+      totalmsgsize = clients[i]->BuildMsg();
+
+      // now, loop through that buffer and send the messages as individual
+      // datagrams
+      for(p=0; p < totalmsgsize; p += msgsize)
+      {
+        hdrp = (player_msghdr_t*)(clients[i]->totalwritebuffer);
+        msgsize = sizeof(player_msghdr_t) + ntohl(hdrp->size);
+
+        if(clients[i]->Write(msgsize) == -1)
+        {
+          MarkClientForDeletion(i);
+          break;
+        }
+
+        // move the next msg up
+        memmove(clients[i]->totalwritebuffer,
+                clients[i]->totalwritebuffer+msgsize,
+                totalmsgsize-msgsize);
+      }
+
+
+      // did we write them all succesfully?
+      if(p == totalmsgsize)
+      {
+        if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+           (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
+          clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
+        else
+          clients[i]->datarequested = false;
       }
     }
   }

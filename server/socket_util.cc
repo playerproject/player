@@ -37,6 +37,8 @@
 #include <netdb.h>     /* for gethostbyname(3) */
 #include <netinet/in.h>   /* for sockaddr_in type */
 
+#include "player.h"
+
 /*
  * this function creates a socket of the indicated type and binds it to 
  * the indicated port.
@@ -50,7 +52,8 @@
  *  serverp: this is a value-result param that will contain the socket's info
  *  blocking: whether or not it should be blocking
  *  portnum: port to bind() to
- *  socktype: should be SOCK_DGRAM (for UDP) or SOCK_STREAM (for TCP)
+ *  socktype: should be PLAYER_TRANSPORT_UDP (for UDP) or
+ *            PLAYER_TRANSPORT_TCP (for TCP)
  *  backlog: number of waiting connections to be allowed (TCP only)
  *
  * RETURN: 
@@ -61,18 +64,30 @@
 
 int
 create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
-                int portnum, int socktype, int backlog)
+                int portnum, int playersocktype, int backlog)
 {
   int sock;                   /* socket we're creating */
   int flags;                  /* temp for old socket access flags */
   int address_size;           /* size of server address struct */
   int one = 1;
 
+  int socktype;
+
   char* first_dot;
   struct hostent* entp;
   char host[256];
   
   address_size = sizeof(*((struct sockaddr_in*)serverp));
+
+  if(playersocktype == PLAYER_TRANSPORT_TCP)
+    socktype = SOCK_STREAM;
+  else if(playersocktype == PLAYER_TRANSPORT_UDP)
+    socktype = SOCK_DGRAM;
+  else
+  {
+    PLAYER_ERROR("Unknown protocol type");
+    return(-1);
+  }
 
   if(gethostname(host,sizeof(host)) == -1)
   {

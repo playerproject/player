@@ -51,7 +51,7 @@
 extern PlayerTime* GlobalTime;
 
 extern CDeviceTable* deviceTable;
-extern CClientData* clients[];
+extern ClientData* clients[];
 extern ClientManager* clientmanager;
 extern char playerversion[];
 
@@ -59,7 +59,7 @@ extern int global_playerport; // used to generate useful output & debug
 // true if we're connecting to Stage instead of a real robot
 extern bool use_stage;
 
-CClientData::CClientData(char* key, int myport) 
+ClientData::ClientData(char* key, int myport)
 {
   requested = NULL;
   numsubs = 0;
@@ -108,7 +108,7 @@ CClientData::CClientData(char* key, int myport)
   datarequested = false;
 }
 
-bool CClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
+bool ClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
                             unsigned int payload_size)
 {
   player_device_auth_req_t tmpreq;
@@ -141,7 +141,7 @@ bool CClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
     return(false);
 }
 
-int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,  
+int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,  
                                 size_t payload_size) 
 {
   unsigned short requesttype = 0;
@@ -479,7 +479,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     reply_hdr.size = htonl(replysize);
 
     if(GlobalTime->GetTime(&curr) == -1)
-      fputs("CClientData::HandleRequests(): GetTime() failed!!!!\n", stderr);
+      fputs("ClientData::HandleRequests(): GetTime() failed!!!!\n", stderr);
     reply_hdr.time_sec = htonl(curr.tv_sec);
     reply_hdr.time_usec = htonl(curr.tv_usec);
 
@@ -492,11 +492,10 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       return(-1);
   }
 
-  
   return(0);
 }
 
-CClientData::~CClientData() 
+ClientData::~ClientData() 
 {
   RemoveRequests();
 
@@ -518,7 +517,7 @@ CClientData::~CClientData()
     delete[] replybuffer;
 }
 
-void CClientData::RemoveRequests() 
+void ClientData::RemoveRequests() 
 {
   CDeviceSubscription* thissub = requested;
   CDeviceSubscription* tmpsub;
@@ -549,7 +548,7 @@ void CClientData::RemoveRequests()
   requested = NULL;
 }
 
-void CClientData::MotorStop() 
+void ClientData::MotorStop() 
 {
   player_position_cmd_t command;
   CDevice* devicep;
@@ -570,7 +569,7 @@ void CClientData::MotorStop()
 
 
 // Handle device list requests.
-void CClientData::HandleListRequest(player_device_devlist_t *req,
+void ClientData::HandleListRequest(player_device_devlist_t *req,
                                     player_device_devlist_t *rep)
 {
   CDeviceEntry *entry;
@@ -602,7 +601,7 @@ void CClientData::HandleListRequest(player_device_devlist_t *req,
 
 
 // Handle driver info requests.
-void CClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
+void ClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
                                           player_device_driverinfo_t *rep)
 {
   char *driver_name;
@@ -625,7 +624,7 @@ void CClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
   return;
 }
 
-void CClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
+void ClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
                                            player_device_nameservice_req_t *rep)
 {
   CDeviceEntry *entry;
@@ -650,7 +649,7 @@ void CClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
 }
 
 
-void CClientData::UpdateRequested(player_device_req_t req)
+void ClientData::UpdateRequested(player_device_req_t req)
 {
   CDeviceSubscription* thisub;
   CDeviceSubscription* prevsub;
@@ -775,7 +774,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
 }
 
 unsigned char 
-CClientData::FindPermission(player_device_id_t id)
+ClientData::FindPermission(player_device_id_t id)
 {
   unsigned char tmpaccess;
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
@@ -789,7 +788,7 @@ CClientData::FindPermission(player_device_id_t id)
   return(PLAYER_ERROR_MODE);
 }
 
-bool CClientData::CheckOpenPermissions(player_device_id_t id)
+bool ClientData::CheckOpenPermissions(player_device_id_t id)
 {
   bool permission = false;
   unsigned char letter;
@@ -804,7 +803,7 @@ bool CClientData::CheckOpenPermissions(player_device_id_t id)
   return(permission);
 }
 
-bool CClientData::CheckWritePermissions(player_device_id_t id)
+bool ClientData::CheckWritePermissions(player_device_id_t id)
 {
   bool permission = false;
   unsigned char letter;
@@ -821,7 +820,7 @@ bool CClientData::CheckWritePermissions(player_device_id_t id)
 // them, and assemble the results into totalwritebuffer.  Returns the
 // total size of the data that was written into that buffer.
 size_t
-CClientData::BuildMsg()
+ClientData::BuildMsg()
 {
   size_t size, totalsize=0;
   CDevice* devicep;
@@ -929,7 +928,7 @@ CClientData::BuildMsg()
 }
 
 
-int CClientData::Subscribe(player_device_id_t id)
+int ClientData::Subscribe(player_device_id_t id)
 {
   CDevice* devicep;
   int subscribe_result;
@@ -948,7 +947,7 @@ int CClientData::Subscribe(player_device_id_t id)
 }
 
 
-void CClientData::Unsubscribe(player_device_id_t id)
+void ClientData::Unsubscribe(player_device_id_t id)
 {
   CDevice* devicep;
 
@@ -964,7 +963,7 @@ void CClientData::Unsubscribe(player_device_id_t id)
 }
 
 void
-CClientData::PrintRequested(char* str)
+ClientData::PrintRequested(char* str)
 {
   printf("%s:requested: ",str);
   for(CDeviceSubscription* thissub=requested;thissub;thissub=thissub->next)
@@ -972,7 +971,30 @@ CClientData::PrintRequested(char* str)
   puts("");
 }
 
-int CClientData::Read()
+// Copy len bytes of src to totalwritebuffer+offset.  Will realloc()
+// totalwritebuffer to make room, if necessary.
+void 
+ClientData::FillWriteBuffer(unsigned char* src, size_t offset, size_t len)
+{
+  size_t totalsize = offset + len;
+
+  while(totalsize > totalwritebuffersize)
+  {
+    // need more memory
+    totalwritebuffersize *= 2;
+    assert(totalwritebuffer = 
+           (unsigned char*)realloc(totalwritebuffer, 
+                                   totalwritebuffersize));
+  }
+
+  memcpy(totalwritebuffer + offset, src, len);
+}
+
+/*************************************************************************
+ * ClientDataTCP
+ *************************************************************************/
+int 
+ClientDataTCP::Read()
 {
   int thisreadcnt;
   bool msgready = false;
@@ -1093,7 +1115,7 @@ int CClientData::Read()
           break;
         else
         {
-          //perror("CClientData::Read(): read() errored");
+          //perror("ClientData::Read(): read() errored");
           return(-1);
         }
       }
@@ -1106,10 +1128,10 @@ int CClientData::Read()
       }
       break;
     case PLAYER_READ_ERROR:
-      fputs("CClientData:Read(): i'm in an error read state!\n",stderr);
+      fputs("ClientData:Read(): i'm in an error read state!\n",stderr);
       break;
     default:
-      fputs("CClientData:Read(): i'm in an unknown read state!\n",stderr);
+      fputs("ClientData:Read(): i'm in an unknown read state!\n",stderr);
       break;
   }
  
@@ -1120,38 +1142,14 @@ int CClientData::Read()
     return(0);
 }
 
-int
-CClientData::WriteIdentString()
-{
-  unsigned char data[PLAYER_IDENT_STRLEN];
-  // write back an identifier string
-  if(use_stage)
-    sprintf((char*)data, "%s%s (stage)", PLAYER_IDENT_STRING, playerversion);
-  else
-    sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
-  bzero(((char*)data)+strlen((char*)data),
-        PLAYER_IDENT_STRLEN-strlen((char*)data));
-
-  FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);
-  if(Write(PLAYER_IDENT_STRLEN) < 0)
-  {
-    if(errno != EAGAIN)
-    {
-      perror("ClientManager::WriteIdentString():write()");
-      return(-1);
-    }
-  }
-  return(0);
-}
-
 // Try to write() len bytes from totalwritebuffer, which should have been
 // filled with FillWriteBuffer().  If fewer than len bytes are written, 
 // the remaining bytes are moved up to the front of totalwritebuffer and 
 // their length is recorded in leftover_size.  Returns 0 on success (which
 // includes writing fewer than len bytes) and -1 on error (e.g., if the 
 // other end of the socket was closed).
-int
-CClientData::Write(size_t len)
+int 
+ClientDataTCP::Write(size_t len)
 {
   int byteswritten;
 
@@ -1185,23 +1183,65 @@ CClientData::Write(size_t len)
   return(0);
 }
 
-
-// Copy len bytes of src to totalwritebuffer+offset.  Will realloc()
-// totalwritebuffer to make room, if necessary.
-void 
-CClientData::FillWriteBuffer(unsigned char* src, size_t offset, size_t len)
+/*************************************************************************
+ * ClientDataUDP
+ *************************************************************************/
+int 
+ClientDataUDP::Read()
 {
-  size_t totalsize = offset + len;
+  int numread;
 
-  while(totalsize > totalwritebuffersize)
+  // Assume for now that we get an entire Player packet within one UDP
+  // packet.   Might need to later add support for Player packet
+  // fragmentation and re-assembly.
+  if((numread = recvfrom(socket,readbuffer,PLAYER_MAX_MESSAGE_SIZE,
+                         0,NULL,NULL)) < 0)
   {
-    // need more memory
-    totalwritebuffersize *= 2;
-    assert(totalwritebuffer = 
-           (unsigned char*)realloc(totalwritebuffer, 
-                                   totalwritebuffersize));
+    PLAYER_ERROR1("%s",strerror(errno));
+    return(-1);
   }
 
-  memcpy(totalwritebuffer + offset, src, len);
+  if(numread < (int)sizeof(player_msghdr_t))
+  {
+    PLAYER_WARN1("Message too short (%d bytes)", numread);
+    return(0);
+  }
+  memcpy((void*)&hdrbuffer,readbuffer,sizeof(player_msghdr_t));
+        
+  // byte-swap as necessary
+  hdrbuffer.type = ntohs(hdrbuffer.type);
+  hdrbuffer.device = ntohs(hdrbuffer.device);
+  hdrbuffer.device_index = ntohs(hdrbuffer.device_index);
+  hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);
+  hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
+  hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
+  hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
+  hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
+  hdrbuffer.size = ntohl(hdrbuffer.size);
+
+  memmove(readbuffer,readbuffer+sizeof(player_msghdr_t),
+          numread-sizeof(player_msghdr_t));
+
+  return(HandleRequests(hdrbuffer,readbuffer,hdrbuffer.size));
+
+  return(0);
 }
 
+int 
+ClientDataUDP::Write(size_t len)
+{
+  int byteswritten;
+  
+  // Assume that all data can be written in a single datagram.  Need to
+  // make this smarter later.
+  if((byteswritten = sendto(socket, totalwritebuffer, len, 0, 
+                            (struct sockaddr*)&clientaddr, 
+                            (socklen_t)clientaddr_len)) < 0)
+  {
+    PLAYER_ERROR1("%s", strerror(errno));
+    return(-1);
+  }
+  leftover_size=0;
+
+  return(0);
+}
