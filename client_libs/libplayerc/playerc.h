@@ -93,6 +93,7 @@ typedef struct _playerc_client_t
   // playerc_client_get_devlist().
   int id_count;
   player_device_id_t ids[PLAYER_MAX_DEVICES];
+  char drivernames[PLAYER_MAX_DEVICES][PLAYER_MAX_DEVICE_STRING_LEN];
     
   // List of subscribed devices
   int device_count;
@@ -114,6 +115,9 @@ typedef struct _playerc_device_t
   // Device code, index, etc.
   int code, index, access;
 
+  // The driver name
+  char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
+  
   // The subscribe flag is non-zero if the device has been
   // successfully subscribed.
   int subscribed;
@@ -210,11 +214,13 @@ int  playerc_client_delcallback(playerc_client_t *client, playerc_device_t *devi
 int playerc_client_get_devlist(playerc_client_t *client);
 
 // Subscribe/unsubscribe a device from the sever (private)
-int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access);
+int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access,
+                             char *drivername, size_t len);
 int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 
 // Issue a request to the server and await a reply (blocking).
+// Returns -1 on error and -2 on NACK.
 int playerc_client_request(playerc_client_t *client, playerc_device_t *device,
                            void *req_data, int req_len, void *rep_data, int rep_len);
 
@@ -438,6 +444,9 @@ typedef struct
   
   // Number of points in the scan.
   int scan_count;
+
+  // Angular resolution of the scan.
+  double scan_res;
 
   // Scan data; range (m) and bearing (radians).
   double scan[PLAYERC_LASER_MAX_SAMPLES][2];

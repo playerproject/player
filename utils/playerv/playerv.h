@@ -117,6 +117,7 @@ typedef struct
 {
   // Device identifier.
   int code, index;
+  char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
   
   // Handle to the GUI proxy for this device.
   void *proxy;

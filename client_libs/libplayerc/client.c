@@ -50,6 +50,7 @@ typedef struct
 
 
 // Local functions
+int playerc_client_get_driverinfo(playerc_client_t *client);
 int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
                               char *data, int *len);
 int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header,
@@ -263,7 +264,8 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
         PLAYERC_ERR("got the wrong kind of reply (not good).");
         return -1;
       }
-      break;
+      PLAYERC_ERR("got NACK from request");
+      return -2;
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
     {
@@ -344,12 +346,47 @@ int playerc_client_get_devlist(playerc_client_t *client)
   }
   client->id_count = config.device_count;
 
+  // Now get the driver info
+  return playerc_client_get_driverinfo(client);
+}
+
+
+// Get the driver info for all devices.  The data is written into the
+// proxy structure rather than returned to the caller.
+int playerc_client_get_driverinfo(playerc_client_t *client)
+{
+  int i, len;
+  player_device_driverinfo_t req;
+  player_device_driverinfo_t rep;
+
+  for (i = 0; i < client->id_count; i++)
+  {
+    req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
+    req.id.code = htons(client->ids[i].code);
+    req.id.index = htons(client->ids[i].index);
+    req.id.port = htons(client->ids[i].port);
+
+    len = playerc_client_request(client, NULL,
+                                 &req, sizeof(req), &rep, sizeof(rep));
+    if (len < 0)
+      return -1;
+    if (len != sizeof(rep))
+    {
+      PLAYERC_ERR2("reply to driverinfo request has incorrect length (%d != %d)",
+                   len, sizeof(rep));
+      return -1;
+    }
+
+    strcpy(client->drivernames[i], rep.driver_name);
+  }
+
   return 0;
 }
 
 
 // Subscribe to a device
-int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access)
+int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access,
+                             char *drivername, size_t len)
 {
   player_device_req_t req;
   player_device_resp_t rep;
@@ -367,6 +404,9 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index, int 
     PLAYERC_ERR2("requested [%d] access, but got [%d] access", access, rep.access);
     return -1;
   }
+
+  // Copy the driver name
+  strncpy(drivername, rep.driver_name, len);
 
   return 0;
 }

@@ -182,6 +182,20 @@ typedef struct
   
 } __attribute__ ((packed)) player_device_devlist_t;
 
+/* Get a driver name.
+ * To get a name, set the subtype to PLAYER_PLAYER_DRIVERINFO_REQ
+ * and set the id field.  Player will return the driver info. */
+typedef struct
+{
+  /* Subtype; must be PLAYER_PLAYER_DRIVERINFO_REQ. */
+  uint16_t subtype;
+
+  /* The device identifier. */
+  player_device_id_t id;
+
+  /* The driver name (returned) */
+  char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
+} __attribute__ ((packed)) player_device_driverinfo_t;
 
 /* the format of a "device request" ioctl to Player */
 typedef struct
@@ -237,12 +251,13 @@ typedef struct
 } __attribute__ ((packed)) player_device_data_req_t;
 
 
-#define PLAYER_PLAYER_DEVLIST_REQ  ((uint16_t)1)
-#define PLAYER_PLAYER_DEV_REQ      ((uint16_t)2)
-#define PLAYER_PLAYER_DATA_REQ     ((uint16_t)3)
-#define PLAYER_PLAYER_DATAMODE_REQ ((uint16_t)4)
-#define PLAYER_PLAYER_DATAFREQ_REQ ((uint16_t)5)
-#define PLAYER_PLAYER_AUTH_REQ     ((uint16_t)6)
+#define PLAYER_PLAYER_DEVLIST_REQ     ((uint16_t)1)
+#define PLAYER_PLAYER_DRIVERINFO_REQ  ((uint16_t)2)
+#define PLAYER_PLAYER_DEV_REQ         ((uint16_t)3)
+#define PLAYER_PLAYER_DATA_REQ        ((uint16_t)4)
+#define PLAYER_PLAYER_DATAMODE_REQ    ((uint16_t)5)
+#define PLAYER_PLAYER_DATAFREQ_REQ    ((uint16_t)6)
+#define PLAYER_PLAYER_AUTH_REQ        ((uint16_t)7)
 /*************************************************************************/
 
 /*************************************************************************/
