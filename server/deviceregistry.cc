@@ -204,9 +204,10 @@ void ServiceAdvLSD_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_STAGE1P4
+void StgSimulation_Register(DriverTable *table);
 void StgLaser_Register(DriverTable *table);
 void StgPosition_Register(DriverTable *table);
-void StgSimulation_Register(DriverTable *table);
+void StgFiducialNeighbors_Register(DriverTable *table);
 #endif
 
 /* this array lists the interfaces that Player knows how to load, along with
@@ -474,8 +475,9 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_STAGE1P4
+  StgSimulation_Register(driverTable);
   StgLaser_Register(driverTable);
   StgPosition_Register(driverTable);
-  StgSimulation_Register(driverTable);
+  StgFiducialNeighbors_Register(driverTable);
 #endif
 }

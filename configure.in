@@ -114,12 +114,48 @@ fi 2>/dev/null
 AM_CONDITIONAL(WITH_PYTHON, test x$PYTHON_INTERP != xno)
 AC_SUBST(PYTHON_INTERP)
 
+dnl do we have pkg-config?
+AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+
+dnl Set up RTK2 for the various GUIs 
+dnl we do it before configuring drivers in case they have GUI bits
+
+dnl if pkg-config is not available we find RTK the hard way  
+if test "$PKG_CONFIG" = "no" ; then
+    AC_MSG_RESULT([pkg-config not available. Using --with-rtk and --prefix to find libRTK2.])  
+    dnl This macro is defined in m4.d/rtktests.m4
+    RTK_CHECK
+    dnl we set the vars that pkg-config would have created
+    dnl TODO - remove these duplicate vars
+    RTK_CFLAGS=$RTK_CPPFLAGS
+    RTK_LIBS=$RTK_LDADD
+    AC_SUBST(RTK_CFLAGS)
+    AC_SUBST(RTK_CLIBS)
+else
+  dnl pkg-config is available, so we use it	
+  dnl add prefix to the pkg-config path in case RTK or Stage was
+  dnl installed there and the user didn't add it manually 
+  PKG_CONFIG_PATH=$prefix/lib/pkgconfig:$PKG_CONFIG_PATH
+  AC_MSG_RESULT([pkg-config searching for librtk2.pc in $PKG_CONFIG_PATH]) 
+
+  PKG_CHECK_MODULES(RTK, librtk2 >= 2.2,
+    with_rtk=yes
+    AC_DEFINE(INCLUDE_RTK2,1,[building optional RTK GUI components]),
+    AC_MSG_WARN([no suitable RTK was found. ])
+  ) 
+  AM_CONDITIONAL(WITH_RTK, test x$with_rtk = xyes)
+
+  dnl lots of drivers use CPP flags instead of CFLAGS because that's 
+  dnl what gets set in RTK_CHECK - rtv
+  dnl TODO - remove these duplicate vars
+  RTK_CPPFLAGS=$RTK_CFLAGS
+  AC_SUBST(RTK_CPPFLAGS)
+fi
 
 dnl ************************************************************************
-dnl The following macros are defined in files hiding in m4.d
+dnl Start of macros from m4.d (in addition to RTK_CHECK, used above)
 dnl ************************************************************************
 
-RTK_CHECK
 PLAYER_DRIVERTESTS
 
 dnl ************************************************************************
@@ -254,8 +290,8 @@ if test "x$with_rtk" = "xno"; then
   AC_MSG_RESULT([])	
 else
   AC_MSG_RESULT([Player will build RTK-based components using:])
-  AC_MSG_RESULT([    CPPFLAGS: $RTK_CPPFLAGS])
-  AC_MSG_RESULT([    LDFLAGS: $RTK_LDADD])
+  AC_MSG_RESULT([    CPPFLAGS: $RTK_CFLAGS])
+  AC_MSG_RESULT([    LDFLAGS: $RTK_LIBS])
   AC_MSG_RESULT([])
 fi
 if test "x$enable_gazebo" = "xyes"; then

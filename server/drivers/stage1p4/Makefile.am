@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @STAGE_EXTRA_CPPFLAGS@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @STAGE1P4_CFLAGS@
 
 #noinst_LIBRARIES = @STAGE_LIB@
 
@@ -11,8 +11,7 @@ libstage1p4_a_SOURCES = \
 	stg_position.cc \
 	stg_laser.cc \
 	stg_simulation.cc \
-	stg_fiducial_neighbors.cc \
-	image.cc image.hh
+	stg_fiducial_neighbors.cc
 
 
 # This file should be added to CVS before it's referenced here.  Otherwise,
