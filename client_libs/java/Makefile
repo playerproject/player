@@ -6,7 +6,7 @@ MKDIR = mkdir
 RMDIR = rmdir
 
 INSTALL_LIB = $(INSTALL_PREFIX)/lib
-INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples/java
+#INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples/java
 
 all: PlayerClient.class
 
@@ -18,7 +18,7 @@ install: PlayerClient.class
 	$(INSTALL) -m 644 *.class $(INSTALL_LIB)
 
 uninstall:
-	$(RM) -f $(INSTALL_EXAMPLES)/*.class
+	$(RM) -f $(INSTALL_LIB)/*.class
 
 clean:
 	$(RM) -f *.class

@@ -2,6 +2,9 @@ $Id$
 
 TOMORROW:
 --------
+- add #defines in messages.h that are plain text references for 
+     devices, like for in arg parsing
+
 - make "safe_printf()" or something like that for device drivers to use.  
      maybe just expose a global mutex.
 
