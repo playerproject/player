@@ -19,7 +19,7 @@
 
 ////////////////////////////////////////////////////////////////////////////
 // Load an occupancy grid
-int map_load_occ(map_t *map, const char *filename, int negate)
+int map_load_occ(map_t *map, const char *filename, double scale, int negate)
 {
   FILE *file;
   char magic[3];
@@ -55,6 +55,7 @@ int map_load_occ(map_t *map, const char *filename, int negate)
   // Allocate space in the map
   if (map->cells == NULL)
   {
+    map->scale = scale;
     map->size_x = width;
     map->size_y = height;
     map->cells = calloc(width * height, sizeof(map->cells[0]));

@@ -15,7 +15,7 @@
 
 
 // Create a new map
-map_t *map_alloc(double scale)
+map_t *map_alloc(void)
 {
   map_t *map;
 
@@ -28,7 +28,7 @@ map_t *map_alloc(double scale)
   // Make the size odd
   map->size_x = 0;
   map->size_y = 0;
-  map->scale = scale;
+  map->scale = 0;
   map->max_occ_dist = 0;
   
   // Allocate storage for main map

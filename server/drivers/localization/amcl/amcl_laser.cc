@@ -31,28 +31,69 @@
 #include "config.h"
 #endif
 
+#define PLAYER_ENABLE_MSG 1
+
 #include <math.h>
-#include "amcl.h"
+#include "devicetable.h"
+#include "amcl_laser.h"
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Default constructor
+AMCLLaser::AMCLLaser()
+{
+  this->device = NULL;
+  this->model = NULL;
+  
+  return;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Load laser settings
-int AdaptiveMCL::LoadLaser(ConfigFile* cf, int section)
+int AMCLLaser::Load(ConfigFile* cf, int section)
 {
-  this->laser = NULL;
+  const char *map_filename;
+  double map_scale;
+  int map_negate;
+  
+  // Device stuff
   this->laser_index = cf->ReadInt(section, "laser_index", -1);
-  this->laser_model = NULL;
-  this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 6);
-  this->laser_map_err = cf->ReadLength(section, "laser_map_err", 0.05);
-  this->laser_model = NULL;
+
+  // Get the map settings
+  map_filename = cf->ReadFilename(section, "laser_map", NULL);
+  map_scale = cf->ReadLength(section, "laser_map_scale", 0.05);
+  map_negate = cf->ReadInt(section, "laser_map_negate", 0);
+
+  // Create the map
+  this->map = map_alloc();
+  PLAYER_MSG1("loading map file [%s]", map_filename);
+  if (map_load_occ(this->map, map_filename, map_scale, map_negate) != 0)
+    return -1;
+  
+  // Create the laser model
+  this->model = laser_alloc(map);
+  this->model->range_cov = pow(cf->ReadLength(section, "laser_map_err", 0.05), 2);
+  this->max_ranges = cf->ReadInt(section, "laser_max_ranges", 6);
 
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Unload the model
+int AMCLLaser::Unload(void)
+{
+  laser_free(this->model);
+  this->model = NULL;
+  
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Set up the laser
-int AdaptiveMCL::SetupLaser(void)
+int AMCLLaser::Setup(void)
 {
   uint8_t req;
   uint16_t reptype;
@@ -60,40 +101,34 @@ int AdaptiveMCL::SetupLaser(void)
   player_laser_geom_t geom;
   struct timeval tv;
 
-  // If there is no laser device...
-  if (this->laser_index < 0)
-    return 0;
-
+  // Subscribe to the Laser device
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
 
-  this->laser = deviceTable->GetDevice(id);
-  if (!this->laser)
+  this->device = deviceTable->GetDevice(id);
+  if (!this->device)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return -1;
   }
-  if (this->laser->Subscribe(this) != 0)
+  if (this->device->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
   }
-
+  
   // Get the laser geometry
   req = PLAYER_LASER_GET_GEOM;
-  if (this->laser->Request(&id, this, &req, 1, &reptype, &tv, &geom, sizeof(geom)) < 0)
+  if (this->device->Request(&id, this, &req, 1, &reptype, &tv, &geom, sizeof(geom)) < 0)
   {
     PLAYER_ERROR("unable to get laser geometry");
     return -1;
   }
 
-  this->laser_pose.v[0] = ((int16_t) ntohl(geom.pose[0])) / 1000.0;
-  this->laser_pose.v[1] = ((int16_t) ntohl(geom.pose[1])) / 1000.0;
-  this->laser_pose.v[2] = ((int16_t) ntohl(geom.pose[2])) * M_PI / 180.0;
-
-  // Create the laser model
-  this->laser_model = laser_alloc(this->map, this->laser_pose);
-  this->laser_model->range_cov = this->laser_map_err * this->laser_map_err;
+  // Set the laser pose relative to the robot
+  this->model->laser_pose.v[0] = ((int16_t) ntohl(geom.pose[0])) / 1000.0;
+  this->model->laser_pose.v[1] = ((int16_t) ntohl(geom.pose[1])) / 1000.0;
+  this->model->laser_pose.v[2] = ((int16_t) ntohl(geom.pose[2])) * M_PI / 180.0;
 
   return 0;
 }
@@ -101,18 +136,10 @@ int AdaptiveMCL::SetupLaser(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
-int AdaptiveMCL::ShutdownLaser(void)
-{
-  // If there is no laser device...
-  if (this->laser_index < 0)
-    return 0;
-  
-  this->laser->Unsubscribe(this);
-  this->laser = NULL;
-
-  // Delete the laser model
-  laser_free(this->laser_model);
-  this->laser_model = NULL;
+int AMCLLaser::Shutdown(void)
+{  
+  this->device->Unsubscribe(this);
+  this->device = NULL;
 
   return 0;
 }
@@ -120,139 +147,151 @@ int AdaptiveMCL::ShutdownLaser(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new laser data
-void AdaptiveMCL::GetLaserData(amcl_sensor_data_t *data)
+bool AMCLLaser::GetData()
 {
   int i;
   size_t size;
-  player_laser_data_t ndata;
+  player_laser_data_t data;
+  uint32_t tsec, tusec;
   double r, b, db;
-  
-  // If there is no laser device...
-  if (this->laser_index < 0)
-  {
-    data->laser_range_count = 0;
-    return;
-  }
 
   // Get the laser device data.
-  size = this->laser->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
+  size = this->device->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
+  if (size == 0)
+    return false;
 
-  b = ((int16_t) ntohs(ndata.min_angle)) / 100.0 * M_PI / 180.0;
-  db = ((int16_t) ntohs(ndata.resolution)) / 100.0 * M_PI / 180.0;
+  if (tsec == this->tsec && tusec == this->tusec)
+    return false;
 
-  data->laser_range_count = ntohs(ndata.range_count);
-  assert((size_t) data->laser_range_count <
-         sizeof(data->laser_ranges) / sizeof(data->laser_ranges[0]));
+  b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
+  db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
+
+  this->range_count = ntohs(data.range_count);
+  assert((size_t) this->range_count < sizeof(this->ranges) / sizeof(this->ranges[0]));
 
   // Read and byteswap the range data
-  for (i = 0; i < data->laser_range_count; i++)
+  for (i = 0; i < this->range_count; i++)
   {
-    r = ((int16_t) ntohs(ndata.ranges[i])) / 1000.0;
-    data->laser_ranges[i][0] = r;
-    data->laser_ranges[i][1] = b;
+    r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
+    this->ranges[i][0] = r;
+    this->ranges[i][1] = b;
     b += db;
   }
   
-  return;
+  return true;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the laser sensor model
-bool AdaptiveMCL::UpdateLaserModel(amcl_sensor_data_t *data)
+bool AMCLLaser::UpdateSensor(pf_t *pf)
 {
   int i, step;
+  
+  // Check for new data
+  if (!this->GetData())
+    return false;
+  
+  printf("update laser\n");
 
-  // If there is no laser device...
-  if (this->laser_index < 0)
+  if (this->max_ranges < 2)
     return false;
   
   // Update the laser sensor model with the latest laser measurements
-  if (this->laser_max_samples >= 2)
-  {
-    laser_clear_ranges(this->laser_model);
+  laser_clear_ranges(this->model);
     
-    step = (data->laser_range_count - 1) / (this->laser_max_samples - 1);
-    for (i = 0; i < data->laser_range_count; i += step)
-      laser_add_range(this->laser_model, data->laser_ranges[i][0], data->laser_ranges[i][1]);
+  step = (this->range_count - 1) / (this->max_ranges - 1);
+  for (i = 0; i < this->range_count; i += step)
+    laser_add_range(this->model, this->ranges[i][0], this->ranges[i][1]);
 
-    // Apply the laser sensor model
-    pf_update_sensor(this->pf, (pf_sensor_model_fn_t) laser_sensor_model, this->laser_model);
-  }
-
+  // Apply the laser sensor model
+  pf_update_sensor(pf, (pf_sensor_model_fn_t) laser_sensor_model, this->model);
+  
   return true;
 }
 
 #ifdef INCLUDE_RTKGUI
 
 ////////////////////////////////////////////////////////////////////////////////
-// Draw the laser values
-void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
+// Setup the GUI
+void AMCLLaser::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
+{  
+  this->fig = rtk_fig_create(canvas, robot_fig, 0);
+
+  // Draw the laser map
+  this->map_fig = rtk_fig_create(canvas, NULL, -50);
+  map_draw_occ(this->map, this->map_fig);
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Shutdown the GUI
+void AMCLLaser::ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 {
-  int i, step;
-  pf_vector_t pose;
-  double r, b, m, ax, ay, bx, by;
+  rtk_fig_destroy(this->map_fig);
+  rtk_fig_destroy(this->fig);
+  this->map_fig = NULL;
+  this->fig = NULL;
 
-  // If there is no laser device...
-  if (this->laser_index < 0)
-    return;
+  return;
+}
 
-  rtk_fig_clear(this->laser_fig);
+////////////////////////////////////////////////////////////////////////////////
+// Draw the laser values
+void AMCLLaser::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
+{
+  int i;
+  double r, b, ax, ay, bx, by;
+
+  rtk_fig_clear(this->fig);
 
   // Draw the complete scan
-  rtk_fig_color_rgb32(this->laser_fig, 0x8080FF);
-  for (i = 0; i < data->laser_range_count; i++)
+  rtk_fig_color_rgb32(this->fig, 0x8080FF);
+  for (i = 0; i < this->range_count; i++)
   {
-    r = data->laser_ranges[i][0];
-    b = data->laser_ranges[i][1];
+    r = this->ranges[i][0];
+    b = this->ranges[i][1];
 
     ax = 0;
     ay = 0;
     bx = ax + r * cos(b);
     by = ay + r * sin(b);
 
-    rtk_fig_line(this->laser_fig, ax, ay, bx, by);
+    rtk_fig_line(this->fig, ax, ay, bx, by);
   }
-    
+
+  // TODO: FIX
+  /*
+  // Get the robot figure pose
+  rtk_fig_get_origin(robot_fig, pose.v + 0, pose.v + 1, pose.v + 2);
+
+  if (this->max_ranges < 2)
+    continue;
+
   // Draw the significant part of the scan
-  if (this->laser_max_samples >= 2)
+  step = (this->range_count - 1) / (this->laser_max_ranges - 1);
+  for (i = 0; i < this->range_count; i += step)
   {
-    // Get the robot figure pose
-    rtk_fig_get_origin(this->robot_fig, pose.v + 0, pose.v + 1, pose.v + 2);
-        
-    step = (data->laser_range_count - 1) / (this->laser_max_samples - 1);
-    for (i = 0; i < data->laser_range_count; i += step)
-    {
-      r = data->laser_ranges[i][0];
-      b = data->laser_ranges[i][1];
-      m = map_calc_range(this->map, pose.v[0], pose.v[1], pose.v[2] + b, 8.0);
+    r = this->ranges[i][0];
+    b = this->ranges[i][1];
+    m = map_calc_range(this->map, pose.v[0], pose.v[1], pose.v[2] + b, 8.0);
 
-      ax = 0;
-      ay = 0;
+    ax = 0;
+    ay = 0;
 
-      bx = ax + r * cos(b);
-      by = ay + r * sin(b);
-      rtk_fig_color_rgb32(this->laser_fig, 0xFF0000);
-      rtk_fig_line(this->laser_fig, ax, ay, bx, by);
-
-      /* REMOVE
-      bx = ax + m * cos(b);
-      by = ay + m * sin(b);
-      rtk_fig_color_rgb32(this->laser_fig, 0x00FF00);
-      rtk_fig_line(this->laser_fig, ax, ay, bx, by);
-      */
-    }
-
-    // TESTING
-    /* REMOVE
-    laser_clear_ranges(this->laser_model);
-    for (i = 0; i < data->laser_range_count; i += step)
-      laser_add_range(this->laser_model, data->laser_ranges[i][0], data->laser_ranges[i][1]);
-    //printf("prob = %f\n", laser_sensor_model(this->laser_model, pose));
-    */
+    bx = ax + r * cos(b);
+    by = ay + r * sin(b);
+    rtk_fig_color_rgb32(this->fig, 0xFF0000);
+    rtk_fig_line(this->fig, ax, ay, bx, by);
   }
-
+  */
+  
   return;
 }
 
 #endif
+
+
+

@@ -31,33 +31,47 @@
 #include "config.h"
 #endif
 
-#include "amcl.h"
+#include "devicetable.h"
+#include "amcl_imu.h"
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Default constructor
+AMCLImu::AMCLImu()
+{
+  this->device = NULL;
+  this->model = NULL;
+  
+  return;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Load imu settings
-int AdaptiveMCL::LoadImu(ConfigFile* cf, int section)
+int AMCLImu::Load(ConfigFile* cf, int section)
 {
   // Device stuff
-  this->imu = NULL;
   this->imu_index = cf->ReadInt(section, "imu_index", -1);
+  
+  // Create the imu model
+  this->model = imu_alloc();
 
-  if (this->imu_index < 0)
-  {
-    // No imu
-    this->imu_model = NULL;
-  }
-  else
-  {  
-    // Create the imu model
-    this->imu_model = imu_alloc();
+  // Offset added to yaw (heading) values to get UTM (true) north
+  this->utm_mag_dev = cf->ReadAngle(section, "imu_mag_dev", +13 * M_PI / 180);
 
-    // Expect error in yaw (heading) values
-    this->imu_model->err_head = cf->ReadAngle(section, "imu_err_yaw", 10 * M_PI / 180);
+  // Expect error in yaw (heading) values
+  this->model->err_head = cf->ReadAngle(section, "imu_err_yaw", 10 * M_PI / 180);
 
-    // Offset added to yaw (heading) values to get UTM (true) north
-    this->imu_mag_dev = cf->ReadAngle(section, "imu_mag_dev", +13 * M_PI / 180);
-  }
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Unload the model
+int AMCLImu::Unload(void)
+{
+  imu_free(this->model);
+  this->model = NULL;
   
   return 0;
 }
@@ -65,25 +79,21 @@ int AdaptiveMCL::LoadImu(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the imu
-int AdaptiveMCL::SetupImu(void)
+int AMCLImu::Setup(void)
 {
   player_device_id_t id;
 
-  // If there is no imu device...
-  if (this->imu_index < 0)
-    return 0;
-
-  // Subscribe to the  device
+  // Subscribe to the Imu device
   id.code = PLAYER_POSITION3D_CODE;
   id.index = this->imu_index;
 
-  this->imu = deviceTable->GetDevice(id);
-  if (!this->imu)
+  this->device = deviceTable->GetDevice(id);
+  if (!this->device)
   {
     PLAYER_ERROR("unable to locate suitable imu device");
     return -1;
   }
-  if (this->imu->Subscribe(this) != 0)
+  if (this->device->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to imu device");
     return -1;
@@ -95,81 +105,95 @@ int AdaptiveMCL::SetupImu(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the imu
-int AdaptiveMCL::ShutdownImu(void)
-{
-  // If there is no imu device...
-  if (this->imu_index < 0)
-    return 0;
-  
-  this->imu->Unsubscribe(this);
-  this->imu = NULL;
+int AMCLImu::Shutdown(void)
+{  
+  this->device->Unsubscribe(this);
+  this->device = NULL;
 
-  // TODO: currently leaks
-  //imu_free(this->imu_model);
-  //this->imu = NULL;
-  
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new imu data
-void AdaptiveMCL::GetImuData(amcl_sensor_data_t *data)
+bool AMCLImu::GetData()
 {
   size_t size;
-  player_position3d_data_t ndata;
-
-  // If there is no imu device...
-  if (this->imu_index < 0)
-    return;
+  player_position3d_data_t data;
+  uint32_t tsec, tusec;
 
   // Get the imu device data
-  size = this->imu->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
+  size = this->device->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
+  if (size < sizeof(data))
+    return false;
 
-  data->imu_utm_head = ((int32_t) ntohl(ndata.yaw)) / 3600.0 * M_PI / 180;
-  data->imu_utm_head += this->imu_mag_dev;
+  if (tsec == this->tsec && tusec == this->tusec)
+    return false;
+
+  this->tsec = tsec;
+  this->tusec = tusec;
+
+  this->utm_head = ((int32_t) ntohl(data.yaw)) / 3600.0 * M_PI / 180;
+  this->utm_head += this->utm_mag_dev;
   
-  return;
+  return true;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the imu sensor model
-bool AdaptiveMCL::UpdateImuModel(amcl_sensor_data_t *data)
+bool AMCLImu::UpdateSensor(pf_t *pf)
 {
-  // If there is no imu device...
-  if (this->imu_index < 0)
-    return true;
-
-  printf("update imu %f\n", data->imu_utm_head * 180 / M_PI);
+  // Check for new data
+  if (!this->GetData())
+    return false;
+  
+  printf("update imu %f\n", this->utm_head * 180 / M_PI);
   
   // Update the imu sensor model with the latest imu measurements
-  imu_set_utm(this->imu_model, data->imu_utm_head);
+  imu_set_utm(this->model, this->utm_head);
 
   // Apply the imu sensor model
-  pf_update_sensor(this->pf, (pf_sensor_model_fn_t) imu_sensor_model, this->imu_model);  
-  
+  pf_update_sensor(pf, (pf_sensor_model_fn_t) imu_sensor_model, this->model);  
+
   return true;
 }
 
 #ifdef INCLUDE_RTKGUI
 
 ////////////////////////////////////////////////////////////////////////////////
+// Setup the GUI
+void AMCLImu::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
+{
+  this->fig = rtk_fig_create(canvas, NULL, 0);
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Shutdown the GUI
+void AMCLImu::ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
+{
+  rtk_fig_destroy(this->fig);
+  this->fig = NULL;
+  
+  return;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Draw the imu values
-void AdaptiveMCL::DrawImuData(amcl_sensor_data_t *data)
+void AMCLImu::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 {
   double ox, oy, oa;
   
-  // If there is no imu device...
-  if (this->imu_index < 0)
-    return;
-
-  rtk_fig_clear(this->imu_fig);
-  rtk_fig_color_rgb32(this->imu_fig, 0xFF00FF);
-  rtk_fig_get_origin(this->robot_fig, &ox, &oy, &oa);
-  rtk_fig_arrow(this->imu_fig, ox, oy, data->imu_utm_head + M_PI / 2, 1.0, 0.20);
-
+  rtk_fig_clear(this->fig);
+  rtk_fig_color_rgb32(this->fig, 0xFF00FF);
+  rtk_fig_get_origin(robot_fig, &ox, &oy, &oa);
+  rtk_fig_arrow(this->fig, ox, oy, this->utm_head + M_PI / 2, 1.0, 0.20);
+  
   return;
 }
 
 #endif
+

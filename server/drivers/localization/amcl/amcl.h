@@ -46,15 +46,10 @@
 #include "drivertable.h"
 
 #include "pf/pf.h"
-#include "map/map.h"
-#include "models/odometry.h"
-#include "models/sonar.h"
-#include "models/laser.h"
-#include "models/wifi.h"
-#include "models/gps.h"
-#include "models/imu.h"
+#include "amcl_sensor.h"
 
 
+/* REMOVE
 // Combined sensor data packet
 typedef struct
 {
@@ -96,7 +91,7 @@ typedef struct
   const char *filename;
   
 } amcl_wifi_beacon_t;
-
+*/
 
 // Pose hypothesis
 typedef struct
@@ -131,46 +126,6 @@ class AdaptiveMCL : public CDevice
   public: virtual int Setup(void);
   public: virtual int Shutdown(void);
 
-  // Set up the odometry device
-  private: int LoadOdom(ConfigFile* cf, int section);  
-  private: int SetupOdom(void);
-  private: int ShutdownOdom(void);
-  private: void GetOdomData(amcl_sensor_data_t *data);
-  
-  // Set up the sonar device
-  private: int LoadSonar(ConfigFile* cf, int section);
-  private: int SetupSonar(void);
-  private: int ShutdownSonar(void);
-  private: void GetSonarData(amcl_sensor_data_t *data);
-  
-  // Set up the laser device
-  private: int LoadLaser(ConfigFile* cf, int section);
-  private: int SetupLaser(void);
-  private: int ShutdownLaser(void);
-  private: void GetLaserData(amcl_sensor_data_t *data);
-  
-  // Set up the wifi device
-  private: int LoadWifi(ConfigFile* cf, int section);
-  private: int SetupWifi(void);
-  private: int ShutdownWifi(void);
-  private: void GetWifiData(amcl_sensor_data_t *data);
-
-  // Set up the gps device
-  private: int LoadGps(ConfigFile* cf, int section);
-  private: int SetupGps(void);
-  private: int ShutdownGps(void);
-  private: void GetGpsData(amcl_sensor_data_t *data);
-
-  // Set up the imu device
-  private: int LoadImu(ConfigFile* cf, int section);
-  private: int SetupImu(void);
-  private: int ShutdownImu(void);
-  private: void GetImuData(amcl_sensor_data_t *data);
-
-  // Get the current pose
-  private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-                                  uint32_t* time_sec, uint32_t* time_usec);
-
   // Process configuration requests
   public: virtual int PutConfig(player_device_id_t* device, void* client, 
                                 void* data, size_t len);
@@ -187,10 +142,10 @@ class AdaptiveMCL : public CDevice
   ///////////////////////////////////////////////////////////////////////////
 
   // Push data onto the filter queue
-  private: void Push(amcl_sensor_data_t *data);
+  private: void Push(AMCLSensorData *data);
 
   // Pop data from the filter queue
-  private: int Pop(amcl_sensor_data_t *data);
+  private: AMCLSensorData *Pop(void);
 
   ///////////////////////////////////////////////////////////////////////////
   // Bottom half methods; these methods run in the device thread
@@ -202,39 +157,11 @@ class AdaptiveMCL : public CDevice
   // Device thread finalization
   private: virtual void MainQuit();
 
-  // Initialize the filter
-  private: void InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov);
+  // Update/initialize the filter with new sensor data
+  private: bool UpdateFilter();
 
-  // Update the filter with new sensor data
-  private: bool UpdateFilter(amcl_sensor_data_t *data);
-
-  // Apply sensor models
-  private: bool InitOdomModel(amcl_sensor_data_t *data);
-  private: bool UpdateOdomModel(amcl_sensor_data_t *data);
-  private: bool UpdateSonarModel(amcl_sensor_data_t *data);
-  private: bool UpdateLaserModel(amcl_sensor_data_t *data);
-  private: bool UpdateWifiModel(amcl_sensor_data_t *data);
-  private: bool InitGpsModel(amcl_sensor_data_t *data);
-  private: bool UpdateGpsModel(amcl_sensor_data_t *data);
-  private: bool UpdateImuModel(amcl_sensor_data_t *data);
-
-#ifdef INCLUDE_RTKGUI
-  // Set up the GUI
-  private: int SetupGUI(void);
-
-  // Shut down the GUI
-  private: int ShutdownGUI(void);
-
-  // Draw the current best pose estimate
-  private: void DrawPoseEst();
-
-  // Draw the sensor values
-  private: void DrawSonarData(amcl_sensor_data_t *data);
-  private: void DrawLaserData(amcl_sensor_data_t *data);
-  private: void DrawWifiData(amcl_sensor_data_t *data);
-  private: void DrawGpsData(amcl_sensor_data_t *data);
-  private: void DrawImuData(amcl_sensor_data_t *data);
-#endif
+  // Put new data
+  private: void PutData(uint32_t tsec, uint32_t tusec);
 
   // Process requests.  Returns 1 if the configuration has changed.
   private: int HandleRequests(void);
@@ -245,10 +172,68 @@ class AdaptiveMCL : public CDevice
   // Handle the set pose request
   private: void HandleSetPose(void *client, void *request, int len);
 
+#ifdef INCLUDE_RTKGUI
+  // Set up the GUI
+  private: int SetupGUI(void);
+
+  // Shut down the GUI
+  private: int ShutdownGUI(void);
+
+  // Update the GUI
+  private: void UpdateGUI(void);
+
+  // Draw the current best pose estimate
+  private: void DrawPoseEst();
+#endif
+
   ///////////////////////////////////////////////////////////////////////////
   // Properties
   ///////////////////////////////////////////////////////////////////////////
 
+  // List of all sensors
+  private: int sensor_count;
+  private: AMCLSensor *sensors[16];
+
+  // Index of sensor providing initialization model
+  private: int init_sensor;
+
+  // Index of sensor providing action model
+  private: int action_sensor;
+
+  // Particle filter
+  private: pf_t *pf;
+  private: int pf_min_samples, pf_max_samples;
+  private: double pf_err, pf_z;
+
+  // Sensor data queue
+  private: int q_size, q_start, q_len;
+  private: AMCLSensorData **q_data;
+  
+  // Current particle filter pose estimates
+  private: int hyp_count;
+  private: amcl_hyp_t hyps[PLAYER_LOCALIZE_MAX_HYPOTHS];
+
+  // Has the filter been initialized?
+  private: bool pf_init;
+
+  // Initial pose estimate; used for filter initialization
+  private: pf_vector_t pf_init_pose_mean;
+  private: pf_matrix_t pf_init_pose_cov;
+
+  /* REMOVE
+  // Which sensor should be used to initialized
+  private: bool pf_init_odom;
+  private: bool pf_init_gps;
+  
+  // Last odometric pose estimates used by filter
+  private: pf_vector_t pf_odom_pose;
+  private: uint32_t pf_odom_time_sec, pf_odom_time_usec;
+  
+  // Odometric pose of last used sensor reading
+  private: pf_vector_t odom_pose;
+  */
+  
+  /* TODO: make cspace sensor
   // Occupancy map info
   private: const char *occ_filename;
   private: int occ_map_negate;
@@ -259,49 +244,9 @@ class AdaptiveMCL : public CDevice
   // The global map
   private: map_t *map;
   private: double map_scale;
-
-  // Particle filter
-  private: pf_t *pf;
-  private: int pf_min_samples, pf_max_samples;
-  private: double pf_err, pf_z;
-
-  // Has the initial data been pushed?
-  private: bool push_init;
-
-  // Has the filter been initialized?
-  private: bool pf_init;
-
-  // Which sensor should be used to initialized
-  private: bool pf_init_odom;
-  private: bool pf_init_gps;
+  */
   
-  // Initial pose estimate; these are used for odometry-based
-  // initialization
-  private: pf_vector_t pf_init_pose_mean;
-  private: pf_matrix_t pf_init_pose_cov;
-
-  // Last odometric pose estimates used by filter
-  private: pf_vector_t pf_odom_pose;
-  private: uint32_t pf_odom_time_sec, pf_odom_time_usec;
-  
-  // Odometric pose of last used sensor reading
-  private: pf_vector_t odom_pose;
-
-  // Sensor data queue
-  private: int q_size, q_start, q_len;
-  private: amcl_sensor_data_t *q_data;
-  
-  // Current particle filter pose estimates
-  private: int hyp_count;
-  private: amcl_hyp_t hyps[PLAYER_LOCALIZE_MAX_HYPOTHS];
-
-  // Odometry device info
-  private: CDevice *odom;
-  private: int odom_index;
-
-  // Odometry sensor/action model
-  private: odometry_t *odom_model;
-
+  /* REMOVE
   // Sonar device info
   private: CDevice *sonar;
   private: int sonar_index;
@@ -351,6 +296,7 @@ class AdaptiveMCL : public CDevice
   // IMU sensor model
   private: double imu_mag_dev;
   private: imu_model_t *imu_model;
+  */
 
 #ifdef INCLUDE_RTKGUI
   // RTK stuff; for testing only
@@ -360,11 +306,13 @@ class AdaptiveMCL : public CDevice
   private: rtk_fig_t *map_fig;
   private: rtk_fig_t *pf_fig;
   private: rtk_fig_t *robot_fig;
+  /* REMOVE
   private: rtk_fig_t *sonar_fig;
   private: rtk_fig_t *laser_fig;
   private: rtk_fig_t *wifi_fig;
   private: rtk_fig_t *gps_fig;
   private: rtk_fig_t *imu_fig;
+  */
   // REMOVE private: double origin_ox, origin_oy;
 #endif
 

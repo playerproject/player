@@ -31,50 +31,65 @@
 #include "config.h"
 #endif
 
-#include "amcl.h"
+#include "devicetable.h"
+#include "amcl_gps.h"
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Default constructor
+AMCLGps::AMCLGps()
+{
+  this->device = NULL;
+  this->model = NULL;
+  
+  return;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Load gps settings
-int AdaptiveMCL::LoadGps(ConfigFile* cf, int section)
+int AMCLGps::Load(ConfigFile* cf, int section)
 {
   // Device stuff
-  this->gps = NULL;
   this->gps_index = cf->ReadInt(section, "gps_index", -1);
   
-  if (this->gps_index >= 0)
-  {
-    // Create the gps model
-    this->gps_model = gps_alloc();
-    this->gps_model->utm_base_e = cf->ReadTupleFloat(section, "utm_base", 0, -1);
-    this->gps_model->utm_base_n = cf->ReadTupleFloat(section, "utm_base", 1, -1);
-  }
+  // Create the gps model
+  this->model = gps_alloc();
+  this->model->utm_base_e = cf->ReadTupleFloat(section, "utm_base", 0, -1);
+  this->model->utm_base_n = cf->ReadTupleFloat(section, "utm_base", 1, -1);
 
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Unload the model
+int AMCLGps::Unload(void)
+{
+  gps_free(this->model);
+  this->model = NULL;
+  
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Set up the gps
-int AdaptiveMCL::SetupGps(void)
+int AMCLGps::Setup(void)
 {
   player_device_id_t id;
-
-  // If there is no gps device...
-  if (this->gps_index < 0)
-    return 0;
 
   // Subscribe to the Gps device
   id.code = PLAYER_GPS_CODE;
   id.index = this->gps_index;
 
-  this->gps = deviceTable->GetDevice(id);
-  if (!this->gps)
+  this->device = deviceTable->GetDevice(id);
+  if (!this->device)
   {
     PLAYER_ERROR("unable to locate suitable gps device");
     return -1;
   }
-  if (this->gps->Subscribe(this) != 0)
+  if (this->device->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to gps device");
     return -1;
@@ -86,19 +101,10 @@ int AdaptiveMCL::SetupGps(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the gps
-int AdaptiveMCL::ShutdownGps(void)
-{
-  // If there is no gps device...
-  if (this->gps_index < 0)
-    return 0;
-  
-  this->gps->Unsubscribe(this);
-  this->gps = NULL;
-
-  // TODO: leaks
-  // Delete the gps model
-  //gps_free(this->gps_model);
-  //this->gps_model = NULL;
+int AMCLGps::Shutdown(void)
+{  
+  this->device->Unsubscribe(this);
+  this->device = NULL;
 
   return 0;
 }
@@ -106,62 +112,61 @@ int AdaptiveMCL::ShutdownGps(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new gps data
-void AdaptiveMCL::GetGpsData(amcl_sensor_data_t *data)
+bool AMCLGps::GetData()
 {
   size_t size;
-  player_gps_data_t ndata;
+  player_gps_data_t data;
   uint32_t tsec, tusec;
 
-  // If there is no gps device...
-  if (this->gps_index < 0)
-    return;
-
   // Get the gps device data
-  size = this->gps->GetData(this, (uint8_t*) &ndata, sizeof(ndata), &tsec, &tusec);
-  if (size < sizeof(ndata))
-  {
-    data->gps_time = 0;
-    return;
-  }
+  size = this->device->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
+  if (size < sizeof(data))
+    return false;
 
-  data->gps_time = ntohl(tsec) + ntohl(tusec) * 1e-6;
-  data->gps_utm_e = ((int32_t) ntohl(ndata.utm_e)) / 100.0;
-  data->gps_utm_n = ((int32_t) ntohl(ndata.utm_n)) / 100.0;
-  data->gps_err_horz = ((int32_t) ntohl(ndata.err_horz)) / 1000.0;
+  if (tsec == this->tsec && tusec == this->tusec)
+    return false;
+
+  this->tsec = tsec;
+  this->tusec = tusec;
+
+  this->utm_e = ((int32_t) ntohl(data.utm_e)) / 100.0;
+  this->utm_n = ((int32_t) ntohl(data.utm_n)) / 100.0;
+  this->err_horz = ((int32_t) ntohl(data.err_horz)) / 1000.0;
   
-  return;
+  return true;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize from the GPS sensor model
-bool AdaptiveMCL::InitGpsModel(amcl_sensor_data_t *data)
+bool AMCLGps::InitSensor(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
 {
-  if (data->gps_time == 0)
+  // Check for new data
+  if (!this->GetData())
     return false;
 
-  printf("init gps %.3f %f %f %f\n", data->gps_time,
-         data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
+  printf("init gps %f %f %f\n", 
+         this->utm_e, this->utm_n, this->err_horz);
 
   // Pick up UTM base coordinate
-  if (this->gps_model->utm_base_e < 0 || this->gps_model->utm_base_n < 0)
+  if (this->model->utm_base_e < 0 || this->model->utm_base_n < 0)
   {
-    this->gps_model->utm_base_e = data->gps_utm_e;
-    this->gps_model->utm_base_n = data->gps_utm_n;
-    PLAYER_WARN2("UTM base coord not setting; defaulting to [%.3f %.3f]",
-                 this->gps_model->utm_base_e, this->gps_model->utm_base_n);
+    this->model->utm_base_e = this->utm_e;
+    this->model->utm_base_n = this->utm_n;
+    PLAYER_WARN2("UTM base coord not set; defaulting to [%.3f %.3f]",
+                 this->model->utm_base_e, this->model->utm_base_n);
   }
 
   // Update the gps sensor model with the latest gps measurements
-  gps_set_utm(this->gps_model, data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
+  gps_set_utm(this->model, this->utm_e, this->utm_n, this->err_horz);
 
   // Initialize the initialization routines
-  gps_init_init(this->gps_model);
+  gps_init_init(this->model);
   
   // Draw samples from the gps distribution
-  ::pf_init(this->pf, (pf_init_model_fn_t) gps_init_model, this->gps_model);
+  pf_init(pf, (pf_init_model_fn_t) gps_init_model, this->model);
   
-  gps_init_term(this->gps_model);
+  gps_init_term(this->model);
   
   return true;
 }
@@ -169,38 +174,57 @@ bool AdaptiveMCL::InitGpsModel(amcl_sensor_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the gps sensor model
-bool AdaptiveMCL::UpdateGpsModel(amcl_sensor_data_t *data)
+bool AMCLGps::UpdateSensor(pf_t *pf)
 {
-  if (data->gps_time == this->gps_time)
+  // Check for new data
+  if (!this->GetData())
     return false;
   
-  printf("update gps %.3f %f %f %f\n", data->gps_time,
-         data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
+  printf("update gps %f %f %f\n", 
+         this->utm_e, this->utm_n, this->err_horz);
     
   // Update the gps sensor model with the latest gps measurements
-  gps_set_utm(this->gps_model, data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
+  gps_set_utm(this->model, this->utm_e, this->utm_n, this->err_horz);
 
   // Apply the gps sensor model
-  pf_update_sensor(this->pf, (pf_sensor_model_fn_t) gps_sensor_model, this->gps_model);  
+  pf_update_sensor(pf, (pf_sensor_model_fn_t) gps_sensor_model, this->model);  
 
-  this->gps_time = data->gps_time;
-  
   return true;
 }
 
 #ifdef INCLUDE_RTKGUI
 
 ////////////////////////////////////////////////////////////////////////////////
-// Draw the gps values
-void AdaptiveMCL::DrawGpsData(amcl_sensor_data_t *data)
+// Setup the GUI
+void AMCLGps::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 {
-  rtk_fig_clear(this->gps_fig);
-  rtk_fig_color_rgb32(this->gps_fig, 0xFF00FF);
+  this->fig = rtk_fig_create(canvas, NULL, 0);
+  
+  return;
+}
 
-  rtk_fig_ellipse(this->gps_fig,
-                  data->gps_utm_e - this->gps_model->utm_base_e,
-                  data->gps_utm_n - this->gps_model->utm_base_n, 0,
-                  data->gps_err_horz, data->gps_err_horz, 0);
+
+////////////////////////////////////////////////////////////////////////////////
+// Shutdown the GUI
+void AMCLGps::ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
+{
+  rtk_fig_destroy(this->fig);
+  this->fig = NULL;
+
+  return;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Draw the gps values
+void AMCLGps::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
+{
+  rtk_fig_clear(this->fig);
+  rtk_fig_color_rgb32(this->fig, 0xFF00FF);
+
+  rtk_fig_ellipse(this->fig,
+                  this->utm_e - this->model->utm_base_e,
+                  this->utm_n - this->model->utm_base_n, 0,
+                  this->err_horz, this->err_horz, 0);
   
   return;
 }

@@ -38,14 +38,14 @@ void laser_precompute(laser_t *self);
 
 
 // Create an sensor model
-laser_t *laser_alloc(map_t *map, pf_vector_t laser_pose)
+laser_t *laser_alloc(map_t *map)
 {
   laser_t *self;
 
   self = calloc(1, sizeof(laser_t));
 
   self->map = map;
-  self->laser_pose = laser_pose;
+  self->laser_pose = pf_vector_zero();
 
   self->range_cov = 0.10 * 0.10;
   self->range_bad = 0.50;

@@ -82,6 +82,7 @@ ReadLogManager *ReadLogManager_Get()
 ReadLogManager::ReadLogManager(const char *filename, double speed)
 {
   this->filename = strdup(filename);
+  this->format = strdup("unknown");
   this->speed = speed;
   this->file = NULL;
   this->device_count = 0;
@@ -94,6 +95,7 @@ ReadLogManager::ReadLogManager(const char *filename, double speed)
 // Destructor
 ReadLogManager::~ReadLogManager()
 {
+  free(this->format);
   free(this->filename);
   
   return;
@@ -255,13 +257,21 @@ void ReadLogManager::Main()
       }
     }
 
-    // Discard comments
     if (token_count >= 1)
     {
+      // Discard comments
       if (strcmp(tokens[0], "#") == 0)
         continue;
+
+      // Parse meta-data
       if (strcmp(tokens[0], "##") == 0)
-        continue;
+      {
+        if (token_count == 4)
+        {
+          free(this->format);
+          this->format = strdup(tokens[3]);
+        }
+      }
     }
 
     // Parse out the header info
@@ -381,7 +391,7 @@ int ReadLogManager::ParseData(CDevice *device, int linenum,
 int ReadLogManager::ParseLaser(CDevice *device, int linenum,
                                int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
-  int i, count;
+  int i, count, angle;
   player_laser_data_t data;
 
   if (token_count < 12)
@@ -390,23 +400,54 @@ int ReadLogManager::ParseLaser(CDevice *device, int linenum,
     return -1;
   }
 
-  data.min_angle = NINT16(RAD_DEG(atof(tokens[6])) * 100);
-  data.max_angle = NINT16(RAD_DEG(atof(tokens[7])) * 100);
-  data.resolution = NUINT16(RAD_DEG(atof(tokens[8])) * 100);
-  data.range_count = NUINT16(atoi(tokens[9]));
+  if (strcmp(this->format, "0.0.0") == 0)
+  {
+    data.min_angle = NINT16(RAD_DEG(atof(tokens[6])) * 100);
+    data.max_angle = NINT16(RAD_DEG(atof(tokens[7])) * 100);
+    data.resolution = NUINT16(RAD_DEG(atof(tokens[8])) * 100);
+    data.range_count = NUINT16(atoi(tokens[9]));
     
-  count = 0;
-  for (i = 10; i < token_count; i += 2)
-  {
-    data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));
-    data.intensity[count] = atoi(tokens[i + 1]);
-    count += 1;
-  }
+    count = 0;
+    for (i = 10; i < token_count; i += 2)
+    {
+      data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));
+      data.intensity[count] = atoi(tokens[i + 1]);
+      count += 1;
+    }
 
-  if (count != ntohs(data.range_count))
+    if (count != ntohs(data.range_count))
+    {
+      PLAYER_ERROR2("range count mismatch at %s:%d", this->filename, linenum);
+      return -1;
+    }
+  }
+  else
   {
-    PLAYER_ERROR2("range count mismatch at %s:%d", this->filename, linenum);
-    return -1;
+    data.min_angle = +18000;
+    data.max_angle = -18000;
+    
+    count = 0;
+    for (i = 6; i < token_count; i += 3)
+    {
+      data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));      
+      data.intensity[count] = atoi(tokens[i + 2]);
+
+      angle = (int) (atof(tokens[i + 1]) * 180 / M_PI * 100);
+      if (angle < data.min_angle)
+        data.min_angle = angle;
+      if (angle > data.max_angle)
+        data.max_angle = angle;
+
+      count += 1;
+    }
+
+    data.resolution = (data.max_angle - data.min_angle) / (count - 1);
+    data.range_count = count;
+
+    data.range_count = NUINT16(data.range_count);
+    data.min_angle = NINT16(data.min_angle);
+    data.max_angle = NINT16(data.max_angle);
+    data.resolution = NUINT16(data.resolution);
   }
 
   device->PutData(&data, sizeof(data), tsec, tusec);

@@ -57,6 +57,12 @@ extern PlayerTime* GlobalTime;
 
 #include "amcl.h"
 
+// Sensors
+#include "amcl_odom.h"
+#include "amcl_laser.h"
+#include "amcl_gps.h"
+#include "amcl_imu.h"
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Create an instance of the driver
@@ -85,33 +91,47 @@ void AdaptiveMCL_Register(DriverTable* table)
 AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_localize_data_t), 0, 100, 100)
 {
+  int i;
   double u[3];
 
-  // Get the map settings
-  this->occ_filename = cf->ReadFilename(section, "map_file", NULL);
-  this->map_scale = cf->ReadLength(section, "map_scale", 0.05);
-  this->occ_map_negate = cf->ReadInt(section, "map_negate", 0);
+  this->init_sensor = -1;
+  this->action_sensor = -1;
+  this->sensor_count = 0;
 
-  this->map = NULL;
+  // Create odometry sensor
+  if (cf->ReadInt(section, "odom_index", -1) >= 0)
+  {
+    this->action_sensor = this->sensor_count;
+    if (cf->ReadInt(section, "odom_init", 1))
+      this->init_sensor = this->sensor_count;
+    this->sensors[this->sensor_count++] = new AMCLOdom();
+  }
+  
+  // Create laser sensor
+  if (cf->ReadInt(section, "laser_index", -1) >= 0)
+    this->sensors[this->sensor_count++] = new AMCLLaser();
 
-  // Odometry stuff
-  this->LoadOdom(cf, section);
-  
-  // Sonar stuff
-  this->LoadSonar(cf, section);
-  
-  // Laser stuff
-  this->LoadLaser(cf, section);
-  
-  // WiFi stuff
-  this->LoadWifi(cf, section);
+  // Create GPS sensor
+  if (cf->ReadInt(section, "gps_index", -1) >= 0)
+  {
+    if (cf->ReadInt(section, "gps_init", 1))
+      this->init_sensor = this->sensor_count;
+    this->sensors[this->sensor_count++] = new AMCLGps();
+  }
 
-  // GPS stuff
-  this->LoadGps(cf, section);
+  // Create IMU sensor
+  if (cf->ReadInt(section, "imu_index", -1) >= 0)
+    this->sensors[this->sensor_count++] = new AMCLImu();
 
-  // IMU stuff
-  this->LoadImu(cf, section);
+  // Load sensor settings
+  for (i = 0; i < this->sensor_count; i++)
+    this->sensors[i]->Load(cf, section);  
   
+  // Create the sensor data queue
+  this->q_len = 0;
+  this->q_size = 2000;
+  this->q_data = new (AMCLSensorData*)[this->q_size];
+
   // Particle filter settings
   this->pf = NULL;
   this->pf_min_samples = cf->ReadInt(section, "pf_min_samples", 100);
@@ -121,10 +141,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->pf_err = cf->ReadFloat(section, "pf_err", 0.01);
   this->pf_z = cf->ReadFloat(section, "pf_z", 3);
 
-  // Which sensor will we use to initialize the pf?
-  this->pf_init_odom = cf->ReadInt(section, "pf_init_odom", 1);
-  this->pf_init_gps = cf->ReadInt(section, "pf_init_gps", 0);
-  
+  // TODO: fix
   // Initial pose estimate (odometry-based initialization)
   this->pf_init_pose_mean = pf_vector_zero();
   this->pf_init_pose_mean.v[0] = cf->ReadTupleLength(section, "init_pose", 0, 0);
@@ -143,11 +160,6 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   // Initial hypothesis list
   this->hyp_count = 0;
 
-  // Create the sensor queue
-  this->q_len = 0;
-  this->q_size = 2000;
-  this->q_data = new amcl_sensor_data_t[this->q_size];
-
 #ifdef INCLUDE_RTKGUI
   // Enable debug gui
   this->enable_gui = cf->ReadInt(section, "enable_gui", 0);
@@ -161,7 +173,19 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 // Destructor
 AdaptiveMCL::~AdaptiveMCL(void)
 {
+  int i;
+
+  // Delete sensor data queue
   delete[] this->q_data;
+
+  // Delete sensors
+  for (i = 0; i < this->sensor_count; i++)
+  {
+    this->sensors[i]->Unload();
+    delete this->sensors[i];
+  }
+  this->sensor_count = 0;
+
   return;
 }
 
@@ -171,11 +195,10 @@ AdaptiveMCL::~AdaptiveMCL(void)
 int AdaptiveMCL::Setup(void)
 {
   int i;
-  amcl_sensor_data_t sdata;
-  amcl_wifi_beacon_t *beacon;
     
   PLAYER_TRACE0("setup");
 
+  /* MOVE
   // If we have a map...
   if (this->occ_filename)
   {
@@ -206,47 +229,21 @@ int AdaptiveMCL::Setup(void)
         return -1;
     }
   }
+  */
 
   // Create the particle filter
   assert(this->pf == NULL);
   this->pf = pf_alloc(this->pf_min_samples, this->pf_max_samples);
   this->pf->pop_err = this->pf_err;
   this->pf->pop_z = this->pf_z;
-  
-  // Initialise the odometry device
-  if (this->SetupOdom() != 0)
-    return -1;
-  
-  // Initialise the sonar device
-  if (this->SetupSonar() != 0)
-    return -1;
-  
-  // Initialise the laser device
-  if (this->SetupLaser() != 0)
-    return -1;
 
-  // Initialise wifi
-  if (this->SetupWifi() != 0)
-    return -1;
-
-  // Initialise GPS
-  if (this->SetupGps() != 0)
-    return -1;
-
-  // Initialise IMU
-  if (this->SetupImu() != 0)
-    return -1;
-
-  // Set the initial odometric poses
-  this->GetOdomData(&sdata);
-  this->odom_pose = sdata.odom_pose;
-  this->pf_odom_pose = sdata.odom_pose;
-  this->pf_odom_time_sec = sdata.odom_time_sec;
-  this->pf_odom_time_usec = sdata.odom_time_usec;
+  // Start sensors
+  for (i = 0; i < this->sensor_count; i++)
+    if (this->sensors[i]->Setup() < 0)
+      return -1;
 
   // No data has yet been pushed, and the
   // filter has not yet been initialized
-  this->push_init = false;
   this->pf_init = false;
 
   // Initial hypothesis list
@@ -264,189 +261,30 @@ int AdaptiveMCL::Setup(void)
 // Shutdown the device (called by server thread).
 int AdaptiveMCL::Shutdown(void)
 {
+  int i;
+  
   PLAYER_TRACE0("shutting down");
     
   // Stop the driver thread.
   this->StopThread();
 
-  // Stop the gps device
-  this->ShutdownGps();
-  
-  // Stop the wifi device
-  this->ShutdownWifi();
-
-  // Stop the laser
-  this->ShutdownLaser();
-
-  // Stop the sonar
-  this->ShutdownSonar();
-
-  // Stop the odometry device
-  this->ShutdownOdom();
+  // Stop sensors
+  for (i = 0; i < this->sensor_count; i++)
+    this->sensors[i]->Shutdown();
 
   // Delete the particle filter
   pf_free(this->pf);
   this->pf = NULL;
 
+  /* MOVE
   // Delete the map
   if (this->map)
     map_free(this->map);
   this->map = NULL;
+  */
 
   PLAYER_TRACE0("shutdown done");
   return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Get the current pose.  This function is called by the server thread.
-size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
-                            uint32_t* time_sec, uint32_t* time_usec)
-{
-  int i, j, k;
-  int datalen;
-  player_localize_data_t data;
-  pf_vector_t odom_diff; // odom_pose;
-  pf_vector_t pose;
-  pf_matrix_t pose_cov;
-  amcl_sensor_data_t sdata;
-  amcl_hyp_t *hyp;
-  double scale[3];
-  
-  this->Lock();
-
-  memset(&sdata, 0, sizeof(sdata));
-  
-  // See if there is new odometry data.  If there is, push it and all
-  // the rest of the sensor data onto the sensor queue.
-  this->GetOdomData(&sdata);
-
-  /* REMOVE
-  // See how far the robot has moved
-  odom_pose = sdata.odom_pose;
-  odom_diff = pf_vector_coord_sub(odom_pose, this->odom_pose);
-
-  // Make sure we have moved a reasonable distance
-  if (this->push_init == false ||
-      fabs(odom_diff.v[0]) > 0.20 ||
-      fabs(odom_diff.v[1]) > 0.20 ||
-      fabs(odom_diff.v[2]) > M_PI / 6)
-  {
-    this->odom_pose = sdata.odom_pose;
-  */
-
-    // Get the current sonar data; we assume it is new data
-    this->GetSonarData(&sdata);
-
-    // Get the current laser data; we assume it is new data
-    this->GetLaserData(&sdata);
-
-    // Get the current wifi data; we assume it is new data
-    this->GetWifiData(&sdata);
-
-    // Get the current GPS data; we assume it is new data
-    this->GetGpsData(&sdata);
-
-    // Get the current IMU data; we assume it is new data
-    this->GetImuData(&sdata);
-
-    // Push the data
-    this->Push(&sdata);
-    this->push_init = true;
-//  }
-  
-  // Compute the change in odometric pose
-  odom_diff = pf_vector_coord_sub(sdata.odom_pose, this->pf_odom_pose);
-
-  // Record the number of pending observations
-  data.pending_count = this->q_len;
-  data.pending_time_sec = this->pf_odom_time_sec;
-  data.pending_time_usec = this->pf_odom_time_usec;
-  
-  // Encode the hypotheses
-  data.hypoth_count = this->hyp_count;
-  for (i = 0; i < this->hyp_count; i++)
-  {
-    hyp = this->hyps + i;
-
-    // Get the current estimate
-    pose = hyp->pf_pose_mean;
-    pose_cov = hyp->pf_pose_cov;
-
-    // Translate/rotate the hypotheses to take account of latency in filter
-    pose = pf_vector_coord_add(odom_diff, pose);
-
-    // Check for bad values
-    if (!pf_vector_finite(pose))
-    {
-      pf_vector_fprintf(pose, stderr, "%e");
-      assert(0);
-    }
-    if (!pf_matrix_finite(pose_cov))
-    {
-      pf_matrix_fprintf(pose_cov, stderr, "%e");
-      assert(0);
-    }
-
-    scale[0] = 1000;
-    scale[1] = 1000;
-    scale[2] = 3600 * 180 / M_PI;
-    
-    data.hypoths[i].alpha = (uint32_t) (hyp->weight * 1e6);
-        
-    data.hypoths[i].mean[0] = (int32_t) (pose.v[0] * scale[0]);
-    data.hypoths[i].mean[1] = (int32_t) (pose.v[1] * scale[1]);
-    data.hypoths[i].mean[2] = (int32_t) (pose.v[2] * scale[2]);
-  
-    data.hypoths[i].cov[0][0] = (int64_t) (pose_cov.m[0][0] * scale[0] * scale[0]);
-    data.hypoths[i].cov[0][1] = (int64_t) (pose_cov.m[0][1] * scale[1] * scale[1]);
-    data.hypoths[i].cov[0][2] = 0;
-  
-    data.hypoths[i].cov[1][0] = (int64_t) (pose_cov.m[1][0] * scale[0] * scale[0]);
-    data.hypoths[i].cov[1][1] = (int64_t) (pose_cov.m[1][1] * scale[1] * scale[1]);
-    data.hypoths[i].cov[1][2] = 0;
-
-    data.hypoths[i].cov[2][0] = 0;
-    data.hypoths[i].cov[2][1] = 0;
-    data.hypoths[i].cov[2][2] = (int64_t) (pose_cov.m[2][2] * scale[2] * scale[2]);
-  }
-
-  this->Unlock();
-  
-  // Compute the length of the data packet
-  datalen = sizeof(data) - sizeof(data.hypoths) + data.hypoth_count * sizeof(data.hypoths[0]);
-
-  // Byte-swap
-  data.pending_count = htons(data.pending_count);
-  data.pending_time_sec = htonl(data.pending_time_sec);
-  data.pending_time_usec = htonl(data.pending_time_usec);
-
-  // Byte-swap
-  for (i = 0; (size_t) i < data.hypoth_count; i++)
-  {
-    for (j = 0; j < 3; j++)
-    {
-      data.hypoths[i].mean[j] = htonl(data.hypoths[i].mean[j]);
-      for (k = 0; k < 3; k++)
-        data.hypoths[i].cov[j][k] = htonll(data.hypoths[i].cov[j][k]);
-    }
-    data.hypoths[i].alpha = htonl(data.hypoths[i].alpha);
-  }
-  data.hypoth_count = htonl(data.hypoth_count);
-
-  // Copy data to server
-  assert(datalen > 0);
-  assert(len >= (size_t) datalen);
-  assert(dest != NULL);
-  memcpy(dest, &data, datalen);
-
-  // Set the timestamp
-  if (time_sec)
-    *time_sec = sdata.odom_time_sec;
-  if (time_usec)
-    *time_usec = sdata.odom_time_usec;
-
-  return datalen;
 }
 
 
@@ -464,6 +302,7 @@ int AdaptiveMCL::PutConfig(player_device_id_t* device, void* client,
     return 0;
   }
 
+  /* TODO: fix
   // Process some of the requests immediately
   switch (((char*) data)[0])
   {
@@ -474,6 +313,7 @@ int AdaptiveMCL::PutConfig(player_device_id_t* device, void* client,
       HandleGetMapData(client, data, len);
       return 0;
   }
+  */
 
   // Let the device thread get the rest
   return CDevice::PutConfig(device, client, data, len);
@@ -484,6 +324,7 @@ int AdaptiveMCL::PutConfig(player_device_id_t* device, void* client,
 // Handle map info request
 void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
 {
+  /* FIX
   int reqlen;
   player_localize_map_info_t info;
 
@@ -516,7 +357,7 @@ void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
   // Send map info to the client
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &info, sizeof(info)) != 0)
     PLAYER_ERROR("PutReply() failed");
-  
+  */  
   return;
 }
 
@@ -525,6 +366,7 @@ void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
 // Handle map data request
 void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
 {
+  /* FIX
   int i, j;
   int oi, oj, si, sj;
   int reqlen;
@@ -571,14 +413,14 @@ void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
   // Send map info to the client
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &data, sizeof(data)) != 0)
     PLAYER_ERROR("PutReply() failed");
-  
+  */  
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Push data onto the filter queue.
-void AdaptiveMCL::Push(amcl_sensor_data_t *data)
+void AdaptiveMCL::Push(AMCLSensorData *data)
 {
   int i;
   
@@ -589,7 +431,7 @@ void AdaptiveMCL::Push(amcl_sensor_data_t *data)
   }
 
   i = (this->q_start + this->q_len++) % this->q_size;
-  this->q_data[i] = *data;
+  this->q_data[i] = data;
   
   return;
 }
@@ -597,20 +439,19 @@ void AdaptiveMCL::Push(amcl_sensor_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pop data from the filter queue
-int AdaptiveMCL::Pop(amcl_sensor_data_t *data)
+AMCLSensorData *AdaptiveMCL::Pop(void)
 {
   int i;
   
   if (this->q_len == 0)
-    return 0;
+    return NULL;
 
   //PLAYER_TRACE1("q len %d\n", this->q_len);
   
   i = this->q_start++ % this->q_size;
   this->q_len--;
-  *data = this->q_data[i];
-  
-  return 1;
+
+  return this->q_data[i];
 }
 
 
@@ -619,7 +460,6 @@ int AdaptiveMCL::Pop(amcl_sensor_data_t *data)
 void AdaptiveMCL::Main(void) 
 {  
   struct timespec sleeptime;
-  amcl_sensor_data_t data;
   
   // WARNING: this only works for Linux
   // Run at a lower priority
@@ -665,11 +505,9 @@ void AdaptiveMCL::Main(void)
     // Process any pending requests.
     this->HandleRequests();
 
-    // Process any queued data
-    if (this->Pop(&data))
+    // Update the filter
+    if (this->UpdateFilter())
     {
-      this->UpdateFilter(&data);
-      
 #ifdef INCLUDE_OUTFILE
       // Save the error values
       pf_vector_t mean;
@@ -677,10 +515,10 @@ void AdaptiveMCL::Main(void)
 
       pf_get_cep_stats(pf, &mean, &var);
 
-      //printf("amcl %.3f %.3f %f\n", mean.v[0], mean.v[1], mean.v[2] * 180 / M_PI);
-            
+      printf("amcl %.3f %.3f %f\n", mean.v[0], mean.v[1], mean.v[2] * 180 / M_PI);
+
       fprintf(this->outfile, "%d.%03d unknown 6665 localize 01 %d.%03d ",
-              0, 0, data.odom_time_sec, data.odom_time_usec / 1000);
+              0, 0, 0, 0);
       fprintf(this->outfile, "1.0 %e %e %e %e 0 0 0 0 0 0 0 0 \n",
               mean.v[0], mean.v[1], mean.v[2], var);
       fflush(this->outfile);
@@ -712,67 +550,44 @@ void AdaptiveMCL::MainQuit()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the filter with new sensor data
-bool AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
+bool AdaptiveMCL::UpdateFilter()
 {
   int i;
+  uint32_t tsec, tusec;
   double weight;
   pf_vector_t pose_mean;
   pf_matrix_t pose_cov;
   amcl_hyp_t *hyp;
-  bool update;
-  
-  update = false;
-  
-  // If the distribution has not been initialized...
-  if (this->pf_init == false)
-  {
-    printf("init\n");
-    fflush(stdout);
-      
-    // Initialize distribution from odometric model
-    if (this->pf_init_odom)
-    {
-      this->InitOdomModel(data);
-      this->pf_init = true;
-    }
 
-    // Initialize distribution from GPS model
-    if (this->pf_init_gps)
-    {
-      if (this->InitGpsModel(data))
-      {
-        this->pf_init = true;
-        update = true;
-      }
-    }
+  assert(this->init_sensor >= 0 && this->init_sensor < this->sensor_count);
+  assert(this->action_sensor >= 0 && this->action_sensor < this->sensor_count);
+    
+  // If the filter has not been initialized, initialize it using the
+  // designated model.  We also need to initialize the action model.
+  if (!this->pf_init)
+  {
+    if (!this->sensors[this->action_sensor]->InitAction(this->pf, &tsec, &tusec))
+      return false;
+    if (!this->sensors[this->init_sensor]->InitSensor(this->pf,
+                                                      this->pf_init_pose_mean,
+                                                      this->pf_init_pose_cov))
+      return false;
+    this->pf_init = true;
+  }
+
+  // Update the filter using the action model
+  else
+  {
+    if (!this->sensors[this->action_sensor]->UpdateAction(this->pf, &tsec, &tusec))
+      return false;
   }
   
-  // Apply odometry action and sensor models
-  update |= this->UpdateOdomModel(data);
-
-  // Nothing updated...
-  if (!update)
-    return false;
-
-  // Apply sonar sensor model
-  this->UpdateSonarModel(data);
-
-  // Apply laser sensor model
-  this->UpdateLaserModel(data);
+  // Update the filter using all sensor models
+  for (i = 0; i < this->sensor_count; i++)
+    this->sensors[i]->UpdateSensor(this->pf);
   
-  // Apply the wifi sensor model
-  this->UpdateWifiModel(data);
-
-  // Apply the GPS sensor model
-  this->UpdateGpsModel(data);
-
-  // Apply the IMU sensor model
-  this->UpdateImuModel(data);
-
-  // Resample
+  // Resample the particles
   pf_update_resample(this->pf);
-
-  this->Lock();
 
   // Read out the current hypotheses
   this->hyp_count = 0;
@@ -780,38 +595,112 @@ bool AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   {
     if (!pf_get_cluster_stats(this->pf, i, &weight, &pose_mean, &pose_cov))
       break;
-
     hyp = this->hyps + this->hyp_count++;
     hyp->weight = weight;
     hyp->pf_pose_mean = pose_mean;
     hyp->pf_pose_cov = pose_cov;
   }
 
-  this->Unlock();
+  // Encode data to send to server
+  this->PutData(tsec, tusec);
   
 #ifdef INCLUDE_RTKGUI
-  // Draw the samples
+  // Update the GUI
   if (this->enable_gui)
-  {
-    this->DrawPoseEst();
-    
-    this->DrawSonarData(data);
-    this->DrawLaserData(data);
-    this->DrawWifiData(data);
-    this->DrawGpsData(data);
-    this->DrawImuData(data);
-    
-    rtk_fig_clear(this->pf_fig);
-    rtk_fig_color(this->pf_fig, 0, 0, 1);
-    pf_draw_samples(this->pf, this->pf_fig, 1000);
-    pf_draw_cep_stats(this->pf, this->pf_fig);
-    //rtk_fig_color(this->pf_fig, 0, 1, 0);
-    //pf_draw_stats(this->pf, this->pf_fig);
-    //pf_draw_hist(this->pf, this->pf_fig);
-  }
+    this->UpdateGUI();
 #endif
   
   return true;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Put new data
+void AdaptiveMCL::PutData(uint32_t tsec, uint32_t tusec)
+{
+  int i, j, k;
+  amcl_hyp_t *hyp;
+  double scale[3];
+  pf_vector_t pose;
+  pf_matrix_t pose_cov;
+  size_t datalen;
+  player_localize_data_t data;
+
+  // Record the number of pending observations
+  data.pending_count = 0;
+  data.pending_time_sec = 0;
+  data.pending_time_usec = 0;
+  
+  // Encode the hypotheses
+  data.hypoth_count = this->hyp_count;
+  for (i = 0; i < this->hyp_count; i++)
+  {
+    hyp = this->hyps + i;
+
+    // Get the current estimate
+    pose = hyp->pf_pose_mean;
+    pose_cov = hyp->pf_pose_cov;
+
+    // Check for bad values
+    if (!pf_vector_finite(pose))
+    {
+      pf_vector_fprintf(pose, stderr, "%e");
+      assert(0);
+    }
+    if (!pf_matrix_finite(pose_cov))
+    {
+      pf_matrix_fprintf(pose_cov, stderr, "%e");
+      assert(0);
+    }
+
+    scale[0] = 1000;
+    scale[1] = 1000;
+    scale[2] = 3600 * 180 / M_PI;
+    
+    data.hypoths[i].alpha = (uint32_t) (hyp->weight * 1e6);
+        
+    data.hypoths[i].mean[0] = (int32_t) (pose.v[0] * scale[0]);
+    data.hypoths[i].mean[1] = (int32_t) (pose.v[1] * scale[1]);
+    data.hypoths[i].mean[2] = (int32_t) (pose.v[2] * scale[2]);
+  
+    data.hypoths[i].cov[0][0] = (int64_t) (pose_cov.m[0][0] * scale[0] * scale[0]);
+    data.hypoths[i].cov[0][1] = (int64_t) (pose_cov.m[0][1] * scale[1] * scale[1]);
+    data.hypoths[i].cov[0][2] = 0;
+  
+    data.hypoths[i].cov[1][0] = (int64_t) (pose_cov.m[1][0] * scale[0] * scale[0]);
+    data.hypoths[i].cov[1][1] = (int64_t) (pose_cov.m[1][1] * scale[1] * scale[1]);
+    data.hypoths[i].cov[1][2] = 0;
+
+    data.hypoths[i].cov[2][0] = 0;
+    data.hypoths[i].cov[2][1] = 0;
+    data.hypoths[i].cov[2][2] = (int64_t) (pose_cov.m[2][2] * scale[2] * scale[2]);
+  }
+
+  // Compute the length of the data packet
+  datalen = sizeof(data) - sizeof(data.hypoths) + data.hypoth_count * sizeof(data.hypoths[0]);
+
+  // Byte-swap
+  data.pending_count = htons(data.pending_count);
+  data.pending_time_sec = htonl(data.pending_time_sec);
+  data.pending_time_usec = htonl(data.pending_time_usec);
+
+  // Byte-swap
+  for (i = 0; (size_t) i < data.hypoth_count; i++)
+  {
+    for (j = 0; j < 3; j++)
+    {
+      data.hypoths[i].mean[j] = htonl(data.hypoths[i].mean[j]);
+      for (k = 0; k < 3; k++)
+        data.hypoths[i].cov[j][k] = htonll(data.hypoths[i].cov[j][k]);
+    }
+    data.hypoths[i].alpha = htonl(data.hypoths[i].alpha);
+  }
+  data.hypoth_count = htonl(data.hypoth_count);
+
+  // Copy data to server
+  ((CDevice*) this)->PutData((char*) &data, datalen, tsec, tusec);
+  
+  return;
 }
 
 
@@ -877,7 +766,6 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   // Re-initialize the filter
   this->pf_init_pose_mean = pose;
   this->pf_init_pose_cov = cov;
-  this->push_init = false;
   this->pf_init = false;
 
   // Give them an ack
@@ -894,6 +782,8 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
 // Set up the GUI
 int AdaptiveMCL::SetupGUI(void)
 {
+  int i;
+  
   // Initialize RTK
   rtk_init(NULL, NULL);
 
@@ -902,12 +792,14 @@ int AdaptiveMCL::SetupGUI(void)
   this->canvas = rtk_canvas_create(this->app);
   rtk_canvas_title(this->canvas, "AdaptiveMCL");
 
+  /* TODO: fix
   if (this->map != NULL)
   {
     rtk_canvas_size(this->canvas, this->map->size_x, this->map->size_y);
     rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
   }
   else
+  */
   {
     rtk_canvas_size(this->canvas, 400, 400);
     rtk_canvas_scale(this->canvas, 0.1, 0.1);
@@ -916,6 +808,7 @@ int AdaptiveMCL::SetupGUI(void)
   this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
   this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 5);
 
+  /* FIX
   // Draw the map
   if (this->map != NULL)
   {
@@ -925,16 +818,13 @@ int AdaptiveMCL::SetupGUI(void)
     // HACK; testing
     map_draw_wifi(this->map, this->map_fig, 0);
   }
+  */
 
-  rtk_fig_line(this->map_fig, 0, -1000, 0, +1000);
-  rtk_fig_line(this->map_fig, -1000, 0, +1000, 0);
+  rtk_fig_line(this->map_fig, 0, -100, 0, +100);
+  rtk_fig_line(this->map_fig, -100, 0, +100, 0);
 
+  // Best guess figure
   this->robot_fig = rtk_fig_create(this->canvas, NULL, 9);
-  this->sonar_fig = rtk_fig_create(this->canvas, this->robot_fig, 15);
-  this->laser_fig = rtk_fig_create(this->canvas, this->robot_fig, 10);
-  this->wifi_fig = rtk_fig_create(this->canvas, this->robot_fig, 16);
-  this->gps_fig = rtk_fig_create(this->canvas, NULL, 17);
-  this->imu_fig = rtk_fig_create(this->canvas, NULL, 17);
 
   // Draw the robot
   rtk_fig_color(this->robot_fig, 0.7, 0, 0);
@@ -943,8 +833,9 @@ int AdaptiveMCL::SetupGUI(void)
   // TESTING
   //rtk_fig_movemask(this->robot_fig, RTK_MOVE_TRANS | RTK_MOVE_ROT);
 
-  // Origin of display
-  //this->origin_ox = this->origin_oy = 0.0;
+  // Initialize the sensor GUI's
+  for (i = 0; i < this->sensor_count; i++)
+    this->sensors[i]->SetupGUI(this->canvas, this->robot_fig);
 
   rtk_app_main_init(this->app);
 
@@ -956,12 +847,16 @@ int AdaptiveMCL::SetupGUI(void)
 // Shut down the GUI
 int AdaptiveMCL::ShutdownGUI(void)
 {
-  rtk_fig_destroy(this->wifi_fig);
-  rtk_fig_destroy(this->laser_fig);
-  rtk_fig_destroy(this->sonar_fig);
+  int i;
+  
+  // Finalize the sensor GUI's
+  for (i = 0; i < this->sensor_count; i++)
+    this->sensors[i]->ShutdownGUI(this->canvas, this->robot_fig);
+
   rtk_fig_destroy(this->robot_fig);
-  rtk_fig_destroy(this->map_fig);
   rtk_fig_destroy(this->pf_fig);
+  rtk_fig_destroy(this->map_fig);
+  
   rtk_canvas_destroy(this->canvas);
   rtk_app_destroy(this->app);
 
@@ -969,7 +864,31 @@ int AdaptiveMCL::ShutdownGUI(void)
   
   return 0;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Update the GUI
+void AdaptiveMCL::UpdateGUI(void)
+{
+  int i;
   
+  rtk_fig_clear(this->pf_fig);
+  rtk_fig_color(this->pf_fig, 0, 0, 1);
+  pf_draw_samples(this->pf, this->pf_fig, 1000);
+  pf_draw_cep_stats(this->pf, this->pf_fig);
+  //rtk_fig_color(this->pf_fig, 0, 1, 0);
+  //pf_draw_stats(this->pf, this->pf_fig);
+  //pf_draw_hist(this->pf, this->pf_fig);
+
+  // Draw the best pose estimate
+  this->DrawPoseEst();
+
+  // Draw the current sensor data
+  for (i = 0; i < this->sensor_count; i++)
+    this->sensors[i]->UpdateGUI(this->canvas, this->robot_fig);
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Draw the current best pose estimate
 void AdaptiveMCL::DrawPoseEst()
@@ -978,8 +897,6 @@ void AdaptiveMCL::DrawPoseEst()
   double max_weight;
   amcl_hyp_t *hyp;
   pf_vector_t pose;
-  //int sx, sy;
-  //double mx, my;
   
   this->Lock();
 
@@ -999,23 +916,6 @@ void AdaptiveMCL::DrawPoseEst()
 
   if (max_weight < 0.0)
     return;
-
-  /* REMOVE
-  // Get the current origin
-  rtk_canvas_get_size(this->canvas, &sx, &sy);
-  rtk_canvas_get_scale(this->canvas, &mx, &my);  
-  mx *= sx; my *= sy;
-
-  // Shift the canvas if the robot goes off the canvas
-  if (fabs(pose.v[0] - this->origin_ox) > 0.7 * mx)
-    this->origin_ox = pose.v[0];
-  if (fabs(pose.v[1] - this->origin_oy) > 0.7 * my)
-    this->origin_oy = pose.v[1];
-
-  printf("draw est %f %f : %f %f\n", this->origin_ox, this->origin_oy, pose.v[0], pose.v[1]);
-  */
-
-  printf("draw est %f %f\n", pose.v[0], pose.v[1]);
     
   // Shift the robot figure
   rtk_fig_origin(this->robot_fig, pose.v[0], pose.v[1], pose.v[2]);

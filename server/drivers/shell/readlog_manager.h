@@ -111,6 +111,9 @@ class ReadLogManager
   private: char *filename;
   private: gzFile file;
 
+  // File format
+  private: char *format;
+
   // Playback speed (1 = real time)
   private: double speed;
 
