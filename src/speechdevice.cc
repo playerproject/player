@@ -48,6 +48,10 @@
 #include <signal.h>  /* for sigblock */
 #include <pubsub_util.h>
 
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>
+#endif
+
 #define FESTIVAL_SAY_STRING_PREFIX "(SayText \""
 #define FESTIVAL_SAY_STRING_SUFFIX "\")\n"
 
@@ -301,8 +305,10 @@ RunSpeechThread(void* speechdevice)
     pthread_exit(NULL);
   }
 
+#ifdef PLAYER_LINUX
   sigblock(SIGINT);
   sigblock(SIGALRM);
+#endif
 
   /* make sure we kill Festival on exiting */
   pthread_cleanup_push(QuitFestival,sd);
@@ -392,6 +398,9 @@ RunSpeechThread(void* speechdevice)
 
   pthread_cleanup_pop(1);
   pthread_exit(NULL);
+
+  // shut up compiler
+  return((void*)NULL);
 }
 
 void 

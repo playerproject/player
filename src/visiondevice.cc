@@ -44,6 +44,10 @@
 #include <signal.h>  /* for sigblock */
 #include <pubsub_util.h>
 
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>
+#endif
+
 #define ACTS_REQUEST_QUIT '1'
 #define ACTS_REQUEST_PACKET '0'
 
@@ -201,7 +205,7 @@ CVisionDevice::Setup()
 
       puts("sending conn string");
       /* send the ayllu string to get the server spitting out data */
-      if(sendto(sock, (const void*)msg, strlen(msg), 0, 
+      if(sendto(sock, (const char*)msg, strlen(msg), 0, 
             (const struct sockaddr*)&server, sizeof(server)) == -1)
       {
         perror("CVisionDevice::Setup():sendto() failed");
@@ -212,7 +216,7 @@ CVisionDevice::Setup()
 
       puts("getting ACK");
       /* get the ACK */
-      if((num_read = recvfrom(sock, (void*)buffer, sizeof(buffer), 0, NULL, 
+      if((num_read = recvfrom(sock, (char*)buffer, sizeof(buffer), 0, NULL, 
                                       0)) == -1)
       {
         perror("CVisionDevice::Setup():recvfrom() failed");
@@ -352,8 +356,10 @@ RunVisionThread(void* visiondevice)
     pthread_exit(NULL);
   }
 
+#ifdef PLAYER_LINUX
   sigblock(SIGINT);
   sigblock(SIGALRM);
+#endif
 
   /* make sure we kill ACTS on exiting */
   pthread_cleanup_push(QuitACTS,vd);
@@ -436,6 +442,9 @@ RunVisionThread(void* visiondevice)
 
   pthread_cleanup_pop(1);
   pthread_exit(NULL);
+
+  // shut up, compiler
+  return((void*)NULL);
 }
 
 void 

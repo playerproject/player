@@ -17,7 +17,7 @@ LIBNAME = libplayercclient.a
 INSTALL_LIB = $(INSTALL_PREFIX)/lib
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
-CFLAGS = -g -O2 -Wall 
+CFLAGS = -g -O2 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../../include
 
 OBJECTS = playercclient.o print.o helpers.o

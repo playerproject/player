@@ -34,6 +34,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>
+#endif
+
 /*
  * connects to server listening at host:port.  conn is filled in with
  * relevant information, and is used in subsequent player function

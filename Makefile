@@ -19,19 +19,30 @@ INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
 RMDIR = rmdir
 
+#######################################
+# Platform selection
+#
+
+# for Linux, uncomment the following line
+PLAYER_PLATFORM = -DPLAYER_LINUX
+
+# for Solaris, uncomment the following 2 lines
+#PLAYER_PLATFORM = -DPLAYER_SOLARIS
+#PLATFORM_LIBS = -lxnet
+#######################################
 
 all: server client_libs examples
 
 server: 
-	cd src && make all
+	cd src && make PLAYER_PLATFORM=$(PLAYER_PLATFORM) PLATFORM_LIBS=$(PLATFORM_LIBS) all
 
 .PHONY: client_libs
 client_libs:
-	cd client_libs && make all
+	cd client_libs && make PLAYER_PLATFORM=$(PLAYER_PLATFORM) PLATFORM_LIBS=$(PLATFORM_LIBS) all
 
 .PHONY: examples
 examples:
-	cd examples && make all
+	cd examples && make -i PLAYER_PLATFORM=$(PLAYER_PLATFORM) PLATFORM_LIBS=$(PLATFORM_LIBS) all
 
 dep:
 	cd src && make dep

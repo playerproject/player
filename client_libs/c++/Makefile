@@ -15,7 +15,7 @@ LIBNAME = libplayerclient.a
 INSTALL_LIB = $(INSTALL_PREFIX)/lib
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
-CFLAGS = -g -O2 -Wall 
+CFLAGS = -g -O2 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o devicedatatable.o
@@ -25,7 +25,7 @@ all: $(LIBNAME)
 $(LIBNAME): $(OBS)
 	ar cr $@ $(OBS) ../c/playercclient.o
 
-%.o: %.cc %.h
+%.o: %.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ -c $<
 
 install: $(LIBNAME)

@@ -150,7 +150,7 @@ const int on = 1;
   if(socktype == SOCK_STREAM)
   {
     /* make sure we can reuse the port soon after */
-    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)))
+    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&one, sizeof(one)))
     {
       perror("create_and_bind_socket(): setsockopt(2) failed");
       return(-1);
@@ -169,7 +169,7 @@ const int on = 1;
   (*serverp).sin_family = PF_INET;
   (*serverp).sin_addr.s_addr = INADDR_ANY;
 
-  setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
+  setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on) );
 
   if(bind(sock, (struct sockaddr*)serverp, sizeof(*serverp)) == -1) 
   {

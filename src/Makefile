@@ -9,7 +9,7 @@ DEVICELIBNAME = libplayerdevice.a
 
 INCLUDES = -I../include
 CPP = g++
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall $(PLAYER_PLATFORM)
 LIBDIRS = -L.
 LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm
 MAKEDEP = makedepend
@@ -61,7 +61,7 @@ $(DEVICELIBNAME): $(OBS)
 	$(AR) cr $@ $(OBS)
 
 $(SERVERNAME): main.cc $(DEVICELIBNAME) 
-	$(CPP) $(CFLAGS) $(INCLUDES) $(INCLUDED_DEVICES) -o $@ $< $(LIBS) $(EXTRA_LIBS)
+	$(CPP) $(CFLAGS) $(INCLUDES) $(INCLUDED_DEVICES) -o $@ main.cc $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
 
 %.o: %.cc 
 	$(CPP) $(CFLAGS) $(INCLUDES) -c $<

@@ -38,6 +38,10 @@
 #include <counter.h>
 #include <packet.h>
 
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>  /* for bzero */
+#endif
+
 extern CDeviceTable* deviceTable;
 extern CCounter num_threads;
 extern CClientData* clients[];
