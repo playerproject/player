@@ -75,7 +75,7 @@ Toby Collett
 #include <player.h>
 #include <driver.h>
 #include <drivertable.h>
-#include "error.h"
+//#include "error.h"
 
 // Flock of Birds Serial device interface...
 // two classes, the first to do the access, the second to interface with player
@@ -85,6 +85,8 @@ Toby Collett
 
 #define FOB_DEFAULT_PORT "/dev/ttyS0"
 #define FOB_DEFAULT_RATE B115200
+// size of transmitter 'radius' in mm, ie minimum value axis can have without collision with tx
+#define FOB_DEFAULT_VOIDSIZE 50
 
 #define FOB_DATAMODE_POSITION_ANGLE 0x0
 
@@ -148,16 +150,13 @@ FlockOfBirdsSerial::FlockOfBirdsSerial(char * port, int rate)
 	// save the current io settings
 	tcgetattr(fd, &oldtio);
 
-	// rtv - CBAUD is pre-POSIX and doesn't exist on OS X
-	// should replace this with ispeed and ospeed instead.
-	
 	// set up new settings
 	struct termios newtio;
 	bzero(&newtio, sizeof(newtio));
-	newtio.c_cflag = CS8 | /*CLOCAL |*/ CREAD;
+	newtio.c_cflag = CS8 | CREAD;
 	newtio.c_iflag = IGNPAR;
 	newtio.c_oflag = 0;
-	newtio.c_lflag = 0/*ICANON*/;
+	newtio.c_lflag = 0;
 	
 	// activate new settings
 	tcflush(fd, TCIFLUSH);
@@ -410,7 +409,7 @@ class FlockOfBirds_Device : public Driver
 
 		int HandleConfig(void *client, unsigned char *buffer, size_t len);
 
-
+		unsigned int VoidSize;
 	public:
 		FlockOfBirdsSerial * fob;
 		
@@ -418,8 +417,7 @@ class FlockOfBirds_Device : public Driver
 		char fob_serial_port[MAX_FILENAME_SIZE];
 		int Rate;
 		unsigned char MoveMode;
-
-
+		
 		FlockOfBirds_Device( ConfigFile* cf, int section);
 
 		virtual int Setup();
@@ -451,6 +449,7 @@ FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section)
           cf->ReadString(section, "port", FOB_DEFAULT_PORT),
           sizeof(fob_serial_port));
 	Rate = cf->ReadInt(section, "baudrate", FOB_DEFAULT_RATE);	
+	VoidSize = cf->ReadInt(section, "voidsize", FOB_DEFAULT_VOIDSIZE);	
 }
 
 int 
@@ -520,14 +519,23 @@ FlockOfBirds_Device::HandleConfig(void *client, unsigned char *buffer, size_t le
 void 
 FlockOfBirds_Device::Main()
 {
-  player_position3d_data_t data;
-  player_position3d_cmd_t command;
-  char buffer[256];
-  size_t buffer_len;
-  void *client;
-  //short pan=0, tilt=0;
-  //short panspeed=0, tiltspeed=0;
+	player_position3d_data_t data;
+	player_position3d_cmd_t command;
+	char buffer[256];
+	size_t buffer_len;
+	void *client;
+
+	int Front=1; // is the reciever in 'front' of the transmitter (1 = in front, -1 = behind)
+	double LastData[6];
+	double * PosData;
   
+	// get our first data packet
+	while (fob->ProcessData()<0)
+		pthread_testcancel();
+	
+	// set up previous data buffer
+	memcpy(LastData, fob->GetPosition(),sizeof(LastData));  
+    
   while(1) 
   {
 	pthread_testcancel();
@@ -538,10 +546,21 @@ FlockOfBirds_Device::Main()
 	if (fob->ProcessData()>0)
 	{
 		pthread_testcancel();
-		double * PosData = fob->GetPosition();
-		data.xpos = htonl(static_cast<long> (PosData[0]));
-		data.ypos = htonl(static_cast<long> (PosData[1]));
-		data.zpos = htonl(static_cast<long> (-PosData[2]));
+		PosData = fob->GetPosition();
+		
+		// check if we switched hemisphere...
+		if (((fabs(PosData[1]) > VoidSize) && (PosData[1]*LastData[1] < 0)) ||
+				((fabs(PosData[2]) > VoidSize) && (PosData[2]*LastData[2] < 0)))
+		{
+			Front *= -1;
+		}
+		memcpy(LastData, PosData,sizeof(LastData));  
+		
+		
+		data.xpos = htonl(static_cast<long> (Front*PosData[0]));
+		data.ypos = htonl(static_cast<long> (Front*PosData[1]));
+		data.zpos = htonl(static_cast<long> (-Front*PosData[2]));
+				
 		// translate degerees to milli radians
 		data.yaw = htonl(static_cast<long> (round(DTOR(PosData[3])*1000.0)));
 		data.pitch = htonl(static_cast<long> (round(DTOR(PosData[4])*1000.0)));
