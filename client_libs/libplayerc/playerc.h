@@ -1999,6 +1999,49 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
 
 
 /**************************************************************************/
+/** @defgroup playerc_proxy_dio dio
+
+The dio proxy provides an interface to the digital input/output sensors.
+
+@{
+*/
+
+/** Dio proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+    /// The number of valid digital inputs.
+    uint8_t count;
+
+    /// A bitfield of the current digital inputs.
+    uint32_t digin;
+  
+} playerc_dio_t;
+
+
+/** Create a dio proxy. */
+playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index);
+
+/** Destroy a dio proxy. */
+void playerc_dio_destroy(playerc_dio_t *device);
+
+/** Subscribe to the dio device. */
+int playerc_dio_subscribe(playerc_dio_t *device, int access);
+
+/** Un-subscribe from the dio device. */
+int playerc_dio_unsubscribe(playerc_dio_t *device);
+
+/** Set the output for the dio device. */
+int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t digout);
+
+
+/** @} */
+/***************************************************************************/
+
+
+/**************************************************************************/
 /** @} (proxies) */
 /**************************************************************************/
 
