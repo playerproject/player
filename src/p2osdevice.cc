@@ -712,8 +712,10 @@ void *RunPsosThread( void *p2osdevice )
       //(char)(leftvel/20.0), (char)(rightvel/20.0));
       motorcommand[0] = VEL2;
       motorcommand[1] = 0x3B;
-      motorcommand[2] = (char)(rightvel/20.0);
-      motorcommand[3] = (char)(leftvel/20.0);
+      motorcommand[2] = (char)(rightvel /
+              PlayerRobotParams[pd->param_idx].ConvFactors.Vel2Divisor);
+      motorcommand[3] = (char)(leftvel /
+              PlayerRobotParams[pd->param_idx].ConvFactors.Vel2Divisor);
     }
     else
     {
