@@ -22,7 +22,6 @@ extern "C" {
  * Gaussian
  *************************************************************************/
 
-
 // Gaussian PDF info
 typedef struct
 {
@@ -58,7 +57,6 @@ pf_vector_t pf_pdf_gaussian_sample(pf_pdf_gaussian_t *pdf);
 /**************************************************************************
  * Discrete
  *************************************************************************/
-
 
 // Discrete PDF info
 typedef struct
