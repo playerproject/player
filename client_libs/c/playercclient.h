@@ -174,6 +174,9 @@ int player_read_ptz(player_connection_t* conn, player_ptz_data_t* data);
  */
 int player_read_vision(player_connection_t* conn, player_vision_data_t* data);
 
+/*
+ * to help with debug output
+ */
 void player_print_vision(player_vision_data_t data);
 void player_print_misc(player_misc_data_t data);
 void player_print_ptz(player_ptz_data_t data);

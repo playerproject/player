@@ -18,11 +18,15 @@ INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 CFLAGS = -g -O2 -Wall 
 INCLUDES = -I. -I../../include
 
+OBJECTS = playercclient.o print.o helpers.o
+
 all: $(LIBNAME)
 
-$(LIBNAME): playercclient.c playercclient.h
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o playercclient.o $<
-	ar cr $@ playercclient.o
+$(LIBNAME): $(OBJECTS)
+	ar cr $@ $(OBJECTS)
+
+%.o: %.c playercclient.h
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 install: $(LIBNAME)
 	$(MKDIR) -p $(INSTALL_LIB)
@@ -35,4 +39,4 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/playercclient.h
 
 clean:
-	$(RM) -f $(LIBNAME) *.o
+	$(RM) -f $(LIBNAME) $(OBJECTS)
