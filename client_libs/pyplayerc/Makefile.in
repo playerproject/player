@@ -18,6 +18,7 @@ ifeq ($(WITH_PYTHON), 1)
 all:
 	python setup.py build
 
+maintainer-clean: clean
 clean:
 	rm -f *.o *.so *~
 	python setup.py clean

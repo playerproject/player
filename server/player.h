@@ -1144,16 +1144,6 @@ typedef struct
   short poses[PLAYER_IR_MAX_SAMPLES][3];
 } __attribute__ ((packed)) player_ir_pose_t;
 
-// this struct is unused? BPG
-/*
-// hold config requests
-typedef struct 
-{
-  uint8_t type;
-  float values[PLAYER_IR_MAX_SAMPLES][2];
-} __attribute__ ((packed)) player_reb_ir_params_req_t;
-*/
-
 // some defines
 //#define PLAYER_REB_IR_M_PARAM 1
 //#define PLAYER_REB_IR_B_PARAM 1
