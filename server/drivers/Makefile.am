@@ -9,12 +9,12 @@ CXXFLAGS = @CXXFLAGS_SERVER@
 noinst_LIBRARIES = @ACTS_LIB@ @FESTIVAL_LIB@ \
 		@LASER_LIB@ \
 		@SICK_LIB@ @SONY_LIB@ @UDPBCAST_LIB@ \
-		@FIXEDTONES_LIB@ @WIFI_LIB@
+		@FIXEDTONES_LIB@ @LINUXWIFI_LIB@
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
 
-EXTRA_LIBRARIES = libfixedtones.a libwifi.a libacts.a libsicklms200.a \
+EXTRA_LIBRARIES = libfixedtones.a liblinuxwifi.a libacts.a libsicklms200.a \
 	libfestival.a libsonyevid30.a libudpbroadcast.a \
 	liblasercspace.a liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a 
 
@@ -28,7 +28,7 @@ liblaserbar_a_SOURCES = laserbar.cc
 liblaserbarcode_a_SOURCES = laserbarcode.cc
 liblaservisualbarcode_a_SOURCES = laservisualbarcode.cc
 libfixedtones_a_SOURCES = fixedtones.cc
-libwifi_a_SOURCES = wifi.cc
+liblinuxwifi_a_SOURCES = linuxwifi.cc
 
 
 
