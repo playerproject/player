@@ -214,6 +214,8 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/Makefile 
           server/drivers/position/Makefile 
           server/drivers/audio/Makefile 
+          server/drivers/audiodsp/Makefile
+          server/drivers/audiomixer/Makefile
           server/drivers/fiducial/Makefile 
           server/drivers/ptz/Makefile 
           server/drivers/laser/Makefile 
@@ -266,20 +268,28 @@ AC_MSG_RESULT([])
 AC_MSG_RESULT([The following device drivers will be included:])
 for player_lib in $PLAYER_DRIVERS; do
   if test -n $player_lib; then
-    AC_MSG_RESULT([[    $player_lib]])
+    AC_MSG_RESULT([[+ $player_lib]])
   fi
 done
 AC_MSG_RESULT([])
 AC_MSG_RESULT([The following device drivers will NOT be included:])
+dnl Change the internal field seperator (IFS) to be a colon, so that the
+dnl driver list will be parsed correctly.
+old_IFS=$IFS
+IFS=:
 for player_lib in $PLAYER_NODRIVERS; do
-  if test -n $player_lib; then
-    AC_MSG_RESULT([[    $player_lib]])
+  if test ! $player_lib = "" ; then
+    AC_MSG_RESULT([[- $player_lib]])
   fi
 done
+dnl Change the IFS back to what it was.
+IFS=$old_IFS
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Player will be installed in:])
 AC_MSG_RESULT([    $prefix])
 AC_MSG_RESULT([])
-AC_MSG_RESULT([If you're happy with this configuration, do 'make install'])
-AC_MSG_RESULT([to build and install Player.])
+AC_MSG_RESULT([To see the configuration options, do:])
+AC_MSG_RESULT([    ./configure --help])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([When you're satisfied with the configuration, type 'make install'. ])
 AC_MSG_RESULT([])

@@ -26,10 +26,11 @@ dnl
 AC_DEFUN([PLAYER_ADD_DRIVER], [
 AC_DEFUN([name_caps],translit($1,[a-z],[A-Z]))
 ifelse($3,[yes],
-  [AC_ARG_ENABLE($1,[  --disable-$1	  Don't compile the $1 driver],,
+  [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],,
                  enable_$1=yes)],
-  [AC_ARG_ENABLE($1, [  --enable-$1	  Compile the $1 driver],,
+  [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,
                  enable_$1=no)])
+failed_header_check=no
 if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
   if test len($5) -gt 0; then
     header_list=$5
@@ -37,7 +38,10 @@ if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
     header_list=foo
   fi
   for header in $header_list; do
-    AC_CHECK_HEADER($header, enable_$1=yes, enable_$1=no,)
+    AC_CHECK_HEADER($header, 
+                    enable_$1=yes,
+                    enable_$1=no
+                    failed_header_check=yes,)
   done
 fi
 if test "x$enable_$1" = "xyes"; then
@@ -46,15 +50,20 @@ if test "x$enable_$1" = "xyes"; then
   name_caps[_LIBPATH]=$2/$name_caps[_LIB]
   name_caps[_EXTRA_LIB]=$4
   PLAYER_DRIVERS="$PLAYER_DRIVERS $1"
-else
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS $1"
-fi
+else      
+  if test "x$3" = "xno"; then
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- disabled by default; use --enable-$1 to enable"
+  elif test "x$failed_header_check" = "xyes"; then
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- couldn't find (at least one of) $header_list"
+  else
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- disabled by user"
+  fi
+fi        
 AC_SUBST(name_caps[_LIB])
 PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $name_caps[_LIB]"
 PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $name_caps[_LIBPATH]"
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
-])
-
+])        
 
 AC_DEFUN([PLAYER_DRIVERTESTS], [
 
@@ -121,6 +130,12 @@ PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],
 PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[yes],
                   ["-lrfftw -lfftw"],[rfftw.h])
 
+PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[yes],
+                  ["-lgsl -lgslcblas"],["gsl/gsl_fft_real.h sys/soundcard.h"])
+
+PLAYER_ADD_DRIVER([mixer],[drivers/audiomixer],[yes],
+                  [],[sys/soundcard.h])
+
 PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],
 ["-L$MOBILITY_DIR/lib -L$MOBILITY_DIR/tools/lib -lmby -lidlmby -lomniDynamic2 -lomniORB2 -ltcpwrapGK -lomnithread"], [$MOBILITY_DIR/include/mbylistbase.h])
 
@@ -152,7 +167,7 @@ if test "x$enable_laser" = "xyes"; then
   PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/fiducial/liblaserbar.a drivers/fiducial/liblaserbarcode.a drivers/fiducial/liblaservisualbarcode.a"
   PLAYER_DRIVERS="$PLAYER_DRIVERS laserbar laserbarcode laservisualbarcode"
 else
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS laserbar laserbarcode laservisualbarcode"
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:laserbar -- disabled by user:laserbarcode -- disabled by user:laservisualbarcode -- disabled by user"
 fi
 AC_SUBST(LASERFIDUCIAL_LIBS)
 
@@ -163,8 +178,11 @@ dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
 AC_ARG_ENABLE(amcl,
 [  --enable-amcl           Compile the amcl driver],,enable_amcl=yes)
+amcl_failed_header_check=no
 if test "x$enable_amcl" = "xyes"; then
-  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,enable_amcl=no)
+  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,
+                  enable_amcl=no
+                  amcl_failed_header_check=yes)
 fi
 if test "x$enable_amcl" = "xyes"; then
   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
@@ -177,7 +195,11 @@ if test "x$enable_amcl" = "xyes"; then
   PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lgsl -lgslcblas"
   PLAYER_DRIVERS="$PLAYER_DRIVERS amcl"
 else
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS amcl"
+  if test "x$amcl_failed_header_check" = "xyes"; then
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:amcl -- couldn't find gsl/gsl_version.h"
+  else
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:amcl -- disabled by user"
+  fi
 fi
 AC_SUBST(AMCL_LIB)
 AC_SUBST(AMCL_PF_LIB)
