@@ -340,10 +340,6 @@ CDevice::StopThread()
 void* 
 CDevice::DummyMain(void *devicep)
 {
-  // Defer thread cancellation; the thread will run until
-  // pthread_testcancel() is called.
-  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-
   // block signals that should be handled by the server thread
   sigblock(SIGINT);
   sigblock(SIGHUP);

@@ -224,8 +224,6 @@ FixedTones::Main()
   double omega = 0.0;
   double phase = 0.0;
 
-  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-
   memset( command, 0, AUDIO_COMMAND_BUFFER_SIZE);
   memset( zero, 255, AUDIO_COMMAND_BUFFER_SIZE);
   memset(data,0,AUDIO_DATA_BUFFER_SIZE);

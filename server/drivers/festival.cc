@@ -358,13 +358,6 @@ Festival::Main()
   int numread;
   int numthisread;
 
-  /* make sure we aren't canceled at a bad time */
-  if(pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL))
-  {
-    fputs("RunSpeechThread: pthread_setcanceltype() failed. exiting\n",
-                    stderr);
-    pthread_exit(NULL);
-  }
 
   /* make sure we kill Festival on exiting */
   pthread_cleanup_push(QuitFestival,this);
