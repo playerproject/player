@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
 #define PLAYER_ENABLE_MSG 1
 
 #include "playercommon.h"
@@ -74,7 +74,7 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   PLAYER_TRACE2(" STG_FIDUCIAL GETDATA section %d -> model %d",
-		model->section, model->id );
+		model->section, model->id_client );
   
   stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
 
@@ -125,7 +125,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	PLAYER_TRACE0( "requesting fiducial geom" );
 
 	// just get the model's geom - Stage doesn't have separate
-	// fiducial geom yet
+	// fiducial geom (yet)
 	stg_geom_t geom;
 	if( stg_model_prop_get( this->model, STG_PROP_GEOM, &geom,sizeof(geom)))
 	  PLAYER_ERROR( "error requesting STG_PROP_GEOM" );
@@ -141,15 +141,67 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	pgeom.size[0] = htons((uint16_t)(1000.0 * geom.size.x)); 
 	pgeom.size[1] = htons((uint16_t)(1000.0 * geom.size.y)); 
 	
-	pgeom.fiducial_size[0] = ntohs((uint16_t)100);
-	pgeom.fiducial_size[1] = ntohs((uint16_t)100);
-
+	pgeom.fiducial_size[0] = ntohs((uint16_t)0); // TODO - get this info
+	pgeom.fiducial_size[1] = ntohs((uint16_t)0);
+	
 	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		      &pgeom, sizeof(pgeom) ) != 0 )
 	  PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_GEOM");      
       }
       break;
-
+      
+    case PLAYER_FIDUCIAL_SET_FOV:
+      
+      if( len == sizeof(player_fiducial_fov_t) )
+	{
+	  player_fiducial_fov_t* pfov = (player_fiducial_fov_t*)data;
+	  
+	  // convert from player to stage FOV packets
+	  stg_fiducial_config_t setcfg;
+	  memset( &setcfg, 0, sizeof(setcfg) );
+	  setcfg.min_range = (uint16_t)ntohs(pfov->min_range) / 1000.0;
+	  setcfg.max_range_id = (uint16_t)ntohs(pfov->max_range) / 1000.0;
+	  setcfg.max_range_anon = setcfg.max_range_id;
+	  setcfg.fov = DTOR((uint16_t)ntohs(pfov->view_angle));
+	  
+	  //printf( "setting fiducial FOV to min %f max %f fov %f\n",
+	  //  setcfg.min_range, setcfg.max_range_anon, setcfg.fov );
+	  
+	  if( stg_model_prop_set( this->model, STG_PROP_FIDUCIALCONFIG, 
+				  &setcfg,sizeof(setcfg)))
+	    PLAYER_ERROR( "error setting STG_PROP_FIDUCIALCONFIG" );
+	  else
+	    PLAYER_TRACE0( "set fiducial config OK" );
+	}    
+      else
+	PLAYER_ERROR2("Incorrect packet size setting fiducial FOV (%d/%d)",
+		      (int)len, (int)sizeof(player_fiducial_fov_t) );      
+      
+      // deliberate no-break - SET_FOV needs the current FOV as a reply
+      
+    case PLAYER_FIDUCIAL_GET_FOV:
+      {
+	PLAYER_TRACE0( "requesting fiducial FOV" );
+	
+	stg_fiducial_config_t cfg;
+	if( stg_model_prop_get( this->model, STG_PROP_FIDUCIALCONFIG, 
+				&cfg,sizeof(cfg))
+	    != 0 )
+	  PLAYER_TRACE0( "error requesting STG_PROP_LASERCONFIG" );
+	
+	
+	// fill in the geometry data formatted player-like
+	player_fiducial_fov_t pfov;
+	pfov.min_range = htons((uint16_t)(1000.0 * cfg.min_range));
+	pfov.max_range = htons((uint16_t)(1000.0 * cfg.max_range_anon));
+	pfov.view_angle = htons((uint16_t)RTOD(cfg.fov));
+	
+	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
+		      &pfov, sizeof(pfov) ) != 0 )
+	  PLAYER_ERROR("PutReply() failed for PLAYER_FIDUCIAL_GET_FOV");      
+      }
+      break;
+      
     default:
       {
 	printf( "Warning: stg_fiducial doesn't support config id %d\n", buf[0] );

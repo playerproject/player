@@ -36,7 +36,7 @@ define p2dx_sonar_new sonar
 #
 define pioneer2dx position
 (
-  size [.440 .330]
+  size [0.44 0.33]
   #offset [-0.04 0.0]
   #p2dx_sonar()
   #power()
@@ -50,6 +50,17 @@ define pioneer2dx position
   # laser geometry vector	
   # format: [ posex posey posea sizex sizey ]
   laser_geom [ 0 0 0 0.15 0.15 ]
+	
+  # fiducialfinder configuration
+  # format [ minrange maxrange maxrange_ids fov ]
+  fiducial [ 0.0 5.0 5.0 90.0 ]  
+
+  # blobfinder configuration
+  # format [ channels imagewidth imageheight maxrange pan lilt zoom(fov) ]
+  blobfinder [ 6 80 60 7.0 0 0 60.0 ]  
+  blobchannels [ "red" "green" "blue" "cyan" "yellow" "magenta" ]	
+
+
 
   line_count 8
   line[0] [0.23 0.05 0.15 0.15]

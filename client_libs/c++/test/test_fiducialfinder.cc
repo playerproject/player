@@ -85,16 +85,19 @@ test_fiducial(PlayerClient* client, int index)
 		    fp.max_range, goal_max_range );
 	  
 	  if( fp.view_angle != goal_view_angle )
-	    printf( "FOV min range %.2f doesn't match requested value %.2f\n",
+	    printf( "FOV view angle %.2f doesn't match requested value %.2f\n",
 		    fp.view_angle, goal_view_angle );
 	}
       PASS();
     }
 
-    // wait for a few cycles so we can see the change
-    for(int i=0; i < 10; i++)
+  // wait for a few cycles so we can see the change
+  for(int i=0; i < 10; i++)
+    {
       client->Read();
-    
+      fp.Print();
+    }
+  
     TEST("resetting original field of view" );
     if( fp.SetFOV( original_min_range,original_max_range,original_view_angle) 
 	< 0 )
@@ -145,52 +148,53 @@ test_fiducial(PlayerClient* client, int index)
 	puts( "Messaging not supported" );
       }
     else
+    {
       PASS();
+      
+      // send a message to each detected fiducial in turn
+      for( int i=0; i<fp.count; i++ )
+	{
+	  // wait for a few cycles so we can see the messages happen
+	  for(int j=0; j < 3; j++)
+	    client->Read();
+	  
+	  msg.target_id = fp.beacons[i].id;
+	  snprintf( (char*)&msg.bytes, PLAYER_FIDUCIAL_MAX_MSG_LEN, 
+		    "hello %d", msg.target_id );
+	  msg.len = (uint8_t)strlen((char*)&msg.bytes);
+	  
+	  // attempt to send a message
+	  TEST("sending addressed message");
+	  
+	  printf( "\"%s\" to %d ...", msg.bytes, msg.target_id ); 
+	  
+	  if( fp.SendMessage(&msg,true) < 0 )
+	    {
+	      FAIL();
+	      puts( "Fail. Messaging probably not supported" );
+	      break;
+	    }
+	  else
+	    PASS();
+	}
+      
+      // attempt to read a message
+      TEST("reading a message");
+      
+      player_fiducial_msg_t recv;
+      while( fp.RecvMessage(&recv, true) == 0 )
+	{
+	  printf( "Message received: " );
+	  
+	  for( int i=0; i<recv.len; i++ )
+	    putchar( recv.bytes[i] );
+	  
+	  puts( "" );
+	}
 
-    // send a message to each detected fiducial in turn
-    for( int i=0; i<fp.count; i++ )
-      {
-	// wait for a few cycles so we can see the messages happen
-	for(int j=0; j < 3; j++)
-	  client->Read();
-	
-	msg.target_id = fp.beacons[i].id;
-	snprintf( (char*)&msg.bytes, PLAYER_FIDUCIAL_MAX_MSG_LEN, 
-		  "hello %d", msg.target_id );
-	msg.len = (uint8_t)strlen((char*)&msg.bytes);
-	
-	// attempt to send a message
-	TEST("sending addressed message");
+      PASS();
+    }
 
-	printf( "\"%s\" to %d ...", msg.bytes, msg.target_id ); 
-	
-	if( fp.SendMessage(&msg,true) < 0 )
-	  {
-	    FAIL();
-	    puts( "Fail. Messaging probably not supported" );
-	    break;
-	  }
-	else
-	  PASS();
-      }
-    
-        // attempt to read a message
-    TEST("reading a message");
-    
-    player_fiducial_msg_t recv;
-    while( fp.RecvMessage(&recv, true) == 0 )
-      {
-	printf( "Message received: " );
-
-	for( int i=0; i<recv.len; i++ )
-	  putchar( recv.bytes[i] );
-
-	puts( "" );
-      }
-
-    puts( "No message available." );
-
-    PASS();
 
     TEST("unsubscribing");
     if((fp.ChangeAccess(PLAYER_CLOSE_MODE,&access) < 0) ||
