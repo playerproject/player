@@ -128,6 +128,6 @@ int main(int argc, char **argv)
       newturnrate = 0;
 
     /* write commands to robot */
-    pp.SetSpeed(newspeed,newturnrate);
+    pp.SetSpeed(2*newspeed,newturnrate);
   }
 }

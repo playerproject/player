@@ -15,8 +15,8 @@ OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       laserbeaconproxy.o visionproxy.o  \
       gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o \
       rwi_positionproxy.o rwi_sonarproxy.o rwi_laserproxy.o rwi_bumperproxy.o \
-      rwi_powerproxy.o
-      #occupancyproxy.o truthproxy.o idarproxy.o descartesproxy.o
+      rwi_powerproxy.o truthproxy.o
+      #occupancyproxy.o idarproxy.o descartesproxy.o
 
 all: $(LIBNAME)
 
@@ -155,7 +155,7 @@ uninstall:
 
 clean:
 	cd test && make clean
-	$(RM) -f $(LIBNAME) *.o
+	$(RM) -f $(LIBNAME) *.o *~
 	$(RM) -f ../../lib/$(LIBNAME)
 	$(RM) -f ../../include/playercclient.h 
 	$(RM) -f ../../include/playerclient.h 
@@ -182,5 +182,3 @@ clean:
 	$(RM) -f ../../include/rwi_bumperproxy.h
 	$(RM) -f ../../include/rwi_powerproxy.h
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-

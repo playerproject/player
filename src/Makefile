@@ -162,5 +162,3 @@ uninstall:
 	$(RM) -f $(INSTALL_LIB)/libplayerqueue.a
 
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-

@@ -41,8 +41,7 @@
 #include <speechproxy.h>  /* support for the speech device */
 #include <laserbeaconproxy.h>  /* support for the laserbeacon device */
 #include <visionproxy.h>  /* support for the vision device */
-//BROKEN #include <truthproxy.h>  /* support for the truth device */
-//REMOVE? #include <occupancyproxy.h>  /* support for guess which device */
+#include <truthproxy.h>  /* support for the truth device */
 #include <gpsproxy.h>  /* support for the GPS device */
 #include <bpsproxy.h>  /* support for the BPS device */
 #include <broadcastproxy.h> /* support for the broadcast device */
@@ -54,6 +53,7 @@
 //#include <rwi_joystickproxy.h> /* support for the RWI joystick device */
 #include <rwi_powerproxy.h> /* support for the RWI power device */
 
+//#include <occupancyproxy.h>  /* support for guess which device */
 //#include <idarproxy.h>  /* support for the IDAR device */
 //#include <descartesproxy.h>  /* support for the IDAR device */
 

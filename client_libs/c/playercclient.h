@@ -145,6 +145,26 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
                 char* payload, size_t payloadlen);
 
 /*
+ * read one message header from the indicated connection. 
+ *
+ * Returns:
+ *    0 if everything went OK
+ *   -1 if something went wrong (you should probably close the connection!)
+ */
+  int player_read_header(player_connection_t* conn, player_msghdr_t* hdr );
+
+/*
+ * read the data part of a message from the indicated connection.  put the 
+ * data in buffer, up to bufferlen.
+ *
+ * Returns:
+ *    0 if everything went OK
+ *   -1 if something went wrong (you should probably close the connection!)
+ */
+int player_read_payload(player_connection_t* conn, char* payload, size_t payloadlen);
+
+
+/*
  * write commands to the indicated connection. writes the data contained
  * in command, up to commandlen.
  *

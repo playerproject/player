@@ -324,6 +324,92 @@ int player_request_device_access(player_connection_t* conn,
 }
 
 /*
+ * read one message header from the indicated connection. 
+ *
+ * Returns:
+ *    0 if everything went OK
+ *   -1 if something went wrong (you should probably close the connection!)
+ */
+int player_read_header(player_connection_t* conn, player_msghdr_t* hdr )
+{
+  int readcnt=0,thisreadcnt;
+
+  if(conn->sock < 0)
+    return(-1);
+
+  hdr->stx = 0;
+  /* wait for the STX */
+  while(ntohs(hdr->stx) != PLAYER_STXX)
+  {
+    if((readcnt = read((*conn).sock,&(hdr->stx),sizeof(hdr->stx))) <= 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_read(): read() errored while looking for STX");
+      return(-1);
+    }
+  }
+
+  /* get the rest of the header */
+  while(readcnt < sizeof(player_msghdr_t))
+  {
+    if((thisreadcnt = read((*conn).sock, ((char*)hdr)+readcnt,
+                      sizeof(player_msghdr_t)-readcnt)) <= 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_read(): read() errored while reading header.");
+      return(-1);
+    }
+    readcnt += thisreadcnt;
+  }
+
+  /* byte-swap as necessary */
+  hdr->type = ntohs(hdr->type);
+  hdr->device = ntohs(hdr->device);
+  hdr->device_index = ntohs(hdr->device_index);
+  hdr->time_sec = ntohl(hdr->time_sec);
+  hdr->time_usec = ntohl(hdr->time_usec);
+  hdr->timestamp_sec = ntohl(hdr->timestamp_sec);
+  hdr->timestamp_usec = ntohl(hdr->timestamp_usec);
+  hdr->size = ntohl(hdr->size);
+  /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
+  /*timesec = (time_t)(hdr->time / 1000);*/
+  /*printf("time: %s\n", ctime(&timesec));*/
+  
+  return 0;
+}
+
+/*
+ * read the data part of a message from the indicated connection.  put the 
+ * data in buffer, up to bufferlen.
+ *
+ * Returns:
+ *    0 if everything went OK
+ *   -1 if something went wrong (you should probably close the connection!)
+ */
+int player_read_payload(player_connection_t* conn, char* payload, size_t payloadlen)
+{
+  int readcnt=0,thisreadcnt;
+  char dummy[PLAYER_MAX_MESSAGE_SIZE];
+
+  if(conn->sock < 0)
+    return(-1);
+
+  readcnt = 0;
+  while(readcnt < payloadlen)
+  {
+    if((thisreadcnt = read((*conn).sock,payload+readcnt,payloadlen-readcnt)) <= 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_read(): read() errored while reading payload.");
+      return(-1);
+    }
+    readcnt += thisreadcnt;
+  }
+
+  return(0);
+}
+
+/*
  * read one complete message from the indicated connection.  put the 
  * data in buffer, up to bufferlen.
  *
