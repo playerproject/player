@@ -26,7 +26,7 @@
 
 //#define DEBUG
 
-#include <truthproxy.h>
+#include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <math.h>

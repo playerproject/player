@@ -26,7 +26,7 @@
  * client-side position device 
  */
 
-#include <positionproxy.h>
+#include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
 #ifdef PLAYER_SOLARIS
@@ -45,8 +45,8 @@ int PositionProxy::SetSpeed(short speed, short turnrate)
 
   player_position_cmd_t cmd;
 
-  cmd.speed = htons(speed);
-  cmd.turnrate = htons(turnrate);
+  cmd.xspeed = htons(speed);
+  cmd.yawspeed = htons(turnrate);
 
   return(client->Write(PLAYER_POSITION_CODE,index,
                        (const char*)&cmd,sizeof(cmd)));
@@ -64,7 +64,7 @@ int PositionProxy::SetMotorState(unsigned char state)
 
   char buffer[2];
 
-  buffer[0] = PLAYER_POSITION_MOTOR_POWER_REQ;
+  buffer[0] = PLAYER_P2OS_POSITION_MOTOR_POWER_REQ;
   buffer[1] = state;
 
 
@@ -86,7 +86,7 @@ int PositionProxy::SelectVelocityControl(unsigned char mode)
 
   char buffer[2];
 
-  buffer[0] = PLAYER_POSITION_VELOCITY_CONTROL_REQ;
+  buffer[0] = PLAYER_P2OS_POSITION_VELOCITY_CONTROL_REQ;
   buffer[1] = mode;
 
   return(client->Request(PLAYER_POSITION_CODE,index,(const char*)buffer,
@@ -105,7 +105,7 @@ int PositionProxy::ResetOdometry()
 
   char buffer[1];
 
-  buffer[0] = PLAYER_POSITION_RESET_ODOM_REQ;
+  buffer[0] = PLAYER_P2OS_POSITION_RESET_ODOM_REQ;
 
   return(client->Request(PLAYER_POSITION_CODE,index,(const char*)buffer,
                          sizeof(buffer)));
@@ -123,19 +123,19 @@ void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 
   xpos = (int)ntohl(((player_position_data_t*)buffer)->xpos);
   ypos = (int)ntohl(((player_position_data_t*)buffer)->ypos);
-  theta = ntohs(((player_position_data_t*)buffer)->theta);
-  speed = (short)ntohs(((player_position_data_t*)buffer)->speed);
-  turnrate = (short)ntohs(((player_position_data_t*)buffer)->turnrate);
-  compass = ntohs(((player_position_data_t*)buffer)->compass);
-  stalls = ((player_position_data_t*)buffer)->stalls;
+  theta = ntohs(((player_position_data_t*)buffer)->yaw);
+  speed = (short)ntohs(((player_position_data_t*)buffer)->xspeed);
+  turnrate = (short)ntohs(((player_position_data_t*)buffer)->yawspeed);
+  //compass = ntohs(((player_position_data_t*)buffer)->compass);
+  stall = ((player_position_data_t*)buffer)->stall;
 }
 
 // interface that all proxies SHOULD provide
 void PositionProxy::Print()
 {
   printf("#Position(%d:%d) - %c\n", device, index, access);
-  puts("#xpos\typos\ttheta\tspeed\tturn\tcompass\tstalls");
-  printf("%d\t%d\t%u\t%d\t%d\t%u\t%d\n", 
-         xpos,ypos,theta,speed,turnrate,compass,stalls);
+  puts("#xpos\typos\ttheta\tspeed\tturn\tstall");
+  printf("%d\t%d\t%u\t%d\t%d\t%d\n", 
+         xpos,ypos,theta,speed,turnrate,stall);
 }
 

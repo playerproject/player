@@ -30,7 +30,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <math.h>
-#include "idarturretproxy.h"
+#include "playerclient.h"
 
 #ifdef PLAYER_SOLARIS
   #include <strings.h>

@@ -22,13 +22,12 @@
 
 /*
  * $Id$
- *
- * client-side position device 
  */
 
-#define PLAYER_ENABLE_TRACE 1
+//#define PLAYER_ENABLE_TRACE 1
 
-#include <broadcastproxy.h>
+#include <playerclient.h>
+
 #include <netinet/in.h>
 #include <string.h>
 #ifdef PLAYER_SOLARIS
@@ -38,24 +37,24 @@
 
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
-BroadcastProxy::BroadcastProxy(PlayerClient* pc, unsigned short index, unsigned char access)
-    : ClientProxy(pc, PLAYER_BROADCAST_CODE, index, access)
+CommsProxy::CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access)
+    : ClientProxy(pc, PLAYER_COMMS_CODE, index, access)
 {
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a message from the incoming queue
-int BroadcastProxy::Read(void *msg, int len)
+int CommsProxy::Read(void *msg, int len)
 {
-  player_broadcast_msg_t req, rep;
+  player_comms_msg_t req, rep;
   player_msghdr_t hdr;
   int reqlen;
 
-  req.subtype = PLAYER_BROADCAST_SUBTYPE_RECV;
+  req.subtype = PLAYER_COMMS_SUBTYPE_RECV;
   reqlen = sizeof(req.subtype);
 
-  if(client->Request(PLAYER_BROADCAST_CODE,index,
+  if(client->Request(PLAYER_COMMS_CODE,index,
                      (const char*)&req, reqlen,
                      &hdr, (char*)&rep,sizeof(rep)) ||
      
@@ -64,7 +63,7 @@ int BroadcastProxy::Read(void *msg, int len)
 
   if((int)hdr.size > len)
   {
-    printf("WARNING: received broadcast msg too long (%d > %d)\n "
+    printf("WARNING: received comms msg too long (%d > %d)\n "
            "truncating msg\n", hdr.size, len);
     hdr.size = len;
   }
@@ -77,23 +76,23 @@ int BroadcastProxy::Read(void *msg, int len)
  
 ///////////////////////////////////////////////////////////////////////////
 // Write a message to the outgoing queue
-int BroadcastProxy::Write(void *msg, int len)
+int CommsProxy::Write(void *msg, int len)
 {
-  player_broadcast_msg_t req;
+  player_comms_msg_t req;
   int reqlen, replen;
 
   if(len > (int)sizeof(req.data))
   {
-    printf("WARNING: sent broadcast msg too long (%d > %d);\n "
+    printf("WARNING: sent comms msg too long (%d > %d);\n "
            "truncating msg\n", len, sizeof(req.data));
     len = sizeof(req.data);
   }
 
-  req.subtype = PLAYER_BROADCAST_SUBTYPE_SEND;
+  req.subtype = PLAYER_COMMS_SUBTYPE_SEND;
   memcpy(req.data,msg,len);
   reqlen = sizeof(req) - sizeof(req.data) + len;
 
-  replen = client->Request(PLAYER_BROADCAST_CODE,index,
+  replen = client->Request(PLAYER_COMMS_CODE,index,
                            (const char*)&req, reqlen);
 
   if(replen < 0)
@@ -106,14 +105,14 @@ int BroadcastProxy::Write(void *msg, int len)
 
 ///////////////////////////////////////////////////////////////////////////
 // Update the incoming queue (does nothing)
-void BroadcastProxy::FillData(player_msghdr_t hdr, const char* buffer)
+void CommsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Debugging function (does nothing)
-void BroadcastProxy::Print()
+void CommsProxy::Print()
 {
 }
 

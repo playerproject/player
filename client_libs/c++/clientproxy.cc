@@ -26,7 +26,6 @@
  * parent class for client-side device proxies
  */
 
-#include <clientproxy.h>
 #include <playerclient.h>
 
 // constructor will try to get access to the device

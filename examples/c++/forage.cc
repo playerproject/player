@@ -102,8 +102,8 @@ int main(int argc, char** argv)
 
   // get device access
   PositionProxy pp(&robot,0,'a');
-  SonarProxy sp(&robot,0,'r');
-  VisionProxy vp(&robot,0,'r');
+  FRFProxy sp(&robot,0,'r');
+  BlobfinderProxy vp(&robot,0,'r');
   GripperProxy gp(&robot,0,'a');
   GpsProxy gpsp(&robot,0,'r');
 
@@ -130,7 +130,7 @@ int main(int argc, char** argv)
            sp[4] < minfrontdistance ||
            sp[5] < minfrontdistance);
 
-    if(obs || avoidcount || pp.stalls)
+    if(obs || avoidcount || pp.stall)
     {
       // OBSTACLE AVOIDANCE
       newspeed = -50;
@@ -173,7 +173,10 @@ int main(int argc, char** argv)
       else
       {
         // go to home
-        double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.compass-90)));
+        
+        // TODO: compass is not in the position packet any more
+        //double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.compass-90)));
+        double bearing = 0;
         if(fabs(bearing)>170.0)
           bearing=170.0;
 
@@ -190,7 +193,9 @@ int main(int argc, char** argv)
       double dx = home_x-gpsp.xpos;
       double dy = home_y-gpsp.ypos;
       double dist = sqrt(dx*dx+dy*dy);
-      double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.compass-90)+M_PI));
+      // TODO: compass is not in the position packet any more
+      //double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.compass-90)+M_PI));
+      double bearing = 0;
 
       if(last_bearing < MAXDOUBLE && fabs(last_bearing-bearing) > 180)
         bearing=last_bearing;

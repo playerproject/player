@@ -2,11 +2,8 @@
 #include <stdlib.h> /* for exit() */
 
 int main(int argc, char *argv[]) {
-  //PlayerClient* robot = new PlayerClient("localhost");
   PlayerClient robot("localhost");
-  //SonarProxy* sp = new SonarProxy(robot,0,'r');
-  SonarProxy sp(&robot,0,'r');
-  //PositionProxy* pp = new PositionProxy(robot,0,'w');
+  FRFProxy sp(&robot,0,'r');
   PositionProxy pp(&robot,0,'w');
 
   int newturnrate,newspeed;

@@ -1,7 +1,6 @@
 #define PLAYER_ENABLE_TRACE 0
 
 #include "playerclient.h"
-#include <moteproxy.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>

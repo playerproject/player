@@ -4,7 +4,7 @@
  * a demo to show how to use the multi client.
  */
 
-#include <playermulticlient.h>
+#include <playerclient.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -18,7 +18,7 @@ int main(int argc, char **argv)
   int num;
   PlayerClient** clients;
   PositionProxy** pproxies;
-  SonarProxy** sproxies;
+  FRFProxy** sproxies;
 
   int baseport = PLAYER_PORTNUM;
   if(argc < 2)
@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 
   clients = new PlayerClient*[num];
   pproxies = new PositionProxy*[num];
-  sproxies = new SonarProxy*[num];
+  sproxies = new FRFProxy*[num];
 
   /* create a multiclient to control them all */
   PlayerMultiClient multi;
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   {
     clients[i] = new PlayerClient(host,baseport+i);
     pproxies[i] = new PositionProxy(clients[i],0,'r');
-    sproxies[i] = new SonarProxy(clients[i],0,'r');
+    sproxies[i] = new FRFProxy(clients[i],0,'r');
     multi.AddClient(clients[i]);
     //usleep(10000);
   }

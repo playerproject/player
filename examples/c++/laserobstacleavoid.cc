@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
   PlayerClient robot(host,port);
   PositionProxy pp(&robot,0,'w');
-  LaserProxy lp(&robot,0,'r');
+  SRFProxy lp(&robot,0,'r');
 
   printf("%s\n",robot.conn.banner);
 
@@ -74,8 +74,8 @@ int main(int argc, char **argv)
     
   
   /* maybe turn on the motors */
-  //if(turnOnMotors && pp.SetMotorState(1))
-    //exit(1);
+  if(turnOnMotors && pp.SetMotorState(1))
+    exit(1);
 
   int newspeed, newturnrate;
   /* go into read-think-act loop */
