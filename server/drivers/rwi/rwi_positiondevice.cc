@@ -36,9 +36,15 @@
 #endif
 #include <math.h>
 
-CDevice* RWIPosition_Init(int argc, char *argv[])
+CDevice* RWIPosition_Init(char* interface, ConfigFile* cf, int section)
 {
-  return ((CDevice *)(new CRWIPositionDevice(argc, argv)));
+  return ((CDevice *)(new CRWIPositionDevice(interface, cf, section)));
+}
+
+void 
+RWIPosition_Register(DriverTable* table)
+{
+  table->AddDriver("rwi_position", PLAYER_ALL_MODE, RWIPosition_Init);
 }
 	
 
@@ -129,7 +135,7 @@ CRWIPositionDevice::Main()
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
 		    switch (cfg.request) {
-		    	case PLAYER_POSITION_MOTOR_POWER_REQ:
+		    	case PLAYER_P2OS_POSITION_MOTOR_POWER_REQ:
 		    		// RWI does not turn off motor power:
 		    		// the motors are always on when connected.
 		    		// we simply stop processing movement commands
@@ -144,7 +150,7 @@ CRWIPositionDevice::Main()
 		    			             "rwi_positiondevice.\n");
 		    		}
 					break;
-			    case PLAYER_POSITION_RESET_ODOM_REQ:
+			    case PLAYER_P2OS_POSITION_RESET_ODOM_REQ:
 					ResetOdometry();
 					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
 		    		             NULL, NULL, 0)) {
@@ -177,7 +183,7 @@ CRWIPositionDevice::Main()
 		
 		if (enabled) {
 			// always apply the latest speed command: RWI stops us otherwise
-    		PositionCommand(ntohs(cmd.speed), ntohs(cmd.turnrate));
+    		PositionCommand(ntohs(cmd.xspeed), ntohs(cmd.yawspeed));
     	}
 	
 		// Finally, collect new data
@@ -221,24 +227,21 @@ CRWIPositionDevice::Main()
 		}
 #else
 		data.xpos = data.ypos = 0;
-		data.theta = data.speed = data.turnrate = 0;
+		data.yaw = data.xspeed = data.yawspeed = 0;
 #endif			// USE_MOBILITY
 
-		// FIXME: I do not have a compass, so I don't know how to find it		
-		data.compass = 0;
-		
 		// determine stall value
 		if (moving && old_xpos == data.xpos && old_ypos == data.ypos
-		    && old_theta == data.theta) {
-		    data.stalls = 1;
+		    && old_theta == data.yaw) {
+		    data.stall = 1;
 		} else {
-			data.stalls = 0;
+			data.stall = 0;
 		}
 		
 		// Keep a copy of our new data for stall computation
 		old_xpos = data.xpos;
 		old_ypos = data.ypos;
-		old_theta = data.theta;
+		old_theta = data.yaw;
 	
 	    PutData((unsigned char *) &data, sizeof(data), 0, 0);
 	

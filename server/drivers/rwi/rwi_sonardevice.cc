@@ -29,27 +29,32 @@
   #include <strings.h>
 #endif
 
-CDevice* RWISonar_Init(int argc, char *argv[])
+CDevice* RWISonar_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice *)(new CRWISonarDevice(argc, argv)));
+  return((CDevice *)(new CRWISonarDevice(interface, cf, section)));
+}
+
+void 
+RWISonar_Register(DriverTable* table)
+{
+  table->AddDriver("rwi_sonar", PLAYER_READ_MODE, RWISonar_Init);
 }
 	
-CRWISonarDevice::CRWISonarDevice(int argc, char **argv)
-    : CRWIDevice(argc, argv,
-                 sizeof(player_sonar_data_t),
+CRWISonarDevice::CRWISonarDevice(char* interface, ConfigFile* cf, int section)
+    : CRWIDevice(interface, cf, section,
+                 sizeof(player_frf_data_t),
                  0 /* no commands for sonar */,
 		         1,1)
 {
-	// default to upper ring if none is specified
-	upper = true;
-	
-	// parse cmd line args
-	for (int i = 0; i < argc; i++) {
-		if (!strcmp(argv[i], "upper"))
-			upper = true;
-		else if (!strcmp(argv[i], "lower"))
-			upper = false;
-	}
+        char* tmp;
+
+        tmp = (char*)cf->ReadString(section, "array", "upper");
+
+        if (!strcmp(tmp, "upper")) {
+          upper = true;
+        } else if(!strcmp(tmp, "lower")) {
+          upper = false;
+        }
 }
 
 int
@@ -71,7 +76,7 @@ CRWISonarDevice::Setup()
 #endif			// USE_MOBILITY
 	
 	// Zero the common buffer
-	player_sonar_data_t data;
+	player_frf_data_t data;
 	memset(&data, 0, sizeof(data));
 	PutData((unsigned char *) &data, sizeof(data), 0, 0);	
 	
@@ -100,7 +105,7 @@ CRWISonarDevice::Main()
 
 	// Working buffer space
 	player_rwi_config_t cfg;
-	player_sonar_data_t data;
+	player_frf_data_t data;
 	
 	void *client;
 	
@@ -117,7 +122,7 @@ CRWISonarDevice::Main()
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
 		    switch (cfg.request) {
-			    case PLAYER_SONAR_POWER_REQ:
+			    case PLAYER_P2OS_SONAR_POWER_REQ:
 		    		// RWI does not turn off sonar power; all we can do is
 		    		// stop updating the data
 		    		if (cfg.value == 0)
@@ -131,7 +136,7 @@ CRWISonarDevice::Main()
 		    			             "rwi_sonardevice.\n");
 		    		}
 					break;
-				case PLAYER_SONAR_GET_GEOM_REQ:
+				case PLAYER_FRF_GET_GEOM_REQ:
 					// FIXME: not yet implemented
 					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
 		    		             NULL, NULL, 0)) {

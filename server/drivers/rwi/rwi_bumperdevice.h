@@ -29,7 +29,7 @@
 class CRWIBumperDevice: public CRWIDevice {
 
 public:
-	CRWIBumperDevice (int argc, char *argv[]);
+	CRWIBumperDevice (char* interface, ConfigFile* cf, int section);
 
 	virtual int Setup ();
 	virtual int Shutdown ();

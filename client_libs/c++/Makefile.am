@@ -26,18 +26,18 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               speechproxy.cc \
                               truthproxy.cc \
                               blobfinderproxy.cc
+                              #rwi_bumperproxy.cc \
+                              #rwi_bumperproxy.h \
+                              #rwi_laserproxy.cc \
+                              #rwi_laserproxy.h \
+                              #rwi_positionproxy.cc \
+                              #rwi_positionproxy.h \
+                              #rwi_powerproxy.cc \
+                              #rwi_powerproxy.h \
+                              #rwi_sonarproxy.cc \
+                              #rwi_sonarproxy.h
                               #bpsproxy.cc
                               #bpsproxy.h
-                              #rwi_bumperproxy.cc
-                              #rwi_bumperproxy.h
-                              #rwi_laserproxy.cc
-                              #rwi_laserproxy.h
-                              #rwi_positionproxy.cc
-                              #rwi_positionproxy.h
-                              #rwi_powerproxy.cc
-                              #rwi_powerproxy.h
-                              #rwi_sonarproxy.cc
-                              #rwi_sonarproxy.h
 
 include_HEADERS = playerclient.h
                   

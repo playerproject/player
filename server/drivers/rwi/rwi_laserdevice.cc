@@ -29,9 +29,15 @@
   #include <strings.h>
 #endif
 
-CDevice* RWILaser_Init(int argc, char *argv[])
+CDevice* RWILaser_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice *)(new CRWILaserDevice(argc, argv)));
+  return((CDevice *)(new CRWILaserDevice(interface, cf, section)));
+}
+
+void 
+RWILaser_Register(DriverTable* table)
+{
+  table->AddDriver("rwi_laser", PLAYER_READ_MODE, RWILaser_Init);
 }
 
 int
@@ -52,7 +58,7 @@ CRWILaserDevice::Setup()
 	#endif			// USE_MOBILITY
 		
 	// Zero the common buffer
-	player_laser_data_t data;
+	player_srf_data_t data;
 	memset(&data, 0, sizeof(data));
 	PutData((unsigned char *) &data, sizeof(data), 0, 0);	
 	
@@ -81,7 +87,7 @@ CRWILaserDevice::Main()
 	
 	// Working buffer space
 	player_rwi_config_t cfg;
-	player_laser_data_t data;
+	player_srf_data_t data;
 	
 	void *client;
 	
@@ -98,21 +104,7 @@ CRWILaserDevice::Main()
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
 		    switch (cfg.request) {
-			    case PLAYER_LASER_POWER_REQ:
-		    		// RWI does not turn off laser power: all we can do is
-		    		// stop updating the data
-		    		if (cfg.value == 0)
-		    			enabled = false;
-		    		else
-		    			enabled = true;
-		    			
-		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_laserdevice.\n");
-		    		}
-					break;
-				case PLAYER_LASER_GET_GEOM:
+				case PLAYER_SRF_GET_GEOM:
 					// FIXME: not yet implemented
 					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
 		    		             NULL, NULL, 0)) {

@@ -31,11 +31,12 @@
 #define _RWI_POSITIONDEVICE_H
 
 #include <rwidevice.h>
+#include <drivertable.h>
 
 class CRWIPositionDevice: public CRWIDevice {
 public:
-	CRWIPositionDevice (int argc, char *argv[])
-		: CRWIDevice(argc, argv,
+	CRWIPositionDevice (char* interface, ConfigFile* cf, int section)
+		: CRWIDevice(interface, cf, section,
 		             sizeof(player_position_data_t),
 		             sizeof(player_position_cmd_t),
 		             1,1),

@@ -62,11 +62,11 @@ void FixedTones_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_RWI
-CDevice* RWIBumper_Init(int argc, char *argv[]);
-CDevice* RWILaser_Init(int argc, char *argv[]);
-CDevice* RWIPosition_Init(int argc, char *argv[]);
-CDevice* RWIPower_Init(int argc, char *argv[]);
-CDevice* RWISonar_Init(int argc, char *argv[]);
+void RWIBumper_Register(DriverTable* table);
+void RWILaser_Register(DriverTable* table);
+void RWIPosition_Register(DriverTable* table);
+void RWIPower_Register(DriverTable* table);
+void RWISonar_Register(DriverTable* table);
 #endif
 
 /* this array lists the interfaces that Player knows how to load, along with
@@ -138,16 +138,11 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_RWI
-  availableDeviceTable->AddDevice(PLAYER_RWI_POSITION_CODE, PLAYER_ALL_MODE,
-                                  PLAYER_RWI_POSITION_STRING, RWIPosition_Init);
-  availableDeviceTable->AddDevice(PLAYER_RWI_SONAR_CODE, PLAYER_READ_MODE,
-                                  PLAYER_RWI_SONAR_STRING, RWISonar_Init);
-  availableDeviceTable->AddDevice(PLAYER_RWI_LASER_CODE, PLAYER_READ_MODE,
-                                  PLAYER_RWI_LASER_STRING, RWILaser_Init);
-  availableDeviceTable->AddDevice(PLAYER_RWI_BUMPER_CODE, PLAYER_READ_MODE,
-                                  PLAYER_RWI_BUMPER_STRING, RWIBumper_Init);
-  availableDeviceTable->AddDevice(PLAYER_RWI_POWER_CODE, PLAYER_READ_MODE,
-		                  PLAYER_RWI_POWER_STRING, RWIPower_Init);
+  RWIPosition_Register(driverTable);
+  RWISonar_Register(driverTable);
+  RWILaser_Register(driverTable);
+  RWIBumper_Register(driverTable);
+  RWIPower_Register(driverTable);
 #endif
 }
 

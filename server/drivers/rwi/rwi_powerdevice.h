@@ -25,12 +25,13 @@
 #define _RWI_POWERDEVICE_H
 
 #include <rwidevice.h>
+#include <drivertable.h>
 
 class CRWIPowerDevice: public CRWIDevice {
 
 public:
-	CRWIPowerDevice (int argc, char *argv[])
-		: CRWIDevice(argc, argv,
+	CRWIPowerDevice (char* interface, ConfigFile* cf, int section)
+		: CRWIDevice(interface, cf, section,
 		             sizeof(player_power_data_t),
 		             0,  /* power device takes no commands */
 		             1,1)

@@ -25,10 +25,11 @@
 #define _RWI_SONARDEVICE_H
 
 #include <rwidevice.h>
+#include <drivertable.h>
 
 class CRWISonarDevice: public CRWIDevice {
 public:
-	CRWISonarDevice (int argc, char *argv[]);
+	CRWISonarDevice (char* interface, ConfigFile* cf, int section);
 
 	virtual int Setup ();
 	virtual int Shutdown ();
