@@ -94,8 +94,14 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
     // See if there is any data
     //
     size_t data_len = m_info->data_len;
-    ASSERT(data_len <= m_data_len);
-    ASSERT(data_len <= size);
+
+    // Check for overflows
+    //
+    if (data_len > m_data_len || data_len > size)
+    {
+        PLAYER_ERROR("invalid data length; ignoring data");
+        return 0;
+    }
     
     // Copy the data
     //
@@ -115,7 +121,10 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
 //
 void CStageDevice::PutCommand(unsigned char *command, size_t len)
 {
-    ASSERT(len <= m_command_len);
+    // Check for overflows
+    //
+    if (len > m_command_len)
+        PLAYER_ERROR("invalid command length; ignoring command");
     
     // Copy the command
     // 
@@ -132,7 +141,10 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
 //
 void CStageDevice::PutConfig(unsigned char *config, size_t len)
 {
-    ASSERT(len <= m_config_len);
+    // Check for overflows
+    //
+    if (len > m_config_len)
+        PLAYER_ERROR("invalid config length; ignoring config");
     
     // Copy the data
     //
