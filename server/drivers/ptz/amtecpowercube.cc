@@ -22,7 +22,7 @@
  * $Id$
  *
  * Driver for controlling the Amtec PowerCube Wrist, a powerful pan-tilt
- * unit.
+ * unit that can, for example, carry a SICK laser.
  */
 
 #if HAVE_CONFIG_H
