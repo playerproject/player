@@ -989,10 +989,22 @@ int main( int argc, char *argv[] )
     //GlobalTime = (PlayerTime*)(new WallclockTime());
   }
 
+  sigset_t signalset;
+  sigemptyset(&signalset);
+  sigaddset(&signalset,SIGINT);
+  sigaddset(&signalset,SIGHUP);
+  sigaddset(&signalset,SIGTERM);
+  pthread_sigmask(SIG_BLOCK, &signalset, NULL);
+
   // create the client manager object.
   // it will start one reader thread and one writer thread and keep track
   // of all clients
   clientmanager = new ClientManager;
+
+  sigaddset(&signalset,SIGINT);
+  sigaddset(&signalset,SIGHUP);
+  sigaddset(&signalset,SIGTERM);
+  pthread_sigmask(SIG_UNBLOCK, &signalset, NULL);
 
   // main loop: accept new connections and hand them off to the client
   // manager.

@@ -119,12 +119,11 @@ class CClientData
     unsigned char mode;
     unsigned short frequency;  // Hz
     bool datarequested;
+    bool markedfordeletion;
 
     // this is used in the ClientWriterThread to decide when to write
     double last_write;
 
-    // use this to lock the socket for output
-    pthread_mutex_t socketwrite;
     int socket;
 
     CClientData(char* key, int port);

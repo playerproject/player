@@ -96,7 +96,7 @@ class CStageDevice : public CDevice
 
     // Write configuration to the device
     //
-    public: virtual int PutConfig( unsigned char *, size_t maxsize);
+    public: virtual int PutConfig(CClientData*,unsigned char *, size_t maxsize);
     
     // Simulator lock bookkeeping data and init method
     //

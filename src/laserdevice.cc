@@ -54,7 +54,6 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
-#include <signal.h>  /* for sigblock */
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
 #include <playertime.h>
@@ -297,11 +296,6 @@ int CLaserDevice::Main()
     
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
-#ifdef PLAYER_LINUX
-    sigblock(SIGINT);
-    sigblock(SIGALRM);
-#endif
-        
     // Ask the laser to send data
     //
     for (int retry = 0; retry < MAX_RETRIES; retry++)

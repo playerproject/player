@@ -41,9 +41,6 @@
 #include <clientmanager.h>
 #include <packet.h>
 
-// tmp; for gerkey extensions
-#include <p2osdevice.h>
-
 #include <iostream.h> //some debug output it easier using stream IO
 
 #ifdef PLAYER_SOLARIS
@@ -85,6 +82,8 @@ CClientData::CClientData(char* key, int myport)
 
   last_write = 0.0;
 
+  markedfordeletion = false;
+
   if(strlen(key))
   {
     strncpy(auth_key,key,sizeof(auth_key));
@@ -97,7 +96,6 @@ CClientData::CClientData(char* key, int myport)
   }
 
   pthread_mutex_init( &access, NULL ); 
-  pthread_mutex_init( &socketwrite, NULL ); 
 
   datarequested = false;
 }
@@ -394,6 +392,8 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   /* if it's a request, then we must generate a reply */
   if(requesttype)
   {
+    pthread_mutex_lock(&access);
+
     reply_hdr.stx = htons(PLAYER_STXX);
     reply_hdr.type = htons(requesttype);
     reply_hdr.device = htons(hdr.device);
@@ -417,7 +417,6 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       replysize = 0;
     }
 
-
     reply_hdr.size = htonl(replysize);
 
     if(GlobalTime->GetTime(&curr) == -1)
@@ -429,17 +428,16 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     reply_hdr.timestamp_usec = reply_hdr.time_usec;
     memcpy(replybuffer,&reply_hdr,sizeof(player_msghdr_t));
 
-    pthread_mutex_lock(&socketwrite);
     if(write(socket, replybuffer, replysize+sizeof(player_msghdr_t)) < 0) 
     {
       if(errno != EAGAIN)
       {
         perror("HandleRequests: write()");
-        pthread_mutex_unlock(&socketwrite);
+        pthread_mutex_unlock(&access);
         return(-1);
       }
     }
-    pthread_mutex_unlock(&socketwrite);
+    pthread_mutex_unlock(&access);
   }
 
   if(unlock_pending)
@@ -469,6 +467,8 @@ CClientData::~CClientData()
 
   if(replybuffer)
     delete replybuffer;
+
+  pthread_mutex_destroy(&access);
 }
 
 void CClientData::RemoveRequests() 
@@ -594,7 +594,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
         thisub->access = PLAYER_CLOSE_MODE;
         break;
       case PLAYER_CLOSE_MODE:
-      case 'e':
+      case PLAYER_ERROR_MODE:
         printf("Device \"%x:%x\" already closed\n", req.code,req.index);
         break;
       default:
@@ -603,7 +603,8 @@ void CClientData::UpdateRequested(player_device_req_t req)
     }
   }
   /* OPEN */
-  else if((thisub->access == 'e') || (thisub->access==PLAYER_CLOSE_MODE))
+  else if((thisub->access == PLAYER_ERROR_MODE) || 
+          (thisub->access==PLAYER_CLOSE_MODE))
   {
     switch(req.access) 
     {
@@ -612,19 +613,19 @@ void CClientData::UpdateRequested(player_device_req_t req)
            (Subscribe(req.code,req.index) == 0))
           thisub->access=PLAYER_ALL_MODE;
         else
-          thisub->access='e';
+          thisub->access=PLAYER_ERROR_MODE;
         break;
       case PLAYER_WRITE_MODE:
         if(Subscribe(req.code,req.index)==0)
           thisub->access=PLAYER_WRITE_MODE;
         else 
-          thisub->access='e';
+          thisub->access=PLAYER_ERROR_MODE;
         break;
       case PLAYER_READ_MODE:
         if(Subscribe(req.code,req.index) == 0)
           thisub->access=PLAYER_READ_MODE;
         else
-          thisub->access='e';
+          thisub->access=PLAYER_ERROR_MODE;
         break;
       default:
         printf("Unknown access \"%c\"\n", req.access);
@@ -645,7 +646,7 @@ unsigned char
 CClientData::FindPermission(unsigned short code, unsigned short index)
 {
   unsigned char tmpaccess;
-  pthread_mutex_lock(&access);
+  //pthread_mutex_lock(&access);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
     if((thisub->code == code) && (thisub->index == index))
@@ -655,7 +656,7 @@ CClientData::FindPermission(unsigned short code, unsigned short index)
       return(tmpaccess);
     }
   }
-  pthread_mutex_unlock(&access);
+  //pthread_mutex_unlock(&access);
   return(PLAYER_ERROR_MODE);
 }
 
@@ -665,7 +666,10 @@ bool CClientData::CheckOpenPermissions(unsigned short code,
   bool permission = false;
   unsigned char letter;
 
+  pthread_mutex_lock(&access);
   letter = FindPermission(code,index);
+  pthread_mutex_unlock(&access);
+
   if((letter==PLAYER_ALL_MODE) || 
      (letter==PLAYER_READ_MODE) || 
      (letter==PLAYER_WRITE_MODE))
@@ -680,7 +684,10 @@ bool CClientData::CheckWritePermissions(unsigned short code,
   bool permission = false;
   unsigned char letter;
 
+  pthread_mutex_lock(&access);
   letter = FindPermission(code,index);
+  pthread_mutex_unlock(&access);
+
   if((letter==PLAYER_ALL_MODE) || (PLAYER_WRITE_MODE==letter)) 
     permission = true;
 
@@ -693,16 +700,15 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
   CDevice* devicep;
   player_msghdr_t hdr;
   struct timeval curr;
+  bool needsynch = false;
   
-  // don't lock this here; it's already locked by the caller
-  //pthread_mutex_lock( &access );
-
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_DATA);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
     if(thisub->access==PLAYER_ALL_MODE || thisub->access==PLAYER_READ_MODE) 
     {
+      needsynch = true;
       char access = 
               deviceTable->GetDeviceAccess(port,thisub->code,thisub->index);
 
@@ -714,20 +720,6 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
           hdr.device_index = htons(thisub->index);
           hdr.reserved = 0;
 
-          //if( thisub->consume )
-          //size = devicep->
-          //  GetLock()->ConsumeData(devicep, 
-          //			 data+totalsize+sizeof(hdr),
-          //			 maxsize-totalsize-sizeof(hdr),
-          //			 &(hdr.timestamp_sec), 
-          //			 &(hdr.timestamp_usec));
-          //
-          // else
-          //size = devicep->GetLock()->GetData(devicep, 
-                                              //data+totalsize+sizeof(hdr),
-                                              //maxsize-totalsize-sizeof(hdr),
-                                              //&(hdr.timestamp_sec), 
-                                              //&(hdr.timestamp_usec));
           size = devicep->GetData(data+totalsize+sizeof(hdr),
                                   maxsize-totalsize-sizeof(hdr),
                                   &(hdr.timestamp_sec), 
@@ -779,23 +771,25 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
       }
     }
   }
-  //pthread_mutex_unlock( &access );
 
   // now add a zero-length SYNCH packet to the end of the buffer
-  hdr.stx = htons(PLAYER_STXX);
-  hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
-  hdr.device = htons(PLAYER_PLAYER_CODE);
-  hdr.device_index = htons(0);
-  hdr.reserved = 0;
-  hdr.size = 0;
+  if(needsynch)
+  {
+    hdr.stx = htons(PLAYER_STXX);
+    hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
+    hdr.device = htons(PLAYER_PLAYER_CODE);
+    hdr.device_index = htons(0);
+    hdr.reserved = 0;
+    hdr.size = 0;
 
-  if(GlobalTime->GetTime(&curr) == -1)
-    fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
-  hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
-  hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
+    if(GlobalTime->GetTime(&curr) == -1)
+      fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
+    hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
+    hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
 
-  memcpy(data+totalsize,&hdr,sizeof(hdr));
-  totalsize += sizeof(hdr);
+    memcpy(data+totalsize,&hdr,sizeof(hdr));
+    totalsize += sizeof(hdr);
+  }
 
   return(totalsize);
 }
@@ -1003,17 +997,17 @@ CClientData::WriteIdentString()
   bzero(((char*)data)+strlen((char*)data),
         PLAYER_IDENT_STRLEN-strlen((char*)data));
 
-  pthread_mutex_lock(&socketwrite);
+  pthread_mutex_lock(&access);
   if(write(socket, data, PLAYER_IDENT_STRLEN) < 0 ) 
   {
     if(errno != EAGAIN)
     {
       perror("ClientManager::Write():write()");
-      pthread_mutex_unlock(&socketwrite);
+      pthread_mutex_unlock(&access);
       return(-1);
     }
   }
-  pthread_mutex_unlock(&socketwrite);
+  pthread_mutex_unlock(&access);
   return(0);
 }
 
@@ -1024,17 +1018,11 @@ CClientData::Write()
 
   size = BuildMsg(writebuffer,PLAYER_MAX_MESSAGE_SIZE);
 
-  pthread_mutex_lock(&socketwrite);
   if(size>0 && write(socket, writebuffer, size) < 0 ) 
   {
     if(errno != EAGAIN)
-    {
-      //perror("CClientData::Write: write()");
-      pthread_mutex_unlock(&socketwrite);
       return(-1);
-    }
   }
-  pthread_mutex_unlock(&socketwrite);
   return(0);
 }
 

@@ -241,7 +241,8 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
 ///////////////////////////////////////////////////////////////////////////
 // Write configuration to the device
 //
-int CStageDevice::PutConfig(unsigned char *config, size_t len)
+int CStageDevice::PutConfig(CClientData* client, unsigned char *config, 
+                            size_t len)
 {
   Lock();
 

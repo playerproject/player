@@ -40,7 +40,6 @@
 #include <unistd.h>
 #include <math.h>
 #include <stdlib.h>  /* for abs() */
-#include <signal.h>  /* for sigblock */
 #include <netinet/in.h>
 
 #include <p2osdevice.h>
@@ -678,11 +677,6 @@ void *RunPsosThread( void *p2osdevice )
 
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;
-
-#ifdef PLAYER_LINUX
-  sigblock(SIGINT);
-  sigblock(SIGALRM);
-#endif
 
   GlobalTime->GetTime(&pd->timeBegan_tv);
 

@@ -67,11 +67,14 @@ class ClientManager
     // add a client to our watch list
     void AddClient(CClientData* client);
 
+    // mark a client for deletion
+    void MarkClientForDeletion(int idx, bool have_lock);
     // remove a client
     void RemoveClient(int idx, bool have_locks);
     void RemoveBlanks(bool have_locks);
 
     int Read();
+    int Write();
 
     // get the index corresponding to a CClientData pointer
     int GetIndex(CClientData* ptr);
