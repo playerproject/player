@@ -770,13 +770,23 @@ RFLEX::Main()
 				radPsec_turnRateDemand = DEG2RAD_CONV((long) ntohl(command.position.yawspeed));
 			}
 			/* NEXT, write commands */
-			//yes we have to do this every time (otherwise failsafe will kick in)
+			// rflex has a built in failsafe mode where if no move command is recieved in a 
+			// certain interval the robot stops.
+			// this is a good thing given teh size of the robot...
+			// if network goes down or some such and the user looses control then the robot stops
+			// if the robot is running in an autonomous mdoe it is easy enough to simply 
+			// resend the command repeatedly
 
 			// allow rflex joystick to overide the player command
 			if (joy_control > 0)
 				--joy_control;
-			else
+			// only set new command if type is valid and their is a new command
+			else if (command.position.type == 0)
+			{
 				rflex_set_velocity(rflex_fd,(long) MM2ARB_ODO_CONV(mmPsec_speedDemand),(long) RAD2ARB_ODO_CONV(radPsec_turnRateDemand),(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
+				command.position.type = 255;
+				positionp->PutCommand(this,(unsigned char *)&command.position, sizeof(command.position));
+			}
 		}
 		else
 			rflex_stop_robot(rflex_fd,(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));
