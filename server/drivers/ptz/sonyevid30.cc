@@ -146,7 +146,10 @@ class SonyEVID30:public Driver
   int SendCommand(unsigned char* str, int len, uint8_t camera = 1);
   int CancelCommand(char socket);
   int SendRequest(unsigned char* str, int len, unsigned char* reply, uint8_t camera = 1);
-  int HandleConfig(void *client, unsigned char *buf, size_t len);
+//  int HandleConfig(void *client, unsigned char *buf, size_t len);
+
+  // MessageHandler
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 
   // this function will be run in a separate thread
   virtual void Main();
@@ -172,6 +175,8 @@ protected:
   struct pollfd read_pfd;
 
   int movement_mode;
+  int pandemand;
+  int tiltdemand;
 
 public:
 
@@ -218,13 +223,15 @@ SonyEVID30_Register(DriverTable* table)
 }
 
 SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
+  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
 {
   ptz_fd = -1;
   command_pending1 = false;
   command_pending2 = false;
 
   movement_mode = 0;
+  pandemand = 0;
+  tiltdemand=0;
 
   read_pfd.events = POLLIN;
 
@@ -316,15 +323,15 @@ SonyEVID30::Setup()
   puts("Done.");
 
   // zero the command and data buffers
-  player_ptz_data_t data;
-  player_ptz_cmd_t cmd;
+//  player_ptz_data_t data;
+//  player_ptz_cmd_t cmd;
 
-  data.pan = data.tilt = data.zoom = 0;
-  cmd.pan = cmd.tilt = 0;
-  cmd.zoom = this->maxfov;
+//  data.pan = data.tilt = data.zoom = 0;
+//  cmd.pan = cmd.tilt = 0;
+//  cmd.zoom = this->maxfov;
 
-  PutData((void*)&data,sizeof(data),NULL);
-  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
+//  PutData((void*)&data,sizeof(data),NULL);
+//  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
   // start the thread to talk with the camera
   StartThread();
@@ -776,78 +783,50 @@ SonyEVID30::SendAbsZoom(short zoom)
   return(SendCommand(command, 7));
 }
 
-/* handle a configuration request
- *
- * returns: 0 on success, -1 on error
- */
-int
-SonyEVID30::HandleConfig(void *client, unsigned char *buffer, size_t len)
+
+int SonyEVID30::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
 {
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+  *resp_len = 0;
+
   player_ptz_generic_config_t *cfg;
   int length;
 
-  switch(buffer[0]) {
-  case PLAYER_PTZ_GENERIC_CONFIG_REQ:
-    cfg = (player_ptz_generic_config_t *)buffer;
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_GENERIC_CONFIG, device_id))
+  {
+    assert(hdr->size == sizeof(player_ptz_generic_config_t));
+
+    cfg = (player_ptz_generic_config_t *)data;
     length = ntohs(cfg->length);
 
     // check whether command or inquiry...
-    if (cfg->config[0] == VISCA_COMMAND_CODE) {
-      if (SendCommand(cfg->config, length) < 0) {
-	if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
-	  PLAYER_ERROR("SONYEVI: Failed to PutReply\n");
-	}
-      } else {
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL)) {
-	  PLAYER_ERROR("SONYEVI: Failed to PutReply\n");
-	}
-      }
-    } else {
+    if (cfg->config[0] == VISCA_COMMAND_CODE) 
+    {
+      if (SendCommand(cfg->config, length) < 0) 
+        return 	PLAYER_MSGTYPE_RESP_NACK;
+      else
+        return PLAYER_MSGTYPE_RESP_ACK;
+    } 
+    else 
+    {
       // this is an inquiry, so we have to send data back
       length = SendRequest(cfg->config, length, cfg->config);
       cfg->length = htons(length);
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
-		   cfg, sizeof(player_ptz_generic_config_t), NULL)) {
-	PLAYER_ERROR("SONYEVI: Failed to PutReply\n");
-      }
+      return PLAYER_MSGTYPE_RESP_ACK;
     }
-    break;
-
-  default:
-    return -1;
   }
-
-  return 0;
-}
-
-void
-SonyEVID30::PrintPacket(char* str, unsigned char* cmd, int len)
-{
-  printf("%s: ", str);
-  for(int i=0;i<len;i++)
-    printf(" %.2x", cmd[i]);
-  puts("");
-}
-
-// this function will be run in a separate thread
-void 
-SonyEVID30::Main()
-{
-  player_ptz_data_t data;
-  player_ptz_cmd_t command;
-  char buffer[256];
-  size_t buffer_len;
-  void *client;
-  short pan,tilt,zoom;
-  short pandemand=0, tiltdemand=0, zoomdemand=0;
-  bool newpantilt=true, newzoom=true;
-  
-  while(1) {
-    pthread_testcancel();
-    GetCommand((void*)&command, sizeof(player_ptz_cmd_t),NULL);
-    pthread_testcancel();
-    
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  {
+    short zoomdemand=0;
+    bool newpantilt=true, newzoom=true;
+  	
+  	assert (hdr->size == sizeof (player_ptz_cmd_t));
+  	player_ptz_cmd_t command = *reinterpret_cast<player_ptz_cmd_t *> (data);
     if(pandemand != (short)ntohs((unsigned short)(command.pan)))
     {
       pandemand = (short)ntohs((unsigned short)(command.pan));
@@ -871,26 +850,71 @@ SonyEVID30::Main()
     zoomdemand = (1024 * (zoomdemand - this->maxfov)) / (this->minfov - this->maxfov);
     
     if(newzoom)
-      {
-	if(SendAbsZoom(zoomdemand))
+    {
+	  if(SendAbsZoom(zoomdemand))
 	  {
 	    fputs("SonyEVID30:Main():SendAbsZoom() errored. bailing.\n", stderr);
 	    pthread_exit(NULL);
 	  }
-      }
+    }
+    
+    if(newpantilt)
+    {
+	  if (!movement_mode) 
+	  {
+	    pandemand = -pandemand;
+	    if(SendAbsPanTilt(pandemand,tiltdemand))
+	    {
+	      fputs("SonyEVID30:Main():SendAbsPanTilt() errored. bailing.\n", stderr);
+	      pthread_exit(NULL);
+	    }
+	  }
+    } 
+	return 0;
+  }
+
+  return -1;
+}
+
+
+void
+SonyEVID30::PrintPacket(char* str, unsigned char* cmd, int len)
+{
+  printf("%s: ", str);
+  for(int i=0;i<len;i++)
+    printf(" %.2x", cmd[i]);
+  puts("");
+}
+
+// this function will be run in a separate thread
+void 
+SonyEVID30::Main()
+{
+  player_ptz_data_t data;
+//  char buffer[256];
+//  size_t buffer_len;
+//  void *client;
+  short pan,tilt,zoom;
+  
+  while(1) 
+  {
+    pthread_testcancel();
+    ProcessMessages();
+    pthread_testcancel();
+    
     
     /* get current state */
     if(GetAbsPanTilt(&pan,&tilt))
-      {
-	fputs("SonyEVID30:Main():GetAbsPanTilt() errored. bailing.\n", stderr);
-	pthread_exit(NULL);
-      }
+    {
+	  fputs("SonyEVID30:Main():GetAbsPanTilt() errored. bailing.\n", stderr);
+	  pthread_exit(NULL);
+    }
     /* get current state */
     if(GetAbsZoom(&zoom))
-      {
-	fputs("SonyEVID30:Main():GetAbsZoom() errored. bailing.\n", stderr);
-	pthread_exit(NULL);
-      }
+    {
+	  fputs("SonyEVID30:Main():GetAbsZoom() errored. bailing.\n", stderr);
+	  pthread_exit(NULL);
+    }
     
     // Do the necessary coordinate conversions.  Camera's natural pan
     // coordinates increase clockwise; we want them the other way, so
@@ -899,30 +923,18 @@ SonyEVID30::Main()
     pan = -pan;
     zoom = this->maxfov + (zoom * (this->minfov - this->maxfov)) / 1024; 
     
-    
-    if(newpantilt)
-      {
-	if (!movement_mode) {
-	  pandemand = -pandemand;
-	  if(SendAbsPanTilt(pandemand,tiltdemand))
-	    {
-	      fputs("SonyEVID30:Main():SendAbsPanTilt() errored. bailing.\n", 
-		    stderr);
-	      pthread_exit(NULL);
-	    }
-	}
-      } else {
-	if (movement_mode) {
-	  if (pandemand-pan) {
+    if (movement_mode) 
+	{
+	  if (pandemand-pan) 
+	  {
 	    SendStepPan(pandemand-pan);
 	  }
-	  
-	  if (tiltdemand - tilt) {
+	
+	  if (tiltdemand - tilt) 
+	  {
 	    SendStepTilt(tiltdemand - tilt);
 	  }
 	}
-      }
-    
   
     // Copy the data.
     data.pan = htons((unsigned short)pan);
@@ -931,22 +943,8 @@ SonyEVID30::Main()
     
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    PutData((void*)&data, sizeof(player_ptz_data_t),NULL);
-    
-    newpantilt = false;
-    newzoom = false;
-    
-
-    // check for config requests 
-    if((buffer_len = 
-        GetConfig(&client,(void*)buffer,sizeof(buffer),NULL)) > 0) 
-    {
-      
-      if (HandleConfig(client, (uint8_t *)buffer, buffer_len) < 0) {
-	fprintf(stderr, "SONYEVI: error handling config request\n");
-      }
-    }
-
+    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA,0,(void*)&data, sizeof(player_ptz_data_t),NULL);
+       
     usleep(PTZ_SLEEP_TIME_USEC);
     }
 }

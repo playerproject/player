@@ -393,7 +393,7 @@ void BumperSafe::Main()
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 BumperSafe::BumperSafe( ConfigFile* cf, int section)
-        : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE), BaseClient(this)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE), BaseClient(this)
 {
 	Blocked = false;
 

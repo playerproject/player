@@ -181,7 +181,7 @@ Festival_Register(DriverTable* table)
 void QuitFestival(void* speechdevice);
 
 Festival::Festival( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_SPEECH_CODE, PLAYER_WRITE_MODE)
+  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SPEECH_CODE, PLAYER_WRITE_MODE)
 {
 //  int queuelen;
   sock = -1;

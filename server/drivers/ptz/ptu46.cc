@@ -590,7 +590,7 @@ PTU46_Register(DriverTable* table)
 }
 
 PTU46_Device::PTU46_Device( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
+  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
 {
 
   data.pan = data.tilt = data.zoom = data.panspeed = data.tiltspeed = 0;

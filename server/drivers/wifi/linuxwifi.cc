@@ -115,8 +115,8 @@ public:
   int Setup();
   int Shutdown();
 
-	// MessageHandler
-	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+  // MessageHandler
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 
 
 protected:
@@ -163,7 +163,7 @@ LinuxWiFi_Register(DriverTable *table)
 }
 
 LinuxWiFi::LinuxWiFi( ConfigFile *cf, int section) :
-  Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE) 
+  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE, PLAYER_READ_MODE) 
 {
   info_fp = NULL;
   
