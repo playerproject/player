@@ -43,7 +43,7 @@ int GzClient::Init(const char *serverid)
     return -1;
 
   GzClient::sim = gz_sim_alloc();
-  if (gz_sim_open(GzClient::sim, GzClient::client, 0) != 0)
+  if (gz_sim_open(GzClient::sim, GzClient::client, "default") != 0)
     return -1;
 
   return 0;

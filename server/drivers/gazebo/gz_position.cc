@@ -77,7 +77,7 @@ class GzPosition : public CDevice
   private: void HandleGetGeom(void *client, void *req, int reqlen);
 
   // Gazebo id
-  private: int gz_id;
+  private: const char *gz_id;
 
   // Gazebo client object
   private: gz_client_t *client;
@@ -119,9 +119,9 @@ GzPosition::GzPosition(char* interface, ConfigFile* cf, int section)
 {
 
   // Get the id of the device in Gazebo
-  this->gz_id = cf->ReadInt(section, "gz_id", 0);
+  this->gz_id = cf->ReadString(section, "gz_id", 0);
 
-  // Get the globally defined  Gazebo client (one per instance of Player)
+  // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
   
   // Create an interface
