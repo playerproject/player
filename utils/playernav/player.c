@@ -43,12 +43,18 @@ init_player(playerc_client_t** clients,
       fprintf(stderr, "Failed to set data mode\n");
       return(NULL);
     }
-    assert(maps[i] = playerc_map_create(clients[i], 0));
-    if(playerc_map_subscribe(maps[i],PLAYER_READ_MODE) < 0)
+    // only subscribe to the first robot's map
+    if(i==0)
     {
-      fprintf(stderr, "Failed to subscribe to map\n");
-      return(NULL);
+      assert(maps[i] = playerc_map_create(clients[i], 0));
+      if(playerc_map_subscribe(maps[i],PLAYER_READ_MODE) < 0)
+      {
+        fprintf(stderr, "Failed to subscribe to map\n");
+        return(NULL);
+      }
     }
+    else
+      maps[i] = NULL;
     assert(localizes[i] = playerc_localize_create(clients[i], 0));
     if(playerc_localize_subscribe(localizes[i],PLAYER_READ_MODE) < 0)
     {
@@ -103,13 +109,20 @@ void
 fini_player(playerc_mclient_t* mclient,
             playerc_client_t** clients,
             playerc_map_t** maps,
+            playerc_localize_t** localizes,
+            playerc_planner_t** planners,
             int num_bots)
 {
   int i;
 
   for(i=0;i<num_bots;i++)
   {
-    playerc_map_destroy(maps[i]);
+    if(maps[i])
+      playerc_map_destroy(maps[i]);
+    if(localizes[i])
+      playerc_localize_destroy(localizes[i]);
+    if(planners[i])
+      playerc_planner_destroy(planners[i]);
     playerc_client_destroy(clients[i]);
   }
   playerc_mclient_destroy(mclient);

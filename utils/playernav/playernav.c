@@ -274,6 +274,8 @@ main(int argc, char** argv)
   fini_player(gui_data.mclient,
               gui_data.clients,
               gui_data.maps,
+              gui_data.localizes,
+              gui_data.planners,
               gui_data.num_robots);
   fini_gui(&gui_data);
 
