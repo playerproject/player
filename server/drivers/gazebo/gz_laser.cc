@@ -165,6 +165,8 @@ size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
   int i;
   player_laser_data_t data;
 
+  gz_laser_lock(this->iface, 1);
+  
   data.min_angle = htons((int) (this->iface->data->min_angle * 100 * 180 / M_PI));
   data.max_angle = htons((int) (this->iface->data->max_angle * 100 * 180 / M_PI));
   data.resolution = htons((int) (this->iface->data->resolution * 100 * 180 / M_PI));
@@ -183,6 +185,8 @@ size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
     *timestamp_sec = (int) (this->iface->data->time);
   if (timestamp_usec)
     *timestamp_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+
+  gz_laser_unlock(this->iface);
   
   return sizeof(data);
 }
