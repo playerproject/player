@@ -41,6 +41,7 @@
 
 #include <device.h>
 #include <devicetable.h>
+#include <deviceregistry.h>
 #include <clientdata.h>
 #include <clientmanager.h>
 
@@ -830,7 +831,6 @@ ClientData::BuildMsg()
   Driver* driver;
   player_msghdr_t hdr;
   struct timeval curr;
-  size_t numdata;
   
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_DATA);
@@ -901,8 +901,8 @@ ClientData::BuildMsg()
     }
     else
     {
-      PLAYER_WARN2("Unknown device \"%d:%d\"",
-                   thisub->id.code,thisub->id.index);
+      PLAYER_WARN2("Unknown device \"%s:%d\"",
+                   ::lookup_interface_name(0, thisub->id.code),thisub->id.index);
     }
   }
 
@@ -940,8 +940,8 @@ int ClientData::Subscribe(player_device_id_t id)
   }
   else
   {
-    PLAYER_WARN2("Unknown device \"%d:%d\" - subscribe cancelled", 
-                 id.code,id.index);
+    PLAYER_WARN2("Unknown device \"%s:%d\" - subscribe cancelled", 
+                 ::lookup_interface_name(0, id.code),id.index);
     return(1);
   }
 }
@@ -957,8 +957,8 @@ void ClientData::Unsubscribe(player_device_id_t id)
   }
   else
   {
-    PLAYER_WARN2("Unknown device \"%d:%d\" - unsubscribe cancelled", 
-                 id.code,id.index);
+    PLAYER_WARN2("Unknown device \"%s:%d\" - unsubscribe cancelled", 
+                 ::lookup_interface_name(0, id.code),id.index);
   }
 }
 
