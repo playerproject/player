@@ -438,6 +438,11 @@ Acts::Setup()
       acts_args[i++] = "-H";
       acts_args[i++] = heightstring;
       break;
+    case ACTS_VERSION_UNKNOWN:
+    default:
+      PLAYER_ERROR("unknown ACTS version!");
+      return(-1);
+      break;
   }
   acts_args[i] = (char*)NULL;
 
