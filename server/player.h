@@ -3368,30 +3368,43 @@ typedef struct player_mcom_return
 /*************************************************************************
  ** begin section nomad
  *************************************************************************/
-/** [Synopsis]
-   The {\tt nomad} interface affords control of a Nomad 200 robot.
- */
-/** [Constants] */
+/*************************************************************************/
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup player_interface_nomad nomad
+
+The nomad interface affords control of Nomadics Nomad robots and
+relatives.
+
+Warning: some of the command and data variables are specified in
+native Nomad units; they don't follow Player's conventions. This will
+be changed once someone figiures out exactly what the Nomad units are.
+
+@{
+*/
+
 #define NOMAD_SONAR_COUNT 16
 #define NOMAD_BUMPER_COUNT 16
 #define NOMAD_IR_COUNT 16
-/** TODO: measure the Nomad to get this exactly right */
-#define NOMAD_RADIUS_MM 400 
-#define NOMAD_CONFIG_BUFFER_SIZE 256
-#define NOMAD_SERIAL_PORT "/dev/ttyS0"
-#define NOMAD_SERIAL_BAUD  9600
 
-/** [Data] The {\tt nomad} interface provides a pose estimate, sonar
-and infrared range readings, and bumper contact readings.  The format
-is: */
+#define NOMAD_RADIUS_MM 400 /// Approximate radius of the Nomad 200 TODO: measure the Nomad to get this exactly right.
+
+#define NOMAD_CONFIG_BUFFER_SIZE 256    
+#define NOMAD_SERIAL_PORT "/dev/ttyS0" ///< default serial port
+#define NOMAD_SERIAL_BAUD  9600        ///< default serial speed
+
+/** The nomad data packet provides a pose estimate, sonar and infrared
+range readings, and bumper contact readings.*/
 typedef struct player_nomad_data
 {
   /** X and Y position, in mm */
   int32_t x, y;
   /** heading, in degrees */
   int32_t a; 
-  /** velocities (units?)*/
-  int32_t vel_trans, vel_steer, vel_turret; 
+
+  int32_t vel_trans; ///< translation velocity (in native Nomad units)
+  int32_t vel_steer; ///< steering velocity (in native Nomad units)
+  int32_t vel_turret; ///< turret rotation velocity (in native Nomad units)
 
   /** sonar range sensors: range in mm */
   uint16_t sonar[NOMAD_SONAR_COUNT];
@@ -3402,20 +3415,18 @@ typedef struct player_nomad_data
 
 } __PACKED__ player_nomad_data_t;
   
-/** [Commands]
-   Move the Nomad.
-*/
-
-typedef struct player_nomad_cmd
-{
-   /** velocities (units?)*/
+/** The Nomad command packet lets you set independent velocties for
+    translation, steering and turret rotation. These are specified in
+    native Nomad units. (TODO: This should change in future to match
+    normal Player style (mm/sec), once someone figures out exactly
+    what the Nomad units are). */
+typedef struct player_nomad_cmd {
   int32_t vel_trans, vel_steer, vel_turret; 
 } __PACKED__ player_nomad_cmd_t;
 
-/** [Configs]
-    This interface accepts no configs
-*/
-
+    
+/** @} */
+/** @} */
 
 /*************************************************************************
  ** end section
