@@ -327,6 +327,16 @@ class CRobot {
   int ResetPosition();
 
   /*
+   * Set the laser configuration
+   * Use min_ and max_segment to specify a restricted scan.
+   * Set intensity to true to get intensity data in the top three bits
+   * of the range scan data.
+   *
+   * Returns 0 on success; non-zero otherwise
+   */
+  int SetLaserConfig(int min_segment, int max_segment, bool intensity);
+
+  /*
    * When in REQUESTREPLY mode, request a round of sensor data
    *
    * Returns 0 on success; non-zero otherwise

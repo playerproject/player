@@ -18,11 +18,32 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/*
- * $Id$
- *
- * the SICK laser device
- */
+
+///////////////////////////////////////////////////////////////////////////
+//
+// File: laserdevice.h
+// Author: Andrew Howard
+// Date: 7 Nov 2000
+// Desc: Driver for the SICK laser
+//
+// CVS info:
+//  $Source$
+//  $Author$
+//  $Revision$
+//
+// Usage:
+//  (empty)
+//
+// Theory of operation:
+//  (empty)
+//
+// Known bugs:
+//  (empty)
+//
+// Possible enhancements:
+//  (empty)
+//
+///////////////////////////////////////////////////////////////////////////
 
 #ifndef LASERDEVICE
 #define LASERDEVICE
@@ -32,58 +53,138 @@
 #include "lock.h"
 #include "device.h"
 
-class CLaserDevice:public CDevice {
- private:
-  bool data_swapped;     // whether or not the data buffer has been byteswapped
-  pthread_t thread;           // the thread that continuously reads from the laser 
-  int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
-  
-  CLock lock;
+// Some length-specific types
+//
+#ifndef BYTE
+#define BYTE unsigned char
+#endif
+#ifndef UINT16
+#define UINT16 unsigned short
+#endif
 
-  ssize_t WriteToLaser( unsigned char *data, ssize_t len ); 
 
-  /* methods used to decode the response from the laser */
-  ssize_t RecieveAck();
-  void DecodeStatusByte( unsigned char byte );
-  bool CheckDatagram( unsigned char *datagram );
+// The laser device class
+//
+class CLaserDevice : public CDevice
+{
+  public:
+    
+    CLaserDevice(char *port);
+      
+    int Setup();
+    int Shutdown();
+    void Run();
+      
+    CLock* GetLock( void ) {return &lock;};
 
-  /* methods used to configure the laser */
-  int Request38k();
-  int RequestData();
-  int ChangeMode( );
+    // Client interface
+    //
+    int GetData( unsigned char * );
+    void PutData( unsigned char * );
+    void GetCommand( unsigned char * );
+    void PutCommand( unsigned char *,int );
+    int GetConfig( unsigned char * );
+    void PutConfig( unsigned char *,int );
+    
+  private:
+
+    // Dummy main (just calls real main)
+    //
+    static void* DummyMain(void *laserdevice);
+
+    // Main function for device thread
+    //
+    int Main();
+    
+    // Open the terminal
+    // Returns 0 on success
+    //
+    int OpenTerm();
+
+    // Close the terminal
+    // Returns 0 on success
+    //
+    int CloseTerm();
+    
+    // Set the terminal speed
+    // Valid values are 9600 and 38400
+    // Returns 0 on success
+    //
+    int ChangeTermSpeed(int speed);
+
+    // Put the laser into configuration mode
+    //
+    int SetLaserMode();
+
+    // Set the laser data rate
+    // Valid values are 9600 and 38400
+    // Returns 0 on success
+    //
+    int SetLaserSpeed(int speed);
+
+    // Set the laser configuration
+    // Returns 0 on success
+    //
+    int SetLaserConfig();
+
+    // Request data from the laser
+    // Returns 0 on success
+    //
+    int RequestLaserData();
+
+    // Read laser range data
+    // Runs in the device thread.
+    //
+    int ProcessLaserData();
+
+    // Write a packet to the laser
+    //
+    ssize_t WriteToLaser(BYTE *data, ssize_t len); 
+    
+    // Read a packet from the laser
+    //
+    ssize_t ReadFromLaser(BYTE *data, ssize_t maxlen, bool ack = false, int timeout = -1);
+
+    // Calculates CRC for a telegram
+    //
+    unsigned short CreateCRC(BYTE *data, ssize_t len);
+
+    // Get the time (in ms)
+    //
+    int GetTime();
+    
+  protected:
+    bool data_swapped;     // whether or not the data buffer has been byteswapped
+    pthread_t thread;           // the thread that continuously reads from the laser 
+    CLock lock;
+
+    // laser device file descriptor
+    //
+    int laser_fd;           
+
+    // Most recent scan data
+    //
+    BYTE* data;
+
+    // Config data
+    // PutConfig sets the data and the size, and GetConfig reads and zeros it
+    //
+    ssize_t config_size;
+    BYTE* config;
+
+    // Turn intensity data on/off
+    //
+    bool intensity;
+    
+    // Scan range  (for restricted scan)
+    //
+    int min_segment, max_segment;
 
  public:
-  unsigned char* data;   // array holding the most recent laser scan
-  unsigned char* config;   // latest config request from client
-
-  // PutConfig sets this to the right size, and GetConfig zeros it
-  int config_size;
-
-  int laser_fd;               // laser device file descriptor
-  // device used to communicate with the laserk
-  char LASER_SERIAL_PORT[LASER_SERIAL_PORT_NAME_SIZE]; 
-
-
-  /* Calculates CRC for a telegram */
-  unsigned short CreateCRC( unsigned char* commData, unsigned int uLen );
-
-  CLaserDevice(char *port);
-
-  void Run();
-
-  int Setup();
-  int Shutdown();
-
-  virtual CLock* GetLock( void ){ return &lock; };
-
-  int GetData( unsigned char * );
-  void PutData( unsigned char * );
-
-  void GetCommand( unsigned char * );
-  void PutCommand( unsigned char *,int );
-
-  int GetConfig( unsigned char * );
-  void PutConfig( unsigned char *,int );
+    
+    // device used to communicate with the laserk
+    char LASER_SERIAL_PORT[LASER_SERIAL_PORT_NAME_SIZE];
 };
+
 
 #endif

@@ -872,6 +872,26 @@ int CRobot::ResetPosition()
   return(Request((char*)req,sizeof(req)));
 }
 
+
+/*
+ * Set the laser configuration
+ *
+ * Returns 0 on success; non-zero otherwise
+ */
+int CRobot::SetLaserConfig(int min_segment, int max_segment, bool intensity)
+{
+  unsigned char req[4 + 2 * 2 + 1];
+  req[0] = 'x';
+  req[1] = 'l';
+  *((unsigned short*) &req[2]) = htons(2 * 2 + 1);
+  *((unsigned short*) &req[4]) = htons(min_segment);
+  *((unsigned short*) &req[6]) = htons(max_segment);
+  req[8] = (unsigned char) intensity;
+
+  return(Request((char*) req, sizeof(req)));   
+}
+
+
 /*
  * When in REQUESTREPLY mode, request a round of sensor data
  *
