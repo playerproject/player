@@ -1419,7 +1419,7 @@ can return a maximum of 401 readings; this limits the valid
 combinations of scan width and angular resolution.
 
 @par Commands
-    This device accepts no commands.
+    This interface accepts no commands.
 
 @par Configuration requests
 
@@ -1679,18 +1679,25 @@ typedef struct player_blobfinder_imager_config
  ** end section
  *************************************************************************/
 
-/*************************************************************************
- ** begin section ptz
- *************************************************************************/
+/*************************************************************************/
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup player_interface_ptz ptz
 
-/** [Synopsis]
-The {\tt ptz} interface is used to control a pan-tilt-zoom unit. */
+The ptz interface is used to control a pan-tilt-zoom unit, such as a camera.
 
-/** [Constants] */
+@par Configuration requests
 
-/** Configuration request codes */
+- TODO
+
+@{
+*/
+
+/** Code for generic configuration request */
 #define PLAYER_PTZ_GENERIC_CONFIG_REQ	((uint8_t)1)
+/** Code for control mode configuration request */
 #define PLAYER_PTZ_CONTROL_MODE_REQ ((uint8_t)2)
+/** Code for autoservo configuration request */
 #define PLAYER_PTZ_AUTOSERVO ((uint8_t)3)
 
 /** Maximum command length for use with PLAYER_PTZ_GENERIC_CONFIG_REQ, 
@@ -1701,9 +1708,8 @@ The {\tt ptz} interface is used to control a pan-tilt-zoom unit. */
 #define PLAYER_PTZ_VELOCITY_CONTROL 0
 #define PLAYER_PTZ_POSITION_CONTROL 1
 
-/** [Data] */
-/** The {\tt ptz} interface returns data reflecting the current state of the
-Pan-Tilt-Zoom unit; the format is: */
+/** The ptz interface returns data reflecting the current state of the
+Pan-Tilt-Zoom unit. */
 typedef struct player_ptz_data
 {
   /** Pan (degrees) */
@@ -1716,11 +1722,9 @@ typedef struct player_ptz_data
   int16_t panspeed, tiltspeed;
 } __PACKED__ player_ptz_data_t;
 
-/** [Command] */
 /**
-The {\tt ptz} interface accepts commands that set change the state of
-the unit; the format is given below. Note that
-the commands are {\em absolute}, not relative. */
+The ptz interface accepts commands that set change the state of the unit.
+Note that the commands are absolute, not relative. */
 typedef struct player_ptz_cmd
 {
   /** Desired pan angle (degrees) */
@@ -1733,7 +1737,6 @@ typedef struct player_ptz_cmd
   int16_t panspeed, tiltspeed;
 } __PACKED__ player_ptz_cmd_t;
 
-/** [Configuration: Set/Get unit-specific config ] */
 /** This ioctl allows the client to send a unit-specific command to the
     unit.  Whether data is returned depends on the command that was sent.
     The server may fill in "config" with a reply if applicable. */
@@ -1749,11 +1752,10 @@ typedef struct player_ptz_generic_config
   uint8_t	config[PLAYER_PTZ_MAX_CONFIG_LEN];
 } __PACKED__ player_ptz_generic_config_t;
 
-/** [Configuration: Change control mode] */
 /** This ioctl allows the client to switch between position and velocity
     control, for those drivers that support it.
     Note that this request changes how the driver interprets forthcoming 
-    commands from {\em all} clients. */
+    commands from all clients. */
 typedef struct player_ptz_controlmode_config
 {
   /** Must be set to PLAYER_PTZ_CONTROL_MODE_REQ */
@@ -1764,10 +1766,8 @@ typedef struct player_ptz_controlmode_config
   uint8_t mode;
 } __PACKED__ player_ptz_velocitymode_config_t;
 
-
-/*************************************************************************
- ** end section
- *************************************************************************/
+/** @} */
+/** @} */
 
 /*************************************************************************
  ** begin section cmucam2
@@ -2876,19 +2876,26 @@ typedef struct
 /*************************************************************************/
 
 /*************************************************************************/
-/*
- * Joystick Device
- */
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup player_interface_joystick joystick
 
-/*************************************************************************
- ** begin section power
- *************************************************************************/
+The joystick interface provides access to the state of a joystick.
+It allows another driver or a (possibly off-board) client to read and
+use the state of a joystick.
 
-/** [Synopsis]
-  The {\tt power} interface provides access to a robot's power subsystem. */
+@par Commands
+    This interface accepts no commands.
 
-/** [Data] */
-typedef struct
+@par Configuration requests
+  This interface accepts no configuration requests.
+
+@{
+*/
+
+/** The joystick data packet, which contains the current state of the
+    joystick */
+typedef struct player_joystick_data
 {
   /** Current joystick position (unscaled) */
   int16_t xpos, ypos;
@@ -2901,13 +2908,8 @@ typedef struct
   
 } __PACKED__ player_joystick_data_t;
 
-
-/** [Commands] This interface accepts no commands */
-
-
-/*************************************************************************
- ** end section
- *************************************************************************/
+/** @} */
+/** @} */
 
 
 /*************************************************************************/

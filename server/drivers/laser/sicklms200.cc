@@ -28,9 +28,9 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_sicklms200 SickLMS200 driver
+/** @defgroup player_driver_sicklms200 SICK LMS 200 driver
 
-Driver for the SICK LMS200 scanning laser range-finder.
+The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
 
 @par Interfaces
 - @ref player_interface_laser
