@@ -2,9 +2,6 @@
 
 #include "playernav.h"
 
-// global quit flag
-extern char quit;
-
 // flag and index for robot currently being moved by user (if any)
 extern int robot_moving_p;
 extern int robot_moving_idx;
@@ -31,7 +28,7 @@ _quit_callback(GtkWidget *widget,
                GdkEvent *event,
                gpointer data)
 {
-  quit = 1;
+  gtk_main_quit();
   return(TRUE);
 }
 
@@ -152,7 +149,7 @@ _robot_button_callback(GnomeCanvasItem *item,
                   {
                     fprintf(stderr, "error while setting pose on robot %d\n", 
                             idx);
-                    quit=1;
+                    gtk_main_quit();
                     return(TRUE);
                   }
                 }
@@ -173,7 +170,7 @@ _robot_button_callback(GnomeCanvasItem *item,
                   {
                     fprintf(stderr, "error while setting goal on robot %d\n", 
                             idx);
-                    quit=1;
+                    gtk_main_quit();
                     return(TRUE);
                   }
                   gui_data->goals[idx][0] = mean[0];
