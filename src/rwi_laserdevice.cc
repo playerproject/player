@@ -114,7 +114,7 @@ CRWILaserDevice::Main()
 					break;
 				case PLAYER_LASER_SET_CONFIG:
 					// nothing can be changed for RWI lasers
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NSUP,
 		    		             NULL, NULL, 0)) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_laserdevice.\n");
@@ -122,7 +122,7 @@ CRWILaserDevice::Main()
 					break;
 				case PLAYER_LASER_GET_CONFIG:
 					// I don't know of any other valid values for RWI robots
-					cfg.min_angle = htons(-9000);
+					cfg.min_angle = htons((uint16_t) -9000);
 					cfg.max_angle = htons(9000);
 					cfg.resolution = htons(100);
 					cfg.intensity = 0;
@@ -137,7 +137,7 @@ CRWILaserDevice::Main()
 					player_laser_geom_t geom;
 					geom.subtype = PLAYER_LASER_GET_GEOM;
 					geom.pose[0] = geom.pose[1] = geom.pose[2] = 0;
-					geom.size[0] = geom.pose[1] = htons((uint16_t)500);
+					geom.size[0] = geom.size[1] = htons((uint16_t)200);
 					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
 		    		             NULL, &geom, sizeof(geom))) {
 		    			PLAYER_ERROR("Failed to PutReply in "
@@ -145,9 +145,9 @@ CRWILaserDevice::Main()
 		    		}
 					break;
 				default:
-					printf("rwi_laser device received unknown %s",
+					printf("rwi_laser device received unknown "
 					       "configuration request\n");
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NSUP,
 		    		             NULL, NULL, 0)) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_laserdevice.\n");
@@ -161,7 +161,7 @@ CRWILaserDevice::Main()
 		// Finally, collect new data
 		if (enabled) {
 			// FIXME: does this need to be generalized?
-			data.min_angle = htons(-9000);
+			data.min_angle = htons((uint16_t) -9000);
 			data.max_angle = htons(9000);
 			data.resolution = htons(100);
 #ifdef USE_MOBILITY

@@ -124,16 +124,16 @@ CRWIBumperDevice::Main()
 					break;
 				case PLAYER_BUMPER_GET_GEOM_REQ:
 					// FIXME: not yet implemented
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NSUP,
 		    		             NULL, NULL, 0)) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_bumperdevice.\n");
 		    		}
 					break;
 				default:
-					printf("rwi_bumper device received unknown %s",
+					printf("rwi_bumper device received unknown "
 					       "configuration request\n");
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NSUP,
 		    		             NULL, NULL, 0)) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_bumperdevice.\n");

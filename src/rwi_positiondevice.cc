@@ -143,7 +143,7 @@ CRWIPositionDevice::Main()
 					break;
 				case PLAYER_POSITION_VELOCITY_CONTROL_REQ:
 					// unsupported for RWI
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NSUP,
 		    		             NULL, NULL, 0)) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_positiondevice.\n");
@@ -162,7 +162,7 @@ CRWIPositionDevice::Main()
 					player_position_geom_t geom;
 					geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 					geom.pose[0] = geom.pose[1] = geom.pose[2] = 0;
-					geom.size[0] = geom.pose[1] = htons((uint16_t)700);
+					geom.size[0] = geom.size[1] = htons((uint16_t)525);
 					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
 		    		             NULL, &geom, sizeof(geom))) {
 		    			PLAYER_ERROR("Failed to PutReply in "
@@ -170,9 +170,9 @@ CRWIPositionDevice::Main()
 		    		}
 					break;
 				default:
-					printf("rwi_position device received unknown %s",
+					printf("rwi_position device received unknown "
 					       "configuration request\n");
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NSUP,
 		    		             NULL, NULL, 0)) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_positiondevice.\n");

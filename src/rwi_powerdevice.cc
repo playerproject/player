@@ -89,19 +89,17 @@ CRWIPowerDevice::Main()
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
 		    switch (cfg.request) {
 			    case PLAYER_MAIN_POWER_REQ:
-		    		// RWI does not turn off main power:
-		    		// ignore this request
-		    		
-		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		// RWI does not turn off main power
+		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_NSUP,
 		    		             NULL, NULL, 0)) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_powerdevice.\n");
 		    		}
 					break;
 				default:
-					printf("rwi_power device received unknown %s",
+					printf("rwi_power device received unknown "
 					       "configuration request\n");
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NSUP,
 		    		             NULL, NULL, 0)) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_powerdevice.\n");

@@ -150,9 +150,9 @@ CRWISonarDevice::Main()
 		    		}
 					break;
 				default:
-					printf("rwi_sonar device received unknown %s",
+					printf("rwi_sonar device received unknown "
 					       "configuration request\n");
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NSUP,
 		    		             NULL, NULL, 0)) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_sonardevice.\n");
