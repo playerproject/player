@@ -94,19 +94,7 @@
 caddr_t arenaIO; // the address for memory mapped IO to arena
 
 
-#define USAGE "USAGE"
-#define USAGE0 \
-  "USAGE: player [-gp <port>] [-pp <port>] [-lp <port>] [-zp <port>] \n" \
-  "             [-vp <port>] [-vc <path>] [-stage <path>] [-exp] [-debug]\n" \
-  "  -gp <port>   : TCP port where Player will listen. Default: 6665\n" \
-  "  -pp <port>   : serial port where P2OS device is connected. Default: /dev/ttyS0\n" \
-  "  -lp <port>   : serial port where laser is connected. Default: /dev/ttyS1\n" \
-  "  -zp <port>   : serial port where PTZ camera is connected.  Default: /dev/ttyS2\n" \
-  "  -vp <port>   : TCP port where ACTS should run. Default: 5001\n" \
-  "  -vc <path>   : config file for ACTS. Default: /usr/local/acts/actsconfig\n" \
-  "  -stage <path>: use memory-mapped IO with Stage through this name in the filesystem\n" \
-  "  -exp         : use experimental features\n" \
-  "  -debug       : turn on debugging info"
+
 
 CCounter num_threads;
 
@@ -127,14 +115,49 @@ bool SHUTTING_DOWN;
 
 bool experimental = false;
 bool debug = false;
-bool useArena = false;
 int playerport = PLAYER_PORTNUM;
 
+char* sane_spec[] = { "-misc:0",
+                      "-gripper:0",
+                      "-position:0",
+                      "-sonar:0",
+                      "-laser:0",
+                      "-vision:0",
+                      "-ptz:0",
+                      "-audio:0",
+                      "-laserbeacon:0",
+                      "-broadcast:0",
+                      "-speech:0" };
+
+
+/* Usage statement */
+void
+Usage()
+{
+  puts("");
+  fprintf(stderr, "USAGE: player [-port <port>] [-stage <path>] [-sane] "
+          "[DEVICE]...\n");
+  fprintf(stderr, "  -port <port>  : TCP port where Player will listen. "
+          "Default: %d\n", PLAYER_PORTNUM);
+  fprintf(stderr, "  -stage <path> : use memory-mapped IO with Stage "
+          "through this file.\n");
+  fprintf(stderr, "  -sane         : use the compiled-in device defaults:\n");
+  for(int i=0;i<ARRAYSIZE(sane_spec);i++)
+    fprintf(stderr, "                      %s\n",sane_spec[i]);
+  fprintf(stderr, "\n  Each [DEVICE] should be of the form:\n");
+  fprintf(stderr, "    -<name>:<index> [options]\n");
+  fprintf(stderr, "  If omitted, <index> is assumed to be 0.\n");
+  fprintf(stderr, "  [options] is a string of device-specific options.\n");
+  fprintf(stderr, "  For example:\n");
+  fprintf(stderr, "    -laser:0 \"port /dev/ttyS0\"\n");
+}
+
+/* sighandler to shut everything down properly */
 void Interrupt( int dummy ) 
 {
-  // setting this will suppress print statements from the client
-  // deaths
+  // setting this will suppress print statements from the client deaths
   SHUTTING_DOWN = true;
+  
   // first, delete the clients
   for(unsigned int i=0;i<MAXNUMCLIENTS;i++)
   {
@@ -142,11 +165,15 @@ void Interrupt( int dummy )
       delete clients[i];
   }
 
+  // next, delete the deviceTable; it will delete all the devices internally
   delete deviceTable;
+
+  // we're done
   puts("Player quitting");
   exit(0);
 }
 
+/* for debugging */
 void PrintHeader(player_msghdr_t hdr)
 {
   printf("stx: %u\n", hdr.stx);
@@ -159,6 +186,7 @@ void PrintHeader(player_msghdr_t hdr)
   printf("size:%u\n", hdr.size);
 }
 
+/* simple func to call delete on a char* */
 void
 delete_func(void* ptr)
 {
@@ -345,7 +373,7 @@ void *client_writer(void* arg)
 
 /*
  * parses strings that look like "-laser:2"
- * <str> MUST be NULL-terminated.
+ *   <str1> is the device string; <str2> is the argument string for the device
  *
  * if the string can be parsed, then the appropriate device will be created, 
  *    and 0 will be returned.
@@ -358,7 +386,7 @@ parse_device_string(char* str1, char* str2)
   uint16_t index = 0;
   CDevice* tmpdevice;
 
-  if((str1[0] != '-') || (strlen(str1) < 2))
+  if(!str1 || (str1[0] != '-') || (strlen(str1) < 2))
     return(-1);
 
   /* get the index */
@@ -373,7 +401,7 @@ parse_device_string(char* str1, char* str2)
   int argc = 0;
   char* argv[32];
   char* tmpptr;
-  if(strlen(str2))
+  if(str2 && strlen(str2))
   {
     argv[argc++] = strtok(str2, " ");
     while(argc < (int)sizeof(argv))
@@ -386,11 +414,6 @@ parse_device_string(char* str1, char* str2)
     }
   }
 
-  //printf("str1:%s:%d\n",str1,argc);
-  //for(int i=0;i<argc;i++)
-  //{
-    //printf(":%s:\n", argv[i]);
-  //}
   /* get the device name */
   if(!strncmp(PLAYER_MISC_STRING,str1+1,strlen(PLAYER_MISC_STRING)))
   {
@@ -399,8 +422,8 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_MISC_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
-    fputs("Support for misc device was not included at compile time.",stderr);
-    return(-1);
+    fputs("\nWarning: Support for misc device was not included at compile time.\n",stderr);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_GRIPPER_STRING,str1+1,strlen(PLAYER_GRIPPER_STRING)))
@@ -410,9 +433,9 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_GRIPPER_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
-    fputs("Support for gripper device was not included at compile time.",
+    fputs("\nWarning: Support for gripper device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_POSITION_STRING,str1+1,
@@ -423,9 +446,9 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_POSITION_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
-    fputs("Support for position device was not included at compile time.",
+    fputs("\nWarning: Support for position device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_SONAR_STRING,str1+1,strlen(PLAYER_SONAR_STRING)))
@@ -435,9 +458,9 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_SONAR_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
-    fputs("Support for sonar device was not included at compile time.",
+    fputs("\nWarning: Support for sonar device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_LASER_STRING,str1+1,strlen(PLAYER_LASER_STRING)))
@@ -447,9 +470,9 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_LASER_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
-    fputs("Support for laser device was not included at compile time.",
+    fputs("\nWarning: Support for laser device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_VISION_STRING,str1+1,strlen(PLAYER_VISION_STRING)))
@@ -459,9 +482,9 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_VISION_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
-    fputs("Support for vision device was not included at compile time.",
+    fputs("\nWarning: Support for vision device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_PTZ_STRING,str1+1,strlen(PLAYER_PTZ_STRING)))
@@ -471,9 +494,9 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_PTZ_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
-    fputs("Support for ptz device was not included at compile time.",
+    fputs("\nWarning: Support for ptz device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_AUDIO_STRING,str1+1,strlen(PLAYER_AUDIO_STRING)))
@@ -483,9 +506,9 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_AUDIO_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
-    fputs("Support for audio device was not included at compile time.",
+    fputs("\nWarning: Support for audio device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_LASERBEACON_STRING,str1+1,
@@ -496,9 +519,9 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_LASERBEACON_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
-    fputs("Support for laserbeacon device was not included at compile time.",
+    fputs("\nWarning: Support for laserbeacon device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_BROADCAST_STRING,str1+1,
@@ -509,9 +532,9 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_BROADCAST_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
-    fputs("Support for broadcast device was not included at compile time.",
+    fputs("\nWarning: Support for broadcast device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_SPEECH_STRING,str1+1,strlen(PLAYER_SPEECH_STRING)))
@@ -521,14 +544,14 @@ parse_device_string(char* str1, char* str2)
     deviceTable->AddDevice(PLAYER_SPEECH_CODE, index, 
                            PLAYER_WRITE_MODE, tmpdevice);
 #else
-    fputs("Support for speech device was not included at compile time.",
+    fputs("\nWarning: Support for speech device was not included at compile time.\n",
           stderr);
-    return(-1);
+    return(0);
 #endif
   }
   else if(!strncmp(PLAYER_GPS_STRING,str1+1,strlen(PLAYER_GPS_STRING)))
   {
-    puts("Error: GPS device is not yet implemented in Player");
+    fputs("GPS device is not yet implemented in Player.\n",stderr);
     return(-1);
   }
   else
@@ -541,6 +564,9 @@ parse_device_string(char* str1, char* str2)
 
 int main( int argc, char *argv[] )
 {
+  bool special_config = false;
+  bool already_sane = false;
+  bool use_stage = false;
   unsigned int j;
   struct sockaddr_in listener;
   //struct sockaddr_in sender;
@@ -553,42 +579,32 @@ int main( int argc, char *argv[] )
   int player_sock = 0;
 
   // devices
-  CDevice* laserDevice = NULL;
-  CDevice* sonarDevice = NULL;
-  CDevice* visionDevice = NULL;
-  CDevice* positionDevice = NULL;
-  CDevice* gripperDevice = NULL;
-  CDevice* miscDevice = NULL;
-  CDevice* ptzDevice = NULL;
-  CDevice* audioDevice = NULL;
-  CDevice* laserbeaconDevice = NULL;
-  CDevice* broadcastDevice = NULL;
-  CDevice* speechDevice = NULL;
-  CDevice* gpsDevice = NULL;
+  CDevice* tmpdevice = NULL;
 
-  char arenaFile[128]; // filename for mapped memory
+  char arenaFile[MAX_FILENAME_SIZE]; // filename for mapped memory
 
   pthread_mutex_init(&clients_mutex,NULL);
 
   printf("** Player v%s ** ", PLAYER_VERSION);
+  fflush(stdout);
 
   for( int i = 1; i < argc; i++ ) 
   {
-    if(!strcmp(argv[i],"-s") || !strcmp(argv[i],"--stage"))
+    if(!strcmp(argv[i],"-stage"))
     {
       if(++i<argc) 
       {
 	strncpy(arenaFile, argv[i], sizeof(arenaFile));
-	useArena = true;
+	use_stage = true;
 	printf("[Stage]");
       }
       else 
       {
-	puts( USAGE );
+	Usage();
 	exit(-1);
       }
     }
-    else if(!strcmp(argv[i], "-p") || !strcmp(argv[i], "--port"))
+    else if(!strcmp(argv[i], "-port"))
     {
       if(++i<argc) 
       { 
@@ -597,128 +613,59 @@ int main( int argc, char *argv[] )
       }
       else 
       {
-	puts(USAGE);
+	Usage();
 	exit(-1);
       }
+    }
+    else if(!strcmp(argv[i], "-sane"))
+    {
+      for(int i=0;i<ARRAYSIZE(sane_spec);i++)
+      {
+        if(parse_device_string(sane_spec[i],NULL) < 0)
+        {
+          fprintf(stderr, "Warning: got error while creating sane "
+                  "device \"%s\"\n", sane_spec[i]);
+        }
+      }
+      already_sane = true;
     }
     else if((i+1)<argc)
     {
       if(parse_device_string(argv[i],argv[i+1]) < 0)
       {
-        puts(USAGE);
+        Usage();
         exit(-1);
       }
       i++;
+      special_config = true;
     }
     else
     {
-      puts(USAGE);
-      exit(-1);
+      if(parse_device_string(argv[i],NULL) < 0)
+      {
+        Usage();
+        exit(-1);
+      }
+      special_config = true;
     }
+  }
 
-
-    /*
-    if ( strcmp( argv[i], "-lp") == 0 ) {
-      i++;
-      if (i<argc) { 
-	strcpy( laserserialport, argv[i] );
-	printf("Assuming laser is connected to serial port \"%s\"\n",
-	       argv[i]);
-      }
-      else {
-	puts(USAGE);
-	exit(0);
+  if(!already_sane && !special_config && !use_stage)
+  {
+    for(int i=0;i<ARRAYSIZE(sane_spec);i++)
+    {
+      if(parse_device_string(sane_spec[i],NULL) < 0)
+      {
+        fprintf(stderr, "Warning: got error while creating sane "
+                "device \"%s\"\n", sane_spec[i]);
       }
     }
-    else if ( strcmp( argv[i], "-zp") == 0 ) {
-      i++;
-      if (i<argc) { 
-	strcpy(ptzserialport,argv[i]);
-	printf("Assuming PTZ camera is connected to serial port \"%s\"\n",
-                        ptzserialport);
-      }
-      else {
-	puts(USAGE);
-	exit(0);
-      }
-    }
-    else if ( strcmp( argv[i], "-pp") == 0 ) {
-      i++;
-      if (i<argc) { 
-	strcpy(p2osport,argv[i]);
-	printf("Assuming P2OS device (the robot) is connected to serial port \"%s\"\n",
-                        p2osport);
-      }
-      else {
-	puts(USAGE);
-	exit(0);
-      }
-    }
-    else if ( strcmp( argv[i], "-gp") == 0 ) {
-      i++;
-      if (i<argc) { 
-	playerport = atoi(argv[i]);
-	printf("[Port %d]", playerport);
-      }
-      else {
-	puts(USAGE);
-	exit(0);
-      }
-    }
-    else if ( strcmp( argv[i], "-debug") == 0 ) {
-      puts("Debug info comin' at ya'");
-      debug = true;
-    }
-    else if ( strcmp( argv[i], "-vp") == 0 ) {
-      i++;
-      if (i<argc) { 
-	//visionDevice->portnum = atoi(argv[i]);
-	visionport = atoi(argv[i]);
-	printf("Will run ACTS on port %d\n", visionport);
-      }
-      else {
-	puts(USAGE);
-	exit(0);
-      }
-    }
-    else if ( strcmp( argv[i], "-vc") == 0 ) {
-      i++;
-      if (i<argc) { 
-        strcpy(visionconfigfile, argv[i]);
-	printf("ACTS will use config file \"%s\"\n", argv[i]);
-      }
-      else {
-	puts(USAGE);
-	exit(0);
-      }
-    }
-    else if ( strcmp( argv[i], "-stage") == 0 ) {
-      i++;
-      if( i<argc ) {
-	strcpy( arenaFile, argv[i] );
-	useArena = true;
-	printf("[Stage]");
-      }
-      else {
-	puts( USAGE );
-	exit( 0 );
-      }
-    }
-    else if ( strcmp( argv[i], "-exp") == 0 ) {
-      experimental = true;
-      puts("Experimental");
-    }
-    else {
-      puts(USAGE);
-      exit(0);
-    }
-    */
   }
 
   puts( "" ); // newline, flush
 
   // create the devices dynamically 
-  if( useArena )
+  if( use_stage )
   { 
 #ifdef INCLUDE_STAGE
     // create and test the shared memory connection to arena
@@ -764,58 +711,85 @@ int main( int argc, char *argv[] )
     fflush( stdout );
 #endif
 
-    miscDevice = new CStageDevice( arenaIO + MISC_DATA_START,
+    /* this will all be obviated by Richard's new stuff... */
+    int index = 0;
+    tmpdevice = new CStageDevice( arenaIO + MISC_DATA_START,
                                    MISC_DATA_BUFFER_SIZE,
                                    MISC_COMMAND_BUFFER_SIZE,
                                    MISC_CONFIG_BUFFER_SIZE);
+    deviceTable->AddDevice(PLAYER_MISC_CODE, index, 
+                           PLAYER_READ_MODE, tmpdevice);
     
-    positionDevice = new CStageDevice( arenaIO + POSITION_DATA_START,
+    tmpdevice = new CStageDevice( arenaIO + POSITION_DATA_START,
                                        POSITION_DATA_BUFFER_SIZE,
                                        POSITION_COMMAND_BUFFER_SIZE,
                                        POSITION_CONFIG_BUFFER_SIZE);
+    deviceTable->AddDevice(PLAYER_POSITION_CODE, index, 
+                           PLAYER_ALL_MODE, tmpdevice);
 
-    sonarDevice =    new CStageDevice( arenaIO + SONAR_DATA_START,
+    tmpdevice =    new CStageDevice( arenaIO + SONAR_DATA_START,
                                        SONAR_DATA_BUFFER_SIZE,
                                        SONAR_COMMAND_BUFFER_SIZE,
                                        SONAR_CONFIG_BUFFER_SIZE); 
+    deviceTable->AddDevice(PLAYER_SONAR_CODE, index, 
+                           PLAYER_READ_MODE, tmpdevice);
     
-    laserDevice = new CStageDevice(arenaIO + LASER_DATA_START,
+    tmpdevice = new CStageDevice(arenaIO + LASER_DATA_START,
                                    LASER_DATA_BUFFER_SIZE,
                                    LASER_COMMAND_BUFFER_SIZE,
                                    LASER_CONFIG_BUFFER_SIZE); 
+    deviceTable->AddDevice(PLAYER_LASER_CODE, index, 
+                           PLAYER_READ_MODE, tmpdevice);
  
-    visionDevice = new CStageDevice(arenaIO + ACTS_DATA_START,
+    tmpdevice = new CStageDevice(arenaIO + ACTS_DATA_START,
                                     ACTS_DATA_BUFFER_SIZE,
                                     ACTS_COMMAND_BUFFER_SIZE,
                                     ACTS_CONFIG_BUFFER_SIZE);
+    deviceTable->AddDevice(PLAYER_VISION_CODE, index, 
+                           PLAYER_READ_MODE, tmpdevice);
 
-    ptzDevice = new CStageDevice(arenaIO + PTZ_DATA_START,
+    tmpdevice = new CStageDevice(arenaIO + PTZ_DATA_START,
                                  PTZ_DATA_BUFFER_SIZE,
                                  PTZ_COMMAND_BUFFER_SIZE,
                                  PTZ_CONFIG_BUFFER_SIZE);
-    laserbeaconDevice = new CStageDevice(arenaIO + LASERBEACON_DATA_START,
+    deviceTable->AddDevice(PLAYER_PTZ_CODE, index, 
+                           PLAYER_ALL_MODE, tmpdevice);
+
+    tmpdevice = new CStageDevice(arenaIO + LASERBEACON_DATA_START,
                                          LASERBEACON_DATA_BUFFER_SIZE,
                                          LASERBEACON_COMMAND_BUFFER_SIZE,
                                          LASERBEACON_CONFIG_BUFFER_SIZE);
+    deviceTable->AddDevice(PLAYER_LASERBEACON_CODE, index, 
+                           PLAYER_READ_MODE, tmpdevice);
 
-    broadcastDevice = new CStageDevice(arenaIO + BROADCAST_DATA_START,
+    tmpdevice = new CStageDevice(arenaIO + BROADCAST_DATA_START,
                                        BROADCAST_DATA_BUFFER_SIZE,
                                        BROADCAST_COMMAND_BUFFER_SIZE,
                                        BROADCAST_CONFIG_BUFFER_SIZE); 
+    deviceTable->AddDevice(PLAYER_BROADCAST_CODE, index, 
+                           PLAYER_ALL_MODE, tmpdevice);
 
-    gripperDevice = new CStageDevice(arenaIO + GRIPPER_DATA_START,
+    tmpdevice = new CStageDevice(arenaIO + GRIPPER_DATA_START,
                                      GRIPPER_DATA_BUFFER_SIZE,
                                      GRIPPER_COMMAND_BUFFER_SIZE,
                                      GRIPPER_CONFIG_BUFFER_SIZE);
+    deviceTable->AddDevice(PLAYER_GRIPPER_CODE, index, 
+                           PLAYER_ALL_MODE, tmpdevice);
 
-    gpsDevice = new CStageDevice(arenaIO + GPS_DATA_START,
+    tmpdevice = new CStageDevice(arenaIO + GPS_DATA_START,
                                      GPS_DATA_BUFFER_SIZE,
                                      GPS_COMMAND_BUFFER_SIZE,
                                      GPS_CONFIG_BUFFER_SIZE);
+    deviceTable->AddDevice(PLAYER_GPS_CODE, index, 
+                           PLAYER_READ_MODE, tmpdevice);
     
     // unsupported devices - CNoDevice::Setup() fails
-    audioDevice =  (CDevice*)new CNoDevice();
-    speechDevice =  (CDevice*)new CNoDevice();
+    tmpdevice =  (CDevice*)new CNoDevice();
+    deviceTable->AddDevice(PLAYER_AUDIO_CODE, index, 
+                           PLAYER_ALL_MODE, tmpdevice);
+    tmpdevice =  (CDevice*)new CNoDevice();
+    deviceTable->AddDevice(PLAYER_SPEECH_CODE, index, 
+                           PLAYER_WRITE_MODE, tmpdevice);
 #endif
 
   }
@@ -826,11 +800,6 @@ int main( int argc, char *argv[] )
     perror("signal(2) failed while setting up for SIGPIPE");
     exit(1);
   }
-  //if(signal(SIGALRM, EmptySigHanndler) == SIG_ERR)
-  //{
-    //perror("signal(2) failed while setting up for SIGALRM");
-    //exit(1);
-  //}
 
   if(signal(SIGINT, &Interrupt ) == SIG_ERR)
   {
@@ -851,12 +820,13 @@ int main( int argc, char *argv[] )
     exit(-1);
   }
 
-  while(1) {
+  while(1) 
+  {
     clientData = new CClientData;
 
     /* block here */
-    //if((clientData->socket = accept(player_sock,(struct sockaddr *)&sender,&sender_len)) == -1)
-    if((clientData->socket = accept(player_sock,(struct sockaddr *)NULL, &sender_len)) == -1)
+    if((clientData->socket = accept(player_sock,(struct sockaddr *)NULL, 
+                                    &sender_len)) == -1)
     {
       perror("accept(2) failed: ");
       exit(-1);
@@ -867,21 +837,22 @@ int main( int argc, char *argv[] )
     {
       printf("** New client accepted on socket %d ** [Port %d]\n", 
              clientData->socket,playerport);
-      if(pthread_create(&clientData->writeThread, NULL, client_writer, clientData))
+      if(pthread_create(&clientData->writeThread, NULL, client_writer, 
+                        clientData))
       {
         perror("pthread_create(3) failed");
         exit(-1);
       }
       num_threads+=1;
 
-      if(pthread_create(&clientData->readThread, NULL, client_reader, clientData))
+      if(pthread_create(&clientData->readThread, NULL, client_reader, 
+                        clientData))
       {
         perror("pthread_create(3) failed");
         exit(-1);
       }
       num_threads+=1;
       
-      //puts("main locking clients_mutex");
       pthread_mutex_lock(&clients_mutex);
       // find a place to put it in our array
       for(j=0;j<MAXNUMCLIENTS;j++)
@@ -897,7 +868,6 @@ int main( int argc, char *argv[] )
         clientData->client_index = j;
       }
       pthread_mutex_unlock(&clients_mutex);
-      //puts("main unlocking clients_mutex");
     }
     else
     {

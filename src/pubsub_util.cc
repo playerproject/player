@@ -67,7 +67,7 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
   int flags;                  /* temp for old socket access flags */
   int address_size;           /* size of server address struct */
   int one = 1;
-const int on = 1;
+  const int on = 1;
 
   char* first_dot;
   struct hostent* entp;
@@ -150,7 +150,8 @@ const int on = 1;
   if(socktype == SOCK_STREAM)
   {
     /* make sure we can reuse the port soon after */
-    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&one, sizeof(one)))
+    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&one, 
+                  sizeof(one)))
     {
       perror("create_and_bind_socket(): setsockopt(2) failed");
       return(-1);
@@ -188,17 +189,6 @@ const int on = 1;
       return(-1);
     }
   }
-
-  /*
-   * put the port in the address struct
-   */
-  //if(getsockname(sock, (struct sockaddr*)serverp, &address_size) == -1)                  
-  //{
-    //perror("create_and_bind_socket():getsockname() failed; socket "
-           //"not created");
-    //close(sock);
-    //return(-1);
-  //}
 
   /*
    * return the fd for the newly bound socket 
