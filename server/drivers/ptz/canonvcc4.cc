@@ -169,7 +169,7 @@ class canonvcc4:public Driver
 
   int ptz_fd; // ptz device file descriptor
   /* device used to communicate with the ptz */
-  char ptz_serial_port[MAX_FILENAME_SIZE];
+  const char* ptz_serial_port;
 
   // Min and max values for camera field of view (degrees).
   // These are used to compute appropriate zoom values.
@@ -204,9 +204,7 @@ canonvcc4::canonvcc4(ConfigFile* cf, int section) :
 {
   ptz_fd = -1;
 
-  strncpy(ptz_serial_port,
-          cf->ReadString(section, "port", DEFAULT_PTZ_PORT),
-          sizeof(ptz_serial_port));
+  ptz_serial_port = cf->ReadString(section, "port", DEFAULT_PTZ_PORT);
 }
 
 /************************************************************************/
@@ -222,7 +220,7 @@ canonvcc4::Setup()
 
   // open it.  non-blocking at first, in case there's no ptz unit.
   if((ptz_fd = 
-      open("/dev/ttyS1",
+      open(ptz_serial_port,
 	   O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
     perror("canonvcc4::Setup():open():");
