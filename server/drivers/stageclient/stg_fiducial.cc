@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
 #define PLAYER_ENABLE_MSG 1
 
 #include "playercommon.h"
@@ -203,7 +203,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	{
 	  PLAYER_TRACE0( "setting fiducial id" );
 	  
-	  int id = ((player_fiducial_id_t*)data)->id;
+	  int id = ntohl(((player_fiducial_id_t*)data)->id);
 	  
 	  if( stg_model_prop_set( this->model, STG_PROP_FIDUCIALRETURN, 
 				  &id,sizeof(id)))
@@ -220,6 +220,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
   case PLAYER_FIDUCIAL_GET_ID:
       {
 	PLAYER_TRACE0( "requesting fiducial ID" );
+	puts( "requesting fiducial ID" );
 	
 	int id = 0;
 	if( stg_model_prop_get( this->model, STG_PROP_FIDUCIALRETURN, 
