@@ -866,6 +866,25 @@ class FiducialProxy : public ClientProxy
   int SetFOV( double min_range, 
 	      double max_range, 
 	      double view_angle);
+  
+  /**  Attempt to send a message to a fiducial. See the Player manual
+       for details of the message packet. Use a target_id of -1 to
+       broadcast. Note: these message functions use configs that are
+       probably only supported by Stage-1.4 (or later) fiducial
+       driver.
+  */
+
+  int SendMessage( player_fiducial_msg_t* msg );
+
+  /** Read the last message received from a fiducial. The packet is
+      completely filled in by the. If consume is true, the message is
+      deleted ffom the device on reading. If false, the message is
+      kept and can be read again. Note: these message functions use
+      configs that are probably only supported by Stage-1.4 (or later)
+      fiducial driver.
+  */
+
+  int RecvMessage( player_fiducial_msg_t* msg, bool consume );
 
 };
 

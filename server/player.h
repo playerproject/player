@@ -1503,10 +1503,17 @@ typedef struct player_waveform_data
 /** The maximum number of fiducials that can be detected at one time. */
 #define PLAYER_FIDUCIAL_MAX_SAMPLES 32
 
+/** The maximum size of a data packet exchanged with a fiducial at one time.*/
+#define PLAYER_FIDUCIAL_MAX_MSG_LEN 32
+
 /** Request packet subtypes */
-#define PLAYER_FIDUCIAL_GET_GEOM   0x01
-#define PLAYER_FIDUCIAL_GET_FOV    0x02
-#define PLAYER_FIDUCIAL_SET_FOV    0x03
+#define PLAYER_FIDUCIAL_GET_GEOM     0x01
+#define PLAYER_FIDUCIAL_GET_FOV      0x02
+#define PLAYER_FIDUCIAL_SET_FOV      0x03
+#define PLAYER_FIDUCIAL_SEND_MSG     0x04
+#define PLAYER_FIDUCIAL_RECV_MSG     0x05
+#define PLAYER_FIDUCIAL_EXCHANGE_MSG 0x06
+
 
 /** [Data]
 
@@ -1599,6 +1606,46 @@ typedef struct player_fiducial_fov
   uint16_t view_angle;
 } __attribute__ ((packed)) player_fiducial_fov_t;
 
+
+/** [Configuration: exchange message.] 
+    
+    NOTE: This config is currently supported only by the Stage fiducial
+    driver (stg_fidicial).
+
+    The fiducial sensor can attempt to send a message to a target
+    using the PLAYER_FIDUCIAL_SEND_MSG request. If target_id is -1,
+    the message is broadcast to all targets. The device replies with
+    an ACK if the message was sent OK, but receipt by the target is
+    not guaranteed. The power field sets a percentage of maximum
+    transmit power. If the consume flag is set, the message is
+    transmitted just once. If it is unset, the message is transmitted
+    repeatedly (at device-dependent intervals).
+    
+    Send a PLAYER_FIDUCIAL_RECV_MSG request to obtain the last message
+    recieved from the indicated target. If the consume flag is set,
+    the message is deleted from the device's buffer, if unset, the
+    same message can be retreived multiple times until a new message
+    arrives. The power field indicates the intensity of the recieved
+    message, as a percentage of maximum.
+
+    Similarly, the PLAYER_FIDUCIAL_EXCHANGE_MSG request sends a
+    message, then returns any reply received from the
+    target. Depending on the device, this could be a reflection of the
+    sent message.
+*/
+
+/** Fiducial send message packet */
+typedef struct player_fiducial_msg
+{
+   /** Packet subtype. Must be PLAYER_FIDUCIAL_SEND_MSG or
+       PLAYER_FIDUCIAL_EXCHANGE_MSG. */
+  uint8_t subtype;
+  int32_t target_id;
+  uint8_t bytes[PLAYER_FIDUCIAL_MAX_MSG_LEN];
+  uint8_t len; 
+  uint16_t power;
+  uint8_t consume;
+} __attribute__ ((packed)) player_fiducial_msg_t;
 
 /*************************************************************************
  ** end section
