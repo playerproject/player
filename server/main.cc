@@ -540,10 +540,10 @@ parse_config_file(char* fname)
   int code = 0;
   
   // parse the file
+  printf("\n\nParsing configuration file \"%s\"...\n", fname);
+
   if(!configFile.Load(fname))
     return(false);
-
-  puts("");
 
   // load each device specified in the file
   for(int i = 1; i < configFile.GetEntityCount(); i++)
@@ -577,19 +577,19 @@ parse_config_file(char* fname)
     }
     if(!driver)
     {
-      PLAYER_ERROR1("couldn't find interface \"%s\"", interface);
+      PLAYER_ERROR1("Couldn't find interface \"%s\"", interface);
       exit(-1);
     }
 
     // did the user specify a different driver?
     driver = (char*)configFile.ReadString(i, "driver", driver);
 
-    printf("loading driver \"%s\" as device \"%s:%d\"\n", 
+    printf("  loading driver \"%s\" as device \"%s:%d\"\n", 
            driver, interface, index);
     /* look for the indicated driver in the available device table */
     if(!(entry = driverTable->GetDriverEntry(driver)))
     {
-      PLAYER_ERROR1("couldn't instantiate requested device \"%s\"", interface);
+      PLAYER_ERROR1("Couldn't find driver \"%s\"", driver);
       return(false);
     }
     else
@@ -601,7 +601,7 @@ parse_config_file(char* fname)
 
       if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
       {
-        PLAYER_ERROR2("couldn't instantiate driver \"%s\" for interface \"%s\"\n",
+        PLAYER_ERROR2("Initialization failed for driver \"%s\" as interface \"%s\"\n",
                       driver, interface);
         exit(-1);
       }
@@ -612,7 +612,8 @@ parse_config_file(char* fname)
       {
         if(tmpdevice->Subscribe(NULL))
         {
-          PLAYER_ERROR1("failed to subscribe to interface \"%s\"", interface);
+          PLAYER_ERROR2("Initial subscription failed to driver \"%s\" as interface \"%s\"\n",
+                        driver,interface);
           exit(-1);
         }
       }
@@ -620,6 +621,9 @@ parse_config_file(char* fname)
   }
 
   configFile.WarnUnused();
+
+  puts("Done.");
+
   return(true);
 }
 
