@@ -263,6 +263,9 @@ static void localize_onread(localize_object_t *self)
 
   thread_acquire();
 
+  for(i=0;i<PyList_Size(self->pyhypoths);i++)
+    Py_DECREF(PyList_GetItem(self->pyhypoths,i));
+
   Py_DECREF(self->pyhypoths);
 
   self->pyhypoths = PyList_New(0);

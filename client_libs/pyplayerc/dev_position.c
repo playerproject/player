@@ -92,6 +92,9 @@ PyObject *position_new(PyObject *self, PyObject *args)
   pyposition->px = PyFloat_FromDouble(0);
   pyposition->py = PyFloat_FromDouble(0);
   pyposition->pa = PyFloat_FromDouble(0);
+  pyposition->vx = PyFloat_FromDouble(0);
+  pyposition->vy = PyFloat_FromDouble(0);
+  pyposition->va = PyFloat_FromDouble(0);
 
   /* Add callback for post-processing incoming data */
   playerc_client_addcallback(pyclient->client, (playerc_device_t*) pyposition->position,
@@ -115,6 +118,9 @@ static void position_del(PyObject *self)
   Py_DECREF(pyposition->px);
   Py_DECREF(pyposition->py);
   Py_DECREF(pyposition->pa);
+  Py_DECREF(pyposition->vx);
+  Py_DECREF(pyposition->vy);
+  Py_DECREF(pyposition->va);
   playerc_position_destroy(pyposition->position);
   PyObject_Del(self);
 }
@@ -217,6 +223,9 @@ static void position_onread(position_object_t *pyposition)
   Py_DECREF(pyposition->px);
   Py_DECREF(pyposition->py);
   Py_DECREF(pyposition->pa);
+  Py_DECREF(pyposition->vx);
+  Py_DECREF(pyposition->vy);
+  Py_DECREF(pyposition->va);
   pyposition->px = PyFloat_FromDouble(pyposition->position->px);
   pyposition->py = PyFloat_FromDouble(pyposition->position->py);
   pyposition->pa = PyFloat_FromDouble(pyposition->position->pa);    
