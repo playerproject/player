@@ -1,10 +1,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/server
 
-lib_LIBRARIES = libplayercclient.a
+lib_LTLIBRARIES = libplayercclient.la
 
-libplayercclient_a_SOURCES = playercclient.c playercclient.h
-
-# helpers.c print.c
+libplayercclient_la_SOURCES = playercclient.c playercclient.h
 
 include_HEADERS = playercclient.h
-

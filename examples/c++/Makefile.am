@@ -1,5 +1,5 @@
 AM_CPPFLAGS = -I$(top_srcdir)/server -I$(top_srcdir)/client_libs/c -I$(top_srcdir)/client_libs/c++
-LDADD = -L$(top_builddir)/client_libs/c++ -lplayerclient
+LDADD = $(top_builddir)/client_libs/c++/libplayerclient.la
 
 noinst_PROGRAMS = rsn \
                   randomwalk \

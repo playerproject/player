@@ -1,8 +1,8 @@
 AM_CPPFLAGS = -I$(top_srcdir)/server
 
-lib_LIBRARIES = libplayerpacket.a
+lib_LTLIBRARIES = libplayerpacket.la
 
-libplayerpacket_a_SOURCES = playerpacket.c playerpacket.h
+libplayerpacket_la_SOURCES = playerpacket.c playerpacket.h
 
 include_HEADERS = playerpacket.h
 

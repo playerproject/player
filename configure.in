@@ -30,9 +30,15 @@ if test ! $GCC = yes -o ! $GXX = yes; then
   AC_MSG_ERROR([Player *requires* gcc and g++ to build.])
 fi
 AC_PROG_CPP
-AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_C_BIGENDIAN
+
+dnl don't need AC_PROG_RANLIB when using AM_PROG_LIBTOOL
+dnl AC_PROG_RANLIB
+
+dnl by default, don't build any shared libs
+AC_DISABLE_SHARED
+AM_PROG_LIBTOOL
 
 dnl where's RTK?
 AC_ARG_WITH(rtk, [  --with-rtk=dir          Location of RTK],
@@ -160,7 +166,15 @@ AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(c_r, pthread_create, 
 [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 
-AC_SUBST(LIBOBJS)
+dnl I don't think that this is necessary
+dnl AC_SUBST(LIBOBJS)
+
+dnl Because we're using libtool to build some client libs, we need to define
+dnl LTLIBOBJS to have everything that LIBOBJS has, but with extensions of .lo,
+dnl instead of .o.  Here is some voodoo from the Autotools book that does it.
+Xsed="sed -e s/^X//"
+LTLIBOBJS=`echo X"$LIBOBJS" |\$Xsed -e "s,\. [^.]* ,.lo,g;s,\. [^.]* ,.lo,g;s,\.[^.]*$,.lo,"`
+AC_SUBST(LTLIBOBJS)
 
 dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile
