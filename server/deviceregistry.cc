@@ -106,6 +106,8 @@ void CMVision_Register(DriverTable* table);
 
 #ifdef INCLUDE_CMUCAM2
 void Cmucam2_Register(DriverTable* table);
+void Cmucam2blobfinder_Register(DriverTable* table);
+void Cmucam2ptz_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_UPCBARCODE
@@ -403,6 +405,7 @@ player_interface_t interfaces[] = {
   {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, "camera1394"},
   {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "shapetracker"},
   {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING, "nomad"},
+  {PLAYER_CMUCAM2_CODE, PLAYER_CMUCAM2_STRING, "cmucam2"},  
   {PLAYER_ENERGY_CODE, PLAYER_ENERGY_STRING, "stg_energy"},
   {PLAYER_MAP_CODE, PLAYER_MAP_STRING, "mapfile"},
   {PLAYER_HUD_CODE, PLAYER_HUD_STRING, "gz_hud"},
@@ -540,6 +543,8 @@ register_devices()
 
 #ifdef INCLUDE_CMUCAM2
   Cmucam2_Register(driverTable);
+  Cmucam2blobfinder_Register(driverTable);
+  Cmucam2ptz_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_UPCBARCODE
