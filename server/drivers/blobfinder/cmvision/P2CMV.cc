@@ -88,7 +88,7 @@ private:
   // for getting Gazebo gz_camera to intialize if needed.
   // dirty hack ! :-(
 
-#if INCLUDE_GAZEBO 
+#ifdef PLAYER_CAMERA_CODE //INCLUDE_GAZEBO 
  char * gz_interface;
   ConfigFile * gz_cf;
   int gz_section;

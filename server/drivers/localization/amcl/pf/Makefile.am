@@ -5,7 +5,7 @@ noinst_LIBRARIES = @AMCL_PF_LIB@
 EXTRA_LIBRARIES = libpf.a
 
 if INCLUDE_RTKGUI
-AM_CPPFLAGS = -I$(top_srcdir)/server @RTK_CPPFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir)/server @RTK_CFLAGS@
 else
 AM_CPPFLAGS = -I$(top_srcdir)/server
 endif

@@ -272,7 +272,7 @@ enable_stage1p4=yes)
 if test "x$enable_stage1p4" = "xyes"; then
   dnl pkg-config is REQUIRED to find the Stage-1.4 C++ library.
   dnl If we find stage, we also need libpnm for loading bitmaps
-  if test "$PKG_CONFIG" != "no" ; then
+  if test "x$have_pkg_config" = "xyes" ; then
     PKG_CHECK_MODULES(STAGE1P4, stagecpp >= 1.4, 
 	  enable_stage1p4=yes, 
           enable_stage1p4=no

@@ -13,7 +13,7 @@ GAZEBO_MIN_VERSION="0.3.0"
 
 dnl Where is Gazebo?
 if test "x$enable_gazebo" = "xyes"; then
-  if test "$PKG_CONFIG" != "no" ; then
+  if test "x$have_pkg_config" = "xyes" ; then
     PKG_CHECK_MODULES(GAZEBO,gazebo >= $GAZEBO_MIN_VERSION, 
 	  enable_gazebo=yes, 
     enable_gazebo=no 
@@ -23,12 +23,6 @@ if test "x$enable_gazebo" = "xyes"; then
     disable_reason="pkg-config unavailable; maybe you should install it"
   fi
 fi
-
-GAZEBO_EXTRA_CPPFLAGS=$GAZEBO_CFLAGS
-GAZEBO_EXTRA_LDFLAGS=$GAZEBO_LIBS
-AC_SUBST(GAZEBO_EXTRA_CPPFLAGS)
-AC_SUBST(GAZEBO_EXTRA_LDFLAGS)
-
 ])
 
 dnl Test to see if a particular Gazebo driver is available
@@ -37,7 +31,7 @@ AC_DEFUN([GAZEBO_TEST_DRIVER], [
 AC_CHECK_LIB(gazebo, gz_$1_alloc, 
   include_gazebo_$1=yes, 
   include_gazebo_$1=no,
-  [$GAZEBO_EXTRA_LDFLAGS]
+  [$GAZEBO_LIBS]
 )
 
 if test "x$include_gazebo_$1" = "xyes"; then
@@ -67,5 +61,11 @@ if test "x$include_gazebo_power" = "xyes"; then
   AC_DEFINE(HAS_GAZEBO_LASER_MAX_RANGE,1,[laser data has max range member])
 fi
 
+dnl The call to AC_CHECK_LIB above *should* append the gazebo linker flags
+dnl to LIBS, but for some reason it doesn't, so we'll manually add them to
+dnl PLAYER_DRIVER_EXTRA_LIBS
+if test "x$enable_gazebo" = "xyes"; then
+  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_LIBS"
+fi
 ])
 

@@ -47,7 +47,7 @@ void yuv420p_to_yuyv(unsigned char *image, unsigned char *temp, int x, int y)
 {
   const int numpix = x * y;
   int i, j;
-  int y00, y01, y10, y11, u, v;
+  //int y00, y01, y10, y11, u, v;
   unsigned char *pY = image;
   unsigned char *pU = pY + numpix;
   unsigned char *pV = pU + numpix / 4;
@@ -154,7 +154,7 @@ bool capturev4l::initialize(char *device,int nwidth,int nheight,int nfmt)
     printf("GWIN return error %d\n", errno);
     return false;
   }
-  else if (win.height != nheight || win.width != nwidth) {
+  else if ((int)win.height != nheight || (int)win.width != nwidth) {
     printf("Couldn't set resolution (%d, %d), exiting\n", nwidth, nheight);
     return false;
   }
