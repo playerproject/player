@@ -767,7 +767,7 @@ typedef struct player_position3d_data
   /** X, Y, and Z position, in mm */
   int32_t xpos, ypos, zpos;
   /** Roll, pitch, and yaw, in arc-seconds (1/3600 of a degree) */
-  uint32_t roll, pitch, yaw;
+  int32_t roll, pitch, yaw;
   /** X, Y, and Z translational velocities, in mm/sec */
   int32_t xspeed, yspeed, zspeed;
   /** Angular velocities, in arc-seconds / second */
