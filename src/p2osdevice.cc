@@ -264,6 +264,7 @@ int CP2OSDevice::Setup()
     printf("wireless modem response = %s\n", modem_buf);
 
     // wait until get "Connected to address 2"
+    int modem_connect_try = 10;
     while (modem_buf[12] != 't') 
     {
       usleep(300000);
@@ -279,6 +280,11 @@ int CP2OSDevice::Setup()
       if(modem_buf[0] == 'P') 
       {
         printf("Please check partner modem and try again\n");
+        return(1);
+      }
+      if(modem_connect_try-- == 0) 
+      {
+        printf("Failed to connect radio modem\n");
         return(1);
       }
     }
