@@ -1,8 +1,7 @@
 (setq *PLAYER-PORTNUM* 6665)
 (setq *PLAYER-BANNERLEN* 32)
-; how do you represent hex?
-;(setq *PLAYER-STX* 0x5875)
-(setq *PLAYER-STX* 22648)
+
+(setq *PLAYER-STX* #x5878)
 
 (setq *PLAYER-MSGTYPE-DATA*  1)
 (setq *PLAYER-MSGTYPE-CMD*   2)
@@ -32,13 +31,15 @@
 (setq *PLAYER-PLAYER-DATAFREQ-REQ* 4)
 (setq *PLAYER-PLAYER-AUTH-REQ*     5)
 
+; shorter (and more familiar) names for binary types
 (setq uint8 '(unsigned-byte 8))
 (setq uint16 '(unsigned-byte 16))
 (setq uint32 '(unsigned-byte 32))
 
-(setq *PLAYER-READ-MODE* 114)
-(setq *PLAYER-WRITE-MODE* 119)
-(setq *PLAYER-ALL-MODE* 97)
-(setq *PLAYER-CLOSE-MODE* 99)
-(setq *PLAYER-ERROR-MODE* 101)
+; how do you use hex?
+(setq *PLAYER-READ-MODE* #x72)
+(setq *PLAYER-WRITE-MODE* #x77)
+(setq *PLAYER-ALL-MODE* #x61)
+(setq *PLAYER-CLOSE-MODE* #x63)
+(setq *PLAYER-ERROR-MODE* #x65)
 
