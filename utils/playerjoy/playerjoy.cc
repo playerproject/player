@@ -575,7 +575,7 @@ int main(int argc, char** argv)
       else if( strcmp( argv[i], "-speed" ) == 0 )
       {
         if(i++ < argc)
-          max_speed = atoi(argv[i]);
+          max_speed = atof(argv[i]);
         else
         {
           puts(USAGE);
@@ -585,7 +585,7 @@ int main(int argc, char** argv)
       else if( strcmp( argv[i], "-turnspeed" ) == 0 )
       {
         if(i++ < argc)
-          max_turn = atoi(argv[i]);
+          max_turn = atof(argv[i]);
         else
         {
           puts(USAGE);
