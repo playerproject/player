@@ -148,17 +148,18 @@
 #include <stdio.h>
 
 /* too noisy! */
-//#define ERROR(m)  printf("Error : %s : %s\n", __PRETTY_FUNCTION__, m)
+//#define PLAYER_ERROR(m)  printf("Error : %s : %s\n", __PRETTY_FUNCTION__, m)
 #define PLAYER_ERROR(m) 
-//#define MSG(m)       printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__)
+
+//#define PLAYER_MSG0(m)       printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__)
 #define PLAYER_MSG0(m) 
-//#define MSG1(m, a)   printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a)
+//#define PLAYER_MSG1(m, a)   printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a)
 #define PLAYER_MSG1(m, a) 
-//#define MSG2(m, a, b) printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a, b)
+//#define PLAYER_MSG2(m, a, b) printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a, b)
 #define PLAYER_MSG2(m, a, b) 
-//#define MSG3(m, a, b, c) printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c)
+//#define PLAYER_MSG3(m, a, b, c) printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c)
 #define PLAYER_MSG3(m, a, b, c) 
-//#define MSG4(m, a, b, c, d) printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c, d)
+//#define PLAYER_MSG4(m, a, b, c, d) printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c, d)
 #define PLAYER_MSG4(m, a, b, c, d) 
 
 #if PLAYER_ENABLE_TRACE
