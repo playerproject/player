@@ -1,1 +1,2 @@
-SUBDIRS = c++ libplayerc 
+
+SUBDIRS = plugins c++ libplayerc 

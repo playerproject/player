@@ -21,7 +21,7 @@ dnl
 dnl Also create playercommon.h, replacing a couple of C defines with the right
 dnl values.  That way, playercommon.h will be installed in a good working
 dnl state.
-AM_CONFIG_HEADER(config.h server/playercommon.h)
+AM_CONFIG_HEADER(config.h server/playercommon.h server/prefix.h)
 
 dnl Find basic tools
 AC_PROG_CC
@@ -351,6 +351,9 @@ AC_OUTPUT(Makefile
           client_libs/pyplayerc/Makefile
           client_libs/tcl/Makefile
           examples/Makefile
+          examples/plugins/Makefile
+          examples/plugins/exampledriver/Makefile
+          examples/plugins/multidriver/Makefile
           examples/c++/Makefile
           examples/libplayerc/Makefile
           utils/Makefile

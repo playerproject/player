@@ -35,16 +35,15 @@
 #include <math.h>
 #include <locale.h>
 
+#include "player.h"
 #include "replace.h"
 #include "configfile.h"
+#include "deviceregistry.h"
+
+extern int global_playerport;
 
 #define COLOR_DATABASE "/usr/X11R6/lib/X11/rgb.txt"
 
-// the isblank() macro is not standard - it's a GNU extension
-// and it doesn't work for me, so here's an implementation - rtv
-#ifndef isblank
-  #define isblank(a) (a == ' ' || a == '\t')
-#endif
 
 ///////////////////////////////////////////////////////////////////////////
 // Useful macros for dumping parser errors
@@ -52,6 +51,12 @@
   PLAYER_ERROR2("%s:%d : " z, this->filename, l)
 #define PARSE_ERR(z, l) \
   PLAYER_ERROR2("%s:%d : " z, this->filename, l)
+
+// the isblank() macro is not standard - it's a GNU extension
+// and it doesn't work for me, so here's an implementation - rtv
+#ifndef isblank
+  #define isblank(a) (a == ' ' || a == '\t')
+#endif
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1713,3 +1718,58 @@ uint32_t ConfigFile::LookupColor(const char *name)
   return 0xFF0000;
 }
 
+
+///////////////////////////////////////////////////////////////////////////
+// Read a device id from a tuple; there are no defaults for tuples;
+// they must be supplied
+int ConfigFile::ReadDeviceId(int section, int index,
+                             int expected_code, player_device_id_t *id)
+{
+  player_interface_t interface;
+  const char *str;
+  char s[128];
+  int port, ind;
+
+  str = this->ReadTupleString(section, "interfaces", index, NULL);
+  if (str == NULL)
+  {
+    PLAYER_ERROR1("section [%d]: missing interface field", section);
+    return -1;
+  } 
+  
+  // Look for port:interface:index
+  if (sscanf(str, "%d:%127[^:]:%d", &port, s, &ind) < 3)
+  {
+    port = global_playerport;
+    
+    // Look for interface:index
+    if (sscanf(str, "%127[^:]:%d", s, &ind) < 2)
+    {
+      PLAYER_ERROR1("section [%d]: syntax error in interface field", section);
+      return -1;
+    }
+  }
+
+  // Find the interface
+  if (::lookup_interface(s, &interface) != 0)
+  {
+    PLAYER_ERROR2("section [%d]: unknown interface: [%s]", section, s);
+    return -1;
+  }
+
+  // Make sure the code is correct
+  if (expected_code != -1 && interface.code != expected_code)
+  {
+    PLAYER_ERROR3("config file section [%d]: mismatched interface: [%s] should be [%s]",
+                  section,
+                  ::lookup_interface_name(0, interface.code),
+                  ::lookup_interface_name(0, expected_code));
+    return -1;
+  }
+
+  id->port = port;
+  id->code = interface.code;
+  id->index = ind;
+ 
+  return 0;
+}

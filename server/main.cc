@@ -703,7 +703,7 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
 
 
 // Parse a new-style device from the config file
-bool ParseDeviceEx(ConfigFile *configFile, int section)
+bool ParseDeviceEx(ConfigFile *cf, int section)
 {
   const char *pluginname;  
   const char *drivername;
@@ -711,10 +711,10 @@ bool ParseDeviceEx(ConfigFile *configFile, int section)
   CDevice *device;
 
   // Load any required plugins
-  pluginname = configFile->ReadString(section, "plugin", NULL);
+  pluginname = cf->ReadString(section, "plugin", NULL);
   if (pluginname != NULL)
   {
-    if(!LoadPlugin(pluginname,configFile->filename))
+    if(!LoadPlugin(pluginname,cf->filename))
     {
       PLAYER_ERROR1("failed to load plugin: %s", pluginname);
       return (false);
@@ -722,7 +722,7 @@ bool ParseDeviceEx(ConfigFile *configFile, int section)
   }
 
   // Get the driver name
-  drivername = configFile->ReadString(section, "driver", NULL);
+  drivername = cf->ReadString(section, "driver", NULL);
   if (drivername == NULL)
   {
     PLAYER_ERROR1("No driver name specified in section %d", section);
@@ -736,14 +736,40 @@ bool ParseDeviceEx(ConfigFile *configFile, int section)
     PLAYER_ERROR1("Couldn't find driver \"%s\"", drivername);
     return (false);
   }
-  
-  // Create a driver; the driver will add entries into the device
-  // table
-  device = (*(entry->initfuncEx)) (configFile, section);
-  if (device == NULL || device->error != 0)
+
+  // Create an old-style driver (for backwards compatability)
+  if (entry->initfunc && !entry->initfuncEx)
   {
-    PLAYER_ERROR1("Initialization failed for driver \"%s\"", drivername);
-    exit(-1);
+    player_device_id_t id;
+    
+    // Figure out what our interface is
+    if (cf->ReadDeviceId(section, 0, -1, &id) != 0)
+      return (false);
+    
+    // Create a driver
+    device = (*(entry->initfunc)) (::lookup_interface_name(0, id.code), cf, section);
+    if (device == NULL || device->error != 0)
+    {
+      PLAYER_ERROR1("Initialization failed for driver \"%s\"", drivername);
+      return (false);
+    }
+
+    // Add driver to the device table
+    if (deviceTable->AddDevice(id, drivername, NULL, entry->access, device) != 0)
+      return (false);
+  }
+
+  // Create a new-style driver
+  else if (!entry->initfunc && entry->initfuncEx)
+  {
+    // Just create a driver; the driver will add entries into the
+    // device table
+    device = (*(entry->initfuncEx)) (cf, section);
+    if (device == NULL || device->error != 0)
+    {
+      PLAYER_ERROR1("Initialization failed for driver \"%s\"", drivername);
+      return (false);
+    }
   }
 
   return true;
@@ -1043,14 +1069,6 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
         id.code = code;
         id.port = port;
         id.index = index;
-
-        /* REMOVE
-           if(deviceTable->AddDevice(id, driver, robotname, 
-           entry->access, tmpdevice) < 0)
-           exit(-1);
-
-           firstdevice=false;
-        */
 
         // Create the driver
         if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))

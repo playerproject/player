@@ -132,7 +132,7 @@ MultiDriver::MultiDriver(ConfigFile* cf, int section)
     : CDevice(0, 0, 10, 10)
 {
   // Create position interface
-  if (this->ReadDeviceId(cf, section, 0, PLAYER_POSITION_CODE, &this->position_id) != 0)
+  if (cf->ReadDeviceId(section, 0, PLAYER_POSITION_CODE, &this->position_id) != 0)
   {
     this->SetError(-1);
     return;
@@ -146,7 +146,7 @@ MultiDriver::MultiDriver(ConfigFile* cf, int section)
   }
 
   // Create laser interface
-  if (this->ReadDeviceId(cf, section, 1, PLAYER_LASER_CODE, &this->laser_id) != 0)
+  if (cf->ReadDeviceId(section, 1, PLAYER_LASER_CODE, &this->laser_id) != 0)
   {
     this->SetError(-1);
     return;

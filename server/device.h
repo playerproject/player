@@ -42,7 +42,7 @@ extern bool experimental;
 
 // getting around circular inclusion
 class CLock;
-class ConfigFile;
+
 
 
 class CDevice 
@@ -149,12 +149,6 @@ class CDevice
                       unsigned char* command, size_t commandsize, 
                       unsigned char* reqqueue, int reqqueuelen, 
                       unsigned char* repqueue, int repqueuelen);
-
-    // Read a device id from the config file (helper function for
-    // new-style drivers).  Note that code is the *expected* interface
-    // type; returns 0 if a suitable device id is found.
-    int ReadDeviceId(ConfigFile *cf, int entity, int index,
-                     int code, player_device_id_t *id);
     
     // Add a new-style interface; returns 0 on success
     int AddInterfaceEx(player_device_id_t id, const char *drivername,
