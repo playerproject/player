@@ -25,6 +25,12 @@
       10-30-2003 Initial Version
   =========================================================================*/
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
+#if HAVE_V4L
+
 #include "capturev4l.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -358,3 +364,5 @@ unsigned char *capturev4l::captureFrame()
     return(current);
   */
 }
+
+#endif // HAVE_V4l
