@@ -172,6 +172,10 @@ int P2OS::Setup()
   unsigned char sonarcommand[4];
   P2OSPacket sonarpacket; 
   int i;
+  //int bauds[] = {B38400, B19200, B9600};
+  int bauds[] = {B9600, B19200, B38400};
+  int numbauds = sizeof(bauds);
+  int currbaud = 0;
 
   struct termios term;
   unsigned char command;
@@ -208,12 +212,14 @@ int P2OS::Setup()
     psos_fd = -1;
     return(1);
   }
-  
+
 #if HAVE_CFMAKERAW
   cfmakeraw( &term );
 #endif
-  cfsetispeed( &term, B9600 );
-  cfsetospeed( &term, B9600 );
+  //cfsetispeed( &term, B9600 );
+  //cfsetospeed( &term, B9600 );
+  cfsetispeed(&term, bauds[currbaud]);
+  cfsetospeed(&term, bauds[currbaud]);
   
   if( tcsetattr( psos_fd, TCSAFLUSH, &term ) < 0 )
   {
@@ -328,12 +334,31 @@ int P2OS::Setup()
       }
       else
       {
-        printf("Couldn't synchronize with P2OS.\n"  
-               "  Most likely because the robot is not connected to %s\n", 
-               psos_serial_port);
-        close(psos_fd);
-        psos_fd = -1;
-        return(1);
+        // couldn't connect; try lower speed.
+        if(++currbaud < numbauds)
+        {
+          cfsetispeed(&term, bauds[currbaud]);
+          cfsetospeed(&term, bauds[currbaud]);
+          if( tcsetattr( psos_fd, TCSAFLUSH, &term ) < 0 )
+          {
+            perror("P2OS::Setup():tcsetattr():");
+            close(psos_fd);
+            psos_fd = -1;
+            return(1);
+          }
+
+          if( tcflush( psos_fd, TCIOFLUSH ) < 0 )
+          {
+            perror("P2OS::Setup():tcflush():");
+            close(psos_fd);
+            psos_fd = -1;
+            return(1);
+          }
+          num_sync_attempts = 5;
+          continue;
+        }
+        else
+          break;
       }
     }
     //receivedpacket.PrintHex();
@@ -365,6 +390,16 @@ int P2OS::Setup()
         break;
     }
     usleep(P2OS_CYCLETIME_USEC);
+  }
+
+  if(psos_state != READY)
+  {
+    printf("Couldn't synchronize with P2OS.\n"  
+           "  Most likely because the robot is not connected to %s\n", 
+           psos_serial_port);
+    close(psos_fd);
+    psos_fd = -1;
+    return(1);
   }
 
   cnt = 4;
@@ -1090,10 +1125,18 @@ P2OS::Main()
   pthread_exit(NULL);
 }
 
+struct timeval p2oscurr;
+struct timeval p2oslast;
+
 /* send the packet, then receive and parse an SIP */
 int
 P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
 {
+  gettimeofday(&p2oscurr,NULL);
+  printf("cycle time: %lf\n",
+         (p2oscurr.tv_sec + (p2oscurr.tv_usec / 1000000.0)) -
+         (p2oslast.tv_sec + (p2oslast.tv_usec / 1000000.0)));
+  p2oslast = p2oscurr;
   P2OSPacket packet;
   //static SIP sippacket;
   player_p2os_data_t data;
