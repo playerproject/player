@@ -48,6 +48,9 @@ libplayerclient_a_SOURCES =   clientproxy.cc \
                               plannerproxy.cc \
                               mapproxy.cc \
                               energyproxy.cc \
-															speechrecognitionproxy.cc
+                              speechrecognitionproxy.cc \
+                              simulationproxy.cc
+                              #bpsproxy.cc
+                              #bpsproxy.h
 
 include_HEADERS = playerclient.h playermcomtypes.h

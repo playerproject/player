@@ -2442,6 +2442,13 @@ for this interface. Suggestions welcome on playerstage-developers.
 @{
 */
 
+/** Request packet subtypes. */
+#define PLAYER_SIMULATION_SET_POSE2D 0x00
+
+/** the maximum length of a string indentifying a simulation object */
+#define PLAYER_SIMULATION_IDENTIFIER_MAXLEN 64
+
+
 /** @brief Data
 
 Just a placeholder for now; data will be added in future.
@@ -2461,6 +2468,22 @@ typedef struct player_simulation_cmd
   /** A single byte of as-yet-unspecified command. Useful for experiments. */
   uint8_t cmd;
 } __PACKED__ player_simulation_cmd_t;
+
+
+/** @brief Configuration request: set 2D pose of a named simulation object 
+
+To set the pose of an object in a simulator, use this message. */
+typedef struct player_simulation_pose2d_req
+{ 
+   /** Packet subtype. Must be PLAYER_SIMULATION_SET_POSE2D */
+   uint8_t subtype;
+
+  /** the identifier of the object we want to locate */
+  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+
+  /** the desired pose in (mm,mm,degrees) */
+  int32_t x, y, a;
+} __PACKED__ player_simulation_pose2d_req_t;
 
 /** @} */
 /** @} */
