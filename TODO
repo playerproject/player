@@ -2,13 +2,40 @@ $Id$
 
 TOMORROW:
 ---------
-- laser:
-    - CRC errors on heavy system load or lots of IO?
-    - when laser driver isn't working right, Golem hangs
-        and won't die...
+- protocol
+    - add timestamp to all data
+    - add extra byte for device names?
+    - add ability to send other types of commands (relative instead
+        of absolute)
+           - config command to change interpretation of future commands?
+           - extra byte to allow different kinds of commands?
+           - extra device that takes different commands?
+    - add ability to only send 'new' commands.
+         - config command to set state.
+    - add ability to check current config, when possible; analogous to
+        fcntl(F_GETFL) and fcntl(F_SETFL).
 
-- make sure build of java client stuff happens on 'make'
+- gut C++ client.
+  - make other Write() method for various devices
+  - make functional interface to commands/data?
+  + make smarter in terms of current configuration status.
+      should be able to:
+        + Read() with no args
+        + Write() with no args but only write the right devices
+        - make Request() much smarter (e.g., handle device closures)
+  + make usable examples of c++ client.
+  + edit docs for c++ client
 
+- change mailing list to 'players@fnord'
+
+- enforce read/write semantics (e.g. return error on "lw")
+
++ pan direction in ptz control?
+    - only broken in simulator
+
+- make it work under inetd.
+   - NO.  just bring it up on system boot. maybe add script
+       in /etc/rc.d/init.d and proper links.
 
 IMMEDIATE:
 ----------
@@ -22,25 +49,16 @@ IMMEDIATE:
     command buffers for safety.  if other clients want to overwrite, they
     can.
 
-- add 'distro' target to Makefile.  should:
-    - latex && cp golem.ps to ./doc
-    - cd .. && tar hcvzf ..... 
-
 - gripper: new control loop that monitors current condition, and commands
     according to client's desired setting
      - maybe should have control loop in client_reader....no, that
          would suck.  need to keep control within RunPsosThread,
          just multiplex between that and motor control.
 
-
 LATER:
 ------
-- add ability to only get 'fresh' data
-
-- enforce read/write semantics (e.g. return error on "lw")
-
-- make it work under inetd.
-   - need to stay up after starting.
++ bee ptz control broken
+    - fixed it. IRQ mismatch.  need to check comet and atom, probably.
 
 - compass: check newer P2OS versions for compass 
       compatibility.
@@ -61,13 +79,17 @@ LATER:
           different idea.
 
 - P2OS stuff (really needs a whole rewrite):
-    + add position Reset.  maybe not until after making
-        CSerialController...
     - do error-checking on calls to:
         - CPacket::Build()
         - CPacket::Receive()
         - CPacket::Send()
         - others?
+    - add capability to reconnect
+        - but how?  symptom will be no SIP when one is expected.
+          maybe set a timer to go off after 15ms and wake up
+          the read, then do a Reconnect()?
+             - tried that; still very flaky...
+    + add position Reset.  DONE
     + remove calls to exit() from packet.cc
     + fix P2OSDevice::Setup() to not block waiting for SYNC0, thereby
         able to detect lack of P2OS.
@@ -75,34 +97,26 @@ LATER:
       versions.  
         + hopefully fixed, because of tcflush().
         + much more robust startup now
-    - add capability to reconnect
-        - but how?  symptom will be no SIP when one is expected.
-          maybe set a timer to go off after 15ms and wake up
-          the read, then do a Reconnect()?
-        - tried that; still very flaky...
       
-- C++ client:
-  - make other Write() method for various devices
-  - make functional interface to commands/data?
-  + make smarter in terms of current configuration status.
-      should be able to:
-        + Read() with no args
-        + Write() with no args but only write the right devices
-  + make usable examples of c++ client.
-  + edit docs for c++ client
-
 
 LATENT:
 -------
++ milka dead?
+    - replaced fuse.
+    - why did the fuse blow? blocked cooling fan?
 
 - on tanis & v.0.6.5, one time only got 720 bytes from a laser
      data packet.  why?
        - now running client ON tanis.  maybe that fixes it?  that
-         would be bad.
+           would be bad.
        - happened more than once.  data's not queuing up, though...
 
 DONE:
 ------
++ add 'distro' target to Makefile.  should:
+    + latex && cp golem.ps to ./doc
+    + cd .. && tar hcvzf ..... 
+
 + figure out Boyoon's Golem-0.7/Arena-0.6.6 problem.
     - done.  was 'offsets.h' inconsistency.
 
