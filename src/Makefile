@@ -9,7 +9,7 @@ DEVICELIBNAME = libplayerdevice.a
 
 INCLUDES = -I../include
 CPP = g++
-CFLAGS = -g -g -g -Wall
+CFLAGS = -g -Wall
 LIBDIRS = -L.
 LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm
 MAKEDEP = makedepend
@@ -30,6 +30,7 @@ INCLUDE_POSITION = -DINCLUDE_POSITION
 INCLUDE_GRIPPER = -DINCLUDE_GRIPPER
 INCLUDE_MISC = -DINCLUDE_MISC
 INCLUDE_PTZ = -DINCLUDE_PTZ
+INCLUDE_SPEECH = -DINCLUDE_SPEECH
 #INCLUDE_AUDIO = -DINCLUDE_AUDIO
 # the following libs are only needed for the audio device
 #EXTRA_LIBS = -lrfftw -lfftw
@@ -38,13 +39,14 @@ INCLUDE_BROADCAST = -DINCLUDE_BROADCAST
 
 INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
                    $(INCLUDE_POSITION) $(INCLUDE_GRIPPER) $(INCLUDE_MISC) \
-				   $(INCLUDE_MISC) $(INCLUDE_PTZ) $(INCLUDE_STAGE) \
-                   $(INCLUDE_AUDIO) $(INCLUDE_LASERBEACON) $(INCLUDE_BROADCAST)
+                   $(INCLUDE_MISC) $(INCLUDE_PTZ) $(INCLUDE_STAGE) \
+                   $(INCLUDE_AUDIO) $(INCLUDE_LASERBEACON) \
+                   $(INCLUDE_BROADCAST) $(INCLUDE_SPEECH)
 
 INSTALL_BIN = $(INSTALL_PREFIX)/bin
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
-OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenalock.o devicetable.o stagedevice.o ptzdevice.o laserbeacondevice.o broadcastdevice.o
+OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenalock.o devicetable.o stagedevice.o ptzdevice.o laserbeacondevice.o broadcastdevice.o speechdevice.o
 
 all: $(SERVERNAME)
 
@@ -130,6 +132,9 @@ sonardevice.o: ../include/sonardevice.h ../include/p2osdevice.h
 sonardevice.o: ../include/device.h ../include/lock.h
 sonardevice.o: ../include/playercommon.h ../include/packet.h
 sonardevice.o: ../include/messages.h ../include/sip.h
+speechdevice.o: ../include/speechdevice.h ../include/lock.h
+speechdevice.o: ../include/device.h ../include/playercommon.h
+speechdevice.o: ../include/messages.h ../include/pubsub_util.h
 stagedevice.o: ../include/stagedevice.h ../include/playercommon.h
 stagedevice.o: ../include/device.h ../include/lock.h ../include/arenalock.h
 stagedevice.o: ../include/stage.h ../include/messages.h

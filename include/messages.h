@@ -56,6 +56,7 @@
 #define PLAYER_AUDIO_CODE          ((uint16_t)9)
 #define PLAYER_LASERBEACON_CODE   ((uint16_t)10)
 #define PLAYER_BROADCAST_CODE     ((uint16_t)11)
+#define PLAYER_SPEECH_CODE        ((uint16_t)12)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -349,6 +350,40 @@ typedef struct
 
 /*************************************************************************/
 
+/*************************************************************************/
+/*
+ * Speech Device
+ */
+
+/*
+ * Speech data packet:
+ *   uint8_t dummy: a dummy byte (because i think a device that returns
+ *                  no data won't work very well right now - should fix
+ *                  that)
+ */
+typedef struct
+{
+  uint8_t dummy;
+} __attribute__ ((packed)) player_speech_data_t;
+
+/*
+ * Speech command packet:
+ *   1-256 byte string: ASCII string to say
+ */
+
+/* Festival size stuff */
+#define SPEECH_MAX_STRING_LEN 256
+
+typedef struct
+{
+  uint8_t string[SPEECH_MAX_STRING_LEN];
+} __attribute__ ((packed)) player_speech_cmd_t;
+
+#define SPEECH_DATA_BUFFER_SIZE sizeof(player_speech_data_t)
+#define SPEECH_COMMAND_BUFFER_SIZE sizeof(player_speech_cmd_t)
+#define SPEECH_CONFIG_BUFFER_SIZE 0
+
+/*************************************************************************/
 
 
 /*************************************************************************/
