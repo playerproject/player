@@ -60,6 +60,8 @@
 #define PLAYER_ENABLE_TRACE 0
 #include "broadcastdevice.hh"
 
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
 
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -186,8 +188,14 @@ int CBroadcastDevice::Shutdown()
 
 ///////////////////////////////////////////////////////////////////////////
 // Get incoming data
-size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize)
+size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize,
+                                 uint32_t* timestamp_sec, 
+                                 uint32_t* timestamp_usec)
 {    
+  int size;
+
+  Lock();
+
   this->data.len = 0;
 
   // Read all the currently queued packets
@@ -217,9 +225,18 @@ size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize)
     
   // Copy data
   memcpy(data, &this->data, maxsize); 
+  // fill in the timestamp
+  struct timeval curr;
+  GlobalTime->GetTime(&curr);
+  *timestamp_sec = curr.tv_sec;
+  *timestamp_usec = curr.tv_usec;
 
   // Return actual length of data
-  return ntohs(this->data.len) + sizeof(this->data.len);
+  size = ntohs(this->data.len) + sizeof(this->data.len);
+
+  Unlock();
+
+  return(size);
 }
 
 

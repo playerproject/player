@@ -147,8 +147,6 @@ CSpeechDevice::Setup()
   char host[] = "localhost";
   struct hostent* entp;
 
-  pthread_attr_t attr;
-  
   command_size = 0;
   queue->Flush();
   read_pending = false;
@@ -254,9 +252,7 @@ CSpeechDevice::Setup()
     }
 
     /* now spawn reading thread */
-    if(pthread_attr_init(&attr) ||
-       pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) ||
-       pthread_create(&thread, &attr, &RunSpeechThread, this))
+    if(pthread_create(&thread, NULL, &RunSpeechThread, this))
     {
       fputs("CSpeechDevice::Setup(): pthread creation messed up\n",stderr);
       KillFestival();
@@ -273,14 +269,15 @@ CSpeechDevice::Setup()
 int
 CSpeechDevice::Shutdown()
 {
+  void* dummy;
   /* if Setup() was never called, don't do anything */
   if(sock == -1)
     return(0);
 
   pthread_cancel(thread);
-  // give it time
-  usleep(100000);
-  KillFestival();
+  if(pthread_join(thread,&dummy))
+    perror("CSpeechDevice::Shutdown:pthread_join()");
+  //KillFestival();
 
   sock = -1;
   puts("Festival speech server has been shutdown");

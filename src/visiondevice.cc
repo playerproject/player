@@ -200,8 +200,6 @@ CVisionDevice::Setup()
   char host[] = "localhost";
   struct hostent* entp;
 
-  pthread_attr_t attr;
-
   printf("ACTS vision server connection initializing (%s,%d)...",
          configfilepath,portnum);
   fflush(stdout);
@@ -314,9 +312,7 @@ CVisionDevice::Setup()
     puts("Done.");
 
     /* now spawn reading thread */
-    if(pthread_attr_init(&attr) ||
-       pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) ||
-       pthread_create(&thread, &attr, &RunVisionThread, this))
+    if(pthread_create(&thread, NULL, &RunVisionThread, this))
     {
       fputs("CVisionDevice::Setup(): pthread creation messed up\n",stderr);
       KillACTS();
@@ -333,15 +329,16 @@ CVisionDevice::Setup()
 int
 CVisionDevice::Shutdown()
 {
+  void* dummy;
   /* if Setup() was never called, don't do anything */
   if(sock == -1)
     return(0);
 
   pthread_cancel(thread);
-  // give it time
-  usleep(100000);
+  if(pthread_join(thread,&dummy))
+    perror("CVisionDevice::Shutdown::pthread_join()");
   // just to be sure...
-  KillACTS();
+  //KillACTS();
 
   sock = -1;
   puts("ACTS vision server has been shutdown");
@@ -356,7 +353,8 @@ CVisionDevice::KillACTS()
 }
 
 size_t
-CVisionDevice::GetData(unsigned char* dest, size_t maxsize)
+CVisionDevice::GetData(unsigned char* dest, size_t maxsize,
+                       uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   int size;
   Lock();
@@ -364,6 +362,8 @@ CVisionDevice::GetData(unsigned char* dest, size_t maxsize)
   *((player_vision_data_t*)dest) = 
           ((player_internal_vision_data_t*)device_data)->data;
   size=((player_internal_vision_data_t*)device_data)->size;
+  *timestamp_sec = data_timestamp_sec;
+  *timestamp_usec = data_timestamp_usec;
   Unlock();
   return(size);
 }
@@ -601,7 +601,7 @@ RunVisionThread(void* visiondevice)
     pthread_testcancel();
 
     /* got the data. now fill it in */
-    vd->PutData((unsigned char*)&local_data, sizeof(local_data));
+    vd->PutData((unsigned char*)&local_data, sizeof(local_data),0,0);
   }
 
   pthread_cleanup_pop(1);

@@ -423,10 +423,8 @@ CClientData::~CClientData()
 {
   RemoveRequests();
 
-  // why was this here?  - BPG
-  //usleep(100000);
-
   if (socket) close(socket);
+
   printf("** Player [port %d] killing client on socket %d **\n", 
 	 global_playerport, socket);
 
@@ -447,6 +445,8 @@ void CClientData::RemoveRequests()
 
   while(thissub)
   {
+    if(thissub->code == PLAYER_POSITION_CODE)
+      MotorStop();
     switch(thissub->access) 
     {
       case PLAYER_ALL_MODE:
@@ -460,8 +460,6 @@ void CClientData::RemoveRequests()
       default:
         break;
     }
-    if(thissub->code == PLAYER_POSITION_CODE)
-      MotorStop();
     tmpsub = thissub->next;
     delete thissub;
     thissub = tmpsub;
@@ -478,8 +476,6 @@ void CClientData::MotorStop()
 
   if((devicep = deviceTable->GetDevice(port,PLAYER_POSITION_CODE,0)))
   {
-    //devicep->GetLock()->PutCommand(devicep, (unsigned char*)&command, 
-                                   //sizeof(command));
     devicep->PutCommand((unsigned char*)&command, sizeof(command));
   }
 }
@@ -489,7 +485,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
   CDeviceSubscription* thisub;
   CDeviceSubscription* prevsub;
 
-  pthread_mutex_lock( &access );
+  pthread_mutex_lock(&access);
 
   // find place to place the update
   for(thisub=requested,prevsub=NULL;thisub;
@@ -521,7 +517,9 @@ void CClientData::UpdateRequested(player_device_req_t req)
   /* UPDATE */
   
   // go from either PLAYER_READ_MODE or PLAYER_WRITE_MODE to PLAYER_ALL_MODE
-  if(((thisub->access==PLAYER_WRITE_MODE) || (thisub->access==PLAYER_READ_MODE)) && (req.access==PLAYER_ALL_MODE))
+  if(((thisub->access==PLAYER_WRITE_MODE) || 
+      (thisub->access==PLAYER_READ_MODE)) && 
+     (req.access==PLAYER_ALL_MODE))
   {
     // subscribe once more
     if(Subscribe(req.code,req.index) == 0)
@@ -530,15 +528,19 @@ void CClientData::UpdateRequested(player_device_req_t req)
       thisub->access='e';
   }
   // go from PLAYER_ALL_MODE to either PLAYER_READ_MODE or PLAYER_WRITE_MODE
-  else if(thisub->access==PLAYER_ALL_MODE && (req.access==PLAYER_READ_MODE || req.access==PLAYER_WRITE_MODE)) 
+  else if(thisub->access==PLAYER_ALL_MODE && 
+          (req.access==PLAYER_READ_MODE || 
+           req.access==PLAYER_WRITE_MODE)) 
   {
     // unsubscribe once
     Unsubscribe(req.code,req.index);
     thisub->access=req.access;
   }
   // go from either PLAYER_READ_MODE to PLAYER_WRITE_MODE or PLAYER_WRITE_MODE to PLAYER_READ_MODE
-  else if(((thisub->access==PLAYER_READ_MODE) && (req.access==PLAYER_WRITE_MODE)) ||
-          ((thisub->access==PLAYER_WRITE_MODE) && (req.access==PLAYER_READ_MODE)))
+  else if(((thisub->access==PLAYER_READ_MODE) && 
+           (req.access==PLAYER_WRITE_MODE)) ||
+          ((thisub->access==PLAYER_WRITE_MODE) && 
+           (req.access==PLAYER_READ_MODE)))
   {
     // no subscription change necessary
     thisub->access=req.access;
@@ -602,7 +604,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
     printf("Unknown unused request \"%x:%x:%c\".\n",
                     req.code, req.index, req.access);
   }
-  pthread_mutex_unlock( &access );
+  pthread_mutex_unlock(&access);
 }
 
 unsigned char 
@@ -681,6 +683,9 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
                                   &(hdr.timestamp_sec), 
                                   &(hdr.timestamp_usec));
 
+          hdr.timestamp_sec = htonl(hdr.timestamp_sec);
+          hdr.timestamp_usec = htonl(hdr.timestamp_usec);
+
           // if we're in an UPDATE mode, we only want this data if it is new
           if((mode == PLAYER_DATAMODE_PUSH_NEW) || 
              (mode == PLAYER_DATAMODE_PULL_NEW))
@@ -749,12 +754,12 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
 int CClientData::Subscribe( unsigned short code, unsigned short index )
 {
   CDevice* devicep;
+  int subscribe_result;
 
   if((devicep = deviceTable->GetDevice(port,code,index)))
   {
-    //return(devicep->GetLock()->Subscribe(devicep));
-    printf("calling Subscribe %d:%d\n", code,index);
-    return(devicep->Subscribe());
+    subscribe_result = devicep->Subscribe();
+    return(subscribe_result);
   }
   else
   {

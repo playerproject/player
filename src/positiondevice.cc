@@ -37,10 +37,16 @@ CPositionDevice::~CPositionDevice()
   ((player_p2os_cmd_t*)device_command)->position.turnrate = 0;
 }
 
-size_t CPositionDevice::GetData( unsigned char *dest, size_t maxsize ) 
+size_t CPositionDevice::GetData( unsigned char *dest, size_t maxsize,
+                                 uint32_t* timestamp_sec, 
+                                 uint32_t* timestamp_usec)
 {
+  Lock();
   *((player_position_data_t*)dest) = 
           ((player_p2os_data_t*)device_data)->position;
+  *timestamp_sec = data_timestamp_sec;
+  *timestamp_usec = data_timestamp_usec;
+  Unlock();
   return( sizeof( player_position_data_t) );
 }
 

@@ -114,48 +114,70 @@ class CSIP;
 
 class CP2OSDevice:public CDevice 
 {
-private:
-  static pthread_t thread;
-  static pthread_mutex_t serial_mutex;
-  static CSIP* sippacket;
-
- public:
-  static int param_idx;  // index in the RobotParams table for this robot
-  static bool direct_wheel_vel_control;  // false -> separate trans and rot vel
-  static char num_loops_since_rvel;  
-  static int psos_fd;               // p2os device file descriptor
-  static char psos_serial_port[MAX_FILENAME_SIZE]; // device used to communicate with p2os
-  static bool radio_modemp; // are we using a radio modem?
+  private:
+    static pthread_t thread;
+    //static pthread_mutex_t serial_mutex;
+    static CSIP* sippacket;
   
-  static bool arena_initialized_data_buffer;
-  static bool arena_initialized_command_buffer;
+    // since we have several child classes that must use the same lock, we 
+    // declare our own static mutex here and override Lock() and Unlock() to 
+    // use this mutex instead of the one declared in CDevice.
+    static pthread_mutex_t p2os_accessMutex;
 
-  //static player_p2os_data_t* data;
-  //static player_p2os_cmd_t* command;
+    // likewise, we need one P2OS-wide subscription count to manage calls to
+    // Setup() and Shutdown()
+    static int p2os_subscriptions;
 
-  static int last_client_id;
+  protected:
+    void Lock();
+    void Unlock();
 
-  /*
-   * in this order:
-   *   char: command (e.g., 'm' for motors enable)
-   *   arg: command-specific arg
-   */
-  static unsigned char* config;
-  // set to size by PutConfig and zeroed by GetConfig
-  static int config_size;
+  public:
+    static int param_idx;  // index in the RobotParams table for this robot
+    static bool direct_wheel_vel_control;  // false -> separate trans and rot vel
+    static char num_loops_since_rvel;  
+    static int psos_fd;               // p2os device file descriptor
+    
+    // device used to communicate with p2os
+    static char psos_serial_port[MAX_FILENAME_SIZE]; 
+    static bool radio_modemp; // are we using a radio modem?
 
-  static struct timeval timeBegan_tv;
+    //static bool arena_initialized_data_buffer;
+    //static bool arena_initialized_command_buffer;
 
-  CP2OSDevice(int argc, char** argv);
-  ~CP2OSDevice();
+    //static player_p2os_data_t* data;
+    //static player_p2os_cmd_t* command;
 
-  virtual int Setup();
-  virtual int Shutdown();
-  virtual void PutData( unsigned char *, size_t maxsize);
-  virtual size_t GetConfig( unsigned char *, size_t maxsize);
-  virtual void PutConfig( unsigned char *, size_t maxsize);
-  int SendReceive(CPacket* pkt); //, bool already_have_lock);
-  void ResetRawPositions();
+    static int last_client_id;
+
+    /*
+     * in this order:
+     *   char: command (e.g., 'm' for motors enable)
+     *   arg: command-specific arg
+     */
+    static unsigned char* config;
+    // set to size by PutConfig and zeroed by GetConfig
+    static int config_size;
+
+    static struct timeval timeBegan_tv;
+
+    CP2OSDevice(int argc, char** argv);
+    ~CP2OSDevice();
+
+    // we override these, because we will maintain our own subscription count
+    virtual int Subscribe();
+    virtual int Unsubscribe();
+
+    virtual int Setup();
+    virtual int Shutdown();
+
+    virtual void PutData(unsigned char *, size_t maxsize,
+                         uint32_t timestamp_sec, uint32_t timestamp_usec);
+    virtual size_t GetConfig( unsigned char *, size_t maxsize);
+    virtual void PutConfig( unsigned char *, size_t maxsize);
+
+    int SendReceive(CPacket* pkt); //, bool already_have_lock);
+    void ResetRawPositions();
 };
 
 

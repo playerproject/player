@@ -129,7 +129,6 @@ int
 CAudioDevice::Setup()
 {
   int r=0;
-  pthread_attr_t attr;
 
   p=rfftw_create_plan(N, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
   r = configureDSP();
@@ -142,9 +141,7 @@ CAudioDevice::Setup()
   printf("Audio: Ran setup() \n");
 
   // Start dsp-read/write thread
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  pthread_create( &thread, &attr, &RunAudioThread, this );
+  pthread_create( &thread, NULL, &RunAudioThread, this );
 
   return r;
 }
@@ -176,7 +173,7 @@ void *RunAudioThread(void *audiodevice)
   memset( command, 0, AUDIO_COMMAND_BUFFER_SIZE);
   memset( zero, 255, AUDIO_COMMAND_BUFFER_SIZE);
   memset(data,0,AUDIO_DATA_BUFFER_SIZE);
-  ad->PutData(data, sizeof(data));
+  ad->PutData(data, sizeof(data),0,0);
 
   while(1) 
   {
@@ -199,7 +196,7 @@ void *RunAudioThread(void *audiodevice)
 	  for ( i=0; i < nHighestPeaks*sizeof(short)*2; i++) {
 	    data[i]=0;
 	  }	
-	  ad->PutData(data, sizeof(data));
+	  ad->PutData(data, sizeof(data),0,0);
 	  
 	  ad->openDSPforWrite();
 	  pthread_testcancel();
@@ -252,7 +249,7 @@ void *RunAudioThread(void *audiodevice)
 	cnt += sizeof(short);
       }
       
-      ad->PutData(data, sizeof(data));
+      ad->PutData(data, sizeof(data),0,0);
       usleep(100000);
     }
   }
@@ -335,7 +332,10 @@ CAudioDevice::~CAudioDevice()
 int 
 CAudioDevice::Shutdown()
 {
+  void* dummy;
   pthread_cancel( thread );
+  if(pthread_join(thread,&dummy))
+    perror("CAudioDevice::Shutdown:pthread_join()");
   if (fd>0) close(fd);
   printf("Audio-device has been shutdown\n");
 

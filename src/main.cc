@@ -180,12 +180,11 @@ void Interrupt( int dummy )
     delete deviceTable;
   }
 
-  if( use_stage )
+  if(use_stage)
     puts("** Player quitting **" );
   else
     printf("** Player [port %d] quitting **\n", global_playerport );
   
-
   exit(0);
 }
 
@@ -796,7 +795,7 @@ int main( int argc, char *argv[] )
         if(!(handle = dlopen(new_argv[i], RTLD_NOW)))
         {
           fprintf(stderr,"\n  %s\n",dlerror());
-          Interrupt(0);
+          Interrupt(SIGINT);
         }
         else
           puts("Success!");

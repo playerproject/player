@@ -44,7 +44,9 @@ class CBroadcastDevice : public CDevice
     public: virtual int Shutdown();
 
     // Client interface
-    public: virtual size_t GetData(unsigned char *, size_t maxsize);
+    public: virtual size_t GetData(unsigned char *, size_t maxsize,
+                                   uint32_t* timestamp_sec, 
+                                   uint32_t* timestamp_usec);
     public: virtual void PutCommand(unsigned char *, size_t maxsize);
     
     // Send a packet

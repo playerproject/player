@@ -125,8 +125,8 @@ size_t CStageDevice::ConsumeData(unsigned char *data, size_t size)
 // Read data from the device
 //
 size_t CStageDevice::GetData(unsigned char *data, size_t size,
-                        uint32_t* timestamp_sec = NULL, 
-                        uint32_t* timestamp_usec = NULL)
+                        uint32_t* timestamp_sec, 
+                        uint32_t* timestamp_usec)
 {
   Lock();
 #ifdef DEBUG

@@ -56,6 +56,9 @@
 #include "bpsdevice.h"
 #include "devicetable.h"
 
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
+
 extern CDeviceTable* deviceTable;
 extern int global_playerport; // used to get at devices
 static void *DummyMain(void *data);
@@ -312,7 +315,7 @@ void CBpsDevice::Main()
             ProcessOdometry(ox, oy, oa);
             
             // Update our data
-            PutData(NULL, 0);
+            PutData(NULL, 0,0,0);
         }
     }
 }
@@ -322,7 +325,9 @@ void CBpsDevice::Main()
 // Put data in buffer (called by device thread)
 // Note that the arguments are ignored.
 //
-void CBpsDevice::PutData(unsigned char *src, size_t maxsize)
+void CBpsDevice::PutData(unsigned char *src, size_t maxsize,
+                         uint32_t timestamp_sec, 
+                         uint32_t timestamp_usec)
 {
     CBpsFrame *frame = this->current;
 
@@ -352,6 +357,16 @@ void CBpsDevice::PutData(unsigned char *src, size_t maxsize)
             htonl((int) (ga * 180 / M_PI));
     // TODO htonl((int) (this->err * 1e6));
     ((player_bps_data_t*)this->device_data)->err = 0; 
+
+    if(timestamp_sec == 0)
+    {
+      struct timeval curr;
+      GlobalTime->GetTime(&curr);
+      timestamp_sec = curr.tv_sec;
+      timestamp_usec = curr.tv_usec;
+    }
+    data_timestamp_sec = timestamp_sec;
+    data_timestamp_usec = timestamp_usec;
 
     Unlock();
 }
@@ -866,7 +881,7 @@ void CBpsDevice::Test(const char *filename)
             ProcessOdometry(ox, oy, oa);
 
             // Update our pose
-            PutData(NULL, 0);
+            PutData(NULL, 0,0,0);
         }
         
         if (strcmp(type, "laser_beacon") == 0)

@@ -52,7 +52,7 @@ class ClientManager
 
     // ClientReaderThread locks these two:
     pthread_mutex_t rthread_client_mutex;
-    pthread_mutex_t ufd_mutex;
+    //pthread_mutex_t ufd_mutex;
     
     // ClientWriterThread locks this one:
     pthread_mutex_t wthread_client_mutex;
@@ -68,8 +68,8 @@ class ClientManager
     void AddClient(CClientData* client);
 
     // remove a client
-    void RemoveClient(int idx, bool have_rlock, bool have_wlock);
-    void RemoveBlanks(bool have_rlock, bool have_wlock);
+    void RemoveClient(int idx, bool have_locks);
+    void RemoveBlanks(bool have_locks);
 
     int Read();
 

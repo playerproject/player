@@ -142,8 +142,8 @@ int CLaserBeaconDevice::Setup()
     this->filter[i] = 0;
     
   // Hack to get around mutex on GetData
-  this->beacon_data.count = 0;
-  PutData((uint8_t*) &this->beacon_data, sizeof(this->beacon_data));
+  //this->beacon_data.count = 0;
+  //PutData((uint8_t*) &this->beacon_data, sizeof(this->beacon_data));
 
   PLAYER_MSG2("laser beacon device: bitcount [%d] bitwidth [%fm]",
               this->max_bits, this->bit_width);

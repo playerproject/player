@@ -53,10 +53,11 @@ class CDevice
     // locking mechanism (and overrides locking methods)
     pthread_mutex_t accessMutex;
 
-    // number of current subscriptions
-    int subscriptions;
 
   public:
+    // number of current subscriptions
+    int subscriptions;
+    
     // buffers for data and command
     static unsigned char* device_data;
     static unsigned char* device_command;
@@ -84,7 +85,8 @@ class CDevice
             unsigned char* reqqueue, int reqqueuelen, 
             unsigned char* repqueue, int repqueuelen);
 
-    // these are used to control subscriptions to the device
+    // these are used to control subscriptions to the device; a device MAY
+    // override them, but usually won't (P2OS being the main exception).
     virtual int Subscribe();
     virtual int Unsubscribe();
 
@@ -95,11 +97,9 @@ class CDevice
     // these MAY be overridden by the device itself, but then the device
     // is reponsible for Lock()ing and Unlock()ing appropriately
     virtual size_t GetData(unsigned char* dest, size_t len,
-                        uint32_t* timestamp_sec = NULL, 
-                        uint32_t* timestamp_usec = NULL);
+                        uint32_t* timestamp_sec, uint32_t* timestamp_usec);
     virtual void PutData(unsigned char* src, size_t len,
-                         uint32_t timestamp_sec = 0, 
-                         uint32_t timestamp_usec = 0);
+                         uint32_t timestamp_sec, uint32_t timestamp_usec);
     
     virtual size_t GetCommand( unsigned char *, size_t );
     virtual void PutCommand( unsigned char * , size_t );
@@ -115,13 +115,6 @@ class CDevice
     uint32_t data_timestamp_sec;
     uint32_t data_timestamp_usec;
 
-    // quick hack to get around the fact that P2OS devices share a 
-    // subscription counter, which precludes us from determining, for
-    // example, how many clients are connected to the Sonar device,
-    // as opposed to the Position device.  solution: keep another
-    // per-device subscription counter here.
-    int subscrcount;
-    
   protected:
     // these methods are used to lock and unlock the various buffers and
     // queues; they are implemented with mutexes in CDevice and overridden

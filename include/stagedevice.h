@@ -83,8 +83,8 @@ class CStageDevice : public CDevice
     // Read data from the device
     //
     public: virtual size_t GetData(unsigned char* dest, size_t len,
-                        uint32_t* timestamp_sec = NULL, 
-                        uint32_t* timestamp_usec = NULL);
+                        uint32_t* timestamp_sec,
+                        uint32_t* timestamp_usec);
 
     // Read data from the device and mark the data buffer as empty
     //

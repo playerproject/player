@@ -46,6 +46,9 @@
 #include <p2osdevice.h>
 #include <packet.h>
 
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
+
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
 #include <devicetable.h>
@@ -68,21 +71,20 @@ extern int global_playerport; // used to get at devices
 #define MOTOR_MAX_TURNRATE 100
 
 /* these are necessary to make the static fields visible to the linker */
-extern pthread_t      CP2OSDevice::thread;
-extern unsigned char* CP2OSDevice::config;
-extern int            CP2OSDevice::config_size;
-extern struct timeval CP2OSDevice::timeBegan_tv;
-extern bool           CP2OSDevice::direct_wheel_vel_control;
-extern int            CP2OSDevice::psos_fd; 
-extern int            CP2OSDevice::last_client_id; 
-extern char           CP2OSDevice::psos_serial_port[];
-extern bool           CP2OSDevice::radio_modemp;
-extern char           CP2OSDevice::num_loops_since_rvel;
-//extern pthread_mutex_t CP2OSDevice::serial_mutex;
+extern pthread_t       CP2OSDevice::thread;
+extern unsigned char*  CP2OSDevice::config;
+extern int             CP2OSDevice::config_size;
+extern struct timeval  CP2OSDevice::timeBegan_tv;
+extern bool            CP2OSDevice::direct_wheel_vel_control;
+extern int             CP2OSDevice::psos_fd; 
+extern int             CP2OSDevice::last_client_id; 
+extern char            CP2OSDevice::psos_serial_port[];
+extern bool            CP2OSDevice::radio_modemp;
+extern char            CP2OSDevice::num_loops_since_rvel;
 extern CSIP*           CP2OSDevice::sippacket;
-extern bool           CP2OSDevice::arena_initialized_data_buffer;
-extern bool           CP2OSDevice::arena_initialized_command_buffer;
-extern int           CP2OSDevice::param_idx;
+extern int             CP2OSDevice::param_idx;
+extern pthread_mutex_t CP2OSDevice::p2os_accessMutex;
+extern int             CP2OSDevice::p2os_subscriptions;
 
 
 void *RunPsosThread( void *p2osdevice );
@@ -109,9 +111,6 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv) :
     config = new unsigned char[P2OS_CONFIG_BUFFER_SIZE];
     config_size = 0;
   }
-
-  arena_initialized_command_buffer = false;
-  arena_initialized_data_buffer = false;
 
   ((player_p2os_cmd_t*)device_command)->position.speed = 0;
   ((player_p2os_cmd_t*)device_command)->position.turnrate = 0;
@@ -157,11 +156,12 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv) :
               argv[i]);
   }
 
-  // zero the per-device subscription counter.
-  subscrcount = 0;
+  // zero the subscription counters.
+  subscriptions = p2os_subscriptions = 0;
 
   //pthread_mutex_init(&serial_mutex,NULL);
-  //
+
+  pthread_mutex_init(&p2os_accessMutex,NULL);
 
   last_client_id = -1;
 }
@@ -170,6 +170,15 @@ CP2OSDevice::~CP2OSDevice()
 {
   Shutdown();
   //pthread_mutex_destroy(&serial_mutex);
+}
+
+void CP2OSDevice::Lock()
+{
+  pthread_mutex_lock(&p2os_accessMutex);
+}
+void CP2OSDevice::Unlock()
+{
+  pthread_mutex_unlock(&p2os_accessMutex);
 }
 
 int CP2OSDevice::Setup()
@@ -181,7 +190,6 @@ int CP2OSDevice::Setup()
   struct termios term;
   unsigned char command;
   CPacket packet, receivedpacket;
-  pthread_attr_t attr;
   int flags;
   bool sent_close = false;
   enum
@@ -200,7 +208,9 @@ int CP2OSDevice::Setup()
   printf("P2OS connection initializing (%s)...",psos_serial_port);
   fflush(stdout);
 
-  if((psos_fd = open( psos_serial_port, O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 ) {
+  if((psos_fd = open(psos_serial_port, 
+                     O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+  {
     perror("CP2OSDevice::Setup():open():");
     return(1);
   }  
@@ -428,9 +438,7 @@ int CP2OSDevice::Setup()
 
 
   /* now spawn reading thread */
-  if(pthread_attr_init(&attr) ||
-     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) ||
-     pthread_create(&thread, &attr, &RunPsosThread, this))
+  if(pthread_create(&thread, NULL, &RunPsosThread, this))
   {
     fputs("CP2OSDevice::Setup(): pthread creation messed up\n",stderr);
     return(1);
@@ -441,6 +449,7 @@ int CP2OSDevice::Setup()
 int CP2OSDevice::Shutdown()
 {
   unsigned char command[20],buffer[20];
+  void* dummy;
   CPacket packet; 
 
   memset(buffer,0,20);
@@ -454,6 +463,10 @@ int CP2OSDevice::Shutdown()
   {
     fputs("CP2OSDevice::Shutdown(): WARNING: pthread_cancel() on psos "
           "reading thread failed\n",stderr);
+  }
+  if(pthread_join(thread,&dummy))
+  {
+    perror("CP2OSDevice::Shutdown(): pthread_join()");
   }
 
   command[0] = STOP;
@@ -477,15 +490,84 @@ int CP2OSDevice::Shutdown()
   return(0);
 }
 
-void CP2OSDevice::PutData( unsigned char* src, size_t maxsize)
+int CP2OSDevice::Subscribe()
+{
+  int setupResult;
+
+  Lock();
+
+  if(p2os_subscriptions == 0) 
+  {
+    setupResult = Setup();
+    if (setupResult == 0 ) 
+    {
+      p2os_subscriptions++;  // increment the static p2os-wide subscr counter
+      subscriptions++;       // increment the per-device subscr counter
+    }
+  }
+  else 
+  {
+    p2os_subscriptions++;  // increment the static p2os-wide subscr counter
+    subscriptions++;       // increment the per-device subscr counter
+    setupResult = 0;
+  }
+  
+  Unlock();
+  return( setupResult );
+}
+
+int CP2OSDevice::Unsubscribe()
+{
+  int shutdownResult;
+
+  Lock();
+  
+  if(subscriptions == 0) 
+  {
+    shutdownResult = -1;
+  }
+  else if ( subscriptions == 1) 
+  {
+    shutdownResult = Shutdown();
+    if (shutdownResult == 0 ) 
+    { 
+      p2os_subscriptions--;  // decrement the static p2os-wide subscr counter
+      subscriptions--;       // decrement the per-device subscr counter
+    }
+    /* do we want to unsubscribe even though the shutdown went bad? */
+  }
+  else 
+  {
+    p2os_subscriptions--;  // decrement the static p2os-wide subscr counter
+    subscriptions--;       // decrement the per-device subscr counter
+    shutdownResult = 0;
+  }
+  
+  Unlock();
+
+  return( shutdownResult );
+}
+
+
+void CP2OSDevice::PutData( unsigned char* src, size_t maxsize,
+                         uint32_t timestamp_sec, uint32_t timestamp_usec)
 {
   Lock();
 
   *((player_p2os_data_t*)device_data) = *((player_p2os_data_t*)src);
+
+  if(timestamp_sec == 0)
+  {
+    struct timeval curr;
+    GlobalTime->GetTime(&curr);
+    timestamp_sec = curr.tv_sec;
+    timestamp_usec = curr.tv_usec;
+  }
+
+  data_timestamp_sec = timestamp_sec;
+  data_timestamp_usec = timestamp_usec;
   
   // need to fill in the timestamps on all P2OS devices
-  // NOTE: all these fields are already byte-swapped; that happened
-  //       in the all-side-effects-all-the-time CLock class
   CDevice* sonarp = deviceTable->GetDevice(global_playerport,
                                            PLAYER_SONAR_CODE,0);
   if(sonarp)
@@ -553,10 +635,6 @@ void CP2OSDevice::PutConfig( unsigned char* src, size_t size)
   Unlock();
 }
 
-void EmptySigHanndler( int dummy ) {
-  printf("EmptySigHanndler: got %d\n", dummy);
-}
-
 void *RunPsosThread( void *p2osdevice ) 
 {
   CP2OSDevice* pd = (CP2OSDevice*) p2osdevice;
@@ -593,13 +671,15 @@ void *RunPsosThread( void *p2osdevice )
 
   gettimeofday(&pd->timeBegan_tv, NULL);
 
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
+
   for(;;)
   {
     // we want to turn on the sonars if someone just subscribed, and turn
     // them off if the last subscriber just unsubscribed.
     if(sonarp)
     {
-      if(!last_sonar_subscrcount && sonarp->subscrcount)
+      if(!last_sonar_subscrcount && sonarp->subscriptions)
       {
         motorcommand[0] = SONAR;
         motorcommand[1] = 0x3B;
@@ -609,7 +689,7 @@ void *RunPsosThread( void *p2osdevice )
         //puts("turning Sonars ON");
         pd->SendReceive(&motorpacket);
       }
-      else if(last_sonar_subscrcount && !(sonarp->subscrcount))
+      else if(last_sonar_subscrcount && !(sonarp->subscriptions))
       {
         motorcommand[0] = SONAR;
         motorcommand[1] = 0x3B;
@@ -620,7 +700,7 @@ void *RunPsosThread( void *p2osdevice )
         pd->SendReceive(&motorpacket);
       }
       
-      last_sonar_subscrcount = sonarp->subscrcount;
+      last_sonar_subscrcount = sonarp->subscriptions;
     }
     
     // we want to reset the odometry and enable the motors if the first 
@@ -628,7 +708,7 @@ void *RunPsosThread( void *p2osdevice )
     // and disable the motors if the last client unsubscribed.
     if(positionp)
     {
-      if(!last_position_subscrcount && positionp->subscrcount)
+      if(!last_position_subscrcount && positionp->subscriptions)
       {
         // disable motor power
         motorcommand[0] = ENABLE;
@@ -643,7 +723,7 @@ void *RunPsosThread( void *p2osdevice )
 
         pd->last_client_id = -1;
       }
-      else if(last_position_subscrcount && !(positionp->subscrcount))
+      else if(last_position_subscrcount && !(positionp->subscriptions))
       {
         // command motors to stop
         motorcommand[0] = VEL2;
@@ -667,7 +747,7 @@ void *RunPsosThread( void *p2osdevice )
         pd->SendReceive(&motorpacket);//,false);
       }
 
-      last_position_subscrcount = positionp->subscrcount;
+      last_position_subscrcount = positionp->subscriptions;
     }
 
     
@@ -933,7 +1013,6 @@ CP2OSDevice::SendReceive(CPacket* pkt) //, bool already_have_lock)
       //pd->Setup();
       pthread_exit(NULL);
     }
-    pthread_testcancel();
 
     if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
        (packet.packet[3] == 0x30 || packet.packet[3] == 0x31) ||
@@ -944,7 +1023,7 @@ CP2OSDevice::SendReceive(CPacket* pkt) //, bool already_have_lock)
       sippacket->Parse( &packet.packet[3] );
       sippacket->Fill(&data, timeBegan_tv );
 
-      PutData((unsigned char*)&data, sizeof(data));
+      PutData((unsigned char*)&data, sizeof(data),0,0);
     }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
             (packet.packet[3] == 0x50 || packet.packet[3] == 0x80) ||
