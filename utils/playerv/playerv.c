@@ -167,9 +167,9 @@ int main(int argc, char **argv)
   // Print out a list of unused options.
   opt_warn_unused(opt);
 
-  // Start the gui
-  rtk_app_refresh_rate(app, rate);
-  rtk_app_start(app);
+  // Start the gui; dont run in a separate thread.
+  rtk_app_refresh_rate(app, 0);
+  rtk_app_main_init(app);
   
   while (!quit)
   {
@@ -179,11 +179,7 @@ int main(int argc, char **argv)
 
     // Update everything on the sync packet.
     if (proxy == client)
-    {
-      // Update the main window
-      if (mainwnd_update(mainwnd) != 0)
-        break;
-
+    {      
       // Update all the subscribed devices
       for (i = 0; i < device_count; i++)
       {
@@ -191,11 +187,18 @@ int main(int argc, char **argv)
         if (device->proxy)
           (*(device->fnupdate)) (device->proxy);
       }
+
+      // Let gui process messages
+      rtk_app_main_loop(app);
+
+      // Update the main window
+      if (mainwnd_update(mainwnd) != 0)
+        break;
     }
   }
   
   // Stop the gui
-  rtk_app_stop(app);
+  rtk_app_main_term(app);
 
   // Destroy devices
   for (i = 0; i < device_count; i++)

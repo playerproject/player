@@ -43,7 +43,9 @@
 
 #define COLOR_GRID_MAJOR         0xC0C0C0
 #define COLOR_GRID_MINOR         0xE0E0E0
-#define COLOR_LASER_SCAN         0x0000C0
+#define COLOR_LASER              0x0000C0
+#define COLOR_LASER_EMP          0xD0D0FF
+#define COLOR_LASER_OCC          0x0000C0
 #define COLOR_FIDUCIAL           0x0000C0
 #define COLOR_POSITION_ROBOT     0xC00000
 #define COLOR_POSITION_CONTROL   0xFF0000

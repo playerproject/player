@@ -62,7 +62,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   rtk_menuitem_check(laser->subscribe_item, subscribe);
 
   // Construct figures
-  laser->scan_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
+  laser->scan_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 0);
   
   return laser;
 }
@@ -170,6 +170,8 @@ void laser_update_config(laser_t *laser)
   rtk_menuitem_check(laser->res025_item, (res == 25));
   rtk_menuitem_check(laser->res050_item, (res == 50));
   rtk_menuitem_check(laser->res100_item, (res == 100));
+
+  return;
 }  
 
 
@@ -177,30 +179,68 @@ void laser_update_config(laser_t *laser)
 void laser_draw(laser_t *laser)
 {
   int i;
+  int style;
   double ax, ay, bx, by;
+  double r, b, res;
+  double points[3][2];
 
   rtk_fig_show(laser->scan_fig, 1);      
   rtk_fig_clear(laser->scan_fig);
-  rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_SCAN);
 
-  // Draw in the laser itself
-  rtk_fig_rectangle(laser->scan_fig, 0, 0, 0,
-                    laser->proxy->size[0], laser->proxy->size[1], 0);
-
-  // Draw in the range scan
-  for (i = 0; i < laser->proxy->scan_count; i++)
+  // TESTING (should use menu option)
+  style = 1;
+  
+  if (style == 0)
   {
-    bx = laser->proxy->point[i][0];
-    by = laser->proxy->point[i][1];
-    if (i == 0)
+    rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_EMP);
+      
+    // Draw in the range scan
+    for (i = 0; i < laser->proxy->scan_count; i++)
     {
+      bx = laser->proxy->point[i][0];
+      by = laser->proxy->point[i][1];
+      if (i == 0)
+      {
+        ax = bx;
+        ay = by;
+      }
+      rtk_fig_line(laser->scan_fig, ax, ay, bx, by);
       ax = bx;
       ay = by;
     }
-    rtk_fig_line(laser->scan_fig, ax, ay, bx, by);
-    ax = bx;
-    ay = by;
   }
+  else if (style == 1)
+  {
+    res = laser->proxy->scan_res / 2;
+          
+    // Draw in the range scan (empty space)
+    rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_EMP);
+    for (i = 0; i < laser->proxy->scan_count; i++)
+    {      
+      r = laser->proxy->scan[i][0];
+      b = laser->proxy->scan[i][1];
+      points[0][0] = 0;
+      points[0][1] = 0;
+      points[1][0] = r * cos(b - res);
+      points[1][1] = r * sin(b - res);
+      points[2][0] = r * cos(b + res);
+      points[2][1] = r * sin(b + res);
+      rtk_fig_polygon(laser->scan_fig, 0, 0, 0, 3, points);
+    }
+
+    // Draw in the range scan (occupied space)
+    rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_OCC);
+    for (i = 0; i < laser->proxy->scan_count; i++)
+    {
+      r = laser->proxy->scan[i][0];
+      b = laser->proxy->scan[i][1];
+      ax = r * cos(b - res);
+      ay = r * sin(b - res);
+      bx = r * cos(b + res);
+      by = r * sin(b + res);
+      rtk_fig_line(laser->scan_fig, ax, ay, bx, by);
+    }
+  } 
 
   // Draw in the intensity scan
   for (i = 0; i < laser->proxy->scan_count; i++)
@@ -211,6 +251,13 @@ void laser_draw(laser_t *laser)
     ay = laser->proxy->point[i][1];
     rtk_fig_rectangle(laser->scan_fig, ax, ay, 0, 0.05, 0.05, 1);
   }
+
+  // Draw in the laser itself
+  rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER);
+  rtk_fig_rectangle(laser->scan_fig, 0, 0, 0,
+                    laser->proxy->size[0], laser->proxy->size[1], 0);
+
+  return;
 }
 
 

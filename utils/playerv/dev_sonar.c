@@ -142,6 +142,7 @@ void sonar_draw(sonar_t *sonar)
 {
   int i;
   double dr, da;
+  double points[3][2];
 
   for (i = 0; i < sonar->proxy->scan_count; i++)
   {
@@ -155,9 +156,17 @@ void sonar_draw(sonar_t *sonar)
     // Draw in the range scan
     rtk_fig_color_rgb32(sonar->scan_fig[i], COLOR_SONAR_SCAN);
     dr = sonar->proxy->scan[i];
-    da = 20 * M_PI / 180;
-    rtk_fig_line(sonar->scan_fig[i], 0, 0, dr, 0);
-    rtk_fig_line(sonar->scan_fig[i], dr, -dr * da/2, dr, +dr * da/2);
+    da = 20 * M_PI / 180 / 2;
+    //rtk_fig_line(sonar->scan_fig[i], 0, 0, dr, 0);
+    //rtk_fig_line(sonar->scan_fig[i], dr, -dr * da/2, dr, +dr * da/2);
+    points[0][0] = 0;
+    points[0][1] = 0;
+    points[1][0] = dr * cos(-da);
+    points[1][1] = dr * sin(-da);
+    points[2][0] = dr * cos(+da);
+    points[2][1] = dr * sin(+da);
+    rtk_fig_polygon(sonar->scan_fig[i], 0, 0, 0, 3, points);
+
   }
 }
 
