@@ -438,8 +438,8 @@ static PyObject *client_setdatafreq(PyObject *self, PyObject *args)
 {
   int result;
   pyclient_t *pyclient;
-  pyclient = (pyclient_t*) self;
   int freq;
+  pyclient = (pyclient_t*) self;
 
   if (!PyArg_ParseTuple(args, "i", &freq))
     return NULL;
