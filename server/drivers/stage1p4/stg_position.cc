@@ -163,10 +163,14 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
       break;
       
     default:
-      PLAYER_WARN1( "stage1p4 doesn't support config id %d", buf[0] );
-      break;
+      {
+	PLAYER_WARN1( "stage1p4 doesn't support config id %d", buf[0] );
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
     }
-
+  
   return(0);
 }
 
