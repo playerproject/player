@@ -36,6 +36,11 @@ void ptz_draw(ptz_t *ptz);
 // Move the ptz
 void ptz_move(ptz_t *ptz);
 
+// Camera field of view at min and max zoom
+// TODO: get these from somewhere
+#define FMIN (6 * M_PI / 180)
+#define FMAX (60 * M_PI / 180)
+
 
 // Create a ptz device
 ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
@@ -64,14 +69,14 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
   snprintf(label, sizeof(label), "ptz %d", index);
   ptz->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   ptz->subscribe_item = rtk_menuitem_create(ptz->menu, "Subscribe", 1);
-  ptz->enable_item = rtk_menuitem_create(ptz->menu, "Enable", 1);
+  ptz->command_item = rtk_menuitem_create(ptz->menu, "Command", 1);
   
   // Set the initial menu state
   rtk_menuitem_check(ptz->subscribe_item, ptz->proxy->info.subscribed);
 
   // Construct figures
-  ptz->data_fig = rtk_fig_create(mainwnd->canvas, NULL, 0);
-  ptz->cmd_fig = rtk_fig_create(mainwnd->canvas, NULL, 1);
+  ptz->data_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 0);
+  ptz->cmd_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
   rtk_fig_movemask(ptz->cmd_fig, RTK_MOVE_TRANS);
   rtk_fig_origin(ptz->cmd_fig, 1, 0, 0);
   rtk_fig_color_rgb32(ptz->cmd_fig, COLOR_PTZ_CMD);
@@ -133,7 +138,7 @@ void ptz_update(ptz_t *ptz)
   }
 
   // Move the ptz
-  if (ptz->proxy->info.subscribed && rtk_menuitem_ischecked(ptz->enable_item))
+  if (ptz->proxy->info.subscribed && rtk_menuitem_ischecked(ptz->command_item))
   {
     rtk_fig_show(ptz->cmd_fig, 1);
     ptz_move(ptz);
@@ -146,11 +151,13 @@ void ptz_update(ptz_t *ptz)
 // Draw the ptz scan
 void ptz_draw(ptz_t *ptz)
 {
-  double ox, oy;
-  double fx;
+  double ox, oy, d;
+  double ax, ay, bx, by;
+  double fx, fd;
 
   // Camera field of view in x-direction (radians)
-  fx = 30 * M_PI / 180;
+  fx = FMAX + (double) ptz->proxy->zoom / 1024 * (FMIN - FMAX);
+  fd = 1.0 / tan(fx/2);
   
   rtk_fig_show(ptz->data_fig, 1);      
   rtk_fig_clear(ptz->data_fig);
@@ -165,6 +172,14 @@ void ptz_draw(ptz_t *ptz)
   ox = 100 * cos(ptz->proxy->pan - fx / 2);
   oy = 100 * sin(ptz->proxy->pan - fx / 2);
   rtk_fig_line(ptz->data_fig, 0, 0, ox, oy);
+
+  // Draw in the zoom bar (2 m in length)
+  d = sqrt(fd * fd + 1.0 * 1.0);
+  ax = d * cos(ptz->proxy->pan + fx / 2);
+  ay = d * sin(ptz->proxy->pan + fx / 2);
+  bx = d * cos(ptz->proxy->pan - fx / 2);
+  by = d * sin(ptz->proxy->pan - fx / 2);
+  rtk_fig_line(ptz->data_fig, ax, ay, bx, by);
 }
 
 
@@ -173,12 +188,16 @@ void ptz_move(ptz_t *ptz)
 {
   double ox, oy, oa;
   double pan, tilt, zoom;
-
+  double fx;
+    
   rtk_fig_get_origin(ptz->cmd_fig, &ox, &oy, &oa);
 
   pan = atan2(oy, ox);
   tilt = 0;
-  zoom = 0;
+
+  fx = 2 * atan2(1.0, sqrt(ox * ox + oy * oy));
+  zoom = 1024 * (fx - FMAX) / (FMIN - FMAX);
+  //zoom = 1024 * sqrt(ox * ox + oy * oy) / 4.0;
   
   if (playerc_ptz_set(ptz->proxy, pan, tilt, zoom) != 0)
     PRINT_ERR1("libplayerc error: %s", playerc_errorstr);

@@ -59,6 +59,7 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   snprintf(label, sizeof(label), "position %d", index);
   position->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   position->subscribe_item = rtk_menuitem_create(position->menu, "Subscribe", 1);
+  position->command_item = rtk_menuitem_create(position->menu, "Command", 1);
   position->enable_item = rtk_menuitem_create(position->menu, "Enable", 0);
   position->disable_item = rtk_menuitem_create(position->menu, "Disable", 0);
 
@@ -146,7 +147,8 @@ void position_update(position_t *position)
   }
   
   // Servo to the goal position
-  position_update_servo(position);
+  if (rtk_menuitem_ischecked(position->command_item))
+    position_update_servo(position);
   
   if (position->proxy->info.subscribed)
   {
@@ -197,16 +199,18 @@ void position_update_servo(position_t *position)
   double min_vr, max_vr;
   double min_va, max_va;
 
-  if (!position->proxy->info.subscribed)
+  // Only servo if we are subscribed and have enabled commands.
+  if (position->proxy->info.subscribed &&
+      rtk_menuitem_ischecked(position->command_item))    
+  {
+    rtk_fig_show(position->control_fig, 1);
+    rtk_fig_show(position->path_fig, 1);
+  }
+  else
   {
     rtk_fig_show(position->control_fig, 0);
     rtk_fig_show(position->path_fig, 0);
     return;
-  }
-  else
-  {
-    rtk_fig_show(position->control_fig, 1);
-    rtk_fig_show(position->path_fig, 1);
   }
   
   min_vr = -0.10; max_vr = 0.20;
