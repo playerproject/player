@@ -5,7 +5,7 @@ TOMORROW:
 - make "safe_printf()" or something like that for device drivers to use.  
      maybe just expose a global mutex.
 
-- check on timestamps. make sure byte-swapping works (server and client).
+- add method to get timestamp from devices
 
 - 'finish' C client.  test (sim and robot).
      - put vision data in useable structure
@@ -43,6 +43,8 @@ NOW:
 
 LATER:
 ------
+- more general conditional definition of byte-swapping routines.
+
 - compass: check newer P2OS versions for compass 
       compatibility.
    - version 1.B (on fly) seems to work fine.  just
@@ -85,6 +87,9 @@ LATENT:
 
 DONE:
 ------
++ check on timestamps. make sure byte-swapping works (server and client).
+    - defined macros htonll(x) && ntohll(x)
+
 + on tanis & v.0.6.5, one time only got 720 bytes from a laser
      data packet.  why?
        - now running client ON tanis.  maybe that fixes it?  that

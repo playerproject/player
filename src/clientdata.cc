@@ -265,7 +265,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     }
 
     gettimeofday(&curr,NULL);
-    reply_hdr.time=(uint64_t)((curr.tv_sec * 1000.0)+(curr.tv_usec / 1000.0));
+    reply_hdr.time=
+          htonll((uint64_t)((curr.tv_sec * 1000.0)+(curr.tv_usec / 1000.0)));
     reply_hdr.timestamp=reply_hdr.time;
     memcpy(reply,&reply_hdr,sizeof(player_msghdr_t));
 
@@ -529,6 +530,7 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
         {
           hdr.device = thisub->code;
           hdr.device_index = thisub->index;
+          // FIXME: get timestamp from device somehow...
           hdr.timestamp = 0;
           hdr.reserved = 0;
           
@@ -545,12 +547,10 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
               continue;
           }
           
-
-          // FIXME
-          //hdr.timestamp = devicep->GetTime()....;
           hdr.size = htonl(size);
           gettimeofday(&curr,NULL);
-          hdr.time=(uint64_t)((curr.tv_sec * 1000.0)+(curr.tv_usec / 1000.0));
+          hdr.time=
+             htonll((uint64_t)((curr.tv_sec * 1000.0)+(curr.tv_usec / 1000.0)));
           memcpy(data+totalsize,&hdr,sizeof(hdr));
           totalsize += sizeof(hdr) + size;
         }

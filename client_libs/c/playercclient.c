@@ -34,6 +34,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
+#include <time.h>  /* temporary */
+
 /*
  * connects to server listening at host:port.  conn is filled in with
  * relevant information, and is used in subsequent player function
@@ -233,6 +235,7 @@ int player_request_device_access(player_connection_t* conn,
 int player_read(player_connection_t* conn, player_msghdr_t* hdr,
                 char* payload, size_t payloadlen)
 {
+  time_t timesec;
   int readcnt;
 
   hdr->stx = 0;
@@ -258,9 +261,12 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 
   /* byte-swap as necessary */
   hdr->device_index = ntohs(hdr->device_index);
-  hdr->time = ntohl(hdr->time);
-  hdr->timestamp = ntohl(hdr->timestamp);
+  hdr->time = ntohll(hdr->time);
+  hdr->timestamp = ntohll(hdr->timestamp);
   hdr->size = ntohl(hdr->size);
+  //printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);
+  timesec = (time_t)(hdr->time / 1000);
+  printf("time: %s\n", ctime(&timesec));
   /*puts("got HDR");*/
 
   /* get the payload */
