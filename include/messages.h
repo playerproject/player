@@ -584,8 +584,9 @@ typedef struct
 /* Request packet subtypes
  */
 #define PLAYER_BPS_SUBTYPE_SETGAIN 1
-#define PLAYER_BPS_SUBTYPE_SETLASER 2
-#define PLAYER_BPS_SUBTYPE_SETBEACON 3
+#define PLAYER_BPS_SUBTYPE_SETBEACON 2
+#define PLAYER_BPS_SUBTYPE_SETLASER 3
+
 
 
 
