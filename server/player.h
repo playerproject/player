@@ -475,9 +475,15 @@ typedef struct
  */
 typedef struct
 {
-  int16_t pan;  /* -100 to 100 degrees. increases counterclockwise */
-  int16_t tilt; /* -25 to 25 degrees. increases up */
-  uint16_t zoom; /* 0 to 1023. 0 is wide, 1023 is telefoto */
+  /* Pan value (degrees).  Zero at center, increases counterclockwise. */
+  int16_t pan;
+
+  /* Tilt value (degrees).  Zero at center, increases up. */
+  int16_t tilt;
+
+  /* Field of view (degrees). */
+  int16_t zoom;
+  
 } __attribute__ ((packed)) player_ptz_cmd_t;
 
 /*
@@ -485,9 +491,15 @@ typedef struct
  */
 typedef struct
 {
-  int16_t pan;  /* -100 to 100 degrees. increases counterclockwise */
-  int16_t tilt; /* -25 to 25 degrees. increases up */
-  uint16_t zoom; /* 0 to 1023. 0 is wide, 1023 is telefoto */
+  /* Pan value (degrees).  Zero at center, increases counterclockwise. */
+  int16_t pan;
+
+  /* Tilt value (degrees).  Zero at center, increases up. */
+  int16_t tilt;
+
+  /* Field of view (degrees). */
+  int16_t zoom;
+
 } __attribute__ ((packed)) player_ptz_data_t;
 /*************************************************************************/
 
