@@ -107,6 +107,8 @@ CDeviceTable* deviceTable = new CDeviceTable();
 // keep track of the pointers to our various clients.
 // that way we can cancel them at Shutdown
 ClientManager* clientmanager;
+
+// for use in other places (cliendata.cc, for example)
 char playerversion[] = PLAYER_VERSION;
 
 bool experimental = false;
@@ -151,14 +153,8 @@ Usage()
 /* sighandler to shut everything down properly */
 void Interrupt( int dummy ) 
 {
+  // delete the manager; it will delete the clients
   delete clientmanager;
-
-  // first, delete the clients
-  //for(unsigned int i=0;i<MAXNUMCLIENTS;i++)
-  //{
-    //if(clients[i])
-      //delete clients[i];
-  //}
 
   // next, delete the deviceTable; it will delete all the devices internally
   delete deviceTable;
@@ -179,194 +175,6 @@ void PrintHeader(player_msghdr_t hdr)
   printf("times: %u:%u\n", hdr.timestamp_sec,hdr.timestamp_usec);
   printf("reserved: %u\n", hdr.reserved);
   printf("size:%u\n", hdr.size);
-}
-
-/* simple func to call delete on a char* */
-void
-delete_func(void* ptr)
-{
-  delete (char*)ptr;
-}
-
-void *client_reader(void* arg)
-{
-  CClientData *cd = (CClientData *) arg;
-  unsigned char *buffer;
-  unsigned int readcnt;
-  player_msghdr_t hdr;
-
-  pthread_detach(pthread_self());
-
-  pthread_setcanceltype( PTHREAD_CANCEL_ASYNCHRONOUS, NULL );
-#ifdef PLAYER_LINUX
-  sigblock(SIGINT);
-  sigblock(SIGALRM);
-#endif
-
-  buffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
-
-  //printf("client_reader() with id %ld and socket %d - created\n", 
-	 //cd->readThread, cd->socket);
-
-  pthread_cleanup_push(delete_func,buffer);
-  while(1) 
-  {
-    char c;
-    hdr.stx = 0;
-
-    /* wait for the STX */
-    // Fixed to support big-endian machines. ahoward
-    while(hdr.stx != PLAYER_STXX)
-    {
-      //puts("looking for STX");
-
-      // make sure we don't get garbage
-      c = 0;
-
-      //printf("read %d bytes; reading now\n", readcnt);
-      if(read(cd->socket,&c,1) <= 0)
-      {
-        // client must be gone. fuck 'em
-        //perror("client_reader(): read() while waiting for STX");
-        delete cd;
-      }
-      //printf("c:%x\n", c);
-
-      // This should be the high byte
-      hdr.stx = ((short) c) << 8;
-
-      if(read(cd->socket,&c,1) <= 0)
-      {
-        // client must be gone. fuck 'em
-        //perror("client_reader(): read() while waiting for STX");
-        delete cd;
-      }
-      //printf("c:%x\n", c);
-
-      // This should be the low byte
-      hdr.stx |= ((short) c);
-
-      //printf("got:%x:\n",ntohs(hdr.stx));
-      readcnt = sizeof(hdr.stx);
-    }
-    //puts("got STX");
-
-    int thisreadcnt;
-    /* get the rest of the header */
-    while(readcnt < sizeof(player_msghdr_t))
-    {
-      if((thisreadcnt = read(cd->socket, &(hdr.type), 
-                          sizeof(player_msghdr_t)-readcnt)) <= 0)
-      {
-        //perror("client_reader(): read() while reading header");
-        delete cd;
-      }
-      readcnt += thisreadcnt;
-    }
-
-    // byte-swap as necessary
-    hdr.type = ntohs(hdr.type);
-    hdr.device = ntohs(hdr.device);
-    hdr.device_index = ntohs(hdr.device_index);
-    hdr.time_sec = ntohl(hdr.time_sec);
-    hdr.time_usec = ntohl(hdr.time_usec);
-    hdr.timestamp_sec = ntohl(hdr.timestamp_sec);
-    hdr.timestamp_usec = ntohl(hdr.timestamp_usec);
-    hdr.size = ntohl(hdr.size);
-    
-    //puts("got HDR");
-
-    /* get the payload */
-    if(hdr.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
-    {
-      printf("WARNING: client's message is too big (%d bytes). Ignoring\n",
-             hdr.size);
-      continue;
-    }
-
-    for(readcnt  = read(cd->socket,buffer,hdr.size);
-        readcnt != hdr.size;
-        readcnt += read(cd->socket,buffer+readcnt,hdr.size-readcnt));
-
-    //if((readcnt = read(cd->socket,buffer,hdr.size)) != hdr.size)
-    // {
-    //printf("client_reader: tried to read client-specified %d bytes, but "
-                      //"only got %d\n", hdr.size, readcnt);
-      //delete cd;
-    //}
-    //puts("got payload");
-
-    cd->HandleRequests(hdr,buffer, hdr.size);
-  } 
-  pthread_cleanup_pop(1);
-}
-
-void *client_writer(void* arg)
-{
-  CClientData *clientData = (CClientData *) arg;
-  unsigned char *data;
-  int size;
-  unsigned long realsleep;
-  
-#ifdef PLAYER_LINUX
-  sigblock(SIGINT);
-  sigblock(SIGALRM);
-#endif
-  pthread_detach(pthread_self());
-  pthread_setcanceltype( PTHREAD_CANCEL_ASYNCHRONOUS, NULL );
-  
-  //printf("client_writer() with id %ld and socket %d - created\n", 
-	 //clientData->writeThread, clientData->socket);
-
-  int data_buffer_size = PLAYER_MAX_MESSAGE_SIZE;
-  data = new unsigned char[data_buffer_size];
-  //unsigned char data[data_buffer_size];
-
-  // write back an identifier string
-  sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, PLAYER_VERSION);
-  bzero(((char*)data)+strlen((char*)data),
-                  PLAYER_IDENT_STRLEN-strlen((char*)data));
-
-  pthread_mutex_lock(&(clientData->socketwrite));
-  if(write(clientData->socket, data, PLAYER_IDENT_STRLEN) < 0 ) {
-    perror("client_writer");
-    delete clientData;
-  }
-  pthread_mutex_unlock(&(clientData->socketwrite));
-
-  pthread_cleanup_push(delete_func,data);
-  for(;;)
-  {
-    if(clientData->auth_pending)
-      continue;
-    size = clientData->BuildMsg( data, data_buffer_size );
-          
-    pthread_mutex_lock(&(clientData->socketwrite));
-    if( size>0 && write(clientData->socket, data, size) < 0 ) {
-      perror("client_writer");
-      delete clientData;
-    }
-    pthread_mutex_unlock(&(clientData->socketwrite));
-    
-    if(clientData->mode == CONTINUOUS || clientData->mode == UPDATE )
-    {
-      //printf("req. sleep for: %lu\n", 
-                      //(unsigned long)(1000000.0 / clientData->frequency));
-
-      // account for 10ms delay
-      realsleep = (unsigned long)(1000000.0 / clientData->frequency)-10000;
-      realsleep = max(realsleep,0);
-      //usleep((unsigned long)(1000000.0 / clientData->frequency));
-      usleep(realsleep);
-    }
-    else if(clientData->mode == REQUESTREPLY)
-    {
-      pthread_mutex_lock(&(clientData->datarequested));
-    }
-  }
-  pthread_cleanup_pop(1);
-
-  //delete data;
 }
 
 bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
@@ -680,6 +488,7 @@ int main( int argc, char *argv[] )
   printf("** Player v%s ** ", PLAYER_VERSION);
   fflush(stdout);
 
+  // parse args
   for( int i = 1; i < argc; i++ ) 
   {
     if(!strcmp(new_argv[i],"-stage"))
@@ -757,6 +566,7 @@ int main( int argc, char *argv[] )
     }
   }
 
+  // default behavior is to use the sane spec
   if(!already_sane && !special_config && !use_stage)
   {
     for(int i=0;i<ARRAYSIZE(sane_spec);i++)
@@ -790,12 +600,9 @@ int main( int argc, char *argv[] )
 
   puts( "" ); // newline, flush
   
-  // create the devices dynamically 
-
 #ifdef INCLUDE_STAGE
-
   if( use_stage )
-  { 
+  {
       // create the shared memory connection to Stage
       
 #ifdef VERBOSE
@@ -848,24 +655,29 @@ int main( int argc, char *argv[] )
     exit(1);
   }
 
- if(signal(SIGHUP, &Interrupt ) == SIG_ERR)
+  if(signal(SIGHUP, &Interrupt ) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGHUP");
     exit(1);
   }
 
+  // setup the socket to listen on
   if((player_sock = 
       create_and_bind_socket(&listener,1,global_playerport,SOCK_STREAM,200)) 
-                  == -1)
+     == -1)
   {
     fputs("create_and_bind_socket() failed; quitting", stderr);
     exit(-1);
   }
 
-  // create the one client reader object
+  // create the client manager object.
+  // it will start one reader thread and one writer thread and keep track
+  // of all clients
   clientmanager = new ClientManager;
 
-  while(1) 
+  // main loop: accept new connections and hand them off to the client
+  // manager.
+  for(;;) 
   {
     clientData = new CClientData(auth_key);
 
@@ -877,36 +689,24 @@ int main( int argc, char *argv[] )
       exit(-1);
     }
 
+    // make the socket non-blocking
+    if(fcntl(clientData->socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+      perror("fcntl() failed while making socket non-blocking. quitting.");
+      exit(-1);
+    }
+
     /* got conn */
     printf("** Player [port %d] client accepted on socket %d **\n", 
            global_playerport, clientData->socket);
 
+    /* add it to the manager's list */
     clientmanager->AddClient(clientData);
 
-    /*
-       if(pthread_create(&clientData->writeThread, NULL, 
-       client_writer, clientData))
-       {
-       perror("pthread_create(3) failed");
-       exit(-1);
-       }
-     */
-
-    /*
-       if(pthread_create(&clientData->readThread, NULL, client_reader, 
-       clientData))
-       {
-       perror("pthread_create(3) failed");
-       exit(-1);
-       }
-       num_threads+=1;
-     */
   }
 
   /* don't get here */
   return(0);
 }
-
-
 
 

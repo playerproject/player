@@ -43,17 +43,16 @@ class ClientManager
 
     // dynamically managed array of structs that we'll give to poll(2)
     struct pollfd* ufds;
-    int size_ufds;
-    int num_ufds;
 
   public:
     // dynamically managed array of our clients
-    CClientData** clients;
     int num_clients;
     int size_clients;
+    CClientData** clients;
 
     // to control access to client array
-    pthread_mutex_t mutex;
+    pthread_mutex_t client_mutex;
+    pthread_mutex_t ufd_mutex;
     
     // constructor
     ClientManager();
@@ -66,6 +65,7 @@ class ClientManager
 
     // remove a client
     void RemoveClient(int idx);
+    void RemoveBlanks();
 
     int Read();
 

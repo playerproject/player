@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <sys/time.h>
 
@@ -56,14 +57,13 @@ CClientData::CClientData(char* key)
 {
   requested = NULL;
   numsubs = 0;
-  readThread = 0;
-  writeThread = 0;
   socket = 0;
   mode = CONTINUOUS;
   frequency = 10;
 
   readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
   writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
+  replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
 
   last_write = 0.0;
 
@@ -79,9 +79,9 @@ CClientData::CClientData(char* key)
   }
 
   pthread_mutex_init( &access, NULL ); 
-  pthread_mutex_init( &datarequested, NULL ); 
-  //pthread_mutex_init( &requesthandling, NULL ); 
   pthread_mutex_init( &socketwrite, NULL ); 
+
+  datarequested = false;
 }
 
 bool CClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
@@ -145,44 +145,36 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   struct timeval curr;
   unsigned int real_payloadsize;
 
-  //static unsigned char reply[PLAYER_MAX_MESSAGE_SIZE]; // old style
+  // clean the buffer every time for all-day freshness
+  bzero(replybuffer, PLAYER_MAX_MESSAGE_SIZE);
 
-  static int reply_size = PLAYER_MAX_MESSAGE_SIZE;
-  static unsigned char* reply = 0;
+  // debug output; leave it here
+#if 0
+  printf("type:%u device:%u index:%u\n", 
+         hdr.type,hdr.device,hdr.device_index);
+  printf("Request(%d):",payload_size);
+  for(unsigned int i=0;i<payload_size;i++)
+    printf("%c",payload[i]);
+  printf("\t");
+  for(unsigned int i=0;i<payload_size;i++)
+    printf("%x ",payload[i]);
+  puts("");
+#endif
 
-  // allocate storage just the first time this is called
-  if( reply == 0 ) reply = new unsigned char[ reply_size ];
-
-  // but clean the buffer every time for all-day freshness
-  bzero(reply, reply_size );
-
-  if(0)
-  {
-    printf("type:%u device:%u index:%u\n", 
-       hdr.type,hdr.device,hdr.device_index);
-    printf("Request(%d):",payload_size);
-    for(unsigned int i=0;i<payload_size;i++)
-      printf("%c",payload[i]);
-    printf("\t");
-    for(unsigned int i=0;i<payload_size;i++)
-      printf("%x ",payload[i]);
-    puts("");
-  }
-
-  //pthread_mutex_lock( &requesthandling );
   
   if(auth_pending)
   {
     if(CheckAuth(hdr,payload,payload_size))
     {
+      pthread_mutex_lock( &access );
       auth_pending = false;
       request = true;
+      pthread_mutex_unlock( &access );
     }
     else
     {
       fputs("Warning: failed authentication; closing connection.\n", stderr);
       return(-1);
-      //delete this;
     }
   }
   else
@@ -219,13 +211,11 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                 printf("HandleRequests(): got small player_device_req_t: %d\n",
                        real_payloadsize);
                 break;
-                //return;
               }
               for(j=sizeof(player_device_ioctl_t);
                   j<payload_size-(sizeof(player_device_req_t)-1);
                   j+=sizeof(player_device_req_t))
               {
-                //puts("memcpying request");
                 memcpy(&req,payload+j,sizeof(player_device_req_t));
                 req.code = ntohs(req.code);
                 req.index = ntohs(req.index);
@@ -244,26 +234,25 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               }
               memcpy(&datamode,payload+sizeof(player_device_ioctl_t),
                      sizeof(player_device_datamode_req_t));
+              // lock before changing mode
+              pthread_mutex_lock(&access);
               switch(datamode.mode)
               {
                 case REQUESTREPLY:
                   /* changet to request/reply */
                   //puts("changing to REQUESTREPLY");
+                  datarequested=false;
                   mode = REQUESTREPLY;
-                  pthread_mutex_unlock(&datarequested);
-                  pthread_mutex_lock(&datarequested);
                   break;
                 case CONTINUOUS:
                   /* change to continuous mode */
                   //puts("changing to CONTINUOUS");
                   mode = CONTINUOUS;
-                  pthread_mutex_unlock(&datarequested);
                   break;
                 case UPDATE:
                   /* change to continuous mode */
                   //puts("changing to UPDATE");
                   mode = UPDATE;
-                  pthread_mutex_unlock(&datarequested);
                   break;
                 default:
                   printf("Player warning: unknown I/O mode requested (%d)."
@@ -271,6 +260,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                          datamode.mode );
                   break;
               } // end datamode switch
+              pthread_mutex_unlock(&access);
               break;
             case PLAYER_PLAYER_DATA_REQ:
               // this ioctl takes no args
@@ -295,7 +285,9 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               }
               memcpy(&datafreq,payload+sizeof(player_device_ioctl_t),
                      sizeof(player_device_datafreq_req_t));
+              pthread_mutex_lock(&access);
               frequency = ntohs(datafreq.frequency);
+              pthread_mutex_unlock(&access);
               break;
             case PLAYER_PLAYER_AUTH_REQ:
               fputs("Warning: unnecessary authentication request.\n",stderr);
@@ -321,9 +313,6 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         }
         break;
       case PLAYER_MSGTYPE_CMD:
-
-        //puts( "processing command message" );
-
         /* command message */
         if(CheckPermissions(hdr.device,hdr.device_index))
         {
@@ -353,8 +342,8 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         }
         else 
         {
-          //printf("No permissions to command %x:%x\n",
-          //hdr.device,hdr.device_index);
+          printf("No permissions to command %x:%x\n",
+                 hdr.device,hdr.device_index);
         }
         break;
       default:
@@ -377,8 +366,8 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
      * reflect what permissions were granted for the indicated devices */
     if(devicerequest)
     {
-      memcpy(reply+sizeof(player_msghdr_t),payload,
-                      sizeof(player_device_ioctl_t));
+      memcpy(replybuffer+sizeof(player_msghdr_t),payload,
+             sizeof(player_device_ioctl_t));
       for(i=sizeof(player_msghdr_t)+sizeof(player_device_ioctl_t),
           j=sizeof(player_device_ioctl_t);
           j<payload_size-(sizeof(player_device_req_t)-1);
@@ -386,15 +375,15 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       {
         memcpy(&req,payload+j,sizeof(player_device_req_t));
         req.access = FindPermission(ntohs(req.code),ntohs(req.index));
-        memcpy(reply+i,&req,sizeof(player_device_req_t));
+        memcpy(replybuffer+i,&req,sizeof(player_device_req_t));
       }
     }
     /* otherwise, just copy back the request, since we can't get result
-     * codes here
+     * codes here (yet)
      */
     else
     {
-      memcpy(reply+sizeof(player_msghdr_t),payload,payload_size);
+      memcpy(replybuffer+sizeof(player_msghdr_t),payload,payload_size);
     }
 
     gettimeofday(&curr,NULL);
@@ -403,22 +392,27 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
     reply_hdr.timestamp_sec = reply_hdr.time_sec;
     reply_hdr.timestamp_usec = reply_hdr.time_usec;
-    memcpy(reply,&reply_hdr,sizeof(player_msghdr_t));
+    memcpy(replybuffer,&reply_hdr,sizeof(player_msghdr_t));
 
     pthread_mutex_lock(&socketwrite);
-    if(write(socket, reply, payload_size+sizeof(player_msghdr_t)) < 0) 
+    if(write(socket, replybuffer, payload_size+sizeof(player_msghdr_t)) < 0) 
     {
-      perror("HandleRequests");
-      pthread_mutex_unlock(&socketwrite);
-      return(-1);
-      //delete this;
+      if(errno != EAGAIN)
+      {
+        perror("HandleRequests");
+        pthread_mutex_unlock(&socketwrite);
+        return(-1);
+      }
     }
     pthread_mutex_unlock(&socketwrite);
   }
 
   if(unlock_pending)
-    pthread_mutex_unlock( &datarequested);
-  //pthread_mutex_unlock( &requesthandling );
+  {
+    pthread_mutex_lock(&access);
+    datarequested = true;
+    pthread_mutex_unlock(&access);
+  }
   
   return(0);
 }
@@ -441,9 +435,11 @@ CClientData::~CClientData()
   if(writebuffer)
     delete writebuffer;
 
+  if(replybuffer)
+    delete replybuffer;
+
   pthread_mutex_destroy( &access );
   pthread_mutex_destroy( &socketwrite );
-  pthread_mutex_destroy( &datarequested );
 }
 
 void CClientData::RemoveRequests() 
@@ -644,10 +640,8 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
   player_msghdr_t hdr;
   struct timeval curr;
   
-  /* make sure that we are not changing format */
-  //pthread_mutex_lock( &requesthandling );
-
-  pthread_mutex_lock( &access );
+  // don't lock this here; it's already locked by the caller
+  //pthread_mutex_lock( &access );
 
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_DATA);
@@ -664,44 +658,41 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
           hdr.device_index = htons(thisub->index);
           hdr.reserved = 0;
 
-          //puts("CClientData::BuildMsg() calling GetData");
           size = devicep->GetLock()->GetData(devicep, 
                                              data+totalsize+sizeof(hdr),
                                              maxsize-totalsize-sizeof(hdr),
                                              &(hdr.timestamp_sec), 
 					     &(hdr.timestamp_usec));
 	  
-          //puts("CClientData::BuildMsg() called GetData");
-
 	  // if we're in UPDATE mode, we only want this data if it is new
 	  if( mode == UPDATE )
-	    {
-	      //printf( "last_sec: %u\tlast_usec: %u\n", 
-	      //      thisub->last_sec, thisub->last_usec );
+          {
+            //printf( "last_sec: %u\tlast_usec: %u\n", 
+            //      thisub->last_sec, thisub->last_usec );
 
-	      // if the data has the same timestamp as last time then
-	      // we don;t want it - just send back an empty
-	      // packet. (Byte order doesn't matter for the equality
-	      // check)
-	      if( hdr.timestamp_sec == thisub->last_sec && 
-		  hdr.timestamp_usec == thisub->last_usec )  
-		{
-		  size = 0; // this prevents us copying in the data
-		  //puts( "stale data" );
-		}
-	      //else
-	      //printf( "fresh data at %u sec.\n", ntohl(hdr.timestamp_sec) );
+            // if the data has the same timestamp as last time then
+            // we don;t want it - just send back an empty
+            // packet. (Byte order doesn't matter for the equality
+            // check)
+            if( hdr.timestamp_sec == thisub->last_sec && 
+                hdr.timestamp_usec == thisub->last_usec )  
+            {
+              size = 0; // this prevents us copying in the data
+              //puts( "stale data" );
+            }
+            //else
+            //printf( "fresh data at %u sec.\n", ntohl(hdr.timestamp_sec) );
 
-	      // record the time we got data for this device
-	      // keep 'em in network byte order - it doesn't matter
-	      // as long as we remember to swap them for printing
-	      thisub->last_sec = hdr.timestamp_sec;
-	      thisub->last_usec = hdr.timestamp_usec;
-	    }
-	 
-	  hdr.size = htonl(size);
-	  memcpy(data+totalsize,&hdr,sizeof(hdr));
-	  totalsize += sizeof(hdr) + size; 
+            // record the time we got data for this device
+            // keep 'em in network byte order - it doesn't matter
+            // as long as we remember to swap them for printing
+            thisub->last_sec = hdr.timestamp_sec;
+            thisub->last_usec = hdr.timestamp_usec;
+          }
+
+          hdr.size = htonl(size);
+          memcpy(data+totalsize,&hdr,sizeof(hdr));
+          totalsize += sizeof(hdr) + size; 
 
           gettimeofday(&curr,NULL);
           hdr.time_sec = htonl(curr.tv_sec);
@@ -720,8 +711,7 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
       }
     }
   }
-  pthread_mutex_unlock( &access );
-  //pthread_mutex_unlock( &requesthandling );
+  //pthread_mutex_unlock( &access );
 
   return(totalsize);
 }
@@ -772,6 +762,7 @@ CClientData::PrintRequested(char* str)
 int CClientData::Read()
 {
   unsigned int readcnt;
+  unsigned int thisreadcnt;
   player_msghdr_t hdr;
 
   char c;
@@ -788,9 +779,14 @@ int CClientData::Read()
     //printf("read %d bytes; reading now\n", readcnt);
     if(read(socket,&c,1) <= 0)
     {
-      // client must be gone. fuck 'em
-      //perror("client_reader(): read() while waiting for STX");
-      return(-1);
+      if(errno == EAGAIN)
+        return(0);
+      else
+      {
+        // client must be gone. fuck 'em
+        //perror("client_reader(): read() while waiting for STX");
+        return(-1);
+      }
     }
     //printf("c:%x\n", c);
 
@@ -799,9 +795,14 @@ int CClientData::Read()
 
     if(read(socket,&c,1) <= 0)
     {
-      // client must be gone. fuck 'em
-      //perror("client_reader(): read() while waiting for STX");
-      return(-1);
+      if(errno == EAGAIN)
+        return(0);
+      else
+      {
+        // client must be gone. fuck 'em
+        //perror("client_reader(): read() while waiting for STX");
+        return(-1);
+      }
     }
     //printf("c:%x\n", c);
 
@@ -813,15 +814,19 @@ int CClientData::Read()
   }
   //puts("got STX");
 
-  int thisreadcnt;
   /* get the rest of the header */
   while(readcnt < sizeof(player_msghdr_t))
   {
     if((thisreadcnt = read(socket, &(hdr.type), 
                            sizeof(player_msghdr_t)-readcnt)) <= 0)
     {
-      //perror("client_reader(): read() while reading header");
-      return(-1);
+      if(errno == EAGAIN)
+        return(0);
+      else
+      {
+        //perror("client_reader(): read() while reading header");
+        return(-1);
+      }
     }
     readcnt += thisreadcnt;
   }
@@ -838,7 +843,7 @@ int CClientData::Read()
 
   //puts("got HDR");
 
-  /* get the payload */
+  // make sure it's not too big
   if(hdr.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
   {
     printf("WARNING: client's message is too big (%d bytes). Ignoring\n",
@@ -846,19 +851,30 @@ int CClientData::Read()
     return(0);
   }
 
-  for(readcnt  = read(socket,readbuffer,hdr.size);
-      readcnt != hdr.size;
-      readcnt += read(socket,readbuffer+readcnt,hdr.size-readcnt));
+  /* get the payload */
+  readcnt = 0;
+  while(readcnt != hdr.size)
+  {
+    if((thisreadcnt = read(socket,readbuffer+readcnt,hdr.size-readcnt)) <= 0)
+    {
+      if(thisreadcnt < 0 && errno != EAGAIN)
+      {
+        perror("CClientData::Read(): read() errored");
+        return(-1);
+      }
+      break;
+    }
+    readcnt += thisreadcnt;
+  }
 
-  //if((readcnt = read(cd->socket,buffer,hdr.size)) != hdr.size)
-  // {
-  //printf("client_reader: tried to read client-specified %d bytes, but "
-  //"only got %d\n", hdr.size, readcnt);
-  //delete cd;
-  //}
-  //puts("got payload");
-
-  return(HandleRequests(hdr,readbuffer, hdr.size));
+  if(readcnt != hdr.size)
+  {
+    printf("CClientData::Read(): tried to read client-specified %d bytes, but "
+           "only got %d\n", hdr.size, readcnt);
+    return(0);
+  }
+  else
+    return(HandleRequests(hdr,readbuffer, hdr.size));
 }
 
 int
@@ -873,9 +889,12 @@ CClientData::WriteIdentString()
   pthread_mutex_lock(&socketwrite);
   if(write(socket, data, PLAYER_IDENT_STRLEN) < 0 ) 
   {
-    perror("ClientManager::Write():write()");
-    pthread_mutex_unlock(&socketwrite);
-    return(-1);
+    if(errno != EAGAIN)
+    {
+      perror("ClientManager::Write():write()");
+      pthread_mutex_unlock(&socketwrite);
+      return(-1);
+    }
   }
   pthread_mutex_unlock(&socketwrite);
   return(0);
@@ -891,8 +910,12 @@ CClientData::Write()
   pthread_mutex_lock(&socketwrite);
   if(size>0 && write(socket, writebuffer, size) < 0 ) 
   {
-    perror("ClientManager::Write: write()");
-    return(-1);
+    if(errno != EAGAIN)
+    {
+      perror("CClientData::Write: write()");
+      pthread_mutex_unlock(&socketwrite);
+      return(-1);
+    }
   }
   pthread_mutex_unlock(&socketwrite);
   return(0);
