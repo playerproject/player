@@ -44,7 +44,18 @@ define testrobot pioneer2dx
   energy.return 0 # we don't give charge
 )
 
-testrobot( name "r0" pose [3.022 5.962 7201.322] )
-testrobot( name "r1" pose [8.222 8.066 -20.084] color "green")
-testrobot( name "r2" pose [8.518 8.883 -71.250] color "blue" )
+basic( name "r0" pose [3.022 5.962 7201.322] )
+
+laser( 
+  size [1 1]
+  name "r1" 
+  pose [8.222 8.066 -20.084] 
+  color "green"   
+  laser.view [ 0.0 8.0 180.0 ]
+  laser.pose [ 0 0 0 ]
+  laser.size [ 0.15 0.15 ]
+  laser.samples 180 
+)
+
+position( name "r2" pose [8.518 8.883 -71.250] color "blue" )
 
