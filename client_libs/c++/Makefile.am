@@ -28,8 +28,8 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               blobfinderproxy.cc \
                               wifiproxy.cc \
 			      irproxy.cc \
-			      powerproxy.cc \
-                              bumperproxy.cc
+			      powerproxy.cc
+                              #bumperproxy.cc
                               #bpsproxy.cc
                               #bpsproxy.h
 
