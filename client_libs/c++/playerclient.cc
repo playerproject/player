@@ -232,9 +232,12 @@ int PlayerClient::Read()
 {
   player_msghdr_t hdr;
   
-  char buffer[PLAYER_MAX_MESSAGE_SIZE];
   struct timeval curr;
   ClientProxy* thisproxy;
+  static char *buffer = NULL;
+
+  if(!buffer)
+    assert(buffer = new char[PLAYER_MAX_MESSAGE_SIZE]);
   
   if(!Connected())
   {
@@ -245,7 +248,7 @@ int PlayerClient::Read()
   // read until we get a SYNCH packet
   for(;;)
   {
-    if(player_read(&conn, &hdr, buffer, sizeof(buffer)))
+    if(player_read(&conn, &hdr, buffer, PLAYER_MAX_MESSAGE_SIZE))
     {
       if(player_debug_level(-1) >= 2)
         fputs("WARNING: player_read() errored\n", stderr);
