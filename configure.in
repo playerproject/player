@@ -390,7 +390,6 @@ AC_OUTPUT(Makefile
           examples/libplayerc/Makefile
           utils/Makefile
           utils/playerv/Makefile
-          utils/tkviewer/Makefile
           utils/playerjoy/Makefile
           utils/playernav/Makefile
           utils/playervcr/Makefile
