@@ -201,9 +201,9 @@ GAZEBO_HEADER=$with_gazebo/include/gazebo.h
 GAZEBO_EXTRA_CPPFLAGS="-I$with_gazebo/include"
 GAZEBO_EXTRA_LDFLAGS="-L$with_gazebo/lib -lgazebo",
 dnl ...or is is in a standard place?
-GAZEBO_HEADER=gazebo.h
-GAZEBO_EXTRA_CPPFLAGS=""
-GAZEBO_EXTRA_LDFLAGS="-lgazebo"
+GAZEBO_HEADER=$prefix/include/gazebo.h
+GAZEBO_EXTRA_CPPFLAGS="-I$prefix/include"
+GAZEBO_EXTRA_LDFLAGS="-L$prefix/lib -lgazebo"
 )
 
 dnl Add the Gazebo driver
