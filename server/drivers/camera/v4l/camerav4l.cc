@@ -292,6 +292,7 @@ int CameraV4L::Setup()
   }
   else if (strcasecmp(this->palette, "YUV420P") == 0)
   {
+    /// @todo Add support for color (write YUV -> RGB converter)
     // For YUV cameras, we provide the Y component only (greyscale
     // image).  At some point, someone should probably write the
     // planer-to-rgb conversion.
