@@ -456,13 +456,16 @@ void WriteLog::Main(void)
 {
   int i;
   size_t size, maxsize;
-  struct timeval time;
+  struct timeval time, sync_time, elapsed_time;
   void *data;
   WriteLogDevice *device;
   
   maxsize = PLAYER_MAX_MESSAGE_SIZE;
   data = malloc(maxsize);
-  
+
+  sync_time.tv_sec = 0;
+  sync_time.tv_usec = 0;
+
   while (1)
   {
     pthread_testcancel();
@@ -495,8 +498,14 @@ void WriteLog::Main(void)
       this->Write(device, data, size, time);
     }
 
-    /// @todo Write the sync packet at 10Hz; it's just a heartbeat
-    this->Write(NULL, NULL, 0, time);
+    /// Write the sync packet at 10Hz; it's just a heartbeat
+    GlobalTime->GetTime(&time);
+    TIMESUB(&time, &sync_time, &elapsed_time);
+    if (elapsed_time.tv_usec > 100000)
+    {
+      sync_time = time;
+      this->Write(NULL, NULL, 0, sync_time);
+    }
   }
 
   free(data);
@@ -838,18 +847,12 @@ void WriteLog::WritePosition3d(player_position3d_data_t *data)
           MM_M(HINT32(data->xpos)),
           MM_M(HINT32(data->ypos)),
           MM_M(HINT32(data->zpos)),
-          //DEG_RAD(HINT32(data->roll) / 3600.0),
-          //DEG_RAD(HINT32(data->pitch) / 3600.0),
-          //DEG_RAD(HINT32(data->yaw) / 3600.0),
           HINT32(data->roll) / 1000.0,
           HINT32(data->pitch) / 1000.0,
           HINT32(data->yaw) / 1000.0,
           MM_M(HINT32(data->xspeed)),
           MM_M(HINT32(data->yspeed)),
           MM_M(HINT32(data->zspeed)),
-          //DEG_RAD(HINT32(data->rollspeed) / 3600.0),
-          //DEG_RAD(HINT32(data->pitchspeed) / 3600.0),
-          //DEG_RAD(HINT32(data->yawspeed) / 3600.0),
           HINT32(data->rollspeed) / 1000.0,
           HINT32(data->pitchspeed) / 1000.0,
           HINT32(data->yawspeed) / 1000.0,

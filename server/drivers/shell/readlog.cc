@@ -142,8 +142,11 @@ class ReadLog: public Driver
   // Main loop
   public: virtual void Main();
 
-  // Process configuration requests
-  private: int ProcessConfig();
+  // Process log interface configuration requests
+  private: int ProcessLogConfig();
+
+  // Process generic configuration requests
+  private: int ProcessOtherConfig();
 
   // Parse the header info
   private: int ParseHeader(int linenum, int token_count, char **tokens,
@@ -390,6 +393,10 @@ void ReadLog::Main()
   {
     pthread_testcancel();
 
+    // Process requests
+    this->ProcessLogConfig();
+    this->ProcessOtherConfig();
+
     // If we're not supposed to playback data, sleep and loop
     if(!this->enable)
     {
@@ -431,8 +438,7 @@ void ReadLog::Main()
         // reset the flag
         this->rewind_requested = false;
 
-        puts("ReadLog: logfile rewound");
-
+        PLAYER_MSG0("logfile rewound");
         continue;
       }
     }
@@ -452,6 +458,10 @@ void ReadLog::Main()
       {
         usleep(100000);
         pthread_testcancel();
+
+        // Process requests
+        this->ProcessLogConfig();
+        this->ProcessOtherConfig();
 
         ReadLogTime_time.tv_usec += 100000;
         if (ReadLogTime_time.tv_usec >= 1000000)
@@ -542,6 +552,136 @@ void ReadLog::Main()
 }
 
 
+
+////////////////////////////////////////////////////////////////////////////
+// Process configuration requests
+int ReadLog::ProcessLogConfig()
+{
+  player_log_set_read_rewind_t rreq;
+  player_log_set_read_state_t sreq;
+  player_log_get_state_t greq;
+  uint8_t subtype;
+  char src[PLAYER_MAX_REQREP_SIZE];
+  void *client;
+  struct timeval time;
+  size_t len;
+
+  len = this->GetConfig(this->log_id, &client, src, sizeof(src), &time);
+  if (len == 0)
+    return 0;
+  
+  if(len < sizeof(sreq.subtype))
+  {
+    PLAYER_WARN2("request was too small (%d < %d)",
+                  len, sizeof(sreq.subtype));
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+      PLAYER_ERROR("PutReply() failed");
+  }
+
+  subtype = ((player_log_set_read_state_t*)src)->subtype;
+  switch(subtype)
+  {
+    case PLAYER_LOG_SET_READ_STATE_REQ:
+      if(len != sizeof(sreq))
+      {
+        PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      sreq = *((player_log_set_read_state_t*)src);
+      if(sreq.state)
+      {
+        puts("ReadLog: start playback");
+        this->enable = true;
+      }
+      else
+      {
+        puts("ReadLog: stop playback");
+        this->enable = false;
+      }
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    case PLAYER_LOG_GET_STATE_REQ:
+      if(len != sizeof(greq.subtype))
+      {
+        PLAYER_WARN2("request wrong size (%d != %d)", 
+                     len, sizeof(greq.subtype));
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      greq = *((player_log_get_state_t*)src);
+      greq.type = PLAYER_LOG_TYPE_READ;
+      if(this->enable)
+        greq.state = 1;
+      else
+        greq.state = 0;
+
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+                        &greq, sizeof(greq),NULL) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    case PLAYER_LOG_SET_READ_REWIND_REQ:
+      if(len != sizeof(rreq.subtype))
+      {
+        PLAYER_WARN2("request wrong size (%d != %d)", 
+                     len, sizeof(rreq.subtype));
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+
+      // set the appropriate flag in the manager
+      this->rewind_requested = true;
+
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+
+    default:
+      PLAYER_WARN1("got request of unknown subtype %u", subtype);
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+  }
+  
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Process generic requests
+int ReadLog::ProcessOtherConfig()
+{
+  int i;
+  player_device_id_t id;
+  char src[PLAYER_MAX_REQREP_SIZE];
+  void *client;
+  struct timeval time;
+  size_t len;
+  
+  // Check for request on all interfaces
+  for (i = 0; i < this->provide_count; i++)
+  {
+    id = this->provide_ids[i];
+    if (id.code == PLAYER_LOG_CODE)
+      continue;
+      
+    len = this->GetConfig(id, &client, src, sizeof(src), &time);
+    if (len == 0)
+      continue;
+
+    if (this->PutReply(id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
+      PLAYER_ERROR("PutReply() failed");
+  }
+
+  return 0;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////////
 // Signed int conversion macros
 #define NINT16(x) (htons((int16_t)(x)))
@@ -587,9 +727,9 @@ int ReadLog::ParseHeader(int linenum, int token_count, char **tokens,
     id->code = interface.code;
     id->index = atoi(tokens[4]);
     stime->tv_sec = (uint32_t) floor(atof(tokens[0]));
-    stime->tv_usec = ((uint32_t) floor(atof(tokens[0]) * 1e6)) % 1000000;
+    stime->tv_usec = ((uint32_t) (fmod(atof(tokens[0]), 1) * 1e6)) % 1000000;
     dtime->tv_sec = (uint32_t) floor(atof(tokens[5]));
-    dtime->tv_usec = ((uint32_t) floor(atof(tokens[5]) * 1e6)) % 1000000;
+    dtime->tv_usec = ((uint32_t) (fmod(atof(tokens[5]), 1) * 1e6)) % 1000000;
   }
   else
   {
@@ -707,8 +847,6 @@ int ReadLog::ParseCamera(player_device_id_t id, int linenum,
   assert(dst_size = NUINT32(data->image_size));
   assert(dst_size < sizeof(data->image));
 
-  // REMOVE printf("%d %d\n", src_size, dst_size);
-
   // Decode string
   ::DecodeHex(data->image, dst_size, tokens[12], src_size);
               
@@ -786,7 +924,7 @@ int ReadLog::ParseJoystick(player_device_id_t id, int linenum,
 int ReadLog::ParseLaser(player_device_id_t id, int linenum,
                                int token_count, char **tokens, struct timeval time)
 {
-  int i, count, angle;
+  int i, count;
   player_laser_data_t data;
 
   if (token_count < 12)
@@ -795,57 +933,57 @@ int ReadLog::ParseLaser(player_device_id_t id, int linenum,
     return -1;
   }
 
-  if (strcmp(this->format, "0.0.0") == 0)
-  {
-    data.min_angle = NINT16(RAD_DEG(atof(tokens[6])) * 100);
-    data.max_angle = NINT16(RAD_DEG(atof(tokens[7])) * 100);
-    data.resolution = NUINT16(RAD_DEG(atof(tokens[8])) * 100);
-    data.range_res = NUINT16(1);
-    data.range_count = NUINT16(atoi(tokens[9]));
+  data.min_angle = NINT16(RAD_DEG(atof(tokens[6])) * 100);
+  data.max_angle = NINT16(RAD_DEG(atof(tokens[7])) * 100);
+  data.resolution = NUINT16(RAD_DEG(atof(tokens[8])) * 100);
+  data.range_res = NUINT16(1);
+  data.range_count = NUINT16(atoi(tokens[9]));
     
-    count = 0;
-    for (i = 10; i < token_count; i += 2)
-    {
-      data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));
-      data.intensity[count] = atoi(tokens[i + 1]);
-      count += 1;
-    }
-
-    if (count != ntohs(data.range_count))
-    {
-      PLAYER_ERROR2("range count mismatch at %s:%d", this->filename, linenum);
-      return -1;
-    }
-  }
-  else
+  count = 0;
+  for (i = 10; i < token_count; i += 2)
   {
-    data.min_angle = +18000;
-    data.max_angle = -18000;
-    
-    count = 0;
-    for (i = 6; i < token_count; i += 3)
-    {
-      data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));      
-      data.intensity[count] = atoi(tokens[i + 2]);
-
-      angle = (int) (atof(tokens[i + 1]) * 180 / M_PI * 100);
-      if (angle < data.min_angle)
-        data.min_angle = angle;
-      if (angle > data.max_angle)
-        data.max_angle = angle;
-
-      count += 1;
-    }
-
-    data.resolution = (data.max_angle - data.min_angle) / (count - 1);
-    data.range_count = count;
-
-    data.range_count = NUINT16(data.range_count);
-    data.min_angle = NINT16(data.min_angle);
-    data.max_angle = NINT16(data.max_angle);
-    data.resolution = NUINT16(data.resolution);
-    data.range_res = NUINT16(1);
+    data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));
+    data.intensity[count] = atoi(tokens[i + 1]);
+    count += 1;
   }
+
+  if (count != ntohs(data.range_count))
+  {
+    PLAYER_ERROR2("range count mismatch at %s:%d", this->filename, linenum);
+    return -1;
+  }
+
+  /* DEPRECATED; REMOVE
+     else
+     {
+     data.min_angle = +18000;
+     data.max_angle = -18000;
+    
+     count = 0;
+     for (i = 6; i < token_count; i += 3)
+     {
+     data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));      
+     data.intensity[count] = atoi(tokens[i + 2]);
+
+     angle = (int) (atof(tokens[i + 1]) * 180 / M_PI * 100);
+     if (angle < data.min_angle)
+     data.min_angle = angle;
+     if (angle > data.max_angle)
+     data.max_angle = angle;
+
+     count += 1;
+     }
+
+     data.resolution = (data.max_angle - data.min_angle) / (count - 1);
+     data.range_count = count;
+
+     data.range_count = NUINT16(data.range_count);
+     data.min_angle = NINT16(data.min_angle);
+     data.max_angle = NINT16(data.max_angle);
+     data.resolution = NUINT16(data.resolution);
+     data.range_res = NUINT16(1);
+     }
+  */
 
   this->PutData(id, &data, sizeof(data), &time);
 
@@ -883,7 +1021,7 @@ int ReadLog::ParsePosition(player_device_id_t id, int linenum,
 ////////////////////////////////////////////////////////////////////////////
 // Parse position3d data
 int ReadLog::ParsePosition3d(player_device_id_t id, int linenum,
-                                    int token_count, char **tokens, struct timeval time)
+                             int token_count, char **tokens, struct timeval time)
 {
  player_position3d_data_t data;
 
@@ -897,17 +1035,17 @@ int ReadLog::ParsePosition3d(player_device_id_t id, int linenum,
   data.ypos = NINT32(M_MM(atof(tokens[7])));
   data.zpos = NINT32(M_MM(atof(tokens[8])));
 
-  data.roll = NINT32(RAD_DEG(3600 * atof(tokens[9])));
-  data.pitch = NINT32(RAD_DEG(3600 * atof(tokens[10])));
-  data.yaw = NINT32(RAD_DEG(3600 * atof(tokens[11])));
+  data.roll = NINT32(1000 * atof(tokens[9]));
+  data.pitch = NINT32(1000 * atof(tokens[10]));
+  data.yaw = NINT32(1000 * atof(tokens[11]));
 
   data.xspeed = NINT32(M_MM(atof(tokens[12])));
   data.yspeed = NINT32(M_MM(atof(tokens[13])));
   data.zspeed = NINT32(M_MM(atof(tokens[14])));
 
-  data.rollspeed = NINT32(RAD_DEG(3600 * atof(tokens[15])));
-  data.pitchspeed = NINT32(RAD_DEG(3600 * atof(tokens[16])));
-  data.yawspeed = NINT32(RAD_DEG(3600 * atof(tokens[17])));
+  data.rollspeed = NINT32(1000 * atof(tokens[15]));
+  data.pitchspeed = NINT32(1000 * atof(tokens[16]));
+  data.yawspeed = NINT32(1000 * atof(tokens[17]));
   
   data.stall = atoi(tokens[18]);
 
@@ -952,106 +1090,6 @@ int ReadLog::ParseWifi(player_device_id_t id, int linenum,
 
   this->PutData(id, &data, sizeof(data), &time);
 
-  return 0;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////
-// Process configuration requests
-int ReadLog::ProcessConfig()
-{
-  /* TODO : fix
-  player_log_set_read_rewind_t rreq;
-  player_log_set_read_state_t sreq;
-  player_log_get_state_t greq;
-  uint8_t subtype;
-
-  if(id.code != PLAYER_LOG_CODE)
-  {
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return(0);
-  }
-
-  if(len < sizeof(sreq.subtype))
-  {
-    PLAYER_WARN2("request was too small (%d < %d)",
-                  len, sizeof(sreq.subtype));
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-  }
-
-  subtype = ((player_log_set_read_state_t*)src)->subtype;
-  switch(subtype)
-  {
-    case PLAYER_LOG_SET_READ_STATE_REQ:
-      if(len != sizeof(sreq))
-      {
-        PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-      sreq = *((player_log_set_read_state_t*)src);
-      if(sreq.state)
-      {
-        puts("ReadLog: start playback");
-        this->manager->enable = true;
-      }
-      else
-      {
-        puts("ReadLog: stop playback");
-        this->manager->enable = false;
-      }
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    case PLAYER_LOG_GET_STATE_REQ:
-      if(len != sizeof(greq.subtype))
-      {
-        PLAYER_WARN2("request wrong size (%d != %d)", 
-                     len, sizeof(greq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-      greq = *((player_log_get_state_t*)src);
-      greq.type = PLAYER_LOG_TYPE_READ;
-      if(this->manager->enable)
-        greq.state = 1;
-      else
-        greq.state = 0;
-
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
-                        &greq, sizeof(greq),NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    case PLAYER_LOG_SET_READ_REWIND_REQ:
-      if(len != sizeof(rreq.subtype))
-      {
-        PLAYER_WARN2("request wrong size (%d != %d)", 
-                     len, sizeof(rreq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-
-      // set the appropriate flag in the manager
-      this->manager->rewind_requested = true;
-
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-
-    default:
-      PLAYER_WARN1("got request of unknown subtype %u", subtype);
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-  }
-  */
-  
   return 0;
 }
 
