@@ -122,14 +122,13 @@ class PlayerClient;
 /** @defgroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
 
-/** @defgroup player_clientlib_clientproxy Client proxy base class
+/**
 
 Base class for all proxy devices. Access to a device is provided by a
 device-specific proxy class.  These classes all inherit from the @p
 ClientProxy class which defines an interface for device proxies.  As such,
 a few methods are common to all devices and we explain them here.
 
-@{
 */
 class ClientProxy
 {
@@ -238,15 +237,13 @@ class ClientProxyNode
     ClientProxyNode* next;
 };
 
-/** @} */
 
-/** @defgroup player_clientlib_playerclient Client object
+/**
 
 One @p PlayerClient object is used to control each connection to
 a Player server.  Contained within this object are methods for changing the
 connection parameters and obtaining access to devices, which we explain 
 next.
-@{
 */
 class PlayerClient
 {
@@ -450,19 +447,16 @@ class PlayerClient
     int GetDeviceList(); 
 };
 
-/** @} */
-
 // forward declaration to avoid including <sys/poll.h>, which may not be
 // available when people are building clients against this lib
 struct pollfd;
 
-/** @defgroup player_clientlib_cplusplus_playermulticlient Multiclient object
+/** 
 
 The PlayerMultiClient makes it easy to control multiple Player connections
 within one thread.   You can connect to any number of Player servers
 and read from all of them with a single Read().
 
-@{
 */
 class PlayerMultiClient
 {
@@ -519,14 +513,12 @@ class PlayerMultiClient
     int ReadLatest( int max_reads );
 };
 
-/** @} */
-
 /** @} (core) */
 
 /** @defgroup player_clientlib_cplusplus_proxies Proxies */
 /** @{ */
 
-/** @defgroup player_clientlib_cplusplus_aioproxy AIOProxy
+/** 
 
 The @p AIOProxy class is used to read from a @ref player_interface_aio
 (analog I/O) device.  */
@@ -559,7 +551,7 @@ public:
 };
 
 
-/** @defgroup player_clientlib_cplusplus_gpsproxy GpsProxy
+/** 
 
 The @p GpsProxy class is used to control a @ref player_interface_gps
 device.  The latest pose data is stored in three class attributes.  */
@@ -605,15 +597,8 @@ class GpsProxy : public ClientProxy
 
 
 
-/** @defgroup player_clientlib_cplusplus_gripperproxy GripperProxy
 
-The @p GripperProxy class is used to control a @ref
-player_interface_gripper device.  The latest gripper data held in a
-handful of class attributes.  A single method provides user control.
-@{
-*/
-
-/* gripper stuff */
+/* Gripper stuff */
 #define GRIPopen   1
 #define GRIPclose  2
 #define GRIPstop   3
@@ -626,6 +611,12 @@ handful of class attributes.  A single method provides user control.
 #define GRIPpress  16
 #define LIFTcarry  17
 
+/** 
+
+The @p GripperProxy class is used to control a @ref
+player_interface_gripper device.  The latest gripper data held in a
+handful of class attributes.  A single method provides user control.
+*/
 class GripperProxy : public ClientProxy
 {
 
@@ -662,9 +653,8 @@ class GripperProxy : public ClientProxy
     void Print();
 };
 
-/** @} */
 
-/** @defgroup player_clientlib_cplusplus_soundproxy SoundProxy
+/** 
 
 The @p SoundProxy class is used to control a @ref player_interface_sound
 device, which allows you to play pre-recorded sound files on a robot.
@@ -694,13 +684,6 @@ class SoundProxy : public ClientProxy
     void Print() {};
 };
 
-/** @defgroup player_clientlib_cplusplus_fiducialproxy FiducialProxy
-
-The @p FiducialProxy class is used to control @ref
-player_interface_fiducial devices.  The latest set of detected beacons
-is stored in the @p beacons array.
-@{
-*/
 
 class FiducialItem
 {
@@ -711,6 +694,12 @@ class FiducialItem
 };
 
 
+/** 
+
+The @p FiducialProxy class is used to control @ref
+player_interface_fiducial devices.  The latest set of detected beacons
+is stored in the @p beacons array.
+*/
 class FiducialProxy : public ClientProxy
 {
 
@@ -818,10 +807,9 @@ class FiducialProxy : public ClientProxy
 
 };
 
-/** @} */
 
 
-/** @defgroup player_clientlib_cplusplus_laserproxy LaserProxy
+/** 
 
 The @p LaserProxy class is used to control a @ref player_interface_laser
 device.  The latest scan data is held in two arrays: @p ranges and @p
@@ -935,13 +923,6 @@ class LaserProxy : public ClientProxy
 };
 
 
-/** @defgroup player_clientlib_cplusplus_localizeproxy LocalizeProxy
-
-The @p LocalizeProxy class is used to control a @ref
-player_interface_localize device, which can provide multiple pose
-hypotheses for a robot.
-@{
-*/
  
 class localize_hypoth
 {
@@ -954,6 +935,12 @@ class localize_hypoth
     double weight;
 };
 
+/** 
+
+The @p LocalizeProxy class is used to control a @ref
+player_interface_localize device, which can provide multiple pose
+hypotheses for a robot.
+*/
 class LocalizeProxy : public ClientProxy
 {
 
@@ -1011,9 +998,8 @@ class LocalizeProxy : public ClientProxy
     void Print();
 };
 
-/** @} */
 
-/** @defgroup player_clientlib_cplusplus_motorproxy MotorProxy
+/** 
 
 The @p MotorProxy class is used to control a @ref player_interface_motor
 device.  The latest motor data is contained in the attributes @p theta,
@@ -1121,7 +1107,7 @@ class MotorProxy : public ClientProxy
   void Print();
 };
 
-/** @defgroup player_clientlib_cplusplus_positionproxy PositionProxy
+/** 
 
 The @p PositionProxy class is used to control a @ref
 player_interface_position device.  The latest position data is contained
@@ -1260,7 +1246,7 @@ class PositionProxy : public ClientProxy
 };
 
 
-/** @defgroup player_clientlib_cplusplus_position2dproxy Position2DProxy
+/** 
 
 The @p Position2DProxy class is used to control a @ref
 player_interface_position2d device.  The latest position data is contained
@@ -1411,7 +1397,7 @@ class Position2DProxy : public ClientProxy
   void Print();
 };
 
-/** @defgroup player_clientlib_cplusplus_position3dproxy Position3DProxy
+/** 
 
 The @p Position3DProxy class is used to control
 a player_interface_position3d device.  The latest position data is
@@ -1567,7 +1553,7 @@ class Position3DProxy : public ClientProxy
   unsigned char Stall () const { return stall; }
 };
 
-/** @defgroup player_clientlib_cplusplus_ptzproxy PtzProxy
+/** 
 
 The @p PtzProxy class is used to control a @ref player_interface_ptz
 device.  The state of the camera can be read from the pan, tilt, zoom
@@ -1617,7 +1603,7 @@ class PtzProxy : public ClientProxy
 };
 
 
-/** @defgroup player_clientlib_cplusplus_sonarproxy SonarProxy
+/** 
 
 The @p SonarProxy class is used to control a @ref player_interface_sonar
 device.  The most recent sonar range measuremts can be read from the
@@ -1690,7 +1676,7 @@ class SonarProxy : public ClientProxy
     void Print();
 };
 
-/** @defgroup player_clientlib_cplusplus_speechproxy SpeechProxy
+/** 
 
 The @p SpeechProxy class is used to control a @ref player_interface_speech
 device.  Use the say method to send things to say.
@@ -1716,7 +1702,7 @@ class SpeechProxy : public ClientProxy
     int Say(char* str);
 };
 
-/** @defgroup player_clientlib_cplusplus_truthproxy TruthProxy
+/** 
 
 The @p TruthProxy gets and sets the @e true pose of a @ref
 player_interface_truth device [worldfile tag: truth()]. This may be
@@ -1781,14 +1767,6 @@ class TruthProxy : public ClientProxy
 
 };
 
-/** @defgroup player_clientlib_cplusplus_blobfinderproxy BlobfinderProxy
-
-The @p BlobfinderProxy class is used to control a  @ref
-player_interface_blobfinder device.  It contains no methods.  The latest
-color blob data is stored in @p blobs, a dynamically allocated 2-D array,
-indexed by color channel.
-@{
-*/
 class Blob
 {
   public:
@@ -1804,6 +1782,13 @@ class Blob
     double range;
 };
 
+/** 
+
+The @p BlobfinderProxy class is used to control a  @ref
+player_interface_blobfinder device.  It contains no methods.  The latest
+color blob data is stored in @p blobs, a dynamically allocated 2-D array,
+indexed by color channel.
+*/
 class BlobfinderProxy : public ClientProxy
 {
 
@@ -1844,14 +1829,6 @@ class BlobfinderProxy : public ClientProxy
 
 };
 
-/** @} */
-
-/** @defgroup player_clientlib_cplusplus_irproxy IRProxy
-
-The @p IRProxy class is used to control an @ref player_interface_ir
-device.
-@{
-*/
 
 // these define default coefficients for our 
 // range and standard deviation estimates
@@ -1867,6 +1844,11 @@ device.
 //this is the effective range of the sensor in mm
 #define IRPROXY_MAX_RANGE 700
 
+/** 
+
+The @p IRProxy class is used to control an @ref player_interface_ir
+device.
+*/
 class IRProxy : public ClientProxy
 {
 public:
@@ -1929,9 +1911,7 @@ public:
   void Print();
 };
 
-/** @} */
-
-/** @defgroup player_clientlib_cplusplus_wifiproxy WiFiProxy
+/** 
 
 The @p WiFiProxy class controls a @ref player_interface_wifi device.  */
 class WiFiProxy: public ClientProxy
@@ -1986,7 +1966,7 @@ protected:
 
 };
 
-/** @defgroup player_clientlib_cplusplus_powerproxy PowerProxy
+/** 
 
 The @p PowerProxy class controls a @ref player_interface_power device. */
 class PowerProxy : public ClientProxy 
@@ -2015,7 +1995,7 @@ class PowerProxy : public ClientProxy
 };
 
 
-/** @defgroup player_clientlib_cplusplus_audioproxy AudioProxy
+/** 
 
 The @p AudioProxy class controls an @ref player_interface_audio device.
 */
@@ -2051,7 +2031,7 @@ class AudioProxy : public ClientProxy
     void Print ();
 };
 
-/** @defgroup player_clientlib_cplusplus_audiodspproxy AudioDSPProxy
+/** 
 
 The @p AudioDSPProxy class controls an @ref player_interface_audiodsp device.
 */
@@ -2096,7 +2076,7 @@ class AudioDSPProxy : public ClientProxy
     void Print ();
 };
 
-/** @defgroup player_clientlib_cplusplus_audiomixerproxy AudioMixerProxy
+/** 
 
 The @p AudioMixerProxy class controls an @ref player_interface_audiomixer device.
 */
@@ -2133,7 +2113,7 @@ class AudioMixerProxy : public ClientProxy
     void Print ();
 };
 
-/** @defgroup player_clientlib_cplusplus_bumperproxy BumperProxy
+/** 
 
 The @p BumperProxy class is used to read from a @ref
 player_interface_bumper device.
@@ -2184,7 +2164,7 @@ private:
     uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
 };
 
-/** @defgroup player_clientlib_cplusplus_dioproxy DIOProxy
+/** 
 
 The @p DIOProxy class is used to read from a @ref player_interface_dio
 (digital I/O) device.
@@ -2220,7 +2200,7 @@ public:
     void Print ();
 };
  
-/** @defgroup player_clientlib_cplusplus_waveformproxy WaveformProxy
+/** 
 
 The @p WaveformProxy class is used to read raw digital waveforms from
 a @ref player_interface_waveform device.  */
@@ -2272,7 +2252,7 @@ public:
 
 };
 
-/** @defgroup player_clientlib_cplusplus_mcomproxy MComProxy
+/** 
 
 The @p MComProxy class is used to exchange data with other clients
 connected with the same server, through a set of named "channels" in
@@ -2337,7 +2317,7 @@ public:
     void Print();
 };
 
-/** @defgroup player_clientlib_cplusplus_blinkenlightproxy BlinkenlightProxy
+/** 
 
 The @p BlinkenlightProxy class is used to enable and disable
 a flashing indicator light, and to set its period, via a @ref
@@ -2383,7 +2363,7 @@ public:
     int SetLight( bool enable, int period_ms );
 };
 
-/** @defgroup player_clientlib_cplusplus_cameraproxy CameraProxy
+/** 
 
 The @p CameraProxy class can be used to get images from a @ref
 player_interface_camera device. */
@@ -2422,7 +2402,7 @@ private:
    int frameNo;
 };
 
-/** @defgroup player_clientlib_cplusplus_hudproxy HUDProxy
+/** 
 
 The @p HUDProxy class can be used to draw shapes onto a simulator screen,
 via a @ref player_interface_hud device. All values for the Draw routines
@@ -2467,7 +2447,7 @@ private:
    int filled;
 };
 
-/** @defgroup player_clientlib_cplusplus_plannerproxy PlannerProxy
+/** 
 
 The @p PlannerProxy proxy provides an interface to a 2D motion @ref
 player_interface_planner. */
@@ -2519,7 +2499,7 @@ class PlannerProxy : public ClientProxy
 
 };
 
-/** @defgroup player_clientlib_cplusplus_energyproxy EnergyProxy
+/** 
 
 The @p EnergyProxy class is used to read from an @ref
 player_interface_energy device.
@@ -2558,7 +2538,7 @@ public:
     bool charging;
 };
 
-/** @defgroup player_clientlib_cplusplus_mapproxy MapProxy
+/** 
 
 The @p map proxy provides access to a @ref player_interface_map device.
 */
