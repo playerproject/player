@@ -1141,6 +1141,7 @@ int main( int argc, char *argv[] )
   char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
 
+
   global_argc = argc;
   global_argv = argv;
 

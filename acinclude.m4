@@ -183,6 +183,8 @@ PLAYER_ADD_DRIVER([simpleshape],[drivers/blobfinder],[yes],
 
 PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([sphinx2],[drivers/speech/recognition],[yes],["sphinx2/s2types.h"],[],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
+
 PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[yes],[],[],[])
@@ -462,7 +464,6 @@ GAZEBO_TEST_DRIVER([stereo],[stereo])
 GAZEBO_TEST_DRIVER([gripper],[gripper])
 GAZEBO_TEST_DRIVER([sonar],[sonar])
 GAZEBO_TEST_DRIVER([sonars],[sonars])  dnl Deprecated; backwards compatability
-GAZEBO_TEST_DRIVER([hud],[hud])
 
 ])
 

@@ -752,7 +752,7 @@ class FiducialProxy : public ClientProxy
       unconnected. */
   FiducialProxy(PlayerClient* pc, unsigned short index,
                 unsigned char access='c') :
-    ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access) {}
+    ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access) { count=0; }
     
   // interface that all proxies must provide
   void FillData(player_msghdr_t hdr, const char* buffer);
@@ -2415,50 +2415,6 @@ private:
    int frameNo;
 };
 
-/** 
-
-The @p HUDProxy class can be used to draw shapes onto a simulator screen,
-via a @ref player_interface_hud device. All values for the Draw routines
-should be pixel values.*/
-class HUDProxy : public ClientProxy 
-{
-
-public:
-    // Constructor.  Leave the access field empty to start unconnected.
-   HUDProxy (PlayerClient *pc, unsigned short index,
-       unsigned char access='c');
-
-   virtual ~HUDProxy();
-
-   // Set the drawing color
-   void SetColor( float color[3] );
-
-   // Set the drawing style
-   void SetStyle( int filled );
-
-   // Remove the draw element with id
-   int Remove(int id);
-
-   // Draw a box, opposing corners defined by (ax,ay) and (bx,by)
-   int DrawBox(int id, int ax, int ay, int bx, int by);
-
-   // Draw a line on , end point define by (ax,ay) and (bx,by)
-   int DrawLine(int id, int ax, int ay, int bx, int by);
-
-   // Draw text at (x,y) 
-   int DrawText(int id, const char *text, int x, int y);
-
-   // Draw a circle, center defined  by (cx,cy) and radius (radius) 
-   int DrawCircle(int id, int cx, int cy, int radius);
-
-
-   // interface that all proxies must provide
-   void FillData(player_msghdr_t hdr, const char* buffer);
-
-private:
-   float color[3];
-   int filled;
-};
 
 /** 
 
@@ -2586,6 +2542,31 @@ class MapProxy : public ClientProxy
   /** Occupancy for each cell (empty = -1, unknown = 0, occupied = +1) */
   public: char *cells;
 };
+
+
+/** 
+The @p SpeechRecognition proxy provides access to a @ref player_interface_speechrecognition device.
+*/
+class SpeechRecognitionProxy : public ClientProxy
+{
+  // Constructor
+  public: SpeechRecognitionProxy (PlayerClient *pc, unsigned short indes,
+              unsigned char access='c');
+
+  // Destructor
+  public: ~SpeechRecognitionProxy();
+
+  // interface that all proxies must provide
+  public: void FillData (player_msghdr_t hde, const char *buffer);
+
+  public: char rawText[SPEECH_RECOGNITION_TEXT_LEN];
+
+  // Just estimating that no more than 20 words will be spoken between updates.
+  // Assuming that the longest word is <= 30 characters.
+  public: char words[20][30]; 
+  public: int wordCount;
+};
+
 
 /** @} */
 /** @} */

@@ -121,6 +121,10 @@ void SimpleShape_Register(DriverTable* table);
 void Festival_Register(DriverTable* table);
 #endif 
 
+#ifdef INCLUDE_SPHINX2
+void Sphinx2_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_LASERBAR
 void LaserBar_Register(DriverTable* table);
 #endif
@@ -328,10 +332,6 @@ void GzSonars_Register(DriverTable *table);
 void GzSonar_Register(DriverTable *table);
 #endif
 
-#ifdef INCLUDE_GAZEBO_HUD
-void GzHUD_Register(DriverTable *table);
-#endif
-
 #ifdef INCLUDE_GAZEBO_STEREO
 void GzStereo_Register(DriverTable *table);
 #endif
@@ -408,11 +408,11 @@ player_interface_t interfaces[] = {
   {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING, "nomad"},
   {PLAYER_ENERGY_CODE, PLAYER_ENERGY_STRING, "stg_energy"},
   {PLAYER_MAP_CODE, PLAYER_MAP_STRING, "mapfile"},
-  {PLAYER_HUD_CODE, PLAYER_HUD_STRING, "gz_hud"},
   {PLAYER_PLANNER_CODE, PLAYER_PLANNER_STRING, "wavefront"},
   {PLAYER_POSITION2D_CODE, PLAYER_POSITION2D_STRING, "null"},
   {PLAYER_MOTOR_CODE, PLAYER_MOTOR_STRING, "null"},
   {PLAYER_JOYSTICK_CODE, PLAYER_JOYSTICK_STRING, "linuxjoystick"},
+  {PLAYER_SPEECH_RECOGNITION_CODE, PLAYER_SPEECH_RECOGNITION_STRING, "sphinx2"},
   {0,NULL,NULL}
 };
 
@@ -561,6 +561,10 @@ register_devices()
 
 #ifdef INCLUDE_FESTIVAL
   Festival_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SPHINX2
+  Sphinx2_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_LASERBAR
@@ -767,10 +771,6 @@ register_devices()
 
 #ifdef INCLUDE_GAZEBO_SONAR
   GzSonar_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_HUD
-  GzHUD_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_GAZEBO_STEREO
