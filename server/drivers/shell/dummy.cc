@@ -26,11 +26,11 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_dummy Dummy driver
+/** @defgroup player_driver_dummy dummy
 
 The dummy driver generates dummy data and consumes dummy commands for
 any interface; useful for debugging client libraries and benchmarking
-server performance
+server performance.
 
 
 @par Interfaces
@@ -43,7 +43,7 @@ server performance
 @par Configuration file options
 
 - rate
-  - Data rate (Hz); e.g., rate 20 will generate data at 10Hz.
+  - Data rate (Hz); e.g., rate 20 will generate data at 20Hz.
       
 @par Example 
 
@@ -215,7 +215,7 @@ Dummy::Dummy(ConfigFile* cf, int section)
   }
   
   // Data rate
-  this->rate = cf->ReadFloat(section, "rate", 10);
+  this->rate = cf->ReadFloat(section, "rate", 10);  
 
   return;
 }

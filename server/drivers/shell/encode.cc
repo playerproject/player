@@ -14,6 +14,7 @@
 
 
 static char hex_table[] = "0123456789ABCDEF";
+#define unhex_table(h) ((h >= 'A' && h <= 'F') ? 10 + h - 'A' : h - '0')
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -64,9 +65,9 @@ void DecodeHex(void *dst, size_t dst_len, const char *src, size_t src_len)
 
   for (i = 0; i < dst_len; i++)
   {
-    sh = src[2 * i + 0];
-    sl = src[2 * i + 1];
-    ((char*) dst)[i] = (sh << 4) | sl;
+    sh = unhex_table(src[2 * i + 0]);
+    sl = unhex_table(src[2 * i + 1]);
+    ((unsigned char*) dst)[i] = (sh << 4) | sl;
   }
   
   return;

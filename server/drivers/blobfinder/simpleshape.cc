@@ -29,7 +29,7 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_simpleshape Find simple geometric shapes.
+/** @defgroup player_driver_simpleshape simpleshape
 
 The simpleshape driver looks for simple geometric shapes in a camera
 image.  The user must supply a @e model of the target shape, in the

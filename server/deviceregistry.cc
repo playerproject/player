@@ -113,8 +113,8 @@ void Cmucam2ptz_Register(DriverTable* table);
 void UPCBarcode_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_SHAPETRACKER
-void ShapeTracker_Register(DriverTable* table);
+#ifdef INCLUDE_SIMPLESHAPE
+void SimpleShape_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_FESTIVAL
@@ -258,11 +258,9 @@ void CameraV4L_Register(DriverTable *table);
 void Camera1394_Register(DriverTable *table);
 #endif
 
-/* REMOVE
-#ifdef INCLUDE_JPEGSTREAM
-void JpegStream_Register(DriverTable* table);
+#ifdef INCLUDE_IMAGESEQ
+void ImageSeq_Register(DriverTable* table);
 #endif
-*/
 
 #ifdef INCLUDE_CAMERACOMPRESS
 void CameraCompress_Register(DriverTable* table);
@@ -397,7 +395,7 @@ player_interface_t interfaces[] = {
   {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sickpls"},
   {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, "camerav4l"},
   {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, "camera1394"},
-  {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "shapetracker"},
+  {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "simpleshape"},
   {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING, "nomad"},
   {PLAYER_CMUCAM2_CODE, PLAYER_CMUCAM2_STRING, "cmucam2"},  
   {PLAYER_ENERGY_CODE, PLAYER_ENERGY_STRING, "stg_energy"},
@@ -549,8 +547,8 @@ register_devices()
   UPCBarcode_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_SHAPETRACKER
-  ShapeTracker_Register(driverTable);
+#ifdef INCLUDE_SIMPLESHAPE
+  SimpleShape_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FESTIVAL
@@ -694,11 +692,9 @@ register_devices()
   Camera1394_Register(driverTable);
 #endif
 
-/* REMOVE
-#ifdef INCLUDE_JPEGSTREAM
-  JpegStream_Register(driverTable);
+#ifdef INCLUDE_IMAGESEQ
+  ImageSeq_Register(driverTable);
 #endif
-*/
 
 #ifdef INCLUDE_CAMERACOMPRESS
   CameraCompress_Register(driverTable);

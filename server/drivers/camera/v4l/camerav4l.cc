@@ -28,10 +28,10 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_camerav4l Video4Linux camera driver
+/** @defgroup player_driver_camerav4l camerav4l
 
 The camerav4l driver captures images from V4l-compatible cameras.  See
-below for notes on specific cameras/frame grabbers.
+below for notes on specific camera/frame grabber combinations.
 
 
 @par Interfaces
@@ -193,7 +193,7 @@ Driver* CameraV4L_Init( ConfigFile* cf, int section)
 }
 
 
-// a driver registration function
+// Driver registration function
 void CameraV4L_Register(DriverTable* table)
 {
   table->AddDriver("camerav4l", CameraV4L_Init);

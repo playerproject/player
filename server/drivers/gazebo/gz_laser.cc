@@ -29,9 +29,9 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_gz_laser Gazebo laser driver
+/** @defgroup player_driver_gz_laser gz_laser
 
-The @p gz_laser driver is used to access Gazebo models that support
+The gz_laser driver is used to access Gazebo models that support
 the laser interface (such as the SickLMS200 model).
 
 @par Interfaces

@@ -28,10 +28,11 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_cameracompress Camera image compression driver
+/** @defgroup player_driver_cameracompress cameracompress
 
-The CameraCompress driver accepts data from another camera device,
-compresses it, and makes the compressed data available on a new interface.
+The cameracompress driver accepts data from another camera device,
+compresses it, and makes the compressed data available on a new
+interface.
 
 @par Interfaces
 - This driver supports the @ref player_interface_camera interface.
