@@ -69,8 +69,18 @@ int player_disconnect(player_connection_t* conn);
  *      0 if everything went OK
  *     -1 if something went wrong (you should probably close the connection!)
  */
-int player_request(player_connection_t* conn, const char* request,
-                   size_t requestlen, char* reply, size_t replylen);
+int player_request(player_connection_t* conn, 
+                   uint16_t device, uint16_t device_index, 
+                   const char* payload, size_t payloadlen, 
+                   player_msghdr_t* replyhdr, char* reply, size_t replylen);
+
+/*
+ * issue a single device request (special case of player_request())
+ */
+int player_request_device_access(player_connection_t* conn,
+                                 uint16_t device,
+                                 uint16_t device_index,
+                                 uint8_t access);
 
 /*
  * read from the indicated connection.  put the data in buffer, up to
@@ -80,7 +90,8 @@ int player_request(player_connection_t* conn, const char* request,
  *    0 if everything went OK
  *   -1 if something went wrong (you should probably close the connection!)
  */
-int player_read(player_connection_t* conn, char* buffer, size_t bufferlen);
+int player_read(player_connection_t* conn, player_msghdr_t* hdr,
+                char* payload, size_t payloadlen);
 
 /*
  * write commands to the indicated connection. writes the data contained
@@ -90,6 +101,81 @@ int player_read(player_connection_t* conn, char* buffer, size_t bufferlen);
  *    0 if everything goes OK
  *   -1 if something went wrong (you should probably close the connection!)
  */
-int player_write(player_connection_t* conn, char* command, size_t commandlen);
+int player_write(player_connection_t* conn, 
+                 uint16_t device, uint16_t device_index,
+                 char* command, size_t commandlen);
+
+/******* helper functions *********/
+/*
+ * write to position
+ */
+int player_write_position(player_connection_t* conn, player_position_cmd_t cmd);
+
+/*
+ * write to ptz
+ */
+int player_write_ptz(player_connection_t* conn, player_ptz_cmd_t cmd);
+
+/*
+ * read laser data into designated buffer.
+ *
+ * Returns:
+ *   0 if OK
+ *  -1 if something wrong (like got unexpected device code)
+ */
+int player_read_laser(player_connection_t* conn, player_laser_data_t* data);
+
+/*
+ * read sonar data into designated buffer.
+ *
+ * Returns:
+ *   0 if OK
+ *  -1 if something wrong (like got unexpected device code)
+ */
+int player_read_sonar(player_connection_t* conn, player_sonar_data_t* data);
+
+/*
+ * read position data into designated buffer.
+ *
+ * Returns:
+ *   0 if OK
+ *  -1 if something wrong (like got unexpected device code)
+ */
+int player_read_position(player_connection_t* conn,
+                player_position_data_t* data);
+
+/*
+ * read misc data into designated buffer.
+ *
+ * Returns:
+ *   0 if OK
+ *  -1 if something wrong (like got unexpected device code)
+ */
+int player_read_misc(player_connection_t* conn, player_misc_data_t* data);
+
+/*
+ * read ptz data into designated buffer.
+ *
+ * Returns:
+ *   0 if OK
+ *  -1 if something wrong (like got unexpected device code)
+ */
+int player_read_ptz(player_connection_t* conn, player_ptz_data_t* data);
+
+/*
+ * read vision data into designated buffer.
+ *
+ * Returns:
+ *   0 if OK
+ *  -1 if something wrong (like got unexpected device code)
+ */
+int player_read_vision(player_connection_t* conn, player_vision_data_t* data);
+
+void player_print_vision(player_vision_data_t data);
+void player_print_misc(player_misc_data_t data);
+void player_print_ptz(player_ptz_data_t data);
+void player_print_laser(player_laser_data_t data);
+void player_print_sonar(player_sonar_data_t data);
+void player_print_position(player_position_data_t data);
 
 #endif
