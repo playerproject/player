@@ -153,14 +153,11 @@ void position_update(position_t *self)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   
-  // Servo to the goal position
-  if (rtk_menuitem_ischecked(self->command_item))
-  {
-    if (rtk_menuitem_ischecked(self->pose_mode_item))
-      position_servo_pos(self);
-    else
-      position_servo_vel(self);
-  }
+  // Servo to the goal
+  if (rtk_menuitem_ischecked(self->pose_mode_item))
+    position_servo_pos(self);
+  else
+    position_servo_vel(self);
   
   if (self->proxy->info.subscribed)
   {
