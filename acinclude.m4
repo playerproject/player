@@ -431,7 +431,8 @@ GAZEBO_TEST_DRIVER([ptz],[ptz])
 GAZEBO_TEST_DRIVER([truth],[truth])
 GAZEBO_TEST_DRIVER([stereo],[stereo])
 GAZEBO_TEST_DRIVER([gripper],[gripper])
-GAZEBO_TEST_DRIVER([sonars],[sonars])
+GAZEBO_TEST_DRIVER([sonar],[sonar])
+GAZEBO_TEST_DRIVER([sonars],[sonars])  dnl Deprecated; backwards compatability
 GAZEBO_TEST_DRIVER([hud],[hud])
 
 ])

@@ -56,12 +56,10 @@ else
   dnl Add prefix to the pkg-config path in case RTK or Gazebo was
   dnl installed there and the user didn't add it manually .
   dnl
-  dnl Also, check for prefix=NONE, which happens if the user didn't specify
-  dnl a prefix.  In that case, add /usr/local/lib/pkgconfig, because on
+  dnl Also, add /usr/local/lib/pkgconfig, because on
   dnl some platforms, pkg-config won't look there by default.
+  export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
   if test "x$prefix" = "xNONE"; then
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-  else
     export PKG_CONFIG_PATH=$prefix/lib/pkgconfig:$PKG_CONFIG_PATH
   fi
 fi
