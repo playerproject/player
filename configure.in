@@ -233,6 +233,15 @@ AC_SUBST(ISENSE_LIB)
 AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
 
+dnl Optionally build the python client if the header is available
+PYTHON_VERSION=2.2
+AC_ARG_WITH(python,
+[  --without-python        Don't compile the python client libraries],
+with_python=no,
+AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no))
+AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
+
+
 dnl the following must use --with to be built
 AC_ARG_WITH(reb,
 [  --with-reb              Compile the reb drivers],,
@@ -260,8 +269,7 @@ AC_SUBST(MICROSTRAIN_LIBPATH)
 
 dnl optionally compile the audio waveform driver - disabled by default
 AC_ARG_WITH(waveaudio,
-[  --with-waveaudio        Compile the wave audio driver],,
-with_waveaudio=no)
+[  --with-waveaudio        Compile the wave audio driver],,with_waveaudio=no)
 if test "x$with_waveaudio" = "xyes"; then
   dnl check that we have the soundcard header available
   AC_CHECK_HEADER(sys/soundcard.h, with_waveaudio=yes, with_waveaudio=no,)
@@ -274,25 +282,19 @@ fi
 AC_SUBST(WAVEAUDIO_LIB)
 AC_SUBST(WAVEAUDIO_LIBPATH)
 
-
-dnl Optionally build the python client.
-PYTHON_VERSION=2.2
-AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)
-AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
-
 dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h strings.h)
 
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply dnl use AC_CHECK_TYPE because socklen_t 
-dnl isn't in the standard headers (until we move to autoconf-2.5)
+dnl isn't in the standard headers (autoconf-2.5 has better methods for this)
 AC_MSG_CHECKING(if socklen_t is defined)
 AC_TRY_COMPILE(
      [#include <sys/socket.h>],
      [socklen_t len = 42; return len;],
         [AC_MSG_RESULT(yes)],
          [AC_MSG_RESULT(no)
-          AC_DEFINE(socklen_t, int, need to define this on BSD platforms)])
+          AC_DEFINE(socklen_t, int, must define this on BSD-based platforms)])
 
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(scandir poll dirname)
