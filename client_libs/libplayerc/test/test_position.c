@@ -35,6 +35,12 @@ int test_position(playerc_client_t *client, int index)
     FAIL();
   printf("position geom: [%6.3f %6.3f %6.3f] [%6.3f %6.3f]\n",
          device->pose[0], device->pose[1], device->pose[2], device->size[0], device->size[1]);
+
+  TEST("enabling motors");
+  if (playerc_position_enable(device, 1) == 0)
+    PASS();
+  else
+    FAIL();
   
   for (t = 0; t < 30; t++)
   {
@@ -58,7 +64,7 @@ int test_position(playerc_client_t *client, int index)
     }
 
     TEST1("writing data (attempt %d)", t);
-    if (playerc_position_set_cmd_vel(device, 0.01, 0.0, 0.0, 0) != 0)
+    if (playerc_position_set_cmd_vel(device, 0.10, 0.0, 0.0, 1) != 0)
     {
       FAIL();
       break;
