@@ -1,6 +1,6 @@
 
 
-CVS_DEST=Player-cvs-html
+CVS_DEST=Player-cvs-php
 NAME=player
 
 all:
