@@ -545,8 +545,8 @@ Khepera::Main()
 				// need to calculate the left and right velocities
 				int transvel = static_cast<int> (static_cast<int> (ntohl(cmd.position.xspeed)) * geometry->encoder_res);
 				int rotvel = static_cast<int> (static_cast<int> (ntohl(cmd.position.yawspeed)) * geometry->encoder_res * M_PI * ntokhs(geometry->position.size[0])/360.0);
-				int leftvel = transvel + rotvel;
-				int rightvel = transvel - rotvel;
+				int leftvel = transvel - rotvel;
+				int rightvel = transvel + rotvel;
 	
 				// now we set the speed
 				if (this->motors_enabled) 
