@@ -994,7 +994,7 @@ class LaserProxy : public ClientProxy
         LaserProxy} named {\tt lp}, the following expressions are
         equivalent: \verb+lp.ranges[0]+, \verb+lp.Ranges(0)+, 
         and \verb+lp[0]+.  */
-    uint16_t operator [] (unsigned int index)
+    uint32_t operator [] (unsigned int index)
     {
       return Ranges(index);
     }
