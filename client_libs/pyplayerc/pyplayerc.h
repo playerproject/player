@@ -42,7 +42,7 @@
  *
  * Author: Andrew H
  * Date: 24 Aug 2001
- * Desc: Python bindings for position device
+ * Desc: Python bindings 
  *
  * CVS info:
  * $Source$

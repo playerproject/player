@@ -600,7 +600,7 @@ typedef struct _playerc_gps_t
   int quality;
      
   /** Number of satellites in view. */
-  int num_sats;
+  int sat_count;
 
 } playerc_gps_t;
 
@@ -861,6 +861,85 @@ int  playerc_position_set_speed(playerc_position_t *device,
     odometric coordinate system. */
 int playerc_position_set_cmd_pose(playerc_position_t *device,
                                   double gx, double gy, double ga);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
+
+/***************************************************************************
+ ** begin section position3d
+ **************************************************************************/
+
+/** [Synopsis] The {\tt position3d} proxy provides an interface to a
+mobile robot base, such as the Segway RMP series.  The proxy
+supports both differential drive robots (which are capable of forward
+motion and rotation) and omni-drive robots (which are capable of
+forward, sideways and rotational motion). */
+
+/** [Data] */
+
+/** Position3d device data. */
+typedef struct _playerc_position3d_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Robot geometry in robot cs: pose gives the position3d and
+      orientation, size gives the extent.  These values are filled in
+      by playerc_position3d_get_geom(). */
+  double pose[3];
+  double size[2];
+  
+  /** Device position (m). */
+  double pos_x, pos_y, pos_z;
+
+  /** Device orientation (radians). */
+  double pos_roll, pos_pitch, pos_yaw;
+
+  /** Linear velocity (m/s). */
+  double vel_x, vel_y, vel_z;
+
+  /** Angular velocity (radians/sec). */
+  double vel_roll, vel_pitch, vel_yaw;
+  
+  /** Stall flag [0, 1]. */
+  int stall;
+
+} playerc_position3d_t;
+
+/** [Methods] */
+
+/** Create a position3d device proxy. */
+playerc_position3d_t *playerc_position3d_create(playerc_client_t *client, int index);
+
+/** Destroy a position3d device proxy. */
+void playerc_position3d_destroy(playerc_position3d_t *device);
+
+/** Subscribe to the position3d device */
+int playerc_position3d_subscribe(playerc_position3d_t *device, int access);
+
+/** Un-subscribe from the position3d device */
+int playerc_position3d_unsubscribe(playerc_position3d_t *device);
+
+/** Enable/disable the motors */
+int playerc_position3d_enable(playerc_position3d_t *device, int enable);
+
+/** Get the position3d geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_position3d_get_geom(playerc_position3d_t *device);
+
+/** Set the target speed.  vx : forward speed (m/s).  vy : sideways
+    speed (m/s); this field is used by omni-drive robots only.  va :
+    rotational speed (radians/s).  All speeds are defined in the robot
+    coordinate system. */
+int playerc_position3d_set_speed(playerc_position3d_t *device,
+                                 double vx, double vy, double va);
+
+/** Set the target pose (gx, gy, ga) is the target pose in the
+    odometric coordinate system. */
+int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
+                                    double gx, double gy, double ga);
 
 /***************************************************************************
  ** end section
