@@ -1,66 +1,30 @@
 $Id$
 
-
-devicetable.cc: convert to 2-character codes.  need to dyanmically
-                create/delete them. yuck.
-
---------
-printing
---------
-- remove print statements from all 'run' threads.  only Setup() should
-    output anything.  however, that's not really safe, since they
-    could interleave with concurrent clients starting different 
-    devices.  mutex?
-
-    - yep. make some kind of SAFE_PRINTF that will lock, print, and
-        unlock a single global mutex.
-          - but, make sure that potentially blocking on a mutex
-              when you expected to return quickly from a print
-              won't fuck up close timing.
-
-- add back in SOME of the laser output to Setup().
-
-
-
 TOMORROW:
----------
-- protocol
-    - add timestamp to all data
-    - add extra byte for device names?
-    - add ability to send other types of commands (relative instead
-        of absolute)
-           - config command to change interpretation of future commands?
-           - extra byte to allow different kinds of commands?
-           - extra device that takes different commands?
-    - add ability to only send 'new' commands.
-         - config command to set state.
-    - add ability to check current config, when possible; analogous to
-        fcntl(F_GETFL) and fcntl(F_SETFL).
+--------
+- make "safe_printf()" or something like that for device drivers to use.  
+     maybe just expose a global mutex.
 
-- gut C++ client.
-  - make other Write() method for various devices
-  - make functional interface to commands/data?
-  + make smarter in terms of current configuration status.
-      should be able to:
-        + Read() with no args
-        + Write() with no args but only write the right devices
-        - make Request() much smarter (e.g., handle device closures)
-  + make usable examples of c++ client.
-  + edit docs for c++ client
+- check on timestamps. make sure byte-swapping works (server and client).
 
-- change mailing list to 'players@fnord'
+- 'finish' C client.  test (sim and robot).
+     - put vision data in useable structure
+     - add vision example (follow orange thing)
+     - add a couple of config commands (like motor power)
 
-- enforce read/write semantics (e.g. return error on "lw")
+- rework C++ client. test (sim and robot).
+     - add vision example (follow orange thing)
 
-+ pan direction in ptz control?
-    - only broken in simulator
+- update Java client?  nah, get the Danes to do it.
 
-- make it work under inetd.
-   - NO.  just bring it up on system boot. maybe add script
-       in /etc/rc.d/init.d and proper links.
+- move repository to sagan/tobor
 
-IMMEDIATE:
-----------
+NOW:
+----
+- add some kind of config file to Player.   need to specify
+    mappings from devices to ports and things like that.  still take
+    command-line args, though.
+
 - acts on old robots (tanis&milka) takes a LONG time to start up the
     first time (presumably before it's swapped in); Golem hangs.  wait
     longer?
@@ -79,9 +43,6 @@ IMMEDIATE:
 
 LATER:
 ------
-+ bee ptz control broken
-    - fixed it. IRQ mismatch.  need to check comet and atom, probably.
-
 - compass: check newer P2OS versions for compass 
       compatibility.
    - version 1.B (on fly) seems to work fine.  just
@@ -92,15 +53,13 @@ LATER:
       need old P2OS with old compass.  fuck activmedia. fuck
       them with a great big dick.
   
-- check on gripper commanding.  whine is bad.
-
 - remove non-portable pthread behavior.  should be confined to:
       + pthread_kill_other_threads_np(). GONE
       - unlocking mutex owned by other thread.  probably just
           CClientData::datareqeusted for request/reply mode.  need
           different idea.
 
-- P2OS stuff (really needs a whole rewrite):
+- P2OS stuff:
     - do error-checking on calls to:
         - CPacket::Build()
         - CPacket::Receive()
@@ -123,18 +82,24 @@ LATER:
 
 LATENT:
 -------
-+ milka dead?
-    - replaced fuse.
-    - why did the fuse blow? blocked cooling fan?
 
-- on tanis & v.0.6.5, one time only got 720 bytes from a laser
+DONE:
+------
++ on tanis & v.0.6.5, one time only got 720 bytes from a laser
      data packet.  why?
        - now running client ON tanis.  maybe that fixes it?  that
            would be bad.
        - happened more than once.  data's not queuing up, though...
 
-DONE:
-------
++ milka dead?
+    - replaced fuse.
+    - why did the fuse blow? blocked cooling fan?
+
++ change mailing list to 'players@fnord'
+
++ devicetable.cc: convert to 2-character codes.  need to dyanmically
+                create/delete them. yuck.
+
 + add 'distro' target to Makefile.  should:
     + latex && cp golem.ps to ./doc
     + cd .. && tar hcvzf ..... 
