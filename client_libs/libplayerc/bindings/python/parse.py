@@ -53,7 +53,7 @@ def compile(prefix):
     rule.foot = '\n}\n'
 
     rep = Replace()
-    rep.src = re.compile('%s_t\s*\*\s*%s_create\s*' % (prefix, prefix))
+    rep.src = re.compile('\s*%s_create\s*' % (prefix))
     rep.dst = '%s' % prefix
     rule.replacements += [rep]
 
@@ -169,11 +169,17 @@ def parse_file(instream, rules):
 
             # Parse function name and args
             (name, sig) = string.split(func, '(', 1)
+            sig = '(' + sig
             tokens = string.split(name)
             (rval, name) = (string.join(tokens[:-1]), tokens[-1])
-            sig = '(' + sig
-            
+            if name[0] == '*':
+                name = name[1:]
+                rval = rval + ' *'
             #print '%s | %s | %s' % (rval, name, sig)
+
+            # Apply replacement rules to return type
+            if rule.type == 'constructor':
+                rval = ''
 
             # Apply replacement rules to name
             for rep in rule.replacements:
