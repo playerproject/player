@@ -23,8 +23,7 @@ libplayerc_a_SOURCES = playerc.h \
 
 include_HEADERS = playerc.h
 
-# Not working at the moment
-#dist-hook:
-#	mkdir -p $(top_distdir)/doc
-#	cd $(srcdir)/doc && make manual
-#	cp -p $(srcdir)/doc/libplayerc.ps $(top_distdir)/doc
+dist-hook:
+	mkdir -p $(top_distdir)/doc
+	cd $(srcdir)/doc && make manual
+	cp -p $(srcdir)/doc/libplayerc.ps $(top_distdir)/doc

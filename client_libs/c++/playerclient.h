@@ -803,7 +803,7 @@ class PositionProxy : public ClientProxy
         Set {\tt mode} to 0 for direct wheel velocity control (default),
         or 1 for separate translational and rotational control.
         
-	For "reb_position": 0 is direct velocity control, 1 is for velocity-based
+	For "reb\_position": 0 is direct velocity control, 1 is for velocity-based
 	heading PD controller (uses DoDesiredHeading())
 
         Returns: 0 if everything's ok, -1 otherwise.
@@ -1221,7 +1221,7 @@ class PowerProxy : public ClientProxy
     uint16_t charge;
 };
 
-/** The {\tt BumperProxy} class is used to read from the {\tt rwi_bumper}
+/** The {\tt BumperProxy} class is used to read from the {\tt rwi\_bumper}
 	device.
  */
 class BumperProxy : public ClientProxy {
