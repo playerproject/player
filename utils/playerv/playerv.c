@@ -173,8 +173,9 @@ int main(int argc, char **argv)
   // Print out a list of unused options.
   opt_warn_unused(opt);
 
-  // Start the gui; dont run in a separate thread.
-  rtk_app_refresh_rate(app, 0);
+  // Start the gui; dont run in a separate thread and dont let it do
+  // its own updates.
+  //rtk_app_refresh_rate(app, 0);
   rtk_app_main_init(app);
   
   while (!quit)
