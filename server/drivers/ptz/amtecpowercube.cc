@@ -53,7 +53,7 @@
 #define AMTEC_DLE       0x10
 
 // sizes
-#define MAX_ACMD_SIZE     48
+#define AMTEC_MAX_CMDSIZE     48
 
 // command IDs
 #define AMTEC_CMD_RESET        0x00
@@ -62,9 +62,12 @@
 #define AMTEC_CMD_SET_EXT      0x08
 #define AMTEC_CMD_GET_EXT      0x0a
 
-
 // parameter IDs
-#define AMTEC_GET_POS   0x3c
+#define AMTEC_PARAM_GET_POS   0x3c
+
+// module IDs
+#define AMTEC_MODULE_TILT_ID                         11
+#define AMTEC_MODULE_PAN_ID                          12
 
 class AmtecPowerCube:public CDevice 
 {
@@ -73,8 +76,16 @@ class AmtecPowerCube:public CDevice
     virtual void Main();
     bool fd_blocking;
 
-    int send_command(int id, unsigned char* cmd, size_t len);
-    int write_data(unsigned char *buf, size_t len);
+    int SendCommand(int id, unsigned char* cmd, size_t len);
+    int WriteData(unsigned char *buf, size_t len);
+
+    int GetAbsPanTilt(short* pan, short* tilt);
+
+    long BytesWaiting(int sd);
+    int AwaitAnswer(unsigned char *buf, int *len);
+    int WaitForETX(unsigned char *buf, int  *len);
+    int ReadAnswer(unsigned char *cmd, int *len);
+    void ConvertBuffer(unsigned char *cmd, int *len);
 
   public:
     int fd; // amtec device file descriptor
@@ -127,6 +138,7 @@ int
 AmtecPowerCube::Setup()
 {
   struct termios term;
+  short pan,tilt;
   int flags;
 
   player_ptz_cmd_t cmd;
@@ -173,8 +185,7 @@ AmtecPowerCube::Setup()
 
   fd_blocking = false;
   /* try to get current state, just to make sure we actually have a camera */
-  //if(GetAbsPanTilt(&pan,&tilt))
-  if(0)
+  if(GetAbsPanTilt(&pan,&tilt))
   {
     printf("Couldn't connect to PTZ device most likely because the camera\n"
                     "is not connected or is connected not to %s\n", 
@@ -214,11 +225,11 @@ AmtecPowerCube::Setup()
 // The following method is based on one found in CARMEN.  Thanks to the
 // authors.
 int 
-AmtecPowerCube::send_command(int id, unsigned char* cmd, size_t len)
+AmtecPowerCube::SendCommand(int id, unsigned char* cmd, size_t len)
 {
   size_t i;
   int ctr, add;
-  unsigned char rcmd[MAX_ACMD_SIZE];
+  unsigned char rcmd[AMTEC_MAX_CMDSIZE];
   unsigned char bcc;
   unsigned char umnr;
   unsigned char lmnr;
@@ -298,7 +309,7 @@ AmtecPowerCube::send_command(int id, unsigned char* cmd, size_t len)
   fprintf( stderr, "\n" );
 #endif
   
-  if(write_data(rcmd, ctr)) 
+  if(WriteData(rcmd, ctr)) 
     return(0);
   else
     return(-1);
@@ -307,7 +318,7 @@ AmtecPowerCube::send_command(int id, unsigned char* cmd, size_t len)
 // The following method is based on one found in CARMEN.  Thanks to the
 // authors.
 int
-AmtecPowerCube::write_data(unsigned char *buf, size_t len)
+AmtecPowerCube::WriteData(unsigned char *buf, size_t len)
 {
   size_t written = 0;
   int tmp = 0;
@@ -324,3 +335,155 @@ AmtecPowerCube::write_data(unsigned char *buf, size_t len)
   }
   return(0);
 }
+
+long 
+AmtecPowerCube::BytesWaiting(int sd)
+{
+  long available=0;
+  if(ioctl(sd, FIONREAD, &available) == 0 )
+    return available;
+  else
+    return -1;
+}    
+
+int
+AmtecPowerCube::WaitForETX(unsigned char *buf, int  *len)
+{
+  static int pos, loop, val;
+#ifdef IO_DEBUG
+  int i;
+#endif
+  pos = 0; loop = 0;
+  while( loop<MAX_NUM_LOOPS ) {
+    val = BytesWaiting(fd );
+    if (val>0) {
+      read(fd, &(buf[pos]), val);
+#ifdef IO_DEBUG
+      for (i=0;i<val;i++)
+	fprintf( stderr, "[0x%s%x]", buf[pos+i]<16?"0":"", buf[pos+i] );
+#endif
+      if(buf[pos+val-1]==AMTEC_ETX) {
+	*len = pos+val-1;
+#ifdef IO_DEBUG
+	fprintf( stderr, "\n" );
+#endif
+	return(0);
+      }
+      pos += val;
+    } else {
+      usleep(1000);
+      loop++;
+    }
+  }
+#ifdef IO_DEBUG
+  fprintf( stderr, "\n" );
+#endif
+  return(-1);
+}
+
+int
+AmtecPowerCube::AwaitAnswer(unsigned char *buf, int *len)
+{
+  int loop = 0;
+  *len = 0;
+#ifdef IO_DEBUG
+  fprintf( stderr, "<--- " );
+#endif
+  while(loop<10) {
+    if (BytesWaiting(fd)) {
+      read(fd, &(buf[0]), 1 );
+#ifdef IO_DEBUG
+      fprintf( stderr, "(0x%s%x)", buf[0]<16?"0":"", buf[0] );
+#endif
+      if (buf[0]==AMTEC_STX) {
+	return(WaitForETX(buf,len));
+      }
+    } else {
+      usleep(1000);
+      loop++;
+    }
+  }
+#ifdef IO_DEBUG
+  fprintf( stderr, "\n" );
+#endif
+  return(-1);
+}
+
+void
+AmtecPowerCube::ConvertBuffer(unsigned char *cmd, int *len)
+{
+  int i, j;
+  for (i=0;i<*len;i++) {
+    if (cmd[i]==B_DLE) {
+      switch(cmd[i+1]) {
+      case 0x82:
+	cmd[i] = 0x02;
+	for (j=i+2;j<*len;j++) cmd[j-1] = cmd[j];
+	(*len)--;
+	break;
+      case 0x83:
+	cmd[i] = 0x03;
+	for (j=i+2;j<*len;j++) cmd[j-1] = cmd[j];
+	(*len)--;
+	break;
+      case 0x90:
+	cmd[i] = 0x10;
+	for (j=i+2;j<*len;j++) cmd[j-1] = cmd[j];
+	(*len)--;
+	break;
+      }
+    }
+  }
+}
+
+int
+AmtecPowerCube::ReadAnswer(unsigned char *cmd, int *len)
+{
+#ifdef IO_DEBUG
+  int i;
+#endif
+  if (WaitForAnswer(cmd, len)) {
+#ifdef IO_DEBUG
+    fprintf( stderr, "<=== " );
+    for (i=0;i<*len;i++)
+      fprintf( stderr, "[0x%s%x]", cmd[i]<16?"0":"", cmd[i] );
+    fprintf( stderr, "\n" );
+#endif
+    ConvertBuffer( cmd, len );
+#ifdef IO_DEBUG
+    fprintf( stderr, "<=p= " );
+    for (i=0;i<*len;i++)
+      fprintf( stderr, "[0x%s%x]", cmd[i]<16?"0":"", cmd[i] );
+    fprintf( stderr, "\n" );
+#endif
+    return(0);
+  } else {
+    return(-1);
+  }
+}
+
+int
+AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[2];
+
+  cmd[0] = AMTEC_CMD_GET_EXT;
+  cmd[1] = AMTEC_PARAM_GET_POS;
+
+  // get the pan first
+  if(SendCommand(AMTEC_MODULE_PAN_ID, cmd, 2) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+
+  return(0);
+}
+
