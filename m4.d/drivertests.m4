@@ -109,6 +109,9 @@ PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],[],[],[])
+if  test "x$enable_sicklms200" = "xyes"; then
+	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
+fi
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
