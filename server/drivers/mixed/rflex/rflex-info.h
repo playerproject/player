@@ -84,6 +84,8 @@
 #define IR_RUN                   0
 #define IR_REPORT                1
 
+#define JSTK_GET_STATE		     0
+
 enum PARITY_TYPE   { N, E, O };
 
 typedef struct {

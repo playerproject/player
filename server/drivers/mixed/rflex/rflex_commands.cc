@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <rflex.h>
+
 
 //holds data until someone wants to read it
 typedef struct {
@@ -272,6 +274,9 @@ void rflex_set_velocity( int fd, long tvel, long rvel,
   // ** workaround for stupid hardware bug, cause unknown, but this works
   // ** with minimal detriment to control
   // ** avoids all values with 1b in highest or 3'rd highest order byte
+  
+  // 0x1b is part of the packet terminating string
+  // which is most likely what causes the bug
 
   // ** if 2'nd order byte is 1b, round to nearest 1c, or 1a
   if((urvel&0xff00)==0x1b00){
@@ -621,8 +626,49 @@ static void parseSonarReport( unsigned char *buffer )
   }
 }
 
+//processes a joystick packet fromt the rflex, and sets as command if 
+// joystick command enabled
+static void parseJoyReport( int fd, unsigned char *buffer )
+{
+
+	int x,y;
+  unsigned char opcode, dlen, buttons;
+    
+  opcode = buffer[4];
+  dlen   = buffer[5];
+
+  switch(opcode) {
+  case JSTK_GET_STATE:
+  	if (dlen < 13)
+	{	
+		fprintf(stderr,"Joystick Packet too small\n");
+		break;
+	}
+	x = convertBytes2UInt32(&buffer[10]);
+	y = convertBytes2UInt32(&buffer[14]);
+	buttons = buffer[18];
+	
+	if ((buttons & 1) == 1)
+	{
+//		rflex_set_velocity(fd,static_cast<long> (y * rflex_configs.odo_distance_conversion* rflex_configs.joy_pos_ratio), static_cast<long> (x* rflex_configs.joy_ang_ratio * rflex_configs.odo_angle_conversion), static_cast<long> (rflex_configs.mmPsec2_trans_acceleration));
+		rflex_set_velocity(fd,(long) MM2ARB_ODO_CONV(y * rflex_configs.joy_pos_ratio),(long) RAD2ARB_ODO_CONV(x * rflex_configs.joy_ang_ratio),(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
+
+
+		RFLEX::joy_control = 5;
+//		RFLEX::command->position.xspeed = static_cast<int> (y * rflex_configs.joy_pos_ratio);
+//		RFLEX::command->position.yawspeed = static_cast<int> (x * rflex_configs.joy_ang_ratio);
+		
+	}
+//	printf("JoystickState: %d %d %d %d %d\n",x,y,buttons,0,0);//RFLEX::command->position.xspeed,RFLEX::command->position.yawspeed);
+    break;
+  default:
+    break;
+  }
+}
+
+
 //parses a packet from the rflex, and decides what to do with it
-static int parseBuffer( unsigned char *buffer, unsigned int len )
+static int parseBuffer( int fd,unsigned char *buffer, unsigned int len )
 {
   unsigned int port, dlen, crc;
 
@@ -644,6 +690,7 @@ static int parseBuffer( unsigned char *buffer, unsigned int len )
       parseMotReport( buffer );
       break;
     case JSTK_PORT:
+		parseJoyReport( fd, buffer );
       break;
     case SONAR_PORT:
       parseSonarReport( buffer );
@@ -680,7 +727,7 @@ static int clear_incoming_data(int fd)
     pthread_testcancel();
     waitForAnswer(fd, buffer, &len);
     pthread_testcancel();
-    parseBuffer(buffer, len);
+    parseBuffer(fd, buffer, len);
   }
   return count;
 }
@@ -770,6 +817,10 @@ void rflex_update_system( int fd , int *battery,
 {
   //cmdSend( fd, SYS_PORT, 0, SYS_LCD_DUMP, 0, NULL );
   cmdSend( fd, SYS_PORT, 0, SYS_STATUS, 0, NULL );
+  if (rflex_configs.use_joystick)
+  {
+  	cmdSend( fd, JSTK_PORT, 0, JSTK_GET_STATE, 0, NULL);
+  }
   
  
   clear_incoming_data(fd);

@@ -87,7 +87,7 @@ extern player_rflex_data_t*  RFLEX::data;
 extern player_rflex_cmd_t*   RFLEX::command;
 extern unsigned char*    RFLEX::reqqueue;
 extern unsigned char*    RFLEX::repqueue;
-
+extern int               RFLEX::joy_control;
 
 //NOTE - this is accessed as an extern variable by the other RFLEX objects
 rflex_config_t rflex_configs;
@@ -103,6 +103,9 @@ RFLEX::RFLEX(char* interface, ConfigFile* cf, int section)
 
     //just sets stuff to zero
     set_config_defaults();
+	
+	// joystick override
+	joy_control = 0;
 
     //get serial port: everyone needs it (and we dont' want them fighting)
     strncpy(rflex_configs.serial_port,
@@ -353,8 +356,10 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 void 
 RFLEX::Main()
 {
-	printf("Waiting for rflex_done=1 in config file\n");
-	while (rflex_configs.run == false);
+	printf("Waiting for rflex_done=1 in config file...");
+	fflush(stdout);
+	while (rflex_configs.run == false) pthread_testcancel();
+	printf("Rflex Thread Started\n");
 	
 
 	player_rflex_cmd_t command;
@@ -749,7 +754,7 @@ RFLEX::Main()
 		/* read the clients' commands from the common buffer */
 		GetCommand((unsigned char*)&command, sizeof(command));
 		
-		if(positionp->subscriptions)
+		if(positionp->subscriptions || rflex_configs.use_joystick)
 		{
 			newmotorspeed = false;
 			newmotorturn = false;
@@ -766,7 +771,12 @@ RFLEX::Main()
 			}
 			/* NEXT, write commands */
 			//yes we have to do this every time (otherwise failsafe will kick in)
-			rflex_set_velocity(rflex_fd,(long) MM2ARB_ODO_CONV(mmPsec_speedDemand),(long) RAD2ARB_ODO_CONV(radPsec_turnRateDemand),(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
+
+			// allow rflex joystick to overide the player command
+			if (joy_control > 0)
+				--joy_control;
+			else
+				rflex_set_velocity(rflex_fd,(long) MM2ARB_ODO_CONV(mmPsec_speedDemand),(long) RAD2ARB_ODO_CONV(radPsec_turnRateDemand),(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
 		}
 		else
 			rflex_stop_robot(rflex_fd,(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));
@@ -942,7 +952,7 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *
 
 
   //this would get the battery,time, and brake state (if we cared)
-  //update system (battery,time, and brake)
+  //update system (battery,time, and brake also request joystick data)
   rflex_update_system(rflex_fd,&batt,&brake);
 	d->power.charge = htons(static_cast<uint16_t> (batt/10) + rflex_configs.power_offset);
 }
@@ -963,6 +973,11 @@ void RFLEX::set_config_defaults(){
   rflex_configs.range_distance_conversion=0.0;
   rflex_configs.mmPsec2_trans_acceleration=500.0;
   rflex_configs.radPsec2_rot_acceleration=500.0;
+  rflex_configs.use_joystick=false;
+  rflex_configs.joy_pos_ratio=0;
+  rflex_configs.joy_ang_ratio=0;
+  
+  
   rflex_configs.max_num_sonars=0;
   rflex_configs.num_sonars=0;
   rflex_configs.sonar_age=0;

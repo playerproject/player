@@ -53,6 +53,13 @@ typedef struct rflex_config_t{
   double mmPsec2_trans_acceleration;
   //default rotational acceleration in rad/sec
   double radPsec2_rot_acceleration;
+  
+  // use rflex joystick to command robot?
+  bool use_joystick;
+  double joy_pos_ratio, joy_ang_ratio;
+  
+  
+  
   //maximum number of sonar supported by modules
   //(generally 16*number of sonar controller boards, or banks)
   int max_num_sonars;
