@@ -154,7 +154,7 @@ static PyObject *wifi_str(PyObject *self)
   {
     link = pywifi->wifi->links + i;
     snprintf(s, sizeof(s), "%s %d %d %d ",
-             link->ip, link->link, link->level, link->noise);
+             link->ip, link->qual, link->level, link->noise);
     assert(strlen(str) + strlen(s) < sizeof(str));
     strcat(str, s);
   }
