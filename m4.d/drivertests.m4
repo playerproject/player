@@ -116,6 +116,10 @@ PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
 	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
+AC_ARG_ENABLE(highspeedsick, [  --disable-highspeedsick   Don't build support for 500Kbps comms with SICK],,enable_highspeedsick=yes)
+if test "x$enable_highspeedsick" = "xno"; then
+  AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[[disable 500Kbps comms with SICK]])
+fi
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
