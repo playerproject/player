@@ -81,6 +81,8 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->qlen = 0;
   client->qsize = sizeof(client->qitems, client->qitems[0]);
 
+  client->datatime = 0;
+  
   return client;
 }
 
@@ -151,6 +153,21 @@ int playerc_client_disconnect(playerc_client_t *client)
 }
 
 
+// Change the server's data delivery mode
+int playerc_client_datamode(playerc_client_t *client, int mode)
+{
+  player_device_datamode_req_t req;
+
+  req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
+  req.mode = mode;
+
+  if (playerc_client_request(client, NULL, &req, sizeof(req), NULL, 0) < 0)
+    return -1;
+  
+  return 0;
+}
+
+
 // Test to see if there is pending data.
 int playerc_client_peek(playerc_client_t *client, int timeout)
 {
@@ -196,7 +213,10 @@ void *playerc_client_read(playerc_client_t *client)
 
   // Catch and ignore sync messages
   if (header.type == PLAYER_MSGTYPE_SYNCH)
+  {
+    client->datatime = header.timestamp_sec + header.timestamp_usec * 1e-6;
     return client;
+  }
   
   // Check the return type 
   if (header.type != PLAYER_MSGTYPE_DATA)
@@ -216,8 +236,8 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
 {
   player_msghdr_t header;
 
-  if (!(device->access == PLAYER_WRITE_MODE || device->access == PLAYER_ALL_MODE))
-    PLAYERC_WARN("writing to device without write permission");
+  //if (!(device->access == PLAYER_WRITE_MODE || device->access == PLAYER_ALL_MODE))
+  //  PLAYERC_WARN("writing to device without write permission");
     
   header.stx = PLAYER_STXX;
   header.type = PLAYER_MSGTYPE_CMD;
@@ -267,7 +287,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
 
     if (rep_header.type == PLAYER_MSGTYPE_DATA)
     {
-      //playerc_client_dispatch(client, &rep_header, data, len);
+      // Queue up any incoming data packets for later dispatch
       playerc_client_push(client, &rep_header, data, len);
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
@@ -412,8 +432,8 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
 
 
 // Subscribe to a device
-int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access,
-                             char *drivername, size_t len)
+int playerc_client_subscribe(playerc_client_t *client, int code, int index,
+                             int access, char *drivername, size_t len)
 {
   player_device_req_t req;
   player_device_resp_t rep;

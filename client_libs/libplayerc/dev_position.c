@@ -58,6 +58,8 @@ void playerc_position_destroy(playerc_position_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
+
+  return;
 }
 
 
@@ -96,8 +98,8 @@ void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *heade
 int playerc_position_enable(playerc_position_t *device, int enable)
 {
   player_position_power_config_t config;
-  memset( &config, 0, sizeof(config) );
 
+  memset(&config, 0, sizeof(config));
   config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   config.value = enable;
 
@@ -113,8 +115,8 @@ int playerc_position_get_geom(playerc_position_t *device)
 {
   int len;
   player_position_geom_t config;
-  memset( &config, 0, sizeof(config) );
 
+  memset(&config, 0, sizeof(config));
   config.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 
   len = playerc_client_request(device->info.client, &device->info,
@@ -141,12 +143,25 @@ int playerc_position_get_geom(playerc_position_t *device)
 int playerc_position_set_speed(playerc_position_t *device, double vx, double vy, double va)
 {
   player_position_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
-  
+
+  memset(&cmd, 0, sizeof(cmd));
   cmd.xspeed = htonl((int) (vx * 1000.0));
   cmd.yspeed = htonl((int) (vy * 1000.0));
   cmd.yawspeed = htonl((int) (va * 180.0 / M_PI));
 
-  return playerc_client_write(device->info.client, &device->info, (char*) &cmd, sizeof(cmd));
+  return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }
 
+
+// Set the target pose
+int playerc_position_set_cmd_pose(playerc_position_t *device, double gx, double gy, double ga)
+{
+  player_position_cmd_t cmd;
+
+  memset(&cmd, 0, sizeof(cmd));
+  cmd.xpos = htonl((int) (gx * 1000.0));
+  cmd.ypos = htonl((int) (gy * 1000.0));
+  cmd.yaw = htonl((int) (ga * 180.0 / M_PI));
+
+  return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
+}

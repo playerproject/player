@@ -39,6 +39,10 @@
   #define MAX(a,b) ((a > b) ? a : b)
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /***************************************************************************
  * Array sizes
@@ -112,7 +116,10 @@ typedef struct _playerc_client_t
   // A circular queue used to buffer incoming data packets.
   int qfirst, qlen, qsize;
   playerc_client_item_t qitems[128];
-    
+  
+  // Data time stamp on the last SYNC packet
+  double datatime;
+
 } playerc_client_t;
 
 
@@ -122,8 +129,8 @@ typedef struct _playerc_device_t
   // Pointer to the client proxy.
   playerc_client_t *client;
 
-  // Device code, index, etc.
-  int code, index, access;
+  // Device code, index
+  int code, index;
 
   // The driver name
   char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
@@ -209,6 +216,9 @@ void playerc_client_destroy(playerc_client_t *client);
 int  playerc_client_connect(playerc_client_t *client);
 int  playerc_client_disconnect(playerc_client_t *client);
 
+// Change the server's data delivery mode
+int playerc_client_datamode(playerc_client_t *client, int mode);
+
 // Add/remove a device proxy (private)
 int playerc_client_adddevice(playerc_client_t *client, playerc_device_t *device);
 int playerc_client_deldevice(playerc_client_t *client, playerc_device_t *device);
@@ -224,8 +234,8 @@ int  playerc_client_delcallback(playerc_client_t *client, playerc_device_t *devi
 int playerc_client_get_devlist(playerc_client_t *client);
 
 // Subscribe/unsubscribe a device from the sever (private)
-int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access,
-                             char *drivername, size_t len);
+int playerc_client_subscribe(playerc_client_t *client, int code, int index,
+                             int access, char *drivername, size_t len);
 int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 
@@ -607,13 +617,18 @@ int playerc_position_enable(playerc_position_t *device, int enable);
 // rather than returning it to the caller.
 int playerc_position_get_geom(playerc_position_t *device);
 
-// Set the robot speed.
+// Set the target speed.
 // vx : forward speed (m/s).
 // vy : sideways speed (m/s); this field is used by omni-drive robots only.
 // va : rotational speed (radians/s).
 // All speeds are defined in the robot coordinate system.
 int  playerc_position_set_speed(playerc_position_t *device,
                                 double vx, double vy, double va);
+
+// Set the target pose
+// (gx, gy, ga) is the target pose in the odometric coordinate system.
+int playerc_position_set_cmd_pose(playerc_position_t *device,
+                                  double gx, double gy, double ga);
 
 
 /***************************************************************************
@@ -770,7 +785,7 @@ int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double
 typedef struct
 {
   // Destination IP address
-  char ip[16];
+  char ip[32];
  
   // Link properties
   int link, level, noise;
@@ -874,6 +889,10 @@ int playerc_localize_set_config(playerc_localize_t *device, player_localize_conf
 /***************************************************************************
  * proxy : end (this is just here so the auto-documentation works.
  **************************************************************************/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

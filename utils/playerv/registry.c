@@ -55,6 +55,12 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fndestroy = (fndestroy_t) position_destroy;
       device->fnupdate = (fnupdate_t) position_update;
       break;
+    case PLAYER_POWER_CODE:
+      device->proxy = power_create(mainwnd, opt, client, 
+                                      device->index, device->drivername, device->subscribe);
+      device->fndestroy = (fndestroy_t) power_destroy;
+      device->fnupdate = (fnupdate_t) power_update;
+      break;
     case PLAYER_PTZ_CODE:
       device->proxy = ptz_create(mainwnd, opt, client, 
                                  device->index, device->drivername, device->subscribe);

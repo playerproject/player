@@ -49,6 +49,7 @@
 #define COLOR_FIDUCIAL           0xF000F0
 #define COLOR_POSITION_ROBOT     0xC00000
 #define COLOR_POSITION_CONTROL   0xFF0000
+#define COLOR_POWER              0x000000
 #define COLOR_PTZ_DATA           0x00C000
 #define COLOR_PTZ_CMD            0x00C000
 #define COLOR_SONAR              0xC0C080
@@ -267,6 +268,43 @@ void position_destroy(position_t *position);
 
 // Update a position device
 void position_update(position_t *position);
+
+
+/***************************************************************************
+ * Power device
+ ***************************************************************************/
+
+// Power device info
+typedef struct
+{
+  // Driver name
+  char *drivername;
+
+  // Power device proxy
+  playerc_power_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+
+  // Figures
+  rtk_fig_t *fig;
+  
+} power_t;
+
+
+// Create a power device
+power_t *power_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                      int index,  const char *drivername, int subscribe);
+
+// Destroy a power device
+void power_destroy(power_t *power);
+
+// Update a power device
+void power_update(power_t *power);
 
 
 /***************************************************************************
