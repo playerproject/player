@@ -1,4 +1,5 @@
 #include <math.h>
+#include <sys/time.h>
 
 #include "playercommon.h"
 #include "playernav.h"
@@ -21,6 +22,7 @@ static gboolean setting_theta=FALSE;
 static gboolean setting_goal=FALSE;
 
 extern int dumpp;
+int show_robot_names;
 
 /*
  * handle quit events, by setting a flag that will make the main loop exit
@@ -42,6 +44,31 @@ _toggle_dump(GtkWidget *widget,
   dumpp = !dumpp;
   return(TRUE);
 }
+
+static gboolean 
+_show_names(GtkWidget *widget,
+             GdkEvent *event,
+             gpointer data)
+{
+  int i;
+  gui_data_t* gui_data = (gui_data_t*)widget; 
+
+  show_robot_names = !show_robot_names;
+
+  if(show_robot_names)
+  {
+    for(i=0;i<gui_data->num_robots;i++)
+      gnome_canvas_item_show(gui_data->robot_labels[i]);
+  }
+  else
+  {
+    for(i=0;i<gui_data->num_robots;i++)
+      gnome_canvas_item_hide(gui_data->robot_labels[i]);
+  }
+
+  return(TRUE);
+}
+
 
 static gboolean 
 _stop_all_robots(GtkWidget *widget,
@@ -156,7 +183,8 @@ _robot_button_callback(GnomeCanvasItem *item,
         break;
     }
     assert(idx < gui_data->num_robots);
-    gnome_canvas_item_hide(gui_data->robot_labels[idx]);
+    if(!show_robot_names)
+      gnome_canvas_item_hide(gui_data->robot_labels[idx]);
     onrobot=TRUE;
   }
 
@@ -365,6 +393,10 @@ make_menu(gui_data_t* gui_data)
   GtkMenuItem* file_item;
   GtkCheckMenuItem* dump_item;
   GtkMenuItem* quit_item;
+
+  GtkMenu* view_menu;
+  GtkMenuItem* view_item;
+  GtkCheckMenuItem* show_names_item;
   
   GtkMenu* stop_menu;
   GtkMenuItem* stop_item;
@@ -372,17 +404,20 @@ make_menu(gui_data_t* gui_data)
   GtkMenuItem* go_all_item;
 
   file_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
+  view_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
   stop_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
 
   /* Create the menu items */
   quit_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Quit");
   dump_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Capture stills");
+  show_names_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Show robot names");
   stop_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Stop all robots");
   go_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Go all robots");
 
   /* Add them to the menu */
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)dump_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)quit_item);
+  gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)show_names_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)stop_all_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)go_all_item);
 
@@ -394,6 +429,9 @@ make_menu(gui_data_t* gui_data)
   g_signal_connect_swapped(G_OBJECT (dump_item), "activate",
                            G_CALLBACK(_toggle_dump),
                            (gpointer) "file.dump");
+  g_signal_connect_swapped(G_OBJECT (show_names_item), "activate",
+                           G_CALLBACK(_show_names),
+                           (gpointer) gui_data);
   g_signal_connect_swapped(G_OBJECT (stop_all_item), "activate",
                            G_CALLBACK(_stop_all_robots),
                            (gpointer) gui_data);
@@ -404,6 +442,7 @@ make_menu(gui_data_t* gui_data)
   /* We do need to show menu items */
   gtk_widget_show((GtkWidget*)dump_item);
   gtk_widget_show((GtkWidget*)quit_item);
+  gtk_widget_show((GtkWidget*)show_names_item);
   gtk_widget_show((GtkWidget*)stop_all_item);
   gtk_widget_show((GtkWidget*)go_all_item);
 
@@ -415,11 +454,15 @@ make_menu(gui_data_t* gui_data)
 
   file_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("File");
   gtk_widget_show((GtkWidget*)file_item);
-  stop_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Stop/Go...");
+  view_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("View");
+  gtk_widget_show((GtkWidget*)view_item);
+  stop_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Stop/Go");
   gtk_widget_show((GtkWidget*)stop_item);
 
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), (GtkWidget*)file_menu);
   gtk_menu_bar_append(GTK_MENU_BAR (menu_bar), (GtkWidget*)file_item);
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(view_item), (GtkWidget*)view_menu);
+  gtk_menu_bar_append(GTK_MENU_BAR (menu_bar), (GtkWidget*)view_item);
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(stop_item), (GtkWidget*)stop_menu);
   gtk_menu_bar_append(GTK_MENU_BAR (menu_bar), (GtkWidget*)stop_item);
 }
@@ -858,19 +901,30 @@ dump_screenshot(gui_data_t* gui_data)
   GdkPixbuf* screenshot;
   char fname[PATH_MAX];
   gint width, height;
+  struct timeval last;
+  struct timeval curr;
+  double diff;
   
   g_assert((win = ((GtkWidget*)gui_data->main_window)->window));
   if(gdk_window_is_viewable(win))
   {
     gtk_window_get_size(gui_data->main_window, &width, &height);
+    gettimeofday(&last,NULL);
     g_assert((screenshot = gdk_pixbuf_get_from_drawable(NULL,(GdkDrawable*)win,
                                                         gdk_colormap_get_system(),
                                                         0,0,0,0,
                                                         width,height)));
+    gettimeofday(&curr,NULL);
+    diff = (curr.tv_sec + curr.tv_usec/1e6) - (last.tv_sec + last.tv_usec/1e6);
+    printf("time to get pixbuf: %lf\n", diff);
+    last = curr;
     sprintf(fname,"playernav-img-%04d.png",idx);
     printf("writing screenshot to %s\n", fname);
     if(!(gdk_pixbuf_save(screenshot, fname, "png", NULL, NULL)))
       puts("FAILED");
+    gettimeofday(&curr,NULL);
+    diff = (curr.tv_sec + curr.tv_usec/1e6) - (last.tv_sec + last.tv_usec/1e6);
+    printf("time to save pixbuf: %lf\n", diff);
 
     g_object_unref(screenshot);
     idx++;
