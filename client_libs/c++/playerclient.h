@@ -59,6 +59,11 @@ class ClientProxyNode
     ClientProxyNode* next;
 };
 
+/** One {\tt PlayerClient} object is used to control each connection to
+    a Player server.  Contained within this object are methods for changing the
+    connection parameters and obtaining access to devices, which we explain 
+    next.
+ */
 class PlayerClient
 {
   private:
@@ -102,35 +107,38 @@ class PlayerClient
     struct timeval timestamp;
 
     // constructors
-    // 
-    // make a client and connect it as indicated.
+    
+    /** Make a client and connect it as indicated.
+        If {\tt hostname} is omitted (or NULL) then the client will {\em not}
+        be connected.  In that cast, call {\tt Connect()} yourself later.
+     */
     PlayerClient(const char* hostname=NULL, const int port=PLAYER_PORTNUM);
 
-    // use a binary IP instead of a hostname
+    /** Make a client and connect it as indicated, using a binary IP instead 
+        of a hostname
+      */
     PlayerClient(const struct in_addr* hostaddr, const int port);
 
     // destructor
     ~PlayerClient();
 
-    // 4 ways to connect to the server
-    // Return:
-    //    0 if everything is OK (connection opened)
-    //   -1 if something went wrong (connection NOT opened)
-    //  
-    int Connect(const char* hostname, int port);
-    int Connect(const char* hostname) { return(Connect(hostname,PLAYER_PORTNUM)); }
-    int Connect() { return(Connect("localhost",PLAYER_PORTNUM)); }
+    /** Connect to the indicated host and port.\\
+        Returns 0 on success; -1 on error.
+     */
+    int Connect(const char* hostname="localhost", int port=PLAYER_PORTNUM);
 
-    // use the binary IP address
+    /** Connect to the indicated host and port, using a binary IP.\\
+        Returns 0 on success; -1 on error.
+     */
     int Connect(const struct in_addr* addr, int port);
 
-    // disconnect from server
-    // Return:
-    //    0 if everything is OK (connection closed)
-    //   -1 if something went wrong (connection was probably already closed)
+    /** Disconnect from server.\\
+        Returns 0 on success; -1 on error.
+      */
     int Disconnect();
 
-    // check if we are connected
+    /** Check if we are connected.
+      */
     bool Connected() { return((conn.sock >= 0) ? true : false); }
 
     //
@@ -140,6 +148,14 @@ class PlayerClient
     //    0 if everything went OK
     //   -1 if something went wrong (you should probably close the connection!)
     //
+    /**
+    This method will read one round of data; that is, it will read one data
+    packet for each device that is currently open for reading.  The data from
+    each device will be processed by the appropriate device proxy and stored
+    there for access by your program.  If no errors occurred 0 is returned.
+    Otherwise, -1 is returned and diagnostic information is printed to {\tt
+    stderr} (you should probably close the connection!).
+    */
     int Read();
     
     //
@@ -169,15 +185,13 @@ class PlayerClient
                 const char* payload,
                 size_t payloadlen);
     
-    // request access to a device, meant for use by client-side device
-    // proxy constructors
-    //
-    // req_access is requested access
-    // grant_access, if non-NULL, will be filled with the granted access
-    //
-    // Returns:
-    //   0 if everything went OK
-    //   -1 if something went wrong (you should probably close the connection!)
+    /**
+      Request access to a device; meant mostly for use by client-side device 
+      proxy constructors.\\
+      {\tt req\_access} is requested access.\\
+      {\tt grant\_access}, if non-NULL, will be filled with the granted access.\\
+      Returns 0 if everything went OK or -1 if something went wrong.
+    */
     int RequestDeviceAccess(unsigned short device,
                             unsigned short index,
                             unsigned char req_access,
@@ -186,17 +200,29 @@ class PlayerClient
     // Player device configurations
 
     // change continuous data rate (freq is in Hz)
+    /**
+      You can change the rate at which your client receives data from the 
+      server with this method.  The value of {\tt freq} is interpreted as Hz; 
+      this will be the new rate at which your client receives data (when in 
+      continuous mode).  On error, -1 is returned; otherwise 0.
+     */
     int SetFrequency(unsigned short freq);
 
-    // change data delivery mode
-    //   1 = request/reply
-    //   0 = continuous (default)
+    /** You can toggle the mode in which the server sends data to your 
+        client with this method.  The {\tt mode} should be either 1 
+        (for request/reply) or 0 (for continuous).  On error, -1 is 
+        returned; otherwise 0.
+      */
     int SetDataMode(unsigned char mode);
 
-    // request a round of data (only valid when in request/reply mode)
+    /** When in request/reply mode, you can request a single round of data 
+        using this method.  On error -1 is returned; otherwise 0.
+      */
     int RequestData();
 
-    // authenticate
+    /** Attempt to authenticate your client using the provided key.  If 
+        authentication fails, the server will close your connection
+      */
     int Authenticate(char* key);
     
     // proxy list management methods

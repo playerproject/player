@@ -8,22 +8,24 @@ Player homepage is at:
 
 Contents
 -------------
-COPYING              GNU Public License
-Makefile.common      common Makefile; make your configuration changes here
-Makefile             the top-level Makefile
-README               this file
-TODO                 we've got big plans...
-client_libs/c        source for C client-side utilities
-client_libs/c++      source for C++ client-side utilities
-client_libs/tcl      source for Tcl/Tk client-side utilities
-client_libs/lisp     source for Common LISP client-side utilities
-examples/c           source for C example clients
-examples/c++         source for C++ example clients
-examples/tcl         source for Tcl/Tk example clients
-examples/lisp        source for Common LISP example clients
-doc                  users manual
-include              header files for Player
-src                  source for Player
+COPYING                GNU Public License
+Makefile.common        common Makefile; make your configuration changes here
+Makefile               the top-level Makefile; you shouldn't need to change it
+README                 this file
+TODO                   we've got big plans...
+client_libs/c          source for the "reference" C client-side utilities
+client_libs/libplayerc source for the C client-side utilities
+client_libs/c++        source for the C++ client-side utilities
+client_libs/tcl        source for Tcl client-side utilities
+client_libs/lisp       source for Common LISP client-side utilities
+examples/c             source for "reference" C example clients
+examples/c++           source for C++ example clients
+examples/tcl           source for Tcl/Tk example clients
+examples/lisp          source for Common LISP example clients
+doc                    users manuals for Player and client libraries
+utils                  client-side utilities that you might find useful
+include                header files for Player
+src                    source for Player
 
 Configuration 
 ------------------

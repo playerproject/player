@@ -52,10 +52,12 @@ $(C_CLIENT_DIR)/$(C_CLIENT_OBJ):
 dep:
 	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.cc 2>/dev/null
 	$(RM) -f Makefile.bak
+	cd test && make dep
 
 clean_dep:
 	$(MAKEDEP) -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND"
 	$(RM) -f Makefile.bak
+	cd test && make clean_dep
 
 %.o: %.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ -c $<
@@ -110,6 +112,7 @@ uninstall:
 
 
 clean:
+	cd test && make clean
 	$(RM) -f $(LIBNAME) *.o
 	$(RM) -f ../../lib/$(LIBNAME)
 	$(RM) -f ../../include/playercclient.h 
