@@ -160,7 +160,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
 
   // Do we create a robot position interface?
   if(cf->ReadDeviceId(&(this->position_id), section, "provides",
-                      PLAYER_POSITION_CODE, -1, "odometry") == 0)
+                      PLAYER_POSITION_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
                           sizeof(player_position_data_t),

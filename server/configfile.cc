@@ -1877,8 +1877,13 @@ int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *na
     // Match the tuple index
     if (index > 0 && i != index)
       continue;
+
+    // If we are expecting a key, but there is non in the file, this
+    // is no match.
+    if (key && k == NULL)
+      continue;
     
-    // Match the key (if present)
+    // If the key is expected and present in the file, it must match
     if (key && k && strcmp(key, k) != 0)
       continue;
 
@@ -1897,118 +1902,6 @@ int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *na
 
 
 
-/* REMOVE
-// Parse the "devices" option in the given section.  Returns the number
-// of device ids if a valid "devices" section is found, and -1 otherwise.
-// 0 is returned, then ids will point to a malloc()ed list of the parsed
-// ids (which the caller should free()), in the order they were given.
-int
-ConfigFile::ParseDeviceIds(int section, player_device_id_t** ids)
-{
-  int field_idx;
-  Field* field;
-  const char *str;
-  int port, ind;
-  char s[128];
-  player_interface_t interface;
-
-  if((field_idx = GetField(section,"provides")) < 0)
-  {
-    PLAYER_ERROR1("section [%d]: missing devices entry", section);
-    return -1;
-  }
-
-  field = this->fields + field_idx;
-
-  assert(*ids = (player_device_id_t*)malloc(field->value_count * 
-                                            sizeof(player_device_id_t)));
-
-  for(int i=0; i<field->value_count; i++)
-  {
-    assert(str = GetFieldValue(field_idx,i));
-    // Look for port:interface:index
-    if(sscanf(str, "%d:%127[^:]:%d", &port, s, &ind) < 3)
-    {
-      port = global_playerport;
-
-      // Look for interface:index
-      if(sscanf(str, "%127[^:]:%d", s, &ind) < 2)
-      {
-        PLAYER_ERROR1("section [%d]: syntax error in interface field", section);
-        free(*ids);
-        return -1;
-      }
-    }
-
-    // Find the interface
-    if(::lookup_interface(s, &interface) != 0)
-    {
-      PLAYER_ERROR2("section [%d]: unknown interface: [%s]", section, s);
-      free(*ids);
-      return -1;
-    }
-
-    (*ids)[i].code = interface.code;
-    (*ids)[i].index = ind;
-    (*ids)[i].port = port;
-  }
-
-  return(field->value_count);
-}
-
-// Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
-// num_ids, if there exists an i'th id with the given code, fills in id
-// appropriately, and returns 0.
-//
-// "Consumes" the selected id in the list, by setting the port to 0.  Thus,
-// after calling ReadDeviceId() for each supported interface, you can call
-// UnusedIds() to determine whether the user gave any extra interfaces.
-//
-// Returns -1 if no such id can be found.
-int
-ConfigFile::ReadDeviceId(player_device_id_t* id, player_device_id_t* ids,
-                         int num_ids, int code, int i)
-{
-  int j,k;
-
-  for(k=0,j=0;j<num_ids;j++)
-  {
-    if(ids[j].code == code || code == -1)
-    {
-      if(k==i)
-      {
-        *id = ids[j];
-        // consume this id
-        ids[j].port = 0;
-        return(0);
-      }
-      else
-        k++;
-    }
-  }
-  return(-1);
-}
-
-// Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
-// num_ids, tells whether there remain any "unused" ids.  An id is unused
-// if its port is nonzero.
-int
-ConfigFile::UnusedIds(int section, player_device_id_t* ids, int num_ids)
-{
-  int unused = 0;
-
-  for(int i=0;i<num_ids;i++)
-  {
-    if(ids[i].port)
-    {
-      PLAYER_ERROR3("section [%d]: unused device ID %s:%d",
-                    section,::lookup_interface_name(0,ids[i].code),ids[i].index);
-      unused = 1;
-    }
-  }
-  return(unused);
-}
-*/
 
 
 
