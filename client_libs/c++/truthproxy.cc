@@ -103,6 +103,8 @@ int TruthProxy::GetPose( double *px, double *py, double *pa )
   return 0;
 }
 
+// angles must be transmitted as integers on [0..359]
+#define RAD_TO_POS_DEG(x) (((((int) (x * 180 / M_PI)) % 360) + 360) % 360)
 
 // Set the object pose by sending a config request
 int TruthProxy::SetPose( double px, double py, double pa )
@@ -113,7 +115,7 @@ int TruthProxy::SetPose( double px, double py, double pa )
   config.subtype = PLAYER_TRUTH_SET_POSE;
   config.px = htonl((int) (px * 1000));
   config.py = htonl((int) (py * 1000));
-  config.pa = htonl((int) (pa * 180 / M_PI)); 
+  config.pa = htonl(RAD_TO_POS_DEG(pa));
   
   len = client->Request(m_device_id,
 			 (const char*)&config, sizeof(config));
@@ -134,7 +136,7 @@ int TruthProxy::SetPoseOnRoot( double px, double py, double pa )
   config.subtype = PLAYER_TRUTH_SET_POSE_ON_ROOT;
   config.px = htonl((int) (px * 1000));
   config.py = htonl((int) (py * 1000));
-  config.pa = htonl((int) (pa * 180 / M_PI)); 
+  config.pa = htonl(RAD_TO_POS_DEG(pa));
   
   len = client->Request( m_device_id,
 			 (const char*)&config, sizeof(config));
