@@ -101,7 +101,7 @@ void playerc_ir_putdata(playerc_ir_t *device, player_msghdr_t *header,
 
   assert(sizeof(*data) <= len);
 
-  device->ranges.range_count = (data->range_count);
+  device->ranges.range_count = ntohs(data->range_count);
 
   // copy data into packet
   for (i = 0; i < device->ranges.range_count; i++)
