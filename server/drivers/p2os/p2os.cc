@@ -625,8 +625,6 @@ P2OS::Main()
 
   GlobalTime->GetTime(&timeBegan_tv);
 
-  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
-
   // request the current configuration
   /*
     configreq[0] = 18;

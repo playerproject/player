@@ -589,14 +589,6 @@ Acts::Main()
 
   char acts_request_packet = ACTS_REQUEST_PACKET;
 
-  /* make sure we aren't canceled at a bad time */
-  if(pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL))
-  {
-    fputs("RunVisionThread: pthread_setcanceltype() failed. exiting\n",
-                    stderr);
-    pthread_exit(NULL);
-  }
-
   /* make sure we kill ACTS on exiting */
   pthread_cleanup_push(QuitACTS,this);
 
