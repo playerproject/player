@@ -61,6 +61,26 @@ int IDARProxy::SendMessage( idartx_t* tx )
 			 (const char*)(&cfg),sizeof(cfg)));
 }
 
+
+int IDARProxy::SendGetMessage( idartx_t* tx, idarrx_t* rx )
+{
+  assert( client );
+  assert( rx );
+  assert( tx );
+  
+  player_idar_config_t cfg;
+  player_msghdr_t hdr;
+  
+  cfg.instruction = IDAR_TRANSMIT_RECEIVE;
+ 
+  memcpy( &cfg.tx, tx, sizeof(cfg.tx) ); // paste in the message
+    
+  // sends request, waits for reply, returns -1 on failure
+  return(client->Request(PLAYER_IDAR_CODE,index,
+			 (const char*)&cfg,sizeof(cfg),
+			 &hdr, (char*)rx, sizeof(idarrx_t) ) );
+}
+
 // interface that all proxies SHOULD provide
 
 // this fetches the latest message and prints it out

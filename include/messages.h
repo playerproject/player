@@ -760,6 +760,7 @@ typedef struct
 #define IDAR_TRANSMIT 0
 #define IDAR_RECEIVE 1
 #define IDAR_RECEIVE_NOFLUSH 2
+#define IDAR_TRANSMIT_RECEIVE 3
 
 typedef struct
 {
@@ -776,7 +777,7 @@ typedef struct
   uint8_t reflection; // true/false
   uint32_t timestamp_sec;
   uint32_t timestamp_usec;
-  uint16_t ranges[ RAYS_PER_SENSOR ]; // useful for debugging & visualization
+  uint16_t range; // mm
 } __attribute__ ((packed)) idarrx_t; 
 
 // IDRAR config packet - 
