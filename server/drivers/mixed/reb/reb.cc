@@ -74,15 +74,17 @@ extern int global_playerport; // used to get at devices
 
 // we need to debug different things at different times
 //#define DEBUG_POS
-#define DEBUG_SERIAL
+//#define DEBUG_SERIAL
 #define DEBUG_CONFIG
 
 // useful macros
 #define DEG2RAD(x) (((double)(x))*0.01745329251994)
 #define RAD2DEG(x) (((double)(x))*57.29577951308232)
 
-#define DEG2RAD_FIX(x) ((x) * 17453)
-#define RAD2DEG_FIX(x) ((x) * 57295780)
+//#define DEG2RAD_FIX(x) ((x) * 17453)
+//#define RAD2DEG_FIX(x) ((x) * 57295780)
+#define DEG2RAD_FIX(x) ((x) * 174)
+#define RAD2DEG_FIX(x) ((x) * 572958)
 
 /* these are necessary to make the static fields visible to the linker */
 extern pthread_t		REB::thread;
@@ -103,16 +105,15 @@ extern unsigned char*		REB::reqqueue;
 extern unsigned char*		REB::repqueue;
 extern struct timeval		REB::last_position;
 extern bool			REB::refresh_last_position;
+extern int			REB::last_lpos;
+extern int			REB::last_rpos;
+extern int			REB::last_x_f;
+extern int			REB::last_y_f;
+extern double			REB::last_theta;
 extern bool			REB::motors_enabled;
 extern bool			REB::velocity_mode;
 extern bool			REB::direct_velocity_control;
-extern int			REB::ir_sequence;
-extern struct timeval		REB::last_ir;
 extern short			REB::desired_heading;
-extern struct timeval		REB::last_pos_update;
-extern struct timeval		REB::last_ir_update;
-extern struct timeval		REB::last_power_update;
-extern int			REB::pos_update_period;
 extern int			REB::locks;
 extern int			REB::slocks;
 extern struct pollfd		REB::write_pfd;
@@ -130,9 +131,10 @@ REB::REB(char *interface, ConfigFile *cf, int section)
     initialize_reb_params();
   
     // also, install default parameter values.
-    strncpy(this->reb_serial_port,REB_DEFAULT_SERIAL_PORT,sizeof(this->reb_serial_port));
+    strncpy(reb_serial_port,REB_DEFAULT_SERIAL_PORT,sizeof(reb_serial_port));
     reb_fd = -1;
-  
+    param_index = 0;
+
     data = new player_reb_data_t;
     command = new player_reb_cmd_t;
 
@@ -147,32 +149,20 @@ REB::REB(char *interface, ConfigFile *cf, int section)
     ((player_reb_cmd_t*)device_command)->position.xspeed = 0;
     ((player_reb_cmd_t*)device_command)->position.yawspeed = 0;
 
-    this->reb_subscriptions = 0;
-    this->ir_subscriptions = 0;
-    this->pos_subscriptions = 0;
-    this->power_subscriptions = 0;
+    reb_subscriptions = 0;
+    ir_subscriptions = 0;
+    pos_subscriptions = 0;
+    power_subscriptions = 0;
 
     //set up the poll parameters... used for the comms
     // over the serial port to the Kam
     write_pfd.events = POLLOUT;
     read_pfd.events = POLLIN;
 
-    // we want to stagger our writes to the serial port
-    // so we are doing some rudimentary scheduling
-    GlobalTime->GetTime(&this->last_pos_update);
-    this->last_ir_update = this->last_pos_update;
-    if (this->last_ir_update.tv_usec < 
-	this->last_ir_update.tv_usec+REB_IR_UPDATE_PERIOD*1000) {
-      this->last_ir_update.tv_usec += REB_IR_UPDATE_PERIOD*1000;
-    } else {
-      this->last_ir_update.tv_sec++;
-      this->last_ir_update.tv_usec += REB_IR_UPDATE_PERIOD*1000;
-    }
-    this->last_power_update = this->last_pos_update;
-
     pthread_mutex_init(&reb_accessMutex,NULL);
     pthread_mutex_init(&reb_setupMutex,NULL);
 
+    
     initdone = true; 
   }
   else
@@ -187,12 +177,31 @@ REB::REB(char *interface, ConfigFile *cf, int section)
                  repqueue, repqueuelen);
   }
 
-  this->param_index = 0;   
-  this->refresh_last_position = true;
 
+  // now we have to look up our parameters.  this should be given as an argument
   strncpy(reb_serial_port, cf->ReadString(section, "port", reb_serial_port),
 	  sizeof(reb_serial_port));
-  
+
+  // check if it's the reb_position being loaded.  then params are important
+  char driver[32] = "foo";
+  if (!strcmp("reb_position", cf->ReadString(section, "driver", driver))) {
+    char subclass[32] = "slow";
+    strncpy(subclass, cf->ReadString(section, "subclass", subclass),
+	    strlen(subclass));
+    if (!strcmp(subclass, "fast")) {
+      param_index = 1;
+    } else {
+      param_index = 0;
+    }
+  }
+
+  // zero position counters
+  last_lpos = 0;
+  last_rpos = 0;
+  last_x_f=0;
+  last_y_f=0;
+  last_theta = 0.0;
+
   // zero the subscription counter.
   subscriptions = 0;
 }
@@ -268,15 +277,12 @@ REB::Setup()
   // so no IRs firing
   SetIRState(REB_IR_STOP);
 
-  this->param_index =0;
-  this->motors_enabled = false;
-  this->velocity_mode = true;
-  this->direct_velocity_control = false;
-  this->refresh_last_position = false;
+  refresh_last_position = false;
+  motors_enabled = false;
+  velocity_mode = true;
+  direct_velocity_control = false;
 
-  this->pos_update_period = REB_POS_UPDATE_PERIOD_VEL;
-
-  this->desired_heading = 0;
+  desired_heading = 0;
 
   /* now spawn reading thread */
   StartThread();
@@ -284,7 +290,8 @@ REB::Setup()
 }
 
 
-int REB::Shutdown()
+int 
+REB::Shutdown()
 {
   printf("REB: SHUTDOWN\n");
 
@@ -302,9 +309,6 @@ int REB::Shutdown()
   cmd.position.yawspeed = 0;
   cmd.position.yaw = 0;
 
-  //  PutCommand((uint8_t *)&cmd, sizeof(cmd));
-
-
   if (locks > 0) {
     printf("REB: %d LOCKS STILL EXIST\n", locks);
     while (locks) {
@@ -312,12 +316,13 @@ int REB::Shutdown()
     }
   }
   
-  close(this->reb_fd);
-  this->reb_fd = -1;
+  close(reb_fd);
+  reb_fd = -1;
   return(0);
 }
 
-int REB::Subscribe(void *client)
+int 
+REB::Subscribe(void *client)
 {
   int setupResult;
 
@@ -343,7 +348,8 @@ int REB::Subscribe(void *client)
   return( setupResult );
 }
 
-int REB::Unsubscribe(void *client)
+int 
+REB::Unsubscribe(void *client)
 {
   int shutdownResult;
 
@@ -376,8 +382,9 @@ int REB::Unsubscribe(void *client)
 }
 
 
-void REB::PutData( unsigned char* src, size_t maxsize,
-                         uint32_t timestamp_sec, uint32_t timestamp_usec)
+void 
+REB::PutData( unsigned char* src, size_t maxsize,
+	      uint32_t timestamp_sec, uint32_t timestamp_usec)
 {
   Lock();
 
@@ -464,7 +471,13 @@ REB::Main()
       if(!this->ir_subscriptions && ir->subscriptions) {
 	// then someone just subbed to IR
 	SetIRState(REB_IR_START);
-	
+
+	// zero out ranges in IR data so proxy knows
+	// to do regression
+	for (int i =0 ; i < PLAYER_IR_MAX_SAMPLES; i++) {
+	  data->ir.ranges[i] = 0;
+	}
+
       } else if(this->ir_subscriptions && !(ir->subscriptions)) {
 	// then last person stopped sub from IR..
 	SetIRState(REB_IR_STOP);
@@ -485,6 +498,29 @@ REB::Main()
 	SetSpeed(REB_MOTOR_RIGHT, 0);
 	
 	SetOdometry(0,0,0);
+
+	// set up speed and pos PID
+	ConfigSpeedPID(0, 1000, 0, 10);
+	ConfigSpeedPID(2, 1000, 0, 10);
+	ConfigPosPID(0, 100, 0, 10);
+	ConfigPosPID(2, 100, 0, 10);
+
+	// have to convert spd from mm/s to pulse/10ms
+	int spd = (int) rint(100.0 * 
+			 PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+	
+	// have to convert acc from mm/s^2 to pulses/256/(10ms^2)
+	int acc = (int) rint(100.0 * 
+			 PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+	
+	if (acc > REB_MAX_ACC) {
+	  acc = REB_MAX_ACC;
+	} else if (acc == 0) {
+	  acc = REB_MIN_ACC;
+	}
+	ConfigSpeedProfile(0, spd, acc);
+	ConfigSpeedProfile(2, spd, acc);
+
       } else if (this->pos_subscriptions && !(pos->subscriptions)) {
 	// last sub just unsubbed
 	printf("REB: last pos sub gone\n");
@@ -521,19 +557,19 @@ REB::Main()
     bool newposcommand=false;
     short trans_command, rot_command, heading_command;
     
-    if ((trans_command = (short)ntohs(cmd.position.xspeed)) != 
+    if ((trans_command = (short)ntohl(cmd.position.xspeed)) != 
 	last_trans_command) {
       newtrans = true;
       last_trans_command = trans_command;
     }
     
-    if ((rot_command = (short) ntohs(cmd.position.yawspeed)) != 
+    if ((rot_command = (short) ntohl(cmd.position.yawspeed)) != 
 	last_rot_command) {
       newrot = true;
       last_rot_command = rot_command;
     }
     
-    if ((heading_command = (short) ntohs(cmd.position.yaw)) != 
+    if ((heading_command = (short) ntohl(cmd.position.yaw)) != 
 	this->desired_heading) {
       newheading = true;
       this->desired_heading = heading_command;
@@ -547,7 +583,7 @@ REB::Main()
 	  // then we are doing my velocity based heading PD controller
 	  
 	  // calculate difference between desired and current
-	  unsigned short current_theta = (short) ntohs(this->data->position.yaw);
+	  int current_theta =  ntohl(this->data->position.yaw);
 	  int diff = this->desired_heading - current_theta;
 	  
 	  // this will make diff the shortest angle between command and current
@@ -614,6 +650,7 @@ REB::Main()
 	leftvel = trans_command*REB_FIXED_FACTOR - rot_term_fixed;
 	rightvel = trans_command*REB_FIXED_FACTOR + rot_term_fixed;
 	
+
 	leftvel /= REB_FIXED_FACTOR;
 	rightvel /= REB_FIXED_FACTOR;
 
@@ -727,7 +764,7 @@ REB::Main()
 	// reset the counters first???? FIX  
 	// we have to return the position command status now FIX
 	if (this->motors_enabled && newposcommand) {
-	  printf("REB: SENDING POS COMMAND\n");
+	  printf("REB: SENDING POS COMMAND l=%d r=%d\n", leftpos, rightpos);
 	  // we need to reset counters to 0 for odometry to work
 	  SetPosCounter(REB_MOTOR_LEFT, 0);
 	  SetPosCounter(REB_MOTOR_RIGHT, 0);
@@ -837,12 +874,13 @@ REB::ReadConfig()
 #endif
 
 	player_ir_pose_t irpose;
-	for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
-	  ir_pose_t irp = PlayerUBotRobotParams[param_index].ir_pose[i];
-	  
-	  irpose.poses[i][0] = htons((short) irp.ir_x);
-	  irpose.poses[i][1] = htons((short) irp.ir_y);
-	  irpose.poses[i][2] = htons((short) irp.ir_theta);
+	uint16_t numir = PlayerUBotRobotParams[param_index].NumberIRSensors;
+	irpose.pose_count = htons(numir);
+	for (int i =0; i < numir; i++) {
+	  int16_t *irp = PlayerUBotRobotParams[param_index].ir_pose[i];
+	  for (int j =0; j < 3; j++) {
+	    irpose.poses[i][j] = htons(irp[j]);
+	  }
 	}
 	
 	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &irpose,
@@ -957,7 +995,6 @@ REB::ReadConfig()
 
 	// also set up not to use position mode!
 	this->velocity_mode = true;
-	this->pos_update_period = REB_POS_UPDATE_PERIOD_VEL;
 	
 	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
 	  PLAYER_ERROR("REB: failed to put reply");
@@ -988,6 +1025,7 @@ REB::ReadConfig()
       break;
       // END POSITION IOCTLS ////////////
 
+      // REB POSITION IOCTLS ////////////
       case PLAYER_POSITION_POSITION_MODE_REQ: {
 	// select velocity or position mode
 	// 0 for velocity mode
@@ -1008,10 +1046,8 @@ REB::ReadConfig()
 	
 	if (posmode->state) {
 	  this->velocity_mode = false;
-	  this->pos_update_period = REB_POS_UPDATE_PERIOD_POS;
 	} else {
 	  this->velocity_mode = true;
-	  this->pos_update_period = REB_POS_UPDATE_PERIOD_VEL;
 	}
 	
 	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
@@ -1183,60 +1219,22 @@ void
 REB::UpdateData()
 {
   player_reb_data_t d;
-    
-  // struct timeval curr, end;
-  //  int timems;
 
   Lock();
   memcpy(&d, this->data, sizeof(player_reb_data_t));
   Unlock();
 
-  // get time since last ir update in ms
-  //timems = (curr.tv_sec - last_ir_update.tv_sec)*1000 +
-  //    (curr.tv_usec - last_ir_update.tv_usec)/1000;
-  
-  // we dont want to update IR during position mode moves
-  // because it uses a lot of b/w on the serial port... FIX
-
-  //  if (this->ir_subscriptions && timems >= REB_IR_UPDATE_PERIOD) {
-
   Lock();
-  //  GlobalTime->GetTime(&curr);
   UpdateIRData(&d);
-  //  GlobalTime->GetTime(&end);
   Unlock();
-  //  printf("REB: IR PER=%d us\n", (end.tv_sec - curr.tv_sec)*1000000 +
-  //	 (end.tv_usec - curr.tv_usec));
 
-  //    last_ir_update = curr;
-    //  }
-
-  //    timems = (curr.tv_sec - last_power_update.tv_sec)*1000 +
-  //    (curr.tv_usec - last_power_update.tv_usec)/1000;
-    //    printf("REB: power=%d timems=%d\n", power_subscriptions, timems);
-  //   if (this->power_subscriptions && timems >= REB_POWER_UPDATE_PERIOD) {
   Lock();
   UpdatePowerData(&d);
   Unlock();
 
-    //  last_power_update = curr;
-    //  }
-
-    //  timems = (curr.tv_sec - last_pos_update.tv_sec)*1000 +
-    //    (curr.tv_usec - last_pos_update.tv_usec)/1000;
-
-
-    //  if (this->pos_subscriptions && timems >= this->pos_update_period) {
   Lock();
-  //  GlobalTime->GetTime(&curr);
   UpdatePosData(&d);
-  //  GlobalTime->GetTime(&end);
   Unlock();
-  //  printf("REB: POS PER=%d us\n", (end.tv_sec - curr.tv_sec)*1000000 +
-  //	 (end.tv_usec - curr.tv_usec));
-  
-    //    last_pos_update = curr;
-    //  }
   
   PutData((unsigned char *)&d, sizeof(d), 0 ,0);
 }
@@ -1254,19 +1252,14 @@ REB::UpdateIRData(player_reb_data_t * d)
 {
   // then we can take a reading
   uint16_t volts[PLAYER_IR_MAX_SAMPLES];
-  // struct timeval curr;
-  // char buf[64];
 
   ReadAllIR(volts);
   
   for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
     // these are in units of 4 mV
-    //    volts[i] = ReadAD(i);
-    
     // now turn into mV units
     volts[i] *= 4;
     d->ir.voltages[i] = htons(volts[i]);
-    //    printf("REB: IR%d=%d\n", i, volts[i]);
   }
   
 }
@@ -1300,23 +1293,28 @@ REB::UpdatePosData(player_reb_data_t *d)
   unsigned char target_status =0;
   int lreading=0, rreading=0;
   long mmpp_f = PlayerUBotRobotParams[this->param_index].MMPerPulsesF;
+  //  static int last_lpos=0, last_rpos=0;
+  int x_rem=0, y_rem=0;
 
   // check if we have to get a baseline time first
   if (this->refresh_last_position) {
     GlobalTime->GetTime(&(this->last_position));
     this->refresh_last_position = false;
   }
-
+  
   // get the previous odometry values
   // we know this is from last time, cuz this function
   // is only place to change them
-  theta = (double) ((int)ntohs(this->data->position.yaw));
+  //  theta = (double) ((int)ntohs(this->data->position.yaw));
 
   //covert theta to rad
-  theta = DEG2RAD(theta);
+  //  theta = DEG2RAD(theta);
+  theta = last_theta;
 
-  x_f = ntohl(this->data->position.xpos)*REB_FIXED_FACTOR;
-  y_f = ntohl(this->data->position.ypos)*REB_FIXED_FACTOR;
+  //  x_f = ntohl(this->data->position.xpos)*REB_FIXED_FACTOR ;
+  //  y_f = ntohl(this->data->position.ypos)*REB_FIXED_FACTOR ;
+  x_f = last_x_f;
+  y_f = last_y_f;
 
   // get the time
   struct timeval curr;
@@ -1326,40 +1324,75 @@ REB::UpdatePosData(player_reb_data_t *d)
   long v_f=0;
 
   if (this->velocity_mode) {
-    int lvel=0,rvel=0;
-    lvel = ReadSpeed(REB_MOTOR_LEFT);
+    int lpos=0, rpos=0, lp, rp;
+    //        lvel = ReadSpeed(REB_MOTOR_LEFT);
+    lpos = ReadPos(REB_MOTOR_LEFT);
     // negate because motor's are facing opposite directions
-    rvel = -ReadSpeed(REB_MOTOR_RIGHT); 
+    //        rvel = -ReadSpeed(REB_MOTOR_RIGHT); 
+    rpos = -ReadPos(REB_MOTOR_RIGHT);
 
-    lreading = lvel;
-    rreading = rvel;
+    lreading = lpos;
+    rreading = rpos;
 
     // calc time in  sec
     long t_f = (curr.tv_sec - this->last_position.tv_sec)*100 +
       (curr.tv_usec - this->last_position.tv_usec)/10000;
 
+    lp = lpos-last_lpos;
+    rp = rpos-last_rpos;
+    
+    last_lpos = lpos;
+    last_rpos = rpos;
+
     // this is pulse/10ms
-    v_f = (rvel+lvel)/2;
-    v_f *= REB_FIXED_FACTOR;
+    v_f = (rp+lp) * REB_FIXED_FACTOR / 2;
+    v_f /= t_f;
+
+    //    v_f = (rvel+lvel)/2;
+    //    v_f *= REB_FIXED_FACTOR;
 
     // rad/pulse
-    theta_dot = (rvel- lvel) /
-      (PlayerUBotRobotParams[this->param_index].RobotAxleLength *
-       PlayerUBotRobotParams[this->param_index].PulsesPerMM);
+    //    theta_dot = (rvel- lvel) /
+    //    theta_dot = (( (double) rp / (double) t_f) - ( (double)lp / (double) t_f)) /
+    //      (PlayerUBotRobotParams[this->param_index].RobotAxleLength *
+    //       PlayerUBotRobotParams[this->param_index].PulsesPerMM);
+    theta_dot = (rp - lp) / 
+      (PlayerUBotRobotParams[param_index].RobotAxleLength *
+       PlayerUBotRobotParams[param_index].PulsesPerMM * (double)t_f);
 
-    theta += theta_dot *t_f;
+    theta += theta_dot * t_f;
 
     // convert from rad/10ms -> rad/s -> deg/s
-    theta_dot = theta_dot * 100.0;
+    theta_dot *= 100.0;
     
     // this is pulse/10ms
     long x_dot_f = (long) (v_f * cos(theta));
     long y_dot_f = (long) (v_f * sin(theta));
 
     // change to deltas mm and add integrate over time
-    x_f += (x_dot_f/REB_FIXED_FACTOR) * mmpp_f * t_f;
-    y_f += (y_dot_f/REB_FIXED_FACTOR) * mmpp_f * t_f;
-    
+      
+    //    x_f += (x_dot_f/REB_FIXED_FACTOR) * mmpp_f * t_f;
+    //    y_f += (y_dot_f/REB_FIXED_FACTOR) * mmpp_f * t_f;
+
+    int base = (mmpp_f * t_f);
+    x_rem = base * (x_dot_f /100);
+    assert(ABS(x_rem) <= 0x7FFFFFFF);
+    x_rem /= 100;
+
+    y_rem = base * (y_dot_f / 100);
+    assert(ABS(y_rem) <= 0x7FFFFFFF);
+    y_rem /= 100;
+
+    x_f += x_rem;
+    y_f += y_rem;
+
+    last_x_f = x_f;
+    last_y_f = y_f;
+    last_theta = theta;
+
+    //    printf("REB: x=%d y=%d t=%g lp=%d rp=%d t_f=%d vf=%d xd=%d yd=%d xr=%d yr=%d\n", x_f, y_f, last_theta, lp, rp, t_f, v_f,
+    //	   x_dot_f, y_dot_f, x_rem, y_rem);
+
     x_f /= REB_FIXED_FACTOR;
     y_f /= REB_FIXED_FACTOR;
   } else {
@@ -1382,7 +1415,7 @@ REB::UpdatePosData(player_reb_data_t *d)
 
     target_status = rtar;
     // check for on target so we know to update
-    if (!d->position.stall && target_status) {
+    //    if (!d->position.stall && target_status) {
       // then this is a new one, so do an update
 
       lpos = ReadPos(REB_MOTOR_LEFT);
@@ -1413,14 +1446,7 @@ REB::UpdatePosData(player_reb_data_t *d)
       x_f = (long) rint(x);
       y_f = (long) rint(y);
 
-      printf("REB: pos mode x=%g y=%g theta=%g\n", x,y, theta);
-    } 
-
   }
-
-  // get integer rounded x,y and theta
-  int rx = x_f;
-  int ry = y_f;
 
   int rtheta = (int) rint(RAD2DEG(theta));
   
@@ -1445,16 +1471,15 @@ REB::UpdatePosData(player_reb_data_t *d)
   printf("REB: l%s=%d r%s=%d x=%d y=%d theta=%d trans=%d rot=%d target=%02x\n",
 	 this->velocity_mode ? "vel" : "pos", lreading,
 	 this->velocity_mode ? "vel" : "pos", rreading, 
-	 rx, ry, rtheta,  rv, rtd, target_status);
+	 x_f, y_f, rtheta,  rv, rtd, target_status);
 #endif
 
   // now write data
-  d->position.xpos = htonl(rx);
-  d->position.ypos = htonl(ry);
-  d->position.yaw = htons( rtheta);
-  d->position.xspeed = htons(rv);
-  d->position.yawspeed = htons( rtd);
-  //  d->position.heading = htons(this->desired_heading);
+  d->position.xpos = htonl(x_f);
+  d->position.ypos = htonl(y_f);
+  d->position.yaw = htonl( rtheta);
+  d->position.xspeed = htonl(rv);
+  d->position.yawspeed = htonl( rtd);
   d->position.stall = target_status;
 
   // later we read the torques FIX
@@ -1462,27 +1487,6 @@ REB::UpdatePosData(player_reb_data_t *d)
   // update last time
   this->last_position = curr;
 }
-  
-
-
-/* this will reset odometry -- the counters on the encoders and 
- * the integrated position estimates
- *
- * returns:
- */
-/*void
-REB::ResetOdometry()
-{
-
-    SetPosCounter(REB_MOTOR_LEFT, 0);
-  SetPosCounter(REB_MOTOR_RIGHT, 0);
-
-  this->data->position.x = 0;
-  this->data->position.y = 0;
-  this->data->position.theta = 0;
-  
-}
-*/
 
 /* this will set the odometry to a given position
  * ****NOTE: assumes that the arguments are in network byte order!*****
@@ -1496,11 +1500,18 @@ REB::SetOdometry(int x, int y, short theta)
   SetPosCounter(REB_MOTOR_LEFT, 0);
   SetPosCounter(REB_MOTOR_RIGHT, 0);
 
+  last_lpos = 0;
+  last_rpos = 0;
+
+  last_x_f = ntohl(x)*REB_FIXED_FACTOR;
+  last_y_f = ntohl(y)*REB_FIXED_FACTOR;
+
+  last_theta = (double) DEG2RAD(ntohs(theta));
+
   // we assume these are already in network byte order!!!!
   this->data->position.xpos = x;
   this->data->position.ypos = y;
   this->data->position.yaw = theta;
-
 }
 
 /* this will write len bytes from buf out to the serial port reb_fd 
@@ -1579,6 +1590,13 @@ REB::read_serial_until(char *buf, int len, char *flag, int flen)
 {
   int num=0,t, pret;
   
+  int timeout;
+
+  if (velocity_mode) {
+    timeout = 500;
+  } else {
+    timeout = 1500;
+  }
 #ifdef DEBUG_SERIAL
   printf("RSU before while flag len=%d len=%d\n", flen, len);
 #endif
@@ -1586,7 +1604,7 @@ REB::read_serial_until(char *buf, int len, char *flag, int flen)
   while (num < len-1) {
 
     // wait for channel to have data first...
-    pret = poll(&read_pfd, 1, 2000);
+    pret = poll(&read_pfd, 1, timeout);
     
     if (pret < 0) {
       perror("read_serial_until");
@@ -1665,13 +1683,16 @@ REB::write_command(char *buf, int len, int maxsize)
     do {
       rcount=0;
       ret = read_serial_until(rbuf, maxsize, CRLF, strlen(CRLF));
-    } while (rbuf[0] != tolower(buf[0]) && rcount++ < 2 && ret >= 0);
+      if (ret < 0) {
+	Restart();
+      }
+    } while (rbuf[0] != tolower(buf[0]) && rcount++ < 2 );
 
     if (ret < 0) {
       Restart();
       continue;
     }
-
+    
     total += ret;
     break;
   }
@@ -1721,7 +1742,7 @@ REB::Restart()
   printf("REB: sending restart...");
 
   fflush(stdout);
-  write_serial(REB_RESTART_COMMAND, strlen(REB_RESTART_COMMAND));
+  write_serial("\r", strlen("\r"));
 
   printf("done\n");
 }
@@ -1789,7 +1810,7 @@ REB::ReadAllIR(uint16_t *ir)
   for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
     // find the first comma
     while (buf[p++] != ',') {
-      if (p >= strlen(buf)) {
+      if (p >= (int) strlen(buf)) {
 	return;
       }
     }

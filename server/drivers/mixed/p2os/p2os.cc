@@ -37,7 +37,6 @@
   #include <strings.h>
 #endif
 
-
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/stat.h>
@@ -200,6 +199,13 @@ int P2OS::Setup()
   unsigned char sonarcommand[4];
   P2OSPacket sonarpacket; 
   int i;
+  // this is the order in which we'll try the possible baud rates. we try 9600
+  // first because most robots use it, and because otherwise the radio modem
+  // connection code might not work (i think that the radio modems operate at
+  // 9600).
+  int bauds[] = {B9600, B38400, B19200};
+  int numbauds = sizeof(bauds);
+  int currbaud = 0;
 
   struct termios term;
   unsigned char command;
@@ -236,12 +242,14 @@ int P2OS::Setup()
     psos_fd = -1;
     return(1);
   }
-  
+
 #if HAVE_CFMAKERAW
   cfmakeraw( &term );
 #endif
-  cfsetispeed( &term, B9600 );
-  cfsetospeed( &term, B9600 );
+  //cfsetispeed( &term, B9600 );
+  //cfsetospeed( &term, B9600 );
+  cfsetispeed(&term, bauds[currbaud]);
+  cfsetospeed(&term, bauds[currbaud]);
   
   if( tcsetattr( psos_fd, TCSAFLUSH, &term ) < 0 )
   {
@@ -311,7 +319,7 @@ int P2OS::Setup()
     }
   }
 
-  int num_sync_attempts = 5;
+  int num_sync_attempts = 3;
   while(psos_state != READY)
   {
     //printf("psos_state: %d\n", psos_state);
@@ -356,12 +364,34 @@ int P2OS::Setup()
       }
       else
       {
-        printf("Couldn't synchronize with P2OS.\n"  
-               "  Most likely because the robot is not connected to %s\n", 
-               psos_serial_port);
-        close(psos_fd);
-        psos_fd = -1;
-        return(1);
+        // couldn't connect; try lower speed.
+        if(++currbaud < numbauds)
+        {
+          cfsetispeed(&term, bauds[currbaud]);
+          cfsetospeed(&term, bauds[currbaud]);
+          if( tcsetattr( psos_fd, TCSAFLUSH, &term ) < 0 )
+          {
+            perror("P2OS::Setup():tcsetattr():");
+            close(psos_fd);
+            psos_fd = -1;
+            return(1);
+          }
+
+          if( tcflush( psos_fd, TCIOFLUSH ) < 0 )
+          {
+            perror("P2OS::Setup():tcflush():");
+            close(psos_fd);
+            psos_fd = -1;
+            return(1);
+          }
+          num_sync_attempts = 3;
+          continue;
+        }
+        else
+        {
+          // tried all speeds; bail
+          break;
+        }
       }
     }
     //receivedpacket.PrintHex();
@@ -393,6 +423,16 @@ int P2OS::Setup()
         break;
     }
     usleep(P2OS_CYCLETIME_USEC);
+  }
+
+  if(psos_state != READY)
+  {
+    printf("Couldn't synchronize with P2OS.\n"  
+           "  Most likely because the robot is not connected to %s\n", 
+           psos_serial_port);
+    close(psos_fd);
+    psos_fd = -1;
+    return(1);
   }
 
   cnt = 4;

@@ -52,22 +52,24 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   data->position.ypos = y_offset;
   // now transform current position by rotation if there is one
   // and add to offset
-    if (angle_offset != 0) {
-	double rot = DTOR(angle_offset);    // convert rotation to radians
-	//puts("angle correction");
-	data->position.xpos += (int32_t) (xpos * cos(rot) - ypos * sin(rot));
-	data->position.ypos += (int32_t) (xpos * sin(rot) + ypos * cos(rot));
-	data->position.yaw = (data->position.yaw + angle) % 360;
-    }
-    else {
-      data->position.xpos += xpos;
-      data->position.ypos += ypos;
-      data->position.yaw = angle;
-    }
-    // now byteswap fields
-    data->position.xpos = htonl(data->position.xpos);
-    data->position.ypos = htonl(data->position.ypos);
-    data->position.yaw = htonl(data->position.yaw);
+  if (angle_offset != 0) 
+  {
+    double rot = DTOR(angle_offset);    // convert rotation to radians
+    //puts("angle correction");
+    data->position.xpos += (int32_t) (xpos * cos(rot) - ypos * sin(rot));
+    data->position.ypos += (int32_t) (xpos * sin(rot) + ypos * cos(rot));
+    data->position.yaw = (data->position.yaw + angle) % 360;
+  }
+  else 
+  {
+    data->position.xpos += xpos;
+    data->position.ypos += ypos;
+    data->position.yaw = angle;
+  }
+  // now byteswap fields
+  data->position.xpos = htonl(data->position.xpos);
+  data->position.ypos = htonl(data->position.ypos);
+  data->position.yaw = htonl(data->position.yaw);
   data->position.xspeed = htonl((int32_t) (((lvel) + (rvel) ) / 2));
   data->position.yawspeed = htonl((int32_t)
      (180*((double)(rvel - lvel) /
@@ -255,7 +257,7 @@ void SIP::Parse( unsigned char *buffer )
   sonarreadings = buffer[cnt];
   cnt += sizeof(unsigned char);
 
-  //printf("%hu:", sonarreadings);
+  //printf("%hu sonar readings:\n", sonarreadings);
   for(unsigned char i = 0;i < sonarreadings;i++) {
     sonars[buffer[cnt]]=   (unsigned short)
       rint((buffer[cnt+1] | (buffer[cnt+2] << 8)) *
