@@ -177,7 +177,7 @@ static void fiducial_onread(fiducial_object_t *fiducialob)
     PyTuple_SetItem(tuple, 1, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].range));
     PyTuple_SetItem(tuple, 2, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].bearing));
     PyTuple_SetItem(tuple, 3, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].orient));
-    PyList_SetItem(fiducialob->fiducials, i, tuple);
+    PyList_SET_ITEM(fiducialob->fiducials, i, tuple);
   }
     
   thread_release();
