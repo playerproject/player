@@ -84,6 +84,21 @@ typedef struct
 } amcl_sensor_data_t;
 
 
+// Pose hypothesis
+typedef struct
+{
+  // Total weight (weights sum to 1)
+  double weight;
+
+  // Mean of pose esimate
+  pf_vector_t pf_pose_mean;
+
+  // Covariance of pose estimate
+  pf_matrix_t pf_pose_cov;
+  
+} amcl_hyp_t;
+
+
 // Incremental navigation driver
 class AdaptiveMCL : public CDevice
 {
@@ -237,9 +252,13 @@ class AdaptiveMCL : public CDevice
   // Last odometric pose estimates used by filter
   private: pf_vector_t pf_odom_pose;
 
-  // Current particle filter pose estimate
-  private: pf_vector_t pf_pose_mean;
-  private: pf_matrix_t pf_pose_cov;
+  // Initial pose estimate
+  private: pf_vector_t pf_init_pose_mean;
+  private: pf_matrix_t pf_init_pose_cov;
+
+  // Current particle filter pose estimates
+  private: int hyp_count;
+  private: amcl_hyp_t hyps[PLAYER_LOCALIZE_MAX_HYPOTHS];
 
 #ifdef INCLUDE_RTKGUI
   // RTK stuff; for testing only
@@ -259,7 +278,7 @@ CDevice* AdaptiveMCL_Init(char* interface, ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_LOCALIZE_STRING) != 0)
   {
-    PLAYER_ERROR1("driver \"adaptive_mcl\" does not support interface \"%s\"\n", interface);
+    PLAYER_ERROR1("driver \"amcl\" does not support interface \"%s\"\n", interface);
     return (NULL);
   }
   return ((CDevice*) (new AdaptiveMCL(interface, cf, section)));
@@ -269,7 +288,7 @@ CDevice* AdaptiveMCL_Init(char* interface, ConfigFile* cf, int section)
 // a driver registration function
 void AdaptiveMCL_Register(DriverTable* table)
 {
-  table->AddDriver("adaptive_mcl", PLAYER_ALL_MODE, AdaptiveMCL_Init);
+  table->AddDriver("amcl", PLAYER_ALL_MODE, AdaptiveMCL_Init);
   return;
 }
 
@@ -318,19 +337,22 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->pf_z = cf->ReadFloat(section, "pf_z", 3);
   
   // Initial pose estimate
-  this->pf_pose_mean = pf_vector_zero();
-  this->pf_pose_mean.v[0] = cf->ReadTupleLength(section, "init_pose", 0, 0);
-  this->pf_pose_mean.v[1] = cf->ReadTupleLength(section, "init_pose", 1, 0);
-  this->pf_pose_mean.v[2] = cf->ReadTupleAngle(section, "init_pose", 2, 0);
+  this->pf_init_pose_mean = pf_vector_zero();
+  this->pf_init_pose_mean.v[0] = cf->ReadTupleLength(section, "init_pose", 0, 0);
+  this->pf_init_pose_mean.v[1] = cf->ReadTupleLength(section, "init_pose", 1, 0);
+  this->pf_init_pose_mean.v[2] = cf->ReadTupleAngle(section, "init_pose", 2, 0);
 
   // Initial pose covariance
   u[0] = cf->ReadTupleLength(section, "init_pose_var", 0, 1e3);
   u[1] = cf->ReadTupleLength(section, "init_pose_var", 1, 1e3);
   u[2] = cf->ReadTupleAngle(section, "init_pose_var", 2, 1e2);
-  this->pf_pose_cov = pf_matrix_zero();
-  this->pf_pose_cov.m[0][0] = u[0] * u[0];
-  this->pf_pose_cov.m[1][1] = u[1] * u[1];
-  this->pf_pose_cov.m[2][2] = u[2] * u[2];
+  this->pf_init_pose_cov = pf_matrix_zero();
+  this->pf_init_pose_cov.m[0][0] = u[0] * u[0];
+  this->pf_init_pose_cov.m[1][1] = u[1] * u[1];
+  this->pf_init_pose_cov.m[2][2] = u[2] * u[2];
+
+  // Initial hypothesis list
+  this->hyp_count = 0;
 
   // Create the sensor queue
   this->q_len = 0;
@@ -419,6 +441,9 @@ int AdaptiveMCL::Setup(void)
   this->odom_pose = sdata.odom_pose;
   this->pf_odom_pose = sdata.odom_pose;
 
+  // Initial hypothesis list
+  this->hyp_count = 0;
+  
 #ifdef INCLUDE_RTKGUI
   // Start the GUI
   if (this->enable_gui)
@@ -802,6 +827,7 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   pf_vector_t pose;
   pf_matrix_t pose_cov;
   amcl_sensor_data_t sdata;
+  amcl_hyp_t *hyp;
   
   this->Lock();
 
@@ -830,50 +856,54 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
     this->Push(&sdata);
   }
   
-  // Get the current estimate
-  pose = this->pf_pose_mean;
-  pose_cov = this->pf_pose_cov;
-
-  // Compute the change in pose
+  // Compute the change in odometric pose
   odom_diff = pf_vector_coord_sub(odom_pose, this->pf_odom_pose);
 
-  // Translate/rotate the hypotheses to take account of latency in filter
-  pose = pf_vector_coord_add(odom_diff, pose);
+  // Encode the hypotheses
+  data.hypoth_count = this->hyp_count;
+  for (i = 0; i < this->hyp_count; i++)
+  {
+    hyp = this->hyps + i;
 
-  // Check for bad values
-  if (!pf_vector_finite(pose))
-  {
-    pf_vector_fprintf(pose, stderr, "%e");
-    assert(0);
-  }
-  if (!pf_matrix_finite(pose_cov))
-  {
-    pf_matrix_fprintf(pose_cov, stderr, "%e");
-    assert(0);
+    // Get the current estimate
+    pose = hyp->pf_pose_mean;
+    pose_cov = hyp->pf_pose_cov;
+
+    // Translate/rotate the hypotheses to take account of latency in filter
+    pose = pf_vector_coord_add(odom_diff, pose);
+
+    // Check for bad values
+    if (!pf_vector_finite(pose))
+    {
+      pf_vector_fprintf(pose, stderr, "%e");
+      assert(0);
+    }
+    if (!pf_matrix_finite(pose_cov))
+    {
+      pf_matrix_fprintf(pose_cov, stderr, "%e");
+      assert(0);
+    }
+    
+    data.hypoths[i].alpha = (uint32_t) (hyp->weight * 1e6);
+        
+    data.hypoths[i].mean[0] = (int32_t) (pose.v[0] * 1000);
+    data.hypoths[i].mean[1] = (int32_t) (pose.v[1] * 1000);
+    data.hypoths[i].mean[2] = (int32_t) (pose.v[2] * 180 * 3600 / M_PI);
+  
+    data.hypoths[i].cov[0][0] = (int64_t) (pose_cov.m[0][0] * 1000 * 1000);
+    data.hypoths[i].cov[0][1] = (int64_t) (pose_cov.m[0][1] * 1000 * 1000);
+    data.hypoths[i].cov[0][2] = 0;
+  
+    data.hypoths[i].cov[1][0] = (int64_t) (pose_cov.m[1][0] * 1000 * 1000);
+    data.hypoths[i].cov[1][1] = (int64_t) (pose_cov.m[1][1] * 1000 * 1000);
+    data.hypoths[i].cov[1][2] = 0;
+
+    data.hypoths[i].cov[2][0] = 0;
+    data.hypoths[i].cov[2][1] = 0;
+    data.hypoths[i].cov[2][2] = (int64_t) (pose_cov.m[2][2] * 180 * 3600 / M_PI * 180 * 3600 / M_PI);
   }
 
   this->Unlock();
-    
-  // Encode the one-and-only hypothesis
-  data.hypoth_count = 1;
-
-  data.hypoths[0].mean[0] = (int32_t) (pose.v[0] * 1000);
-  data.hypoths[0].mean[1] = (int32_t) (pose.v[1] * 1000);
-  data.hypoths[0].mean[2] = (int32_t) (pose.v[2] * 180 * 3600 / M_PI);
-  
-  data.hypoths[0].cov[0][0] = (int64_t) (pose_cov.m[0][0] * 1000 * 1000);
-  data.hypoths[0].cov[0][1] = (int64_t) (pose_cov.m[0][1] * 1000 * 1000);
-  data.hypoths[0].cov[0][2] = 0;
-  
-  data.hypoths[0].cov[1][0] = (int64_t) (pose_cov.m[1][0] * 1000 * 1000);
-  data.hypoths[0].cov[1][1] = (int64_t) (pose_cov.m[1][1] * 1000 * 1000);
-  data.hypoths[0].cov[1][2] = 0;
-
-  data.hypoths[0].cov[2][0] = 0;
-  data.hypoths[0].cov[2][1] = 0;
-  data.hypoths[0].cov[2][2] = (int64_t) (pose_cov.m[2][2] * 180 * 3600 / M_PI * 180 * 3600 / M_PI);
-
-  data.hypoths[0].alpha = 0;
   
   // Compute the length of the data packet
   datalen = sizeof(data) - sizeof(data.hypoths) + data.hypoth_count * sizeof(data.hypoths[0]);
@@ -955,13 +985,16 @@ void AdaptiveMCL::Main(void)
   nice(10);
 
   // Initialize the filter
-  this->InitFilter(this->pf_pose_mean, this->pf_pose_cov);
+  this->InitFilter(this->pf_init_pose_mean, this->pf_init_pose_cov);
   
   while (true)
   {
 #ifdef INCLUDE_RTKGUI
     if (this->enable_gui)
+    {
+      rtk_canvas_render(this->canvas);
       rtk_app_main_loop(this->app);
+    }
 #endif
 
     // Sleep for 1ms (will actually take longer than this).
@@ -988,6 +1021,10 @@ void AdaptiveMCL::Main(void)
 // Initialize the filter
 void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
 {
+  int i;
+  double weight;
+  amcl_hyp_t *hyp;
+  
   // Initialize the odometric model
   odometry_init_init(this->odom_model, pose_mean, pose_cov);
   
@@ -995,17 +1032,25 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
   pf_init(this->pf, (pf_init_model_fn_t) odometry_init_model, this->odom_model);
   
   odometry_init_term(this->odom_model);
-  
-  this->Lock();
-  
-  // Re-compute the pose estimate
-  pf_calc_stats(this->pf, &this->pf_pose_mean, &this->pf_pose_cov);
 
-  PLAYER_TRACE3("pf: %f %f %f",
-                this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
-  
+  this->Lock();
+
+  // Get the hypotheses
+  this->hyp_count = 0;
+  for (i = 0; i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
+  {
+    if (!pf_get_cluster_stats(this->pf, i, &weight, &pose_mean, &pose_cov))
+      break;
+
+    hyp = this->hyps + this->hyp_count++;
+    hyp->weight = weight;
+    hyp->pf_pose_mean = pose_mean;
+    hyp->pf_pose_cov = pose_cov;
+  }
+
   this->Unlock();
 
+  
 #ifdef INCLUDE_RTKGUI
   // Draw the samples
   if (this->enable_gui)
@@ -1013,13 +1058,11 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
     DrawPoseEst();
     
     rtk_fig_clear(this->pf_fig);
-    rtk_fig_color(this->pf_fig, 1, 0, 0);
+    rtk_fig_color(this->pf_fig, 0, 0, 1);
     pf_draw_samples(this->pf, this->pf_fig, 1000);
+    rtk_fig_color(this->pf_fig, 0, 1, 0);
     pf_draw_stats(this->pf, this->pf_fig);
-
-    pf_draw_hist(this->pf, this->pf_fig);
-        
-    rtk_canvas_render(this->canvas);
+    //pf_draw_hist(this->pf, this->pf_fig);
   }
 #endif
 
@@ -1032,7 +1075,11 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
 void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 {
   int i;
-  
+  double weight;
+  pf_vector_t pose_mean;
+  pf_matrix_t pose_cov;
+  amcl_hyp_t *hyp;
+
   // Update the odometry sensor model with the latest odometry measurements
   odometry_action_init(this->odom_model, this->pf_odom_pose, data->odom_pose);
   odometry_sensor_init(this->odom_model);
@@ -1064,19 +1111,25 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 
   // Resample
   pf_update_resample(this->pf);
-    
-  this->Lock();
   
-  // Re-compute the pose estimate
-  pf_calc_stats(this->pf, &this->pf_pose_mean, &this->pf_pose_cov); 
+  this->Lock();
 
   this->pf_odom_pose = data->odom_pose;
 
-  this->Unlock();
+  // Get the hypotheses
+  this->hyp_count = 0;
+  for (i = 0; i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
+  {
+    if (!pf_get_cluster_stats(this->pf, i, &weight, &pose_mean, &pose_cov))
+      break;
 
-  PLAYER_TRACE4("pf: %d %f %f %f",
-                this->pf->sets[this->pf->current_set].sample_count,
-                this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
+    hyp = this->hyps + this->hyp_count++;
+    hyp->weight = weight;
+    hyp->pf_pose_mean = pose_mean;
+    hyp->pf_pose_cov = pose_cov;
+  }
+
+  this->Unlock();
 
 
 #ifdef INCLUDE_RTKGUI
@@ -1087,13 +1140,11 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
     DrawSonarData(data);
     
     rtk_fig_clear(this->pf_fig);
-    rtk_fig_color(this->pf_fig, 1, 0, 0);
+    rtk_fig_color(this->pf_fig, 0, 0, 1);
     pf_draw_samples(this->pf, this->pf_fig, 1000);
+    rtk_fig_color(this->pf_fig, 0, 1, 0);
     pf_draw_stats(this->pf, this->pf_fig);
-
-    pf_draw_hist(this->pf, this->pf_fig);
-    
-    rtk_canvas_render(this->canvas);
+    //pf_draw_hist(this->pf, this->pf_fig);
   }
 #endif
 
@@ -1107,9 +1158,18 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 // Draw the current best pose estimate
 void AdaptiveMCL::DrawPoseEst()
 {
+  int i;
+  amcl_hyp_t *hyp;
+  
   this->Lock();
-  rtk_fig_origin(this->robot_fig, this->pf_pose_mean.v[0],
-                 this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
+
+  for (i = 0; i < this->hyp_count; i++)
+  {
+    hyp = this->hyps + i;
+    rtk_fig_origin(this->robot_fig, hyp->pf_pose_mean.v[0],
+                   hyp->pf_pose_mean.v[1], hyp->pf_pose_mean.v[2]);
+  }
+  
   this->Unlock();
   
   return;

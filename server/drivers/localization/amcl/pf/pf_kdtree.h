@@ -23,13 +23,16 @@ typedef struct pf_kdtree_node
 
   // Pivot dimension and value
   int pivot_dim;
-  int pivot_value;
+  double pivot_value;
   
   // The key for this node
   int key[3];
 
   // The value for this node
   double value;
+
+  // The cluster label (leaf nodes)
+  int cluster;
 
   // Child nodes
   struct pf_kdtree_node *children[2];
@@ -57,24 +60,31 @@ typedef struct
 
 
 // Create a tree
-pf_kdtree_t *pf_kdtree_alloc(int max_size);
+extern pf_kdtree_t *pf_kdtree_alloc(int max_size);
 
 // Destroy a tree
-void pf_kdtree_free(pf_kdtree_t *self);
+extern void pf_kdtree_free(pf_kdtree_t *self);
 
 // Clear all entries from the tree
-void pf_kdtree_clear(pf_kdtree_t *self);
+extern void pf_kdtree_clear(pf_kdtree_t *self);
 
 // Insert a pose into the tree
-void pf_kdtree_insert(pf_kdtree_t *tree, pf_vector_t pose, double value);
+extern void pf_kdtree_insert(pf_kdtree_t *self, pf_vector_t pose, double value);
+
+// Cluster the leaves in the tree
+extern void pf_kdtree_cluster(pf_kdtree_t *self);
 
 // Determine the probability estimate for the given pose
-double pf_kdtree_prob(pf_kdtree_t *tree, pf_vector_t pose);
+extern double pf_kdtree_get_prob(pf_kdtree_t *self, pf_vector_t pose);
+
+// Determine the cluster label for the given pose
+extern int pf_kdtree_get_cluster(pf_kdtree_t *self, pf_vector_t pose);
+
 
 #ifdef INCLUDE_RTKGUI
 
 // Draw the tree
-void pf_kdtree_draw(pf_kdtree_t *self, rtk_fig_t *fig);
+extern void pf_kdtree_draw(pf_kdtree_t *self, rtk_fig_t *fig);
 
 #endif
 

@@ -288,6 +288,7 @@ void localize_draw_hypoth(localize_t *localize)
     // Get eigen values/vectors
     cov[0][0] = hypoth->cov[0][0];
     cov[0][1] = hypoth->cov[0][1];
+    cov[1][0] = hypoth->cov[1][0];
     cov[1][1] = hypoth->cov[1][1];
     eigen(cov, eval, evec);
         
@@ -298,9 +299,17 @@ void localize_draw_hypoth(localize_t *localize)
     sx = 6 * sqrt(eval[0]) / mag;
     sy = 6 * sqrt(eval[1]) / mag;
 
-    rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa, sx);
-    rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa + M_PI / 2, sy);
-    rtk_fig_ellipse(localize->hypoth_fig, ox, oy, oa, sx, sy, 0);
+    if (sx < 0.10)
+      sx = 0.10;
+    if (sy < 0.10)
+      sy = 0.10;
+    
+    if (sx > 1e-3 && sy > 1e-3)
+    {
+      rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa, sx);
+      rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa + M_PI / 2, sy);
+      rtk_fig_ellipse(localize->hypoth_fig, ox, oy, oa, sx, sy, 0);
+    }
   }
   
   return;

@@ -8,13 +8,14 @@ resolution 0.03
 
 bitmap
 (
+  #file "sal2.pnm"
   file "cave.pnm"
   resolution 0.03
 )
 
 position
 (
-  name "robot" port 6665 pose [4.990 2.090 90.000]
+  name "robot" port 6665 pose [12.190 2.410 0.689]
   laser () 
 )
 

@@ -45,6 +45,25 @@ typedef struct
 } pf_sample_t;
 
 
+// Information for a cluster of samples
+typedef struct
+{
+  // Number of samples
+  int count;
+
+  // Total weight of samples in this cluster
+  double weight;
+
+  // Cluster statistics
+  pf_vector_t mean;
+  pf_matrix_t cov;
+
+  // Workspace
+  double m[4], c[2][2];
+  
+} pf_cluster_t;
+
+
 // Information for a set of samples
 typedef struct
 {
@@ -54,6 +73,10 @@ typedef struct
 
   // A kdtree encoding the histogram
   pf_kdtree_t *kdtree;
+
+  // Clusters
+  int cluster_count, cluster_max_count;
+  pf_cluster_t *clusters;
   
 } pf_sample_set_t;
 
@@ -67,11 +90,11 @@ typedef struct _pf_t
   // Population size parameters
   double pop_err, pop_z;
   
-  // The sample sets.  We keep two sets an use [current_set]
+  // The sample sets.  We keep two sets and use [current_set]
   // to identify the active set.
   int current_set;
   pf_sample_set_t sets[2];
-  
+
 } pf_t;
 
 
@@ -93,11 +116,15 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
 // Resample the distribution
 void pf_update_resample(pf_t *pf);
 
+/*
 // Compute the distributions statistics (mean and covariance).
 void pf_calc_stats(pf_t *pf, pf_vector_t *mean, pf_matrix_t *cov);
+*/
 
-// Get a particular sample
-//REMOVE pf_sample_t *pf_get_sample(pf_t *pf, int i);
+// Compute the statistics for a particular cluster.  Returns 0 if
+// there is no such cluster.
+int pf_get_cluster_stats(pf_t *pf, int cluster, double *weight,
+                         pf_vector_t *mean, pf_matrix_t *cov);
 
 // Display the sample set
 void pf_draw_samples(pf_t *pf, struct _rtk_fig_t *fig, int max_samples);
