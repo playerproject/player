@@ -56,6 +56,8 @@ extern "C" {
 }
 
 #include "stage1p4.h"
+#include "stg_time.h"
+extern PlayerTime* GlobalTime;
 
 // init static vars
 char* Stage1p4::world_file = DEFAULT_STG_WORLDFILE;
@@ -90,6 +92,10 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
   // gets shown and populated without having to connect a client.
   if( Stage1p4::stage_client == NULL )
     {
+      // steal the global clock
+      //if( GlobalTime ) delete GlobalTime;
+      //assert( (GlobalTime = new StgTime() ));
+      
       int stage_port = 
 	config->ReadInt(section, "port", STG_DEFAULT_SERVER_PORT);
       

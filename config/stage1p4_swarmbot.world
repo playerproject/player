@@ -4,7 +4,7 @@
 
 # the resolution of Stage's raytrace model in meters
 #
-resolution 0.03
+resolution 0.02
 size [10 10]
 name "Player driver test"
 
@@ -40,7 +40,7 @@ define background bg
 
 background
 (
-  #bitmap "test.pnm" 
+  bitmap "hospital_section.pnm" 
   color "purple"
 ) 
 
@@ -50,140 +50,142 @@ define indicatorlight light
   size [0.02 0.02]
   light "blink"
   matrix_render "false"
+  interval 0.0
 )
 
 define swarmbot sb
 (
   color "black"
 
+  interval 0.05
   size [0.1 0.1]
  
   neighbor 1
-  neighbor_bounds [ 0.0 2.0 ]
+  neighbor_bounds [ 0.0 1.5 ]
 	
-  indicatorlight( color "red"     pose [ 0.030  0.000 0.000 ] light [0 500]) 
-  indicatorlight( color "green"   pose [ 0.000 -0.030 0.000 ] light [0 500] ) 
-  indicatorlight( color "blue"    pose [ 0.000  0.030 0.000 ] light [0 500]) 
-  indicatorlight( color "magenta" pose [-0.030  0.000 0.000 ] light [0 500]) 
+  #indicatorlight( color "red"     pose [ 0.030  0.000 0.000 ] light [0 500]) 
+  #indicatorlight( color "green"   pose [ 0.000 -0.030 0.000 ] light [0 500] ) 
+  #indicatorlight( color "blue"    pose [ 0.000  0.030 0.000 ] light [0 500]) 
+  #indicatorlight( color "magenta" pose [-0.030  0.000 0.000 ] light [0 500]) 
 
-  #ranger_count 8
-  #ranger[0] [00.05 0.0     0.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
-  #ranger[1] [00.05 00.05    45.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
-  #ranger[2] [0.0 00.05    90.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
-  #ranger[3] [-00.05 00.05  135.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
-  #ranger[4] [-00.05 0.0  180.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
-  #ranger[5] [-00.05 -00.05 225.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
-  #ranger[6] [0.0 -00.05  270.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
-  #ranger[7] [00.05 -00.05  315.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
+  ranger_count 8
+  ranger[0] [00.05 0.0     0.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
+  ranger[1] [00.05 00.05    45.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
+  ranger[2] [0.0 00.05    90.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
+  ranger[3] [-00.05 00.05  135.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
+  ranger[4] [-00.05 0.0  180.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
+  ranger[5] [-00.05 -00.05 225.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
+  ranger[6] [0.0 -00.05  270.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
+  ranger[7] [00.05 -00.05  315.0 0.02 0.03 0.2 0.5 40.0 0.0 ]
 )
 	
 # color the zeroth robot red so we can identify it easily
 swarmbot( name "sb0" 
-          pose [8.407 8.710 -0.011] 
+          pose [5.016 4.475 -0.011] 
           color "red" 
 	  size [1 0.5]
           bitmap "submarine.pnm" 
 	  nose "no" 
 )
 
-swarmbot( pose [2.424 3.126 -0.864] )
-swarmbot( pose [2.252 2.960 -0.600] )
-swarmbot( pose [1.892 3.212 -0.908] )
-swarmbot( pose [2.630 2.927 -1.349] )
-swarmbot( pose [2.742 2.787 -1.166] )
-swarmbot( pose [2.139 3.201 -0.762] )
-swarmbot( pose [2.064 2.740 -1.088] )
-swarmbot( pose [2.338 3.440 -2.172] )
-swarmbot( pose [3.163 3.720 4.304]  )
-swarmbot( pose [1.480 2.960 4.304]  )
-swarmbot( pose [1.638 2.727 4.304]  )
-swarmbot( pose [1.838 2.568 4.304]  )
-swarmbot( pose [2.015 2.500 4.304]  )
-swarmbot( pose [2.751 2.373 4.304]  )
-swarmbot( pose [2.880 2.532 4.304]  )
-swarmbot( pose [2.471 2.404 4.304]  )
-swarmbot( pose [2.984 2.742 4.304]  )
-swarmbot( pose [3.020 2.917 4.304]  )
-swarmbot( pose [3.122 3.103 4.304]  )
-swarmbot( pose [3.186 3.397 4.304]  )
-swarmbot( pose [2.902 3.544 4.304]  )
-swarmbot( pose [2.784 3.764 4.304]  )
-swarmbot( pose [2.545 4.008 4.304]  )
-swarmbot( pose [2.288 3.810 4.304]  )
-swarmbot( pose [2.058 3.783 4.304]  )
-swarmbot( pose [1.884 3.618 4.304]  )
-swarmbot( pose [1.765 3.351 4.304]  )
-swarmbot( pose [1.738 3.067 4.304]  )
-swarmbot( pose [1.930 2.921 4.304]  )
-swarmbot( pose [2.325 2.627 4.304]  )
-swarmbot( pose [2.618 2.600 4.304]  )
-swarmbot( pose [2.116 3.515 4.304]  )
-swarmbot( pose [2.545 3.657 4.304]  )
-swarmbot( pose [3.845 3.522 4.304]  )
-swarmbot( pose [2.609 3.362 4.304]  )
-swarmbot( pose [2.754 3.246 4.304]  )
-swarmbot( pose [2.218 4.399 4.304]  )
-swarmbot( pose [2.575 4.574 4.304]  )
-swarmbot( pose [3.701 2.723 4.304]  )
-swarmbot( pose [3.750 3.321 4.304]  )
-swarmbot( pose [2.502 1.556 4.304]  )
-swarmbot( pose [2.835 3.038 4.304]  )
-swarmbot( pose [1.450 4.174 4.304]  )
-swarmbot( pose [3.591 3.900 4.304]  )
-swarmbot( pose [3.183 4.184 4.304]  )
-swarmbot( pose [3.659 3.151 4.304]  )
-swarmbot( pose [1.172 3.946 4.304]  )
-swarmbot( pose [3.412 4.270 4.304]  )
-swarmbot( pose [3.263 2.095 4.304]  )
-swarmbot( pose [2.128 1.835 4.304]  )
-swarmbot( pose [2.683 1.949 4.304]  )
-swarmbot( pose [2.407 1.913 4.304]  )
-swarmbot( pose [1.855 2.096 4.304]  )
-swarmbot( pose [2.116 2.062 4.304]  )
-swarmbot( pose [1.379 2.300 4.304]  )
-swarmbot( pose [1.379 2.505 4.304]  )
-swarmbot( pose [1.617 2.334 4.304]  )
-swarmbot( pose [1.606 2.550 4.304]  )
-swarmbot( pose [1.388 2.746 4.304]  )
-swarmbot( pose [1.277 2.932 4.304]  )
-swarmbot( pose [1.264 3.180 4.304]  )
-swarmbot( pose [1.252 3.428 4.304]  )
-swarmbot( pose [1.401 3.651 4.304]  )
-swarmbot( pose [1.622 3.889 4.304]  )
-swarmbot( pose [1.810 4.173 4.304]  )
-swarmbot( pose [2.133 4.185 4.304]  )
-swarmbot( pose [2.406 4.284 4.304]  )
-swarmbot( pose [2.899 4.422 4.304]  )
-swarmbot( pose [2.744 4.269 4.304]  )
-swarmbot( pose [3.634 3.577 4.304]  )
-swarmbot( pose [3.498 3.701 4.304]  )
-swarmbot( pose [3.411 3.949 4.304]  )
-swarmbot( pose [2.964 4.148 4.304]  )
-swarmbot( pose [3.163 3.949 4.304]  )
-swarmbot( pose [4.033 2.903 4.304]  )
-swarmbot( pose [1.505 4.524 4.304]  )
-swarmbot( pose [3.324 2.584 4.304]  )
-swarmbot( pose [3.535 3.043 4.304]  )
-swarmbot( pose [3.576 2.491 4.304]  )
-swarmbot( pose [1.508 3.196 4.304]  )
-swarmbot( pose [1.554 3.398 4.304]  )
-swarmbot( pose [3.022 1.867 4.304]  )
-swarmbot( pose [2.058 2.243 4.304]  )
-swarmbot( pose [2.260 2.286 4.304]  )
-swarmbot( pose [2.462 2.170 4.304]  )
-swarmbot( pose [2.636 2.243 4.304]  )
-swarmbot( pose [2.838 2.142 4.304]  )
-swarmbot( pose [3.012 2.344 4.304]  )
-swarmbot( pose [3.535 2.167 4.304]  )
-swarmbot( pose [3.351 3.251 4.304]  )
-swarmbot( pose [1.884 3.911 4.304]  )
-swarmbot( pose [2.306 4.030 4.304]  )
-swarmbot( pose [1.916 4.514 4.304]  )
-swarmbot( pose [2.792 3.985 4.304]  )
-swarmbot( pose [3.360 3.545 4.304]  )
-swarmbot( pose [3.314 3.040 4.304]  )
-swarmbot( pose [3.304 2.829 4.304]  )
-swarmbot( pose [3.012 3.361 4.304]  )
-swarmbot( pose [3.553 3.389 4.304]  )
-swarmbot( pose [2.929 3.783 4.304]  )
+swarmbot( pose [1.437 8.659 -0.864] )
+swarmbot( pose [1.050 8.495 2.157] )
+swarmbot( pose [9.732 6.676 -4.353] )
+swarmbot( pose [1.765 8.631 -1.349] )
+swarmbot( pose [9.690 6.335 -1.166] )
+swarmbot( pose [8.633 6.042 -0.762] )
+swarmbot( pose [1.375 9.203 -1.088] )
+swarmbot( pose [1.648 7.673 -3.702] )
+swarmbot( pose [0.808 8.046 5.409]  )
+swarmbot( pose [9.247 6.655 4.304]  )
+swarmbot( pose [0.587 8.466 2.000]  )
+swarmbot( pose [2.020 9.155 4.226]  )
+swarmbot( pose [0.520 9.211 -0.315]  )
+swarmbot( pose [9.731 5.939 7.116]  )
+swarmbot( pose [0.827 7.564 6.189]  )
+swarmbot( pose [9.462 6.522 5.378]  )
+swarmbot( pose [1.603 9.030 8.673]  )
+swarmbot( pose [0.523 8.097 2.101]  )
+swarmbot( pose [1.069 7.833 3.348]  )
+swarmbot( pose [1.316 7.706 2.732]  )
+swarmbot( pose [1.142 8.109 8.221]  )
+swarmbot( pose [0.694 7.797 1.734]  )
+swarmbot( pose [1.449 8.257 1.893]  )
+swarmbot( pose [9.163 6.047 1.373]  )
+swarmbot( pose [9.463 6.157 5.620]  )
+swarmbot( pose [0.875 8.811 4.684]  )
+swarmbot( pose [9.491 5.812 2.981]  )
+swarmbot( pose [8.472 6.270 2.601]  )
+swarmbot( pose [1.132 9.013 7.881]  )
+swarmbot( pose [1.138 8.770 5.412]  )
+swarmbot( pose [1.911 8.363 7.263]  )
+swarmbot( pose [0.884 8.260 3.273]  )
+swarmbot( pose [8.796 6.579 6.568]  )
+swarmbot( pose [1.437 7.959 2.843]  )
+swarmbot( pose [0.596 8.869 2.638]  )
+swarmbot( pose [8.859 5.705 6.727]  )
+swarmbot( pose [9.250 5.813 2.384]  )
+swarmbot( pose [1.770 8.090 1.049]  )
+swarmbot( pose [8.746 6.276 6.328]  )
+swarmbot( pose [8.580 5.807 3.589]  )
+swarmbot( pose [9.749 5.634 2.656]  )
+swarmbot( pose [9.830 6.175 2.309]  )
+swarmbot( pose [2.029 8.802 3.078]  )
+swarmbot( pose [1.939 7.865 5.095]  )
+swarmbot( pose [8.919 6.086 2.084]  )
+swarmbot( pose [9.252 6.378 2.160]  )
+swarmbot( pose [9.124 5.574 4.066]  )
+swarmbot( pose [8.997 6.421 9.010]  )
+swarmbot( pose [9.410 5.557 5.823]  )
+swarmbot( pose [0.508 7.471 6.188]  )
+#swarmbot( pose [2.683 1.949 4.304]  )
+#swarmbot( pose [2.407 1.913 4.304]  )
+#swarmbot( pose [1.855 2.096 4.304]  )
+#swarmbot( pose [2.116 2.062 4.304]  )
+#swarmbot( pose [1.379 2.300 4.304]  )
+#swarmbot( pose [1.379 2.505 4.304]  )
+#swarmbot( pose [1.617 2.334 4.304]  )
+#swarmbot( pose [1.606 2.550 4.304]  )
+#swarmbot( pose [1.388 2.746 4.304]  )
+#swarmbot( pose [1.277 2.932 4.304]  )
+#swarmbot( pose [1.264 3.180 4.304]  )
+#swarmbot( pose [1.252 3.428 4.304]  )
+#swarmbot( pose [1.401 3.651 4.304]  )
+#swarmbot( pose [1.622 3.889 4.304]  )
+#swarmbot( pose [1.810 4.173 4.304]  )
+#swarmbot( pose [2.133 4.185 4.304]  )
+#swarmbot( pose [2.406 4.284 4.304]  )
+#swarmbot( pose [2.899 4.422 4.304]  )
+#swarmbot( pose [2.744 4.269 4.304]  )
+#swarmbot( pose [3.634 3.577 4.304]  )
+#swarmbot( pose [3.498 3.701 4.304]  )
+#swarmbot( pose [3.411 3.949 4.304]  )
+#swarmbot( pose [2.964 4.148 4.304]  )
+#swarmbot( pose [3.163 3.949 4.304]  )
+#swarmbot( pose [4.033 2.903 4.304]  )
+#swarmbot( pose [1.505 4.524 4.304]  )
+#swarmbot( pose [3.324 2.584 4.304]  )
+#swarmbot( pose [3.535 3.043 4.304]  )
+#swarmbot( pose [3.576 2.491 4.304]  )
+#swarmbot( pose [1.508 3.196 4.304]  )
+#swarmbot( pose [1.554 3.398 4.304]  )
+#swarmbot( pose [3.022 1.867 4.304]  )
+#swarmbot( pose [2.058 2.243 4.304]  )
+#swarmbot( pose [2.260 2.286 4.304]  )
+#swarmbot( pose [2.462 2.170 4.304]  )
+#swarmbot( pose [2.636 2.243 4.304]  )
+#swarmbot( pose [2.838 2.142 4.304]  )
+#swarmbot( pose [3.012 2.344 4.304]  )
+#swarmbot( pose [3.535 2.167 4.304]  )
+#swarmbot( pose [3.351 3.251 4.304]  )
+#swarmbot( pose [1.884 3.911 4.304]  )
+#swarmbot( pose [2.306 4.030 4.304]  )
+#swarmbot( pose [1.916 4.514 4.304]  )
+#swarmbot( pose [2.792 3.985 4.304]  )
+#swarmbot( pose [3.360 3.545 4.304]  )
+#swarmbot( pose [3.314 3.040 4.304]  )
+#swarmbot( pose [3.304 2.829 4.304]  )
+#swarmbot( pose [3.012 3.361 4.304]  )
+#swarmbot( pose [3.553 3.389 4.304]  )
+#swarmbot( pose [2.929 3.783 4.304]  )
 

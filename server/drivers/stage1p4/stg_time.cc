@@ -28,6 +28,7 @@
 
 #include "stage1p4.h"
 #include "stg_time.h"
+#include "math.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -49,6 +50,32 @@ StgTime::~StgTime()
 // Get the simulator time
 int StgTime::GetTime(struct timeval* time)
 {
-  memcpy( time, &Stage1p4::stage_client->time, sizeof(struct timeval) );
-  return 0;
+ puts( "get time" );
+
+  // get the time from Stage. 
+
+  // this mechanism could be more efficient,
+  // but it's nice and simple for now.
+  
+ if( Stage1p4::created_models_count < 3 )
+   {
+     memset( time, 0, sizeof(struct timeval) );
+     return 0;
+   }
+
+ stg_property_t *prop = 
+   stg_send_property( Stage1p4::stage_client, 
+		      Stage1p4::created_models[2].stage_id, 
+		      STG_PROP_TIME, STG_GET, NULL, 0 );
+ 
+ printf( "time is %.4f\n", prop->timestamp );
+ 
+ assert( prop );
+ 
+ time->tv_sec = (int) floor(prop->timestamp);
+ time->tv_usec = (int) floor(fmod(prop->timestamp, 1.0) * 1e6);
+ 
+ stg_property_free(prop);
+ 
+ return 0;
 }
