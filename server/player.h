@@ -1779,13 +1779,19 @@ typedef struct player_ir_power_req
  ** begin section localize
  *************************************************************************/
 
-/** [Synopsis] The {\tt localize} interface provides a pose information
-using probablistic localize algorithms. */
+/** [Synopsis] The {\tt localize} interface provides pose information
+    for the robot.  Generally speaking, localization drivers will
+    estimate the pose of the robot by comparing observed sensor
+    readings against a pre-defined map of the environment.  See, for
+    the example, the {\tt regular_mcl} and {\tt adaptive_mcl} drivers,
+    which implement probabilistic Monte-Carlo localization algorithms.
+*/
 
 /** [Constants] */
-/** the maximum number of pose hypothesis */
+/** The maximum number of pose hypotheses. */
 #define PLAYER_LOCALIZE_MAX_HYPOTHS            10
-/** the various configuration subtypes */
+
+/** Request/reply packet subtypes */
 #define PLAYER_LOCALIZE_SET_POSE_REQ           ((uint8_t)1)
 #define PLAYER_LOCALIZE_GET_CONFIG_REQ         ((uint8_t)2)
 #define PLAYER_LOCALIZE_SET_CONFIG_REQ         ((uint8_t)3)
@@ -1793,21 +1799,22 @@ using probablistic localize algorithms. */
 #define PLAYER_LOCALIZE_GET_MAP_DATA_REQ       ((uint8_t)5)
 
 /** [Data] */
-/**
-The {\tt localize} interface returns multiple hypothesis, of which format is: */
+/** Since the robot pose may be ambiguous (i.e., the robot may at any
+    of a number of widely spaced locations), the {\tt localize}
+    interface is capable of returning more that one hypothesis.  The
+    format for each such hypothesis is as follows: */
 typedef struct player_localize_hypoth
 {
-  /** the central pose (mean) of a hypothesis (mm, mm, arc-seconds) */
+  /** The mean value of the pose estimate (mm, mm, arc-seconds). */
   int32_t mean[3];
-  /** the covariance matrix of a hypothesis (mm$^2$, arc-seconds$^2$) */
+  /** The covariance matrix pose estimate (mm$^2$, arc-seconds$^2$). */
   int64_t cov[3][3];
-  /** coefficient for linear combination : int(alpha * billion) */
+  /** The weight coefficient for linear combination (alpha * 1e6). */
   uint32_t alpha;
 } __attribute__ ((packed)) player_localize_hypoth_t;
 
-/**
-The {\tt localize} interface returns data regarding the pose of the robot;
-the format is: */
+/** The {\tt localize} interface returns a data packet containing an
+    an array of hypotheses, defined as follows: */
 typedef struct player_localize_data
 {
   /** the number of pose hypothesis */
@@ -1821,69 +1828,67 @@ typedef struct player_localize_data
 
 
 /** [Configuration: Set the robot pose estimate] */
-/**
-Set the robot pose estimate.  The server will reply with a zero length
-repsonse packet. */
+/** Set the current robot pose hypothesis.  The server will reply with
+    a zero length response packet. */
 typedef struct player_localize_set_pose
 {
-  /** subtype; Must be PLAYER_LOCALIZE_SET_POSE_REQ. */
+  /** Request subtype; must be PLAYER_LOCALIZE_SET_POSE_REQ. */
   uint8_t subtype;
-  /** the central pose (mean) of a hypothesis (mm, mm, arc-seconds) */
+  /** The mean value of the pose estimate (mm, mm, arc-seconds). */
   int32_t mean[3];
-  /** the covariance matrix of a hypothesis (mm$^2$, arc-seconds$^2$). */
+  /** The covariance matrix pose estimate (mm$^2$, arc-seconds$^2$). */
   int64_t cov[3][3];
+
 } __attribute__ ((packed)) player_localize_set_pose_t;
 
 
-/** [Configuration: Get/set configuration] */
-/**
-To retrieve the configuration, set the subtype to PLAYER_LOCALIZE_GET_CONFIG_REQ
-and leave the other fields empty. The server will reply with the following
-configuaration fields filled in.
- 
-To change the current configuration, set the subtype to PLAYER_LOCALIZE_SET_CONFIG_REQ
-and fill the configuration fields. */
+/** [Configuration: Get/Set configuration] */
+/**  To retrieve the configuration, set the subtype to
+     PLAYER_LOCALIZE_GET_CONFIG_REQ and leave the other fields
+     empty. The server will reply with the following configuaration
+     fields filled in.  To change the current configuration, set the
+     subtype to PLAYER_LOCALIZE_SET_CONFIG_REQ and fill the
+     configuration fields. */
 typedef struct player_localize_config
 { 
-  /** subtype; must be either PLAYER_LOCALIZE_GET_CONFIG_REQ or
-      PLAYER_LOCALIZE_SET_CONFIG_REQ */
+  /** Request subtype; must be either PLAYER_LOCALIZE_GET_CONFIG_REQ
+      or PLAYER_LOCALIZE_SET_CONFIG_REQ */
   uint8_t subtype;
-  /** configuration for particle-based localize algorithms */
+  /** Maximum number of particles (for drivers using particle
+   * filters). */
   uint32_t num_particles;
 } __attribute__ ((packed)) player_localize_config_t;
 
 
 /** [Configuration: Get map information] */
-/**
-Retrieve the size and scale information of a current map. This request
-is used to get the size information before you request the actual map
-data. Set the subtype to PLAYER_LOCALIZE_GET_MAP_INFO_REQ; the
-server will reply with the size information filled in. */
+/** Retrieve the size and scale information of a current map. This
+request is used to get the size information before you request the
+actual map data. Set the subtype to PLAYER_LOCALIZE_GET_MAP_INFO_REQ;
+the server will reply with the size information filled in. */
 typedef struct player_localize_map_info
 {
-  /** subtype; must be PLAYER_LOCALIZE_GET_MAP_INFO_REQ */
+  /** Request subtype; must be PLAYER_LOCALIZE_GET_MAP_INFO_REQ */
   uint8_t subtype; 
-  /** the scale of the map (pixels per kilometer) */
+  /** The scale of the map (pixels per kilometer). */
   uint32_t scale; 
-  /** the size of the map */
+  /** The size of the map (pixels). */
   uint32_t width, height;
 } __attribute__ ((packed)) player_localize_map_info_t;
 
 /** [Configuration: Get map data] */
-/**
-Retrieve the map data. Beacause of the limited size of a request-replay messages,
-the map data is tranfered in tiles.  Set the subtype to
-PLAYER_LOCALIZE_GET_MAP_DATA_REQ, and set the column, row index of a tile.
-Then, the server will reply with the requested block data filled in. */
+/** Retrieve the map data. Beacause of the limited size of a
+request-replay messages, the map data is tranfered in tiles.  In the
+request packet, set the column and row index of a specific tile; the
+server will reply with the requested map data filled in. */
 typedef struct player_localize_map_data
 {
-  /** subtype; must be PLAYER_LOCALIZE_MAP_DATA_REQ */
+  /** Request subtype; must be PLAYER_LOCALIZE_MAP_DATA_REQ. */
   uint8_t subtype; 
-  /** the tile origin */
+  /** The tile origin (pixels). */
   uint32_t col, row;
-  /** the size of the tile */
+  /** The size of the tile (pixels). */
   uint32_t width, height;
-  /** map data (empty = -1, unknown = 0, occupied = +1) */
+  /** Cell occupancy value (empty = -1, unknown = 0, occupied = +1). */
   int8_t data[PLAYER_MAX_REQREP_SIZE - 17];
 } __attribute__ ((packed)) player_localize_map_data_t;
 
