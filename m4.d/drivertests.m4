@@ -204,7 +204,6 @@ PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
 PLAYER_ADD_DRIVER([wavefront],[drivers/planner/wavefront],[yes],[],[],[])
 PLAYER_ADD_DRIVER([mapfile],[drivers/map],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
-AC_SUBST(GDK_PIXBUF_CFLAGS)
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GDK_PIXBUF_LIBS"
 
 PLAYER_ADD_DRIVER([mapcspace],[drivers/map],[yes],[],[],[])
@@ -233,7 +232,6 @@ PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
 	
 PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[yes],
                   [],[],[],[STAGE1P4],[stage >= 1.4])
-AC_SUBST(STAGE1P4_CFLAGS)
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STAGE1P4_LIBS"
 
 PLAYER_ADD_DRIVER([laserbar],[drivers/fiducial],[yes],[],[],[])
@@ -245,11 +243,17 @@ dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
 PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
 
+dnl Service Discovery with libservicediscovery
 AC_LANG_SAVE
 AC_LANG_CPLUSPLUS
 PLAYER_ADD_DRIVER([service_adv_lsd], [drivers/service_adv], [yes],
     [servicediscovery/servicedirectory.hh], [], [-lservicediscovery])
 AC_LANG_RESTORE
+
+dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
+PLAYER_ADD_DRIVER([service_adv_mdns],[drivers/service_adv],[yes],
+                  [],[],[],[HOWL],[howl >= 0.9.5])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
