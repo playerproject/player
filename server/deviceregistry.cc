@@ -208,6 +208,10 @@ void AdaptiveMCL_Register(DriverTable* table);
 void LifoMCom_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_CAMERAV4L
+void CameraV4L_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_GAZEBO_CAMERA
 void GzCamera_Register(DriverTable *table);
 #endif
@@ -292,7 +296,7 @@ player_interface_t interfaces[] = {
   {PLAYER_SERVICE_ADV_CODE, PLAYER_SERVICE_ADV_STRING, "service_adv_lsd"},
   {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING, "stg_simulation"},
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_BLINKENLIGHT_STRING, "stg_blinkenlight"},
-  {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, ""},
+  {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, "camerav4l"},
   {0,NULL,NULL}
 };
 
@@ -526,6 +530,10 @@ register_devices()
 
 #ifdef INCLUDE_LIFOMCOM
   LifoMCom_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_CAMERAV4L
+  CameraV4L_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_GAZEBO_CAMERA
