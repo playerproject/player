@@ -752,7 +752,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   char* playerpath;
   char* tmp;
   char* cfgdir;
-  char* error;
+  const char* error;
   unsigned int i,j;
 
   // see if we got an absolute path

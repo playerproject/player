@@ -99,9 +99,9 @@ void playerc_truth_putdata(playerc_truth_t *device, player_msghdr_t *header,
 {
   assert(sizeof(*data) <= len);
 
-  device->px = ntohl(data->px) / 1000.0;
-  device->py = ntohl(data->py) / 1000.0;
-  device->pa = ((double) (int32_t) ntohl(data->pa)) * M_PI / 180;
+  device->px = ((int32_t) ntohl(data->px)) / 1000.0;
+  device->py = ((int32_t) ntohl(data->py)) / 1000.0;
+  device->pa = ((int32_t) ntohl(data->pa)) * M_PI / 180;
 }
 
 

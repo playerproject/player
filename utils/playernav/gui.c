@@ -712,6 +712,7 @@ draw_waypoints(gui_data_t* gui_data, int idx)
 
   if(gui_data->robot_paths[idx])
   {
+    //puts("destroying waypoints");
     gtk_object_destroy(GTK_OBJECT(gui_data->robot_paths[idx]));
     gui_data->robot_paths[idx] = NULL;
   }

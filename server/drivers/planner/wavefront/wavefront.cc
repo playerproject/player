@@ -421,7 +421,8 @@ Wavefront::PutPlannerData()
 
   data.gx = htonl((int)rint(this->target_x * 1e3));
   data.gy = htonl((int)rint(this->target_y * 1e3));
-  data.ga = htonl((int)rint(this->target_a * 1e3));
+  //data.ga = htonl((int)rint(this->target_a * 1e3));
+  data.ga = htonl((int)rint(RTOD(this->target_a)));
 
   data.wx = htonl((int)rint(this->waypoint_x * 1e3));
   data.wy = htonl((int)rint(this->waypoint_y * 1e3));
@@ -640,19 +641,23 @@ void Wavefront::Main()
         if((dist > this->dist_eps) &&
             fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0)
         {
-          //puts("adding rotational waypoint");
           this->waypoint_x = this->localize_x;
           this->waypoint_y = this->localize_y;
           this->waypoint_a = angle;
           this->curr_waypoint--;
           rotate_waypoint=true;
-
+          //printf("adding rotational waypoint: %f,%f,%f\n",
+                 //this->waypoint_x, this->waypoint_y, this->waypoint_a);
         }
         else
           rotate_waypoint=false;
 
         SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
       }
+      //printf("waiting for achievement of %f,%f,%f\n",
+             //this->waypoint_x, this->waypoint_y, RTOD(this->waypoint_a));
+      //printf("current pose %f,%f,%f\n",
+             //this->localize_x, this->localize_y, RTOD(this->localize_a));
       if(!rotate_waypoint)
         SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
     }
