@@ -5,25 +5,11 @@ PYTHONINSTALL = pythoninstall
 endif
 
 # use distutils to build
-pythonbuild: dev_blobfinder.c dev_comms.c dev_fiducial.c dev_gps.c dev_laser.c \
-             dev_position.c dev_ptz.c dev_truth.c dev_wifi.c pyplayerc.c pyplayerc.h setup.py
+pythonbuild: dev_blobfinder.c dev_comms.c dev_fiducial.c dev_gps.c dev_laser.c dev_position.c dev_ptz.c dev_sonar.c dev_truth.c dev_wifi.c pyplayerc.c pyplayerc.h setup.py
 	@PYTHON_INTERP@ $(srcdir)/setup.py build
 
-
-EXTRA_DIST = dev_blobfinder.c \
-						 dev_comms.c \
-             dev_fiducial.c \
-						 dev_gps.c \
-             dev_laser.c \
-						 dev_localize.c \
-             dev_position.c dev_position3d.c \
-             dev_power.c \
-             dev_ptz.c \
-						 dev_truth.c \
-						 dev_wifi.c \
-             pyplayerc.c \
-             pyplayerc.h \
-				     setup.py
+# files that go in distribution
+EXTRA_DIST = dev_blobfinder.c dev_comms.c dev_fiducial.c dev_gps.c dev_laser.c dev_localize.c dev_position.c dev_position3d.c dev_power.c dev_ptz.c dev_sonar.c dev_truth.c dev_wifi.c pyplayerc.c pyplayerc.h setup.py
 
 clean-local:
 	rm -rf build
