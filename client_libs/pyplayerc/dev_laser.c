@@ -130,6 +130,12 @@ static PyObject *laser_getattr(PyObject *self, char *attrname)
     Py_INCREF(laserob->scan);
     result = laserob->scan;
   }
+  else if (strcmp(attrname, "scan_str") == 0)
+  {
+    // Return the laser scan as a string (good for compact storage)
+    result = PyString_FromStringAndSize(laserob->laser->scan,
+                                        laserob->laser->scan_count * sizeof(laserob->laser->scan[0]));
+  }
   else
     result = Py_FindMethod(laser_methods, self, attrname);
 
@@ -187,7 +193,7 @@ static void laser_onread(laser_object_t *laserob)
     PyTuple_SetItem(tuple, 2, PyFloat_FromDouble(laserob->laser->point[i][0]));
     PyTuple_SetItem(tuple, 3, PyFloat_FromDouble(laserob->laser->point[i][1]));
     PyTuple_SetItem(tuple, 4, PyInt_FromLong(laserob->laser->intensity[i]));
-    PyList_SetItem(laserob->scan, i, tuple);
+    PyList_SET_ITEM(laserob->scan, i, tuple);
   }
 
   thread_release();
