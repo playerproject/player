@@ -198,6 +198,8 @@ LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
   this->segment_count = 0;
   
   // Fiducial data.
+  this->timesec = 0;
+  this->timeusec = 0;
   memset(&this->data, 0, sizeof(this->data));
 
   return;
