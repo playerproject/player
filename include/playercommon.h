@@ -35,10 +35,15 @@
   #include <sys/types.h>   // solaris puts them here
 #endif
 
+#ifdef PLAYER_LINUX
+  #include <stdint.h>      // linux puts them here
+#endif
+
 #ifdef PLAYER_CYGWIN
 #include <sys/types.h>   // so does cygwin
 
-typedef unsigned int size_t; // can't find this type in the headers!
+//cygwin doesn't appear to have them 
+typedef unsigned int size_t; 
 typedef unsigned int uint32_t;
 typedef unsigned short uint16_t;
 typedef unsigned char uint8_t;
@@ -46,13 +51,11 @@ typedef int int32_t;
 typedef short int16_t;
 typedef char int8_t;
 
-#define MAXINT INT_MAX
+// INT_MAX is more portable - limits.h
+#define MAXINT INT_MAX 
 
 #endif
 
-#ifdef PLAYER_LINUX
-  #include <stdint.h>      // linux puts them here
-#endif
 
 /* debug malloc(3) */
 #define MALLOC_CHECK_ 2

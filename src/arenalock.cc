@@ -38,51 +38,70 @@
 #include <sys/sem.h>
 #include <netinet/in.h>
 
-#define SEMKEY 2000
+#include "stagedevice.h"
+
+//#define SEMKEY 2000
 
 CArenaLock::CArenaLock():CLock()
 {  
+  // nothing to do here these days...
+
   //puts( "AL: construct" );
 
   // create a single semaphore to sync access to the shared memory segments
   //puts( "Obtaining semaphore" );
 
-  semKey = SEMKEY;
+  // reworked semaphore code to be POSIX instead of SYSV
 
-  union semun
-    {
-      int val;
-      struct semid_ds *buf;
-      ushort *array;
-  } argument;
+  ///semKey = SEMKEY;
 
-  argument.val = 0; // initial semaphore value
+//    union semun
+//      {
+//        int val;
+//        struct semid_ds *buf;
+//        ushort *array;
+//    } argument;
 
-  semid = semget( semKey, 1, 0666 );
+//    argument.val = 0; // initial semaphore value
 
-  if( semid < 0 ) // semget failed
-    {
-      perror( "Can't find Arena's semaphore" );
-      exit( -1 );
-    }
-  //else
+//    semid = semget( semKey, 1, 0666 );
+
+//    if( semid < 0 ) // semget failed
+//      {
+//        perror( "Can't find Arena's semaphore" );
+//        exit( -1 );
+//      }
+   //else
   //puts( "found semaphore" );
 
-  // setup locking operation buffer
-  lock_ops[0].sem_num = 0;
-  lock_ops[0].sem_op = 1;
-  lock_ops[0].sem_flg = 0;
+//    // setup locking operation buffer
+//    lock_ops[0].sem_num = 0;
+//    lock_ops[0].sem_op = 1;
+//    lock_ops[0].sem_flg = 0;
   
-  // setup unlocking operation buffer
-  unlock_ops[0].sem_num = 0;
-  unlock_ops[0].sem_op = -1;
-  unlock_ops[0].sem_flg = 0;
+//    // setup unlocking operation buffer
+//    unlock_ops[0].sem_num = 0;
+//    unlock_ops[0].sem_op = -1;
+//    unlock_ops[0].sem_flg = 0;
 }
 
 CArenaLock::~CArenaLock() 
 {
   //puts( "AL: destruct" );
 }
+
+
+bool CArenaLock::InstallSemaphore( sem_t* sem )
+{
+  // get the pointer to the semaphore structure in shared memory
+  // this is called from main.cc CreateStageDevices()
+ 
+  m_lock = sem;
+
+  printf( "Player: device lock at %p\n", m_lock );
+}
+
+
 
 int CArenaLock::Setup( CDevice *obj ) 
 {
@@ -96,14 +115,28 @@ int CArenaLock::Shutdown( CDevice *obj )
   return( obj->Shutdown() );
 }
 
-int CArenaLock::Lock( void )
+bool CArenaLock::Lock( void )
 {
-  return( semop( semid, lock_ops, 1 ) );
+  //printf( "P: LOCK %p\n", m_lock );
+
+  if( sem_wait( m_lock ) < 0 )
+  {
+    perror( "sem_wait failed" );
+    return false;
+  }
+   return true;
 }
 
-int CArenaLock::Unlock( void )
+bool CArenaLock::Unlock( void )
 {
-  return( semop( semid, unlock_ops, 1 ) );
+  //printf( "P: UNLOCK %p\n", m_lock );
+
+  if( sem_post( m_lock ) < 0 )
+  {
+    perror( "sem_post failed" );
+    return false;
+  }
+  return true;
 }
 
 
@@ -182,7 +215,6 @@ size_t CArenaLock::GetConfig( CDevice *obj , unsigned char *dest, size_t maxsize
 int CArenaLock::Subscribe( CDevice *obj ) 
 {
   //puts( "AL: subscribe" );
-
   int res = 0 ;
 
   if( subscriptions == 0  )

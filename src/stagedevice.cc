@@ -48,6 +48,8 @@ CStageDevice::CStageDevice(player_stage_info_t* info )
 	  info->player_id.index ); 
 #endif
 
+  printf( "PLAYER: info at %p\n", info );
+
   m_info = info;
   m_info_len = sizeof( player_stage_info_t );
   
@@ -63,7 +65,12 @@ CStageDevice::CStageDevice(player_stage_info_t* info )
   m_config_len = m_info->config_len;
   
   next = 0; // initialize linked list pointer
-      
+
+  // setup the lock object
+  printf( "installing sem %p\n", &info->lock );
+  m_lock.InstallSemaphore( &info->lock);
+  
+
 #ifdef DEBUG
   PLAYER_TRACE4("creating device at addr: %p %p %p %p %p", 
 		m_info, m_data_buffer, m_command_buffer, m_config_buffer );

@@ -28,12 +28,20 @@
  *
  */
 
-#include <stagetime.h>
+#include "stagetime.h"
+#include <stdio.h>
+
+// constuctor
+StageTime::StageTime( stage_clock_t* clock ) 
+{ 
+  simtimep = &clock->time;  
+  stagelock.InstallSemaphore( &clock->lock );
+}
 
 
 int StageTime::GetTime(struct timeval* time)
 { 
-  if(stagelock.Lock() == -1)
+  if( !stagelock.Lock() )
   {
     perror("StageTime::GetTime(): semop() failed on Lock().");
     return(-1);
@@ -41,7 +49,7 @@ int StageTime::GetTime(struct timeval* time)
 
   *time = *simtimep;
 
-  if(stagelock.Unlock() == -1)
+  if( !stagelock.Unlock() )
   {
     perror("StageTime::GetTime(): semop() failed on Unlock().");
     return(-1);
