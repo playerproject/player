@@ -4,6 +4,7 @@ AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage
 
 player_DEPENDENCIES =   @STAGE_LIBPATH@ \
 			@P2OS_LIBPATH@ \
+			@REB_LIBPATH@ \
 			@SICK_LIBPATH@ \
 			@FESTIVAL_LIBPATH@ \
 			@ACTS_LIBPATH@ \
