@@ -1,3 +1,22 @@
+/* 
+ *  libplayerc : a Player client library
+ *  Copyright (C) Andrew Howard 2002
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ */
 /***************************************************************************
  * Desc: Position device proxy
  * Author: Andrew Howard
@@ -5,6 +24,7 @@
  * CVS: $Id$
  **************************************************************************/
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <netinet/in.h>
@@ -61,9 +81,12 @@ void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *heade
   device->px = (long) ntohl(data->xpos) / 1000.0;
   device->py = (long) ntohl(data->ypos) / 1000.0;
   device->pa = (short) ntohs(data->theta) * M_PI / 180.0;
+  device->pa = atan2(sin(device->pa), cos(device->pa));
+  
   device->vx = (short) ntohs(data->speed) / 1000.0;
   device->vy = (short) ntohs(data->sidespeed) / 1000.0;
   device->va = (short) ntohs(data->turnrate) * M_PI / 180.0;
+  
   device->stall = data->stalls;
 }
 

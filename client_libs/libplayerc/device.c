@@ -19,6 +19,7 @@ void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
   device->client = client;
   device->code = code;
   device->index = index;
+  device->subscribed = 0;
   device->callback_count = 0;
   device->putdata = putdata;
 
@@ -36,8 +37,11 @@ void playerc_device_term(playerc_device_t *device)
 // Subscribe/unsubscribe the device
 int playerc_device_subscribe(playerc_device_t *device, int access)
 {
-  return playerc_client_subscribe(device->client, device->code,
-                                  device->index, access);
+  if (playerc_client_subscribe(device->client, device->code,
+                               device->index, access) != 0)
+    return -1;
+  device->subscribed = 1;
+  return 0;
 }
 
 
@@ -45,6 +49,7 @@ int playerc_device_subscribe(playerc_device_t *device, int access)
 // Subscribe/unsubscribe the device
 int playerc_device_unsubscribe(playerc_device_t *device)
 {
+  device->subscribed = 0;
   return playerc_client_unsubscribe(device->client, device->code,
                                     device->index);
 }
