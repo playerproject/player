@@ -651,9 +651,11 @@ P2OS::Subscribe(player_device_id_t id)
       case PLAYER_SONAR_CODE:
         this->sonar_subscriptions++;
         break;
+	/*
       default:
         PLAYER_ERROR1("got subscription for unknown interface %d", id.code);
         assert(false);
+	*/
     }
   }
 
@@ -677,9 +679,11 @@ P2OS::Unsubscribe(player_device_id_t id)
       case PLAYER_SONAR_CODE:
         assert(--this->sonar_subscriptions >= 0);
         break;
+	/*
       default:
         PLAYER_ERROR1("got unsubscription for unknown interface %d", id.code);
         assert(false);
+	*/
     }
   }
 

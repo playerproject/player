@@ -20,8 +20,8 @@ int test_power(playerc_client_t *client, int index)
 
   device = playerc_power_create(client, index);
 
-  TEST("subscribing (read/write)");
-  if (playerc_power_subscribe(device, PLAYER_ALL_MODE) != 0)
+  TEST("subscribing (read)");
+  if (playerc_power_subscribe(device, PLAYER_READ_MODE) != 0)
   {
     FAIL();
     return -1;
