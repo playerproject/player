@@ -15,9 +15,11 @@ TODO                 we've got big plans...
 client_libs/c        source for C client-side utilities
 client_libs/c++      source for C++ client-side utilities
 client_libs/tcl      source for Tcl/Tk client-side utilities
+client_libs/lisp     source for Common LISP client-side utilities
 examples/c           source for C example clients
 examples/c++         source for C++ example clients
 examples/tcl         source for Tcl/Tk example clients
+examples/lisp        source for Common LISP example clients
 doc                  users manual
 include              header files for Player
 src                  source for Player
@@ -31,13 +33,7 @@ Configuration
 
 Build 
 ------------------
-- if your machine (i.e. robot) has its clock set wrong (like most of ours)
-  you'll want touch all the files to fix clock skew and ensure a complete 
-  build:
-
-     $ find . -exec touch {} \;
-
-- then build (in the top-level directory):
+- in the top-level directory:
 
      $ make
 
@@ -46,15 +42,15 @@ Install
 --------------------
 - to install everything (server binary, client libraries and headers,
     and examples) in the selected install directory (default is
-    /usr/local/player<version>):
+    /usr/local/player-<version>):
 
       # make install
 
   the executable server itself will install (by default) as 
-  /usr/local/player<version>/bin/player.
+  /usr/local/player-<version>/bin/player.
 
-- if you want to install somewhere else, change INSTALL_BASE in 
-  Makefile.common
+- if you want to install somewhere else (like in your own home directory), 
+    change INSTALL_BASE in Makefile.common
 
 Uninstall
 --------------------
