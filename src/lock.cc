@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,18 +19,20 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *   
  *   a general purpose lock class.  each device object has one of
  *   these and uses it to control access to common data buffers.
  */
-#include<pthread.h>
-#include<stdio.h>
+#include <pthread.h>
+#include <stdio.h>
 
 #include <device.h>
 #include <lock.h>
 #include <errors.h>
+
 
 CLock::CLock() 
 {
@@ -62,7 +65,7 @@ int CLock::Setup( CDevice *obj )
 
 int CLock::Shutdown( CDevice *obj ) 
 {
-
+  int retval;
   if ( firstdata == false ) 
   {
     // this means that the setup went okay and the call to lock will 
@@ -70,7 +73,8 @@ int CLock::Shutdown( CDevice *obj )
     pthread_mutex_lock( &setupDataMutex );
   }
   firstdata = true;
-  return( obj->Shutdown() );
+  retval = obj->Shutdown();
+  return(retval);
 }
 
 size_t CLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize ) 

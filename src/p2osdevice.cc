@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -42,7 +44,6 @@
 #include <netinet/in.h>
 
 #include <p2osdevice.h>
-#include <sip.h>
 #include <packet.h>
 
 /* here we calculate our conversion factors.
@@ -64,8 +65,8 @@
 
 /* these are necessary to make the static fields visible to the linker */
 extern pthread_t      CP2OSDevice::thread;
-extern unsigned char* CP2OSDevice::data;
-extern unsigned char* CP2OSDevice::command;
+extern player_p2os_data_t* CP2OSDevice::data;
+extern player_p2os_cmd_t* CP2OSDevice::command;
 extern unsigned char* CP2OSDevice::config;
 extern int            CP2OSDevice::config_size;
 extern CLock          CP2OSDevice::lock;
@@ -84,21 +85,23 @@ void *RunPsosThread( void *p2osdevice );
 CP2OSDevice::CP2OSDevice(char *port) 
 {
   //puts("CP2OSDevice::CP2OSDevice()");
-  data = new unsigned char[P2OS_DATA_BUFFER_SIZE];
-  command = new unsigned char[P2OS_COMMAND_BUFFER_SIZE];
+  data = new player_p2os_data_t;
+  command = new player_p2os_cmd_t;
   config = new unsigned char[P2OS_CONFIG_BUFFER_SIZE];
 
   config_size = 0;
   arena_initialized_command_buffer = false;
   arena_initialized_data_buffer = false;
 
-  *(short*)&command[POSITION_COMMAND_OFFSET] = 
-          (short)htons((unsigned short)0);
-  *(short*)&command[POSITION_COMMAND_OFFSET+sizeof(short)] = 
-          (short)htons((unsigned short)0);
+  command->position.speed = 0;
+  command->position.turnrate = 0;
+  //*(short*)&command[POSITION_COMMAND_OFFSET] = 
+          //(short)htons((unsigned short)0);
+  //*(short*)&command[POSITION_COMMAND_OFFSET+sizeof(short)] = 
+          //(short)htons((unsigned short)0);
 
-  command[GRIPPER_COMMAND_OFFSET] = GRIPstore;
-  command[GRIPPER_COMMAND_OFFSET+1] = 0x00;
+  command->gripper.cmd = GRIPstore;
+  command->gripper.arg = 0x00;
 
   psos_fd = -1;
   strcpy( psos_serial_port, port );
@@ -128,12 +131,13 @@ int CP2OSDevice::Setup()
     READY
   } psos_state;
     
-  //puts("CP2OSDevice::Setup()");
-
   psos_state = NO_SYNC;
 
   char name[20], type[20], subtype[20];
   int cnt;
+
+  printf("P2OS connection initializing...");
+  fflush(stdout);
 
   if((psos_fd = open( psos_serial_port, O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 ) {
     perror("CP2OSDevice::Setup():open():");
@@ -258,7 +262,6 @@ int CP2OSDevice::Setup()
   cnt += sprintf(subtype, "%s", &receivedpacket.packet[cnt]);
   cnt++;
 
-  printf("Connected to %s, a %s %s\n", name, type, subtype);
 
   command = OPEN;
   packet.Build( &command, 1);
@@ -270,7 +273,7 @@ int CP2OSDevice::Setup()
   packet.Send( psos_fd );
   usleep(P2OS_CYCLETIME_USEC);
 
-  puts("P2OS connection ready");
+  printf("Done.  Connected to %s, a %s %s\n", name, type, subtype);
   direct_wheel_vel_control = true;
   num_loops_since_rvel = 2;
   pthread_mutex_unlock(&serial_mutex);
@@ -320,7 +323,7 @@ int CP2OSDevice::Shutdown()
 
   close(psos_fd);
   psos_fd = -1;
-  puts("P2OS Connection closed");
+  puts("P2OS has been shutdown");
   pthread_mutex_unlock(&serial_mutex);
   delete sippacket;
   return(0);
@@ -332,12 +335,12 @@ size_t CP2OSDevice::GetData( unsigned char* dest, size_t maxsize)
 }
 void CP2OSDevice::PutData( unsigned char* src, size_t maxsize)
 {
-  memcpy( data, src, P2OS_DATA_BUFFER_SIZE);
+  *data = *((player_p2os_data_t*)src);
 }
 
 void CP2OSDevice::GetCommand( unsigned char* dest, size_t maxsize)
 {
-  memcpy( dest, command, P2OS_COMMAND_BUFFER_SIZE);
+  *((player_p2os_cmd_t*)dest) = *command;
 }
 void CP2OSDevice::PutCommand( unsigned char* src, size_t maxsize)
 {
@@ -369,7 +372,7 @@ void *RunPsosThread( void *p2osdevice )
 {
   CP2OSDevice* pd = (CP2OSDevice*) p2osdevice;
 
-  unsigned char command[P2OS_COMMAND_BUFFER_SIZE];
+  player_p2os_cmd_t command;
   unsigned char config[P2OS_CONFIG_BUFFER_SIZE];
   unsigned char motorcommand[4];
   //unsigned char gripcommand[4];
@@ -377,7 +380,6 @@ void *RunPsosThread( void *p2osdevice )
   //CPacket grippacket; 
   short speedDemand=0, turnRateDemand=0;
   short gripperDemand;
-  int cnt; 
   bool newmotorspeed, newmotorturn;
   bool newgrippercommand;
   double leftvel, rightvel;
@@ -386,16 +388,6 @@ void *RunPsosThread( void *p2osdevice )
 
   int config_size;
 
-  /*
-   * in this order:
-   *   ints: time X Y
-   *   shorts: heading, forwardvel, turnrate, compass
-   *   chars: stalls
-   *   shorts: 16 sonars
-   *   chars: gripstate,gripbeams
-   *   chars: bumpers,voltage
-   */
-  //unsigned char data[P2OS_DATA_BUFFER_SIZE];
   sigblock(SIGINT);
   sigblock(SIGALRM);
 
@@ -462,25 +454,22 @@ void *RunPsosThread( void *p2osdevice )
     }
 
     /* read the clients' commands from the common buffer */
-    pd->GetLock()->GetCommand(pd,command, sizeof(command));
+    pd->GetLock()->GetCommand(pd,(unsigned char*)&command, sizeof(command));
 
-    cnt = POSITION_COMMAND_OFFSET;
     newmotorspeed = false;
-    if( speedDemand != (short) ntohs( *(short *) &command[cnt]))
+    if( speedDemand != (short) ntohs(command.position.speed));
       newmotorspeed = true;
-    speedDemand = (short) ntohs( *(short *) &command[cnt]);
+    speedDemand = (short) ntohs(command.position.speed);
 
-    cnt+=sizeof(short);
     newmotorturn = false;
-    if(turnRateDemand != (short) ntohs( *(short *) &command[cnt]))
+    if(turnRateDemand != (short) ntohs(command.position.turnrate));
       newmotorturn = true;
-    turnRateDemand = (short) ntohs( *(short *) &command[cnt]);
+    turnRateDemand = (short) ntohs(command.position.turnrate);
 
-    cnt = GRIPPER_COMMAND_OFFSET;
     newgrippercommand = false;
-    if(gripperDemand != (short) ntohs( *(short *) &command[cnt]))
+    if(gripperDemand != (short) ntohs(command.gripper.cmd));
       newgrippercommand = true;
-    gripperDemand = (short) ntohs( *(short *) &command[cnt]);
+    gripperDemand = (short) ntohs(command.gripper.arg);
 
     /* NEXT, write commands */
 
@@ -607,7 +596,7 @@ CP2OSDevice::SendReceive(CPacket* pkt, bool already_have_lock)
 {
   CPacket packet;
   //static CSIP sippacket;
-  unsigned char data[P2OS_DATA_BUFFER_SIZE];
+  player_p2os_data_t data;
 
   if((psos_fd >= 0) && sippacket)
   {
@@ -647,9 +636,9 @@ CP2OSDevice::SendReceive(CPacket* pkt, bool already_have_lock)
     {
       /* It is a sip packet */
       sippacket->Parse( &packet.packet[3] );
-      sippacket->Fill(data, timeBegan_tv );
+      sippacket->Fill(&data, timeBegan_tv );
 
-      GetLock()->PutData(this,data, sizeof(data));
+      GetLock()->PutData(this,(unsigned char*)&data, sizeof(data));
     }
     else 
     {

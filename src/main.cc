@@ -77,7 +77,7 @@
 #include <fcntl.h>
 
 #ifdef INCLUDE_STAGE
-#include <stagedevice.hh>
+#include <stagedevice.h>
 #endif
 
 caddr_t arenaIO; // the address for memory mapped IO to arena
@@ -108,14 +108,6 @@ caddr_t arenaIO; // the address for memory mapped IO to arena
 
 CCounter num_threads;
 
-// devices
-CDevice *laserDevice = NULL;
-CDevice* sonarDevice = NULL;
-CDevice* visionDevice = NULL;
-CDevice* positionDevice = NULL;
-CDevice* gripperDevice = NULL;
-CDevice* miscDevice = NULL;
-CDevice* ptzDevice = NULL;
 
 CDeviceTable* deviceTable = new CDeviceTable();
 
@@ -130,11 +122,12 @@ CDeviceTable* deviceTable = new CDeviceTable();
 CClientData* clients[MAXNUMCLIENTS];
 pthread_mutex_t clients_mutex;
 bool SHUTTING_DOWN;
-
+  
 bool experimental = false;
 bool debug = false;
 
-void Interrupt( int dummy ) {
+void Interrupt( int dummy ) 
+{
   // setting this will suppress print statements from the client
   // deaths
   SHUTTING_DOWN = true;
@@ -145,14 +138,9 @@ void Interrupt( int dummy ) {
       delete clients[i];
   }
 
-  delete laserDevice;
-  delete sonarDevice;
-  delete visionDevice;
-  delete positionDevice;
-  delete gripperDevice;
-  delete miscDevice;
-  delete ptzDevice;
-  //pthread_kill_other_threads_np();
+  // the deviceTable now deletes all the devices that it contains
+  // on exit.
+  delete deviceTable;
   puts("Player quitting");
   exit(0);
 }
@@ -172,8 +160,8 @@ void *client_reader(void* arg)
 
   buffer = new unsigned char[READ_BUFFER_SIZE];
 
-  printf("client_reader() with id %ld and socket %d - created\n", 
-	 cd->readThread, cd->socket);
+  //printf("client_reader() with id %ld and socket %d - created\n", 
+	 //cd->readThread, cd->socket);
 
   while(1) 
   {
@@ -215,8 +203,8 @@ void *client_writer(void* arg)
   pthread_detach(pthread_self());
   pthread_setcanceltype( PTHREAD_CANCEL_ASYNCHRONOUS, NULL );
   
-  printf("client_writer() with id %ld and socket %d - created\n", 
-	 clientData->writeThread, clientData->socket);
+  //printf("client_writer() with id %ld and socket %d - created\n", 
+	 //clientData->writeThread, clientData->socket);
 
   int data_buffer_size = 8192;
   data = new unsigned char[data_buffer_size];
@@ -254,14 +242,22 @@ int main( int argc, char *argv[] )
   CClientData *clientData;
   int player_sock = 0;
 
+  // devices
+  CDevice* laserDevice = NULL;
+  CDevice* sonarDevice = NULL;
+  CDevice* visionDevice = NULL;
+  CDevice* positionDevice = NULL;
+  CDevice* gripperDevice = NULL;
+  CDevice* miscDevice = NULL;
+  CDevice* ptzDevice = NULL;
 
   /* use these to temporarily store command-line args */
   int playerport = PORTNUM;
-  char p2osport[LASER_SERIAL_PORT_NAME_SIZE] = DEFAULT_P2OS_PORT;
-  char laserserialport[LASER_SERIAL_PORT_NAME_SIZE] = DEFAULT_LASER_PORT;
-  char ptzserialport[LASER_SERIAL_PORT_NAME_SIZE] = DEFAULT_PTZ_PORT;
+  char p2osport[MAX_FILENAME_SIZE] = DEFAULT_P2OS_PORT;
+  char laserserialport[MAX_FILENAME_SIZE] = DEFAULT_LASER_PORT;
+  char ptzserialport[MAX_FILENAME_SIZE] = DEFAULT_PTZ_PORT;
   int  visionport = DEFAULT_ACTS_PORT;
-  char visionconfigfile[VISION_CONFIGFILE_NAME_SIZE] = DEFAULT_ACTS_CONFIGFILE;
+  char visionconfigfile[MAX_FILENAME_SIZE] = DEFAULT_ACTS_CONFIGFILE;
   bool useoldacts = false;
 
   int useArena = false;
@@ -431,15 +427,15 @@ int main( int argc, char *argv[] )
     puts( "ok.\n" );
     fflush( stdout );
 #endif
-    positionDevice = new CStageDevice( arenaIO + SPOSITION_DATA_START,
-                                   SPOSITION_DATA_BUFFER_SIZE,
-                                   SPOSITION_COMMAND_BUFFER_SIZE,
-                                   SPOSITION_CONFIG_BUFFER_SIZE);
+    positionDevice = new CStageDevice( arenaIO + POSITION_DATA_START,
+                                   POSITION_DATA_BUFFER_SIZE,
+                                   POSITION_COMMAND_BUFFER_SIZE,
+                                   POSITION_CONFIG_BUFFER_SIZE);
 
-    sonarDevice =    new CStageDevice( arenaIO + SSONAR_DATA_START,
-                                   SSONAR_DATA_BUFFER_SIZE,
-                                   SSONAR_COMMAND_BUFFER_SIZE,
-                                   SSONAR_CONFIG_BUFFER_SIZE); 
+    sonarDevice =    new CStageDevice( arenaIO + SONAR_DATA_START,
+                                   SONAR_DATA_BUFFER_SIZE,
+                                   SONAR_COMMAND_BUFFER_SIZE,
+                                   SONAR_CONFIG_BUFFER_SIZE); 
     
     laserDevice = new CStageDevice(arenaIO + LASER_DATA_START,
                                    LASER_DATA_BUFFER_SIZE,
