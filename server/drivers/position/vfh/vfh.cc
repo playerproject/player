@@ -82,11 +82,12 @@ class VFH_Class : public CDevice
     double odom_geom_pose[3];
     double odom_geom_size[3];
 
-    // Pose of robot in odometric cs
+    // Pose of robot in odometric cs (mm,mm,deg)
     double odom_pose[3];
 
-    // Velocity of robot in robot cs
-    double odom_vel[3];
+    // Velocity of robot in robot cs, NOT byteswapped, just for passing
+    // through
+    int32_t odom_vel_be[3];
 
     // Laser device info
     CDevice *laser;
@@ -183,8 +184,13 @@ void VFH_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int VFH_Class::Setup() {
+int VFH_Class::Setup() 
+{
   player_position_cmd_t cmd;
+
+  cmd.xpos = cmd.ypos = cmd.yaw = 0;
+  cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
+  CDevice::PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 
   this->active_goal = false;
   this->goal_x = this->goal_y = this->goal_t = 0;
@@ -404,32 +410,20 @@ int VFH_Class::GetOdom() {
   if (time - this->odom_time < 0.001)
     return 0;
   this->odom_time = time;
-  /*
-  this->odom->Wait();
-  this->odom->GetData(this,(unsigned char*) &data, sizeof(data), NULL, NULL);
-  */
-
-  /*
-  this->odom->Wait();
-  this->odom->GetData(this,(unsigned char*) &data, sizeof(data), NULL, NULL);
-  */
 
   // Byte swap
   data.xpos = ntohl(data.xpos);
   data.ypos = ntohl(data.ypos);
   data.yaw = ntohl(data.yaw);
 
-  data.xspeed = ntohl(data.xspeed);
-  data.yspeed = ntohl(data.yspeed);
-  data.yawspeed = ntohl(data.yawspeed);
+  this->odom_pose[0] = (double)data.xpos;
+  this->odom_pose[1] = (double)data.ypos;
+  this->odom_pose[2] = (double)data.yaw;
 
-  this->odom_pose[0] = (double) ((int32_t) data.xpos);
-  this->odom_pose[1] = (double) ((int32_t) data.ypos);
-  this->odom_pose[2] = (double) ((int32_t) data.yaw);
-
-  this->odom_vel[0] = (double) ((int32_t) data.xspeed) / 1000.0;
-  this->odom_vel[1] = (double) ((int32_t) data.yspeed) / 1000.0;
-  this->odom_vel[2] = (double) ((int32_t) data.yawspeed) * M_PI / 180;
+  // don't byteswap velocities, we're just passing them through
+  this->odom_vel_be[0] = data.xspeed;
+  this->odom_vel_be[1] = data.yspeed;
+  this->odom_vel_be[2] = data.yawspeed;
 
   return 1;
 }
@@ -807,7 +801,8 @@ void VFH_Class::GetCommand()
   player_position_cmd_t cmd;
   int x,y,t;
 
-  if (CDevice::GetCommand(&cmd, sizeof(cmd)) != 0) {
+  if(CDevice::GetCommand(&cmd, sizeof(cmd)) != 0) 
+  {
     x = (int)ntohl(cmd.xpos);
     y = (int)ntohl(cmd.ypos);
     t = (int)ntohl(cmd.yaw);
@@ -1620,23 +1615,20 @@ void VFH_Class::PutPose()
   uint32_t timesec, timeusec;
   player_position_data_t data;
 
-  //REMOVE this->GetOdom();
-
   data.xpos = (int32_t)rint(this->odom_pose[0]);
   data.ypos = (int32_t)rint(this->odom_pose[1]);
   data.yaw = (int32_t)rint(this->odom_pose[2]);
 
-  data.xspeed = (int32_t)rint(this->odom_vel[0]);
-  data.yspeed = (int32_t)rint(this->odom_vel[1]);
-  data.yawspeed = (int32_t)rint(this->odom_vel[2]);
+  data.xspeed = this->odom_vel_be[0];
+  data.yspeed = this->odom_vel_be[1];
+  data.yawspeed = this->odom_vel_be[2];
+  data.stall = 0;
 
   // Byte swap
   data.xpos = htonl(data.xpos);
   data.ypos = htonl(data.ypos);
   data.yaw = htonl(data.yaw);
-  data.xspeed = htonl(data.xspeed);
-  data.yspeed = htonl(data.yspeed);
-  data.yawspeed = htonl(data.yawspeed);
+  // don't byteswap velocities; they're already in network byteorder
 
   // Compute timestamp
   timesec = (uint32_t) this->odom_time;

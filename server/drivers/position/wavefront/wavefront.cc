@@ -83,8 +83,18 @@ class Wavefront : public CDevice
     bool new_goal;
     // current odom pose
     double position_x, position_y, position_a;
+    // current odom velocities, NOT byteswapped or unit converted, because 
+    // we're just passing them through and don't need to use them
+    int32_t position_xspeed_be, position_yspeed_be, position_aspeed_be;
+    // last timestamp from localize
+    unsigned int localize_timesec, localize_timeusec;
+    // last timestamp from position
+    unsigned int position_timesec, position_timeusec;
     // current localize pose
     double localize_x, localize_y, localize_a;
+    // current localize pose, not byteswapped or unit converted, for
+    // passing through.
+    int32_t localize_x_be, localize_y_be, localize_a_be;
     bool stopped;
 
     // methods for internal use
@@ -97,6 +107,7 @@ class Wavefront : public CDevice
     void GetLocalizeData();
     void GetPositionData();
     void PutPositionCommand(double x, double y, double a);
+    void PutPositionData();
     void StopPosition();
     void LocalizeToPosition(double* px, double* py, double* pa,
                             double lx, double ly, double la);
@@ -169,6 +180,12 @@ int Wavefront::Setup()
   this->target_x = this->target_y = this->target_a = 0.0;
   this->position_x = this->position_y = this->position_a = 0.0;
   this->localize_x = this->localize_y = this->localize_a = 0.0;
+  this->position_xspeed_be = 
+          this->position_yspeed_be = 
+          this->position_aspeed_be = 0;
+  this->localize_x_be = this->localize_y_be = this->localize_a_be = 0;
+  this->localize_timesec = this->localize_timeusec = 0;
+  this->position_timesec = this->position_timeusec = 0;
   this->new_goal = false;
   memset(this->lx_window,0,sizeof(this->lx_window));
   memset(this->ly_window,0,sizeof(this->ly_window));
@@ -296,13 +313,12 @@ Wavefront::GetLocalizeData()
 {
   player_localize_data_t data;
   unsigned int timesec, timeusec;
-  static unsigned int last_timesec = 0;
-  static unsigned int last_timeusec = 0;
   double timediff;
   double lx,ly,la;
   double dist;
   double lx_sum, ly_sum;
   double lx_avg, ly_avg;
+  double la_tmp;
   struct timeval curr;
 
   if(!this->localize->GetData(this,(unsigned char*)&data,sizeof(data),
@@ -310,11 +326,12 @@ Wavefront::GetLocalizeData()
     return;
 
   // is this new data?
-  if((last_timesec == timesec) && (last_timeusec == timeusec))
+  if((this->localize_timesec == timesec) && 
+     (this->localize_timeusec == timeusec))
     return;
 
-  last_timesec = timesec;
-  last_timeusec = timeusec;
+  this->localize_timesec = timesec;
+  this->localize_timeusec = timeusec;
 
   // just take the first hypothesis, on the assumption that it's the
   // highest weight.
@@ -351,6 +368,14 @@ Wavefront::GetLocalizeData()
     this->localize_x = lx;
     this->localize_y = ly;
     this->localize_a = la;
+
+    // also store it un-byteswapped
+    this->localize_x_be = data.hypoths[0].mean[0];
+    this->localize_y_be = data.hypoths[0].mean[1];
+    la_tmp = NORMALIZE(la);
+    if(la_tmp < 0)
+      la_tmp += 2*M_PI;
+    this->localize_a_be = (int32_t)htonl((int)rint(RTOD(la_tmp)));
   }
   else
     PLAYER_WARN3("discarding pose %f,%f,%f", lx,ly,la);
@@ -368,25 +393,48 @@ Wavefront::GetPositionData()
 {
   player_position_data_t data;
   unsigned int timesec, timeusec;
-  static unsigned int last_timesec = 0;
-  static unsigned int last_timeusec = 0;
 
   if(!this->position->GetData(this,(unsigned char*)&data,sizeof(data),
                               &timesec, &timeusec))
     return;
 
   // is this new data?
-  if((last_timesec == timesec) && (last_timeusec == timeusec))
+  if((this->position_timesec == timesec) && 
+     (this->position_timeusec == timeusec))
     return;
 
-  last_timesec = timesec;
-  last_timeusec = timeusec;
+  this->position_timesec = timesec;
+  this->position_timeusec = timeusec;
 
   this->position_x = ((int)ntohl(data.xpos))/1e3;
   this->position_y = ((int)ntohl(data.ypos))/1e3;
   this->position_a = DTOR(ntohl(data.yaw));
-  //printf("GetPositionData: %f, %f, %f\n",
-         //position_x,position_y,RTOD(position_a));
+  // current odom velocities are NOT byteswapped or unit converted, because 
+  // we're just passing them through and don't need to use them
+  this->position_xspeed_be = data.xspeed;
+  this->position_yspeed_be = data.yspeed;
+  this->position_aspeed_be = data.yawspeed;
+}
+
+void
+Wavefront::PutPositionData()
+{
+  player_position_data_t data;
+
+  // put as data the current localize pose, with the speeds from the
+  // position device.  arbitrarily use the latest timestamp from position
+  // for this data.
+
+  data.xpos = this->localize_x_be;
+  data.ypos = this->localize_y_be;
+  data.yaw = this->localize_a_be;
+  data.xspeed = this->position_xspeed_be;
+  data.yspeed = this->position_yspeed_be;
+  data.yawspeed = this->position_aspeed_be;
+  data.stall = 0;
+
+  PutData((unsigned char*)&data,sizeof(data),
+          this->position_timesec, this->position_timeusec);
 }
 
 void
@@ -473,6 +521,7 @@ void Wavefront::Main()
 
     GetLocalizeData();
     GetPositionData();
+    PutPositionData();
     GetCommand();
 
     if(this->new_goal)
