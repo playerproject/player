@@ -65,6 +65,7 @@ GAZEBO_TEST_DRIVER([laser])
 GAZEBO_TEST_DRIVER([position])
 GAZEBO_TEST_DRIVER([power])
 GAZEBO_TEST_DRIVER([ptz])
+GAZEBO_TEST_DRIVER([truth])
 
 dnl This is a complete bogus test because I cant get AC_CHECK_MEMBER to work
 if test "x$include_gazebo_power" = "xyes"; then
