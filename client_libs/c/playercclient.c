@@ -163,6 +163,9 @@ int player_request(player_connection_t* conn,
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
   memcpy(buffer+sizeof(player_msghdr_t),payload,payloadlen);
 
+  if(conn->sock < 0)
+    return(-1);
+
   /* write the request */
   if(write((*conn).sock,buffer, sizeof(player_msghdr_t)+payloadlen) == -1)
   {
@@ -189,7 +192,8 @@ int player_request(player_connection_t* conn,
 int player_request_device_access(player_connection_t* conn,
                                  uint16_t device,
                                  uint16_t device_index,
-                                 uint8_t access)
+                                 uint8_t req_access,
+                                 uint8_t* grant_access)
 {
   player_device_ioctl_t this_ioctl;
   player_device_req_t this_req;
@@ -201,7 +205,7 @@ int player_request_device_access(player_connection_t* conn,
   this_ioctl.subtype = htons(PLAYER_PLAYER_DEV_REQ);
   this_req.code = htons(device);
   this_req.index = htons(device_index);
-  this_req.access = access;
+  this_req.access = req_access;
 
   memcpy(payload,&this_ioctl,sizeof(player_device_ioctl_t));
   memcpy(payload+sizeof(player_device_ioctl_t),
@@ -216,13 +220,13 @@ int player_request_device_access(player_connection_t* conn,
   memcpy(&this_req, replybuffer+sizeof(player_device_ioctl_t), 
                   sizeof(player_device_req_t));
 
-  /* see if something went wrong */
-  if(memcmp(payload,replybuffer,sizeof(payload)))
+  if(grant_access)
+    *grant_access = this_req.access;
+  else if(memcmp(payload,replybuffer,sizeof(payload)))
   {
     fprintf(stderr, "player_request_device_access(): requested '%c' access "
-                    "to device %x:%x, but got '%c' access\n",
-                    access, device, device_index, this_req.access);
-    return(-1);
+	    "to device %x:%x, but got '%c' access\n",
+	    req_access, device, device_index, this_req.access);
   }
 
   return(0);
@@ -243,6 +247,9 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   int mincnt; 
   int readcnt = 0;
   char dummy[PLAYER_MAX_MESSAGE_SIZE];
+
+  if(conn->sock < 0)
+    return(-1);
 
   hdr->stx = 0;
   /* wait for the STX */
@@ -344,6 +351,9 @@ int player_write(player_connection_t* conn,
   hdr.size = htonl(commandlen);
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
   memcpy(buffer+sizeof(player_msghdr_t),command,commandlen);
+
+  if(conn->sock < 0)
+    return(-1);
 
   if(write((*conn).sock, buffer, sizeof(player_msghdr_t)+commandlen) !=
                   sizeof(player_msghdr_t)+commandlen)
