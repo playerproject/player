@@ -413,7 +413,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   {
     reply_hdr.stx = htons(PLAYER_STXX);
     reply_hdr.type = htons(requesttype);
-    reply_hdr.robot = 0;
+    reply_hdr.robot = htons(hdr.robot);
     reply_hdr.device = htons(hdr.device);
     reply_hdr.device_index = htons(hdr.device_index);
     reply_hdr.reserved = 0;
@@ -423,13 +423,11 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     {
       replysize = sizeof(player_device_devlist_t);
     }
-
     /* if it was a player device list request... */
     else if(driverinforequest)
     {
       replysize = sizeof(player_device_driverinfo_t);
     }
-
     /* if it was a player device request, then the reply should
      * reflect what permissions were granted for the indicated devices */
     else if(devicerequest)
@@ -884,8 +882,8 @@ int CClientData::BuildMsg()
       }
       else
       {
-        printf("BuildMsg(): Unknown device \"%x:%x\"\n",
-                        thisub->id.code,thisub->id.index);
+        printf("BuildMsg(): Unknown device \"%d:%d:%d\"\n",
+                        thisub->id.robot,thisub->id.code,thisub->id.index);
       }
     }
   }
@@ -932,8 +930,8 @@ int CClientData::Subscribe(player_device_id_t id)
   }
   else
   {
-    printf("Subscribe(): Unknown device \"%x:%x\" - subscribe cancelled\n", 
-                    id.code,id.index);
+    printf("Subscribe(): Unknown device \"%d:%d:%d\" - subscribe cancelled\n", 
+                    id.robot,id.code,id.index);
     return(1);
   }
 }
@@ -949,8 +947,8 @@ void CClientData::Unsubscribe(player_device_id_t id)
   }
   else
   {
-    printf("Unsubscribe(): Unknown device \"%x:%x\" - unsubscribe cancelled\n", 
-                    id.code,id.index);
+    printf("Unsubscribe(): Unknown device \"%d:%d:%d\" - unsubscribe cancelled\n", 
+                    id.robot,id.code,id.index);
   }
 }
 

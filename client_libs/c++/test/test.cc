@@ -8,7 +8,12 @@
 #include "playerclient.h"
 #include "test.h"
 
+#include <unistd.h>
+
 bool use_stage;
+
+// hack
+int robot;
 
 int main(int argc, const char *argv[])
 {
@@ -18,6 +23,7 @@ int main(int argc, const char *argv[])
   char *arg;
   const char *device, *sindex; int index;
   PlayerClient client;
+
 
   // Default host, port
   host = "localhost";
@@ -43,6 +49,15 @@ int main(int argc, const char *argv[])
         exit(-1);
       }
       port = atoi(argv[i]);
+    }
+    else if (strcmp(argv[i], "-r") == 0)
+    {
+      if(++i >= argc)
+      {
+        puts("missing robot id");
+        exit(-1);
+      }
+      robot = atoi(argv[i]);
     }
     else if(!strcmp(argv[i],"-stage"))
       use_stage = true;

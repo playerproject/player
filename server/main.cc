@@ -73,8 +73,8 @@ player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
 
-#define VERBOSE
-#define DEBUG
+//#define VERBOSE
+//#define DEBUG
 
 // true if we're connecting to Stage instead of a real robot
 bool use_stage = false;
@@ -824,8 +824,8 @@ int main( int argc, char *argv[] )
     // deduced from the stageIO filenames
     stage_clock_t * sclock = CreateStageDevices( stage_io_directory, 
 						 &ports, &num_ufds );
-    num_ufds=1;
     assert( sclock ); 
+    /*
     //printf( "created %d ports (1: %d 2: %d...)\n",
     //    num_ufds, ports[0], ports[1] );
 
@@ -856,6 +856,7 @@ int main( int argc, char *argv[] )
 #ifdef VERBOSE
     puts( "]" );
 #endif
+*/
 
 #else
     PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
@@ -873,8 +874,8 @@ int main( int argc, char *argv[] )
 		  "a configuration file?");
   }
 
-  if(!use_stage)
-  {
+  //if(!use_stage)
+  //{
     num_ufds = 1;
     if(!(ufds = new struct pollfd[num_ufds]) || !(ports = new int[num_ufds]))
     {
@@ -893,7 +894,7 @@ int main( int argc, char *argv[] )
 
     ufds[0].events = POLLIN;
     ports[0] = global_playerport;
-  }
+  //}
 
   // create the client manager object.
   clientmanager = new ClientManager(ufds,ports,num_ufds,auth_key);

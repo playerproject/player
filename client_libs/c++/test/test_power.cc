@@ -12,7 +12,7 @@ int
 test_power(PlayerClient* client, int index)
 {
   unsigned char access;
-  PowerProxy pp(client,index);
+  PowerProxy pp(client,index,'c',robot);
 
   printf("device [power] index [%d]\n", index);
 

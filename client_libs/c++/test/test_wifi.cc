@@ -12,7 +12,7 @@ int
 test_wifi(PlayerClient* client, int index)
 {
   unsigned char access;
-  WiFiProxy wp(client,index);
+  WiFiProxy wp(client,index,'c',robot);
 
   printf("device [wifi] index [%d]\n", index);
 

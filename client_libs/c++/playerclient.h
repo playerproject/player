@@ -121,11 +121,14 @@ class ClientProxy
     ClientProxy(PlayerClient* pc, 
 		unsigned short req_device,
 		unsigned short req_index,
-		unsigned char req_access = 'c' );
+		unsigned char req_access = 'c',
+                unsigned short req_robot = 0);
 
+    /*
     ClientProxy(PlayerClient* pc, 
 		player_device_id_t device_id,
 		unsigned char req_access = 'c' );
+                */
 
     // destructor will try to close access to the device
     virtual ~ClientProxy();
@@ -454,7 +457,8 @@ class CommsProxy : public ClientProxy
 {
   /** Proxy constructor.  Leave the access field empty to start
       unconnected.  */
-  public: CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access ='c');
+  public: CommsProxy(PlayerClient* pc, unsigned short index, 
+                     unsigned char access ='c',unsigned short robot=0);
 
   public: ~CommsProxy();
 
@@ -544,8 +548,8 @@ class GpsProxy : public ClientProxy
     /** Constructor.  Leave the access field empty to start
         unconnected.*/
     GpsProxy(PlayerClient* pc, unsigned short index, 
-              unsigned char access='c') :
-            ClientProxy(pc,PLAYER_GPS_CODE,index,access) {}
+              unsigned char access='c', unsigned short robot=0) :
+            ClientProxy(pc,PLAYER_GPS_CODE,index,access,robot) {}
 
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
@@ -599,8 +603,8 @@ class GripperProxy : public ClientProxy
     /** The client calls this method to make a new proxy.  Leave access empty 
          to start unconnected. */
     GripperProxy(PlayerClient* pc, unsigned short index, 
-                 unsigned char access='c') :
-            ClientProxy(pc,PLAYER_GRIPPER_CODE,index,access) {}
+                 unsigned char access='c', unsigned short robot=0) :
+            ClientProxy(pc,PLAYER_GRIPPER_CODE,index,access,robot) {}
 
     // these methods are the user's interface to this device
 
@@ -662,7 +666,8 @@ class IDARTurretProxy : public ClientProxy
   // the client calls this method to make a new proxy
   //   leave access empty to start unconnected
   IDARTurretProxy(PlayerClient* pc, unsigned short index, 
-	    unsigned char access = 'c');
+	    unsigned char access = 'c', unsigned short robot=0):
+  ClientProxy(pc,PLAYER_IDARTURRET_CODE,index,access,robot) {}
   
   // interface that all proxies must provide
   // reads the receive buffers from player
@@ -723,8 +728,8 @@ class FiducialProxy : public ClientProxy
   /** Constructor.  Leave the access field empty to start
       unconnected. */
   FiducialProxy(PlayerClient* pc, unsigned short index,
-                unsigned char access='c'):
-    ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access) {}
+                unsigned char access='c', unsigned short robot=0):
+    ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access,robot) {}
     
   // interface that all proxies must provide
   void FillData(player_msghdr_t hdr, const char* buffer);
@@ -778,8 +783,8 @@ class LaserProxy : public ClientProxy
     /** Constructor.  Leave the access field empty to start
         unconnected. */
     LaserProxy(PlayerClient* pc, unsigned short index, 
-               unsigned char access='c'):
-        ClientProxy(pc,PLAYER_LASER_CODE,index,access) {}
+               unsigned char access='c', unsigned short robot=0):
+        ClientProxy(pc,PLAYER_LASER_CODE,index,access,robot) {}
 
     // these methods are the user's interface to this device
 
@@ -853,7 +858,7 @@ class LaserProxy : public ClientProxy
 class MoteProxy : public ClientProxy
 {
     public: MoteProxy(PlayerClient* pc, unsigned short index, 
-		      unsigned char access ='c');
+		      unsigned char access ='c', unsigned short robot=0);
 
     public: int Sendto(int src, int dest, char* msg, int len);
 
@@ -913,8 +918,8 @@ class PositionProxy : public ClientProxy
   /** Constructor.
       Leave the access field empty to start unconnected. */
   PositionProxy(PlayerClient* pc, unsigned short index,
-                unsigned char access ='c') :
-    ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
+                unsigned char access ='c', unsigned short robot = 0) :
+    ClientProxy(pc,PLAYER_POSITION_CODE,index,access,robot) {}
 
   // these methods are the user's interface to this device
 
@@ -1041,8 +1046,9 @@ class PtzProxy : public ClientProxy
     /** Constructor.
         Leave the access field empty to start unconnected.
     */
-    PtzProxy(PlayerClient* pc, unsigned short index, unsigned char access='c'):
-            ClientProxy(pc,PLAYER_PTZ_CODE,index,access) {}
+    PtzProxy(PlayerClient* pc, unsigned short index, 
+             unsigned char access='c', unsigned short robot=0):
+            ClientProxy(pc,PLAYER_PTZ_CODE,index,access,robot) {}
 
     // these methods are the user's interface to this device
 
@@ -1098,8 +1104,8 @@ class SonarProxy : public ClientProxy
         Leave the access field empty to start unconnected.
     */
     SonarProxy(PlayerClient* pc, unsigned short index, 
-               unsigned char access = 'c') :
-            ClientProxy(pc,PLAYER_SONAR_CODE,index,access)
+               unsigned char access = 'c',unsigned short robot=0) :
+            ClientProxy(pc,PLAYER_SONAR_CODE,index,access,robot)
     { bzero(&sonar_pose,sizeof(sonar_pose)); }
 
     // these methods are the user's interface to this device
@@ -1156,8 +1162,8 @@ class SpeechProxy : public ClientProxy
         Leave the access field empty to start unconnected.
     */
     SpeechProxy(PlayerClient* pc, unsigned short index, 
-                unsigned char access='c'):
-            ClientProxy(pc,PLAYER_SPEECH_CODE,index,access) {}
+                unsigned char access='c',unsigned short robot=0):
+            ClientProxy(pc,PLAYER_SPEECH_CODE,index,access,robot) {}
 
     // these methods are the user's interface to this device
 
@@ -1200,8 +1206,8 @@ class TruthProxy : public ClientProxy
       Leave the access field empty to start unconnected.
   */
   TruthProxy(PlayerClient* pc, unsigned short index, 
-             unsigned char access = 'c') :
-    ClientProxy(pc,PLAYER_TRUTH_CODE,index,access) {};
+             unsigned char access = 'c',unsigned short robot=0) :
+    ClientProxy(pc,PLAYER_TRUTH_CODE,index,access,robot=0) {};
 
     
   // interface that all proxies must provide
@@ -1285,7 +1291,7 @@ class BlobfinderProxy : public ClientProxy
         Leave the access field empty to start unconnected.
     */
     BlobfinderProxy(PlayerClient* pc, unsigned short index, 
-                unsigned char access='c');
+                unsigned char access='c',unsigned short robot=0);
     ~BlobfinderProxy();
 
     // these methods are the user's interface to this device
@@ -1410,8 +1416,8 @@ public:
         Leave the access field empty to start unconnected.
     */
   WiFiProxy(PlayerClient *pc, unsigned short index, 
-	       unsigned char access = 'c') : 
-    ClientProxy(pc, PLAYER_WIFI_CODE, index, access), link_count(0) {}
+	       unsigned char access = 'c',unsigned short robot=0) : 
+    ClientProxy(pc, PLAYER_WIFI_CODE, index, access,robot), link_count(0) {}
 
 
   int GetLinkQuality(char * ip = NULL);
@@ -1459,8 +1465,8 @@ class PowerProxy : public ClientProxy
       Leave the access field empty to start unconnected.
      */
     PowerProxy (PlayerClient* pc, unsigned short index,
-                unsigned char access ='c')
-            : ClientProxy(pc,PLAYER_POWER_CODE,index,access) {}
+                unsigned char access ='c',unsigned short robot=0)
+            : ClientProxy(pc,PLAYER_POWER_CODE,index,access,robot) {}
 
     /// Returns the current charge.
     uint16_t Charge () const { return charge; }
@@ -1534,8 +1540,8 @@ public:
         Leave the access field empty to start unconnected.
     */
     BumperProxy (PlayerClient* pc, unsigned short index,
-                   unsigned char access = 'c')
-            : ClientProxy(pc,PLAYER_BUMPER_CODE,index,access) 
+                   unsigned char access = 'c',unsigned short robot=0)
+            : ClientProxy(pc,PLAYER_BUMPER_CODE,index,access,robot) 
       {}
 
     ~BumperProxy()
@@ -1590,8 +1596,8 @@ public:
         Leave the access field empty to start unconnected.
     */
     DIOProxy (PlayerClient* pc, unsigned short index,
-                   unsigned char access = 'c')
-            : ClientProxy(pc,PLAYER_DIO_CODE,index,access) 
+                   unsigned char access = 'c',unsigned short robot=0)
+            : ClientProxy(pc,PLAYER_DIO_CODE,index,access,robot) 
       {}
 
     ~DIOProxy()

@@ -11,7 +11,7 @@ int
 test_truth(PlayerClient* client, int index)
 {
   unsigned char access;
-  TruthProxy tp(client,index);
+  TruthProxy tp(client,index,'c',robot);
 
   printf("device [truth] index [%d]\n", index);
 

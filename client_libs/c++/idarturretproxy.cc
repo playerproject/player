@@ -35,14 +35,6 @@
 
 #define DEBUG
 
-IDARTurretProxy::IDARTurretProxy(PlayerClient* pc, unsigned short index, 
-		     unsigned char access ) :
-  ClientProxy(pc,PLAYER_IDARTURRET_CODE,index,access) 
-{
-
-}
-
-
 int IDARTurretProxy::SendMessages( player_idarturret_config_t* conf )
 {
   assert( client );

@@ -30,8 +30,8 @@
 #include <netinet/in.h>
 
 BlobfinderProxy::BlobfinderProxy(PlayerClient* pc, unsigned short index, 
-            unsigned char access ):
-            ClientProxy(pc,PLAYER_BLOBFINDER_CODE,index,access)
+            unsigned char access, unsigned short robot):
+            ClientProxy(pc,PLAYER_BLOBFINDER_CODE,index,access,robot)
 {
   // zero everything
   bzero(num_blobs,sizeof(num_blobs));

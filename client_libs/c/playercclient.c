@@ -269,7 +269,6 @@ int player_request(player_connection_t* conn,
   {
     if(player_read(conn, &hdr, buffer, sizeof(buffer)) == -1)
       return(-1);
-
   }
 
   /* did they want the reply? */
@@ -372,6 +371,7 @@ int player_read_header(player_connection_t* conn, player_msghdr_t* hdr )
   hdr->time_usec = ntohl(hdr->time_usec);
   hdr->timestamp_sec = ntohl(hdr->timestamp_sec);
   hdr->timestamp_usec = ntohl(hdr->timestamp_usec);
+  hdr->reserved = ntohs(hdr->reserved);
   hdr->size = ntohl(hdr->size);
   /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
   /*timesec = (time_t)(hdr->time / 1000);*/
@@ -456,6 +456,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 
   /* byte-swap as necessary */
   hdr->type = ntohs(hdr->type);
+  hdr->robot = ntohs(hdr->robot);
   hdr->device = ntohs(hdr->device);
   hdr->device_index = ntohs(hdr->device_index);
   hdr->time_sec = ntohl(hdr->time_sec);
@@ -463,6 +464,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   hdr->timestamp_sec = ntohl(hdr->timestamp_sec);
   hdr->timestamp_usec = ntohl(hdr->timestamp_usec);
   hdr->size = ntohl(hdr->size);
+  hdr->reserved = ntohl(hdr->reserved);
   /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
   /*timesec = (time_t)(hdr->time / 1000);*/
   /*printf("time: %s\n", ctime(&timesec));*/

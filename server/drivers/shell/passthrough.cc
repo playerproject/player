@@ -49,8 +49,7 @@ class PassThrough:public CDevice
     // info for the server/device to which we will connect
     const char* remote_hostname;
     int remote_port;
-    int remote_code;
-    int remote_index;
+    player_device_id_t remote_device_id;
     unsigned char remote_access;
     char remote_drivername[PLAYER_MAX_DEVICE_STRING_LEN];
 
@@ -68,7 +67,8 @@ class PassThrough:public CDevice
     void CloseConnection();
 
   public:
-    PassThrough(player_device_id_t id, const char* hostname, char* interface, 
+    PassThrough(const char* hostname, int port,
+                player_device_id_t id, char* interface, 
                 ConfigFile* cf, int section);
     ~PassThrough();
     virtual int Setup();
@@ -81,6 +81,7 @@ PassThrough_Init(char* interface, ConfigFile* cf, int section)
 {
   player_interface_t interf;
   player_device_id_t id;
+  int port;
   const char* host;
   // determine the code for the interface that we have been asked to support
   if(lookup_interface(interface, &interf) < 0)
@@ -89,17 +90,18 @@ PassThrough_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   host = cf->ReadString(section, "host", "localhost");
-  id.robot = cf->ReadInt(section, "port", global_playerport);
+  port = cf->ReadInt(section, "port", global_playerport);
+  id.robot = cf->ReadInt(section, "robot", 0);
   id.code = interf.code;
   id.index = cf->ReadInt(section, "index", 0);
 
-  if(!strcmp(host,"localhost") && (id.robot == global_playerport))
+  if(!strcmp(host,"localhost") && (port == global_playerport))
   {
     PLAYER_ERROR("passthrough connected to itself; you should specify\n the hostname and/or port of the remote server in the configuration file");
     return(NULL);
   }
 
-  return((CDevice*)(new PassThrough(id, host, interface, cf, section)));
+  return((CDevice*)(new PassThrough(host, port, id, interface, cf, section)));
 }
 
 // a driver registration function
@@ -109,14 +111,14 @@ PassThrough_Register(DriverTable* table)
   table->AddDriver("passthrough", PLAYER_ALL_MODE, PassThrough_Init);
 }
 
-PassThrough::PassThrough(player_device_id_t id, const char* hostname, 
-                         char* interface, ConfigFile* cf, int section) :
+PassThrough::PassThrough(const char* hostname, int port,
+                         player_device_id_t id, char* interface, 
+                         ConfigFile* cf, int section) :
   CDevice(PLAYER_MAX_PAYLOAD_SIZE,PLAYER_MAX_PAYLOAD_SIZE,1,1)
 {
   this->remote_hostname = hostname;
-  this->remote_port = id.robot;
-  this->remote_code = id.code;
-  this->remote_index = id.index;
+  this->remote_port = port;
+  this->remote_device_id = id;
   this->remote_access = (unsigned char)cf->ReadString(section, "access", "a")[0];
 
   assert(this->remote_data = (char*)calloc(PLAYER_MAX_PAYLOAD_SIZE,1));
@@ -164,12 +166,13 @@ PassThrough::Setup()
 
   puts("Done");
 
-  printf("Passthrough opening device %d:%d...", this->remote_code,
-         this->remote_index);
+  printf("Passthrough opening device %d:%d:%d...", 
+         this->remote_device_id.robot,
+         this->remote_device_id.code,
+         this->remote_device_id.index);
   // open the device
   if((player_request_device_access(&this->conn,
-                                   this->remote_code,
-                                   this->remote_index,
+                                   this->remote_device_id,
                                    this->remote_access,
                                    &grant_access,
                                    this->remote_drivername,
@@ -222,7 +225,7 @@ PassThrough::Main()
         GetConfig(&id,&client,this->remote_config,PLAYER_MAX_PAYLOAD_SIZE)) > 0)
     {
       // send it
-      if(player_request(&this->conn,this->remote_code,this->remote_index,
+      if(player_request(&this->conn,this->remote_device_id,
                         this->remote_config,len_config,&replyhdr,
                         this->remote_reply,PLAYER_MAX_PAYLOAD_SIZE) < 0)
       {
@@ -242,7 +245,7 @@ PassThrough::Main()
     if((len_command = GetCommand((unsigned char*)this->remote_command,
                          PLAYER_MAX_PAYLOAD_SIZE)) > 0)
     {
-      if(player_write(&this->conn,this->remote_code,this->remote_index,
+      if(player_write(&this->conn,this->remote_device_id,
                       this->remote_command,len_command) < 0)
       {
         PLAYER_ERROR("got error while writing command; bailing");
@@ -260,8 +263,9 @@ PassThrough::Main()
     }
 
     if((hdr.type == PLAYER_MSGTYPE_DATA) &&
-       (hdr.device == this->remote_code) &&
-       (hdr.device_index == this->remote_index))
+       (hdr.robot == this->remote_device_id.robot) &&
+       (hdr.device == this->remote_device_id.code) &&
+       (hdr.device_index == this->remote_device_id.index))
     {
       PutData(this->remote_data,hdr.size,
               hdr.timestamp_sec,hdr.timestamp_usec);
