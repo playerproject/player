@@ -125,3 +125,20 @@ int IDARTurretProxy::GetMessages( player_idarturret_reply_t* reply )
 			 &hdr, (char*)reply, sizeof(*reply) ) );
 }
 
+int IDARTurretProxy::SendGetMessages( player_idarturret_config_t* conf,
+				      player_idarturret_reply_t* reply )
+{
+  assert( client );
+  assert( conf );
+  assert( reply );
+
+  player_msghdr_t hdr;
+
+  conf->instruction = IDAR_TRANSMIT_RECEIVE; 
+
+  
+  // sends request, waits for reply, returns -1 on failure
+  return(client->Request(PLAYER_IDARTURRET_CODE,index,
+			 (const char*)conf,sizeof(player_idarturret_config_t),
+			 &hdr, (char*)reply, sizeof(player_idarturret_reply_t) ) );
+}

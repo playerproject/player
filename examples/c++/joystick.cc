@@ -51,7 +51,7 @@ public:
 };
 
 // type for a list of pointers to Client objects
-typedef list<Client*> ClientList;
+typedef std::list<Client*> ClientList;
 
 /////////////////////////////////////////////////////////////////////
 // this is the event structure from the linux joystick driver v2.0.0
