@@ -113,7 +113,8 @@ pf_pdf_discrete_t *pf_pdf_discrete_alloc(int count, double *probs)
   pdf = calloc(1, sizeof(pf_pdf_discrete_t));
 
   pdf->prob_count = count;
-  pdf->probs = probs;
+  pdf->probs = malloc(count * sizeof(double));
+  memcpy(pdf->probs, probs, count * sizeof(double));
   
   // Initialize the random number generator
   pdf->rng = gsl_rng_alloc(gsl_rng_taus);
@@ -131,6 +132,7 @@ void pf_pdf_discrete_free(pf_pdf_discrete_t *pdf)
 {
   gsl_ran_discrete_free(pdf->ran);
   gsl_rng_free(pdf->rng);
+  free(pdf->probs);  
   free(pdf);
   return;
 }
@@ -147,20 +149,9 @@ double pf_pdf_discrete_value(pf_pdf_discrete_t *pdf, int i)
 int pf_pdf_discrete_sample(pf_pdf_discrete_t *pdf)
 {
   int i;
+  
+  i = gsl_ran_discrete(pdf->rng, pdf->ran);
+  assert(i >= 0 && i < pdf->prob_count);
 
-  while (1)
-  {
-    i = gsl_ran_discrete(pdf->rng, pdf->ran);
-    
-    //assert(i >= 0 && i < pdf->prob_count);
-    if (!(i >= 0 && i < pdf->prob_count))
-    {
-      printf("bad sample [%d]\n", i);
-      continue;
-    }
-      
-    if (pdf->probs[i] > 0)
-      break;
-  }
   return i;
 }

@@ -9,6 +9,9 @@
 #ifndef PF_VECTOR_H
 #define PF_VECTOR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // The basic vector
 typedef struct
@@ -24,6 +27,9 @@ typedef struct
 } pf_matrix_t;
 
 
+// Return a zero vector
+pf_vector_t pf_vector_zero();
+
 // Simple vector addition
 pf_vector_t pf_vector_add(pf_vector_t a, pf_vector_t b);
 
@@ -36,6 +42,10 @@ pf_vector_t pf_vector_coord_add(pf_vector_t a, pf_vector_t b);
 // Transform from global to local coords (a - b)
 pf_vector_t pf_vector_coord_sub(pf_vector_t a, pf_vector_t b);
 
+
+// Return a zero matrix
+pf_matrix_t pf_matrix_zero();
+
 // Compute the matrix inverse.  Will also return the determinant,
 // which should be checked for underflow (indicated singular matrix).
 pf_matrix_t pf_matrix_inverse(pf_matrix_t a, double *det);
@@ -44,5 +54,8 @@ pf_matrix_t pf_matrix_inverse(pf_matrix_t a, double *det);
 // diagonal matrix [d] such that a = r * d * r^T.
 void pf_matrix_svd(pf_matrix_t *r, pf_matrix_t *d, pf_matrix_t a);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

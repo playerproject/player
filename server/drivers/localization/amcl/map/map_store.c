@@ -21,22 +21,22 @@ int map_load_occ(map_t *map, const char *filename)
   char magic[3];
   int i, j;
   int ch, occ;
-  int width, height;
+  int width, height, depth;
   map_cell_t *cell;
 
   // Open file
   file = fopen(filename, "r");
   if (file == NULL)
   {
-    PLAYER_ERR2("%s: %s\n", strerror(errno), filename);
+    fprintf(stderr, "%s: %s\n", strerror(errno), filename);
     return -1;
   }
 
   // Read ppm header
   fscanf(file, "%10s \n", magic);
-  if (strcmp(magic, "P6") != 0)
+  if (strcmp(magic, "P5") != 0)
   {
-    PLAYER_ERR("incorrect image format; must be PPM/binary");
+    fprintf(stderr, "incorrect image format; must be PGM/binary");
     return -1;
   }
 
@@ -46,7 +46,7 @@ int map_load_occ(map_t *map, const char *filename)
   ungetc(ch, file);
 
   // Read image dimensions
-  fscanf(file, "%d %d \n %*d \n", &width, &height);
+  fscanf(file, " %d %d \n %d \n", &width, &height, &depth);
 
   // Allocate space in the map
   map->size_x = width;
@@ -61,12 +61,10 @@ int map_load_occ(map_t *map, const char *filename)
     for (i = 0; i < width; i++)
     {
       ch = fgetc(file);
-      ch = fgetc(file);
-      ch = fgetc(file);
 
-      if (ch < 64)
+      if (ch < depth / 3)
         occ = +1;
-      else if (ch > 192)
+      else if (ch > 2 * depth / 3)
         occ = -1;
       else
         occ = 0;
@@ -79,9 +77,6 @@ int map_load_occ(map_t *map, const char *filename)
   fclose(file);
   
   return 0;
-
-
-  
 }
 
 

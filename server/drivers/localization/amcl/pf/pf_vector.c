@@ -12,6 +12,19 @@
 #include "pf_vector.h"
 
 
+// Return a zero vector
+pf_vector_t pf_vector_zero()
+{
+  pf_vector_t c;
+
+  c.v[0] = 0.0;
+  c.v[1] = 0.0;
+  c.v[2] = 0.0;
+  
+  return c;
+}
+
+
 // Simple vector addition
 pf_vector_t pf_vector_add(pf_vector_t a, pf_vector_t b)
 {
@@ -61,6 +74,20 @@ pf_vector_t pf_vector_coord_sub(pf_vector_t a, pf_vector_t b)
   c.v[2] = a.v[2] - b.v[2];
   
   return c;
+}
+
+
+// Return a zero matrix
+pf_matrix_t pf_matrix_zero()
+{
+  int i, j;
+  pf_matrix_t c;
+
+  for (i = 0; i < 3; i++)
+    for (j = 0; j < 3; j++)
+      c.m[i][j] = 0.0;
+        
+  return;
 }
 
 

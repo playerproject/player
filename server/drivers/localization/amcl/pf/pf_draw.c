@@ -25,44 +25,34 @@ void pf_draw_statistics(pf_t *pf, rtk_fig_t *fig);
 
 
 // Draw the sample set
-void pf_draw_samples(pf_t *pf, rtk_fig_t *fig)
+void pf_draw_samples(pf_t *pf, rtk_fig_t *fig, int max_samples)
 {
   int i;
   double px, py;
   pf_sample_set_t *set;
   pf_sample_t *sample;
-  pf_kdtree_t *tree;
 
   set = pf->sets + pf->current_set;
-
-  tree = pf_kdtree_alloc();
+  max_samples = MIN(max_samples, set->sample_count);
     
-  for (i = 0; i < set->sample_count; i++)
+  for (i = 0; i < max_samples; i++)
   {
     sample = set->samples + i;
 
-    //pf_kdtree_insert(tree, sample->pose);
-    
     px = sample->pose.v[0];
     py = sample->pose.v[1];
 
     //printf("%f %f\n", px, py);
     
-    //rtk_fig_point(fig, px, py);
-    rtk_fig_rectangle(fig, px, py, 0, 0.1, 0.1, 0);
+    rtk_fig_point(fig, px, py);
+    //rtk_fig_rectangle(fig, px, py, 0, 0.1, 0.1, 0);
   }
-
-  // Draw the tree
-  //pf_draw_tree_node(pf, fig, tree, tree->root);
-  
-  pf_kdtree_free(tree);
-
-  // Draw the statistics
-  //pf_draw_statistics(pf, fig);
   
   return;
 }
 
+
+/* FIX
 
 // Recursively draw the kd tree
 void pf_draw_tree_node(pf_t *pf, rtk_fig_t *fig, pf_kdtree_t *tree, pf_kdtree_node_t *node)
@@ -117,3 +107,4 @@ void pf_draw_statistics(pf_t *pf, rtk_fig_t *fig)
   
   return;
 }
+*/

@@ -14,6 +14,9 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**************************************************************************
  * Gaussian
@@ -85,5 +88,8 @@ double pf_pdf_discrete_value(pf_pdf_discrete_t *pdf, int i);
 // Generate a sample from the the pdf.
 int pf_pdf_discrete_sample(pf_pdf_discrete_t *pdf);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

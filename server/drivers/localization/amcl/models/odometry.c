@@ -5,25 +5,34 @@
  * CVS: $Id$
  *************************************************************************/
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
 #include "odometry.h"
 
-void odometry_init(odometry_t *sensor);
+
+// Build a list of all empty cells in c-space
+void odometry_init_cspace(odometry_t *sensor);
+
 
 // Create an sensor model
-odometry_t *odometry_alloc(map_t *map)
+odometry_t *odometry_alloc(map_t *map, double robot_radius)
 {
   odometry_t *sensor;
 
   sensor = calloc(1, sizeof(odometry_t));
 
   sensor->map = map;
+  sensor->robot_radius = robot_radius;
+  
   sensor->stall = 0;
 
-  sensor->init_pdf = NULL;
+  sensor->init_gpdf = NULL;
+  sensor->init_dpdf = NULL;
   sensor->action_pdf = NULL;
+
+  odometry_init_cspace(sensor);
   
   return sensor;
 }
@@ -32,7 +41,41 @@ odometry_t *odometry_alloc(map_t *map)
 // Free an sensor model
 void odometry_free(odometry_t *sensor)
 {
+  free(sensor->ccells);
   free(sensor);
+  return;
+}
+
+
+// Build a list of all empty cells in c-space
+void odometry_init_cspace(odometry_t *sensor)
+{
+  int i, j;
+  map_cell_t *cell;
+  pf_vector_t *ccell;
+
+  sensor->ccell_count = 0;
+  sensor->ccells = malloc(sensor->map->size_x * sensor->map->size_y * sizeof(sensor->ccells[0]));
+    
+  for (j = 0; j < sensor->map->size_y; j++)
+  {
+    for (i = 0; i < sensor->map->size_x; i++)
+    {
+      cell = sensor->map->cells + MAP_INDEX(sensor->map, i, j);
+
+      if (cell->occ_state != -1)
+        continue;
+      if (cell->occ_dist < sensor->robot_radius)
+        continue;
+
+      ccell = sensor->ccells + sensor->ccell_count++;
+
+      ccell->v[0] = MAP_WXGX(sensor->map, i);
+      ccell->v[1] = MAP_WYGY(sensor->map, j);
+      ccell->v[2] = 0.0;
+    }
+  }
+  
   return;
 }
 
@@ -40,14 +83,41 @@ void odometry_free(odometry_t *sensor)
 // Set the initial pose
 void odometry_init_pose(odometry_t *sensor, pf_vector_t pose, pf_matrix_t pose_cov)
 {
-  if (sensor->init_pdf)
+  int i;
+  pf_pdf_gaussian_t *gpdf;
+  double *weights;
+  pf_vector_t *ccell;
+
+  if (sensor->init_gpdf)
   {
-    pf_pdf_gaussian_free(sensor->init_pdf);
-    sensor->init_pdf = NULL;
+    pf_pdf_gaussian_free(sensor->init_gpdf);
+    sensor->init_gpdf = NULL;
+  }
+
+  if (sensor->init_dpdf)
+  {
+    pf_pdf_discrete_free(sensor->init_dpdf);
+    sensor->init_dpdf = NULL;
   }
   
-  // Create a pdf with suitable characterisitics
-  sensor->init_pdf = pf_pdf_gaussian_alloc(pose, pose_cov); 
+  // Create an array to put weights in
+  weights = malloc(sensor->ccell_count * sizeof(weights[0]));
+
+  // Create temporary gaussian pdf 
+  sensor->init_gpdf = pf_pdf_gaussian_alloc(pose, pose_cov);
+
+  // Determine the weight for each free cell, based on the gaussian pdf
+  for (i = 0; i < sensor->ccell_count; i++)
+  {
+    ccell = sensor->ccells + i;
+    weights[i] = pf_pdf_gaussian_value(sensor->init_gpdf, *ccell);
+  }
+    
+  // Create a discrete pdf
+  sensor->init_dpdf = pf_pdf_discrete_alloc(sensor->ccell_count, weights);
+
+  // Free temp stuff
+  free(weights);
 
   return;
 }
@@ -56,19 +126,23 @@ void odometry_init_pose(odometry_t *sensor, pf_vector_t pose, pf_matrix_t pose_c
 // The initialization model function
 pf_vector_t odometry_init_model(odometry_t *sensor)
 {
-  pf_vector_t pose;
-  map_cell_t *cell;
+  int i;
+  pf_vector_t pose, npose;
+    
+  pose = pf_vector_zero();
 
-  pose.v[0] = pose.v[1] = pose.v[2] = 0;
+  // Guess a pose from the discrete distribution
+  i = pf_pdf_discrete_sample(sensor->init_dpdf);
+  assert(i >= 0 && i < sensor->ccell_count);
+  pose = sensor->ccells[i];
 
-  while (1)
-  {
-    pose = pf_pdf_gaussian_sample(sensor->init_pdf);
-    //printf("%f %f %f\n", pose.v[0], pose.v[1], pose.v[2]);
-    cell = map_get_cell(sensor->map, pose.v[0], pose.v[1], pose.v[2]);
-    if (cell && cell->occ_dist > 0.25) //TESTING
-        break;
-  }
+  // Perturb with an orientation drawn from the gaussian distribution
+  npose = pf_pdf_gaussian_sample(sensor->init_gpdf);
+  pose.v[0] += (0.5 - (double) rand() / RAND_MAX) * sensor->map->scale;
+  pose.v[1] += (0.5 - (double) rand() / RAND_MAX) * sensor->map->scale;
+  pose.v[2] += npose.v[2];  
+
+  //printf("%f %f %f\n", pose.v[0], pose.v[1], pose.v[2]);
       
   return pose;
 }
@@ -142,18 +216,19 @@ double odometry_sensor_model(odometry_t *sensor, pf_vector_t pose)
   if (!cell)
     return 0;
 
+  if (cell->occ_state != -1)
+    return 0.01;
+  
   if (sensor->stall == 0)
   {
-    // TESTING
-    if (cell->occ_dist < 0.25)
+    if (cell->occ_dist < sensor->robot_radius)
       p = 0.01;
     else
       p = 1.0;
   }
   else
   {
-    // TESTING
-    if (cell->occ_dist < 0.25)
+    if (cell->occ_dist < sensor->robot_radius)
       p = 1.0;
     else
       p = 0.01;

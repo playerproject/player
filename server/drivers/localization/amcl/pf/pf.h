@@ -11,6 +11,10 @@
 
 #include "pf_vector.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Forward declarations
 struct _pf_t;
 struct _rtk_fig_t;
@@ -87,7 +91,11 @@ void pf_calc_stats(pf_t *pf, pf_vector_t *mean, pf_matrix_t *cov);
 //REMOVE pf_sample_t *pf_get_sample(pf_t *pf, int i);
 
 // Display the sample set
-void pf_draw_samples(pf_t *pf, struct _rtk_fig_t *fig);
+void pf_draw_samples(pf_t *pf, struct _rtk_fig_t *fig, int max_samples);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif
