@@ -182,6 +182,11 @@ void REBIR_Register(DriverTable *table);
 void REBPower_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_KHEPERA
+void KheperaPosition_Register(DriverTable *table);
+void KheperaIR_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_FIXEDTONES
 void FixedTones_Register(DriverTable* table);
 #endif
@@ -572,6 +577,11 @@ register_devices()
   REBPosition_Register(driverTable);
   REBIR_Register(driverTable);
   REBPower_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_KHEPERA
+  KheperaPosition_Register(driverTable);
+  KheperaIR_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ISENSE

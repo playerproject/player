@@ -299,6 +299,7 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/rflex/Makefile 
           server/drivers/mixed/rwi/Makefile 
           server/drivers/mixed/reb/Makefile 
+          server/drivers/mixed/khepera/Makefile 
           server/drivers/mixed/rmp/Makefile
           server/drivers/mixed/nomad/Makefile
           server/drivers/mixed/botrics/Makefile
