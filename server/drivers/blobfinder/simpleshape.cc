@@ -38,14 +38,14 @@ form of a binary image (such as the one shown below).
 @image html simpleshape_h.gif "Sample model for the simpleshape detector"
 
 
-@par Inputs
+@par Requires
 
 - This driver acquires image data from a @ref player_interface_camera
   interface.
 
-@par Outputs
+@par Provides
 
-- This driver outputs detected shapes through a @ref
+- This driver provides detected shapes through a @ref
   player_interface_blobfinder interface.
 
 - This driver also supplies processed image data through a @ref
@@ -82,8 +82,8 @@ form of a binary image (such as the one shown below).
 driver
 (
   name "simpleshape"
-  inputs ["camera:0"]
-  outputs ["blobfinder:1" "camera:1"]
+  requires ["camera:0"]
+  provides ["blobfinder:1" "camera:1"]
   model "simpleshape_h.pgm"
 )
 @endverbatim
@@ -235,7 +235,7 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
   memset(&this->out_camera_id.code, 0, sizeof(player_device_id_t));
 
   // Must have a blobfinder interface
-  if (cf->ReadDeviceId(&this->blobfinder_id, section, "outputs",
+  if (cf->ReadDeviceId(&this->blobfinder_id, section, "provides",
                        PLAYER_BLOBFINDER_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
@@ -249,7 +249,7 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
   }
 
   // Optionally have a camera interface
-  if (cf->ReadDeviceId(&this->out_camera_id, section, "outputs",
+  if (cf->ReadDeviceId(&this->out_camera_id, section, "provides",
                        PLAYER_CAMERA_CODE, -1, NULL) == 0)
   {
     if (this->AddInterface(this->out_camera_id, PLAYER_READ_MODE,
@@ -261,7 +261,7 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
   }
 
   // Must have an input camera
-  if (cf->ReadDeviceId(&this->camera_id, section, "inputs",
+  if (cf->ReadDeviceId(&this->camera_id, section, "requires",
                        PLAYER_CAMERA_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
@@ -521,7 +521,10 @@ void SimpleShape::ProcessImage()
       break;
     }
     default:
+    {
       PLAYER_WARN1("image format [%d] is not supported", this->cameraData.format);
+      return;
+    }
   }
 
   // Copy original image to output
@@ -572,8 +575,6 @@ void SimpleShape::FindShapes()
   cvFindContours(this->workImage, storage, &contour, sizeof(CvContour), 
                  CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
     
-  printf("\n");
-  
   for(; contour != NULL; contour = contour->h_next)
   {
     rect = cvBoundingRect(contour);

@@ -57,41 +57,8 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
                size_t datasize, size_t commandsize, 
                size_t reqqueuelen, size_t repqueuelen)
 {
-  /*
-  player_device_id_t* ids;
-  int num_ids;
-
-  // Parse devices section
-  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
-  // Take on the first id given in the config file, but make sure it has
-  // the right code
-  this->device_id = ids[0];
-  if((interface > 0) && (this->device_id.code != interface))
-  {
-    PLAYER_ERROR2("section [%d]: interface %s is not supported",
-                  section, ::lookup_interface_name(0,ids[0].code));
-    this->SetError(-1);
-    return;
-  }
-
-  // consume the id, then check for superfluous ids
-  ids[0].port = 0;
-  if(cf->UnusedIds(section, ids,num_ids))
-  {
-    this->SetError(-1);    
-    free(ids);
-    return;
-  }
-  free(ids);
-  */
-
   // Look for our default device id
-  if (cf->ReadDeviceId(&this->device_id, section, "outputs", interface, -1, NULL) != 0)
+  if (cf->ReadDeviceId(&this->device_id, section, "provides", interface, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;
