@@ -309,6 +309,8 @@ PLAYER_ADD_DRIVER([service_adv_mdns],[drivers/service_adv],[yes],
                   [],[],[],[HOWL],[howl >= 0.9.6])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
+PLAYER_ADD_DRIVER([fakelocalize],[drivers/localization], [yes],[],[],[])
+
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
 user_override=no

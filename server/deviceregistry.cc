@@ -345,6 +345,10 @@ void ServiceAdvLSD_Register(DriverTable* table);
 void ServiceAdvMDNS_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_FAKELOCALIZE
+void FakeLocalize_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_STAGECLIENT
 void StgSimulation_Register(DriverTable *table);
 void StgLaser_Register(DriverTable *table);
@@ -784,6 +788,10 @@ register_devices()
 
 #ifdef INCLUDE_SERVICE_ADV_MDNS
   ServiceAdvMDNS_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_FAKELOCALIZE
+  FakeLocalize_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_NOMAD
