@@ -416,6 +416,7 @@ int LaserVisualBW::UpdateLaser()
   
   // Do some byte swapping on the laser data.
   data.resolution = ntohs(data.resolution);
+  data.range_res = ntohs(data.range_res);
   data.min_angle = ntohs(data.min_angle);
   data.max_angle = ntohs(data.max_angle);
   data.range_count = ntohs(data.range_count);
@@ -456,7 +457,7 @@ void LaserVisualBW::FindLaserFiducials(double time, player_laser_data_t *data)
   // Look for a candidate patch in scan.
   for (i = 0; i < data->range_count; i++)
   {
-    r = (double) (data->ranges[i]) / 1000;
+    r = (double) ((int) (uint32_t) data->ranges[i] * data->range_res) / 1000;
     b = (double) (data->min_angle + i * data->resolution) / 100.0 * M_PI / 180;
     h = (int) (data->intensity[i]);
 
@@ -523,7 +524,7 @@ void LaserVisualBW::FitLaserFiducial(player_laser_data_t *data,
 
   for (i = first; i <= last; i++)
   {
-    r = (double) (data->ranges[i]) / 1000;
+    r = (double) ((int) (uint32_t) data->ranges[i] * data->range_res) / 1000;
     b = (double) (data->min_angle + i * data->resolution) / 100.0 * M_PI / 180;
 
     if (r < mr)
@@ -772,7 +773,23 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
 ////////////////////////////////////////////////////////////////////////////////
 // Process any new camera data.
 int LaserVisualBW::UpdateCamera()
-{  
+{
+  player_camera_data_t data;
+  size_t size;
+  uint32_t timesec, timeusec;
+  double time;
+  
+  // Get the camera data.
+  size = this->camera->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  time = (double) timesec + ((double) timeusec) * 1e-6;
+
+  // Dont do anything if this is old data.
+  if (time == this->camera_time)
+    return 0;
+  this->camera_time = time;
+
+  // TODO
+  
   return 1;
 }
 
