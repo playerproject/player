@@ -83,6 +83,12 @@ void RFLEXPosition::GetOptions(ConfigFile * cf,int section, rflex_config_t *rfle
   rflex_configs->radPsec2_rot_acceleration=
     cf->ReadFloat(section, "default_rot_acceleration",0.1);
 
+	
+	// use rflex joystick for position
+	rflex_configs->use_joystick |= cf->ReadInt(section, "rflex_joystick",0);
+	rflex_configs->joy_pos_ratio = cf->ReadFloat(section, "rflex_joy_pos_ratio",0);
+	rflex_configs->joy_ang_ratio = cf->ReadFloat(section, "rflex_joy_ang_ratio",0);
+
 	rflex_configs->run |= cf->ReadInt(section, "rflex_done",0);
 
   Unlock();

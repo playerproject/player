@@ -156,6 +156,9 @@ class RFLEX:public CDevice
 
     virtual void PutData(unsigned char *, size_t maxsize,
                          uint32_t timestamp_sec, uint32_t timestamp_usec);
+
+	static int joy_control;
+
 };
 
 
