@@ -6,7 +6,8 @@ include ../../Makefile.common
 
 LIBNAME = libplayercclient.a
 
-CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
+CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
+#CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../../include
 
 OBJECTS = playercclient.o print.o helpers.o
@@ -40,5 +41,3 @@ uninstall:
 clean:
 	$(RM) -f $(LIBNAME) $(OBJECTS)
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-

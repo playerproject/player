@@ -42,5 +42,3 @@ uninstall:
 clean:
 	$(RM) -f $(LIBNAME) *.o
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-

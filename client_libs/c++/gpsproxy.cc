@@ -36,7 +36,17 @@
 // warp the robot
 int GpsProxy::Warp(int x, int y, int heading)
 {
-  return(0);
+  if(!client)
+    return(-1);
+
+  player_gps_config_t config;
+
+  config.xpos = htonl(x);
+  config.ypos = htonl(y);
+  config.heading = htonl(heading);
+
+  return(client->Request(PLAYER_GPS_CODE,index,(const char*)&config,
+                         sizeof(config)));
 }
 
 void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
