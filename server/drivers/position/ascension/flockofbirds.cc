@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <string.h>
 #include <pthread.h>
+#include <math.h>
 
 // Player includes
 #include <player.h>
@@ -485,10 +486,14 @@ FlockOfBirds_Device::Main()
 		data.xpos = htonl(static_cast<long> (PosData[0]));
 		data.ypos = htonl(static_cast<long> (PosData[1]));
 		data.zpos = htonl(static_cast<long> (-PosData[2]));
+		// translate degerees to milli radians
+		data.yaw = htonl(static_cast<long> (round(DTOR(PosData[3])*1000.0)));
+		data.pitch = htonl(static_cast<long> (round(DTOR(PosData[4])*1000.0)));
+		data.roll = htonl(static_cast<long> (round(DTOR(PosData[5])*1000.0)));
 		// translate degerees to arc seconds
-		data.yaw = htonl(static_cast<long> ((PosData[3] < 0 ? (PosData[3] + 360) : PosData[3]) * 3600));
+		/*data.yaw = htonl(static_cast<long> ((PosData[3] < 0 ? (PosData[3] + 360) : PosData[3]) * 3600));
 		data.pitch = htonl(static_cast<long> ((PosData[4] < 0 ? (PosData[4] + 360) : PosData[4]) * 3600));
-		data.roll = htonl(static_cast<long> ((PosData[5] < 0 ? (PosData[5] + 360) : PosData[5]) * 3600));
+		data.roll = htonl(static_cast<long> ((PosData[5] < 0 ? (PosData[5] + 360) : PosData[5]) * 3600));*/
 
 		PutData((unsigned char*)&data, sizeof(player_position3d_data_t),0,0);
 	}    
