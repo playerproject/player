@@ -165,7 +165,7 @@ fi
                                                                      
 AC_ARG_ENABLE(highspeedsick, [  --disable-highspeedsick   Don't build support for 500Kbps comms with SICK],,enable_highspeedsick=yes)
 if test "x$enable_highspeedsick" = "xno"; then
-  AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[[disable 500Kbps comms with SICK]])
+  AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[disable 500Kbps comms with SICK])
 fi
 
 AC_ARG_ENABLE(playerclient_thread, [  --disable-playerclient_thread   Build thread safe c++ client library],,disable_playerclient_thread=no)
@@ -268,9 +268,29 @@ PLAYER_ADD_DRIVER([linuxjoystick],[drivers/joystick],[yes],[linux/joystick.h],[]
 
 dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
-dnl Disabled by default because it doesn't always build (maybe the version
-dnl of libdc1394 needs to be checked?)
-PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[no],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
+
+dnl IEEE1394 (Firewire) camera driver
+PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
+
+dnl libdc1394 has varying API's, depending on the version.  Do some checks
+dnl to see what the function signatures look like
+if test "x$enable_camera1394" = "xyes"; then
+
+  dc1394_dma_setup_args="0"
+
+  AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
+    [[#include "libdc1394/dc1394_control.h"]], 
+    [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]), 
+    dc1394_dma_setup_args="11")
+
+  AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
+    [[#include "libdc1394/dc1394_control.h"]], 
+    [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]), 
+    dc1394_dma_setup_args="12")
+
+  AC_DEFINE_UNQUOTED(DC1394_DMA_SETUP_CAPTURE_ARGS, $dc1394_dma_setup_args, 
+              [arg count for dma capture function])
+fi
 
 PLAYER_ADD_DRIVER([cameracompress],[drivers/camera/compress],[yes],[jpeglib.h],[],[-ljpeg])
 PLAYER_ADD_DRIVER([imageseq],[drivers/camera],[yes],["gdal_priv.h jpeglib.h"],[],[-lgdal])

@@ -26,6 +26,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include "player.h"
 
 #include <errno.h>
@@ -262,15 +266,26 @@ int Camera1394::Setup()
     PLAYER_ERROR("Unable to get iso data; is the camera plugged in?");
     return -1;
   }
-      
+
+
+#if DC1394_DMA_SETUP_CAPTURE_ARGS == 11
   // Set camera to use DMA, improves performance.
-  // The '1' parameters is the dropFrames parameter.
   if (!this->forceRaw &&
       dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
                                this->format, this->mode, speed,
                                this->frameRate, NUM_DMA_BUFFERS, 1, NULL,
                                &this->camera) == DC1394_SUCCESS)
-  {
+#elif DC1394_DMA_SETUP_CAPTURE_ARGS == 12
+  // Set camera to use DMA, improves performance.
+  if (!this->forceRaw &&
+      dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
+                               this->format, this->mode, speed,
+                               this->frameRate, NUM_DMA_BUFFERS, 1, 0, NULL,
+                               &this->camera) == DC1394_SUCCESS)
+#else
+  if (0)
+#endif
+  {    
     this->method = methodVideo;
   }
   else
