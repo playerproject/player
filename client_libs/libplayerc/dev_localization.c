@@ -182,12 +182,14 @@ int playerc_localization_get_map_header(playerc_localization_t *device,
     map_header.scale = scale;
     
     len = playerc_client_request(device->info.client, &device->info,
-	    			 &map_header, sizeof(map_header), &map_header, sizeof(map_header));
+	    &map_header, sizeof(map_header.subtype)+sizeof(map_header.scale),
+	    &map_header, sizeof(map_header));
     if (len < 0)
 	return -1;
     if (len != sizeof(map_header))
     {
-	PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(map_header));
+	PLAYERC_ERR2("reply has unexpected length (%d != %d)", len,
+		sizeof(map_header.subtype)+sizeof(map_header.scale));
 	return -1;
     }
 
@@ -226,7 +228,8 @@ int playerc_localization_get_map(playerc_localization_t *device,
 	row_data.scale = scale;
 	row_data.row = htons(r);
 	len = playerc_client_request(device->info.client, &device->info,
-				     &row_data, sizeof(row_data), &row_data, sizeof(row_data));
+		&row_data, sizeof(row_data.subtype) + sizeof(row_data.scale) +
+		sizeof(row_data.row), &row_data, sizeof(row_data));
 	if (len < 0)
 	    return -1;
 	if (len != sizeof(row_data))

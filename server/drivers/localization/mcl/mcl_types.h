@@ -37,9 +37,10 @@
 
 #define MCL_MAX_PARTICLES 100000		// packet size must be fixed
 
-#define MCL_CMD_CONFIG	0			// command 'send configuration'
-#define MCL_CMD_UPDATE	1			// command 'update'
-#define MCL_CMD_STOP	2			// command 'stop update'
+#define MCL_CMD_NONE	0			// there is no command
+#define MCL_CMD_CONFIG	1			// command 'send configuration'
+#define MCL_CMD_UPDATE	2			// command 'update'
+#define MCL_CMD_STOP	3			// command 'stop update'
 
 #endif
 
@@ -123,7 +124,7 @@ typedef mcl_config_t stage_data_t;
 // command going to Stage
 typedef struct stage_command
 {
-    bool command;			// is a request message ?
+    int command;			// is a request message ?
     uint32_t num_hypothesis;
     mcl_hypothesis_t hypothesis[PLAYER_LOCALIZATION_MAX_HYPOTHESIS];
     uint32_t num_particles;

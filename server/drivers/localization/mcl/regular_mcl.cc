@@ -296,50 +296,9 @@ void RegularMCL::Main(void)
 	    }
 
 #ifdef INCLUDE_STAGE
-
-	    // Send visualization data to Stage
-	    if (use_stage)
-	    {
-		// it is no a request
-		this->stage_command.command = MCL_CMD_UPDATE;
-
-		// hypothesis set
-		int n = 0;
-		for (int i=0; i<PLAYER_LOCALIZATION_MAX_HYPOTHESIS; i++)
-		{
-		    if (this->clustering->pi[i] > 0.0) {
-			stage_command.hypothesis[n].alpha = this->clustering->pi[i];
-			stage_command.hypothesis[n].mean[0] = this->clustering->mean[i][0];
-			stage_command.hypothesis[n].mean[1] = this->clustering->mean[i][1];
-			stage_command.hypothesis[n].mean[2] = this->clustering->mean[i][2];
-			stage_command.hypothesis[n].cov[0][0] = this->clustering->cov[i][0][0];
-			stage_command.hypothesis[n].cov[0][1] = this->clustering->cov[i][0][1];
-			stage_command.hypothesis[n].cov[0][2] = this->clustering->cov[i][0][2];
-			stage_command.hypothesis[n].cov[1][0] = this->clustering->cov[i][1][0];
-			stage_command.hypothesis[n].cov[1][1] = this->clustering->cov[i][1][1];
-			stage_command.hypothesis[n].cov[1][2] = this->clustering->cov[i][1][2];
-			stage_command.hypothesis[n].cov[2][0] = this->clustering->cov[i][2][0];
-			stage_command.hypothesis[n].cov[2][1] = this->clustering->cov[i][2][1];
-			stage_command.hypothesis[n].cov[2][2] = this->clustering->cov[i][2][2];
-			n++;
-		    }
-		}
-		stage_command.num_hypothesis = n;
-
-		// particle set
-		stage_command.num_particles = (this->config.num_particles < MCL_MAX_PARTICLES) ?
-				    this->config.num_particles : MCL_MAX_PARTICLES;
-		vector<particle_t>::iterator p = this->particles.begin();
-		for (uint32_t i=0; i<stage_command.num_particles; i++, p++)
-		    stage_command.particles[i] = *p;
-
-		// send data
-		size_t size = sizeof(bool) +		// stage_command.request
-			      sizeof(uint32_t) +	// stage_command.num_hypothesis
-			      sizeof(mcl_hypothesis_t) * PLAYER_LOCALIZATION_MAX_HYPOTHESIS +
-			      sizeof(uint32_t) +	// stage_command.num_particles
-			      sizeof(particle_t) * stage_command.num_particles;
-		PutStageCommand((void*)this, (unsigned char*)&stage_command, size);
+	    if (use_stage) {
+		// Send visualization data to Stage
+		this->SendStageData();
 	    }
 #endif
 
@@ -431,10 +390,10 @@ void RegularMCL::UpdateConfig(void)
 	    {
 		player_localization_map_header_t map_header;
 		// check if the config request is valid
-		if (len != sizeof(player_localization_map_header_t))
+		if (len != sizeof(map_header.subtype)+sizeof(map_header.scale))
 		{
 		    PLAYER_ERROR2("config request len is invalid (%d != %d)",
-			    len, sizeof(map_header));
+			    len, sizeof(map_header.subtype)+sizeof(map_header.scale));
 		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
 			PLAYER_ERROR("PutReply() failed");
 		    continue;
@@ -455,10 +414,13 @@ void RegularMCL::UpdateConfig(void)
 	    {
 		player_localization_map_data_t map_data;
 		// check if the config request is valid
-		if (len != sizeof(player_localization_map_data_t))
+		if (len != sizeof(map_data.subtype) +
+			   sizeof(map_data.scale) +
+			   sizeof(map_data.row))
 		{
 		    PLAYER_ERROR2("config request len is invalid (%d != %d)",
-			    len, sizeof(map_data));
+			    len, sizeof(map_data.subtype) +
+			    sizeof(map_data.scale) + sizeof(map_data.row));
 		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
 			PLAYER_ERROR("PutReply() failed");
 		    continue;
@@ -820,6 +782,52 @@ void RegularMCL::LoadStageConfiguration(void)
     this->config = stage_data;
 
     cerr << "done." << endl;
+}
+
+
+// send the current data set to Stage for visualization
+void RegularMCL::SendStageData(void)
+{
+    // it is an update request
+    this->stage_command.command = MCL_CMD_UPDATE;
+
+    // hypothesis set
+    int n = 0;
+    for (int i=0; i<PLAYER_LOCALIZATION_MAX_HYPOTHESIS; i++)
+    {
+	if (this->clustering->pi[i] > 0.0) {
+	    stage_command.hypothesis[n].alpha = this->clustering->pi[i];
+	    stage_command.hypothesis[n].mean[0] = this->clustering->mean[i][0];
+	    stage_command.hypothesis[n].mean[1] = this->clustering->mean[i][1];
+	    stage_command.hypothesis[n].mean[2] = this->clustering->mean[i][2];
+	    stage_command.hypothesis[n].cov[0][0] = this->clustering->cov[i][0][0];
+	    stage_command.hypothesis[n].cov[0][1] = this->clustering->cov[i][0][1];
+	    stage_command.hypothesis[n].cov[0][2] = this->clustering->cov[i][0][2];
+	    stage_command.hypothesis[n].cov[1][0] = this->clustering->cov[i][1][0];
+	    stage_command.hypothesis[n].cov[1][1] = this->clustering->cov[i][1][1];
+	    stage_command.hypothesis[n].cov[1][2] = this->clustering->cov[i][1][2];
+	    stage_command.hypothesis[n].cov[2][0] = this->clustering->cov[i][2][0];
+	    stage_command.hypothesis[n].cov[2][1] = this->clustering->cov[i][2][1];
+	    stage_command.hypothesis[n].cov[2][2] = this->clustering->cov[i][2][2];
+	    n++;
+	}
+    }
+    stage_command.num_hypothesis = n;
+
+    // particle set
+    stage_command.num_particles = (this->config.num_particles < MCL_MAX_PARTICLES) ?
+			this->config.num_particles : MCL_MAX_PARTICLES;
+    vector<particle_t>::iterator p = this->particles.begin();
+    for (uint32_t i=0; i<stage_command.num_particles; i++, p++)
+	stage_command.particles[i] = *p;
+
+    // send data
+    size_t size = sizeof(bool) +		// stage_command.request
+		  sizeof(uint32_t) +	// stage_command.num_hypothesis
+		  sizeof(mcl_hypothesis_t) * PLAYER_LOCALIZATION_MAX_HYPOTHESIS +
+		  sizeof(uint32_t) +	// stage_command.num_particles
+		  sizeof(particle_t) * stage_command.num_particles;
+    PutStageCommand((void*)this, (unsigned char*)&stage_command, size);
 }
 
 
