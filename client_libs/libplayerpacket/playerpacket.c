@@ -316,9 +316,9 @@ void FiducialGeomPack(  player_fiducial_geom_t* geom,
   
   geom->subtype = PLAYER_FIDUCIAL_GET_GEOM;
   
-  geom->pose[0] = MM_U16( px );
-  geom->pose[1] = MM_U16( py );
-  geom->pose[2] = Deg_U16( px );
+  geom->pose[0] = MM_16( px );
+  geom->pose[1] = MM_16( py );
+  geom->pose[2] = Deg_16( px );
   
   geom->size[0] = MM_U16( sensor_width );
   geom->size[1] = MM_U16( sensor_height );
@@ -337,9 +337,9 @@ void FiducialGeomUnpack(  player_fiducial_geom_t* geom,
   // check we are parsing the right type of packet
   assert( geom->subtype == PLAYER_FIDUCIAL_GET_GEOM );
   
-  if(px) *px = M_U16( geom->pose[0] );
-  if(py) *py = M_U16( geom->pose[1] );
-  if(pth) *pth = Rad_U16( geom->pose[2] );
+  if(px) *px = M_16( geom->pose[0] );
+  if(py) *py = M_16( geom->pose[1] );
+  if(pth) *pth = Rad_16( geom->pose[2] );
   
   if(sensor_width) *sensor_width = M_U16( geom->size[0] ); 
   if(sensor_height) *sensor_height = M_U16( geom->size[1] ); 

@@ -189,8 +189,8 @@ void GzGps::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
-    data.latitude = htonl((int32_t) (216000 * this->iface->data->latitude));
-    data.longitude = htonl((int32_t) (216000 * this->iface->data->longitude));
+    data.latitude = htonl((int32_t) (1e7 * this->iface->data->latitude));
+    data.longitude = htonl((int32_t) (1e7 * this->iface->data->longitude));
     data.altitude = htonl((int32_t) (1000 * this->iface->data->altitude));
     data.utm_e = htonl((int32_t) (100 * this->iface->data->utm_e));
     data.utm_n = htonl((int32_t) (100 * this->iface->data->utm_n));

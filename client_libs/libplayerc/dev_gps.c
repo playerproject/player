@@ -103,8 +103,8 @@ void playerc_gps_putdata(playerc_gps_t *device, player_msghdr_t *header,
   device->utc_time = (uint32_t) ntohl(data->time_sec);
   device->utc_time += ((uint32_t) ntohl(data->time_usec)) * 1e-6;
 
-  device->lat = (int32_t) ntohl(data->latitude) / 216000.0;
-  device->lon = (int32_t) ntohl(data->longitude) / 216000.0;
+  device->lat = (int32_t) ntohl(data->latitude) / 1e7;
+  device->lon = (int32_t) ntohl(data->longitude) / 1e7;
   device->alt = (int32_t) ntohl(data->altitude) / 1000.0;
 
   device->utm_e = (int32_t) ntohl(data->utm_e) / 100.0;

@@ -787,7 +787,7 @@ typedef struct player_position_geom
   /** Packet subtype.  Must be PLAYER_POSITION_GET_GEOM_REQ. */
   uint8_t subtype;
   /** Pose of the robot base, in the robot cs (mm, mm, degrees). */
-  uint16_t pose[3];
+  int16_t pose[3];
   /** Dimensions of the base (mm, mm). */
   uint16_t size[2];
 } __PACKED__ player_position_geom_t;
@@ -1012,7 +1012,7 @@ typedef struct player_position2d_geom
   /** Packet subtype.  Must be PLAYER_POSITION2D_GET_GEOM_REQ. */
   uint8_t subtype;
   /** Pose of the robot base, in the robot cs (mm, mm, mrad). */
-  uint16_t pose[3];
+  int16_t pose[3];
   /** Dimensions of the base (mm, mm). */
   uint16_t size[2];
 } __PACKED__ player_position2d_geom_t;
@@ -1182,7 +1182,7 @@ typedef struct player_position3d_cmd
   /** X, Y, and Z position, in mm */
   int32_t xpos, ypos, zpos;
   /** Roll, pitch, and yaw, in mrad */
-  uint32_t roll, pitch, yaw;
+  int32_t roll, pitch, yaw;
   /** X, Y, and Z translational velocities, in mm/s */
   int32_t xspeed, yspeed, zspeed;
   /** Angular velocities, in mrad/s */
@@ -1205,7 +1205,7 @@ typedef struct player_position3d_geom
   uint8_t subtype;
 
   /** Pose of the robot base, in the robot cs (mm, mm, mm, mrad, mrad, mrad).*/
-  uint16_t pose[6];
+  int16_t pose[6];
 
   /** Dimensions of the base (mm, mm, mm). */
   uint16_t size[3];
@@ -2075,7 +2075,7 @@ typedef struct player_fiducial_geom
   uint8_t subtype;
   /** Pose of the detector in the robot cs (x, y, orient) in units if
       (mm, mm, degrees). */
-  uint16_t pose[3];
+  int16_t pose[3];
   /** Size of the detector in units of (mm, mm) */
   uint16_t size[2];  
   /** Dimensions of the fiducials in units of (mm, mm). */
@@ -2267,12 +2267,13 @@ typedef struct player_gps_data
 {
   /** GPS (UTC) time, in seconds and microseconds since the epoch. */
   uint32_t time_sec, time_usec; 
-  /** Latitude, in 1/60 of an arc-second (i.e., 1/216000 of a degree).  
-      Positive is north of equator, negative is south of equator. */
+  /** Latitude in degrees / 1e7 (units are scaled such that the
+      effective resolution is roughly 1cm).  Positive is north of
+      equator, negative is south of equator. */
   int32_t latitude;
-  /** Longitude, in 1/60 of an arc-second (i.e., 1/216000 of a degree).  
-      Positive is east of prime meridian, negative is west 
-      of prime meridian. */
+  /** Longitude in degrees / 1e7 (units are scaled such that the
+      effective resolution is roughly 1cm).  Positive is east of prime
+      meridian, negative is west of prime meridian. */
   int32_t longitude;
   /** Altitude, in millimeters.  Positive is above reference (e.g.,
       sea-level), and negative is below. */
