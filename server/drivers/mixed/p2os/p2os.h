@@ -124,6 +124,7 @@ typedef struct
   player_dio_data_t dio;
   player_aio_data_t aio;
   player_blobfinder_data_t blobfinder;
+  player_position_data_t compass;
 } __attribute__ ((packed)) player_p2os_data_t;
 
 typedef struct
