@@ -52,6 +52,7 @@ install: $(BINARIES)
 	$(INSTALL) -m 644 grip.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 forage.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 multilogger.cc $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 644 rsn.cc $(INSTALL_EXAMPLES)/c++
 	@echo "Installing C++ example binaries"
 	$(INSTALL) -m 755 randomwalk $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 visualservo $(INSTALL_EXAMPLES)/c++
@@ -82,6 +83,7 @@ uninstall:
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/grip.cc
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/forage.cc
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/multilogger.cc
+	$(RM) -f  $(INSTALL_EXAMPLES)/c++/rsn.cc
 	@echo "Uninstalling example binaries"
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/randomwalk
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/visualservo
@@ -95,6 +97,7 @@ uninstall:
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/grip
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/forage
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/multilogger
+	$(RM) -f  $(INSTALL_EXAMPLES)/c++/rsn
 
 clean:
 	$(RM) -f *.o $(BINARIES) test

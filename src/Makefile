@@ -121,5 +121,6 @@ uninstall:
 	$(RM) -f $(INSTALL_BIN)/$(SERVERNAME)
 	$(RM) -f $(INSTALL_INCLUDE)/playercommon.h
 	$(RM) -f $(INSTALL_INCLUDE)/messages.h
+	$(RM) -f $(INSTALL_INCLUDE)/defaults.h
 	$(RM) -f $(INSTALL_INCLUDE)/stage.h
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND

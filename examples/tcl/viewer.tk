@@ -24,7 +24,7 @@
 # a nifty Tk robot viewer
 #
 
-set PLAYER_VERSION 1.2
+set PLAYER_VERSION 1.2-alpha
 
 # for the 'signal' command
 package require Tclx
