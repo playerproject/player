@@ -29,7 +29,6 @@
 #ifndef _CLIENTDATA_H
 #define _CLIENTDATA_H
 
-#include <pthread.h>
 #include <messages.h>
 
 // get around circular inclusion;

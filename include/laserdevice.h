@@ -48,7 +48,6 @@
 
 #ifndef _LASERDEVICE_H
 #define _LASERDEVICE_H
-#include <pthread.h>
 #include <unistd.h>
 
 #include "device.h"

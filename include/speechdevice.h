@@ -35,7 +35,6 @@
 #ifndef _SPEECHDEVICE_H
 #define _SPEECHDEVICE_H
 
-#include <pthread.h>
 
 #include <device.h>
 #include <messages.h>

@@ -31,7 +31,6 @@
 #ifndef _VISIONDEVICE_H
 #define _VISIONDEVICE_H
 
-#include <pthread.h>
 
 #include <device.h>
 #include <messages.h>
