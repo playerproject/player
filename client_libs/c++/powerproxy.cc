@@ -45,6 +45,6 @@ void
 PowerProxy::Print()
 {
   printf("#Power(%d:%d) - %c\n", device, index, access);
-  printf("%d\n", charge);
+  printf("%u\n", charge);
 }
 

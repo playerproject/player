@@ -27,6 +27,10 @@ test_power(PlayerClient* client, int index)
   PASS();
   printf("DRIVER: %s\n", pp.driver_name);
 
+  // wait for P2OS to start up
+  for(int i=0;i<20;i++)
+    client->Read();
+
   for(int t = 0; t < 3; t++)
   {
     TEST1("reading data (attempt %d)", t);
