@@ -50,6 +50,7 @@ class MapFile : public CDevice
   private:
     const char* filename;
     double resolution;
+    int negate;
     int size_x, size_y;
     char* mapdata;
     
@@ -59,7 +60,7 @@ class MapFile : public CDevice
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapFile(const char* file, double res);
+    MapFile(const char* file, double res, int neg);
     ~MapFile();
     virtual int Setup();
     virtual int Shutdown();
@@ -72,6 +73,7 @@ MapFile_Init(char* interface, ConfigFile* cf, int section)
 {
   const char* filename;
   double resolution;
+  int negate;
 
   if(strcmp(interface, PLAYER_MAP_STRING))
   {
@@ -90,8 +92,9 @@ MapFile_Init(char* interface, ConfigFile* cf, int section)
     PLAYER_ERROR("must specify positive map resolution");
     return(NULL);
   }
+  negate = cf->ReadInt(section,"negate",0);
 
-  return((CDevice*)(new MapFile(filename, resolution)));
+  return((CDevice*)(new MapFile(filename, resolution, negate)));
 }
 
 // a driver registration function
@@ -103,13 +106,14 @@ MapFile_Register(DriverTable* table)
 
 
 // this one has no data or commands, just configs
-MapFile::MapFile(const char* file, double res) : 
+MapFile::MapFile(const char* file, double res, int neg) : 
   CDevice(0,0,100,100)
 {
   this->mapdata = NULL;
   this->size_x = this->size_y = 0;
   this->filename = file;
   this->resolution = res;
+  this->negate = neg;
 }
 
 MapFile::~MapFile()
@@ -161,7 +165,10 @@ MapFile::Setup()
       p = pixels + j*rowstride + i*n_channels*bps;
 
       // HACK
-      occ = 100 - 100 * (*(p+bps) / 255);
+      if(!this->negate)
+        occ = 100 - 100 * (*p / 255);
+      else
+        occ = 100 - 100 * ((255 - *p) / 255);
       if(occ > 90)
         this->mapdata[MAP_IDX(this,i,this->size_y - j)] = +1;
       else if(occ < 10)
