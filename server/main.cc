@@ -735,14 +735,14 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   static int init_done = 0;
   
   if( !init_done )
-    {
-      int errors = 0;
-      if((errors = lt_dlinit()))
-	PLAYER_ERROR2( "Error(s) initializing dynamic loader (%d, %s)",
-		      errors, lt_dlerror() );
-      else
-	init_done = 1;
-    }
+  {
+    int errors = 0;
+    if((errors = lt_dlinit()))
+      PLAYER_ERROR2( "Error(s) initializing dynamic loader (%d, %s)",
+                     errors, lt_dlerror() );
+    else
+      init_done = 1;
+  }
   
   //void* handle=NULL;
   
@@ -803,8 +803,8 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
         break;
       }
       else
-	//printf("failed (%s)\n", dlerror() );
-	printf("failed (%s)\n", lt_dlerror() );
+        //printf("failed (%s)\n", dlerror() );
+        printf("failed (%s)\n", lt_dlerror() );
 
       i=j+1;
     }

@@ -72,7 +72,7 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
 @verbatim
 driver
 (
-  driver sicklms200
+  name "sicklms200"
   devices ["laser:0"]
   port "/dev/ttyS0"
   resolution 100   # Angular resolution 1 degree (181 readings @ 10Hz)

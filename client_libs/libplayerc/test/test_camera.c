@@ -16,11 +16,10 @@ static void test_camera_save(playerc_camera_t *device, const char *filename);
 int test_camera(playerc_client_t *client, int index)
 {
   int t;
-  //double i_px, i_py, i_pa;
-  //double f_px, f_py, f_pa;
   void *rdevice;
   playerc_camera_t *device;
   char filename[128];
+  int csize, usize;
 
   printf("device [camera] index [%d]\n", index);
 
@@ -45,8 +44,14 @@ int test_camera(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("camera: [w %d h %d d %d] [%d bytes]\n", 
-             device->width, device->height, device->depth, device->image_size);
+
+      // Decompress the image
+      csize = device->image_size;
+      playerc_camera_decompress(device);
+      usize = device->image_size;
+      
+      printf("camera: [w %d h %d d %d] [%d/%d bytes]\n", 
+             device->width, device->height, device->depth, csize, usize);
 
       snprintf(filename, sizeof(filename), "camera_%03d.ppm", t);
       printf("camera: saving [%s] (only works for RGB888) \n", filename);

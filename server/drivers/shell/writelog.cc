@@ -24,9 +24,52 @@
  * Date: 14 Jun 2003
  * CVS: $Id$
  *
- * The writelog driver will write data from another device to a log file.
- * The readlog driver will replay the data as if it can from the real sensors.
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_writelog WriteLog driver
+
+The writelog driver will write data from another device to a log file
+(the readlog driver can be used to later replay the data as if it can
+from the real sensors).
+
+
+@par Interfaces
+- @ref player_interface_log
+
+@par Supported configuration requests
+
+- PLAYER_LOG_SET_WRITE_STATE
+- PLAYER_LOG_GET_STATE
+  
+@par Configuration file options
+
+- log_devices [""]
+  - List of devices to log data from.
+
+- wait_index -1
+  - Device to wait on (index into log_devices list); set the to the device
+  with the highest data rate to get all data.
+
+- enable 0
+  - Default log state; set to 1 for continous logging.
+      
+@par Example 
+
+@verbatim
+driver
+(
+  name "writelog"
+  devices ["log:0"]
+  log_devices ["position:0" "laser:0"]
+  wait_index 1
+  alwayson 1
+  enable 1
+)
+@endverbatim
+*/
+/** @} */
 
 #include <assert.h>
 #include <ctype.h>
@@ -47,6 +90,7 @@
 #include "drivertable.h"
 #include "deviceregistry.h"
 #include "playertime.h"
+#include "encode.h"
 
 
 // Utility class for storing per-device info
@@ -82,8 +126,8 @@ class WriteLog: public Driver
   private: virtual void Main(void);
 
   // Write data to file
-  public: void Write(void *data, size_t size,
-                     const player_device_id_t *id, uint32_t sec, uint32_t usec);
+  private: void Write(void *data, size_t size,
+                      const player_device_id_t *id, uint32_t sec, uint32_t usec);
 
   // Write camera data to file
   private: void WriteCamera(player_camera_data_t *data);
@@ -182,7 +226,8 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
 
   // Let user override default filename
   this->filename = cf->ReadString(section, "filename", this->default_filename);
-  
+
+  // Default enabled?
   if(cf->ReadInt(section, "enable", 1) > 0)
     this->enable_default = true;
   else
@@ -225,7 +270,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   }
 
   // See which device we should wait on
-  this->wait_index = cf->ReadInt(section, "wait_device", -1);
+  this->wait_index = cf->ReadInt(section, "wait_index", -1);
 
   return;
 }
@@ -559,8 +604,15 @@ void WriteLog::Write(void *data, size_t size,
 // Write camera data to file
 void WriteLog::WriteCamera(player_camera_data_t *data)
 {
+  char *str;
 
-  // TODO
+  // Image format
+  fprintf(this->file, "%d %d %d %d %d",
+          data->width, data->height, data->depth, data->compression, data->image_size);
+
+  // Write image bytes
+  ::EncodeHex(data->image, data->image_size, &str);
+  fprintf(this->file, str);
   
   return;
 }
@@ -725,6 +777,7 @@ void WriteLog::WriteGps(player_gps_data_t *data)
   return;
 }
 
+
 ////////////////////////////////////////////////////////////////////////////
 // Write truth data to file
 void WriteLog::WriteTruth(player_truth_data_t *data)
@@ -736,6 +789,7 @@ void WriteLog::WriteTruth(player_truth_data_t *data)
   
   return;
 }
+
 
 ////////////////////////////////////////////////////////////////////////////
 // Write fiducial data to file
@@ -765,5 +819,4 @@ void WriteLog::WriteFiducial(player_fiducial_data_t *data)
   
   return;
 }
-
 

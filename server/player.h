@@ -1803,46 +1803,65 @@ typedef struct player_cmucam2_cmd
  ** end section
  *************************************************************************/
 
-/*************************************************************************
- ** begin section camera
- *************************************************************************/
+/*************************************************************************/
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup player_interface_camera camera
 
-// Allow for 640x480 32-bit images
+The camera interface is used to see what the camera sees.  It is
+intended primarily for server-side (i.e., driver-to-driver) data
+transfers, rather than server-to-client transfers.
+
+@par Commands
+
+This interface has no commands.
+
+@par Configuration requests
+
+This interface has no configuration requests.
+
+    
+@{
+*/
+
+/// @name Image dimensions
+/// @{
 #define PLAYER_CAMERA_IMAGE_WIDTH 640
 #define PLAYER_CAMERA_IMAGE_HEIGHT 480
-//#define PLAYER_CAMERA_IMAGE_SIZE PLAYER_MAX_PAYLOAD_SIZE-12
 #define PLAYER_CAMERA_IMAGE_SIZE (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
+/// @}
 
-/** [Synopsis] */
-/** EXPERIMENTAL.  The {\tt camera} interface is used to see what the
-camera sees.  It is intended primarily for server-side (i.e.,
-driver-to-driver) data transfers, rather than server-to-client
-transfers. */
+/// @name Compression methods
+/// @{
+#define PLAYER_CAMERA_COMPRESS_RAW 0
+#define PLAYER_CAMERA_COMPRESS_JPEG 1
+/// @}
 
-/** [Data] */
-/** The {\tt camera} interface returns the image seen by the camera; the format is: */
+/** Data returned by camera. */
 typedef struct player_camera_data
 {
   /** Image dimensions (pixels). */
   uint16_t width, height;
 
-  /** Image depth (8, 16, 24). */
+  /** Image depth (bits-per-pixel) (8, 16, 24, 32). */
   uint8_t depth;
 
-  /** Size of image data (bytes) */
+  /** Image compression; PLAYER_CAMERA_COMPRESS_RAW indicates no
+      compression. */
+  uint8_t compression;
+
+  /** Size of image data after compression (bytes) */
   uint32_t image_size;
 
-  /** Format of the image data, ex: 'raw', 'jpg' */
-  uint8_t format[4];
-
-  /** Image data (packed format). */
+  /** Compressed image data. */
   uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
 
 } __PACKED__ player_camera_data_t;
 
-/*************************************************************************
- ** end section
- *************************************************************************/
+/** @} */
+/** @} */
+
+
 
 /*************************************************************************
  ** begin section audio
