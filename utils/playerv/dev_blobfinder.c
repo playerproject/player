@@ -26,6 +26,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include "playerv.h"
 
 
@@ -37,8 +38,8 @@ void blobfinder_draw(blobfinder_t *blobfinder);
 
 
 // Create a blobfinder device
-blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt,
-                        playerc_client_t *client, int index, int subscribe)
+blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                                int index, const char *drivername, int subscribe)
 {
   char section[64];
   char label[64];
@@ -46,10 +47,11 @@ blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt,
   
   blobfinder = malloc(sizeof(blobfinder_t));
   blobfinder->datatime = 0;
+  blobfinder->drivername = strdup(drivername);
   blobfinder->proxy = playerc_blobfinder_create(client, index);
   
   // Construct the menu
-  snprintf(label, sizeof(label), "blobfinder %d", index);
+  snprintf(label, sizeof(label), "blobfinder:%d (%s)", index, blobfinder->drivername);
   blobfinder->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   blobfinder->subscribe_item = rtk_menuitem_create(blobfinder->menu, "Subscribe", 1);
   blobfinder->stats_item = rtk_menuitem_create(blobfinder->menu, "Show stats", 1);
@@ -87,7 +89,8 @@ void blobfinder_destroy(blobfinder_t *blobfinder)
   if (blobfinder->proxy->info.subscribed)
     playerc_blobfinder_unsubscribe(blobfinder->proxy);
   playerc_blobfinder_destroy(blobfinder->proxy);
-  
+
+  free(blobfinder->drivername);
   free(blobfinder);
 }
 
