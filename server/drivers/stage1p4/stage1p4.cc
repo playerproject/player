@@ -131,14 +131,13 @@ Stage1p4::~Stage1p4()
     stg_client_free( this->stage_client );
 }
 
-// setup - creates a single connection to Stage, shared by all instances
 int Stage1p4::Setup()
 {  
   // Look up my name to get a Stage model id from the array created by
   // the constructor.
 
   // load my name from the config file
-  const char* name = config->ReadString( section, "name", "<no name>" );
+  const char* name = config->ReadString( section, "model", "<no name>" );
   PLAYER_MSG1( "stage1p4 starting device name \"%s\"", name );
   
   // lookup name (todo - this would be much faster using a hash table)

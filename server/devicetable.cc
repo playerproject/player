@@ -184,7 +184,13 @@ CDeviceTable::GetDeviceEntry(player_device_id_t id)
     // port.
     if((thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index) &&
-       (!use_stage || (thisentry->id.port == id.port)))
+
+       // Player now uses multiple ports if multiple robots are
+       // specified in the config file, with or without Stage, so we
+       // do need to match port too - rtv.  
+       //(!use_stage || (thisentry->id.port == id.port)))
+
+       (thisentry->id.port == id.port))
       break;
   }
 

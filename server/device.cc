@@ -356,6 +356,12 @@ void CDevice::Unlock()
     
 int CDevice::Subscribe(void *client)
 {
+  /* printf( "device subscribe %d:%d:%d\n",
+    device_id.port, 
+    device_id.code, 
+    device_id.index ); 
+  */
+
   int setupResult;
 
   if(subscriptions == 0) 
