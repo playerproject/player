@@ -1250,8 +1250,7 @@ class TruthProxy : public ClientProxy
   double x, y, a; 
 
   /** Constructor.
-      Leave the access field empty to start unconnected.
-  */
+      Leave the access field empty to start unconnected.  */
   TruthProxy(PlayerClient* pc, unsigned short index, 
              unsigned char access = 'c',unsigned short robot=0) :
     ClientProxy(pc,PLAYER_TRUTH_CODE,index,access,robot=0) {};
@@ -1276,6 +1275,17 @@ class TruthProxy : public ClientProxy
       if there is a problem.  
   */
   int SetPose( double px, double py, double pa );
+
+
+  /** Request the value returned by a fiducialfinder (and possibly a
+      foofinser, depending on its mode), when detecting this
+      object. */
+  int GetFiducialID( int16_t* id );
+
+  /** Set the value returned by a fiducialfinder (and possibly a
+      foofinser, depending on its mode), when detecting this
+      object. */
+  int SetFiducialID( int16_t id );
 };
 
 

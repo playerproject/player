@@ -87,6 +87,44 @@ test_truth(PlayerClient* client, int index)
     }
   PASS();
 
+
+  int16_t id = 0;
+  int16_t newid = 42;
+
+  TEST("getting the original fiducial ID");
+  if(tp.GetFiducialID( &id ) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  printf( "original fiducial id: %d  ", id );
+  PASS();
+  
+  TEST("setting the fiducial ID to 42");
+  if(tp.SetFiducialID( newid ) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  PASS();
+
+  TEST("getting the new fiducial ID");
+  if(tp.GetFiducialID( &id ) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  printf( "new fiducial id: %d  ", id );
+  PASS();
+  
+  TEST("resetting fiducial ID to original value");
+  if(tp.SetFiducialID( id ) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  PASS();
+
   TEST("unsubscribing (read)");
   if((tp.ChangeAccess(PLAYER_CLOSE_MODE,&access) < 0) ||
      (access != PLAYER_CLOSE_MODE))
