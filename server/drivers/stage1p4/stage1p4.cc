@@ -69,11 +69,11 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
 
   if( strcmp( enttype, "simulation" ) == 0 )
     {
-      //printf( "Initializing Stage simulation device\n" );
+      printf( "Initializing Stage simulation device\n" );
     }
   else
     {
-      //printf( "Initializing Stage model with interface \"%s\"\n", enttype );
+      printf( "Initializing Stage model with interface \"%s\"\n", enttype );
 
       char* model_name = 
 	(char*)config->ReadString(section, "model", NULL );
@@ -106,6 +106,10 @@ int Stage1p4::Setup()
 { 
   if( this->model && this->subscribe_prop )
     {
+      printf( "subscribing to model %d:%s\n",
+	      this->model->id_server, 
+	      stg_property_string( this->subscribe_prop) );
+
       // TODO - get this subscription speed correctly
       //puts( "SUBSCRIBING" );
       stg_model_subscribe( this->model, this->subscribe_prop, 100 ); // 100ms 
