@@ -107,6 +107,29 @@ int CArenaLock::Unlock( void )
 }
 
 
+// same as GetData, except we read the data then mark the buffer as
+// having no data available during the same lock
+size_t CArenaLock::ConsumeData( CDevice *obj , 
+				unsigned char *dest, size_t maxsize,
+				uint32_t* timestamp_sec, 
+				uint32_t* timestamp_usec)
+{
+  int size;
+  Lock();
+  //puts( "AL: get data" );
+  // the GetData call also copies the data timestamp from shared memory
+  // to the 'data_timestamp' field in the device object.
+  size = obj->ConsumeData(dest, maxsize);
+  if(timestamp_sec)
+    *timestamp_sec = htonl(obj->data_timestamp_sec);
+  if(timestamp_usec)
+    *timestamp_usec = htonl(obj->data_timestamp_usec);
+  Unlock();
+  return(size);
+}
+
+
+
 size_t CArenaLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize,
                             uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {

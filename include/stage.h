@@ -33,8 +33,11 @@
 #include <messages.h>
 #include <sys/time.h> // for struct timeval
 
-// devices on this port are visible to all players
-#define GLOBALPORT 1
+
+// the largest number of unique ports player can bind
+// this is only used for a temporary buffer
+// and can easily be replaced with dynamic allocation if necessary
+#define MAXPORTS 2048
 
 // Notes on stage/player shared memory format.
 //

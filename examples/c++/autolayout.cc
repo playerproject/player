@@ -73,6 +73,9 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
+    
+    pproxy->stalls = 1;
+    struct timeval last = pproxy->timestamp;
     while(pproxy->stalls)
     {
       int randx = x0 + (rand() % (x1-x0));
@@ -81,8 +84,13 @@ int main(int argc, char** argv)
 
       if(gproxy->Warp(randx,randy,randh))
         exit(-1);
-
-      client->Read();
+       
+      while(pproxy->timestamp.tv_sec == last.tv_sec && pproxy->timestamp.tv_usec == last.tv_usec)
+        client->Read();
+      last = pproxy->timestamp;
+      while(pproxy->timestamp.tv_sec == last.tv_sec && pproxy->timestamp.tv_usec == last.tv_usec)
+        client->Read();
+      last = pproxy->timestamp;
     }
 
     delete pproxy;

@@ -78,6 +78,8 @@
 #define PLAYER_SPEECH_STRING         "speech"
 #define PLAYER_GPS_STRING            "gps"
 #define PLAYER_BPS_STRING            "bps"
+#define PLAYER_DESCARTES_STRING       "descartes"
+#define PLAYER_IDAR_STRING           "idar"
 
 /* the currently assigned device codes */
 #define PLAYER_PLAYER_CODE         ((uint16_t)1)
@@ -97,6 +99,7 @@
 #define PLAYER_TRUTH_CODE         ((uint16_t)15)
 #define PLAYER_BPS_CODE           ((uint16_t)16) // broken?
 #define PLAYER_IDAR_CODE          ((uint16_t)17)
+#define PLAYER_DESCARTES_CODE      ((uint16_t)18)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -153,6 +156,7 @@ typedef struct
   uint16_t code;
   uint16_t index;
   uint8_t access;
+  //uint8_t consume;
 } __attribute__ ((packed)) player_device_req_t;
 
 /* the format of a "datamode change" ioctl to Player */
@@ -587,9 +591,6 @@ typedef struct
 #define PLAYER_BPS_SUBTYPE_SETBEACON 2
 #define PLAYER_BPS_SUBTYPE_SETLASER 3
 
-
-
-
 /*************************************************************************/
 
 
@@ -632,25 +633,77 @@ typedef struct
  * IDAR device - HRL's infrared data and ranging turret
  */
 
-// IDRAR command packet - contains messages to transmit
-//
+#define IDARBUFLEN 16
+#define RAYS_PER_SENSOR 5
 
+#define IDAR_INSTRUCTION_TRANSMIT 0
+#define IDAR_INSTRUCTION_RECEIVE 1
+#define IDAR_INSTRUCTION_RECEIVE_NOFLUSH 2
 
 typedef struct
 {
-  uint16_t values[PLAYER_NUM_IDAR_SAMPLES];
-  uint16_t ranges[PLAYER_NUM_IDAR_SAMPLES]; // mm
-} __attribute ((packed)) player_idar_command_t;
+  unsigned char mesg[IDARBUFLEN];
+  uint8_t len; //0-255
+  uint8_t intensity; //0-255
+  uint8_t directions; // each set bit means send in that direction
+} __attribute ((packed)) idartx_t;
 
-
-// IDAR data packet - contains messages to received
-//
+// WARNING - if( PLAYER_NUM_IDAR_SAMPLES > 8 ) you need to increase
+// the number of bits in the directions member...
 typedef struct
 {
-  uint16_t values[PLAYER_NUM_IDAR_SAMPLES];
-  uint16_t ranges[PLAYER_NUM_IDAR_SAMPLES]; // mm    
+  unsigned char mesg[IDARBUFLEN];
+  uint8_t len; //0-255
+  uint8_t intensity; //0-255
+  uint8_t reflection; // true/false
+  uint16_t ranges[ RAYS_PER_SENSOR ]; // useful for debugging & visualization
+} __attribute ((packed)) idarrx_t; 
+
+// IDAR data packet - contains messages received and messages sent
+// since last read
+typedef struct
+{
+  idarrx_t rx[PLAYER_NUM_IDAR_SAMPLES];
+  //idartx_t tx[PLAYER_NUM_IDAR_SAMPLES];
 } __attribute ((packed)) player_idar_data_t;
 
+// IDAR command packet - contains a message (possibly null) for each
+//typedef  struct
+//{
+//idartx_t tx[PLAYER_NUM_IDAR_SAMPLES];
+//} __attribute ((packed)) player_idar_cmd_t;
+
+// IDRAR config packet - 
+// has room for a message in case this is a transmit command
+// we use config because it is consumed by default
+// and the messages must only be sent once
+typedef  struct
+{
+  uint8_t instruction;
+  idartx_t tx;
+} __attribute ((packed)) player_idar_config_t;
+
+
+/*************************************************************************/
+/*
+ * Descartes Device - a small holonomic robot with bumpers
+ */
+
+/* command buffer */
+typedef struct
+{
+  int16_t speed, heading, distance; // UNITS: mm/sec, degrees, mm
+} __attribute__ ((packed)) player_descartes_cmd_t;
+
+/* data buffer */
+typedef struct 
+{
+  int32_t xpos,ypos; // mm, mm, degrees
+  int16_t theta; //speed, distance_remaining;
+  uint8_t bumpers[2]; // booleans
+} __attribute__ ((packed)) player_descartes_data_t;
+
+// no configs for descarte
 
 /*************************************************************************/
 
@@ -688,13 +741,14 @@ typedef struct
 {
   uint16_t width, height, ppm;
   uint32_t num_pixels;
-  
+  //uint16_t num_truths;
 } __attribute ((packed)) player_occupancy_data_t;
 
 typedef struct
 {
   uint16_t x, y, color;
 } __attribute ((packed)) pixel_t;
+
 
 
 #endif

@@ -59,12 +59,12 @@ class PlayerMultiClient
     // to that address
     PlayerClient* GetClient( char* host, int port )
       {
-	printf( "searching for %s:%d\n",
-		host, port );
+	//printf( "searching for %s:%d\n",
+	//host, port );
 	for( int c=0; c<num_ufds; c++ )
 	  {
-	    printf( "checking [%d] %s:%d\n",
-		    c, clients[c]->hostname, clients[c]->port );
+	    //printf( "checking [%d] %s:%d\n",
+	    //    c, clients[c]->hostname, clients[c]->port );
 
 	  if( (strcmp(clients[c]->hostname, host) == 0 ) 
 	      && clients[c]->port == port )
@@ -87,6 +87,10 @@ class PlayerMultiClient
     //   -1 if something went wrong (you should probably close the connection!)
     //
     int Read();
+
+    // same as Read(), but reads everything off the socket so we end
+    // up with the freshest data, subject to N maximum reads
+    int ReadLatest( int max_reads );
 };
 
 #endif

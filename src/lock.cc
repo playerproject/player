@@ -99,6 +99,27 @@ size_t CLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize,
   return(size);
 }
 
+// same as GetData, but this allows us to tell the device we have 
+// read the data
+size_t CLock::ConsumeData( CDevice *obj , unsigned char *dest, size_t maxsize,
+			   uint32_t* timestamp_sec, uint32_t* timestamp_usec) 
+{
+  int size;
+
+  pthread_mutex_lock( &setupDataMutex );
+  pthread_mutex_lock( &dataAccessMutex );
+  size = obj->ConsumeData(dest, maxsize);
+  if(timestamp_sec)
+    *timestamp_sec = htonl(obj->data_timestamp_sec);
+  if(timestamp_usec)
+    *timestamp_usec = htonl(obj->data_timestamp_usec);
+  pthread_mutex_unlock( &dataAccessMutex );
+  pthread_mutex_unlock( &setupDataMutex );
+  return(size);
+}
+
+
+
 void CLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize,
                      uint32_t timestamp_sec, uint32_t timestamp_usec) 
 {

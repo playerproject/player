@@ -176,7 +176,8 @@ int PlayerMultiClient::Read()
   for( int c=0; c<num_ufds; c++ )
     clients[c]->fresh = false;
   
-  int num_to_read,retval;
+  int num_to_read, retval;
+
   // let's try this poll(2) thing (with no timeout)
   if((num_to_read = poll(ufds,num_ufds,-1)) == -1)
   {
@@ -210,3 +211,58 @@ int PlayerMultiClient::Read()
   return(0);
 }
 
+// reads all available data, so we end up with only the freshest
+//
+// max_reads is a maximum numer of reads as a sanity check to avoid
+// being stuck in here forever. has a short poll() timeout.
+// 
+// Returns:
+//    0 if everything went OK
+//   -1 if something went wrong (you should probably close the connection!)
+//
+int PlayerMultiClient::ReadLatest( int max_reads )
+{
+  // clear the fresh flags in the client objects
+  for( int c=0; c<num_ufds; c++ )
+    clients[c]->fresh = false;
+  
+  int total_reads = 0;
+  int num_to_read = 1, retval = 0;
+
+  while( num_to_read > 0  &&  total_reads < max_reads )
+    {
+      // let's try this poll(2) thing (with almost instant timeout)
+      if((num_to_read = poll(ufds,num_ufds,1)) == -1)
+	{
+	  if(player_debug_level(-1) >= 2)
+	    perror("PlayerMultiClient::Read(): poll(2) failed:");
+	  return(-1);
+	}
+      
+      //printf("EVENTS: %d\n", num_to_read);
+      // call the corresponding Read() for each one that's ready
+      for(int i=0;i<num_ufds && num_to_read;i++)
+	{
+	  // is this one ready to read?
+	  if(ufds[i].revents & POLLIN)
+	    {
+	      // set the fresh flag
+	      clients[i]->fresh = true;
+	      
+	      //printf("reading from: %d 0x%x\n", i,ufds[i].events);
+	      if((retval = clients[i]->Read()) == -1)
+		return(retval);
+
+	      total_reads++; // count the reads
+	    }
+	  else if(ufds[i].revents)
+	    {
+	      if(player_debug_level(-1) >= 3)
+		printf("PlayerMultiClient::Read() got strange revent 0x%x for "
+		       "client %d\n", ufds[i].revents,i);
+	    }
+	}
+    }
+
+  return(0);
+}

@@ -106,7 +106,10 @@ int PlayerClient::Read()
   ClientProxy* thisproxy;
   
   if(!Connected())
-    return(-1);
+    {
+      fprintf(stderr,"ERROR PlayerClient not connected\n" );
+      return(-1);
+    }
   // read as many times as necessary
   for(int numreads = CountReadProxies();numreads;numreads--)
   {
@@ -201,13 +204,13 @@ int PlayerClient::Request(unsigned short device,
 int PlayerClient::RequestDeviceAccess(unsigned short device,
                                       unsigned short index,
                                       unsigned char req_access,
-                                      unsigned char* grant_access)
+                                      unsigned char* grant_access )
 {
   if(!Connected())
     return(-1);
   
   return(player_request_device_access(&conn, device, index, 
-                                      req_access, grant_access));
+                                      req_access, grant_access ));
 }
     
 // Player device configurations

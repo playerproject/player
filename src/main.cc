@@ -30,8 +30,8 @@
 //#define VERBOSE
 //#define DEBUG
 
+#include <dirent.h>
 #include <dlfcn.h>
-
 #include <stdio.h>
 #include <errno.h>
 #include <string.h> // for bzero()
@@ -102,7 +102,7 @@
 #ifdef INCLUDE_STAGE
 #include <stagedevice.h>
 player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
-//#include <truthdevice.h>
+char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
 
 // enable "special" extensions
@@ -116,12 +116,6 @@ CDeviceTable* deviceTable = new CDeviceTable();
 //   int GetTime(struct timeval*)
 // which everyone must use to get the current time
 PlayerTime* GlobalTime;
-
-// storage for the TruthDevice's info - there is no
-// space in shared memory for this device
-// this is zeroed, then passed into the TruthDevice's constructor
-// in CreateStageDevices()
-//player_stage_info_t *truth_info = new player_stage_info_t();
 
 // keep track of the pointers to our various clients.
 // that way we can cancel them at Shutdown
@@ -157,7 +151,7 @@ Usage()
   fprintf(stderr, "  -port <port>  : TCP port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
   fprintf(stderr, "  -stage <path> : use memory-mapped IO with Stage "
-          "through this file.\n");
+          "through the devices in this directory\n");
   fprintf(stderr, "  -sane         : use the compiled-in device defaults:\n");
   for(int i=0;i<ARRAYSIZE(sane_spec);i++)
     fprintf(stderr, "                      %s\n",sane_spec[i]);
@@ -223,141 +217,256 @@ void PrintHeader(player_msghdr_t hdr)
   printf("size:%u\n", hdr.size);
 }
 
-#ifdef INCLUDE_STAGE
-struct timeval* CreateStageDevices( player_stage_info_t *arenaIO)
+// a matching function to indentify valid device names
+// used by scandir to fetch device filenames
+int MatchDeviceName( const struct dirent* ent )
 {
-  player_stage_info_t *end = (player_stage_info_t*)((char*)arenaIO + ioSize);
-  player_stage_info_t *info;
+  // device names are > 2 chars long,; . and .. are not
+  return( strlen( ent->d_name ) > 2 );
+}
+
+
+#ifdef INCLUDE_STAGE
+// looks int the directory for device entries, creates the devices
+// and fills an array with unique port numbers
+struct timeval* CreateStageDevices( char* directory, int** ports, int* num_ports )
+{
+#ifdef VERBOSE
+  printf( "Searching for Stage devices\n" );
+#endif
+
+  struct dirent **namelist;
+  int n;
   
-  // iterate through the mmapped buffer
-  //
-  // but don't go all the way to the end; stop 8 bytes short, because
-  // the last 8 bytes are used for the current time feed from stage.
-  for( info = arenaIO; 
-       info < (player_stage_info_t*)((char*)end - sizeof(struct timeval)); 
-       info = (player_stage_info_t*)((char*)info + (size_t)(info->len) ))
-  {      
-#ifdef DEBUG
-    printf( "[] Processing mmap at base: %p info: %p (len: %d total: %d)" 
-            "next: %p end: %p\n", 
-            arenaIO, info, info->len, ioSize, 
-            (char*)info + info->len , end );
-    fflush( stdout );
-#endif	  
+  int tfd = 0;
+  
+  char devicefile[ MAX_FILENAME_SIZE ];
 
-    CStageDevice *dev = 0; // declare outside switch statement
+  int portcount = 0;
+  
+  int* portstmp = new int[MAXPORTS];
 
-    switch( info->player_id.type )
-      {
-	//create a generic stage IO device for these types:
-      case PLAYER_PLAYER_CODE: 
-      case PLAYER_MISC_CODE:
-      case PLAYER_POSITION_CODE:
-      case PLAYER_SONAR_CODE:
-      case PLAYER_LASER_CODE:
-      case PLAYER_VISION_CODE:  
-      case PLAYER_PTZ_CODE:     
-      case PLAYER_LASERBEACON_CODE: 
-      case PLAYER_TRUTH_CODE:
-      case PLAYER_OCCUPANCY_CODE:
-      case PLAYER_GPS_CODE:
-      case PLAYER_GRIPPER_CODE:
-      case PLAYER_IDAR_CODE:
-	
-        // Create a StageDevice with this IO base address
-        dev = new CStageDevice( info );
+  // open all the files in the IO directory
+  n = scandir( directory, &namelist, MatchDeviceName, 0);
+  if (n < 0)
+    perror("scandir");
+  else {
+    // for every file in the directory, create a new device
+    while(n--) {
 
-	// XX should be checking the host names here!
-	// this is probably a nasty bug!
-	// check by using unique  ports in a distributed
-	// experiment, then making the ports the same... boom!
-	// fix with a local flag in the info buffer like so:
-	
-	if( info->local )
-	  deviceTable->AddDevice( info->player_id.port,
-				  info->player_id.type, 
-				  info->player_id.index, 
-				  PLAYER_ALL_MODE, dev );
-	
-#ifdef DEBUG
-        printf( "Player created StageDevice (%d,%d,%d)\n", 
-                info->player_id.port, 
-                info->player_id.type, 
-                info->player_id.index ); 
-        fflush( stdout );
-#endif	  
+      // don't try to load the clock here - we'll do it below
+      if( strcmp( "clock", namelist[n]->d_name ) == 0 )
+	break;
 
-        break;
-        
-      case PLAYER_BROADCAST_CODE:   
+#ifdef DEBUG      
+      printf("Opening %s ", namelist[n]->d_name);
+      fflush( stdout );
+#endif
+      
+      sprintf( devicefile, "%s/%s", directory, namelist[n]->d_name ); 
+      
+      if( (tfd = open(devicefile, O_RDWR )) < 0 )
+	{
+	  perror( "Failed to open IO file" );
+	  printf("Tried to open file \"%s\"\n", devicefile);
+	  exit( -1 );
+	}
+    
+      // find out how big the file is - we need to mmap that many bytes
+      int ioSize = lseek( tfd, 0, SEEK_END );
+
+#ifdef VERBOSE
+      printf( "Mapping %d bytes.\n", ioSize );
+      fflush( stdout );
+#endif
+      
+      player_stage_info_t* deviceIO = 0;
+      
+      
+      if( (deviceIO = 
+	   (player_stage_info_t*)mmap( NULL, ioSize, PROT_READ | PROT_WRITE, 
+				       MAP_SHARED, tfd, (off_t)0 ))  
+	  == MAP_FAILED )
+	{
+	  perror( "Failed to map memory" );
+	  exit( -1 );
+	}
+      
+      close( tfd ); // can close fd once mapped
+      
+      CStageDevice *dev = 0; // declare outside switch statement
+
+      // get the player type and index from the header
+      // NOT from the filename
+      switch( deviceIO->player_id.type )
+	{
+	  //create a generic stage IO device for these types:
+	case PLAYER_PLAYER_CODE: 
+	case PLAYER_MISC_CODE:
+	case PLAYER_POSITION_CODE:
+	case PLAYER_SONAR_CODE:
+	case PLAYER_LASER_CODE:
+	case PLAYER_VISION_CODE:  
+	case PLAYER_PTZ_CODE:     
+	case PLAYER_LASERBEACON_CODE: 
+	case PLAYER_TRUTH_CODE:
+	case PLAYER_OCCUPANCY_CODE:
+	case PLAYER_GPS_CODE:
+	case PLAYER_GRIPPER_CODE:
+	case PLAYER_IDAR_CODE:
+	case PLAYER_DESCARTES_CODE:
+	  {
+	    // Create a StageDevice with this IO base address
+	    dev = new CStageDevice( deviceIO );
+	    
+	    deviceTable->AddDevice( deviceIO->player_id.port,
+				    deviceIO->player_id.type, 
+				    deviceIO->player_id.index, 
+				    PLAYER_ALL_MODE, dev );
+	    
+	    // have we registered this port already?
+	    int j = 0;
+	    while( j<portcount )
+	      {
+		if( portstmp[j] == deviceIO->player_id.port )
+		  break;
+		j++;
+	      }
+	    if( j == portcount ) // we have not! 
+	      // we add this port to the array of ports we must listen on
+	      portstmp[portcount++] = deviceIO->player_id.port;
+	  }	  
+	  break;
+	  
+	case PLAYER_BROADCAST_CODE:   
 #ifdef INCLUDE_BROADCAST
-        // Create broadcast device as per normal
-        if( info->local )
-        {
-          int argc = 0;
-          char *argv[2];
-          // Broadcast through the loopback device; note that this
-          // wont work with distributed Stage.
-          argv[argc++] = "addr";
-          argv[argc++] = "127.255.255.255";
-          deviceTable->AddDevice(info->player_id.port,
-                                 info->player_id.type,
-                                 info->player_id.index, 
-                                 PLAYER_ALL_MODE, new CBroadcastDevice(argc, argv));
-        }
+	  // Create broadcast device as per normal
+	  if( deviceIO->local )
+	    {
+	      int argc = 0;
+	      char *argv[2];
+	      // Broadcast through the loopback device; note that this
+	      // wont work with distributed Stage.
+	      argv[argc++] = "addr";
+	      argv[argc++] = "127.255.255.255";
+	      deviceTable->AddDevice(deviceIO->player_id.port,
+				     deviceIO->player_id.type,
+				     deviceIO->player_id.index, 
+				     PLAYER_ALL_MODE, 
+				     new CBroadcastDevice(argc, argv));
+	      
+	      // have we registered this port already?
+	      int j = 0;
+	      while( j<portcount )
+		{
+		  if( portstmp[j] == deviceIO->player_id.port )
+		    break;
+		  j++;
+		}
+	      if( j == portcount ) // we have not! 
+		// we add this port to the array of ports we must listen on
+		portstmp[portcount++] = deviceIO->player_id.port;
+	    }
 #endif
-        break;
+	  break;
 
-        // devices not implemented
-      case PLAYER_AUDIO_CODE:   
+	  // devices not implemented
+	case PLAYER_AUDIO_CODE:   
 #ifdef VERBOSE
-        printf( "Device type %d not yet implemented in Stage\n", 
-                info->player_id.type);
-        fflush( stdout );
+	  printf( "Device type %d not yet implemented in Stage\n", 
+		  deviceIO->player_id.type);
+	  fflush( stdout );
 #endif
-        break;
-
-      case 0:
+	  break;
+	  
+	case 0:
 #ifdef VERBOSE
-        printf( "Player ignoring Stage device type %d\n", 
-                info->player_id.type);
-        fflush( stdout );
+	  printf( "Player ignoring Stage device type %d\n", 
+		  deviceIO->player_id.type);
+	  fflush( stdout );
 #endif
-        break;	  
-
-        // unknown device 
-      default: printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   
-                       info->player_id.type, 
-                       info->player_id.port, 
-                       info->player_id.type, 
-                       info->player_id.index ); 
-               break;
+	  break;	  
+	  
+	  // unknown device 
+	default: printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   
+			 deviceIO->player_id.type, 
+			 deviceIO->player_id.port, 
+			 deviceIO->player_id.type, 
+			 deviceIO->player_id.index ); 
+	  break;
+	}
+      
+      
+      free(namelist[n]);
     }
+    free(namelist);
   }
+  
 
-#ifdef INCLUDE_BPS
+  // we've discovered all thew ports now, so allocate memory for the
+  // required port numbers at the return pointer
+  assert( *ports = new int[ portcount ] );
+  
+  // copy the port numbers in
+  memcpy( *ports, portstmp, portcount * sizeof(int) );
+  
+  // set the number of ports detected
+  *num_ports = portcount;
+
+  // clean up
+  delete[] portstmp;
+
+  // open and map the stage clock
+  char clockname[MAX_FILENAME_SIZE];
+  snprintf( clockname, MAX_FILENAME_SIZE-1, "%s/clock", directory );
+  
+#ifdef DEBUG
+  printf("Opening %s\n", clockname );
+#endif
+  
+  if( (tfd = open( clockname, O_RDWR )) < 0 )
+    {
+      perror( "Failed to open clock file" );
+      printf("Tried to open file \"%s\"\n", clockname );
+      exit( -1 );
+    }
+  
+    
+ struct timeval * stage_tv = 0;    
+ 
+ if( (stage_tv = 
+      (struct timeval*)mmap( NULL, sizeof(struct timeval),
+			     PROT_READ | PROT_WRITE, 
+			     MAP_SHARED, tfd, (off_t)0 ) )
+     == MAP_FAILED )
+   {
+     perror( "Failed to map clock memory" );
+     exit( -1 );
+   }
+ 
+ close( tfd ); // can close fd once mapped
+
+#ifdef DEBUG  
+  printf( "finished creating stage devices\n" );
+  fflush( stdout );
+#endif
+
+ 
+ return( stage_tv );
+}
+
+//#ifdef INCLUDE_BPS
   // DOUBLE-HACK -- now this won't work in stage, because we don't know to 
   //                which port to tie the device - BPG
   //
   // HACK -- Create BPS as per normal; it will use other simulated devices
   // The stage versus non-stage initialization needs some re-thinking.
   // ahoward
-  deviceTable->AddDevice(global_playerport,PLAYER_BPS_CODE, 0, 
-                         PLAYER_READ_MODE, new CBpsDevice(0, NULL));
-#endif
+// deviceTable->AddDevice(global_playerport,PLAYER_BPS_CODE, 0, 
+//                       PLAYER_READ_MODE, new CBpsDevice(0, NULL));
+//#endif
 
-  
-#ifdef DEBUG  
-  printf( "finished creating stage devices\n" );
-  fflush( stdout );
-#endif
 
-  // return pointer to the location of the struct timeval
-  //printf("current time: %d %d\n", 
-         //((struct timeval*)info)->tv_sec,
-         //((struct timeval*)info)->tv_usec);
-  return((struct timeval*)info);
-}
 #endif
 
 /*
@@ -583,10 +692,8 @@ int main( int argc, char *argv[] )
   
   // use these to keep track of many sockets in stage mode
   struct pollfd* ufds;
-  int* ports;
+  int* ports = 0;
   int num_ufds;
-
-  char arenaFile[MAX_FILENAME_SIZE]; // filename for mapped memory
 
   // make a copy of argv, so that strtok in parse_device_string
   // doesn't screw with it 
@@ -604,9 +711,9 @@ int main( int argc, char *argv[] )
     {
       if(++i<argc) 
       {
-	strncpy(arenaFile, new_argv[i], sizeof(arenaFile));
+	strncpy(stage_io_directory, new_argv[i], sizeof(stage_io_directory));
 	use_stage = true;
-	printf("[Stage]");
+	printf("[Stage %s]", stage_io_directory );
       }
       else 
       {
@@ -661,22 +768,6 @@ int main( int argc, char *argv[] )
 	    
 	    printf("[Port %d]", global_playerport);
 	  }
-	else 
-	  {
-	    Usage();
-	    exit(-1);
-	  }
-      }
-    // added a distinct command-line option to handle multiple ports
-    // for a subtle but reassuring difference in output - RTV
-    else if(!strcmp(new_argv[i], "-ports"))
-      {
-	if(++i<argc) 
-	  { 
-	    global_playerport = atoi(new_argv[i]);
-	    
-	    printf("[Ports %d]", global_playerport);
-      }
 	else 
 	  {
 	    Usage();
@@ -783,80 +874,47 @@ int main( int argc, char *argv[] )
 #ifdef INCLUDE_STAGE
   if( use_stage )
   {
-      // create the shared memory connection to Stage
-      
-#ifdef VERBOSE
-      printf( "Mapping shared memory through %s\n", arenaFile );
-#endif
-      
-      int tfd = 0;
-    if( (tfd = open( arenaFile, O_RDWR )) < 0 )
-      {
-	perror( "Failed to open file" );
-        printf("Tried to open file \"%s\"\n", arenaFile);
-	exit( -1 );
-      }
+    // create the shared memory connection to Stage
+    // returns pointer to the timeval struct
+    // and creates the ports array and array length with the port numbers
+    // deduced from the stageIO filenames
+    struct timeval* simtimep = CreateStageDevices( stage_io_directory, 
+						   &ports, &num_ufds );
     
-    
-    // find out how big the file is - we need to mmap that many bytes
-    ioSize = lseek( tfd, 0, SEEK_END );
+    //printf( "created %d ports (1: %d 2: %d...)\n",
+    //    num_ufds, ports[0], ports[1] );
+
+    // allocate storage for poll structures
+    assert( ufds = new struct pollfd[num_ufds] );
     
 #ifdef VERBOSE
-    printf( "Mapping %d bytes.\n", ioSize );
-    fflush( stdout );
+    printf( "[Port" );
 #endif
+
+    // bind a socket on each port
+    for(int i=0;i<num_ufds;i++)
+      {
+#ifdef VERBOSE
+	printf( " %d", ports[i] ); fflush( stdout );
+#endif      
+	// setup the socket to listen on
+	if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
+						SOCK_STREAM,200)) == -1)
+	  {
+	    fputs("create_and_bind_socket() failed; quitting", stderr);
+	    exit(-1);
+	  }
+	
+	ufds[i].events = POLLIN;
+      }
     
-    if( (arenaIO = 
-	 (player_stage_info_t*)mmap( NULL, ioSize, PROT_READ | PROT_WRITE, 
-				     MAP_SHARED, tfd, (off_t)0 ))  
-	== MAP_FAILED )
-      {
-	perror( "Failed to map memory" );
-	exit( -1 );
-      }
-      
-    close( tfd ); // can close fd once mapped
-
-    // make all the stage devices, scan
-    //
-    // returns pointer to the timeval struct at the end of the list
-    struct timeval* simtimep = CreateStageDevices( arenaIO);
-
-    // make room to store all the sockets
-    //  (when in stage mode, the command-line given port is the number of
-    //   ports that will come in on stdin)
-    num_ufds = global_playerport;
-    if(!(ufds = new struct pollfd[num_ufds]) || !(ports = new int[num_ufds]))
-    {
-      perror("new failed for pollfds or ports");
-      exit(-1);
-    }
-
-    //printf( "[Port" );
-
-    // read in the ports
-    for(int i=0;i<global_playerport;i++)
-    {
-      if(scanf("%d", ports+i) != 1)
-        printf("scanf failed to get port %d\n", i);
-
-      //printf( " %d", *(ports+i) ); fflush( stdout );
-      
-      // setup the socket to listen on
-      if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
-                                              SOCK_STREAM,200)) == -1)
-      {
-        fputs("create_and_bind_socket() failed; quitting", stderr);
-        exit(-1);
-      }
-
-      ufds[i].events = POLLIN;
-    }
-
-    //puts( "]" );
+#ifdef VERBOSE
+    puts( "]" );
+#endif
 
     // set up the stagetime object
-    GlobalTime = (PlayerTime*)(new StageTime(simtimep));
+    assert( simtimep );
+    assert( GlobalTime = (PlayerTime*)(new StageTime(simtimep)) );
   }  
 
 #endif // INCLUDE_STAGE  
@@ -942,6 +1000,10 @@ int main( int argc, char *argv[] )
 	//printf("** Player [port %d] client accepted from %s "
 	// "on socket %d **\n", 
 	// global_playerport, clientName->h_name, clientData->socket);
+
+
+	// now reports the port number that was connected, instead of the 
+	// global player port - RTV
 	
 	char clientIp[64];
 	if( make_dotted_ip_address( clientIp, 64, 
@@ -949,12 +1011,12 @@ int main( int argc, char *argv[] )
 	  {
 	    // couldn't get the ip
 	    printf("** Player [port %d] client accepted on socket %d **\n",
-		   global_playerport,  clientData->socket);
+		   ports[i],  clientData->socket);
 	  }
 	else
 	  printf("** Player [port %d] client accepted from %s "
 		  "on socket %d **\n", 
-		  global_playerport, clientIp, clientData->socket);
+		  ports[i], clientIp, clientData->socket);
 	
         /* add it to the manager's list */
         clientmanager->AddClient(clientData);

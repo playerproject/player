@@ -48,13 +48,16 @@ class CDeviceSubscription
     unsigned short index;
     unsigned char access;
 
+    // RTV allow clients to consume data from devices.
+    // if this is set, ConsumeData() is called instead of GetData()
+    unsigned char consume;
 
     // record the last time we got fresh data
     uint32_t last_sec, last_usec; 
 
     CDeviceSubscription* next;
 
-    CDeviceSubscription() { next = NULL; access = 'e'; }
+    CDeviceSubscription() { next = NULL; access = 'e'; consume = 0; }
 };
 
 typedef enum

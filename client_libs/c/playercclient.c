@@ -233,7 +233,7 @@ int player_request_device_access(player_connection_t* conn,
                                  uint16_t device,
                                  uint16_t device_index,
                                  uint8_t req_access,
-                                 uint8_t* grant_access)
+                                 uint8_t* grant_access )
 {
   player_device_ioctl_t this_ioctl;
   player_device_req_t this_req;
@@ -246,6 +246,9 @@ int player_request_device_access(player_connection_t* conn,
   this_req.code = htons(device);
   this_req.index = htons(device_index);
   this_req.access = req_access;
+
+  //RTV - experimental consume data mode
+  //this_req.consume = consume;
 
   memcpy(payload,&this_ioctl,sizeof(player_device_ioctl_t));
   memcpy(payload+sizeof(player_device_ioctl_t),

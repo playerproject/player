@@ -81,6 +81,9 @@ class LaserProxy : public ClientProxy
 
     // these methods are the user's interface to this device
 
+    // returns the local rectangular coordinate of the i'th beam strike
+    int CartesianCoordinate( int i, int *x, int *y );
+
     // configure the laser scan.
     /** Configure the laser scan pattern.
         Angles {\tt min\_angle} and {\tt max\_angle} are measured in

@@ -26,7 +26,8 @@
 
 #define PLAYER_ENABLE_TRACE 0
 
-#include <sys/time.h> // for gettimeofdaty()
+
+#include <sys/time.h> // for gettimeofday()
 #include <string.h> // for memcpy()
 #include <stagedevice.h>
 #include <stage.h>
@@ -94,6 +95,19 @@ int CStageDevice::Shutdown()
     return 0;
 };
 
+///////////////////////////////////////////////////////////////////////////
+// Read data from the device and mark the data area as empty
+//
+size_t CStageDevice::ConsumeData(unsigned char *data, size_t size)
+{
+  size_t result = GetData( data, size );
+  
+  // tell stage and other clients that this data has been read
+  if( result == m_info->data_avail ) // the fetch worked OK
+    m_info->data_avail = 0;
+  
+  return result;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // Read data from the device
@@ -218,9 +232,10 @@ void CStageDevice::PutConfig(unsigned char *config, size_t len)
     // set timestamp for this config
     struct timeval tv;
     gettimeofday( &tv, 0 );
-    
+
     m_info->config_timestamp_sec = tv.tv_sec;
     m_info->config_timestamp_usec = tv.tv_usec;
+
 }
 
 
