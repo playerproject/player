@@ -47,9 +47,10 @@ extern int global_playerport; // used to gen. useful output & debug
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
-AMCLLaser::AMCLLaser()
+AMCLLaser::AMCLLaser(player_device_id_t id)
 {
   this->driver = NULL;
+  this->laser_id = id;
   
   return;
 }
@@ -59,11 +60,10 @@ AMCLLaser::AMCLLaser()
 // Load laser settings
 int AMCLLaser::Load(ConfigFile* cf, int section)
 {
-  // Device stuff
-  this->laser_index = cf->ReadInt(section, "laser_index", -1);
-
-  // Get the map settings
-  this->map_index = cf->ReadInt(section, "laser_map_index", -1);
+  // Get the map settings.  Don't error check here; we'll do it later, in
+  // SetupMap().
+  cf->ReadDeviceId(&(this->map_id), section, "requires",
+                   PLAYER_MAP_CODE, -1, "laser");
   
   this->laser_pose.v[0] = cf->ReadTupleLength(section, "laser_pose", 0, 0);
   this->laser_pose.v[1] = cf->ReadTupleLength(section, "laser_pose", 1, 0);
@@ -108,10 +108,6 @@ int AMCLLaser::Setup(void)
   }
 
   // Subscribe to the Laser device
-  this->laser_id.port = global_playerport;
-  this->laser_id.code = PLAYER_LASER_CODE;
-  this->laser_id.index = this->laser_index;
-
   this->driver = deviceTable->GetDriver(this->laser_id);
   if (!this->driver)
   {
@@ -148,20 +144,15 @@ int AMCLLaser::Setup(void)
 int
 AMCLLaser::SetupMap(void)
 {
-  player_device_id_t map_id;
   Driver* mapdriver;
 
   // Subscribe to the map device
-  map_id.port = global_playerport;
-  map_id.code = PLAYER_MAP_CODE;
-  map_id.index = this->map_index;
-
-  if(!(mapdriver = deviceTable->GetDriver(map_id)))
+  if(!(mapdriver = deviceTable->GetDriver(this->map_id)))
   {
     PLAYER_ERROR("unable to locate suitable map device");
     return -1;
   }
-  if(mapdriver->Subscribe(map_id) != 0)
+  if(mapdriver->Subscribe(this->map_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to map device");
     return -1;
@@ -170,7 +161,7 @@ AMCLLaser::SetupMap(void)
   // Create the map
   this->map = map_alloc();
   //PLAYER_MSG1("loading map file [%s]", map_filename);
-  PLAYER_MSG1(2, "reading map from map:%d", this->map_index);
+  PLAYER_MSG1(2, "reading map from map:%d", this->map_id.index);
   //if(map_load_occ(this->map, map_filename, map_scale, map_negate) != 0)
     //return -1;
 
@@ -184,7 +175,7 @@ AMCLLaser::SetupMap(void)
   player_map_info_t info;
   struct timeval ts;
   info.subtype = PLAYER_MAP_GET_INFO_REQ;
-  if((replen = mapdriver->Request(map_id, this, 
+  if((replen = mapdriver->Request(this->map_id, this, 
                                   &info, sizeof(info.subtype), NULL,
                                   &reptype, &info, sizeof(info), &ts)) == 0)
   {
@@ -229,7 +220,7 @@ AMCLLaser::SetupMap(void)
 
     reqlen = sizeof(data_req) - sizeof(data_req.data);
 
-    if((replen = mapdriver->Request(map_id, this, 
+    if((replen = mapdriver->Request(this->map_id, this, 
                                     &data_req, reqlen, NULL,
                                     &reptype, 
                                     &data_req, sizeof(data_req), &ts)) == 0)
@@ -264,7 +255,7 @@ AMCLLaser::SetupMap(void)
   }
 
   // we're done with the map device now
-  if(mapdriver->Unsubscribe(map_id) != 0)
+  if(mapdriver->Unsubscribe(this->map_id) != 0)
     PLAYER_WARN("unable to unsubscribe from map device");
 
   return(0);

@@ -43,10 +43,11 @@ extern int global_playerport;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
-AMCLOdom::AMCLOdom()
+AMCLOdom::AMCLOdom(player_device_id_t id)
 {
   this->driver = NULL;
   this->action_pdf = NULL;
+  this->odom_id = id;
   
   return;
 }
@@ -56,8 +57,6 @@ AMCLOdom::AMCLOdom()
 // Load settings
 int AMCLOdom::Load(ConfigFile* cf, int section)
 {
-  this->odom_index = cf->ReadInt(section, "odom_index", 0);
-
   this->time.tv_sec = 0;
   this->time.tv_usec = 0;
 
@@ -92,9 +91,6 @@ int AMCLOdom::Unload(void)
 int AMCLOdom::Setup(void)
 {
   // Subscribe to the odometry driver
-  this->odom_id.port = global_playerport;
-  this->odom_id.code = PLAYER_POSITION_CODE;
-  this->odom_id.index = this->odom_index;
   this->driver = deviceTable->GetDriver(this->odom_id);
   if (!this->driver)
   {

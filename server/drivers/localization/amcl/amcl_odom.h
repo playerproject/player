@@ -48,7 +48,7 @@ class AMCLOdomData : public AMCLSensorData
 class AMCLOdom : public AMCLSensor
 {
   // Default constructor
-  public: AMCLOdom();
+  public: AMCLOdom(player_device_id_t id);
 
   // Load the model
   public: virtual int Load(ConfigFile* cf, int section);
@@ -73,7 +73,6 @@ class AMCLOdom : public AMCLSensor
   public: static pf_vector_t ActionModel(AMCLOdom *self, pf_vector_t pose);
   
   // Device info
-  private: int odom_index;
   private: player_device_id_t odom_id;
   private: Driver *driver;
 

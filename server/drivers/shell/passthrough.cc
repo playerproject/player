@@ -253,10 +253,17 @@ driver
 )
 driver
 (
+  name "mapfile"
+  provides ["map:0"]
+  filename "cave.pnm"
+  resolution 0.03
+  negate 1
+)
+driver
+(
   name "amcl"
   provides ["localize:0"]
-  requires ["position:0" "laser:0"]
-  ....
+  requires ["odometry::position:0" "laser:0" "laser::map:0"]
 )
 @endverbatim
 The second Player server will start up and listen on port 7000;
