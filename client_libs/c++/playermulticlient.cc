@@ -27,6 +27,7 @@
  */
 
 #include <playermulticlient.h>
+#include <string.h>  // for memcpy
 
 // constructor
 PlayerMultiClient::PlayerMultiClient()
