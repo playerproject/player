@@ -97,8 +97,6 @@ PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[no],)
 
 PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[no],)
 
-PLAYER_ADD_DRIVER([localization],[drivers/localization],[no],)
-
 dnl PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],["-lgsl -lgslcblas"],[gsl/gsl_version.h])
 
 dnl PLAYER_ADD_DRIVER doesn't handle multiple libraries in <name>_LIB, so

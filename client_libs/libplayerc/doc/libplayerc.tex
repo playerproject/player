@@ -487,19 +487,14 @@ is enabled (using the {\tt set\_config} function).
 \section{The {\tt localize} proxy}
 
 The {\tt localize} proxy provides an interface to localization
-drivers.  Generally speaking, these are abstract drivers that attempt to localize the
-robot by matching sensor observations (odometry, laser and sonar)
-against a prior map of the environment (such as an occupancy grid).
-
-Since the pose may be ambiguous, the interface supports mulitple
-hypotheses, each of which has some mean and covariance.
-
-
-
+drivers.  Generally speaking, these are abstract drivers that attempt
+to localize the robot by matching sensor observations (odometry, laser
+and/or sonar) against a prior map of the environment (such as an
+occupancy grid).  Since the pose may be ambiguous, multiple hypotheses
+may returned; each hypothesis specifies one possible pose estimate for
+the robot.
 
 The proxy supports the following functions:
-
-
 \begin{quote}
 \lstinputlisting{localize.f.tex}
 \end{quote}
