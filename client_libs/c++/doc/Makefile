@@ -37,5 +37,6 @@ manual:
 
 # Clean up everything
 clean:
-	$(RM) -rf generated
+	$(RM) -rf generated *.h.tex $(MANNAME).aux $(MANNAME).log \
+	          $(MANNAME).dvi $(MANNAME).ps
 

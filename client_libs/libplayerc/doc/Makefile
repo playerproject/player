@@ -62,7 +62,8 @@ clean:
 	rm -rf $(NAME).ps $(NAME).dvi $(NAME).log \
 	      $(NAME).aux $(NAME).blg $(NAME).toc \
 	      $(NAME).lot $(NAME).lof \
-	      missfont.log $(NAME).bbl $(NAME).pdf *.bak html_docs
+	      missfont.log $(NAME).bbl $(NAME).pdf *.bak html_docs \
+	      *.f.tex *.t.tex pass1-* xx0*
 
 # Special case targets for extracting sections from the header file.
 
