@@ -628,11 +628,15 @@ void WriteLog::WriteCamera(player_camera_data_t *data)
 // Write camera data to image file as well 
 void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *data, struct timeval *time)
 {
-  int i;
-  uint8_t pix;
   FILE *file;
   char filename[1024];
 
+  if (data->compression != PLAYER_CAMERA_COMPRESS_RAW)
+  {
+    PLAYER_WARN("unsupported compression method");
+    return;
+  }
+  
   snprintf(filename, sizeof(filename), "%s_camera_%02d_%06d.pnm",
            this->default_basename, device->id.index, device->cameraFrame++);
   
@@ -640,31 +644,23 @@ void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *da
   if (file == NULL)
     return;
 
-  // Write ppm header
-  fprintf(file, "P6\n%d %d\n%d\n", HUINT16(data->width), HUINT16(data->height), 255);
-  
-  // Write data here
-  for (i = 0; i < (int) HUINT32(data->image_size); i++)
+  if (data->format == PLAYER_CAMERA_FORMAT_RGB888)
   {
-    if (data->format == PLAYER_CAMERA_FORMAT_RGB888)
-    {
-      pix = data->image[i];
-      fputc(pix, file);
-    }
-    else if (data->format == PLAYER_CAMERA_FORMAT_GREY8)
-    {
-      pix = data->image[i];
-      fputc(pix, file);
-      fputc(pix, file);
-      fputc(pix, file);
-    }
-    else
-    {
-      PLAYER_WARN("unsupported image format");
-      break;
-    }
+    // Write ppm header
+    fprintf(file, "P6\n%d %d\n%d\n", HUINT16(data->width), HUINT16(data->height), 255);
+    fwrite(data->image, 1, HUINT32(data->image_size), file);
   }
-
+  else if (data->format == PLAYER_CAMERA_FORMAT_GREY8)
+  {
+    // Write pgm header
+    fprintf(file, "P5\n%d %d\n%d\n", HUINT16(data->width), HUINT16(data->height), 255);
+    fwrite(data->image, 1, HUINT32(data->image_size), file);
+  }
+  else
+  {
+    PLAYER_WARN("unsupported image format");
+  }
+  
   fclose(file);
   
   return;
