@@ -2,6 +2,8 @@ $Id$
 
 NEXT RELEASE:
 -------------
+- include <linux/limits.h> to get PATH_MAX for linux-arm crosscompile
+
 - test multiple data packets per frame
 
 - separate interface and driver docs
