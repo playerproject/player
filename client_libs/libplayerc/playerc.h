@@ -326,7 +326,7 @@ int playerc_gps_teleport(playerc_gps_t *device, double px, double py, double pa)
 
 
 /***************************************************************************
- * Laser device
+ * proxy : laser device
  **************************************************************************/
 
 // Laser device data
@@ -364,21 +364,22 @@ int playerc_laser_unsubscribe(playerc_laser_t *device);
 
 // Configure the laser.
 // min_angle, max_angle : Start and end angles for the scan.
-// resolution : Resolution in 0.01 degree increments.  Valid values are 25, 50, 100.
+// resolution : Resolution in 0.01 degree increments.  Valid values
+//              are 25, 50, 100.
 // intensity : Intensity flag; set to 1 to enable reflection intensity data.
-int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double max_angle,
-                              int resolution, int intensity);
+int  playerc_laser_set_config(playerc_laser_t *device, double min_angle,
+                              double max_angle, int resolution, int intensity);
 
 // Get the laser configuration
 // min_angle, max_angle : Start and end angles for the scan.
-// resolution : Resolution in 0.01 degree increments.
+// resolution : Resolution is in 0.01 degree increments.
 // intensity : Intensity flag; set to 1 to enable reflection intensity data.
-int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double *max_angle,
-                              int *resolution, int *intensity);
+int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle,
+                              double *max_angle, int *resolution, int *intensity);
 
 
 /***************************************************************************
- * LBD (laser beacon detector) device
+ * proxy : lbd (laser beacon detector) device
  **************************************************************************/ 
 
 // Description for a single beacon
@@ -432,7 +433,7 @@ int playerc_lbd_get_config(playerc_lbd_t *device,
 
 
 /***************************************************************************
- * Position device
+ * proxy : position device
  **************************************************************************/
 
 // Position device
@@ -473,7 +474,7 @@ int  playerc_position_setspeed(playerc_position_t *device, double vx, double vy,
 
 
 /***************************************************************************
- * PTZ (pan-tilt-zoom camera) device
+ * proxy : ptz (pan-tilt-zoom camera) device
  **************************************************************************/
 
 // PTZ device data
@@ -511,7 +512,7 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, int zoom);
 
 
 /***************************************************************************
- * Sonar device
+ * proxy : sonar device
  **************************************************************************/
 
 // Sonar device data

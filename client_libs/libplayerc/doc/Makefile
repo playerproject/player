@@ -5,6 +5,8 @@
 # generic LaTeX makefile
 #
 
+.SUFFIXES: .tex .i
+
 LATEX = latex
 BIBTEX = bibtex
 DVIPS = dvips
@@ -22,7 +24,8 @@ MANPATH = ../../../doc
 dvi: $(NAME).dvi
 
 $(NAME).dvi: $(NAME).tex \
-						dev_laser_t.tex dev_laser_f.tex
+						laser.t.tex laser.f.tex \
+						position.t.tex position.f.tex
 	$(LATEX) $< && $(LATEX) $<
 
 light: $(NAME).tex
@@ -51,8 +54,26 @@ clean:
 	      $(NAME).lot $(NAME).lof \
 	      missfont.log $(NAME).bbl $(NAME).pdf *.bak html_docs
 
-dev_laser_t.tex dev_laser_f.tex : $(INCLUDE)
-	csplit $(INCLUDE)  %Laser\ %+2  "/playerc_laser_t/"+1 && cp xx00 dev_laser_t.tex
-	csplit xx01 "//\*\*/" && cp xx00 dev_laser_f.tex
+# These targets extra the data and function sections for each proxy
+# from the header file.  Each section must start with a comment of
+# the form "proxy : DEVICENAME".
 
-#	csplit $(INCLUDE)  %Laser\ %+2  "//\*\*/" && cp xx00 dev_laser.tex
+%.t.tex : $(INCLUDE)
+	echo $< $*
+	csplit -f "pass1-" $(INCLUDE) %proxy\ :\ $*%+2  "/playerc_"$*"_t/"+2
+	csplit pass1-00 %//% && cat -s xx00 > $@
+
+%.f.tex : $(INCLUDE)
+	echo $< $*
+	csplit -f "pass1-" $(INCLUDE) %proxy\ :\ $*%+2  "/playerc_"$*"_t/"+2
+	csplit pass1-01 %//% /"proxy\ :\ "/-1 && cat -s xx00 > $@
+
+#%.t.tex : $(INCLUDE)
+#	echo $< $*
+#	csplit -f "pass1-" $(INCLUDE) %$*\ device\ :%+2  "/playerc_"$*"_t/"+2
+#	csplit pass1-00 %//% && cat -s xx00 > $@
+
+#%.f.tex : $(INCLUDE)
+#	echo $< $*
+#	csplit -f "pass1-" $(INCLUDE) %$*\ device\ :%+2  "/playerc_"$*"_t/"+2
+#	csplit pass1-01 %//% "//\*\*/"-1 && cat -s xx00 > $@
