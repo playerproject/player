@@ -155,7 +155,7 @@ AM_CONDITIONAL(INCLUDE_LIBPLAYERC_PY, test x$enable_libplayerc_py = xyes)
 
 
 dnl ************************************************************************
-dnl Start of macros from m4.d
+dnl Start of macros from acinclude.m4
 dnl ************************************************************************
 
 dnl Do the standard driver tests (including gazebo)
@@ -168,7 +168,7 @@ if test "x$enable_gazebo" = "xyes"; then
 fi
 
 dnl ************************************************************************
-dnl End of macros from m4.d
+dnl End of macros from acinclude.m4
 dnl ************************************************************************
 
 dnl Set up GTK/RTK2 for the various GUIs 
