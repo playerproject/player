@@ -79,7 +79,7 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
     player_laser_data_t laser_data;
     m_laser->GetLock()->GetData(m_laser,
                                 (uint8_t*) &laser_data, sizeof(laser_data),
-                                &data_timestamp);
+                                &data_timestamp_sec, &data_timestamp_usec);
     
     // Analyse the laser data
     //
