@@ -99,8 +99,13 @@ void playerc_gps_putdata(playerc_gps_t *device, player_msghdr_t *header,
 {
   assert(sizeof(*data) <= len);
   
-  device->px = (int32_t) ntohl(data->xpos) / 1000.0;
-  device->py = (int32_t) ntohl(data->ypos) / 1000.0;
-  device->pa = (int32_t) ntohl(data->heading) * M_PI / 180;
+  device->lat = (int32_t) ntohl(data->latitude) / 216000.0;
+  device->lon = (int32_t) ntohl(data->longitude) / 216000.0;
+  device->alt = (int32_t) ntohl(data->altitude) / 1000.0;
+
+  device->quality = data->quality;
+  device->num_sats = data->num_sats;
+
+  return;
 }
 

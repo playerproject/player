@@ -5,6 +5,7 @@
  # CVS: $Id$
  **************************************************************************/
 
+#include <math.h>
 #include "test.h"
 #include "playerc.h"
 
@@ -28,7 +29,7 @@ int test_gps(playerc_client_t *client, int index)
   }
   PASS();
 
-  for (t = 0; t < 3; t++)
+  for (t = 0; 1; t++)
   {
     TEST1("reading data (attempt %d)", t);
 
@@ -39,8 +40,11 @@ int test_gps(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("gps: [%6.3f] [%6.3f] [%6.3f]\n",
-             device->px, device->py, device->pa);
+      printf("gps: [%+11.6f] [%+11.6f] [%+7.3f] : "
+             "[%+3.0f D %02.4f M] [%+3.0f D %02.4f M]\n",
+             device->lat, device->lon, device->alt,
+             device->lat, fmod(fabs(device->lat) * 60, 60),
+             device->lon, fmod(fabs(device->lon) * 60, 60));
     }
     else
       FAIL();
