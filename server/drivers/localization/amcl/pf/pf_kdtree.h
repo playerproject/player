@@ -79,9 +79,6 @@ extern double pf_kdtree_get_prob(pf_kdtree_t *self, pf_vector_t pose);
 // Determine the cluster label for the given pose
 extern int pf_kdtree_get_cluster(pf_kdtree_t *self, pf_vector_t pose);
 
-// Determine the cluster label for the given pose
-extern int pf_kdtree_get_cluster(pf_kdtree_t *self, pf_vector_t pose);
-
 #ifdef INCLUDE_RTKGUI
 
 // Draw the tree
