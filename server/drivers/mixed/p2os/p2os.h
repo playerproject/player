@@ -63,10 +63,12 @@
 #define OPEN 1
 #define CLOSE 2
 #define ENABLE 4
+#define SETA 5
 #define SETV 6
 #define SETO 7
 #define VEL 11
 #define RVEL 21
+#define SETRA 23
 #define SONAR 28
 #define STOP 29
 #define VEL2 32
@@ -183,12 +185,16 @@ class P2OS : public Driver
     const char* psos_serial_port;
     struct timeval lastblob_tv;
 
-    // Max motor speeds
+    // Max motor speeds (mm/sec,deg/sec)
     int motor_max_speed;
     int motor_max_turnspeed;
 
     // Bound the command velocities
     bool use_vel_band; 
+
+    // Max motor accel/decel (mm/sec/sec, deg/sec/sec)
+    short motor_max_trans_accel, motor_max_trans_decel;
+    short motor_max_rot_accel, motor_max_rot_decel;
 
     int radio_modemp; // are we using a radio modem?
     int joystickp; // are we using a joystick?
