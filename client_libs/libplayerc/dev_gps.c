@@ -98,10 +98,20 @@ void playerc_gps_putdata(playerc_gps_t *device, player_msghdr_t *header,
                          player_gps_data_t *data, size_t len)
 {
   assert(sizeof(*data) <= len);
-  
+
+  device->utc_time = (uint32_t) ntohl(data->time_sec);
+  device->utc_time += ((uint32_t) ntohl(data->time_usec)) * 1e-6;
+
   device->lat = (int32_t) ntohl(data->latitude) / 216000.0;
   device->lon = (int32_t) ntohl(data->longitude) / 216000.0;
   device->alt = (int32_t) ntohl(data->altitude) / 1000.0;
+
+  device->utm_e = (int32_t) ntohl(data->utm_e) / 100.0;
+  device->utm_n = (int32_t) ntohl(data->utm_n) / 100.0;
+
+  device->hdop = (uint16_t) ntohs(data->hdop) / 10.0;
+  device->err_horz = (uint32_t) ntohl(data->err_horz) / 1000.0;
+  device->err_vert = (uint32_t) ntohl(data->err_vert) / 1000.0;
 
   device->quality = data->quality;
   device->sat_count = data->num_sats;

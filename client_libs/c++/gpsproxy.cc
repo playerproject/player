@@ -70,7 +70,7 @@ void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 
   quality = buf->quality;
 
-  hdop = buf->hdop * 10.0;
+  hdop = (int) (unsigned int) ntohs(buf->hdop) * 10.0;
 
   time.tv_sec = ntohl(buf->time_sec);
   time.tv_usec = ntohl(buf->time_usec);

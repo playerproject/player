@@ -113,13 +113,19 @@ static PyObject *gps_str(PyObject *self)
 
   snprintf(str, sizeof(str),
            "gps %02d %013.3f"
-           " %+09.5f %+09.5f %+07.3f"
-           " %d %02d",
+           " %.3f %+09.5f %+09.5f %+07.3f"
+           " %.3f %.3f %.3f %.3f %.3f %d %02d",
            pygps->gps->info.index,
            pygps->gps->info.datatime,
+           pygps->gps->utc_time,
            pygps->gps->lat,
            pygps->gps->lon,
            pygps->gps->alt,
+           pygps->gps->utm_e,
+           pygps->gps->utm_n,
+           pygps->gps->hdop,
+           pygps->gps->err_horz,
+           pygps->gps->err_vert,
            pygps->gps->quality,
            pygps->gps->sat_count);
   
