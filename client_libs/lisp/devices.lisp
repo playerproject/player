@@ -64,6 +64,11 @@
   (player-request client
     (player-make-player-datareq)
     *PLAYER-PLAYER-DATA-REQ-SIZE* *PLAYER-PLAYER-CODE* 0 T))
+
+(defun player-set-motorpower (client state &OPTIONAL (index 0))
+  (player-request client
+    (player-make-position-motorpower state)
+    *PLAYER-POSITION-MOTOR-POWER-REQ-SIZE* *PLAYER-POSITION-CODE* index T))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
