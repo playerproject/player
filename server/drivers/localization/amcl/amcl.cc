@@ -512,7 +512,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
 
   // Update distances
   this->min_dr = cf->ReadTupleLength(section, "update_thresh", 0, 0.20);
-  this->min_da = cf->ReadTupleAngle(section, "update_thresh", 0, 30 * M_PI / 180);
+  this->min_da = cf->ReadTupleAngle(section, "update_thresh", 1, 30 * M_PI / 180);
 
   // Initial hypothesis list
   this->hyp_count = 0;
