@@ -399,7 +399,19 @@ PositionProxy::SetStatus(uint8_t cmd, uint16_t value)
 			 (const char *)&rmp_cfg, sizeof(rmp_cfg));
 }
 
-  
+int
+PositionProxy::PlatformShutdown()
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_rmp_config_t rmp;
+  rmp.subtype = PLAYER_POSITION_RMP_SHUTDOWN;
+
+  return client->Request(m_device_id,
+			 (const char *)&rmp, sizeof(rmp));
+}
 
 void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {

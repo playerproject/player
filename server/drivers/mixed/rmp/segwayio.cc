@@ -269,7 +269,7 @@ SegwayIO::WriteLoop()
   can_packet_t pkt;
   rmp_frame_t data_frame[2];
   int loopmillis;
-
+  int last_rot=0, last_trans=0;
   data_frame[0].ready = 0;
   data_frame[1].ready = 0;
 
@@ -297,7 +297,6 @@ SegwayIO::WriteLoop()
     last = curr;
 
     // now we want to send the latest command...
-
     // want to write a packet at no more than 100 Hz, so 
     // just do one each time through the loop
     if (!command_queue.empty()) {
@@ -333,11 +332,25 @@ SegwayIO::WriteLoop()
     // now pkt is filled with either a status command
     // or blank, awaiting velocity commands
 
+    /*
+    if (last_trans != trans_command) {
+      last_trans = trans_command;
+      gotNew = true;
+    }
+    */
+
     // fill in the latest rot & trans velocities
     pthread_mutex_lock(&trans_command_mutex);
     pkt.PutSlot(0, (uint16_t)trans_command);
     pthread_mutex_unlock(&trans_command_mutex);
-    
+
+    /*
+    if (last_rot != rot_command) {
+      last_rot= rot_command;
+      gotNew = true;
+    }
+    */
+
     pthread_mutex_lock(&rot_command_mutex);
     pkt.PutSlot(1, (uint16_t)rot_command);
     pthread_mutex_unlock(&rot_command_mutex);
@@ -350,10 +363,13 @@ SegwayIO::WriteLoop()
 	     pkt.toString());
     }
     */
+    
     //    printf("SEGWAYIO: %d ms WRITE: %s\n", loopmillis, pkt.toString());
 
     // write it out!
-    canio->WritePacket(pkt);
+    if (canio->WritePacket(pkt) < 0) {
+      printf("SEGWAYIO: CANIO Write Error!\n");
+    }
   }
 }
 
@@ -407,6 +423,7 @@ SegwayIO::GetData(player_position_data_t *data)
   data->yawspeed = htonl( (uint32_t) (rint(((double)rmp_data.yaw_dot / 
 					 (double)RMP_COUNT_PER_DEG_PER_S))*1000.0) );
 
+  data->stall = 0;
 }
   
 /* marshals power related data into player format
@@ -435,7 +452,6 @@ SegwayIO::GetData(player_power_data_t *data)
 int
 SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
 {
-  can_packet_t pkt;
   static int16_t last_trans=0, last_rot = 0;
 
   // we only care about cmd.xspeed and cmd.yawspeed
@@ -491,10 +507,9 @@ SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
 
   if (rot_command != last_rot ||
       trans_command != last_trans) {
-    pthread_mutex_lock(&command_queue_mutex);
-    command_queue.push(pkt);
-    pthread_mutex_unlock(&command_queue_mutex);
 
+    printf("SEGWAYIO: VEL: t: %d r: %d\n", trans_command,
+	   rot_command);
     last_rot = rot_command;
     last_trans = trans_command;
   }
@@ -515,12 +530,31 @@ SegwayIO::StatusCommand(const uint16_t &cmd, const uint16_t &val)
 
   pkt.id = RMP_CAN_ID_COMMAND;
   pkt.PutSlot(2, cmd);
-  pkt.PutSlot(3, val);
-
+  //  pkt.PutSlot(3, val);
+  pkt.PutByte(6, val);
+  pkt.PutByte(7, val);
+  
   if (cmd) {
     printf("SEGWAYIO: STATUS: cmd: %02x val: %02x pkt: %s\n", 
 	   cmd, val, pkt.toString());
   }
+
+  pthread_mutex_lock(&command_queue_mutex);
+  command_queue.push(pkt);
+  pthread_mutex_unlock(&command_queue_mutex);
+
+  return 0;
+}
+
+int
+SegwayIO::ShutdownCommand()
+{
+  can_packet_t pkt;
+
+  pkt.id = RMP_CAN_ID_SHUTDOWN;
+
+  printf("SEGWAYIO: SHUTDOWN: pkt: %s\n",
+	 pkt.toString());
 
   pthread_mutex_lock(&command_queue_mutex);
   command_queue.push(pkt);

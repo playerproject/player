@@ -18,6 +18,8 @@ struct can_packet_t
     for (int i =0; i < 8; i++) {
       msg[i] = 0;
     }
+
+    flags = canMSG_STD;
   }
 
   uint16_t GetSlot(int s)  const {
@@ -29,6 +31,10 @@ struct can_packet_t
     msg[slot*2+1] = val & 0xFF;
   }
 
+  void PutByte(const int byte, const uint16_t val) {
+    msg[byte] = val & 0xFF;
+  }
+
   char * toString() {
     static char buf[256];
     sprintf(buf, "id:%04lX %02X %02X %02X %02X %02X %02X %02X %02X",
@@ -38,7 +44,8 @@ struct can_packet_t
     return buf;
   }
 } __attribute__((packed));
-  
+
+#define DUALCAN_NR_CHANNELS 2  
 
 /* this class encapsulates the low level CAN stuff.... so it deals
    with reading and writing packets on the dual CAN channels.
