@@ -71,6 +71,10 @@ void RWIPower_Register(DriverTable* table);
 void RWISonar_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_ISENSE
+void InertiaCube2_Register(DriverTable* table);
+#endif
+
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
  *
@@ -147,6 +151,10 @@ register_devices()
   RWILaser_Register(driverTable);
   RWIBumper_Register(driverTable);
   RWIPower_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_ISENSE
+  InertiaCube2_Register(driverTable);
 #endif
 }
 
