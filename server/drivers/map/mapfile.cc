@@ -24,6 +24,7 @@
  * A driver to read an occupancy grid map from an image file.
  */
 
+#include <sys/types.h> // required by Darwin
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>

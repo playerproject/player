@@ -25,6 +25,7 @@
  * convolve it with a robot to create the C-space.
  */
 
+#include <sys/types.h> // required by Darwin
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>

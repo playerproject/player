@@ -25,6 +25,8 @@
  * scale it to produce a map with a different given resolution.
  */
 
+
+#include <sys/types.h> // required by Darwin
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
