@@ -52,6 +52,10 @@ velocity, left/right sets rotational (yaw) velocity.
 
 Details of keyboard control are printed out on the console.
 
+@todo
+  Calibrate out initial offset; should be possible by parsing the 
+  JS_EVENT_INIT message.
+
 */
 
 /** @} */
