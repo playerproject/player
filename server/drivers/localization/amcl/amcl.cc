@@ -226,7 +226,7 @@ void AdaptiveMCL_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
-    : PSDevice(sizeof(player_localize_data_t), 0, 10, 10)
+    : PSDevice(sizeof(player_localize_data_t), 0, 100, 100)
 {
   double size;
   double u[3];
@@ -246,9 +246,6 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->map_scale = cf->ReadLength(section, "map_scale", 0.05);
   this->map_file = cf->ReadFilename(section, "map_file", NULL);
   this->map = NULL;
-
-  // TESTING
-  this->map_file = "phe200-exp12-fly-05cm.pgm";
   
   // Odometry model settings
   this->odom_model = NULL;
@@ -742,10 +739,12 @@ int AdaptiveMCL::GetLaser(void)
 void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
 {
   // Initialize the odometric model
-  odometry_init_pose(this->odom_model, pose_mean, pose_cov);
-
+  odometry_init_init(this->odom_model, pose_mean, pose_cov);
+  
   // Draw samples from the odometric distribution
   pf_init(this->pf, (pf_init_model_fn_t) odometry_init_model, this->odom_model);
+  
+  odometry_init_term(this->odom_model);
 
 #ifdef INCLUDE_RTKGUI
   // Draw the samples
@@ -791,14 +790,17 @@ void AdaptiveMCL::UpdateFilter(void)
   uint64_t time = gettime();
   
   // Update the odometry sensor model with the latest odometry measurements
-  odometry_set_pose(this->odom_model, this->last_odom_pose, this->curr_odom_pose);  
-  odometry_set_stall(this->odom_model, 0);
+  odometry_action_init(this->odom_model, this->last_odom_pose, this->curr_odom_pose);
+  odometry_sensor_init(this->odom_model);
 
   // Apply the odometry action model
   pf_update_action(this->pf, (pf_action_model_fn_t) odometry_action_model, this->odom_model);
 
   // Apply the odometry sensor model
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) odometry_sensor_model, this->odom_model);
+
+  odometry_sensor_term(this->odom_model);
+  odometry_action_term(this->odom_model);
 
   // TESTING
   printf("update: odom     %d\n", (uint32_t) (gettime() - time));
