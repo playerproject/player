@@ -640,13 +640,19 @@ int Acoustics::PlayBuffer(char* buffer,unsigned int size)
 
 int Acoustics::Record()
 {
-  int result = this->OpenDevice(O_RDONLY);
+  int result = -1;
 
-  if( !result && read(audioFD, this->audioBuffer, this->audioBuffSize) != this->audioBuffSize)
+  // Make sure we opened the file and setup has been run
+  if( !this->OpenDevice(O_RDONLY) && this->audioBuffSize>0 )
   {
-    PLAYER_WARN("did not read specified amount from audio device");
-    result = -1;
-  }
+    if( read(audioFD, this->audioBuffer, this->audioBuffSize) 
+        != this->audioBuffSize )
+    {
+      PLAYER_WARN("did not read specified amount from audio device");
+    } else {
+      result = 0;
+    }
+  } 
 
   return result;
 }
