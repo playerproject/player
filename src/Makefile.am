@@ -15,14 +15,13 @@ EXTRA_player_SOURCES = visiondevice.cc positiondevice.cc gripperdevice.cc \
                        speechdevice.cc miscdevice.cc ptzdevice.cc \
                        audiodevice.cc bpsdevice.cc laserdevice.cc \
                        sonardevice.cc p2osdevice.cc robot_params.cc \
-                       packet.cc sip.cc stagetime.cc stagedevice.cc
+                       packet.cc sip.cc stagetime.cc stagedevice.cc \
+                       rwi_bumperdevice.cc rwidevice.cc rwi_laserdevice.cc \
+		       rwi_positiondevice.cc rwi_powerdevice.cc \
+		       rwi_sonardevice.cc
 
 player_DEPENDENCIES   = @LASER_OBJ@ \
                         @VISION_OBJ@ \
-                        @SONAR_OBJ@ \
-                        @POSITION_OBJ@ \
-                        @GRIPPER_OBJ@ \
-                        @MISC_OBJ@ \
                         @PTZ_OBJ@ \
                         @AUDIO_OBJ@ \
                         @LASERBEACON_OBJ@ \
@@ -30,9 +29,10 @@ player_DEPENDENCIES   = @LASER_OBJ@ \
                         @SPEECH_OBJ@ \
                         @BPS_OBJ@ \
                         @P2OS_OBJ@ \
+                        @RWI_OBJ@ \
                         @STAGE_OBJ@
 
-player_LDADD   = -lpthread -lm -ldl @LASER_OBJ@ @VISION_OBJ@ @SONAR_OBJ@ @POSITION_OBJ@ @GRIPPER_OBJ@ @MISC_OBJ@ @PTZ_OBJ@ @AUDIO_OBJ@ @LASERBEACON_OBJ@ @BROADCAST_OBJ@ @SPEECH_OBJ@ @BPS_OBJ@ @P2OS_OBJ@ @STAGE_OBJ@
+player_LDADD   = -lpthread -lm -ldl @LASER_OBJ@ @VISION_OBJ@ @PTZ_OBJ@ @AUDIO_OBJ@ @LASERBEACON_OBJ@ @BROADCAST_OBJ@ @SPEECH_OBJ@ @BPS_OBJ@ @P2OS_OBJ@ @RWI_OBJ@ @STAGE_OBJ@
 
 include_HEADERS = $(top_builddir)/include/defaults.h \
                   $(top_builddir)/include/playercommon.h \
