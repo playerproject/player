@@ -35,6 +35,7 @@
 #include "devicetable.h"
 #include "amcl_odom.h"
 
+extern int global_playerport;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
@@ -77,6 +78,7 @@ int AMCLOdom::Setup(void)
   player_device_id_t id;
   
   // Subscribe to the odometry device
+  id.port = global_playerport;
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
   this->device = deviceTable->GetDevice(id);
