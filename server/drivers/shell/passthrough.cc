@@ -36,7 +36,10 @@
 #include <deviceregistry.h>  // for lookup_interface()
 #include <device.h>
 #include <drivertable.h>
+#include <devicetable.h>
 #include <player.h>
+
+extern CDeviceTable* deviceTable;
 
 extern int global_playerport;
 
@@ -143,9 +146,11 @@ int
 PassThrough::Setup()
 {
   unsigned char grant_access;
+  CDeviceEntry* devp;
 
   // zero out the buffers
   PutData(NULL,0,0,0);
+  PutCommand(NULL,NULL,0);
 
   printf("Passthrough connecting to server at %s:%d...", this->remote_hostname,
          this->remote_port);
@@ -172,9 +177,19 @@ PassThrough::Setup()
      (grant_access != this->remote_access))
   {
     PLAYER_ERROR("couldn't get requested access to remote device");
+    CloseConnection();
     return(-1);
   }
   puts("Done");
+
+  // set the driver name in the devicetable
+  if(!(devp = deviceTable->GetDeviceEntry(this->device_id)))
+  {
+    PLAYER_ERROR("couldn't find my own entry in the deviceTable");
+    CloseConnection();
+    return(-1);
+  }
+  strncpy(devp->name,this->remote_drivername,PLAYER_MAX_DEVICE_STRING_LEN);
 
   StartThread();
 
