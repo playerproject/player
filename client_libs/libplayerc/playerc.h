@@ -38,9 +38,9 @@
  * Array sizes
  **************************************************************************/
 
-#define PLAYERC_LASER_MAX_SCAN 401
-#define PLAYERC_LBD_MAX_BEACONS 64
-#define PLAYERC_SONAR_MAX_SCAN 16
+#define PLAYERC_LASER_MAX_SCAN PLAYER_NUM_LASER_SAMPLES
+#define PLAYERC_LBD_MAX_BEACONS PLAYER_MAX_LASERBEACONS
+#define PLAYERC_SONAR_MAX_SCAN PLAYER_NUM_SONAR_SAMPLES
 #define PLAYERC_VISION_MAX_BLOBS 64
 
 
