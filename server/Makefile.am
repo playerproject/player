@@ -1,6 +1,6 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/stage1p4 -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_builddir)/replace
+AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/stage1p4 -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_builddir)/replace @STAGE1P4_CFLAGS@
 
 player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 

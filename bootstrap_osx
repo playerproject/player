@@ -1,8 +1,11 @@
 #!/bin/sh
 
+# these drivers don't work under Darwin
+BROKEN="--disable-ptu46 --disable-er --disable-rtk3"
+
 set -x
 aclocal -I /sw/share/aclocal
 autoheader
 automake --gnu --add-missing
 autoconf
-./configure "$@"
+./configure $BROKEN "$@"

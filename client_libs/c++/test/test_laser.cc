@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <math.h>
 
+
+
 int
 test_laser(PlayerClient* client, int index)
 {
@@ -55,6 +57,8 @@ test_laser(PlayerClient* client, int index)
     FAIL();
     return(-1);
   }
+  
+  lp.PrintConfig();
 
   TEST("check configuration sanity");
   if(abs(lp.min_angle + (90*100)) || 

@@ -4,148 +4,86 @@
 
 # the resolution of Stage's raytrace model in meters
 #
-resolution 0.02
-size [5 5]
-name "Player driver test"
 
-# GUI settings
-#
-gui
-(
-  size [ 502.000 506.000 ]
-  origin [5.018 4.950 0]
-  scale 0.021 # the size of each bitmap pixel in meters
-)
+include "pioneer.inc"
+
+
+#size [120 45]
+#bitmap "hospital.png"
+
+size [20 20]
+bitmap "autolab.png"
+
+resolution 0.02  # meters per pixel
+interval_sim 0.1  # seconds per update step
+interval_real 0.1 # real-time seconds per update step
 
 # load a bitmapped environment from a file
-define background bg
+#bitmap "cave.png" 
+#size [10 10]
+
+
+  # GUI settings
+  #
+  #gui
+  #(
+   # size [ 502.000 506.000 ]
+    #origin [5.018 4.950 0]
+    #scale 0.021 # the size of each bitmap pixel in meters
+  #)
+
+
+  #file "cave.pnm.gz" 
+
+
+
+  # create a robot, setting its start position and Player port, 
+  # and equipping it with a laser range scanner
+  #
+  model
+  (
+    name "budgie"	
+    size [0.5 0.25] 
+    pose [8.048 2.829 0]
+    #velocity [0 0 -20]
+
+    bitmap "submarine.png"
+    color "blue"
+  )
+
+#pioneer2dx( name "r0" pose [4.868 6.382 7080.741] velocity [ 0.0 0.0 15 ] )
+pioneer2dx( name "r0" pose [4.868 6.382 7080.741]  )
+pioneer2dx( name "r1" pose [1.497 5.232 -20.084] )
+pioneer2dx( name "r2" pose [2.586 8.947 -71.250] )
+pioneer2dx( name "r3" pose [1.449 3.189 -20.084] )
+pioneer2dx( name "r4" pose [1.749 3.189 -20.084] )
+pioneer2dx( name "r5" pose [1.949 3.189 -20.084] )
+pioneer2dx( name "r6" pose [2.449 3.189 -20.084] )
+pioneer2dx( name "r7" pose [2.749 3.189 -20.084] )
+#pioneer2dx( name "r8" pose [2.949 3.189 -20.084] )
+#pioneer2dx( name "r9" pose [3.249 3.189 -20.84] )
+
+#model( name "foo" pose [1.000 1.000 0.000] )
+
+
+define chatterbox model
 (
-  # this object should have a bounding box added
-  border "true"
+  scount 8
+  spose[0] [  0.075  0.0   0 ]
+  spose[1] [  0.075  0.075  45 ]
+  spose[2] [  0.0    0.075  90 ]
+  spose[3] [ -0.075  0.075 135 ]
+  spose[4] [ -0.075  0.0 180 ]
+  spose[5] [ -0.075 -0.075 225 ]
+  spose[6] [  0.0   -0.075 270 ]
+  spose[7] [  0.075 -0.075 315 ]
 
-  # this object should not have a direction-indicating nose
-  nose "false"
- 
-  # disable handling of this object with the mouse 
-  mouseable "false"
-
-  # a negative number will make this object the maximum
-  # possible size in that axis. Here we fill the whole world
-  size [-1 -1]
-
-  # TODO - add origin munging to match the size-munging above
-  origin [2.5 2.5 0]
-
+  size [0.15 0.15]
+  nose 1
+  color "red"
 )
 
-background
-(
-  bitmap "test.pnm" 
-  color "purple"
-) 
-
-#bug
-#( 
-#   pose [ 1.764 0.502 0.029 ]
-#   size [0.8 0.4]
-#   bitmap "bug.pnm"
-#   color "orange"
-#   nose "false"
-#   name "orange_bug" # override the default name 
-#)
-
-
-define blackant ant
-( 	
-  size [0.05 0.02]
-  bitmap "ant2.pnm"
-  color "black"
-  nose "false"
-)
-
-#blackant( pose [ -0.12 0.1 2.0 ] velocity [ 0 0 1.0 ] )
-#blackant( pose [ 0.12 0.08 1.0 ] velocity [ 0 0 1.0 ] )
-#blackant( pose [ 0    0    2.7 ] velocity [ 0 0 1.0 ] )
-
-#robotproblem
-#(
-#  size [1 1]
-#  pose [ 1 1 0]
-#  bitmap "robot_problem.pnm"
-#)
-
-sonarbot
-(
-  size [0.4 0.4]
-
-   ranger_count 8
-   ranger[0] [0.1 0.0     0.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
-   ranger[1] [0.1 0.1    45.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
-   ranger[2] [0.0 0.1    90.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
-   ranger[3] [-0.1 0.1  135.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
-   ranger[4] [-0.1 0.0  180.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
-   ranger[5] [-0.1 -0.1 225.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
-   ranger[6] [0.0 -0.1  270.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
-   ranger[7] [0.1 -0.1  315.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
-
-   pose [ 0.890 2.686 -1.253 ]
-) 
-
-define indicatorlight light
-(
-  nose "no"
-  size [0.02 0.02]
-  matrix_render "false"
-)
-
-sub
-(
-   size [1.0 0.5]
-   pose [0.627 0.363 -0.003]
-   bitmap "submarine.pnm"
-   nose "no"
-   color "red"
-)
-
-define swarmbot sb
-(
-  size [0.1 0.1]
-
-  neighbor 1	
-
-  indicatorlight( color "red"    pose [0.030 0.000 0.000] light [1 200] ) 
-  indicatorlight( color "green"  pose [0.000 0.030 0.000] light [1 400]) 
-  indicatorlight( color "blue"   pose [-0.030 0.000 0.000] light [1 800]) 
-  indicatorlight( color "magenta" pose [0.000 -0.030 0.000] light [1 1600]) 
-
-  velocity [ 0 0 1 ]
-)
-	
-#swarmbot( pose [4.422 3.873 116.134] color "red" )
-#swarmbot( pose [3.459 4.364 88.634] color "green"  )
-#swarmbot( pose [4.752 4.627 115.580] color "blue"  )
-#swarmbot( pose [4.678 3.706 23.374] color "red" )
-#swarmbot( pose [3.249 4.722 75.454] color "green"  )
-#swarmbot( pose [4.357 4.306 49.700] color "blue"  )
-#swarmbot( pose [4.531 3.514 52.404] color "red" )
-#swarmbot( pose [2.965 4.365 46.944] color "green"  )
-#swarmbot( pose [4.651 4.288 23.600] color "blue"  )
-#swarmbot( pose [4.767 3.454 48.404] color "red" )
-#swarmbot( pose [3.084 4.117 36.554] color "green"  )
-#swarmbot( pose [4.165 4.444 47.160] color "blue"  )
-#swarmbot( pose [4.541 3.248 48.294] color "red" )
-#swarmbot( pose [3.462 4.718 25.444] color "green"  )
-#swarmbot( pose [4.349 4.554 47.480] color "blue"  )
-#swarmbot( pose [4.384 3.633 75.194] color "red" )
-#swarmbot( pose [3.028 4.584 74.364] color "green"  )
-#swarmbot( pose [4.550 4.481 65.890] color "blue"  )
-#swarmbot( pose [4.238 3.459 71.264] color "red" )
-#swarmbot( pose [3.341 4.530 50.194] color "green"  )
-#swarmbot( pose [4.513 4.691 61.560] color "blue"  )
-#swarmbot( pose [4.166 3.777 47.874] color "red" )
-#swarmbot( pose [3.386 4.099 35.514] color "green"  )
-#swarmbot( pose [4.303 4.755 42.580] color "blue"  )
-#swarmbot( pose [3.990 3.569 50.534] color "red" )
-#swarmbot( pose [3.248 4.300 73.054] color "green"  )
-#swarmbot( pose [4.156 4.636 73.880] color "blue"  )
-
+chatterbox( name "ch1" pose [2 2 0] )
+chatterbox( name "ch2" pose [2 2.2 0] )
+chatterbox( name "ch3" pose [2 2.3 0] )
+chatterbox( name "ch4" pose [2 2.4 0] )

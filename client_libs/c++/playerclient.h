@@ -1002,8 +1002,11 @@ class LaserProxy : public ClientProxy
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
     
-    /// Print out the latest laser range/intensity data.
+    /// Print out the current configuration and laser range/intensity data.
     void Print();
+
+    /// Print out the current configuration
+    void PrintConfig();
 };
 
 /*****************************************************************************

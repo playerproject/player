@@ -15,6 +15,7 @@
 bool turnOnMotors = false;
 char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
+int device_index = 0; // use this to access the nth indexed position and laser devices
 
 /* easy little command line argument parser */
 void
@@ -45,6 +46,16 @@ parse_args(int argc, char** argv)
         exit(1);
       }
     }
+    else if(!strcmp(argv[i],"-i"))
+    {
+      if(++i<argc)
+        device_index = atoi(argv[i]);
+      else
+      {
+        puts(USAGE);
+        exit(1);
+      }
+    }
     else if(!strcmp(argv[i],"-m"))
     {
       turnOnMotors = true;
@@ -65,8 +76,8 @@ int main(int argc, char **argv)
   parse_args(argc,argv);
 
   PlayerClient robot(host,port);
-  PositionProxy pp(&robot,0,'w');
-  LaserProxy lp(&robot,0,'r');
+  PositionProxy pp(&robot,device_index,'w');
+  LaserProxy lp(&robot,device_index,'r');
 
   printf("%s\n",robot.conn.banner);
 
@@ -75,8 +86,8 @@ int main(int argc, char **argv)
     
   
   /* maybe turn on the motors */
-  if(turnOnMotors && pp.SetMotorState(1))
-    exit(1);
+  //if(turnOnMotors && pp.SetMotorState(1))
+  //exit(1);
 
   int newspeed, newturnrate;
   /* go into read-think-act loop */
@@ -93,7 +104,7 @@ int main(int argc, char **argv)
     /*
      * laser avoid (stolen from esben's java example)
      */
-    // Do obstackle avoidance for 400 time steps
+
     minL=INT_MAX; 
     minR=INT_MAX;
     for (int j=0; j<180; j++) {

@@ -182,17 +182,25 @@ LaserProxy::SetLaserState(const unsigned char state)
 			(const char *) &cfg, sizeof(cfg)));
 }
 
-// interface that all proxies SHOULD provide
-void LaserProxy::Print()
+// print the configuration 
+void LaserProxy::PrintConfig()
 {
   printf("#LASER(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#min\tmax\tres\tcount\trange_res");
   printf("%d\t%d\t%u\t%u\t%d\n", min_angle,max_angle,resolution,range_count,
 	 range_res);
+}
+
+// interface that all proxies SHOULD provide
+void LaserProxy::Print()
+{
+  this->PrintConfig();
+
   puts("#range\tintensity");
   for(unsigned short i=0;i<range_count && i<PLAYER_LASER_MAX_SAMPLES;i++)
     printf("%u %u ", ranges[i],intensities[i]);
   puts("");
 }
+
 
