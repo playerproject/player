@@ -1,17 +1,23 @@
-AM_CPPFLAGS = -DINCLUDE_GUI -I$(top_srcdir)/rtk2 -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/server `gtk-config --cflags`
+if WITH_GUI
+PLAYERV = playerv
+else
+PLAYERV =
+endif
 
-bin_PROGRAMS = playerv
+AM_CPPFLAGS = -I$(top_srcdir)/rtk2 -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/server `gtk-config --cflags`
+
+bin_PROGRAMS = $(PLAYERV)
 
 playerv_SOURCES = playerv.c \
                   playerv.h \
-									registry.c \
+                  registry.c \
                   mainwnd.c \
                   dev_blobfinder.c \
                   dev_fiducial.c \
                   dev_laser.c \
                   dev_position.c \
                   dev_ptz.c \
-									dev_sonar.c \
+		  dev_sonar.c \
                   error.h \
                   opt.c \
                   opt.h
