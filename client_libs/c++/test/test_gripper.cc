@@ -46,23 +46,55 @@ test_gripper(PlayerClient* client, int index)
     gp.Print();
   }
 
-  TEST("gripper deploy");
-  if(gp.SetGrip(GRIPdeploy) < 0)
+  if(use_stage)
   {
-    FAIL();
-    return(-1);
-  }
-  sleep(3);
-  PASS();
+    TEST("gripper open");
+    if(gp.SetGrip(GRIPopen) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+    sleep(1);
+    PASS();
 
-  TEST("gripper store");
-  if(gp.SetGrip(GRIPstore) < 0)
-  {
-    FAIL();
-    return(-1);
+    TEST("gripper close");
+    if(gp.SetGrip(GRIPclose) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+    sleep(1);
+    PASS();
+
+    TEST("gripper open");
+    if(gp.SetGrip(GRIPopen) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+    sleep(1);
+    PASS();
   }
-  sleep(4);
-  PASS();
+  else
+  {
+    TEST("gripper deploy");
+    if(gp.SetGrip(GRIPdeploy) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+    sleep(3);
+    PASS();
+
+    TEST("gripper store");
+    if(gp.SetGrip(GRIPstore) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+    sleep(4);
+    PASS();
+  }
 
   TEST("unsubscribing");
   if((gp.ChangeAccess(PLAYER_CLOSE_MODE,&access) < 0) ||

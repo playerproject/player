@@ -8,8 +8,6 @@
 #include "test.h"
 #include <unistd.h>
 
-extern bool use_stage;
-
 int
 test_vision(PlayerClient* client, int index)
 {

@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
  *                      
  *
@@ -18,6 +18,26 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
+ */
+/*
+ *  Player - One Hell of a Robot Server
+ *  Copyright (C) 2003
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 /*
@@ -96,6 +116,27 @@ int TruthProxy::SetPose( double px, double py, double pa )
   config.pa = htonl((int) (pa * 180 / M_PI)); 
   
   len = client->Request(m_device_id,
+			 (const char*)&config, sizeof(config));
+  if (len < 0)
+    return -1;
+  
+  // TODO: check for a NACK
+  
+  return 0;
+}
+
+// Set the object pose by sending a config request
+int TruthProxy::SetPoseOnRoot( double px, double py, double pa )
+{
+  int len;
+  player_truth_pose_t config;
+  
+  config.subtype = PLAYER_TRUTH_SET_POSE_ON_ROOT;
+  config.px = htonl((int) (px * 1000));
+  config.py = htonl((int) (py * 1000));
+  config.pa = htonl((int) (pa * 180 / M_PI)); 
+  
+  len = client->Request( PLAYER_TRUTH_CODE, index, 
 			 (const char*)&config, sizeof(config));
   if (len < 0)
     return -1;

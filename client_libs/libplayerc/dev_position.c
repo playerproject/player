@@ -1,6 +1,6 @@
 /* 
  *  libplayerc : a Player client library
- *  Copyright (C) Andrew Howard 2002
+ *  Copyright (C) Andrew Howard 2002-2003
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -16,6 +16,25 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
+ */
+/*
+ *  Player - One Hell of a Robot Server
+ *  Copyright (C) Andrew Howard 2003
+ *                      
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 /***************************************************************************
  * Desc: Position device proxy
@@ -58,6 +77,8 @@ void playerc_position_destroy(playerc_position_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
+
+  return;
 }
 
 
@@ -96,8 +117,8 @@ void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *heade
 int playerc_position_enable(playerc_position_t *device, int enable)
 {
   player_position_power_config_t config;
-  memset( &config, 0, sizeof(config) );
 
+  memset(&config, 0, sizeof(config));
   config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   config.value = enable;
 
