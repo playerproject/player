@@ -1190,10 +1190,10 @@ typedef struct
   playerc_device_t info;
 
   /** Did the planner find a valid path? */
-  char path_valid;
+  int path_valid;
 
   /** Have we arrived at the goal? */
-  char path_done;
+  int path_done;
 
   /** Current pose (m, m, radians). */
   double px, py, pa;
