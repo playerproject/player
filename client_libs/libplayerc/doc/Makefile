@@ -5,6 +5,7 @@
 # generic LaTeX makefile
 #
 
+MAKEDOC = ../makedoc2.py
 LATEX = latex
 BIBTEX = bibtex
 DVIPS = dvips
@@ -14,34 +15,40 @@ PS2PDF = ps2pdf
 NAME = libplayerc
 
 # Library include file
-INCLUDE = ../playerc.h
+INCLUDE = ../../playerc.h
 
 all: dvi ps pdf
 
 dvi: $(NAME).dvi
 
 $(NAME).dvi: $(NAME).tex \
-						client.f.tex \
-						device.t.tex \
-						blobfinder.t.tex blobfinder.f.tex \
-						comms.t.tex comms.f.tex \
-						fiducial.t.tex fiducial.f.tex \
-						gps.t.tex gps.f.tex \
-						laser.t.tex laser.f.tex \
-						localize.t.tex localize.f.tex \
-						position.t.tex position.f.tex \
-						ptz.t.tex ptz.f.tex \
-						sonar.t.tex sonar.f.tex \
-						truth.t.tex truth.f.tex \
-						wifi.t.tex wifi.f.tex
+#						client.f.tex \
+#						device.t.tex \
+#						blobfinder.t.tex blobfinder.f.tex \
+#						comms.t.tex comms.f.tex \
+#						fiducial.t.tex fiducial.f.tex \
+#						gps.t.tex gps.f.tex \
+#						laser.t.tex laser.f.tex \
+#						localize.t.tex localize.f.tex \
+#						position.t.tex position.f.tex \
+#						ptz.t.tex ptz.f.tex \
+#						sonar.t.tex sonar.f.tex \
+#						truth.t.tex truth.f.tex \
+#						wifi.t.tex wifi.f.tex
+	cd proxies && $(MAKEDOC) $(INCLUDE)
 	$(LATEX) $< && $(LATEX) $<
 
 light: $(NAME).tex
 	$(LATEX) $< 
 
+#html:
+#	rm -rf html_docs
+#	latex2html -split 0 -nonavigation -html_version 3.2,table,math -show_section_numbers -mkdir -dir html_docs $(NAME).tex
+
 html:
 	rm -rf html_docs
-	latex2html -split 0 -nonavigation -html_version 3.2,table,math -show_section_numbers -mkdir -dir html_docs $(NAME).tex
+	latex2html -split 4 -toc_depth 3 -html_version 3.2,table,math -show_section_numbers -mkdir -dir html_docs $(NAME).tex
+
 
 ps: $(NAME).ps
 
