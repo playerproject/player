@@ -65,6 +65,7 @@ PlayerClient::PlayerClient(const char* hostname,
   proxies = (ClientProxyNode*)NULL;
   num_proxies = 0;
   fresh = false;
+  data_delivery_mode = PLAYER_DATAMODE_PUSH_NEW;
 
   memset( this->hostname, 0, 256 );
   memset( &this->hostaddr, 0, sizeof(struct in_addr) );
@@ -243,6 +244,14 @@ int PlayerClient::Read()
     fprintf(stderr,"ERROR PlayerClient not connected\n" );
     delete[] buffer;
     return(-1);
+  }
+
+  // if we're in a PULL mode, we first need to request a round of data
+  if((this->data_delivery_mode == PLAYER_DATAMODE_PULL_NEW) ||
+     (this->data_delivery_mode == PLAYER_DATAMODE_PULL_ALL))
+  {
+    if(this->RequestData() < 0)
+      return(-1);
   }
   
   // read until we get a SYNCH packet
@@ -445,7 +454,10 @@ int PlayerClient::SetDataMode(unsigned char mode)
 
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
-  return(Request(id, payload, sizeof(payload),NULL,0,0));
+  if(Request(id, payload, sizeof(payload),NULL,0,0) < 0)
+    return(-1);
+  this->data_delivery_mode = mode;
+  return(0);
 }
 
 // request a round of data (only valid when in request/reply mode)

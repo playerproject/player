@@ -229,6 +229,8 @@ class PlayerClient
     int num_proxies;
 
     int reserved;
+
+    unsigned char data_delivery_mode;
     
     // get the pointer to the proxy for the given device and index
     //
