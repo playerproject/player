@@ -263,9 +263,13 @@ AC_ARG_WITH(waveaudio,
 [  --with-waveaudio        Compile the wave audio driver],,
 with_waveaudio=no)
 if test "x$with_waveaudio" = "xyes"; then
-  AC_DEFINE(INCLUDE_WAVEAUDIO, 1, [[include the WAVEAUDIO driver]])
-  WAVEAUDIO_LIB="libwaveaudio.a"
-  WAVEAUDIO_LIBPATH="drivers/libwaveaudio.a"
+  dnl check that we have the soundcard header available
+  AC_CHECK_HEADER(sys/soundcard.h, with_waveaudio=yes, with_waveaudio=no,)
+  if test "x$with_waveaudio" = "xyes"; then
+    AC_DEFINE(INCLUDE_WAVEAUDIO, 1, [[include the WAVEAUDIO driver]])
+    WAVEAUDIO_LIB="libwaveaudio.a"
+    WAVEAUDIO_LIBPATH="drivers/libwaveaudio.a"
+  fi
 fi
 AC_SUBST(WAVEAUDIO_LIB)
 AC_SUBST(WAVEAUDIO_LIBPATH)
