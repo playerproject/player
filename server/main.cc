@@ -155,7 +155,12 @@ Usage()
     fprintf(stderr, "%s ", sortedlist[i]);
   }
   free(sortedlist);
-  fprintf(stderr,"\n\nPart of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
+  fprintf(stderr,"\n\nStage support was ");
+#if ! INCLUDE_STAGE
+  fprintf(stderr,"NOT ");
+#endif
+  fprintf(stderr,"included.\n");
+  fprintf(stderr,"\nPart of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
   fprintf(stderr, "Copyright (C) 2000 - 2003 Brian Gerkey, Richard Vaughan, Andrew Howard,\nand contributors.\n");
   fprintf(stderr,"\nReleased under the GNU General Public License.\n");
   fprintf(stderr,"\nPlayer comes with ABSOLUTELY NO WARRANTY.  This is free software, and you are\nwelcome to redistribute it under certain conditions; see COPYING for details.\n\n");
