@@ -104,17 +104,17 @@ void playerc_position3d_putdata(playerc_position3d_t *device, player_msghdr_t *h
   device->pos_y = (long) ntohl(data->ypos) / 1000.0;
   device->pos_z = (long) ntohl(data->zpos) / 1000.0;
 
-  device->pos_roll = (long) ntohl(data->roll) * M_PI / 180.0 / 3600.0;
-  device->pos_pitch = (long) ntohl(data->pitch) * M_PI / 180.0 / 3600.0;
-  device->pos_yaw = (long) ntohl(data->yaw) * M_PI / 180.0 / 3600.0;
+  device->pos_roll = (long) ntohl(data->roll)  / 1000.0;
+  device->pos_pitch = (long) ntohl(data->pitch) / 1000.0;
+  device->pos_yaw = (long) ntohl(data->yaw)  / 1000.0;
 
   device->vel_x = (long) ntohl(data->xspeed) / 1000.0;
   device->vel_y = (long) ntohl(data->yspeed) / 1000.0;
   device->vel_z = (long) ntohl(data->zspeed) / 1000.0;
 
-  device->vel_roll = (long) ntohl(data->rollspeed) * M_PI / 180.0 / 3600.0;
-  device->vel_pitch = (long) ntohl(data->pitchspeed) * M_PI / 180.0 / 3600.0;
-  device->vel_yaw = (long) ntohl(data->yawspeed) * M_PI / 180.0 / 3600.0;
+  device->vel_roll = (long) ntohl(data->rollspeed) / 1000.0;
+  device->vel_pitch = (long) ntohl(data->pitchspeed) / 1000.0;
+  device->vel_yaw = (long) ntohl(data->yawspeed) / 1000.0;
   
   device->stall = data->stall;
 }
@@ -126,7 +126,7 @@ int playerc_position3d_enable(playerc_position3d_t *device, int enable)
   player_position3d_power_config_t config;
 
   memset(&config, 0, sizeof(config));
-  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+  config.request = PLAYER_POSITION3D_MOTOR_POWER_REQ;
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
@@ -143,7 +143,7 @@ int playerc_position3d_get_geom(playerc_position3d_t *device)
   player_position_geom_t config;
 
   memset(&config, 0, sizeof(config));
-  config.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+  config.subtype = PLAYER_POSITION3D_GET_GEOM_REQ;
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
@@ -157,38 +157,72 @@ int playerc_position3d_get_geom(playerc_position3d_t *device)
 
   device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
   device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
-  device->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
+  device->pose[2] = ((int16_t) ntohs(config.pose[2])) / 1000.0;
+
+  device->pose[3] = ((int16_t) ntohs(config.pose[3]))  / 1000.0;
+  device->pose[4] = ((int16_t) ntohs(config.pose[4])) / 1000.0;
+  device->pose[5] = ((int16_t) ntohs(config.pose[5])) / 1000.0;
+
   device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
   device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
+  device->size[2] = ((int16_t) ntohs(config.size[2])) / 1000.0;
 
   return 0;
 }
 
 
 // Set the robot speed
-int playerc_position3d_set_speed(playerc_position3d_t *device, double vx, double vy, double va)
+int playerc_position3d_set_velocity(playerc_position3d_t *device, 
+                     double vx, double vy, double vz,
+                     double vr, double vp, double vt)
 {
   player_position3d_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
   cmd.xspeed = htonl((int) (vx * 1000.0));
   cmd.yspeed = htonl((int) (vy * 1000.0));
-  cmd.yawspeed = htonl((int) (va * 180.0 / M_PI));
+  cmd.zspeed = htonl((int) (vz * 1000.0));
 
-  return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
+  cmd.rollspeed = htonl((int) (vr * 1000.0));
+  cmd.pitchspeed = htonl((int) (vp * 1000.0));
+  cmd.yawspeed = htonl((int) (vt * 1000.0));
+
+  return playerc_client_write(device->info.client,
+                     &device->info, &cmd, sizeof(cmd));
 }
 
 
 // Set the target pose
-int playerc_position3d_set_cmd_pose(playerc_position3d_t *device, double gx, double gy, double ga)
+int playerc_position3d_set_pose(playerc_position3d_t *device,
+                        double gx, double gy, double gz,
+                        double gr, double gp, double gt)
 {
   player_position3d_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
   cmd.xpos = htonl((int) (gx * 1000.0));
   cmd.ypos = htonl((int) (gy * 1000.0));
-  cmd.yaw = htonl((int) (ga * 180.0 / M_PI));
+  cmd.zpos = htonl((int) (gz * 1000.0));
 
-  return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
+  cmd.roll = htonl((int) (gr * 1000.0));
+  cmd.pitch = htonl((int) (gp * 1000.0));
+  cmd.yaw = htonl((int) (gt * 1000.0));
+
+  return playerc_client_write(device->info.client,
+                     &device->info, &cmd, sizeof(cmd));
+}
+
+/** For compatibility with old position3d interface */
+int playerc_position3d_set_speed(playerc_position3d_t *device,
+                                 double vx, double vy, double vz)
+{
+  playerc_position3d_set_velocity(device,vx,vy,vz,0,0,0);
+}
+
+/** For compatibility with old position3d interface */
+int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
+                                    double gx, double gy, double gz)
+{
+  playerc_position3d_set_pose(device,gx,gy,gz,0,0,0);
 }
 

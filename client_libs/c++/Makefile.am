@@ -39,18 +39,20 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               audioproxy.cc \
                               waveformproxy.cc \
                               mcomproxy.cc \
-															localizeproxy.cc \
-															soundproxy.cc \
-															audiodspproxy.cc \
+                              localizeproxy.cc \
+                              soundproxy.cc \
+                              audiodspproxy.cc \
                               audiomixerproxy.cc \
-															position3dproxy.cc \
+                              motorproxy.cc \
+                              position2dproxy.cc \
+                              position3dproxy.cc \
                               blinkenlightproxy.cc \
-															cameraproxy.cc \
-															aioproxy.cc \
-															hudproxy.cc \
-															plannerproxy.cc \
-															mapproxy.cc \
-															energyproxy.cc
+                              cameraproxy.cc \
+                              aioproxy.cc \
+                              hudproxy.cc \
+                              plannerproxy.cc \
+                              mapproxy.cc \
+                              energyproxy.cc
                               #bpsproxy.cc
                               #bpsproxy.h
 

@@ -23,7 +23,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -56,7 +56,9 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int Position3DProxy::SetSpeed(double xspeed, double yspeed, double yawspeed)
+int32_t Position3DProxy::SetSpeed(double xspeed, double yspeed, double zspeed,
+                  double rollspeed, double pitchspeed,
+                  double yawspeed)
 {
   if(!client)
     return(-1);
@@ -64,46 +66,45 @@ int Position3DProxy::SetSpeed(double xspeed, double yspeed, double yawspeed)
   player_position3d_cmd_t cmd;
   memset(&cmd, 0, sizeof(cmd));
 
-  cmd.xpos = cmd.ypos = cmd.zpos = 0;
-  cmd.roll = cmd.pitch = cmd.yaw = 0;
-  cmd.xspeed = (int32_t)htonl((int)rint(xspeed*1e3));
-  cmd.yspeed = (int32_t)htonl((int)rint(yspeed*1e3));
-  cmd.zspeed = 0;
-  cmd.rollspeed = 0;
-  cmd.pitchspeed = 0;
-  cmd.yawspeed = (int32_t)htonl((int)rint(RTOD(yawspeed) * 3600.0));
+  cmd.xspeed     = htonl(static_cast<int32_t>(rint(xspeed*1e3)));
+  cmd.yspeed     = htonl(static_cast<int32_t>(rint(yspeed*1e3)));
+  cmd.zspeed     = htonl(static_cast<int32_t>(rint(zspeed*1e3)));
+  cmd.rollspeed  = htonl(static_cast<int32_t>(rint(rollspeed*1e3)));
+  cmd.pitchspeed = htonl(static_cast<int32_t>(rint(pitchspeed*1e3)));
+  cmd.yawspeed   = htonl(static_cast<int32_t>(rint(yawspeed*1e3)));
 
   return(client->Write(m_device_id,
-                       (const char*)&cmd,sizeof(cmd)));
+                       reinterpret_cast<char*>(&cmd),
+                       sizeof(cmd)));
 }
-    
-// send a motor command
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int Position3DProxy::SetSpeed(double xspeed, 
-                              double yspeed, 
-                              double zspeed,
-                              double yawspeed)
+
+/* goto the specified location (m, m, m, rad, rad,rad)
+ * this only works if the robot supports position control.
+ *
+ * returns: 0 if ok, -1 else
+ */
+int32_t
+Position3DProxy::GoTo(double x, double y, double z,
+            double roll, double pitch, double yaw)
 {
-  if(!client)
-    return(-1);
+  if (!client) {
+    return -1;
+  }
 
   player_position3d_cmd_t cmd;
-  memset(&cmd, 0, sizeof(cmd));
+  memset( &cmd, 0, sizeof(cmd) );
 
-  cmd.xpos = cmd.ypos = cmd.zpos = 0;
-  cmd.roll = cmd.pitch = cmd.yaw = 0;
-  cmd.xspeed = (int32_t)htonl((int)rint(1e3*xspeed));
-  cmd.yspeed = (int32_t)htonl((int)rint(1e3*yspeed));
-  cmd.zspeed = (int32_t)htonl((int)rint(1e3*zspeed));
-  cmd.rollspeed = 0;
-  cmd.pitchspeed = 0;
-  cmd.yawspeed = (int32_t)htonl((int)rint(RTOD(yawspeed) * 3600.0));
+  cmd.xpos   = htonl(static_cast<int32_t>(rint(x*1e3)));
+  cmd.ypos   = htonl(static_cast<int32_t>(rint(y*1e3)));
+  cmd.zpos   = htonl(static_cast<int32_t>(rint(z*1e3)));
+
+  cmd.roll   = htonl(static_cast<int32_t>(rint(roll*1e3)));
+  cmd.pitch  = htonl(static_cast<int32_t>(rint(pitch*1e3)));
+  cmd.yaw    = htonl(static_cast<int32_t>(rint(yaw*1e3)));
 
   return(client->Write(m_device_id,
-                       (const char*)&cmd,sizeof(cmd)));
+                       reinterpret_cast<char*>(&cmd),
+                       sizeof(cmd)));
 }
 
 void Position3DProxy::FillData(player_msghdr_t hdr, const char* buffer)
@@ -118,21 +119,21 @@ void Position3DProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_position3d_data_t),hdr.size);
   }
 
-  xpos = ((int)ntohl(buf->xpos)) / 1e3;
-  ypos = ((int)ntohl(buf->ypos)) / 1e3;
-  zpos = ((int)ntohl(buf->zpos)) / 1e3;
+  xpos = static_cast<int32_t>(ntohl(buf->xpos)) / 1e3;
+  ypos = static_cast<int32_t>(ntohl(buf->ypos)) / 1e3;
+  zpos = static_cast<int32_t>(ntohl(buf->zpos)) / 1e3;
 
-  roll = DTOR(((double)(int)ntohl(buf->roll)) / 3600.0);
-  pitch = DTOR(((double)(int)ntohl(buf->pitch)) / 3600.0);
-  yaw = DTOR(((double)(int)ntohl(buf->yaw)) / 3600.0);
+  roll  = static_cast<int32_t>(ntohl(buf->roll))  / 1e3;
+  pitch = static_cast<int32_t>(ntohl(buf->pitch)) / 1e3;
+  yaw   = static_cast<int32_t>(ntohl(buf->yaw))   / 1e3;
 
-  xspeed = ((int)ntohl(buf->xspeed)) / 1e3;
-  yspeed = ((int)ntohl(buf->yspeed)) / 1e3;
-  zspeed = ((int)ntohl(buf->zspeed)) / 1e3;
+  xspeed = static_cast<int32_t>(ntohl(buf->xspeed)) / 1e3;
+  yspeed = static_cast<int32_t>(ntohl(buf->yspeed)) / 1e3;
+  zspeed = static_cast<int32_t>(ntohl(buf->zspeed)) / 1e3;
 
-  rollspeed = DTOR(((double)(int)ntohl(buf->rollspeed)) / 3600.0);
-  pitchspeed = DTOR(((double)(int)ntohl(buf->pitchspeed)) / 3600.0);
-  yawspeed = DTOR(((double)(int)ntohl(buf->yawspeed)) / 3600.0);
+  rollspeed  = static_cast<int32_t>(ntohl(buf->rollspeed))  / 1e3;
+  pitchspeed = static_cast<int32_t>(ntohl(buf->pitchspeed)) / 1e3;
+  yawspeed   = static_cast<int32_t>(ntohl(buf->yawspeed))   / 1e3;
 
   stall = buf->stall;
 }
@@ -150,7 +151,7 @@ void Position3DProxy::Print()
          xspeed,yspeed,zspeed,rollspeed,pitchspeed,yawspeed);
 }
 
-int Position3DProxy::SetMotorState(unsigned char state)
+int32_t Position3DProxy::SetMotorState(unsigned char state)
 {
   if(!client)
     return(-1);
@@ -162,6 +163,171 @@ int Position3DProxy::SetMotorState(unsigned char state)
   config.value = state;
 
 
-  return(client->Request(m_device_id,(const char*)&config,
+  return(client->Request(m_device_id,
+                         reinterpret_cast<char*>(&config),
                          sizeof(config)));
 }
+
+
+// Returns:
+//   0 if everything's ok
+//   -1 otherwise (that's bad)
+int32_t Position3DProxy::SelectVelocityControl(unsigned char mode)
+{
+  if(!client)
+    return(-1);
+
+  player_position3d_velocitymode_config_t config;
+  memset( &config, 0, sizeof(config) );
+
+  config.request = PLAYER_POSITION3D_VELOCITY_MODE_REQ;
+  config.value = mode;
+
+  return(client->Request(m_device_id,
+                         reinterpret_cast<char*>(&config),
+                         sizeof(config)));
+}
+
+// reset odometry to (0,0,0)
+//
+// Returns:
+//   0 if everything's ok
+//   -1 otherwise (that's bad)
+int32_t Position3DProxy::ResetOdometry()
+{
+  if(!client)
+    return(-1);
+
+  player_position3d_resetodom_config_t config;
+  memset( &config, 0, sizeof(config) );
+
+  config.request = PLAYER_POSITION3D_RESET_ODOM_REQ;
+
+  return(client->Request(m_device_id,
+                         reinterpret_cast<char*>(&config),
+                         sizeof(config)));
+
+}
+
+// set odometry to (x,y,z,roll,pitch,theta)
+//
+// Returns:
+//   0 if everything's ok
+//   -1 otherwise (that's bad)
+int32_t Position3DProxy::SetOdometry( double x, double y, double z,
+                                      double roll, double pitch, double yaw )
+{
+  if(!client)
+    return(-1);
+
+  player_position3d_set_odom_req_t config;
+  memset( &config, 0, sizeof(config) );
+
+  config.subtype = PLAYER_POSITION3D_SET_ODOM_REQ;
+  config.x = htonl(static_cast<int32_t>(rint(x*1e3)));
+  config.y = htonl(static_cast<int32_t>(rint(y*1e3)));
+  config.z = htonl(static_cast<int32_t>(rint(z*1e3)));
+
+  config.roll  = htonl(static_cast<int32_t>(rint(roll*1e3)));
+  config.pitch = htonl(static_cast<int32_t>(rint(pitch*1e3)));
+  config.yaw   = htonl(static_cast<int32_t>(rint(yaw*1e3)));
+
+  return(client->Request(m_device_id,
+                         reinterpret_cast<char*>(&config),
+                         sizeof(config)));
+}
+
+/* set the PID for the speed controller
+ *
+ * returns: 0 if ok, -1 else
+ */
+int32_t
+Position3DProxy::SetSpeedPID(double kp, double ki, double kd)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position3d_speed_pid_req_t req;
+  memset( &req, 0, sizeof(req) );
+
+  req.subtype = PLAYER_POSITION3D_SPEED_PID_REQ;
+  req.kp = htonl(static_cast<int32_t>(rint(kp*1e3)));
+  req.ki = htonl(static_cast<int32_t>(rint(ki*1e3)));
+  req.kd = htonl(static_cast<int32_t>(rint(kd*1e3)));
+
+  return client->Request(m_device_id,
+                         reinterpret_cast<const char*>(&req),
+                         sizeof(req));
+}
+
+/* set the constants for the position PID
+ *
+ * returns: 0 if ok, -1 else
+ */
+int32_t
+Position3DProxy::SetPositionPID(double kp, double ki, double kd)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position3d_position_pid_req_t req;
+  memset( &req, 0, sizeof(req) );
+
+  req.subtype = PLAYER_POSITION3D_POSITION_PID_REQ;
+  req.kp = htonl(static_cast<int32_t>(rint(kp*1e3)));
+  req.ki = htonl(static_cast<int32_t>(rint(ki*1e3)));
+  req.kd = htonl(static_cast<int32_t>(rint(kd*1e3)));
+
+  return client->Request(m_device_id,
+                         reinterpret_cast<const char*>(&req),
+                         sizeof(req));
+}
+
+/* set the speed profile values used during position mode
+ * returns: 0 if ok, -1 else
+ */
+int32_t
+Position3DProxy::SetPositionSpeedProfile(double spd, double acc)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position3d_speed_prof_req_t req;
+  memset( &req, 0, sizeof(req) );
+
+  req.subtype = PLAYER_POSITION3D_SPEED_PROF_REQ;
+  req.speed   = htonl(static_cast<int32_t>(rint(spd*1e3))); //rad/s
+  req.acc     = htonl(static_cast<int32_t>(rint(acc*1e3))); //rad/s/s
+
+  return client->Request(m_device_id,
+                         reinterpret_cast<char*>(&req),
+                         sizeof(req));
+}
+
+/* select the kind of velocity control to perform
+ * 1 for position mode
+ * 0 for velocity mode
+ *
+ * returns: 0 if ok, -1 else
+ */
+int32_t
+Position3DProxy::SelectPositionMode(unsigned char mode)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position3d_position_mode_req_t req;
+  memset( &req, 0, sizeof(req) );
+
+  req.subtype = PLAYER_POSITION3D_POSITION_MODE_REQ;
+  req.state = mode;
+
+  return client->Request(m_device_id,
+                         reinterpret_cast<char*>(&req),
+                         sizeof(req));
+}
+

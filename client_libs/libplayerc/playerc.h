@@ -980,7 +980,66 @@ int playerc_localize_set_config(playerc_localize_t *device, player_localize_conf
  ** end section
  **************************************************************************/ 
 
+ /***************************************************************************
+ ** begin section motor
+ **************************************************************************/
 
+/** [Synopsis] The {\tt motor} proxy provides an interface to a
+mobile robot base, such as the ActiveMedia Pioneer series.  The proxy
+supports both differential drive robots (which are capable of forward
+motion and rotation) and omni-drive robots (which are capable of
+forward, sideways and rotational motion). */
+
+/** [Data] */
+
+/** Motor device data. */
+typedef struct _playerc_motor_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Odometric pose (radians). */
+  double pt;
+
+  /** Odometric velocity (radians). */
+  double vt;
+
+  /** Stall flag [0, 1]. */
+  int stall;
+
+} playerc_motor_t;
+
+/** [Methods] */
+
+/** Create a motor device proxy. */
+playerc_motor_t *playerc_motor_create(playerc_client_t *client, int index);
+
+/** Destroy a motor device proxy. */
+void playerc_motor_destroy(playerc_motor_t *device);
+
+/** Subscribe to the motor device */
+int playerc_motor_subscribe(playerc_motor_t *device, int access);
+
+/** Un-subscribe from the motor device */
+int playerc_motor_unsubscribe(playerc_motor_t *device);
+
+/** Enable/disable the motors */
+int playerc_motor_enable(playerc_motor_t *device, int enable);
+
+/** Change position control 0=velocity;1=position */
+int playerc_motor_position_control(playerc_motor_t *device, int type);
+
+/** Set the target rotational velocity (vt) in rad/s.  */
+int playerc_motor_set_cmd_vel(playerc_motor_t *device,
+                                 double vt, int state);
+
+/** Set the target pose (pt) is the target pose in rad/s. */
+int playerc_motor_set_cmd_pose(playerc_motor_t *device,
+                                  double gt, int state);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
 
 /***************************************************************************
  ** begin section position
@@ -1051,7 +1110,83 @@ int playerc_position_set_cmd_pose(playerc_position_t *device,
 
 /***************************************************************************
  ** end section
- **************************************************************************/ 
+ **************************************************************************/
+
+ 
+/***************************************************************************
+ ** begin section position2d
+ **************************************************************************/
+
+/** [Synopsis] The {\tt position2d} proxy provides an interface to a
+mobile robot base, such as the ActiveMedia Pioneer series.  The proxy
+supports both differential drive robots (which are capable of forward
+motion and rotation) and omni-drive robots (which are capable of
+forward, sideways and rotational motion). */
+
+/** [Data] */
+
+/** Position2d device data. */
+typedef struct _playerc_position2d_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Robot geometry in robot cs: pose gives the position2d and
+      orientation, size gives the extent.  These values are filled in
+      by playerc_position2d_get_geom(). */
+  double pose[3];
+  double size[2];
+
+  /** Odometric pose (m, m, rad). */
+  double px, py, pa;
+
+  /** Odometric velocity (m/s, m/s, rad/s). */
+  double vx, vy, va;
+
+  /** Stall flag [0, 1]. */
+  int stall;
+
+} playerc_position2d_t;
+
+/** [Methods] */
+
+/** Create a position2d device proxy. */
+playerc_position2d_t *playerc_position2d_create(playerc_client_t *client, int index);
+
+/** Destroy a position2d device proxy. */
+void playerc_position2d_destroy(playerc_position2d_t *device);
+
+/** Subscribe to the position2d device */
+int playerc_position2d_subscribe(playerc_position2d_t *device, int access);
+
+/** Un-subscribe from the position2d device */
+int playerc_position2d_unsubscribe(playerc_position2d_t *device);
+
+/** Enable/disable the motors */
+int playerc_position2d_enable(playerc_position2d_t *device, int enable);
+
+/** Change position control 0=velocity;1=position */
+int playerc_motor_position_control(playerc_motor_t *device, int type);
+
+/** Get the position2d geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_position2d_get_geom(playerc_position2d_t *device);
+
+/** Set the target speed.  vx : forward speed (m/s).  vy : sideways
+    speed (m/s); this field is used by omni-drive robots only.  va :
+    rotational speed (rad/s).  All speeds are defined in the robot
+    coordinate system. */
+int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
+                                 double vx, double vy, double va, int state);
+
+/** Set the target pose (gx, gy, ga) is the target pose in the
+    odometric coordinate system. */
+int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
+                                  double gx, double gy, double ga, int state);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
 
 
 /***************************************************************************
@@ -1077,7 +1212,7 @@ typedef struct _playerc_position3d_t
       by playerc_position3d_get_geom(). */
   double pose[3];
   double size[2];
-  
+
   /** Device position (m). */
   double pos_x, pos_y, pos_z;
 
@@ -1089,7 +1224,7 @@ typedef struct _playerc_position3d_t
 
   /** Angular velocity (radians/sec). */
   double vel_roll, vel_pitch, vel_yaw;
-  
+
   /** Stall flag [0, 1]. */
   int stall;
 
@@ -1098,7 +1233,8 @@ typedef struct _playerc_position3d_t
 /** [Methods] */
 
 /** Create a position3d device proxy. */
-playerc_position3d_t *playerc_position3d_create(playerc_client_t *client, int index);
+playerc_position3d_t *playerc_position3d_create(playerc_client_t *client,
+						int index);
 
 /** Destroy a position3d device proxy. */
 void playerc_position3d_destroy(playerc_position3d_t *device);
@@ -1117,20 +1253,29 @@ int playerc_position3d_enable(playerc_position3d_t *device, int enable);
 int playerc_position3d_get_geom(playerc_position3d_t *device);
 
 /** Set the target speed.  vx : forward speed (m/s).  vy : sideways
-    speed (m/s); this field is used by omni-drive robots only.  va :
-    rotational speed (radians/s).  All speeds are defined in the robot
-    coordinate system. */
+    speed (m/s); vz : vertical speed (m/s). vr : roll speed (rad/s) .
+    vp : pitch speed (rad/s) . vt : theta speed (rad/s).
+    All speeds are defined in the robot coordinate system. */
+int playerc_position3d_set_velocity(playerc_position3d_t *device,
+				    double vx, double vy, double vz,
+				    double vr, double vp, double vt);
+/** For compatibility with old position3d interface */
 int playerc_position3d_set_speed(playerc_position3d_t *device,
-                                 double vx, double vy, double va);
+                                 double vx, double vy, double vz);
 
-/** Set the target pose (gx, gy, ga) is the target pose in the
+/** Set the target pose (gx, gy, ga, gr, gp, gt) is the target pose in the
     odometric coordinate system. */
+int playerc_position3d_set_pose(playerc_position3d_t *device,
+                                    double gx, double gy, double gz,
+                                    double gr, double gp, double gt);
+
+/** For compatibility with old position3d interface */
 int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
-                                    double gx, double gy, double ga);
+                                    double gx, double gy, double gz);
 
 /***************************************************************************
  ** end section
- **************************************************************************/ 
+ **************************************************************************/
 
 
 /***************************************************************************

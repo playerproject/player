@@ -24,7 +24,9 @@ extern bool use_stage;
 extern int robot;
 
 int test_gps(PlayerClient* client, int index);
+int test_motor(PlayerClient* client, int index);
 int test_position(PlayerClient* client, int index);
+int test_position2d(PlayerClient* client, int index);
 int test_position3d(PlayerClient* client, int index);
 int test_position_control(PlayerClient* client, int index);
 int test_sonar(PlayerClient* client, int index);
