@@ -31,4 +31,3 @@ multilogger_SOURCES = multilogger.cc
 stress_SOURCES = stress.cc
 pherobot_SOURCES = pherobot.cc
 
-goto_LDADD = $(LDADD) -lpthread

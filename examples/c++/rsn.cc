@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <math.h>
 #include <stdio.h>
