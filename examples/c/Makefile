@@ -15,7 +15,7 @@ INCLUDES = -I../../client_libs/c -I../../include -I/usr/local/player/include
 LIBDIRS = -L../../client_libs/c -L/usr/local/player/lib 
 LIBS = $(LIBDIRS) -lplayercclient
 
-BINARIES = randomwalk laserobstacleavoid ptz test
+BINARIES = randomwalk laserobstacleavoid ptz 
 
 all: $(BINARIES)
 
