@@ -51,6 +51,8 @@
 //#include <sys/poll.h>
 #include "replace.h"
 
+#include "replace.h"  // for poll
+
 // constructor
 PlayerMultiClient::PlayerMultiClient()
 {

@@ -49,6 +49,7 @@
 
 #include <playerclient.h>
 #include <netinet/in.h>
+#include <math.h>
 
 /* fills in all the data....
  *
@@ -62,11 +63,30 @@ WiFiProxy::FillData(player_msghdr_t hdr, const char *buffer)
 	    sizeof(player_wifi_data_t), hdr.size);
   }
 
-  /* TODO: fix
-  link = ntohs( ((player_wifi_data_t *)buffer)->link );
-  level = ntohs( ((player_wifi_data_t *)buffer)->level );
-  noise = ntohs( ((player_wifi_data_t *)buffer)->noise );
-  */
+  player_wifi_data_t * d = (player_wifi_data_t *)buffer;
+
+  throughput = ntohl(d->throughput);
+  op_mode = d->mode;
+  bitrate = ntohl(d->bitrate);
+
+  // get access point/cell addr
+  strncpy(access_point, d->ap, sizeof(access_point));
+  
+  link_count = ntohl(d->link_count);
+  
+  for (int i = 0; i < link_count; i++) {
+    links[i].qual_type = d->links[i].qual_type;
+    links[i].qual = ntohs(d->links[i].qual);
+    links[i].level = ntohs(d->links[i].level);
+    links[i].noise = ntohs(d->links[i].noise);
+    links[i].maxqual = ntohs(d->links[i].maxqual);
+    links[i].maxlevel = ntohs(d->links[i].maxlevel);
+    links[i].maxnoise = ntohs(d->links[i].maxnoise);
+
+    //    links[i].bitrate = ntohl(d->links[i].bitrate);
+
+    memcpy(links[i].ip, d->links[i].ip, sizeof(links[i].ip));
+  }
   
 }
 
@@ -77,6 +97,168 @@ WiFiProxy::FillData(player_msghdr_t hdr, const char *buffer)
 void
 WiFiProxy::Print()
 {
-  printf("#WiFi(%d:%d) - %c\n", device, index, access);
-  printf("\tlink: %d\tlevel: %d\tnoise: %d\n", link, level, noise);
+  char mode[16];
+
+  switch(op_mode) {
+  case PLAYER_WIFI_MODE_AUTO:
+    strcpy(mode, "AUTO");
+    break;
+  case PLAYER_WIFI_MODE_ADHOC:
+    strcpy(mode, "ADHOC");
+    break;
+  case PLAYER_WIFI_MODE_MASTER:
+    strcpy(mode, "MASTER");
+    break;
+  case PLAYER_WIFI_MODE_INFRA:
+    strcpy(mode, "INFRA");
+    break;
+  case PLAYER_WIFI_MODE_REPEAT:
+    strcpy(mode, "REPEAT");
+    break;
+  case PLAYER_WIFI_MODE_SECOND:
+    strcpy(mode, "SECOND");
+    break;
+  default:
+    sprintf(mode, "OTHER (%d)", op_mode);
+  }
+
+  printf("#WiFi(%d:%d) - %c\n", m_device_id.code, 
+         m_device_id.index, access);
+
+  printf("\tMode: %s\t%s\n", mode, access_point);
+  printf("\tBitrate: %d\tThroughput: %d\n", bitrate, throughput);
+
+  if (!link_count) {
+    printf("\tNo link information\n");
+  } else {
+    for (int i =0; i < link_count; i++) {
+      printf("\tIP: %s", links[i].ip);
+
+      switch(links[i].qual_type) {
+      case PLAYER_WIFI_QUAL_DBM:
+	printf("\tquality: %d/%d\tlevel: %d dBm\tnoise: %d dBm\n", 
+	       links[i].qual, links[i].maxqual,
+	       links[i].level - 0x100, links[i].noise - 0x100);
+	break;
+      case PLAYER_WIFI_QUAL_REL:
+	printf("\tquality: %d/%d\tlevel: %d/%d\tnoise: %d/%d\n",
+	       links[i].qual, links[i].maxqual,
+	       links[i].level, links[i].maxlevel,
+	       links[i].noise, links[i].maxnoise);
+	break;
+      case PLAYER_WIFI_QUAL_UNKNOWN:
+      default:
+	printf("\tquality: %d\tlevel: %d\tnoise: %d\n",
+	       links[i].qual, links[i].level, links[i].noise);
+	break;
+      }
+    }
+  }
 }
+
+/* given the ip address, find the link quality.  if ip address
+ * is NULL, return the first link entry
+ *
+ * returns: the link quality for given IP
+ */
+int
+WiFiProxy::GetLinkQuality(char *ip)
+{
+  int idx = 0;
+
+  if (ip) {
+    idx = GetLinkIndex(ip);
+    if (idx < 0) {
+      return 0;
+    }
+  }
+
+  return links[idx].qual;
+}
+
+/* given the IP, return the signal level, or first entry
+ * if IP is NULL
+ *
+ * returns: signal level to IP
+ */
+int
+WiFiProxy::GetLevel(char *ip)
+{
+  int idx = 0;
+  
+  if (ip) {
+    idx = GetLinkIndex(ip);
+    if (idx < 0) {
+      return 0;
+    }
+  }
+
+  return links[idx].level;
+}
+
+/* 
+ *
+ * returns: noise level for given IP
+ */
+int
+WiFiProxy::GetNoise(char *ip)
+{
+  int idx =0;
+  if (ip) {
+    idx =  GetLinkIndex(ip);
+    if (idx < 0) {
+      return 0;
+    }
+  }
+
+  return links[idx].level;
+}
+
+/* 
+ *
+ * returns: bitrate for given IP
+ */
+int
+WiFiProxy::GetBitrate()
+{
+  return bitrate;
+}
+
+/* given the IP address, find the corresponding link entry
+ *
+ * returns: index of link entry with given IP, -1 if not found
+ */
+int
+WiFiProxy::GetLinkIndex(char *ip)
+{
+  for (int i=0; i < link_count; i++) {
+    if (!strcmp(links[i].ip, ip)) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+char *
+WiFiProxy::GetMAC(char *mac, int len)
+{
+  char buf[32];
+
+  player_wifi_mac_req_t req;
+  player_msghdr_t hdr;
+
+  req.subtype = PLAYER_WIFI_MAC_REQ;
+
+  if (client->Request(m_device_id, (const char *)&req, sizeof(req),
+		      &hdr, buf, sizeof(buf)) < 0) {
+    *mac = '\0';
+  } else {
+    strncpy(mac, buf, len);
+  }
+
+  return mac;
+}
+    
+  
+  

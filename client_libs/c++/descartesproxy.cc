@@ -74,8 +74,7 @@ int DescartesProxy::Move(short speed, short heading, short distance )
   cfg.heading = htons(heading);
   cfg.distance = htons(distance);
   
-  return(client->Request(PLAYER_DESCARTES_CODE,index,
-			 (const char*)&cfg,sizeof(cfg)));
+  return(client->Request(m_device_id, (const char*)&cfg,sizeof(cfg)));
 } 
   //return(client->Write(PLAYER_DESCARTES_CODE,index,
   //                   (const char*)&cmd,sizeof(cmd)));
@@ -100,7 +99,8 @@ void DescartesProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void DescartesProxy::Print()
 {
-  printf("#Descartes(%d:%d) - %c\n", device, index, access);
+  printf("#Descartes(%d:%d) - %c\n",
+         m_device_id.code, m_device_id.index, access);
   puts("#xpos\typos\ttheta\tbumpers");
   printf("%d\t%d\t%u\t%u-%u\n", 
          xpos,ypos,theta,bumpers[0],bumpers[1]);

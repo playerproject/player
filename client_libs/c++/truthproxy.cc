@@ -72,7 +72,8 @@ void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void TruthProxy::Print()
 {
-  printf("#GROUND TRUTH POSE (%d:%d) - %c\n", device, index, access);
+  printf("#GROUND TRUTH POSE (%d:%d) - %c\n", 
+         m_device_id.code, m_device_id.index, access);
   puts("#(Xm,Ym,THradians)");
   printf("%.3f\t%.3f\t%.3f\n", x,y,a);
 }
@@ -85,8 +86,8 @@ int TruthProxy::GetPose( double *px, double *py, double *pa )
   
   config.subtype = PLAYER_TRUTH_GET_POSE;
   
-  if(client->Request(PLAYER_TRUTH_CODE,index,
-                     (const char*)&config, sizeof(config.subtype),
+  if(client->Request(m_device_id,
+                     (const char*)&config, sizeof(config),
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
   
@@ -114,7 +115,7 @@ int TruthProxy::SetPose( double px, double py, double pa )
   config.py = htonl((int) (py * 1000));
   config.pa = htonl((int) (pa * 180 / M_PI)); 
   
-  len = client->Request( PLAYER_TRUTH_CODE, index, 
+  len = client->Request(m_device_id,
 			 (const char*)&config, sizeof(config));
   if (len < 0)
     return -1;
@@ -135,7 +136,7 @@ int TruthProxy::SetPoseOnRoot( double px, double py, double pa )
   config.py = htonl((int) (py * 1000));
   config.pa = htonl((int) (pa * 180 / M_PI)); 
   
-  len = client->Request( PLAYER_TRUTH_CODE, index, 
+  len = client->Request( m_device_id,
 			 (const char*)&config, sizeof(config));
   if (len < 0)
     return -1;
@@ -144,4 +145,46 @@ int TruthProxy::SetPoseOnRoot( double px, double py, double pa )
   
   return 0;
 }
+
+int TruthProxy::GetFiducialID( int16_t* id )
+{  
+  player_truth_fiducial_id_t config;
+  player_msghdr_t hdr;
+  
+  config.subtype = PLAYER_TRUTH_GET_FIDUCIAL_ID;
+  
+  if(client->Request(m_device_id,
+                     (const char*)&config, sizeof(config),
+                     &hdr, (char*)&config, sizeof(config)) < 0)
+    return(-1);
+  
+  if( id ) *id = (int16_t)ntohs(config.id);
+
+  return 0;
+}
+
+
+int TruthProxy::SetFiducialID( int16_t id )
+{
+  int len;
+  player_truth_fiducial_id_t config;
+  
+  config.subtype = PLAYER_TRUTH_SET_FIDUCIAL_ID;
+  
+  config.id = htons(id);
+  
+  len = client->Request(m_device_id,
+			(const char*)&config, sizeof(config));
+  if (len < 0)
+    return -1;
+  
+  // TODO: check for a NACK
+  return 0;
+}
+
+
+
+
+
+
 

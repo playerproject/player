@@ -65,7 +65,8 @@ PowerProxy::FillData(player_msghdr_t hdr, const char *buffer)
 void
 PowerProxy::Print()
 {
-  printf("#Power(%d:%d) - %c\n", device, index, access);
+  printf("#Power(%d:%d) - %c\n", m_device_id.code, 
+         m_device_id.index, access);
   printf("%u\n", charge);
 }
 

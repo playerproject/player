@@ -66,7 +66,8 @@ DIOProxy::FillData(player_msghdr_t hdr, const char *buffer)
 void
 DIOProxy::Print()
 {
-  printf("#DIO(%d:%d) - %c\n", device, index, access);
+  printf("#DIO(%d:%d) - %c\n", m_device_id.code, 
+         m_device_id.index, access);
   printf("%d %u\n", count, digin);
 }
 

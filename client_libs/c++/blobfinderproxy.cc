@@ -50,7 +50,7 @@
 #include <netinet/in.h>
 
 BlobfinderProxy::BlobfinderProxy(PlayerClient* pc, unsigned short index, 
-            unsigned char access ):
+            unsigned char access):
             ClientProxy(pc,PLAYER_BLOBFINDER_CODE,index,access)
 {
   // zero everything
@@ -146,7 +146,8 @@ void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void BlobfinderProxy::Print()
 {
-  printf("#Blobfinder(%d:%d) - %c\n", device, index, access);
+  printf("#Blobfinder(%d:%d) - %c\n", m_device_id.code,
+         m_device_id.index, access);
   for(int i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
   {
     if(num_blobs[i])

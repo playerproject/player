@@ -53,14 +53,6 @@
 
 #define DEBUG
 
-IDARProxy::IDARProxy(PlayerClient* pc, unsigned short index, 
-		     unsigned char access ) :
-  ClientProxy(pc,PLAYER_IDAR_CODE,index,access) 
-{
-
-}
-
-
 int IDARProxy::SendMessage( idartx_t* tx )
 {
   assert( client );
@@ -73,8 +65,7 @@ int IDARProxy::SendMessage( idartx_t* tx )
  
   // send a request, don't wait for reply
   // returns -1 on error
-  return(client->Request(PLAYER_IDAR_CODE,index,
-			 (const char*)(&cfg),sizeof(cfg)));
+  return(client->Request(m_device_id, (const char*)(&cfg),sizeof(cfg)));
 }
 
 
@@ -92,7 +83,7 @@ int IDARProxy::SendGetMessage( idartx_t* tx, idarrx_t* rx )
   memcpy( &cfg.tx, tx, sizeof(cfg.tx) ); // paste in the message
     
   // sends request, waits for reply, returns -1 on failure
-  return(client->Request(PLAYER_IDAR_CODE,index,
+  return(client->Request(m_device_id,
 			 (const char*)&cfg,sizeof(cfg),
 			 &hdr, (char*)rx, sizeof(idarrx_t) ) );
 }
@@ -104,7 +95,8 @@ void IDARProxy::Print()
 {
   idarrx_t msg;
   
-  printf("#IDAR(%d:%d) - %c ", device, index, access);
+  printf("#IDAR(%d:%d) - %c ", m_device_id.code,
+         m_device_id.index, access);
 
   switch( GetMessageNoFlush( &msg ) )
     {
@@ -150,7 +142,7 @@ int IDARProxy::GetMessage( idarrx_t* rx )
   // cfg.tx field is not used for receive messages
   
   // sends request, waits for reply, returns -1 on failure
-  return(client->Request(PLAYER_IDAR_CODE,index,
+  return(client->Request(m_device_id,
 			 (const char*)&cfg,sizeof(cfg),
 			 &hdr, (char*)rx, sizeof(idarrx_t) ) );
 }
@@ -167,7 +159,7 @@ int IDARProxy::GetMessageNoFlush( idarrx_t* rx )
   // cfg.tx field is not used for receive messages
   
   // sends request, waits for reply, returns -1 on failure
-  return(client->Request(PLAYER_IDAR_CODE,index,
+  return(client->Request(m_device_id,
 			 (const char*)&cfg,sizeof(cfg),
 			 &hdr, (char*)rx, sizeof(idarrx_t) ) );
 }

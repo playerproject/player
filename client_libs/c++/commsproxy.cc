@@ -46,8 +46,11 @@
 
 //#define PLAYER_ENABLE_TRACE 1
 
-#include <playerclient.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
+#include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <stdlib.h>
@@ -55,7 +58,8 @@
 
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
-CommsProxy::CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access)
+CommsProxy::CommsProxy(PlayerClient* pc, unsigned short index, 
+                       unsigned char access)
     : ClientProxy(pc, PLAYER_COMMS_CODE, index, access)
 {
   this->listlen = 10;
@@ -88,7 +92,7 @@ int CommsProxy::Write(void *msg, int len)
             len, PLAYER_MAX_MESSAGE_SIZE);
     return -1;
   }
-  return client->Write(PLAYER_COMMS_CODE, index, (const char *) msg, len);
+  return client->Write(m_device_id, (const char *) msg, len);
 }
 
 
@@ -148,7 +152,8 @@ int CommsProxy::Delete(int index)
 // Debugging function (does nothing)
 void CommsProxy::Print()
 {
-  printf("# Comms(%d:%d) - %c : %d messages\n", device, index, access,
+  printf("# Comms(%d:%d) - %c : %d messages\n",
+         m_device_id.code, m_device_id.index, access,
          this->msg_num);
   for(size_t i=0;i<this->msg_num;i++)
   {

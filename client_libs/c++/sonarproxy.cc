@@ -65,7 +65,7 @@ SonarProxy::SetSonarState(unsigned char state)
   config.subtype = PLAYER_SONAR_POWER_REQ;
   config.value = state;
 
-  return(client->Request(PLAYER_SONAR_CODE,index,(const char*)&config,
+  return(client->Request(m_device_id,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -79,7 +79,7 @@ SonarProxy::GetSonarGeom()
 
   sonar_pose.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 
-  if((client->Request(PLAYER_SONAR_CODE,index,(const char*)&sonar_pose,
+  if((client->Request(m_device_id,(const char*)&sonar_pose,
                       sizeof(sonar_pose.subtype), &hdr, (char*)&sonar_pose, 
                       sizeof(sonar_pose)) < 0) ||
      (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
@@ -117,7 +117,8 @@ void SonarProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void SonarProxy::Print()
 {
-  printf("#Sonar(%d:%d) - %c\n", device, index, access);
+  printf("#Sonar(%d:%d) - %c\n", m_device_id.code,
+         m_device_id.index, access);
   for(size_t i=0;i<range_count;i++)
     printf("%u ", ranges[i]);
   puts("");

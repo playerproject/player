@@ -54,8 +54,10 @@ ClientProxy::ClientProxy(PlayerClient* pc,
             unsigned short req_index,
             unsigned char req_access)
 {
-  device = req_device;
-  index = req_index;
+  m_device_id.port = pc->port;
+  m_device_id.code = req_device;
+  m_device_id.index = req_index;
+
   client = pc;
 
   timestamp.tv_sec = 0;
@@ -66,6 +68,9 @@ ClientProxy::ClientProxy(PlayerClient* pc,
   receivedtime.tv_usec = 0;
   valid = false;
 
+  bzero(&last_data,sizeof(last_data));
+  bzero(&last_header,sizeof(last_header));
+
   // start out with no access
   unsigned char grant_access = 'e';
    
@@ -75,19 +80,23 @@ ClientProxy::ClientProxy(PlayerClient* pc,
 
   if(client && req_access!='c')
   {
-    client->RequestDeviceAccess(req_device, req_index, 
+    client->RequestDeviceAccess(m_device_id,
                                 req_access, &grant_access,
                                 driver_name, sizeof(driver_name));
 
     if((req_access != grant_access) && (player_debug_level(-1) >= 1))
       printf("WARNING: tried to get '%c' access to device %d:%d but got "
- 	     "'%c' access.\n", req_access, device, index, grant_access);
+             "'%c' access.\n", req_access,
+             m_device_id.code, m_device_id.code, grant_access);
   }
   else
   {
-    //if(player_debug_level(-1) >= 4)
-      //printf("WARNING: couldn't open device %d:%d because no client "
- 	     //"object is available\n", device,index);
+    /*
+    if(player_debug_level(-1) >= 4)
+      printf("WARNING: couldn't open device %d:%d:%d because no client "
+ 	     "object is available\n", m_device_id.robot,m_device_id.code,
+             m_device_id.index);
+     */
   }
 
   access = grant_access;
@@ -99,7 +108,7 @@ ClientProxy::~ClientProxy()
   if(client)
   {
     if((access != 'c') && (access != 'e'))
-      client->RequestDeviceAccess(device,index,'c',NULL);
+      client->RequestDeviceAccess(m_device_id,'c',NULL);
     // remove it to our client's list to manage
     client->RemoveProxy(this);
   }
@@ -108,13 +117,12 @@ ClientProxy::~ClientProxy()
 // methods for changing access mode
 int ClientProxy::ChangeAccess(unsigned char req_access, 
                               unsigned char* grant_access )
-			      
 {
   unsigned char our_grant_access = access;
 
   if(client)
   {
-    if(client->RequestDeviceAccess(device, index, req_access, 
+    if(client->RequestDeviceAccess(m_device_id, req_access, 
                                    &our_grant_access,
                                    driver_name, sizeof(driver_name)))
     {
@@ -125,10 +133,14 @@ int ClientProxy::ChangeAccess(unsigned char req_access,
 
     if((req_access != our_grant_access) && (player_debug_level(-1) >= 1))
       printf("WARNING: tried to get '%c' access to device %d:%d but got "
- 	     "'%c' access.\n", req_access, device, index, our_grant_access);
+ 	     "'%c' access.\n", req_access, m_device_id.code,
+             m_device_id.index, our_grant_access);
   }
   else
+  {
+    puts("no client");
     return(-1);
+  }
 
   access = our_grant_access;
 
@@ -143,15 +155,22 @@ void ClientProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
   // we can use this base class as a generic device
   // to just pull data out of player
-
-  // copy in the data in a generic sort of way - don't attempt to parse it.
-  memcpy( last_data, buffer, hdr.size );
-
-  // store the header, too.
-  memcpy( &last_header, &hdr, sizeof( hdr ) );
+  // (the data is actually copied in by StoreData(), which is called before
+  // this method).
 
   //if(player_debug_level(-1) >= 1)
   //fputs("WARNING: virtual FillData() was called.\n",stderr);
+}
+
+// This method is used internally to keep a copy of the last message from
+// the device
+void ClientProxy::StoreData(player_msghdr_t hdr, const char* buffer)
+{
+  // copy in the data in a generic sort of way - don't attempt to parse it.
+  memcpy(last_data, buffer, hdr.size);
+
+  // store the header, too.
+  memcpy(&last_header, &hdr, sizeof(hdr));
 }
 
 // interface that all proxies SHOULD provide

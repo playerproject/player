@@ -57,9 +57,6 @@
 #endif
 
 #include <sys/time.h>
-//#include <sys/poll.h>
-// forward declaration so that we don't have to #include <sys/poll.h> in
-// this header (it's not available on every system)
 struct pollfd;
 #include <string.h>
 
@@ -107,15 +104,16 @@ class ClientProxy
      */
     bool valid;
 
-    // if this generic proxy is not subclassed, the most recent 
-    // data and header get copied in here. that way we can use this
-    // base class on it's own as a generic proxy
-    unsigned char last_data[4096];
+    // the last message header and body will be copied here by StoreData(), so
+    // that it's available for later use.
+    unsigned char last_data[PLAYER_MAX_MESSAGE_SIZE];
     player_msghdr_t last_header;
 
     unsigned char access;   // 'r', 'w', or 'a' (others?)
-    unsigned short device; // the name by which we identify this kind of device
-    unsigned short index;  // which device we mean
+    //unsigned short robot;  // to which robot this proxy pertains
+    //unsigned short device; // the name by which we identify this kind of device
+    //unsigned short index;  // which device we mean
+    player_device_id_t m_device_id;
 
     /** The name of the driver used to implement this device in the server.
      */
@@ -147,7 +145,7 @@ class ClientProxy
     ClientProxy(PlayerClient* pc, 
 		unsigned short req_device,
 		unsigned short req_index,
-		unsigned char req_access = 'c' );
+		unsigned char req_access = 'c');
 
     // destructor will try to close access to the device
     virtual ~ClientProxy();
@@ -169,6 +167,10 @@ class ClientProxy
     /** All proxies must provide this method.  It is used internally to parse
         new data when it is received. */
     virtual void FillData(player_msghdr_t hdr, const char* buffer);
+
+    /** This method is used internally to keep a copy of the last message from
+        the device **/
+    void StoreData(player_msghdr_t hdr, const char* buffer);
     
     /** All proxies SHOULD provide this method, which should print out, in a
         human-readable form, the device's current state. */
@@ -213,8 +215,9 @@ class PlayerClient
     //
     // returns NULL if we can't find it.
     //
-    ClientProxy* PlayerClient::GetProxy(unsigned short device, 
+    ClientProxy* GetProxy(unsigned short device, 
                                         unsigned short index);
+    ClientProxy* GetProxy(player_device_id_t id);
 
   public:
     //  Struct containing information about the  connection to Player
@@ -297,14 +300,13 @@ class PlayerClient
     /** Write a command to the server.  This method is {\bf not} intended for
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 on success, -1 otherwise. */
-    int Write(unsigned short device, unsigned short index,
+    int Write(player_device_id_t device_id,
               const char* command, size_t commandlen);
 
     /** Send a request to the server.  This method is {\bf not} intended for
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 on success, -1 otherwise. */
-    int Request(unsigned short device,
-                unsigned short index,
+    int Request(player_device_id_t device_id,
                 const char* payload,
                 size_t payloadlen,
                 player_msghdr_t* replyhdr,
@@ -315,8 +317,7 @@ class PlayerClient
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 if an ACK is received, -1 
         otherwise. */
-    int Request(unsigned short device,
-                unsigned short index,
+    int Request(player_device_id_t device_id,
                 const char* payload,
                 size_t payloadlen);
     
@@ -327,8 +328,7 @@ class PlayerClient
       {\tt grant_access}, if non-NULL, will be filled with the granted access.
       Returns 0 if everything went OK or -1 if something went wrong.
     */
-    int RequestDeviceAccess(unsigned short device,
-                            unsigned short index,
+    int RequestDeviceAccess(player_device_id_t device_id,
                             unsigned char req_access,
                             unsigned char* grant_access,
                             char* driver_name = NULL,
@@ -365,7 +365,7 @@ class PlayerClient
         authentication fails, the server will close your connection.
       */
     int Authenticate(char* key);
-    
+
     // proxy list management methods
 
     // add a proxy to the list
@@ -382,6 +382,10 @@ class PlayerClient
 /*****************************************************************************
  ** begin section PlayerMultiClient
  *****************************************************************************/
+
+// forward declaration to avoid including <sys/poll.h>, which may not be
+// available when people are building clients against this lib
+struct pollfd;
 
 /**
   The PlayerMultiClient makes it easy to control multiple Player connections 
@@ -470,7 +474,8 @@ class CommsProxy : public ClientProxy
 {
   /** Proxy constructor.  Leave the access field empty to start
       unconnected.  */
-  public: CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access ='c');
+  public: CommsProxy(PlayerClient* pc, unsigned short index, 
+                     unsigned char access ='c');
 
   public: ~CommsProxy();
 
@@ -521,7 +526,7 @@ class DescartesProxy : public ClientProxy
     // the client calls this method to make a new proxy
     //   leave access empty to start unconnected
     DescartesProxy(PlayerClient* pc, unsigned short index, 
-                  unsigned char access ='c'):
+                  unsigned char access ='c') :
             ClientProxy(pc,PLAYER_DESCARTES_CODE,index,access) {}
 
     // these methods are the user's interface to this device
@@ -682,8 +687,9 @@ class IDARProxy : public ClientProxy
   // the client calls this method to make a new proxy
   //   leave access empty to start unconnected
   IDARProxy(PlayerClient* pc, unsigned short index, 
-	    unsigned char access = 'c');
-  
+	    unsigned char access = 'c') :
+   ClientProxy(pc,PLAYER_IDAR_CODE,index,access) {}
+ 
   // interface that all proxies must provide
   // reads the receive buffers from player
   //void FillData(player_msghdr_t hdr, const char* buffer);
@@ -714,7 +720,8 @@ class IDARTurretProxy : public ClientProxy
   // the client calls this method to make a new proxy
   //   leave access empty to start unconnected
   IDARTurretProxy(PlayerClient* pc, unsigned short index, 
-	    unsigned char access = 'c');
+	    unsigned char access = 'c') :
+  ClientProxy(pc,PLAYER_IDARTURRET_CODE,index,access) {}
   
   // interface that all proxies must provide
   // reads the receive buffers from player
@@ -757,6 +764,30 @@ class FiducialProxy : public ClientProxy
    */
   unsigned short count;
 
+  /** The pose of the sensor [x,y,theta]
+   */
+  double pose[3];
+
+  /** The size of the sensor [x,y]
+   */
+  double size[2];
+
+  /** The size of the most recently detected fiducial
+  */
+  double fiducial_size[2];
+
+  /** the minimum range of the sensor in meters (partially defines the FOV)
+   */
+  double min_range;
+  
+  /** the maximum range of the sensor in meters (partially defines the FOV)
+   */
+  double max_range;
+
+  /** the receptive angle of the sensor in degrees (partially defines the FOV)
+   */
+  double view_angle;
+
   /** The latest laser beacon data.  Each beacon has the following
       information: 
       \begin{itemize} 
@@ -775,7 +806,7 @@ class FiducialProxy : public ClientProxy
   /** Constructor.  Leave the access field empty to start
       unconnected. */
   FiducialProxy(PlayerClient* pc, unsigned short index,
-                unsigned char access='c'):
+                unsigned char access='c') :
     ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access) {}
     
   // interface that all proxies must provide
@@ -783,6 +814,28 @@ class FiducialProxy : public ClientProxy
     
   /// Print out latest beacon data.
   void Print();
+
+  /// Print the latest FOV configuration
+  int PrintFOV();
+
+  /// Print the latest geometry configuration
+  int PrintGeometry();
+
+  /// Get the sensor's geometry configuration
+  int GetConfigure();
+ 
+  /// Get the field of view 
+  int GetFOV();
+
+  /** Set the field of view, updating the proxy with the actual values
+      achieved. Params are: minimum range in meters, maximum range in
+      meters, view angle in radians 
+  */
+  
+  int SetFOV( double min_range, 
+	      double max_range, 
+	      double view_angle);
+
 };
 
 /*****************************************************************************
@@ -830,7 +883,7 @@ class LaserProxy : public ClientProxy
     /** Constructor.  Leave the access field empty to start
         unconnected. */
     LaserProxy(PlayerClient* pc, unsigned short index, 
-               unsigned char access='c'):
+               unsigned char access='c') :
         ClientProxy(pc,PLAYER_LASER_CODE,index,access) {}
 
     // these methods are the user's interface to this device
@@ -942,6 +995,92 @@ class MoteProxy : public ClientProxy
 
 
 /*****************************************************************************
+ ** begin section LocalizeProxy
+ *****************************************************************************/
+
+class localize_hypoth
+{
+  public:
+    // Pose estimate (mm, mm, degrees)
+    double mean[3];
+    // Covariance (mm^2, degrees^2)
+    double cov[3][3];
+    // Weight associated with this hypothesis
+    double weight;
+};
+
+/** The {\tt LocalizeProxy} class is used to control a {\tt localize} device,
+    which can provide multiple pose hypotheses for a robot.
+ */
+class LocalizeProxy : public ClientProxy
+{
+
+  public:
+    /// Map dimensions (cells)
+    unsigned int map_size_x, map_size_y;
+
+    /// Map scale (m/cell)
+    double map_scale;
+
+    /// Map data (empty = -1, unknown = 0, occupied = +1)
+    int8_t *map_cells;
+
+    /// Number of pending (unprocessed) sensor readings
+    int pending_count;
+    
+    /// Number of possible poses
+    int hypoth_count;
+
+    /** Array of possible poses.  Each pose contains the following
+        information:
+        \begin{itemize}
+        \item {\tt double mean[3]} (pose estimate, in m, m, degrees)
+        \item {\tt double cov[3][3]} (covariance, in m$^{2}$ and degrees$^{2}$)
+        \item {\tt double weight} (weight associated with this estimate)
+        \end{itemize}
+     */
+    localize_hypoth hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
+
+
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+     */
+    LocalizeProxy(PlayerClient* pc, unsigned short index, 
+                  unsigned char access = 'c') :
+            ClientProxy(pc,PLAYER_LOCALIZE_CODE,index,access)
+    { map_cells=NULL; bzero(&hypoths,sizeof(hypoths)); }
+
+    ~LocalizeProxy();
+
+    // these methods are the user's interface to this device
+    
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+
+    /** Set the current pose hypothesis (m, m, degrees).  Returns 0 on 
+        success, -1 on error.
+     */
+    int SetPose(double pose[3], double cov[3][3]);
+
+    /** Get the number of particles (for particle filter-based localization
+        systems).  Returns the number of particles, or -1 on error.
+     */
+    int GetNumParticles();
+
+    /** Get the map from the server.  It's stored in map_size_x, map_size_y,
+        map_scale, and map_cells.  Returns 0 on success, -1 on error.
+     */
+    int GetMap();
+    
+    /// Print out current hypotheses.
+    void Print();
+};
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+/*****************************************************************************
  ** begin section PositionProxy
  *****************************************************************************/
 
@@ -1044,7 +1183,7 @@ class PositionProxy : public ClientProxy
   int DoRotation(int deg);
 
   /// Only supported by the reb_position driver.
-  int DoDesiredHeading(short theta, int xspeed, int yawspeed);
+  int DoDesiredHeading(int theta, int xspeed, int yawspeed);
 
   /// Accessor method
   int32_t  Xpos () const { return xpos; }
@@ -1076,92 +1215,6 @@ class PositionProxy : public ClientProxy
  *****************************************************************************/
 
 /*****************************************************************************
- ** begin section LocalizeProxy
- *****************************************************************************/
-
-class localize_hypoth
-{
-  public:
-    // Pose estimate (m, m, degrees)
-    double mean[3];
-    // Covariance (m^2, degrees^2)
-    double cov[3][3];
-    // Weight associated with this hypothesis
-    double weight;
-};
-
-/** The {\tt LocalizeProxy} class is used to control a {\tt localize} device,
-    which can provide multiple pose hypotheses for a robot.
- */
-class LocalizeProxy : public ClientProxy
-{
-
-  public:
-    /// Map dimensions (cells)
-    unsigned int map_size_x, map_size_y;
-
-    /// Map scale (m/cell)
-    double map_scale;
-
-    /// Map data (empty = -1, unknown = 0, occupied = +1)
-    int8_t *map_cells;
-    
-    /// Number of pending (unprocessed) sensor readings
-    int pending_count;
-
-    /// Number of possible poses
-    int hypoth_count;
-
-    /** Array of possible poses.  Each pose contains the following
-        information:
-        \begin{itemize}
-        \item {\tt double mean[3]} (pose estimate, in m, m, degrees)
-        \item {\tt double cov[3][3]} (covariance, in m$^{2}$ and degrees$^{2}$)
-        \item {\tt double weight} (weight associated with this estimate)
-        \end{itemize}
-     */
-    localize_hypoth hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
-
-
-    /** Constructor.
-        Leave the access field empty to start unconnected.
-     */
-    LocalizeProxy(PlayerClient* pc, unsigned short index, 
-                  unsigned char access = 'c') :
-            ClientProxy(pc,PLAYER_LOCALIZE_CODE,index,access)
-    { map_cells=NULL; bzero(&hypoths,sizeof(hypoths)); }
-
-    ~LocalizeProxy();
-
-    // these methods are the user's interface to this device
-    
-    // interface that all proxies must provide
-    void FillData(player_msghdr_t hdr, const char* buffer);
-
-    /** Set the current pose hypothesis (m, m, degrees).  Returns 0 on 
-        success, -1 on error.
-     */
-    int SetPose(double pose[3], double cov[3][3]);
-
-    /** Get the number of particles (for particle filter-based localization
-        systems).  Returns the number of particles, or -1 on error.
-     */
-    int GetNumParticles();
-
-    /** Get the map from the server.  It's stored in map_size_x, map_size_y,
-        map_scale, and map_cells.  Returns 0 on success, -1 on error.
-     */
-    int GetMap();
-    
-    /// Print out current hypotheses.
-    void Print();
-};
-
-/*****************************************************************************
- ** end section
- *****************************************************************************/
-
-/*****************************************************************************
  ** begin section PtzProxy
  *****************************************************************************/
 
@@ -1179,7 +1232,8 @@ class PtzProxy : public ClientProxy
     /** Constructor.
         Leave the access field empty to start unconnected.
     */
-    PtzProxy(PlayerClient* pc, unsigned short index, unsigned char access='c'):
+    PtzProxy(PlayerClient* pc, unsigned short index, 
+             unsigned char access='c') :
             ClientProxy(pc,PLAYER_PTZ_CODE,index,access) {}
 
     // these methods are the user's interface to this device
@@ -1294,7 +1348,7 @@ class SpeechProxy : public ClientProxy
         Leave the access field empty to start unconnected.
     */
     SpeechProxy(PlayerClient* pc, unsigned short index, 
-                unsigned char access='c'):
+                unsigned char access='c') :
             ClientProxy(pc,PLAYER_SPEECH_CODE,index,access) {}
 
     // these methods are the user's interface to this device
@@ -1335,8 +1389,7 @@ class TruthProxy : public ClientProxy
   double x, y, a; 
 
   /** Constructor.
-      Leave the access field empty to start unconnected.
-  */
+      Leave the access field empty to start unconnected.  */
   TruthProxy(PlayerClient* pc, unsigned short index, 
              unsigned char access = 'c') :
     ClientProxy(pc,PLAYER_TRUTH_CODE,index,access) {};
@@ -1367,6 +1420,17 @@ class TruthProxy : public ClientProxy
       picked up. Returns 0 on success, -1 if there is a problem.
   */
   int SetPoseOnRoot( double px, double py, double pa );
+
+  /** Request the value returned by a fiducialfinder (and possibly a
+      foofinser, depending on its mode), when detecting this
+      object. */
+  int GetFiducialID( int16_t* id );
+
+  /** Set the value returned by a fiducialfinder (and possibly a
+      foofinser, depending on its mode), when detecting this
+      object. */
+  int SetFiducialID( int16_t id );
+
 };
 
 
@@ -1414,11 +1478,12 @@ class BlobfinderProxy : public ClientProxy
     /** Array containing arrays of the latest blob data.
         Each blob contains the following information:
         \begin{itemize}
-        \item {\tt unsigned int color} (in packed RGB);
+        \item {\tt unsigned int color} (in packed RGB)
         \item {\tt unsigned int area} (blob area, in square pixels)
-        \item {\tt unsigned short x, y} (blob center, in pixels);
+        \item {\tt unsigned short x, y} (blob center, in pixels)
         \item {\tt unsigned short left, right, top, bottom} (blob bounding box,
         in pixels)
+        \item {\tt unsigned short range} (range to blob center, in mm)
         \end{itemize}
         For example, to access the area of the $0^{th}$ blob on channel 2, you
         would refer to: {\tt blobs[2][0].area}.
@@ -1549,20 +1614,41 @@ class WiFiProxy: public ClientProxy
 {
 public:
 
-  /// The current wifi data.
-  unsigned short link, level, noise;
 
     /** Constructor.
         Leave the access field empty to start unconnected.
     */
   WiFiProxy(PlayerClient *pc, unsigned short index, 
-	       unsigned char access = 'c') : 
-    ClientProxy(pc, PLAYER_WIFI_CODE, index, access) {}
+	       unsigned char access = 'c') :
+    ClientProxy(pc, PLAYER_WIFI_CODE, index, access), link_count(0) {}
 
+
+  int GetLinkQuality(char * ip = NULL);
+  int GetLevel(char * ip = NULL);
+  int GetLeveldBm(char * ip = NULL) { return GetLevel(ip) - 0x100; }
+  int GetNoise(char * ip = NULL);
+  int GetNoisedBm(char * ip = NULL) { return GetNoise(ip) - 0x100; }
+
+  int GetBitrate();
+
+  char * GetMAC(char *buf, int len);
   void FillData(player_msghdr_t hdr, const char *buffer);
 
   /// Print out current data.
   void Print();
+
+protected:
+  int GetLinkIndex(char *ip);
+
+  /// The current wifi data.
+  int link_count;
+  player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
+  uint32_t throughput;
+  uint8_t op_mode;
+  int32_t bitrate;
+  
+  char access_point[32];
+
 };
 /*****************************************************************************
  ** end section
@@ -1642,6 +1728,99 @@ class AudioProxy : public ClientProxy
 /*****************************************************************************
  ** end section
  *****************************************************************************/
+
+/*****************************************************************************
+ ** begin section AudioDSPProxy
+ *****************************************************************************/
+
+/** The {\tt AudioDSPProxy} class controls an {\tt acoustics} device.
+ */
+class AudioDSPProxy : public ClientProxy 
+{
+
+  public:
+    /** Format code of each sample */
+    int16_t sampleFormat;
+
+    /** Rate at which to sample (Hz) */
+    uint16_t sampleRate;
+
+    /** Number of channels */
+    uint8_t channels;
+
+    uint16_t freq[5];
+    uint16_t amp[5];
+
+    /** Constructor.
+      Leave the access field empty to start unconnected.
+     */
+    AudioDSPProxy (PlayerClient* pc, unsigned short index,
+                unsigned char access ='c')
+            : ClientProxy(pc,PLAYER_AUDIODSP_CODE,index,access) {}
+
+    int Configure(uint8_t channels, uint16_t sampleRate, 
+        int16_t sampleFormat=0xFFFFFFFF );
+
+    int GetConfigure();
+
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    /// Play a fixed-frequency tone
+    int PlayTone(unsigned short freq, unsigned short amp, unsigned int dur);
+    int PlayChirp(unsigned short freq, unsigned short amp, unsigned int dur,
+        const unsigned char bitString[], unsigned short bitStringLen);
+    int Replay();
+
+    /// Print the current data.
+    void Print ();
+};
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+/*****************************************************************************
+ ** begin section AudioMixerProxy
+ *****************************************************************************/
+
+/** The {\tt AudioMixerProxy} class controls an {\tt mixer} device.
+ */
+class AudioMixerProxy : public ClientProxy 
+{
+
+  public:
+    unsigned short masterLeft, masterRight;
+    unsigned short pcmLeft, pcmRight;
+    unsigned short lineLeft, lineRight;
+    unsigned short micLeft, micRight;
+    unsigned short iGain, oGain;
+
+    /** Constructor.
+      Leave the access field empty to start unconnected.
+     */
+    AudioMixerProxy (PlayerClient* pc, unsigned short index,
+                unsigned char access ='c')
+            : ClientProxy(pc,PLAYER_AUDIOMIXER_CODE,index,access) {}
+
+    int GetConfigure();
+
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    int SetMaster(unsigned short left, unsigned short right);
+    int SetPCM(unsigned short left, unsigned short right);
+    int SetLine(unsigned short left, unsigned short right);
+    int SetMic(unsigned short left, unsigned short right);
+    int SetIGain(unsigned short gain);
+    int SetOGain(unsigned short gain);
+
+    // Print the current data.
+    void Print ();
+};
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
 
 /*****************************************************************************
  ** begin section BumperProxy
@@ -1793,7 +1972,6 @@ public:
  ** end section
  *****************************************************************************/
 
-
 /*****************************************************************************
  ** begin section MComProxy
  *****************************************************************************/
@@ -1818,7 +1996,9 @@ public:
     char channel[MCOM_CHANNEL_LEN];
 
 public:
-    MComProxy(PlayerClient* pc, unsigned short index, unsigned char access = 'c') : ClientProxy(pc,PLAYER_MCOM_CODE,index,access){}
+    MComProxy(PlayerClient* pc, unsigned short index, 
+              unsigned char access = 'c') :
+            ClientProxy(pc,PLAYER_MCOM_CODE,index,access){}
 
     /** Read and remove the most recent buffer in 'channel' with type 'type'.
         The result can be read with LastData(). */
@@ -1857,5 +2037,6 @@ public:
 /*****************************************************************************
  ** end section
  *****************************************************************************/
+
 
 #endif

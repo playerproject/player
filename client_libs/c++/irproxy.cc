@@ -91,7 +91,7 @@ IRProxy::SetIRState(unsigned char state)
   req.subtype = PLAYER_IR_POWER_REQ;
   req.state = state;
 
-  return client->Request(PLAYER_IR_CODE, index, 
+  return client->Request(m_device_id,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -112,7 +112,7 @@ IRProxy::GetIRPose()
 
   req.subtype = PLAYER_IR_POSE_REQ;
   
-  if ((client->Request(PLAYER_IR_CODE, index, (const char *)&req,
+  if ((client->Request(m_device_id, (const char *)&req,
 		       sizeof(req), &hdr, (char *)&ir_pose,
 		       sizeof(ir_pose)) < 0) ||
       hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
@@ -124,6 +124,9 @@ IRProxy::GetIRPose()
     ir_pose.poses[i][0] = ntohs(ir_pose.poses[i][0]);
     ir_pose.poses[i][1] = ntohs(ir_pose.poses[i][1]);
     ir_pose.poses[i][2] = ntohs(ir_pose.poses[i][2]);
+
+    //    printf("IRPROXY: IRPOSE%d: %d %d %d\n", i,
+    //	   ir_pose.poses[i][0], ir_pose.poses[i][1], ir_pose.poses[i][2]);
   }
 
   return 0;
@@ -173,11 +176,17 @@ IRProxy::FillData(player_msghdr_t hdr, const char *buffer)
   }
 
   for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
-    voltages[i] = ntohs( ((player_ir_data_t *)buffer)->voltages[i] );
-    // calc range in mm
-    new_range = (unsigned short) rint(exp( (log( (double)voltages[i] ) - params[i][IRPROXY_B_PARAM] ) /
-		     params[i][IRPROXY_M_PARAM]));
-
+    new_range = ntohs(((player_ir_data_t *)buffer)->ranges[i]);
+ 
+    // if range is 0, then this is from real IR data
+    // so we do a regression.  otherwise, its been done
+    // for us by stage
+    if (new_range == 0) {
+      voltages[i] = ntohs( ((player_ir_data_t *)buffer)->voltages[i] );
+      // calc range in mm
+      new_range = (unsigned short) rint(exp( (log( (double)voltages[i] ) - params[i][IRPROXY_B_PARAM] ) /
+					     params[i][IRPROXY_M_PARAM]));
+    }
     // if the range is obviously too far, then dont do the
     // std dev calc.  This threshold should probably be much lower.
     if (new_range <= 8000) {
@@ -211,7 +220,8 @@ IRProxy::CalcStdDev(int w, unsigned  short range)
 void
 IRProxy::Print()
 {
-  printf("#REB IR(%d:%d) - %c\n", device, index, access);
+  printf("#REB IR(%d:%d) - %c\n", m_device_id.code,
+         m_device_id.index, access);
   for (int i = 0;i < PLAYER_IR_MAX_SAMPLES; i++) {
     printf("IR%d:\tR=%d\tV=%d\tSTD=%g\n", i, ranges[i], voltages[i], 
 	   stddev[i]);
