@@ -188,7 +188,10 @@ void LinuxJoystick::Main()
 {
   // The main loop; interact with the device here
   while (true)
-  {    
+  {
+    // Sleep (you might, for example, block on a read() instead)
+    usleep(100000);
+
     // test if we are supposed to cancel
     pthread_testcancel();
 
@@ -200,9 +203,6 @@ void LinuxJoystick::Main()
     
     // Write outgoing data
     this->RefreshData();
-    
-    // Sleep (you might, for example, block on a read() instead)
-    //usleep(100000);
   }
   return;
 }

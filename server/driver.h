@@ -213,7 +213,8 @@ class Driver
                           void* src, size_t len,
                           struct timeval* timestamp);
 
-    /// Get next configuration request for driver.
+    /// Get next configuration request for driver.  Returns the size
+    /// of the request; 0 if no pending requests.
     virtual int GetConfig(player_device_id_t id, void **client, 
                           void* dest, size_t len,
                           struct timeval* timestamp);

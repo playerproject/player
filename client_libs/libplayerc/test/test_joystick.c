@@ -20,8 +20,8 @@ int test_joystick(playerc_client_t *client, int index)
 
   device = playerc_joystick_create(client, index);
 
-  TEST("subscribing (read/write)");
-  if (playerc_joystick_subscribe(device, PLAYER_ALL_MODE) != 0)
+  TEST("subscribing (read)");
+  if (playerc_joystick_subscribe(device, PLAYER_READ_MODE) != 0)
   {
     FAIL();
     return -1;

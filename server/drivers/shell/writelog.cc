@@ -85,6 +85,15 @@ class WriteLog: public Driver
   public: void Write(void *data, size_t size,
                      const player_device_id_t *id, uint32_t sec, uint32_t usec);
 
+  // Write camera data to file
+  private: void WriteCamera(player_camera_data_t *data);
+  
+  // Write fiducial data to file
+  private: void WriteFiducial(player_fiducial_data_t *data);
+  
+  // Write GPS data to file
+  private: void WriteGps(player_gps_data_t *data);
+
   // Write joystick data to file
   private: void WriteJoystick(player_joystick_data_t *data);
 
@@ -100,17 +109,11 @@ class WriteLog: public Driver
   // Write power data to file
   private: void WritePower(player_power_data_t *data);
 
-  // Write wifi data to file
-  private: void WriteWiFi(player_wifi_data_t *data);
-
-  // Write GPS data to file
-  private: void WriteGps(player_gps_data_t *data);
-
   // Write truth data to file
   private: void WriteTruth(player_truth_data_t *data);
 
-  // Write fiducial data to file
-  private: void WriteFiducial(player_fiducial_data_t *data);
+  // Write wifi data to file
+  private: void WriteWiFi(player_wifi_data_t *data);
 
   // File to read data from
   private: char default_filename[1024];
@@ -498,8 +501,20 @@ void WriteLog::Write(void *data, size_t size,
   // Write the data
   switch (iface.code)
   {
+    case PLAYER_CAMERA_CODE:
+      this->WriteCamera((player_camera_data_t*) data);
+      break;
+    case PLAYER_FIDUCIAL_CODE:
+      this->WriteFiducial((player_fiducial_data_t*) data);
+      break;
+    case PLAYER_GPS_CODE:
+      this->WriteGps((player_gps_data_t*) data);
+      break;
     case PLAYER_JOYSTICK_CODE:
       this->WriteJoystick((player_joystick_data_t*) data);
+      break;
+    case PLAYER_LASER_CODE:
+      this->WriteLaser((player_laser_data_t*) data);
       break;
     case PLAYER_POSITION_CODE:
       this->WritePosition((player_position_data_t*) data);
@@ -510,17 +525,8 @@ void WriteLog::Write(void *data, size_t size,
     case PLAYER_POWER_CODE:
       this->WritePower((player_power_data_t*) data);
       break;
-    case PLAYER_LASER_CODE:
-      this->WriteLaser((player_laser_data_t*) data);
-      break;
-    case PLAYER_GPS_CODE:
-      this->WriteGps((player_gps_data_t*) data);
-      break;
     case PLAYER_TRUTH_CODE:
       this->WriteTruth((player_truth_data_t*) data);
-      break;
-    case PLAYER_FIDUCIAL_CODE:
-      this->WriteFiducial((player_fiducial_data_t*) data);
       break;
     case PLAYER_WIFI_CODE:
       this->WriteWiFi((player_wifi_data_t*) data);
@@ -531,6 +537,7 @@ void WriteLog::Write(void *data, size_t size,
   
   return;
 }
+
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -546,6 +553,17 @@ void WriteLog::Write(void *data, size_t size,
 #define CM_M(x) ((x) / 100.0)
 #define MM_M(x) ((x) / 1000.0)
 #define DEG_RAD(x) ((x) * M_PI / 180.0)
+
+
+////////////////////////////////////////////////////////////////////////////
+// Write camera data to file
+void WriteLog::WriteCamera(player_camera_data_t *data)
+{
+
+  // TODO
+  
+  return;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////
