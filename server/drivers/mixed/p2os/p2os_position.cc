@@ -30,12 +30,17 @@
 #include <stdio.h>
 #include <p2os.h>
 
+
+// Default max speeds
+#define MOTOR_DEF_MAX_SPEED 500
+#define MOTOR_DEF_MAX_TURNSPEED 100
+
+
 class P2OSPosition: public P2OS 
 {
  public:
    ~P2OSPosition();
-   P2OSPosition(char* interface, ConfigFile* cf, int section) :
-           P2OS(interface, cf, section){}
+   P2OSPosition(char* interface, ConfigFile* cf, int section);
    virtual size_t GetData(void*,unsigned char *, size_t maxsize,
                           uint32_t* timestamp_sec, uint32_t* timestamp_usec);
    void PutCommand(void*, unsigned char *, size_t maxsize);
@@ -59,6 +64,17 @@ P2OSPosition_Register(DriverTable* table)
 {
   table->AddDriver("p2os_position", PLAYER_ALL_MODE, P2OSPosition_Init);
 }
+
+
+P2OSPosition::P2OSPosition(char* interface, ConfigFile* cf, int section)
+    : P2OS(interface, cf, section)
+{
+  motor_max_speed = cf->ReadInt(section, "max_xspeed", MOTOR_DEF_MAX_SPEED);
+  motor_max_turnspeed = cf->ReadInt(section, "max_yawspeed", MOTOR_DEF_MAX_TURNSPEED);
+  use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
+  return;
+}
+
 
 P2OSPosition::~P2OSPosition()
 {

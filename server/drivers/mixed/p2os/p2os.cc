@@ -69,10 +69,6 @@ extern int global_playerport; // used to get at devices
 #define PTZ_PAN_CONV_FACTOR (0x370 / PTZ_PAN_MAX)
 #define PTZ_TILT_CONV_FACTOR (0x12C / PTZ_TILT_MAX)
 
-/* these are from personal experience */
-#define MOTOR_MAX_SPEED 500
-#define MOTOR_MAX_TURNRATE 100
-
 /* these are necessary to make the static fields visible to the linker */
 extern pthread_t       P2OS::thread;
 extern struct timeval  P2OS::timeBegan_tv;
@@ -81,6 +77,7 @@ extern int             P2OS::psos_fd;
 extern char            P2OS::psos_serial_port[];
 extern int             P2OS::radio_modemp;
 extern int             P2OS::joystickp;
+extern bool            P2OS::use_vel_band;
 extern int             P2OS::cmucam;
 extern bool            P2OS::initdone;
 extern char            P2OS::num_loops_since_rvel;
@@ -817,15 +814,15 @@ P2OS::Main()
     if(cmucamp)
     {
 /*
-      if(!last_cmucam_subscrcount && cmucamp->subscriptions)
-      {
-         // First subscription
-         CMUcamTrack();
-      }
-      else if(last_cmucam_subscrcount && !(cmucamp->subscriptions))
-      {
-         CMUcamReset();
-      }
+  if(!last_cmucam_subscrcount && cmucamp->subscriptions)
+  {
+  // First subscription
+  CMUcamTrack();
+  }
+  else if(last_cmucam_subscrcount && !(cmucamp->subscriptions))
+  {
+  CMUcamReset();
+  }
 */
       
       last_cmucam_subscrcount = cmucamp->subscriptions;
@@ -837,23 +834,23 @@ P2OS::Main()
       if (now_tv.tv_sec > lastblob_tv.tv_sec) 
       {
 //         printf(".");  fflush(stdout);
-         P2OSPacket cam_packet;
-         unsigned char cam_command[4];
+        P2OSPacket cam_packet;
+        unsigned char cam_command[4];
 
-         cam_command[0] = GETAUX2;
-         cam_command[1] = ARGINT;
-         cam_command[2] = 0;
-         cam_command[3] = 0;
-         cam_packet.Build(cam_command, 4);
-         SendReceive(&cam_packet);
+        cam_command[0] = GETAUX2;
+        cam_command[1] = ARGINT;
+        cam_command[2] = 0;
+        cam_command[3] = 0;
+        cam_packet.Build(cam_command, 4);
+        SendReceive(&cam_packet);
 
-         cam_command[0] = GETAUX2;
-         cam_command[1] = ARGINT;
-         cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;
-         cam_command[3] = 0;
-         cam_packet.Build(cam_command, 4);
-         SendReceive(&cam_packet);
-         GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
+        cam_command[0] = GETAUX2;
+        cam_command[1] = ARGINT;
+        cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;
+        cam_command[3] = 0;
+        cam_packet.Build(cam_command, 4);
+        SendReceive(&cam_packet);
+        GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
       }
     }
     
@@ -922,40 +919,40 @@ P2OS::Main()
               np += sprintf((char*)&cam_command[np], "CR ");
 
               if ((short)ntohs(imager_config.brightness) >= 0)
-                 np += sprintf((char*)&cam_command[np], " 6 %d",
-                            ntohs(imager_config.brightness));
+                np += sprintf((char*)&cam_command[np], " 6 %d",
+                              ntohs(imager_config.brightness));
 
               if ((short)ntohs(imager_config.contrast) >= 0)
-                 np += sprintf((char*)&cam_command[np], " 5 %d",
-                            ntohs(imager_config.contrast));
+                np += sprintf((char*)&cam_command[np], " 5 %d",
+                              ntohs(imager_config.contrast));
 
               if (imager_config.autogain >= 0)
-                 if (imager_config.autogain == 0)
-                    np += sprintf((char*)&cam_command[np], " 19 32");
-                 else
-                    np += sprintf((char*)&cam_command[np], " 19 33");
+                if (imager_config.autogain == 0)
+                  np += sprintf((char*)&cam_command[np], " 19 32");
+                else
+                  np += sprintf((char*)&cam_command[np], " 19 33");
 
               if (imager_config.colormode >= 0)
-                 if (imager_config.colormode == 3)
-                    np += sprintf((char*)&cam_command[np], " 18 36");
-                 else if (imager_config.colormode == 2)
-                    np += sprintf((char*)&cam_command[np], " 18 32");
-                 else if (imager_config.colormode == 1)
-                    np += sprintf((char*)&cam_command[np], " 18 44");
-                 else
-                    np += sprintf((char*)&cam_command[np], " 18 40");
+                if (imager_config.colormode == 3)
+                  np += sprintf((char*)&cam_command[np], " 18 36");
+                else if (imager_config.colormode == 2)
+                  np += sprintf((char*)&cam_command[np], " 18 32");
+                else if (imager_config.colormode == 1)
+                  np += sprintf((char*)&cam_command[np], " 18 44");
+                else
+                  np += sprintf((char*)&cam_command[np], " 18 40");
 
               if (np > 6)
               {
-                 sprintf((char*)&cam_command[np], "\r");
-                 cam_command[2] = strlen((char *)&cam_command[3]);
-                 cam_packet.Build(cam_command, (int)cam_command[2]+3);
-                 SendReceive(&cam_packet);
+                sprintf((char*)&cam_command[np], "\r");
+                cam_command[2] = strlen((char *)&cam_command[3]);
+                cam_packet.Build(cam_command, (int)cam_command[2]+3);
+                SendReceive(&cam_packet);
 
-                 printf("Blobfinder imager parameters updated.\n");
-                 printf("       %s\n", &cam_command[3]);
+                printf("Blobfinder imager parameters updated.\n");
+                printf("       %s\n", &cam_command[3]);
               } else
-                 printf("Blobfinder imager parameters NOT updated.\n");
+                printf("Blobfinder imager parameters NOT updated.\n");
 
               CMUcamTrack(); 	// Restart tracking
  
@@ -1054,11 +1051,11 @@ P2OS::Main()
               if(sippacket)
               {
                 sippacket->x_offset = ntohl(set_odom_req.x) -
-                        sippacket->xpos;
+                  sippacket->xpos;
                 sippacket->y_offset = ntohl(set_odom_req.y) -
-                        sippacket->ypos;
+                  sippacket->ypos;
                 sippacket->angle_offset = ntohs(set_odom_req.theta) -
-                        sippacket->angle;
+                  sippacket->angle;
               }
 
               if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
@@ -1110,7 +1107,7 @@ P2OS::Main()
 
               player_position_velocitymode_config_t velmode_config;
               velmode_config = 
-                      *((player_position_velocitymode_config_t*)config);
+                *((player_position_velocitymode_config_t*)config);
 
               if(velmode_config.value)
                 direct_wheel_vel_control = false;
@@ -1221,38 +1218,75 @@ P2OS::Main()
         PlayerRobotParams[param_idx].DiffConvFactor;
       leftvel = (speedDemand - rotational_term);
       rightvel = (speedDemand + rotational_term);
-      if(fabs(leftvel) > MOTOR_MAX_SPEED)
+
+      // Apply wheel speed bounds
+      if(fabs(leftvel) > motor_max_speed)
       {
         if(leftvel > 0)
         {
-          leftvel = MOTOR_MAX_SPEED;
-          rightvel *= MOTOR_MAX_SPEED/leftvel;
+          leftvel = motor_max_speed;
+          rightvel *= motor_max_speed/leftvel;
           puts("Left wheel velocity threshholded!");
         }
         else
         {
-          leftvel = -MOTOR_MAX_SPEED;
-          rightvel *= -MOTOR_MAX_SPEED/leftvel;
+          leftvel = -motor_max_speed;
+          rightvel *= -motor_max_speed/leftvel;
         }
       }
-      if(fabs(rightvel) > MOTOR_MAX_SPEED)
+      if(fabs(rightvel) > motor_max_speed)
       {
         if(rightvel > 0)
         {
-          rightvel = MOTOR_MAX_SPEED;
-          leftvel *= MOTOR_MAX_SPEED/rightvel;
+          rightvel = motor_max_speed;
+          leftvel *= motor_max_speed/rightvel;
           puts("Right wheel velocity threshholded!");
         }
         else
         {
-          rightvel = -MOTOR_MAX_SPEED;
-          leftvel *= -MOTOR_MAX_SPEED/rightvel;
+          rightvel = -motor_max_speed;
+          leftvel *= -motor_max_speed/rightvel;
         }
       }
 
+      // Apply control band bounds
+      if (use_vel_band)
+      {
+        // This band prevents the wheels from turning in opposite
+        // directions
+        if (leftvel * rightvel < 0)
+        {
+          if (leftvel + rightvel >= 0)
+          {
+            if (leftvel < 0)
+              leftvel = 0;
+            if (rightvel < 0)
+              rightvel = 0;
+          }
+          else
+          {
+            if (leftvel > 0)
+              leftvel = 0;
+            if (rightvel > 0)
+              rightvel = 0;
+          }
+        }
+      }
+
+      // Apply byte range bounds
+      if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
+        leftvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
+      if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
+        leftvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
+      if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
+        rightvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
+      if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
+        rightvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
+      
       // left and right velocities are in 2cm/sec 
       //printf("leftvel: %d\trightvel:%d\n", 
-      //(char)(leftvel/20.0), (char)(rightvel/20.0));
+      //       (char)(leftvel/20.0), (char)(rightvel/20.0));
+      
       motorcommand[0] = VEL2;
       motorcommand[1] = ARGINT;
       motorcommand[2] = (char)(rightvel /
@@ -1276,15 +1310,16 @@ P2OS::Main()
           motorcommand[1] = ARGNINT;
 
         absspeedDemand = (unsigned short)abs(speedDemand);
-        if(absspeedDemand < MOTOR_MAX_SPEED) {
+        if(absspeedDemand < motor_max_speed)
+        {
           motorcommand[2] = absspeedDemand & 0x00FF;
-	  motorcommand[3] = (absspeedDemand & 0xFF00) >> 8;
-	}
+          motorcommand[3] = (absspeedDemand & 0xFF00) >> 8;
+        }
         else
         {
           puts("Speed demand threshholded!");
-          motorcommand[2] = MOTOR_MAX_SPEED & 0x00FF;
-	  motorcommand[3] = (MOTOR_MAX_SPEED & 0xFF00) >> 8;
+          motorcommand[2] = motor_max_speed & 0x00FF;
+          motorcommand[3] = (motor_max_speed & 0xFF00) >> 8;
         }
       }
       else
@@ -1296,15 +1331,16 @@ P2OS::Main()
           motorcommand[1] = ARGNINT;
 
         absturnRateDemand = (unsigned short)abs(turnRateDemand);
-        if(absturnRateDemand < MOTOR_MAX_TURNRATE) {
+        if(absturnRateDemand < motor_max_turnspeed)
+        {
           motorcommand[2] = absturnRateDemand & 0x00FF;
-	  motorcommand[3] = (absturnRateDemand & 0xFF00) >> 8;
-	}
+          motorcommand[3] = (absturnRateDemand & 0xFF00) >> 8;
+        }
         else
         {
           puts("Turn rate demand threshholded!");
-         motorcommand[2] = MOTOR_MAX_TURNRATE & 0x00FF;
-	 motorcommand[3] = (MOTOR_MAX_TURNRATE & 0xFF00) >> 8;
+          motorcommand[2] = motor_max_turnspeed & 0x00FF;
+          motorcommand[3] = (motor_max_turnspeed & 0xFF00) >> 8;
         }
       }
     }
@@ -1329,7 +1365,7 @@ P2OS::Main()
         gripcommand[0] = GRIPPERVAL;
         gripcommand[1] = ARGINT;
         gripcommand[2] = gripperArg & 0x00FF;
-	gripcommand[3] = (gripperArg & 0xFF00) >> 8;
+        gripcommand[3] = (gripperArg & 0xFF00) >> 8;
         grippacket.Build( gripcommand, 4);
         SendReceive(&grippacket);
       }
@@ -1350,7 +1386,7 @@ P2OS::Main()
       sound_cmd.index = 0;
       // TODO: who should really be the client here?
       soundp->PutCommand(this,(unsigned char*)(&sound_cmd), 
-                              sizeof(sound_cmd));
+                         sizeof(sound_cmd));
       soundindex = 0;
     }
       

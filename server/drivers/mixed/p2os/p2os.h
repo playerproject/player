@@ -184,6 +184,13 @@ class P2OS:public CDevice
     static player_p2os_data_t* data;
     static player_p2os_cmd_t* command;
 
+    // Max motor speeds
+    static int motor_max_speed;
+    static int motor_max_turnspeed;
+    
+    // Bound the command velocities
+    static bool use_vel_band; 
+        
     static int cmucam; // is the cmucam driver active (used in the cfg file)?
 
     void Lock();
