@@ -68,6 +68,12 @@ DIOProxy::Print()
 {
   printf("#DIO(%d:%d) - %c\n", m_device_id.code, 
          m_device_id.index, access);
-  printf("%d %u\n", count, digin);
+  printf("%d bit:  ",count);
+  for (int i=0; i< count; i++)
+  {
+	printf( (digin << i) & 0x80000000 ? "1" : "0");
+	if (i %4 == 3)
+		printf(" ");
+  }
+  printf("\n");
 }
-
