@@ -1179,58 +1179,85 @@ typedef struct player_blobfinder_imager_config
  *************************************************************************/
 
 /** [Synopsis]
-The {\tt ptz} interface is used to control a pan-tilt-zoom camera. */
+The {\tt ptz} interface is used to control a pan-tilt-zoom unit. */
+
+/** [Constants] */
+
+/** Configuration request codes */
+#define PLAYER_PTZ_GENERIC_CONFIG_REQ	((uint8_t)1)
+#define PLAYER_PTZ_CONTROL_MODE_REQ ((uint8_t)2)
+
+/** Maximum command length for use with PLAYER_PTZ_GENERIC_CONFIG_REQ, 
+    based on the Sony EVID30 camera right now. */
+#define PLAYER_PTZ_MAX_CONFIG_LEN	32
+
+/** Control modes, for use with PLAYER_PTZ_CONTROL_MODE_REQ */
+#define PLAYER_PTZ_VELOCITY_CONTROL 0
+#define PLAYER_PTZ_POSITION_CONTROL 1
 
 /** [Data] */
 /** The {\tt ptz} interface returns data reflecting the current state of the
-Pan-Tilt-Zoom camera unit; the format is: */
+Pan-Tilt-Zoom unit; the format is: */
 typedef struct player_ptz_data
 {
   /** Pan (degrees) */
   int16_t pan;
-
   /** Tilt (degrees) */
   int16_t tilt;
-
   /** Field of view (degrees). */
   int16_t zoom;
-
+  /** Current pan/tilt velocities (deg/sec) */
+  int16_t panspeed, tiltspeed;
 } __attribute__ ((packed)) player_ptz_data_t;
 
 /** [Command] */
 /**
 The {\tt ptz} interface accepts commands that set change the state of
-the camera; the format is given below. Note that
+the unit; the format is given below. Note that
 the commands are {\em absolute}, not relative. */
 typedef struct player_ptz_cmd
 {
-  /** Pan (degrees) */
+  /** Desired pan angle (degrees) */
   int16_t pan;
-
-  /** Tilt (degrees) */
+  /** Desired tilt angle (degrees) */
   int16_t tilt;
-
-  /** Field of view (degrees). */
+  /** Desired field of view (degrees). */
   int16_t zoom;
-  
+  /** Desired pan/tilt velocities (deg/sec) */
+  int16_t panspeed, tiltspeed;
 } __attribute__ ((packed)) player_ptz_cmd_t;
 
-/** [Configuration: Set/Get camera-specific config ] */
-/** This ioctl allows the client to send a camera-specific command to the
-    camera.  Whether data is returned depends on the command that was sent.
-*/
-#define PLAYER_PTZ_GENERIC_CONFIG_REQ	((uint8_t)1)
-
-/** max command length, based on the Sony camera right now. The server may
- fill in "config" with a reply if applicable. */
-#define PLAYER_PTZ_MAX_CONFIG_LEN	32
+/** [Configuration: Set/Get unit-specific config ] */
+/** This ioctl allows the client to send a unit-specific command to the
+    unit.  Whether data is returned depends on the command that was sent.
+    The server may fill in "config" with a reply if applicable. */
 typedef struct player_ptz_generic_config
 {
   /** Must be set to PLAYER_PTZ_GENERIC_CONFIG_REQ */
   uint8_t	subtype;
+
+  /** Length of data in config buffer */
   uint16_t	length;
+
+  /** Buffer for command/reply */
   uint8_t	config[PLAYER_PTZ_MAX_CONFIG_LEN];
 } __attribute__ ((packed)) player_ptz_generic_config_t;
+
+/** [Configuration: Change control mode] */
+/** This ioctl allows the client to switch between position and velocity
+    control, for those drivers that support it.
+    Note that this request changes how the driver interprets forthcoming 
+    commands from {\em all} clients. */
+typedef struct player_ptz_controlmode_config
+{
+  /** Must be set to PLAYER_PTZ_CONTROL_MODE_REQ */
+  uint8_t	subtype;
+
+  /** Mode to use: must be either PLAYER_PTZ_VELOCITY_CONTROL or
+      PLAYER_PTZ_POSITION_CONTROL. */
+  uint8_t mode;
+} __attribute__ ((packed)) player_ptz_velocitymode_config_t;
+
 
 /*************************************************************************
  ** end section

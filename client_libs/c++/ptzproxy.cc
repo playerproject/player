@@ -62,9 +62,25 @@ int PtzProxy::SetCam(short pan, short tilt, short zoom)
 
   player_ptz_cmd_t cmd;
 
+  memset(&cmd,0,sizeof(cmd));
   cmd.pan = htons(pan);
   cmd.tilt = htons(tilt);
   cmd.zoom = htons(zoom);
+
+  return(client->Write(m_device_id,
+                       (const char*)&cmd,sizeof(cmd)));
+}
+
+int PtzProxy::SetSpeed(short panspeed, short tiltspeed)
+{
+  if(!client)
+    return(-1);
+
+  player_ptz_cmd_t cmd;
+
+  memset(&cmd,0,sizeof(cmd));
+  cmd.panspeed = htons(panspeed);
+  cmd.tiltspeed = htons(tiltspeed);
 
   return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
@@ -98,10 +114,17 @@ PtzProxy::SendConfig(uint8_t *bytes, size_t len, uint8_t *reply,
   return 0;
 }
 
-  
-  
-  
+int
+PtzProxy::SelectControlMode(uint8_t mode)
+{
+  player_ptz_controlmode_config cfg;
 
+  cfg.subtype = PLAYER_PTZ_CONTROL_MODE_REQ;
+  cfg.mode = mode;
+
+  return(client->Request(m_device_id,(const char*)&cfg,
+                         sizeof(cfg)));
+}
   
 
 void PtzProxy::FillData(player_msghdr_t hdr, const char* buffer)
@@ -117,6 +140,8 @@ void PtzProxy::FillData(player_msghdr_t hdr, const char* buffer)
   pan = (short)ntohs(((player_ptz_data_t*)buffer)->pan);
   tilt = (short)ntohs(((player_ptz_data_t*)buffer)->tilt);
   zoom = (short)ntohs(((player_ptz_data_t*)buffer)->zoom);
+  panspeed = (short)ntohs(((player_ptz_data_t*)buffer)->panspeed);
+  tiltspeed = (short)ntohs(((player_ptz_data_t*)buffer)->tiltspeed);
 }
 
 // interface that all proxies SHOULD provide
@@ -124,7 +149,7 @@ void PtzProxy::Print()
 {
   printf("#Ptz(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
-  puts("#pan\ttilt\tzoom");
-  printf("%d\t%d\t%u\n", pan,tilt,zoom);
+  puts("#pan\ttilt\tzoom\tpanspeed\ttiltspeed");
+  printf("%d\t%d\t%u\t%d\t%d\n", pan,tilt,zoom,panspeed,tiltspeed);
 }
 

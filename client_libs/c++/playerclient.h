@@ -1323,6 +1323,8 @@ class PtzProxy : public ClientProxy
     
     /// Pan, tilt, and field of view values (all degrees).
     short pan, tilt, zoom;
+    /// Pan and tilt speeds (deg/sec)
+    short panspeed, tiltspeed;
 
     /** Constructor.
         Leave the access field empty to start unconnected.
@@ -1340,11 +1342,19 @@ class PtzProxy : public ClientProxy
     */
     int SetCam(short pan, short tilt, short zoom);
 
+    /** Specify new target velocities */
+    int SetSpeed(short panspeed, short tiltspeed);
+
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
     
-  /// Send a camera-specific config
-  int SendConfig(uint8_t *bytes, size_t len, uint8_t *reply = NULL, size_t reply_len = 0);
+    /// Send a camera-specific config
+    int SendConfig(uint8_t *bytes, size_t len, uint8_t *reply = NULL, 
+                   size_t reply_len = 0);
+    
+    /** Select new control mode.  Use either PLAYER_PTZ_POSITION_CONTROL
+        or PLAYER_PTZ_VELOCITY_CONTROL. */
+    int SelectControlMode(uint8_t mode);
 
     /// Print out current ptz state.
     void Print();

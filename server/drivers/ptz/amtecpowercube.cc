@@ -49,6 +49,9 @@
 
 #define AMTEC_SLEEP_TIME_USEC 20000
 
+/* angular velocity used when in position control mode */
+#define AMTEC_DEFAULT_SPEED_DEG_PER_SEC 40
+
 // start, end, and escape chars
 #define AMTEC_STX       0x02
 #define AMTEC_ETX       0x03
@@ -76,6 +79,7 @@
 #define AMTEC_PARAM_MAX_POS   0x46
 #define AMTEC_PARAM_CUBESTATE 0x27
 #define AMTEC_PARAM_MAXCURR   0x4c
+#define AMTEC_PARAM_ACT_VEL   0x41
 
 // motion IDs
 #define AMTEC_MOTION_FRAMP       4
@@ -99,6 +103,8 @@ class AmtecPowerCube:public CDevice
     int return_to_home;
     int minpan, maxpan;
     int mintilt, maxtilt;
+    int speed;
+    uint8_t controlmode;
 
     // low-level methods to interact with the device
     int SendCommand(int id, unsigned char* cmd, size_t len);
@@ -120,13 +126,19 @@ class AmtecPowerCube:public CDevice
     void Uint16ToBytes(unsigned char *bytes, unsigned short s);
 
     // higher-level methods for common use
-    int GetAbsPanTilt(short* pan, short* tilt);
-    int SetAbsPan(short oldpan, short pan);
-    int SetAbsTilt(short oldtilt, short tilt);
+    int GetPanTiltPos(short* pan, short* tilt);
+    int GetPanTiltVel(short* panspeed, short* tiltspeed);
+    int SetPanPos(short oldpan, short pan);
+    int SetTiltPos(short oldtilt, short tilt);
+    int SetPanVel(short panspeed);
+    int SetTiltVel(short tiltspeed);
     int Home();
     int Halt();
     int Reset();
     int SetLimits();
+
+    // helper for dealing with config requests.
+    void HandleConfig(void *client, unsigned char *buf, size_t len);
 
   public:
     int fd; // amtec device file descriptor
@@ -160,7 +172,7 @@ AmtecPowerCube_Register(DriverTable* table)
 }
 
 AmtecPowerCube::AmtecPowerCube(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),0,0)
+  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
   fd = -1;
   player_ptz_data_t data;
@@ -174,6 +186,7 @@ AmtecPowerCube::AmtecPowerCube(char* interface, ConfigFile* cf, int section) :
 
   this->serial_port = cf->ReadString(section, "port", AMTEC_DEFAULT_PORT);
   this->return_to_home = cf->ReadInt(section, "home", 0);
+  this->speed = cf->ReadInt(section, "speed", AMTEC_DEFAULT_SPEED_DEG_PER_SEC);
 }
 
 int 
@@ -298,6 +311,9 @@ AmtecPowerCube::Setup()
   short pan,tilt;
   int flags;
 
+  // default to position control
+  this->controlmode = PLAYER_PTZ_POSITION_CONTROL;
+
   player_ptz_cmd_t cmd;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
@@ -342,7 +358,7 @@ AmtecPowerCube::Setup()
 
   fd_blocking = false;
   /* try to get current state, just to make sure we actually have a camera */
-  if(GetAbsPanTilt(&pan,&tilt))
+  if(GetPanTiltPos(&pan,&tilt))
   {
     printf("Couldn't connect to Amtec PowerCube most likely because the unit\n"
                     "is not connected or is connected not to %s\n", 
@@ -744,7 +760,7 @@ AmtecPowerCube::SetFloatParam(int id, int param, float val)
 }
 
 int
-AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
+AmtecPowerCube::GetPanTiltPos(short* pan, short* tilt)
 {
   float tmp;
 
@@ -764,6 +780,31 @@ AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
     return(-1);
   }
   *tilt = (short)(RTOD(tmp));
+
+  return(0);
+}
+
+int
+AmtecPowerCube::GetPanTiltVel(short* panspeed, short* tiltspeed)
+{
+  float tmp;
+
+  // get the pan
+  if(GetFloatParam(AMTEC_MODULE_PAN, AMTEC_PARAM_ACT_VEL, &tmp) < 0)
+  {
+    PLAYER_ERROR("GetFloatParam() failed");
+    return(-1);
+  }
+  // reverse pan angle, to increase ccw, then normalize
+  *panspeed = -(short)RTOD(NORMALIZE(tmp));
+  
+  // get the tilt
+  if(GetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_ACT_VEL, &tmp) < 0)
+  {
+    PLAYER_ERROR("GetFloatParam() failed");
+    return(-1);
+  }
+  *tiltspeed = (short)(RTOD(tmp));
 
   return(0);
 }
@@ -813,38 +854,83 @@ AmtecPowerCube::SetLimits()
 }
 
 int
-AmtecPowerCube::SetAbsPan(short oldpan, short pan)
+AmtecPowerCube::SetPanPos(short oldpan, short pan)
 {
   unsigned char buf[AMTEC_MAX_CMDSIZE];
   unsigned char cmd[8];
   float newpan;
+  unsigned short time;
 
   newpan = DTOR(pan);
+  time = (unsigned short)rint(((double)abs(pan - oldpan) / 
+                               (double)this->speed) * 1e3);
 
   cmd[0] = AMTEC_CMD_SET_MOTION;
-  cmd[1] = AMTEC_MOTION_FVEL_ACK;
+  cmd[1] = AMTEC_MOTION_FSTEP_ACK;
   FloatToBytes(cmd+2,newpan);
-  printf("sending pan command: %d (%f)\n", pan, newpan);
+  Uint16ToBytes(cmd+6,time);
   if(SendCommand(AMTEC_MODULE_PAN,cmd,8) < 0)
     return(-1);
   if(ReadAnswer(buf,sizeof(buf)) < 0)
     return(-1);
-  //printf("module state:0x%x\n", buf[6]);
   return(0);
 }
 
 int
-AmtecPowerCube::SetAbsTilt(short oldtilt, short tilt)
+AmtecPowerCube::SetTiltPos(short oldtilt, short tilt)
 {
   unsigned char buf[AMTEC_MAX_CMDSIZE];
   unsigned char cmd[8];
   float newtilt;
+  unsigned short time;
 
   newtilt = DTOR(tilt);
+  time = (unsigned short)rint(((double)abs(tilt - oldtilt) / 
+                               (double)this->speed) * 1e3);
 
   cmd[0] = AMTEC_CMD_SET_MOTION;
-  cmd[1] = AMTEC_MOTION_FRAMP;
+  cmd[1] = AMTEC_MOTION_FSTEP_ACK;
   FloatToBytes(cmd+2,newtilt);
+  Uint16ToBytes(cmd+6,time);
+  if(SendCommand(AMTEC_MODULE_TILT,cmd,8) < 0)
+    return(-1);
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+    return(-1);
+  return(0);
+}
+
+int
+AmtecPowerCube::SetPanVel(short panspeed)
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[6];
+  float newpanspeed;
+
+  newpanspeed = DTOR(panspeed);
+
+  cmd[0] = AMTEC_CMD_SET_MOTION;
+  cmd[1] = AMTEC_MOTION_FVEL_ACK;
+  FloatToBytes(cmd+2,newpanspeed);
+  printf("sending pan command: %d (%f)\n", panspeed, newpanspeed);
+  if(SendCommand(AMTEC_MODULE_PAN,cmd,6) < 0)
+    return(-1);
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+    return(-1);
+  return(0);
+}
+
+int
+AmtecPowerCube::SetTiltVel(short tiltspeed)
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[6];
+  float newtiltspeed;
+
+  newtiltspeed = DTOR(tiltspeed);
+
+  cmd[0] = AMTEC_CMD_SET_MOTION;
+  cmd[1] = AMTEC_MOTION_FVEL_ACK;
+  FloatToBytes(cmd+2,newtiltspeed);
   if(SendCommand(AMTEC_MODULE_TILT,cmd,6) < 0)
     return(-1);
   if(ReadAnswer(buf,sizeof(buf)) < 0)
@@ -857,14 +943,28 @@ AmtecPowerCube::Main()
 {
   player_ptz_data_t data;
   player_ptz_cmd_t command;
+
   short lastpan, lasttilt;
   short newpan, newtilt;
   short currpan, currtilt;
 
+  short lastpanspeed, lasttiltspeed;
+  short newpanspeed, newtiltspeed;
+  short currpanspeed, currtiltspeed;
+
+  char buffer[256];
+  size_t buffer_len;
+  void *client;
+
   // read the current state
-  if(GetAbsPanTilt(&lastpan,&lasttilt) < 0)
+  if(GetPanTiltPos(&lastpan,&lasttilt) < 0)
   {
-    PLAYER_ERROR("GetAbsPanTilt() failed; bailing.");
+    PLAYER_ERROR("GetPanTiltPos() failed; bailing.");
+    pthread_exit(NULL);
+  }
+  if(GetPanTiltVel(&lastpanspeed,&lasttiltspeed) < 0)
+  {
+    PLAYER_ERROR("GetPanTiltVel() failed; bailing.");
     pthread_exit(NULL);
   }
 
@@ -873,43 +973,88 @@ AmtecPowerCube::Main()
     pthread_testcancel();
 
     GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
-    // reverse pan angle, to increase ccw
-    newpan = -(short)ntohs(command.pan);
-    newtilt = (short)ntohs(command.tilt);
-
-    if(newpan != lastpan)
+    if(this->controlmode == PLAYER_PTZ_POSITION_CONTROL)
     {
-      // send new pan position
-      if(SetAbsPan(lastpan,newpan))
+      // reverse pan angle, to increase ccw
+      newpan = -(short)ntohs(command.pan);
+      newtilt = (short)ntohs(command.tilt);
+
+      if(newpan != lastpan)
       {
-        PLAYER_ERROR("SetAbsPan() failed(); bailing.");
-        pthread_exit(NULL);
+        // send new pan position
+        if(SetPanPos(lastpan,newpan))
+        {
+          PLAYER_ERROR("SetPan() failed(); bailing.");
+          pthread_exit(NULL);
+        }
+
+        lastpan = newpan;
       }
 
-      lastpan = newpan;
-    }
-
-    if(newtilt != lasttilt)
-    {
-      // send new tilt position
-      if(SetAbsTilt(lasttilt,newtilt))
+      if(newtilt != lasttilt)
       {
-        PLAYER_ERROR("SetAbsTilt() failed(); bailing.");
-        pthread_exit(NULL);
+        // send new tilt position
+        if(SetTiltPos(lasttilt,newtilt))
+        {
+          PLAYER_ERROR("SetTilt() failed(); bailing.");
+          pthread_exit(NULL);
+        }
+
+        lasttilt = newtilt;
+      }
+    }
+    else if(this->controlmode == PLAYER_PTZ_VELOCITY_CONTROL)
+    {
+      // reverse pan angle, to increase ccw
+      newpanspeed = -(short)ntohs(command.panspeed);
+      newtiltspeed = (short)ntohs(command.tiltspeed);
+
+      if(newpanspeed != lastpanspeed)
+      {
+        // send new pan speed
+        if(SetPanVel(newpanspeed))
+        {
+          PLAYER_ERROR("SetPanVel() failed(); bailing.");
+          pthread_exit(NULL);
+        }
+
+        lastpanspeed = newpanspeed;
       }
 
-      lasttilt = newtilt;
+      if(newtiltspeed != lasttiltspeed)
+      {
+        // send new tilt position
+        if(SetTiltVel(newtiltspeed))
+        {
+          PLAYER_ERROR("SetTiltVel() failed(); bailing.");
+          pthread_exit(NULL);
+        }
+
+        lasttiltspeed = newtiltspeed;
+      }
+    }
+    else
+    {
+      PLAYER_ERROR1("unkown control mode: %d; bailing",this->controlmode);
+      pthread_exit(NULL);
     }
 
-    if(GetAbsPanTilt(&currpan,&currtilt))
+    if(GetPanTiltPos(&currpan,&currtilt))
     {
-      PLAYER_ERROR("GetAbsPanTilt() failed(); bailing.");
+      PLAYER_ERROR("GetPanTiltPos() failed(); bailing.");
+      pthread_exit(NULL);
+    }
+    if(GetPanTiltVel(&currpanspeed,&currtiltspeed))
+    {
+      PLAYER_ERROR("GetPanTiltVel() failed(); bailing.");
       pthread_exit(NULL);
     }
 
     data.pan = htons(currpan);
     data.tilt = htons(currtilt);
     data.zoom = 0;
+    data.panspeed = htons(currpanspeed);
+    data.tiltspeed = htons(currtiltspeed);
 
     PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
 
@@ -920,7 +1065,7 @@ AmtecPowerCube::Main()
       PLAYER_ERROR("GetUint32Param() failed; bailing");
       pthread_exit(NULL);
     }
-    printf("state: 0x%x\n", state);
+    //printf("state: 0x%x\n", state);
     if(state & AMTEC_STATE_ERROR)
     {
       PLAYER_ERROR1("the Amtec unit has encountered an error and will need\n"
@@ -928,8 +1073,57 @@ AmtecPowerCube::Main()
                     state);
       pthread_exit(NULL);
     }
+    
+    // check for config requests 
+    if((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer))) > 0) 
+      HandleConfig(client, (uint8_t *)buffer, buffer_len);
 
     usleep(AMTEC_SLEEP_TIME_USEC);
+  }
+}
+
+void 
+AmtecPowerCube::HandleConfig(void *client, unsigned char *buf, size_t len)
+{
+  player_ptz_controlmode_config* cfg;
+  player_ptz_cmd_t cmd;
+
+  switch(buf[0])
+  {
+    case PLAYER_PTZ_CONTROL_MODE_REQ:
+      cfg = (player_ptz_controlmode_config*)buf;
+      if(len != sizeof(player_ptz_controlmode_config))
+      {
+        PLAYER_WARN("control mode request is wrong size; ignoring");
+	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+	  PLAYER_ERROR("Failed to PutReply\n");
+      }
+      else
+      {
+        if((cfg->mode != PLAYER_PTZ_VELOCITY_CONTROL) &&
+           (cfg->mode != PLAYER_PTZ_POSITION_CONTROL))
+        {
+          PLAYER_WARN1("unknown control mode requested: %d", cfg->mode);
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+            PLAYER_ERROR("Failed to PutReply\n");
+        }
+        else
+        {
+          // change mode, and zero existing commands, to avoid unexpected
+          // consequences.
+          controlmode = cfg->mode;
+          memset(&cmd,0,sizeof(cmd));
+          PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+            PLAYER_ERROR("Failed to PutReply\n");
+        }
+      }
+      break;
+    default:
+      PLAYER_WARN1("unknown config request: %d", buf[0]);
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        PLAYER_ERROR("Failed to PutReply\n");
+      break;
   }
 }
 
