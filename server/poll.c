@@ -23,7 +23,7 @@
  * a fallback implementation when poll() is not available. - BPG
  */
 
-#include "poll.h"
+#include "replace.h"
 
 //#include <alloca.h>
 #include <sys/types.h>

@@ -40,14 +40,6 @@
 
 #include <dirent.h>
 
-#if !HAVE_SCANDIR
-extern "C" {
-  int scandir(const char *dir, struct dirent ***namelist,
-              int (*select)(const struct dirent *),
-              int (*compar)(const struct dirent **, const struct dirent **));
-}
-#endif
-
 #if HAVE_LIB_DL
 #include <dlfcn.h>
 #endif
@@ -61,12 +53,6 @@ extern "C" {
 #include <unistd.h>  /* for close(2) */
 #include <sys/socket.h>  /* for accept(2) */
 #include <netdb.h> /* for gethostbyaddr(3) */
-
-#if HAVE_POLL
-#include <sys/poll.h>  /* for poll(2) */
-#else
-#include "poll.h"  /* for poll(2) */
-#endif
 
 #include <socket_util.h> /* for create_and_bind_socket() */
 #include <deviceregistry.h> /* for register_devices() */
@@ -83,6 +69,8 @@ extern "C" {
 
 #include <sys/mman.h> // for mmap
 #include <fcntl.h>
+
+#include "replace.h"
 
 #include <stagetime.h>
 #include <stagedevice.h>
