@@ -43,6 +43,8 @@
 //      config buffer
 
 
+
+
 // player/stage info buffer
 // data_len is set by stage and indicates the number of bytes available.
 // command_len is set by player.
@@ -52,6 +54,7 @@ typedef struct
 {
     uint8_t available;
     uint8_t subscribed;
+    uint64_t data_timestamp;
     uint16_t data_len;
     uint16_t command_len;
     uint16_t config_len;
