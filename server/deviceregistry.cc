@@ -109,6 +109,10 @@ void InertiaCube2_Register(DriverTable* table);
 void MicroStrain3DMG_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_WAVEAUDIO
+void Waveaudio_Register(DriverTable* table);
+#endif
+
 
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
@@ -132,6 +136,7 @@ player_interface_t interfaces[] = {
   {PLAYER_SONAR_CODE, PLAYER_SONAR_STRING, "p2os_sonar"},
   {PLAYER_WIFI_CODE, PLAYER_WIFI_STRING, "linuxwifi"},
   {PLAYER_IR_CODE, PLAYER_IR_STRING, "reb_ir"},
+  {PLAYER_WAVEFORM_CODE, PLAYER_WAVEFORM_STRING, "wave_audio"},
   {0,NULL,NULL}
 };
 
@@ -227,6 +232,10 @@ register_devices()
 
 #ifdef INCLUDE_MICROSTRAIN
   MicroStrain3DMG_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_WAVEAUDIO
+  Waveaudio_Register(driverTable);
 #endif
 }
 
