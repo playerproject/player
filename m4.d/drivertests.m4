@@ -207,11 +207,12 @@ dnl pkg-config is REQUIRED to find the Stage-1.4 C++ library.
 dnl If we find stage, we also need libpnm for loading bitmaps
 if test "$PKG_CONFIG" != "no" ; then
   PKG_CHECK_MODULES(STAGE1P4, stagecpp >= 1.4, 
-	[FOUND_STAGE1p4=yes, AC_CHECK_LIB(pnm, pnm_init)],
+	[FOUND_STAGE1p4=yes],
 	[FOUND_STAGE1p4=no]
 )
 	
   if test "$FOUND_STAGE1P4" = "yes" ; then
+    AC_CHECK_LIB(pnm, pnm_init)
     PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
 	    [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
   fi
