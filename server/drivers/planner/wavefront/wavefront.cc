@@ -21,6 +21,10 @@
 // TODO:
 //   - allow a waypoint to be skipped, if the robot gets near a later
 //      waypoint
+//
+//  - allow for computing a path, without actually executing it.
+//
+//  - compute and return path length
 
 #include <string.h>
 #include <stdlib.h>

@@ -10,13 +10,17 @@ extern int robot_moving_p;
 extern int robot_moving_idx;
 
 #define ROBOT_ALPHA 128
-guint32 robot_colors[] = { GNOME_CANVAS_COLOR_A(255,0,0,ROBOT_ALPHA),
-                           GNOME_CANVAS_COLOR_A(0,255,0,ROBOT_ALPHA),
-                           GNOME_CANVAS_COLOR_A(0,0,255,ROBOT_ALPHA),
-                           GNOME_CANVAS_COLOR_A(255,0,255,ROBOT_ALPHA),
-                           GNOME_CANVAS_COLOR_A(255,255,0,ROBOT_ALPHA),
-                           GNOME_CANVAS_COLOR_A(0,255,255,ROBOT_ALPHA) };
-size_t num_robot_colors = sizeof(robot_colors) / sizeof(robot_colors[0]);
+static guint32 robot_colors[] = { GNOME_CANVAS_COLOR_A(255,0,0,ROBOT_ALPHA),
+                                  GNOME_CANVAS_COLOR_A(0,255,0,ROBOT_ALPHA),
+                                  GNOME_CANVAS_COLOR_A(0,0,255,ROBOT_ALPHA),
+                                  GNOME_CANVAS_COLOR_A(255,0,255,ROBOT_ALPHA),
+                                  GNOME_CANVAS_COLOR_A(255,255,0,ROBOT_ALPHA),
+                                  GNOME_CANVAS_COLOR_A(0,255,255,ROBOT_ALPHA) };
+static size_t num_robot_colors = sizeof(robot_colors) / sizeof(robot_colors[0]);
+
+static gboolean dragging=FALSE;
+static gboolean setting_theta=FALSE;
+static gboolean setting_goal=FALSE;
 
 
 /*
@@ -85,9 +89,6 @@ _robot_button_callback(GnomeCanvasItem *item,
   static int idx;
   gboolean onrobot=FALSE;
   double theta;
-  static gboolean dragging=FALSE;
-  static gboolean setting_theta=FALSE;
-  static gboolean setting_goal=FALSE;
   static GnomeCanvasPoints* points = NULL;
   static GnomeCanvasItem* setting_theta_line = NULL;
   pose_t pose;
@@ -721,6 +722,9 @@ draw_waypoints(gui_data_t* gui_data, int idx)
   if(gui_data->planners[idx]->path_valid && 
      !gui_data->planners[idx]->path_done)
   {
+    if(!dragging && !setting_theta)
+      gnome_canvas_item_hide(gui_data->robot_goals[idx]);
+
     g_assert((gui_data->robot_paths[idx] = 
               gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
                                     gnome_canvas_group_get_type(),

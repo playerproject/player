@@ -1,3 +1,12 @@
+// TODO:
+//
+//   * Debug constant redraw problem.  It seems that, on some machines,
+//     the app gets a continuous streams of GTK events, which makes X suck
+//     up the whole CPU.
+//
+//   * Make initial window size / zoom fit the whole map.
+//
+//   * Make the zoom work better / look nicer
 
 #include <assert.h>
 #include <signal.h>
