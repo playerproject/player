@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/server
+AM_CPPFLAGS = -I$(top_srcdir)/server @GDK_PIXBUF_CFLAGS@
 
 noinst_LIBRARIES = @WAVEFRONT_LIB@
 
