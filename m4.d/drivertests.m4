@@ -3,6 +3,19 @@ dnl Here are the tests for inclusion of Player's various device drivers
 define(PLAYER_DRIVERTESTS, [
 
 dnl the following drivers will install by default
+AC_ARG_WITH(passthrough,
+[  --without-passthrough          Don't compile the passthrough drivers],,
+with_passthrough=yes)
+if test "x$with_passthrough" = "xyes"; then
+  AC_DEFINE(INCLUDE_PASSTHROUGH, 1, [[include the passthrough driver]])
+  PASSTHROUGH_LIB="libpassthrough.a"
+  PASSTHROUGH_LIBPATH="drivers/shell/libpassthrough.a"
+  PASSTHROUGH_EXTRA_LIB="-L../client_libs/c -lplayercclient"
+fi
+AC_SUBST(PASSTHROUGH_LIB)
+AC_SUBST(PASSTHROUGH_LIBPATH)
+AC_SUBST(PASSTHROUGH_EXTRA_LIB)
+
 AC_ARG_WITH(p2os,
 [  --without-p2os          Don't compile the p2os drivers],,
 with_p2os=yes)

@@ -80,10 +80,9 @@ class ClientProxy
       */
     PlayerClient* client;
 
-    // if this generic proxy is not subclassed, the most recent 
-    // data and header get copied in here. that way we can use this
-    // base class on it's own as a generic proxy
-    unsigned char last_data[4096];
+    // the last message header and body will be copied here by StoreData(), so
+    // that it's available for later use.
+    unsigned char last_data[PLAYER_MAX_MESSAGE_SIZE];
     player_msghdr_t last_header;
 
     unsigned char access;   // 'r', 'w', or 'a' (others?)
@@ -142,6 +141,10 @@ class ClientProxy
     /** All proxies must provide this method.  It is used internally to parse
         new data when it is received. */
     virtual void FillData(player_msghdr_t hdr, const char* buffer);
+
+    /** This method is used internally to keep a copy of the last message from
+        the device **/
+    void StoreData(player_msghdr_t hdr, const char* buffer);
     
     /** All proxies SHOULD provide this method, which should print out, in a
         human-readable form, the device's current state. */
