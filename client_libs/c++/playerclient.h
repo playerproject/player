@@ -654,6 +654,42 @@ class GripperProxy : public ClientProxy
  ** end section
  *****************************************************************************/
 
+/*****************************************************************************
+ ** begin section SoundProxy
+ *****************************************************************************/
+
+/** The {\tt SoundProxy} class is used to control a {\tt sound} device,
+    which allows you to play pre-recorded sound files on a robot.
+*/
+class SoundProxy : public ClientProxy
+{
+
+  public:
+    
+    /** The client calls this method to make a new proxy.  Leave access empty 
+         to start unconnected. */
+    SoundProxy(PlayerClient* pc, unsigned short index, 
+                 unsigned char access='c') :
+            ClientProxy(pc,PLAYER_SOUND_CODE,index,access) {}
+
+    // these methods are the user's interface to this device
+    
+    /** Play the sound indicated by the index.  Returns 0 on success, -1 on
+        error.
+     */
+    int Play(int index);
+
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer) {};
+    
+    /// Does nothing.
+    void Print() {};
+};
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
 
 class IDARProxy : public ClientProxy
 {

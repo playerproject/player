@@ -40,9 +40,9 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               audioproxy.cc \
                               waveformproxy.cc \
                               mcomproxy.cc \
-                              audiodspproxy.cc \
-                              mcomproxy.cc \
-                              localizeproxy.cc
+			      localizeproxy.cc \
+			      soundproxy.cc \
+                              audiodspproxy.cc
                               #bpsproxy.cc
                               #bpsproxy.h
 
