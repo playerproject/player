@@ -205,6 +205,10 @@ class VFH_Class : public Driver
 
     // Check for new commands from server
     void GetCommand();
+
+    // Computes the signed minimum difference between the two angles.  Inputs
+    // and return values are in degrees.
+    double angle_diff(double a, double b);
     
     // Truth device info
     Driver *truth;
@@ -764,7 +768,7 @@ void VFH_Class::Main()
   double timediff;
 
   // bookkeeping to implement hysteresis when rotating at the goal
-  bool atgoal;
+  bool turninginplace;
   int rotatedir;
 
   sleeptime.tv_sec = 0;
@@ -778,16 +782,15 @@ void VFH_Class::Main()
   if(this->truth)
     this->GetTruth();
 
-  atgoal = false;
+  turninginplace = false;
   while (true)
   {
     // Wait till we get new odometry data; this may block indefinitely
     // on older versions of Stage and Gazebo.
-   // this->odom->Wait();
+    // this->odom->Wait();
 
     // Process any pending requests.
     this->HandleRequests();
-
 
     // Sleep for 1ms (will actually take longer than this).
     nanosleep(&sleeptime, NULL);
@@ -818,14 +821,15 @@ void VFH_Class::Main()
     this->GetCommand();
 
     if(!this->active_goal)
-    {
-      //puts("VFH: no active goal");
       continue;
-    }
 
+    // Figure how far, in distance and orientation, we are from the goal
     dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
                 pow((goal_y - this->odom_pose[1]),2));
+    angdiff = this->angle_diff((double)this->goal_t,this->odom_pose[2]);
 
+    // If we're currently escaping after a stall, check whether we've done
+    // so for long enough.
     if(escaping)
     {
       GlobalTime->GetTime(&curr);
@@ -835,6 +839,8 @@ void VFH_Class::Main()
         escaping = false;
     }
 
+    // CASE 1: The robot has stalled, so escape if the user specified
+    //         a non-zero escape velocity.
     if(escaping || 
        (this->escape_speed && this->escape_time && this->odom_stall))
     {
@@ -848,32 +854,32 @@ void VFH_Class::Main()
         GlobalTime->GetTime(&startescape);
         escaping = true;
       }
-      atgoal = false;
+      turninginplace = false;
     }
+    // CASE 2: The robot is at the goal, within user-specified tolerances, so
+    //         stop.
     else if((dist < (this->dist_eps * 1e3)) && 
-       (fabs(NORMALIZE(DTOR(goal_t)-DTOR(this->odom_pose[2]))) < this->ang_eps))
+            (fabs(DTOR(angdiff)) < this->ang_eps))
     {
       this->active_goal = false;
       this->speed = this->turnrate = 0;
       PutCommand( this->speed, this->turnrate );
+      turninginplace = false;
     }
+    // CASE 3: The robot is too far from the goal position, so invoke VFH to
+    //         get there.
     else if (dist > (this->dist_eps * 1e3))
     {
-      float Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]), (goal_x - this->odom_pose[0]))
-              * 180 / M_PI - this->odom_pose[2];
+      float Desired_Angle = (90 + atan2((goal_y - this->odom_pose[1]),
+                                        (goal_x - this->odom_pose[0]))
+                             * 180 / M_PI - this->odom_pose[2]);
 
       while (Desired_Angle > 360.0)
-      {
         Desired_Angle -= 360.0;
-      }
       while (Desired_Angle < 0)
-      {
         Desired_Angle += 360.0;
-      }
 
       vfh_Algorithm->SetDesiredAngle( Desired_Angle );
-
-      //printf("vfh dist %.3f angle %.3f\n", dist, Desired_Angle);
 
       // Get new laser data.
       this->GetLaser();
@@ -881,47 +887,43 @@ void VFH_Class::Main()
                                  (int)ntohl(this->odom_vel_be[0]),
                                  this->speed, this->turnrate );
       PutCommand( this->speed, this->turnrate );
-      atgoal = false;
+      turninginplace = false;
     }
+    // CASE 4: The robot is at the goal position, but still needs to turn
+    //         in place to reach the desired orientation.
     else
     {
       // At goal, stop
-      angdiff = this->goal_t - this->odom_pose[2];
-      while (angdiff > 180)
-        angdiff -= 360.0;
-      while (angdiff < -180)
-        angdiff += 360.0;
-
       speed = 0;
-      if(fabs(angdiff) > RTOD(this->ang_eps))
+
+      // Turn in place in the appropriate direction, with speed
+      // proportional to the angular distance to the goal orientation.
+      turnrate = (int)rint(fabs(angdiff/180.0) * 
+                           vfh_Algorithm->GetMaxTurnrate());
+
+      // If we've just gotten to the goal, pick a direction to turn;
+      // otherwise, keep turning the way we started (to prevent
+      // oscillation)
+      if(!turninginplace)
       {
-        turnrate = (int)rint(fabs(angdiff/180.0) * vfh_Algorithm->GetMaxTurnrate());
-        // if we've just gotten to the goal, pick a direction to turn;
-        // otherwise, keep turning the way we started (to prevent
-        // oscillation)
-        if(!atgoal)
-        {
-          atgoal = true;
-          if(angdiff < 0)
-            rotatedir = -1;
-          else
-            rotatedir = 1;
-        }
-
-        turnrate *= rotatedir;
-
-        if(turnrate < 0)
-          turnrate = MIN(turnrate,-this->vfh_Algorithm->GetMinTurnrate());
+        turninginplace = true;
+        if(angdiff < 0)
+          rotatedir = -1;
         else
-          turnrate = MAX(turnrate,this->vfh_Algorithm->GetMinTurnrate());
+          rotatedir = 1;
       }
+
+      turnrate *= rotatedir;
+
+      // Threshold to make sure we don't send arbitrarily small turn speeds
+      // (which may not cause the robot to actually move).
+      if(turnrate < 0)
+        turnrate = MIN(turnrate,-this->vfh_Algorithm->GetMinTurnrate());
       else
-        turnrate = 0;
+        turnrate = MAX(turnrate,this->vfh_Algorithm->GetMinTurnrate());
 
       this->PutCommand( this->speed, this->turnrate );
     }
-    // gettimeofday(&time, 0);
-    // printf("After VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
   }
   return;
 }
@@ -1131,4 +1133,25 @@ void VFH_Class::PutPose()
   return;
 }
 
+// computes the signed minimum difference between the two angles.  inputs
+// and return values are in degrees.
+double
+VFH_Class::angle_diff(double a, double b)
+{
+  double ra, rb;
+  double d1, d2;
+
+  ra = NORMALIZE(DTOR(a));
+  rb = NORMALIZE(DTOR(b));
+
+  d1 = ra-rb;
+  d2 = 2*M_PI - fabs(d1);
+  if(d1 > 0)
+    d2 *= -1.0;
+
+  if(fabs(d1) < fabs(d2))
+    return(RTOD(d1));
+  else
+    return(RTOD(d2));
+}
 
