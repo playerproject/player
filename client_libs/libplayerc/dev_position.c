@@ -138,13 +138,13 @@ void playerc_position_putgeom(playerc_position_t *device, player_msghdr_t *heade
 // Enable/disable the motors
 int playerc_position_enable(playerc_position_t *device, int enable)
 {
-  player_position_power_config_t config;
+  player_position_power_config_t config = {0};
 
-  memset(&config, 0, sizeof(config));
-  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+//  memset(&config, 0, sizeof(config));
+//  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   config.value = enable;
 
-  return playerc_client_request(device->info.client, &device->info,
+  return playerc_client_request(device->info.client, &device->info, PLAYER_POSITION_MOTOR_POWER, 
                                 &config, sizeof(config),
                                 &config, sizeof(config));    
 }
@@ -158,10 +158,10 @@ int playerc_position_get_geom(playerc_position_t *device)
   player_position_geom_t config;
 
   memset(&config, 0, sizeof(config));
-  config.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+//  config.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
+  len = playerc_client_request(device->info.client, &device->info, PLAYER_POSITION_GET_GEOM,
+                               &config, 0, &config, sizeof(config));
   if (len < sizeof(player_position_geom_t))
     return -1;
 

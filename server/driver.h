@@ -47,14 +47,12 @@ class Driver;
 class ClientData;
 
 // Macros to provide helpers for message handling, see rflex.cc for usage
-// MSG(player_device_id DeviceID, MessageType, Expected data size, 
-//            request subtype (0xFF for none))
+// MSG(player_device_id DeviceID, MessageType, SubType, Expected data size)
 // Make sure each MSG is matched with a MSG_END
-#define MSG(DeviceID, Type, Size, SubType) \
+#define MSG(DeviceID, Type, SubType, Size) \
 	if(hdr->type == Type && hdr->device == DeviceID.code \
 			&& hdr->device_index == DeviceID.index \
-			&& hdr->size == Size \
-			&& (Size == 0 || SubType == 0xFF || SubType == data[0]))\
+			&& SubType == hdr->subtype)\
 	{ \
 		if ( hdr->size != Size ) {PLAYER_WARN2("Recieved message with incorrect size: %d expected, %d recieved\n",Size,hdr->size); return -1;} 
 	
@@ -292,13 +290,13 @@ class Driver
 
     /// Put Msg to Client
     virtual int PutMsg(player_device_id_t id, ClientData* client, 
-                         unsigned short type, 
+                         uint8_t type, uint8_t subtype,
                          void* src, size_t len = 0,
                          struct timeval* timestamp = NULL);
 
     /// Put reply to client using given header
     virtual int PutMsg(player_msghdr * hdr, ClientData* client, 
-                         unsigned short type, 
+                         uint8_t type, 
                          void* src, size_t len = 0,
                          struct timeval* timestamp = NULL);
 

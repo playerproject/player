@@ -633,7 +633,7 @@ void SickLMS200::Main()
       }
       
       // Make data available
-      PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, (uint8_t*) &data, sizeof(data), &time);
+      PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (uint8_t*) &data, sizeof(data), &time);
     }
   }
 }

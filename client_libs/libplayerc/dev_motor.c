@@ -112,10 +112,10 @@ int playerc_motor_enable(playerc_motor_t *device, int enable)
   player_motor_power_config_t config;
 
   memset(&config, 0, sizeof(config));
-  config.request = PLAYER_MOTOR_POWER_REQ;
+//  config.request = PLAYER_MOTOR_POWER_REQ;
   config.value = enable;
 
-  return playerc_client_request(device->info.client, &device->info,
+  return playerc_client_request(device->info.client, &device->info,PLAYER_MOTOR_POWER,
                                 &config, sizeof(config),
                                 &config, sizeof(config));    
 }
@@ -126,10 +126,10 @@ int playerc_motor_position_control(playerc_motor_t *device, int type)
   player_motor_power_config_t config;
 
   memset(&config, 0, sizeof(config));
-  config.request = PLAYER_MOTOR_VELOCITY_MODE_REQ;
+//  config.request = PLAYER_MOTOR_VELOCITY_MODE_REQ;
   config.value = type;
 
-  return playerc_client_request(device->info.client, &device->info,
+  return playerc_client_request(device->info.client, &device->info, PLAYER_MOTOR_VELOCITY_MODE,
                                 &config, sizeof(config),
                                 &config, sizeof(config));    
 }

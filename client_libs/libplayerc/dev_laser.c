@@ -185,14 +185,14 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
   int len;
   player_laser_config_t config;
 
-  config.subtype = PLAYER_LASER_SET_CONFIG;
+//  config.subtype = PLAYER_LASER_SET_CONFIG;
   config.min_angle = htons((unsigned int) (int) (min_angle * 180.0 / M_PI * 100));
   config.max_angle = htons((unsigned int) (int) (max_angle * 180.0 / M_PI * 100));
   config.resolution = htons(resolution);
   config.intensity = (intensity ? 1 : 0);
   config.range_res = htons((uint16_t)range_res);
 
-  len = playerc_client_request(device->info.client, &device->info,
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_LASER_SET_CONFIG,
                                &config, sizeof(config), &config, sizeof(config));
   if (len < 0)
     return -1;
@@ -209,10 +209,10 @@ int playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double 
 {
   player_laser_config_t config;
 
-  config.subtype = PLAYER_LASER_GET_CONFIG;
+//  config.subtype = PLAYER_LASER_GET_CONFIG;
 
-  playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
+  playerc_client_request(device->info.client, &device->info,PLAYER_LASER_GET_CONFIG,
+                               &config, 0, &config, sizeof(config));
 
 
    while(!device->info.freshconfig)
@@ -238,10 +238,10 @@ int playerc_laser_get_geom(playerc_laser_t *device)
   int len;
   player_laser_geom_t config;
 
-  config.subtype = PLAYER_LASER_GET_GEOM;
+//  config.subtype = PLAYER_LASER_GET_GEOM;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_LASER_GET_GEOM,
+                               &config, 0, &config, sizeof(config));
   if (len < sizeof(config))
     return -1;
 

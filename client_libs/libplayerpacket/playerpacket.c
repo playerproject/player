@@ -314,7 +314,7 @@ void FiducialGeomPack(  player_fiducial_geom_t* geom,
 {  
   assert( geom );
   
-  geom->subtype = PLAYER_FIDUCIAL_GET_GEOM;
+  //geom->subtype = PLAYER_FIDUCIAL_GET_GEOM;
   
   geom->pose[0] = MM_16( px );
   geom->pose[1] = MM_16( py );
@@ -335,7 +335,7 @@ void FiducialGeomUnpack(  player_fiducial_geom_t* geom,
   assert( geom );
   
   // check we are parsing the right type of packet
-  assert( geom->subtype == PLAYER_FIDUCIAL_GET_GEOM );
+ // assert( geom->subtype == PLAYER_FIDUCIAL_GET_GEOM );
   
   if(px) *px = M_16( geom->pose[0] );
   if(py) *py = M_16( geom->pose[1] );
@@ -354,10 +354,10 @@ void FiducialFovPack( player_fiducial_fov_t* fov, int setflag,
 {
   assert( fov );
   
-  if( setflag ) // if we want a SET operation
+  /*if( setflag ) // if we want a SET operation
     fov->subtype = PLAYER_FIDUCIAL_SET_FOV;
   else
-    fov->subtype = PLAYER_FIDUCIAL_GET_FOV;
+    fov->subtype = PLAYER_FIDUCIAL_GET_FOV;*/
   
   fov->min_range = MM_U16( min_range );
   fov->max_range = MM_U16( max_range );

@@ -55,7 +55,7 @@ class Message
     /// create a new message
     Message(const struct player_msghdr & Header, const unsigned char * data,unsigned int data_size, ClientData * client = NULL); 
     /// create raw message
-    Message(const unsigned char * data,unsigned int data_size, ClientData * client = NULL);
+    //Message(const unsigned char * data,unsigned int data_size, ClientData * client = NULL);
     /// copy pointers from existing message and increment refcounts
     Message(const Message & rhs); 
     /// destroy message, dec ref counts and delete data if ref count == 0

@@ -135,10 +135,10 @@ int FiducialProxy::GetConfigure()
   player_fiducial_geom_t config;
   player_msghdr_t hdr;
 
-  config.subtype = PLAYER_FIDUCIAL_GET_GEOM;
+  //config.subtype = PLAYER_FIDUCIAL_GET_GEOM;
 
-  len = client->Request(m_device_id,
-			(const char*)&config, sizeof(config.subtype),
+  len = client->Request(m_device_id,PLAYER_FIDUCIAL_GET_GEOM,
+			(const char*)&config, 0,
 			&hdr, (char*)&config, sizeof(config) );
 
   if( len == -1 )
@@ -169,10 +169,10 @@ int FiducialProxy::GetFOV()
   player_fiducial_fov_t fov;
   player_msghdr_t hdr;
 
-  fov.subtype = PLAYER_FIDUCIAL_GET_FOV;
+  //fov.subtype = PLAYER_FIDUCIAL_GET_FOV;
   
-  int result = client->Request(m_device_id,
-			       (const char*)&fov, sizeof(fov.subtype),
+  int result = client->Request(m_device_id,PLAYER_FIDUCIAL_GET_FOV,
+			       (const char*)&fov, 0,
 			       &hdr, (char*)&fov, sizeof(fov) );
   
   if( result < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK )
@@ -201,7 +201,7 @@ int FiducialProxy::SetFOV( double min_range,
   
   FiducialFovPack( &fov, 1, min_range, max_range, view_angle );
     
-  len = client->Request(m_device_id,
+  len = client->Request(m_device_id, PLAYER_FIDUCIAL_SET_FOV,
 			(const char*)&fov, sizeof(fov),
 			&hdr, (char*)&fov, sizeof(fov) );
   
@@ -226,10 +226,10 @@ int FiducialProxy::SetId( int id )
   player_fiducial_id_t pid;
   player_msghdr_t hdr;
   
-  pid.subtype = PLAYER_FIDUCIAL_SET_ID;
+  //pid.subtype = PLAYER_FIDUCIAL_SET_ID;
   pid.id = htonl( id );
 
-  len = client->Request(m_device_id,
+  len = client->Request(m_device_id, PLAYER_FIDUCIAL_SET_ID,
 			(const char*)&pid, sizeof(pid),
 			&hdr, (char*)&pid, sizeof(pid) );
   
@@ -256,9 +256,9 @@ int FiducialProxy::GetId( void )
   player_fiducial_id_t pid;
   player_msghdr_t hdr;
   
-  pid.subtype = PLAYER_FIDUCIAL_GET_ID;
+  //pid.subtype = PLAYER_FIDUCIAL_GET_ID;
 
-  len = client->Request(m_device_id,
+  len = client->Request(m_device_id, PLAYER_FIDUCIAL_GET_ID,
 			(const char*)&pid, sizeof(pid),
 			&hdr, (char*)&pid, sizeof(pid) );
   
@@ -283,7 +283,7 @@ int FiducialProxy::SendMessage( player_fiducial_msg_t* msg, bool consume )
 {
   // build the transmit request
   player_fiducial_msg_tx_req_t tx_req;
-  tx_req.subtype = PLAYER_FIDUCIAL_SEND_MSG;
+  //tx_req.subtype = PLAYER_FIDUCIAL_SEND_MSG;
   tx_req.consume = (uint8_t)consume;
 
   // copy the message into the send struct, byteswapping fields
@@ -295,7 +295,7 @@ int FiducialProxy::SendMessage( player_fiducial_msg_t* msg, bool consume )
   //printf( "sending message of %d bytes\n", msg->len );
   
   player_msghdr_t hdr;
-  if( client->Request(m_device_id,
+  if( client->Request(m_device_id,PLAYER_FIDUCIAL_SEND_MSG,
 		      (const char*)&tx_req, sizeof(tx_req),
 		      &hdr, NULL, 0 ) < 0 )
     {
@@ -327,13 +327,13 @@ int FiducialProxy::RecvMessage( player_fiducial_msg_t* recv_msg,
   assert(recv_msg);
   
   player_fiducial_msg_rx_req_t rx_req;
-  rx_req.subtype = PLAYER_FIDUCIAL_RECV_MSG;
+  //rx_req.subtype = PLAYER_FIDUCIAL_RECV_MSG;
   rx_req.consume = (uint8_t)consume;
   
   //printf( "requesting receive message\n" );
   
   player_msghdr_t hdr;
-  if( client->Request(m_device_id,
+  if( client->Request(m_device_id, PLAYER_FIDUCIAL_RECV_MSG, 
 		      (const char*)&rx_req, 
 		      sizeof(player_fiducial_msg_rx_req_t),
 		      &hdr, (char*)recv_msg,  

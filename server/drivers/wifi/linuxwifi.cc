@@ -286,7 +286,7 @@ int LinuxWiFi::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t 
 	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
 	*resp_len = 0;
 	
-	MSG(device_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_WIFI_MAC_REQ)
+	MSG(device_id, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_MAC, 0)
 	{	
   		GetMACAddress((char *)resp_data, *resp_len);
   		*resp_len = strlen((char*)resp_data);
@@ -447,7 +447,7 @@ LinuxWiFi::Update(void)
  
   wifi_data.qual_type = qual_type;
   
-  this->PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, &wifi_data, sizeof(player_wifi_data_t), NULL);
+  this->PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &wifi_data, sizeof(player_wifi_data_t), NULL);
 }
 
 

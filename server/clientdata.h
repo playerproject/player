@@ -153,7 +153,7 @@ class ClientData
                         size_t payload_size);
 
     // Put message into clients outgoing queue
-    virtual void PutMsg(uint16_t type, uint16_t device, uint16_t device_index, 
+    virtual void PutMsg(uint8_t type, uint8_t subtype, uint16_t device, uint16_t device_index, 
                 uint32_t timestamp_sec, uint32_t timestamp_usec,
 		uint32_t size, unsigned char * data);
 
@@ -204,12 +204,12 @@ class ClientDataInternal : public ClientData
 
 		// send a message to a subscribed device
 		int SendMsg(player_device_id_t id,
-                         unsigned short type, 
+                         uint8_t type, uint8_t subtype,
                          uint8_t* src, size_t len = 0,
                          struct timeval* timestamp = NULL);
 
 		// override this since we dont want to do the host to net transform
-		void PutMsg(uint16_t type, uint16_t device, uint16_t device_index, 
+		void PutMsg(uint8_t type, uint8_t subtype, uint16_t device, uint16_t device_index, 
                 uint32_t timestamp_sec, uint32_t timestamp_usec,
 				uint32_t size, unsigned char * data);
 				

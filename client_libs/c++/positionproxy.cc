@@ -184,11 +184,11 @@ int PositionProxy::SetMotorState(unsigned char state)
   player_position_power_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+  //config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   config.value = state;
 
 
-  return(client->Request(m_device_id,(const char*)&config,
+  return(client->Request(m_device_id,PLAYER_POSITION_MOTOR_POWER,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -207,10 +207,10 @@ int PositionProxy::SelectVelocityControl(unsigned char mode)
   player_position_velocitymode_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_POSITION_VELOCITY_MODE_REQ;
+  //config.request = PLAYER_POSITION_VELOCITY_MODE_REQ;
   config.value = mode;
 
-  return(client->Request(m_device_id,(const char*)&config,
+  return(client->Request(m_device_id,PLAYER_POSITION_VELOCITY_MODE,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -227,9 +227,9 @@ int PositionProxy::ResetOdometry()
   player_position_resetodom_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_POSITION_RESET_ODOM_REQ;
+//  config.request = PLAYER_POSITION_RESET_ODOM_REQ;
 
-  return(client->Request(m_device_id,(const char*)&config,
+  return(client->Request(m_device_id,PLAYER_POSITION_RESET_ODOM,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -246,13 +246,13 @@ int PositionProxy::SetOdometry( double x, double y, double theta)
   player_position_set_odom_req_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.subtype = PLAYER_POSITION_SET_ODOM_REQ;
+//  config.subtype = PLAYER_POSITION_SET_ODOM_REQ;
   config.x = (int32_t)htonl((int)rint(x*1e3));
   config.y = (int32_t)htonl((int)rint(y*1e3));
   config.theta = (int32_t)htonl((int)rint(RTOD(theta)));
   //printf("theta: %d\n", (int)ntohl(config.theta));
   
-  return(client->Request(m_device_id,(const char*)&config,
+  return(client->Request(m_device_id,PLAYER_POSITION_SET_ODOM,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -272,10 +272,10 @@ PositionProxy::SelectPositionMode(unsigned char mode)
   player_position_position_mode_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION_POSITION_MODE_REQ;
+//  req.subtype = PLAYER_POSITION_POSITION_MODE_REQ;
   req.state = mode;
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION_POSITION_MODE,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -318,12 +318,12 @@ PositionProxy::SetSpeedPID(int kp, int ki, int kd)
   player_position_speed_pid_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION_SPEED_PID_REQ;
+//  req.subtype = PLAYER_POSITION_SPEED_PID_REQ;
   req.kp = htonl((unsigned int)kp);
   req.ki = htonl((unsigned int)ki);
   req.kd = htonl((unsigned int)kd);
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION_SPEED_PID,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -341,12 +341,12 @@ PositionProxy::SetPositionPID(short kp, short ki, short kd)
   player_position_position_pid_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION_POSITION_PID_REQ;
+//  req.subtype = PLAYER_POSITION_POSITION_PID_REQ;
   req.kp = htonl(kp);
   req.ki = htonl(ki);
   req.kd = htonl(kd);
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION_POSITION_PID,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -366,11 +366,11 @@ PositionProxy::SetPositionSpeedProfile(short spd, short acc)
   player_position_speed_prof_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION_SPEED_PROF_REQ;
+//  req.subtype = PLAYER_POSITION_SPEED_PROF_REQ;
   req.speed = htons(spd);
   req.acc = htons(acc);
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION_SPEED_PROF,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -400,11 +400,11 @@ PositionProxy::SetStatus(uint8_t cmd, uint16_t value)
 
   player_rmp_config_t rmp_cfg;
 
-  rmp_cfg.subtype = cmd;
+  //rmp_cfg.subtype = cmd;
 
   rmp_cfg.value = htons(value);
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,cmd,
 			 (const char *)&rmp_cfg, sizeof(rmp_cfg));
 }
 
@@ -416,9 +416,9 @@ PositionProxy::PlatformShutdown()
   }
 
   player_rmp_config_t rmp;
-  rmp.subtype = PLAYER_POSITION_RMP_SHUTDOWN;
+  //rmp.subtype = PLAYER_POSITION_RMP_SHUTDOWN;
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION_RMP_SHUTDOWN,
 			 (const char *)&rmp, sizeof(rmp));
 }
 

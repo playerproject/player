@@ -356,7 +356,7 @@ RFLEX_Register(DriverTable *table)
 ///////////////////////////////
 // Message handler functions
 /////////////////////////////// 
-
+void PrintHeader(player_msghdr_t hdr);
 int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
 {
 	assert(hdr);
@@ -367,7 +367,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	*resp_len = 0;
 	
 	// Sonar bank 1 power request
-	MSG(sonar_id, PLAYER_MSGTYPE_REQ, sizeof(player_sonar_power_config_t), PLAYER_SONAR_POWER_REQ)
+	MSG(sonar_id, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_POWER, sizeof(player_sonar_power_config_t))
 	{
 		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
 			rflex_sonars_off(rflex_fd);
@@ -377,7 +377,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	MSG_END_ACK;
 
 	// Sonar bank 2 power request
-	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, sizeof(player_sonar_power_config_t), PLAYER_SONAR_POWER_REQ)
+	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_POWER, sizeof(player_sonar_power_config_t))
 	{
 		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
 			rflex_sonars_off(rflex_fd);
@@ -387,10 +387,10 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	MSG_END_ACK;
 
 	// Sonar bank 1 geom request
-	MSG(sonar_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_SONAR_GET_GEOM_REQ)
+	MSG(sonar_id, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 0)
 	{
 		player_sonar_geom_t geom;
-		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+//		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 		geom.pose_count = htons((short) rflex_configs.sonar_1st_bank_end);
 		for (int i = 0; i < rflex_configs.sonar_1st_bank_end; i++)
 		{
@@ -404,10 +404,10 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	MSG_END_ACK;
 
 	// Sonar bank 2 geom request
-	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, 1, PLAYER_SONAR_GET_GEOM_REQ)
+	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 0)
 	{
 		player_sonar_geom_t geom;
-		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+//		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 		geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
 		for (int i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
 		{
@@ -420,10 +420,10 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	}
 	MSG_END_ACK;
 
-	MSG(bumper_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_BUMPER_GET_GEOM_REQ)
+	MSG(bumper_id, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM, 0)
 	{
 		player_bumper_geom_t geom;
-		geom.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
+//		geom.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
 		geom.bumper_count = htons((short) rflex_configs.bumper_count);
 		for (int i = 0; i < rflex_configs.bumper_count; i++)
 		{ 
@@ -439,11 +439,11 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	}
 	MSG_END_ACK;
 
-	MSG(ir_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_IR_POSE_REQ)
+	MSG(ir_id, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, 0)
 	{
 		// Assemble geometry structure for sending
 		player_ir_pose_t geom;
-		geom.subtype = PLAYER_IR_POSE_REQ;
+//		geom.subtype = PLAYER_IR_POSE_REQ;
 		geom.pose_count = htons((short) rflex_configs.ir_poses.pose_count);
 		for (int i = 0; i < rflex_configs.ir_poses.pose_count; i++){
 			geom.poses[i][0] = htons((short) rflex_configs.ir_poses.poses[i][0]); //mm
@@ -456,23 +456,23 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	}
 	MSG_END_ACK;
 
-	MSG(ir_id, PLAYER_MSGTYPE_REQ, 2, PLAYER_IR_POWER_REQ)
+	MSG(ir_id, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, 1)
 	{
-		if (data[1] == 0)
+		if (data[0] == 0)
 			rflex_ir_off(rflex_fd);
 		else
 			rflex_ir_on(rflex_fd);	
 	}
 	MSG_END_ACK;
 
-	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_set_odom_req_t), PLAYER_POSITION_SET_ODOM_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, sizeof(player_position_set_odom_req_t))
 	{
 		player_position_set_odom_req_t * set_odom_req = ((player_position_set_odom_req_t*)data);;
 		set_odometry((long) ntohl(set_odom_req->x),(long) ntohl(set_odom_req->y),(short) ntohs(set_odom_req->theta));	
 	}
 	MSG_END_ACK;
 
-	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_power_config_t), PLAYER_POSITION_MOTOR_POWER_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, sizeof(player_position_power_config_t))
 	{
 		if(((player_position_power_config_t*)data)->value==0)
 			rflex_brake_on(rflex_fd);
@@ -481,23 +481,23 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	}
 	MSG_END_ACK;
 
-	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_velocitymode_config_t), PLAYER_POSITION_VELOCITY_MODE_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, sizeof(player_position_velocitymode_config_t))
 	{
 		// Does nothing, needs to be implemented
 	}
 	MSG_END_ACK;
 
-	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_resetodom_config_t), PLAYER_POSITION_RESET_ODOM_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, sizeof(player_position_resetodom_config_t))
 	{
 		reset_odometry();
 	}
 	MSG_END_ACK;
 
-	MSG(position_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_POSITION_GET_GEOM_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, 0)
 	{
 		// TODO : get values from somewhere.
 		player_position_geom_t geom;
-		geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+//		geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 		//mm
 		geom.pose[0] = htons((short) (0));
 		geom.pose[1] = htons((short) (0));
@@ -512,7 +512,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	}
 	MSG_END_ACK;
 
-	MSG(position_id, PLAYER_MSGTYPE_CMD, sizeof(player_position_cmd_t), 0xFF)
+	MSG(position_id, PLAYER_MSGTYPE_CMD, 0, sizeof(player_position_cmd_t))
 	{
 		command = *reinterpret_cast<player_position_cmd_t *> (data);
 	}
@@ -995,11 +995,11 @@ RFLEX::Main()
     update_everything(&rflex_data);
     pthread_testcancel();
 
-    PutMsg(this->position_id,NULL,PLAYER_MSGTYPE_DATA,
+    PutMsg(this->position_id,NULL,PLAYER_MSGTYPE_DATA,0,
             (unsigned char*)&rflex_data.position,
             sizeof(player_position_data_t),
             NULL);
-    PutMsg(this->sonar_id,NULL,PLAYER_MSGTYPE_DATA,
+    PutMsg(this->sonar_id,NULL,PLAYER_MSGTYPE_DATA,0,
             (unsigned char*)&rflex_data.sonar,
             sizeof(player_sonar_data_t),
             NULL);
@@ -1011,7 +1011,7 @@ RFLEX::Main()
 		double NewGeom[3];
 	
         player_sonar_geom_t geom;
-        geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+//        geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
         geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
         for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
         {
@@ -1020,33 +1020,33 @@ RFLEX::Main()
           geom.poses[i][1] = htons((short) NewGeom[1]);
           geom.poses[i][2] = htons((short) RAD2DEG_CONV(NewGeom[2]));
         }
-		PutMsg(this->sonar_id_2, NULL, PLAYER_MSGTYPE_GEOM,
+		PutMsg(this->sonar_id_2, NULL, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_GEOM,
 			(unsigned char*)&geom, sizeof(player_sonar_geom_t),
 			NULL);
 	}
 	LastYaw = rflex_data.position.yaw;
 			
-    PutMsg(this->sonar_id_2,NULL,PLAYER_MSGTYPE_DATA,
+    PutMsg(this->sonar_id_2,NULL,PLAYER_MSGTYPE_DATA,0,
             (unsigned char*)&rflex_data.sonar2,
             sizeof(player_sonar_data_t),
             NULL);
-    PutMsg(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,
+    PutMsg(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,0,
             (unsigned char*)&rflex_data.ir,
             sizeof(player_ir_data_t),
             NULL);
-    PutMsg(this->bumper_id,NULL,PLAYER_MSGTYPE_DATA,
+    PutMsg(this->bumper_id,NULL,PLAYER_MSGTYPE_DATA,0,
             (unsigned char*)&rflex_data.bumper,
             sizeof(player_bumper_data_t),
             NULL);
-    PutMsg(this->power_id,NULL,PLAYER_MSGTYPE_DATA,
+    PutMsg(this->power_id,NULL,PLAYER_MSGTYPE_DATA,0,
             (unsigned char*)&rflex_data.power,
             sizeof(player_power_data_t),
             NULL);
-    PutMsg(this->aio_id,NULL,PLAYER_MSGTYPE_DATA,
+    PutMsg(this->aio_id,NULL,PLAYER_MSGTYPE_DATA,0,
             (unsigned char*)&rflex_data.aio,
             sizeof(player_aio_data_t),
             NULL);
-    PutMsg(this->dio_id,NULL,PLAYER_MSGTYPE_DATA,
+    PutMsg(this->dio_id,NULL,PLAYER_MSGTYPE_DATA,0,
             (unsigned char*)&rflex_data.dio,
             sizeof(player_dio_data_t),
             NULL);

@@ -380,7 +380,7 @@ int Festival::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
 	
 	//printf("ptz got msg: %d %d:%d %d %d\n",hdr->type, hdr->device, hdr->device_index, hdr->size, hdr->size? data[0] : 0);
 	
-	MSG(device_id, PLAYER_MSGTYPE_CMD, sizeof(player_speech_cmd_t), 0xFF)
+	MSG(device_id, PLAYER_MSGTYPE_CMD, 0, sizeof(player_speech_cmd_t))
 	{	
 		// make ABSOLUTELY sure we've got one NULL
 		data[hdr->size]='\0';

@@ -151,10 +151,11 @@ int playerc_position3d_enable(playerc_position3d_t *device, int enable)
   player_position3d_power_config_t config;
 
   memset(&config, 0, sizeof(config));
-  config.request = PLAYER_POSITION3D_MOTOR_POWER_REQ;
+//  config.request = PLAYER_POSITION3D_MOTOR_POWER_REQ;
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
+                                PLAYER_POSITION3D_MOTOR_POWER,
                                 &config, sizeof(config),
                                 &config, sizeof(config));    
 }
@@ -168,10 +169,10 @@ int playerc_position3d_get_geom(playerc_position3d_t *device)
   player_position_geom_t config;
 
   memset(&config, 0, sizeof(config));
-  config.subtype = PLAYER_POSITION3D_GET_GEOM_REQ;
+  //config.subtype = PLAYER_POSITION3D_GET_GEOM_REQ;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_POSITION3D_GET_GEOM,
+                               &config, 0, &config, sizeof(config));
   if (len < 0)
     return -1;
 

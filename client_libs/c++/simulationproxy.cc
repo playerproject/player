@@ -69,12 +69,12 @@ int SimulationProxy::SetPose2D( char* identifier, double x, double y, double a )
   
   player_simulation_pose2d_req_t req;
 
-  req.subtype = PLAYER_SIMULATION_SET_POSE2D;
+//  req.subtype = PLAYER_SIMULATION_SET_POSE2D;
   strncpy( req.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
   req.x = htonl( (int32_t)(1000.0 * x) );
   req.y = htonl( (int32_t)(1000.0 * y) );
   req.a = htonl( (int32_t)RTOD(a) );
 
-  return client->Request( m_device_id,
+  return client->Request( m_device_id,PLAYER_SIMULATION_SET_POSE2D,
 			  (const char *)&req, sizeof(req));
 }

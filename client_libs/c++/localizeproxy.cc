@@ -100,7 +100,7 @@ int
 LocalizeProxy::SetPose(double pose[3], double cov[3][3])
 {
   player_localize_set_pose_t req;
-  req.subtype = PLAYER_LOCALIZE_SET_POSE_REQ;
+//  req.subtype = PLAYER_LOCALIZE_SET_POSE_REQ;
 
   req.mean[0] = htonl((int)(pose[0] * 1000.0));
   req.mean[1] = htonl((int)(pose[1] * 1000.0));
@@ -118,7 +118,7 @@ LocalizeProxy::SetPose(double pose[3], double cov[3][3])
   req.cov[2][1] = 0;
   req.cov[2][2] = htonll((int64_t)(RTOD(cov[2][2]) * 3600 * 3600));
 
-  return(client->Request(m_device_id,(const char*)&req,sizeof(req)));
+  return(client->Request(m_device_id,PLAYER_LOCALIZE_SET_POSE,(const char*)&req,sizeof(req)));
 }
 
 int
@@ -127,10 +127,10 @@ LocalizeProxy::GetNumParticles()
   player_localize_config_t req,rep;
   player_msghdr_t rephdr;
 
-  req.subtype = PLAYER_LOCALIZE_GET_CONFIG_REQ;
+//  req.subtype = PLAYER_LOCALIZE_GET_CONFIG_REQ;
   req.num_particles = 0;
 
-  if(client->Request(m_device_id,(const char*)&req,sizeof(req),&rephdr,
+  if(client->Request(m_device_id,PLAYER_LOCALIZE_GET_CONFIG,(const char*)&req,sizeof(req),&rephdr,
                      (char*)&rep,sizeof(rep)) < 0)
     return(-1);
 

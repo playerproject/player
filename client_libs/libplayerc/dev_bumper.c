@@ -143,10 +143,10 @@ int playerc_bumper_get_geom(playerc_bumper_t *device)
   int i;
   player_bumper_geom_t config;
 
-  config.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
+//  config.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
+  len = playerc_client_request(device->info.client, &device->info, PLAYER_BUMPER_GET_GEOM,
+                               &config, 0, &config, sizeof(config));
   if (len < sizeof(config))
     return -1;
   device->pose_count = htons(config.bumper_count);

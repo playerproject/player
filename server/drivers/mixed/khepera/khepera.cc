@@ -162,24 +162,23 @@ Khepera_Register(DriverTable *table)
   table->AddDriver("khepera", Khepera_Init);
 }
 
-int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data)
+int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
 {
+	*resp_len = 0;
+
 	// ir pose request
-	MSG(ir_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_IR_POSE_REQ)
+	MSG(ir_id, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, 0)
 	{
-		player_ir_pose_t irpose;
-		irpose = geometry->ir;
-		irpose.subtype = PLAYER_IR_POSE_REQ;
+//		player_ir_pose_t irpose;
+//		irpose = geometry->ir;
+//		irpose.subtype = PLAYER_IR_POSE_REQ;
 
-		if(PutMsg(this->ir_id, client, PLAYER_MSGTYPE_GEOM, 
-            		&irpose, sizeof(irpose),NULL)) 
-		{
-    		PLAYER_ERROR("Khepera: failed to put reply");
-		}
+		memcpy(resp_data, &geometry->ir, sizeof(geometry->ir));
+		*resp_len = sizeof(geometry->ir);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
-	MSG(position_id, PLAYER_MSGTYPE_CMD, sizeof(player_position_cmd_t), 0xFF)
+	MSG(position_id, PLAYER_MSGTYPE_CMD, 0, sizeof(player_position_cmd_t))
 	{
 		player_position_cmd_t * poscmd = reinterpret_cast<player_position_cmd_t *> (data);
 
@@ -204,35 +203,32 @@ int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
 	}
 	MSG_END;
 
-	MSG(position_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_POSITION_GET_GEOM_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, 0)
 	{
-		if(PutMsg(position_id, client, PLAYER_MSGTYPE_GEOM, 
-			&geometry->position, sizeof(geometry->position),NULL)) 
-		{
-			PLAYER_ERROR("Khepera: failed to put reply");
-		}
+		memcpy(resp_data, &geometry->position, sizeof(geometry->position));
+		*resp_len = sizeof(geometry->position);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
-	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_power_config_t), PLAYER_POSITION_MOTOR_POWER_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, sizeof(player_position_power_config_t))
 	{
 		this->motors_enabled = ((player_position_power_config_t *)data)->value;
 	}
 	MSG_END;
 	
-	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_velocitymode_config_t), PLAYER_POSITION_VELOCITY_MODE_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, sizeof(player_position_velocitymode_config_t))
 	{
 		/// Need to implement
 	}
 	MSG_END;
 	
-	MSG(position_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_POSITION_RESET_ODOM_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, 0)
 	{
 		ResetOdometry();
 	}
 	MSG_END;
 	
-	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_set_odom_req_t), PLAYER_POSITION_SET_ODOM_REQ)
+	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, sizeof(player_position_set_odom_req_t))
 	{
 		// note really implemented yet
 		player_position_set_odom_req_t *req = (player_position_set_odom_req_t *) data;
@@ -304,7 +300,7 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
     geometry->scale = cf->ReadFloat(section, "scale_factor", KHEPERA_DEFAULT_SCALE);
 
   // set sub type here
-  geometry->position.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+//  geometry->position.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 
   geometry->encoder_res = cf->ReadFloat(section,"encoder_res", KHEPERA_DEFAULT_ENCODER_RES);
 
@@ -506,7 +502,7 @@ Khepera::Main()
       // to do regression
       player_ir_data_t ir_data;
       memset(&ir_data,0,sizeof(player_ir_data_t));
-      PutMsg(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,(unsigned char*)&ir_data,
+      PutMsg(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,0,(unsigned char*)&ir_data,
               sizeof(player_ir_data_t),NULL);
     }
     last_ir_subscrcount = this->ir_subscriptions;
@@ -558,7 +554,7 @@ Khepera::UpdateData()
   UpdatePosData(&position_data);
 
   // put position data
-  PutMsg(this->position_id, NULL, PLAYER_MSGTYPE_DATA,
+  PutMsg(this->position_id, NULL, PLAYER_MSGTYPE_DATA,0,
           (unsigned char *) &position_data,
           sizeof(player_position_data_t),
           NULL);
@@ -566,7 +562,7 @@ Khepera::UpdateData()
   UpdateIRData(&ir_data);
 
   // put ir data
-  PutMsg(this->ir_id, NULL, PLAYER_MSGTYPE_DATA, 
+  PutMsg(this->ir_id, NULL, PLAYER_MSGTYPE_DATA, 0,
           (unsigned char *)&ir_data,
           sizeof(player_ir_data_t),
           NULL);
@@ -678,7 +674,7 @@ Khepera::ResetOdometry()
 
   player_position_data_t data;
   memset(&data,0,sizeof(player_position_data_t));
-  this->PutMsg(this->position_id, NULL,PLAYER_MSGTYPE_DATA, (unsigned char *) &data, 
+  this->PutMsg(this->position_id, NULL,PLAYER_MSGTYPE_DATA, 0, (unsigned char *) &data, 
                 sizeof(player_position_data_t), NULL);
 
   x=y=yaw=0;

@@ -318,11 +318,13 @@ void PrintHeader(player_msghdr_t hdr)
 {
   printf("stx: %u\n", hdr.stx);
   printf("type: %u\n", hdr.type);
+  printf("subtype: %u\n", hdr.subtype);
   printf("device: %u\n", hdr.device);
   printf("index: %u\n", hdr.device_index);
   printf("time: %u:%u\n", hdr.time_sec,hdr.time_usec);
   printf("times: %u:%u\n", hdr.timestamp_sec,hdr.timestamp_usec);
-  printf("sequence: %u\n", hdr.sequence);
+  printf("seq: %u\n", hdr.seq);
+  printf("conid: %u\n", hdr.conid);
   printf("size:%u\n", hdr.size);
 }
 

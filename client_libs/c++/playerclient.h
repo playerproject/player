@@ -414,7 +414,7 @@ class PlayerClient
     /** Send a request to the server.  This method is @b not intended for
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 on success, -1 otherwise. */
-    int Request(player_device_id_t device_id,
+    int Request(player_device_id_t device_id, uint8_t reqtype,
                 const char* payload,
                 size_t payloadlen,
                 player_msghdr_t* replyhdr,
@@ -425,7 +425,7 @@ class PlayerClient
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 if an ACK is received, -1 
         otherwise. */
-    int Request(player_device_id_t device_id,
+    int Request(player_device_id_t device_id, uint8_t reqtype,
                 const char* payload,
                 size_t payloadlen);
     

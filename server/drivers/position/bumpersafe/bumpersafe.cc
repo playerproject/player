@@ -195,8 +195,6 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	assert(resp_len);
 	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
 
-	//printf("bumpersafe Got Message: %d %d %d %d %d\n", hdr->type, hdr->device, hdr->device_index, hdr->size, hdr->size ? data[0] : 0);
-	
 	if (hdr->type==PLAYER_MSGTYPE_SYNCH)
 	{	
 		*resp_len = 0;
@@ -245,7 +243,7 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	
 	if (Blocked)
 	{
-		MSG(device_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_power_config_t), PLAYER_POSITION_MOTOR_POWER_REQ)
+		MSG(device_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, sizeof(player_position_power_config_t))
 		{
 			// if motor is switched on then we reset the 'safe state' so robot can move with a bump panel active
 	  		if (((player_position_power_config_t *) data)->value == 1)
@@ -264,30 +262,27 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	// set reply to value so the reply for this message goes straight to the given client
 	if(hdr->device==device_id.code && hdr->device_index==device_id.index && hdr->type == PLAYER_MSGTYPE_REQ)
 	{
-		//printf("send message for Immediate processing by position device\n");
 		hdr->device_index = position_id.index;
 		int ret = position->ProcessMessage(&BaseClient, hdr, data, resp_data, resp_len);
 		hdr->device_index = device_id.index;
 		return ret;
 	}
 	
-	MSG(position_id, PLAYER_MSGTYPE_GEOM, sizeof(player_position_geom_t),0xFF)
+	MSG(position_id, PLAYER_MSGTYPE_DATA, PLAYER_POSITION_GEOM, sizeof(player_position_geom_t))
 	{
-		//printf("Got geom message from position device\n");
-		PutMsg(device_id, NULL, PLAYER_MSGTYPE_GEOM, data, sizeof(player_position_geom_t));		
+		PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION_GEOM, data, sizeof(player_position_geom_t));		
 		*resp_len=0;
 	}
 	MSG_END
 
-	MSG(position_id, PLAYER_MSGTYPE_DATA, sizeof(player_position_data_t),0xFF)
+	MSG(position_id, PLAYER_MSGTYPE_DATA, 0, sizeof(player_position_data_t))
 	{
-		//printf("Got data message from position device\n");
-		PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, data, sizeof(player_position_data_t));		
+		PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, data, sizeof(player_position_data_t));		
 		*resp_len=0;
 	}
 	MSG_END
 
-	MSG(device_id, PLAYER_MSGTYPE_CMD, sizeof(player_position_cmd_t), 0xFF)
+	MSG(device_id, PLAYER_MSGTYPE_CMD, 0, sizeof(player_position_cmd_t))
 	{
 		cmd = *reinterpret_cast<player_position_cmd_t *> (data);
 		if (!Blocked)
@@ -309,7 +304,6 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 // Set up the underlying position device.
 int BumperSafe::SetupPosition() 
 {
-	printf("Setup POsition called\n");
 	uint8_t DataBuffer[PLAYER_MAX_MESSAGE_SIZE];
 	
 	this->position = deviceTable->GetDriver(this->position_id);
@@ -326,7 +320,6 @@ int BumperSafe::SetupPosition()
 // Shutdown the underlying position device.
 int BumperSafe::ShutdownPosition() 
 {
-
   // Stop the robot before unsubscribing
   this->speed = 0;
   this->turnrate = 0;
@@ -341,15 +334,14 @@ void BumperSafe::PutPositionCommand()
 {
 	player_position_cmd_t NullCmd = {0};
 	if (Blocked)
-		BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, (uint8_t*)&NullCmd, sizeof(cmd));
+		BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&NullCmd, sizeof(cmd));
 	else
-		BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, (uint8_t*)&cmd, sizeof(cmd));
+		BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&cmd, sizeof(cmd));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the bumper
 int BumperSafe::SetupBumper() {
-	printf("Setup bumper called\n");
 	this->bumper = deviceTable->GetDriver(this->bumper_id);
 	if (!this->bumper)
 	{
@@ -389,7 +381,6 @@ void BumperSafe::Main()
   // this->GetBumper();
 
 	// need to do geom request first
-	printf("Main Bumper thread started\n");
   
   while (true)
   {

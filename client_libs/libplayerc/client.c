@@ -132,7 +132,7 @@ int playerc_client_connect(playerc_client_t *client)
 {
   struct hostent* entp;
   struct sockaddr_in server;
-  char banner[32];
+  char banner[32+sizeof(player_msghdr_t)];
 
   // Construct socket 
   client->sock = socket(PF_INET, SOCK_STREAM, 0);
@@ -197,10 +197,10 @@ int playerc_client_datamode(playerc_client_t *client, int mode)
 {
   player_device_datamode_req_t req;
 
-  req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
+//  req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
   req.mode = mode;
 
-  if (playerc_client_request(client, NULL, &req, sizeof(req), NULL, 0) < 0)
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_DATAMODE, &req, sizeof(req), NULL, 0) < 0)
     return -1;
 
   /* cache the change */
@@ -214,10 +214,10 @@ int playerc_client_datafreq(playerc_client_t *client, int freq)
 {
   player_device_datafreq_req_t req;
 
-  req.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
+//  req.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
   req.frequency = htons(freq);
 
-  if (playerc_client_request(client, NULL, &req, sizeof(req), NULL, 0) < 0)
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_DATAFREQ,  &req, sizeof(req), NULL, 0) < 0)
     return -1;
   
   return 0;
@@ -256,8 +256,8 @@ playerc_client_requestdata(playerc_client_t* client)
 {
   player_device_data_req_t req;
 
-  req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
-  return(playerc_client_request(client, NULL, &req, sizeof(req), NULL, 0));
+//  req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
+  return(playerc_client_request(client, NULL, PLAYER_PLAYER_DATA, &req, sizeof(req), NULL, 0));
 }
 
 // Read and process a packet (blocking)
@@ -287,18 +287,20 @@ void *playerc_client_read(playerc_client_t *client)
   
   switch(header.type)
   {
-  	case PLAYER_MSGTYPE_SYNCH:
-	    client->datatime = header.timestamp_sec + header.timestamp_usec * 1e-6;
-    	return client->id;
+    case PLAYER_MSGTYPE_SYNCH:
+	  client->datatime = header.timestamp_sec + header.timestamp_usec * 1e-6;
+      return client->id;
 	
-	case PLAYER_MSGTYPE_GEOM:
-		return playerc_client_dispatch_geom(client, &header, client->data, len);
+/*	case PLAYER_MSGTYPE_GEOM:
+	  return playerc_client_dispatch_geom(client, &header, client->data, len);
   
   	case PLAYER_MSGTYPE_CONFIG:
-		return playerc_client_dispatch_config(client, &header, client->data, len);  
-  
+	  return playerc_client_dispatch_config(client, &header, client->data, len);  
+  */
   	case PLAYER_MSGTYPE_DATA:
+  	{
 		return playerc_client_dispatch(client, &header, client->data, len);
+  	}
   }
   
 	PLAYERC_WARN1("unexpected message type [%d]", header.type);
@@ -326,40 +328,38 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
 
 
 // Issue request and await reply (blocking).
-int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinfo,
+int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinfo, uint8_t reqtype, 
                            void *req_data, int req_len, void *rep_data, int rep_len)
 {
 	int resptype;
   player_msghdr_t req_header;
 
+  req_header.stx = PLAYER_STXX;
+  req_header.type = PLAYER_MSGTYPE_REQ;
+  req_header.subtype = reqtype;
+  req_header.size = req_len;
+
   if (deviceinfo == NULL)
   {
-    req_header.stx = PLAYER_STXX;
-    req_header.type = PLAYER_MSGTYPE_REQ;
     req_header.device = PLAYER_PLAYER_CODE;    
     req_header.device_index = 0;
-    req_header.size = req_len;
   }
   else
   {
-    req_header.stx = PLAYER_STXX;
-    req_header.type = PLAYER_MSGTYPE_REQ;
     req_header.device = deviceinfo->code;
     req_header.device_index = deviceinfo->index;
-    req_header.size = req_len;
   }
 
   if (playerc_client_writepacket(client, &req_header, req_data, req_len) < 0)
     return -1;
 
-
-	resptype = playerc_client_getresponse(client, req_header.device, req_header.device_index, 0, rep_data, rep_len);
-	return resptype;
+  resptype = playerc_client_getresponse(client, req_header.device, req_header.device_index, 0, NULL, rep_data, rep_len);
+  return resptype;
 }
 
 
 int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
-		uint16_t  index, uint16_t sequence, uint8_t * resp_data, int resp_len)
+		uint16_t  index, uint16_t sequence, uint8_t * resptype, uint8_t * resp_data, int resp_len)
 {
 	player_msghdr_t rep_header;
 	playerc_client_item_t *item;
@@ -372,6 +372,8 @@ int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
 		// need to add sequence to list to be checked
 		if (item->header.device == device && item->header.device_index == index)
 		{
+			if (resptype)
+				*resptype = item->header.subtype;
 			// need to deal with removing items from the queue
 			// circular buffer is not best option for this
 			// so either need to use linked list 
@@ -399,6 +401,8 @@ int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
 		// need to add sequence to list to be checked
 		if (rep_header.device == device && rep_header.device_index == index)
 		{
+			if (resptype)
+				*resptype = rep_header.subtype;
 			// need to deal with removing items from the queue
 			// circular buffer is not best option for this
 			// so either need to use linked list 
@@ -464,9 +468,9 @@ int playerc_client_get_devlist(playerc_client_t *client)
   int i, len;
   player_device_devlist_t config;
 
-  config.subtype = htons(PLAYER_PLAYER_DEVLIST_REQ);
+//  config.subtype = htons(PLAYER_PLAYER_DEVLIST_REQ);
 
-  len = playerc_client_request(client, NULL,
+  len = playerc_client_request(client, NULL, PLAYER_PLAYER_DEVLIST,
                                &config, sizeof(config), &config, sizeof(config));
   if (len < 0)
     return -1;
@@ -501,12 +505,12 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
 
   for (i = 0; i < client->devinfo_count; i++)
   {
-    req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
+    //req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
     req.id.port = htons(client->devinfos[i].port);
     req.id.code = htons(client->devinfos[i].code);
     req.id.index = htons(client->devinfos[i].index);
 
-    len = playerc_client_request(client, NULL,
+    len = playerc_client_request(client, NULL, PLAYER_PLAYER_DRIVERINFO,
                                  &req, sizeof(req), &rep, sizeof(rep));
     if (len < 0)
       return -1;
@@ -531,12 +535,12 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
   player_device_req_t req;
   player_device_resp_t rep;
 
-  req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
+//  req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
   req.code = htons(code);
   req.index = htons(index);
   req.access = access;
 
-  if (playerc_client_request(client, NULL, &req, sizeof(req), &rep, sizeof(rep)) < 0)
+  if (playerc_client_request(client, NULL,PLAYER_PLAYER_DEV, &req, sizeof(req), &rep, sizeof(rep)) < 0)
     return -1;
 
   if (rep.access != access)
@@ -558,12 +562,12 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
   player_device_req_t req;
   player_device_resp_t rep;
 
-  req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
+//  req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
   req.code = htons(code);
   req.index = htons(index);
   req.access = PLAYER_CLOSE_MODE;
 
-  if (playerc_client_request(client, NULL, &req, sizeof(req), &rep, sizeof(rep)) < 0)
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_DEV, &req, sizeof(req), &rep, sizeof(rep)) < 0)
     return -1;
 
   if (rep.access != PLAYER_CLOSE_MODE)
@@ -664,7 +668,8 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
   
   // Do the network byte re-ordering 
   header->stx = ntohs(header->stx);
-  header->type = ntohs(header->type);
+  header->type = (header->type);
+  header->subtype = (header->subtype);
   header->device = ntohs(header->device);
   header->device_index = ntohs(header->device_index);
   header->size = ntohl(header->size);
@@ -703,7 +708,8 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
 
   // Do the network byte re-ordering 
   header->stx = htons(header->stx);
-  header->type = htons(header->type);
+  header->type = (header->type);
+  header->subtype = (header->subtype);
   header->device = htons(header->device);
   header->device_index = htons(header->device_index);
   header->size = htonl(header->size);
@@ -719,10 +725,10 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
     PLAYERC_ERR2("sent incomplete header, %d of %d bytes", bytes, sizeof(player_msghdr_t));
     return -1;
   }
-
   // Now undo the network byte re-ordering 
   header->stx = ntohs(header->stx);
-  header->type = ntohs(header->type);
+  header->type = (header->type);
+  header->subtype = (header->subtype);
   header->device = ntohs(header->device);
   header->device_index = ntohs(header->device_index);
   header->size = ntohl(header->size);
@@ -799,10 +805,6 @@ void *playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
 {
   int i, j;
   playerc_device_t *device;
-
-  // We get zero-length packets sometimes
-  if (len == 0)
-    return NULL;
   
   // Look for a device proxy to handle this data 
   for (i = 0; i < client->device_count; i++)
@@ -837,10 +839,6 @@ void *playerc_client_dispatch_geom(playerc_client_t *client, player_msghdr_t *he
   int i;
   playerc_device_t *device;
 
-  // We get zero-length packets sometimes
-  if (len == 0)
-    return NULL;
-  
   // Look for a device proxy to handle this data 
   for (i = 0; i < client->device_count; i++)
   {
@@ -870,10 +868,6 @@ void *playerc_client_dispatch_config(playerc_client_t *client, player_msghdr_t *
   int i;
   playerc_device_t *device;
 
-  // We get zero-length packets sometimes
-  if (len == 0)
-    return NULL;
-  
   // Look for a device proxy to handle this data 
   for (i = 0; i < client->device_count; i++)
   {

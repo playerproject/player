@@ -427,7 +427,7 @@ Driver::GetReply(player_device_id_t id, void* client,
 // New-style: Write general msg to device
 int 
 Driver::PutMsg(player_device_id_t id, ClientData* client, 
-                 unsigned short type, 
+                 uint8_t type, uint8_t subtype,
                  void* src, size_t len,
                  struct timeval* timestamp)
 {
@@ -453,7 +453,7 @@ Driver::PutMsg(player_device_id_t id, ClientData* client,
   }
 
   Lock();
-	clientmanager->PutMsg(type, id.code, id.index,ts.tv_sec,
+	clientmanager->PutMsg(type, subtype, id.code, id.index,ts.tv_sec,
 		ts.tv_usec, len, (unsigned char *)src, client);
   Unlock();
 
@@ -464,7 +464,7 @@ Driver::PutMsg(player_device_id_t id, ClientData* client,
 }
 
 int Driver::PutMsg(player_msghdr * hdr, ClientData* client, 
-                 unsigned short type, 
+                 uint8_t type, 
                  void* src, size_t len,
                  struct timeval* timestamp)
 {
@@ -494,7 +494,7 @@ int Driver::PutMsg(player_msghdr * hdr, ClientData* client,
   }
 
   Lock();
-	clientmanager->PutMsg(type, id.code, id.index,ts.tv_sec,
+	clientmanager->PutMsg(type, hdr->subtype, id.code, id.index,ts.tv_sec,
 		ts.tv_usec, len, (unsigned char *)src, client);
   Unlock();
 
@@ -671,7 +671,7 @@ void Driver::ProcessMessages()
     if (ret > 0)
       PutMsg(hdr, el->msg.Client, ret, RespData, RespLen, NULL);
     else if (ret < 0)
-      PLAYER_WARN5("Unhandled message for driver device=%d:%d type=%d len=%d subtype=%d\n",hdr->device, hdr->device_index, hdr->type, hdr->size, hdr->size ? data[0] : 0);
+      PLAYER_WARN5("Unhandled message for driver device=%d:%d type=%d subtype=%d len=%d\n",hdr->device, hdr->device_index, hdr->type, hdr->subtype, hdr->size);
     pthread_testcancel();
   }
 }

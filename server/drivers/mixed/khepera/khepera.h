@@ -148,7 +148,7 @@ public:
   //unsigned char ReadStatus(int, int *, int *);
 
 	// MessageHandler
-	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data);	
+	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 
 private:
   player_device_id_t ir_id;

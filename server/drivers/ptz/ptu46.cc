@@ -664,20 +664,20 @@ int PTU46_Device::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8
 	
 	//printf("ptz got msg: %d %d:%d %d %d\n",hdr->type, hdr->device, hdr->device_index, hdr->size, hdr->size? data[0] : 0);
 	
-	MSG(device_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_PTZ_GENERIC_CONFIG_REQ)
+	MSG(device_id, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_GENERIC_CONFIG, 0)
 	{	
   		return PLAYER_MSGTYPE_RESP_NACK;
 	}
 	MSG_END
 
-	MSG(device_id, PLAYER_MSGTYPE_REQ, 2, PLAYER_PTZ_CONTROL_MODE_REQ)
+	MSG(device_id, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_CONTROL_MODE, 1)
 	{	
-		if(data[1] != MoveMode)
+		if(data[0] != MoveMode)
 		{
 			uint8_t NewMode;
-			if (data[1] == PLAYER_PTZ_VELOCITY_CONTROL)
+			if (data[0] == PLAYER_PTZ_VELOCITY_CONTROL)
 				NewMode = PTU46_VELOCITY;
-			else if (data[1] == PLAYER_PTZ_POSITION_CONTROL)
+			else if (data[0] == PLAYER_PTZ_POSITION_CONTROL)
 				NewMode = PTU46_POSITION;		
 			else
 				return PLAYER_MSGTYPE_RESP_NACK;
@@ -690,7 +690,7 @@ int PTU46_Device::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8
 	}
 	MSG_END_ACK
 
-	MSG(device_id, PLAYER_MSGTYPE_CMD, sizeof(player_ptz_cmd_t), 0xFF)
+	MSG(device_id, PLAYER_MSGTYPE_CMD, 0, sizeof(player_ptz_cmd_t))
 	{	
 		player_ptz_cmd_t * new_command = reinterpret_cast<player_ptz_cmd_t *> (data);
 		int16_t pan = ntohs(new_command->pan);
@@ -775,7 +775,7 @@ PTU46_Device::Main()
 	    
 	    /* test if we are supposed to cancel */
 	    pthread_testcancel();
-	    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, (unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
+	    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
 	    
 		// repeat frequency (default to 10 Hz)
 	    usleep(PTZ_SLEEP_TIME_USEC);

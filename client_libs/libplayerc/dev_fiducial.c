@@ -157,10 +157,10 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device)
   int len;
   player_fiducial_geom_t config;
 
-  config.subtype = PLAYER_FIDUCIAL_GET_GEOM;
+//  config.subtype = PLAYER_FIDUCIAL_GET_GEOM;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_FIDUCIAL_GET_GEOM,
+                               &config, 0, &config, sizeof(config));
   if (len < 0)
     return -1;
 

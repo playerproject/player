@@ -214,6 +214,15 @@ void ClientManager::AddClient(ClientData* client)
     // Try to write the ident string to the client, and kill the client if
     // it fails.  
     unsigned char data[PLAYER_IDENT_STRLEN];
+    player_msghdr_t hdr = {0};
+    hdr.stx = PLAYER_STXX;
+    hdr.device = PLAYER_PLAYER_CODE;
+    hdr.device_index = 0;
+    hdr.type = PLAYER_MSGTYPE_REQ;
+    hdr.subtype = PLAYER_PLAYER_IDENT;
+    hdr.size = PLAYER_IDENT_STRLEN;
+    
+ 
     // write back an identifier string
     if(use_stage)
       sprintf((char*)data, "%s%s (stage)", PLAYER_IDENT_STRING, playerversion);
@@ -222,7 +231,8 @@ void ClientManager::AddClient(ClientData* client)
     memset(((char*)data)+strlen((char*)data),0,
            PLAYER_IDENT_STRLEN-strlen((char*)data));
 
-	Message New(data,PLAYER_IDENT_STRLEN,client);
+	Message New(hdr, data, PLAYER_IDENT_STRLEN, client);
+//	Message New(data,PLAYER_IDENT_STRLEN,client);
 	client->OutQueue.AddMessage(New);
     //client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);    
     while((retval= client->Write()) > 0);
@@ -407,14 +417,14 @@ ClientManager::DataAvailable(void)
 
 
 void
-ClientManager::PutMsg(uint16_t type, uint16_t device, uint16_t device_index, 
+ClientManager::PutMsg(uint8_t type, uint8_t subtype, uint16_t device, uint16_t device_index, 
                 uint32_t timestamp_sec, uint32_t timestamp_usec,
 		uint32_t size, unsigned char * data, ClientData * client)
 {
 	// if client != Null we just send to that client
 	if (client)
 	{
-		client->PutMsg(type, device, device_index, timestamp_sec, timestamp_usec, size, data);
+		client->PutMsg(type, subtype, device, device_index, timestamp_sec, timestamp_usec, size, data);
 	}
 	else if (clients)
 	{
@@ -424,7 +434,7 @@ ClientManager::PutMsg(uint16_t type, uint16_t device, uint16_t device_index,
 			{
 				if(thissub->id.code == device && thissub->id.index == device_index)
 				{
-					clients[i]->PutMsg(type, device, device_index, timestamp_sec, timestamp_usec, size, data);
+					clients[i]->PutMsg(type, subtype, device, device_index, timestamp_sec, timestamp_usec, size, data);
 					break;
 				}
 			}
@@ -646,7 +656,7 @@ ClientManagerTCP::Write()
 			{
 			    // Put sync message into clients outgoing queue
 				//printf("Generate Sync\n");
-    			clients[i]->PutMsg(PLAYER_MSGTYPE_SYNCH, PLAYER_PLAYER_CODE, 0, 
+    			clients[i]->PutMsg(PLAYER_MSGTYPE_SYNCH, 0, PLAYER_PLAYER_CODE, 0, 
                 curr.tv_sec, curr.tv_usec,0,NULL);
 			}
 
@@ -729,7 +739,7 @@ ClientManagerUDP::Read()
       // if the client ID (the first 2 bytes of reserved) is 0, then this 
       // must be a new client
       if((ntohs(hdr.stx) == PLAYER_STXX) &&
-         (ntohs(hdr.sequence >> 16) == 0) &&
+         (ntohs(hdr.conid) == 0) &&
          (ntohs(hdr.type) == PLAYER_MSGTYPE_REQ) &&
          (ntohs(hdr.device) == PLAYER_PLAYER_CODE) &&
          (ntohs(hdr.device_index) == 0) &&
@@ -766,7 +776,7 @@ ClientManagerUDP::Read()
         hdr.type = htons(PLAYER_MSGTYPE_RESP_ACK);
         hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
         hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
-        hdr.sequence = htons(clientData->client_id) << 16;
+        hdr.conid = htons(clientData->client_id);
 
 		Message New(hdr,NULL,0);
 		clientData->OutQueue.AddMessage(New);
@@ -789,7 +799,7 @@ ClientManagerUDP::Read()
       // is there an object for this client yet?
       for(int j=0; j<num_clients && clients[j]; j++)
       {
-        if(clients[j]->client_id == ntohs(hdr.sequence >> 16))
+        if(clients[j]->client_id == ntohs(hdr.conid))
         {
           clientData=clients[j];
           break;

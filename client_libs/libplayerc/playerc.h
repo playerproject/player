@@ -386,7 +386,7 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 */ 
 int playerc_client_request(playerc_client_t *client, struct _playerc_device_t *device,
-                           void *req_data, int req_len, void *rep_data, int rep_len);
+                           uint8_t reqtype, void *req_data, int req_len, void *rep_data, int rep_len);
                                 
 /** @brief Wait for response from server (blocking).
 
@@ -399,7 +399,7 @@ int playerc_client_request(playerc_client_t *client, struct _playerc_device_t *d
 
 */
 int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
-		uint16_t  index, uint16_t sequence, uint8_t * resp_data, int resp_len);
+		uint16_t index, uint16_t sequence, uint8_t * resptype, uint8_t * resp_data, int resp_len);
 
 /** @brief Test to see if there is pending data.
 

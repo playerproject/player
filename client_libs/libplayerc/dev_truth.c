@@ -143,10 +143,10 @@ int playerc_truth_get_pose(playerc_truth_t *device,
   int len;
   player_truth_pose_t config;
 
-  config.subtype = PLAYER_TRUTH_GET_POSE;
+  //config.subtype = PLAYER_TRUTH_GET_POSE;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_TRUTH_GET_POSE,
+                               &config, 0, &config, sizeof(config));
   if (len < 0)
     return -1;
    while(device->info.freshgeom == 0)
@@ -171,7 +171,7 @@ int playerc_truth_set_pose(playerc_truth_t *device,
   int len;
   player_truth_pose_t config;
 
-  config.subtype = PLAYER_TRUTH_SET_POSE;
+//  config.subtype = PLAYER_TRUTH_SET_POSE;
 
   config.pos[0] = htonl((uint32_t) (int32_t) (px * 1000));
   config.pos[1] = htonl((uint32_t) (int32_t) (py * 1000));
@@ -181,7 +181,7 @@ int playerc_truth_set_pose(playerc_truth_t *device,
   config.rot[1] = htonl((uint32_t) (int32_t) (ry * 1000));
   config.rot[2] = htonl((uint32_t) (int32_t) (rz * 1000));
   
-  len = playerc_client_request(device->info.client, &device->info,
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_TRUTH_SET_POSE,
                                &config, sizeof(config), &config, sizeof(config));
   if (len < 0)
     return -1;

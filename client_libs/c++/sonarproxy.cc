@@ -64,10 +64,10 @@ SonarProxy::SetSonarState(unsigned char state)
 
   player_sonar_power_config_t config;
 
-  config.subtype = PLAYER_SONAR_POWER_REQ;
+//  config.subtype = PLAYER_SONAR_POWER_REQ;
   config.value = state;
 
-  return(client->Request(m_device_id,(const char*)&config,
+  return(client->Request(m_device_id,PLAYER_SONAR_POWER,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -80,10 +80,10 @@ SonarProxy::GetSonarGeom()
   if(!client)
     return(-1);
 
-  sonar_pose.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+//  sonar_pose.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 
-  if((client->Request(m_device_id,(const char*)&sonar_pose,
-                      sizeof(sonar_pose.subtype), &hdr, (char*)&sonar_pose, 
+  if((client->Request(m_device_id,PLAYER_SONAR_GET_GEOM,(const char*)&sonar_pose,
+                      0, &hdr, (char*)&sonar_pose, 
                       sizeof(sonar_pose)) < 0) ||
      (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
     return(-1);

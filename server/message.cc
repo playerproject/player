@@ -58,6 +58,8 @@ Message::Message(const struct player_msghdr & Header, const unsigned char * data
   Size = sizeof(struct player_msghdr)+data_size;
   Data = new unsigned char [Size];
   assert (Data);
+  assert (Header.type);
+
   // copy the header and then the data into out message data buffer
   memcpy(Data,&Header,sizeof(struct player_msghdr));
   memcpy(&Data[sizeof(struct player_msghdr)],data,data_size);
@@ -66,7 +68,7 @@ Message::Message(const struct player_msghdr & Header, const unsigned char * data
   *RefCount = 1;
 }
 
-Message::Message(const unsigned char * data, unsigned int data_size, ClientData * _client)
+/*Message::Message(const unsigned char * data, unsigned int data_size, ClientData * _client)
 {
   Client = _client;
   Lock = new pthread_mutex_t;
@@ -80,7 +82,7 @@ Message::Message(const unsigned char * data, unsigned int data_size, ClientData 
   RefCount = new unsigned int;
   assert (RefCount);
   *RefCount = 1;
-}
+}*/
 
 Message::Message(const Message & rhs)
 {
