@@ -56,6 +56,8 @@ GAZEBO_TEST_DRIVER([position3d])
 GAZEBO_TEST_DRIVER([power])
 GAZEBO_TEST_DRIVER([ptz])
 GAZEBO_TEST_DRIVER([truth])
+GAZEBO_TEST_DRIVER([gripper])
+GAZEBO_TEST_DRIVER([sonars])
 
 dnl This is a complete bogus test because I cant get AC_CHECK_MEMBER to work
 if test "x$include_gazebo_power" = "xyes"; then
