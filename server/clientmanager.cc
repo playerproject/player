@@ -253,6 +253,9 @@ ClientManager::UpdateDevices()
   }
 }
 
+extern double totalwritetime;
+extern int totalwritenum;
+
 // Update the ClientManager
 int ClientManager::Update()
 {
@@ -277,6 +280,8 @@ int ClientManager::Update()
     printf("Write() returned %d\n", retval);
     return(retval);
   }
+
+  this->Wait();
 
   return(0);
 }
@@ -358,7 +363,7 @@ ClientManager::ResetClientTimestamps(void)
     clients[i]->last_write = 0.0;
 }
 
-// Waits on the condition variable associated with this device.
+// Waits on the manager's condition variable
 void 
 ClientManager::Wait(void)
 {
@@ -393,6 +398,7 @@ ClientManagerTCP::Accept()
   ClientData *clientData;
   socklen_t sender_len;
 
+  // poll on the fds that we're listening on
   if((num_connects = poll(accept_ufds,num_accept_ufds,0)) < 0)
   {
     if(errno == EINTR)
@@ -460,9 +466,8 @@ ClientManagerTCP::Read()
 {
   int num_to_read;
 
-  // poll the fds that we're reading from, without timeout of 0ms, for
-  // immediate return
-  if((num_to_read = poll(ufds,num_clients,10)) == -1)
+  // poll on the fds that we're reading from
+  if((num_to_read = poll(ufds,num_clients,0)) == -1)
   {
     if(errno != EINTR)
     {
@@ -607,16 +612,22 @@ ClientManagerTCP::Write()
     
     double curr_seconds = curr.tv_sec+(curr.tv_usec/1000000.0);
     
+    
     // is it time to write?
-    if((((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+    bool time_to_write = 
+            ((curr_seconds + 0.000001) - clients[i]->last_write) >=  // *
+            (1.0/clients[i]->frequency);
+
+    if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ASYNC) ||
+       (((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
          (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
-        (((curr_seconds + 0.000001) - clients[i]->last_write) >=  // * 
-         (1.0/clients[i]->frequency))) ||
+        time_to_write) ||
        (((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
          (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW)) &&
         (clients[i]->datarequested)))
     {
-      size_t msglen = clients[i]->BuildMsg();
+      size_t msglen = clients[i]->BuildMsg(time_to_write || 
+                                           clients[i]->datarequested);
       if(clients[i]->Write(msglen) == -1)
         MarkClientForDeletion(i);
       else
@@ -868,16 +879,33 @@ ClientManagerUDP::Write()
     if(clients[i]->leftover_size)
       continue;
     
+    // rtv - had to fix a dumb rounding error here. This code is
+    // producing intervals like 0.09999-recurring seconds instead of
+    // 0.1 second, so updates were being skipped. I added a
+    // microsecond (*) when testing the elapsed interval. The bug was
+    // probably not a problem when using the real-time clock, but
+    // shows up when working with a simulator where time comes in
+    // discrete chunks. This was a beast to figure out since printf
+    // was rounding up the numbers to print them out!
+    
+    double curr_seconds = curr.tv_sec+(curr.tv_usec/1000000.0);
+    
+    
     // is it time to write?
-    if((((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+    bool time_to_write = 
+            ((curr_seconds + 0.000001) - clients[i]->last_write) >=  // *
+            (1.0/clients[i]->frequency);
+
+    if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ASYNC) ||
+       (((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
          (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
-        (((curr.tv_sec+(curr.tv_usec/1000000.0))- clients[i]->last_write) >= 
-         (1.0/clients[i]->frequency))) ||
+        time_to_write) ||
        (((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
          (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW)) &&
         (clients[i]->datarequested)))
     {
-      totalmsgsize = clients[i]->BuildMsg();
+      totalmsgsize = clients[i]->BuildMsg(time_to_write || 
+                                          clients[i]->datarequested);
 
       // now, loop through that buffer and send the messages as individual
       // datagrams

@@ -626,12 +626,8 @@ Driver::DataAvailable(void)
   pthread_cond_broadcast(&cond);
   pthread_mutex_unlock(&condMutex);
 
-  // testing
-#if 0
   // also wake up the server thread
-  puts("releasing server thread");
   clientmanager->DataAvailable();
-#endif
 }
 
 // Waits on the condition variable associated with this device.

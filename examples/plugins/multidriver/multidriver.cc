@@ -40,10 +40,9 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "player.h"
-#include "player/drivertable.h"
-#include "player/driver.h"
-
+#include <player/drivertable.h>
+#include <player/driver.h>
+#include <player.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////

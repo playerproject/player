@@ -219,6 +219,7 @@ typedef struct
 #define PLAYER_DATAMODE_PULL_ALL 1
 #define PLAYER_DATAMODE_PUSH_NEW 2
 #define PLAYER_DATAMODE_PULL_NEW 3
+#define PLAYER_DATAMODE_PUSH_ASYNC 4
 
 /** The request subtypes */
 #define PLAYER_PLAYER_DEVLIST_REQ     ((uint16_t)1)

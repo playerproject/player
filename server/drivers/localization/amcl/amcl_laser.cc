@@ -33,6 +33,7 @@
 
 #define PLAYER_ENABLE_MSG 1
 
+#include <netinet/in.h>
 #include <math.h>
 #include <stdlib.h>
 #include <sys/time.h>

@@ -29,10 +29,10 @@
 
 #include <string.h>
 
-#include <device.h>
-#include <deviceregistry.h>
+#include "device.h"
+#include "deviceregistry.h"
 
-#include <drivertable.h>
+#include "drivertable.h"
 // this table holds all the currently *available* drivers
 // (it's declared in main.cc)
 extern DriverTable* driverTable;

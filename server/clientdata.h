@@ -145,7 +145,7 @@ class ClientData
     // Loop through all devices currently open for this client, get data from
     // them, and assemble the results into totalwritebuffer.  Returns the
     // total size of the data that was written into that buffer.
-    size_t BuildMsg();
+    size_t BuildMsg(bool include_sync);
 
     // Copy len bytes of src to totalwritebuffer+offset.  Will realloc()
     // totalwritebuffer to make room, if necessary.

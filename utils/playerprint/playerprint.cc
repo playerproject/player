@@ -14,13 +14,15 @@
   "USAGE: playerprint [-h <host>] [-p <port>] <device>\n" \
   "       -h <host>: connect to Player on this host\n" \
   "       -p <port>: connect to Player on this TCP port\n" \
-  "       -t : print the proxy's timestamp before the data\n" 
+  "       -t : print the proxy's timestamp before the data\n" \
+  "       -u <rate>: request data update at <rate> in Hz\n"
 
 char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
 int idx = 0;
 char* dev = NULL;
 bool print_timestamp = false;
+int data_rate = 10;
 
 /* easy little command line argument parser */
 void
@@ -42,6 +44,16 @@ parse_args(int argc, char** argv)
     {
       if(++i<argc-1)
         strcpy(host,argv[i]);
+      else
+      {
+        puts(USAGE);
+        exit(1);
+      }
+    }
+    else if(!strcmp(argv[i],"-u"))
+    {
+      if(++i<argc-1)
+        data_rate = atoi(argv[i]);
       else
       {
         puts(USAGE);
@@ -81,14 +93,13 @@ parse_args(int argc, char** argv)
 
 int main(int argc, char **argv)
 {
-  //struct timeval last;
-
   parse_args(argc,argv);
 
   ClientProxy* cp;
 
   // connect to Player
   PlayerClient pclient(host,port);
+  assert(!pclient.SetFrequency(data_rate));
   if(!strcmp(dev,PLAYER_POSITION_STRING))
     assert(cp = (ClientProxy*)new PositionProxy(&pclient,idx,'r'));
   else if(!strcmp(dev,PLAYER_POSITION3D_STRING))
@@ -132,26 +143,29 @@ int main(int argc, char **argv)
   //pclient.SetFrequency(1000);
 
   /* go into read-think-act loop */
+  double last = -1.0;
   for(;;)
   {
     /* this blocks until new data comes; 10Hz by default */
     if(pclient.Read())
       exit(1);
-    /*
-    printf("%f\n", (pclient.timestamp.tv_sec + pclient.timestamp.tv_usec/1e6) - 
-           (last.tv_sec + last.tv_usec/1e6));
-    last=pclient.timestamp;
-    */
     
-    if( print_timestamp )
+    if(pclient.fresh)
+    {
+      cp->Print();
+      pclient.fresh = false;
+      
+      if( print_timestamp )
       {
-	double timestamp = 
-	  (double)cp->timestamp.tv_sec + ((double)cp->timestamp.tv_usec)/1e6;
-	
-	printf( "#timestamp: %.3f\n", timestamp );
+        double timestamp = 
+                (double)cp->timestamp.tv_sec + ((double)cp->timestamp.tv_usec)/1e6;
+
+        printf( "#timestamp: %.6f\n", timestamp );
+        if(last >= 0.0)
+          printf("#diff: %.6f\n", timestamp - last);
+        last = timestamp;
       }
-    
-    cp->Print();
+    }
   }
 }
 

@@ -105,6 +105,7 @@ driver
 
   
 #include <sys/types.h>
+#include <netinet/in.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
@@ -114,7 +115,6 @@ driver
 
 #include "player.h"
 #include "driver.h"
-#include "devicetable.h"
 #include "drivertable.h"
 
 #include "rmp_frame.h"

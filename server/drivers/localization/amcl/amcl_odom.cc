@@ -31,6 +31,7 @@
 #include "config.h"
 #endif
 
+#include <netinet/in.h>
 #include <math.h>
 #include "devicetable.h"
 #include "amcl_odom.h"

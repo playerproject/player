@@ -36,10 +36,9 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "player.h"
-#include "player/drivertable.h"
-#include "player/driver.h"
-
+#include <player/drivertable.h>
+#include <player/driver.h>
+#include <player.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
@@ -158,9 +157,6 @@ void ExampleDriver::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Extra stuff for building a shared object.
-
-// Need access to the global driver table
-#include <player/drivertable.h>
 
 /* need the extern to avoid C++ name-mangling  */
 extern "C" {
