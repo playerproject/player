@@ -99,7 +99,7 @@ PassThrough::PassThrough(ConfigFile* cf, int section)
   }
 
   // Create an interface
-  if (this->AddInterface(this->local_id, PLAYER_READ_MODE,
+  if (this->AddInterface(this->local_id, PLAYER_ALL_MODE,
                          PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1) != 0)
   {
     this->SetError(-1);    
@@ -244,14 +244,13 @@ PassThrough::Main()
   player_msghdr_t hdr;
   void* client;
   player_msghdr_t replyhdr;
-  player_device_id_t id;
   struct timeval ts;
 
   for(;;)
   {
     // did we get a config request?
     if((len_config = 
-        GetConfig(id,&client,this->remote_config,PLAYER_MAX_PAYLOAD_SIZE,NULL)) > 0)
+        GetConfig(&client,this->remote_config,PLAYER_MAX_PAYLOAD_SIZE,NULL)) > 0)
     {
       // send it
       if(player_request(&this->conn,this->remote_id.code,
@@ -268,7 +267,7 @@ PassThrough::Main()
       ts.tv_usec = replyhdr.timestamp_usec;
 
       // return the reply
-      PutReply(id,client,replyhdr.type,this->remote_reply,replyhdr.size,&ts);
+      PutReply(client,replyhdr.type,this->remote_reply,replyhdr.size,&ts);
     }
 
     // did we get a new command to send?

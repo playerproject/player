@@ -113,7 +113,7 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   }
 
   // Create an interface
-  if (this->AddInterface(this->local_id, PLAYER_READ_MODE,
+  if (this->AddInterface(this->local_id, PLAYER_ALL_MODE,
                          PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1) != 0)
   {
     this->SetError(-1);    

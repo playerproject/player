@@ -390,22 +390,13 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         /* command message */
         if(CheckWritePermissions(id))
         {
-          // check if we can write to this device
-          if((deviceTable->GetDeviceAccess(id) == PLAYER_WRITE_MODE) ||
-             (deviceTable->GetDeviceAccess(id) == PLAYER_ALL_MODE))
-
+          // make sure we've got a non-NULL pointer
+          if((driver = deviceTable->GetDriver(id)))
           {
-            // make sure we've got a non-NULL pointer
-            if((driver = deviceTable->GetDriver(id)))
-            {
-              driver->PutCommand(id,payload,payload_size,&curr);
-            }
-            else
-              PLAYER_WARN2("found NULL pointer for device %x:%x",
-                           id.code,id.index);
+            driver->PutCommand(id,payload,payload_size,&curr);
           }
           else
-            PLAYER_WARN2("You can't send commands to %x:%x",
+            PLAYER_WARN2("found NULL pointer for device %x:%x",
                          id.code,id.index);
         }
         else 
@@ -690,6 +681,8 @@ ClientData::UpdateRequested(player_device_req_t req)
     numsubs++;
   }
 
+  unsigned char allowed_access = deviceTable->GetDeviceAccess(thissub->id);
+
   if(req.access != thissub->access)
   {
     switch(req.access)
@@ -710,25 +703,38 @@ ClientData::UpdateRequested(player_device_req_t req)
       case PLAYER_WRITE_MODE:
       case PLAYER_ALL_MODE:
         // client wants to open it in some fashion
-        if((thissub->access == PLAYER_CLOSE_MODE) ||
-           (thissub->access == PLAYER_ERROR_MODE))
+
+        // make sure that the requested access is allowed
+        if((allowed_access != PLAYER_ALL_MODE) &&
+           (allowed_access != req.access))
         {
-          // it wasn't already open, so Subscribe
-          if(this->Subscribe(thissub->id) == 0)
-          {
-            // Subscribe succeeded, so grant requested access
-            thissub->access = req.access;
-          }
-          else
-          {
-            // Subscribe failes, so mark it as ERROR
-            thissub->access = PLAYER_ERROR_MODE;
-          }
+          PLAYER_WARN4("not granting unallowed access '%c' to device \"%d:%s:%d\"",
+                       req.access,thissub->id.port,
+                       ::lookup_interface_name(0, thissub->id.code),
+                       thissub->id.index);
         }
         else
         {
-          // it was already open, so merely grant the new access
-          thissub->access = req.access;
+          if((thissub->access == PLAYER_CLOSE_MODE) ||
+             (thissub->access == PLAYER_ERROR_MODE))
+          {
+            // it wasn't already open, so Subscribe
+            if(this->Subscribe(thissub->id) == 0)
+            {
+              // Subscribe succeeded, so grant requested access
+              thissub->access = req.access;
+            }
+            else
+            {
+              // Subscribe failes, so mark it as ERROR
+              thissub->access = PLAYER_ERROR_MODE;
+            }
+          }
+          else
+          {
+            // it was already open, so merely grant the new access
+            thissub->access = req.access;
+          }
         }
         break;
       default:
@@ -1029,8 +1035,8 @@ int ClientData::Subscribe(player_device_id_t id)
   }
   else
   {
-    PLAYER_WARN2("Unknown device \"%s:%d\" - subscribe cancelled", 
-                 ::lookup_interface_name(0, id.code),id.index);
+    PLAYER_WARN3("Unknown device \"%d:%s:%d\" - subscribe cancelled", 
+                 id.port,::lookup_interface_name(0, id.code),id.index);
     return(1);
   }
 }
@@ -1046,8 +1052,8 @@ void ClientData::Unsubscribe(player_device_id_t id)
   }
   else
   {
-    PLAYER_WARN2("Unknown device \"%s:%d\" - unsubscribe cancelled", 
-                 ::lookup_interface_name(0, id.code),id.index);
+    PLAYER_WARN3("Unknown device \"%d:%s:%d\" - unsubscribe cancelled", 
+                 id.port,::lookup_interface_name(0, id.code),id.index);
   }
 }
 

@@ -355,7 +355,8 @@ Driver::GetConfig(player_device_id_t id, void **client,
   device = deviceTable->GetDevice(id);
   if (device == NULL)
   {
-    PLAYER_ERROR("interface not found; did you AddInterface()?");
+    PLAYER_ERROR3("device \"%d:%s:%d\" not found; did you AddInterface()?",
+                  id.port,::lookup_interface_name(0, id.code),id.index);
     assert(false);
   }
 

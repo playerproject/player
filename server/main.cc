@@ -1271,7 +1271,7 @@ int main( int argc, char *argv[] )
 
   //g_server_pid = getpid();
 
-  printf("** Player v%s ** ", playerversion);
+  printf("** Player v%s (with multiple interface support)** ", playerversion);
   fflush(stdout);
 
   // parse args

@@ -175,7 +175,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
 
   for (i = 0; true; i++)
   {
-    desc = cf->ReadTupleString(section, "devices", i, NULL);
+    desc = cf->ReadTupleString(section, "log_devices", i, NULL);
     if (!desc)
       break;
       
@@ -237,7 +237,10 @@ int WriteLog::Setup()
     device->device = deviceTable->GetDriver(device->id);
     if (!device->device)
     {
-      PLAYER_ERROR("unable to locate device for logging");
+      PLAYER_ERROR3("unable to locate device \"%d:%s:%d\" for logging",
+                    device->id.port,
+                    ::lookup_interface_name(0, device->id.code),
+                    device->id.index);
       return -1;
     }
     if (device->device->Subscribe(device->id) != 0)
