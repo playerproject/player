@@ -55,7 +55,11 @@
 #include <clientmanager.h>
 #include <devicetable.h>
 #include <drivertable.h>
-#include <prefix.h>
+
+
+// I can't find a way to do @prefix@ substitution in server/prefix.h that
+// works in more than one version of autotools.  Fix this later.
+//#include <prefix.h>
 
 // the base class and two derived classes for timefeeds:
 #include <playertime.h>
@@ -888,6 +892,9 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       puts("failed");
   }
 
+// I can't find a way to do @prefix@ substitution in server/prefix.h that
+// works in more than one version of autotools.  Fix this later.
+#if 0
   // try to load it from prefix/lib/player/plugins
   if(!handle)
   {
@@ -903,6 +910,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       puts("failed");
 
   }
+#endif
 
   // Now invoke the initialization function
   if(handle)

@@ -22,7 +22,11 @@ dnl Also create playercommon.h, replacing a couple of C defines with the right
 dnl values.  That way, playercommon.h will be installed in a good working
 dnl state.
 AM_CONFIG_HEADER(config.h server/playercommon.h)
-AC_CONFIG_FILES(server/prefix.h)
+
+
+dnl I can't find a way to do @prefix@ substitution in server/prefix.h that
+dnl works in more than one version of autotools.  Fix this later.
+dnl AM_CONFIG_FILES(server/prefix.h)
 
 dnl Find basic tools
 AC_PROG_CC

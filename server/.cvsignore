@@ -3,3 +3,4 @@ Makefile.in
 player
 stamp-h*
 playercommon.h
+prefix.h
