@@ -431,10 +431,10 @@ int main( int argc, char *argv[] )
     //ptzDevice =    new CArenaPtzDevice(ptzserialport);
         
     // use the stage type devicesc
-    positionDevice = new CStageDevice( arenaIO + P2OS_DATA_START,
-                                   P2OS_DATA_BUFFER_SIZE,
-                                   P2OS_COMMAND_BUFFER_SIZE,
-                                   P2OS_CONFIG_BUFFER_SIZE);
+    positionDevice = new CStageDevice( arenaIO + SPOSITION_DATA_START,
+                                   SPOSITION_DATA_BUFFER_SIZE,
+                                   SPOSITION_COMMAND_BUFFER_SIZE,
+                                   SPOSITION_CONFIG_BUFFER_SIZE);
 
     sonarDevice =    new CStageDevice( arenaIO + SSONAR_DATA_START,
                                    SSONAR_DATA_BUFFER_SIZE,

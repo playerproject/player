@@ -19,7 +19,8 @@ CArenaSonarDevice::~CArenaSonarDevice()
 int CArenaSonarDevice::Setup() 
 { 
   //puts( "Arena sonar setup" ); 
-  
+
+    /* retired. ahoward
   if(!arena_initialized_data_buffer)
   {
     data     = (unsigned char*)arenaIO + P2OS_DATA_START; 
@@ -28,6 +29,7 @@ int CArenaSonarDevice::Setup()
   //data       = (unsigned char*)arenaIO + SONAR_DATA_START;
   
   *(unsigned char*)(arenaIO + SUB_SONAR) = 1;
+  */
 
   return 0; 
 };
@@ -37,14 +39,17 @@ int CArenaSonarDevice::Shutdown()
 { 
   //puts( "Arena sonar shutdown" );
 
+    /*
   *(unsigned char*)(arenaIO + SUB_SONAR ) = 0;
+  */
  
   return 0; 
 };
 
 int CArenaSonarDevice::GetData( unsigned char *dest )
 {
+    /*
   memcpy(dest,(unsigned char*)arenaIO+SONAR_DATA_START,SONAR_DATA_BUFFER_SIZE);
-
+    */
   return SONAR_DATA_BUFFER_SIZE;
 }

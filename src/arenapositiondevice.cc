@@ -19,7 +19,8 @@ CArenaPositionDevice::~CArenaPositionDevice()
 
 int CArenaPositionDevice::Setup() 
 { 
-  //puts( "Arena position setup" ); 
+    /* retired. ahoward
+   //puts( "Arena position setup" ); 
  
   if(!arena_initialized_data_buffer)
   {
@@ -34,6 +35,7 @@ int CArenaPositionDevice::Setup()
   }
   
   *(unsigned char*)(arenaIO + SUB_MOTORS) = 1;
+  */
   return 0;
 }
 
@@ -47,10 +49,12 @@ int CArenaPositionDevice::Shutdown()
 
 size_t CArenaPositionDevice::GetData( unsigned char *dest, size_t maxsize)
 {
+    /* retired ahoward
   // a little wierdness here, to do with the different packaging of P2OS data
   // between the arena and non-arena devices
   memcpy( dest, arenaIO + P2OS_DATA_START, POSITION_DATA_BUFFER_SIZE );
   //memcpy( dest, data, POSITION_DATA_BUFFER_SIZE );
+    */
 
   return POSITION_DATA_BUFFER_SIZE;
 }

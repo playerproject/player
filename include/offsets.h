@@ -34,6 +34,14 @@
  * this file defines buffer sizes, offsets, and such
  */
 
+// Length specific types
+//
+#define BYTE unsigned char
+#define INT16 signed short
+#define UINT16 unsigned short
+#define INT32 signed int
+#define UINT32 unsigned int
+
 
 // Notes on stage/player shared memory format.
 //
@@ -64,6 +72,38 @@
 #define INFO_DATA_FLAG      1
 #define INFO_COMMAND_FLAG   2
 #define INFO_CONFIG_FLAG    3
+
+// Position device command buffer
+//
+typedef struct PlayerPositionCommand
+{
+    INT16 vr, vth;
+} __attribute__ ((packed));
+
+
+// Position device data buffer
+//
+typedef struct PlayerPositionData
+{
+    UINT32 time;
+    INT32 px, py;
+    UINT16 pth;
+    INT16 vr, vth;
+    UINT16 compass;
+    BYTE stall;
+} __attribute__ ((packed));
+
+
+// Memory map for position device
+// *** HACK -- name collision with the offset into the PSOS buffer
+//
+#define SPOSITION_DATA_BUFFER_SIZE sizeof(PlayerPositionData)
+#define SPOSITION_COMMAND_BUFFER_SIZE sizeof(PlayerPositionCommand)
+#define SPOSITION_CONFIG_BUFFER_SIZE 0
+#define SPOSITION_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
+                              + SPOSITION_DATA_BUFFER_SIZE \
+                              + SPOSITION_COMMAND_BUFFER_SIZE \
+                              + SPOSITION_CONFIG_BUFFER_SIZE
 
 
 /* laser stuff */
@@ -229,10 +269,11 @@
 #define SUB_BUFFER_SIZE 7
 
 #define ARENA_SUB_START 0
-#define P2OS_DATA_START ARENA_SUB_START + SUB_BUFFER_SIZE
-#define P2OS_COMMAND_START P2OS_DATA_START + P2OS_DATA_BUFFER_SIZE
-#define SONAR_DATA_START P2OS_COMMAND_START + P2OS_COMMAND_BUFFER_SIZE
-#define SSONAR_DATA_START SONAR_DATA_START + SONAR_DATA_BUFFER_SIZE
+//*** remove #define P2OS_DATA_START ARENA_SUB_START + SUB_BUFFER_SIZE
+//*** remove #define P2OS_COMMAND_START P2OS_DATA_START + P2OS_DATA_BUFFER_SIZE
+#define SPOSITION_DATA_START ARENA_SUB_START + SUB_BUFFER_SIZE
+//*** #define SONAR_DATA_START SPOSITION_COMMAND_START + SPOSITION_TOTAL_BUFFER_SIZE
+#define SSONAR_DATA_START SPOSITION_DATA_START + SPOSITION_TOTAL_BUFFER_SIZE
 #define LASER_DATA_START SSONAR_DATA_START + SSONAR_TOTAL_BUFFER_SIZE
 #define PTZ_DATA_START LASER_DATA_START + LASER_TOTAL_BUFFER_SIZE
 #define ACTS_DATA_START PTZ_DATA_START + PTZ_TOTAL_BUFFER_SIZE
