@@ -27,16 +27,17 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <math.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <stdlib.h>       // for atoi(3)
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "player.h"
 #include "device.h"
