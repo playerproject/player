@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <gsl/gsl_fft_real.h>
 
@@ -180,7 +181,7 @@ size_t Acoustics::GetCommand(void* dest, size_t maxsize)
     memcpy(dest,device_command,device_used_commandsize);
     device_used_commandsize = 0;
   }
-  memset(dest,0,maxsize);
+  //memset(dest,0,maxsize);
   return(retval);
 }
 
@@ -611,7 +612,7 @@ void Acoustics::InsertPeak(int f,int a)
   int i=this->nHighestPeaks-1;
   int j;
 
-  while (this->peakAmp[i-1]<a && i>0) {
+  while (i>0 && this->peakAmp[i-1]<a) {
     i--;
   }
 
@@ -651,15 +652,25 @@ int Acoustics::PlayBuffer(char* buffer,unsigned int size)
 int Acoustics::Record()
 {
   int result = -1;
+  int numread;
+
+  if(!this->audioBuffer)
+    this->SetBufferSize(this->audioBuffSize);
 
   // Make sure we opened the file and setup has been run
   if( !this->OpenDevice(O_RDONLY) && this->audioBuffSize>0 )
   {
-    if( read(audioFD, this->audioBuffer, this->audioBuffSize) 
-        != this->audioBuffSize )
+    if((numread = read(audioFD, this->audioBuffer, this->audioBuffSize)) < 0)
+    {
+      PLAYER_ERROR1("read() failed: %s; bailing",strerror(errno));
+      pthread_exit(NULL);
+    }
+    else if(numread != this->audioBuffSize )
     {
       PLAYER_WARN("did not read specified amount from audio device");
-    } else {
+    }
+    else 
+    {
       result = 0;
     }
   } 
@@ -721,10 +732,15 @@ void Acoustics::CreateSine(unsigned short freq, unsigned short amp,
 
   unsigned int numSamples = (unsigned int)((duration/1000.0)*this->sampleRate);
 
+  memset(buffer,0,bufferSize);
+
   short audio;
 
   // Calculate the first full wave
-  for(phase=0,i=0;phase<2*M_PI&&i<numSamples;phase+=omega,i++)
+  for(phase=0,i=0;
+      (phase<2*M_PI) && (i<numSamples) && 
+      (this->channels*2*i + (2*this->channels)-1) < bufferSize;
+      phase+=omega,i++)
   {
     audio=(short)(amp*sin(phase));
 
@@ -742,7 +758,7 @@ void Acoustics::CreateSine(unsigned short freq, unsigned short amp,
 
   // Get the rest of the data
   unsigned int bytesPerCopy = i*this->channels*2;
-  for(unsigned int j=bytesPerCopy;j<bufferSize;j+=bytesPerCopy)
+  for(unsigned int j=bytesPerCopy;(j+bytesPerCopy)<bufferSize;j+=bytesPerCopy)
   {
     memcpy(buffer+j,buffer,bytesPerCopy);
   }
