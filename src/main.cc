@@ -119,7 +119,7 @@ CDeviceTable* deviceTable = new CDeviceTable();
 // this number divided by two (two threads per client) is
 // the maximum number of clients that the server will support
 // i don't know what a good number would be
-#define MAXNUMTHREADS 201
+#define MAXNUMTHREADS 401
 #define MAXNUMCLIENTS MAXNUMTHREADS/2
 
 // keep track of the pointers to our various clients.
@@ -626,7 +626,7 @@ int main( int argc, char *argv[] )
     exit(1);
   }
 
-  if((player_sock = create_and_bind_socket(&listener,1,playerport,SOCK_STREAM,0)) 
+  if((player_sock = create_and_bind_socket(&listener,1,playerport,SOCK_STREAM,200)) 
                   == -1)
   {
     fputs("create_and_bind_socket() failed; quitting", stderr);

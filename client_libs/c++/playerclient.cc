@@ -643,6 +643,23 @@ int PlayerClient::ChangeMotorState(unsigned char state)
 
 }
 
+/* Enable/disable sonars.*/
+int PlayerClient::ChangeSonarState(unsigned char state)
+{
+  // space for 's' and a single-byte arg
+  char payload[2];
+
+  player_msghdr_t replyhdr;
+  char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
+
+  payload[0] = 's';
+  payload[1] = state;
+  return(player_request(&conn, PLAYER_POSITION_CODE, 0,
+                          payload, sizeof(payload),
+                          &replyhdr, replybuffer, sizeof(replybuffer)));
+
+}
+
 /*
  * Change the update frequency at which this client receives data
  *
