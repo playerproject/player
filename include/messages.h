@@ -60,7 +60,18 @@
 #define PLAYER_WRITE_MODE 'w'
 #define PLAYER_ALL_MODE 'a'
 
+/* the largest possible message that the server will currently send
+ * or receive */
+#define PLAYER_MAX_MESSAGE_SIZE 8192
 
+/* the default player port */
+#define PLAYER_PORTNUM 6665
+
+/*
+ * info that is spit back as a banner on connection
+ */
+#define PLAYER_IDENT_STRING "Player v."
+#define PLAYER_IDENT_STRLEN 32
 
 /* generic message header */
 typedef struct

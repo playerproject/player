@@ -31,10 +31,6 @@
 // suck in the version string from the file in the top level directory
 #include "../VERSION"
 
-#define PLAYER_IDENT_STRING "Player v."
-#define PLAYER_IDENT_STRLEN 32
-
-#define READ_BUFFER_SIZE 128
 
 #include <stdio.h>
 #include <errno.h>
@@ -87,9 +83,6 @@
 #endif
 
 caddr_t arenaIO; // the address for memory mapped IO to arena
-
-#define PORTNUM 6665
-
 
 #define DEFAULT_ACTS_PORT 5001
 #define DEFAULT_ACTS_CONFIGFILE "/usr/local/acts/actsconfig"
@@ -169,7 +162,7 @@ void *client_reader(void* arg)
   sigblock(SIGINT);
   sigblock(SIGALRM);
 
-  buffer = new unsigned char[READ_BUFFER_SIZE];
+  buffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
 
   //printf("client_reader() with id %ld and socket %d - created\n", 
 	 //cd->readThread, cd->socket);
@@ -209,7 +202,7 @@ void *client_reader(void* arg)
     puts("got HDR");
 
     /* get the payload */
-    if(hdr.size > READ_BUFFER_SIZE-sizeof(player_msghdr_t))
+    if(hdr.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
       printf("WARNING: client's message is too big (%d bytes). "
                       "Buffer overflow likely.", hdr.size);
 
@@ -239,7 +232,7 @@ void *client_writer(void* arg)
   //printf("client_writer() with id %ld and socket %d - created\n", 
 	 //clientData->writeThread, clientData->socket);
 
-  int data_buffer_size = 8192;
+  int data_buffer_size = PLAYER_MAX_MESSAGE_SIZE;
   data = new unsigned char[data_buffer_size];
 
   // write back an identifier string
@@ -298,7 +291,7 @@ int main( int argc, char *argv[] )
   CDevice* audioDevice = NULL;
 
   /* use these to temporarily store command-line args */
-  int playerport = PORTNUM;
+  int playerport = PLAYER_PORTNUM;
   char p2osport[MAX_FILENAME_SIZE] = DEFAULT_P2OS_PORT;
   char laserserialport[MAX_FILENAME_SIZE] = DEFAULT_LASER_PORT;
   char ptzserialport[MAX_FILENAME_SIZE] = DEFAULT_PTZ_PORT;
