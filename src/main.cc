@@ -31,6 +31,9 @@
 // suck in the version string from the file in the top level directory
 #include "../VERSION"
 
+#define PLAYER_IDENT_STRING "Player v."
+#define PLAYER_IDENT_STRLEN 32
+
 #define READ_BUFFER_SIZE 128
 
 #include <stdio.h>
@@ -154,8 +157,9 @@ void *client_reader(void* arg)
 {
   CClientData *cd = (CClientData *) arg;
   unsigned char *buffer;
-  int readcnt;
-  unsigned short size;
+  unsigned int readcnt;
+  player_msghdr_t hdr;
+  hdr.stx = 0x0000;
 
   pthread_detach(pthread_self());
 
@@ -170,30 +174,43 @@ void *client_reader(void* arg)
 
   while(1) 
   {
-    /* get the first char + the size */
-    //puts("about to read()");
-    if((readcnt = read(cd->socket,buffer,2+sizeof(unsigned short))) <= 0)
+    /* wait for the STX */
+    while(hdr.stx != PLAYER_STX)
     {
-      //if(errno) perror("client_reader: read() ");
+      if((readcnt = read(cd->socket,&hdr,sizeof(uint16_t))) <= 0)
+      {
+        // client must be gone. fuck 'em
+        perror("client_reader(): read() while waiting for STX");
+        delete cd;
+      }
+    }
+    puts("got STX");
+
+    /* get the rest of the header */
+    if((readcnt += read(cd->socket,
+                        &(hdr.type),
+                        sizeof(player_msghdr_t)-sizeof(uint16_t))) != 
+                    sizeof(player_msghdr_t))
+    {
+      perror("client_reader(): read() while reading header");
       delete cd;
     }
-    //puts("first read() ok");
+    puts("got HDR");
 
-    size = ntohs(*(unsigned short*)(buffer+2));
-    if(size > READ_BUFFER_SIZE-(2+sizeof(unsigned short)))
+    /* get the payload */
+    hdr.size = ntohs(hdr.size);
+    if(hdr.size > READ_BUFFER_SIZE-sizeof(player_msghdr_t))
       printf("WARNING: client's message is too big (%d bytes). "
-                      "Buffer overflow likely.", size);
+                      "Buffer overflow likely.", hdr.size);
 
-    //puts("about to read()");
-    if((readcnt = read(cd->socket,buffer+2+sizeof(unsigned short),size)) 
-                    != size)
+    if((readcnt = read(cd->socket,buffer,hdr.size)) != hdr.size)
     {
       perror("client_reader: couldn't read client-specified number of bytes");
       delete cd;
     }
-    //puts("second read() ok");
+    puts("got payload");
 
-    cd->HandleRequests(buffer, 2+sizeof(unsigned short)+size);
+    cd->HandleRequests(hdr,buffer, hdr.size);
   } 
 }
 
@@ -213,6 +230,18 @@ void *client_writer(void* arg)
 
   int data_buffer_size = 8192;
   data = new unsigned char[data_buffer_size];
+
+  // write back an identifier string
+  sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, PLAYER_VERSION);
+  bzero(((char*)data)+strlen((char*)data),
+                  PLAYER_IDENT_STRLEN-strlen((char*)data));
+
+  pthread_mutex_lock(&(clientData->socketwrite));
+  if(write(clientData->socket, data, PLAYER_IDENT_STRLEN) < 0 ) {
+    perror("client_writer");
+    delete clientData;
+  }
+  pthread_mutex_unlock(&(clientData->socketwrite));
 
   for(;;)
   {
