@@ -38,7 +38,7 @@
 #include "config.h"
 #endif
 
-#ifndef INCLUDE_GAZEBO_SONAR
+#ifndef INCLUDE_GAZEBO_SONARS
 #warning "gz_sonar not supported by libgazebo; skipping"
 #else
 
