@@ -1222,7 +1222,7 @@ class PowerProxy : public ClientProxy
 };
 
 /** The {\tt BumperProxy} class is used to read from the {\tt rwi\_bumper}
-	device.
+	device and Stage's bumper model
  */
 class BumperProxy : public ClientProxy {
 
@@ -1234,7 +1234,15 @@ public:
     */
     BumperProxy (PlayerClient* pc, unsigned short index,
                    unsigned char access = 'c')
-            : ClientProxy(pc,PLAYER_BUMPER_CODE,index,access) {}
+            : ClientProxy(pc,PLAYER_BUMPER_CODE,index,access) 
+      {}
+    //memset( bumpers, 0, sizeof(bumpers[0])*PLAYER_BUMPER_MAX_SAMPLES);
+    // }
+    
+
+    ~BumperProxy()
+      {}
+
 
     // these methods are the user's interface to this device
 
@@ -1243,6 +1251,11 @@ public:
       */
     bool Bumped (const unsigned int i);
     bool BumpedAny ();
+
+    /** Requests the geometries of the bumpers
+     * returns -1 if anything went wrong, 0 if OK
+     */ 
+    int GetBumperGeom( player_bumper_geom_t* bumper_defs );
 
     uint8_t BumperCount () const { return bumper_count; }
     //uint32_t Bumpfield () const { return bumpfield; }
@@ -1256,7 +1269,7 @@ public:
 private:
     /** array representing bumped state.
      */
-    uint8_t  bumper_count;
+    uint8_t bumper_count;
     uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
 };
 

@@ -44,6 +44,52 @@ BumperProxy::Bumped(const unsigned int i)
     return false;
 }
 
+int
+BumperProxy::GetBumperGeom( player_bumper_geom_t* bumper_geom )
+{
+  player_msghdr_t hdr;
+  
+  if(!client)
+    return(-1);
+
+  assert( bumper_geom );
+
+
+
+  bumper_geom->subtype = PLAYER_BUMPER_GET_GEOM_REQ;
+
+  if((client->Request(PLAYER_BUMPER_CODE,index,(const char*)bumper_geom,
+                      sizeof(bumper_geom->subtype), &hdr, (char*)bumper_geom, 
+                      sizeof(*bumper_geom)) < 0) ||
+     (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
+    return(-1);
+
+  bumper_geom->bumper_count = ntohs(bumper_geom->bumper_count);
+
+  // fix the byte order for all the geom definitions
+  for(int i=0;i<bumper_geom->bumper_count;i++)
+  {
+    bumper_geom->bumper_def[i].x_offset =
+      ntohs(bumper_geom->bumper_def[i].x_offset);
+
+    bumper_geom->bumper_def[i].y_offset = 
+      ntohs(bumper_geom->bumper_def[i].y_offset);
+    
+    bumper_geom->bumper_def[i].th_offset = 
+      ntohs(bumper_geom->bumper_def[i].th_offset);
+    
+    bumper_geom->bumper_def[i].length = 
+      ntohs(bumper_geom->bumper_def[i].length);
+    
+    bumper_geom->bumper_def[i].radius = 
+      ntohs(bumper_geom->bumper_def[i].radius);
+  }
+
+  return(0);
+}
+
+
+
 void
 BumperProxy::FillData(player_msghdr_t hdr, const char *buffer)
 {

@@ -23,17 +23,19 @@ int test_gps(PlayerClient* client, int index);
 int test_position(PlayerClient* client, int index);
 int test_sonar(PlayerClient* client, int index);
 int test_power(PlayerClient* client, int index);
-//int test_misc(PlayerClient* client, int index);
 int test_laser(PlayerClient* client, int index);
 int test_ptz(PlayerClient* client, int index);
 int test_speech(PlayerClient* client, int index);
 int test_vision(PlayerClient* client, int index);
-//int test_bps(PlayerClient* client, int index);
 int test_lbd(PlayerClient* client, int index);
 int test_broadcast(PlayerClient* client, int index);
 int test_gripper(PlayerClient* client, int index);
 int test_truth(PlayerClient* client, int index);
 int test_idar(PlayerClient* client, int index);
 int test_idarturret(PlayerClient* client, int index);
+int test_bumper(PlayerClient* client, int index);
+
+//int test_misc(PlayerClient* client, int index);
+//int test_bps(PlayerClient* client, int index);
 
 #endif // TEST_H

@@ -9,6 +9,8 @@ LDADD = -L$(top_builddir)/client_libs/c++ -lplayerclient
 
 noinst_PROGRAMS = $(BUILDTEST)
 
+test_DEPENDENCIES = ../libplayerclient.a
+
 test_SOURCES = test_broadcast.cc \
                test.cc \
                test_gps.cc \
@@ -22,7 +24,8 @@ test_SOURCES = test_broadcast.cc \
                test_speech.cc \
                test_truth.cc \
                test_vision.cc \
-	       test_power.cc
+	       test_power.cc \
+               test_bumper.cc 
                #test_idar.cc \
                #test_idarturret.cc
                #test_misc.cc

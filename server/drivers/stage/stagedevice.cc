@@ -48,7 +48,7 @@ StageDevice::StageDevice(player_stage_info_t* info,
 #ifdef DEBUG
   printf( "P: Creating Stage device (%d,%d,%d) locking %d:%d\n", 
           info->player_id.port, 
-          info->player_id.type, 
+          info->player_id.code, 
           info->player_id.index,
 	  lockfd, lockbyte ); 
 #endif
@@ -83,7 +83,7 @@ StageDevice::StageDevice(player_stage_info_t* info,
   InstallLock( lockfd, lockbyte );
 
 #ifdef DEBUG
-  PLAYER_TRACE4("creating device at addr: %p %p %p %p %p %p", 
+  PLAYER_TRACE4("creating device at addr: %p %p %p %p %p", 
                 m_info, data_buffer, command_buffer, 
                 config_buffer, reply_buffer);
   fflush( stdout );
@@ -124,7 +124,7 @@ size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
 #ifdef DEBUG
   printf( "P: getting (%d,%d,%d) info at %p, data at %p, buffer len %d, %d bytes available, size parameter %d\n", 
           m_info->player_id.port, 
-          m_info->player_id.type, 
+          m_info->player_id.code, 
           m_info->player_id.index, 
           m_info, device_data,
           m_info->data_len,
@@ -203,7 +203,7 @@ void StageDevice::PutCommand(void* client,unsigned char *command, size_t len)
   printf( "P: StageDevice::PutCommand (%d,%d,%d) info at %p,"
 	  " command at %p\n", 
           m_info->player_id.port, 
-          m_info->player_id.type, 
+          m_info->player_id.code, 
           m_info->player_id.index, 
           m_info, command);
   fflush( stdout );

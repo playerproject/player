@@ -104,11 +104,6 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "vision") == 0 || strcmp(device, "all") == 0)
       test_vision(&client, index);
     
-    // BPS device
-    /*
-    if(strcmp(device, "bps") == 0 || strcmp(device, "all") == 0)
-      test_bps(&client, index);
-     */
     
     // GPS device
     if(strcmp(device, "gps") == 0 || strcmp(device, "all") == 0)
@@ -130,6 +125,15 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "comms") == 0 || strcmp(device, "all") == 0)
       test_broadcast(&client, index);
     
+    // Bumper
+    if(strcmp(device, "bumper") == 0 || strcmp(device, "all") == 0)
+      test_bumper(&client, index);
+
+    // BPS device
+    /*
+    if(strcmp(device, "bps") == 0 || strcmp(device, "all") == 0)
+      test_bps(&client, index);
+     */
 
     /*
     // IDAR device
