@@ -185,7 +185,7 @@ PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],
 PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[yes],
                   ["-lrfftw -lfftw"],[rfftw.h])
 
-PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[no],
+PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[yes],
                   ["-lgsl -lgslcblas"],["gsl/gsl_fft_real.h sys/soundcard.h"])
 
 PLAYER_ADD_DRIVER([mixer],[drivers/audiomixer],[yes],
