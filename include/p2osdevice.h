@@ -127,6 +127,7 @@ private:
   static char num_loops_since_rvel;  
   static int psos_fd;               // p2os device file descriptor
   static char psos_serial_port[MAX_FILENAME_SIZE]; // device used to communicate with p2os
+  static bool radio_modemp; // are we using a radio modem?
   
   static bool arena_initialized_data_buffer;
   static bool arena_initialized_command_buffer;

@@ -111,7 +111,7 @@ int CPacket::Receive( int fd )
       {
         if ( (cnt+=read( fd, &prefix[2], 1 )) < 0 ) 
         {
-          perror("CPacket():Receive():read():");
+          //perror("CPacket():Receive():read():");
           return(1);
         }
       }
@@ -132,7 +132,7 @@ int CPacket::Receive( int fd )
     {
       if ( (cnt+=read( fd, &packet[3+cnt],  prefix[2]-cnt )) < 0 ) 
       {
-        perror("CPacket():Receive():read():");
+        //perror("CPacket():Receive():read():");
 	return(1);
       }  
     }

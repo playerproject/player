@@ -133,9 +133,9 @@ void CLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize,
     timestamp_usec = curr.tv_usec;
   }
   pthread_mutex_lock( &dataAccessMutex );
-  obj->PutData(dest, maxsize);
   obj->data_timestamp_sec = timestamp_sec;
   obj->data_timestamp_usec = timestamp_usec;
+  obj->PutData(dest, maxsize);
   pthread_mutex_unlock( &dataAccessMutex );
   if (firstdata) 
   {

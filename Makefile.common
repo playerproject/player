@@ -14,7 +14,7 @@
 # sent back to the client when it connects), and is used below to construct
 # the directory name for installation.
 
-PLAYER_VERSION = 1.2
+PLAYER_VERSION = 1.2-alpha
 
 
 #######################################

@@ -135,6 +135,39 @@ while {$i < $PLAYER_NUM_SONAR_SAMPLES}  {
 # these toggle_* procs are called when the corresponding checkbuttons
 # are pressed.  they open and close the appropriate device
 #
+proc toggle_ptz {} {
+  global display_ptz
+  if {$display_ptz} {
+    player_req_dev robot ptz a
+    .vision_panel.left configure -state normal
+    .vision_panel.right configure -state normal
+    .vision_panel.up configure -state normal
+    .vision_panel.down configure -state normal
+    .vision_panel.in configure -state normal
+    .vision_panel.out configure -state normal
+
+    .vision_panel.data_frame.pan configure -state normal
+    .vision_panel.data_frame.pan_value configure -state normal
+    .vision_panel.data_frame.tilt configure -state normal
+    .vision_panel.data_frame.tilt_value configure -state normal
+    .vision_panel.data_frame.zoom configure -state normal
+    .vision_panel.data_frame.zoom_value configure -state normal
+  } else {
+    player_req_dev robot ptz c
+    .vision_panel.left configure -state disabled
+    .vision_panel.right configure -state disabled
+    .vision_panel.up configure -state disabled
+    .vision_panel.down configure -state disabled
+    .vision_panel.in configure -state disabled
+    .vision_panel.out configure -state disabled
+    .vision_panel.data_frame.pan configure -state disabled
+    .vision_panel.data_frame.pan_value configure -state disabled
+    .vision_panel.data_frame.tilt configure -state disabled
+    .vision_panel.data_frame.tilt_value configure -state disabled
+    .vision_panel.data_frame.zoom configure -state disabled
+    .vision_panel.data_frame.zoom_value configure -state disabled
+  }
+}
 proc toggle_vision {} {
   global display_vision
   if {$display_vision} {
@@ -341,34 +374,29 @@ proc createVisionPanel {} {
 
   set display_vision 0
 
-  button .vision_panel.left -image $leftarrow 
-  button .vision_panel.right -image $rightarrow
-  button .vision_panel.up -image $uparrow
-  button .vision_panel.down -image $downarrow 
-
-  button .vision_panel.in -text +
-  button .vision_panel.out -text -
+  button .vision_panel.left -image $leftarrow -state disabled \
+    -command {catch {set newpan [expr $robot(ptz,pan) + 10];checkCameraLimits;player_set_camera robot $newpan $robot(ptz,tilt) $robot(ptz,zoom)}}
+  button .vision_panel.right -image $rightarrow -state disabled \
+    -command {catch {set newpan [expr $robot(ptz,pan) -10];checkCameraLimits;player_set_camera robot $newpan $robot(ptz,tilt) $robot(ptz,zoom)}}
+  button .vision_panel.up -image $uparrow -state disabled \
+    -command {catch {set newtilt [expr $robot(ptz,tilt) + 5]; checkCameraLimits;player_set_camera robot $robot(ptz,pan) $newtilt $robot(ptz,zoom)}}
+  button .vision_panel.down -image $downarrow  -state disabled \
+    -command {catch {set newtilt [expr $robot(ptz,tilt) -5];checkCameraLimits;player_set_camera robot $robot(ptz,pan) $newtilt $robot(ptz,zoom)}}
+  button .vision_panel.in -text + -state disabled \
+    -command {catch {set newzoom [expr $robot(ptz,zoom) + 100];checkCameraLimits;player_set_camera robot $robot(ptz,pan) $robot(ptz,tilt) $newzoom}}
+  button .vision_panel.out -text - -state disabled \
+    -command {catch {set newzoom [expr $robot(ptz,zoom) -100];checkCameraLimits;player_set_camera robot $robot(ptz,pan) $robot(ptz,tilt) $newzoom}}
 
   frame .vision_panel.data_frame
-  label .vision_panel.data_frame.pan -text Pan:
-  label .vision_panel.data_frame.pan_value -textvariable robot(ptz,pan) -width 8 -anchor e
-  label .vision_panel.data_frame.tilt -text Tilt:
-  label .vision_panel.data_frame.tilt_value -textvariable robot(ptz,tilt) -width 8 -anchor e
-  label .vision_panel.data_frame.zoom -text Zoom:
-  label .vision_panel.data_frame.zoom_value -textvariable robot(ptz,zoom) -width 8 -anchor e
+  label .vision_panel.data_frame.pan -text Pan: -state disabled
+  label .vision_panel.data_frame.pan_value -textvariable robot(ptz,pan) -width 8 -anchor e -state disabled
+  label .vision_panel.data_frame.tilt -text Tilt: -state disabled
+  label .vision_panel.data_frame.tilt_value -textvariable robot(ptz,tilt) -width 8 -anchor e -state disabled
+  label .vision_panel.data_frame.zoom -text Zoom: -state disabled
+  label .vision_panel.data_frame.zoom_value -textvariable robot(ptz,zoom) -width 8 -anchor e -state disabled
+  checkbutton .vision_panel.ptz_check -command toggle_ptz\
+    -variable display_ptz -text "Display PTZ"
 
-  bind .vision_panel.left <Button-1> \
-    {catch {incr newpan 10;checkCameraLimits;player_set_camera robot $newpan $newtilt $newzoom}}
-  bind .vision_panel.right <Button-1>\
-    {catch {incr newpan -10;checkCameraLimits;player_set_camera robot $newpan $newtilt $newzoom}}
-  bind .vision_panel.up <Button-1> \
-    {catch {incr newtilt 5; checkCameraLimits;player_set_camera robot $newpan $newtilt $newzoom}}
-  bind .vision_panel.down <Button-1> \
-    {catch {incr newtilt -5;checkCameraLimits;player_set_camera robot $newpan $newtilt $newzoom}}
-  bind .vision_panel.in <Button-1> \
-    {catch {incr newzoom 100;checkCameraLimits;player_set_camera robot $newpan $newtilt $newzoom}}
-  bind .vision_panel.out <Button-1> \
-    {catch {incr newzoom -100;checkCameraLimits;player_set_camera robot $newpan $newtilt $newzoom}}
 
   grid configure .vision_panel.canvas -column 0 -row 0 -columnspan 5
   grid configure .vision_panel.vision_check -column 0 -row 1 -columnspan 5
@@ -388,6 +416,8 @@ proc createVisionPanel {} {
   grid configure .vision_panel.data_frame.tilt_value -column 1 -row 1
   grid configure .vision_panel.data_frame.zoom -column 0 -row 2
   grid configure .vision_panel.data_frame.zoom_value -column 1 -row 2
+  grid configure .vision_panel.data_frame.zoom_value -column 1 -row 2
+  grid configure .vision_panel.ptz_check -column 0 -row 6 -columnspan 5
 }
 
 set display_sonar 0
@@ -752,9 +782,6 @@ proc startRobot {} {
   }
   if {[string compare [player_req_dev robot misc r] r]} {
     puts "WARNING: unable to get access to the misc device"
-  }
-  if {[string compare [player_req_dev robot ptz a] a]} {
-    puts "WARNING: unable to get access to the ptz device"
   }
 
   # -restart is VERY important....
