@@ -149,6 +149,7 @@ PassThrough::Setup()
 {
   unsigned char grant_access;
   CDeviceEntry* devp;
+  player_msghdr_t hdr;
 
   // zero out the buffers
   PutData(NULL,0,0,0);
@@ -193,6 +194,27 @@ PassThrough::Setup()
     return(-1);
   }
   strncpy(devp->name,this->remote_drivername,PLAYER_MAX_DEVICE_STRING_LEN);
+
+  for(;;)
+  {
+    // wait for one data packet from the remote server, to avoid sending
+    // zero length packets to our clients
+    if(player_read(&this->conn,&hdr,this->remote_data,PLAYER_MAX_PAYLOAD_SIZE))
+    {
+      PLAYER_ERROR("got error while reading data; bailing");
+      CloseConnection();
+      return(-1);
+    }
+
+    if((hdr.type == PLAYER_MSGTYPE_DATA) &&
+       (hdr.device == this->remote_device_id.code) &&
+       (hdr.device_index == this->remote_device_id.index))
+    {
+      PutData(this->remote_data,hdr.size,
+              hdr.timestamp_sec,hdr.timestamp_usec);
+      break;
+    }
+  }
 
   StartThread();
 
