@@ -24,19 +24,13 @@
 # a nifty Tk robot viewer
 #
 
-set PLAYER_VERSION 1.2-alpha
-
 # for the 'signal' command
 package require Tclx
 
+#
 # get the robot client utilities
-if {[file exists ../../client_libs/tcl/playerclient.tcl]} {
-  source ../../client_libs/tcl/playerclient.tcl
-} elseif {[file exists ../../lib/playerclient.tcl]} {
-  source ../../lib/playerclient.tcl
-} else { 
-  source /usr/local/player-${PLAYER_VERSION}/lib/playerclient.tcl
-}
+lappend auto_path ../../client_libs
+package require Tclplayer
 
 set CANVAS_WIDTH 400
 set CANVAS_HEIGHT 400

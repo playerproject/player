@@ -7,7 +7,6 @@
 include Makefile.common
 
 MANUAL_LOCATION = player-manual
-PWD = $(shell pwd)
 
 all: server client_libs examples
 

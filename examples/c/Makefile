@@ -4,8 +4,10 @@
 
 include ../../Makefile.common
 
-INCLUDES = -I../../client_libs/c -I../../include -I$(INSTALL_PREFIX)/include -I/usr/local/player/include
-LIBDIRS = -L../../client_libs/c -L$(INSTALL_PREFIX)/lib -L/usr/local/player/lib
+INCLUDES = -I../../include -I$(INSTALL_PREFIX)/include \
+           -I/usr/local/player/include
+LIBDIRS = -L../../lib -L$(INSTALL_PREFIX)/lib \
+          -L/usr/local/player/lib
 LIBS = $(LIBDIRS) -lplayercclient $(PLATFORM_LIBS)
 
 BINARIES = randomwalk laserobstacleavoid ptz 

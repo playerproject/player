@@ -4,23 +4,7 @@
 
 include ../../Makefile.common
 
-all: ptz.tcl viewer.tk sonarobstacleavoid.tcl
-
-
-#
-# put the right version number in
-#
-%.tcl: force
-	${SED} s/"set PLAYER_VERSION.*"/"set PLAYER_VERSION ${PLAYER_VERSION}"/ < $@ > $@.tmp
-	${MV} $@.tmp $@
-	${CHMOD} 755 $@ 
-
-%.tk: force
-	${SED} s/"set PLAYER_VERSION.*"/"set PLAYER_VERSION ${PLAYER_VERSION}"/ < $@ > $@.tmp
-	${MV} $@.tmp $@
-	${CHMOD} 755 $@ 
-
-force:
+all: 
 
 dep:
 

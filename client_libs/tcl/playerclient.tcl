@@ -23,6 +23,8 @@
 # Tcl client utilities for Player
 #
 
+package provide Tclplayer 1.0
+
 # we'll make variables from these names
 set player_base_varname "pc"
 set player_base_varnum 0
