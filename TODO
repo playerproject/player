@@ -1,5 +1,27 @@
 $Id$
 
+
+devicetable.cc: convert to 2-character codes.  need to dyanmically
+                create/delete them. yuck.
+
+--------
+printing
+--------
+- remove print statements from all 'run' threads.  only Setup() should
+    output anything.  however, that's not really safe, since they
+    could interleave with concurrent clients starting different 
+    devices.  mutex?
+
+    - yep. make some kind of SAFE_PRINTF that will lock, print, and
+        unlock a single global mutex.
+          - but, make sure that potentially blocking on a mutex
+              when you expected to return quickly from a print
+              won't fuck up close timing.
+
+- add back in SOME of the laser output to Setup().
+
+
+
 TOMORROW:
 ---------
 - protocol
