@@ -626,17 +626,17 @@ class FiducialProxy : public ClientProxy
     void Print();
 };
 
-/** The {\tt SRFProxy} class is used to control the {\tt srf} device.
+/** The {\tt LaserProxy} class is used to control the {\tt laser} device.
     The latest scan data is held in two arrays: {\tt ranges} and {\tt
-    intensity}.  The srf scan range, resolution and so on can be
+    intensity}.  The laser scan range, resolution and so on can be
     configured using the {\tt Configure()} method.
 */
-class SRFProxy : public ClientProxy
+class LaserProxy : public ClientProxy
 {
 
   public:
 
-    // the latest srf scan data
+    // the latest laser scan data
     
     /** Scan range for the latest set of data.
         Angles are measured in units of $0.01^{\circ}$,
@@ -659,11 +659,11 @@ class SRFProxy : public ClientProxy
     unsigned short range_count;
 
     /// The range values (in mm).
-    unsigned short ranges[PLAYER_SRF_MAX_SAMPLES];
+    unsigned short ranges[PLAYER_LASER_MAX_SAMPLES];
 
     // TODO: haven't verified that intensities work yet:
     /// The reflected intensity values (arbitrary units in range 0-7).
-    unsigned char intensities[PLAYER_SRF_MAX_SAMPLES];
+    unsigned char intensities[PLAYER_LASER_MAX_SAMPLES];
 
     // What is this?
     unsigned short min_right,min_left;
@@ -673,17 +673,17 @@ class SRFProxy : public ClientProxy
         You can change the access later using
         {\tt PlayerProxy::RequestDeviceAccess()}.
     */
-    SRFProxy(PlayerClient* pc, unsigned short index, 
+    LaserProxy(PlayerClient* pc, unsigned short index, 
                unsigned char access='c'):
-        ClientProxy(pc,PLAYER_SRF_CODE,index,access) {}
+        ClientProxy(pc,PLAYER_LASER_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 
     // returns the local rectangular coordinate of the i'th beam strike
     int CartesianCoordinate( int i, int *x, int *y );
 
-    // configure the srf scan.
-    /** Configure the srf scan pattern.
+    // configure the laser scan.
+    /** Configure the laser scan pattern.
         Angles {\tt min\_angle} and {\tt max\_angle} are measured in
         units of $0.1^{\circ}$, in the range -9000
         ($-90^{\circ}$) to +9000 ($+90^{\circ}$).  {\tt
@@ -696,7 +696,7 @@ class SRFProxy : public ClientProxy
     int Configure(short min_angle, short max_angle, 
                   unsigned short resolution, bool intensity);
 
-    /** Get the current srf configuration; it is read into the
+    /** Get the current laser configuration; it is read into the
         relevant class attributes.\\
         Returns the 0 on success, or -1 of there is a problem.
       */
@@ -704,7 +704,7 @@ class SRFProxy : public ClientProxy
 
     /** Range access operator.
         This operator provides an alternate way of access the range data.
-        For example, given a {\tt SRFProxy} named {\tt lp}, the following
+        For example, given a {\tt LaserProxy} named {\tt lp}, the following
         expressions are equivalent: \verb+lp.ranges[0]+ and \verb+lp[0]+.
     */
     unsigned short operator [](unsigned int index)
@@ -869,52 +869,52 @@ class PtzProxy : public ClientProxy
     void Print();
 };
 
-/** The {\tt FRFProxy} class is used to control the {\tt frf} device.
-    The most recent frf range measuremts can be read from the {\tt range}
+/** The {\tt SonarProxy} class is used to control the {\tt sonar} device.
+    The most recent sonar range measuremts can be read from the {\tt range}
     attribute, or using the the {\tt []} operator.
  */
-class FRFProxy : public ClientProxy
+class SonarProxy : public ClientProxy
 {
 
   public:
-    /** The number of frf readings received.
+    /** The number of sonar readings received.
      */
     unsigned short range_count;
 
-    /** The latest frf scan data.
+    /** The latest sonar scan data.
         Range is measured in mm.
      */
-    unsigned short ranges[PLAYER_FRF_MAX_SAMPLES];
+    unsigned short ranges[PLAYER_SONAR_MAX_SAMPLES];
 
-    /** Positions of frfs
+    /** Positions of sonars
      */
-    player_frf_geom_t frf_pose;
+    player_sonar_geom_t sonar_pose;
    
     /** Constructor.
         Leave the access field empty to start unconnected.
         You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
     */
-    FRFProxy(PlayerClient* pc, unsigned short index, 
+    SonarProxy(PlayerClient* pc, unsigned short index, 
                unsigned char access = 'c') :
-            ClientProxy(pc,PLAYER_FRF_CODE,index,access)
-    { bzero(&frf_pose,sizeof(frf_pose)); }
+            ClientProxy(pc,PLAYER_SONAR_CODE,index,access)
+    { bzero(&sonar_pose,sizeof(sonar_pose)); }
 
     // these methods are the user's interface to this device
     
-    /** Enable/disable the frfs.
+    /** Enable/disable the sonars.
         Set {\tt state} to 1 to enable, 0 to disable.
-        Note that when frfs are disabled the client will still receive frf
-        data, but the ranges will always be the last value read from the frfs
+        Note that when sonars are disabled the client will still receive sonar
+        data, but the ranges will always be the last value read from the sonars
         before they were disabled.\\
         Returns 0 on success, -1 if there is a problem.
      */
-    int SetFRFState(unsigned char state);
+    int SetSonarState(unsigned char state);
 
-    int GetFRFGeom();
+    int GetSonarGeom();
 
     /** Range access operator.
         This operator provides an alternate way of access the range data.
-        For example, given a {\tt FRFProxy} named {\tt sp}, the following
+        For example, given a {\tt SonarProxy} named {\tt sp}, the following
         expressions are equivalent: \verb+sp.ranges[0]+ and \verb+sp[0]+.
      */
     unsigned short operator [](unsigned int index) 
@@ -925,12 +925,12 @@ class FRFProxy : public ClientProxy
         return(0);
     }
 
-    /** Get the pose of a particular frf.
+    /** Get the pose of a particular sonar.
         This is a convenience function that returns the pose of any
-        frf on a Pioneer2DX robot.  It will {\em not} return valid
+        sonar on a Pioneer2DX robot.  It will {\em not} return valid
         poses for other configurations.
     */
-    void GetFRFPose(int s, double* px, double* py, double* pth);
+    void GetSonarPose(int s, double* px, double* py, double* pth);
     
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);

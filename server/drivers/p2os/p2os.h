@@ -90,7 +90,7 @@
 typedef struct
 {
   player_position_data_t position;
-  player_frf_data_t sonar;
+  player_sonar_data_t sonar;
   player_gripper_data_t gripper;
   player_power_data_t power;
   player_bumper_data_t bumper;

@@ -3,7 +3,7 @@
 
 int main(int argc, char *argv[]) {
   PlayerClient robot("localhost");
-  FRFProxy sp(&robot,0,'r');
+  SonarProxy sp(&robot,0,'r');
   PositionProxy pp(&robot,0,'w');
 
   int newturnrate,newspeed;

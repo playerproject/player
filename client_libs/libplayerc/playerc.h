@@ -38,10 +38,10 @@
  * Array sizes
  **************************************************************************/
 
-#define PLAYERC_SRF_MAX_SAMPLES       PLAYER_SRF_MAX_SAMPLES
-#define PLAYERC_FIDUCIAL_MAX_SAMPLES  PLAYER_FIDUCIAL_MAX_SAMPLES
-#define PLAYERC_FRF_MAX_SAMPLES       PLAYER_FRF_MAX_SAMPLES
-#define PLAYERC_BLOBFINDER_MAX_BLOBS      64
+#define PLAYERC_LASER_MAX_SAMPLES       PLAYER_LASER_MAX_SAMPLES
+#define PLAYERC_FIDUCIAL_MAX_SAMPLES    PLAYER_FIDUCIAL_MAX_SAMPLES
+#define PLAYERC_SONAR_MAX_SAMPLES       PLAYER_SONAR_MAX_SAMPLES
+#define PLAYERC_BLOBFINDER_MAX_BLOBS    64
 
 
 /***************************************************************************
@@ -349,18 +349,18 @@ int playerc_gps_teleport(playerc_gps_t *device, double px, double py, double pa)
 
 
 /***************************************************************************
- * proxy : scanning range-finder
+ * proxy : laser (scanning range-finder)
  **************************************************************************/
 
-// SRF proxy.
+// Laser proxy.
 typedef struct
 {
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
-  // SRF geometry in robot cs: pose gives the position and
+  // laser geometry in robot cs: pose gives the position and
   // orientation, size gives the extent.  These values are filled in by
-  // playerc_srf_get_geom().
+  // playerc_laser_get_geom().
   double pose[3];
   double size[2];
   
@@ -368,47 +368,47 @@ typedef struct
   int scan_count;
 
   // Scan data; range (m) and bearing (radians).
-  double scan[PLAYERC_SRF_MAX_SAMPLES][2];
+  double scan[PLAYERC_LASER_MAX_SAMPLES][2];
 
   // Scan data; x, y position (m).
-  double point[PLAYERC_SRF_MAX_SAMPLES][2];
+  double point[PLAYERC_LASER_MAX_SAMPLES][2];
 
   // Scan reflection intensity values (0-3).
-  int intensity[PLAYERC_SRF_MAX_SAMPLES];
+  int intensity[PLAYERC_LASER_MAX_SAMPLES];
   
-} playerc_srf_t;
+} playerc_laser_t;
 
 
-// Create a SRF proxy
-playerc_srf_t *playerc_srf_create(playerc_client_t *client, int index);
+// Create a laser proxy
+playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index);
 
-// Destroy a SRF proxy
-void playerc_srf_destroy(playerc_srf_t *device);
+// Destroy a laser proxy
+void playerc_laser_destroy(playerc_laser_t *device);
 
-// Subscribe to the SRF device
-int playerc_srf_subscribe(playerc_srf_t *device, int access);
+// Subscribe to the laser device
+int playerc_laser_subscribe(playerc_laser_t *device, int access);
 
-// Un-subscribe from the SRF device
-int playerc_srf_unsubscribe(playerc_srf_t *device);
+// Un-subscribe from the laser device
+int playerc_laser_unsubscribe(playerc_laser_t *device);
 
-// Configure the SRF.
+// Configure the laser.
 // min_angle, max_angle : Start and end angles for the scan.
 // resolution : Resolution in 0.01 degree increments.  Valid values
 //              are 25, 50, 100.
 // intensity : Intensity flag; set to 1 to enable reflection intensity data.
-int  playerc_srf_set_config(playerc_srf_t *device, double min_angle,
+int  playerc_laser_set_config(playerc_laser_t *device, double min_angle,
                             double max_angle, int resolution, int intensity);
 
-// Get the SRF configuration
+// Get the laser configuration
 // min_angle, max_angle : Start and end angles for the scan.
 // resolution : Resolution is in 0.01 degree increments.
 // intensity : Intensity flag; set to 1 to enable reflection intensity data.
-int  playerc_srf_get_config(playerc_srf_t *device, double *min_angle,
+int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle,
                             double *max_angle, int *resolution, int *intensity);
 
-// Get the SRF geometry.  The writes the result into the proxy
+// Get the laser geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int playerc_srf_get_geom(playerc_srf_t *device);
+int playerc_laser_get_geom(playerc_laser_t *device);
 
 
 /***************************************************************************
@@ -568,10 +568,10 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, int zoom);
 
 
 /***************************************************************************
- * proxy : fixed range-finder
+ * proxy : sonar (fixed range-finder)
  **************************************************************************/
 
-// FRF proxy.
+// Sonar proxy.
 typedef struct
 {
   // Device info; must be at the start of all device structures.
@@ -580,34 +580,34 @@ typedef struct
   // Number of pose values.
   int pose_count;
   
-  // Pose of each FRF relative to robot (m, m, radians).  This
-  // structure is filled by calling playerc_frf_get_geom().
-  double poses[PLAYERC_FRF_MAX_SAMPLES][3];
+  // Pose of each sonar relative to robot (m, m, radians).  This
+  // structure is filled by calling playerc_sonar_get_geom().
+  double poses[PLAYERC_SONAR_MAX_SAMPLES][3];
   
   // Number of points in the scan.
   int scan_count;
 
   // Scan data: range (m)
-  double scan[PLAYERC_FRF_MAX_SAMPLES];
+  double scan[PLAYERC_SONAR_MAX_SAMPLES];
   
-} playerc_frf_t;
+} playerc_sonar_t;
 
 
-// Create a FRF proxy
-playerc_frf_t *playerc_frf_create(playerc_client_t *client, int index);
+// Create a sonar proxy
+playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index);
 
-// Destroy a FRF proxy
-void playerc_frf_destroy(playerc_frf_t *device);
+// Destroy a sonar proxy
+void playerc_sonar_destroy(playerc_sonar_t *device);
 
-// Subscribe to the FRF device
-int playerc_frf_subscribe(playerc_frf_t *device, int access);
+// Subscribe to the sonar device
+int playerc_sonar_subscribe(playerc_sonar_t *device, int access);
 
-// Un-subscribe from the FRF device
-int playerc_frf_unsubscribe(playerc_frf_t *device);
+// Un-subscribe from the sonar device
+int playerc_sonar_unsubscribe(playerc_sonar_t *device);
 
-// Get the FRF geometry.  The writes the result into the proxy
+// Get the sonar geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int playerc_frf_get_geom(playerc_frf_t *device);
+int playerc_sonar_get_geom(playerc_sonar_t *device);
 
 
 /***************************************************************************

@@ -90,9 +90,9 @@ void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *heade
   {
     fiducial = data->fiducials + i;
     device->fiducials[i].id = fiducial->id;
-    device->fiducials[i].range = ntohs(fiducial->range) / 1000.0;
-    device->fiducials[i].bearing = ((int) (int16_t) ntohs(fiducial->bearing)) * M_PI / 180;
-    device->fiducials[i].orient = ((int) (int16_t) ntohs(fiducial->orient)) * M_PI / 180;
+    device->fiducials[i].range = ntohs(fiducial->pose[0]) / 1000.0;
+    device->fiducials[i].bearing = ((int) (int16_t) ntohs(fiducial->pose[1])) * M_PI / 180;
+    device->fiducials[i].orient = ((int) (int16_t) ntohs(fiducial->pose[2])) * M_PI / 180;
   }
 }
 

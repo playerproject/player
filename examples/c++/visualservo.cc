@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 
   /* Connect to the Player server */
   PlayerClient robot(host,port);
-  FRFProxy sp(&robot,0,'r');
+  SonarProxy sp(&robot,0,'r');
   BlobfinderProxy vp(&robot,0,'r');
 
   /* request read access on the sonars and all access to the wheels */

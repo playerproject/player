@@ -45,8 +45,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_DIO_STRING;
     case PLAYER_FIDUCIAL_CODE:
       return PLAYER_FIDUCIAL_STRING;
-    case PLAYER_FRF_CODE:
-      return PLAYER_FRF_STRING;
+    case PLAYER_LASER_CODE:
+      return PLAYER_LASER_STRING;
     case PLAYER_GRIPPER_CODE:
       return PLAYER_GRIPPER_STRING;
     case PLAYER_POSITION_CODE:
@@ -55,8 +55,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_POWER_STRING;
     case PLAYER_PTZ_CODE:
       return PLAYER_PTZ_STRING;
-    case PLAYER_SRF_CODE:
-      return PLAYER_SRF_STRING;
+    case PLAYER_SONAR_CODE:
+      return PLAYER_SONAR_STRING;
     default:
       break;
   }
@@ -79,8 +79,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_DIO_CODE;
   if (strcmp(name, PLAYER_FIDUCIAL_STRING) == 0)
     return PLAYER_FIDUCIAL_CODE;
-  if (strcmp(name, PLAYER_FRF_STRING) == 0)
-    return PLAYER_FRF_CODE;
+  if (strcmp(name, PLAYER_LASER_STRING) == 0)
+    return PLAYER_LASER_CODE;
   if (strcmp(name, PLAYER_GRIPPER_STRING) == 0)
     return PLAYER_GRIPPER_CODE;
   if (strcmp(name, PLAYER_POSITION_STRING) == 0)
@@ -89,7 +89,9 @@ int playerc_lookup_code(const char *name)
     return PLAYER_POWER_CODE;
   if (strcmp(name, PLAYER_PTZ_STRING) == 0)
     return PLAYER_PTZ_CODE;
-  if (strcmp(name, PLAYER_SRF_STRING) == 0)
-    return PLAYER_SRF_CODE;
+  if (strcmp(name, PLAYER_SONAR_STRING) == 0)
+    return PLAYER_SONAR_CODE;
   return -1;
 }
+
+

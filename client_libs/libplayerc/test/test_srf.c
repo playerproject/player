@@ -9,22 +9,22 @@
 #include "playerc.h"
 
 
-// Basic srf test
-int test_srf(playerc_client_t *client, int index)
+// Basic laser test
+int test_laser(playerc_client_t *client, int index)
 {
   int t, i;
   void *rdevice;
-  playerc_srf_t *device;
+  playerc_laser_t *device;
 
   double min, max;
   int resolution, intensity;
 
-  printf("device [srf] index [%d]\n", index);
+  printf("device [laser] index [%d]\n", index);
 
-  device = playerc_srf_create(client, index);
+  device = playerc_laser_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_srf_subscribe(device, PLAYER_READ_MODE) == 0)
+  if (playerc_laser_subscribe(device, PLAYER_READ_MODE) == 0)
     PASS();
   else
     FAIL();
@@ -34,13 +34,13 @@ int test_srf(playerc_client_t *client, int index)
   max = +M_PI/2;
   resolution = 100;
   intensity = 1;
-  if (playerc_srf_set_config(device, min, max, resolution, intensity) == 0)
+  if (playerc_laser_set_config(device, min, max, resolution, intensity) == 0)
     PASS();
   else
     FAIL();
 
   TEST("get configuration");
-  if (playerc_srf_get_config(device, &min, &max, &resolution, &intensity) == 0)
+  if (playerc_laser_get_config(device, &min, &max, &resolution, &intensity) == 0)
     PASS();
   else
     FAIL();
@@ -54,11 +54,11 @@ int test_srf(playerc_client_t *client, int index)
     PASS();
   
   TEST("getting geometry");
-  if (playerc_srf_get_geom(device) == 0)
+  if (playerc_laser_get_geom(device) == 0)
     PASS();
   else
     FAIL();
-  printf("srf geom: [%6.3f %6.3f %6.3f] [%6.3f %6.3f]\n",
+  printf("laser geom: [%6.3f %6.3f %6.3f] [%6.3f %6.3f]\n",
          device->pose[0], device->pose[1], device->pose[2], device->size[0], device->size[1]);
 
   for (t = 0; t < 10; t++)
@@ -72,7 +72,7 @@ int test_srf(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("srf: [%d] ", device->scan_count);
+      printf("laser: [%d] ", device->scan_count);
       for (i = 0; i < 3; i++)
         printf("[%6.3f, %6.3f] ", device->scan[i][0], device->scan[i][1]);
       printf("\n");
@@ -85,12 +85,12 @@ int test_srf(playerc_client_t *client, int index)
   }
   
   TEST("unsubscribing");
-  if (playerc_srf_unsubscribe(device) == 0)
+  if (playerc_laser_unsubscribe(device) == 0)
     PASS();
   else
     FAIL();
   
-  playerc_srf_destroy(device);
+  playerc_laser_destroy(device);
   
   return 0;
 }

@@ -9,30 +9,30 @@
 #include "playerc.h"
 
 
-// Basic frf test
-int test_frf(playerc_client_t *client, int index)
+// Basic sonar test
+int test_sonar(playerc_client_t *client, int index)
 {
   int t, i;
   void *rdevice;
-  playerc_frf_t *device;
+  playerc_sonar_t *device;
 
-  printf("device [frf] index [%d]\n", index);
+  printf("device [sonar] index [%d]\n", index);
 
-  device = playerc_frf_create(client, index);
+  device = playerc_sonar_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_frf_subscribe(device, PLAYER_READ_MODE) == 0)
+  if (playerc_sonar_subscribe(device, PLAYER_READ_MODE) == 0)
     PASS();
   else
     FAIL();
 
   TEST("getting geometry");
-  if (playerc_frf_get_geom(device) == 0)
+  if (playerc_sonar_get_geom(device) == 0)
     PASS();
   else
     FAIL();
 
-  printf("frf geom: ");
+  printf("sonar geom: ");
   for (i = 0; i < device->pose_count; i++)
     printf("[%6.3f %6.3f %6.3f] ", device->poses[i][0], device->poses[i][1], device->poses[i][2]);
   printf("\n");
@@ -48,7 +48,7 @@ int test_frf(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("frf range: [%d] ", device->scan_count);
+      printf("sonar range: [%d] ", device->scan_count);
       for (i = 0; i < 3; i++)
         printf("[%6.3f] ", device->scan[i]);
       printf("\n");
@@ -61,12 +61,12 @@ int test_frf(playerc_client_t *client, int index)
   }
   
   TEST("unsubscribing");
-  if (playerc_frf_unsubscribe(device) == 0)
+  if (playerc_sonar_unsubscribe(device) == 0)
     PASS();
   else
     FAIL();
   
-  playerc_frf_destroy(device);
+  playerc_sonar_destroy(device);
   
   return 0;
 }

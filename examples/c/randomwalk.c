@@ -89,7 +89,7 @@ parse_args(int argc, char** argv)
 int main(int argc, char** argv)
 {
   player_connection_t conn;
-  player_frf_data_t sonar;
+  player_sonar_data_t sonar;
   player_position_cmd_t poscmd;
   int randint;
   int randcount = 0;
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
   /* request read access on the sonars and write access to the wheels */
   if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'w',NULL) == -1)
     exit(1);
-  if(player_request_device_access(&conn, PLAYER_FRF_CODE, 0, 'r',NULL) == -1)
+  if(player_request_device_access(&conn, PLAYER_SONAR_CODE, 0, 'r',NULL) == -1)
     exit(1);
 
   if(motorson)
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
   }
 
   /* it's not necessary, but we could close the devices like this: */
-  if(player_request_device_access(&conn, PLAYER_FRF_CODE, 0, 'c',NULL))
+  if(player_request_device_access(&conn, PLAYER_SONAR_CODE, 0, 'c',NULL))
     exit(1);
   if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'c',NULL))
     exit(1);

@@ -528,7 +528,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   id.port = global_playerport;
   id.index = 0;
 
-  id.code = PLAYER_FRF_CODE;
+  id.code = PLAYER_SONAR_CODE;
   CDevice* sonarp = deviceTable->GetDevice(id);
   if(sonarp)
   {
@@ -616,7 +616,7 @@ P2OS::Main()
   id.port = global_playerport;
   id.index = 0;
 
-  id.code = PLAYER_FRF_CODE;
+  id.code = PLAYER_SONAR_CODE;
   CDevice* sonarp = deviceTable->GetDevice(id);
   id.code = PLAYER_POSITION_CODE;
   CDevice* positionp = deviceTable->GetDevice(id);
@@ -718,7 +718,7 @@ P2OS::Main()
     {
       switch(id.code)
       {
-        case PLAYER_FRF_CODE:
+        case PLAYER_SONAR_CODE:
           switch(config[0])
           {
             case PLAYER_P2OS_SONAR_POWER_REQ:
@@ -745,7 +745,7 @@ P2OS::Main()
                 PLAYER_ERROR("failed to PutReply");
               break;
 
-            case PLAYER_FRF_GET_GEOM_REQ:
+            case PLAYER_SONAR_GET_GEOM_REQ:
               /* Return the sonar geometry. */
               if(config_size != 1)
               {
@@ -756,10 +756,10 @@ P2OS::Main()
                 break;
               }
 
-              player_frf_geom_t geom;
-              geom.subtype = PLAYER_FRF_GET_GEOM_REQ;
+              player_sonar_geom_t geom;
+              geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
               geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
-              for (int i = 0; i < PLAYER_FRF_MAX_SAMPLES; i++)
+              for (int i = 0; i < PLAYER_SONAR_MAX_SAMPLES; i++)
               {
                 sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
                 geom.poses[i][0] = htons((short) (pose.x));

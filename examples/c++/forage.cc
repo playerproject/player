@@ -102,7 +102,7 @@ int main(int argc, char** argv)
 
   // get device access
   PositionProxy pp(&robot,0,'a');
-  FRFProxy sp(&robot,0,'r');
+  SonarProxy sp(&robot,0,'r');
   BlobfinderProxy vp(&robot,0,'r');
   GripperProxy gp(&robot,0,'a');
   GpsProxy gpsp(&robot,0,'r');

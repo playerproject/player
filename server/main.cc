@@ -337,8 +337,8 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         // create a generic simulated stage IO device for these types:
         case PLAYER_PLAYER_CODE: 
         case PLAYER_POSITION_CODE:
-        case PLAYER_FRF_CODE:
-        case PLAYER_SRF_CODE:
+        case PLAYER_LASER_CODE:
+        case PLAYER_SONAR_CODE:
         case PLAYER_BLOBFINDER_CODE:  
         case PLAYER_PTZ_CODE:     
         case PLAYER_FIDUCIAL_CODE: 

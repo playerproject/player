@@ -33,6 +33,7 @@ short turnrate = 40;
 
 
 /* parse command-line args */
+
 void
 parse_args(int argc, char** argv)
 {
@@ -131,8 +132,8 @@ int main(int argc, char** argv)
   }
 
 
-  SRFProxy lp(&robot,0);
-  FRFProxy sp(&robot,0);
+  LaserProxy lp(&robot,0);
+  SonarProxy sp(&robot,0);
   PositionProxy pp(&robot,0,'a');
 
   if(pp.GetAccess() == 'e') {
