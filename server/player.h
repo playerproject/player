@@ -524,11 +524,14 @@ typedef struct player_gripper_cmd
  ** begin section position
  *************************************************************************/
 
-/** [Synopsis] The {\tt position} interface is used to control a planar 
- mobile robot base. */
+/** [Synopsis] 
+The {\tt position} interface is used to control a planar 
+mobile robot base. */
 
 /** [Constants] */
-/** the various configuration subtypes */
+
+/**
+The various configuration request types. */
 #define PLAYER_POSITION_GET_GEOM_REQ          ((uint8_t)1)
 #define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
 #define PLAYER_POSITION_VELOCITY_MODE_REQ     ((uint8_t)3)
@@ -539,21 +542,22 @@ typedef struct player_gripper_cmd
 #define PLAYER_POSITION_SPEED_PROF_REQ        ((uint8_t)8)
 #define PLAYER_POSITION_SET_ODOM_REQ          ((uint8_t)9)
 
-/** [Segway RMP]: these are possible config commands.. 
-    see the status command in the RMP manual */
-#define PLAYER_POSITION_RMP_VELOCITY_SCALE	((uint8_t)51)
-#define PLAYER_POSITION_RMP_ACCEL_SCALE		((uint8_t)52)
-#define PLAYER_POSITION_RMP_TURN_SCALE		((uint8_t)53)
-#define PLAYER_POSITION_RMP_GAIN_SCHEDULE	((uint8_t)54)
-#define PLAYER_POSITION_RMP_CURRENT_LIMIT	((uint8_t)55)
-#define PLAYER_POSITION_RMP_RST_INTEGRATORS	((uint8_t)56)
+/**
+These are possible Segway RMP config commands; see the status command in 
+the RMP manual */
+#define PLAYER_POSITION_RMP_VELOCITY_SCALE      ((uint8_t)51)
+#define PLAYER_POSITION_RMP_ACCEL_SCALE         ((uint8_t)52)
+#define PLAYER_POSITION_RMP_TURN_SCALE          ((uint8_t)53)
+#define PLAYER_POSITION_RMP_GAIN_SCHEDULE       ((uint8_t)54)
+#define PLAYER_POSITION_RMP_CURRENT_LIMIT       ((uint8_t)55)
+#define PLAYER_POSITION_RMP_RST_INTEGRATORS     ((uint8_t)56)
 #define PLAYER_POSITION_RMP_SHUTDOWN            ((uint8_t)57)
 
-/** [Segway RMP]: these are used for the set reset integrators part */
-#define PLAYER_POSITION_RMP_RST_INT_RIGHT	0x01
-#define PLAYER_POSITION_RMP_RST_INT_LEFT		0x02
-#define PLAYER_POSITION_RMP_RST_INT_YAW		0x04
-#define PLAYER_POSITION_RMP_RST_INT_FOREAFT	0x08
+/** These are used for resetting the Segway RMP's integrators. */
+#define PLAYER_POSITION_RMP_RST_INT_RIGHT       0x01
+#define PLAYER_POSITION_RMP_RST_INT_LEFT        0x02
+#define PLAYER_POSITION_RMP_RST_INT_YAW         0x04
+#define PLAYER_POSITION_RMP_RST_INT_FOREAFT     0x08
 
 /** [Data] */
 /**
@@ -745,7 +749,7 @@ typedef struct player_rmp_config
  mobile robot base. */
 
 /** [Constants] */
-/** yet to be defined */
+/** Yet to be defined */
 
 /** [Data] */
 /**
@@ -755,11 +759,11 @@ typedef struct player_position3d_data
 {
   /** X, Y, and Z position, in mm */
   int32_t xpos, ypos, zpos;
-  /** Roll, pitch, and yaw, in degrees */
+  /** Roll, pitch, and yaw, in arc-seconds (1/3600 of a degree) */
   uint32_t roll, pitch, yaw;
   /** X, Y, and Z translational velocities, in mm/sec */
   int32_t xspeed, yspeed, zspeed;
-  /** Angular velocities, in degrees/sec */
+  /** Angular velocities, in arc-seconds / second */
   int32_t rollspeed, pitchspeed, yawspeed;
   /** Are the motors stalled? */
   uint8_t stall;
@@ -774,15 +778,15 @@ typedef struct player_position3d_cmd
 {
   /** X, Y, and Z position, in mm */
   int32_t xpos, ypos, zpos;
-  /** Roll, pitch, and yaw, in degrees */
-  int32_t roll, pitch, yaw;
+  /** Roll, pitch, and yaw, in arc-seconds (1/3600 of a degree) */
+  uint32_t roll, pitch, yaw;
   /** X, Y, and Z translational velocities, in mm/sec */
   int32_t xspeed, yspeed, zspeed;
-  /** Angular velocities, in degrees/sec */
+  /** Angular velocities, in arc-seconds / second */
   int32_t rollspeed, pitchspeed, yawspeed;
 } __attribute__ ((packed)) player_position3d_cmd_t;
 
-/** [Configuration: Query geometry] */
+/** [Configuration] */
 /** Yet to be defined. */
 
 /*************************************************************************
