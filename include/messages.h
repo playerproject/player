@@ -355,22 +355,28 @@ typedef struct
  * Broadcast device
  */
 
-// Data poacket
+// Broadcast command packet
 //
 typedef struct
 {
     uint16_t len;
+    uint8_t  msg[4096];
+} __attribute ((packed)) player_broadcast_cmd_t;
+
+
+// Data packet
+// Each packet may contain multiple messages.
+// Messages are concatenated in the buffer, with each message having the
+// following format.
+//   message length -- two byte unsigned int
+//   message body -- arbitrary length data
+// The list is terminated by a message with zero length.
+//
+typedef struct
+{
     uint8_t  buffer[4096];
 } __attribute ((packed)) player_broadcast_data_t;
 
-
-// Command packet
-//
-typedef struct
-{
-    uint16_t len;
-    uint8_t  buffer[4096];
-} __attribute ((packed)) player_broadcast_cmd_t;
 
 #define BROADCAST_DATA_BUFFER_SIZE ((int) sizeof(player_broadcast_data_t))
 #define BROADCAST_COMMAND_BUFFER_SIZE ((int) sizeof(player_broadcast_cmd_t))

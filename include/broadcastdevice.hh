@@ -33,6 +33,7 @@
 
 #include "lock.h"
 #include "device.h"
+#include "messages.h"
 
 class CBroadcastDevice : public CDevice
 {
@@ -66,6 +67,11 @@ class CBroadcastDevice : public CDevice
     // Lock object
     //
     private: CLock m_lock;
+
+    // Local copy of broadcast data
+    //
+    private: player_broadcast_cmd_t m_cmd;
+    private: player_broadcast_data_t m_data;
 
     // Write socket info
     //
