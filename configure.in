@@ -230,5 +230,6 @@ AC_MSG_RESULT([])
 AC_MSG_RESULT([Player will be installed in:])
 AC_MSG_RESULT([    $prefix])
 AC_MSG_RESULT([])
- 
 
+foo=bar
+foo="$foo bat"

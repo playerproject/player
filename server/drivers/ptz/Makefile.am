@@ -1,4 +1,4 @@
-noinst_LIBRARIES = @SONY_LIB@
+noinst_LIBRARIES = @SONYEVID30_LIB@
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
