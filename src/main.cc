@@ -142,7 +142,6 @@ char* sane_spec[] = { "-misc:0",
                       "-laser:0",
                       "-vision:0",
                       "-ptz:0",
-                      "-audio:0",
                       "-laserbeacon:0",
                       "-broadcast:0",
                       "-speech:0",
@@ -577,7 +576,6 @@ int main( int argc, char *argv[] )
 
   printf("** Player v%s ** ", PLAYER_VERSION);
   fflush(stdout);
-  printf("%d %d %d %d %d\n", 'r', 'w', 'a', 'c', 'e');
 
   // parse args
   for( int i = 1; i < argc; i++ ) 
