@@ -15,6 +15,13 @@
 #include "devicetable.h"
 #include "drivertable.h"
 #include "vfh_algorithm.h"
+#include "playertime.h"
+
+extern PlayerTime *GlobalTime;
+
+// HACK: these backup params should be made configurable.
+#define BACKUP_TIME 2.5
+#define BACKUP_SPEED 100
 
 /** @addtogroup drivers Drivers */
 /** @{ */
@@ -217,7 +224,7 @@ class VFH_Class : public Driver
     // Pose of robot in odometric cs (mm,mm,deg)
     double odom_pose[3];
 
-    // Stall flag
+    // Stall flag and counter
     int odom_stall;
 
     // Velocity of robot in robot cs, NOT byteswapped, just for passing
@@ -745,10 +752,14 @@ void VFH_Class::Main()
 {
   struct timespec sleeptime;
   float dist;
-  //struct timeval stime, time;
-  //int gt, ct;
-  //bool newodom,newtruth;
   double angdiff;
+  struct timeval startbackup, curr;
+  bool backingup = false;
+  double timediff;
+
+  // bookkeeping to implement hysteresis when rotating at the goal
+  bool atgoal;
+  int rotatedir;
 
   sleeptime.tv_sec = 0;
   sleeptime.tv_nsec = 1000000L;
@@ -761,6 +772,7 @@ void VFH_Class::Main()
   if(this->truth)
     this->GetTruth();
 
+  atgoal = false;
   while (true)
   {
     // Wait till we get new odometry data; this may block indefinitely
@@ -796,7 +808,6 @@ void VFH_Class::Main()
     // Write odometric data (so we emulate the underlying odometric device)
     this->PutPose();
 
-
     // Read client command
     this->GetCommand();
 
@@ -806,26 +817,33 @@ void VFH_Class::Main()
       continue;
     }
 
-    // gettimeofday(&time, 0);
-    // printf("Before VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
-
     dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
                 pow((goal_y - this->odom_pose[1]),2));
 
-    
-    /*
-    printf("VFH: goal : %d,%d,%d\n",
-           this->goal_x, this->goal_y, this->goal_t);
-    printf("VFH: pose: %f,%f,%f\n",
-           this->odom_pose[0], this->odom_pose[1], this->odom_pose[2]);
-    
-    printf("VFH: dist: %f\n", dist);
-    */
+    if(backingup)
+    {
+      GlobalTime->GetTime(&curr);
+      timediff = (curr.tv_sec + curr.tv_usec/1e6) -
+              (startbackup.tv_sec + startbackup.tv_usec/1e6);
+      if(timediff > BACKUP_TIME)
+        backingup = false;
+    }
 
-    if((dist < (this->dist_eps * 1e3)) && 
+    if(this->odom_stall || backingup)
+    {
+      this->speed = -BACKUP_SPEED;
+      this->turnrate = 0;
+      PutCommand( this->speed, this->turnrate );
+      if(this->odom_stall)
+      {
+        GlobalTime->GetTime(&startbackup);
+        backingup = true;
+      }
+      atgoal = false;
+    }
+    else if((dist < (this->dist_eps * 1e3)) && 
        (fabs(NORMALIZE(DTOR(goal_t)-DTOR(this->odom_pose[2]))) < this->ang_eps))
     {
-      //puts("VFH: goal reached");
       this->active_goal = false;
       this->speed = this->turnrate = 0;
       PutCommand( this->speed, this->turnrate );
@@ -854,34 +872,11 @@ void VFH_Class::Main()
                                  (int)ntohl(this->odom_vel_be[0]),
                                  this->speed, this->turnrate );
       PutCommand( this->speed, this->turnrate );
+      atgoal = false;
     }
     else
     {
       // At goal, stop
-      //      goal_t = 90;
-
-      /*
-      gt = goal_t % 360;
-      if (gt > 180)
-        gt -= 360;
-
-      ct = (int)rint(this->odom_pose[2]) % 360;
-      if (ct > 180)
-        ct -= 360;
-
-      if (((gt - ct) > 10) && ((gt - ct) <= 180)) {
-        speed = 0;
-        turnrate = MAX_TURNRATE;
-      } else if (((gt - ct) < -10) &&
-                 ((gt - ct) >= -180)) {
-        speed = 0;
-        turnrate = -1 * MAX_TURNRATE;
-      } else {
-        speed = 0;
-        turnrate = 0;
-      }
-      */
-
       angdiff = this->goal_t - this->odom_pose[2];
       while (angdiff > 180)
         angdiff -= 360.0;
@@ -891,7 +886,21 @@ void VFH_Class::Main()
       speed = 0;
       if(fabs(angdiff) > RTOD(this->ang_eps))
       {
-        turnrate = (int)rint((angdiff/180.0) * vfh_Algorithm->GetMaxTurnrate());
+        turnrate = (int)rint(fabs(angdiff/180.0) * vfh_Algorithm->GetMaxTurnrate());
+        // if we've just gotten to the goal, pick a direction to turn;
+        // otherwise, keep turning the way we started (to prevent
+        // oscillation)
+        if(!atgoal)
+        {
+          atgoal = true;
+          if(angdiff < 0)
+            rotatedir = -1;
+          else
+            rotatedir = 1;
+        }
+
+        turnrate *= rotatedir;
+
         if(turnrate < 0)
           turnrate = MIN(turnrate,-this->vfh_Algorithm->GetMinTurnrate());
         else

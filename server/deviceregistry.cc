@@ -74,7 +74,7 @@ void ClodBuster_Register(DriverTable* table);
 void Obot_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_ER
+#ifdef INCLUDE_ER1
 void ER_Register(DriverTable* table);
 #endif
 
@@ -517,7 +517,7 @@ register_devices()
   Obot_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_ER
+#ifdef INCLUDE_ER1
   ER_Register(driverTable);
 #endif
 
