@@ -31,7 +31,8 @@ test_SOURCES = test_broadcast.cc \
                test_fiducialfinder.cc \
        	       test_lookup.cc \
                test_audiodsp.cc \
-      	       test_localize.cc
+      	       test_localize.cc \
+      	       test_audiomixer.cc
               #test_idar.cc \
                #test_idarturret.cc
                #test_misc.cc

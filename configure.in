@@ -202,6 +202,7 @@ AC_OUTPUT(Makefile
           server/drivers/position/Makefile 
           server/drivers/audio/Makefile 
           server/drivers/audiodsp/Makefile
+          server/drivers/audiomixer/Makefile
           server/drivers/fiducial/Makefile 
           server/drivers/ptz/Makefile 
           server/drivers/laser/Makefile 

@@ -1786,6 +1786,49 @@ class AudioDSPProxy : public ClientProxy
  *****************************************************************************/
 
 /*****************************************************************************
+ ** begin section AudioMixerProxy
+ *****************************************************************************/
+
+/** The {\tt AudioMixerProxy} class controls an {\tt mixer} device.
+ */
+class AudioMixerProxy : public ClientProxy 
+{
+
+  public:
+    unsigned short masterLeft, masterRight;
+    unsigned short pcmLeft, pcmRight;
+    unsigned short lineLeft, lineRight;
+    unsigned short micLeft, micRight;
+    unsigned short iGain, oGain;
+
+    /** Constructor.
+      Leave the access field empty to start unconnected.
+     */
+    AudioMixerProxy (PlayerClient* pc, unsigned short index,
+                unsigned char access ='c')
+            : ClientProxy(pc,PLAYER_AUDIOMIXER_CODE,index,access) {}
+
+    int GetConfigure();
+
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    int SetMaster(unsigned short left, unsigned short right);
+    int SetPCM(unsigned short left, unsigned short right);
+    int SetLine(unsigned short left, unsigned short right);
+    int SetMic(unsigned short left, unsigned short right);
+    int SetIGain(unsigned short gain);
+    int SetOGain(unsigned short gain);
+
+    // Print the current data.
+    void Print ();
+};
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+
+/*****************************************************************************
  ** begin section BumperProxy
  *****************************************************************************/
 
