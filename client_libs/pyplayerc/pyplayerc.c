@@ -1,0 +1,1069 @@
+/***************************************************************************
+ *
+ * Author: Andrew H
+ * Date: 24 Aug 2001
+ * Desc: Python bindings for Player client
+ *
+ * CVS info:
+ * $Source$
+ * $Author$
+ * $Revision$
+ *
+ **************************************************************************/
+
+#include <pthread.h>
+#include "Python.h"
+#include "playerc.h"
+#include "pyplayerc.h"
+
+
+/***************************************************************************
+ * Error handling
+ **************************************************************************/
+
+static PyObject *errorob;
+
+
+/***************************************************************************
+ * Thread utilities
+ **************************************************************************/
+
+
+/* Index of our info in the TLS area of the thread
+   Needed for correct storing and restoring of the Python interpreter state
+   in multi-threaded programs.
+ */
+static pthread_key_t thread_key;
+
+
+/* Acquire lock and set python state for current thread
+ */
+void thread_acquire()
+{
+  PyThreadState *state;
+    
+  state = (PyThreadState*) pthread_getspecific(thread_key);
+  PyEval_AcquireLock();
+  PyThreadState_Swap(state);
+}
+
+
+/* Release lock and set python state to NULL
+ */
+void thread_release()
+{
+  PyThreadState *state;
+    
+  state = PyThreadState_Swap(NULL);
+  if (thread_key == 0)
+    pthread_key_create(&thread_key, NULL);
+  pthread_setspecific(thread_key, state);
+  PyEval_ReleaseLock();
+}
+
+
+/***************************************************************************
+ * Multi client
+ **************************************************************************/
+
+
+/* Python wrapper for client type */
+typedef struct
+{
+    PyObject_HEAD
+    playerc_mclient_t *mclient;
+} mclient_object_t;
+
+
+staticforward PyTypeObject mclient_type;
+staticforward PyMethodDef mclient_methods[];
+
+
+static PyObject *mclient_new(PyObject *self, PyObject *args)
+{
+    mclient_object_t *mclientob;
+
+    if (!PyArg_ParseTuple(args, ""))
+        return NULL;
+
+    mclientob = PyObject_New(mclient_object_t, &mclient_type);
+    mclientob->mclient = playerc_mclient_create();
+
+    return (PyObject*) mclientob;
+}
+
+
+static void mclient_del(PyObject *self)
+{
+    mclient_object_t *mclientob;
+
+    mclientob = (mclient_object_t*) self;
+    playerc_mclient_destroy(mclientob->mclient);
+    PyObject_Del(self);
+}
+
+
+static PyObject *mclient_getattr(PyObject *self, char *attrname)
+{
+    PyObject *result;
+    mclient_object_t *mclientob;
+
+    mclientob = (mclient_object_t*) self;
+    result = Py_FindMethod(mclient_methods, self, attrname);
+
+    return result;
+}
+
+
+/* Connect to server
+ */
+static PyObject *mclient_connect(PyObject *self, PyObject *args)
+{
+    int result;
+    mclient_object_t *mclientob;
+    mclientob = (mclient_object_t*) self;
+
+    result = playerc_mclient_connect(mclientob->mclient);
+    return PyInt_FromLong(result);
+}
+
+
+/* Disconnect from server
+ */
+static PyObject *mclient_disconnect(PyObject *self, PyObject *args)
+{
+    int result;
+    mclient_object_t *mclientob;
+    mclientob = (mclient_object_t*) self;
+
+    result = playerc_mclient_disconnect(mclientob->mclient);
+    return PyInt_FromLong(result);
+}
+
+
+/* Read and process a message
+*/
+static PyObject *mclient_read(PyObject *self, PyObject *args)
+{
+    int result;
+    double timeout;
+    mclient_object_t *mclientob;
+    mclientob = (mclient_object_t*) self;
+
+    if (!PyArg_ParseTuple(args, "d", &timeout))
+        return NULL;
+
+    thread_release();
+    result = playerc_mclient_read(mclientob->mclient, (int) (timeout * 1000));
+    thread_acquire();
+
+    if (result < 0)
+    {
+        PyErr_SetString(errorob, "");
+        return NULL;
+    }
+    
+    return PyInt_FromLong(result);
+}
+
+
+/* Assemble python mclient type
+ */
+static PyTypeObject mclient_type = 
+{
+    PyObject_HEAD_INIT(NULL)
+    0,
+    "mclient",
+    sizeof(mclient_object_t),
+    0,
+    mclient_del, /*tp_dealloc*/
+    0,          /*tp_print*/
+    mclient_getattr, /*tp_getattr*/
+    0,          /*tp_setattr*/
+    0,          /*tp_compare*/
+    0,          /*tp_repr*/
+    0,          /*tp_as_number*/
+    0,          /*tp_as_sequence*/
+    0,          /*tp_as_mapping*/
+    0,          /*tp_hash */
+};
+
+
+static PyMethodDef mclient_methods[] =
+{
+    {"connect", mclient_connect, METH_VARARGS},
+    {"disconnect", mclient_disconnect, METH_VARARGS},
+    {"read", mclient_read, METH_VARARGS},
+    {NULL, NULL}
+};
+
+
+
+/***************************************************************************
+ * Single client
+ **************************************************************************/
+
+/* Python wrapper for client type is declared in header.*/
+
+staticforward PyTypeObject client_type;
+staticforward PyMethodDef client_methods[];
+
+
+static PyObject *client_new(PyObject *self, PyObject *args)
+{
+    char *hostname;
+    int port;
+    mclient_object_t *mclientob;
+    client_object_t *clientob;
+
+    if (!PyArg_ParseTuple(args, "Osi", &mclientob, &hostname, &port))
+        return NULL;
+
+    clientob = PyObject_New(client_object_t, &client_type);
+    if ((PyObject*) mclientob == Py_None)
+        clientob->client = playerc_client_create(NULL, hostname, port);
+    else
+        clientob->client = playerc_client_create(mclientob->mclient, hostname, port);
+
+    return (PyObject*) clientob;
+}
+
+
+static void client_del(PyObject *self)
+{
+    client_object_t *clientob;
+
+    clientob = (client_object_t*) self;
+    playerc_client_destroy(clientob->client);
+    PyObject_Del(self);
+}
+
+
+static PyObject *client_getattr(PyObject *self, char *attrname)
+{
+    PyObject *result;
+    client_object_t *clientob;
+
+    clientob = (client_object_t*) self;
+
+    result = NULL;
+    if (strcmp(attrname, "host") == 0)
+        result = PyString_FromString(clientob->client->host);
+    else
+        result = Py_FindMethod(client_methods, self, attrname);
+
+    return result;
+}
+
+
+/* Connect to server
+ */
+static PyObject *client_connect(PyObject *self, PyObject *args)
+{
+  int result;
+  client_object_t *clientob;
+  clientob = (client_object_t*) self;
+
+  thread_release();
+  result = playerc_client_connect(clientob->client);
+  thread_acquire();
+  if (result < 0)
+  {
+    PyErr_SetString(errorob, "");
+    return NULL;
+  }
+  return PyInt_FromLong(result);
+}
+
+/* Disconnect from server
+ */
+static PyObject *client_disconnect(PyObject *self, PyObject *args)
+{
+  int result;
+  client_object_t *clientob;
+  clientob = (client_object_t*) self;
+
+  result = playerc_client_disconnect(clientob->client);
+  return PyInt_FromLong(result);
+}
+
+
+/* Read and process a message
+*/
+static PyObject *client_read(PyObject *self, PyObject *args)
+{
+  int i;
+  void *result;
+  PyObject *resultob;
+  client_object_t *clientob;
+  clientob = (client_object_t*) self;
+
+  thread_release();
+  result = playerc_client_read(clientob->client);
+  thread_acquire();
+
+  if (result == NULL)
+  {
+    Py_INCREF(Py_None);
+    return Py_None;
+  }
+  else
+  {
+    // See if it was a synch packet
+    if (result == clientob->client)
+    {
+      resultob = (PyObject*) clientob;
+      Py_INCREF(resultob);
+      return resultob;
+    }
+    
+    // Go through the list of devices and work our which one we got.
+    for (i = 0; i < clientob->client->device_count; i++)
+    {
+      if (clientob->client->device[i] == result)
+      {
+        resultob = (PyObject*) clientob->client->device[i]->user_data;
+        Py_INCREF(resultob);
+        return resultob;
+      }
+    }
+    
+    // Should never get here!
+    PyErr_SetString(errorob, "internal error: device not found");
+    return NULL;
+  }
+}
+
+
+/* Assemble python client type
+ */
+static PyTypeObject client_type = 
+{
+  PyObject_HEAD_INIT(NULL)
+  0,
+  "client",
+  sizeof(client_object_t),
+  0,
+  client_del, /*tp_dealloc*/
+  0,          /*tp_print*/
+  client_getattr, /*tp_getattr*/
+  0,          /*tp_setattr*/
+  0,          /*tp_compare*/
+  0,          /*tp_repr*/
+  0,          /*tp_as_number*/
+  0,          /*tp_as_sequence*/
+  0,          /*tp_as_mapping*/
+  0,          /*tp_hash */
+};
+
+
+static PyMethodDef client_methods[] =
+{
+    {"connect", client_connect, METH_VARARGS},
+    {"disconnect", client_disconnect, METH_VARARGS},
+    {"read", client_read, METH_VARARGS},
+    {NULL, NULL}
+};
+
+
+
+
+
+/***************************************************************************
+ * lbd device
+ **************************************************************************/
+
+
+/* Python wrapper for lbd type */
+typedef struct
+{
+    PyObject_HEAD
+    playerc_client_t *client;
+    playerc_lbd_t *lbd;
+    PyObject *beacons;
+} lbd_object_t;
+
+/* Local declarations */
+static void lbd_onread(lbd_object_t *lbdob);
+
+staticforward PyTypeObject lbd_type;
+staticforward PyMethodDef lbd_methods[];
+
+ 
+static PyObject *lbd_new(PyObject *self, PyObject *args)
+{
+    client_object_t *clientob;
+    lbd_object_t *lbdob;
+    int index;
+    char access;
+
+    if (!PyArg_ParseTuple(args, "Oic", &clientob, &index, &access))
+        return NULL;
+
+    lbdob = PyObject_New(lbd_object_t, &lbd_type);
+    lbdob->client = clientob->client;
+    lbdob->lbd = playerc_lbd_create(clientob->client, index);
+    lbdob->beacons = PyList_New(0);
+    
+    /* Add callback for post-processing incoming data */
+    playerc_client_addcallback(clientob->client,
+                               (playerc_device_t*) lbdob->lbd,
+                               (playerc_callback_fn_t) lbd_onread,
+                               (void*) lbdob);
+    
+    return (PyObject*) lbdob;
+}
+
+
+static void lbd_del(PyObject *self)
+{
+    lbd_object_t *lbdob;
+    lbdob = (lbd_object_t*) self;
+
+    playerc_client_delcallback(lbdob->client,
+                               (playerc_device_t*) lbdob->lbd,
+                               (playerc_callback_fn_t) lbd_onread,
+                               (void*) lbdob);    
+    playerc_lbd_destroy(lbdob->lbd);
+    PyObject_Del(self);
+}
+
+
+static PyObject *lbd_getattr(PyObject *self, char *attrname)
+{
+    PyObject *result;
+    lbd_object_t *lbdob;
+
+    lbdob = (lbd_object_t*) self;
+
+    if (strcmp(attrname, "datatime") == 0)
+    {
+        result = PyFloat_FromDouble(lbdob->lbd->info.datatime);
+    }
+    else if (strcmp(attrname, "beacons") == 0)
+    {
+        Py_INCREF(lbdob->beacons);
+        result = lbdob->beacons;
+    }
+    else
+        result = Py_FindMethod(lbd_methods, self, attrname);
+
+    return result;
+}
+
+
+/* Get string representation (type function) */
+static PyObject *lbd_str(PyObject *self)
+{
+  int i;
+  char s[64];
+  char str[8192];
+  lbd_object_t *lbdob;
+  lbdob = (lbd_object_t*) self;
+
+  snprintf(str, sizeof(str),
+           "lbd %02d %013.3f ",
+           lbdob->lbd->info.index,
+           lbdob->lbd->info.datatime);
+
+  for (i = 0; i < lbdob->lbd->beacon_count; i++)
+  {
+    snprintf(s, sizeof(s), "%03d %05.3f %+05.3f %+05.3f ",
+             lbdob->lbd->beacons[i].id,
+             lbdob->lbd->beacons[i].range,
+             lbdob->lbd->beacons[i].bearing,
+             lbdob->lbd->beacons[i].orient);
+    assert(strlen(str) + strlen(s) < sizeof(str));
+    strcat(str, s);
+  }
+  return PyString_FromString(str);
+}
+
+
+/* Callback for post-processing incoming data */
+static void lbd_onread(lbd_object_t *lbdob)
+{
+    int i;
+    PyObject *tuple;
+
+    thread_acquire();
+    
+    Py_DECREF(lbdob->beacons);
+    lbdob->beacons = PyList_New(lbdob->lbd->beacon_count);
+    
+    for (i = 0; i < lbdob->lbd->beacon_count; i++)
+    {
+        tuple = PyTuple_New(4);
+        PyTuple_SetItem(tuple, 0, PyInt_FromLong(lbdob->lbd->beacons[i].id));
+        PyTuple_SetItem(tuple, 1, PyFloat_FromDouble(lbdob->lbd->beacons[i].range));
+        PyTuple_SetItem(tuple, 2, PyFloat_FromDouble(lbdob->lbd->beacons[i].bearing));
+        PyTuple_SetItem(tuple, 3, PyFloat_FromDouble(lbdob->lbd->beacons[i].orient));
+        PyList_SetItem(lbdob->beacons, i, tuple);
+    }
+    
+    thread_release();
+}
+
+
+/* Configure lbd
+   (bit_count, bit_width)
+*/
+static PyObject *lbd_configure(PyObject *self, PyObject *args)
+{
+    int bit_count;
+    double bit_width;
+    lbd_object_t *lbdob;
+    
+    if (!PyArg_ParseTuple(args, "id", &bit_count, &bit_width))
+        return NULL;
+    lbdob = (lbd_object_t*) self;
+
+    return PyInt_FromLong(playerc_lbd_set_config(lbdob->lbd,
+                                                 bit_count, bit_width));
+}
+
+
+/* Assemble python lbd type
+ */
+static PyTypeObject lbd_type = 
+{
+    PyObject_HEAD_INIT(NULL)
+    0,
+    "lbd",
+    sizeof(lbd_object_t),
+    0,
+    lbd_del, /*tp_dealloc*/
+    0,          /*tp_print*/
+    lbd_getattr, /*tp_getattr*/
+    0,          /*tp_setattr*/
+    0,          /*tp_compare*/
+    0,          /*tp_repr*/
+    0,          /*tp_as_number*/
+    0,          /*tp_as_sequence*/
+    0,          /*tp_as_mapping*/
+    0,          /*tp_hash */
+    0,          /*tp_call*/
+    lbd_str,  /*tp_string*/
+};
+
+
+static PyMethodDef lbd_methods[] =
+{
+    {"configure", lbd_configure, METH_VARARGS},
+    {NULL, NULL}
+};
+
+
+/***************************************************************************
+ * gps device
+ **************************************************************************/
+
+
+/* Python wrapper for gps type */
+typedef struct
+{
+    PyObject_HEAD
+    playerc_client_t *client;
+    playerc_gps_t *gps;
+    PyObject *px, *py, *pa;
+} gps_object_t;
+
+/* Local declarations */
+static void gps_onread(gps_object_t *gpsob);
+
+staticforward PyTypeObject gps_type;
+staticforward PyMethodDef gps_methods[];
+
+
+static PyObject *gps_new(PyObject *self, PyObject *args)
+{
+    client_object_t *clientob;
+    gps_object_t *gpsob;
+    int index;
+    char access;
+
+    if (!PyArg_ParseTuple(args, "Oic", &clientob, &index, &access))
+        return NULL;
+
+    gpsob = PyObject_New(gps_object_t, &gps_type);
+    gpsob->client = clientob->client;
+    gpsob->gps = playerc_gps_create(clientob->client, index);
+    gpsob->px = PyFloat_FromDouble(0);
+    gpsob->py = PyFloat_FromDouble(0);
+    gpsob->pa = PyFloat_FromDouble(0);
+
+    /* Add callback for post-processing incoming data */
+    playerc_client_addcallback(clientob->client, (playerc_device_t*) gpsob->gps,
+                               (playerc_callback_fn_t) gps_onread,
+                               (void*) gpsob);
+    
+    return (PyObject*) gpsob;
+}
+
+
+static void gps_del(PyObject *self)
+{
+    gps_object_t *gpsob;
+    gpsob = (gps_object_t*) self;
+
+    playerc_client_delcallback(gpsob->client, (playerc_device_t*) gpsob->gps,
+                               (playerc_callback_fn_t) gps_onread,
+                               (void*) gpsob);    
+    Py_DECREF(gpsob->px);
+    Py_DECREF(gpsob->py);
+    Py_DECREF(gpsob->pa);
+    playerc_gps_destroy(gpsob->gps);
+    PyObject_Del(self);
+}
+
+
+static PyObject *gps_getattr(PyObject *self, char *attrname)
+{
+    PyObject *result;
+    gps_object_t *gpsob;
+
+    gpsob = (gps_object_t*) self;
+
+    result = NULL;
+    if (strcmp(attrname, "datatime") == 0)
+    {
+        result = PyFloat_FromDouble(gpsob->gps->info.datatime);
+    }
+    else if (strcmp(attrname, "px") == 0)
+    {
+        Py_INCREF(gpsob->px);
+        result = gpsob->px;
+    }
+    else if (strcmp(attrname, "py") == 0)
+    {
+        Py_INCREF(gpsob->py);
+        result = gpsob->py;
+    }
+    else if (strcmp(attrname, "pa") == 0)
+    {
+        Py_INCREF(gpsob->pa);
+        result = gpsob->pa;
+    }
+    else
+        result = Py_FindMethod(gps_methods, self, attrname);
+
+    return result;
+}
+
+
+/* Callback for post-processing incoming data */
+static void gps_onread(gps_object_t *gpsob)
+{
+    thread_acquire();
+    
+    Py_DECREF(gpsob->px);
+    Py_DECREF(gpsob->py);
+    Py_DECREF(gpsob->pa);
+
+    gpsob->px = PyFloat_FromDouble(gpsob->gps->px);
+    gpsob->py = PyFloat_FromDouble(gpsob->gps->py);
+    gpsob->pa = PyFloat_FromDouble(gpsob->gps->pa);    
+
+    thread_release();
+}
+
+
+/* Assemble python gps type
+ */
+static PyTypeObject gps_type = 
+{
+    PyObject_HEAD_INIT(NULL)
+    0,
+    "gps",
+    sizeof(gps_object_t),
+    0,
+    gps_del, /*tp_dealloc*/
+    0,          /*tp_print*/
+    gps_getattr, /*tp_getattr*/
+    0,          /*tp_setattr*/
+    0,          /*tp_compare*/
+    0,          /*tp_repr*/
+    0,          /*tp_as_number*/
+    0,          /*tp_as_sequence*/
+    0,          /*tp_as_mapping*/
+    0,          /*tp_hash */
+};
+
+
+static PyMethodDef gps_methods[] =
+{
+    {NULL, NULL}
+};
+
+
+/***************************************************************************
+ * bps device
+ **************************************************************************/
+
+
+/* Python wrapper for bps type */
+typedef struct
+{
+    PyObject_HEAD
+    playerc_client_t *client;
+    playerc_bps_t *bps;
+    PyObject *px, *py, *pa;
+    PyObject *err;
+} bps_object_t;
+
+/* Local declarations */
+static void bps_onread(bps_object_t *bpsob);
+
+staticforward PyTypeObject bps_type;
+staticforward PyMethodDef bps_methods[];
+
+
+static PyObject *bps_new(PyObject *self, PyObject *args)
+{
+    client_object_t *clientob;
+    bps_object_t *bpsob;
+    int index;
+    char access;
+
+    if (!PyArg_ParseTuple(args, "Oic", &clientob, &index, &access))
+        return NULL;
+
+    bpsob = PyObject_New(bps_object_t, &bps_type);
+    bpsob->client = clientob->client;
+    bpsob->bps = playerc_bps_create(clientob->client, index);
+    bpsob->px = PyFloat_FromDouble(0);
+    bpsob->py = PyFloat_FromDouble(0);
+    bpsob->pa = PyFloat_FromDouble(0);
+    bpsob->err = PyFloat_FromDouble(0);
+
+    /* Add callback for post-processing incoming data */
+    playerc_client_addcallback(clientob->client, (playerc_device_t*) bpsob->bps,
+                               (playerc_callback_fn_t) bps_onread,
+                               (void*) bpsob);
+    
+    return (PyObject*) bpsob;
+}
+
+
+static void bps_del(PyObject *self)
+{
+    bps_object_t *bpsob;
+    bpsob = (bps_object_t*) self;
+
+    playerc_client_delcallback(bpsob->client, (playerc_device_t*) bpsob->bps,
+                               (playerc_callback_fn_t) bps_onread,
+                               (void*) bpsob);    
+    Py_DECREF(bpsob->px);
+    Py_DECREF(bpsob->py);
+    Py_DECREF(bpsob->pa);
+    Py_DECREF(bpsob->err);
+    playerc_bps_destroy(bpsob->bps);
+    PyObject_Del(self);
+}
+
+
+static PyObject *bps_getattr(PyObject *self, char *attrname)
+{
+    PyObject *result;
+    bps_object_t *bpsob;
+
+    bpsob = (bps_object_t*) self;
+
+    result = NULL;
+    if (strcmp(attrname, "px") == 0)
+    {
+        Py_INCREF(bpsob->px);
+        result = bpsob->px;
+    }
+    else if (strcmp(attrname, "py") == 0)
+    {
+        Py_INCREF(bpsob->py);
+        result = bpsob->py;
+    }
+    else if (strcmp(attrname, "pa") == 0)
+    {
+        Py_INCREF(bpsob->pa);
+        result = bpsob->pa;
+    }
+    else if (strcmp(attrname, "err") == 0)
+    {
+        Py_INCREF(bpsob->err);
+        result = bpsob->err;
+    }
+    else
+        result = Py_FindMethod(bps_methods, self, attrname);
+
+    return result;
+}
+
+
+/* Callback for post-processing incoming data */
+static void bps_onread(bps_object_t *bpsob)
+{
+    thread_acquire();
+    
+    Py_DECREF(bpsob->px);
+    Py_DECREF(bpsob->py);
+    Py_DECREF(bpsob->pa);
+    Py_DECREF(bpsob->err);
+
+    bpsob->px = PyFloat_FromDouble(bpsob->bps->px);
+    bpsob->py = PyFloat_FromDouble(bpsob->bps->py);
+    bpsob->pa = PyFloat_FromDouble(bpsob->bps->pa);    
+    bpsob->err = PyFloat_FromDouble(bpsob->bps->err);
+    
+    thread_release();
+}
+
+
+/* Set the beacon positions
+   (id, (px, py, pa), (ux, uy, ua))
+ */
+static PyObject *bps_setbeacon(PyObject *self, PyObject *args)
+{
+    bps_object_t *bpsob;
+    int id;
+    double px, py, pa;
+    double ux, uy, ua;
+
+    bpsob = (bps_object_t*) self;
+    if (!PyArg_ParseTuple(args, "i(ddd)(ddd)", &id, &px, &py, &pa, &ux, &uy, &ua))
+        return NULL;
+
+    return PyInt_FromLong(playerc_bps_set_beacon(bpsob->bps, id, px, py, pa, ux, uy, ua));
+}
+
+
+/* Assemble python bps type
+ */
+static PyTypeObject bps_type = 
+{
+    PyObject_HEAD_INIT(NULL)
+    0,
+    "bps",
+    sizeof(bps_object_t),
+    0,
+    bps_del, /*tp_dealloc*/
+    0,          /*tp_print*/
+    bps_getattr, /*tp_getattr*/
+    0,          /*tp_setattr*/
+    0,          /*tp_compare*/
+    0,          /*tp_repr*/
+    0,          /*tp_as_number*/
+    0,          /*tp_as_sequence*/
+    0,          /*tp_as_mapping*/
+    0,          /*tp_hash */
+};
+
+
+static PyMethodDef bps_methods[] =
+{
+    {"setbeacon", bps_setbeacon, METH_VARARGS},
+    {NULL, NULL}
+};
+
+
+
+/***************************************************************************
+ * broadcast device
+ **************************************************************************/
+
+
+/* Python wrapper for broadcast type */
+typedef struct
+{
+    PyObject_HEAD
+    playerc_client_t *client;
+    playerc_broadcast_t *broadcast;
+    PyObject *px, *py, *pa;
+} broadcast_object_t;
+
+staticforward PyTypeObject broadcast_type;
+staticforward PyMethodDef broadcast_methods[];
+
+
+static PyObject *broadcast_new(PyObject *self, PyObject *args)
+{
+    client_object_t *clientob;
+    broadcast_object_t *broadcastob;
+    int index;
+    char access;
+
+    if (!PyArg_ParseTuple(args, "Oic", &clientob, &index, &access))
+        return NULL;
+
+    broadcastob = PyObject_New(broadcast_object_t, &broadcast_type);
+    broadcastob->client = clientob->client;
+    broadcastob->broadcast = playerc_broadcast_create(clientob->client, index);
+
+    return (PyObject*) broadcastob;
+}
+
+
+static void broadcast_del(PyObject *self)
+{
+    broadcast_object_t *broadcastob;
+    broadcastob = (broadcast_object_t*) self;
+
+    playerc_broadcast_destroy(broadcastob->broadcast);
+    PyObject_Del(self);
+}
+
+
+static PyObject *broadcast_getattr(PyObject *self, char *attrname)
+{
+    PyObject *result;
+    broadcast_object_t *broadcastob;
+
+    broadcastob = (broadcast_object_t*) self;
+
+    result = NULL;
+    if (strcmp(attrname, "datatime") == 0)
+        result = PyFloat_FromDouble(broadcastob->broadcast->info.datatime);
+    else
+        result = Py_FindMethod(broadcast_methods, self, attrname);
+
+    return result;
+}
+
+
+/* Write a message
+   Args: string
+   Returns: none
+*/
+static PyObject *broadcast_write(PyObject *self, PyObject *args)
+{
+    broadcast_object_t *broadcastob;
+    char *msg;
+    
+    if (!PyArg_ParseTuple(args, "s", &msg))
+        return NULL;
+    broadcastob = (broadcast_object_t*) self;
+
+    thread_release();
+    playerc_broadcast_send(broadcastob->broadcast, msg, strlen(msg));
+    thread_acquire();
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+
+/* Read a message
+   Args: none
+   Returns: message as a string
+*/
+static PyObject *broadcast_read(PyObject *self, PyObject *args)
+{
+    broadcast_object_t *broadcastob;
+    int len;
+    char msg[1024];
+    
+    if (!PyArg_ParseTuple(args, ""))
+        return NULL;
+    broadcastob = (broadcast_object_t*) self;
+
+    thread_release();
+    len = playerc_broadcast_recv(broadcastob->broadcast, msg, sizeof(msg));
+    thread_acquire();
+
+    if (len <= 0)
+    {
+      Py_INCREF(Py_None);
+      return Py_None;
+    }
+    return PyString_FromStringAndSize(msg, len);
+}
+
+
+/* Assemble python broadcast type
+ */
+static PyTypeObject broadcast_type = 
+{
+    PyObject_HEAD_INIT(NULL)
+    0,
+    "broadcast",
+    sizeof(broadcast_object_t),
+    0,
+    broadcast_del, /*tp_dealloc*/
+    0,          /*tp_print*/
+    broadcast_getattr, /*tp_getattr*/
+    0,          /*tp_setattr*/
+    0,          /*tp_compare*/
+    0,          /*tp_repr*/
+    0,          /*tp_as_number*/
+    0,          /*tp_as_sequence*/
+    0,          /*tp_as_mapping*/
+    0,          /*tp_hash */
+};
+
+
+static PyMethodDef broadcast_methods[] =
+{
+    {"read", broadcast_read, METH_VARARGS},
+    {"write", broadcast_write, METH_VARARGS},
+    {NULL, NULL}
+};
+
+
+
+/***************************************************************************
+ * module level stuff
+ **************************************************************************/
+
+extern PyTypeObject laser_type;
+extern PyObject *laser_new(PyObject *self, PyObject *args);
+
+extern PyTypeObject position_type;
+extern PyObject *position_new(PyObject *self, PyObject *args);
+
+extern PyTypeObject ptz_type;
+extern PyObject *ptz_new(PyObject *self, PyObject *args);
+
+extern PyTypeObject vision_type;
+extern PyObject *vision_new(PyObject *self, PyObject *args);
+
+
+static PyMethodDef module_methods[] =
+{
+  {"mclient", mclient_new, METH_VARARGS},
+  {"client", client_new, METH_VARARGS},
+  {"laser", laser_new, METH_VARARGS},
+  {"position", position_new, METH_VARARGS},
+  {"ptz", ptz_new, METH_VARARGS},
+  {"vision", vision_new, METH_VARARGS},
+  {"lbd", lbd_new, METH_VARARGS},
+  {"gps", gps_new, METH_VARARGS},
+  {"bps", bps_new, METH_VARARGS},
+  {"broadcast", broadcast_new, METH_VARARGS},
+  {NULL, NULL}
+};
+
+
+void initplayerc(void)
+{
+  PyObject *moduleob;
+    
+  /* Finish initialization of type objects here */
+  mclient_type.ob_type = &PyType_Type;
+  client_type.ob_type = &PyType_Type;
+  laser_type.ob_type = &PyType_Type;
+  position_type.ob_type = &PyType_Type;
+  ptz_type.ob_type = &PyType_Type;
+  vision_type.ob_type = &PyType_Type;
+  lbd_type.ob_type = &PyType_Type;
+  gps_type.ob_type = &PyType_Type;
+  bps_type.ob_type = &PyType_Type;
+    
+  moduleob = Py_InitModule("playerc", module_methods);
+
+  /* Add out exception */
+  errorob = PyErr_NewException("playerc.error", NULL, NULL);
+  PyDict_SetItemString(PyModule_GetDict(moduleob), "error", errorob);
+
+  /* Make sure an interpreter lock object is created, since
+     we will may try to release it at some point.
+  */
+  PyEval_InitThreads();
+}
+
