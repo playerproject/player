@@ -99,10 +99,10 @@ int playerc_lbd_set_config(playerc_lbd_t *device,
   player_laserbeacon_config_t config;
 
   // Get the current device configuration.
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_GETCONFIG;
+  config.subtype = PLAYER_LASERBEACON_GET_CONFIG;
   len = playerc_client_request(device->info.client, &device->info,
-                               (char*) &config, sizeof(config),
-                               (char*) &config, sizeof(config));
+                               &config, sizeof(config.subtype),
+                               &config, sizeof(config));
   if (len < 0)
     return -1;
   if (len != sizeof(config))
@@ -112,19 +112,16 @@ int playerc_lbd_set_config(playerc_lbd_t *device,
   }
 
   // Change the bit size and the number of bits
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETCONFIG;
+  config.subtype = PLAYER_LASERBEACON_SET_CONFIG;
   config.bit_count = bit_count;
   config.bit_size = htons(bit_width * 1000);
   len = playerc_client_request(device->info.client, &device->info,
-                               (char*) &config, sizeof(config),
-                               (char*) &config, sizeof(config));
+                               &config, sizeof(config), &config, sizeof(config));
   if (len < 0)
     return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
+
+  // TODO: check for a NACK
+
   return 0;
 }
 
@@ -137,10 +134,9 @@ int playerc_lbd_get_config(playerc_lbd_t *device,
   player_laserbeacon_config_t config;
 
   // Get the current device configuration.
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_GETCONFIG;
+  config.subtype = PLAYER_LASERBEACON_GET_CONFIG;
   len = playerc_client_request(device->info.client, &device->info,
-                               (char*) &config, sizeof(config.subtype),
-                               (char*) &config, sizeof(config));
+                               &config, sizeof(config.subtype), &config, sizeof(config));
   if (len < 0)
     return -1;
   if (len != sizeof(config))

@@ -64,93 +64,90 @@ struct CBpsObs;
 // The bps device class
 class CBpsDevice : public CDevice
 {
-    // Init function
-  public:
-    static CDevice* Init(int argc, char** argv)
+  // Init function
+  public: static CDevice* Init(int argc, char** argv)
     {
       return((CDevice*)(new CBpsDevice(argc,argv)));
     }
 
-    // Constructor
-    public: CBpsDevice(int argc, char** argv);
+  // Constructor
+  public: CBpsDevice(int argc, char** argv);
 
-    // Setup/shutdown routines
-    public: virtual int Setup();
-    public: virtual int Shutdown();
+  // Setup/shutdown routines
+  public: virtual int Setup();
+  public: virtual int Shutdown();
 
-    // Device thread
-    public: virtual void Main();
+  // Device thread
+  public: virtual void Main();
     
-    // Client interface
-    public: virtual void PutData(unsigned char *, size_t maxsize,
-                                 uint32_t timestamp_sec, 
-                                 uint32_t timestamp_usec);
-    public: virtual int PutConfig(void *client, void *data, size_t len);
+  // Client interface
+  public: virtual void PutData(unsigned char *, size_t maxsize,
+                               uint32_t timestamp_sec, uint32_t timestamp_usec);
 
-    // Estimateion functions
-    private: void ProcessOdometry(double ox, double oy, double oa);
-    private: void ProcessBeacon(int id, double r, double b, double o);
-    private: double UpdateEstimate();
-    private: double ComputeForce(CBpsObs *obs);
-    private: CBpsFrame *AllocFrame();
-    private: CBpsObs *AllocObs(CBpsFrame *a_frame, CBpsFrame *b_frame);
-    private: CBpsFrame *CreateFrame();
-    private: void DestroyFrame(CBpsFrame *frame);
-    private: CBpsObs *CreateObs();
-    private: void DestroyObs(CBpsObs *obs);
+  // Update the device configuration
+  private: int UpdateConfig();
+    
+  // Estimateion functions
+  private: void ProcessOdometry(double ox, double oy, double oa);
+  private: void ProcessBeacon(int id, double r, double b, double o);
+  private: double UpdateEstimate();
+  private: double ComputeForce(CBpsObs *obs);
+  private: CBpsFrame *AllocFrame();
+  private: CBpsObs *AllocObs(CBpsFrame *a_frame, CBpsFrame *b_frame);
+  private: CBpsFrame *CreateFrame();
+  private: void DestroyFrame(CBpsFrame *frame);
+  private: CBpsObs *CreateObs();
+  private: void DestroyObs(CBpsObs *obs);
 
 #ifdef INCLUDE_SELFTEST
-    // Self-test functions
-    private: void Test(const char *filename);
-    private: void Dump();
-    private: FILE *dumpfile;
+  // Self-test functions
+  private: void Test(const char *filename);
+  private: void Dump();
+  private: FILE *dumpfile;
 #endif
       
-    // BPG
-    private: double err;
+  // BPG
+  private: double err;
 
-    // Our index
-    private: uint16_t index;
+  // Our index
+  private: uint16_t index;
     
-    // Pointer to beacon detector to get data from
-    private: CDevice *position;   
-    private: CDevice *laserbeacon;
+  // Pointer to beacon detector to get data from
+  private: CDevice *position;   
+  private: CDevice *laserbeacon;
 
-    // Timestamps
-    private: uint32_t position_sec, position_usec;
-    private: uint32_t beacon_sec, beacon_usec;
+  // Timestamps
+  private: uint32_t position_sec, position_usec;
+  private: uint32_t beacon_sec, beacon_usec;
 
-    // Gain term
-    private: double gain;
+  // Gain term
+  private: double gain;
     
-    // Pose of laser relative to robot
-    private: double laser_px, laser_py, laser_pa;
+  // Pose of laser relative to robot
+  private: double laser_px, laser_py, laser_pa;
     
-    // List of true beacon poses
-    private: struct
-    {
-        bool isset;
-        double px, py, pa;
-        double ux, uy, ua;
-    } beacon[256];
+  // List of true beacon poses
+  private: struct
+  {
+    bool isset;
+    double px, py, pa;
+    double ux, uy, ua;
+  } beacons[256];
 
-    // Limits
-    private: int max_frames, max_obs;
+  // Limits
+  private: int max_frames, max_obs;
     
-    // Frame list
-    private: int frame_count;
-    private: CBpsFrame* frames[64];
-    private: int obs_count;
-    private: CBpsObs* obs[256];
+  // Frame list
+  private: int frame_count;
+  private: CBpsFrame* frames[64];
+  private: int obs_count;
+  private: CBpsObs* obs[256];
 
-    // Current frame
-    private: CBpsFrame *current;
+  // Current frame
+  private: CBpsFrame *current;
 
-    // Current odometric pose
-    private: double odo_px, odo_py, odo_pa;
-
-    // Current bps data
-    //private: player_bps_data_t data;
+  // Current odometric pose
+  private: double odo_px, odo_py, odo_pa;
 };
 
 

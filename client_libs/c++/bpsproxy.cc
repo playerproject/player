@@ -38,9 +38,9 @@ int BpsProxy::AddBeacon(char id, int px, int py, int pa)
   if(!client)
     return(-1);
 
-  player_bps_setbeacon_t req;
+  player_bps_beacon_t req;
 
-  req.subtype = PLAYER_BPS_SUBTYPE_SETBEACON;
+  req.subtype = PLAYER_BPS_SET_BEACON;
   req.id = id;
   req.px = htonl(px);
   req.py = htonl(py);
@@ -50,7 +50,7 @@ int BpsProxy::AddBeacon(char id, int px, int py, int pa)
   req.ua = 0;
 
   return(client->Request(PLAYER_BPS_CODE,index,(const char*)&req,
-                         sizeof(player_bps_setbeacon_t)));
+                         sizeof(player_bps_beacon_t)));
 }
 
 void BpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
