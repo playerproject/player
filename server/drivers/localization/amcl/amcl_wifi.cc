@@ -33,6 +33,7 @@
 
 #include "amcl.h"
 
+#if 0
 
 ////////////////////////////////////////////////////////////////////////////////
 // Load wifi settings
@@ -174,6 +175,8 @@ bool AdaptiveMCL::UpdateWifiModel(amcl_sensor_data_t *data)
 
   return true;
 }
+
+#endif
 
 #ifdef INCLUDE_RTKGUI
 

@@ -51,12 +51,33 @@
 #include <mobilityactuator_i.h>
 #endif // USE_MOBILITY
 
+/*************************************************************************/
+/*
+ * RWI drivers
+ *
+ * All RWI devices use the same struct for sending config commands.
+ * The request numbers are found near the devices to which they
+ * pertain.
+ *
+ * TODO: this struct should be renamed in an interface-specific way and moved
+ *       up into the section(s) for which is pertains.  also, request type
+ *       codes should be claimed for each one (requests are now part of the
+ *       device interface)
+ */
+
+typedef struct player_rwi_config
+{
+  uint8_t   request;
+  uint8_t   value;
+} __PACKED__ player_rwi_config_t;
+/*************************************************************************/
+
 class CRWIDevice : public Driver  {
 
 public:
-	CRWIDevice (char* interface, ConfigFile* cf, int section,
-	            size_t datasize, size_t commandsize,
-	            int reqqueuelen, int repqueuelen);
+	CRWIDevice ( ConfigFile* cf, int section,
+                       size_t datasize, size_t commandsize,
+                       int reqqueuelen, int repqueuelen);
 	~CRWIDevice ();
 		
 protected:

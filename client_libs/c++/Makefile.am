@@ -15,11 +15,8 @@ libplayerclient_a_DEPENDENCIES = $(top_builddir)/client_libs/c/playercclient.o  
 
 libplayerclient_a_SOURCES =   commsproxy.cc \
                               clientproxy.cc \
-                              descartesproxy.cc \
                               gpsproxy.cc \
                               gripperproxy.cc \
-                              idarproxy.cc \
-                              idarturretproxy.cc \
                               fiducialproxy.cc \
                               laserproxy.cc \
                               playerclient.cc \
@@ -53,13 +50,5 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               plannerproxy.cc \
                               mapproxy.cc \
                               energyproxy.cc
-                              #bpsproxy.cc
-                              #bpsproxy.h
 
 include_HEADERS = playerclient.h playermcomtypes.h
-
-# REMOVE; docs are no longer built in the distribution
-#dist-hook:
-#	mkdir -p $(top_distdir)/doc
-#	cd $(srcdir)/doc && make
-#	cp -p $(srcdir)/doc/cppclient.ps $(top_distdir)/doc

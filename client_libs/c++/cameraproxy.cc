@@ -66,7 +66,7 @@ CameraProxy::~CameraProxy()
 
 void CameraProxy::FillData( player_msghdr_t hdr, const char *buffer)
 {
-  int32_t size;
+  size_t size;
 
   size = sizeof(player_camera_data_t) -
          sizeof(uint8_t[PLAYER_CAMERA_IMAGE_SIZE]) +

@@ -46,6 +46,24 @@
  *
  * a pure C client
  */
+
+/** @addtogroup clientlibs Client Libraries */
+/** @{ */
+/** @defgroup player_clientlib_c C client library
+
+Included with Player is a simple, no-frills client interface library
+written in ANSI C (@p client_libs/c).  This client is intentionally
+primitive and most users will find it inconvenient for writing anything
+more that the simplest control program.  Rather than direct use, the C
+client should be considered the reference implementation of a Player
+client library and should be consulted for networking details when
+writing new clients in other languages (the C client can also be used
+directly as a low-level substrate for other clients; the C++ client is
+implemented in this way).  In the file @p playercclient.c are defined
+the 5 device-neutral functions necessary in any client.
+
+*/
+
 #ifndef PLAYERCCLIENT_H
 #define PLAYERCCLIENT_H
 

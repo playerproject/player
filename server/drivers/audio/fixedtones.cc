@@ -32,7 +32,7 @@ in the frequency domain are determined.  The fixedtones driver can also
 produce fixed-tone sounds of given frequency, amplitude, and duration.
 
 This driver is not widely used and may not function properly.  You might
-want to try the @ref player_driver_audio driver instead.
+want to try the @ref player_driver_acoustics driver instead.
 
 @par Compile-time dependencies
 

@@ -88,6 +88,7 @@ Richard Vaughan, Pawel Zebrowski
 #include <drivertable.h>
 #include <devicetable.h>
 #include "error.h"
+#include "nomad.h"
 
 class NomadSonar:public Driver 
 {
@@ -216,14 +217,14 @@ void NomadSonar::Update()
 		break;
 	      }
 	    
-	    double interval = (M_PI*2.0)/NOMAD_SONAR_COUNT;
+	    double interval = (M_PI*2.0)/PLAYER_NOMAD_SONAR_COUNT;
 	    double radius = NOMAD_RADIUS_MM;
 	    
 	    player_sonar_geom_t geom;
 	    memset(&geom,0,sizeof(geom));
 	    geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-	    geom.pose_count = htons((uint16_t)NOMAD_SONAR_COUNT);
-	    for (int i = 0; i < NOMAD_SONAR_COUNT; i++)
+	    geom.pose_count = htons((uint16_t)PLAYER_NOMAD_SONAR_COUNT);
+	    for (int i = 0; i < PLAYER_NOMAD_SONAR_COUNT; i++)
 	      {
 		double angle = interval * i;
 		geom.poses[i][0] = htons((int16_t)rint(radius*cos(angle)));
@@ -270,11 +271,11 @@ NomadSonar::Main()
       player_sonar_data_t player_data;
       memset(&player_data,0,sizeof(player_data));
       
-      player_data.range_count = ntohs((uint16_t)NOMAD_SONAR_COUNT);
+      player_data.range_count = ntohs((uint16_t)PLAYER_NOMAD_SONAR_COUNT);
   
       memcpy( &player_data.ranges, 
 	      &nomad_data.sonar, 
-	      NOMAD_SONAR_COUNT * sizeof(uint16_t) );
+	      PLAYER_NOMAD_SONAR_COUNT * sizeof(uint16_t) );
       
       PutData((void*)&player_data, sizeof(player_data), NULL);
     }

@@ -193,7 +193,7 @@ The rflex driver provides the following device interfaces, some of them named:
 @par Notes
 -# Since the units used by the Rflex for odometry appear to be completely
    arbitrary, this coefficient is needed to convert to millimeters: mm =
-   (rflex units) / (odo\_distance\_conversion).  These arbitrary units
+   (rflex units) / (odo_distance_conversion).  These arbitrary units
    also seem to be different on each robot model. I'm afraid you'll
    have to determine your robot's conversion factor by driving a known
    distance and observing the output of the RFlex.
@@ -204,7 +204,7 @@ The rflex driver provides the following device interfaces, some of them named:
 -# Used for prefiltering:
    the standard Polaroid sensors never return values that are closer
    than the closest obstacle, thus we can buffer locally looking for the
-   closest reading in the last "sonar\_age" readings. Since the servo
+   closest reading in the last "sonar_age" readings. Since the servo
    tick here is quite small, you can still get pretty recent data in
    the client.
 -# These values are all used for remapping the sonars from Rflex indexing
@@ -231,7 +231,7 @@ The rflex driver provides the following device interfaces, some of them named:
    y1 th1 x2 y2 th2 x3 y3 th3 ...".  x and y are mm and theta is radians,
 in Player's robot coordinate system.
 -# Used to convert between arbitrary sonar units to millimeters: mm =
-   sonar units / range\_distance\_conversion.
+   sonar units / range_distance_conversion.
 -# Calibration is in the form Range = (Voltage/a)^b and stored in the
    tuple as [a1 b1 a2 b2 ...] etc for each ir sensor.
 
