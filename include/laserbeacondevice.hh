@@ -48,7 +48,6 @@
 #ifndef LASERBEACONDEVICE
 #define LASERBEACONDEVICE
 
-#include <pthread.h>
 #include <unistd.h>
 
 #include "device.h"
@@ -58,6 +57,13 @@
 // The laser beacon device class
 class CLaserBeaconDevice : public CDevice
 {
+  // Initialization function
+  public:
+    static CDevice* Init(int argc, char** argv)
+    {
+      return((CDevice*)(new CLaserBeaconDevice(argc,argv)));
+    }
+
   // Constructor
   public: CLaserBeaconDevice(int argc, char** argv);
 
@@ -70,7 +76,9 @@ class CLaserBeaconDevice : public CDevice
   public: virtual size_t GetData(unsigned char *, size_t maxsize,
                                  uint32_t* timestamp_sec,
                                  uint32_t* timestamp_usec);
-  public: virtual void PutConfig(unsigned char *, size_t maxsize);
+  public: virtual int PutConfig(CClientData* client,
+                                 unsigned char *, 
+                                 size_t maxsize);
 
   // Analyze the laser data and return beacon data
   private: void FindBeacons(const player_laser_data_t *laser_data,

@@ -176,10 +176,10 @@ proc toggle_sonar {} {
   global display_sonar
   if {$display_sonar} {
     player_req_dev robot sonar r
-    player_change_sonar_state robot 1
+    #player_change_sonar_state robot 1
   } else {
     player_req_dev robot sonar c
-    player_change_sonar_state robot 0
+    #player_change_sonar_state robot 0
   }
 }
 proc toggle_laser {} {

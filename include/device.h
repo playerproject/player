@@ -56,8 +56,9 @@ class CDevice
 
     // this mutex is used to mutually exclude calls to Setup and Shutdown
     pthread_mutex_t setupMutex;
-
-
+    
+    pthread_t devicethread;
+    
   public:
     // number of current subscriptions
     int subscriptions;
@@ -73,13 +74,16 @@ class CDevice
     // amount at last write into each respective buffer
     size_t device_used_datasize;
     size_t device_used_commandsize;
+    
+    // to record the time at which the device gathered the data
+    uint32_t data_timestamp_sec;
+    uint32_t data_timestamp_usec;
 
     // queues for incoming requests and outgoing replies
     PlayerQueue* device_reqqueue;
     PlayerQueue* device_repqueue;
 
     virtual ~CDevice() {};
-
 
     // this is the main constructor, used by most non-Stage devices.
     // storage will be allocated by this constructor
@@ -127,12 +131,22 @@ class CDevice
     virtual int PutReply(CClientData* client, unsigned short type,
                          struct timeval* ts, unsigned char * , size_t);
 
+    /* start a thread that will invoke Main() */
+    virtual void StartThread();
 
-    // to record the time at which the device gathered the data
-    uint32_t data_timestamp_sec;
-    uint32_t data_timestamp_usec;
+    /* cancel (and wait for termination) of the thread */
+    virtual void StopThread();
+    
+    // Main function for device thread
+    //
+    virtual void Main();
 
   protected:
+    // Dummy main (just calls real main).  This is used to simplify thread
+    // creation.
+    //
+    static void* DummyMain(void *laserdevice);
+
     // these methods are used to lock and unlock the various buffers and
     // queues; they are implemented with mutexes in CDevice and overridden
     // in CStageDevice

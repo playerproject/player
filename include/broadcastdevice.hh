@@ -36,6 +36,13 @@
 
 class CBroadcastDevice : public CDevice
 {
+  // Init function
+  public: 
+    static CDevice* Init(int argc, char** argv)
+    {
+      return((CDevice*)(new CBroadcastDevice(argc,argv)));
+    }
+  
   // Constructor
   public: CBroadcastDevice(int argc, char** argv);
 
@@ -51,11 +58,8 @@ class CBroadcastDevice : public CDevice
   // Handle requests.  We dont queue them up, but handle them immediately.
   public: virtual int PutConfig(CClientData* client, unsigned char* data, size_t len);
 
-  // Dummy main (just calls real main)
-  private: static void* DummyMain(void *device);
-
   // Main function for device thread
-  private: int Main();
+  private: virtual void Main();
 
   // Setup the message queues
   private: int SetupQueues();
@@ -90,9 +94,6 @@ class CBroadcastDevice : public CDevice
   // Receive a packet from the broadcast socket.  This will block.
   private: int RecvPacket(void *packet, size_t size);
   
-  // Device thread
-  private: pthread_t thread;
-
   // Queue used for each client.
   private: struct queue_t
   {

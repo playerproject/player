@@ -54,6 +54,8 @@
 
 /* strings to match the currently assigned devices (used for pretty-printing 
  * and command-line parsing) */
+#define PLAYER_MAX_DEVICE_STRING_LEN 64
+
 #define PLAYER_PLAYER_STRING         "player"
 #define PLAYER_MISC_STRING           "misc"
 #define PLAYER_GRIPPER_STRING        "gripper"

@@ -71,14 +71,13 @@ extern int global_playerport; // used to get at devices
 
 /* these are necessary to make the static fields visible to the linker */
 extern pthread_t       CP2OSDevice::thread;
-extern unsigned char*  CP2OSDevice::config;
-extern int             CP2OSDevice::config_size;
 extern struct timeval  CP2OSDevice::timeBegan_tv;
 extern bool            CP2OSDevice::direct_wheel_vel_control;
 extern int             CP2OSDevice::psos_fd; 
 extern int             CP2OSDevice::last_client_id; 
 extern char            CP2OSDevice::psos_serial_port[];
 extern bool            CP2OSDevice::radio_modemp;
+extern bool            CP2OSDevice::initdone;
 extern char            CP2OSDevice::num_loops_since_rvel;
 extern CSIP*           CP2OSDevice::sippacket;
 extern int             CP2OSDevice::param_idx;
@@ -87,48 +86,58 @@ extern pthread_mutex_t CP2OSDevice::p2os_setupMutex;
 extern int             CP2OSDevice::p2os_subscriptions;
 extern player_p2os_data_t*  CP2OSDevice::data;
 extern player_p2os_cmd_t*  CP2OSDevice::command;
+extern unsigned char*    CP2OSDevice::reqqueue;
+extern unsigned char*    CP2OSDevice::repqueue;
 
-
-void *RunPsosThread( void *p2osdevice );
 
 CP2OSDevice::CP2OSDevice(int argc, char** argv)
 {
-  static bool robotparamsdone = false;
+  int reqqueuelen = 1;
+  int repqueuelen = 1;
 
-  // if not already done, build the table of robot parameters.
-  if(!robotparamsdone)
+  if(!initdone)
   {
+    // build the table of robot parameters.
     initialize_robot_params();
-    robotparamsdone = true;
   
     // also, install default parameter values.
     strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
     psos_fd = -1;
     radio_modemp = false;
-  }
   
-  if(!data)
     data = new player_p2os_data_t;
-  if(!command)
     command = new player_p2os_cmd_t;
 
-  // TODO: allocate space for queues here
-  if(!config)
+    reqqueue = (unsigned char*)(new playerqueue_elt_t[reqqueuelen]);
+    repqueue = (unsigned char*)(new playerqueue_elt_t[repqueuelen]);
+
+    SetupBuffers((unsigned char*)data, sizeof(player_p2os_data_t),
+                 (unsigned char*)command, sizeof(player_p2os_cmd_t),
+                 reqqueue, reqqueuelen,
+                 repqueue, repqueuelen);
+
+    ((player_p2os_cmd_t*)device_command)->position.speed = 0;
+    ((player_p2os_cmd_t*)device_command)->position.turnrate = 0;
+
+    ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
+    ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
+
+    initdone = true; 
+  }
+  else
   {
-    config = new unsigned char[P2OS_CONFIG_BUFFER_SIZE];
-    config_size = 0;
+    // every sub-device gets its own queue object (but they all point to the
+    // same chunk of memory)
+    reqqueue = (unsigned char*)(new playerqueue_elt_t[reqqueuelen]);
+    repqueue = (unsigned char*)(new playerqueue_elt_t[repqueuelen]);
+
+    // every sub-device needs to get its various pointers set up
+    SetupBuffers((unsigned char*)data, sizeof(player_p2os_data_t),
+                 (unsigned char*)command, sizeof(player_p2os_cmd_t),
+                 reqqueue, reqqueuelen,
+                 repqueue, repqueuelen);
   }
 
-  SetupBuffers((unsigned char*)data, sizeof(player_p2os_data_t),
-               (unsigned char*)command, sizeof(player_p2os_cmd_t),
-               NULL, 0,
-               NULL, 0);
-
-  ((player_p2os_cmd_t*)device_command)->position.speed = 0;
-  ((player_p2os_cmd_t*)device_command)->position.turnrate = 0;
-
-  ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
-  ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
 
 
   // parse command-line args
@@ -450,18 +459,13 @@ int CP2OSDevice::Setup()
 
 
   /* now spawn reading thread */
-  if(pthread_create(&thread, NULL, &RunPsosThread, this))
-  {
-    fputs("CP2OSDevice::Setup(): pthread creation messed up\n",stderr);
-    return(1);
-  }
+  StartThread();
   return(0);
 }
 
 int CP2OSDevice::Shutdown()
 {
   unsigned char command[20],buffer[20];
-  void* dummy;
   CPacket packet; 
 
   memset(buffer,0,20);
@@ -471,15 +475,7 @@ int CP2OSDevice::Shutdown()
     return(0);
   }
 
-  if(pthread_cancel(thread))
-  {
-    fputs("CP2OSDevice::Shutdown(): WARNING: pthread_cancel() on psos "
-          "reading thread failed\n",stderr);
-  }
-  if(pthread_join(thread,&dummy))
-  {
-    perror("CP2OSDevice::Shutdown(): pthread_join()");
-  }
+  StopThread();
 
   command[0] = STOP;
   packet.Build(command, 1);
@@ -616,43 +612,9 @@ void CP2OSDevice::PutData( unsigned char* src, size_t maxsize,
   Unlock();
 }
 
-size_t CP2OSDevice::GetConfig( unsigned char* dest, size_t maxsize)
+void 
+CP2OSDevice::Main()
 {
-  int size;
-
-  Lock();
-
-  if(config_size)
-  {
-    memcpy(dest, config, config_size);
-  }
-  size = config_size;
-  config_size = 0;
-
-  Unlock();
-
-  return(size);
-}
-int CP2OSDevice::PutConfig( unsigned char* src, size_t size)
-{
-  Lock();
-
-  if(size > P2OS_CONFIG_BUFFER_SIZE)
-    puts("CP2OSDevice::PutConfig(): config request too big. ignoring");
-  else
-  {
-    memcpy(config, src, size);
-    config_size = size;
-  }
-
-  Unlock();
-  return(0);
-}
-
-void *RunPsosThread( void *p2osdevice ) 
-{
-  CP2OSDevice* pd = (CP2OSDevice*) p2osdevice;
-
   player_p2os_cmd_t command;
   unsigned char config[P2OS_CONFIG_BUFFER_SIZE];
   unsigned char motorcommand[4];
@@ -678,7 +640,7 @@ void *RunPsosThread( void *p2osdevice )
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;
 
-  GlobalTime->GetTime(&pd->timeBegan_tv);
+  GlobalTime->GetTime(&timeBegan_tv);
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -695,8 +657,7 @@ void *RunPsosThread( void *p2osdevice )
         motorcommand[2] = 1;
         motorcommand[3] = 0;
         motorpacket.Build(motorcommand, 4);
-        //puts("turning Sonars ON");
-        pd->SendReceive(&motorpacket);
+        SendReceive(&motorpacket);
       }
       else if(last_sonar_subscrcount && !(sonarp->subscriptions))
       {
@@ -705,8 +666,7 @@ void *RunPsosThread( void *p2osdevice )
         motorcommand[2] = 0;
         motorcommand[3] = 0;
         motorpacket.Build(motorcommand, 4);
-        //puts("turning Sonars OFF");
-        pd->SendReceive(&motorpacket);
+        SendReceive(&motorpacket);
       }
       
       last_sonar_subscrcount = sonarp->subscriptions;
@@ -725,12 +685,12 @@ void *RunPsosThread( void *p2osdevice )
         motorcommand[2] = 0;
         motorcommand[3] = 0;
         motorpacket.Build(motorcommand, 4);
-        pd->SendReceive(&motorpacket);//,false);
+        SendReceive(&motorpacket);//,false);
 
         // reset odometry
-        pd->ResetRawPositions();
+        ResetRawPositions();
 
-        pd->last_client_id = -1;
+        last_client_id = -1;
       }
       else if(last_position_subscrcount && !(positionp->subscriptions))
       {
@@ -753,15 +713,16 @@ void *RunPsosThread( void *p2osdevice )
         motorcommand[2] = 0;
         motorcommand[3] = 0;
         motorpacket.Build(motorcommand, 4);
-        pd->SendReceive(&motorpacket);//,false);
+        SendReceive(&motorpacket);//,false);
       }
 
       last_position_subscrcount = positionp->subscriptions;
     }
 
     
+    CClientData* client;
     // first, check if there is a new config command
-    if((config_size = pd->GetConfig(config, sizeof(config))))
+    if((config_size = GetConfig(&client, config, sizeof(config))))
     {
       switch(config[0])
       {
@@ -773,6 +734,8 @@ void *RunPsosThread( void *p2osdevice )
 	  if(config_size-1 != 1)
           {
 	    puts("Arg to sonar state change request is wrong size; ignoring");
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+              PLAYER_ERROR("failed to PutReply");
 	    break;
 	  }
           motorcommand[0] = SONAR;
@@ -780,7 +743,10 @@ void *RunPsosThread( void *p2osdevice )
           motorcommand[2] = config[1];
           motorcommand[3] = 0;
           motorpacket.Build(motorcommand, 4);
-          pd->SendReceive(&motorpacket);
+          SendReceive(&motorpacket);
+
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+            PLAYER_ERROR("failed to PutReply");
           break;
         case PLAYER_POSITION_MOTOR_POWER_REQ:
           /* motor state change request 
@@ -790,6 +756,8 @@ void *RunPsosThread( void *p2osdevice )
 	  if(config_size-1 != 1)
           {
 	    puts("Arg to motor state change request is wrong size; ignoring");
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+              PLAYER_ERROR("failed to PutReply");
 	    break;
 	  }
           motorcommand[0] = ENABLE;
@@ -797,7 +765,10 @@ void *RunPsosThread( void *p2osdevice )
           motorcommand[2] = config[1];
           motorcommand[3] = 0;
           motorpacket.Build(motorcommand, 4);
-          pd->SendReceive(&motorpacket);//,false);
+          SendReceive(&motorpacket);
+
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+            PLAYER_ERROR("failed to PutReply");
           break;
         case PLAYER_POSITION_VELOCITY_CONTROL_REQ:
           /* velocity control mode:
@@ -808,41 +779,44 @@ void *RunPsosThread( void *p2osdevice )
           {
 	    puts("Arg to velocity control mode change request is wrong "
                             "size; ignoring");
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+              PLAYER_ERROR("failed to PutReply");
 	    break;
 	  }
           if(config[1])
-            pd->direct_wheel_vel_control = false;
+            direct_wheel_vel_control = false;
           else
-            pd->direct_wheel_vel_control = true;
+            direct_wheel_vel_control = true;
+
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+            PLAYER_ERROR("failed to PutReply");
           break;
         case PLAYER_POSITION_RESET_ODOM_REQ:
           /* reset position to 0,0,0: no args */
 	  if(config_size-1 != 0)
           {
 	    puts("Arg to reset position request is wrong size; ignoring");
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+              PLAYER_ERROR("failed to PutReply");
 	    break;
 	  }
-          pd->ResetRawPositions();
+          ResetRawPositions();
+
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+            PLAYER_ERROR("failed to PutReply");
           break;
         default:
           printf("RunPsosThread: got unknown config request \"%c\"\n",
                           config[0]);
+
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+            PLAYER_ERROR("failed to PutReply");
           break;
       }
-
-      // set size to zero, so we'll know not to read it next time unless
-      // PutConfig() was called again
-      pd->config_size = 0;
     }
 
-    /* wait a bit, randomly, to encourage different clients' access */
-    /*
-    int rand_int = (int)(50000.0*rand()/(RAND_MAX+1.0));
-    usleep(rand_int);
-    */
-
     /* read the clients' commands from the common buffer */
-    pd->GetCommand((unsigned char*)&command, sizeof(command));
+    GetCommand((unsigned char*)&command, sizeof(command));
 
     newmotorspeed = false;
     if( speedDemand != (short) ntohs(command.position.speed));
@@ -864,13 +838,13 @@ void *RunPsosThread( void *p2osdevice )
     gripperArg = command.gripper.arg;
 
     /* NEXT, write commands */
-    if(pd->direct_wheel_vel_control)
+    if(direct_wheel_vel_control)
     {
       // do direct wheel velocity control here
       //printf("speedDemand: %d\t turnRateDemand: %d\n",
                       //speedDemand, turnRateDemand);
       rotational_term = (M_PI/180.0) * turnRateDemand /
-              PlayerRobotParams[pd->param_idx].ConvFactors.DiffConvFactor;
+              PlayerRobotParams[param_idx].ConvFactors.DiffConvFactor;
       leftvel = (speedDemand - rotational_term);
       rightvel = (speedDemand + rotational_term);
       if(fabs(leftvel) > MOTOR_MAX_SPEED)
@@ -908,9 +882,9 @@ void *RunPsosThread( void *p2osdevice )
       motorcommand[0] = VEL2;
       motorcommand[1] = 0x3B;
       motorcommand[2] = (char)(rightvel /
-              PlayerRobotParams[pd->param_idx].ConvFactors.Vel2Divisor);
+              PlayerRobotParams[param_idx].ConvFactors.Vel2Divisor);
       motorcommand[3] = (char)(leftvel /
-              PlayerRobotParams[pd->param_idx].ConvFactors.Vel2Divisor);
+              PlayerRobotParams[param_idx].ConvFactors.Vel2Divisor);
     }
     else
     {
@@ -919,7 +893,7 @@ void *RunPsosThread( void *p2osdevice )
       // if trans vel is new, write it;
       // if just rot vel is new, write it;
       // if neither are new, write trans.
-      if((newmotorspeed || !newmotorturn) && (pd->num_loops_since_rvel < 2))
+      if((newmotorspeed || !newmotorturn) && (num_loops_since_rvel < 2))
       {
         motorcommand[0] = VEL;
         if(speedDemand >= 0)
@@ -957,7 +931,7 @@ void *RunPsosThread( void *p2osdevice )
     }
     //printf("motorpacket[0]: %d\n", motorcommand[0]);
     motorpacket.Build( motorcommand, 4);
-    pd->SendReceive(&motorpacket);//,false);
+    SendReceive(&motorpacket);//,false);
 
     if(newgrippercommand)
     {
@@ -967,7 +941,7 @@ void *RunPsosThread( void *p2osdevice )
       gripcommand[1] = 0x3B;
       *(unsigned short*)&gripcommand[2] = gripperCmd;
       grippacket.Build( gripcommand, 4);
-      pd->SendReceive(&grippacket);
+      SendReceive(&grippacket);
 
       // pass extra value to gripper if needed 
       if(gripperCmd == GRIPpress || gripperCmd == LIFTcarry ) 
@@ -976,7 +950,7 @@ void *RunPsosThread( void *p2osdevice )
         gripcommand[1] = 0x3B;
         *(unsigned short*)&gripcommand[2] = (unsigned short)gripperArg;
         grippacket.Build( gripcommand, 4);
-        pd->SendReceive(&grippacket);
+        SendReceive(&grippacket);
       }
     }
   }
@@ -1072,6 +1046,23 @@ CP2OSDevice::ResetRawPositions()
     pkt.Build(p2oscommand, 2);
     SendReceive(&pkt);//,true);
   }
+}
+
+/* start a thread that will invoke Main() */
+void 
+CP2OSDevice::StartThread()
+{
+  pthread_create(&thread, NULL, &DummyMain, this);
+}
+
+/* cancel (and wait for termination) of the thread */
+void 
+CP2OSDevice::StopThread()
+{
+  void* dummy;
+  pthread_cancel(thread);
+  if(pthread_join(thread,&dummy))
+    perror("CP2OSDevice::StopThread:pthread_join()");
 }
 
 

@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h> // for bzero()
-#include <stdlib.h>  /* atoi(3) */
+#include <stdlib.h>  /* free(3),exit(3) */
 #include <signal.h>
 #include <pthread.h>  /* for pthread stuff */
 #include <netinet/in.h> /* for struct sockaddr_in, SOCK_STREAM */
@@ -44,49 +44,13 @@
 #include <sys/socket.h>  /* for accept(2) */
 #include <sys/poll.h>  /* for poll(2) */
 #include <netdb.h> /* for gethostbyaddr(3) */
-#include <pubsub_util.h> /* for create_and_bind_socket() */
 
-#include <defaults.h>
+#include <pubsub_util.h> /* for create_and_bind_socket() */
+#include <defaults.h>  /* for device defaults */
+#include <deviceregistry.h> /* for register_devices() */
 
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
-#endif
-
-#ifdef INCLUDE_LASER
-#include <laserdevice.h>
-#endif
-#ifdef INCLUDE_SONAR
-#include <sonardevice.h>
-#endif
-#ifdef INCLUDE_VISION
-#include <visiondevice.h>
-#endif
-#ifdef INCLUDE_POSITION
-#include <positiondevice.h>
-#endif
-#ifdef INCLUDE_GRIPPER
-#include <gripperdevice.h>
-#endif
-#ifdef INCLUDE_MISC
-#include <miscdevice.h>
-#endif
-#ifdef INCLUDE_PTZ
-#include <ptzdevice.h>
-#endif
-#ifdef INCLUDE_AUDIO
-#include <audiodevice.h>
-#endif
-#ifdef INCLUDE_LASERBEACON
-#include <laserbeacondevice.hh>
-#endif
-#ifdef INCLUDE_BROADCAST
-#include <broadcastdevice.hh>
-#endif
-#ifdef INCLUDE_SPEECH
-#include <speechdevice.h>
-#endif
-#ifdef INCLUDE_BPS
-#include <bpsdevice.h>
 #endif
 
 #include <clientdata.h>
@@ -115,7 +79,11 @@ bool player_gerkey = false;
 
 size_t ioSize = 0; // size of the IO buffer
 
+
+// this table holds all the currently *instantiated* devices
 CDeviceTable* deviceTable = new CDeviceTable();
+// this table holds all the currently *available* device types
+CDeviceTable* availableDeviceTable = new CDeviceTable();
 
 // the global PlayerTime object has a method 
 //   int GetTime(struct timeval*)
@@ -134,17 +102,8 @@ bool debug = false;
 
 int global_playerport = PLAYER_PORTNUM; // used to gen. useful output & debug
 
-char* sane_spec[] = { "-misc:0",
-                      "-gripper:0",
-                      "-position:0",
-                      "-sonar:0",
-                      "-laser:0",
-                      "-vision:0",
-                      "-ptz:0",
-                      "-laserbeacon:0",
-                      "-broadcast:0",
-                      "-speech:0",
-                      "-bps:0"};
+// declared in deviceregistry.cc
+extern char* sane_spec[];
 
 /* Usage statement */
 void
@@ -158,7 +117,7 @@ Usage()
   fprintf(stderr, "  -stage <path> : use memory-mapped IO with Stage "
           "through the devices in this directory\n");
   fprintf(stderr, "  -sane         : use the compiled-in device defaults:\n");
-  for(int i=0;i<ARRAYSIZE(sane_spec);i++)
+  for(int i=0;sane_spec[i];i++)
     fprintf(stderr, "                      %s\n",sane_spec[i]);
   fprintf(stderr, "\n  Each [DEVICE] should be of the form:\n");
   fprintf(stderr, "    -<name>:<index> [options]\n");
@@ -168,7 +127,7 @@ Usage()
   fprintf(stderr, "    -laser:0 \"port /dev/ttyS0\"\n");
 }
 
-/* just so we no when we've segfaulted, when running under stage */
+/* just so we know when we've segfaulted, even when running under stage */
 void 
 printout( int dummy ) 
 {
@@ -198,6 +157,7 @@ Interrupt( int dummy )
   exit(0);
 }
 
+/* setup some signal handlers */
 void 
 SetupSignalHandlers()
 {
@@ -270,19 +230,41 @@ void PrintHeader(player_msghdr_t hdr)
   printf("size:%u\n", hdr.size);
 }
 
+
+#ifdef INCLUDE_STAGE
+// a simple function to conditionally add a port (if is new) to 
+// a list of ports
+void 
+StageAddPort(int* ports, int* portcount, int newport)
+{
+  // have we registered this port already?
+  int j = 0;
+  while(j<(*portcount))
+  {
+    if(ports[j] == newport)
+      break;
+    j++;
+  }
+  if(j == (*portcount)) // we have not! 
+  {
+    // we add this port to the array of ports we must listen on
+    ports[(*portcount)++] = newport;
+  }
+}
+
 // a matching function to indentify valid device names
 // used by scandir to fetch device filenames
-int MatchDeviceName( const struct dirent* ent )
+int
+MatchDeviceName( const struct dirent* ent )
 {
   // device names are > 2 chars long,; . and .. are not
   return( strlen( ent->d_name ) > 2 );
 }
 
-#ifdef INCLUDE_STAGE
 // looks in the directory for device entries, creates the devices
 // and fills an array with unique port numbers
-stage_clock_t* CreateStageDevices( char* directory, int** ports, 
-                                   int* num_ports )
+stage_clock_t* 
+CreateStageDevices( char* directory, int** ports, int* num_ports )
 {
 #ifdef VERBOSE
   printf( "Searching for Stage devices\n" );
@@ -369,7 +351,7 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
       // NOT from the filename
       switch( deviceIO->player_id.type )
       {
-        //create a generic stage IO device for these types:
+        // create a generic simulated stage IO device for these types:
         case PLAYER_PLAYER_CODE: 
         case PLAYER_MISC_CODE:
         case PLAYER_POSITION_CODE:
@@ -389,36 +371,19 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
           // Create a StageDevice with this IO base address and filedes
           dev = new CStageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	    
-          /*
-          printf("Stage adding device %d:%d:%d\n",
-                 deviceIO->player_id.port,
-                 deviceIO->player_id.type, 
-                 deviceIO->player_id.index);
-           */
-
           deviceTable->AddDevice( deviceIO->player_id.port,
                                   deviceIO->player_id.type, 
                                   deviceIO->player_id.index, 
                                   PLAYER_ALL_MODE, dev );
 	    
-          // have we registered this port already?
-          int j = 0;
-          while( j<portcount )
-          {
-            if( portstmp[j] == deviceIO->player_id.port )
-              break;
-            j++;
-          }
-          if( j == portcount ) // we have not! 
-            // we add this port to the array of ports we must listen on
-            portstmp[portcount++] = deviceIO->player_id.port;
-        }	  
+          // add this port to our listening list
+          StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+        }
         break;
 	  
         case PLAYER_BROADCAST_CODE:   
-#ifdef INCLUDE_BROADCAST
           // Create broadcast device as per normal
-          if( deviceIO->local )
+          if(deviceIO->local)
           {
             int argc = 0;
             char *argv[2];
@@ -426,41 +391,77 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
             // wont work with distributed Stage.
             argv[argc++] = "addr";
             argv[argc++] = "127.255.255.255";
-            deviceTable->AddDevice(deviceIO->player_id.port,
-                                   deviceIO->player_id.type,
-                                   deviceIO->player_id.index, 
-                                   PLAYER_ALL_MODE, 
-                                   new CBroadcastDevice(argc, argv));
-	      
-            // have we registered this port already?
-            int j = 0;
-            while( j<portcount )
+
+            // find the broadcast device in the available device table
+            CDeviceEntry* entry;
+            if(!(entry = 
+                 availableDeviceTable->GetDeviceEntry(PLAYER_BROADCAST_STRING)))
             {
-              if( portstmp[j] == deviceIO->player_id.port )
-                break;
-              j++;
+              puts("WARNING: Player support for broadcast device unavailable.");
             }
-            if( j == portcount ) // we have not! 
-              // we add this port to the array of ports we must listen on
-              portstmp[portcount++] = deviceIO->player_id.port;
+            else
+            {
+              // add it to the instantiated device table
+              deviceTable->AddDevice(deviceIO->player_id.port,
+                                     deviceIO->player_id.type,
+                                     deviceIO->player_id.index, 
+                                     PLAYER_ALL_MODE, 
+                                     (*(entry->initfunc))(argc,argv));
+ 
+
+              // add this port to our listening list
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+            }
           }
-#endif
+          break;
+
+        case PLAYER_BPS_CODE:   
+          // Create broadcast device as per normal
+          if(deviceIO->local)
+          {
+            int argc = 0;
+            char *argv[2];
+            char tmpindex[32];
+            // We make the assumption that this bps device should read from 
+            // the laser and position devices that are identified by the same 
+            // index as itself.
+            argv[argc++] = "index";
+            sprintf(tmpindex,"%d",deviceIO->player_id.index);
+            argv[argc++] = tmpindex;
+
+            // find the bps device in the available device table
+            CDeviceEntry* entry;
+            if(!(entry = 
+                 availableDeviceTable->GetDeviceEntry(PLAYER_BPS_STRING)))
+            {
+              puts("WARNING: Player support for bps device unavailable.");
+            }
+            else
+            {
+              // add it to the instantiated device table
+              deviceTable->AddDevice(deviceIO->player_id.port,
+                                     deviceIO->player_id.type,
+                                     deviceIO->player_id.index, 
+                                     PLAYER_ALL_MODE, 
+                                     (*(entry->initfunc))(argc,argv));
+ 
+
+              // add this port to our listening list
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+            }
+          }
           break;
 
           // devices not implemented
         case PLAYER_AUDIO_CODE:   
-#ifdef VERBOSE
-          printf( "Device type %d not yet implemented in Stage\n", 
-                  deviceIO->player_id.type);
-          fflush( stdout );
-#endif
+          printf("Device type %d not yet implemented in Stage\n", 
+                 deviceIO->player_id.type);
           break;
 	  
         case 0:
 #ifdef VERBOSE
-          printf( "Player ignoring Stage device type %d\n", 
-                  deviceIO->player_id.type);
-          fflush( stdout );
+          printf("Player ignoring Stage device type %d\n", 
+                 deviceIO->player_id.type);
 #endif
           break;	  
 	  
@@ -536,232 +537,9 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
 
   return( clock );
 }
+#endif // INCLUDE_STAGE
 
-//#ifdef INCLUDE_BPS
-  // DOUBLE-HACK -- now this won't work in stage, because we don't know to 
-  //                which port to tie the device - BPG
-  //
-  // HACK -- Create BPS as per normal; it will use other simulated devices
-  // The stage versus non-stage initialization needs some re-thinking.
-  // ahoward
-// deviceTable->AddDevice(global_playerport,PLAYER_BPS_CODE, 0, 
-//                       PLAYER_READ_MODE, new CBpsDevice(0, NULL));
-//#endif
-
-
-#endif
-
-/*
- * parses strings that look like "-laser:2"
- *   <str1> is the device string; <str2> is the argument string for the device
- *
- * if the string can be parsed, then the appropriate device will be created, 
- *    and 0 will be returned.
- * otherwise, -1 is retured
- */
-int
-parse_device_string(char* str1, char* str2)
-{
-  char* colon;
-  uint16_t index = 0;
-  CDevice* tmpdevice;
-
-  // if we haven't initialized the PlayerTime pointer yet, do it now,
-  // because it might be referenced by CDevice::PutData(), which can be
-  // called by a device's constructor
-  if(!GlobalTime)
-    GlobalTime = (PlayerTime*)(new WallclockTime());
-
-  if(!str1 || (str1[0] != '-') || (strlen(str1) < 2))
-    return(-1);
-
-  /* get the index */
-  if((colon = strchr(str1,':')))
-  {
-    if(strlen(colon) < 2)
-      return(-1);
-    index = atoi(colon+1);
-  }
-
-  /* parse the config string into argc/argv format */
-  int argc = 0;
-  char* argv[32];
-  char* tmpptr;
-  if(str2 && strlen(str2))
-  {
-    argv[argc++] = strtok(str2, " ");
-    while(argc < (int)sizeof(argv))
-    {
-      tmpptr = strtok(NULL, " ");
-      if(tmpptr)
-        argv[argc++] = tmpptr;
-      else
-        break;
-    }
-  }
-  
-  /* get the device name */
-  if(!strncmp(PLAYER_MISC_STRING,str1+1,strlen(PLAYER_MISC_STRING)))
-  {
-#ifdef INCLUDE_MISC
-    tmpdevice = new CMiscDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_MISC_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for misc device was not included at compile time.\n",stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_GRIPPER_STRING,str1+1,strlen(PLAYER_GRIPPER_STRING)))
-  {
-#ifdef INCLUDE_GRIPPER
-    tmpdevice = new CGripperDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_GRIPPER_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for gripper device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_POSITION_STRING,str1+1,
-                   strlen(PLAYER_POSITION_STRING)))
-  {
-#ifdef INCLUDE_POSITION
-    tmpdevice = new CPositionDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_POSITION_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for position device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_SONAR_STRING,str1+1,strlen(PLAYER_SONAR_STRING)))
-  {
-#ifdef INCLUDE_SONAR
-    tmpdevice = new CSonarDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_SONAR_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for sonar device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  // WARNING! the string compare is a bit fragile; must look for 'laserbeacon'
-  // before looking for 'laser'...
-  else if(!strncmp(PLAYER_LASERBEACON_STRING,str1+1,
-                   strlen(PLAYER_LASERBEACON_STRING)))
-  {
-#ifdef INCLUDE_LASERBEACON
-    tmpdevice = new CLaserBeaconDevice(argc,argv); 
-    deviceTable->AddDevice(global_playerport,PLAYER_LASERBEACON_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for laserbeacon device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_LASER_STRING,str1+1,strlen(PLAYER_LASER_STRING)))
-  {
-#ifdef INCLUDE_LASER
-    tmpdevice = new CLaserDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_LASER_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for laser device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_VISION_STRING,str1+1,strlen(PLAYER_VISION_STRING)))
-  {
-#ifdef INCLUDE_VISION
-    tmpdevice = new CVisionDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_VISION_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for vision device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_PTZ_STRING,str1+1,strlen(PLAYER_PTZ_STRING)))
-  {
-#ifdef INCLUDE_PTZ
-    tmpdevice = new CPtzDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_PTZ_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for ptz device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_AUDIO_STRING,str1+1,strlen(PLAYER_AUDIO_STRING)))
-  {
-#ifdef INCLUDE_AUDIO
-    tmpdevice = new CAudioDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_AUDIO_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for audio device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_BROADCAST_STRING,str1+1,
-                   strlen(PLAYER_BROADCAST_STRING)))
-  {
-#ifdef INCLUDE_BROADCAST
-    tmpdevice = new CBroadcastDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_BROADCAST_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for broadcast device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_SPEECH_STRING,str1+1,strlen(PLAYER_SPEECH_STRING)))
-  {
-#ifdef INCLUDE_SPEECH
-    tmpdevice = new CSpeechDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_SPEECH_CODE, index, 
-                           PLAYER_WRITE_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for speech device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else if(!strncmp(PLAYER_GPS_STRING,str1+1,strlen(PLAYER_GPS_STRING)))
-  {
-    fputs("GPS device is not yet implemented in Player.\n",stderr);
-    return(-1);
-  }
-  else if(!strncmp(PLAYER_BPS_STRING,str1+1,strlen(PLAYER_BPS_STRING)))
-  {
-#ifdef INCLUDE_BPS
-    tmpdevice = new CBpsDevice(argc,argv);
-    deviceTable->AddDevice(global_playerport,PLAYER_BPS_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-#else
-    fputs("\nWarning: Support for bps device was not included at compile time.\n",
-          stderr);
-    return(0);
-#endif
-  }
-  else
-  {
-    printf("Error: unknown device \"%s\"\n", str1);
-    return(-1);
-  }
-  return(0);
-}
-
+/* placeholder for a future configuration file parser */
 int
 parse_config_file(char* fname)
 {
@@ -773,14 +551,19 @@ int main( int argc, char *argv[] )
   bool special_config = false;
   struct sockaddr_in listener;
   char auth_key[PLAYER_KEYLEN] = "";
-  //struct sockaddr_in sender;
+  CClientData *clientData;
 #ifdef PLAYER_LINUX
   socklen_t sender_len;
 #else
   int sender_len;
 #endif
-  CClientData *clientData;
-  //int player_sock = 0;
+
+  // Register the default available devices in the availableDeviceTable.  
+  //
+  // Although most of these devices are only used with physical devices, 
+  // some (e.g., broadcast, bps) are used with Stage, and so we always call 
+  // this function.
+  register_devices();
   
   // use these to keep track of many sockets in stage mode
   struct pollfd* ufds = 0;
@@ -887,7 +670,7 @@ int main( int argc, char *argv[] )
     }
     else if(!strcmp(new_argv[i], "-sane"))
     {
-      for(int i=0;i<ARRAYSIZE(sane_spec);i++)
+      for(int i=0;sane_spec[i];i++)
       {
         if(parse_device_string(sane_spec[i],NULL) < 0)
         {
@@ -926,7 +709,7 @@ int main( int argc, char *argv[] )
   {
     if(parse_config_file(DEFAULT_PLAYER_CONFIGFILE)<0)
     {
-      for(int i=0;i<ARRAYSIZE(sane_spec);i++)
+      for(int i=0;sane_spec[i];i++)
       {
         if(parse_device_string(sane_spec[i],NULL) < 0)
         {

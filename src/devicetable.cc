@@ -27,6 +27,8 @@
  */
 #include <devicetable.h>
 
+#include <string.h> // for strncpy(3)
+
 // true if we're connecting to Stage instead of a real robot
 extern bool use_stage;
 
@@ -57,15 +59,13 @@ CDeviceTable::~CDeviceTable()
   // destroy the mutex.
   pthread_mutex_destroy(&mutex);
 }
-
-// code is the id for the device (e.g, 's' for sonar)
-// access is the access for the device (e.g., 'r' for sonar)
-// devicep is the controlling object (e.g., sonarDevice for sonar)
-//  
-// returns 0 on success, non-zero on failure (device not added)
-int CDeviceTable::AddDevice(int port, unsigned short code, 
-                            unsigned short index, unsigned char access, 
-                            CDevice* devicep)
+    
+// this is the 'base' AddDevice method, which sets all the fields
+int 
+CDeviceTable::AddDevice(int port, unsigned short code, unsigned short index, 
+                        unsigned char access, char* name, 
+                        CDevice* (*initfunc)(int,char**),
+                        CDevice* devicep)
 {
   CDeviceEntry* thisentry;
   CDeviceEntry* preventry;
@@ -99,6 +99,12 @@ int CDeviceTable::AddDevice(int port, unsigned short code,
   thisentry->code = code;
   thisentry->index = index;
   thisentry->access = access;
+  if(name)
+  {
+    strncpy(thisentry->name,name,sizeof(thisentry->name));
+    thisentry->name[sizeof(thisentry->name)-1] = '\0';
+  }
+  thisentry->initfunc = initfunc;
   thisentry->devicep = devicep;
   pthread_mutex_unlock(&mutex);
   return(0);
@@ -106,8 +112,9 @@ int CDeviceTable::AddDevice(int port, unsigned short code,
 
 // returns the controlling object for the given code (or NULL
 // on failure)
-CDevice* CDeviceTable::GetDevice(int port, unsigned short code, 
-                                 unsigned short index)
+CDevice* 
+CDeviceTable::GetDevice(int port, unsigned short code, 
+                        unsigned short index)
 {
   CDeviceEntry* thisentry;
   CDevice* devicep = NULL;
@@ -129,6 +136,25 @@ CDevice* CDeviceTable::GetDevice(int port, unsigned short code,
   }
   pthread_mutex_unlock(&mutex);
   return(devicep);
+}
+    
+// another one; this one matches on the string name
+CDeviceEntry* 
+CDeviceTable::GetDeviceEntry(char* name)
+{
+  CDeviceEntry* thisentry;
+  CDeviceEntry* retval = NULL;
+  pthread_mutex_lock(&mutex);
+  for(thisentry=head;thisentry;thisentry=thisentry->next)
+  {
+    if(!strcmp(thisentry->name,name))
+    {
+      retval = thisentry;
+      break;
+    }
+  }
+  pthread_mutex_unlock(&mutex);
+  return(retval);
 }
 
 // returns the code for access ('r', 'w', or 'a') for the given 

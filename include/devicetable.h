@@ -39,11 +39,13 @@ class CDeviceEntry
     int port;            // the player tcp port to which this device is tied
     unsigned short code;  // the 'name' by which we identify this kind of device
     unsigned short index;  // which device we mean
-    unsigned char access;   // 'r', 'w', or 'a' (others?)
+    unsigned char access;   // allowed access mode: 'r', 'w', or 'a'
+    char name[PLAYER_MAX_DEVICE_STRING_LEN]; // the string name for this device
+    CDevice* (*initfunc)(int,char**);
     CDevice* devicep;  // the device itself
     CDeviceEntry* next;  // next in list
 
-    CDeviceEntry() { devicep = NULL; next = NULL; }
+    CDeviceEntry() { name[0]='\0'; devicep = NULL; next = NULL; }
     ~CDeviceEntry() { if(devicep) delete devicep; }
 };
 
@@ -58,18 +60,40 @@ class CDeviceTable
   public:
     CDeviceTable();
     ~CDeviceTable();
+    
+    // this is the 'base' AddDevice method, which sets all the fields
+    int AddDevice(int port, unsigned short code, unsigned short index, 
+                  unsigned char access, char* name, 
+                  CDevice* (*initfunc)(int,char**),
+                  CDevice* devicep);
 
+    // this one is used to fill the instantiated device table
+    //
     // code is the id for the device (e.g, 's' for sonar)
     // access is the access for the device (e.g., 'r' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
-    // returns 0 on success, non-zero on failure (device not added)
     int AddDevice(int port, unsigned short code, unsigned short index, 
-                  unsigned char access, CDevice* devicep);
+                  unsigned char access, CDevice* devicep)
+    {
+      return(AddDevice(port,code,index,access,NULL,NULL,devicep));
+    }
+
+    // this one sets some different fields; it's used to fill the available
+    // device table, instead of the instantiated device table
+    int AddDevice(unsigned short code, unsigned char access, char* name,
+                  CDevice* (*initfunc)(int,char**))
+    {
+      return(AddDevice(0,code,0,access,name,initfunc,NULL));
+    }
+
 
     // returns the controlling object for the given code (or NULL
     // on failure)
     CDevice* GetDevice(int port, unsigned short code, unsigned short index);
+
+    // another one; this one matches on the string name
+    CDeviceEntry* GetDeviceEntry(char* name);
 
     // returns the code for access ('r', 'w', or 'a') for the given 
     // device, or 'e' on failure

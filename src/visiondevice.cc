@@ -57,7 +57,6 @@
 #define ACTS_STARTUP_CONN_LIMIT 60 /* number of attempts to make */
 
 
-void* RunVisionThread(void* visiondevice);
 void QuitACTS(void* visiondevice);
 
 
@@ -308,12 +307,7 @@ CVisionDevice::Setup()
     puts("Done.");
 
     /* now spawn reading thread */
-    if(pthread_create(&thread, NULL, &RunVisionThread, this))
-    {
-      fputs("CVisionDevice::Setup(): pthread creation messed up\n",stderr);
-      KillACTS();
-      return(1);
-    }
+    StartThread();
 
     return(0);
   }
@@ -325,16 +319,11 @@ CVisionDevice::Setup()
 int
 CVisionDevice::Shutdown()
 {
-  void* dummy;
   /* if Setup() was never called, don't do anything */
   if(sock == -1)
     return(0);
 
-  pthread_cancel(thread);
-  if(pthread_join(thread,&dummy))
-    perror("CVisionDevice::Shutdown::pthread_join()");
-  // just to be sure...
-  //KillACTS();
+  StopThread();
 
   sock = -1;
   puts("ACTS vision server has been shutdown");
@@ -348,32 +337,14 @@ CVisionDevice::KillACTS()
     perror("CVisionDevice::KillACTS(): some error while killing ACTS");
 }
 
-/*
-size_t
-CVisionDevice::GetData(unsigned char* dest, size_t maxsize,
-                       uint32_t* timestamp_sec, uint32_t* timestamp_usec)
-{
-  int size;
-  Lock();
-  // size is stored at first two bytes
-  *((player_vision_data_t*)dest) = 
-          ((player_internal_vision_data_t*)device_data)->data;
-  size=((player_internal_vision_data_t*)device_data)->size;
-  *timestamp_sec = data_timestamp_sec;
-  *timestamp_usec = data_timestamp_usec;
-  Unlock();
-  return(size);
-}
-*/
-
-void* 
-RunVisionThread(void* visiondevice)
+void
+CVisionDevice::Main()
 {
   int numread;
   int num_blobs;
   int i;
 
-  CVisionDevice* vd = (CVisionDevice*)visiondevice;
+  //CVisionDevice* vd = (CVisionDevice*)visiondevice;
 
   // we'll transform the data into this structured buffer
   player_vision_data_t local_data;
@@ -394,7 +365,7 @@ RunVisionThread(void* visiondevice)
   }
 
   /* make sure we kill ACTS on exiting */
-  pthread_cleanup_push(QuitACTS,vd);
+  pthread_cleanup_push(QuitACTS,this);
 
   /* loop and read */
   for(;;)
@@ -406,7 +377,7 @@ RunVisionThread(void* visiondevice)
     pthread_testcancel();
 
     /* request a packet from ACTS */
-    if(write(vd->sock,&acts_request_packet,sizeof(acts_request_packet)) == -1)
+    if(write(sock,&acts_request_packet,sizeof(acts_request_packet)) == -1)
     {
       perror("RunVisionThread: write() failed sending ACTS_REQUEST_PACKET;"
                       "exiting.");
@@ -414,30 +385,30 @@ RunVisionThread(void* visiondevice)
     }
 
     /* get the header first */
-    if((numread = read(vd->sock,acts_hdr_buf,vd->header_len)) == -1)
+    if((numread = read(sock,acts_hdr_buf,header_len)) == -1)
     {
       perror("RunVisionThread: read() failed for header: exiting");
       break;
     }
-    else if(numread != vd->header_len)
+    else if(numread != header_len)
     {
       fprintf(stderr,"RunVisionThread: something went wrong\n"
              "              expected %d bytes of header, but only got %d\n", 
-             vd->header_len,numread);
+             header_len,numread);
       break;
     }
 
     /* convert the header, if necessary */
-    if(vd->acts_version == ACTS_VERSION_1_0)
+    if(acts_version == ACTS_VERSION_1_0)
     {
       for(i=0;i<VISION_NUM_CHANNELS;i++)
       {
         // convert 2-byte ACTS 1.0 encoded entries to byte-swapped integers
         // in a structured array
         local_data.header[i].index = 
-                htons(acts_hdr_buf[vd->header_elt_len*i]-1);
+                htons(acts_hdr_buf[header_elt_len*i]-1);
         local_data.header[i].num = 
-                htons(acts_hdr_buf[vd->header_elt_len*i+1]-1);
+                htons(acts_hdr_buf[header_elt_len*i+1]-1);
       }
     }
     else
@@ -446,19 +417,19 @@ RunVisionThread(void* visiondevice)
       {
         // convert 4-byte ACTS 1.2 encoded entries to byte-swapped integers
         // in a structured array
-        local_data.header[i].index = acts_hdr_buf[vd->header_elt_len*i]-1;
+        local_data.header[i].index = acts_hdr_buf[header_elt_len*i]-1;
         local_data.header[i].index = 
                 local_data.header[i].index << 6;
         local_data.header[i].index |= 
-                acts_hdr_buf[vd->header_elt_len*i+1]-1;
+                acts_hdr_buf[header_elt_len*i+1]-1;
         local_data.header[i].index = 
                 htons(local_data.header[i].index);
 
-        local_data.header[i].num = acts_hdr_buf[vd->header_elt_len*i+2]-1;
+        local_data.header[i].num = acts_hdr_buf[header_elt_len*i+2]-1;
         local_data.header[i].num = 
                 local_data.header[i].num << 6;
         local_data.header[i].num |= 
-                acts_hdr_buf[vd->header_elt_len*i+3]-1;
+                acts_hdr_buf[header_elt_len*i+3]-1;
         local_data.header[i].num = 
                 htons(local_data.header[i].num);
       }
@@ -470,25 +441,25 @@ RunVisionThread(void* visiondevice)
       num_blobs += ntohs(local_data.header[i].num);
 
     /* read in the blob data */
-    if((numread = read(vd->sock,acts_blob_buf,num_blobs*vd->blob_size)) == -1)
+    if((numread = read(sock,acts_blob_buf,num_blobs*blob_size)) == -1)
     {
       perror("RunVisionThread: read() failed on blob data; exiting.");
       break;
     }
-    else if(numread != num_blobs*vd->blob_size)
+    else if(numread != num_blobs*blob_size)
     {
       fprintf(stderr,"RunVisionThread: something went wrong\n"
              "              expected %d bytes of blob data, but only got %d\n", 
-             num_blobs*vd->blob_size,numread);
+             num_blobs*blob_size,numread);
       break;
     }
 
-    if(vd->acts_version == ACTS_VERSION_1_0)
+    if(acts_version == ACTS_VERSION_1_0)
     {
       // convert 10-byte ACTS 1.0 blobs to new byte-swapped structured array
       for(i=0;i<num_blobs;i++)
       {
-        int tmpptr = vd->blob_size*i;
+        int tmpptr = blob_size*i;
         // get the 4-byte area first
         local_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
@@ -523,7 +494,7 @@ RunVisionThread(void* visiondevice)
       // convert 16-byte ACTS 1.2 blobs to new byte-swapped structured array
       for(i=0;i<num_blobs;i++)
       {
-        int tmpptr = vd->blob_size*i;
+        int tmpptr = blob_size*i;
         
         // get the 4-byte area first
         local_data.blobs[i].area = 0;
@@ -571,15 +542,12 @@ RunVisionThread(void* visiondevice)
     pthread_testcancel();
 
     /* got the data. now fill it in */
-    vd->PutData((unsigned char*)&local_data, 
+    PutData((unsigned char*)&local_data, 
                 (VISION_HEADER_SIZE + num_blobs*VISION_BLOB_SIZE),0,0);
   }
 
   pthread_cleanup_pop(1);
   pthread_exit(NULL);
-
-  // shut up, compiler
-  return((void*)NULL);
 }
 
 void 

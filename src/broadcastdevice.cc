@@ -134,7 +134,7 @@ int CBroadcastDevice::Setup()
     return 1;
 
   // Start device thread
-  pthread_create(&this->thread, NULL, &DummyMain, this );
+  StartThread();
   
   PLAYER_TRACE0("initializing ... done");
     
@@ -146,14 +146,10 @@ int CBroadcastDevice::Setup()
 // Shutdown device
 int CBroadcastDevice::Shutdown()
 {
-  void* dummy;
-  
   PLAYER_TRACE0("shuting down");
   
   // Shutdown device thread
-  pthread_cancel(this->thread);
-  if (pthread_join(this->thread, &dummy) != 0)
-    PLAYER_ERROR1("error joining thread : %s", strerror(errno));
+  StopThread();
 
   // Shutdown the message queues
   ShutdownQueues();
@@ -216,19 +212,10 @@ int CBroadcastDevice::PutConfig(CClientData* client, unsigned char* data, size_t
 }
 
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Dummy main (just calls real main)
-void* CBroadcastDevice::DummyMain(void *device)
-{
-  ((CBroadcastDevice*) device)->Main();
-  return NULL;
-}
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-int CBroadcastDevice::Main() 
+void
+CBroadcastDevice::Main() 
 {
   int len;
   player_broadcast_msg_t msg;
@@ -257,8 +244,6 @@ int CBroadcastDevice::Main()
     PushQueue(&msg, len);
     Unlock();
   }
-
-  return 0;
 }
 
 

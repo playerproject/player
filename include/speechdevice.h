@@ -43,30 +43,31 @@
 class CSpeechDevice:public CDevice 
 {
   private:
-    pthread_t thread;   // the thread that interacts with Festival
     int pid;      // Festival's pid so we can kill it later (if necessary)
 
     int portnum;  // port number where Festival will run (default 1314)
     char festival_libdir_value[MAX_FILENAME_SIZE]; // the libdir
 
-
-  public:
     /* a queue to hold incoming speech strings */
-    //char queue[SPEECH_MAX_QUEUE_LEN][SPEECH_MAX_STRING_LEN];
-    //int queue_insert_idx;
-    //int queue_remove_idx;
-    //int queue_len;
     PlayerQueue* queue;
 
     bool read_pending;
-    int sock;               // socket to Festival
 
+
+  public:
+    int sock;               // socket to Festival
+    void KillFestival();
+
+    static CDevice* Init(int argc, char** argv)
+    {
+      return((CDevice*)(new CSpeechDevice(argc,argv)));
+    }
+    
     // constructor 
-    //
     CSpeechDevice(int argc, char** argv);
 
     ~CSpeechDevice();
-    void KillFestival();
+    virtual void Main();
 
     int Setup();
     int Shutdown();

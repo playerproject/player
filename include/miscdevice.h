@@ -37,9 +37,14 @@
 class CMiscDevice: public CP2OSDevice 
 {
  public:
-  CMiscDevice::CMiscDevice(int argc, char** argv):CP2OSDevice(argc,argv){}
-  size_t GetData( unsigned char *, size_t maxsize, 
-                  uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+   static CDevice* Init(int argc, char** argv)
+   {
+     return((CDevice*)(new CMiscDevice(argc,argv)));
+   }
+
+   CMiscDevice(int argc, char** argv):CP2OSDevice(argc,argv){}
+   size_t GetData( unsigned char *, size_t maxsize, 
+                   uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
 #endif

@@ -48,15 +48,11 @@
 class CAudioDevice:public CDevice 
 {
  private:
-  pthread_t thread; // the thread that continuously reads/writes from the dsp 
   bool command_pending1;  // keep track of how many commands are pending;
   bool command_pending2;  // that way, we can cancel them if necessary
   bool audio_fd_blocking;
   
- public:
-  //unsigned char* command;   // array holding the client's commands
-  //unsigned char* data;      // array holding the most recent feedback
-
+  
   // Esbens own additions
   int audio_fd; // audio device file descriptor
   int configureDSP();
@@ -66,13 +62,21 @@ class CAudioDevice:public CDevice
   int sampleSound();
   void listenForTones();
   int playSound(int duration);
+  virtual void PrintPacket(char* str, unsigned char* cmd, int len);
 
+ public:
+
+  static CDevice* Init(int argc, char** argv)
+  {
+    return((CDevice*)(new CAudioDevice(argc,argv)));
+  }
   CAudioDevice(int argc, char** argv);
   ~CAudioDevice();
 
+  virtual void Main();
+
   virtual int Setup();
   virtual int Shutdown();
-  virtual void PrintPacket(char* str, unsigned char* cmd, int len);
 };
 
 #endif
