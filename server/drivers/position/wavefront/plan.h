@@ -70,7 +70,7 @@ typedef struct
   plan_cell_t **waypoints;
 
   // Image data (for drawing)
-  uint16_t *image;
+  //uint16_t *image;
   
 } plan_t;
 

@@ -9,7 +9,8 @@ PLAYER_NODRIVERS=
 dnl This macro can be used to setup the testing and associated autoconf 
 dnl variables and C defines for a device driver.
 dnl
-dnl PLAYER_ADD_DRIVER(name,path,default,[header],[cppadd],[ldadd])
+dnl PLAYER_ADD_DRIVER(name,path,default,[header],[cppadd],[ldadd],
+dnl                   [pkgvar],[pkg])
 dnl
 dnl Args:
 dnl   name:    name; driver library should take the name lib<name>.a
@@ -20,6 +21,11 @@ dnl   cppadd:  compiler flags to be used when building the driver
 dnl            (e.g., "-I/somewhere_odd/include")
 dnl   ldadd:   link flags to be added to Player if this driver is included
 dnl            (e.g., "-lgsl -lcblas")
+dnl   pkgvar:  variable prefix to be used with pkg-config; if your package
+dnl            is found, pkgvar_CFLAGS and pkg_LIBS will be set
+dnl            appropriately
+dnl   pkg:     name of package that is required to build the driver; it
+dnl            should be a pkg-config style string, like [gtk+-2.0 >= 2.1]
 dnl
 dnl The C define INCLUDE_<name> and the autoconf variable <name>_LIB (with 
 dnl <name> capitalized) will be conditionally defined to be 1 and 
@@ -34,6 +40,8 @@ ifelse($3,[yes],
   [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,
                  enable_$1=no)])
 failed_header_check=no
+failed_package_check=no
+no_pkg_config=no
 if test "x$enable_$1" = "xyes" -a len($4) -gt 0; then
 dnl This little bit of hackery keeps us from generating invalid shell code,
 dnl in the form of 'for' over an empty list.
@@ -52,6 +60,18 @@ dnl in the form of 'for' over an empty list.
     enable_$1=no
   fi
 fi
+
+if test len($7) -gt 0 -a len($8) -gt 0; then
+  if test "x$have_pkg_config" = "xyes" ; then
+    PKG_CHECK_MODULES($7, $8,
+      enable_$1=yes,
+      enable_$1=no
+      failed_package_check=yes)
+  else
+    no_pkg_config=yes
+  fi
+fi
+
 if test "x$enable_$1" = "xyes"; then
   AC_DEFINE([INCLUDE_]name_caps, 1, [include the $1 driver])
   name_caps[_LIB]=[lib]$1[.a]
@@ -60,7 +80,11 @@ if test "x$enable_$1" = "xyes"; then
   name_caps[_EXTRA_LIB]=$6
   PLAYER_DRIVERS="$PLAYER_DRIVERS $1"
 else      
-  if test "x$failed_header_check" = "xyes"; then
+  if test "x$no_pkg_config" = "xyes"; then
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- pkg-config is required to test for dependencies"
+  elif test "x$failed_package_check" = "xyes"; then
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- couldn't find required package $8"
+  elif test "x$failed_header_check" = "xyes"; then
     PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- couldn't find (at least one of) $header_list"
   elif test "x$3" = "xno"; then
     PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- disabled by default; use --enable-$1 to enable"
@@ -238,11 +262,10 @@ PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],
 PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
-dnl TODO: should really use Magick-config to get the cflags and libs for
-dnl       ImageMagick, but I can't be bothered right now
-PLAYER_ADD_DRIVER([wavefront],[drivers/position/wavefront],[no],[],
-                  ["-I/usr/include/freetype2 -D_FILE_OFFSET_BITS=64 -D_REENTRANT -I/usr/X11R6/include -I/usr/X11R6/include/X11 -I/usr/include/libxml2"],
-                  ["-L/usr/lib -L/usr/X11R6/lib -L/usr/lib -L/usr/lib -lMagick --lfreetype -ljpeg -lpng -ldpstk -ldps -lXext -lSM -lICE -lX11 -lxml2 -lz -lpthread -lm"])
+PLAYER_ADD_DRIVER([wavefront],[drivers/position/wavefront],[yes],[],
+                  [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
+AC_SUBST(GDK_PIXBUF_CFLAGS)
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GDK_PIXBUF_LIBS"
 
 PLAYER_ADD_DRIVER([waveaudio],[drivers/waveform],[yes],[sys/soundcard.h],[],[])
 
@@ -266,48 +289,15 @@ PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[no],[],[],[])
 PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
 
 	
-dnl PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
-dnl                  [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
-
-dnl PLAYER_ADD_DRIVER doesn't support checking for installed packages a la
-dnl pkg-config, so do it manually
-AC_ARG_ENABLE(stage1p4,
-[  --disable-stage1p4           Don't compile the stage1p4 driver],
-disable_reason="disabled by user",
-enable_stage1p4=no)
-if test "x$enable_stage1p4" = "xyes"; then
-  dnl pkg-config is REQUIRED to find the Stage-1.4 library.
-  if test "x$have_pkg_config" = "xyes" ; then
-    PKG_CHECK_MODULES(STAGE1P4, stage >= 1.4, 
-	  enable_stage1p4=yes, 
-          enable_stage1p4=no
-          disable_reason="couldn't find Stage C library (libstage)")
-  else
-    enable_stage1p4=no
-    disable_reason="pkg-config unavailable; maybe you should install it"
-  fi
-else
-  disable_reason="disabled by default; use --enable-stage1p4 to enable"
-fi
-if test "x$enable_stage1p4" = "xyes"; then
-  AC_DEFINE(INCLUDE_STAGE1P4, 1, [[include the (new) Stage 1.4 drivers]])
-  STAGE1P4_LIB="libstage1p4.a"
-  PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $STAGE1P4_LIB"
-  PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/stage1p4/libstage1p4.a"
-  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STAGE1P4_LIBS"
-  PLAYER_DRIVERS="$PLAYER_DRIVERS stage1p4"
-else
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:stage1p4 -- $disable_reason"
-fi
-AC_SUBST(STAGE1P4_LIB)
+PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[yes],
+                  [],[],[],[STAGE1P4],[stage >= 1.4])
 AC_SUBST(STAGE1P4_CFLAGS)
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STAGE1P4_LIBS"
 
 PLAYER_ADD_DRIVER([laserbar],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbw],[drivers/fiducial],[yes],[],[],[])
-
-
 
 dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
