@@ -50,6 +50,10 @@
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
+#define NOMAD_QLEN 5
+
+// CHECK: is this the right number?
+#define NOMAD_SONAR_RANGE_MAX_MM 5000
 
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
@@ -119,10 +123,10 @@ void Nomad_Register(DriverTable* table)
 
 
 Nomad::Nomad(char* interface, ConfigFile* cf, int section)
-  : CDevice( sizeof(player_position_data_t), 
-	     sizeof(player_position_cmd_t), 1, 1 )
+  : CDevice( sizeof(player_nomad_data_t), 
+	     sizeof(player_nomad_cmd_t), NOMAD_QLEN, NOMAD_QLEN )
 {
-  this->serial_device = cf->ReadString( section, "serial_device", NOMAD_SERIAL_PORT );
+  this->serial_device = (char*)cf->ReadString( section, "serial_device", NOMAD_SERIAL_PORT );
   this->serial_speed = cf->ReadInt( section, "serial_speed", NOMAD_SERIAL_BAUD );
   //this->server_host = cf->ReadString( section, "server_host", "" );
   //this->serverPort = cf->ReadInt( section, "server_port", 0 );
@@ -257,9 +261,20 @@ Nomad::Main()
       data.vel_trans = htonl(data.vel_steer);
       data.vel_turret = htonl(data.vel_turret);
 
+      double sonar_scale = NOMAD_SONAR_RANGE_MAX_MM / 255.0;
+
+      //printf( "Nomad sonar: " );
+      for( int i=0; i<NOMAD_SONAR_COUNT; i++ )
+	{
+	  //printf( " %d", State[ STATE_SONAR_0 + i ] );
+	  data.sonar[i] 
+	    = htons((uint16_t)(sonar_scale*State[STATE_SONAR_0+i]));
+	}
+	  //puts("");
+
       PutData((uint8_t*)&data, sizeof(data), 0,0 );
       
-      usleep(1);
+      //usleep(1);
 
     }
   pthread_exit(NULL);
