@@ -173,9 +173,9 @@ size_t GzPtz::GetData(void* client, unsigned char* dest, size_t len,
 {
   player_ptz_data_t data;
 
-  data.pan = htons ((int) (this->iface->data->pan * 180 / M_PI));
-  data.tilt = htons ((int) (this->iface->data->tilt * 180 / M_PI));
-  data.zoom = htons ((int) (this->iface->data->zoom * 180 / M_PI));
+  data.pan = htons((int16_t) (this->iface->data->pan * 180 / M_PI));
+  data.tilt = htons((int16_t) (this->iface->data->tilt * 180 / M_PI));
+  data.zoom = htons((int16_t) (this->iface->data->zoom * 180 / M_PI));
 
   assert(len >= sizeof(data));
 
@@ -200,9 +200,9 @@ void GzPtz::PutCommand(void* client, unsigned char* src, size_t len)
 
   cmd = (player_ptz_cmd_t*) src;
 
-  this->iface->data->cmd_pan = ((int) ntohs(cmd->pan)) * M_PI / 180;
-  this->iface->data->cmd_tilt = ((int) ntohs(cmd->tilt)) * M_PI / 180;
-  this->iface->data->cmd_zoom = (int) ntohs(cmd->zoom);
+  this->iface->data->cmd_pan = ((int16_t) ntohs(cmd->pan)) * M_PI / 180;
+  this->iface->data->cmd_tilt = ((int16_t) ntohs(cmd->tilt)) * M_PI / 180;
+  this->iface->data->cmd_zoom = ((int16_t) ntohs(cmd->zoom)) * M_PI / 180;
   
   return;
 }

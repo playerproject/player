@@ -72,7 +72,7 @@ class GzCamera : public CDevice
                                  uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 
   // Gazebo device id
-  private: const char *gz_id;
+  private: char *gz_id;
 
   // Gazebo client object
   private: gz_client_t *client;
@@ -112,9 +112,11 @@ void GzCamera_Register(DriverTable* table)
 GzCamera::GzCamera(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_camera_data_t), 0, 10, 10)
 {
-
-  // Get the id of the device in Gazebo
-  this->gz_id = cf->ReadString(section, "gz_id", 0);
+  // Get the id of the device in Gazebo.
+  // TODO: fix potential buffer overflow
+  this->gz_id = (char*) calloc(1024, sizeof(char));
+  strcat(this->gz_id, GzClient::prefix_id);
+  strcat(this->gz_id, cf->ReadString(section, "gz_id", ""));
 
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
