@@ -25,13 +25,13 @@ define bigrobot pioneer2dx
 (
   # add a laser scanner	
   # laser view vector - format: [ minrange maxrange fov ]
-  laser.view [ 0.0 8.0 180.0 ]
+  laser.view [ 0.0 5.0 180.0 ]
   laser.pose [ 0 0 0 ]
   laser.size [ 0.15 0.15 ]
   laser.samples 180
 	
   # fiducialfinder view vector - format [ minrange maxrange fov ]
-  fiducial.view [ 0.0 5.0 90.0 ]  
+  fiducial.view [ 0.0 5.0 180.0 ]  
   fiducial.id_limit 4.0
 
   # blobfinder configuration 
