@@ -26,6 +26,7 @@
 
 #define PLAYER_ENABLE_TRACE 0
 
+#include <sys/time.h> // for gettimeofdaty()
 #include <string.h> // for memcpy()
 #include <stagedevice.h>
 #include <stage.h>
@@ -186,6 +187,13 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
     // Set flag to indicate command has been set
     //
     m_info->command_avail = len;
+
+    // set timestamp for this command
+    struct timeval tv;
+    gettimeofday( &tv, 0 );
+
+    m_info->command_timestamp_sec = tv.tv_sec;
+    m_info->command_timestamp_usec = tv.tv_usec;
 }
 
 
@@ -206,6 +214,13 @@ void CStageDevice::PutConfig(unsigned char *config, size_t len)
     // Set flag to indicate config has been changed
     //
     m_info->config_avail = len;
+
+    // set timestamp for this config
+    struct timeval tv;
+    gettimeofday( &tv, 0 );
+    
+    m_info->config_timestamp_sec = tv.tv_sec;
+    m_info->config_timestamp_usec = tv.tv_usec;
 }
 
 
