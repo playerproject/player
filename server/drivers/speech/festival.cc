@@ -379,9 +379,10 @@ int Festival::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
 	*resp_len = 0;
 	
 	//printf("ptz got msg: %d %d:%d %d %d\n",hdr->type, hdr->device, hdr->device_index, hdr->size, hdr->size? data[0] : 0);
-	
-	MSG(device_id, PLAYER_MSGTYPE_CMD, 0, sizeof(player_speech_cmd_t))
-	{	
+
+	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+	{
+		assert(hdr->size == sizeof(player_speech_cmd_t));
 		// make ABSOLUTELY sure we've got one NULL
 		data[hdr->size]='\0';
 		// now strlen() should return the right length
@@ -390,8 +391,8 @@ int Festival::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
 		/* if there's space, put it in the queue */
 		queue.push_back(strdup((char *)data));
 		Unlock();
+		return 0;
 	}
-	MSG_END_ACK
 
 	return -1;
 }

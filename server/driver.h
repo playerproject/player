@@ -143,8 +143,8 @@ class Driver
     /// @param queue_maxlen How long can the incoming queue grow?
     Driver(ConfigFile *cf, 
            int section,
-           bool overwrite_cmds, 
-           size_t queue_maxlen);
+           bool overwrite_cmds = true, 
+           size_t queue_maxlen = PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
 
     /// @brief Destructor
     virtual ~Driver();

@@ -285,14 +285,15 @@ int LinuxWiFi::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t 
 	assert(resp_len);
 	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
 	*resp_len = 0;
-	
-	MSG(device_id, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_MAC, 0)
-	{	
+
+	if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_MAC, device_id))
+	{
+		assert(hdr->size == 0);
+
   		GetMACAddress((char *)resp_data, *resp_len);
   		*resp_len = strlen((char*)resp_data);
+  		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK
-
 	return -1;
 }
 

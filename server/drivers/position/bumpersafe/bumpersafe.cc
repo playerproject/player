@@ -61,6 +61,8 @@ Toby Collett
 #include <time.h>
 #include <math.h>
 
+#include <assert.h>
+
 #include "player.h"
 #include "error.h"
 #include "driver.h"
@@ -231,29 +233,20 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 		return 0;
 	}
 	
-	/*if(hdr->device==position_id.code && hdr->device_index==position_id.index)
+	if (Blocked && MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, device_id))
 	{
-		hdr->device_index = device_id.index;
-		PutMsg(hdr, NULL, hdr->type, data, hdr->size);
-		return 0;
-	}*/
-	
-	if (Blocked)
-	{
-		MSG(device_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, sizeof(player_position_power_config_t))
+		assert(hdr->size == sizeof(player_position_power_config_t));
+		// if motor is switched on then we reset the 'safe state' so robot can move with a bump panel active
+  		if (((player_position_power_config_t *) data)->value == 1)
 		{
-			// if motor is switched on then we reset the 'safe state' so robot can move with a bump panel active
-	  		if (((player_position_power_config_t *) data)->value == 1)
-			{
-				SafeState = CurrentState;
-				Blocked = false;
-    			cmd.xspeed = 0;
-    			cmd.yspeed = 0;
-    			cmd.yawspeed = 0;
-			}
+			SafeState = CurrentState;
+			Blocked = false;
+			cmd.xspeed = 0;
+			cmd.yspeed = 0;
+			cmd.yawspeed = 0;
 		}
 		*resp_len = 0;
-		MSG_END_ACK;
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
 	
 	// set reply to value so the reply for this message goes straight to the given client
@@ -265,22 +258,23 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 		return ret;
 	}
 	
-	MSG(position_id, PLAYER_MSGTYPE_DATA, PLAYER_POSITION_GEOM, sizeof(player_position_geom_t))
+	if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION_GEOM, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_geom_t));
 		PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION_GEOM, data, sizeof(player_position_geom_t));		
 		*resp_len=0;
+		return 0;
 	}
-	MSG_END
-
-	MSG(position_id, PLAYER_MSGTYPE_DATA, 0, sizeof(player_position_data_t))
+	if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_data_t));
 		PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, data, sizeof(player_position_data_t));		
 		*resp_len=0;
+		return 0;
 	}
-	MSG_END
-
-	MSG(device_id, PLAYER_MSGTYPE_CMD, 0, sizeof(player_position_cmd_t))
+	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
 	{
+		assert(hdr->size == sizeof(player_position_cmd_t));
 		cmd = *reinterpret_cast<player_position_cmd_t *> (data);
 		if (!Blocked)
 		{
@@ -289,8 +283,8 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 			hdr->device_index = device_id.index;
 			return ret;
 		}
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
 
 	return -1;
 }

@@ -118,6 +118,8 @@ Toby Collett
 #include <netinet/in.h>
 #include <ctype.h>
 
+#include <assert.h>
+
 #include <khepera.h>
 
 #include <error.h>
@@ -166,20 +168,18 @@ int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
 {
 	*resp_len = 0;
 
-	// ir pose request
-	MSG(ir_id, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, 0)
+	if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, 
+                        ir_id))
 	{
-//		player_ir_pose_t irpose;
-//		irpose = geometry->ir;
-//		irpose.subtype = PLAYER_IR_POSE_REQ;
-
+		assert(hdr->size == 0);
+		
 		memcpy(resp_data, &geometry->ir, sizeof(geometry->ir));
 		*resp_len = sizeof(geometry->ir);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(position_id, PLAYER_MSGTYPE_CMD, 0, sizeof(player_position_cmd_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_cmd_t));
 		player_position_cmd_t * poscmd = reinterpret_cast<player_position_cmd_t *> (data);
 
 		if (this->velocity_mode) 
@@ -200,36 +200,36 @@ int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
 		} 
 		else
 			PLAYER_WARN("Khepera driver does not support position mode yet");
+		return 0;
 	}
-	MSG_END;
-
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, 0)
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, position_id))
 	{
+		assert(hdr->size == 0);
 		memcpy(resp_data, &geometry->position, sizeof(geometry->position));
 		*resp_len = sizeof(geometry->position);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, sizeof(player_position_power_config_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_power_config_t));
 		this->motors_enabled = ((player_position_power_config_t *)data)->value;
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END;
-	
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, sizeof(player_position_velocitymode_config_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_velocitymode_config_t));
 		/// Need to implement
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END;
-	
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, 0)
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, position_id))
 	{
+		assert(hdr->size == 0);
 		ResetOdometry();
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END;
-	
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, sizeof(player_position_set_odom_req_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_set_odom_req_t));
 		// note really implemented yet
 		player_position_set_odom_req_t *req = (player_position_set_odom_req_t *) data;
 #ifdef DEBUG_CONFIG
@@ -242,8 +242,8 @@ int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
 		printf("Khepera: SET_ODOM_REQ x=%d y=%d theta=%d\n", x, y, theta);
 #endif
 		ResetOdometry();
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END;
 
 	return -1;
 }

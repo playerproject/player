@@ -305,6 +305,7 @@ Matthew Brewer, Toby Collett
 #include <stdlib.h>  /* for abs() */
 #include <netinet/in.h>
 #include <termios.h>
+#include <assert.h>
 
 #include "rflex.h"
 #include "rflex_configs.h"
@@ -365,30 +366,32 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	assert(resp_len);
 	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
 	*resp_len = 0;
-	
-	// Sonar bank 1 power request
-	MSG(sonar_id, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_POWER, sizeof(player_sonar_power_config_t))
+
+	if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_POWER, 
+                        sonar_id))
 	{
+		assert(hdr->size == sizeof(player_sonar_power_config));
 		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
 			rflex_sonars_off(rflex_fd);
 		else
 			rflex_sonars_on(rflex_fd);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	// Sonar bank 2 power request
-	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_POWER, sizeof(player_sonar_power_config_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_POWER, 
+                        sonar_id_2))
 	{
+		assert(hdr->size == sizeof(player_sonar_power_config));
 		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
 			rflex_sonars_off(rflex_fd);
 		else
 			rflex_sonars_on(rflex_fd);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	// Sonar bank 1 geom request
-	MSG(sonar_id, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 0)
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 
+                        sonar_id))
 	{
+		assert(hdr->size == 0);
+
 		player_sonar_geom_t geom;
 //		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 		geom.pose_count = htons((short) rflex_configs.sonar_1st_bank_end);
@@ -400,12 +403,13 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		}
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	// Sonar bank 2 geom request
-	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 0)
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 
+                        sonar_id_2))
 	{
+		assert(hdr->size == 0);
+
 		player_sonar_geom_t geom;
 //		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 		geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
@@ -417,11 +421,13 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		}
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(bumper_id, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM, 0)
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 
+                        bumper_id))
 	{
+		assert(hdr->size == 0);
+
 		player_bumper_geom_t geom;
 //		geom.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
 		geom.bumper_count = htons((short) rflex_configs.bumper_count);
@@ -436,11 +442,12 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(ir_id, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, 0)
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, ir_id))
 	{
+		assert(hdr->size == 0);
+
 		// Assemble geometry structure for sending
 		player_ir_pose_t geom;
 //		geom.subtype = PLAYER_IR_POSE_REQ;
@@ -453,48 +460,53 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(ir_id, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, 1)
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, ir_id))
 	{
+		assert(hdr->size == 1);
+
 		if (data[0] == 0)
 			rflex_ir_off(rflex_fd);
 		else
 			rflex_ir_on(rflex_fd);	
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, sizeof(player_position_set_odom_req_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_set_odom_req_t));
+
 		player_position_set_odom_req_t * set_odom_req = ((player_position_set_odom_req_t*)data);;
 		set_odometry((long) ntohl(set_odom_req->x),(long) ntohl(set_odom_req->y),(short) ntohs(set_odom_req->theta));	
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, sizeof(player_position_power_config_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_power_config_t));
+
 		if(((player_position_power_config_t*)data)->value==0)
 			rflex_brake_on(rflex_fd);
 		else
 			rflex_brake_off(rflex_fd);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, sizeof(player_position_velocitymode_config_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_velocitymode_config_t));
 		// Does nothing, needs to be implemented
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, sizeof(player_position_resetodom_config_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_resetodom_config_t));
+
 		reset_odometry();
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(position_id, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, 0)
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, position_id))
 	{
+		assert(hdr->size == 0);
+
 		// TODO : get values from somewhere.
 		player_position_geom_t geom;
 //		geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
@@ -509,14 +521,15 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	MSG_END_ACK;
-
-	MSG(position_id, PLAYER_MSGTYPE_CMD, 0, sizeof(player_position_cmd_t))
+	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, position_id))
 	{
+		assert(hdr->size == sizeof(player_position_cmd_t));
+
 		command = *reinterpret_cast<player_position_cmd_t *> (data);
+		return 0;
 	}
-	MSG_END_ACK;
 
 	return -1;
 }
@@ -524,7 +537,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 RFLEX::RFLEX(ConfigFile* cf, int section)
         : Driver(cf,section)
 {
-  // zero ids, so that we'll know later which interfaces were requested
+  // zero ids, so that we'll know later which interfaces were requested 
   memset(&this->position_id, 0, sizeof(player_device_id_t));
   memset(&this->sonar_id, 0, sizeof(player_device_id_t));
   memset(&this->sonar_id_2, 0, sizeof(player_device_id_t));
