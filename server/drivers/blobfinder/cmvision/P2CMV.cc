@@ -55,10 +55,8 @@
 #if HAVE_V4L
   #include "capturev4l.h"
 #endif
-
-#if INCLUDE_GAZEBO_CAMERA
-  #include "captureGazebo.h"
-  #include "gz_cam_init.h"
+#ifdef PLAYER_CAMERA_CODE
+#include "captureCamera.h"
 #endif
 
 #define CMV_NUM_CHANNELS CMV_MAX_COLORS
@@ -138,9 +136,7 @@ CMVisionBF::CMVisionBF(char* interface, ConfigFile* cf, int section)
   vision=NULL;
   cap=NULL;
   
-  //#ifdef HAVE_GAZEBO
-  
-#if INCLUDE_GAZEBO
+#ifdef PLAYER_CAMERA_CODE //INCLUDE_GAZEBO
   gz_interface=interface;
   gz_cf=cf;
   gz_section=section;
@@ -206,14 +202,16 @@ CMVisionBF::Setup()
     return(-1);
 #endif
   }
- else if(!strcmp(capturetype, "GAZEBO"))
+ else if(!strcmp(capturetype, "camera"))
   {
-    //#if HAVE_GAZEBO
-
-#if INCLUDE_GAZEBO_CAMERA
-    cap = new captureGazebo(gz_interface,gz_cf,gz_section);
+#ifdef PLAYER_CAMERA_CODE
+       // does this interface always exist? 
+       cap = new captureCamera(gz_interface,gz_cf,gz_section);
+       // get image size from camera_data struct
+       width = ((captureCamera*)cap)->Width();
+       height = ((captureCamera*)cap)->Height();
 #else
-    PLAYER_ERROR("Sorry, support for capture from a Gazebo camera was not "
+    PLAYER_ERROR("Sorry, support for the camera interface was not "
                  "included at compile-time");
     return(-1);
 #endif
@@ -306,7 +304,21 @@ CMVisionBF::Main()
       // clean our buffers
       memset(&local_data,0,sizeof(local_data));
       
-      // put in some stuff that doesnt change
+#ifdef PLAYER_CAMERA_CODE
+      if(!strcmp(capturetype, "camera"))
+	   {
+		int nwidth = ((captureCamera*)cap)->Width();
+		int nheight = ((captureCamera*)cap)->Height();
+		if ((width!=nwidth)!=(height!=nheight))
+		     {
+			  width = nwidth;
+			  height = nheight;
+			  vision->initialize(width,height);
+		     }
+	   }
+#endif
+      
+      // put in some stuff that doesnt change (almost...)
       local_data.width = htons(this->width);
       local_data.height = htons(this->height);
       
