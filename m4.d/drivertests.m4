@@ -284,15 +284,15 @@ AC_ARG_WITH(gazebo, [  --with-gazebo=dir       Location of Gazebo],
 if test "x$enable_gazebo" = "xyes"; then
 if test "x$GAZEBO_DIR" = "xNONE" -o "x$GAZEBO_DIR" = "xno"; then
   GAZEBO_HEADER=gazebo.h
-  GAZEBO_EXTRA_CPPFLAGS="-DINCLUDE_GAZEBO"
+  GAZEBO_EXTRA_CPPFLAGS=
   GAZEBO_EXTRA_LDFLAGS=-lgazebo
 elif test "x$GAZEBO_DIR" = "xyes"; then
   GAZEBO_HEADER=$prefix/include/gazebo.h
-  GAZEBO_EXTRA_CPPFLAGS="-I$prefix/include -DINCLUDE_GAZEBO"
+  GAZEBO_EXTRA_CPPFLAGS="-I$prefix/include"
   GAZEBO_EXTRA_LDFLAGS="-L$prefix/lib -lgazebo"
 else
   GAZEBO_HEADER=$GAZEBO_DIR/include/gazebo.h
-  GAZEBO_EXTRA_CPPFLAGS="-I$GAZEBO_DIR/include -DINCLUDE_GAZEBO"
+  GAZEBO_EXTRA_CPPFLAGS="-I$GAZEBO_DIR/include"
   GAZEBO_EXTRA_LDFLAGS="-L$GAZEBO_DIR/lib -lgazebo"
 fi
 else 
