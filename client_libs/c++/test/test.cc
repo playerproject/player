@@ -73,6 +73,10 @@ int main(int argc, const char *argv[])
     // Power device - a simple one to start with
     if(strcmp(device, "power") == 0 || strcmp(device, "all") == 0)
       test_power(&client, index);
+    
+    // DIO device
+    if(strcmp(device, "dio") == 0 || strcmp(device, "all") == 0)
+      test_dio(&client, index);
 
     // Position device
     if (strcmp(device, "position") == 0 || strcmp(device, "all") == 0)

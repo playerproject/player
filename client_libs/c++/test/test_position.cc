@@ -73,6 +73,24 @@ test_position(PlayerClient* client, int index)
   sleep(3);
   PASS();
 
+  TEST("moving left");
+  if(pp.SetSpeed(0,100,0) < 0)
+  {
+    FAIL();
+    return(-1);
+  }
+  sleep(3);
+  PASS();
+
+  TEST("moving right");
+  if(pp.SetSpeed(0,-100,0) < 0)
+  {
+    FAIL();
+    return(-1);
+  }
+  sleep(3);
+  PASS();
+
   TEST("turning right");
   if(pp.SetSpeed(0,-25) < 0)
   {

@@ -25,6 +25,7 @@ test_SOURCES = test_broadcast.cc \
                test_truth.cc \
                test_vision.cc \
 	       test_power.cc \
+	       test_dio.cc \
                test_bumper.cc \
                test_wifi.cc 
                #test_idar.cc \
