@@ -48,10 +48,10 @@
 
 
 // Driver for detecting laser retro-reflectors.
-class Shapetracker : public CDevice
+class ShapeTracker : public CDevice
 {
   // Constructor
-  public: Shapetracker(char* interface, ConfigFile* cf, int section);
+  public: ShapeTracker(char* interface, ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -81,7 +81,7 @@ class Shapetracker : public CDevice
 
 
 // Initialization function
-CDevice* Shapetracker_Init(char* interface, ConfigFile* cf, int section)
+CDevice* ShapeTracker_Init(char* interface, ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_BLOBFINDER_STRING) != 0)
   {
@@ -89,20 +89,20 @@ CDevice* Shapetracker_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new Shapetracker(interface, cf, section)));
+  return ((CDevice*) (new ShapeTracker(interface, cf, section)));
 }
 
 
 // a driver registration function
-void Shapetracker_Register(DriverTable* table)
+void ShapeTracker_Register(DriverTable* table)
 {
-  table->AddDriver("shapetracker", PLAYER_READ_MODE, Shapetracker_Init);
+  table->AddDriver("shapetracker", PLAYER_READ_MODE, ShapeTracker_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-Shapetracker::Shapetracker(char* interface, ConfigFile* cf, int section)
+ShapeTracker::ShapeTracker(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_blobfinder_data_t), 0, 10, 10)
 {
   this->camera_index = cf->ReadInt(section, "camera", 0);
@@ -115,7 +115,7 @@ Shapetracker::Shapetracker(char* interface, ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int Shapetracker::Setup()
+int ShapeTracker::Setup()
 {
   player_device_id_t id;
 
@@ -144,7 +144,7 @@ int Shapetracker::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int Shapetracker::Shutdown()
+int ShapeTracker::Shutdown()
 {
   // Stop the driver thread.
   StopThread();
@@ -158,7 +158,7 @@ int Shapetracker::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Shapetracker::Main() 
+void ShapeTracker::Main() 
 {
   while (true)
   {
@@ -184,7 +184,7 @@ void Shapetracker::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process requests.  Returns 1 if the configuration has changed.
-int Shapetracker::HandleRequests()
+int ShapeTracker::HandleRequests()
 {
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
@@ -206,7 +206,7 @@ int Shapetracker::HandleRequests()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process any new camera data.
-int Shapetracker::UpdateCamera()
+int ShapeTracker::UpdateCamera()
 {
   size_t size;
   uint32_t timesec, timeusec;
@@ -233,7 +233,7 @@ int Shapetracker::UpdateCamera()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Look for stuff in the image.
-void Shapetracker::ProcessImage()
+void ShapeTracker::ProcessImage()
 {
   // TODO: image processing
   
@@ -243,7 +243,7 @@ void Shapetracker::ProcessImage()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
-void Shapetracker::WriteData()
+void ShapeTracker::WriteData()
 {
   /* TODO
   int i;
