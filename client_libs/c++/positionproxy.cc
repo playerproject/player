@@ -41,6 +41,7 @@ int PositionProxy::SetSpeed(int speed, int sidespeed, int turnrate)
     return(-1);
 
   player_position_cmd_t cmd;
+  memset( &cmd, 0, sizeof(cmd) );
 
   cmd.xspeed = (int)htonl(speed);
   cmd.yspeed = (int)htonl(sidespeed);
@@ -222,26 +223,27 @@ PositionProxy::SelectPositionMode(unsigned char mode)
 			 (const char *)&req, sizeof(req));
 }
 
-/* Set odometry to the gicen pose.  
+/* goto the specified location (x mm, y mm, t degrees)
+ * this only works if the robot supports position control.
  *
  * returns: 0 if ok, -1 else
  */
 int
-PositionProxy::SetOdometry(long x, long y,int t)
+PositionProxy::GoTo(int x, int y, int t)
 {
   if (!client) {
     return -1;
-  }
-  player_position_set_odom_req_t req;
+  }  
 
-  req.subtype = PLAYER_POSITION_SET_ODOM_REQ;
-  req.x = htonl( x);
-  req.y = htonl( y);
-  t %= 360;
-  t=(uint16_t) (t < 0 ? t+360 : t);
-  req.theta = htons(t);
-  return client->Request(PLAYER_POSITION_CODE, index, 
-			 (const char *)&req, sizeof(req));
+  player_position_cmd_t cmd;
+  memset( &cmd, 0, sizeof(cmd) );
+
+  cmd.xpos = (int32_t)htonl(x);
+  cmd.ypos = (int32_t)htonl(y);
+  cmd.yaw  = (int32_t)htonl(t);
+
+  return(client->Write(PLAYER_POSITION_CODE,index,
+                       (const char*)&cmd,sizeof(cmd)));
 }
 
 /* set the PID for the speed controller
