@@ -238,7 +238,7 @@ proc requestFromRobot {device index req} {
       #puts "- ok"
     } else {
       #puts "- but got \"$reply\" (length: [string length $reply])"
-      error "bad reply \"$reply\""
+      puts "Error: bad reply \"$reply\""
     }
   }
 }
