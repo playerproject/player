@@ -209,6 +209,7 @@ void StgLaser_Register(DriverTable *table);
 void StgPosition_Register(DriverTable *table);
 void StgFiducial_Register(DriverTable *table);
 void StgSonar_Register(DriverTable *table);
+void StgBlinkenlight_Register(DriverTable *table);
 #endif
 
 /* this array lists the interfaces that Player knows how to load, along with
@@ -245,6 +246,7 @@ player_interface_t interfaces[] = {
   {PLAYER_GPS_CODE, PLAYER_GPS_STRING, "garminnmea"},
   {PLAYER_SERVICE_ADV_CODE, PLAYER_SERVICE_ADV_STRING, "service_adv_lsd"},
   {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING, "stg_simulation"},
+  {PLAYER_BLINKENLIGHT_CODE, PLAYER_BLINKENLIGHT_STRING, "stg_blinkenlight"},
   {0,NULL,NULL}
 };
 
@@ -481,5 +483,6 @@ register_devices()
   StgPosition_Register(driverTable);
   StgFiducial_Register(driverTable);
   StgSonar_Register(driverTable);
+  StgBlinkenlight_Register(driverTable);
 #endif
 }

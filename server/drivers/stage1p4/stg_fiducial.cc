@@ -1,6 +1,7 @@
 /*
  *  Stage-1.4 driver for Player
  *  Copyright (C) 2003  Richard Vaughan (rtv) vaughan@hrl.com 
+ *  for the Player/Stage Project http://playerstage.sourceforge.net
  *
  * This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,13 +20,12 @@
  * $Id$
  */
 
+#include <stdlib.h>
+
 #include "playercommon.h"
 #include "drivertable.h"
 #include "player.h"
-#include <stdlib.h>
 #include "stage1p4.h"
-
-// DRIVER FOR FIDUCIAL INTERFACE ////////////////////////////////////////////////////////
 
 class StgFiducial:public Stage1p4
 {
@@ -49,7 +49,7 @@ CDevice* StgFiducial_Init(char* interface, ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_FIDUCIAL_STRING))
     {
-      PLAYER_ERROR1("driver \"stg_fiducial_neighbors\" does not support interface \"%s\"\n",
+      PLAYER_ERROR1("driver \"stg_fiducial\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
@@ -60,7 +60,7 @@ CDevice* StgFiducial_Init(char* interface, ConfigFile* cf, int section)
 
 void StgFiducial_Register(DriverTable* table)
 {
-  table->AddDriver("stg_fiducial_neighbors", PLAYER_ALL_MODE, StgFiducial_Init);
+  table->AddDriver("stg_fiducial", PLAYER_ALL_MODE, StgFiducial_Init);
 }
 
 // override GetData to get data from Stage on demand, rather than the
@@ -164,25 +164,38 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
       
     case PLAYER_FIDUCIAL_SEND_MSG:
       {
-	assert( len == sizeof( player_fiducial_msg_t) );
-	player_fiducial_msg_t* p_msg = (player_fiducial_msg_t*)data;
+	assert( len == sizeof( player_fiducial_msg_tx_req_t) );
+
+	player_fiducial_msg_tx_req_t* p_msg = 
+	  (player_fiducial_msg_tx_req_t*)data;
 	
 	stg_los_msg_t s_msg;
 	memset( &s_msg, 0, sizeof(s_msg) );
 	
-	s_msg.id = (int32_t)ntohl(p_msg->target_id);
-	s_msg.power = (uint16_t)ntohs(p_msg->power);
-	s_msg.consume = p_msg->consume;
-	
-	s_msg.len = (size_t)p_msg->len;
+	s_msg.id = (int32_t)ntohl(p_msg->msg.target_id);
+	s_msg.power = p_msg->msg.intensity;
+	//s_msg.consume = p_msg->consume;
+	s_msg.len = (size_t)p_msg->msg.len;
 
 	printf( "sending message len %d\n", s_msg.len );
 
 	if( s_msg.len > STG_LOS_MSG_MAX_LEN ) s_msg.len = STG_LOS_MSG_MAX_LEN;
-	memcpy( &s_msg.bytes, p_msg->bytes, s_msg.len );
+	memcpy( &s_msg.bytes, p_msg->msg.bytes, s_msg.len );
 	
-	stg_model_send_los_msg( this->stage_client, this->stage_id, 
-				&s_msg );
+	stg_prop_id_t propid;
+	
+	if( p_msg->consume )
+	  propid = STG_PROP_LOS_MSG_CONSUME;
+	else
+	  propid = STG_PROP_LOS_MSG;
+	
+	if( stg_set_property(  this->stage_client, this->stage_id,
+			       propid, (void*)&s_msg, sizeof(s_msg))
+	    < 0 )
+	  {
+	    puts( "failed to send fiducial message" );
+	    return -1;
+	  }
 	
 	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) 
 	    != 0 )
@@ -190,41 +203,72 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
       }
       break;
 
+    case PLAYER_FIDUCIAL_RECV_MSG:
+      {
+	assert( len == sizeof(player_fiducial_msg_rx_req_t ) );
+	
+	player_fiducial_msg_rx_req_t* req = 
+	  (player_fiducial_msg_rx_req_t*)data;
+	
+	stg_los_msg_t* s_msg;
+	size_t len;
+	stg_prop_id_t prop;
+	
+	if( req->consume )
+	  prop = STG_PROP_LOS_MSG_CONSUME;
+	else
+	  prop = STG_PROP_LOS_MSG;
+	  
+	puts( "GETTING MESSAGE" );
+
+	assert( stg_get_property( this->stage_client, this->stage_id, 
+				  prop, 
+				  (void**)&s_msg, &len ) == 0 );
+
+	printf( "message is %d bytes\n", len );
+
+	if( len == 0 )
+	  {
+	    puts( "no message to receive" );
+	    
+	    if( PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, 
+			  NULL, NULL, 0 ) != 0 )
+	      PLAYER_ERROR("PutReply() failed");
+	  }
+	else if( len == sizeof(stg_los_msg_t) )
+	  { 
+	    // convert the message from Stage to Player format
+	    player_fiducial_msg_t reply;
+	    
+	    reply.target_id = htonl( (int32_t)s_msg->id );
+	    reply.intensity = (uint8_t)s_msg->power;
+	    reply.len = (uint8_t)s_msg->len;
+	    memcpy( reply.bytes, s_msg->bytes, s_msg->len );
+
+	    printf( "copied message (%s)\n", reply.bytes );
+
+	    free( s_msg );
+	    
+	    if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL,
+			  &reply, sizeof(player_fiducial_msg_t) ) != 0 )
+	      PLAYER_ERROR("PutReply() failed");
+	  }
+	else
+	  {
+	    // failed
+	    printf( "error: got wrong message size from Stage (%d/%d bytes)\n",
+		    len, sizeof(stg_los_msg_t) );
+	    
+	    if( PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK,
+			  NULL, NULL, 0 ) != 0 )
+	      PLAYER_ERROR("PutReply() failed");
+	  }	    
+      }
+      break;
+
     case PLAYER_FIDUCIAL_EXCHANGE_MSG:
       {
-	assert( len == sizeof( player_fiducial_msg_t) );
-	player_fiducial_msg_t* p_msg = (player_fiducial_msg_t*)data;
-	
-	stg_los_msg_t s_msg;
-	
-	s_msg.id = ntohl(p_msg->target_id);
-	s_msg.power = ntohs(p_msg->power);
-	s_msg.consume = (int)p_msg->consume;
-	
-	size_t sz = (size_t)p_msg->len;
-	if( sz > STG_LOS_MSG_MAX_LEN ) sz =  STG_LOS_MSG_MAX_LEN;
-	memcpy( &s_msg.bytes, p_msg->bytes, sz );
-	
-	stg_model_exchange_los_msg( this->stage_client, this->stage_id, 
-					&s_msg );
-	
-	// re-format the reply into Player-speak
-
-	player_fiducial_msg_t p_reply;
-	p_reply.target_id = htonl( s_msg.id );
-	p_reply.power = htons( s_msg.power );
-	p_reply.consume = (uint8_t)s_msg.consume;
-	sz = (size_t)s_msg.len;
-
-	if( sz > PLAYER_FIDUCIAL_MAX_MSG_LEN ) 
-	  sz =  PLAYER_FIDUCIAL_MAX_MSG_LEN;
-	
-	p_reply.len = (uint8_t)s_msg.len;
-	memcpy( &p_reply.bytes, &s_msg.bytes, sz );
-	
-	if (PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		      &p_reply, sizeof(p_reply) ) != 0 )
-	  PLAYER_ERROR("PutReply() failed");
+	// TODO
       }
     default:
       {
