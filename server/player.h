@@ -76,6 +76,7 @@
 #define PLAYER_IR_CODE             ((uint16_t)22)  // IR array
 #define PLAYER_WIFI_CODE	   ((uint16_t)23)  // wifi card status
 #define PLAYER_WAVEFORM_CODE	   ((uint16_t)24)  // fetch raw waveforms
+#define PLAYER_LOCALIZATION_CODE   ((uint16_t)25)  // localization
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -104,6 +105,7 @@
 #define PLAYER_IR_STRING             "ir"
 #define PLAYER_WIFI_STRING           "wifi"
 #define PLAYER_WAVEFORM_STRING       "waveform"
+#define PLAYER_LOCALIZATION_STRING   "localization"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -1763,5 +1765,113 @@ typedef struct player_ir_power_req
  ** end section
  *************************************************************************/
 
+/*************************************************************************
+ ** begin section localization
+ *************************************************************************/
+
+/** [Synopsis] The {\tt localization} interface provides a pose information
+using probablistic localization algorithms. */
+
+/** [Constants] */
+/** the maximum number of pose hypothesis */
+#define PLAYER_LOCALIZATION_MAX_HYPOTHESIS         10
+/** the various configuration subtypes */
+#define PLAYER_LOCALIZATION_RESET_REQ              ((uint8_t)1)
+#define PLAYER_LOCALIZATION_GET_CONFIG_REQ         ((uint8_t)2)
+#define PLAYER_LOCALIZATION_SET_CONFIG_REQ         ((uint8_t)3)
+#define PLAYER_LOCALIZATION_GET_MAP_HDR_REQ        ((uint8_t)4)
+#define PLAYER_LOCALIZATION_GET_MAP_DATA_REQ       ((uint8_t)5)
+
+/** [Data] */
+/**
+The {\tt localization} interface returns multiple hypothesis, of which format is: */
+typedef struct player_localization_hypothesis
+{
+    /** the central pose (mean) of a hypothesis */
+    int32_t mean[3];
+    /** the covariance matrix of a hypothesis */
+    int32_t cov[3][3];
+    /** coefficient for linear combination : int(alpha * billion) */
+    uint32_t alpha;
+} __attribute__ ((packed)) player_localization_hypothesis_t;
+
+/**
+The {\tt localization} interface returns data regarding the pose of the robot;
+the format is: */
+typedef struct player_localization_data
+{
+    /** the number of pose hypothesis */
+    uint32_t num_hypothesis;
+    /** the array of the hypothesis */
+    player_localization_hypothesis_t hypothesis[PLAYER_LOCALIZATION_MAX_HYPOTHESIS];
+} __attribute__ ((packed)) player_localization_data_t;
+
+/** [Commands] This interface accepts no commands. */
+
+/** [Configuration: Reset particles] */
+/**
+Reset localization algorithm; there is no parameter necessary. */
+typedef struct player_localization_reset
+{
+    /** subtype; Must be PLAYER_LOCALIZATION_RESET_REQ. */
+    uint8_t subtype;
+} __attribute__ ((packed)) player_localization_reset_t;
+
+/** [Configuration: Get/set configuration] */
+/**
+To retrieve the configuration, set the subtype to PLAYER_LOCALIZATION_GET_CONFIG_REQ
+and leave the other fields empty. The server will reply with the following
+configuaration fields filled in.
+ 
+To change the current configuration, set the subtype to PLAYER_LOCALIZATION_SET_CONFIG_REQ
+and fill the configuration fields. */
+typedef struct player_localization_config
+{ 
+  /** subtype; must be either PLAYER_LOCALIZATION_GET_CONFIG_REQ or
+      PLAYER_LOCALIZATION_SET_CONFIG_REQ */
+  uint8_t subtype;
+  /** configuration for particle-based localization algorithms */
+  uint32_t num_particles;
+} __attribute__ ((packed)) player_localization_config_t;
+
+/** [configuration: Get a map information] */
+/**
+Retrieve the size and scale information of a current map. This request is used
+to get the size information with a given scale before you request the actual
+map data. Set the subtype to PLAYER_LOCALIZATION_GET_MAP_HDR_REQ and set the scale factor,
+then the server will reply with the size information filled in. */
+typedef struct player_localization_map_header
+{
+  /** subtype; must be PLAYER_LOCALIZATION_GET_MAP_HDR_REQ */
+  uint8_t subtype; 
+  /** the scale of the map */
+  uint8_t scale; 
+  /** the size of the map */
+  uint32_t width, height;
+  /** the number of pixels per kilo-meter */
+  uint32_t ppkm;
+} __attribute__ ((packed)) player_localization_map_header_t;
+
+/** [Configuration: Get map data] */
+/**
+Retrieve the (scaled) map data. Since the maximum size of a request-replay message,
+map data should be partitioned and tranfered block by block. Set the subtype to
+PLAYER_LOCALIZATION_GET_MAP_DATA_REQ, set the scale factor, and set the row index of a block.
+Then, the server will replay with the requested block data filled in. */
+typedef struct player_localization_map_data
+{
+  /** subtype; must be PLAYER_LOCALIZATION_MAP_DATA_REQ */
+  uint8_t subtype; 
+  /** the scale of the map */
+  uint8_t scale;
+  /** the index row */
+  uint16_t row;
+  /** map data */
+  uint8_t data[PLAYER_MAX_REQREP_SIZE - 4];
+} __attribute__ ((packed)) player_localization_map_data_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 #endif /* PLAYER_H */

@@ -767,6 +767,57 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 
 
 /***************************************************************************
+ * proxy : localization device
+ **************************************************************************/
+
+// localization device data
+typedef struct
+{
+  // Device info; must be at the start of all device structures.
+  playerc_device_t info;
+
+  // Number of hypothesis.
+  uint32_t num_hypothesis;
+  
+  // Pose of each hypothesis in global coordnate sytems (m, m, radians).
+  player_localization_hypothesis_t hypothesis[PLAYER_LOCALIZATION_MAX_HYPOTHESIS];
+  
+} playerc_localization_t;
+
+
+// Create a localization proxy
+playerc_localization_t *playerc_localization_create(playerc_client_t *client, int index);
+
+// Destroy a localization proxy
+void playerc_localization_destroy(playerc_localization_t *device);
+
+// Subscribe to the localization device
+int playerc_localization_subscribe(playerc_localization_t *device, int access);
+
+// Un-subscribe from the localization device
+int playerc_localization_unsubscribe(playerc_localization_t *device);
+
+// Reset the localization device
+int playerc_localization_reset(playerc_localization_t *device);
+
+// Get the current configuration.
+int playerc_localization_get_config(playerc_localization_t *device,
+	player_localization_config_t *config);
+
+// Modify the current configuration.
+int playerc_localization_set_config(playerc_localization_t *device,
+	player_localization_config_t config);
+
+// Retrieve the information of the internal grid map
+int playerc_localization_get_map_header(playerc_localization_t *device,
+	uint8_t scale, player_localization_map_header_t *header);
+
+// Retrieve the scaled grid map
+int playerc_localization_get_map(playerc_localization_t *device,
+	uint8_t scale, player_localization_map_header_t *header, char *data);
+
+
+/***************************************************************************
  * proxy : end (this is just here so the auto-documentation works.
  **************************************************************************/
 

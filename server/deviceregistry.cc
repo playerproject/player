@@ -122,6 +122,10 @@ void MicroStrain3DMG_Register(DriverTable* table);
 void Waveaudio_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_LOCALIZATION
+void RegularMCL_Register(DriverTable* table);
+#endif
+
 
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
@@ -146,6 +150,7 @@ player_interface_t interfaces[] = {
   {PLAYER_WIFI_CODE, PLAYER_WIFI_STRING, "linuxwifi"},
   {PLAYER_IR_CODE, PLAYER_IR_STRING, "reb_ir"},
   {PLAYER_WAVEFORM_CODE, PLAYER_WAVEFORM_STRING, "wave_audio"},
+  {PLAYER_LOCALIZATION_CODE, PLAYER_LOCALIZATION_STRING, "regular_mcl"},
   {0,NULL,NULL}
 };
 
@@ -254,6 +259,10 @@ register_devices()
 
 #ifdef INCLUDE_WAVEAUDIO
   Waveaudio_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LOCALIZATION
+  RegularMCL_Register(driverTable);
 #endif
 }
 

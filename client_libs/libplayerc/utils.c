@@ -59,6 +59,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_SONAR_STRING;
     case PLAYER_WIFI_CODE:
       return PLAYER_WIFI_STRING;
+    case PLAYER_LOCALIZATION_CODE:
+      return PLAYER_LOCALIZATION_STRING;
     default:
       break;
   }
@@ -95,6 +97,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_SONAR_CODE;
   if (strcmp(name, PLAYER_WIFI_STRING) == 0)
     return PLAYER_WIFI_CODE;
+  if (strcmp(name, PLAYER_LOCALIZATION_STRING) == 0)
+    return PLAYER_LOCALIZATION_CODE;
   return -1;
 }
 

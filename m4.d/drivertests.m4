@@ -221,4 +221,16 @@ fi
 AC_SUBST(WAVEAUDIO_LIB)
 AC_SUBST(WAVEAUDIO_LIBPATH)
 
+dnl optionally compile the localization driver -- disabled by default
+AC_ARG_WITH(localization,
+[  --with-localization     Compile the localization driver],,with_localization=no)
+if test "x$with_localization" = "xyes"; then
+  AC_DEFINE(INCLUDE_LOCALIZATION, 1, [[include the LOCALIZATION driver]])
+  LOCALIZATION_LIB="liblocalization.a"
+  LOCALIZATION_LIBPATH="drivers/localization/liblocalization.a"
+fi
+AC_SUBST(LOCALIZATION_LIB)
+AC_SUBST(LOCALIZATION_LIBPATH)
+
 ])
+
