@@ -19,6 +19,7 @@ bool turnOnMotors = false;
 bool use_laser = false;
 char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
+char auth_key[PLAYER_KEYLEN];
 
 /* parse command-line args */
 void
@@ -43,6 +44,16 @@ parse_args(int argc, char** argv)
     {
       if(++i<argc)
         port = atoi(argv[i]);
+      else
+      {
+        puts(USAGE);
+        exit(1);
+      }
+    }
+    else if(!strcmp(argv[i],"-k"))
+    {
+      if(++i<argc)
+        strncpy(auth_key,argv[i],sizeof(auth_key));
       else
       {
         puts(USAGE);
@@ -79,6 +90,15 @@ int main(int argc, char** argv)
 
   /* Connect to the Player server */
   PlayerClient robot(host,port);
+
+  if(strlen(auth_key))
+  {
+    if(robot.Authenticate(auth_key))
+    {
+      puts("Authentication failed.");
+      exit(1);
+    }
+  }
   LaserProxy lp(&robot,0);
   SonarProxy sp(&robot,0);
 

@@ -52,7 +52,7 @@ extern bool SHUTTING_DOWN;
 
 extern int global_playerport; // used to generate useful output & debug
 
-CClientData::CClientData() 
+CClientData::CClientData(char* key) 
 {
   requested = NULL;
   numsubs = 0;
@@ -60,13 +60,68 @@ CClientData::CClientData()
   writeThread = 0;
   socket = 0;
   mode = CONTINUOUS;
-  //mode = UPDATE; // RTV - default for testing
   frequency = 10;
+
+  if(strlen(key))
+  {
+    strncpy(auth_key,key,sizeof(auth_key));
+    auth_key[sizeof(auth_key)-1] = '\0';
+    auth_pending = true;
+  }
+  else
+  {
+    auth_pending = false;
+  }
 
   pthread_mutex_init( &access, NULL ); 
   pthread_mutex_init( &datarequested, NULL ); 
   //pthread_mutex_init( &requesthandling, NULL ); 
   pthread_mutex_init( &socketwrite, NULL ); 
+}
+
+bool CClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
+                            unsigned int payload_size)
+{
+  player_device_ioctl_t player_ioctl;
+  player_device_auth_req_t tmpreq;
+  unsigned int real_payloadsize;
+
+  if(hdr.device != PLAYER_PLAYER_CODE)
+    return(false);
+
+  // ignore the device_index.  can we have more than one player?
+  // is the payload big enough?
+  if(payload_size < sizeof(player_device_ioctl_t))
+  {
+    printf("CheckAuth(): Player device got small ioctl: %d\n",
+           payload_size);
+    return(false);
+  }
+
+  // what sort of ioctl is it?
+  memcpy(&player_ioctl,payload,sizeof(player_device_ioctl_t));
+  real_payloadsize = payload_size - sizeof(player_device_ioctl_t);
+  player_ioctl.subtype = ntohs(player_ioctl.subtype);
+
+  if(player_ioctl.subtype != PLAYER_PLAYER_AUTH_REQ)
+    return(false);
+
+  if(real_payloadsize > sizeof(player_device_auth_req_t))
+  {
+    printf("HandleRequests(): got big "
+           "arg for auth change: %d\n",real_payloadsize);
+    return(false);
+  }
+
+  bzero(&tmpreq,sizeof(tmpreq));
+  memcpy(&tmpreq,payload+sizeof(player_device_ioctl_t),
+         real_payloadsize);
+  tmpreq.auth_key[sizeof(tmpreq.auth_key)-1] = '\0';
+
+  if(!strcmp(auth_key,tmpreq.auth_key))
+    return(true);
+  else
+    return(false);
 }
 
 void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,  
@@ -111,175 +166,195 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
   //pthread_mutex_lock( &requesthandling );
   
-  switch(hdr.type)
+  if(auth_pending)
   {
-    case PLAYER_MSGTYPE_REQ:
-      /* request message */
+    if(CheckAuth(hdr,payload,payload_size))
+    {
+      auth_pending = false;
       request = true;
-      // if it's for us, handle it here
-      if(hdr.device == PLAYER_PLAYER_CODE)
-      {
-        // ignore the device_index.  can we have more than one player?
-        // is the payload big enough?
-        if(payload_size < sizeof(player_device_ioctl_t))
+    }
+    else
+    {
+      fputs("Warning: failed authentication; closing connection.\n", stderr);
+      delete this;
+    }
+  }
+  else
+  {
+    switch(hdr.type)
+    {
+      case PLAYER_MSGTYPE_REQ:
+        /* request message */
+        request = true;
+        // if it's for us, handle it here
+        if(hdr.device == PLAYER_PLAYER_CODE)
         {
-          printf("HandleRequests(): Player device got small ioctl: %d\n",
-                          payload_size);
-          //pthread_mutex_unlock( &requesthandling );
-          return;
-        }
+          // ignore the device_index.  can we have more than one player?
+          // is the payload big enough?
+          if(payload_size < sizeof(player_device_ioctl_t))
+          {
+            printf("HandleRequests(): Player device got small ioctl: %d\n",
+                   payload_size);
+            //pthread_mutex_unlock( &requesthandling );
+            return;
+          }
 
-        // what sort of ioctl is it?
-        memcpy(&player_ioctl,payload,sizeof(player_device_ioctl_t));
-        real_payloadsize = payload_size - sizeof(player_device_ioctl_t);
-        player_ioctl.subtype = ntohs(player_ioctl.subtype);
-        switch(player_ioctl.subtype)
-        {
-          case PLAYER_PLAYER_DEV_REQ:
-            devicerequest = true;
-            if(real_payloadsize < sizeof(player_device_req_t))
-            {
-              printf("HandleRequests(): got small player_device_req_t: %d\n",
-                              real_payloadsize);
+          // what sort of ioctl is it?
+          memcpy(&player_ioctl,payload,sizeof(player_device_ioctl_t));
+          real_payloadsize = payload_size - sizeof(player_device_ioctl_t);
+          player_ioctl.subtype = ntohs(player_ioctl.subtype);
+
+          switch(player_ioctl.subtype)
+          {
+            case PLAYER_PLAYER_DEV_REQ:
+              devicerequest = true;
+              if(real_payloadsize < sizeof(player_device_req_t))
+              {
+                printf("HandleRequests(): got small player_device_req_t: %d\n",
+                       real_payloadsize);
+                break;
+                //return;
+              }
+              for(j=sizeof(player_device_ioctl_t);
+                  j<payload_size-(sizeof(player_device_req_t)-1);
+                  j+=sizeof(player_device_req_t))
+              {
+                //puts("memcpying request");
+                memcpy(&req,payload+j,sizeof(player_device_req_t));
+                req.code = ntohs(req.code);
+                req.index = ntohs(req.index);
+                UpdateRequested(req);
+              }
+              //puts("done with requests");
+              if(j != payload_size)
+                puts("HandleRequests(): garbage following player DR ioctl");
               break;
-              //return;
-            }
-            for(j=sizeof(player_device_ioctl_t);
-                j<payload_size-(sizeof(player_device_req_t)-1);
-                j+=sizeof(player_device_req_t))
-            {
-              //puts("memcpying request");
-              memcpy(&req,payload+j,sizeof(player_device_req_t));
-              req.code = ntohs(req.code);
-              req.index = ntohs(req.index);
-              UpdateRequested(req);
-            }
-            //puts("done with requests");
-            if(j != payload_size)
-              puts("HandleRequests(): garbage following player DR ioctl");
-            break;
-          case PLAYER_PLAYER_DATAMODE_REQ:
-            if(real_payloadsize != sizeof(player_device_datamode_req_t))
-            {
-              printf("HandleRequests(): got wrong size "
-                     "player_device_datamode_req_t: %d\n",real_payloadsize);
+            case PLAYER_PLAYER_DATAMODE_REQ:
+              if(real_payloadsize != sizeof(player_device_datamode_req_t))
+              {
+                printf("HandleRequests(): got wrong size "
+                       "player_device_datamode_req_t: %d\n",real_payloadsize);
+                break;
+              }
+              memcpy(&datamode,payload+sizeof(player_device_ioctl_t),
+                     sizeof(player_device_datamode_req_t));
+              switch(datamode.mode)
+              {
+                case REQUESTREPLY:
+                  /* changet to request/reply */
+                  //puts("changing to REQUESTREPLY");
+                  mode = REQUESTREPLY;
+                  pthread_mutex_unlock(&datarequested);
+                  pthread_mutex_lock(&datarequested);
+                  break;
+                case CONTINUOUS:
+                  /* change to continuous mode */
+                  //puts("changing to CONTINUOUS");
+                  mode = CONTINUOUS;
+                  pthread_mutex_unlock(&datarequested);
+                  break;
+                case UPDATE:
+                  /* change to continuous mode */
+                  //puts("changing to UPDATE");
+                  mode = UPDATE;
+                  pthread_mutex_unlock(&datarequested);
+                  break;
+                default:
+                  printf("Player warning: unknown I/O mode requested (%d)."
+                         "Ignoring request\n",
+                         datamode.mode );
+                  break;
+              } // end datamode switch
               break;
-            }
-            memcpy(&datamode,payload+sizeof(player_device_ioctl_t),
-                            sizeof(player_device_datamode_req_t));
-            switch(datamode.mode)
-	      {
-              case REQUESTREPLY:
-		/* changet to request/reply */
-		//puts("changing to REQUESTREPLY");
-		mode = REQUESTREPLY;
-		pthread_mutex_unlock(&datarequested);
-		pthread_mutex_lock(&datarequested);
-		break;
-	      case CONTINUOUS:
-		/* change to continuous mode */
-		//puts("changing to CONTINUOUS");
-		mode = CONTINUOUS;
-		pthread_mutex_unlock(&datarequested);
-		break;
-	      case UPDATE:
-		/* change to continuous mode */
-		//puts("changing to UPDATE");
-		mode = UPDATE;
-		pthread_mutex_unlock(&datarequested);
-		break;
-	      default:
-		printf("Player warning: unknown I/O mode requested (%d)."
-		       "Ignoring request\n",
-		       datamode.mode );
-		break;
-	      } // end datamode switch
-            break;
-          case PLAYER_PLAYER_DATA_REQ:
-            // this ioctl takes no args
-            if(real_payloadsize != 0)
-            {
-              printf("HandleRequests(): got wrong size "
-                     "arg for player_data_req: %d\n",real_payloadsize);
+            case PLAYER_PLAYER_DATA_REQ:
+              // this ioctl takes no args
+              if(real_payloadsize != 0)
+              {
+                printf("HandleRequests(): got wrong size "
+                       "arg for player_data_req: %d\n",real_payloadsize);
+                break;
+              }
+              if(mode != REQUESTREPLY)
+                puts("WARNING: got request for data when not in "
+                     "request/reply mode");
+              else
+                unlock_pending=true;
               break;
-            }
-            if(mode != REQUESTREPLY)
-              puts("WARNING: got request for data when not in "
-                              "request/reply mode");
-            else
-              unlock_pending=true;
-            break;
-          case PLAYER_PLAYER_DATAFREQ_REQ:
-            if(real_payloadsize != sizeof(unsigned short))
-            {
-              printf("HandleRequests(): got wrong size "
-                     "arg for update frequency change: %d\n",real_payloadsize);
+            case PLAYER_PLAYER_DATAFREQ_REQ:
+              if(real_payloadsize != sizeof(player_device_datafreq_req_t))
+              {
+                printf("HandleRequests(): got wrong size "
+                       "arg for update frequency change: %d\n",real_payloadsize);
+                break;
+              }
+              memcpy(&datafreq,payload+sizeof(player_device_ioctl_t),
+                     sizeof(player_device_datafreq_req_t));
+              frequency = ntohs(datafreq.frequency);
               break;
-            }
-            memcpy(&datafreq,payload+sizeof(player_device_ioctl_t),
-                            sizeof(player_device_datafreq_req_t));
-            frequency = ntohs(datafreq.frequency);
-            break;
-          default:
-            printf("Unknown server ioctl %x\n", player_ioctl.subtype);
-            break;
-        }
-      }
-      else
-      {
-        // it's for another device.  hand it off.
-        
-        // pass the config request on the proper device
-        // make sure we've got a non-NULL pointer
-        if((devicep = deviceTable->GetDevice(hdr.device,hdr.device_index)))
-        {
-          devicep->GetLock()->PutConfig(devicep,payload,payload_size);
+            case PLAYER_PLAYER_AUTH_REQ:
+              fputs("Warning: unnecessary authentication request.\n",stderr);
+              break;
+            default:
+              printf("Unknown server ioctl %x\n", player_ioctl.subtype);
+              break;
+          }
         }
         else
-          printf("HandleRequests(): got REQ for unkown device: %x:%x\n",
-                          hdr.device,hdr.device_index);
-      }
-      break;
-    case PLAYER_MSGTYPE_CMD:
-      
-      //puts( "processing command message" );
-
-      /* command message */
-      if(CheckPermissions(hdr.device,hdr.device_index))
-      {
-	//puts( "got permissions" );
-
-        // check if we can write to this device
-        if((deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'w') ||
-           (deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'a'))
-        
         {
-	  //puts( "got access" );
+          // it's for another device.  hand it off.
+
+          // pass the config request on the proper device
           // make sure we've got a non-NULL pointer
           if((devicep = deviceTable->GetDevice(hdr.device,hdr.device_index)))
           {
-	    //puts( "got device" );
-            devicep->GetLock()->PutCommand(devicep,payload,payload_size);
+            devicep->GetLock()->PutConfig(devicep,payload,payload_size);
           }
           else
-          {
-            printf("HandleRequests(): found NULL pointer for device %x:%x\n",
-                            hdr.device,hdr.device_index);
-          }
+            printf("HandleRequests(): got REQ for unkown device: %x:%x\n",
+                   hdr.device,hdr.device_index);
         }
-        else
-	  printf("You can't send commands to %x:%x\n",
-                            hdr.device,hdr.device_index);
-      }
-      else 
-      {
-        //printf("No permissions to command %x:%x\n",
-                        //hdr.device,hdr.device_index);
-      }
-      break;
-    default:
-      printf("HandleRequests(): Unknown message type %x\n", hdr.type);
-      break;
+        break;
+      case PLAYER_MSGTYPE_CMD:
+
+        //puts( "processing command message" );
+
+        /* command message */
+        if(CheckPermissions(hdr.device,hdr.device_index))
+        {
+          //puts( "got permissions" );
+
+          // check if we can write to this device
+          if((deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'w') ||
+             (deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'a'))
+
+          {
+            //puts( "got access" );
+            // make sure we've got a non-NULL pointer
+            if((devicep = deviceTable->GetDevice(hdr.device,hdr.device_index)))
+            {
+              //puts( "got device" );
+              devicep->GetLock()->PutCommand(devicep,payload,payload_size);
+            }
+            else
+            {
+              printf("HandleRequests(): found NULL pointer for device %x:%x\n",
+                     hdr.device,hdr.device_index);
+            }
+          }
+          else
+            printf("You can't send commands to %x:%x\n",
+                   hdr.device,hdr.device_index);
+        }
+        else 
+        {
+          //printf("No permissions to command %x:%x\n",
+          //hdr.device,hdr.device_index);
+        }
+        break;
+      default:
+        printf("HandleRequests(): Unknown message type %x\n", hdr.type);
+        break;
+    }
   }
 
   /* if it's a request, then we must generate a reply */

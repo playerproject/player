@@ -30,8 +30,8 @@ set PLAYER_VERSION 1.0a
 package require Tclx
 
 # get the robot client utilities
-if {[file exists ../../client_libs/newtcl/playerclient.tcl]} {
-  source ../../client_libs/newtcl/playerclient.tcl
+if {[file exists ../../client_libs/tcl/playerclient.tcl]} {
+  source ../../client_libs/tcl/playerclient.tcl
 } else { 
   source /usr/local/player-${PLAYER_VERSION}/lib/playerclient.tcl
 }

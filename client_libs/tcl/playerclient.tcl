@@ -304,13 +304,12 @@ proc player_req {obj device index req} {
 
   upvar #0 $obj arr
 
-  puts "entered player_req"
-
   set device [player_name_to_code $device]
 
   if {![array exists arr]} {
     error "\"$obj\" isn't a client object, or isn't initialized"
   }
+  set arr(request_pending) 1
 
   if {$arr(sock) == -1} {
     error "connection not set up"
@@ -356,7 +355,7 @@ proc player_req {obj device index req} {
     }
   }
   set reply [read $arr(sock) $size]
-  puts "leaving player_req"
+  set arr(request_pending) 0
   return $reply
 }
 
@@ -388,7 +387,6 @@ proc player_read {obj} {
   global PLAYER_STX PLAYER_READ_MODE PLAYER_ALL_MODE PLAYER_HEADER_LEN 
   global PLAYER_PLAYER_CODE PLAYER_PLAYER_DATA_REQ
 
-  puts "entering player_read"
   upvar #0 $obj arr
 
   if {![array exists arr]} {
@@ -396,6 +394,10 @@ proc player_read {obj} {
   }
   if {$arr(sock) == -1} {
     error "connection not set up"
+  }
+
+  if {$arr(request_pending)} {
+    return
   }
 
   # request a data packet
@@ -449,7 +451,6 @@ proc player_read {obj} {
     player_parse_data $obj $device $device_index $data $size
     incr i
   }
-  puts "leaving player_read"
 }
 
 # get the data out and put it in arr vars
