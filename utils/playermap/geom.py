@@ -42,6 +42,11 @@ def coord_sub(g, o):
     return
 
 
+def dist_euclid(a, b):
+
+    return sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2)
+
+
 def dist_metric(a, b, m):
     """Compute the distance between two poses using the given metric."""
 

@@ -377,16 +377,17 @@ static PyObject *pyrelax_relax_ls(pyrelax_t *self, PyObject *args)
 static PyObject *pyrelax_relax_nl(pyrelax_t *self, PyObject *args)
 {
   int steps;
-  double step, tol, err, epsabs;
+  double step, tol, epsabs, epsrel;
+  double err, stats[3];
   
-  if (!PyArg_ParseTuple(args, "iddd", &steps, &epsabs, &step, &tol))
+  if (!PyArg_ParseTuple(args, "idddd", &steps, &epsabs, &epsrel, &step, &tol))
     return NULL;
 
   Py_BEGIN_ALLOW_THREADS
-  err = relax_relax_nl(self->relax, steps, epsabs, step, tol);
+  err = relax_relax_nl(self->relax, &steps, epsabs, epsrel, step, tol, stats);
   Py_END_ALLOW_THREADS
   
-  return Py_BuildValue("d", err);
+  return Py_BuildValue("di(ddd)", err, steps, stats[0], stats[1], stats[2]);
 }
 
 

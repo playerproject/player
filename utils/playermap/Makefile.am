@@ -6,7 +6,7 @@ noinst_DATA = pythonbuild
 PYTHONINSTALL = pythoninstall
 endif
 
-MAPPER_FILES = setup.py __init__.py main.py gui.py logfile.py map.py robot_mapper.py team_mapper.py geom.py
+MAPPER_FILES = setup.py __init__.py main.py gui.py logfile.py map.py robot_mapper.py team_mapper.py geo_mapper.py geom.py
 
 # These files need to be added to the distro
 EXTRA_DIST = playermap.in playermap.glade $(MAPPER_FILES)

@@ -48,9 +48,6 @@ typedef struct _grid_cell_t
 
   // Non-zero if this cell has been visited by the robot
   int visited;
-
-  // Non-zero if this cell is a frontier
-  int front;
     
 } grid_cell_t;
 
@@ -97,11 +94,17 @@ void grid_reset(grid_t *self);
 // Save the occupancy values to an image file
 int grid_save_occ(grid_t *self, const char *filename);
 
+// Save the robot path to an image
+int grid_save_path(grid_t *grid, const char *filename);
+
 // Get the cell at the given point
 grid_cell_t *grid_get_cell(grid_t *self, double ox, double oy);
 
 // See if a point is in free space
 int grid_test_free(grid_t *self, double ox, double oy);
+
+// Mark a cell as visited (useful for displaying paths)
+void grid_set_visited(grid_t *self, double ox, double oy);
 
 
 /**************************************************************************

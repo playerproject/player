@@ -20,9 +20,9 @@
  */
 ///////////////////////////////////////////////////////////////////////////
 //
-// Desc: Gazebo (simulator) fiducial driver
-// Author: Andrew Howard
-// Date: 9 Nov 2003
+// Desc: Gazebo (simulator) factory driver
+// Author: Chris Jones
+// Date: 14 Nov 2003
 // CVS: $Id$
 //
 ///////////////////////////////////////////////////////////////////////////
@@ -35,9 +35,9 @@
 #include <errno.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>       // for atoi(3)
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
 #include "device.h"
@@ -48,73 +48,73 @@
 
 
 // Incremental navigation driver
-class GzPower : public CDevice
+class GzFactory : public CDevice
 {
   // Constructor
-  public: GzPower(char* interface, ConfigFile* cf, int section);
+  public: GzFactory(char* interface, ConfigFile* cf, int section);
 
   // Destructor
-  public: virtual ~GzPower();
+  public: virtual ~GzFactory();
 
   // Setup/shutdown routines.
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Data
-  public: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-                                 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+  // Check for new data
+  public: virtual void Update();
 
   // Commands
   public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t* device, void* client,
+                                void* req, size_t reqlen);
 
-  // Gazebo device id
+  // Gazebo id
   private: char *gz_id;
 
   // Gazebo client object
   private: gz_client_t *client;
   
   // Gazebo Interface
-  private: gz_power_t *iface;
+  private: gz_factory_t *iface;
 
   // Timestamp on last data update
-  private: uint32_t tsec, tusec;
+  private: double datatime;
 };
 
 
 // Initialization function
-CDevice* GzPower_Init(char* interface, ConfigFile* cf, int section)
+CDevice* GzFactory_Init(char* interface, ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_POWER_STRING) != 0)
+  if (strcmp(interface, PLAYER_SPEECH_STRING) != 0)
   {
-    PLAYER_ERROR1("driver \"gz_power\" does not support interface \"%s\"\n", interface);
+    PLAYER_ERROR1("driver \"gz_factory\" does not support interface \"%s\"\n", interface);
     return (NULL);
   }
-  return ((CDevice*) (new GzPower(interface, cf, section)));
+  return ((CDevice*) (new GzFactory(interface, cf, section)));
 }
 
 
 // a driver registration function
-void GzPower_Register(DriverTable* table)
+void GzFactory_Register(DriverTable* table)
 {
-  table->AddDriver("gz_power", PLAYER_ALL_MODE, GzPower_Init);
+  table->AddDriver("gz_factory", PLAYER_ALL_MODE, GzFactory_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzPower::GzPower(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_power_data_t), 0, 10, 10)
+//    : CDevice(sizeof(player_factory_data_t), sizeof(player_factory_cmd_t), 10, 10)
+GzFactory::GzFactory(char* interface, ConfigFile* cf, int section)
 {
-  // Get the globally defined  Gazebo client (one per instance of Player)
+    // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
 
   // Get the id of the device in Gazebo.
@@ -122,107 +122,83 @@ GzPower::GzPower(char* interface, ConfigFile* cf, int section)
   this->gz_id = (char*) calloc(1024, sizeof(char));
   strcat(this->gz_id, GzClient::prefix_id);
   strcat(this->gz_id, cf->ReadString(section, "gz_id", ""));
-
+  
   // Create an interface
-  this->iface = gz_power_alloc();
+  this->iface = gz_factory_alloc();
 
-  this->tsec = this->tusec = 0;
-    
+  this->datatime = -1;
+
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Destructor
-GzPower::~GzPower()
+GzFactory::~GzFactory()
 {
-  gz_power_free(this->iface);
-  
+  gz_factory_free(this->iface); 
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int GzPower::Setup()
-{ 
+int GzFactory::Setup()
+{
   // Open the interface
-  if (gz_power_open(this->iface, this->client, this->gz_id) != 0)
+  if (gz_factory_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
-  
+
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int GzPower::Shutdown()
+int GzFactory::Shutdown()
 {
-  gz_power_close(this->iface);
-
+  gz_factory_close(this->iface);
+  
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Data
-size_t GzPower::GetData(void* client, unsigned char* dest, size_t len,
-                           uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+// Check for new data
+void GzFactory::Update()
 {
-  player_power_data_t data;
-  uint32_t tsec, tusec;
-  
-  gz_power_lock(this->iface, 1);
-
-  // TODO : get power data here
-  data.charge = 120;
-  
-  assert(len >= sizeof(data));
-  memcpy(dest, &data, sizeof(data));
-
-  tsec = (int) (this->iface->data->time);
-  tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
-
-  gz_power_unlock(this->iface);
-
-  // signal that new data is available
-  if (tsec != this->tsec || tusec != this->tusec)
-    DataAvailable();
-  this->tsec = tsec;
-  this->tusec = tusec;
-
-  if (timestamp_sec)
-    *timestamp_sec = tsec;
-  if (timestamp_usec)
-    *timestamp_usec = tusec;
-
-  return sizeof(data);
+  return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzPower::PutCommand(void* client, unsigned char* src, size_t len)
-{  
+void GzFactory::PutCommand(void* client, unsigned char* src, size_t len)
+{
+  player_speech_cmd_t *cmd;
+    
+  assert(len >= sizeof(player_speech_cmd_t));
+  cmd = (player_speech_cmd_t*) src;
+
+  gz_factory_lock(this->iface, 1);
+  strcpy((char *)this->iface->data->string, (char *)cmd->string);
+  gz_factory_unlock(this->iface);
+    
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzPower::PutConfig(player_device_id_t* device, void* client, void* data, size_t len)
+int GzFactory::PutConfig(player_device_id_t* device, void* client, void* req, size_t req_len)
 {
-  uint8_t subtype;
-
-  subtype = ((uint8_t*) data)[0];
-  switch (subtype)
+  switch (((char*) req)[0])
   {
     default:
-    {
       if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
-    }
   }
   return 0;
 }
+

@@ -4,13 +4,19 @@ from distutils.core import setup, Extension
 
 m_scan = Extension('playermap.cmodules.scan',
                    sources = ['cmodules/pyscan.c',
+                              'cmodules/pyscan_group.c',
+                              'cmodules/pyscan_match.c',
                               'cmodules/scan.c',
                               'cmodules/scan_contour.c',
+                              'cmodules/scan_solid.c',
+                              'cmodules/scan_group.c',
                               'cmodules/scan_match.c',
+                              'cmodules/gpc.c',
+                              'cmodules/vector.c',
                               'cmodules/geom.c'],
                    include_dirs = [],
                    library_dirs = [],
-                   libraries = [])
+                   libraries = ['gsl', 'gslcblas'])
 
 m_relax = Extension('playermap.cmodules.relax',
                     sources = ['cmodules/pyrelax.c',

@@ -17,7 +17,7 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-# Desc: Build the map using data from all robots robot
+# Desc: Do global mapping stuff
 # Author: Andrew Howard
 # Date: 14 Jun 2003
 
@@ -103,7 +103,11 @@ class TeamMapper:
         outlier = 1e16
         for patch in self.map.patches:
             for link in self.map.get_patch_links(patch):
-                match = scan.ScanMatch(link.patch_a.scan, link.patch_b.scan)
+                group_a = scan.scan_group()
+                group_a.add_scan((0, 0, 0), link.patch_a.scan)
+                group_b = scan.scan_group()
+                group_b.add_scan((0, 0, 0), link.patch_b.scan)
+                match = scan.scan_match(group_a, group_b)
                 link.pairs = match.pairs(link.patch_a.pose, link.patch_b.pose, outlier)
         return
 
@@ -114,44 +118,54 @@ class TeamMapper:
         outlier = 1e16
 
         rgraph = relax.Relax()
+        rnodes = {}
+        rlinks = []
 
-        # Create relax node for everything
+        # Create a node for geo-referencing
+        geo_node = relax.Node(rgraph)
+        geo_node.free = 0
+
+        # Create nodes for all the patches
         for patch in self.map.patches:
-            patch.rnode = relax.Node(rgraph)
-            patch.rnode.pose = patch.pose
-            patch.rnode.free = 1
+            rnode = relax.Node(rgraph)
+            rnode.pose = patch.pose
+            rnode.free = 1
+            rnodes[patch] = rnode
 
-        # Create all the links
+        # Create geo-reference links
+        for pin in self.map.pins:
+            for (patch, pos) in pin.patches:
+                rlink = relax.Link(rgraph, geo_node, rnodes[patch])
+                rlink.type = (0,)
+                rlink.w = (pin.pos_var ** (-2),)  # HACK
+                rlink.outlier = (1e6,) # HACK
+                rlink.pa = pin.pos
+                rlink.pb = pos
+                rlinks += [rlink]
+
+        # Create links between patches
         for link in self.map.links:
-
-            link.rlinks = []
             for pair in link.pairs:
-                rlink = relax.Link(rgraph, link.patch_a.rnode, link.patch_b.rnode)
+                rnode_a = rnodes[link.patch_a]
+                rnode_b = rnodes[link.patch_b]                
+                rlink = relax.Link(rgraph, rnode_a, rnode_b)
                 rlink.type = (pair[0],)
-                rlink.w = (max(pair[1], 2.0),) # Magic
+                rlink.w = (pair[2],)
                 rlink.outlier = (outlier,)
-                rlink.pa = pair[2]
-                rlink.pb = pair[3]
-                rlink.la = pair[4]
-                rlink.lb = pair[5]
-                link.rlinks += [rlink]
+                rlink.pa = pair[3]
+                rlink.pb = pair[4]
+                rlink.la = pair[5]
+                rlink.lb = pair[6]
+                rlinks += [rlink]
                 
         # Relax the graph
-        #err = rgraph.relax_ls(100, 1e-4, 0) # Magic
-        err = rgraph.relax_nl(1000, 1e-7, 1e-3, 1e-4) # Magic
+        (err, steps, m) = rgraph.relax_nl(1000, 1e-3, 1e-7, 1e-2, 1e-4) # Magic
 
         # Read new values
         for patch in self.map.patches:
-            patch.pose = patch.rnode.pose
+            patch.pose = rnodes[patch].pose
 
-        # Delete everything
-        for link in self.map.links:
-            del link.rlinks
-        for patch in self.map.patches:
-            del patch.rnode
-        del rgraph
-
-        print 'global fit %.6f' % (err)
+        print 'global fit %d %.6f' % (steps, err)
 
         return err
 
@@ -188,20 +202,20 @@ class TeamMapper:
             for (rpose, ranges) in patch.ranges:
                 npose = geom.coord_add(rpose, patch.pose)
                 npose = geom.coord_sub(npose, grid_pose)
-                #ngrid.add_ranges_slow(npose, ranges)
-                ngrid.add_ranges_fast(npose, ranges)
-
-            # Display the grid
-            im = ngrid.draw()
-            fig.clear()
-            fig.image(grid_pose[:2], grid_size, im[0], im[1])
-
-            # HACK
-            gui.do_yield()
+                ngrid.add_ranges_slow(npose, ranges)
+                #ngrid.add_ranges_fast(npose, ranges)
 
         # Save the occupancy grid
         print 'saved occ grid [%s]' % filename
         ngrid.save_occ(filename)
+
+        # HACK
+        path_filename = 'path' + filename
+
+        # Save the path
+        print 'saved path [%s]' % path_filename
+        ngrid.save_path(path_filename)
+
         return
 
 

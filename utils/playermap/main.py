@@ -18,7 +18,7 @@ from logfile import LogFile, LogFileEntry
 from map import Map
 from robot_mapper import RobotMapper
 from team_mapper import TeamMapper
-
+from geo_mapper import GeoMapper
 
 class Robot:
     """Combined info for a single robot."""
@@ -74,6 +74,12 @@ def makemap(gladepath, logfilename, options):
 
     # Construct proxy for the team
     team_mapper = TeamMapper(map, maproot)
+
+    # Geo mapping
+    geo_mapper = GeoMapper(map, maproot)
+    pin_file = options.get('--pin-file', None)
+    if pin_file:
+        geo_mapper.load_pins(pin_file)
     
     try:
         
@@ -205,7 +211,8 @@ def main(gladepath):
                                   'update-angle=',
                                   'patch-dist=',
                                   'outlier-dist=',
-                                  'odom-w='])
+                                  'odom-w=',
+                                  'pin-file='])
     
     for opt in opts:
         if opt[0] == '-p':

@@ -34,6 +34,7 @@
 #include "grid.h"
 
 
+///////////////////////////////////////////////////////////////////////////
 // Save the occupancy grid to an image
 int grid_save_occ(grid_t *grid, const char *filename)
 {
@@ -64,6 +65,44 @@ int grid_save_occ(grid_t *grid, const char *filename)
       if (col < 0)
         col = 0;
       if (col > 255)
+        col = 255;
+
+      fputc(col, file);
+    }
+  }
+
+  fclose(file);
+
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Save the robot path to an image
+int grid_save_path(grid_t *grid, const char *filename)
+{
+  int i, j;
+  int col;
+  FILE *file;
+  grid_cell_t *cell;
+
+  file = fopen(filename, "w+");
+  if (file == NULL)
+    return -1;
+
+  // Write pgm header
+  fprintf(file, "P5\n%d %d\n%d\n", grid->size_x, grid->size_y, 255);
+  
+  // Write data here
+  for (j = grid->size_y - 1; j >= 0; j--)
+  {
+    for (i = 0; i < grid->size_x; i++)
+    {
+      cell = grid->cells + GRID_INDEX(grid, i, j);
+
+      if (cell->visited)
+        col = 0;
+      else
         col = 255;
 
       fputc(col, file);

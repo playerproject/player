@@ -29,24 +29,12 @@
 #include <Python.h>
 #include <float.h>
 
-#include "scan.h"
+#include "pyscan.h"
 
 
 /**************************************************************************
  * Scan object
  *************************************************************************/
-
-
-// Python wrapper for scan class
-typedef struct
-{
-  PyObject_HEAD
-  scan_t *scan;
-} pyscan_t;
-
-extern PyTypeObject pyscan_type;
-extern PyMethodDef pyscan_methods[];
-
 
 // Create a scan
 static PyObject *pyscan_alloc(pyscan_t *self, PyObject *args)
@@ -90,22 +78,23 @@ static PyObject *pyscan_add_ranges(pyscan_t *self, PyObject *args)
   int range_count;
   double ranges[401][2];
   PyObject *pyranges;
+  int result;
   
   if (!PyArg_ParseTuple(args, "(ddd)O",
                         origin.v + 0, origin.v + 1, origin.v + 2, &pyranges))
     return NULL;
 
   range_count = PyList_Size(pyranges);
+  assert(range_count < 401);
   for (i = 0; i < range_count; i++)
   {
     ranges[i][0] = PyFloat_AsDouble(PyTuple_GetItem(PyList_GetItem(pyranges, i), 0));
     ranges[i][1] = PyFloat_AsDouble(PyTuple_GetItem(PyList_GetItem(pyranges, i), 1));
   }
 
-  scan_add_ranges(self->scan, origin, range_count, ranges);
+  result = scan_add_ranges(self->scan, origin, range_count, ranges);
 
-  Py_INCREF(Py_None);
-  return Py_None;
+  return Py_BuildValue("i", result);
 }
 
 
@@ -126,8 +115,7 @@ static PyObject *pyscan_get_raw(pyscan_t *self, PyObject *args)
   for (i = 0; i < contour->point_count; i++)
   {
     point = contour->points + i;
-    PyList_SET_ITEM(pycontour, i, Py_BuildValue("(dddd)", point->r, point->b,
-                                                point->x, point->y));
+    PyList_SET_ITEM(pycontour, i, Py_BuildValue("(dd)", point->x, point->y));
   }
     
   return pycontour;
@@ -168,14 +156,60 @@ static PyObject *pyscan_get_hits(pyscan_t *self, PyObject *args)
   if (!PyArg_ParseTuple(args, ""))
     return NULL;
 
-  pypoints = PyList_New(self->scan->hit->point_count);
-  for (i = 0; i < self->scan->hit->point_count; i++)
+  pypoints = PyList_New(self->scan->hits->point_count);
+  for (i = 0; i < self->scan->hits->point_count; i++)
   {
-    point = self->scan->hit->points + i;
+    point = self->scan->hits->points + i;
     PyList_SET_ITEM(pypoints, i, Py_BuildValue("(dd)d", point->x, point->y, point->w));
   }
     
   return pypoints;
+}
+
+
+// Get the hit polylines (for faster drawing)
+static PyObject *pyscan_get_hit_lines(pyscan_t *self, PyObject *args)
+{
+  int i;
+  double dx, dy;
+  scan_point_t *point, *npoint;
+  PyObject *pylists, *pypoints, *pypoint;
+
+  if (!PyArg_ParseTuple(args, ""))
+    return NULL;
+
+  pylists = PyList_New(0);
+
+  for (i = 0; i < self->scan->hits->point_count; i++)
+  {
+    point = self->scan->hits->points + i;
+
+    if (i == 0)
+    {
+      pypoints = PyList_New(0);
+      PyList_Append(pylists, pypoints);
+      Py_DECREF(pypoints);
+    }
+    else
+    {
+      npoint = self->scan->hits->points + i - 1;
+      dx = point->x - npoint->x;
+      dy = point->y - npoint->y;
+
+      if (sqrt(dx * dx + dy * dy) > 2 * self->scan->hit_dist)
+      {
+        pypoints = PyList_New(0);
+        PyList_Append(pylists, pypoints);
+        Py_DECREF(pypoints);
+      }
+    }
+    
+    pypoint = Py_BuildValue("(dd)", point->x, point->y);
+    PyList_Append(pypoints, pypoint);
+    Py_DECREF(pypoint);
+  }
+    
+  return pylists;
 }
 
 
@@ -199,12 +233,28 @@ static PyObject *pyscan_test_occ(pyscan_t *self, PyObject *args)
 static PyObject *pyscan_test_free(pyscan_t *self, PyObject *args)
 {
   scan_point_t point;
-  int result;
+  double result;
 
   if (!PyArg_ParseTuple(args, "(dd)", &point.x, &point.y))
     return NULL;
 
   result = scan_test_free(self->scan, point);
+  
+  return Py_BuildValue("d", result);
+}
+
+
+// Test a line to see if it lies in free space
+static PyObject *pyscan_test_free_line(pyscan_t *self, PyObject *args)
+{
+  scan_point_t pa;
+  scan_point_t pb;
+  int result;
+
+  if (!PyArg_ParseTuple(args, "(dd)(dd)", &pa.x, &pa.y, &pb.x, &pb.y))
+    return NULL;
+
+  result = scan_test_free_line(self->scan, pa, pb);
   
   return Py_BuildValue("i", result);
 }
@@ -215,7 +265,7 @@ PyTypeObject pyscan_type =
 {
   PyObject_HEAD_INIT(NULL)
   0,
-  "Scan",
+  "scan",
   sizeof(pyscan_t),
   0,
   (void*) pyscan_free, /*tp_dealloc*/
@@ -238,135 +288,14 @@ PyMethodDef pyscan_methods[] =
   {"get_raw", (PyCFunction) pyscan_get_raw, METH_VARARGS},
   {"get_free", (PyCFunction) pyscan_get_free, METH_VARARGS},
   {"get_hits", (PyCFunction) pyscan_get_hits, METH_VARARGS},
+  {"get_hit_lines", (PyCFunction) pyscan_get_hit_lines, METH_VARARGS},
   {"test_occ", (PyCFunction) pyscan_test_occ, METH_VARARGS},
   {"test_free", (PyCFunction) pyscan_test_free, METH_VARARGS},
+  {"test_free_line", (PyCFunction) pyscan_test_free_line, METH_VARARGS},
   {NULL, NULL}
 };
 
 
-/**************************************************************************
- * Scan match object
- *************************************************************************/
-
-// Python wrapper for scan match class
-typedef struct
-{
-  PyObject_HEAD
-  pyscan_t *pyscan_a, *pyscan_b;
-  scan_match_t *scan_match;
-} pyscan_match_t;
-
-extern PyTypeObject pyscan_match_type;
-extern PyMethodDef pyscan_match_methods[];
-
-
-// Create a scan_match
-PyObject *pyscan_match_alloc(pyscan_match_t *self, PyObject *args)
-{
-  pyscan_t *pyscan_a, *pyscan_b;
-  
-  if (!PyArg_ParseTuple(args, "O!O!", &pyscan_type, &pyscan_a, &pyscan_type, &pyscan_b))
-    return NULL;
-
-  self = PyObject_New(pyscan_match_t, &pyscan_match_type);
-
-  self->pyscan_a = pyscan_a;
-  self->pyscan_b = pyscan_b;
-  Py_INCREF(self->pyscan_a);
-  Py_INCREF(self->pyscan_b);
-
-  self->scan_match = scan_match_alloc(pyscan_a->scan, pyscan_b->scan);
-
-  return (PyObject*) self;
-}
-
-
-// Destroy the scan_match
-static void pyscan_match_free(pyscan_match_t *self)
-{
-  scan_match_free(self->scan_match);
-  
-  Py_DECREF(self->pyscan_a);
-  Py_DECREF(self->pyscan_b);
-  PyObject_Del(self);
-
-  return;
-}
-
-
-// Get scan_match attributes
-static PyObject *pyscan_match_getattr(pyscan_match_t *self, char *attrname)
-{
-  PyObject *result;
-
-  result = Py_FindMethod(pyscan_match_methods, (PyObject*) self, attrname);
-
-  return result;
-}
-
-
-// Find points pairs
-static PyObject *pyscan_match_pairs(pyscan_match_t *self, PyObject *args)
-{
-  int i;
-  double dist;
-  vector_t pose_a, pose_b;
-  scan_pair_t *pair;
-  PyObject *pypair, *pypairs;
-  
-  if (!PyArg_ParseTuple(args, "(ddd)(ddd)d",
-                        pose_a.v + 0, pose_a.v + 1, pose_a.v + 2,
-                        pose_b.v + 0, pose_b.v + 1, pose_b.v + 2,
-                        &dist))
-    return NULL;
-
-  self->scan_match->outlier_dist = dist;
-  
-  scan_match_pairs(self->scan_match, pose_a, pose_b);
-
-  pypairs = PyList_New(self->scan_match->pair_count);
-  
-  for (i = 0; i < self->scan_match->pair_count; i++)
-  {
-    pair = self->scan_match->pairs + i;
-    pypair = Py_BuildValue("id(dd)(dd)((dd)(dd))((dd)(dd))",
-                           pair->type, pair->w,
-                           pair->pa.x, pair->pa.y, pair->pb.x, pair->pb.y,
-                           pair->la.pa.x, pair->la.pa.y, pair->la.pb.x, pair->la.pb.y,
-                           pair->lb.pa.x, pair->lb.pa.y, pair->lb.pb.x, pair->lb.pb.y);
-    PyList_SET_ITEM(pypairs, i, pypair);
-  }
-  return pypairs;    
-}
-
-
-// Assemble python scan_match type
-PyTypeObject pyscan_match_type = 
-{
-  PyObject_HEAD_INIT(NULL)
-  0,
-  "ScanMatch",
-  sizeof(pyscan_match_t),
-  0,
-  (void*) pyscan_match_free, /*tp_dealloc*/
-  0,              /*tp_print*/
-  (void*) pyscan_match_getattr, /*tp_getattr*/
-  0,          /*tp_setattr*/
-  0,          /*tp_compare*/
-  0,          /*tp_repr*/
-  0,          /*tp_as_number*/
-  0,          /*tp_as_sequence*/
-  0,          /*tp_as_mapping*/
-  0,          /*tp_hash */
-};
-
-
-// Methods
-PyMethodDef pyscan_match_methods[] =
-{
-  {"pairs", (PyCFunction) pyscan_match_pairs, METH_VARARGS},
-  {NULL, NULL}
-};
 
 
 /**************************************************************************
@@ -376,8 +305,9 @@ PyMethodDef pyscan_match_methods[] =
 // Module method table
 struct PyMethodDef module_methods[] =
 {
-  {"Scan", (PyCFunction) pyscan_alloc, METH_VARARGS},
-  {"ScanMatch", (PyCFunction) pyscan_match_alloc, METH_VARARGS},
+  {"scan", (PyCFunction) pyscan_alloc, METH_VARARGS},
+  {"scan_group", (PyCFunction) pyscan_group_alloc, METH_VARARGS},
+  {"scan_match", (PyCFunction) pyscan_match_alloc, METH_VARARGS},
   {NULL, NULL}
 };
 
@@ -387,6 +317,7 @@ void initscan(void)
 {
   // Finish initialise of type objects here
   pyscan_type.ob_type = &PyType_Type;
+  pyscan_group_type.ob_type = &PyType_Type;  
   pyscan_match_type.ob_type = &PyType_Type;  
 
   // Register our new type
