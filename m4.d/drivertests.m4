@@ -254,7 +254,9 @@ PLAYER_ADD_DRIVER([linuxjoystick],[drivers/joystick],[no],)
 
 dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
-PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
+dnl Disabled by default because it doesn't always build (maybe the version
+dnl of libdc1394 needs to be checked?)
+PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[no],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
 
 PLAYER_ADD_DRIVER([jpegcompress],[drivers/camera/jpeg],[yes],[jpeglib.h],[],[-ljpeg])
 
