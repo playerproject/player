@@ -54,7 +54,7 @@ void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 void GpsProxy::Print()
 {
   printf("#GPS(%d:%d) - %c\n", device, index, access);
-  puts("#(X,Y)");
+  puts("#(X,Y,DEG)");
   printf("%d\t%d\t%d\n", xpos,ypos,heading);
 }
 
