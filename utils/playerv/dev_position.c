@@ -208,6 +208,20 @@ void position_servo_pos(position_t *self)
   double rx, ry, ra;
   double gx, gy, ga;
   
+  // Only servo if we are subscribed and have enabled commands.
+  if (self->proxy->info.subscribed &&
+      rtk_menuitem_ischecked(self->command_item))    
+  {
+    rtk_fig_show(self->control_fig, 1);
+    rtk_fig_show(self->path_fig, 1);
+  }
+  else
+  {
+    rtk_fig_show(self->control_fig, 0);
+    rtk_fig_show(self->path_fig, 0);
+    return;
+  }
+  
   if (rtk_fig_mouse_selected(self->control_fig))
   {
     // Get goal pose in robot cs
