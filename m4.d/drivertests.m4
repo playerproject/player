@@ -110,6 +110,8 @@ PLAYER_ADD_DRIVER([logfile],[drivers/shell],[yes],[zlib.h],[],[-lz])
 
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],[],[],[])

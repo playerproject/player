@@ -58,6 +58,10 @@ void ClodBuster_Register(DriverTable* table);
 void Trogdor_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_ER
+void ER_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_WAVEFRONT
 void Wavefront_Register(DriverTable* table);
 #endif
@@ -184,7 +188,6 @@ void Acoustics_Register(DriverTable* table);
 #ifdef INCLUDE_MIXER
 void Mixer_Register(DriverTable* table);
 #endif
-
 
 #ifdef INCLUDE_RWI
 void RWIBumper_Register(DriverTable* table);
@@ -415,6 +418,10 @@ register_devices()
 
 #ifdef INCLUDE_TROGDOR
   Trogdor_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_ER
+  ER_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_WAVEFRONT
