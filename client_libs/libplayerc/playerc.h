@@ -228,6 +228,9 @@ typedef struct _playerc_client_t
   /** @internal Socket descriptor */
   int sock;
 
+  /** @internal Data delivery mode */
+  int mode;
+
   /** List of available (but not necessarily subscribed) devices.
       This list is filled in by playerc_client_get_devlist(). */
   playerc_device_info_t devinfos[PLAYERC_MAX_DEVICES];
@@ -309,6 +312,19 @@ playerc_error_str() to get a descriptive error message.
   
 */
 int playerc_client_datamode(playerc_client_t *client, int mode);
+
+/** @brief Request a round of data.
+
+@param client Pointer to client object.
+
+Request a round of data; only valid when in a request/reply (aka PULL)
+data delivery mode.  But you don't need to call this function, because @ref
+playerc_client_read will do it for you if the client is in a PULL mode.
+
+Use @ref playerc_client_datamode to change modes.
+
+*/
+int playerc_client_requestdata(playerc_client_t* client);
 
 /** @brief Change the server's data delivery frequency
 

@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include "playerc.h"
+#include "playercommon.h"
 
 
 int main(int argc, const char **argv)
@@ -44,13 +45,18 @@ int main(int argc, const char **argv)
   if (playerc_client_connect(client) != 0)
     return -1;
 
+  /*
+  if(playerc_client_datamode(client, PLAYER_DATAMODE_PULL_NEW) < 0)
+    return -1;
+    */
+
   // Create and subscribe to a position device.
   position = playerc_position_create(client, 0);
   if (playerc_position_subscribe(position, PLAYER_ALL_MODE))
     return -1;
 
   // Make the robot spin!
-  if (playerc_position_set_cmd_vel(position, 0, 0, 0.1, 1) != 0)
+  if (playerc_position_set_cmd_vel(position, 0, 0, DTOR(40.0), 1) != 0)
     return -1;
   
   for (i = 0; i < 200; i++)
