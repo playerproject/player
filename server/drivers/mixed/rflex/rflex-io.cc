@@ -268,6 +268,32 @@ waitForETX( int fd, unsigned char *buf, int  *len )
 #endif
 #endif
 	      return(TRUE);
+
+	  }
+	  else if(buf[2] == 0x06 && pos == dlen)
+	    {
+	      //Wait to have one more byte
+	    }
+	  else if(buf[2] == 0x06 && pos >= (dlen+1) && buf[dlen-1]==B_ESC && buf[dlen-0]==B_ETX)
+	    {    
+	      //haunted packet. We have a ghost byte at the 7th position. scrap it and send a corrected paquet
+	      for (int j = 0;j<(buf[5]+3);j++)
+		{
+		  //shift byte to the left
+		  buf[j+6] = buf[j+7];
+		}
+	           
+	      *len = dlen;
+
+#ifdef IO_DEBUG
+              fprintf( stderr, "- fixed answer ->" );
+              for (i=0;i<pos;i++)
+		fprintf( stderr, "[0x%s%x]", buf[i]<16?"0":"", buf[i] );
+              fprintf( stderr, "\n" );
+#endif
+
+
+	      return(TRUE);
 	  } else {
 #ifdef IO_DEBUG
 	      fprintf( stderr, "- wrong answer ->" );
