@@ -70,9 +70,16 @@ class GzCamera : public CDevice
   // Check for new data
   public: virtual void Update();
 
+  // Save an image frame
+  private: void SaveFrame(const char *filename);
+
   // Gazebo device id
   private: char *gz_id;
 
+  // Save image frames?
+  private: int save;
+  private: int frameno;
+  
   // Gazebo client object
   private: gz_client_t *client;
   
@@ -122,6 +129,10 @@ GzCamera::GzCamera(char* interface, ConfigFile* cf, int section)
   this->gz_id = (char*) calloc(1024, sizeof(char));
   strcat(this->gz_id, GzClient::prefix_id);
   strcat(this->gz_id, cf->ReadString(section, "gz_id", ""));
+
+  // Save frames?
+  this->save = cf->ReadInt(section, "save", 0);
+  this->frameno = 0;
 
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -173,6 +184,7 @@ void GzCamera::Update()
 {
   size_t size;
   uint32_t tsec, tusec;
+  char filename[256];
   
   gz_camera_lock(this->iface, 1);
 
@@ -195,10 +207,54 @@ void GzCamera::Update()
     // Send data to server
     size = sizeof(this->data) - sizeof(this->data.image) + this->iface->data->image_size;
     this->PutData(&this->data, size, tsec, tusec);
+
+    // Save frames
+    if (this->save)
+    {
+      printf("click %d\n", this->frameno);
+      snprintf(filename, sizeof(filename), "click-%04d.ppm", this->frameno++);
+      this->SaveFrame(filename);
+    }
   }
 
   gz_camera_unlock(this->iface);
 
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Save an image frame
+void GzCamera::SaveFrame(const char *filename)
+{
+  int i, j, width, height;
+  unsigned char *pix;
+  FILE *file;
+
+  file = fopen(filename, "w+");
+
+  width = ntohs(this->data.width);
+  height = ntohs(this->data.height);
+  
+  // Write ppm header
+  fprintf(file, "P6\n%d %d\n%d\n", width, height, 255);
+
+  pix = this->data.image;
+  
+  // Write pixels here
+  for (j = width - 1; j >= 0; j--)
+  {
+    for (i = 0; i < width; i++)
+    {
+      fputc(pix[0], file);
+      fputc(pix[1], file);
+      fputc(pix[2], file);
+      pix += 3;
+    }
+  }
+
+  fclose(file);
+  
   return;
 }
 

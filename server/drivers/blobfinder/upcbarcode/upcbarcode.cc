@@ -53,11 +53,8 @@ struct blob_t
   // Id (-1) if undetermined.
   int id;
 
-  // Blob center (image coords)
-  double x, y;
-
-  // Blob size (image coords)
-  double width, height;
+  // Blob bounding coords
+  int ax, ay, bx, by;
 };
 
 
@@ -82,6 +79,9 @@ class UPCBarcode : public CDevice
   
   // Process any new camera data.
   private: int UpdateCamera();
+
+  // Look for barcodes in the image.  
+  private: void ProcessImage();
 
   // Extract a bit string from the image.  
   private: int ExtractSymbols(int x, int symbol_max_count, int symbols[]);
@@ -150,7 +150,7 @@ UPCBarcode::UPCBarcode(char* interface, ConfigFile* cf, int section)
   this->barcount = cf->ReadInt(section, "bit_count", 3);
 
   // Barcode properties: minimum height (pixels), height tolerance (ratio).
-  this->guard_min = cf->ReadInt(section, "guard_min", 4);
+  this->guard_min = cf->ReadInt(section, "guard_min", 3);
   this->guard_tol = cf->ReadLength(section, "guard_tol", 0.20);
 
   // Error threshold on the first and second best digits
@@ -220,11 +220,13 @@ void UPCBarcode::Main()
     pthread_testcancel();
 
     // Process any new camera data.
-    UpdateCamera();
+    if (this->UpdateCamera())
+      this->ProcessImage();
 
     // Process any pending requests.
-    HandleRequests();
+    this->HandleRequests();
   }
+  return;
 }
 
 
@@ -274,10 +276,6 @@ int UPCBarcode::UpdateCamera()
   size_t size;
   uint32_t timesec, timeusec;
   double time;
-  int id, best_id;
-  int x;
-  int symbol_count;
-  int symbols[480];
 
   // Get the camera data.
   size = this->camera->GetData(this, (unsigned char*) &this->camera_data,
@@ -293,14 +291,31 @@ int UPCBarcode::UpdateCamera()
   this->camera_data.width = ntohs(this->camera_data.width);
   this->camera_data.height = ntohs(this->camera_data.height); 
   this->camera_data.depth = this->camera_data.depth;
-
-
-
   
-  best_id = -1;
+  return 1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Look for barcodes in the image.  This looks for verical barcodes,
+// and assumes barcodes are not placed above each other.
+void UPCBarcode::ProcessImage()
+{
+  int x, step_x;
+  int id;
+  int symbol_count;
+  int symbols[PLAYER_CAMERA_IMAGE_HEIGHT];
+  blob_t *blob;
+
+  step_x = 16;
   
-  // Barcode may not be centered, so look across entire image
-  for (x = 0; x < this->camera_data.width; x += 16)
+  this->blob_count = 0;
+  blob = NULL;
+
+  printf("%d %d\n", this->camera_data.width, this->camera_data.height);
+
+  // Process image columns
+  for (x = 0; x < this->camera_data.width; x += step_x)
   {
     // Extract raw symbols
     symbol_count = this->ExtractSymbols(x, sizeof(symbols) / sizeof(symbols[0]), symbols);
@@ -308,24 +323,37 @@ int UPCBarcode::UpdateCamera()
     // Identify barcode
     id = this->ExtractCode(symbol_count, symbols);
 
-    // If we see multiple barcodes, we dont know which is the correct one
-    if (id >= 0)
+    printf("%d %d\n", x, id);
+
+    // If we have an open blob, and didnt get the same id, close the blob
+    if (blob != NULL && id != blob->id)
     {
-      if (best_id < 0)
-      {
-        best_id = id;
-      }
-      else if (best_id != id)
-      {
-        best_id = -1;
-        break;
-      }
+      this->blob_count++;
+      blob = NULL;
+    }
+
+    // If we dont have a blob, and we got an id, open a blob
+    if (blob == NULL && id >= 0)
+    {
+      assert(this->blob_count < (int) (sizeof(this->blobs) / sizeof(this->blobs[0])));
+      blob = this->blobs + this->blob_count;
+      blob->id = id;
+      blob->ax = x;
+      blob->bx = x + 1;
+      blob->ay = 0;
+      blob->by = this->camera_data.height;
+    }
+
+    // If we have an open blob, and got an id, continue the blob
+    else if (blob != NULL && id >= 0)
+    {
+      blob->bx = x + 1;
     }
   }
 
-  // TODO
-  
-  return 1;
+  printf("\n");
+
+  return;
 }
 
 
@@ -418,7 +446,7 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
       }
     }
 
-    //fprintf(file, "%d %f %f %d\n", i, fv, fn, state);
+    //fprintf(file, "%d %d %f %f %d\n", i, this->camera_data.image[pix], fv, fn, state);
   }
 
   if (state == 0)
@@ -573,13 +601,13 @@ void UPCBarcode::WriteData()
       blob = this->blobs + i;
 
       data.blobs[blob_count].color = 0;  // TODO
-      data.blobs[blob_count].area = htonl((int) (blob->width * blob->height));
-      data.blobs[blob_count].x = htons((int) (blob->x));
-      data.blobs[blob_count].y = htons((int) (blob->y));
-      data.blobs[blob_count].left = htons((int) (blob->x - blob->width / 2));
-      data.blobs[blob_count].right = htons((int) (blob->x + blob->width / 2));
-      data.blobs[blob_count].top = htons((int) (blob->y - blob->height / 2));
-      data.blobs[blob_count].bottom = htons((int) (blob->y + blob->height / 2));
+      data.blobs[blob_count].area = htonl((int) ((blob->bx - blob->ax) * (blob->by - blob->ay)));
+      data.blobs[blob_count].x = htons((int) ((blob->bx + blob->ax) / 2));
+      data.blobs[blob_count].y = htons((int) ((blob->by + blob->ay) / 2));
+      data.blobs[blob_count].left = htons((int) (blob->ax));
+      data.blobs[blob_count].right = htons((int) (blob->ay));
+      data.blobs[blob_count].top = htons((int) (blob->bx));
+      data.blobs[blob_count].bottom = htons((int) (blob->by));
       data.blobs[blob_count].range = htons(0);
       channel_count++;
       blob_count++;
