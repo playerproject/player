@@ -49,6 +49,32 @@ int PositionProxy::SetSpeed(int speed, int turnrate)
                        (const char*)&cmd,sizeof(cmd)));
 }
 
+/* sets the desired heading to theta, with the translational
+ * and rotational velocity contraints xspeed and yawspeed, respectively
+ *
+ * returns: 0 if ok, -1 else
+ */
+int
+PositionProxy::DoDesiredHeading(short theta, int xspeed, int yawspeed)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position_cmd_t cmd;
+
+  // the desired heading is the yaw member
+  cmd.yaw = htons(theta);
+  
+  // set velocity constraints
+  cmd.xspeed = htons(xspeed);
+  cmd.yawspeed = htons(yawspeed);
+
+  return client->Write(PLAYER_POSITION_CODE, index, 
+		       (const char *)&cmd, sizeof(cmd));
+}
+  
+
 /* if the robot is in position mode, this will make it perform
  * a straightline translation by trans mm. (negative values will be backwards)
  * undefined effect if in velocity mode
@@ -283,6 +309,7 @@ PositionProxy::SetPositionSpeedProfile(short spd, short acc)
   return client->Request(PLAYER_POSITION_CODE, index, 
 			 (const char *)&req, sizeof(req));
 }
+
 
 void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
