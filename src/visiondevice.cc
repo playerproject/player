@@ -200,7 +200,8 @@ CVisionDevice::Setup()
   player_vision_data_t dummy;
   bzero(&dummy,sizeof(dummy));
   // zero the data buffer
-  PutData((unsigned char*)&dummy,sizeof(dummy.header),0,0);
+  PutData((unsigned char*)&dummy,
+          sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
 
   sprintf(acts_port_num,"%d",portnum);
 
