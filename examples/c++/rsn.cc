@@ -1,11 +1,12 @@
 #include <netinet/in.h>
-#include <list.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h> 
 #include <playerclient.h>
 #include <string.h> /* for strcpy() */
 #include <unistd.h>
+
+#include <list>
 
 #define USAGE \
 "\nUSAGE: rsn_wave [-h <host>] [-p <port>] [-m]\n"\

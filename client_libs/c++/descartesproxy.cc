@@ -50,15 +50,17 @@ int DescartesProxy::Move(short speed, short heading, short distance )
 
   heading %= (short)360;
 
-  player_descartes_cmd_t cmd;
-
-  cmd.speed = htons(speed);
-  cmd.heading = htons(heading);
-  cmd.distance = htons(distance);
+  player_descartes_config_t cfg;
   
-  return(client->Write(PLAYER_DESCARTES_CODE,index,
-                       (const char*)&cmd,sizeof(cmd)));
-}
+  cfg.speed = htons(speed);
+  cfg.heading = htons(heading);
+  cfg.distance = htons(distance);
+  
+  return(client->Request(PLAYER_DESCARTES_CODE,index,
+			 (const char*)&cfg,sizeof(cfg)));
+} 
+  //return(client->Write(PLAYER_DESCARTES_CODE,index,
+  //                   (const char*)&cmd,sizeof(cmd)));
 
 void DescartesProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {

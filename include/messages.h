@@ -42,7 +42,6 @@
 /* need to put this stuff somewhere else? maybe run-time config? */
 #define PLAYER_NUM_SONAR_SAMPLES  24
 #define PLAYER_NUM_LASER_SAMPLES  401
-//#define PLAYER_NUM_IDAR_SAMPLES   8
 #define PLAYER_NUM_BUMPER_SAMPLES 32
 
 /* the message start signifier */
@@ -799,7 +798,7 @@ typedef  struct
 typedef struct
 {
   int16_t speed, heading, distance; // UNITS: mm/sec, degrees, mm
-} __attribute__ ((packed)) player_descartes_cmd_t;
+} __attribute__ ((packed)) player_descartes_config_t;
 
 /* data buffer */
 typedef struct 
@@ -809,7 +808,7 @@ typedef struct
   uint8_t bumpers[2]; // booleans
 } __attribute__ ((packed)) player_descartes_data_t;
 
-// no configs for descartes
+// no commands or replies for descartes
 
 /*************************************************************************/
 

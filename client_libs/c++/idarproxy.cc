@@ -62,18 +62,43 @@ int IDARProxy::SendMessage( idartx_t* tx )
 }
 
 // interface that all proxies SHOULD provide
+
+// this fetches the latest message and prints it out
 void IDARProxy::Print()
 {
-  //puts( "IDAR Proxy: no data" );
-  
   idarrx_t msg;
   
-  if( GetMessage( &msg ) < 0 )
-    puts( "failed to get message for printing" );
+  printf("#IDAR(%d:%d) - %c ", device, index, access);
+
+  switch( GetMessage( &msg ) )
+    {
+    case -1:
+      puts( "failed to get message" );
+      break;
+      
+    case 0:
+      PrintMessage( &msg );
+      break;
+
+    default:
+      puts( "IDAR GetMessage() returned wierd value" );
+      break;
+    }
+}
+
+
+void IDARProxy::PrintMessage( idarrx_t* msg )
+{
+  if( msg->len == 0 )
+    printf( "[ <none> ]\n" );
   else
     {
-      printf( "Idar: recv %d bytes, intensity: %d \n",
-	      msg.len, msg.intensity );
+      printf( "[ " );
+      
+      for( int c=0; c<msg->len; c++ )
+	printf( "%2X ", msg->mesg[c] );
+      
+      printf( "] (%d)\n", msg->intensity );
     }
 }
 
@@ -90,7 +115,7 @@ int IDARProxy::GetMessage( idarrx_t* rx )
   
   // sends request, waits for reply, returns -1 on failure
   return(client->Request(PLAYER_IDAR_CODE,index,
-			 (const char*)(&cfg),sizeof(cfg),
-			 &hdr, (char*)&rx, sizeof(idarrx_t) ) );
+			 (const char*)&cfg,sizeof(cfg),
+			 &hdr, (char*)rx, sizeof(idarrx_t) ) );
 }
 
