@@ -26,6 +26,11 @@
 // CVS: $Id$
 //
 ///////////////////////////////////////////////////////////////////////////
+
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #if INCLUDE_GAZEBO
 
 #include "gz_camera.h"
