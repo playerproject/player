@@ -122,16 +122,16 @@ proc requestFromRobot {req} {
                   timestamp0 timestamp1 reserved size] != 10} {
       error "scanning header"
     }
-    puts "stx: $stx"
-    puts "type: $type"
-    puts "device: $device"
-    puts "device_index: $device_index"
-    puts "time0: $time0"
-    puts "time1: $time1"
-    puts "timestamp0: $timestamp0"
-    puts "timestamp1: $timestamp1"
-    puts "reserved: $reserved"
-    puts "size: $size"
+    #puts "stx: $stx"
+    #puts "type: $type"
+    #puts "device: $device"
+    #puts "device_index: $device_index"
+    #puts "time0: $time0"
+    #puts "time1: $time1"
+    #puts "timestamp0: $timestamp0"
+    #puts "timestamp1: $timestamp1"
+    #puts "reserved: $reserved"
+    #puts "size: $size"
     if {![string compare $type $PLAYER_MSGTYPE_RESP]} {
         break;
     }
@@ -199,6 +199,7 @@ proc readData {} {
                   timestamp0 timestamp1 reserved size] != 10} {
       error "scanning header"
     }
+
     #puts "stx: $stx"
     #puts "type: $type"
     #puts "device: $device"
@@ -297,9 +298,9 @@ proc readData {} {
       }
     } elseif {![string compare $device $PLAYER_POSITION_CODE]} {
       # position data packet
-      if {[binary scan $data IIISSSSc\
-                   time xpos ypos heading \
-                   speed turnrate compass stall] != 8} {
+      if {[binary scan $data IISSSSc\
+                   xpos ypos heading \
+                   speed turnrate compass stall] != 7} {
         error "failed to get position data"
       }
     } elseif {![string compare $device $PLAYER_LASER_CODE]} {
