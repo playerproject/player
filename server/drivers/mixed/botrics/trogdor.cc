@@ -25,7 +25,9 @@
  *
  * Driver for the so-called "Trogdor" robots, made by Botrics.  They're
  * small, very fast robots that carry SICK lasers (talk to the laser over a
- * normal serial port using the sicklms200 driver).
+ * normal serial port using the sicklms200 driver).  Some of this code is
+ * borrowed and/or adapted from the 'cerebellum' module of CARMEN; thanks
+ * to the authors of that module.
  */
 
 #if HAVE_CONFIG_H
@@ -48,31 +50,9 @@
 #include <drivertable.h>
 #include <player.h>
 
-#define TROGDOR_DEFAULT_PORT "/dev/usb/ttyUSB1"
+#include "trogdor_constants.h"
 
-// might need to define a longer delay to wait for acks
-#define TROGDOR_DELAY_US 10000
-
-#define TROGDOR_ACK   6 // if command acknowledged
-#define TROGDOR_NACK 21 // if garbled message
-
-#define TROGDOR_INIT1 253 // The init commands are used in sequence(1,2,3)
-#define TROGDOR_INIT2 252 // to initialize a link to a cerebellum.
-#define TROGDOR_INIT3 251 // It will then blink green and start accepting other 
-                  // commands.
-
-#define TROGDOR_DEINIT 250
-
-#define TROGDOR_SET_VELOCITIES 118 // 'v'(left_vel, right_vel) as 16-bit signed ints
-#define TROGDOR_SET_ACCELERATIONS 97 // 'a'(left_accel, right_accel) as 16-bit unsigned ints
-#define TROGDOR_ENABLE_VEL_CONTROL  101 // 'e'()
-#define TROGDOR_DISABLE_VEL_CONTROL 100 // 'd'()
-#define TROGDOR_GET_ODOM            111 // 'o'()->(left_count, right_count, left_vel, right_vel)
-#define TROGDOR_GET_VOLTAGE          98 // 'b'()->(batt_voltage)
-#define TROGDOR_STOP                115 // 's'()  [shortcut for set_velocities(0,0)]
-#define TROGDOR_KILL                107 // 'k'()  [shortcut for disable_velocity_control]
-
-#define TROGDOR_HEARTBEAT           104 // 'h'() sends keepalive
+static void StopRobot(void* trogdordev);
 
 class Trogdor : public CDevice 
 {
@@ -93,11 +73,13 @@ class Trogdor : public CDevice
     void UpdateOdom(int ltics, int rtics);
     unsigned char ComputeChecksum(unsigned char *ptr, size_t len);
     int SendCommand(unsigned char cmd, int val1, int val2);
-    int SetVelocity(int lvel, int rvel);
 
   public:
     int fd; // device file descriptor
     const char* serial_port; // name of dev file
+
+    // public, so that it can be called from pthread cleanup function
+    int SetVelocity(int lvel, int rvel);
 
     Trogdor(char* interface, ConfigFile* cf, int section);
 
@@ -250,12 +232,19 @@ Trogdor::Setup()
 int
 Trogdor::Shutdown()
 {
+  unsigned char deinitstr[1];
+
   if(fd == -1)
     return(0);
 
   StopThread();
 
-  SetVelocity(0,0);
+  if(SetVelocity(0,0) < 0)
+    PLAYER_ERROR("failed to stop robot while shutting down");
+
+  deinitstr[0] = TROGDOR_DEINIT;
+  if(WriteBuf(deinitstr,sizeof(deinitstr)) < 0)
+    PLAYER_ERROR("failed to deinitialize connection to robot");
 
   if(close(fd))
     PLAYER_ERROR1("close() failed:%s",strerror(errno));
@@ -268,18 +257,48 @@ void
 Trogdor::Main()
 {
   player_position_cmd_t command;
-  player_position_data_t data;
+  //player_position_data_t data;
   int lvel, rvel;
   int ltics, rtics;
+  double rotational_term, command_lvel, command_rvel;
 
-  // TODO: push a pthread cleanup function that stops the robots
+  // push a pthread cleanup function that stops the robot
+  pthread_cleanup_push(StopRobot,this);
 
   for(;;)
   {
     pthread_testcancel();
-    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    GetCommand((unsigned char*)&command, sizeof(player_position_cmd_t));
 
-    // TODO: convert (tv,rv) to (lv,rv) and send to robot
+    if(fabs(RTOD((double)command.yawspeed)) > TROGDOR_MAX_YAWSPEED)
+    {
+      PLAYER_WARN("yawspeed thresholded");
+      if(command.yawspeed > 0)
+        command.yawspeed = (int32_t)rint(DTOR(TROGDOR_MAX_YAWSPEED));
+      else
+        command.yawspeed = (int32_t)rint(DTOR(-TROGDOR_MAX_YAWSPEED));
+    }
+    if(fabs(command.xspeed / 1e3) > TROGDOR_MAX_XSPEED)
+    {
+      if(command.xspeed > 0)
+        command.xspeed = (int32_t)rint(TROGDOR_MAX_XSPEED*1e3);
+      else
+        command.xspeed = (int32_t)rint(-TROGDOR_MAX_XSPEED*1e3);
+    }
+
+    // convert (tv,rv) to (lv,rv) and send to robot
+    rotational_term = DTOR(command.yawspeed) * TROGDOR_AXLE_LENGTH / 2.0;
+    command_rvel = command.xspeed + rotational_term;
+    command_lvel = command.xspeed - rotational_term;
+
+    // TODO: sanity check on per-wheel speeds
+
+    if(SetVelocity((int)rint(command_lvel / TROGDOR_M_PER_TICK),
+                   (int)rint(command_rvel / TROGDOR_M_PER_TICK)) < 0)
+    {
+      PLAYER_ERROR("failed to set velocity");
+      pthread_exit(NULL);
+    }
 
     if(GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
     {
@@ -288,7 +307,12 @@ Trogdor::Main()
     }
 
     UpdateOdom(ltics,rtics);
+
+    // TODO: PutData()
+    
+    usleep(TROGDOR_DELAY_US);
   }
+  pthread_cleanup_pop(1);
 }
 
 int
@@ -496,5 +520,14 @@ Trogdor::SetVelocity(int lvel, int rvel)
     return(-1);
   }
   return(0);
+}
+
+static void
+StopRobot(void* trogdordev)
+{
+  Trogdor* td = (Trogdor*)trogdordev;
+
+  if(td->SetVelocity(0,0) < 0)
+    PLAYER_ERROR("failed to stop robot on thread exit");
 }
 
