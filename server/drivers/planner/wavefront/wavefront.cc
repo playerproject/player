@@ -573,23 +573,21 @@ void Wavefront::Main()
         this->new_goal=false;
       }
       else
-      {
         this->curr_waypoint = 0;
-
-        /*
-           double wx,wy;
-           for(int i=0;plan_get_waypoint(this->plan,i++,&wx,&wy);)
-           printf("waypoint %d: %f,%f\n", i, wx, wy);
-           */
-      }
     }
 
-    
+
     bool going_for_target = (this->curr_waypoint == this->plan->waypoint_count);
     dist = sqrt(((this->localize_x - this->target_x) *
-          (this->localize_x - this->target_x)) +
-        ((this->localize_y - this->target_y) *
-         (this->localize_y - this->target_y)));
+                 (this->localize_x - this->target_x)) +
+                ((this->localize_y - this->target_y) *
+                 (this->localize_y - this->target_y)));
+    // Note that we compare the current heading and waypoint heading in the 
+    // *odometric* frame.   We do this because comparing the current
+    // heading and waypoint heading in the localization frame is unreliable 
+    // when making small adjustments to achieve a desired heading (i.e., the
+    // robot gets there and VFH stops, but here we don't realize we're done
+    // because the localization heading hasn't changed sufficiently).
     angle = fabs(NORMALIZE(this->waypoint_odom_a - this->position_a));
     if(going_for_target && dist < this->dist_eps && angle < this->ang_eps)
     {
@@ -609,14 +607,20 @@ void Wavefront::Main()
     {
       // are we there yet?  ignore angle, cause this is just a waypoint
       dist = sqrt(((this->localize_x - this->waypoint_x) * 
-            (this->localize_x - this->waypoint_x)) +
-          ((this->localize_y - this->waypoint_y) *
-           (this->localize_y - this->waypoint_y)));
+                   (this->localize_x - this->waypoint_x)) +
+                  ((this->localize_y - this->waypoint_y) *
+                   (this->localize_y - this->waypoint_y)));
+      // Note that we compare the current heading and waypoint heading in the 
+      // *odometric* frame.   We do this because comparing the current
+      // heading and waypoint heading in the localization frame is unreliable 
+      // when making small adjustments to achieve a desired heading (i.e., the
+      // robot gets there and VFH stops, but here we don't realize we're done
+      // because the localization heading hasn't changed sufficiently).
       if(this->new_goal ||
-          ((dist < this->dist_eps) &&
-           (!rotate_waypoint ||
-            (fabs(NORMALIZE(this->waypoint_odom_a - this->position_a))
-             < this->ang_eps))))
+         ((dist < this->dist_eps) &&
+          (!rotate_waypoint ||
+           (fabs(NORMALIZE(this->waypoint_odom_a - this->position_a))
+            < this->ang_eps))))
       {
         this->new_goal = false;
 
@@ -656,6 +660,7 @@ void Wavefront::Main()
           rotate_waypoint=false;
 
         SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
+        // cache this waypoint, in odometric coords
         LocalizeToPosition(&this->waypoint_odom_x,
                            &this->waypoint_odom_y,
                            &this->waypoint_odom_a,
@@ -670,6 +675,7 @@ void Wavefront::Main()
       if(!rotate_waypoint)
       {
         SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
+        // cache this waypoint, in odometric coords
         LocalizeToPosition(&this->waypoint_odom_x,
                            &this->waypoint_odom_y,
                            &this->waypoint_odom_a,
