@@ -6,8 +6,6 @@
 import time
 import sys, os, getopt
 import math
-import profile
-import pstats
 import random
 import gtk
 
@@ -164,7 +162,8 @@ def makemap(gladepath, logfilename, options):
                     break
 
             if data == None:
-                continue
+                #continue
+                break
 
             # Monitor time
             logtime = data.ctime
