@@ -19,6 +19,7 @@ module = Extension('playerc',
                    libraries = ['playerc'])
 
 
+
 setup(name = 'player',
       version = 'X.X',
       description = 'Player client support',

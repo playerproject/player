@@ -5,11 +5,9 @@ BUILDTEST =
 endif
 
 AM_CPPFLAGS = -I$(srcdir)/.. -I$(srcdir)/../../c -I$(top_srcdir)/server
-LDADD = -L$(top_builddir)/client_libs/c++ -lplayerclient
+test_LDADD = $(top_builddir)/client_libs/c++/libplayerclient.la
 
 noinst_PROGRAMS = $(BUILDTEST)
-
-test_DEPENDENCIES = ../libplayerclient.a
 
 test_SOURCES = test_broadcast.cc \
                test.cc \

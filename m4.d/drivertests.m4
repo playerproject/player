@@ -30,7 +30,9 @@ ifelse($3,[yes],
   [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,
                  enable_$1=no)])
 if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
-  AC_CHECK_HEADER($5, enable_$1=yes, enable_$1=no,)
+  for header in $5; do
+    AC_CHECK_HEADER($header, enable_$1=yes, enable_$1=no,)
+  done
 fi
 if test "x$enable_$1" = "xyes"; then
   AC_DEFINE([INCLUDE_]name_caps, 1, [include the $1 driver])
@@ -100,7 +102,7 @@ AC_DEFUN([PLAYER_DRIVERTESTS], [
 PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],)
 
 PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],
-                  ["-L../client_libs/c -lplayercclient"])
+                  ["../client_libs/c/playercclient.o"])
 
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],)
 
