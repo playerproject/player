@@ -54,7 +54,7 @@ int test_camera(playerc_client_t *client, int index)
              device->width, device->height, device->depth, csize, usize);
 
       snprintf(filename, sizeof(filename), "camera_%03d.ppm", t);
-      printf("camera: saving [%s] (only works for RGB888) \n", filename);
+      printf("camera: saving [%s]\n", filename);
       test_camera_save(device, filename);
     }
     else
@@ -93,8 +93,23 @@ void test_camera_save(playerc_camera_t *device, const char *filename)
   // Write data here
   for (i = 0; i < device->image_size; i++)
   {
-    pix = device->image[i];
-    fputc(pix, file);
+    if (device->format == PLAYER_CAMERA_FORMAT_RGB888)
+    {
+      pix = device->image[i];
+      fputc(pix, file);
+    }
+    else if (device->format == PLAYER_CAMERA_FORMAT_GREY8)
+    {
+      pix = device->image[i];
+      fputc(pix, file);
+      fputc(pix, file);
+      fputc(pix, file);
+    }
+    else
+    {
+      printf("unsupported image format");
+      break;
+    }
   }
 
   fclose(file);
