@@ -25,8 +25,8 @@ struct can_packet_t
   }
 
   void PutSlot(const int slot, const uint16_t val) {
-    msg[slot] = (val >> 8) & 0xFF;
-    msg[slot+1] = val & 0xFF;
+    msg[slot*2] = (val >> 8) & 0xFF;
+    msg[slot*2+1] = val & 0xFF;
   }
 
   char * toString() {

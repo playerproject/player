@@ -148,6 +148,8 @@ SegwayRMP::Main()
 	  motor_enabled = false;
 	}
 
+	printf("SEGWAYRMP: motors state: %d\n", motor_enabled);
+
 	if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
 		     NULL, NULL, 0)) {
 	  PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
@@ -171,7 +173,7 @@ SegwayRMP::Main()
 	rmp = (player_rmp_config_t *)buffer;
 	rmp_val = ntohs(rmp->value);
 
-	printf("SEGWAYRMP: velocity scale %d\n", rmp->value);
+	printf("SEGWAYRMP: velocity scale %d\n", rmp_val);
 	
 	segway->StatusCommand(rmp_cmd, rmp_val);
 
@@ -267,6 +269,9 @@ SegwayRMP::Main()
     GetCommand((unsigned char *)&cmd, sizeof(cmd));
 
     if(motor_enabled) {
+      //      printf("SEGWAYRMP: motors_enabled xs: %d ys: %d\n",
+      //	     ntohl(cmd.xspeed), ntohl(cmd.yspeed));
+
       // do a motor command
       // segway wants it in host order
       cmd.xspeed = ntohl(cmd.xspeed);

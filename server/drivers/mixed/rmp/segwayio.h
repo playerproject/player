@@ -40,22 +40,24 @@ using namespace std;
 #define RMP_COUNT_PER_DEG_PER_S		7.8
 #define RMP_COUNT_PER_MM_PER_S		0.32882963
 #define RMP_COUNT_PER_DEG_PER_SS	72.437229
+#define RMP_COUNT_PER_REV               112644
 
 #define RMP_MAX_TRANS_VEL_MM_S		3576
 #define RMP_MAX_ROT_VEL_DEG_S		18	// from rmi_demo: 1300*0.013805056
-#define RMP_READ_WRITE_PERIOD		10	// 100Hz = 10 ms period
 #define RMP_MAX_TRANS_VEL_COUNT		1176
 #define RMP_MAX_ROT_VEL_COUNT		1024
+
+#define RMP_READ_WRITE_PERIOD		1	// 100Hz = 10 ms period
 
 // this holds all the RMP data it gives us
 struct rmp_frame_t
 {
-  uint16_t     	pitch;
-  uint16_t	pitch_dot;
-  uint16_t     	roll;
-  uint16_t     	roll_dot;
+  int16_t     	pitch;
+  int16_t	pitch_dot;
+  int16_t     	roll;
+  int16_t     	roll_dot;
   int32_t      	yaw;
-  uint16_t	yaw_dot;
+  int16_t	yaw_dot;
   int32_t      	left;
   int16_t      	left_dot;
   int32_t      	right;
