@@ -83,6 +83,10 @@ double imap_fit_ranges(imap_t *imap, double *ox, double *oy, double *oa,
   double da;
   imap_t *imap_new;
 
+  // TESTING
+  static int count;
+  char filename[64];
+
   // HACK: size
   // Create a new map
   imap_new = imap_alloc(16.0 / imap->scale, 16.0 / imap->scale, imap->scale,
@@ -90,8 +94,17 @@ double imap_fit_ranges(imap_t *imap, double *ox, double *oy, double *oa,
   //imap_new = imap_alloc(imap->size_x, imap->size_y, imap->scale,
   //                      imap->max_fit_dist, imap->max_fit_dist);
 
+  // Set the sensor model parameters so that cells
+  // get assigned immediately to occupied or empty.
+  imap_new->model_occ_thresh = imap_new->model_occ_inc;
+  imap_new->model_emp_thresh = imap_new->model_emp_inc;
+  
   // Add the laser scan to the new map
   imap_add_ranges(imap_new, 0, 0, *oa, range_count, ranges);
+  
+  // TESTING
+  snprintf(filename, sizeof(filename), "laser_%04d.pgm", count++);
+  imap_save_occ(imap_new, filename);
 
   // Find the best fit between the new map and the old map
   da = 0.0;
@@ -165,16 +178,14 @@ double imap_fit(imap_t *imap_a, imap_t *imap_b,
   
   // TESTING
   //printf("%d %f %f %f %f\n", 0, s->f,
-  //       gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 2), gsl_vector_get(s->x, 2));
+  //       gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 1), gsl_vector_get(s->x, 2));
 
   // Do the fitting
-  for (i = 0; i < 50; i++)
+  for (i = 0; i < 10; i++)
   {
-    /*
     // TESTING
-    printf("%d %f %f %f %f\n", i, s->f,
-           gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 2), gsl_vector_get(s->x, 2));
-    */
+    //printf("%d %f %f %f %f\n", i, s->f,
+    //       gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 1), gsl_vector_get(s->x, 2));
 
     status = gsl_multimin_fdfminimizer_iterate(s);
     if (status == GSL_ENOPROG)
@@ -192,8 +203,8 @@ double imap_fit(imap_t *imap_a, imap_t *imap_b,
   }
 
   // TESTING
-  //printf("%d %f (%f %f %f)\n", i, s->f,
-  //       gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 2), gsl_vector_get(s->x, 2));
+  //printf("%d %f %f %f %f\n", i, s->f,
+  //       gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 1), gsl_vector_get(s->x, 2));
   //printf("\n\n");
 
   err = s->f;
@@ -320,9 +331,6 @@ double imap_fit_compare(imap_fit_t *fit, double pose[3], double grad[3])
   double dfdb[2], dbdp[2][3];
   imap_cell_t *cell_a, *cell_b;
   imap_fit_cell_t *fcell;
-
-  // HACK
-  k = 0.00;
   
   cb = cos(pose[2]);
   sb = sin(pose[2]);
@@ -333,14 +341,17 @@ double imap_fit_compare(imap_fit_t *fit, double pose[3], double grad[3])
   df[1] = 0.0;
   df[2] = 0.0;
 
+  // HACK
+  k = 1 / 0.10;
+
   // Start with odometric estimate
   dx = (pose[0] - fit->ox);
   dy = (pose[1] - fit->oy);
   da = NORMALIZE(pose[2] - fit->oa);
-  f += k * (dx * dx + dy * dy + da * da);
-  df[0] += k * 2 * dx;
-  df[1] += k * 2 * dy;
-  df[2] += k * 2 * da;
+  f += k * k * (dx * dx + dy * dy + da * da);
+  df[0] += k * dx;
+  df[1] += k * dy;
+  df[2] += k * da;
   
   // Iterate over the occupied cells in imap B
   for (i = 0; i < fit->imap_b_cell_count; i++)

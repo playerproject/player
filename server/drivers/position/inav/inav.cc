@@ -69,6 +69,9 @@ class INav : public CDevice
   public: virtual int Setup();
   public: virtual int Shutdown();
 
+  // TESTING
+  virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  
   // Set up the odometry device.
   private: int SetupOdom();
   private: int ShutdownOdom();
@@ -168,6 +171,8 @@ INav::INav(char* interface, ConfigFile* cf, int section)
   this->laser = NULL;
   this->laser_index = cf->ReadInt(section, "laser_index", 0);
   this->laser_time = 0.0;
+
+  // TESTING; should get this by querying the laser geometry
   this->laser_pose.v[0] = cf->ReadTupleLength(section, "laser_pose", 0, 0);
   this->laser_pose.v[1] = cf->ReadTupleLength(section, "laser_pose", 1, 0);
   this->laser_pose.v[2] = cf->ReadTupleAngle(section, "laser_pose", 2, 0);
@@ -235,6 +240,15 @@ int INav::Shutdown()
   this->ShutdownOdom();
 
   return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// TESTING
+void INav::PutCommand(void* client, unsigned char* src, size_t len)
+{
+  this->odom->PutCommand(client, src, len);
+  return;
 }
 
 
@@ -315,7 +329,7 @@ void INav::Main()
 
   // Clear the map
   imap_reset(this->map);
-  
+
   while (true)
   {
     // Sleep for 1ms (will actually take longer than this).
@@ -361,9 +375,11 @@ int INav::HandleRequests()
   {
     switch (request[0])
     {
+      /*
       case PLAYER_POSITION_GET_GEOM_REQ:
         HandleGetGeom(client, request, len);
         break;
+      */
 
       default:
         if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
@@ -385,6 +401,8 @@ void INav::HandleGetGeom(void *client, void *request, int len)
   struct timeval ts;
   uint16_t reptype;
 
+  printf("get geom\n");
+  
   if (len != 1)
   {
     PLAYER_ERROR2("geometry request len is invalid (%d != %d)", len, 1);
@@ -415,6 +433,8 @@ void INav::HandleGetGeom(void *client, void *request, int len)
 
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
     PLAYER_ERROR("PutReply() failed");
+
+  printf("got geom\n");
   
   return;
 }
@@ -472,11 +492,12 @@ int INav::GetLaser()
     return 0;
   this->laser_time = time;
 
-  // Read and byteswap the range data
   b = ntohs(data.min_angle) / 100.0 * M_PI / 180.0;
   db = ntohs(data.resolution) / 100.0 * M_PI / 180.0;
   this->laser_count = ntohs(data.range_count);
   assert(this->laser_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
+
+  // Read and byteswap the range data
   for (i = 0; i < this->laser_count; i++)
   {
     r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
@@ -487,6 +508,16 @@ int INav::GetLaser()
   
   return 1;
 }
+
+
+/*
+////////////////////////////////////////////////////////////////////////////////
+// Check for new commands
+int INav::GetCommand()
+{
+  return 0;
+}
+*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -500,10 +531,18 @@ void INav::PutPose()
   data.ypos = (int32_t) (this->inc_pose.v[1] * 1000);
   data.yaw = (int32_t) (this->inc_pose.v[2] * 180 / M_PI);
 
+  // TODO
+  data.xspeed = 0;
+  data.yspeed = 0;
+  data.yawspeed = 0;
+
   // Byte swap
   data.xpos = htonl(data.xpos);
   data.ypos = htonl(data.ypos);
   data.yaw = htonl(data.yaw);
+  data.xspeed = htonl(data.xspeed);
+  data.yspeed = htonl(data.yspeed);
+  data.yawspeed = htonl(data.yawspeed);
 
   // Compute time.  Use the position device's time.
   timesec = (uint32_t) this->odom_time;
@@ -549,19 +588,35 @@ void INav::UpdatePoseLaser()
 {
   inav_vector_t pose, zero;
 
+  zero.v[0] = 0;
+  zero.v[1] = 0;
+  zero.v[2] = 0;
+
+  printf("before %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
+    
   // Compute the pose of the laser in the global cs
   pose = inav_vector_cs_add(this->laser_pose, this->inc_pose);
+  
+  //printf("before %f %f %f\n", pose.v[0], pose.v[1], pose.v[2]);  
   
   // Compute the best fit between the laser scan and the map.
   imap_fit_ranges(this->map, pose.v + 0, pose.v + 1, pose.v + 2,
                   this->laser_count, this->laser_ranges);
-
+    
   // Compute the pose of the robot from the best-fit laser pose
   this->inc_pose = inav_vector_cs_add(inav_vector_cs_sub(zero, this->laser_pose), pose);
 
+  printf("after %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
+    
   // Update the map with the current range readings
   imap_add_ranges(this->map, pose.v[0], pose.v[1], pose.v[2],
                   this->laser_count, this->laser_ranges);
+
+  // TESTING
+  static int count;
+  char filename[64];
+  snprintf(filename, sizeof(filename), "imap_%04d.pgm", count++);
+  imap_save_occ(this->map, filename);
   
   return;
 }

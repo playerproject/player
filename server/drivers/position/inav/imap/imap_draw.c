@@ -6,16 +6,18 @@
  * CVS: $Id$
 **************************************************************************/
 
+#include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <rtk.h>
+
 #include "imap.h"
 
 
 // Draw the occupancy imap
-void imap_draw(imap_t *imap, rtk_fig_t *fig)
+void imap_draw_occ(imap_t *imap, rtk_fig_t *fig)
 {
   int i, j;
   int col;

@@ -107,12 +107,6 @@ void imap_translate(imap_t *imap, int di, int dj);
 // Get the cell at the given point
 imap_cell_t *imap_get_cell(imap_t *imap, double ox, double oy, double oa);
 
-// Draw the imap
-void imap_draw(imap_t *imap, struct _rtk_fig_t *fig);
-
-// Draw the occupancy offsets
-void imap_draw_dist(imap_t *imap, struct _rtk_fig_t *fig);
-
 
 /**************************************************************************
  * Range functions
@@ -131,6 +125,20 @@ double imap_occ_dist(imap_t *imap, double ox, double oy);
 
 // Get a vector that points to the nearest occupied cell.
 double imap_occ_vector(imap_t *imap, double ox, double oy, double *dx, double *dy);
+
+
+/**************************************************************************
+ * GUI/diagnostic functions
+ **************************************************************************/
+
+// Draw the occupancy grid
+void imap_draw_occ(imap_t *imap, struct _rtk_fig_t *fig);
+
+// Draw the occupancy offsets
+void imap_draw_dist(imap_t *imap, struct _rtk_fig_t *fig);
+
+// Save the occupancy grid to an image file
+int imap_save_occ(imap_t *imap, const char *filename);
 
 
 /**************************************************************************
