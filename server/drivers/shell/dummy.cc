@@ -62,6 +62,7 @@ driver
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <netinet/in.h>
 
 #include "player.h"
 #include "driver.h"
@@ -146,31 +147,9 @@ Dummy::Dummy(ConfigFile* cf, int section)
   }
 
   free(ids);
-    
-  // Figure out how big our buffers need to be
-  switch (this->local_id.code)
-  {
-    case PLAYER_CAMERA_CODE:
-      this->data_len = sizeof(player_camera_data_t);
-      this->cmd_len = 0;
-      break;
-    case PLAYER_LASER_CODE:
-      this->data_len = sizeof(player_laser_data_t);
-      this->cmd_len = 0;
-      break;
-    case PLAYER_POSITION_CODE:
-      this->data_len = sizeof(player_position_data_t);
-      this->cmd_len = sizeof(player_position_cmd_t);
-      break;
-    default:
-      PLAYER_ERROR1("unsupported interface [%s]",
-                    lookup_interface_name(0, this->local_id.code));
-      this->SetError(-1);
-      return;
-  }
 
   // Add our interface
-  if (this->AddInterface(this->local_id, PLAYER_ALL_MODE, this->data_len,
+  if (this->AddInterface(this->local_id, PLAYER_ALL_MODE, PLAYER_MAX_MESSAGE_SIZE,
                          this->cmd_len, 10, 10) != 0)
   {
     this->SetError(-1);
@@ -182,6 +161,57 @@ Dummy::Dummy(ConfigFile* cf, int section)
 
   // Create config buffer
   this->req_buffer = (char*) calloc(1, PLAYER_MAX_REQREP_SIZE);
+
+  // Initialize data buffers and lengths with something sensible
+  switch (this->local_id.code)
+  {
+    case PLAYER_CAMERA_CODE:
+    {
+      player_camera_data_t *data = (player_camera_data_t*) this->data_buffer;
+      int w = 320;
+      int h = 240;
+
+      data->width = htons(w);
+      data->height = htons(h);
+      data->depth = 24;
+      data->compression = PLAYER_CAMERA_COMPRESS_RAW;
+      data->image_size = htonl(w * h * 3);
+
+      for (int j = 0; j < h; j++)
+      {
+        for (int i = 0; i < w; i++)
+        {
+          data->image[(i + j * w) * 3 + 0] = ((i + j) % 2) * 255;
+          data->image[(i + j * w) * 3 + 1] = ((i + j) % 2) * 255;
+          data->image[(i + j * w) * 3 + 2] = ((i + j) % 2) * 255;
+        }
+      }
+      
+      this->data_len = sizeof(*data) - sizeof(data->image) + w * h * 3;
+      this->cmd_len = 0;
+
+      break;
+    }
+    case PLAYER_LASER_CODE:
+    {
+      this->data_len = sizeof(player_laser_data_t);
+      this->cmd_len = 0;
+      break;
+    }
+    case PLAYER_POSITION_CODE:
+    {
+      this->data_len = sizeof(player_position_data_t);
+      this->cmd_len = sizeof(player_position_cmd_t);
+      break;
+    }
+    default:
+    {
+      PLAYER_ERROR1("unsupported interface [%s]",
+                    lookup_interface_name(0, this->local_id.code));
+      this->SetError(-1);
+      return;
+    }
+  }
   
   // Data rate
   this->rate = cf->ReadFloat(section, "rate", 10);

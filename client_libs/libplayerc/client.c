@@ -97,6 +97,8 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   if (mclient)
     playerc_mclient_addclient(mclient, client);
 
+  client->data = (char*) malloc(PLAYER_MAX_MESSAGE_SIZE);
+  
   client->qfirst = 0;
   client->qlen = 0;
   client->qsize = sizeof(client->qitems) / sizeof(client->qitems[0]);
@@ -110,8 +112,10 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 // Destroy a player client
 void playerc_client_destroy(playerc_client_t *client)
 {
+  free(client->data);
   free(client->host);
   free(client);
+  return;
 }
 
 
@@ -233,16 +237,14 @@ void *playerc_client_read(playerc_client_t *client)
 {
   player_msghdr_t header;
   int len;
-  char data[PLAYER_MAX_MESSAGE_SIZE];
 
   // See if there is any queued data.
-  len = sizeof(data);
-
-  if (playerc_client_pop(client, &header, data, &len) < 0)
+  len = PLAYER_MAX_MESSAGE_SIZE;
+  if (playerc_client_pop(client, &header, client->data, &len) < 0)
   {
     // If there is no queued data, read a packet (blocking).
-    len = sizeof(data);
-    if (playerc_client_readpacket(client, &header, data, &len) < 0)
+    len = PLAYER_MAX_MESSAGE_SIZE;
+    if (playerc_client_readpacket(client, &header, client->data, &len) < 0)
       return NULL;
   }
 
@@ -261,7 +263,7 @@ void *playerc_client_read(playerc_client_t *client)
   }
 
   // Dispatch
-  return playerc_client_dispatch(client, &header, data, len);
+  return playerc_client_dispatch(client, &header, client->data, len);
 }
 
 
@@ -408,7 +410,7 @@ int playerc_client_request_recv(playerc_client_t *client, playerc_device_t *devi
                                 void *rep_data, int rep_len)
 {
   int i, len;
-  char data[8192];
+  char data[PLAYER_MAX_REQREP_SIZE];
   player_msghdr_t rep_header;
 
   // Read packets until we get a reply.  Data packets get queued up

@@ -1,1 +1,1 @@
-SUBDIRS = v4l 1394 jpegStream
+SUBDIRS = v4l 1394 compress

@@ -6,4 +6,4 @@ EXTRA_LIBRARIES = libdummy.a libpassthrough.a liblogfile.a
 
 libdummy_a_SOURCES = dummy.cc
 libpassthrough_a_SOURCES = passthrough.cc 
-liblogfile_a_SOURCES = readlog_manager.h readlog_manager.cc readlog_time.h readlog_time.cc readlog.cc writelog.cc
+liblogfile_a_SOURCES = readlog_manager.h readlog_manager.cc readlog_time.h readlog_time.cc readlog.cc writelog.cc encode.h encode.cc

@@ -239,6 +239,9 @@ typedef struct _playerc_client_t
   int qfirst, qlen, qsize;
   /* @} */
 
+  /** Temp buffer for incoming packets. */
+  char *data;
+
   /** Data time stamp on the last SYNC packet */
   double datatime;
 
@@ -526,7 +529,7 @@ int playerc_bumper_get_geom(playerc_bumper_t *device);
 /***************************************************************************/
 /** @defgroup playerc_proxy_camera camera
 
-The camera proxy can be used to get images from a camera.
+The camera proxy can be used to get images from a camera.  
 
 @{
 */
@@ -542,6 +545,9 @@ typedef struct
 
   /** Image depth (8, 16, 24). */
   uint8_t depth;
+
+  /** Image compression method. */
+  uint8_t compression;
 
   /** Size of image data (bytes) */
   uint32_t image_size;
@@ -563,6 +569,10 @@ int playerc_camera_subscribe(playerc_camera_t *device, int access);
 
 /** Un-subscribe from the camera device. */
 int playerc_camera_unsubscribe(playerc_camera_t *device);
+
+/** Decompress the image (modifies the current proxy data). */
+void playerc_camera_decompress(playerc_camera_t *device);
+
 
 /** @} */
 /**************************************************************************/

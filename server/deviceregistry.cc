@@ -258,8 +258,14 @@ void CameraV4L_Register(DriverTable *table);
 void Camera1394_Register(DriverTable *table);
 #endif
 
+/* REMOVE
 #ifdef INCLUDE_JPEGSTREAM
 void JpegStream_Register(DriverTable* table);
+#endif
+*/
+
+#ifdef INCLUDE_CAMERACOMPRESS
+void CameraCompress_Register(DriverTable* table);
 #endif
 
 
@@ -688,8 +694,14 @@ register_devices()
   Camera1394_Register(driverTable);
 #endif
 
+/* REMOVE
 #ifdef INCLUDE_JPEGSTREAM
   JpegStream_Register(driverTable);
+#endif
+*/
+
+#ifdef INCLUDE_CAMERACOMPRESS
+  CameraCompress_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_GAZEBO_CAMERA

@@ -49,6 +49,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
+#include "playerpacket.h"
 #include "playerc.h"
 #include "error.h"
 
@@ -97,17 +98,44 @@ int playerc_camera_unsubscribe(playerc_camera_t *device)
 void playerc_camera_putdata(playerc_camera_t *device, player_msghdr_t *header,
                             player_camera_data_t *data, size_t len)
 {
-  printf("%d %d\n", sizeof(*data), len);
-  
   assert(sizeof(*data) >= len);
 
   device->width = ntohs(data->width);
   device->height = ntohs(data->height);
   device->depth = data->depth;
+  device->compression = data->compression;
   device->image_size = ntohl(data->image_size);
 
   assert(device->image_size < sizeof(device->image));
   memcpy(device->image, data->image, device->image_size);
+  
+  return;
+}
+
+
+// Decompress image data
+void playerc_camera_decompress(playerc_camera_t *device)
+{
+  int dst_size;
+  unsigned char *dst;
+
+  if (device->compression == PLAYER_CAMERA_COMPRESS_RAW)
+    return;
+  
+  // Create a temp buffer
+  dst_size = device->width * device->height * device->depth / 8;
+  dst = malloc(dst_size);
+
+  // Decompress into temp buffer
+  jpeg_decompress(dst, dst_size, device->image, device->image_size);
+
+  // Copy uncompress image
+  device->image_size = dst_size;
+  assert(dst_size < sizeof(device->image));
+  memcpy(device->image, dst, dst_size);
+
+  // Pixels are now raw
+  device->compression = PLAYER_CAMERA_COMPRESS_RAW;
 
   return;
 }
