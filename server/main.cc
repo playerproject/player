@@ -346,7 +346,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
       
       close( tfd ); // can close fd once mapped
       
-      //StageDevice *dev = 0; // declare outside switch statement
+      StageDevice *dev = 0; // declare outside switch statement
 
       // prime the configFile parser
       int globalparent = configFile.AddEntity(-1,"");
