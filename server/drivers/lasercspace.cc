@@ -69,6 +69,9 @@ class LaserCSpace : public CDevice
   // updated.
   private: int UpdateLaser();
 
+  // Pre-compute a bunch of stuff
+  private: void Precompute();
+
   // Compute the maximum free-space range for sample n.
   private: double FreeRange(int n);
 
@@ -80,6 +83,7 @@ class LaserCSpace : public CDevice
 
   // Device pose relative to robot.
   private: double pose[3];
+  private: double size[2];
   
   // Laser stuff.
   private: int laser_index;
@@ -92,6 +96,9 @@ class LaserCSpace : public CDevice
 
   // Robot radius.
   private: double radius;
+
+  // Lookup table for precomputations
+  private: double lu[PLAYER_LASER_MAX_SAMPLES][4];
 
   // Fiducila stuff (the data we generate).
   private: player_laser_data_t data;
@@ -129,16 +136,14 @@ LaserCSpace::LaserCSpace(char* interface, ConfigFile* cf, int section)
   this->pose[1] = 0;
   this->pose[2] = 0;
 
-  // If laser_index is not overridden by an argument here, then we'll
-  // use the device's own index, which we can get in Setup() below.
-  this->laser_index = cf->ReadInt(section, "laser", -1);
+  this->laser_index = cf->ReadInt(section, "laser", 0);
   this->laser_device = NULL;
   this->laser_timesec = 0;
   this->laser_timeusec = 0;
 
   // Settings.
   this->radius = cf->ReadLength(section, "radius", 0.50);
-  this->sample_step = cf->ReadInt(section, "step", 10);
+  this->sample_step = cf->ReadInt(section, "step", 1);
   
   // Outgoing data
   this->timesec = 0;
@@ -157,12 +162,17 @@ int LaserCSpace::Setup()
   
   // Subscribe to the laser.
   id.code = PLAYER_LASER_CODE;
-  id.index = (this->laser_index >= 0 ? this->laser_index : this->device_id.index);
+  id.index = this->laser_index;
   id.port = this->device_id.port;
   this->laser_device = deviceTable->GetDevice(id);
   if (!this->laser_device)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
+    return(-1);
+  }
+  if (this->laser_device == this)
+  {
+    PLAYER_ERROR("attempt to subscribe to self");
     return(-1);
   }
   if (this->laser_device->Subscribe(this) != 0)
@@ -173,9 +183,11 @@ int LaserCSpace::Setup()
 
   // Get the laser geometry.
   // TODO: no support for this at the moment.
-  //this->pose[0] = 0.10;
-  //this->pose[1] = 0;
-  //this->pose[2] = 0;
+  this->pose[0] = 0.10;
+  this->pose[1] = 0;
+  this->pose[2] = 0;
+  this->size[0] = 0.15;
+  this->size[1] = 0.15;
 
   return 0;
 }
@@ -240,10 +252,12 @@ int LaserCSpace::UpdateLaser()
   this->data.min_angle = this->laser_data.min_angle;
   this->data.max_angle = this->laser_data.max_angle;
   this->data.range_count = this->laser_data.range_count;
+
+  this->Precompute();
   
   for (i = 0; i < this->laser_data.range_count; i++)
   {
-    r = FreeRange(i);
+    r = this->FreeRange(i);
     this->data.ranges[i] = (int16_t) (r * 1000);
   }
 
@@ -260,6 +274,30 @@ int LaserCSpace::UpdateLaser()
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Pre-compute a bunch of stuff
+void LaserCSpace::Precompute()
+{
+  int i;
+  double r, b, x, y;
+  
+  for (i = 0; i < this->laser_data.range_count; i++)
+  {
+    r = (double) (this->laser_data.ranges[i]) / 1000;
+    b = (double) (this->laser_data.min_angle +
+                  this->laser_data.resolution * i) / 100.0 * M_PI / 180;
+    x = r * cos(b);
+    y = r * sin(b);
+
+    this->lu[i][0] = r;
+    this->lu[i][1] = b;
+    this->lu[i][2] = x;
+    this->lu[i][3] = y;
+  }
+  return;
+}
+  
+
+////////////////////////////////////////////////////////////////////////////////
 // Compute the maximum free-space range for sample n.
 double LaserCSpace::FreeRange(int n)
 {
@@ -274,22 +312,22 @@ double LaserCSpace::FreeRange(int n)
   step = this->sample_step;
   
   // Range and bearing of this reading.
-  r = (double) (this->laser_data.ranges[n]) / 1000;
-  b = (double) (this->laser_data.min_angle +
-                this->laser_data.resolution * n) / 100.0 * M_PI / 180;
-  x = r * cos(b);
-  y = r * sin(b);
+  r = this->lu[n][0];
+  b = this->lu[n][1];
+  x = this->lu[n][2];
+  y = this->lu[n][3];  
 
   max_r = r - this->radius;
 
   // Look for intersections with obstacles.
   for (i = 0; i < this->laser_data.range_count; i += step)
   {
-    r_ = (double) (this->laser_data.ranges[i]) / 1000;
-    b_ = (double) (this->laser_data.min_angle +
-                   this->laser_data.resolution * i) / 100.0 * M_PI / 180;
-    x_ = r_ * cos(b_);
-    y_ = r_ * sin(b_);
+    r_ = this->lu[i][0];
+    if (r_ - this->radius > max_r)
+      continue;
+    b_ = this->lu[i][1];
+    x_ = this->lu[i][2];
+    y_ = this->lu[i][3];  
 
     // Compute parametric point on ray that is nearest the obstacle.
     s = (x * x_ + y * y_) / (x * x + y * y);
@@ -364,8 +402,8 @@ void LaserCSpace::HandleGetGeom(void *client, void *request, int len)
   geom.pose[0] = htons((short) (this->pose[0] * 1000));
   geom.pose[1] = htons((short) (this->pose[1] * 1000));
   geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
-  geom.size[0] = htons((short) (0.15 * 1000)); // TODO
-  geom.size[1] = htons((short) (0.15 * 1000));
+  geom.size[0] = htons((short) (this->size[0] * 1000));
+  geom.size[1] = htons((short) (this->size[1] * 1000));
 
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
     PLAYER_ERROR("PutReply() failed");
