@@ -24,6 +24,8 @@
 
 #include <stdlib.h>
 
+#define DEBUG
+
 #include "playercommon.h"
 #include "drivertable.h"
 #include "player.h"
@@ -178,8 +180,8 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	    // TODO
 	    // int intensity = plc->intensity;
 	    
-	    PRINT_DEBUG4( "requested laser config:\n %d %d %d %d",
-			  min_a, max_a, ang_res, intensity );
+	    //PRINT_DEBUG4( "requested laser config:\n %d %d %d %d",
+	    //	  min_a, max_a, ang_res, intensity );
 	    
 	    min_a /= 100;
 	    max_a /= 100;
@@ -261,8 +263,14 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	stg_geom_t geom;
 	if( stg_model_prop_get( this->model, STG_PROP_GEOM, &geom,sizeof(geom))
 	    != 0 )
-	  PLAYER_TRACE0( "error requesting STG_PROP_CONFIG" );
+	  PLAYER_TRACE0( "error requesting STG_PROP_GEOM" );
 	
+	PRINT_DEBUG5( "received laser geom: %.2f %.2f %.2f -  %.2f %.2f",
+		geom.pose.x, 
+		geom.pose.y, 
+		geom.pose.a, 
+		geom.size.x, 
+		geom.size.y ); 
 	
 	// fill in the geometry data formatted player-like
 	player_laser_geom_t pgeom;
