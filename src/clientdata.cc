@@ -52,7 +52,7 @@ extern PlayerTime* GlobalTime;
 
 extern CDeviceTable* deviceTable;
 extern CClientData* clients[];
-extern pthread_mutex_t clients_mutex;
+//extern pthread_mutex_t clients_mutex;
 extern ClientManager* clientmanager;
 extern char playerversion[];
 
@@ -94,8 +94,6 @@ CClientData::CClientData(char* key, int myport)
   {
     auth_pending = false;
   }
-
-  pthread_mutex_init( &access, NULL ); 
 
   datarequested = false;
 }
@@ -173,10 +171,8 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   {
     if(CheckAuth(hdr,payload,payload_size))
     {
-      pthread_mutex_lock( &access );
       auth_pending = false;
       requesttype = PLAYER_MSGTYPE_RESP_ACK;
-      pthread_mutex_unlock( &access );
     }
     else
     {
@@ -239,8 +235,6 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                 break;
               }
               datamode = *((player_device_datamode_req_t*)payload);
-              // lock before changing mode
-              pthread_mutex_lock(&access);
               switch(datamode.mode)
               {
                 case PLAYER_DATAMODE_PULL_NEW:
@@ -275,7 +269,6 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                   requesttype = PLAYER_MSGTYPE_RESP_NACK;
                   break;
               }
-              pthread_mutex_unlock(&access);
               break;
             case PLAYER_PLAYER_DATA_REQ:
               // this ioctl takes no args
@@ -308,9 +301,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                 break;
               }
               datafreq = *((player_device_datafreq_req_t*)payload);
-              pthread_mutex_lock(&access);
               frequency = ntohs(datafreq.frequency);
-              pthread_mutex_unlock(&access);
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
             case PLAYER_PLAYER_AUTH_REQ:
@@ -392,8 +383,6 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   /* if it's a request, then we must generate a reply */
   if(requesttype)
   {
-    pthread_mutex_lock(&access);
-
     reply_hdr.stx = htons(PLAYER_STXX);
     reply_hdr.type = htons(requesttype);
     reply_hdr.device = htons(hdr.device);
@@ -438,18 +427,15 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       if(errno != EAGAIN)
       {
         perror("HandleRequests: write()");
-        pthread_mutex_unlock(&access);
         return(-1);
       }
     }
-    pthread_mutex_unlock(&access);
   }
 
+  // FIXME: should this still be here?
   if(unlock_pending)
   {
-    pthread_mutex_lock(&access);
     datarequested = true;
-    pthread_mutex_unlock(&access);
   }
   
   return(0);
@@ -472,8 +458,6 @@ CClientData::~CClientData()
 
   if(replybuffer)
     delete replybuffer;
-
-  pthread_mutex_destroy(&access);
 }
 
 void CClientData::RemoveRequests() 
@@ -527,8 +511,6 @@ void CClientData::UpdateRequested(player_device_req_t req)
 {
   CDeviceSubscription* thisub;
   CDeviceSubscription* prevsub;
-
-  pthread_mutex_lock(&access);
 
   // find place to place the update
   for(thisub=requested,prevsub=NULL;thisub;
@@ -647,24 +629,20 @@ void CClientData::UpdateRequested(player_device_req_t req)
     printf("Unknown unused request \"%x:%x:%c\".\n",
                     req.code, req.index, req.access);
   }
-  pthread_mutex_unlock(&access);
 }
 
 unsigned char 
 CClientData::FindPermission(player_device_id_t id)
 {
   unsigned char tmpaccess;
-  //pthread_mutex_lock(&access);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
     if((thisub->id.code == id.code) && (thisub->id.index == id.index))
     {
       tmpaccess = thisub->access;
-      pthread_mutex_unlock(&access);
       return(tmpaccess);
     }
   }
-  //pthread_mutex_unlock(&access);
   return(PLAYER_ERROR_MODE);
 }
 
@@ -673,9 +651,7 @@ bool CClientData::CheckOpenPermissions(player_device_id_t id)
   bool permission = false;
   unsigned char letter;
 
-  pthread_mutex_lock(&access);
   letter = FindPermission(id);
-  pthread_mutex_unlock(&access);
 
   if((letter==PLAYER_ALL_MODE) || 
      (letter==PLAYER_READ_MODE) || 
@@ -690,9 +666,7 @@ bool CClientData::CheckWritePermissions(player_device_id_t id)
   bool permission = false;
   unsigned char letter;
 
-  pthread_mutex_lock(&access);
   letter = FindPermission(id);
-  pthread_mutex_unlock(&access);
 
   if((letter==PLAYER_ALL_MODE) || (PLAYER_WRITE_MODE==letter)) 
     permission = true;
@@ -838,10 +812,8 @@ void
 CClientData::PrintRequested(char* str)
 {
   printf("%s:requested: ",str);
-  pthread_mutex_lock(&access);
   for(CDeviceSubscription* thissub=requested;thissub;thissub=thissub->next)
     printf("%x:%x:%d ", thissub->id.code,thissub->id.index,thissub->access);
-  pthread_mutex_unlock(&access);
   puts("");
 }
 
@@ -1002,17 +974,14 @@ CClientData::WriteIdentString()
   bzero(((char*)data)+strlen((char*)data),
         PLAYER_IDENT_STRLEN-strlen((char*)data));
 
-  pthread_mutex_lock(&access);
   if(write(socket, data, PLAYER_IDENT_STRLEN) < 0 ) 
   {
     if(errno != EAGAIN)
     {
       perror("ClientManager::Write():write()");
-      pthread_mutex_unlock(&access);
       return(-1);
     }
   }
-  pthread_mutex_unlock(&access);
   return(0);
 }
 

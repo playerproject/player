@@ -37,7 +37,6 @@
 #include <string.h> // for bzero()
 #include <stdlib.h>  /* free(3),exit(3) */
 #include <signal.h>
-#include <pthread.h>  /* for pthread stuff */
 #include <netinet/in.h> /* for struct sockaddr_in, SOCK_STREAM */
 #include <unistd.h>  /* for close(2) */
 #include <sys/types.h>  /* for accept(2) */
@@ -135,7 +134,7 @@ Usage()
 void 
 printout( int dummy ) 
 {
-  puts("got SIGSEGV!");
+  puts("Player got a SIGSEGV! (that ain't good...)");
   exit(-1);
 }
 
@@ -197,29 +196,6 @@ SetupSignalHandlers()
   }
 }
 
-/* used to name incoming client connections */
-int
-make_dotted_ip_address(char* dest, int len, uint32_t addr)
-{
-  char tmp[512];
-  int mask = 0xff;
-
-  sprintf(tmp, "%u.%u.%u.%u",
-                  addr>>0 & mask,
-                  addr>>8 & mask,
-                  addr>>16 & mask,
-                  addr>>24 & mask);
-
-  if((strlen(tmp) + 1) > (unsigned int)len)
-  {
-    return(-1);
-  }
-  else
-  {
-    strncpy(dest, tmp, len);
-    return(0);
-  }
-}
 
 /* for debugging */
 void PrintHeader(player_msghdr_t hdr)
@@ -561,12 +537,6 @@ int main( int argc, char *argv[] )
   bool special_config = false;
   struct sockaddr_in listener;
   char auth_key[PLAYER_KEYLEN] = "";
-  CClientData *clientData;
-#ifdef PLAYER_LINUX
-  socklen_t sender_len;
-#else
-  int sender_len;
-#endif
 
   // Register the default available devices in the availableDeviceTable.  
   //
@@ -777,7 +747,6 @@ int main( int argc, char *argv[] )
 #endif
 
   }  
-
 #endif // INCLUDE_STAGE  
 
   if(!use_stage)
@@ -802,88 +771,18 @@ int main( int argc, char *argv[] )
     ports[0] = global_playerport;
   }
 
-  sigset_t signalset;
-  sigemptyset(&signalset);
-  sigaddset(&signalset,SIGINT);
-  sigaddset(&signalset,SIGHUP);
-  sigaddset(&signalset,SIGTERM);
-  pthread_sigmask(SIG_BLOCK, &signalset, NULL);
-
   // create the client manager object.
-  // it will start one reader thread and one writer thread and keep track
-  // of all clients
-  clientmanager = new ClientManager;
+  clientmanager = new ClientManager(ufds,ports,num_ufds,auth_key);
 
-  sigaddset(&signalset,SIGINT);
-  sigaddset(&signalset,SIGHUP);
-  sigaddset(&signalset,SIGTERM);
-  pthread_sigmask(SIG_UNBLOCK, &signalset, NULL);
-
-  // main loop: accept new connections and hand them off to the client
-  // manager.
+  // main loop: sleep the shortest amount possible, periodically updating
+  // the clientmanager.
   for(;;) 
   {
-    int num_connects;
-
-    if((num_connects = poll(ufds,num_ufds,-1)) < 0)
+    usleep(0);
+    if(clientmanager->Update())
     {
-      if(errno == EINTR)
-        continue;
-
-      perror("poll() failed.");
+      fputs("ClientManager::Update() errored; bailing.\n", stderr);
       exit(-1);
-    }
-
-    if(!num_connects)
-      continue;
-
-    for(int i=0;i<num_ufds;i++)
-    {
-      if(ufds[i].revents & POLLIN)
-      {
-        clientData = new CClientData(auth_key,ports[i]);
-
-        struct sockaddr_in cliaddr;
-        sender_len = sizeof(cliaddr);
-        memset( &cliaddr, 0, sizeof(cliaddr) );
-
-        /* shouldn't block here */
-        if((clientData->socket = accept(ufds[i].fd, 
-                                        (struct sockaddr*)&cliaddr, 
-                                        &sender_len)) == -1)
-        {
-          perror("accept(2) failed: ");
-          exit(-1);
-        }
-
-        // make the socket non-blocking
-        if(fcntl(clientData->socket, F_SETFL, O_NONBLOCK) == -1)
-        {
-          perror("fcntl() failed while making socket non-blocking. quitting.");
-          exit(-1);
-        }
-
-        /* got conn */
-	
-        // now reports the port number that was connected, instead of the 
-        // global player port - RTV
-	
-        char clientIp[64];
-        if( make_dotted_ip_address( clientIp, 64, 
-                                    (uint32_t)(cliaddr.sin_addr.s_addr) ) )
-        {
-          // couldn't get the ip
-          printf("** Player [port %d] client accepted on socket %d **\n",
-                 ports[i],  clientData->socket);
-        }
-        else
-          printf("** Player [port %d] client accepted from %s "
-                 "on socket %d **\n", 
-                 ports[i], clientIp, clientData->socket);
-	
-        /* add it to the manager's list */
-        clientmanager->AddClient(clientData);
-      }
     }
   }
 

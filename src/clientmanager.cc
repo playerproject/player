@@ -32,17 +32,62 @@
 #include <errno.h>
 #include <string.h>  // for memcpy(3)
 #include <stdlib.h>  // for exit(3)
-#include <unistd.h>  // for usleep(2)
 #include <netinet/in.h>  // for byte-swappers
+#include <sys/types.h>  // for accept(2)
+#include <sys/socket.h>  // for accept(2)
+#include <fcntl.h>  // for fcntl(2)
+#include <unistd.h>  // for fnctl(2)
+
+#include <sys/time.h>  // temporary
 
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
-void* ClientReaderThread(void* arg);
-void* ClientWriterThread(void* arg);
-
-ClientManager::ClientManager()
+/* used to name incoming client connections */
+int
+make_dotted_ip_address(char* dest, int len, uint32_t addr)
 {
+  char tmp[512];
+  int mask = 0xff;
+
+  sprintf(tmp, "%u.%u.%u.%u",
+                  addr>>0 & mask,
+                  addr>>8 & mask,
+                  addr>>16 & mask,
+                  addr>>24 & mask);
+
+  if((strlen(tmp) + 1) > (unsigned int)len)
+  {
+    return(-1);
+  }
+  else
+  {
+    strncpy(dest, tmp, len);
+    return(0);
+  }
+}
+
+ClientManager::ClientManager(struct pollfd* listen_ufds, int* ports,
+                             int numfds, char* auth_key)
+{
+  // allocate space for accept_ufds
+  if(!(accept_ufds = new struct pollfd[numfds]) || 
+     !(accept_ports = new int[numfds]))
+  {
+    fputs("ClientManager::ClientManager(): new failed. "
+          "Out of memory? bailing\n", stderr);
+    exit(1);
+  }
+
+  // store the ufds and ports for accepting new connections
+  memcpy(accept_ufds, listen_ufds, sizeof(struct pollfd)*numfds);
+  memcpy(accept_ports, ports, sizeof(int)*numfds);
+  num_accept_ufds = numfds;
+
+  strncpy(client_auth_key, auth_key,sizeof(client_auth_key));
+  // just in case...
+  client_auth_key[sizeof(client_auth_key)-1] = '\0';
+
   // initialize both arrays to this size; we'll double it each time
   // we need more space later
   int initial_size = 8;
@@ -59,47 +104,16 @@ ClientManager::ClientManager()
 
   if(!(ufds = new struct pollfd[initial_size]))
   {
-    fputs("PlayerMultiClient::PlayerMultiClient(): new failed. "
+    fputs("ClientManager::ClientManager(): new failed. "
           "Out of memory? bailing \n", stderr);
     exit(1);
   }
   bzero((char*)ufds,sizeof(struct pollfd)*initial_size);
-
-  pthread_mutex_init(&rthread_client_mutex,NULL);
-  pthread_mutex_init(&wthread_client_mutex,NULL);
-
-  // start the reader thread
-  if(pthread_create(&readthread, NULL, ClientReaderThread, this))
-  {
-    perror("pthread_create(3) failed; bailing");
-    exit(-1);
-  }
-  
-  // start the writer thread
-  if(pthread_create(&writethread, NULL, ClientWriterThread, this))
-  {
-    perror("pthread_create(3) failed; bailing");
-    exit(-1);
-  }
 }
 
 // destructor
 ClientManager::~ClientManager()
 {
-  void* thread_return;
-
-  pthread_cancel(writethread);
-  if(pthread_join(writethread, &thread_return))
-    perror("ClientManager::~ClientManager(): pthread_join()");
-
-  pthread_cancel(readthread);
-  if(pthread_join(readthread, &thread_return))
-    perror("ClientManager::~ClientManager(): pthread_join()");
-
-  
-  pthread_mutex_destroy(&wthread_client_mutex);
-  pthread_mutex_destroy(&rthread_client_mutex);
-
   // tear down dynamic structures here
   if(clients)
   {
@@ -107,7 +121,6 @@ ClientManager::~ClientManager()
     {
       if(clients[i])
       {
-        //printf("deleting client %d (sock %d)\n", i, clients[i]->socket);
         delete clients[i];
       }
     }
@@ -115,6 +128,8 @@ ClientManager::~ClientManager()
   }
   if(ufds)
     delete ufds;
+  if(accept_ufds)
+    delete accept_ufds;
 }
 
 // add a client to our watch list
@@ -122,11 +137,6 @@ void ClientManager::AddClient(CClientData* client)
 {
   if(!client)
     return;
-
-  //  this is only ever called from main(), so we know that these mutexes
-  //  will not be locked already
-  pthread_mutex_lock(&rthread_client_mutex);
-  pthread_mutex_lock(&wthread_client_mutex);
 
   // First, add it to the array of clients
 
@@ -193,38 +203,51 @@ void ClientManager::AddClient(CClientData* client)
   // it fails
   if(client->WriteIdentString() == -1)
   {
-    MarkClientForDeletion(num_clients-1,false);
-    RemoveBlanks(true);
+    MarkClientForDeletion(num_clients-1);
+    RemoveBlanks();
+  }
+}
+
+// Update the ClientManager
+int ClientManager::Update()
+{
+  int retval;
+
+  if((retval = Accept()))
+  {
+    printf("Accept() returned %d\n", retval);
+    return(retval);
   }
 
-  pthread_mutex_unlock(&wthread_client_mutex);
-  pthread_mutex_unlock(&rthread_client_mutex);
+  if((retval = Read()))
+  {
+    printf("Read() returned %d\n", retval);
+    return(retval);
+  }
+
+  if((retval = Write()))
+  {
+    printf("Write() returned %d\n", retval);
+    return(retval);
+  }
+
+  return(0);
 }
 
 // mark a client for deletion
 void
-ClientManager::MarkClientForDeletion(int idx, bool have_lock)
+ClientManager::MarkClientForDeletion(int idx)
 {
-  if(!have_lock)
-    pthread_mutex_lock(&(clients[idx]->access));
   clients[idx]->markedfordeletion = true;
-  if(!have_lock)
-    pthread_mutex_unlock(&(clients[idx]->access));
 }
     
 // shift the clients and ufds down so that they're contiguous
-void ClientManager::RemoveBlanks(bool have_locks)
+void ClientManager::RemoveBlanks()
 {
   int i,j;
 
   if(!num_clients)
     return;
-
-  if(!have_locks)
-  {
-    pthread_mutex_lock(&rthread_client_mutex);
-    pthread_mutex_lock(&wthread_client_mutex);
-  }
 
   for(i=0;i<num_clients;)
   {
@@ -260,12 +283,6 @@ void ClientManager::RemoveBlanks(bool have_locks)
   for(i=0;clients[i];i++);
 
   num_clients = i;
-
-  if(!have_locks)
-  {
-    pthread_mutex_unlock(&wthread_client_mutex);
-    pthread_mutex_unlock(&rthread_client_mutex);
-  }
 }
 
 // get the index corresponding to a CClientData pointer
@@ -284,19 +301,91 @@ int ClientManager::GetIndex(CClientData* ptr)
   return(retval);
 }
 
+// accept new connections
+int ClientManager::Accept()
+{
+  int num_connects;
+  CClientData *clientData;
+#ifdef PLAYER_LINUX
+  socklen_t sender_len;
+#else
+  int sender_len;
+#endif
+
+  if((num_connects = poll(accept_ufds,num_accept_ufds,0)) < 0)
+  {
+    if(errno == EINTR)
+      return(0);
+
+    perror("poll() failed.");
+    exit(-1);
+  }
+
+  if(!num_connects)
+    return(0);
+
+  for(int i=0;i<num_accept_ufds && num_connects>0;i++)
+  {
+    if(accept_ufds[i].revents & POLLIN)
+    {
+      num_connects--;
+      clientData = new CClientData(client_auth_key,accept_ports[i]);
+
+      struct sockaddr_in cliaddr;
+      sender_len = sizeof(cliaddr);
+      memset(&cliaddr, 0, sizeof(cliaddr));
+
+      /* shouldn't block here */
+      if((clientData->socket = accept(accept_ufds[i].fd, 
+                                      (struct sockaddr*)&cliaddr, 
+                                      &sender_len)) == -1)
+      {
+        perror("accept(2) failed: ");
+        exit(-1);
+      }
+
+      // make the socket non-blocking
+      if(fcntl(clientData->socket, F_SETFL, O_NONBLOCK) == -1)
+      {
+        perror("fcntl() failed while making socket non-blocking. quitting.");
+        exit(-1);
+      }
+
+      /* got conn */
+
+      // now reports the port number that was connected, instead of the 
+      // global player port - RTV
+      char clientIp[64];
+      if(make_dotted_ip_address(clientIp, 64, 
+                                (uint32_t)(cliaddr.sin_addr.s_addr)))
+      {
+        // couldn't get the ip
+        printf("** Player [port %d] client accepted on socket %d **\n",
+               accept_ports[i],  clientData->socket);
+      }
+      else
+        printf("** Player [port %d] client accepted from %s "
+               "on socket %d **\n", 
+               accept_ports[i], clientIp, clientData->socket);
+
+      /* add it to the manager's list */
+      AddClient(clientData);
+    }
+  }
+  return(0);
+}
+
 int ClientManager::Read()
 {
   int num_to_read;
 
-  pthread_mutex_lock(&rthread_client_mutex);
-  
-  // let's try this poll(2) thing (with a 10ms timeout)
-  if((num_to_read = poll(ufds,num_clients,100)) == -1)
+  // poll the fds that we're reading from, without timeout of 0ms, for
+  // immediate return
+  if((num_to_read = poll(ufds,num_clients,0)) == -1)
   {
     if(errno != EINTR)
     {
       perror("ClientManager::Read(): poll(2) failed:");
-      pthread_mutex_unlock(&rthread_client_mutex);
       return(-1);
     }
   }
@@ -315,7 +404,7 @@ int ClientManager::Read()
       if((clients[i]->Read()) == -1)
       {
         // read(2) must have errored. client is probably gone
-        MarkClientForDeletion(i,false);
+        MarkClientForDeletion(i);
       }
     }
     else if(ufds[i].revents)
@@ -323,12 +412,11 @@ int ClientManager::Read()
       if(!(ufds[i].revents & POLLHUP))
         printf("ClientManager::Read() got strange revent 0x%x for "
                "client %d; killing it\n", ufds[i].revents,i);
-      MarkClientForDeletion(i,false);
+      MarkClientForDeletion(i);
     }
   }
 
-  pthread_mutex_unlock(&rthread_client_mutex);
-  RemoveBlanks(false);
+  RemoveBlanks();
   return(0);
 }
 
@@ -336,32 +424,14 @@ int ClientManager::Write()
 {
   struct timeval curr;
   
-  // sleep a bit, then check to see if anybody needs taking care of
-  //
-  // NOTE: usleep(0) appears to sleep for an average of 10ms (maybe
-  // we just get the scheduler delay of 10ms?).  usleep(1) sleeps for an 
-  // average of 20ms (timer resolution of 10ms plus scheduler delay of 10ms?)
-  //
-  //usleep(1);
-  usleep(0);
-
   if(GlobalTime->GetTime(&curr) == -1)
-    fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
-
-  // lock access to the array of clients
-  pthread_mutex_lock(&(wthread_client_mutex));
+    fputs("ClientManager::Write(): GetTime() failed!!!!\n", stderr);
 
   for(int i=0;i<num_clients;i++)
   {
-    // lock access to the client's internal state
-    pthread_mutex_lock(&(clients[i]->access));
-
     // if we're waiting for an authorization on this client, then skip it
     if(clients[i]->auth_pending)
-    {
-      pthread_mutex_unlock(&(clients[i]->access));
       continue;
-    }
 
     // look for pending replies intended for this client.  we only need to 
     // look in the devices to which this client is subscribed, thus we
@@ -423,7 +493,7 @@ int ClientManager::Write()
             {
               perror("ClientWriterThread: write()");
               // dump this client
-              MarkClientForDeletion(i,true);
+              MarkClientForDeletion(i);
               // break out of device loop
               break;
             }
@@ -436,14 +506,19 @@ int ClientManager::Write()
     if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
        (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
     {
+      /*
       if(((curr.tv_sec+(curr.tv_usec/1000000.0))-
           clients[i]->last_write) + 0.005 >= 
+         (1.0/clients[i]->frequency))
+         */
+      if(((curr.tv_sec+(curr.tv_usec/1000000.0))-
+          clients[i]->last_write) >= 
          (1.0/clients[i]->frequency))
       {
         if(clients[i]->Write() == -1)
         {
           // write must have errored. dump it
-          MarkClientForDeletion(i,true);
+          MarkClientForDeletion(i);
         }
         else
           clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
@@ -457,80 +532,13 @@ int ClientManager::Write()
       if(clients[i]->Write() == -1)
       {
         // write must have errored. dump it
-        MarkClientForDeletion(i,true);
+        MarkClientForDeletion(i);
       }
     }
-    
-    // unlock access to client data
-    pthread_mutex_unlock(&(clients[i]->access));
   }
 
-  // unlock access to the array of clients
-  pthread_mutex_unlock(&(wthread_client_mutex));
-
   // remove any clients that we marked
-  RemoveBlanks(false);
+  RemoveBlanks();
 
   return(0);
 }
-
-// this is a quick hack to unlock all the mutexes so that we can exit
-// cleanly even when we're in the middle of opening or closing a device
-void
-UnlockAllClientMutexes(void* arg)
-{
-  ClientManager* cr = (ClientManager*)arg;
-
-  for(int i=0;i<cr->num_clients;i++)
-  {
-    if(cr->clients[i])
-      pthread_mutex_unlock(&(cr->clients[i]->access));
-  }
-  pthread_mutex_unlock(&(cr->rthread_client_mutex));
-  pthread_mutex_unlock(&(cr->wthread_client_mutex));
-}
-
-void*
-ClientReaderThread(void* arg)
-{
-  ClientManager* cr = (ClientManager*)arg;
-
-  // make sure we don't get cancelled at the wrong time
-  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-
-  pthread_cleanup_push(UnlockAllClientMutexes,arg);
-
-  for(;;)
-  {
-    // should we quit?
-    pthread_testcancel();
-
-    if(cr->Read() == -1)
-      pthread_exit(0);
-  }
-
-  pthread_cleanup_pop(1);
-}
-
-void*
-ClientWriterThread(void* arg)
-{
-  ClientManager* cr = (ClientManager*)arg;
-
-  // make sure we don't get cancelled at the wrong time
-  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-
-  pthread_cleanup_push(UnlockAllClientMutexes,arg);
-  
-  for(;;)
-  {
-    // should we quit?
-    pthread_testcancel();
-    
-    if(cr->Write() == -1)
-      pthread_exit(0);
-  }
-  
-  pthread_cleanup_pop(1);
-}
-

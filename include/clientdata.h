@@ -23,8 +23,7 @@
 /*
  * $Id$
  * 
- *   class for encapsulating all the data pertaining to a single
- *   client
+ *   class for encapsulating all the data pertaining to a single client
  */
 
 #ifndef _CLIENTDATA_H
@@ -39,7 +38,6 @@ class CDevice;
 // keep a linked list of these
 class CDeviceSubscription
 {
-
   public:
     player_device_id_t id;
     unsigned char access;
@@ -71,7 +69,6 @@ typedef enum
 class CClientData 
 {
   private:
-    // these are locked by access:
     char auth_key[PLAYER_KEYLEN];
     unsigned char *readbuffer;
     unsigned char *writebuffer;
@@ -101,12 +98,6 @@ class CClientData
     int BuildMsg(unsigned char *data, size_t maxsize);
 
  public:
-    // use this lock things like mode,frequency, requested, and datarequested.
-    // they are potentially read/written by both the ClientWriterThread and
-    // ClientReaderThread
-    pthread_mutex_t access;
-
-    // these are locked by access:
     CDeviceSubscription* requested;
     int numsubs;
     unsigned char *replybuffer;
@@ -116,7 +107,7 @@ class CClientData
     bool datarequested;
     bool markedfordeletion;
 
-    // this is used in the ClientWriterThread to decide when to write
+    // this is used decide when to write
     double last_write;
 
     int socket;
