@@ -62,6 +62,8 @@ class SonarProxy : public ClientProxy
       else 
         return(0);
     }
+
+    void GetSonarPose(int s, double* px, double* py, double* pth);
     
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);

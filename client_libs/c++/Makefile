@@ -6,7 +6,8 @@ include ../../Makefile.common
 
 LIBNAME = libplayerclient.a
 
-CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
+CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
+#CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
@@ -79,5 +80,3 @@ uninstall:
 clean:
 	$(RM) -f $(LIBNAME) *.o
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-

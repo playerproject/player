@@ -49,6 +49,9 @@ class GpsProxy : public ClientProxy
 
     // these methods are the user's interface to this device
 
+    // warp the robot
+    int Warp(int x, int y, int heading);
+
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
     
