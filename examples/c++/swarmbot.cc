@@ -90,8 +90,9 @@ typedef struct
   PlayerClient* pc;
   FiducialProxy* fp;
   PositionProxy* pp;
-  BlinkenlightProxy* bp;
-  
+  BlinkenlightProxy* bpr, *bpg, *bpb;
+  SonarProxy* sp;
+
   grad_direction_t store[storelen];
 } swarmbot_t;
 
@@ -109,7 +110,11 @@ int main(int argc, char **argv)
       bots[r].pc = new PlayerClient(host,port++);      
       bots[r].fp = new FiducialProxy(bots[r].pc,0,'a');
       bots[r].pp = new PositionProxy(bots[r].pc,0,'a');
-      bots[r].bp = new BlinkenlightProxy(bots[r].pc,0,'a');
+      bots[r].bpr = new BlinkenlightProxy(bots[r].pc,0,'a');
+      bots[r].bpg = new BlinkenlightProxy(bots[r].pc,1,'a');
+      bots[r].bpb = new BlinkenlightProxy(bots[r].pc,2,'a');
+
+      //bots[r].sp = new SonarProxy(bots[r].pc,0,'a');
 
       // create some dummy messages in the store
       for( int s=0; s<storelen; s++ )
@@ -120,29 +125,17 @@ int main(int argc, char **argv)
       
       for( int a=0; a<5; a++ )
 	if( bots[r].pc->Read()) exit(1);
-    }
+ 
+      //bots[r].sp->GetSonarGeom();
+   }
   
+
   // blink the zeroth robot's blinkenlight
-  bots[0].bp->SetLight( true, 500 );
+  //bots[0].bp->SetLight( true, 500 );
   
   while( 1 )
     {
-      // robot zero sends out a message with hop count zero
-      gradient_t grad;
-      grad.type = 1;
-      grad.range = 0;
-      
-      // build a message incorporating the grad packet
-      player_fiducial_msg_t msg;		  
-      msg.target_id = -1;
-      memcpy(msg.bytes,&grad,sizeof(grad));
-      msg.len = sizeof(grad);
-      msg.intensity = 200;
-      
-      bots[0].pc->Read();
-      bots[0].fp->SendMessage( &msg, true );
-      
-      for( int r=1; r<num_robots; r++ )
+      for( int r=0; r<num_robots; r++ )
 	{
 	  // wait for the playerclient to get new data. each read we have
 	  // a new array of visible neigbors, with their angles and ranges
@@ -203,31 +196,78 @@ int main(int argc, char **argv)
 	  // a little potential field algorithm for dispersal
 	  double dx=0.0, dy=0.0;
 	  
+	  
 	  // for each neighbor detected
 	  for( int s=0; s< bots[r].fp->count; s++ )
 	    {
-	      double range = bots[r].fp->beacons[s].pose[0] / 1000.0;
+	      double range = (bots[r].fp->beacons[s].pose[0] / 1000.0);
 	      double bearing = DTOR(bots[r].fp->beacons[s].pose[1]);   
 	      
-	      range = range - 1.5;
+	      range = 1.0 / (range*range);
+
+	      //range = range - 1.5;
 	      
+	      dx -= range * cos( bearing ); 	  
+	      dy -= range * sin( bearing ); 	   
+	    }
+	 
+	  /*
+	  // for each sonar reading
+	  for( int s=0; s< bots[r].sp->range_count; s++ )
+	    {
+	      double range = bots[r].sp->ranges[s] / 1000.0;
+	      double bearing = DTOR(bots[r].sp->sonar_pose.poses[s][2]);   
+	      
+	      //range = range - 1.5;
+	      
+	      //if( range < 0.5 ) range = 0.0;
+
 	      dx += range * cos( bearing ); 	  
 	      dy += range * sin( bearing ); 	   
 	    }
-	  
+	  */
+
 	  // threshold our turnrate
 	  int turnrate = direction;
 	  if( turnrate > 100 ) turnrate = 100.0;
 	  if( turnrate < -100 ) turnrate = -100.0;
 	  
 	  // move!
-	  bots[r].pp->SetSpeed( 200*dx, 200*dy, turnrate );
+	  //bots[r].pp->SetSpeed( 200*dx, 200*dy, turnrate );
+	  //bots[r].pp->SetSpeed( 200*dx, 200*dy, 0 );
+	  
+	  double resultant_angle = atan2(dy,dx);
+	  double resultant_distance = hypot(dx,dy );
 
-	  // enable the light if we're pointing to the source
+	  int forwards = 0;
+	  if( fabs(resultant_angle) < 0.1 )
+	    forwards = (int)(20 * resultant_distance);
+	  
+	  if( fabs(forwards) < 25 ) forwards = 0;
+	  if( forwards > 400 ) forwards = 400;
+	  if( forwards < -400 ) forwards = -400;
+
+
+	  //bots[r].pp->SetSpeed( 0,0, 2 * (int)RTOD(resultant_angle)  );
+	  bots[r].pp->SetSpeed( forwards,0, 2.0 * (int)RTOD(resultant_angle)  );
+
+	  //printf( "dx %.2f dy %.2f  = %.2f radians %.2fm  forwards %d\n",
+	  //  dx, dy, atan2(dy,dx), hypot(dx,dy), forwards );
+
+
+
+	  // enable the blue light if we're pointing to the source
 	  if( fabs(direction) < 3 )
-	    bots[r].bp->SetLight( true, 0 );
+	    bots[r].bpb->SetLight( true, 0 );
 	  else
-	    bots[r].bp->SetLight( false, 0 );
+	    bots[r].bpb->SetLight( false, 0 );
+
+
+	  // enable the red light if we're happy with our position
+	  if( forwards == 0 )
+	    bots[r].bpr->SetLight( true, 0 );
+	  else
+	    bots[r].bpr->SetLight( false, 0 );
 
 	  // transmit my range estimate to the broadcast address (-1)
 	  if( lowrange < 10000 )
