@@ -185,6 +185,10 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
 //
 int CLaserBeaconDevice::Setup()
 {
+    // Subscribe to the laser device
+    //
+    m_laser->GetLock()->Subscribe(m_laser);
+
     // Maximum variance in the flatness of the beacon
     //
     m_max_depth = 0.05;
@@ -215,6 +219,10 @@ int CLaserBeaconDevice::Setup()
 //
 int CLaserBeaconDevice::Shutdown()
 {
+    // Unsubscribe from the laser device
+    //
+    m_laser->GetLock()->Unsubscribe(m_laser);
+
     PLAYER_MSG0("laser beacon device: shutdown");
     return 0;
 }

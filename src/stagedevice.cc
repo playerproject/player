@@ -69,7 +69,7 @@ int CStageDevice::Setup()
     
     // Set the subscribed flag
     //
-    m_info->subscribed = 1;
+    m_info->subscribed++;
     return 0;
 }
 
@@ -81,7 +81,7 @@ int CStageDevice::Shutdown()
 {
     // Reset the subscribed flag
     //
-    m_info->subscribed = 0;
+    m_info->subscribed--;
     return 0;
 };
 
