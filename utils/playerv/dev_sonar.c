@@ -26,6 +26,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include "playerv.h"
 
 
@@ -40,8 +41,8 @@ void sonar_nodraw(sonar_t *sonar);
 
 
 // Create a sonar device
-sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt,
-                  playerc_client_t *client, int index, int subscribe)
+sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                      int index, const char *drivername, int subscribe)
 {
   int i;
   char label[64];
@@ -50,12 +51,13 @@ sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt,
   
   sonar = malloc(sizeof(sonar_t));
   sonar->proxy = playerc_sonar_create(client, index);
+  sonar->drivername = strdup(drivername);
   sonar->datatime = 0;
 
   snprintf(section, sizeof(section), "sonar:%d", index);
 
   // Construct the menu
-  snprintf(label, sizeof(label), "sonar %d", index);
+  snprintf(label, sizeof(label), "sonar:%d (%s)", index, sonar->drivername);
   sonar->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   sonar->subscribe_item = rtk_menuitem_create(sonar->menu, "Subscribe", 1);
 
@@ -85,7 +87,8 @@ void sonar_destroy(sonar_t *sonar)
 
   rtk_menuitem_destroy(sonar->subscribe_item);
   rtk_menu_destroy(sonar->menu);
-  
+
+  free(sonar->drivername);
   free(sonar);
 }
 

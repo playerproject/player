@@ -30,6 +30,7 @@
 
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include "playerv.h"
 
@@ -131,7 +132,7 @@ int main(int argc, char **argv)
     device = devices + i;
     device->code = client->ids[i].code;
     device->index = client->ids[i].index;
-    strcpy(device->drivername, client->drivernames[i]);
+    device->drivername = strdup(client->drivernames[i]);
 
     // See if the device should be subscribed immediately.
     snprintf(section, sizeof(section), "%s:%d", playerc_lookup_name(device->code), device->index);
@@ -154,16 +155,19 @@ int main(int argc, char **argv)
   for (i = 0; i < device_count; i++)
   {
     device = devices + i;
-    printf("%20s:%d (%s)", playerc_lookup_name(device->code),
-           device->index, device->drivername);
+    snprintf(section, sizeof(section), "%s:%d",
+             playerc_lookup_name(device->code), device->index);
+    printf("%-16s %-40s", section, device->drivername);
     if (device->proxy)
-      printf("  ok  ");
+    {
+      if (device->subscribe)
+        printf("subscribed");
+      else
+        printf("ready");
+    }
     else
-      printf("  --  ");
-    if (device->subscribe)
-      printf("subscribed\n");
-    else
-      printf("\n");
+      printf("unsupported");
+    printf("\n");
   }
   
   // Print out a list of unused options.
@@ -208,6 +212,7 @@ int main(int argc, char **argv)
     device = devices + i;
     if (device->proxy)
       (*(device->fndestroy)) (device->proxy);
+    free(device->drivername);
   }
 
   // Disconnect from server

@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include "playerv.h"
 
 
@@ -38,8 +39,8 @@ void ptz_move(ptz_t *ptz);
 
 
 // Create a ptz device
-ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
-                  playerc_client_t *client, int index, int subscribe)
+ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                            int index, const char *drivername, int subscribe)
 {
   char section[64];
   char label[64];
@@ -47,6 +48,7 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
   
   ptz = malloc(sizeof(ptz_t));
   ptz->datatime = 0;
+  ptz->drivername = strdup(drivername);
   ptz->proxy = playerc_ptz_create(client, index);
 
   // Set initial device state
@@ -58,7 +60,7 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
   }
 
   // Construct the menu
-  snprintf(label, sizeof(label), "ptz %d", index);
+  snprintf(label, sizeof(label), "ptz:%d (%s)", index, ptz->drivername);
   ptz->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   ptz->subscribe_item = rtk_menuitem_create(ptz->menu, "Subscribe", 1);
   ptz->command_item = rtk_menuitem_create(ptz->menu, "Command", 1);
@@ -93,7 +95,8 @@ void ptz_destroy(ptz_t *ptz)
   if (ptz->proxy->info.subscribed)
     playerc_ptz_unsubscribe(ptz->proxy);
   playerc_ptz_destroy(ptz->proxy);
-  
+
+  free(ptz->drivername);
   free(ptz);
 }
 

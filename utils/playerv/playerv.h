@@ -117,7 +117,9 @@ typedef struct
 {
   // Device identifier.
   int code, index;
-  char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
+
+  // Driver name
+  char *drivername;
   
   // Handle to the GUI proxy for this device.
   void *proxy;
@@ -131,6 +133,7 @@ typedef struct
   
 } device_t;
 
+
 // Create the appropriate GUI proxy for a given set of device info.
 void create_proxy(device_t *device, opt_t *opt,
                   mainwnd_t *mainwnd, playerc_client_t *client);
@@ -143,6 +146,15 @@ void create_proxy(device_t *device, opt_t *opt,
 // Laser device info
 typedef struct
 {
+  // Driver name
+  char *drivername;
+  
+  // Laser device proxy
+  playerc_laser_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+  
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
@@ -151,18 +163,12 @@ typedef struct
   // Figure for drawing the scan
   rtk_fig_t *scan_fig;
   
-  // Laser device proxy
-  playerc_laser_t *proxy;
-
-  // Timestamp on most recent data
-  double datatime;
-  
 } laser_t;
 
 
 // Create a laser device
-laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt,
-                  playerc_client_t *client, int index, int subscribe);
+laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                      int index, const char *drivername, int subscribe);
 
 // Destroy a laser device
 void laser_destroy(laser_t *laser);
@@ -178,6 +184,15 @@ void laser_update(laser_t *laser);
 // Fiducial detector info
 typedef struct
 {
+  // Driver name
+  char *drivername;
+
+  // Fiducial device proxy
+  playerc_fiducial_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
@@ -185,19 +200,13 @@ typedef struct
 
   // Figure for drawing the fiducials.
   rtk_fig_t *fig;
-  
-  // Fiducial device proxy
-  playerc_fiducial_t *proxy;
-
-  // Timestamp on most recent data
-  double datatime;
-  
+    
 } fiducial_t;
 
 
 // Create a fiducial device
-fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt,
-                            playerc_client_t *client, int index, int subscribe);
+fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, 
+                            int index, const char *drivername, int subscribe);
 
 // Destroy a fiducial device
 void fiducial_destroy(fiducial_t *fiducial);
@@ -213,6 +222,15 @@ void fiducial_update(fiducial_t *fiducial);
 // Position device info
 typedef struct
 {
+  // Driver name
+  char *drivername;
+
+  // Position device proxy
+  playerc_position_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
@@ -224,18 +242,12 @@ typedef struct
   rtk_fig_t *control_fig;
   rtk_fig_t *path_fig;
   
-  // Position device proxy
-  playerc_position_t *proxy;
-
-  // Timestamp on most recent data
-  double datatime;
-
 } position_t;
 
 
 // Create a position device
-position_t *position_create(mainwnd_t *mainwnd, opt_t *opt,
-                            playerc_client_t *client, int index, int subscribe);
+position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                            int index, const char *drivername, int subscribe);
 
 // Destroy a position device
 void position_destroy(position_t *position);
@@ -251,6 +263,9 @@ void position_update(position_t *position);
 // PTZ device info
 typedef struct
 {
+  // Driver name
+  char *drivername;
+
   // Ptz device proxy
   playerc_ptz_t *proxy;
 
@@ -270,8 +285,8 @@ typedef struct
 
 
 // Create a ptz device
-ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
-                  playerc_client_t *client, int index, int subscribe);
+ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                  int index, const char *drivername, int subscribe);
 
 // Destroy a ptz device
 void ptz_destroy(ptz_t *ptz);
@@ -287,6 +302,9 @@ void ptz_update(ptz_t *ptz);
 // SONAR device info
 typedef struct
 {
+  // Driver name
+  char *drivername;
+
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
@@ -304,8 +322,8 @@ typedef struct
 
 
 // Create a sonar device
-sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt,
-                  playerc_client_t *client, int index, int subscribe);
+sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                      int index, const char *drivername, int subscribe);
 
 // Destroy a sonar device
 void sonar_destroy(sonar_t *sonar);
@@ -321,6 +339,9 @@ void sonar_update(sonar_t *sonar);
 // Blobfinder device info
 typedef struct
 {
+  // Driver name
+  char *drivername;
+
   // Blobfinder device proxy
   playerc_blobfinder_t *proxy;
 
@@ -343,8 +364,8 @@ typedef struct
 
 
 // Create a blobfinder device
-blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt,
-                                playerc_client_t *client, int index, int subscribe);
+blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                                int index, const char *drivername, int subscribe);
 
 // Destroy a blobfinder device
 void blobfinder_destroy(blobfinder_t *blobfinder);

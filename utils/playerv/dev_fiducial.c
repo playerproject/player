@@ -36,8 +36,8 @@ void fiducial_draw(fiducial_t *fiducial);
 
 
 // Create a fiducial device
-fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt,
-                            playerc_client_t *client, int index, int subscribe)
+fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                                int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
@@ -48,12 +48,13 @@ fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt,
 
   // Create a proxy
   fiducial->proxy = playerc_fiducial_create(client, index);
+  fiducial->drivername = strdup(drivername);
   fiducial->datatime = 0;
 
   snprintf(section, sizeof(section), "fiducial:%d", index);
     
   // Construct the menu
-  snprintf(label, sizeof(label), "fiducial %d", index);
+  snprintf(label, sizeof(label), "fiducial:%d (%s)", index, fiducial->drivername);
   fiducial->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   fiducial->subscribe_item = rtk_menuitem_create(fiducial->menu, "Subscribe", 1);
   fiducial->bits5_item = rtk_menuitem_create(fiducial->menu, "5 bits", 0);
@@ -81,6 +82,8 @@ void fiducial_destroy(fiducial_t *fiducial)
   rtk_menuitem_destroy(fiducial->bits5_item);
   rtk_menuitem_destroy(fiducial->subscribe_item);
   rtk_menu_destroy(fiducial->menu);
+
+  free(fiducial->drivername);
   free(fiducial);
 }
 

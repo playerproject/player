@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include "playerv.h"
 
 
@@ -42,7 +43,7 @@ void position_update_servo(position_t *position);
 
 // Create a position device
 position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                            int index, int subscribe)
+                            int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
@@ -51,12 +52,13 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   position = malloc(sizeof(position_t));
 
   position->proxy = playerc_position_create(client, index);
+  position->drivername = strdup(drivername);
   position->datatime = 0;
   
   snprintf(section, sizeof(section), "position:%d", index);
   
   // Construct the menu
-  snprintf(label, sizeof(label), "position %d", index);
+  snprintf(label, sizeof(label), "position:%d (%s)", index, position->drivername);
   position->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   position->subscribe_item = rtk_menuitem_create(position->menu, "Subscribe", 1);
   position->command_item = rtk_menuitem_create(position->menu, "Command", 1);
@@ -96,7 +98,8 @@ void position_destroy(position_t *position)
 
   rtk_menuitem_destroy(position->subscribe_item);
   rtk_menu_destroy(position->menu);
-  
+
+  free(position->drivername);
   free(position);
 }
 

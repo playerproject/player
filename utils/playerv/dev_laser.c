@@ -26,6 +26,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include "playerv.h"
 
 
@@ -38,7 +39,7 @@ void laser_draw(laser_t *laser);
 
 // Create a laser device
 laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                  int index, int subscribe)
+                      int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
@@ -46,12 +47,13 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   
   laser = malloc(sizeof(laser_t));
   laser->proxy = playerc_laser_create(client, index);
+  laser->drivername = strdup(drivername);
   laser->datatime = 0;
 
   snprintf(section, sizeof(section), "laser:%d", index);
 
   // Construct the menu
-  snprintf(label, sizeof(label), "laser %d (%s)", index, laser->proxy->info.drivername);
+  snprintf(label, sizeof(label), "laser:%d (%s)", index, laser->drivername);
   laser->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   laser->subscribe_item = rtk_menuitem_create(laser->menu, "Subscribe", 1);
   laser->res025_item = rtk_menuitem_create(laser->menu, "0.25 deg resolution", 1);
@@ -82,6 +84,8 @@ void laser_destroy(laser_t *laser)
   rtk_menuitem_destroy(laser->res100_item);
   rtk_menuitem_destroy(laser->subscribe_item);
   rtk_menu_destroy(laser->menu);
+
+  free(laser->drivername);
   
   free(laser);
 }
@@ -160,14 +164,8 @@ void laser_update_config(laser_t *laser)
 
   // Set the laser configuration.
   if (update)
-  {
     if (playerc_laser_set_config(laser->proxy, min, max, res, intensity) != 0)
       PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-
-    // Get the laser configuration (in case anyone else has changed it).
-    //if (playerc_laser_get_config(laser->proxy, &min, &max, &res, &intensity) != 0)
-    //  PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-  }
 
   res = (int) (laser->proxy->scan_res * 180 / M_PI * 100);
   rtk_menuitem_check(laser->res025_item, (res == 25));
