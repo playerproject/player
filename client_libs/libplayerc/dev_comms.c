@@ -33,6 +33,11 @@
 #include "error.h"
 
 
+// Local declarations
+void playerc_comms_putdata(playerc_comms_t *device, player_msghdr_t *header,
+                           void *data, size_t len);
+
+
 // Create a new comms proxy
 playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index)
 {
@@ -40,7 +45,11 @@ playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_comms_t));
   memset(device, 0, sizeof(playerc_comms_t));
-  playerc_device_init(&device->info, client, PLAYER_COMMS_CODE, index, NULL);
+  playerc_device_init(&device->info, client, PLAYER_COMMS_CODE, index,
+                      (playerc_putdata_fn_t) playerc_comms_putdata);
+
+  device->msg_len = 0;
+  device->msg = NULL;
     
   return device;
 }
@@ -49,8 +58,11 @@ playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index)
 // Destroy a comms proxy
 void playerc_comms_destroy(playerc_comms_t *device)
 {
+  if (device->msg)
+    free(device->msg);
   playerc_device_term(&device->info);
   free(device);
+  return;
 }
 
 
@@ -68,57 +80,27 @@ int playerc_comms_unsubscribe(playerc_comms_t *device)
 }
 
 
-// Send a comms message.
+// Process incoming data
+void playerc_comms_putdata(playerc_comms_t *device, player_msghdr_t *header,
+                           void *data, size_t len)
+{
+  if (device->msg)
+    free(device->msg);
+  device->msg_len = len;
+  device->msg = malloc(len);
+  memcpy(device->msg, data, len);
+
+  return;
+}
+
+
+// Send a message
 int playerc_comms_send(playerc_comms_t *device, void *msg, int len)
 {
-  player_comms_msg_t req, rep;
-  int reqlen, replen;
-
-  if (len > sizeof(req.data))
+  if (len > PLAYER_MAX_MESSAGE_SIZE)
   {
-    PLAYERC_ERR2("message too long; %d > %d bytes.", len, sizeof(req.data));
+    PLAYERC_ERR2("message too long; %d > %d bytes.", len, PLAYER_MAX_MESSAGE_SIZE);
     return -1;
   }
-  
-  req.subtype = PLAYER_COMMS_SUBTYPE_SEND;
-  memcpy(&req.data, msg, len);
-  reqlen = sizeof(req) - sizeof(req.data) + len;
-
-  replen =  playerc_client_request(device->info.client, &device->info,
-                                   &req, reqlen, &rep, sizeof(rep));
-  if (replen < 0)
-    return replen;
-
-  // TODO: process reply?
-  
-  return 0;
+  return playerc_client_write(device->info.client, &device->info, msg, len);
 }
-
-
-// Read the next comms message.
-int playerc_comms_recv(playerc_comms_t *device, void *msg, int len)
-{
-  player_comms_msg_t req, rep;
-  int reqlen, replen;
-
-  req.subtype = PLAYER_COMMS_SUBTYPE_RECV;
-  reqlen = sizeof(req.subtype);
-
-  replen =  playerc_client_request(device->info.client, &device->info,
-                                   &req, reqlen, &rep, sizeof(rep));
-  if (replen < 0)
-    return replen;
-  if (replen == 0)
-    return 0;
-  if (replen > len)
-  {
-    PLAYERC_ERR2("message too long; %d > %d bytes.", replen, sizeof(len));
-    return -1;
-  }
-
-  memcpy(msg, rep.data, replen);
-
-  return replen;
-}
-
-

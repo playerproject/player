@@ -707,21 +707,22 @@ typedef struct
  * Comms interface
  */
 
-/* Request packet sub-types */
-#define PLAYER_COMMS_SUBTYPE_SEND 0x01
-#define PLAYER_COMMS_SUBTYPE_RECV 0x02
-
-/* Comms request/reply packet. */
+/* Comms command packets.  I've made it a packet so we can add routing
+*  instructions at some later date. */
 typedef struct
 {
-  /* Packet subtype.  Set to PLAYER_COMMS_SUBTYPE_SEND to send a
-   * broadcast messages.  Set to PLAYER_COMMS_SUBTYPE_RECV to read
-   * the next message in the incoming message queue. */
-  uint8_t subtype;
+  /* The message. */
+  uint8_t msg;
+} __attribute__ ((packed)) player_comms_cmd_t;
 
-  /* The message to send, or the message that was received*/
-  uint8_t data[PLAYER_MAX_REQREP_SIZE - 1];
-} __attribute__ ((packed)) player_comms_msg_t;
+
+/* Comms data packets.  I've made it a packet so we can add routing
+*  instructions at some later date. */
+typedef struct
+{
+  /* The message. */
+  uint8_t msg;
+} __attribute__ ((packed)) player_comms_data_t;
 /*************************************************************************/
 
 /*************************************************************************/

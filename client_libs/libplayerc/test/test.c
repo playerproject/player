@@ -100,9 +100,19 @@ int main(int argc, const char *argv[])
   {
     switch (client->ids[i].code)
     {
+      // Blobfinder device
+      case PLAYER_BLOBFINDER_CODE:
+        test_blobfinder(client, client->ids[i].index);
+        break;
+
       // Broadcast device
       case PLAYER_COMMS_CODE:
         test_comms(client, client->ids[i].index);
+        break;
+
+      // Fiducial detector
+      case PLAYER_FIDUCIAL_CODE:
+        test_fiducial(client, client->ids[i].index);
         break;
 
       // GPS device
@@ -113,11 +123,6 @@ int main(int argc, const char *argv[])
       // Laser device
       case PLAYER_LASER_CODE:
         test_laser(client, client->ids[i].index);
-        break;
-
-      // Fiducial detector
-      case PLAYER_FIDUCIAL_CODE:
-        test_fiducial(client, client->ids[i].index);
         break;
 
       // Position device
@@ -138,11 +143,6 @@ int main(int argc, const char *argv[])
       // Truth device
       case PLAYER_TRUTH_CODE:
         test_truth(client, client->ids[i].index);
-        break;
-
-      // Blobfinder device
-      case PLAYER_BLOBFINDER_CODE:
-        test_blobfinder(client, client->ids[i].index);
         break;
 
       default:

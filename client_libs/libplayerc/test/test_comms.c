@@ -12,8 +12,9 @@
 // Basic comms device test
 int test_comms(playerc_client_t *client, int index)
 {
-  int i, j, len;
+  int i, len;
   char msg[128];
+  void *rdevice;
   playerc_comms_t *comms;
 
   printf("device [comms] index [%d]\n", index);
@@ -28,34 +29,32 @@ int test_comms(playerc_client_t *client, int index)
   }
   PASS();
 
-  // Send some messages
-  for (i = 0; i < 2; i++)
+  for (i = 0; i < 10; i++)
   {
-    for (j = 0; j < 5; j++)
-    {
-      TEST1("sending comms message [%d]", i);
-      snprintf(msg, sizeof(msg), "this is message [%d:%d]", i, j);
-      if (playerc_comms_send(comms, msg, strlen(msg) + 1) != 0)
-        FAIL();
-      else
-        PASS();
-    }
+    TEST1("sending comms message [%d]", i);
+    snprintf(msg, sizeof(msg), "this is message (%d)", i);
+    if (playerc_comms_send(comms, msg, strlen(msg) + 1) != 0)
+      FAIL();
+    else
+      PASS();
+  }
 
-    for (j = 0; j < 10; j++)
+  for (i = 0; i < 10; i++)
+  {
+    TEST1("reading data (attempt %d)", i);
+
+    do
+      rdevice = playerc_client_read(client);
+    while (rdevice == client);
+
+    if (rdevice == comms)
     {
-      TEST("receiving comms message");
-      len = playerc_comms_recv(comms, msg, sizeof(msg));
-      if (len == 0)
-      {
-        PASS();
-        break;
-      }
-      else if (len < 0)
-        FAIL();
-      else
-        PASS();
-      printf("recv : %s\n", msg);
+      PASS();
+      if (comms->msg)
+        printf("recv : %d [%s]\n", comms->msg_len, comms->msg);
     }
+    else
+      FAIL();
   }
   
   TEST("unsubscribing");

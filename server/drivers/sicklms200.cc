@@ -207,7 +207,7 @@ void SickLMS200_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_laser_data_t),0,10,10)
+    : CDevice(sizeof(player_laser_data_t),0,10,10)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);

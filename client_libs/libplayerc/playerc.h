@@ -360,6 +360,10 @@ typedef struct
 {
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
+
+  // The most recent incoming message
+  size_t msg_len;
+  void *msg;
     
 } playerc_comms_t;
 
@@ -380,7 +384,7 @@ int playerc_comms_unsubscribe(playerc_comms_t *device);
 int playerc_comms_send(playerc_comms_t *device, void *msg, int len);
 
 // Read the next comms message.
-int playerc_comms_recv(playerc_comms_t *device, void *msg, int len);
+//REMOVE int playerc_comms_recv(playerc_comms_t *device, void *msg, int len);
 
 
 /***************************************************************************
