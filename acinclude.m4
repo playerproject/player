@@ -372,11 +372,25 @@ fi
 
 dnl Check for some functions in 0.5
 if test "x$enable_gazebo" = "xyes"; then
+
   AC_CHECK_LIB(gazebo,gz_client_wait,have_gz_client_wait=yes)
   if test "x$have_gz_client_wait" = "xyes"; then
     AC_DEFINE(HAVE_GZ_CLIENT_WAIT,1,[gz_client_wait is defined])
   fi
+
+  AC_CHECK_MEMBER(gz_fiducial_fid_t.pose,have_member=yes,have_member=no,[#include <gazebo.h>])
+  if test "x$have_member" = "xyes"; then
+    AC_DEFINE(HAVE_GZ_FID_POSE,1,[gz_fiducial_fid_t.pose is defined])
+  fi
+
+  AC_CHECK_MEMBER(gz_gps_data_t.utc_time,have_member=yes,have_member=no,[#include <gazebo.h>])
+  if test "x$have_member" = "xyes"; then
+    AC_DEFINE(HAVE_GZ_GPS_UTC,1,[gz_gps_data_t.utc_time is defined])
+  fi
+
 fi
+
+
 
 dnl If gazebo is not built; make sure the correct messages are
 dnl printed
