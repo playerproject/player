@@ -192,13 +192,10 @@ Interrupt( int dummy )
 {
   if (dummy == SIGTERM)
   {
-    if(use_stage)
-      puts("** Player quitting (SIGTERM) **" );
-    else
-      printf("** Player [port %d] quitting **\n", global_playerport );
+    printf("** Player [port %d] quitting **\n", global_playerport );
     exit(0);
-  }
-
+   }
+  
   // Tell the main loop to quit
   quit = 1;
 }
