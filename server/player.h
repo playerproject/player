@@ -1672,7 +1672,7 @@ network interface; the format is: */
 typedef struct
 {
   /** IP address of destination. */
-  char ip[16];
+  char ip[32];
   
   /** Link quality, level and noise information */
   uint16_t link, level, noise;
