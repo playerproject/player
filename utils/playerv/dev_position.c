@@ -54,6 +54,7 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   
   self = malloc(sizeof(position_t));
 
+  self->mainwnd = mainwnd;
   self->proxy = playerc_position_create(client, index);
   self->drivername = strdup(drivername);
   self->datatime = 0;
@@ -69,8 +70,13 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   self->enable_item = rtk_menuitem_create(self->menu, "Enable", 0);
   self->disable_item = rtk_menuitem_create(self->menu, "Disable", 0);
 
+  // We can use this device to give us a coordinate system
+  snprintf(label, sizeof(label), "Frame position:%d (%s)", index, self->drivername);
+  self->frame_item = rtk_menuitem_create(mainwnd->view_menu, label, 1);
+
   // Set the initial menu state
   rtk_menuitem_check(self->subscribe_item, subscribe);
+  rtk_menuitem_check(self->frame_item, 0);  
   
   // Create a figure representing the robot
   self->robot_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 10);
@@ -141,6 +147,11 @@ void position_update(position_t *self)
   }
   rtk_menuitem_check(self->subscribe_item, self->proxy->info.subscribed);
 
+  // HACK
+  // Use this device as our global cs
+  if (rtk_menuitem_ischecked(self->frame_item) == 1)
+    rtk_fig_origin(self->mainwnd->robot_fig, self->proxy->px, self->proxy->py, self->proxy->pa);
+  
   // Check enable flag
   if (rtk_menuitem_isactivated(self->enable_item))
   {
@@ -154,7 +165,16 @@ void position_update(position_t *self)
       if (playerc_position_enable(self->proxy, 0) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
-  
+
+  // Reset control figure when using position mode
+  if (rtk_menuitem_isactivated(self->pose_mode_item))
+  {
+    self->goal_px = self->proxy->px;
+    self->goal_py = self->proxy->py;
+    self->goal_pa = self->proxy->pa;
+    rtk_fig_origin(self->control_fig, 0, 0, 0);
+  }
+
   // Servo to the goal
   if (rtk_menuitem_ischecked(self->pose_mode_item))
     position_servo_pos(self);
@@ -238,8 +258,8 @@ void position_servo_pos(position_t *self)
   }
   else
   { 
-    // Reset the goal figure
-    //rx = ry = ra = 0;
+    // Get goal pose in robot cs
+    rtk_fig_get_origin(self->control_fig, &rx, &ry, &ra);
   }
 
   // Compute goal point in robot cs

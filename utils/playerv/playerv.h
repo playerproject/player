@@ -71,10 +71,13 @@ typedef struct
   // The rtk canvas
   rtk_canvas_t *canvas;
   
-  // The base figure for the robot
+  // The grid figure (fixed to cs)
   rtk_fig_t *grid_fig;
+
+  // The base figure for the robot
+  // Robot is always at (0, 0, 0) in this cs
   rtk_fig_t *robot_fig;
-  
+
   // Menu containing file options
   rtk_menu_t *file_menu;
   rtk_menuitem_t *exit_item;
@@ -100,7 +103,9 @@ typedef struct
   rtk_menu_t *view_menu;
   rtk_menuitem_t *view_item_rotate;
   rtk_menuitem_t *view_item_1m;
+  rtk_menuitem_t *view_item_10m;
   rtk_menuitem_t *view_item_2f;
+  rtk_menuitem_t *view_item_ego;
   
   // Menu containing the device list
   rtk_menu_t *device_menu;
@@ -237,6 +242,9 @@ void fiducial_update(fiducial_t *fiducial);
 // Position device info
 typedef struct
 {
+  // Pointer to the main window
+  mainwnd_t *mainwnd;
+  
   // Driver name
   char *drivername;
 
@@ -252,6 +260,7 @@ typedef struct
   rtk_menuitem_t *command_item;
   rtk_menuitem_t *pose_mode_item;
   rtk_menuitem_t *enable_item, *disable_item;
+  rtk_menuitem_t *frame_item;
 
   // Figures
   rtk_fig_t *robot_fig;
@@ -437,6 +446,9 @@ void blobfinder_update(blobfinder_t *blobfinder);
 // localize device info
 typedef struct
 {
+  // Main window
+  mainwnd_t *mainwnd;
+  
   // Driver name
   char *drivername;
 
@@ -445,6 +457,7 @@ typedef struct
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *reset_item;
   rtk_menuitem_t *showmap_item;
+  rtk_menuitem_t *frame_item;
 
   // localize device proxy
   playerc_localize_t *proxy;

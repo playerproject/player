@@ -196,11 +196,6 @@ int main(int argc, char **argv)
     if (count > 0)
     {
       proxy = playerc_client_read(client);
-      //if (proxy == NULL)
-      //{
-      //  PRINT_ERR1("%s", playerc_error_str());
-      //  break;
-      //}
 
       // Update everything on the sync packet.
       if (proxy == client)
