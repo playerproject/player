@@ -373,6 +373,7 @@ ClientWriterThread(void* arg)
 {
   ClientManager* cr = (ClientManager*)arg;
   struct timeval curr;
+  //struct timeval tmp,last_tmp;
   //double lasttime = 0;
 
   pthread_detach(pthread_self());
@@ -411,6 +412,7 @@ ClientWriterThread(void* arg)
     //gettimeofday(&curr,NULL);
     if(GlobalTime->GetTime(&curr) == -1)
       fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
+
     //printf("%f %f\n", curr.tv_sec + curr.tv_usec / 1000000.0,(curr.tv_sec + curr.tv_usec / 1000000.0) - lasttime);
     //lasttime = curr.tv_sec + curr.tv_usec / 1000000.0;
 
@@ -433,9 +435,24 @@ ClientWriterThread(void* arg)
       // is it time to write?
       if(cr->clients[i]->mode == CONTINUOUS || cr->clients[i]->mode == UPDATE)
       {
+        /*
+        printf("comparing %f >= %f\n",
+               ((curr.tv_sec+(curr.tv_usec/1000000.0))-
+                cr->clients[i]->last_write),
+               (1.0/cr->clients[i]->frequency));
+         */
         if(((curr.tv_sec+(curr.tv_usec/1000000.0))-
-            cr->clients[i]->last_write) >= (1.0/cr->clients[i]->frequency))
+            cr->clients[i]->last_write) + 0.005 >= 
+           (1.0/cr->clients[i]->frequency))
         {
+          /*
+          gettimeofday(&tmp,NULL);
+          printf("writing to client %d; diff: %f\n", i, 
+                 (tmp.tv_sec + tmp.tv_usec / 1000000.0) -
+                 (last_tmp.tv_sec + last_tmp.tv_usec / 1000000.0));
+          last_tmp = tmp;
+          */
+
           if(cr->clients[i]->Write() == -1)
           {
             // write must have errored. dump it
