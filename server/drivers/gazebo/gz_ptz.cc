@@ -167,9 +167,9 @@ size_t GzPtz::GetData(void* client, unsigned char* dest, size_t len,
   {
    player_ptz_data_t data;
 
-   data.pan = ((int) (this->iface->data->pan * 180/M_PI));
-  data.tilt = ((int) (this->iface->data->tilt * 180 /M_PI));
-  data.zoom = ((int) (this->iface->data->zoom * 180 / M_PI));
+   data.pan =htons ((int) (this->iface->data->pan * 180/M_PI));
+  data.tilt =htons ((int) (this->iface->data->tilt * 180 /M_PI));
+  data.zoom =htons ((int) (this->iface->data->zoom * 180 / M_PI));
   // printf("GetDatalen=%d\n",len);
   // assert(len >= sizeof(data));
   // The new header size seems to give in a size way bigger than whats expected here. So it always seems to exit on this assert.
