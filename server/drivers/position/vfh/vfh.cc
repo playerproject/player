@@ -782,10 +782,11 @@ void VFH_Class::Main()
       speed = 0;
       if(fabs(angdiff) > RTOD(this->ang_eps))
       {
-        if(angdiff > 0)
-          turnrate = MAX_TURNRATE;
+        turnrate = (int)rint((angdiff/180.0) * MAX_TURNRATE);
+        if(turnrate < 0)
+          turnrate = MIN(turnrate,-10);
         else
-          turnrate = -MAX_TURNRATE;
+          turnrate = MAX(turnrate,10);
       }
       else
         turnrate = 0;
