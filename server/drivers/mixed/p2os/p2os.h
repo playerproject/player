@@ -166,6 +166,7 @@ class P2OS : public Driver
     void HandleConfig(void);
     void GetCommand(void);
     void PutData(void);
+    void HandlePositionCommand(player_position_cmd_t position_cmd);
 
     int param_idx;  // index in the RobotParams table for this robot
     int direct_wheel_vel_control; // false -> separate trans and rot vel

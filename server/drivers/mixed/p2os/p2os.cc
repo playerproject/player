@@ -471,6 +471,12 @@ int P2OS::Setup()
     this->SendReceive(&gyro_packet);
   }
 
+  // zero position command buffer
+  player_position_cmd_t zero;
+  memset(&zero,0,sizeof(player_position_cmd_t));
+  this->PutCommand(this->position_id,(void*)&zero,
+                   sizeof(player_position_cmd_t),NULL);
+  
   /* now spawn reading thread */
   this->StartThread();
   return(0);
@@ -562,7 +568,6 @@ P2OS::Unsubscribe(player_device_id_t id)
 void 
 P2OS::PutData(void)
 {
-
   // TODO: something smarter about timestamping.
 
   // put position data
@@ -652,14 +657,10 @@ P2OS::Main()
 #endif
     
     // handle pending config requests
-    puts("HandleConfig");
     this->HandleConfig();
-    puts("done");
 
     // process latest commands
-    puts("GetCommand");
     this->GetCommand();
-    puts("done");
   }
   pthread_exit(NULL);
 }
@@ -1243,6 +1244,152 @@ P2OS::HandleConfig(void)
 }
 
 void
+P2OS::HandlePositionCommand(player_position_cmd_t position_cmd)
+{
+  int speedDemand, turnRateDemand;
+  double leftvel, rightvel;
+  double rotational_term;
+  unsigned short absspeedDemand, absturnRateDemand;
+  unsigned char motorcommand[4];
+  P2OSPacket motorpacket; 
+
+  speedDemand = (int)ntohl(position_cmd.xspeed);
+  turnRateDemand = (int) ntohl(position_cmd.yawspeed);
+
+  if(this->direct_wheel_vel_control)
+  {
+    // convert xspeed and yawspeed into wheelspeeds
+    rotational_term = (M_PI/180.0) * turnRateDemand /
+            PlayerRobotParams[param_idx].DiffConvFactor;
+    leftvel = (speedDemand - rotational_term);
+    rightvel = (speedDemand + rotational_term);
+
+    // Apply wheel speed bounds
+    if(fabs(leftvel) > this->motor_max_speed)
+    {
+      if(leftvel > 0)
+      {
+        leftvel = this->motor_max_speed;
+        rightvel *= this->motor_max_speed/leftvel;
+        puts("Left wheel velocity threshholded!");
+      }
+      else
+      {
+        leftvel = -this->motor_max_speed;
+        rightvel *= -this->motor_max_speed/leftvel;
+      }
+    }
+    if(fabs(rightvel) > this->motor_max_speed)
+    {
+      if(rightvel > 0)
+      {
+        rightvel = this->motor_max_speed;
+        leftvel *= this->motor_max_speed/rightvel;
+        puts("Right wheel velocity threshholded!");
+      }
+      else
+      {
+        rightvel = -this->motor_max_speed;
+        leftvel *= -this->motor_max_speed/rightvel;
+      }
+    }
+
+    // Apply control band bounds
+    if(this->use_vel_band)
+    {
+      // This band prevents the wheels from turning in opposite
+      // directions
+      if (leftvel * rightvel < 0)
+      {
+        if (leftvel + rightvel >= 0)
+        {
+          if (leftvel < 0)
+            leftvel = 0;
+          if (rightvel < 0)
+            rightvel = 0;
+        }
+        else
+        {
+          if (leftvel > 0)
+            leftvel = 0;
+          if (rightvel > 0)
+            rightvel = 0;
+        }
+      }
+    }
+
+    // Apply byte range bounds
+    if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
+      leftvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
+    if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
+      leftvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
+    if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
+      rightvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
+    if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
+      rightvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
+
+    // send the speed command
+    motorcommand[0] = VEL2;
+    motorcommand[1] = ARGINT;
+    motorcommand[2] = (char)(rightvel /
+                             PlayerRobotParams[param_idx].Vel2Divisor);
+    motorcommand[3] = (char)(leftvel /
+                             PlayerRobotParams[param_idx].Vel2Divisor);
+
+    motorpacket.Build(motorcommand, 4);
+    this->SendReceive(&motorpacket);
+  }
+  else
+  {
+    // do separate trans and rot vels
+
+    motorcommand[0] = VEL;
+    if(speedDemand >= 0)
+      motorcommand[1] = ARGINT;
+    else
+      motorcommand[1] = ARGNINT;
+
+    absspeedDemand = (unsigned short)abs(speedDemand);
+    if(absspeedDemand < this->motor_max_speed)
+    {
+      motorcommand[2] = absspeedDemand & 0x00FF;
+      motorcommand[3] = (absspeedDemand & 0xFF00) >> 8;
+    }
+    else
+    {
+      puts("Speed demand threshholded!");
+      motorcommand[2] = this->motor_max_speed & 0x00FF;
+      motorcommand[3] = (this->motor_max_speed & 0xFF00) >> 8;
+    }
+    motorpacket.Build(motorcommand, 4);
+    this->SendReceive(&motorpacket);
+
+    motorcommand[0] = RVEL;
+    if(turnRateDemand >= 0)
+      motorcommand[1] = ARGINT;
+    else
+      motorcommand[1] = ARGNINT;
+
+    absturnRateDemand = (unsigned short)abs(turnRateDemand);
+    if(absturnRateDemand < this->motor_max_turnspeed)
+    {
+      motorcommand[2] = absturnRateDemand & 0x00FF;
+      motorcommand[3] = (absturnRateDemand & 0xFF00) >> 8;
+    }
+    else
+    {
+      puts("Turn rate demand threshholded!");
+      motorcommand[2] = this->motor_max_turnspeed & 0x00FF;
+      motorcommand[3] = (this->motor_max_turnspeed & 0xFF00) >> 8;
+    }
+
+    motorpacket.Build(motorcommand, 4);
+    this->SendReceive(&motorpacket);
+
+  }
+}
+
+void
 P2OS::GetCommand(void)
 {
   // get and send the latest motor command (always send it)
@@ -1250,147 +1397,7 @@ P2OS::GetCommand(void)
   if(Driver::GetCommand(this->position_id,(void*)&position_cmd,
                         sizeof(player_position_cmd_t),NULL) > 0)
   {
-    int speedDemand, turnRateDemand;
-    double leftvel, rightvel;
-    double rotational_term;
-    unsigned short absspeedDemand, absturnRateDemand;
-    unsigned char motorcommand[4];
-    P2OSPacket motorpacket; 
-
-    speedDemand = (int)ntohl(position_cmd.xspeed);
-    turnRateDemand = (int) ntohl(position_cmd.yawspeed);
-
-    if(this->direct_wheel_vel_control)
-    {
-      // convert xspeed and yawspeed into wheelspeeds
-      rotational_term = (M_PI/180.0) * turnRateDemand /
-        PlayerRobotParams[param_idx].DiffConvFactor;
-      leftvel = (speedDemand - rotational_term);
-      rightvel = (speedDemand + rotational_term);
-
-      // Apply wheel speed bounds
-      if(fabs(leftvel) > this->motor_max_speed)
-      {
-        if(leftvel > 0)
-        {
-          leftvel = this->motor_max_speed;
-          rightvel *= this->motor_max_speed/leftvel;
-          puts("Left wheel velocity threshholded!");
-        }
-        else
-        {
-          leftvel = -this->motor_max_speed;
-          rightvel *= -this->motor_max_speed/leftvel;
-        }
-      }
-      if(fabs(rightvel) > this->motor_max_speed)
-      {
-        if(rightvel > 0)
-        {
-          rightvel = this->motor_max_speed;
-          leftvel *= this->motor_max_speed/rightvel;
-          puts("Right wheel velocity threshholded!");
-        }
-        else
-        {
-          rightvel = -this->motor_max_speed;
-          leftvel *= -this->motor_max_speed/rightvel;
-        }
-      }
-
-      // Apply control band bounds
-      if(this->use_vel_band)
-      {
-        // This band prevents the wheels from turning in opposite
-        // directions
-        if (leftvel * rightvel < 0)
-        {
-          if (leftvel + rightvel >= 0)
-          {
-            if (leftvel < 0)
-              leftvel = 0;
-            if (rightvel < 0)
-              rightvel = 0;
-          }
-          else
-          {
-            if (leftvel > 0)
-              leftvel = 0;
-            if (rightvel > 0)
-              rightvel = 0;
-          }
-        }
-      }
-
-      // Apply byte range bounds
-      if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
-        leftvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
-      if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
-        leftvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
-      if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
-        rightvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
-      if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
-        rightvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
-      
-      // send the speed command
-      motorcommand[0] = VEL2;
-      motorcommand[1] = ARGINT;
-      motorcommand[2] = (char)(rightvel /
-                               PlayerRobotParams[param_idx].Vel2Divisor);
-      motorcommand[3] = (char)(leftvel /
-                               PlayerRobotParams[param_idx].Vel2Divisor);
-
-      motorpacket.Build(motorcommand, 4);
-      this->SendReceive(&motorpacket);
-    }
-    else
-    {
-      // do separate trans and rot vels
-
-      motorcommand[0] = VEL;
-      if(speedDemand >= 0)
-        motorcommand[1] = ARGINT;
-      else
-        motorcommand[1] = ARGNINT;
-
-      absspeedDemand = (unsigned short)abs(speedDemand);
-      if(absspeedDemand < this->motor_max_speed)
-      {
-        motorcommand[2] = absspeedDemand & 0x00FF;
-        motorcommand[3] = (absspeedDemand & 0xFF00) >> 8;
-      }
-      else
-      {
-        puts("Speed demand threshholded!");
-        motorcommand[2] = this->motor_max_speed & 0x00FF;
-        motorcommand[3] = (this->motor_max_speed & 0xFF00) >> 8;
-      }
-      motorpacket.Build(motorcommand, 4);
-      this->SendReceive(&motorpacket);
-
-      motorcommand[0] = RVEL;
-      if(turnRateDemand >= 0)
-        motorcommand[1] = ARGINT;
-      else
-        motorcommand[1] = ARGNINT;
-
-      absturnRateDemand = (unsigned short)abs(turnRateDemand);
-      if(absturnRateDemand < this->motor_max_turnspeed)
-      {
-        motorcommand[2] = absturnRateDemand & 0x00FF;
-        motorcommand[3] = (absturnRateDemand & 0xFF00) >> 8;
-      }
-      else
-      {
-        puts("Turn rate demand threshholded!");
-        motorcommand[2] = this->motor_max_turnspeed & 0x00FF;
-        motorcommand[3] = (this->motor_max_turnspeed & 0xFF00) >> 8;
-      }
-
-      motorpacket.Build(motorcommand, 4);
-      this->SendReceive(&motorpacket);
-
-    }
+    this->HandlePositionCommand(position_cmd);
   }
 
 #if 0
