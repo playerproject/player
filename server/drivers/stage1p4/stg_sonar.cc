@@ -19,7 +19,7 @@
  * $Id$
  */
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 1
 
 #include "playercommon.h"
@@ -80,33 +80,35 @@ void StgSonar_Register(DriverTable* table)
 size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {  
-
-  stg_property_t* prop = 
-    stg_model_get_prop_cached( model, this->subscribe_prop);
   
-  stg_ranger_sample_t *rangers = (stg_ranger_sample_t*)prop->data;
-  size_t rcount = prop->len / sizeof(stg_ranger_sample_t);
-
-  PLAYER_TRACE2( "i see %d bytes of ranger data: %d ranger readings", 
-		 prop->len, rcount );
+  stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
   
-  // limit the number of samples to Player's maximum
-  if( rcount > PLAYER_SONAR_MAX_SAMPLES )
-    rcount = PLAYER_SONAR_MAX_SAMPLES;
-  
-  player_sonar_data_t sonar;
-  memset( &sonar, 0, sizeof(sonar) );
-  
-  if( power_on ) // set with a sonar config
+  if( prop )
     {
-      sonar.range_count = htons((uint16_t)rcount);
+      stg_ranger_sample_t *rangers = (stg_ranger_sample_t*)prop->data;
+      size_t rcount = prop->len / sizeof(stg_ranger_sample_t);
       
-      for( int i=0; i<(int)rcount; i++ )
-	sonar.ranges[i] = htons((uint16_t)(1000.0*rangers[i].range));
+      PLAYER_TRACE2( "i see %d bytes of ranger data: %d ranger readings", 
+		     (int)prop->len, (int)rcount );
+      
+      // limit the number of samples to Player's maximum
+      if( rcount > PLAYER_SONAR_MAX_SAMPLES )
+	rcount = PLAYER_SONAR_MAX_SAMPLES;
+      
+      player_sonar_data_t sonar;
+      memset( &sonar, 0, sizeof(sonar) );
+      
+      if( power_on ) // set with a sonar config
+	{
+	  sonar.range_count = htons((uint16_t)rcount);
+	  
+	  for( int i=0; i<(int)rcount; i++ )
+	    sonar.ranges[i] = htons((uint16_t)(1000.0*rangers[i].range));
+	}
+      
+      CDevice::PutData( &sonar, sizeof(sonar), 0,0 ); // time gets filled in
     }
   
-  CDevice::PutData( &sonar, sizeof(sonar), 0,0 ); // time gets filled in
-
   // now inherit the standard data-getting behavior 
   return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
 }
@@ -124,7 +126,7 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
 	stg_ranger_config_t* cfgs = NULL;
 	size_t len = 0;
 	if( stg_model_prop_get_var( this->model, STG_PROP_RANGERCONFIG, 
-				    &cfgs, &len ))
+				    (void**)&cfgs, &len ))
 	  {
 	    PLAYER_ERROR( "error requesting STG_PROP_RANGERCONFIG" );
 	    
@@ -177,7 +179,7 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
 	  {
 	    PLAYER_WARN2( "stg_sonar: arg to sonar state change "
 			  "request wrong size (%d/%d bytes); ignoring",
-			  len,sizeof(player_sonar_power_config_t) );
+			  (int)len,(int)sizeof(player_sonar_power_config_t) );
 	    
 	    if(PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, 
 			NULL, NULL, 0))

@@ -7,8 +7,6 @@ EXTRA_LIBRARIES = libstage1p4.a
 libstage1p4_a_SOURCES = \
  stage1p4.cc \
  stage1p4.h \
- worldfile.cc \
- worldfile.h \
  stg_time.cc \
  stg_time.h \
  stg_simulation.cc \
@@ -18,6 +16,8 @@ libstage1p4_a_SOURCES = \
 
 #	stg_fiducial.cc \
 #	stg_blinkenlight.cc
+# worldfile.cc \
+# worldfile.h 
 
 # This file should be added to CVS before it's referenced here.  Otherwise,
 # the 'make dist' fails.

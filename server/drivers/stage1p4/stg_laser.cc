@@ -83,9 +83,10 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
   if( prop ) 
     {      
       stg_laser_config_t* cfg = (stg_laser_config_t*)prop->data;
-      stg_laser_sample_t* samples = (stg_laser_sample_t*)(prop->data + sizeof(stg_laser_config_t));
+      stg_laser_sample_t* samples = (stg_laser_sample_t*)
+	(((char*)prop->data) + sizeof(stg_laser_config_t));
       
-      int sample_count = cfg->samples;
+      //int sample_count = cfg->samples;
       
       assert( prop->len == sizeof(stg_laser_config_t) + cfg->samples * sizeof(stg_laser_sample_t) );
       
@@ -108,11 +109,11 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 	  pdata.ranges[i] = htons( (uint16_t)(samples[i].range) );
 	  pdata.intensity[i] = 0;
 	}
+
+      // publish this data
+      CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
     }
  
-  // publish this data
-  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
-
   // now inherit the standard data-getting behavior 
   return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
   
@@ -140,7 +141,8 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	    int min_a = (int16_t)ntohs(plc->min_angle);
 	    int max_a = (int16_t)ntohs(plc->max_angle);
 	    int ang_res = (int16_t)ntohs(plc->resolution);
-	    int intensity = plc->intensity;
+	    // TODO
+	    // int intensity = plc->intensity;
 	    
 	    PRINT_DEBUG4( "requested laser config:\n %d %d %d %d",
 			  min_a, max_a, ang_res, intensity );
@@ -152,19 +154,14 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	    slc_request.fov = DTOR(max_a - min_a);
 	    // todo - slc_request.intensity = plc->intensity;
 
-	    slc_request.samples = slc_request.fov / DTOR(ang_res);
-	    
-	    stg_laser_config_t slc_reply;
-	    
+	    slc_request.samples = (int)(slc_request.fov / DTOR(ang_res));
+	    	    
 	    int err;
-	    if( (err = stg_model_prop_set_ack( this->model, STG_PROP_LASERCONFIG,
-					       &slc_request, sizeof(slc_request)) ) )
+	    if( (err = stg_model_prop_set( this->model, STG_PROP_LASERCONFIG,
+					   &slc_request, sizeof(slc_request)) ) )
 	      PLAYER_ERROR1( "error %d setting laser config", err );
 	    else
 	      PLAYER_TRACE0( "set laser config OK" );
-
-	    //printf( "config reply\n" );
-	    //stg_print_laser_config( &slc_reply );
 
 	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, plc, len) != 0)
 	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_SET_CONFIG");
@@ -191,10 +188,10 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	    //stg_print_laser_config( &slc );
 	    
 	    // integer angles in degrees/100
-	    int16_t  min_angle = -RTOD(slc.fov/2.0) * 100;
-	    int16_t  max_angle = +RTOD(slc.fov/2.0) * 100;
+	    int16_t  min_angle = (int16_t)(-RTOD(slc.fov/2.0) * 100);
+	    int16_t  max_angle = (int16_t)(+RTOD(slc.fov/2.0) * 100);
 	    //uint16_t angular_resolution = RTOD(slc.fov / slc.samples) * 100;
-	    uint16_t angular_resolution = RTOD(slc.fov / (slc.samples-1)) * 100;
+	    uint16_t angular_resolution =(uint16_t)(RTOD(slc.fov / (slc.samples-1)) * 100);
 	    uint16_t range_multiplier = 1; // TODO - support multipliers
 
 	    int intensity = 1; // todo
@@ -226,6 +223,7 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
     case PLAYER_LASER_GET_GEOM:
       {	
 	PLAYER_TRACE0( "requesting laser geom" );
+
 	stg_geom_t geom;
 	if( stg_model_prop_get( this->model, STG_PROP_LASERGEOM, &geom,sizeof(geom)))
 	  PLAYER_ERROR( "error requesting STG_PROP_LASERGEOM" );

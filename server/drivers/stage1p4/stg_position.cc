@@ -99,6 +99,8 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
       position_data.xpos = ntohl((int32_t)(1000.0 * pose->x));
       position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
       position_data.yaw = ntohl((int32_t)(RTOD(pose->a)));
+
+      printf( "getdata called at %lu ms\n", stage_client->stagetime );
       
       // publish this data
       CDevice::PutData( &position_data, sizeof(position_data), 0,0 ); 
@@ -120,14 +122,17 @@ void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
       vel.y = ((double)((int32_t)ntohl(pcmd->yspeed))) / 1000.0;
       vel.a = DTOR((double)((int32_t)ntohl(pcmd->yawspeed)));
       
-      printf( "sending vel\n" );
+      //printf( "sending vel\n" );
       
-      stg_model_prop_set( this->model, STG_PROP_VELOCITY, 
-			  &vel, sizeof(vel) ) ;
+      stg_model_prop_delta( this->model, STG_PROP_VELOCITY, 
+			    &vel, sizeof(vel) ) ;
+      //stg_client_write_msg ( this->stage_client, 
+      //			STG_PROP_VELOCITY, 
+      //			&vel, sizeof(vel) ) ;
     }
   else
     PLAYER_ERROR2( "wrong size position command packet (%d/%d bytes)",
-		   len, sizeof(player_position_cmd_t) );
+		   (int)len, (int)sizeof(player_position_cmd_t) );
 
 
   // we ignore position for now.

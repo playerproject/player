@@ -21,12 +21,10 @@ x *  You should have received a copy of the GNU General Public License
 */
 
 // STAGE-1.4 DRIVER CLASS  /////////////////////////////////
-// creates a single static Stage client
 
 #include "device.h"
 #include "configfile.h"
 #include "stage.h"
-#include "worldfile.h"
 
 class Stage1p4 : public CDevice
 {
@@ -37,18 +35,17 @@ class Stage1p4 : public CDevice
   
   virtual int Setup();
   virtual int Shutdown(); 
-  virtual void Update();
 
  protected:
 
   static ConfigFile* config;
-  static CWorldFile wf;
-  static char worldfile_name[MAXPATHLEN]; // filename
+
+  //static char worldfile_name[MAXPATHLEN]; // filename
+
+  // all player devices share the same Stage client and world (for now)
   static stg_client_t* stage_client;
-  static char* world_name;
-  static bool init;
-  static pthread_mutex_t reply_mutex; // used to block until a device until a reply is received
-  static pthread_mutex_t model_mutex; // used to protect the model tree data
+  static stg_world_t* world;
+
 
   stg_model_t* model; // points inside the shared stg_client_t to our
 		      // individual model data
@@ -56,10 +53,6 @@ class Stage1p4 : public CDevice
   // the property we automatically subscribe to on Setup();
   stg_id_t subscribe_prop;
 
+  
 
-  void ModelsLock(){ pthread_mutex_lock( &model_mutex ); }
-  void ModelsUnlock(){ pthread_mutex_unlock( &model_mutex ); }
-
-  //void AwaitReply(){ pthread_mutex_lock( &reply_mutex ) 
-  //	     pthread_mutex_w  };
 };
