@@ -62,11 +62,12 @@ CDeviceTable::~CDeviceTable()
     
 // this is the 'base' AddDevice method, which sets all the fields
 int 
-CDeviceTable::AddDevice(player_device_id_t id, unsigned char access, 
-                        CDevice* devicep)
+CDeviceTable::AddDevice(player_device_id_t id, char* name,
+                        unsigned char access, CDevice* devicep)
 {
   CDeviceEntry* thisentry;
   CDeviceEntry* preventry;
+  
   // right now, don't check for preexisting device, just overwrite the old
   // device.  shouldn't really come up.
   pthread_mutex_lock(&mutex);
@@ -94,6 +95,7 @@ CDeviceTable::AddDevice(player_device_id_t id, unsigned char access,
   }
 
   thisentry->id = id;
+  strncpy(thisentry->name, name, sizeof(thisentry->name));
   thisentry->access = access;
   thisentry->devicep = devicep;
   if(devicep)
@@ -110,6 +112,47 @@ CDeviceTable::GetDevice(player_device_id_t id)
 { 
   CDeviceEntry* thisentry;
   CDevice* devicep = NULL;
+
+  if((thisentry = GetDeviceEntry(id)))
+    devicep = thisentry->devicep;
+
+  return(devicep);
+}
+
+    
+// returns the code for access ('r', 'w', or 'a') for the given 
+// device, or 'e' on failure
+unsigned char 
+CDeviceTable::GetDeviceAccess(player_device_id_t id)
+{
+  CDeviceEntry* thisentry;
+  char access = 'e';
+
+  if((thisentry = GetDeviceEntry(id)))
+    access = thisentry->access;
+
+  return(access);
+}
+// returns the string name of the driver in use for the given id 
+// (returns NULL on failure)
+char* 
+CDeviceTable::GetDriver(player_device_id_t id)
+{
+  CDeviceEntry* thisentry;
+  char* driver = NULL;
+
+  if((thisentry = GetDeviceEntry(id)))
+    driver = thisentry->name;
+
+  return(driver);
+}    
+
+// find a device entry, based on id, and return the pointer (or NULL
+// on failure)
+CDeviceEntry* 
+CDeviceTable::GetDeviceEntry(player_device_id_t id)
+{
+  CDeviceEntry* thisentry;
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
@@ -121,36 +164,10 @@ CDeviceTable::GetDevice(player_device_id_t id)
     if((thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index) &&
        (!use_stage || (thisentry->id.port == id.port)))
-    {
-      devicep = thisentry->devicep;
       break;
-    }
   }
 
   pthread_mutex_unlock(&mutex);
-  return(devicep);
-}
-    
-// returns the code for access ('r', 'w', or 'a') for the given 
-// device, or 'e' on failure
-unsigned char 
-CDeviceTable::GetDeviceAccess(player_device_id_t id)
-{
-  CDeviceEntry* thisentry;
-  char access = 'e';
-
-  pthread_mutex_lock(&mutex);
-  for(thisentry=head;thisentry;thisentry=thisentry->next)
-  {
-    if((thisentry->id.port == id.port) && 
-       (thisentry->id.code == id.code) && 
-       (thisentry->id.index == id.index))
-    {
-      access = thisentry->access;
-      break;
-    }
-  }
-  pthread_mutex_unlock(&mutex);
-  return(access);
+  return(thisentry);
 }
 
