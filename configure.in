@@ -3,6 +3,8 @@ dnl Process this file with autoconf to produce a configure script.
 dnl Start autoconf with this file.  Not really sure why it needs a filename.
 AC_INIT(server/main.cc)
 
+dnl Define this so that we can refer to it twice below
+define(PLAYER_VERSION,1.3)
 
 dnl Initialize automake with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.
@@ -11,8 +13,6 @@ AM_INIT_AUTOMAKE(player,PLAYER_VERSION)
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
 
-dnl Define this so that we can refer to it twice below
-define(PLAYER_VERSION,1.3)
 
 
 dnl Generate a configuration header called <config.h> and put all the C
@@ -194,23 +194,22 @@ AC_ARG_WITH(laser,
 AC_SUBST(LASER_LIB)
 AC_SUBST(LASER_LIBPATH)
 
-
-dnl the following must use --with to be built
-dnl check if they want the WiFi driver
+WIFI_LIB="libwifi.a"
+WIFI_LIBPATH="drivers/libwifi.a"
 AC_ARG_WITH(wifi, 
 [  --with-wifi                Use the WiFi driver],
 [case "${withval}" in
  yes) AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])
-      WIFI_LIB="libwifi.a"
-      WIFI_LIBPATH="drivers/libwifi.a"
       ;;
-  no) ;;
-   *) ;;
+  no) WIFI_LIB=""
+      WIFI_LIBPATH=""
+      ;;
  esac],
-[])
+[AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])])
 AC_SUBST(WIFI_LIB)
 AC_SUBST(WIFI_LIBPATH)
 
+dnl the following must use --with to be built
 AC_ARG_WITH(reb,
 [  --with-reb                Use the REB],
 [case "${withval}" in 
