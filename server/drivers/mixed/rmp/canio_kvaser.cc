@@ -41,7 +41,7 @@ CANIOKvaser::Init(long channel_freq)
     
     // set filter to only accept packets we are interested in...
     // that is, messages with IDs 0x400, 0x401, ..., 0x404
-    if ((ret = canAccept(channels[i], 0x407, canFILTER_SET_MASK_STD)) < 0) {
+    if ((ret = canAccept(channels[i], 0x400, canFILTER_SET_MASK_STD)) < 0) {
       return ret;
     }
 
