@@ -7,6 +7,9 @@ import sys
 
 prefixes = ['playerc_client',
             'playerc_device_info',
+            'playerc_joystick',
+            'playerc_position',
+            'playerc_position3d',
             'playerc_laser']
 
 

@@ -40,8 +40,10 @@ def test_laser(client, index):
 
     for i in range(10):
 
-        proxy = client.read()
-        print proxy == laser.this
+        while 1:
+            id = client.read()
+            if id == laser.info.id:
+                break
 
         print "laser: [%14.3f] [%d] " % (laser.info.datatime, laser.scan_count),
         for i in range(3):

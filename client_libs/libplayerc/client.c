@@ -89,6 +89,8 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 
   client = malloc(sizeof(playerc_client_t));
   memset(client, 0, sizeof(playerc_client_t));
+
+  client->id = client;
   client->host = strdup(host);
   client->port = port;
 
@@ -248,7 +250,7 @@ void *playerc_client_read(playerc_client_t *client)
   if (header.type == PLAYER_MSGTYPE_SYNCH)
   {
     client->datatime = header.timestamp_sec + header.timestamp_usec * 1e-6;
-    return client;
+    return client->id;
   }
   
   // Check the return type 
@@ -855,7 +857,7 @@ void *playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
       for (j = 0; j < device->callback_count; j++)
         (*device->callback[j]) (device->callback_data[j]);
 
-      return device;
+      return device->id;
     }
   }
   return NULL;

@@ -188,7 +188,7 @@ playerc_client_t structure to be used in other subsequent calls.
 
 /** Info about an available (but not necessarily subscribed) device. */
 typedef struct
-{
+{  
   /** Player id of the device. */
   int port, code, index;
 
@@ -201,6 +201,10 @@ typedef struct
 /** Client data. */
 typedef struct _playerc_client_t
 {
+  /** A useful ID for identifying devices; mostly used by other
+      language bindings. */
+  void *id;
+
   /** Server address. */
   char *host;
   int port;
@@ -296,9 +300,9 @@ int playerc_client_request_recv(playerc_client_t *client, playerc_device_t *devi
 int playerc_client_peek(playerc_client_t *client, int timeout);
 
 /** Read data from the server (blocking).  For data packets, will
-    return a pointer to the device proxy that got the data; for synch
-    packets, will return a pointer to the client itself; on error, will
-    return NULL. */
+    return the ID of the proxy that got the data; for synch packets,
+    will return the ID of the client itself; on error, will return
+    NULL. */
 void *playerc_client_read(playerc_client_t *client);
 
 // Write data to the server (private).
@@ -325,6 +329,11 @@ proxy should not be instantiated directly.
 /** Generic device info. */
 typedef struct _playerc_device_t
 {
+  /** A useful ID for identifying devices; mostly used by other
+      language bindings.  For backwards-compatibility, this is passed
+      as void pointer. */
+  void *id;
+
   /** Pointer to the client proxy. */
   playerc_client_t *client;
 
