@@ -438,6 +438,9 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
         if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
+
+      odom_x = odom_y = odom_yaw = 0.0;
+      
       // return 1 to indicate that we wrote to the CAN bus this time
       return(1);
 
@@ -767,9 +770,6 @@ SegwayRMP::Read()
 int
 SegwayRMP::Write(CanPacket& pkt)
 {
-  //    printf("SEGWAYIO: %d ms WRITE: %s\n", loopmillis, pkt.toString());
-
-  // write it out!
   return(canio->WritePacket(pkt));
 }
 
@@ -900,7 +900,7 @@ int
 SegwayRMP::Diff(uint32_t from, uint32_t to, bool first)
 {
   int diff1, diff2;
-  uint32_t max = (uint32_t)pow(2,32)-1;
+  static uint32_t max = (uint32_t)pow(2,32)-1;
 
   // if this is the first time, report no change
   if(first)
