@@ -34,6 +34,7 @@ extern "C" {
 
 
 #include <messages.h>
+#include <netinet/in.h> /* for struct in_addr */
 
 typedef struct
 {
@@ -56,7 +57,7 @@ typedef struct
 int player_debug_level(int level);
 
 /*
- * connects to server listening at host:port.  conn is filled in with
+ * connects to server listening at host:port . conn is filled in with
  * relevant information, and is used in subsequent player function
  * calls
  *
@@ -64,8 +65,34 @@ int player_debug_level(int level);
  *    0 if everything is OK (connection opened)
  *   -1 if something went wrong (connection NOT opened)
  */
-int player_connect(player_connection_t* conn, const char* host, int port);
+int player_connect(player_connection_t* conn, 
+		   const char* host, 
+		   const int port);
 
+/*
+ * connects to server listening at addr:port.  conn is filled in with
+ * relevant information, and is used in subsequent player function
+ * calls. (alternative to player_connect() using binary address)
+ *
+ * Returns:
+ *    0 if everything is OK (connection opened)
+ *   -1 if something went wrong (connection NOT opened)
+ */
+int player_connect_ip(player_connection_t* conn, 
+		      const struct in_addr* addr, 
+		      const int port);
+/*
+ * connects to server listening at the address specified in sockaddr.
+ * conn is filled in with relevant information, and is used in
+ * subsequent player function calls. player_connect() and player_connect_ip
+ * use this function.
+ * 
+ *
+ * Returns:
+ *    0 if everything is OK (connection opened)
+ *   -1 if something went wrong (connection NOT opened) */
+int player_connect_sockaddr(player_connection_t* conn, 
+			    const struct sockaddr_in* server);
 /*
  * close a connection. conn should be a value that was previously returned
  * by a call to player_connect()

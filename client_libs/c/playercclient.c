@@ -67,28 +67,86 @@ int player_debug_level(int level)
  */
 int player_connect(player_connection_t* conn, const char* host, int port)
 {
-  struct sockaddr_in server;
   struct hostent* entp;
-  int sock;
-  char banner[PLAYER_IDENT_STRLEN];
-  int thisnumread,numread;
+  struct sockaddr_in server;
 
-  /* fill in server structure */
-  server.sin_family = PF_INET;
-
+  /* pointers must be good */
+  assert( conn );
+  assert( host );
+  
   /* 
    * this is okay to do, because gethostbyname(3) does no lookup if the 
    * 'host' * arg is already an IP addr
    */
   if((entp = gethostbyname(host)) == NULL)
-  {
-    if(player_debug_level(-1) >= 2)
-      fprintf(stderr, "player_connect() \"%s\" is an unknown host\n", host);
-    return(-1);
-  }
+    {
+      if(player_debug_level(-1) >= 2)
+	fprintf(stderr, "player_connect() \"%s\" is an unknown host\n", host);
+      return(-1);
+    }
 
+  /* bounds check before copying in the address */
+  assert( sizeof(server.sin_addr) >= entp->h_length );
   memcpy(&server.sin_addr, entp->h_addr_list[0], entp->h_length);
+
+  /* fill in server structure */
+  server.sin_family = PF_INET;
   server.sin_port = htons(port);
+  
+  /* make the connection */
+  return player_connect_sockaddr( conn, &server );
+}
+
+/*
+ * connects to server listening at host:port.  conn is filled in with
+ * relevant information, and is used in subsequent player function
+ * calls
+ *
+ * Returns:
+ *    0 if everything is OK (connection opened)
+ *   -1 if something went wrong (connection NOT opened)
+ */
+int player_connect_ip(player_connection_t* conn, 
+		   const struct in_addr* addr, 
+		   const int port)
+{
+  struct sockaddr_in server;
+
+  /* pointers must be good */
+  assert( conn );
+  assert( addr );
+
+  /* fill in server structure */
+  server.sin_family = PF_INET;
+  server.sin_port = htons(port);
+
+  /* bounds check before copying in the address */
+  assert( sizeof(server.sin_addr) <= sizeof(addr->s_addr) );
+  memcpy(&server.sin_addr, &addr->s_addr, sizeof(addr->s_addr) );
+  
+  /* make the connection */
+  return player_connect_sockaddr( conn, &server );
+}
+
+
+/*
+ * connects to server listening at the address specified in sockaddr.
+ * conn is filled in with relevant information, and is used in
+ * subsequent player function calls
+ *
+ * Returns:
+ *    0 if everything is OK (connection opened)
+ *   -1 if something went wrong (connection NOT opened) */
+int player_connect_sockaddr(player_connection_t* conn, 
+			    const struct sockaddr_in* server)
+{
+  int sock;
+  char banner[PLAYER_IDENT_STRLEN];
+  int thisnumread,numread;
+  
+  /* pointers must be good */
+  assert( conn );
+  assert( server );
 
   /* make our socket (and leave it blocking) */
   if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
@@ -101,7 +159,7 @@ int player_connect(player_connection_t* conn, const char* host, int port)
   /* 
    * hook it up
    */
-  if(connect(sock, (struct sockaddr*)&server, sizeof(server)) == -1)
+  if(connect(sock, (struct sockaddr*)server, sizeof(*server)) == -1)
   {
     if(player_debug_level(-1) >= 2)
       perror("player_connect(): connect() failed");
@@ -215,7 +273,7 @@ int player_request(player_connection_t* conn,
       return(-1);
   }
 
-  // did they want the reply?
+  /* did they want the reply? */
   if(replyhdr && reply && replylen >= hdr.size)
   {
     *replyhdr = hdr;
@@ -246,9 +304,6 @@ int player_request_device_access(player_connection_t* conn,
   this_req.code = htons(device);
   this_req.index = htons(device_index);
   this_req.access = req_access;
-
-  //RTV - experimental consume data mode
-  //this_req.consume = consume;
 
   memcpy(payload,&this_ioctl,sizeof(player_device_ioctl_t));
   memcpy(payload+sizeof(player_device_ioctl_t),
@@ -332,8 +387,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
   /*timesec = (time_t)(hdr->time / 1000);*/
   /*printf("time: %s\n", ctime(&timesec));*/
-  //puts("got HDR");
-
+  
   /* get the payload */
   if(hdr->size > payloadlen)
     if(player_debug_level(-1) >= 2)

@@ -97,6 +97,9 @@ class PlayerClient
     // store the name and port of the connected host
     char hostname[256]; 
     int port;
+    // store the IP of the host, too - more efficient for
+    // matching, etc, then the string
+    struct in_addr hostaddr;
 
     // the current time on the server
     struct timeval timestamp;
@@ -104,12 +107,16 @@ class PlayerClient
     // constructors
     // 
     // make a client and connect it as indicated.
-    PlayerClient(const char* hostname=NULL, int port=PLAYER_PORTNUM);
+    PlayerClient(const char* hostname=NULL, const int port=PLAYER_PORTNUM);
+
+    // use a binary IP instead of a hostname
+    PlayerClient(const struct in_addr* hostaddr = NULL, 
+		 const int port=PLAYER_PORTNUM);
 
     // destructor
     ~PlayerClient();
 
-    // 3 ways to connect to the server
+    // 4 ways to connect to the server
     // Return:
     //    0 if everything is OK (connection opened)
     //   -1 if something went wrong (connection NOT opened)
@@ -117,6 +124,9 @@ class PlayerClient
     int Connect(const char* hostname, int port);
     int Connect(const char* hostname) { return(Connect(hostname,PLAYER_PORTNUM)); }
     int Connect() { return(Connect("localhost",PLAYER_PORTNUM)); }
+
+    // use the binary IP address
+    int Connect(const struct in_addr* addr, int port);
 
     // disconnect from server
     // Return:
