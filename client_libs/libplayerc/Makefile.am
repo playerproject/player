@@ -28,7 +28,7 @@ libplayerc_a_LIBADD = $(top_builddir)/replace/*.o
 
 include_HEADERS = playerc.h
 
-#dist-hook:
-#	mkdir -p $(top_distdir)/doc
-#	cd $(srcdir)/doc && make
-#	cp -p $(srcdir)/doc/libplayerc.ps $(top_distdir)/doc
+dist-hook:
+	mkdir -p $(top_distdir)/doc
+	cd $(srcdir)/doc && make
+	cp -p $(srcdir)/doc/libplayerc.ps $(top_distdir)/doc

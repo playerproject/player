@@ -9,7 +9,8 @@ config_DATA = usc_pioneer.cfg \
 	      gazebo.cfg \
 	      segwayrmp.cfg\
               gazebo_blobfinder.cfg\
-              colors.txt
+              colors.txt \
+	      wavefront.cfg
 
 EXTRA_DIST = usc_pioneer.cfg \
              umass_reb.cfg \
@@ -20,4 +21,5 @@ EXTRA_DIST = usc_pioneer.cfg \
 	     gazebo.cfg \
 	     segwayrmp.cfg\
              gazebo_blobfinder.cfg\
-             colors.txt
+             colors.txt \
+	     wavefront.cfg
