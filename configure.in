@@ -353,6 +353,8 @@ AC_OUTPUT(Makefile
           client_libs/c++/test/Makefile
           client_libs/libplayerc/Makefile
           client_libs/libplayerc/test/Makefile
+          client_libs/libplayerc/bindings/Makefile
+          client_libs/libplayerc/bindings/python/Makefile
           client_libs/libplayerpacket/Makefile
           client_libs/pyplayerc/Makefile
           client_libs/tcl/Makefile
