@@ -66,6 +66,10 @@ class CBroadcastDevice : public CDevice
     private: player_broadcast_cmd_t cmd;
     private: player_broadcast_data_t data;
 
+    // Address and port to broadcast on
+    private: char *addr;
+    private: int port;
+
     // Write socket info
     private: int write_socket;
     private: sockaddr_in write_addr;

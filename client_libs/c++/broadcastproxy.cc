@@ -26,7 +26,7 @@
  * client-side position device 
  */
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 
 #include <broadcastproxy.h>
 #include <netinet/in.h>

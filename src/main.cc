@@ -287,6 +287,16 @@ struct timeval* CreateStageDevices( player_stage_info_t *arenaIO)
         fflush( stdout );
 #endif	  
 
+
+#ifdef INCLUDE_BROADCAST
+      case PLAYER_BROADCAST_CODE:   
+        // Create broadcast device as per normal
+        if( info->local )
+          deviceTable->AddDevice(info->player_id.port,
+                                 info->player_id.type,
+                                 info->player_id.index, 
+                                 PLAYER_ALL_MODE, new CBroadcastDevice(0, NULL));
+#endif
         break;
 
         // devices not implemented
@@ -327,16 +337,6 @@ struct timeval* CreateStageDevices( player_stage_info_t *arenaIO)
                          PLAYER_READ_MODE, new CBpsDevice(0, NULL));
 #endif
 
-#ifdef INCLUDE_BROADCAST
-  // DOUBLE-HACK -- now this won't work in stage, because we don't know to 
-  //                which port to tie the device - BPG
-  //
-  // HACK -- Create broadcast device as per normal
-  // The stage versus non-stage initialization needs some re-thinking.
-  // ahoward
-  deviceTable->AddDevice(global_playerport,PLAYER_BROADCAST_CODE, 0, 
-                         PLAYER_ALL_MODE, new CBroadcastDevice(0, NULL));
-#endif
   
 #ifdef DEBUG  
   printf( "finished creating stage devices\n" );
