@@ -132,6 +132,7 @@ PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],
                   [$GAZEBO_EXTRA_CPPFLAGS],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
+PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[yes],[],[],[])
 
 
 if test "x$enable_cmvision" = "xyes"; then

@@ -82,6 +82,10 @@ void CMVision_Register(DriverTable* table);
 void UPCBarcode_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_SHAPETRACKER
+void ShapeTracker_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_FESTIVAL
 void Festival_Register(DriverTable* table);
 #endif 
@@ -413,6 +417,10 @@ register_devices()
 
 #ifdef INCLUDE_UPCBARCODE
   UPCBarcode_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SHAPETRACKER
+  ShapeTracker_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FESTIVAL
