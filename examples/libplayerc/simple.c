@@ -49,10 +49,6 @@ int main(int argc, const char **argv)
   if (playerc_position_subscribe(position, PLAYER_ALL_MODE))
     return -1;
 
-  // Enable the position device
-  if (playerc_position_enable(position, 1) != 0)
-    return -1;
-
   // Make the robot spin!
   if (playerc_position_set_cmd_vel(position, 0, 0, 0.1, 1) != 0)
     return -1;
