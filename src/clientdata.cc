@@ -548,6 +548,16 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
         {
           data[totalsize] = requested[i];
           size = devicep->GetLock()->GetData(devicep, &data[totalsize+3], maxsize-totalsize-3);
+
+          // *** HACK -- ahoward
+          // Skip this data if it is zero length
+          //
+          if (size == 0)
+          {
+              puts("BuldMsg(): got zero length data; ignoring");
+              continue;
+          }
+          
           *(unsigned short *)&data[totalsize+1] = htons ( size );
           totalsize+=size+3;
         }
