@@ -97,7 +97,7 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(scandir)
-AC_CHECK_FUNCS(cfmakeraw)
+AC_CHECK_FUNCS(cfmakeraw sigblock)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
 #AC_FUNC_MMAP
