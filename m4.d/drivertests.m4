@@ -238,11 +238,23 @@ PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
 dnl Service Discovery
 dnl Don't need to do the language setting here, since C++ checking was done
 dnl earlier, seeing as Player is written in C++.
-dnl AC_LANG_SAVE
-dnl AC_LANG(C++)
+dnl
+dnl XXX
+dnl
+dnl These don't check for C++, they enable the C++ compiler. If these checks
+dnl aren't here, the test will *always* fail, since autoconf will try to 
+dnl use the C compiler instead of the C++ compiler.
+dnl
+dnl If you want to, you can move AC_LANG(C++) to the beginning of the configure
+dnl script...
+dnl
+dnl -reed
+dnl
+AC_LANG_SAVE
+AC_LANG(C++)
 PLAYER_ADD_DRIVER([service_adv_lsd], [drivers/service_adv], [yes],
     [servicediscovery/servicedirectory.hh], [], [-lservicediscovery])
-dnl AC_LANG_RESTORE
+AC_LANG_RESTORE
 
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
