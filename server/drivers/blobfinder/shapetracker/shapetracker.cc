@@ -43,6 +43,7 @@
 #include <unistd.h>
 
 #include <opencv/cv.h>
+#include <opencv/highgui.h>
 
 #include "device.h"
 #include "devicetable.h"
@@ -345,8 +346,9 @@ void ShapeTracker::FindShapes()
       {
         rect = cvBoundingRect(result,0);
 
-        if (rect.width < this->cameraData.width-10 && 
+        /*if (rect.width < this->cameraData.width-10 && 
             rect.height < this->cameraData.height-10)
+            */
         {
           this->shapes[this->shapeCount].id = result->total;
           this->shapes[this->shapeCount].ax = rect.x;
@@ -357,10 +359,11 @@ void ShapeTracker::FindShapes()
           this->shapeCount = (this->shapeCount+1) % 255;
         }
 
-        //cvDrawContours(this->workImage, result, 255, 0, 0, 5, 8);
+        cvDrawContours(this->workImage, result, 255, 0, 0, 3, 8);
         //cvDrawContours(this->mainImage, result, 255, 0, 0, 5, 8);
 
-        //cvSaveImage("main2.jpg", this->mainImage);
+        printf("Finding shapes\n");
+        cvSaveImage("workContours.jpg", this->workImage);
         //this->orientPoint = getcentralpoint(this->mainImage, result);
       }
     }
