@@ -5,7 +5,7 @@
 # CVS: $Id$
 ###########################################################################
 
-include ../../../Makefile.common
+include ../../Makefile.common
 
 .SUFFIXES: .c .o
 
@@ -16,9 +16,9 @@ include ../../../Makefile.common
 EXE = simple
 OBS = simple.o
 
-INCLUDES = -I.. -I../../../include
+INCLUDES = -I../../include 
 CFLAGS = -g3 -Wall $(INCLUDES)
-LFLAGS = -lm -L.. -lplayerc
+LFLAGS = -lm -L../../lib -lplayerc
 
 ###########################################################################
 # Build section

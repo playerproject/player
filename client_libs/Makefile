@@ -31,7 +31,7 @@ dep:
 	cd c++ && make dep
 	cd tcl && make dep
 	cd libplayerc && make dep
-	
+
 clean:
 	cd c && make clean
 	cd c++ && make clean
