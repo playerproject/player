@@ -40,7 +40,7 @@ Note that you must declare a @ref player_interface_log device to allow
 logging control.
 
 Note that unless you plan to remote-control this driver via the @ref
-player_inteface_log interface (e.g., using @ref player_util_playervcr),
+player_interface_log interface (e.g., using @ref player_util_playervcr),
 you should specify the @p alwayson option in the configuration file so
 that logging start when Player starts.
 
