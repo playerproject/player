@@ -28,6 +28,7 @@
  *   from ACTS, which this device spawns and then talks to.
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
 #include <netdb.h> /* for gethostbyname(3) */
@@ -239,7 +240,7 @@ Acts::Setup()
   char acts_port_flag[] = "-s";
 
   char acts_port_num[MAX_FILENAME_SIZE];
-  char* acts_args[8];
+  char* acts_args[32];
 
   static struct sockaddr_in server;
   char host[] = "localhost";
@@ -257,6 +258,7 @@ Acts::Setup()
 
   sprintf(acts_port_num,"%d",portnum);
 
+  /* HACK - I've customized for ACTS2.0.  ahoward
   acts_args[i++] = acts_bin_name;
   if(strlen(configfilepath))
   {
@@ -266,14 +268,34 @@ Acts::Setup()
   acts_args[i++] = acts_port_flag;
   acts_args[i++] = acts_port_num;
   acts_args[i] = (char*)NULL;
+  */
 
+  // HACK - custom for ACTS2.0
+  acts_args[i++] = acts_bin_name;
+  if(strlen(configfilepath))
+  {
+    acts_args[i++] = "-t";
+    acts_args[i++] = configfilepath;
+  }
+  acts_args[i++] = "-p";
+  acts_args[i++] = acts_port_num;
+  acts_args[i++] = "-G";
+  acts_args[i++] = "bttv";
+  acts_args[i++] = "-d";
+  acts_args[i++] = "/dev/video0";
+  acts_args[i++] = "-n";
+  acts_args[i++] = "0";
+  acts_args[i++] = "-x";
+  acts_args[i] = (char*)NULL;
+  assert(i <= sizeof(acts_args) / sizeof(acts_args[0]));
+  
   if(!(pid = fork()))
   {
     // make sure we don't get that "ACTS: Packet" bullshit on the console
-    int dummy_fd = open("/dev/null",O_RDWR);
-    dup2(dummy_fd,0);
-    dup2(dummy_fd,1);
-    dup2(dummy_fd,2);
+    //int dummy_fd = open("/dev/null",O_RDWR);
+    //dup2(dummy_fd,0);
+    //dup2(dummy_fd,1);
+    //dup2(dummy_fd,2);
 
     /* detach from controlling tty, so we don't get pesky SIGINTs and such */
     if(setpgrp() == -1)
@@ -409,6 +431,10 @@ Acts::Main()
 
   char acts_request_packet = ACTS_REQUEST_PACKET;
 
+  // TODO: put a descriptive color in here (I'm not sure where
+  // to get it from).  Some default colors...
+  int colors[] = {0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00};
+  
   /* make sure we aren't canceled at a bad time */
   if(pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL))
   {
@@ -522,9 +548,9 @@ Acts::Main()
         // to get it from).
         local_data.blobs[i].color = htonl(0xFF0000);
         
-	// stage puts the range in here to simulate stereo vision. we
-	// can't do that (yet?) so set the range to zero - rtv
-	local_data.blobs[i].range = 0;
+        // stage puts the range in here to simulate stereo vision. we
+        // can't do that (yet?) so set the range to zero - rtv
+        local_data.blobs[i].range = 0;
 
         // get the 4-byte area first
         local_data.blobs[i].area = 0;
@@ -562,13 +588,27 @@ Acts::Main()
       {
         int tmpptr = blob_size*i;
 
-        // TODO: put a descriptive color in here (I'm not sure where
-        // to get it from).
-        local_data.blobs[i].color = htonl(0xFF0000);
+        // Figure out the blob channel number
+        int ch = 0;
+        for (int j = 0; j < VISION_NUM_CHANNELS; j++)
+        {
+          if (i >= ntohs(local_data.header[j].index) &&
+              i < ntohs(local_data.header[j].index) + ntohs(local_data.header[j].num))
+          {
+            ch = j;
+            break;
+          }
+        }
 
-	// stage puts the range in here to simulate stereo vision. we
-	// can't do that (yet?) so set the range to zero - rtv
-	local_data.blobs[i].range = 0;
+        // Put in a descriptive color.
+        if (ch < (int) (sizeof(colors) / sizeof(colors[0])))
+          local_data.blobs[i].color = htonl(colors[ch]);            
+        else
+          local_data.blobs[i].color = htonl(0xFF0000);
+
+        // stage puts the range in here to simulate stereo vision. we
+        // can't do that (yet?) so set the range to zero - rtv
+        local_data.blobs[i].range = 0;
 
         // get the 4-byte area first
         local_data.blobs[i].area = 0;
