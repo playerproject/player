@@ -35,28 +35,37 @@
 #define PLAYER_NUM_SONAR_SAMPLES 16
 #define PLAYER_NUM_LASER_SAMPLES 361
 
+/* the message start signifier */
+#define PLAYER_STX MAKEUINT16('x','X')
+
 /* the player message types */
-#define PLAYER_MSGTYPE_DATA 0x7264 // "rd" robot data
-#define PLAYER_MSGTYPE_CMD  0x7263 // "rc" robot cmd
-#define PLAYER_MSGTYPE_REQ  0x7271 // "rq" robot req
-#define PLAYER_MSGTYPE_RESP 0x7272 // "rr" robot resp
+#define PLAYER_MSGTYPE_DATA MAKEUINT16('r','d') // "rd" robot data
+#define PLAYER_MSGTYPE_CMD  MAKEUINT16('r','c') // "rc" robot cmd
+#define PLAYER_MSGTYPE_REQ  MAKEUINT16('r','q') // "rq" robot req
+#define PLAYER_MSGTYPE_RESP MAKEUINT16('r','r') // "rr" robot resp
 
 /* the currently assigned device codes */
-#define PLAYER_MISC_CODE    0x706d  // "pm" pioneer misc
-#define PLAYER_GRIPPER_CODE 0x7067  // "pg" pioneer gripper
-#define PLAYER_POSITION_CODE 0x7070  // "pp" pioneer position
-#define PLAYER_SONAR_CODE   0x7073  // "ps" pioneer sonar
-#define PLAYER_LASER_CODE   0x736c  // "sl" SICK laser
-#define PLAYER_VISION_CODE  0x6176  // "av" ACTS vision
-#define PLAYER_PTZ_CODE     0x737a  // "sz" Sony PTZ
-#define PLAYER_PLAYER_CODE  0x7273  // "rs" robot server
+#define PLAYER_MISC_CODE    MAKEUINT16('p','m')  // "pm" pioneer misc
+#define PLAYER_GRIPPER_CODE MAKEUINT16('p','g')  // "pg" pioneer gripper
+#define PLAYER_POSITION_CODE MAKEUINT16('p','p')  // "pp" pioneer position
+#define PLAYER_SONAR_CODE   MAKEUINT16('p','s')  // "ps" pioneer sonar
+#define PLAYER_LASER_CODE   MAKEUINT16('s','l')  // "sl" SICK laser
+#define PLAYER_VISION_CODE  MAKEUINT16('a','v')  // "av" ACTS vision
+#define PLAYER_PTZ_CODE     MAKEUINT16('s','z')  // "sz" Sony PTZ
+#define PLAYER_PLAYER_CODE  MAKEUINT16('r','s')  // "rs" robot server
+#define PLAYER_AUDIO_CODE  MAKEUINT16('f','a')  // "fa" freq analyzer (audio)
 
-#define PLAYER_STX 0x7858 // "xX" 
+/* the access modes */
+#define PLAYER_READ_MODE 'r'
+#define PLAYER_WRITE_MODE 'w'
+#define PLAYER_ALL_MODE 'a'
+
+
 
 /* generic message header */
 typedef struct
 {
-  uint16_t stx;     /* always equal to "xX" (0x7858) */
+  uint16_t stx;     /* always equal to "xX" (0x5878) */
   uint16_t type;    /* message type */
   uint16_t device;  /* what kind of device */
   uint16_t device_index; /* which device of that kind */
@@ -83,12 +92,21 @@ typedef struct
 {
   uint16_t code;
   uint16_t index;
-  uint16_t access;
+  uint8_t access;
 } __attribute__ ((packed)) player_device_req_t;
 
+/* the format of a "datamode change" ioctl to Player */
+typedef struct
+{
+  // 0 = continuous (default)
+  // 1 = request/reply
+  uint8_t mode;
+} __attribute__ ((packed)) player_device_datamode_req_t;
 
-#define PLAYER_PLAYER_DEV_REQ  0x6472 // "dr" device request
-#define PLAYER_PLAYER_DATA_REQ 0x6470 // "dp" data packet (request)
+#define PLAYER_PLAYER_DEV_REQ  MAKEUINT16('d','r') // "dr" device request
+#define PLAYER_PLAYER_DATA_REQ MAKEUINT16('d','p') // "dp" data packet (request)
+#define PLAYER_PLAYER_DATAMODE_REQ MAKEUINT16('d','m') // "dm" data mode change
+#define PLAYER_PLAYER_DATAFREQ_REQ MAKEUINT16('d','f') // "df" data freq change
 
 /*************************************************************************/
 

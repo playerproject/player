@@ -162,7 +162,6 @@ void *client_reader(void* arg)
   unsigned char *buffer;
   unsigned int readcnt;
   player_msghdr_t hdr;
-  hdr.stx = 0x0000;
 
   pthread_detach(pthread_self());
 
@@ -177,15 +176,18 @@ void *client_reader(void* arg)
 
   while(1) 
   {
+    hdr.stx = 0;
     /* wait for the STX */
     while(hdr.stx != PLAYER_STX)
     {
-      if((readcnt = read(cd->socket,&hdr,sizeof(uint16_t))) <= 0)
+      printf("looking for STX:%x:\n",PLAYER_STX);
+      if((readcnt = read(cd->socket,&(hdr.stx),sizeof(uint16_t))) <= 0)
       {
         // client must be gone. fuck 'em
         perror("client_reader(): read() while waiting for STX");
         delete cd;
       }
+      printf("got:%x:\n",hdr.stx);
     }
     puts("got STX");
 
@@ -198,17 +200,23 @@ void *client_reader(void* arg)
       perror("client_reader(): read() while reading header");
       delete cd;
     }
+    //hdr.type = ntohs(hdr.type);
+    //hdr.device = ntohs(hdr.device);
+    hdr.device_index = ntohs(hdr.device_index);
+    hdr.time = ntohl(hdr.time);
+    hdr.timestamp = ntohl(hdr.timestamp);
+    hdr.size = ntohl(hdr.size);
     puts("got HDR");
 
     /* get the payload */
-    hdr.size = ntohs(hdr.size);
     if(hdr.size > READ_BUFFER_SIZE-sizeof(player_msghdr_t))
       printf("WARNING: client's message is too big (%d bytes). "
                       "Buffer overflow likely.", hdr.size);
 
     if((readcnt = read(cd->socket,buffer,hdr.size)) != hdr.size)
     {
-      perror("client_reader: couldn't read client-specified number of bytes");
+      printf("client_reader: tried to read client-specified %d bytes, but "
+                      "only got %d\n", hdr.size, readcnt);
       delete cd;
     }
     puts("got payload");
@@ -535,28 +543,28 @@ int main( int argc, char *argv[] )
 
   // add the devices to the global table
 #ifdef INCLUDE_LASER
-  deviceTable->AddDevice('l', 0, 'r', laserDevice);
+  deviceTable->AddDevice(PLAYER_LASER_CODE, 0, PLAYER_READ_MODE, laserDevice);
 #endif
 #ifdef INCLUDE_SONAR
-  deviceTable->AddDevice('s', 0, 'r', sonarDevice);
+  deviceTable->AddDevice(PLAYER_SONAR_CODE, 0, PLAYER_READ_MODE, sonarDevice);
 #endif
 #ifdef INCLUDE_VISION
-  deviceTable->AddDevice('v', 0, 'r', visionDevice);
+  deviceTable->AddDevice(PLAYER_VISION_CODE, 0, PLAYER_READ_MODE, visionDevice);
 #endif
 #ifdef INCLUDE_POSITION
-  deviceTable->AddDevice('p', 0, 'a', positionDevice);
+  deviceTable->AddDevice(PLAYER_POSITION_CODE, 0, PLAYER_ALL_MODE, positionDevice);
 #endif
 #ifdef INCLUDE_GRIPPER
-  deviceTable->AddDevice('g', 0, 'a', gripperDevice);
+  deviceTable->AddDevice(PLAYER_GRIPPER_CODE, 0, PLAYER_ALL_MODE, gripperDevice);
 #endif
 #ifdef INCLUDE_MISC
-  deviceTable->AddDevice('m', 0, 'r', miscDevice);
+  deviceTable->AddDevice(PLAYER_MISC_CODE, 0, PLAYER_READ_MODE, miscDevice);
 #endif
 #ifdef INCLUDE_PTZ
-  deviceTable->AddDevice('z', 0, 'a', ptzDevice);
+  deviceTable->AddDevice(PLAYER_PTZ_CODE, 0, PLAYER_ALL_MODE, ptzDevice);
 #endif
 #ifdef INCLUDE_AUDIO
-  deviceTable->AddDevice('a', 0, 'a', audioDevice);
+  deviceTable->AddDevice(PLAYER_AUDIO_CODE, 0, PLAYER_ALL_MODE, audioDevice);
 #endif
 
   /* set up to handle SIGPIPE (happens when the client dies) */
