@@ -1,4 +1,4 @@
-SUBDIRS = imap
+SUBDIRS =
 
 if INCLUDE_RTKGUI
 

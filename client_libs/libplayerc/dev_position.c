@@ -141,11 +141,25 @@ int playerc_position_get_geom(playerc_position_t *device)
 int playerc_position_set_speed(playerc_position_t *device, double vx, double vy, double va)
 {
   player_position_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
-  
+
+  memset(&cmd, 0, sizeof(cmd));
   cmd.xspeed = htonl((int) (vx * 1000.0));
   cmd.yspeed = htonl((int) (vy * 1000.0));
   cmd.yawspeed = htonl((int) (va * 180.0 / M_PI));
+
+  return playerc_client_write(device->info.client, &device->info, (char*) &cmd, sizeof(cmd));
+}
+
+
+// Set the target pose
+int playerc_position_set_pose(playerc_position_t *device, double gx, double gy, double ga)
+{
+  player_position_cmd_t cmd;
+
+  memset(&cmd, 0, sizeof(cmd));
+  cmd.xpos = htonl((int) (gx * 1000.0));
+  cmd.ypos = htonl((int) (gy * 1000.0));
+  cmd.yaw = htonl((int) (ga * 180.0 / M_PI));
 
   return playerc_client_write(device->info.client, &device->info, (char*) &cmd, sizeof(cmd));
 }
