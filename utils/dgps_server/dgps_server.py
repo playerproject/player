@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
+# Desc: Application for collecting DGPS (RTCM) corrections from a base
+# station.  Raw packets from the base station are re-transmitted over
+# a multicast UDP socket.
+#
+# Author: Andrew Howard
+# Date: 6 Aug 2003
 
-import os, termios
-from socket import *
-
-
+import os, termios, select
+import socket
 import sys
 import time
 
@@ -30,13 +34,17 @@ class DGPSServer:
     def main(self):
         """Serve up corrections forever."""
 
+        print 'waiting for DGPS data...'
+
+        counter = 0
         while 1:
 
-            self.serial_read()
+            data = self.serial_read()
+            self.udp_write(data)
 
-            # TODO: test for and re-transmit RTCM messages
-            
-            self.udp_write('this is a test\0')
+            counter += 1
+            print 'sending: %d\r' % counter,
+            sys.stdout.flush()
 
         return
 
@@ -44,8 +52,8 @@ class DGPSServer:
     def udp_open(self):
         """Create a multicast UDP socket."""
 
-        self.udp_sock = socket(AF_INET, SOCK_DGRAM)
-        self.udp_sock.setsockopt(IPPROTO_IP, IP_MULTICAST_TTL, 1)
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
         return
 
 
@@ -63,6 +71,8 @@ class DGPSServer:
 
         attr = termios.tcgetattr(self.serial_fd)
         attr[4] = termios.B4800
+        attr[6][termios.VMIN] = 1
+        attr[6][termios.VTIME] = 0
         termios.tcsetattr(self.serial_fd, termios.TCSAFLUSH, attr)
         return
 
@@ -70,10 +80,17 @@ class DGPSServer:
     def serial_read(self):
         """Read packets from the serial port."""
 
-        data = os.read(self.serial_fd, 100)
-        print data
+        p = select.poll()
+        p.register(self.serial_fd, select.POLLIN)
 
-        return
+        # Block until we get one byte
+        data = os.read(self.serial_fd, 1)
+
+        # Read following bytes
+        while p.poll(100):
+            data += os.read(self.serial_fd, 1)
+
+        return data
     
 
 
