@@ -18,6 +18,7 @@ include "pioneer.inc"
 
 
 
+
 #size [120 45]
 #bitmap "bitmaps/hospital.png"
 
@@ -58,9 +59,9 @@ interval_real 100 # real-time milliseconds per update step
     color "blue"
   )
 
-pioneer2dx( name "r0" pose [3.767 11.245 7080.741]  )
-pioneer2dx( name "r1" pose [1.328 11.223 -20.084] )
-pioneer2dx( name "r2" pose [3.675 12.530 -71.250] )
+pioneer2dx( name "r0" pose [3.393 10.480 6998.135] color "blue" )
+pioneer2dx( name "r1" pose [1.328 11.223 -20.084] color "green")
+pioneer2dx( name "r2" pose [1.419 11.927 -71.250] color "magenta" )
 pioneer2dx( name "r3" pose [1.302 7.349 -20.084] )
 pioneer2dx( name "r4" pose [1.309 8.327 -20.084] )
 pioneer2dx( name "r5" pose [1.313 9.257 -20.084] )

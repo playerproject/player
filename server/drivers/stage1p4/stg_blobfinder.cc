@@ -86,23 +86,69 @@ size_t StgBlobfinder::GetData(void* client, unsigned char* dest, size_t len,
       stg_blobfinder_blob_t *blobs = (stg_blobfinder_blob_t*)prop->data;
       size_t bcount = prop->len / sizeof(stg_blobfinder_blob_t);
       
-      PLAYER_TRACE2( "i see %d bytes of blob data: %d blobs", 
-		     (int)prop->len, (int)bcount );
+      // ACTS has blobs sorted by channel (color), and by area within
+      // channel. Player has inherited this awful mess, so we'll
+      // bubble sort the blobs (This could be more efficient. Tony
+      // Hoare would spank me).
+      if( bcount > 1 )
+	{
+	  int change = true;
+	  stg_blobfinder_blob_t tmp;
+	  
+	  while( change )
+	    {
+	      change = false;
+	      
+	      unsigned int b;
+	      for( b=0; b<bcount-1; b++ )
+		{
+		  // if the channels are in the wrong order
+		  if( (blobs[b].channel > blobs[b+1].channel)
+		      // or they are the same channel but the areas are 
+		      // in the wrong order
+		      ||( (blobs[b].channel == blobs[b+1].channel) 
+			  && blobs[b].area < blobs[b+1].area ) )
+		    {		      
+		      //switch the blobs
+		      memcpy( &tmp, &(blobs[b]), sizeof(stg_blobfinder_blob_t) );
+		      memcpy( &(blobs[b]), &(blobs[b+1]), sizeof(stg_blobfinder_blob_t) );
+		      memcpy( &(blobs[b+1]), &tmp, sizeof(stg_blobfinder_blob_t) );
+		      
+		      change = true;
+		    }
+		}
+	    }
+	}      
       
       // limit the number of samples to Player's maximum
-      //if( rcount > PLAYER_BLOBFINDER_MAX_SAMPLES )
-      //rcount = PLAYER_BLOBFINDER_MAX_SAMPLES;
-      
+      if( bcount > PLAYER_BLOBFINDER_MAX_BLOBS )
+	bcount = PLAYER_BLOBFINDER_MAX_BLOBS;      
+     
       player_blobfinder_data_t bfd;
       memset( &bfd, 0, sizeof(bfd) );
       
-      bfd.width = 180;
-      bfd.height = 120;
-      bfd.header[0].index = 0;
-      bfd.header[0].num = bcount;
-      
-      for( int b=0; b<bcount; b++ )
+      // now run through the blobs, packing them into the player buffer
+      // counting the number of blobs in each channel and making entries
+      // in the acts header 
+      int b;
+      for( b=0; b<bcount; b++ )
 	{
+	  // I'm not sure the ACTS-area is really just the area of the
+	  // bounding box, or if it is in fact the pixel count of the
+	  // actual blob. Here it's just the rectangular area.
+	  
+	  // useful debug - leave in
+	  /*
+	    cout << "blob "
+	    << " channel: " <<  (int)blobs[b].channel
+	    << " area: " <<  blobs[b].area
+	    << " left: " <<  blobs[b].left
+	    << " right: " <<  blobs[b].right
+	    << " top: " <<  blobs[b].top
+	    << " bottom: " <<  blobs[b].bottom
+	    << endl;
+	  */
+	  
 	  bfd.blobs[b].x      = htons((uint16_t)blobs[b].xpos);
 	  bfd.blobs[b].y      = htons((uint16_t)blobs[b].ypos);
 	  bfd.blobs[b].left   = htons((uint16_t)blobs[b].left);
@@ -112,8 +158,28 @@ size_t StgBlobfinder::GetData(void* client, unsigned char* dest, size_t len,
 	  
 	  bfd.blobs[b].color = htonl(blobs[b].color);
 	  bfd.blobs[b].area  = htonl(blobs[b].area);
+	  
+	  // increment the count for this channel
+	  bfd.header[blobs[b].channel].num++;
 	}
 
+      // now we finish the header by setting the blob indexes and byte
+      // swapping the counts.
+      int pos = 0;
+      for( int ch=0; ch<PLAYER_BLOBFINDER_MAX_CHANNELS; ch++ )
+	{
+	  bfd.header[ch].index = htons(pos);
+	  pos += bfd.header[ch].num;
+	  
+	  // byte swap the blob count for each channel
+	  PRINT_DEBUG2( "channel: %d blobs: %d\n", ch,  bfd.header[ch].num ); 
+	  bfd.header[ch].num = htons(bfd.header[ch].num);
+	}
+      
+      // and set the image width * height
+      bfd.width = htons((uint16_t)160);
+      bfd.height = htons((uint16_t)120);
+      
       CDevice::PutData( &bfd, sizeof(bfd), 0,0 ); // time gets filled in
     }
   
