@@ -11,6 +11,8 @@
 		 is specified in the worldfile.
     
     License: GNU GPL v.2 or later
+
+    $Id$
 */
 
 #include <stdio.h>
