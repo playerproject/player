@@ -264,7 +264,7 @@ int player_request(player_connection_t* conn,
 
   bzero(&hdr,sizeof(hdr));
   /* eat data until the response comes back */
-  while((hdr.type != PLAYER_MSGTYPE_RESP) || 
+  while((hdr.type != PLAYER_MSGTYPE_RESP_ACK) || 
         (hdr.device != device) ||
         (hdr.device_index != device_index))
   {

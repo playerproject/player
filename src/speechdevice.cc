@@ -46,7 +46,6 @@
 #include <string.h>  /* for strncpy(3),memcpy(3) */
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h>  /* for pthread stuff */
-#include <signal.h>  /* for sigblock */
 #include <pubsub_util.h>
 
 #ifdef PLAYER_SOLARIS
@@ -352,11 +351,6 @@ RunSpeechThread(void* speechdevice)
                     stderr);
     pthread_exit(NULL);
   }
-
-#ifdef PLAYER_LINUX
-  sigblock(SIGINT);
-  sigblock(SIGALRM);
-#endif
 
   /* make sure we kill Festival on exiting */
   pthread_cleanup_push(QuitFestival,sd);

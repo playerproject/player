@@ -67,14 +67,13 @@ class CLaserDevice : public CDevice
     int Setup();
     int Shutdown();
     void Run();
-      
 
-    // Client interface
-    //
-    size_t GetConfig( unsigned char *, size_t maxsize);
-    void PutConfig( unsigned char *, size_t maxsize);
-    
   private:
+
+    // Check for new config request, and fill in private fields appropriately
+    // returns Pointer to the client expecting the reply if there was a 
+    // request, NULL otherwise
+    CClientData* ParseConfig();
 
     // Dummy main (just calls real main)
     //
@@ -161,17 +160,6 @@ class CLaserDevice : public CDevice
     //
     int m_laser_fd;           
 
-    // Config data
-    // PutConfig sets the data and the size, and GetConfig reads and zeros it
-    //
-    ssize_t m_config_size;
-    player_laser_config_t m_config;
-
-    // Most recent scan data
-    // PutData sets the data, GetData reads it
-    //
-    //player_laser_data_t m_data;
-    
     // Scan width and resolution
     //
     int m_scan_width, m_scan_res;

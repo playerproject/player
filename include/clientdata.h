@@ -33,6 +33,9 @@
 #include <pthread.h>
 #include <messages.h>
 
+// get around circular inclusion;
+class CDevice;
+
 // keep a linked list of these
 class CDeviceSubscription
 {
@@ -41,6 +44,7 @@ class CDeviceSubscription
     unsigned short code;
     unsigned short index;
     unsigned char access;
+    CDevice* devicep;
 
     // RTV allow clients to consume data from devices.
     // if this is set, ConsumeData() is called instead of GetData()
@@ -51,7 +55,12 @@ class CDeviceSubscription
 
     CDeviceSubscription* next;
 
-    CDeviceSubscription() { next = NULL; access = 'e'; }
+    CDeviceSubscription() 
+    { 
+      devicep = NULL; 
+      next = NULL; 
+      access = PLAYER_ERROR_MODE; 
+    }
 };
 
 typedef enum
@@ -68,13 +77,9 @@ class CClientData
 {
   private:
     // these are locked by access:
-    CDeviceSubscription* requested;
-    int numsubs;
-
     char auth_key[PLAYER_KEYLEN];
     unsigned char *readbuffer;
     unsigned char *writebuffer;
-    unsigned char *replybuffer;
     player_msghdr_t hdrbuffer;
     
     // added this so Player can manage multiple robots in Stage mode
@@ -93,7 +98,8 @@ class CClientData
     void RemoveBlanks();  
     void RemoveRequests();
     void UpdateRequested(player_device_req_t req);
-    bool CheckPermissions(unsigned short code, unsigned short index);
+    bool CheckWritePermissions(unsigned short code, unsigned short index);
+    bool CheckOpenPermissions(unsigned short code, unsigned short index);
     unsigned char FindPermission( unsigned short code, unsigned short index);
     void Unsubscribe( unsigned short code, unsigned short index );
     int Subscribe( unsigned short code, unsigned short index );
@@ -106,23 +112,25 @@ class CClientData
     pthread_mutex_t access;
 
     // these are locked by access:
+    CDeviceSubscription* requested;
+    int numsubs;
+    unsigned char *replybuffer;
     bool auth_pending;
     unsigned char mode;
     unsigned short frequency;  // Hz
     bool datarequested;
+    bool markedfordeletion;
 
     // this is used in the ClientWriterThread to decide when to write
     double last_write;
 
-    // use this to lock the socket for output
-    pthread_mutex_t socketwrite;
     int socket;
 
     CClientData(char* key, int port);
     ~CClientData();
 
     int HandleRequests(player_msghdr_t hdr, unsigned char *payload,
-                        unsigned int payload_size);
+                        size_t payload_size);
 
     int Read();
     int Write();
