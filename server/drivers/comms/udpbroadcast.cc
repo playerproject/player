@@ -109,7 +109,8 @@ class UDPBroadcast : public CDevice
   private: int PushQueue(void *msg, int len);
 
   // Pop a message from a particular client's queue
-  private: int PopQueue(void *client, void *msg, int len);
+  private: int PopQueue(void *client, void *msg, int len, 
+                        struct timeval* timestamp);
   
   // Initialise the broadcast sockets
   private: int SetupSockets();
@@ -130,6 +131,7 @@ class UDPBroadcast : public CDevice
     int size, count, start, end;
     int *msglen;
     void **msg;
+    struct timeval* timestamp;
   };
 
   // Max messages to have in any given queue
@@ -181,7 +183,7 @@ void UDPBroadcast_Register(DriverTable* table)
 UDPBroadcast::UDPBroadcast(char* interface, ConfigFile* cf, int section)
     : CDevice(0,0,0,0)
 {
-  this->max_queue_size = 100;
+  this->max_queue_size = 160;
   this->read_socket = 0;
   this->write_socket = 0;
 
@@ -299,11 +301,17 @@ size_t UDPBroadcast::GetData(void* client, unsigned char* dest, size_t len,
                              uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   size_t dlen;
+  struct timeval ts;
   
   // Pop the next waiting packet from the queue and send it back
   // to the client.
   Lock();
-  dlen = PopQueue(client, dest, len);
+  dlen = PopQueue(client, dest, len, &ts);
+  if(dlen)
+  {
+    *timestamp_sec = ts.tv_sec;
+    *timestamp_usec = ts.tv_usec;
+  }
   Unlock();
 
   PLAYER_TRACE3("client %p got %d bytes [%s]", client, dlen, dest);
@@ -378,6 +386,15 @@ int UDPBroadcast::AddQueue(void *client)
 {
   queue_t *queue;
 
+  // first, check if we've already got a queue for this client.  this can
+  // happen when a client subscribes read/write, because that causes our
+  // Subscribe() to be called twice.
+  for(int i=0;i<this->qlist_count;i++)
+  {
+    if(this->qlist[i]->client == client)
+      return(0);
+  }
+
   PLAYER_TRACE1("adding queue for client %p", client);
 
   if (this->qlist_count == this->qlist_size)
@@ -392,8 +409,9 @@ int UDPBroadcast::AddQueue(void *client)
   queue->size = 10;
   queue->count = 0;
   queue->start = queue->end = 0;
-  queue->msg = (void**) malloc(queue->size * sizeof(void*));
-  queue->msglen = (int*) malloc(queue->size * sizeof(int));
+  queue->msg = (void**) calloc(queue->size, sizeof(void*));
+  queue->msglen = (int*) calloc(queue->size, sizeof(int));
+  queue->timestamp = (struct timeval*) calloc(queue->size, sizeof(struct timeval));
   
   this->qlist[this->qlist_count++] = queue;
   
@@ -413,14 +431,24 @@ int UDPBroadcast::DelQueue(void *client)
   index = FindQueue(client);
   if (index < 0)
   {
-    PLAYER_ERROR1("queue for client %p not found", client);
-    return 1;
-   }
+    // this is likely OK; it can happen when a client was subscribed
+    // read/write and then unsubscribed, which causes our Unsubscribe() to be
+    // called twice.
+    //PLAYER_ERROR1("queue for client %p not found", client);
+    return 0;
+  }
 
+  for(int i=0;i<this->qlist[index]->count;i++)
+    free(this->qlist[index]->msg[i]);
+  free(this->qlist[index]->msg);
+  free(this->qlist[index]->msglen);
+  free(this->qlist[index]->timestamp);
   free(this->qlist[index]);
+
   memmove(this->qlist + index, this->qlist + index + 1,
-          (this->qlist_count - 1) * sizeof(this->qlist[0]));
+          (this->qlist_count - (index + 1)) * sizeof(this->qlist[0]));
   this->qlist_count--;
+
   
   return 0;
 }
@@ -466,25 +494,45 @@ int UDPBroadcast::PushQueue(void *msg, int len)
 {
   int i;
   queue_t *queue;
+  struct timeval curr;
   
+  // first, get the current time in order to stamp the message
+  GlobalTime->GetTime(&curr);
+
   for (i = 0; i < this->qlist_count; i++)
   {
     queue = this->qlist[i];
 
     // Resize queue if we've run out of space.
-    if (queue->count ==  queue->size)
+    if(queue->count == queue->size)
     {
-      if (queue->size >= this->max_queue_size)
+      if(queue->size >= this->max_queue_size)
         continue;
       queue->size *= 2;
-      queue->msg = (void**) realloc(queue->msg, queue->size * sizeof(void*));
-      queue->msglen = (int*) realloc(queue->msglen, queue->size * sizeof(int));
+      queue->msg = (void**)realloc(queue->msg, queue->size * sizeof(void*));
+      queue->msglen = (int*)realloc(queue->msglen, queue->size * sizeof(int));
+      queue->timestamp = (struct timeval*)realloc(queue->timestamp, queue->size * sizeof(struct timeval));
+
+      // now we need to move everything between the start pointers and the end
+      // of the old buffers to the end of the new buffers
+      memmove(queue->msg + (queue->size/2) + queue->start,
+              queue->msg + queue->start,
+              ((queue->size/2) - queue->start) * sizeof(void*));
+      memmove(queue->msglen + (queue->size/2) + queue->start,
+              queue->msglen + queue->start,
+              ((queue->size/2) - queue->start) * sizeof(int));
+      memmove(queue->timestamp + (queue->size/2) + queue->start,
+              queue->timestamp + queue->start,
+              ((queue->size/2) - queue->start) * sizeof(struct timeval));
+      // now move the start pointer
+      queue->start += queue->size/2;
     }
     assert(queue->count < queue->size);
 
     queue->msg[queue->end] = malloc(len);
     memcpy(queue->msg[queue->end], msg, len);
     queue->msglen[queue->end] = len;
+    queue->timestamp[queue->end] = curr;
     
     queue->end = (queue->end + 1) % queue->size;
     queue->count += 1;
@@ -496,7 +544,8 @@ int UDPBroadcast::PushQueue(void *msg, int len)
 
 ///////////////////////////////////////////////////////////////////////////
 // Pop a message from a particular client's queue
-int UDPBroadcast::PopQueue(void *client, void *msg, int len)
+int UDPBroadcast::PopQueue(void *client, void *msg, int len, 
+                           struct timeval* timestamp)
 {
   int index, msglen;
   queue_t *queue;
@@ -512,10 +561,12 @@ int UDPBroadcast::PopQueue(void *client, void *msg, int len)
   if (queue->count == 0)
     return 0;
   
+
   msglen = queue->msglen[queue->start];
   assert(msglen <= len);
   memcpy(msg, queue->msg[queue->start], msglen);
   free(queue->msg[queue->start]);
+  *timestamp = queue->timestamp[queue->start];
 
   queue->start = (queue->start + 1) % queue->size;
   queue->count -= 1;

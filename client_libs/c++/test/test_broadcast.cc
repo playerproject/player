@@ -31,13 +31,16 @@ test_broadcast(PlayerClient* client, int index)
   PASS();
   printf("DRIVER: %s\n", bp.driver_name);
 
-  TEST("send message");
-  if(bp.Write(msg, strlen(msg)+1) >= 0)
-    PASS();
-  else
+  for(int i=0;i<1;i++)
   {
-    FAIL();
-    return(-1);
+    TEST("send message");
+    if(bp.Write(msg, strlen(msg)+1) >= 0)
+      PASS();
+    else
+    {
+      FAIL();
+      return(-1);
+    }
   }
 
   sleep(1);
@@ -58,7 +61,7 @@ test_broadcast(PlayerClient* client, int index)
       bp.Print();
       
       TEST("compare messages");
-      if(!strncmp(msg,(const char*) bp.msg,strlen(msg)))
+      if(!strncmp(msg,(const char*) bp.msg[0],strlen(msg)))
       {
         PASS();
         break;
@@ -72,11 +75,23 @@ test_broadcast(PlayerClient* client, int index)
   }
 
   TEST("got message");
-  if (bp.msg_len == 0)
+  if(bp.msg_num == 0)
   {
     FAIL();
     return(-1);
   }
+  PASS();
+
+  TEST("deleting messages");
+  for(int i=bp.msg_num-1; i>=0; i--)
+  {
+    if(bp.Delete(0))
+    {
+      FAIL();
+      return(-1);
+    }
+  }
+  PASS();
 
   TEST("unsubscribing");
   if((bp.ChangeAccess(PLAYER_CLOSE_MODE,&access) < 0) ||

@@ -1666,11 +1666,9 @@ interface. */
 
 #define PLAYER_WIFI_MAX_LINKS 16
 
-/** [Data] */
-/**
-The {\tt wifi} interface returns data regarding the state of a wireless
+/** [Data]*/
+/** The {\tt wifi} interface returns data regarding the state of a wireless
 network interface; the format is: */
-
 typedef struct
 {
   /** IP address of destination. */
@@ -1710,8 +1708,7 @@ sensors. */
 #define PLAYER_IR_POWER_REQ  ((uint8_t)2)
 
 /** [Data] */
-/**
-The {\tt ir} interface returns range readings from the IR array; the format 
+/** The {\tt ir} interface returns range readings from the IR array; the format 
 is: */
 typedef struct player_ir_data
 {
