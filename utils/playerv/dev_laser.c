@@ -162,8 +162,10 @@ void laser_update_config(laser_t *laser)
     if (playerc_laser_set_config(laser->proxy, min, max, res, intensity) != 0)
       PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
 
-  if (playerc_laser_get_config(laser->proxy, &min, &max, &res, &intensity) != 0)
-    PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+  // Cant call this every time without stuffing up the main read loop.
+  // Need to fix this.
+  //if (playerc_laser_get_config(laser->proxy, &min, &max, &res, &intensity) != 0)
+  //  PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
 
   rtk_menuitem_check(laser->res025_item, (res == 25));
   rtk_menuitem_check(laser->res050_item, (res == 50));
