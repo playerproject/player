@@ -134,6 +134,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 {
   unsigned short requesttype = 0;
   bool unlock_pending=false;
+  bool devlistrequest=false;
   bool devicerequest=false;
   CDevice* devicep;
   player_device_req_t req;
@@ -209,6 +210,15 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                   ntohs(((player_device_req_t*)payload)->subtype);
           switch(subtype)
           {
+            // Process device list requests.
+            case PLAYER_PLAYER_DEVLIST_REQ:
+              devlistrequest = true;
+              HandleListRequest((player_device_devlist_t*) payload,
+                                (player_device_devlist_t*) replybuffer +
+                                sizeof(player_msghdr_t));
+              requesttype = PLAYER_MSGTYPE_RESP_ACK;
+              break;
+              
             case PLAYER_PLAYER_DEV_REQ:
               devicerequest = true;
               if(payload_size < sizeof(player_device_req_t))
@@ -387,9 +397,14 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     reply_hdr.device_index = htons(hdr.device_index);
     reply_hdr.reserved = (uint32_t)0;
 
+    /* if it was a player device list request... */
+    if(devlistrequest)
+    {
+      replysize = sizeof(player_device_devlist_t);
+    }
     /* if it was a player device request, then the reply should
      * reflect what permissions were granted for the indicated devices */
-    if(devicerequest)
+    else if(devicerequest)
     {
       req = *((player_device_req_t*)payload);
 
@@ -504,6 +519,33 @@ void CClientData::MotorStop()
     devicep->PutCommand((unsigned char*)&command, sizeof(command));
   }
 }
+
+
+// Handle device list requests.
+void CClientData::HandleListRequest(player_device_devlist_t *req,
+                                    player_device_devlist_t *rep)
+{
+  CDeviceEntry *entry;
+  
+  rep->subtype = PLAYER_PLAYER_DEVLIST_REQ;
+  rep->device_count = 0;
+
+  for (entry = deviceTable->GetFirstEntry(); entry != NULL;
+       entry = deviceTable->GetNextEntry(entry))
+  {
+    rep->devices[rep->device_count].code = htons(entry->id.code);
+    rep->devices[rep->device_count].index = htons(entry->id.index);
+    rep->devices[rep->device_count].port = htons(entry->id.port);
+    rep->device_count++;
+  }
+
+  // Do some byte swapping.
+  rep->subtype = htons(rep->subtype);
+  rep->device_count = htons(rep->device_count);
+  
+  return;
+}
+
 
 void CClientData::UpdateRequested(player_device_req_t req)
 {

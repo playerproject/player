@@ -109,6 +109,9 @@
 #define PLAYER_CLOSE_MODE 'c'
 #define PLAYER_ERROR_MODE 'e'
 
+/* The maximum number of devices the server will support. */
+#define PLAYER_MAX_DEVICES 64
+
 /* the largest possible message that the server will currently send
  * or receive */
 #define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
@@ -160,6 +163,23 @@ typedef struct
  * The "Player" device
  */
 
+/* Get the list of available interfaces.
+ * To request the list, set the subtype to PLAYER_PLAYER_DEVLIST_REQ
+ * and leave the rest of the fields blank.  Player will return a
+ * packet with subtype PLAYER_PLAYER_DEVLIST_REQ with the fields
+ * filled in. */
+typedef struct
+{
+  /* Subtype; must be PLAYER_PLAYER_DEVLIST_REQ. */
+  uint16_t subtype;
+
+  /* The list of available devices. */
+  uint16_t device_count;
+  player_device_id_t devices[PLAYER_MAX_DEVICES];
+  
+} __attribute__ ((packed)) player_device_devlist_t;
+
+
 /* the format of a "device request" ioctl to Player */
 typedef struct
 {
@@ -204,11 +224,13 @@ typedef struct
   uint16_t subtype;
 } __attribute__ ((packed)) player_device_data_req_t;
 
-#define PLAYER_PLAYER_DEV_REQ     ((uint16_t)1)
-#define PLAYER_PLAYER_DATA_REQ     ((uint16_t)2)
-#define PLAYER_PLAYER_DATAMODE_REQ ((uint16_t)3)
-#define PLAYER_PLAYER_DATAFREQ_REQ ((uint16_t)4)
-#define PLAYER_PLAYER_AUTH_REQ     ((uint16_t)5)
+
+#define PLAYER_PLAYER_DEVLIST_REQ  ((uint16_t)1)
+#define PLAYER_PLAYER_DEV_REQ      ((uint16_t)2)
+#define PLAYER_PLAYER_DATA_REQ     ((uint16_t)3)
+#define PLAYER_PLAYER_DATAMODE_REQ ((uint16_t)4)
+#define PLAYER_PLAYER_DATAFREQ_REQ ((uint16_t)5)
+#define PLAYER_PLAYER_AUTH_REQ     ((uint16_t)6)
 /*************************************************************************/
 
 /*************************************************************************/

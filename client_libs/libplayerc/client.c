@@ -259,6 +259,41 @@ int playerc_client_deldevice(playerc_client_t *client, playerc_device_t *device)
 }
 
 
+// Get the list of available device ids.  The data is written into the
+// proxy structure rather than returned to the caller.
+int playerc_client_get_devlist(playerc_client_t *client)
+{
+  int i, len;
+  player_device_devlist_t config;
+
+  config.subtype = htons(PLAYER_PLAYER_DEVLIST_REQ);
+
+  len = playerc_client_request(client, NULL,
+                               &config, sizeof(config), &config, sizeof(config));
+  if (len < 0)
+    return -1;
+  if (len != sizeof(config))
+  {
+    PLAYERC_ERR2("reply to devlist request has incorrect length (%d != %d)", len, sizeof(config));
+    return -1;
+  }
+
+  // Do some byte swapping.
+  config.device_count = ntohs(config.device_count);
+  for (i = 0; i < config.device_count; i++)
+  {
+    client->ids[i].code = ntohs(config.devices[i].code);
+    client->ids[i].index = ntohs(config.devices[i].index);
+    client->ids[i].port = ntohs(config.devices[i].port);
+  }
+  client->id_count = config.device_count;
+
+  printf("devlist returned %d devices\n", client->id_count);
+
+  return 0;
+}
+
+
 // Subscribe to a device
 int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access)
 {
