@@ -477,8 +477,10 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     reply_hdr.timestamp_usec = reply_hdr.time_usec;
     memcpy(replybuffer,&reply_hdr,sizeof(player_msghdr_t));
 
-    FillWriteBuffer(replybuffer,0,replysize+sizeof(player_msghdr_t));
-    if(Write(replysize+sizeof(player_msghdr_t)) < 0)
+    FillWriteBuffer(replybuffer,
+                    leftover_size,
+                    replysize+sizeof(player_msghdr_t));
+    if(Write(leftover_size+replysize+sizeof(player_msghdr_t)) < 0)
       return(-1);
   }
 
