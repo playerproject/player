@@ -78,6 +78,8 @@
 #define PLAYER_WAVEFORM_CODE	   ((uint16_t)24)  // fetch raw waveforms
 #define PLAYER_LOCALIZE_CODE   ((uint16_t)25)  // localization
 #define PLAYER_MCOM_CODE           ((uint16_t)26)  // multicoms
+#define PLAYER_SOUND_CODE	   ((uint16_t)27) // sound file playback
+
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -108,6 +110,7 @@
 #define PLAYER_WAVEFORM_STRING       "waveform"
 #define PLAYER_LOCALIZE_STRING   "localize"
 #define PLAYER_MCOM_STRING           "mcom"
+#define PLAYER_SOUND_STRING	    "sound"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -1967,4 +1970,11 @@ typedef struct player_mcom_return
  ** end section
  *************************************************************************/
 
+/**
+ * Sound interface. Use this interface to playback a sound through the robot
+ * It takes an index of a pre-recorded sound file as argument to the command
+ */
+typedef struct player_sound_cmd {
+  uint16_t index;
+} __attribute__ ((packed)) player_sound_cmd_t;
 #endif /* PLAYER_H */

@@ -88,6 +88,7 @@ void P2OSdio_Register(DriverTable* table);
 void P2OSBumper_Register(DriverTable* table);
 void P2OSPosition_Register(DriverTable* table);
 void P2OSSonar_Register(DriverTable* table);
+void P2OSSound_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_LINUXWIFI
@@ -169,6 +170,7 @@ player_interface_t interfaces[] = {
   {PLAYER_WAVEFORM_CODE, PLAYER_WAVEFORM_STRING, "wave_audio"},
   {PLAYER_LOCALIZE_CODE, PLAYER_LOCALIZE_STRING, "adaptive_mcl"},
   {PLAYER_MCOM_CODE, PLAYER_MCOM_STRING, "lifomcom"},
+  {PLAYER_SOUND_CODE, PLAYER_SOUND_STRING, "p2os_sound"},
   {0,NULL,NULL}
 };
 
@@ -245,6 +247,7 @@ register_devices()
   P2OSBumper_Register(driverTable);
   P2OSPosition_Register(driverTable);
   P2OSSonar_Register(driverTable);
+  P2OSSound_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FIXEDTONES

@@ -70,6 +70,8 @@
 #define TTY2 42
 #define GETAUX 43
 #define JOYDRIVE 47
+#define SOUND 90
+#define PLAYLIST 91
 
 /* gripper stuff */
 #define GRIPopen   1
@@ -103,6 +105,7 @@ typedef struct
 {
   player_position_cmd_t position;
   player_gripper_cmd_t gripper;
+  player_sound_cmd_t sound;
 } __attribute__ ((packed)) player_p2os_cmd_t;
 
 // this is here because we need the above typedef's before including it.

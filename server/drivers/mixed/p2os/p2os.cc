@@ -613,12 +613,18 @@ P2OS::Main()
   unsigned char config[P2OS_CONFIG_BUFFER_SIZE];
   unsigned char motorcommand[4];
   unsigned char gripcommand[4];
+  unsigned char soundcommand[4];
   P2OSPacket motorpacket; 
-  P2OSPacket grippacket; 
+  P2OSPacket grippacket;
+  P2OSPacket soundpacket;
+  
   short speedDemand=0, turnRateDemand=0;
   char gripperCmd=0,gripperArg=0;
   bool newmotorspeed, newmotorturn;
   bool newgrippercommand;
+  bool newsoundplay;
+  unsigned short soundindex=0;
+  
   double leftvel, rightvel;
   double rotational_term;
   unsigned short absspeedDemand, absturnRateDemand;
@@ -636,7 +642,9 @@ P2OS::Main()
   CDevice* sonarp = deviceTable->GetDevice(id);
   id.code = PLAYER_POSITION_CODE;
   CDevice* positionp = deviceTable->GetDevice(id);
-
+  id.code = PLAYER_SOUND_CODE;
+  CDevice* soundp = deviceTable->GetDevice(id);
+  
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;
 
@@ -969,6 +977,13 @@ P2OS::Main()
     gripperCmd = command.gripper.cmd;
     gripperArg = command.gripper.arg;
 
+    /* check for sound play command */
+    newsoundplay = false;
+    if (command.sound.index) {
+      newsoundplay = true;
+      soundindex = ntohs(command.sound.index);
+    }
+    
     /* NEXT, write commands */
     if(direct_wheel_vel_control)
     {
@@ -1034,12 +1049,15 @@ P2OS::Main()
           motorcommand[1] = 0x1B;
 
         absspeedDemand = (unsigned short)abs(speedDemand);
-        if(absspeedDemand < MOTOR_MAX_SPEED)
-          *(unsigned short*)&motorcommand[2] = absspeedDemand;
+        if(absspeedDemand < MOTOR_MAX_SPEED) {
+          motorcommand[2] = absspeedDemand & 0x00FF;
+	  motorcommand[3] = (absspeedDemand & 0xFF00) >> 8;
+	}
         else
         {
           puts("Speed demand threshholded!");
-          *(unsigned short*)&motorcommand[2] = (unsigned short)MOTOR_MAX_SPEED;
+          motorcommand[2] = MOTOR_MAX_SPEED & 0x00FF;
+	  motorcommand[3] = (MOTOR_MAX_SPEED & 0xFF00) >> 8;
         }
       }
       else
@@ -1051,13 +1069,15 @@ P2OS::Main()
           motorcommand[1] = 0x1B;
 
         absturnRateDemand = (unsigned short)abs(turnRateDemand);
-        if(absturnRateDemand < MOTOR_MAX_TURNRATE)
-          *(unsigned short*)&motorcommand[2] = absturnRateDemand;
+        if(absturnRateDemand < MOTOR_MAX_TURNRATE) {
+          motorcommand[2] = absturnRateDemand & 0x00FF;
+	  motorcommand[3] = (absturnRateDemand & 0xFF00) >> 8;
+	}
         else
         {
           puts("Turn rate demand threshholded!");
-          *(unsigned short*)&motorcommand[2] = 
-            (unsigned short)MOTOR_MAX_TURNRATE;
+         motorcommand[2] = MOTOR_MAX_TURNRATE & 0x00FF;
+	 motorcommand[3] = (MOTOR_MAX_TURNRATE & 0xFF00) >> 8;
         }
       }
     }
@@ -1071,7 +1091,8 @@ P2OS::Main()
       // gripper command 
       gripcommand[0] = GRIPPER;
       gripcommand[1] = 0x3B;
-      *(unsigned short*)&gripcommand[2] = gripperCmd;
+      gripcommand[2] = gripperCmd & 0x00FF;
+      gripcommand[3] = (gripperCmd & 0xFF00) >> 8;
       grippacket.Build( gripcommand, 4);
       SendReceive(&grippacket);
 
@@ -1080,12 +1101,33 @@ P2OS::Main()
       {
         gripcommand[0] = GRIPPERVAL;
         gripcommand[1] = 0x3B;
-        *(unsigned short*)&gripcommand[2] = (unsigned short)gripperArg;
+        gripcommand[2] = gripperArg & 0x00FF;
+	gripcommand[3] = (gripperArg & 0xFF00) >> 8;
         grippacket.Build( gripcommand, 4);
         SendReceive(&grippacket);
       }
     }
 
+    // send sound play command down
+    if (newsoundplay) {
+      soundcommand[0] = SOUND;
+      soundcommand[1] = 0x3B;
+      soundcommand[2] = soundindex & 0x00FF;
+      soundcommand[3] = (soundindex & 0xFF00) >> 8;
+      soundpacket.Build(soundcommand,4);
+      SendReceive(&soundpacket);
+      //printf("Playing sound: %hu\n", soundindex);
+      fflush(stdout);
+      // now reset command to 0
+      player_sound_cmd_t sound_cmd;
+      sound_cmd.index = 0;
+      // TODO: who should really be the client here?
+      soundp->PutCommand(this,(unsigned char*)(&sound_cmd), 
+                              sizeof(sound_cmd));
+      soundindex = 0;
+    }
+      
+        
   }
   pthread_exit(NULL);
 }
