@@ -67,12 +67,20 @@ extern "C" {
  * Useful constants (re-defined here so SWIG can pick them up easily
  **************************************************************************/
 
+/** The device access modes */
 #define PLAYERC_READ_MODE PLAYER_READ_MODE
 #define PLAYERC_WRITE_MODE PLAYER_WRITE_MODE
 #define PLAYERC_ALL_MODE PLAYER_ALL_MODE
 #define PLAYERC_CLOSE_MODE PLAYER_CLOSE_MODE
 #define PLAYERC_ERROR_MODE PLAYER_ERROR_MODE
   
+/** The valid data delivery modes */
+#define PLAYERC_DATAMODE_PUSH_ALL PLAYER_DATAMODE_PUSH_ALL 
+#define PLAYERC_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL_ALL 
+#define PLAYERC_DATAMODE_PUSH_NEW PLAYER_DATAMODE_PUSH_NEW 
+#define PLAYERC_DATAMODE_PULL_NEW PLAYER_DATAMODE_PULL_NEW 
+#define PLAYERC_DATAMODE_PUSH_ASYNC PLAYER_DATAMODE_PUSH_ASYNC
+
 
 /***************************************************************************
  * Array sizes
