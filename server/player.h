@@ -1886,6 +1886,28 @@ typedef struct
 // no commands or replies for descartes
 /*************************************************************************/
 
+/*************************************************************************/
+/*
+ * RFLEX drivers - for RWI robots, but does not require mobility
+ *
+ * All RFLEX devices use the same struct for sending config commands.
+ * The request numbers are found near the devices to which they
+ * pertain.
+ *
+ * TODO: this struct should be renamed in an interface-specific way and moved
+ *       up into the section(s) for which is pertains.  also, request type
+ *       codes should be claimed for each one (requests are now part of the
+ *       device interface)
+ */
+
+typedef struct
+{
+  uint8_t   request;
+  uint8_t   value;
+} __attribute__ ((packed)) player_rflex_config_t;
+/*************************************************************************/
+
+
 /*************************************************************************
  ** begin section dio
  *************************************************************************/
