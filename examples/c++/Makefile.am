@@ -20,7 +20,8 @@ noinst_PROGRAMS = randomwalk \
                   vfh \
                   manualGrip \
                   shapetracker \
-                  simulation_poke
+                  simulation_poke \
+                  recharge
 
 #multilogger
 #forage
@@ -47,6 +48,7 @@ vfh_SOURCES = vfh.cc
 swarmbot_target_SOURCES = swarmbot_target.cc
 manualGrip_SOURCES = manualGrip.cc
 shapetracker_SOURCES = shapetracker.cc
+recharge_SOURCES = recharge.cc
 #goto_SOURCES = goto.cc
 #forage_SOURCES = forage.cc
 #multilogger_SOURCES = multilogger.cc
