@@ -13,8 +13,6 @@
 int test_wifi(playerc_client_t *client, int index)
 {
   int i, t;
-  //double i_px, i_py, i_pa;
-  //double f_px, f_py, f_pa;
   void *rdevice;
   playerc_wifi_t *device;
 
@@ -45,7 +43,7 @@ int test_wifi(playerc_client_t *client, int index)
       for (i = 0; i < device->link_count; i++)
       {
         printf("wifi: [%s] [%4d] [%4d] [%4d]\n", device->links[i].ip,
-               device->links[i].link, device->links[i].level, device->links[i].noise);
+               device->links[i].qual, device->links[i].level, device->links[i].noise);
       }
     }
     else
