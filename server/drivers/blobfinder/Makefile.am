@@ -1,4 +1,4 @@
-SUBDIRS = cmvision
+SUBDIRS = cmvision upcbarcode
 
 noinst_LIBRARIES = @ACTS_LIB@ 
 
