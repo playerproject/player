@@ -141,24 +141,24 @@ Trogdor::Setup()
   fflush(stdout);
 
   // open it.  non-blocking at first, in case there's no robot
-  if((fd = open(serial_port, O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+  if((this->fd = open(serial_port, O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
     PLAYER_ERROR1("open() failed: %s", strerror(errno));
     return(-1);
   }  
  
-  if(tcflush(fd, TCIFLUSH ) < 0 )
+  if(tcflush(this->fd, TCIFLUSH) < 0 )
   {
     PLAYER_ERROR1("tcflush() failed: %s", strerror(errno));
-    close(fd);
-    fd = -1;
+    close(this->fd);
+    this->fd = -1;
     return(-1);
   }
-  if(tcgetattr(fd, &term) < 0 )
+  if(tcgetattr(this->fd, &term) < 0 )
   {
     PLAYER_ERROR1("tcgetattr() failed: %s", strerror(errno));
-    close(fd);
-    fd = -1;
+    close(this->fd);
+    this->fd = -1;
     return(-1);
   }
   
@@ -168,11 +168,11 @@ Trogdor::Setup()
   cfsetispeed(&term, B57600);
   cfsetospeed(&term, B57600);
   
-  if(tcsetattr(fd, TCSAFLUSH, &term) < 0 )
+  if(tcsetattr(this->fd, TCSAFLUSH, &term) < 0 )
   {
     PLAYER_ERROR1("tcsetattr() failed: %s", strerror(errno));
-    close(fd);
-    fd = -1;
+    close(this->fd);
+    this->fd = -1;
     return(-1);
   }
 
@@ -180,41 +180,54 @@ Trogdor::Setup()
   
   // initialize the robot
   unsigned char initstr[3];
-
   initstr[0] = TROGDOR_INIT1;
   initstr[1] = TROGDOR_INIT2;
   initstr[2] = TROGDOR_INIT3;
+  unsigned char deinitstr[1];
+  deinitstr[0] = TROGDOR_DEINIT;
 
   if(WriteBuf(initstr,sizeof(initstr)) < 0)
   {
-    PLAYER_ERROR("failed on write of initialization string");
-    close(fd);
-    fd = -1;
-    return(1);
+    PLAYER_WARN("failed to initialize robot; i'll try to de-initializate it");
+    if(WriteBuf(deinitstr,sizeof(deinitstr)) < 0)
+    {
+      PLAYER_ERROR("failed on write of de-initialization string");
+      close(this->fd);
+      this->fd = -1;
+      return(1);
+    }
+    if(WriteBuf(initstr,sizeof(initstr)) < 0)
+    {
+      PLAYER_ERROR("failed on 2nd write of initialization string; giving up");
+      close(this->fd);
+      this->fd = -1;
+      return(1);
+    }
   }
+
 
   /* try to get current odometry, just to make sure we actually have a robot */
   if(GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
   {
     PLAYER_ERROR("failed to get odometry");
-    close(fd);
-    fd = -1;
+    close(this->fd);
+    this->fd = -1;
     return(1);
   }
 
   /* ok, we got data, so now set NONBLOCK, and continue */
-  if((flags = fcntl(fd, F_GETFL)) < 0)
+  if((flags = fcntl(this->fd, F_GETFL)) < 0)
   {
     PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
-    close(fd);
-    fd = -1;
+    close(this->fd);
+    this->fd = -1;
     return(1);
   }
-  if(fcntl(fd, F_SETFL, flags ^ O_NONBLOCK) < 0)
+  if(fcntl(this->fd, F_SETFL, flags ^ O_NONBLOCK) < 0)
   {
     PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
-    close(fd);
-    fd = -1;
+    close(this->fd);
+    this->fd = -1;
     return(1);
   }
   fd_blocking = true;
@@ -234,21 +247,26 @@ Trogdor::Shutdown()
 {
   unsigned char deinitstr[1];
 
-  if(fd == -1)
+  if(this->fd == -1)
     return(0);
 
   StopThread();
 
+  // the robot is stopped by the thread cleanup function StopRobot(), which
+  // is called as a result of the above StopThread()
+  /*
   if(SetVelocity(0,0) < 0)
     PLAYER_ERROR("failed to stop robot while shutting down");
+   */
 
+  usleep(TROGDOR_DELAY_US);
   deinitstr[0] = TROGDOR_DEINIT;
   if(WriteBuf(deinitstr,sizeof(deinitstr)) < 0)
     PLAYER_ERROR("failed to deinitialize connection to robot");
 
-  if(close(fd))
+  if(close(this->fd))
     PLAYER_ERROR1("close() failed:%s",strerror(errno));
-  fd = -1;
+  this->fd = -1;
   puts("Botrics Trogdor has been shutdown");
   return(0);
 }
@@ -261,6 +279,10 @@ Trogdor::Main()
   int lvel, rvel;
   int ltics, rtics;
   double rotational_term, command_lvel, command_rvel;
+  void* client;
+  char buf[256];
+
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
   // push a pthread cleanup function that stops the robot
   pthread_cleanup_push(StopRobot,this);
@@ -268,33 +290,39 @@ Trogdor::Main()
   for(;;)
   {
     pthread_testcancel();
+    
     GetCommand((unsigned char*)&command, sizeof(player_position_cmd_t));
 
     if(fabs(RTOD((double)command.yawspeed)) > TROGDOR_MAX_YAWSPEED)
     {
       PLAYER_WARN("yawspeed thresholded");
       if(command.yawspeed > 0)
-        command.yawspeed = (int32_t)rint(DTOR(TROGDOR_MAX_YAWSPEED));
+        command.yawspeed = (int32_t)rint(RTOD(TROGDOR_MAX_YAWSPEED));
       else
-        command.yawspeed = (int32_t)rint(DTOR(-TROGDOR_MAX_YAWSPEED));
+        command.yawspeed = (int32_t)rint(RTOD(-TROGDOR_MAX_YAWSPEED));
     }
     if(fabs(command.xspeed / 1e3) > TROGDOR_MAX_XSPEED)
     {
+      PLAYER_WARN("xspeed thresholded");
       if(command.xspeed > 0)
         command.xspeed = (int32_t)rint(TROGDOR_MAX_XSPEED*1e3);
       else
         command.xspeed = (int32_t)rint(-TROGDOR_MAX_XSPEED*1e3);
     }
 
+    //printf("tv: %d\trv: %d\n", command.xspeed, command.yawspeed);
+
     // convert (tv,rv) to (lv,rv) and send to robot
-    rotational_term = DTOR(command.yawspeed) * TROGDOR_AXLE_LENGTH / 2.0;
-    command_rvel = command.xspeed + rotational_term;
-    command_lvel = command.xspeed - rotational_term;
+    rotational_term = DTOR(command.yawspeed) * TROGDOR_AXLE_LENGTH / 4.0;
+    command_rvel = (command.xspeed/1e3) + rotational_term;
+    command_lvel = (command.xspeed/1e3) - rotational_term;
+    //printf("rot: %f lv: %f rv: %f\n",
+           //rotational_term,command_lvel,command_rvel);
 
     // TODO: sanity check on per-wheel speeds
 
-    if(SetVelocity((int)rint(command_lvel / TROGDOR_M_PER_TICK),
-                   (int)rint(command_rvel / TROGDOR_M_PER_TICK)) < 0)
+    if(SetVelocity((int)rint(command_lvel / (300.0 * TROGDOR_M_PER_TICK)),
+                   (int)rint(command_rvel / (300.0 * TROGDOR_M_PER_TICK))) < 0)
     {
       PLAYER_ERROR("failed to set velocity");
       pthread_exit(NULL);
@@ -309,6 +337,10 @@ Trogdor::Main()
     UpdateOdom(ltics,rtics);
 
     // TODO: PutData()
+
+    // we don't handle any configs yet
+    if(GetConfig(&client,(void*)buf,sizeof(buf)) > 0)
+      PutReply(client, PLAYER_MSGTYPE_RESP_NACK);
     
     usleep(TROGDOR_DELAY_US);
   }
@@ -320,17 +352,22 @@ Trogdor::ReadBuf(unsigned char* s, size_t len)
 {
   int thisnumread;
   size_t numread = 0;
-  int bytesperread=1;
+  int loop;
+  int maxloops=10;
 
-  // if we're not blocking, give the unit some time to respond
-  if(!fd_blocking)
-    usleep(TROGDOR_DELAY_US);
+  loop=0;
   while(numread < len)
   {
+    //printf("loop %d of %d\n", loop,maxloops);
     // apparently the underlying PIC gets overwhelmed if we read too fast
     // wait...how can that be?
-    if((thisnumread = read(this->fd,s+numread,bytesperread)) < 0)
+    if((thisnumread = read(this->fd,s+numread,len-numread)) < 0)
     {
+      if(!this->fd_blocking && errno == EAGAIN && ++loop < maxloops)
+      {
+        usleep(TROGDOR_DELAY_US);
+        continue;
+      }
       PLAYER_ERROR1("read() failed: %s", strerror(errno));
       return(-1);
     }
@@ -338,6 +375,12 @@ Trogdor::ReadBuf(unsigned char* s, size_t len)
       PLAYER_WARN("short read");
     numread += thisnumread;
   }
+  /*
+  printf("read: ");
+  for(size_t i=0;i<numread;i++)
+    printf("%d ", s[i]);
+  puts("");
+  */
   return(0);
 }
 
@@ -351,6 +394,7 @@ Trogdor::WriteBuf(unsigned char* s, size_t len)
   // apparently the underlying PIC gets overwhelmed if we write too fast
   for(size_t i=0;i<len;i++)
   {
+    //printf("writing byte %d\n", i);
     if((numwritten = write(this->fd,s+i,bytesperwrite)) < 0)
     {
       PLAYER_ERROR1("write() failed: %s", strerror(errno));
@@ -358,6 +402,7 @@ Trogdor::WriteBuf(unsigned char* s, size_t len)
     }
     if(numwritten != bytesperwrite)
       PLAYER_WARN("short write");
+    usleep(10);
   }
 
   // get acknowledgement
@@ -402,10 +447,10 @@ Trogdor::BytesToInt32(unsigned char *ptr)
 void
 Trogdor::Int32ToBytes(unsigned char* buf, int i)
 {
-  buf[0] = (i >> 0) && 0xFF;
-  buf[1] = (i >> 8)  && 0xFF;
-  buf[2] = (i >> 16) && 0xFF;
-  buf[3] = (i >> 24) && 0xFF;
+  buf[0] = (i >> 0)  & 0xFF;
+  buf[1] = (i >> 8)  & 0xFF;
+  buf[2] = (i >> 16) & 0xFF;
+  buf[3] = (i >> 24) & 0xFF;
 }
 
 int
@@ -429,7 +474,7 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
     return(-1);
   }
 
-  if(ValidateChecksum(buf, 17) < 0)
+  if(ValidateChecksum(buf, 18) < 0)
   {
     PLAYER_ERROR("checksum failed on odometry packet");
     return(-1);
@@ -448,6 +493,8 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
   *rvel = BytesToInt32(buf+index);
   index += 4;
   *lvel = BytesToInt32(buf+index);
+
+  //puts("got good odom packet");
 
   return(0);
 }
@@ -493,6 +540,7 @@ Trogdor::SendCommand(unsigned char cmd, int val1, int val2)
   unsigned char buf[10];
   int i;
 
+  //printf("SendCommand: %d %d %d\n", cmd, val1, val2);
   i=0;
   buf[i] = cmd;
   i+=1;
