@@ -181,6 +181,7 @@ class Map:
         self.links_a = {}
         self.links_b = {}
         self.patch_id = 0
+        self.patch_callback = None
         return
     
 
@@ -199,6 +200,8 @@ class Map:
         if self.root_fig:
             patch.fig = rtk3.Fig(self.root_fig)
             patch.site_fig = rtk3.Fig(patch.fig)
+            if self.patch_callback:
+                patch.fig.connect(self.patch_callback, patch)
 
         self.patch_id += 1
         self.patches += [patch]

@@ -91,9 +91,6 @@ class LogFile:
                 data.datatime = datatime
                 data.odom_pose = (float(tokens[6]), float(tokens[7]), float(tokens[8]))
 
-                # TESTING
-                data.odom_pose = (data.odom_pose[1], data.odom_pose[0], data.odom_pose[2])
-
                 return data
 
             # Process odometry
