@@ -34,9 +34,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-StgTime::StgTime( struct _stg_client* cli )
+StgTime::StgTime( stg_client_t* cli )
 {
-  this->cli = cli;
+  this->client = cli;
   return;
 }
 
@@ -57,14 +57,20 @@ int StgTime::GetTime(struct timeval* time)
   
   // handle any packets coming in from Stage - there might be a new
   // time in the pipe
-  if( this->cli )
+  if( this->client )
     {
       PRINT_DEBUG( "stg_time checking for new data" );
-      stg_client_read( this->cli );
-      PRINT_DEBUG( "stg_time done checking" );
 
-      time->tv_sec =  (long)cli->world->time;
-      time->tv_usec =  (long)(fmod( cli->world->time, 1.0) * 1000000.0);
+      stg_msg_t* msg = NULL;      
+      while( (msg = stg_client_read( client )) )
+	{
+	  stg_client_handle_message( client, msg );
+	  free( msg );
+	}
+      
+      PRINT_DEBUG( "stg_time done checking" );
+      time->tv_sec =  (long)client->stagetime;
+      time->tv_usec =  (long)(fmod( client->stagetime, 1.0) * 1000000.0);
     }
   else // no time data available yet. 
     memset( time, 0, sizeof(struct timeval) );
