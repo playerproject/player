@@ -70,6 +70,7 @@ extern "C" {
 #define PLAYERC_LASER_MAX_SAMPLES       PLAYER_LASER_MAX_SAMPLES
 #define PLAYERC_FIDUCIAL_MAX_SAMPLES    PLAYER_FIDUCIAL_MAX_SAMPLES
 #define PLAYERC_SONAR_MAX_SAMPLES       PLAYER_SONAR_MAX_SAMPLES
+#define PLAYERC_BUMPER_MAX_SAMPLES		PLAYER_BUMPER_MAX_SAMPLES
 #define PLAYERC_BLOBFINDER_MAX_BLOBS    64
 #define PLAYERC_WIFI_MAX_LINKS          PLAYER_WIFI_MAX_LINKS
 
@@ -1121,6 +1122,61 @@ int playerc_sonar_get_geom(playerc_sonar_t *device);
 /***************************************************************************
  ** end section
  **************************************************************************/ 
+
+
+/***************************************************************************
+ ** begin section bumper
+ **************************************************************************/
+
+/** [Synopsis] The {\tt bumper} proxy provides an interface to the
+bumper sensors built into robots such as the RWI B21R. */
+
+/** [Data] */
+
+/** Bumper proxy data. */
+typedef struct _playerc_bumper_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Number of pose values. */
+  int pose_count;
+  
+  /** Pose of each bumper relative to robot (mm, mm, deg, mm, mm).  This
+      structure is filled by calling playerc_bumper_get_geom(). 
+	  values are x,y (of center) ,normal,length,curvature */
+  double poses[PLAYERC_BUMPER_MAX_SAMPLES][5];
+  
+  /** Number of points in the scan. */
+  int bumper_count;
+
+  /** Bump data: unsigned char, either boolean or code indicating corner. */
+  double bumpers[PLAYERC_BUMPER_MAX_SAMPLES];
+  
+} playerc_bumper_t;
+
+/** [Methods] */
+
+/** Create a bumper proxy. */
+playerc_bumper_t *playerc_bumper_create(playerc_client_t *client, int index);
+
+/** Destroy a bumper proxy. */
+void playerc_bumper_destroy(playerc_bumper_t *device);
+
+/** Subscribe to the bumper device. */
+int playerc_bumper_subscribe(playerc_bumper_t *device, int access);
+
+/** Un-subscribe from the bumper device. */
+int playerc_bumper_unsubscribe(playerc_bumper_t *device);
+
+/** Get the bumper geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_bumper_get_geom(playerc_bumper_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
 
 
 /***************************************************************************

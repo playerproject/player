@@ -56,6 +56,8 @@
 #define COLOR_SONAR              0xC0C080
 #define COLOR_SONAR_SCAN         0xC0C080
 #define COLOR_WIFI               0x000000
+#define COLOR_BUMPER             0xC080C0
+#define COLOR_BUMPER_ACTIVE      0x00FF00
 
 
 /***************************************************************************
@@ -396,6 +398,41 @@ void sonar_destroy(sonar_t *sonar);
 // Update a sonar device
 void sonar_update(sonar_t *sonar);
 
+ /***************************************************************************
+  * Bumper device
+  ***************************************************************************/
+
+ // BUMPER device info
+ typedef struct
+ {
+   // Driver name
+   char *drivername;
+
+   // Menu stuff
+   rtk_menu_t *menu;
+   rtk_menuitem_t *subscribe_item;
+
+   // Figures for drawing the bumper 
+   rtk_fig_t *scan_fig[PLAYERC_BUMPER_MAX_SAMPLES];
+
+   // Bumper device proxy
+   playerc_bumper_t *proxy;
+
+   // Timestamp on most recent data
+   double datatime;
+
+ } bumper_t;
+
+
+ // Create a bumper device
+ bumper_t *bumper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                       int index,  const char *drivername, int subscribe);
+
+ // Destroy a bumper device
+ void bumper_destroy(bumper_t *bumper);
+
+ // Update a bumper device
+ void bumper_update(bumper_t *bumper);
 
 /***************************************************************************
  * Blobfinder device

@@ -146,6 +146,7 @@ void RFLEXaio_Register(DriverTable* table);
 void RFLEXdio_Register(DriverTable* table);
 void RFLEXPosition_Register(DriverTable* table);
 void RFLEXSonar_Register(DriverTable* table);
+void RFLEXbumper_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_LINUXWIFI
@@ -453,6 +454,7 @@ register_devices()
   RFLEXdio_Register(driverTable);
   RFLEXPosition_Register(driverTable);
   RFLEXSonar_Register(driverTable);
+  RFLEXbumper_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SONYEVID30

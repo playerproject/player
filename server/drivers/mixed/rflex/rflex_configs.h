@@ -17,6 +17,7 @@
 #define RFLEX_CONFIGS_H
 
 #include <math.h>
+#include <player.h>
 
 //holds the pose of a sonar in robot relative coordinates
 typedef struct
@@ -72,6 +73,8 @@ typedef struct rflex_config_t{
   long sonar_echo_delay;
   long sonar_ping_delay;
   long sonar_set_delay;
+  unsigned short bumper_count;
+  player_bumper_define_t * bumper_def;
 }  rflex_config_t;
 
 //notice - every file that includes this header gets a GLOBAL rflex_configs!!

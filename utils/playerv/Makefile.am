@@ -18,6 +18,7 @@ playerv_SOURCES = playerv.c \
                   dev_power.c \
                   dev_ptz.c \
                   dev_sonar.c \
+                  dev_bumper.c \
 		  dev_wifi.c \
                   error.h \
                   opt.c \

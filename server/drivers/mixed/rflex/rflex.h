@@ -119,7 +119,7 @@ class RFLEX:public CDevice
     int initialize_robot();
     void reset_odometry();
     void set_odometry(long,long,short);
-    void update_everything(player_rflex_data_t* d, CDevice* sonarp);    
+    void update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice* bumperp);    
 
     void set_config_defaults();
   protected:
