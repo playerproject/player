@@ -98,7 +98,7 @@ driver
   name "writelog"
   requires ["laser:0" "position:0"]
   provides ["log:0"]
-  alwayson 1  # 
+  alwayson 1 
   autorecord 1
 )
 @endverbatim
@@ -127,9 +127,9 @@ driver
 #include "playertime.h"
 #include "encode.h"
 
-
+  
 // Utility class for storing per-device info
-class WriteLogDevice
+struct WriteLogDevice
 {
   public: player_device_id_t id;
   public: Driver *device;
@@ -145,19 +145,19 @@ class WriteLogDevice
 // The logfile driver
 class WriteLog: public Driver 
 {
-  // Constructor
+  /// Constructor
   public: WriteLog(ConfigFile* cf, int section);
 
-  // Destructor
+  /// Destructor
   public: ~WriteLog();
 
-  // Initialize the driver
+  /// Initialize the driver
   public: virtual int Setup();
 
-  // Finalize the driver
+  /// Finalize the driver
   public: virtual int Shutdown();
 
-  // Process configuration requests
+  /// Process configuration requests
   public: virtual int PutConfig(player_device_id_t id, void *client, 
                                 void* src, size_t len,
                                 struct timeval* timestamp);
