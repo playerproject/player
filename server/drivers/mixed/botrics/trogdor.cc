@@ -743,7 +743,7 @@ Trogdor::UpdateOdom(int ltics, int rtics)
   // sometimes get zeros)
   if(d_delta > 100*(TROGDOR_MAX_WHEELSPEED * (TROGDOR_DELAY_US/1e6)))
   {
-    PLAYER_WARN("Invalid odometry change; ignoring");
+    PLAYER_WARN("Invalid odometry change (too big); ignoring");
     return;
   }
   
@@ -753,7 +753,7 @@ Trogdor::UpdateOdom(int ltics, int rtics)
   // too much impact.
   if(!ltics || !rtics)
   {
-    PLAYER_WARN("Invalid odometry change; ignoring");
+    PLAYER_WARN("Invalid odometry change (zeros); ignoring");
     return;
   }
 
@@ -761,6 +761,8 @@ Trogdor::UpdateOdom(int ltics, int rtics)
   this->py += d_delta * sin(this->pa);
   this->pa += a_delta;
   this->pa = NORMALIZE(this->pa);
+  
+  printf("trogdor: pose: %f,%f,%f\n", this->px,this->py,RTOD(this->pa));
 
   this->last_ltics = ltics;
   this->last_rtics = rtics;
