@@ -110,15 +110,19 @@ thinks it has already achieved it.
   - Angular difference from target angle that will considered acceptable.
     Set this to be GREATER than the corresponding threshold of the
     underlying position device!
-- replan_cycle (float)
+- replan_dist_thresh (length)
+  - Default: 2.0 m
+  - Change in robot's position (in localization space) that will
+    trigger replanning.  Set to -1 for no replanning (i.e, make
+    a plan one time and then stick with it until the goal is reached).
+    Replanning is pretty cheap computationally and can really help in
+    dynamic environments.  Note that no changes are made to the map in
+    order to replan; support is forthcoming for explicitly replanning
+    around obstacles that were not in the map.  See also replan_min_time.
+- replan_min_time (float)
   - Default: 2.0
-  - Time in seconds between replanning (i.e., constructing a new best path to 
-    the current goal from the current position).  Set to 0 (zero) for no 
-    replanning (i.e, make a plan one time and then stick with it until the 
-    goal is reached).  Replanning is pretty cheap computationally and can 
-    really help in dynamic environments.  Note that no changes are made 
-    to the map in order to replan; support is forthcoming for explicitly 
-    replanning around obstacles that were not in the map.
+  - Minimum time in seconds between replanning.  Set to -1 for no
+    replanning.  See also replan_dist_thresh;
 - cspace_file (filename)
   - Default: "player.cspace"
   - Use this file to cache the configuration space (c-space) data.
@@ -128,11 +132,8 @@ thinks it has already achieved it.
     In either case, the c-space data will be cached to this file for
     use next time.  C-space computation can be expensive and so caching
     can save a lot of time, especially when the planner is frequently
-    stopped and started.  An md5 hash of the map data is also cached,
-    to verify that the same map is being used.  As a result, c-space
-    caching is only available on systems with the libmd5 library, which
-    defines MD5_Init(), MD5_Update(), and MD5_Final().  This library is
-    part of the OpenSSL development kit.
+    stopped and started.  This feature requires md5 hashing functions
+    in libcrypto.
 
 @par Example 
 
@@ -193,8 +194,6 @@ Brian Gerkey, Andrew Howard
 /** @} */
 
 // TODO:
-//   - allow a waypoint to be skipped, if the robot gets near a later
-//      waypoint
 //
 //  - allow for computing a path, without actually executing it.
 //
@@ -296,8 +295,11 @@ class Wavefront : public Driver
     bool stopped;
     // have we reached the goal (used to decide whether or not to replan)?
     bool atgoal;
-    // replan this often
-    double replan_cycle;
+    // replan each time the robot's localization position changes by at
+    // least this much (meters)
+    double replan_dist_thresh;
+    // leave at least this much time (seconds) between replanning cycles
+    double replan_min_time;
 
     // methods for internal use
     int SetupLocalize();
@@ -376,7 +378,8 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->dist_penalty = cf->ReadFloat(section,"dist_penalty",1.0);
   this->dist_eps = cf->ReadLength(section,"distance_epsilon", 0.5);
   this->ang_eps = cf->ReadAngle(section,"angle_epsilon",DTOR(10));
-  this->replan_cycle = cf->ReadFloat(section,"replan_cycle",2.0);
+  this->replan_dist_thresh = cf->ReadLength(section,"replan_dist_thresh",2.0);
+  this->replan_min_time = cf->ReadFloat(section,"replan_min_time",2.0);
   this->cspace_fname = cf->ReadFilename(section,"cspace_file","player.cspace");
 }
 
@@ -711,9 +714,11 @@ void Wavefront::Main()
 {
   double dist, angle;
   struct timeval curr;
-  struct timeval last_replan = {INT_MAX, INT_MAX};
-  double timediff;
+  double last_replan_lx=0.0, last_replan_ly=0.0;
+  struct timeval last_replan_time = {INT_MAX, INT_MAX};
+  double replan_timediff, replan_dist;
   static bool rotate_waypoint=false;
+  bool replan;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -732,7 +737,6 @@ void Wavefront::Main()
   GetLocalizeData();
   StopPosition();
 
-  this->curr_waypoint = -1;
   for(;;)
   {
     pthread_testcancel();
@@ -742,22 +746,24 @@ void Wavefront::Main()
     PutPlannerData();
     GetCommand();
 
-    if(!this->enable)
-    {
-      this->StopPosition();
-      usleep(CYCLE_TIME_US);
-      continue;
-    }
-
     this->newData = false;
 
+    // Is it time to replan?
     GlobalTime->GetTime(&curr);
-    timediff = (curr.tv_sec + curr.tv_usec/1e6) -
-            (last_replan.tv_sec + last_replan.tv_usec/1e6);
+    replan_timediff = (curr.tv_sec + curr.tv_usec/1e6) -
+            (last_replan_time.tv_sec + last_replan_time.tv_usec/1e6);
+    replan_dist = sqrt(((this->localize_x - last_replan_lx) *
+                        (this->localize_x - last_replan_lx)) +
+                       ((this->localize_y - last_replan_ly) *
+                        (this->localize_y - last_replan_ly)));
+    replan = (this->replan_dist_thresh >= 0.0) && 
+            (replan_dist > this->replan_dist_thresh) &&
+            (this->replan_min_time >= 0.0) &&
+            (replan_timediff > this->replan_min_time) && 
+            !this->atgoal;
 
     // Did we get a new goal, or is it time to replan?
-    if(this->new_goal || 
-       (this->replan_cycle && (timediff > this->replan_cycle) && !this->atgoal))
+    if(this->new_goal || replan)
     {
       this->newData = true;
 
@@ -796,7 +802,16 @@ void Wavefront::Main()
         this->curr_waypoint = 0;
         this->new_goal = true;
       }
-      last_replan = curr;
+      last_replan_time = curr;
+      last_replan_lx = this->localize_x;
+      last_replan_ly = this->localize_y;
+    }
+
+    if(!this->enable)
+    {
+      this->StopPosition();
+      usleep(CYCLE_TIME_US);
+      continue;
     }
 
     bool going_for_target = (this->curr_waypoint == this->plan->waypoint_count);
