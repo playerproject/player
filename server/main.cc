@@ -93,7 +93,7 @@
 bool quit = false;
 
 // true if sigint should be ignored
-bool mask_sigint = false; // TESTING
+bool mask_sigint = false;
 
 // true if we're connecting to Stage instead of a real robot
 bool use_stage = false;
@@ -1019,6 +1019,13 @@ int main( int argc, char *argv[] )
         Usage();
         exit(-1);
       }
+    }
+
+    // Mask (ignore) SIGINT
+    else if(!strcmp(argv[i], "--nosigint"))
+    {
+      printf("[nosigint]");
+      mask_sigint = true;
     }
     else if(!strcmp(argv[i], "-gerkey"))
     {
