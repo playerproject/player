@@ -96,6 +96,7 @@ class Dummy: public Driver
   // Dummy data buffer
   private: size_t data_len, cmd_len;
   private: char *data_buffer;
+  private: char *req_buffer;
 };
 
 
@@ -149,6 +150,10 @@ Dummy::Dummy(ConfigFile* cf, int section)
   // Figure out how big our buffers need to be
   switch (this->local_id.code)
   {
+    case PLAYER_CAMERA_CODE:
+      this->data_len = sizeof(player_camera_data_t);
+      this->cmd_len = 0;
+      break;
     case PLAYER_LASER_CODE:
       this->data_len = sizeof(player_laser_data_t);
       this->cmd_len = 0;
@@ -173,7 +178,10 @@ Dummy::Dummy(ConfigFile* cf, int section)
   }
 
   // Create data buffer
-  this->data_buffer = (char*) calloc(1, sizeof(PLAYER_MAX_MESSAGE_SIZE));
+  this->data_buffer = (char*) calloc(1, PLAYER_MAX_MESSAGE_SIZE);
+
+  // Create config buffer
+  this->req_buffer = (char*) calloc(1, PLAYER_MAX_REQREP_SIZE);
   
   // Data rate
   this->rate = cf->ReadFloat(section, "rate", 10);
@@ -186,6 +194,7 @@ Dummy::Dummy(ConfigFile* cf, int section)
 // Destructor
 Dummy::~Dummy()
 {
+  free(this->req_buffer);
   free(this->data_buffer);
 
   return;
@@ -219,6 +228,7 @@ int Dummy::Shutdown()
 void Dummy::Main(void)
 {
   struct timespec req;
+  void *client;
 
   req.tv_sec = (time_t) (1.0 / this->rate);
   req.tv_nsec = (long) (fmod(1e9 / this->rate, 1e9));
@@ -229,7 +239,16 @@ void Dummy::Main(void)
     if (nanosleep(&req, NULL) == -1)
       continue;
 
+    // Write data
     this->PutData(this->local_id, this->data_buffer, this->data_len, NULL);
+
+    // Process pending configuration requests
+    while (this->GetConfig(this->local_id, &client, this->req_buffer,
+                           PLAYER_MAX_REQREP_SIZE, NULL))
+    {
+      if (this->PutReply(this->local_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
+        PLAYER_ERROR("PutReply() failed");
+    }
   }
   return;
 }
