@@ -595,12 +595,22 @@ proc player_parse_data {obj device device_index data size} {
     }
   } elseif {$device == $PLAYER_SONAR_CODE} {
     # sonar data packet
-    if {[expr $size / 2] != $PLAYER_NUM_SONAR_SAMPLES} {
-      puts "Warning: expected $PLAYER_NUM_SONAR_SAMPLES sonar readings, but received [expr $size/2] readings"
+    if {[binary scan $data S arr($name,$device_index,count)] != 1} {
+      puts "Warning: failed to get sonar range count"
+      return
     }
+    # make it unsigned
+    set arr($name,$device_index,count) \
+      [expr $arr($name,$device_index,count) & 0xFFFF]
+
+    # copy into non-indexed spot for convenience
+    if {!$device_index} {
+      set arr($name,count) $arr($name,$device_index,count)
+    }
+
     set j 0
-    while {$j < [expr $size / 2]} {
-      if {[binary scan $data "x[expr 2 * $j]S" \
+    while {$j < $arr($name,$device_index,count)} {
+      if {[binary scan $data "x[expr 2 + (2 * $j)]S" \
                arr($name,$device_index,$j)] != 1} {
         puts "Warning: failed to get sonar scan $j"
         return
