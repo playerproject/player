@@ -156,7 +156,7 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
 {
   int count;
   struct pollfd fd;
-
+  
   fd.fd = client->sock;
   fd.events = POLLIN | POLLHUP;
   fd.revents = 0;

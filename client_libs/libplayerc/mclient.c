@@ -75,31 +75,29 @@ int playerc_mclient_addclient(playerc_mclient_t *mclient, playerc_client_t *clie
 }
 
 
-// Connect a bunch of clients
-int playerc_mclient_connect(playerc_mclient_t *mclient)
+// Test to see if there is pending data.
+// Returns -1 on error, 0 or 1 otherwise.
+int playerc_mclient_peek(playerc_mclient_t *mclient, int timeout)
 {
-  int i;
+  int i, count;
 
+  // Configure poll structure to wait for incoming data 
   for (i = 0; i < mclient->client_count; i++)
   {
-    if (playerc_client_connect(mclient->client[i]) < 0)
-      return -1;
+    mclient->pollfd[i].fd = mclient->client[i]->sock;
+    mclient->pollfd[i].events = POLLIN;
+    mclient->pollfd[i].revents = 0;
   }
-  return 0;
-}
 
-
-// Disconnect a bunch of clients
-int playerc_mclient_disconnect(playerc_mclient_t *mclient)
-{
-  int i;
-
-  for (i = 0; i < mclient->client_count; i++)
+  // Wait for incoming data 
+  count = poll(mclient->pollfd, mclient->client_count, timeout);
+  if (count < 0)
   {
-    if (playerc_client_disconnect(mclient->client[i]) < 0)
-      return -1;
+    PLAYERC_ERR1("poll returned error [%s]", strerror(errno));
+    return -1;
   }
-  return 0;
+
+  return (count > 0);
 }
 
 
@@ -132,5 +130,6 @@ int playerc_mclient_read(playerc_mclient_t *mclient, int timeout)
   }
   return count;
 }
+
 
 

@@ -81,68 +81,66 @@ staticforward PyMethodDef mclient_methods[];
 
 static PyObject *mclient_new(PyObject *self, PyObject *args)
 {
-    mpyclient_t *mpyclient;
+  mpyclient_t *mpyclient;
 
-    if (!PyArg_ParseTuple(args, ""))
-        return NULL;
+  if (!PyArg_ParseTuple(args, ""))
+    return NULL;
 
-    mpyclient = PyObject_New(mpyclient_t, &mclient_type);
-    mpyclient->mclient = playerc_mclient_create();
+  mpyclient = PyObject_New(mpyclient_t, &mclient_type);
+  mpyclient->mclient = playerc_mclient_create();
 
-    return (PyObject*) mpyclient;
+  return (PyObject*) mpyclient;
 }
 
 
 static void mclient_del(PyObject *self)
 {
-    mpyclient_t *mpyclient;
+  mpyclient_t *mpyclient;
 
-    mpyclient = (mpyclient_t*) self;
-    playerc_mclient_destroy(mpyclient->mclient);
-    PyObject_Del(self);
+  mpyclient = (mpyclient_t*) self;
+  playerc_mclient_destroy(mpyclient->mclient);
+  PyObject_Del(self);
 }
 
 
 static PyObject *mclient_getattr(PyObject *self, char *attrname)
 {
-    PyObject *result;
-    mpyclient_t *mpyclient;
+  PyObject *result;
+  mpyclient_t *mpyclient;
 
-    mpyclient = (mpyclient_t*) self;
-    result = Py_FindMethod(mclient_methods, self, attrname);
+  mpyclient = (mpyclient_t*) self;
+  result = Py_FindMethod(mclient_methods, self, attrname);
 
-    return result;
+  return result;
 }
 
 
-/* Connect to server
- */
-static PyObject *mclient_connect(PyObject *self, PyObject *args)
+// Peek our clients
+static PyObject *mclient_peek(PyObject *self, PyObject *args)
 {
-    int result;
-    mpyclient_t *mpyclient;
-    mpyclient = (mpyclient_t*) self;
+  int result;
+  double timeout;
+  mpyclient_t *mpyclient;
+  mpyclient = (mpyclient_t*) self;
 
-    result = playerc_mclient_connect(mpyclient->mclient);
-    return PyInt_FromLong(result);
+  if (!PyArg_ParseTuple(args, "d", &timeout))
+    return NULL;
+
+  thread_release();
+  result = playerc_mclient_peek(mpyclient->mclient, (int) (timeout * 1000));
+  thread_acquire();
+
+  if (result < 0)
+  {
+    PyErr_SetString(errorob, "");
+    return NULL;
+  }
+    
+  return PyInt_FromLong(result);
 }
 
 
-/* Disconnect from server
- */
-static PyObject *mclient_disconnect(PyObject *self, PyObject *args)
-{
-    int result;
-    mpyclient_t *mpyclient;
-    mpyclient = (mpyclient_t*) self;
-
-    result = playerc_mclient_disconnect(mpyclient->mclient);
-    return PyInt_FromLong(result);
-}
- 
-
-/* Read and process a message
-*/
+// Read and process a message
 static PyObject *mclient_read(PyObject *self, PyObject *args)
 {
   int result;
@@ -165,6 +163,7 @@ static PyObject *mclient_read(PyObject *self, PyObject *args)
     
   return PyInt_FromLong(result);
 }
+
 
 
 /* Assemble python mclient type
@@ -191,10 +190,9 @@ static PyTypeObject mclient_type =
 
 static PyMethodDef mclient_methods[] =
 {
-    {"connect", mclient_connect, METH_VARARGS},
-    {"disconnect", mclient_disconnect, METH_VARARGS},
-    {"read", mclient_read, METH_VARARGS},
-    {NULL, NULL}
+  {"peek", mclient_peek, METH_VARARGS},
+  {"read", mclient_read, METH_VARARGS},
+  {NULL, NULL}
 };
 
 

@@ -77,7 +77,6 @@ typedef struct
   struct _playerc_client_t *client[128];
 
   // Poll info 
-  //struct pollfd pollfd[128];
   struct pollfd* pollfd;
 
 } playerc_mclient_t;
@@ -172,19 +171,16 @@ playerc_mclient_t *playerc_mclient_create(void);
 // Destroy a multi-client object
 void playerc_mclient_destroy(playerc_mclient_t *mclient);
 
-// Connect to all the servers at once
-int playerc_mclient_connect(playerc_mclient_t *mclient);
-
-// Disconnect from all the servers at once
-int playerc_mclient_disconnect(playerc_mclient_t *mclient);
-
-// Read incoming data.
-// The timeout is in ms.  Set timeout to a negative value to wait
-// indefinitely.
-int  playerc_mclient_read(playerc_mclient_t *mclient, int timeout);
-
 // Add a client to the multi-client (private).
 int playerc_mclient_addclient(playerc_mclient_t *mclient, playerc_client_t *client);
+
+// Test to see if there is pending data.
+// Returns -1 on error, 0 or 1 otherwise.
+int playerc_mclient_peek(playerc_mclient_t *mclient, int timeout);
+
+// Read incoming data.  The timeout is in ms.  Set timeout to a
+// negative value to wait indefinitely.
+int playerc_mclient_read(playerc_mclient_t *mclient, int timeout);
 
 
 /***************************************************************************
