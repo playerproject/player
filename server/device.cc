@@ -31,6 +31,7 @@
 #include <device.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include <netinet/in.h>
 
 #include <playertime.h>
@@ -355,3 +356,30 @@ CDevice::Main()
         stderr);
 }
 
+// A helper method for internal use; e.g., when one device wants to make a
+// request of another device
+int
+CDevice::Request(player_device_id_t* device, void* requester, 
+                 void* request, size_t reqlen,
+                 unsigned short* reptype, struct timeval* ts,
+                 void* reply, size_t replen)
+{
+  int size = -1;
+
+  if(PutConfig(device, requester, request, reqlen))
+  {
+    // queue was full
+    *reptype = PLAYER_MSGTYPE_RESP_ERR;
+    size = 0;
+  }
+  else
+  {
+    // poll for the reply
+    for(size = GetReply(device, requester, reptype, ts, reply, replen);
+        size < 0;
+        usleep(10000), 
+        size = GetReply(device, requester, reptype, ts, reply, replen));
+  }
+
+  return(size);
+}
