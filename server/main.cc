@@ -126,6 +126,9 @@ extern player_interface_t interfaces[];
 void
 Usage()
 {
+  int maxlen=66;
+  char** sortedlist;
+
   puts("");
   fprintf(stderr, "USAGE:  player [options] [<configfile>]\n\n");
   fprintf(stderr, "Where [options] can be:\n");
@@ -139,9 +142,19 @@ Usage()
   fprintf(stderr, "  -k <key>       : require client authentication with the "
           "given key\n");
   fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
-  fprintf(stderr, "\nThe following drivers were compiled into Player:\n");
-  for(int i=0;i<driverTable->Size();i++)
-    fprintf(stderr, "  %s\n", driverTable->GetDriverName(i));
+  fprintf(stderr, "\nThe following %d drivers were compiled into Player:\n\n    ",
+          driverTable->Size());
+  sortedlist = driverTable->SortDrivers();
+  for(int i=0, len=0; i<driverTable->Size(); i++)
+  {
+    if((len += strlen(sortedlist[i])) >= maxlen)
+    {
+      fprintf(stderr,"\n    ");
+      len=strlen(sortedlist[i]);
+    }
+    fprintf(stderr, "%s ", sortedlist[i]);
+  }
+  free(sortedlist);
   fprintf(stderr,"\n\nPart of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
   fprintf(stderr, "Copyright (C) 2000 - 2003 Brian Gerkey, Richard Vaughan, Andrew Howard,\nand contributors.\n");
   fprintf(stderr,"\nReleased under the GNU General Public License.\n");

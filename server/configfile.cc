@@ -110,7 +110,7 @@ bool ConfigFile::Load(const char *filename)
   {
     PLAYER_ERROR2("unable to open world file %s : %s",
                this->filename, strerror(errno));
-    fclose(file);
+    //fclose(file);
     return false;
   }
 

@@ -63,6 +63,10 @@ class DriverTable
     int AddDriver(char* name, char access, 
                   CDevice* (*initfunc)(char*,ConfigFile*,int));
 
+    // sort drivers, based on name.  the return value points at newly
+    // malloc()ed memory, which the user should free().
+    char** SortDrivers();
+
     // matches on the driver name
     DriverEntry* GetDriverEntry(char* name);
    
