@@ -159,7 +159,7 @@ void Interrupt( int dummy ) {
   delete miscDevice;
   delete ptzDevice;
   //pthread_kill_other_threads_np();
-  puts("Quitting");
+  puts("Player quitting");
   exit(0);
 }
 
@@ -275,7 +275,11 @@ int main( int argc, char *argv[] )
 
   pthread_mutex_init(&clients_mutex,NULL);
 
-  printf("Player Robot Server v%s\n", PLAYER_VERSION);
+  // printf("Player Robot Server v%s\n", PLAYER_VERSION);
+  
+  // new look to match Stage - revert if you don't like it! - RTV
+  printf("** Player v%s ** ", PLAYER_VERSION);
+
   for( int i = 1; i < argc; i++ ) 
   {
     //printf( "ARG: %s\n", argv[i] ); fflush( stdout );
@@ -321,7 +325,10 @@ int main( int argc, char *argv[] )
       i++;
       if (i<argc) { 
 	playerport = atoi(argv[i]);
-	printf("Will run Player on port %d\n", playerport);
+	//printf("Will run Player on port %d\n", playerport);
+	// new look to match Stage - what do you think?
+	// just chuck this out if you don't like it - RTV
+	printf("[Port %d]", playerport);
       }
       else {
 	puts(USAGE);
@@ -360,7 +367,10 @@ int main( int argc, char *argv[] )
       if( i<argc ) {
 	strcpy( arenaFile, argv[i] );
 	useArena = true;
-	printf("Entering the Stage\n");
+	//printf( "Taking the Stage\n" );
+	// new look to match Stage - what do you think?
+	// just chuck this out if you don't like it - RTV
+	printf("[Stage]");
       }
       else {
 	puts( USAGE );
@@ -376,6 +386,8 @@ int main( int argc, char *argv[] )
       exit(0);
     }
   }
+
+  puts( "" ); // newline, flush
 
   // create the devices dynamically 
   if( useArena )
