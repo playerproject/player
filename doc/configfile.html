@@ -59,6 +59,11 @@ options are supported):
     - Default: [] (i.e., no required devices)
     - The device(s) on which this driver depends (i.e., those devices
       that the driver will read from or write to).
+  - plugin (string)
+    - Default none
+    - Use this option to specify the filename of a plugin driver (see @ref
+      plugin_driver) to load.  This file should be a shared object (aka
+      dynamic library) that implements the driver.
   - alwayson (integer)
     - Default: 0
     - If nonzero, then the driver is started when Player starts, rather
