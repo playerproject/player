@@ -271,6 +271,8 @@ for player_lib in $PLAYER_DRIVERS; do
 done
 AC_MSG_RESULT([])
 AC_MSG_RESULT([The following device drivers will NOT be included:])
+dnl Change the internal field seperator (IFS) to be a colon, so that the
+dnl driver list will be parsed correctly.
 old_IFS=$IFS
 IFS=:
 for player_lib in $PLAYER_NODRIVERS; do
@@ -278,18 +280,13 @@ for player_lib in $PLAYER_NODRIVERS; do
     AC_MSG_RESULT([[- $player_lib]])
   fi
 done
+dnl Change the IFS back to what it was.
 IFS=$old_IFS
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Player will be installed in:])
 AC_MSG_RESULT([    $prefix/])
 AC_MSG_RESULT([])
-AC_MSG_RESULT([You can specify a different installation directory like this:])
-AC_MSG_RESULT([    ./configure --prefix=<install dir>])
-AC_MSG_RESULT([])
-AC_MSG_RESULT([You can specify an RTK installation like this:])
-AC_MSG_RESULT([    ./configure --with-rtk=<RTK prefix dir>])
-AC_MSG_RESULT([])
-AC_MSG_RESULT([To see the other configuration options, do:])
+AC_MSG_RESULT([To see the configuration options, do:])
 AC_MSG_RESULT([    ./configure --help])
 AC_MSG_RESULT([])
 AC_MSG_RESULT([When you're satisfied with the configuration, type 'make install'. ])
