@@ -96,6 +96,7 @@ void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *heade
 int playerc_position_enable(playerc_position_t *device, int enable)
 {
   player_position_power_config_t config;
+  memset( &config, 0, sizeof(config) );
 
   config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   config.value = enable;
@@ -112,6 +113,7 @@ int playerc_position_get_geom(playerc_position_t *device)
 {
   int len;
   player_position_geom_t config;
+  memset( &config, 0, sizeof(config) );
 
   config.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 
@@ -139,7 +141,8 @@ int playerc_position_get_geom(playerc_position_t *device)
 int playerc_position_set_speed(playerc_position_t *device, double vx, double vy, double va)
 {
   player_position_cmd_t cmd;
-
+  memset( &cmd, 0, sizeof(cmd) );
+  
   cmd.xspeed = htonl((int) (vx * 1000.0));
   cmd.yspeed = htonl((int) (vy * 1000.0));
   cmd.yawspeed = htonl((int) (va * 180.0 / M_PI));
