@@ -249,6 +249,7 @@ typedef struct
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *command_item;
+  rtk_menuitem_t *pose_mode_item;
   rtk_menuitem_t *enable_item, *disable_item;
 
   // Figures
@@ -264,10 +265,10 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
                             int robot, int index,  const char *drivername, int subscribe);
 
 // Destroy a position device
-void position_destroy(position_t *position);
+void position_destroy(position_t *self);
 
 // Update a position device
-void position_update(position_t *position);
+void position_update(position_t *self);
 
 
 /***************************************************************************

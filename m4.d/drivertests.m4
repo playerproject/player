@@ -135,13 +135,11 @@ if test "x$enable_inav" = "xyes"; then
   AC_DEFINE(INCLUDE_INAV, 1, [[include the INAV driver]])
   INAV_LIB="libinav.a"
   INAV_LIBPATH="drivers/position/inav/libinav.a"
-  INAV_IMAP_LIB="libimap.a"
   INAV_EXTRA_LIB="-lgsl -lgslcblas"
 fi
 AC_SUBST(INAV_LIB)
 AC_SUBST(INAV_LIBPATH)
 AC_SUBST(INAV_EXTRA_LIB)
-AC_SUBST(INAV_IMAP_LIB)
 
 
 dnl Manually append LIB, LIBPATH, and EXTRA_LIB vars for those drivers that
