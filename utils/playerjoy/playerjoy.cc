@@ -21,8 +21,10 @@
 #include <list>
 
 #define USAGE \
-  "USAGE: joystick [-v] <host:port> [<host:port>] ... \n" \
-  "       -v : verbose mode; print Player device state on stdout\n" \
+  "USAGE: joystick [-v] [-3d] [-c] <host:port> [<host:port>] ... \n" \
+  "       -v  : verbose mode; print Player device state on stdout\n" \
+  "       -3d : connect to position3d interface (instead of position)\n" \
+  "       -c  : continuously send commands\n" \
   "       <host:port> : connect to a Player on this host and port\n"
 
 
@@ -34,6 +36,9 @@ int g_verbose = false;
 
 // are we talking in 3D?
 bool threed = false;
+
+// should we continuously send commands?
+bool always_command = false;
 
 // define a class to do interaction with Player
 class Client
@@ -87,7 +92,7 @@ struct js_event {
 
 // at full joystick depression you'll go this fast
 #define MAX_SPEED    2000 // mm/second
-#define MAX_TURN    60 // degrees/second
+#define MAX_TURN    80 // degrees/second
 
 // this is the speed that the camera will pan when you press the
 // hatswitches in degrees/sec
@@ -337,7 +342,7 @@ void Client::Update( struct controller* cont )
       pp3->Print();
   }
   
-  if( cont->dirty ) // if the joystick sent a command
+  if( cont->dirty || always_command) // if the joystick sent a command
   {
     // send the speed commands
     if(!threed)
@@ -370,6 +375,8 @@ int main(int argc, char** argv)
 	g_verbose = true;
       else if( strcmp( argv[i], "-3d" ) == 0 )
 	threed = true;
+      else if( strcmp( argv[i], "-c" ) == 0 )
+	always_command = true;
       else
 	puts( USAGE ); // malformed arg - print usage hints
     }
