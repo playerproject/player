@@ -37,37 +37,8 @@
 CommsProxy::CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access)
     : ClientProxy(pc, PLAYER_COMMS_CODE, index, access)
 {
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-// Read a message from the incoming queue
-int CommsProxy::Read(void *msg, int len)
-{
-  player_comms_msg_t req, rep;
-  player_msghdr_t hdr;
-  int reqlen;
-
-  req.subtype = PLAYER_COMMS_SUBTYPE_RECV;
-  reqlen = sizeof(req.subtype);
-
-  if(client->Request(PLAYER_COMMS_CODE,index,
-                     (const char*)&req, reqlen,
-                     &hdr, (char*)&rep,sizeof(rep)) ||
-     
-     hdr.type != PLAYER_MSGTYPE_RESP_ACK)
-    return(-1);
-
-  if((int)hdr.size > len)
-  {
-    printf("WARNING: received comms msg too long (%d > %d)\n "
-           "truncating msg\n", hdr.size, len);
-    hdr.size = len;
-  }
-
-  memcpy(msg,rep.data,hdr.size);
-
-  return(hdr.size);
+  this->msg_len = 0;
+  return;
 }
 
  
@@ -75,35 +46,32 @@ int CommsProxy::Read(void *msg, int len)
 // Write a message to the outgoing queue
 int CommsProxy::Write(void *msg, int len)
 {
-  player_comms_msg_t req;
-  int reqlen, replen;
-
-  if(len > (int)sizeof(req.data))
+  if (len > PLAYER_MAX_MESSAGE_SIZE)
   {
-    printf("WARNING: sent comms msg too long (%d > %d);\n "
-           "truncating msg\n", len, sizeof(req.data));
-    len = sizeof(req.data);
+    fprintf(stderr, "outgoing message too long; %d > %d bytes.",
+            len, PLAYER_MAX_MESSAGE_SIZE);
+    return -1;
   }
-
-  req.subtype = PLAYER_COMMS_SUBTYPE_SEND;
-  memcpy(req.data,msg,len);
-  reqlen = sizeof(req) - sizeof(req.data) + len;
-
-  replen = client->Request(PLAYER_COMMS_CODE,index,
-                           (const char*)&req, reqlen);
-
-  if(replen < 0)
-    return(replen);
-
-  return(0);
+  return client->Write(PLAYER_COMMS_CODE, index, (const char *) msg, len);
 }
 
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Update the incoming queue (does nothing)
+// Update the incoming queue 
 void CommsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
+  if (hdr.size > PLAYER_MAX_MESSAGE_SIZE)
+  {
+    fprintf(stderr, "incoming message too long; %d > %d bytes.",
+            hdr.size, PLAYER_MAX_MESSAGE_SIZE);
+    return;
+  }
+  
+  this->msg_len = hdr.size;
+  memcpy(this->msg, buffer, hdr.size);
+
+  return;
 }
 
 
@@ -111,6 +79,9 @@ void CommsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // Debugging function (does nothing)
 void CommsProxy::Print()
 {
+  printf("# Comms(%d:%d) - %c\n", device, index, access);
+  printf("# len %d msg [%s]\n", this->msg_len, this->msg);
+  return;
 }
 
 

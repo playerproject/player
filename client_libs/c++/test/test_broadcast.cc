@@ -20,9 +20,9 @@ test_broadcast(PlayerClient* client, int index)
 
   printf("device [broadcast] index [%d]\n", index);
 
-  TEST("subscribing (read)");
-  if((bp.ChangeAccess(PLAYER_READ_MODE,&access) < 0) ||
-     (access != PLAYER_READ_MODE))
+  TEST("subscribing (read/write)");
+  if((bp.ChangeAccess(PLAYER_ALL_MODE,&access) < 0) ||
+     (access != PLAYER_ALL_MODE))
   {
     FAIL();
     printf("DRIVER: %s\n", bp.driver_name);
@@ -42,19 +42,37 @@ test_broadcast(PlayerClient* client, int index)
 
   sleep(1);
 
-  TEST("receive message");
-  if(bp.Read(rep,sizeof(rep)) >= 0)
-    PASS();
-  else
+
+  for(int t = 0; t < 3; t++)
   {
-    FAIL();
-    return(-1);
+    TEST("receive message");
+    if(client->Read() < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+    PASS();
+
+    if (bp.msg_len > 0)
+    {
+      bp.Print();
+      
+      TEST("compare messages");
+      if(!strncmp(msg,(const char*) bp.msg,strlen(msg)))
+      {
+        PASS();
+        break;
+      }
+      else
+      {
+        FAIL();
+        return(-1);
+      }
+    }
   }
 
-  TEST("compare messages");
-  if(!strncmp(msg,rep,strlen(msg)))
-    PASS();
-  else
+  TEST("got message");
+  if (bp.msg_len == 0)
   {
     FAIL();
     return(-1);

@@ -49,7 +49,6 @@ playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index)
                       (playerc_putdata_fn_t) playerc_comms_putdata);
 
   device->msg_len = 0;
-  device->msg = NULL;
     
   return device;
 }
@@ -58,8 +57,6 @@ playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index)
 // Destroy a comms proxy
 void playerc_comms_destroy(playerc_comms_t *device)
 {
-  if (device->msg)
-    free(device->msg);
   playerc_device_term(&device->info);
   free(device);
   return;
@@ -84,12 +81,13 @@ int playerc_comms_unsubscribe(playerc_comms_t *device)
 void playerc_comms_putdata(playerc_comms_t *device, player_msghdr_t *header,
                            void *data, size_t len)
 {
-  if (device->msg)
-    free(device->msg);
+  if (len > PLAYER_MAX_MESSAGE_SIZE)
+  {
+    PLAYERC_ERR2("incoming message too long; %d > %d bytes.", len, PLAYER_MAX_MESSAGE_SIZE);
+    return;
+  }
   device->msg_len = len;
-  device->msg = malloc(len);
   memcpy(device->msg, data, len);
-
   return;
 }
 
@@ -99,7 +97,7 @@ int playerc_comms_send(playerc_comms_t *device, void *msg, int len)
 {
   if (len > PLAYER_MAX_MESSAGE_SIZE)
   {
-    PLAYERC_ERR2("message too long; %d > %d bytes.", len, PLAYER_MAX_MESSAGE_SIZE);
+    PLAYERC_ERR2("outgoing message too long; %d > %d bytes.", len, PLAYER_MAX_MESSAGE_SIZE);
     return -1;
   }
   return playerc_client_write(device->info.client, &device->info, msg, len);
