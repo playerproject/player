@@ -97,16 +97,17 @@ def makemap(gladepath, logfilename, options):
 ##                     saveframe += 1
 ##                     savetime = logtime
 
-##                 # Rotate the map
-##                 if mainwin.rotate:
-##                     a = mainwin.rotate * 5 * math.pi / 180
-##                     for patch in map.patches:
-##                         patch.pose = geom.coord_add(patch.pose, (0, 0, a))
-##                     for patch in map.patches:
-##                         patch.draw()
-##                     for link in map.links:
-##                         link.draw()
-##                     mainwin.rotate = 0
+                # Rotate the map
+                if mainwin.rotate:
+                    a = mainwin.rotate * 5 * math.pi / 180
+                    for patch in map.patches:
+                        patch.pose = geom.coord_add(patch.pose, (0, 0, a))
+                    for patch in map.patches:
+                        patch.draw()
+                    for link in map.links:
+                        link.draw()
+                    robot.mapper.draw_state()
+                    mainwin.rotate = 0
 
                 # Infer links
                 if mainwin.infer_links:
@@ -195,13 +196,10 @@ def makemap(gladepath, logfilename, options):
 
 def main(gladepath):
 
-    # For added speed
-    #sys.setcheckinterval(100)
-
     logfile = None
-    prof = 0
     options = {}
 
+    # The -p switch is for profiling; it is caught at a higher level
     (opts, args) = getopt.getopt(sys.argv[1:], 'p',
                                  ['nogui',
                                   'disable-scan-match',
@@ -211,7 +209,7 @@ def main(gladepath):
     
     for opt in opts:
         if opt[0] == '-p':
-            prof = 1
+            pass
         elif len(opt) == 1:
             options[opt] = '1'
         else:
@@ -223,17 +221,7 @@ def main(gladepath):
 
     logfile = args[0]
 
-    # Run with profiler
-    if prof:
-        
-        profile.run('makemap(gladepath, logfile, options)', '.profile')
-        p = pstats.Stats('.profile')
-        p.sort_stats('time').print_stats()
-
-    # Run normally
-    else:
-        
-        makemap(gladepath, logfile, options)
+    makemap(gladepath, logfile, options)
         
 
 

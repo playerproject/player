@@ -43,21 +43,14 @@ class TeamMapper:
 
         self.map = map
         self.root_fig = root_fig
-        self.mutuals = {}
-        self.fixed = []
-        self.connected = []
+
+        # Direct all patch figure events back to us
+        self.map.patch_callback = self.on_patch_press
         return
 
 
     def update(self):
         """Look for team-wide info."""
-
-        # Install handlers for patches
-        #if self.root_fig:
-        #    for patch in self.map.patches:
-        #        if not patch in self.connected:
-        #            patch.fig.connect(self.on_patch_press, patch)
-        #            self.connected.append(patch)
 
         return 0
 
@@ -127,7 +120,7 @@ class TeamMapper:
         for patch in self.map.patches:
             patch.rnode = relax.Node(rgraph)
             patch.rnode.pose = patch.pose
-            patch.rnode.free = 1 #not patch.fixed
+            patch.rnode.free = 1
 
         # Create all the links
         for link in self.map.links:
@@ -150,7 +143,6 @@ class TeamMapper:
 
         # Read new values
         for patch in self.map.patches:
-            #if not patch.fixed:
             patch.pose = patch.rnode.pose
 
         # Delete everything
