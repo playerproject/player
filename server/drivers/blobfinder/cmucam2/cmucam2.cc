@@ -43,7 +43,7 @@
 #include <socket_util.h>
 #include <drivertable.h>
 #include <player.h>
-#include <camera.h>
+#include "camera.c"
 
 class Cmucam2:public CDevice 
 {
@@ -54,8 +54,9 @@ class Cmucam2:public CDevice
     void get_blob(packet_t cam_packet, player_blobfinder_blob_elt *blob, color_config range);
     int fd;
     int num_of_blobs;
+    char devicepath[MAX_FILENAME_SIZE];
     color_config color[PLAYER_BLOBFINDER_MAX_BLOBS];
-    Camera cam;
+    //Camera cam;
 
   public:  
 
@@ -92,23 +93,14 @@ Cmucam2_Register(DriverTable* table)
 Cmucam2::Cmucam2(char* interface, ConfigFile* cf, int section)
   : CDevice(sizeof(player_blobfinder_data_t),0,0,0)
 {
+  num_of_blobs = cf->ReadInt(section, "num_blobs", 1);
+  strncpy(devicepath, cf->ReadString(section, "devicepath", NULL), sizeof(devicepath)-1);
 
-  // do any initial setup here, including reading parameters out of
-  // Player's config file
-
-  // you don't need to connect to the camera yet - do that in Setup();
-
-  num_of_blobs = cf->ReadInt(section, "num_of_blobs", 16);
-  char variable[10];
-  for(int j = 0; j < 10; j++)
-    variable[j] = '\0';
-  char blob_num[2];  
-  strcat(variable, "color");
+  char variable[20];
   
   for(int i = 0; i < num_of_blobs; i++)
   {
-    sprintf(blob_num, "%d", i);
-    strcat(variable, blob_num);
+    sprintf(variable, "color%d", i);   
     color[i].rmin = (int)cf->ReadTupleFloat(section, variable, 0, 16);
     color[i].rmax = (int)cf->ReadTupleFloat(section, variable, 1, 16);
     color[i].gmin = (int)cf->ReadTupleFloat(section, variable, 2, 16);
@@ -127,17 +119,16 @@ Cmucam2::Setup()
   PutData((unsigned char*)&dummy,
           sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
 
-  // TODO set up the camera here
-  // open a file descriptor, etc.
-  fd = cam.open_port();        // opening the serial port
-  if(fd<0)                     // if not successful, stop
+  fd = open_port(devicepath);        // opening the serial port
+  if(fd<0)                           // if not successful, stop
+  {
+    printf("Camera connection failed!\n");
     return 0; 
-  cam.power(fd, 1);
-  printf("Camera is ON.");
+  }
 
   /* now spawn reading thread */
   StartThread();
-  
+
   return(0);
 }
 
@@ -145,10 +136,8 @@ int
 Cmucam2::Shutdown()
 {
   StopThread();
-  cam.stop_tracking(fd);
-  cam.power(fd, 0);                   // shutdown the camera
-  cam.close_port(fd);                 // close the serial port
-  printf("Camera is OFF.\n");               
+  stop_tracking(fd);
+  close_port(fd);                 // close the serial port
   return(0);
 }
 
@@ -169,22 +158,19 @@ Cmucam2::Main()
   packet_t blob_info;
   player_blobfinder_blob_elt blob;
 
-  /* loop and read */
-  int i;
+  int blobs_observed;
+
+  poll_mode(fd, 1);  
   for(;;)
   {
-    /* test if we are supposed to cancel */
     pthread_testcancel();
-
-
-    // TODO read data from the CMUCam here
-    for(i = 0; i < num_of_blobs; i++)
+    blobs_observed = 0;
+    for(int i = 0; i < num_of_blobs; i++)
     {
-      cam.track_blob(fd, color[i]);
-      cam.get_t_packet(fd, &blob_info);
-      cam.stop_tracking(fd);
-      get_blob(blob_info, &blob, color[i]);
-      printf("confidence: %d  area: %d   x: %d   y: %d\n", blob_info.confidence, blob_info.blob_area,  blob_info.middle_x, blob_info.middle_y);
+      track_blob(fd, color[i]);   
+      get_t_packet(fd, &blob_info);         
+      stop_tracking(fd);
+      get_blob(blob_info, &blob, color[i]);    
     
       blob.color = htonl(blob.color);
       blob.area = htonl(blob.area);
@@ -199,13 +185,9 @@ Cmucam2::Main()
       memcpy( &local_data.blobs[i], &blob, sizeof(blob) );
     }
 
-    // TODO - if things go badly wrong, 'break' here.
-    // TODO package the data into the blobfinder data format
-
     /* got the data. now fill it in */
     PutData((unsigned char*)&local_data, 
-	    (PLAYER_BLOBFINDER_HEADER_SIZE + num_of_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),0,0);
-
+	    (PLAYER_BLOBFINDER_HEADER_SIZE + num_of_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),0,0);    
   }
  
   pthread_exit(NULL);
