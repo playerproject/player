@@ -69,9 +69,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Define length-specific data types
 //
-#ifndef BYTE
-    #define BYTE unsigned short
-#endif
+#define BYTE unsigned char
 
 
 class CStageDevice : public CDevice
@@ -83,11 +81,11 @@ class CStageDevice : public CDevice
 
     // Initialise the device
     //
-    public: virtual int Setup() {return 0;};
+    public: virtual int Setup();
 
     // Terminate the device
     //
-    public: virtual int Shutdown() {return 0;};
+    public: virtual int Shutdown();
     
     // Read data from the device
     //
