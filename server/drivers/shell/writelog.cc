@@ -135,6 +135,10 @@ class WriteLogDevice
   public: Driver *device;
   public: struct timeval time;
   public: int cameraFrame;
+  // only filled out for sonar devices; we cache the sonar geometry
+  // right after subscribing, then prefix every line of sonar data
+  // with this info.
+  public: player_sonar_geom_t sonar_geom;
 };
 
 
@@ -184,6 +188,9 @@ class WriteLog: public Driver
 
   // Write laser data to file
   private: void WriteLaser(player_laser_data_t *data);
+
+  // Write sonar data to file
+  private: void WriteSonar(player_sonar_data_t *data, WriteLogDevice* device);
 
   // Write position data to file
   private: void WritePosition(player_position_data_t *data);
@@ -336,6 +343,40 @@ int WriteLog::Setup()
     {
       PLAYER_ERROR("unable to subscribe to device for logging");
       return -1;
+    }
+    if (device->id.code == PLAYER_SONAR_CODE)
+    {
+      // We need to cache the sonar geometry
+      unsigned short reptype;
+      device->sonar_geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+      if((device->device->Request(device->id,(void*)this,
+                                  (void*)&(device->sonar_geom),
+                                  sizeof(device->sonar_geom.subtype),
+                                  (struct timeval*)NULL,
+                                  &reptype,
+                                  (void*)&(device->sonar_geom),
+                                  sizeof(device->sonar_geom),
+                                  (struct timeval*)NULL) < 0) ||
+         (reptype != PLAYER_MSGTYPE_RESP_ACK))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get sonar geometry");
+        device->sonar_geom.pose_count = 0;
+      }
+      else
+      {
+        // byteswap
+        device->sonar_geom.pose_count = ntohs(device->sonar_geom.pose_count);
+        for(int j=0; j<device->sonar_geom.pose_count; j++)
+        {
+          device->sonar_geom.poses[j][0] = 
+                  (int16_t)ntohs(device->sonar_geom.poses[j][0]);
+          device->sonar_geom.poses[j][1] = 
+                  (int16_t)ntohs(device->sonar_geom.poses[j][1]);
+          device->sonar_geom.poses[j][2] = 
+                  (int16_t)ntohs(device->sonar_geom.poses[j][2]);
+        }
+      }
     }
   }
 
@@ -586,6 +627,9 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
     case PLAYER_LASER_CODE:
       this->WriteLaser((player_laser_data_t*) data);
       break;
+    case PLAYER_SONAR_CODE:
+      this->WriteSonar((player_sonar_data_t*) data, device);
+      break;
     case PLAYER_POSITION_CODE:
       this->WritePosition((player_position_data_t*) data);
       break;
@@ -827,6 +871,31 @@ void WriteLog::WriteLaser(player_laser_data_t *data)
     fprintf(this->file, "%.3f %2d ",
             MM_M(HUINT16(data->ranges[i]) * HUINT16(data->range_res)),
             data->intensity[i]);
+
+  return;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Write sonar data to file
+void WriteLog::WriteSonar(player_sonar_data_t *data, WriteLogDevice* device)
+{
+  unsigned int i;
+
+  // Note that, in this format, we need a lot of precision in the
+  // resolution field.
+
+  // Format:
+  //   pose_count x0 y0 a0 x1 y1 a1 ...  range_count r0 r1 ...
+  fprintf(this->file, "%u ", device->sonar_geom.pose_count);
+  for(i=0;i<device->sonar_geom.pose_count;i++)
+    fprintf(this->file, "%+07.3f %+07.3f %+07.4f ", 
+            MM_M(device->sonar_geom.poses[i][0]),
+            MM_M(device->sonar_geom.poses[i][1]),
+            DEG_RAD(device->sonar_geom.poses[i][2]));
+
+  fprintf(this->file, "%u ", HUINT16(data->range_count));
+  for(i=0;i<HUINT16(data->range_count);i++)
+    fprintf(this->file, "%.3f ", MM_M(HUINT16(data->ranges[i])));
 
   return;
 }
