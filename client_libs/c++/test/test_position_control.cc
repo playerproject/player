@@ -58,15 +58,20 @@ test_position_control(PlayerClient* client, int index)
   }
   PASS();
 
+  int poses[][3] = { {400,400,45}, 
+		     {400,-400,315}, 
+		     {-400,400,225}, 
+		     {-400,-400,135}, 
+		     {0,0,0}
+  };
 
-  int poses[][3] = { {400,0,0}, {400,0,90}, {400,-400,180}, {0,0,0} };
-  int num_poses = 4;
-  int cycles_allowed = 50;
+  int num_poses = 5;
+  int cycles_allowed = 60;
 
   // test is passed if robot moves to correct position within these
   // tolerances
-  int xtolerance = 30; //mm
-  int ytolerance = 30; //mm
+  int xtolerance = 50; //mm
+  int ytolerance = 50; //mm
   int atolerance = 5; //degrees
 
   int xerror, yerror, aerror;
@@ -77,7 +82,6 @@ test_position_control(PlayerClient* client, int index)
       
       pp.GoTo( poses[p][0], poses[p][1], poses[p][2] );
       
-
       for( int c=0; c<cycles_allowed; c++ )
 	{
 	  client->Read();

@@ -83,19 +83,13 @@ int main(int argc, const char *argv[])
       test_position(&client, index);
 
     // Position device - position control mode
-    // not many robots support this mode
+    // not many robots support this mode but Stage's position model does.
     if (strcmp(device, "position_control") == 0 || strcmp(device, "all") == 0)
       test_position_control(&client, index);
     
     // Sonar device
     if(strcmp(device, "sonar") == 0 || strcmp(device, "all") == 0)
       test_sonar(&client, index);
-    
-    // Misc device
-    /*
-    if(strcmp(device, "misc") == 0 || strcmp(device, "all") == 0)
-      test_misc(&client, index);
-      */
     
     // Laser device
     if(strcmp(device, "laser") == 0 || strcmp(device, "all") == 0)

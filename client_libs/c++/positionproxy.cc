@@ -64,6 +64,7 @@ PositionProxy::DoDesiredHeading(short theta, int xspeed, int yawspeed)
   }
 
   player_position_cmd_t cmd;
+  memset( &cmd, 0, sizeof(cmd) );
 
   // the desired heading is the yaw member
   cmd.yaw = htons(theta);
@@ -91,6 +92,7 @@ PositionProxy::DoStraightLine(int trans)
   }
 
   player_position_cmd_t cmd;
+  memset( &cmd, 0, sizeof(cmd) );
 
   // we send a no movement pos command first so that 
   // the real pos command will look new.  sort of a hack FIX
@@ -124,6 +126,7 @@ PositionProxy::DoRotation(int rot)
   }
 
   player_position_cmd_t cmd;
+  memset( &cmd, 0, sizeof(cmd) );
 
   // as before, send a fake pos command first so the
   // real one will be flagged as new
@@ -153,6 +156,7 @@ int PositionProxy::SetMotorState(unsigned char state)
     return(-1);
 
   player_position_power_config_t config;
+  memset( &config, 0, sizeof(config) );
 
   config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   config.value = state;
@@ -175,6 +179,7 @@ int PositionProxy::SelectVelocityControl(unsigned char mode)
     return(-1);
 
   player_position_velocitymode_config_t config;
+  memset( &config, 0, sizeof(config) );
 
   config.request = PLAYER_POSITION_VELOCITY_MODE_REQ;
   config.value = mode;
@@ -194,9 +199,32 @@ int PositionProxy::ResetOdometry()
     return(-1);
 
   player_position_resetodom_config_t config;
+  memset( &config, 0, sizeof(config) );
 
   config.request = PLAYER_POSITION_RESET_ODOM_REQ;
 
+  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
+                         sizeof(config)));
+}
+
+// set odometry to (x,y,a)
+//
+// Returns:
+//   0 if everything's ok
+//   -1 otherwise (that's bad)
+int PositionProxy::SetOdometry( int x, int y, unsigned short theta   )
+{
+  if(!client)
+    return(-1);
+
+  player_position_set_odom_req_t config;
+  memset( &config, 0, sizeof(config) );
+
+  config.subtype = PLAYER_POSITION_SET_ODOM_REQ;
+  config.x = htonl((int32_t)x);
+  config.y = htonl((int32_t)y);
+  config.theta= htons((uint16_t)theta);
+  
   return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
                          sizeof(config)));
 }
@@ -215,6 +243,7 @@ PositionProxy::SelectPositionMode(unsigned char mode)
   }
 
   player_position_position_mode_req_t req;
+  memset( &req, 0, sizeof(req) );
 
   req.subtype = PLAYER_POSITION_POSITION_MODE_REQ;
   req.state = mode;
@@ -258,6 +287,7 @@ PositionProxy::SetSpeedPID(int kp, int ki, int kd)
   }
 
   player_position_speed_pid_req_t req;
+  memset( &req, 0, sizeof(req) );
 
   req.subtype = PLAYER_POSITION_SPEED_PID_REQ;
   req.kp = htonl((unsigned int)kp);
@@ -280,6 +310,7 @@ PositionProxy::SetPositionPID(short kp, short ki, short kd)
   }
 
   player_position_position_pid_req_t req;
+  memset( &req, 0, sizeof(req) );
 
   req.subtype = PLAYER_POSITION_POSITION_PID_REQ;
   req.kp = htonl(kp);
@@ -304,6 +335,7 @@ PositionProxy::SetPositionSpeedProfile(short spd, short acc)
   }
 
   player_position_speed_prof_req_t req;
+  memset( &req, 0, sizeof(req) );
 
   req.subtype = PLAYER_POSITION_SPEED_PROF_REQ;
   req.speed = htons(spd);
