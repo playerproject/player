@@ -92,6 +92,9 @@ class VFH_Class : public CDevice
     // Pose of robot in odometric cs (mm,mm,deg)
     double odom_pose[3];
 
+    // Stall flag
+    int odom_stall;
+
     // Velocity of robot in robot cs, NOT byteswapped, just for passing
     // through
     int32_t odom_vel_be[3];
@@ -114,6 +117,8 @@ class VFH_Class : public CDevice
     int speed, turnrate;
     double reset_odom_x, reset_odom_y, reset_odom_t;
     int32_t goal_x, goal_y, goal_t;
+    int32_t goal_vx, goal_vy, goal_vt;
+    int cmd_state, cmd_type;
 
 
     // VFH Member variables
@@ -432,6 +437,8 @@ int VFH_Class::GetOdom() {
   this->odom_vel_be[1] = data.yspeed;
   this->odom_vel_be[2] = data.yawspeed;
 
+  this->odom_stall = data.stall;
+
   return 1;
 }
 
@@ -564,9 +571,34 @@ void VFH_Class::PutCommand() {
 
   memset(&cmd, 0, sizeof(cmd));
 
-  cmd.xspeed = (int32_t) (this->con_vel[0]);
-  cmd.yspeed = (int32_t) (this->con_vel[1]);
-  cmd.yawspeed = (int32_t) (this->con_vel[2]);
+  // Stop the robot (locks the motors) if the motor state is set to
+  // disabled.  The P2OS driver does not respect the motor state.
+  if (this->cmd_state == 0)
+  {
+    cmd.xspeed = 0;
+    cmd.yspeed = 0;
+    cmd.yawspeed = 0;
+  }
+
+  // Velocity mode: pass through the commands.  There is some added
+  // latency here, perhaps move this to GetCommand()?
+  else if (this->cmd_type == 0)
+  {
+    cmd.xspeed = this->goal_vx;
+    cmd.yspeed = this->goal_vy;
+    cmd.yawspeed = this->goal_vt;
+  }
+
+  // Position mode
+  else
+  {
+    cmd.xspeed = (int32_t) (this->con_vel[0]);
+    cmd.yspeed = (int32_t) (this->con_vel[1]);
+    cmd.yawspeed = (int32_t) (this->con_vel[2]);
+  }
+
+  if (abs(cmd.yawspeed) > MAX_TURNRATE)
+    PLAYER_WARN1("fast turn %d", cmd.yawspeed);
 
   cmd.xspeed = htonl(cmd.xspeed);
   cmd.yspeed = htonl(cmd.yspeed);
@@ -810,15 +842,37 @@ void VFH_Class::GetCommand()
 
   if(CDevice::GetCommand(&cmd, sizeof(cmd)) != 0) 
   {
-    x = (int)ntohl(cmd.xpos);
-    y = (int)ntohl(cmd.ypos);
-    t = (int)ntohl(cmd.yaw);
-    if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
+    // Velocity mode
+    if (cmd.type == 0)
     {
-      this->active_goal = true;
-      this->goal_x = x;
-      this->goal_y = y;
-      this->goal_t = t;
+      x = (int)ntohl(cmd.xspeed);
+      y = (int)ntohl(cmd.yspeed);
+      t = (int)ntohl(cmd.yawspeed);
+
+      this->cmd_type = 0;
+      this->cmd_state = cmd.state;
+      this->goal_vx = x;
+      this->goal_vy = y;
+      this->goal_vt = t;
+    }
+
+    // Position mode
+    else
+    {
+      x = (int)ntohl(cmd.xpos);
+      y = (int)ntohl(cmd.ypos);
+      t = (int)ntohl(cmd.yaw);
+
+      this->cmd_type = 1;
+      this->cmd_state = cmd.state;
+
+      if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
+      {
+        this->active_goal = true;
+        this->goal_x = x;
+        this->goal_y = y;
+        this->goal_t = t;
+      }
     }
   }
 }
@@ -1629,7 +1683,7 @@ void VFH_Class::PutPose()
   data.xspeed = this->odom_vel_be[0];
   data.yspeed = this->odom_vel_be[1];
   data.yawspeed = this->odom_vel_be[2];
-  data.stall = 0;
+  data.stall = this->odom_stall;
 
   // Byte swap
   data.xpos = htonl(data.xpos);
