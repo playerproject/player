@@ -13,8 +13,7 @@ libplayerclient_a_LIBADD = $(top_builddir)/client_libs/c/playercclient.o $(top_b
 libplayerclient_a_DEPENDENCIES = $(top_builddir)/client_libs/c/playercclient.o  $(top_builddir)/client_libs/libplayerpacket/playerpacket.o 
 
 
-libplayerclient_a_SOURCES =   commsproxy.cc \
-                              clientproxy.cc \
+libplayerclient_a_SOURCES =   clientproxy.cc \
                               gpsproxy.cc \
                               gripperproxy.cc \
                               fiducialproxy.cc \

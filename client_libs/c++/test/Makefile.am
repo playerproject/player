@@ -9,8 +9,7 @@ test_LDADD = $(top_builddir)/client_libs/c++/libplayerclient.a
 
 noinst_PROGRAMS = $(BUILDTEST)
 
-test_SOURCES = test_broadcast.cc \
-               test_blobfinder.cc \
+test_SOURCES = test_blobfinder.cc \
                test.cc \
                test_gps.cc \
                test_gripper.cc \
