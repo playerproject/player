@@ -8,7 +8,7 @@
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
-#if HAVE_OPENSSL_MD5_H && HAVE_LIBMD5
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   #include <openssl/md5.h>
 #endif
 
@@ -108,7 +108,7 @@ void plan_update_cspace(plan_t *plan, const char* cachefile)
   double r;
   plan_cell_t *cell, *ncell;
 
-#if HAVE_OPENSSL_MD5_H && HAVE_LIBMD5
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   short hash;
   hash = plan_md5(plan);
   if(cachefile)
@@ -155,7 +155,7 @@ void plan_update_cspace(plan_t *plan, const char* cachefile)
     }
   }
 
-#if HAVE_OPENSSL_MD5_H && HAVE_LIBMD5
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   if(cachefile)
     plan_write_cspace(plan,cachefile,hash);
 #endif
@@ -180,7 +180,7 @@ int plan_write_cspace(plan_t *plan, const char* fname, short hash)
   }
 
   fprintf(fp,"%d\n%d\n", plan->size_x, plan->size_y);
-  fprintf(fp,"%lf\n%lf\n", plan->scale,plan->max_radius);
+  fprintf(fp,"%.3lf\n%.3lf\n", plan->scale,plan->max_radius);
   fprintf(fp,"%d\n", hash);
 
   for(j = 0; j < plan->size_y; j++)
@@ -188,7 +188,7 @@ int plan_write_cspace(plan_t *plan, const char* fname, short hash)
     for(i = 0; i < plan->size_x; i++)
     {
       cell = plan->cells + PLAN_INDEX(plan, i, j);
-      fprintf(fp,"%f\n", cell->occ_dist);
+      fprintf(fp,"%.3f\n", cell->occ_dist);
     }
   }
 
@@ -229,8 +229,8 @@ int plan_read_cspace(plan_t *plan, const char* fname, short hash)
   /* Verify that metadata matches */
   if((size_x != plan->size_x) ||
      (size_y != plan->size_y) ||
-     (scale != plan->scale) ||
-     (max_radius != plan->max_radius) ||
+     (fabs(scale - plan->scale) > 1e-3) ||
+     (fabs(max_radius - plan->max_radius) > 1e-3) ||
      (cached_hash != hash))
   {
     PLAYER_MSG1(2,"Mismatch in c-space metadata read from file %s", fname);
@@ -262,7 +262,7 @@ int plan_read_cspace(plan_t *plan, const char* fname, short hash)
 short
 plan_md5(plan_t* plan)
 {
-#if HAVE_OPENSSL_MD5_H && HAVE_LIBMD5
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   MD5_CTX c;
   short digest;
 
