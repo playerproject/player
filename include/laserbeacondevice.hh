@@ -103,6 +103,10 @@ class CLaserBeaconDevice : public CDevice
     private: int m_max_bits;
     private: double m_bit_width;
     private: double m_max_depth;
+    private: double m_zero_thresh, m_one_thresh;
+
+    // Filter array (beacons must appear in multiple frames to be accepted
+    //
     private: double m_filter[256];
 };
 

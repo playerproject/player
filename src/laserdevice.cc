@@ -227,7 +227,7 @@ int CLaserDevice::Setup()
     m_scan_res = 50;
     m_scan_min_segment = 0;
     m_scan_max_segment = 360;
-    m_intensity = false;
+    m_intensity = true;
 
     puts("laser initialising");
     fflush(stdout);
