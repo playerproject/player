@@ -441,10 +441,11 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
           // Create a StageDevice with this IO base address and filedes
           dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	  
-          deviceTable->AddDevice(deviceIO->player_id, 
-                                 (char*)(deviceIO->drivername),
-                                 (char*)(deviceIO->robotname),
-                                 PLAYER_ALL_MODE, dev);
+          if(deviceTable->AddDevice(deviceIO->player_id, 
+                                    (char*)(deviceIO->drivername),
+                                    (char*)(deviceIO->robotname),
+                                    PLAYER_ALL_MODE, dev) < 0)
+            exit(-1);
 	  
           // add this port to our listening list
           StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
@@ -478,11 +479,13 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
             {
               int section = configFile.AddEntity(globalparent, "mcom");
               // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id, "mcom",
-                                     (char*)(deviceIO->robotname),
-                                     PLAYER_ALL_MODE, 
-                                     (*(entry->initfunc))(PLAYER_MCOM_STRING,
-                                                          &configFile, section));
+              if(deviceTable->AddDevice(deviceIO->player_id, "mcom",
+                                        (char*)(deviceIO->robotname),
+                                        PLAYER_ALL_MODE, 
+                                        (*(entry->initfunc))(PLAYER_MCOM_STRING,
+                                                             &configFile, 
+                                                             section)) < 0)
+                exit(-1);
  
               // add this port to our listening list
               StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
@@ -518,11 +521,13 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
             else
             {
               // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id, "udpbroadcast",
-                                     (char*)(deviceIO->robotname),
-                                     PLAYER_ALL_MODE, 
-                                     (*(entry->initfunc))(PLAYER_COMMS_STRING,
-                                                          &configFile, section));
+              if(deviceTable->AddDevice(deviceIO->player_id, "udpbroadcast",
+                                        (char*)(deviceIO->robotname),
+                                        PLAYER_ALL_MODE, 
+                                        (*(entry->initfunc))(PLAYER_COMMS_STRING,
+                                                             &configFile, 
+                                                             section)) < 0)
+                exit(-1);
  
               // add this port to our listening list
               StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
@@ -540,11 +545,13 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
             int section = configFile.AddEntity(globalparent, PLAYER_SERVICE_ADV_STRING);
             // TODO: maybe get some stuff out of the world file and add it here?
 
-            deviceTable->AddDevice(deviceIO->player_id, PLAYER_SERVICE_ADV_STRING,
-                (char*) deviceIO->robotname, PLAYER_ALL_MODE,
-                (* (entry->initfunc) ) (PLAYER_SERVICE_ADV_STRING, 
-                                        &configFile, section)
-            );
+            if(deviceTable->AddDevice(deviceIO->player_id, 
+                                      PLAYER_SERVICE_ADV_STRING,
+                                      (char*) deviceIO->robotname, PLAYER_ALL_MODE,
+                                      (* (entry->initfunc) ) (PLAYER_SERVICE_ADV_STRING, 
+                                                              &configFile, 
+                                                              section)) > 0)
+              exit(-1);
 
             StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
             break;
@@ -828,7 +835,10 @@ parse_config_file(char* fname, int** ports, int* num_ports,
                       driver, interface);
         exit(-1);
       }
-      deviceTable->AddDevice(id, driver, robotname, entry->access, tmpdevice);
+      if(deviceTable->AddDevice(id, driver, robotname, 
+                                entry->access, tmpdevice) < 0)
+        exit(-1);
+
       firstdevice=false;
 
       // should this device be "always on"?
