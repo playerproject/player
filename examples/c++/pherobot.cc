@@ -97,10 +97,9 @@ int main(int argc, char **argv)
     memcpy( &send_msgs.tx[i], &send_msg, sizeof(send_msg) );
   
     
-  struct timeval start_tv, end_tv;
+  struct timeval start_tv;
   gettimeofday( &start_tv, NULL );
 
-  int num_loops = 100;
   for( int g=0; /* loop forever */ ; g++)
     {
       if( ip.SendGetMessages( &send_msgs, &recv_msgs ) < 0 )
