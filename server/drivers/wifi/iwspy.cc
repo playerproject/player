@@ -244,7 +244,7 @@ void Iwspy::Main()
       {
         link = data.links + data.link_count++;
         strcpy(link->ip, nic->ip);
-        link->link = htons(nic->link);
+        link->qual = htons(nic->link);
         link->level = htons(nic->level);
         link->noise = htons(nic->noise);
         nic->out_count = nic->in_count;
