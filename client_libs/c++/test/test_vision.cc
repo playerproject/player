@@ -8,6 +8,8 @@
 #include "test.h"
 #include <unistd.h>
 
+extern bool use_stage;
+
 int
 test_vision(PlayerClient* client, int index)
 {
@@ -25,12 +27,14 @@ test_vision(PlayerClient* client, int index)
   }
   PASS();
 
-  // let ACTS start up
-  TEST("waiting for ACTS to start up");
-  for(int i=0;i<100;i++)
-    client->Read();
-  puts("done.");
-
+  if(!use_stage)
+  {
+    // let ACTS start up
+    TEST("waiting for ACTS to start up");
+    for(int i=0;i<100;i++)
+      client->Read();
+    puts("done.");
+  }
 
   for(int t = 0; t < 3; t++)
   {

@@ -8,13 +8,14 @@
 #include "playerclient.h"
 #include "test.h"
 
+bool use_stage;
+
 int main(int argc, const char *argv[])
 {
   const char *host;
   int port;
   int i;
   char *arg;
-  const char *opt, *val;
   const char *device, *sindex; int index;
   PlayerClient client;
 
@@ -23,15 +24,28 @@ int main(int argc, const char *argv[])
   port = 6665;
 
   // Read program options
-  for (i = 1; i < argc - 1; i += 2)
+  for (i = 1; i < argc; i++)
   {
-    opt = argv[i];
-    val = argv[i + 1];
-
-    if (strcmp(opt, "-h") == 0)
-      host = val;
-    else if (strcmp(opt, "-p") == 0)
-      port = atoi(val);
+    if (strcmp(argv[i], "-h") == 0)
+    {
+      if(++i >= argc)
+      {
+        puts("missing hostname");
+        exit(-1);
+      }
+      host = argv[i];
+    }
+    else if (strcmp(argv[i], "-p") == 0)
+    {
+      if(++i >= argc)
+      {
+        puts("missing port");
+        exit(-1);
+      }
+      port = atoi(argv[i]);
+    }
+    else if(!strcmp(argv[i],"-stage"))
+      use_stage = true;
   }
   
   printf("host [%s:%d]\n", host, port);
