@@ -32,26 +32,58 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+/** The {\tt LaserBeaconProxy} class is used to control the
+    {\tt laserbeacon} device.
+    The latest set of detected beacons is stored in the
+    {\tt beacons} array.
+    The {\tt laserbeacon} device may be configured using
+    the {\tt SetBits()} and {\tt SetThresh()} methods.
+*/
 class LaserbeaconProxy : public ClientProxy
 {
 
   public:
     // the latest laser beacon data
+
+    /** The latest laser beacon data.
+        Each beacon has the following information:
+        \begin{verbatim}
+        uint8_t id;
+        uint16_t range;
+        int16_t bearing;
+        int16_t orient;
+        \end{verbatim}
+        where {\tt range} is measured in mm, and {\tt bearing} and
+        {\tt orient} are measured in degrees.
+        The number of beacons detected is stored in {\tt count}.
+     */
     unsigned short count;
     player_laserbeacon_item_t beacons[PLAYER_MAX_LASERBEACONS];
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
     LaserbeaconProxy(PlayerClient* pc, unsigned short index,
                      unsigned char access='c'):
             ClientProxy(pc,PLAYER_LASERBEACON_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 
-    // Set the bit properties
+    /** Set the bit properties of the beacons.
+        Set {\tt bit\_count} to the number of bits in your beacons
+        (usually 5 or 8).
+        Set {\tt bit\_size} to the width of each bit (in mm).\\
+        Returns the 0 on success, or -1 of there is a problem.
+     */
     int SetBits(unsigned char bit_count, unsigned short bit_size);
 
-    // Set the bit thresholds
+    /** Set the identification thresholds.
+        Thresholds must be in the range 0--99.
+        See the Player manual for a full discussion of these settings.\\
+        Returns the 0 on success, or -1 of there is a problem.
+     */
     int SetThresh(unsigned short zero_thresh, unsigned short one_thresh);
     
     // interface that all proxies must provide

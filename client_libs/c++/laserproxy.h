@@ -32,33 +32,74 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+
+/** The {\tt LaserProxy} class is used to control the {\tt laser} device.
+    The latest scan data is held in two arrays: {\tt ranges} and {\tt
+    intensity}.  The laser scan range, resolution and so on can be
+    configured using the {\tt Configure()} method.
+*/
 class LaserProxy : public ClientProxy
 {
 
   public:
+
     // the latest laser scan data
-    short min_angle;
-    short max_angle;
+    
+    /** Scan range for the latest set of data.
+        Angles are measured in units of $0.1^{\circ}$,
+        in the range -9000 ($-90^{\circ}$) to
+        +9000 ($+90^{\circ}$).
+    */
+    short min_angle; short max_angle;
+
+    /** Scan resolution for the latest set of data.
+        Resolution is measured in units of $0.1^{\circ}$.
+    */
     unsigned short resolution;
+
+    /// The number of range measurements in the latest set of data.
     unsigned short range_count;
+
+    /// The range values (in mm).
     unsigned short ranges[PLAYER_NUM_LASER_SAMPLES];
+
     // TODO: haven't verified that intensities work yet:
+    /// The reflected intensity values (arbitrary units in range 0-7).
     unsigned char intensities[PLAYER_NUM_LASER_SAMPLES];
+
+    // What is this?
     unsigned short min_right,min_left;
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
     LaserProxy(PlayerClient* pc, unsigned short index, 
                unsigned char access='c'):
-            ClientProxy(pc,PLAYER_LASER_CODE,index,access) {}
+        ClientProxy(pc,PLAYER_LASER_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 
     // configure the laser scan.
+    /** Configure the laser scan pattern.
+        Angles {\tt min\_angle} and {\tt max\_angle} are measured in
+        units of $0.1^{\circ}$, in the range -9000
+        ($-90^{\circ}$) to +9000 ($+90^{\circ}$).  {\tt
+        resolution} is also measured in units of $0.1^{\circ}$; valid
+        values are: 25 ($0.25^{\circ}$), 50 ($0.5^{\circ}$) and $100
+        (1^{\circ}$).  Set {\tt intensity} to {\tt true} to enable
+        intensity measurements, or {\tt false} to disable.\\
+        Returns the 0 on success, or -1 of there is a problem.
+    */
     int Configure(short min_angle, short max_angle, 
                   unsigned short resolution, bool intensity);
 
-    // a different way to access the range data
+    /** Range access operator.
+        This operator provides an alternate way of access the range data.
+        For example, given a {\tt LaserProxy} named {\tt lp}, the following
+        expressions are equivalent: \verb+lp.ranges[0]+ and \verb+lp[0]+.
+    */
     unsigned short operator [](unsigned int index)
     { 
       if(index < sizeof(ranges))

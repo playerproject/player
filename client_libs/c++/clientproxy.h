@@ -35,6 +35,9 @@
 // forward declaration for friending
 class PlayerClient;
 
+
+/* Base class for all proxy devices.
+ */
 class ClientProxy
 {
   // GCC 3.0 requires this new syntax
@@ -51,9 +54,11 @@ class ClientProxy
     struct timeval timestamp;  // time at which this data was sensed
     struct timeval senttime;   // time at which this data was sent
     struct timeval receivedtime; // time at which this data was received
-    
-    // constructor will try to get access to the device (unless req_device
-    // is 0)
+
+    /* Constructor.
+        The constructor will try to get access to the device
+        (unless \p req_device is 0 or \p req_access is 'c').
+    */
     ClientProxy(PlayerClient* pc, 
 		unsigned short req_device,
 		unsigned short req_index,

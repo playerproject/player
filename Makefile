@@ -27,7 +27,7 @@ dep:
 	cd client_libs && make dep
 	cd examples && make dep
 
-install: install_server install_client_libs install_examples
+install: install_server install_client_libs install_examples install_doc
 
 install_server:
 	cd src && make install
@@ -37,6 +37,10 @@ install_client_libs:
 
 install_examples:
 	cd examples && make install
+
+install_doc:
+	$(MKDIR) -p $(INSTALL_DOC)
+	$(INSTALL) -m 644 doc/* $(INSTALL_DOC)
 
 uninstall:
 	cd src && make uninstall
@@ -48,11 +52,13 @@ uninstall:
 
 distro: clean
 	$(MKDIR) doc
+	cd client_libs/c++/doc && make manual
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` $(PLAYER_VERSION)
 
 distro_bleeding: clean
 	$(MKDIR) doc
+	cd client_libs/c++/doc && make manual
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` Bleeding
 

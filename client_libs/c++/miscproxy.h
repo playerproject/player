@@ -32,26 +32,35 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+/** The {\tt MiscProxy} class is used to control the {\tt misc} device.
+    The latest data is contained in the public attributes.
+ */
 class MiscProxy : public ClientProxy
 {
 
   public:
-    // the latest misc data
-    //
-    // bitfields; panels number clockwise
-    unsigned char frontbumpers,rearbumpers;
-    // battery voltage in decivolts
+    /** The state of the front and read bumper arrays.
+        The lower 5 bits of each represent the states of the
+        5 individual bumper panels (0 if not presses, 1 if pressed).
+        Panels are numbers clockwise.
+     */
+    unsigned char frontbumpers, rearbumpers;
+    
+    /// Battery voltage (decivolts).
     unsigned char voltage;
-    // bitfield of current digital in
+    
+    /// Value of the auxiliary digital input channel (bitfield).
     unsigned char digin;
-    // 0-255 level of whichever analog in is selected
+    
+    /// Value of selected analogy input channel (0-255)
     unsigned char analog;
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
-    MiscProxy(PlayerClient* pc, unsigned short index, 
-              unsigned char access='c') :
-            ClientProxy(pc,PLAYER_MISC_CODE,index,access) {}
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
+    */
+    MiscProxy(PlayerClient* pc, unsigned short index, unsigned char access='c') :
+        ClientProxy(pc,PLAYER_MISC_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 

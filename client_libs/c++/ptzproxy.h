@@ -32,27 +32,36 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+
+/** The {\tt PtzProxy} class is used to control the {\tt ptz} device.
+    The state of the camera can be read from the {\tt pan, tilt, zoom}
+    attributes and changed using the {\tt SetCam()} method.
+ */
 class PtzProxy : public ClientProxy
 {
 
   public:
-    // the latest ptz data
-    short pan,tilt;
+    /// Pan and tilt values (degrees).
+    short pan, tilt;
+
+    /// Zoom value (0 -- 1024, where 0 is wide angle and 1024 is telephoto).
     unsigned short zoom;
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
-    PtzProxy(PlayerClient* pc, unsigned short index, 
-             unsigned char access='c'):
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
+    PtzProxy(PlayerClient* pc, unsigned short index, unsigned char access='c'):
             ClientProxy(pc,PLAYER_PTZ_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 
-    // send a camera command
-    //
-    // Returns:
-    //   0 if everything's ok
-    //   -1 otherwise (that's bad)
+    /** Change the camera state.
+        Specify the new {\tt pan} and {\tt tilt} values (degrees)
+        and the new {\tt zoom} value (0 -- 1024).
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
     int SetCam(short pan, short tilt, unsigned short zoom);
 
     // interface that all proxies must provide

@@ -32,29 +32,43 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+/** The {\tt SonarProxy} class is used to control the {\tt sonar} device.
+    The most recent sonar range measuremts can be read from the {\tt range}
+    attribute, or using the the {\tt []} operator.
+ */
 class SonarProxy : public ClientProxy
 {
 
   public:
-    // the latest sonar scan data
+    /** The latest sonar scan data.
+        Range is measured in mm.
+     */
     unsigned short ranges[PLAYER_NUM_SONAR_SAMPLES];
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
+    */
     SonarProxy(PlayerClient* pc, unsigned short index, 
                unsigned char access = 'c') :
             ClientProxy(pc,PLAYER_SONAR_CODE,index,access) {}
 
     // these methods are the user's interface to this device
     
-    // enable/disable the sonars
-    //
-    // Returns:
-    //   0 if everything's ok
-    //   -1 otherwise (that's bad)
+    /** Enable/disable the sonars.
+        Set {\tt state} to 1 to enable, 0 to disable.
+        Note that when sonars are disabled the client will still receive sonar
+        data, but the ranges will always be the last value read from the sonars
+        before they were disabled.\\
+        Returns 0 on success, -1 if there is a problem.
+     */
     int SetSonarState(unsigned char state);
 
-    // a different way to access the range data
+    /** Range access operator.
+        This operator provides an alternate way of access the range data.
+        For example, given a {\tt SonarProxy} named {\tt sp}, the following
+        expressions are equivalent: \verb+sp.ranges[0]+ and \verb+sp[0]+.
+     */
     unsigned short operator [](unsigned int index) 
     { 
       if(index < sizeof(ranges))
@@ -63,6 +77,11 @@ class SonarProxy : public ClientProxy
         return(0);
     }
 
+    /** Get the pose of a particular sonar.
+        This is a convenience function that returns the pose of any
+        sonar on a Pioneer2DX robot.  It will {\em not} return valid
+        poses for other configurations.
+    */
     void GetSonarPose(int s, double* px, double* py, double* pth);
     
     // interface that all proxies must provide
