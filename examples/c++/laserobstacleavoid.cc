@@ -92,10 +92,10 @@ int main(int argc, char **argv)
     minL=MAXINT; 
     minR=MAXINT;
     for (int j=0; j<180; j++) {
-      if (minR>robot.laser[j]) minR=robot.laser[j];
+      if (minR>robot.laser->ranges[j]) minR=robot.laser->ranges[j];
     }
     for (int j=181; j<361; j++) {
-      if (minL>robot.laser[j]) minL=robot.laser[j];
+      if (minL>robot.laser->ranges[j]) minL=robot.laser->ranges[j];
     }
     int l=(100*minR)/500-100;
     int r=(100*minL)/500-100;

@@ -73,6 +73,14 @@ CLaserBeaconDevice::CLaserBeaconDevice(CDevice *laser)
 //
 size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize) 
 {
+    // Dont do anything if the laser doesnt have new data
+    //
+    if (m_laser->data_timestamp_sec == this->data_timestamp_sec &&
+        m_laser->data_timestamp_usec == this->data_timestamp_usec)
+    {
+        return sizeof(player_laserbeacon_data_t);
+    }
+    
     // Get the laser data
     //
     player_laser_data_t laser_data;
@@ -108,6 +116,11 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
     //
     ASSERT(maxsize >= sizeof(beacon_data));
     memcpy(dest, &beacon_data, sizeof(beacon_data));
+
+    // Copy the laser timestamp
+    //
+    this->data_timestamp_sec = m_laser->data_timestamp_sec;
+    this->data_timestamp_usec  = m_laser->data_timestamp_usec;
     
     return sizeof(beacon_data);
 }
@@ -159,17 +172,9 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
     // Number of bits and size of each bit
     //
     m_max_bits = beacon_config->bit_count;
+    m_max_bits = max(m_max_bits, 3);
+    m_max_bits = min(m_max_bits, 8);
     m_bit_width = ntohs(beacon_config->bit_size) / 1000.0;
-
-    // Expected width of beacon
-    //
-    m_min_width = m_max_bits * m_bit_width - m_bit_width;  
-    m_max_width = m_max_bits * m_bit_width + m_bit_width;
-
-    // Tolerance
-    //
-    m_one_thresh = +beacon_config->one_thresh;
-    m_zero_thresh = -beacon_config->zero_thresh;
 
     PLAYER_TRACE2("bits %d, width %f", m_max_bits, m_bit_width);
 }
@@ -189,15 +194,10 @@ int CLaserBeaconDevice::Setup()
     m_max_bits = 8;
     m_bit_width = 0.05;
 
-    // Expected width of beacon
+    // Zero the filters
     //
-    m_min_width = m_max_bits * m_bit_width - m_bit_width;  
-    m_max_width = m_max_bits * m_bit_width + m_bit_width;
-    
-    // Histogram thresholds
-    //
-    m_one_thresh = +3;
-    m_zero_thresh = -3;
+    for (int i = 0; i < ARRAYSIZE(m_filter); i++)
+        m_filter[i] = 0;
     
     // Hack to get around mutex on GetData
     //
@@ -228,13 +228,25 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
 {
     beacon_data->count = 0;
 
-    double max_width = m_max_bits * m_bit_width;
-    
     int ai = -1;
     int bi = -1;
     double ax, ay;
     double bx, by;
+
+    // Expected width of beacon
+    //
+    double max_width = (m_max_bits + 1) * m_bit_width;
     
+    // Update the filters
+    // We filter ids across multiple frames.
+    //
+    double filter_gain = 0.50;
+    double filter_thresh = 0.80;
+    for (int i = 0; i < ARRAYSIZE(m_filter); i++)
+        m_filter[i] *= (1 - filter_gain);
+
+    // Find the beacons in this scan
+    //
     for (int i = 0; i < laser_data->range_count; i++)
     {
         int intensity = (int) (laser_data->ranges[i] >> 13);
@@ -253,26 +265,43 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
                 ax = px;
                 ay = py;
             }
+            bi = i;
+            bx = px;
+            by = py;
         }
         if (ai < 0)
             continue;
-        
+
         double width = sqrt((px - ax) * (px - ax) + (py - ay) * (py - ay));
         if (width < max_width)
             continue;
 
-        bi = i;
-        bx = px;
-        by = py;
-        
-        printf("%d %d\n", ai, bi);
+        // Assign an id to the beacon
+        //
         double orient = atan2(by - ay, bx - ax);
         int id = IdentBeacon(ai, bi, ax, ay, orient, laser_data);
+
+        // Reset counters so we can find new beacons
+        //
         ai = -1;
         bi = -1;
 
+        // Ignore invalid ids
+        //
         if (id < 0)
             continue;
+        
+        // Do some additional filtering on the id
+        // We make sure the id is present in multiple laser scans,
+        // thereby eliminating most false matches.
+        //
+        if (id > 0)
+        {
+            assert(id >= 0 && id < ARRAYSIZE(m_filter));
+            m_filter[id] += filter_gain;
+            if (m_filter[id] < filter_thresh)
+                id = 0;
+        }
         
         // Check for array overflow
         //
@@ -305,8 +334,16 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
 int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double oth,
                                     const player_laser_data_t *laser_data)
 {
-    int term_count = 0;
-    double term[PLAYER_NUM_LASER_SAMPLES][2];
+
+    // Initialise our probability distribution
+    // We determine the probability that each bit is set using Bayes law.
+    //
+    double prob[8][2];
+    for (int bit = 0; bit < ARRAYSIZE(prob); bit++)
+    {
+        prob[bit][0] = 0.5;
+        prob[bit][1] = 0.5;
+    }
 
     // Scan through the readings that make up the candidate
     //
@@ -341,62 +378,60 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
         if (fabs(tcy) > m_max_depth)
             return -1;
 
-        // Add a term to our histogram
+        // Update our probability distribution
+        // Use Bayes law
         //
-        if (intensity > 0)
+        for (int bit = 0; bit < m_max_bits; bit++)
         {
-            term[term_count][0] = tcx / m_bit_width;
-            term[term_count][1] = fabs(tbx - tax) / m_bit_width;
-            term_count++;
-        }
-    }
+            // Assume a simple gaussian for the sensor model
+            // The width of the gaussian is determined by the laser resolution
+            // and the orientation of the beacon wrt the laser.
+            //
+            double x = bit + 0.5;
+            double m = tcx / m_bit_width;
+            double s = fabs(tbx - tax) / m_bit_width / 2;
+            double pa = exp(-(x - m) * (x - m) / (2 * s * s)) / 2 + 0.5;
+            double pb = 1 - pa;
 
-    /* for testing
-    for (double x = -0.5; x <= m_max_bits + 0.5; x += 0.1)
-    {
-        double v = 0;
-        for (int j = 0; j < term_count; j++)
-        {
-            double z = term[j][0];
-            double s = term[j][1];
-            v += exp(-(x - z) * (x - z) / (2 * s * s));
+            assert(bit >= 0 && bit < ARRAYSIZE(prob));
+            
+            if (intensity == 0)
+            {
+                prob[bit][0] *= pa;
+                prob[bit][1] *= pb;
+            }
+            else
+            {
+                prob[bit][0] *= pb;
+                prob[bit][1] *= pa;
+            }
+
+            // Normalize
+            //
+            double n = prob[bit][0] + prob[bit][1];
+            prob[bit][0] /= n;
+            prob[bit][1] /= n;
         }
-        printf("%1.3f %1.3f\n", (double) x, (double) v);
     }
-    printf("\n");
-    printf("\n");
-    */
 
     int id = 0;
-    double one_thresh;
-    double zero_thresh;
+    double one_thresh = 0.99;
+    double zero_thresh = 0.01;
 
-    // Identify bits
-    // Assumes first two bits are 1 and 0.
+    // Now assign the id
     //
     for (int bit = 0; bit < m_max_bits; bit++)
     {
-        double x = (double) bit + 0.5;
-        double v = 0;
-        for (int j = 0; j < term_count; j++)
-        {
-            double z = term[j][0];
-            double s = term[j][1];
-            v += exp(-(x - z) * (x - z) / (2 * s * s));
-        }
-
-        if (bit == 0)
-            one_thresh = v - 0.5;
-        else if (bit == 1)
-            zero_thresh = v + 0.5;
-        
-        if (v > one_thresh)
+        //printf("%f ", (double) (prob[bit][1]));
+        if (prob[bit][1] > one_thresh)
             id |= (1 << bit);
-        else if (v > zero_thresh)
-            return 0;
+        else if (prob[bit][1] > zero_thresh)
+        {
+            id = 0;
+            break;
+        }
     }
-    if (one_thresh - zero_thresh < 0)
-        return 0;
+    //printf("\n");
     
     return id;
 }

@@ -195,11 +195,9 @@ class PlayerClient
       * Set the laser beacon configuration
       * <bit_count> specifies the number of bits in the beacon (including end markers)
       * <bit_size> specifies the size of each bit (in mm)
-      * <one_thresh> is the total number of reflections required to form a '1' bit
-      * <zero_thresh> is the total number of non-reflections required to form a '0' bit
       *
       */
-     int SetLaserBeaconConfig(int bit_count, int bit_size, int one_thresh, int zero_thresh);
+     int SetLaserBeaconConfig(int bit_count, int bit_size);
       
      /*
       * Enable/disable the motors
