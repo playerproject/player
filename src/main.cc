@@ -350,6 +350,7 @@ int main( int argc, char *argv[] )
   CDevice* laserbeaconDevice = NULL;
   CDevice* broadcastDevice = NULL;
   CDevice* speechDevice = NULL;
+  CDevice* gpsDevice = NULL;
 
   /* use these to temporarily store command-line args */
   int playerport = PLAYER_PORTNUM;
@@ -560,6 +561,11 @@ int main( int argc, char *argv[] )
                                      GRIPPER_DATA_BUFFER_SIZE,
                                      GRIPPER_COMMAND_BUFFER_SIZE,
                                      GRIPPER_CONFIG_BUFFER_SIZE);
+
+    gpsDevice = new CStageDevice(arenaIO + GPS_DATA_START,
+                                     GPS_DATA_BUFFER_SIZE,
+                                     GPS_COMMAND_BUFFER_SIZE,
+                                     GPS_CONFIG_BUFFER_SIZE);
     
     // unsupported devices - CNoDevice::Setup() fails
     audioDevice =  (CDevice*)new CNoDevice();
@@ -628,6 +634,8 @@ int main( int argc, char *argv[] )
     deviceTable->AddDevice(PLAYER_BROADCAST_CODE, 0, PLAYER_ALL_MODE, broadcastDevice);
   if(speechDevice)
     deviceTable->AddDevice(PLAYER_SPEECH_CODE, 0, PLAYER_WRITE_MODE, speechDevice);
+  if(gpsDevice)
+    deviceTable->AddDevice(PLAYER_GPS_CODE, 0, PLAYER_READ_MODE, gpsDevice);
 
   /* set up to handle SIGPIPE (happens when the client dies) */
   if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
