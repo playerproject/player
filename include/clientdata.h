@@ -56,10 +56,19 @@ class CClientData
 {
   CDeviceSubscription* requested;
   int numsubs;
-  pthread_mutex_t access, requesthandling;
+  pthread_mutex_t access;
+  //pthread_mutex_t requesthandling;
 
   void MotorStop();
   void PrintRequested(char*);
+  
+  void RemoveBlanks();  
+  void RemoveRequests();
+  void UpdateRequested(player_device_req_t req);
+  bool CheckPermissions(unsigned short code, unsigned short index);
+  unsigned char FindPermission( unsigned short code, unsigned short index);
+  void Unsubscribe( unsigned short code, unsigned short index );
+  int Subscribe( unsigned short code, unsigned short index );
 
  public:
   int client_index;
@@ -78,14 +87,7 @@ class CClientData
   //void HandleRequests( unsigned char *buffer, int readcnt );
   void HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                                  unsigned int payload_size);
-  void RemoveBlanks();  
-  void RemoveRequests();
-  void UpdateRequested(player_device_req_t req);
-  bool CheckPermissions(unsigned short code, unsigned short index);
-  unsigned char FindPermission( unsigned short code, unsigned short index);
   int BuildMsg( unsigned char *data, size_t maxsize );
-  void Unsubscribe( unsigned short code, unsigned short index );
-  int Subscribe( unsigned short code, unsigned short index );
 };
 
 

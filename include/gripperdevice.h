@@ -35,7 +35,7 @@ class CGripperDevice: public CP2OSDevice
 {
  public:
   ~CGripperDevice();
-  CGripperDevice::CGripperDevice(char* port):CP2OSDevice(port){}
+  CGripperDevice::CGripperDevice(int argc, char** argv):CP2OSDevice(argc,argv){}
   size_t GetData( unsigned char *, size_t maxsize);
   void PutCommand( unsigned char *, size_t maxsize);
 };

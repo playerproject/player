@@ -71,12 +71,16 @@ int main(int argc, char **argv)
   /* Connect to Player server */
   PlayerClient robot(host,port);
 
-  /* Request sensor data */
+  /* Request sensor access */
   SpeechProxy fp(&robot,0,'w');
 
   /* send the string */
-  printf("Saying \"%s\"...\n", str);
-  fp.Say(str);
+  for(;;)
+  {
+    printf("Saying \"%s\"...\n", str);
+    fp.Say(str);
+    sleep(4);
+  }
 
   /* wait a little to make sure that it gets out to the sound card */
   sleep(5);

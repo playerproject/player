@@ -62,7 +62,7 @@ class CLaserBeaconDevice : public CDevice
 {
     // Constructor
     //
-    public: CLaserBeaconDevice(CDevice *laser);
+    public: CLaserBeaconDevice(int argc, char** argv);
 
     // Setup/shutdown routines
     //
@@ -95,6 +95,7 @@ class CLaserBeaconDevice : public CDevice
 
     // Pointer to laser to get data from
     //
+    private: uint16_t index;
     private: CDevice *m_laser;
 
     // Magic numbers

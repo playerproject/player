@@ -182,7 +182,7 @@ private:
 
   static struct timeval timeBegan_tv;
 
-  CP2OSDevice(char*);
+  CP2OSDevice(int argc, char** argv);
   ~CP2OSDevice();
 
   virtual CLock* GetLock( void ){ return lock; };

@@ -72,7 +72,11 @@ int CDeviceTable::AddDevice(unsigned short code, unsigned short index,
       preventry=thisentry, thisentry=thisentry->next)
   {
     if((thisentry->code == code) && (thisentry->index == index))
+    {
+      if(thisentry->devicep)
+        delete thisentry->devicep;
       break;
+    }
   }
 
   if(!thisentry)

@@ -65,7 +65,7 @@ class CSpeechDevice:public CDevice
 
     // constructor 
     //
-    CSpeechDevice();
+    CSpeechDevice(int argc, char** argv);
 
     ~CSpeechDevice();
     void KillFestival();

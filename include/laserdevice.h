@@ -63,7 +63,7 @@ class CLaserDevice : public CDevice
 {
   public:
     
-    CLaserDevice(char *port);
+    CLaserDevice(int argc, char** argv);
       
     int Setup();
     int Shutdown();

@@ -85,10 +85,11 @@ extern CSIP*           CP2OSDevice::sippacket;
 extern bool           CP2OSDevice::arena_initialized_data_buffer;
 extern bool           CP2OSDevice::arena_initialized_command_buffer;
 
+#define DEFAULT_P2OS_PORT "/dev/ttyS0"
 
 void *RunPsosThread( void *p2osdevice );
 
-CP2OSDevice::CP2OSDevice(char *port) 
+CP2OSDevice::CP2OSDevice(int argc, char** argv)
 {
   if(!data)
     data = new player_p2os_data_t;
@@ -108,16 +109,29 @@ CP2OSDevice::CP2OSDevice(char *port)
 
   command->position.speed = 0;
   command->position.turnrate = 0;
-  //*(short*)&command[POSITION_COMMAND_OFFSET] = 
-          //(short)htons((unsigned short)0);
-  //*(short*)&command[POSITION_COMMAND_OFFSET+sizeof(short)] = 
-          //(short)htons((unsigned short)0);
 
   command->gripper.cmd = GRIPstore;
   command->gripper.arg = 0x00;
 
+  strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
   psos_fd = -1;
-  strcpy( psos_serial_port, port );
+  for(int i=0;i<argc;i++)
+  {
+    if(!strcmp(argv[i],"port"))
+    {
+      if(++i<argc)
+      {
+        strncpy(psos_serial_port, argv[i], sizeof(psos_serial_port));
+        psos_serial_port[sizeof(psos_serial_port)-1] = '\0';
+      }
+      else
+        fprintf(stderr, "CP2OSDevice: missing port; using default: \"%s\"\n",
+                psos_serial_port);
+    }
+    else
+      fprintf(stderr, "CP2OSDevice: ignoring unknown parameter \"%s\"\n",
+              argv[i]);
+  }
 
   // zero the per-device subscription counter.
   subscrcount = 0;
@@ -155,7 +169,7 @@ int CP2OSDevice::Setup()
   char name[20], type[20], subtype[20];
   int cnt;
 
-  printf("P2OS connection initializing...");
+  printf("P2OS connection initializing (%s)...",psos_serial_port);
   fflush(stdout);
 
   if((psos_fd = open( psos_serial_port, O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 ) {

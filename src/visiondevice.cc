@@ -62,21 +62,44 @@
 void* RunVisionThread(void* visiondevice);
 void QuitACTS(void* visiondevice);
 
+#define DEFAULT_ACTS_PORT 5001
+#define DEFAULT_ACTS_CONFIGFILE "/usr/local/acts/actsconfig"
 
-CVisionDevice::CVisionDevice(int num, char* configfile, bool oldacts)
+CVisionDevice::CVisionDevice(int argc, char** argv)
 {
   sock = -1;
   //data = new unsigned char[sizeof(unsigned short)+ACTS_TOTAL_MAX_SIZE];
   data = new player_internal_vision_data_t;
 
-  // save that number.  however, command-line flag to ACTS doesn't seem
-  // to work right now...
-  portnum = num;
-  useoldacts = oldacts;
-  if(configfile)
-    strncpy(configfilepath,configfile,sizeof(configfilepath));
-  else
-    configfilepath[0] = '\0';
+  strncpy(configfilepath,DEFAULT_ACTS_CONFIGFILE,sizeof(configfilepath));
+  portnum=DEFAULT_ACTS_PORT;
+  for(int i=0;i<argc;i++)
+  {
+    if(!strcmp(argv[i],"port"))
+    {
+      if(++i<argc)
+        portnum = atoi(argv[i]);
+      else
+        fprintf(stderr, "CVisionDevice: missing port; using default: %d\n",
+                portnum);
+    }
+    else if(!strcmp(argv[i],"configfile"))
+    {
+      if(++i<argc)
+      {
+        strncpy(configfilepath,argv[i],sizeof(configfilepath));
+        configfilepath[sizeof(configfilepath)-1] = '\0';
+      }
+      else
+        fprintf(stderr, "CVisionDevice: missing configfile; "
+                "using default: \"%s\"\n", configfilepath);
+    }
+    else
+      fprintf(stderr, "CVisionDevice: ignoring unknown parameter \"%s\"\n",
+              argv[i]);
+  }
+  // just don't deal with old acts
+  useoldacts = false;
 }
 
 CVisionDevice::~CVisionDevice()
@@ -113,7 +136,8 @@ CVisionDevice::Setup()
 
   pthread_attr_t attr;
 
-  printf("ACTS vision server connection initializing...");
+  printf("ACTS vision server connection initializing (%s,%d)...",
+         configfilepath,portnum);
   fflush(stdout);
 
   if(useoldacts)

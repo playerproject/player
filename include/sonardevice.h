@@ -33,8 +33,8 @@
 class CSonarDevice: public CP2OSDevice 
 {
  public:
+  CSonarDevice(int argc, char** argv):CP2OSDevice(argc, argv){}
   size_t GetData( unsigned char *, size_t maxsize);
-  CSonarDevice(char* port):CP2OSDevice(port){}
 };
 
 #endif

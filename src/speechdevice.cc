@@ -80,7 +80,7 @@ void QuitFestival(void* speechdevice);
 
 
 
-CSpeechDevice::CSpeechDevice()
+CSpeechDevice::CSpeechDevice(int argc, char** argv)
 {
   sock = -1;
   data = new player_speech_data_t;
