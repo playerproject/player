@@ -1,4 +1,5 @@
-SUBDIRS = . test bindings
+SUBDIRS = . test 
+#bindings
 
 AM_CPPFLAGS = -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
