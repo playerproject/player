@@ -294,7 +294,7 @@ AC_OUTPUT(Makefile
           server/drivers/rwi/Makefile 
           server/drivers/isense/Makefile 
           server/drivers/stage/Makefile 
-	server/drivers/reb/Makefile 
+          server/drivers/reb/Makefile 
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile
@@ -310,6 +310,7 @@ AC_OUTPUT(Makefile
           utils/Makefile
           utils/playerv/Makefile
           utils/tkviewer/Makefile
+          utils/playerjoy/Makefile
           config/Makefile)
 
 
