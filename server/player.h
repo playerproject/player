@@ -983,44 +983,50 @@ typedef struct player_blobfinder_data
  ** end section
  *************************************************************************/
 
+/*************************************************************************
+ ** begin section ptz
+ *************************************************************************/
 
-/*************************************************************************/
-/*
- * PTZ interface
- */
+/** [Synopsis]
+The {\tt ptz} interface is used to control a pan-tilt-zoom camera. */
 
-/*
- * the ptz command packet
- */
-typedef struct
+/** [Data] */
+/** The {\tt ptz} interface returns data reflecting the current state of the
+Pan-Tilt-Zoom camera unit; the format is: */
+typedef struct player_ptz_data
 {
-  /* Pan value (degrees).  Zero at center, increases counterclockwise. */
+  /** Pan (degrees) */
   int16_t pan;
 
-  /* Tilt value (degrees).  Zero at center, increases up. */
+  /** Tilt (degrees) */
   int16_t tilt;
 
-  /* Field of view (degrees). */
+  /** Field of view (degrees). */
+  int16_t zoom;
+
+} __attribute__ ((packed)) player_ptz_data_t;
+
+/** [Command] */
+/**
+The {\tt ptz} interface accepts commands that set change the state of
+the camera; the format is given below. Note that
+the commands are {\em absolute}, not relative. */
+typedef struct player_ptz_cmd
+{
+  /** Pan (degrees) */
+  int16_t pan;
+
+  /** Tilt (degrees) */
+  int16_t tilt;
+
+  /** Field of view (degrees). */
   int16_t zoom;
   
 } __attribute__ ((packed)) player_ptz_cmd_t;
 
-/*
- * the ptz data packet
- */
-typedef struct
-{
-  /* Pan value (degrees).  Zero at center, increases counterclockwise. */
-  int16_t pan;
-
-  /* Tilt value (degrees).  Zero at center, increases up. */
-  int16_t tilt;
-
-  /* Field of view (degrees). */
-  int16_t zoom;
-
-} __attribute__ ((packed)) player_ptz_data_t;
-/*************************************************************************/
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 /**************************************************************************
  * The Audio interface
