@@ -50,7 +50,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 
 #include <string.h>
 #include <math.h>
@@ -175,6 +175,8 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
     m_max_bits = max(m_max_bits, 3);
     m_max_bits = min(m_max_bits, 8);
     m_bit_width = ntohs(beacon_config->bit_size) / 1000.0;
+    m_zero_thresh = ntohs(beacon_config->zero_thresh) / 100.0;
+    m_one_thresh = ntohs(beacon_config->one_thresh) / 100.0;
 
     PLAYER_TRACE2("bits %d, width %f", m_max_bits, m_bit_width);
 }
@@ -197,6 +199,11 @@ int CLaserBeaconDevice::Setup()
     //
     m_max_bits = 8;
     m_bit_width = 0.05;
+
+    // Default thresholds
+    //
+    m_zero_thresh = 0.10;
+    m_one_thresh = 0.95;
 
     // Zero the filters
     //
@@ -243,6 +250,7 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
 
     // Expected width of beacon
     //
+    double min_width = (m_max_bits - 1) * m_bit_width;
     double max_width = (m_max_bits + 1) * m_bit_width;
     
     // Update the filters
@@ -282,6 +290,10 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
 
         double width = sqrt((px - ax) * (px - ax) + (py - ay) * (py - ay));
         if (width < max_width)
+            continue;
+
+        width = sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
+        if (width < min_width || width > max_width)
             continue;
 
         // Assign an id to the beacon
@@ -398,7 +410,7 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
             double x = bit + 0.5;
             double m = tcx / m_bit_width;
             double s = fabs(tbx - tax) / m_bit_width / 2;
-            double pa = exp(-(x - m) * (x - m) / (2 * s * s)) / 2 + 0.5;
+            double pa = 0.90 * exp(-(x - m) * (x - m) / (2 * s * s)) / 2 + 0.5;
             double pb = 1 - pa;
 
             assert(bit >= 0 && bit < ARRAYSIZE(prob));
@@ -423,17 +435,15 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
     }
 
     int id = 0;
-    double one_thresh = 0.99;
-    double zero_thresh = 0.01;
 
     // Now assign the id
     //
     for (int bit = 0; bit < m_max_bits; bit++)
     {
-        //printf("%f ", (double) (prob[bit][1]));
-        if (prob[bit][1] > one_thresh)
+        //printf("%f ", (double) prob[bit][1]);
+        if (prob[bit][1] > m_one_thresh)
             id |= (1 << bit);
-        else if (prob[bit][1] > zero_thresh)
+        else if (prob[bit][1] > m_zero_thresh)
         {
             id = 0;
             break;

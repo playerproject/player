@@ -655,7 +655,8 @@ int PlayerClient::SetLaserConfig(int scan_res, int min_angle, int max_angle, boo
  * <bit_size> specifies the size of each bit (in mm)
  *
  */
-int PlayerClient::SetLaserBeaconConfig(int bit_count, int bit_size)
+int PlayerClient::SetLaserBeaconConfig(int bit_count, int bit_size,
+                                       int zero_thresh, int one_thresh)
 {
   player_msghdr_t replyhdr;
   char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
@@ -664,6 +665,8 @@ int PlayerClient::SetLaserBeaconConfig(int bit_count, int bit_size)
 
   payload.bit_count = (uint8_t) bit_count;
   payload.bit_size = htons(bit_size);
+  payload.zero_thresh = htons(zero_thresh);
+  payload.one_thresh = htons(one_thresh);
 
   return(player_request(&conn, PLAYER_LASERBEACON_CODE, 0,
                           (char*) &payload, sizeof(payload),
