@@ -242,6 +242,13 @@ int WriteLog::Setup()
 {
   int i;
   WriteLogDevice *device;
+
+  // Check for valid wait device
+  if (this->wait_device >= this->device_count)
+  {
+    PLAYER_ERROR("invalid wait device");
+    return -1;
+  }
   
   // Subscribe to the underlying devices
   for (i = 0; i < this->device_count; i++)
