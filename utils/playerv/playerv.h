@@ -40,6 +40,8 @@
  * Default colors
  ***************************************************************************/
 
+#define COLOR_POSITION_ROBOT     0xC00000
+#define COLOR_POSITION_CONTROL   0xFF0000
 #define COLOR_LASER_SCAN         0x0000C0
 #define COLOR_LASERBEACON_BEACON 0x0000C0
 
@@ -57,7 +59,7 @@ typedef struct
 
   // The base figure for the robot
   rtk_fig_t *robot_fig;
-
+  
   // Menu containing file options
   rtk_menu_t *file_menu;
   rtk_menuitem_t *exit_item;
@@ -75,7 +77,8 @@ mainwnd_t *mainwnd_create(rtk_app_t *app);
 void mainwnd_destroy(mainwnd_t *wnd);
 
 // Update the window
-void mainwnd_update(mainwnd_t *wnd);
+// Returns 1 if the program should quit.
+int mainwnd_update(mainwnd_t *wnd);
 
 
 // Window containing tabular data.
@@ -91,23 +94,58 @@ tablewnd_t *tablewnd_init(rtk_app_t *app);
 
 
 /***************************************************************************
+ * Position device
+ ***************************************************************************/
+
+// Position device info
+typedef struct
+{
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *enable_item, *disable_item;
+
+  // Figures
+  rtk_fig_t *robot_fig;
+  rtk_fig_t *control_fig;
+  rtk_fig_t *path_fig;
+  
+  // Position device proxy
+  playerc_position_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+} position_t;
+
+
+// Create a position device
+position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+
+// Destroy a position device
+void position_destroy(position_t *position);
+
+// Update a position device
+void position_update(position_t *position);
+
+
+/***************************************************************************
  * Laser device
  ***************************************************************************/
 
 // Laser device info
 typedef struct
 {
-  // Subscribe/unsibscribe menu item
-  rtk_menuitem_t *menuitem;
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *res025_item, *res050_item, *res100_item;
 
   // Figure for drawing the laser scan
   rtk_fig_t *scan_fig;
   
   // Laser device proxy
   playerc_laser_t *proxy;
-
-  // Non-zero if the laser is currently subscribed
-  int subscribed;
 
   // Timestamp on most recent data
   double datatime;
@@ -132,7 +170,7 @@ void laser_update(laser_t *laser);
 // LaserBeacon device info
 typedef struct
 {
-  // Menu
+  // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *bits5_item, *bits8_item;
@@ -142,9 +180,6 @@ typedef struct
   
   // LaserBeacon device proxy
   playerc_laserbeacon_t *proxy;
-
-  // Non-zero if the laser is currently subscribed
-  int subscribed;
 
   // Timestamp on most recent data
   double datatime;

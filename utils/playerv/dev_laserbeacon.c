@@ -38,11 +38,31 @@ void laserbeacon_draw(laserbeacon_t *laserbeacon);
 // Create a laserbeacon device
 laserbeacon_t *laserbeacon_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index)
 {
+  int subscribe;
   char label[64];
+  char section[64];
   laserbeacon_t *laserbeacon;
   
   laserbeacon = malloc(sizeof(laserbeacon_t));
   memset(laserbeacon, 0, sizeof(laserbeacon_t));
+
+  // Create a proxy
+  laserbeacon->proxy = playerc_laserbeacon_create(client, index);
+  laserbeacon->datatime = 0;
+
+  snprintf(section, sizeof(section), "laserbeacon:%d", index);
+    
+  // Set initial device state
+  subscribe = opt_get_int(opt, section, "", 0);
+  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
+  if (subscribe)
+  {
+    if (playerc_laserbeacon_subscribe(laserbeacon->proxy, PLAYER_READ_MODE) != 0)
+      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+  }
+
+  // Create a figure
+  laserbeacon->beacon_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
 
   // Construct the menu
   snprintf(label, sizeof(label), "LaserBeacon %d", index);
@@ -51,15 +71,8 @@ laserbeacon_t *laserbeacon_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client
   laserbeacon->bits5_item = rtk_menuitem_create(laserbeacon->menu, "5 bits", 0);
   laserbeacon->bits8_item = rtk_menuitem_create(laserbeacon->menu, "8 bits", 0);
 
-  // Create a figure
-  laserbeacon->beacon_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
-
-  // Create a proxy
-  laserbeacon->proxy = playerc_laserbeacon_create(client, index);
-
-  // Misc initialization
-  laserbeacon->subscribed = 0;
-  laserbeacon->datatime = 0;
+  // Set the initial menu state
+  rtk_menuitem_check(laserbeacon->subscribe_item, laserbeacon->proxy->info.subscribed);
 
   return laserbeacon;
 }
@@ -68,7 +81,7 @@ laserbeacon_t *laserbeacon_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client
 // Destroy a laserbeacon device
 void laserbeacon_destroy(laserbeacon_t *laserbeacon)
 {
-  if (laserbeacon->subscribed)
+  if (laserbeacon->proxy->info.subscribed)
     playerc_laserbeacon_unsubscribe(laserbeacon->proxy);
   playerc_laserbeacon_destroy(laserbeacon->proxy);
 
@@ -84,39 +97,36 @@ void laserbeacon_destroy(laserbeacon_t *laserbeacon)
 // Update a laserbeacon device
 void laserbeacon_update(laserbeacon_t *laserbeacon)
 {
-  // See if the subscription menu item has changed
-  if (rtk_menuitem_ischecked(laserbeacon->subscribe_item) != laserbeacon->subscribed)
+  // Update the device subscription
+  if (rtk_menuitem_ischecked(laserbeacon->subscribe_item))
   {
-    if (!laserbeacon->subscribed)
-    {
+    if (!laserbeacon->proxy->info.subscribed)
       if (playerc_laserbeacon_subscribe(laserbeacon->proxy, PLAYER_READ_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-      else
-        laserbeacon->subscribed = 1;
-    }
-    else
-    {
+  }
+  else
+  {
+    if (laserbeacon->proxy->info.subscribed)
       if (playerc_laserbeacon_unsubscribe(laserbeacon->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-      else
-        laserbeacon->subscribed = 0;
-    }
-    rtk_menuitem_check(laserbeacon->subscribe_item, laserbeacon->subscribed);
   }
+  rtk_menuitem_check(laserbeacon->subscribe_item, laserbeacon->proxy->info.subscribed);
 
   // See if the number of bits has changed
   if (rtk_menuitem_isactivated(laserbeacon->bits5_item))
   {    
-    if (playerc_laserbeacon_configure(laserbeacon->proxy, 5, 0.050) != 0)
-      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+    if (laserbeacon->proxy->info.subscribed)
+      if (playerc_laserbeacon_configure(laserbeacon->proxy, 5, 0.050) != 0)
+        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
   if (rtk_menuitem_isactivated(laserbeacon->bits8_item))
-  {    
-    if (playerc_laserbeacon_configure(laserbeacon->proxy, 8, 0.050) != 0)
-      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+  {
+    if (laserbeacon->proxy->info.subscribed)
+      if (playerc_laserbeacon_configure(laserbeacon->proxy, 8, 0.050) != 0)
+        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
 
-  if (laserbeacon->subscribed)
+  if (laserbeacon->proxy->info.subscribed)
   {
     // Draw in the beacon data if it has changed.
     if (laserbeacon->proxy->info.datatime != laserbeacon->datatime)

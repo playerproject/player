@@ -36,18 +36,57 @@ void laser_draw(laser_t *laser);
 // Create a laser device
 laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index)
 {
+  int subscribe;
+  double ox, oy, oa;
   char label[64];
+  char section[64];
   laser_t *laser;
   
   laser = malloc(sizeof(laser_t));
 
-  snprintf(label, sizeof(label), "Laser %d", index);
-  laser->menuitem = rtk_menuitem_create(mainwnd->device_menu, label, 1);
-  laser->scan_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
-  
   laser->proxy = playerc_laser_create(client, index);
-  laser->subscribed = 0;
   laser->datatime = 0;
+
+  snprintf(section, sizeof(section), "laser:%d", index);
+
+  // Get laser geometry
+  // TESTING
+  if (index == 1)
+  {
+    ox = 0;
+    oy = 0;
+    oa = M_PI;
+  }
+  else
+  {
+    ox = 0;
+    oy = 0;
+    oa = 0;
+  }
+
+  // Set initial device state
+  subscribe = opt_get_int(opt, section, "", 0);
+  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
+  if (subscribe)
+  {
+    if (playerc_laser_subscribe(laser->proxy, PLAYER_READ_MODE) != 0)
+      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+  }
+
+  // Construct figures
+  laser->scan_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
+  rtk_fig_origin(laser->scan_fig, ox, oy, oa);
+    
+  // Construct the menu
+  snprintf(label, sizeof(label), "Laser %d", index);
+  laser->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
+  laser->subscribe_item = rtk_menuitem_create(laser->menu, "Subscribe", 1);
+  laser->res025_item = rtk_menuitem_create(laser->menu, "0.25 deg resolution", 0);
+  laser->res050_item = rtk_menuitem_create(laser->menu, "0.50 deg resolution", 0);
+  laser->res100_item = rtk_menuitem_create(laser->menu, "1.00 deg resolution", 0);
+
+  // Set the initial menu state
+  rtk_menuitem_check(laser->subscribe_item, laser->proxy->info.subscribed);
 
   return laser;
 }
@@ -56,12 +95,18 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, 
 // Destroy a laser device
 void laser_destroy(laser_t *laser)
 {
-  if (laser->subscribed)
+  if (laser->proxy->info.subscribed)
     playerc_laser_unsubscribe(laser->proxy);
   playerc_laser_destroy(laser->proxy);
 
   rtk_fig_destroy(laser->scan_fig);
-  rtk_menuitem_destroy(laser->menuitem);
+
+  rtk_menuitem_destroy(laser->res025_item);
+  rtk_menuitem_destroy(laser->res050_item);
+  rtk_menuitem_destroy(laser->res100_item);
+  rtk_menuitem_destroy(laser->subscribe_item);
+  rtk_menu_destroy(laser->menu);
+  
   free(laser);
 }
 
@@ -69,27 +114,42 @@ void laser_destroy(laser_t *laser)
 // Update a laser device
 void laser_update(laser_t *laser)
 {
-  // See if the subscription menu item has changed
-  if (rtk_menuitem_ischecked(laser->menuitem) != laser->subscribed)
+  // Update the device subscription
+  if (rtk_menuitem_ischecked(laser->subscribe_item))
   {
-    if (!laser->subscribed)
-    {
+    if (!laser->proxy->info.subscribed)
       if (playerc_laser_subscribe(laser->proxy, PLAYER_READ_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-      else
-        laser->subscribed = 1;
-    }
-    else
-    {
+  }
+  else
+  {
+    if (laser->proxy->info.subscribed)
       if (playerc_laser_unsubscribe(laser->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-      else
-        laser->subscribed = 0;
-    }
-    rtk_menuitem_check(laser->menuitem, laser->subscribed);
+  }
+  rtk_menuitem_check(laser->subscribe_item, laser->proxy->info.subscribed);
+
+  // See if the resolution has been changed
+  if (rtk_menuitem_isactivated(laser->res025_item))
+  {
+    if (laser->proxy->info.subscribed)
+      if (playerc_laser_configure(laser->proxy, -M_PI/2, +M_PI/2, 0.25*M_PI/180, 1) != 0)
+        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+  }
+  if (rtk_menuitem_isactivated(laser->res050_item))
+  {
+    if (laser->proxy->info.subscribed)
+      if (playerc_laser_configure(laser->proxy, -M_PI/2, +M_PI/2, 0.50*M_PI/180, 1) != 0)
+        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+  }
+  if (rtk_menuitem_isactivated(laser->res100_item))
+  {
+    if (laser->proxy->info.subscribed)
+      if (playerc_laser_configure(laser->proxy, -M_PI/2, +M_PI/2, 1.00*M_PI/180, 1) != 0)
+        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
 
-  if (laser->subscribed)
+  if (laser->proxy->info.subscribed)
   {
     // Draw in the laser scan if it has been changed.
     if (laser->proxy->info.datatime != laser->datatime)

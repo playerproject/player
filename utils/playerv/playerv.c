@@ -52,6 +52,7 @@ int main(int argc, char **argv)
   int rate;
 
   // Devices
+  position_t *position;
   laser_t *laser[2];
   laserbeacon_t *laserbeacon[2];
 
@@ -103,10 +104,14 @@ int main(int argc, char **argv)
   */  
 
   // Create (but dont subscribe) devices
+  position = position_create(mainwnd, opt, client, 0);
   laser[0] = laser_create(mainwnd, opt, client, 0);
   laser[1] = laser_create(mainwnd, opt, client, 1);
   laserbeacon[0] = laserbeacon_create(mainwnd, opt, client, 0);
   laserbeacon[1] = laserbeacon_create(mainwnd, opt, client, 1);
+
+  // Print out a list of unused options.
+  opt_warn_unused(opt);
 
   // Start the gui
   rtk_app_refresh_rate(app, rate);
@@ -114,11 +119,16 @@ int main(int argc, char **argv)
   
   while (!quit)
   {
+    // Update the main window
+    if (mainwnd_update(mainwnd))
+      break;
+
     // Wait for some data.  We rely on getting the sync messages if no
     // devices are subscribed.
     playerc_client_read(client);
 
     // Update devices
+    position_update(position);
     laser_update(laser[0]);
     laser_update(laser[1]);
     laserbeacon_update(laserbeacon[0]);
@@ -133,6 +143,7 @@ int main(int argc, char **argv)
   laserbeacon_destroy(laserbeacon[0]);
   laser_destroy(laser[1]);
   laser_destroy(laser[0]);
+  position_destroy(position);
 
   // Destroy the main window
   mainwnd_destroy(mainwnd);
