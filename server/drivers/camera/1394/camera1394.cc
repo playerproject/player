@@ -162,8 +162,6 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   else
     this->frameRate = FRAMERATE_60;
 
-  // TODO: frame size
-  
   // Image size. This determines the capture resolution. There are a limited
   // number of options available. At 640x480, a camera can capture at
   // _RGB or _MONO or _MONO16.  
@@ -171,7 +169,10 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   const char* str;
   str =  cf->ReadString(section, "camera_mode", "mode_160x120_yuv444");
   if (0==strcmp(str,"mode_160x120_yuv444"))
+  {
     this->mode = MODE_160x120_YUV444;
+    this->frameSize = 160 * 120 * 2; // Is this correct?
+  }
   else if (0==strcmp(str,"mode_320x240_yuv422"))
   {
     this->mode = MODE_320x240_YUV422;
@@ -182,11 +183,14 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   else if (0==strcmp(str,"mode_640x480_yuv422"))
     this->mode = MODE_640x480_YUV422;
   else if (0==strcmp(str,"mode_640x480_rgb"))
+  {
     this->mode = MODE_640x480_RGB;
+    this->frameSize = 640 * 480 * 3;
+  }
   else if (0==strcmp(str,"mode_640x480_mono"))
   {
     this->mode = MODE_640x480_MONO;
-    this->frameSize = 640 * 480;
+    this->frameSize = 640 * 480 * 1;
   }
   else if (0==strcmp(str,"mode_640x480_mono16"))
     this->mode = MODE_640x480_MONO16;
@@ -269,9 +273,10 @@ int Camera1394::Setup()
     }
   }
 
+  // Start transmitting camera data
   if (DC1394_SUCCESS != dc1394_start_iso_transmission(this->handle, this->camera.node))
   {
-    PLAYER_ERROR("Unable to start camera iso transmission.");
+    PLAYER_ERROR("unable to start camera");
     return -1;
   }
 
@@ -288,6 +293,10 @@ int Camera1394::Shutdown()
 {
   // Stop the driver thread.
   StopThread();
+
+  // Stop transmitting camera data
+  if (dc1394_stop_iso_transmission(this->handle, this->camera.node) != DC1394_SUCCESS) 
+    PLAYER_WARN("unable to stop camera");
 
   // Free resources
   if (this->method == methodRaw)
@@ -430,6 +439,26 @@ int Camera1394::ConvertFrame()
         dst[0] = src[1];
         dst[1] = src[3];
       }
+      break;
+    }
+
+    case MODE_640x480_MONO:
+    {
+      this->data.depth = 8;
+      this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
+      this->data.image_size = this->frameSize;
+      assert(this->data.image_size <= sizeof(this->data.image));
+      memcpy(this->data.image, this->frame, this->data.image_size);
+      break;
+    }
+
+    case MODE_640x480_RGB:
+    {
+      this->data.depth = 8;
+      this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+      this->data.image_size = this->frameSize;
+      assert(this->data.image_size <= sizeof(this->data.image));
+      memcpy(this->data.image, this->frame, this->data.image_size);
       break;
     }
 

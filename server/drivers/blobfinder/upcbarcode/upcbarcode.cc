@@ -42,6 +42,9 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
@@ -78,7 +81,7 @@ class UPCBarcode : public Driver
   private: void HandleGetGeom(void *client, void *req, int reqlen);
   
   // Process any new camera data.
-  private: int UpdateCamera();
+  private: int ReadCamera();
 
   // Look for barcodes in the image.  
   private: void ProcessImage();
@@ -90,26 +93,40 @@ class UPCBarcode : public Driver
   private: int ExtractCode(int symbol_count, int symbols[]);
   
   // Write the device data (the data going back to the client).
-  private: void WriteData();
+  private: void WriteBlobfinderData();
+
+  // Write the device data (the data going back to the client).
+  private: void WriteCameraData();
+
+  // Output devices
+  private: player_device_id_t blobfinder_id;
+  private: player_device_id_t out_camera_id;
 
   // Image processing
-  private: double edge_thresh;
+  private: double edgeThresh;
   
   // Barcode tolerances
   private: int barcount;
   private: double barwidth;
-  private: double guard_min, guard_tol;
-  private: double err_first, err_second;
+  private: double guardMin, guardTol;
+  private: double errFirst, errSecond;
 
-  // Camera stuff
-  private: int camera_index;
+  // Input camera stuff
   private: player_device_id_t camera_id;
   private: Driver *camera;
-  private: double camera_time;
-  private: player_camera_data_t camera_data;
+  private: struct timeval cameraTime;
+  private: player_camera_data_t cameraData;
+
+  // Images
+  private: IplImage *inpImage;
+  private: IplImage *outImage;
+  private: CvMat outSubImages[4];
+  
+  // Output camera stuff
+  private: player_camera_data_t outCameraData;
 
   // List of currently tracked blobs.
-  private: int blob_count;
+  private: int blobCount;
   private: blob_t blobs[256];
 };
 
@@ -131,30 +148,69 @@ void UPCBarcode_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 UPCBarcode::UPCBarcode( ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE,
-             sizeof(player_blobfinder_data_t), 0, 10, 10)
+    : Driver(cf, section)
 {
-  this->camera_index = cf->ReadInt(section, "camera", 0);
+  
+  // Must have a blobfinder interface
+  if (cf->ReadDeviceId(&this->blobfinder_id, section, "provides",
+                       PLAYER_BLOBFINDER_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+  if (this->AddInterface(this->blobfinder_id, PLAYER_READ_MODE,
+                         sizeof(player_blobfinder_data_t), 0, 1, 1) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+
+  // Optionally have a camera interface
+  if (cf->ReadDeviceId(&this->out_camera_id, section, "provides",
+                       PLAYER_CAMERA_CODE, -1, NULL) == 0)
+  {
+    if (this->AddInterface(this->out_camera_id, PLAYER_READ_MODE,
+                           sizeof(player_camera_data_t), 0, 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      return;
+    }
+  }
+  else
+    memset(&this->out_camera_id.code, 0, sizeof(player_device_id_t));
+
+  // Must have an input camera
+  if (cf->ReadDeviceId(&this->camera_id, section, "requires",
+                       PLAYER_CAMERA_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+
+  // Other camera settings
   this->camera = NULL;
-  this->camera_time = 0;
+
+  // Image workspace
+  this->inpImage = NULL;
+  this->outImage = NULL;
 
   // Image processing
-  this->edge_thresh = cf->ReadFloat(section, "edge_thresh", 20);
+  this->edgeThresh = cf->ReadFloat(section, "edgeThresh", 20);
   
   // Default blobfinder properties.
   this->barwidth = cf->ReadLength(section, "bit_width", 0.08);
   this->barcount = cf->ReadInt(section, "bit_count", 3);
 
   // Barcode properties: minimum height (pixels), height tolerance (ratio).
-  this->guard_min = cf->ReadInt(section, "guard_min", 3);
-  this->guard_tol = cf->ReadLength(section, "guard_tol", 0.20);
+  this->guardMin = cf->ReadInt(section, "guardMin", 3);
+  this->guardTol = cf->ReadLength(section, "guardTol", 0.20);
 
   // Error threshold on the first and second best digits
-  this->err_first = cf->ReadFloat(section, "digit_err_first", 0.5);
-  this->err_second = cf->ReadFloat(section, "digit_err_second", 1.0);
+  this->errFirst = cf->ReadFloat(section, "digit_errFirst", 0.5);
+  this->errSecond = cf->ReadFloat(section, "digit_errSecond", 1.0);
 
   // Reset blob list.
-  this->blob_count = 0;
+  this->blobCount = 0;
 
   return;
 }
@@ -165,9 +221,6 @@ UPCBarcode::UPCBarcode( ConfigFile* cf, int section)
 int UPCBarcode::Setup()
 {
   // Subscribe to the camera.
-  this->camera_id.code = PLAYER_CAMERA_CODE;
-  this->camera_id.index = this->camera_index;
-  this->camera_id.port = this->device_id.port;
   this->camera = deviceTable->GetDriver(this->camera_id);
   if (!this->camera)
   {
@@ -197,6 +250,11 @@ int UPCBarcode::Shutdown()
   // Unsubscribe from devices.
   this->camera->Unsubscribe(this->camera_id);
 
+  if (this->inpImage)
+    cvReleaseImage(&(this->inpImage));
+  if (this->outImage)
+    cvReleaseImage(&(this->outImage));
+
   return 0;
 }
 
@@ -214,10 +272,11 @@ void UPCBarcode::Main()
     pthread_testcancel();
 
     // Process any new camera data.
-    if (this->UpdateCamera())
+    if (this->ReadCamera())
     {
       this->ProcessImage();
-      this->WriteData();
+      this->WriteBlobfinderData();
+      this->WriteCameraData();      
     }
 
     // Process any pending requests.
@@ -268,26 +327,21 @@ void UPCBarcode::HandleGetGeom(void *client, void *request, int len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process any new camera data.
-int UPCBarcode::UpdateCamera()
+int UPCBarcode::ReadCamera()
 {
   size_t size;
-  struct timeval timestamp;
-  double time;
 
   // Get the camera data.
-  size = this->camera->GetData(this->camera_id, (void*)&this->camera_data,
-                               sizeof(this->camera_data), &timestamp);
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
-
-  // Dont do anything if this is old data.
-  if (fabs(time - this->camera_time) < 0.001)
-    return 0;
-  this->camera_time = time;
+  size = this->camera->GetData(this->camera_id, &this->cameraData,
+                               sizeof(this->cameraData), &this->cameraTime);
   
   // Do some byte swapping
-  this->camera_data.width = ntohs(this->camera_data.width);
-  this->camera_data.height = ntohs(this->camera_data.height); 
-  this->camera_data.depth = this->camera_data.depth;
+  this->cameraData.width = ntohs(this->cameraData.width);
+  this->cameraData.height = ntohs(this->cameraData.height); 
+  this->cameraData.depth = this->cameraData.depth;
+  this->cameraData.image_size = ntohl(this->cameraData.image_size);
+  this->cameraData.format = this->cameraData.format;
+  this->cameraData.compression = this->cameraData.compression;
   
   return 1;
 }
@@ -304,15 +358,57 @@ void UPCBarcode::ProcessImage()
   int symbols[PLAYER_CAMERA_IMAGE_HEIGHT];
   blob_t *blob;
 
+  int width, height;
+
+  width = this->cameraData.width;
+  height = this->cameraData.height;
+
+  // Create input image if it doesnt exist
+  if (this->inpImage == NULL)
+    this->inpImage = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 1);
+
+  // Copy pixels into input image
+  switch (this->cameraData.format)
+  {
+    case PLAYER_CAMERA_FORMAT_GREY8:
+    {
+      // Copy pixels to input image (grayscale)
+      assert(this->inpImage->imageSize >= (int) this->cameraData.image_size);
+      memcpy(this->inpImage->imageData, this->cameraData.image, this->inpImage->imageSize);
+      break;
+    }
+    default:
+    {
+      PLAYER_WARN1("image format [%d] is not supported", this->cameraData.format);
+      return;
+    }
+  }
+
+  // Create an output image if we dont have one already.
+  if (this->outImage == NULL)
+  {
+    this->outImage = cvCreateImage(cvSize(2 * width, height), IPL_DEPTH_8U, 1);
+    cvGetSubRect(this->outImage, this->outSubImages + 0, cvRect(0, 0, width, height));
+    cvGetSubRect(this->outImage, this->outSubImages + 1, cvRect(width, 0, width, height));
+  }
+
+  // Copy original image to output
+  if (this->out_camera_id.port)
+  {
+    cvSetZero(this->outImage);
+    cvCopy(this->inpImage, this->outSubImages + 0);
+
+    // TESTING
+    cvSaveImage("out.pgm", this->outImage);
+  }
+
   step_x = 16;
   
-  this->blob_count = 0;
+  this->blobCount = 0;
   blob = NULL;
 
-  printf("%d %d\n", this->camera_data.width, this->camera_data.height);
-
   // Process image columns
-  for (x = 0; x < this->camera_data.width; x += step_x)
+  for (x = 0; x < width; x += step_x)
   {
     // Extract raw symbols
     symbol_count = this->ExtractSymbols(x, sizeof(symbols) / sizeof(symbols[0]), symbols);
@@ -320,25 +416,26 @@ void UPCBarcode::ProcessImage()
     // Identify barcode
     id = this->ExtractCode(symbol_count, symbols);
 
-    printf("%d %d\n", x, id);
+    if (id >= 0)
+      printf("%d %d\n", x, id);
 
     // If we have an open blob, and didnt get the same id, close the blob
     if (blob != NULL && id != blob->id)
     {
-      this->blob_count++;
+      this->blobCount++;
       blob = NULL;
     }
 
     // If we dont have a blob, and we got an id, open a blob
     if (blob == NULL && id >= 0)
     {
-      assert(this->blob_count < (int) (sizeof(this->blobs) / sizeof(this->blobs[0])));
-      blob = this->blobs + this->blob_count;
+      assert(this->blobCount < (int) (sizeof(this->blobs) / sizeof(this->blobs[0])));
+      blob = this->blobs + this->blobCount;
       blob->id = id;
       blob->ax = x;
       blob->bx = x + 1;
       blob->ay = 0;
-      blob->by = this->camera_data.height;
+      blob->by = this->cameraData.height;
     }
 
     // If we have an open blob, and got an id, continue the blob
@@ -364,48 +461,22 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
   int state, start, symbol_count;
   double kernel[] = {+1, +2, 0, -2, -1};
 
-  // GREY
-  if (this->camera_data.depth == 8)
-  {
-    off = x * this->camera_data.depth / 8;
-    inc = this->camera_data.width * this->camera_data.depth / 8;
-  }
+  off = x;
+  inc = this->inpImage->width;
 
-  // RGB24, use G channel
-  else if (this->camera_data.depth == 24)
-  {
-    off = x * this->camera_data.depth / 8 + 1;
-    inc = this->camera_data.width * this->camera_data.depth / 8;
-  }
-
-  // RGB32, use G channel
-  else if (this->camera_data.depth == 32)
-  {
-    off = x * this->camera_data.depth / 8 + 1;
-    inc = this->camera_data.width * this->camera_data.depth / 8;
-  }
-
-  else
-  {
-    PLAYER_ERROR1("no support for image depth %d", this->camera_data.depth);
-    return 0;
-  }
-
-  //FILE *file = fopen("edge.out", "a+");
-
-  assert(symbol_max_count >= this->camera_data.height);
+  assert(symbol_max_count >= this->inpImage->height);
 
   state = -1;
   start = -1;
   symbol_count = 0;
 
-  for (i = 2, pix = off + 2 * inc; i < this->camera_data.height - 2; i++, pix += inc)
+  for (i = 2, pix = off + 2 * inc; i < this->inpImage->height - 2; i++, pix += inc)
   {
    // Run an edge detector
     fn = fv = 0.0;
     for (j = -2; j <= 2; j++)
     {
-      fv += kernel[j + 2] * this->camera_data.image[pix + j * inc];
+      fv += kernel[j + 2] * this->inpImage->imageData[pix + j * inc];
       fn += fabs(kernel[j + 2]);
     }
     fv /= fn;
@@ -413,12 +484,12 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
     // Pick the transitions
     if (state == -1)
     {
-      if (fv > +this->edge_thresh)
+      if (fv > +this->edgeThresh)
       {
         state = 1;
         start = i;
       }
-      else if (fv < -this->edge_thresh)
+      else if (fv < -this->edgeThresh)
       {
         state = 0;
         start = i;
@@ -426,7 +497,7 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
     }
     else if (state == 0)
     {
-      if (fv > +this->edge_thresh)
+      if (fv > +this->edgeThresh)
       {
         symbols[symbol_count++] = -(i - start);
         state = 1;
@@ -435,7 +506,7 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
     }
     else if (state == 1)
     {
-      if (fv < -this->edge_thresh)
+      if (fv < -this->edgeThresh)
       {
         symbols[symbol_count++] = +(i - start);
         state = 0;
@@ -443,7 +514,7 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
       }
     }
 
-    //fprintf(file, "%d %d %f %f %d\n", i, this->camera_data.image[pix], fv, fn, state);
+    //fprintf(file, "%d %d %f %f %d\n", i, this->cameraData.image[pix], fv, fn, state);
   }
 
   if (state == 0)
@@ -502,21 +573,21 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
     c = symbols[i + 2];
 
     // Look for a start guard: +N-N+N
-    if (a > this->guard_min && b < -this->guard_min && c > this->guard_min)
+    if (a > this->guardMin && b < -this->guardMin && c > this->guardMin)
     {
       mean = (a - b + c) / 3.0;
       min = MIN(a, MIN(-b, c));
       max = MAX(a, MAX(-b, c));
       assert(mean > 0);
 
-      if ((mean - min) / mean > this->guard_tol)
+      if ((mean - min) / mean > this->guardTol)
         continue;
-      if ((max - mean) / mean > this->guard_tol)
+      if ((max - mean) / mean > this->guardTol)
         continue;
 
       //printf("guard %d %.2f\n", i, mean);
 
-      best_err = this->err_first;
+      best_err = this->errFirst;
       best_digit = -1;
       
       // Read the code digit (4 symbols) and compare against the known
@@ -546,7 +617,7 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
       {
         if (k == best_digit)
           continue;
-        if (err[k] < this->err_second)
+        if (err[k] < this->errSecond)
         {
           best_digit = -1;
           break;
@@ -568,16 +639,15 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
-void UPCBarcode::WriteData()
+void UPCBarcode::WriteBlobfinderData()
 {
   int i;
-  int blob_count, channel_count, channel;
-  struct timeval timestamp;
+  int blobCount, channel_count, channel;
   blob_t *blob;
   player_blobfinder_data_t data;
 
-  data.width = htons(this->camera_data.width);
-  data.height = htons(this->camera_data.height);
+  data.width = htons(this->cameraData.width);
+  data.height = htons(this->cameraData.height);
 
   // Reset the header data
   for (i = 0; i < PLAYER_BLOBFINDER_MAX_CHANNELS; i++)
@@ -585,44 +655,72 @@ void UPCBarcode::WriteData()
     data.header[i].index = 0;
     data.header[i].num = 0;
   }
-  blob_count = 0;
+  blobCount = 0;
 
   // Go through the blobs
   for (channel = 0; channel < PLAYER_BLOBFINDER_MAX_CHANNELS; channel++)
   {
-    data.header[channel].index = htons(blob_count);
+    data.header[channel].index = htons(blobCount);
     channel_count = 0;
     
-    for (i = 0; i < this->blob_count; i++)
+    for (i = 0; i < this->blobCount; i++)
     {
       blob = this->blobs + i;
       if (blob->id != channel)
         continue;
 
-      data.blobs[blob_count].color = 0;  // TODO
-      data.blobs[blob_count].area = htonl((int) ((blob->bx - blob->ax) * (blob->by - blob->ay)));
-      data.blobs[blob_count].x = htons((int) ((blob->bx + blob->ax) / 2));
-      data.blobs[blob_count].y = htons((int) ((blob->by + blob->ay) / 2));
-      data.blobs[blob_count].left = htons((int) (blob->ax));
-      data.blobs[blob_count].right = htons((int) (blob->ay));
-      data.blobs[blob_count].top = htons((int) (blob->bx));
-      data.blobs[blob_count].bottom = htons((int) (blob->by));
-      data.blobs[blob_count].range = htons(0);
+      data.blobs[blobCount].color = 0;  // TODO
+      data.blobs[blobCount].area = htonl((int) ((blob->bx - blob->ax) * (blob->by - blob->ay)));
+      data.blobs[blobCount].x = htons((int) ((blob->bx + blob->ax) / 2));
+      data.blobs[blobCount].y = htons((int) ((blob->by + blob->ay) / 2));
+      data.blobs[blobCount].left = htons((int) (blob->ax));
+      data.blobs[blobCount].right = htons((int) (blob->ay));
+      data.blobs[blobCount].top = htons((int) (blob->bx));
+      data.blobs[blobCount].bottom = htons((int) (blob->by));
+      data.blobs[blobCount].range = htons(0);
       channel_count++;
-      blob_count++;
+      blobCount++;
     }
 
     data.header[channel].num = htons(channel_count);
   }
-  
-  // Compute the data timestamp (from camera).
-  timestamp.tv_sec = (uint32_t) this->camera_time;
-  timestamp.tv_usec = (uint32_t) (fmod(this->camera_time, 1.0) * 1e6);
-  
+    
   // Copy data to server.
-  PutData((unsigned char*) &data, sizeof(data), &timestamp);
+  PutData((unsigned char*) &data, sizeof(data), &this->cameraTime);
   
   return;
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Write camera data; this is a little bit naughty: we re-use the
+// input camera data, but modify the pixels
+void UPCBarcode::WriteCameraData()
+{
+  size_t size;
+  
+  if (this->camera_id.port == 0)
+    return;
+  if (this->outImage == NULL)
+    return;
+
+  // Do some byte swapping
+  this->outCameraData.width = htons(this->outImage->width);
+  this->outCameraData.height = htons(this->outImage->height);
+  this->outCameraData.depth = 8;
+  this->outCameraData.format = PLAYER_CAMERA_FORMAT_GREY8;
+  this->outCameraData.compression = PLAYER_CAMERA_COMPRESS_RAW;
+  this->outCameraData.image_size = htonl(this->outImage->imageSize);
+
+  // Copy in the pixels
+  memcpy(this->outCameraData.image, this->outImage->imageData, this->outImage->imageSize);
+
+  // Compute message size
+  size = sizeof(this->outCameraData) - sizeof(this->outCameraData.image)
+    + this->outImage->imageSize;
+
+  // Copy data to server
+  this->PutData(this->out_camera_id, &this->outCameraData, size, &this->cameraTime);
+  
+  return;
+}

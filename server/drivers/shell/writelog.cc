@@ -40,7 +40,7 @@ The @ref player_driver_readlog driver can be used to replay the data
 sensors).
 
 
-@par Inputs
+@par Requires
 
 The writelog driver takes as input a list of devices to log data from.
 The driver with the <b>highest data rate</b> should be placed first in the list.
@@ -58,7 +58,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref player_interface_wifi
 
 
-@par Outputs
+@par Provides
 
 - @ref player_interface_log : turn logging on/off.  The following
   requests are supported:
@@ -82,8 +82,8 @@ The writelog driver can will log data from the following interfaces:
 driver
 (
   name "writelog"
-  inputs ["laser:0" "position:0"]
-  outputs ["log:0"]
+  requires ["laser:0" "position:0"]
+  provides ["log:0"]
   alwayson 1
   enable 1
 )
@@ -260,9 +260,9 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   this->device_count = 0;
   
   // Get a list of input devices
-  for (i = 0; i < cf->GetTupleCount(section, "inputs"); i++)
+  for (i = 0; i < cf->GetTupleCount(section, "requires"); i++)
   {
-    if (cf->ReadDeviceId(&id, section, "inputs", -1, i, NULL) != 0)
+    if (cf->ReadDeviceId(&id, section, "requires", -1, i, NULL) != 0)
     {
       this->SetError(-1);
       return;
