@@ -33,6 +33,11 @@
 #include "error.h"
 
 
+// Local declarations
+void playerc_truth_putdata(playerc_truth_t *device, player_msghdr_t *header,
+                           player_truth_data_t *data, size_t len);
+
+
 // Create a new truth proxy
 playerc_truth_t *playerc_truth_create(playerc_client_t *client, int index)
 {
@@ -40,8 +45,8 @@ playerc_truth_t *playerc_truth_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_truth_t));
   memset(device, 0, sizeof(playerc_truth_t));
-  playerc_device_init(&device->info, client, PLAYER_TRUTH_CODE, index, NULL);
- 
+  playerc_device_init(&device->info, client, PLAYER_TRUTH_CODE, index, 
+                      (playerc_putdata_fn_t) playerc_truth_putdata); 
   return device;
 }
 
@@ -65,6 +70,18 @@ int playerc_truth_subscribe(playerc_truth_t *device, int access)
 int playerc_truth_unsubscribe(playerc_truth_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
+}
+
+
+// Process incoming data
+void playerc_truth_putdata(playerc_truth_t *device, player_msghdr_t *header,
+                           player_truth_data_t *data, size_t len)
+{
+  assert(sizeof(*data) <= len);
+
+  device->px = ntohl(data->px) / 1000.0;
+  device->py = ntohl(data->py) / 1000.0;
+  device->pa = ntohl(data->pa) * M_PI / 180;
 }
 
 

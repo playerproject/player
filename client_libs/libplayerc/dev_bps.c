@@ -37,6 +37,7 @@
 void playerc_bps_putdata(playerc_bps_t *device, player_msghdr_t *header,
                          player_bps_data_t *data, size_t len);
 
+
 // Create a new bps proxy
 playerc_bps_t *playerc_bps_create(playerc_client_t *client, int index)
 {

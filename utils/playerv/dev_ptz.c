@@ -38,8 +38,8 @@ void ptz_move(ptz_t *ptz);
 
 
 // Create a ptz device
-ptz_t *ptz_create(mainwnd_t *mainwnd, imagewnd_t *imagewnd, opt_t *opt,
-                        playerc_client_t *client, int index)
+ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
+                  playerc_client_t *client, int index)
 {
   int subscribe;
   char section[64];

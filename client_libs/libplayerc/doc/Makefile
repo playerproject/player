@@ -45,7 +45,7 @@ html:
 ps: $(NAME).ps
 
 $(NAME).ps: $(NAME).dvi
-	$(DVIPS) -f -t letter $(NAME).dvi > $@
+	$(DVIPS) -f -P pdf -t letter $(NAME).dvi > $@
 
 pdf: $(NAME).pdf
 
