@@ -61,6 +61,8 @@ Device::Device(player_device_id_t id, Driver *device, unsigned char access)
   this->reqqueue = NULL;
   this->repqueue = NULL;
 
+  this->allocp = false;
+
   return;
 }
 
@@ -79,11 +81,17 @@ Device::~Device()
       delete this->driver;
   }
 
-  // Delete our buffers
-  if (this->data)
-    delete [] this->data;
-  if (this->command)
-    delete [] this->command;
+  // if we allocated our bufferes, delete them
+  if(this->allocp)
+  {
+    if (this->data)
+      delete [] this->data;
+    if (this->command)
+      delete [] this->command;
+  }
+
+  // always delete the queues; they're smart enough to know whether their
+  // memory was pre-allocated.
   if (this->reqqueue)
     delete this->reqqueue;
   if (this->repqueue)
@@ -109,6 +117,8 @@ void Device::SetupBuffers(size_t datasize, size_t commandsize,
   assert(this->command);
   assert(this->reqqueue);
   assert(this->repqueue);
+
+  this->allocp = true;
 
   return;
 }

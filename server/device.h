@@ -41,6 +41,10 @@ class Driver;
 // and hence appear more than once in the device table.
 class Device
 {
+  private:
+    // did we allocate buffers, or did somebody else?
+    bool allocp;
+
   public:
   
   // Default constructor etc
