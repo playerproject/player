@@ -37,6 +37,7 @@
 #include "devicetable.h"
 #include "amcl_laser.h"
 
+extern int global_playerport; // used to gen. useful output & debug
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
@@ -102,6 +103,7 @@ int AMCLLaser::Setup(void)
   struct timeval tv;
 
   // Subscribe to the Laser device
+  id.port = global_playerport;
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
 
