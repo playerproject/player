@@ -18,7 +18,11 @@ extern "C" {
 // Forward declarations
 struct _rtk_fig_t;
 
+  
+// Limits
+#define MAP_WIFI_MAX_LEVELS 8
 
+  
 // Description for a single map cell.
 typedef struct
 {
@@ -27,6 +31,9 @@ typedef struct
 
   // Distance to the nearest occupied cell
   double occ_dist;
+
+  // Wifi levels
+  double wifi_levels[MAP_WIFI_MAX_LEVELS];
 
 } map_cell_t;
 
@@ -66,8 +73,11 @@ void map_free(map_t *map);
 // Get the cell at the given point
 map_cell_t *map_get_cell(map_t *map, double ox, double oy, double oa);
 
-// Load a map file (occupancy grid)
+// Load an occupancy map
 int map_load_occ(map_t *map, const char *filename, int negate);
+
+// Load a wifi signal strength map
+int map_load_wifi(map_t *map, const char *filename, int index);
 
 // Update the cspace distances
 void map_update_cspace(map_t *map, double max_occ_dist);
@@ -90,6 +100,9 @@ void map_draw_occ(map_t *map, struct _rtk_fig_t *fig);
 
 // Draw the cspace map
 void map_draw_cspace(map_t *map, struct _rtk_fig_t *fig);
+
+// Draw a wifi map
+void map_draw_wifi(map_t *map, struct _rtk_fig_t *fig, int index);
 
 
 /**************************************************************************

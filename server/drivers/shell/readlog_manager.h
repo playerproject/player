@@ -93,6 +93,10 @@ class ReadLogManager
   private: int ParsePosition(CDevice *device, int linenum,
                              int token_count, char **tokens, uint64_t dtime);
 
+  // Parse wifi data
+  private: int ParseWifi(CDevice *device, int linenum,
+                         int token_count, char **tokens, uint64_t dtime);
+
   // File to read data from
   private: char *filename;
   private: FILE *file;

@@ -48,7 +48,7 @@
 #include <sys/time.h>
 
 #define PLAYER_ENABLE_TRACE 0
-#define PLAYER_ENABLE_MSG 0
+#define PLAYER_ENABLE_MSG 1
 
 #include "player.h"
 #include "device.h"
@@ -60,13 +60,26 @@
 #include "models/odometry.h"
 #include "models/sonar.h"
 #include "models/laser.h"
+#include "models/wifi.h"
 
 #ifdef INCLUDE_RTKGUI
 #include "rtk.h"
 #endif
 
 
-// Combined sensor data
+// Wifi beacon data
+typedef struct
+{
+  // Beacon hostname/ip address
+  const char *hostname;
+
+  // Wifi map filename
+  const char *filename;
+  
+} amcl_wifi_beacon_t;
+
+
+// Combined sensor data packet
 typedef struct
 {
   // Data time-stamp (odometric)
@@ -76,12 +89,16 @@ typedef struct
   pf_vector_t odom_pose;
 
   // Sonar ranges
-  int srange_count;
-  double sranges[PLAYER_SONAR_MAX_SAMPLES];
+  int sonar_range_count;
+  double sonar_ranges[PLAYER_SONAR_MAX_SAMPLES];
 
   // Laser ranges
-  int range_count;
-  double ranges[PLAYER_LASER_MAX_SAMPLES][2];
+  int laser_range_count;
+  double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2];
+
+  // Wifi
+  int wifi_level_count;
+  int wifi_levels[PLAYER_WIFI_MAX_LINKS];
   
 } amcl_sensor_data_t;
 
@@ -118,11 +135,6 @@ class AdaptiveMCL : public CDevice
   public: virtual int Setup(void);
   public: virtual int Shutdown(void);
 
-#ifdef INCLUDE_RTKGUI
-  // Set up the GUI
-  private: int SetupGUI(void);
-  private: int ShutdownGUI(void);
-#endif
 
   // Set up the odometry device
   private: int SetupOdom(void);
@@ -144,6 +156,13 @@ class AdaptiveMCL : public CDevice
 
   // Check for new laser data
   private: void GetLaserData(amcl_sensor_data_t *data);
+
+  // Set up the wifi device
+  private: int SetupWifi(void);
+  private: int ShutdownWifi(void);
+
+  // Check for new wifi data
+  private: void GetWifiData(amcl_sensor_data_t *data);
 
   // Get the current pose
   private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
@@ -177,6 +196,9 @@ class AdaptiveMCL : public CDevice
   // Main function for device thread.
   private: virtual void Main(void);
 
+  // Device thread finalization
+  private: virtual void MainQuit();
+
   // Initialize the filter
   private: void InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov);
 
@@ -184,14 +206,23 @@ class AdaptiveMCL : public CDevice
   private: void UpdateFilter(amcl_sensor_data_t *data);
 
 #ifdef INCLUDE_RTKGUI
+  // Set up the GUI
+  private: int SetupGUI(void);
+
+  // Shut down the GUI
+  private: int ShutdownGUI(void);
+
   // Draw the current best pose estimate
   private: void DrawPoseEst();
+
+  // Draw the sonar values
+  private: void DrawSonarData(amcl_sensor_data_t *data);
 
   // Draw the laser values
   private: void DrawLaserData(amcl_sensor_data_t *data);
 
-  // Draw the sonar values
-  private: void DrawSonarData(amcl_sensor_data_t *data);
+  // Draw the wifi values
+  private: void DrawWifiData(amcl_sensor_data_t *data);
 #endif
 
   // Process requests.  Returns 1 if the configuration has changed.
@@ -207,52 +238,10 @@ class AdaptiveMCL : public CDevice
   // Properties
   ///////////////////////////////////////////////////////////////////////////
 
-  // Odometry device info
-  private: CDevice *odom;
-  private: int odom_index;
-
-  // Sonar device info
-  private: CDevice *sonar;
-  private: int sonar_index;
-
-  // Sonar poses relative to robot
-  private: int sonar_pose_count;
-  private: pf_vector_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
-  
-  // Laser device info
-  private: CDevice *laser;
-  private: int laser_index;
-
-  // Laser pose relative to robot
-  private: pf_vector_t laser_pose;
-
-  // Effective robot radius (used for c-space tests)
-  private: double robot_radius;
-
-  // Occupancy map
-  private: const char *map_file;
-  private: double map_scale;
-  private: int map_negate;
+  // The global map
   private: map_t *map;
+  private: double map_scale;
 
-  // Odometry sensor/action model
-  private: odometry_t *odom_model;
-
-  // Sonar sensor model
-  private: sonar_t *sonar_model;
-
-  // Laser sensor model
-  private: laser_t *laser_model;
-  private: int laser_max_samples;
-  private: double laser_map_err;
-
-  // Odometric pose of last used sensor reading
-  private: pf_vector_t odom_pose;
-
-  // Sensor data queue
-  private: int q_size, q_start, q_len;
-  private: amcl_sensor_data_t *q_data;
-  
   // Particle filter
   private: pf_t *pf;
   private: int pf_min_samples, pf_max_samples;
@@ -266,6 +255,61 @@ class AdaptiveMCL : public CDevice
   private: pf_vector_t pf_init_pose_mean;
   private: pf_matrix_t pf_init_pose_cov;
 
+  // Odometry device info
+  private: CDevice *odom;
+  private: int odom_index;
+
+  // Odometry map file
+  private: const char *occ_filename;
+  private: int occ_map_negate;
+  
+  // Effective robot radius (used for c-space tests)
+  private: double robot_radius;
+
+  // Odometry sensor/action model
+  private: odometry_t *odom_model;
+
+  // Sonar device info
+  private: CDevice *sonar;
+  private: int sonar_index;
+
+  // Sonar poses relative to robot
+  private: int sonar_pose_count;
+  private: pf_vector_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
+
+  // Sonar sensor model
+  private: sonar_t *sonar_model;
+
+  // Laser device info
+  private: CDevice *laser;
+  private: int laser_index;
+
+  // Laser pose relative to robot
+  private: pf_vector_t laser_pose;
+
+  // Laser sensor model
+  private: laser_t *laser_model;
+  private: int laser_max_samples;
+  private: double laser_map_err;
+
+  // Wifi device info
+  private: CDevice *wifi;
+  private: int wifi_index;
+
+  // List of possible wifi beacons
+  private: int wifi_beacon_count;
+  private: amcl_wifi_beacon_t wifi_beacons[PLAYER_WIFI_MAX_LINKS];
+
+  // WiFi sensor model
+  private: wifi_t *wifi_model;
+
+  // Odometric pose of last used sensor reading
+  private: pf_vector_t odom_pose;
+
+  // Sensor data queue
+  private: int q_size, q_start, q_len;
+  private: amcl_sensor_data_t *q_data;
+  
   // Current particle filter pose estimates
   private: int hyp_count;
   private: amcl_hyp_t hyps[PLAYER_LOCALIZE_MAX_HYPOTHS];
@@ -278,8 +322,9 @@ class AdaptiveMCL : public CDevice
   private: rtk_fig_t *map_fig;
   private: rtk_fig_t *pf_fig;
   private: rtk_fig_t *robot_fig;
-  private: rtk_fig_t *laser_fig;
   private: rtk_fig_t *sonar_fig;
+  private: rtk_fig_t *laser_fig;
+  private: rtk_fig_t *wifi_fig;
 #endif
 };
 
@@ -309,34 +354,50 @@ void AdaptiveMCL_Register(DriverTable* table)
 AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_localize_data_t), 0, 100, 100)
 {
-  //double size;
+  int i;
   double u[3];
-  
+  amcl_wifi_beacon_t *beacon;
+
+  // Get the map settings
+  this->occ_filename = cf->ReadFilename(section, "map_file", NULL);
+  this->map_scale = cf->ReadLength(section, "map_scale", 0.05);
+  this->occ_map_negate = cf->ReadInt(section, "map_negate", 0);
+  this->map = NULL;
+
+  // Odometry stuff
   this->odom = NULL;
   this->odom_index = cf->ReadInt(section, "position_index", 0);
-
-  this->sonar = NULL;
-  this->sonar_index = cf->ReadInt(section, "sonar_index", -1);
-
-  this->laser = NULL;
-  this->laser_index = cf->ReadInt(section, "laser_index", -1);
-
-  // C-space info
   this->robot_radius = cf->ReadLength(section, "robot_radius", 0.20);
-  
-  // Get the map settings
-  this->map_file = cf->ReadFilename(section, "map_file", NULL);
-  this->map_scale = cf->ReadLength(section, "map_scale", 0.05);
-  this->map_negate = cf->ReadInt(section, "map_negate", 0);
-  this->map = NULL;
-  
-  // Odometry model settings
   this->odom_model = NULL;
 
-  // Laser model settings
+  // Sonar stuff
+  this->sonar = NULL;
+  this->sonar_index = cf->ReadInt(section, "sonar_index", -1);
+  this->sonar_pose_count = 0;
+  this->sonar_model = NULL;
+
+  // Laser stuff
+  this->laser = NULL;
+  this->laser_index = cf->ReadInt(section, "laser_index", -1);
   this->laser_model = NULL;
   this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 6);
   this->laser_map_err = cf->ReadLength(section, "laser_map_err", 0.05);
+  this->laser_model = NULL;
+
+  // Wifi stuff
+  this->wifi = NULL;
+  this->wifi_index = cf->ReadInt(section, "wifi_index", -1);
+  this->wifi_beacon_count = 0;
+  for (i = 0; i < PLAYER_WIFI_MAX_LINKS; i++)
+  {
+    beacon = this->wifi_beacons + i;
+    beacon->hostname = cf->ReadTupleString(section, "wifi_beacons", i * 2 + 0, NULL);
+    beacon->filename = cf->ReadTupleString(section, "wifi_beacons", i * 2 + 1, NULL);
+    if (beacon->hostname == NULL)
+      break;
+    this->wifi_beacon_count++;
+  }
+  this->wifi_model = NULL;
 
   // Particle filter settings
   this->pf = NULL;
@@ -392,42 +453,49 @@ AdaptiveMCL::~AdaptiveMCL(void)
 // Set up the device (called by server thread).
 int AdaptiveMCL::Setup(void)
 {
+  int i;
   amcl_sensor_data_t sdata;
+  amcl_wifi_beacon_t *beacon;
     
   PLAYER_TRACE0("setup");
 
-  // Initialise the underlying position device
-  if (this->SetupOdom() != 0)
-    return -1;
-  
-  // Initialise the sonar
-  if (this->SetupSonar() != 0)
-    return -1;
-
-  // Initialise the laser
-  if (this->SetupLaser() != 0)
-    return -1;
-
-  // Create the map
-  if (!this->map_file)
-  {
-    PLAYER_ERROR("map file not specified");
-    return -1;
-  }
-  
-  // Create the map
   assert(this->map == NULL);
   this->map = map_alloc(this->map_scale);
   
-  // Load the map
-  PLAYER_MSG1("loading map file [%s]", this->map_file);
-  if (map_load_occ(this->map, this->map_file, this->map_negate) != 0)
-    return -1;
+  // Load the occupancy map
+  if (this->occ_filename != NULL)
+  {
+    PLAYER_MSG1("loading occupancy map file [%s]", this->occ_filename);
+    if (map_load_occ(this->map, this->occ_filename, this->occ_map_negate) != 0)
+      return -1;
+  }
 
   // Compute the c-space
   PLAYER_MSG0("computing cspace");
   map_update_cspace(this->map, 2 * this->robot_radius);
+
+  // Load the wifi maps
+  for (i = 0; i < this->wifi_beacon_count; i++)
+  {
+    beacon = this->wifi_beacons + i;
+    if (beacon->filename != NULL)
+    {
+      PLAYER_MSG1("loading wifi map file [%s]", beacon->filename);
+      if (map_load_wifi(this->map, beacon->filename, i) != 0)
+        return -1;
+    }
+  }
+
+  // Create the particle filter
+  assert(this->pf == NULL);
+  this->pf = pf_alloc(this->pf_min_samples, this->pf_max_samples);
+  this->pf->pop_err = this->pf_err;
+  this->pf->pop_z = this->pf_z;
   
+  // Initialise the position device
+  if (this->SetupOdom() != 0)
+    return -1;
+
   // Create the odometry model
   this->odom_model = odometry_alloc(this->map, this->robot_radius);
   if (odometry_init_cspace(this->odom_model))
@@ -435,19 +503,28 @@ int AdaptiveMCL::Setup(void)
     PLAYER_ERROR("error generating free space map (this could be a bad map)");
     return -1;
   }
+  
+  // Initialise the sonar device
+  if (this->SetupSonar() != 0)
+    return -1;
 
   // Create the sonar model
   this->sonar_model = sonar_alloc(this->map, this->sonar_pose_count, this->sonar_poses);
   
+  // Initialise the laser device
+  if (this->SetupLaser() != 0)
+    return -1;
+
   // Create the laser model
   this->laser_model = laser_alloc(this->map, this->laser_pose);
   this->laser_model->range_cov = this->laser_map_err * this->laser_map_err;
 
-  // Create the particle filter
-  assert(this->pf == NULL);
-  this->pf = pf_alloc(this->pf_min_samples, this->pf_max_samples);
-  this->pf->pop_err = this->pf_err;
-  this->pf->pop_z = this->pf_z;
+  // Initialise wifi
+  if (this->SetupWifi() != 0)
+    return -1;
+
+  // Create the wifi model
+  this->wifi_model = wifi_alloc(this->map);
 
   // Set the initial odometric poses
   this->GetOdomData(&sdata);
@@ -459,12 +536,6 @@ int AdaptiveMCL::Setup(void)
   // Initial hypothesis list
   this->hyp_count = 0;
   
-#ifdef INCLUDE_RTKGUI
-  // Start the GUI
-  if (this->enable_gui)
-    this->SetupGUI();
-#endif
-
   // Start the driver thread.
   PLAYER_MSG0("running");
   this->StartThread();
@@ -479,102 +550,46 @@ int AdaptiveMCL::Shutdown(void)
 {
   // Stop the driver thread.
   this->StopThread();
-    
-#ifdef INCLUDE_RTKGUI
-  // Stop the GUI
-  if (this->enable_gui)
-    this->ShutdownGUI();
-#endif
 
-  // Delete the particle filter
-  pf_free(this->pf);
-  this->pf = NULL;
+  // Delete the wifi model
+  wifi_free(this->wifi_model);
+  this->wifi_model = NULL;
 
-  // Delete the odometry model
-  odometry_free(this->odom_model);
-  this->odom_model = NULL;
+  // Stop the wifi device
+  this->ShutdownWifi();
+
+  // Delete the laser model
+  laser_free(this->laser_model);
+  this->laser_model = NULL;
+
+  // Stop the laser
+  this->ShutdownLaser();
 
   // Delete the sonar model
   sonar_free(this->sonar_model);
   this->sonar_model = NULL;
 
-  // Delete the laser model
-  laser_free(this->laser_model);
-  this->laser_model = NULL;
-  
-  // Delete the map
-  map_free(this->map);
-  this->map = NULL;
-  
-  // Stop the laser
-  this->ShutdownLaser();
-
   // Stop the sonar
   this->ShutdownSonar();
 
-  // Stop the odom device
+  // Delete the odometry model
+  odometry_free(this->odom_model);
+  this->odom_model = NULL;
+
+  // Stop the odometry device
   this->ShutdownOdom();
+
+  // Delete the particle filter
+  pf_free(this->pf);
+  this->pf = NULL;
+
+  // Delete the map
+  map_free(this->map);
+  this->map = NULL;
 
   PLAYER_TRACE0("shutdown");
   return 0;
 }
-
-
-#ifdef INCLUDE_RTKGUI
-
-////////////////////////////////////////////////////////////////////////////////
-// Set up the GUI
-int AdaptiveMCL::SetupGUI(void)
-{
-  // Initialize RTK
-  rtk_init(NULL, NULL);
-
-  this->app = rtk_app_create();
-
-  this->canvas = rtk_canvas_create(this->app);
-  rtk_canvas_title(this->canvas, "AdaptiveMCL");
-  rtk_canvas_size(this->canvas, this->map->size_x, this->map->size_y);
-  rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
-
-  this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
-  this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 5);
-
-  // Draw the map
-  map_draw_occ(this->map, this->map_fig);
-  //map_draw_cspace(this->map, this->map_fig);
-
-  this->robot_fig = rtk_fig_create(this->canvas, NULL, 9);
-  this->laser_fig = rtk_fig_create(this->canvas, this->robot_fig, 10);
-  this->sonar_fig = rtk_fig_create(this->canvas, this->robot_fig, 15);
-
-  rtk_fig_movemask(this->robot_fig, RTK_MOVE_TRANS | RTK_MOVE_ROT);
-
-  // Draw the robot
-  rtk_fig_color(this->robot_fig, 0.7, 0, 0);
-  rtk_fig_rectangle(this->robot_fig, 0, 0, 0, 0.40, 0.20, 0);
-
-  rtk_app_main_init(this->app);
-
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Shut down the GUI
-int AdaptiveMCL::ShutdownGUI(void)
-{
-  rtk_fig_destroy(this->sonar_fig);
-  rtk_fig_destroy(this->robot_fig);
-  rtk_fig_destroy(this->map_fig);
-  rtk_fig_destroy(this->pf_fig);
-  rtk_canvas_destroy(this->canvas);
-  rtk_app_main_term(this->app);
-  rtk_app_destroy(this->app);
-  
-  return 0;
-}
-  
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -715,21 +730,21 @@ void AdaptiveMCL::GetSonarData(amcl_sensor_data_t *data)
   // If there is no sonar device...
   if (this->sonar_index < 0)
   {
-    data->srange_count = 0;
+    data->sonar_range_count = 0;
     return;
   }
   
   // Get the sonar device data.
   size = this->sonar->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
 
-  data->srange_count = ntohs(ndata.range_count);
-  assert(data->srange_count < sizeof(data->sranges) / sizeof(data->sranges[0]));
+  data->sonar_range_count = ntohs(ndata.range_count);
+  assert(data->sonar_range_count < sizeof(data->sonar_ranges) / sizeof(data->sonar_ranges[0]));
 
   // Read and byteswap the range data
-  for (i = 0; i < data->srange_count; i++)
+  for (i = 0; i < data->sonar_range_count; i++)
   {
     r = ((int16_t) ntohs(ndata.ranges[i])) / 1000.0;
-    data->sranges[i] = r;
+    data->sonar_ranges[i] = r;
   }
 
   return;
@@ -808,7 +823,7 @@ void AdaptiveMCL::GetLaserData(amcl_sensor_data_t *data)
   // If there is no laser device...
   if (this->laser_index < 0)
   {
-    data->range_count = 0;
+    data->laser_range_count = 0;
     return;
   }
 
@@ -818,16 +833,105 @@ void AdaptiveMCL::GetLaserData(amcl_sensor_data_t *data)
   b = ((int16_t) ntohs(ndata.min_angle)) / 100.0 * M_PI / 180.0;
   db = ((int16_t) ntohs(ndata.resolution)) / 100.0 * M_PI / 180.0;
 
-  data->range_count = ntohs(ndata.range_count);
-  assert(data->range_count < sizeof(data->ranges) / sizeof(data->ranges[0]));
+  data->laser_range_count = ntohs(ndata.range_count);
+  assert(data->laser_range_count < sizeof(data->laser_ranges) / sizeof(data->laser_ranges[0]));
 
   // Read and byteswap the range data
-  for (i = 0; i < data->range_count; i++)
+  for (i = 0; i < data->laser_range_count; i++)
   {
     r = ((int16_t) ntohs(ndata.ranges[i])) / 1000.0;
-    data->ranges[i][0] = r;
-    data->ranges[i][1] = b;
+    data->laser_ranges[i][0] = r;
+    data->laser_ranges[i][1] = b;
     b += db;
+  }
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Set up the wifi
+int AdaptiveMCL::SetupWifi(void)
+{
+  uint8_t req;
+  uint16_t reptype;
+  player_device_id_t id;
+  struct timeval tv;
+
+  // If there is no wifi device...
+  if (this->wifi_index < 0)
+    return 0;
+
+  id.code = PLAYER_WIFI_CODE;
+  id.index = this->wifi_index;
+
+  this->wifi = deviceTable->GetDevice(id);
+  if (!this->wifi)
+  {
+    PLAYER_ERROR("unable to locate suitable wifi device");
+    return -1;
+  }
+  if (this->wifi->Subscribe(this) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to wifi device");
+    return -1;
+  }
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Shut down the wifi
+int AdaptiveMCL::ShutdownWifi(void)
+{
+  // If there is no wifi device...
+  if (this->wifi_index < 0)
+    return 0;
+  
+  this->wifi->Unsubscribe(this);
+  this->wifi = NULL;
+  
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Check for new wifi data
+void AdaptiveMCL::GetWifiData(amcl_sensor_data_t *data)
+{
+  int i, j;
+  size_t size;
+  player_wifi_data_t ndata;
+  player_wifi_link_t *link;
+  amcl_wifi_beacon_t *beacon;
+  
+  // If there is no wifi device...
+  if (this->wifi_index < 0)
+  {
+    data->laser_range_count = 0;
+    return;
+  }
+
+  // Get the wifi device data.
+  size = this->wifi->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
+
+  data->wifi_level_count = 0;
+  for (i = 0; i < this->wifi_beacon_count; i++)
+  {
+    beacon = this->wifi_beacons + i;
+
+    data->wifi_levels[i] = 0;
+    for (j = 0; j < ntohs(ndata.link_count); j++)
+    {
+      link = ndata.links + j;
+      
+      if (strcmp(link->ip, beacon->hostname) == 0)
+        data->wifi_levels[i] = (int16_t) ntohs(link->level);
+
+      printf("[%d] [%s] [%s] [%d]\n", i, beacon->hostname, link->ip, data->wifi_levels[i]);
+    }
+    data->wifi_level_count++;
   }
   
   return;
@@ -871,6 +975,9 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
 
     // Get the current laser data; we assume it is new data
     this->GetLaserData(&sdata);
+
+    // Get the current laser data; we assume it is new data
+    this->GetWifiData(&sdata);
 
     // Push the data
     this->Push(&sdata);
@@ -1133,11 +1240,18 @@ void AdaptiveMCL::Main(void)
 {  
   struct timespec sleeptime;
   amcl_sensor_data_t data;
-  int init = 0;
   
   // WARNING: this only works for Linux
   // Run at a lower priority
   nice(10);
+
+#ifdef INCLUDE_RTKGUI
+  pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+  
+  // Start the GUI
+  if (this->enable_gui)
+    this->SetupGUI();
+#endif
 
   // Initialize the filter
   this->InitFilter(this->pf_init_pose_mean, this->pf_init_pose_cov);
@@ -1150,6 +1264,7 @@ void AdaptiveMCL::Main(void)
       rtk_canvas_render(this->canvas);
       rtk_app_main_loop(this->app);
     }
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 #endif
 
     // Sleep for 1ms (will actually take longer than this).
@@ -1157,31 +1272,34 @@ void AdaptiveMCL::Main(void)
     sleeptime.tv_nsec = 1000000L;
     nanosleep(&sleeptime, NULL);
 
-    // Test if we are supposed to cancel this thread.
+    // Test if we are supposed to cancel this thread.  This is the
+    // only place we can cancel from if we are running the GUI.
     pthread_testcancel();
+
+#ifdef INCLUDE_RTKGUI
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+#endif
 
     // Process any pending requests.
     this->HandleRequests();
 
     // Process any queued data
     if (this->Pop(&data))
-    {
-      init = 1; // TESTING
       this->UpdateFilter(&data);
-    }
-
-#ifdef INCLUDE_RTKGUI
-    // TESTING
-    if (this->enable_gui)
-    {
-      if (init)
-      {
-        DrawLaserData(&data);
-        DrawSonarData(&data);
-      }
-    }
-#endif
   }
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Thread finalization
+void AdaptiveMCL::MainQuit()
+{
+#ifdef INCLUDE_RTKGUI
+  // Stop the GUI
+  if (this->enable_gui)
+    this->ShutdownGUI();
+#endif
 
   return;
 }
@@ -1264,25 +1382,32 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 
   // Update the sonar sensor model with the latest sonar measurements
   sonar_clear_ranges(this->sonar_model);
-  for (i = 0; i < data->srange_count; i++)
-    sonar_add_range(this->sonar_model, data->sranges[i]);
+  for (i = 0; i < data->sonar_range_count; i++)
+    sonar_add_range(this->sonar_model, data->sonar_ranges[i]);
 
   // Apply the sonar sensor model
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) sonar_sensor_model, this->sonar_model);  
-  
+
   // Update the laser sensor model with the latest laser measurements
   if (this->laser_max_samples >= 2)
   {
     laser_clear_ranges(this->laser_model);
     
-    step = (data->range_count - 1) / (this->laser_max_samples - 1);
-    for (i = 0; i < data->range_count; i += step)
-      laser_add_range(this->laser_model, data->ranges[i][0], data->ranges[i][1]);
+    step = (data->laser_range_count - 1) / (this->laser_max_samples - 1);
+    for (i = 0; i < data->laser_range_count; i += step)
+      laser_add_range(this->laser_model, data->laser_ranges[i][0], data->laser_ranges[i][1]);
 
     // Apply the laser sensor model
     pf_update_sensor(this->pf, (pf_sensor_model_fn_t) laser_sensor_model, this->laser_model);
   }
 
+  // Update the wifi sensor model with the latest wifi measurements
+  for (i = 0; i < data->wifi_level_count; i++)
+    wifi_set_level(this->wifi_model, i, data->wifi_levels[i]);
+
+  // Apply the wifi sensor model
+  pf_update_sensor(this->pf, (pf_sensor_model_fn_t) wifi_sensor_model, this->wifi_model);  
+  
   // Resample
   pf_update_resample(this->pf);
   
@@ -1313,8 +1438,9 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   if (this->enable_gui)
   {
     DrawPoseEst();
-    DrawLaserData(data);
     DrawSonarData(data);
+    DrawLaserData(data);
+    DrawWifiData(data);
     
     rtk_fig_clear(this->pf_fig);
     rtk_fig_color(this->pf_fig, 0, 0, 1);
@@ -1402,6 +1528,66 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
 #ifdef INCLUDE_RTKGUI
 
 ////////////////////////////////////////////////////////////////////////////////
+// Set up the GUI
+int AdaptiveMCL::SetupGUI(void)
+{
+  // Initialize RTK
+  rtk_init(NULL, NULL);
+
+  this->app = rtk_app_create();
+
+  this->canvas = rtk_canvas_create(this->app);
+  rtk_canvas_title(this->canvas, "AdaptiveMCL");
+  rtk_canvas_size(this->canvas, this->map->size_x, this->map->size_y);
+  rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
+
+  this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
+  this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 5);
+
+  // Draw the map
+  map_draw_occ(this->map, this->map_fig);
+  //map_draw_cspace(this->map, this->map_fig);
+
+  // HACK; testing
+  map_draw_wifi(this->map, this->map_fig, 0);
+
+  this->robot_fig = rtk_fig_create(this->canvas, NULL, 9);
+  this->sonar_fig = rtk_fig_create(this->canvas, this->robot_fig, 15);
+  this->laser_fig = rtk_fig_create(this->canvas, this->robot_fig, 10);
+  this->wifi_fig = rtk_fig_create(this->canvas, this->robot_fig, 16);
+
+  // Draw the robot
+  rtk_fig_color(this->robot_fig, 0.7, 0, 0);
+  rtk_fig_rectangle(this->robot_fig, 0, 0, 0, 0.40, 0.20, 0);
+
+  // TESTING
+  rtk_fig_movemask(this->robot_fig, RTK_MOVE_TRANS | RTK_MOVE_ROT);
+
+  rtk_app_main_init(this->app);
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Shut down the GUI
+int AdaptiveMCL::ShutdownGUI(void)
+{
+  rtk_fig_destroy(this->wifi_fig);
+  rtk_fig_destroy(this->laser_fig);
+  rtk_fig_destroy(this->sonar_fig);
+  rtk_fig_destroy(this->robot_fig);
+  rtk_fig_destroy(this->map_fig);
+  rtk_fig_destroy(this->pf_fig);  
+  rtk_canvas_destroy(this->canvas);
+  rtk_app_destroy(this->app);
+
+  rtk_app_main_term(this->app);
+  
+  return 0;
+}
+  
+////////////////////////////////////////////////////////////////////////////////
 // Draw the current best pose estimate
 void AdaptiveMCL::DrawPoseEst()
 {
@@ -1431,6 +1617,33 @@ void AdaptiveMCL::DrawPoseEst()
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Draw the sonar values
+void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
+{
+  int i;
+  double r, b, ax, ay, bx, by;
+  
+  rtk_fig_clear(this->sonar_fig);
+  rtk_fig_color_rgb32(this->sonar_fig, 0xC0C080);
+  
+  for (i = 0; i < data->sonar_range_count; i++)
+  {
+    r = data->sonar_ranges[i];
+    b = this->sonar_poses[i].v[2];
+
+    ax = this->sonar_poses[i].v[0];
+    ay = this->sonar_poses[i].v[1];
+
+    bx = ax + r * cos(b);
+    by = ay + r * sin(b);
+    
+    rtk_fig_line(this->sonar_fig, ax, ay, bx, by);
+  }
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Draw the laser values
 void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
 {
@@ -1442,10 +1655,10 @@ void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
 
   // Draw the complete scan
   rtk_fig_color_rgb32(this->laser_fig, 0x8080FF);
-  for (i = 0; i < data->range_count; i++)
+  for (i = 0; i < data->laser_range_count; i++)
   {
-    r = data->ranges[i][0];
-    b = data->ranges[i][1];
+    r = data->laser_ranges[i][0];
+    b = data->laser_ranges[i][1];
 
     ax = 0;
     ay = 0;
@@ -1461,11 +1674,11 @@ void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
     // Get the robot figure pose
     rtk_fig_get_origin(this->robot_fig, pose.v + 0, pose.v + 1, pose.v + 2);
         
-    step = (data->range_count - 1) / (this->laser_max_samples - 1);
-    for (i = 0; i < data->range_count; i += step)
+    step = (data->laser_range_count - 1) / (this->laser_max_samples - 1);
+    for (i = 0; i < data->laser_range_count; i += step)
     {
-      r = data->ranges[i][0];
-      b = data->ranges[i][1];
+      r = data->laser_ranges[i][0];
+      b = data->laser_ranges[i][1];
       m = map_calc_range(this->map, pose.v[0], pose.v[1], pose.v[2] + b, 8.0);
 
       ax = 0;
@@ -1484,8 +1697,8 @@ void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
 
     // TESTING
     laser_clear_ranges(this->laser_model);
-    for (i = 0; i < data->range_count; i += step)
-      laser_add_range(this->laser_model, data->ranges[i][0], data->ranges[i][1]);
+    for (i = 0; i < data->laser_range_count; i += step)
+      laser_add_range(this->laser_model, data->laser_ranges[i][0], data->laser_ranges[i][1]);
     //printf("prob = %f\n", laser_sensor_model(this->laser_model, pose));
   }
 
@@ -1494,28 +1707,28 @@ void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Draw the sonar values
-void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
+// Draw the wifi values
+void AdaptiveMCL::DrawWifiData(amcl_sensor_data_t *data)
 {
   int i;
-  double r, b, ax, ay, bx, by;
-  
-  rtk_fig_clear(this->sonar_fig);
-  rtk_fig_color_rgb32(this->sonar_fig, 0xC0C080);
-  
-  for (i = 0; i < data->srange_count; i++)
+  const char *hostname;
+  int level;
+  char ntext[128], text[1024];
+
+  text[0] = 0;
+  for (i = 0; i < data->wifi_level_count; i++)
   {
-    r = data->sranges[i];
-    b = this->sonar_poses[i].v[2];
-
-    ax = this->sonar_poses[i].v[0];
-    ay = this->sonar_poses[i].v[1];
-
-    bx = ax + r * cos(b);
-    by = ay + r * sin(b);
+    hostname = this->wifi_beacons[i].hostname;
+    level = data->wifi_levels[i];
     
-    rtk_fig_line(this->sonar_fig, ax, ay, bx, by);
+    snprintf(ntext, sizeof(ntext), "%s %02d\n", hostname, level);
+    strcat(text, ntext);
   }
+
+  rtk_fig_clear(this->wifi_fig);
+  rtk_fig_color_rgb32(this->wifi_fig, 0xFFFF00);
+  rtk_fig_text(this->wifi_fig, +1, +1, 0, text);
+  
   return;
 }
 

@@ -21,6 +21,7 @@
 #include "map.h"
 
 
+////////////////////////////////////////////////////////////////////////////
 // Draw the occupancy map
 void map_draw_occ(map_t *map, rtk_fig_t *fig)
 {
@@ -55,6 +56,7 @@ void map_draw_occ(map_t *map, rtk_fig_t *fig)
 }
 
 
+////////////////////////////////////////////////////////////////////////////
 // Draw the cspace map
 void map_draw_cspace(map_t *map, rtk_fig_t *fig)
 {
@@ -75,6 +77,7 @@ void map_draw_cspace(map_t *map, rtk_fig_t *fig)
       pixel = image + (j * map->size_x + i);
 
       col = 255 * cell->occ_dist / map->max_occ_dist;
+
       *pixel = RTK_RGB16(col, col, col);
     }
   }
@@ -89,45 +92,51 @@ void map_draw_cspace(map_t *map, rtk_fig_t *fig)
 }
 
 
-/* FIX
-// Draw the occupancy offsets
-void imap_draw_dist(imap_t *imap, rtk_fig_t *fig)
+////////////////////////////////////////////////////////////////////////////
+// Draw a wifi map
+void map_draw_wifi(map_t *map, rtk_fig_t *fig, int index)
 {
   int i, j;
-  int di, dj;
-  double dr;
-  double ax, ay, bx, by;
-  imap_cell_t *cell;
+  int col;
+  map_cell_t *cell;
+  uint16_t *image, *mask;
+  uint16_t *ipix, *mpix;
 
-  rtk_fig_color(fig, 1, 0, 0);
-  
-  for (j = 0; j < imap->size_y; j++)
+  image = malloc(map->size_x * map->size_y * sizeof(image[0]));
+  mask = malloc(map->size_x * map->size_y * sizeof(mask[0]));
+
+  // Draw wifi levels
+  for (j = 0; j < map->size_y; j++)
   {
-    for (i =  0; i < imap->size_x; i++)
+    for (i =  0; i < map->size_x; i++)
     {
-      cell = imap->cells + IMAP_INDEX(imap, i, j);
-      dr = cell->occ_dist;
-      di = cell->occ_di;
-      dj = cell->occ_dj;
+      cell = map->cells + MAP_INDEX(map, i, j);
+      ipix = image + (j * map->size_x + i);
+      mpix = mask + (j * map->size_x + i);
 
-      if (dr >= imap->max_occ_dist)
-        continue;
+      col = 100 + cell->wifi_levels[index];
 
-      if (di == 0 && dj == 0)
-        continue;
-
-      ax = IMAP_WXGX(imap, i);
-      ay = IMAP_WYGY(imap, j);
-
-      bx = IMAP_WXGX(imap, i + di);
-      by = IMAP_WYGY(imap, j + dj);
-
-      rtk_fig_arrow_ex(fig, ax, ay, bx, by, 0.02);
+      if (cell->occ_state == -1)
+      {
+        *ipix = RTK_RGB16(col, col, col);
+        *mpix = 1;
+      }
+      else
+      {
+        *mpix = 0;
+      }
     }
   }
 
+  // Draw the entire occupancy map as an image
+  rtk_fig_image(fig, map->origin_x, map->origin_y, 0,
+                map->scale, map->size_x, map->size_y, 16, image, mask);
+
+  free(mask);
+  free(image);
+  
   return;
 }
-*/
+
 
 #endif
