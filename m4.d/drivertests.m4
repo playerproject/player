@@ -206,6 +206,8 @@ PLAYER_ADD_DRIVER([mapfile],[drivers/map],[yes],[],
 AC_SUBST(GDK_PIXBUF_CFLAGS)
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GDK_PIXBUF_LIBS"
 
+PLAYER_ADD_DRIVER([mapcspace],[drivers/map],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([waveaudio],[drivers/waveform],[yes],[sys/soundcard.h],[],[])
 
 PLAYER_ADD_DRIVER([aodv],[drivers/wifi],[no],[],[],[])
