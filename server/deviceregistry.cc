@@ -246,6 +246,28 @@ lookup_interface(char* name, player_interface_t* interface)
   return(-1);
 }
 
+/* 
+ * looks through the array of available interfaces for one which the given
+ * code.  if found, interface is filled out (the caller must provide storage)
+ * and zero is returned.  otherwise, -1 is returned.
+ */
+int
+lookup_interface_code(int code, player_interface_t* interface)
+{
+  for(int i=0; interfaces[i].code; i++)
+  {
+    if(code == interfaces[i].code)
+    {
+      *interface = interfaces[i];
+      return(0);
+    }
+  }
+  return(-1);
+}
+
+
+
+
 /*
  * this function will be called at startup.  all available devices should
  * be added to the driverTable here.  they will be instantiated later as 
