@@ -68,16 +68,30 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                                  unsigned int payload_size) 
 {
   bool request=false;
-  //unsigned int i;
-  unsigned int j;
+  bool devicerequest=false;
+  unsigned int i,j;
   CDevice* devicep;
   player_device_ioctl_t player_ioctl;
   player_device_req_t req;
-  //player_msghdr_t reply_hdr;
+  player_device_datamode_req_t datamode;
+  player_msghdr_t reply_hdr;
+  struct timeval curr;
+  unsigned int real_payloadsize;
 
   static unsigned char reply[REQUEST_BUFFER_SIZE];
 
   bzero(reply,sizeof(reply));
+
+  if(1)
+  {
+    printf("Request(%d):",payload_size);
+    for(unsigned int i=0;i<payload_size;i++)
+      printf("%c",payload[i]);
+    printf("\t");
+    for(unsigned int i=0;i<payload_size;i++)
+      printf("%x ",payload[i]);
+    puts("");
+  }
 
   pthread_mutex_lock( &requesthandling );
   
@@ -98,37 +112,74 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           return;
         }
 
-        /* lock here so the writer thread won't interfere while
-         * we change these values in the ClientData object */
-        pthread_mutex_lock( &access );
-        
         // what sort of ioctl is it?
         memcpy(&player_ioctl,payload,sizeof(player_device_ioctl_t));
+        real_payloadsize = payload_size - sizeof(player_device_ioctl_t);
         switch(player_ioctl.subtype)
         {
           case PLAYER_PLAYER_DEV_REQ:
-            if((payload_size - sizeof(player_device_ioctl_t)) < 
-                            sizeof(player_device_req_t))
+            devicerequest = true;
+            if(real_payloadsize < sizeof(player_device_req_t))
             {
               printf("HandleRequests(): got small player_device_req_t: %d\n",
-                              payload_size-sizeof(player_device_ioctl_t));
+                              real_payloadsize);
               return;
             }
             for(j=sizeof(player_device_ioctl_t);
                 j<payload_size-(sizeof(player_device_req_t)-1);
                 j+=sizeof(player_device_req_t))
             {
+              puts("memcpying request");
               memcpy(&req,payload+j,sizeof(player_device_req_t));
               UpdateRequested(req);
             }
-            if(j != (payload_size-(sizeof(player_device_req_t)-1)))
+            puts("done with requests");
+            if(j != payload_size)
               puts("HandleRequests(): garbage following player DR ioctl");
+            break;
+          case PLAYER_PLAYER_DATAMODE_REQ:
+            if(real_payloadsize != sizeof(player_device_datamode_req_t))
+            {
+              printf("HandleRequests(): got wrong size "
+                     "player_device_datamode_req_t: %d\n",real_payloadsize);
+              return;
+            }
+            memcpy(&datamode,payload+sizeof(player_device_ioctl_t),
+                            sizeof(player_device_datamode_req_t));
+            if(datamode.mode)
+            {
+              /* changet to request/reply */
+              puts("changing to REQUESTREPLY");
+              mode = REQUESTREPLY;
+              pthread_mutex_unlock(&datarequested);
+              pthread_mutex_lock(&datarequested);
+            }
+            else
+            {
+              /* change to continuous mode */
+              puts("changing to CONTINUOUS");
+              mode = CONTINUOUS;
+              pthread_mutex_unlock(&datarequested);
+            }
+            break;
+          case PLAYER_PLAYER_DATA_REQ:
+            // this ioctl takes no args
+            if(real_payloadsize != 0)
+            {
+              printf("HandleRequests(): got wrong size "
+                     "arg for player_data_req: %d\n",real_payloadsize);
+              return;
+            }
+            if(mode != REQUESTREPLY)
+              puts("WARNING: got request for data when not in "
+                              "request/reply mode");
+            else
+              pthread_mutex_unlock( &datarequested);
             break;
           default:
             printf("Unknown server ioctl %x\n", player_ioctl.subtype);
             break;
         }
-        pthread_mutex_unlock( &access );
       }
       else
       {
@@ -144,6 +195,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           printf("HandleRequests(): got REQ for unkown device: %x:%x\n",
                           hdr.device,hdr.device_index);
       }
+      break;
     case PLAYER_MSGTYPE_CMD:
       /* command message */
       if(CheckPermissions(hdr.device,hdr.device_index))
@@ -170,7 +222,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       }
       else 
       {
-        printf("No permissions to commands %x:%x\n",
+        printf("No permissions to command %x:%x\n",
                         hdr.device,hdr.device_index);
       }
       break;
@@ -178,28 +230,54 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       printf("HandleRequests(): Unknown message type %x\n", hdr.type);
       break;
   }
-  /*
-  if (request)
-  {
-    reply[0]='r';
-    *(unsigned short*)&reply[1] = htons( size );
 
-    for(j=0;j<size;j+=2)
+  /* if it's a request, then we must generate a reply */
+  if(request)
+  {
+    reply_hdr.stx = PLAYER_STX;
+    reply_hdr.type = PLAYER_MSGTYPE_RESP;
+    reply_hdr.device = hdr.device;
+    reply_hdr.device_index = hdr.device_index;
+    reply_hdr.reserved = (uint32_t)0;
+    reply_hdr.size = htonl(payload_size);
+
+    /* if it was a player device request, then the reply should
+     * reflect what permissions were granted for the indicated devices */
+    if(devicerequest)
     {
-      reply[1+sizeof(unsigned short)+j] = buffer[2+sizeof(unsigned short)+j];
-      reply[2+sizeof(unsigned short)+j] =
-              FindPermission(buffer[2+sizeof(unsigned short)+j],0);
-              //FindPermission( buffer[2+sizeof(unsigned short)+j] );
+      memcpy(reply+sizeof(player_msghdr_t),payload,
+                      sizeof(player_device_ioctl_t));
+      for(i=sizeof(player_msghdr_t)+sizeof(player_device_ioctl_t),
+          j=sizeof(player_device_ioctl_t);
+          j<payload_size-(sizeof(player_device_req_t)-1);
+          i+=sizeof(player_device_req_t),j+=sizeof(player_device_req_t))
+      {
+        memcpy(&req,payload+j,sizeof(player_device_req_t));
+        req.access = FindPermission(req.code,req.index);
+        memcpy(reply+i,&req,sizeof(player_device_req_t));
+      }
+    }
+    /* otherwise, just copy back the request, since we can't get result
+     * codes here
+     */
+    else
+    {
+      memcpy(reply+sizeof(player_msghdr_t),payload,payload_size);
     }
 
+    gettimeofday(&curr,NULL);
+    reply_hdr.time=(uint64_t)((curr.tv_sec * 1000.0)+(curr.tv_usec / 1000.0));
+    reply_hdr.timestamp=reply_hdr.time;
+    memcpy(reply,&reply_hdr,sizeof(player_msghdr_t));
+
     pthread_mutex_lock(&socketwrite);
-    if( write(socket, reply, size+1+sizeof(unsigned short)) < 0 ) {
+    if(write(socket, reply, payload_size+sizeof(player_msghdr_t)) < 0) 
+    {
       perror("HandleRequests");
       delete this;
     }
     pthread_mutex_unlock(&socketwrite);
   }
-  */
 
   pthread_mutex_unlock( &requesthandling );
 }
@@ -354,7 +432,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
         break;
       case 'c':
       case 'e':
-        printf("Device \"%d:%d\" already closed\n", req.code,req.index);
+        printf("Device \"%x:%x\" already closed\n", req.code,req.index);
         break;
       default:
         printf("Unknown access permission \"%c\"\n", req.access);
@@ -392,9 +470,9 @@ void CClientData::UpdateRequested(player_device_req_t req)
   /* IGNORE */
   else 
   {
-    printf("The current access is \"%d:%d:%c\". ",
+    printf("The current access is \"%x:%x:%c\". ",
                     thisub->code, thisub->index, thisub->access);
-    printf("Unknown unused request \"%d:%d:%c\".\n",
+    printf("Unknown unused request \"%x:%x:%c\".\n",
                     req.code, req.index, req.access);
   }
   pthread_mutex_unlock( &access );
@@ -468,7 +546,10 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
               continue;
           }
           
-          hdr.size = htons(size);
+
+          // FIXME
+          //hdr.timestamp = devicep->GetTime()....;
+          hdr.size = htonl(size);
           gettimeofday(&curr,NULL);
           hdr.time=(uint64_t)((curr.tv_sec * 1000.0)+(curr.tv_usec / 1000.0));
           memcpy(data+totalsize,&hdr,sizeof(hdr));
@@ -476,13 +557,13 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
         }
         else
         {
-          printf("BuildMsg(): found NULL pointer for device \"%d:%d\"\n",
+          printf("BuildMsg(): found NULL pointer for device \"%x:%x\"\n",
                           thisub->code, thisub->index);
         }
       }
       else
       {
-        printf("BuildMsg(): Unknown device \"%d:%d\"\n",
+        printf("BuildMsg(): Unknown device \"%x:%x\"\n",
                         thisub->code,thisub->index);
       }
     }
@@ -503,7 +584,7 @@ int CClientData::Subscribe( unsigned short code, unsigned short index )
   }
   else
   {
-    printf("Subscribe(): Unknown device \"%d:%d\" - subscribe cancelled\n", 
+    printf("Subscribe(): Unknown device \"%x:%x\" - subscribe cancelled\n", 
                     code,index);
     return(1);
   }
@@ -520,7 +601,7 @@ void CClientData::Unsubscribe( unsigned short code, unsigned short index )
   }
   else
   {
-    printf("Unsubscribe(): Unknown device \"%d:%d\" - unsubscribe cancelled\n", 
+    printf("Unsubscribe(): Unknown device \"%x:%x\" - unsubscribe cancelled\n", 
                     code,index);
   }
 }
@@ -530,7 +611,7 @@ CClientData::PrintRequested(char* str)
 {
   printf("%s:requested: ",str);
   for(CDeviceSubscription* thissub=requested;thissub;thissub=thissub->next)
-    printf("%d:%d:%d ", thissub->code,thissub->index,thissub->access);
+    printf("%x:%x:%d ", thissub->code,thissub->index,thissub->access);
   puts("");
 }
 
