@@ -42,7 +42,6 @@
 #include "drivertable.h"
 #include "playertime.h"
 
-#include "jpegcompress.h"
 
 #define NUM_DMA_BUFFERS 8
 
@@ -179,9 +178,6 @@ class Camera1394 : public Driver
   
   // Data to send to server
   private: player_camera_data_t data;
-
-  private: const char *imageFormat;
-  private: double imageQuality;
 };
 
 
@@ -256,9 +252,6 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
      
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
-
-  this->imageFormat = cf->ReadString(section, "image_format", "ppm");
-  this->imageQuality = cf->ReadFloat(section, "image_quality", 0.8);
 
   // display a test pattern?
   this->test = cf->ReadInt(section, "test", 0);
@@ -460,6 +453,7 @@ int Camera1394::SaveFrame(const char *filename)
     return -1;
   }
 
+
   fprintf(fp,"P6\n%u %u\n255\n",this->camera.frame_width, this->camera.frame_height);
 
   fwrite ((unsigned char*)this->frame, 1, this->camera.dma_frame_size, fp);
@@ -492,41 +486,25 @@ void Camera1394::WriteData()
     this->data.depth = 8;
     this->data.image_size = htonl(this->width * this->height);
 
-    if (strcmp(this->imageFormat,"jpg")==0)
-    {
-      jpeg_compress(this->testImage, &this->data, (int)(this->imageQuality*100));
-      size = sizeof(this->data) - sizeof(this->data.image) + 
-             ntohl(this->data.image_size);
-    } else {
-      memcpy(this->data.image, this->testImage, this->width*this->height);
-      size = sizeof(this->data) - sizeof(this->data.image) + 
-             this->width * this->height;
-    }
+    memcpy(this->data.image, this->testImage, this->width*this->height);
+    size = sizeof(this->data) - sizeof(this->data.image) + 
+      this->width * this->height;
 
   } else {  
+
     // Set the image properties
     this->data.width = htons(this->camera.frame_width);
     this->data.height = htons(this->camera.frame_height);
-    // depth is only 8 bit currently, so no htons
-    //this->data.depth = htons(8);
     this->data.depth = 8;
 
     this->data.image_size = htonl(this->camera.dma_frame_size);
 
-    if (strcmp(this->imageFormat,"jpg")==0)
-    {
-      jpeg_compress(this->frame, &this->data, (int)(this->imageQuality*100));
-      size = sizeof(this->data) - sizeof(this->data.image) + 
-        ntohl(this->data.image_size);
-    } else {
+    // Set the image pixels
+    assert((size_t) this->camera.dma_frame_size <= sizeof(this->data.image));
+    memcpy(this->data.image, this->frame, this->camera.dma_frame_size);
 
-      // Set the image pixels
-      assert((size_t) this->camera.dma_frame_size <= sizeof(this->data.image));
-      memcpy(this->data.image, this->frame, this->camera.dma_frame_size);
-
-      // Copy data to server.
-      size = sizeof(this->data) - sizeof(this->data.image) + this->camera.dma_frame_size;
-    }
+    // Copy data to server.
+    size = sizeof(this->data) - sizeof(this->data.image) + this->camera.dma_frame_size;
   }
 
   struct timeval timestamp;

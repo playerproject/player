@@ -1809,8 +1809,8 @@ typedef struct player_cmucam2_cmd
 // Allow for 640x480 32-bit images
 #define PLAYER_CAMERA_IMAGE_WIDTH 640
 #define PLAYER_CAMERA_IMAGE_HEIGHT 480
-#define PLAYER_CAMERA_IMAGE_SIZE PLAYER_MAX_PAYLOAD_SIZE-12
-
+//#define PLAYER_CAMERA_IMAGE_SIZE PLAYER_MAX_PAYLOAD_SIZE-12
+#define PLAYER_CAMERA_IMAGE_SIZE (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
 
 /** [Synopsis] */
 /** EXPERIMENTAL.  The {\tt camera} interface is used to see what the
@@ -1832,7 +1832,7 @@ typedef struct player_camera_data
   uint32_t image_size;
 
   /** Format of the image data, ex: 'raw', 'jpg' */
-  uint8_t format[3];
+  uint8_t format[4];
 
   /** Image data (packed format). */
   uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];

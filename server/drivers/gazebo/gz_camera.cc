@@ -50,8 +50,6 @@
 #include "gazebo.h"
 #include "gz_client.h"
 
-#include "jpegcompress.h"
-
 // Incremental navigation driver
 class GzCamera : public Driver
 {
@@ -200,27 +198,24 @@ void GzCamera::Update()
     this->data.depth = this->iface->data->depth;
     this->data.image_size = htonl(this->iface->data->image_size);
 
-    if (strcmp(this->imageFormat,"jpg")==0)
-    {
-      jpeg_compress(this->iface->data->image, &this->data, (int)(this->imageQuality*100));
-    }
-    else
-    {
-      // Set the image pixels
-      assert((size_t) this->iface->data->image_size < sizeof(this->data.image));
-      memcpy(this->data.image, this->iface->data->image, this->iface->data->image_size);
-    }
+    // Set the image pixels
+    assert((size_t) this->iface->data->image_size < sizeof(this->data.image));
+
+    memcpy(this->data.image, this->iface->data->image, 
+        this->iface->data->image_size);
+
+    size = sizeof(this->data) - sizeof(this->data.image) + 
+      this->iface->data->image_size;
 
     // Send data to server
-    size = sizeof(this->data) - sizeof(this->data.image) + this->iface->data->image_size;
     this->PutData(&this->data, size, &ts);
     
+
     // Save frames
     if (this->save)
     {
       //printf("click %d\n", this->frameno);
-      snprintf(filename, sizeof(filename), "click-%04d.%s",this->frameno++,
-               this->imageFormat);
+      snprintf(filename, sizeof(filename), "click-%04d.ppm",this->frameno++);
       this->SaveFrame(filename);
     }
   }
@@ -241,36 +236,30 @@ void GzCamera::SaveFrame(const char *filename)
 
   file = fopen(filename, "w+");
 
-  if (strcmp(this->imageFormat,"jpg")==0)
+  width = ntohs(this->data.width);
+  height = ntohs(this->data.height);
+
+  // Write ppm header
+  fprintf(file, "P6\n%d %d\n%d\n", width, height, 255);
+
+
+  pix = this->data.image;
+
+  // Write pixels here
+  for (j = width - 1; j >= 0; j--)
   {
-    fwrite(this->data.image,1,this->data.image_size, file);
-  }
-  else
-  {
-    width = ntohs(this->data.width);
-    height = ntohs(this->data.height);
-
-    // Write ppm header
-    fprintf(file, "P6\n%d %d\n%d\n", width, height, 255);
-
-    pix = this->data.image;
-
-    // Write pixels here
-    for (j = width - 1; j >= 0; j--)
+    for (i = 0; i < width; i++)
     {
-      for (i = 0; i < width; i++)
-      {
-        fputc(pix[0], file);
-        fputc(pix[1], file);
-        fputc(pix[2], file);
-        pix += 3;
-      }
+      fputc(pix[0], file);
+      fputc(pix[1], file);
+      fputc(pix[2], file);
+      pix += 3;
     }
-
   }
+
 
   fclose(file);
-  
+
   return;
 }
 

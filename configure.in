@@ -324,6 +324,7 @@ AC_OUTPUT(Makefile
           server/drivers/camera/Makefile 
           server/drivers/camera/v4l/Makefile
           server/drivers/camera/1394/Makefile
+          server/drivers/camera/jpegStream/Makefile
           server/drivers/fiducial/Makefile 
           server/drivers/ptz/Makefile 
           server/drivers/laser/Makefile 
@@ -348,7 +349,6 @@ AC_OUTPUT(Makefile
           server/drivers/stage/Makefile 
           server/drivers/stageclient/Makefile 
           server/drivers/gazebo/Makefile 
-          server/drivers/camera/jpeg/Makefile
           server/drivers/planner/Makefile 
           server/drivers/planner/wavefront/Makefile 
           server/drivers/position/isense/Makefile 

@@ -330,9 +330,9 @@ void ShapeTracker::FindShapes()
         if(i >= 2)
         {
           t1 = fabs(this->CalcAngle(
-                (CvPoint*)cvGetSeqElem(result, i , 0),
-                (CvPoint*)cvGetSeqElem(result, i-2 , 0),
-                (CvPoint*)cvGetSeqElem(result, i-1 , 0)));
+                (CvPoint*)cvGetSeqElem(result, i ),
+                (CvPoint*)cvGetSeqElem(result, i-2),
+                (CvPoint*)cvGetSeqElem(result, i-1)));
           s = s > t1 ? s : t1;
           
         }

@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I../camera/jpeg @GAZEBO_CFLAGS@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @GAZEBO_CFLAGS@
 
 noinst_LIBRARIES = @GAZEBO_LIB@
 
