@@ -588,7 +588,7 @@ static PyMethodDef module_methods[] =
 };
 
 
-void initplayerc(void)
+void initpyplayerc(void)
 {
   PyObject *moduleob;
     
@@ -607,7 +607,7 @@ void initplayerc(void)
   ptz_type.ob_type = &PyType_Type;
   wifi_type.ob_type = &PyType_Type;
     
-  moduleob = Py_InitModule("playerc", module_methods);
+  moduleob = Py_InitModule("pyplayerc", module_methods);
 
   /* Add out exception */
   errorob = PyErr_NewException("playerc.error", NULL, NULL);

@@ -2,7 +2,7 @@
 from distutils.core import setup, Extension
 
 
-module = Extension('playerc',
+module = Extension('pyplayerc',
                    sources = ['pyplayerc.c',
                               'dev_blobfinder.c',
                               'dev_comms.c',

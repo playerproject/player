@@ -170,7 +170,7 @@ unsigned char
 DeviceTable::GetDeviceAccess(player_device_id_t id)
 {
   Device* thisentry;
-  char access = 'e';
+  char access = PLAYER_ERROR_MODE;
 
   if((thisentry = GetDevice(id)))
     access = thisentry->access;

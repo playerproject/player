@@ -688,6 +688,16 @@ ClientData::UpdateRequested(player_device_req_t req)
 
   unsigned char allowed_access = deviceTable->GetDeviceAccess(thissub->id);
 
+  if(allowed_access == PLAYER_ERROR_MODE)
+  {
+    PLAYER_WARN3("not allowing subscription to unknown device \"%d:%s:%d\"",
+                       thissub->id.port,
+                       ::lookup_interface_name(0, thissub->id.code),
+                       thissub->id.index);
+    return(PLAYER_ERROR_MODE);
+  }
+
+
   if(req.access != thissub->access)
   {
     switch(req.access)

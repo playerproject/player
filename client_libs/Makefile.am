@@ -1,2 +1,2 @@
 
-SUBDIRS = c libplayerpacket c++ tcl libplayerc # REMOVE pyplayerc 
+SUBDIRS = c libplayerpacket c++ tcl libplayerc pyplayerc 

@@ -111,26 +111,26 @@ if test "x$with_glibc21" = "xyes"; then
 fi
 
 dnl Optionally build the python client if the header is available
-dnl AC_ARG_WITH(python,
-dnl [  --without-python        Don't compile the python client libraries],
-dnl PYTHON_INTERP=$with_python,
-dnl [AC_CHECK_PROG([PYTHON_INTERP],[python],python,no)])
-dnl if test x$PYTHON_INTERP = xyes; then
-dnl   PYTHON_INTERP=python
-dnl fi
-dnl if test x$PYTHON_INTERP != xno; then
-dnl   with_python=yes
-dnl   dnl See whether the += operator is defined in this version of Python
-dnl   AC_MSG_CHECKING([Python version])
-dnl   if `$PYTHON_INTERP -c "i=0;i+=1;"`; then
-dnl     AC_MSG_RESULT([>= 2, good.  Will build Python bindings.])
-dnl   else
-dnl     AC_MSG_RESULT([< 2, too old (or doesn't work).  Won't build Python bindings.])
-dnl     with_python=no
-dnl   fi
-dnl fi 2>/dev/null
-dnl AM_CONDITIONAL(WITH_PYTHON, test "x$with_python" = "xyes")
-dnl AC_SUBST(PYTHON_INTERP)
+AC_ARG_WITH(python,
+[  --without-python        Don't compile the python client libraries],
+PYTHON_INTERP=$with_python,
+[AC_CHECK_PROG([PYTHON_INTERP],[python],python,no)])
+if test x$PYTHON_INTERP = xyes; then
+  PYTHON_INTERP=python
+fi
+if test x$PYTHON_INTERP != xno; then
+  with_python=yes
+  dnl See whether the += operator is defined in this version of Python
+  AC_MSG_CHECKING([Python version])
+  if `$PYTHON_INTERP -c "i=0;i+=1;"`; then
+    AC_MSG_RESULT([>= 2, good.  Will build Python bindings.])
+  else
+    AC_MSG_RESULT([< 2, too old (or doesn't work).  Won't build Python bindings.])
+    with_python=no
+  fi
+fi 2>/dev/null
+AM_CONDITIONAL(WITH_PYTHON, test "x$with_python" = "xyes")
+AC_SUBST(PYTHON_INTERP)
 
 dnl Optionally build python bindings to libplayerc (libplayerc-py)
 AC_ARG_ENABLE(libplayerc-py,
@@ -375,7 +375,7 @@ AC_OUTPUT(Makefile
           client_libs/libplayerc/bindings/Makefile
           client_libs/libplayerc/bindings/python/Makefile
           client_libs/libplayerpacket/Makefile
-dnl          client_libs/pyplayerc/Makefile
+          client_libs/pyplayerc/Makefile
           client_libs/tcl/Makefile
           examples/Makefile
           examples/plugins/Makefile
