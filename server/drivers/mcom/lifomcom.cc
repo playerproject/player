@@ -67,14 +67,12 @@ void LifoMCom_Register(DriverTable* t) {
 
 // called by player with config requests
 int LifoMCom::PutConfig(player_device_id_t* device, void* client, void* data, size_t len) {
-    printf("PutConfig\n");
 
     assert(len == sizeof(player_mcom_config_t));
     player_mcom_config_t* cfg = (player_mcom_config_t*)data;
     cfg->type = ntohs(cfg->type);
 
     // arguments to PutReply are: (void* client, ushort replytype, struct timeval* ts, void* data, size_t datalen)
-    printf("Switch\n");
     switch(cfg->command) {
         case PLAYER_MCOM_PUSH_REQ:
             Data.Push(cfg->data, cfg->type, cfg->channel);
