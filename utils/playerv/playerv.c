@@ -68,6 +68,7 @@ int main(int argc, char **argv)
   int i;
   int port;
   int rate;
+  int count;
   char section[256];
   int device_count;
   device_t devices[PLAYER_MAX_DEVICES];
@@ -175,14 +176,27 @@ int main(int argc, char **argv)
 
   // Start the gui; dont run in a separate thread and dont let it do
   // its own updates.
-  //rtk_app_refresh_rate(app, 0);
   rtk_app_main_init(app);
   
   while (!quit)
   {
     // Wait for some data.  We rely on getting the sync messages if no
     // devices are subscribed.
-    proxy = playerc_client_read(client);
+    count = playerc_client_peek(client, 50);
+    if (count < 0)
+    {
+      PRINT_ERR1("%s", playerc_errorstr);
+      break;
+    }
+    if (count > 0)
+    {
+      proxy = playerc_client_read(client);
+      if (proxy == NULL)
+      {
+        PRINT_ERR1("%s", playerc_errorstr);
+        break;
+      }
+    }
 
     // Let gui process messages
     rtk_app_main_loop(app);
