@@ -88,6 +88,10 @@ class SickLMS200 : public CDevice
     // Process configuration requests.  Returns 1 if the configuration
     // has changed.
     int UpdateConfig();
+
+    // Compute the start and end scan segments based on the current resolution and
+    // scan angles.  Returns 0 if the configuration is valid.
+    int CheckScanConfig();
     
     // Open the terminal
     // Returns 0 on success
@@ -214,6 +218,18 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
 
   // Default serial port
   this->device_name = cf->ReadString(section, "port", DEFAULT_LASER_PORT);
+
+  // Set default configuration
+  this->scan_width = 180;
+  this->scan_res = cf->ReadInt(section, "resolution", 50);
+  this->min_angle = -9000;
+  this->max_angle = +9000;
+  this->scan_min_segment = 0;
+  this->scan_max_segment = 360;
+  this->intensity = true;
+
+  if (this->CheckScanConfig() != 0)
+    PLAYER_ERROR("invalid scan configuration");
 }
 
 
@@ -221,15 +237,6 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
 // Set up the device
 int SickLMS200::Setup()
 {   
-  // Set default configuration
-  this->scan_width = 180;
-  this->scan_res = 50;
-  this->min_angle = -9000;
-  this->max_angle = +9000;
-  this->scan_min_segment = 0;
-  this->scan_max_segment = 360;
-  this->intensity = true;
-
   printf("Laser initialising (%s)\n", this->device_name);
     
   // Open the terminal
@@ -395,53 +402,14 @@ int SickLMS200::UpdateConfig()
         this->min_angle = (short) ntohs(config.min_angle);
         this->max_angle = (short) ntohs(config.max_angle);
 
-        if (this->scan_res == 25)
+        if (this->CheckScanConfig() == 0)
         {
-          // For high res, drop the scan range down to 100 degrees.
-          // The angles must be interpreted differently too.
-          this->scan_width = 100;
-          this->scan_min_segment = (this->min_angle + 5000) / this->scan_res;
-          this->scan_max_segment = (this->max_angle + 5000) / this->scan_res;
-
-          if (this->scan_min_segment < 0)
-            this->scan_min_segment = 0;
-          if (this->scan_min_segment > 400)
-            this->scan_min_segment = 400;
-
-          if (this->scan_max_segment < 0)
-            this->scan_max_segment = 0;
-          if (this->scan_max_segment > 400)
-            this->scan_max_segment = 400;
-
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
-                      sizeof(config)) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          return 1;
-        }
-        else if (this->scan_res == 50 || this->scan_res == 100)
-        {
-          this->scan_width = 180;
-          this->scan_min_segment = (this->min_angle + 9000) / this->scan_res;
-          this->scan_max_segment = (this->max_angle + 9000) / this->scan_res;
-
-          if (this->scan_min_segment < 0)
-            this->scan_min_segment = 0;
-          if (this->scan_min_segment > 360)
-            this->scan_min_segment = 360;
-
-          if (this->scan_max_segment < 0)
-            this->scan_max_segment = 0;
-          if (this->scan_max_segment > 360)
-            this->scan_max_segment = 360;
-
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
-                      sizeof(config)) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
             PLAYER_ERROR("PutReply() failed");
           return 1;
         }
         else
         {
-          // This is an invalid configuration
           if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
         }
@@ -500,6 +468,53 @@ int SickLMS200::UpdateConfig()
     }
   }
   return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Compute the start and end scan segments based on the current resolution and
+// scan angles.  Returns 0 if the configuration is valid.
+int SickLMS200::CheckScanConfig()
+{
+  if (this->scan_res == 25)
+  {
+    // For high res, drop the scan range down to 100 degrees.
+    // The angles must be interpreted differently too.
+    this->scan_width = 100;
+    this->scan_min_segment = (this->min_angle + 5000) / this->scan_res;
+    this->scan_max_segment = (this->max_angle + 5000) / this->scan_res;
+
+    if (this->scan_min_segment < 0)
+      this->scan_min_segment = 0;
+    if (this->scan_min_segment > 400)
+      this->scan_min_segment = 400;
+    
+    if (this->scan_max_segment < 0)
+      this->scan_max_segment = 0;
+    if (this->scan_max_segment > 400)
+      this->scan_max_segment = 400;
+
+    return 0;
+  }
+  else if (this->scan_res == 50 || this->scan_res == 100)
+  {
+    this->scan_width = 180;
+    this->scan_min_segment = (this->min_angle + 9000) / this->scan_res;
+    this->scan_max_segment = (this->max_angle + 9000) / this->scan_res;
+    
+    if (this->scan_min_segment < 0)
+      this->scan_min_segment = 0;
+    if (this->scan_min_segment > 360)
+      this->scan_min_segment = 360;
+
+    if (this->scan_max_segment < 0)
+      this->scan_max_segment = 0;
+    if (this->scan_max_segment > 360)
+      this->scan_max_segment = 360;
+
+    return 0;
+  }
+  return -1;
 }
 
 
