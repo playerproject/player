@@ -63,9 +63,11 @@ void FiducialProxy::Print()
   printf("#Fiducial(%d:%d) - %c\n", device, index, access);
   puts("#count");
   printf("%d\n", count);
-  puts("#id\trange\tbear\torient");
+  puts("#id\trange\tbear\torient\tr_err\tb_err\to_err");
   for(unsigned short i=0;i<count && i<PLAYER_FIDUCIAL_MAX_SAMPLES;i++)
-    printf("%u\t%u\t%d\t%d\n", beacons[i].id, beacons[i].pose[0], 
-           beacons[i].pose[1], beacons[i].pose[2]);
+    printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
+	   beacons[i].id, 
+	   beacons[i].pose[0], beacons[i].pose[1], beacons[i].pose[2],
+	   beacons[i].upose[0], beacons[i].upose[1], beacons[i].upose[2]);
 }
 
