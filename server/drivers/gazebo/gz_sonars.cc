@@ -38,6 +38,10 @@
 #include "config.h"
 #endif
 
+#ifndef INCLUDE_GAZEBO_SONAR
+#warning "gz_sonar not supported by libgazebo; skipping"
+#else
+
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
@@ -302,3 +306,5 @@ void GzSonars::HandleSonarsPower(void *client, void *req, int reqlen)
   
   return;
 }
+
+#endif

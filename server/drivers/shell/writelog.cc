@@ -106,6 +106,9 @@ class WriteLog: public CDevice
   // Subscribed device list
   private: int device_count;
   private: WriteLogDevice devices[1024];
+
+  // Device we are waiting on
+  private: int wait_index;
 };
 
 
@@ -188,6 +191,9 @@ WriteLog::WriteLog(int code, ConfigFile* cf, int section)
     device->tsec = 0;
     device->tusec = 0;
   }
+
+  // See which device we should wait on
+  this->wait_index = cf->ReadInt(section, "wait_device", -1);
     
   return;
 }
@@ -303,8 +309,18 @@ void WriteLog::Main(void)
   {
     pthread_testcancel();
 
-    // Default 10Hz data rate
-    usleep(100000);
+    if (this->wait_index >= 0)
+    {
+      // Wait on some device
+      // TODO: should be able to wait on any device
+      device = this->devices + this->wait_index;
+      device->device->Wait();
+    }
+    else
+    {
+      // Default 10Hz data rate
+      usleep(100000);
+    }
 
     // Walk the device list
     for (i = 0; i < this->device_count; i++)
