@@ -118,6 +118,9 @@ class AdaptiveMCL : public CDevice
   // Handle geometry requests.
   private: void HandleGetGeom(void *client, void *request, int len);
 
+  // Handle the set pose request
+  private: void HandleSetPose(void *client, void *request, int len);
+
   // Handle map info request
   private: void HandleGetMapInfo(void *client, void *request, int len);
 
@@ -377,9 +380,6 @@ int AdaptiveMCL::SetupOdom()
     return -1;
   }
 
-  // TODO
-  // Get the odometry geometry
-
   return 0;
 }
 
@@ -397,7 +397,10 @@ int AdaptiveMCL::ShutdownOdom()
 // Set up the laser
 int AdaptiveMCL::SetupLaser()
 {
+  uint8_t req;
+  uint16_t reptype;
   player_device_id_t id;
+  player_laser_geom_t geom;
   
   id.robot = this->device_id.robot;
   id.code = PLAYER_LASER_CODE;
@@ -415,9 +418,18 @@ int AdaptiveMCL::SetupLaser()
     return -1;
   }
 
-  // TODO
+  /* TODO
   // Get the laser geometry
-  
+  req = PLAYER_POSITION_GET_GEOM_REQ;
+  if (this->Request(&id, this, &req, 1, &reptype, NULL, &geom, sizeof(geom)) != 0)
+  {
+    PLAYER_ERROR("unable to get position device geometry");
+    return -1;
+  }
+
+  printf("got laser geom\n");
+  */
+
   return 0;
 }
 
@@ -439,9 +451,9 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   int i, j, k;
   int datalen;
   player_localize_data_t data;
+  pf_vector_t odom_pose, odom_diff;
   pf_vector_t pose;
   pf_matrix_t pose_cov;
-  pf_vector_t odom_pose;
   
   this->Lock();
 
@@ -452,13 +464,13 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   // Get the current odometric pose
   this->GetOdom(&odom_pose, time_sec, time_usec);
 
-  // Translate/rotate the hypotheses to take account of latency in filter
-  pose = pf_vector_coord_add(pf_vector_coord_sub(odom_pose, this->last_odom_pose), pose);
-
-  // Translate/rotate the covariance matrix
-  // TODO
-
+  // Compute the change in pose 
+  odom_diff = pf_vector_coord_sub(odom_pose, this->last_odom_pose);
+  
   this->Unlock();
+
+  // Translate/rotate the hypotheses to take account of latency in filter
+  pose = pf_vector_coord_add(odom_diff, pose);
 
   // Check for bad values
   if (!pf_vector_finite(pose))
@@ -471,7 +483,7 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
     pf_matrix_fprintf(pose_cov, stderr, "%e");
     assert(0);
   }
-  
+    
   // Encode the one-and-only hypothesis
   data.hypoth_count = 1;
 
@@ -479,17 +491,17 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   data.hypoths[0].mean[1] = (int32_t) (pose.v[1] * 1000);
   data.hypoths[0].mean[2] = (int32_t) (pose.v[2] * 180 * 3600 / M_PI);
   
-  data.hypoths[0].cov[0][0] = (int32_t) (pose_cov.m[0][0] * 1000 * 1000);
-  data.hypoths[0].cov[0][1] = (int32_t) (pose_cov.m[0][1] * 1000 * 1000);
+  data.hypoths[0].cov[0][0] = (int64_t) (pose_cov.m[0][0] * 1000 * 1000);
+  data.hypoths[0].cov[0][1] = (int64_t) (pose_cov.m[0][1] * 1000 * 1000);
   data.hypoths[0].cov[0][2] = 0;
   
-  data.hypoths[0].cov[1][0] = (int32_t) (pose_cov.m[1][0] * 1000 * 1000);
-  data.hypoths[0].cov[1][1] = (int32_t) (pose_cov.m[1][1] * 1000 * 1000);
+  data.hypoths[0].cov[1][0] = (int64_t) (pose_cov.m[1][0] * 1000 * 1000);
+  data.hypoths[0].cov[1][1] = (int64_t) (pose_cov.m[1][1] * 1000 * 1000);
   data.hypoths[0].cov[1][2] = 0;
 
   data.hypoths[0].cov[2][0] = 0;
   data.hypoths[0].cov[2][1] = 0;
-  data.hypoths[0].cov[2][2] = (int32_t) (pose_cov.m[2][2] * 180 * 3600 / M_PI * 180 * 3600 / M_PI);
+  data.hypoths[0].cov[2][2] = (int64_t) (pose_cov.m[2][2] * 180 * 3600 / M_PI * 180 * 3600 / M_PI);
 
   data.hypoths[0].alpha = 0;
   
@@ -503,7 +515,7 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
     {
       data.hypoths[i].mean[j] = htonl(data.hypoths[i].mean[j]);
       for (k = 0; k < 3; k++)
-        data.hypoths[i].cov[j][k] = htonl(data.hypoths[i].cov[j][k]);
+        data.hypoths[i].cov[j][k] = htonll(data.hypoths[i].cov[j][k]);
     }
     data.hypoths[i].alpha = htons(data.hypoths[i].alpha);
   }
@@ -773,6 +785,10 @@ int AdaptiveMCL::HandleRequests()
         break;
       */
 
+      case PLAYER_LOCALIZE_SET_POSE_REQ:
+        HandleSetPose(client, request, len);
+        break;
+      
       case PLAYER_LOCALIZE_GET_MAP_INFO_REQ:
         HandleGetMapInfo(client, request, len);
         break;
@@ -839,6 +855,55 @@ void AdaptiveMCL::HandleGetGeom(void *client, void *request, int len)
   return;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Handle the set pose request
+void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
+{
+  size_t reqlen;
+  player_localize_set_pose_t req;
+  pf_vector_t pose;
+  pf_matrix_t cov;
+
+  // Expected length of request
+  reqlen = sizeof(req);
+  
+  // check if the config request is valid
+  if (len != reqlen)
+  {
+    PLAYER_ERROR("config request len is invalid (%d != %d)", len, reqlen);
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+    return;
+  }
+
+  req = *((player_localize_set_pose_t*) request);
+
+  pose.v[0] = ((int32_t) ntohl(req.mean[0])) / 1000.0;
+  pose.v[1] = ((int32_t) ntohl(req.mean[1])) / 1000.0;
+  pose.v[2] = ((int32_t) ntohl(req.mean[2])) / 3600.0 * M_PI / 180;
+    
+  cov = pf_matrix_zero();
+  cov.m[0][0] = ((int64_t) ntohll(req.cov[0][0])) / 1e6;
+  cov.m[0][1] = ((int64_t) ntohll(req.cov[0][1])) / 1e6;
+  cov.m[1][0] = ((int64_t) ntohll(req.cov[1][0])) / 1e6;
+  cov.m[1][1] = ((int64_t) ntohll(req.cov[1][1])) / 1e6;
+  cov.m[2][2] = ((int64_t) ntohll(req.cov[2][2])) / (3600.0 * 3600.0) * (M_PI / 180 * M_PI / 180);
+
+  // TESTING
+  PLAYER_TRACE("pose, cov:");
+  pf_vector_fprintf(pose, stdout, "%f");
+  pf_matrix_fprintf(cov, stdout, "%f");
+
+  // Initialize the filter
+  this->InitFilter(pose, cov);
+
+  // Give them an ack
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+    PLAYER_ERROR("PutReply() failed");
+
+  return;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -814,6 +814,7 @@ typedef struct
   
 } playerc_localize_hypoth_t;
 
+
 // Localize device data
 typedef struct
 {
@@ -848,8 +849,8 @@ int playerc_localize_subscribe(playerc_localize_t *device, int access);
 // Un-subscribe from the localize device
 int playerc_localize_unsubscribe(playerc_localize_t *device);
 
-// Reset the localize device
-int playerc_localize_reset(playerc_localize_t *device);
+// Set the the robot pose (mean and covariance)
+int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3][3]);
 
 // Retrieve the occupancy map.  The map is written into the proxy
 // structure.

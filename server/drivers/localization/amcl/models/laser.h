@@ -33,6 +33,17 @@ typedef struct
 
   // Laser pose relative to robot
   pf_vector_t laser_pose;
+
+  // Covariance in the range reading
+  double range_cov;
+
+  // Probability of spurious range readings
+  double range_bad;
+
+  // Pre-computed laser sensor model
+  int lut_size;
+  double lut_res;
+  double *lut_probs;
   
   // Laser (range, bearing) values
   int range_count;

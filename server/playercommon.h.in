@@ -93,6 +93,19 @@
 #define GETFIRSTUINT32(x) (*((uint32_t*)x))
 #define GETFIRSTINT32(x)  (*((int32_t*)x))
 
+#if __BYTE_ORDER == __BIG_ENDIAN
+  #define htonll(n) (n)
+#else
+  #define htonll(n) ((((unsigned long long) htonl(n)) << 32) + htonl((n) >> 32))
+#endif
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+  #define ntohll(n) (n)
+#else
+  #define ntohll(n) ((((unsigned long long)ntohl(n)) << 32) + ntohl((n) >> 32))
+#endif
+
+
 #define MAX_FILENAME_SIZE PATH_MAX
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -77,8 +77,10 @@ void pf_init(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
 
   set = pf->sets + pf->current_set;
 
+  set->sample_count = pf->max_samples;
+
   // Compute the new sample poses
-  for (i = 0; i < pf->max_samples; i++)
+  for (i = 0; i < set->sample_count; i++)
   {
     sample = set->samples + i;
     sample->weight = 1.0 / pf->max_samples;
@@ -119,6 +121,7 @@ void pf_update_action(pf_t *pf, pf_action_model_fn_t action_fn, void *action_dat
   {
     sample = set->samples + i;
     sample->pose = (*action_fn) (action_data, sample->pose);
+    sample->weight = 1.0 / set->sample_count;
   }
   
   return;
