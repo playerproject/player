@@ -31,7 +31,7 @@
   #include <config.h>
 #endif
 
-//#include <assert.h>
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
@@ -41,6 +41,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <stdlib.h>
 
 #include "playercommon.h"
 #include "drivertable.h"
@@ -53,17 +54,21 @@ extern PlayerTime* GlobalTime;
 // MicroStraing 3DM-G IMU driver
 class MicroStrain3DMG : public CDevice
 {
+  ///////////////////////////////////////////////////////////////////////////
+  // Top half methods; these methods run in the server thread
+  ///////////////////////////////////////////////////////////////////////////
+  
   // Constructor
   public: MicroStrain3DMG(int code, ConfigFile* cf, int section);
+
+  // Destructor
+  public: virtual ~MicroStrain3DMG();
 
   // Initialise device
   public: virtual int Setup();
 
   // Shutdown the device
   public: virtual int Shutdown();
-
-  // Main function for device thread.
-  private: virtual void Main();
 
   // Open the serial port
   // Returns 0 on success
@@ -73,6 +78,33 @@ class MicroStrain3DMG : public CDevice
   // Returns 0 on success
   private: int ClosePort();
 
+  // Get number of pending data packets
+  private: virtual size_t GetNumData(void* client);
+
+  // Get pending data packets
+  private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
+                                  uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Middle methods: these methods facilitate communication between the top
+  // and bottom halfs.
+  ///////////////////////////////////////////////////////////////////////////
+
+  // Push data to the queue
+  private: void Push(player_position3d_data_t *data,
+                     uint32_t time_sec, uint32_t time_usec);
+
+  // Pop data from the queue; returns the number of items popped
+  private: int Pop(player_position3d_data_t *data,
+                   uint32_t *time_sec, uint32_t *time_usec);
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Bottom half methods; these methods run in the device thread
+  ///////////////////////////////////////////////////////////////////////////
+
+  // Main function for device thread.
+  private: virtual void Main();
+  
   // Read the firmware version
   private: int GetFirmware(char *firmware, int len);
 
@@ -101,15 +133,21 @@ class MicroStrain3DMG : public CDevice
 
   // Port file descriptor
   private: int fd;
+
+  // Queue of pending data
+  private: int q_count, q_max_count;
+  private: struct QElem
+  {
+    player_position3d_data_t data;
+    uint32_t time_sec, time_usec;
+  } *q_elems;
 };
 
 
 // Factory creation function
 CDevice* MicroStrain3DMG_Init(char* interface, ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_POSITION_STRING) == 0)
-    return ((CDevice*) (new MicroStrain3DMG(PLAYER_POSITION_CODE, cf, section)));
-  else if (strcmp(interface, PLAYER_POSITION3D_STRING) == 0)
+  if (strcmp(interface, PLAYER_POSITION3D_STRING) == 0)
     return ((CDevice*) (new MicroStrain3DMG(PLAYER_POSITION3D_CODE, cf, section)));
 
   PLAYER_ERROR1("driver \"MicroStrain3DMG\" does not support interface \"%s\"\n",
@@ -151,6 +189,25 @@ MicroStrain3DMG::MicroStrain3DMG(int code, ConfigFile* cf, int section)
   // Default serial port
   this->port_name = cf->ReadString(section, "port", "/dev/ttyS1");
 
+  // Initialize data queue
+  this->q_max_count = 0;
+  this->q_count = 0;
+  this->q_elems = NULL;
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Destructor
+MicroStrain3DMG::~MicroStrain3DMG()
+{
+  free(this->q_elems);
+
+  this->q_max_count = 0;
+  this->q_count = 0;
+  this->q_elems = NULL;
+  
   return;
 }
 
@@ -187,25 +244,88 @@ int MicroStrain3DMG::Shutdown()
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Get number of pending data packets
+size_t MicroStrain3DMG::GetNumData(void* client)
+{
+  printf("q_count %d\n", this->q_count);
+  return this->q_count;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Get pending data packets
+size_t MicroStrain3DMG::GetData(void* client, unsigned char* dest, size_t len,
+                                uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+{
+  assert(len > sizeof(player_position3d_data_t));
+  if (this->Pop((player_position3d_data_t*) dest, timestamp_sec, timestamp_usec))
+    return sizeof(player_position3d_data_t);
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Push data to the queue
+void MicroStrain3DMG::Push(player_position3d_data_t *data,
+                           uint32_t time_sec, uint32_t time_usec)
+{
+  this->Lock();
+  
+  // Expand queue as necessary
+  if (this->q_count >= this->q_max_count)
+  {
+    this->q_max_count += 1;
+    this->q_max_count *= 2;
+    this->q_elems = (QElem*) realloc(this->q_elems, this->q_max_count * sizeof(this->q_elems[0]));
+    assert(this->q_elems);
+  }
+
+  // Push the data onto the end of the queue
+  this->q_elems[this->q_count].data = *data;
+  this->q_elems[this->q_count].time_sec = time_sec;
+  this->q_elems[this->q_count].time_usec = time_usec;
+  this->q_count += 1;
+
+  this->Unlock();
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Pop data from the queue; returns the number of items popped
+int MicroStrain3DMG::Pop(player_position3d_data_t *data,
+                         uint32_t *time_sec, uint32_t *time_usec)
+{
+  if (this->q_count == 0)
+    return 0;
+
+  this->Lock();
+  
+  // Grab the data from the front of the queue
+  *data = this->q_elems[0].data;
+  *time_sec = this->q_elems[0].time_sec;
+  *time_usec = this->q_elems[0].time_usec;
+  
+  // Shift the remaining elements
+  this->q_count -= 1;
+  memmove(this->q_elems, this->q_elems + 1, this->q_count * sizeof(this->q_elems[0]));
+
+  this->Unlock();
+    
+  return 1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void MicroStrain3DMG::Main() 
 {
   int i;
-  double ntime, dt;
-  double al[3], ar[3];
-  double vl[3], vr[3];
-  double pl[3], pr[3];
-  double q[4];
-  double m;
+  double ntime;
   double e[3];
   struct timeval time;
-
-      
-  for (i = 0; i < 3; i++)
-  {
-    vr[i] = 0.0;
-    pr[i] = 0.0;
-  }
+  player_position3d_data_t data;
   
   while (true)
   {
@@ -218,49 +338,9 @@ void MicroStrain3DMG::Main()
 
     // Get the Euler angles from the sensor
     GetStabEuler(&ntime, e);
-    
-    // Get sensor data
-    //GetStabQ(&ntime, q);
 
-    /*
-    m =  q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
-        
-    //printf("%+6.3f %+6.3f %+6.3f %+6.3f, %+6.3f\n", q[0], q[1], q[2], q[3], m);
-
-    e[0] = 0.0;
-    e[1] = 0.0;
-    e[2] = atan2(2 * (q[1] * q[2] + q[0] * q[3]),
-                 (q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]));
-
-    // BROKEN
-    //e[1] = asin(-2 * (q[0] * q[2] - q[3] * q[1]));
-    //e[0] = atan(2 * (q[3] * q[0] + q[1] * q[2]) /
-    //            (q[3] * q[3] - q[0] * q[0] - q[1] * q[1] + q[2] * q[2]));
-
-    //printf("%5.3f %+6.1f %+6.1f %+6.1f\n",
-    //       ntime, e[0] * 180 / M_PI, e[1] * 180 / M_PI, e[2] * 180 / M_PI);
-    */
-
-    if (this->code == PLAYER_POSITION_CODE)
+    if (this->code == PLAYER_POSITION3D_CODE)
     {
-      player_position_data_t data;
-
-      // Construct data packet
-      data.xpos = 0;
-      data.ypos = 0;
-      data.yaw = htonl((int32_t) (-e[2] * 180 / M_PI));
-      data.xspeed = 0;
-      data.yspeed = 0;
-      data.yawspeed = 0;
-      data.stall = 0;
-
-      // Make data available
-      PutData(&data, sizeof(data), time.tv_sec, time.tv_usec);
-    }
-    else if (this->code == PLAYER_POSITION3D_CODE)
-    {
-      player_position3d_data_t data;
-
       // Construct data packet
       data.xpos = 0;
       data.ypos = 0;
@@ -281,7 +361,7 @@ void MicroStrain3DMG::Main()
       data.stall = 0;
 
       // Make data available
-      PutData(&data, sizeof(data), time.tv_sec, time.tv_usec);
+      this->Push(&data, time.tv_sec, time.tv_usec);
     }
     else
       assert(false);
