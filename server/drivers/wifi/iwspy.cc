@@ -98,6 +98,9 @@ class Iwspy : public CDevice
     int in_count, out_count;
   };
 
+  // Interface to be monitored
+  private: const char *ethx;
+
   // The list of NIC's to be monitored
   private: int nic_count;
   private: nic_t nics[8];
@@ -145,6 +148,9 @@ Iwspy::Iwspy(char *interface, ConfigFile *cf, int section)
 
   // Read the number of pings to start
   this->ping_count = 5;
+
+  // Ethernet interface to monitor
+  this->ethx = cf->ReadString(section, "eth", "eth1");
   
   // Read IP addresses to monitor
   this->nic_count = 0;
@@ -169,15 +175,15 @@ Iwspy::Iwspy(char *interface, ConfigFile *cf, int section)
 // Initialize driver
 int Iwspy::Setup()
 {
-  /* REMOVE?
-  int i;
-  char mac[64];
-  */
-
   // Start pinging
   if (this->StartPing() != 0)
     return -1;
 
+  // Give the ping time to refresh the arp table before
+  // trying to spy
+  usleep(2000000);
+
+  // Arp lookup is unreliable for some reason
   /* REMOVE?
   // Wait a while until the arp table is refreshed
   usleep(1000000);
@@ -282,7 +288,7 @@ int Iwspy::InitIwSpy()
   {
     argc = 0;
     args[argc++] = "iwspy";
-    args[argc++] = "eth0";
+    args[argc++] = strdup(this->ethx);
 
     // Add the list of MAC addresses to be monitored.
     for (i = 0; i < this->nic_count; i++)
@@ -345,7 +351,7 @@ void Iwspy::UpdateIwSpy()
     dup2(dummy_fd, 2);
 
     // Run iwspy
-    if (execlp("iwspy", "iwspy", "eth0", NULL) != 0)
+    if (execlp("iwspy", "iwspy", this->ethx, NULL) != 0)
     {
       PLAYER_ERROR1("error on exec: [%s]", strerror(errno));
       exit(errno);
@@ -537,7 +543,7 @@ int Iwspy::StartPing()
       dup2(dummy_fd,2);
 
       // Run ping
-      if (execl("/bin/ping", "ping", "-b", "10.0.0.0", NULL) != 0)
+      if (execlp("ping", "ping", "-b", "10.0.0.0", NULL) != 0)
       {
         PLAYER_ERROR1("error on exec: [%s]", strerror(errno));
         exit(errno);
