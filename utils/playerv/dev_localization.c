@@ -166,13 +166,20 @@ void localize_draw_map(localize_t *localize)
   uint16_t col;
   uint16_t *image;
   int size_x, size_y;
+  int ssize_x, ssize_y;
   int csize_x, csize_y;
   double cscale_x, cscale_y;
-  
+
   mag = localize->map_mag;
   scale = localize->proxy->map_scale;
+
+  // Original map dimensions
   size_x = localize->proxy->map_size_x;
   size_y = localize->proxy->map_size_y;
+
+  // Scaled map dimensions
+  ssize_x = (int) ((double) size_x / mag + 0.5);
+  ssize_y = (int) ((double) size_y / mag + 0.5);
 
   // Canvas dimensions
   rtk_canvas_get_size(localize->map_fig->canvas, &csize_x, &csize_y);
@@ -180,15 +187,15 @@ void localize_draw_map(localize_t *localize)
   
   // Set the initial pose of the map
   rtk_fig_origin(localize->map_fig,
-                 -csize_x / 2 * cscale_x + size_x / mag * scale / 2,
-                 +csize_y / 2 * cscale_y - size_y / mag * scale / 2, 0);
+                 -csize_x / 2 * cscale_x + ssize_x * scale / 2,
+                 +csize_y / 2 * cscale_y - ssize_y * scale / 2, 0);
 
   // Construct an image representing the map
-  image = malloc((size_x * size_y) / (mag * mag) * sizeof(uint16_t));
+  image = malloc(ssize_x * ssize_y * sizeof(uint16_t));
 
-  for (j = 0; j < size_y / mag; j++)
-    for (i = 0; i < size_x / mag; i++)
-      image[i + j * size_x / mag] = RTK_RGB16(255, 255, 255);
+  for (j = 0; j < ssize_y; j++)
+    for (i = 0; i < ssize_x; i++)
+      image[i + j * ssize_x] = RTK_RGB16(255, 255, 255);
   
   for (j = 0; j < size_y; j++)
   {
@@ -206,19 +213,17 @@ void localize_draw_map(localize_t *localize)
           col = RTK_RGB16(0, 0, 0);
           break;
       }
-      if (col < image[i / mag + j / mag * size_x / mag])
-        image[i / mag + j / mag * size_x / mag] = col;
+      if (col < image[i / mag + j / mag * ssize_x])
+        image[i / mag + j / mag * ssize_x] = col;
     }
   }
 
   // Draw the image
   rtk_fig_show(localize->map_fig, 1);
   rtk_fig_clear(localize->map_fig);
-  rtk_fig_image(localize->map_fig, 0, 0, 0, scale,
-                size_x / mag, size_y / mag, 16, image, NULL);
+  rtk_fig_image(localize->map_fig, 0, 0, 0, scale, ssize_x, ssize_y, 16, image, NULL);
   rtk_fig_color(localize->map_fig, 0, 0, 0);
-  rtk_fig_rectangle(localize->map_fig, 0, 0, 0,
-                    size_x / mag * scale, size_y / mag * scale, 0);
+  rtk_fig_rectangle(localize->map_fig, 0, 0, 0, ssize_x * scale, ssize_y * scale, 0);
 
   free(image);
   
@@ -254,17 +259,15 @@ void localize_draw_hypoth(localize_t *localize)
         
     ox = hypoth->mean[0] / mag;
     oy = hypoth->mean[1] / mag;
-    oa = atan2(evec[0][1], evec[0][0]);
+    oa = atan2(-evec[0][1], evec[0][0]);
     
-    sx = 3 * sqrt(eval[0]) / mag;
-    sy = 3 * sqrt(eval[1]) / mag;
+    sx = 6 * sqrt(eval[0]) / mag;
+    sy = 6 * sqrt(eval[1]) / mag;
 
     printf("%f %f %f %f %f\n", ox, oy, oa, sx, sy);
     
-    rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa, +sx);
-    rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa, -sx);
-    rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa + M_PI / 2, +sy);
-    rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa + M_PI / 2, -sy);
+    rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa, sx);
+    rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa + M_PI / 2, sy);
     rtk_fig_ellipse(localize->hypoth_fig, ox, oy, oa, sx, sy, 0);
   }
   
