@@ -106,7 +106,7 @@ AC_SUBST(LASERCSPACE_LIBPATH)
 
 AC_ARG_WITH(linuxwifi, 
 [  --without-linuxwifi     Don't compile the linuxwifi driver],,
-with_linuxwifi=yes)
+[AC_CHECK_HEADER(linux/wireless.h, with_linuxwifi=yes,,)])
 if test "x$with_linuxwifi" = "xyes"; then
   AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])
   LINUXWIFI_LIB="liblinuxwifi.a"
@@ -116,7 +116,7 @@ AC_SUBST(LINUXWIFI_LIB)
 AC_SUBST(LINUXWIFI_LIBPATH)
 
 AC_ARG_WITH(aodv, 
-[  --without-aodv          Don't compile the aodv driver],,
+[  --without-aodv          Compile the aodv driver],,
 with_aodv=no)
 if test "x$with_aodv" = "xyes"; then
   AC_DEFINE(INCLUDE_AODV, 1, [[include the AODV driver]])
