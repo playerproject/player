@@ -97,6 +97,10 @@
 //
 #define DTOR(d) ((d) * M_PI / 180)
 
+// Normalize angle to domain -pi, pi
+//
+#define NORMALIZE(z) atan2(sin(z), cos(z))
+
 #define LOBYTE(w) ((uint8_t) (w & 0xFF))
 #define HIBYTE(w) ((uint8_t) ((w >> 8) & 0xFF))
 #define MAKEUINT16(lo, hi) ((((uint16_t) (hi)) << 8) | ((uint16_t) (lo)))

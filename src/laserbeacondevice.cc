@@ -391,7 +391,12 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
             beacon_data->beacon[beacon_data->count].id = id;
             beacon_data->beacon[beacon_data->count].range = (int) (range * 1000);
             beacon_data->beacon[beacon_data->count].bearing = (int) (bearing * 180 / M_PI);
-            beacon_data->beacon[beacon_data->count].orient = (int) (orient * 180 / M_PI + 90);
+            // normalizing orient to [-pi, pi] and adding 90 deg like it was
+            // done before 
+            orient += M_PI*0.5;
+            orient = NORMALIZE(orient);
+            beacon_data->beacon[beacon_data->count].orient = (int) (orient * 180 / M_PI );
+            //beacon_data->beacon[beacon_data->count].orient = (int) (orient * 180 / M_PI + 90);
             beacon_data->count++;
         }
     }
