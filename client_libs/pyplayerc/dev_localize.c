@@ -236,7 +236,7 @@ static PyObject *localize_set_pose(localize_object_t *self, PyObject *args)
   self = (localize_object_t*) self;
   memset(cov,0,3*3*sizeof(double));
   cov[0][0] = var[0]*var[0];
-  cov[1][1] = var[1]*var[0];
+  cov[1][1] = var[1]*var[1];
   cov[2][2] = var[2]*var[2];
 
   thread_release();

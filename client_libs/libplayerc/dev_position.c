@@ -214,13 +214,10 @@ int playerc_position_get_waypoints(playerc_position_t *device)
   }
 
   device->waypoint_count = (int)ntohs(config.count);
-  printf("got %d waypoints:\n", device->waypoint_count);
   for(i=0;i<device->waypoint_count;i++)
   {
     device->waypoints[i][0] = ((int)ntohl(config.waypoints[i].x)) / 1e3;
     device->waypoints[i][1] = ((int)ntohl(config.waypoints[i].y)) / 1e3;
-    printf("  %d: (%.3f, %.3f)\n", 
-           i, device->waypoints[i][0], device->waypoints[i][1]);
   }
 
   return 0;

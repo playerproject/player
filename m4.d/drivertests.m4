@@ -22,10 +22,10 @@ dnl            (e.g., "-I/somewhere_odd/include")
 dnl   ldadd:   link flags to be added to Player if this driver is included
 dnl            (e.g., "-lgsl -lcblas")
 dnl   pkgvar:  variable prefix to be used with pkg-config; if your package
-dnl            is found, pkgvar_CFLAGS and pkg_LIBS will be set
+dnl            is found, pkgvar_CFLAGS and pkgvar_LIBS will be set
 dnl            appropriately
 dnl   pkg:     name of package that is required to build the driver; it
-dnl            should be a pkg-config style string, like [gtk+-2.0 >= 2.1]
+dnl            should be a valid pkg-config spec, like [gtk+-2.0 >= 2.1]
 dnl
 dnl The C define INCLUDE_<name> and the autoconf variable <name>_LIB (with 
 dnl <name> capitalized) will be conditionally defined to be 1 and 
