@@ -78,7 +78,15 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
 
 AC_DEFUN([PLAYER_DRIVERTESTS], [
 
-PLAYER_ADD_DRIVER([segwayrmp],[drivers/position],[no],[],[],[])
+dnl Where's CANLIB??
+AC_ARG_WITH(canlib, [  --with-canlib=dir     Location of CANLIB],
+CANLIB_DIR=$with_canlib,
+CANLIB_DIR="${HOME}/canlib")
+
+PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[no],
+	[$CANLIB_DIR/include/canlib.h],
+	["-I$CANLIB_DIR/include"],
+	["-L$CANLIB_DIR/canlib -lcanlib"])
 
 PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],[],[],[])
 

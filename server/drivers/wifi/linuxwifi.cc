@@ -384,16 +384,17 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
 
   data.bitrate = htonl(bitrate);
     
-  data.link_count = htonl(1);
+  data.link_count = htons(1);
   strncpy(data.links[0].ip, "0.0.0.0", sizeof(data.links[0].ip));
   data.links[0].qual = htons(wqual);
-  data.links[0].maxqual = htons(wmaxqual);
   data.links[0].level = htons(wlevel);
-  data.links[0].maxlevel = htons(wmaxlevel);
   data.links[0].noise = htons(wnoise);
-  data.links[0].maxnoise = htons(wmaxnoise);
+
+  data.maxqual = htons(wmaxqual);
+  data.maxlevel = htons(wmaxlevel);
+  data.maxnoise = htons(wmaxnoise);
  
-  data.links[0].qual_type = qual_type;
+  data.qual_type = qual_type;
   
   assert(sizeof(data) < maxsize);
   memcpy(dest, &data, sizeof(data));
