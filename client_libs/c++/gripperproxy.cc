@@ -38,7 +38,7 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int GripperProxy::SetGrip(unsigned char cmd, unsigned char arg=0)
+int GripperProxy::SetGrip(unsigned char cmd, unsigned char arg)
 {
   if(!client)
     return(-1);

@@ -50,7 +50,7 @@ void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
   x = (double)ntohl(((player_truth_data_t*)buffer)->px)  / 1000.0;
   y = (double)ntohl(((player_truth_data_t*)buffer)->py) / 1000.0;
   // heading in NBO integer degrees to double radians
-  a = DTOR((double)ntohl(((player_truth_data_t*)buffer)->pa));
+  a = DTOR((double)(int32_t)ntohl(((player_truth_data_t*)buffer)->pa));
 }
 
 // interface that all proxies SHOULD provide
@@ -75,9 +75,9 @@ int TruthProxy::GetPose( double *px, double *py, double *pa )
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
   
-  *px = ntohl(config.px) / 1000.0;
-  *py = ntohl(config.py) / 1000.0;
-  *pa = DTOR(ntohl(config.pa));
+  *px = (double)(int32_t)ntohl(config.px) / 1000.0;
+  *py = (double)(int32_t)ntohl(config.py) / 1000.0;
+  *pa = DTOR((double)(int32_t)ntohl(config.pa));
   
   // update the internal pose record too.
   x = *px;

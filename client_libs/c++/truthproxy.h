@@ -80,7 +80,7 @@ class TruthProxy : public ClientProxy
   // these are updated at regular intervals as data arrives, you can
   // read these values directly (setting them does NOT change the
   // device's pose!)
-  double x, y, a; // meters, meters, degrees
+  double x, y, a; // meters, meters, radians
 
   // query Player about the current pose - wait for a reply
   int GetPose( double *px, double *py, double *pa );
