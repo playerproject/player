@@ -4,6 +4,7 @@
 #endif
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 
 #include "rflex-info.h"
@@ -14,6 +15,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <unistd.h>
 
 //holds data until someone wants to read it
 typedef struct {
@@ -32,6 +34,10 @@ typedef struct {
   int lcd_y;
   unsigned char * lcd_data;
 } rflex_status_t;
+
+
+static int clear_incoming_data(int fd);
+
 
 static rflex_status_t status;
 
@@ -141,6 +147,24 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
 
   pthread_testcancel();
   writeData( fd, cmd, 9+len );
+
+	// Some issues with commands not being recognised if sent too rapidly
+	// (too small a buffer on recieving end?
+	// So we delay for a bit, specifically we wait until specified amount of
+	// time has passed without recieving a packet. This roughtly approximates
+	// to waiting till the command has finshed being executed on the robot
+	int count;
+	timeval start,now;
+	do  
+	{
+		count = clear_incoming_data(fd);
+  		gettimeofday(&now,NULL);
+		if (count > 0 ) 
+			start = now;
+		count = (now.tv_sec - start.tv_sec) * 1000000 + (now.tv_usec - start.tv_usec);
+	} while (count < 10000);
+
+  
   pthread_testcancel();
 }
 
@@ -535,22 +559,26 @@ static int parseBuffer( unsigned char *buffer, unsigned int len )
   return(1);
 }
 
-static void clear_incoming_data(int fd)
+// returns number of commands parsed
+static int clear_incoming_data(int fd)
 {
   unsigned char buffer[4096];
   int len;
   int bytes;
+	int count = 0;
 
   // 32 bytes here because the motion packet is 34. No sense in waiting for a
   // complete packet -- we can starve because the last 2 bytes might always
   // arrive with the next packet also, and we never leave the loop. 
 
   while ((bytes = bytesWaiting(fd)) > 32) {
+  	count ++;
     pthread_testcancel();
     waitForAnswer(fd, buffer, &len);
     pthread_testcancel();
     parseBuffer(buffer, len);
   }
+  return count;
 }
 
 //returns the odometry data saved in the struct
@@ -621,7 +649,7 @@ void rflex_update_bumpers(int fd, int num_bumpers,
 void rflex_update_system( int fd , int *battery, 
 			     int *brake)
 {
-  cmdSend( fd, SYS_PORT, 0, SYS_LCD_DUMP, 0, NULL );
+  //cmdSend( fd, SYS_PORT, 0, SYS_LCD_DUMP, 0, NULL );
   cmdSend( fd, SYS_PORT, 0, SYS_STATUS, 0, NULL );
   
  
