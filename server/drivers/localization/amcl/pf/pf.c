@@ -33,6 +33,14 @@ pf_t *pf_alloc(int min_samples, int max_samples)
   pf->min_samples = min_samples;
   pf->max_samples = max_samples;
 
+  // Control parameters for the population size calculation.  [err] is
+  // the max error between the true distribution and the estimated
+  // distribution.  [z] is the upper standard normal quantile for (1 -
+  // p), where p is the probability that the error on the estimated
+  // distrubition will be less than [err].
+  pf->pop_err = 0.01;
+  pf->pop_z = 3;
+  
   pf->current_set = 0;
   for (j = 0; j < 2; j++)
   {
@@ -49,6 +57,9 @@ pf_t *pf_alloc(int min_samples, int max_samples)
       sample->pose.v[2] = 0.0;
       sample->weight = 1.0 / max_samples;
     }
+
+    // HACK: is 3 times max_samples enough?
+    set->kdtree = pf_kdtree_alloc(3 * max_samples);
   }
 
   return pf;
@@ -61,7 +72,10 @@ void pf_free(pf_t *pf)
   int i;
   
   for (i = 0; i < 2; i++)
+  {
+    free(pf->sets[i].kdtree);
     free(pf->sets[i].samples);
+  }
   free(pf);
   
   return;
@@ -170,7 +184,6 @@ void pf_update_resample(pf_t *pf)
   pf_sample_set_t *set_a, *set_b;
   pf_sample_t *sample_a, *sample_b;
   pf_pdf_discrete_t *pdf;
-  pf_kdtree_t *tree;
 
   set_a = pf->sets + pf->current_set;
   set_b = pf->sets + (pf->current_set + 1) % 2;
@@ -190,7 +203,7 @@ void pf_update_resample(pf_t *pf)
   pdf = pf_pdf_discrete_alloc(set_a->sample_count, randlist);
 
   // Create the kd tree for adaptive sampling
-  tree = pf_kdtree_alloc();
+  pf_kdtree_clear(set_b->kdtree);
 
   // Draw samples from set a to create set b.
   total = 0;
@@ -202,16 +215,19 @@ void pf_update_resample(pf_t *pf)
 
     //printf("%d %f\n", i, sample_a->weight);
     assert(sample_a->weight > 0);
-    
+
+    // Add sample to list
     sample_b = set_b->samples + set_b->sample_count++;
     sample_b->pose = sample_a->pose;
     sample_b->weight = 1.0;
     total += sample_b->weight;
 
-    pf_kdtree_insert(tree, sample_b->pose);
+    // Add sample to histogram
+    pf_kdtree_insert(set_b->kdtree, sample_b->pose, sample_b->weight);
 
+    // See if we have enough samples yet
     if (set_b->sample_count >= pf->min_samples)
-      if (set_b->sample_count > pf_resample_limit(pf, tree->node_count))
+      if (set_b->sample_count > pf_resample_limit(pf, set_b->kdtree->leaf_count))
         break;
   }
 
@@ -219,7 +235,6 @@ void pf_update_resample(pf_t *pf)
   //printf("samples %d\n", set_b->sample_count);
   //printf("tree %d\n", tree->node_count);
 
-  pf_kdtree_free(tree);
   pf_pdf_discrete_free(pdf);
   free(randlist);
   
@@ -241,27 +256,19 @@ void pf_update_resample(pf_t *pf)
 // with samples in them.  This is taken directly from Fox et al.
 int pf_resample_limit(pf_t *pf, int k)
 {
-  double z, err;
+  //double z, err;
   double a, b, c, x;
   int n;
-
-  // Control parameters for the population size calculation.  [err] is
-  // the max error between the true distribution and the estimated
-  // distribution.  [z] is the upper standard normal quantile for (1 -
-  // p), where p is the probability that the error on the estimated
-  // distrubition will be less than [err].
-  err = 0.01;
-  z = 3;
 
   if (k <= 1)
     return pf->min_samples;
 
   a = 1;
   b = 2 / (9 * ((double) k - 1));
-  c = sqrt(2 / (9 * ((double) k - 1))) * z;
+  c = sqrt(2 / (9 * ((double) k - 1))) * pf->pop_z;
   x = a - b + c;
 
-  n = (int) ceil((k - 1) / (2 * err) * x * x * x);
+  n = (int) ceil((k - 1) / (2 * pf->pop_err) * x * x * x);
 
   return n;
 }
@@ -274,7 +281,7 @@ void pf_calc_stats(pf_t *pf, pf_vector_t *mean, pf_matrix_t *cov)
   int i, j, k;
   pf_sample_set_t *set;
   pf_sample_t *sample;
-  double r;
+  //double r;
   double n;
   double m[4];
   double c[2][2];

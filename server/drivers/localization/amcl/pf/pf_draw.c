@@ -10,16 +10,17 @@
 #include <math.h>
 #include <stdlib.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "rtk.h"
 
 #include "pf.h"
 #include "pf_pdf.h"
 #include "pf_kdtree.h"
 
-
-// Recursively draw the kd tree
-void pf_draw_tree_node(pf_t *pf, rtk_fig_t *fig, pf_kdtree_t *tree, pf_kdtree_node_t *node);
-
+ 
 // Draw the statistics
 void pf_draw_statistics(pf_t *pf, rtk_fig_t *fig);
 
@@ -52,36 +53,24 @@ void pf_draw_samples(pf_t *pf, rtk_fig_t *fig, int max_samples)
 }
 
 
-/* FIX
-
-// Recursively draw the kd tree
-void pf_draw_tree_node(pf_t *pf, rtk_fig_t *fig, pf_kdtree_t *tree, pf_kdtree_node_t *node)
+// Draw the hitogram (kd tree)
+void pf_draw_hist(pf_t *pf, rtk_fig_t *fig)
 {
-  double px, py, sx, sy;
-  
-  if (node == NULL)
-    return;
-  
-  sx = 0.50;
-  sy = 0.50;
+  pf_sample_set_t *set;
 
-  px = sx * (node->key[0] + 0.5);
-  py = sy * (node->key[1] + 0.5);
-  
-  rtk_fig_rectangle(fig, px, py, 0, sx, sy, 0);
-  
-  pf_draw_tree_node(pf, fig, tree, node->children[0]);
-  pf_draw_tree_node(pf, fig, tree, node->children[1]);
+  set = pf->sets + pf->current_set;
+
+  rtk_fig_color(fig, 0.0, 0.0, 1.0);
+  pf_kdtree_draw(set->kdtree, fig);
   
   return;
 }
-*/
 
 
 // Draw the statistics
 void pf_draw_stats(pf_t *pf, rtk_fig_t *fig)
 {
-  int i;
+  //int i;
   pf_vector_t mean;
   pf_matrix_t cov;
   pf_matrix_t r, d;

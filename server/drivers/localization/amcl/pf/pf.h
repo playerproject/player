@@ -10,6 +10,7 @@
 #define PF_H
 
 #include "pf_vector.h"
+#include "pf_kdtree.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,8 +48,13 @@ typedef struct
 // Information for a set of samples
 typedef struct
 {
+  // The samples
   int sample_count;
   pf_sample_t *samples;
+
+  // A kdtree encoding the histogram
+  pf_kdtree_t *kdtree;
+  
 } pf_sample_set_t;
 
 
@@ -57,6 +63,9 @@ typedef struct _pf_t
 {
   // This min and max number of samples
   int min_samples, max_samples;
+
+  // Population size parameters
+  double pop_err, pop_z;
   
   // The sample sets.  We keep two sets an use [current_set]
   // to identify the active set.
@@ -92,6 +101,9 @@ void pf_calc_stats(pf_t *pf, pf_vector_t *mean, pf_matrix_t *cov);
 
 // Display the sample set
 void pf_draw_samples(pf_t *pf, struct _rtk_fig_t *fig, int max_samples);
+
+// Draw the histogram (kdtree)
+void pf_draw_hist(pf_t *pf, struct _rtk_fig_t *fig);
 
 // Draw the statistics
 void pf_draw_stats(pf_t *pf, struct _rtk_fig_t *fig);
