@@ -49,6 +49,9 @@ vision_t *vision_create(mainwnd_t *mainwnd, imagewnd_t *imagewnd, opt_t *opt,
   vision->datatime = 0;
   vision->proxy = playerc_vision_create(client, index);
 
+  vision->width = 320;
+  vision->height = 240;
+
   // Set initial device state
   snprintf(section, sizeof(section), "vision:%d", index);
   subscribe = opt_get_int(opt, section, "", 0);
@@ -138,9 +141,11 @@ void vision_draw(vision_t *vision)
   rtk_fig_clear(vision->image_fig);
 
   rtk_fig_color_rgb32(vision->image_fig, 0xFFFFFF);
-  rtk_fig_rectangle(vision->image_fig, 128, 128, 0, 256, 256, 1);
+  rtk_fig_rectangle(vision->image_fig, vision->width/2, vision->height/2,
+                    0, vision->width, vision->height, 1);
   rtk_fig_color_rgb32(vision->image_fig, 0x000000);
-  rtk_fig_rectangle(vision->image_fig, 128, 128, 0, 256, 256, 0);
+  rtk_fig_rectangle(vision->image_fig, vision->width/2, vision->height/2,
+                    0, vision->width, vision->height, 0);
 
   for (i = 0; i < vision->proxy->blob_count; i++)
   {

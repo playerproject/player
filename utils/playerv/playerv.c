@@ -56,7 +56,7 @@ int main(int argc, char **argv)
   // Devices
   position_t *position;
   laser_t *laser[2];
-  laserbeacon_t *laserbeacon[2];
+  lbd_t *lbd[2];
   ptz_t *ptz;
   vision_t *vision;
 
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     return -1;
 
   // Create a window for the raw image
-  imagewnd = imagewnd_create(app);
+  imagewnd = imagewnd_create(app, host, port);
   if (!imagewnd)
     return -1;
 
@@ -116,8 +116,8 @@ int main(int argc, char **argv)
   position = position_create(mainwnd, opt, client, 0);
   laser[0] = laser_create(mainwnd, opt, client, 0);
   laser[1] = laser_create(mainwnd, opt, client, 1);
-  laserbeacon[0] = laserbeacon_create(mainwnd, opt, client, 0);
-  laserbeacon[1] = laserbeacon_create(mainwnd, opt, client, 1);
+  lbd[0] = lbd_create(mainwnd, opt, client, 0);
+  lbd[1] = lbd_create(mainwnd, opt, client, 1);
   ptz = ptz_create(mainwnd, imagewnd, opt, client, 0);
   vision = vision_create(mainwnd, imagewnd, opt, client, 0);
   
@@ -142,8 +142,8 @@ int main(int argc, char **argv)
     position_update(position);
     laser_update(laser[0]);
     laser_update(laser[1]);
-    laserbeacon_update(laserbeacon[0]);
-    laserbeacon_update(laserbeacon[1]);
+    lbd_update(lbd[0]);
+    lbd_update(lbd[1]);
     ptz_update(ptz);
     vision_update(vision);
   }
@@ -154,8 +154,8 @@ int main(int argc, char **argv)
   // Destroy devices
   vision_destroy(vision);
   ptz_destroy(ptz);
-  laserbeacon_destroy(laserbeacon[1]);
-  laserbeacon_destroy(laserbeacon[0]);
+  lbd_destroy(lbd[1]);
+  lbd_destroy(lbd[0]);
   laser_destroy(laser[1]);
   laser_destroy(laser[0]);
   position_destroy(position);
