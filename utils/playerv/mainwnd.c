@@ -43,7 +43,7 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
 
   // Set up the canvas
   rtk_canvas_movemask(wnd->canvas, RTK_MOVE_PAN | RTK_MOVE_ZOOM);
-  rtk_canvas_size(wnd->canvas, 300, 300);
+  rtk_canvas_size(wnd->canvas, 320, 240);
   rtk_canvas_scale(wnd->canvas, 0.02, 0.02);
   rtk_canvas_origin(wnd->canvas, 0, 0);
 
@@ -128,8 +128,8 @@ int mainwnd_update(mainwnd_t *wnd)
   {
     snprintf(filename, sizeof(filename), "playerv-%s-%d-%04d.ppm",
              wnd->host, wnd->port, wnd->stills_count++);
-    rtk_canvas_export_image(wnd->canvas, filename);
     printf("exporting %s\n", filename);
+    rtk_canvas_export_image(wnd->canvas, filename);
   }
 
   // Rotate the display
