@@ -1,11 +1,19 @@
 $Id$
 
+NEXT RELEASE:
+-------------
+- test multiple data packets per frame
+
+- separate interface and driver docs
+
+- add docs for new drivers
+
+- decide which drivers are "stable" and which are "experimental"
+
+
 NOW:
 ----
 - add client pointers to all device interface calls
-
-- add CDevice method to ask devices how many data packets are available for
-  a particular client.
 
 - Generalize gripper control to allow for any gripper, and modify command
     and data specifications to be more natural
@@ -38,6 +46,9 @@ LATENT:
 
 DONE:
 ------
++ add CDevice method to ask devices how many data packets are available for
+  a particular client.
+
 + add some kind of config file to Player.   need to specify
     mappings from devices to ports and things like that.  still take
     command-line args, though.
