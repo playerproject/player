@@ -3,11 +3,21 @@
 #
 
 #
-# this is where player will be installed.  change it if you like.
-INSTALL_PREFIX = /usr/local/player
+# player will be installed to this dir with VERSION appended
+# (e.g. '/usr/local/player0.8c'). change the base directory name
+# if you want, but try to leave the version identifier on there; makes
+# things easier
+#
+INSTALL_BASE = /usr/local/player
+# get version from VERSION file
+VERSION=$(shell awk '{print substr($$3,2,length($$3)-2);}' $(PWD)/VERSION)
+INSTALL_PREFIX=$(INSTALL_BASE)$(VERSION)
+
 INSTALL_BIN = $(INSTALL_PREFIX)/bin
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
+
 RMDIR = rmdir
+
 
 all: server client_libs examples
 
@@ -39,7 +49,7 @@ install_examples:
 uninstall:
 	cd src && make INSTALL_PREFIX=$(INSTALL_PREFIX) uninstall
 	cd client_libs && make INSTALL_PREFIX=$(INSTALL_PREFIX) uninstall
-	cd examples && make INSTALL_PREFIX=$(INSTALL_PREFIX) uninstall
+	cd examples && make -i INSTALL_PREFIX=$(INSTALL_PREFIX) uninstall
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_BIN) 
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_INCLUDE)
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
