@@ -1,0 +1,18 @@
+# Desc: Example plugin makefile
+# CVS: $Id$
+
+# if Player is not installed in /usr/local, you must put the alternative
+# installation directory here:
+#
+PS=/Users/vaughan/PS-HEAD
+
+all: exampledriver.dylib
+
+%.o: %.cc
+	$(CXX) -I$(PS)/include -Wall -g3 -dynamiclib -c $<
+
+%.dylib: %.o
+	$(CXX) -bundle -flat_namespace -undefined suppress -o $@ $<
+
+clean:
+	rm -f *.o *.so
