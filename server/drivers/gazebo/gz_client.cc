@@ -56,6 +56,15 @@ int GzClient::Init(const char *serverid, const char *prefixid)
   if (gz_sim_open(GzClient::sim, GzClient::client, "default") != 0)
     return -1;
 
+  // Check that version numbers match
+  if (((gz_data_t*) GzClient::sim->iface->mmap)->version != LIBGAZEBO_VERSION)
+  {
+    PLAYER_ERROR2("libgazebo mismatch: Gazebo is using v%03X, Player is using v%03X\n"
+                  "Try re-building Player",                
+                  ((gz_data_t*) GzClient::sim->iface->mmap)->version, LIBGAZEBO_VERSION);
+    return -1;
+  }
+
   if (prefixid != NULL)
     GzClient::prefix_id = prefixid;
 
