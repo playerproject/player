@@ -7,8 +7,8 @@
 
 include "pioneer.inc"
 
-size [18 18]
-bitmap "bitmaps/autolab.png"
+size [18 24.4]
+bitmap "autolab.png"
 
 resolution 0.02  # meters per pixel
 
