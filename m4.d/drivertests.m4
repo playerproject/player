@@ -262,9 +262,12 @@ AC_ARG_ENABLE(amcl,
 [  --disable-amcl           Don't compile the amcl driver],
   disable_reason="disabled by user",enable_amcl=yes)
 if test "x$enable_amcl" = "xyes"; then
-  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,
-                  enable_amcl=no
-                  disable_reason="couldn't find gsl/gsl_version.h")
+  PKG_CHECK_MODULES(GSL,gsl,
+                    enable_amcl=yes,
+                    enable_amcl=no)
+dnl  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,
+dnl                  enable_amcl=no
+dnl                  disable_reason="couldn't find gsl/gsl_version.h")
 fi
 if test "x$enable_amcl" = "xyes"; then
   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
@@ -274,7 +277,8 @@ if test "x$enable_amcl" = "xyes"; then
   AMCL_PF_LIB="libpf.a"
   AMCL_MAP_LIB="libmap.a"
   AMCL_MODELS_LIB="libmodels.a"
-  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lgsl -lgslcblas"
+dnl  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lgsl -lgslcblas"
+  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GSL_LIBS"
   PLAYER_DRIVERS="$PLAYER_DRIVERS amcl"
 else
   PLAYER_NODRIVERS="$PLAYER_NODRIVERS:amcl -- $disable_reason"
@@ -283,6 +287,7 @@ AC_SUBST(AMCL_LIB)
 AC_SUBST(AMCL_PF_LIB)
 AC_SUBST(AMCL_MAP_LIB)
 AC_SUBST(AMCL_MODELS_LIB)
+AC_SUBST(GSL_CFLAGS)
 
 AC_SUBST(PLAYER_DRIVER_LIBS)
 AC_SUBST(PLAYER_DRIVER_LIBPATHS)

@@ -215,6 +215,60 @@ int FiducialProxy::SetFOV( double min_range,
   return 0; // OK
 }
 
+// Set the fiducial identification value displayed by this device (if
+// supported) returns the value actually used by the device, which may
+// differ from the one requested, or -1 on error.
+int FiducialProxy::SetId( int id )
+{ 
+  int len;
+  player_fiducial_id_t pid;
+  player_msghdr_t hdr;
+  
+  pid.subtype = PLAYER_FIDUCIAL_SET_ID;
+  pid.id = htonl( id );
+
+  len = client->Request(m_device_id,
+			(const char*)&pid, sizeof(pid),
+			&hdr, (char*)&pid, sizeof(pid) );
+  
+  if( len < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK )
+    {
+      puts( "fiducial config ID request failed" );
+      return(-1);
+    }
+
+  int result_id = ntohl( pid.id );
+
+  if( result_id != id )
+    PLAYER_WARN2( "Setting fiducial ID: result (%d) differs from request (%d)",
+		 result_id, id );
+
+  return result_id;
+}
+
+// Get the fiducial identification value displayed by this device (if supported)
+// returns the ID or -1 on errorx
+int FiducialProxy::GetId( void )
+{ 
+  int len;
+  player_fiducial_id_t pid;
+  player_msghdr_t hdr;
+  
+  pid.subtype = PLAYER_FIDUCIAL_GET_ID;
+
+  len = client->Request(m_device_id,
+			(const char*)&pid, sizeof(pid),
+			&hdr, (char*)&pid, sizeof(pid) );
+  
+  if( len < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK )
+    {
+      puts( "fiducial config ID request failed" );
+      return(-1);
+    }
+
+  return ntohl( pid.id );
+}
+
 /*
   Attempt to send a message to a fiducial. See the Player manual
   for details of the message packet. Use a target_id of -1 to
