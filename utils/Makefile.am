@@ -1,3 +1,3 @@
 
-SUBDIRS = playerv tkviewer playerjoy playernav playervcr
+SUBDIRS = playerv playerjoy playernav playervcr
 #playermap
