@@ -4,8 +4,8 @@
 
 include ../../Makefile.common
 
-#CFLAGS = -g -Wall $(PLAYER_PLATFORM)
-CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
+CFLAGS = -g -Wall $(PLAYER_PLATFORM)
+#CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I../../client_libs/c++ -I../../client_libs/c -I../../include -I$(INSTALL_PREFIX)/include -I/usr/local/player/include
 LIBDIRS = -L../../client_libs/c++ -L$(INSTALL_PREFIX)/lib -L/usr/local/player/lib
 LIBS = $(LIBDIRS) -lplayerclient $(PLATFORM_LIBS) -lm
