@@ -2443,10 +2443,10 @@ class PlannerProxy : public ClientProxy
   public: void FillData( player_msghdr_t hdr, const char *buffer);
 
   /** Did the planner find a valid path? */
-  public: char pathValid;
+  public: bool pathValid;
 
   /** Have we arrived at the goal? */
-  public: char pathDone;
+  public: bool pathDone;
 
   /** Current pose (m, m, radians). */
   public: double px, py, pa;
