@@ -209,9 +209,9 @@ void ClientManager::AddClient(ClientData* client)
     ufds[num_clients++].events = POLLIN;
   }
     
-  // If the client's socket fd is 0, then there's not really a client; this
+  // If the client's socket fd is < 0, then there's not really a client; this
   // devices is alwayson.  So don't send the ident string.
-  if(client->socket != 0)
+  if(client->socket >= 0)
   {
     // Try to write the ident string to the client, and kill the client if
     // it fails.  

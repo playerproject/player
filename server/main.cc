@@ -1075,7 +1075,7 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
     assert((clientdata = (ClientData*)new ClientDataTCP("",port)));
         
     // to indicate that this one is a dummy
-    clientdata->socket = 0;
+    clientdata->socket = -1;
 
     // don't add it to the client manager here, because it hasn't been
     // created yet.  instead, queue them up for later addition.
