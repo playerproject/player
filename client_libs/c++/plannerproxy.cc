@@ -57,6 +57,7 @@ PlannerProxy::PlannerProxy( PlayerClient *pc, unsigned short index,
     unsigned char access )
   : ClientProxy (pc, PLAYER_PLANNER_CODE, index, access)
 {
+  this->pathDone = 1;
   return;
 }
 
@@ -157,8 +158,8 @@ void PlannerProxy::FillData( player_msghdr_t hdr, const char *buffer)
   this->wa = (long) ntohl(data->wa) * M_PI / 180.0;
   this->wa = atan2(sin(this->wa), cos(this->wa));
 
-  this->currWaypoint = (int) ntohs(data->curr_waypoint);
-  this->waypointCount = (unsigned int)ntohs(data->waypoint_count);
+  this->currWaypoint = (short) ntohs(data->curr_waypoint);
+  this->waypointCount = (unsigned short)ntohs(data->waypoint_count);
 
   return;
 }
