@@ -314,6 +314,7 @@ void Iwspy::UpdateIwSpy()
 {
   int status;
   pid_t pid;
+  int dummy_fd;
   int stdout_pipe[2];
 
   // Create pipes
@@ -333,6 +334,10 @@ void Iwspy::UpdateIwSpy()
     dup(stdout_pipe[1]);
     close(stdout_pipe[0]);
     close(stdout_pipe[1]);
+
+    // Pipe stderr output to /dev/null
+    dummy_fd = open("/dev/null", O_RDWR);
+    dup2(dummy_fd, 2);
 
     // Run iwspy
     if (execl("/sbin/iwspy", "iwspy", "eth0", NULL) != 0)
@@ -372,7 +377,7 @@ void Iwspy::Parse(int fd)
   ssize_t bytes;
   char buffer[80 * 25];
   char line[1024];
-  char mac[16];
+  char mac[32];
   int link, level, noise;
   char status[16];
   nic_t *nic;
@@ -398,8 +403,15 @@ void Iwspy::Parse(int fd)
 
     if (sscanf(line, " %s : Quality:%d/%*d Signal level:%d dBm  Noise level:%d dBm (%s)",
                mac, &link, &level, &noise, status) < 5)
-      continue;
+    {
+      status[0] = 0;
+      if (sscanf(line, " %s : Quality:%d/%*d Signal level:%d dBm  Noise level:%d dBm",
+                 mac, &link, &level, &noise) < 4)
+        continue;
+    }
 
+    //printf("mac [%s]\n", mac);
+    
     // Update the appropriate entry in the nic list.
     for (j = 0; j < this->nic_count; j++)
     {
@@ -411,7 +423,7 @@ void Iwspy::Parse(int fd)
         nic->level = level;
         nic->noise = noise;
         nic->in_count++;
-        printf("iwspy: %s %d %d %d\n", nic->ip, link, level, noise);
+        //printf("iwspy: %s %d %d %d\n", nic->ip, link, level, noise);
         break;
       }
     }
