@@ -133,9 +133,16 @@ Usage()
 
 /* just so we know when we've segfaulted, even when running under stage */
 void 
-printout( int dummy ) 
+printout_segv( int dummy ) 
 {
   puts("Player got a SIGSEGV! (that ain't good...)");
+  exit(-1);
+}
+/* just so we know when we've bus errored, even when running under stage */
+void 
+printout_bus( int dummy ) 
+{
+  puts("Player got a SIGBUS! (that ain't good...)");
   exit(-1);
 }
 
@@ -164,9 +171,14 @@ Interrupt( int dummy )
 void 
 SetupSignalHandlers()
 {
-  if(signal(SIGSEGV, printout) == SIG_ERR)
+  if(signal(SIGSEGV, printout_segv) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGSEGV");
+    exit(1);
+  }
+  if(signal(SIGBUS, printout_bus) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGBUS");
     exit(1);
   }
 
