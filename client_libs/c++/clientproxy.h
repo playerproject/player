@@ -42,13 +42,14 @@ class ClientProxy
     unsigned short device; // the name by which we identify this kind of device
     unsigned short index;  // which device we mean
     unsigned char access;   // 'r', 'w', or 'a' (others?)
-    struct timeval timestamp;  // time at which this data was sensed
-    struct timeval senttime;   // time at which this data was sent
-    struct timeval receivedtime; // time at which this data was received
 
     PlayerClient* client;  // our controlling client object
 
   public: 
+    struct timeval timestamp;  // time at which this data was sensed
+    struct timeval senttime;   // time at which this data was sent
+    struct timeval receivedtime; // time at which this data was received
+    
     // constructor will try to get access to the device (unless req_device
     // is 0)
     ClientProxy(PlayerClient* pc, 

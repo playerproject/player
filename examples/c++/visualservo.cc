@@ -89,7 +89,6 @@ int main(int argc, char** argv)
   PlayerClient robot(host,port);
   SonarProxy sp(&robot,0,'r');
   VisionProxy vp(&robot,0,'r');
-  GripperProxy gp(&robot,0,'w');
 
   /* request read access on the sonars and all access to the wheels */
   PositionProxy pp(&robot,0,'a');
@@ -98,8 +97,6 @@ int main(int argc, char** argv)
   if(turnOnMotors && pp.SetMotorState(1))
     exit(1);
 
-  int count = 0;
-  bool gripopen = true;
   int newturnrate,newspeed;
   //int lastdir = 1;
   /* go into read-think-act loop */
@@ -108,16 +105,6 @@ int main(int argc, char** argv)
     /* this blocks until new data comes; 10Hz by default */
     if(robot.Read())
       exit(1);
-
-    if(!((++count) % 10))
-    {
-      if(gripopen)
-        gp.SetGrip(GRIPclose,0);
-      else
-        gp.SetGrip(GRIPopen,0);
-      gripopen=!gripopen;
-      count = 0;
-    }
 
     /* See if there is an obstacle in front */
     obs = (sp[2] < minfrontdistance ||
@@ -143,9 +130,9 @@ int main(int argc, char** argv)
       }
       avoidcount--;
     }
-    else if(vp.num_blobs[channel])
+    else if(vp.num_blobs[channel]>0)
     {
-      vp.Print();
+      //vp.Print();
       if(vp.blobs[channel][0].area < minarea)
         continue;
 
@@ -157,8 +144,8 @@ int main(int argc, char** argv)
       else
         newturnrate = 0;
       
-      newspeed = 0;
-      //newspeed = 200;
+      //newspeed = 0;
+      newspeed = 200;
     }
     else
     {

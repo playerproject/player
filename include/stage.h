@@ -31,6 +31,7 @@
 
 /* get types and device-specific packet formats */
 #include <messages.h>
+#include <sys/time.h> // for struct timeval
 
 // Notes on stage/player shared memory format.
 //

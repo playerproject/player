@@ -133,6 +133,7 @@ bool SHUTTING_DOWN;
 
 bool experimental = false;
 bool debug = false;
+bool useArena = false;
 
 void Interrupt( int dummy ) {
   // setting this will suppress print statements from the client
@@ -361,7 +362,6 @@ int main( int argc, char *argv[] )
   char visionconfigfile[MAX_FILENAME_SIZE] = DEFAULT_ACTS_CONFIGFILE;
   //bool useoldacts = false;
 
-  int useArena = false;
   char arenaFile[128]; // filename for mapped memory
 
   pthread_mutex_init(&clients_mutex,NULL);

@@ -85,7 +85,7 @@ void GripperProxy::Print()
   puts("#paddles\tinner beams\touter beams");
   printf("%s\t%s\t%s\n",
          (paddles_open) ? "open" : "closed",
-         (inner_break_beam) ? "clear" : "broken",
-         (outer_break_beam) ? "clear" : "broken");
+         (inner_break_beam) ? "broken" : "clear",
+         (outer_break_beam) ? "broken" : "clear");
 }
 
