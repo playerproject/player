@@ -12,6 +12,10 @@ player.ps: player.tex player.bib
 	$(LATEX) $< && $(BIBTEX) player && $(LATEX) $< && $(LATEX) $<
 	dvips -f -t letter player.dvi > $@
 
+draft: player.ps
+	./draftify.pl player.ps > player.ps.tmp
+	mv -f player.ps.tmp player.ps
+
 install: player.ps
 	cp -f $< ../doc
 
