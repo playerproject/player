@@ -227,22 +227,22 @@ Waveaudio::Main()
       {
 	pthread_testcancel();
 	
-	puts( "READING" );
+	//puts( "READING" );
 	
 	if(read(fd, &(data.data), samples) < samples ) 
 	  {
 	    PLAYER_WARN("not enough data read");
 	  } 
 	
-	printf( "rate: %d depth: %d samples: %d\n", 
-		ntohl(data.rate),
-		ntohs(data.depth),
-		ntohl(data.samples) );
+	//printf( "rate: %d depth: %d samples: %d\n", 
+	//ntohl(data.rate),
+	//ntohs(data.depth),
+	//ntohl(data.samples) );
 
-	for( int s=0; s<samples; s++ )
-	  printf( "%u ", data.data[s] );
+	//for( int s=0; s<samples; s++ )
+	//printf( "%u ", data.data[s] );
 
-	puts("");
+	//puts("");
 
 	PutData(&data, sizeof(data),0,0);
 	usleep(100000);
