@@ -47,6 +47,49 @@ test_position(PlayerClient* client, int index)
     pp.Print();
   }
 
+  const int ox = 100, oy = -200;
+  const unsigned short oa = 180;
+  
+  TEST("Setting odometry" );
+  if( pp.SetOdometry(ox, oy, oa) < 0 )
+    {
+      FAIL();
+      return(-1);
+    }
+  
+  printf("\n - initial \t[%d %d %u]\n"
+	 " - requested \t[%d %d %u]\n", 
+	 pp.xpos, pp.ypos, pp.theta, 
+	 ox, oy, oa );
+  
+  
+  for( int s=0; s<10; s++ )
+    {
+      client->Read();
+      printf( " - reading \t[%d %d %u]\r", 
+	      pp.xpos, pp.ypos, pp.theta );
+      fflush(stdout);
+    }
+  
+  puts("");
+
+  if( pp.xpos != ox || pp.ypos != oy || pp.theta != oa )
+    {
+      FAIL();
+      return(-1);
+    }
+  else
+    PASS();
+  
+  TEST("resetting odometry");
+  if(pp.ResetOdometry() < 0)
+  {
+    FAIL();
+    return(-1);
+  }
+  sleep(1);
+  PASS();
+
   TEST("enabling motors");
   if(pp.SetMotorState(1) < 0)
   {
