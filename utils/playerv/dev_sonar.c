@@ -160,6 +160,7 @@ void sonar_draw(sonar_t *sonar)
     rtk_fig_color_rgb32(sonar->scan_fig[i], COLOR_SONAR_SCAN);
     dr = sonar->proxy->scan[i];
     da = 20 * M_PI / 180 / 2;
+  
     //rtk_fig_line(sonar->scan_fig[i], 0, 0, dr, 0);
     //rtk_fig_line(sonar->scan_fig[i], dr, -dr * da/2, dr, +dr * da/2);
     points[0][0] = 0;
