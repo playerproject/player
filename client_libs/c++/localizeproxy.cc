@@ -63,6 +63,7 @@ void LocalizeProxy::FillData(player_msghdr_t hdr, const char* buffer)
   player_localize_data_t* buf = (player_localize_data_t*)buffer;
 
   // Byte-swapping goodness
+  pending_count = ntohs(buf->pending_count);
   hypoth_count = ntohl(buf->hypoth_count);
   bzero(hypoths,sizeof(hypoths));
   for(int i=0;i<hypoth_count;i++)
@@ -127,6 +128,9 @@ LocalizeProxy::GetNumParticles()
                      (char*)&rep,sizeof(rep)) < 0)
     return(-1);
 
+  if(rephdr.type == PLAYER_MSGTYPE_RESP_NACK)
+    return -1;
+  
   return(ntohl(rep.num_particles));
 }
 
