@@ -764,7 +764,12 @@ typedef struct player_rmp_config
 
 /** [Constants] */
 /** Supported config requests */
-#define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
+
+#define PLAYER_POSITION3D_GET_GEOM_REQ          ((uint8_t)1)
+#define PLAYER_POSITION3D_MOTOR_POWER_REQ       ((uint8_t)2)
+#define PLAYER_POSITION3D_VELOCITY_MODE_REQ     ((uint8_t)3)
+#define PLAYER_POSITION3D_POSITION_MODE_REQ     ((uint8_t)5)
+
 
 /** [Data] */
 /**
