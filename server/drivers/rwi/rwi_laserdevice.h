@@ -25,13 +25,14 @@
 #define _RWI_LASERDEVICE_H
 
 #include <rwidevice.h>
+#include <drivertable.h>
 
 class CRWILaserDevice: public CRWIDevice {
 
 public:
-	CRWILaserDevice (int argc, char *argv[])
-		: CRWIDevice(argc, argv,
-		             sizeof(player_laser_data_t),
+	CRWILaserDevice (char* interface, ConfigFile* cf, int section)
+		: CRWIDevice(interface, cf, section,
+		             sizeof(player_srf_data_t),
 		             0,  /* laser device takes no commands */
 		             1,1)
 		{}

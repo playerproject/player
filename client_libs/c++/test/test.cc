@@ -79,8 +79,10 @@ int main(int argc, const char *argv[])
       test_sonar(&client, index);
     
     // Misc device
+    /*
     if(strcmp(device, "misc") == 0 || strcmp(device, "all") == 0)
       test_misc(&client, index);
+      */
     
     // Laser device
     if(strcmp(device, "laser") == 0 || strcmp(device, "all") == 0)
@@ -99,8 +101,10 @@ int main(int argc, const char *argv[])
       test_vision(&client, index);
     
     // BPS device
+    /*
     if(strcmp(device, "bps") == 0 || strcmp(device, "all") == 0)
       test_bps(&client, index);
+     */
     
     // Laserbeacon device
     if(strcmp(device, "laserbeacon") == 0 || strcmp(device, "all") == 0)

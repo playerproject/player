@@ -39,6 +39,7 @@
 #include <pthread.h>
 
 #include <device.h>
+#include <configfile.h>
 #include <player.h>
 #include <netinet/in.h>  // for htonl()
 
@@ -53,7 +54,7 @@
 class CRWIDevice : public CDevice  {
 
 public:
-	CRWIDevice (int argc, char *argv[],
+	CRWIDevice (char* interface, ConfigFile* cf, int section,
 	            size_t datasize, size_t commandsize,
 	            int reqqueuelen, int repqueuelen);
 	~CRWIDevice ();

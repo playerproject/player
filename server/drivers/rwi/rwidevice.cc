@@ -34,7 +34,7 @@ extern unsigned int     CRWIDevice::rwi_device_count;
 extern mbyClientHelper *CRWIDevice::helper;
 #endif				// USE_MOBILITY
 
-CRWIDevice::CRWIDevice(int argc, char *argv[],
+CRWIDevice::CRWIDevice(char* interface, ConfigFile* cf, int section,
                        size_t datasize, size_t commandsize,
                        int reqqueuelen, int repqueuelen)
 	: CDevice(datasize, commandsize, reqqueuelen, repqueuelen)
@@ -60,17 +60,15 @@ CRWIDevice::CRWIDevice(int argc, char *argv[],
 	pthread_mutex_unlock(&rwi_counter_mutex);
 	
 	#ifdef USE_MOBILITY
-	strncpy(name, RWI_ROBOT_NAME_DEFAULT, RWI_ROBOT_NAME_MAX);
 	
-	// parse cmd line args to find name
-	for (int i = 0; i < argc; i++) {
-		if (!strcmp(argv[i], "name") && (++i < argc)) {
-			strncpy(name, argv[i], RWI_ROBOT_NAME_MAX);
-			// just in case:
-			name[sizeof(name)-1] = '\0';
-			name_provided = true;
-		}
-	}
+	// parse config file options to find name
+        strncpy(name, 
+                cf->ReadString(section, "name", RWI_ROBOT_NAME_DEFAULT), 
+                RWI_ROBOT_NAME_MAX);
+        // just in case:
+        name[sizeof(name)-1] = '\0';
+        if(!strcmp(name,RWI_ROBOT_NAME_DEFAULT))
+          name_provided = true;
 	#endif				// USE_MOBILITY
 }
 

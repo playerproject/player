@@ -22,34 +22,39 @@
  */
 
 #include <rwi_bumperdevice.h>
+#include <drivertable.h>
 #include <stdio.h>
 #include <netinet/in.h>
 #include <string.h>
 
 // a factory creation function
-CDevice* RWIBumper_Init(int argc, char *argv[])
+CDevice* RWIBumper_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice *)(new CRWIBumperDevice(argc, argv)));
+  return((CDevice *)(new CRWIBumperDevice(interface, cf, section)));
+}
+
+void 
+RWIBumper_Register(DriverTable* table)
+{
+  table->AddDriver("rwi_bumper", PLAYER_READ_MODE, RWIBumper_Init);
 }
 	
 
-CRWIBumperDevice::CRWIBumperDevice(int argc, char **argv)
-    : CRWIDevice(argc, argv,
+CRWIBumperDevice::CRWIBumperDevice(char* interface, ConfigFile* cf, int section)
+    : CRWIDevice(interface, cf, section,
                  sizeof(player_bumper_data_t),
                  0 /* no commands for bumpers */,
 		         1,1)
 {
-	// default to upper set if none is specified
-	upper = true;
-		
-	// parse cmd line args
-	for (int i = 0; i < argc; i++) {
-		if (!strcmp(argv[i], "upper")) {
-			upper = true;
-		} else if (!strcmp(argv[i], "lower")) {
-			upper = false;
-		}
-	}
+        char* tmp;
+
+        tmp = (char*)cf->ReadString(section, "array", "upper");
+
+        if (!strcmp(tmp, "upper")) {
+          upper = true;
+        } else if(!strcmp(tmp, "lower")) {
+          upper = false;
+        }
 }
 
 int
@@ -150,21 +155,21 @@ CRWIBumperDevice::Main()
 		// Finally, collect new data
 		if (enabled) {
 #ifdef USE_MOBILITY
-			bumper_data = bumper_state->get_sample(0);
+			//bumper_data = bumper_state->get_sample(0);
 		
 			data.bumper_count = bumper_data->point.length();
-			data.bumpfield = 0;
+			bzero(data.bumpers, sizeof(data.bumpers));
 				
 			for (unsigned int i = 0; (i < bumper_data->point.length())
-			                         && (i < PLAYER_NUM_BUMPER_SAMPLES); i++) {
+			                         && (i < PLAYER_MAX_BUMPER_SAMPLES); i++) {
 			    if (bumper_data->point[i].flags == 1)
-					data.bumpfield |= (1 << i);
+					data.bumpers[i] = 1;
 			    else
-					data.bumpfield &= ~(1 << i);
+					data.bumpers[i] = 0;
 			}
 #else
 			data.bumper_count = 0;
-			data.bumpfield = 0;
+			bzero(data.bumpers, sizeof(data.bumpers));
 #endif			// USE_MOBILITY
 
 			PutData((unsigned char *) &data, sizeof(data), 0, 0);

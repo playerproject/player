@@ -12,7 +12,7 @@ int
 test_lbd(PlayerClient* client, int index)
 {
   unsigned char access;
-  LaserbeaconProxy lbp(client,index);
+  FiducialProxy lbp(client,index);
 
   printf("device [laserbeacon] index [%d]\n", index);
 

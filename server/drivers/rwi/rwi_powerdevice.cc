@@ -29,9 +29,15 @@
   #include <strings.h>
 #endif
 
-CDevice* RWIPower_Init(int argc, char *argv[])
+CDevice* RWIPower_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice *)(new CRWIPowerDevice(argc, argv)));
+  return((CDevice *)(new CRWIPowerDevice(interface, cf, section)));
+}
+
+void 
+RWIPower_Register(DriverTable* table)
+{
+  table->AddDriver("rwi_power", PLAYER_READ_MODE, RWIPower_Init);
 }
 
 int

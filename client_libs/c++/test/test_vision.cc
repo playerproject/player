@@ -14,7 +14,7 @@ int
 test_vision(PlayerClient* client, int index)
 {
   unsigned char access;
-  VisionProxy vp(client,index);
+  BlobfinderProxy vp(client,index);
 
   printf("device [vision] index [%d]\n", index);
 
