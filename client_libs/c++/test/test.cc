@@ -128,6 +128,10 @@ int main(int argc, const char *argv[])
     // Bumper
     if(strcmp(device, "bumper") == 0 || strcmp(device, "all") == 0)
       test_bumper(&client, index);
+    
+    // WiFi
+    if(strcmp(device, "wifi") == 0 || strcmp(device, "all") == 0)
+      test_wifi(&client, index);
 
     // BPS device
     /*

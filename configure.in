@@ -205,20 +205,20 @@ AC_ARG_WITH(laser,
 AC_SUBST(LASER_LIB)
 AC_SUBST(LASER_LIBPATH)
 
-WIFI_LIB="libwifi.a"
-WIFI_LIBPATH="drivers/libwifi.a"
+LINUXWIFI_LIB="liblinuxwifi.a"
+LINUXWIFI_LIBPATH="drivers/liblinuxwifi.a"
 AC_ARG_WITH(wifi, 
 [  --with-wifi                Use the WiFi driver],
 [case "${withval}" in
  yes) AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])
       ;;
-  no) WIFI_LIB=""
-      WIFI_LIBPATH=""
+  no) LINUXWIFI_LIB=""
+      LINUXWIFI_LIBPATH=""
       ;;
  esac],
 [AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])])
-AC_SUBST(WIFI_LIB)
-AC_SUBST(WIFI_LIBPATH)
+AC_SUBST(LINUXWIFI_LIB)
+AC_SUBST(LINUXWIFI_LIBPATH)
 
 dnl the following must use --with to be built
 AC_ARG_WITH(reb,
