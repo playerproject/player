@@ -213,6 +213,8 @@ dnl  disabled because it uses CBAUD which is pre-POSIX and doesn't
 dnl  exist on OSX - rtv 2004.05.12
 PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([flockofbirds],[drivers/position/ascension],[no],[],[],[])
+
 PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])
