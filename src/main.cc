@@ -250,13 +250,15 @@ struct timeval* CreateStageDevices( char* directory, int** ports, int* num_ports
   n = scandir( directory, &namelist, MatchDeviceName, 0);
   if (n < 0)
     perror("scandir");
-  else {
+  else
+  {
     // for every file in the directory, create a new device
-    while(n--) {
+    while(n--)
+    {
 
       // don't try to load the clock here - we'll do it below
       if( strcmp( "clock", namelist[n]->d_name ) == 0 )
-	break;
+        break;
 
 #ifdef DEBUG      
       printf("Opening %s ", namelist[n]->d_name);
@@ -266,11 +268,11 @@ struct timeval* CreateStageDevices( char* directory, int** ports, int* num_ports
       sprintf( devicefile, "%s/%s", directory, namelist[n]->d_name ); 
       
       if( (tfd = open(devicefile, O_RDWR )) < 0 )
-	{
-	  perror( "Failed to open IO file" );
-	  printf("Tried to open file \"%s\"\n", devicefile);
-	  exit( -1 );
-	}
+      {
+        perror( "Failed to open IO file" );
+        printf("Tried to open file \"%s\"\n", devicefile);
+        exit( -1 );
+      }
     
       // find out how big the file is - we need to mmap that many bytes
       int ioSize = lseek( tfd, 0, SEEK_END );
@@ -284,13 +286,13 @@ struct timeval* CreateStageDevices( char* directory, int** ports, int* num_ports
       
       
       if( (deviceIO = 
-	   (player_stage_info_t*)mmap( NULL, ioSize, PROT_READ | PROT_WRITE, 
-				       MAP_SHARED, tfd, (off_t)0 ))  
-	  == MAP_FAILED )
-	{
-	  perror( "Failed to map memory" );
-	  exit( -1 );
-	}
+           (player_stage_info_t*)mmap( NULL, ioSize, PROT_READ | PROT_WRITE, 
+                                       MAP_SHARED, tfd, (off_t)0 ))  
+          == MAP_FAILED )
+      {
+        perror( "Failed to map memory" );
+        exit( -1 );
+      }
       
       close( tfd ); // can close fd once mapped
       
@@ -299,104 +301,103 @@ struct timeval* CreateStageDevices( char* directory, int** ports, int* num_ports
       // get the player type and index from the header
       // NOT from the filename
       switch( deviceIO->player_id.type )
-	{
-	  //create a generic stage IO device for these types:
-	case PLAYER_PLAYER_CODE: 
-	case PLAYER_MISC_CODE:
-	case PLAYER_POSITION_CODE:
-	case PLAYER_SONAR_CODE:
-	case PLAYER_LASER_CODE:
-	case PLAYER_VISION_CODE:  
-	case PLAYER_PTZ_CODE:     
-	case PLAYER_LASERBEACON_CODE: 
-	case PLAYER_TRUTH_CODE:
-	case PLAYER_OCCUPANCY_CODE:
-	case PLAYER_GPS_CODE:
-	case PLAYER_GRIPPER_CODE:
-	case PLAYER_IDAR_CODE:
-	case PLAYER_DESCARTES_CODE:
-	  {
-	    // Create a StageDevice with this IO base address
-	    dev = new CStageDevice( deviceIO );
+      {
+        //create a generic stage IO device for these types:
+        case PLAYER_PLAYER_CODE: 
+        case PLAYER_MISC_CODE:
+        case PLAYER_POSITION_CODE:
+        case PLAYER_SONAR_CODE:
+        case PLAYER_LASER_CODE:
+        case PLAYER_VISION_CODE:  
+        case PLAYER_PTZ_CODE:     
+        case PLAYER_LASERBEACON_CODE: 
+        case PLAYER_TRUTH_CODE:
+        case PLAYER_OCCUPANCY_CODE:
+        case PLAYER_GPS_CODE:
+        case PLAYER_GRIPPER_CODE:
+        case PLAYER_IDAR_CODE:
+        case PLAYER_DESCARTES_CODE:
+        {
+          // Create a StageDevice with this IO base address
+          dev = new CStageDevice( deviceIO );
 	    
-	    deviceTable->AddDevice( deviceIO->player_id.port,
-				    deviceIO->player_id.type, 
-				    deviceIO->player_id.index, 
-				    PLAYER_ALL_MODE, dev );
+          deviceTable->AddDevice( deviceIO->player_id.port,
+                                  deviceIO->player_id.type, 
+                                  deviceIO->player_id.index, 
+                                  PLAYER_ALL_MODE, dev );
 	    
-	    // have we registered this port already?
-	    int j = 0;
-	    while( j<portcount )
-	      {
-		if( portstmp[j] == deviceIO->player_id.port )
-		  break;
-		j++;
-	      }
-	    if( j == portcount ) // we have not! 
-	      // we add this port to the array of ports we must listen on
-	      portstmp[portcount++] = deviceIO->player_id.port;
-	  }	  
-	  break;
+          // have we registered this port already?
+          int j = 0;
+          while( j<portcount )
+          {
+            if( portstmp[j] == deviceIO->player_id.port )
+              break;
+            j++;
+          }
+          if( j == portcount ) // we have not! 
+            // we add this port to the array of ports we must listen on
+            portstmp[portcount++] = deviceIO->player_id.port;
+        }	  
+        break;
 	  
-	case PLAYER_BROADCAST_CODE:   
+        case PLAYER_BROADCAST_CODE:   
 #ifdef INCLUDE_BROADCAST
-	  // Create broadcast device as per normal
-	  if( deviceIO->local )
-	    {
-	      int argc = 0;
-	      char *argv[2];
-	      // Broadcast through the loopback device; note that this
-	      // wont work with distributed Stage.
-	      argv[argc++] = "addr";
-	      argv[argc++] = "127.255.255.255";
-	      deviceTable->AddDevice(deviceIO->player_id.port,
-				     deviceIO->player_id.type,
-				     deviceIO->player_id.index, 
-				     PLAYER_ALL_MODE, 
-				     new CBroadcastDevice(argc, argv));
+          // Create broadcast device as per normal
+          if( deviceIO->local )
+          {
+            int argc = 0;
+            char *argv[2];
+            // Broadcast through the loopback device; note that this
+            // wont work with distributed Stage.
+            argv[argc++] = "addr";
+            argv[argc++] = "127.255.255.255";
+            deviceTable->AddDevice(deviceIO->player_id.port,
+                                   deviceIO->player_id.type,
+                                   deviceIO->player_id.index, 
+                                   PLAYER_ALL_MODE, 
+                                   new CBroadcastDevice(argc, argv));
 	      
-	      // have we registered this port already?
-	      int j = 0;
-	      while( j<portcount )
-		{
-		  if( portstmp[j] == deviceIO->player_id.port )
-		    break;
-		  j++;
-		}
-	      if( j == portcount ) // we have not! 
-		// we add this port to the array of ports we must listen on
-		portstmp[portcount++] = deviceIO->player_id.port;
-	    }
+            // have we registered this port already?
+            int j = 0;
+            while( j<portcount )
+            {
+              if( portstmp[j] == deviceIO->player_id.port )
+                break;
+              j++;
+            }
+            if( j == portcount ) // we have not! 
+              // we add this port to the array of ports we must listen on
+              portstmp[portcount++] = deviceIO->player_id.port;
+          }
 #endif
-	  break;
+          break;
 
-	  // devices not implemented
-	case PLAYER_AUDIO_CODE:   
+          // devices not implemented
+        case PLAYER_AUDIO_CODE:   
 #ifdef VERBOSE
-	  printf( "Device type %d not yet implemented in Stage\n", 
-		  deviceIO->player_id.type);
-	  fflush( stdout );
+          printf( "Device type %d not yet implemented in Stage\n", 
+                  deviceIO->player_id.type);
+          fflush( stdout );
 #endif
-	  break;
+          break;
 	  
-	case 0:
+        case 0:
 #ifdef VERBOSE
-	  printf( "Player ignoring Stage device type %d\n", 
-		  deviceIO->player_id.type);
-	  fflush( stdout );
+          printf( "Player ignoring Stage device type %d\n", 
+                  deviceIO->player_id.type);
+          fflush( stdout );
 #endif
-	  break;	  
+          break;	  
 	  
-	  // unknown device 
-	default: printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   
-			 deviceIO->player_id.type, 
-			 deviceIO->player_id.port, 
-			 deviceIO->player_id.type, 
-			 deviceIO->player_id.index ); 
-	  break;
-	}
-      
-      
+          // unknown device 
+        default:
+          printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   
+                  deviceIO->player_id.type, 
+                  deviceIO->player_id.port, 
+                  deviceIO->player_id.type, 
+                  deviceIO->player_id.index ); 
+          break;
+      }
       free(namelist[n]);
     }
     free(namelist);
@@ -425,26 +426,26 @@ struct timeval* CreateStageDevices( char* directory, int** ports, int* num_ports
 #endif
   
   if( (tfd = open( clockname, O_RDWR )) < 0 )
-    {
-      perror( "Failed to open clock file" );
-      printf("Tried to open file \"%s\"\n", clockname );
-      exit( -1 );
-    }
+  {
+    perror( "Failed to open clock file" );
+    printf("Tried to open file \"%s\"\n", clockname );
+    exit( -1 );
+  }
   
     
- struct timeval * stage_tv = 0;    
+  struct timeval * stage_tv = 0;    
  
- if( (stage_tv = 
-      (struct timeval*)mmap( NULL, sizeof(struct timeval),
-			     PROT_READ | PROT_WRITE, 
-			     MAP_SHARED, tfd, (off_t)0 ) )
-     == MAP_FAILED )
-   {
-     perror( "Failed to map clock memory" );
-     exit( -1 );
-   }
+  if( (stage_tv = 
+       (struct timeval*)mmap( NULL, sizeof(struct timeval),
+                              PROT_READ | PROT_WRITE, 
+                              MAP_SHARED, tfd, (off_t)0 ) )
+      == MAP_FAILED )
+  {
+    perror( "Failed to map clock memory" );
+    exit( -1 );
+  }
  
- close( tfd ); // can close fd once mapped
+  close( tfd ); // can close fd once mapped
 
 #ifdef DEBUG  
   printf( "finished creating stage devices\n" );
@@ -452,7 +453,7 @@ struct timeval* CreateStageDevices( char* directory, int** ports, int* num_ports
 #endif
 
  
- return( stage_tv );
+  return( stage_tv );
 }
 
 //#ifdef INCLUDE_BPS
@@ -711,14 +712,14 @@ int main( int argc, char *argv[] )
     {
       if(++i<argc) 
       {
-	strncpy(stage_io_directory, new_argv[i], sizeof(stage_io_directory));
-	use_stage = true;
-	printf("[Stage %s]", stage_io_directory );
+        strncpy(stage_io_directory, new_argv[i], sizeof(stage_io_directory));
+        use_stage = true;
+        printf("[Stage %s]", stage_io_directory );
       }
       else 
       {
-	Usage();
-	exit(-1);
+        Usage();
+        exit(-1);
       }
     }
     else if(!strcmp(new_argv[i], "-key"))
@@ -731,8 +732,8 @@ int main( int argc, char *argv[] )
       }
       else 
       {
-	Usage();
-	exit(-1);
+        Usage();
+        exit(-1);
       }
     }
     else if(!strcmp(new_argv[i], "-gerkey"))
@@ -756,24 +757,24 @@ int main( int argc, char *argv[] )
       }
       else 
       {
-	Usage();
-	exit(-1);
+        Usage();
+        exit(-1);
       }
     }
     else if(!strcmp(new_argv[i], "-port"))
-      {
-	if(++i<argc) 
-	  { 
-	    global_playerport = atoi(new_argv[i]);
+    {
+      if(++i<argc) 
+      { 
+        global_playerport = atoi(new_argv[i]);
 	    
-	    printf("[Port %d]", global_playerport);
-	  }
-	else 
-	  {
-	    Usage();
-	    exit(-1);
-	  }
+        printf("[Port %d]", global_playerport);
       }
+      else 
+      {
+        Usage();
+        exit(-1);
+      }
+    }
     else if(!strcmp(new_argv[i], "-sane"))
     {
       for(int i=0;i<ARRAYSIZE(sane_spec);i++)
@@ -823,24 +824,24 @@ int main( int argc, char *argv[] )
   // This argv shit apparently segfaults on Linux 2.2. Fuck it.
   //
   /*
-  // get rid of our argv copy
-  for(int i = 0;i<argc;i++)
+    // get rid of our argv copy
+    for(int i = 0;i<argc;i++)
     free(new_argv[i]);
 
-  // pretty up our entry in the process table (and also hide the auth_key)
-  char buffer[32];
-  if(!use_stage)
+    // pretty up our entry in the process table (and also hide the auth_key)
+    char buffer[32];
+    if(!use_stage)
     sprintf(buffer,"Player [Port %d]",global_playerport);
-  else
+    else
     sprintf(buffer,"Player [Port %d] [Stage]",global_playerport);
-  int len = 0;
-  for(int i=0;i<argc;i++)
+    int len = 0;
+    for(int i=0;i<argc;i++)
     len += strlen(argv[i])+1;
-  len--;
-  bzero(argv[0],len);
-  if(len<(int)sizeof(buffer))
+    len--;
+    bzero(argv[0],len);
+    if(len<(int)sizeof(buffer))
     argv[0] = (char*)realloc(argv[0],sizeof(buffer));
-  strcpy(argv[0],buffer);
+    strcpy(argv[0],buffer);
   */
 
   puts( "" ); // newline, flush
@@ -879,7 +880,7 @@ int main( int argc, char *argv[] )
     // and creates the ports array and array length with the port numbers
     // deduced from the stageIO filenames
     struct timeval* simtimep = CreateStageDevices( stage_io_directory, 
-						   &ports, &num_ufds );
+                                                   &ports, &num_ufds );
     
     //printf( "created %d ports (1: %d 2: %d...)\n",
     //    num_ufds, ports[0], ports[1] );
@@ -893,20 +894,20 @@ int main( int argc, char *argv[] )
 
     // bind a socket on each port
     for(int i=0;i<num_ufds;i++)
-      {
+    {
 #ifdef VERBOSE
-	printf( " %d", ports[i] ); fflush( stdout );
+      printf( " %d", ports[i] ); fflush( stdout );
 #endif      
-	// setup the socket to listen on
-	if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
-						SOCK_STREAM,200)) == -1)
-	  {
-	    fputs("create_and_bind_socket() failed; quitting", stderr);
-	    exit(-1);
-	  }
-	
-	ufds[i].events = POLLIN;
+      // setup the socket to listen on
+      if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
+                                              SOCK_STREAM,200)) == -1)
+      {
+        fputs("create_and_bind_socket() failed; quitting", stderr);
+        exit(-1);
       }
+	
+      ufds[i].events = POLLIN;
+    }
     
 #ifdef VERBOSE
     puts( "]" );
@@ -969,16 +970,16 @@ int main( int argc, char *argv[] )
       {
         clientData = new CClientData(auth_key,ports[i]);
 
-	struct sockaddr_in cliaddr;
-	sender_len = sizeof(cliaddr);
-	memset( &cliaddr, 0, sizeof(cliaddr) );
+        struct sockaddr_in cliaddr;
+        sender_len = sizeof(cliaddr);
+        memset( &cliaddr, 0, sizeof(cliaddr) );
 
-	        /* shouldn't block here */
+        /* shouldn't block here */
         if((clientData->socket = accept(ufds[i].fd, 
-					(struct sockaddr*)&cliaddr, 
-					&sender_len)) == -1)
-	  //if((clientData->socket = accept(ufds[i].fd, NULL, 
-	  //                          &sender_len)) == -1)
+                                        (struct sockaddr*)&cliaddr, 
+                                        &sender_len)) == -1)
+          //if((clientData->socket = accept(ufds[i].fd, NULL, 
+          //                          &sender_len)) == -1)
         {
           perror("accept(2) failed: ");
           exit(-1);
@@ -993,30 +994,30 @@ int main( int argc, char *argv[] )
 
         /* got conn */
 	
-	// lookup the name of the client
-	//struct hostent* clientName
-	//= gethostbyaddr( &(cliaddr.sin_addr), sender_len, AF_INET );
-	//if( clientName && clientName->h_name )
-	//printf("** Player [port %d] client accepted from %s "
-	// "on socket %d **\n", 
-	// global_playerport, clientName->h_name, clientData->socket);
+        // lookup the name of the client
+        //struct hostent* clientName
+        //= gethostbyaddr( &(cliaddr.sin_addr), sender_len, AF_INET );
+        //if( clientName && clientName->h_name )
+        //printf("** Player [port %d] client accepted from %s "
+        // "on socket %d **\n", 
+        // global_playerport, clientName->h_name, clientData->socket);
 
 
-	// now reports the port number that was connected, instead of the 
-	// global player port - RTV
+        // now reports the port number that was connected, instead of the 
+        // global player port - RTV
 	
-	char clientIp[64];
-	if( make_dotted_ip_address( clientIp, 64, 
-				    (uint32_t)(cliaddr.sin_addr.s_addr) ) )
-	  {
-	    // couldn't get the ip
-	    printf("** Player [port %d] client accepted on socket %d **\n",
-		   ports[i],  clientData->socket);
-	  }
-	else
-	  printf("** Player [port %d] client accepted from %s "
-		  "on socket %d **\n", 
-		  ports[i], clientIp, clientData->socket);
+        char clientIp[64];
+        if( make_dotted_ip_address( clientIp, 64, 
+                                    (uint32_t)(cliaddr.sin_addr.s_addr) ) )
+        {
+          // couldn't get the ip
+          printf("** Player [port %d] client accepted on socket %d **\n",
+                 ports[i],  clientData->socket);
+        }
+        else
+          printf("** Player [port %d] client accepted from %s "
+                 "on socket %d **\n", 
+                 ports[i], clientIp, clientData->socket);
 	
         /* add it to the manager's list */
         clientmanager->AddClient(clientData);
