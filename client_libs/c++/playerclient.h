@@ -125,6 +125,9 @@ class PlayerClient
      int RequestDeviceAccess(uint16_t device,uint8_t access)
         { return(RequestDeviceAccess(device,0,access)); }
 
+     /* query the current device access */
+     uint8_t QueryDeviceAccess(uint16_t device, uint16_t index);
+     
      /* write ALL commands to server */
      int Write();
 

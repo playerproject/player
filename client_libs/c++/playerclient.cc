@@ -53,24 +53,32 @@ PlayerClient::PlayerClient()
   // set up the 'normal' devices
   
   // the zeroth position device
-  devicedatatable->UpdateAccess(PLAYER_POSITION_CODE, 0, 'e');
+  devicedatatable->AddDevice(PLAYER_POSITION_CODE, 0, 'c',
+                             POSITION_DATA_BUFFER_SIZE,
+                             POSITION_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_POSITION_CODE,0);
   position = (player_position_data_t*)(thisentry->data);
   newspeed = &(((player_position_cmd_t*)(thisentry->command))->speed);
   newturnrate = &(((player_position_cmd_t*)(thisentry->command))->turnrate);
   
   // the zeroth laser device
-  devicedatatable->UpdateAccess(PLAYER_LASER_CODE, 0, 'e');
+  devicedatatable->AddDevice(PLAYER_LASER_CODE, 0, 'c',
+                             LASER_DATA_BUFFER_SIZE,
+                             LASER_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_LASER_CODE,0);
   laser = ((player_laser_data_t*)(thisentry->data))->ranges;
 
   // the zeroth sonar device
-  devicedatatable->UpdateAccess(PLAYER_SONAR_CODE, 0, 'e');
+  devicedatatable->AddDevice(PLAYER_SONAR_CODE, 0, 'c',
+                             SONAR_DATA_BUFFER_SIZE,
+                             SONAR_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_SONAR_CODE,0);
   sonar = ((player_sonar_data_t*)(thisentry->data))->ranges;
   
   // the zeroth PTZ device
-  devicedatatable->UpdateAccess(PLAYER_PTZ_CODE, 0, 'e');
+  devicedatatable->AddDevice(PLAYER_PTZ_CODE, 0, 'c',
+                             PTZ_DATA_BUFFER_SIZE,
+                             PTZ_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_PTZ_CODE,0);
   ptz = (player_ptz_data_t*)(thisentry->data);
   newpan = &(((player_ptz_cmd_t*)(thisentry->command))->pan);
@@ -78,22 +86,30 @@ PlayerClient::PlayerClient()
   newzoom = &(((player_ptz_cmd_t*)(thisentry->command))->zoom);
  
   // the zeroth misc device
-  devicedatatable->UpdateAccess(PLAYER_MISC_CODE, 0, 'e');
+  devicedatatable->AddDevice(PLAYER_MISC_CODE, 0, 'c',
+                             MISC_DATA_BUFFER_SIZE,
+                             MISC_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_MISC_CODE,0);
   misc = (player_misc_data_t*)(thisentry->data);
   
   // the zeroth vision device
-  devicedatatable->UpdateAccess(PLAYER_VISION_CODE, 0, 'e');
+  devicedatatable->AddDevice(PLAYER_VISION_CODE, 0, 'c',
+                             ACTS_DATA_BUFFER_SIZE,
+                             ACTS_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_VISION_CODE,0);
   vision = (vision_data*)(thisentry->data);
 
   // the zeroth laserbeacon device
-  devicedatatable->UpdateAccess(PLAYER_LASERBEACON_CODE, 0, 'e');
+  devicedatatable->AddDevice(PLAYER_LASERBEACON_CODE, 0, 'c',
+                             LASERBEACON_DATA_BUFFER_SIZE,
+                             LASERBEACON_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_LASERBEACON_CODE,0);
   laserbeacon_data = (player_laserbeacon_data_t*)(thisentry->data);
 
   // the zeroth broadcast device
-  devicedatatable->UpdateAccess(PLAYER_BROADCAST_CODE, 0, 'e');
+  devicedatatable->AddDevice(PLAYER_BROADCAST_CODE, 0, 'c',
+                             BROADCAST_DATA_BUFFER_SIZE,
+                             BROADCAST_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_BROADCAST_CODE,0);
   broadcast_data = (player_broadcast_data_t*)(thisentry->data);
   broadcast_cmd = (player_broadcast_cmd_t*)(thisentry->command);
@@ -143,6 +159,12 @@ int PlayerClient::RequestDeviceAccess(uint16_t device, uint16_t index,
   return(devicedatatable->UpdateAccess(device, index, access));
 
   return(0);
+}
+
+/* query the current device access */
+uint8_t PlayerClient::QueryDeviceAccess(uint16_t device, uint16_t index)
+{
+  return devicedatatable->GetDeviceAccess(device, index);  
 }
 
 

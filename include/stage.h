@@ -44,7 +44,10 @@
 
 
 // player/stage info buffer
-// data_len is set by stage and indicates the number of bytes available.
+// available is set by stage and read by player.
+// subscribed is set by player and read by stage.
+// data_timestamp is set by stage and read by player.
+// data_len is set by stage and read by player.
 // command_len is set by player.
 // config_len is set by player and reset (to zero) by stage.
 //
@@ -58,8 +61,13 @@ typedef struct
     uint16_t config_len;
 } __attribute__ ((packed)) player_stage_info_t;
 
+
 #define INFO_BUFFER_SIZE    sizeof(player_stage_info_t)
 
+#define MISC_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
+                              + MISC_DATA_BUFFER_SIZE \
+                              + MISC_COMMAND_BUFFER_SIZE \
+                              + MISC_CONFIG_BUFFER_SIZE
 
 #define POSITION_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
                               + POSITION_DATA_BUFFER_SIZE \
@@ -96,6 +104,8 @@ typedef struct
                               BROADCAST_COMMAND_BUFFER_SIZE + \
                               BROADCAST_CONFIG_BUFFER_SIZE 
 
+/* *** RETIRE -- ahoward
+
 // Player/arena interface shared memory locations
 
 // subscription flags for player/arena interface 
@@ -109,9 +119,17 @@ typedef struct
 #define SUB_PTZ  SUB_MOTORS + 6
 
 #define SUB_BUFFER_SIZE 7
+*/
 
-#define ARENA_SUB_START 0
-#define POSITION_DATA_START ARENA_SUB_START + SUB_BUFFER_SIZE
+// Make space for memory test
+//
+#define TEST_TOTAL_BUFFER_SIZE 64
+
+// Lay out memory mapped area
+//
+#define TEST_DATA_START 0
+#define MISC_DATA_START TEST_DATA_START + TEST_TOTAL_BUFFER_SIZE
+#define POSITION_DATA_START MISC_DATA_START + MISC_TOTAL_BUFFER_SIZE
 #define SONAR_DATA_START POSITION_DATA_START + POSITION_TOTAL_BUFFER_SIZE
 #define LASER_DATA_START SONAR_DATA_START + SONAR_TOTAL_BUFFER_SIZE
 #define PTZ_DATA_START LASER_DATA_START + LASER_TOTAL_BUFFER_SIZE

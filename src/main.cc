@@ -459,31 +459,36 @@ int main( int argc, char *argv[] )
     fflush( stdout );
 #endif
 
-    for( int c=0; c<64; c++ )
-      {
-	if( c != ((unsigned char*)arenaIO)[c] )
-	{
-	  perror( "Warning: memory check failed" );
-	}
-      }
-
-    // re-initialize with zeros
-    bzero( arenaIO, areaSize );
+    for(int c = 0; c < TEST_TOTAL_BUFFER_SIZE; c++ )
+    {
+        if( c != ((unsigned char*)arenaIO)[TEST_DATA_START + c] )
+        {
+            perror( "Warning: memory check failed" );
+            break;
+        } 
+    }
 
 #ifdef VERBOSE
     puts( "ok.\n" );
     fflush( stdout );
 #endif
+
+#ifdef INCLUDE_MISC
+    miscDevice = new CStageDevice( arenaIO + MISC_DATA_START,
+                                   MISC_DATA_BUFFER_SIZE,
+                                   MISC_COMMAND_BUFFER_SIZE,
+                                   MISC_CONFIG_BUFFER_SIZE);
+#endif
     
     positionDevice = new CStageDevice( arenaIO + POSITION_DATA_START,
-                                   POSITION_DATA_BUFFER_SIZE,
-                                   POSITION_COMMAND_BUFFER_SIZE,
-                                   POSITION_CONFIG_BUFFER_SIZE);
+                                       POSITION_DATA_BUFFER_SIZE,
+                                       POSITION_COMMAND_BUFFER_SIZE,
+                                       POSITION_CONFIG_BUFFER_SIZE);
 
     sonarDevice =    new CStageDevice( arenaIO + SONAR_DATA_START,
-                                   SONAR_DATA_BUFFER_SIZE,
-                                   SONAR_COMMAND_BUFFER_SIZE,
-                                   SONAR_CONFIG_BUFFER_SIZE); 
+                                       SONAR_DATA_BUFFER_SIZE,
+                                       SONAR_COMMAND_BUFFER_SIZE,
+                                       SONAR_CONFIG_BUFFER_SIZE); 
     
     laserDevice = new CStageDevice(arenaIO + LASER_DATA_START,
                                    LASER_DATA_BUFFER_SIZE,
@@ -517,9 +522,6 @@ int main( int argc, char *argv[] )
     // unsupported devices - CNoDevice::Setup() fails
 #ifdef INCLUDE_GRIPPER
     gripperDevice = (CGripperDevice*)new CNoDevice();
-#endif
-#ifdef INCLUDE_MISC
-    miscDevice =    (CMiscDevice*)new CNoDevice();  
 #endif
 #ifdef INCLUDE_AUDIO
     audioDevice =  (CAudioDevice*)new CNoDevice();

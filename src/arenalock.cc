@@ -162,7 +162,8 @@ int CArenaLock::Subscribe( CDevice *obj )
   if( subscriptions == 0  )
     {
       res = obj->Setup();
-      subscriptions = 1;
+      if (res == 0)
+          subscriptions++;
     }
   else
     subscriptions++;
@@ -181,7 +182,9 @@ int CArenaLock::Unsubscribe( CDevice *obj )
   else if( subscriptions == 1  )
     {
       res = obj->Shutdown();
-      subscriptions--;
+      if (res == 0 )
+          subscriptions--;    
+      /* do we want to unsubscribe even though the shutdown went bad? */
     }
   else {
     subscriptions--;

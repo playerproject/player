@@ -59,12 +59,13 @@ CStageDevice::CStageDevice(void *buffer, size_t data_len, size_t command_len, si
 //
 int CStageDevice::Setup()
 {
-    /* *** TESTING -- this doesnt work right now
     // See if device is available
     //
     if (!m_info->available)
+    {
+        puts("stage device unavailable");
         return 1;
-    */
+    }
     
     // Set the subscribed flag
     //
