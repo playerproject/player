@@ -178,33 +178,33 @@ typedef char int8_t;
 #include <stdio.h>
 
 /* too noisy! */
-#define PLAYER_ERROR(m)         printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__)
-#define PLAYER_ERROR1(m, a)     printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__, a)
-#define PLAYER_ERROR2(m, a, b)  printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__, a, b)
+#define PLAYER_ERROR(m)         printf("player error : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__)
+#define PLAYER_ERROR1(m, a)     printf("player error : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__, a)
+#define PLAYER_ERROR2(m, a, b)  printf("player error : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__, a, b)
 //#define PLAYER_ERROR(m) 
 
 // Warning macros
-#define PLAYER_WARN(m)         printf("\nplayer warning : %s %s "m"\n", \
+#define PLAYER_WARN(m)         printf("\nplayer warning : %s:%s():\n    "m"\n",\
                                      __FILE__, __FUNCTION__)
-#define PLAYER_WARN1(m, a)     printf("\nplayer warning : %s %s "m"\n", \
+#define PLAYER_WARN1(m, a)     printf("\nplayer warning : %s:%s():\n    "m"\n",\
                                      __FILE__, __FUNCTION__, a)
-#define PLAYER_WARN2(m, a, b)  printf("\nplayer warning : %s %s "m"\n", \
+#define PLAYER_WARN2(m, a, b)  printf("\nplayer warning : %s:%s():\n    "m"\n",\
                                      __FILE__, __FUNCTION__, a, b)
-#define PLAYER_WARN3(m, a, b, c) printf("\nplayer warning : %s %s "m"\n", \
+#define PLAYER_WARN3(m, a, b, c) printf("\nplayer warning : %s:%s():\n    "m"\n",\
                                      __FILE__, __FUNCTION__, a, b, c)
 
 
 #if PLAYER_ENABLE_MSG
 
-#define PLAYER_MSG0(m)             printf("msg   : %s %s\n        "m"\n", \
+#define PLAYER_MSG0(m)             printf("player msg   : %s:%s():\n    "m"\n", \
                                           __FILE__, __FUNCTION__)   
-#define PLAYER_MSG1(m, a)          printf("msg   : %s %s\n        "m"\n", \
+#define PLAYER_MSG1(m, a)          printf("player msg   : %s:%s():\n    "m"\n", \
                                           __FILE__, __FUNCTION__, a)
-#define PLAYER_MSG2(m, a, b)       printf("msg   : %s %s\n        "m"\n", \
+#define PLAYER_MSG2(m, a, b)       printf("player msg   : %s:%s():\n    "m"\n", \
                                           __FILE__, __FUNCTION__, a, b)
-#define PLAYER_MSG3(m, a, b, c)    printf("msg   : %s %s\n        "m"\n", \
+#define PLAYER_MSG3(m, a, b, c)    printf("player msg   : %s:%s():\n    "m"\n", \
                                           __FILE__, __FUNCTION__, a, b, c) 
-#define PLAYER_MSG4(m, a, b, c, d) printf("msg   : %s %s\n        "m"\n", \
+#define PLAYER_MSG4(m, a, b, c, d) printf("player msg   : %s:%s():\n    "m"\n", \
                                           __FILE__, __FUNCTION__, a, b, c, d)
 #else
 

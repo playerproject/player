@@ -114,10 +114,9 @@ void
 Usage()
 {
   puts("");
-  fprintf(stderr, "USAGE: player [-c <file>] [-p <port>] [-s <path>] "
+  fprintf(stderr, "USAGE: player [-p <port>] [-s <path>] [<configfile>]"
           "[-dl <shlib>] \n");
   fprintf(stderr, "              [-k <key>]  [DEVICE]...\n");
-  fprintf(stderr, "  -c <file>     : load the the indicated config file\n");
   fprintf(stderr, "  -p <port>     : TCP port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
   fprintf(stderr, "  -s <path>     : use memory-mapped IO with Stage "
@@ -125,6 +124,7 @@ Usage()
   fprintf(stderr, "  -d <shlib>    : load the the indicated shared library\n");
   fprintf(stderr, "  -k <key>      : require client authentication with the "
           "given key\n");
+  fprintf(stderr, "  <configfile>  : load the the indicated config file\n");
 }
 
 /* just so we know when we've segfaulted, even when running under stage */
@@ -353,7 +353,8 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // Create a StageDevice with this IO base address and filedes
           dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	    
-          deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, dev);
+          deviceTable->AddDevice(deviceIO->player_id, "stage", 
+                                 PLAYER_ALL_MODE, dev);
 	    
           // add this port to our listening list
           StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
@@ -387,8 +388,9 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             else
             {
               // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
-                              (*(entry->initfunc))(PLAYER_COMMS_STRING,
+              deviceTable->AddDevice(deviceIO->player_id, "broadcast",
+                                     PLAYER_ALL_MODE, 
+                                     (*(entry->initfunc))(PLAYER_COMMS_STRING,
                                                    &configFile, section));
  
               // add this port to our listening list
@@ -595,7 +597,7 @@ parse_config_file(char* fname)
                       driver, interface);
         exit(-1);
       }
-      deviceTable->AddDevice(id, entry->access, tmpdevice);
+      deviceTable->AddDevice(id, driver, entry->access, tmpdevice);
     }
   }
 
@@ -605,7 +607,6 @@ parse_config_file(char* fname)
 
 int main( int argc, char *argv[] )
 {
-  bool special_config = false;
   struct sockaddr_in listener;
   char auth_key[PLAYER_KEYLEN] = "";
 
@@ -698,19 +699,11 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
-    else if(!strcmp(argv[i], "-c"))
+    else if(i == (argc-1))
     {
-      if(++i<argc)
-      {
-        if(!parse_config_file(argv[i]))
-          exit(-1);
-        special_config = true;
-      }
-      else
-      {
-        Usage();
+      // assume that this is a config file
+      if(!parse_config_file(argv[i]))
         exit(-1);
-      }
     }
     else
     {
@@ -765,6 +758,13 @@ int main( int argc, char *argv[] )
 #endif
 
   }  
+
+  // check for empty device table
+  if(!(deviceTable->Size()))
+  {
+    PLAYER_WARN("No devices instantiated; perhaps you should supply " 
+                "a configuration file?");
+  }
 
   if(!use_stage)
   {

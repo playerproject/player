@@ -39,6 +39,7 @@ class CDeviceEntry
   public:
     player_device_id_t id;  // id for this device
     unsigned char access;   // allowed access mode: 'r', 'w', or 'a'
+    char name[PLAYER_MAX_DEVICE_STRING_LEN]; // the string name for the driver
     CDevice* devicep;  // the device itself
     CDeviceEntry* next;  // next in list
 
@@ -54,6 +55,10 @@ class CDeviceTable
     int numdevices;
     pthread_mutex_t mutex;
 
+    // find a device entry, based on id, and return the pointer (or NULL
+    // on failure)
+    CDeviceEntry* GetDeviceEntry(player_device_id_t id);
+
   public:
     CDeviceTable();
     ~CDeviceTable();
@@ -61,15 +66,20 @@ class CDeviceTable
     // this one is used to fill the instantiated device table
     //
     // id is the id for the device (e.g, 's' for sonar)
+    // name is the string driver name (e.g., "p2os_sonar")
     // access is the access for the device (e.g., 'r' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
-    int AddDevice(player_device_id_t id, unsigned char access, 
+    int AddDevice(player_device_id_t id, char* name, unsigned char access, 
                   CDevice* devicep);
 
     // returns the controlling object for the given id 
     // (returns NULL on failure)
     CDevice* GetDevice(player_device_id_t id);
+    
+    // returns the string name of the driver in use for the given id 
+    // (returns NULL on failure)
+    char* GetDriver(player_device_id_t id);
 
     // returns the code for access ('r', 'w', or 'a') for the given 
     // device, or 'e' on failure
@@ -80,6 +90,8 @@ class CDeviceTable
 
     // Get the next device entry.
     CDeviceEntry *GetNextEntry(CDeviceEntry *entry) {return entry->next;}
+
+    int Size() {return(numdevices);}
 };
 
 
