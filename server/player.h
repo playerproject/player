@@ -545,6 +545,7 @@ typedef struct player_gripper_cmd
 #define PLAYER_POSITION_RMP_GAIN_SCHEDULE	((uint8_t)54)
 #define PLAYER_POSITION_RMP_CURRENT_LIMIT	((uint8_t)55)
 #define PLAYER_POSITION_RMP_RST_INTEGRATORS	((uint8_t)56)
+#define PLAYER_POSITION_RMP_SHUTDOWN            ((uint8_t)57)
 
 /** [Segway RMP]: these are used for the set reset integrators part */
 #define PLAYER_POSITION_RMP_RST_INT_RIGHT	0x01

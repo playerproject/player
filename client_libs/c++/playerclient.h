@@ -1165,6 +1165,8 @@ class PositionProxy : public ClientProxy
   /// Only supported by the segwayrmp driver
   int SetStatus(uint8_t cmd, uint16_t value);
 
+  int PlatformShutdown();
+
   /// Accessor method
   int32_t  Xpos () const { return xpos; }
   

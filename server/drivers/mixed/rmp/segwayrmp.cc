@@ -253,7 +253,16 @@ SegwayRMP::Main()
 	}
 
 	break;
-	
+
+      case PLAYER_POSITION_RMP_SHUTDOWN:
+	segway->ShutdownCommand();
+
+	if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		     NULL, NULL, 0)) {
+	  PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+	}
+	break;
+
       default:
 	printf("segwayrmp received unknown config request %d\n", 
 	       buffer[0]);

@@ -47,7 +47,7 @@ using namespace std;
 #define RMP_MAX_TRANS_VEL_COUNT		1176
 #define RMP_MAX_ROT_VEL_COUNT		1024
 
-#define RMP_READ_WRITE_PERIOD		10	// 10 ms period = 100 Hz
+#define RMP_READ_WRITE_PERIOD		500	// 10 ms period = 100 Hz
 
 // this holds all the RMP data it gives us
 struct rmp_frame_t
@@ -110,6 +110,8 @@ public:
 
   int StatusCommand(const uint16_t &cmd, const uint16_t &val);
   
+  int ShutdownCommand();
+
   // implement all the configs as methods here... they just create
   // a CAN packet and put it on the queue
 protected:
