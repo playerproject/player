@@ -72,10 +72,12 @@
 
 #include "replace.h"
 
+#if INCLUDE_STAGE
 #include <stagetime.h>
 #include <stagedevice.h>
 player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
+#endif
 
 // true if we're connecting to Stage instead of a real robot
 bool use_stage = false;
@@ -222,6 +224,7 @@ void PrintHeader(player_msghdr_t hdr)
 }
 
 
+#if INCLUDE_STAGE
 // a simple function to conditionally add a port (if is new) to 
 // a list of ports
 void 
@@ -536,6 +539,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 
   return( clock );
 }
+#endif
 
 bool
 parse_config_file(char* fname)
@@ -677,6 +681,7 @@ int main( int argc, char *argv[] )
     }
     else if(!strcmp(argv[i],"-s"))
     {
+#if INCLUDE_STAGE
       if(++i<argc) 
       {
         strncpy(stage_io_directory, argv[i], sizeof(stage_io_directory));
@@ -688,6 +693,10 @@ int main( int argc, char *argv[] )
         Usage();
         exit(-1);
       }
+#else
+      PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
+      exit(-1);
+#endif
     }
     else if(!strcmp(argv[i], "-k"))
     {
@@ -765,6 +774,7 @@ int main( int argc, char *argv[] )
   
   if( use_stage )
   {
+#if INCLUDE_STAGE
     // create the shared memory connection to Stage
     // returns pointer to the timeval struct
     // and creates the ports array and array length with the port numbers
@@ -804,6 +814,10 @@ int main( int argc, char *argv[] )
     puts( "]" );
 #endif
 
+#else
+    PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
+    exit(-1);
+#endif
   }  
 
   // check for empty device table
