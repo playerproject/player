@@ -101,7 +101,6 @@ class PlayerClient
      unsigned short* newzoom;
 
      unsigned short *sonar;
-     // *** REMOVE unsigned short *laser;
      
      // data structures to hold sensor readings FROM robot
      player_position_data_t* position;
