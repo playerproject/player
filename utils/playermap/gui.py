@@ -25,7 +25,9 @@ class MainWin:
 
         self.quit = 0
 
-        self.canvas = rtk3.Canvas()
+        # Default to 0, which is an X11 canvas.  Call with 1 for anti-aliased 
+        # canvas.  Should probably expose this somehow.
+        self.canvas = rtk3.Canvas(0)
         self.canvas.addto(self.glade.get_widget('globalmap'))
 
         self.canvas_scale = 0.05

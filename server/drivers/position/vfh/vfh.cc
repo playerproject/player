@@ -14,7 +14,8 @@
 #include "devicetable.h"
 #include "drivertable.h"
 
-class VFH_Class : public CDevice {
+class VFH_Class : public CDevice 
+{
   public:
     // Constructor
     VFH_Class(char* interface, ConfigFile* cf, int section);

@@ -672,7 +672,8 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
 #endif
 
 bool
-parse_config_file(char* fname, int** ports, int* num_ports)
+parse_config_file(char* fname, int** ports, int* num_ports, 
+                  ClientData*** alwayson_devices, int* num_alwayson_devices)
 {
   DriverEntry* entry;
   CDevice* tmpdevice;
@@ -699,6 +700,7 @@ parse_config_file(char* fname, int** ports, int* num_ports)
   // entities in the config file (yes, i'm too lazy to dynamically
   // reallocate this buffer for a tighter bound).
   assert(*ports = new int[configFile.GetEntityCount()]);
+  assert(*alwayson_devices = new ClientData*[configFile.GetEntityCount()]);
   // we'll increment this counter as we go
   *num_ports=0;
 
@@ -824,12 +826,16 @@ parse_config_file(char* fname, int** ports, int* num_ports)
         ClientData* clientdata;
         player_device_req_t req;
 
-        assert((clientdata = (ClientData*)new ClientDataTCP("",0)));
+        assert((clientdata = (ClientData*)new ClientDataTCP("",port)));
         
         // to indicate that this one is a dummy
         clientdata->socket = 0;
 
-        clientmanager->AddClient(clientdata);
+        // don't add it to the client manager here, because it hasn't been
+        // created yet.  instead, queue them up for later addition.
+        //clientmanager->AddClient(clientdata);
+        (*alwayson_devices)[(*num_alwayson_devices)++] = clientdata;
+        
         req.code = code;
         req.index = index;
         req.access = PLAYER_READ_MODE;
@@ -840,7 +846,6 @@ parse_config_file(char* fname, int** ports, int* num_ports)
           exit(-1);
         }
       }
-
     }
   }
 
@@ -865,6 +870,8 @@ int main( int argc, char *argv[] )
   double readlog_speed = 1.0;
   
   int *ports = NULL;
+  ClientData** alwayson_devices = NULL;
+  int num_alwayson_devices = 0;
   struct pollfd *ufds = NULL;
   int num_ufds = 0;
   int protocol = PLAYER_TRANSPORT_TCP;
@@ -1127,7 +1134,8 @@ int main( int argc, char *argv[] )
   {
     // Parse the config file and instantiate drivers.  It builds up a list
     // of ports that we need to listen on.
-    if (!parse_config_file(configfile, &ports, &num_ufds))
+    if (!parse_config_file(configfile, &ports, &num_ufds,
+                           &alwayson_devices, &num_alwayson_devices))
       exit(-1);
   }
 
@@ -1174,6 +1182,10 @@ int main( int argc, char *argv[] )
     PLAYER_ERROR("Unknown transport protocol");
     exit(-1);
   }
+
+  // now that we've create the clientmanager, add any "alwayson" devices
+  for(int i=0;i<num_alwayson_devices;i++)
+    clientmanager->AddClient(alwayson_devices[i]);
 
   // check for empty device table
   if(!(deviceTable->Size()))
