@@ -29,9 +29,6 @@
 #include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
 
 void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {

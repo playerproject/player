@@ -26,6 +26,12 @@
  * the Sony EVI-D30 PTZ camera
  */
 
+#include <player.h>
+
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -38,7 +44,6 @@
 
 #include <device.h>
 #include <drivertable.h>
-#include <player.h>
 
 #define PTZ_SLEEP_TIME_USEC 100000
 
@@ -180,7 +185,9 @@ SonyEVID30::Setup()
     return(-1);
   }
   
+#if HAVE_CFMAKERAW
   cfmakeraw(&term);
+#endif
   cfsetispeed(&term, B9600);
   cfsetospeed(&term, B9600);
   

@@ -36,6 +36,9 @@
 #include <sys/time.h> // for struct timeval
 #include <semaphore.h> // for sem_t
 
+#include <fcntl.h> // for fcntl
+#include <unistd.h> // for fcntl
+
 #define STAGE_CLOCK_NAME "clock"
 #define STAGE_LOCK_NAME "lock"
 

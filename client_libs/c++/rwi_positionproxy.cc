@@ -24,9 +24,6 @@
 #include <rwi_positionproxy.h>
 #include <netinet/in.h>
 #include <string.h>
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
     
 // send a motor command
 //

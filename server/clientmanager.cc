@@ -29,6 +29,10 @@
 #include "clientmanager.h"
 #include "device.h"
 
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
+
 #include <errno.h>
 #include <string.h>  // for memcpy(3)
 #include <stdlib.h>  // for exit(3)

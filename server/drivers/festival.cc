@@ -32,6 +32,11 @@
  *   Accepts no configuration (for now)
  */
 
+#include <player.h>
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
+
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execlp(3),fork(2)*/
@@ -47,7 +52,6 @@
 #include <socket_util.h>
 
 #include <drivertable.h>
-#include <player.h>
 
 /* don't change this unless you change the Festival init scripts as well*/
 #define DEFAULT_FESTIVAL_PORTNUM 1314

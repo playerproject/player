@@ -26,10 +26,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
-
 // enable/disable the laser
 //
 // Returns:

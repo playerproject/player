@@ -32,10 +32,6 @@
 #include <string.h>
 #include <netdb.h> // for gethostbyname(3)
 
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
-
 // just make a client, and connect, if instructed
 PlayerClient::PlayerClient(const char* hostname, int port )
 {
