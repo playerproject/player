@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2002
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *     Nik Melchior
  *
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -20,40 +21,30 @@
  *
  */
 
-/* Copyright (C) 2002
- *   John Sweeney, UMASS, Amherst, Laboratory for Perceptual Robotics
- *
- * $Id$
- * 
- * implementation of REB Misc proxy class
- *
- */
-
 #include <playerclient.h>
 #include <netinet/in.h>
+#include <string.h>
 
-/* fills in all the data....
- *
- * returns:
- */
 void
-REBPowerProxy::FillData(player_msghdr_t hdr, const char *buffer)
+PowerProxy::FillData(player_msghdr_t hdr, const char *buffer)
 {
-  if (hdr.size != sizeof(player_power_data_t)) {
-    fprintf(stderr, "REBPOWERPROXY: expected %d but got %d\n",
-	    sizeof(player_power_data_t), hdr.size);
+  if(hdr.size != sizeof(player_power_data_t)) 
+  {
+    if(player_debug_level(-1) >= 1)
+      fprintf(stderr,"WARNING: PowerProxy expected %d bytes of "
+              "power data, but received %d. Unexpected results may "
+              "ensue.\n",
+              sizeof(player_power_data_t),hdr.size);
   }
-  
-  battery = ntohs( ((player_power_data_t *)buffer)->charge );
+
+  charge = ntohs(((player_power_data_t *)buffer)->charge);
 }
 
-/* print it
- *
- * returns:
- */
+// interface that all proxies SHOULD provide
 void
-REBPowerProxy::Print()
+PowerProxy::Print()
 {
-  printf("#REBPower(%d:%d) - %c\n", device, index, access);
-  printf("\tBattery: %d mV\n", battery);
+  printf("#Power(%d:%d) - %c\n", device, index, access);
+  printf("%d\n", charge);
 }
+

@@ -135,6 +135,26 @@ int LaserProxy::CartesianCoordinate( int i, int *x, int *y )
   return true;
 }
 
+// enable/disable the laser
+//
+// Returns:
+//   0 if everything's ok
+//   -1 otherwise (that's bad)
+int
+LaserProxy::SetLaserState(const unsigned char state)
+{
+    if (!client)
+		return (-1);
+
+    player_laser_power_config_t cfg;
+
+    cfg.subtype = PLAYER_LASER_POWER_CONFIG;
+    cfg.value = state;
+
+    return (client->Request(PLAYER_LASER_CODE, index,
+			(const char *) &cfg, sizeof(cfg)));
+}
+
 // interface that all proxies SHOULD provide
 void LaserProxy::Print()
 {

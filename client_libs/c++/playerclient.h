@@ -675,7 +675,6 @@ class LaserProxy : public ClientProxy
     /// The reflected intensity values (arbitrary units in range 0-7).
     unsigned char intensities[PLAYER_LASER_MAX_SAMPLES];
 
-    // What is this?
     unsigned short min_right,min_left;
    
     /** Constructor.
@@ -688,6 +687,15 @@ class LaserProxy : public ClientProxy
         ClientProxy(pc,PLAYER_LASER_CODE,index,access) {}
 
     // these methods are the user's interface to this device
+
+    /** Enable/disable the laser.
+      Set {\tt state} to 1 to enable, 0 to disable.
+      Note that when laser is disabled the client will still receive laser
+      data, but the ranges will always be the last value read from the
+      laser before it was disabled.
+      Returns 0 on success, -1 if there is a problem.
+     */
+    int SetLaserState (const unsigned char state);
 
     // returns the local rectangular coordinate of the i'th beam strike
     int CartesianCoordinate( int i, int *x, int *y );
@@ -712,18 +720,27 @@ class LaserProxy : public ClientProxy
       */
     int GetConfigure();
 
+    /** Accessors
+     */
+    int  RangeCount () { return range_count; }
+    uint16_t Ranges (const unsigned int index)
+    {
+    	if (index < range_count)
+    		return ranges[index];
+    	else
+    		return 0;
+    }
+    uint16_t MinLeft () { return min_left; }
+    uint16_t MinRight () { return min_right; }
     /** Range access operator.
         This operator provides an alternate way of access the range data.
-        For example, given a {\tt LaserProxy} named {\tt lp}, the following
-        expressions are equivalent: \verb+lp.ranges[0]+ and \verb+lp[0]+.
+        For example, given an {\tt LaserProxy} named {\tt lp}, the following
+        expressions are equivalent: \verb+lp.Ranges(0)+ and \verb+lp[0]+.
     */
-    unsigned short operator [](unsigned int index)
-    { 
-      if(index < sizeof(ranges))
-        return(ranges[index]);
-      else 
-        return(0);
-    } 
+    uint16_t operator [] (unsigned int index)
+    {
+      return Ranges(index);
+    }
     
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
@@ -773,6 +790,16 @@ class MoteProxy : public ClientProxy
     private: unsigned char msg_q_index;
 };
 
+
+#define REB_PPROXY_MOTOR_OFF 0
+#define REB_PPROXY_MOTOR_ON 1
+
+#define REB_PPROXY_POSITION_MODE 0
+#define REB_PPROXY_VELOCITY_MODE 1
+#define REB_PPROXY_TORQUE_MODE 2
+
+#define REB_PPROXY_PD_CONTROL 1
+#define REB_PPROXY_DIRECT_CONTROL 0
 
 /** The {\tt PositionProxy} class is used to control the {\tt position} device.
     The latest position data is contained in the attributes {\tt xpos, ypos}, etc.
@@ -832,6 +859,25 @@ class PositionProxy : public ClientProxy
         Returns: 0 if everything's ok, -1 otherwise.
     */
     int ResetOdometry();
+
+    // the following ioctls are currently only supported by reb_position
+    int SelectPositionMode(unsigned char);
+    int SetOdometry(long x,long y,int t);
+    int SetSpeedPID(int kp, int ki, int kd);
+    int SetPositionPID(short kp, short ki, short kd);
+    int SetPositionSpeedProfile(short spd, short acc);
+    int DoStraightLine(int mm);
+    int DoRotation(int deg);
+
+    /** Accessors
+     */
+    int32_t  Xpos () const { return xpos; }
+    int32_t  Ypos () const { return ypos; }
+    uint16_t Theta () const { return theta; }
+    int16_t  Speed () const { return speed; }
+    int16_t  TurnRate () const { return turnrate; }
+    //unsigned short Compass () const { return compass; }
+    unsigned char Stall () const { return stall; }
 
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
@@ -1109,66 +1155,6 @@ class BlobfinderProxy : public ClientProxy
     void Print();
 };
 
-#define REB_PPROXY_MOTOR_OFF 0
-#define REB_PPROXY_MOTOR_ON 1
-
-#define REB_PPROXY_POSITION_MODE 0
-#define REB_PPROXY_VELOCITY_MODE 1
-#define REB_PPROXY_TORQUE_MODE 2
-
-#define REB_PPROXY_PD_CONTROL 1
-#define REB_PPROXY_DIRECT_CONTROL 0
-
-
-/** The {\tt REBPositionProxy} class is used to control the {\REB_position} device.
- */
-class REBPositionProxy : public ClientProxy
-{
-public:
-  long x;
-  long y;
-  unsigned short theta;
-
-  short translational;
-  short rotational;
-  short desired_heading;
-  unsigned char on_target;
-
-  REBPositionProxy(PlayerClient *pc, unsigned short index,
-		   unsigned char access = 'c') :
-    ClientProxy(pc, PLAYER_REB_POSITION_CODE, index, access) {}
-
-  
-  // these methods are for configuring the position device
-  int SetMotorState(unsigned char);
-
-  int SelectVelocityControl(unsigned char);
-
-  int SelectPositionMode(unsigned char);
-
-  int ResetOdometry();
-
-  int SetOdometry(long x,long y,int t);
-
-  int SetSpeedPID(int kp, int ki, int kd);
-  
-  int SetPositionPID(short kp, short ki, short kd);
-  
-  int SetPositionSpeedProfile(short spd, short acc);
-  
-  // these are command methods
-  int SetSpeed(short trans, short rot, short heading=0);
-  
-  int DoStraightLine(int mm);
-  
-  int DoRotation(int deg);
-  
-  // required by ClientProxy
-  void FillData(player_msghdr_t hdr, const char *buffer);
-  
-  void Print();
-};
-
 #define REB_IRPROXY_IR_OFF 0
 #define REB_IRPROXY_IR_ON 1
 
@@ -1188,21 +1174,21 @@ public:
 //this is the effective range of the sensor in mm
 #define REB_IRPROXY_MAX_RANGE 700
 
-class REBIRProxy : public ClientProxy
+class IRProxy : public ClientProxy
 {
 public:
 
-  unsigned short voltages[PLAYER_REB_NUM_IR_SENSORS];
-  unsigned short ranges[PLAYER_REB_NUM_IR_SENSORS];
-  double stddev[PLAYER_REB_NUM_IR_SENSORS];
+  unsigned short voltages[PLAYER_IR_MAX_SAMPLES];
+  unsigned short ranges[PLAYER_IR_MAX_SAMPLES];
+  double stddev[PLAYER_IR_MAX_SAMPLES];
 
-  double params[PLAYER_REB_NUM_IR_SENSORS][2]; // distance regression params
-  double sparams[PLAYER_REB_NUM_IR_SENSORS][2]; //std dev regression params
+  double params[PLAYER_IR_MAX_SAMPLES][2]; // distance regression params
+  double sparams[PLAYER_IR_MAX_SAMPLES][2]; //std dev regression params
 
-  player_reb_ir_pose_t ir_pose;
+  player_ir_pose_t ir_pose;
 
-  REBIRProxy(PlayerClient *pc, unsigned short index,
-	     unsigned char access = 'c');
+  IRProxy(PlayerClient *pc, unsigned short index,
+          unsigned char access = 'c');
 
   // these are config methods
   int SetIRState(unsigned char);
@@ -1215,8 +1201,9 @@ public:
 
   double CalcStdDev(int w, unsigned short range);
 
-  unsigned short operator [](unsigned int index) {
-    if (index < PLAYER_REB_NUM_IR_SENSORS) {
+  unsigned short operator [](unsigned int index) 
+  {
+    if (index < PLAYER_IR_MAX_SAMPLES) {
       return ranges[index];
     } 
 
@@ -1228,21 +1215,6 @@ public:
 
   void Print();
 };
-
-class REBPowerProxy: public ClientProxy
-{
-public:
-  unsigned short battery;
-
-  REBPowerProxy(PlayerClient *pc, unsigned short index, 
-	       unsigned char access = 'c') : 
-    ClientProxy(pc, PLAYER_REB_POWER_CODE, index, access) {}
-
-  void FillData(player_msghdr_t hdr, const char *buffer);
-
-  void Print();
-};
-
 
 class WiFiProxy: public ClientProxy
 {
@@ -1257,4 +1229,70 @@ public:
 
   void Print();
 };
+
+class PowerProxy : public ClientProxy 
+{
+
+  public:
+    /** Constructor.
+      Leave the access field empty to start unconnected.
+      You can change the access later using
+      {\tt PlayerProxy::RequestDeviceAccess()}.
+     */
+    PowerProxy (PlayerClient* pc, unsigned short index,
+                unsigned char access ='c')
+            : ClientProxy(pc,PLAYER_POWER_CODE,index,access) {}
+
+    uint8_t Charge () const { return charge; }
+
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    // interface that all proxies SHOULD provide
+    void Print ();
+
+  private:
+    // Remaining power in centivolts
+    uint16_t charge;
+};
+
+/** The {\tt BumperProxy} class is used to read from the {\tt rwi_bumper}
+	device.
+ */
+class BumperProxy : public ClientProxy {
+
+public:
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess}.
+    */
+    BumperProxy (PlayerClient* pc, unsigned short index,
+                   unsigned char access = 'c')
+            : ClientProxy(pc,PLAYER_BUMPER_CODE,index,access) {}
+
+    // these methods are the user's interface to this device
+
+    /** These methods return 1 if the specified bumper(s)
+        have been bumped, 0 otherwise.
+      */
+    bool Bumped (const unsigned int i);
+    bool BumpedAny ();
+
+    uint8_t BumperCount () const { return bumper_count; }
+    //uint32_t Bumpfield () const { return bumpfield; }
+
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    // interface that all proxies SHOULD provide
+    void Print ();
+
+private:
+    /** array representing bumped state.
+     */
+    uint8_t  bumper_count;
+    uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
+};
+
 #endif

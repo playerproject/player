@@ -20,9 +20,11 @@ test_truth(PlayerClient* client, int index)
      (access != PLAYER_READ_MODE))
   {
     FAIL();
+    printf("DRIVER: %s\n", tp.driver_name);
     return -1;
   }
   PASS();
+  printf("DRIVER: %s\n", tp.driver_name);
 
   double rx=0, ry=0, rth=0;
   

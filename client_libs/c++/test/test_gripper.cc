@@ -21,9 +21,11 @@ test_gripper(PlayerClient* client, int index)
      (access != PLAYER_ALL_MODE))
   {
     FAIL();
+    printf("DRIVER: %s\n", gp.driver_name);
     return -1;
   }
   PASS();
+  printf("DRIVER: %s\n", gp.driver_name);
 
   // wait for P2OS to start up
   for(int i=0; i < 20; i++)

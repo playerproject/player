@@ -25,9 +25,11 @@ test_broadcast(PlayerClient* client, int index)
      (access != PLAYER_READ_MODE))
   {
     FAIL();
+    printf("DRIVER: %s\n", bp.driver_name);
     return -1;
   }
   PASS();
+  printf("DRIVER: %s\n", bp.driver_name);
 
   TEST("send message");
   if(bp.Write(msg, strlen(msg)+1) >= 0)
