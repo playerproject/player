@@ -73,8 +73,6 @@
 #define PLAYER_IDAR_CODE           ((uint16_t)17)  // ranging + comms
 // Descartes should be subsumed by position
 #define PLAYER_DESCARTES_CODE      ((uint16_t)18)  // the Descartes platform
-// Mote should be subsumed by comms?
-#define PLAYER_MOTE_CODE           ((uint16_t)19)  // the USC Mote
 #define PLAYER_DIO_CODE            ((uint16_t)20)  // digital I/O
 #define PLAYER_AIO_CODE            ((uint16_t)21)  // analog I/O
 #define PLAYER_IR_CODE             ((uint16_t)22)  // IR array
@@ -107,7 +105,6 @@
 #define PLAYER_IDARTURRET_STRING     "idarturret"
 #define PLAYER_IDAR_STRING           "idar"
 #define PLAYER_DESCARTES_STRING      "descartes"
-#define PLAYER_MOTE_STRING           "mote"
 #define PLAYER_DIO_STRING            "dio"
 #define PLAYER_AIO_STRING            "aio"
 #define PLAYER_IR_STRING             "ir"
@@ -1709,27 +1706,6 @@ typedef struct
 } __attribute__ ((packed)) player_descartes_data_t;
 
 // no commands or replies for descartes
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * Mote radio device
- */
-
-#define MAX_MOTE_DATA_SIZE 32
-#define MAX_MOTE_Q_LEN     10
-
-typedef struct
-{
-  uint8_t len;
-  uint8_t buf[MAX_MOTE_DATA_SIZE];
-  float   rssi;
-} __attribute__ ((packed)) player_mote_data_t;
-
-typedef struct
-{
-  uint8_t strength;
-} __attribute__ ((packed)) player_mote_config_t;
 /*************************************************************************/
 
 /*************************************************************************
