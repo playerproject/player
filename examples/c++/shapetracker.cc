@@ -71,8 +71,6 @@ parse_args(int argc, char** argv)
 
 int main(int argc, char **argv)
 {
-  int minR, minL;
-
   parse_args(argc,argv);
 
   PlayerClient robot(host,port);
@@ -81,7 +79,6 @@ int main(int argc, char **argv)
   BlobfinderProxy bp(&robot, 0, 'r');
   HUDProxy hp(&robot, 0, 'w');
 
-  int newspeed, newturnrate;
   int i,j;
   float red[3];
   float blue[3];

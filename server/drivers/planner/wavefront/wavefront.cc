@@ -306,8 +306,8 @@ Wavefront::GetLocalizeData()
     return;
 
   // is this new data?
-  if((this->localize_timesec == timestamp.tv_sec) && 
-     (this->localize_timeusec == timestamp.tv_usec))
+  if((this->localize_timesec == (unsigned int)timestamp.tv_sec) && 
+     (this->localize_timeusec == (unsigned int)timestamp.tv_usec))
     return;
 
   this->localize_timesec = timestamp.tv_sec;
@@ -379,8 +379,8 @@ Wavefront::GetPositionData()
     return;
 
   // is this new data?
-  if((this->position_timesec == timestamp.tv_sec) && 
-     (this->position_timeusec == timestamp.tv_usec))
+  if((this->position_timesec == (unsigned int)timestamp.tv_sec) && 
+     (this->position_timeusec == (unsigned int)timestamp.tv_usec))
     return;
 
   this->position_timesec = timestamp.tv_sec;

@@ -1,6 +1,6 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace
+AM_CPPFLAGS = -Wall @GAZEBO_EXTRA_CPPFLAGS@ -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig

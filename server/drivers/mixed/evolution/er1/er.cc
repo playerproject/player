@@ -283,7 +283,7 @@ ER::Setup()
 	}
 
 	// zero the command buffer
-	PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+	PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
 	PutData((unsigned char*)&data,sizeof(data),NULL);
 
 	// start the thread to talk with the robot

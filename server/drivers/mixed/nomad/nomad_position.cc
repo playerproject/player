@@ -212,8 +212,7 @@ void NomadPosition::Update()
       cmd.vel_turret = (command.yspeed);
       
       // command the Nomad device
-      // CHECK: is this the right syntax?
-      this->nomad->PutCommand((void*)&cmd, sizeof(cmd),NULL ); 
+      this->nomad->PutCommand(this->device_id, (void*)&cmd, sizeof(cmd),NULL); 
     }
 }
 
