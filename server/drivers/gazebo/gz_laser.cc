@@ -46,6 +46,7 @@
 #include "drivertable.h"
 
 #include "gazebo.h"
+#include "gz_client.h"
 
 
 // Incremental navigation driver
@@ -71,10 +72,13 @@ class GzLaser : public CDevice
   // Request/reply
   public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
 
-  // Gazebo id
+  // Gazebo device id
   private: int gz_id;
 
-  // Interface
+  // Gazebo client object
+  private: gz_client_t *client;
+  
+  // Gazebo Interface
   private: gz_laser_t *iface;
 };
 
@@ -82,6 +86,11 @@ class GzLaser : public CDevice
 // Initialization function
 CDevice* GzLaser_Init(char* interface, ConfigFile* cf, int section)
 {
+  if (GzClient::client == NULL)
+  {
+    PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
+    return (NULL);
+  }
   if (strcmp(interface, PLAYER_LASER_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"gz_laser\" does not support interface \"%s\"\n", interface);
@@ -108,6 +117,9 @@ GzLaser::GzLaser(char* interface, ConfigFile* cf, int section)
   // Get the id of the device in Gazebo
   this->gz_id = cf->ReadInt(section, "gz_id", 0);
 
+  // Get the globally defined  Gazebo client (one per instance of Player)
+  this->client = GzClient::client;
+  
   // Create an interface
   this->iface = gz_laser_alloc();
   
@@ -126,8 +138,9 @@ GzLaser::~GzLaser()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
 int GzLaser::Setup()
-{
-  if (gz_laser_open(this->iface, this->gz_id) != 0)
+{ 
+  // Open the interface
+  if (gz_laser_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
   
   return 0;
@@ -138,7 +151,9 @@ int GzLaser::Setup()
 // Shutdown the device (called by server thread).
 int GzLaser::Shutdown()
 {
-  return gz_laser_close(this->iface);
+  gz_laser_close(this->iface);
+
+  return 0;
 }
 
 
