@@ -22,7 +22,7 @@ MANFILES = ../positionproxy.h ../sonarproxy.h ../miscproxy.h \
            ../ptzproxy.h ../visionproxy.h ../laserproxy.h \
            ../laserbeaconproxy.h ../speechproxy.h \
            ../broadcastproxy.h ../bpsproxy.h ../gpsproxy.h \
-	   ../gripperproxy.h ../playerclient.h
+	   ../gripperproxy.h ../playerclient.h ../truthproxy.h
 
 
 # Build the manual

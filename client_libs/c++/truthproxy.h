@@ -51,15 +51,34 @@
 #define NORMALIZE(z) atan2(sin(z), cos(z))
 #endif
 
+/** The {\tt TruthProxy} gets and sets the {\em true} pose of a truth
+    device [worldfile tag: truth()]. This may be different from the
+    pose returned by a device such as GPS or Position. If you want to
+    log what happened in an experiment, this is the device to
+    use. 
+
+    Setting the position of a truth device moves its parent, so you
+    can put a truth device on robot and teleport it around the place. 
+ */
 class TruthProxy : public ClientProxy
 {
   
   public:
-  ///////////////////////////////////////////////////////////
-  // system interface
-  //
-  // the client calls this method to make a new proxy
-  //   leave access empty to start unconnected
+
+  /** These vars store the current device pose (x,y,a) as
+      (m,m,radians). The values are updated at regular intervals as
+      data arrives. You can read these values directly but setting
+      them does NOT change the device's pose!. Use {\tt
+      TruthProxy::SetPose()} for that.  
+*/
+  double x, y, a; 
+
+
+  /** Constructor.
+      Leave the access field empty to start unconnected.
+      You can change the access later using 
+      {\tt PlayerProxy::RequestDeviceAccess}.
+  */
   TruthProxy(PlayerClient* pc, unsigned short index, 
              unsigned char access = 'c') :
     ClientProxy(pc,PLAYER_TRUTH_CODE,index,access) {};
@@ -68,24 +87,21 @@ class TruthProxy : public ClientProxy
   // interface that all proxies must provide
   void FillData(player_msghdr_t hdr, const char* buffer);
     
-  ////////////////////////////////////////////////////////////////////
-  // user interface 
-  //
-  // these methods are the user's interface to this device to get and
-  // set the device's position
-
   // interface that all proxies SHOULD provide
   void Print();
 
-  // these are updated at regular intervals as data arrives, you can
-  // read these values directly (setting them does NOT change the
-  // device's pose!)
-  double x, y, a; // meters, meters, radians
-
-  // query Player about the current pose - wait for a reply
+  /** Query Player about the current pose - requests the pose from the
+      server, then fills in values for the arguments
+      (m,m,radians). Usually you'll just read the {\tt x,y,a}
+      attributes but this function allows you to get pose direct from
+      the server if you need too. Returns 0 on success, -1 if there is
+      a problem.  
+  */
   int GetPose( double *px, double *py, double *pa );
 
-  // request a change in pose
+  /** Request a change in pose (m,m,radians). Returns 0 on success, -1
+      if there is a problem.  
+  */
   int SetPose( double px, double py, double pa );
 
 
