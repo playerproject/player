@@ -34,8 +34,8 @@
 
 The linuxjoystick driver reads data from a standard Linux joystick and
 provides the data via the @ref player_interface_joystick interface.
-This driver can also control a position device by converting joystick
-positions to velocity commands.
+This driver can also control a @ref player_interface_position device by
+converting joystick positions to velocity commands.
 
 @par Compile-time dependencies
 
@@ -73,11 +73,11 @@ positions to velocity commands.
     Useful for implementing a dead zone on a touchy joystick.
 - max_xspeed (length / sec)
   - Default: 0.5 m/sec
-  - The maximum translational velocity to be used when commanding a
+  - The maximum absolute translational velocity to be used when commanding a
     position device.
 - max_yawspeed (angle / sec)
   - Default: 30 deg/sec
-  - The maximum rotational velocity to be used when commanding a
+  - The maximum absolute rotational velocity to be used when commanding a
     position device.
 - timeout (float)
   - Default: 5.0
@@ -85,7 +85,9 @@ positions to velocity commands.
     the underlying position device will be stopped, for safety.  Set to
     0.0 for no timeout.
 
-@par Example 
+@par Examples
+
+Basic configuration
 
 @verbatim
 driver
@@ -96,13 +98,38 @@ driver
 )
 @endverbatim
 
+Controlling a Pioneer, plus remapping joystick axes and setting various
+limits.
+
+@verbatim
+driver
+(
+  name "p2os"
+  provides ["odometry::position:0"]
+  port "/dev/usb/tts/0"
+)
+
+driver
+(
+  name "linuxjoystick"
+  provides ["joystick:0"]
+  requires ["odometry::position:0"]
+  max_yawspeed 50
+  max_xspeed 0.5
+  axes [3 4]
+  axis_minima [5000 5000]
+  port "/dev/js0"
+  alwayson 1
+)
+@endverbatim
+
 @todo
 Add support for continuously sending commands, which might be needed for 
 position devices that use watchdog timers.
 
 @par Authors
 
-Andrew Howard
+Andrew Howard, Brian Gerkey
 
 */
 /** @} */
