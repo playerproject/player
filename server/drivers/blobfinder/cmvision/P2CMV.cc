@@ -145,9 +145,11 @@ CMVisionBF::CMVisionBF(char* interface, ConfigFile* cf, int section)
   // first, get the necessary args
   width = cf->ReadInt(section, "width", DEFAULT_CMV_WIDTH);
   height = cf->ReadInt(section, "height", DEFAULT_CMV_HEIGHT);
-  
   colorfile = cf->ReadString(section, "colorfile", "");
   capturetype = cf->ReadString(section, "capture", "1394");
+  // just here to supress a configfile warning. 
+  // it's used by captureCamera
+  int idx = cf->ReadInt(section, "index", 0);
   
 #if HAVE_1394
   // this might belong in capture1394.cc
