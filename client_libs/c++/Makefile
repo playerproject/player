@@ -11,7 +11,8 @@ INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
-      laserbeaconproxy.o visionproxy.o gpsproxy.o playermulticlient.o
+      laserbeaconproxy.o visionproxy.o truthproxy.o occupancyproxy.o \
+      gpsproxy.o playermulticlient.o
 
 all: $(LIBNAME)
 
@@ -46,7 +47,10 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 sonarproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 speechproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 visionproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 truthproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 occupancyproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 gpsproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 playermulticlient.h $(INSTALL_INCLUDE)
 
 uninstall:
 	$(RM) -f $(INSTALL_LIB)/$(LIBNAME)
@@ -61,82 +65,10 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/sonarproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/speechproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/visionproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/truthproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/occupancyproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/gpsproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/playermulticlient.h
 
 clean:
 	$(RM) -f $(LIBNAME) *.o
-# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-clientproxy.o: ./clientproxy.h ../c/playercclient.h ../../include/messages.h
-clientproxy.o: ../../include/playercommon.h ./playerclient.h ./laserproxy.h
-clientproxy.o: ./sonarproxy.h ./miscproxy.h ./positionproxy.h ./ptzproxy.h
-clientproxy.o: ./gripperproxy.h ./speechproxy.h ./laserbeaconproxy.h
-clientproxy.o: ./visionproxy.h ./gpsproxy.h
-gpsproxy.o: ./gpsproxy.h ./clientproxy.h ../c/playercclient.h
-gpsproxy.o: ../../include/messages.h ../../include/playercommon.h
-gpsproxy.o: ./playerclient.h ./laserproxy.h ./sonarproxy.h ./miscproxy.h
-gpsproxy.o: ./positionproxy.h ./ptzproxy.h ./gripperproxy.h ./speechproxy.h
-gpsproxy.o: ./laserbeaconproxy.h ./visionproxy.h
-gripperproxy.o: ./gripperproxy.h ./clientproxy.h ../c/playercclient.h
-gripperproxy.o: ../../include/messages.h ../../include/playercommon.h
-gripperproxy.o: ./playerclient.h ./laserproxy.h ./sonarproxy.h ./miscproxy.h
-gripperproxy.o: ./positionproxy.h ./ptzproxy.h ./speechproxy.h
-gripperproxy.o: ./laserbeaconproxy.h ./visionproxy.h ./gpsproxy.h
-laserbeaconproxy.o: ./laserbeaconproxy.h ./clientproxy.h ../c/playercclient.h
-laserbeaconproxy.o: ../../include/messages.h ../../include/playercommon.h
-laserbeaconproxy.o: ./playerclient.h ./laserproxy.h ./sonarproxy.h
-laserbeaconproxy.o: ./miscproxy.h ./positionproxy.h ./ptzproxy.h
-laserbeaconproxy.o: ./gripperproxy.h ./speechproxy.h ./visionproxy.h
-laserbeaconproxy.o: ./gpsproxy.h
-laserproxy.o: ./laserproxy.h ./clientproxy.h ../c/playercclient.h
-laserproxy.o: ../../include/messages.h ../../include/playercommon.h
-laserproxy.o: ./playerclient.h ./sonarproxy.h ./miscproxy.h ./positionproxy.h
-laserproxy.o: ./ptzproxy.h ./gripperproxy.h ./speechproxy.h
-laserproxy.o: ./laserbeaconproxy.h ./visionproxy.h ./gpsproxy.h
-miscproxy.o: ./miscproxy.h ./clientproxy.h ../c/playercclient.h
-miscproxy.o: ../../include/messages.h ../../include/playercommon.h
-miscproxy.o: ./playerclient.h ./laserproxy.h ./sonarproxy.h ./positionproxy.h
-miscproxy.o: ./ptzproxy.h ./gripperproxy.h ./speechproxy.h
-miscproxy.o: ./laserbeaconproxy.h ./visionproxy.h ./gpsproxy.h
-playerclient.o: ./playerclient.h ../../include/messages.h
-playerclient.o: ../../include/playercommon.h ../c/playercclient.h
-playerclient.o: ./laserproxy.h ./clientproxy.h ./sonarproxy.h ./miscproxy.h
-playerclient.o: ./positionproxy.h ./ptzproxy.h ./gripperproxy.h
-playerclient.o: ./speechproxy.h ./laserbeaconproxy.h ./visionproxy.h
-playerclient.o: ./gpsproxy.h
-playermulticlient.o: ./playermulticlient.h ./playerclient.h
-playermulticlient.o: ../../include/messages.h ../../include/playercommon.h
-playermulticlient.o: ../c/playercclient.h ./laserproxy.h ./clientproxy.h
-playermulticlient.o: ./sonarproxy.h ./miscproxy.h ./positionproxy.h
-playermulticlient.o: ./ptzproxy.h ./gripperproxy.h ./speechproxy.h
-playermulticlient.o: ./laserbeaconproxy.h ./visionproxy.h ./gpsproxy.h
-positionproxy.o: ./positionproxy.h ./clientproxy.h ../c/playercclient.h
-positionproxy.o: ../../include/messages.h ../../include/playercommon.h
-positionproxy.o: ./playerclient.h ./laserproxy.h ./sonarproxy.h ./miscproxy.h
-positionproxy.o: ./ptzproxy.h ./gripperproxy.h ./speechproxy.h
-positionproxy.o: ./laserbeaconproxy.h ./visionproxy.h ./gpsproxy.h
-ptzproxy.o: ./ptzproxy.h ./clientproxy.h ../c/playercclient.h
-ptzproxy.o: ../../include/messages.h ../../include/playercommon.h
-ptzproxy.o: ./playerclient.h ./laserproxy.h ./sonarproxy.h ./miscproxy.h
-ptzproxy.o: ./positionproxy.h ./gripperproxy.h ./speechproxy.h
-ptzproxy.o: ./laserbeaconproxy.h ./visionproxy.h ./gpsproxy.h
-sonarproxy.o: ./sonarproxy.h ./clientproxy.h ../c/playercclient.h
-sonarproxy.o: ../../include/messages.h ../../include/playercommon.h
-sonarproxy.o: ./playerclient.h ./laserproxy.h ./miscproxy.h ./positionproxy.h
-sonarproxy.o: ./ptzproxy.h ./gripperproxy.h ./speechproxy.h
-sonarproxy.o: ./laserbeaconproxy.h ./visionproxy.h ./gpsproxy.h
-speechproxy.o: ./speechproxy.h ./clientproxy.h ../c/playercclient.h
-speechproxy.o: ../../include/messages.h ../../include/playercommon.h
-speechproxy.o: ./playerclient.h ./laserproxy.h ./sonarproxy.h ./miscproxy.h
-speechproxy.o: ./positionproxy.h ./ptzproxy.h ./gripperproxy.h
-speechproxy.o: ./laserbeaconproxy.h ./visionproxy.h ./gpsproxy.h
-test.o: ./playerclient.h ../../include/messages.h
-test.o: ../../include/playercommon.h ../c/playercclient.h ./laserproxy.h
-test.o: ./clientproxy.h ./sonarproxy.h ./miscproxy.h ./positionproxy.h
-test.o: ./ptzproxy.h ./gripperproxy.h ./speechproxy.h ./laserbeaconproxy.h
-test.o: ./visionproxy.h ./gpsproxy.h
-visionproxy.o: ./visionproxy.h ./clientproxy.h ../c/playercclient.h
-visionproxy.o: ../../include/messages.h ../../include/playercommon.h
-visionproxy.o: ./playerclient.h ./laserproxy.h ./sonarproxy.h ./miscproxy.h
-visionproxy.o: ./positionproxy.h ./ptzproxy.h ./gripperproxy.h
-visionproxy.o: ./speechproxy.h ./laserbeaconproxy.h ./gpsproxy.h

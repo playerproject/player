@@ -47,12 +47,12 @@ size_t CPositionDevice::GetData( unsigned char *dest, size_t maxsize )
 {
   //memcpy( dest, &data[POSITION_DATA_OFFSET], POSITION_DATA_BUFFER_SIZE);
   *((player_position_data_t*)dest) = data->position;
-  return(POSITION_DATA_BUFFER_SIZE);
+  return( sizeof( player_position_data_t) );
 }
 
 void CPositionDevice::PutCommand( unsigned char *src, size_t size ) 
 {
-  if(size != POSITION_COMMAND_BUFFER_SIZE)
+  if(size != sizeof( player_position_cmd_t ) )
     puts("CPositionDevice::PutCommand(): command wrong size. ignoring.");
   else
     command->position = *((player_position_cmd_t*)src);

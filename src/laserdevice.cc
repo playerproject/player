@@ -117,9 +117,9 @@ CLaserDevice::CLaserDevice(int argc, char** argv)
 //
 size_t CLaserDevice::GetData( unsigned char *dest, size_t destsize ) 
 {
-    assert(destsize >= LASER_DATA_BUFFER_SIZE);
-    memcpy(dest, &m_data, LASER_DATA_BUFFER_SIZE);
-    return(LASER_DATA_BUFFER_SIZE);
+    assert( destsize >= sizeof( player_laser_data_t) );
+    memcpy(dest, &m_data, sizeof( player_laser_data_t ) );
+    return(sizeof( player_laser_data_t ));
 }
 
 
@@ -128,7 +128,7 @@ size_t CLaserDevice::GetData( unsigned char *dest, size_t destsize )
 //
 void CLaserDevice::PutData( unsigned char *src, size_t srcsize )
 {
-    assert(srcsize == LASER_DATA_BUFFER_SIZE);
+    assert(srcsize == sizeof( player_laser_data_t ));
     memcpy(&m_data, src, srcsize);
 }
 
@@ -1090,3 +1090,8 @@ int64_t CLaserDevice::GetTime()
     gettimeofday(&tv, NULL);
     return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
 }
+
+
+
+
+

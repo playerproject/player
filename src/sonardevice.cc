@@ -32,11 +32,10 @@
 
 size_t CSonarDevice::GetData( unsigned char *dest, size_t maxsize)
 {
-
   //memcpy( dest, &data[SONAR_DATA_OFFSET], SONAR_DATA_BUFFER_SIZE );
   *((player_sonar_data_t*)dest) = data->sonar;
   
-  return(SONAR_DATA_BUFFER_SIZE);
+  return( sizeof(player_sonar_data_t) );
 }
 
 

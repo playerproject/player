@@ -42,6 +42,8 @@
 #include <speechproxy.h>  /* support for the speech device */
 #include <laserbeaconproxy.h>  /* support for the laserbeacon device */
 #include <visionproxy.h>  /* support for the vision device */
+#include <truthproxy.h>  /* support for the truth device */
+#include <occupancyproxy.h>  /* support for guess which device */
 #include <gpsproxy.h>  /* support for the GPS device */
 
 // keep a linked list of proxies that we've got open

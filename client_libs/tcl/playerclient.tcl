@@ -436,6 +436,7 @@ proc parseData {device device_index data size} {
         return
       }
       set laser($j) [expr ($laser($j) + 0x10000) % 0x10000]
+      #puts -nonewline "$laser($j) "
       # TODO: why does stage return laser values of 11392?????
       if {$laser($j) > $PLAYER_MAX_LASER_VALUE} {
         #set laser($j) $PLAYER_MAX_LASER_VALUE

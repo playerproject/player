@@ -32,7 +32,7 @@ if {[file exists ../../client_libs/tcl/playerclient.tcl]} {
 
 set CANVAS_WIDTH 800
 set CANVAS_HEIGHT 800
-set PI 3.14159
+set PI 3.14159264
 
 # max range of 8 meters
 set MAX_RANGE 8000.0
@@ -329,15 +329,15 @@ proc toggle_sonar {} {
     ChangeSonarState 0
   }
 }
-#proc toggle_laser {} {
-  #global display_laser
-  #global PLAYER_LASER_CODE PLAYER_READ_MODE PLAYER_CLOSE_MODE
-  #if {$display_laser} {
-    #requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE
-  #} else {
-    #requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_CLOSE_MODE
-  #}
-#}
+proc toggle_laser {} {
+  global display_laser
+  global PLAYER_LASER_CODE PLAYER_READ_MODE PLAYER_CLOSE_MODE
+  if {$display_laser} {
+    requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE
+  } else {
+    requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_CLOSE_MODE
+  }
+}
 #########################################################################
 
 proc createRobotPanel {} {
@@ -405,10 +405,10 @@ proc createRobotPanel {} {
 
   checkbutton .robot_panel.sonar_check -command toggle_sonar\
     -variable display_sonar -text "Display Sonars"
-  #checkbutton .robot_panel.laser_check -command toggle_laser\
-    #-variable display_laser -text "Display Laser"
   checkbutton .robot_panel.laser_check -command toggle_laser\
-    -text "Display Laser"
+    -variable display_laser -text "Display Laser"
+  #checkbutton .robot_panel.laser_check -command toggle_laser\
+    #-text "Display Laser"
   checkbutton .robot_panel.bumper_check \
     -variable display_bumpers -text "Display Bumpers"
 
@@ -493,7 +493,7 @@ proc displayData {} {
   # display the vision device data
   #
   if {$display_vision && [lsearch [array names vision] 0,numblobs] > -1} {
-    # draw the first two channels.
+    # draw the first four channels.
     set i 0
     while {$i < $vision(0,numblobs)} {
       set vision_obslist [concat $vision_obslist \
@@ -503,13 +503,13 @@ proc displayData {} {
                $vision(0,$i,right) $vision(0,$i,bottom)\
                $vision(0,$i,left) $vision(0,$i,bottom)\
                $vision(0,$i,left) $vision(0,$i,top) \
-               -width 2 -fill yellow]\
+               -width 2 -fill red]\
         [.vision_panel.canvas create polygon \
                [expr $vision(0,$i,x) - 2] [expr $vision(0,$i,y) - 2]\
                [expr $vision(0,$i,x) + 2] [expr $vision(0,$i,y) - 2]\
                [expr $vision(0,$i,x) + 2] [expr $vision(0,$i,y) + 2]\
                [expr $vision(0,$i,x) - 2] [expr $vision(0,$i,y) + 2]\
-               -fill yellow]]
+               -fill red]]
       incr i
     }
     set i 0
@@ -521,13 +521,13 @@ proc displayData {} {
                $vision(1,$i,right) $vision(1,$i,bottom)\
                $vision(1,$i,left) $vision(1,$i,bottom)\
                $vision(1,$i,left) $vision(1,$i,top) \
-               -width 2 -fill pink]\
+               -width 2 -fill green]\
         [.vision_panel.canvas create polygon \
                [expr $vision(1,$i,x) - 2] [expr $vision(1,$i,y) - 2]\
                [expr $vision(1,$i,x) + 2] [expr $vision(1,$i,y) - 2]\
                [expr $vision(1,$i,x) + 2] [expr $vision(1,$i,y) + 2]\
                [expr $vision(1,$i,x) - 2] [expr $vision(1,$i,y) + 2]\
-               -fill pink]]
+               -fill green]]
       incr i
     }
     set i 0
@@ -539,13 +539,13 @@ proc displayData {} {
                $vision(2,$i,right) $vision(2,$i,bottom)\
                $vision(2,$i,left) $vision(2,$i,bottom)\
                $vision(2,$i,left) $vision(2,$i,top) \
-               -width 2 -fill orange]\
+               -width 2 -fill blue]\
         [.vision_panel.canvas create polygon \
                [expr $vision(2,$i,x) - 2] [expr $vision(2,$i,y) - 2]\
                [expr $vision(2,$i,x) + 2] [expr $vision(2,$i,y) - 2]\
                [expr $vision(2,$i,x) + 2] [expr $vision(2,$i,y) + 2]\
                [expr $vision(2,$i,x) - 2] [expr $vision(2,$i,y) + 2]\
-               -fill orange]]
+               -fill blue]]
       incr i
     }
     set i 0
@@ -557,13 +557,13 @@ proc displayData {} {
                $vision(3,$i,right) $vision(3,$i,bottom)\
                $vision(3,$i,left) $vision(3,$i,bottom)\
                $vision(3,$i,left) $vision(3,$i,top) \
-               -width 2 -fill green]\
+               -width 2 -fill yellow]\
         [.vision_panel.canvas create polygon \
                [expr $vision(3,$i,x) - 2] [expr $vision(3,$i,y) - 2]\
                [expr $vision(3,$i,x) + 2] [expr $vision(3,$i,y) - 2]\
                [expr $vision(3,$i,x) + 2] [expr $vision(3,$i,y) + 2]\
                [expr $vision(3,$i,x) - 2] [expr $vision(3,$i,y) + 2]\
-               -fill green]]
+               -fill yellow]]
       incr i
     }
 
@@ -686,11 +686,15 @@ proc startRobot {} {
   connectToRobot $host
   #ChangeSonarState 0
   # try to connect to ptz, position, and misc (but ignore errors)
-  requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE
+  if {[catch {requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE}]} {
+    set display_laser 0
+  }
   catch {requestDeviceAccess $PLAYER_POSITION_CODE 0 $PLAYER_ALL_MODE}
-  #catch {requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE}
-  #catch {requestDeviceAccess $PLAYER_MISC_CODE 0 $PLAYER_ALL_MODE}
+  catch {requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE}
+  catch {requestDeviceAccess $PLAYER_MISC_CODE 0 $PLAYER_ALL_MODE}
+  # NYImplemented
   #catch {requestDeviceAccess $PLAYER_SPEECH_CODE 0 $PLAYER_WRITE_MODE}
+
   signal trap SIGALRM {displayData;alarm .1}
   alarm .1
 }
