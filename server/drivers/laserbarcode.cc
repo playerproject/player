@@ -142,7 +142,6 @@ LaserBarcode_Register(DriverTable* table)
   table->AddDriver("laserbarcode", PLAYER_READ_MODE, LaserBarcode_Init);
 }
 
-extern CDeviceTable* deviceTable;
 extern int global_playerport; // used to get at devices
 
 ////////////////////////////////////////////////////////////////////////////////
