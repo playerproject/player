@@ -363,7 +363,8 @@ AC_OUTPUT(Makefile
           utils/playernav/Makefile
           utils/playervcr/Makefile
           config/Makefile
-          config/stage/Makefile)
+          config/stage/Makefile
+	  server/prefix.h)
 
 
 # -----------------------------------------------------------------------
