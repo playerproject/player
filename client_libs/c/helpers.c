@@ -174,6 +174,8 @@ int player_read_ptz(player_connection_t* conn, player_ptz_data_t* data)
   data->pan = ntohs(data->pan);
   data->tilt = ntohs(data->tilt);
   data->zoom = ntohs(data->zoom);
+  data->panspeed = ntohs(data->panspeed);
+  data->tiltspeed = ntohs(data->tiltspeed);
 
   return(0);
 }
@@ -222,6 +224,8 @@ int player_write_ptz(player_connection_t* conn, player_ptz_cmd_t cmd)
   swapped_cmd.pan = htons(cmd.pan);
   swapped_cmd.tilt = htons(cmd.tilt);
   swapped_cmd.zoom = htons(cmd.zoom);
+  swapped_cmd.panspeed = htons(cmd.panspeed);
+  swapped_cmd.tiltspeed = htons(cmd.tiltspeed);
   return(player_write(conn, PLAYER_PTZ_CODE, 0, 
                           (char*)&swapped_cmd, sizeof(player_ptz_cmd_t)));
 }

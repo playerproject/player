@@ -1189,6 +1189,14 @@ player_ser_player_ptz_cmd(void* dest, player_ptz_cmd_t src)
   swappedsrc.zoom = htons(src.zoom);
   memcpy(((char*)dest)+i, &(swappedsrc.zoom), sizeof(uint16_t));
   i += sizeof(uint16_t);
+  
+  // added pan speed and tilt speed as this function seems out of date
+  swappedsrc.panspeed = htons(src.panspeed);
+  memcpy(((char*)dest)+i, &(swappedsrc.panspeed), sizeof(uint16_t));
+  i += sizeof(uint16_t);
+  swappedsrc.tiltspeed = htons(src.tiltspeed);
+  memcpy(((char*)dest)+i, &(swappedsrc.tiltspeed), sizeof(uint16_t));
+  i += sizeof(uint16_t);
 
 
   return(i);
@@ -1206,6 +1214,14 @@ player_deser_player_ptz_cmd(player_ptz_cmd_t* dest, void* src)
   i += sizeof(uint16_t);
   memcpy(&(dest->zoom), ((char*)src)+i, sizeof(uint16_t));
   dest->zoom = ntohs(dest->zoom);
+  i += sizeof(uint16_t);
+
+  // added pan speed and tilt speed as this function seems out of date
+  memcpy(&(dest->panspeed), ((char*)src)+i, sizeof(uint16_t));
+  dest->panspeed = ntohs(dest->panspeed);
+  i += sizeof(uint16_t);
+  memcpy(&(dest->tiltspeed), ((char*)src)+i, sizeof(uint16_t));
+  dest->tiltspeed = ntohs(dest->tiltspeed);
   i += sizeof(uint16_t);
 
   return(i);
@@ -1227,6 +1243,14 @@ player_ser_player_ptz_data(void* dest, player_ptz_data_t src)
   memcpy(((char*)dest)+i, &(swappedsrc.zoom), sizeof(uint16_t));
   i += sizeof(uint16_t);
 
+  // added pan speed and tilt speed as this function seems out of date
+  swappedsrc.panspeed = htons(src.panspeed);
+  memcpy(((char*)dest)+i, &(swappedsrc.panspeed), sizeof(uint16_t));
+  i += sizeof(uint16_t);
+  swappedsrc.tiltspeed = htons(src.tiltspeed);
+  memcpy(((char*)dest)+i, &(swappedsrc.tiltspeed), sizeof(uint16_t));
+  i += sizeof(uint16_t);
+
 
   return(i);
 }
@@ -1243,6 +1267,14 @@ player_deser_player_ptz_data(player_ptz_data_t* dest, void* src)
   i += sizeof(uint16_t);
   memcpy(&(dest->zoom), ((char*)src)+i, sizeof(uint16_t));
   dest->zoom = ntohs(dest->zoom);
+  i += sizeof(uint16_t);
+
+  // added pan speed and tilt speed as this function seems out of date
+  memcpy(&(dest->panspeed), ((char*)src)+i, sizeof(uint16_t));
+  dest->panspeed = ntohs(dest->panspeed);
+  i += sizeof(uint16_t);
+  memcpy(&(dest->tiltspeed), ((char*)src)+i, sizeof(uint16_t));
+  dest->tiltspeed = ntohs(dest->tiltspeed);
   i += sizeof(uint16_t);
 
   return(i);

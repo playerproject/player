@@ -182,15 +182,16 @@ void ptz_draw(ptz_t *ptz)
 void ptz_move(ptz_t *ptz)
 {
   double ox, oy, oa;
-  double pan, tilt, zoom;
+  double pan, tilt, zoom, speed;
     
   rtk_fig_get_origin(ptz->cmd_fig, &ox, &oy, &oa);
 
   pan = atan2(oy, ox);
   tilt = 0;
   zoom = 2 * atan2(0.5, sqrt(ox * ox + oy * oy));
-  
-  if (playerc_ptz_set(ptz->proxy, pan, tilt, zoom) != 0)
+  speed = sqrt(oy*oy + ox*ox);
+
+  if (playerc_ptz_set_ws(ptz->proxy, pan, tilt, zoom,speed,0) != 0)
     PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 }
 

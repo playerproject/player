@@ -114,6 +114,10 @@ void LaserCSpace_Register(DriverTable* table);
 void SonyEVID30_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_PTU46
+void PTU46_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_UDPBROADCAST
 void UDPBroadcast_Register(DriverTable* table);
 #endif
@@ -289,6 +293,7 @@ player_interface_t interfaces[] = {
   {PLAYER_AUDIODSP_CODE, PLAYER_AUDIODSP_STRING, "acoustics"},
   {PLAYER_FIDUCIAL_CODE, PLAYER_FIDUCIAL_STRING, "laserbarcode"},
   {PLAYER_PTZ_CODE, PLAYER_PTZ_STRING, "sonyevid30"},
+  {PLAYER_PTZ_CODE, PLAYER_PTZ_STRING, "ptu46"},
   {PLAYER_COMMS_CODE, PLAYER_COMMS_STRING, "udpbroadcast"},
   {PLAYER_GRIPPER_CODE, PLAYER_GRIPPER_STRING, "p2os_gripper"},
   {PLAYER_POWER_CODE, PLAYER_POWER_STRING, "p2os_power"},
@@ -461,6 +466,10 @@ register_devices()
 
 #ifdef INCLUDE_SONYEVID30
   SonyEVID30_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_PTU46
+  PTU46_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_UDPBROADCAST
