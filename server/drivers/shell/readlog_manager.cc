@@ -53,9 +53,9 @@ static ReadLogManager *manager;
 
 ////////////////////////////////////////////////////////////////////////////
 // Instantiate and initialize the manager
-int ReadLogManager_Init(const char *filename)
+int ReadLogManager_Init(const char *filename, double speed)
 {
-  manager = new ReadLogManager(filename);
+  manager = new ReadLogManager(filename, speed);
   return manager->Startup();
 }
 
@@ -81,9 +81,10 @@ ReadLogManager *ReadLogManager_Get()
 
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
-ReadLogManager::ReadLogManager(const char *filename)
+ReadLogManager::ReadLogManager(const char *filename, double speed)
 {
   this->filename = strdup(filename);
+  this->speed = speed;
   this->file = NULL;
   this->device_count = 0;
   
@@ -264,9 +265,7 @@ void ReadLogManager::Main()
 
     if (header_id.code == PLAYER_PLAYER_CODE)
     {
-      // HACK
-      //usleep(100000);
-      usleep(10000);
+      usleep((int) (100000 / this->speed));
       continue;
     }
     else

@@ -44,7 +44,7 @@ class ReadLogManager;
 
 
 // Instantiate and initialize the manager
-int ReadLogManager_Init(const char *filename);
+int ReadLogManager_Init(const char *filename, double speed);
 
 // Finalize the manager
 int ReadLogManager_Fini();
@@ -56,7 +56,7 @@ ReadLogManager *ReadLogManager_Get();
 class ReadLogManager
 {
   // Constructor
-  public: ReadLogManager(const char *filename);
+  public: ReadLogManager(const char *filename, double speed);
 
   // Destructor
   public: virtual ~ReadLogManager();  
@@ -102,6 +102,9 @@ class ReadLogManager
   // File to read data from
   private: char *filename;
   private: gzFile file;
+
+  // Playback speed (1 = real time)
+  private: double speed;
 
   // Subscribed device list
   private: int device_count;

@@ -753,6 +753,7 @@ int main( int argc, char *argv[] )
   char *configfile = NULL;
   char *gz_serverid = NULL;
   char *readlog_filename = NULL;
+  double readlog_speed = 1.0;
   
   int *ports = NULL;
   struct pollfd *ufds = NULL;
@@ -826,6 +827,20 @@ int main( int argc, char *argv[] )
       if(++i<argc)
       {
         readlog_filename = argv[i];
+      }
+      else
+      {
+        Usage();
+        exit(-1);
+      }
+    }
+
+    // ReadLog support
+    else if(!strcmp(argv[i], "-rs"))
+    {
+      if(++i<argc)
+      {
+        readlog_speed = atof(argv[i]);
       }
       else
       {
@@ -983,7 +998,7 @@ int main( int argc, char *argv[] )
   {
 #ifdef INCLUDE_READLOG
     // Initialize the readlog reader
-    if (ReadLogManager_Init(readlog_filename) != 0)
+    if (ReadLogManager_Init(readlog_filename, readlog_speed) != 0)
       exit(-1);
 
     // Use the clock from Gazebo
