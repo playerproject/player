@@ -8,7 +8,7 @@
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
-#if HAVE_OPENSSL_MD5_H
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBMD5
   #include <openssl/md5.h>
 #endif
 
@@ -108,7 +108,7 @@ void plan_update_cspace(plan_t *plan, const char* cachefile)
   double r;
   plan_cell_t *cell, *ncell;
 
-#if HAVE_OPENSSL_MD5_H
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBMD5
   short hash;
   hash = plan_md5(plan);
   if(cachefile)
@@ -155,7 +155,7 @@ void plan_update_cspace(plan_t *plan, const char* cachefile)
     }
   }
 
-#if HAVE_OPENSSL_MD5_H
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBMD5
   if(cachefile)
     plan_write_cspace(plan,cachefile,hash);
 #endif
@@ -262,7 +262,7 @@ int plan_read_cspace(plan_t *plan, const char* fname, short hash)
 short
 plan_md5(plan_t* plan)
 {
-#if HAVE_OPENSSL_MD5_H
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBMD5
   MD5_CTX c;
   short digest;
 
