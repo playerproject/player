@@ -144,7 +144,9 @@ CFLAGS = -Wall $(PLAYER_PLATFORM) $(INCLUDE_SELFTEST)
 #CFLAGS += -O2
 # for debug, use the following instead:
 CFLAGS += -g3
-
+# for profiling, add the following:
+#CFLAGS += -pg 
+#PROFILE_LINK = -pg
 
 ############## You shouldn't need to change below here ############## 
 RM = rm
