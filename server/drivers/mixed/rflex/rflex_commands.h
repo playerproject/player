@@ -24,7 +24,7 @@
 				  int *r_vel);
 
   void rflex_update_system(int fd, int *battery,
-				  int *timestamp, int *brake);
+				   int *brake);
 
   int rflex_update_sonar(int fd, int num_sonars,
 				 int *ranges);
