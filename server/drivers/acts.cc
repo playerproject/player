@@ -462,7 +462,7 @@ Acts::Setup()
     //dup2(dummy_fd,2);
 
     /* detach from controlling tty, so we don't get pesky SIGINTs and such */
-    if(setpgrp() == -1)
+    if(setpgid(0,0) == -1)
     {
       perror("Acts:Setup(): error while setpgrp()");
       exit(1);
