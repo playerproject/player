@@ -53,7 +53,10 @@
 #define TROGDOR_MAX_TICS 2147483648U
 
 /* for safety */
-#define TROGDOR_MAX_WHEELSPEED   4.0
+#define TROGDOR_MAX_WHEELSPEED   1.0
+
+/* to account for our bad low-level PID motor controller */
+#define TROGDOR_MIN_WHEELSPEED_TICKS 5
 
 /************************************************************************/
 /* Comm protocol values */
