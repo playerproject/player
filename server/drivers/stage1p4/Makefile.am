@@ -13,7 +13,8 @@ libstage1p4_a_SOURCES = \
  stg_laser.cc \
  stg_position.cc \
  stg_sonar.cc \
- stg_energy.cc
+ stg_energy.cc \
+ stg_blobfinder.cc
 
 #	stg_fiducial.cc \
 #	stg_blinkenlight.cc
