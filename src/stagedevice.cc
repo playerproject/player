@@ -241,7 +241,7 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
 ///////////////////////////////////////////////////////////////////////////
 // Write configuration to the device
 //
-void CStageDevice::PutConfig(unsigned char *config, size_t len)
+int CStageDevice::PutConfig(unsigned char *config, size_t len)
 {
   Lock();
 
@@ -264,6 +264,8 @@ void CStageDevice::PutConfig(unsigned char *config, size_t len)
   m_info->config_timestamp_usec = tv.tv_usec;
 
   Unlock();
+
+  return(0);
 }
 
 void CStageDevice::Lock( void )

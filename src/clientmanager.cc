@@ -27,11 +27,14 @@
  */
 
 #include "clientmanager.h"
+#include "device.h"
+
 #include <errno.h>
 #include <string.h>  // for memcpy(3)
 #include <stdlib.h>  // for exit(3)
 #include <signal.h>  // for sigblock(2)
 #include <unistd.h>  // for usleep(2)
+#include <netinet/in.h>  // for byte-swappers
 
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
@@ -426,11 +429,85 @@ ClientWriterThread(void* arg)
         continue;
       // lock access to the client's internal state
       pthread_mutex_lock(&(cr->clients[i]->access));
+      
+      // if we're waiting for an authorization on this client, then skip it
       if(cr->clients[i]->auth_pending)
       {
         pthread_mutex_unlock(&(cr->clients[i]->access));
         continue;
       }
+
+      // look for pending replies intended for this client.  we only need to 
+      // look in the devices to which this client is subscribed, thus we
+      // iterate through the client's own subscription list (this structure
+      // is already locked above by the 'access' mutex).
+      for(CDeviceSubscription* thisub = cr->clients[i]->requested;
+          thisub;
+          thisub = thisub->next)
+      {
+        unsigned short type;
+        int replysize;
+        struct timeval ts;
+
+        //printf("client %d: looking at sub %d:%d\n",
+               //i, thisub->code, thisub->index);
+
+        // is this a valid device
+        if(thisub->devicep)
+        {
+          // does this device have a reply ready?
+          if((replysize = thisub->devicep->GetReply(cr->clients[i], &type, &ts,
+                         cr->clients[i]->replybuffer+sizeof(player_msghdr_t), 
+                         PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))) >= 0)
+          {
+            //printf("found reply: %d bytes\n", replysize);
+            
+            // build up and send the reply
+            player_msghdr_t reply_hdr;
+
+            reply_hdr.stx = htons(PLAYER_STXX);
+            reply_hdr.type = htons(type);
+            reply_hdr.device = htons(thisub->code);
+            reply_hdr.device_index = htons(thisub->index);
+            reply_hdr.reserved = (uint32_t)0;
+            reply_hdr.size = htonl(replysize);
+
+            if(GlobalTime->GetTime(&curr) == -1)
+              fputs("ClientWriterThread(): GetTime() failed!!!!\n", stderr);
+            reply_hdr.time_sec = htonl(curr.tv_sec);
+            reply_hdr.time_usec = htonl(curr.tv_usec);
+            reply_hdr.timestamp_sec = htonl(ts.tv_sec);
+            reply_hdr.timestamp_usec = htonl(ts.tv_usec);
+
+            memcpy(cr->clients[i]->replybuffer,&reply_hdr,
+                   sizeof(player_msghdr_t));
+
+            pthread_mutex_lock(&(cr->clients[i]->socketwrite));
+            if(write(cr->clients[i]->socket, cr->clients[i]->replybuffer, 
+                     replysize+sizeof(player_msghdr_t)) < 0) 
+            {
+              if(errno != EAGAIN)
+              {
+                perror("ClientWriterThread: write()");
+                pthread_mutex_unlock(&(cr->clients[i]->socketwrite));
+
+                // dump this client
+                pthread_mutex_unlock(&(cr->wthread_client_mutex));
+                cr->RemoveClient(i,false);
+                pthread_mutex_lock(&(cr->wthread_client_mutex));
+
+                // go to the next client
+                break;
+              }
+            }
+            pthread_mutex_unlock(&(cr->clients[i]->socketwrite));
+          }
+        }
+      }
+      
+      // maybe it's just been deleted as a result of the config reply?
+      if(!cr->clients[i])
+        continue;
 
       // is it time to write?
       if((cr->clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 

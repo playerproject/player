@@ -31,6 +31,8 @@
 #include <stdlib.h> // for exit(3)
 #include <string.h> // for bzero(3)
 
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
     
 // basic constructor; makes a PlayerQueue that will dynamically allocate
 // memory for the queue
@@ -54,7 +56,8 @@ PlayerQueue::PlayerQueue(unsigned char* tmpqueue, int tmpqueuelen)
 // push a new element on the queue.  returns the index of the new
 // element in the queue, or -1 if the queue is full
 int 
-PlayerQueue::Push(CClientData* client, unsigned char* data, int size)
+PlayerQueue::Push(CClientData* client, unsigned short type, struct timeval* ts,
+                  unsigned char* data, int size)
 {
   // search for an empty spot, from front to back
   for(int i=0;i<len;i++)
@@ -72,6 +75,13 @@ PlayerQueue::Push(CClientData* client, unsigned char* data, int size)
         queue[i].size = size;
 
       memcpy(queue[i].data,data,queue[i].size);
+      queue[i].type = type;
+
+      if(ts)
+        queue[i].timestamp = *ts;
+      else
+        GlobalTime->GetTime(&(queue[i].timestamp));
+
       queue[i].valid = 1;
       return(i);
     }
@@ -80,9 +90,10 @@ PlayerQueue::Push(CClientData* client, unsigned char* data, int size)
 }
 
 // another form of Push, this one doesn't set the client pointer
-int PlayerQueue::Push(unsigned char* data, int size)
+int 
+PlayerQueue::Push(unsigned char* data, int size)
 {
-  return(Push(NULL,data,size));
+  return(Push(NULL,0,NULL,data,size));
 }
 
 // pop an element off the queue. returns the size of the element,
@@ -130,13 +141,15 @@ PlayerQueue::Pop(CClientData** client, unsigned char* data, int size)
 }
     
 // another form of Pop, this one doesn't set the client pointer
-int PlayerQueue::Pop(unsigned char* data, int size)
+int 
+PlayerQueue::Pop(unsigned char* data, int size)
 {
   return(Pop(NULL,data,size));
 }
     
 // clear the queue; returns 0 on success; -1 on failure
-int PlayerQueue::Flush()
+int 
+PlayerQueue::Flush()
 {
   unsigned char dummybuf[PLAYER_MAX_REQREP_SIZE];
   int dummysize = PLAYER_MAX_REQREP_SIZE;
@@ -146,8 +159,66 @@ int PlayerQueue::Flush()
 }
 
 // is the queue empty?
-bool PlayerQueue::Empty()
+bool 
+PlayerQueue::Empty()
 {
   return(!(queue[0].valid));
+}
+
+// a slightly different kind of Pop, this one searches the queue for an
+// element in which the client pointer matches the one provided.  Pops
+// the first such element and returns its size, or -1 if no such element
+// is found
+int 
+PlayerQueue::Match(CClientData* client, unsigned short* type,
+                   struct timeval* ts, unsigned char* data, int size)
+{
+  int tmpsize;
+
+  // look for the one we want
+  for(int i=0;i<len;i++)
+  {
+    // assume that they're packed to the front, so we can bail on the
+    // first invalid entry
+    if(!queue[i].valid)
+      return(-1);
+
+    if(queue[i].client == client)
+    {
+      if(size < queue[i].size)
+      {
+        fprintf(stderr, "PlayerQueue::Match(): WARNING: truncating %d byte "
+                "request/reply to %d bytes\n", queue[i].size, size);
+        tmpsize = size;
+      }
+      else
+        tmpsize = queue[i].size;
+
+      memcpy(data, queue[i].data, tmpsize);
+      *type = queue[i].type;
+      *ts = queue[i].timestamp;
+
+      queue[i].valid = 0;
+    
+      // now, move the others up in the queue
+      while(i<(len-1))
+      {
+        if(!queue[i].valid && queue[i+1].valid)
+        {
+          queue[i].client = queue[i+1].client;
+          queue[i].size = queue[i+1].size;
+          memcpy(queue[i].data,queue[i+1].data,queue[i].size);
+          queue[i].valid = 1;
+          queue[i+1].valid = 0;
+        }
+        i++;
+      }
+
+      return(tmpsize);
+    }
+  }
+
+  // didn't find one
+  return(-1);
 }
 

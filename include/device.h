@@ -114,11 +114,13 @@ class CDevice
     virtual size_t GetCommand( unsigned char *, size_t );
     virtual void PutCommand( unsigned char * , size_t );
     
-    virtual size_t GetConfig( unsigned char *, size_t);
-    virtual void PutConfig( unsigned char * , size_t);
+    virtual size_t GetConfig(CClientData** client, unsigned char *, size_t);
+    virtual int PutConfig(CClientData* client, unsigned char * , size_t);
 
-    virtual size_t GetReply( unsigned char *, size_t);
-    virtual void PutReply(unsigned char * , size_t);
+    virtual int GetReply(CClientData* client, unsigned short* type,
+                         struct timeval* ts, unsigned char *, size_t);
+    virtual int PutReply(CClientData* client, unsigned short type,
+                         struct timeval* ts, unsigned char * , size_t);
 
 
     // to record the time at which the device gathered the data

@@ -634,7 +634,7 @@ size_t CP2OSDevice::GetConfig( unsigned char* dest, size_t maxsize)
 
   return(size);
 }
-void CP2OSDevice::PutConfig( unsigned char* src, size_t size)
+int CP2OSDevice::PutConfig( unsigned char* src, size_t size)
 {
   Lock();
 
@@ -647,6 +647,7 @@ void CP2OSDevice::PutConfig( unsigned char* src, size_t size)
   }
 
   Unlock();
+  return(0);
 }
 
 void *RunPsosThread( void *p2osdevice ) 

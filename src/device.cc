@@ -94,24 +94,59 @@ void CDevice::SetupBuffers(unsigned char* data, size_t datasize,
   device_repqueue = new PlayerQueue(repqueue, repqueuelen);
 }
 
-size_t CDevice::GetReply(unsigned char *, size_t)
+int CDevice::GetReply(CClientData* client, unsigned short* type,
+                      struct timeval* ts, unsigned char* data, size_t len)
 {
-  puts("WARNING: GetReply() not implemented");
+  int size;
+
+  Lock();
+  size = device_repqueue->Match(client, type, ts, data, len);
+  Unlock();
+
+  return(size);
+}
+
+int CDevice::PutReply(CClientData* client, unsigned short type,
+                      struct timeval* ts, unsigned char* data, size_t len)
+{
+  int retval;
+
+  Lock();
+  retval = device_repqueue->Push(client, type, ts, data, len);
+  Unlock();
+
   return(0);
 }
 
-void CDevice::PutReply(unsigned char * , size_t)
+size_t CDevice::GetConfig(CClientData** client, unsigned char * data,size_t len)
 {
-  puts("WARNING: GetReply() not implemented");
+  int size;
+
+  Lock();
+
+  if((size = device_reqqueue->Pop(client, data, len)) < 0)
+  {
+    Unlock();
+    return(0);
+  }
+
+  Unlock();
+  return(size);
 }
 
-size_t CDevice::GetConfig(unsigned char * data,size_t len)
+int CDevice::PutConfig(CClientData* client, unsigned char* data, size_t len)
 {
+  Lock();
+
+  if(device_reqqueue->Push(client, PLAYER_MSGTYPE_REQ, NULL, data, len) < 0)
+  {
+    // queue was full
+    Unlock();
+    return(-1);
+  }
+
+  Unlock();
   return(0);
-}
-
-void CDevice::PutConfig(unsigned char * data, size_t len)
-{
 }
 
 size_t CDevice::GetData(unsigned char* dest, size_t len,
