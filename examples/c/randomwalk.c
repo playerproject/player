@@ -104,9 +104,9 @@ int main(int argc, char** argv)
     exit(1);
 
   /* request read access on the sonars and write access to the wheels */
-  if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'w') == -1)
+  if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'w',NULL) == -1)
     exit(1);
-  if(player_request_device_access(&conn, PLAYER_SONAR_CODE, 0, 'r') == -1)
+  if(player_request_device_access(&conn, PLAYER_SONAR_CODE, 0, 'r',NULL) == -1)
     exit(1);
 
   /* maybe turn on the motors */
@@ -168,9 +168,9 @@ int main(int argc, char** argv)
   }
 
   /* it's not necessary, but we could close the devices like this: */
-  if(player_request_device_access(&conn, PLAYER_SONAR_CODE, 0, 'c'))
+  if(player_request_device_access(&conn, PLAYER_SONAR_CODE, 0, 'c',NULL))
     exit(1);
-  if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'c'))
+  if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'c',NULL))
     exit(1);
 
   return(0);

@@ -156,7 +156,7 @@ int PlayerClient::Disconnect()
 int PlayerClient::RequestDeviceAccess(uint16_t device, uint16_t index, 
                                        uint8_t access)
 {
-  if(player_request_device_access(&conn, device, index, access) == -1)
+  if(player_request_device_access(&conn, device, index, access,NULL) == -1)
     return(-1);
 
   return(devicedatatable->UpdateAccess(device, index, access));

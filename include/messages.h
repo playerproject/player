@@ -160,6 +160,8 @@ typedef struct
 #define POSITION_COMMAND_BUFFER_SIZE sizeof(player_position_cmd_t)
 #define POSITION_CONFIG_BUFFER_SIZE 32
 
+/* TODO: need to make structured buffers for config requests */
+
 /* the various configuration commands 
  * NOTE: these must not be the same as any other P2OS device! */
 #define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)1)
@@ -416,13 +418,14 @@ typedef struct
     int16_t orient;
 } __attribute__ ((packed)) player_laserbeacon_item_t;
 
+#define PLAYER_MAX_LASERBEACONS 32
 /*
  * the laser beacon data packet (all beacons)
  */
 typedef struct 
 {
     uint16_t count;
-    player_laserbeacon_item_t beacon[32]; 
+    player_laserbeacon_item_t beacon[PLAYER_MAX_LASERBEACONS]; 
 } __attribute__ ((packed)) player_laserbeacon_data_t;
 
 /*
