@@ -19,10 +19,9 @@ BINARIES = rsn \
 	   laserobstacleavoid \
            example_from_manual \
 	   say \
-	   truth \
 	   grip \
 	   forage \
-	   multilogger stress autolayout 
+	   multilogger stress
 	   #multirandom multiphero
 
 all: $(BINARIES)
@@ -50,7 +49,6 @@ install: $(BINARIES)
 	$(INSTALL) -m 644 laserobstacleavoid.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 example_from_manual.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 say.cc $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 truth.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 grip.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 forage.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 multilogger.cc $(INSTALL_EXAMPLES)/c++
@@ -64,7 +62,6 @@ install: $(BINARIES)
 	$(INSTALL) -m 755 laserobstacleavoid $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 example_from_manual $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 say $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 755 truth $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 grip $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 forage $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 multilogger $(INSTALL_EXAMPLES)/c++
@@ -81,7 +78,6 @@ uninstall:
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/laserobstacleavoid.cc
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/example_from_manual.cc
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/say.cc
-	$(RM) -f  $(INSTALL_EXAMPLES)/c++/truth.cc 
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/grip.cc
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/forage.cc
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/multilogger.cc
@@ -95,7 +91,6 @@ uninstall:
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/laserobstacleavoid
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/example_from_manual
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/say
-	$(RM) -f  $(INSTALL_EXAMPLES)/c++/truth
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/grip
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/forage
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/multilogger

@@ -96,7 +96,7 @@ class CLaserBeaconDevice : public CDevice
 #endif
 
   // Pointer to laser to get data from
-  private: uint16_t index;
+  private: int index;
   private: CDevice *laser;
 
   // Defaults

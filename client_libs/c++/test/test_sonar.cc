@@ -40,9 +40,9 @@ test_sonar(PlayerClient* client, int index)
   for(int i=0;i<PLAYER_NUM_SONAR_SAMPLES;i++)
   {
     printf("Sonar[%d]: (%d,%d,%d)\n", i, 
-           sp.sonar_pose.pose[i][0],
-           sp.sonar_pose.pose[i][1],
-           sp.sonar_pose.pose[i][2]);
+           sp.sonar_pose.poses[i][0],
+           sp.sonar_pose.poses[i][1],
+           sp.sonar_pose.poses[i][2]);
   }
 
   for(int t = 0; t < 3; t++)

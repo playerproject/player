@@ -110,7 +110,7 @@ class CBpsDevice : public CDevice
   private: double err;
 
   // Our index
-  private: uint16_t index;
+  private: int index;
     
   // Pointer to beacon detector to get data from
   private: CDevice *position;   

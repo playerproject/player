@@ -94,8 +94,9 @@ void SonarProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_sonar_data_t),hdr.size);
   }
 
+  range_count = ntohs(((player_sonar_data_t*)buffer)->range_count);
   bzero(ranges,sizeof(ranges));
-  for(size_t i=0;i<PLAYER_NUM_SONAR_SAMPLES;i++)
+  for(size_t i=0;i<range_count;i++)
   {
     ranges[i] = ntohs(((player_sonar_data_t*)buffer)->ranges[i]);
   }
@@ -105,7 +106,7 @@ void SonarProxy::FillData(player_msghdr_t hdr, const char* buffer)
 void SonarProxy::Print()
 {
   printf("#Sonar(%d:%d) - %c\n", device, index, access);
-  for(size_t i=0;i<PLAYER_NUM_SONAR_SAMPLES;i++)
+  for(size_t i=0;i<range_count;i++)
     printf("%u ", ranges[i]);
   puts("");
 }

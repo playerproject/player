@@ -69,7 +69,9 @@ extern int global_playerport; // used to get at devices
 CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv) :
   CDevice(0,0,0,1)
 {
-  this->index = 0;
+  // if index is not overridden by an argument here, then we'll use the
+  // device's own index, which we can get in Setup() below.
+  this->index = -1;
   this->default_bitcount = 8;
   this->default_bitsize = 0.05;
   
@@ -118,15 +120,27 @@ int CLaserBeaconDevice::Setup()
 {
   // get the pointer to the laser
   player_device_id_t id;
-  id.port = global_playerport;
+  id.port = device_id.port;
   id.code = PLAYER_LASER_CODE;
-  id.index = index;
-  this->laser = deviceTable->GetDevice(id);
-  ASSERT(this->laser != NULL);
+  // if index was not overridden by an argument in the constructor, then we
+  // use the device's own index
+  if(this->index >= 0)
+    id.index = index;
+  else
+    id.index = device_id.index;
+  printf("CLaserBeaconDevice:Setup(%d:%d:%d)\n", id.code,id.index,id.port);
+  if(!(this->laser = deviceTable->GetDevice(id)))
+  {
+    fputs("CLaserBeaconDevice:Setup(): couldn't find laser device\n",stderr);
+    return(-1);
+  }
     
   // Subscribe to the laser device, but fail if it fails
   if(this->laser->Subscribe(this) != 0)
+  {
+    fputs("CLaserBeaconDevice:Setup(): couldn't setup laser device\n",stderr);
     return(-1);
+  }
 
   // Maximum variance in the flatness of the beacon
   this->max_depth = 0.05;

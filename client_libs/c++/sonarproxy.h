@@ -44,6 +44,10 @@ class SonarProxy : public ClientProxy
 {
 
   public:
+    /** The number of sonar readings received.
+     */
+    unsigned short range_count;
+
     /** The latest sonar scan data.
         Range is measured in mm.
      */
