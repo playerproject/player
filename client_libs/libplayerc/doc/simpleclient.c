@@ -30,7 +30,7 @@ int main(int argc, const char **argv)
   playerc_position_enable(position, 1);
 
   // Start the robot turning slowing
-  playerc_position_set_speed(position, 0, 0, 0.1);
+  playerc_position_set_cmd_vel(position, 0, 0, 0.1, 1);
 
   for (i = 0; i < 200; i++)
   {
