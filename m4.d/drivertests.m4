@@ -166,7 +166,9 @@ PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[no],[],[],[])
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
-PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[no],[opencv/cv.h],[],["-lopencv"])
+PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[no],
+                  [],[],[],[OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])
 
@@ -233,7 +235,7 @@ PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
 PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([stage],[drivers/stage],[no],[],[],[])
+PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([stageclient],[drivers/stageclient],[yes],
                   [],[],[],[STAGECLIENT],[stage >= 1.5])
@@ -259,7 +261,7 @@ AC_LANG_RESTORE
 
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
 PLAYER_ADD_DRIVER([service_adv_mdns],[drivers/service_adv],[yes],
-                  [],[],[],[HOWL],[howl >= 0.9.5])
+                  [],[],[],[HOWL],[howl = 0.9.5])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so

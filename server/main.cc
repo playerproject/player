@@ -441,7 +441,7 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
       //PSDevice* devicep = 0;
 
       // prime the configFile parser
-      int globalparent = configFile.AddEntity(-1,"");
+      //int globalparent = configFile.AddEntity(-1,"");
       
 
       // get the player type and index from the header
@@ -469,17 +469,24 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
           // Create a StageDevice with this IO base address and filedes
           dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	  
+          /*
           if(deviceTable->AddDevice(deviceIO->player_id, 
                                     (char*)(deviceIO->drivername),
                                     (char*)(deviceIO->robotname),
                                     PLAYER_ALL_MODE, dev) < 0)
-            exit(-1);
+                                    */
+          if(deviceTable->AddDevice(deviceIO->player_id, 
+                                    PLAYER_ALL_MODE, dev) < 0)
+          {
+            //exit(-1);
+          }
 	  
           // add this port to our listening list
           StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
         }
         break;
 
+#if 0
         case PLAYER_LOCALIZE_CODE:
         {
           PLAYER_WARN("Localization drivers cannot be loaded from a .world "
@@ -584,6 +591,7 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
             StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
             break;
         }
+#endif
 
         // devices not implemented
         case PLAYER_AUDIO_CODE:   
@@ -664,6 +672,9 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
   }
   else
   {
+    puts("Sorry, auto-assiging port disabled for now.  Come again.");
+    exit(-1);
+#if 0
     // we're supposed to auto-assign ports.  first, we must get the
     // baseport.  then we'll get whichever other ports we can.
     int curr_ufd = 0;
@@ -713,6 +724,7 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
     }
 
     puts("]");
+#endif
   }
     
 #ifdef VERBOSE

@@ -53,6 +53,7 @@
 //
 #include <playercommon.h>
 
+#include <device.h>
 #include <driver.h>
 #include <stage1p3.h>
 
@@ -83,13 +84,15 @@ class StageDevice : public Driver
     
   // Read data from the device
   //
-  public: virtual size_t GetData(void* client,unsigned char* dest, size_t len,
-                                 uint32_t* timestamp_sec,
-                                 uint32_t* timestamp_usec);
+  public: virtual size_t GetData(player_device_id_t id,
+                                 void* dest, size_t len,
+                                 struct timeval* timestamp);
 
   // Write a command to the device
   //
-  public: virtual void PutCommand(void* client, unsigned char * , size_t maxsize);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Write configuration to the device
   //
@@ -105,6 +108,11 @@ class StageDevice : public Driver
   // these two methods are overrides of the Driver definitions.
   private: virtual void Lock();
   private: virtual void Unlock();
+
+  // Pointer to my Device, which has pointers to data and command
+  // buffers
+  private: Device* device;
+
 
   // Pointer to shared info buffers
   //

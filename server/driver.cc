@@ -127,6 +127,32 @@ Driver::AddInterface(player_device_id_t id, unsigned char access,
   return 0;
 }
 
+// Add an interface, with pre-allocated memory
+int 
+Driver::AddInterface(player_device_id_t id, unsigned char access,
+                     void* data, size_t datasize, 
+                     void* command, size_t commandsize, 
+                     void* reqqueue, int reqqueuelen, 
+                     void* repqueue, int repqueuelen)
+{
+  Device *device;
+
+  // Add ourself to the device table
+  if (deviceTable->AddDevice(id, access, this) != 0)
+  {
+    PLAYER_ERROR("failed to add interface");
+    return -1;
+  }
+
+  // Get the device and initialize it
+  device = deviceTable->GetDevice(id);
+  assert(device != NULL);
+  device->SetupBuffers(data, datasize, command, commandsize, 
+                       reqqueue, reqqueuelen, repqueue, repqueuelen);
+
+  return 0;
+}
+
 
 // New-style PutData; [id] specifies the interface to be written
 void 

@@ -73,6 +73,11 @@ class PlayerQueue
     int Push(player_device_id_t* device, void* client, unsigned short type, 
              struct timeval* ts, void* data, int size);
 
+    int Push(player_device_id_t* device, void* client, unsigned short type, 
+             void* data, int size)
+    { return Push(device, client, type, NULL, data, size); }
+
+
     // another form of Push, this one doesn't set the client pointer
     int Push(void* data, int size);
 
@@ -80,6 +85,10 @@ class PlayerQueue
     // or -1 if the queue is empty
     int Pop(player_device_id_t* device, void** client, 
             struct timeval* ts, void* data, int size);
+
+    int Pop(player_device_id_t* device, void** client, 
+            void* data, int size)
+    { return Pop(device, client, NULL, data, size); }
     
     // another form of Pop, this one doesn't set the client pointer
     int Pop(void* data, int size);

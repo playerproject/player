@@ -112,3 +112,17 @@ void Device::SetupBuffers(size_t datasize, size_t commandsize,
 
   return;
 }
+
+void Device::SetupBuffers(void* data, size_t datasize, 
+                          void* command, size_t commandsize, 
+                          void* reqqueue, int reqqueuelen, 
+                          void* repqueue, int repqueuelen)
+{
+  this->data = (unsigned char*)data;
+  this->data_size = datasize;
+  this->command = (unsigned char*)command;
+  this->command_size = commandsize;
+  this->reqqueue = new PlayerQueue(reqqueue, reqqueuelen);
+  this->repqueue = new PlayerQueue(repqueue, repqueuelen);
+}
+

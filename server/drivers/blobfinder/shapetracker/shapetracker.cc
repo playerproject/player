@@ -104,6 +104,7 @@ class ShapeTracker : public Driver
 
   // Camera stuff
   private: int cameraIndex;
+  private: player_device_id_t camera_id;
   private: Driver *camera;
   private: double cameraTime;
   private: player_camera_data_t cameraData;
@@ -140,13 +141,6 @@ class ShapeTracker : public Driver
 // Initialization function
 Driver* ShapeTracker_Init( ConfigFile* cf, int section)
 {
-  if (strcmp( PLAYER_BLOBFINDER_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"shapetracker\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-
   return ((Driver*) (new ShapeTracker( cf, section)));
 }
 
@@ -154,14 +148,15 @@ Driver* ShapeTracker_Init( ConfigFile* cf, int section)
 // a driver registration function
 void ShapeTracker_Register(DriverTable* table)
 {
-  table->AddDriver("shapetracker", PLAYER_READ_MODE, ShapeTracker_Init);
+  table->AddDriver("shapetracker", ShapeTracker_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 ShapeTracker::ShapeTracker( ConfigFile* cf, int section)
-    : Driver(cf, section, sizeof(player_blobfinder_data_t), 0, 10, 10)
+    : Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE,
+             sizeof(player_blobfinder_data_t), 0, 10, 10)
 {
   this->cameraIndex = cf->ReadInt(section, "camera", 0);
   this->camera = NULL;
@@ -183,21 +178,18 @@ ShapeTracker::ShapeTracker( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int ShapeTracker::Setup()
 {
-  player_device_id_t id;
-
-
   // Subscribe to the camera.
-  id.code = PLAYER_CAMERA_CODE;
-  id.index = this->cameraIndex;
-  id.port = this->device_id.port;
-  this->camera = deviceTable->GetDriver(id);
+  this->camera_id.code = PLAYER_CAMERA_CODE;
+  this->camera_id.index = this->cameraIndex;
+  this->camera_id.port = this->device_id.port;
+  this->camera = deviceTable->GetDriver(this->camera_id);
 
   if (!this->camera)
   {
     PLAYER_ERROR("unable to locate suitable camera device");
     return(-1);
   }
-  if (this->camera->Subscribe(this) != 0)
+  if (this->camera->Subscribe(this->camera_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to camera device");
     return(-1);
@@ -220,7 +212,7 @@ int ShapeTracker::Shutdown()
   StopThread();
   
   // Unsubscribe from devices.
-  this->camera->Unsubscribe(this);
+  this->camera->Unsubscribe(this->camera_id);
 
   return 0;
 }
@@ -263,12 +255,12 @@ int ShapeTracker::HandleRequests()
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
   int len;
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -282,13 +274,13 @@ int ShapeTracker::HandleRequests()
 int ShapeTracker::UpdateCamera()
 {
   size_t size;
-  uint32_t timesec, timeusec;
+  struct timeval ts;
   double time;
 
   // Get the camera data.
-  size = this->camera->GetData(this, (unsigned char*) &this->cameraData,
-                               sizeof(this->cameraData), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  size = this->camera->GetData(this->camera_id, (void*)&this->cameraData,
+                               sizeof(this->cameraData), &ts);
+  time = (double) ts.tv_sec + ((double) ts.tv_usec) * 1e-6;
 
   // Dont do anything if this is old data.
   if (fabs(time - this->cameraTime) < 0.001)
@@ -621,7 +613,7 @@ void ShapeTracker::WriteData()
 {
   unsigned int i;
   int shapeCount, channelCount, channel;
-  uint32_t timesec, timeusec;
+  struct timeval ts;
   Shape *shape;
   player_blobfinder_data_t data;
 
@@ -670,11 +662,11 @@ void ShapeTracker::WriteData()
   }
   
   // Compute the data timestamp (from camera).
-  timesec = (uint32_t) this->cameraTime;
-  timeusec = (uint32_t) (fmod(this->cameraTime, 1.0) * 1e6);
+  ts.tv_sec = (uint32_t) this->cameraTime;
+  ts.tv_usec = (uint32_t) (fmod(this->cameraTime, 1.0) * 1e6);
  
   // Copy data to server.
-  PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
+  PutData((void*) &data, sizeof(data), &ts);
   
   return;
 }

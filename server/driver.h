@@ -122,6 +122,17 @@ class Driver
     int AddInterface(player_device_id_t id, unsigned char access,
                      size_t datasize, size_t commandsize,
                      size_t reqqueuelen, size_t repqueuelen);
+    
+    /** Add a new-style interface, with pre-allocated memory.
+        Specify the interface code,
+        allowed access mode and buffer/queue sizes.  Returns 0 on
+        success
+        */
+    int AddInterface(player_device_id_t id, unsigned char access,
+                     void* data, size_t datasize, 
+                     void* command, size_t commandsize, 
+                     void* reqqueue, int reqqueuelen, 
+                     void* repqueue, int repqueuelen);
 
     /// Set/reset error code
     void SetError(int code) {this->error = code;}

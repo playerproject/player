@@ -51,6 +51,12 @@ class Device
   void SetupBuffers(size_t datasize, size_t commandsize,
                     size_t reqqueuelen, size_t repqueuelen);
 
+  // Initialize the buffers for this interface, with memory pre-allocated
+  void SetupBuffers(void* data, size_t datasize, 
+                    void* command, size_t commandsize, 
+                    void* reqqueue, int reqqueuelen, 
+                    void* repqueue, int repqueuelen);
+
   // Index in the device table
   int index;              
 
