@@ -1,7 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000 Brian Gerkey and others
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,7 +27,7 @@
 // Theory of operation:
 //  TODO
 //
-// Requires: position (odometry), laser, sonar
+// Requires: position (odometry)
 // Provides: localization
 //
 ///////////////////////////////////////////////////////////////////////////
