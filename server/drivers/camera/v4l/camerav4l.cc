@@ -330,7 +330,6 @@ void CameraV4L::WriteData()
   
   // Copy data to server.
   size = sizeof(this->data) - sizeof(this->data.image) + this->frame->size;
-  size = 921609;
   PutData((void*) &this->data, size, this->tsec, this->tusec);
 
   return;
