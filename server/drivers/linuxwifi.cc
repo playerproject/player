@@ -25,7 +25,7 @@
  *
  * $Id$
  *
- * WiFi driver.  Reads the wireless info found in /proc/net/wireless.
+ * LinuxWiFi driver.  Reads the wireless info found in /proc/net/wireless.
  * sort of ad hoc right now, as I've only tested on our own orinoco
  * cards.  
  *
@@ -48,10 +48,10 @@ extern PlayerTime *GlobalTime;
 #define WIFI_UPDATE_PERIOD 2000
 #define WIFI_INFO_FILE "/proc/net/wireless"
 
-class WiFi : public CDevice
+class LinuxWiFi : public CDevice
 {
 public:
-  WiFi(char *interface, ConfigFile *cf, int section) :
+  LinuxWiFi(char *interface, ConfigFile *cf, int section) :
     CDevice(0, 0, 0, 1) {}
 
   //  virtual void Main();
@@ -69,22 +69,22 @@ protected:
 
 };
 
-CDevice * WiFi_Init(char *interface, ConfigFile *cf, int section);
-void WiFi_Register(DriverTable *table);
+CDevice * LinuxWiFi_Init(char *interface, ConfigFile *cf, int section);
+void LinuxWiFi_Register(DriverTable *table);
 
 /* check for supported interfaces.
  *
- * returns: pointer to new WiFi driver if supported, NULL else
+ * returns: pointer to new LinuxWiFi driver if supported, NULL else
  */
 CDevice *
-WiFi_Init(char *interface, ConfigFile *cf, int section)
+LinuxWiFi_Init(char *interface, ConfigFile *cf, int section)
 { 
   if(strcmp(interface, PLAYER_WIFI_STRING)) {
-    PLAYER_ERROR1("driver \"wifi\" does not support interface \"%s\"\n",
+    PLAYER_ERROR1("driver \"linuxwifi\" does not support interface \"%s\"\n",
 		  interface);
     return NULL;
   } else {
-    return ((CDevice*)(new WiFi(interface, cf, section)));
+    return ((CDevice*)(new LinuxWiFi(interface, cf, section)));
   }
 }
 
@@ -93,16 +93,16 @@ WiFi_Init(char *interface, ConfigFile *cf, int section)
  * returns: 
  */
 void
-WiFi_Register(DriverTable *table)
+LinuxWiFi_Register(DriverTable *table)
 {
-  table->AddDriver("wifi", PLAYER_READ_MODE, WiFi_Init);
+  table->AddDriver("linuxwifi", PLAYER_READ_MODE, LinuxWiFi_Init);
 }
 
 int
-WiFi::Setup()
+LinuxWiFi::Setup()
 {
   if ((this->info_fp = fopen(WIFI_INFO_FILE, "r")) == NULL) {
-    fprintf(stderr, "WiFi: couldn't open info file \"%s\"\n",
+    fprintf(stderr, "LinuxWiFi: couldn't open info file \"%s\"\n",
 	    WIFI_INFO_FILE);
     return -1;
   } 
@@ -116,22 +116,23 @@ WiFi::Setup()
     }
     
     if (fgets(buf, sizeof(buf),this->info_fp) == NULL) {
-      fprintf(stderr, "WiFi: couldn't read line from info file\n");
+      fprintf(stderr, "LinuxWiFi: couldn't read line from info file\n");
       fclose(this->info_fp);
       return -1;
     }
   }
   
   // now we are at line of interest
-  int eth, status, link, level, noise;
-  sscanf(buf, "  eth%d: %d %d %d %d", &eth, &status,
+  int eth, status; 
+  double link, level, noise;
+  sscanf(buf, "  eth%d: %d %lf %lf %lf", &eth, &status,
 	 &link, &level, &noise);
   
   return 0;
 }
 
 int
-WiFi::Shutdown()
+LinuxWiFi::Shutdown()
 {
   fclose(this->info_fp);
 
@@ -143,23 +144,26 @@ WiFi::Shutdown()
  * returns: 
  */
 size_t
-WiFi::GetData(void* client,unsigned char *dest, size_t maxsize, 
+LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize, 
               uint32_t *timestamp_sec,
 	      uint32_t *timestamp_usec)
 {
   player_wifi_data_t data;
-  int eth, status, link, level, noise;
+  int eth, status;
+  double link, level, noise;
   unsigned short wlink, wlevel, wnoise;
 
   struct timeval curr;
   
   // get the wifi info
   if (fsetpos(this->info_fp, &this->start_pos)) {
-    fprintf(stderr, "WiFi: fsetpos returned error\n");
+    fprintf(stderr, "LinuxWiFi: fsetpos returned error\n");
   }
   
-  fscanf(this->info_fp, "  eth%d: %d %d %d %d", &eth, &status,
+  fscanf(this->info_fp, "  eth%d: %d %lf %lf %lf", &eth, &status,
 	 &link, &level, &noise);
+
+  printf("LinuxWiFi: %lf %lf %lf\n", link,level,noise);
   
   wlink = (unsigned short)link;
   wlevel = (unsigned short) level;

@@ -81,7 +81,7 @@ void P2OSSonar_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_WIFI
-void WiFi_Register(DriverTable *table);
+void LinuxWiFi_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_REB
@@ -127,7 +127,7 @@ player_interface_t interfaces[] = {
   {PLAYER_DIO_CODE, PLAYER_DIO_STRING, "p2os_dio"},
   {PLAYER_POSITION_CODE, PLAYER_POSITION_STRING, "p2os_position"},
   {PLAYER_SONAR_CODE, PLAYER_SONAR_STRING, "p2os_sonar"},
-  {PLAYER_WIFI_CODE, PLAYER_WIFI_STRING, "wifi"},
+  {PLAYER_WIFI_CODE, PLAYER_WIFI_STRING, "linuxwifi"},
   {PLAYER_IR_CODE, PLAYER_IR_STRING, "reb_ir"},
   {0,NULL,NULL}
 };
@@ -213,7 +213,7 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_WIFI
-  WiFi_Register(driverTable);
+  LinuxWiFi_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_REB
