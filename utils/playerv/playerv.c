@@ -34,31 +34,6 @@
 #include "playerv.h"
 
 
-// Callback prototypes
-typedef void (*fndestroy_t) (void*);
-typedef void (*fnupdate_t) (void*);
-
-
-// Somewhere to store which devices are available.
-typedef struct
-{
-  // Device identifier.
-  int code, index;
-  
-  // Handle to the GUI proxy for this device.
-  void *proxy;
-
-  // Callbacks
-  fndestroy_t fndestroy;
-  fnupdate_t fnupdate;
-
-  // Non-zero if should be subscribed.
-  int subscribe;
-  
-} device_t;
-
-
-
 // Set flag to 1 to force program to quit
 static int quit = 0;
 
@@ -78,51 +53,6 @@ void print_usage()
   printf("                 [--<device>:<index>] [--<device>:<index>] ... \n");
   printf("Example: playerv -p 6665 --position:0 --srf:0\n");
   printf("\n");
-}
-
-
-// Create the appropriate GUI proxy for a given set of device info.
-void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_client_t *client)
-{
-  switch (device->code)
-  {
-    case PLAYER_BLOBFINDER_CODE:
-      device->proxy = blobfinder_create(mainwnd, opt, client, device->index, device->subscribe);
-      device->fndestroy = (fndestroy_t) blobfinder_destroy;
-      device->fnupdate = (fnupdate_t) blobfinder_update;
-      break;
-    case PLAYER_FIDUCIAL_CODE:
-      device->proxy = fiducial_create(mainwnd, opt, client, device->index, device->subscribe);
-      device->fndestroy = (fndestroy_t) fiducial_destroy;
-      device->fnupdate = (fnupdate_t) fiducial_update;
-      break;
-    case PLAYER_FRF_CODE:
-      device->proxy = frf_create(mainwnd, opt, client, device->index, device->subscribe);
-      device->fndestroy = (fndestroy_t) frf_destroy;
-      device->fnupdate = (fnupdate_t) frf_update;
-      break;
-    case PLAYER_POSITION_CODE:
-      device->proxy = position_create(mainwnd, opt, client, device->index, device->subscribe);
-      device->fndestroy = (fndestroy_t) position_destroy;
-      device->fnupdate = (fnupdate_t) position_update;
-      break;
-    case PLAYER_PTZ_CODE:
-      device->proxy = ptz_create(mainwnd, opt, client, device->index, device->subscribe);
-      device->fndestroy = (fndestroy_t) ptz_destroy;
-      device->fnupdate = (fnupdate_t) ptz_update;
-      break;
-    case PLAYER_SRF_CODE:
-      device->proxy = srf_create(mainwnd, opt, client, device->index, device->subscribe);
-      device->fndestroy = (fndestroy_t) srf_destroy;
-      device->fnupdate = (fnupdate_t) srf_update;
-      break;
-    default:
-      device->proxy = NULL;
-      device->fndestroy = NULL;
-      device->fnupdate = NULL;
-      break;
-  }
-  return;
 }
 
 

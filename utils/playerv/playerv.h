@@ -36,6 +36,7 @@
 #include "opt.h"
 
 
+
 /***************************************************************************
  * Default colors
  ***************************************************************************/
@@ -91,6 +92,38 @@ void mainwnd_destroy(mainwnd_t *wnd);
 // Update the window
 // Returns 1 if the program should quit.
 int mainwnd_update(mainwnd_t *wnd);
+
+
+/***************************************************************************
+ * Device registry
+ ***************************************************************************/
+
+// Callback prototypes
+typedef void (*fndestroy_t) (void*);
+typedef void (*fnupdate_t) (void*);
+
+
+// Somewhere to store which devices are available.
+typedef struct
+{
+  // Device identifier.
+  int code, index;
+  
+  // Handle to the GUI proxy for this device.
+  void *proxy;
+
+  // Callbacks
+  fndestroy_t fndestroy;
+  fnupdate_t fnupdate;
+
+  // Non-zero if should be subscribed.
+  int subscribe;
+  
+} device_t;
+
+// Create the appropriate GUI proxy for a given set of device info.
+void create_proxy(device_t *device, opt_t *opt,
+                  mainwnd_t *mainwnd, playerc_client_t *client);
 
 
 /***************************************************************************
