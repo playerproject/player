@@ -64,13 +64,28 @@ void GripperProxy::FillData(player_msghdr_t hdr, const char* buffer)
 
   state = ((player_gripper_data_t*)buffer)->state;
   beams = ((player_gripper_data_t*)buffer)->beams;
+
+  outer_break_beam = (beams & 0x04) ? true : false;
+  inner_break_beam = (beams & 0x08) ? true : false;
+
+  paddles_open = (state & 0x01) ? true : false;
+  paddles_closed = (state & 0x02) ? true : false;
+  paddles_moving = (state & 0x04) ? true : false;
+  gripper_error = (state & 0x08) ? true : false;
+  lift_up = (state & 0x10) ? true : false;
+  lift_down = (state & 0x20) ? true : false;
+  lift_moving = (state & 0x40) ? true : false;
+  lift_error = (state & 0x80) ? true : false;
 }
 
 // interface that all proxies SHOULD provide
 void GripperProxy::Print()
 {
   printf("#Gripper(%d:%d) - %c\n", device, index, access);
-  puts("#state\tbeams");
-  printf("%d\t%d\n", state,beams);
+  puts("#paddles\tinner beams\touter beams");
+  printf("%s\t%s\t%s\n",
+         (paddles_open) ? "open" : "closed",
+         (inner_break_beam) ? "clear" : "broken",
+         (outer_break_beam) ? "clear" : "broken");
 }
 
