@@ -42,6 +42,10 @@ extern DriverTable* driverTable;
 extern PlayerTime* GlobalTime;
 
 /* prototype device-specific init funcs */
+#ifdef INCLUDE_GARMINNMEA
+void GarminNMEA_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_SEGWAYRMP
 void SegwayRMP_Register(DriverTable* table);
 //void RMPPower_Register(DriverTable *table);
@@ -211,6 +215,7 @@ player_interface_t interfaces[] = {
   {PLAYER_AUDIOMIXER_CODE, PLAYER_AUDIOMIXER_STRING, "mixer"},
   {PLAYER_POSITION3D_CODE, PLAYER_POSITION3D_STRING, "segwayrmp"},
   {PLAYER_TRUTH_CODE, PLAYER_TRUTH_STRING, "passthrough"},
+  {PLAYER_GPS_CODE, PLAYER_GPS_STRING, "garminnmea"},
   {0,NULL,NULL}
 };
 
@@ -241,9 +246,8 @@ lookup_interface(char* name, player_interface_t* interface)
 void
 register_devices()
 {
-#ifdef INCLUDE_SEGWAYRMP
-  SegwayRMP_Register(driverTable);
-  //RMPPower_Register(driverTable);
+#ifdef INCLUDE_GARMINNMEA
+  GarminNMEA_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKLMS200
