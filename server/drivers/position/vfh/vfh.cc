@@ -1351,7 +1351,7 @@ int VFH_Class::Set_Motion() {
   // This happens if all directions blocked, so just spin in place
   if (speed <= 0) {
     //printf("stop\n");
-    turnrate = 40;
+    turnrate = MAX_TURNRATE;
     speed = 0;
   }
   // goal behind robot, turn toward it
@@ -1359,9 +1359,9 @@ int VFH_Class::Set_Motion() {
     //printf("turn %f\n", Desired_Angle);
     speed = 0;
     if (Desired_Angle > 270) {
-      turnrate = -40;
+      turnrate = -MAX_TURNRATE;
     } else {
-      turnrate = 40;
+      turnrate = MAX_TURNRATE;
     }
   }
   else {
