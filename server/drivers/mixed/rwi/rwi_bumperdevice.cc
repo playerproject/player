@@ -62,7 +62,7 @@ CRWIBumperDevice::Setup()
 {
 #ifdef USE_MOBILITY
 	CORBA::Object_ptr temp;
-	char *path = upper ? "/EnclosureContact/Point" : "/BaseContact/Point";
+	const char *path = upper ? "/EnclosureContact/Point" : "/BaseContact/Point";
 	
 	if (RWIConnect(&temp, path) < 0) {
 		fprintf(stderr, "rwi_bumperdevice unable to connect.\n");
