@@ -1,3 +1,13 @@
+2002-10-31 19:58  gerkey
+
+	* ChangeLog, Makefile.common, client_libs/c++/positionproxy.h,
+	client_libs/c++/doc/cppclient.tex,
+	client_libs/c++/test/test_position.cc,
+	client_libs/libplayerc/doc/libplayerc.tex,
+	client_libs/lisp/doc/lispplayer.tex,
+	client_libs/tcl/doc/tclplayer.tex, player-manual/player.tex,
+	src/clientdata.cc: last commit before release
+
 2002-10-31 12:36  gerkey
 
 	* client_libs/c++/positionproxy.cc,
