@@ -734,6 +734,9 @@ int playerc_map_subscribe(playerc_map_t *device, int access);
 /** Un-subscribe from the map device. */
 int playerc_map_unsubscribe(playerc_map_t *device);
 
+/** Get the map, which is stored in the proxy. */
+int playerc_map_get_map(playerc_map_t* device);
+
 /***************************************************************************
  ** end section
  **************************************************************************/

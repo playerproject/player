@@ -142,7 +142,7 @@ dnl ************************************************************************
 dnl End of macros from m4.d
 dnl ************************************************************************
 
-dnl Set up RTK2 for the various GUIs 
+dnl Set up GTK/RTK2 for the various GUIs 
 dnl we do it before configuring drivers in case they have GUI bits
 dnl The logic is: only use pkg-config
 AC_ARG_WITH(rtk, [  --without-rtk          Don't build RTK-based GUIs],,
@@ -162,8 +162,11 @@ elif test "x$with_rtk" = "xyes"; then
     with_rtk=no
     AC_MSG_WARN([no suitable RTK was found])
   )
+
+  PKG_CHECK_MODULES(GTK, gtk+-2.0, with_gtk=yes, with_gtk=no)
 fi
 AM_CONDITIONAL(WITH_RTK, test x$with_rtk = xyes)
+AM_CONDITIONAL(WITH_GTK, test x$with_gtk = xyes)
 
 dnl Include RTK gui support (for debugging)
 AC_ARG_ENABLE(rtkgui, 
@@ -344,6 +347,7 @@ AC_OUTPUT(Makefile
           utils/playerv/Makefile
           utils/tkviewer/Makefile
           utils/playerjoy/Makefile
+          utils/playernav/Makefile
           config/Makefile
           config/stage/Makefile)
 
