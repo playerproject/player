@@ -466,6 +466,43 @@ class PlayerMultiClient
  ** end section
  *****************************************************************************/
 
+/*****************************************************************************
+ ** begin section AIOProxy
+ *****************************************************************************/
+
+/** The {\tt AIOProxy} class is used to read from a {\tt aio} (analog I/O)
+    device.
+ */
+class AIOProxy : public ClientProxy
+{
+
+public:
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+    */
+    AIOProxy (PlayerClient* pc, unsigned short index,
+                   unsigned char access = 'c')
+            : ClientProxy(pc,PLAYER_AIO_CODE,index,access)
+      {}
+
+    ~AIOProxy()
+      {}
+
+    /// The number of valid digital inputs.
+    char count;
+
+    /// A bitfield of the current digital inputs.
+    int anin[PLAYER_AIO_MAX_SAMPLES];
+
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    /// Print out the current digital input state.
+    void Print ();
+};
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
 
 /*****************************************************************************
  ** begin section CommsProxy
