@@ -37,7 +37,7 @@ class Stage1p4;
 class StgTime : public PlayerTime
 {
   // Constructor
-  public: StgTime( Stage1p4* stage );
+  public: StgTime( Stage1p4* stage);
 
   // Destructor
   public: virtual ~StgTime();
@@ -45,7 +45,7 @@ class StgTime : public PlayerTime
   // Get the simulator time
   public: int GetTime(struct timeval* time);
 
- private: Stage1p4* stage;
+  Stage1p4* stage;
 };
 
 #endif

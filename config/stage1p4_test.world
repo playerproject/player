@@ -101,7 +101,7 @@ define indicatorlight light
 sub
 (
    size [1.0 0.5]
-   pose [0.636 0.528 0.000]
+   pose [0.627 0.363 -0.003]
    bitmap "submarine.pnm"
    nose "no"
    color "red"
@@ -121,9 +121,9 @@ define swarmbot sb
   velocity [ 0 0 1 ]
 )
 	
-swarmbot( pose [4.422 3.873 74.934] color "red" )
-swarmbot( pose [3.459 4.364 46.834] color "green"  )
-swarmbot( pose [4.752 4.627 72.780] color "blue"  )
+swarmbot( pose [4.422 3.873 116.134] color "red" )
+swarmbot( pose [3.459 4.364 88.634] color "green"  )
+swarmbot( pose [4.752 4.627 115.580] color "blue"  )
 #swarmbot( pose [4.678 3.706 23.374] color "red" )
 #swarmbot( pose [3.249 4.722 75.454] color "green"  )
 #swarmbot( pose [4.357 4.306 49.700] color "blue"  )

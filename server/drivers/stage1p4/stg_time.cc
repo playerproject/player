@@ -34,7 +34,7 @@
 // Constructor
 StgTime::StgTime( Stage1p4* stage )
 {
-  this->stage = stage; 
+  this->stage = stage;
   return;
 }
 
@@ -53,15 +53,18 @@ int StgTime::GetTime(struct timeval* time)
 {
   //puts( "get time" );
   
+  // handle any packets coming in from Stage - there might be a new
+  // time in the pipe
   stage->CheckForData();
 
   double seconds = 0.0;
-
-  if( Stage1p4::prop_buffer[STG_WORLD_TIME] )    
-    seconds = *(double*)Stage1p4::prop_buffer[STG_WORLD_TIME]->data;
   
-  time->tv_sec =  floor(seconds);
-  time->tv_usec =  floor(fmod(seconds, 1.0) * 1e6);
+  // if any time data has been received from Stage, use it
+  if( Stage1p4::stage_time )    
+    seconds = *(double*)Stage1p4::stage_time->data;
+  
+  time->tv_sec =  (long)floor(seconds);
+  time->tv_usec =  (long)floor(fmod(seconds, 1.0) * 1e6);
   
   //printf( "time now %d sec %d usec\n", time->tv_sec, time->tv_usec );
   

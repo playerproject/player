@@ -44,6 +44,7 @@ public:
 			  void* data, size_t len);
   protected:
   virtual int Setup(){ this->StageSubscribe( STG_MOD_POSE ); return 0;};
+  virtual int Shutdown(){ this->StageUnsubscribe( STG_MOD_POSE ); return 0;};
   
   player_position_data_t position_data;
 };
@@ -83,14 +84,13 @@ void StgPosition_Register(DriverTable* table)
 size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 			    uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  PLAYER_MSG2(" STG_POSITION GETDATA section %d -> model %d",
-	      this->section, this->stage_id );
+  stg_model_t* model = &Stage1p4::models[this->section];
 
   // request position data from Stage
-  this->WaitForData( this->stage_id, STG_MOD_POSE );
+  this->WaitForData( model->stage_id, STG_MOD_POSE );
   
   // copy data from Stage    
-  stg_property_t* prop = Stage1p4::prop_buffer[STG_MOD_POSE];
+  stg_property_t* prop = model->props[STG_MOD_POSE];
   
   stg_pose_t* pose = (stg_pose_t*)prop->data;
   size_t plen = prop->len;
@@ -123,7 +123,8 @@ void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
   vel.y = ((double)((int32_t)ntohl(pcmd->yspeed))) / 1000.0;
   vel.a = DTOR((double)((int32_t)ntohl(pcmd->yawspeed)));
   
-  assert( stg_set_property( this->stage_client, this->stage_id,
+  assert( stg_set_property( this->stage_client, 
+			    Stage1p4::models[this->section].stage_id,
 			    STG_MOD_VELOCITY, (void**)&vel, sizeof(vel) ) 
 	  == 0 );
   
@@ -138,6 +139,7 @@ void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
 int StgPosition::PutConfig(player_device_id_t* device, void* client, 
 			   void* data, size_t len)
 {
+  stg_model_t* model = &Stage1p4::models[this->section];
 
   // rather than push the request onto the request queue, we'll handle
   // it right away
@@ -150,7 +152,7 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
       {
 	stg_pose_t* org = NULL;
 	size_t len = 0;
-	assert( stg_get_property( this->stage_client, this->stage_id, 
+	assert( stg_get_property( this->stage_client, model->stage_id, 
 				  STG_MOD_ORIGIN,
 				  (void**)&org, &len ) == 0 );
 	
@@ -158,7 +160,7 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
 	
 	stg_size_t* sz = NULL;
 	len = 0;
-	assert( stg_get_property( this->stage_client, this->stage_id, 
+	assert( stg_get_property( this->stage_client, model->stage_id, 
 				  STG_MOD_SIZE,
 				  (void**)&sz, &len ) == 0 );
 	

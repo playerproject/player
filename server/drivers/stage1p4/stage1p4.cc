@@ -24,7 +24,7 @@
 // creates a single static Stage client. This is subclassed for each
 // Player interface. Each instance shares the single Stage connection
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 1
 
 #include <string.h>
@@ -32,6 +32,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
+
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -44,45 +45,25 @@
 #include <math.h>
 #include <sys/time.h> 
 #include <unistd.h>
-#include <signal.h>
-#include <pthread.h>
-
-extern int global_argc;
-extern char** global_argv;
-
-// took me ages to figure this linkage out. grrr. 
-extern "C" {
-#include <pam.h> // image-reading library
-}
 
 #include "stage1p4.h"
 #include "stg_time.h"
-extern PlayerTime* GlobalTime;
 
 // init static vars
 char* Stage1p4::world_file = DEFAULT_STG_WORLDFILE;
 stg_client_t* Stage1p4::stage_client = NULL;
-stg_client_t* Stage1p4::stage_config_client = NULL;
-stg_name_id_t* Stage1p4::created_models = NULL;
-int Stage1p4::created_models_count = 0;
+stg_model_t* Stage1p4::models = NULL;
+int Stage1p4::models_count = 0;
 ConfigFile* Stage1p4::config = NULL;
 CWorldFile Stage1p4::wf;
-stg_id_t Stage1p4::world_id = 0;
+
 double Stage1p4::time = 0.0;
-stg_property_t *Stage1p4::prop_buffer[STG_MESSAGE_COUNT];
 int Stage1p4::stage_port = 6601;
 char* Stage1p4::stage_host = "localhost";
+stg_property_t* Stage1p4::stage_time = NULL;
 
-char Stage1p4::subs[STG_MESSAGE_COUNT];
-
-// signal cacher - when Player gets a SIG_USR2 we save the worldfile
-void catch_sigusr2( int signum )
-{
-  puts( "PLAYER SAVE" );
-  Stage1p4::wf.DownloadAndSave( Stage1p4::stage_client, 
-				Stage1p4::created_models,
-				Stage1p4::created_models_count );
-}
+// declare Player's emergency stop function (defined in main.cc)
+void Interrupt( int dummy );
 
 // constructor
 //
@@ -93,97 +74,41 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
   PLAYER_TRACE1( "Stage1p4 device created for interface %s\n", interface );
   
   this->config = cf;
-  this->section = section; 
+    
+  const char *enttype = config->GetEntityType(section);
+ 
+  //printf( "processing entity type %s\n", enttype );
   
-  // just do this startup stuff once - it is hared by all instances
-  // do this in the constructor and not in Setup() so the Stage window
-  // gets shown and populated without having to connect a client.
-  if( Stage1p4::stage_client == NULL )
+  if( strcmp( enttype, "simulation" ) == 0 )
     {
-      // steal the global clock
-      if( GlobalTime ) delete GlobalTime;
-      assert( (GlobalTime = new StgTime(this) ));
+      //printf( "ignoring simulation device" );
+    }
+  else
+    {
+      char* model_name = 
+	(char*)config->ReadString(section, "model", 0 );
       
-      memset( prop_buffer, 0, STG_MESSAGE_COUNT * sizeof(stg_property_t*) );
-      memset( subs, 0, STG_MESSAGE_COUNT * sizeof(char) );
-
-      Stage1p4::stage_port = 
-	config->ReadInt(section, "port", STG_DEFAULT_SERVER_PORT);
+      if( model_name == NULL )
+	PLAYER_ERROR1( "device \"%s\" uses the Stage1p4 driver but has "
+		       "no \"model\" value defined.",
+		       model_name );
       
-      Stage1p4::stage_host = 
-	(char*)config->ReadString(section, "host", DEFAULT_STG_HOST);
+      PLAYER_TRACE1( "attempting to resolve Stage model \"%s\"", model_name );
       
-      // initialize the bitmap library
-      pnm_init( &global_argc, global_argv );
-
-      PLAYER_MSG2( "Creating client to Stage server on %s:%d", 
-		   stage_host, stage_port );
+      // now look up the Stage worldfile section number for this device
+      // (note - this is NOT our Player config file section number)
+      this->section = 0;   
+      for( int i=1; i<models_count; i++ )
+	if( strcmp( model_name, models[i].name ) == 0 )
+	  {
+	    this->section = i;
+	    break;
+	  }
       
-      Stage1p4::stage_client = 
-	stg_client_create( stage_host, stage_port, STG_TOS_SUBSCRIPTION );
-      assert(Stage1p4::stage_client);
-
-      // make another client for configuration requests
-      Stage1p4::stage_config_client = 
-	stg_client_create( stage_host, stage_port, STG_TOS_SUBSCRIPTION );
-      assert(Stage1p4::stage_config_client);
-      
-
-      // load a worldfile and create a passel of Stage models
-      Stage1p4::world_file = 
-	(char*)config->ReadString(section, "worldfile", DEFAULT_STG_WORLDFILE);
-
-            
-      PLAYER_MSG1( "Uploading world from \"%s\"", world_file );      
-      CWorldFile wf;
-      wf.Load( Stage1p4::world_file );
-      // this function from libstagecpp does a lot of work turning the
-      // worldfile into a series of model creation and configuration
-      // requests. It creates an array of <name,stageid> pairs.
-      wf.Upload( Stage1p4::stage_client, 
-      	 &Stage1p4::created_models, 
-      	 &Stage1p4::created_models_count,
-      	 &Stage1p4::world_id );
-
-
-      // subscribe to the clock from the world we just created
-      stg_property_t* reply = stg_send_property( Stage1p4::stage_client,
-						 Stage1p4::world_id, 
-						 STG_WORLD_TIME, 
-						 STG_SUBSCRIBE,
-						 NULL, 0 );
-      
-      if( !(reply && (reply->action == STG_SUBSCRIBE) && *reply->data == (char)1 ))
-	{
-	  PLAYER_ERROR( "stage1p4: time subscription failed" );
-	  exit(-1);
-	}
-
-      stg_property_free(reply);
-
-      // catch USR2 signal. getting this signal makes us SAVE the
-      // world state.
-      if( signal( SIGUSR2, catch_sigusr2 ) == SIG_ERR )
-	PLAYER_ERROR( "stage1p4 failed to install SAVE signal handler." );
-
-      /*
-      reply = stg_send_property( Stage1p4::stage_client,
-				 -1, 
-				 STG_SERVER_TIME, 
-				 STG_UNSUBSCRIBE,
-				 NULL, 0 );
-      
-      if( !(reply && (reply->action == STG_ACK) ))
-	{
-	  PLAYER_ERROR( "stage1p4: time unsubscription failed" );
-	  exit(-1);
-	}
-
-      stg_property_free(reply);
-      */
-
-      //this->StartThread();
-    } 
+      if( this->section == 0 )
+	PLAYER_ERROR1( "device %s can't find a Stage model with the same name",
+		       model_name );
+    }
 }
 
 // destructor
@@ -195,34 +120,14 @@ Stage1p4::~Stage1p4()
 
 void Stage1p4::StageSubscribe( stg_prop_id_t data )
 { 
-  // load my name from the config file
-  const char* name = config->ReadString( section, "model", "<no name>" );
-  PLAYER_MSG1( "stage1p4 starting device name \"%s\"", name );
-  
-  // lookup name (todo - speed this up with a hash table)
-  this->stage_id = -1; // invalid
-  for( int i=0; i < created_models_count; i++ )
-    if( strcmp( created_models[i].name, name ) == 0 )
-      {
-	this->stage_id =  created_models[i].stage_id;
-	break;
-      }
-  
-  // handle name match failure
-  if( stage_id == -1 )
-    {
-      PLAYER_ERROR1( "stage1p4: device name \"%s\" doesn't match a Stage model", name );
-      exit(-1);
-    }
-#ifdef DEBUG
-  else
-    PLAYER_MSG2( "stage1p4: device name \"%s\" matches stage model %d",
-		   name, this->stage_id );    
-#endif
+  stg_model_t* model = &Stage1p4::models[this->section];
 
- // subscribe to sonar data
+  PLAYER_TRACE2( "stage1p4 starting device (%d:%s)", 
+		 model->stage_id, model->name );
+  
+  // subscribe to our data
   stg_property_t* prop =  stg_property_create();
-  prop->id = this->stage_id;
+  prop->id = model->stage_id;
   prop->timestamp = 1.0;
   prop->property = data;
   prop->action = STG_SUBSCRIBE;
@@ -231,7 +136,7 @@ void Stage1p4::StageSubscribe( stg_prop_id_t data )
   
   // wait until a subscription reply comes back
   int timeout = 500;
-  while( subs[data] == 0 )
+  while( model->subs[data] == 0 )
     {
       this->CheckForData();
       
@@ -239,40 +144,99 @@ void Stage1p4::StageSubscribe( stg_prop_id_t data )
 	break;
       usleep(100);
     }
-  
-  if( subs[data] == 0 )
+
+  switch( model->subs[data] )
     {
-      PLAYER_ERROR( "stage1p4: sonar subscription failed (timeout)" );
+    case 0:
+      PRINT_ERR2( "stage1p4: subscription (%d:%s) failed (timeout)",
+		     prop->id, stg_property_string(prop->property) );
       exit(-1);
+      break;
+      
+    case -1:
+      PRINT_ERR2( "stage1p4: subscription (%d:%s) failed (no such model)",
+		     prop->id, stg_property_string(prop->property) );
+      exit(-1);
+      break;
+      
+    case 1:
+      PLAYER_TRACE2( "stage1p4: subscription (%d:%s) succeeded",
+		   prop->id, stg_property_string(prop->property) );
+      break;
+      
+    default:
+      PRINT_ERR3( "stage1p4: subscription (%d:%s) failed (code %d)",
+		   prop->id, stg_property_string(prop->property),  
+		   model->subs[data] );      
+      break;
     }
 }
 
-int Stage1p4::Shutdown()
-{
-  //this->StopThread();
 
-  return 0; //ok
+void Stage1p4::StageUnsubscribe( stg_prop_id_t data )
+{ 
+  stg_model_t* model = &Stage1p4::models[this->section];
+  
+  PLAYER_TRACE2( "stage1p4 stopping device (%d:%s)", 
+	       model->stage_id, model->name );
+  
+  // subscribe to our data
+  stg_property_t* prop =  stg_property_create();
+  prop->id = model->stage_id;
+  prop->timestamp = 1.0;
+  prop->property = data;
+  prop->action = STG_UNSUBSCRIBE;
+  stg_property_write( Stage1p4::stage_client, prop );
+  stg_property_free( prop );
+  
+  // wait until a subscription reply comes back
+  int timeout = 1000;
+  while( model->subs[data] == 1 )
+    {
+      this->CheckForData();
+      
+      if( --timeout == 0 )
+	break;
+      usleep(100);
+    }
+
+  switch( model->subs[data] )
+    {
+    case 1:
+      PRINT_ERR2( "stage1p4: unsubscription (%d:%s) failed (timeout)",
+		     prop->id, stg_property_string(prop->property) );
+      exit(-1);
+      break;
+      
+    case -1:
+      PRINT_ERR2( "stage1p4: subscription (%d:%s) failed (no such model)",
+		     prop->id, stg_property_string(prop->property) );
+      exit(-1);
+      break;
+      
+    case 0:
+      PLAYER_TRACE2( "stage1p4: unsubscription (%d:%s) succeeded",
+		   prop->id, stg_property_string(prop->property) );
+      break;
+      
+    default:
+      PRINT_ERR3( "stage1p4: unsubscription (%d:%s) failed (code %d)",
+		   prop->id, stg_property_string(prop->property),  
+		   model->subs[data] );      
+      break;
+    }
 }
-
 
 void Stage1p4::WaitForData( stg_id_t model, stg_prop_id_t datatype )
 {
-  // wait until a reply shows up in the buffer
-  while( prop_buffer[datatype] == 0 )
+  // wait until a property of this type shows up in the buffer
+  while( Stage1p4::models[this->section].props[datatype] == 0 )
     {
-      //printf( "waiting for a property for %s\n", 
-      //      stg_property_string(datatype) );
+      printf( "waiting for a property for %s\n", 
+	      stg_property_string(datatype) );
       
       this->CheckForData();
-      usleep(100);
-    }
-  
-  while( prop_buffer[datatype]->len < 1 )
-    {
-      // printf( "waiting for some data bytes for %s\n", 
-      //      stg_property_string(datatype) );
-     
-      this->CheckForData();
+      puts("sleeping");
       usleep(100);
     }
 }
@@ -286,40 +250,133 @@ void Stage1p4::CheckForData( void )
     {
       //puts( "POLLIN" );
       stg_property_t* prop = stg_property_read( Stage1p4::stage_client );
-      
+
+      // TODO - this doesn't seem to b triggered when Stage dies. what
+      // is up with that?
+      if( prop == NULL )
+	{
+	  printf( "Stage1p4: failed to read from Stage. Quitting.\n" );
+	  Interrupt(0); // kills Player dead.
+	}
+     
       //printf( "received property [%d:%s]\n",
       //      prop->id, stg_property_string(prop->property) );
-      
-      // handle subscription results
-      if( prop->action == STG_SUBSCRIBE )
+
+      // if this is a time packet, we stash it in the static clock
+      if( prop->property == STG_WORLD_TIME )
+	{ 
+	  // TODO - assume stage_time is a fixed size to get rid of
+	  // this realloc
+	  // printf( "time packet! (%.3f)\n", *(double*)prop->data );
+	  stage_time =  (stg_property_t*)
+	    realloc( stage_time, sizeof(stg_property_t) + prop->len );
+	  memcpy( stage_time, prop, sizeof(stg_property_t) + prop->len );
+	}
+      else if( prop->property == STG_WORLD_SAVE )
 	{
-	  printf( "subscription reply!\n" );
-	  subs[prop->property] = *prop->data;
+	  puts( "PLAYER SAVE" );
+
+	  // request fresh pose data for everything
+	  // Iterate through sections, requesting pose data for each entity
+	  for (int section = 1; section < models_count; section++)
+	    {
+	      if( strcmp( "gui", wf.GetEntityType(section) ) == 0 )
+		{
+		  //PRINT_WARN( "save gui section not implemented" );
+		}
+	      else
+		{
+		  stg_id_t anid = models[section].stage_id;
+		  
+		  char* name = models[section].name;
+		  PLAYER_TRACE3( "requesting pose data for model %d \"%s\" "
+				 "section %d\n", 
+				 anid,  models[section].name, section );
+
+		  // zap any old pose data
+		  free(models[section].props[STG_MOD_POSE]);
+		  models[section].props[STG_MOD_POSE] = NULL;
+		  
+		  // ask for new pose data		  
+		  stg_property_t* prop = stg_property_create(); 
+		  prop->id = anid;
+		  prop->action = STG_GET;
+		  prop->property = STG_MOD_POSE;
+		  
+		  stg_property_write( Stage1p4::stage_client, prop );
+		  free( prop );
+
+		  // wait for the pose data to show up
+		  while( models[section].props[STG_MOD_POSE] == NULL )
+		    {
+		      PLAYER_TRACE4( "waiting for [%d:%s] data to show up (section %d) at %p",
+				     anid, 
+				     stg_property_string(STG_MOD_POSE),
+				     section,
+				     models[section].props[STG_MOD_POSE] );
+		      
+		      CheckForData();
+		      usleep(1);
+		    }
+		}
+	    }
+	  
+	  Stage1p4::wf.DownloadAndSave( Stage1p4::stage_client, 
+					Stage1p4::models,
+					Stage1p4::models_count );
 	}
       else
-	{
-	  //printf( "storing [%d:%s] %d bytes of data\n",
-	  //  prop->id, stg_property_string(prop->property), prop->len );
+	{	
+	  // find the incoming stage id in the model array and poke in the
+	  // data. TODO - use a hash table instead of an array so we
+	  // avoid this search
+	  stg_model_t* target = NULL;
 	  
-	  // stash this property in the array
-	  prop_buffer[prop->property] = (stg_property_t*)
-	    realloc( prop_buffer[prop->property], sizeof(stg_property_t) + prop->len );
-	  memcpy( prop_buffer[prop->property], prop, sizeof(stg_property_t) + prop->len );
+	  for( int i=0; i<Stage1p4::models_count; i++ )
+	    {
+	      if( Stage1p4::models[i].stage_id == prop->id )
+		{
+		  target = &Stage1p4::models[i];
+		  //printf( " - target is section %d\n", i );
+		  break;
+		}
+	    }
 	  
-	  stg_property_free(prop);
+	  if( target == NULL )
+	    PRINT_ERR1( "stage1p4: received property for unknown model (%d)",
+			prop->id );
+	  else
+	    {
+	      // handle subscription results
+	      if( prop->action == STG_SUBSCRIBE || 
+		  prop->action == STG_UNSUBSCRIBE )
+		{
+		  PLAYER_TRACE3( "subscription reply! [%d:%s] - %d\n",
+				prop->id, 
+				stg_property_string(prop->property),
+				*(char*)prop->data );
+		  
+		  target->subs[prop->property] = *prop->data;
+		}
+	      else // everything else gets stored in the property cache
+		{		  
+		  //printf( "storing [%d:%s] %d bytes of data\n",
+		  //prop->id, stg_property_string(prop->property), prop->len);
+		  
+		  // stash this property in the device's array of pointers
+		  target->props[prop->property] = (stg_property_t*)
+		    realloc( target->props[prop->property], 
+			     sizeof(stg_property_t) + prop->len );
+		  
+		  memcpy( target->props[prop->property], prop, 
+			  sizeof(stg_property_t) + prop->len );
+		  
+		  stg_property_free(prop);
+		}
+	    }
 	}
     }
 }
-
-void Stage1p4::Main( void )
-{
-  while(1)
-    {
-      // test if we are supposed to cancel
-      pthread_testcancel();
-
-    }
-}
-
 // END CLASS
-
+  
+  
