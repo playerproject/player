@@ -105,13 +105,6 @@
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
-/* the access modes */
-#define PLAYER_READ_MODE 'r'
-#define PLAYER_WRITE_MODE 'w'
-#define PLAYER_ALL_MODE 'a'
-#define PLAYER_CLOSE_MODE 'c'
-#define PLAYER_ERROR_MODE 'e'
-
 /* The maximum number of devices the server will support. */
 #define PLAYER_MAX_DEVICES 64
 
@@ -151,106 +144,31 @@ typedef struct
   uint32_t size;  /* size in bytes of the payload to follow */
 } __attribute__ ((packed)) player_msghdr_t;
 
-/* a device identifier; devices are differentiated internally in Player by 
- * these ids
- */
-typedef struct
-{
-  uint16_t code;
-  uint16_t index;
-  uint16_t port;
-} __attribute__ ((packed)) player_device_id_t;
+/*************************************************************************
+ ** begin section Player
+ *************************************************************************/
 
-/*************************************************************************/
-/*
- * The "Player" device
+/** [Synopsis]
+   The {\tt player} device represents the server itself, and is used in
+   configuring the behavior of the server.  This device is always open.
  */
 
-/* Get the list of available interfaces.
- * To request the list, set the subtype to PLAYER_PLAYER_DEVLIST_REQ
- * and leave the rest of the fields blank.  Player will return a
- * packet with subtype PLAYER_PLAYER_DEVLIST_REQ with the fields
- * filled in. */
-typedef struct
-{
-  /* Subtype; must be PLAYER_PLAYER_DEVLIST_REQ. */
-  uint16_t subtype;
+/** [Constants]
+  */
+/** The device access modes */
+#define PLAYER_READ_MODE 'r'
+#define PLAYER_WRITE_MODE 'w'
+#define PLAYER_ALL_MODE 'a'
+#define PLAYER_CLOSE_MODE 'c'
+#define PLAYER_ERROR_MODE 'e'
 
-  /* The list of available devices. */
-  uint16_t device_count;
-  player_device_id_t devices[PLAYER_MAX_DEVICES];
-  
-} __attribute__ ((packed)) player_device_devlist_t;
+/** The valid data delivery modes */
+#define PLAYER_DATAMODE_PUSH_ALL 0
+#define PLAYER_DATAMODE_PULL_ALL 1
+#define PLAYER_DATAMODE_PUSH_NEW 2
+#define PLAYER_DATAMODE_PULL_NEW 3
 
-/* Get a driver name.
- * To get a name, set the subtype to PLAYER_PLAYER_DRIVERINFO_REQ
- * and set the id field.  Player will return the driver info. */
-typedef struct
-{
-  /* Subtype; must be PLAYER_PLAYER_DRIVERINFO_REQ. */
-  uint16_t subtype;
-
-  /* The device identifier. */
-  player_device_id_t id;
-
-  /* The driver name (returned) */
-  char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
-} __attribute__ ((packed)) player_device_driverinfo_t;
-
-/* the format of a "device request" ioctl to Player */
-typedef struct
-{
-  uint16_t subtype;
-  uint16_t code;
-  uint16_t index;
-  uint8_t access;
-} __attribute__ ((packed)) player_device_req_t;
-
-/* the format of a "device response" ioctl from Player */
-typedef struct
-{
-  uint16_t subtype;
-  uint16_t code;
-  uint16_t index;
-  uint8_t access;
-  uint8_t driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
-} __attribute__ ((packed)) player_device_resp_t;
-
-/* the valid datamode codes */
-#define PLAYER_DATAMODE_PUSH_ALL 0 // all data at fixed frequency
-#define PLAYER_DATAMODE_PULL_ALL 1 // all data on demand
-#define PLAYER_DATAMODE_PUSH_NEW 2 // only new new data at fixed freq
-#define PLAYER_DATAMODE_PULL_NEW 3 // only new data on demand
-
-/* the format of a "datamode change" ioctl to Player */
-typedef struct
-{
-  uint16_t subtype;
-  uint8_t mode;
-} __attribute__ ((packed)) player_device_datamode_req_t;
-
-/* the format of a "frequency change" ioctl to Player */
-typedef struct
-{
-  // frequency in Hz
-  uint16_t subtype;
-  uint16_t frequency;
-} __attribute__ ((packed)) player_device_datafreq_req_t;
-
-/* the format of an authentication request */
-typedef struct
-{
-  uint16_t subtype;
-  uint8_t auth_key[PLAYER_KEYLEN];
-} __attribute__ ((packed)) player_device_auth_req_t;
-
-/* the format of a request for data (no args) */
-typedef struct
-{
-  uint16_t subtype;
-} __attribute__ ((packed)) player_device_data_req_t;
-
-
+/** The request subtypes */
 #define PLAYER_PLAYER_DEVLIST_REQ     ((uint16_t)1)
 #define PLAYER_PLAYER_DRIVERINFO_REQ  ((uint16_t)2)
 #define PLAYER_PLAYER_DEV_REQ         ((uint16_t)3)
@@ -258,49 +176,319 @@ typedef struct
 #define PLAYER_PLAYER_DATAMODE_REQ    ((uint16_t)5)
 #define PLAYER_PLAYER_DATAFREQ_REQ    ((uint16_t)6)
 #define PLAYER_PLAYER_AUTH_REQ        ((uint16_t)7)
-/*************************************************************************/
 
-/*************************************************************************/
-/*
- * Power interface
- */
+/** [Data]
+    This interface accepts no commands.
+*/
 
-typedef struct
+/** [Commands]
+    This interface accepts no commands.
+*/
+
+/** [Configuration: Get device list]
+*/
+
+/** A device identifier; devices are differentiated internally in Player by 
+    these identifiers, and some messages contain them. */
+typedef struct player_device_id
 {
+  /** The interface provided by the device*/
+  uint16_t code;
+  /** The index of the device */
+  uint16_t index;
+  /** The TCP port of the device (only useful with Stage)*/
+  uint16_t port;
+
+} __attribute__ ((packed)) player_device_id_t;
+
+
+/** Get the list of available devices from the server. 
+    It's useful for applications such as viewer programs and test suites that
+    tailor behave differently depending on which devices are available.
+    To request the list, set the subtype to PLAYER_PLAYER_DEVLIST_REQ
+    and leave the rest of the fields blank.  Player will return a
+    packet with subtype PLAYER_PLAYER_DEVLIST_REQ with the fields
+    filled in. */
+typedef struct player_device_devlist
+{
+  /** Subtype; must be PLAYER_PLAYER_DEVLIST_REQ. */
+  uint16_t subtype;
+
+  /** The number of devices */
+  uint16_t device_count;
+
+  /** The list of available devices. */
+  player_device_id_t devices[PLAYER_MAX_DEVICES];
+  
+} __attribute__ ((packed)) player_device_devlist_t;
+
+/** [Configuration: Get driver name]
+*/
+
+/** Get the driver name for a particular device.
+    To get a name, set the subtype to PLAYER_PLAYER_DRIVERINFO_REQ
+    and set the id field.  Player will return the driver info. */
+typedef struct player_device_driverinfo
+{
+  /** Subtype; must be PLAYER_PLAYER_DRIVERINFO_REQ. */
+  uint16_t subtype;
+
+  /** The device identifier. */
+  player_device_id_t id;
+
+  /** The driver name (returned) */
+  char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
+
+} __attribute__ ((packed)) player_device_driverinfo_t;
+
+/** [Configuration: Request device access]
+*/
+
+/** {\em This is the most important request!}
+ Before interacting with a device, the client must request appropriate access.
+ The format of this request is: */
+typedef struct player_device_req
+{
+  /** Subtype; must be PLAYER_PLAYER_DEV_REQ */
+  uint16_t subtype;
+  /** The interface for the device */
+  uint16_t code;
+  /** The index for the device */
+  uint16_t index;
+  /** The requested access */
+  uint8_t access;
+
+} __attribute__ ((packed)) player_device_req_t;
+
+/** The format of the server's reply is: */
+typedef struct player_device_resp
+{
+  /** Subtype; will be PLAYER_PLAYER_DEV_REQ */
+  uint16_t subtype;
+  /** The interface for the device */
+  uint16_t code;
+  /** The index for the device */
+  uint16_t index;
+  /** The granted access */
+  uint8_t access;
+  /** The name of the underlying driver */
+  uint8_t driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
+
+} __attribute__ ((packed)) player_device_resp_t;
+
+/** The access codes, which are used in both the request and response, are
+ given above.   {\bf Read} access means that the
+ server will start sending data from the specified device. For instance, if
+ read access is obtained for the sonar device Player will start sending sonar
+ data to the client. {\bf Write} access means that the client has permission
+ to control the actuators of the device. There is no locking mechanism so
+ different clients can have concurrent write access to the same actuators.
+ {\bf All} access is both of the above and finally {\bf close} means that
+ there is no longer any access to the device. Device request messages can
+ be sent at any time, providing on the fly reconfiguration for clients
+ that need different devices depending on the task at hand.  
+ \\
+ Of course, not all of the access codes are applicable to all devices;
+ for instance it does not make sense to write to the sonars.   However,
+ a request for such access will not generate an error; rather, it will be
+ granted, but any commands actually sent to that device will be ignored.
+ In response to such a device request, the server will send a reply indicating
+ the {\em actual} access that was granted for the device.  The granted access
+ may be different from the requested access; in particular, if there was
+ some error in initializing the device the granted access will be '{\tt e}',
+ and the client should not try to read from or write to the device. */
+
+/** [Configuration: Request data] */
+
+/** When the server is in a {\em pull} data delivery mode (see next request
+ for information on data delivery modes), the client can request a single
+ round of data by sending a zero-argument request with type code {\tt 0x0003}.
+ The response will be a zero-length acknowledgement.*/
+typedef struct player_device_data_req
+{
+  /** Subtype; must be PLAYER_PLAYER_DATA_REQ */
+  uint16_t subtype;
+
+} __attribute__ ((packed)) player_device_data_req_t;
+
+/** [Configuration: Change data delivery mode] */
+
+/** 
+The Player server supports four data modes, described above.
+By default, the server operates in {\tt PLAYER\_DATAMODE\_PUSH\_NEW} mode at 
+a frequency of 10Hz.  To switch to a different mode send a request with the 
+format given below.  The server's reply will be a zero-length 
+acknowledgement. */
+typedef struct player_device_datamode_req
+{
+  /** Subtype; must be PLAYER_PLAYER_DATAMODE_REQ */
+  uint16_t subtype;
+  /** The requested mode */
+  uint8_t mode;
+
+} __attribute__ ((packed)) player_device_datamode_req_t;
+
+
+/** [Configuration: Change data delivery frequency] */
+
+/** By default, the fixed frequency for the {\em push} data delivery modes is
+ 10Hz; thus a client which makes no configuration changes will receive
+ sensor data approximately every 100ms. The server can send data faster
+ or slower; to change the frequency, send a request of the format:*/
+typedef struct player_device_datafreq_req
+{
+  /** Subtype; must be PLAYER_PLAYER_DATAFREQ_REQ */
+  uint16_t subtype;
+  /** requested frequency in Hz */
+  uint16_t frequency;
+
+} __attribute__ ((packed)) player_device_datafreq_req_t;
+
+/**The server's reply will be a
+ zero-length acknowledgement. Due to limitations of the Linux scheduler,
+ Player's maximum data rate on that platform is approximately 50Hz. */
+
+/** [Configuration: Authentication] */
+
+/** If server authentication has been enabled (by providing {\tt -key <key>}
+ on the command-line; see Section~\ref{sect:commandline}), then each
+ client must authenticate itself before otherwise interacting with
+ the server.  To authenticate, send a request of the format: */
+typedef struct player_device_auth_req
+{
+  /** Subtype; must by PLAYER_PLAYER_AUTH_REQ */
+  uint16_t subtype;
+  /** The authentication key */
+  uint8_t auth_key[PLAYER_KEYLEN];
+
+} __attribute__ ((packed)) player_device_auth_req_t;
+
+ /** If the key matches
+ the server's key then the client is authenticated, the server will reply
+ with a zero-length acknowledgement, and the client can continue with other
+ operations.  If the key does not match, or if the client attempts any
+ other server interactions before authenticating, then the connection will
+ be closed immediately.  It is only necessary to authenticate each client once.
+\\
+ Note that this support for authentication is {\bf NOT} a security mechanism.
+ The keys are always in plain text, both in memory and when transmitted over
+ the network; further, since the key is given on the command-line, there is
+ a very good chance that you can find it in plain text in the process table
+ (in Linux try {\tt ps -ax | grep player}).  Thus you should not use an
+ important password as your key, nor should you rely on Player authentication
+ to prevent bad guys from driving your robots (use a firewall instead).
+ Rather, authentication was introduced into Player to prevent accidentally
+ connecting one's client program to someone else's robot.  This kind of
+ accident occurs primarily when Stage is running in a multi-user environment.
+ In this case it is very likely that there is a Player server listening
+ on port \DEFAULTPORT, and clients will generally connect to that port by
+ default, unless a specific option is given.  Check the Stage documentation
+ for how to specify a Player authentication key in your {\tt .world} file. */
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section power
+ *************************************************************************/
+
+/** [Synopsis]
+  The {\tt power} interface provides access to a robot's power subsystem. */
+
+/** [Constants] */
+
+/** what does this do? */
+#define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
+
+/** [Data] The {\tt power} device returns data in the format: */
+typedef struct player_power_data
+{
+  /** Battery voltage, in decivolts */
   uint16_t  charge;
 } __attribute__ ((packed)) player_power_data_t;
 
-// TODO: what does this do?
-#define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
+/** [Commands] This interface accepts no commands */
 
-/* Packet for requesting power config  - replies with a player_power_data_t*/
-typedef struct
+/** [Configuration: Request power] */
+
+/** Packet for requesting power config  - replies with a player_power_data_t
+  */
+typedef struct player_power_config
 {
-  /* Packet subtype.  Must be PLAYER_MAIN_POWER_REQ. */
+  /** Packet subtype.  Must be PLAYER_MAIN_POWER_REQ. */
   uint8_t subtype;
 } __attribute__ ((packed)) player_power_config_t;
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
-/*************************************************************************/
+/*************************************************************************
+ ** begin section gripper
+ *************************************************************************/
 
+/** [Synopsis] The {\tt gripper} interface provides access to a robotic 
+ gripper. */
 
-/*************************************************************************/
-/*
- * Gripper Device
- */
+/** [Data] */
 
-/* the gripper command packet */
-typedef struct
+/**
+The {\tt gripper} interface returns 2 bytes that represent the current state 
+of the gripper; the format is given below.
+Note that the exact interpretation of this data may vary depending
+on the details of your gripper and how it is connected to your robot
+(e.g., General I/O vs. User I/O for the Pioneer gripper). */
+typedef struct player_gripper_data
 {
-  /* cmd is the command & arg is an optional arg used for some commands */
-  uint8_t cmd, arg; 
-} __attribute__ ((packed)) player_gripper_cmd_t;
-
-/* the gripper data packet */
-typedef struct
-{
+  /** The current gripper lift and breakbeam state */
   uint8_t state, beams;
 } __attribute__ ((packed)) player_gripper_data_t;
-/*************************************************************************/
+
+/** The following table defines how the data can be interpreted for some
+    Pioneer robots and Stage: 
+\begin{center}
+{\small \begin{tabularx}{\columnwidth}{llX}
+\hline
+Field & Type & Meaning\\
+\hline
+{\tt state} & {\bf unsigned byte} & bit 0: Paddles open \newline
+                      bit 1: Paddles closed\newline
+                      bit 2: Paddles moving\newline
+                      bit 3: Paddles error\newline
+                      bit 4: Lift is up\newline
+                      bit 5: Lift is down\newline
+                      bit 6: Lift is moving\newline
+                      bit 7: Lift error \\
+                      
+{\tt beams} & {\bf unsigned byte} & bit 0: Gripper limit reached\newline
+                      bit 1: Lift limit reached\newline
+                      bit 2: Outer beam obstructed\newline
+                      bit 3: Inner beam obstructed\newline
+                      bit 4: Left paddle open\newline
+                      bit 5: Right paddle open\\
+
+\hline
+\end{tabularx}}
+\end{center}
+*/
+
+/** [Commands]  */
+/**
+The {\tt gripper} interface accepts 2-byte commands, the format of
+which is given below. 
+These two bytes are sent directly to the gripper; refer to Table 3-3 page
+10 in the Pioneer 2 Gripper Manual\cite{gripman} for a list of commands. The
+first byte is the command. The second is the argument for the LIFTcarry and
+GRIPpress commands, but for all others it is ignored. */
+typedef struct player_gripper_cmd
+{
+  /** the command and optional argument */
+  uint8_t cmd, arg; 
+} __attribute__ ((packed)) player_gripper_cmd_t;
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
 
 
 /*************************************************************************
