@@ -31,6 +31,7 @@
 
 #include <clientproxy.h>
 #include <playerclient.h>
+#include <string.h>
 
 /** The {\tt SonarProxy} class is used to control the {\tt sonar} device.
     The most recent sonar range measuremts can be read from the {\tt range}
@@ -44,6 +45,10 @@ class SonarProxy : public ClientProxy
         Range is measured in mm.
      */
     unsigned short ranges[PLAYER_NUM_SONAR_SAMPLES];
+
+    /** Positions of sonars
+     */
+    player_sonar_geom_t sonar_pose;
    
     /** Constructor.
         Leave the access field empty to start unconnected.
@@ -51,7 +56,8 @@ class SonarProxy : public ClientProxy
     */
     SonarProxy(PlayerClient* pc, unsigned short index, 
                unsigned char access = 'c') :
-            ClientProxy(pc,PLAYER_SONAR_CODE,index,access) {}
+            ClientProxy(pc,PLAYER_SONAR_CODE,index,access)
+    { bzero(&sonar_pose,sizeof(sonar_pose)); }
 
     // these methods are the user's interface to this device
     
@@ -63,6 +69,8 @@ class SonarProxy : public ClientProxy
         Returns 0 on success, -1 if there is a problem.
      */
     int SetSonarState(unsigned char state);
+
+    int GetSonarGeom();
 
     /** Range access operator.
         This operator provides an alternate way of access the range data.

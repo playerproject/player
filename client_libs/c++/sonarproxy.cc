@@ -39,7 +39,8 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int SonarProxy::SetSonarState(unsigned char state)
+int 
+SonarProxy::SetSonarState(unsigned char state)
 {
   if(!client)
     return(-1);
@@ -52,6 +53,34 @@ int SonarProxy::SetSonarState(unsigned char state)
 
   return(client->Request(PLAYER_SONAR_CODE,index,(const char*)buffer,
                          sizeof(buffer)));
+}
+
+int 
+SonarProxy::GetSonarGeom()
+{
+  player_msghdr_t hdr;
+
+  if(!client)
+    return(-1);
+
+  char buffer[1];
+
+  buffer[0] = PLAYER_SONAR_GET_GEOM_REQ;
+
+  if((client->Request(PLAYER_SONAR_CODE,index,(const char*)buffer,
+                      sizeof(buffer), &hdr, (char*)&sonar_pose, 
+                      sizeof(sonar_pose)) < 0) ||
+     (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
+    return(-1);
+
+  for(int i=0;i<PLAYER_NUM_SONAR_SAMPLES;i++)
+  {
+    sonar_pose.pose[i][0] = ntohs(sonar_pose.pose[i][0]);
+    sonar_pose.pose[i][1] = ntohs(sonar_pose.pose[i][1]);
+    sonar_pose.pose[i][2] = ntohs(sonar_pose.pose[i][2]);
+  }
+
+  return(0);
 }
 
 void SonarProxy::FillData(player_msghdr_t hdr, const char* buffer)
