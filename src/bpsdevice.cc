@@ -46,7 +46,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 
 #include <errno.h>
 #include <string.h>
@@ -232,6 +232,9 @@ void CBpsDevice::Main()
     uint32_t sec, usec;
 
     PLAYER_TRACE0("main");
+
+    // Nice ourself down so we dont interfere with other threads
+    nice(10);
 
     while (TRUE)
     {
