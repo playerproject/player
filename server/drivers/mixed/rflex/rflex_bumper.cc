@@ -76,6 +76,23 @@ void RFLEXbumper::GetOptions(ConfigFile *cf,int section,rflex_config_t * rflex_c
 		rflex_configs->bumper_def[x].radius = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+4,0));	//mm  	
 	}
 	rflex_configs->bumper_address = cf->ReadInt(section, "rflex_bumper_address",DEFAULT_RFLEX_BUMPER_ADDRESS);
+
+
+	const char *bumperStyleStr = cf->ReadString(section, "rflex_bumper_style",DEFAULT_RFLEX_BUMPER_STYLE);
+	
+	if(strcmp(bumperStyleStr,RFLEX_BUMPER_STYLE_BIT) == 0)
+	{
+	   rflex_configs->bumper_style = BUMPER_BIT;
+	}
+	else if(strcmp(bumperStyleStr,RFLEX_BUMPER_STYLE_ADDR) == 0)
+	{
+	   rflex_configs->bumper_style = BUMPER_ADDR;
+	}
+	else
+	{
+	   //Invalid value
+	   rflex_configs->bumper_style = BUMPER_ADDR;
+	}
 	
 	rflex_configs->run |= cf->ReadInt(section, "rflex_done",0);
 	
