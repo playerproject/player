@@ -79,7 +79,7 @@ void plan_reset(plan_t *plan)
       cell->cj = j;
       cell->occ_state = 0;
       cell->occ_dist = plan->max_radius;
-      cell->plan_cost = 1e6;
+      cell->plan_cost = 1e12;
       cell->plan_next = NULL;
     }
   }
@@ -181,10 +181,11 @@ void plan_update_cspace(plan_t *plan)
     for (i = 0; i < plan->size_x; i++)
     {
       cell = plan->cells + PLAN_INDEX(plan, i, j);
-      if (cell->occ_state != +1)
+      if (cell->occ_state < 0)
         continue;
 
       cell->occ_dist = plan->max_radius;
+      //cell->occ_dist = 0.0;
 
       for (dj = -dn; dj <= +dn; dj++)
       {

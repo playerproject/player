@@ -10,6 +10,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 
 #include "plan.h"
 
@@ -81,8 +82,8 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
 
         cost = cell->plan_cost + plan->scale;
 
-        if (ncell->occ_dist < plan->des_min_radius)
-          cost += plan->dist_penalty * (plan->des_min_radius - ncell->occ_dist);
+        if (ncell->occ_dist < plan->max_radius)
+          cost += plan->dist_penalty * (plan->max_radius - ncell->occ_dist);
 
         if (cost < ncell->plan_cost)
         {
