@@ -139,13 +139,11 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	pgeom.fiducial_size[0] = ntohs((uint16_t)100);
 	pgeom.fiducial_size[1] = ntohs((uint16_t)100);
 
-	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		  &pgeom, sizeof(pgeom) );
+	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
+		      &pgeom, sizeof(pgeom) )  != 0 )
+	  PLAYER_ERROR("PutReply() failed");
       }
       break;
-      
-
-      
       
     case PLAYER_FIDUCIAL_SEND_MSG:
       {
@@ -166,18 +164,12 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	if( s_msg.len > STG_LOS_MSG_MAX_LEN ) s_msg.len = STG_LOS_MSG_MAX_LEN;
 	memcpy( &s_msg.bytes, p_msg->bytes, s_msg.len );
 	
-	// keep the original message to compare it to the reply
-	//stg_los_msg_t compare;
-	//memcpy( &compare, &s_msg, sizeof(stg_los_msg_t) );
-	
 	stg_model_send_los_msg( this->stage_client, this->stage_id, 
 				&s_msg );
 	
-	// if the reply was identical to the sent message, it worked OK
-	//if( memcmp( &compare, &s_msg, sizeof(stg_los_msg_t) ) == 0 )
-	  PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
-	  //else
-	  //PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0 );
+	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) 
+	    != 0 )
+	  PLAYER_ERROR("PutReply() failed");;
       }
       break;
 
@@ -213,15 +205,15 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	p_reply.len = (uint8_t)s_msg.len;
 	memcpy( &p_reply.bytes, &s_msg.bytes, sz );
 	
-	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		  &p_reply, sizeof(p_reply) );
+	if (PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
+		      &p_reply, sizeof(p_reply) ) != 0 )
+	  PLAYER_ERROR("PutReply() failed");
       }
     default:
       {
-	PLAYER_WARN1( "stage1p4 doesn't support config id %d", buf[0] );
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+	printf( "Warning: stg_fiducial doesn't support config id %d\n", buf[0] );
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0) 
           PLAYER_ERROR("PutReply() failed");
-        break;
       }
     }
   
