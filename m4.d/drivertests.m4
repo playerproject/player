@@ -79,7 +79,7 @@ if test "x$have_raw1394" = "xyes" -a "x$have_dc1394" = "xyes"; then
 else
   AC_MSG_RESULT([***************************************************])
   AC_MSG_RESULT([Couldn't find the 1394 (firewire) headers. 1394])
-  AC_MSG_RESULT([camera support will *not* be included in the])
+  AC_MSG_RESULT([camera support will *NOT* be included in the])
   AC_MSG_RESULT([CMVision driver])
   AC_MSG_RESULT([***************************************************])
 fi
@@ -94,7 +94,7 @@ if test "x$have_videodev2" = "xyes"; then
 else
   AC_MSG_RESULT([***************************************************])
   AC_MSG_RESULT([Couldn't find the Video4Linux2 headers. V4L2 camera])
-  AC_MSG_RESULT([support will *not* be included in the CMVision driver])
+  AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
   AC_MSG_RESULT([***************************************************])
 fi
 
