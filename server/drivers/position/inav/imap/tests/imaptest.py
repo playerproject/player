@@ -36,10 +36,10 @@ class MapTest:
         self.noise = noise
 
         # Pose of laser in robot cs
-        self.laser_pose = (0.30, 0, 0)
+        self.laser_pose = (0.15, 0, 0)
 
         # Create the local map
-        self.map = imap.imap(16.0, 16.0, self.map_scale, 0.50, 0.25)
+        self.map = imap.imap(16.0, 16.0, self.map_scale, 0.25, 0.25)
 
         # Poses
         self.odom_pose = None
@@ -166,7 +166,7 @@ def main(logfile, fit, scale, noise, export):
             type = tokens[3]
             index = int(tokens[4])
 
-            if type == 'position' and index == 0:
+            if type == 'position' and index == 0:  # HACK
                 datatime = float(tokens[5])
                 #print datatime
                 odom_pose = (float(tokens[6]),
