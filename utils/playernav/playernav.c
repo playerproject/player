@@ -11,6 +11,10 @@
 // global quit flag
 char quit;
 
+// flag and index for robot currently being moved by user (if any)
+int robot_moving_p;
+int robot_moving_idx;
+
 static void
 _interrupt_callback(int signum)
 {
@@ -95,7 +99,11 @@ main(int argc, char** argv)
         {
           robot_pose.px = robot_pose.py = 0.0;
         }
-        move_robot(gui_data.robot_items[i],robot_pose);
+
+        // don't draw the new pose if the user in the middle of moving the
+        // robot
+        if(!robot_moving_p || (robot_moving_idx != i))
+          move_robot(gui_data.robot_items[i],robot_pose);
         gui_data.localizes[i]->info.fresh = 0;
       }
 
