@@ -5,19 +5,18 @@ TOMORROW:
 - make "safe_printf()" or something like that for device drivers to use.  
      maybe just expose a global mutex.
 
-- add method to get timestamp from devices
 
 - 'finish' C client.  test (sim and robot).
-     - put vision data in useable structure
      - add vision example (follow orange thing)
      - add a couple of config commands (like motor power)
 
 - rework C++ client. test (sim and robot).
      - add vision example (follow orange thing)
 
+- change all 'a', 'r', and 'w' to the appropriate PLAYER_*_MODE
+
 - update Java client?  nah, get the Danes to do it.
 
-- move repository to sagan/tobor
 
 NOW:
 ----
@@ -87,6 +86,13 @@ LATENT:
 
 DONE:
 ------
++ add method to get timestamp from devices
+   - now, CLock::PutData() can take a timestamp, and it will
+      store it in CDevice::data_timestamp.  Likewise, CLock::GetData()
+      takes a pointer to put the timestamp into.
+
++ move repository to sagan/tobor
+
 + check on timestamps. make sure byte-swapping works (server and client).
     - defined macros htonll(x) && ntohll(x)
 
