@@ -832,6 +832,8 @@ void CBpsDevice::DestroyObs(CBpsObs *obs)
 // Read in and process a log-file
 void CBpsDevice::Test(const char *filename)
 {
+    double gps_px, gps_py, gps_pa;
+    
     FILE *file = fopen(filename, "r");
     if (!file)
     {
@@ -860,6 +862,17 @@ void CBpsDevice::Test(const char *filename)
             this->beacon[id].ua = 0;
             this->beacon[id].isset = true;
         }
+
+        // Look for gps entries;
+        // this is useful comparing with ground-truth
+        if (strcmp(type, "gps") == 0)
+        {
+            strtok(NULL, " ");
+            strtok(NULL, " ");
+            gps_px = atof(strtok(NULL, " ")) / 1000;
+            gps_py = atof(strtok(NULL, " ")) / 1000;
+            gps_pa = atof(strtok(NULL, " ")) * M_PI / 180;
+        }
         
         if (strcmp(type, "position") == 0)
         {
@@ -869,6 +882,9 @@ void CBpsDevice::Test(const char *filename)
             double oy = atof(strtok(NULL, " ")) / 1000;
             double oa = atof(strtok(NULL, " ")) * M_PI / 180;
             ProcessOdometry(ox, oy, oa);
+
+            // Update our pose
+            PutData(NULL, 0);
         }
         
         if (strcmp(type, "laser_beacon") == 0)
@@ -891,11 +907,15 @@ void CBpsDevice::Test(const char *filename)
             }
 
             for (int i = 0; i < 100; i++)
-            {
                 UpdateEstimate();
-                Dump();
-            }
         }
+
+        double gx = (int) ntohl(this->data.px) / 1000.0;
+        double gy = (int) ntohl(this->data.py) / 1000.0;
+        double ga = (int) ntohl(this->data.pa) * M_PI / 180.0;    
+        printf("%f %f %f %f %f %f\n", gps_px, gps_py, gps_pa, gx, gy, ga);
+                      
+        Dump();
     }
 }
 
@@ -924,7 +944,7 @@ void CBpsDevice::Dump()
                 obs->a_frame, obs->b_frame, obs->ax, obs->ay, obs->aa,
                 obs->bx, obs->by, obs->ba);
     }
-    
+
     fprintf(this->dumpfile, "\n");
 }
 
