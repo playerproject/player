@@ -259,6 +259,8 @@ PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],[gsl/gsl_version.h],[],
 
 PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
+PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[no],[],[],[])
+
 PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
 
 	
@@ -270,7 +272,7 @@ dnl pkg-config, so do it manually
 AC_ARG_ENABLE(stage1p4,
 [  --disable-stage1p4           Don't compile the stage1p4 driver],
 disable_reason="disabled by user",
-enable_stage1p4=yes)
+enable_stage1p4=no)
 if test "x$enable_stage1p4" = "xyes"; then
   dnl pkg-config is REQUIRED to find the Stage-1.4 C++ library.
   dnl If we find stage, we also need libpnm for loading bitmaps
@@ -278,7 +280,7 @@ if test "x$enable_stage1p4" = "xyes"; then
     PKG_CHECK_MODULES(STAGE1P4, stagecpp >= 1.4, 
 	  enable_stage1p4=yes, 
           enable_stage1p4=no
-          disable_reason="couldn't find Stage C++ library (stagecpp)")
+          disable_reason="couldn't find Stage C library (libstage)")
   else
     enable_stage1p4=no
     disable_reason="pkg-config unavailable; maybe you should install it"
