@@ -396,7 +396,6 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
         case PLAYER_IDAR_CODE:
         case PLAYER_IDARTURRET_CODE:
         case PLAYER_DESCARTES_CODE:
-        case PLAYER_MOTE_CODE:
         case PLAYER_POWER_CODE:
         case PLAYER_BUMPER_CODE:
         {
