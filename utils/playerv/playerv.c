@@ -72,11 +72,6 @@ int main(int argc, char **argv)
   vision_t *vision;
 
   printf("PlayerViewer %s\n", PLAYER_VERSION);
-  if (argc <= 2)
-  {
-    print_usage();
-    return -1;
-  }
 
   // Initialise rtk lib
   rtk_init(&argc, &argv);
