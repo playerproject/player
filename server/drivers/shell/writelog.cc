@@ -84,6 +84,9 @@ class WriteLog: public CDevice
   public: void Write(void *data, size_t size,
                      const player_device_id_t *id, uint32_t sec, uint32_t usec);
 
+  // Write joystick data to file
+  private: void WriteJoystick(player_joystick_data_t *data);
+
   // Write laser data to file
   private: void WriteLaser(player_laser_data_t *data);
 
@@ -473,6 +476,9 @@ void WriteLog::Write(void *data, size_t size,
   // Write the data
   switch (iface.code)
   {
+    case PLAYER_JOYSTICK_CODE:
+      this->WriteJoystick((player_joystick_data_t*) data);
+      break;
     case PLAYER_POSITION_CODE:
       this->WritePosition((player_position_data_t*) data);
       break;
@@ -516,6 +522,20 @@ void WriteLog::Write(void *data, size_t size,
 #define MM_M(x) ((x) / 1000.0)
 #define DEG_RAD(x) ((x) * M_PI / 180.0)
 
+
+////////////////////////////////////////////////////////////////////////////
+// Write joystick data to file
+void WriteLog::WriteJoystick(player_joystick_data_t *data)
+{
+  fprintf(this->file, "%+d %+d %d %d %X",
+          HINT16(data->xpos),
+          HINT16(data->ypos),
+          HINT16(data->xscale),
+          HINT16(data->yscale),
+          HUINT16(data->buttons));
+
+  return;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////

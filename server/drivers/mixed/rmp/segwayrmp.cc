@@ -344,8 +344,10 @@ SegwayRMP::Main()
       else if(cmd.code == PLAYER_POSITION3D_CODE)
       {
         // convert to host order; let MakeVelocityCommand do the rest
+        // Position3d uses milliradians/sec, so convert here to
+        // degrees/sec
         xspeed = ntohl(cmd.position3d_cmd.xspeed);
-        yawspeed = ntohl(cmd.position3d_cmd.yawspeed);
+        yawspeed = (int32_t) (((double) (int32_t) ntohl(cmd.position3d_cmd.yawspeed)) / 1000 * 180 / M_PI);
         timeout_counter=0;
       }
       else
