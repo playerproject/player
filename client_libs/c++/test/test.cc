@@ -167,6 +167,9 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "blinkenlight") == 0 || strcmp(device, "all") == 0)
       test_blinkenlight(&client, index);
 
+    if(strcmp(device, "camera") == 0 || strcmp(device, "all") == 0)
+      test_camera(&client, index);
+
 
     // BPS device
     /*

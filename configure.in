@@ -286,6 +286,8 @@ AC_OUTPUT(Makefile
           server/drivers/audiodsp/Makefile
           server/drivers/audiomixer/Makefile
           server/drivers/camera/Makefile 
+          server/drivers/camera/v4l/Makefile
+          server/drivers/camera/1394/Makefile
           server/drivers/fiducial/Makefile 
           server/drivers/ptz/Makefile 
           server/drivers/laser/Makefile 
@@ -324,6 +326,7 @@ AC_OUTPUT(Makefile
           server/drivers/localization/amcl/map/Makefile
           server/drivers/localization/amcl/models/Makefile
           server/drivers/service_adv/Makefile
+          server/drivers/blobfinder/shapetracker/Makefile
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile
@@ -343,7 +346,6 @@ AC_OUTPUT(Makefile
           config/Makefile
           config/stage/Makefile)
 
-#server/drivers/blobfinder/shapetracker/Makefile
 
 # -----------------------------------------------------------------------
 # RTK3 and playermap are currently disabled.

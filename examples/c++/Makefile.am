@@ -19,7 +19,8 @@ noinst_PROGRAMS = randomwalk \
                   lookupport \
                   vfh \
                   playerprint \
-                  manualGrip
+                  manualGrip \
+									shapetracker
 
 #multilogger
 #forage
@@ -45,6 +46,7 @@ vfh_SOURCES = vfh.cc
 swarmbot_target_SOURCES = swarmbot_target.cc
 playerprint_SOURCES = playerprint.cc
 manualGrip_SOURCES = manualGrip.cc
+shapetracker_SOURCES = shapetracker.cc
 #goto_SOURCES = goto.cc
 #forage_SOURCES = forage.cc
 #multilogger_SOURCES = multilogger.cc

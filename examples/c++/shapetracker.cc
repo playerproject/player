@@ -7,7 +7,7 @@
 #include <unistd.h> /* for usleep() */
 
 #define USAGE \
-  "USAGE: laserobstacleavoid [-h <host>] [-p <port>] [-m]\n" \
+  "USAGE: shapetracker [-h <host>] [-p <port>] [-m]\n" \
   "       -h <host>: connect to Player on this host\n" \
   "       -p <port>: connect to Player on this TCP port\n" \
   "       -m       : turn on motors (be CAREFUL!)"
@@ -76,14 +76,25 @@ int main(int argc, char **argv)
   parse_args(argc,argv);
 
   PlayerClient robot(host,port);
+  //CameraProxy cp(&robot,0,'r');
 
-  printf("%s\n",robot.conn.banner);
-
-  /* maybe turn on the motors */
-  //if(turnOnMotors && pp.SetMotorState(1))
-  //exit(1);
+  BlobfinderProxy bp(&robot, 0, 'r');
+  HUDProxy hp(&robot, 0, 'w');
 
   int newspeed, newturnrate;
+  int i,j;
+  float red[3];
+  float blue[3];
+
+  red[0] = 255.0;
+  red[1] = 0.0;
+  red[2] = 0.0;
+
+  blue[0] = 0.0;
+  blue[1] = 0.0;
+  blue[2] = 255.0;
+
+
   /* go into read-think-act loop */
   for(;;)
   {
@@ -91,38 +102,30 @@ int main(int argc, char **argv)
     if(robot.Read())
       exit(1);
 
-    /* print current sensor data to console */
-    //lp.Print();
-    //pp.Print();
+    //printf( "Num Blobs[%d]\n",bp.num_blobs[8]);
 
-    /*
-     * laser avoid (stolen from esben's java example)
-     */
+    for (i=6; i<=16; i+=2)
+    {
+      for (j=0; j < 5/*bp.num_blobs[i]*/; j++)
+      {
+        if (j < bp.num_blobs[i])
+        {
+          hp.SetColor( red );
+          hp.SetStyle(0);
+          hp.DrawBox( i*10+j, bp.blobs[i][j].left,
+              bp.blobs[i][j].bottom,
+              bp.blobs[i][j].right, 
+              bp.blobs[i][j].top);
 
-    /*minL=INT_MAX; 
-    minR=INT_MAX;
-    for (int j=0; j<180; j++) {
-      if (minR>lp[j])
-        minR=lp[j];
+          hp.SetColor(blue);
+          hp.SetStyle(1);
+          hp.DrawCircle( -i*10+j, bp.blobs[i][j].x, bp.blobs[i][j].y, 8 );
+
+        } else {
+          hp.Remove(i*10+j);
+          hp.Remove(-i*10+j);
+        }
+      }
     }
-    for (int j=181; j<361; j++) {
-      if (minL>lp[j])
-        minL=lp[j];
-    }
-    int l=(100*minR)/500-100;
-    int r=(100*minL)/500-100;
-    if (l>100) 
-      l=100; 
-    if (r>100) 
-      r=100;
-    newspeed = r+l;
-    newturnrate = r-l;
-    newturnrate = min(newturnrate,40);
-    newturnrate = max(newturnrate,-40);
-    */
-                  
-    /* write commands to robot */
-//    pp.SetSpeed(newspeed,newturnrate);
-//    pp.SetSpeed(0,0);
   }
 }
