@@ -99,6 +99,10 @@ int main(int argc, const char *argv[])
     // GPS device
     if(strcmp(device, "gps") == 0 || strcmp(device, "all") == 0)
       test_gps(&client, index);
+    
+    // Gripper device
+    if(strcmp(device, "gripper") == 0 || strcmp(device, "all") == 0)
+      test_gripper(&client, index);
 
     free(arg);
   }

@@ -30,5 +30,6 @@ int test_vision(PlayerClient* client, int index);
 int test_bps(PlayerClient* client, int index);
 int test_lbd(PlayerClient* client, int index);
 int test_broadcast(PlayerClient* client, int index);
+int test_gripper(PlayerClient* client, int index);
 
 #endif // TEST_H
