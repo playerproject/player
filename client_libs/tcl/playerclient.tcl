@@ -338,7 +338,8 @@ proc parseData {device device_index data size} {
     set l 0
     while {$l < $ACTS_NUM_CHANNELS} {
       if {[binary scan $data "x[expr 2*$l+1]c" numblobs] != 1} {
-        error "failed to get number of blobs for channel $l"
+        puts "Warning: failed to get number of blobs for channel $l"
+        return
       }
       set vision($l,numblobs) [expr $numblobs - 1]
       set j 0
@@ -346,7 +347,8 @@ proc parseData {device device_index data size} {
         if {[binary scan $data "x[expr $bufptr]cccccccccc" \
                   areabits(0) areabits(1) areabits(2) areabits(3)\
                   x y left right top bottom] != 10} {
-          error "failed to get blob info for ${j}th blob on ${l}th channel"
+          puts "Warning: failed to get blob info for ${j}th blob on ${l}th channel"
+          return
         }
         # make everything unsigned
         set x [expr ( $x + 0x100 ) % 0x100]
@@ -380,12 +382,14 @@ proc parseData {device device_index data size} {
   } elseif {![string compare $device $PLAYER_PTZ_CODE]} {
     # ptz data packet
     if {[binary scan $data SSS pan tilt zoom] != 3} {
-      error "failed to get pan/tilt/zoom"
+      puts "Warning: failed to get pan/tilt/zoom"
+      return
     }
   } elseif {![string compare $device $PLAYER_MISC_CODE]} {
     # misc data packet
     if {[binary scan $data ccc frontbumpers rearbumpers battery] != 3} {
-      error "failed to get bumpers and battery"
+      puts "Warning: failed to get bumpers and battery"
+      return
     }
     # make them unsigned
     set frontbumpers [expr ( $frontbumpers + 0x100 ) % 0x100]
@@ -399,7 +403,8 @@ proc parseData {device device_index data size} {
     set j 0
     while {$j < [expr $size / 2]} {
       if {[binary scan $data "x[expr 2 * $j]S" sonar($j)] != 1} {
-        error "failed to get sonar scan $j"
+        puts "Warning: failed to get sonar scan $j"
+        return
       }
       set sonar($j) [expr ($sonar($j) + 0x10000) % 0x10000]
       incr j
@@ -409,16 +414,17 @@ proc parseData {device device_index data size} {
     if {[binary scan $data IISSSSc\
                  xpos ypos heading \
                  speed turnrate compass stall] != 7} {
-      error "failed to get position data"
+      puts "Warning: failed to get position data"
+      return
     }
   } elseif {![string compare $device $PLAYER_LASER_CODE]} {
     if {[binary scan $data SSSS min_angle max_angle resolution \
                                  range_count] != 4} {
-        error "failed to parse laser header"
+        puts "Warning: failed to parse laser header"
+        return
     }
 
     set range_count [expr ($range_count + 0x10000) % 0x10000]
-    puts "range_count $range_count"
 
     if {[expr ($size-8) / 2] != $PLAYER_NUM_LASER_SAMPLES} {
       puts "Warning: expected $PLAYER_NUM_LASER_SAMPLES laser readings, but received [expr $size/2] readings"
@@ -426,7 +432,8 @@ proc parseData {device device_index data size} {
     set j 0
     while {$j < [expr $range_count]} {
       if {[binary scan $data "x8x[expr 2 * $j]S" laser($j)] != 1} {
-        error "failed to get laser scan $j"
+        puts "Warning: failed to get laser scan $j"
+        return
       }
       set laser($j) [expr ($laser($j) + 0x10000) % 0x10000]
       # TODO: why does stage return laser values of 11392?????
@@ -436,7 +443,8 @@ proc parseData {device device_index data size} {
       incr j
     }
   } else {
-    error "got unexpected message \"$data\""
+    puts "Warning: got unexpected message \"$data\""
+    return
   }
 }
 
