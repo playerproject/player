@@ -194,6 +194,10 @@ class SegwayRMP : public CDevice
 
     uint16_t interface_code;
 
+    // Odometry calculation
+    double odom_lin, odom_ang;
+    double odom_x, odom_y, odom_yaw;
+
     // helper to handle config requests
     int HandleConfig(void* client, unsigned char* buffer, size_t len);
 
@@ -242,8 +246,8 @@ void SegwayRMP_Register(DriverTable* table)
 }
 
 SegwayRMP::SegwayRMP(uint16_t code, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position3d_data_t), 
-              sizeof(player_position3d_cmd_t), 10, 10)
+    : CDevice(sizeof(player_position_data_t), 
+              sizeof(player_position_cmd_t), 10, 10)
 {
   last_xspeed = last_yawspeed = 0;
   canio = NULL;
@@ -278,6 +282,10 @@ SegwayRMP::Setup()
     PLAYER_ERROR("error on CAN Init");
     return(-1);
   }
+
+  // Initialize odometry
+  this->odom_x = this->odom_y = this->odom_yaw = 0.0;
+  this->odom_lin = this->odom_ang = 0.0;
 
   StartThread();
 
@@ -319,6 +327,7 @@ SegwayRMP::Main()
   unsigned char buffer[256];
   size_t buffer_len;
   player_position_cmd_t cmd;
+  player_position3d_cmd_t cmd3d;
   void *client;
   CanPacket pkt;
   int32_t xspeed,yawspeed;
@@ -358,7 +367,12 @@ SegwayRMP::Main()
     }
 
     // Get a new command
-    GetCommand((unsigned char *)&cmd, sizeof(cmd));
+    if(interface_code == PLAYER_POSITION_CODE)
+      GetCommand((unsigned char *)&cmd, sizeof(cmd));
+    else if(interface_code == PLAYER_POSITION3D_CODE)
+      GetCommand((unsigned char *)&cmd3d, sizeof(cmd3d));
+    else
+      PLAYER_ERROR1("can't format data into interface %d", interface_code);
 
     if(motor_enabled) 
     {
@@ -597,6 +611,8 @@ SegwayRMP::Read()
   int channel;
   int ret;
   rmp_frame_t data_frame[2];
+  double new_lin, new_ang;
+  double delta_lin, delta_ang;
 
   data_frame[0].ready = 0;
   data_frame[1].ready = 0;
@@ -626,6 +642,42 @@ SegwayRMP::Read()
           // Are we presenting 2D or 3D info?
           if(interface_code == PLAYER_POSITION_CODE)
           {
+
+            // Get the new linear and angular encoder values
+	    //printf("foreaft: %d\tyaw: %d\n",
+              //data_frame[channel].foreaft,data_frame[channel].yaw);
+            new_lin = (double) data_frame[channel].foreaft / ((double) RMP_COUNT_PER_M);
+            new_ang = (double) data_frame[channel].yaw / (double) RMP_COUNT_PER_REV * 2 * M_PI;
+
+            delta_lin = new_lin - this->odom_lin;
+            delta_ang = new_ang - this->odom_ang;
+
+            // First-order odometry integration
+            this->odom_x += delta_lin * cos(this->odom_yaw);
+            this->odom_y += delta_lin * sin(this->odom_yaw);
+            this->odom_yaw += delta_ang;
+
+            // Normalize yaw in [0, 360]
+            this->odom_yaw = atan2(sin(this->odom_yaw), cos(this->odom_yaw));
+            if (this->odom_yaw < 0)
+              this->odom_yaw += 2 * M_PI;
+
+            position_data.xpos = htonl(((int32_t) this->odom_x * 1000));
+            position_data.ypos = htonl(((int32_t) this->odom_y * 1000));
+            position_data.yaw = htonl(((int32_t) (this->odom_yaw / M_PI * 180)));
+
+            printf("old %f %f : new %f %f : delta %f %f : odom %.2f %.2f %.2f\n",
+                   this->odom_lin, this->odom_ang,
+                   new_lin, new_ang,
+                   delta_lin, delta_ang,
+                   this->odom_x, this->odom_y, this->odom_yaw * 180 / M_PI);
+            
+
+            this->odom_lin = new_lin;
+            this->odom_ang = new_ang;
+            
+
+            /*
             //
             // xpos is fore/aft integrated position?
             // change from counts to mm
@@ -648,7 +700,8 @@ SegwayRMP::Read()
                     htonl(((uint32_t) rint(((double)data_frame[channel].yaw /
                                             (double)RMP_COUNT_PER_REV) * 360.0))
                           % 360);
-
+            */
+            
             // combine left and right wheel velocity to get foreward velocity
             // change from counts/s into mm/s
             position_data.xspeed = 
