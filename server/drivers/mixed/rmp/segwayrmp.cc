@@ -238,6 +238,7 @@ class SegwayRMP : public CDevice
     void MakeShutdownCommand(CanPacket* pkt);
 };
 
+
 // Initialization function
 CDevice* SegwayRMP_Init(char* interface, ConfigFile* cf, int section)
 {
@@ -296,7 +297,7 @@ SegwayRMP::Setup()
 
   if(this->interface_code == PLAYER_POSITION_CODE)
     PutCommand((void*)this,(unsigned char*)&cmd,sizeof(cmd));
-  else if(this->interface_code == PLAYER_POSITION_CODE)
+  else if(this->interface_code == PLAYER_POSITION3D_CODE)
     PutCommand((void*)this,(unsigned char*)&cmd3d,sizeof(cmd3d));
 
   printf("segwayrmp: CAN bus initializing...");
@@ -891,7 +892,9 @@ SegwayRMP::MakeStatusCommand(CanPacket* pkt, uint16_t cmd, uint16_t val)
 
   pkt->id = RMP_CAN_ID_COMMAND;
   pkt->PutSlot(2, cmd);
-  //  pkt.PutSlot(3, val);
+ 
+  // it was noted in the windows demo code that they
+  // copied the 8-bit value into both bytes like this
   pkt->PutByte(6, val);
   pkt->PutByte(7, val);
 
