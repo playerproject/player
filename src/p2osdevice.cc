@@ -188,15 +188,6 @@ void CP2OSDevice::Unlock()
   pthread_mutex_unlock(&p2os_accessMutex);
 }
 
-void CP2OSDevice::SetupLock()
-{
-  pthread_mutex_lock(&p2os_setupMutex);
-}
-void CP2OSDevice::SetupUnlock()
-{
-  pthread_mutex_unlock(&p2os_setupMutex);
-}
-
 int CP2OSDevice::Setup()
 {
   unsigned char sonarcommand[4];
@@ -495,8 +486,6 @@ int CP2OSDevice::Subscribe(void *client)
 {
   int setupResult;
 
-  SetupLock();
-
   if(p2os_subscriptions == 0) 
   {
     setupResult = Setup();
@@ -513,7 +502,6 @@ int CP2OSDevice::Subscribe(void *client)
     setupResult = 0;
   }
   
-  SetupUnlock();
   return( setupResult );
 }
 
@@ -521,8 +509,6 @@ int CP2OSDevice::Unsubscribe(void *client)
 {
   int shutdownResult;
 
-  SetupLock();
-  
   if(p2os_subscriptions == 0) 
   {
     shutdownResult = -1;
@@ -544,8 +530,6 @@ int CP2OSDevice::Unsubscribe(void *client)
     shutdownResult = 0;
   }
   
-  SetupUnlock();
-
   return( shutdownResult );
 }
 
