@@ -602,6 +602,10 @@ typedef struct player_position_cmd
   int32_t xspeed, yspeed; 
   /** Angular velocity, in degrees/sec */
   int32_t yawspeed;
+  /** Motor state (zero is either off or locked, depending on the driver). */
+  uint8_t state;
+  /** Command type; 0 = velocity, 1 = position. */
+  uint8_t type;
 } __attribute__ ((packed)) player_position_cmd_t;
 
 /** [Configuration: Query geometry] */
