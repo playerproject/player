@@ -345,7 +345,6 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
       // prime the configFile parser
       int globalparent = configFile.AddEntity(-1,"");
 
-      char namebuf[PLAYER_MAX_DEVICE_STRING_LEN];
       // get the player type and index from the header
       // NOT from the filename
       switch(deviceIO->player_id.code)
@@ -369,10 +368,8 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // Create a StageDevice with this IO base address and filedes
           dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	  
-   	  // TODO - make this match the real device driver names
-	  strncpy( namebuf, "stage_device", 64 );
-	        
-	  deviceTable->AddDevice(deviceIO->player_id, namebuf, 
+	  deviceTable->AddDevice(deviceIO->player_id, 
+                                 (char*)(deviceIO->drivername),
                                  PLAYER_ALL_MODE, dev);
 	  
           // add this port to our listening list
