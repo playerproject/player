@@ -70,6 +70,40 @@ int PtzProxy::SetCam(short pan, short tilt, short zoom)
                        (const char*)&cmd,sizeof(cmd)));
 }
 
+int
+PtzProxy::SendConfig(uint8_t *bytes, size_t len, uint8_t *reply, 
+		     size_t reply_len)
+{
+  player_ptz_generic_config_t cfg;
+  player_msghdr_t hdr;
+
+  if (len > PLAYER_PTZ_MAX_CONFIG_LEN) {
+    fprintf(stderr, "config too long to send!\n");
+    return -1;
+  }
+
+  cfg.subtype = PLAYER_PTZ_GENERIC_CONFIG_REQ;
+  memcpy(&cfg.config, bytes, len);
+  cfg.length = htons((short)len);
+  
+  if (client->Request(m_device_id, (const char *)&cfg,
+		      sizeof(cfg), &hdr,
+		      (char *)&cfg, sizeof(cfg)) < 0) {
+    fprintf(stderr, "PTZPROXY: error on SendConfig request\n");
+    return -1;
+  }
+  
+  memcpy(reply, &cfg.config, reply_len);
+
+  return 0;
+}
+
+  
+  
+  
+
+  
+
 void PtzProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
   if(hdr.size != sizeof(player_ptz_data_t))

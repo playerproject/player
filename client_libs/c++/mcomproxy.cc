@@ -128,6 +128,25 @@ int MComProxy::Clear(int type, char * channelQ){
 			 (const char*)&cfg,sizeof(cfg));
 }
 
+int
+MComProxy::SetCapacity(int type, char *channel, unsigned char cap) 
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_mcom_config_t cfg;
+
+  cfg.command = PLAYER_MCOM_SET_CAPACITY_REQ;
+  cfg.type = htons(type);
+  strncpy(cfg.channel, channel, MCOM_CHANNEL_LEN);
+  cfg.data.data[0] = cap;
+
+  return client->Request(m_device_id, (const char *)&cfg, sizeof(cfg));
+}
+
+
+
 
 
 void MComProxy::FillData(player_msghdr_t hdr, const char* buffer)

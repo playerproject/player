@@ -1343,6 +1343,9 @@ class PtzProxy : public ClientProxy
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
     
+  /// Send a camera-specific config
+  int SendConfig(uint8_t *bytes, size_t len, uint8_t *reply = NULL, size_t reply_len = 0);
+
     /// Print out current ptz state.
     void Print();
 };
@@ -2139,6 +2142,10 @@ public:
 
     /** Clear all messages of type 'type' on channel 'channel' */
     int Clear(int type, char channel[MCOM_CHANNEL_LEN]);
+
+  /** Set the capacity of the buffer using 'type' and 'channel' to 'cap'.  
+      Note that 'cap' is an unsigned char and must be < MCOM_N_BUFS */
+  int SetCapacity(int type, char channel[MCOM_CHANNEL_LEN], unsigned char cap);
 
     /** Get the results of the last command (Pop or Read). Call
         PlayerClient::Read() before using.  */

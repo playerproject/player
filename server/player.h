@@ -1215,6 +1215,23 @@ typedef struct player_ptz_cmd
   
 } __attribute__ ((packed)) player_ptz_cmd_t;
 
+/** [Configuration: Set/Get camera-specific config ] */
+/** This ioctl allows the client to send a camera-specific command to the
+    camera.  Whether data is returned depends on the command that was sent.
+*/
+#define PLAYER_PTZ_GENERIC_CONFIG_REQ	((uint8_t)1)
+
+/** max command length, based on the Sony camera right now. The server may
+ fill in "config" with a reply if applicable. */
+#define PLAYER_PTZ_MAX_CONFIG_LEN	32
+typedef struct player_ptz_generic_config
+{
+  /** Must be set to PLAYER_PTZ_GENERIC_CONFIG_REQ */
+  uint8_t	subtype;
+  uint16_t	length;
+  uint8_t	config[PLAYER_PTZ_MAX_CONFIG_LEN];
+} __attribute__ ((packed)) player_ptz_generic_config_t;
+
 /*************************************************************************
  ** end section
  *************************************************************************/
@@ -2421,11 +2438,14 @@ typedef struct player_localize_map_data
 #define MCOM_N_BUFS             10      
 /** size of channel name */
 #define MCOM_CHANNEL_LEN        8       
+/** returns this if empty */
+#define MCOM_EMPTY_STRING	"(EMPTY)"
 /** request ids */
 #define PLAYER_MCOM_PUSH_REQ    0
 #define PLAYER_MCOM_POP_REQ     1
 #define PLAYER_MCOM_READ_REQ    2
 #define PLAYER_MCOM_CLEAR_REQ   3
+#define PLAYER_MCOM_SET_CAPACITY_REQ	4
 
 /** [Data] The {\tt mcom} interface returns no data. */
 
@@ -2447,7 +2467,7 @@ typedef struct player_mcom_data
 typedef struct player_mcom_config
 {
     /** Which request.  Should be one of the defined request ids. */
-    uint16_t command;
+    uint8_t command;
     /** The "type" of the data. */
     uint16_t type;
     /** The name of the channel. */

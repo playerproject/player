@@ -105,10 +105,17 @@ int LifoMCom::PutConfig(player_device_id_t* device, void* client, void* data, si
                 return 0;
             }
             break;
-        case PLAYER_MCOM_CLEAR_REQ:
-            Data.Clear(cfg->type, cfg->channel);
+         case PLAYER_MCOM_CLEAR_REQ:
+	    Data.Clear(cfg->type, cfg->channel);
             PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL ,0);
             return 0;
+	    
+    case PLAYER_MCOM_SET_CAPACITY_REQ:
+      
+      Data.SetCapacity(cfg->type, cfg->channel, cfg->data.data[0]);
+      PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+      return 0;
+
         default:
             printf("Error: message %d to MCOM Device not recognized\n", cfg->command);
             PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL,0);	
@@ -117,14 +124,12 @@ int LifoMCom::PutConfig(player_device_id_t* device, void* client, void* data, si
     return 0;
 }
 
-
-
-
 LifoMCom::Buffer::Buffer() {
     top = 0;
+    capacity = MCOM_N_BUFS;
     for(int x = 0 ; x < MCOM_N_BUFS; x++) {
         dat[x].full=0;
-        strcpy(dat[x].data,"(EMPTY)");
+        strcpy(dat[x].data,MCOM_EMPTY_STRING);
     }
 }
 
@@ -133,8 +138,10 @@ LifoMCom::Buffer::~Buffer(){
 
 void LifoMCom::Buffer::Push(player_mcom_data_t newdat) {
     top++;
-    if(top>=MCOM_N_BUFS)
-        top-=MCOM_N_BUFS;
+    top %= capacity;
+    //    if(top>=MCOM_N_BUFS)
+    //        top-=MCOM_N_BUFS;
+    
     dat[top]=newdat;
     dat[top].full=1;
 }
@@ -143,10 +150,12 @@ player_mcom_data_t LifoMCom::Buffer::Pop(){
     player_mcom_data_t ret;
     ret=dat[top];
     dat[top].full=0;
-    strcpy(dat[top].data,"(EMPTY)");
-    top-=1;
-    if(top<0)
-        top+=MCOM_N_BUFS;
+    strcpy(dat[top].data, MCOM_EMPTY_STRING);
+
+    if(--top < 0) {
+      //        top+=MCOM_N_BUFS;
+      top += capacity;
+    }
     return ret;
 }
 
@@ -169,8 +178,13 @@ void LifoMCom::Buffer::print(){
         printf("%s :: %i\n",dat[x].data,dat[x].full);
 }
 
+void
+LifoMCom::Buffer::SetCapacity(int cap) 
+{
+  capacity = cap;
+}
 
-LifoMCom::LinkList::LinkList() : top(NULL){
+LifoMCom::LinkList::LinkList() : top(NULL) {
 }
 
 LifoMCom::LinkList::~LinkList(){
@@ -189,7 +203,7 @@ void LifoMCom::LinkList::Push(player_mcom_data_t d,int type, char channel[MCOM_C
         top=new Link;
         top->next=NULL;
         top->buf.type=type;
-        strcpy(top->buf.channel,channel);
+        strncpy(top->buf.channel, channel, MCOM_CHANNEL_LEN);
         p=top;
     } else {
         while(p->next!=NULL && (p->buf.type!=type || strcmp(p->buf.channel,channel))) {
@@ -201,7 +215,7 @@ void LifoMCom::LinkList::Push(player_mcom_data_t d,int type, char channel[MCOM_C
             p=p->next;
             p->next=NULL;
             p->buf.type=type;
-            strcpy(p->buf.channel,channel);
+            strncpy(p->buf.channel, channel, MCOM_CHANNEL_LEN);
         }
     }
     p->buf.Push(d);
@@ -211,7 +225,7 @@ player_mcom_data_t LifoMCom::LinkList::Pop(int type, char channel[MCOM_CHANNEL_L
     Link *p=top;
     Link *last;
     player_mcom_data_t ret;
-    strcpy(ret.data,"(EMPTY)");
+    strcpy(ret.data, MCOM_EMPTY_STRING);
     ret.full=0;
     if(p==NULL){
         return ret;
@@ -246,7 +260,7 @@ player_mcom_data_t LifoMCom::LinkList::Read(int type,char channel[MCOM_CHANNEL_L
     Link * p=top;
     player_mcom_data_t ret;
     ret.full=0;
-    strcpy(ret.data, "(EMPTY)");
+    strcpy(ret.data, MCOM_EMPTY_STRING);
     if(p==NULL)
         return ret;
     else{
@@ -279,4 +293,37 @@ void LifoMCom::LinkList::Clear(int type, char channel[MCOM_CHANNEL_LEN]) {
             delete p;
         }
     }
+}
+
+void
+LifoMCom::LinkList::SetCapacity(int type, char channel[MCOM_CHANNEL_LEN],
+				unsigned char cap)
+{
+  Link *link = FindLink(type, channel);
+
+  if (link != NULL) {
+    link->buf.SetCapacity((int)cap);
+  }
+}
+
+LifoMCom::Link *
+LifoMCom::LinkList::FindLink(int type, char channel[MCOM_CHANNEL_LEN])
+{
+  Link *p = top, *last = NULL;
+  
+  if (p == NULL) {
+    return NULL;
+  }
+
+  while (p->next != NULL && (p->buf.type != type ||
+			     strcmp(p->buf.channel, channel))) {
+    last = p;
+    p = p->next;
+  }
+
+  if (p->buf.type == type && !strcmp(p->buf.channel, channel)) {
+    return p;
+  }
+
+  return NULL;
 }
