@@ -74,6 +74,9 @@ typedef struct
   
 } amcl_stage_data_t;
 
+// More awful hack
+extern bool use_stage;
+
 
 // TESTING
 // Time function used for profiling
@@ -184,6 +187,7 @@ class AdaptiveMCL : public PSDevice
 
   // Particle filter
   private: pf_t *pf;
+  private: int min_samples, max_samples;
 
   // Current and previous odometric pose estimates used by filter
   private: pf_vector_t curr_odom_pose;
@@ -256,6 +260,8 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Particle filter settings
   this->pf = NULL;
+  this->min_samples = cf->ReadInt(section, "min_samples", 100);
+  this->max_samples = cf->ReadInt(section, "max_samples", 100000);
 
   // Initial pose estimate
   this->pf_pose_mean = pf_vector_zero();
@@ -288,11 +294,14 @@ AdaptiveMCL::~AdaptiveMCL(void)
 // Set up the device (called by server thread).
 int AdaptiveMCL::Setup(void)
 {
+  uint32_t time_sec, time_usec;
+    
   PLAYER_TRACE("setup");
 
 #ifdef INCLUDE_STAGE
-  if (this->LoadStageConfig() != 0)
-    return -1;
+  if (use_stage)
+    if (this->LoadStageConfig() != 0)
+      return -1;
 #endif
   
   // Initialise the underlying position device.
@@ -329,11 +338,11 @@ int AdaptiveMCL::Setup(void)
 
   // Create the particle filter
   assert(this->pf == NULL);
-  this->pf = pf_alloc(100, 100000);
+  this->pf = pf_alloc(this->min_samples, this->max_samples);
 
   // Set initial filter values
-  this->GetOdom(&this->last_odom_pose, NULL, NULL);
-  this->GetOdom(&this->curr_odom_pose, NULL, NULL);
+  this->GetOdom(&this->last_odom_pose, &time_sec, &time_usec);
+  this->GetOdom(&this->curr_odom_pose, &time_sec, &time_usec);
 
 #ifdef INCLUDE_RTKGUI
   // Start the GUI
@@ -635,6 +644,7 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
 // Main function for device thread
 void AdaptiveMCL::Main(void) 
 {
+  uint32_t time_sec, time_usec;
   struct timespec sleeptime;
   
   // WARNING: this only works for Linux
@@ -662,7 +672,7 @@ void AdaptiveMCL::Main(void)
     this->HandleRequests();
     
     // Get the current odometric pose
-    this->GetOdom(&this->curr_odom_pose, NULL, NULL);
+    this->GetOdom(&this->curr_odom_pose, &time_sec, &time_usec);
 
     // Get current laser values; if we have a new set, update the
     // filter
