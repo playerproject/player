@@ -102,6 +102,13 @@ CDeviceTable::AddDevice(player_device_id_t id, char* name,
     devicep->device_id = id;
   pthread_mutex_unlock(&mutex);
 
+  /*printf( "Added device %d.%d.%d - %s\n", 
+	  thisentry->id.port, 
+	  thisentry->id.code, 
+	  thisentry->id.index, 
+	  thisentry->name );
+  */
+
   return(0);
 }
 
@@ -140,6 +147,8 @@ CDeviceTable::GetDriver(player_device_id_t id)
 {
   CDeviceEntry* thisentry;
   char* driver = NULL;
+
+  //printf( "Looking up ID %u.%u.%u\n", id.port, id.code, id.index );
 
   if((thisentry = GetDeviceEntry(id)))
     driver = thisentry->name;

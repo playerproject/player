@@ -86,7 +86,7 @@ void IDARProxy::Print()
   
   printf("#IDAR(%d:%d) - %c ", device, index, access);
 
-  switch( GetMessage( &msg ) )
+  switch( GetMessageNoFlush( &msg ) )
     {
     case -1:
       puts( "failed to get message" );
@@ -127,6 +127,23 @@ int IDARProxy::GetMessage( idarrx_t* rx )
   player_msghdr_t hdr;
 
   cfg.instruction = IDAR_RECEIVE;
+  // cfg.tx field is not used for receive messages
+  
+  // sends request, waits for reply, returns -1 on failure
+  return(client->Request(PLAYER_IDAR_CODE,index,
+			 (const char*)&cfg,sizeof(cfg),
+			 &hdr, (char*)rx, sizeof(idarrx_t) ) );
+}
+
+int IDARProxy::GetMessageNoFlush( idarrx_t* rx )
+{
+  assert( client );
+  assert( rx );
+  
+  player_idar_config_t cfg;
+  player_msghdr_t hdr;
+
+  cfg.instruction = IDAR_RECEIVE_NOFLUSH;
   // cfg.tx field is not used for receive messages
   
   // sends request, waits for reply, returns -1 on failure

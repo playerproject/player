@@ -21,7 +21,9 @@ test_SOURCES = test_broadcast.cc \
                test_sonar.cc \
                test_speech.cc \
                test_truth.cc \
-               test_vision.cc
+               test_vision.cc \
+               test_idar.cc \
+               test_idarturret.cc
                #test_misc.cc
                #test_bps.cc
 

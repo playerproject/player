@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
 //
 // File: stagedevice.cc
-// Author: Andrew Howard
+// Author: Andrew Howard, Richard Vaughan
 // Date: 28 Nov 2000
 // Desc: Class for stage (simulated) devices
 //
