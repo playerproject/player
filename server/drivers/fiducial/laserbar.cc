@@ -92,6 +92,7 @@ class LaserBar : public CDevice
 
   // Reflector properties.
   private: double reflector_width;
+  private: double reflector_tol;
   
   // Local copy of the current laser data.
   private: player_laser_data_t ldata;
@@ -131,6 +132,7 @@ LaserBar::LaserBar(char* interface, ConfigFile* cf, int section)
 
   // Default reflector properties.
   this->reflector_width = cf->ReadLength(section, "width", 0.08);
+  this->reflector_tol = cf->ReadLength(section, "tol", 0.50);
 }
 
 
@@ -372,8 +374,8 @@ bool LaserBar::TestMoments(double mn, double mr, double mb, double mrr, double m
     return false;
 
   // These are tests for a cylindrical reflector.
-  dr = this->reflector_width / 2;
-  db = atan2(this->reflector_width / 2, mr);
+  dr = (1 + this->reflector_tol) * this->reflector_width / 2;
+  db = (1 + this->reflector_tol) * atan2(this->reflector_width / 2, mr);
   if (mrr > dr * dr)
     return false;
   if (mbb > db * db)

@@ -78,6 +78,9 @@ class GzLaser : public CDevice
   
   // Gazebo Interface
   private: gz_laser_t *iface;
+
+  // Timestamp on last data update
+  private: uint32_t tsec, tusec;
 };
 
 
@@ -122,7 +125,9 @@ GzLaser::GzLaser(char* interface, ConfigFile* cf, int section)
 
   // Create an interface
   this->iface = gz_laser_alloc();
-  
+
+  this->tsec = this->tusec = 0;
+    
   return;
 }
 
@@ -166,7 +171,8 @@ size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
 {
   int i;
   player_laser_data_t data;
-
+  uint32_t tsec, tusec;
+  
   gz_laser_lock(this->iface, 1);
   
   data.min_angle = htons((int) (this->iface->data->min_angle * 100 * 180 / M_PI));
@@ -177,19 +183,28 @@ size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
   for (i = 0; i < this->iface->data->range_count; i++)
   {
     data.ranges[i] = htons((int) (this->iface->data->ranges[i] * 1000));
-    data.intensity[i] = htons(0);
+    data.intensity[i] = (uint8_t) (int) this->iface->data->intensity[i];
   }
 
   assert(len >= sizeof(data));
   memcpy(dest, &data, sizeof(data));
 
-  if (timestamp_sec)
-    *timestamp_sec = (int) (this->iface->data->time);
-  if (timestamp_usec)
-    *timestamp_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+  tsec = (int) (this->iface->data->time);
+  tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
   gz_laser_unlock(this->iface);
-  
+
+  // signal that new data is available
+  if (tsec != this->tsec || tusec != this->tusec)
+    DataAvailable();
+  this->tsec = tsec;
+  this->tusec = tusec;
+
+  if (timestamp_sec)
+    *timestamp_sec = tsec;
+  if (timestamp_usec)
+    *timestamp_usec = tusec;
+
   return sizeof(data);
 }
 
