@@ -27,7 +27,7 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
 #
 # definitely build the device-independent objects
 #
-OBS = clientdata.o lock.o pubsub_util.o devicetable.o device.o \
+OBS = clientdata.o pubsub_util.o devicetable.o device.o \
       clientmanager.o wallclocktime.o main.o playerqueue.o
 
 #
@@ -59,7 +59,7 @@ ifdef INCLUDE_PTZ
   OBS += ptzdevice.o 
 endif
 ifdef INCLUDE_STAGE
-  OBS += arenalock.o stagedevice.o stagetime.o
+  OBS += stagedevice.o stagetime.o
 endif
 ifdef INCLUDE_AUDIO
   OBS += audiodevice.o
@@ -99,7 +99,7 @@ $(DEVICELIBNAME): $(OBS)
 	$(AR) cr $@ $(OBS)
 
 $(SERVERNAME): $(DEVICELIBNAME) 
-	$(CPP) -rdynamic -o $@ $< $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
+	$(CPP) -rdynamic -o $@ $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
 
 main.o: main.cc
 	$(CPP) $(CFLAGS) -DPLAYER_VERSION=\"$(PLAYER_VERSION)\" $(INCLUDES) $(INCLUDED_DEVICES) -o $@ -c main.cc 

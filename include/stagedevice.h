@@ -54,7 +54,6 @@
 #include <playercommon.h>
 
 #include <device.h>
-#include <arenalock.h>
 #include <stage.h>
 
 // this is the root of the stage device filesystem name
@@ -71,7 +70,7 @@ class CStageDevice : public CDevice
     public: CStageDevice( player_stage_info_t* info, 
 			  int lockfd, int lockbyte );
 
-     public: CStageDevice* next; // used to keep a list of objects
+    public: CStageDevice* next; // used to keep a list of objects
 
     // Initialise the device
     //
@@ -83,39 +82,32 @@ class CStageDevice : public CDevice
     
     // Read data from the device
     //
-    public: virtual size_t GetData( unsigned char *, size_t maxsize);
+    public: virtual size_t GetData(unsigned char* dest, size_t len,
+                        uint32_t* timestamp_sec = NULL, 
+                        uint32_t* timestamp_usec = NULL);
 
     // Read data from the device and mark the data buffer as empty
     //
-    public: virtual size_t ConsumeData( unsigned char *, size_t );
+    //public: virtual size_t ConsumeData( unsigned char *, size_t );
 
-    // Write data to the device
-    //
-    public: virtual void PutData( unsigned char *, size_t maxsize) {};
-
-    // Read a command from  the device
-    //
-    public: virtual void GetCommand( unsigned char *, size_t maxsize) {};
-    
     // Write a command to the device
     //
     public: virtual void PutCommand( unsigned char * , size_t maxsize);
-
-    // Read configuration from the device
-    //
-    public: virtual size_t GetConfig( unsigned char *, size_t maxsize) {return 0;};
 
     // Write configuration to the device
     //
     public: virtual void PutConfig( unsigned char *, size_t maxsize);
     
-    // Get a lockable object for synchronizing data exchange
+    // Simulator lock bookkeeping data and init method
     //
-    public: virtual CLock* GetLock( void ) {return &m_lock;};
+    private: int lock_fd;
+    private: int lock_byte;
+    private: bool InstallLock( int fd, int index )
+              {lock_fd = fd; lock_byte = index;}
 
-    // Simulator lock
-    //
-    private: CArenaLock m_lock;
+    // these two methods are overrides of the CDevice definitions.
+    private: virtual void Lock();
+    private: virtual void Unlock();
 
     // Pointer to shared info buffers
     //

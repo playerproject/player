@@ -51,7 +51,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include <lock.h>
 #include <device.h>
 
 #include <playercommon.h>
@@ -69,7 +68,6 @@ class CLaserDevice : public CDevice
     int Shutdown();
     void Run();
       
-    CLock* GetLock( void ) {return &m_lock;};
 
     // Client interface
     //
@@ -151,10 +149,6 @@ class CLaserDevice : public CDevice
     int64_t GetTime();
     
   protected:
-    // Side effects class
-    //
-    CLock m_lock;
-
     // Laser driver thread
     //
     pthread_t m_thread;

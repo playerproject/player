@@ -37,7 +37,6 @@
 
 #include <pthread.h>
 
-#include <lock.h>
 #include <device.h>
 #include <messages.h>
 
@@ -47,19 +46,18 @@ class CSpeechDevice:public CDevice
     pthread_t thread;   // the thread that interacts with Festival
     int pid;      // Festival's pid so we can kill it later (if necessary)
 
-    CLock lock;
-
     int portnum;  // port number where Festival will run (default 1314)
     char festival_libdir_value[MAX_FILENAME_SIZE]; // the libdir
 
 
   public:
     /* a queue to hold incoming speech strings */
-    /*  what kind of replacement policy to use? */
-    char queue[SPEECH_MAX_QUEUE_LEN][SPEECH_MAX_STRING_LEN];
-    int queue_insert_idx;
-    int queue_remove_idx;
-    int queue_len;
+    //char queue[SPEECH_MAX_QUEUE_LEN][SPEECH_MAX_STRING_LEN];
+    //int queue_insert_idx;
+    //int queue_remove_idx;
+    //int queue_len;
+    PlayerQueue* queue;
+
     bool read_pending;
     int sock;               // socket to Festival
     int command_size; // zeroed by thread (commands are consumed)
@@ -71,12 +69,10 @@ class CSpeechDevice:public CDevice
     ~CSpeechDevice();
     void KillFestival();
 
-    virtual CLock* GetLock( void ){ return &lock; };
-    
     int Setup();
     int Shutdown();
 
-    void GetCommand(unsigned char *, size_t maxsize);
+    size_t GetCommand(unsigned char *, size_t maxsize);
     void PutCommand(unsigned char *, size_t maxsize);
 };
 

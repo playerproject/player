@@ -33,7 +33,6 @@
 
 #include <pthread.h>
 
-#include <lock.h>
 #include <device.h>
 #include <messages.h>
 
@@ -49,7 +48,6 @@ class CVisionDevice:public CDevice
     int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
     int pid;      // ACTS's pid so we can kill it later
 
-    CLock lock;
     
     // returns the enum representation of the given version string, or
     // ACTS_VERSION_UNKNOWN on failure to match.
@@ -86,19 +84,10 @@ class CVisionDevice:public CDevice
     ~CVisionDevice();
     void KillACTS();
 
-    virtual CLock* GetLock( void ){ return &lock; };
-    
     int Setup();
     int Shutdown();
 
     size_t GetData(unsigned char *, size_t maxsize);
-    //void PutData(unsigned char *, size_t maxsize);
-
-    void GetCommand(unsigned char *, size_t maxsize);
-    void PutCommand(unsigned char *, size_t maxsize);
-
-    size_t GetConfig(unsigned char *, size_t maxsize);
-    void PutConfig(unsigned char *, size_t maxsize);
 };
 
 #endif

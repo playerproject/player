@@ -62,9 +62,21 @@ class PlayerQueue
     // element in the queue, or -1 if the queue is full
     int Push(CClientData* client, unsigned char* data, int size);
 
+    // another form of Push, this one doesn't set the client pointer
+    int Push(unsigned char* data, int size);
+
     // pop an element off the queue. returns the size of the element,
     // or -1 if the queue is empty
     int Pop(CClientData** client, unsigned char* data, int size);
+    
+    // another form of Pop, this one doesn't set the client pointer
+    int Pop(unsigned char* data, int size);
+
+    // clear the queue; returns 0 on success; -1 on failure
+    int Flush();
+
+    // is the queue empty?
+    bool Empty();
 };
 
 #endif

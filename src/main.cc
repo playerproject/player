@@ -235,7 +235,7 @@ int MatchDeviceName( const struct dirent* ent )
 }
 
 #ifdef INCLUDE_STAGE
-// looks int the directory for device entries, creates the devices
+// looks in the directory for device entries, creates the devices
 // and fills an array with unique port numbers
 stage_clock_t* CreateStageDevices( char* directory, int** ports, 
                                    int* num_ports )
@@ -308,10 +308,10 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
       player_stage_info_t* deviceIO = 0;
       
       
-      if( (deviceIO = 
-           (player_stage_info_t*)mmap( NULL, ioSize, PROT_READ | PROT_WRITE, 
-                                       MAP_SHARED, tfd, (off_t)0 ))  
-          == MAP_FAILED )
+      if((deviceIO = 
+          (player_stage_info_t*)mmap( NULL, ioSize, PROT_READ | PROT_WRITE, 
+                                      MAP_SHARED, tfd, (off_t)0 ))  
+         == MAP_FAILED )
       {
         perror( "Failed to map memory" );
         exit( -1 );
@@ -345,6 +345,13 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
           // Create a StageDevice with this IO base address and filedes
           dev = new CStageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	    
+          /*
+          printf("Stage adding device %d:%d:%d\n",
+                 deviceIO->player_id.port,
+                 deviceIO->player_id.type, 
+                 deviceIO->player_id.index);
+           */
+
           deviceTable->AddDevice( deviceIO->player_id.port,
                                   deviceIO->player_id.type, 
                                   deviceIO->player_id.index, 
@@ -464,12 +471,12 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
 
   if( (clock = (stage_clock_t*)mmap( NULL, sizeof(struct timeval),
 				     PROT_READ | PROT_WRITE, 
-				     MAP_SHARED, tfd, (off_t)0 ) )
+                                     MAP_SHARED, tfd, (off_t)0 ) )
       == MAP_FAILED )
-    {
-      perror( "Failed to map clock memory" );
-      exit( -1 );
-    }
+  {
+    perror( "Failed to map clock memory" );
+    exit( -1 );
+  }
   
   //close( tfd ); // can close fd once mapped
 
@@ -483,7 +490,6 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
   assert( clock );
   assert( GlobalTime = (PlayerTime*)(new StageTime( clock, tfd )) );
 
- 
   return( clock );
 }
 
@@ -727,9 +733,9 @@ int main( int argc, char *argv[] )
   //int player_sock = 0;
   
   // use these to keep track of many sockets in stage mode
-  struct pollfd* ufds;
+  struct pollfd* ufds = 0;
   int* ports = 0;
-  int num_ufds;
+  int num_ufds = 0;
 
   // make a copy of argv, so that strtok in parse_device_string
   // doesn't screw with it 
@@ -745,6 +751,7 @@ int main( int argc, char *argv[] )
   {
     if(!strcmp(new_argv[i],"-stage"))
     {
+#ifdef INCLUDE_STAGE
       if(++i<argc) 
       {
         strncpy(stage_io_directory, new_argv[i], sizeof(stage_io_directory));
@@ -756,6 +763,10 @@ int main( int argc, char *argv[] )
         Usage();
         exit(-1);
       }
+#else
+      puts("\nSorry, Stage support was disabled at compile-time.");
+      exit(-1);
+#endif
     }
     else if(!strcmp(new_argv[i], "-key"))
     {

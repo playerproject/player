@@ -311,7 +311,8 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           // make sure we've got a non-NULL pointer
           if((devicep = deviceTable->GetDevice(port,hdr.device,hdr.device_index)))
           {
-            devicep->GetLock()->PutConfig(devicep,payload,payload_size);
+            //devicep->GetLock()->PutConfig(devicep,payload,payload_size);
+            devicep->PutConfig(payload,payload_size);
           }
           else
             printf("HandleRequests(): got REQ for unkown device: %x:%x\n",
@@ -333,7 +334,8 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             // make sure we've got a non-NULL pointer
             if((devicep = deviceTable->GetDevice(port,hdr.device,hdr.device_index)))
             {
-              devicep->GetLock()->PutCommand(devicep,payload,payload_size);
+              //devicep->GetLock()->PutCommand(devicep,payload,payload_size);
+              devicep->PutCommand(payload,payload_size);
             }
             else
             {
@@ -475,8 +477,11 @@ void CClientData::MotorStop()
   command.speed = command.sidespeed = command.turnrate = 0;
 
   if((devicep = deviceTable->GetDevice(port,PLAYER_POSITION_CODE,0)))
-    devicep->GetLock()->PutCommand(devicep, (unsigned char*)&command, 
-                                   sizeof(command));
+  {
+    //devicep->GetLock()->PutCommand(devicep, (unsigned char*)&command, 
+                                   //sizeof(command));
+    devicep->PutCommand((unsigned char*)&command, sizeof(command));
+  }
 }
 
 void CClientData::UpdateRequested(player_device_req_t req)
@@ -666,11 +671,15 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
           //			 &(hdr.timestamp_usec));
           //
           // else
-          size = devicep-> GetLock()->GetData(devicep, 
-                                              data+totalsize+sizeof(hdr),
-                                              maxsize-totalsize-sizeof(hdr),
-                                              &(hdr.timestamp_sec), 
-                                              &(hdr.timestamp_usec));
+          //size = devicep->GetLock()->GetData(devicep, 
+                                              //data+totalsize+sizeof(hdr),
+                                              //maxsize-totalsize-sizeof(hdr),
+                                              //&(hdr.timestamp_sec), 
+                                              //&(hdr.timestamp_usec));
+          size = devicep->GetData(data+totalsize+sizeof(hdr),
+                                  maxsize-totalsize-sizeof(hdr),
+                                  &(hdr.timestamp_sec), 
+                                  &(hdr.timestamp_usec));
 
           // if we're in an UPDATE mode, we only want this data if it is new
           if((mode == PLAYER_DATAMODE_PUSH_NEW) || 
@@ -743,7 +752,9 @@ int CClientData::Subscribe( unsigned short code, unsigned short index )
 
   if((devicep = deviceTable->GetDevice(port,code,index)))
   {
-    return(devicep->GetLock()->Subscribe(devicep));
+    //return(devicep->GetLock()->Subscribe(devicep));
+    printf("calling Subscribe %d:%d\n", code,index);
+    return(devicep->Subscribe());
   }
   else
   {
@@ -760,7 +771,8 @@ void CClientData::Unsubscribe( unsigned short code, unsigned short index )
 
   if((devicep = deviceTable->GetDevice(port,code,index)))
   {
-    devicep->GetLock()->Unsubscribe(devicep);
+    //devicep->GetLock()->Unsubscribe(devicep);
+    devicep->Unsubscribe();
   }
   else
   {

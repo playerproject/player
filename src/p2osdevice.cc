@@ -71,7 +71,6 @@ extern int global_playerport; // used to get at devices
 extern pthread_t      CP2OSDevice::thread;
 extern unsigned char* CP2OSDevice::config;
 extern int            CP2OSDevice::config_size;
-extern CLock*         CP2OSDevice::lock;
 extern struct timeval CP2OSDevice::timeBegan_tv;
 extern bool           CP2OSDevice::direct_wheel_vel_control;
 extern int            CP2OSDevice::psos_fd; 
@@ -110,9 +109,6 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv) :
     config = new unsigned char[P2OS_CONFIG_BUFFER_SIZE];
     config_size = 0;
   }
-
-  if(!lock)
-    lock = new CLock;
 
   arena_initialized_command_buffer = false;
   arena_initialized_data_buffer = false;
@@ -172,7 +168,7 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv) :
 
 CP2OSDevice::~CP2OSDevice()
 {
-  GetLock()->Shutdown( this );
+  Shutdown();
   //pthread_mutex_destroy(&serial_mutex);
 }
 
@@ -483,6 +479,8 @@ int CP2OSDevice::Shutdown()
 
 void CP2OSDevice::PutData( unsigned char* src, size_t maxsize)
 {
+  Lock();
+
   *((player_p2os_data_t*)device_data) = *((player_p2os_data_t*)src);
   
   // need to fill in the timestamps on all P2OS devices
@@ -519,18 +517,31 @@ void CP2OSDevice::PutData( unsigned char* src, size_t maxsize)
     gripperp->data_timestamp_sec = this->data_timestamp_sec;
     gripperp->data_timestamp_usec = this->data_timestamp_usec;
   }
+
+  Unlock();
 }
 
 size_t CP2OSDevice::GetConfig( unsigned char* dest, size_t maxsize)
 {
+  int size;
+
+  Lock();
+
   if(config_size)
   {
     memcpy(dest, config, config_size);
   }
-  return(config_size);
+  size = config_size;
+  config_size = 0;
+
+  Unlock();
+
+  return(size);
 }
 void CP2OSDevice::PutConfig( unsigned char* src, size_t size)
 {
+  Lock();
+
   if(size > P2OS_CONFIG_BUFFER_SIZE)
     puts("CP2OSDevice::PutConfig(): config request too big. ignoring");
   else
@@ -538,6 +549,8 @@ void CP2OSDevice::PutConfig( unsigned char* src, size_t size)
     memcpy(config, src, size);
     config_size = size;
   }
+
+  Unlock();
 }
 
 void EmptySigHanndler( int dummy ) {
@@ -642,9 +655,8 @@ void *RunPsosThread( void *p2osdevice )
         player_position_cmd_t position_cmd;
         position_cmd.speed = 0;
         position_cmd.turnrate = 0;
-        positionp->GetLock()->PutCommand(positionp,
-                                         (unsigned char*)(&position_cmd), 
-                                         sizeof(position_cmd));
+        positionp->PutCommand((unsigned char*)(&position_cmd), 
+                              sizeof(position_cmd));
       
         // disable motor power
         motorcommand[0] = ENABLE;
@@ -660,7 +672,7 @@ void *RunPsosThread( void *p2osdevice )
 
     
     // first, check if there is a new config command
-    if((config_size = pd->GetLock()->GetConfig(pd,config, sizeof(config))))
+    if((config_size = pd->GetConfig(config, sizeof(config))))
     {
       switch(config[0])
       {
@@ -741,7 +753,7 @@ void *RunPsosThread( void *p2osdevice )
     */
 
     /* read the clients' commands from the common buffer */
-    pd->GetLock()->GetCommand(pd,(unsigned char*)&command, sizeof(command));
+    pd->GetCommand((unsigned char*)&command, sizeof(command));
 
     newmotorspeed = false;
     if( speedDemand != (short) ntohs(command.position.speed));
@@ -932,7 +944,7 @@ CP2OSDevice::SendReceive(CPacket* pkt) //, bool already_have_lock)
       sippacket->Parse( &packet.packet[3] );
       sippacket->Fill(&data, timeBegan_tv );
 
-      GetLock()->PutData(this,(unsigned char*)&data, sizeof(data));
+      PutData((unsigned char*)&data, sizeof(data));
     }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
             (packet.packet[3] == 0x50 || packet.packet[3] == 0x80) ||

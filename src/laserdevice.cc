@@ -117,59 +117,66 @@ CLaserDevice::CLaserDevice(int argc, char** argv) :
 //
 size_t CLaserDevice::GetConfig(unsigned char *dest, size_t maxsize) 
 {
-    if (m_config_size == 0)
-        return 0;
+  Lock();
 
-    m_intensity = m_config.intensity;
-    m_scan_res = m_config.resolution;
-    int min_angle = (short) m_config.min_angle;
-    int max_angle = (short) m_config.max_angle;
+  if (m_config_size == 0)
+  {
+    Unlock();
+    return 0;
+  }
 
-    PLAYER_TRACE2("%d %d", min_angle, max_angle);
+  m_intensity = m_config.intensity;
+  m_scan_res = m_config.resolution;
+  int min_angle = (short) m_config.min_angle;
+  int max_angle = (short) m_config.max_angle;
 
-    // For high res, drop the scan range down to 100 degrees.
-    // The angles must be interpreted differently too.
-    //
-    if (m_scan_res == 25)
-    {
-        m_scan_width = 100;
-        m_scan_min_segment = (min_angle + 5000) / m_scan_res;
-        m_scan_max_segment = (max_angle + 5000) / m_scan_res;
+  PLAYER_TRACE2("%d %d", min_angle, max_angle);
 
-        if (m_scan_min_segment < 0)
-            m_scan_min_segment = 0;
-        if (m_scan_min_segment > 400)
-            m_scan_min_segment = 400;
+  // For high res, drop the scan range down to 100 degrees.
+  // The angles must be interpreted differently too.
+  //
+  if (m_scan_res == 25)
+  {
+    m_scan_width = 100;
+    m_scan_min_segment = (min_angle + 5000) / m_scan_res;
+    m_scan_max_segment = (max_angle + 5000) / m_scan_res;
 
-        if (m_scan_max_segment < 0)
-            m_scan_max_segment = 0;
-        if (m_scan_max_segment > 400)
-            m_scan_max_segment = 400;
-    }
-    else if (m_scan_res == 50 || m_scan_res == 100)
-    {
-        m_scan_width = 180;
-        m_scan_min_segment = (min_angle + 9000) / m_scan_res;
-        m_scan_max_segment = (max_angle + 9000) / m_scan_res;
+    if (m_scan_min_segment < 0)
+      m_scan_min_segment = 0;
+    if (m_scan_min_segment > 400)
+      m_scan_min_segment = 400;
 
-        if (m_scan_min_segment < 0)
-            m_scan_min_segment = 0;
-        if (m_scan_min_segment > 360)
-            m_scan_min_segment = 360;
+    if (m_scan_max_segment < 0)
+      m_scan_max_segment = 0;
+    if (m_scan_max_segment > 400)
+      m_scan_max_segment = 400;
+  }
+  else if (m_scan_res == 50 || m_scan_res == 100)
+  {
+    m_scan_width = 180;
+    m_scan_min_segment = (min_angle + 9000) / m_scan_res;
+    m_scan_max_segment = (max_angle + 9000) / m_scan_res;
 
-        if (m_scan_max_segment < 0)
-            m_scan_max_segment = 0;
-        if (m_scan_max_segment > 360)
-            m_scan_max_segment = 360;
-    }
-    else
-        PLAYER_ERROR("invalid laser configuration");
-    
-    PLAYER_MSG3("new scan range [%d %d], intensity [%d]",
-                (int) m_scan_min_segment, (int) m_scan_max_segment, (int) m_intensity);
-    
-    m_config_size = 0;
-    return sizeof(m_config);
+    if (m_scan_min_segment < 0)
+      m_scan_min_segment = 0;
+    if (m_scan_min_segment > 360)
+      m_scan_min_segment = 360;
+
+    if (m_scan_max_segment < 0)
+      m_scan_max_segment = 0;
+    if (m_scan_max_segment > 360)
+      m_scan_max_segment = 360;
+  }
+  else
+    PLAYER_ERROR("invalid laser configuration");
+
+  PLAYER_MSG3("new scan range [%d %d], intensity [%d]",
+              (int) m_scan_min_segment, (int) m_scan_max_segment, (int) m_intensity);
+
+  m_config_size = 0;
+
+  Unlock();
+  return sizeof(m_config);
 }
 
 
@@ -178,20 +185,25 @@ size_t CLaserDevice::GetConfig(unsigned char *dest, size_t maxsize)
 //
 void CLaserDevice::PutConfig( unsigned char *src, size_t maxsize) 
 {
-    if (maxsize != sizeof(m_config))
-    {
-        PLAYER_ERROR("config request has incorrect size; ignoring");
-        return;
-    }
+  Lock();
 
-    memcpy(&m_config, src, maxsize);
-    m_config_size = maxsize;
-    
-    // Byte-swap the configuration data
-    //
-    m_config.resolution = ntohs(m_config.resolution);
-    m_config.min_angle = ntohs(m_config.min_angle);
-    m_config.max_angle = ntohs(m_config.max_angle);
+  if (maxsize != sizeof(m_config))
+  {
+    PLAYER_ERROR("config request has incorrect size; ignoring");
+    Unlock();
+    return;
+  }
+
+  memcpy(&m_config, src, maxsize);
+  m_config_size = maxsize;
+
+  // Byte-swap the configuration data
+  //
+  m_config.resolution = ntohs(m_config.resolution);
+  m_config.min_angle = ntohs(m_config.min_angle);
+  m_config.max_angle = ntohs(m_config.max_angle);
+
+  Unlock();
 }
 
 
@@ -338,7 +350,7 @@ int CLaserDevice::Main()
 
         // Look for configuration requests
         //
-        if (GetLock()->GetConfig(this, NULL, 0))
+        if(GetConfig(NULL, 0))
         {
             // Change any config settings
             //
@@ -378,8 +390,8 @@ int CLaserDevice::Main()
 
             // Make data available
             //
-            GetLock()->PutData(this, (uint8_t*) &data, sizeof(data),
-                               time.tv_sec, time.tv_usec);
+            PutData((uint8_t*) &data, sizeof(data),
+                    time.tv_sec, time.tv_usec);
         }
     }
 
@@ -1049,9 +1061,9 @@ unsigned short CLaserDevice::CreateCRC(uint8_t* data, ssize_t len)
 //
 int64_t CLaserDevice::GetTime()
 {
-    timeval tv;
-    gettimeofday(&tv, NULL);
-    return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
+  timeval tv;
+  gettimeofday(&tv, NULL);
+  return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
 }
 
 

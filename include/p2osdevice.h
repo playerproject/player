@@ -36,7 +36,6 @@
 #include <sys/time.h>
 
 #include <device.h>
-#include <lock.h>
 #include <packet.h>
 #include <playercommon.h>
 #include <messages.h>
@@ -117,7 +116,6 @@ class CP2OSDevice:public CDevice
 {
 private:
   static pthread_t thread;
-  static CLock* lock;
   static pthread_mutex_t serial_mutex;
   static CSIP* sippacket;
 
@@ -151,14 +149,9 @@ private:
   CP2OSDevice(int argc, char** argv);
   ~CP2OSDevice();
 
-  virtual CLock* GetLock( void ){ return lock; };
-
   virtual int Setup();
   virtual int Shutdown();
-  //virtual size_t GetData( unsigned char *, size_t maxsize);
   virtual void PutData( unsigned char *, size_t maxsize);
-  //virtual void GetCommand( unsigned char *, size_t maxsize);
-  //virtual void PutCommand( unsigned char *, size_t maxsize);
   virtual size_t GetConfig( unsigned char *, size_t maxsize);
   virtual void PutConfig( unsigned char *, size_t maxsize);
   int SendReceive(CPacket* pkt); //, bool already_have_lock);

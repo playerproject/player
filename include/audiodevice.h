@@ -31,8 +31,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "lock.h"
-#include "device.h"
+#include <device.h>
 
 #define AUDIO_SLEEP_TIME_USEC 100000
 
@@ -54,11 +53,9 @@ class CAudioDevice:public CDevice
   bool command_pending2;  // that way, we can cancel them if necessary
   bool audio_fd_blocking;
   
-  CLock lock;
-
  public:
-  unsigned char* command;   // array holding the client's commands
-  unsigned char* data;      // array holding the most recent feedback
+  //unsigned char* command;   // array holding the client's commands
+  //unsigned char* data;      // array holding the most recent feedback
 
   // Esbens own additions
   int audio_fd; // audio device file descriptor
@@ -76,17 +73,6 @@ class CAudioDevice:public CDevice
   virtual int Setup();
   virtual int Shutdown();
   virtual void PrintPacket(char* str, unsigned char* cmd, int len);
- 
-  virtual CLock* GetLock( void ){ return &lock; };
-
-  virtual size_t GetData( unsigned char *, size_t maxsize );
-  virtual void PutData( unsigned char *, size_t maxsize );
-
-  virtual void GetCommand( unsigned char *, size_t maxsize );
-  virtual void PutCommand( unsigned char *, size_t maxsize);
-
-  virtual size_t GetConfig( unsigned char *, size_t maxsize);
-  virtual void PutConfig( unsigned char *, size_t maxsize);
 };
 
 #endif

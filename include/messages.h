@@ -679,7 +679,7 @@ typedef struct
   uint8_t len; //0-255
   uint8_t intensity; //0-255
   uint8_t directions; // each set bit means send in that direction
-} __attribute ((packed)) idartx_t;
+} __attribute__ ((packed)) idartx_t;
 
 // WARNING - if( PLAYER_NUM_IDAR_SAMPLES > 8 ) you need to increase
 // the number of bits in the directions member...
@@ -692,7 +692,7 @@ typedef struct
   uint32_t timestamp_sec;
   uint32_t timestamp_usec;
   uint16_t ranges[ RAYS_PER_SENSOR ]; // useful for debugging & visualization
-} __attribute ((packed)) idarrx_t; 
+} __attribute__ ((packed)) idarrx_t; 
 
 // IDAR data packet - contains messages received and messages sent
 // since last read
@@ -700,13 +700,13 @@ typedef struct
 {
   idarrx_t rx[PLAYER_NUM_IDAR_SAMPLES];
   //idartx_t tx[PLAYER_NUM_IDAR_SAMPLES];
-} __attribute ((packed)) player_idar_data_t;
+} __attribute__ ((packed)) player_idar_data_t;
 
 // IDAR command packet - contains a message (possibly null) for each
 //typedef  struct
 //{
 //idartx_t tx[PLAYER_NUM_IDAR_SAMPLES];
-//} __attribute ((packed)) player_idar_cmd_t;
+//} __attribute__ ((packed)) player_idar_cmd_t;
 
 // IDRAR config packet - 
 // has room for a message in case this is a transmit command
@@ -716,7 +716,7 @@ typedef  struct
 {
   uint8_t instruction;
   idartx_t tx;
-} __attribute ((packed)) player_idar_config_t;
+} __attribute__ ((packed)) player_idar_config_t;
 
 
 /*************************************************************************/
@@ -764,7 +764,7 @@ typedef struct
   
   uint32_t x, y; // mm, mm
   uint16_t th, w, h; // degrees, mm, mm
-} __attribute ((packed)) player_generic_truth_t;
+} __attribute__ ((packed)) player_generic_truth_t;
 
 /*************************************************************************/
 /*************************************************************************/
@@ -777,12 +777,12 @@ typedef struct
   uint16_t width, height, ppm;
   uint32_t num_pixels;
   //uint16_t num_truths;
-} __attribute ((packed)) player_occupancy_data_t;
+} __attribute__ ((packed)) player_occupancy_data_t;
 
 typedef struct
 {
   uint16_t x, y, color;
-} __attribute ((packed)) pixel_t;
+} __attribute__ ((packed)) pixel_t;
 
 /**************************************************************************
  * the Audio device; recognizes and generates fixed-frequency tones with

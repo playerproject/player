@@ -78,13 +78,9 @@ void QuitFestival(void* speechdevice);
 CSpeechDevice::CSpeechDevice(int argc, char** argv) :
   CDevice(0,sizeof(player_speech_cmd_t),1,1)
 {
+  int queuelen = SPEECH_MAX_QUEUE_LEN;
   sock = -1;
-  //command = new player_speech_cmd_t;
   command_size = 0;
-  bzero(queue,SPEECH_MAX_QUEUE_LEN*SPEECH_MAX_STRING_LEN);
-  queue_len = 0;
-  queue_insert_idx = 0;
-  queue_remove_idx = 0;
   read_pending = false;
 
   portnum = DEFAULT_FESTIVAL_PORTNUM;
@@ -111,16 +107,26 @@ CSpeechDevice::CSpeechDevice(int argc, char** argv) :
         fprintf(stderr, "CSpeechDevice: missing configfile; "
                 "using default: \"%s\"\n", festival_libdir_value);
     }
+    else if(!strcmp(argv[i],"queuelen"))
+    {
+      if(++i<argc)
+        queuelen = atoi(argv[i]);
+      else
+        fprintf(stderr, "CSpeechDevice: missing queuelen; "
+                "using default: %d\n", queuelen);
+    }
     else
       fprintf(stderr, "CSpeechDevice: ignoring unknown parameter \"%s\"\n",
               argv[i]);
   }
 
+  queue = new PlayerQueue(queuelen);
+  assert(queue);
 }
 
 CSpeechDevice::~CSpeechDevice()
 {
-  GetLock()->Shutdown(this);
+  Shutdown();
   if(sock != -1)
     QuitFestival(this);
 }
@@ -144,12 +150,8 @@ CSpeechDevice::Setup()
   pthread_attr_t attr;
   
   command_size = 0;
-  bzero(queue,SPEECH_MAX_QUEUE_LEN*SPEECH_MAX_STRING_LEN);
-  queue_len = 0;
-  queue_insert_idx = 0;
-  queue_remove_idx = 0;
+  queue->Flush();
   read_pending = false;
-
 
   printf("Festival speech synthesis server connection initializing (%s,%d)...",
          festival_libdir_value,portnum);
@@ -293,15 +295,18 @@ CSpeechDevice::KillFestival()
   sock = -1;
 }
 
-void 
+size_t 
 CSpeechDevice::GetCommand(unsigned char* dest, size_t maxsize)
 {
   *((player_speech_cmd_t*)dest) = *((player_speech_cmd_t*)device_command);
   command_size = 0;
+  return(device_commandsize);
 }
 void 
 CSpeechDevice::PutCommand(unsigned char* src, size_t maxsize)
 {
+  Lock();
+
   *((player_speech_cmd_t*)device_command) = *((player_speech_cmd_t*)src);
   // NULLify extra bytes at end
   if(maxsize > sizeof(player_speech_cmd_t))
@@ -318,6 +323,8 @@ CSpeechDevice::PutCommand(unsigned char* src, size_t maxsize)
   
   // now strlen() should return the right length
   command_size = strlen((const char*)(((player_speech_cmd_t*)device_command)->string));
+
+  Unlock();
 }
 
 void* 
@@ -359,22 +366,16 @@ RunSpeechThread(void* speechdevice)
     if(sd->command_size)
     {
       /* get the string */
-      sd->GetLock()->GetCommand(sd,(unsigned char*)&cmd,sizeof(cmd));
+      sd->GetCommand((unsigned char*)&cmd,sizeof(cmd));
 
       /* if there's space, put it in the queue */
-      if(sd->queue_len < SPEECH_MAX_QUEUE_LEN)
-      {
-        strcpy(sd->queue[sd->queue_insert_idx],(const char*)(cmd.string));
-        sd->queue_insert_idx = (sd->queue_insert_idx+1) % SPEECH_MAX_QUEUE_LEN;
-        sd->queue_len++;
-      }
-      else
+      if(sd->queue->Push((unsigned char*)&cmd,sizeof(cmd)) < 0)
         fprintf(stderr, "CSpeechDevice: not enough room in queue; discarding "
-                "string: \"%s\"\n", (const char*)(cmd.string));
+                "string:\n   \"%s\"\n", (const char*)(cmd.string));
     }
 
     /* do we have a string to send and is there not one pending? */
-    if(sd->queue_len && !(sd->read_pending))
+    if(!(sd->queue->Empty()) && !(sd->read_pending))
     {
       /* send prefix to Festival */
       if(write(sd->sock,(const void*)prefix,strlen(prefix)) == -1)
@@ -383,9 +384,11 @@ RunSpeechThread(void* speechdevice)
         break;
       }
 
+      unsigned char tmpstr[sizeof(player_speech_cmd_t)];
+      int tmpstrlen;
+      tmpstrlen = sd->queue->Pop(tmpstr,sizeof(tmpstr));
       /* send the first string from the queue to Festival */
-      if(write(sd->sock,sd->queue[sd->queue_remove_idx],
-               strlen(sd->queue[sd->queue_remove_idx])) == -1)
+      if(write(sd->sock,tmpstr,tmpstrlen) == -1)
       {
         perror("RunSpeechThread: write() failed sending string; exiting.");
         break;
@@ -397,9 +400,6 @@ RunSpeechThread(void* speechdevice)
         perror("RunSpeechThread: write() failed sending suffix; exiting.");
         break;
       }
-
-      sd->queue_remove_idx = (sd->queue_remove_idx+1) % SPEECH_MAX_QUEUE_LEN;
-      sd->queue_len--;
       sd->read_pending = true;
     }
 

@@ -31,6 +31,7 @@
 #include <string.h> // for memcpy()
 #include <stagedevice.h>
 #include <stage.h>
+#include <sys/file.h> //for flock
 
 //#define DEBUG
 //#define VERBOSE
@@ -73,7 +74,7 @@ CStageDevice::CStageDevice(player_stage_info_t* info,
 //    m_lock.InstallLock( lockfd );
 //  #endif
 
-  m_lock.InstallLock( lockfd, lockbyte );
+  InstallLock( lockfd, lockbyte );
 
 #ifdef DEBUG
   PLAYER_TRACE4("creating device at addr: %p %p %p %p %p", 
@@ -107,6 +108,7 @@ int CStageDevice::Shutdown()
 ///////////////////////////////////////////////////////////////////////////
 // Read data from the device and mark the data area as empty
 //
+/*
 size_t CStageDevice::ConsumeData(unsigned char *data, size_t size)
 {
   size_t result = GetData( data, size );
@@ -117,12 +119,16 @@ size_t CStageDevice::ConsumeData(unsigned char *data, size_t size)
   
   return result;
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////
 // Read data from the device
 //
-size_t CStageDevice::GetData(unsigned char *data, size_t size)
+size_t CStageDevice::GetData(unsigned char *data, size_t size,
+                        uint32_t* timestamp_sec = NULL, 
+                        uint32_t* timestamp_usec = NULL)
 {
+  Lock();
 #ifdef DEBUG
   printf( "P: getting (%d,%d,%d) info at %p, data at %p, buffer len %d, %d bytes available, size parameter %d\n", 
           m_info->player_id.port, 
@@ -153,6 +159,7 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
   if (data_avail > m_data_len )
   {
     printf("warning: available data (%d bytes) > buffer size (%d bytes); ignoring data\n", data_avail, m_data_len );
+    Unlock();
     return 0;
     //data_avail = m_data_len;
   }
@@ -162,6 +169,7 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
   if( data_avail > size)
   {
     printf("warning data available (%d bytes) > space in Player packet (%d bytes); ignoring data\n", data_avail, size );
+    Unlock();
     return 0;
 
     //data_avail = size;
@@ -176,7 +184,13 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
   // Copy the timestamp
   data_timestamp_sec = m_info->data_timestamp_sec;
   data_timestamp_usec = m_info->data_timestamp_usec;
+  if(timestamp_sec)
+    *timestamp_sec = data_timestamp_sec;
+  if(timestamp_usec)
+    *timestamp_usec = data_timestamp_usec;
     
+  Unlock();
+
   return data_avail;
 }
 
@@ -186,6 +200,8 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
 //
 void CStageDevice::PutCommand(unsigned char *command, size_t len)
 {
+  Lock();
+
 #ifdef DEBUG
   printf( "P: StageDevice::PutCommand (%d,%d,%d) info at %p,"
 	  " command at %p\n", 
@@ -212,6 +228,8 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
 
   m_info->command_timestamp_sec = tv.tv_sec;
   m_info->command_timestamp_usec = tv.tv_usec;
+
+  Unlock();
 }
 
 
@@ -220,6 +238,8 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
 //
 void CStageDevice::PutConfig(unsigned char *config, size_t len)
 {
+  Lock();
+
   // Check for overflows
   //
   if (len > m_config_len)
@@ -238,4 +258,72 @@ void CStageDevice::PutConfig(unsigned char *config, size_t len)
   m_info->config_timestamp_sec = tv.tv_sec;
   m_info->config_timestamp_usec = tv.tv_usec;
 
+  Unlock();
 }
+
+void CStageDevice::Lock( void )
+{
+  //printf( "P: LOCK %p\n", m_lock );
+
+//  #ifdef POSIX_SEM
+
+//      if( sem_wait( m_lock ) < 0 )
+//        {
+//          perror( "sem_wait failed" );
+//          return false;
+//        }
+
+//  #else
+
+//    // BSD file locking style
+//    flock( lock_fd, LOCK_EX );
+
+//  #endif
+
+ // POSIX RECORD LOCKING METHOD
+  struct flock cmd;
+
+  cmd.l_type = F_WRLCK; // request write lock
+  cmd.l_whence = SEEK_SET; // count bytes from start of file
+  cmd.l_start = this->lock_byte; // lock my unique byte
+  cmd.l_len = 1; // lock 1 byte
+
+
+  //printf( "WAITING for byte %d\n", this->lock_byte );
+
+
+
+  fcntl( this->lock_fd, F_SETLKW, &cmd );
+  //printf( "DONE WAITING\n" );
+}
+
+void CStageDevice::Unlock( void )
+{
+  //printf( "P: UNLOCK %p\n", m_lock );
+
+//  #ifdef POSIX_SEM
+
+//    if( sem_post( m_lock ) < 0 )
+//    {
+//    perror( "sem_post failed" );
+//    return false;
+//    }
+
+//  #else
+
+//    // BSD file locking style
+//    flock( lock_fd, LOCK_UN );
+
+//  #endif
+
+ // POSIX RECORD LOCKING METHOD
+  struct flock cmd;
+
+  cmd.l_type = F_UNLCK; // request  unlock
+  cmd.l_whence = SEEK_SET; // count bytes from start of file
+  cmd.l_start = this->lock_byte; // unlock my unique byte
+  cmd.l_len = 1; // unlock 1 byte
+
+  fcntl( this->lock_fd, F_SETLKW, &cmd );
+}
+

@@ -52,9 +52,8 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "lock.h"
-#include "device.h"
-#include "messages.h"
+#include <device.h>
+#include <messages.h>
 
 
 // Forward declare some structures
@@ -71,15 +70,12 @@ class CBpsDevice : public CDevice
     // Setup/shutdown routines
     public: virtual int Setup();
     public: virtual int Shutdown();
-    public: virtual CLock* GetLock() {return &lock;};
 
     // Device thread
     public: void Main();
     
     // Client interface
-    //public: virtual size_t GetData(unsigned char *, size_t maxsize);
     public: virtual void PutData(unsigned char *, size_t maxsize);
-    public: virtual size_t GetConfig(unsigned char *, size_t maxsize);
     public: virtual void PutConfig(unsigned char *, size_t maxsize);
 
     // Estimateion functions
@@ -103,8 +99,6 @@ class CBpsDevice : public CDevice
       
     // BPG
     private: double err;
-    // Lock object for synchronization
-    private: CLock lock;
 
     // Our thread
     private: pthread_t thread;
