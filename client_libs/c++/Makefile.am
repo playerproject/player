@@ -8,9 +8,9 @@ pkgconfig_DATA = playerclient.pc
 
 lib_LIBRARIES = libplayerclient.a
 
-libplayerclient_a_LIBADD = $(top_builddir)/client_libs/c/playercclient.o $(top_builddir)/replace/*.o $(top_builddir)/client_libs/libplayerpacket/playerpacket.o 
+libplayerclient_a_LIBADD = $(top_builddir)/client_libs/c/playercclient.o $(top_builddir)/replace/*.o $(top_builddir)/client_libs/libplayerpacket/*.o 
 
-libplayerclient_a_DEPENDENCIES = $(top_builddir)/client_libs/c/playercclient.o  $(top_builddir)/client_libs/libplayerpacket/playerpacket.o 
+libplayerclient_a_DEPENDENCIES = $(top_builddir)/client_libs/c/playercclient.o  $(top_builddir)/client_libs/libplayerpacket/*.o 
 
 
 libplayerclient_a_SOURCES =   clientproxy.cc \
