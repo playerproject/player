@@ -113,11 +113,11 @@ size_t CMGzCamera::GetData(void* client, unsigned char* dest, size_t len,
       *timestamp_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   }
 
-  
+  /*  
     int fd = creat("tmpimage.raw",O_RDWR);
     write(fd,dest,width*height*RGBSIZE);
     close(fd);
-  
+  */
 
   // free(data.image);
 
