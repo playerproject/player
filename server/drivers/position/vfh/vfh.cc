@@ -382,20 +382,59 @@ int VFH_Class::GetLaser() {
     return 0;
   this->laser_time = time;
 
-  b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
-  db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
+//  b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
+//  db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
+
+  b = ((int16_t) ntohs(data.min_angle)) / 100.0;
+  db = ((int16_t) ntohs(data.resolution)) / 100.0;
+
   this->laser_count = ntohs(data.range_count);
   assert(this->laser_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
 
   // Read and byteswap the range data
+  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) {
+    this->laser_ranges[i][0] = -1;
+  }
+
+// what are units of min_angle and resolution
+//printf("LASER %d %d\n", (int)b, (int)db);
+
+  b += 90;
   for (i = 0; i < this->laser_count; i++)
   {
+//printf("b: %f\n", b);
+//    r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
+//if ((i % 20) == 0) {
+//printf("b: %f\n", b);
+    r = ((int16_t) ntohs(data.ranges[i]));
+    this->laser_ranges[(int)rint(b * 2)][0] = r;
+    this->laser_ranges[(int)rint(b * 2)][1] = b;
+//}
+    b += db;
+  }
+
+  r = 1000000;
+  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) {
+    if (this->laser_ranges[i][0] != -1) {
+      r = this->laser_ranges[i][0];
+    } else {
+      this->laser_ranges[i][0] = r;
+    }
+  }
+ 
+
+/*
+  // Read and byteswap the range data
+  for (i = 0; i < this->laser_count; i++)
+  {
+printf("b: %f\n", b);
 //    r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
     r = ((int16_t) ntohs(data.ranges[i]));
     this->laser_ranges[i][0] = r;
     this->laser_ranges[i][1] = b;
     b += db;
   }
+*/
 
   return 1;
 }
@@ -532,7 +571,7 @@ void VFH_Class::Main() {
                 powf((goal_y - this->odom_pose[1]),2));
     
     if (dist > 500) {
-      Desired_Angle = atan2((goal_y - this->odom_pose[1]),
+      Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]),
                             (goal_x - this->odom_pose[0])) * 180 / M_PI - this->odom_pose[2];
 
       while (Desired_Angle > 360.0) {
@@ -542,7 +581,7 @@ void VFH_Class::Main() {
         Desired_Angle += 360.0;
       }
 //Desired_Angle = 90;
-      printf("ANGLE: %f\tDIST: %f\n", Desired_Angle, dist);
+//      printf("ANGLE: %f\tDIST: %f\n", Desired_Angle, dist);
 
       // Get new laser data.
       this->GetLaser();
@@ -614,11 +653,11 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
   this->Picked_Angle = 90;
   this->Last_Picked_Angle = this->Picked_Angle;
 
-  cell_size = cf->ReadLength(section, "cell_size", 100.0);
+  cell_size = cf->ReadLength(section, "cell_size", 0.1) * 1000.0;
   window_diameter = cf->ReadInt(section, "window_diameter", 61);
   sector_angle = cf->ReadInt(section, "sector_angle", 5);
-  robot_radius = cf->ReadLength(section, "robot_radius", 250.0);
-  safety_dist = cf->ReadLength(section, "safety_dist", 100.0);
+  robot_radius = cf->ReadLength(section, "robot_radius", 0.25) * 1000.0;
+  safety_dist = cf->ReadLength(section, "safety_dist", 0.1) * 1000.0;
   max_speed = cf->ReadInt(section, "max_speed", 200);
   max_turnrate = cf->ReadInt(section, "max_turnrate", 40);
   free_space_cutoff = cf->ReadLength(section, "free_space_cutoff", 2000000.0);
@@ -888,6 +927,12 @@ int VFH_Class::Init(double cell_width, int window_diameter, int sector_angle, do
 int VFH_Class::Update_VFH() {
   int print = 0;
 
+  if (Desired_Angle > 180) {
+    speed = 1;
+    Set_Motion();
+    return(1);
+  }
+
   Build_Primary_Polar_Histogram();
   if (print) {
     printf("Primary Histogram\n");
@@ -913,7 +958,7 @@ int VFH_Class::Update_VFH() {
 
   Select_Direction();
 
-  printf("Picked Angle: %f\n", Picked_Angle);
+//  printf("Picked Angle: %f\n", Picked_Angle);
 
   if (Picked_Angle != -9999) {
     Set_Motion();
@@ -1306,6 +1351,13 @@ int VFH_Class::Set_Motion() {
   if (speed <= 0) {
     turnrate = 40;
     speed = 0;
+  } else if (speed == 1) { // goal behind robot, turn toward it
+    speed = 0;
+    if (Desired_Angle > 270) {
+      turnrate = -40;
+    } else {
+      turnrate = 40;
+    }
   } else {
 //  printf("Picked %f\n", Picked_Angle);
     if ((Picked_Angle > 270) && (Picked_Angle < 360)) {
