@@ -45,7 +45,7 @@ void register_devices();
  * name.  if found, interface is filled out (the caller must provide storage)
  * and zero is returned.  otherwise, -1 is returned.
  */
-int lookup_interface(char* name, player_interface_t* interface);
+int lookup_interface(const char* name, player_interface_t* interface);
 
 /* 
  * looks through the array of available interfaces for one which the given
@@ -61,4 +61,4 @@ lookup_interface_code(int code, player_interface_t* interface);
  * returns 0 if the device is not found.
  */
 char*
-lookup_device_name(unsigned int startpos, int code);
+lookup_interface_name(unsigned int startpos, int code);

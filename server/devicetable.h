@@ -29,35 +29,13 @@
 #ifndef _DEVICETABLE_H
 #define _DEVICETABLE_H
 
-#include <device.h>
 #include <pthread.h>
 #include <configfile.h>
 #include <string.h>
 
-// one element in a linked list
-class CDeviceEntry
-{
-  public:
-    player_device_id_t id;  // id for this device
-    unsigned char access;   // allowed access mode: 'r', 'w', or 'a'
-    // the string name for the driver
-    char drivername[PLAYER_MAX_DEVICE_STRING_LEN]; 
-    // the string name for the robot (only used with Stage)
-    char robotname[PLAYER_MAX_DEVICE_STRING_LEN]; 
-    CDevice* devicep;  // the device itself
-    CDeviceEntry* next;  // next in list
+#include "device.h"
+#include "deviceentry.h"
 
-    CDeviceEntry();
-    ~CDeviceEntry() 
-    { 
-      if(devicep) 
-      {
-        if(devicep->subscriptions)
-          devicep->Shutdown();
-        delete devicep;
-      }
-    }
-};
 
 class CDeviceTable
 {
@@ -70,11 +48,7 @@ class CDeviceTable
   public:
     CDeviceTable();
     ~CDeviceTable();
-    
-    // find a device entry, based on id, and return the pointer (or NULL
-    // on failure)
-    CDeviceEntry* GetDeviceEntry(player_device_id_t id);
-    
+        
     // this one is used to fill the instantiated device table
     //
     // id is the id for the device (e.g, 's' for sonar)
@@ -82,9 +56,13 @@ class CDeviceTable
     // access is the access for the device (e.g., 'r' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
-    int AddDevice(player_device_id_t id, char* drivername, 
-                  char* robotname, unsigned char access, 
+    int AddDevice(player_device_id_t id, const char* drivername, 
+                  const char* robotname, unsigned char access, 
                   CDevice* devicep);
+
+    // find a device entry, based on id, and return the pointer (or NULL
+    // on failure)
+    CDeviceEntry* GetDeviceEntry(player_device_id_t id);
 
     // returns the controlling object for the given id 
     // (returns NULL on failure)

@@ -25,20 +25,12 @@
  *
  *   class to keep track of available devices.  
  */
-#include <devicetable.h>
 #include <string.h> // for strncpy(3)
-
+#include "devicetable.h"
+#include "deviceregistry.h"
 
 // true if we're connecting to Stage instead of a real robot
 extern bool use_stage;
-
-CDeviceEntry::CDeviceEntry()
-{ 
-  devicep = NULL; 
-  next = NULL;
-  memset(drivername, 0, sizeof(drivername));
-  memset(robotname, 0, sizeof(robotname));
-}
 
 
 // initialize the table
@@ -71,52 +63,43 @@ CDeviceTable::~CDeviceTable()
     
 // this is the 'base' AddDevice method, which sets all the fields
 int 
-CDeviceTable::AddDevice(player_device_id_t id, char* drivername,
-                        char* robotname, unsigned char access, 
+CDeviceTable::AddDevice(player_device_id_t id, const char* drivername,
+                        const char* robotname, unsigned char access, 
                         CDevice* devicep)
 {
   CDeviceEntry* thisentry;
   CDeviceEntry* preventry;
-  
-  // check for preexisting device, and return -1 
+
   pthread_mutex_lock(&mutex);
+
+  // Check for duplicate entries (not allowed)
   for(thisentry = head,preventry=NULL; thisentry; 
       preventry=thisentry, thisentry=thisentry->next)
   {
-    if((thisentry->id.port == id.port) && 
-       (thisentry->id.code == id.code) && 
-       (thisentry->id.index == id.index))
-    {
-      PLAYER_ERROR3("collision for device ID %d:%d:%d",
-                    id.port, id.code, id.index);
-      return(-1);
-    }
+    if ((thisentry->id.port == id.port) && 
+        (thisentry->id.code == id.code) && 
+        (thisentry->id.index == id.index))
+      break;
   }
-
-  thisentry = new CDeviceEntry;
+  if (thisentry)
+  {
+    PLAYER_ERROR3("duplicate device id %d:%s:%d",
+                  id.port, lookup_interface_name(0, id.code), id.index);
+    pthread_mutex_unlock(&mutex);
+    return -1;
+  }
+    
+  // Create a new device entry
+  thisentry = new CDeviceEntry(id, devicep, access, drivername, robotname);
+  thisentry->index = numdevices;
+  thisentry->next = NULL;
   if(preventry)
     preventry->next = thisentry;
   else
     head = thisentry;
   numdevices++;
 
-  thisentry->id = id;
-  strncpy(thisentry->drivername, drivername, sizeof(thisentry->drivername));
-  if(robotname)
-    strncpy(thisentry->robotname, robotname, sizeof(thisentry->robotname));
-  thisentry->access = access;
-  thisentry->devicep = devicep;
-  if(devicep)
-    devicep->device_id = id;
   pthread_mutex_unlock(&mutex);
-
-  /*printf( "Added device %d.%d.%d - %s\n", 
-	  thisentry->id.port, 
-	  thisentry->id.code, 
-	  thisentry->id.index, 
-	  thisentry->drivername );
-  */
-
   return(0);
 }
 
@@ -148,6 +131,7 @@ CDeviceTable::GetDeviceAccess(player_device_id_t id)
 
   return(access);
 }
+
 // returns the string name of the driver in use for the given id 
 // (returns NULL on failure)
 char* 
