@@ -41,6 +41,8 @@ private:
   PositionProxy *pp;
   PtzProxy *ptzp;
 
+  int pan, tilt;
+
 public:
   Client(char* host, int port ); // constructor
   
@@ -251,7 +253,7 @@ Client::Client(char* host, int port )
   assert( player = new PlayerClient(host,port) );  
   assert( pp = new PositionProxy(player,0,'a') );
   assert( ptzp = new PtzProxy(player,0,'a' ) );
-  
+ 
   //printf( "p: %p\n", player );
   
   if(pp->GetAccess() == 'e') {
@@ -267,6 +269,10 @@ Client::Client(char* host, int port )
 	exit( -1 );
       }
   
+  // store a local copy of the initial p&t
+  pan = ptzp->pan;
+  tilt = ptzp->tilt;
+
   if( g_verbose )
     {
       pp->Print();
@@ -285,25 +291,26 @@ void Client::Update( struct controller* cont )
 {
   if( g_verbose )
     printf( "Player: %s:%d %.2f "
-	    "- speed: %d turn: %d pan: %d tilt: %d zoom: %d \n",
+	    "- speed: %d turn: %d pan: %d(%d) tilt: %d(%d) zoom: %d \n",
 	    player->hostname, player->port,
 	    player->timestamp.tv_sec+player->timestamp.tv_usec/1000000.0,
 	    pp->speed, pp->turnrate, 
-	    ptzp->pan, ptzp->tilt, ptzp->zoom );      
+	    ptzp->pan, cont->pan, ptzp->tilt, cont->tilt, ptzp->zoom );      
   
   if( cont->dirty ) // if the joystick sent a command
     {
       // send the speed commands
       if( pp ) pp->SetSpeed( cont->speed, cont->turnrate);
       // send the zoom command to the camera
-      if( ptzp ) ptzp->SetCam( ptzp->pan, ptzp->tilt, cont->zoom ); 
+      if( ptzp ) ptzp->SetCam( pan, tilt, cont->zoom ); 
     }
   
+  pan += cont->pan;
+  tilt += cont->tilt;
+
   // if we're panning we update the camera position
   if( cont->pan != 0 || cont->tilt != 0 )
-    if( ptzp ) ptzp->SetCam( ptzp->pan + cont->pan, 
-			     ptzp->tilt + cont->tilt, 
-			     cont->zoom );
+    if( ptzp ) ptzp->SetCam( pan, tilt, cont->zoom );
 }
 
 
