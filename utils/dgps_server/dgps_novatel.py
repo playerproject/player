@@ -27,6 +27,7 @@ class NovatelGPS:
         self.serial_open(device)
 
         # send a command
+        self.serial_write('fix none\r\n')
         self.serial_write('log com1 bestposa ontime 1\r\n')
         return
 
@@ -85,7 +86,11 @@ class NovatelGPS:
                 break
 
         # parse the sentence
-        tokens = sentence.split(';')[1].split(',')
+        tokens = sentence.split(';')
+        if len(tokens) < 2:
+            return
+        tokens = tokens[1].split(',')
+        
         self.status = tokens[0]
         self.latitude = tokens[2]
         self.longitude = tokens[3]
@@ -100,8 +105,11 @@ class NovatelGPS:
         """
         fix the position of the reference station.
         """
-        # change the interface mode of com2
-        self.serial_write('interfacemode com2 none rtcm\r\n')
+
+        self.serial_write('unlogall\r\n')
+                
+        # change the interface mode of com1
+        self.serial_write('interfacemode com1 novatel rtcm\r\n')
 
         # fix the position
         self.serial_write('fix position ' + self.latitude +
@@ -110,9 +118,9 @@ class NovatelGPS:
 
         # make it generate RTCM messages
         self.serial_write('dgpsrxid auto\r\n')
-        self.serial_write('log com2 rtcm1 ontime 2\r\n')
-        self.serial_write('log com2 rtcm3 ontime 5\r\n')
-        self.serial_write('log com2 rtcm9 ontime 2\r\n')
+        self.serial_write('log com1 rtcm1 ontime 2\r\n')
+        self.serial_write('log com1 rtcm3 ontime 5\r\n')
+        self.serial_write('log com1 rtcm9 ontime 2\r\n')
 
         return
 
