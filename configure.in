@@ -122,7 +122,6 @@ AC_OUTPUT(Makefile
           client_libs/pyplayerc/Makefile
           client_libs/tcl/Makefile
           examples/Makefile
-          examples/c/Makefile
           examples/c++/Makefile
           examples/libplayerc/Makefile
           rtk2/Makefile
