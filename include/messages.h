@@ -602,6 +602,7 @@ typedef struct
 
 // Broadcast command packet
 // Each packet may contain multiple messages.
+// len indicates the total length of the message buffer.
 // Messages are concatenated in the buffer, with each message having the
 // following format.
 //   message length -- two byte unsigned int
@@ -616,6 +617,7 @@ typedef struct
 
 // Data packet
 // Each packet may contain multiple messages.
+// len indicates the total length of the message buffer.
 // Messages are concatenated in the buffer, with each message having the
 // following format.
 //   message length -- two byte unsigned int
