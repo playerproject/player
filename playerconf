@@ -49,7 +49,7 @@ configstring = './configure'
 if len(val) > 0:
   configstring += ' --prefix=' + val
 
-configout = os.popen('configure --help')
+configout = os.popen('./configure --help')
 lines = configout.read().split('\n')
 
 go = 0
