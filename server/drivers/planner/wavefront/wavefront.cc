@@ -166,8 +166,8 @@ Wavefront::Wavefront(char* interface, ConfigFile* cf, int section)
   this->localize_index = cf->ReadInt(section,"localize_index",-1);
   this->map_index = cf->ReadInt(section,"map_index",-1);
   //this->cspace_fname = cf->ReadString(section,"cspace_filename",NULL);
-  this->robot_radius = cf->ReadLength(section,"robot_radius",0.15);
-  this->safety_dist = cf->ReadLength(section,"safety_dist", this->robot_radius);
+  //this->robot_radius = cf->ReadLength(section,"robot_radius",0.15);
+  this->safety_dist = cf->ReadLength(section,"safety_dist", 0.25);
   this->max_radius = cf->ReadLength(section,"max_radius",1.0);
   this->dist_penalty = cf->ReadFloat(section,"dist_penalty",1.0);
   this->dist_eps = cf->ReadLength(section,"distance_epsilon", 
@@ -178,7 +178,8 @@ Wavefront::Wavefront(char* interface, ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int Wavefront::Setup()
+int 
+Wavefront::Setup()
 {
   player_planner_cmd_t cmd;
   player_planner_data_t data;
@@ -243,7 +244,8 @@ int Wavefront::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int Wavefront::Shutdown()
+int 
+Wavefront::Shutdown()
 {
   // Stop the driver thread.
   this->StopThread();
@@ -640,6 +642,9 @@ int
 Wavefront::SetupPosition()
 {
   player_device_id_t id;
+  player_position_geom_t geom;
+  struct timeval ts;
+  unsigned short reptype;
 
   id.code = PLAYER_POSITION_CODE;
   id.index = this->position_index;
@@ -656,6 +661,21 @@ Wavefront::SetupPosition()
     PLAYER_ERROR("unable to subscribe to position device");
     return(-1);
   }
+
+  // Get the robot's geometry, and infer the radius
+  geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+  if(this->position->Request(&id, this, &geom, sizeof(geom.subtype),
+                             &reptype, &ts, &geom, sizeof(geom)) <
+     sizeof(player_position_geom_t))
+  {
+    PLAYER_ERROR("failed to get robot geometry");
+    return(-1);
+  }
+
+  // take the bigger of the two dimensions, convert to meters, and halve 
+  // to get a radius
+  this->robot_radius = MAX(htons(geom.size[0]), htons(geom.size[1])) / 1e3;
+  this->robot_radius /= 2.0;
 
   return 0;
 }
@@ -734,7 +754,7 @@ Wavefront::SetupMap()
   info.subtype = PLAYER_MAP_GET_INFO_REQ;
   if((replen = mapdevice->Request(&map_id, this, &info, 
                                   sizeof(info.subtype), &reptype, 
-                                  &ts, &info, sizeof(info))) == 0)
+                                  &ts, &info, sizeof(info))) <= 0)
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
