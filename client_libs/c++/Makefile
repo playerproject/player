@@ -6,7 +6,7 @@ include ../../Makefile.common
 
 LIBNAME = libplayerclient.a
 
-CFLAGS = -O3 -Wall $(PLAYER_PLATFORM)
+CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
