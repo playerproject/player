@@ -50,7 +50,7 @@ class StageTime : public PlayerTime
     void Unlock();
 
   public:
-    StageTime( stage_clock_t* clock, int fd );
+    StageTime(const char *directory);
     ~StageTime() { } // empty destructor
 
     int GetTime(struct timeval* time);

@@ -28,18 +28,52 @@
  *
  */
 
-#include "stagetime.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
 #include <sys/file.h>
 
+#include "stagetime.h"
+
+
 // constuctor
-StageTime::StageTime( stage_clock_t* clock, int fd ) 
-{ 
+StageTime::StageTime(const char *directory) 
+{
+  // open and map the stage clock
+  char clockname[MAX_FILENAME_SIZE];
+  snprintf( clockname, MAX_FILENAME_SIZE-1, "%s/%s", 
+            directory, STAGE_CLOCK_NAME );
+  
+#ifdef DEBUG
+  printf("Opening %s\n", clockname );
+#endif
+
+  int tfd;
+  
+  if( (tfd = open( clockname, O_RDWR )) < 0 )
+  {
+    perror( "Failed to open clock file" );
+    printf("Tried to open file \"%s\"\n", clockname );
+    exit( -1 );
+  }
+
+  stage_clock_t *clock = 0;
+  clock = (stage_clock_t*) mmap( NULL, sizeof(struct timeval),
+                                 PROT_READ | PROT_WRITE, 
+                                 MAP_SHARED, tfd, (off_t) 0);
+  if (clock == MAP_FAILED)
+  {
+    perror( "Failed to map clock memory" );
+    exit( -1 );
+  }
+  assert(clock);
+
   simtimep = &clock->time; 
   
   // use the first byte of the clock file to synchronize access
-  InstallLock( fd, 0 );
+  InstallLock( tfd, 0 );
 }
+
 
 void StageTime::Lock( void )
 {
