@@ -574,54 +574,6 @@ void playerc_camera_decompress(playerc_camera_t *device);
 /** @} */
 /**************************************************************************/
 
-
-/***************************************************************************/
-/** @defgroup playerc_proxy_comms comms
-
-The comms proxy provides an interface to the network broadcast device.
-This device broadcasts any message sent to it onto the local network,
-and returns the messages broadcast by other robots.  This device use
-broadcast UDP sockets, and therefore offers no guarantee that messages
-will be delivered, or that they will be delivered in the order in
-which they are transmitted.
-
-@{
-*/
-
-
-/** Comms proxy data. */
-typedef struct
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-  /** The most recent incoming messages. */
-  size_t msg_len;
-  uint8_t msg[PLAYER_MAX_MESSAGE_SIZE];
-    
-} playerc_comms_t;
-
-
-/** Create a comms proxy. */
-playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index);
-
-/** Destroy a comms proxy. */
-void playerc_comms_destroy(playerc_comms_t *device);
-
-/** Subscribe to the comms device. */
-int playerc_comms_subscribe(playerc_comms_t *device, int access);
-
-/** Un-subscribe from the comms device. */
-int playerc_comms_unsubscribe(playerc_comms_t *device);
-
-/** Send a comms message. */
-int playerc_comms_send(playerc_comms_t *device, void *msg, int len);
-
-
-/** @} */
-/**************************************************************************/
-
-
 /***************************************************************************/
 /** @defgroup playerc_proxy_fiducial fiducial
 
