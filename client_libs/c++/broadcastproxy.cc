@@ -91,9 +91,9 @@ int BroadcastProxy::Write(char *msg, int len)
     PLAYER_TRACE2("wrote msg [%s] to queue %d bytes", msg, len);
     
     uint16_t xlen = htons(len);
-    memcpy(this->cmd.buffer + this->cmd.len, &xlen, sizeof(len));
-    memcpy(this->cmd.buffer + this->cmd.len + sizeof(len), msg, len);
-    this->cmd.len += len + sizeof(len);
+    memcpy(this->cmd.buffer + this->cmd.len, &xlen, sizeof(xlen));
+    memcpy(this->cmd.buffer + this->cmd.len + sizeof(xlen), msg, len);
+    this->cmd.len += len + sizeof(xlen);
 
     return len;
 }
