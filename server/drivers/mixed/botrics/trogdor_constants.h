@@ -45,8 +45,8 @@
 #define TROGDOR_M_PER_TICK     (TROGDOR_WHEEL_CIRCUM / TROGDOR_TICKS_PER_REV)
 
 /* for safety */
-#define TROGDOR_MAX_XSPEED       0.5
-#define TROGDOR_MAX_YAWSPEED     DTOR(20.0)
+#define TROGDOR_MAX_XSPEED       1.0
+#define TROGDOR_MAX_YAWSPEED     DTOR(60.0)
 
 /************************************************************************/
 /* Comm protocol values */
