@@ -6,6 +6,12 @@
  * CVS: $Id$
 **************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef INCLUDE_RTKGUI
+
 #include <errno.h>
 #include <math.h>
 #include <stdlib.h>
@@ -124,3 +130,4 @@ void imap_draw_dist(imap_t *imap, rtk_fig_t *fig)
 }
 */
 
+#endif

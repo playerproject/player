@@ -28,7 +28,7 @@
 // Theory of operation:
 //  TODO
 //
-// Requires: position (odometry), laser
+// Requires: position (odometry), laser, sonar
 // Provides: localization
 //
 ///////////////////////////////////////////////////////////////////////////

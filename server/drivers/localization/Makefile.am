@@ -1,1 +1,1 @@
-SUBDIRS = mcl amcl
+SUBDIRS = amcl
