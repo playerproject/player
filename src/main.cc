@@ -75,6 +75,9 @@
 #ifdef INCLUDE_BROADCAST
 #include <broadcastdevice.hh>
 #endif
+#ifdef INCLUDE_SPEECH
+#include <speechdevice.h>
+#endif
 
 #include <clientdata.h>
 #include <devicetable.h>
@@ -313,6 +316,7 @@ int main( int argc, char *argv[] )
   CDevice* audioDevice = NULL;
   CDevice* laserbeaconDevice = NULL;
   CDevice* broadcastDevice = NULL;
+  CDevice* speechDevice = NULL;
 
   /* use these to temporarily store command-line args */
   int playerport = PLAYER_PORTNUM;
@@ -569,6 +573,9 @@ int main( int argc, char *argv[] )
 #ifdef INCLUDE_BROADCAST
     broadcastDevice = new CBroadcastDevice;
 #endif
+#ifdef INCLUDE_SPEECH
+    speechDevice =     new CSpeechDevice();
+#endif
   }
 
   // add the devices to the global table
@@ -601,6 +608,9 @@ int main( int argc, char *argv[] )
 #endif
 #ifdef INCLUDE_BROADCAST
   deviceTable->AddDevice(PLAYER_BROADCAST_CODE, 0, PLAYER_ALL_MODE, broadcastDevice);
+#endif
+#ifdef INCLUDE_SPEECH
+  deviceTable->AddDevice(PLAYER_SPEECH_CODE, 0, PLAYER_WRITE_MODE, speechDevice);
 #endif
 
   /* set up to handle SIGPIPE (happens when the client dies) */
