@@ -88,6 +88,8 @@ PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[no],)
 
 PLAYER_ADD_DRIVER([mcl],[drivers/localization/mcl],[no],)
 
+PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],["-lgsl -lgslcblas"],[gsl/gsl_version.h])
+
 dnl PLAYER_ADD_DRIVER doesn't handle multiple libraries in <name>_LIB, so
 dnl do it manually
 AC_ARG_ENABLE(laser,
@@ -123,24 +125,6 @@ AC_SUBST(AMCL_PF_LIB)
 AC_SUBST(AMCL_MAP_LIB)
 AC_SUBST(AMCL_MODELS_LIB)
 AC_SUBST(AMCL_EXTRA_LIB)
-
-dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
-dnl do it manually
-AC_ARG_ENABLE(inav,
-[  --enable-inav           Compile the inav driver],,enable_inav=no)
-if test "x$enable_inav" = "xyes"; then
-  AC_CHECK_HEADER(gsl/gsl_version.h,,
-    AC_MSG_ERROR([The GNU Scientific Library (gsl) is required to build the
-                  inav driver; pass --disable-inav to configure.]))
-  AC_DEFINE(INCLUDE_INAV, 1, [[include the INAV driver]])
-  INAV_LIB="libinav.a"
-  INAV_LIBPATH="drivers/position/inav/libinav.a"
-  INAV_EXTRA_LIB="-lgsl -lgslcblas"
-fi
-AC_SUBST(INAV_LIB)
-AC_SUBST(INAV_LIBPATH)
-AC_SUBST(INAV_EXTRA_LIB)
-
 
 dnl Manually append LIB, LIBPATH, and EXTRA_LIB vars for those drivers that
 dnl the PLAYER_ADD_DRIVER macro wasn't called.
