@@ -1,0 +1,3162 @@
+2002-06-11 01:16  inspectorg
+
+	* client_libs/libplayerc/doc/: Makefile, libplayerc.tex: Tweaked
+	make file
+
+2002-06-11 01:15  gerkey
+
+	* utils/playerv/playerv.c: made playerv default
+
+2002-06-11 00:55  gerkey
+
+	* Makefile, distro.sh, client_libs/tcl/Makefile, rtk2/Makefile,
+	src/Makefile: for distro
+
+2002-06-11 00:01  gerkey
+
+	* Makefile, utils/playerv/Makefile: going for distro
+
+2002-06-10 23:48  rtv
+
+	* rtk2/Makefile: removed README.xs README.world. renamed
+	README.stage to README. worked on manual
+
+2002-06-10 23:32  gerkey
+
+	* rtk2/rtk_canvas.c: fixed file bug
+
+2002-06-10 23:30  gerkey
+
+	* client_libs/libplayerc/test/Makefile, src/visiondevice.cc,
+	utils/tkplayerv/viewer.tk: fixed small vision bug on initial data
+
+2002-06-10 22:56  gerkey
+
+	* client_libs/: c++/doc/cppclient.tex,
+	oldc++/doc/notext_ps_logo.eps, oldc++/doc/oldcppclient.tex: slight
+	manual change
+
+2002-06-10 22:53  gerkey
+
+	* client_libs/: c++/doc/cppclient.tex, c++/doc/notext_ps_logo.eps,
+	libplayerc/doc/libplayerc.tex, libplayerc/doc/notext_ps_logo.eps,
+	lisp/doc/lispplayer.tex, lisp/doc/notext_ps_logo.eps,
+	tcl/doc/notext_ps_logo.eps, tcl/doc/tclplayer.tex: added common
+	frontpage logos
+
+2002-06-10 22:47  inspectorg
+
+	* utils/playerv/: Makefile, playerv.c: Added usage output
+
+2002-06-10 20:12  gerkey
+
+	* doc/player-manual/player.tex: added section on GUIs
+
+2002-06-10 18:51  inspectorg
+
+	* rtk2/: rtk.h, rtk_canvas.c, rtk_fig.c: Fixed figure selection;
+	added figure for zooming
+
+2002-06-10 18:34  gerkey
+
+	* rtk2/Makefile: added optimize flag
+
+2002-06-10 18:31  gerkey
+
+	* Makefile.common: almost ready for 1.2
+
+2002-06-09 22:25  inspectorg
+
+	* client_libs/libplayerc/: client.c, dev_broadcast.c, dev_gps.c,
+	doc/Makefile, doc/libplayerc.tex, test/Makefile, test/test.c,
+	test/test.h, test/test.world, test/test_broadcast.c,
+	test/test_gps.c: Added gps device
+
+2002-06-09 22:12  gerkey
+
+	* client_libs/c++/gripperproxy.cc,
+	client_libs/c++/test/test_gripper.cc, examples/c++/forage.cc: minor
+	tweaks to examples
+
+2002-06-09 19:58  inspectorg
+
+	* client_libs/libplayerc/doc/libplayerc.tex: Added a device summary
+
+2002-06-09 19:28  gerkey
+
+	* client_libs/tcl/playerclient.tcl,
+	client_libs/tcl/doc/tclplayer.tex, include/messages.h,
+	utils/tkplayerv/viewer.tk: several small things:   Stage PTZ's
+	device:     - visualization incorporates zoom, in the same way as
+	the vision device.	- defaults to 60-degree FOV, with linear
+	12x zoom (kind of like a Sony)	    - takes 'lens' option (either
+	"normal" or "wide", where wide is 2x FOV)
+	
+	  Stage's position device:
+	    - fixed little compass bug
+	
+	  Stage's vision device:
+	    - fixed little bug when joining two symmetrically placed blobs
+	
+	  tkplayerv:
+	    - draws vision data using blob color fields
+
+2002-06-09 14:20  gerkey
+
+	* client_libs/tcl/playerclient.tcl: updated for new sonar data
+	format
+
+2002-06-09 14:17  gerkey
+
+	* doc/player-manual/player.tex: added range_count to sonar data
+	struct
+
+2002-06-09 14:16  gerkey
+
+	* client_libs/c++/test/: test.cc, test_vision.cc: added more
+	devices and stuff to everything.world.	fixed up and tested gripper
+	and puck interactions.
+
+2002-06-09 13:07  gerkey
+
+	* client_libs/c++/sonarproxy.cc, client_libs/c++/sonarproxy.h,
+	client_libs/c++/test/test_sonar.cc, examples/c++/Makefile,
+	include/bpsdevice.h, include/laserbeacondevice.hh,
+	src/bpsdevice.cc, src/deviceregistry.cc, src/devicetable.cc,
+	src/laserbeacondevice.cc, src/main.cc: some small changes; fixed
+	command-line indexing bug, and changed lbd and bps so that they
+	default to using devices on their own index (rather than 0).
+
+2002-06-09 12:21  gerkey
+
+	* doc/player-manual/player.tex: foo
+
+2002-06-09 11:36  inspectorg
+
+	* client_libs/libplayerc/dev_bps.c,
+	client_libs/libplayerc/dev_truth.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/doc/Makefile,
+	client_libs/libplayerc/doc/libplayerc.tex,
+	client_libs/libplayerc/test/test_truth.c, include/messages.h,
+	utils/playerv/Makefile, utils/playerv/dev_ptz.c,
+	utils/playerv/dev_vision.c, utils/playerv/imagewnd.c,
+	utils/playerv/mainwnd.c, utils/playerv/playerv.c,
+	utils/playerv/playerv.h: Removed image window from playerv; added
+	grid to playerv; added support for truth device data to libplayerc
+
+2002-06-07 16:53  inspectorg
+
+	* client_libs/c++/sonarproxy.cc,
+	client_libs/libplayerc/dev_sonar.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/test_sonar.c, include/messages.h,
+	src/p2osdevice.cc, src/sip.cc, utils/playerv/dev_sonar.c: Changed
+	sonar packet
+
+2002-06-07 11:35  gerkey
+
+	* client_libs/c++/test/test_gps.cc, src/main.cc: some minor fixes;
+	Player now ignores the "lock" file, in addition to ignoring the
+	"clock" file.  gets rid of that "Unknown device type 24515" error.
+	
+	also, i "#ifdef DEBUG"ed some output in Stage vision device.
+
+2002-06-07 10:30  inspectorg
+
+	* utils/playerv/: dev_sonar.c, error.h: Minor tweaks
+
+2002-06-06 23:30  inspectorg
+
+	* client_libs/: c++/Makefile, c++/gpsproxy.cc, c++/gpsproxy.h,
+	c++/playerclient.h, c++/truthproxy.h, libplayerc/doc/Makefile,
+	libplayerc/doc/libplayerc.tex: Added support for truth device
+
+2002-06-06 23:13  inspectorg
+
+	* client_libs/libplayerc/Makefile,
+	client_libs/libplayerc/dev_truth.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/Makefile,
+	client_libs/libplayerc/test/test.c,
+	client_libs/libplayerc/test/test.h,
+	client_libs/libplayerc/test/test_truth.c, include/messages.h: Added
+	truth device
+
+2002-06-06 20:02  gerkey
+
+	* doc/player-manual/player.tex: touched up config req/rep methods
+
+2002-06-06 19:53  gerkey
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile,
+	client_libs/c++/sonarproxy.h, client_libs/c++/test/Makefile,
+	include/messages.h: some tweaks to make c++ clients build on
+	Solaris
+
+2002-06-05 18:26  gerkey
+
+	* client_libs/: c++/sonarproxy.cc, c++/sonarproxy.h,
+	c++/test/test_sonar.cc, tcl/playerclient.tcl: new sonar geometry
+	support
+
+2002-06-05 18:24  gerkey
+
+	* src/robot_params.cc: new params
+
+2002-06-05 18:20  gerkey
+
+	* src/robot_params.cc: new params
+
+2002-06-05 17:48  gerkey
+
+	* include/robot_params.h, src/p2osdevice.cc, src/robot_params.cc,
+	src/sip.cc: new robot params
+
+2002-06-05 01:30  inspectorg
+
+	* client_libs/libplayerc/client.c, src/p2osdevice.cc: Minor merging
+
+2002-06-04 16:39  gerkey
+
+	* src/main.cc: took out debug
+
+2002-06-04 16:18  gerkey
+
+	* client_libs/c/playercclient.c, client_libs/c++/playerclient.cc,
+	client_libs/c++/truthproxy.cc, client_libs/c++/truthproxy.h,
+	include/broadcastdevice.hh, include/clientdata.h, include/device.h,
+	include/devicetable.h, include/laserbeacondevice.hh,
+	include/messages.h, include/playerqueue.h, include/stage.h,
+	src/bpsdevice.cc, src/broadcastdevice.cc, src/clientdata.cc,
+	src/clientmanager.cc, src/device.cc, src/deviceregistry.cc,
+	src/devicetable.cc, src/laserbeacondevice.cc, src/laserdevice.cc,
+	src/main.cc, src/p2osdevice.cc, src/playerqueue.cc: a few changes
+	in lots of files:   - a 'player_device_id_t', which contains a
+	device's code, index, and port,     is now passed in and out of
+	configuration req/rep queues.  this allows     one device (e.g.,
+	P2OS) to intelligently service requests actually     addressed to
+	other devices.
+	
+	  - a 'player_device_id_t' is now stored in each device as well,
+	under
+	    the name 'device_id'.  it is public, and is set by
+	    CDeviceTable::AddDevice() when the device is added to the
+	instantiated
+	    device table.  this allows devices to know who they are.  still
+	not a
+	    perfect solution because you might want to know in the
+	constructor.
+
+2002-06-03 23:49  rtv
+
+	* src/: device.cc, stagedevice.cc: added initialization to
+	CStageDevice::CStageDevice(), fixing a	horrible bug
+
+2002-06-03 23:35  rtv
+
+	* rtk2/rtk_canvas.c: improved support for distributed modes by
+	creating stage client and server modes. stage can be as  run with
+	or without the RTK2 GUI, which is now standard. In server mode (the
+	default) stage reads a worldfile, creates external IO files and
+	spawns a Player. In client mode (-c on the command line) stage
+	connects to a server and downloads the world model. Clients may
+	update devices, thus sharing the compulational load [NOT TESTED -
+	PROBABLY BROKEN]. A client's GUI can be used as a remote world
+	viewer. This replaces XS which has been removed. Lots to do here
+	before this is releasable...
+
+2002-06-03 21:59  inspectorg
+
+	* client_libs/libplayerc/dev_position.c,
+	client_libs/libplayerc/dev_sonar.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/test_laser.c,
+	client_libs/libplayerc/test/test_position.c, include/messages.h,
+	src/p2osdevice.cc, utils/playerv/dev_position.c: Added position
+	geometry packet
+
+2002-06-03 18:46  inspectorg
+
+	* client_libs/libplayerc/dev_laser.c,
+	client_libs/libplayerc/dev_sonar.c,
+	client_libs/libplayerc/dev_vision.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/test_laser.c,
+	client_libs/libplayerc/test/test_sonar.c,
+	client_libs/libplayerc/test/test_vision.c, include/laserdevice.h,
+	include/messages.h, include/robot_params.h, include/sonardevice.h,
+	include/visiondevice.h, src/laserdevice.cc, src/p2osdevice.cc,
+	src/robot_params.cc, src/sonardevice.cc, src/visiondevice.cc,
+	utils/playerv/Makefile, utils/playerv/dev_laser.c,
+	utils/playerv/dev_lbd.c, utils/playerv/dev_position.c,
+	utils/playerv/dev_ptz.c, utils/playerv/dev_sonar.c,
+	utils/playerv/dev_vision.c, utils/playerv/imagewnd.c,
+	utils/playerv/playerv.c, utils/playerv/playerv.h: Added
+	width/height to vision; added geometry packets to sonar, laser
+
+2002-06-03 15:02  gerkey
+
+	* Makefile, README, distro.sh, client_libs/libplayerc/Makefile:
+	small changes to get ready for building distros
+
+2002-06-03 10:30  inspectorg
+
+	* rtk2/: rtk.h, rtk_fig.c: Added gavins patch to stop mem leak on
+	text strokes
+
+2002-06-02 17:40  inspectorg
+
+	* Makefile, utils/playerv/Makefile: Updated makefiles; should build
+	rtk2
+
+2002-06-02 17:24  inspectorg
+
+	* client_libs/libplayerc/dev_position.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/doc/Makefile,
+	client_libs/libplayerc/doc/libplayerc.tex,
+	examples/libplayerc/Makefile, utils/playerv/dev_position.c: Updated
+	libplayerc manual
+
+2002-06-01 09:42  inspectorg
+
+	* client_libs/libplayerc/: playerc.h, doc/Makefile,
+	doc/libplayerc.tex: Added Makefile magic to extract documentation
+	from header
+
+2002-05-31 18:58  inspectorg
+
+	* client_libs/libplayerc/doc/: Makefile, libplayerc.tex: Added more
+	stuff to manual
+
+2002-05-31 15:49  inspectorg
+
+	* client_libs/libplayerc/doc/libplayerc.tex: Added some intro text
+
+2002-05-31 14:58  gerkey
+
+	* include/p2osdevice.h, src/p2osdevice.cc: fixed memory leaks
+
+2002-05-30 23:00  inspectorg
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile,
+	client_libs/c++/bpsproxy.cc, client_libs/c++/laserbeaconproxy.cc,
+	client_libs/c++/test/Makefile, client_libs/libplayerc/Makefile,
+	client_libs/libplayerc/client.c, client_libs/libplayerc/dev_bps.c,
+	client_libs/libplayerc/dev_laser.c,
+	client_libs/libplayerc/dev_lbd.c,
+	client_libs/libplayerc/dev_sonar.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/test_bps.c, examples/c/Makefile,
+	examples/c++/Makefile, include/bpsdevice.h, include/messages.h,
+	src/Makefile, rtk2/Makefile, src/bpsdevice.cc,
+	src/laserbeacondevice.cc, src/laserdevice.cc,
+	utils/playerv/Makefile: Updated BPS device
+
+2002-05-30 20:06  gerkey
+
+	* utils/tkplayerv/Makefile: makefile for tkviewer
+
+2002-05-30 17:55  inspectorg
+
+	* client_libs/libplayerc/test/: Makefile, test.c, test.h,
+	test_bps.c, test_sonar.c: Added bps and sonar tests
+
+2002-05-30 17:14  inspectorg
+
+	* client_libs/Makefile, client_libs/c/Makefile,
+	client_libs/c++/Makefile, client_libs/c++/test/Makefile,
+	client_libs/libplayerc/Makefile,
+	client_libs/libplayerc/examples/Makefile,
+	client_libs/libplayerc/examples/simple.c, examples/c/Makefile,
+	examples/c++/Makefile, examples/libplayerc/Makefile,
+	examples/libplayerc/simple.c, rtk2/Makefile, src/Makefile,
+	utils/playerv/Makefile: Moved examples for libplayerc
+
+2002-05-30 13:50  gerkey
+
+	* client_libs/c++/laserbeaconproxy.cc,
+	client_libs/c++/laserproxy.cc, client_libs/libplayerc/dev_laser.c,
+	client_libs/libplayerc/dev_lbd.c, client_libs/tcl/playerclient.tcl,
+	client_libs/tcl/doc/tclplayer.tex, src/Makefile, src/bpsdevice.cc,
+	src/deviceregistry.cc, src/laserbeacondevice.cc,
+	src/laserdevice.cc: a few small fixes.	the devices that have "GET"
+	configuration requests now take those requests as 'short' messages
+	in that only the subtype is specified, without a bunch of unused
+	fields.
+
+2002-05-30 13:48  gerkey
+
+	* doc/player-manual/player.tex: fixed some device details
+
+2002-05-30 11:24  gerkey
+
+	* doc/player-manual/: player.bib, player.tex: some more
+	documentation
+
+2002-05-30 10:12  gerkey
+
+	* Makefile, Makefile.common, README, client_libs/c++/Makefile,
+	client_libs/c++/gripperproxy.h, client_libs/c++/playerclient.h,
+	client_libs/c++/visionproxy.h, client_libs/c++/doc/Makefile,
+	client_libs/c++/doc/cppclient.tex,
+	client_libs/c++/test/test_laser.cc,
+	client_libs/libplayerc/Makefile,
+	client_libs/libplayerc/examples/Makefile,
+	client_libs/libplayerc/test/Makefile,
+	client_libs/tcl/playerclient.tcl,
+	client_libs/tcl/doc/tclplayer.tex, utils/Makefile,
+	utils/playerv/Makefile: - documentation changes in c++ and tcl
+	
+	- Makefile changes toward making a new distro
+
+2002-05-29 16:45  gerkey
+
+	* examples/tcl/: Makefile, viewer.tk: moved viewer.tk to utils
+
+2002-05-29 16:44  gerkey
+
+	* utils/tkplayerv/: README, viewer.tk: new location for the Tk
+	viewer
+
+2002-05-29 08:49  inspectorg
+
+	* utils/playerv/: Makefile, dev_laserbeacon.c, dev_lbd.c,
+	dev_vision.c, playerv.c, playerv.h: Did some re-organization
+
+2002-05-29 08:49  inspectorg
+
+	* client_libs/libplayerc/: doc/Makefile, doc/libplayerc.tex,
+	examples/Makefile, examples/simple.c: Added manual and example
+
+2002-05-28 21:23  gerkey
+
+	* doc/player-manual/player.tex: added a field to the vision data
+	packet
+
+2002-05-28 21:14  gerkey
+
+	* Makefile.common, client_libs/c/playercclient.c,
+	client_libs/c++/broadcastproxy.cc, client_libs/c++/gpsproxy.h,
+	client_libs/c++/gripperproxy.cc, client_libs/c++/gripperproxy.h,
+	client_libs/c++/laserbeaconproxy.cc,
+	client_libs/c++/laserbeaconproxy.h, client_libs/c++/laserproxy.cc,
+	client_libs/c++/laserproxy.h, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h, client_libs/c++/sonarproxy.cc,
+	client_libs/c++/doc/Makefile, client_libs/c++/doc/cppclient.tex,
+	client_libs/tcl/playerclient.tcl, include/sip.h, src/bpsdevice.cc,
+	src/p2osdevice.cc: made a few changes, mostly cleaning up
+	request/reply interactions, fixing/updating C++ client, and
+	documentation.
+
+2002-05-28 21:13  gerkey
+
+	* client_libs/c++/test/: Makefile, test.cc, test.h,
+	test_gripper.cc: added gripper test
+
+2002-05-28 21:03  gerkey
+
+	* client_libs/c++/test/: Makefile, test.cc, test.h, test_bps.cc,
+	test_broadcast.cc, test_gps.cc, test_laser.cc, test_lbd.cc,
+	test_misc.cc, test_position.cc, test_ptz.cc, test_sonar.cc,
+	test_speech.cc, test_vision.cc: new tests
+
+2002-05-26 22:45  inspectorg
+
+	* Makefile.common, include/messages.h, src/visiondevice.cc: Added
+	color field to vision blob data
+
+2002-05-26 22:44  inspectorg
+
+	* client_libs/libplayerc/: dev_ptz.c, dev_vision.c, playerc.h,
+	test/Makefile, test/test.c, test/test.h: Bug fixes
+
+2002-05-26 22:44  inspectorg
+
+	* rtk2/rtk.h, rtk2/rtk_canvas.c, utils/playerv/Makefile,
+	utils/playerv/dev_laserbeacon.c, utils/playerv/dev_ptz.c,
+	utils/playerv/dev_vision.c, utils/playerv/imagewnd.c,
+	utils/playerv/mainwnd.c, utils/playerv/playerv.c,
+	utils/playerv/playerv.h: Added vision and ptz
+
+2002-05-26 17:30  inspectorg
+
+	* client_libs/libplayerc/test/: Makefile, test.c, test.h,
+	test_laser.c, test_lbd.c, test_position.c, test_ptz.c,
+	test_vision.c: Updated tests
+
+2002-05-26 16:35  inspectorg
+
+	* client_libs/c++/: broadcastproxy.cc, broadcastproxy.h,
+	laserbeaconproxy.cc: Fixed compile errors, but broadcast and ldb
+	wont work properly yet
+
+2002-05-26 16:33  inspectorg
+
+	* client_libs/libplayerc/: Makefile, client.c, dev_bps.c,
+	dev_gps.c, dev_laserbeacon.c, dev_lbd.c, dev_ptz.c, dev_vision.c,
+	playerc.h, test/Makefile, test/test.c, test/test.h,
+	test/test_laser.c, test/test_laserbeacon.c, test/test_lbd.c,
+	test/test_vision.c: Added skeletons for bps, gps, ptz
+
+2002-05-26 14:05  gerkey
+
+	* Makefile, include/device.h, src/Makefile, utils/Makefile,
+	utils/playerv/Makefile: a few minor changes, in preparation for new
+	distribution
+
+2002-05-26 13:55  gerkey
+
+	* client_libs/: Makefile, c++/doc/cppclient.tex,
+	libplayerc/Makefile, lisp/doc/Makefile, lisp/doc/lispplayer.tex,
+	oldc++/doc/Makefile, oldc++/doc/oldcppclient.tex,
+	tcl/playerclient.tcl, tcl/doc/Makefile, tcl/doc/tclplayer.tex:
+	split language-specific client details into their own manuals
+
+2002-05-26 13:44  gerkey
+
+	* doc/player-manual/player.tex: took language-specific docs out to
+	separate manuals
+
+2002-05-25 15:38  inspectorg
+
+	* client_libs/libplayerc/: Makefile, dev_vision.c, playerc.h,
+	test/Makefile, test/test.c, test/test_laser.c, test/test_vision.c:
+	Added skeleton for vision device
+
+2002-05-24 20:42  gerkey
+
+	* doc/player-manual/player.tex: in the middle of Tcl client
+	documentation
+
+2002-05-24 19:19  gerkey
+
+	* doc/player-manual/player.tex: (pretty much) finished
+	documentation of adding new devices
+
+2002-05-24 17:01  inspectorg
+
+	* Makefile.common, client_libs/libplayerc/dev_laser.c,
+	client_libs/libplayerc/dev_laserbeacon.c,
+	client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/test/test_laserbeacon.c,
+	include/bpsdevice.h, include/broadcastdevice.hh, include/device.h,
+	include/laserbeacondevice.hh, include/laserdevice.h,
+	include/messages.h, include/playerqueue.h, utils/playerv/Makefile,
+	utils/playerv/dev_laser.c, utils/playerv/dev_laserbeacon.c: Changed
+	queue to use void*
+
+2002-05-24 16:59  inspectorg
+
+	* src/: bpsdevice.cc, broadcastdevice.cc, clientdata.cc, device.cc,
+	laserbeacondevice.cc, laserdevice.cc, p2osdevice.cc,
+	playerqueue.cc: Changed configuration stuff for laser and laser
+	beacon; changed request/reply queue to use void*
+
+2002-05-23 21:22  inspectorg
+
+	* client_libs/libplayerc/: Makefile, test.c, test/Makefile,
+	test/test.c, test/test.h, test/test_broadcast.c, test/test_laser.c,
+	test/test_laserbeacon.c, test/test_position.c: Moved test code to
+	separate dir
+
+2002-05-22 19:40  gerkey
+
+	* src/Makefile, src/audiodevice.cc, src/bpsdevice.cc,
+	src/broadcastdevice.cc, src/device.cc, src/deviceregistry.cc,
+	src/devicetable.cc, src/laserbeacondevice.cc, src/laserdevice.cc,
+	src/main.cc, src/p2osdevice.cc, src/ptzdevice.cc,
+	src/speechdevice.cc, src/visiondevice.cc, TODO,
+	client_libs/tcl/playerclient.tcl, examples/tcl/viewer.tk,
+	include/audiodevice.h, include/bpsdevice.h,
+	include/broadcastdevice.hh, include/device.h,
+	include/deviceregistry.h, include/devicetable.h,
+	include/gripperdevice.h, include/laserbeacondevice.hh,
+	include/laserdevice.h, include/messages.h, include/miscdevice.h,
+	include/p2osdevice.h, include/positiondevice.h,
+	include/ptzdevice.h, include/sonardevice.h, include/speechdevice.h,
+	include/visiondevice.h: two main things:
+	
+	  - changed all configurable devices to use new request/reply
+	configuration
+	    protocol (even when they don't use the incoming queue, like
+	bps).  have
+	    tested p2os devices and laser, but not laserbeacon or bps
+	(Andrew?)
+	
+	  - added thread management support to CDevice. if, in your device,
+	you
+	    override the virtual class method 'void Main()', then you can
+	call
+	    'StartThread()', which will create a new thread and execute
+	your method
+	    in it.  this means that you have proper object context in the
+	thread,
+	    including the ability to access private members.  when you're
+	done, just
+	    call 'StopThread()', which will cancel() and join() the thread.
+	
+	    have converted all threaded devices to use this model, and have
+	tested
+	    all but bps (Andrew?)
+
+2002-05-22 09:58  gerkey
+
+	* doc/player-manual/player.tex: added more info about how to extend
+	the server
+
+2002-05-22 09:56  gerkey
+
+	* TODO, src/main.cc: minor changes
+
+2002-05-21 09:32  inspectorg
+
+	* client_libs/libplayerc/Makefile, client_libs/libplayerc/client.c,
+	client_libs/libplayerc/dev_broadcast.c,
+	client_libs/libplayerc/dev_laser.c,
+	client_libs/libplayerc/playerc.h, client_libs/libplayerc/test.c,
+	include/broadcastdevice.hh, include/device.h, include/messages.h,
+	include/p2osdevice.h, src/bpsdevice.cc, src/broadcastdevice.cc,
+	src/clientdata.cc, src/device.cc, src/laserbeacondevice.cc,
+	src/p2osdevice.cc: Re-write of broadcast device
+
+2002-05-20 23:24  gerkey
+
+	* doc/player-manual/: buffers.eps, buffers.fig, player.tex: in the
+	process of updating for 1.2, including accurate description of
+	server structure and how to add a new device.  also modified server
+	architecture diagram in order to show that only one each
+	client-reader and client-writer threads are used to service all
+	clients.
+
+2002-05-20 23:21  gerkey
+
+	* TODO, src/Makefile: added some items to the TODO list
+
+2002-05-17 23:01  inspectorg
+
+	* client_libs/libplayerc/client.c,
+	client_libs/libplayerc/dev_laser.c,
+	client_libs/libplayerc/playerc.h, client_libs/libplayerc/test.c,
+	include/messages.h, include/player.h, rtk2/rtk_menu.c,
+	src/Makefile, src/broadcastdevice.cc, src/laserdevice.cc,
+	utils/playerv/dev_laser.c, utils/playerv/dev_position.c: Added get
+	config to laser
+
+2002-05-17 11:18  gerkey
+
+	* rtk2/: Makefile, rtk_table.c: trying the synchronous I/O merge
+	again.	hopefully i've gotten it right this time.
+
+2002-05-17 10:58  gerkey
+
+	* rtk2/: LICENCE, Makefile, pyrtk.c, rtk.c, rtk.h, rtk_canvas.c,
+	rtk_fig.c, rtk_menu.c, rtk_table.c, rtkprivate.h: retrying merge
+
+2002-05-17 10:43  gerkey
+
+	* README, client_libs/c/playercclient.c,
+	client_libs/tcl/playerclient.tcl, examples/c++/randomwalk.cc,
+	include/bpsdevice.h, include/clientdata.h, include/clientmanager.h,
+	include/device.h, include/laserdevice.h, include/messages.h,
+	include/p2osdevice.h, include/playerqueue.h, include/stage.h,
+	include/stagedevice.h, src/Makefile, src/audiodevice.cc,
+	src/bpsdevice.cc, src/clientdata.cc, src/clientmanager.cc,
+	src/device.cc, src/devicetable.cc, src/laserdevice.cc, src/main.cc,
+	src/p2osdevice.cc, src/playerqueue.cc, src/ptzdevice.cc,
+	src/speechdevice.cc, src/stagedevice.cc, src/visiondevice.cc:
+	merged in synch-io code (again)
+
+2002-05-16 23:45  inspectorg
+
+	* client_libs/libplayerc/client.c: Provisional support for new
+	request/reply model
+
+2002-05-16 20:55  inspectorg
+
+	* utils/playerv/: mainwnd.c, opt.c, playerv.c: Fixed short-form
+	option processing
+
+2002-05-16 20:53  inspectorg
+
+	* rtk2/: Makefile, pyrtk.c, rtk.c, rtk.h, rtk_canvas.c, rtk_fig.c,
+	rtk_menu.c, rtkprivate.h: Fixed some bogus checked-in stuff
+
+2002-05-16 20:25  gerkey
+
+	* rtk2/: Makefile, pyrtk.c, rtk.c, rtk.h, rtk_canvas.c, rtk_fig.c,
+	rtk_menu.c, rtkprivate.h: one big change:  Stage now follows
+	Player's synchronous request/reply model for device configuration. 
+	requests come in on queues, and replies go out on queues.
+	
+	this seems to work, and has been tested with all configurable
+	devices, except the Mote.
+	
+	possible problem: Stage is now linking to some object code from
+	Player, in order to get the PlayerQueue functionality, used in
+	manipulating the request/reply queues.	maybe this could be
+	avoided, with some thought...
+
+2002-05-16 20:21  gerkey
+
+	* README, client_libs/c/playercclient.c,
+	client_libs/tcl/playerclient.tcl, examples/c++/randomwalk.cc,
+	include/bpsdevice.h, include/clientdata.h, include/clientmanager.h,
+	include/device.h, include/laserdevice.h, include/messages.h,
+	include/p2osdevice.h, include/playerqueue.h, include/stage.h,
+	include/stagedevice.h, src/Makefile, src/audiodevice.cc,
+	src/bpsdevice.cc, src/clientdata.cc, src/clientmanager.cc,
+	src/device.cc, src/devicetable.cc, src/laserdevice.cc, src/main.cc,
+	src/p2osdevice.cc, src/playerqueue.cc, src/ptzdevice.cc,
+	src/speechdevice.cc, src/stagedevice.cc, src/visiondevice.cc: one
+	big change: synchronous configuration is now possible.	requests
+	are put on per-device incoming queues, and each device puts replies
+	on per-device outgoing queues.
+	
+	seems to work, including Stage devices. some physical devices
+	(e.g., P2OS) need to be updated to use this method.
+
+2002-05-16 19:18  gerkey
+
+	* rtk2/Makefile: changed a few things, mostly related to
+	request/reply queuing. seems to work now, but requires some
+	testing.
+
+2002-05-16 19:15  gerkey
+
+	* include/device.h, include/playerqueue.h, include/stage.h,
+	include/stagedevice.h, src/Makefile, src/device.cc, src/main.cc,
+	src/playerqueue.cc, src/stagedevice.cc: fixed a few queuing bugs,
+	and implemented the request/reply queues properly in Stage.  seems
+	to work now. merge is next.
+
+2002-05-16 17:41  inspectorg
+
+	* client_libs/libplayerc/: client.c, dev_laser.c,
+	dev_laserbeacon.c, dev_position.c, device.c, mclient.c, playerc.c,
+	playerc.h, playerc_private.h: Added subscription flag
+
+2002-05-16 17:40  inspectorg
+
+	* utils/playerv/: Makefile, dev_laser.c, dev_laserbeacon.c,
+	dev_position.c, mainwnd.c, opt.c, opt.h, playerv.c, playerv.h:
+	Added position device interface
+
+2002-05-15 15:07  inspectorg
+
+	* utils/playerv/Makefile, rtk2/rtk.h, rtk2/rtk_fig.c,
+	rtk2/rtk_menu.c, utils/playerv/dev_laser.c,
+	utils/playerv/dev_laserbeacon.c, utils/playerv/error.h,
+	utils/playerv/mainwnd.c, utils/playerv/opt.c, utils/playerv/opt.h,
+	utils/playerv/playerv.c, utils/playerv/playerv.h,
+	client_libs/libplayerc/Makefile, client_libs/libplayerc/client.c,
+	client_libs/libplayerc/dev_laser.c,
+	client_libs/libplayerc/dev_laserbeacon.c,
+	client_libs/libplayerc/dev_position.c,
+	client_libs/libplayerc/device.c, client_libs/libplayerc/error.c,
+	client_libs/libplayerc/error.h, client_libs/libplayerc/mclient.c,
+	client_libs/libplayerc/playerc.c, client_libs/libplayerc/playerc.h,
+	client_libs/libplayerc/playerc_private.h,
+	client_libs/libplayerc/test.c: [no log message]
+
+2002-05-06 17:24  inspectorg
+
+	* rtk2/Makefile: Alpha release
+
+2002-05-02 21:55  inspectorg
+
+	* rtk2/LICENCE: Added licences and fiddled with links
+
+2002-05-02 15:40  inspectorg
+
+	* rtk2/: rtk.h, rtk_menu.c: Added identification code
+
+2002-05-01 14:16  inspectorg
+
+	* rtk2/: rtk.c, rtk.h: Added initialization function
+
+2002-05-01 13:57  inspectorg
+
+	* rtk2/: Makefile, pyrtk.c, rtk.c, rtk.h, rtk_canvas.c, rtk_fig.c,
+	rtk_menu.c, rtk_table.c, rtkprivate.h: Lots of changes; added
+	tables
+
+2002-04-30 22:52  gerkey
+
+	* src/Makefile: cleaned up Makefiles (removed deps)
+
+2002-04-30 22:50  gerkey
+
+	* examples/c++/randomwalk.cc, include/clientdata.h,
+	include/clientmanager.h, include/stagedevice.h, src/Makefile,
+	src/audiodevice.cc, src/clientdata.cc, src/clientmanager.cc,
+	src/laserdevice.cc, src/main.cc, src/p2osdevice.cc,
+	src/ptzdevice.cc, src/speechdevice.cc, src/stagedevice.cc,
+	src/visiondevice.cc: cleaned up some mutex handling, but still had
+	to insert a super-kludge pthread_cleanup function that unlocks
+	everything, in order to make sure that Player always shuts down. 
+	however, i think that all the runtime deadlocks (which are more
+	important) have been properly removed.
+	
+	currently, Player segfaults on some device requests when running
+	inside Stage; what a pain in the ass.
+
+2002-04-30 17:34  gerkey
+
+	* client_libs/c/playercclient.c, client_libs/tcl/playerclient.tcl,
+	include/bpsdevice.h, include/clientdata.h, include/device.h,
+	include/laserdevice.h, include/messages.h, include/p2osdevice.h,
+	include/playerqueue.h, include/stagedevice.h, src/bpsdevice.cc,
+	src/clientdata.cc, src/clientmanager.cc, src/device.cc,
+	src/devicetable.cc, src/laserdevice.cc, src/p2osdevice.cc,
+	src/playerqueue.cc, src/stagedevice.cc: going toward synch request
+	/ reply.  laser seems to work; still to be done:
+	
+	  - P2OS conversion
+	
+	  - BPS conversion
+	
+	  - StageDevice conversion (and debug; player crashes??)
+	
+	  - look at interface again; is it too messy/asymmetric?
+	
+	  - verify timestamping
+	
+	  - double-check those client mutexes; i'll bet there's deadlock
+	lurking in
+	      there somewhere...
+
+2002-04-30 17:31  gerkey
+
+	* README: foo
+
+2002-04-30 14:38  gerkey
+
+	* Makefile, client_libs/tcl/Makefile,
+	client_libs/tcl/playerclient.tcl, examples/c/Makefile,
+	examples/c++/Makefile, examples/tcl/Makefile, examples/tcl/ptz.tcl,
+	examples/tcl/sonarobstacleavoid.tcl, examples/tcl/viewer.tk,
+	src/stagedevice.cc: changed tcl client to a package
+
+2002-04-29 17:51  gerkey
+
+	* client_libs/c++/playermulticlient.cc: moved the setting of
+	freshness flag after the Read
+
+2002-04-23 16:34  gerkey
+
+	* Makefile.common, examples/c++/say.cc, include/device.h,
+	include/messages.h, include/p2osdevice.h, include/ptzdevice.h,
+	include/speechdevice.h, include/stagedevice.h, include/stagetime.h,
+	include/visiondevice.h, src/Makefile, src/clientmanager.cc,
+	src/device.cc, src/laserdevice.cc, src/main.cc, src/p2osdevice.cc,
+	src/packet.cc, src/ptzdevice.cc, src/speechdevice.cc,
+	src/visiondevice.cc: ok, i think that i fixed all the stuff that i
+	broke before.  i've tested with a robot and some hardware, and
+	everything works.  not much changed since last time, except that
+	Put/Get Command/Data now remember how much data/command was Put, so
+	that Get returns the right amount.  this means that devices that
+	use variable-length buffers (e.g., vision) can still use the
+	default methods as defined in CDevice.
+
+2002-04-23 10:52  gerkey
+
+	* include/device.h, include/laserbeacondevice.hh,
+	include/p2osdevice.h, src/device.cc, src/laserbeacondevice.cc,
+	src/p2osdevice.cc, src/playerqueue.cc, src/ptzdevice.cc,
+	src/speechdevice.cc, src/stagedevice.cc, src/visiondevice.cc: more
+	cleaning
+
+2002-04-20 13:10  gerkey
+
+	* include/bpsdevice.h, include/broadcastdevice.hh,
+	include/clientdata.h, include/clientmanager.h, include/device.h,
+	include/gripperdevice.h, include/miscdevice.h,
+	include/p2osdevice.h, include/positiondevice.h,
+	include/sonardevice.h, include/stagedevice.h,
+	include/visiondevice.h, src/Makefile, src/audiodevice.cc,
+	src/bpsdevice.cc, src/broadcastdevice.cc, src/clientdata.cc,
+	src/clientmanager.cc, src/device.cc, src/gripperdevice.cc,
+	src/laserbeacondevice.cc, src/laserdevice.cc, src/main.cc,
+	src/miscdevice.cc, src/p2osdevice.cc, src/positiondevice.cc,
+	src/ptzdevice.cc, src/sonardevice.cc, src/speechdevice.cc,
+	src/stagedevice.cc, src/visiondevice.cc: more cleaning house:	-
+	mutexes are now handled better between reader and writer threads;
+	Player	    should always exit cleanly, even when in the middle of
+	opening a device
+	
+	  - instead of usleep()ing after pthread_cancel(), we now
+	pthread_join(), to
+	     be sure that the thread is gone; removes much uncertainty
+	
+	  - PutData and GetData now always take 4 args, with the last two
+	being
+	    timestamps or pointers to timestamps, respectively.  if a
+	device overrides
+	    either of these methods, then it is responsible for doing its
+	own
+	    timestamping.
+	
+	  - P2OS devices should *almost* work now.  they share a common
+	(static)
+	    pthread_mutex, and Subsribe() and Unsubscribe() are overridden
+	to access
+	    it.  timestamping should work, but could be cleaner.  however,
+	they are
+	    still probably not accessing the same data and command buffers;
+	need to
+	    convert the non-allocating CDevice constructor into a
+	SetupBuffers()
+	    method that can be called by any device that needs to manage
+	its own
+	    storage (i.e., P2OS and StageDevice).
+
+2002-04-19 16:11  gerkey
+
+	* examples/c++/say.cc, include/arenalock.h, include/audiodevice.h,
+	include/bpsdevice.h, include/broadcastdevice.hh,
+	include/clientdata.h, include/defaults.h, include/device.h,
+	include/errors.h, include/laserbeacondevice.hh,
+	include/laserdevice.h, include/lock.h, include/messages.h,
+	include/p2osdevice.h, include/playerqueue.h, include/ptzdevice.h,
+	include/speechdevice.h, include/stagedevice.h, include/stagetime.h,
+	include/visiondevice.h, src/Makefile, src/arenalock.cc,
+	src/audiodevice.cc, src/bpsdevice.cc, src/broadcastdevice.cc,
+	src/clientdata.cc, src/device.cc, src/laserbeacondevice.cc,
+	src/laserdevice.cc, src/lock.cc, src/main.cc, src/p2osdevice.cc,
+	src/playerqueue.cc, src/ptzdevice.cc, src/speechdevice.cc,
+	src/stagedevice.cc, src/stagetime.cc, src/visiondevice.cc: CLock is
+	DEAD!!! CLock is DEAD!!! CLock is DEAD!!! CLock is DEAD!!!
+	
+	(also CArenaLock is DEAD)
+	
+	locking facilities have been pushed into CDevice:   Lock();  
+	Unlock(); if a device uses the default interface methods (GetData,
+	etc.) provided in CDevice, then locking will be performed
+	automatically, as before.  if a device chooses to override any of
+	those default methods, then that device must Lock() and Unlock() of
+	its own accord (usually just Lock() on entrance to the interface
+	method, and Unlock() prior to exit).
+	
+	predictably, CStageDevice overrides Lock() and Unlock() to use the
+	record locking mechanism, instead of pthread mutexes.
+	
+	one (sort of) unfortunate side-effect:	 - since i removed the
+	concept of a Lock object (i was tired of all those     GetLock()
+	calls), the Stage-style locking code is actually *replicated*	 
+	in the StageTime class.  might be a way around this, i'll look
+	later.
+	
+	this is NOT thoroughly tested, although Stage seems to work fine. 
+	i can forsee two problem areas that i'll likely have to fix:
+	
+	  - P2OS devices probably don't share locking correctly any more
+	
+	  - data timestamping may or may not work correctly right now,
+	especially
+	    in devices which override the default interface methods.
+
+2002-04-18 13:37  gerkey
+
+	* include/bpsdevice.h, include/device.h, include/laserdevice.h,
+	include/messages.h, include/p2osdevice.h, include/playerqueue.h,
+	include/ptzdevice.h, include/speechdevice.h,
+	include/visiondevice.h, src/Makefile, src/bpsdevice.cc,
+	src/device.cc, src/gripperdevice.cc, src/laserdevice.cc,
+	src/miscdevice.cc, src/p2osdevice.cc, src/playerqueue.cc,
+	src/positiondevice.cc, src/ptzdevice.cc, src/sonardevice.cc,
+	src/speechdevice.cc, src/stagedevice.cc, src/visiondevice.cc:
+	generic Get/Put Data/Command functionality is now available in the
+	CDevice class.	also, support is provided for allocating the data
+	and command buffers.  this means that devices that do the normal
+	thing (i.e., just copy fixed-length data and command strings in and
+	out of buffers) no longer have to implement their own versions of
+	the Get/Put methods.
+	
+	i've removed said methods from most devices, leaving only the one
+	that do fancy things (e.g., bpsdevice does some coordinate
+	transform, visiondevice uses variable-length buffers).
+	
+	also added playerqueue.{cc|h}, which implements a simple
+	fixed-length, fixed-element-size queue.  this will used for
+	synchronous request/reply; it's half-implemented now.
+
+2002-04-15 10:52  gerkey
+
+	* src/p2osdevice.cc: added radio reconnect limit
+
+2002-04-10 10:19  inspectorg
+
+	* rtk2/: Makefile, pyrtk.c, rtk.h, rtk_canvas.c, rtk_fig.c: Removed
+	non-portable mutexes
+
+2002-03-16 16:26  gerkey
+
+	* examples/tcl/: ptz.tcl, sonarobstacleavoid.tcl, viewer.tk: added
+	more paths to search for playerclient.tcl; really need to make that
+	a packge...
+
+2002-03-16 16:21  gerkey
+
+	* Makefile, distro.sh, examples/c++/Makefile, examples/tcl/ptz.tcl,
+	examples/tcl/sonarobstacleavoid.tcl, examples/tcl/viewer.tk,
+	src/Makefile: a few distro changes
+
+2002-03-16 16:12  gerkey
+
+	* Makefile.common, client_libs/tcl/playerclient.tcl,
+	examples/c++/grip.cc, examples/tcl/viewer.tk, include/messages.h,
+	include/p2osdevice.h, src/clientdata.cc, src/clientmanager.cc,
+	src/gripperdevice.cc, src/lock.cc, src/p2osdevice.cc,
+	src/packet.cc, src/positiondevice.cc, src/sonardevice.cc: a few
+	changes.
+	
+	  - P2OS device now seems to work in a general way.  it
+	successfully detects
+	    the robot type (at least Pioneer 1 and 2) and uses the
+	appropriate
+	    parameters.  also, the startup phase is more tolerant to
+	errors.
+	
+	  - Kim Jinsuck's radio modem init code has been added to the P2OS
+	device,
+	    and the 'radio' command-line arg can be used to enable it.
+	
+	  - the four data delivery modes have been renamed:
+	       PLAYER_DATAMODE_PUSH_ALL
+	       PLAYER_DATAMODE_PULL_ALL
+	       PLAYER_DATAMODE_PUSH_NEW
+	       PLAYER_DATAMODE_PULL_NEW
+	    they have been, more or less, tested.
+	
+	  - the Tk viewer is more functional now and its PTZ control is
+	better.
+
+2002-03-16 16:03  gerkey
+
+	* doc/player-manual/player.tex: updated for 1.2-alpha
+
+2002-03-15 15:12  gerkey
+
+	* src/p2osdevice.cc: added Vel2Divisor
+
+2002-03-15 15:04  gerkey
+
+	* include/p2osdevice.h, include/robot_params.h, include/sip.h,
+	src/Makefile, src/p2osdevice.cc, src/robot_params.cc, src/sip.cc:
+	P2OS parameters for all robots are now stored in a global table and
+	the driver automatically indexes into that table based on Class and
+	Subclass of the particular robot; UNTESTED
+
+2002-03-15 10:39  gerkey
+
+	* rtk2/Makefile: - fixed makedepend support
+	
+	- fixed a couple of little things that were causing compiler errors
+
+2002-03-14 20:03  gsibley
+
+	* examples/c++/make_rsn.c: added make_rsn.c (in
+	player/examples/c++).  Use it to make world files for rsn.cc
+
+2002-03-14 20:01  gsibley
+
+	* client_libs/c++/moteproxy.cc, client_libs/c++/moteproxy.h,
+	client_libs/c++/playerclient.cc, examples/c++/rsn.cc,
+	include/messages.h, src/stagedevice.cc: [no log message]
+
+2002-03-14 19:09  gerkey
+
+	* client_libs/c/playercclient.c, client_libs/c++/playerclient.cc,
+	include/clientdata.h, include/messages.h, src/clientdata.cc,
+	src/clientmanager.cc, src/main.cc, src/p2osdevice.cc,
+	src/packet.cc, src/speechdevice.cc, src/visiondevice.cc: a couple
+	of changes:
+	
+	- we now have 4 data modes:	- PLAYER_DATAMODE_CONTINUOUS: get
+	all data every cycle at a fixed freq	 - PLAYER_DATAMODE_UPDATE:
+	get only new data every cycle at a fixed freq	  -
+	PLAYER_DATAMODE_REQUESTREPLY: get all data every cycle on demand   
+	 - PLAYER_DATAMODE_REQUESTREPLY_UPDATE: get new data every cycle on
+	demand
+	
+	- vision and speech device startup is now faster and more robust
+	(yeah!)
+
+2002-03-13 23:07  gerkey
+
+	* Makefile.common, README, TODO, distro.sh,
+	client_libs/c/helpers.c, client_libs/c/playercclient.c,
+	client_libs/c/playercclient.h, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h, client_libs/tcl/TODO,
+	client_libs/tcl/playerclient.tcl, examples/c/laserobstacleavoid.c,
+	examples/c/ptz.c, examples/c/randomwalk.c, examples/c++/forage.cc,
+	examples/c++/randomwalk.cc, examples/c++/visualservo.cc,
+	examples/lisp/sonarobstacleavoid.lisp,
+	examples/tcl/sonarobstacleavoid.tcl, include/messages.h,
+	include/playercommon.h, src/Makefile, src/clientdata.cc,
+	src/main.cc, src/p2osdevice.cc, src/positiondevice.cc: *PROTOCOL
+	CHANGE*
+	
+	the Player message protocol now includes a SYNCH message that is
+	attached to the end of all of the data messages in each round of
+	data.  the SYNCH message has its own new type (5) and is addressed
+	from the Player device (1:0).  new datamodes are forthcoming.
+	
+	C,C++, and Tcl clients have been updated.  haven't bothered with
+	LISP client yet.
+
+2002-03-13 18:07  gerkey
+
+	* include/messages.h: fixed double declaration of PLAYER_MOTE_CODE
+
+2002-03-12 00:55  rtv
+
+	* include/arenalock.h, include/stage.h, include/stagedevice.h,
+	src/arenalock.cc, src/main.cc, src/stagedevice.cc,
+	src/stagetime.cc: implemented POSIX record locking for data
+	protection in Stage mode
+
+2002-03-11 18:52  rtv
+
+	* client_libs/: c/playercclient.c, c/playercclient.h,
+	c++/playerclient.cc, c++/playerclient.h, c++/playermulticlient.cc,
+	c++/playermulticlient.h: added support for connection by binary IP
+	into c and c++ client libs
+
+2002-03-09 19:16  gsibley
+
+	* examples/c++/rsn_start.sh, src/stagedevice.cc: turn off debugging
+	#define's - GTS
+
+2002-03-09 16:52  gsibley
+
+	* client_libs/c++/moteproxy.cc, client_libs/c++/moteproxy.h,
+	examples/c++/rsn.cc: forgot to add motedevice files - my bad - GTS
+
+2002-03-07 19:26  gsibley
+
+	* client_libs/c++/Makefile, client_libs/c++/playerclient.h,
+	examples/c++/Makefile, include/messages.h, src/main.cc,
+	src/stagedevice.cc: fixed Makefiles for rtk2.  added mote device
+	(point to point).
+
+2002-03-04 12:56  rtv
+
+	* examples/c++/: multimapping.cc, multirandom.cc: added
+	multimapping example, reverted multirandom example to
+	straightforward random walk
+
+2002-02-27 14:27  rtv
+
+	* rtk2/: rtk.h, rtk_canvas.c: changed host ID to IP instead of name
+	for compactness and speed
+
+2002-02-25 09:50  inspectorg
+
+	* rtk2/: pyrtk.c, rtk.h, rtk_canvas.c: Added font selection
+	function
+
+2002-02-20 00:45  rtv
+
+	* src/main.cc: nicer quit message in stage mode
+
+2002-02-19 16:22  inspectorg
+
+	* rtk2/: pyrtk.c, rtk.c, rtk.h, rtk_canvas.c, rtk_fig.c: Added some
+	error-checking to python bindings
+
+2002-02-15 09:20  inspectorg
+
+	* rtk2/rtk_fig.c: Rectangles now fill properly on export
+
+2002-02-12 23:08  inspectorg
+
+	* rtk2/: pyrtk.c, rtk_fig.c: Fixed text strokes so they draw in the
+	right place
+
+2002-02-11 10:44  inspectorg
+
+	* client_libs/c++/broadcastproxy.cc, include/laserbeacondevice.hh,
+	include/playercommon.h, src/laserbeacondevice.cc, src/main.cc: Some
+	attempted fixes
+
+2002-02-09 15:38  inspectorg
+
+	* rtk2/: Makefile, pyrtk.c: Tweaked makefile
+
+2002-02-08 19:37  rtv
+
+	* include/messages.h: working on hrlstage
+
+2002-02-06 18:57  rtv
+
+	* include/messages.h: working on HRL device support
+
+2002-02-06 16:45  rtv
+
+	* include/arenalock.h, include/messages.h, include/stagedevice.h,
+	include/stagetime.h, src/arenalock.cc, src/main.cc,
+	src/stagedevice.cc, src/stagetime.cc: new BSD-style locking model
+	for P/S interaction
+
+2002-02-05 21:26  inspectorg
+
+	* include/playercommon.h: Fixed up some macros
+
+2002-02-05 14:50  rtv
+
+	* include/messages.h: fixed device config bug
+
+2002-02-05 14:49  rtv
+
+	* Makefile.common: reverted to current compilers
+
+2002-02-05 11:38  inspectorg
+
+	* src/Makefile: Fixed makefile so that defaults.h gets installed
+
+2002-02-05 11:36  inspectorg
+
+	* Makefile.common, include/messages.h, src/broadcastdevice.cc,
+	src/stagedevice.cc: Hopefully minor formating changes
+
+2002-02-02 16:41  gerkey
+
+	* Makefile.common, include/audiodevice.h, include/defaults.h,
+	include/messages.h, include/visiondevice.h, src/bpsdevice.cc,
+	src/broadcastdevice.cc, src/main.cc, src/ptzdevice.cc,
+	src/visiondevice.cc: moved all device-specific defaults that users
+	might want to change into defaults.h.
+
+2002-02-02 13:09  gerkey
+
+	* Makefile.common, client_libs/c/Makefile,
+	client_libs/c++/Makefile, client_libs/oldc++/Makefile,
+	examples/c/Makefile, examples/c++/Makefile,
+	examples/oldc++/Makefile, include/messages.h, src/Makefile,
+	src/arenalock.cc, src/bpsdevice.cc: cleaned up Makefiles a bit and
+	removed some compiler warnings
+
+2002-02-01 17:24  rtv
+
+	* include/arenalock.h, include/playercommon.h, include/sip.h,
+	include/stage.h, include/stagetime.h, src/arenalock.cc,
+	src/main.cc, src/stagedevice.cc, src/stagetime.cc: new
+	POSIX-compliant semaphores for stage interaction, 1-per-device
+
+2002-02-01 11:25  rtv
+
+	* Makefile.common, include/playercommon.h, include/sip.h,
+	src/clientdata.cc, src/clientmanager.cc: working on POSIX
+	compliance, and looking into win32+cygwin compilation as a POSIX
+	tester. should allow an OSX port too
+
+2002-01-30 18:43  inspectorg
+
+	* rtk2/pyrtk.c: Minor tweaks
+
+2002-01-29 19:33  inspectorg
+
+	* rtk2/: rtk.c, rtk.h, rtk_canvas.c, rtk_fig.c: Many updates to rtk
+	interface
+
+2002-01-28 19:25  inspectorg
+
+	* rtk2/: rtk.h, rtk_canvas.c, rtk_fig.c: Fixes to world file
+
+2002-01-27 19:21  inspectorg
+
+	* rtk2/rtk_fig.c: minor speed tweaks
+
+2002-01-24 14:13  gerkey
+
+	* Makefile, Makefile.common, client_libs/c/Makefile,
+	client_libs/c++/Makefile: changed two things:	 - when C and C++
+	clients are made, they do a 'false install' locally	 in the
+	source tree by putting symlinks to their headers and libraries	   
+	in 'lib' and 'include' directories at the top-level.  this makes
+	the	 source tree look just like the install tree, so that
+	client programs,      such as 'xs' can be built against the source
+	tree.  thus, you can build	all of stage with 'make -e
+	PLAYER_DIR=<path to Player source tree>'
+	
+	   - default install is now in user-space.  specifically, the
+	default
+	     INSTALL_PREFIX is now '$(HOME)/player-<version>'.
+
+2002-01-24 13:45  gerkey
+
+	* client_libs/Makefile, client_libs/c/playercclient.c,
+	client_libs/c/print.c, client_libs/c++/visionproxy.cc,
+	client_libs/lisp/messages.lisp, client_libs/tcl/playerclient.tcl,
+	examples/Makefile, examples/c++/visualservo.cc,
+	examples/tcl/viewer.tk, include/messages.h, include/visiondevice.h,
+	src/main.cc, src/visiondevice.cc: changed to NEW Player vision data
+	packet format.	the vision device will now interact with either
+	ACTS 1.0 or ACTS 1.2 (there's a 'version' command-line arg to pick
+	your version), and will always output the new packet format, which
+	is similar to ACTS 1.2, but byte-swapped rather than
+	6-bits-per-byte-plus-one encoded.
+	
+	C++ and Tcl client libs have been updated; OLD C++ CLIENT NO LONGER
+	WORKS!
+	
+	Lisp client doesn't have vision support yet...
+
+2002-01-11 14:13  inspectorg
+
+	* rtk2/: Makefile, rtk_canvas.c: Fixed sticky mouse
+
+2002-01-11 14:13  inspectorg
+
+	* rtk2/: Makefile, rtk.c, rtk_canvas.c: Changed export to draw
+	layers in correct order
+
+2001-12-31 12:00  inspectorg
+
+	* rtk2/: Makefile, rtk.c, rtk.h, rtk_canvas.c, rtk_menu.c: Added
+	menus to canvases
+
+2001-12-31 09:23  inspectorg
+
+	* Makefile.common, client_libs/c++/Makefile, examples/tcl/ptz.tcl,
+	examples/tcl/sonarobstacleavoid.tcl, examples/tcl/viewer.tk,
+	src/main.cc: Some minor formatting changes
+
+2001-12-31 09:11  inspectorg
+
+	* rtk2/: Makefile, pyrtk.c, rtk.c, rtk.h, rtk_canvas.c, rtk_fig.c,
+	rtkprivate.h: Added rtk2 to repository
+
+2001-12-21 11:38  inspectorg
+
+	* Makefile.common, client_libs/c++/broadcastproxy.cc,
+	doc/player-manual/player.tex, examples/tcl/ptz.tcl,
+	examples/tcl/sonarobstacleavoid.tcl, examples/tcl/viewer.tk:
+	Changed for 1.1 bugfix release
+
+2001-12-19 19:16  vaughan
+
+	* Makefile, client_libs/c/Makefile, client_libs/c/playercclient.c,
+	client_libs/c/playercclient.h, client_libs/c++/Makefile,
+	client_libs/c++/clientproxy.cc, client_libs/c++/clientproxy.h,
+	client_libs/c++/laserproxy.cc, client_libs/c++/laserproxy.h,
+	client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	client_libs/c++/playermulticlient.cc,
+	client_libs/c++/playermulticlient.h, client_libs/oldc++/Makefile,
+	examples/c/Makefile, examples/c++/Makefile,
+	examples/c++/autolayout.cc, examples/oldc++/Makefile,
+	include/arenalock.h, include/clientdata.h, include/device.h,
+	include/lock.h, include/messages.h, include/stage.h,
+	include/stagedevice.h, src/Makefile, src/arenalock.cc,
+	src/clientdata.cc, src/lock.cc, src/main.cc, src/stagedevice.cc:
+	branching to test new device model
+
+2001-11-27 11:18  gerkey
+
+	* client_libs/c++/doc/Makefile: took out ps2pdf bit
+
+2001-11-27 11:17  gerkey
+
+	* distro.sh: now excluding c++ doc directory
+
+2001-11-19 18:50  vaughan
+
+	* src/stagedevice.cc: added timestamps to stagedevice commands and
+	configs
+
+2001-11-14 19:17  ahoward
+
+	* doc/player-manual/player.tex: Removed C++ client stuff from
+	manual
+
+2001-11-14 17:40  ahoward
+
+	* client_libs/c++/doc/docker.py: Added doc generation tools
+
+2001-11-14 16:05  ahoward
+
+	* client_libs/c++/bpsproxy.h, client_libs/c++/broadcastproxy.h,
+	client_libs/c++/clientproxy.h, client_libs/c++/laserbeaconproxy.h,
+	client_libs/c++/laserproxy.h, client_libs/c++/miscproxy.h,
+	client_libs/c++/playerclient.h, client_libs/c++/positionproxy.h,
+	client_libs/c++/ptzproxy.h, client_libs/c++/sonarproxy.h,
+	client_libs/c++/speechproxy.h, client_libs/c++/visionproxy.h,
+	client_libs/c++/doc/Makefile, client_libs/c++/doc/cppclient.tex,
+	Makefile, Makefile.common: Changed client library interface:
+	documentation is now mostly in-code.
+
+2001-11-13 12:00  gerkey
+
+	* doc/player-manual/player.tex: changed date to today
+
+2001-11-13 11:47  gerkey
+
+	* doc/player-manual/player.tex: added Bleeding
+
+2001-11-12 19:49  ahoward
+
+	* client_libs/c++/broadcastproxy.cc,
+	client_libs/c++/broadcastproxy.h, doc/player-manual/player.tex,
+	include/messages.h: Updated manual; some proxy changes
+
+2001-11-12 17:03  ahoward
+
+	* doc/player-manual/player.tex: Added start of bps section
+
+2001-11-12 15:05  ahoward
+
+	* doc/player-manual/player.tex: Fixes for broadcast device with
+	simulator
+
+2001-11-12 14:45  ahoward
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile,
+	client_libs/oldc++/Makefile, examples/c/Makefile,
+	examples/c++/Makefile, examples/oldc++/Makefile, src/Makefile,
+	src/main.cc: Fixes for broadcast device
+
+2001-11-12 14:18  ahoward
+
+	* client_libs/c++/broadcastproxy.cc, include/broadcastdevice.hh,
+	src/broadcastdevice.cc, src/main.cc, doc/player-manual/player.tex:
+	More-or-less working broadcast device
+
+2001-11-11 12:17  ahoward
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile,
+	client_libs/c++/broadcastproxy.cc,
+	client_libs/c++/broadcastproxy.h, client_libs/c++/playerclient.h,
+	client_libs/oldc++/Makefile, client_libs/oldc++/playerclient.cc,
+	examples/c/Makefile, examples/c++/Makefile,
+	examples/oldc++/Makefile, include/broadcastdevice.hh,
+	include/messages.h, src/Makefile, src/broadcastdevice.cc,
+	src/main.cc: Updated broadcast device
+
+2001-11-10 11:28  ahoward
+
+	* doc/player-manual/player.tex: Updated laser beacon device
+
+2001-11-08 21:53  ahoward
+
+	* client_libs/c++/broadcastproxy.cc,
+	client_libs/c++/broadcastproxy.h,
+	client_libs/c++/laserbeaconproxy.cc,
+	client_libs/c++/laserbeaconproxy.h,
+	client_libs/oldc++/playerclient.cc, include/messages.h,
+	src/broadcastdevice.cc, src/laserbeacondevice.cc: Changed laser
+	beacon config commands.  Added broadcast proxy
+
+2001-11-07 23:49  ahoward
+
+	* client_libs/c++/: playerclient.cc, playerclient.h: Added
+	timestamp to playerclient
+
+2001-11-07 21:43  ahoward
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile,
+	client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	client_libs/oldc++/Makefile, examples/c/Makefile,
+	examples/c++/Makefile, examples/oldc++/Makefile, src/Makefile:
+	Added const to some function args
+
+2001-11-07 15:02  ahoward
+
+	* doc/player-manual/player.tex: Added sidespeed to manual
+
+2001-10-25 15:14  ahoward
+
+	* include/messages.h: Added omni-capability
+
+2001-10-24 12:17  vaughan
+
+	* include/messages.h, src/main.cc: added IDAR device entry to
+	MakeStageDevice
+
+2001-10-13 12:42  gerkey
+
+	* doc/player-manual/player.tex: fixed typ0
+
+2001-10-12 18:55  gerkey
+
+	* README, doc/player-manual/player.tex: foo
+
+2001-10-12 18:53  gerkey
+
+	* README.java: don't need this here anymore
+
+2001-10-12 18:51  gerkey
+
+	* client_libs/python/Makefile, client_libs/python/PlayerClient.py,
+	client_libs/python/README, client_libs/python/TODO,
+	client_libs/python/setup.py, examples/python/Makefile,
+	examples/python/viewer.py: python now separate
+
+2001-10-12 18:41  gerkey
+
+	* distro.sh: slight change
+
+2001-10-12 18:40  gerkey
+
+	* examples/c++/startmany.tcl: little helper
+
+2001-10-12 18:34  gerkey
+
+	* client_libs/java/: Makefile, PlayerClient.java: java now separate
+
+2001-10-12 18:33  gerkey
+
+	* examples/java/: Makefile, ObstacleAvoidanceUsingLaser.java,
+	ObstacleAvoidanceUsingSonar.java: java is now distributed
+	separately
+
+2001-10-12 17:53  gerkey
+
+	* doc/player-manual/player.tex: set date
+
+2001-10-12 17:51  gerkey
+
+	* Makefile.common, client_libs/c/Makefile,
+	client_libs/c++/Makefile, examples/tcl/ptz.tcl,
+	examples/tcl/sonarobstacleavoid.tcl, examples/tcl/viewer.tk,
+	src/Makefile: moving to version 1.0
+
+2001-10-12 17:47  gerkey
+
+	* src/arenalock.cc: took inline out of Lock() and Unlock(); it was
+	bugging the linker when -O2 is on
+
+2001-10-12 17:40  gerkey
+
+	* src/main.cc: removed audio from sane config
+
+2001-10-12 17:39  gerkey
+
+	* doc/player-manual/player.tex: changed to Times font for better
+	PDFs
+
+2001-10-12 17:34  gerkey
+
+	* doc/player-manual/: Makefile, player.tex: verion 1.0, methinks
+
+2001-10-10 12:08  gerkey
+
+	* examples/c++/laserobstacleavoid.cc, src/Makefile,
+	src/clientdata.cc, src/laserdevice.cc, src/main.cc: some changes,
+	mostly to allow for dynamic loading of device drivers
+
+2001-10-05 16:52  gerkey
+
+	* examples/lisp/sonarobstacleavoid.lisp: now turns on motors
+
+2001-10-05 16:51  gerkey
+
+	* client_libs/lisp/: constants.lisp, devices.lisp, messages.lisp:
+	added config request to enable motors
+
+2001-10-05 16:36  gerkey
+
+	* examples/lisp/sonarobstacleavoid.lisp: first lisp example
+
+2001-10-05 16:35  gerkey
+
+	* client_libs/lisp/: constants.lisp, core.lisp, devices.lisp,
+	messages.lisp, playerclient.lisp, utils.lisp: more or less works
+	now
+
+2001-10-05 12:09  gerkey
+
+	* client_libs/lisp/: constants.lisp, messages.lisp,
+	playerclient.lisp: can read data now
+
+2001-10-05 10:40  gerkey
+
+	* client_libs/lisp/: constants.lisp, messages.lisp,
+	playerclient.lisp: primitive, but works
+
+2001-10-04 12:33  gerkey
+
+	* client_libs/lisp/: constants.lisp, playerclient.lisp: first cut
+	at a lisp client
+
+2001-10-03 14:03  gerkey
+
+	* client_libs/c/Makefile, client_libs/c/playercclient.c,
+	client_libs/c++/Makefile, examples/c/Makefile,
+	examples/c++/Makefile, examples/c++/forage.cc, src/Makefile: fixed
+	C client read loop, returned Makefiles to normal state
+
+2001-10-02 17:21  gerkey
+
+	* include/playercommon.h, src/laserbeacondevice.cc: added NORMALIZE
+	to beacon orientation
+
+2001-10-02 12:03  gerkey
+
+	* client_libs/c++/sonarproxy.cc: add math.h
+
+2001-10-01 17:14  gerkey
+
+	* client_libs/c/Makefile, client_libs/c++/gpsproxy.cc,
+	client_libs/oldc++/Makefile, examples/c/Makefile,
+	examples/c++/Makefile, examples/oldc++/Makefile, src/Makefile:
+	Makefile.common
+
+2001-10-01 17:14  gerkey
+
+	* src/clientmanager.cc: made time matching code more generous for
+	Stage
+
+2001-10-01 17:12  gerkey
+
+	* examples/c++/: multirandom.cc, sonarobstacleavoid.cc: minor
+	changes
+
+2001-09-28 23:47  gerkey
+
+	* examples/c++/autolayout.cc: an autolayout program for stage
+
+2001-09-28 22:31  gerkey
+
+	* client_libs/c++/: Makefile, gpsproxy.h, playerclient.cc,
+	sonarproxy.cc, sonarproxy.h, gpsproxy.cc: added GetSonarPose
+
+2001-09-28 22:17  gerkey
+
+	* examples/c++/multirandom.cc: nifty multiclient random walk
+
+2001-09-26 11:04  vaughan
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile,
+	client_libs/c++/playermulticlient.cc,
+	client_libs/c++/playermulticlient.h, client_libs/oldc++/Makefile,
+	examples/c/Makefile, examples/c++/Makefile, examples/c++/forage.cc,
+	examples/c++/randomwalk.cc, examples/oldc++/Makefile,
+	include/stage.h, src/Makefile, src/main.cc: working on multi-host
+	support
+
+2001-09-26 09:55  gerkey
+
+	* include/stagetime.h, include/wallclocktime.h, src/Makefile:
+	subtle changes
+
+2001-09-25 14:16  gerkey
+
+	* examples/c++/sonarobstacleavoid.cc, include/arenalock.h,
+	include/playertime.h, include/stagetime.h, include/wallclocktime.h,
+	src/Makefile, src/bpsdevice.cc, src/clientdata.cc,
+	src/clientmanager.cc, src/laserbeacondevice.cc, src/lock.cc,
+	src/main.cc, src/stagetime.cc, src/wallclocktime.cc: now does
+	timing from stage
+
+2001-09-23 11:12  gerkey
+
+	* src/main.cc: made poll() block forever on the accepting sockets
+
+2001-09-23 00:38  gerkey
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile,
+	client_libs/oldc++/Makefile, examples/c/Makefile,
+	examples/c++/Makefile, examples/c++/stress.cc,
+	examples/oldc++/Makefile, include/clientdata.h,
+	include/devicetable.h, include/nodevice.h, src/Makefile,
+	src/bpsdevice.cc, src/clientdata.cc, src/devicetable.cc,
+	src/laserbeacondevice.cc, src/main.cc, src/nodevice.cc,
+	src/p2osdevice.cc: switched to 1 player per stage.  when in stage
+	mode, player now interprets '-port <num>' to mean the number of
+	ports to listen on, then reads the port numbers on stdin,
+	newline-separated.  intial results are encouraging.
+
+2001-09-21 11:31  vaughan
+
+	* client_libs/c++/gpsproxy.cc: fixed comment in Print() to show
+	heading
+
+2001-09-21 11:30  vaughan
+
+	* client_libs/c++/: gpsproxy.cc, gpsproxy.h: added heading support
+	and gnuplot-friendly Print() to GpsProxy
+
+2001-09-20 19:06  vaughan
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile,
+	client_libs/c++/clientproxy.h, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h,
+	client_libs/c++/playermulticlient.cc,
+	client_libs/c++/playermulticlient.h, client_libs/oldc++/Makefile,
+	examples/c/Makefile, examples/c++/Makefile,
+	examples/c++/sonarobstacleavoid.cc, examples/oldc++/Makefile,
+	src/Makefile, src/main.cc, src/stagedevice.cc: added more good
+	stuff to the c++ client libs
+
+2001-09-20 14:44  vaughan
+
+	* client_libs/c++/: playermulticlient.cc, playermulticlient.h:
+	added ClientRemove function
+
+2001-09-20 13:09  gerkey
+
+	* src/p2osdevice.cc: added gripper support to p2osdevice.cc
+
+2001-09-19 23:08  gerkey
+
+	* client_libs/tcl/playerclient.tcl, examples/tcl/viewer.tk: fixed
+	up tcl client
+
+2001-09-19 23:02  gerkey
+
+	* client_libs/c/playercclient.c, client_libs/c/playercclient.h,
+	client_libs/c++/Makefile, client_libs/c++/bpsproxy.cc,
+	client_libs/c++/bpsproxy.h, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h, examples/tcl/viewer.tk,
+	include/bpsdevice.h, include/lock.h, include/p2osdevice.h,
+	src/bpsdevice.cc, src/clientdata.cc, src/main.cc,
+	src/p2osdevice.cc: added bpsproxy, spruced up viewer.tk, added
+	gerkey extensions
+
+2001-09-15 18:32  ahoward
+
+	* src/: bpsdevice.cc, laserbeacondevice.cc: Fixed bug in lbd when
+	there is one-and-a-half beacons in the fov
+
+2001-09-14 18:37  ahoward
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile,
+	client_libs/oldc++/Makefile, client_libs/oldc++/oldplayerclient.h,
+	client_libs/oldc++/playerclient.cc, examples/c/Makefile,
+	examples/c++/Makefile, examples/oldc++/Makefile, src/Makefile,
+	src/bpsdevice.cc: Added gps and bps devices
+
+2001-09-14 09:15  ahoward
+
+	* src/bpsdevice.cc: More work on bps
+
+2001-09-13 20:08  ahoward
+
+	* include/bpsdevice.h, src/bpsdevice.cc, src/laserbeacondevice.cc:
+	Re-writing bps -- still broken
+
+2001-09-12 20:57  ahoward
+
+	* Makefile.common, client_libs/c/Makefile,
+	client_libs/c++/Makefile, client_libs/oldc++/Makefile,
+	examples/c/Makefile, examples/c++/Makefile,
+	examples/oldc++/Makefile, include/laserbeacondevice.hh,
+	include/playercommon.h, src/Makefile, src/laserbeacondevice.cc:
+	Improved laser beacon detector (not quite done yet)
+
+2001-09-10 09:47  ahoward
+
+	* include/laserbeacondevice.hh, src/laserbeacondevice.cc: Added
+	self-test function
+
+2001-09-09 18:21  ahoward
+
+	* include/laserbeacondevice.hh, src/laserbeacondevice.cc: Some
+	fixed for laser beacon device
+
+2001-09-08 13:45  ahoward
+
+	* examples/tcl/ptz.tcl, examples/tcl/sonarobstacleavoid.tcl,
+	examples/tcl/viewer.tk, src/laserbeacondevice.cc: Fixed laser
+	beacon bug when using multiple clients
+
+2001-09-08 10:03  ahoward
+
+	* include/bpsdevice.h, src/bpsdevice.cc: Changed BPS device to use
+	own thread
+
+2001-09-07 10:18  ahoward
+
+	* Makefile.common: Increased version number to match stage
+
+2001-09-06 18:17  gerkey
+
+	* client_libs/tcl/playerclient.tcl, examples/tcl/viewer.tk: fixed
+	viewer laser rendering and added bps support to client
+
+2001-09-06 18:17  gerkey
+
+	* src/: bpsdevice.cc, laserbeacondevice.cc, main.cc: some fixes
+
+2001-09-06 11:35  gerkey
+
+	* Makefile, client_libs/Makefile, client_libs/c/Makefile,
+	client_libs/c++/Makefile, client_libs/oldc++/Makefile,
+	client_libs/tcl/Makefile, examples/Makefile, examples/c/Makefile,
+	examples/c++/Makefile, examples/oldc++/Makefile,
+	examples/tcl/Makefile, src/Makefile, src/main.cc: added 'dep' and
+	'clean_dep' targets to all Makefiles
+
+2001-09-05 19:37  gerkey
+
+	* Makefile.common: foo
+
+2001-09-05 19:31  gerkey
+
+	* distro.sh: foo
+
+2001-09-05 19:27  gerkey
+
+	* Makefile.common, client_libs/c++/miscproxy.cc,
+	client_libs/c++/miscproxy.h, client_libs/tcl/playerclient.tcl,
+	include/messages.h, include/p2osdevice.h, src/Makefile,
+	src/main.cc, src/sip.cc: added digital and analog in to misc
+	packet; C++ and Tcl client updated to match
+
+2001-09-04 16:57  gerkey
+
+	* src/Makefile: took out makedep
+
+2001-09-04 16:55  gerkey
+
+	* client_libs/c/playercclient.c,
+	examples/c++/laserobstacleavoid.cc, include/clientdata.h,
+	src/Makefile, src/clientdata.cc, src/clientmanager.cc, src/main.cc:
+	new read loop
+
+2001-08-30 17:37  ahoward
+
+	* src/clientdata.cc: Added hack to make client reader loop readall
+	of the message
+
+2001-08-30 16:29  ahoward
+
+	* include/bpsdevice.h, include/messages.h, src/bpsdevice.cc:
+	Changed bps to optimize robot pose
+
+2001-08-30 14:25  gerkey
+
+	* examples/c++/laserobstacleavoid.cc, include/clientdata.h,
+	include/clientmanager.h, include/counter.h, src/Makefile,
+	src/clientdata.cc, src/clientmanager.cc, src/main.cc,
+	src/pubsub_util.cc: many changes in order to cut thread count.	now
+	the clientmanager has two threads: one to read and one to write. 
+	it manages all clients with those threads.  still pending is the
+	request/reply blocking problem, to be solved soon with some queues.
+
+2001-08-28 23:22  gerkey
+
+	* src/pubsub_util.cc: took out unnecessary call to setsockopt
+
+2001-08-28 23:16  gerkey
+
+	* src/clientdata.cc: removed EINTR stuff
+
+2001-08-28 22:37  gerkey
+
+	* include/: clientdata.h, clientmanager.h: foo
+
+2001-08-28 21:10  gerkey
+
+	* src/: clientdata.cc, clientmanager.cc, main.cc: almost works
+	threadless
+
+2001-08-27 20:42  ahoward
+
+	* Makefile.common, include/bpsdevice.h, include/messages.h,
+	src/Makefile, src/bpsdevice.cc, src/main.cc: Added bps device
+	(beacon-based position)
+
+2001-08-27 14:36  ahoward
+
+	* doc/player-manual/beacon.eps: Added beacon fig
+
+2001-08-27 14:35  ahoward
+
+	* doc/player-manual/player.tex: Added appendix describing the laser
+	beacon device
+
+2001-08-26 21:43  gerkey
+
+	* src/: Makefile, main.cc: foo
+
+2001-08-26 21:27  gerkey
+
+	* src/clientmanager.cc: fixed update timing
+
+2001-08-26 15:36  gerkey
+
+	* include/clientdata.h, include/clientmanager.h, src/Makefile,
+	src/clientdata.cc, src/clientmanager.cc, src/main.cc: threadless
+	model seems to work now
+
+2001-08-23 18:00  gerkey
+
+	* src/clientmanager.cc: file clientmanager.cc was initially added
+	on branch threadless-1-0-beta.
+
+2001-08-23 18:00  gerkey
+
+	* include/clientmanager.h: file clientmanager.h was initially added
+	on branch threadless-1-0-beta.
+
+2001-08-23 18:00  gerkey
+
+	* examples/c++/laserobstacleavoid.cc, include/clientdata.h,
+	include/clientmanager.h, include/counter.h, src/Makefile,
+	src/clientdata.cc, src/clientmanager.cc, src/main.cc: now
+	threadless; still need bugfixes
+
+2001-08-23 14:20  gerkey
+
+	* TODO: foo
+
+2001-08-23 09:22  ahoward
+
+	* Makefile.common, include/messages.h: Added heading and
+	configuration packet to gps device
+
+2001-08-21 15:47  ahoward
+
+	* Makefile.common, examples/tcl/ptz.tcl,
+	examples/tcl/sonarobstacleavoid.tcl, examples/tcl/viewer.tk:
+	Candidate for 1.0-beta
+
+2001-08-21 15:10  ahoward
+
+	* Makefile.common: Added options for user install
+
+2001-08-16 20:30  gerkey
+
+	* doc/player-manual/player.tex: almost there
+
+2001-08-16 20:17  gerkey
+
+	* Makefile.common: to version 1.0-alpha
+
+2001-08-16 16:03  gerkey
+
+	* examples/c++/forage.cc: made it work better
+
+2001-08-16 15:56  gerkey
+
+	* examples/c++/Makefile: added execute to executable examples
+
+2001-08-15 23:16  gerkey
+
+	* include/messages.h: changed max message size
+
+2001-08-14 14:36  gerkey
+
+	* client_libs/tcl/playerclient.tcl, examples/tcl/Makefile,
+	examples/tcl/sonarobstacleavoid.tcl, src/Makefile, src/main.cc:
+	added player_authenticate and sonarobstacleavoid
+
+2001-08-14 14:05  gerkey
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	client_libs/tcl/playerclient.tcl, examples/c++/randomwalk.cc,
+	examples/tcl/ptz.tcl, examples/tcl/viewer.tk, include/clientdata.h,
+	include/messages.h, src/clientdata.cc, src/main.cc: added
+	authentication
+
+2001-08-13 16:21  gerkey
+
+	* Makefile.common: foo
+
+2001-08-13 16:20  gerkey
+
+	* Makefile.common, client_libs/tcl/playerclient.tcl,
+	examples/tcl/Makefile, examples/tcl/viewer.tk: slight
+
+2001-08-12 18:46  gerkey
+
+	* client_libs/tcl/playerclient.tcl, examples/tcl/Makefile,
+	examples/tcl/ptz.tcl, examples/tcl/say.tcl, examples/tcl/viewer.tk:
+	A whole new Tcl client!!! and examples/viewer/etc.
+
+2001-08-12 18:41  gerkey
+
+	* Makefile, Makefile.common: minor changes
+
+2001-08-10 17:05  gerkey
+
+	* src/main.cc: added GPS for stage init
+
+2001-08-08 16:57  gerkey
+
+	* client_libs/Makefile, client_libs/oldc++/playerclient.cc,
+	include/messages.h: small fixes; oldc++
+
+2001-08-08 16:37  vaughan
+
+	* Makefile, Makefile.common, client_libs/Makefile,
+	client_libs/c++/Makefile, client_libs/c++/clientproxy.h,
+	client_libs/c++/occupancyproxy.cc,
+	client_libs/c++/occupancyproxy.h, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h, client_libs/c++/truthproxy.cc,
+	client_libs/c++/truthproxy.h, client_libs/tcl/playerclient.tcl,
+	examples/c++/Makefile, examples/c++/truth.cc,
+	examples/tcl/viewer.tk, include/clientdata.h, include/messages.h,
+	include/stage.h, include/stagedevice.h, src/Makefile,
+	src/clientdata.cc, src/gripperdevice.cc, src/laserdevice.cc,
+	src/main.cc, src/miscdevice.cc, src/positiondevice.cc,
+	src/ptzdevice.cc, src/sonardevice.cc, src/stagedevice.cc: First
+	merge since RTV's playerexp sojourn. added code for truth and
+	occupancy devices; untested but possibly useful.  Added UPDATE mode
+	which returns only fresh data or an empty data buffer for each
+	device.  Proxies added for the truth and occupancy devices, with an
+	example truth logging program exmaples/c++/truth.cc
+
+2001-08-07 12:17  gerkey
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/visionproxy.cc,
+	client_libs/c++/visionproxy.h, src/clientdata.cc: fixed c++ proxy
+	removal, and added pending_unlock to clientdata
+
+2001-08-05 18:32  gerkey
+
+	* include/packet.h, src/main.cc: slight change to arg parser
+
+2001-08-05 15:29  gerkey
+
+	* Makefile, include/packet.h, src/main.cc, src/packet.cc,
+	src/pubsub_util.cc, src/speechdevice.cc: finished changing
+	command-line args; -sane now works
+
+2001-08-05 15:28  gerkey
+
+	* doc/player-manual/player.tex: changed command-line arg section,
+	and added notes about GPS
+
+2001-08-05 12:24  gerkey
+
+	* include/messages.h, include/speechdevice.h, src/Makefile,
+	src/laserdevice.cc, src/p2osdevice.cc, src/ptzdevice.cc,
+	src/speechdevice.cc, src/visiondevice.cc: almost to sane
+
+2001-08-03 20:40  gerkey
+
+	* Makefile.common, src/Makefile, src/main.cc: slight change to
+	Makefiles and also made delete_func proper
+
+2001-08-03 20:36  gerkey
+
+	* Makefile.common, examples/c++/laserobstacleavoid.cc,
+	examples/c++/say.cc, examples/c++/sonarobstacleavoid.cc,
+	examples/tcl/viewer.tk, include/audiodevice.h,
+	include/broadcastdevice.hh, include/clientdata.h,
+	include/gripperdevice.h, include/laserbeacondevice.hh,
+	include/laserdevice.h, include/messages.h, include/miscdevice.h,
+	include/p2osdevice.h, include/positiondevice.h,
+	include/ptzdevice.h, include/sonardevice.h, include/speechdevice.h,
+	include/visiondevice.h, src/audiodevice.cc, src/broadcastdevice.cc,
+	src/clientdata.cc, src/devicetable.cc, src/laserbeacondevice.cc,
+	src/laserdevice.cc, src/main.cc, src/p2osdevice.cc,
+	src/ptzdevice.cc, src/speechdevice.cc, src/visiondevice.cc: lots of
+	changes; now you have to explicitly create devices at the command
+	line; 'sane' mode to come later
+
+2001-07-16 16:28  gerkey
+
+	* client_libs/c++/Makefile: added gpsproxy.h to install
+
+2001-07-16 09:25  gerkey
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile, src/Makefile:
+	from optimize to debug
+
+2001-07-16 09:24  gerkey
+
+	* src/main.cc: bugfix in read loop
+
+2001-07-16 09:23  gerkey
+
+	* src/main.cc: slight bugfix in read loop
+
+2001-07-15 15:50  gerkey
+
+	* client_libs/c++/playermulticlient.cc: added an include
+
+2001-07-15 15:40  gerkey
+
+	* client_libs/c/Makefile, client_libs/c++/Makefile, src/Makefile:
+	turned on -O3
+
+2001-07-15 00:05  gerkey
+
+	* src/: clientdata.cc, main.cc: slight changes
+
+2001-07-14 16:06  gerkey
+
+	* client_libs/c++/Makefile, client_libs/c++/clientproxy.h,
+	client_libs/c++/gripperproxy.cc, client_libs/c++/playerclient.cc,
+	examples/c++/forage.cc, examples/c++/multilogger.cc,
+	examples/c++/visualservo.cc, include/stage.h,
+	include/stagedevice.h, src/clientdata.cc, src/main.cc: added
+	various gripper/puck features
+
+2001-07-12 16:25  gerkey
+
+	* doc/player-manual/player.tex: froze in time
+
+2001-07-12 00:04  gerkey
+
+	* client_libs/c++/Makefile, client_libs/c++/gpsproxy.cc,
+	client_libs/c++/gpsproxy.h, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h,
+	client_libs/c++/playermulticlient.cc,
+	client_libs/c++/playermulticlient.h,
+	client_libs/c++/visionproxy.cc, examples/c++/Makefile,
+	examples/c++/forage.cc, examples/c++/multilogger.cc,
+	include/messages.h, include/stage.h, src/main.cc: added GPS device
+	(stage), gps proxy and multiclient
+
+2001-07-11 18:42  gerkey
+
+	* client_libs/c++/gripperproxy.cc, client_libs/c++/gripperproxy.h,
+	examples/c++/Makefile, examples/c++/forage.cc,
+	examples/c++/grip.cc, examples/c++/visualservo.cc: added stuff to
+	gripperproxy and test programs for gripper and foraging
+
+2001-07-10 19:09  gerkey
+
+	* client_libs/c++/gripperproxy.cc, client_libs/c++/gripperproxy.h,
+	examples/c++/Makefile, examples/c++/visualservo.cc, src/main.cc:
+	gripper works
+
+2001-07-10 00:33  gerkey
+
+	* examples/c++/visualservo.cc: visual servo example
+
+2001-07-10 00:30  gerkey
+
+	* client_libs/tcl/playerclient.tcl, examples/c++/Makefile,
+	examples/tcl/viewer.tk, include/stage.h, src/Makefile,
+	src/clientdata.cc: new stage gripper stuff, some Tcl client mods
+
+2001-06-29 17:11  gerkey
+
+	* Makefile.common, examples/c++/laserobstacleavoid.cc: changed
+	version to include Bleeding
+
+2001-06-29 17:02  gerkey
+
+	* doc/player-manual/player.tex: changed version to Bleeding
+
+2001-06-29 16:42  gerkey
+
+	* doc/player-manual/Makefile: added html target
+
+2001-06-29 16:33  gerkey
+
+	* doc/player-manual/Makefile: added html target
+
+2001-06-29 01:39  gerkey
+
+	* client_libs/c++/clientproxy.h, client_libs/c++/visionproxy.h,
+	examples/c++/laserobstacleavoid.cc,
+	examples/c++/sonarobstacleavoid.cc: minor c++ client changes
+
+2001-06-29 01:38  gerkey
+
+	* doc/player-manual/player.tex: finished C++ docs
+
+2001-06-28 14:26  gerkey
+
+	* Makefile: fixed bleeding target name
+
+2001-06-28 14:08  gerkey
+
+	* Makefile: added distro-bleeding target
+
+2001-06-14 11:13  gerkey
+
+	* examples/c++/: Makefile, say.cc: new example
+
+2001-06-14 11:13  gerkey
+
+	* doc/player-manual/player.tex: toward new client appendices
+
+2001-06-02 10:52  ahoward
+
+	* src/main.cc: Fixed STX read problem for big-endian machines
+
+2001-05-27 14:32  gerkey
+
+	* distro.sh: small distro change
+
+2001-05-27 14:27  gerkey
+
+	* Makefile.common: now 0.9.1
+
+2001-05-25 16:56  gerkey
+
+	* distro.sh: distro
+
+2001-05-25 16:36  gerkey
+
+	* Makefile.common: version
+
+2001-05-25 16:34  gerkey
+
+	* Makefile: foo
+
+2001-05-25 16:29  gerkey
+
+	* Makefile, distro.sh, client_libs/Makefile,
+	client_libs/c++/Makefile, client_libs/c++/clientproxy.cc,
+	client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	client_libs/c++/speechproxy.cc, examples/Makefile,
+	examples/c++/Makefile, examples/oldc++/Makefile,
+	examples/oldc++/example_from_manual.cc, examples/oldc++/goto.cc,
+	examples/oldc++/laserobstacleavoid.cc, examples/oldc++/ptz.cc,
+	examples/oldc++/randomwalk.cc,
+	examples/oldc++/sonarobstacleavoid.cc, src/speechdevice.cc: small
+	distro change
+
+2001-05-25 16:08  gerkey
+
+	* doc/player-manual/player.tex: 0.9
+
+2001-05-25 14:01  gerkey
+
+	* client_libs/oldc++/: Makefile, devicedatatable.cc,
+	devicedatatable.h, playerclient.cc, playerclient.h,
+	olddevicedatatable.h, oldplayerclient.h: renamed
+
+2001-05-25 13:51  gerkey
+
+	* examples/c++/: Makefile, example_from_manual.cc, goto.cc,
+	laserobstacleavoid.cc, ptz.cc, randomwalk.cc,
+	sonarobstacleavoid.cc: new c++ examples
+
+2001-05-25 13:36  gerkey
+
+	* examples/c++/: Makefile, example_from_manual.cc, goto.cc,
+	laserobstacleavoid.cc, ptz.cc, randomwalk.cc,
+	sonarobstacleavoid.cc: making room for NEW c++ examples
+
+2001-05-25 13:35  gerkey
+
+	* examples/oldc++/: Makefile, example_from_manual.cc, goto.cc,
+	laserobstacleavoid.cc, ptz.cc, randomwalk.cc,
+	sonarobstacleavoid.cc: now the OLD c++ examples
+
+2001-05-25 13:32  gerkey
+
+	* client_libs/c++/: Makefile, clientproxy.cc, clientproxy.h,
+	gripperproxy.cc, gripperproxy.h, laserbeaconproxy.cc,
+	laserbeaconproxy.h, laserproxy.cc, laserproxy.h, miscproxy.cc,
+	miscproxy.h, playerclient.cc, playerclient.h, positionproxy.cc,
+	positionproxy.h, ptzproxy.cc, ptzproxy.h, sonarproxy.cc,
+	sonarproxy.h, speechproxy.cc, speechproxy.h, test.cc,
+	visionproxy.cc, visionproxy.h: The NEW c++ client lib
+
+2001-05-25 13:31  gerkey
+
+	* client_libs/c++/: Makefile, devicedatatable.cc,
+	devicedatatable.h, playerclient.cc, playerclient.h: making room for
+	NEW c++ client lib
+
+2001-05-25 13:30  gerkey
+
+	* client_libs/oldc++/: Makefile, devicedatatable.cc,
+	devicedatatable.h, playerclient.cc, playerclient.h: this is now the
+	OLD c++ client library
+
+2001-05-25 12:39  gerkey
+
+	* client_libs/c/playercclient.c, client_libs/c/playercclient.h,
+	client_libs/c++/playerclient.cc, examples/c/laserobstacleavoid.c,
+	examples/c/ptz.c, examples/c/randomwalk.c, include/messages.h:
+	slight change to C client
+
+2001-05-25 00:37  gerkey
+
+	* distro.sh, client_libs/c/playercclient.c,
+	client_libs/c/playercclient.h: part way to new c++ client; probably
+	breaks everything right now...
+
+2001-05-24 21:27  gerkey
+
+	* client_libs/tcl/playerclient.tcl,
+	examples/c++/laserobstacleavoid.cc, examples/tcl/viewer.tk,
+	include/messages.h, include/stagedevice.h: example fixes, and
+	update to Tcl client
+
+2001-05-24 19:50  gerkey
+
+	* Makefile.common: back to 1.1.1beta
+
+2001-05-23 20:23  gerkey
+
+	* doc/player-manual/: player.bib, player.tex: getting there
+
+2001-05-23 19:37  gerkey
+
+	* Makefile, Makefile.common, README, TODO, VERSION, distro.sh,
+	client_libs/Makefile, client_libs/c/Makefile,
+	client_libs/c++/Makefile, client_libs/java/Makefile,
+	client_libs/python/Makefile, client_libs/tcl/Makefile,
+	examples/Makefile, examples/c/Makefile, examples/c++/Makefile,
+	examples/java/Makefile, examples/python/Makefile,
+	examples/tcl/Makefile, src/Makefile, src/main.cc: many changes,
+	mostly to do with compilation and configuration for compilation.
+	
+	Java and Python stuff is NOT included in distribution.
+	
+	Player will NOT build on Solaris right now, because of some gmake
+	problem
+
+2001-05-23 15:17  gerkey
+
+	* Makefile, README, client_libs/tcl/playerclient.tcl,
+	examples/tcl/viewer.tk, include/device.h, include/lock.h,
+	include/messages.h, include/positiondevice.h,
+	include/speechdevice.h: added code to turn sonars and motors on and
+	off appropriately
+	
+	also fixed sub/unsub state machine so that it works properly
+
+2001-05-23 15:16  gerkey
+
+	* src/: Makefile, clientdata.cc, lock.cc, main.cc, p2osdevice.cc,
+	speechdevice.cc: [no log message]
+
+2001-05-22 18:44  gerkey
+
+	* doc/player-manual/player.tex: almost done
+
+2001-05-22 08:48  gerkey
+
+	* doc/player-manual/player.tex: new chapter
+
+2001-05-21 18:56  gerkey
+
+	* Makefile, distro.sh: fixed stuff
+
+2001-05-21 18:03  esben
+
+	* src/: clientdata.cc, main.cc: fixed STX read bug
+
+2001-05-17 18:31  ahoward
+
+	* src/stagedevice.cc: Changes some asserts to warnings
+
+2001-05-15 18:16  ahoward
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	include/laserbeacondevice.hh, include/messages.h,
+	src/laserbeacondevice.cc, src/laserdevice.cc: Frigged around with
+	thresholds on laser beacon detector
+
+2001-05-15 15:15  ahoward
+
+	* src/: arenalock.cc, laserbeacondevice.cc, main.cc,
+	stagedevice.cc: Fixed laser beacon subscription
+
+2001-05-11 20:07  ahoward
+
+	* VERSION, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h, examples/c++/laserobstacleavoid.cc,
+	include/laserbeacondevice.hh, include/lock.h, include/messages.h,
+	src/laserbeacondevice.cc, src/laserdevice.cc, src/lock.cc: Re-wrote
+	beacon detector again
+
+2001-05-11 14:13  gerkey
+
+	* src/broadcastdevice.cc: slight change for compatibility
+
+2001-05-11 14:10  gerkey
+
+	* Makefile, client_libs/c/Makefile, client_libs/c/playercclient.c,
+	client_libs/c++/Makefile, examples/c/Makefile,
+	examples/c++/Makefile, src/Makefile, src/broadcastdevice.cc,
+	src/clientdata.cc, src/laserdevice.cc, src/main.cc,
+	src/p2osdevice.cc, src/packet.cc, src/ptzdevice.cc,
+	src/pubsub_util.cc, src/speechdevice.cc, src/visiondevice.cc:
+	ported to Solaris (mostly)
+
+2001-05-10 19:38  ahoward
+
+	* src/: laserbeacondevice.cc, laserdevice.cc: Complete re-write of
+	laser beacon detector.	Now works more reliably, and at longer
+	range.
+
+2001-05-10 14:42  ahoward
+
+	* client_libs/c++/playerclient.h, include/laserdevice.h,
+	include/playercommon.h, src/laserdevice.cc: Tweaked the laser
+	driver for improved speed and more reliable initialisation
+
+2001-05-09 23:37  ahoward
+
+	* examples/c++/randomwalk.cc: Fixed randomwalk example for changed
+	laser
+
+2001-05-09 18:31  ahoward
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	include/laserdevice.h, include/messages.h,
+	src/laserbeacondevice.cc, src/laserdevice.cc: Added variable
+	resolution to laser device.  This will break some clients
+
+2001-05-08 18:45  gerkey
+
+	* client_libs/tcl/playerclient.tcl: added SPEECH_CODE
+
+2001-05-08 18:45  gerkey
+
+	* examples/tcl/say.tcl: simple example
+
+2001-05-08 18:20  gerkey
+
+	* include/messages.h, include/speechdevice.h, src/Makefile,
+	src/main.cc, src/speechdevice.cc: first run at Festival interface
+
+2001-05-05 12:05  gerkey
+
+	* client_libs/c/Makefile, client_libs/c/helpers.c,
+	client_libs/c/playercclient.c, client_libs/c/playercclient.h,
+	client_libs/c/print.c, client_libs/c++/playerclient.cc,
+	client_libs/tcl/playerclient.tcl, examples/c++/randomwalk.cc,
+	examples/tcl/viewer.tk, include/messages.h, src/p2osdevice.cc: some
+	changes, including protocol constants
+
+2001-05-05 12:02  gerkey
+
+	* doc/player-manual/: Makefile, epsf.sty: don't need it
+
+2001-05-05 12:00  gerkey
+
+	* doc/player-manual/: exampleuse.eps, exampleuse.fig,
+	opensonar.eps, opensonar.fig: new figures
+
+2001-05-05 11:59  gerkey
+
+	* doc/player-manual/player.tex: foo
+
+2001-05-03 08:39  ahoward
+
+	* include/playercommon.h, src/laserbeacondevice.cc,
+	src/laserdevice.cc: Fixed byte-ordering problem in laser
+	configuration; changed orientation sense on beacon detector
+
+2001-05-02 18:54  gerkey
+
+	* doc/player-manual/player.tex: almost to 1.1
+
+2001-05-02 10:12  gerkey
+
+	* doc/player-manual/player.tex: almost to 1.1
+
+2001-04-30 11:11  gerkey
+
+	* client_libs/tcl/playerclient.tcl: made client better
+
+2001-04-30 11:06  gerkey
+
+	* doc/player-manual/player.tex: still changing
+
+2001-04-28 21:53  gerkey
+
+	* doc/player-manual/player.tex: moving to 1.1
+
+2001-04-28 19:36  gerkey
+
+	* doc/player-manual/player.tex: added version info and spellchecked
+
+2001-04-27 15:30  gerkey
+
+	* examples/tcl/: ptz.tcl, viewer.tk: updated for new client
+
+2001-04-27 15:30  gerkey
+
+	* client_libs/c/: Makefile, helpers.c, playercclient.c,
+	playercclient.h, print.c: split into several files
+
+2001-04-27 15:27  gerkey
+
+	* client_libs/tcl/: TODO, playerclient.tcl: added more procs and
+	comments
+
+2001-04-27 13:22  ahoward
+
+	* client_libs/c++/playerclient.cc, include/messages.h,
+	include/stage.h, src/laserdevice.cc, src/stagedevice.cc: Fixed time
+	stuff for stage
+
+2001-04-27 10:38  gerkey
+
+	* TODO, src/main.cc: who knows?
+
+2001-04-26 18:18  ahoward
+
+	* src/laserbeacondevice.cc: Fixed times for laser beacon
+
+2001-04-26 18:00  ahoward
+
+	* VERSION, client_libs/c/playercclient.c,
+	client_libs/c++/devicedatatable.h, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h, include/arenalock.h,
+	include/device.h, include/lock.h, include/messages.h,
+	src/arenalock.cc, src/clientdata.cc, src/laserbeacondevice.cc,
+	src/lock.cc, src/main.cc, src/stagedevice.cc: Changes STX code
+	handling; changed time field from 64bit to 2x32bit fields
+
+2001-04-20 13:44  ahoward
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	examples/c++/randomwalk.cc, include/messages.h,
+	src/laserbeacondevice.cc: Added laser beacon config commands
+
+2001-04-17 16:25  ahoward
+
+	* Makefile: Fixed pwd problem with make install
+
+2001-04-17 16:15  ahoward
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	examples/c++/sonarobstacleavoid.cc, include/messages.h,
+	include/playercommon.h, src/laserbeacondevice.cc,
+	src/laserdevice.cc: Added configuration parameters to laser beacon
+	device
+
+2001-04-04 21:21  boyoon
+
+	* client_libs/python/PlayerClient.py, client_libs/python/setup.py,
+	client_libs/python/README, client_libs/python/TODO,
+	client_libs/python/Makefile, examples/python/viewer.py,
+	examples/python/Makefile: Add a python module for Player.
+
+2001-02-27 21:13  gerkey
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	include/p2osdevice.h, src/main.cc, src/p2osdevice.cc: added ability
+	to turn off sonars
+
+2001-02-26 21:55  gerkey
+
+	* client_libs/c++/devicedatatable.h,
+	client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	include/messages.h, src/clientdata.cc, src/main.cc: various changes
+	to make timestamps more accessible (interim solution)
+
+2001-02-17 17:52  ahoward
+
+	* include/playercommon.h, src/laserdevice.cc: Tweaks to message
+	macros
+
+2001-02-16 13:43  gerkey
+
+	* doc/player-manual/: Makefile, draftify.pl: don't need draft, and
+	makefile is now generic
+
+2001-02-16 11:21  gerkey
+
+	* Makefile, TODO, client_libs/java/Makefile: now Player installs
+	with version number, like '/usr/local/player1.0beta'
+
+2001-02-13 16:20  gerkey
+
+	* doc/player-manual/player.tex: updated to NOT be the IRIS tech
+	report format
+
+2001-02-12 18:04  gerkey
+
+	* Makefile: took out manual-related targets
+
+2001-02-12 18:03  gerkey
+
+	* tex/: Makefile, buffers.eps, buffers.fig, draftify.pl, epsf.sty,
+	player.bib, player.tex, threads.eps, threads.fig: the player manual
+	is now a separate module called 'player-manual' in the ./papers
+	branch of the repository
+
+2001-02-12 17:52  gerkey
+
+	* doc/player-manual/: Makefile, buffers.eps, buffers.fig,
+	draftify.pl, epsf.sty, player.bib, player.tex, threads.eps,
+	threads.fig: Initial revision
+
+2001-02-12 17:52  gerkey
+
+	* doc/player-manual/: Makefile, buffers.eps, buffers.fig,
+	draftify.pl, epsf.sty, player.bib, player.tex, threads.eps,
+	threads.fig: Player manual
+
+2001-02-09 11:15  ahoward
+
+	* client_libs/c++/: playerclient.cc, playerclient.h: Updated for
+	broadcast device
+
+2001-02-07 16:32  ahoward
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	include/broadcastdevice.hh, include/messages.h, src/Makefile,
+	src/broadcastdevice.cc: Broadcast device now works
+
+2001-02-07 14:59  gerkey
+
+	* src/clientdata.cc: more message parsing changes, to ensure that
+	client will get a response, even when the request was garbled.
+
+2001-02-07 14:52  gerkey
+
+	* client_libs/c/playercclient.c, client_libs/c++/playerclient.h,
+	client_libs/tcl/playerclient.tcl, examples/tcl/viewer.tk,
+	src/Makefile, src/clientdata.cc: more byte-swapping fixes,
+	including making the Tcl client operational (i think; i've done
+	minimal testing).
+
+2001-02-07 12:25  gerkey
+
+	* client_libs/c/playercclient.c, client_libs/tcl/playerclient.tcl,
+	include/messages.h, src/arenalock.cc, src/clientdata.cc,
+	src/main.cc: changed device codes and indices to byte-swapped
+	(short) integer quantities.  Tcl client is NOT done yet, and so
+	doesn't work right now
+
+2001-02-06 21:11  ahoward
+
+	* src/broadcastdevice.cc: Made broadcast device more-or-less work
+
+2001-02-06 21:05  ahoward
+
+	* client_libs/c/playercclient.c: Fixed packet reading loop
+
+2001-02-06 20:54  gerkey
+
+	* client_libs/c/playercclient.c: made robust loop for dealing with
+	LARGE packets
+
+2001-02-06 20:46  gerkey
+
+	* src/main.cc: added robust read loop to deal with LARGE packets
+
+2001-02-06 20:31  gerkey
+
+	* include/lock.h: fixed minor thing
+
+2001-02-06 20:28  gerkey
+
+	* src/: clientdata.cc, main.cc, p2osdevice.cc, packet.cc: various
+	cleanups
+
+2001-02-06 20:28  gerkey
+
+	* include/: clientdata.h, lock.h, playercommon.h, sip.h,
+	sonardevice.h: various cleanups, including fix for BAD buffer
+	overrun in CSIP() (sip.h)
+
+2001-02-06 20:26  gerkey
+
+	* TODO, VERSION, examples/c/randomwalk.c,
+	examples/c++/randomwalk.cc, include/p2osdevice.h: minor
+
+2001-02-06 20:25  ahoward
+
+	* client_libs/c++/playerclient.cc, include/broadcastdevice.hh,
+	src/Makefile, src/broadcastdevice.cc: Enabled new devices
+
+2001-02-06 17:06  ahoward
+
+	* client_libs/c++/devicedatatable.cc,
+	client_libs/c++/devicedatatable.h, client_libs/c++/playerclient.cc,
+	client_libs/c++/playerclient.h, include/broadcastdevice.hh,
+	include/stage.h, src/arenalock.cc, src/broadcastdevice.cc,
+	src/main.cc, src/stagedevice.cc: Added some devices; changes for
+	stage
+
+2001-02-06 13:33  gerkey
+
+	* include/messages.h: fixed small struct type problem (line 342)
+
+2001-02-06 13:26  gerkey
+
+	* src/: Makefile, main.cc: made broadcastdevice and
+	laserbeacondevice NOT compiled by default.  (just until we get them
+	right)
+
+2001-02-06 12:49  ahoward
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	include/laserbeacondevice.hh, include/messages.h,
+	include/playercommon.h, include/stage.h, src/Makefile,
+	src/laserbeacondevice.cc, src/laserdevice.cc, src/main.cc: Fixed
+	some namespace collisions; added devices
+
+2001-02-05 19:44  ahoward
+
+	* include/playercommon.h, src/laserdevice.cc, src/stagedevice.cc:
+	Fixed some namespace collisions
+
+2001-02-05 17:18  gerkey
+
+	* Makefile, TODO, VERSION, examples/c/Makefile,
+	examples/tcl/ptz.tcl: various minor changes
+
+2001-02-05 17:18  gerkey
+
+	* client_libs/c/: playercclient.c, playercclient.h: pure C client.
+	it's done, barring the future addition of extra functionality
+
+2001-02-05 17:15  gerkey
+
+	* include/: arenalock.h, device.h, lock.h, messages.h, stage.h:
+	small changes, mostly to do with timestamping
+
+2001-02-05 17:14  gerkey
+
+	* src/: Makefile, arenalock.cc, clientdata.cc,
+	laserbeacondevice.cc, lock.cc, sip.cc, stagedevice.cc: small
+	changes, mostly to do with timestamping of data
+
+2001-02-05 17:11  gerkey
+
+	* examples/c++/: Makefile, clienttest.cc, example_from_manual.cc,
+	goto.cc, laserobstacleavoid.cc, ptz.cc, randomwalk.cc,
+	sonarobstacleavoid.cc: removed dumb example.  updated others to new
+	client class (PlayerClient)
+
+2001-02-05 17:08  gerkey
+
+	* client_libs/c++/: Makefile, devicedatatable.cc,
+	devicedatatable.h, playerclient.cc, playerclient.h: new C++ client,
+	including supporting devicedata linked list
+
+2001-02-02 12:20  gerkey
+
+	* include/device.h: bug fix
+
+2001-02-02 12:16  gerkey
+
+	* TODO, client_libs/c/playercclient.c, include/device.h,
+	include/playercommon.h, src/clientdata.cc: getting toward a pure C
+	client
+
+2001-02-01 16:19  ahoward
+
+	* include/laserbeacondevice.hh, src/laserbeacondevice.cc: Now
+	reports anonymous beacons
+
+2001-01-31 21:23  gerkey
+
+	* examples/c/Makefile: minor
+
+2001-01-31 21:17  gerkey
+
+	* src/: clientdata.cc, main.cc, sip.cc: cosmetic
+
+2001-01-31 21:17  gerkey
+
+	* examples/Makefile, include/audiodevice.h, include/messages.h:
+	minor
+
+2001-01-31 21:17  gerkey
+
+	* client_libs/tcl/playerclient.tcl: new Tcl client ALMOST done
+
+2001-01-31 21:17  gerkey
+
+	* client_libs/c++/playerclient.cc: minor change
+
+2001-01-31 21:17  gerkey
+
+	* client_libs/c/: playercclient.c, playercclient.h: C client lib
+	ALMOST done
+
+2001-01-31 21:16  gerkey
+
+	* TODO, VERSION, client_libs/Makefile: updated
+
+2001-01-31 21:15  gerkey
+
+	* examples/c/: Makefile, laserobstacleavoid.c, ptz.c, randomwalk.c:
+	new C examples
+
+2001-01-31 21:14  gerkey
+
+	* examples/c/simple.c: didn't need it
+
+2001-01-30 12:20  ahoward
+
+	* include/laserbeacondevice.hh, src/laserbeacondevice.cc: Created
+	laser beacon device
+
+2001-01-29 14:22  esben
+
+	* include/audiodevice.h, src/audiodevice.cc: Minor update of the
+	audiodevice files (enables notes to be stopped by sending (0,0,0).
+	
+	The Esb
+
+2001-01-28 19:23  gerkey
+
+	* client_libs/c/: Makefile, playercclient.c, playercclient.h: first
+	step toward a C client
+
+2001-01-28 19:22  gerkey
+
+	* examples/c/simple.c: minor
+
+2001-01-28 19:21  gerkey
+
+	* examples/c/: Makefile, simple.c: first step toward a pure C
+	client
+
+2001-01-28 19:18  gerkey
+
+	* include/messages.h, src/Makefile, src/clientdata.cc, src/main.cc:
+	toward a pure C client with the protocol
+
+2001-01-26 15:01  gerkey
+
+	* client_libs/tcl/playerclient.tcl, examples/tcl/viewer.tk,
+	include/messages.h, src/Makefile, src/clientdata.cc, src/main.cc:
+	upgraded to new protocol (more or less)
+
+2001-01-26 15:01  gerkey
+
+	* VERSION: version change
+
+2001-01-22 16:03  esben
+
+	* include/audiodevice.h, src/Makefile, src/audiodevice.cc,
+	src/main.cc: Audio device added. The makefile requires fftw-library
+	installed.
+
+2001-01-22 15:28  esben
+
+	* src/arenalock.cc: stupid trivial change
+
+2001-01-16 10:45  gerkey
+
+	* src/clientdata.cc, src/main.cc, client_libs/tcl/playerclient.tcl:
+	halfway toward new message protocol.  NOT usable!
+
+2001-01-16 10:43  gerkey
+
+	* include/: clientdata.h, messages.h: halfway toward new message
+	protocol.  NOT usable right now!
+
+2001-01-14 16:12  gerkey
+
+	* include/clientdata.h, include/devicetable.h, include/messages.h,
+	src/Makefile, src/clientdata.cc, src/devicetable.cc, src/main.cc:
+	changed 'requested' structure to a linked list
+
+2001-01-12 17:29  gerkey
+
+	* tex/: Makefile, player.tex: minor.
+
+2001-01-12 17:29  gerkey
+
+	* tex/draftify.pl: little script to add raw Postscript commands to
+	a ps file so that the word "Draft" is printed like a watermark. 
+	apparently, i should use the latex draft package.  oh well.
+
+2001-01-12 17:28  gerkey
+
+	* src/: Makefile, arenalock.cc, clientdata.cc, devicetable.cc,
+	gripperdevice.cc, laserdevice.cc, lock.cc, main.cc, miscdevice.cc,
+	nodevice.cc, p2osdevice.cc, packet.cc, positiondevice.cc,
+	ptzdevice.cc, pubsub_util.cc, sip.cc, sonardevice.cc,
+	stagedevice.cc, visiondevice.cc: Many changes.	mostly, moved to
+	structured data buffers.  as far as i can tell, it all works.
+
+2001-01-12 17:28  gerkey
+
+	* TODO: changed it
+
+2001-01-12 17:25  gerkey
+
+	* include/: arenalock.h, clientdata.h, counter.h, device.h,
+	devicetable.h, errors.h, gripperdevice.h, laserdevice.h, lock.h,
+	miscdevice.h, nodevice.h, p2osdevice.h, packet.h, positiondevice.h,
+	ptzdevice.h, pubsub_util.h, sip.h, sonardevice.h, visiondevice.h:
+	Many changes!  some aesthetic (like changing copyright header);
+	others deeper (like moving to structured data buffers).
+
+2001-01-12 17:24  gerkey
+
+	* include/playercommon.h: includes for type declarations like
+	'uint8_t', as well as some of Andrew's macros, like 'ERROR()'.
+
+2001-01-12 17:23  gerkey
+
+	* include/stage.h: This is the only file you should include for
+	compiling Stage.  it will in turn include a couple of others
+	(messages.h and playercommon.h) for structure definitions and type
+	declarations.
+
+2001-01-12 17:23  gerkey
+
+	* include/messages.h: this is the definitive source for packet
+	formats, in the form of packed C structures.
+
+2001-01-12 17:22  gerkey
+
+	* include/stagedevice.h: renamed this from "stagedevice.hh"
+
+2001-01-12 17:14  gerkey
+
+	* include/stagedevice.hh: for uniformity, i changed the name to
+	"stagedevice.h"  is that pedantic?
+
+2001-01-12 17:13  gerkey
+
+	* include/rtk-types.hh: most of the contents of the file are now in
+	"playercommon.h"
+
+2001-01-12 17:13  gerkey
+
+	* include/offsets.h: don't need this file anymore.  it's contents
+	are now sensibly distributed among "messages.h" and "stage.h"
+
+2001-01-12 17:11  gerkey
+
+	* VERSION: update version
+
+2001-01-12 17:09  gerkey
+
+	* copyright_header: just a copyright header.  put it at the top of
+	each source file
+
+2000-12-18 11:09  gerkey
+
+	* src/: main.cc, ptzdevice.cc: removed commented lines for old
+	Arena*device types. added comments.
+
+2000-12-18 11:09  gerkey
+
+	* include/nodevice.h: added CLock member and made GetLock() return
+	a pointer to it. finally, the NoDevice thing works.
+
+2000-12-18 11:07  gerkey
+
+	* TODO: added stuff
+
+2000-12-14 18:06  ahoward
+
+	* src/clientdata.cc: Fixed clientdata so zero length data packets
+	are ignored
+
+2000-12-14 13:55  gerkey
+
+	* src/: Makefile, arenalaserdevice.cc, arenapositiondevice.cc,
+	arenaptzdevice.cc, arenasonardevice.cc, arenavisiondevice.cc,
+	main.cc: no longer need 'arena' devices since the move to the
+	stagedevice.  main.cc no longer #includes the 'arena*.h' files
+
+2000-12-14 13:54  gerkey
+
+	* include/: arenalaserdevice.h, arenapositiondevice.h,
+	arenaptzdevice.h, arenasonardevice.h, arenavisiondevice.h: no
+	longer need these files since the move to the 'stagedevice'
+
+2000-12-07 22:27  vaughan
+
+	* src/main.cc: improved shutdown behaviour
+
+2000-12-06 22:12  vaughan
+
+	* VERSION: changed debug level to 0.8c to match stage
+
+2000-12-06 22:05  vaughan
+
+	* VERSION, src/main.cc: did nothing!
+
+2000-12-06 22:00  ahoward
+
+	* include/offsets.h, include/stagedevice.hh, src/stagedevice.cc:
+	Added variable-length data protocol to player/stage shared mem
+	interface
+
+2000-12-05 23:39  gerkey
+
+	* tex/Makefile: very minor
+
+2000-12-05 15:29  gerkey
+
+	* Makefile, distro.sh: now the 'distro' target depends on the
+	'clean' target, rather than having distro.sh call 'make clean'
+	explicitly
+
+2000-12-05 15:07  gerkey
+
+	* doc/player.ps: postscript is now unnecessary since the TeX source
+	is included.  do 'make manual'
+
+2000-12-05 15:06  gerkey
+
+	* tex/: Makefile, buffers.eps, buffers.fig, epsf.sty, player.bib,
+	player.tex, threads.eps, threads.fig: tex documentation,
+	bibliography and figures
+
+2000-12-05 15:05  gerkey
+
+	* src/main.cc: now gets version string by #including ../VERSION
+
+2000-12-05 15:05  gerkey
+
+	* doc/player.ps: to be deleted
+
+2000-12-05 15:05  gerkey
+
+	* Makefile, VERSION, distro.sh: Makefile and VERSION changed for
+	easier automatic versioning.  Makefile now contains 'distro' target
+	which runs distro.sh to make a tarball.  neat.
+
+2000-12-04 18:18  vaughan
+
+	* client_libs/c++/playerclient.cc: fixed command read bug in c++
+	client library
+
+2000-12-04 14:45  gerkey
+
+	* src/main.cc, VERSION: version number change
+
+2000-12-01 19:55  ahoward
+
+	* include/offsets.h, src/arenapositiondevice.cc,
+	src/arenasonardevice.cc, src/main.cc: Fixed packets on position
+	device
+
+2000-12-01 17:30  ahoward
+
+	* client_libs/c++/playerclient.cc, include/offsets.h,
+	src/arenaptzdevice.cc, src/main.cc: Added new-style stage ptz
+	device
+
+2000-11-30 19:14  ahoward
+
+	* client_libs/c++/playerclient.cc, include/arenalaserdevice.h,
+	include/arenalock.h, include/arenapositiondevice.h,
+	include/arenavisiondevice.h, include/clientdata.h,
+	include/device.h, include/gripperdevice.h, include/laserdevice.h,
+	include/lock.h, include/miscdevice.h, include/nodevice.h,
+	include/offsets.h, include/p2osdevice.h, include/positiondevice.h,
+	include/ptzdevice.h, include/sonardevice.h, include/stagedevice.hh,
+	include/visiondevice.h, src/arenalaserdevice.cc, src/arenalock.cc,
+	src/arenapositiondevice.cc, src/clientdata.cc,
+	src/gripperdevice.cc, src/laserdevice.cc, src/lock.cc, src/main.cc,
+	src/miscdevice.cc, src/nodevice.cc, src/p2osdevice.cc,
+	src/positiondevice.cc, src/ptzdevice.cc, src/sonardevice.cc,
+	src/stagedevice.cc, src/visiondevice.cc: Added size specifiers to
+	all unstructured buffer calls
+
+2000-11-30 18:50  vaughan
+
+	* client_libs/c++/playerclient.cc, include/offsets.h,
+	include/stagedevice.hh, src/main.cc, src/sonardevice.cc,
+	src/stagedevice.cc: implemented sonar device model
+
+2000-11-29 20:33  gerkey
+
+	* src/: Makefile, main.cc: Added various INCLUDE_* macros to
+	Makefile and main.cc to allow conditional compilation of support
+	for each device and for Stage
+
+2000-11-29 18:56  ahoward
+
+	* src/: laserdevice.cc, stagedevice.cc: No changes?
+
+2000-11-29 16:53  ahoward
+
+	* include/rtk-types.hh: Added rtk-types.hh to provide useful macros
+
+2000-11-29 16:19  ahoward
+
+	* include/stagedevice.hh, src/main.cc, src/stagedevice.cc: Added
+	subscription
+
+2000-11-29 15:02  vaughan
+
+	* src/stagedevice.cc: added #include to pacify fussy compiler
+
+2000-11-29 14:50  ahoward
+
+	* include/offsets.h, include/stagedevice.hh, src/Makefile,
+	src/arenalock.cc, src/main.cc, src/stagedevice.cc: Added generic
+	stage device
+
+2000-11-29 11:35  gerkey
+
+	* src/: Golem, Player: unneeded binary
+
+2000-11-28 20:04  ahoward
+
+	* client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	include/laserdevice.h, src/laserdevice.cc: Complete re-write of
+	laser device, with added configuration functionality
+
+2000-11-28 17:42  ahoward
+
+	* client_libs/c++/: playerclient.cc, playerclient.h: Added some
+	const's to c++ client
+
+2000-11-28 16:16  ahoward
+
+	* COPYING, Makefile, README, README.java, TODO, VERSION,
+	examples/Makefile, client_libs/Makefile, client_libs/c++/Makefile,
+	client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	client_libs/java/Makefile, client_libs/java/PlayerClient.java,
+	client_libs/tcl/Makefile, client_libs/tcl/playerclient.tcl,
+	examples/c++/Makefile, examples/c++/clienttest.cc,
+	examples/c++/example_from_manual.cc, examples/c++/goto.cc,
+	examples/c++/laserobstacleavoid.cc, examples/c++/ptz.cc,
+	examples/c++/randomwalk.cc, examples/c++/sonarobstacleavoid.cc,
+	examples/java/Makefile,
+	examples/java/ObstacleAvoidanceUsingLaser.java,
+	examples/java/ObstacleAvoidanceUsingSonar.java,
+	examples/tcl/Makefile, examples/tcl/ptz.tcl,
+	examples/tcl/viewer.tk, src/Makefile, src/arenalaserdevice.cc,
+	src/arenalock.cc, src/arenapositiondevice.cc,
+	src/arenaptzdevice.cc, src/arenasonardevice.cc,
+	src/arenavisiondevice.cc, src/clientdata.cc, src/gripperdevice.cc,
+	src/laserdevice.cc, src/lock.cc, src/main.cc, src/miscdevice.cc,
+	src/p2osdevice.cc, src/packet.cc, src/positiondevice.cc,
+	src/pubsub_util.cc, src/sip.cc, src/sonardevice.cc,
+	src/visiondevice.cc, src/Golem, src/nodevice.cc, src/Player,
+	src/devicetable.cc, src/ptzdevice.cc, doc/player.ps,
+	include/arenalaserdevice.h, include/arenalock.h,
+	include/arenapositiondevice.h, include/arenaptzdevice.h,
+	include/arenasonardevice.h, include/arenavisiondevice.h,
+	include/clientdata.h, include/counter.h, include/device.h,
+	include/devicetable.h, include/errors.h, include/gripperdevice.h,
+	include/laserdevice.h, include/lock.h, include/miscdevice.h,
+	include/nodevice.h, include/offsets.h, include/p2osdevice.h,
+	include/packet.h, include/positiondevice.h, include/ptzdevice.h,
+	include/pubsub_util.h, include/sip.h, include/sonardevice.h,
+	include/visiondevice.h: Initial revision
+
+2000-11-28 16:16  ahoward
+
+	* COPYING, Makefile, README, README.java, TODO, VERSION,
+	examples/Makefile, client_libs/Makefile, client_libs/c++/Makefile,
+	client_libs/c++/playerclient.cc, client_libs/c++/playerclient.h,
+	client_libs/java/Makefile, client_libs/java/PlayerClient.java,
+	client_libs/tcl/Makefile, client_libs/tcl/playerclient.tcl,
+	examples/c++/Makefile, examples/c++/clienttest.cc,
+	examples/c++/example_from_manual.cc, examples/c++/goto.cc,
+	examples/c++/laserobstacleavoid.cc, examples/c++/ptz.cc,
+	examples/c++/randomwalk.cc, examples/c++/sonarobstacleavoid.cc,
+	examples/java/Makefile,
+	examples/java/ObstacleAvoidanceUsingLaser.java,
+	examples/java/ObstacleAvoidanceUsingSonar.java,
+	examples/tcl/Makefile, examples/tcl/ptz.tcl,
+	examples/tcl/viewer.tk, src/Makefile, src/arenalaserdevice.cc,
+	src/arenalock.cc, src/arenapositiondevice.cc,
+	src/arenaptzdevice.cc, src/arenasonardevice.cc,
+	src/arenavisiondevice.cc, src/clientdata.cc, src/gripperdevice.cc,
+	src/laserdevice.cc, src/lock.cc, src/main.cc, src/miscdevice.cc,
+	src/p2osdevice.cc, src/packet.cc, src/positiondevice.cc,
+	src/pubsub_util.cc, src/sip.cc, src/sonardevice.cc,
+	src/visiondevice.cc, src/Golem, src/nodevice.cc, src/Player,
+	src/devicetable.cc, src/ptzdevice.cc, doc/player.ps,
+	include/arenalaserdevice.h, include/arenalock.h,
+	include/arenapositiondevice.h, include/arenaptzdevice.h,
+	include/arenasonardevice.h, include/arenavisiondevice.h,
+	include/clientdata.h, include/counter.h, include/device.h,
+	include/devicetable.h, include/errors.h, include/gripperdevice.h,
+	include/laserdevice.h, include/lock.h, include/miscdevice.h,
+	include/nodevice.h, include/offsets.h, include/p2osdevice.h,
+	include/packet.h, include/positiondevice.h, include/ptzdevice.h,
+	include/pubsub_util.h, include/sip.h, include/sonardevice.h,
+	include/visiondevice.h: Initial import
+
