@@ -428,6 +428,7 @@ Wavefront::LocalizeToPosition(double* px, double* py, double* pa,
 void
 Wavefront::StopPosition()
 {
+  puts("stopping robot");
   PutPositionCommand(this->position_x,this->position_y,this->position_a);
 }
 
@@ -508,6 +509,7 @@ void Wavefront::Main()
                  (this->localize_y - this->target_y)));
     angle = fabs(this->localize_a - this->target_a);
     printf("angle: %f\teps:%f\n", angle, this->ang_eps);
+    printf("dist: %f\teps:%f\n", dist, this->dist_eps);
     if(dist < this->dist_eps && angle < this->ang_eps)
     {
       // we're at the final target, so stop
