@@ -20,29 +20,15 @@
  */ 
 ///////////////////////////////////////////////////////////////////////////
 //
-// File: broadcastdevice.cc
+// Desc: Device for inter-player communication using broadcast sockets.
 // Author: Andrew Howard
 // Date: 5 Feb 2000
-// Desc: Device for inter-player communication using broadcast sockets.
-//
-// CVS info:
-//  $Source$
-//  $Author$
-//  $Revision$
-//
-// Usage:
-//  (empty)
+// CVS: $Id$
 //
 // Theory of operation:
-//  This device actually uses IPv4 broadcasting (not multicasting).
-//  Be careful not to run this on the university nets: you will get
-//  disconnected and spanked!
-//
-// Known bugs:
-//  (empty)
-//
-// Possible enhancements:
-//  (empty)
+//  This device uses IPv4 broadcasting (not multicasting).  Be careful
+//  not to run this on the university nets: you will get disconnected
+//  and spanked!
 //
 ///////////////////////////////////////////////////////////////////////////
 

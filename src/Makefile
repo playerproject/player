@@ -121,10 +121,13 @@ install: $(SERVERNAME)
 	$(MKDIR) -p $(INSTALL_BIN)
 	$(INSTALL) -m 755 $(SERVERNAME) $(INSTALL_BIN)
 	$(MKDIR) -p $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 ../include/player.h $(INSTALL_INCLUDE)/player.h
 	$(INSTALL) -m 644 ../include/playercommon.h $(INSTALL_INCLUDE)/playercommon.h
 	$(INSTALL) -m 644 ../include/messages.h $(INSTALL_INCLUDE)/messages.h
 	$(INSTALL) -m 644 ../include/defaults.h $(INSTALL_INCLUDE)/defaults.h
+	$(INSTALL) -m 644 ../include/playerqueue.h $(INSTALL_INCLUDE)/playerqueue.h
 	$(INSTALL) -m 644 ../include/stage.h $(INSTALL_INCLUDE)/stage.h
+	$(INSTALL) -m 644 libplayerqueue.a $(INSTALL_LIB)/libplayerqueue.a
 
 uninstall:
 	$(RM) -f $(INSTALL_BIN)/$(SERVERNAME)

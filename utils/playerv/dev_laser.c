@@ -29,6 +29,9 @@
 #include "playerv.h"
 
 
+// Update the laser configuration
+void laser_update_config(laser_t *laser);
+
 // Draw the laser scan
 void laser_draw(laser_t *laser);
 
@@ -81,9 +84,9 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, 
   snprintf(label, sizeof(label), "Laser %d", index);
   laser->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   laser->subscribe_item = rtk_menuitem_create(laser->menu, "Subscribe", 1);
-  laser->res025_item = rtk_menuitem_create(laser->menu, "0.25 deg resolution", 0);
-  laser->res050_item = rtk_menuitem_create(laser->menu, "0.50 deg resolution", 0);
-  laser->res100_item = rtk_menuitem_create(laser->menu, "1.00 deg resolution", 0);
+  laser->res025_item = rtk_menuitem_create(laser->menu, "0.25 deg resolution", 1);
+  laser->res050_item = rtk_menuitem_create(laser->menu, "0.50 deg resolution", 1);
+  laser->res100_item = rtk_menuitem_create(laser->menu, "1.00 deg resolution", 1);
 
   // Set the initial menu state
   rtk_menuitem_check(laser->subscribe_item, laser->proxy->info.subscribed);
@@ -129,26 +132,10 @@ void laser_update(laser_t *laser)
   }
   rtk_menuitem_check(laser->subscribe_item, laser->proxy->info.subscribed);
 
-  // See if the resolution has been changed
-  if (rtk_menuitem_isactivated(laser->res025_item))
-  {
-    if (laser->proxy->info.subscribed)
-      if (playerc_laser_configure(laser->proxy, -M_PI/2, +M_PI/2, 0.25*M_PI/180, 1) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-  }
-  if (rtk_menuitem_isactivated(laser->res050_item))
-  {
-    if (laser->proxy->info.subscribed)
-      if (playerc_laser_configure(laser->proxy, -M_PI/2, +M_PI/2, 0.50*M_PI/180, 1) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-  }
-  if (rtk_menuitem_isactivated(laser->res100_item))
-  {
-    if (laser->proxy->info.subscribed)
-      if (playerc_laser_configure(laser->proxy, -M_PI/2, +M_PI/2, 1.00*M_PI/180, 1) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-  }
-
+  // Update the configuration stuff
+  if (laser->proxy->info.subscribed)
+    laser_update_config(laser);
+  
   if (laser->proxy->info.subscribed)
   {
     // Draw in the laser scan if it has been changed.
@@ -164,6 +151,40 @@ void laser_update(laser_t *laser)
     rtk_fig_show(laser->scan_fig, 0);
   }
 }
+
+
+// Update the laser configuration
+void laser_update_config(laser_t *laser)
+{
+  int update;
+  double min, max;
+  int res, intensity;
+  
+  update = 0;
+  if (rtk_menuitem_isactivated(laser->res025_item))
+  {
+    res = 25; min = -50*M_PI/180; max = +50*M_PI/180; update = 1;
+  }
+  if (rtk_menuitem_isactivated(laser->res050_item))
+  {
+    res = 50; min = -M_PI/2; max = +M_PI/2; update = 1;
+  }
+  if (rtk_menuitem_isactivated(laser->res100_item))
+  {
+    res = 100; min = -M_PI/2; max = +M_PI/2; update = 1;
+  }
+
+  if (update)
+    if (playerc_laser_set_config(laser->proxy, min, max, res, intensity) != 0)
+      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+
+  if (playerc_laser_get_config(laser->proxy, &min, &max, &res, &intensity) != 0)
+    PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+
+  rtk_menuitem_check(laser->res025_item, (res == 25));
+  rtk_menuitem_check(laser->res050_item, (res == 50));
+  rtk_menuitem_check(laser->res100_item, (res == 100));
+}  
 
 
 // Draw the laser scan

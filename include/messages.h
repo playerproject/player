@@ -332,21 +332,34 @@ typedef struct
 } __attribute__ ((packed)) player_laser_data_t;
 
 /*
-   the laser configuration packet
+ * Laser request subtypes.
+ */
+#define PLAYER_LASER_SET_CONFIG 0x01
+#define PLAYER_LASER_GET_CONFIG 0x02
 
-   <min_angle> and <max_angle> specify the start and end angles
-   (in units of 0.01 degrees).  Valid range is -9000 to +9000.
-   <resolution> specifies the resolution (in units of 0.01 degrees).
-   Valid resolutions are 25, 50, 100.
-   If <intensity> is set reflection intensity values will be returned
-   in the top 3 bits of the range data.
-*/
+/*
+ * Laser configuration packet.
+ */
 typedef struct
 {
+  /* Packet subtype.  Set to PLAYER_LASER_SET_CONFIG to set the laser
+   configuration; or set to PLAYER_LASER_GET_CONFIG to get the laser
+   configuration. */
+  uint8_t subtype;
+
+  /* Start and end angles for the laser scan (in units of 0.01
+   * degrees).  Valid range is -9000 to +9000. */
   int16_t min_angle;
   int16_t max_angle;
+
+ /* Scan resolution (in units of 0.01 degrees).  Valid resolutions are
+  * 25, 50, 100. */
   uint16_t resolution;
+
+  /* Enable reflection intensity data (returned in the top 3 bits of
+   * the range data. */
   uint8_t  intensity;
+  
 } __attribute__ ((packed)) player_laser_config_t;
 
 
@@ -511,10 +524,10 @@ typedef struct
  */
 typedef struct
 {
-    uint8_t id;
-    uint16_t range;
-    int16_t bearing;
-    int16_t orient;
+  uint8_t id;
+  uint16_t range;
+  int16_t bearing;
+  int16_t orient;
 } __attribute__ ((packed)) player_laserbeacon_item_t;
 
 #define PLAYER_MAX_LASERBEACONS 32
@@ -539,9 +552,9 @@ typedef struct
  */
 typedef struct
 {
-    uint8_t subtype;
-    uint8_t bit_count;
-    uint16_t bit_size;
+  uint8_t subtype;
+  uint8_t bit_count;
+  uint16_t bit_size;
 } __attribute__ ((packed)) player_laserbeacon_setbits_t;
 
 /* Laser beacon request packet: set the bit acceptance thresholds
@@ -551,9 +564,9 @@ typedef struct
  */
 typedef struct
 {
-    uint8_t subtype;
-    uint16_t zero_thresh;
-    uint16_t one_thresh;
+  uint8_t subtype;
+  uint16_t zero_thresh;
+  uint16_t one_thresh;
 } __attribute__ ((packed)) player_laserbeacon_setthresh_t;
 
 
