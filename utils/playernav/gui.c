@@ -868,8 +868,6 @@ draw_waypoints(gui_data_t* gui_data, int idx)
   }
   else if(gui_data->planners[idx]->path_valid)
   {
-    gnome_canvas_item_show(gui_data->robot_goals[idx]);
-
     g_assert((gui_data->robot_paths[idx] = 
               gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
                                     gnome_canvas_group_get_type(),
@@ -902,12 +900,20 @@ draw_waypoints(gui_data_t* gui_data, int idx)
                                         robot_colors[idx % num_robot_colors],
                                         "width_pixels", 1,
                                         NULL)));
-
-        pose.px =  gui_data->planners[idx]->waypoints[i][0];
-        pose.py =  gui_data->planners[idx]->waypoints[i][1];
-        pose.pa = 0.0;
-        move_item(waypoint, pose,0);
       }
+      else
+      {
+        if(!dragging && !setting_theta)
+        {
+          gnome_canvas_item_show(gui_data->robot_goals[idx]);
+          waypoint = gui_data->robot_goals[idx];
+        }
+      }
+
+      pose.px =  gui_data->planners[idx]->waypoints[i][0];
+      pose.py =  gui_data->planners[idx]->waypoints[i][1];
+      pose.pa = 0.0;
+      move_item(waypoint, pose,0);
 
       if(i>0)
       {
