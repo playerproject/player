@@ -306,7 +306,8 @@ void SickLMS200_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickLMS200::SickLMS200(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_READ_MODE)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+             PLAYER_LASER_CODE, PLAYER_READ_MODE)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -537,7 +538,7 @@ int SickLMS200::ProcessMessage(ClientData * client, player_msghdr * hdr,
   }
   MSG_END
 
-  MSG(device_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_LASER_GET_CONFIG)
+  MSG(device_id, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_CONFIG, 0)
   {
     player_laser_config_t config;
     config.intensity = this->intensity;
@@ -551,7 +552,7 @@ int SickLMS200::ProcessMessage(ClientData * client, player_msghdr * hdr,
   }
   MSG_END_ACK
 
-  MSG(device_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_LASER_GET_GEOM)
+  MSG(device_id, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, 0)
   {
     player_laser_geom_t geom;
     geom.pose[0] = htons((short) (this->pose[0] * 1000));
@@ -561,7 +562,7 @@ int SickLMS200::ProcessMessage(ClientData * client, player_msghdr * hdr,
     geom.size[1] = htons((short) (this->size[1] * 1000));
 
     *resp_len = sizeof(player_laser_geom_t);
-    memcpy(resp_data, &geom, sizeof(player_laser_config_t));
+    memcpy(resp_data, &geom, sizeof(player_laser_geom_t));
   }
   MSG_END_ACK
 

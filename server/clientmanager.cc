@@ -222,9 +222,7 @@ ClientManager::AddClient(ClientData* client)
     // Make a message with the reply string
     Message ident_msg(hdr, data, PLAYER_IDENT_STRLEN, client);
     // Push it onto the new client's queue
-    puts("pushing");
-    client->OutQueue.Push(ident_msg);
-    puts("done pushing");
+    client->OutQueue->Push(ident_msg);
 
     // Write to the client.
     if(client->Write() < 0)
@@ -742,7 +740,7 @@ ClientManagerUDP::Read()
         hdr.conid = htons(clientData->client_id);
 
         Message New(hdr,NULL,0);
-        clientData->OutQueue.Push(New);
+        clientData->OutQueue->Push(New);
         if(clientData->Write() < 0)
         {
           PLAYER_ERROR1("%s", strerror(errno));

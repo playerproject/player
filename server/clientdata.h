@@ -93,8 +93,8 @@ class ClientData
 		   unsigned char* payload,
                    unsigned int payload_size);
     /// Handle device list requests.
-    void HandleListRequest(player_device_devlist_t *req,
-                           player_device_devlist_t *rep);
+    int HandleListRequest(player_device_devlist_t *req,
+                          player_device_devlist_t *rep);
     /// Handle driver info requests.
     void HandleDriverInfoRequest(player_device_driverinfo_t *req,
                                  player_device_driverinfo_t *rep);
@@ -123,7 +123,7 @@ class ClientData
     /// Length of requested.
     int numsubs;
     /// Queue for outgoing messages to the client.
-    MessageQueue OutQueue;
+    MessageQueue* OutQueue;
     /// Buffer in which replies are constructed.
     unsigned char *replybuffer;
     /// Buffer into which incoming message headers are read.
@@ -262,7 +262,7 @@ class ClientDataInternal : public ClientData
     int Unsubscribe(player_device_id_t device);
     int SetDataMode(uint8_t datamode);
   protected:
-    MessageQueue InQueue;
+    MessageQueue* InQueue;
     Driver * driver;
 };
 

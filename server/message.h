@@ -57,7 +57,6 @@ class Message
             const unsigned char * data,
             unsigned int data_size, 
             ClientData * client = NULL); 
-
     /// Copy pointers from existing message and increment refcount.
     Message(const Message & rhs); 
 
@@ -72,9 +71,12 @@ class Message
     uint8_t * GetPayload() {return (&Data[sizeof(player_msghdr_t)]);};
     /// Get Payload size.
     size_t GetPayloadSize() {return Size - sizeof(player_msghdr_t);};
-
     /// Size of message data.
     unsigned int GetSize() {return Size;};
+    /// Compare type, subtype, device, and device_index.
+    bool Compare(Message &other);
+    /// Decrement ref count
+    void DecRef();
 
     /// ???
     ClientData* Client;
@@ -122,30 +124,38 @@ class MessageQueue
 {
   public:
     /// Create an empty message queue.
-    MessageQueue();
+    MessageQueue(bool _Replace, size_t _Maxlen);
     /// Destroy a message queue.
     ~MessageQueue();
-    /// Should we replace messages with newer ones from same device?
-    bool Replace;
     /// Push a message onto the queue.  Returns a pointer to the new last
     /// element in the queue.
     MessageQueueElement * Push(Message & msg);
-    /// Pop a message from the queue.  Returns pointer to said message, or
+    /// Pop message element @p el from the queue.  If @p el is NULL, then the 
+    /// tail of the queue is popped.  Returns pointer to said message, or
     /// NULL if the queue is empty.
-    MessageQueueElement * Pop();
+    MessageQueueElement * Pop(MessageQueueElement* el = NULL);
+    /// Set the @p Replace flag, which governs whether data and command
+    /// messages of the same subtype from the same device are replaced in
+    /// the queue.
+    void SetReplace(bool _Replace) { this->Replace = _Replace; };
   private:
     /// Lock the mutex associated with this queue.
     void Lock() {pthread_mutex_lock(lock);};
     /// Unlock the mutex associated with this queue.
     void Unlock() {pthread_mutex_unlock(lock);};
+    /// Remove element @p el from the queue, and rearrange pointers
+    /// appropriately.
+    void Remove(MessageQueueElement* el);
     /// Head of the queue.
     MessageQueueElement Head;
     /// Tail of the queue.
     MessageQueueElement * pTail;
     /// Mutex to control access to the queue, via Lock() and Unlock().
     pthread_mutex_t * lock;
-    /// Maximum length of queue.
-    size_t maxlen;
+    /// Maximum length of queue in elements.
+    size_t Maxlen;
+    /// Should we replace messages with newer ones from same device?
+    bool Replace;
 };
 
 #endif

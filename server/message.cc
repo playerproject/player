@@ -35,13 +35,14 @@
 
 Message::Message()
 {
-  assert(Lock = new pthread_mutex_t);
-  pthread_mutex_init(Lock,NULL);
-  Size = sizeof(struct player_msghdr);
-  assert(Data = new unsigned char [Size]);
-  assert(RefCount = new unsigned int);
-  *RefCount = 1;
-  Client = NULL;
+  assert(this->Lock = new pthread_mutex_t);
+  pthread_mutex_init(this->Lock,NULL);
+  this->Size = sizeof(struct player_msghdr);
+  assert(this->Data = new unsigned char [this->Size]);
+  memset(this->Data,0,this->Size);
+  assert(this->RefCount = new unsigned int);
+  *this->RefCount = 1;
+  this->Client = NULL;
 }
 
  
@@ -50,17 +51,17 @@ Message::Message(const struct player_msghdr & Header,
                  unsigned int data_size, 
                  ClientData * _client)
 {
-  Client = _client;
-  assert(Lock = new pthread_mutex_t);
-  pthread_mutex_init(Lock,NULL);
-  assert(Size = sizeof(struct player_msghdr)+data_size);
-  assert(Data = new unsigned char [Size]);
+  this->Client = _client;
+  assert(this->Lock = new pthread_mutex_t);
+  pthread_mutex_init(this->Lock,NULL);
+  assert(this->Size = sizeof(struct player_msghdr)+data_size);
+  assert(this->Data = new unsigned char[this->Size]);
 
   // copy the header and then the data into out message data buffer
-  memcpy(Data,&Header,sizeof(struct player_msghdr));
-  memcpy(&Data[sizeof(struct player_msghdr)],data,data_size);
-  assert(RefCount = new unsigned int);
-  *RefCount = 1;
+  memcpy(this->Data,&Header,sizeof(struct player_msghdr));
+  memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
+  assert(this->RefCount = new unsigned int);
+  *this->RefCount = 1;
 }
 
 Message::Message(const Message & rhs)
@@ -81,8 +82,26 @@ Message::Message(const Message & rhs)
 
 Message::~Message()
 {
+  this->DecRef();
+}
+
+bool 
+Message::Compare(Message &other)
+{ 
+  player_msghdr_t* thishdr = this->GetHeader();
+  player_msghdr_t* otherhdr = other.GetHeader();
+  return((thishdr->type == otherhdr->type) &&
+         (thishdr->subtype == otherhdr->subtype) &&
+         (thishdr->device == otherhdr->device) &&
+         (thishdr->device_index == otherhdr->device_index));
+};
+
+void 
+Message::DecRef()
+{
   pthread_mutex_lock(Lock);
   RefCount--;
+  assert(RefCount >= 0);
   if(RefCount==0)
   {
     delete [] Data;
@@ -114,44 +133,74 @@ MessageQueueElement::~MessageQueueElement()
 {
 }
 
-MessageQueue::MessageQueue()
+MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
 {
-  Replace = false;
-  pTail = &Head;
-  lock = new pthread_mutex_t;
-  assert(lock);
-  pthread_mutex_init(lock,NULL);
+  this->Replace = _Replace;
+  this->Maxlen = _Maxlen;
+  this->pTail = &this->Head;
+  this->lock = new pthread_mutex_t;
+  assert(this->lock);
+  pthread_mutex_init(this->lock,NULL);
 }
 
 MessageQueue::~MessageQueue()
 {
   // clear the queue
-  while (Pop());
+  while(Pop());
 }
 
 MessageQueueElement* 
 MessageQueue::Push(Message & msg)
 {
-  assert(pTail);
+  player_msghdr_t* hdr;
+  assert(this->pTail);
   assert(*msg.RefCount);
-  Lock();
-  pTail = new MessageQueueElement(*pTail,msg);
-  Unlock();
-  return pTail;
+  this->Lock();
+  hdr = msg.GetHeader();
+  if(this->Replace && 
+     ((hdr->type == PLAYER_MSGTYPE_DATA) || 
+      (hdr->type == PLAYER_MSGTYPE_CMD)))
+  {
+    for(MessageQueueElement* el = this->pTail; 
+        el != &this->Head; 
+        el = el->prev)
+    {
+      if(el->msg.Compare(msg))
+      {
+        this->Remove(el);
+        delete el;
+        break;
+      }
+    }
+  }
+  this->pTail = new MessageQueueElement(*this->pTail,msg);
+  this->Unlock();
+  return(this->pTail);
 }
 
 MessageQueueElement*
-MessageQueue::Pop()
+MessageQueue::Pop(MessageQueueElement* el)
 {
   Lock();
-  if (pTail == &Head)
+  if(pTail == &Head)
   {	
     Unlock();
     return NULL;
   }
-  MessageQueueElement * ret = pTail;
-  pTail->prev->next = NULL;
-  pTail = pTail->prev;
+  if(!el)
+    assert(el = this->Head.next);
+  this->Remove(el);
   Unlock();
-  return ret;
+  return(el);
 }
+
+void
+MessageQueue::Remove(MessageQueueElement* el)
+{
+  el->prev->next = el->next;
+  if(el == this->pTail)
+    this->pTail = this->pTail->prev;
+  else
+    el->next->prev = el->prev;
+}
+

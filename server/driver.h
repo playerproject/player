@@ -107,7 +107,7 @@ class Driver
     int error;
 
     /// Queue for all incoming messages for this driver
-    MessageQueue InQueue;
+    MessageQueue* InQueue;
 
   public:
 
@@ -115,16 +115,28 @@ class Driver
     //
     /// @param cf Current configuration file
     /// @param section Current section in configuration file
+    /// @param overwrite_cmds Do new commands overwrite old ones?
+    /// @param queue_maxlen How long can the incoming queue grow?
     /// @param interface Player interface code; e.g., PLAYER_POSITION_CODE
     /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
-    Driver(ConfigFile *cf, int section, int interface, uint8_t access);
+    Driver(ConfigFile *cf, 
+           int section, 
+           bool overwrite_cmds, 
+           size_t queue_maxlen, 
+           int interface, 
+           uint8_t access);
 
     /// @brief Constructor for multiple-interface drivers.
     ///
     /// Use AddInterface() to specify individual interfaces.
     /// @param cf Current configuration file
     /// @param section Current section in configuration file
-    Driver(ConfigFile *cf, int section);
+    /// @param overwrite_cmds Do new commands overwrite old ones?
+    /// @param queue_maxlen How long can the incoming queue grow?
+    Driver(ConfigFile *cf, 
+           int section,
+           bool overwrite_cmds, 
+           size_t queue_maxlen);
 
     /// @brief Destructor
     virtual ~Driver();

@@ -326,12 +326,100 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
   return playerc_client_writepacket(client, &header, cmd, len);
 }
 
-
 // Issue request and await reply (blocking).
-int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinfo, uint8_t reqtype, 
-                           void *req_data, int req_len, void *rep_data, int rep_len)
+int playerc_client_request(playerc_client_t *client, 
+                           playerc_device_t *deviceinfo,
+                           uint8_t subtype,
+                           void *req_data, int req_len, 
+                           void *rep_data, int rep_len)
 {
-	int resptype;
+  int i, len;
+  player_msghdr_t req_header, rep_header;
+
+  if(deviceinfo == NULL)
+  {
+    req_header.stx = PLAYER_STXX;
+    req_header.type = PLAYER_MSGTYPE_REQ;
+    req_header.device = PLAYER_PLAYER_CODE;    
+    req_header.device_index = 0;
+    req_header.size = req_len;
+  }
+  else
+  {
+    req_header.stx = PLAYER_STXX;
+    req_header.type = PLAYER_MSGTYPE_REQ;
+    req_header.device = deviceinfo->code;
+    req_header.device_index = deviceinfo->index;
+    req_header.size = req_len;
+  }
+  req_header.subtype = subtype;
+
+  if (playerc_client_writepacket(client, &req_header, req_data, req_len) < 0)
+    return -1;
+
+  // Read packets until we get a reply.  Data packets get queued up
+  // for later processing.
+  for (i = 0; i < 1000; i++)
+  {
+    len = PLAYER_MAX_MESSAGE_SIZE;
+    if (playerc_client_readpacket(client, &rep_header, client->data, &len) < 0)
+      return -1;
+
+    if (rep_header.type == PLAYER_MSGTYPE_DATA)
+    {
+      // Queue up any incoming data packets for later dispatch
+      playerc_client_push(client, &rep_header, client->data, len);
+    }
+    else if(rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
+    {
+      if (rep_header.device != req_header.device ||
+          rep_header.device_index != req_header.device_index ||
+          rep_header.subtype != req_header.subtype ||
+          rep_header.size > rep_len)
+      {
+        PLAYERC_ERR("got the wrong kind of reply (not good).");
+        return -1;
+      }
+      memcpy(rep_data, client->data, rep_len);
+      break;
+    }
+    else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
+    {
+      if (rep_header.device != req_header.device ||
+          rep_header.device_index != req_header.device_index ||
+          rep_header.subtype != req_header.subtype ||
+          rep_header.size > rep_len)
+      {
+        PLAYERC_ERR("got the wrong kind of reply (not good).");
+        return -1;
+      }
+      PLAYERC_ERR("got NACK from request");
+      return -2;
+    }
+    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
+    {
+      PLAYERC_ERR("got ERR from request");
+      return -1;
+    }
+  }
+
+  if (i == 1000)
+  {
+    PLAYERC_ERR("timed out waiting for server reply to request");
+    return -1;
+  }
+    
+  return len;
+}
+
+#if 0
+// Issue request and await reply (blocking).
+int playerc_client_request(playerc_client_t *client, 
+                           playerc_device_t *deviceinfo, uint8_t reqtype, 
+                           void *req_data, int req_len, void *rep_data, 
+                           int rep_len)
+{
+  int resptype;
   player_msghdr_t req_header;
 
   req_header.stx = PLAYER_STXX;
@@ -353,78 +441,82 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
   if (playerc_client_writepacket(client, &req_header, req_data, req_len) < 0)
     return -1;
 
-  resptype = playerc_client_getresponse(client, req_header.device, req_header.device_index, 0, NULL, rep_data, rep_len);
+  resptype = playerc_client_getresponse(client, req_header.device, 
+                                        req_header.device_index, 0, NULL, 
+                                        rep_data, rep_len);
   return resptype;
 }
 
 
 int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
-		uint16_t  index, uint16_t sequence, uint8_t * resptype, uint8_t * resp_data, int resp_len)
+                               uint16_t  index, uint16_t sequence, 
+                               uint8_t * resptype, uint8_t * resp_data, 
+                               int resp_len)
 {
-	player_msghdr_t rep_header;
-	playerc_client_item_t *item;
-	int i;
-	int len;
-	// First we check through the stored messages to see if one matches
-	for(i = 0; i < client->qlen; ++i)
-	{
-		item = &client->qitems[(i + client->qfirst) % client->qsize];
-		// need to add sequence to list to be checked
-		if (item->header.device == device && item->header.device_index == index)
-		{
-			if (resptype)
-				*resptype = item->header.subtype;
-			// need to deal with removing items from the queue
-			// circular buffer is not best option for this
-			// so either need to use linked list 
-			// or just tag items as read and remove in read method
-    		if (item->header.type == PLAYER_MSGTYPE_RESP_NACK)
-				return -1;
-			else if (item->header.type == PLAYER_MSGTYPE_RESP_ACK)
-			{
-				if (item->len > resp_len)
-					 return -2;
-				memcpy(resp_data, item->data, item->len);
-				return item->len;
-			}
-		}
-	} 
-	
-	// then start reading in new messages, store in queue if they are 
-	// not the one we are waiting for
-	for (i = 0; i < 1000; i++)
-  	{
-    	len = PLAYER_MAX_MESSAGE_SIZE;
-    	if (playerc_client_readpacket(client, &rep_header, client->data, &len) < 0)
-      		return -1;
+  player_msghdr_t rep_header;
+  playerc_client_item_t *item;
+  int i;
+  int len;
+  // First we check through the stored messages to see if one matches
+  for(i = 0; i < client->qlen; ++i)
+  {
+    item = &client->qitems[(i + client->qfirst) % client->qsize];
+    // need to add sequence to list to be checked
+    if (item->header.device == device && item->header.device_index == index)
+    {
+      if (resptype)
+        *resptype = item->header.subtype;
+      // need to deal with removing items from the queue
+      // circular buffer is not best option for this
+      // so either need to use linked list 
+      // or just tag items as read and remove in read method
+      if (item->header.type == PLAYER_MSGTYPE_RESP_NACK)
+        return -1;
+      else if (item->header.type == PLAYER_MSGTYPE_RESP_ACK)
+      {
+        if (item->len > resp_len)
+          return -2;
+        memcpy(resp_data, item->data, item->len);
+        return item->len;
+      }
+    }
+  } 
 
-		// need to add sequence to list to be checked
-		if (rep_header.device == device && rep_header.device_index == index)
-		{
-			if (resptype)
-				*resptype = rep_header.subtype;
-			// need to deal with removing items from the queue
-			// circular buffer is not best option for this
-			// so either need to use linked list 
-			// or just tag items as read and remove in read method
-    		if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
-				return -1;
-			else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
-			{
-				if (len > resp_len)
-					 return -2;
-				memcpy(resp_data, client->data, len);
-				return len;
-			}
+  // then start reading in new messages, store in queue if they are 
+  // not the one we are waiting for
+  for (i = 0; i < 1000; i++)
+  {
+    len = PLAYER_MAX_MESSAGE_SIZE;
+    if (playerc_client_readpacket(client, &rep_header, client->data, &len) < 0)
+      return -1;
 
-		}
-   		// Queue up any incoming data packets for later dispatch
-   		playerc_client_push(client, &rep_header, client->data, len);
-  	}
+    // need to add sequence to list to be checked
+    if (rep_header.device == device && rep_header.device_index == index)
+    {
+      if (resptype)
+        *resptype = rep_header.subtype;
+      // need to deal with removing items from the queue
+      // circular buffer is not best option for this
+      // so either need to use linked list 
+      // or just tag items as read and remove in read method
+      if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
+        return -1;
+      else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
+      {
+        if (len > resp_len)
+          return -2;
+        memcpy(resp_data, client->data, len);
+        return len;
+      }
+    }
+    // Queue up any incoming data packets for later dispatch
+    playerc_client_push(client, &rep_header, client->data, len);
+  }
 
-    PLAYERC_ERR("timed out waiting for server reply to request");
-    return -1;
+  PLAYERC_ERR("timed out waiting for server reply to request");
+  return -1;
 }
+#endif
 
 
 // Add a device proxy 

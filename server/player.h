@@ -158,7 +158,7 @@
  */
 #define PLAYER_MAX_REQREP_SIZE 4096 /*4KB*/
 
-#define PLAYER_DEFAULT_QUEUE_MAXLEN 32
+#define PLAYER_MSGQUEUE_DEFAULT_MAXLEN 32
 
 /* the default player port */
 #define PLAYER_PORTNUM 6665
@@ -296,15 +296,11 @@ typedef struct player_device_id
     with the fields filled in. */
 typedef struct player_device_devlist
 {
-  /** Subtype; must be PLAYER_PLAYER_DEVLIST_REQ. */
-  //uint16_t subtype;
-
   /** The number of devices */
   uint16_t device_count;
 
   /** The list of available devices. */
   player_device_id_t devices[PLAYER_MAX_DEVICES];
-  
 } __PACKED__ player_device_devlist_t;
 
 /** @brief Configuration request: Get the driver name for a particular device.

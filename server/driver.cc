@@ -55,9 +55,11 @@ extern DeviceTable* deviceTable;
 
 // Default constructor for single-interface drivers.  Specify the
 // interface code and buffer sizes.
-Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access)
+Driver::Driver(ConfigFile *cf, int section, 
+               bool overwrite_cmds, size_t queue_maxlen, 
+               int interface, uint8_t access)
 {
-  error = 0;
+  this->error = 0;
   
   // Look for our default device id
   if(cf->ReadDeviceId(&this->device_id, section, "provides", 
@@ -74,27 +76,33 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access)
     return;
   }
 
-  subscriptions = 0;
-  entries = 0;
-  alwayson = false;
+  this->subscriptions = 0;
+  this->entries = 0;
+  this->alwayson = false;
 
-  pthread_mutex_init(&accessMutex,NULL);
-  pthread_mutex_init(&condMutex,NULL);
-  pthread_cond_init(&cond,NULL);
+  assert(this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen));
+
+  pthread_mutex_init(&this->accessMutex,NULL);
+  pthread_mutex_init(&this->condMutex,NULL);
+  pthread_cond_init(&this->cond,NULL);
 }
     
 // this is the other constructor, used by multi-interface drivers.
-Driver::Driver(ConfigFile *cf, int section)
+Driver::Driver(ConfigFile *cf, int section,
+               bool overwrite_cmds, size_t queue_maxlen)
 {
-  device_id.code = INT_MAX;
+  this->device_id.code = INT_MAX;
   
-  subscriptions = 0;
-  entries = 0;
-  alwayson = false;
+  this->error = 0;
+  this->subscriptions = 0;
+  this->entries = 0;
+  this->alwayson = false;
 
-  pthread_mutex_init(&accessMutex,NULL);
-  pthread_mutex_init(&condMutex,NULL);
-  pthread_cond_init(&cond,NULL);
+  assert(this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen));
+
+  pthread_mutex_init(&this->accessMutex,NULL);
+  pthread_mutex_init(&this->condMutex,NULL);
+  pthread_cond_init(&this->cond,NULL);
 }
 
 // destructor, to free up allocated buffers.  not stricly necessary, since
@@ -290,7 +298,7 @@ void Driver::ProcessMessages()
   // If we have subscriptions, then see if we have and pending messages
   // and process them
   MessageQueueElement * el;
-  while((el=InQueue.Pop()))
+  while((el=InQueue->Pop()))
   {
     int RespLen = PLAYER_MAX_MESSAGE_SIZE;
 

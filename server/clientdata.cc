@@ -56,37 +56,40 @@ void PrintHeader(player_msghdr_t hdr);
 
 ClientData::ClientData(char* key, int myport)
 {
-  requested = NULL;
-  numsubs = 0;
-  mode = PLAYER_DATAMODE_PUSH_NEW;
-  frequency = 10;
+  this->requested = NULL;
+  this->numsubs = 0;
+  this->mode = PLAYER_DATAMODE_PUSH_NEW;
+  this->frequency = 10;
 
-  port = myport;
-  socket = -1;
+  this->port = myport;
+  this->socket = -1;
 
-  assert(readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
-  assert(replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
+  assert(this->readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
+  assert(this->replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
 
-  memset((char*)readbuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
-  memset((char*)replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
-  memset((char*)&hdrbuffer, 0, sizeof(player_msghdr_t));
+  memset((char*)this->readbuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
+  memset((char*)this->replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
+  memset((char*)&this->hdrbuffer, 0, sizeof(player_msghdr_t));
 
-  last_write = 0.0;
+  this->last_write = 0.0;
 
-  markedfordeletion = false;
+  this->markedfordeletion = false;
 
   if(strlen(key))
   {
-    strncpy(auth_key,key,sizeof(auth_key));
-    auth_key[sizeof(auth_key)-1] = '\0';
-    auth_pending = true;
+    strncpy(this->auth_key,key,sizeof(auth_key));
+    this->auth_key[sizeof(this->auth_key)-1] = '\0';
+    this->auth_pending = true;
   }
   else
   {
-    auth_pending = false;
+    this->auth_pending = false;
   }
 
-  datarequested = false;
+  this->datarequested = false;
+
+  assert(this->OutQueue = 
+         new MessageQueue(true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN));
 }
 
 bool ClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
@@ -137,7 +140,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     PLAYER_ERROR("GetTime() failed!!!!");
 
   // clean the buffer every time for all-day freshness
-  memset((char*)replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
+  memset((char*)this->replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
 
   if(auth_pending)
   {
@@ -168,10 +171,9 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       {
         // Process device list requests.
         case PLAYER_PLAYER_DEVLIST:
-          HandleListRequest((player_device_devlist_t*) payload,
-                            (player_device_devlist_t*) replybuffer);
           requesttype = PLAYER_MSGTYPE_RESP_ACK;
-          replysize = sizeof(player_device_devlist_t);
+          replysize = HandleListRequest((player_device_devlist_t*) payload,
+                                        (player_device_devlist_t*)this->replybuffer);
           break;
 
         // Process driver info requests.
@@ -225,36 +227,32 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           switch(datamode.mode)
           {
             case PLAYER_DATAMODE_PULL_NEW:
-              /* change to update request/reply */
-              datarequested=false;
-              mode = PLAYER_DATAMODE_PULL_NEW;
+              this->datarequested=false;
+              this->mode = PLAYER_DATAMODE_PULL_NEW;
+              this->OutQueue->SetReplace(true);
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
-
             case PLAYER_DATAMODE_PULL_ALL:
-              /* change to request/reply */
-              //puts("changing to REQUESTREPLY");
-              datarequested=false;
-              mode = PLAYER_DATAMODE_PULL_ALL;
+              this->datarequested=false;
+              this->mode = PLAYER_DATAMODE_PULL_ALL;
+              this->OutQueue->SetReplace(true);
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
             case PLAYER_DATAMODE_PUSH_ALL:
-              /* change to continuous mode */
-              //puts("changing to CONTINUOUS");
-              mode = PLAYER_DATAMODE_PUSH_ALL;
+              this->mode = PLAYER_DATAMODE_PUSH_ALL;
+              this->OutQueue->SetReplace(true);
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
             case PLAYER_DATAMODE_PUSH_NEW:
-              /* change to update mode (doesn't re-send old data)*/
-              //puts("changing to UPDATE");
-              mode = PLAYER_DATAMODE_PUSH_NEW;
+              this->mode = PLAYER_DATAMODE_PUSH_NEW;
+              this->OutQueue->SetReplace(true);
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
             case PLAYER_DATAMODE_PUSH_ASYNC:
-              mode = PLAYER_DATAMODE_PUSH_ASYNC;
+              this->mode = PLAYER_DATAMODE_PUSH_ASYNC;
+              this->OutQueue->SetReplace(false);
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
-
             default:
               PLAYER_WARN1("unknown I/O mode requested (%d)."
                            "Ignoring request", datamode.mode);
@@ -329,7 +327,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         {
           // create a message and enqueue it to driver
           Message New(hdr,payload,hdr.size, this);
-          driver->InQueue.Push(New);
+          driver->InQueue->Push(New);
           requesttype = 0;
         }
         else
@@ -408,12 +406,12 @@ void ClientData::RemoveRequests()
 
 
 // Handle device list requests.
-void ClientData::HandleListRequest(player_device_devlist_t *req,
-                                    player_device_devlist_t *rep)
+int
+ClientData::HandleListRequest(player_device_devlist_t *req,
+                              player_device_devlist_t *rep)
 {
   Device *device;
 
-//  rep->subtype = PLAYER_PLAYER_DEVLIST_REQ;
   rep->device_count = 0;
 
   // Get all the device entries that have the right port number.
@@ -432,10 +430,10 @@ void ClientData::HandleListRequest(player_device_devlist_t *req,
   }
 
   // Do some byte swapping.
-//  rep->subtype = htons(rep->subtype);
   rep->device_count = htons(rep->device_count);
 
-  return;
+  return(sizeof(rep->device_count) + 
+         sizeof(player_device_id_t) * rep->device_count);
 }
 
 
@@ -683,7 +681,8 @@ ClientData::PutMsg(uint8_t type,
 		   uint32_t size, 
 		   unsigned char * data)
 {
-  player_msghdr hdr;
+  player_msghdr_t hdr;
+  memset(&hdr,0,sizeof(player_msghdr_t));
   hdr.stx = htons(PLAYER_STXX);
   hdr.type=type;
   hdr.subtype=subtype;
@@ -694,7 +693,7 @@ ClientData::PutMsg(uint8_t type,
   hdr.size=htonl(size); // size of message data
 
   Message New(hdr,data,size);
-  OutQueue.Push(New);
+  OutQueue->Push(New);
 }
 
 /*************************************************************************
@@ -853,13 +852,16 @@ ClientDataTCP::Read()
 int 
 ClientDataTCP::Write()
 {
+  struct timeval curr;
   int byteswritten;
+
+  GlobalTime->GetTime(&curr);
 
   if(this->usedwritebuffersize==0)
   {
     // Loop through waiting messages and write them to buffer
     MessageQueueElement * el;
-    while((el=this->OutQueue.Pop()))
+    while((el=this->OutQueue->Pop()))
     {
       size_t totalsize = this->usedwritebuffersize + el->msg.GetSize();
 
@@ -872,12 +874,15 @@ ClientDataTCP::Write()
                                        this->totalwritebuffersize));
       }
 
+      // Fill in latest server time
+      el->msg.GetHeader()->time_sec = htonl(curr.tv_sec);
+      el->msg.GetHeader()->time_usec = htonl(curr.tv_usec);
       memcpy(this->totalwritebuffer + this->usedwritebuffersize, 
 	     el->msg.GetData(), el->msg.GetSize());	
       this->usedwritebuffersize += el->msg.GetSize();
 
       delete el;
-    }	
+    }
   }
 
   // if we have any data then write it
@@ -969,7 +974,7 @@ ClientDataUDP::Write()
 {
   // Loop through waiting messages and write them to buffer
   MessageQueueElement * el;
-  while ((el=OutQueue.Pop()))
+  while ((el=OutQueue->Pop()))
   {
     int byteswritten;
 
@@ -997,6 +1002,8 @@ ClientDataInternal::ClientDataInternal(Driver * _driver,
 {
   assert(_driver); 
   driver=_driver;
+  assert(this->InQueue = 
+         new MessageQueue(true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN));
 }
 
 ClientDataInternal::~ClientDataInternal()
@@ -1009,8 +1016,8 @@ ClientDataInternal::Read()
   // this is a 'psuedo read' basically we take messages from the InQueue and
   // Dispatch them to the drivers
   MessageQueueElement * el;
-  while ((el=InQueue.Pop()))
-    driver->InQueue.Push(el->msg);
+  while ((el=InQueue->Pop()))
+    driver->InQueue->Push(el->msg);
 
   return(0);
 }
@@ -1021,7 +1028,7 @@ ClientDataInternal::Write()
   // This doesnt actually need to do anything as any messages set to 
   // this client will just be queued immediately
   MessageQueueElement * el;
-  while ((el=OutQueue.Pop()))
+  while ((el=OutQueue->Pop()))
   {
     player_msghdr * hdr = el->msg.GetHeader();
     uint8_t * data = el->msg.GetPayload();
@@ -1054,7 +1061,7 @@ ClientDataInternal::PutMsg(uint8_t type,
 
   Message New(hdr,data,size,this);	
   assert(*New.RefCount);
-  InQueue.Push(New);
+  InQueue->Push(New);
 }
 
 // Called by client driver to send a message to another driver
@@ -1083,7 +1090,7 @@ ClientDataInternal::SendMsg(player_device_id_t device,
   hdr.size = size; // size of message data
 
   Message New(hdr,data,size,this);
-  OutQueue.Push(New);
+  OutQueue->Push(New);
 
   return 0;
 }
