@@ -47,9 +47,7 @@ class CDeviceEntry
     CDevice* devicep;  // the device itself
     CDeviceEntry* next;  // next in list
 
-    CDeviceEntry() { devicep = NULL; next = NULL; 
-                     bzero(drivername, sizeof(drivername));
-                     bzero(robotname, sizeof(robotname));}
+    CDeviceEntry();
     ~CDeviceEntry() 
     { 
       if(devicep) 

@@ -150,7 +150,7 @@ AC_TRY_COMPILE(
 
 
 dnl Checks for library functions.
-AC_REPLACE_FUNCS(scandir poll dirname)
+AC_REPLACE_FUNCS(scandir poll dirname alphasort)
 AC_CHECK_FUNCS(cfmakeraw sigblock)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
@@ -230,9 +230,9 @@ else
   AC_MSG_RESULT([])
 fi
 AC_MSG_RESULT([The following device drivers will be included:])
-for player_lib in $PLAYER_DRIVER_LIBS; do
+for player_lib in $PLAYER_DRIVERS; do
   if test -n $player_lib; then
-    AC_MSG_RESULT([[    ${player_lib:3:${#player_lib}-5}]])
+    AC_MSG_RESULT([[    $player_lib]])
   fi
 done
 AC_MSG_RESULT([])
