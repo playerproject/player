@@ -820,7 +820,7 @@ typedef struct
   char ip[32];
  
   // Link properties
-  int link, level, noise;
+  int qual, level, noise;
  
 } playerc_wifi_link_t;
 

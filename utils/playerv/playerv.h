@@ -46,6 +46,7 @@
 #define COLOR_LASER              0x0000C0
 #define COLOR_LASER_EMP          0xD0D0FF
 #define COLOR_LASER_OCC          0x0000C0
+#define COLOR_LOCALIZE           0xFF0000
 #define COLOR_FIDUCIAL           0xF000F0
 #define COLOR_POSITION_ROBOT     0xC00000
 #define COLOR_POSITION_CONTROL   0xFF0000
@@ -54,7 +55,7 @@
 #define COLOR_PTZ_CMD            0x00C000
 #define COLOR_SONAR              0xC0C080
 #define COLOR_SONAR_SCAN         0xC0C080
-#define COLOR_LOCALIZE           0xFF0000
+#define COLOR_WIFI               0x000000
 
 
 /***************************************************************************
@@ -470,6 +471,45 @@ void localize_destroy(localize_t *localize);
 
 // Update a localize device
 void localize_update(localize_t *localize);
+
+
+
+/***************************************************************************
+ * Wifi device
+ ***************************************************************************/
+
+// Wifi device info
+typedef struct
+{
+  // Driver name
+  char *drivername;
+
+  // Wifi device proxy
+  playerc_wifi_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+
+  // Figures
+  rtk_fig_t *fig;
+  
+} wifi_t;
+
+
+// Create a wifi device
+wifi_t *wifi_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                    int index,  const char *drivername, int subscribe);
+
+// Destroy a wifi device
+void wifi_destroy(wifi_t *wifi);
+
+// Update a wifi device
+void wifi_update(wifi_t *wifi);
+
 
 
 #endif

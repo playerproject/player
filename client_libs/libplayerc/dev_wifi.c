@@ -104,10 +104,7 @@ void playerc_wifi_putdata(playerc_wifi_t *device, player_msghdr_t *header,
   for (i = 0; i < device->link_count; i++)
   {
     strncpy(device->links[i].ip, data->links[i].ip, sizeof(device->links[i].ip));
-    /* NOTE: I commented out the following line and added the second one,
-     * but don't know that it's right   - BPG */
-    /*device->links[i].link = (int16_t) ntohs(data->links[i].link);*/
-    device->links[i].link = (int16_t) ntohs(data->links[i].qual);
+    device->links[i].qual = (int16_t) ntohs(data->links[i].qual);
     device->links[i].level = (int16_t) ntohs(data->links[i].level);
     device->links[i].noise = (int16_t) ntohs(data->links[i].noise);
   }
