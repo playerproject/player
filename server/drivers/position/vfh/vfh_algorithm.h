@@ -11,13 +11,20 @@ public:
     VFH_Algorithm( double cell_size,
                    int window_diameter,
                    int sector_angle,
-                   double safety_dist,
+                   double safety_dist_0ms,
+                   double safety_dist_1ms, 
                    int max_speed,
+                   int max_speed_narrow_opening,
+                   int max_speed_wide_opening,
                    int max_acceleration,
                    int min_turnrate,
-                   int max_turnrate,
-                   double free_space_cutoff,
-                   double obs_cutoff,
+                   int max_turnrate_0ms,
+                   int max_turnrate_1ms,
+                   double min_turn_radius_safety_factor,
+                   double free_space_cutoff_0ms,
+                   double obs_cutoff_0ms,
+                   double free_space_cutoff_1ms,
+                   double obs_cutoff_1ms,
                    double weight_desired_dir,
                    double weight_current_dir );
 
@@ -29,16 +36,25 @@ public:
     int Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int current_speed, int &chosen_speed, int &chosen_turnrate );
 
     // Get methods
-    int GetMinTurnrate() { return MIN_TURNRATE; }
-    int GetMaxTurnrate() { return MAX_TURNRATE; }
-    int GetMaxSpeed()    { return MAX_SPEED; }
+    int   GetMinTurnrate() { return MIN_TURNRATE; }
+    float GetDesiredAngle() { return Desired_Angle; }
+    float GetPickedAngle() { return Picked_Angle; }
+
+    // Max Turnrate depends on speed
+    int GetMaxTurnrate( int speed );
+    int GetCurrentMaxSpeed() { return Current_Max_Speed; }
 
     // Set methods
     void SetRobotRadius( float robot_radius ) { this->ROBOT_RADIUS = robot_radius; }
     void SetDesiredAngle( float Desired_Angle ) { this->Desired_Angle = Desired_Angle; }
     void SetMinTurnrate( int min_turnrate ) { MIN_TURNRATE = min_turnrate; }
-    void SetMaxTurnrate( int max_turnrate ) { MAX_TURNRATE = max_turnrate; }
-    void SetMaxSpeed( int max_speed );
+    void SetCurrentMaxSpeed( int Current_Max_Speed );
+
+    // The Histogram.
+    // This is public so that monitoring tools can get at it; it shouldn't
+    // be modified externally.
+    // Sweeps in an anti-clockwise direction.
+    float *Hist;
 
 private:
 
@@ -50,13 +66,15 @@ private:
     float Delta_Angle(float a1, float a2);
     int Bisect_Angle(int angle1, int angle2);
 
-    int Calculate_Cells_Mag( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2] );
-    int Build_Primary_Polar_Histogram( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2] );
-    int Build_Binary_Polar_Histogram();
+    // Returns 0 if something got inside the safety distance, else 1.
+    int Calculate_Cells_Mag( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int speed );
+    // Returns 0 if something got inside the safety distance, else 1.
+    int Build_Primary_Polar_Histogram( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int speed );
+    int Build_Binary_Polar_Histogram(int speed);
     int Build_Masked_Polar_Histogram(int speed);
     int Select_Candidate_Angle();
     int Select_Direction();
-    int Set_Motion( int &speed, int &turnrate );
+    int Set_Motion( int &speed, int &turnrate, int current_speed );
 
     // AB: This doesn't seem to be implemented anywhere...
     // int Read_Min_Turning_Radius_From_File(char *filename);
@@ -68,37 +86,65 @@ private:
     void Print_Cells_Enlargement_Angle();
     void Print_Hist();
 
+    // Returns the speed index into Cell_Sector, for a given speed in mm/sec.
+    // This exists so that only a few (potentially large) Cell_Sector tables must be stored.
+    int Get_Speed_Index( int speed );
+
+    // Returns the safety dist in mm for this speed.
+    int Get_Safety_Dist( int speed );
+
+    float Get_Binary_Hist_Low( int speed );
+    float Get_Binary_Hist_High( int speed );
+
     // Data
 
-    float ROBOT_RADIUS;         // millimeters
-    int CENTER_X;               // cells
-    int CENTER_Y;               // cells
-    int HIST_SIZE;              // sectors (over 360deg)
+    float ROBOT_RADIUS;           // millimeters
+    int CENTER_X;                 // cells
+    int CENTER_Y;                 // cells
+    int HIST_SIZE;                // sectors (over 360deg)
 
-    float CELL_WIDTH;           // millimeters
-    int WINDOW_DIAMETER;        // cells
-    int SECTOR_ANGLE;           // degrees
-    float SAFETY_DIST;          // millimeters
-    int MAX_SPEED;              // mm/sec
-    int MAX_ACCELERATION;       // mm/sec/sec
-    int MIN_TURNRATE;           // deg/sec
-    int MAX_TURNRATE;           // deg/sec
-    float Binary_Hist_Low, Binary_Hist_High;
+    float CELL_WIDTH;             // millimeters
+    int WINDOW_DIAMETER;          // cells
+    int SECTOR_ANGLE;             // degrees
+    float SAFETY_DIST_0MS;        // millimeters
+    float SAFETY_DIST_1MS;        // millimeters
+    int Current_Max_Speed;        // mm/sec
+    int MAX_SPEED;                // mm/sec
+    int MAX_SPEED_NARROW_OPENING; // mm/sec
+    int MAX_SPEED_WIDE_OPENING;   // mm/sec
+    int MAX_ACCELERATION;         // mm/sec/sec
+    int MIN_TURNRATE;             // deg/sec -- not actually used internally
+
+    int NUM_CELL_SECTOR_TABLES;
+
+    // Scale turnrate linearly between these two
+    int MAX_TURNRATE_0MS;       // deg/sec
+    int MAX_TURNRATE_1MS;       // deg/sec
+    double MIN_TURN_RADIUS_SAFETY_FACTOR;
+    float Binary_Hist_Low_0ms, Binary_Hist_High_0ms;
+    float Binary_Hist_Low_1ms, Binary_Hist_High_1ms;
     float U1, U2;
     float Desired_Angle, Picked_Angle, Last_Picked_Angle;
+    int   Max_Speed_For_Picked_Angle;
 
     std::vector<std::vector<float> > Cell_Direction;
     std::vector<std::vector<float> > Cell_Base_Mag;
     std::vector<std::vector<float> > Cell_Mag;
-    std::vector<std::vector<float> > Cell_Dist;
+    std::vector<std::vector<float> > Cell_Dist;      // millimetres
     std::vector<std::vector<float> > Cell_Enlarge;
-    std::vector<std::vector<std::vector<int> > > Cell_Sector;
+
+    // Cell_Sector[x][y] is a vector of indices to sectors that are effected if cell (x,y) contains
+    // an obstacle.  
+    // Cell enlargement is taken into account.
+    // Acess as: Cell_Sector[speed_index][x][y][sector_index]
+    std::vector<std::vector<std::vector<std::vector<int> > > > Cell_Sector;
     std::vector<float> Candidate_Angle;
+    std::vector<int> Candidate_Speed;
 
     double dist_eps;
     double ang_eps;
 
-    float *Hist, *Last_Binary_Hist;
+    float *Last_Binary_Hist;
 
     // Minimum turning radius at different speeds, in millimeters
     std::vector<int> Min_Turning_Radius;

@@ -217,7 +217,7 @@ Brian Gerkey, Andrew Howard
 // TODO: monitor localize timestamps, and slow or stop robot accordingly
 
 // time to sleep between loops (us)
-#define CYCLE_TIME_US 50000
+#define CYCLE_TIME_US 100000
 // number of past poses to use when low-pass filtering localize data
 #define LOCALIZE_WINDOW_SIZE 10
 // skip poses that are more than this far away from the current window avg
