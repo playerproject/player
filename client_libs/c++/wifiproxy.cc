@@ -43,10 +43,13 @@ WiFiProxy::FillData(player_msghdr_t hdr, const char *buffer)
     fprintf(stderr, "WIFIPROXY: expected %d but got %d\n",
 	    sizeof(player_wifi_data_t), hdr.size);
   }
- 
+
+  /* TODO: fix
   link = ntohs( ((player_wifi_data_t *)buffer)->link );
   level = ntohs( ((player_wifi_data_t *)buffer)->level );
   noise = ntohs( ((player_wifi_data_t *)buffer)->noise );
+  */
+  
 }
 
 /* print it

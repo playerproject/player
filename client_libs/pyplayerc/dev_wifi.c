@@ -19,7 +19,7 @@ typedef struct
   PyObject_HEAD
   playerc_client_t *client;
   playerc_wifi_t *wifi;
-  PyObject *values;
+  PyObject *pylinks;
 } pywifi_t;
 
 // Local declarations
@@ -43,7 +43,7 @@ PyObject *wifi_new(PyObject *self, PyObject *args)
   pywifi->client = pyclient->client;
   pywifi->wifi = playerc_wifi_create(pyclient->client, index);
   pywifi->wifi->info.user_data = pywifi;
-  pywifi->values = PyTuple_New(3);
+  pywifi->pylinks = PyTuple_New(0);
 
   // Add callback for post-processing incoming data */
   playerc_client_addcallback(pyclient->client, (playerc_device_t*) pywifi->wifi,
@@ -62,9 +62,12 @@ static void wifi_del(PyObject *self)
   playerc_client_delcallback(pywifi->client, (playerc_device_t*) pywifi->wifi,
                              (playerc_callback_fn_t) wifi_onread,
                              (void*) pywifi);    
-  Py_DECREF(pywifi->values);
   playerc_wifi_destroy(pywifi->wifi);
+
+  Py_DECREF(pywifi->pylinks);
   PyObject_Del(self);
+  
+  return;
 }
 
 
@@ -80,17 +83,10 @@ static PyObject *wifi_getattr(PyObject *self, char *attrname)
   {
     result = PyFloat_FromDouble(pywifi->wifi->info.datatime);
   }
-  else if (strcmp(attrname, "link") == 0)
+  else if (strcmp(attrname, "links") == 0)
   {
-    result = Py_BuildValue("i", pywifi->wifi->link);
-  }
-  else if (strcmp(attrname, "level") == 0)
-  {
-    result = Py_BuildValue("i", pywifi->wifi->level);
-  }
-  else if (strcmp(attrname, "noise") == 0)
-  {
-    result = Py_BuildValue("i", pywifi->wifi->noise);
+    Py_INCREF(pywifi->pylinks);
+    result = pywifi->pylinks;
   }
   else
     result = Py_FindMethod(wifi_methods, self, attrname);
@@ -103,18 +99,25 @@ static PyObject *wifi_getattr(PyObject *self, char *attrname)
 // Get string representation (type function)
 static PyObject *wifi_str(PyObject *self)
 {
+  int i;
   char str[8192];
+  char s[1024];
   pywifi_t *pywifi;
+  playerc_wifi_link_t *link;
 
   pywifi = (pywifi_t*) self;
 
-  snprintf(str, sizeof(str),
-           "wifi %02d %013.3f %d %d %d",
-           pywifi->wifi->info.index,
-           pywifi->wifi->info.datatime,
-           pywifi->wifi->link,
-           pywifi->wifi->level,
-           pywifi->wifi->noise);
+  snprintf(str, sizeof(str), "wifi %02d %013.3f ",
+           pywifi->wifi->info.index, pywifi->wifi->info.datatime);
+
+  for (i = 0; i < pywifi->wifi->link_count; i++)
+  {
+    link = pywifi->wifi->links + i;
+    snprintf(s, sizeof(s), "%s %d %d %d ",
+             link->ip, link->link, link->level, link->noise);
+    assert(strlen(str) + strlen(s) < sizeof(str));
+    strcat(str, s);
+  }
 
   return PyString_FromString(str);
 }

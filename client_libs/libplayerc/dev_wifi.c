@@ -78,9 +78,17 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device)
 void playerc_wifi_putdata(playerc_wifi_t *device, player_msghdr_t *header,
                           player_wifi_data_t *data, size_t len)
 {
-  device->link = (int16_t) ntohs(data->link);
-  device->level = (int16_t) ntohs(data->level);
-  device->noise = (int16_t) ntohs(data->noise);
+  int i;
+  
+  device->link_count = (int16_t) ntohs(data->link_count);
+
+  for (i = 0; i < device->link_count; i++)
+  {
+    strncpy(device->links[i].ip, data->links[i].ip, sizeof(device->links[i].ip));
+    device->links[i].link = (int16_t) ntohs(data->links[i].link);
+    device->links[i].level = (int16_t) ntohs(data->links[i].level);
+    device->links[i].noise = (int16_t) ntohs(data->links[i].noise);
+  }
 
   return;
 }

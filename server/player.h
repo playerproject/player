@@ -1662,14 +1662,28 @@ typedef struct
 The {\tt wifi} interface provides access to the state of a wireless network
 interface. */
 
+#define PLAYER_WIFI_MAX_LINKS 16
+
 /** [Data] */
 /**
 The {\tt wifi} interface returns data regarding the state of a wireless
 network interface; the format is: */
+
+typedef struct
+{
+  /** IP address of destination. */
+  char ip[16];
+  
+  /** Link quality, level and noise information */
+  uint16_t link, level, noise;
+} __attribute__ ((packed)) player_wifi_link_t;
+
+
 typedef struct player_wifi_data
 {
-  /** signal and noise information */
-  uint16_t  link, level, noise;
+  /** A list of links */
+  int link_count;
+  player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
 } __attribute__ ((packed)) player_wifi_data_t;
 
 /** [Commands] This interface accepts no commands. */

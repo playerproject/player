@@ -42,6 +42,7 @@
 #define PLAYERC_FIDUCIAL_MAX_SAMPLES    PLAYER_FIDUCIAL_MAX_SAMPLES
 #define PLAYERC_SONAR_MAX_SAMPLES       PLAYER_SONAR_MAX_SAMPLES
 #define PLAYERC_BLOBFINDER_MAX_BLOBS    64
+#define PLAYERC_WIFI_MAX_LINKS          PLAYER_WIFI_MAX_LINKS
 
 
 /***************************************************************************
@@ -727,14 +728,27 @@ int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double
  * proxy : wifi (wireless info) device
  **************************************************************************/
 
+// Individual link info
+typedef struct
+{
+  // Destination IP address
+  char ip[16];
+ 
+  // Link properties
+  int link, level, noise;
+ 
+} playerc_wifi_link_t;
+
+
 // Wifi device proxy
 typedef struct
 {
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
-  // Link properties
-  int link, level, noise;
+  // A list containing info for each link
+  int link_count;
+  playerc_wifi_link_t links[PLAYERC_WIFI_MAX_LINKS];
   
 } playerc_wifi_t;
 

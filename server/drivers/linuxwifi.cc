@@ -168,12 +168,15 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
 
   //printf("LinuxWiFi: %lf %lf %lf\n", link,level,noise);
   
-  wlink = (unsigned short)link;
+  wlink = (unsigned short) link;
   wlevel = (unsigned short) level;
   wnoise = (unsigned short) noise;
-  data.link = htons(wlink);
-  data.level = htons(wlevel);
-  data.noise = htons(wnoise);
+
+  data.link_count = htons(1);
+    
+  data.links[0].link = htons(wlink);
+  data.links[0].level = htons(wlevel);
+  data.links[0].noise = htons(wnoise);
 
   assert(sizeof(data) < maxsize);
   memcpy(dest, &data, sizeof(data));
