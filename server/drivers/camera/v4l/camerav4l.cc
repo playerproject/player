@@ -236,7 +236,7 @@ void CameraV4L::Main()
   char filename[256];
 
   frameno = 0;
-      
+     
   while (true)
   {
     // Go to sleep for a while (this is a polling loop).
@@ -330,6 +330,7 @@ void CameraV4L::WriteData()
   
   // Copy data to server.
   size = sizeof(this->data) - sizeof(this->data.image) + this->frame->size;
+  size = 921609;
   PutData((void*) &this->data, size, this->tsec, this->tusec);
 
   return;

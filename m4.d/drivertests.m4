@@ -137,10 +137,10 @@ PLAYER_ADD_DRIVER([cmucam2],[drivers/blobfinder/cmucam2],[no],[],[],[])
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
-dnl PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[no],[],[],[])
+PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[no],[opencv/cv.h],[],["-lopencv"])
 
 
-if test "x$enable_cmvision" = "xyes"; then
+if test "x$enable_cmvision" = "xyes" -o "x$enable-camera1394" = "xyes"; then
   dnl Check for video-related headers, to see which support can be compiled into
   dnl the CMVision driver.
   AC_CHECK_HEADER(libraw1394/raw1394.h, have_raw1394=yes, have_raw1394=no)
@@ -310,7 +310,8 @@ PLAYER_ADD_DRIVER([laservisualbw],[drivers/fiducial],[yes],[],[],[])
 
 
 dnl Camera drivers
-PLAYER_ADD_DRIVER([camerav4l],[drivers/camera],[yes],[linux/videodev.h],[],[])
+PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
+PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[no],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],[])
 
 dnl Service Discovery
 dnl Don't need to do the language setting here, since C++ checking was done

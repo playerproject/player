@@ -2311,4 +2311,83 @@ public:
  ** end section
  *****************************************************************************/
 
+/*****************************************************************************
+ ** begin section CameraProxy
+ *****************************************************************************/
+
+/** The {\tt CameraProxy} class can be used to get images from a camera. */
+
+class CameraProxy : public ClientProxy 
+{
+
+public:
+    // Constructor.  Leave the access field empty to start unconnected.
+   CameraProxy (PlayerClient *pc, unsigned short index,
+       unsigned char access='c');
+
+   virtual ~CameraProxy();
+
+   // Image color depth
+   uint8_t depth;
+
+   // Image dimensions (pixels)
+   uint16_t width, height;
+
+   // Sime of the image (bytes)
+   uint32_t imageSize;
+
+   // Image data
+   uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
+
+   // interface that all proxies must provide
+   void FillData(player_msghdr_t hdr, const char* buffer);
+};
+
+/*****************************************************************************
+ ** begin section HUDProxy
+ *****************************************************************************/
+
+/** The {\tt HUDProxy} class can be used to draw shapes onto a simulator
+ * screen. All values for the Draw routines should be pixel values.*/
+
+class HUDProxy : public ClientProxy 
+{
+
+public:
+    // Constructor.  Leave the access field empty to start unconnected.
+   HUDProxy (PlayerClient *pc, unsigned short index,
+       unsigned char access='c');
+
+   virtual ~HUDProxy();
+
+   // Set the drawing color
+   void SetColor( float color[3] );
+
+   // Set the drawing style
+   void SetStyle( int filled );
+
+   // Remove the draw element with id
+   int Remove(int id);
+
+   // Draw a box, opposing corners defined by (ax,ay) and (bx,by)
+   int DrawBox(int id, int ax, int ay, int bx, int by);
+
+   // Draw a line on , end point define by (ax,ay) and (bx,by)
+   int DrawLine(int id, int ax, int ay, int bx, int by);
+
+   // Draw text at (x,y) 
+   int DrawText(int id, const char *text, int x, int y);
+
+   // Draw a circle, center defined  by (cx,cy) and radius (radius) 
+   int DrawCircle(int id, int cx, int cy, int radius);
+
+
+   // interface that all proxies must provide
+   void FillData(player_msghdr_t hdr, const char* buffer);
+
+private:
+   float color[3];
+   int filled;
+};
+
 #endif

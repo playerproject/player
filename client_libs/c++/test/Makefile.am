@@ -35,7 +35,8 @@ test_SOURCES = test_broadcast.cc \
                test_audiodsp.cc \
                test_localize.cc \
                test_audiomixer.cc \
-               test_blinkenlight.cc
+               test_blinkenlight.cc \
+							 test_camera.cc
               #test_idar.cc \
                #test_idarturret.cc
                #test_misc.cc

@@ -2796,6 +2796,63 @@ typedef struct player_sound_cmd
  ** end section
  *************************************************************************/
 
+
+/*************************************************************************
+ ** begin section hud
+ *************************************************************************/
+/** [Synopsis]
+The {\tt hud} interface provides an drawing interface for simulators for the
+purpose of creating a Heads Up Display. This is currently only supported by
+Gazebo.
+*/
+
+/** [Constants] */
+/** Drawable subtypes. */
+#define PLAYER_HUD_BOX 0x00
+#define PLAYER_HUD_LINE 0x01
+#define PLAYER_HUD_TEXT 0x02
+#define PLAYER_HUD_CIRCLE 0x03
+
+/** [Data] This interface provides no data. */
+
+/** [Commands] This interface accepts no commands. */
+
+/** [Configuration: Draw element] */
+/** Request the HUD to draw a new element to the screen. */
+typedef struct player_hud_config
+{
+  /** Packet subtype. */
+  uint8_t subtype;
+
+  /** Id of this drawing element */
+  uint32_t id;
+
+  /** Two points */
+  int16_t pt1[2];
+  int16_t pt2[2];
+
+  /** Single values */
+  int16_t value1;
+
+  /** A text string to render */
+  char text[PLAYER_MAX_DEVICE_STRING_LEN];
+
+  /** Color to render at */
+  int16_t color[3];
+
+  /** Remove this element? */
+  int8_t remove;
+
+  /** Draw this element filled in? */
+  int8_t filled;
+
+} __attribute__ ((packed)) player_hud_config_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+
 /*************************************************************************
  ** begin section energy
  *************************************************************************/

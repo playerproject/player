@@ -87,6 +87,7 @@ void Acts_Register(DriverTable* table);
 void CMVision_Register(DriverTable* table);
 #endif
 
+
 #ifdef INCLUDE_CMUCAM2
 void Cmucam2_Register(DriverTable* table);
 #endif
@@ -251,6 +252,11 @@ void LifoMCom_Register(DriverTable* table);
 void CameraV4L_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_CAMERA1394
+void Camera1394_Register(DriverTable *table);
+#endif
+
+
 #ifdef INCLUDE_GAZEBO_CAMERA
 void GzCamera_Register(DriverTable *table);
 #endif
@@ -298,6 +304,11 @@ void GzGripper_Register(DriverTable *table);
 #ifdef INCLUDE_GAZEBO_SONARS
 void GzSonars_Register(DriverTable *table);
 #endif
+
+#ifdef INCLUDE_GAZEBO_HUD
+void GzHUD_Register(DriverTable *table);
+#endif
+
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
 void ServiceAdvLSD_Register(DriverTable* table);
@@ -360,6 +371,8 @@ player_interface_t interfaces[] = {
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_BLINKENLIGHT_STRING, "stg_blinkenlight"},
   {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sickpls"},
   {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, "camerav4l"},
+  {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, "camera1394"},
+  {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "shapetracker"},
   {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING, "nomad"},
   {PLAYER_ENERGY_CODE, PLAYER_ENERGY_STRING, "stg_energy"},
   {0,NULL,NULL}
@@ -641,6 +654,10 @@ register_devices()
   CameraV4L_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_CAMERA1394
+  Camera1394_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_GAZEBO_CAMERA
   GzCamera_Register(driverTable);
 #endif
@@ -688,6 +705,11 @@ register_devices()
 #ifdef INCLUDE_GAZEBO_SONARS
   GzSonars_Register(driverTable);
 #endif
+
+#ifdef INCLUDE_GAZEBO_HUD
+  GzHUD_Register(driverTable);
+#endif
+
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
   ServiceAdvLSD_Register(driverTable);

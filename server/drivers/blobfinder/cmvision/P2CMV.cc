@@ -137,7 +137,7 @@ CMVisionBF::CMVisionBF(char* interface, ConfigFile* cf, int section)
 {
   vision=NULL;
   cap=NULL;
-  
+ 
 #ifdef PLAYER_CAMERA_CODE //INCLUDE_GAZEBO
   gz_interface=interface;
   gz_cf=cf;

@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     strcpy(host,"localhost");
   } else if (argv[1][0] == '1') {
     printf("ROBOT #1 (65.103.106.61)...\n");
-    strcpy(host,"65.103.105.61");
+    strcpy(host,"10.0.0.80");
   } else if (argv[1][0] == '2') {
     printf("ROBOT #2 (65.103.106.63)...\n");
     strcpy(host,"65.103.105.63");
@@ -37,7 +37,7 @@ int main(int argc, char** argv)
   printf("Please hold target directly in front of camera until AmigoBot begins to move...\n");
 
   /* Connect to the Player server */
-  PlayerClient robot(host,port);
+  PlayerClient robot("10.0.0.80",port);
   BlobfinderProxy bp(&robot,0,'r');
   PositionProxy pp(&robot,0,'a');
   sleep(1);
