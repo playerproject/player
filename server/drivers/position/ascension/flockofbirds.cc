@@ -415,7 +415,7 @@ FlockOfBirds_Device::Setup()
 	bzero(&cmd,sizeof(cmd));
 
   	PutData((void*)&data,sizeof(data),NULL);
-  	PutCommand((void*)&cmd,sizeof(cmd),NULL);
+  	PutCommand(device_id,(void*)&cmd,sizeof(cmd),NULL);
 
 	// start the thread to talk with the camera
 	StartThread();
