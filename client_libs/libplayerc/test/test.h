@@ -34,6 +34,9 @@ int test_laser(playerc_client_t *client, int robot, int index);
 // Basic test for the LBD (laser beacon detector) device.
 int test_lbd(playerc_client_t *client, int robot, int index);
 
+// Basic localization test
+int test_localize(playerc_client_t *client, int robot, int index);
+
 // Basic test for position device.
 int test_position(playerc_client_t *client, int robot, int index);
 

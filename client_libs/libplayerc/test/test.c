@@ -128,6 +128,11 @@ int main(int argc, const char *argv[])
         test_laser(client, robot, client->ids[i].index);
         break;
 
+      // Localize device
+      case PLAYER_LOCALIZE_CODE:
+        test_localize(client, robot, client->ids[i].index);
+        break;
+
       // Position device
       case PLAYER_POSITION_CODE:
         test_position(client, robot, client->ids[i].index);
