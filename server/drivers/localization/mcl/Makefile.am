@@ -1,6 +1,6 @@
 noinst_LIBRARIES = @LOCALIZATION_LIB@ 
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/server/drivers/stage
 
 EXTRA_LIBRARIES = libmcl.a
 

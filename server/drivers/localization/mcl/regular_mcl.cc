@@ -45,7 +45,7 @@ extern int global_playerport; // used to get at devices
 
 // constructor
 RegularMCL::RegularMCL(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_localization_data_t),0,10,10)
+    : PSDevice(sizeof(player_localization_data_t),0,10,10)
 {
     // load configuration : update speed
     this->frequency = cf->ReadFloat(section, "frequency", 1.0);

@@ -33,7 +33,7 @@
 #include <vector>
 using std::vector;
 
-#include <device.h>
+#include <psdevice.h>
 #include <drivertable.h>
 #include <player.h>
 
@@ -45,7 +45,7 @@ using std::vector;
 
 
 
-class RegularMCL : public CDevice 
+class RegularMCL : public PSDevice
 {
     private:
 	// configuration : update speed
