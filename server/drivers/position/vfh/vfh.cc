@@ -546,7 +546,6 @@ void VFH_Class::Main() {
 //    gettimeofday(&stime, 0);
     // Sleep for 1ms (will actually take longer than this).
     nanosleep(&sleeptime, NULL);
-    puts("foo");
 
 //    gettimeofday(&time, 0);
 //    printf("After sleep Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
