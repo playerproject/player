@@ -212,12 +212,16 @@ void *client_reader(void* arg)
       printf("WARNING: client's message is too big (%d bytes). "
                       "Buffer overflow likely.", hdr.size);
 
-    if((readcnt = read(cd->socket,buffer,hdr.size)) != hdr.size)
-    {
-      printf("client_reader: tried to read client-specified %d bytes, but "
-                      "only got %d\n", hdr.size, readcnt);
-      delete cd;
-    }
+    for(readcnt  = read(cd->socket,buffer,hdr.size);
+        readcnt != hdr.size;
+        readcnt += read(cd->socket,buffer+readcnt,hdr.size-readcnt));
+
+    //if((readcnt = read(cd->socket,buffer,hdr.size)) != hdr.size)
+    //{
+      //printf("client_reader: tried to read client-specified %d bytes, but "
+                      //"only got %d\n", hdr.size, readcnt);
+      //delete cd;
+    //}
     //puts("got payload");
 
     cd->HandleRequests(hdr,buffer, hdr.size);
