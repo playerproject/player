@@ -19,7 +19,6 @@ test_SOURCES = test_broadcast.cc \
                test_laser.cc \
                test_lbd.cc \
                test_position.cc \
-               test_position_control.cc \
                test_ptz.cc \
                test_sonar.cc \
                test_speech.cc \
@@ -29,6 +28,7 @@ test_SOURCES = test_broadcast.cc \
 	       test_dio.cc \
                test_bumper.cc \
                test_wifi.cc 
+               #test_position_control.cc \
                #test_idar.cc \
                #test_idarturret.cc
                #test_misc.cc

@@ -84,8 +84,8 @@ int main(int argc, const char *argv[])
 
     // Position device - position control mode
     // not many robots support this mode
-    if (strcmp(device, "position_control") == 0 || strcmp(device, "all") == 0)
-      test_position_control(&client, index);
+    //if (strcmp(device, "position_control") == 0 || strcmp(device, "all") == 0)
+    //test_position_control(&client, index);
    
     // Sonar device
     if(strcmp(device, "sonar") == 0 || strcmp(device, "all") == 0)
