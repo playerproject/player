@@ -305,8 +305,12 @@ int PlayerClient::Read()
       // put the data in the object
       if(hdr.size)
       {
+        // functionality currently disabled, until it is fixed to handle
+        // big messages.
+#if 0
         // store an opaque copy
         thisproxy->StoreData(hdr,buffer);
+#endif
         // also let the device-specific proxy parse it
         thisproxy->FillData(hdr,buffer);
         // let the user know that data has arrived.  set it every time, in

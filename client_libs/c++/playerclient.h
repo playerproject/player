@@ -145,8 +145,12 @@ class ClientProxy
 
     /** the last message header and body will be copied here by
         StoreData(), so that it's available for later use. */
+    // functionality currently disabled, until it is fixed to handle
+    // big messages.
+#if 0
     unsigned char last_data[PLAYER_MAX_MESSAGE_SIZE];
     player_msghdr_t last_header;
+#endif
 
     unsigned char access;   // 'r', 'w', or 'a' (others?)
     player_device_id_t m_device_id;
@@ -206,7 +210,11 @@ class ClientProxy
 
     /** This method is used internally to keep a copy of the last message from
         the device **/
+    // functionality currently disabled, until it is fixed to handle
+    // big messages.
+#if 0
     void StoreData(player_msghdr_t hdr, const char* buffer);
+#endif
     
     /** All proxies SHOULD provide this method, which should print out, in a
         human-readable form, the device's current state. */
