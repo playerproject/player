@@ -13,7 +13,7 @@ OBS = mclient.o client.o device.o error.o \
 			dev_position.o dev_laser.o dev_laserbeacon.o dev_broadcast.o
 
 TEST = test
-TEST_OBS = test.o
+TEST_OBS = test.o test_position.o
 TEST_LFLAGS = -L. -lplayerc -lm
 
 INCLUDES = -I. -I../../include
