@@ -59,19 +59,42 @@ void StageProxy::Print()
   printf("interval: %d ms\n", interval_ms );
 }
 
-int StageProxy::CreateModel( char* type, char* name, char* parent,
-			      double x, double y, double a )
+int StageProxy::DestroyModel( int model_id )
+{
+  player_stage_model_t model;
+  
+  model.subtype = PLAYER_STAGE_DESTROY_MODEL;
+  model.id = model_id;
+  
+  return(client->Request(m_device_id, 
+			 (const char*)&model,
+                         sizeof(model))); 
+}
+
+int StageProxy::DestroyAllModels( void )
+{
+  uint8_t config = PLAYER_STAGE_DESTROY_ALL;
+  
+  return(client->Request(m_device_id, 
+			 (const char*)&config,
+                         sizeof(config))); 
+}
+
+
+int StageProxy::CreateModel( const char* type, 
+			     const char* name, 
+			     int parent_id,
+			     double x, double y, double a )
 {
   if(!client)
     return(-1);
   
   // idiot check
-  if(!name) { printf( "error: NULL name string" ); return(-1); }
-  if(!parent) { printf( "error: NULL parent string" ); return(-1); }
-  if(!type) { printf( "error: NULL type string" ); return(-1); }
-  if(strlen(name)<1) { printf( "error: empty name string" ); return(-1); }
-  if(strlen(parent)<1) { printf( "error: empty parent string" ); return(-1); }
-  if(strlen(type)<1) { printf( "error: empty type string" ); return(-1); }
+  if(parent_id<0) { printf( "error: parent = %d\n", parent_id ); return(-1); }
+  if(!name) { printf( "error: NULL name string\n" ); return(-1); }
+  if(!type) { printf( "error: NULL type string\n" ); return(-1); }
+  if(strlen(name)<1) { printf( "error: empty name string\n" ); return(-1); }
+  if(strlen(type)<1) { printf( "error: empty type string\n" ); return(-1); }
   
   player_stage_model_t model;
   player_msghdr_t hdr;
@@ -81,8 +104,11 @@ int StageProxy::CreateModel( char* type, char* name, char* parent,
   // set up the model structure
   strncpy(model.type, type, PLAYER_MAX_DEVICE_STRING_LEN );
   strncpy(model.name, name, PLAYER_MAX_DEVICE_STRING_LEN );  
-  strncpy(model.parent, parent, PLAYER_MAX_DEVICE_STRING_LEN );
   
+  model.parent_id = parent_id;
+  
+  model.id = 0; // this is filled in by Stage on return
+
   model.px = x;
   model.py = y;
   model.pa = a;
@@ -92,9 +118,9 @@ int StageProxy::CreateModel( char* type, char* name, char* parent,
                      &hdr, (char*)&model, sizeof(model)) < 0)
     return(-1);
 
-  printf( "created model type %s name %s parent %s at (%.2f,%.2f,%.2f)\n",
-	  model.type, model.name, model.parent, 
+  printf( "created model type %s name %s parent %d at (%.2f,%.2f,%.2f)\n",
+	  model.type, model.name, model.parent_id, 
 	  model.px, model.py, model.pa );	  
 
-  return(0);
+  return( model.id );
 }

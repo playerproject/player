@@ -26,6 +26,8 @@
  * Stage device that connects to a Stage server and interacts with it
  */
 
+#define PLAYER_ENABLE_TRACE 1
+
 #if  HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -286,7 +288,7 @@ void StageDevice::Main( void )
     // Make data available
     player_stage_data_t data;
     data.interval_ms = htonl((int)(update_interval * 1000.0));
-    data.model_count = htonl(CEntity::root->NumModels());
+    data.model_count = htonl(CEntity::root->NumModels()-1);
     //printf( "putting data" );
     PutData((uint8_t*) &data, sizeof(data), 0,0 );
 
@@ -319,7 +321,7 @@ int StageDevice::Setup()
 //
 int StageDevice::Shutdown()
 {
-  //PRINT_WARN1( "SHUTDOWN model %d",  stage_model.id );
+  PRINT_WARN( "SHUTDOWN stage" );
 
   return 0;
 };
@@ -352,12 +354,12 @@ int StageDevice::HandleConfigRequests()
 	      player_stage_model_t* model = (player_stage_model_t*)buffer;
 	      
 	      printf( "received create model request for:\n"
-		      "type %s name %s  parent %s at (%.2f %.2f %.2f)\n",
+		      "type %s name %s  parent %d at (%.2f %.2f %.2f)\n",
 		      model->type, model->name, model->parent, 
 		      model->px, model->py, model->pa );
 	      
 	      this->ModelLock();
-	      assert( CEntity::root->CreateEntity( model ) == 0 );
+	      assert( CEntity::root->CreateModel( model ) == 0 );
 	      this->ModelUnlock();
 
 	      if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
@@ -366,6 +368,39 @@ int StageDevice::HandleConfigRequests()
 			     "PLAYER_STAGE_CREATE_MODEL");
 	    }
 	  break;
+	  
+	case PLAYER_STAGE_DESTROY_MODEL:
+	  {
+	    PLAYER_TRACE0( "received config PLAYER_STAGE_DESTROY_MODEL" );
+	    
+	    // cast the data to the correct type for this IOCTL
+	    player_stage_model_t *model =  
+	      (player_stage_model_t*)buffer;
+	    
+	    this->ModelLock();
+	    CEntity::root->DestroyModel( model->id );
+	    this->ModelUnlock();
+	    
+	    if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK ) != 0 )
+	      PLAYER_ERROR("PutReply() failed responding to "
+			   "PLAYER_STAGE_DESTROY_ALL");
+	  }
+	  break;
+	  
+	case PLAYER_STAGE_DESTROY_ALL:
+	  PLAYER_TRACE0( "received config PLAYER_STAGE_DESTROY_ALL" );
+
+	  this->ModelLock();
+	  CEntity::root->DestroyAll();
+	  this->ModelUnlock();
+
+	  if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK ) != 0 )
+	    PLAYER_ERROR("PutReply() failed responding to "
+			 "PLAYER_STAGE_DESTROY_ALL");
+	  break;
+	  
+	default:
+	  PLAYER_WARN1( "received unknown config (%d)", buffer[0] );
 	}
     }  
   return 0; // ok.

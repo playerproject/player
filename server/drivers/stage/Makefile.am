@@ -43,4 +43,4 @@ libstage_a_SOURCES = \
 bin_PROGRAMS = stage
 AM_CPPFLAGS += -I$(top_builddir)/client_libs/c++ -I$(top_builddir)/client_libs/c
 LDADD = -L$(top_builddir)/client_libs/c++ -lplayerclient
-stage_SOURCES = client.cc
+stage_SOURCES = client.cc worldfile.cc colors.cc

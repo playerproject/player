@@ -51,11 +51,14 @@ CRootEntity::CRootEntity( const stage_libitem_t items[] )
 
   // init the storage for created models
   // the hash keys will be char strings
-  ents =  g_hash_table_new( g_str_hash, g_str_equal );
+  //ents =  g_hash_table_new( g_str_hash, g_str_equal );
+ 
+  // the hash keys will be integers
+  ents =  g_hash_table_new( g_int_hash, g_int_equal() );
   
   // add myself to the hash table
   
-  g_hash_table_insert( ents, (gpointer)PLAYER_STAGE_ROOT_NAME, this );
+  g_hash_table_insert( ents, 0, this );
 
   size_x = 10.0; // a 10m world by default
   size_y = 10.0;
@@ -164,64 +167,6 @@ int CRootEntity::Property( int con, stage_prop_id_t property,
 	}
       break;
       
-      /*
-    case STG_PROP_ROOT_CREATE:
-      if( value && reply ) // both must be good
-	{
-	  int num_models =  len / sizeof(stage_model_t);
-	  
-	  PRINT_WARN1( "root received CREATE request for %d models", num_models );	  
-	  for( int m=0; m<num_models; m++ )
-	    {
-	      // make a new model from the correct offset in the value buffer.
-	      // this call fills in their ID field correctly
-	      stage_model_t* mod = (stage_model_t*)
-		((char*)value + m*sizeof(stage_model_t));
-	      
-	      if( this->CreateEntity( mod ) == -1 )
-		PRINT_ERR( "failed to create a new model (invalid ID)" );	    
-	    }
-	  
-	  // reply with the same array of models, with the IDs set
-	  //SIOBufferProperty( reply, this->stage_id, 
-	  //	     STG_PROP_ROOT_CREATE,
-	  //	     value, len,
-	  //	     STG_ISREPLY );
-	}
-      else
-	PRINT_ERR2( "root received CREATE request but didn't"
-		    "get data and/or reply buffers (data: %p) (reply: %p)",		    value, reply );
-      break;
-      
-    case STG_PROP_ROOT_DESTROY:
-      if( value )
-	{
-	  int num_models = len / sizeof(stage_model_t);
-	  
-	  PRINT_WARN1( "root received DESTROY request for %d models", 
-		       num_models );
-	  
-	  for( int m=0; m<num_models; m++ )
-	    {	    
-	      stage_model_t* mod = (stage_model_t*)
-		((char*)value + m*sizeof(stage_model_t));
-	      
-	      // todo - remove from my list of children
-	      
-	      if( this->DestroyEntity( mod->id ) == -1 )
-		PRINT_ERR1( "failed to destroy model %d", mod->id );
-	    }
-	}
-      
-      // if( reply ) //acknowledge by returning the same models
-      //	SIOBufferProperty( reply, this->stage_id, 
-      //		   STG_PROP_ROOT_DESTROY,
-      //		   value, len, STG_ISREPLY );
-
-
-  break;
-
-      */	
     default: 
       break;
     }
@@ -243,39 +188,50 @@ stage_libitem_t* CRootEntity::FindItemWithToken( const stage_libitem_t* items,
   return NULL; // didn't find the token
 }
 
-
-int CRootEntity::DestroyEntity( char* name )
+// destroy all my children and their descendents
+int CRootEntity::DestroyAll() 
 {
+  CHILDLOOP(ch)
+    DestroyModel( ch->name );
+
+  return 0;
+}
+
+
+int CRootEntity::DestroyModel( char* name )
+{
+  
   // look up the pointer
   CEntity* ent = (CEntity*)g_hash_table_lookup( ents, (gpointer)name );
-
+  PLAYER_TRACE2("destroying model %s (%p)", name, ent );
+  
   if( ent ) // if it's no good, don't kill it.
     {
-      // forget about it
-      g_hash_table_remove( ents, (gpointer)name );
-      
-      PRINT_DEBUG2("destroying model %s (%p)", name, ent );
+      // recursively destroy its children
+      for( CEntity* ch = ent->child_list; ch; ch = ch->next )
+	DestroyModel( ch->name );
       
       ent->Shutdown();
       ent->RtkShutdown();
       
-      // recursively destroy its children
-      for( CEntity* ch = ent->child_list; ch; ch = ch->next )
-	DestroyEntity( ch->name );
-      
       // remove this entity from it's parent's childlist
       STAGE_LIST_REMOVE( ent->m_parent_entity->child_list, ent)
 	
-	delete ent;
+      // forget about it
+      g_hash_table_remove( ents, (gpointer)name );
+
+      delete ent;
     }
 
   return 0;
 }
 
 // create an instance of an entity given a worldfile token
-int CRootEntity::CreateEntity( player_stage_model_t* model )
+int CRootEntity::CreateModel( player_stage_model_t* model )
 {
   assert( model );
+
+  static int model_count = 0;
 
   // look up this token in the library
   stage_libitem_t* libit = FindItemWithToken( model->type );
@@ -297,7 +253,7 @@ int CRootEntity::CreateEntity( player_stage_model_t* model )
   }
   
   
-  PRINT_DEBUG3( "creating a %s model with name \"%s\" with parent %s",
+  PRINT_DEBUG3( "creating a %s model with name \"%s\" with parent \"%s\"",
 		model->type, model->name, model->parent );
   
   // if it has a valid parent, look up the parent's address
@@ -305,7 +261,7 @@ int CRootEntity::CreateEntity( player_stage_model_t* model )
 
   if( !parentPtr )
     {
-      PRINT_ERR1( "No model exists with name %s",
+      PRINT_ERR1( "No model exists with name \"%s\"",
 		  model->parent );
       return -1;
     }
@@ -318,11 +274,17 @@ int CRootEntity::CreateEntity( player_stage_model_t* model )
 		       parentPtr ); 
 
    assert( ent );
+
+   // set the pose of the new entity
+   ent->SetPose( model->px, model->py, model->pa );
+
    // associate this id with this entity
 
    //int* key = (int*)g_new(int, 1);
    //*key = model->id;
-   g_hash_table_insert( ents, (gpointer)(model->name), ent);
+   g_hash_table_insert( ents, model->id, ent);
+   PRINT_WARN1( "inserting model %d name \"%s\" into hash table", 
+		model->id, model->name );
 
    // need to do some startup outside the constructor to allow for
    // full polymorphism

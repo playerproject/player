@@ -32,11 +32,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 //#define DEBUG
-
+#include "playercommon.h"
 #include "replace.h" // for dirname(3)
-#include "stage_types.hh"
+//#include "stage_types.hh"
 #include "colors.hh"
 #include "worldfile.hh"
 
@@ -49,9 +50,9 @@
 ///////////////////////////////////////////////////////////////////////////
 // Useful macros for dumping parser errors
 #define TOKEN_ERR(z, l) \
-  PRINT_ERR2("%s:%d : " z, this->filename, l)
+  PLAYER_ERROR2("%s:%d : " z, this->filename, l)
 #define PARSE_ERR(z, l) \
-  PRINT_ERR2("%s:%d : " z, this->filename, l)
+  PLAYER_ERROR2("%s:%d : " z, this->filename, l)
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -109,7 +110,7 @@ bool CWorldFile::Load(const char *filename)
   FILE *file = fopen(this->filename, "r");
   if (!file)
   {
-    PRINT_ERR2("unable to open world file %s : %s",
+    PLAYER_ERROR2("unable to open world file %s : %s",
                this->filename, strerror(errno));
     return false;
   }
@@ -133,7 +134,7 @@ bool CWorldFile::Load(const char *filename)
   // Dump contents and exit if this file is meant for debugging only.
   if (ReadInt(0, "test", 0) != 0)
   {
-    PRINT_ERR("this is a test file; quitting");
+    PLAYER_ERROR("this is a test file; quitting");
     DumpTokens();
     DumpMacros();
     DumpEntities();
@@ -176,7 +177,7 @@ bool CWorldFile::Save(const char *filename)
   FILE *file = fopen(filename, "w+");
   if (!file)
   {
-    PRINT_ERR2("unable to open world file %s : %s",
+    PLAYER_ERROR2("unable to open world file %s : %s",
                filename, strerror(errno));
     return false;
   }
@@ -204,7 +205,7 @@ bool CWorldFile::WarnUnused()
     if (!property->used)
     {
       unused = true;
-      PRINT_WARN3("worldfile %s:%d : property [%s] is defined but not used",
+      PLAYER_WARN3("worldfile %s:%d : property [%s] is defined but not used",
                   this->filename, property->line, property->name);
     }
   }
@@ -462,7 +463,7 @@ bool CWorldFile::LoadTokenInclude(FILE *file, int *line, int include)
   FILE *infile = fopen(fullpath, "r");
   if (!infile)
   {
-    PRINT_ERR2("unable to open include file %s : %s",
+    PLAYER_ERROR2("unable to open include file %s : %s",
                fullpath, strerror(errno));
     free(fullpath);
     return false;
@@ -1485,7 +1486,7 @@ bool CWorldFile::ReadBool(int entity, const char *name, bool value)
   else if (strcmp(v, "false") == 0 || strcmp(v, "no") == 0)
     return false;
   CProperty *pproperty = this->properties + property;
-  PRINT_WARN3("worldfile %s:%d : '%s' is not a valid boolean value; assuming 'false'",
+  PLAYER_WARN3("worldfile %s:%d : '%s' is not a valid boolean value; assuming 'false'",
               this->filename, pproperty->line, v);
   return false;
 }

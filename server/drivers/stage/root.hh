@@ -89,11 +89,14 @@ public:
 		  CreatorFunctionPtr creator );
   
   // create an instance of an entity given a request returns zero on success.
-  int CreateEntity( player_stage_model_t* model );
+  int CreateModel( player_stage_model_t* model );
   
   // remove an entity and its children from the sim
-  int DestroyEntity( char* name );
-  
+  int DestroyModel( char* name );
+
+  // destroy all my children and their descendents
+  int DestroyAll();
+
   CEntity* GetEnt( char* name )
   {
     return( (CEntity*)g_hash_table_lookup( ents, (gpointer)name ) ); 

@@ -1410,6 +1410,10 @@ The {\tt stage} interface provides access to the absolute state of entities.
 /** [Constants] */
 /** Request packet subtypes. */
 #define PLAYER_STAGE_CREATE_MODEL 0x00
+/** Destroy a named model and its descendents */
+#define PLAYER_STAGE_DESTROY_MODEL 0x01
+/** destroy everything except root */
+#define PLAYER_STAGE_DESTROY_ALL 0x02
 
 /** [Data] */
 /** The {\tt stage} interface returns data concerning the current state of
@@ -1430,8 +1434,8 @@ typedef struct player_stage_data
  and fill in the rest of the fields with the new pose. */
 typedef struct player_stage_model
 {
-  /** Packet subtype.  Must be either PLAYER_STAGE_GET_POSE or
-    PLAYER_STAGE_SET_POSE */
+  /** Packet subtype.  Options:
+      PLAYER_STAGE_CREATE_MODEL */
   uint8_t subtype;
 
   /** the type of model to create - must match a Stage library entry */
@@ -1440,14 +1444,18 @@ typedef struct player_stage_model
   /** the name of this model instance - used to identify this device */
   char name[PLAYER_MAX_DEVICE_STRING_LEN];
 
-  /** the name of the parent to which this model will be attached */
-  char parent[PLAYER_MAX_DEVICE_STRING_LEN];
+  /** Stage's unique id for this model. When creating a model, this should
+      be zero and is filled in by Stage. The whole packet is returned 
+      as the reply. */
+  int id;
+
+  /** the unique ID of the parent to which this model will be attached */
+  int parent_id;
 
   /** Object pose in world cs (mm, mm, degrees). */
   double px, py, pa; 
 
 } __attribute__ ((packed)) player_stage_model_t;
-
 
 
 /*************************************************************************

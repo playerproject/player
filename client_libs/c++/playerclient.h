@@ -1274,10 +1274,17 @@ class StageProxy : public ClientProxy
 
   /// Print out some metadata about the Stage world
   void Print();
+  
+  /* Request creation of a new model. returns -1 on error, else an 
+     integer id for the model >= 1 */
+  int CreateModel( const char* type, const char* name, int parent_id,
+		   double x, double y, double a );
 
-  /// Request creation of a new model. returns 0 on success.
-  int CreateModel( char* type, char* name, char* parent,
-		    double x, double y, double a );
+  /// Destroy the specified model
+  int DestroyModel( int model_id );
+
+  /// Destroy all models
+  int DestroyAllModels();
 };
 
 
