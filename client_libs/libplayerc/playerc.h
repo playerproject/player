@@ -724,6 +724,35 @@ int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double
 
 
 /***************************************************************************
+ * proxy : wifi (wireless info) device
+ **************************************************************************/
+
+// Wifi device proxy
+typedef struct
+{
+  // Device info; must be at the start of all device structures.
+  playerc_device_t info;
+
+  // Link properties
+  int link, level, noise;
+  
+} playerc_wifi_t;
+
+
+// Create a wifi proxy.
+playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index);
+
+// Destroy a wifi proxy.
+void playerc_wifi_destroy(playerc_wifi_t *device);
+
+// Subscribe to the wifi device
+int playerc_wifi_subscribe(playerc_wifi_t *device, int access);
+
+// Un-subscribe from the wifi device
+int playerc_wifi_unsubscribe(playerc_wifi_t *device);
+
+
+/***************************************************************************
  * proxy : end (this is just here so the auto-documentation works.
  **************************************************************************/
 

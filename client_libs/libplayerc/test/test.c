@@ -145,6 +145,11 @@ int main(int argc, const char *argv[])
         test_truth(client, client->ids[i].index);
         break;
 
+      // WiFi device
+      case PLAYER_WIFI_CODE:
+        test_wifi(client, client->ids[i].index);
+        break;
+
       default:
         printf("no test for interface [%s]\n",
                playerc_lookup_name(client->ids[i].code));
