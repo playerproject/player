@@ -34,7 +34,7 @@ AC_PROG_RANLIB
 AC_PROG_INSTALL
 
 dnl where's RTK?
-AC_ARG_WITH(rtk, [   --with-rtk=dir      Location of RTK],
+AC_ARG_WITH(rtk, [  --with-rtk=dir          Location of RTK],
 RTK_DIR=$with_rtk,
 RTK_DIR="${HOME}/rtk-2.1")
 AC_SUBST(RTK_DIR)
@@ -65,7 +65,7 @@ dnl Change default installation prefix from /usr/local to user's home
 AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
 
 dnl client tests are compiled by default
-AC_ARG_WITH(tests, [  --with-tests            Build tests],,
+AC_ARG_WITH(tests, [  --without-tests         Don't build client tests],,
 with_tests=yes)
 AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
 
@@ -84,7 +84,7 @@ AR_SERVER="ar"
 RANLIB_SERVER=$RANLIB
 
 AC_ARG_WITH(server-arch,
-[  --with-server-arch=arm     Make the server for ARM (using LART)],
+[  --with-server-arch=arm  Make the server for ARM (using LART)],
 [case "${withval}" in
    arm)  AC_MSG_CHECKING([whether the LART ARM cross compiler is supported])
          if test -d /data/lart/cross; then
@@ -110,7 +110,7 @@ dnl the following drivers will install by default
 P2OS_LIB="libp2os.a"
 P2OS_LIBPATH="drivers/p2os/libp2os.a"
 AC_ARG_WITH(p2os,
-[  --with-p2os                Use the P2OS],
+[  --without-p2os          Don't compile the p2os drivers],
 [case "${withval}" in 
  yes) AC_DEFINE(INCLUDE_P2OS, 1, [[include the P2OS driver]])
       ;;
@@ -126,7 +126,7 @@ AC_SUBST(P2OS_LIBPATH)
 SICK_LIB="libsicklms200.a"
 SICK_LIBPATH="drivers/libsicklms200.a"
 AC_ARG_WITH(sick,
-[  --with-sick                Use the SICK],
+[  --without-sick          Don't compile the sicklms200 driver],
 [case "${withval}" in 
  yes) AC_DEFINE(INCLUDE_SICK, 1, [[include the SICK driver]])
       ;;
@@ -142,7 +142,7 @@ AC_SUBST(SICK_LIBPATH)
 ACTS_LIB="libacts.a"
 ACTS_LIBPATH="drivers/libacts.a"
 AC_ARG_WITH(acts,
-[  --with-acts                Use the ACTS],
+[  --without-acts          Don't compile the acts driver],
 [case "${withval}" in 
  yes) AC_DEFINE(INCLUDE_ACTS, 1, [[include the ACTS driver]])
       ;;
@@ -158,7 +158,7 @@ AC_SUBST(ACTS_LIBPATH)
 FESTIVAL_LIB="libfestival.a"
 FESTIVAL_LIBPATH="drivers/libfestival.a"
 AC_ARG_WITH(festival,
-[  --with-festival                Use the FESTIVAL],
+[  --without-festival      Don't compile the festival driver],
 [case "${withval}" in 
  yes) AC_DEFINE(INCLUDE_FESTIVAL, 1, [[include the FESTIVAL driver]])
       ;;
@@ -174,7 +174,7 @@ AC_SUBST(FESTIVAL_LIBPATH)
 SONY_LIB="libsonyevid30.a"
 SONY_LIBPATH="drivers/libsonyevid30.a"
 AC_ARG_WITH(sony,
-[  --with-sony                Use the SONY],
+[  --without-sony          Don't compile the sonyevid30 driver],
 [case "${withval}" in 
  yes) AC_DEFINE(INCLUDE_SONY, 1, [[include the SONY driver]])
       ;;
@@ -190,7 +190,7 @@ AC_SUBST(SONY_LIBPATH)
 UDPBCAST_LIB="libudpbroadcast.a"
 UDPBCAST_LIBPATH="drivers/libudpbroadcast.a"
 AC_ARG_WITH(udpbcast,
-[  --with-udpbcast                Use the UDPBCAST],
+[  --without-udpbcast      Don't compile the udpbroadcast driver],
 [case "${withval}" in 
  yes) AC_DEFINE(INCLUDE_UDPBCAST, 1, [[include the UDPBCAST driver]])
       ;;
@@ -206,7 +206,7 @@ AC_SUBST(UDPBCAST_LIBPATH)
 LASER_LIB="liblasercspace.a liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a"
 LASER_LIBPATH="drivers/liblasercspace.a drivers/liblaserbar.a drivers/liblaserbarcode.a drivers/liblaservisualbarcode.a"
 AC_ARG_WITH(laser,
-[  --with-laser                Use the LASER],
+[  --without-laser         Don't compile the laser-based fiducial drivers],
 [case "${withval}" in 
  yes) AC_DEFINE(INCLUDE_LASER, 1, [[include the LASER driver]])
       ;;
@@ -221,7 +221,7 @@ AC_SUBST(LASER_LIBPATH)
 LINUXWIFI_LIB="liblinuxwifi.a"
 LINUXWIFI_LIBPATH="drivers/liblinuxwifi.a"
 AC_ARG_WITH(wifi, 
-[  --with-wifi                Use the WiFi driver],
+[  --without-wifi          Don't compile the linuxwifi driver],
 [case "${withval}" in
  yes) AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])
       ;;
@@ -235,7 +235,7 @@ AC_SUBST(LINUXWIFI_LIBPATH)
 
 dnl the following must use --with to be built
 AC_ARG_WITH(reb,
-[  --with-reb                Use the REB],
+[  --with-reb              Compile the reb drivers],
 [case "${withval}" in 
  yes) AC_DEFINE(INCLUDE_REB, 1, [[include the REB driver]])
       REB_LIB="libreb.a"
@@ -251,32 +251,44 @@ AC_SUBST(REB_LIBPATH)
 
 dnl check for the fftw library (by way of one of its headers) and compile
 dnl the fixed tones driver if its found
-AC_CHECK_HEADER(rfftw.h, 
+AC_ARG_WITH(fixedtones,
+[  --without-fixedtones    Don't compile the fixedtones driver],,
+AC_CHECK_HEADER(rfftw.h, with_fixedtones=yes,,))
+if test "x$with_fixedtones" = xyes; then
   AC_DEFINE(INCLUDE_FIXEDTONES,1,[include the fixed tones driver])
   FIXEDTONES_LIB="libfixedtones.a"
   FIXEDTONES_LIBPATH="drivers/libfixedtones.a"
-  FIXEDTONES_EXTRA_LIB="-lrfftw -lfftw",,)
+  FIXEDTONES_EXTRA_LIB="-lrfftw -lfftw"
+fi
 AC_SUBST(FIXEDTONES_LIB)
 AC_SUBST(FIXEDTONES_LIBPATH)
 AC_SUBST(FIXEDTONES_EXTRA_LIB)
 
 dnl check for Mobility (by way of one of its headers) and compile
 dnl the RWI driver if it's found
-AC_CHECK_HEADER(mobilitycomponents_i.h,
+AC_ARG_WITH(rwi,
+[  --without-rwi           Don't compile the rwi drivers],,
+AC_CHECK_HEADER(mobilitycomponents_i.h, with_rwi=yes,,))
+if test "x$with_rwi" = "xyes"; then
   AC_DEFINE(INCLUDE_RWI,1,[include the RWI driver])
   AC_DEFINE(USE_MOBILITY,1,[use the RWI Mobility interface])
   RWI_LIB="librwi.a"
-  RWI_LIBPATH="drivers/rwi/librwi.a",,)
+  RWI_LIBPATH="drivers/rwi/librwi.a"
+fi
 AC_SUBST(RWI_LIB)
 AC_SUBST(RWI_LIBPATH)
 
 dnl check for the isense library (by way of one of its headers) and compile
 dnl the Intersense drivers if foune.
-AC_CHECK_HEADER(isense/isense.h, 
+AC_ARG_WITH(isense,
+[  --without-isense        Don't compile the isense drivers],,
+AC_CHECK_HEADER(isense/isense.h, with_isense=yes,,))
+if test "x$with_isense" = "xyes"; then
   AC_DEFINE(INCLUDE_ISENSE,1,[include the InterSense driver])
   ISENSE_LIB="libisense.a"
   ISENSE_LIBPATH="drivers/isense/libisense.a"
-  ISENSE_EXTRA_LIB="-lisense",,)
+  ISENSE_EXTRA_LIB="-lisense"
+fi
 AC_SUBST(ISENSE_LIB)
 AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
