@@ -1173,6 +1173,9 @@ The result is written into the proxy.
 */
 int playerc_log_get_state(playerc_log_t* device);
 
+/** @brief Change name of log file to write to. */
+int playerc_log_set_filename(playerc_log_t* device, const char* fname);
+
 
 /** @} */
 

@@ -158,3 +158,25 @@ int playerc_log_set_read_rewind(playerc_log_t* device)
   }
   return(0);
 }
+
+// Change filename 
+int playerc_log_set_filename(playerc_log_t* device, const char* fname)
+{
+  player_log_set_filename_t req;
+
+  req.subtype = PLAYER_LOG_SET_FILENAME;
+  if(strlen(fname) > (sizeof(req.filename)-1))
+  {
+    PLAYERC_ERR("filename too long");
+    return(-1);
+  }
+  strcpy(req.filename,fname);
+
+  if(playerc_client_request(device->info.client, &device->info,
+                            &req, sizeof(req), NULL, 0) < 0)
+  {
+    PLAYERC_ERR("failed to set logfile name");
+    return(-1);
+  }
+  return(0);
+}
