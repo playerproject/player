@@ -95,6 +95,9 @@ class INav : public CDevice
   // Check for new laser data
   private: int GetLaser();
 
+  // Get log data (for testing)
+  private: int GetLog();
+
   // Write the pose data (the data going back to the client).
   private: void PutPose();
 
@@ -107,6 +110,9 @@ class INav : public CDevice
   // Get the time in ms
   private: int64_t GetTime();
 
+  // Log file (for testing)
+  private: FILE *logfile;
+  
   // Odometry device info
   private: CDevice *odom;
   private: int odom_index;
@@ -197,6 +203,9 @@ INav::INav(char* interface, ConfigFile* cf, int section)
   this->map_pose.v[1] = 0.0;
   this->map_pose.v[2] = 0.0;
 
+  // Open the log file 
+  this->logfile = fopen(cf->ReadString(section, "logfile", ""), "r");
+
   return;
 }
 
@@ -205,6 +214,7 @@ INav::INav(char* interface, ConfigFile* cf, int section)
 // Destructor
 INav::~INav()
 {
+  fclose(this->logfile);
   imap_free(this->map);
   return;
 }
@@ -214,6 +224,7 @@ INav::~INav()
 // Set up the device (called by server thread).
 int INav::Setup()
 {
+  /*
   // Initialise the underlying position device.
   if (this->SetupOdom() != 0)
     return -1;
@@ -221,7 +232,8 @@ int INav::Setup()
   // Initialise the laser.
   if (this->SetupLaser() != 0)
     return -1;
-
+  */
+  
   // Start the driver thread.
   this->StartThread();
   
@@ -236,11 +248,13 @@ int INav::Shutdown()
   // Stop the driver thread.
   this->StopThread();
 
+  /*
   // Stop the laser
   this->ShutdownLaser();
 
   // Stop the odom device.
   this->ShutdownOdom();
+  */
 
   return 0;
 }
@@ -338,11 +352,14 @@ void INav::Main()
     // Sleep for 1ms (will actually take longer than this).
     sleeptime.tv_sec = 0;
     sleeptime.tv_nsec = 1000000L;
-    nanosleep(&sleeptime, NULL);
+    //nanosleep(&sleeptime, NULL);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
 
+    GetLog();
+        
+    /*
     // Process any pending requests.
     HandleRequests();
 
@@ -361,6 +378,7 @@ void INav::Main()
       UpdatePoseLaser();
       PutPose();
     }
+    */
   }
   return;
 }
@@ -513,14 +531,74 @@ int INav::GetLaser()
 }
 
 
-/*
 ////////////////////////////////////////////////////////////////////////////////
-// Check for new commands
-int INav::GetCommand()
+// Get log data (for testing)
+int INav::GetLog()
 {
-  return 0;
+  char line[4096];
+  char *type, *tmp;
+  double r, b;
+  int i, index;
+  double dtime;
+
+  if (this->logfile == NULL)
+    return 0;
+
+  if (fgets(line, sizeof(line), this->logfile) == NULL)
+    return 0;
+
+  //printf("%s\n", line);
+
+  strtok(line, " ");
+  strtok(NULL, " ");
+  strtok(NULL, " ");
+  type = strtok(NULL, " ");
+
+  if (strcmp(type, "position") == 0)
+  {
+    index = atoi(strtok(NULL, " "));
+    if (index == 0)
+    {
+      dtime = atof(strtok(NULL, " "));
+      this->odom_pose.v[0] = atof(strtok(NULL, " "));
+      this->odom_pose.v[1] = atof(strtok(NULL, " "));
+      this->odom_pose.v[2] = atof(strtok(NULL, " "));
+      this->odom_time = dtime;
+
+      UpdatePoseOdom();
+    }
+  }
+
+  else if (strcmp(type, "laser") == 0)
+  {
+    index = atoi(strtok(NULL, " "));
+    dtime = atof(strtok(NULL, " "));
+    for (i = 0; i < 401; i++)
+    {
+      tmp = strtok(NULL, " ");
+      if (tmp == NULL)
+        break;
+      r = atof(tmp);
+
+      tmp = strtok(NULL, " ");
+      if (tmp == NULL)
+        break;
+      b = atof(tmp);
+      
+      strtok(NULL, " ");
+
+      this->laser_ranges[i][0] = r;
+      this->laser_ranges[i][1] = b;
+    }
+    this->laser_count = i;
+    this->laser_time = dtime;
+
+    UpdatePoseLaser();
+  }
+
+  return 1;
 }
-*/
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -582,9 +660,9 @@ void INav::UpdatePoseOdom()
   dj = (int) (d.v[1] / this->map_scale);
   if (abs(di) > 0 || abs(dj) > 0)
   {
-    //imap_translate(this->map, di, dj);
-    //this->map_pose.v[0] += di * this->map_scale;
-    //this->map_pose.v[1] += dj * this->map_scale;
+    imap_translate(this->map, di, dj);
+    this->map_pose.v[0] += di * this->map_scale;
+    this->map_pose.v[1] += dj * this->map_scale;
   }
 
   return;
