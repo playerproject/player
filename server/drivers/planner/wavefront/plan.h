@@ -85,8 +85,10 @@ void plan_free(plan_t *plan);
 // Reset the plan
 void plan_reset(plan_t *plan);
 
+#if 0
 // Load the occupancy values from an image file
 int plan_load_occ(plan_t *plan, const char *filename, double scale);
+#endif
 
 // Construct the configuration space from the occupancy grid.
 void plan_update_cspace(plan_t *plan);

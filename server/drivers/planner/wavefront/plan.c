@@ -16,8 +16,10 @@
 #include <playercommon.h>
 #include <error.h>
 
+#if 0
 // Use gdk-pixbuf for loading the images
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#endif
 
 #include "plan.h"
 
@@ -89,6 +91,7 @@ void plan_reset(plan_t *plan)
 }
 
 
+#if 0
 // Load the occupancy map
 int plan_load_occ(plan_t *plan, const char *filename, double scale)
 {
@@ -164,6 +167,7 @@ int plan_load_occ(plan_t *plan, const char *filename, double scale)
   
   return 0;
 }
+#endif
 
 
 // Construct the configuration space from the occupancy grid.
