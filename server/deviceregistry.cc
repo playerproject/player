@@ -113,6 +113,10 @@ void REBPower_Register(DriverTable *table);
 void FixedTones_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_ACOUSTICS
+void Acoustics_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_RWI
 void RWIBumper_Register(DriverTable* table);
 void RWILaser_Register(DriverTable* table);
@@ -164,6 +168,7 @@ player_interface_t interfaces[] = {
   {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "acts"},
   {PLAYER_SPEECH_CODE, PLAYER_SPEECH_STRING, "festival"},
   {PLAYER_AUDIO_CODE, PLAYER_AUDIO_STRING, "fixedtones"},
+  {PLAYER_AUDIODSP_CODE, PLAYER_AUDIODSP_STRING, "acoustics"},
   {PLAYER_FIDUCIAL_CODE, PLAYER_FIDUCIAL_STRING, "laserbarcode"},
   {PLAYER_PTZ_CODE, PLAYER_PTZ_STRING, "sonyevid30"},
   {PLAYER_COMMS_CODE, PLAYER_COMMS_STRING, "udpbroadcast"},
@@ -261,6 +266,10 @@ register_devices()
 
 #ifdef INCLUDE_FIXEDTONES
   FixedTones_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_ACOUSTICS
+  Acoustics_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_RWI

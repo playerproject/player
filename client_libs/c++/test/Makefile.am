@@ -23,14 +23,15 @@ test_SOURCES = test_broadcast.cc \
                test_speech.cc \
                test_truth.cc \
                test_vision.cc \
-	       test_power.cc \
-	       test_dio.cc \
+      	       test_power.cc \
+       	       test_dio.cc \
                test_bumper.cc \
                test_wifi.cc \
                test_mcom.cc \
                test_fiducialfinder.cc \
-	       test_lookup.cc \
-	       test_localize.cc
+       	       test_lookup.cc \
+               test_audiodsp.cc \
+      	       test_localize.cc
               #test_idar.cc \
                #test_idarturret.cc
                #test_misc.cc
