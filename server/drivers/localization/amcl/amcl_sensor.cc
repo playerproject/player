@@ -126,7 +126,7 @@ void AMCLSensor::ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Draw sensor data
-void AMCLSensor::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
+void AMCLSensor::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig, AMCLSensorData *data)
 {
   return;
 }
