@@ -10,4 +10,4 @@ autoconf
 ./configure "$@"
 
 # Run rtk3 boostrap recusively
-cd rtk3 && ./bootstrap
+#cd rtk3 && ./bootstrap
