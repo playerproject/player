@@ -454,9 +454,10 @@ void Client::Update( struct controller* cont )
       printf("%5.3f %5.3f\n", cont->speed, RTOD(cont->turnrate));
     lastcommand = curr;
   }
-  else if(((curr.tv_sec + (curr.tv_usec / 1e6)) -
-           (lastcommand.tv_sec + (lastcommand.tv_usec / 1e6))) > 
-          COMMAND_TIMEOUT_SEC)
+  else if(use_keyboard && 
+          (((curr.tv_sec + (curr.tv_usec / 1e6)) -
+            (lastcommand.tv_sec + (lastcommand.tv_usec / 1e6))) > 
+           COMMAND_TIMEOUT_SEC))
   {
     if(!stopped)
     {
