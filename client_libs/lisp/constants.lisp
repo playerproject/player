@@ -31,12 +31,17 @@
 (setq *PLAYER-PLAYER-DATAFREQ-REQ* 4)
 (setq *PLAYER-PLAYER-AUTH-REQ*     5)
 
+(setq *PLAYER-PLAYER-DATAMODE-CONTINUOUS* 0)
+(setq *PLAYER-PLAYER-DATAMODE-REQREP* 1)
+
 ; shorter (and more familiar) names for binary types
 (setq uint8 '(unsigned-byte 8))
 (setq uint16 '(unsigned-byte 16))
 (setq uint32 '(unsigned-byte 32))
+(setq int8 '(signed-byte 8))
+(setq int16 '(signed-byte 16))
+(setq int32 '(signed-byte 32))
 
-; how do you use hex?
 (setq *PLAYER-READ-MODE* #x72)
 (setq *PLAYER-WRITE-MODE* #x77)
 (setq *PLAYER-ALL-MODE* #x61)
