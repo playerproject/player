@@ -148,8 +148,9 @@
 #include <stdio.h>
 
 /* too noisy! */
-#define PLAYER_ERROR(m)  printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__)
-#define PLAYER_ERROR1(m, a)  printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__, a)
+#define PLAYER_ERROR(m)         printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__)
+#define PLAYER_ERROR1(m, a)     printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__, a)
+#define PLAYER_ERROR2(m, a, b)  printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__, a, b)
 //#define PLAYER_ERROR(m) 
 
 

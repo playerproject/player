@@ -84,9 +84,9 @@ class CLaserBeaconDevice : public CDevice
     private: int IdentBeacon(int a, int b, double ox, double oy, double oth,
                              const player_laser_data_t *laser_data);
 
-#ifdef PLAYER_SELFTEST
+#ifdef INCLUDE_SELFTEST
     // Beacon detector self-test
-    private: int SelfTest();
+    private: int SelfTest(const char *filename);
 
     // Filename for self-test
     private: char *test_filename;
@@ -104,7 +104,7 @@ class CLaserBeaconDevice : public CDevice
     private: int max_bits;
     private: double bit_width;
     private: double max_depth;
-    private: double zero_thresh, one_thresh;
+    private: double accept_thresh, zero_thresh, one_thresh;
 
     // Filter array (beacons must appear in multiple frames to be accepted)
     private: double filter[256];
