@@ -1,5 +1,17 @@
 $Id$
 
+1.6 RELEASE:
+------------
+- update .cfg files
+- document .cfg syntax
+- document utils (playerv, playernav, playerjoy)
+- document all drivers
+- document all interfaces
+- document ASYNC data mode
+- test on Solaris
+- document driver API
+- document plugin building procedure (mention libtool)
+
 NEXT RELEASE:
 -------------
 - include <linux/limits.h> to get PATH_MAX for linux-arm crosscompile
