@@ -21,16 +21,16 @@ playerc_oo.i: ../../playerc.h $(top_srcdir)/server/player.h
 	if test ! -s playerc.i; then cp $(srcdir)/playerc.i .; fi
 	python $(srcdir)/parse.py ../../playerc.h playerc_oo.i
 
+# Use distutils to build module
+pythonbuild: playerc_oo.i ../../playerc.h
+	python $(srcdir)/setup.py build
+
 # For distcheck builds, clean up the files we created in the build tree
 # This generates warnings, so I'm relying on the top-level Makefile.am override.
 #distclean:
 #	rm -f ../../playerc.h
 #	rm -f $(top_builddir)/server/player.h
 #	rm -f playerc_oo.i playerc.i playerc_wrap.c Makefile
-
-# Use distutils to build module
-pythonbuild: playerc_oo.i ../../playerc.h
-	python $(srcdir)/setup.py build
 
 # Normal cleanup
 clean-local:

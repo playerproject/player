@@ -46,14 +46,18 @@ const char *GzClient::prefix_id = "";
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize 
 int GzClient::Init(int serverid, const char *prefixid)
-{
-  // TODO: pipe errors into player?
-  gz_error_init(1, 9);
-  
+{  
   GzClient::client = gz_client_alloc();
 
+#ifdef GZ_CLIENT_ID_PLAYER
+  // Use version 0.5.0
   if (gz_client_connect_wait(GzClient::client, serverid, GZ_CLIENT_ID_PLAYER) != 0)
     return -1;
+#else
+  // Use version 0.4.0
+  if (gz_client_connect(GzClient::client, "default") != 0)
+    return -1;
+#endif
 
   GzClient::sim = gz_sim_alloc();
   if (gz_sim_open(GzClient::sim, GzClient::client, "default") != 0)
