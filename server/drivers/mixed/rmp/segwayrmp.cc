@@ -283,7 +283,6 @@ SegwayRMP::SegwayRMP(uint16_t code, ConfigFile* cf, int section)
 
 SegwayRMP::~SegwayRMP()
 {
-  Shutdown();
 }
 
 int
@@ -528,12 +527,12 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
                         (uint16_t)RMP_CAN_RST_ALL);
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -550,12 +549,12 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -570,12 +569,12 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -590,12 +589,12 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -610,12 +609,12 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -630,12 +629,12 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -650,12 +649,12 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -666,12 +665,12 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
