@@ -44,17 +44,8 @@ test_gripper(PlayerClient* client, int index)
     gp.Print();
   }
 
-  TEST("lift down");
-  if(gp.SetGrip(LIFTdown) < 0)
-  {
-    FAIL();
-    return(-1);
-  }
-  sleep(3);
-  PASS();
-
-  TEST("paddles open");
-  if(gp.SetGrip(GRIPopen) < 0)
+  TEST("gripper deploy");
+  if(gp.SetGrip(GRIPdeploy) < 0)
   {
     FAIL();
     return(-1);

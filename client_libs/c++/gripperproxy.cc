@@ -83,7 +83,7 @@ void GripperProxy::Print()
 {
   printf("#Gripper(%d:%d) - %c\n", device, index, access);
   puts("#paddles\tinner beams\touter beams");
-  printf("%s\t%s\t%s\n",
+  printf("%s\t\t%s\t\t%s\n",
          (paddles_open) ? "open" : "closed",
          (inner_break_beam) ? "broken" : "clear",
          (outer_break_beam) ? "broken" : "clear");
