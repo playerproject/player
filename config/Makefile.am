@@ -1,4 +1,4 @@
-configdir = $(prefix)/config
+configdir = $(prefix)/share/player/config
 
 config_DATA = usc_pioneer.cfg \
               umass_reb.cfg \
