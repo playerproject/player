@@ -85,7 +85,7 @@
 #define PLAYER_AUDIODSP_CODE       ((uint16_t)28)  // audio dsp I/O
 #define PLAYER_AUDIOMIXER_CODE     ((uint16_t)29)  // audio I/O
 #define PLAYER_POSITION3D_CODE     ((uint16_t)30)  // 3-D position
-#define PLAYER_SIMULATION_CODE     ((uint16_t)30)  // simulators
+#define PLAYER_SIMULATION_CODE     ((uint16_t)31)  // simulators
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 

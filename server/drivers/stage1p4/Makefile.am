@@ -6,7 +6,11 @@ noinst_LIBRARIES = @STAGE1P4_LIB@
 
 EXTRA_LIBRARIES = libstage1p4.a
 
-libstage1p4_a_SOURCES = stage1p4.cc
-#stagedevice.cc stagedevice.h stage.h stagetime.cc stagetime.h
+libstage1p4_a_SOURCES = \
+	stage1p4.cc \
+	stage1p4.h \
+	stg_position.cc \
+	stg_laser.cc \
+	stg_simulation.cc
 
 #include_HEADERS = 
