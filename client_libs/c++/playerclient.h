@@ -2200,4 +2200,55 @@ public:
  *****************************************************************************/
 
 
+/*****************************************************************************
+ ** begin section BlinkenlightProxy
+ *****************************************************************************/
+
+/** The {\tt BlinkenlightProxy} class is used to enable and disable a
+ flashing indicator light, and to set it's period. */
+class BlinkenlightProxy : public ClientProxy 
+{
+
+public:
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+    */
+  BlinkenlightProxy (PlayerClient* pc, unsigned short index,
+		     unsigned char access = 'c')
+    : ClientProxy(pc,PLAYER_BLINKENLIGHT_CODE,index,access) 
+    {
+      // assume the light is off by default
+      this->period_ms = 0;
+      this->enable = false;
+    }
+  
+  virtual ~BlinkenlightProxy()
+    { };
+  
+  /// true: indicator light enabled, false: disabled.
+  bool enable;
+  
+  /** The current period (one whole on/off cycle) of the blinking
+      light. If the period is zero and the light is enabled, the light
+      is on. 
+  */
+  int period_ms;
+  
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    /// Print out the current status
+    void Print ();
+
+    /** Set the state of the indicator light. A period of zero means
+        the light will be unblinkingly on or off. Returns 0 on
+        success, else -1.
+    */
+    int SetLight( bool enable, int period_ms );
+};
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
 #endif
