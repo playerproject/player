@@ -58,55 +58,38 @@ CDevice* RFLEXSonar_Init(char* interface, ConfigFile* cf, int section)
  * deffinition
  */
 void RFLEXSonar::GetOptions(ConfigFile *cf,int section,rflex_config_t * rflex_configs){
-  char temp[1024];
-  char *now;
-  char *next;
   int x;
   Lock();
-  rflex_configs->range_distance_conversion=atof(strncpy(temp,cf->ReadString(section, "range_distance_conversion", temp),sizeof(temp)));
-  rflex_configs->max_num_sonars=atoi(strncpy(temp,cf->ReadString(section, "max_num_sonars", temp),sizeof(temp)));
-  rflex_configs->num_sonars=atoi(strncpy(temp,cf->ReadString(section, "num_sonars", temp),sizeof(temp)));
-  rflex_configs->sonar_age=atoi(strncpy(temp,cf->ReadString(section, "sonar_age", temp),sizeof(temp)));
-  rflex_configs->num_sonar_banks=atoi(strncpy(temp,cf->ReadString(section, "num_sonar_banks", temp),sizeof(temp)));
-  rflex_configs->num_sonars_possible_per_bank=atoi(strncpy(temp,cf->ReadString(section, "num_sonars_possible_per_bank", temp),sizeof(temp)));
-  rflex_configs->num_sonars_in_bank=(int *) malloc(rflex_configs->num_sonar_banks*sizeof(int));
-  strncpy(temp,cf->ReadString(section, "num_sonars_in_bank", temp),sizeof(temp));
-  now=temp;
-  for(x=0;x<rflex_configs->num_sonar_banks;x++){
-    if(now==NULL){
-      fprintf(stderr,"error parsing num_sonar_banks in configfile\n");
-      exit(1);
-    }
-    rflex_configs->num_sonars_in_bank[x]=strtol(now,&next,0);
-    now=next;
-  }
-  rflex_configs->sonar_echo_delay=atoi(strncpy(temp,cf->ReadString(section, "sonar_echo_delay", temp),sizeof(temp)));
-  rflex_configs->sonar_ping_delay=atoi(strncpy(temp,cf->ReadString(section, "sonar_ping_delay", temp),sizeof(temp)));
-  rflex_configs->sonar_set_delay=atoi(strncpy(temp,cf->ReadString(section, "sonar_set_delay", temp),sizeof(temp)));
-  
-  
+  rflex_configs->range_distance_conversion=
+    cf->ReadFloat(section, "range_distance_conversion",1);
+  rflex_configs->max_num_sonars=
+    cf->ReadInt(section, "max_num_sonars",64);
+  rflex_configs->num_sonars=
+    cf->ReadInt(section, "num_sonars",24);
+  rflex_configs->sonar_age=
+    cf->ReadInt(section, "sonar_age",1);
+  rflex_configs->num_sonar_banks=
+    cf->ReadInt(section, "num_sonar_banks",8);
+  rflex_configs->num_sonars_possible_per_bank=
+    cf->ReadInt(section, "num_sonars_possible_per_bank",16);
+  rflex_configs->num_sonars_in_bank=(int *) malloc(rflex_configs->num_sonar_banks*sizeof(double));
+  for(x=0;x<rflex_configs->num_sonar_banks;x++)
+    rflex_configs->num_sonars_in_bank[x]=
+      (int) cf->ReadTupleFloat(section, "num_sonars_in_bank",x,8);
+  rflex_configs->sonar_echo_delay=
+    cf->ReadInt(section, "sonar_echo_delay",3000);
+  rflex_configs->sonar_ping_delay=
+    cf->ReadInt(section, "sonar_ping_delay",0);
+  rflex_configs->sonar_set_delay=
+    cf->ReadInt(section, "sonar_set_delay", 0);
   rflex_configs->mmrad_sonar_poses=(sonar_pose_t *) malloc(rflex_configs->num_sonars*sizeof(sonar_pose_t));
-  strncpy(temp,cf->ReadString(section, "mmrad_sonar_poses", temp),sizeof(temp));
-  now=temp;
   for(x=0;x<rflex_configs->num_sonars;x++){
-    if(now==NULL){
-      fprintf(stderr,"error parsing sonar poses in configfile\n");
-      exit(1);
-    }
-    rflex_configs->mmrad_sonar_poses[x].x=strtod(now,&next);
-    now=next;
-    if(now==NULL){
-      fprintf(stderr,"error parsing sonar poses in configfile\n");
-      exit(1);
-    }
-    rflex_configs->mmrad_sonar_poses[x].y=strtod(now,&next);
-    now=next;
-    if(temp==NULL){
-      fprintf(stderr,"error parsing sonar poses in configfile\n");
-      exit(1);
-    }
-    rflex_configs->mmrad_sonar_poses[x].t=strtod(now,&next);
-    now=next;
+    rflex_configs->mmrad_sonar_poses[x].x=
+      cf->ReadTupleFloat(section, "mmrad_sonar_poses",3*x+1,0.0);
+    rflex_configs->mmrad_sonar_poses[x].y=
+      cf->ReadTupleFloat(section, "mmrad_sonar_poses",3*x+2,0.0);
+    rflex_configs->mmrad_sonar_poses[x].t=
+      cf->ReadTupleFloat(section, "mmrad_sonar_poses",3*x,0.0);
   }
   Unlock();
 }  

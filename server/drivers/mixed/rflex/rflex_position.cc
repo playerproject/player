@@ -65,18 +65,23 @@ void RFLEXPosition::GetOptions(ConfigFile * cf,int section, rflex_config_t *rfle
   char temp[1024];
   Lock();
   //length
-  rflex_configs->mm_length=atof(strncpy(temp,cf->ReadString(section, "mm_length", temp),sizeof(temp)));
+  rflex_configs->mm_length=
+    cf->ReadFloat(section, "mm_length",0.5);
   //width
-  rflex_configs->mm_width=atof(strncpy(temp,cf->ReadString(section, "mm_width", temp),sizeof(temp)));
+  rflex_configs->mm_width=
+    cf->ReadFloat(section, "mm_width",0.5);
   //distance conversion
-  rflex_configs->odo_distance_conversion=atof(strncpy(temp,cf->ReadString(section, "odo_distance_conversion", temp),sizeof(temp)));
+  rflex_configs->odo_distance_conversion=
+    cf->ReadFloat(section, "odo_distance_conversion", 0.0);
   //angle conversion
-  rflex_configs->odo_angle_conversion=atof(strncpy(temp,cf->ReadString(section, "odo_angle_conversion", temp),sizeof(temp)));
+  rflex_configs->odo_angle_conversion=
+    cf->ReadFloat(section, "odo_angle_conversion", 0.0);
   //default trans accel
-  rflex_configs->mmPsec2_trans_acceleration=atof(strncpy(temp,cf->ReadString(section, "default_trans_acceleration", temp),sizeof(temp)));
-  //defautl rot accel
-  rflex_configs->radPsec2_rot_acceleration=atof(strncpy(temp,cf->ReadString(section, "default_rot_acceleration", temp),sizeof(temp)));
-
+  rflex_configs->mmPsec2_trans_acceleration=
+    cf->ReadFloat(section, "default_trans_acceleration",0.1);
+  //default rot accel
+  rflex_configs->radPsec2_rot_acceleration=
+    cf->ReadFloat(section, "default_rot_acceleration",0.1);
   Unlock();
 }
 
