@@ -781,8 +781,8 @@ Trogdor::UpdateOdom(int ltics, int rtics)
   l_delta = ltics_delta * TROGDOR_M_PER_TICK;
   r_delta = rtics_delta * TROGDOR_M_PER_TICK;
 
-  printf("Left speed: %f\n", l_delta / timediff);
-  printf("Right speed: %f\n", r_delta / timediff);
+  //printf("Left speed: %f\n", l_delta / timediff);
+  //printf("Right speed: %f\n", r_delta / timediff);
 
 
   a_delta = (r_delta - l_delta) / TROGDOR_AXLE_LENGTH;
