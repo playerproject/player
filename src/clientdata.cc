@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -40,14 +42,6 @@
 #define REQUEST_BUFFER_SIZE 1024
 
 extern CDeviceTable* deviceTable;
-/*
-extern CLaserDevice* laserDevice;
-extern CSonarDevice* sonarDevice;
-extern CVisionDevice* visionDevice;
-extern CGripperDevice* gripperDevice;
-extern CMiscDevice* miscDevice;
-extern CPtzDevice* ptzDevice;
-*/
 extern CCounter num_threads;
 extern CClientData* clients[];
 extern pthread_mutex_t clients_mutex;
@@ -265,10 +259,10 @@ CClientData::~CClientData()
     
     if(!SHUTTING_DOWN)
     {
-      printf("client_writer() with id %ld - killed\n", 
-                      writeThread);
-      printf("client_reader() with id %ld - killed\n", 
-                      readThread);
+      //printf("client_writer() with id %ld - killed\n", 
+                      //writeThread);
+      //printf("client_reader() with id %ld - killed\n", 
+                      //readThread);
     }
     pthread_mutex_lock(&clients_mutex);
     clients[client_index] = NULL;

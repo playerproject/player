@@ -27,8 +27,8 @@
 #define ENABLE_TRACE 0
 
 #include <string.h> // for memcpy()
-#include "stagedevice.hh"
-#include "offsets.h"
+#include <stagedevice.h>
+#include <stage.h>
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -37,16 +37,16 @@
 //
 CStageDevice::CStageDevice(void *buffer, size_t data_len, size_t command_len, size_t config_len)
 {
-    m_info = (PlayerStageInfo*) buffer;
+    m_info = (player_stage_info_t*) buffer;
     m_info_len = INFO_BUFFER_SIZE;
     
-    m_data_buffer = (BYTE*) buffer + m_info_len;
+    m_data_buffer = (uint8_t*) buffer + m_info_len;
     m_data_len = data_len;
 
-    m_command_buffer = (BYTE*) m_data_buffer + data_len;
+    m_command_buffer = (uint8_t*) m_data_buffer + data_len;
     m_command_len = command_len;
 
-    m_config_buffer = (BYTE*) m_command_buffer + command_len;
+    m_config_buffer = (uint8_t*) m_command_buffer + command_len;
     m_config_len = config_len;
 
     TRACE4("creating device at addr: %p %p %p %p", m_info, m_data_buffer,

@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -30,11 +32,9 @@
 #include <netinet/in.h>
 #include <sip.h>
 #include <stdlib.h> /* for abs() */
-#include <p2osdevice.h>
 
-void CSIP::Fill( unsigned char data[],  struct timeval timeBegan_tv) 
+void CSIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv) 
 {
-  int cnt;
   struct timeval timeNow_tv;
   unsigned int timeNow;
   
@@ -44,85 +44,26 @@ void CSIP::Fill( unsigned char data[],  struct timeval timeBegan_tv)
 		    ( timeNow_tv.tv_usec - timeBegan_tv.tv_usec ) / 1000.0);
   
   /* time and position */
-  cnt = POSITION_DATA_OFFSET;
-  *(unsigned long*)(&data[cnt]) =  htonl((unsigned int) timeNow);
-  cnt+=sizeof(unsigned int);
-  *(unsigned int*)(&data[cnt]) =  htonl((int)xpos); 
-  cnt+=sizeof(unsigned int);
-  *(unsigned int*)(&data[cnt]) = htonl((int)ypos); 
-  cnt+=sizeof(unsigned int);
-  *(unsigned short*)(&data[cnt]) = htons((unsigned short)angle);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt]) = htons((unsigned short) (((lvel) + (rvel) ) / 2));
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt]) = 
-    htons((unsigned short)(180*((double)(rvel - lvel)/(double)RobotAxleLength)/ M_PI));
-  cnt+=sizeof(unsigned short);
+  data->position.time = htonl((unsigned int)timeNow);
+  data->position.x = htonl((unsigned int)xpos); 
+  data->position.y = htonl((unsigned int)ypos); 
+  data->position.theta = htons((unsigned short)angle);
+  data->position.speed = htons((unsigned short) (((lvel) + (rvel) ) / 2));
+  data->position.turnrate = htons((unsigned short)
+                  (180*((double)(rvel - lvel)/(double)RobotAxleLength)/ M_PI));
+  data->position.compass = htons(compass);
+  data->position.stall = (unsigned char)(lwstall || rwstall);
   
-  *(unsigned short*)(&data[cnt] ) = htons(compass);
-  cnt+=sizeof(unsigned short);
-  data[cnt] = (unsigned char)(lwstall || rwstall);
-  
-  cnt = SONAR_DATA_OFFSET;
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[0]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[1]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[2]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[3]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[4]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[5]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[6]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[7]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[8]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[9]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[10]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[11]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[12]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[13]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[14]);
-  cnt+=sizeof(unsigned short);
-  *(unsigned short*)(&data[cnt] ) = 
-    htons( (unsigned short) sonars[15]);
+  for(int i=0;i<(int)sizeof(sonars);i++)
+    data->sonar.ranges[i] = htons((unsigned short)sonars[i]);
 
-  cnt = GRIPPER_DATA_OFFSET;
-  data[cnt++] =  (unsigned char) (timer >> 8);
-  data[cnt] =  (unsigned char) digin;
+  data->gripper.state = (unsigned char)(timer >> 8);
+  data->gripper.beams = (unsigned char)digin;
 
-  // BUMPERS not implemented yet....
-  cnt = MISC_DATA_OFFSET;
-  data[cnt++] =  (unsigned char) frontbumpers;
-  data[cnt++] =  (unsigned char) rearbumpers;
-  data[cnt]   =  (unsigned char) battery;
+  data->misc.frontbumpers =  (unsigned char)frontbumpers;
+  data->misc.rearbumpers =  (unsigned char)rearbumpers;
+  data->misc.voltage = (unsigned char)battery;
 }
-
 
 int CSIP::PositionChange( unsigned short from, unsigned short to ) 
 {

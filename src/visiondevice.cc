@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -60,7 +62,8 @@ void QuitACTS(void* visiondevice);
 CVisionDevice::CVisionDevice(int num, char* configfile, bool oldacts)
 {
   sock = -1;
-  data = new unsigned char[sizeof(unsigned short)+ACTS_TOTAL_MAX_SIZE];
+  //data = new unsigned char[sizeof(unsigned short)+ACTS_TOTAL_MAX_SIZE];
+  data = new player_internal_vision_data_t;
 
   // save that number.  however, command-line flag to ACTS doesn't seem
   // to work right now...
@@ -93,7 +96,7 @@ CVisionDevice::Setup()
   char old_acts_bin_name[] = "ACTSServer";
   char old_acts_configfile_flag[] = "-s";
 
-  char acts_port_num[VISION_PORT_NAME_SIZE];
+  char acts_port_num[MAX_FILENAME_SIZE];
   char* acts_args[8];
 
   static struct sockaddr_in server;
@@ -105,6 +108,9 @@ CVisionDevice::Setup()
   char buffer[64];
 
   pthread_attr_t attr;
+
+  printf("ACTS vision server connection initializing...");
+  fflush(stdout);
 
   if(useoldacts)
   {
@@ -134,10 +140,10 @@ CVisionDevice::Setup()
   if(!(pid = fork()))
   {
     // make sure we don't get that "ACTS: Packet" bullshit on the console
-    //int dummy_fd = open("/dev/null",O_RDWR);
-    //dup2(dummy_fd,0);
-    //dup2(dummy_fd,1);
-    //dup2(dummy_fd,2);
+    int dummy_fd = open("/dev/null",O_RDWR);
+    dup2(dummy_fd,0);
+    dup2(dummy_fd,1);
+    dup2(dummy_fd,2);
 
     /* detach from controlling tty, so we don't get pesky SIGINTs and such */
     if(setpgrp() == -1)
@@ -245,6 +251,8 @@ CVisionDevice::Setup()
       }
     }
 
+    puts("Done.");
+
     /* now spawn reading thread */
     if(pthread_attr_init(&attr) ||
        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) ||
@@ -275,6 +283,8 @@ CVisionDevice::Shutdown()
           "reading thread failed; killing ACTS by hand\n",stderr);
     QuitACTS(this);
   }
+
+  puts("ACTS vision server has been shutdown");
   return(0);
 }
 
@@ -290,15 +300,15 @@ CVisionDevice::KillACTS()
 void 
 CVisionDevice::PutData(unsigned char* src, size_t size)
 {
-  memcpy(data,src,*((unsigned short*)src)+sizeof(short));
+  *data = *((player_internal_vision_data_t*)src);
 }
 
 size_t
 CVisionDevice::GetData(unsigned char* dest, size_t maxsize)
 {
   /* size is stored at first two bytes */
-  memcpy(dest,data+sizeof(short),*((unsigned short*)data));
-  return(*((unsigned short*)data));
+  *((player_vision_data_t*)dest) = data->data;
+  return(data->size);
 }
 
 void 
@@ -325,19 +335,14 @@ RunVisionThread(void* visiondevice)
   int numread;
   int num_blobs;
   int i;
-  int num_read;
-  //struct timeval curr;
 
   CVisionDevice* vd = (CVisionDevice*)visiondevice;
-  /* 2 extra bytes to put size at front */
-  unsigned char local_data[sizeof(short)+ACTS_TOTAL_MAX_SIZE];
-  unsigned char* header = local_data+2;
-  unsigned char* blobs = header+ACTS_HEADER_SIZE;
+
+  player_internal_vision_data_t local_data;
 
   char acts_request_packet = ACTS_REQUEST_PACKET;
 
-
-  bzero(local_data,sizeof(local_data));
+  bzero(&local_data,sizeof(local_data));
 
   /* make sure we aren't canceled at a bad time */
   if(pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL))
@@ -359,18 +364,18 @@ RunVisionThread(void* visiondevice)
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
-    if(vd->useoldacts)
-    {
-      /* get the packet */
-      if((num_read = recvfrom(vd->sock, (void*)local_data, sizeof(local_data), 
-                                      0, NULL, 0)) == -1)
-      {
-        perror("RunVisionThread:recvfrom() failed");
-        break;
-      }
-    }
-    else
-    {
+    //if(vd->useoldacts)
+    //{
+      ///* get the packet */
+      //if((num_read = recvfrom(vd->sock, (void*)local_data, sizeof(local_data), 
+                                      //0, NULL, 0)) == -1)
+      //{
+        //perror("RunVisionThread:recvfrom() failed");
+        //break;
+      //}
+    //}
+    //else
+    //{
     /* request a packet from ACTS */
     if(write(vd->sock,&acts_request_packet,sizeof(acts_request_packet)) == -1)
     {
@@ -380,7 +385,7 @@ RunVisionThread(void* visiondevice)
     }
 
     /* get the header first */
-    if((numread = read(vd->sock,header,ACTS_HEADER_SIZE)) == -1)
+    if((numread = read(vd->sock,local_data.data.header,ACTS_HEADER_SIZE)) == -1)
     {
       perror("RunVisionThread: read() failed for header: exiting");
       break;
@@ -396,11 +401,12 @@ RunVisionThread(void* visiondevice)
     /* sum up the data we expect */
     for(num_blobs=0,i=1;i<ACTS_HEADER_SIZE;i+=2)
     {
-      num_blobs += header[i]-1;
+      num_blobs += local_data.data.header[i]-1;
     }
 
 
-    if((numread = read(vd->sock,blobs,num_blobs*ACTS_BLOB_SIZE)) == -1)
+    if((numread = read(vd->sock,local_data.data.blobs,
+                                    num_blobs*ACTS_BLOB_SIZE)) == -1)
     {
       perror("RunVisionThread: read() failed on blob data; exiting.");
       break;
@@ -413,23 +419,19 @@ RunVisionThread(void* visiondevice)
       break;
     }
     
-    //gettimeofday(&curr,NULL);
-    //printf("RunVisionThread: got ACTS packet: %ld %ld\n", 
-                    //curr.tv_sec, curr.tv_usec);
     /* byte-swap everything */
     /* no, don't.  since the vision data is a sequence of
      * individual bytes, there's nothing to be swapped */
 
     /* store total size */
-    *((unsigned short *)local_data) = 
-            (unsigned short)(ACTS_HEADER_SIZE + num_blobs*ACTS_BLOB_SIZE);
+    local_data.size = (uint16_t)(ACTS_HEADER_SIZE + num_blobs*ACTS_BLOB_SIZE);
 
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
     /* got the data. now fill it in */
-    vd->GetLock()->PutData(vd, local_data, sizeof(local_data));
-    }
+    vd->GetLock()->PutData(vd, (unsigned char*)&local_data, sizeof(local_data));
+    //}
   }
 
   pthread_cleanup_pop(1);

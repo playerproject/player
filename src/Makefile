@@ -71,45 +71,47 @@ uninstall:
 
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
 
-arenalock.o: ../include/device.h ../include/offsets.h ../include/lock.h
-arenalock.o: ../include/arenalock.h ../include/errors.h
-clientdata.o: ../include/devicetable.h ../include/device.h
-clientdata.o: ../include/offsets.h ../include/lock.h ../include/clientdata.h
-clientdata.o: ../include/counter.h ../include/packet.h
-devicetable.o: ../include/devicetable.h ../include/device.h
-devicetable.o: ../include/offsets.h ../include/lock.h
+arenalock.o: ../include/device.h ../include/lock.h ../include/arenalock.h
+arenalock.o: ../include/errors.h
+clientdata.o: ../include/devicetable.h ../include/device.h ../include/lock.h
+clientdata.o: ../include/clientdata.h ../include/counter.h
+clientdata.o: ../include/packet.h
+devicetable.o: ../include/devicetable.h ../include/device.h ../include/lock.h
 gripperdevice.o: ../include/gripperdevice.h ../include/p2osdevice.h
-gripperdevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
-gripperdevice.o: ../include/packet.h ../include/sip.h
-laserdevice.o: ../include/rtk-types.hh ../include/laserdevice.h
-laserdevice.o: ../include/lock.h ../include/device.h ../include/offsets.h
-lock.o: ../include/device.h ../include/offsets.h ../include/lock.h
-lock.o: ../include/errors.h
+gripperdevice.o: ../include/device.h ../include/lock.h ../include/packet.h
+gripperdevice.o: ../include/playercommon.h ../include/messages.h
+gripperdevice.o: ../include/sip.h
+laserdevice.o: ../include/playercommon.h ../include/laserdevice.h
+laserdevice.o: ../include/lock.h ../include/device.h ../include/messages.h
+lock.o: ../include/device.h ../include/lock.h ../include/errors.h
 main.o: ../VERSION ../include/pubsub_util.h ../include/clientdata.h
-main.o: ../include/devicetable.h ../include/device.h ../include/offsets.h
-main.o: ../include/lock.h ../include/counter.h ../include/nodevice.h
+main.o: ../include/devicetable.h ../include/device.h ../include/lock.h
+main.o: ../include/counter.h ../include/nodevice.h
 miscdevice.o: ../include/miscdevice.h ../include/p2osdevice.h
-miscdevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
-miscdevice.o: ../include/packet.h ../include/sip.h
-nodevice.o: ../include/nodevice.h ../include/device.h ../include/offsets.h
-nodevice.o: ../include/lock.h
-p2osdevice.o: ../include/p2osdevice.h ../include/device.h
-p2osdevice.o: ../include/offsets.h ../include/lock.h ../include/packet.h
-p2osdevice.o: ../include/sip.h
+miscdevice.o: ../include/device.h ../include/lock.h ../include/packet.h
+miscdevice.o: ../include/playercommon.h ../include/messages.h
+miscdevice.o: ../include/sip.h
+nodevice.o: ../include/nodevice.h ../include/device.h ../include/lock.h
+p2osdevice.o: ../include/p2osdevice.h ../include/device.h ../include/lock.h
+p2osdevice.o: ../include/packet.h ../include/playercommon.h
+p2osdevice.o: ../include/messages.h ../include/sip.h
 packet.o: ../include/packet.h
 positiondevice.o: ../include/positiondevice.h ../include/p2osdevice.h
-positiondevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
-positiondevice.o: ../include/packet.h ../include/sip.h
+positiondevice.o: ../include/device.h ../include/lock.h ../include/packet.h
+positiondevice.o: ../include/playercommon.h ../include/messages.h
+positiondevice.o: ../include/sip.h
 ptzdevice.o: ../include/ptzdevice.h ../include/lock.h ../include/device.h
-ptzdevice.o: ../include/offsets.h
-sip.o: ../include/sip.h ../include/p2osdevice.h ../include/device.h
-sip.o: ../include/offsets.h ../include/lock.h ../include/packet.h
+ptzdevice.o: ../include/playercommon.h ../include/messages.h
+sip.o: ../include/sip.h ../include/messages.h ../include/playercommon.h
+sip.o: ../include/p2osdevice.h ../include/device.h ../include/lock.h
+sip.o: ../include/packet.h
 sonardevice.o: ../include/sonardevice.h ../include/p2osdevice.h
-sonardevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
-sonardevice.o: ../include/packet.h ../include/sip.h
-stagedevice.o: ../include/stagedevice.hh ../include/rtk-types.hh
-stagedevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
-stagedevice.o: ../include/arenalock.h
+sonardevice.o: ../include/device.h ../include/lock.h ../include/packet.h
+sonardevice.o: ../include/playercommon.h ../include/messages.h
+sonardevice.o: ../include/sip.h
+stagedevice.o: ../include/stagedevice.h ../include/playercommon.h
+stagedevice.o: ../include/device.h ../include/lock.h ../include/arenalock.h
+stagedevice.o: ../include/stage.h ../include/messages.h
 visiondevice.o: ../include/visiondevice.h ../include/lock.h
-visiondevice.o: ../include/device.h ../include/offsets.h
-visiondevice.o: ../include/pubsub_util.h
+visiondevice.o: ../include/device.h ../include/messages.h
+visiondevice.o: ../include/playercommon.h ../include/pubsub_util.h

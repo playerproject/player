@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,9 +41,16 @@ CDeviceTable::CDeviceTable()
 // tear down the table
 CDeviceTable::~CDeviceTable()
 {
-  // no dynamic memory; nothing to do
- 
-  // well, destroy the mutex.
+  // for each registered device, delete it.
+  pthread_mutex_lock(&mutex);
+  for(int i=0;i<MAX_NUM_DEVICES;i++)
+  {
+    if(devices[i].devicep)
+      delete devices[i].devicep;
+  }
+  pthread_mutex_unlock(&mutex);
+  
+  // destroy the mutex.
   pthread_mutex_destroy(&mutex);
 }
 

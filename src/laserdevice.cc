@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -58,8 +59,8 @@
 #include <time.h>
 #include <sys/time.h>
 
-#include "rtk-types.hh"
-#include "laserdevice.h"
+#include <playercommon.h>
+#include <laserdevice.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -191,6 +192,8 @@ int CLaserDevice::Setup()
     max_segment = 360;
     intensity = false;
 
+    printf("Laser connection initializing...");
+    fflush(stdout);
     if (OpenTerm())
         return 1;
 
@@ -227,6 +230,7 @@ int CLaserDevice::Setup()
     CloseTerm();
 
     MSG("laser ready");
+    puts("Done.");
 
     // Start the device thread
     //
@@ -245,6 +249,7 @@ int CLaserDevice::Shutdown()
   close(laser_fd);
   pthread_cancel( thread );
   MSG("Laser has been shutdown");
+  puts("Laser has been shutdown");
 
   return(0);
 }
@@ -422,7 +427,7 @@ int CLaserDevice::ChangeTermSpeed(int speed)
 int CLaserDevice::SetLaserMode()
 {
     ssize_t len;
-    BYTE packet[20];
+    uint8_t packet[20];
 
     packet[0] = 0x20; /* mode change command */
     packet[1] = 0x00; /* configuration mode */
@@ -470,7 +475,7 @@ int CLaserDevice::SetLaserMode()
 int CLaserDevice::SetLaserSpeed(int speed)
 {
     ssize_t len;
-    BYTE packet[20];
+    uint8_t packet[20];
 
     packet[0] = 0x20;
     packet[1] = (speed == 9600 ? 0x42 : 0x40);
@@ -509,7 +514,7 @@ int CLaserDevice::SetLaserSpeed(int speed)
 int CLaserDevice::SetLaserConfig()
 {
     ssize_t len;
-    BYTE packet[512];
+    uint8_t packet[512];
 
     packet[0] = 0x74;
     len = 1;
@@ -589,7 +594,7 @@ int CLaserDevice::SetLaserConfig()
 int CLaserDevice::RequestLaserData()
 {
     ssize_t len = 0;
-    BYTE packet[20];
+    uint8_t packet[20];
     
     packet[len++] = 0x20; /* mode change command */
     
@@ -644,8 +649,8 @@ int CLaserDevice::RequestLaserData()
 //
 int CLaserDevice::ProcessLaserData()
 {
-    BYTE raw_data[LASER_DATA_BUFFER_SIZE + 7];
-    BYTE final_data[LASER_DATA_BUFFER_SIZE] = {0};
+    uint8_t raw_data[LASER_DATA_BUFFER_SIZE + 7];
+    uint8_t final_data[LASER_DATA_BUFFER_SIZE] = {0};
 
     // Read a packet from the laser
     //
@@ -720,9 +725,9 @@ int CLaserDevice::ProcessLaserData()
 ////////////////////////////////////////////////////////////////////////////////
 // Write a packet to the laser
 //
-ssize_t CLaserDevice::WriteToLaser(BYTE *data, ssize_t len)
+ssize_t CLaserDevice::WriteToLaser(uint8_t *data, ssize_t len)
 {
-    BYTE buffer[4 + 1024 + 2];
+    uint8_t buffer[4 + 1024 + 2];
     ASSERT(4 + len + 2 < (ssize_t) sizeof(buffer));
 
     // Create header
@@ -738,7 +743,7 @@ ssize_t CLaserDevice::WriteToLaser(BYTE *data, ssize_t len)
 
     // Create footer (CRC)
     //
-    UINT16 crc = CreateCRC(buffer, 4 + len);
+    uint16_t crc = CreateCRC(buffer, 4 + len);
     buffer[4 + len + 0] = LOBYTE(crc);
     buffer[4 + len + 1] = HIBYTE(crc);
 
@@ -758,7 +763,7 @@ ssize_t CLaserDevice::WriteToLaser(BYTE *data, ssize_t len)
 // Set timeout to -1 to make this blocking, otherwise it will return in timeout ms.
 // Returns the packet length (0 if timeout occurs)
 //
-ssize_t CLaserDevice::ReadFromLaser(BYTE *data, ssize_t maxlen, bool ack, int timeout)
+ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int timeout)
 {
     // If the timeout is infinite,
     // go to blocking io
@@ -802,8 +807,8 @@ ssize_t CLaserDevice::ReadFromLaser(BYTE *data, ssize_t maxlen, bool ack, int ti
     int stop_time = start_time + timeout;
 
     int bytes = 0;
-    BYTE header[5] = {0};
-    BYTE footer[3];
+    uint8_t header[5] = {0};
+    uint8_t footer[3];
     
     // Read until we get a valid header
     // or we timeout
@@ -859,12 +864,12 @@ ssize_t CLaserDevice::ReadFromLaser(BYTE *data, ssize_t maxlen, bool ack, int ti
     // Construct entire packet
     // And check the CRC
     //
-    BYTE buffer[4 + 1024 + 1];
+    uint8_t buffer[4 + 1024 + 1];
     ASSERT(4 + len + 1 < (ssize_t) sizeof(buffer));
     memcpy(buffer, header, 4);
     memcpy(buffer + 4, data, len);
     memcpy(buffer + 4 + len, footer, 1);
-    UINT16 crc = CreateCRC(buffer, 4 + len + 1);
+    uint16_t crc = CreateCRC(buffer, 4 + len + 1);
     if (crc != MAKEUINT16(footer[1], footer[2]))
         RETURN_ERROR(0, "CRC error, ignoring packet");
     
@@ -875,10 +880,10 @@ ssize_t CLaserDevice::ReadFromLaser(BYTE *data, ssize_t maxlen, bool ack, int ti
 ////////////////////////////////////////////////////////////////////////////////
 // Create a CRC for the given packet
 //
-unsigned short CLaserDevice::CreateCRC(BYTE* data, ssize_t len)
+unsigned short CLaserDevice::CreateCRC(uint8_t* data, ssize_t len)
 {
-    UINT16 uCrc16;
-    BYTE abData[2];
+    uint16_t uCrc16;
+    uint8_t abData[2];
   
     uCrc16 = 0;
     abData[0] = 0;

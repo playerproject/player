@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -31,16 +33,8 @@
 size_t CSonarDevice::GetData( unsigned char *dest, size_t maxsize)
 {
 
-  /*
-   * in this order:
-   *   ints: time X Y
-   *   shorts: heading, forwardvel, turnrate, compass
-   *   chars: stalls
-   *
-   *   shorts: 16 sonars
-   */
-
-  memcpy( dest, &data[SONAR_DATA_OFFSET], SONAR_DATA_BUFFER_SIZE );
+  //memcpy( dest, &data[SONAR_DATA_OFFSET], SONAR_DATA_BUFFER_SIZE );
+  *((player_sonar_data_t*)dest) = data->sonar;
   
   return(SONAR_DATA_BUFFER_SIZE);
 }

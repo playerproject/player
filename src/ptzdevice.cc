@@ -18,6 +18,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -42,16 +43,22 @@ void *RunPtzThread(void *ptzdevice);
 
 CPtzDevice::CPtzDevice(char *port) 
 {
-  data = new unsigned char[PTZ_DATA_BUFFER_SIZE];
-  command = new unsigned char[PTZ_COMMAND_BUFFER_SIZE];
+  data = new player_ptz_data_t;
+  command = new player_ptz_cmd_t;
 
 
   ptz_fd = -1;
   command_pending1 = false;
   command_pending2 = false;
 
-  bzero(data, PTZ_DATA_BUFFER_SIZE);
-  bzero(command, PTZ_COMMAND_BUFFER_SIZE);
+  data->pan = 0;
+  data->tilt = 0;
+  data->zoom = 0;
+
+  command->pan = 0;
+  command->tilt = 0;
+  command->zoom = 0;
+
   strcpy(ptz_serial_port, port);
   // just in case...
   ptz_serial_port[sizeof(ptz_serial_port)-1] = '\0';
@@ -64,6 +71,9 @@ CPtzDevice::Setup()
   pthread_attr_t attr;
   short pan,tilt;
   int flags;
+
+  printf("PTZ connection initializing...");
+  fflush(stdout);
 
   // open it.  non-blocking at first, in case there's no ptz unit.
   if((ptz_fd = open(ptz_serial_port, O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
@@ -127,7 +137,7 @@ CPtzDevice::Setup()
     return(1);
   }
   ptz_fd_blocking = true;
-  puts("PTZ camera ready");
+  puts("Done.");
 
   // start the thread to talk with the camera
   pthread_attr_init(&attr);
@@ -145,15 +155,16 @@ CPtzDevice::~CPtzDevice()
 int 
 CPtzDevice::Shutdown()
 {
-  unsigned char cmd[PTZ_COMMAND_BUFFER_SIZE];
+  player_ptz_cmd_t cmd;
 
   if(ptz_fd == -1)
     return(0);
 
-  *(short*)&cmd[0] = (short)htons((unsigned short)0);
-  *(short*)&cmd[0+sizeof(short)] = (short)htons((unsigned short)0);
-  *(short*)&cmd[0+2*sizeof(short)] = (short)htons((unsigned short)0);
-  PutCommand(cmd,PTZ_COMMAND_BUFFER_SIZE);
+  // put the camera back to center
+  cmd.pan = 0;
+  cmd.tilt = 0;
+  cmd.zoom = 0;
+  PutCommand((unsigned char*)&cmd,sizeof(player_ptz_cmd_t));
   usleep(3*PTZ_SLEEP_TIME_USEC);
 
   if(close(ptz_fd))
@@ -550,10 +561,10 @@ CPtzDevice::PrintPacket(char* str, unsigned char* cmd, int len)
 
 void *RunPtzThread(void *ptzdevice) 
 {
-  unsigned char data[PTZ_DATA_BUFFER_SIZE];
-  unsigned char command[PTZ_COMMAND_BUFFER_SIZE];
+  player_ptz_data_t data;
+  player_ptz_cmd_t command;
   short pan,tilt,zoom;
-  int cnt;
+  //int cnt;
   short pandemand, tiltdemand, zoomdemand;
   bool newpantilt=true, newzoom=true;
 
@@ -567,25 +578,22 @@ void *RunPtzThread(void *ptzdevice)
   while(1) 
   {
     pthread_testcancel();
-    zd->GetLock()->GetCommand(zd, command, sizeof(command));
+    zd->GetLock()->GetCommand(zd, (unsigned char*)&command, sizeof(player_ptz_cmd_t));
     pthread_testcancel();
 
-    cnt = 0;
-    if(pandemand != (short)ntohs((unsigned short)(*(short*)(&command[cnt]))))
+    if(pandemand != (short)ntohs((unsigned short)(command.pan)))
     {
-      pandemand = (short)ntohs((unsigned short)(*(short*)(&command[cnt])));
+      pandemand = (short)ntohs((unsigned short)(command.pan));
       newpantilt = true;
     }
-    cnt += sizeof(short);
-    if(tiltdemand != (short)ntohs((unsigned short)(*(short*)(&command[cnt]))))
+    if(tiltdemand != (short)ntohs((unsigned short)(command.tilt)))
     {
-      tiltdemand = (short)ntohs((unsigned short)(*(short*)(&command[cnt])));
+      tiltdemand = (short)ntohs((unsigned short)(command.tilt));
       newpantilt = true;
     }
-    cnt += sizeof(short);
-    if(zoomdemand != (short)ntohs((unsigned short)(*(short*)(&command[cnt]))))
+    if(zoomdemand != (short)ntohs((unsigned short)(command.zoom)))
     {
-      zoomdemand = (short)ntohs((unsigned short)(*(short*)(&command[cnt])));
+      zoomdemand = (short)ntohs((unsigned short)(command.zoom));
       newzoom = true;
     }
 
@@ -621,18 +629,15 @@ void *RunPtzThread(void *ptzdevice)
       pthread_exit(NULL);
     }
 
-    cnt = 0;
     // camera's natural pan coordinates increase clockwise;
     // we want them the other way, so we negate pan here.
-    *(short*)(&data[cnt]) = htons((unsigned short)-pan);
-    cnt += sizeof(short);
-    *(short*)(&data[cnt]) = htons((unsigned short)tilt);
-    cnt += sizeof(short);
-    *(short*)(&data[cnt]) = htons((unsigned short)zoom);
+    data.pan = htons((unsigned short)-pan);
+    data.tilt = htons((unsigned short)tilt);
+    data.zoom = htons((unsigned short)zoom);
 
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    zd->GetLock()->PutData( zd, data, sizeof(data) );
+    zd->GetLock()->PutData( zd, (unsigned char*)&data, sizeof(player_ptz_data_t));
 
     newpantilt = false;
     newzoom = false;
@@ -643,26 +648,26 @@ void *RunPtzThread(void *ptzdevice)
 
 size_t CPtzDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
-  memcpy( dest, data, PTZ_DATA_BUFFER_SIZE );
-  return(PTZ_DATA_BUFFER_SIZE);
+  *((player_ptz_data_t*)dest) = *data;
+  return(sizeof(player_ptz_data_t));
 }
 
 void CPtzDevice::PutData( unsigned char *src, size_t maxsize )
 {
-  memcpy( data, src, PTZ_DATA_BUFFER_SIZE );
+  *data = *((player_ptz_data_t*)src);
 }
 
 void CPtzDevice::GetCommand( unsigned char *dest, size_t maxsize )
 {
-  memcpy( dest, command, PTZ_COMMAND_BUFFER_SIZE);
+  *((player_ptz_cmd_t*)dest) = *command;
 }
 
 void CPtzDevice::PutCommand( unsigned char *src, size_t size)
 {
-  if(size != PTZ_COMMAND_BUFFER_SIZE)
+  if(size != sizeof(player_ptz_cmd_t))
     puts("CPtzDevice::PutCommand(): command wrong size. ignoring.");
   else
-    memcpy(command,src,PTZ_COMMAND_BUFFER_SIZE);
+    *command = *((player_ptz_cmd_t*)src);
 }
 size_t CPtzDevice::GetConfig( unsigned char *dest, size_t maxsize)
 {

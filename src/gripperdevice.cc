@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -30,20 +32,13 @@
 
 CGripperDevice::~CGripperDevice()
 {
-  command[GRIPPER_COMMAND_OFFSET] = GRIPstore;
-  command[GRIPPER_COMMAND_OFFSET+1] = 0x00;
+  command->gripper.cmd = GRIPstore;
+  command->gripper.arg = 0x00;
 }
-size_t CGripperDevice::GetData( unsigned char *dest, size_t maxsize ) {
-  /*
-   * in this order:
-   *   ints: time X Y
-   *   shorts: heading, forwardvel, turnrate, compass
-   *   chars: stalls
-   *   shorts: 16 sonars
-   *
-   *   chars: gripstate,gripbeams
-   */
-  memcpy( dest, &data[GRIPPER_DATA_OFFSET], GRIPPER_DATA_BUFFER_SIZE );
+
+size_t CGripperDevice::GetData( unsigned char *dest, size_t maxsize ) 
+{
+  *((player_gripper_data_t*)dest) = data->gripper;
   return(GRIPPER_DATA_BUFFER_SIZE);
 }
 
@@ -52,6 +47,6 @@ void CGripperDevice::PutCommand(unsigned char *src, size_t size)
   if(size != GRIPPER_COMMAND_BUFFER_SIZE)
     puts("CGripperDevice::PutCommand(): command wrong size. ignoring.");
   else
-    memcpy( command+GRIPPER_COMMAND_OFFSET, src, GRIPPER_COMMAND_BUFFER_SIZE);
+    command->gripper = *((player_gripper_cmd_t*)src);
 }
 

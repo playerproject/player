@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -32,29 +34,29 @@
 
 CPositionDevice::~CPositionDevice()
 {
-  *(short*)&command[POSITION_COMMAND_OFFSET] = 
-          (short)htons((unsigned short)0);
-  *(short*)&command[POSITION_COMMAND_OFFSET+sizeof(short)] = 
-          (short)htons((unsigned short)0);
+  //*(short*)&command[POSITION_COMMAND_OFFSET] = 
+          //(short)htons((unsigned short)0);
+  //*(short*)&command[POSITION_COMMAND_OFFSET+sizeof(short)] = 
+          //(short)htons((unsigned short)0);
+
+  command->position.speed = 0;
+  command->position.turnrate = 0;
 }
 
 size_t CPositionDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
-  /*
-   * in this order:
-   *   ints: time X Y
-   *   shorts: heading, forwardvel, turnrate, compass
-   *   chars: stalls
-   */
-  memcpy( dest, &data[POSITION_DATA_OFFSET], POSITION_DATA_BUFFER_SIZE);
+  //memcpy( dest, &data[POSITION_DATA_OFFSET], POSITION_DATA_BUFFER_SIZE);
+  *((player_position_data_t*)dest) = data->position;
   return(POSITION_DATA_BUFFER_SIZE);
 }
-
 
 void CPositionDevice::PutCommand( unsigned char *src, size_t size ) 
 {
   if(size != POSITION_COMMAND_BUFFER_SIZE)
     puts("CPositionDevice::PutCommand(): command wrong size. ignoring.");
   else
-    memcpy( command+POSITION_COMMAND_OFFSET, src, POSITION_COMMAND_BUFFER_SIZE);
+    command->position = *((player_position_cmd_t*)src);
+    
+  //memcpy( command+POSITION_COMMAND_OFFSET, src, POSITION_COMMAND_BUFFER_SIZE);
 }
+
