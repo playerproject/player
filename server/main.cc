@@ -103,6 +103,9 @@ bool player_gerkey = false;
 
 size_t ioSize = 0; // size of the IO buffer
 
+// pid of the main server thread.  used in CDevice::DataAvailable() to
+// send a SIGUSR1 to this thread when new data is available
+//pid_t g_server_pid;
 
 // this table holds all the currently *instantiated* devices
 CDeviceTable* deviceTable = new CDeviceTable();
@@ -208,6 +211,11 @@ Interrupt( int dummy )
     quit = 1;
 }
 
+void
+DoNothing(int sig)
+{
+}
+
 /* setup some signal handlers */
 void 
 SetupSignalHandlers()
@@ -245,6 +253,12 @@ SetupSignalHandlers()
   if(signal(SIGTERM, Interrupt) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGTERM");
+    exit(1);
+  }
+
+  if(signal(SIGUSR1, DoNothing) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGUSR1");
     exit(1);
   }
 }
@@ -893,6 +907,8 @@ int main( int argc, char *argv[] )
   
   // Trap ^C
   SetupSignalHandlers();
+
+  //g_server_pid = getpid();
 
   printf("** Player v%s ** ", playerversion);
   fflush(stdout);

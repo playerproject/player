@@ -6,6 +6,9 @@
 #include <playerclient.h>  // for player client stuff
 #include <string.h> /* for strcpy() */
 #include <assert.h>
+#include <assert.h>
+
+#include <sys/time.h>
 
 #define USAGE \
   "USAGE: playerprint [-h <host>] [-p <port>] <device>\n" \
@@ -72,6 +75,8 @@ parse_args(int argc, char** argv)
 
 int main(int argc, char **argv)
 {
+  struct timeval last;
+
   parse_args(argc,argv);
 
   ClientProxy* cp;
@@ -108,14 +113,19 @@ int main(int argc, char **argv)
     exit(1);
   }
 
+  pclient.SetFrequency(1000);
+
   /* go into read-think-act loop */
   for(;;)
   {
     /* this blocks until new data comes; 10Hz by default */
     if(pclient.Read())
       exit(1);
+    printf("%f\n", (pclient.timestamp.tv_sec + pclient.timestamp.tv_usec/1e6) - 
+           (last.tv_sec + last.tv_usec/1e6));
+    last=pclient.timestamp;
 
-    cp->Print();
+    //cp->Print();
   }
 }
 
