@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @STAGE1P4_CFLAGS@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace @STAGE1P4_CFLAGS@
 
 noinst_LIBRARIES = @STAGE1P4_LIB@
 
