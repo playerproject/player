@@ -326,7 +326,7 @@ int SickLMS200::Setup()
     }
   }
 
-  if (this->port_rate != 38400) {
+  if (this->port_rate > 38400) {
     printf("LASER: trying hi speed\n");
     sleep(1);
     // now that we have a connection, let's set the port rate

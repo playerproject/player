@@ -71,7 +71,7 @@ extern int global_playerport; // used to get at devices
 
 /* these are necessary to make the static fields visible to the linker */
 extern pthread_t       P2OS::thread;
-extern struct timeval  P2OS::timeBegan_tv;
+//extern struct timeval  P2OS::timeBegan_tv;
 extern bool            P2OS::direct_wheel_vel_control;
 extern int             P2OS::psos_fd; 
 extern char            P2OS::psos_serial_port[];
@@ -81,6 +81,7 @@ extern int             P2OS::motor_max_speed;
 extern int             P2OS::motor_max_turnspeed;
 extern bool            P2OS::use_vel_band;
 extern int             P2OS::cmucam;
+extern int             P2OS::gyro;
 extern bool            P2OS::initdone;
 extern char            P2OS::num_loops_since_rvel;
 extern SIP*            P2OS::sippacket;
@@ -110,6 +111,7 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
     radio_modemp = 0;
     joystickp = 0;
     cmucam = 0;		// If p2os_cmucam is used, this will be overridden
+    gyro = 0;		// If p2os_gyro is used, this will be overridden
   
     data = new player_p2os_data_t;
     command = new player_p2os_cmd_t;
@@ -506,6 +508,19 @@ int P2OS::Setup()
   if (cmucam)
     CMUcamReset();
 
+  if(gyro)
+  {
+    // request that gyro data be sent each cycle
+    P2OSPacket gyro_packet;
+    unsigned char gyro_command[4];
+    gyro_command[0] = GYRO;
+    gyro_command[1] = ARGINT;
+    gyro_command[2] = 1;
+    gyro_command[3] = 0;
+    gyro_packet.Build(gyro_command, 4);
+    SendReceive(&gyro_packet);
+  }
+
   /* now spawn reading thread */
   StartThread();
   return(0);
@@ -726,7 +741,7 @@ P2OS::Main()
   if(sippacket)
     sippacket->x_offset = sippacket->y_offset = sippacket->angle_offset = 0;
 
-  GlobalTime->GetTime(&timeBegan_tv);
+  //GlobalTime->GetTime(&timeBegan_tv);
 
   // request the current configuration
   /*
@@ -1447,7 +1462,7 @@ P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
       /* It is a server packet, so process it */
       sippacket->Parse( &packet.packet[3] );
       //sippacket->Print();
-      sippacket->Fill(&data, timeBegan_tv );
+      sippacket->Fill(&data);
 
       PutData((unsigned char*)&data, sizeof(data),0,0);
     }
@@ -1466,7 +1481,7 @@ P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
           /* Be sure to pass data size too (packet[2])! */
           sippacket->ParseSERAUX( &packet.packet[2] );
           //sippacket->Print();
-          sippacket->Fill(&data, timeBegan_tv );
+          sippacket->Fill(&data);
  
           PutData((unsigned char*)&data, sizeof(data),0,0);
 //          packet.Print();
@@ -1517,6 +1532,22 @@ P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
 
       /* we don't understand these yet, so ignore */
     }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
+            packet.packet[3] == GYROPAC)
+    {
+      /* It's a set of gyro measurements */
+      sippacket->ParseGyro(&packet.packet[2]);
+      sippacket->Fill(&data);
+      PutData((unsigned char*)&data, sizeof(data),0,0);
+
+      /* Now, the manual says that we get one gyro packet each cycle,
+       * right before the standard SIP.  So, we'll call SendReceive() 
+       * again (with no packet to send) to get the standard SIP.  There's 
+       * a definite danger of infinite recursion here if the manual
+       * is wrong.
+       */
+      SendReceive(NULL);
+    }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
             (packet.packet[3] == 0x20))
     {
@@ -1524,7 +1555,7 @@ P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
     }
     else 
     {
-      puts("got unknown packet:");
+      PLAYER_WARN("got unknown packet:");
       packet.PrintHex();
     }
 
