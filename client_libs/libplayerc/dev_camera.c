@@ -105,6 +105,7 @@ void playerc_camera_putdata(playerc_camera_t *device, player_msghdr_t *header,
   device->height = ntohs(data->height);
   device->bpp = data->bpp;
   device->format = data->format;
+  device->fdiv = ntohs(data->fdiv);
   device->compression = data->compression;
   device->image_size = ntohl(data->image_size);
 

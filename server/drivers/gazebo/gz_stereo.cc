@@ -45,13 +45,14 @@ This driver provides four named camera interfaces:
 - "right" @ref player_interface_camera
   - Right camera image (RGB)
 
-- "leftdepth" @ref player_interface_camera
-  - Left depth image; this is a 16-bit monochrome image (MONO16), with
-    each pixel recording the depth in mm.
+- "left_disparity" @ref player_interface_camera
+  - Left disparity image; this is a 16-bit monochrome image (MONO16), with
+    each pixel recording the horizontal disparity in the rectified image.
 
-- "rightdepth" @ref player_interface_camera
-  - Right depth image; this is a 16-bit monochrome image (MONO16), with
-    each pixel recording the depth in mm.
+- "right_disparity" @ref player_interface_camera
+  - Right disparity image; this is a 16-bit monochrome image (MONO16), with
+    each pixel recording the horizontal disparity in the rectified image.
+
 
 @par Supported configuration requests
 
@@ -71,7 +72,7 @@ None
 driver
 (
   name gz_stereo
-  provides ["left::camera:0" "right::camera:1" "leftdepth::camera:2"]
+  provides ["left::camera:0" "right::camera:1" "left_disparity::camera:2"]
   gz_id "stereo1"
 )
 @endverbatim
@@ -119,8 +120,7 @@ class GzStereo : public Driver
   public: virtual void Update();
 
   // Save an image frame
-  private: void SaveFrame(const char *filename, player_camera_data_t *data,
-                          float near, float far);
+  private: void SaveFrame(const char *filename, player_camera_data_t *data);
 
   // Gazebo device id
   private: char *gz_id;
@@ -138,12 +138,12 @@ class GzStereo : public Driver
   // Left/right camera interfaces
   private: player_device_id_t leftId, rightId;
 
-  // Left depth camera interface
-  private: player_device_id_t leftDepthId, rightDepthId;
+  // Left disparity camera interface
+  private: player_device_id_t leftDisparityId, rightDisparityId;
 
   // Most recent data
   private: player_camera_data_t leftImage, rightImage;
-  private: player_camera_data_t leftDepth, rightDepth;
+  private: player_camera_data_t leftDisparity, rightDisparity;
 
   // Timestamp on last data update
   private: double datatime;
@@ -202,12 +202,12 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
     }
   }
 
-  // Get depth camera interface
-  memset(&this->leftDepthId, 0, sizeof(this->leftDepthId));
-  if (cf->ReadDeviceId(&this->leftDepthId, section, "provides",
-                       PLAYER_CAMERA_CODE, -1, "leftdepth") == 0)
+  // Get disparity camera interface
+  memset(&this->leftDisparityId, 0, sizeof(this->leftDisparityId));
+  if (cf->ReadDeviceId(&this->leftDisparityId, section, "provides",
+                       PLAYER_CAMERA_CODE, -1, "leftdisparity") == 0)
   {
-    if (this->AddInterface(this->leftDepthId, PLAYER_READ_MODE,
+    if (this->AddInterface(this->leftDisparityId, PLAYER_READ_MODE,
                            sizeof(player_camera_data_t), 0, 1, 1) != 0)
     {
       this->SetError(-1);
@@ -215,12 +215,12 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
     }
   }
 
-  // Get depth camera interface
-  memset(&this->rightDepthId, 0, sizeof(this->rightDepthId));
-  if (cf->ReadDeviceId(&this->rightDepthId, section, "provides",
-                       PLAYER_CAMERA_CODE, -1, "rightdepth") == 0)
+  // Get disparity camera interface
+  memset(&this->rightDisparityId, 0, sizeof(this->rightDisparityId));
+  if (cf->ReadDeviceId(&this->rightDisparityId, section, "provides",
+                       PLAYER_CAMERA_CODE, -1, "rightdisparity") == 0)
   {
-    if (this->AddInterface(this->rightDepthId, PLAYER_READ_MODE,
+    if (this->AddInterface(this->rightDisparityId, PLAYER_READ_MODE,
                            sizeof(player_camera_data_t), 0, 1, 1) != 0)
     {
       this->SetError(-1);
@@ -325,7 +325,7 @@ void GzStereo::Update()
       if (this->save)
       {
         snprintf(filename, sizeof(filename), "left_image_%04d.pnm", this->frameno);
-        this->SaveFrame(filename, dst, 0, 0);
+        this->SaveFrame(filename, dst);
       }
     }
 
@@ -348,69 +348,71 @@ void GzStereo::Update()
       if (this->save)
       {
         snprintf(filename, sizeof(filename), "right_image_%04d.pnm", this->frameno);
-        this->SaveFrame(filename, dst, 0, 0);
+        this->SaveFrame(filename, dst);
       }
     }
 
-    if (this->leftDepthId.code)
+    if (this->leftDisparityId.code)
     {
-      // Left depth
-      dst = &this->leftDepth;
+      // Left disparity
+      dst = &this->leftDisparity;
       dst->width = htons(src->width);
       dst->height = htons(src->height);
       dst->bpp = 16;
       dst->format = PLAYER_CAMERA_FORMAT_MONO16;
+      dst->fdiv = htons(16);
       dst->compression = PLAYER_CAMERA_COMPRESS_RAW;
-      dst->image_size = htonl(src->left_depth_size * 2);
-      assert((size_t) src->left_depth_size < sizeof(dst->image));
+      dst->image_size = htonl(src->left_disparity_size * 2);
+      assert((size_t) src->left_disparity_size < sizeof(dst->image));
 
       for (j = 0; j < (int) src->height; j++)
       {
-        src_pix = src->left_depth + j * src->width;
+        src_pix = src->left_disparity + j * src->width;
         dst_pix = ((uint16_t*) dst->image) + j * src->width;        
         for (i = 0; i < (int) src->width; i++)
-          dst_pix[i] = htons((uint16_t) (src_pix[i] * 1000));
+          dst_pix[i] = htons((uint16_t) (int16_t) (src_pix[i] * 16));
       }
     
-      size = sizeof(*dst) - sizeof(dst->image) + src->left_depth_size;
-      this->PutData(this->leftDepthId, dst, size, &ts);
+      size = sizeof(*dst) - sizeof(dst->image) + src->left_disparity_size;
+      this->PutData(this->leftDisparityId, dst, size, &ts);
 
       // Save frames
       if (this->save)
       {
-        snprintf(filename, sizeof(filename), "left_depth_%04d.pnm", this->frameno);
-        this->SaveFrame(filename, dst, src->min_depth, src->max_depth);
+        snprintf(filename, sizeof(filename), "left_disparity_%04d.pnm", this->frameno);
+        this->SaveFrame(filename, dst);
       }
     }
 
-    if (this->rightDepthId.code)
+    if (this->rightDisparityId.code)
     {
-      // Right depth
-      dst = &this->rightDepth;
+      // Right disparity
+      dst = &this->rightDisparity;
       dst->width = htons(src->width);
       dst->height = htons(src->height);
       dst->bpp = 16;
       dst->format = PLAYER_CAMERA_FORMAT_MONO16;
+      dst->fdiv = htons(16);
       dst->compression = PLAYER_CAMERA_COMPRESS_RAW;
-      dst->image_size = htonl(src->right_depth_size * 2);
-      assert((size_t) src->right_depth_size < sizeof(dst->image));
+      dst->image_size = htonl(src->right_disparity_size * 2);
+      assert((size_t) src->right_disparity_size < sizeof(dst->image));
 
       for (j = 0; j < (int) src->height; j++)
       {
-        src_pix = src->right_depth + j * src->width;
+        src_pix = src->right_disparity + j * src->width;
         dst_pix = ((uint16_t*) dst->image) + j * src->width;        
         for (i = 0; i < (int) src->width; i++)
-          dst_pix[i] = htons((uint16_t) (src_pix[i] * 1000));
+          dst_pix[i] = htons((uint16_t) (int16_t) (src_pix[i] * 16));
       }
     
-      size = sizeof(*dst) - sizeof(dst->image) + src->right_depth_size;
-      this->PutData(this->rightDepthId, dst, size, &ts);
+      size = sizeof(*dst) - sizeof(dst->image) + src->right_disparity_size;
+      this->PutData(this->rightDisparityId, dst, size, &ts);
 
       // Save frames
       if (this->save)
       {
-        snprintf(filename, sizeof(filename), "right_depth_%04d.pnm", this->frameno);
-        this->SaveFrame(filename, dst, src->min_depth, src->max_depth);
+        snprintf(filename, sizeof(filename), "right_disparity_%04d.pnm", this->frameno);
+        this->SaveFrame(filename, dst);
       }
     }
 
@@ -426,13 +428,9 @@ void GzStereo::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Save an image frame
-void GzStereo::SaveFrame(const char *filename, player_camera_data_t *data,
-                         float near, float far)
+void GzStereo::SaveFrame(const char *filename, player_camera_data_t *data)
 {
-  int i, j, width, height;
-  double a, b;
-  uint16_t *src;
-  uint8_t *dst;
+  int i, width, height;
   FILE *file;
 
   file = fopen(filename, "w+");
@@ -444,29 +442,10 @@ void GzStereo::SaveFrame(const char *filename, player_camera_data_t *data,
 
   if (data->format == PLAYER_CAMERA_FORMAT_MONO16)
   {
-    // Compute scaling factors so we use the entire grayscale range with
-    // color = 1 / depth
-    a = (near * far) / (far - near);
-    b = -near / (far - near);
-
-    dst = new uint8_t [width];
-    
     // Write pgm (in cm)
-    fprintf(file, "P5\n%d %d\n%d\n", width, height, 255);
+    fprintf(file, "P5\n%d %d\n%d\n", width, height, 16);
     for (i = 0; i < height; i++)
-    {
-      src = ((uint16_t*) data->image) + i * width;
-      for (j = 0; j < width; j++)
-      {
-        if (src[j] == 0)
-          dst[j] = 0;
-        else
-          dst[j] = (uint8_t) (255 * (a / (ntohs(src[j]) / 1000.0) + b));
-      }
-      fwrite(dst, 1, width, file);
-    }
-      
-    delete [] dst;
+      fwrite(data->image + i * width, 16, width, file);
   }
   else if (data->format == PLAYER_CAMERA_FORMAT_RGB888)
   {

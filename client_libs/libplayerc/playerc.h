@@ -540,7 +540,12 @@ typedef struct
   int bpp;
 
   /** Image format (e.g., RGB888). */
-  uint8_t format;
+  int format;
+
+  /** Some images (such as disparity maps) use scaled pixel values;
+      for these images, fdiv specifies the scale divisor (i.e., divide
+      the integer pixel value by fdiv to recover the real pixel value). */
+  int fdiv;
 
   /** Image compression method. */
   int compression;
