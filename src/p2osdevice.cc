@@ -84,12 +84,21 @@ extern char           CP2OSDevice::num_loops_since_rvel;
 extern CSIP*           CP2OSDevice::sippacket;
 extern bool           CP2OSDevice::arena_initialized_data_buffer;
 extern bool           CP2OSDevice::arena_initialized_command_buffer;
+extern int           CP2OSDevice::param_idx;
 
 
 void *RunPsosThread( void *p2osdevice );
 
 CP2OSDevice::CP2OSDevice(int argc, char** argv)
 {
+  static bool robotparamsdone = false;
+
+  // if not already done, build the table of robot parameters.
+  if(!robotparamsdone)
+  {
+    initialize_robot_params();
+    robotparamsdone = true;
+  }
   if(!data)
     data = new player_p2os_data_t;
   if(!command)
@@ -151,6 +160,7 @@ int CP2OSDevice::Setup()
 {
   unsigned char sonarcommand[4];
   CPacket sonarpacket; 
+  int i;
 
   struct termios term;
   unsigned char command;
@@ -217,6 +227,10 @@ int CP2OSDevice::Setup()
     return(1);
   }
 
+  // apparently this initializes the radio modem, in the case that a modem
+  // is being used in place of a serial cable
+  //write(psos_fd, "WMS2\r", 5);
+  
   while(psos_state != READY)
   {
     //printf("psos_state: %d\n", psos_state);
@@ -311,13 +325,31 @@ int CP2OSDevice::Setup()
   usleep(P2OS_CYCLETIME_USEC);
 
   printf("Done.  Connected to %s, a %s %s\n", name, type, subtype);
+
+  // now, based on robot type, find the right set of parameters
+  for(i=0;i<PLAYER_NUM_ROBOT_TYPES;i++)
+  {
+    if(!strcmp(PlayerRobotParams[i].General.Class,type) && 
+       !strcmp(PlayerRobotParams[i].General.Subclass,subtype))
+    {
+      param_idx = i;
+      break;
+    }
+  }
+  if(i == PLAYER_NUM_ROBOT_TYPES)
+  {
+    fputs("P2OS: Warning: couldn't find parameters for this robot; "
+            "using defaults\n",stderr);
+    param_idx = 0;
+  }
+  
   direct_wheel_vel_control = true;
   num_loops_since_rvel = 2;
   //pthread_mutex_unlock(&serial_mutex);
 
   // first, receive a packet so we know we're connected.
   if(!sippacket)
-    sippacket = new CSIP();
+    sippacket = new CSIP(param_idx);
   SendReceive((CPacket*)NULL);//,false);
 
   // turn off the sonars at first
@@ -642,7 +674,8 @@ void *RunPsosThread( void *p2osdevice )
       // do direct wheel velocity control here
       //printf("speedDemand: %d\t turnRateDemand: %d\n",
                       //speedDemand, turnRateDemand);
-      rotational_term = ((M_PI/180.0)*turnRateDemand*RobotAxleLength)/2.0;
+      rotational_term = (M_PI/180.0) * turnRateDemand /
+              PlayerRobotParams[pd->param_idx].ConvFactors.DiffConvFactor;
       leftvel = (speedDemand - rotational_term);
       rightvel = (speedDemand + rotational_term);
       if(fabs(leftvel) > MOTOR_MAX_SPEED)

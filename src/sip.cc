@@ -50,7 +50,9 @@ void CSIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   data->position.theta = htons((unsigned short)angle);
   data->position.speed = htons((unsigned short) (((lvel) + (rvel) ) / 2));
   data->position.turnrate = htons((unsigned short)
-                  (180*((double)(rvel - lvel)/(double)RobotAxleLength)/ M_PI));
+     (180*((double)(rvel - lvel) /
+           (2.0/PlayerRobotParams[param_idx].ConvFactors.DiffConvFactor)) / 
+           M_PI));
   data->position.compass = htons(compass);
   data->position.stalls = (unsigned char)(lwstall || rwstall);
   
@@ -142,7 +144,8 @@ void CSIP::Parse( unsigned char *buffer )
 
   newxpos = ( (*(unsigned short *)&buffer[cnt]) & 0xEFFF) % 4096; /* 15 ls-bits */
   if (xpos!=MAXINT) {
-    change = (int) rint(PositionChange( rawxpos, newxpos ) * DistConvFactor);
+    change = (int) rint(PositionChange( rawxpos, newxpos ) * 
+                PlayerRobotParams[param_idx].ConvFactors.DistConvFactor);
     if (abs(change)>100)
       puts("Change is not valid");
     else
@@ -155,7 +158,8 @@ void CSIP::Parse( unsigned char *buffer )
   
   newypos = ( (*(unsigned short *)&buffer[cnt]) & 0xEFFF) % 4096; /* 15 ls-bits */
   if (ypos!=MAXINT) {
-    change = (int) rint(PositionChange( rawypos, newypos ) * DistConvFactor);
+    change = (int) rint(PositionChange( rawypos, newypos ) * 
+                PlayerRobotParams[param_idx].ConvFactors.DistConvFactor);
     if (abs(change)>100)
       puts("Change is not valid");
     else
@@ -166,11 +170,14 @@ void CSIP::Parse( unsigned char *buffer )
   rawypos = newypos;
   cnt += sizeof(short);
 
-  angle = (short)rint(*(short *)&buffer[cnt] * AngleConvFactor * 180.0/M_PI);
+  angle = (short)rint(*(short *)&buffer[cnt] *
+        PlayerRobotParams[param_idx].ConvFactors.AngleConvFactor * 180.0/M_PI);
   cnt += sizeof(short);
-  lvel = (short)rint(*(short *)&buffer[cnt] * VelConvFactor);
+  lvel = (short)rint(*(short *)&buffer[cnt] * 
+                     PlayerRobotParams[param_idx].ConvFactors.VelConvFactor);
   cnt += sizeof(short);
-  rvel = (short)rint(*(short *)&buffer[cnt] * VelConvFactor);
+  rvel = (short)rint(*(short *)&buffer[cnt] * 
+                     PlayerRobotParams[param_idx].ConvFactors.VelConvFactor);
   cnt += sizeof(short);
   battery = buffer[cnt];
   cnt += sizeof(unsigned char);
@@ -183,7 +190,8 @@ void CSIP::Parse( unsigned char *buffer )
   frontbumpers = buffer[cnt] >> 1;
   cnt += sizeof(unsigned char);
 
-  control = (short)rint(*(short *) &buffer[cnt] * AngleConvFactor);
+  control = (short)rint(*(short *) &buffer[cnt] * 
+          PlayerRobotParams[param_idx].ConvFactors.AngleConvFactor);
   cnt += sizeof(short);
   ptu = *(unsigned short *) &buffer[cnt];
   cnt += sizeof(short);
@@ -196,7 +204,8 @@ void CSIP::Parse( unsigned char *buffer )
   
   for(unsigned char i = 0;i < sonarreadings;i++) {
     sonars[buffer[cnt]]= 
-            (short)rint(*(unsigned short*)&buffer[cnt+1]*RangeConvFactor);
+            (short)rint(*(unsigned short*)&buffer[cnt+1] *
+                   PlayerRobotParams[param_idx].ConvFactors.RangeConvFactor);
     //printf("%hu %hu %hu\n", buffer[cnt], buffer[cnt+1], buffer[cnt+2]);
     //printf("index %d value %hu\n", buffer[cnt], sonars[buffer[cnt]]);
     cnt += 3*sizeof(unsigned char);

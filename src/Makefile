@@ -41,19 +41,19 @@ ifdef INCLUDE_LASER
   OBS += laserdevice.o 
 endif
 ifdef INCLUDE_SONAR
-  OBS += sonardevice.o p2osdevice.o packet.o sip.o 
+  OBS += sonardevice.o p2osdevice.o robot_params.o packet.o sip.o 
 endif
 ifdef INCLUDE_VISION
   OBS += visiondevice.o 
 endif
 ifdef INCLUDE_POSITION
-  OBS += positiondevice.o p2osdevice.o packet.o sip.o 
+  OBS += positiondevice.o robot_params.o p2osdevice.o packet.o sip.o 
 endif
 ifdef INCLUDE_GRIPPER
-  OBS += gripperdevice.o p2osdevice.o packet.o sip.o 
+  OBS += gripperdevice.o robot_params.o p2osdevice.o packet.o sip.o 
 endif
 ifdef INCLUDE_MISC
-  OBS += miscdevice.o p2osdevice.o packet.o sip.o 
+  OBS += miscdevice.o robot_params.o p2osdevice.o packet.o sip.o 
 endif
 ifdef INCLUDE_PTZ
   OBS += ptzdevice.o 

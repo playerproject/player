@@ -34,11 +34,13 @@
 
 #include <pthread.h>
 #include <sys/time.h>
+
 #include <device.h>
 #include <lock.h>
 #include <packet.h>
 #include <playercommon.h>
 #include <messages.h>
+#include <robot_params.h>
    
 #define P2OS_MOTORS_REQUEST_ON 0
 #define P2OS_MOTORS_ON 1
@@ -47,14 +49,14 @@
 
 /* data for the p2-dx robot from p2 operation manual */
 #define P2OS_CYCLETIME_USEC 100000
-#define AngleConvFactor 0.001534
-#define DistConvFactor 0.826
-#define VelConvFactor 1.0
-#define RobotRadius 250.0
-#define RobotDiagonal 120.0
-#define Holonomic 1
-#define RangeConvFactor 0.268
-#define RobotAxleLength 320.0
+//#define AngleConvFactor 0.001534
+//#define DistConvFactor 0.826
+//#define VelConvFactor 1.0
+//#define RobotRadius 250.0
+//#define RobotDiagonal 120.0
+//#define Holonomic 1
+//#define RangeConvFactor 0.268
+//#define RobotAxleLength 320.0
 
 /* p2os constants */
 #define SYNC0 0
@@ -90,50 +92,6 @@
 #define GRIPpress  16
 #define LIFTcarry  17
 
-/*
- * P2OS device stuff
- *
- *   this device's 'data' buffer is shared among many devices.  here
- *   is the layout (in this order):
- *     'position' data:
- *       3 ints: time X Y
- *       4 shorts: heading, forwardvel, turnrate, compass
- *       1 chars: stalls
- *     'sonar' data:
- *       16 shorts: 16 sonars
- *     'gripper' data:
- *       2 chars: gripstate,gripbeams
- *     'misc' data:
- *       2 chars: frontbumper,rearbumpers
- *       1 char:  voltage
- */
-/*
-#define P2OS_DATA_BUFFER_SIZE POSITION_DATA_BUFFER_SIZE + \
-                              SONAR_DATA_BUFFER_SIZE + \
-                              GRIPPER_DATA_BUFFER_SIZE + \
-                              MISC_DATA_BUFFER_SIZE
-#define POSITION_DATA_OFFSET 0
-#define SONAR_DATA_OFFSET POSITION_DATA_OFFSET + POSITION_DATA_BUFFER_SIZE
-#define GRIPPER_DATA_OFFSET SONAR_DATA_OFFSET + SONAR_DATA_BUFFER_SIZE
-#define MISC_DATA_OFFSET GRIPPER_DATA_OFFSET + GRIPPER_DATA_BUFFER_SIZE
-*/
-
-/*
- * the P2OS device 'command' buffer is shared by several devices.
- * here is the layout (in this order):
- *    'position' command:
- *       2 shorts: forwardspeed (mm/sec), turnspeed (deg/sec)
- *    'gripper' command:
- *       2 chars: gripcommand, optional gripcommand
- */
-/*
-#define P2OS_COMMAND_BUFFER_SIZE POSITION_COMMAND_BUFFER_SIZE + \
-                                 GRIPPER_COMMAND_BUFFER_SIZE
-
-#define POSITION_COMMAND_OFFSET 0
-#define GRIPPER_COMMAND_OFFSET POSITION_COMMAND_OFFSET + \
-                               POSITION_COMMAND_BUFFER_SIZE
-*/
 #define P2OS_CONFIG_BUFFER_SIZE 256
 
 typedef struct
@@ -164,6 +122,7 @@ private:
   static CSIP* sippacket;
 
  public:
+  static int param_idx;  // index in the RobotParams table for this robot
   static bool direct_wheel_vel_control;  // false -> separate trans and rot vel
   static char num_loops_since_rvel;  
   static int psos_fd;               // p2os device file descriptor
