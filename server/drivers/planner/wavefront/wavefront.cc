@@ -713,7 +713,7 @@ void Wavefront::Main()
   double last_replan_lx=0.0, last_replan_ly=0.0;
   struct timeval last_replan_time = {INT_MAX, INT_MAX};
   double replan_timediff, replan_dist;
-  static bool rotate_waypoint=false;
+  bool rotate_waypoint=false;
   bool replan;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
@@ -795,7 +795,8 @@ void Wavefront::Main()
         memcpy(this->waypoints, this->plan->waypoints,
                sizeof(plan_cell_t*) * this->waypoint_count);
 
-        this->curr_waypoint = 0;
+        // skip the first waypoint, because it's the robot's current pose
+        this->curr_waypoint = 1;
         this->new_goal = true;
       }
       last_replan_time = curr;
