@@ -32,6 +32,7 @@
 // Requires - Laser device.
 //
 ///////////////////////////////////////////////////////////////////////////
+#include "player.h"
 
 #include <errno.h>
 #include <string.h>
@@ -40,7 +41,6 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
-#include "player.h"
 #include "device.h"
 #include "devicetable.h"
 #include "drivertable.h"

@@ -34,14 +34,7 @@
 #include <unistd.h>
 #include <math.h>
 
-#if HAVE_DIRNAME
-  #include <libgen.h> // for dirname(3)
-#else
-extern "C" {
-  char * dirname (char *path);
-}
-#endif
-
+#include "replace.h"
 #include "configfile.h"
 
 #define COLOR_DATABASE "/usr/X11R6/lib/X11/rgb.txt"
