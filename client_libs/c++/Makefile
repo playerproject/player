@@ -15,7 +15,8 @@ OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       laserbeaconproxy.o visionproxy.o  \
       gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o \
       rwi_positionproxy.o rwi_sonarproxy.o rwi_laserproxy.o rwi_bumperproxy.o \
-      rwi_powerproxy.o truthproxy.o descartesproxy.o idarproxy.o idarturretproxy.o
+      rwi_powerproxy.o truthproxy.o descartesproxy.o idarproxy.o 
+#     idarturretproxy.o
 
 all: $(LIBNAME)
 
