@@ -75,16 +75,16 @@ int AMCLSensor::Shutdown(void)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Initialize the action model
-bool AMCLSensor::InitAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec)
+// Get new sensor data (non-blocking)
+AMCLSensorData *AMCLSensor::GetData(void)
 {
-  return false;
+  return NULL;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the action model
-bool AMCLSensor::UpdateAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec)
+bool AMCLSensor::UpdateAction(pf_t *pf, AMCLSensorData *data)
 {
   return false;
 }
@@ -92,7 +92,7 @@ bool AMCLSensor::UpdateAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize the filter
-bool AMCLSensor::InitSensor(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
+bool AMCLSensor::InitSensor(pf_t *pf, AMCLSensorData *data)
 {
   return false;
 }
@@ -100,7 +100,7 @@ bool AMCLSensor::InitSensor(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the sensor model
-bool AMCLSensor::UpdateSensor(pf_t *pf)
+bool AMCLSensor::UpdateSensor(pf_t *pf, AMCLSensorData *data)
 {
   return false;
 }

@@ -59,8 +59,8 @@ extern PlayerTime* GlobalTime;
 // Sensors
 #include "amcl_odom.h"
 #include "amcl_laser.h"
-#include "amcl_gps.h"
-#include "amcl_imu.h"
+//#include "amcl_gps.h"
+//#include "amcl_imu.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,6 +92,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 {
   int i;
   double u[3];
+  AMCLSensor *sensor;
 
   this->init_sensor = -1;
   this->action_sensor = -1;
@@ -103,13 +104,16 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
     this->action_sensor = this->sensor_count;
     if (cf->ReadInt(section, "odom_init", 1))
       this->init_sensor = this->sensor_count;
-    this->sensors[this->sensor_count++] = new AMCLOdom();
+    sensor = new AMCLOdom();
+    sensor->is_action = 1;
+    this->sensors[this->sensor_count++] = sensor;
   }
-  
+
   // Create laser sensor
   if (cf->ReadInt(section, "laser_index", -1) >= 0)
     this->sensors[this->sensor_count++] = new AMCLLaser();
 
+  /*
   // Create GPS sensor
   if (cf->ReadInt(section, "gps_index", -1) >= 0)
   {
@@ -121,6 +125,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   // Create IMU sensor
   if (cf->ReadInt(section, "imu_index", -1) >= 0)
     this->sensors[this->sensor_count++] = new AMCLImu();
+  */
 
   // Load sensor settings
   for (i = 0; i < this->sensor_count; i++)
@@ -140,8 +145,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->pf_err = cf->ReadFloat(section, "pf_err", 0.01);
   this->pf_z = cf->ReadFloat(section, "pf_z", 3);
 
-  // TODO: fix
-  // Initial pose estimate (odometry-based initialization)
+  // Initial pose estimate
   this->pf_init_pose_mean = pf_vector_zero();
   this->pf_init_pose_mean.v[0] = cf->ReadTupleLength(section, "init_pose", 0, 0);
   this->pf_init_pose_mean.v[1] = cf->ReadTupleLength(section, "init_pose", 1, 0);
@@ -197,39 +201,6 @@ int AdaptiveMCL::Setup(void)
     
   PLAYER_TRACE0("setup");
 
-  /* MOVE
-  // If we have a map...
-  if (this->occ_filename)
-  {
-    assert(this->map == NULL);
-    this->map = map_alloc(this->map_scale);
-  
-    // Load the occupancy map
-    if (this->occ_filename != NULL)
-    {
-      PLAYER_MSG1("loading occupancy map file [%s]", this->occ_filename);
-      if (map_load_occ(this->map, this->occ_filename, this->occ_map_negate) != 0)
-        return -1;
-    }
-
-    // Compute the c-space
-    PLAYER_MSG0("computing cspace");
-    map_update_cspace(this->map, 2 * this->robot_radius);
-  }
-
-  // Load the wifi maps
-  for (i = 0; i < this->wifi_beacon_count; i++)
-  {
-    beacon = this->wifi_beacons + i;
-    if (beacon->filename != NULL)
-    {
-      PLAYER_MSG1("loading wifi map file [%s]", beacon->filename);
-      if (map_load_wifi(this->map, beacon->filename, i) != 0)
-        return -1;
-    }
-  }
-  */
-
   // Create the particle filter
   assert(this->pf == NULL);
   this->pf = pf_alloc(this->pf_min_samples, this->pf_max_samples);
@@ -275,15 +246,37 @@ int AdaptiveMCL::Shutdown(void)
   pf_free(this->pf);
   this->pf = NULL;
 
-  /* MOVE
-  // Delete the map
-  if (this->map)
-    map_free(this->map);
-  this->map = NULL;
-  */
-
   PLAYER_TRACE0("shutdown done");
   return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Check for updated sensor data
+void AdaptiveMCL::Update(void)
+{
+  int i;
+  AMCLSensorData *data;
+
+  assert(this->action_sensor >= 0 && this->action_sensor < this->sensor_count);
+  
+  // Check the action sensor for new data
+  data = this->sensors[this->action_sensor]->GetData();
+  if (data == NULL)
+    return;
+
+  // Flag this as action data and push onto queue
+  this->Push(data);
+
+  // Check the remaining sensors for new data
+  for (i = 0; i < this->sensor_count; i++)
+  {
+    data = this->sensors[i]->GetData();
+    if (data != NULL)
+      this->Push(data);
+  }
+
+  return;
 }
 
 
@@ -428,11 +421,24 @@ void AdaptiveMCL::Push(AMCLSensorData *data)
     PLAYER_ERROR("queue overflow");
     return;
   }
-
   i = (this->q_start + this->q_len++) % this->q_size;
   this->q_data[i] = data;
   
   return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Take a peek at the queue 
+AMCLSensorData *AdaptiveMCL::Peek(void)
+{
+  int i;
+  
+  if (this->q_len == 0)
+    return NULL;
+  i = this->q_start % this->q_size;
+
+  return this->q_data[i];
 }
 
 
@@ -444,9 +450,6 @@ AMCLSensorData *AdaptiveMCL::Pop(void)
   
   if (this->q_len == 0)
     return NULL;
-
-  //PLAYER_TRACE1("q len %d\n", this->q_len);
-  
   i = this->q_start++ % this->q_size;
   this->q_len--;
 
@@ -504,6 +507,10 @@ void AdaptiveMCL::Main(void)
     // Process any pending requests.
     this->HandleRequests();
 
+    // Initialize the filter if we havent already done so
+    if (!this->pf_init)
+      this->InitFilter();
+    
     // Update the filter
     if (this->UpdateFilter())
     {
@@ -548,8 +555,19 @@ void AdaptiveMCL::MainQuit()
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Initialize the filter
+void AdaptiveMCL::InitFilter(void)
+{
+  ::pf_init(this->pf, this->pf_init_pose_mean, this->pf_init_pose_cov);
+  this->pf_init = true;
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Update the filter with new sensor data
-bool AdaptiveMCL::UpdateFilter()
+bool AdaptiveMCL::UpdateFilter(void)
 {
   int i;
   uint32_t tsec, tusec;
@@ -557,34 +575,40 @@ bool AdaptiveMCL::UpdateFilter()
   pf_vector_t pose_mean;
   pf_matrix_t pose_cov;
   amcl_hyp_t *hyp;
+  AMCLSensorData *data;
 
-  assert(this->init_sensor >= 0 && this->init_sensor < this->sensor_count);
-  assert(this->action_sensor >= 0 && this->action_sensor < this->sensor_count);
+  // Get the action data
+  data = this->Pop();
+  if (data == NULL)
+    return false;
+  assert(data->sensor->is_action);
+  
+  // Use the action data to update the filter
+  data->sensor->UpdateAction(this->pf, data);
+
+  // Use the action timestamp 
+  tsec = data->tsec;
+  tusec = data->tusec;
+
+  delete data; data = NULL;
+  
+  // Process the remaining sensor data
+  while (1)
+  {
+    data = this->Peek();
+    if (data == NULL)
+      break;
+    if (data->sensor->is_action)
+      break;
+    data = this->Pop();
+    assert(data);
+
+    // Use the data to update the filter
+    data->sensor->UpdateSensor(this->pf, data);
+
+    delete data; data = NULL;
+  }
     
-  // If the filter has not been initialized, initialize it using the
-  // designated model.  We also need to initialize the action model.
-  if (!this->pf_init)
-  {
-    if (!this->sensors[this->action_sensor]->InitAction(this->pf, &tsec, &tusec))
-      return false;
-    if (!this->sensors[this->init_sensor]->InitSensor(this->pf,
-                                                      this->pf_init_pose_mean,
-                                                      this->pf_init_pose_cov))
-      return false;
-    this->pf_init = true;
-  }
-
-  // Update the filter using the action model
-  else
-  {
-    if (!this->sensors[this->action_sensor]->UpdateAction(this->pf, &tsec, &tusec))
-      return false;
-  }
-  
-  // Update the filter using all sensor models
-  for (i = 0; i < this->sensor_count; i++)
-    this->sensors[i]->UpdateSensor(this->pf);
-  
   // Resample the particles
   pf_update_resample(this->pf);
 
