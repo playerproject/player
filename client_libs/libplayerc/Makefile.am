@@ -1,5 +1,4 @@
-SUBDIRS = . test 
-#bindings
+SUBDIRS = . test bindings
 
 AM_CPPFLAGS = -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
@@ -39,7 +38,8 @@ libplayerc_a_LIBADD = $(top_builddir)/replace/*.o
 
 include_HEADERS = playerc.h
 
-dist-hook:
-	mkdir -p $(top_distdir)/doc
-	cd $(srcdir)/doc && make
-	cp -p $(srcdir)/doc/libplayerc.ps $(top_distdir)/doc
+# REMOVE
+#dist-hook:
+#	mkdir -p $(top_distdir)/doc
+#	cd $(srcdir)/doc && make
+#	cp -p $(srcdir)/doc/libplayerc.ps $(top_distdir)/doc
