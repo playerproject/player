@@ -47,8 +47,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#define PLAYER_ENABLE_TRACE 1
-#define PLAYER_ENABLE_MSG 1
+#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_MSG 0
 
 #include "player.h"
 #include "device.h"
@@ -149,6 +149,16 @@ class AdaptiveMCL : public CDevice
   private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
                                   uint32_t* time_sec, uint32_t* time_usec);
 
+  // Process configuration requests
+  public: virtual int PutConfig(player_device_id_t* device, void* client, 
+                                void* data, size_t len);
+
+  // Handle map info request
+  private: void HandleGetMapInfo(void *client, void *request, int len);
+
+  // Handle map data request
+  private: void HandleGetMapData(void *client, void *request, int len);
+
   ///////////////////////////////////////////////////////////////////////////
   // Middle methods: these methods facilitate communication between the top
   // and bottom halfs.
@@ -177,6 +187,9 @@ class AdaptiveMCL : public CDevice
   // Draw the current best pose estimate
   private: void DrawPoseEst();
 
+  // Draw the laser values
+  private: void DrawLaserData(amcl_sensor_data_t *data);
+
   // Draw the sonar values
   private: void DrawSonarData(amcl_sensor_data_t *data);
 #endif
@@ -189,12 +202,6 @@ class AdaptiveMCL : public CDevice
 
   // Handle the set pose request
   private: void HandleSetPose(void *client, void *request, int len);
-
-  // Handle map info request
-  private: void HandleGetMapInfo(void *client, void *request, int len);
-
-  // Handle map data request
-  private: void HandleGetMapData(void *client, void *request, int len);
 
   ///////////////////////////////////////////////////////////////////////////
   // Properties
@@ -271,6 +278,7 @@ class AdaptiveMCL : public CDevice
   private: rtk_fig_t *map_fig;
   private: rtk_fig_t *pf_fig;
   private: rtk_fig_t *robot_fig;
+  private: rtk_fig_t *laser_fig;
   private: rtk_fig_t *sonar_fig;
 #endif
 };
@@ -359,7 +367,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Create the sensor queue
   this->q_len = 0;
-  this->q_size = 100;
+  this->q_size = 1000;
   this->q_data = new amcl_sensor_data_t[this->q_size];
 
 #ifdef INCLUDE_RTKGUI
@@ -536,7 +544,8 @@ int AdaptiveMCL::SetupGUI(void)
   //map_draw_cspace(this->map, this->map_fig);
 
   this->robot_fig = rtk_fig_create(this->canvas, NULL, 9);
-  this->sonar_fig = rtk_fig_create(this->canvas, this->robot_fig, 10);
+  this->laser_fig = rtk_fig_create(this->canvas, this->robot_fig, 10);
+  this->sonar_fig = rtk_fig_create(this->canvas, this->robot_fig, 15);
 
   // Draw the robot
   rtk_fig_color(this->robot_fig, 0.7, 0, 0);
@@ -946,6 +955,7 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
 
   // Copy data to server
   assert(len >= datalen);
+  assert(dest != NULL);
   memcpy(dest, &data, datalen);
 
   // Set the timestamp
@@ -955,6 +965,125 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
     *time_usec = sdata.odom_time_usec;
 
   return datalen;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Process configuration requests
+int AdaptiveMCL::PutConfig(player_device_id_t* device, void* client,
+                           void* data, size_t len)
+{
+  // Discard bogus empty packets
+  if (len < 1)
+  {
+    PLAYER_WARN("got zero length configuration request; ignoring");
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+    return 0;
+  }
+
+  // Process some of the requests immediately
+  switch (((char*) data)[0])
+  {
+    case PLAYER_LOCALIZE_GET_MAP_INFO_REQ:
+      HandleGetMapInfo(client, data, len);
+      return 0;
+    case PLAYER_LOCALIZE_GET_MAP_DATA_REQ:
+      HandleGetMapData(client, data, len);
+      return 0;
+  }
+
+  // Let the device thread get the rest
+  return CDevice::PutConfig(device, client, data, len);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Handle map info request
+void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
+{
+  size_t reqlen;
+  player_localize_map_info_t info;
+
+  // Expected length of request
+  reqlen = sizeof(info.subtype);
+  
+  // check if the config request is valid
+  if (len != reqlen)
+  {
+    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+    return;
+  }
+
+  //PLAYER_TRACE4("%d %d %f %d\n", this->map->size_x, this->map->size_y,
+  //              this->map->scale, ntohl(info.scale));
+  
+  info.scale = htonl((int32_t) (1000.0 / this->map->scale + 0.5));
+  info.width = htonl((int32_t) (this->map->size_x));
+  info.height = htonl((int32_t) (this->map->size_y));
+
+  // Send map info to the client
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &info, sizeof(info)) != 0)
+    PLAYER_ERROR("PutReply() failed");
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Handle map data request
+void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
+{
+  int i, j;
+  int oi, oj, si, sj;
+  size_t reqlen;
+  map_cell_t *cell;
+  player_localize_map_data_t data;
+
+  // Expected length of request
+  reqlen = sizeof(data) - sizeof(data.data);
+
+  // check if the config request is valid
+  if (len != reqlen)
+  {
+    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+    return;
+  }
+
+  // Construct reply
+  memcpy(&data, request, len);
+
+  oi = ntohl(data.col);
+  oj = ntohl(data.row);
+  si = ntohl(data.width);
+  sj = ntohl(data.height);
+
+  //PLAYER_TRACE4("%d %d %d %d\n", oi, oj, si, sj);
+
+  // Grab the pixels from the map
+  for (j = 0; j < sj; j++)
+  {
+    for (i = 0; i < si; i++)
+    {
+      if (MAP_VALID(this->map, i + oi, j + oj))
+      {
+        cell = this->map->cells + MAP_INDEX(this->map, i + oi, j + oj);
+        data.data[i + j * si] = cell->occ_state;
+      }
+      else
+        data.data[i + j * si] = 0;
+    }
+  }
+    
+  // Send map info to the client
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &data, sizeof(data)) != 0)
+    PLAYER_ERROR("PutReply() failed");
+  
+  return;
 }
 
 
@@ -986,7 +1115,7 @@ int AdaptiveMCL::Pop(amcl_sensor_data_t *data)
   if (this->q_len == 0)
     return 0;
 
-  PLAYER_TRACE1("q len %d\n", this->q_len);
+  //PLAYER_TRACE1("q len %d\n", this->q_len);
   
   i = this->q_start++ % this->q_size;
   this->q_len--;
@@ -1162,6 +1291,7 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   if (this->enable_gui)
   {
     DrawPoseEst();
+    DrawLaserData(data);
     DrawSonarData(data);
     
     rtk_fig_clear(this->pf_fig);
@@ -1175,58 +1305,6 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 
   return;
 }
-
-
-#ifdef INCLUDE_RTKGUI
-
-////////////////////////////////////////////////////////////////////////////////
-// Draw the current best pose estimate
-void AdaptiveMCL::DrawPoseEst()
-{
-  int i;
-  amcl_hyp_t *hyp;
-  
-  this->Lock();
-
-  for (i = 0; i < this->hyp_count; i++)
-  {
-    hyp = this->hyps + i;
-    rtk_fig_origin(this->robot_fig, hyp->pf_pose_mean.v[0],
-                   hyp->pf_pose_mean.v[1], hyp->pf_pose_mean.v[2]);
-  }
-  
-  this->Unlock();
-  
-  return;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Draw the sonar values
-void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
-{
-  int i;
-  double r, b, ax, ay, bx, by;
-  
-  rtk_fig_clear(this->sonar_fig);
-  rtk_fig_color_rgb32(this->sonar_fig, 0xC0C080);
-  
-  for (i = 0; i < data->srange_count; i++)
-  {
-    r = data->sranges[i];
-    b = this->sonar_poses[i].v[2];
-
-    ax = this->sonar_poses[i].v[0];
-    ay = this->sonar_poses[i].v[1];
-
-    bx = ax + r * cos(b);
-    by = ay + r * sin(b);
-    
-    rtk_fig_line(this->sonar_fig, ax, ay, bx, by);
-  }
-  return;
-}
-
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1243,12 +1321,6 @@ int AdaptiveMCL::HandleRequests(void)
     {
       case PLAYER_LOCALIZE_SET_POSE_REQ:
         HandleSetPose(client, request, len);
-        break;
-      case PLAYER_LOCALIZE_GET_MAP_INFO_REQ:
-        HandleGetMapInfo(client, request, len);
-        break;
-      case PLAYER_LOCALIZE_GET_MAP_DATA_REQ:
-        HandleGetMapData(client, request, len);
         break;
       default:
         if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
@@ -1305,90 +1377,98 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
 }
 
 
+#ifdef INCLUDE_RTKGUI
+
 ////////////////////////////////////////////////////////////////////////////////
-// Handle map info request
-void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
+// Draw the current best pose estimate
+void AdaptiveMCL::DrawPoseEst()
 {
-  size_t reqlen;
-  player_localize_map_info_t info;
-
-  // Expected length of request
-  reqlen = sizeof(info.subtype);
+  int i;
+  amcl_hyp_t *hyp;
   
-  // check if the config request is valid
-  if (len != reqlen)
+  this->Lock();
+
+  for (i = 0; i < this->hyp_count; i++)
   {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
+    hyp = this->hyps + i;
+    rtk_fig_origin(this->robot_fig, hyp->pf_pose_mean.v[0],
+                   hyp->pf_pose_mean.v[1], hyp->pf_pose_mean.v[2]);
   }
-
-  PLAYER_TRACE4("%d %d %f %d\n", this->map->size_x, this->map->size_y,
-                this->map->scale, ntohl(info.scale));
   
-  info.scale = htonl((int32_t) (1000.0 / this->map->scale + 0.5));
-  info.width = htonl((int32_t) (this->map->size_x));
-  info.height = htonl((int32_t) (this->map->size_y));
-
-  // Send map info to the client
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &info, sizeof(info)) != 0)
-    PLAYER_ERROR("PutReply() failed");
+  this->Unlock();
   
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Handle map data request
-void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
+// Draw the laser values
+void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
 {
-  int i, j;
-  int oi, oj, si, sj;
-  size_t reqlen;
-  map_cell_t *cell;
-  player_localize_map_data_t data;
+  int i;
+  double r, b, ax, ay, bx, by;
+  
+  rtk_fig_clear(this->laser_fig);
 
-  // Expected length of request
-  reqlen = sizeof(data) - sizeof(data.data);
-
-  // check if the config request is valid
-  if (len != reqlen)
+  // Draw the complete scan
+  rtk_fig_color_rgb32(this->laser_fig, 0x8080FF);
+  for (i = 0; i < data->range_count; i++)
   {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
+    r = data->ranges[i][0];
+    b = data->ranges[i][1];
+
+    ax = 0;
+    ay = 0;
+    bx = ax + r * cos(b);
+    by = ay + r * sin(b);
+
+    rtk_fig_line(this->laser_fig, ax, ay, bx, by);
   }
 
-  // Construct reply
-  memcpy(&data, request, len);
-
-  oi = ntohl(data.col);
-  oj = ntohl(data.row);
-  si = ntohl(data.width);
-  sj = ntohl(data.height);
-
-  PLAYER_TRACE4("%d %d %d %d\n", oi, oj, si, sj);
-
-  // Grab the pixels from the map
-  for (j = 0; j < sj; j++)
+  // Draw the significant part of the scan
+  rtk_fig_color_rgb32(this->laser_fig, 0xFF0000);
+  for (i = 0; i < data->range_count; i += data->range_count / this->laser_max_samples)
   {
-    for (i = 0; i < si; i++)
-    {
-      if (MAP_VALID(this->map, i + oi, j + oj))
-      {
-        cell = this->map->cells + MAP_INDEX(this->map, i + oi, j + oj);
-        data.data[i + j * si] = cell->occ_state;
-      }
-      else
-        data.data[i + j * si] = 0;
-    }
+    r = data->ranges[i][0];
+    b = data->ranges[i][1];
+
+    ax = 0;
+    ay = 0;
+    bx = ax + r * cos(b);
+    by = ay + r * sin(b);
+
+    rtk_fig_line(this->laser_fig, ax, ay, bx, by);
   }
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Draw the sonar values
+void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
+{
+  int i;
+  double r, b, ax, ay, bx, by;
+  
+  rtk_fig_clear(this->sonar_fig);
+  rtk_fig_color_rgb32(this->sonar_fig, 0xC0C080);
+  
+  for (i = 0; i < data->srange_count; i++)
+  {
+    r = data->sranges[i];
+    b = this->sonar_poses[i].v[2];
+
+    ax = this->sonar_poses[i].v[0];
+    ay = this->sonar_poses[i].v[1];
+
+    bx = ax + r * cos(b);
+    by = ay + r * sin(b);
     
-  // Send map info to the client
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &data, sizeof(data)) != 0)
-    PLAYER_ERROR("PutReply() failed");
-  
+    rtk_fig_line(this->sonar_fig, ax, ay, bx, by);
+  }
   return;
 }
+
+#endif
+
+
