@@ -180,6 +180,8 @@ PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[no],[],[],[])
 
+PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[no],[],[],[])
+
 PLAYER_ADD_DRIVER([udpbroadcast],[drivers/comms],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lasercspace],[drivers/laser],[yes],[],[],[])
