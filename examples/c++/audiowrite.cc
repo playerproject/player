@@ -48,19 +48,22 @@ parse_args(int argc, char** argv)
 int main(int argc, char **argv)
 { 
   parse_args(argc,argv);
+  unsigned char bitString[15] = {1,1,1,0,0,0,1,1,1,0,0,0,1,1,1};
 
   /* Connect to Player server */
   PlayerClient robot(host,port);
 
   /* Request sensor data */
-  AudioProxy ap(&robot,0,'w');
+  AudioDSPProxy ap(&robot,0,'w');
 
   for(;;)
   {
     if(robot.Read())
       exit(1);
 
-    ap.PlayTone(1000,50,3);
+    ap.PlayTone(1000,100,3);
+    //ap.PlayChirp(1000, 50, 50, bitString, 15);
+    //ap.PlayChirp(600, 50, 50, bitString, 15);
   }
 
   return(0);
