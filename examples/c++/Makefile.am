@@ -1,8 +1,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/server -I$(top_srcdir)/client_libs/c -I$(top_srcdir)/client_libs/c++
 LDADD = $(top_builddir)/client_libs/c++/libplayerclient.a
 
-noinst_PROGRAMS = rsn \
-                  randomwalk \
+noinst_PROGRAMS = randomwalk \
 	          visualservo \
                   sonarobstacleavoid \
 	          goto \
@@ -24,7 +23,6 @@ noinst_PROGRAMS = rsn \
 waveformread_SOURCES = waveformread.cc
 audioread_SOURCES = audioread.cc
 audiowrite_SOURCES = audiowrite.cc
-rsn_SOURCES = rsn.cc
 randomwalk_SOURCES =  randomwalk.cc
 visualservo_SOURCES = visualservo.cc
 sonarobstacleavoid_SOURCES = sonarobstacleavoid.cc

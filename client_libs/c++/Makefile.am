@@ -22,7 +22,6 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               idarturretproxy.cc \
                               fiducialproxy.cc \
                               laserproxy.cc \
-                              moteproxy.cc \
                               playerclient.cc \
                               playerclient.h \
                               playermulticlient.cc \
