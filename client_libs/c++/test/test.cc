@@ -155,6 +155,9 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "wifi") == 0 || strcmp(device, "all") == 0)
       test_wifi(&client, index);
 
+    if(strcmp(device, "mcom") == 0 || strcmp(device, "all") == 0)
+      test_mcom(&client, index);
+
     // BPS device
     /*
     if(strcmp(device, "bps") == 0 || strcmp(device, "all") == 0)

@@ -45,6 +45,8 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
 
 AC_DEFUN([PLAYER_DRIVERTESTS], [
 
+PLAYER_ADD_DRIVER([mcom],[drivers/mcom],[yes],)
+
 PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],
                   ["-L../client_libs/c -lplayercclient"])
 
