@@ -57,7 +57,8 @@ PlannerProxy::PlannerProxy( PlayerClient *pc, unsigned short index,
     unsigned char access )
   : ClientProxy (pc, PLAYER_PLANNER_CODE, index, access)
 {
-  this->pathDone = 1;
+  this->pathDone = true;
+  this->pathValid = true;
   return;
 }
 
@@ -140,8 +141,8 @@ void PlannerProxy::FillData( player_msghdr_t hdr, const char *buffer)
 
   player_planner_data_t *data = (player_planner_data_t*)buffer;
 
-  this->pathValid = data->valid;
-  this->pathDone = data->done;
+  this->pathValid = data->valid==1;
+  this->pathDone = data->done==1;
 
   this->px = (long) ntohl(data->px) / 1000.0;
   this->py = (long) ntohl(data->py) / 1000.0;

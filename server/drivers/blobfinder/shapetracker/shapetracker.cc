@@ -49,6 +49,8 @@
 #include "devicetable.h"
 #include "drivertable.h"
 
+#define winName "ShapeTracker"
+
 //#include "orientation.h"
 
 // Info on potential shapes.
@@ -204,7 +206,8 @@ int ShapeTracker::Setup()
 
   // Start the driver thread.
   this->StartThread();
-  
+
+  //cvNamedWindow(winName,1);
   return 0;
 }
 
@@ -324,7 +327,7 @@ void ShapeTracker::FindShapes()
     result = cvApproxPoly(contour, sizeof(CvContour), storage, 
         CV_POLY_APPROX_DP, cvContourPerimeter(contour)*0.02, 0);
 
-    
+  
     if ( result->total > 4 &&
         (result->total/2.0 == (int)(result->total/2)) &&
         fabs(cvContourArea(result, CV_WHOLE_SEQ)) > 50)
@@ -346,9 +349,9 @@ void ShapeTracker::FindShapes()
       {
         rect = cvBoundingRect(result,0);
 
-        /*if (rect.width < this->cameraData.width-10 && 
-            rect.height < this->cameraData.height-10)
-            */
+        if (rect.x >5 && rect.y>5)/* && 
+            rect.width < this->cameraData.width-5 && 
+            rect.height < this->cameraData.height-5)*/
         {
           this->shapes[this->shapeCount].id = result->total;
           this->shapes[this->shapeCount].ax = rect.x;
@@ -357,12 +360,14 @@ void ShapeTracker::FindShapes()
           this->shapes[this->shapeCount].by = rect.y + rect.height;
 
           this->shapeCount = (this->shapeCount+1) % 255;
+          //cvDrawContours(this->workImage, result, 255, 0, 0, 3, 8);
+          //cvSaveImage("workContours.jpg", this->workImage);
+         // printf("Total[%d] XY[%d %d]\n",result->total, rect.x, rect.y);
+
         }
 
-        //cvDrawContours(this->workImage, result, 255, 0, 0, 3, 8);
         //cvDrawContours(this->mainImage, result, 255, 0, 0, 5, 8);
 
-        //cvSaveImage("workContours.jpg", this->workImage);
         //this->orientPoint = getcentralpoint(this->mainImage, result);
       }
     }
@@ -553,15 +558,14 @@ void ShapeTracker::ProcessImage()
   this->shapeCount = 0;
 
   // Create a new mainImage if it doesn't already exist
-  if (this->mainImage == NULL)
+  //if (this->mainImage == NULL)
     this->mainImage = cvCreateImage( cvSize(this->cameraData.width,
           this->cameraData.height), IPL_DEPTH_8U, 3);
 
   // Create a work image if it doesn't already exist
-  if (this->workImage == NULL)
+  //if (this->workImage == NULL)
     workImage = cvCreateImage( cvSize(this->cameraData.width,
           this->cameraData.height), IPL_DEPTH_8U, 1);
-
 
   if (this->hist == NULL)
   {
@@ -585,7 +589,7 @@ void ShapeTracker::ProcessImage()
 
   this->ContrastStretch( this->mainImage, this->workImage );
 
-  //cvSaveImage("hist.jpg", this->mainImage);
+  //cvSaveImage("hist.jpg", this->workImage);
 
   cvCvtColor(this->mainImage, this->workImage, CV_BGR2GRAY);
 
@@ -593,13 +597,20 @@ void ShapeTracker::ProcessImage()
   cvThreshold(this->workImage, this->workImage, this->threshold, 255, 
       CV_THRESH_BINARY);
 
-  //cvSaveImage("final.jpg", this->workImage);
+  //cvSaveImage("work.jpg", this->workImage);
 
   // Find all the shapes in the image
   this->FindShapes();
 
 
   //this->KalmanFilter();
+  
+
+  // Clear the images
+  cvReleaseImage(&(this->workImage));
+  this->workImage = NULL;
+  cvReleaseImage(&(this->mainImage));
+  this->mainImage = NULL;
   return;
 }
 

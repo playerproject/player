@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <math.h>
 #include <netinet/in.h>
+#include <playertime.h>
 
 #include "player.h"
 #include "device.h"
@@ -48,6 +49,8 @@
 // catch up (seconds)
 #define LOCALIZE_MAX_LAG 2.0
 
+extern PlayerTime *GlobalTime;
+
 extern int global_playerport;
 
 class Wavefront : public CDevice
@@ -55,6 +58,8 @@ class Wavefront : public CDevice
   private: 
     // Main function for device thread.
     virtual void Main();
+
+    bool newData;
 
     // bookkeeping
     int position_index;
@@ -440,9 +445,19 @@ Wavefront::PutPlannerData()
   data.yawspeed = this->position_aspeed_be;
   */
 
-  /* use the localizer's timestamp */
-  PutData((unsigned char*)&data,sizeof(data),
-          this->localize_timesec, this->localize_timeusec);
+  // We should probably send new data even if we haven't moved.
+  if (this->newData)
+  {
+    struct timeval time;
+    GlobalTime->GetTime(&time);
+
+    PutData((unsigned char*)&data,sizeof(data),
+        time.tv_sec, time.tv_usec);
+  } else {
+    /* use the localizer's timestamp */
+    PutData((unsigned char*)&data,sizeof(data),
+        this->localize_timesec, this->localize_timeusec);
+  }
 }
 
 void
@@ -541,11 +556,15 @@ void Wavefront::Main()
     PutPlannerData();
     GetCommand();
 
+    this->newData = false;
+
     if(this->new_goal)
     {
+      this->newData = true;
+
       // compute costs to the new goal
       plan_update_plan(this->plan, this->target_x, this->target_y);
-      
+
       // compute a path to the goal from the current position
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
 
@@ -556,8 +575,8 @@ void Wavefront::Main()
         this->new_goal=false;
       }
       else if(!plan_get_waypoint(this->plan,0,
-                                 &this->waypoint_x,
-                                 &this->waypoint_y))
+            &this->waypoint_x,
+            &this->waypoint_y))
       {
         PLAYER_WARN("no waypoints!");
         this->curr_waypoint = -1;
@@ -569,16 +588,16 @@ void Wavefront::Main()
 
         double wx,wy;
         /*
-        for(int i=0;plan_get_waypoint(this->plan,i++,&wx,&wy);)
-          printf("waypoint %d: %f,%f\n", i, wx, wy);
-          */
+           for(int i=0;plan_get_waypoint(this->plan,i++,&wx,&wy);)
+           printf("waypoint %d: %f,%f\n", i, wx, wy);
+           */
       }
     }
-      
+
     dist = sqrt(((this->localize_x - this->target_x) *
-                 (this->localize_x - this->target_x)) +
-                ((this->localize_y - this->target_y) *
-                 (this->localize_y - this->target_y)));
+          (this->localize_x - this->target_x)) +
+        ((this->localize_y - this->target_y) *
+         (this->localize_y - this->target_y)));
     angle = fabs(NORMALIZE(this->localize_a - this->target_a));
     if(dist < this->dist_eps && angle < this->ang_eps)
     {
@@ -586,6 +605,8 @@ void Wavefront::Main()
       StopPosition();
       this->curr_waypoint = -1;
       this->new_goal = false;
+
+      this->newData = true;
     }
     else if(this->curr_waypoint < 0)
     {
@@ -594,22 +615,25 @@ void Wavefront::Main()
     }
     else
     {
+
       // are we there yet?  ignore angle, cause this is just a waypoint
       dist = sqrt(((this->localize_x - this->waypoint_x) * 
-                   (this->localize_x - this->waypoint_x)) +
-                  ((this->localize_y - this->waypoint_y) *
-                   (this->localize_y - this->waypoint_y)));
+            (this->localize_x - this->waypoint_x)) +
+          ((this->localize_y - this->waypoint_y) *
+           (this->localize_y - this->waypoint_y)));
       if(this->new_goal ||
-         ((dist < this->dist_eps) &&
-          (!rotate_waypoint ||
-           (fabs(NORMALIZE(this->localize_a - this->waypoint_a))
-            < this->ang_eps))))
+          ((dist < this->dist_eps) &&
+           (!rotate_waypoint ||
+            (fabs(NORMALIZE(this->localize_a - this->waypoint_a))
+             < this->ang_eps))))
       {
         this->new_goal = false;
 
+
+        this->newData = true;
         // get next waypoint
         if(!plan_get_waypoint(this->plan,this->curr_waypoint,
-                              &this->waypoint_x,&this->waypoint_y))
+              &this->waypoint_x,&this->waypoint_y))
         {
           // no more waypoints, so wait for target achievement
 
@@ -621,13 +645,13 @@ void Wavefront::Main()
 
         this->waypoint_a = this->target_a;
         dist = sqrt((this->waypoint_x - this->localize_x) *
-                    (this->waypoint_x - this->localize_x) +
-                    (this->waypoint_y - this->localize_y) *
-                    (this->waypoint_y - this->localize_y));
+            (this->waypoint_x - this->localize_x) +
+            (this->waypoint_y - this->localize_y) *
+            (this->waypoint_y - this->localize_y));
         angle = atan2(this->waypoint_y - this->localize_y, 
-                      this->waypoint_x - this->localize_x);
+            this->waypoint_x - this->localize_x);
         if((dist > this->dist_eps) &&
-           fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0)
+            fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0)
         {
           //puts("adding rotational waypoint");
           this->waypoint_x = this->localize_x;
@@ -635,6 +659,7 @@ void Wavefront::Main()
           this->waypoint_a = angle;
           this->curr_waypoint--;
           rotate_waypoint=true;
+
         }
         else
           rotate_waypoint=false;
