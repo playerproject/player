@@ -36,5 +36,5 @@ pythoninstall:
 
 # seems that distutils doesn't support 'uninstall', so we'll hack it manually
 uninstall-local:
-	rm -rf $(libdir)/python
+	rm -rf $(libdir)/python/playerc.so
 
