@@ -10,8 +10,9 @@ include ../../../Makefile.common
 
 TEST = test
 OBS = test.o \
-			test_bps.o test_broadcast.o test_laser.o test_lbd.o  \
-			test_position.o test_ptz.o test_vision.o
+			test_bps.o test_broadcast.o test_laser.o \
+			test_lbd.o test_position.o test_ptz.o \
+			test_sonar.o test_vision.o
 
 INCLUDES = -I. -I.. -I../../../include
 CFLAGS = -g3 -Wall $(INCLUDES)
