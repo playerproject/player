@@ -291,7 +291,6 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
                            void *req_data, int req_len, void *rep_data, int rep_len)
 {
   int i, len;
-  char data[PLAYER_MAX_REQREP_SIZE];
   player_msghdr_t req_header, rep_header;
 
   if (deviceinfo == NULL)
@@ -318,14 +317,14 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
   // for later processing.
   for (i = 0; i < 1000; i++)
   {
-    len = sizeof(data);
-    if (playerc_client_readpacket(client, &rep_header, data, &len) < 0)
+    len = PLAYER_MAX_MESSAGE_SIZE;
+    if (playerc_client_readpacket(client, &rep_header, client->data, &len) < 0)
       return -1;
 
     if (rep_header.type == PLAYER_MSGTYPE_DATA)
     {
       // Queue up any incoming data packets for later dispatch
-      playerc_client_push(client, &rep_header, data, len);
+      playerc_client_push(client, &rep_header, client->data, len);
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
     {
@@ -336,7 +335,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
         PLAYERC_ERR("got the wrong kind of reply (not good).");
         return -1;
       }
-      memcpy(rep_data, data, rep_len);
+      memcpy(rep_data, client->data, rep_len);
       break;
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
@@ -366,92 +365,6 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
     
   return len;
 }
-
-
-/* Enable these if Brian changes to server to accept multiple requests.
-// Issue request only; use in conjunction with
-// playerc_client_request_recv() to issue multiple requests and get
-// multiple replies.
-int playerc_client_request_send(playerc_client_t *client, playerc_device_t *deviceinfo,
-                                void *req_data, int req_len)
-{
-  player_msghdr_t req_header;
-
-  if (deviceinfo == NULL)
-  {
-    req_header.stx = PLAYER_STXX;
-    req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.robot = 0;
-    req_header.device = PLAYER_PLAYER_CODE;    
-    req_header.device_index = 0;
-    req_header.size = req_len;
-  }
-  else
-  {
-    req_header.stx = PLAYER_STXX;
-    req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.robot = deviceinfo->robot;
-    req_header.device = deviceinfo->code;
-    req_header.device_index = deviceinfo->index;
-    req_header.size = req_len;
-  }
-
-  if (playerc_client_writepacket(client, &req_header, req_data, req_len) < 0)
-    return -1;
-    
-  return 0;
-}
-
-
-// Wait for a reply; use in conjunction with
-// playerc_client_request_send() to issue multiple requests and get
-// multiple replies.
-int playerc_client_request_recv(playerc_client_t *client, playerc_device_t *deviceinfo,
-                                void *rep_data, int rep_len)
-{
-  int i, len;
-  char data[PLAYER_MAX_REQREP_SIZE];
-  player_msghdr_t rep_header;
-
-  // Read packets until we get a reply.  Data packets get queued up
-  // for later processing.
-  for (i = 0; i < 1000; i++)
-  {
-    len = sizeof(data);
-    if (playerc_client_readpacket(client, &rep_header, data, &len) < 0)
-      return -1;
-
-    if (rep_header.type == PLAYER_MSGTYPE_DATA)
-    {
-      // Queue up any incoming data packets for later dispatch
-      playerc_client_push(client, &rep_header, data, len);
-    }
-    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
-    {
-      memcpy(rep_data, data, rep_len);
-      break;
-    }
-    else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
-    {
-      PLAYERC_ERR("got NACK from request");
-      return -2;
-    }
-    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
-    {
-      PLAYERC_ERR("got ERR from request");
-      return -1;
-    }
-  }
-
-  if (i == 1000)
-  {
-    PLAYERC_ERR("timed out waiting for server reply to request");
-    return -1;
-  }
-    
-  return len;
-}
-*/
 
 
 // Add a device proxy 
