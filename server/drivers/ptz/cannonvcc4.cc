@@ -20,14 +20,75 @@
  *
  */
 
-/*===========================================================================
- || Description: 
- ||   This file contains the Player driver for the cannon VCC4 camera head.
- ||   Default port: /dev/ttyS1
- || TODO:
- ||   Add more functionalities. Actually Only pan, tilt and zoom
- ||   values can be set up.
-  ===========================================================================*/
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_cannonVCC4 cannonVCC4
+
+The cannonVCC4 driver controls a Cannon VC-C4 PTZ camera.
+
+The cannonVCC4 driver operates over a direct serial link, not
+through the P2OS microcontroller's AUX port, as is the normal
+configuration for ActivMedia robots.  You may have to make or buy
+a cable to connect your camera to a normal serial port.  Look <a
+href="http://playerstage.sourceforge.net/faq.html#evid30_wiring">here</a>
+for more information and wiring instructions.
+
+The VC-C4 is a rather slow device. Actions and specially initialization
+steps need time to take effect.
+
+VC-C4 ranges:
+- Pan range in degrees: -98...98
+- Tilt in degrees: -30...88
+- Zoom units: 0..2000
+
+The cannonVCC4 driver only support position control.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_ptz
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS1"
+  - The serial port where the camera is connected
+
+@par Example
+
+@verbatim
+driver 
+(
+  name "cannonVCC4" 
+  provides ["ptz:0"]
+  port "/dev/ttyS1"
+)
+@endverbatim
+
+@todo
+
+ - Add more functionalities. Actually Only pan, tilt and zoom
+   values can be set up.
+
+@par Authors
+
+Elena Lazkano', Aitzol Astigarraga
+
+*/
+
+/** @} */
+
 
 #include <fcntl.h>
 #include <stdio.h>

@@ -21,6 +21,47 @@
  *
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_fixedtones fixedtones
+
+The fixedtones driver provides access to sound hardware, via the
+Linux OSS interface.  Incoming sound is put through a Discrete Fourier
+Transform, and the frequencies and amplitudes of the five highest peaks
+in the frequency domain are determined.  The fixedtones driver can also
+produce fixed-tone sounds of given frequency, amplitude, and duration.
+
+This driver is not widely used and may not function properly.  You might
+want to try the @ref player_driver_audio driver instead.
+
+@par Compile-time dependencies
+
+- FFTW library
+
+@par Provides
+
+- @ref player_interface_audio
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- none
+
+@par Authors
+
+- Esben Ostergaard
+
+*/
+
+/** } */
+
 #include <string.h>
 #include <sys/stat.h>
 #include <termios.h>

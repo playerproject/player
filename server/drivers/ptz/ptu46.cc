@@ -30,6 +30,48 @@
  *
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_ptu46 ptu46
+
+The ptu46 driver provides control of the PTU-46-17.5 pan-tilt unit from
+directed perceptions through its text interface (This unit is standard on
+the RWI b21r robot). This driver will probably work with other directed
+perceptions pan tilt units, please let me know if you have tested it.
+
+The ptu46 driver supports both position and velocity control, via the
+PLAYER_PTZ_CONTROL_MODE_REQ request.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_ptz
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+- PLAYER_PTZ_CONTROL_MODE_REQ 
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS0"
+  - The serial port to which the unit is attached.
+
+@par Authors
+
+- Toby Collett 
+
+*/
+
+/** } */
+
 /* This file is divided into two classes, the first simply deals with 
  * the control of the pan-tilt unit, providing simple interfaces such as
  * set pos and get pos.
