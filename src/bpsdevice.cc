@@ -141,9 +141,10 @@ int CBpsDevice::Setup()
     assert(this->position != NULL);
     assert(this->laserbeacon != NULL);
 
-    // Subscribe to devices
-    this->position->Subscribe(this);
-    this->laserbeacon->Subscribe(this);
+    // Subscribe to devices, but fail if they do
+    if((this->position->Subscribe(this) != 0) ||
+       (this->laserbeacon->Subscribe(this) != 0))
+      return(-1);
     
     // Initialise configuration settings
     this->gain = 0.01;

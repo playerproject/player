@@ -139,7 +139,7 @@ int playerc_lbd_get_config(playerc_lbd_t *device,
   // Get the current device configuration.
   config.subtype = PLAYER_LASERBEACON_SUBTYPE_GETCONFIG;
   len = playerc_client_request(device->info.client, &device->info,
-                               (char*) &config, sizeof(config),
+                               (char*) &config, sizeof(config.subtype),
                                (char*) &config, sizeof(config));
   if (len < 0)
     return -1;

@@ -120,8 +120,9 @@ int CLaserBeaconDevice::Setup()
   this->laser = deviceTable->GetDevice(global_playerport,PLAYER_LASER_CODE,index);
   ASSERT(this->laser != NULL);
     
-  // Subscribe to the laser device
-  this->laser->Subscribe(this);
+  // Subscribe to the laser device, but fail if it fails
+  if(this->laser->Subscribe(this) != 0)
+    return(-1);
 
   // Maximum variance in the flatness of the beacon
   this->max_depth = 0.05;
@@ -222,21 +223,21 @@ int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len)
 {
   player_laserbeacon_config_t config;
 
-  // Check the message length
-  if (len != sizeof(config))
-  {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return 0;
-  }
-
-  memcpy(&config, data, sizeof(config));
+  memcpy(&config, data, min(sizeof(config),len));
 
   switch (config.subtype)
   {
     case PLAYER_LASERBEACON_SUBTYPE_SETCONFIG:
     {
+      // Check the message length
+      if (len != sizeof(config))
+      {
+        PLAYER_ERROR2("config request len is invalid (%d != %d)", 
+                      len, sizeof(config));
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        return 0;
+      }
       Lock();
       this->max_bits = config.bit_count;
       this->max_bits = max(this->max_bits, 3);
@@ -253,6 +254,15 @@ int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len)
 
     case PLAYER_LASERBEACON_SUBTYPE_GETCONFIG:
     {
+      // Check the message length
+      if (len != sizeof(config.subtype))
+      {
+        PLAYER_ERROR2("config request len is invalid (%d != %d)", 
+                      len, sizeof(config.subtype));
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        return 0;
+      }
       Lock();
       config.bit_count = this->max_bits;
       config.bit_size = htons((short) (this->bit_width * 1000));

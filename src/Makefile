@@ -71,7 +71,7 @@ ifdef INCLUDE_SPEECH
   OBS += speechdevice.o
 endif
 
-#SHARED_OBJS = laser.so
+#SHARED_OBJS = laserdevice.so
 
 # we build the server, any dynamically loadable device drivers, and an archive
 # of the PlayerQueue for linking into Stage
