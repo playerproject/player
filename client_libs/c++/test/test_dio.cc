@@ -12,7 +12,7 @@ int
 test_dio(PlayerClient* client, int index)
 {
   unsigned char access;
-  DIOProxy dp(client,index);
+  DIOProxy dp(client,index,'c',robot);
 
   printf("device [dio] index [%d]\n", index);
 

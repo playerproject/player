@@ -12,7 +12,7 @@ int
 test_misc(PlayerClient* client, int index)
 {
   unsigned char access;
-  MiscProxy mp(client,index);
+  MiscProxy mp(client,index,'c',robot);
 
   printf("device [misc] index [%d]\n", index);
 

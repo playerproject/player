@@ -12,7 +12,7 @@ int
 test_ptz(PlayerClient* client, int index)
 {
   unsigned char access;
-  PtzProxy zp(client,index);
+  PtzProxy zp(client,index,'c',robot);
 
   printf("device [ptz] index [%d]\n", index);
 

@@ -12,7 +12,7 @@ int
 test_speech(PlayerClient* client, int index)
 {
   unsigned char access;
-  SpeechProxy sp(client,index);
+  SpeechProxy sp(client,index,'c',robot);
 
   printf("device [speech] index [%d]\n", index);
 

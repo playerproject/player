@@ -32,22 +32,19 @@
 ClientProxy::ClientProxy(PlayerClient* pc, 
             unsigned short req_device,
             unsigned short req_index,
-            unsigned char req_access)
+            unsigned char req_access,
+            unsigned short req_robot)
 {
-  player_device_id_t id;
   // TODO: make sure that this default of 0 makes sense.
-  id.robot = 0;
-  id.code = req_device;
-  id.index = req_index;
+  m_device_id.robot = req_robot;
+  m_device_id.code = req_device;
+  m_device_id.index = req_index;
 
-  ClientProxy(pc,id,req_access);
-}
-
+/*
 ClientProxy::ClientProxy(PlayerClient* pc, 
             player_device_id_t device_id,
             unsigned char req_access)
-{
-  m_device_id = device_id;
+*/
   client = pc;
 
   timestamp.tv_sec = 0;
@@ -80,9 +77,12 @@ ClientProxy::ClientProxy(PlayerClient* pc,
   }
   else
   {
-    //if(player_debug_level(-1) >= 4)
-      //printf("WARNING: couldn't open device %d:%d because no client "
- 	     //"object is available\n", device,index);
+    /*
+    if(player_debug_level(-1) >= 4)
+      printf("WARNING: couldn't open device %d:%d:%d because no client "
+ 	     "object is available\n", m_device_id.robot,m_device_id.code,
+             m_device_id.index);
+     */
   }
 
   access = grant_access;
@@ -103,7 +103,6 @@ ClientProxy::~ClientProxy()
 // methods for changing access mode
 int ClientProxy::ChangeAccess(unsigned char req_access, 
                               unsigned char* grant_access )
-			      
 {
   unsigned char our_grant_access = access;
 
@@ -124,7 +123,10 @@ int ClientProxy::ChangeAccess(unsigned char req_access,
              m_device_id.index, our_grant_access);
   }
   else
+  {
+    puts("no client");
     return(-1);
+  }
 
   access = our_grant_access;
 

@@ -452,6 +452,7 @@ int ClientManager::Write()
       int replysize;
       struct timeval ts;
       player_device_id_t id;
+      bzero(&id,sizeof(id));
 
       // is this a valid device
       if(thisub->devicep)
@@ -472,11 +473,13 @@ int ClientManager::Write()
           // subscription entry is correct
           if(!id.code)
           {
+            reply_hdr.robot = htons(thisub->id.robot);
             reply_hdr.device = htons(thisub->id.code);
             reply_hdr.device_index = htons(thisub->id.index);
           }
           else
           {
+            reply_hdr.robot = htons(id.robot);
             reply_hdr.device = htons(id.code);
             reply_hdr.device_index = htons(id.index);
           }

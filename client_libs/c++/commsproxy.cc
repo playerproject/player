@@ -38,8 +38,9 @@
 
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
-CommsProxy::CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access)
-    : ClientProxy(pc, PLAYER_COMMS_CODE, index, access)
+CommsProxy::CommsProxy(PlayerClient* pc, unsigned short index, 
+                       unsigned char access, unsigned short robot)
+    : ClientProxy(pc, PLAYER_COMMS_CODE, index, access,robot)
 {
   this->listlen = 10;
   this->msg = (uint8_t**)calloc(this->listlen,sizeof(uint8_t*));

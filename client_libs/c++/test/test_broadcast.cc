@@ -12,7 +12,7 @@ int
 test_broadcast(PlayerClient* client, int index)
 {
   unsigned char access;
-  CommsProxy bp(client,index);
+  CommsProxy bp(client,index,'c',robot);
   char msg[32];
   char rep[32];
 

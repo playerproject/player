@@ -19,6 +19,8 @@
 #define PASS() (1 ? printf("pass\n"), fflush(stdout) : 0)
 #define FAIL() (1 ? printf("\033[41mfail\033[0m\n"), fflush(stdout) : 0)
 
+extern int robot;
+
 int test_gps(PlayerClient* client, int index);
 int test_position(PlayerClient* client, int index);
 int test_position_control(PlayerClient* client, int index);

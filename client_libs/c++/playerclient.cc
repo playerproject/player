@@ -140,7 +140,6 @@ int PlayerClient::Connect(const struct in_addr* addr, int port)
     memcpy(&this->hostaddr, addr, sizeof(struct in_addr));
     this->port = port;
     this->hostname[0] = 0; // nullify the string
-    conn.port = 6667;
 
     return(0);
   }
@@ -217,8 +216,8 @@ int PlayerClient::Read()
       if(!(thisproxy = GetProxy(id)))
       {
         if(player_debug_level(-1) >= 3)
-          fprintf(stderr,"WARNING: read unexpected data for device %d:%d\n",
-                  hdr.device, hdr.device_index);
+          fprintf(stderr,"WARNING: read unexpected data for device %d:%d:%d\n",
+                  hdr.robot,hdr.device,hdr.device_index);
         continue;
       }
 

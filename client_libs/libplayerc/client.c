@@ -369,7 +369,7 @@ int playerc_client_get_devlist(playerc_client_t *client)
   {
     client->ids[i].code = ntohs(config.devices[i].code);
     client->ids[i].index = ntohs(config.devices[i].index);
-    client->ids[i].port = ntohs(config.devices[i].port);
+    client->ids[i].robot = ntohs(config.devices[i].robot);
   }
   client->id_count = config.device_count;
 
@@ -391,7 +391,7 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
     req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
     req.id.code = htons(client->ids[i].code);
     req.id.index = htons(client->ids[i].index);
-    req.id.port = htons(client->ids[i].port);
+    req.id.robot = htons(client->ids[i].robot);
 
     len = playerc_client_request(client, NULL,
                                  &req, sizeof(req), &rep, sizeof(rep));
@@ -419,8 +419,11 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index, int 
   player_device_resp_t rep;
 
   req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  req.code = htons(code);
-  req.index = htons(index);
+  // TODO: add the necessary infrastructure to specify and store the robot
+  // id somewhere
+  req.id.robot = htons(0);
+  req.id.code = htons(code);
+  req.id.index = htons(index);
   req.access = access;
 
   if (playerc_client_request(client, NULL, &req, sizeof(req), &rep, sizeof(rep)) < 0)
@@ -446,8 +449,11 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
   player_device_resp_t rep;
 
   req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  req.code = htons(code);
-  req.index = htons(index);
+  // TODO: add the necessary infrastructure to specify and store the robot
+  // id somewhere
+  req.id.robot = htons(0);
+  req.id.code = htons(code);
+  req.id.index = htons(index);
   req.access = PLAYER_CLOSE_MODE;
 
   if (playerc_client_request(client, NULL, &req, sizeof(req), &rep, sizeof(rep)) < 0)
@@ -594,6 +600,10 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
   header->device = htons(header->device);
   header->device_index = htons(header->device_index);
   header->size = htonl(header->size);
+  
+  // TODO: add the necessary infrastructure to specify and store the robot
+  // id somewhere
+  header->robot = htons(0);
     
   bytes = send(client->sock, header, sizeof(player_msghdr_t), 0);
   if (bytes < 0)
