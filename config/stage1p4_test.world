@@ -20,14 +20,12 @@ gui
 )
 
 # load a bitmapped environment from a file
-#wall
-#(
-  #pose [2.5 2.5 0.0]
-  #size [5.0 5.0]
+wall
+(
   #bitmap "test.pnm" 
-  #bitmap "hospital.pnm" 
-  #color "blue"
-#)
+  bitmap "/homes/vaughan/PS/HEAD/stage/worlds/cave.pnm" 
+  color "blue"
+)
 
 #entity
 #(
@@ -68,17 +66,15 @@ define swarmbot bar
 (
   size [0.1 0.1]
 
-  light "blink"
-	
   neighbor 1
 
-  #indicatorlight( color "red"    pose [0.03 0 0] ) 
-  #indicatorlight( color "green"  pose [0 0.03 0] ) 
-  #indicatorlight( color "blue"   pose [-0.03 0 0] ) 
-  #indicatorlight( color "yellow" pose [0 -0.03 0] ) 
+  indicatorlight( color "red"    pose [0.03 0 0] light_interval 200 ) 
+  indicatorlight( color "green"  pose [0 0.03 0] light_interval 400 ) 
+  indicatorlight( color "blue"   pose [-0.03 0 0] light_interval 600 ) 
+  indicatorlight( color "yellow" pose [0 -0.03 0] light_interval 800 ) 
 )
 
-swarmbot( name "swarm1" pose [4 3 0] )
-swarmbot( name "swarm2" pose [4 3.2 0] )
-swarmbot( name "swarm3" pose [4 3.5 0] )
-swarmbot( name "swarm4" pose [4 3.8 0] )
+swarmbot( name "swarm1" pose [4 3 0] color "red" )
+swarmbot( name "swarm2" pose [4 3.2 0] color "green"  )
+swarmbot( name "swarm3" pose [4 3.5 0] color "blue"  )
+swarmbot( name "swarm4" pose [4 3.8 0] color "magenta" )

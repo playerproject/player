@@ -19,12 +19,12 @@ gui
 
 # load a bitmapped environment from a file
 #
-#bitmap
-#(
-#  color "purple"
-#  file "cave.pnm.gz" 
-#  resolution 0.02
-#)
+bitmap
+(
+  color "purple"
+  file "/homes/vaughan/PS/HEAD/stage/worlds/cave.pnm.gz" 
+  resolution 0.02
+)
 
 # create a robot, setting its start position
 # and equipping it with a laser range scanner
