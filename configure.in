@@ -107,144 +107,116 @@ AC_SUBST(CXXFLAGS_SERVER)
 AC_SUBST(RANLIB_SERVER)
 
 dnl the following drivers will install by default
-P2OS_LIB="libp2os.a"
-P2OS_LIBPATH="drivers/p2os/libp2os.a"
 AC_ARG_WITH(p2os,
-[  --without-p2os          Don't compile the p2os drivers],
-[case "${withval}" in 
- yes) AC_DEFINE(INCLUDE_P2OS, 1, [[include the P2OS driver]])
-      ;;
- no) P2OS_LIB=""
-     P2OS_LIBPATH=""
-     ;;
- esac],
-[AC_DEFINE(INCLUDE_P2OS, 1, [[include the P2OS driver]])])
+[  --without-p2os          Don't compile the p2os drivers],,
+with_p2os=yes)
+if test "x$with_p2os" = "xyes"; then
+  AC_DEFINE(INCLUDE_P2OS, 1, [[include the P2OS driver]])
+  P2OS_LIB="libp2os.a"
+  P2OS_LIBPATH="drivers/p2os/libp2os.a"
+fi
 AC_SUBST(P2OS_LIB)
 AC_SUBST(P2OS_LIBPATH)
 
 
-SICK_LIB="libsicklms200.a"
-SICK_LIBPATH="drivers/libsicklms200.a"
 AC_ARG_WITH(sick,
-[  --without-sick          Don't compile the sicklms200 driver],
-[case "${withval}" in 
- yes) AC_DEFINE(INCLUDE_SICK, 1, [[include the SICK driver]])
-      ;;
- no) SICK_LIB=""
-     SICK_LIBPATH=""
-     ;;
- esac],
-[AC_DEFINE(INCLUDE_SICK, 1, [[include the SICK driver]])])
+[  --without-sick          Don't compile the sicklms200 driver],,
+with_sick=yes)
+if test "x$with_sick" = "xyes"; then
+  AC_DEFINE(INCLUDE_SICK, 1, [[include the SICK driver]])
+  SICK_LIB="libsicklms200.a"
+  SICK_LIBPATH="drivers/libsicklms200.a"
+fi
 AC_SUBST(SICK_LIB)
 AC_SUBST(SICK_LIBPATH)
 
-
-ACTS_LIB="libacts.a"
-ACTS_LIBPATH="drivers/libacts.a"
 AC_ARG_WITH(acts,
-[  --without-acts          Don't compile the acts driver],
-[case "${withval}" in 
- yes) AC_DEFINE(INCLUDE_ACTS, 1, [[include the ACTS driver]])
-      ;;
- no) ACTS_LIB=""
-     ACTS_LIBPATH=""
-     ;;
- esac],
-[AC_DEFINE(INCLUDE_ACTS, 1, [[include the ACTS driver]])])
+[  --without-acts          Don't compile the acts driver],,
+with_acts=yes)
+if test "x$with_acts" = "xyes"; then
+  AC_DEFINE(INCLUDE_ACTS, 1, [[include the ACTS driver]])
+  ACTS_LIB="libacts.a"
+  ACTS_LIBPATH="drivers/libacts.a"
+fi
 AC_SUBST(ACTS_LIB)
 AC_SUBST(ACTS_LIBPATH)
 
 
-FESTIVAL_LIB="libfestival.a"
-FESTIVAL_LIBPATH="drivers/libfestival.a"
 AC_ARG_WITH(festival,
-[  --without-festival      Don't compile the festival driver],
-[case "${withval}" in 
- yes) AC_DEFINE(INCLUDE_FESTIVAL, 1, [[include the FESTIVAL driver]])
-      ;;
- no) FESTIVAL_LIB=""
-     FESTIVAL_LIBPATH=""
-     ;;
- esac],
-[AC_DEFINE(INCLUDE_FESTIVAL, 1, [[include the FESTIVAL driver]])])
+[  --without-festival      Don't compile the festival driver],,
+with_festival=yes)
+if test "x$with_festival" = "xyes"; then
+  AC_DEFINE(INCLUDE_FESTIVAL, 1, [[include the FESTIVAL driver]])
+  FESTIVAL_LIB="libfestival.a"
+  FESTIVAL_LIBPATH="drivers/libfestival.a"
+fi
 AC_SUBST(FESTIVAL_LIB)
 AC_SUBST(FESTIVAL_LIBPATH)
 
-
-SONY_LIB="libsonyevid30.a"
-SONY_LIBPATH="drivers/libsonyevid30.a"
 AC_ARG_WITH(sony,
-[  --without-sony          Don't compile the sonyevid30 driver],
-[case "${withval}" in 
- yes) AC_DEFINE(INCLUDE_SONY, 1, [[include the SONY driver]])
-      ;;
- no) SONY_LIB=""
-     SONY_LIBPATH=""
-     ;;
- esac],
-[AC_DEFINE(INCLUDE_SONY, 1, [[include the SONY driver]])])
+[  --without-sony          Don't compile the sonyevid30 driver],,
+with_sony=yes)
+if test "x$with_sony" = "xyes"; then
+  AC_DEFINE(INCLUDE_SONY, 1, [[include the SONY driver]])
+  SONY_LIB="libsonyevid30.a"
+  SONY_LIBPATH="drivers/libsonyevid30.a"
+fi
 AC_SUBST(SONY_LIB)
 AC_SUBST(SONY_LIBPATH)
 
+AC_ARG_WITH(stage,
+[  --without-stage         Don't compile the stage driver],,
+with_stage=yes)
+if test "x$with_stage" = "xyes"; then
+  AC_DEFINE(INCLUDE_STAGE, 1, [[include the STAGE driver]])
+  STAGE_LIB="libstage.a"
+  STAGE_LIBPATH="drivers/stage/libstage.a"
+fi
+AC_SUBST(STAGE_LIB)
+AC_SUBST(STAGE_LIBPATH)
 
-UDPBCAST_LIB="libudpbroadcast.a"
-UDPBCAST_LIBPATH="drivers/libudpbroadcast.a"
 AC_ARG_WITH(udpbcast,
-[  --without-udpbcast      Don't compile the udpbroadcast driver],
-[case "${withval}" in 
- yes) AC_DEFINE(INCLUDE_UDPBCAST, 1, [[include the UDPBCAST driver]])
-      ;;
- no) UDPBCAST_LIB=""
-     UDPBCAST_LIBPATH=""
-     ;;
- esac],
-[AC_DEFINE(INCLUDE_UDPBCAST, 1, [[include the UDPBCAST driver]])])
+[  --without-udpbcast      Don't compile the udpbroadcast driver],,
+with_udpbcast=yes)
+if test "x$with_udpbcast" = "xyes"; then
+  AC_DEFINE(INCLUDE_UDPBCAST, 1, [[include the UDPBCAST driver]])
+  UDPBCAST_LIB="libudpbroadcast.a"
+  UDPBCAST_LIBPATH="drivers/libudpbroadcast.a"
+fi
 AC_SUBST(UDPBCAST_LIB)
 AC_SUBST(UDPBCAST_LIBPATH)
 
-
-LASER_LIB="liblasercspace.a liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a"
-LASER_LIBPATH="drivers/liblasercspace.a drivers/liblaserbar.a drivers/liblaserbarcode.a drivers/liblaservisualbarcode.a"
 AC_ARG_WITH(laser,
-[  --without-laser         Don't compile the laser-based fiducial drivers],
-[case "${withval}" in 
- yes) AC_DEFINE(INCLUDE_LASER, 1, [[include the LASER driver]])
-      ;;
- no) LASER_LIB=""
-     LASER_LIBPATH=""
-     ;;
- esac],
-[AC_DEFINE(INCLUDE_LASER, 1, [[include the LASER driver]])])
+[  --without-laser         Don't compile the laser-based fiducial drivers],,
+with_laser=yes)
+if test "x$with_laser" = "xyes"; then
+  AC_DEFINE(INCLUDE_LASER, 1, [[include the LASER driver]])
+  LASER_LIB="liblasercspace.a liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a"
+  LASER_LIBPATH="drivers/liblasercspace.a drivers/liblaserbar.a drivers/liblaserbarcode.a drivers/liblaservisualbarcode.a"
+fi
 AC_SUBST(LASER_LIB)
 AC_SUBST(LASER_LIBPATH)
 
-LINUXWIFI_LIB="liblinuxwifi.a"
-LINUXWIFI_LIBPATH="drivers/liblinuxwifi.a"
-AC_ARG_WITH(wifi, 
-[  --without-wifi          Don't compile the linuxwifi driver],
-[case "${withval}" in
- yes) AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])
-      ;;
-  no) LINUXWIFI_LIB=""
-      LINUXWIFI_LIBPATH=""
-      ;;
- esac],
-[AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])])
+AC_ARG_WITH(linuxwifi, 
+[  --without-linuxwifi          Don't compile the linuxwifi driver],,
+with_linuxwifi=yes)
+if test "x$with_linuxwifi" = "xyes"; then
+  AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])
+  LINUXWIFI_LIB="liblinuxwifi.a"
+  LINUXWIFI_LIBPATH="drivers/liblinuxwifi.a"
+fi
 AC_SUBST(LINUXWIFI_LIB)
 AC_SUBST(LINUXWIFI_LIBPATH)
 
 dnl the following must use --with to be built
 AC_ARG_WITH(reb,
-[  --with-reb              Compile the reb drivers],
-[case "${withval}" in 
- yes) AC_DEFINE(INCLUDE_REB, 1, [[include the REB driver]])
-      REB_LIB="libreb.a"
-      REB_LIBPATH="drivers/reb/libreb.a"
-      ;;
-  no) ;;
-   *) ;;
- esac],
-[])
+[  --with-reb              Compile the reb drivers],,
+with_reb=no)
+if test "x$with_reb" = "xyes"; then
+  AC_DEFINE(INCLUDE_REB, 1, [[include the REB driver]])
+  REB_LIB="libreb.a"
+  REB_LIBPATH="drivers/reb/libreb.a"
+fi
 AC_SUBST(REB_LIB)
 AC_SUBST(REB_LIBPATH)
 
