@@ -738,17 +738,16 @@ SegwayRMP::UpdateData(rmp_frame_t * data_frame)
                        (double)RMP_COUNT_PER_DEG));
   if(tmp < 0)
     tmp += 2*M_PI;
-  data.position3d_data.roll = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
+  data.position3d_data.roll = htonl((int32_t)rint(tmp * 1000.0));
   
   // normalize angles to [0,360]
   tmp = NORMALIZE(DTOR((double)data_frame->pitch /
                        (double)RMP_COUNT_PER_DEG));
   if(tmp < 0)
     tmp += 2*M_PI;
-  data.position3d_data.pitch = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
+  data.position3d_data.pitch = htonl((int32_t)rint(tmp * 1000.0));
   
-  data.position3d_data.yaw = 
-    htonl(((int32_t)(RTOD(this->odom_yaw) * 3600.0)));
+  data.position3d_data.yaw = htonl(((int32_t)(this->odom_yaw * 1000.0)));
   
   // combine left and right wheel velocity to get foreward velocity
   // change from counts/s into mm/s
@@ -763,12 +762,10 @@ SegwayRMP::UpdateData(rmp_frame_t * data_frame)
   
   data.position3d_data.rollspeed = 
     htonl((int32_t)rint((double)data_frame->roll_dot /
-                        (double)RMP_COUNT_PER_DEG_PER_S
-                        * 3600.0));
+                        (double)RMP_COUNT_PER_DEG_PER_S * M_PI / 180 * 1000.0));
   data.position3d_data.pitchspeed = 
     htonl((int32_t)rint((double)data_frame->pitch_dot /
-                        (double)RMP_COUNT_PER_DEG_PER_S
-                        * 3600.0));
+                        (double)RMP_COUNT_PER_DEG_PER_S * M_PI / 180 * 1000.00));
   // from counts/sec into millirad/sec.  also, take the additive
   // inverse, since the RMP reports clockwise angular velocity as
   // positive.
