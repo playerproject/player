@@ -31,10 +31,18 @@
 /** @{ */
 /** @defgroup player_driver_service_adv_lsd service_adv_lsd
 
-Driver for libservicediscovery.  Note that the service_adv_lsd driver has
-no client proxy, and clients cannot "subscribe" and read from it: the
-Init function just starts the man thread and it runs "in the background"
-forever.
+@deprecated 
+
+Driver for libservicediscovery.   This driver is deprecated, since 
+libservicediscovery is no longer maintained, and was never very good
+to begin with. Try the MDNS service discovery driver instead (player_driver_service_adv_mdns).
+
+This driver has no client proxy. The driver responds to queries in a background
+thread when loaded and initialized.
+
+The service is advertised using a URL in this format: player://<hostname>:<port>.
+In addition to any service_tags given in the configuration file, a tag is added
+for each device currently loaded, in the format: <device name>#<index>(<driver name).
 
 @par Compile-time dependencies
 
@@ -62,6 +70,9 @@ forever.
 driver
 (
   name "service_adv_lsd"
+  service_name "MyRobot"
+  service_description "This is my groovy robot."
+  service_tags [ "strength=12" "intelligence=5" "dexterity=9" ]
 )
 @endverbatim
 
@@ -158,13 +169,13 @@ SrvAdv_LSD::SrvAdv_LSD( ConfigFile* configFile, int configSection)
     alwayson = true;      // since there is no client interface
 
     service.url = configFile->ReadString(configSection, "url", ""); // will be detected in Prepare() if ""
-    service.title = configFile->ReadString(configSection, "name", "robot");
-    service.description = configFile->ReadString(configSection, "description", "Player Robot Server");   
+    service.title = configFile->ReadString(configSection, "service_name", "robot");
+    service.description = configFile->ReadString(configSection, "service_description", "Player Robot Server");   
 
     // read types from player config file
     service.types.insert("player");
     const char* x;
-    for(int i = 0; (x = configFile->ReadTupleString(configSection, "tags", i, 0)); i++) {
+    for(int i = 0; (x = configFile->ReadTupleString(configSection, "service_tags", i, 0)); i++) {
         service.types.insert(string(x));
     }
 

@@ -32,18 +32,34 @@
 /** @{ */
 /** @defgroup player_driver_service_adv_mdns service_adv_mdns
 
-Service advertisement driver for howl MDNS (Zeroconf aka "Rendezvous").
-Note that the service_adv_mdns driver has no client proxy, and clients
-cannot "subscribe" and read from it: the Init function just starts the
-Howl threads and they run "in the background" forever.
+This driver can be used to publish a Player service using 
+the proposed IETF standard for multicast DNS service discovery (MDNS-SD).
+MDNS-SD is a part of the <a href="http://www.zeroconf.org">Zeroconf</a> protocols,
+and has also been called "Rendezvous".
+
+The MDNS-SD service type is "_player._tcp".    In addition to any 
+"service_description" given in the configuration file (see below), any 
+loaded device drivers will be represented in the service's TXT record.
+Each device will be entered into the TXT record as: 
+<code>device=</code><i>name</i><code>#</code><i>number</i><code>(</code><i>driver name</i><code>)</code>.
+
+The <a href="http://www.porchdogsoft.com/products/howl/">Howl</a> library is 
+used for MDNS-SD and must be available for this driver to be compiled into
+the server.
+
+This driver has no client proxy. When the driver is loaded and initialized,
+the service is published, and Howl responds to queries in a background 
+thread. Clients may use Howl or any other MDNS-SD implementation to 
+query and find services.
 
 @par Compile-time dependencies
 
-- <a href=http://www.porchdogsoft.com>libhowl</a>
+- <a href="http://www.porchdogsoft.com/products/howl/">libhowl</a>
 
 @par Provides
 
 - none
+  - Note, however, that you must specify a "provides" field in the config file, anyway.
 
 @par Requires
 
@@ -55,7 +71,12 @@ Howl threads and they run "in the background" forever.
 
 @par Configuration file options
 
-- none
+- service_name (string)  
+    - A short name for the service. If omitted, a default will be chosen based on the Player port number.
+- service_description (string)
+    - A longer "description" for the robot, which will be included in the service TXT record.
+- service_tags (tuple string)
+    - Tags to include in the service TXT record, in addition to device names.
  
 @par Example 
 
@@ -63,6 +84,10 @@ Howl threads and they run "in the background" forever.
 driver
 (
   name "service_adv_mdns"
+  provides ["service_adv:0"]
+  service_name "robot"
+  service_description "This is a groovy robot which can be controlled with Player."
+  service_tags [ "job=mapper" "operator=reed" "strength=12" "dexterity=18" "intelligence=4" "thac0=8" ]
 )
 @endverbatim
 
@@ -94,8 +119,8 @@ Reed Hedges
 class SrvAdv_MDNS : public Driver {
   private:
     // MDNS objects
-    sw_discovery howl_client;
-    sw_discovery_publish_id id;
+    sw_discovery howl_session;
+    sw_discovery_oid id;
     std::set<std::string> extra_txt;
     std::string name, description;
 
@@ -139,7 +164,7 @@ void ServiceAdvMDNS_Register(DriverTable* table)
 
 SrvAdv_MDNS::~SrvAdv_MDNS() {
     stop();
-    sw_discovery_fina(howl_client);
+    sw_discovery_fina(howl_session);
 }
 
 // Constructor
@@ -152,12 +177,12 @@ SrvAdv_MDNS::SrvAdv_MDNS( ConfigFile* configFile, int configSection)
 
     // read name and description from config file. 
     assert(configFile);
-    name = configFile->ReadString(configSection, "name", "");
-    description = configFile->ReadString(configSection, "description", "");
+    name = configFile->ReadString(configSection, "service_name", "");
+    description = configFile->ReadString(configSection, "service_description", "");
 
     // read extra tags from player config file
     const char* x;
-    for(int i = 0; (x = configFile->ReadTupleString(configSection, "tags", i, 0)); i++) {
+    for(int i = 0; (x = configFile->ReadTupleString(configSection, "service_tags", i, 0)); i++) {
         extra_txt.insert(std::string(x));
     }
 
@@ -166,10 +191,9 @@ SrvAdv_MDNS::SrvAdv_MDNS( ConfigFile* configFile, int configSection)
 
 // this C function is called when a query on our service is made.
 static sw_result HOWL_API service_reply(
-    sw_discovery_publish_handler handler,
     sw_discovery discovery,
+    sw_discovery_oid id,
     sw_discovery_publish_status status,
-    sw_discovery_publish_id id,
     sw_opaque extra_data)
 {
     printf("service_adv_mdns: ");
@@ -195,10 +219,11 @@ static sw_result HOWL_API service_reply(
 
 void SrvAdv_MDNS::Prepare() {
 
+  printf("service_adv_mdns: prepare\n");
     sw_text_record txt;
     sw_result r;
 
-    if(sw_discovery_init(&howl_client) != SW_OKAY) {
+    if(sw_discovery_init(&howl_session) != SW_OKAY) {
         fprintf(stderr, "service_adv_mdns: Error: Howl initialization failed. (Is mdnsresponder running?)\n");
         return;
     }
@@ -241,9 +266,19 @@ void SrvAdv_MDNS::Prepare() {
     }
 
     printf("service_adv_mdns: Publishing service with MDNS type \"_player._tcp\", port %d, and name \"%s\".\n", device_id.port, name.c_str());
-    r = sw_discovery_publish(howl_client, name.c_str(), MDNS_SERVICE_TYPE, NULL, 
-            NULL, device_id.port, sw_text_record_bytes(txt),
-            sw_text_record_len(txt), NULL, service_reply, NULL, &id);
+    r = sw_discovery_publish(
+            howl_session,        // session
+            0,                  // NIC index (0=all)
+            name.c_str(),       // service name
+            MDNS_SERVICE_TYPE,  // service type, defined above to _player._tcp
+            NULL,               // service domain, NULL=defaut (.local)
+            NULL,               // service hostname, NULL=default
+            device_id.port,     // service port
+            sw_text_record_bytes(txt),  // TXT record
+            sw_text_record_len(txt),    // TXT record length
+            &service_reply,     // callback function
+            NULL,               // extra opaque data
+            &id);               // id of this publication
     if(r != SW_OKAY) {
         fprintf(stderr, "service_adv_mdns: Error: Service publishing failed!  (%ld)\n", r);
         sw_text_record_fina(txt);
@@ -258,14 +293,14 @@ void SrvAdv_MDNS::Prepare() {
 
 void SrvAdv_MDNS::Main() {
     printf("service_adv_mdns: running howl...\n");
-    sw_discovery_run(howl_client); // (does not return)
+    sw_discovery_run(howl_session); // (does not return)
 }
 
 // stop the service directory
 void SrvAdv_MDNS::stop()
 {
-    sw_discovery_stop_publish(howl_client, id);
-    sw_discovery_stop_run(howl_client);
+    sw_discovery_cancel(howl_session, id);
+    sw_discovery_stop_run(howl_session);
     StopThread();
 }
 
