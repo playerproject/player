@@ -76,7 +76,7 @@ class CDevice
     // queues for incoming requests and outgoing replies
     PlayerQueue* device_reqqueue;
     PlayerQueue* device_repqueue;
-
+    
   public:
     // who we are (currently set by CDeviceTable::AddDevice(); not a great
     // place)
