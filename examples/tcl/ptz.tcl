@@ -32,7 +32,7 @@
 # to get the 'sleep' command
 package require Tclx
 
-set PLAYER_VERSION 1.0-beta
+set PLAYER_VERSION 1.0-gamma
 
 #
 # get the robot client utilities
