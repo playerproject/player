@@ -86,7 +86,7 @@ if test "x$CANLIB_DIR" = "xNONE" -o "x$CANLIB_DIR" = "xno"; then
   SEGWAYRMP_EXTRA_CPPFLAGS=
   SEGWAYRMP_EXTRA_LDFLAGS=-lcanlib
 else
-  SEGWAYRMP_HEADER=$CANLIB_DIR/include/gazebo.h
+  SEGWAYRMP_HEADER=$CANLIB_DIR/include/canlib.h
   SEGWAYRMP_EXTRA_CPPFLAGS="-I$CANLIB_DIR/include"
   SEGWAYRMP_EXTRA_LDFLAGS="-L$CANLIB_DIR/lib -lcanlib"
 fi
