@@ -106,17 +106,19 @@ void AdaptiveMCL::GetGpsData(amcl_sensor_data_t *data)
 {
   size_t size;
   player_gps_data_t ndata;
+  uint32_t tsec, tusec;
 
   // If there is no gps device...
   if (this->gps_index < 0)
     return;
 
   // Get the gps device data
-  size = this->gps->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
+  size = this->gps->GetData(this, (uint8_t*) &ndata, sizeof(ndata), &tsec, &tusec);
 
+  data->gps_time = ntohl(tsec) + ntohl(tusec) * 1e-6;
   data->gps_utm_e = ((int32_t) ntohl(ndata.utm_e)) / 100.0;
   data->gps_utm_n = ((int32_t) ntohl(ndata.utm_n)) / 100.0;
-  data->gps_err_horz = ((int32_t) ntohl(ndata.utm_e)) / 1000.0;
+  data->gps_err_horz = ((int32_t) ntohl(ndata.err_horz)) / 1000.0;
   
   return;
 }
@@ -126,6 +128,8 @@ void AdaptiveMCL::GetGpsData(amcl_sensor_data_t *data)
 // Initialize from the GPS sensor model
 void AdaptiveMCL::InitGpsModel(amcl_sensor_data_t *data)
 {
+  printf("init %f %f %f\n", data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
+  
   // Update the gps sensor model with the latest gps measurements
   gps_set_utm(this->gps_model, data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
 
@@ -145,6 +149,8 @@ void AdaptiveMCL::InitGpsModel(amcl_sensor_data_t *data)
 // Apply the gps sensor model
 void AdaptiveMCL::UpdateGpsModel(amcl_sensor_data_t *data)
 {
+  printf("gps %f %f %f\n", data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
+    
   // Update the gps sensor model with the latest gps measurements
   gps_set_utm(this->gps_model, data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
 

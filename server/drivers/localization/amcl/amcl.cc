@@ -107,6 +107,9 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // GPS stuff
   this->LoadGps(cf, section);
+
+  // IMU stuff
+  this->LoadImu(cf, section);
   
   // Particle filter settings
   this->pf = NULL;
@@ -225,6 +228,10 @@ int AdaptiveMCL::Setup(void)
   if (this->SetupGps() != 0)
     return -1;
 
+  // Initialise IMU
+  if (this->SetupImu() != 0)
+    return -1;
+
   // Set the initial odometric poses
   this->GetOdomData(&sdata);
   this->odom_pose = sdata.odom_pose;
@@ -302,6 +309,8 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   
   this->Lock();
 
+  memset(&sdata, 0, sizeof(sdata));
+  
   // See if there is new odometry data.  If there is, push it and all
   // the rest of the sensor data onto the sensor queue.
   this->GetOdomData(&sdata);
@@ -312,6 +321,7 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
 
   // Make sure we have moved a reasonable distance
   if (this->push_init == false ||
+      this->odom_index < 0 ||
       fabs(odom_diff.v[0]) > 0.20 ||
       fabs(odom_diff.v[1]) > 0.20 ||
       fabs(odom_diff.v[2]) > M_PI / 6)
@@ -329,6 +339,9 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
 
     // Get the current GPS data; we assume it is new data
     this->GetGpsData(&sdata);
+
+    // Get the current IMU data; we assume it is new data
+    this->GetImuData(&sdata);
 
     // Push the data
     this->Push(&sdata);
@@ -645,14 +658,16 @@ void AdaptiveMCL::Main(void)
     if (this->Pop(&data))
     {
       this->UpdateFilter(&data);
-
+      
 #ifdef INCLUDE_OUTFILE
       // Save the error values
       pf_vector_t mean;
       double var;
 
       pf_get_cep_stats(pf, &mean, &var);
-      
+
+      printf("%.3f %.3f %f\n", mean.v[0], mean.v[1], mean.v[2] * 180 / M_PI);
+            
       fprintf(this->outfile, "%d.%03d unknown 6665 localize 01 %d.%03d ",
               0, 0, data.odom_time_sec, data.odom_time_usec / 1000);
       fprintf(this->outfile, "1.0 %e %e %e %e 0 0 0 0 0 0 0 0 \n",
@@ -746,6 +761,8 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   pf_matrix_t pose_cov;
   amcl_hyp_t *hyp;
 
+  printf("update\n");
+  
   // If the distribution has not been initialized...
   if (this->pf_init == false)
   {
@@ -756,6 +773,8 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
     // Initialize distribution from GPS model
     if (this->pf_init_gps)
       this->InitGpsModel(data);
+
+    this->pf_init = true;
   }
   
   // Apply odometry action and sensor models
@@ -772,6 +791,9 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 
   // Apply the GPS sensor model
   this->UpdateGpsModel(data);
+
+  // Apply the IMU sensor model
+  this->UpdateImuModel(data);
 
   // Resample
   pf_update_resample(this->pf);

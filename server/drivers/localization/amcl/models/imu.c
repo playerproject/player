@@ -38,6 +38,7 @@ imu_model_t *imu_alloc()
   imu_model_t *self;
 
   self = calloc(1, sizeof(imu_model_t));
+  self->err_head = 10 * M_PI / 180;
   
   return self;
 }
@@ -63,19 +64,17 @@ void imu_set_utm(imu_model_t *self, double utm_head)
 // Gaussian.
 double imu_sensor_model(imu_model_t *self, pf_vector_t pose)
 {
-  /* TODO
-  double dx, dy, sigma;
+  double da, sigma;
   double z, p;
+
+  // TODO: check this
+  da = self->utm_head + self->utm_offset + M_PI / 2 - pose.v[2];
   
-  dx = self->utm_e - pose.v[0];
-  dy = self->utm_n - pose.v[1];
-  sigma = self->err_horz;
-  
-  z = (dx * dx + dy * dy) / (2 * sigma * sigma);
+  da = atan2(sin(da), cos(da));
+  sigma = self->err_head;
+  z = (da * da) / (2 * sigma * sigma);
   p = exp(-z);
   
   return p;
-  */
-  return 1.0;
 }
 

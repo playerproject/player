@@ -39,7 +39,7 @@
 int AdaptiveMCL::LoadOdom(ConfigFile* cf, int section)
 {
   this->odom = NULL;
-  this->odom_index = cf->ReadInt(section, "position_index", 0);
+  this->odom_index = cf->ReadInt(section, "odom_index", 0);
   this->robot_radius = cf->ReadLength(section, "robot_radius", 0.20);
   this->odom_model = NULL;
 
@@ -53,6 +53,9 @@ int AdaptiveMCL::SetupOdom(void)
 {
   player_device_id_t id;
 
+  if (this->odom_index < 0)
+    return 0;
+  
   // Subscribe to the odometry device
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
@@ -85,6 +88,9 @@ int AdaptiveMCL::SetupOdom(void)
 // Shutdown the underlying odom device.
 int AdaptiveMCL::ShutdownOdom(void)
 {
+  if (this->odom_index < 0)
+    return 0;
+
   this->odom->Unsubscribe(this);
   this->laser = NULL;
   
@@ -102,6 +108,9 @@ void AdaptiveMCL::GetOdomData(amcl_sensor_data_t *data)
 {
   size_t size;
   player_position_data_t ndata;
+
+  if (this->odom_index < 0)
+    return;
 
   // Get the odom device data.
   size = this->odom->GetData(this, (uint8_t*) &ndata, sizeof(ndata),
@@ -126,7 +135,10 @@ void AdaptiveMCL::InitOdomModel(amcl_sensor_data_t *data)
 {
   pf_vector_t pose_mean;
   pf_matrix_t pose_cov;
-  
+
+  if (this->odom_index < 0)
+    return;
+
   pose_mean = this->pf_init_pose_mean;
   pose_cov =  this->pf_init_pose_cov,
     
@@ -146,6 +158,9 @@ void AdaptiveMCL::InitOdomModel(amcl_sensor_data_t *data)
 // Apply the odom sensor model
 void AdaptiveMCL::UpdateOdomModel(amcl_sensor_data_t *data)
 {
+  if (this->odom_index < 0)
+    return;
+
   // Update the odometry sensor model with the latest odometry measurements
   odometry_action_init(this->odom_model, this->pf_odom_pose, data->odom_pose);
   odometry_sensor_init(this->odom_model);
