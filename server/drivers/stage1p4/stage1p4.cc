@@ -48,6 +48,7 @@
 #include <drivertable.h>
 
 #include "stage.h" // from the Stage distro
+#include "worldfile.hh"
 
 #define DEFAULT_STG_HOST "localhost"
 #define DEFAULT_STG_WORLDFILE "default.world"
@@ -110,61 +111,63 @@ stg_client_t* Stage1p4::CreateStageClient( char* host, int port, char* world )
 
   PLAYER_MSG1( "Uploading world from \"%s\"", world );
 
+
+  // load a worldfile
+  CWorldFile wf;
+  wf.Load( world );
+  
   stg_world_create_t world_cfg;
-  strncpy( world_cfg.name, "test world", STG_TOKEN_MAX );
-  world_cfg.width = 10.0;
-  world_cfg.height = 10.0;
-  world_cfg.resolution = 0.05; 
+  strncpy(world_cfg.name, wf.ReadString( 0, "name", world ), STG_TOKEN_MAX );
+  world_cfg.width =  wf.ReadTupleFloat( 0, "size", 0, 10.0 );
+  world_cfg.height =  wf.ReadTupleFloat( 0, "size", 1, 10.0 );
+  world_cfg.resolution = wf.ReadFloat( 0, "resolution", 0.1 );
   stg_id_t root = stg_world_create( cli, &world_cfg );
-
-  /*strncpy( world_cfg.name, "test world 2", STG_TOKEN_MAX );
-  world_cfg.width = 20.0;
-  world_cfg.height = 10.0;
-  world_cfg.resolution = 0.05; 
-  stg_id_t root2 = stg_world_create( cli, &world_cfg );
-  */
-
-  /*  
-  stg_entity_create_t child;
-  strncpy( child.name, "banana", STG_TOKEN_MAX );
-  strncpy( child.token, "monkey", STG_TOKEN_MAX );
-  strncpy( child.color, "green", STG_TOKEN_MAX );
-  child.type = 0;
-  child.parent_id = root; // make a new entity on the root 
-  stg_id_t banana = stg_model_create( cli, &child );
-
-  sleep(1);
   
-  strncpy( child.name, "alien", STG_TOKEN_MAX );
-  strncpy( child.token, "monkey", STG_TOKEN_MAX );
-  strncpy( child.color, "purple", STG_TOKEN_MAX );
-  child.type = 0;
-  child.parent_id = banana; // make a new entity on the root 
-  stg_id_t alien = stg_model_create( cli, &child );
-
-  stg_size_t sz;
-  sz.x = 0.25;
-  sz.y = 0.15;
-  stg_model_set_size( cli, alien, &sz );
-
-  stg_velocity_t vel;
-  vel.x = 0.0;
-  vel.y = 0.0;
-  vel.a = 0.3;
-  stg_model_set_velocity( cli, banana, &vel );
-
-  vel.x = 0.0;
-  vel.y = 0.0;
-  vel.a = -0.6;
-
-  stg_model_set_velocity( cli, alien, &vel );
-
-  sleep(10);
-  
-  stg_model_destroy( cli, alien );  
-
-  */
-
+  // Iterate through sections and create entities as required
+  for (int section = 1; section < wf.GetEntityCount(); section++)
+  {
+    if( strcmp( "gui", wf.GetEntityType(section) ) == 0 )
+      {
+	PLAYER_WARN( "gui section not implemented" );
+      }
+    else
+      {
+	// TODO - handle the line numbers
+	const int line = wf.ReadInt(section, "line", -1);
+	
+	stg_entity_create_t child;
+	char autoname[64];
+	snprintf( autoname, 64, "model%d", section );
+	strncpy(child.name, wf.ReadString(section,"name",autoname), 
+		STG_TOKEN_MAX);
+	strncpy(child.token, wf.GetEntityType(section), 
+		STG_TOKEN_MAX );
+	strncpy(child.color, wf.ReadString(section,"color","red"), 
+		STG_TOKEN_MAX);
+	child.type = 0;
+	child.parent_id = root; // make a new entity on the root 
+	stg_id_t banana = stg_model_create( cli, &child );
+	
+	PLAYER_WARN1( "created model %d", banana );
+	
+	stg_size_t sz;
+	sz.x = wf.ReadTupleFloat( section, "size", 0, 1.0 );
+	sz.y = wf.ReadTupleFloat( section, "size", 1, 1.0 );;
+	stg_model_set_size( cli, banana, &sz );
+	
+	stg_velocity_t vel;
+	vel.x = wf.ReadTupleFloat( section, "velocity", 0, 0.0 );
+	vel.y = wf.ReadTupleFloat( section, "velocity", 1, 0.0 );
+	vel.a = wf.ReadTupleFloat( section, "velocity", 2, 0.0 );
+	stg_model_set_velocity( cli, banana, &vel );
+	
+	stg_pose_t pose;
+	pose.x = wf.ReadTupleFloat( section, "pose", 0, 0.0 );
+	pose.y = wf.ReadTupleFloat( section, "pose", 1, 0.0 );
+	pose.a = wf.ReadTupleFloat( section, "pose", 2, 0.0 );
+	stg_model_set_pose( cli, banana, &pose );
+      } 
+  }
   return cli;
 }
 
