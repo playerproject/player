@@ -308,6 +308,10 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
       // don't try to load the clock here - we'll do it below
       if( strcmp( STAGE_CLOCK_NAME, namelist[n]->d_name ) == 0 )
         break;
+      
+      // don't try to open the lock here - we already did it above
+      if( strcmp( STAGE_LOCK_NAME, namelist[n]->d_name ) == 0 )
+        break;
 
 #ifdef DEBUG      
       printf("Opening %s ", namelist[n]->d_name);
@@ -458,13 +462,13 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         case 0:
 #ifdef VERBOSE
           printf("Player ignoring Stage device type %d\n", 
-                 deviceIO->player_id.type);
+                 deviceIO->player_id.code);
 #endif
           break;	  
 	  
           // unknown device 
         default:
-          printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   
+          printf( "Unknown device type %d for object ID (%d,%d,%d)\n",
                   deviceIO->player_id.code, 
                   deviceIO->player_id.port, 
                   deviceIO->player_id.code, 

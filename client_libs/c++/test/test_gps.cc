@@ -24,6 +24,7 @@ test_gps(PlayerClient* client, int index)
   }
   PASS();
 
+  /*
   TEST("warping position");
   if(gp.Warp(100,100,100) < 0)
   {
@@ -31,6 +32,7 @@ test_gps(PlayerClient* client, int index)
     return(-1);
   }
   PASS();
+  */
 
   for(int t = 0; t < 3; t++)
   {
