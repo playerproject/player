@@ -75,8 +75,8 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
      (180*((double)(rvel - lvel) /
            (2.0/PlayerRobotParams[param_idx].DiffConvFactor)) / 
            M_PI));
-  // TODO: where does compass go?
-  //data->position.compass = htons(compass);
+  memset(&(data->compass),0,sizeof(data->compass));
+  data->compass.yaw = htonl(compass);
   data->position.stall = (unsigned char)(lwstall || rwstall);
 
   data->sonar.range_count = htons(PlayerRobotParams[param_idx].SonarNum);
