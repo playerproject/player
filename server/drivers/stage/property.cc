@@ -43,7 +43,7 @@ int CEntity::Property( int con, stage_prop_id_t property,
 		       void* value, size_t len, stage_buffer_t* reply )
 {
 
-  /*
+  
   //PRINT_DEBUG2( "ent %d prop %s", stage_id, SIOPropString(property) );
   
   //if( value )
@@ -61,9 +61,9 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	  assert(len == sizeof(double) );
 	  this->volts = *((double*)value);
 	}
-      if( reply )
-	SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_VOLTAGE,
-			   &this->volts, sizeof(this->volts), STG_ISREPLY);
+      //if( reply )
+      //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_VOLTAGE,
+      //		   &this->volts, sizeof(this->volts), STG_ISREPLY);
       break;
       
     case STG_PROP_ENTITY_PARENT:
@@ -98,10 +98,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	  PRINT_DEBUG2( "buffering POSE %lu bytes in %p", 
 		       (unsigned long)sizeof(pose), reply );
 	  
-	  SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_POSE,
-			     &pose, sizeof(pose), STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_POSE,
+	  //	     &pose, sizeof(pose), STG_ISREPLY );
 
-	  SIODebugBuffer( reply );
+	  //SIODebugBuffer( reply );
 	}
       break;
       
@@ -122,8 +122,8 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	  vel.y = this->vy;
 	  vel.a = this->vth;
 	  
-	  SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_VELOCITY,
-			     &vel, sizeof(vel), STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_VELOCITY,
+	  //	     &vel, sizeof(vel), STG_ISREPLY );
 	}
       
       break;
@@ -161,8 +161,8 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	  sz.x = size_x;
 	  sz.y = size_y;
 	  
-	  SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_SIZE,
-			     &sz, sizeof(sz), STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_SIZE,
+	  //	     &sz, sizeof(sz), STG_ISREPLY );
 	}
 
       break;
@@ -187,8 +187,8 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	  sz.x = origin_x;
 	  sz.y = origin_y;
 	  
-	  SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_ORIGIN,
-			     &sz, sizeof(sz), STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_ORIGIN,
+	  //	     &sz, sizeof(sz), STG_ISREPLY );
 	}
       break;
       
@@ -208,8 +208,8 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	  sz.x = this->min_range;
 	  sz.y = this->max_range;
 	  
-	  SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_RANGEBOUNDS,
-			     &sz, sizeof(sz), STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_RANGEBOUNDS,
+	  //	     &sz, sizeof(sz), STG_ISREPLY );
 	}
       break;
 
@@ -222,17 +222,17 @@ int CEntity::Property( int con, stage_prop_id_t property,
 
       if( reply )
 	{
-	  SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_RECTS,
-			     this->rects, 
-			     this->rect_count * sizeof(stage_rotrect_t), 
-			     STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_RECTS,
+	  //	     this->rects, 
+	  //	     this->rect_count * sizeof(stage_rotrect_t), 
+	  //	     STG_ISREPLY );
 	}
       break;
       
     case STG_PROP_ENTITY_GEOM:
       if( value ) // set the poses of our transducers 
 	{
-	  PRINT_DEBUG1( "setting transduver geometry for %d", this->stage_id );
+	  PRINT_DEBUG1( "setting transducer geometry for %s", this->name);
 	  
 	  // copy the geometry data into our array
 	  memcpy( this->transducers, value, len );
@@ -242,10 +242,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	}
       if( reply ) // reply with our array of sonar poses
 	{
-	  SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_GEOM,
-			     this->transducers,
-			     transducer_count * 3 * sizeof(transducers[0][0]), 
-			     STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_GEOM,
+	  //	     this->transducers,
+	  //	     transducer_count * 3 * sizeof(transducers[0][0]), 
+	  //	     STG_ISREPLY );
 	}
       break;
       
@@ -256,14 +256,14 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	  assert(len == sizeof(int) );
 	  this->power_on = *(int*)value;
 	  
-	  PRINT_DEBUG2( "set ent %d power state %s", 
-			this->stage_id, power_on == 0 ? "OFF" : "ON" );
+	  PRINT_DEBUG2( "set ent %s power state %s", 
+			this->name, power_on == 0 ? "OFF" : "ON" );
 	}
       if( reply ) // reply with the current power state
 	{
-	  SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_POWER,
-			     &this->power_on, sizeof(this->power_on), 
-			     STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_POWER,
+	  //	     &this->power_on, sizeof(this->power_on), 
+	  //	     STG_ISREPLY );
 	}
       break;
 
@@ -272,8 +272,8 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	{
 	  // *value is an array of integer property codes that request
 	  // subscriptions on this channel
-	  PRINT_DEBUG4( "ent %d (%s) SUBSCRIBING %d properties on %d",
-			this->stage_id, this->token,
+	  PRINT_DEBUG4( "ent %s:%s SUBSCRIBING %d properties on %d",
+			this->name, this->type,
 			(int)(len/sizeof(stage_subscription_t)), con );
 	  
 	  this->Subscribe( con, (stage_subscription_t*)value, 
@@ -282,9 +282,9 @@ int CEntity::Property( int con, stage_prop_id_t property,
       
       if( reply ) // nothing interesting to reply here, just a confirm
 	{
-	  SIOBufferProperty( reply, this->stage_id, 
-			     STG_PROP_ENTITY_SUBSCRIBE,
-			     NULL, 0, STG_ISREPLY ); 
+	  //SIOBufferProperty( reply, this->stage_id, 
+	  //	     STG_PROP_ENTITY_SUBSCRIBE,
+	  //	     NULL, 0, STG_ISREPLY ); 
 	}
       
       break;
@@ -298,8 +298,8 @@ int CEntity::Property( int con, stage_prop_id_t property,
       
       if( reply )
 	{
-	  SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_NAME,
-			     name, STG_TOKEN_MAX, STG_ISREPLY ); 
+	  //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_NAME,
+	  //	     name, STG_TOKEN_MAX, STG_ISREPLY ); 
 	}
       break;
       
@@ -311,8 +311,8 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	}
        if( reply ) 
 	 {
-	   SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_COLOR,
-			      &color, sizeof(color), STG_ISREPLY ); 
+	   //SIOBufferProperty( reply, this->stage_id, STG_PROP_ENTITY_COLOR,
+	   //	      &color, sizeof(color), STG_ISREPLY ); 
 	 }      
      break;
             
@@ -324,10 +324,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	}
       if( reply ) 
 	{
-	  SIOBufferProperty( reply, this->stage_id, 
-			     STG_PROP_ENTITY_LASERRETURN,
-			     &laser_return, sizeof(laser_return), 
-			     STG_ISREPLY ); 
+	  ///SIOBufferProperty( reply, this->stage_id, 
+	  //	     STG_PROP_ENTITY_LASERRETURN,
+	  //	     &laser_return, sizeof(laser_return), 
+	  //	     STG_ISREPLY ); 
 	}      
       break;
       
@@ -339,10 +339,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	}
       if( reply ) 
 	{
-	  SIOBufferProperty( reply, this->stage_id, 
-			     STG_PROP_ENTITY_IDARRETURN,
-			     &idar_return, sizeof(idar_return), 
-			     STG_ISREPLY ); 
+	  //SIOBufferProperty( reply, this->stage_id, 
+	  //	     STG_PROP_ENTITY_IDARRETURN,
+	  //	     &idar_return, sizeof(idar_return), 
+	  //	     STG_ISREPLY ); 
 	}      
       break;
       
@@ -354,10 +354,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	}
       if( reply ) 
 	{
-	  SIOBufferProperty( reply, this->stage_id, 
-			     STG_PROP_ENTITY_SONARRETURN,
-			     &sonar_return, sizeof(sonar_return),
-			     STG_ISREPLY ); 
+	  //SIOBufferProperty( reply, this->stage_id, 
+	  //	     STG_PROP_ENTITY_SONARRETURN,
+	  //	     &sonar_return, sizeof(sonar_return),
+	  //	     STG_ISREPLY ); 
 	}      
       break;
       
@@ -369,10 +369,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	}
       if( reply ) 
 	{
-	  SIOBufferProperty( reply, this->stage_id, 
-			     STG_PROP_ENTITY_OBSTACLERETURN,
-			     &obstacle_return, sizeof(obstacle_return), 
-			     STG_ISREPLY ); 
+	  //SIOBufferProperty( reply, this->stage_id, 
+	  //	     STG_PROP_ENTITY_OBSTACLERETURN,
+	  ///	     &obstacle_return, sizeof(obstacle_return), 
+	  //	     STG_ISREPLY ); 
 	}      
       break;
       
@@ -384,10 +384,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	}
       if( reply ) 
 	{
-	  SIOBufferProperty( reply, this->stage_id, 
-			     STG_PROP_ENTITY_VISIONRETURN,
-			     &vision_return, sizeof(vision_return),
-			     STG_ISREPLY ); 
+	  //SIOBufferProperty( reply, this->stage_id, 
+	  //	     STG_PROP_ENTITY_VISIONRETURN,
+	  //	     &vision_return, sizeof(vision_return),
+	  //	     STG_ISREPLY ); 
 	}      
       break;
       
@@ -399,10 +399,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	}
       if( reply ) 
 	{
-	  SIOBufferProperty( reply, this->stage_id, 
-			     STG_PROP_ENTITY_PUCKRETURN,
-			     &puck_return, sizeof(puck_return)
-			     , STG_ISREPLY ); 
+	  //SIOBufferProperty( reply, this->stage_id, 
+	  //	     STG_PROP_ENTITY_PUCKRETURN,
+	  //	     &puck_return, sizeof(puck_return)
+	  //	     , STG_ISREPLY ); 
 	}      
       break;
       
@@ -420,10 +420,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
       if( reply ) 
 	{
 	  // reply with the contents of the command buffer
-	  SIOBufferProperty( reply, this->stage_id, 
-			     STG_PROP_ENTITY_COMMAND,
-			     buffer_cmd.data, buffer_cmd.len, 
-			     STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, 
+	  //	     STG_PROP_ENTITY_COMMAND,
+	  //	     buffer_cmd.data, buffer_cmd.len, 
+	  //	     STG_ISREPLY );
 	}      
       break;
       
@@ -440,10 +440,10 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	{
 	  //PRINT_WARN( " about to buffer data prop" );
 	  // reply with the contents of the data buffer
-	  SIOBufferProperty( reply, this->stage_id, 
-			     STG_PROP_ENTITY_DATA,
-			     buffer_data.data, buffer_data.len,
-			     STG_ISREPLY );
+	  //SIOBufferProperty( reply, this->stage_id, 
+	  //	     STG_PROP_ENTITY_DATA,
+	  //	     buffer_data.data, buffer_data.len,
+	  //	     STG_ISREPLY );
 	  //PRINT_WARN( "done" );
 	}      
       break;
@@ -467,7 +467,6 @@ int CEntity::Property( int con, stage_prop_id_t property,
 	this->SetDirty( con, property, 0 ); // clean on this con
       
     }
-  */
 
 #ifdef INCLUDE_RTK2
   // update the GUI with the new property
