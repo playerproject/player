@@ -2941,5 +2941,34 @@ typedef struct player_energy_data
  ** end section
  *************************************************************************/
 
+/*************************************************************************
+ ** begin section planner
+ *************************************************************************/
+/** [Synopsis] The {\tt planner} interface provides control of a 2-D
+               motion planner */
+
+typedef struct player_planner_data
+{
+  /** Did the planner find a valid path? */
+  uint8_t valid;
+
+  /** The goal location (mm,mm,deg) */
+  int32_t gx,gy,ga;
+
+  /** The current waypoint location (mm,mm,deg) */
+  int32_t wx,wy,wa;
+
+  /** The current waypoint index (handy if you already have the list
+      of waypoints) */
+  uint16_t curr_waypoint;
+
+  /** The number of waypoints in the plan */
+  uint16_t waypoint_count;
+} __attribute__ ((packed)) player_planner_data_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
 
 #endif /* PLAYER_H */

@@ -33,6 +33,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+#include <locale.h>
 
 #include "replace.h"
 #include "configfile.h"
@@ -78,6 +79,9 @@ ConfigFile::ConfigFile()
   // Set defaults units
   this->unit_length = 1.0;
   this->unit_angle = M_PI / 180;
+
+  if(!setlocale(LC_ALL,"POSIX"))
+    fputs("Warning: failed to setlocale(); config file may not be parse correctly\n", stderr);
 }
 
 
