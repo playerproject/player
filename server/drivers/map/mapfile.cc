@@ -149,8 +149,8 @@ MapFile::Setup()
   this->size_x = gdk_pixbuf_get_width(pixbuf);
   this->size_y = gdk_pixbuf_get_height(pixbuf);
 
-  assert(this->mapdata = (char*)malloc(sizeof(unsigned char) *
-                                                this->size_x * this->size_y));
+  assert(this->mapdata = (char*)malloc(sizeof(char) *
+                                       this->size_x * this->size_y));
 
   rowstride = gdk_pixbuf_get_rowstride(pixbuf);
   bps = gdk_pixbuf_get_bits_per_sample(pixbuf)/8;
@@ -176,11 +176,11 @@ MapFile::Setup()
       else
         occ = (255 - color_avg) / 255.0;
       if(occ > 0.95)
-        this->mapdata[MAP_IDX(this,i,this->size_y - j)] = +1;
+        this->mapdata[MAP_IDX(this,i,this->size_y - j - 1)] = +1;
       else if(occ < 0.1)
-        this->mapdata[MAP_IDX(this,i,this->size_y - j)] = -1;
+        this->mapdata[MAP_IDX(this,i,this->size_y - j - 1)] = -1;
       else
-        this->mapdata[MAP_IDX(this,i,this->size_y - j)] = 0;
+        this->mapdata[MAP_IDX(this,i,this->size_y - j - 1)] = 0;
     }
   }
 
