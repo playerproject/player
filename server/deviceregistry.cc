@@ -107,6 +107,7 @@ void RWISonar_Register(DriverTable* table);
 void InertiaCube2_Register(DriverTable* table);
 #endif
 
+
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
  *
@@ -173,7 +174,7 @@ register_devices()
 
 #ifdef INCLUDE_LASER
   LaserBarcode_Register(driverTable);
-  //  LaserCSpace_Register(driverTable);
+  LaserCSpace_Register(driverTable);
   //  LaserFeature_Register(driverTable);
   LaserReflector_Register(driverTable);
   LaserVisualBarcode_Register(driverTable);
@@ -221,6 +222,6 @@ register_devices()
   REBPosition_Register(driverTable);
   REBIR_Register(driverTable);
   REBPower_Register(driverTable);
-#endif 
+#endif
 }
 
