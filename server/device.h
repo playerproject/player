@@ -60,6 +60,8 @@ class CDevice
     pthread_t devicethread;
 
   protected:
+
+    pthread_t GetThread() { return(devicethread); }
     
     // buffers for data and command
     unsigned char* device_data;

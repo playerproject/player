@@ -637,10 +637,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
   if(!thisub)
   {
     thisub = new CDeviceSubscription;
-    thisub->id.code = req.id.code;
-    thisub->id.index = req.id.index;
-    //thisub->id.port = port;
-    thisub->id.robot = req.id.robot;
+    thisub->id = req.id;
     thisub->devicep = deviceTable->GetDevice(thisub->id);
 
     thisub->last_sec = 0; // init the freshness timer

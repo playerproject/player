@@ -63,7 +63,7 @@ CDeviceTable::~CDeviceTable()
 // this is the 'base' AddDevice method, which sets all the fields
 int 
 CDeviceTable::AddDevice(player_device_id_t id, char* name,
-                        unsigned char access, CDevice* devicep)
+                        unsigned char access, CDevice* devicep, int parent)
 {
   CDeviceEntry* thisentry;
   CDeviceEntry* preventry;
@@ -100,6 +100,7 @@ CDeviceTable::AddDevice(player_device_id_t id, char* name,
   thisentry->devicep = devicep;
   if(devicep)
     devicep->device_id = id;
+  thisentry->parent = parent;
   pthread_mutex_unlock(&mutex);
 
   /*printf( "Added device %d.%d.%d - %s\n", 
@@ -165,14 +166,9 @@ CDeviceTable::GetDeviceEntry(player_device_id_t id)
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
-    // if we're not in Stage, then we're only listening on one port,
-    // so we don't need to match the port.  actually, this is a hack to
-    // get around the fact that, given arbitrary ordering of command-line
-    // arguments, devices can get added to the devicetable with an incorrect
-    // port.
     if((thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index) &&
-       (!use_stage || (thisentry->id.robot == id.robot)))
+       (thisentry->id.robot == id.robot))
       break;
   }
 

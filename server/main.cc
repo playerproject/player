@@ -38,6 +38,7 @@
 #include <sys/types.h>  /* for accept(2) */
 #include <dirent.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <errno.h>
 #include <string.h> // for bzero()
 #include <stdlib.h>  /* free(3),exit(3) */
@@ -65,16 +66,9 @@
 #include "replace.h"
 
 #if INCLUDE_STAGE
-#include <sys/mman.h> // for mmap
 #include <stagetime.h>
-#include <stagedevice.h>
-#include <psdevice.h>
-player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
-char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
+CDevice* Stage_Init(char* interface, ConfigFile* cf, int section);
 #endif
-
-//#define VERBOSE
-//#define DEBUG
 
 // true if we're connecting to Stage instead of a real robot
 bool use_stage = false;
@@ -83,7 +77,6 @@ bool use_stage = false;
 bool player_gerkey = false;
 
 size_t ioSize = 0; // size of the IO buffer
-
 
 // this table holds all the currently *instantiated* devices
 CDeviceTable* deviceTable = new CDeviceTable();
@@ -251,6 +244,7 @@ MatchDeviceName( const struct dirent* ent )
   return( strlen( ent->d_name ) > 2 );
 }
 
+#if 0
 // looks in the directory for device entries, creates the devices
 // and fills an array with unique port numbers
 stage_clock_t* 
@@ -612,6 +606,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   return( clock );
 }
 #endif
+#endif
 
 bool
 parse_config_file(char* fname)
@@ -621,6 +616,8 @@ parse_config_file(char* fname)
   char interface[PLAYER_MAX_DEVICE_STRING_LEN];
   char* colon;
   int index;
+  int robot_id;
+  char robot_id_string[PLAYER_MAX_DEVICE_STRING_LEN];
   char* driver;
   int code = 0;
   
@@ -635,11 +632,25 @@ parse_config_file(char* fname)
   {
     if(configFile.entities[i].type < 0)
       continue;
-
+    
     // get the interface name
     strncpy(interface, (const char*)(configFile.entities[i].type), 
             sizeof(interface));
     interface[sizeof(interface)-1] = '\0';
+    
+    // look for a leading robot id and colon
+    if((colon = strchr(interface,':')) && 
+       ((strlen(interface) - strlen(colon)) >= 1) &&
+       isdigit(interface[0]))
+    {
+      // get the robot id
+      strncpy(robot_id_string,interface,strlen(interface)-strlen(colon));
+      robot_id_string[strlen(interface)-strlen(colon)] = '\0';
+      robot_id = atoi(robot_id_string);
+      memmove(interface,colon+1,strlen(colon));
+    }
+    else
+      robot_id = 0;
 
     // look for a colon and trailing index
     if((colon = strchr(interface,':')) && strlen(colon) >= 2)
@@ -660,7 +671,7 @@ parse_config_file(char* fname)
       driver = tmpint.default_driver;
       code = tmpint.code;
     }
-    if(!driver)
+    if(!use_stage && !driver)
     {
       PLAYER_ERROR1("Couldn't find interface \"%s\"", interface);
       exit(-1);
@@ -669,20 +680,39 @@ parse_config_file(char* fname)
     // did the user specify a different driver?
     driver = (char*)configFile.ReadString(i, "driver", driver);
 
-    printf("  loading driver \"%s\" as device \"%s:%d\"\n", 
-           driver, interface, index);
-    /* look for the indicated driver in the available device table */
-    if(!(entry = driverTable->GetDriverEntry(driver)))
+    printf("  loading driver \"%s\" as device \"%d:%s:%d\"\n", 
+           driver, robot_id, interface, index);
+
+    player_device_id_t id;
+    id.code = code;
+    id.robot = robot_id;
+    id.index = index;
+
+    if(use_stage)
     {
-      PLAYER_ERROR1("Couldn't find driver \"%s\"", driver);
-      return(false);
+#if INCLUDE_STAGE
+      if(!(tmpdevice = Stage_Init(interface,&configFile,i)))
+      {
+        PLAYER_ERROR1("Initialization failed for stage driver as interface \"%s\"\n",
+                      interface);
+        exit(-1);
+      }
+      
+      // add this device into the table.  subtract one from the parent id,
+      // because the entities are indexed from 1 (the "root" entity is 0)
+      // and the devicetable is indexed from 0.
+      deviceTable->AddDevice(id, "stage", 'a', tmpdevice,
+                             configFile.entities[i].parent-1);
+#endif
     }
     else
     {
-      player_device_id_t id;
-      id.code = code;
-      id.robot = global_playerport;
-      id.index = index;
+      /* look for the indicated driver in the available device table */
+      if(!(entry = driverTable->GetDriverEntry(driver)))
+      {
+        PLAYER_ERROR1("Couldn't find driver \"%s\"", driver);
+        return(false);
+      }
 
       if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
       {
@@ -690,7 +720,11 @@ parse_config_file(char* fname)
                       driver, interface);
         exit(-1);
       }
-      deviceTable->AddDevice(id, driver, entry->access, tmpdevice);
+      // add this device into the table.  subtract one from the parent id,
+      // because the entities are indexed from 1 (the "root" entity is 0)
+      // and the devicetable is indexed from 0.
+      deviceTable->AddDevice(id, driver, entry->access, tmpdevice,
+                             configFile.entities[i].parent-1);
 
       // should this device be "always on"?
       if(configFile.ReadInt(i, "alwayson", 0))
@@ -754,6 +788,9 @@ int main( int argc, char *argv[] )
     else if(!strcmp(argv[i],"-s"))
     {
 #if INCLUDE_STAGE
+      use_stage = true;
+      // TODO: get hostname:port here
+      /*
       if(++i<argc) 
       {
         strncpy(stage_io_directory, argv[i], sizeof(stage_io_directory));
@@ -765,6 +802,7 @@ int main( int argc, char *argv[] )
         Usage();
         exit(-1);
       }
+      */
 #else
       PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
       exit(-1);
@@ -842,57 +880,7 @@ int main( int argc, char *argv[] )
   }
 
   puts( "" ); // newline, flush
-
   
-  if( use_stage )
-  {
-#if INCLUDE_STAGE
-    // create the shared memory connection to Stage
-    // returns pointer to the timeval struct
-    // and creates the ports array and array length with the port numbers
-    // deduced from the stageIO filenames
-    stage_clock_t * sclock = CreateStageDevices( stage_io_directory, 
-						 &ports, &num_ufds );
-    assert( sclock ); 
-    /*
-    //printf( "created %d ports (1: %d 2: %d...)\n",
-    //    num_ufds, ports[0], ports[1] );
-
-    // allocate storage for poll structures
-    assert( ufds = new struct pollfd[num_ufds] );
-    
-#ifdef VERBOSE
-    printf( "[Port ");
-#endif
-
-    // bind a socket on each port
-    for(int i=0;i<num_ufds;i++)
-    {
-#ifdef VERBOSE
-      printf( " %d", ports[i] ); fflush( stdout );
-#endif      
-      // setup the socket to listen on
-      if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
-                                              SOCK_STREAM,200)) == -1)
-      {
-        fputs("create_and_bind_socket() failed; quitting", stderr);
-        exit(-1);
-      }
-	
-      ufds[i].events = POLLIN;
-    }
-    
-#ifdef VERBOSE
-    puts( "]" );
-#endif
-*/
-
-#else
-    PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
-    exit(-1);
-#endif
-  }  
-
   // check for empty device table
   if(!(deviceTable->Size()))
   {

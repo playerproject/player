@@ -488,6 +488,7 @@ bool ConfigFile::LoadTokenNum(FILE *file, int *line, int include)
   char token[256];
   int len;
   int ch;
+  int tokentype = TokenNum;
   
   len = 0;
   memset(token, 0, sizeof(token));
@@ -505,9 +506,16 @@ bool ConfigFile::LoadTokenNum(FILE *file, int *line, int include)
     {
       token[len++] = ch;
     }
+    else if(isalpha(ch) || ispunct(ch))
+    {
+      // special case for reading id:interface:index keys, which can start
+      // with a number, but should be treated as strings.
+      tokentype = TokenWord;
+      token[len++] = ch;
+    }
     else
     {
-      AddToken(TokenNum, token, include);
+      AddToken(tokentype, token, include);
       ungetc(ch, file);
       return true;
     }

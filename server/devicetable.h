@@ -37,13 +37,14 @@
 class CDeviceEntry
 {
   public:
+    int parent;   // devicetable index for kinematic parent of this device
     player_device_id_t id;  // id for this device
     unsigned char access;   // allowed access mode: 'r', 'w', or 'a'
     char name[PLAYER_MAX_DEVICE_STRING_LEN]; // the string name for the driver
     CDevice* devicep;  // the device itself
     CDeviceEntry* next;  // next in list
 
-    CDeviceEntry() { devicep = NULL; next = NULL; }
+    CDeviceEntry() { devicep = NULL; next = NULL; parent = 0; }
     ~CDeviceEntry() 
     { 
       if(devicep) 
@@ -77,9 +78,10 @@ class CDeviceTable
     // name is the string driver name (e.g., "p2os_sonar")
     // access is the access for the device (e.g., 'r' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
+    // parent is the devicetable index of the kinematic parent
     //  
     int AddDevice(player_device_id_t id, char* name, unsigned char access, 
-                  CDevice* devicep);
+                  CDevice* devicep, int parent);
 
     // returns the controlling object for the given id 
     // (returns NULL on failure)
