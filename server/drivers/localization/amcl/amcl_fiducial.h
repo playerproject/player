@@ -53,6 +53,7 @@ class AMCLFiducialMap
 };
 
 double fiducial_map_calc_range( AMCLFiducialMap* fmap, double ox, double oy, double oa, double max_range, int id, int k);
+double fiducial_map_calc_bearing( AMCLFiducialMap* fmap, double ox, double oy, double oa, double max_range, int id, int k);
 
 AMCLFiducialMap* fiducial_map_alloc();
 
@@ -111,6 +112,9 @@ class AMCLFiducial : public AMCLSensor
   
   // Laser range variance
   private: double range_var;
+
+  // Laser angle variance
+  private: double angle_var;
 
   // Probability of bad range readings
   private: double range_bad;
