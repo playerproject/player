@@ -244,7 +244,7 @@ def make_tex(filename, section, blocks):
 def make_section(file, section):
     """Generate a section entry."""
 
-    file.write('\\section{%s} \label{sect:%s}\n\n' % (section.name,section.name));
+    file.write('\\section{%s} \label{sect:%s}\n\n' % (section.name, section.name));
     return
 
 
@@ -259,9 +259,11 @@ def make_text(file, section, block):
 
 def make_defines(file, section, blocks, index):
 
+    maxchars = 20
+
     file.write('\\begin{center}')
     file.write('\\begin{footnotesize}')
-    file.write('\\begin{tabularx}{\\columnwidth}{XX}\n')
+    file.write('\\begin{tabularx}{\\columnwidth}{lX}\n')
     file.write('\\hline\n')
     file.write('Name/Value & Meaning \\\\\n')
     file.write('\\hline\n')
@@ -272,16 +274,14 @@ def make_defines(file, section, blocks, index):
         if block.type == 'define':
 
             for line in block.code:
-                tokens = string.split(line)
-                if len(tokens) == 3 and tokens[0] == '#define':
-                    name = tokens[1]
-                    value = ''
-                    for token in tokens[2:]:
-                        value += token
-                    file.write('\\verb+%s %s+ ' % (name, value))
+                line = string.replace(line, '_', '\\_')
+                line = string.replace(line, '#define', '')
+                if len(line) > maxchars:
+                    file.write('\\multicolumn{2}{l}{\\tt %s}\\\\\n' % line)
                 else:
-                    file.write('\\verb+%s+ ' % line)
+                    file.write('{\\tt %s} ' % line)
             file.write('& %s \\\\ \n' % block.desc)
+            
             index += 1
         else:
             break
@@ -296,6 +296,8 @@ def make_defines(file, section, blocks, index):
 def make_struct(file, section, blocks, index):
     """Generate a class entry."""
 
+    maxchars = 20
+
     block = blocks[index]
 
     file.write('\n\n\\vspace{1em}\\noindent \\verb+%s+ : %s' % (block.name + '_t', block.desc));
@@ -304,7 +306,7 @@ def make_struct(file, section, blocks, index):
 
     file.write('\\begin{center}')    
     file.write('\\begin{footnotesize}')
-    file.write('\\begin{tabularx}{\\columnwidth}{XX}\n')
+    file.write('\\begin{tabularx}{\\columnwidth}{lX}\n')
     file.write('\\hline\n')
     file.write('Type/Field & Meaning \\\\\n')
     file.write('\\hline\n')
@@ -313,9 +315,16 @@ def make_struct(file, section, blocks, index):
         block = blocks[index]
     
         if block.type == 'data':
+
+            # If the code part is long, use the multi-column format
             for line in block.code:
-                file.write('\\verb+%s+ ' % line)
+                line = string.replace(line, '_', '\\_')
+                if len(line) > maxchars:
+                    file.write('\\multicolumn{2}{l}{\\tt %s}\\\\\n' % line)
+                else:
+                    file.write('{\\tt %s} ' % line)
             file.write('& %s \\\\ \n' % block.desc)
+
             index += 1
         else:
             break
