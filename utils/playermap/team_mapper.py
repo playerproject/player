@@ -80,7 +80,13 @@ class TeamMapper:
                 if npatch in self.map.find_connected(patch):
                     continue
 
-                match = scan.ScanMatch(patch.scan, npatch.scan)
+                group = scan.scan_group()
+                group.add_scan((0, 0, 0), patch.scan)
+
+                ngroup = scan.scan_group()
+                ngroup.add_scan((0, 0, 0), npatch.scan)
+
+                match = scan.scan_match(group, ngroup)
                 pairs = match.pairs(patch.pose, npatch.pose, 1e16)
 
                 if len(pairs) < 4:

@@ -85,15 +85,15 @@ class MapPatch:
         self.fig.polygon((0, 0, 0), self.scan.get_free())
 
         # Draw the hit points
-        self.fig.fgcolor((0, 0, 0, 255))
-        self.fig.bgcolor((0, 0, 0, 255))
-        for (s, w) in self.scan.get_hits():
-            if w > 1:
-                col = int(max(0, 128 - w * 128 / 10))
-                self.fig.fgcolor((col, col, col, 255))
-                self.fig.bgcolor((col, col, col, 255))
-                #self.fig.circle(s, 0.05)
-                self.fig.rectangle((s[0], s[1], 0), (0.05, 0.05))
+        #self.fig.fgcolor((0, 0, 0, 255))
+        #self.fig.bgcolor((0, 0, 0, 255))
+        #for (s, w) in self.scan.get_hits():
+        #    if w > 1:
+        #        col = int(max(0, 128 - w * 128 / 10))
+        #        self.fig.fgcolor((col, col, col, 255))
+        #        self.fig.bgcolor((col, col, col, 255))
+        #        #self.fig.circle(s, 0.05)
+        #        self.fig.rectangle((s[0], s[1], 0), (0.05, 0.05))
 
         # REMOVE
         # Draw pins
