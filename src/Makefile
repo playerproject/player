@@ -33,8 +33,8 @@ INCLUDE_PTZ = -DINCLUDE_PTZ
 #INCLUDE_AUDIO = -DINCLUDE_AUDIO
 # the following libs are only needed for the audio device
 #EXTRA_LIBS = -lrfftw -lfftw
-INCLUDE_LASERBEACON = -DINCLUDE_LASERBEACON
-INCLUDE_BROADCAST = -DINCLUDE_BROADCAST
+#INCLUDE_LASERBEACON = -DINCLUDE_LASERBEACON
+#INCLUDE_BROADCAST = -DINCLUDE_BROADCAST
 
 INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
                    $(INCLUDE_POSITION) $(INCLUDE_GRIPPER) $(INCLUDE_MISC) \
@@ -44,7 +44,8 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
 INSTALL_BIN = $(INSTALL_PREFIX)/bin
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
-OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenalock.o devicetable.o stagedevice.o ptzdevice.o laserbeacondevice.o broadcastdevice.o
+OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenalock.o devicetable.o stagedevice.o ptzdevice.o 
+#laserbeacondevice.o broadcastdevice.o
 
 all: $(SERVERNAME)
 

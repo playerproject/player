@@ -557,7 +557,7 @@ int main( int argc, char *argv[] )
 #ifdef INCLUDE_LASERBEACON
     laserbeaconDevice = new CLaserBeaconDevice(laserDevice);
 #endif
-#ifndef INCLUDE_BROADCAST
+#ifdef INCLUDE_BROADCAST
     broadcastDevice = new CBroadcastDevice;
 #endif
   }
