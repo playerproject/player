@@ -2097,17 +2097,17 @@ typedef player_blinkenlight_data_t player_blinkenlight_cmd_t;
  ** end section
  *************************************************************************/
 
-/*************************************************************************
- ** begin section fiducial
- *************************************************************************/
+/***************************************************************************/
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup player_interface_fiducial fiducial
 
-/** [Synopsis]
+The fiducial interface provides access to devices that detect coded
+fiducials (markers) placed in the environment.  It can also be used
+for devices the detect natural landmarks.
 
-    The fiducial interface provides access to devices that detect
-    coded fiducials (markers) placed in the environment.
- */
-
-/** [Constants] */
+@{
+*/
 
 /** The maximum number of fiducials that can be detected at one time. */
 #define PLAYER_FIDUCIAL_MAX_SAMPLES 32
@@ -2126,27 +2126,26 @@ typedef player_blinkenlight_data_t player_blinkenlight_cmd_t;
 #define PLAYER_FIDUCIAL_SET_ID       0x08
 
 
-/** [Data]
-
-    The fiducial data packet contains a list of the detected
-    fiducials.  Each fiducial is described by the player_fiducial_item
-    structure listed below.
-*/
-
-/** The fiducial data packet (one fiducial). */
+/** Info on a single detected fiducial; the fiducial data packet
+    contains a list of these. */
 typedef struct player_fiducial_item
 {
   /** The fiducial id.  Fiducials that cannot be identified get id
       -1. */
   int16_t id;
 
-  /** Fiducial pose relative to the detector (range, bearing, orient)
-      in units (mm, degrees, degrees). */
-  int16_t pose[3];
+  /** Fiducial position relative to the detector (x, y, z) in mm. */
+  int32_t pos[3];
 
-  /** Uncertainty in the measured pose (range, bearing, orient) in
-      units of (mm, degrees, degrees). */
-  int16_t upose[3];
+  /** Fiducial orientation relative to the detector (r, p, y) in millirad. */
+  int32_t rot[3];
+
+  /** Uncertainty in the measured pose (x, y, z) in mm. */
+  int32_t upos[3];
+
+  /** Uncertainty in fiducial orientation relative to the detector
+      (r, p, y) in millirad. */
+  int32_t urot[3];
   
 } __PACKED__ player_fiducial_item_t;
 
@@ -2163,18 +2162,12 @@ typedef struct player_fiducial_data
 } __PACKED__ player_fiducial_data_t;
 
 
-/** [Command]
-    This device accepts no commands.
-*/
 
-/** [Configuration: get geometry]
-
+/** Get geometry.
     The geometry (pose and size) of the fiducial device can be queried
     using the PLAYER_FIDUCIAL_GET_GEOM request.  The request and
     reply packets have the same format.
 */
-
-/** Fiducial geometry packet. */
 typedef struct player_fiducial_geom
 {
   /** Packet subtype.  Must be PLAYER_FIDUCIAL_GET_GEOM. */
@@ -2191,16 +2184,13 @@ typedef struct player_fiducial_geom
   uint16_t fiducial_size[2];
 } __PACKED__ player_fiducial_geom_t;
 
-/** [Configuration: sensor field of view]
-
+/** Get/set sensor field of view.
     The field of view of the fiducial device can be set using the
     PLAYER_FIDUCIAL_SET_FOV request, and queried using the
     PLAYER_FIDUCIAL_GET_FOV request. The device replies to a SET
     request with the actual FOV achieved. In both cases the request
     and reply packets have the same format.
 */
-
-/** Fiducial geometry packet. */
 typedef struct player_fiducial_fov
 {
   /** Packet subtype.  PLAYER_FIDUCIAL_GET_FOV or PLAYER_FIDUCIAL_SET_FOV. */
@@ -2217,7 +2207,7 @@ typedef struct player_fiducial_fov
 } __PACKED__ player_fiducial_fov_t;
 
 
-/** [Configuration: fiducial value]
+/** Get/set fiducial value.
 
     Some fiducial finder devices display their own fiducial. They can
     use the PLAYER_FIDUCIAL_GET_ID config to report the identifier
@@ -2235,8 +2225,6 @@ typedef struct player_fiducial_fov
 
     Currently supported by the stg_fiducial driver.
 */
-
-/** Fiducial identifier packet */
 typedef struct
 {
   /** Packet subtype. Must be PLAYER_FIDUCIAL_GET_ID or PLAYER_FIDUCIAL_SET_ID. */
@@ -2248,7 +2236,7 @@ typedef struct
 
 
 
-/** [Configuration: fiducial messaging.]
+/** Fiducial messaging.
 
     META-NOTE: FIDUCIAL MESSAGING IS NOT WORKING IN STAGE CVS HEAD OR
     STAGE-1.5
@@ -2279,8 +2267,6 @@ typedef struct
     a reflection of the sent message, a reply from the target of the
     sent message, or a message received from an unrelated sender.
 */
-
-/** Fiducial message packet */
 typedef struct
 {
   /** the fiducial ID of the intended target. */
@@ -2293,6 +2279,7 @@ typedef struct
       0-255 in device-dependent units.*/
   uint8_t intensity; 
 } __PACKED__ player_fiducial_msg_t;
+
 
 /** Fiducial receive message request. The server replies with a
     player_fiducial_msg_t */
@@ -2325,7 +2312,6 @@ typedef struct
 then replies with the last message received, which may be (but is not
 guaranteed to be) be a reply to the sent message. NOTE: this is not
 yet supported by Stage-1.4.*/
-
 typedef struct 
 { 
   /** Must be PLAYER_FIDUCIAL_EXCHANGE_MSG. */
@@ -2343,9 +2329,10 @@ typedef struct
   uint8_t consume_reply;
 }  __PACKED__ player_fiducial_msg_txrx_req_t; 
   
-/*************************************************************************
- ** end section
- *************************************************************************/
+/** @} */
+/** @} */
+
+
 
 
 /*************************************************************************

@@ -69,12 +69,12 @@ void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
   for(unsigned short i = 0; i < count && i < PLAYER_FIDUCIAL_MAX_SAMPLES; i++)
   {
     beacons[i].id = ntohs(data->fiducials[i].id);
-    beacons[i].pose[0] = ((int16_t)ntohs(data->fiducials[i].pose[0])) / 1e3;
-    beacons[i].pose[1] = DTOR((double)(int16_t)ntohs(data->fiducials[i].pose[1]));
-    beacons[i].pose[2] = DTOR((double)(int16_t)ntohs(data->fiducials[i].pose[2]));
-    beacons[i].upose[0] = ((int16_t)ntohs(data->fiducials[i].upose[0])) / 1e3;
-    beacons[i].upose[1] = DTOR((double)(int16_t)ntohs(data->fiducials[i].upose[1]));
-    beacons[i].upose[2] = DTOR((double)(int16_t)ntohs(data->fiducials[i].upose[2]));
+    beacons[i].pose[0] = ((int16_t)ntohs(data->fiducials[i].pos[0])) / 1e3;
+    beacons[i].pose[1] = ((int16_t)ntohs(data->fiducials[i].pos[1])) / 1e3;
+    beacons[i].pose[2] = ((int16_t)ntohs(data->fiducials[i].rot[2])) / 1e3;
+    beacons[i].upose[0] = ((int16_t)ntohs(data->fiducials[i].upos[0])) / 1e3;
+    beacons[i].upose[1] = ((int16_t)ntohs(data->fiducials[i].upos[1])) / 1e3;
+    beacons[i].upose[2] = ((int16_t)ntohs(data->fiducials[i].urot[2])) / 1e3;
   }
 }
 

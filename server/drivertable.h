@@ -29,13 +29,14 @@
 #ifndef _DRIVERTABLE_H
 #define _DRIVERTABLE_H
 
-#include <device.h>
 #include <pthread.h>
-#include <configfile.h>
+#include "device.h"
+#include "configfile.h"
 
 
 // Forward declarations
 class DriverTable;
+class ConfigFile;
 
 
 // Function signature for driver factory functions

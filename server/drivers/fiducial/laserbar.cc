@@ -210,9 +210,9 @@ LaserBar::GetData(player_device_id_t id,
     // Do some byte-swapping on the fiducial data.
     for (i = 0; i < this->fdata.count; i++)
     {
-      this->fdata.fiducials[i].pose[0] = htons(this->fdata.fiducials[i].pose[0]);
-      this->fdata.fiducials[i].pose[1] = htons(this->fdata.fiducials[i].pose[1]);
-      this->fdata.fiducials[i].pose[2] = htons(this->fdata.fiducials[i].pose[2]);
+      this->fdata.fiducials[i].pos[0] = htonl(this->fdata.fiducials[i].pos[0]);
+      this->fdata.fiducials[i].pos[1] = htonl(this->fdata.fiducials[i].pos[1]);
+      this->fdata.fiducials[i].rot[2] = htonl(this->fdata.fiducials[i].rot[2]);
     }
     this->fdata.count = htons(this->fdata.count);
   }
@@ -448,9 +448,9 @@ void LaserBar::Add(double pr, double pb, double po,
   assert(this->fdata.count < ARRAYSIZE(this->fdata.fiducials));
   fiducial = this->fdata.fiducials + this->fdata.count++;
   fiducial->id = (int16_t) -1;
-  fiducial->pose[0] = (int16_t) (int) (pr * 1000);
-  fiducial->pose[1] = (int16_t) (int) (pb * 180 / M_PI);
-  fiducial->pose[2] = (int16_t) (int) (po * 180 / M_PI);
+  fiducial->pos[0] = (int32_t) (int) (pr * cos(pb) * 1000);
+  fiducial->pos[1] = (int32_t) (int) (pr * sin(pb) * 1000);
+  fiducial->rot[2] = (int32_t) (int) (po * 1000);
 
   return;
 }

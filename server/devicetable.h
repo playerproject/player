@@ -30,11 +30,11 @@
 #define _DEVICETABLE_H
 
 #include <pthread.h>
-#include <configfile.h>
 #include <string.h>
 
 #include "driver.h"
 #include "device.h"
+#include "configfile.h"
 
 
 class DeviceTable

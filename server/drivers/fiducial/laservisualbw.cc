@@ -1113,9 +1113,9 @@ void LaserVisualBW::WriteData()
     o = fiducial->pose[2];
 
     data.fiducials[data.count].id = htons(((int16_t) fiducial->id));
-    data.fiducials[data.count].pose[0] = htons(((int16_t) (1000 * r)));
-    data.fiducials[data.count].pose[1] = htons(((int16_t) (180 * b / M_PI)));
-    data.fiducials[data.count].pose[2] = htons(((int16_t) (180 * o / M_PI)));
+    data.fiducials[data.count].pos[0] = htonl(((int32_t) (1000 * r * cos(b))));
+    data.fiducials[data.count].pos[1] = htonl(((int32_t) (1000 * r * sin(b))));
+    data.fiducials[data.count].rot[2] = htonl(((int32_t) (1000 * o)));
     data.count++;
   }
   data.count = htons(data.count);

@@ -327,9 +327,9 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
     // Create an entry for this beacon.
     // Note that we return the surface normal for the beacon orientation.
     data->fiducials[data->count].id = (id > 0 ? id : -1);
-    data->fiducials[data->count].pose[0] = (int) (range * 1000);
-    data->fiducials[data->count].pose[1] = (int) (bearing * 180 / M_PI);
-    data->fiducials[data->count].pose[2] = (int) (NORMALIZE(orient + M_PI/2) * 180 / M_PI);
+    data->fiducials[data->count].pos[0] = (int) (range * cos(bearing) * 1000);
+    data->fiducials[data->count].pos[1] = (int) (range * sin(bearing) * 1000);
+    data->fiducials[data->count].rot[2] = (int) (NORMALIZE(orient + M_PI/2) * 1000);
     data->count++;
   }
 }
@@ -453,9 +453,9 @@ void LaserBarcode::WriteFiducial()
   for (i = 0; i < this->data.count; i++)
   {
     this->data.fiducials[i].id = htons(this->data.fiducials[i].id);
-    this->data.fiducials[i].pose[0] = htons(this->data.fiducials[i].pose[0]);
-    this->data.fiducials[i].pose[1] = htons(this->data.fiducials[i].pose[1]);
-    this->data.fiducials[i].pose[2] = htons(this->data.fiducials[i].pose[2]);
+    this->data.fiducials[i].pos[0] = htonl(this->data.fiducials[i].pos[0]);
+    this->data.fiducials[i].pos[1] = htonl(this->data.fiducials[i].pos[1]);
+    this->data.fiducials[i].rot[2] = htonl(this->data.fiducials[i].rot[2]);
   }
   this->data.count = htons(this->data.count);
 

@@ -260,7 +260,7 @@ int WriteLog::Setup()
 
   // Write the file header
   fprintf(this->file, "## Player version %s \n", VERSION);
-  fprintf(this->file, "## File version %s \n", "0.0.0");
+  fprintf(this->file, "## File version %s \n", "0.1.0");
 
   // Enable/disable logging, according to default set in config file
   this->enable = this->enable_default;
@@ -703,15 +703,18 @@ void WriteLog::WriteTruth(player_truth_data_t *data)
 // Write fiducial data to file
 void WriteLog::WriteFiducial(player_fiducial_data_t *data)
 {
-  // format: <count> [<id> <range> <bearing> <orientation>] ...
+  // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw>] ...
   fprintf(this->file, "%d", HUINT16(data->count));
   for(int i=0;i<HUINT16(data->count);i++)
   {
-    fprintf(this->file, " %d %+07.3f %+07.3f %+04.3f",
+    fprintf(this->file, " %d %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
             HINT16(data->fiducials[i].id),
-            MM_M(HINT16(data->fiducials[i].pose[0])),
-            DEG_RAD(HINT16(data->fiducials[i].pose[1])),
-            DEG_RAD(HINT16(data->fiducials[i].pose[2])));
+            MM_M(HINT32(data->fiducials[i].pos[0])),
+            MM_M(HINT32(data->fiducials[i].pos[1])),
+            MM_M(HINT32(data->fiducials[i].pos[2])),
+            MM_M(HINT32(data->fiducials[i].rot[0])),
+            MM_M(HINT32(data->fiducials[i].rot[1])),
+            MM_M(HINT32(data->fiducials[i].rot[2])));
   }
   
   return;

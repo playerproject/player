@@ -626,8 +626,14 @@ typedef struct
   /** Id (0 if fiducial cannot be identified). */
   int id;
 
-  /** Beacon range, bearing and orientation. */
+  /** @deprecated Beacon range, bearing and orientation. */
   double range, bearing, orient;
+
+  /** Relative beacon position (x, y, z). */
+  double pos[3];
+
+  /** Relative beacon orientation (r, p, y). */
+  double rot[3];
   
 } playerc_fiducial_item_t;
 

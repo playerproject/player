@@ -184,9 +184,9 @@ size_t GzFiducial::GetData(void* client, unsigned char* dest, size_t len,
       break;
 
     data.fiducials[i].id = htons((int) fid->id);
-    data.fiducials[i].pose[0] = htons((int) (fid->pose[0] * 1000.0));
-    data.fiducials[i].pose[1] = htons((int) (fid->pose[1] * 180 / M_PI));
-    data.fiducials[i].pose[2] = htons((int) (fid->pose[2] * 180 / M_PI));
+    data.fiducials[i].pos[0] = htonl((int) (fid->pose[0] * 1000.0));
+    data.fiducials[i].pos[1] = htonl((int) (fid->pose[1] * 1000.0));
+    data.fiducials[i].rot[2] = htonl((int) (fid->pose[2] * 1000.0));
   }
   data.count = htons(i);
   

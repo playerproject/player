@@ -33,9 +33,9 @@
 #include <pthread.h>
 
 #include <stddef.h> /* for size_t */
-#include <clientdata.h>
-#include <playercommon.h>
-#include <playerqueue.h>
+#include "clientdata.h"
+#include "playercommon.h"
+#include "playerqueue.h"
 
 extern bool debug;
 extern bool experimental;
@@ -270,8 +270,8 @@ class Driver
     //
     virtual void MainQuit(void);
 
-    // A helper method for internal use; e.g., when one driver wants to make a
-    // request of another driver.
+    /// A helper method for internal use; e.g., when one driver wants to make a
+    /// request of another driver.
     virtual int Request(player_device_id_t id, void* requester, 
                         void* request, size_t reqlen,
                         struct timeval* req_timestamp,

@@ -254,8 +254,11 @@ PlayerQueue::Match(player_device_id_t* device, void* client,
       memcpy(data, queue[i].data, tmpsize);
       *type = queue[i].type;
       //*ts = queue[i].timestamp;
-      ts->tv_sec = queue[i].timestamp.tv_sec;
-      ts->tv_usec = queue[i].timestamp.tv_usec;
+      if (ts)
+      {
+        ts->tv_sec = queue[i].timestamp.tv_sec;
+        ts->tv_usec = queue[i].timestamp.tv_usec;
+      }
 
       queue[i].valid = 0;
     
