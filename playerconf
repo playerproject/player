@@ -52,6 +52,8 @@ if len(val) > 0:
 configout = os.popen('./configure --help')
 lines = configout.read().split('\n')
 
+print lines
+
 go = 0
 for l in lines:
   if l == '--enable and --with options recognized:':
