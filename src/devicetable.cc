@@ -27,6 +27,9 @@
  */
 #include <devicetable.h>
 
+// true if we're connecting to Stage instead of a real robot
+extern bool use_stage;
+
 // initialize the table
 CDeviceTable::CDeviceTable()
 {
@@ -111,9 +114,14 @@ CDevice* CDeviceTable::GetDevice(int port, unsigned short code,
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
-    if((thisentry->port == port) && 
-       (thisentry->code == code) && 
-       (thisentry->index == index))
+    // if we're not in Stage, then we're only listening on one port,
+    // so we don't need to match the port.  actually, this is a hack to
+    // get around the fact that, given arbitrary ordering of command-line
+    // arguments, devices can get added to the devicetable with an incorrect
+    // port.
+    if((thisentry->code == code) && 
+       (thisentry->index == index) &&
+       (!use_stage || (thisentry->port == port)))
     {
       devicep = thisentry->devicep;
       break;

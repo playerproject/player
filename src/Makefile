@@ -10,6 +10,8 @@
  
 include ../Makefile.common
 
+PWD=$(shell pwd)
+
 SERVERNAME = player
 DEVICELIBNAME = libplayerdevice.a
 
@@ -80,7 +82,14 @@ endif
 
 #SHARED_OBJS = laser.so
 
-all: $(SERVERNAME) $(SHARED_OBJS)
+# we build the server, any dynamically loadable device drivers, and an archive
+# of the PlayerQueue for linking into Stage
+all: $(SERVERNAME) $(SHARED_OBJS) libplayerqueue.a
+
+libplayerqueue.a: playerqueue.o
+	$(AR) cr $@ $<
+	$(MKDIR) -p ../lib
+	$(LN) -fs $(PWD)/$@ ../lib
 
 %.so: %.o 
 	$(CPP) -shared -nostartfiles -o $@ $<

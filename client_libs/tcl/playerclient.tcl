@@ -44,8 +44,10 @@ set PLAYER_HEADER_LEN 30
 set PLAYER_MSGTYPE_DATA 1
 set PLAYER_MSGTYPE_CMD  2
 set PLAYER_MSGTYPE_REQ  3
-set PLAYER_MSGTYPE_RESP 4
+set PLAYER_MSGTYPE_RESP_ACK 4
 set PLAYER_MSGTYPE_SYNCH 5
+set PLAYER_MSGTYPE_RESP_NACK 6
+set PLAYER_MSGTYPE_RESP_ERR 7
 
 ##############################
 # the valid datamode codes 
@@ -326,7 +328,10 @@ proc player_disconnect {obj} {
 #
 proc player_req {obj device index req} {
   global PLAYER_STX PLAYER_MSGTYPE_REQ PLAYER_PLAYER_DEV_REQ
-  global PLAYER_HEADER_LEN PLAYER_MSGTYPE_RESP
+  global PLAYER_HEADER_LEN 
+  global PLAYER_MSGTYPE_RESP_ACK
+  global PLAYER_MSGTYPE_RESP_NACK
+  global PLAYER_MSGTYPE_RESP_ERR
 
   upvar #0 $obj arr
 
@@ -370,8 +375,10 @@ proc player_req {obj device index req} {
     }
 
     # is it the reply we're looking for?
-    if {$type == $PLAYER_MSGTYPE_RESP && $device_rep == $device && \
-        $index_rep == $index} {
+    if {(($type == $PLAYER_MSGTYPE_RESP_ACK) ||  \
+         ($type == $PLAYER_MSGTYPE_RESP_ERR) ||  \
+         ($type == $PLAYER_MSGTYPE_RESP_NACK)) && \
+        $device_rep == $device && $index_rep == $index} {
         break;
     } else {
       # if not, eat other data
@@ -380,6 +387,13 @@ proc player_req {obj device index req} {
       #puts "type: $type  dev: $device_rep  ind: $index_rep"
     }
   }
+
+  if {$type == $PLAYER_MSGTYPE_RESP_NACK} {
+    puts "WARNING: got NACK on request"
+  } elseif {$type == $PLAYER_MSGTYPE_RESP_ERR} {
+    puts "WARNING: got ERR on request"
+  }
+  
   set reply [read $arr(sock) $size]
   set arr(request_pending) 0
   return $reply

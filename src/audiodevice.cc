@@ -25,7 +25,6 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
-#include <signal.h>  /* for sigblock */
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
 #include <unistd.h>
@@ -167,8 +166,6 @@ void *RunAudioThread(void *audiodevice)
   CAudioDevice *ad = (CAudioDevice *) audiodevice;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-  sigblock(SIGINT);
-  sigblock(SIGALRM);
 
   memset( command, 0, AUDIO_COMMAND_BUFFER_SIZE);
   memset( zero, 255, AUDIO_COMMAND_BUFFER_SIZE);
