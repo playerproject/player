@@ -1,15 +1,18 @@
 dnl Process this file with autoconf to produce a configure script.
 
-dnl Start autoconf with this file.  Not really sure why it needs a filename.
-AC_INIT(server/main.cc)
+dnl Initialize autoconf with name and version of package to be built. 
+dnl PACKAGE and VERSION will be so defined in <config.h>.
+AC_INIT(player,1.6)
 
-AC_PREREQ(2.54)
+AC_CONFIG_SRCDIR(server/main.cc)
 
+AC_PREREQ(2.53)
+
+dnl figure out build system (uname-style info)
 AC_CANONICAL_SYSTEM
 
-dnl Initialize automake with name and version of package to be built. 
-dnl PACKAGE and VERSION will be so defined in <config.h>.
-AM_INIT_AUTOMAKE(player,1.6)
+dnl Initialize automake, requiring version 1.6 or better
+AM_INIT_AUTOMAKE(1.6)
 
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
@@ -20,8 +23,8 @@ dnl
 dnl Also create playercommon.h, replacing a couple of C defines with the right
 dnl values.  That way, playercommon.h will be installed in a good working
 dnl state.
-AC_CONFIG_HEADERS(config.h server/playercommon.h)
-
+dnl AC_CONFIG_HEADERS([config.h server/playercommon.h])
+AM_CONFIG_HEADER([config.h server/playercommon.h])
 
 dnl I can't find a way to do @prefix@ substitution in server/prefix.h that
 dnl works in more than one version of autotools.  Fix this later.
