@@ -625,13 +625,12 @@ Driver::DataAvailable(void)
   pthread_mutex_lock(&condMutex);
   pthread_cond_broadcast(&cond);
   pthread_mutex_unlock(&condMutex);
-
+  
   // also wake up the server thread
   clientmanager->DataAvailable();
 }
 
-// a static version that can be used as a callback from libraries that
-// don't know about Player (e.g. Stage). - rtv
+// a static version that can be used as a callback - rtv
 void 
 Driver::DataAvailableStatic( Driver* driver )
 {
