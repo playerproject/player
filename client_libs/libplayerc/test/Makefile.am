@@ -19,6 +19,7 @@ test_SOURCES = test.c \
                test_laser.c \
 							 test_localize.c \
                test_gps.c \
+               test_map.c \
                test_position.c test_position3d.c \
 							 test_power.c \
                test_ptz.c \

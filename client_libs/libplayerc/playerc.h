@@ -693,6 +693,51 @@ int playerc_gps_unsubscribe(playerc_gps_t *device);
  ** end section
  **************************************************************************/
 
+/***************************************************************************
+ ** begin section map
+ **************************************************************************/
+
+/** [Synopsis] The {\tt map} proxy provides an interface to a map.
+ */
+
+/** [Data] */
+
+/** Map proxy data. */
+typedef struct _playerc_map_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Map resolution, m/cell */
+  double resolution;
+
+  /** Map size, in cells */
+  int width, height;
+
+  /** Occupancy for each cell (empty = -1, unknown = 0, occupied = +1) */
+  char* cells;
+} playerc_map_t;
+
+/** [Methods] */
+
+#define PLAYERC_MAP_INDEX(dev, i, j) ((dev->width) * (j) + (i))
+
+/** Create a map proxy. */
+playerc_map_t *playerc_map_create(playerc_client_t *client, int index);
+
+/** Destroy a map proxy. */
+void playerc_map_destroy(playerc_map_t *device);
+
+/** Subscribe to the map device. */
+int playerc_map_subscribe(playerc_map_t *device, int access);
+
+/** Un-subscribe from the map device. */
+int playerc_map_unsubscribe(playerc_map_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
+
 
 /***************************************************************************
  ** begin section laser
