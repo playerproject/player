@@ -64,8 +64,7 @@ void RFLEXbumper::GetOptions(ConfigFile *cf,int section,rflex_config_t * rflex_c
 	int x;
 	Lock();
   
-	rflex_configs->bumper_count = 
-	cf->ReadInt(section, "bumper_count",0);
+	rflex_configs->bumper_count = cf->ReadInt(section, "bumper_count",0);
 	rflex_configs->bumper_def = new player_bumper_define_t[rflex_configs->bumper_count];
   	for(x=0;x<rflex_configs->bumper_count;++x)
 	{
@@ -76,6 +75,9 @@ void RFLEXbumper::GetOptions(ConfigFile *cf,int section,rflex_config_t * rflex_c
 		rflex_configs->bumper_def[x].radius = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+4,0));	//mm  	
 	}
 	rflex_configs->bumper_address = cf->ReadInt(section, "rflex_bumper_address",DEFAULT_RFLEX_BUMPER_ADDRESS);
+	
+	rflex_configs->run |= cf->ReadInt(section, "rflex_done",0);
+	
 	Unlock();
 }  
 

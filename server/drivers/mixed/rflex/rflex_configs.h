@@ -91,6 +91,15 @@ typedef struct rflex_config_t{
   double * ir_b; 
   int ir_min_range;
   int ir_max_range;
+
+
+	// hack to make sure all of the rflex config file is read in 
+	// before we start up the Main thread
+	// particularly nasty as it requires the user to stick the
+	// rflex_done option into their config file...
+	// There are better options for this but all require
+	// significant work to fix so will be left to a later date
+	bool run;
   
 }  rflex_config_t;
 

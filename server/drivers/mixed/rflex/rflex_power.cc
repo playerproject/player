@@ -59,6 +59,9 @@ CDevice* RFLEXPower_Init(char* interface, ConfigFile* cf, int section)
 void RFLEXPower::GetOptions(ConfigFile *cf,int section,rflex_config_t * rflex_configs){
 	Lock(); 
 	rflex_configs->power_offset = cf->ReadInt(section, "rflex_power_offset",DEFAULT_RFLEX_POWER_OFFSET);
+
+	rflex_configs->run |= cf->ReadInt(section, "rflex_done",0);
+	
 	Unlock();
 }  
 

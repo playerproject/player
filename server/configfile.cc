@@ -1577,6 +1577,7 @@ double ConfigFile::ReadTupleFloat(int entity, const char *name,
   if (property < 0)
     return value;
   return atof(GetPropertyValue(property, index));
+  
 }
 
 

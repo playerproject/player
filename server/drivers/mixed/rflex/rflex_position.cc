@@ -82,6 +82,9 @@ void RFLEXPosition::GetOptions(ConfigFile * cf,int section, rflex_config_t *rfle
   //default rot accel
   rflex_configs->radPsec2_rot_acceleration=
     cf->ReadFloat(section, "default_rot_acceleration",0.1);
+
+	rflex_configs->run |= cf->ReadInt(section, "rflex_done",0);
+
   Unlock();
 }
 

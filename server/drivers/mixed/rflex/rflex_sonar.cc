@@ -91,6 +91,9 @@ void RFLEXSonar::GetOptions(ConfigFile *cf,int section,rflex_config_t * rflex_co
     rflex_configs->mmrad_sonar_poses[x].t=
       cf->ReadTupleFloat(section, "mmrad_sonar_poses",3*x,0.0);
   }
+
+	rflex_configs->run |= cf->ReadInt(section, "rflex_done",0);
+
   Unlock();
 }  
 

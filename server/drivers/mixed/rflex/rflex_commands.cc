@@ -595,10 +595,12 @@ static void parseSonarReport( unsigned char *buffer )
   status.num_sonars=rflex_configs.max_num_sonars;
   switch(opcode) {
   case SONAR_REPORT:
+	if (status.ranges == NULL || status.oldranges == NULL)
+		return;
     retval    = convertBytes2UInt32(&(buffer[6]));
     timeStamp = convertBytes2UInt32(&(buffer[10]));
     count = 0;
-    while ((8+count*3<dlen) && (count<256)) {
+    while ((8+count*3<dlen) && (count<256) && (count < rflex_configs.num_sonars)) {
       sid = buffer[14+count*3];
       //shift buffer
       for(x=0;x<rflex_configs.sonar_age-1;x++)
