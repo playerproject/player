@@ -35,7 +35,8 @@
 #include <stdlib.h> /* for abs() */
 #include <unistd.h>
 
-void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv) 
+//void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv) 
+void SIP::Fill(player_p2os_data_t* data)
 {
   //struct timeval timeNow_tv;
   //unsigned int timeNow;
@@ -75,9 +76,15 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
      (180*((double)(rvel - lvel) /
            (2.0/PlayerRobotParams[param_idx].DiffConvFactor)) / 
            M_PI));
+  data->position.stall = (unsigned char)(lwstall || rwstall);
+
+  // compass
   memset(&(data->compass),0,sizeof(data->compass));
   data->compass.yaw = htonl(compass);
-  data->position.stall = (unsigned char)(lwstall || rwstall);
+
+  // gyro
+  memset(&(data->gyro),0,sizeof(data->gyro));
+  data->gyro.yawspeed = htonl(gyro_rate);
 
   data->sonar.range_count = htons(PlayerRobotParams[param_idx].SonarNum);
   for(int i=0;i<min(PlayerRobotParams[param_idx].SonarNum,ARRAYSIZE(sonars));i++)
@@ -381,3 +388,65 @@ void SIP::ParseSERAUX( unsigned char *buffer )
   printf("ERROR: Unknown blob tracker packet type: %c\n", buffer[ix+1]); 
   return;
 }
+
+// Parse a set of gyro measurements.  The buffer is formatted thusly:
+//     length (2 bytes), type (1 byte), count (1 byte)
+// followed by <count> pairs of the form:
+//     rate (2 bytes), temp (1 byte)
+// <rate> falls in [0,1023]; less than 512 is CCW rotation and greater
+// than 512 is CW
+void
+SIP::ParseGyro(unsigned char* buffer)
+{
+  // Get the message length (account for the type byte and the 2-byte
+  // checksum)
+  int len  = (int)buffer[0]-3;
+
+  unsigned char type = buffer[1];
+  if(type != GYROPAC)
+  {
+    // Really should never get here...
+    PLAYER_ERROR("ERROR: Attempt to parse non GYRO packet as gyro data.\n");
+    return;
+  }
+
+  if(len < 1)
+  {
+    PLAYER_WARN("Couldn't get gyro measurement count");
+    return;
+  }
+
+  // get count
+  int count = (int)buffer[2];
+
+  // sanity check
+  if((len-1) != (count*3))
+  {
+    PLAYER_WARN("Mismatch between gyro measurement count and packet length");
+    return;
+  }
+
+  // Actually handle the rate values.  Any number of things could (and
+  // probably should) be done here, like filtering, calibration, conversion
+  // from the gyro's arbitrary units to something meaningful, etc.
+  //
+  // As a first cut, we'll just average all the rate measurements in this 
+  // set, and ignore the temperatures.
+  float ratesum = 0;
+  int bufferpos = 3;
+  unsigned short rate;
+  unsigned char temp;
+  for(int i=0; i<count; i++)
+  {
+    rate = (unsigned short)(buffer[bufferpos++] | (buffer[bufferpos++] << 8));
+    temp = bufferpos++;
+
+    ratesum += rate;
+  }
+
+  int32_t average_rate = (int32_t)rint(ratesum / (float)count);
+
+  // store the result for sending
+  gyro_rate = average_rate;
+}
+

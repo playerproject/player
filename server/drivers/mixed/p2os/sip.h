@@ -57,12 +57,16 @@ class SIP
   unsigned short blobarea, blobconf;	// Area and confidence
   unsigned int	 blobcolor;
 
+  // This value is filled by ParseGyro()
+  int32_t gyro_rate;
+
   /* returns 0 if Parsed correctly otherwise 1 */
   void Parse( unsigned char *buffer );
   void ParseSERAUX( unsigned char *buffer );
+  void ParseGyro(unsigned char* buffer);
   void Print();
   void PrintSonars();
-  void Fill( player_p2os_data_t* data,  struct timeval timeBegan_tv);
+  void Fill(player_p2os_data_t* data);
 
   SIP(int idx) 
   {

@@ -147,6 +147,7 @@ void P2OSSonar_Register(DriverTable* table);
 void P2OSSound_Register(DriverTable* table);
 void P2OSCMUcam_Register(DriverTable* table);
 void P2OSCompass_Register(DriverTable* table);
+void P2OSGyro_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_RFLEX
@@ -519,6 +520,7 @@ register_devices()
   P2OSSound_Register(driverTable);
   P2OSCMUcam_Register(driverTable);
   P2OSCompass_Register(driverTable);
+  P2OSGyro_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FIXEDTONES

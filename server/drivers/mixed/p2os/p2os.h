@@ -73,6 +73,7 @@
 #define TTY2 42		// Added in AmigOS 1.2
 #define GETAUX 43	// Added in AmigOS 1.2
 #define JOYDRIVE 47
+#define GYRO 58         // Added in AROS 1.8
 #define TTY3 66		// Added in AmigOS 1.3
 #define GETAUX2 67	// Added in AmigOS 1.3
 #define SOUND 90
@@ -84,6 +85,7 @@
 #define	ENCODER		0x90
 #define SERAUX		0xB0
 #define SERAUX2		0xB8	// Added in AmigOS 1.3
+#define GYROPAC         0x98    // Added AROS 1.8
 //#define PLAYLIST	0xD0
 
 /* Argument types */
@@ -125,6 +127,7 @@ typedef struct
   player_aio_data_t aio;
   player_blobfinder_data_t blobfinder;
   player_position_data_t compass;
+  player_position_data_t gyro;
 } __attribute__ ((packed)) player_p2os_data_t;
 
 typedef struct
@@ -174,7 +177,7 @@ class P2OS:public CDevice
     static int radio_modemp; // are we using a radio modem?
     static int joystickp; // are we using a joystick?
 
-    static struct timeval timeBegan_tv;
+    //static struct timeval timeBegan_tv;
     struct timeval lastblob_tv;
 
     // did we initialize the common data segments yet?
@@ -192,6 +195,8 @@ class P2OS:public CDevice
     static bool use_vel_band; 
         
     static int cmucam; // is the cmucam driver active (used in the cfg file)?
+
+    static int gyro; // is the gyro driver active (used in the cfg file)?
 
     void Lock();
     void Unlock();
