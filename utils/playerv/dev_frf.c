@@ -40,9 +40,10 @@ void frf_nodraw(frf_t *frf);
 
 
 // Create a frf device
-frf_t *frf_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index)
+frf_t *frf_create(mainwnd_t *mainwnd, opt_t *opt,
+                  playerc_client_t *client, int index, int subscribe)
 {
-  int i, subscribe;
+  int i;
   char label[64];
   char section[64];
   frf_t *frf;
@@ -60,8 +61,6 @@ frf_t *frf_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int 
 
   // Set the initial menu state
   // Set initial device state
-  subscribe = opt_get_int(opt, section, "", 0);
-  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
   rtk_menuitem_check(frf->subscribe_item, subscribe);
 
   // Construct figures

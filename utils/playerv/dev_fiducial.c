@@ -36,9 +36,9 @@ void fiducial_draw(fiducial_t *fiducial);
 
 
 // Create a fiducial device
-fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index)
+fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt,
+                            playerc_client_t *client, int index, int subscribe)
 {
-  int subscribe;
   char label[64];
   char section[64];
   fiducial_t *fiducial;
@@ -60,8 +60,6 @@ fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   fiducial->bits8_item = rtk_menuitem_create(fiducial->menu, "8 bits", 0);
 
   // Set the initial menu state
-  subscribe = opt_get_int(opt, section, "", 0);
-  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
   rtk_menuitem_check(fiducial->subscribe_item, subscribe);
   
   // Create a figure

@@ -38,9 +38,8 @@ void blobfinder_draw(blobfinder_t *blobfinder);
 
 // Create a blobfinder device
 blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt,
-                        playerc_client_t *client, int index)
+                        playerc_client_t *client, int index, int subscribe)
 {
-  int subscribe;
   char section[64];
   char label[64];
   blobfinder_t *blobfinder;
@@ -58,8 +57,6 @@ blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt,
   snprintf(section, sizeof(section), "blobfinder:%d", index);
 
   // Set the initial menu state
-  subscribe = opt_get_int(opt, section, "", 0);
-  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
   rtk_menuitem_check(blobfinder->subscribe_item, subscribe);
   rtk_menuitem_check(blobfinder->stats_item, 0);
   

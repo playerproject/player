@@ -41,12 +41,12 @@ void position_update_servo(position_t *position);
 
 
 // Create a position device
-position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index)
+position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                            int index, int subscribe)
 {
   char label[64];
   char section[64];
   position_t *position;
-  int subscribe;
   
   position = malloc(sizeof(position_t));
 
@@ -64,8 +64,6 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   position->disable_item = rtk_menuitem_create(position->menu, "Disable", 0);
 
   // Set the initial menu state
-  subscribe = opt_get_int(opt, section, "", 0);
-  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
   rtk_menuitem_check(position->subscribe_item, subscribe);
   
   // Create a figure representing the robot

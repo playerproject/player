@@ -44,9 +44,8 @@ void ptz_move(ptz_t *ptz);
 
 // Create a ptz device
 ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
-                  playerc_client_t *client, int index)
+                  playerc_client_t *client, int index, int subscribe)
 {
-  int subscribe;
   char section[64];
   char label[64];
   ptz_t *ptz;
@@ -57,8 +56,6 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
 
   // Set initial device state
   snprintf(section, sizeof(section), "ptz:%d", index);
-  subscribe = opt_get_int(opt, section, "", 0);
-  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
   if (subscribe)
   {
     if (playerc_ptz_subscribe(ptz->proxy, PLAYER_ALL_MODE) != 0)

@@ -37,9 +37,9 @@ void srf_draw(srf_t *srf);
 
 
 // Create a srf device
-srf_t *srf_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index)
+srf_t *srf_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                  int index, int subscribe)
 {
-  int subscribe;
   char label[64];
   char section[64];
   srf_t *srf;
@@ -59,8 +59,6 @@ srf_t *srf_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int 
   srf->res100_item = rtk_menuitem_create(srf->menu, "1.00 deg resolution", 1);
 
   // Set the initial menu state
-  subscribe = opt_get_int(opt, section, "", 0);
-  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
   rtk_menuitem_check(srf->subscribe_item, subscribe);
 
   // Construct figures

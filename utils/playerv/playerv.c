@@ -23,6 +23,7 @@
  * Date: 28 Mar 2002
  * CVS: $Id$
  *************************************************************************/
+
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -31,6 +32,31 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "playerv.h"
+
+
+// Callback prototypes
+typedef void (*fndestroy_t) (void*);
+typedef void (*fnupdate_t) (void*);
+
+
+// Somewhere to store which devices are available.
+typedef struct
+{
+  // Device identifier.
+  int code, index;
+  
+  // Handle to the GUI proxy for this device.
+  void *proxy;
+
+  // Callbacks
+  fndestroy_t fndestroy;
+  fnupdate_t fnupdate;
+
+  // Non-zero if should be subscribed.
+  int subscribe;
+  
+} device_t;
+
 
 
 // Set flag to 1 to force program to quit
@@ -46,11 +72,57 @@ void sig_quit(int signum)
 // Print the usage string
 void print_usage()
 {
-  printf("A visualization tool for the Player robot device server.\n");
+  printf("\nPlayerViewer %s, ", VERSION);
+  printf("a visualization tool for the Player robot device server.\n");
   printf("Usage  : playerv [-h <hostname>] [-p <port>]\n");
   printf("                 [--<device>:<index>] [--<device>:<index>] ... \n");
   printf("Example: playerv -p 6665 --position:0 --srf:0\n");
   printf("\n");
+}
+
+
+// Create the appropriate GUI proxy for a given set of device info.
+void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_client_t *client)
+{
+  switch (device->code)
+  {
+    case PLAYER_BLOBFINDER_CODE:
+      device->proxy = blobfinder_create(mainwnd, opt, client, device->index, device->subscribe);
+      device->fndestroy = (fndestroy_t) blobfinder_destroy;
+      device->fnupdate = (fnupdate_t) blobfinder_update;
+      break;
+    case PLAYER_FIDUCIAL_CODE:
+      device->proxy = fiducial_create(mainwnd, opt, client, device->index, device->subscribe);
+      device->fndestroy = (fndestroy_t) fiducial_destroy;
+      device->fnupdate = (fnupdate_t) fiducial_update;
+      break;
+    case PLAYER_FRF_CODE:
+      device->proxy = frf_create(mainwnd, opt, client, device->index, device->subscribe);
+      device->fndestroy = (fndestroy_t) frf_destroy;
+      device->fnupdate = (fnupdate_t) frf_update;
+      break;
+    case PLAYER_POSITION_CODE:
+      device->proxy = position_create(mainwnd, opt, client, device->index, device->subscribe);
+      device->fndestroy = (fndestroy_t) position_destroy;
+      device->fnupdate = (fnupdate_t) position_update;
+      break;
+    case PLAYER_PTZ_CODE:
+      device->proxy = ptz_create(mainwnd, opt, client, device->index, device->subscribe);
+      device->fndestroy = (fndestroy_t) ptz_destroy;
+      device->fnupdate = (fnupdate_t) ptz_update;
+      break;
+    case PLAYER_SRF_CODE:
+      device->proxy = srf_create(mainwnd, opt, client, device->index, device->subscribe);
+      device->fndestroy = (fndestroy_t) srf_destroy;
+      device->fnupdate = (fnupdate_t) srf_update;
+      break;
+    default:
+      device->proxy = NULL;
+      device->fndestroy = NULL;
+      device->fnupdate = NULL;
+      break;
+  }
+  return;
 }
 
 
@@ -60,23 +132,20 @@ int main(int argc, char **argv)
   playerc_client_t *client;
   rtk_app_t *app;  
   mainwnd_t *mainwnd;
-
   opt_t *opt;
   const char *host;
+  int i;
   int port;
   int rate;
-
-  // Devices
-  position_t *position;
-  srf_t *srf[2];
-  fiducial_t *fiducial[2];
-  ptz_t *ptz;
-  frf_t *frf;
-  blobfinder_t *blobfinder;
+  char section[256];
+  int device_count;
+  device_t devices[PLAYER_MAX_DEVICES];
+  device_t *device;
 
   printf("PlayerViewer %s\n", VERSION);
 
-  // Initialise rtk lib
+  // Initialise rtk lib (after we have read the program options we
+  // want).
   rtk_init(&argc, &argv);
 
   // Register signal handlers
@@ -99,16 +168,24 @@ int main(int argc, char **argv)
   port = opt_get_int(opt, "", "port", -1);
   if (port < 0)
     port = opt_get_int(opt, "", "p", 6665);
-  
+
   // Connect to the server
   printf("Connecting to [%s:%d]\n", host, port);
   client = playerc_client_create(NULL, host, port);
   if (playerc_client_connect(client) != 0)
   {
-    PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+    PRINT_ERR1("%s", playerc_errorstr);
+    print_usage();
     return -1;
   }
-    
+
+  // Get the available devices.
+  if (playerc_client_get_devlist(client) != 0)
+  {
+    PRINT_ERR1("%s", playerc_errorstr);
+    return -1;
+  }
+
   // Create gui
   app = rtk_app_create();
 
@@ -116,16 +193,45 @@ int main(int argc, char **argv)
   mainwnd = mainwnd_create(app, host, port);
   if (!mainwnd)
     return -1;
+  
+  // Create a list of available devices, with their gui proxies.
+  for (i = 0; i < client->id_count; i++)
+  {
+    device = devices + i;
+    device->code = client->ids[i].code;
+    device->index = client->ids[i].index;
 
-  // Create (but dont subscribe) devices
-  position = position_create(mainwnd, opt, client, 0);
-  srf[0] = srf_create(mainwnd, opt, client, 0);
-  srf[1] = srf_create(mainwnd, opt, client, 1);
-  fiducial[0] = fiducial_create(mainwnd, opt, client, 0);
-  fiducial[1] = fiducial_create(mainwnd, opt, client, 1);
-  ptz = ptz_create(mainwnd, opt, client, 0);
-  frf = frf_create(mainwnd, opt, client, 0);
-  blobfinder = blobfinder_create(mainwnd, opt, client, 0);
+    // See if the device should be subscribed immediately.
+    snprintf(section, sizeof(section), "%s:%d", playerc_lookup_name(device->code), device->index);
+    device->subscribe = opt_get_int(opt, section, "", 0);
+    device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
+    if (device->index == 0)
+    {
+      snprintf(section, sizeof(section), "%s", playerc_lookup_name(device->code));
+      device->subscribe = opt_get_int(opt, section, "", device->subscribe);
+      device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
+    }
+
+    // Create the GUI proxy for this device.
+    create_proxy(device, opt, mainwnd, client);
+  }
+  device_count = client->id_count;
+    
+  // Print the list of available devices.
+  printf("Available devices:\n", host, port);
+  for (i = 0; i < device_count; i++)
+  {
+    device = devices + i;
+    printf("  %+20s:%d", playerc_lookup_name(device->code), device->index);
+    if (device->proxy)
+      printf("  ok  ");
+    else
+      printf("  --  ");
+    if (device->subscribe)
+      printf("subscribed\n");
+    else
+      printf("\n");
+  }
   
   // Print out a list of unused options.
   opt_warn_unused(opt);
@@ -145,42 +251,38 @@ int main(int argc, char **argv)
       break;
 
     // Update devices
-    position_update(position);
-    srf_update(srf[0]);
-    srf_update(srf[1]);
-    fiducial_update(fiducial[0]);
-    fiducial_update(fiducial[1]);
-    ptz_update(ptz);
-    frf_update(frf);
-    blobfinder_update(blobfinder);
+    for (i = 0; i < device_count; i++)
+    {
+      device = devices + i;
+      if (device->proxy)
+        (*(device->fnupdate)) (device->proxy);
+    }
   }
   
   // Stop the gui
   rtk_app_stop(app);
 
   // Destroy devices
-  blobfinder_destroy(blobfinder);
-  frf_destroy(frf);
-  ptz_destroy(ptz);
-  fiducial_destroy(fiducial[1]);
-  fiducial_destroy(fiducial[0]);
-  srf_destroy(srf[1]);
-  srf_destroy(srf[0]);
-  position_destroy(position);
+  for (i = 0; i < device_count; i++)
+  {
+    device = devices + i;
+    if (device->proxy)
+      (*(device->fndestroy)) (device->proxy);
+  }
+
+  // Disconnect from server
+  if (playerc_client_disconnect(client) != 0)
+  {
+    PRINT_ERR1("%s", playerc_errorstr);
+    return -1;
+  }
+  playerc_client_destroy(client);
 
   // Destroy the windows
   mainwnd_destroy(mainwnd);
 
   // Destroy the gui
   rtk_app_destroy(app);
-
-  // Disconnect from server
-  if (playerc_client_disconnect(client) != 0)
-  {
-    PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-    return -1;
-  }
-  playerc_client_destroy(client);
 
   opt_term(opt);
   

@@ -38,14 +38,13 @@
 #define PRINT_WARN2(msg, a, b) printf("playerv warning : " msg "\n", a, b)
 
 // Error macros
-#define PRINT_ERR(msg)         printf("playerv error "__FILE__" : " msg "\n")
-#define PRINT_ERR1(msg, a)     printf("playerv error "__FILE__" : " msg "\n", a)
-#define PRINT_ERR2(msg, a, b)  printf("playerv error "__FILE__" : " msg "\n", a, b)
-#define PRINT_ERR3(msg, a, b, c)  printf("playerv error "__FILE__" : " msg "\n", a, b, c)
-
-#define PRINT_ERRNO(m)       printf("playerv error : %s \n  "m" : %s\n", \
-                                   __FILE__, strerror(errno))
-#define PRINT_ERRNO1(m, a)      printf("playerv error : %s \n  "m" : %s\n", \
-                                   __FILE__, a, strerror(errno))
+#define PRINT_ERR(msg)         printf("playerv : error in "__FILE__"\n  " msg "\n")
+#define PRINT_ERR1(msg, a)     printf("playerv : error in "__FILE__"\n  " msg "\n", a)
+#define PRINT_ERR2(msg, a, b)  printf("playerv : error in "__FILE__"\n  " msg "\n", a, b)
+#define PRINT_ERR3(msg, a, b, c)  printf("playerv : error in "__FILE__"\n  " msg "\n", a, b, c)
+#define PRINT_ERRNO(msg)       printf("playerv : error in "__FILE__"\n  " msg "\n", \
+                                      strerror(errno))
+#define PRINT_ERRNO1(msg, a)   printf("playerv error : %s \n  " msg "\n", \
+                                       a, strerror(errno))
 
 #endif
