@@ -2549,7 +2549,7 @@ class MapProxy : public ClientProxy
 
 
 /** 
-The @p SpeechRecognition proxy provides access to a @ref player_interface_speechrecognition device.
+The @p SpeechRecognition proxy provides access to a @ref player_interface_speech_recognition device.
 */
 class SpeechRecognitionProxy : public ClientProxy
 {

@@ -1,7 +1,7 @@
 $Id$
 
 writelog:
-- Add support for logging to multiple files during one execution of Player.
++ Add support for logging to multiple files during one execution of Player.
   I.e., client-side control of logfile name.  Add textbox to playervcr to
   allow the user to change it.
 
