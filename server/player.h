@@ -97,7 +97,7 @@
 #define PLAYER_POSITION2D_CODE     ((uint16_t)48)  // 2-D position
 #define PLAYER_JOYSTICK_CODE       ((uint16_t)49)  // Joytstick
 #define PLAYER_SPEECH_RECOGNITION_CODE  ((uint16_t)50)  // speech recognitionI/O
-
+#define PLAYER_OPAQUE_CODE         ((uint16_t)51)  // plugin interface
 
 /* the currently assigned device strings */
 #define PLAYER_NULL_STRING           "null"
@@ -126,7 +126,7 @@
 #define PLAYER_WAVEFORM_STRING       "waveform"
 #define PLAYER_LOCALIZE_STRING       "localize"
 #define PLAYER_MCOM_STRING           "mcom"
-#define PLAYER_SOUND_STRING	         "sound"
+#define PLAYER_SOUND_STRING	     "sound"
 #define PLAYER_AUDIODSP_STRING       "audiodsp"
 #define PLAYER_AUDIOMIXER_STRING     "audiomixer"
 #define PLAYER_MOTOR_STRING          "motor"
@@ -140,8 +140,9 @@
 #define PLAYER_MAP_STRING            "map"
 #define PLAYER_PLANNER_STRING        "planner"
 #define PLAYER_LOG_STRING            "log"
-#define PLAYER_CAMERA_STRING          "camera"
-#define PLAYER_JOYSTICK_STRING        "joystick"
+#define PLAYER_CAMERA_STRING         "camera"
+#define PLAYER_JOYSTICK_STRING       "joystick"
+#define PLAYER_OPAQUE_STRING         "opaque"
 
 /* The maximum number of devices the server will support. */
 #define PLAYER_MAX_DEVICES 256
