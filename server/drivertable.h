@@ -33,14 +33,27 @@
 #include <pthread.h>
 #include <configfile.h>
 
+typedef CDevice* (*DriverInitFn) (char *interface, ConfigFile *cf, int section);
+typedef CDevice* (*DriverInitFnEx) (ConfigFile *cf, int section);
+
+
+
 // one element in a linked list
 class DriverEntry
 {
   public:
     char name[PLAYER_MAX_DEVICE_STRING_LEN]; // the string name for the driver
     unsigned char access;   // allowed access mode: 'r', 'w', or 'a'
-    CDevice* (*initfunc)(char*,ConfigFile*,int); // factory creation function
-    DriverEntry* next;  // next in list
+
+    // factory creation function
+    DriverInitFn initfunc;
+    //CDevice* (*initfunc)(char*,ConfigFile*,int);
+    
+    // factory creation function (new-style)
+    DriverInitFnEx initfuncEx;
+
+    // next in list
+    DriverEntry* next;  
 
     DriverEntry() { name[0]='\0'; next = NULL; }
 };
@@ -60,15 +73,18 @@ class DriverTable
     int Size() { return(numdrivers); }
     
     // add a new driver to the table
-    int AddDriver(char* name, char access, 
-                  CDevice* (*initfunc)(char*,ConfigFile*,int));
+    int AddDriver(char* name, char access, DriverInitFn initfunc);
+                  //CDevice* (*initfunc)(char*,ConfigFile*,int));
+
+    // add a new driver to the table (new-style)
+    int AddDriverEx(char* name, DriverInitFnEx initfuncEx);
 
     // sort drivers, based on name.  the return value points at newly
     // malloc()ed memory, which the user should free().
     char** SortDrivers();
 
     // matches on the driver name
-    DriverEntry* GetDriverEntry(char* name);
+    DriverEntry* GetDriverEntry(const char* name);
    
     // get the ith driver name; returns NULL if there is no such driver
     char* GetDriverName(int idx);

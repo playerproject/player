@@ -42,6 +42,8 @@ extern bool experimental;
 
 // getting around circular inclusion
 class CLock;
+class ConfigFile;
+
 
 class CDevice 
 {
@@ -86,6 +88,9 @@ class CDevice
     PlayerQueue* device_reqqueue;
     PlayerQueue* device_repqueue;
 
+    // Flag set if this is a new-style driver
+    bool new_style;
+
     // signal that new data is available (calls pthread_cond_broadcast()
     // on this device's condition variable, which will release other
     // devices that are waiting on this one).
@@ -106,6 +111,10 @@ class CDevice
     // number of current subscriptions
     int subscriptions;
 
+    // Total number of entries in the device table using this driver.
+    // This is updated and read in the CDeviceEntry class
+    int entries;
+
     // If true, device should be "always on", i.e., player will "subscribe" 
     // at startup, before any clients subscribe. The "alwayson" parameter in
     // the config file can be used to turn this feature on as well (in which
@@ -113,8 +122,11 @@ class CDevice
     // WARNING: this feature is experimental and may be removed in the future
     bool alwayson;
 
-    virtual ~CDevice();
+    // Last error value; useful for returning error codes from
+    // constructors
+    int error;
 
+  public:
     // this is the main constructor, used by most non-Stage devices.
     // storage will be allocated by this constructor
     CDevice(size_t datasize, size_t commandsize, 
@@ -125,11 +137,30 @@ class CDevice
     // the buffers must allocated, and SetupBuffers() called.
     CDevice();
 
+    // Destructor
+    virtual ~CDevice();
+
+    // Set/reset error code
+    void SetError(int code) {this->error = code;}
+
+    // this method is used by devices that allocate their own storage, but wish to
+    // use the default Put/Get methods
     void SetupBuffers(unsigned char* data, size_t datasize, 
                       unsigned char* command, size_t commandsize, 
                       unsigned char* reqqueue, int reqqueuelen, 
                       unsigned char* repqueue, int repqueuelen);
 
+    // Read a device id from the config file (helper function for
+    // new-style drivers).  Note that code is the *expected* interface
+    // type; returns 0 if a suitable device id is found.
+    int ReadDeviceId(ConfigFile *cf, int entity, int index,
+                     int code, player_device_id_t *id);
+    
+    // Add a new-style interface; returns 0 on success
+    int AddInterfaceEx(player_device_id_t id, const char *drivername,
+                       unsigned char access, size_t datasize, size_t commandsize,
+                       size_t reqqueuelen, size_t repqueuelen);
+    
     // these are used to control subscriptions to the device; a device MAY
     // override them, but usually won't (P2OS being the main exception).
     // The client pointer acts an identifier for devices that need to maintain
@@ -160,40 +191,90 @@ class CDevice
     // also override Update(), in order to call DataAvailable(), allowing
     // other drivers to Wait() on this driver.
     virtual void Update() {}
-    
-    // these MAY be overridden by the device itself, but then the device
-    // is reponsible for Lock()ing and Unlock()ing appropriately
+
+    // Note: the Get* and Put* functions MAY be overridden by the
+    // device itself, but then the device is reponsible for Lock()ing
+    // and Unlock()ing appropriately
+
+    // Write new data to the device
+    virtual void PutData(void* src, size_t len,
+                         uint32_t timestamp_sec, uint32_t timestamp_usec);
+
+    // New-style PutData; [id] specifies the interface to be written
+    virtual void PutDataEx(player_device_id_t id,
+                           void* src, size_t len,
+                           uint32_t timestamp_sec, uint32_t timestamp_usec);
+
+    // Read new data from the device
     virtual size_t GetNumData(void* client);
     virtual size_t GetData(void* client, unsigned char* dest, size_t len,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-    virtual void PutData(void* src, size_t len,
-                         uint32_t timestamp_sec, uint32_t timestamp_usec);
-    
-    virtual size_t GetCommand(void* dest, size_t len);
+
+    // New-style GetData; [id] specifies the interface to be read
+    virtual size_t GetNumDataEx(player_device_id_t id, void* client);
+    virtual size_t GetDataEx(player_device_id_t id, void* client,  
+                             unsigned char* dest, size_t len,
+                             uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+
+    // Write a new command to the device
     virtual void PutCommand(void* client, unsigned char* src, size_t len);
-    
-    virtual size_t GetConfig(void** client, void *data, size_t len);
-    /* a "long form" GetConfig, this one returns the target device ID */
-    virtual size_t GetConfig(player_device_id_t* device, void** client, 
-                             void *data, size_t len);
+
+    // New-style: Write a new command to the device
+    virtual void PutCommandEx(player_device_id_t id, void* client,
+                              unsigned char* src, size_t len);
+
+    // Read the current command for the device
+    virtual size_t GetCommand(void* dest, size_t len);
+
+    // New-style: Read the current command for the device
+    virtual size_t GetCommandEx(player_device_id_t id, void* dest, size_t len);
+
+    // Write configuration request to device
     virtual int PutConfig(player_device_id_t* device, void* client, 
                           void* data, size_t len);
 
-    virtual int GetReply(player_device_id_t* device, void* client, 
-                         unsigned short* type, struct timeval* ts, 
-                         void* data, size_t len);
+    // New-style: Write configuration request to device
+    virtual int PutConfigEx(player_device_id_t id, void *client, void *data, size_t len);
+
+    // Read configuration request from device
+    virtual size_t GetConfig(player_device_id_t* device, void** client, 
+                             void *data, size_t len);
+
+    // New-style: Get next configuration request for device
+    virtual size_t GetConfigEx(player_device_id_t id, void **client, void *data, size_t len);
+
+    // Write configuration reply to device
     virtual int PutReply(player_device_id_t* device, void* client, 
                          unsigned short type, struct timeval* ts, 
                          void* data, size_t len);
+
+    // New-style: Write configuration reply to device
+    virtual int PutReplyEx(player_device_id_t id, void* client, 
+                           unsigned short type, struct timeval* ts, 
+                           void* data, size_t len);
+
+    // Read configuration reply from device
+    virtual int GetReply(player_device_id_t* device, void* client, 
+                         unsigned short* type, struct timeval* ts, 
+                         void* data, size_t len);
+
+    // New-style: Read configuration reply from device
+    virtual int GetReplyEx(player_device_id_t id, void* client, 
+                           unsigned short* type, struct timeval* ts, 
+                           void* data, size_t len);
+
+    // Convenient short form
+    virtual size_t GetConfig(void** client, void* data, size_t len);
+
     /* a short form, for common use; assumes zero-length reply and that the
      * originating device can be inferred from the client's subscription 
      * list 
      */
     virtual int PutReply(void* client, unsigned short type);
+
     /* another short form; this one allows actual replies */
     virtual int PutReply(void* client, unsigned short type, struct timeval* ts, 
                          void* data, size_t len);
-
 
     /* start a thread that will invoke Main() */
     virtual void StartThread();

@@ -107,10 +107,11 @@ size_t ioSize = 0; // size of the IO buffer
 // send a SIGUSR1 to this thread when new data is available
 //pid_t g_server_pid;
 
-// this table holds all the currently *instantiated* devices
-CDeviceTable* deviceTable = new CDeviceTable();
 // this table holds all the currently *available* drivers
 DriverTable* driverTable = new DriverTable();
+
+// this table holds all the currently *instantiated* devices
+CDeviceTable* deviceTable = new CDeviceTable();
 
 // the global PlayerTime object has a method 
 //   int GetTime(struct timeval*)
@@ -696,8 +697,80 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
 
 #endif
 
+
+// Parse a new-style device from the config file
+bool ParseDeviceEx(ConfigFile *configFile, int section)
+{
+  const char *pluginname;  
+  const char *drivername;
+  DriverEntry *entry;
+  CDevice *device;
+  void *handle;
+
+  // Load any required plugins
+  pluginname = configFile->ReadFilename(section, "plugin", NULL);
+  if (pluginname != NULL)
+  {
+    fprintf(stdout, "loading pluging [%s]\n", pluginname);
+    if(!(handle = dlopen(pluginname, RTLD_NOW)))
+    {
+      PLAYER_ERROR1("failed: [%s]", dlerror());
+      return (false);
+    }
+  }
+
+  // Get the driver name
+  drivername = configFile->ReadString(section, "driver", NULL);
+  if (drivername == NULL)
+  {
+    PLAYER_ERROR1("No driver name specified in section %d", section);
+    return (false);
+  }
+  
+  // Look for the driver
+  entry = driverTable->GetDriverEntry(drivername);
+  if (entry == NULL)
+  {
+    PLAYER_ERROR1("Couldn't find driver \"%s\"", drivername);
+    return (false);
+  }
+  
+  // Create a driver; the driver will add entries into the device
+  // table
+  device = (*(entry->initfuncEx)) (configFile, section);
+  if (device == NULL || device->error != 0)
+  {
+    PLAYER_ERROR1("Initialization failed for driver \"%s\"", drivername);
+    exit(-1);
+  }
+
+  return true;
+}
+
+
+// Display the driver/interface map
+void PrintDeviceTable()
+{
+  CDeviceEntry *deviceEntry;
+  player_interface_t interface;
+
+  // Step through the device table
+  for (deviceEntry = deviceTable->GetFirstEntry(); deviceEntry != NULL;
+       deviceEntry = deviceTable->GetNextEntry(deviceEntry))
+  {
+    assert(lookup_interface_code(deviceEntry->id.code, &interface) == 0);
+    
+    fprintf(stdout, "device %d driver %s id %d:%s:%d\n",
+            deviceEntry->index, deviceEntry->drivername,
+            deviceEntry->id.port, interface.name, deviceEntry->id.index);
+  }
+
+  return;
+}
+
+
 bool
-parse_config_file(char* fname, int** ports, int* num_ports, 
+ParseConfigFile(char* fname, int** ports, int* num_ports, 
                   ClientData*** alwayson_devices, int* num_alwayson_devices)
 {
   DriverEntry* entry;
@@ -716,7 +789,7 @@ parse_config_file(char* fname, int** ports, int* num_ports,
 
   
   // parse the file
-  printf("\nParsing configuration file \"%s\"...\n", fname);
+  printf("\nParsing configuration file \"%s\"\n", fname);
 
   if(!configFile.Load(fname))
     return(false);
@@ -735,143 +808,166 @@ parse_config_file(char* fname, int** ports, int* num_ports,
     if(configFile.entities[i].type < 0)
       continue;
 
-    // get the interface name
-    strncpy(interface, (const char*)(configFile.entities[i].type), 
-            sizeof(interface));
-    interface[sizeof(interface)-1] = '\0';
-
-    // look for a colon and trailing index
-    if((colon = strchr(interface,':')))
+    // Check for new-style device block
+    if (strcmp(configFile.GetEntityType(i), "device") == 0)
     {
-      // strip off the end
-      //interface[colon-interface] = '\0';
-      *colon = '\0';
+      if (!ParseDeviceEx(&configFile, i))
+        return false;
     }
-    // look for the new robot:<port>:<name> syntax
-    if(!strcmp(interface,"robot"))
+
+    // Load old-style device blocks
+    // TODO: remove the port addition stuff; the port list
+    // is now extracted directly from the devicetable (see below)
+    else
     {
-      port = -1;
-      robotname[0]='\0';
-      if(colon && strlen(colon+1))
+      // get the interface name
+      strncpy(interface, (const char*)(configFile.entities[i].type), 
+              sizeof(interface));
+      interface[sizeof(interface)-1] = '\0';
+
+      // look for a colon and trailing index
+      if((colon = strchr(interface,':')))
       {
-        if((colon2 = strchr(colon+1,':')))
+        // strip off the end
+        //interface[colon-interface] = '\0';
+        *colon = '\0';
+      }
+      // look for the new robot:<port>:<name> syntax
+      if(!strcmp(interface,"robot"))
+      {
+        port = -1;
+        robotname[0]='\0';
+        if(colon && strlen(colon+1))
         {
-          // strip off the end
-          *colon2 = '\0';
-          if(strlen(colon2+1))
+          if((colon2 = strchr(colon+1,':')))
           {
-            strncpy(robotname,colon2+1,sizeof(robotname));
-            robotname[sizeof(robotname)-1]='\0';
+            // strip off the end
+            *colon2 = '\0';
+            if(strlen(colon2+1))
+            {
+              strncpy(robotname,colon2+1,sizeof(robotname));
+              robotname[sizeof(robotname)-1]='\0';
+            }
+          }
+          // was a port number actually supplied?
+          if(strlen(colon+1))
+          {
+            port = atoi(colon+1);
+            // add this port to our watchlist.  could check for duplicates
+            // here, but we'll just let bind() do that checking for us later
+            (*ports)[(*num_ports)++] = port;
           }
         }
-        // was a port number actually supplied?
-        if(strlen(colon+1))
-        {
-          port = atoi(colon+1);
-          // add this port to our watchlist.  could check for duplicates
-          // here, but we'll just let bind() do that checking for us later
-          (*ports)[(*num_ports)++] = port;
-        }
+        continue;
       }
-      continue;
-    }
-    else
-    {
-      // get the index out
-      if(colon && strlen(colon+1))
-        index = atoi(colon+1);
       else
-        index = 0;
-
-      // if we're using the old single robot syntax (i.e., no robot blocks)
-      // and this is the first device, then we have to add the single port
-      // to our watchlist
-      if(firstdevice && (*num_ports == 0))
-        (*ports)[(*num_ports)++] = port;
-    }
-
-    // TODO: implement auto-assignment of ports
-    if(port < 0)
-    {
-      PLAYER_ERROR("Sorry, auto-assigning ports not yet supported");
-      return(false);
-    }
-
-    driver = NULL;
-    // find the default driver for this interface
-    player_interface_t tmpint;
-    if(lookup_interface(interface, &tmpint) == 0)
-    {
-      driver = tmpint.default_driver;
-      code = tmpint.code;
-    }
-    if(!driver)
-    {
-      PLAYER_ERROR1("Couldn't find interface \"%s\"", interface);
-      exit(-1);
-    }
-
-    // did the user specify a different driver?
-    driver = (char*)configFile.ReadString(i, "driver", driver);
-
-    printf("  loading driver \"%s\" as device \"%d:%s:%d\"\n", 
-           driver, port, interface, index);
-    /* look for the indicated driver in the available device table */
-    if(!(entry = driverTable->GetDriverEntry(driver)))
-    {
-      PLAYER_ERROR1("Couldn't find driver \"%s\"", driver);
-      return(false);
-    }
-    else
-    {
-      player_device_id_t id;
-      id.code = code;
-      id.port = port;
-      id.index = index;
-
-      if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
       {
-        PLAYER_ERROR2("Initialization failed for driver \"%s\" as interface \"%s\"\n",
-                      driver, interface);
-        exit(-1);
+        // get the index out
+        if(colon && strlen(colon+1))
+          index = atoi(colon+1);
+        else
+          index = 0;
+
+        // if we're using the old single robot syntax (i.e., no robot blocks)
+        // and this is the first device, then we have to add the single port
+        // to our watchlist
+        if(firstdevice && (*num_ports == 0))
+          (*ports)[(*num_ports)++] = port;
       }
-      if(deviceTable->AddDevice(id, driver, robotname, 
-                                entry->access, tmpdevice) < 0)
-        exit(-1);
 
-      firstdevice=false;
+      // TODO: implement auto-assignment of ports
+      if(port < 0)
+      {
+        PLAYER_ERROR("Sorry, auto-assigning ports not yet supported");
+        return(false);
+      }
 
-      // should this device be "always on"?
-      if(configFile.ReadInt(i, "alwayson", 0))
+      driver = NULL;
+      // find the default driver for this interface
+      player_interface_t tmpint;
+      if(lookup_interface(interface, &tmpint) == 0)
+      {
+        driver = tmpint.default_driver;
+        code = tmpint.code;
+      }
+      if(!driver)
+      {
+        PLAYER_ERROR1("Couldn't find interface \"%s\"", interface);
+        return(false);
+      }
+
+      // did the user specify a different driver?
+      driver = (char*)configFile.ReadString(i, "driver", driver);
+
+      printf("  loading driver \"%s\" as device \"%d:%s:%d\"\n", 
+             driver, port, interface, index);
+      /* look for the indicated driver in the available device table */
+      if(!(entry = driverTable->GetDriverEntry(driver)))
+      {
+        PLAYER_ERROR1("Couldn't find driver \"%s\"", driver);
+        return(false);
+      }
+      else
+      {
+        player_device_id_t id;
+        id.code = code;
+        id.port = port;
+        id.index = index;
+
+        /* REMOVE
+           if(deviceTable->AddDevice(id, driver, robotname, 
+           entry->access, tmpdevice) < 0)
+           exit(-1);
+
+           firstdevice=false;
+        */
+
+        // Create the driver
+        if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
+        {
+          PLAYER_ERROR2("Initialization failed for driver \"%s\" as interface \"%s\"\n",
+                        driver, interface);
+          return(false);
+        }
+
+        // Add driver to the device table
+        if (deviceTable->AddDevice(id, driver, robotname, entry->access, tmpdevice) != 0)
+          return(false);
+
+        firstdevice=false;
+
+        // should this device be "always on"?
+        if(configFile.ReadInt(i, "alwayson", 0))
           tmpdevice->alwayson = true;
 
-      if(tmpdevice->alwayson)
-      {
-        // In order to allow safe shutdown, we need to create a dummy
-        // clientdata object and add it to the clientmanager.  It will then
-        // form a root for this subscription tree and allow it to be torn
-        // down.
-        ClientData* clientdata;
-        player_device_req_t req;
-
-        assert((clientdata = (ClientData*)new ClientDataTCP("",port)));
-        
-        // to indicate that this one is a dummy
-        clientdata->socket = 0;
-
-        // don't add it to the client manager here, because it hasn't been
-        // created yet.  instead, queue them up for later addition.
-        //clientmanager->AddClient(clientdata);
-        (*alwayson_devices)[(*num_alwayson_devices)++] = clientdata;
-        
-        req.code = code;
-        req.index = index;
-        req.access = PLAYER_READ_MODE;
-        if(clientdata->UpdateRequested(req) != PLAYER_READ_MODE)
+        if(tmpdevice->alwayson)
         {
-          PLAYER_ERROR2("Initial subscription failed to driver \"%s\" as interface \"%s\"\n",
-                        driver,interface);
-          exit(-1);
+          // In order to allow safe shutdown, we need to create a dummy
+          // clientdata object and add it to the clientmanager.  It will then
+          // form a root for this subscription tree and allow it to be torn
+          // down.
+          ClientData* clientdata;
+          player_device_req_t req;
+
+          assert((clientdata = (ClientData*)new ClientDataTCP("",port)));
+        
+          // to indicate that this one is a dummy
+          clientdata->socket = 0;
+
+          // don't add it to the client manager here, because it hasn't been
+          // created yet.  instead, queue them up for later addition.
+          //clientmanager->AddClient(clientdata);
+          (*alwayson_devices)[(*num_alwayson_devices)++] = clientdata;
+        
+          req.code = code;
+          req.index = index;
+          req.access = PLAYER_READ_MODE;
+          if(clientdata->UpdateRequested(req) != PLAYER_READ_MODE)
+          {
+            PLAYER_ERROR2("Initial subscription failed to driver \"%s\" as interface \"%s\"\n",
+                          driver,interface);
+            return(false);
+          }
         }
       }
     }
@@ -879,7 +975,28 @@ parse_config_file(char* fname, int** ports, int* num_ports,
 
   configFile.WarnUnused();
 
-  puts("Done.");
+  // Poll the device table for ports to monitor
+  int i;
+  CDeviceEntry *deviceEntry;
+  for (deviceEntry = deviceTable->GetFirstEntry(); deviceEntry != NULL;
+       deviceEntry = deviceTable->GetNextEntry(deviceEntry))
+  {
+    // See if the port is already in the table
+    for (i = 0; i < *num_ports; i++)
+    {
+      if ((*ports)[i] == deviceEntry->id.port)
+        break;
+    }
+
+    // If its not in the table, add it
+    if (i >= *num_ports)
+      (*ports)[(*num_ports)++] = deviceEntry->id.port;
+  }
+  
+
+  // Print the device table
+  puts("Using device table:");
+  PrintDeviceTable();
 
   return(true);
 }
@@ -903,7 +1020,7 @@ int main( int argc, char *argv[] )
   struct pollfd *ufds = NULL;
   int num_ufds = 0;
   int protocol = PLAYER_TRANSPORT_TCP;
-  char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
+  //char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 
   global_argc = argc;
   global_argv = argv;
@@ -1171,8 +1288,8 @@ int main( int argc, char *argv[] )
   {
     // Parse the config file and instantiate drivers.  It builds up a list
     // of ports that we need to listen on.
-    if (!parse_config_file(configfile, &ports, &num_ufds,
-                           &alwayson_devices, &num_alwayson_devices))
+    if (!ParseConfigFile(configfile, &ports, &num_ufds,
+                         &alwayson_devices, &num_alwayson_devices))
       exit(-1);
   }
 

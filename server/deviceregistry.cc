@@ -421,7 +421,7 @@ player_interface_t interfaces[] = {
  * and zero is returned.  otherwise, -1 is returned.
  */
 int
-lookup_interface(char* name, player_interface_t* interface)
+lookup_interface(const char* name, player_interface_t* interface)
 {
   for(int i=0; interfaces[i].code; i++)
   {
@@ -462,16 +462,18 @@ lookup_interface_code(int code, player_interface_t* interface)
  * leturns 0 when the end of the * array is reached.
  */
 char*
-lookup_device_name(unsigned int startpos, int code) {
-    if(startpos > sizeof(interfaces))
-            return 0;
-    for(int i = startpos; interfaces[i].code != 0; i++)
-    {
-        if(code == interfaces[i].code) {
-            return interfaces[i].name;
-        }
-    }
+lookup_interface_name(unsigned int startpos, int code)
+{
+  if(startpos > sizeof(interfaces))
     return 0;
+  for(int i = startpos; interfaces[i].code != 0; i++)
+  {
+    if(code == interfaces[i].code)
+    {
+      return interfaces[i].name;
+    }
+  }
+  return 0;
 } 
 
 /*
