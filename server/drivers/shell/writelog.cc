@@ -84,11 +84,14 @@ class WriteLog: public CDevice
   public: void Write(void *data, size_t size,
                      const player_device_id_t *id, uint32_t sec, uint32_t usec);
 
-  // Write position data to file
-  private: void WritePosition(player_position_data_t *data, size_t size);
-
   // Write laser data to file
-  private: void WriteLaser(player_laser_data_t *data, size_t size);
+  private: void WriteLaser(player_laser_data_t *data);
+
+  // Write position data to file
+  private: void WritePosition(player_position_data_t *data);
+
+  // Write wifi data to file
+  private: void WriteWiFi(player_wifi_data_t *data);
 
   // File to read data from
   private: const char *filename;
@@ -364,10 +367,10 @@ void WriteLog::Write(void *data, size_t size,
   switch (iface.code)
   {
     case PLAYER_POSITION_CODE:
-      this->WritePosition((player_position_data_t*) data, size);
+      this->WritePosition((player_position_data_t*) data);
       break;
     case PLAYER_LASER_CODE:
-      this->WriteLaser((player_laser_data_t*) data, size);
+      this->WriteLaser((player_laser_data_t*) data);
       break;
   }
 
@@ -391,22 +394,10 @@ void WriteLog::Write(void *data, size_t size,
 #define DEG_RAD(x) ((x) * M_PI / 180.0)
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write position data to file
-void WriteLog::WritePosition(player_position_data_t *data, size_t size)
-{
-  fprintf(this->file, "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
-          MM_M(HINT32(data->xpos)), MM_M(HINT32(data->ypos)), DEG_RAD(HINT32(data->yaw)),
-          MM_M(HINT32(data->xspeed)), MM_M(HINT32(data->yspeed)), DEG_RAD(HINT32(data->yspeed)),
-          data->stall);
-
-  return;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////
 // Write laser data to file
-void WriteLog::WriteLaser(player_laser_data_t *data, size_t size)
+void WriteLog::WriteLaser(player_laser_data_t *data)
 {
   int i;
   
@@ -420,4 +411,35 @@ void WriteLog::WriteLaser(player_laser_data_t *data, size_t size)
   return;
 }
 
+
+////////////////////////////////////////////////////////////////////////////
+// Write position data to file
+void WriteLog::WritePosition(player_position_data_t *data)
+{
+  fprintf(this->file, "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
+          MM_M(HINT32(data->xpos)), MM_M(HINT32(data->ypos)), DEG_RAD(HINT32(data->yaw)),
+          MM_M(HINT32(data->xspeed)), MM_M(HINT32(data->yspeed)), DEG_RAD(HINT32(data->yspeed)),
+          data->stall);
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Write wifi data to file
+void WriteLog::WriteWiFi(player_wifi_data_t *data)
+{
+  int i;
+  
+  fprintf(this->file, "%04d ", HUINT16(data->link_count));
+
+  for (i = 0; i < ntohs(data->link_count); i++)
+    fprintf(this->file, "%s %d %d %d ",
+            data->links[i].ip,
+            HUINT16(data->links[i].qual),
+            HUINT16(data->links[i].level),
+            HUINT16(data->links[i].noise));
+
+  return;
+}
 
