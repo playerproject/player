@@ -160,7 +160,6 @@ MapFile::Setup()
 
   // Read data
   pixels = gdk_pixbuf_get_pixels(pixbuf);
-  // TODO: debug off-by-one error(s) in this loop
   for(j = 0; j < this->size_y; j++)
   {
     for (i = 0; i < this->size_x; i++)
