@@ -1088,7 +1088,7 @@ int main( int argc, char *argv[] )
     puts("** Player quitting **" );
   else
     printf("** Player [port %d] quitting **\n", global_playerport );
-  
+
   // Finalize ReadLog manager
   if (readlog_filename != NULL)
   {
@@ -1104,6 +1104,14 @@ int main( int argc, char *argv[] )
     GzClient::Fini();
 #endif
   }
+  
+  // tear down the client table, which shuts down all open devices
+  delete clientmanager;
+  // tear down the device table, for completeness
+  delete deviceTable;
+  // tear down the driver table, for completeness
+  delete driverTable;
+  
   
   return(0);
 }
