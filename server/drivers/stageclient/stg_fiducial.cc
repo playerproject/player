@@ -49,7 +49,7 @@ StgFiducial::StgFiducial(char* interface, ConfigFile* cf, int section )
 
   //this->subscribe_prop = STG_PROP_FIDUCIALDATA;
    
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_FIDUCIALDATA));
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_DATA));
 
 }
 
@@ -79,7 +79,7 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
   PLAYER_TRACE2(" STG_FIDUCIAL GETDATA section %d -> model %d",
 		model->section, model->id_client );
   
-  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_FIDUCIALDATA);
+  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_DATA);
 
   player_fiducial_data_t pdata;
   memset( &pdata, 0, sizeof(pdata) );
@@ -164,9 +164,9 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	  //printf( "setting fiducial FOV to min %f max %f fov %f\n",
 	  //  setcfg.min_range, setcfg.max_range_anon, setcfg.fov );
 	  
-	  if( stg_model_prop_set( this->model, STG_PROP_FIDUCIALCONFIG, 
+	  if( stg_model_prop_set( this->model, STG_PROP_CONFIG, 
 				  &setcfg,sizeof(setcfg)))
-	    PLAYER_ERROR( "error setting STG_PROP_FIDUCIALCONFIG" );
+	    PLAYER_ERROR( "error setting fiducial STG_PROP_CONFIG" );
 	  else
 	    PLAYER_TRACE0( "set fiducial config OK" );
 	}    
@@ -181,10 +181,10 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	PLAYER_TRACE0( "requesting fiducial FOV" );
 	
 	stg_fiducial_config_t cfg;
-	if( stg_model_prop_get( this->model, STG_PROP_FIDUCIALCONFIG, 
+	if( stg_model_prop_get( this->model, STG_PROP_CONFIG, 
 				&cfg,sizeof(cfg))
 	    != 0 )
-	  PLAYER_TRACE0( "error requesting STG_PROP_FIDUCIALCONFIG" );
+	  PLAYER_TRACE0( "error requesting STG_PROP_CONFIG" );
 	
 	
 	// fill in the geometry data formatted player-like

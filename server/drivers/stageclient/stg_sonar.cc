@@ -52,7 +52,7 @@ StgSonar::StgSonar(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgSonar with interface %s", interface );
   
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_RANGERDATA));
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_DATA));
     
   power_on = 1; // enabled by default
 }
@@ -81,7 +81,7 @@ size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {  
   
-  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_RANGERDATA);
+  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_DATA);
   
   if( prop )
     {
@@ -125,10 +125,10 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
       { 
 	stg_ranger_config_t* cfgs = NULL;
 	size_t len = 0;
-	if( stg_model_prop_get_var( this->model, STG_PROP_RANGERCONFIG, 
+	if( stg_model_prop_get_var( this->model, STG_PROP_CONFIG, 
 				    (void**)&cfgs, &len ))
 	  {
-	    PLAYER_ERROR( "error requesting STG_PROP_RANGERCONFIG" );
+	    PLAYER_ERROR( "error requesting STG_PROP_CONFIG" );
 	    
 	    if(PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, NULL, 
 			 NULL, 0) )
