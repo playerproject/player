@@ -71,7 +71,7 @@ int player_connect(player_connection_t* conn, const char* host, int port)
   struct hostent* entp;
   int sock;
   char banner[PLAYER_IDENT_STRLEN];
-  int numread;
+  int thisnumread,numread;
 
   /* fill in server structure */
   server.sin_family = PF_INET;
@@ -112,12 +112,19 @@ int player_connect(player_connection_t* conn, const char* host, int port)
   /*
    * read the banner from the server
    */
-  if((numread = read(sock,banner,PLAYER_IDENT_STRLEN)) != PLAYER_IDENT_STRLEN)
+  numread = 0;
+  while(numread < PLAYER_IDENT_STRLEN)
   {
-    if(player_debug_level(-1) >= 2)
-      perror("player_connect(): read() failed");
-    close(sock);
-    return(-1);
+    if((thisnumread = 
+        read(sock,banner+numread,PLAYER_IDENT_STRLEN-numread)) < 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_connect(): read() failed");
+      close(sock);
+      return(-1);
+    }
+
+    numread += thisnumread;
   }
 
   /* fill in the caller's structure */
@@ -279,7 +286,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 {
   /*time_t timesec;*/
   int mincnt; 
-  int readcnt = 0;
+  int readcnt,thisreadcnt;
   char dummy[PLAYER_MAX_MESSAGE_SIZE];
 
   if(conn->sock < 0)
@@ -298,13 +305,16 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   }
 
   /* get the rest of the header */
-  if((readcnt += read((*conn).sock, &(hdr->type),
-                      sizeof(player_msghdr_t)-sizeof(hdr->stx))) != 
-                  sizeof(player_msghdr_t))
+  while(readcnt < sizeof(player_msghdr_t))
   {
-    if(player_debug_level(-1) >= 2)
-      perror("player_read(): read() errored while reading header.");
-    return(-1);
+    if((thisreadcnt = read((*conn).sock, ((char*)hdr)+readcnt,
+                      sizeof(player_msghdr_t)-readcnt)) <= 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_read(): read() errored while reading header.");
+      return(-1);
+    }
+    readcnt += thisreadcnt;
   }
 
   /* byte-swap as necessary */
@@ -329,15 +339,28 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 
   mincnt = min(hdr->size, payloadlen);
 
-  for(readcnt  = read((*conn).sock,payload,mincnt);
-      readcnt != mincnt;
-      readcnt += read((*conn).sock,payload+readcnt,mincnt-readcnt));
-
-  if (readcnt < hdr->size)
+  readcnt = 0;
+  while(readcnt < mincnt)
   {
-      for(readcnt += read((*conn).sock,dummy,hdr->size-readcnt);
-          readcnt != hdr->size;
-          readcnt += read((*conn).sock,dummy,hdr->size-readcnt));
+    if((thisreadcnt = read((*conn).sock,payload+readcnt,mincnt-readcnt)) <= 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_read(): read() errored while reading payload.");
+      return(-1);
+    }
+    readcnt += thisreadcnt;
+  }
+
+  while(readcnt < hdr->size)
+  {
+    if((thisreadcnt = read((*conn).sock,dummy,
+                           min(PLAYER_MAX_MESSAGE_SIZE,hdr->size-readcnt))) <= 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_read(): read() errored while reading excess bytes.");
+      return(-1);
+    }
+    readcnt += thisreadcnt;
   }
 
   return(0);

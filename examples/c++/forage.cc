@@ -205,7 +205,6 @@ int main(int argc, char** argv)
     else if(vp.num_blobs[channel]>0)
     {
       // VISUAL SERVO
-      //vp.Print();
       if(vp.blobs[channel][0].area < minarea)
         continue;
 
