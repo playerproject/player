@@ -26,6 +26,60 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_camerav4l Video4Linux camera driver
+
+The camerav4l driver captures images from V4l-compatible cameras.
+
+@par Interfaces
+- @ref player_interface_camera
+
+@par Supported configuration requests
+
+None
+
+
+
+@par Configuration file options
+
+- port "/dev/video0"
+  - Device to read video data from.
+
+- source 3
+  - Some capture cards have multiple input sources; use this field to
+    select which one is used.
+
+- norm "ntsc"
+  - Capture format "ntsc" or "pal"
+
+- size [640 480]
+  - Desired image size.   This may not be honoured if the driver does
+    not support the requested size).
+
+- depth 24
+  - Color depth (8, 16, 24, 32).   
+
+- save 0
+  - Debugging option: set this to write each frame as an image file on disk.
+
+Note that some of these options may not be honoured by the underlying
+V4L kernel driver (it may not support a given image size, for
+example).
+  
+@par Example 
+
+@verbatim
+driver
+(
+  name "camerav4l"
+  devices ["camera:0"]
+)
+@endverbatim
+*/
+/** @} */
+  
+
 #include "player.h"
 
 #include <errno.h>
@@ -80,6 +134,9 @@ class CameraV4L : public Driver
 
   // Pixel depth
   private: int depth;
+
+  // Camera palette
+  private: const char *palette;
   
   // Image dimensions
   private: int width, height;
@@ -125,9 +182,9 @@ CameraV4L::CameraV4L( ConfigFile* cf, int section)
   const char *snorm;
   
   // Camera defaults to /dev/video0 and NTSC
-  this->device = cf->ReadString(section, "device", "/dev/video0");
+  this->device = cf->ReadString(section, "port", "/dev/video0");
 
-  // Source
+  // Input source
   this->source = cf->ReadInt(section, "source", 3);
   
   // NTSC or PAL
@@ -144,13 +201,22 @@ CameraV4L::CameraV4L( ConfigFile* cf, int section)
     this->width = 786;
     this->height = 576;
   }
+  else
+  {
+    this->norm = VIDEO_MODE_AUTO;
+    this->width = 320;
+    this->height = 240;
+  }
 
   // Size
-  this->width = cf->ReadInt(section, "width", this->width);
-  this->height = cf->ReadInt(section, "height", this->height);
+  this->width = cf->ReadTupleInt(section, "size", 0, this->width);
+  this->height = cf->ReadTupleInt(section, "size", 1, this->height);
 
-  // Color
+  // Pixel depth
   this->depth = cf->ReadInt(section, "depth", 24);
+
+  // Palette type
+  this->palette = cf->ReadString(section, "palette", "RGB24");
 
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
@@ -172,31 +238,39 @@ int CameraV4L::Setup()
   
   fg_set_source(this->fg, this->source);
   fg_set_source_norm(this->fg, this->norm);
-  fg_set_capture_window(this->fg, 0, 0, this->width, this->height);
 
-  if (this->depth == 8)
+  if (strcasecmp(this->palette, "GREY") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_GREY);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_GREY );
     this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
   }
-  else if (this->depth == 16)
+  else if (strcasecmp(this->palette, "RGB565") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB565 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB565 );
     this->data.format = PLAYER_CAMERA_FORMAT_RGB565;
   }
-  else if (this->depth == 24)
+  else if (strcasecmp(this->palette, "RGB24") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB24 );    
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB24 );
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
   }
-  else if (this->depth == 32)
+  else if (strcasecmp(this->palette, "RGB32") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB32 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB32 );
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+  }
+  else if (strcasecmp(this->palette, "YUV420P") == 0)
+  {
+    // For YUV cameras, we provide the Y component only (greyscale
+    // image).  At some point, someone should probably write the
+    // planer-to-rgb conversion.
+    fg_set_format(this->fg, VIDEO_PALETTE_YUV420P);
+    this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_YUV420P );
+    this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
   }
   else
   {
@@ -205,6 +279,8 @@ int CameraV4L::Setup()
     return 1;
   }
 
+  fg_set_capture_window(this->fg, 0, 0, this->width, this->height);
+    
   // Start the driver thread.
   this->StartThread();
   
