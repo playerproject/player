@@ -364,6 +364,7 @@ ACTS vision system.\\
 clients via the server.\\
 {\tt laser} & Laser device: interface for scanning laser range-finders
 such as the SICK LMS200.\\
+{\tt localize} & Localization device: returns the global robot pose.\\
 {\tt fiducial} & Fiducial detector: detects fiducials (beacons) placed in the
 environment.\\
 {\tt position} & Position device: for control of a mobile robot platform.\\
@@ -373,6 +374,7 @@ head such as the Sony EVID30 \\
 such as those built into a mobile robot base.\\
 {\tt truth} & Truth device: allows clients to get and set the pose of
 objects in the Stage simulator.  {\bf Simulator only.}\\
+{\tt wifi} & WiFi device: queries link status on wireless networks.\\
 \hline
 \end{tabularx}
 
@@ -572,6 +574,23 @@ structure, which has the following elements:
 \begin{quote}
 \lstinputlisting{truth.t.tex}
 \end{quote}
+
+
+\newpage
+\section{The {\tt wifi} proxy}
+
+The {\tt wifi} proxy is used to query the state of a wireless network.
+It returns information such as the link quality and signal strength of
+access points or of other wireless NIC's on an ad-hoc network.
+\begin{quote}
+\lstinputlisting{wifi.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_wifi\_t}
+structure, which has the following elements:
+\begin{quote}
+\lstinputlisting{wifi.t.tex}
+\end{quote}
+
 
 
 \appendix
