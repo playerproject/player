@@ -108,6 +108,9 @@ void laser_precompute(laser_t *sensor)
     }
   }
 
+  // TODO
+  // Put beyond-max-range probabilities at the boundary of the LUT
+
   return;
 }
 
@@ -120,10 +123,13 @@ inline double laser_sensor_prob(laser_t *sensor, double obs_range, double map_ra
   i = (int) (map_range / sensor->lut_res + 0.5);
   j = (int) (obs_range / sensor->lut_res + 0.5);
 
-  if (i < 0 || i >= sensor->lut_size)
-    return 1.0;
-  if (j < 0 || j >= sensor->lut_size)
-    return 1.0;
+  assert(i >= 0);
+  if (i >= sensor->lut_size)
+    return sensor->lut_size - 1;
+
+  assert(j >= 0);
+  if (j >= sensor->lut_size)
+    return sensor->lut_size - 1;
 
   return sensor->lut_probs[i + j * sensor->lut_size];
 }
