@@ -56,6 +56,15 @@ int test_position(playerc_client_t *client, int index)
       FAIL();
       break;
     }
+
+    TEST1("writing data (attempt %d)", t);
+    if (playerc_position_set_cmd_vel(device, 0.01, 0.0, 0.0, 0) != 0)
+    {
+      FAIL();
+      break;
+    }
+    PASS();
+
   }
   
   TEST("unsubscribing");
