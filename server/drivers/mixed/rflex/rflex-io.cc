@@ -131,7 +131,8 @@ cBaudrate( int baudrate )
     break;
 
 #ifdef B460800  // POSIX doesn't have this one
-#warning including B460800
+#warning Including support for baud rate B460800 which is not available in all implementations of termios. 
+#warning To enable in Linux, you must edit the serial driver: see this source file for details.
   case 500000:
     /* to use 500k you have to change the entry of B460800 in you kernel:
        /usr/src/linux/drivers/usb/serial/ftdi_sio.h:
