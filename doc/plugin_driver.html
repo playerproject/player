@@ -212,14 +212,9 @@ programs to "hang" when talking to the driver.
 
 The overloaded Main() must also be capable of graceful termination
 (i.e., the function should exit cleanly when the user kills the
-server).  This can be achieved by calling
-
-@verbatim
-pthread_testcancel();
-@endverbatim
-
-from within the main loop.  This function checks to see if the driver
-thread should terminate, and if so, immediates exits Main().  If
+server).  This can be achieved by calling @c pthread_testcancel() from
+within the main loop.  This function checks to see if the driver
+thread should terminate, and if so, immediately exits Main().  If
 additional cleanup is required, drivers can also overload
 Driver::MainQuit(), which is guaranteed to be called on thread
 termination.
