@@ -41,6 +41,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <device.h>
 #include <configfile.h>
