@@ -667,7 +667,8 @@ int SickLMS200::CloseTerm()
 {
 #ifdef HAVE_HI_SPEED_SERIAL
   if (ioctl(this->laser_fd, TIOCSSERIAL, &this->old_serial) < 0) {
-    RETURN_ERROR(1, "error trying to reset serial to old state");
+    //RETURN_ERROR(1, "error trying to reset serial to old state");
+    PLAYER_WARN("ioctl() failed while trying to reset serial to old state");
   }
 #endif
 
@@ -695,14 +696,20 @@ int SickLMS200::ChangeTermSpeed(int speed)
   // to get another baud rate instead (based on custom_divisor)
   // this way even if the previous player doesn't reset the
   // port correctly, we'll end up with the right speed we want
-  if (ioctl(this->laser_fd, TIOCGSERIAL, &serial) < 0) {
-    RETURN_ERROR(1, "error on TIOCGSERIAL in beginning");
+  if (ioctl(this->laser_fd, TIOCGSERIAL, &serial) < 0) 
+  {
+    //RETURN_ERROR(1, "error on TIOCGSERIAL in beginning");
+    PLAYER_WARN("ioctl() failed while trying to get serial port info");
   }
-
-  serial.flags &= ~ASYNC_SPD_CUST;
-  serial.custom_divisor = 0;
-  if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) {
-    RETURN_ERROR(1, "error on TIOCSSERIAL in beginning");
+  else
+  {
+    serial.flags &= ~ASYNC_SPD_CUST;
+    serial.custom_divisor = 0;
+    if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) 
+    {
+      //RETURN_ERROR(1, "error on TIOCSSERIAL in beginning");
+      PLAYER_WARN("ioctl() failed while trying to set serial port info");
+    }
   }
 #endif  
 
