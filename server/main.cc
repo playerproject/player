@@ -660,7 +660,7 @@ parse_config_file(char* fname)
   int code = 0;
   
   // parse the file
-  printf("\n\nParsing configuration file \"%s\"...\n", fname);
+  printf("\nParsing configuration file \"%s\"...\n", fname);
 
   if(!configFile.Load(fname))
     return(false);
@@ -1105,7 +1105,6 @@ int main( int argc, char *argv[] )
 #endif
   }
   
-  /* don't get here */
   return(0);
 }
 
