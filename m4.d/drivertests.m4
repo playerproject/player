@@ -264,7 +264,8 @@ AC_ARG_ENABLE(amcl,
 if test "x$enable_amcl" = "xyes"; then
   PKG_CHECK_MODULES(GSL,gsl,
                     enable_amcl=yes,
-                    enable_amcl=no)
+                    enable_amcl=no
+                    disable_reason="couldn't find the GSL")
 dnl  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,
 dnl                  enable_amcl=no
 dnl                  disable_reason="couldn't find gsl/gsl_version.h")
