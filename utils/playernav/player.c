@@ -51,16 +51,16 @@ init_player(playerc_client_t** clients,
     assert(localizes[i] = playerc_localize_create(clients[i], 0));
     if(playerc_localize_subscribe(localizes[i],PLAYER_READ_MODE) < 0)
     {
-      fprintf(stderr, "Failed to subscribe to localize\n");
-      return(NULL);
+      fprintf(stderr, "Warning: Failed to subscribe to localize on robot %d; you won't be able to set its pose.\n",i);
+      playerc_localize_destroy(localizes[i]);
+      localizes[i] = NULL;
     }
     assert(planners[i] = playerc_planner_create(clients[i], 0));
     if(playerc_planner_subscribe(planners[i],PLAYER_ALL_MODE) < 0)
     {
-      fprintf(stderr, "Warning: Failed to subscribe to planner; you won't be able to set goals\n");
+      fprintf(stderr, "Warning: Failed to subscribe to planner on robot %d; you won't be able to give it goals.\n",i);
       playerc_planner_destroy(planners[i]);
       planners[i] = NULL;
-      //return(NULL);
     }
   }
 

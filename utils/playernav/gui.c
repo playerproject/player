@@ -137,17 +137,23 @@ _robot_button_callback(GnomeCanvasItem *item,
 
               if(!setting_goal)
               {
-
-                printf("setting pose for robot %d to (%.3f, %.3f, %.3f)\n",
-                       idx, mean[0], mean[1], mean[2]);
-
-                if(playerc_localize_set_pose(gui_data->localizes[idx], 
-                                             mean, cov) < 0)
+                if(gui_data->localizes[idx])
                 {
-                  fprintf(stderr, "error while setting pose on robot %d\n", 
-                          idx);
-                  quit=1;
-                  return(TRUE);
+                  printf("setting pose for robot %d to (%.3f, %.3f, %.3f)\n",
+                         idx, mean[0], mean[1], mean[2]);
+
+                  if(playerc_localize_set_pose(gui_data->localizes[idx], 
+                                               mean, cov) < 0)
+                  {
+                    fprintf(stderr, "error while setting pose on robot %d\n", 
+                            idx);
+                    quit=1;
+                    return(TRUE);
+                  }
+                }
+                else
+                {
+                  puts("WARNING: NOT setting pose; couldn't connect to localize\n");
                 }
               }
               else
