@@ -8,6 +8,8 @@
 #include "playerclient.h"
 #include "test.h"
 
+#include <unistd.h>
+
 bool use_stage;
 
 int main(int argc, const char *argv[])
@@ -18,6 +20,7 @@ int main(int argc, const char *argv[])
   char *arg;
   const char *device, *sindex; int index;
   PlayerClient client;
+
 
   // Default host, port
   host = "localhost";
@@ -95,6 +98,10 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "laser") == 0 || strcmp(device, "all") == 0)
       test_laser(&client, index);
     
+    // Fiducial finder device
+    //if(strcmp(device, "fiducial") == 0 || strcmp(device, "all") == 0)
+      //test_fiducial(&client, index);
+
     // PTZ device
     if(strcmp(device, "ptz") == 0 || strcmp(device, "all") == 0)
       test_ptz(&client, index);
@@ -138,6 +145,9 @@ int main(int argc, const char *argv[])
 
     if(strcmp(device, "mcom") == 0 || strcmp(device, "all") == 0)
       test_mcom(&client, index);
+
+    if(strcmp(device, "localize") == 0 || strcmp(device, "all") == 0)
+      test_localize(&client, index);
 
     // BPS device
     /*

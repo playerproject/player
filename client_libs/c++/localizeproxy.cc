@@ -111,7 +111,8 @@ LocalizeProxy::SetPose(double pose[3], double cov[3][3])
   req.cov[2][1] = 0;
   req.cov[2][2] = htonll((int64_t)(cov[2][2] * 3600 * 3600));
 
-  return(client->Request(m_device_id,(const char*)&req,sizeof(req)));
+  return(client->Request(PLAYER_LOCALIZE_CODE,index,
+                         (const char*)&req,sizeof(req)));
 }
 
 int
@@ -123,8 +124,8 @@ LocalizeProxy::GetNumParticles()
   req.subtype = PLAYER_LOCALIZE_GET_CONFIG_REQ;
   req.num_particles = 0;
 
-  if(client->Request(m_device_id,(const char*)&req,sizeof(req),&rephdr,
-                     (char*)&rep,sizeof(rep)) < 0)
+  if(client->Request(PLAYER_LOCALIZE_CODE,index,(const char*)&req,
+                     sizeof(req),&rephdr,(char*)&rep,sizeof(rep)) < 0)
     return(-1);
 
   return(ntohl(rep.num_particles));
@@ -144,8 +145,9 @@ LocalizeProxy::GetMap()
   player_msghdr_t rephdr;
 
   inforeq.subtype = PLAYER_LOCALIZE_GET_MAP_INFO_REQ;
-  if(client->Request(m_device_id,(const char*)&inforeq,sizeof(inforeq.subtype),
-                     &rephdr,(char*)&inforep,sizeof(inforep)) < 0)
+  if(client->Request(PLAYER_LOCALIZE_CODE,index,(const char*)&inforeq,
+                     sizeof(inforeq.subtype),&rephdr,(char*)&inforep,
+                     sizeof(inforep)) < 0)
     return(-1);
 
   map_size_x = ntohl(inforep.width);
@@ -177,8 +179,8 @@ LocalizeProxy::GetMap()
       datareq.height = htonl(sj); 
       reqlen = sizeof(datareq) - sizeof(datareq.data);
     
-      if(client->Request(m_device_id,(const char*)&datareq,reqlen,&rephdr,
-                         (char*)&datarep,sizeof(datarep)) < 0)
+      if(client->Request(PLAYER_LOCALIZE_CODE,index,(const char*)&datareq,
+                         reqlen,&rephdr,(char*)&datarep,sizeof(datarep)) < 0)
         return(-1);
 
       for (nj = 0; nj < sj; nj++)
@@ -194,8 +196,8 @@ LocalizeProxy::GetMap()
 // interface that all proxies SHOULD provide
 void LocalizeProxy::Print()
 {
-  printf("#Localize(%d:%d) - %c\n", m_device_id.code,
-         m_device_id.index, access);
+  printf("#Localize(%d:%d) - %c\n", PLAYER_LOCALIZE_CODE,
+         index, access);
   printf("%d hypotheses\n", hypoth_count);
   for(int i=0;i<hypoth_count;i++)
     printf("%d (weight %f): [ %f %f %f ]\n", 

@@ -29,7 +29,9 @@ test_SOURCES = test_broadcast.cc \
 	       test_dio.cc \
                test_bumper.cc \
                test_wifi.cc  \
-               test_mcom.cc
+               test_mcom.cc \
+	       test_localize.cc
+	       #test_fiducialfinder.cc
                #test_idar.cc \
                #test_idarturret.cc
                #test_misc.cc

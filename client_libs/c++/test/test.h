@@ -1,6 +1,6 @@
 /***************************************************************************
  * Desc: Test program for the Player C++ client
- * Author: Andrew Howard, Brian Gerkey
+ * Author: Andrew Howard, Brian Gerkey, Richard Vaughan
  * Date: 28 May 2002
  * CVS: $Id$
  **************************************************************************/
@@ -21,6 +21,8 @@ extern bool use_stage;
 #define PASS() (1 ? printf("pass\n"), fflush(stdout) : 0)
 #define FAIL() (1 ? printf("\033[41mfail\033[0m\n"), fflush(stdout) : 0)
 
+extern int robot;
+
 int test_gps(PlayerClient* client, int index);
 int test_position(PlayerClient* client, int index);
 int test_position_control(PlayerClient* client, int index);
@@ -40,6 +42,8 @@ int test_idarturret(PlayerClient* client, int index);
 int test_bumper(PlayerClient* client, int index);
 int test_wifi(PlayerClient* client, int index);
 int test_mcom(PlayerClient* client, int index);
+int test_localize(PlayerClient* client, int index);
+//int test_fiducial(PlayerClient* client, int index);
 
 //int test_bps(PlayerClient* client, int index);
 
