@@ -69,6 +69,8 @@ test_localize(PlayerClient* client, int index)
   printf("%d  ",num_particles);
   PASS();
 
+// deprecated: get map from map interface instead
+#if 0
   TEST("getting the map");
   if((num_particles = lp.GetMap()) < 0)
   {
@@ -76,6 +78,7 @@ test_localize(PlayerClient* client, int index)
     return(-1);
   }
   PASS();
+#endif
 
   for(t = 0; t < 10; t++)
   {

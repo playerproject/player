@@ -327,6 +327,7 @@ AC_OUTPUT(Makefile
           server/drivers/localization/amcl/models/Makefile
           server/drivers/service_adv/Makefile
           server/drivers/blobfinder/shapetracker/Makefile
+          server/drivers/map/Makefile
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile

@@ -34,6 +34,8 @@
 #define PLAYER_ENABLE_MSG 1
 
 #include <math.h>
+#include <stdlib.h>
+#include <sys/time.h>
 #include "devicetable.h"
 #include "amcl_laser.h"
 
@@ -54,23 +56,11 @@ AMCLLaser::AMCLLaser()
 // Load laser settings
 int AMCLLaser::Load(ConfigFile* cf, int section)
 {
-  const char *map_filename;
-  double map_scale;
-  int map_negate;
-  
   // Device stuff
   this->laser_index = cf->ReadInt(section, "laser_index", -1);
 
   // Get the map settings
-  map_filename = cf->ReadFilename(section, "laser_map", NULL);
-  map_scale = cf->ReadLength(section, "laser_map_scale", 0.05);
-  map_negate = cf->ReadInt(section, "laser_map_negate", 0);
-
-  // Create the map
-  this->map = map_alloc();
-  PLAYER_MSG1("loading map file [%s]", map_filename);
-  if (map_load_occ(this->map, map_filename, map_scale, map_negate) != 0)
-    return -1;
+  this->map_index = cf->ReadInt(section, "laser_map_index", -1);
   
   this->laser_pose.v[0] = cf->ReadTupleLength(section, "laser_pose", 0, 0);
   this->laser_pose.v[1] = cf->ReadTupleLength(section, "laser_pose", 1, 0);
@@ -109,6 +99,12 @@ int AMCLLaser::Setup(void)
   //struct timeval tv;
   player_device_id_t id;
 
+  if(this->SetupMap() < 0)
+  {
+    PLAYER_ERROR("failed to get laser map");
+    return(-1);
+  }
+
   // Subscribe to the Laser device
   id.port = global_playerport;
   id.code = PLAYER_LASER_CODE;
@@ -146,6 +142,130 @@ int AMCLLaser::Setup(void)
   return 0;
 }
 
+int
+AMCLLaser::SetupMap(void)
+{
+  player_device_id_t map_id;
+  CDevice* mapdevice;
+
+  // Subscribe to the map device
+  map_id.port = global_playerport;
+  map_id.code = PLAYER_MAP_CODE;
+  map_id.index = this->map_index;
+
+  if(!(mapdevice = deviceTable->GetDevice(map_id)))
+  {
+    PLAYER_ERROR("unable to locate suitable map device");
+    return -1;
+  }
+  if(mapdevice->Subscribe(this) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to map device");
+    return -1;
+  }
+
+  // Create the map
+  this->map = map_alloc();
+  //PLAYER_MSG1("loading map file [%s]", map_filename);
+  PLAYER_MSG1("reading map from map:%d", this->map_index);
+  //if(map_load_occ(this->map, map_filename, map_scale, map_negate) != 0)
+    //return -1;
+
+  // Fill in the map structure (I'm doing it here instead of in libmap, 
+  // because libmap is written in C, so it'd be a pain to invoke the internal 
+  // device API from there)
+
+  // first, get the map info
+  int replen;
+  unsigned short reptype;
+  player_map_info_t info;
+  struct timeval ts;
+  info.subtype = PLAYER_MAP_GET_INFO_REQ;
+  if((replen = mapdevice->Request(&map_id, this, &info, 
+                                  sizeof(info.subtype), &reptype, 
+                                  &ts, &info, sizeof(info))) == 0)
+  {
+    PLAYER_ERROR("failed to get map info");
+    return(-1);
+  }
+  
+  // copy in the map info
+  this->map->origin_x = this->map->origin_y = 0.0;
+  this->map->scale = 1/(ntohl(info.scale) / 1e3);
+  this->map->size_x = ntohl(info.width);
+  this->map->size_y = ntohl(info.height);
+
+  // allocate space for map cells
+  assert(this->map->cells = (map_cell_t*)malloc(sizeof(map_cell_t) *
+                                                this->map->size_x *
+                                                this->map->size_y));
+
+  // now, get the map data
+  player_map_data_t data_req;
+  int reqlen;
+  int i,j;
+  int oi,oj;
+  int sx,sy;
+  int si,sj;
+
+  data_req.subtype = PLAYER_MAP_GET_DATA_REQ;
+  
+  // Tile size
+  sy = sx = (int)sqrt(sizeof(data_req.data));
+  assert(sx * sy < (int)sizeof(data_req.data));
+  oi=oj=0;
+  while((oi < this->map->size_x) && (oj < this->map->size_y))
+  {
+    si = MIN(sx, this->map->size_x - oi);
+    sj = MIN(sy, this->map->size_y - oj);
+
+    data_req.col = htonl(oi);
+    data_req.row = htonl(oj);
+    data_req.width = htonl(si);
+    data_req.height = htonl(sj);
+
+    reqlen = sizeof(data_req) - sizeof(data_req.data);
+
+    if((replen = mapdevice->Request(&map_id, this, &data_req, reqlen,
+                                    &reptype, &ts, &data_req, 
+                                    sizeof(data_req))) == 0)
+    {
+      PLAYER_ERROR("failed to get map info");
+      return(-1);
+    }
+    else if(replen != (reqlen + si * sj))
+    {
+      PLAYER_ERROR2("got less map data than expected (%d != %d)",
+                    replen, reqlen + si*sj);
+      return(-1);
+    }
+
+    // copy the map data
+    for(j=0;j<sj;j++)
+    {
+      for(i=0;i<si;i++)
+      {
+        this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_state = 
+                data_req.data[j*si + i];
+        this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_dist = 0;
+      }
+    }
+
+    oi += si;
+    if(oi >= this->map->size_x)
+    {
+      oi = 0;
+      oj += sj;
+    }
+  }
+
+  // we're done with the map device now
+  if(mapdevice->Unsubscribe(this) != 0)
+    PLAYER_WARN("unable to unsubscribe from map device");
+
+  return(0);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
@@ -153,6 +273,7 @@ int AMCLLaser::Shutdown(void)
 {  
   this->device->Unsubscribe(this);
   this->device = NULL;
+  map_free(this->map);
 
   return 0;
 }

@@ -179,6 +179,9 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
 
 // Retrieve the occupancy map info.  The info is written into the proxy
 // structure.
+
+// deprecated: get the map from the map interface now
+#if 0
 int playerc_localize_get_map_info(playerc_localize_t *device)
 {
   //int i, j;
@@ -217,10 +220,14 @@ int playerc_localize_get_map_info(playerc_localize_t *device)
 
   return 0;
 }
+#endif
 
 
 // Retrieve a tile from occupancy map.  The map is written into the proxy
 // structure.
+
+// deprecated: get the map from the map interface now
+#if 0
 int playerc_localize_get_map_tile(playerc_localize_t *device)
 {
   int i, j;
@@ -278,10 +285,13 @@ int playerc_localize_get_map_tile(playerc_localize_t *device)
   
   return 0;
 }
-
+#endif
 
 // Retrieve the occupancy map.  The map is written into the proxy
 // structure.
+
+// deprecated: get the map from the map interface now
+#if 0
 int playerc_localize_get_map(playerc_localize_t *device)
 {
   int i, j;
@@ -354,7 +364,7 @@ int playerc_localize_get_map(playerc_localize_t *device)
   
   return 0;
 }
-
+#endif
 
 // Get the current configuration.
 int playerc_localize_get_config(playerc_localize_t *device,

@@ -61,7 +61,7 @@ dnl in the form of 'for' over an empty list.
   fi
 fi
 
-if test len($7) -gt 0 -a len($8) -gt 0; then
+if test "x$enable_$1" = "xyes" -a len($7) -gt 0 -a len($8) -gt 0; then
   if test "x$have_pkg_config" = "xyes" ; then
     PKG_CHECK_MODULES($7, $8,
       enable_$1=yes,
@@ -200,6 +200,8 @@ PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
 PLAYER_ADD_DRIVER([wavefront],[drivers/position/wavefront],[yes],[],
+                  [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
+PLAYER_ADD_DRIVER([mapfile],[drivers/map],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
 AC_SUBST(GDK_PIXBUF_CFLAGS)
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GDK_PIXBUF_LIBS"
