@@ -19,9 +19,9 @@
  *
  */
 /*
- * Desc: Driver for reading log files.
+ * Desc: Driver for writing log files.
  * Author: Andrew Howard
- * Date: 17 May 2003
+ * Date: 14 Jun 2003
  * CVS: $Id$
  *
  * The writelog driver will write data from another device to a log file.
@@ -39,20 +39,21 @@
 
 #include "player.h"
 #include "device.h"
+#include "devicetable.h"
 #include "drivertable.h"
 #include "deviceregistry.h"
 
-#include "readlog_manager.h"
+#include "writelog_manager.h"
 
 
 // The logfile driver
-class ReadLog: public CDevice 
+class WriteLog: public CDevice 
 {
   // Constructor
-  public: ReadLog(int code, ConfigFile* cf, int section);
+  public: WriteLog(int code, ConfigFile* cf, int section);
 
   // Destructor
-  public: ~ReadLog();
+  public: ~WriteLog();
 
   // Initialize the driver
   public: virtual int Setup();
@@ -60,22 +61,29 @@ class ReadLog: public CDevice
   // Finalize the driver
   public: virtual int Shutdown();
 
+  // Process data requests
+  public: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
+                                 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+
   // Process configuration requests
   public: virtual int PutConfig(player_device_id_t* device, void* client, 
                                 void* data, size_t len);
 
   // Our manager
-  private: ReadLogManager *manager;
-  
-  // The part of the log file to read
-  private: player_device_id_t read_id;
+  private: WriteLogManager *manager;
+
+  // Id if the device whose data we are writing
+  private: player_device_id_t write_id;
+
+  // The device whose data we are writing
+  private: CDevice *device;
 };
 
 
 
 ////////////////////////////////////////////////////////////////////////////
 // Create a driver for reading log files
-CDevice* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
+CDevice* ReadWriteLog_Init(char* name, ConfigFile* cf, int section)
 {
   player_interface_t interface;
 
@@ -84,44 +92,46 @@ CDevice* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
     PLAYER_ERROR1("interface \"%s\" is not supported", name);
     return NULL;
   }
-  if (ReadLogManager_Get() == NULL)
+  if (WriteLogManager_Get() == NULL)
   {
     PLAYER_ERROR("no log file specified; did you forget to use -r <filename>?");
     return NULL;
   }
-  return ((CDevice*) (new ReadLog(interface.code, cf, section)));
+  return ((CDevice*) (new WriteLog(interface.code, cf, section)));
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
 // Device factory registration
-void ReadLog_Register(DriverTable* table)
+void WriteLog_Register(DriverTable* table)
 {
-  table->AddDriver("readlogfile", PLAYER_READ_MODE, ReadReadLog_Init);
+  table->AddDriver("writelogfile", PLAYER_READ_MODE, ReadWriteLog_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
-ReadLog::ReadLog(int code, ConfigFile* cf, int section)
+WriteLog::WriteLog(int code, ConfigFile* cf, int section)
     : CDevice(PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
 {
   // Get our manager
-  this->manager = ReadLogManager_Get();
+  this->manager = WriteLogManager_Get();
   assert(this->manager != NULL);
   
   // Get the part of the log file we wish to read
-  this->read_id.code = code;
-  this->read_id.index = cf->ReadInt(section, "index", 0);
-  
+  this->write_id.code = code;
+  this->write_id.index = cf->ReadInt(section, "index", 0);
+
+  this->device = NULL;
+    
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
 // Destructor
-ReadLog::~ReadLog()
+WriteLog::~WriteLog()
 {
   return;
 }
@@ -129,11 +139,24 @@ ReadLog::~ReadLog()
 
 ////////////////////////////////////////////////////////////////////////////
 // Initialize driver
-int ReadLog::Setup()
+int WriteLog::Setup()
 {
-  // Subscribe to the underlying reader
-  if (this->manager->Subscribe(this->read_id, this) != 0)
+  // Subscribe to the underlying writer
+  if (this->manager->Subscribe(this->write_id, this) != 0)
     return -1;
+
+  // Subscribe to the underlying device
+  this->device = deviceTable->GetDevice(this->write_id);
+  if (!this->device)
+  {
+    PLAYER_ERROR("unable to locate underlying device");
+    return -1;
+  }
+  if (this->device->Subscribe(this) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to underlying device");
+    return -1;
+  }
   
   return 0;
 }
@@ -141,18 +164,40 @@ int ReadLog::Setup()
 
 ////////////////////////////////////////////////////////////////////////////
 // Finalize the driver
-int ReadLog::Shutdown()
+int WriteLog::Shutdown()
 {
+  // Unsbscribe from the underlying device
+  this->device->Unsubscribe(this);
+  this->device = NULL;
+  
   // Unsubscribe from the underlying reader
-  this->manager->Unsubscribe(this->read_id, this);
+  this->manager->Unsubscribe(this->write_id, this);
   
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
+// Process get data requests by seeing if the underlying device has
+// any new data.
+size_t WriteLog::GetData(void* client, unsigned char* dest, size_t len,
+                         uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+{
+  size_t size;
+
+  // Read data from underlying device
+  size = this->device->GetData(client, dest, len, timestamp_sec, timestamp_usec);
+
+  // Write data to file
+  this->manager->Write(dest, size, &this->write_id, *timestamp_sec, *timestamp_usec);
+
+  return size;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-int ReadLog::PutConfig(player_device_id_t* device, void* client,
+int WriteLog::PutConfig(player_device_id_t* device, void* client,
                        void* data, size_t len)
 {
   if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
