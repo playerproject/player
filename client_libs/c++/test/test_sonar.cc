@@ -29,6 +29,22 @@ test_sonar(PlayerClient* client, int index)
   for(int i=0; i < 20; i++)
     client->Read();
 
+  TEST("getting sonar geometry");
+  if(sp.GetSonarGeom() < 0)
+  {
+    FAIL();
+    return(-1);
+  }
+  sleep(1);
+  PASS();
+  for(int i=0;i<PLAYER_NUM_SONAR_SAMPLES;i++)
+  {
+    printf("Sonar[%d]: (%d,%d,%d)\n", i, 
+           sp.sonar_pose.pose[i][0],
+           sp.sonar_pose.pose[i][1],
+           sp.sonar_pose.pose[i][2]);
+  }
+
   for(int t = 0; t < 3; t++)
   {
     TEST1("reading data (attempt %d)", t);

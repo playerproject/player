@@ -121,7 +121,7 @@ set VISION_BLOB_SIZE 16
 
 # the sonar device
 set PLAYER_NUM_SONAR_SAMPLES  16
-set PLAYER_SONAR_POWER_REQ     4
+set PLAYER_SONAR_POWER_REQ    11
 
 # the laser device
 set PLAYER_NUM_LASER_SAMPLES  401
