@@ -164,6 +164,10 @@ void AdaptiveMCL::UpdateSonarModel(amcl_sensor_data_t *data)
 {
   int i;
   
+  // If there is no sonar device...
+  if (this->sonar_index < 0)
+    return;
+
   // Update the sonar sensor model with the latest sonar measurements
   sonar_clear_ranges(this->sonar_model);
   for (i = 0; i < data->sonar_range_count; i++)
@@ -184,6 +188,10 @@ void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
   int i;
   double r, b, ax, ay, bx, by;
   
+  // If there is no sonar device...
+  if (this->sonar_index < 0)
+    return;
+
   rtk_fig_clear(this->sonar_fig);
   rtk_fig_color_rgb32(this->sonar_fig, 0xC0C080);
   

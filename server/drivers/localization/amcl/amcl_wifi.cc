@@ -162,6 +162,10 @@ void AdaptiveMCL::GetWifiData(amcl_sensor_data_t *data)
 // Apply the wifi sensor model
 void AdaptiveMCL::UpdateWifiModel(amcl_sensor_data_t *data)
 {
+  // If there is no wifi device...
+  if (this->wifi_index < 0)
+    return;
+  
   // Update the wifi sensor model with the latest wifi measurements
   wifi_set_levels(this->wifi_model, data->wifi_level_count, data->wifi_levels);
 
@@ -183,6 +187,10 @@ void AdaptiveMCL::DrawWifiData(amcl_sensor_data_t *data)
   map_cell_t *cell;
   int olevel, mlevel;
   char ntext[128], text[1024];
+
+  // If there is no wifi device...
+  if (this->wifi_index < 0)
+    return;
 
   // Get the robot figure pose
   rtk_fig_get_origin(this->robot_fig, pose.v + 0, pose.v + 1, pose.v + 2);

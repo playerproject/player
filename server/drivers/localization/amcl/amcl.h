@@ -58,10 +58,8 @@
 // Combined sensor data packet
 typedef struct
 {
-  // Data time-stamp (odometric)
+  // Odometry data
   uint32_t odom_time_sec, odom_time_usec;
-    
-  // Odometric pose
   pf_vector_t odom_pose;
 
   // Sonar ranges
@@ -77,6 +75,7 @@ typedef struct
   int wifi_levels[PLAYER_WIFI_MAX_LINKS];
 
   // GPS
+  double gps_time;
   double gps_utm_e, gps_utm_n;
   double gps_err_horz;
 

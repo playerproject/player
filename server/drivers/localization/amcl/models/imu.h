@@ -41,6 +41,12 @@ typedef struct
 {
   // UTM heading
   double utm_head;
+
+  // Offset added to yaw (heading) values to get UTM (true) north
+  double utm_offset;
+  
+  // Expected bearing error
+  double err_head;
   
 } imu_model_t;
 

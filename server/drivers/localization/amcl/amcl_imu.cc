@@ -40,10 +40,25 @@ int AdaptiveMCL::LoadImu(ConfigFile* cf, int section)
 {
   // Device stuff
   this->imu = NULL;
-  this->imu_index = cf->ReadInt(section, "imuass_index", -1);
+  this->imu_index = cf->ReadInt(section, "imu_index", -1);
 
-  this->imu_model = NULL;
+  if (this->imu_index < 0)
+  {
+    // No imu
+    this->imu_model = NULL;
+  }
+  else
+  {  
+    // Create the imu model
+    this->imu_model = imu_alloc();
 
+    // Offset added to yaw (heading) values to get UTM (true) north
+    this->imu_model->utm_offset = cf->ReadAngle(section, "imu_utm_offset", -13);
+
+    // Expect error in yaw (heading) values
+    this->imu_model->err_head = cf->ReadAngle(section, "imu_err_yaw", 10.0);
+  }
+  
   return 0;
 }
 
@@ -74,9 +89,6 @@ int AdaptiveMCL::SetupImu(void)
     return -1;
   }
 
-  // Create the imu model
-  this->imu_model = imu_alloc();
-
   return 0;
 }
 
@@ -92,8 +104,9 @@ int AdaptiveMCL::ShutdownImu(void)
   this->imu->Unsubscribe(this);
   this->imu = NULL;
 
-  imu_free(this->imu_model);
-  this->imu = NULL;
+  // TODO: currently leaks
+  //imu_free(this->imu_model);
+  //this->imu = NULL;
   
   return 0;
 }
@@ -123,6 +136,8 @@ void AdaptiveMCL::GetImuData(amcl_sensor_data_t *data)
 // Apply the imu sensor model
 void AdaptiveMCL::UpdateImuModel(amcl_sensor_data_t *data)
 {
+  printf("utm_head %f\n", data->imu_utm_head * 180 / M_PI);
+  
   // Update the imu sensor model with the latest imu measurements
   imu_set_utm(this->imu_model, data->imu_utm_head);
 

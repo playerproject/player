@@ -162,6 +162,10 @@ void AdaptiveMCL::GetLaserData(amcl_sensor_data_t *data)
 void AdaptiveMCL::UpdateLaserModel(amcl_sensor_data_t *data)
 {
   int i, step;
+
+  // If there is no laser device...
+  if (this->laser_index < 0)
+    return;
   
   // Update the laser sensor model with the latest laser measurements
   if (this->laser_max_samples >= 2)
@@ -188,7 +192,11 @@ void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
   int i, step;
   pf_vector_t pose;
   double r, b, m, ax, ay, bx, by;
-  
+
+  // If there is no laser device...
+  if (this->laser_index < 0)
+    return;
+
   rtk_fig_clear(this->laser_fig);
 
   // Draw the complete scan
