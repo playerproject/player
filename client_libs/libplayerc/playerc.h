@@ -646,7 +646,10 @@ typedef struct
   /** Size of image data (bytes) */
   int image_size;
   
-  /** Image data (packed format). */
+  /** Image data (byte aligned, row major order).  Multi-byte image
+      formats (such as MONO16) are automatically converted to the
+      correct host byte ordering.
+  */
   uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
     
 } playerc_camera_t;
@@ -975,7 +978,12 @@ int playerc_laser_subscribe(playerc_laser_t *device, int access);
 /** @brief Un-subscribe from the laser device. */
 int playerc_laser_unsubscribe(playerc_laser_t *device);
 
-/** @brief @internal Parse data from incoming packet */
+/** @brief @internal Parse data from incoming packet
+    
+@todo This modifies the the data packet, which is BAD; change to const
+pointer for all putdata functions and fix.
+
+*/
 void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
                            player_laser_data_t *data, size_t len);
 
@@ -1427,6 +1435,11 @@ int playerc_position_subscribe(playerc_position_t *device, int access);
 
 /** @brief Un-subscribe from the position device */
 int playerc_position_unsubscribe(playerc_position_t *device);
+
+/** @internal Parse data from incoming packet */
+void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *header,
+                              player_position_data_t *data, size_t len);
+
 
 /** @brief Enable/disable the motors */
 int playerc_position_enable(playerc_position_t *device, int enable);
