@@ -266,6 +266,7 @@ int
 GarminNMEA::ReadSentence(char* buf, size_t len)
 {
   char* ptr;
+  char* ptr2;
   size_t sentlen;
   char tmp[8];
   int chksum;
@@ -305,20 +306,20 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
   }
 
 
-  // copy in all but the carriage return and line feed
-  strncpy(buf+1,nmea_buf,sentlen-1);
-  buf[sentlen-1] = '\0';
+  // copy in all but the leading $ and trailing carriage return and line feed
+  strncpy(buf,nmea_buf+1,sentlen-3);
+  buf[sentlen-3] = '\0';
 
   // verify the checksum, if present.  two hex digits are the XOR of all the 
   // characters between the $ and *.
-  if((ptr = strchr((const char*)buf,NMEA_CHKSUM_CHAR)) && 
-     (strlen(ptr) == 3))
+  if((ptr2 = strchr((const char*)buf,NMEA_CHKSUM_CHAR)) && 
+     (strlen(ptr2) == 3))
   {
-    strncpy(tmp,ptr+1,2);
+    strncpy(tmp,ptr2+1,2);
     tmp[2]='\0';
     chksum = strtol(tmp,NULL,16);
     oursum=0;
-    for(int i=1;i<(int)(strlen(buf)-strlen(ptr));i++)
+    for(int i=0;i<(int)(strlen(buf)-strlen(ptr2));i++)
       oursum ^= buf[i];
 
     if(oursum != chksum)
@@ -329,8 +330,12 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
     else
     {
       // strip off checksum
-      ptr='\0';
+      *ptr2='\0';
     }
+  }
+  else
+  {
+    //PLAYER_WARN("no checksum");
   }
 
   memmove(nmea_buf,ptr+1,strlen(ptr));
