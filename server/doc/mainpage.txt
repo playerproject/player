@@ -1,0 +1,72 @@
+
+/** \mainpage Player server reference
+
+What is Player? Player is a robot device server.  It gives you simple
+and complete control over the physical sensors and actuators on your
+mobile robot.  When Player is running on your robot, your client
+control program connects to it via a standard TCP socket, and
+communication is accomplished by the sending and receiving of some of
+a small set of simple messages.
+
+Player is designed to be language and platform independent.  Your
+client program can run on any machine that has network connectivity to
+your robot, and it can be written in any language that can open and
+control a TCP socket.  Client-side libraries are currently available
+for C, C++, Tcl, LISP, Java, and Python.
+
+Player also makes no assumptions about how you might want to structure
+your robot control programs; i.e., Player is architecturally neutral.
+
+
+\section usage Quick-start Guide
+
+The Player server is run as follows:
+@verbatim
+$ player [options] <configfile>
+@endverbatim
+
+The configuration file is a text file describing the set of devices to
+be instantiated; for example:
+
+@verbatim
+device
+(
+  driver "p2os_position"
+  interfaces ["position:0"]
+)
+
+device
+(
+  driver "sicklms200"
+  interfaces ["laser:0"]
+  port "/dev/ttyS1"
+)
+@endverbatim
+
+This file instructs the server to create two devices:
+  - A Pioneer P2OS driver, supporting the @ref position interface.
+  - A Sick LMS200 driver, supporting the @ref laser interface.
+Client programs can subsequently connect to these devices, read data,
+send commands and so forth.
+
+Note the important distinction between drivers, interfaces and devices:
+  - A @b driver supports a @e specific piece of hardware, such as a SICK LMS200
+    scanning laser range-finder.
+  - An @b interface is a @e generic mechanism for getting data and/or
+    sending commands to a piece of hardware.
+  - A @b device describes a specific driver/interface pairing; e.g., a SICK LMS200
+    driver which supports the @ref laser interface.
+.
+Devices are also given an @b index to facilitate unique addressing
+(e.g., "laser:0" or "laser:1"); this allows the server to instantiate
+more than one device with the same interface.
+
+@section info Further information
+
+More detailed information can be found at these locations:
+  - @ref commandline
+  - @ref configfile 
+  - @ref interfaces 
+  - @ref drivers 
+
+*/
