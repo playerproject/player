@@ -78,7 +78,6 @@ def parse_file(filename):
 def parse_section(section):
     """Parse out the classes, methods, etc with their associated descriptions."""
 
-
     blocks = []
 
     index = 0
@@ -89,7 +88,7 @@ def parse_section(section):
         tokens = string.split(stripped)
 
         # Parse C-style comments
-        if tokens and tokens[0] == '/**':
+        if tokens and (tokens[0] == '/**' or tokens[0] == '///'):
 
             # Parse the comment bit
             block = Block()
@@ -114,15 +113,20 @@ def parse_comment_c(section, index, block):
 
         text = stripped
 
+        cplusplus = 0
         if text[:3] == '/**':
             text = text[3:]
+        elif text[:3] == '///':
+            text = text[3:]
+            cplusplus = 1
+
         if text[-2:] == '*/':
             text = text[:-2]
 
         block.desc += string.strip(text) + ' '
         index += 1
-        
-        if stripped[-2:] == '*/':
+
+        if cplusplus or stripped[-2:] == '*/':
             break
 
     return index
@@ -145,18 +149,34 @@ def parse_code(section, index, block):
             break
 
         code = stripped
-        if code[-1:] == '{':
-            code = code[:-1]
-        #if code[-1:] == ';':
-        #    code = code[:-1]
+        
+        done = 0
 
         if code:
-            block.code.append(code)
-            #if block.code:
-            #    block.code += '\\\\\n'
-            #block.code += code
+          idx = code.find('{')
+          if idx >= 0:
+            code = string.strip(code[:idx])
+            done = 1
 
-        if stripped[-1:] == '{':
+          idx = code.find('}')
+          if idx >= 0:
+            code = string.strip(code[:idx])
+            done = 1
+
+          idx = code.find(')')
+          if idx >= 0:
+            code = string.strip(code[:idx+1])
+            done = 1
+        
+          if code.startswith('public') or code.startswith('private') or code.startswith('protected'):
+            idx = code.find(':')
+            if idx >= 0:
+              code = string.strip(code[idx+1:])
+
+        if code:
+          block.code.append(code)
+
+        if done:
             break
 
         index += 1
@@ -226,21 +246,11 @@ def make_tex(filename, section, blocks):
 
     texfile = open(filename, 'w+')
 
-    make_section(texfile, section)
+    #make_section(texfile, section)
 
-    index = 0
-    while index < len(blocks):
-        block = blocks[index]
-
-        if block.type == None:
-            make_text(texfile, section, block)
-            index += 1
-        elif block.type == 'define':
-            index = make_defines(texfile, section, blocks, index)
-        elif block.type == 'struct':
-            index = make_struct(texfile, section, blocks, index)
-        else:
-            index += 1
+    make_class(texfile, section, blocks)
+    make_data(texfile, section, blocks)
+    make_methods(texfile, section, blocks)
 
     return
 
@@ -317,39 +327,58 @@ def make_struct(file, section, blocks, index):
     return index
 
 
-def make_class(file, section, block):
+def make_class(file, section, blocks):
     """Generate a class entry."""
 
-    file.write('\\section{%s}\n\n' % section.name);
-    file.write('%s\n' % block.desc)
+    index = 0
+    while index < len(blocks):
+      block = blocks[index]
+      if block.type == 'class':
+        file.write('\\section{%s}\n\n' % section.name);
+        file.write('%s\n' % block.desc)
+      index += 1
     return
 
 
-def make_method(file, section, block):
+def make_methods(file, section, blocks):
     """Generate method blocks."""
 
-    #file.write('\\begin{small}')
-    file.write('\\begin{verbatim}\n')
-    file.write(block.code)
-    file.write('\\end{verbatim}\n')
-    #file.write('\\end{small}')
-    file.write('\\vspace*{-0.5em}\n')
-    file.write('%s\n' % block.desc)
-    file.write('\\vspace*{0.5em}\n')
-
+    file.write('\\subsection*{Methods}\n')
+    index = 0
+    while index < len(blocks):
+      block = blocks[index]
+      if block.type == 'method':
+        file.write('\\begin{verbatim}\n')
+        line = 0
+        while line < len(block.code):
+          file.write(block.code[line] + '\n')
+          line += 1
+        file.write('\\end{verbatim}\n')
+        file.write('\\vspace*{-0.5em}\n')
+        file.write('%s\n' % block.desc)
+        file.write('\\vspace*{0.5em}\n')
+      index += 1
     return
 
 
-def make_data(file, section, block):
+def make_data(file, section, blocks):
     """Generate data blocks."""
 
-    file.write('\\begin{verbatim}\n')
-    file.write(block.code)
-    file.write('\\end{verbatim}\n')
-    file.write('\\vspace*{-0.5em}\n')
-    file.write('%s\n' % block.desc)
-    file.write('\\vspace*{0.5em}\n')
-
+    file.write('\\subsection*{Attributes}\n')
+    index = 0
+    while index < len(blocks):
+      block = blocks[index]
+      if block.type == 'data':
+        file.write('\\begin{verbatim}\n')
+        line = 0
+        while line < len(block.code):
+          file.write(block.code[line] + '\n')
+          line += 1
+        file.write('\\end{verbatim}\n')
+        file.write('\\vspace*{-0.5em}\n')
+        file.write('%s\n' % block.desc)
+        file.write('\\vspace*{0.5em}\n')
+      index += 1
     return
 
 

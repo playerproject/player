@@ -405,7 +405,9 @@ typedef struct player_device_auth_req
 /** what does this do? */
 #define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
 
-/** [Data] The {\tt power} device returns data in the format: */
+/** [Data] */
+
+/** The {\tt power} device returns data in the format: */
 typedef struct player_power_data
 {
   /** Battery voltage, in decivolts */
@@ -583,7 +585,7 @@ typedef struct player_position_power_config
   uint8_t value; 
 } __attribute__ ((packed)) player_position_power_config_t;
 
-/** [Constants: Change velocity control] */
+/** [Configuration: Change velocity control] */
 /**
 Some robots offer different velocity control modes.
 It can be changed by sending a request with the format given below,
@@ -1093,13 +1095,13 @@ typedef struct player_audio_cmd
    target device.*/
 typedef struct player_waveform_data
 {
-  /** Bit rate - bits per second **/
+  /** Bit rate - bits per second */
   uint32_t rate;
-  /** Depth - bits per sample **/
+  /** Depth - bits per sample */
   uint16_t depth;
-  /** Samples - the number of bytes of raw data **/
+  /** Samples - the number of bytes of raw data */
   uint32_t samples;
-  /** data - an array of raw data **/
+  /** data - an array of raw data */
   uint8_t data[ PLAYER_WAVEFORM_DATA_MAX ];
 } __attribute__ ((packed)) player_waveform_data_t;
 
@@ -1664,12 +1666,15 @@ typedef struct
 The {\tt wifi} interface provides access to the state of a wireless network
 interface. */
 
+/** [Constants] */
+/** The maximum number of remote hosts to report on */
 #define PLAYER_WIFI_MAX_LINKS 16
 
-/** [Data]*/
-/** The {\tt wifi} interface returns data regarding the state of a wireless
-network interface; the format is: */
-typedef struct
+/** [Data] */
+/** The {\tt wifi} interface returns data regarding the signal characteristics 
+    of remote hosts as perceived through a wireless network interface; the 
+    format of the data for each host is: */
+typedef struct player_wifi_link
 {
   /** IP address of destination. */
   char ip[32];
@@ -1679,6 +1684,7 @@ typedef struct
 } __attribute__ ((packed)) player_wifi_link_t;
 
 
+/** The complete data packet format is: */
 typedef struct player_wifi_data
 {
   /** A list of links */
@@ -1831,7 +1837,7 @@ typedef struct player_localization_config
   uint32_t num_particles;
 } __attribute__ ((packed)) player_localization_config_t;
 
-/** [configuration: Get a map information] */
+/** [Configuration: Get a map information] */
 /**
 Retrieve the size and scale information of a current map. This request is used
 to get the size information with a given scale before you request the actual
