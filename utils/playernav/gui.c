@@ -163,6 +163,7 @@ _robot_button_callback(GnomeCanvasItem *item,
 {
   static int idx;
   gboolean onrobot=FALSE;
+  gboolean ongoal=FALSE;
   double theta;
   static GnomeCanvasPoints* points = NULL;
   static GnomeCanvasItem* setting_theta_line = NULL;
@@ -178,19 +179,26 @@ _robot_button_callback(GnomeCanvasItem *item,
   pose.px = event->button.x;
   pose.py = -event->button.y;
   
-  // lookup (and store) which robot was clicked
+  // lookup (and store) which robot (or goal) was clicked
   if((item != (GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas)) &&
      !setting_theta && !setting_goal)
   {
     for(idx=0;idx<gui_data->num_robots;idx++)
     {
       if(item == gui_data->robot_items[idx])
+      {
+        onrobot = TRUE;
         break;
+      }
+      else if(item == gui_data->robot_goals[idx])
+      {
+        ongoal = TRUE;
+        break;
+      }
     }
     assert(idx < gui_data->num_robots);
     if(!show_robot_names)
       gnome_canvas_item_hide(gui_data->robot_labels[idx]);
-    onrobot=TRUE;
   }
 
   switch(event->type)
@@ -209,16 +217,34 @@ _robot_button_callback(GnomeCanvasItem *item,
           }
           break;
         case 3:
-          if(onrobot && !setting_theta)
+          if((onrobot || ongoal) && !setting_theta)
           {
             setting_goal=TRUE;
             move_item(gui_data->robot_goals[idx],pose,0);
             gnome_canvas_item_show(gui_data->robot_goals[idx]);
           }
         case 1:
-          if((item == 
-              (GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas)) ||
-             setting_theta)
+          if(!setting_theta)
+          {
+            if(onrobot || (ongoal && event->button.button == 3))
+            {
+              gnome_canvas_item_grab(item,
+                                     GDK_POINTER_MOTION_MASK | 
+                                     GDK_BUTTON_RELEASE_MASK,
+                                     NULL, event->button.time);
+              dragging = TRUE;
+
+              // set these so that the robot's pose won't be updated in
+              // the GUI while we're dragging  the robot (that happens
+              // in playernav.c)
+              if(event->button.button == 1)
+              {
+                robot_moving_p = 1;
+                robot_moving_idx = idx;
+              }
+            }
+          }
+          else
           {
             theta = atan2(-points->coords[3] + points->coords[1],
                           points->coords[2] - points->coords[0]);
@@ -227,28 +253,7 @@ _robot_button_callback(GnomeCanvasItem *item,
             mean[1] = -points->coords[1];
             mean[2] = theta;
 
-            if(!setting_goal)
-            {
-              if(gui_data->localizes[idx])
-              {
-                printf("setting pose for robot %d to (%.3f, %.3f, %.3f)\n",
-                       idx, mean[0], mean[1], mean[2]);
-
-                if(playerc_localize_set_pose(gui_data->localizes[idx], 
-                                             mean, cov) < 0)
-                {
-                  fprintf(stderr, "error while setting pose on robot %d\n", 
-                          idx);
-                  gtk_main_quit();
-                  return(TRUE);
-                }
-              }
-              else
-              {
-                puts("WARNING: NOT setting pose; couldn't connect to localize\n");
-              }
-            }
-            else
+            if(setting_goal)
             {
               if(gui_data->planners[idx])
               {
@@ -273,6 +278,27 @@ _robot_button_callback(GnomeCanvasItem *item,
                 puts("WARNING: NOT setting goal; couldn't connect to planner\n");
               }
             }
+            else
+            {
+              if(gui_data->localizes[idx])
+              {
+                printf("setting pose for robot %d to (%.3f, %.3f, %.3f)\n",
+                       idx, mean[0], mean[1], mean[2]);
+
+                if(playerc_localize_set_pose(gui_data->localizes[idx], 
+                                             mean, cov) < 0)
+                {
+                  fprintf(stderr, "error while setting pose on robot %d\n", 
+                          idx);
+                  gtk_main_quit();
+                  return(TRUE);
+                }
+              }
+              else
+              {
+                puts("WARNING: NOT setting pose; couldn't connect to localize\n");
+              }
+            }
 
             //move_robot(gui_data->robot_items[idx],pose);
             gnome_canvas_item_hide(setting_theta_line);
@@ -280,23 +306,6 @@ _robot_button_callback(GnomeCanvasItem *item,
             setting_goal = FALSE;
 
             robot_moving_p = 0;
-          }
-          else
-          {
-            gnome_canvas_item_grab(item,
-                                   GDK_POINTER_MOTION_MASK | 
-                                   GDK_BUTTON_RELEASE_MASK,
-                                   NULL, event->button.time);
-            dragging = TRUE;
-
-            // set these so that the robot's pose won't be updated in
-            // the GUI while we're dragging  the robot (that happens
-            // in playernav.c)
-            if(event->button.button == 1)
-            {
-              robot_moving_p = 1;
-              robot_moving_idx = idx;
-            }
           }
           break;
         default:
@@ -308,10 +317,10 @@ _robot_button_callback(GnomeCanvasItem *item,
         gnome_canvas_item_show(gui_data->robot_labels[idx]);
       if(dragging)
       {
-        if(!setting_goal)
-          move_item(item,pose,1);
-        else
+        if(setting_goal)
           move_item(gui_data->robot_goals[idx],pose,0);
+        else
+          move_item(item,pose,1);
       }
       else if(setting_theta)
       {
@@ -813,6 +822,8 @@ create_robot(gui_data_t* gui_data, int idx, pose_t pose)
   gui_data->robot_goals[idx] = robot_goal;
   gui_data->robot_poses[idx] = pose;
 
+  gtk_signal_connect(GTK_OBJECT(robot_goal), "event",
+                     (GtkSignalFunc)_robot_button_callback, (void*)gui_data);
   gtk_signal_connect(GTK_OBJECT(robot), "event",
                      (GtkSignalFunc)_robot_button_callback, (void*)gui_data);
 }
@@ -850,11 +861,14 @@ draw_waypoints(gui_data_t* gui_data, int idx)
     gui_data->robot_paths[idx] = NULL;
   }
 
-  if(gui_data->planners[idx]->path_valid && 
-     !gui_data->planners[idx]->path_done)
+  if(gui_data->planners[idx]->path_done)
   {
     if(!dragging && !setting_theta)
       gnome_canvas_item_hide(gui_data->robot_goals[idx]);
+  }
+  else if(gui_data->planners[idx]->path_valid)
+  {
+    gnome_canvas_item_show(gui_data->robot_goals[idx]);
 
     g_assert((gui_data->robot_paths[idx] = 
               gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
@@ -877,20 +891,23 @@ draw_waypoints(gui_data_t* gui_data, int idx)
         i<gui_data->planners[idx]->waypoint_count;
         i++)
     {
-      g_assert((waypoint = 
-                gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_paths[idx],
-                                      gnome_canvas_polygon_get_type(),
-                                      "points", points,
-                                      "outline_color_rgba", COLOR_BLACK,
-                                      "fill_color_rgba", 
-                                      robot_colors[idx % num_robot_colors],
-                                      "width_pixels", 1,
-                                      NULL)));
+      if(i<gui_data->planners[idx]->waypoint_count-1)
+      {
+        g_assert((waypoint = 
+                  gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_paths[idx],
+                                        gnome_canvas_polygon_get_type(),
+                                        "points", points,
+                                        "outline_color_rgba", COLOR_BLACK,
+                                        "fill_color_rgba", 
+                                        robot_colors[idx % num_robot_colors],
+                                        "width_pixels", 1,
+                                        NULL)));
 
-      pose.px =  gui_data->planners[idx]->waypoints[i][0];
-      pose.py =  gui_data->planners[idx]->waypoints[i][1];
-      pose.pa = 0.0;
-      move_item(waypoint, pose,0);
+        pose.px =  gui_data->planners[idx]->waypoints[i][0];
+        pose.py =  gui_data->planners[idx]->waypoints[i][1];
+        pose.pa = 0.0;
+        move_item(waypoint, pose,0);
+      }
 
       if(i>0)
       {
