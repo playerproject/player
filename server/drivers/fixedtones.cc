@@ -217,9 +217,9 @@ FixedTones::Main()
   unsigned char zero[AUDIO_COMMAND_BUFFER_SIZE];
   unsigned int cnt, i;
   int state = UNKNOWN;
-  short playFrq, playAmp, playDur;
-  unsigned int playDuration;
-  unsigned int current;
+  short playFrq=0, playAmp=0, playDur;
+  unsigned int playDuration=0;
+  unsigned int current=0;
   unsigned int remaining;
   double omega = 0.0;
   double phase = 0.0;

@@ -1,6 +1,6 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -I$(srcdir)/drivers/stage
+AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage
 
 bin_PROGRAMS = player
 

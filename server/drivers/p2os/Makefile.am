@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
 noinst_LIBRARIES = libp2os.a
 

@@ -1,10 +1,8 @@
 SUBDIRS = p2os rwi stage
 
-AM_CPPFLAGS = -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
-noinst_LIBRARIES = libacts.a libfestival.a \
-									 liblaserreflector.a liblaserbarcode.a liblaservisualbarcode.a \
-									 libsicklms200.a libsonyevid30.a libudpbroadcast.a @FIXEDTONES_LIB@
+noinst_LIBRARIES = libacts.a libfestival.a liblaserreflector.a liblaserbarcode.a liblaservisualbarcode.a libsicklms200.a libsonyevid30.a libudpbroadcast.a @FIXEDTONES_LIB@
 
 EXTRA_LIBRARIES = libfixedtones.a
 
