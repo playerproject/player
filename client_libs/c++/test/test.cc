@@ -95,6 +95,10 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "laser") == 0 || strcmp(device, "all") == 0)
       test_laser(&client, index);
     
+    // Fiducial finder device
+    if(strcmp(device, "fiducial") == 0 || strcmp(device, "all") == 0)
+      test_fiducial(&client, index);
+
     // PTZ device
     if(strcmp(device, "ptz") == 0 || strcmp(device, "all") == 0)
       test_ptz(&client, index);
