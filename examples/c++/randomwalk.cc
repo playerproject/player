@@ -14,7 +14,7 @@
   "       -m       : turn on motors (be CAREFUL!)"
                
 
-CRobot robot;
+PlayerClient robot;
 bool turnOnMotors = false;
 
 /* parse command-line args */
@@ -73,17 +73,16 @@ int main(int argc, char** argv)
   if(robot.Connect())
     exit(1);
 
-  /* request read access on the sonars and write access to the wheels */
-  if(robot.Request("pasr"))
+  /* request read access on the sonars and all access to the wheels */
+  if(robot.RequestDeviceAccess(PLAYER_POSITION_CODE,PLAYER_ALL_MODE))
+    exit(1);
+  if(robot.RequestDeviceAccess(PLAYER_SONAR_CODE,PLAYER_READ_MODE))
     exit(1);
 
   /* maybe turn on the motors */
-  if(turnOnMotors && robot.ChangeMotorState(1))
-    exit(1);
-
-  //if(robot.SetFrequency(1000))
+  //if(turnOnMotors && robot.ChangeMotorState(1))
     //exit(1);
-  
+
   /* go into read-think-act loop */
   for(;;)
   {
@@ -94,14 +93,13 @@ int main(int argc, char** argv)
     /* print current sensor data to console */
     //robot.Print();
 
-
     if(robot.sonar[2] < minfrontdistance ||
        robot.sonar[3] < minfrontdistance ||
        robot.sonar[4] < minfrontdistance ||
        robot.sonar[5] < minfrontdistance ||
        avoidcount || robot.position->stalls)
     {
-      robot.newspeed = -150;
+      *robot.newspeed = -150;
 
       /* once we start avoiding, continue avoiding for 2 seconds */
       /* (we run at about 10Hz, so 20 loop iterations is about 2 sec) */
@@ -111,16 +109,16 @@ int main(int argc, char** argv)
         randcount = 0;
 
         if(robot.sonar[1]+robot.sonar[15] < robot.sonar[7]+robot.sonar[8])
-          robot.newturnrate = -40;
+          *robot.newturnrate = -40;
         else
-          robot.newturnrate = 40;
+          *robot.newturnrate = 40;
       }
       avoidcount--;
     }
     else
     {
       avoidcount = 0;
-      robot.newspeed = 200;
+      *robot.newspeed = 200;
 
       /* update turnrate every 3 seconds */
       if(!randcount)
@@ -128,7 +126,7 @@ int main(int argc, char** argv)
         /* make random int tween -20 and 20 */
         randint = (1+(int)(40.0*rand()/(RAND_MAX+1.0))) - 20; 
 
-        robot.newturnrate = randint;
+        *robot.newturnrate = randint;
         randcount = 20;
       }
       randcount--;
@@ -137,10 +135,6 @@ int main(int argc, char** argv)
     /* write commands to robot */
     robot.Write();
   }
-
-  /* it's not necessary, but we could close the devices like this: */
-  if(robot.Request("scpc"))
-    exit(1);
 
   return(0);
 }
