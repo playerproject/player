@@ -285,6 +285,8 @@ int PlayerClient::Read()
 
       //printf("%ld:%ld:got new data for %d:%d\n",
              //curr.tv_sec, curr.tv_usec, hdr.device, hdr.device_index);
+      thisproxy->Lock();
+
       // put the data in the object
       if(hdr.size)
       {
@@ -306,6 +308,8 @@ int PlayerClient::Read()
       //printf("setting receivedtime: %ld %ld\n", curr.tv_sec,curr.tv_usec);
       thisproxy->receivedtime.tv_sec = curr.tv_sec;
       thisproxy->receivedtime.tv_usec = curr.tv_usec;
+      thisproxy->Unlock();
+
     }
     else
     {
