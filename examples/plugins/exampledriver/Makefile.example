@@ -4,7 +4,7 @@
 all: exampledriver.so
 
 %.o: %.cc
-	$(CXX) -Wall -g3 -c $<
+	$(CXX) -Wall -g3 `pkg-config --cflags player` -c $<
 
 %.so: %.o
 	$(CXX) -shared -nostartfiles -o $@ $<

@@ -23,11 +23,6 @@
 /*
  * $Id$
  */
-
-/** @defgroup configfile Configuration file syntax 
-@{
-*/
-
 #ifndef CONFFILE_H
 #define CONFFILE_H
 
@@ -51,7 +46,6 @@
 ///   key3 ["foo" "bar"]  
 /// )
 /// @endverbatim
-
 class ConfigFile
 {
   /// @brief Standard constructor
@@ -339,7 +333,7 @@ class ConfigFile
   private: void ClearTokens();
 
   // Add a token to the token list
-  public: bool AddToken(int type, const char *value, int include);
+  private: bool AddToken(int type, const char *value, int include);
 
   // Set a token in the token list
   private: bool SetTokenValue(int index, const char *value);
@@ -347,7 +341,7 @@ class ConfigFile
   // Get the value of a token
   private: const char *GetTokenValue(int index);
 
-  // Dump the token list (for debugging).
+  /// @brief Dump the token list (for debugging).
   public: void DumpTokens();
 
   // Parse a line
@@ -390,19 +384,19 @@ class ConfigFile
   private: void ClearSections();
 
   // Add a section
-  public: int AddSection(int parent, const char *type);
+  private: int AddSection(int parent, const char *type);
 
-  // Dump the section list for debugging
+  /// @brief Dump the section list for debugging
   public: void DumpSections();
 
   // Clear the field list
   private: void ClearFields();
 
   // Add a field
-  public: int AddField(int section, const char *name, int line);
+  private: int AddField(int section, const char *name, int line);
 
   // Add a field value.
-  public: void AddFieldValue(int field, int index, int value_token);
+  private: void AddFieldValue(int field, int index, int value_token);
   
   // Get a field
   private: int GetField(int section, const char *name);
@@ -417,7 +411,7 @@ class ConfigFile
   // Set the value of an field.
   private: void SetFieldValue(int field, int index, const char *value);
 
-  // Dump the field list for debugging
+  /// @brief Dump the field list for debugging
   public: void DumpFields();
 
   // Look up the color in a data based (transform color name -> color value).
@@ -520,5 +514,4 @@ class ConfigFile
   private: double unit_angle;
 };
 
-/** @} */
 #endif

@@ -85,8 +85,8 @@ void ExampleDriver_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 ExampleDriver::ExampleDriver(ConfigFile* cf, int section)
-: Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_READ_MODE,
-         sizeof(player_position_data_t),sizeof(player_position_cmd_t),10,10)
+    : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_READ_MODE,
+             sizeof(player_position_data_t),sizeof(player_position_cmd_t),10,10)
 {
   // Read an option from the configuration file
   this->foop = cf->ReadInt(section, "foo", 0);
