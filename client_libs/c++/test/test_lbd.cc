@@ -31,44 +31,6 @@ test_lbd(PlayerClient* client, int index)
   for(int i=0;i<20;i++)
     client->Read();
 
-  TEST("set bit counts and size");
-  if(lbp.SetBits(5, 102) >= 0)
-    PASS();
-  else
-  {
-    FAIL();
-    return(-1);
-  }
-
-  TEST("set thresholds");
-  if(lbp.SetThresh(60, 60) >= 0)
-    PASS();
-  else
-  {
-    FAIL();
-    return(-1);
-  }
-
-  TEST("get configuration");
-  if(lbp.GetConfig() == 0)
-    PASS();
-  else
-  {
-    FAIL();
-    return(-1);
-  }
-
-  TEST("check configuration sanity");
-  if(lbp.bit_count != 5 ||
-     abs(lbp.bit_size - 102) > 1 ||
-     abs(lbp.one_thresh - 60) > 1 ||
-     abs(lbp.zero_thresh - 60) > 1)
-  {
-    FAIL();
-    return(-1);
-  }
-  PASS();
-
   for(int t = 0; t < 3; t++)
   {
     TEST1("reading data (attempt %d)", t);

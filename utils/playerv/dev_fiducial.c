@@ -57,8 +57,6 @@ fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   snprintf(label, sizeof(label), "fiducial:%d (%s)", index, fiducial->drivername);
   fiducial->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   fiducial->subscribe_item = rtk_menuitem_create(fiducial->menu, "Subscribe", 1);
-  fiducial->bits5_item = rtk_menuitem_create(fiducial->menu, "5 bits", 0);
-  fiducial->bits8_item = rtk_menuitem_create(fiducial->menu, "8 bits", 0);
 
   // Set the initial menu state
   rtk_menuitem_check(fiducial->subscribe_item, subscribe);
@@ -78,8 +76,6 @@ void fiducial_destroy(fiducial_t *fiducial)
   playerc_fiducial_destroy(fiducial->proxy);
 
   rtk_fig_destroy(fiducial->fig);
-  rtk_menuitem_destroy(fiducial->bits8_item);
-  rtk_menuitem_destroy(fiducial->bits5_item);
   rtk_menuitem_destroy(fiducial->subscribe_item);
   rtk_menu_destroy(fiducial->menu);
 
@@ -102,12 +98,6 @@ void fiducial_update(fiducial_t *fiducial)
       // Get the geometry
       if (playerc_fiducial_get_geom(fiducial->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-
-      rtk_fig_origin(fiducial->fig,
-                     fiducial->proxy->pose[0],
-                     fiducial->proxy->pose[1],
-                     fiducial->proxy->pose[2]);
-
     }
   }
   else
@@ -117,20 +107,6 @@ void fiducial_update(fiducial_t *fiducial)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
   rtk_menuitem_check(fiducial->subscribe_item, fiducial->proxy->info.subscribed);
-
-  // See if the number of bits has changed
-  if (rtk_menuitem_isactivated(fiducial->bits5_item))
-  {    
-    if (fiducial->proxy->info.subscribed)
-      if (playerc_fiducial_set_config(fiducial->proxy, 5, 0.050) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-  }
-  if (rtk_menuitem_isactivated(fiducial->bits8_item))
-  {
-    if (fiducial->proxy->info.subscribed)
-      if (playerc_fiducial_set_config(fiducial->proxy, 8, 0.050) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-  }
 
   if (fiducial->proxy->info.subscribed)
   {
@@ -162,7 +138,16 @@ void fiducial_draw(fiducial_t *fiducial)
   rtk_fig_clear(fiducial->fig);
   rtk_fig_color_rgb32(fiducial->fig, COLOR_FIDUCIAL);
 
-  rtk_fig_rectangle(fiducial->fig, 0, 0, 0, 0.15, 0.15, 0);
+  rtk_fig_origin(fiducial->fig,
+                 fiducial->proxy->pose[0],
+                 fiducial->proxy->pose[1],
+                 fiducial->proxy->pose[2]);
+  rtk_fig_rectangle(fiducial->fig, 0, 0, 0,
+                    fiducial->proxy->size[0],                    
+                    fiducial->proxy->size[1], 0);
+
+  wx = fiducial->proxy->fiducial_size[0];
+  wy = fiducial->proxy->fiducial_size[1];
   
   for (i = 0; i < fiducial->proxy->fiducial_count; i++)
   {
@@ -171,13 +156,9 @@ void fiducial_draw(fiducial_t *fiducial)
     ox = fdata->range * cos(fdata->bearing);
     oy = fdata->range * sin(fdata->bearing);
     oa = fdata->orient;
-
-    // TODO: use the configuration info to determine fiducial size
-    wx = 0.05;
-    wy = 0.40;
     
     rtk_fig_rectangle(fiducial->fig, ox, oy, oa, wx, wy, 0);
-    rtk_fig_arrow(fiducial->fig, ox, oy, oa, wy, 0.10);
+    rtk_fig_arrow(fiducial->fig, ox, oy, oa, 0.20, 0.10);
     snprintf(text, sizeof(text), "  %d", fdata->id);
     rtk_fig_text(fiducial->fig, ox, oy, oa, text);
   }

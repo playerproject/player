@@ -46,7 +46,7 @@
 #define COLOR_LASER              0x0000C0
 #define COLOR_LASER_EMP          0xD0D0FF
 #define COLOR_LASER_OCC          0x0000C0
-#define COLOR_FIDUCIAL           0x0000C0
+#define COLOR_FIDUCIAL           0xF000F0
 #define COLOR_POSITION_ROBOT     0xC00000
 #define COLOR_POSITION_CONTROL   0xFF0000
 #define COLOR_PTZ_DATA           0x00C000
@@ -196,7 +196,6 @@ typedef struct
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
-  rtk_menuitem_t *bits5_item, *bits8_item;
 
   // Figure for drawing the fiducials.
   rtk_fig_t *fig;
