@@ -37,7 +37,7 @@ test_sonar(PlayerClient* client, int index)
   }
   sleep(1);
   PASS();
-  for(int i=0;i<PLAYER_MAX_FRF_SAMPLES;i++)
+  for(int i=0;i<PLAYER_FRF_MAX_SAMPLES;i++)
   {
     printf("Sonar[%d]: (%d,%d,%d)\n", i, 
            sp.frf_pose.poses[i][0],

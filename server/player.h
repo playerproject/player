@@ -289,7 +289,7 @@ typedef struct
 /*
  * Fixed range-finder (FRF) interface
  */
-#define PLAYER_MAX_FRF_SAMPLES 32
+#define PLAYER_FRF_MAX_SAMPLES 32
 
 /* the frf data packet */
 typedef struct
@@ -298,7 +298,7 @@ typedef struct
   uint16_t range_count;
   
   /* for the Pioneer, start at the front left sonar and number clockwise */
-  uint16_t ranges[PLAYER_MAX_FRF_SAMPLES];
+  uint16_t ranges[PLAYER_FRF_MAX_SAMPLES];
 } __attribute__ ((packed)) player_frf_data_t;
 
 #define PLAYER_FRF_GET_GEOM_REQ   ((uint8_t)1)
@@ -313,7 +313,8 @@ typedef struct
   uint16_t pose_count;
 
   /* Pose of each sonar, in robot cs (mm, mm, degrees). */
-  int16_t poses[PLAYER_MAX_FRF_SAMPLES][3];
+  int16_t poses[PLAYER_FRF_MAX_SAMPLES][3];
+  
 } __attribute__ ((packed)) player_frf_geom_t;
 /*************************************************************************/
 
@@ -322,7 +323,7 @@ typedef struct
  * Scanning range-finder (SRF) interface
  */
 
-#define PLAYER_MAX_SRF_SAMPLES  401
+#define PLAYER_SRF_MAX_SAMPLES  401
 
 /* The srf data packet. */
 typedef struct
@@ -338,7 +339,7 @@ typedef struct
    * readings.  Reflectivity data is stored in the top three bits of
    * each range reading.  */
   uint16_t range_count;
-  uint16_t ranges[PLAYER_MAX_SRF_SAMPLES];
+  uint16_t ranges[PLAYER_SRF_MAX_SAMPLES];
 } __attribute__ ((packed)) player_srf_data_t;
 
 
@@ -490,6 +491,7 @@ typedef struct
   /* Fiducial bearing and orientation (in degrees) relative to detector. */
   int16_t bearing;
   int16_t orient;
+  
 } __attribute__ ((packed)) player_fiducial_item_t;
 
 
@@ -498,7 +500,8 @@ typedef struct
 {
   /* List of detected fiducials */
   uint16_t count;
-  player_fiducial_item_t beacon[PLAYER_FIDUCIAL_MAX_SAMPLES];
+  player_fiducial_item_t fiducials[PLAYER_FIDUCIAL_MAX_SAMPLES];
+  
 } __attribute__ ((packed)) player_fiducial_data_t;
 
 
@@ -578,7 +581,7 @@ typedef struct
  * Bumper interface
  */
 
-#define PLAYER_MAX_BUMPER_SAMPLES 32
+#define PLAYER_BUMPER_MAX_SAMPLES 32
 
 typedef struct
 {
@@ -586,7 +589,7 @@ typedef struct
   uint8_t bumper_count;
 
   /* array of bumper values */
-  uint8_t bumpers[PLAYER_MAX_BUMPER_SAMPLES];
+  uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
 } __attribute__ ((packed)) player_bumper_data_t;
 
 // TODO: what do these do?
@@ -751,7 +754,7 @@ typedef struct
  * AIO interface
  */
 
-#define PLAYER_MAX_AIO_SAMPLES 8
+#define PLAYER_AIO_MAX_SAMPLES 8
 
 // TODO: add command
 
@@ -759,7 +762,7 @@ typedef struct
 typedef struct
 {
   uint8_t count;
-  int32_t anin[PLAYER_MAX_AIO_SAMPLES];
+  int32_t anin[PLAYER_AIO_MAX_SAMPLES];
 } __attribute__ ((packed)) player_aio_data_t;
 /*************************************************************************/
 

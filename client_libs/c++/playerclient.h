@@ -659,11 +659,11 @@ class SRFProxy : public ClientProxy
     unsigned short range_count;
 
     /// The range values (in mm).
-    unsigned short ranges[PLAYER_MAX_SRF_SAMPLES];
+    unsigned short ranges[PLAYER_SRF_MAX_SAMPLES];
 
     // TODO: haven't verified that intensities work yet:
     /// The reflected intensity values (arbitrary units in range 0-7).
-    unsigned char intensities[PLAYER_MAX_SRF_SAMPLES];
+    unsigned char intensities[PLAYER_SRF_MAX_SAMPLES];
 
     // What is this?
     unsigned short min_right,min_left;
@@ -884,7 +884,7 @@ class FRFProxy : public ClientProxy
     /** The latest frf scan data.
         Range is measured in mm.
      */
-    unsigned short ranges[PLAYER_MAX_FRF_SAMPLES];
+    unsigned short ranges[PLAYER_FRF_MAX_SAMPLES];
 
     /** Positions of frfs
      */

@@ -65,7 +65,7 @@ int player_read_laser(player_connection_t* conn, player_srf_data_t* data)
     return(-1);
   }
 
-  for(i=0;i<PLAYER_MAX_SRF_SAMPLES;i++)
+  for(i=0;i<PLAYER_SRF_MAX_SAMPLES;i++)
     data->ranges[i] = ntohs(data->ranges[i]);
 
   return(0);
@@ -93,7 +93,7 @@ int player_read_sonar(player_connection_t* conn, player_frf_data_t* data)
     return(-1);
   }
 
-  for(i=0;i<PLAYER_MAX_FRF_SAMPLES;i++)
+  for(i=0;i<PLAYER_FRF_MAX_SAMPLES;i++)
     data->ranges[i] = ntohs(data->ranges[i]);
 
   return(0);

@@ -60,11 +60,11 @@ int test_fiducial(playerc_client_t *client, int index)
     {
       PASS();
 
-      printf("fiducial: [%d] ", device->item_count);
-      for (i = 0; i < MIN(3, device->item_count); i++)
-        printf("[%d %6.3f, %6.3f, %6.3f] ", device->items[i].id,
-               device->items[i].range, device->items[i].bearing,
-               device->items[i].orient);
+      printf("fiducial: [%d] ", device->fiducial_count);
+      for (i = 0; i < MIN(3, device->fiducial_count); i++)
+        printf("[%d %6.3f, %6.3f, %6.3f] ", device->fiducials[i].id,
+               device->fiducials[i].range, device->fiducials[i].bearing,
+               device->fiducials[i].orient);
       printf("\n");
     }
     else
