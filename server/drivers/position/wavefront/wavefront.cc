@@ -298,32 +298,32 @@ void
 Wavefront::GetLocalizeData()
 {
   player_localize_data_t data;
-  static unsigned int last_timesec=0;
-  static unsigned int last_timeusec=0;
   unsigned int timesec, timeusec;
+  static unsigned int last_timesec = 0;
+  static unsigned int last_timeusec = 0;
   double lx,ly,la;
   double dist;
   double lx_sum, ly_sum;
   double lx_avg, ly_avg;
   struct timeval curr;
 
-  if(GlobalTime->GetTime(&curr) < 0)
-    PLAYER_ERROR("GetTime() failed!");
-
   if(!this->localize->GetData(this,(unsigned char*)&data,sizeof(data),
                               &timesec, &timeusec) || !data.hypoth_count)
-  {
-    this->l_lag = (curr.tv_sec + curr.tv_usec / 1e6) - 
-            (last_timesec + last_timeusec / 1e6);
     return;
-  }
+
+  // is this new data?
+  if((last_timesec == timesec) && (last_timeusec == timeusec))
+    return;
+
+  last_timesec = timesec;
+  last_timeusec = timeusec;
+
+  if(GlobalTime->GetTime(&curr) < 0)
+    PLAYER_ERROR("GetTime() failed!");
 
   this->l_lag = (curr.tv_sec + curr.tv_usec / 1e6) - 
           (timesec + timeusec / 1e6);
 
-  last_timesec = timesec;
-  last_timeusec = timeusec;
-  
   // just take the first hypothesis, on the assumption that it's the
   // highest weight.
   lx = ((int)ntohl(data.hypoths[0].mean[0]))/1e3;
@@ -457,12 +457,16 @@ void Wavefront::Main()
     GetCommand();
 
     // if localize gets too far behind, stop the robot to let it catch up
+/*
     if(this->l_lag > LOCALIZE_MAX_LAG)
     {
       PLAYER_WARN("stopping robot to let localize catch up");
+      printf("lag: %f\n", this->l_lag);
       StopPosition();
+      usleep(CYCLE_TIME_US);
       continue;
     }
+*/
 
     if(this->new_goal)
     {
@@ -532,6 +536,7 @@ void Wavefront::Main()
           // no more waypoints, so stop
           StopPosition();
           curr_waypoint = -1;
+          usleep(CYCLE_TIME_US);
           continue;
         }
       }
