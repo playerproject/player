@@ -82,4 +82,8 @@ class CDeviceTable
     CDeviceEntry *GetNextEntry(CDeviceEntry *entry) {return entry->next;}
 };
 
+
+// Pointer to the global device table.
+extern CDeviceTable* deviceTable;
+
 #endif
