@@ -1,11 +1,12 @@
 \documentclass[11pt]{report}
 \usepackage{fullpage}
+\usepackage{listings}
+\lstset{language=C, basicstyle=\footnotesize, frame=tb}
 
 \def\VERSION {1.2}
 \def\DEFAULTPORT {6665}
 \def\HOMEPAGE {{\tt http://playerstage.sourceforge.net}}
-\def\libplayerc {{\tt libplayerc}}
-\def\player {Player}
+\def\libplayerc {{\tt libplayerc} }
 
 \begin{document}
 \setcounter{page}{0}
@@ -41,29 +42,13 @@ Los Angeles, California, USA\\
 
 \chapter{Introduction}
 
-\libplayerc is a client library for the \player networked device server.
+\libplayerc is a client library for the Player robot device server.
 It is written in ANSI-C to maximize portability.
 
 Users should read the {\em Player User Manual} included in the standard
 Player distribution.  
 
 The latest version  manual can also be found on the
-
-\section{Licence}
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 \section{Getting \libplayerc}
 
@@ -83,22 +68,36 @@ description of you problem and/or feature request, and information
 such as the Player version and operating system.  Make sure you also
 select the ``\libplayerc'' category when reporting bugs.
 
+\section{Licence}
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.  This program is distributed in the
+hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.  See the GNU General Public License for more details.  You
+should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 \section{Acknowledgements}
+
+This work is supported by DARPA grant DABT63-99-1-0015 (MARS) and NSF
+grant ANI-9979457 (SCOWR), and possibly others.
+
 
 \chapter{General Usage}
 
 \libplayerc is based on a device ``proxy'' model, in which the client
 maintains a local proxy for each of the devices on the remote server.
-Thus, for example, one can create proxies for the {\tt position} and
-{\tt laser} devices.  There is also a special {\tt client} proxy, used
-to interact with the server itself.  
+Thus, for example, one can create local proxies for the {\tt position}
+and {\tt laser} devices.  There is also a special {\tt client} proxy,
+used to control the Player server itself.  
 
-Programs using \libplayerc will have the following general structure.
-
+Programs using \libplayerc will generally the following structure:
 \begin{quote}
-\scriptsize
-\begin{verbatim}
+\begin{lstlisting}[frame=tb]{}
 #include <stdio.h>
 #include "playerc.h"
 
@@ -109,16 +108,13 @@ int main(int argc, const char **argv)
   playerc_position_t *position;
 
   client = playerc_client_create(NULL, "localhost", 6665);
-  if (playerc_client_connect(client) != 0)
-    return -1;
+  playerc_client_connect(client);
 
   position = playerc_position_create(client, 0);
-  if (playerc_position_subscribe(position, PLAYER_ALL_MODE))
-    return -1;
-  if (playerc_position_enable(position, 1) != 0)
-    return -1;
-  if (playerc_position_setspeed(position, 0, 0, 0.1) != 0)
-    return -1;
+  playerc_position_subscribe(position, PLAYER_ALL_MODE);
+
+  playerc_position_enable(position, 1);
+  playerc_position_setspeed(position, 0, 0, 0.1);
   
   for (i = 0; i < 200; i++)
   {
@@ -134,40 +130,117 @@ int main(int argc, const char **argv)
 
   return 0;
 }
-\end{verbatim}
+\end{lstlisting}
 \end{quote}
-BEWARE: this program will cause the robot to spin in circles!
+Note that error checking has been omitted from this example for the
+sake of clarity.  For an example with full error checking, see {\tt
+simple.c} in the {\tt examples/libplayerc} directory.  This program
+can be broken into six steps, as follows.
 
-\begin{itemize}
-\item The client proxy is created using:
+\subsection*{Create and connect a client proxy.}
+
 \begin{quote}\begin{verbatim}
 client = playerc_client_create(NULL, "localhost", 6665);
+playerc_client_connect(client);
 \end{verbatim}\end{quote}
-where \verb+"localhost"+ is the host name 
+The {\tt create} function creates a new client proxy and returns a
+pointer to be used in future function calls ({\tt localhost} should be
+replaced with the network host name of the robot).  The {\tt connect}
+function notifies the Player server that a new client wishes to
+recieve data.
 
-\item 
+\subsection*{Create and subscribe a device proxy.}
+
 \begin{quote}\begin{verbatim}
-playerc_client_connect(client)
+position = playerc_position_create(client, 0);
+playerc_position_subscribe(position, PLAYER_ALL_MODE);
 \end{verbatim}\end{quote}
+The {\tt create} function creates a new position device proxy and
+returns a pointer to be used in future function calls.  The {\tt
+subscribe} function notifies the Player server that the client is
+using the position device, and that the client expects to both send
+commands and recieve data ({\tt PLAYER\_MODE\_ALL}).
 
-\end{itemize}
+\subsection*{Configure the device, send commands.}
+
+\begin{quote}\begin{verbatim}
+playerc_position_enable(position, 1);
+playerc_position_setspeed(position, 0, 0, 0.1);
+\end{verbatim}\end{quote}
+The {\tt enable} function sends a configuration request to the server,
+changing the robot's motor state from {\tt off} to {\tt on}, thereby
+allowing the robot to move.  The {\tt setspeed} function sends a new
+motor speed, in this case commanding the robot to turn on the spot.
+
+Note that most Player devices will accept both asynchronous {\em
+command} and synchronous {\em configuration} requests.  Sending
+commands is analogous using the standard Unix {\tt write} device
+interface, while sending configuration requests is analogous to using
+the {\tt ioctl} interface.  For the most part, {\tt libplayerc} hides
+the distinction between these two interfaces.  Users should be aware,
+however, that while commands are always handled promptly by the
+server, configuration requests may take significant time to complete.
+If possible, configuration requests should therefore be restricted to
+the initialization phase of the program.
+
+\subsection*{Read data from the device.}
+
+\begin{quote}\begin{verbatim}
+playerc_client_read(client);
+printf("position : %f %f %f\n", position->px, ... );
+\end{verbatim}\end{quote}
+The {\tt read} function blocks until new data arrives from the Player
+server.  This data may be from one of the subscribed devices, or it
+may be from the server itself (which sends regular synchronization
+messages to all of its clients).  The {\tt read} function inspects the
+incoming data and automatically updates the elements in the
+appropriate device proxy.  This function also returns a pointer to the
+proxy that was updated, so that user programs may, if desired, trigger
+appropriate events on the arrival of different kinds of data.
+
+\subsection*{Unsubscribe and destroy the device proxy.}
+
+\begin{quote}\begin{verbatim}
+playerc_position_unsubscribe(position);
+playerc_position_destroy(position);
+\end{verbatim}\end{quote}
+The {\tt unsubscribe} function tells the Player server that the client
+is no longer using this device.  The {\tt destroy} function then frees
+the memory associated with the device proxy; the {\tt device} pointer
+is now invalid and should be not be re-used.
+
+\subsection*{Disconnect and destroy the client proxy.}
+
+\begin{quote}\begin{verbatim}
+playerc_client_disconnect(client);
+playerc_client_destroy(client);
+\end{verbatim}\end{quote}
+The {\tt disconnect} function tells the server that the client is
+shutting down.  The {\tt destroy} function then frees the memory
+associated with the client proxy; the {\tt client} pointer is now
+invalid and should be not be re-used.
+
+
 
 
 \chapter{Device Proxy Reference}
 
-\section{{\tt playerc\_client\_t} : the client proxy}
+\section{The {\tt laser} proxy}
 
+The {\tt laser} proxy has the following structure.
+\begin{quote}
+\lstinputlisting{dev_laser_t.tex}
+\end{quote}
 
-
-
-\section{{\tt playerc\_position\_t} : the position device proxy}
-
-
-
-
-\appendix
+The {\tt laser} proxy supports the following functions.
+%\begin{quote}
+%\lstinputlisting{dev_laser_f.tex}
+%\end{quote}
 
 \chapter{Source Listing : \tt playerc.h}
+
+%\lstset{language=C, basicstyle=\footnotesize}
+%\lstinputlisting[]{../playerc.h}
 
 \end{document}
 
