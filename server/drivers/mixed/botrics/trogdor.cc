@@ -53,20 +53,6 @@
 
 #include "trogdor_constants.h"
 
-
-#define        METRES_PER_INCH        (0.0254)
-#define        INCH_PER_METRE         (39.370)
-
-#define        CEREBELLUM_LOOP_FREQUENCY  (300.0)
-
-#define        MACH5_WHEEL_CIRCUMFERENCE  (4.25 * METRES_PER_INCH * 3.1415926535)
-#define        MACH5_TICKS_REV       (5800.0)
-#define        WHEELBASE        (.317)
-#define        METRES_PER_CEREBELLUM (1.0/(MACH5_TICKS_REV / MACH5_WHEEL_CIRCUMFERENCE))
-#define        METRES_PER_CEREBELLUM_VELOCITY (1.0/(METRES_PER_CEREBELLUM * CEREBELLUM_LOOP_FREQUENCY))
-
-#define        ROT_VEL_FACT_RAD (WHEELBASE*METRES_PER_CEREBELLUM_VELOCITY/2)
-
 static void StopRobot(void* trogdordev);
 
 class Trogdor : public CDevice 
@@ -259,15 +245,13 @@ Trogdor::Setup()
   fd_blocking = true;
   puts("Done.");
 
-  /*
-  if(SendCommand(TROGDOR_SET_ACCELERATIONS,25,25) < 0)
+  if(SendCommand(TROGDOR_SET_ACCELERATIONS,10,10) < 0)
   {
     PLAYER_ERROR("failed to set accelerations on setup");
     close(this->fd);
     this->fd = -1;
     return(-1);
   }
-  */
 
   // zero the command buffer
   PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
@@ -673,9 +657,9 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
   }
 
   index = 0;
-  *rtics = BytesToInt32(buf+index);
-  index += 4;
   *ltics = BytesToInt32(buf+index);
+  index += 4;
+  *rtics = BytesToInt32(buf+index);
   index += 4;
   *rvel = BytesToInt32(buf+index);
   index += 4;
@@ -689,22 +673,18 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
 int 
 Trogdor::ComputeTickDiff(int from, int to) 
 {
-  unsigned int positive_from, positive_to;
   int diff1, diff2;
 
-  positive_from = (unsigned int)from + TROGDOR_MAX_TICS;
-  positive_to = (unsigned int)to + TROGDOR_MAX_TICS;
-
   // find difference in two directions and pick shortest
-  if(positive_to > positive_from) 
+  if(to > from) 
   {
-    diff1 = positive_to - positive_from;
-    diff2 = -(positive_from + 2*TROGDOR_MAX_TICS - positive_to);
+    diff1 = to - from;
+    diff2 = (-TROGDOR_MAX_TICS - from) + (to - TROGDOR_MAX_TICS);
   }
   else 
   {
-    diff1 = positive_to - positive_from;
-    diff2 = 2*TROGDOR_MAX_TICS - positive_from + positive_to;
+    diff1 = to - from;
+    diff2 = (from - TROGDOR_MAX_TICS) + (-TROGDOR_MAX_TICS - to);
   }
 
   if(abs(diff1) < abs(diff2)) 
@@ -727,9 +707,6 @@ Trogdor::UpdateOdom(int ltics, int rtics)
     return;
   }
 
-  //printf("ltics: %d\n",ltics);
-  //printf("rtics: %d\n",rtics);
-
   ltics_delta = ComputeTickDiff(last_ltics,ltics);
   rtics_delta = ComputeTickDiff(last_rtics,rtics);
 
@@ -738,6 +715,28 @@ Trogdor::UpdateOdom(int ltics, int rtics)
 
   a_delta = (r_delta - l_delta) / TROGDOR_AXLE_LENGTH;
   d_delta = (l_delta + r_delta) / 2.0;
+
+  //printf("ltics: %d\n", ltics);
+  //printf("rtics: %d\n", rtics);
+
+  // account for transient errors in tick values by ignoring changes that
+  // suggest that we've move farther than physically possible (seems that we 
+  // sometimes get zeros)
+  //if(d_delta > 10*(TROGDOR_MAX_WHEELSPEED * (TROGDOR_DELAY_US/1e6)))
+  //{
+    //PLAYER_WARN("Invalid odometry change; ignoring");
+    //return;
+  //}
+  
+  // MAJOR HACK! The check above is too strict, for some reason.  Since the
+  // problem comes from one or the other encoder returning 0 ticks (always
+  // the left, I think), we'll just throw out those readings.  Shouldn't have
+  // too much impact.
+  if(!ltics || !rtics)
+  {
+    PLAYER_WARN("Invalid odometry change; ignoring");
+    return;
+  }
 
   this->px += d_delta * cos(this->pa);
   this->py += d_delta * sin(this->pa);
