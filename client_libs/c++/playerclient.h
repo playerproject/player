@@ -426,31 +426,55 @@ class PlayerMultiClient
  *****************************************************************************/
 
 /** The {\tt CommsProxy} class controls a {\tt comms} device.
-Data may be written one message at a time to the outgoing broadcast
-queue using the {\tt Write} method.  Incoming data may be read from
-the {\tt msg} field.  */
+Data may be written one message at a time using the {\tt Write} method.  
+
+Incoming data are stored in a set of parallel lists:
+\begin{itemize}
+\item {\tt uint8_t** msg} : list of pointers to message data
+\item {\tt size_t* msg_len} : list of message lengths
+\item {\tt struct timeval* msg_ts} : list of message timestamps
+\end{itemize}
+The current number of valid messages is stored in {\tt msg_num}, and so each 
+list should be considered to be of length {\tt msg_num}.
+
+To delete a message from the lists, use {\tt Delete()}.
+*/
 class CommsProxy : public ClientProxy
 {
   /** Proxy constructor.  Leave the access field empty to start
       unconnected.  */
   public: CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access ='c');
 
+  public: ~CommsProxy();
+
   /** Write a message to the outgoing queue.
-      Returns the number of bytes written, or -1 if the queue is full.
+      Returns the number of bytes written, or -1 on error.
   */
   public: int Write(void *msg, int len);
 
   // interface that all proxies must provide
   protected: void FillData(player_msghdr_t hdr, const char* buffer);
+  
+  /// Delete the given message.  Returns 0 on success and -1 on error.
+  public: int Delete(int index);
     
   /// Print out current message.
   public: void Print();
 
-  /// Length of the most recently read message.
-  public: size_t msg_len;
+  /// List of received messages.
+  public: uint8_t** msg;
+  
+  /// List of lengths of the received messages.
+  public: size_t* msg_len;
+  
+  /// List of timestamps of the received messages.
+  public: struct timeval* msg_ts;
 
-  /// The most recently read message.
-  public: uint8_t msg[PLAYER_MAX_MESSAGE_SIZE];
+  /// Number of received messages 
+  public: size_t msg_num;
+
+  // Current allocated length of msg and msg_len
+  private: size_t listlen;
 };
 
 
@@ -1235,10 +1259,10 @@ class BlobfinderProxy : public ClientProxy
     /** Array containing arrays of the latest blob data.
         Each blob contains the following information:
         \begin{itemize}
-        \item unsigned int color (in packed RGB);
-        \item unsigned int area (blob area, in square pixels)
-        \item unsigned short x, y (blob center, in pixels);
-        \item unsigned short left, right, top, bottom (blob bounding box,
+        \item {\tt unsigned int color} (in packed RGB);
+        \item {\tt unsigned int area} (blob area, in square pixels)
+        \item {\tt unsigned short x, y} (blob center, in pixels);
+        \item {\tt unsigned short left, right, top, bottom} (blob bounding box,
         in pixels)
         \end{itemize}
         For example, to access the area of the $0^{th}$ blob on channel 2, you
@@ -1364,7 +1388,8 @@ public:
  ** begin section WiFiProxy
  *****************************************************************************/
 
-/// The {\tt WiFiProxy} class controls a {\tt wifi} device.
+/** The {\tt WiFiProxy} class controls a {\tt wifi} device.
+ */
 class WiFiProxy: public ClientProxy
 {
 public:
@@ -1392,7 +1417,8 @@ public:
  ** begin section PowerProxy
  *****************************************************************************/
 
-/// The {\tt PowerProxy} class controls a {\tt power} device.
+/** The {\tt PowerProxy} class controls a {\tt power} device.
+ */
 class PowerProxy : public ClientProxy 
 {
 
@@ -1425,7 +1451,8 @@ class PowerProxy : public ClientProxy
  ** begin section AudioProxy
  *****************************************************************************/
 
-/// The {\tt AudioProxy} class controls an {\tt audio} device.
+/** The {\tt AudioProxy} class controls an {\tt audio} device.
+ */
 class AudioProxy : public ClientProxy 
 {
 
