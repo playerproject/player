@@ -15,6 +15,7 @@ all:
 	python setup.py build
 
 clean:
+	rm -f *.o *.so *~
 	python setup.py clean
 
 install:

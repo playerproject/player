@@ -32,7 +32,7 @@
 //   orientations for circular patches.
 //
 // Requires:
-//   SRF, PTZ and blobfinder devices.
+//   Laser, PTZ and blobfinder devices.
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -97,6 +97,9 @@ class LaserVisualBarcode : public CDevice
 
   // Find blobs with valid properties.
   private: void FindBlobs(double time, player_blobfinder_data_t *data);
+
+  // Search the list of valid blobs to locate the visual fiducials.
+  private: void FindVisualFiducials();
     
   // Update the device data (the data going back to the client).
   private: void UpdateData();
@@ -870,6 +873,31 @@ void LaserVisualBarcode::FindBlobs(double time, player_blobfinder_data_t *data)
   }
   
   return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Search the list of valid blobs to locate the visual fiducials.
+void LaserVisualBarcode::FindVisualFiducials()
+{
+  /*
+  for (i = 0; i < this->blob_count; i++)
+  {
+    for (j = 0; j < this->blob_count; j++)
+    {
+      if (j == i)
+        continue;
+      for (k = 0; k < this->blob_count; k++)
+      {
+        if (k == i)
+          continue;
+        if (k == j)
+          continue;
+
+      }
+    }
+  }
+  */  
 }
 
 

@@ -38,7 +38,7 @@ static pthread_key_t thread_key;
 
 /* Acquire lock and set python state for current thread
  */
-void thread_acquire()
+void thread_acquire(void)
 {
   PyThreadState *state;
     
@@ -50,7 +50,7 @@ void thread_acquire()
 
 /* Release lock and set python state to NULL
  */
-void thread_release()
+void thread_release(void)
 {
   PyThreadState *state;
     
@@ -529,25 +529,25 @@ static PyObject *fiducial_str(PyObject *self)
 /* Callback for post-processing incoming data */
 static void fiducial_onread(fiducial_object_t *fiducialob)
 {
-    int i;
-    PyObject *tuple;
+  int i;
+  PyObject *tuple;
 
-    thread_acquire();
+  thread_acquire();
     
-    Py_DECREF(fiducialob->fiducials);
-    fiducialob->fiducials = PyList_New(fiducialob->fiducial->fiducial_count);
+  Py_DECREF(fiducialob->fiducials);
+  fiducialob->fiducials = PyList_New(fiducialob->fiducial->fiducial_count);
     
-    for (i = 0; i < fiducialob->fiducial->fiducial_count; i++)
-    {
-        tuple = PyTuple_New(4);
-        PyTuple_SetItem(tuple, 0, PyInt_FromLong(fiducialob->fiducial->fiducials[i].id));
-        PyTuple_SetItem(tuple, 1, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].range));
-        PyTuple_SetItem(tuple, 2, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].bearing));
-        PyTuple_SetItem(tuple, 3, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].orient));
-        PyList_SetItem(fiducialob->fiducials, i, tuple);
-    }
+  for (i = 0; i < fiducialob->fiducial->fiducial_count; i++)
+  {
+    tuple = PyTuple_New(4);
+    PyTuple_SetItem(tuple, 0, PyInt_FromLong(fiducialob->fiducial->fiducials[i].id));
+    PyTuple_SetItem(tuple, 1, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].range));
+    PyTuple_SetItem(tuple, 2, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].bearing));
+    PyTuple_SetItem(tuple, 3, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].orient));
+    PyList_SetItem(fiducialob->fiducials, i, tuple);
+  }
     
-    thread_release();
+  thread_release();
 }
 
 
@@ -556,16 +556,16 @@ static void fiducial_onread(fiducial_object_t *fiducialob)
 */
 static PyObject *fiducial_configure(PyObject *self, PyObject *args)
 {
-    int bit_count;
-    double bit_width;
-    fiducial_object_t *fiducialob;
+  int bit_count;
+  double bit_width;
+  fiducial_object_t *fiducialob;
     
-    if (!PyArg_ParseTuple(args, "id", &bit_count, &bit_width))
-        return NULL;
-    fiducialob = (fiducial_object_t*) self;
+  if (!PyArg_ParseTuple(args, "id", &bit_count, &bit_width))
+    return NULL;
+  fiducialob = (fiducial_object_t*) self;
 
-    return PyInt_FromLong(playerc_fiducial_set_config(fiducialob->fiducial,
-                                                 bit_count, bit_width));
+  return PyInt_FromLong(playerc_fiducial_set_config(fiducialob->fiducial,
+                                                    bit_count, bit_width));
 }
 
 
@@ -623,94 +623,94 @@ staticforward PyMethodDef gps_methods[];
 
 static PyObject *gps_new(PyObject *self, PyObject *args)
 {
-    client_object_t *clientob;
-    gps_object_t *gpsob;
-    int index;
-    char access;
+  client_object_t *clientob;
+  gps_object_t *gpsob;
+  int index;
+  char access;
 
-    if (!PyArg_ParseTuple(args, "Oic", &clientob, &index, &access))
-        return NULL;
+  if (!PyArg_ParseTuple(args, "Oic", &clientob, &index, &access))
+    return NULL;
 
-    gpsob = PyObject_New(gps_object_t, &gps_type);
-    gpsob->client = clientob->client;
-    gpsob->gps = playerc_gps_create(clientob->client, index);
-    gpsob->px = PyFloat_FromDouble(0);
-    gpsob->py = PyFloat_FromDouble(0);
-    gpsob->pa = PyFloat_FromDouble(0);
+  gpsob = PyObject_New(gps_object_t, &gps_type);
+  gpsob->client = clientob->client;
+  gpsob->gps = playerc_gps_create(clientob->client, index);
+  gpsob->px = PyFloat_FromDouble(0);
+  gpsob->py = PyFloat_FromDouble(0);
+  gpsob->pa = PyFloat_FromDouble(0);
 
-    /* Add callback for post-processing incoming data */
-    playerc_client_addcallback(clientob->client, (playerc_device_t*) gpsob->gps,
-                               (playerc_callback_fn_t) gps_onread,
-                               (void*) gpsob);
+  /* Add callback for post-processing incoming data */
+  playerc_client_addcallback(clientob->client, (playerc_device_t*) gpsob->gps,
+                             (playerc_callback_fn_t) gps_onread,
+                             (void*) gpsob);
     
-    return (PyObject*) gpsob;
+  return (PyObject*) gpsob;
 }
 
 
 static void gps_del(PyObject *self)
 {
-    gps_object_t *gpsob;
-    gpsob = (gps_object_t*) self;
+  gps_object_t *gpsob;
+  gpsob = (gps_object_t*) self;
 
-    playerc_client_delcallback(gpsob->client, (playerc_device_t*) gpsob->gps,
-                               (playerc_callback_fn_t) gps_onread,
-                               (void*) gpsob);    
-    Py_DECREF(gpsob->px);
-    Py_DECREF(gpsob->py);
-    Py_DECREF(gpsob->pa);
-    playerc_gps_destroy(gpsob->gps);
-    PyObject_Del(self);
+  playerc_client_delcallback(gpsob->client, (playerc_device_t*) gpsob->gps,
+                             (playerc_callback_fn_t) gps_onread,
+                             (void*) gpsob);    
+  Py_DECREF(gpsob->px);
+  Py_DECREF(gpsob->py);
+  Py_DECREF(gpsob->pa);
+  playerc_gps_destroy(gpsob->gps);
+  PyObject_Del(self);
 }
 
 
 static PyObject *gps_getattr(PyObject *self, char *attrname)
 {
-    PyObject *result;
-    gps_object_t *gpsob;
+  PyObject *result;
+  gps_object_t *gpsob;
 
-    gpsob = (gps_object_t*) self;
+  gpsob = (gps_object_t*) self;
 
-    result = NULL;
-    if (strcmp(attrname, "datatime") == 0)
-    {
-        result = PyFloat_FromDouble(gpsob->gps->info.datatime);
-    }
-    else if (strcmp(attrname, "px") == 0)
-    {
-        Py_INCREF(gpsob->px);
-        result = gpsob->px;
-    }
-    else if (strcmp(attrname, "py") == 0)
-    {
-        Py_INCREF(gpsob->py);
-        result = gpsob->py;
-    }
-    else if (strcmp(attrname, "pa") == 0)
-    {
-        Py_INCREF(gpsob->pa);
-        result = gpsob->pa;
-    }
-    else
-        result = Py_FindMethod(gps_methods, self, attrname);
+  result = NULL;
+  if (strcmp(attrname, "datatime") == 0)
+  {
+    result = PyFloat_FromDouble(gpsob->gps->info.datatime);
+  }
+  else if (strcmp(attrname, "px") == 0)
+  {
+    Py_INCREF(gpsob->px);
+    result = gpsob->px;
+  }
+  else if (strcmp(attrname, "py") == 0)
+  {
+    Py_INCREF(gpsob->py);
+    result = gpsob->py;
+  }
+  else if (strcmp(attrname, "pa") == 0)
+  {
+    Py_INCREF(gpsob->pa);
+    result = gpsob->pa;
+  }
+  else
+    result = Py_FindMethod(gps_methods, self, attrname);
 
-    return result;
+  return result;
 }
 
 
 /* Callback for post-processing incoming data */
 static void gps_onread(gps_object_t *gpsob)
 {
-    thread_acquire();
+  thread_acquire();
     
-    Py_DECREF(gpsob->px);
-    Py_DECREF(gpsob->py);
-    Py_DECREF(gpsob->pa);
+  Py_DECREF(gpsob->px);
+  Py_DECREF(gpsob->py);
+  Py_DECREF(gpsob->pa);
 
-    gpsob->px = PyFloat_FromDouble(gpsob->gps->px);
-    gpsob->py = PyFloat_FromDouble(gpsob->gps->py);
-    gpsob->pa = PyFloat_FromDouble(gpsob->gps->pa);    
+  gpsob->px = PyFloat_FromDouble(gpsob->gps->px);
+  gpsob->py = PyFloat_FromDouble(gpsob->gps->py);
+  gpsob->pa = PyFloat_FromDouble(gpsob->gps->pa);    
 
-    thread_release();
+  thread_release();
 }
 
 
@@ -718,27 +718,27 @@ static void gps_onread(gps_object_t *gpsob)
  */
 static PyTypeObject gps_type = 
 {
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "gps",
-    sizeof(gps_object_t),
-    0,
-    gps_del, /*tp_dealloc*/
-    0,          /*tp_print*/
-    gps_getattr, /*tp_getattr*/
-    0,          /*tp_setattr*/
-    0,          /*tp_compare*/
-    0,          /*tp_repr*/
-    0,          /*tp_as_number*/
-    0,          /*tp_as_sequence*/
-    0,          /*tp_as_mapping*/
-    0,          /*tp_hash */
+  PyObject_HEAD_INIT(NULL)
+  0,
+  "gps",
+  sizeof(gps_object_t),
+  0,
+  gps_del, /*tp_dealloc*/
+  0,          /*tp_print*/
+  gps_getattr, /*tp_getattr*/
+  0,          /*tp_setattr*/
+  0,          /*tp_compare*/
+  0,          /*tp_repr*/
+  0,          /*tp_as_number*/
+  0,          /*tp_as_sequence*/
+  0,          /*tp_as_mapping*/
+  0,          /*tp_hash */
 };
 
 
 static PyMethodDef gps_methods[] =
 {
-    {NULL, NULL}
+  {NULL, NULL}
 };
 
 
@@ -916,10 +916,10 @@ static PyMethodDef bps_methods[] =
 /* Python wrapper for broadcast type */
 typedef struct
 {
-    PyObject_HEAD
-    playerc_client_t *client;
-    playerc_comms_t *comms;
-    PyObject *px, *py, *pa;
+  PyObject_HEAD
+  playerc_client_t *client;
+  playerc_comms_t *comms;
+  PyObject *px, *py, *pa;
 } comms_object_t;
 
 staticforward PyTypeObject comms_type;
@@ -928,46 +928,46 @@ staticforward PyMethodDef comms_methods[];
 
 static PyObject *comms_new(PyObject *self, PyObject *args)
 {
-    client_object_t *clientob;
-    comms_object_t *commsob;
-    int index;
-    char access;
+  client_object_t *clientob;
+  comms_object_t *commsob;
+  int index;
+  char access;
 
-    if (!PyArg_ParseTuple(args, "Oic", &clientob, &index, &access))
-        return NULL;
+  if (!PyArg_ParseTuple(args, "Oic", &clientob, &index, &access))
+    return NULL;
 
-    commsob = PyObject_New(comms_object_t, &comms_type);
-    commsob->client = clientob->client;
-    commsob->comms = playerc_comms_create(clientob->client, index);
+  commsob = PyObject_New(comms_object_t, &comms_type);
+  commsob->client = clientob->client;
+  commsob->comms = playerc_comms_create(clientob->client, index);
 
-    return (PyObject*) commsob;
+  return (PyObject*) commsob;
 }
 
 
 static void comms_del(PyObject *self)
 {
-    comms_object_t *commsob;
-    commsob = (comms_object_t*) self;
+  comms_object_t *commsob;
+  commsob = (comms_object_t*) self;
 
-    playerc_comms_destroy(commsob->comms);
-    PyObject_Del(self);
+  playerc_comms_destroy(commsob->comms);
+  PyObject_Del(self);
 }
 
 
 static PyObject *comms_getattr(PyObject *self, char *attrname)
 {
-    PyObject *result;
-    comms_object_t *commsob;
+  PyObject *result;
+  comms_object_t *commsob;
 
-    commsob = (comms_object_t*) self;
+  commsob = (comms_object_t*) self;
 
-    result = NULL;
-    if (strcmp(attrname, "datatime") == 0)
-        result = PyFloat_FromDouble(commsob->comms->info.datatime);
-    else
-        result = Py_FindMethod(comms_methods, self, attrname);
+  result = NULL;
+  if (strcmp(attrname, "datatime") == 0)
+    result = PyFloat_FromDouble(commsob->comms->info.datatime);
+  else
+    result = Py_FindMethod(comms_methods, self, attrname);
 
-    return result;
+  return result;
 }
 
 
@@ -977,19 +977,19 @@ static PyObject *comms_getattr(PyObject *self, char *attrname)
 */
 static PyObject *comms_write(PyObject *self, PyObject *args)
 {
-    comms_object_t *commsob;
-    char *msg;
+  comms_object_t *commsob;
+  char *msg;
     
-    if (!PyArg_ParseTuple(args, "s", &msg))
-        return NULL;
-    commsob = (comms_object_t*) self;
+  if (!PyArg_ParseTuple(args, "s", &msg))
+    return NULL;
+  commsob = (comms_object_t*) self;
 
-    thread_release();
-    playerc_comms_send(commsob->comms, msg, strlen(msg));
-    thread_acquire();
+  thread_release();
+  playerc_comms_send(commsob->comms, msg, strlen(msg));
+  thread_acquire();
 
-    Py_INCREF(Py_None);
-    return Py_None;
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 
@@ -999,24 +999,24 @@ static PyObject *comms_write(PyObject *self, PyObject *args)
 */
 static PyObject *comms_read(PyObject *self, PyObject *args)
 {
-    comms_object_t *commsob;
-    int len;
-    char msg[1024];
+  comms_object_t *commsob;
+  int len;
+  char msg[1024];
     
-    if (!PyArg_ParseTuple(args, ""))
-        return NULL;
-    commsob = (comms_object_t*) self;
+  if (!PyArg_ParseTuple(args, ""))
+    return NULL;
+  commsob = (comms_object_t*) self;
 
-    thread_release();
-    len = playerc_comms_recv(commsob->comms, msg, sizeof(msg));
-    thread_acquire();
+  thread_release();
+  len = playerc_comms_recv(commsob->comms, msg, sizeof(msg));
+  thread_acquire();
 
-    if (len <= 0)
-    {
-      Py_INCREF(Py_None);
-      return Py_None;
-    }
-    return PyString_FromStringAndSize(msg, len);
+  if (len <= 0)
+  {
+    Py_INCREF(Py_None);
+    return Py_None;
+  }
+  return PyString_FromStringAndSize(msg, len);
 }
 
 
@@ -1024,29 +1024,29 @@ static PyObject *comms_read(PyObject *self, PyObject *args)
  */
 static PyTypeObject comms_type = 
 {
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "comms",
-    sizeof(comms_object_t),
-    0,
-    comms_del, /*tp_dealloc*/
-    0,          /*tp_print*/
-    comms_getattr, /*tp_getattr*/
-    0,          /*tp_setattr*/
-    0,          /*tp_compare*/
-    0,          /*tp_repr*/
-    0,          /*tp_as_number*/
-    0,          /*tp_as_sequence*/
-    0,          /*tp_as_mapping*/
-    0,          /*tp_hash */
+  PyObject_HEAD_INIT(NULL)
+  0,
+  "comms",
+  sizeof(comms_object_t),
+  0,
+  comms_del, /*tp_dealloc*/
+  0,          /*tp_print*/
+  comms_getattr, /*tp_getattr*/
+  0,          /*tp_setattr*/
+  0,          /*tp_compare*/
+  0,          /*tp_repr*/
+  0,          /*tp_as_number*/
+  0,          /*tp_as_sequence*/
+  0,          /*tp_as_mapping*/
+  0,          /*tp_hash */
 };
 
 
 static PyMethodDef comms_methods[] =
 {
-    {"read", comms_read, METH_VARARGS},
-    {"write", comms_write, METH_VARARGS},
-    {NULL, NULL}
+  {"read", comms_read, METH_VARARGS},
+  {"write", comms_write, METH_VARARGS},
+  {NULL, NULL}
 };
 
 
