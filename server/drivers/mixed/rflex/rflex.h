@@ -75,6 +75,7 @@ typedef struct
 {
   player_position_data_t position;
   player_sonar_data_t sonar;
+  player_sonar_data_t sonar2;
   player_gripper_data_t gripper;
   player_power_data_t power;
   player_bumper_data_t bumper;
@@ -99,6 +100,7 @@ class RFLEX : public Driver
   private:
     player_device_id_t position_id;
     player_device_id_t sonar_id;
+    player_device_id_t sonar_id_2;
     player_device_id_t ir_id;
     player_device_id_t bumper_id;
     player_device_id_t power_id;

@@ -80,6 +80,10 @@ typedef struct rflex_config_t{
   long sonar_echo_delay;
   long sonar_ping_delay;
   long sonar_set_delay;
+  // options to support 2nd sonar bank
+  long sonar_2nd_bank_start;
+  long sonar_1st_bank_end;
+
   
   // bumper configs
   unsigned short bumper_count;
