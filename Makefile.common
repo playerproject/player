@@ -33,11 +33,11 @@ PLAYER_VERSION = 1.2
 #     compat-egcs-c++-6.2-1.1.2.14
 #     compat-libstdc++-6.2-2.9.0.14
 #     compat-egcs-6.2-1.1.2.14
-CPP = g++
-#CPP = i386-glibc21-linux-g++
+#CPP = g++
+CPP = i386-glibc21-linux-g++
 
-CC = gcc
-#CC = i386-glibc21-linux-gcc
+#CC = gcc
+CC = i386-glibc21-linux-gcc
 
 #######################################
 # Install location selection
