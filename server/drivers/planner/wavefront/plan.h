@@ -21,10 +21,10 @@ struct _rtk_fig_t *fig;
 typedef struct _plan_cell_t
 {
   // Cell index in grid map
-  int ci, cj;
+  unsigned short ci, cj;
   
   // Occupancy state (-1 = free, 0 = unknown, +1 = occ)
-  int occ_state;
+  char occ_state;
 
   // Distance to the nearest occupied cell
   float occ_dist;
@@ -66,10 +66,6 @@ typedef struct
   // Waypoints
   int waypoint_count, waypoint_size;
   plan_cell_t **waypoints;
-
-  // Image data (for drawing)
-  //uint16_t *image;
-  
 } plan_t;
 
 
