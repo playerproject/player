@@ -5,7 +5,7 @@ noinst_LIBRARIES = @AMCL_MAP_LIB@
 EXTRA_LIBRARIES = libmap.a
 
 if INCLUDE_RTKGUI
-AM_CPPFLAGS = -I$(top_srcdir)/server -I@RTK_DIR@/include `gtk-config --cflags`
+AM_CPPFLAGS = -I$(top_srcdir)/server @RTK_CPPFLAGS@
 else
 AM_CPPFLAGS = -I$(top_srcdir)/server
 endif

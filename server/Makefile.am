@@ -10,10 +10,7 @@ player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 # separate lines with backslashes.  It makes the link line look like shit and 
 # hard to parse.  - BPG
 #
-player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTKGUI_EXTRA_LIB@ $(top_builddir)/replace/libreplace.a
-
-player_LDFLAGS = @RTKGUI_EXTRA_LDFLAGS@
-
+player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTKGUI_EXTRA_LDADD@ $(top_builddir)/replace/libreplace.a
 
 bin_PROGRAMS = player
 
