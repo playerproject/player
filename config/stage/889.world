@@ -25,7 +25,7 @@ model
   name "budgie"	
   size [4 2] 
   pose [2.691 14.458 -2524.000]
-  velocity [0 0 -20]
+  #velocity [0 0 -20]
 
   bitmap "bitmaps/submarine.png"
   color "red"
