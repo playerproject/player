@@ -1297,8 +1297,11 @@ typedef struct player_ptz_controlmode_config
 #define PLAYER_CAMERA_IMAGE_SIZE (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
 
 
-/** [Synopsis]
-EXPERIMENTAL.  The {\tt camera} interface is used to see what the camera sees. */
+/** [Synopsis] */
+/** EXPERIMENTAL.  The {\tt camera} interface is used to see what the
+camera sees.  It is intended primarily for server-side (i.e.,
+driver-to-driver) data transfers, rather than server-to-client
+transfers. */
 
 /** [Data] */
 /** The {\tt camera} interface returns the image seen by the camera; the format is: */
