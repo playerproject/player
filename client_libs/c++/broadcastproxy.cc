@@ -26,7 +26,7 @@
  * client-side position device 
  */
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
 
 #include <broadcastproxy.h>
 #include <netinet/in.h>
@@ -52,29 +52,29 @@ BroadcastProxy::BroadcastProxy(PlayerClient* pc, unsigned short index, unsigned 
 // Returns -1 if there are no available messages
 int BroadcastProxy::Read(char *msg, int len)
 {
-    if (this->data.len <= 0)
-        return -1; 
+  if (this->data.len <= 0)
+    return -1; 
 
-    // Get the next message in the queue
-    uint16_t _len = ntohs(*((uint16_t*) this->data.buffer));
-    uint8_t *_msg = this->data.buffer + sizeof(_len);
+  // Get the next message in the queue
+  uint16_t _len = ntohs(*((uint16_t*) this->data.buffer));
+  uint8_t *_msg = this->data.buffer + sizeof(_len);
 
-    PLAYER_TRACE1("read queue %d bytes", this->data.len);
+  PLAYER_TRACE1("read queue %d bytes", this->data.len);
     
-    // Make copy of message
-    assert(len >= _len);
-    memcpy(msg, _msg, _len);
+  // Make copy of message
+  assert(len >= _len);
+  memcpy(msg, _msg, _len);
 
-    PLAYER_TRACE2("read msg [%s] from queue %d bytes", _msg, _len);
+  PLAYER_TRACE2("read msg [%s] from queue %d bytes", _msg, _len);
 
-    // Now move everything in the queue down
-    memmove(this->data.buffer, this->data.buffer + _len + sizeof(_len),
-            this->data.len - _len - sizeof(_len));
-    this->data.len -= _len + sizeof(_len);
+  // Now move everything in the queue down
+  memmove(this->data.buffer, this->data.buffer + _len + sizeof(_len),
+          this->data.len - _len - sizeof(_len));
+  this->data.len -= _len + sizeof(_len);
 
-    PLAYER_TRACE0("done moving queue");
+  PLAYER_TRACE0("done moving queue");
 
-    return _len;
+  return _len;
 }
 
  
