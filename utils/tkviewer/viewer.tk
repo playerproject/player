@@ -766,8 +766,8 @@ proc startRobot {} {
   }
 
   # -restart is VERY important....
-  signal -restart trap SIGALRM {displayData;alarm .1}
-  alarm .1
+  signal -restart trap SIGALRM {displayData;alarm .3}
+  alarm .3
 }
 
 go
