@@ -68,6 +68,7 @@ int PositionProxy::SetSpeed(double speed, double sidespeed, double turnrate)
   cmd.xspeed = (int32_t)htonl((int)rint(speed*1e3));
   cmd.yspeed = (int32_t)htonl((int)rint(sidespeed*1e3));
   cmd.yawspeed = (int32_t)htonl((int)rint(RTOD(turnrate)));
+  cmd.state = 1;
 
   return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
@@ -94,6 +95,7 @@ PositionProxy::DoDesiredHeading(int theta, int xspeed, int yawspeed)
   // set velocity constraints
   cmd.xspeed = htonl(xspeed);
   cmd.yawspeed = htonl(yawspeed);
+  cmd.state = 1;
 
   return client->Write(m_device_id,
 		       (const char *)&cmd, sizeof(cmd));
@@ -121,6 +123,7 @@ PositionProxy::DoStraightLine(int trans)
   cmd.xspeed = 0;
   cmd.yawspeed = 0;
   cmd.yaw = 0;
+  cmd.state = 1;
 
   client->Write(m_device_id,
 		(const char *)&cmd, sizeof(cmd));
@@ -156,6 +159,7 @@ PositionProxy::DoRotation(int rot)
   cmd.xspeed = 0;
   cmd.yawspeed = 0;
   cmd.yaw = 0;
+  cmd.state = 1;
 
   client->Write(m_device_id,
 		(const char *)&cmd, sizeof(cmd));
