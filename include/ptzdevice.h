@@ -1,0 +1,100 @@
+/*
+ *  Player - One Hell of a Robot Server
+ *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
+ *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ */
+/*
+ * $Id$
+ *
+ * the Sony EVI-D30 PTZ camera device
+ */
+
+#ifndef PTZDEVICE
+#define PTZDEVICE
+#include <pthread.h>
+#include <unistd.h>
+
+#include "lock.h"
+#include "device.h"
+
+#define PTZ_SLEEP_TIME_USEC 100000
+
+#define MAX_PTZ_PACKET_LENGTH 16
+#define MAX_PTZ_MESSAGE_LENGTH 14
+#define MAX_PTZ_REPLY_LENGTH 11
+
+/* here we calculate our conversion factors.
+ *  0x370 is max value for the PTZ pan command, and in the real
+ *    world, it has +- 25.0 range.
+ *  0x12C is max value for the PTZ tilt command, and in the real
+ *    world, it has +- 100.0 range.
+ */
+#define PTZ_PAN_MAX 100.0
+#define PTZ_TILT_MAX 25.0
+#define PTZ_PAN_CONV_FACTOR (0x370 / PTZ_PAN_MAX)
+#define PTZ_TILT_CONV_FACTOR (0x12C / PTZ_TILT_MAX)
+
+
+class CPtzDevice:public CDevice {
+ private:
+  pthread_t thread; // the thread that continuously reads from the laser 
+  bool command_pending1;  // keep track of how many commands are pending;
+  bool command_pending2;  // that way, we can cancel them if necessary
+  bool ptz_fd_blocking;
+  
+  CLock lock;
+
+  // internal methods
+  int Send(unsigned char* str, int len, unsigned char* reply);
+  int Receive(unsigned char* reply);
+  int SendCommand(unsigned char* str, int len);
+  int CancelCommand(char socket);
+  int SendRequest(unsigned char* str, int len, unsigned char* reply);
+
+ public:
+  // RTV - new dynamic buffer allocation
+  unsigned char* command;   // array holding the client's commands
+  unsigned char* data;      // array holding the most recent feedback
+  // !RTV 
+  int ptz_fd; // ptz device file descriptor
+  char ptz_serial_port[LASER_SERIAL_PORT_NAME_SIZE]; // device used to communicate with the ptz
+
+  CPtzDevice(char *port);
+  ~CPtzDevice();
+
+  virtual int Setup();
+  virtual int Shutdown();
+  virtual int SendAbsPanTilt(short pan, short tilt);
+  virtual int SendAbsZoom(short zoom);
+  virtual int GetAbsZoom(short* zoom);
+  virtual int GetAbsPanTilt(short* pan, short* tilt);
+  virtual void PrintPacket(char* str, unsigned char* cmd, int len);
+
+  virtual CLock* GetLock( void ){ return &lock; };
+
+  virtual int GetData( unsigned char * );
+  virtual void PutData( unsigned char * );
+
+  virtual void GetCommand( unsigned char * );
+  virtual void PutCommand( unsigned char *,int );
+
+  virtual int GetConfig( unsigned char * );
+  virtual void PutConfig( unsigned char *,int );
+};
+
+#endif

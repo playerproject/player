@@ -1,0 +1,643 @@
+#!/usr/bin/wish 
+
+#  Player - One Hell of a Robot Server
+# Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
+#                     gerkey@usc.edu    kaspers@robotics.usc.edu
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
+
+package require Tclx
+
+# get the robot client utilities
+if {[file exists ../../client_libs/tcl/playerclient.tcl]} {
+  source ../../client_libs/tcl/playerclient.tcl
+} else { 
+  source /usr/local/player/lib/playerclient.tcl
+}
+
+set CANVAS_WIDTH 800
+set CANVAS_HEIGHT 800
+
+# max range of 8 meters
+set MAX_RANGE 8000.0
+
+
+ 
+set host localhost
+# default device string
+set device_str pasrlrvaza
+
+set USAGE "USAGE: viewer.tk -- \[-h <host>\] \[-p <port>\] \[-d <device_string>\] \[-s <size>\]\n  -h <host> : hostname/IP where Player is running (default: $host)\n  -p <port> : TCP port where Player is running (default: $port)\n  -d <device_string> : Player device request string (default: $device_str)\n  -s <size> : width/height (in pixels) of the sensor display (default: $CANVAS_HEIGHT)"
+       
+set i 0
+while {$i < $argc} {
+  if {![string compare [lindex $argv $i] "-h"]} {
+    incr i
+    if {$i == $argc} {
+      puts $USAGE 
+      exit 1
+    }
+    set host [lindex $argv $i]
+  } elseif {![string compare [lindex $argv $i] "-p"]} {
+    incr i
+    if {$i == $argc} {
+      puts $USAGE 
+      exit 1
+    }
+    set port [lindex $argv $i]
+  } elseif {![string compare [lindex $argv $i] "-d"]} {
+    incr i
+    if {$i == $argc} {
+      puts $USAGE 
+      exit 1
+    }
+    set device_str [lindex $argv $i]
+  } elseif {![string compare [lindex $argv $i] "-s"]} {
+    incr i
+    if {$i == $argc} {
+      puts $USAGE 
+      exit 1
+    }
+    set CANVAS_HEIGHT [lindex $argv $i]
+    set CANVAS_WIDTH [lindex $argv $i]
+  } else {
+    puts $USAGE
+    exit 1
+  }
+  incr i
+}
+
+set CANVAS_CONV_FACTOR [expr ($CANVAS_HEIGHT / 2.0)  / $MAX_RANGE]
+
+array set sonar_positions [list\
+  0,x [expr $CANVAS_CONV_FACTOR * -130] 0,y  [expr $CANVAS_CONV_FACTOR * -115]\
+  1,x [expr $CANVAS_CONV_FACTOR * -115] 1,y  [expr $CANVAS_CONV_FACTOR * -155]\
+  2,x [expr $CANVAS_CONV_FACTOR * -80] 2,y   [expr $CANVAS_CONV_FACTOR * -190]\
+  3,x [expr $CANVAS_CONV_FACTOR * -25] 3,y   [expr $CANVAS_CONV_FACTOR * -210]\
+  4,x [expr $CANVAS_CONV_FACTOR * 25] 4,y    [expr $CANVAS_CONV_FACTOR * -210]\
+  5,x [expr $CANVAS_CONV_FACTOR * 80] 5,y    [expr $CANVAS_CONV_FACTOR * -190]\
+  6,x [expr $CANVAS_CONV_FACTOR * 115] 6,y   [expr $CANVAS_CONV_FACTOR * -155]\
+  7,x [expr $CANVAS_CONV_FACTOR * 130] 7,y   [expr $CANVAS_CONV_FACTOR * -115]\
+  8,x [expr $CANVAS_CONV_FACTOR * 130] 8,y    [expr $CANVAS_CONV_FACTOR * 115]\
+  9,x [expr $CANVAS_CONV_FACTOR * 115] 9,y    [expr $CANVAS_CONV_FACTOR * 155]\
+  10,x [expr $CANVAS_CONV_FACTOR * 80] 10,y    [expr $CANVAS_CONV_FACTOR * 190]\
+  11,x [expr $CANVAS_CONV_FACTOR * 25] 11,y    [expr $CANVAS_CONV_FACTOR * 210]\
+  12,x [expr $CANVAS_CONV_FACTOR * -25] 12,y   [expr $CANVAS_CONV_FACTOR * 210]\
+  13,x [expr $CANVAS_CONV_FACTOR * -80] 13,y   [expr $CANVAS_CONV_FACTOR * 190]\
+  14,x [expr $CANVAS_CONV_FACTOR * -115] 14,y  [expr $CANVAS_CONV_FACTOR * 155]\
+  15,x [expr $CANVAS_CONV_FACTOR * -130] 15,y  [expr $CANVAS_CONV_FACTOR * 115]]
+
+
+proc toggle_motor_state {} {
+  global motor_state
+
+  ChangeMotorState $motor_state
+}
+
+#set bitmap_path [file join [file dirname $argv0] bitmaps]
+set leftarrow [image create bitmap -data \
+ "#define leftarrow_width 12 #define leftarrow_height 12 static char leftarrow_bits[] = { 0x80,0x00,0xc0,0x00,0xe0,0x00,0xf0,0x00,0xf8,0x00,0xfc,0x00,0xfc,0x00,0xf8, 0x00,0xf0,0x00,0xe0,0x00,0xc0,0x00,0x80,0x00};"]
+set rightarrow [image create bitmap -data \
+ "#define rightarrow_width 12 #define rightarrow_height 12 static char rightarrow_bits[] = { 0x10,0x00,0x30,0x00,0x70,0x00,0xf0,0x00,0xf0,0x01,0xf0,0x03,0xf0,0x03,0xf0, 0x01,0xf0,0x00,0x70,0x00,0x30,0x00,0x10,0x00};"]
+set uparrow [image create bitmap -data \
+ "#define uparrow_width 12 #define uparrow_height 12 static char uparrow_bits[] = { 0x00,0x00,0x00,0x00,0x60,0x00,0xf0,0x00,0xf8,0x01,0xfc,0x03,0xfe,0x07,0xff, 0x0f,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};"]
+set downarrow [image create bitmap -data \
+  "#define downarrow_width 12 #define downarrow_height 12 static char downarrow_bits[] = { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xff,0x0f,0xfe,0x07,0xfc,0x03,0xf8, 0x01,0xf0,0x00,0x60,0x00,0x00,0x00,0x00,0x00};"]
+
+
+proc createControlPanel {} {
+  global motor_state leftarrow rightarrow uparrow downarrow
+
+  frame .control_panel
+
+  
+  button .control_panel.left -image $leftarrow -command {catch Stop}
+  button .control_panel.right -image $rightarrow -command {catch Stop}
+  button .control_panel.up -image $uparrow -command {catch Stop}
+  button .control_panel.down -image $downarrow -command {catch Stop}
+
+  checkbutton .control_panel.motor_state -text "Activate Motors" \
+                -variable motor_state -command toggle_motor_state
+
+  set motor_state 0
+
+  bind .control_panel.left <Button-1> {catch {writeMotorCommand 0 40}}
+  bind .control_panel.right <Button-1> {catch {writeMotorCommand 0 -40}}
+  bind .control_panel.up <Button-1> {catch {writeMotorCommand 250 0}}
+  bind .control_panel.down <Button-1> {catch {writeMotorCommand -250 0}}
+
+  grid configure .control_panel.left -column 0 -row 1
+  grid configure .control_panel.right -column 2 -row 1
+  grid configure .control_panel.up -column 1 -row 0
+  grid configure .control_panel.down -column 1 -row 2
+
+  grid configure .control_panel.motor_state -column 0 -row 3 -columnspan 3
+}
+
+proc createStatusPanel {} {
+  global time xpos ypos battery heading compass frontbumpers rearbumpers
+  global stall
+
+  frame .status_panel
+
+  label .status_panel.time -text Time:
+  label .status_panel.time_value -textvariable time -width 8 -anchor e
+  label .status_panel.xpos -text X:
+  label .status_panel.xpos_value -textvariable xpos -width 8 -anchor e
+  label .status_panel.ypos -text Y:
+  label .status_panel.ypos_value -textvariable ypos -width 8 -anchor e
+  label .status_panel.heading -text Heading:
+  label .status_panel.heading_value -textvariable heading -width 8 -anchor e
+  label .status_panel.compass -text Compass:
+  label .status_panel.compass_value -textvariable compass -width 8 -anchor e
+  label .status_panel.battery -text Battery:
+  label .status_panel.battery_value -textvariable battery -width 8 -anchor e
+  label .status_panel.frontbump -text "Front Bumpers:"
+  label .status_panel.frontbump_value -textvariable frontbumpers -width 8 \
+                                                -anchor e
+  label .status_panel.rearbump -text "Rear Bumpers:"
+  label .status_panel.rearbump_value -textvariable rearbumpers -width 8 \
+                                                -anchor e
+  label .status_panel.stall -text Stall:
+  label .status_panel.stall_value -textvariable stall -width 8 -anchor e
+
+  grid configure .status_panel.time -column 0 -row 0 -sticky w
+  grid configure .status_panel.time_value -column 1 -row 0 -sticky w
+  grid configure .status_panel.xpos -column 0 -row 1 -sticky w
+  grid configure .status_panel.xpos_value -column 1 -row 1 -sticky w
+  grid configure .status_panel.ypos -column 0 -row 2 -sticky w
+  grid configure .status_panel.ypos_value -column 1 -row 2 -sticky w
+  grid configure .status_panel.heading -column 0 -row 3 -sticky w
+  grid configure .status_panel.heading_value -column 1 -row 3 -sticky w
+  grid configure .status_panel.compass -column 0 -row 4 -sticky w
+  grid configure .status_panel.compass_value -column 1 -row 4 -sticky w
+  grid configure .status_panel.battery -column 0 -row 5 -sticky w
+  grid configure .status_panel.battery_value -column 1 -row 5 -sticky w
+  grid configure .status_panel.frontbump -column 0 -row 6 -sticky w
+  grid configure .status_panel.frontbump_value -column 1 -row 6 -sticky w
+  grid configure .status_panel.rearbump -column 0 -row 7 -sticky w
+  grid configure .status_panel.rearbump_value -column 1 -row 7 -sticky w
+  grid configure .status_panel.stall -column 0 -row 8 -sticky w
+  grid configure .status_panel.stall_value -column 1 -row 8 -sticky w
+
+}
+
+set newpan 0
+set newtilt 0
+set newzoom 0
+
+proc checkCameraLimits {} {
+  global newpan newtilt newzoom
+  set PAN_LOW_LIMIT -100
+  set PAN_HIGH_LIMIT 100
+  set TILT_LOW_LIMIT -25
+  set TILT_HIGH_LIMIT 25
+  set ZOOM_LOW_LIMIT 0
+  set ZOOM_HIGH_LIMIT 1023
+  
+  if {$newpan > $PAN_HIGH_LIMIT} {set newpan $PAN_HIGH_LIMIT}
+  if {$newpan < $PAN_LOW_LIMIT} {set newpan $PAN_LOW_LIMIT}
+  if {$newtilt > $TILT_HIGH_LIMIT} {set newtilt $TILT_HIGH_LIMIT}
+  if {$newtilt < $TILT_LOW_LIMIT} {set newtilt $TILT_LOW_LIMIT}
+  if {$newzoom > $ZOOM_HIGH_LIMIT} {set newzoom $ZOOM_HIGH_LIMIT}
+  if {$newzoom < $ZOOM_LOW_LIMIT} {set newzoom $ZOOM_LOW_LIMIT}
+}
+
+proc createVisionPanel {} {
+  global display_vision leftarrow rightarrow uparrow downarrow
+  global pan tilt zoom
+  global newpan newtilt newzoom
+
+  frame .vision_panel
+
+  canvas .vision_panel.canvas -width 160 -height 120 -bg black
+
+  checkbutton .vision_panel.vision_check \
+    -variable display_vision -text "Display Vision"
+
+  set display_vision 0
+
+  button .vision_panel.left -image $leftarrow 
+  button .vision_panel.right -image $rightarrow
+  button .vision_panel.up -image $uparrow
+  button .vision_panel.down -image $downarrow 
+
+  button .vision_panel.in -text +
+  button .vision_panel.out -text -
+
+  frame .vision_panel.data_frame
+  label .vision_panel.data_frame.pan -text Pan:
+  label .vision_panel.data_frame.pan_value -textvariable pan -width 8 -anchor e
+  label .vision_panel.data_frame.tilt -text Tilt:
+  label .vision_panel.data_frame.tilt_value -textvariable tilt -width 8 -anchor e
+  label .vision_panel.data_frame.zoom -text Zoom:
+  label .vision_panel.data_frame.zoom_value -textvariable zoom -width 8 -anchor e
+
+  bind .vision_panel.left <Button-1> \
+    {catch {incr newpan 10;checkCameraLimits;writeCameraCommand $newpan $newtilt $newzoom}}
+  bind .vision_panel.right <Button-1>\
+    {catch {incr newpan -10;checkCameraLimits;writeCameraCommand $newpan $newtilt $newzoom}}
+  bind .vision_panel.up <Button-1> \
+    {catch {incr newtilt 5; checkCameraLimits;writeCameraCommand $newpan $newtilt $newzoom}}
+  bind .vision_panel.down <Button-1> \
+    {catch {incr newtilt -5;checkCameraLimits;writeCameraCommand $newpan $newtilt $newzoom}}
+  bind .vision_panel.in <Button-1> \
+    {catch {incr newzoom 100;checkCameraLimits;writeCameraCommand $newpan $newtilt $newzoom}}
+  bind .vision_panel.out <Button-1> \
+    {catch {incr newzoom -100;checkCameraLimits;writeCameraCommand $newpan $newtilt $newzoom}}
+
+  grid configure .vision_panel.canvas -column 0 -row 0 -columnspan 5
+  grid configure .vision_panel.vision_check -column 0 -row 1 -columnspan 5
+
+  grid configure .vision_panel.left -column 0 -row 3
+  grid configure .vision_panel.right -column 2 -row 3
+  grid configure .vision_panel.up -column 1 -row 2
+  grid configure .vision_panel.down -column 1 -row 4
+
+  grid configure .vision_panel.in -column 3 -row 3
+  grid configure .vision_panel.out -column 4 -row 3
+
+  grid configure .vision_panel.data_frame -column 0 -row 5 -columnspan 5
+  grid configure .vision_panel.data_frame.pan -column 0 -row 0 
+  grid configure .vision_panel.data_frame.pan_value -column 1 -row 0
+  grid configure .vision_panel.data_frame.tilt -column 0 -row 1
+  grid configure .vision_panel.data_frame.tilt_value -column 1 -row 1
+  grid configure .vision_panel.data_frame.zoom -column 0 -row 2
+  grid configure .vision_panel.data_frame.zoom_value -column 1 -row 2
+}
+
+
+proc toggle_sonar_buttons {} {
+  global display_sonar
+
+  if {$display_sonar} {
+    .robot_panel.sonar_line configure -state normal
+    .robot_panel.sonar_dot configure -state normal
+  } else {
+    .robot_panel.sonar_line configure -state disabled
+    .robot_panel.sonar_dot configure -state disabled
+  }
+}
+proc toggle_laser_buttons {} {
+  global display_laser
+
+  if {$display_laser} {
+    .robot_panel.laser_line configure -state normal
+    .robot_panel.laser_dot configure -state normal
+  } else {
+    .robot_panel.laser_line configure -state disabled
+    .robot_panel.laser_dot configure -state disabled
+  }
+}
+
+proc createRobotPanel {} {
+  global display_sonar display_laser CANVAS_WIDTH CANVAS_HEIGHT
+  global display_sonar_mode display_laser_mode sonar_positions
+  global display_bumpers MAX_RANGE CANVAS_CONV_FACTOR
+
+  frame .robot_panel
+
+  # make a canvas to draw on
+  canvas .robot_panel.canvas -width $CANVAS_WIDTH -height $CANVAS_HEIGHT \
+    -xscrollincrement 1 -yscrollincrement 1 -bg black
+  # center the origin (it starts in the top left corner)
+  .robot_panel.canvas xview scroll -[expr $CANVAS_WIDTH/ 2] units
+  .robot_panel.canvas yview scroll -[expr $CANVAS_HEIGHT /2] units
+
+  # draw the robot
+  .robot_panel.canvas create line $sonar_positions(0,x) $sonar_positions(0,y)\
+                                  $sonar_positions(1,x) $sonar_positions(1,y)\
+                                  $sonar_positions(2,x) $sonar_positions(2,y)\
+                                  $sonar_positions(3,x) $sonar_positions(3,y)\
+                                  $sonar_positions(4,x) $sonar_positions(4,y)\
+                                  $sonar_positions(5,x) $sonar_positions(5,y)\
+                                  $sonar_positions(6,x) $sonar_positions(6,y)\
+                                  $sonar_positions(7,x) $sonar_positions(7,y)\
+                                  $sonar_positions(8,x) $sonar_positions(8,y)\
+                                  $sonar_positions(9,x) $sonar_positions(9,y)\
+                                  $sonar_positions(10,x) $sonar_positions(10,y)\
+                                  $sonar_positions(11,x) $sonar_positions(11,y)\
+                                  $sonar_positions(12,x) $sonar_positions(12,y)\
+                                  $sonar_positions(13,x) $sonar_positions(13,y)\
+                                  $sonar_positions(14,x) $sonar_positions(14,y)\
+                                  $sonar_positions(15,x) $sonar_positions(15,y)\
+                                  $sonar_positions(0,x) $sonar_positions(0,y)\
+                                  -fill red
+
+  # draw circles 1m apart
+  set i 1000.0
+  while {$i <= $MAX_RANGE} {
+    set radius [expr $i * $CANVAS_CONV_FACTOR]
+    .robot_panel.canvas create oval -$radius -$radius $radius $radius \
+      -outline blue
+    set i [expr $i + 1000.0]
+  }
+
+  checkbutton .robot_panel.sonar_check -command toggle_sonar_buttons\
+    -variable display_sonar -text "Display Sonars"
+  radiobutton .robot_panel.sonar_line -value line -state disabled\
+    -variable display_sonar_mode -text "As Lines"
+  radiobutton .robot_panel.sonar_dot -value dot -state disabled\
+    -variable display_sonar_mode -text "As Dots"
+  checkbutton .robot_panel.laser_check -command toggle_laser_buttons\
+    -variable display_laser -text "Display Laser"
+  radiobutton .robot_panel.laser_line -value line -state disabled\
+    -variable display_laser_mode -text "As Lines" 
+  radiobutton .robot_panel.laser_dot -value dot -state disabled\
+    -variable display_laser_mode -text "As Dots" 
+  checkbutton .robot_panel.bumper_check \
+    -variable display_bumpers -text "Display Bumpers"
+
+  set display_sonar 0
+  set display_laser 0
+  set display_bumpers 0
+
+  set display_sonar_mode line
+  set display_laser_mode line
+
+  grid configure .robot_panel.canvas -column 0 -row 0 -columnspan 5
+
+  grid configure .robot_panel.sonar_check -column 0 -row 1 -columnspan 2
+  grid configure .robot_panel.sonar_line -column 0 -row 2
+  grid configure .robot_panel.sonar_dot -column 1 -row 2
+
+  grid configure .robot_panel.laser_check -column 2 -row 1 -columnspan 2
+  grid configure .robot_panel.laser_line -column 2 -row 2
+  grid configure .robot_panel.laser_dot -column 3 -row 2
+  grid configure .robot_panel.bumper_check -column 4 -row 1 -columnspan 1
+}
+
+proc gridAll {} {
+  grid configure .robot_panel -column 0 -row 0 -rowspan 3
+  grid configure .control_panel -column 1 -row 0
+  grid configure .status_panel -column 1 -row 1 
+  grid configure .vision_panel -column 1 -row 2 
+}
+
+proc go {} {
+  createControlPanel
+  createStatusPanel
+  createRobotPanel
+  createVisionPanel
+  gridAll
+}
+
+set laser_count 0
+proc drawobs {xoff yoff angle dist line_or_dot color} {
+  global CANVAS_CONV_FACTOR laser_count
+  set PI 3.14159
+
+  set xoff [expr $xoff * $CANVAS_CONV_FACTOR]
+  set yoff [expr $yoff * $CANVAS_CONV_FACTOR]
+  set dist [expr $dist * $CANVAS_CONV_FACTOR]
+
+  set theta [expr $angle * $PI / 180.0]
+  set x [expr $xoff + -$dist * sin($theta)]
+  set y [expr $yoff + -$dist * cos($theta)]
+
+  if {$line_or_dot == "line"} {
+    return [.robot_panel.canvas create line $xoff $yoff $x $y -fill $color]
+  } else {
+    #
+    # i tried crosses instead of ovals....turns out it's slower...
+    #
+    #return [concat \
+      #[.robot_panel.canvas create line \
+                           #[expr $x - 2.0] $y \
+                           #[expr $x + 2.0] $y \
+                           #-fill $color] \
+      #[.robot_panel.canvas create line \
+                           #$x [expr $y - 2.0] \
+                           #$x [expr $y +2.0] \
+                           #-fill $color]]
+    # number every 4th dot
+    #if {![expr $laser_count % 10]} {
+      #return [concat \
+        #[.robot_panel.canvas create oval \
+                             #[expr $x - 2.0] [expr $y - 2.0] \
+                             #[expr $x +2.0] [expr $y +2.0] \
+                             #-fill $color] \
+        #[.robot_panel.canvas create text $x [expr $y - 3.0] \
+                             #-font {Courier -10} -text $laser_count -fill red]]
+    #} else {
+      return [.robot_panel.canvas create oval \
+                             [expr $x - 2.0] [expr $y - 2.0] \
+                             [expr $x +2.0] [expr $y +2.0] \
+                             -fill $color]
+    #}
+  }
+}
+
+set obslist {}
+set vision_obslist {}
+proc displayData {str} {
+  global laser_count
+  global sonar display_sonar display_sonar_mode 
+  global laser display_laser display_laser_mode 
+  global frontbumpers rearbumpers display_bumpers 
+  global display_vision vision
+  global obslist vision_obslist
+
+  #puts "readData $str"
+  readData $str
+
+  eval .robot_panel.canvas delete $obslist
+  eval .vision_panel.canvas delete $vision_obslist
+
+  set obslist {}
+  set vision_obslist {}
+
+  # length in mm from activmedia specs
+  set BUMPER_LENGTH 100.838
+
+  if {$display_vision && [lsearch [array names vision] 0,numblobs] > -1} {
+    # draw the first two channels.
+    set i 0
+    while {$i < $vision(0,numblobs)} {
+      set vision_obslist [concat $vision_obslist \
+        [.vision_panel.canvas create line \
+               $vision(0,$i,left) $vision(0,$i,top)\
+               $vision(0,$i,right) $vision(0,$i,top)\
+               $vision(0,$i,right) $vision(0,$i,bottom)\
+               $vision(0,$i,left) $vision(0,$i,bottom)\
+               $vision(0,$i,left) $vision(0,$i,top) \
+               -width 2 -fill red]\
+        [.vision_panel.canvas create polygon \
+               [expr $vision(0,$i,x) - 2] [expr $vision(0,$i,y) - 2]\
+               [expr $vision(0,$i,x) + 2] [expr $vision(0,$i,y) - 2]\
+               [expr $vision(0,$i,x) + 2] [expr $vision(0,$i,y) + 2]\
+               [expr $vision(0,$i,x) - 2] [expr $vision(0,$i,y) + 2]\
+               -fill red]]
+      incr i
+    }
+    set i 0
+    while {$i < $vision(1,numblobs)} {
+      set vision_obslist [concat $vision_obslist \
+        [.vision_panel.canvas create line \
+               $vision(1,$i,left) $vision(1,$i,top)\
+               $vision(1,$i,right) $vision(1,$i,top)\
+               $vision(1,$i,right) $vision(1,$i,bottom)\
+               $vision(1,$i,left) $vision(1,$i,bottom)\
+               $vision(1,$i,left) $vision(1,$i,top) \
+               -width 2 -fill green]\
+        [.vision_panel.canvas create polygon \
+               [expr $vision(1,$i,x) - 2] [expr $vision(1,$i,y) - 2]\
+               [expr $vision(1,$i,x) + 2] [expr $vision(1,$i,y) - 2]\
+               [expr $vision(1,$i,x) + 2] [expr $vision(1,$i,y) + 2]\
+               [expr $vision(1,$i,x) - 2] [expr $vision(1,$i,y) + 2]\
+               -fill green]]
+      incr i
+    }
+    set i 0
+    while {$i < $vision(2,numblobs)} {
+      set vision_obslist [concat $vision_obslist \
+        [.vision_panel.canvas create line \
+               $vision(2,$i,left) $vision(2,$i,top)\
+               $vision(2,$i,right) $vision(2,$i,top)\
+               $vision(2,$i,right) $vision(2,$i,bottom)\
+               $vision(2,$i,left) $vision(2,$i,bottom)\
+               $vision(2,$i,left) $vision(2,$i,top) \
+               -width 2 -fill blue]\
+        [.vision_panel.canvas create polygon \
+               [expr $vision(2,$i,x) - 2] [expr $vision(2,$i,y) - 2]\
+               [expr $vision(2,$i,x) + 2] [expr $vision(2,$i,y) - 2]\
+               [expr $vision(2,$i,x) + 2] [expr $vision(2,$i,y) + 2]\
+               [expr $vision(2,$i,x) - 2] [expr $vision(2,$i,y) + 2]\
+               -fill blue]]
+      incr i
+    }
+    set i 0
+    while {$i < $vision(3,numblobs)} {
+      set vision_obslist [concat $vision_obslist \
+        [.vision_panel.canvas create line \
+               $vision(3,$i,left) $vision(3,$i,top)\
+               $vision(3,$i,right) $vision(3,$i,top)\
+               $vision(3,$i,right) $vision(3,$i,bottom)\
+               $vision(3,$i,left) $vision(3,$i,bottom)\
+               $vision(3,$i,left) $vision(3,$i,top) \
+               -width 2 -fill yellow]\
+        [.vision_panel.canvas create polygon \
+               [expr $vision(3,$i,x) - 2] [expr $vision(3,$i,y) - 2]\
+               [expr $vision(3,$i,x) + 2] [expr $vision(3,$i,y) - 2]\
+               [expr $vision(3,$i,x) + 2] [expr $vision(3,$i,y) + 2]\
+               [expr $vision(3,$i,x) - 2] [expr $vision(3,$i,y) + 2]\
+               -fill yellow]]
+      incr i
+    }
+
+  }
+      
+  if {$display_bumpers} {
+    if {[expr $frontbumpers >> 0 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs -207.85 -152.01 -37.9904 $BUMPER_LENGTH line yellow]]
+    }
+    if {[expr $frontbumpers >> 1 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs -145.8 -231.45 -71.1592 $BUMPER_LENGTH line yellow]]
+    }
+    if {[expr $frontbumpers >> 2 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs -50.4 -264.0 -90 $BUMPER_LENGTH line yellow]]
+    }
+    if {[expr $frontbumpers >> 3 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs 145.8 -231.45 71.1592 $BUMPER_LENGTH line yellow]]
+    }
+    if {[expr $frontbumpers >> 4 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs 207.85 -152.01 37.9904 $BUMPER_LENGTH line yellow]]
+    }
+
+    if {[expr $rearbumpers >> 4 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs -207.85 152.01 -142.0096 $BUMPER_LENGTH line yellow]]
+    }
+    if {[expr $rearbumpers >> 3 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs -145.8 231.45 -108.8408 $BUMPER_LENGTH line yellow]]
+    }
+    if {[expr $rearbumpers >> 2 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs -50.4 264.0 -90 $BUMPER_LENGTH line yellow]]
+    }
+    if {[expr $rearbumpers >> 1 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs 145.8 231.45 108.8408 $BUMPER_LENGTH line yellow]]
+    }
+    if {[expr $rearbumpers >> 0 & 1]} {
+      set obslist [concat $obslist \
+        [drawobs 207.85 152.01 142.0096 $BUMPER_LENGTH line yellow]]
+    }
+  }
+  if {$display_sonar} {
+    set obslist [concat $obslist \
+      [drawobs  -130 -115  90 $sonar(0) $display_sonar_mode green]\
+      [drawobs  -115 -155  50 $sonar(1) $display_sonar_mode green]\
+      [drawobs  -80  -190  30 $sonar(2) $display_sonar_mode green]\
+      [drawobs  -25  -210   10 $sonar(3) $display_sonar_mode green]\
+      [drawobs  25  -210  -10 $sonar(4) $display_sonar_mode green]\
+      [drawobs  80  -190  -30 $sonar(5) $display_sonar_mode green]\
+      [drawobs  115  -155  -50 $sonar(6) $display_sonar_mode green]\
+      [drawobs  130  -115  -90 $sonar(7) $display_sonar_mode green]\
+      [drawobs 130   115  -90 $sonar(8) $display_sonar_mode green]\
+      [drawobs 115   155 -130 $sonar(9) $display_sonar_mode green]\
+      [drawobs 80   190 -150 $sonar(10) $display_sonar_mode green]\
+      [drawobs 25   210 -170 $sonar(11) $display_sonar_mode green]\
+      [drawobs -25   210  170 $sonar(12) $display_sonar_mode green]\
+      [drawobs -80   190  150 $sonar(13) $display_sonar_mode green]\
+      [drawobs -115   155  130 $sonar(14) $display_sonar_mode green]\
+      [drawobs -130   115   90 $sonar(15) $display_sonar_mode green]]
+  }
+
+  if {$display_laser} {
+    set laser_count 0
+    foreach index [lsort -integer [array names laser]] {
+      set obslist [concat $obslist \
+        [drawobs  0 0 [expr -90 + ($index * 0.5)] $laser($index) \
+                     $display_laser_mode red]]
+      incr laser_count
+    }
+  }
+}
+
+set read_str ""
+proc startRobot {} {
+  global host device_str read_str
+  set delay 0.8
+
+  set i 0
+  while {$i < [string length $device_str]} {
+    append read_str [string index $device_str $i]
+    incr i 2
+  }
+  #puts "device_str:$device_str  read_str:$read_str"
+  connectToRobot $host
+  requestFromRobot $device_str
+  #requestFromRobot pamasava
+  #signal trap SIGALRM {displayData pmsl;alarm 0.8}
+  signal trap SIGALRM {displayData $read_str;alarm 1.5}
+  alarm 1.5
+}
+
+proc stopRobot {} {
+  signal ignore SIGALRM
+  disconnectFromRobot
+}
+
+go
+startRobot

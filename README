@@ -1,0 +1,68 @@
+Player - one hell of a robot server
+----------------------------------
+
+Contents
+-------------
+COPYING              GNU Public License
+Makefile             the Makefile
+README               this file
+README.java          special notes for the Java client utilities
+TODO                 we've got big plans...
+VERSION              which Player you've got
+client_libs/c++      source for C++ client-side utilities
+client_libs/tcl      source for Tcl/Tk client-side utilities
+client_libs/java     source for Java
+examples/c++         source for C++ example clients
+examples/tcl         source for Tcl/Tk example clients
+examples/java        source for Java
+doc                  users manual
+include              header files for Player
+src                  source for Player
+
+Build 
+------------------
+- if your machine (i.e. robot) has its clock set wrong (like most of ours)
+  you'll want touch all the files to fix clock skew and ensure a complete 
+  build:
+
+     # find . -exec touch {} \;
+
+- then build:
+
+     # make
+
+
+Install 
+--------------------
+- to install everything (server binary, client libraries and headers,
+    and examples) in /usr/local/player (you need to be root, of course):
+
+      # make install
+
+  the executable server itself will install as /usr/local/player/bin/player.
+
+- if you want to install somewhere else, change INSTALL_PREFIX in Makefile
+
+Uninstall
+--------------------
+- to uninstall everything (server binary, client libraries and headers,
+    and examples) from /usr/local/player (you need to be root, of course):
+
+      # make uninstall
+
+Clean
+--------------------
+- to clean up (remove all binaries, etc.).  doesn't uninstall from
+    the system.
+
+      # make clean
+    
+
+Further Info
+------------
+- now you've got Player installed.  but, how to use it? user manual
+  is in ./doc.  for further info and updates, check:
+      http://fnord.usc.edu/player
+
+
+                    - brian gerkey (gerkey@usc.edu)
