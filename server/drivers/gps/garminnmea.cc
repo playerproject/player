@@ -26,8 +26,6 @@
  * work with other Garmin units, and (likely with some modification) other
  * NMEA-compliant GPS units.
  *
- * NMEA parsing code borrowed, with thanks, from Srikanth Saripalli 
- * <saripall@usc.edu>.
  */
 
 
