@@ -622,6 +622,8 @@ void *RunPtzThread(void *ptzdevice)
     }
 
     cnt = 0;
+    // camera's natural pan coordinates increase clockwise;
+    // we want them the other way, so we negate pan here.
     *(short*)(&data[cnt]) = htons((unsigned short)-pan);
     cnt += sizeof(short);
     *(short*)(&data[cnt]) = htons((unsigned short)tilt);
