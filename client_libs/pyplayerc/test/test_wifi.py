@@ -9,7 +9,7 @@ import playerc
 def test_wifi(client, index):
     """Test the wifi device."""
 
-    device = playerc.wifi(client, index)
+    device = playerc.wifi(client, 0, index)
     device.subscribe('r')
 
     

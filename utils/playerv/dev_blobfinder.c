@@ -39,7 +39,7 @@ void blobfinder_draw(blobfinder_t *blobfinder);
 
 // Create a blobfinder device
 blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                                int index, const char *drivername, int subscribe)
+                                int robot, int index, const char *drivername, int subscribe)
 {
   char section[64];
   char label[64];
@@ -48,7 +48,7 @@ blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t
   blobfinder = malloc(sizeof(blobfinder_t));
   blobfinder->datatime = 0;
   blobfinder->drivername = strdup(drivername);
-  blobfinder->proxy = playerc_blobfinder_create(client, index);
+  blobfinder->proxy = playerc_blobfinder_create(client, robot, index);
   
   // Construct the menu
   snprintf(label, sizeof(label), "blobfinder:%d (%s)", index, blobfinder->drivername);

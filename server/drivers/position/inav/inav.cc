@@ -274,9 +274,9 @@ int INav::SetupOdom()
 {
   player_device_id_t id;
 
+  id.robot = this->device_id.robot;
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
-  id.port = this->device_id.port;
 
   this->odom = deviceTable->GetDevice(id);
   if (!this->odom)
@@ -309,9 +309,9 @@ int INav::SetupLaser()
 {
   player_device_id_t id;
 
+  id.robot = this->device_id.robot;
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
-  id.port = this->device_id.port;
 
   this->laser = deviceTable->GetDevice(id);
   if (!this->laser)
@@ -429,9 +429,9 @@ void INav::HandleGetGeom(void *client, void *request, int len)
     return;
   }
 
+  id.robot = this->device_id.robot;
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
-  id.port = this->device_id.port;
   
   // Get underlying device geometry.
   req = PLAYER_POSITION_GET_GEOM_REQ;

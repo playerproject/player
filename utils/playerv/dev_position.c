@@ -43,7 +43,7 @@ void position_update_servo(position_t *position);
 
 // Create a position device
 position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                            int index, const char *drivername, int subscribe)
+                            int robot, int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
@@ -51,7 +51,7 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   
   position = malloc(sizeof(position_t));
 
-  position->proxy = playerc_position_create(client, index);
+  position->proxy = playerc_position_create(client, robot, index);
   position->drivername = strdup(drivername);
   position->datatime = 0;
   

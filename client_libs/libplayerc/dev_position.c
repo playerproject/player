@@ -39,13 +39,13 @@ void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *heade
 
 
 // Create a new position proxy
-playerc_position_t *playerc_position_create(playerc_client_t *client, int index)
+playerc_position_t *playerc_position_create(playerc_client_t *client, int robot, int index)
 {
   playerc_position_t *device;
 
   device = malloc(sizeof(playerc_position_t));
   memset(device, 0, sizeof(playerc_position_t));
-  playerc_device_init(&device->info, client, PLAYER_POSITION_CODE, index,
+  playerc_device_init(&device->info, client, robot, PLAYER_POSITION_CODE, index,
                       (playerc_putdata_fn_t) playerc_position_putdata);
 
   

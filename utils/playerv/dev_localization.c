@@ -42,14 +42,14 @@ void localization_draw(localization_t *localization);
 
 // Create a localization device
 localization_t *localization_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-		  int index, const char *drivername, int subscribe)
+                                    int robot, int index, const char *drivername, int subscribe)
 {
     char label[64];
     char section[64];
     localization_t *localization;
   
     localization = malloc(sizeof(localization_t));
-    localization->proxy = playerc_localization_create(client, index);
+    localization->proxy = playerc_localization_create(client, robot, index);
     localization->drivername = strdup(drivername);
     localization->datatime = 0;
 

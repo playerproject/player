@@ -39,17 +39,6 @@
 #include "error.h"
 
 
-// Player message structure for subscibing to devices.  This one is
-// easier to use than the one defined in messages.h.
-typedef struct
-{
-    uint16_t subtype;
-    uint16_t device;
-    uint16_t index;
-    uint8_t access;
-} __attribute__ ((packed)) playerc_msg_subscribe_t;
-
-
 // Local functions
 int playerc_client_get_driverinfo(playerc_client_t *client);
 int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
@@ -151,6 +140,21 @@ int playerc_client_disconnect(playerc_client_t *client)
 }
 
 
+// Change the server's data delivery mode
+int playerc_client_datamode(playerc_client_t *client, int mode)
+{
+  player_device_datamode_req_t req;
+
+  req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
+  req.mode = mode;
+
+  if (playerc_client_request(client, NULL, &req, sizeof(req), NULL, 0) < 0)
+    return -1;
+  
+  return 0;
+}
+
+
 // Test to see if there is pending data.
 int playerc_client_peek(playerc_client_t *client, int timeout)
 {
@@ -215,9 +219,6 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
                          void *cmd, int len)
 {
   player_msghdr_t header;
-
-  if (!(device->access == PLAYER_WRITE_MODE || device->access == PLAYER_ALL_MODE))
-    PLAYERC_WARN("writing to device without write permission");
     
   header.stx = PLAYER_STXX;
   header.type = PLAYER_MSGTYPE_CMD;
@@ -267,7 +268,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
 
     if (rep_header.type == PLAYER_MSGTYPE_DATA)
     {
-      //playerc_client_dispatch(client, &rep_header, data, len);
+      // Queue up any incoming data packets for later dispatch
       playerc_client_push(client, &rep_header, data, len);
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
@@ -412,16 +413,14 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
 
 
 // Subscribe to a device
-int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access,
-                             char *drivername, size_t len)
+int playerc_client_subscribe(playerc_client_t *client, int robot, int code, int index,
+                             int access, char *drivername, size_t len)
 {
   player_device_req_t req;
   player_device_resp_t rep;
 
   req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  // TODO: add the necessary infrastructure to specify and store the robot
-  // id somewhere
-  req.id.robot = htons(0);
+  req.id.robot = htons(robot);
   req.id.code = htons(code);
   req.id.index = htons(index);
   req.access = access;
@@ -443,15 +442,13 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index, int 
 
 
 // Unsubscribe from a device
-int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
+int playerc_client_unsubscribe(playerc_client_t *client, int robot, int code, int index)
 {
   player_device_req_t req;
   player_device_resp_t rep;
 
   req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  // TODO: add the necessary infrastructure to specify and store the robot
-  // id somewhere
-  req.id.robot = htons(0);
+  req.id.robot = htons(robot);
   req.id.code = htons(code);
   req.id.index = htons(index);
   req.access = PLAYER_CLOSE_MODE;

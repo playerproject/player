@@ -65,7 +65,7 @@
 typedef struct
 {
   const char *host;
-  int port;
+  int port, robot;
   
   // The rtk canvas
   rtk_canvas_t *canvas;
@@ -108,7 +108,7 @@ typedef struct
 
 
 // Create the main window
-mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port);
+mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port, int robot);
 
 // Destroy the main window
 void mainwnd_destroy(mainwnd_t *wnd);
@@ -131,7 +131,7 @@ typedef void (*fnupdate_t) (void*);
 typedef struct
 {
   // Device identifier.
-  int code, index;
+  int robot, code, index;
 
   // Driver name
   char *drivername;
@@ -183,7 +183,7 @@ typedef struct
 
 // Create a laser device
 laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                      int index, const char *drivername, int subscribe);
+                      int robot, int index,  const char *drivername, int subscribe);
 
 // Destroy a laser device
 void laser_destroy(laser_t *laser);
@@ -220,7 +220,7 @@ typedef struct
 
 // Create a fiducial device
 fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, 
-                            int index, const char *drivername, int subscribe);
+                            int robot, int index,  const char *drivername, int subscribe);
 
 // Destroy a fiducial device
 void fiducial_destroy(fiducial_t *fiducial);
@@ -261,7 +261,7 @@ typedef struct
 
 // Create a position device
 position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                            int index, const char *drivername, int subscribe);
+                            int robot, int index,  const char *drivername, int subscribe);
 
 // Destroy a position device
 void position_destroy(position_t *position);
@@ -298,7 +298,7 @@ typedef struct
 
 // Create a power device
 power_t *power_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                            int index, const char *drivername, int subscribe);
+                      int robot, int index,  const char *drivername, int subscribe);
 
 // Destroy a power device
 void power_destroy(power_t *power);
@@ -337,7 +337,7 @@ typedef struct
 
 // Create a ptz device
 ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                  int index, const char *drivername, int subscribe);
+                  int robot, int index,  const char *drivername, int subscribe);
 
 // Destroy a ptz device
 void ptz_destroy(ptz_t *ptz);
@@ -374,7 +374,7 @@ typedef struct
 
 // Create a sonar device
 sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                      int index, const char *drivername, int subscribe);
+                      int robot, int index,  const char *drivername, int subscribe);
 
 // Destroy a sonar device
 void sonar_destroy(sonar_t *sonar);
@@ -416,7 +416,7 @@ typedef struct
 
 // Create a blobfinder device
 blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                                int index, const char *drivername, int subscribe);
+                                int robot, int index,  const char *drivername, int subscribe);
 
 // Destroy a blobfinder device
 void blobfinder_destroy(blobfinder_t *blobfinder);
@@ -463,7 +463,7 @@ typedef struct
 
 // Create a localization device
 localization_t *localization_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-		  int index, const char *drivername, int subscribe);
+                                    int robot, int index,  const char *drivername, int subscribe);
 
 // Destroy a localization device
 void localization_destroy(localization_t *localization);

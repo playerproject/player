@@ -45,7 +45,7 @@ int main(int argc, const char **argv)
     return -1;
 
   // Create and subscribe to a position device.
-  position = playerc_position_create(client, 0);
+  position = playerc_position_create(client, 0, 0);
   if (playerc_position_subscribe(position, PLAYER_ALL_MODE))
     return -1;
 

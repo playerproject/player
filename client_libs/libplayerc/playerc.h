@@ -116,7 +116,7 @@ typedef struct _playerc_device_t
   playerc_client_t *client;
 
   // Device code, index, etc.
-  int code, index, access;
+  int robot, code, index; //REMOVE, access;
 
   // The driver name
   char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
@@ -196,8 +196,11 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
 void playerc_client_destroy(playerc_client_t *client);
 
 // Connect/disconnect to the server.
-int  playerc_client_connect(playerc_client_t *client);
-int  playerc_client_disconnect(playerc_client_t *client);
+int playerc_client_connect(playerc_client_t *client);
+int playerc_client_disconnect(playerc_client_t *client);
+
+// Change the server's data delivery mode
+int playerc_client_datamode(playerc_client_t *client, int mode);
 
 // Add/remove a device proxy (private)
 int playerc_client_adddevice(playerc_client_t *client, playerc_device_t *device);
@@ -214,10 +217,9 @@ int  playerc_client_delcallback(playerc_client_t *client, playerc_device_t *devi
 int playerc_client_get_devlist(playerc_client_t *client);
 
 // Subscribe/unsubscribe a device from the sever (private)
-int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access,
-                             char *drivername, size_t len);
-int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
-
+int playerc_client_subscribe(playerc_client_t *client, int robot, int code, int index,
+                             int access, char *drivername, size_t len);
+int playerc_client_unsubscribe(playerc_client_t *client, int robot, int code, int index);
 
 // Issue a request to the server and await a reply (blocking).
 // Returns -1 on error and -2 on NACK.
@@ -245,7 +247,7 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
 
 // Initialise the device 
 void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
-                         int code, int index, playerc_putdata_fn_t putdata);
+                         int robot, int code, int index, playerc_putdata_fn_t putdata);
 
 // Finalize the device
 void playerc_device_term(playerc_device_t *device);
@@ -298,7 +300,7 @@ typedef struct
 
 
 // Create a blobfinder proxy
-playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int index);
+playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a blobfinder proxy
 void playerc_blobfinder_destroy(playerc_blobfinder_t *device);
@@ -333,7 +335,7 @@ typedef struct
 
 
 // Create a bps proxy
-playerc_bps_t *playerc_bps_create(playerc_client_t *client, int index);
+playerc_bps_t *playerc_bps_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a bps proxy
 void playerc_bps_destroy(playerc_bps_t *device);
@@ -379,7 +381,7 @@ typedef struct
 
 
 // Create a comms proxy
-playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index);
+playerc_comms_t *playerc_comms_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a comms proxy
 void playerc_comms_destroy(playerc_comms_t *device);
@@ -414,7 +416,7 @@ typedef struct
 
 
 // Create a gps proxy.
-playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index);
+playerc_gps_t *playerc_gps_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a gps proxy.
 void playerc_gps_destroy(playerc_gps_t *device);
@@ -465,7 +467,7 @@ typedef struct
 
 
 // Create a laser proxy
-playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index);
+playerc_laser_t *playerc_laser_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a laser proxy
 void playerc_laser_destroy(playerc_laser_t *device);
@@ -534,7 +536,7 @@ typedef struct
 
 
 // Create a fiducial proxy
-playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index);
+playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a fiducial proxy
 void playerc_fiducial_destroy(playerc_fiducial_t *device);
@@ -579,7 +581,7 @@ typedef struct
 
 
 // Create a position device proxy.
-playerc_position_t *playerc_position_create(playerc_client_t *client, int index);
+playerc_position_t *playerc_position_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a position device proxy.
 void playerc_position_destroy(playerc_position_t *device);
@@ -623,7 +625,7 @@ typedef struct
 
 
 // Create a power device proxy.
-playerc_power_t *playerc_power_create(playerc_client_t *client, int index);
+playerc_power_t *playerc_power_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a power device proxy.
 void playerc_power_destroy(playerc_power_t *device);
@@ -657,7 +659,7 @@ typedef struct
 
 
 // Create a ptz proxy
-playerc_ptz_t *playerc_ptz_create(playerc_client_t *client, int index);
+playerc_ptz_t *playerc_ptz_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a ptz proxy
 void playerc_ptz_destroy(playerc_ptz_t *device);
@@ -699,7 +701,7 @@ typedef struct
 
 
 // Create a sonar proxy
-playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index);
+playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a sonar proxy
 void playerc_sonar_destroy(playerc_sonar_t *device);
@@ -732,7 +734,7 @@ typedef struct
 
 
 // Create a truth proxy.
-playerc_truth_t *playerc_truth_create(playerc_client_t *client, int index);
+playerc_truth_t *playerc_truth_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a truth proxy.
 void playerc_truth_destroy(playerc_truth_t *device);
@@ -782,7 +784,7 @@ typedef struct
 
 
 // Create a wifi proxy.
-playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index);
+playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a wifi proxy.
 void playerc_wifi_destroy(playerc_wifi_t *device);
@@ -814,7 +816,7 @@ typedef struct
 
 
 // Create a localization proxy
-playerc_localization_t *playerc_localization_create(playerc_client_t *client, int index);
+playerc_localization_t *playerc_localization_create(playerc_client_t *client, int robot, int index);
 
 // Destroy a localization proxy
 void playerc_localization_destroy(playerc_localization_t *device);

@@ -39,13 +39,13 @@ void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *heade
                               player_fiducial_data_t *data, size_t len);
 
 // Create a new fiducial proxy
-playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index)
+playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int robot, int index)
 {
   playerc_fiducial_t *device;
 
   device = malloc(sizeof(playerc_fiducial_t));
   memset(device, 0, sizeof(playerc_fiducial_t));
-  playerc_device_init(&device->info, client, PLAYER_FIDUCIAL_CODE, index,
+  playerc_device_init(&device->info, client, robot, PLAYER_FIDUCIAL_CODE, index,
                       (playerc_putdata_fn_t) playerc_fiducial_putdata);
   
   return device;

@@ -39,13 +39,13 @@ void playerc_power_putdata(playerc_power_t *device, player_msghdr_t *header,
 
 
 // Create a new power proxy
-playerc_power_t *playerc_power_create(playerc_client_t *client, int index)
+playerc_power_t *playerc_power_create(playerc_client_t *client, int robot, int index)
 {
   playerc_power_t *device;
 
   device = malloc(sizeof(playerc_power_t));
   memset(device, 0, sizeof(playerc_power_t));
-  playerc_device_init(&device->info, client, PLAYER_POWER_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_POWER_CODE, robot, index,
                       (playerc_putdata_fn_t) playerc_power_putdata);
 
   

@@ -10,7 +10,7 @@
 
 
 // Basic laser test
-int test_laser(playerc_client_t *client, int index)
+int test_laser(playerc_client_t *client, int robot, int index)
 {
   int t, i;
   void *rdevice;
@@ -21,7 +21,7 @@ int test_laser(playerc_client_t *client, int index)
 
   printf("device [laser] index [%d]\n", index);
 
-  device = playerc_laser_create(client, index);
+  device = playerc_laser_create(client, robot, index);
 
   TEST("subscribing (read)");
   if (playerc_laser_subscribe(device, PLAYER_READ_MODE) == 0)

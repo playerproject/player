@@ -39,13 +39,13 @@ void playerc_ptz_putdata(playerc_ptz_t *device, player_msghdr_t *header,
                          player_ptz_data_t *data, size_t len);
 
 // Create a new ptz proxy
-playerc_ptz_t *playerc_ptz_create(playerc_client_t *client, int index)
+playerc_ptz_t *playerc_ptz_create(playerc_client_t *client, int robot, int index)
 {
   playerc_ptz_t *device;
 
   device = malloc(sizeof(playerc_ptz_t));
   memset(device, 0, sizeof(playerc_ptz_t));
-  playerc_device_init(&device->info, client, PLAYER_PTZ_CODE, index,
+  playerc_device_init(&device->info, client, robot, PLAYER_PTZ_CODE, index,
                       (playerc_putdata_fn_t) playerc_ptz_putdata);
     
   return device;

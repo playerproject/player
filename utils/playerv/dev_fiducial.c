@@ -37,7 +37,7 @@ void fiducial_draw(fiducial_t *fiducial);
 
 // Create a fiducial device
 fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                                int index, const char *drivername, int subscribe)
+                            int robot, int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
@@ -47,7 +47,7 @@ fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   memset(fiducial, 0, sizeof(fiducial_t));
 
   // Create a proxy
-  fiducial->proxy = playerc_fiducial_create(client, index);
+  fiducial->proxy = playerc_fiducial_create(client, robot, index);
   fiducial->drivername = strdup(drivername);
   fiducial->datatime = 0;
 

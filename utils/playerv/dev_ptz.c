@@ -40,7 +40,7 @@ void ptz_move(ptz_t *ptz);
 
 // Create a ptz device
 ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                            int index, const char *drivername, int subscribe)
+                  int robot, int index, const char *drivername, int subscribe)
 {
   char section[64];
   char label[64];
@@ -49,7 +49,7 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   ptz = malloc(sizeof(ptz_t));
   ptz->datatime = 0;
   ptz->drivername = strdup(drivername);
-  ptz->proxy = playerc_ptz_create(client, index);
+  ptz->proxy = playerc_ptz_create(client, robot, index);
 
   // Set initial device state
   snprintf(section, sizeof(section), "ptz:%d", index);
