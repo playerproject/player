@@ -193,12 +193,12 @@ int PlayerMultiClient::Read()
     // is this one ready to read?
     if(ufds[i].revents & POLLIN)
     {
-      // set the fresh flag
-      clients[i]->fresh = true;
-
       //printf("reading from: %d 0x%x\n", i,ufds[i].events);
       if((retval = clients[i]->Read()) == -1)
         return(retval);
+      
+      // set the fresh flag
+      clients[i]->fresh = true;
     }
     else if(ufds[i].revents)
     {
