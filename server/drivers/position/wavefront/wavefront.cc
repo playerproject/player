@@ -25,10 +25,26 @@
 #include <netinet/in.h>
 
 #include "player.h"
+#include "playertime.h"
 #include "device.h"
 #include "drivertable.h"
 #include "devicetable.h"
 #include "plan.h"
+
+extern PlayerTime* GlobalTime;
+
+// TODO: monitor localize timestamps, and slow or stop robot accordingly
+
+// time to sleep between loops (us)
+#define CYCLE_TIME_US 100000
+// number of past poses to use when low-pass filtering localize data
+#define LOCALIZE_WINDOW_SIZE 20
+// skip poses that are more than this far away from the current window avg
+// (meters)
+#define LOCALIZE_WINDOW_EPSILON 3.0
+// if localize gets more than this far behind, stop the robot to let it
+// catch up (seconds)
+#define LOCALIZE_MAX_LAG 2.0
 
 class Wavefront : public CDevice
 {
@@ -48,6 +64,15 @@ class Wavefront : public CDevice
     double ang_eps;
     const char* map_fname;
     const char* cspace_fname;
+
+    // for filtering localize poses
+    double lx_window[LOCALIZE_WINDOW_SIZE];
+    double ly_window[LOCALIZE_WINDOW_SIZE];
+    int l_window_size;
+    int l_window_ptr;
+
+    // for monitoring localize timestamps
+    double l_lag;
 
     // the plan object
     plan_t* plan;
@@ -144,10 +169,14 @@ int Wavefront::Setup()
   PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
   PutData((unsigned char*)&data,sizeof(data),0,0);
 
-  target_x = target_y = target_a = 0.0;
-  position_x = position_y = position_a = 0.0;
-  localize_x = localize_y = localize_a = 0.0;
-  new_goal = false;
+  this->target_x = this->target_y = this->target_a = 0.0;
+  this->position_x = this->position_y = this->position_a = 0.0;
+  this->localize_x = this->localize_y = this->localize_a = 0.0;
+  this->new_goal = false;
+  memset(this->lx_window,0,sizeof(this->lx_window));
+  memset(this->ly_window,0,sizeof(this->ly_window));
+  this->l_window_size = 0;
+  this->l_window_ptr = 0;
 
   if(this->position_index < 0)
   {
@@ -269,22 +298,77 @@ void
 Wavefront::GetLocalizeData()
 {
   player_localize_data_t data;
+  static unsigned int last_timesec=0;
+  static unsigned int last_timeusec=0;
   unsigned int timesec, timeusec;
+  double lx,ly,la;
+  double dist;
+  double lx_sum, ly_sum;
+  double lx_avg, ly_avg;
+  struct timeval curr;
+
+  if(GlobalTime->GetTime(&curr) < 0)
+    PLAYER_ERROR("GetTime() failed!");
 
   if(!this->localize->GetData(this,(unsigned char*)&data,sizeof(data),
-                              &timesec, &timeusec))
+                              &timesec, &timeusec) || !data.hypoth_count)
+  {
+    this->l_lag = (curr.tv_sec + curr.tv_usec / 1e6) - 
+            (last_timesec + last_timeusec / 1e6);
     return;
-  
-  if(!data.hypoth_count)
-    return;
+  }
 
+  this->l_lag = (curr.tv_sec + curr.tv_usec / 1e6) - 
+          (timesec + timeusec / 1e6);
+
+  last_timesec = timesec;
+  last_timeusec = timeusec;
+  
   // just take the first hypothesis, on the assumption that it's the
   // highest weight.
-  this->localize_x = ((int)ntohl(data.hypoths[0].mean[0]))/1e3;
-  this->localize_y = ((int)ntohl(data.hypoths[0].mean[1]))/1e3;
-  this->localize_a = DTOR((int)ntohl(data.hypoths[0].mean[2])/3600.0);
+  lx = ((int)ntohl(data.hypoths[0].mean[0]))/1e3;
+  ly = ((int)ntohl(data.hypoths[0].mean[1]))/1e3;
+  la = DTOR((int)ntohl(data.hypoths[0].mean[2])/3600.0);
   //printf("GetLocalizeData: %f, %f, %f\n",
          //localize_x,localize_y,RTOD(localize_a));
+
+  // is the filter window full yet?
+  if(this->l_window_size >= LOCALIZE_WINDOW_SIZE)
+  {
+    // compute window averages
+    lx_sum = ly_sum = 0.0;
+    for(int i=0;i<this->l_window_size;i++)
+    {
+      lx_sum += this->lx_window[i];
+      ly_sum += this->ly_window[i];
+    }
+    // compute distance of new pose from window average
+    lx_avg = lx_sum / (double)this->l_window_size;
+    ly_avg = ly_sum / (double)this->l_window_size;
+    dist = sqrt((lx-lx_avg)*(lx-lx_avg) + (ly-ly_avg)*(ly-ly_avg));
+  }
+  else
+  {
+    // filter window isn't full yet; just take this pose
+    dist = 0.0;
+  }
+
+  // should we use this pose?
+  if(dist < LOCALIZE_WINDOW_EPSILON)
+  {
+    this->localize_x = lx;
+    this->localize_y = ly;
+    this->localize_a = la;
+  }
+  else
+    PLAYER_WARN3("discarding pose %f,%f,%f", lx,ly,la);
+
+  // regardless, add it to the running window sum
+  this->lx_window[this->l_window_ptr] = lx;
+  this->ly_window[this->l_window_ptr] = ly;
+  if(this->l_window_size < LOCALIZE_WINDOW_SIZE)
+    this->l_window_size++;
+  this->l_window_ptr = (this->l_window_ptr + 1) % LOCALIZE_WINDOW_SIZE;
 }
 
 void
@@ -318,7 +402,6 @@ Wavefront::PutPositionCommand(double x, double y, double a)
   this->position->PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 }
 
-// TODO: fix this transform
 void
 Wavefront::LocalizeToPosition(double* px, double* py, double* pa,
                               double lx, double ly, double la)
@@ -330,8 +413,8 @@ Wavefront::LocalizeToPosition(double* px, double* py, double* pa,
   lx_rot = this->localize_x * cos(offset_a) - this->localize_y * sin(offset_a);
   ly_rot = this->localize_x * sin(offset_a) + this->localize_y * cos(offset_a);
 
-  offset_x = - lx_rot + this->position_x;
-  offset_y = - ly_rot + this->position_y;
+  offset_x = this->position_x - lx_rot;
+  offset_y = this->position_y - ly_rot;
 
   //printf("offset: %f, %f, %f\n", offset_x, offset_y, RTOD(offset_a));
 
@@ -372,6 +455,14 @@ void Wavefront::Main()
     GetPositionData();
     GetLocalizeData();
     GetCommand();
+
+    // if localize gets too far behind, stop the robot to let it catch up
+    if(this->l_lag > LOCALIZE_MAX_LAG)
+    {
+      PLAYER_WARN("stopping robot to let localize catch up");
+      StopPosition();
+      continue;
+    }
 
     if(this->new_goal)
     {
@@ -454,7 +545,7 @@ void Wavefront::Main()
       PutPositionCommand(wx_odom, wy_odom, wa_odom);
     }
 
-    usleep(100000);
+    usleep(CYCLE_TIME_US);
   }
 }
 
