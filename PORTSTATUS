@@ -2,26 +2,34 @@
 # Status of P/S on various platforms
 #
 
+-------------------------------------------------------------------------------
+General notes
+-------------------------------------------------------------------------------
+Player is developed on Linux x86 and OS X.3. Status of other platforms
+is tested infrequently and may be out of date. If you have information
+about other platforms, please contact the Player lead maintainer,
+Brian Gerkey <gerkey@users.sourceforge.net>
+
+
 # Y = YES
 # N = NO
 # U = UNTESTED
 
 -------------------------------------------------------------------------------
-Machine       |   OS           |  Clients?  | Hardware?  |  Stage? |  RTKGUI? 
+Machine       |   OS               |  Clients?  | Hardware?  |  Stage? |  RTKGUI? 
 -------------------------------------------------------------------------------
-x86            Linux 2.2, 2.4       Y           Y           Y           Y
-Sparc          SunOS 5.6, 5.8       Y           U           Y           Y
-Sparc64        Linux 2.4            Y           U           Y           U
-SA1110 (Bitsy) Linux 2.4.19	    U		Y	    N		N
-SA1110 (iPAQ)  Linux 2.4.??         Y           Y           N           N
-Alpha          Linux 2.2            Y           U           Y           U
-x86            FreeBSD 4.7          Y           U           Y           Y
-PowerPC        OS X.2               Y           U           Y           Y
+x86            Linux 2.2, 2.4, 2.6      Y           Y           Y           Y
+Sparc          SunOS 5.6, 5.8           Y           U           Y           Y
+Sparc64        Linux 2.4                Y           U           Y           U
+SA1110 (Bitsy) Linux 2.4.19	        U           Y           N           N
+SA1110 (iPAQ)  Linux 2.4.??             Y           Y           N           N
+Alpha          Linux 2.2                Y           U           Y           U
+x86            FreeBSD 4.7              Y           U           Y           Y
+PowerPC        OS X.2, X.3              Y           U           Y           Y
 -------------------------------------------------------------------------------
 
-
 -------------------------------------------------------------------------------
-Notes
+Platform Notes
 -------------------------------------------------------------------------------
 Sparc/SunOS:
    - udpbroadcast driver causes Player to hang.
@@ -31,4 +39,5 @@ x86/FreeBSD:
 
 Alpha/Linux:
    - Stage lbddevice segfaults in an STL list iteration.
+
 -------------------------------------------------------------------------------
