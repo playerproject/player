@@ -1214,11 +1214,13 @@ The {\tt audiomixer} interface is used to control sound levels. */
 
 /** [Configuration: get levels] */
 /**
-The {\tt audiomixe} interface provides accepts a configuration request which
+The {\tt audiomixer} interface provides accepts a configuration request which
 returns the current state of the mixer levels.
 */
 typedef struct player_audiomixer_config
 {
+  /** documentation for these fields goes here
+   */
   uint8_t subtype;
   uint16_t masterLeft, masterRight;
   uint16_t pcmLeft, pcmRight;
@@ -1236,11 +1238,11 @@ PCM volume, PLAYER_AUDIOMIXER_LINE for the line in volume,
 PLAYER_AUDIOMIXER_MIC for the microphone volume, PLAYER_AUDIOMIXER_IGAIN for 
 the input gain, and PLAYER_AUDIOMIXER_OGAIN for the output gain.
 */
-
 typedef struct player_audiomixer_cmd
 {
+  /** documentation for these fields goes here
+   */
   uint8_t subtype;
-
   uint16_t left;
   uint16_t right;
 
