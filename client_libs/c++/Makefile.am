@@ -1,11 +1,11 @@
 SUBDIRS = . test
 
-AM_CPPFLAGS = -I$(top_srcdir)/server -I$(srcdir)/../c
+AM_CPPFLAGS = -I$(top_srcdir)/server -I$(srcdir)/../c -I$(top_srcdir)/replace
 
 lib_LIBRARIES = libplayerclient.a
 
-libplayerclient_a_LIBADD = ../c/playercclient.o 
-libplayerclient_a_DEPENDENCIES = ../c/playercclient.o
+libplayerclient_a_LIBADD = $(srcdir)/../c/playercclient.o $(top_builddir)/replace/libreplace.a
+libplayerclient_a_DEPENDENCIES = $(srcdir)/../c/playercclient.o $(top_builddir)/replace/libreplace.a
 
 libplayerclient_a_SOURCES =   commsproxy.cc \
                               clientproxy.cc \

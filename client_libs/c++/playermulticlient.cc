@@ -29,6 +29,8 @@
 #include <playerclient.h>
 #include <string.h>  // for memcpy
 
+#include "replace.h"  // for poll
+
 // constructor
 PlayerMultiClient::PlayerMultiClient()
 {
