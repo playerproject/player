@@ -311,9 +311,14 @@ void
 SetupErrorHandlers()
 {
 
+// This needs some work.  If the build system has OpenCV installed, but
+// the user disables all OpenCV-using drivers, then this bit of code is
+// compiled, but the OpenCV libs aren't linked, and so the build fails.
+#if 0
 #ifdef HAVE_OPENCV
   // OpenCV handler
   cvRedirectError(cvErrorCallback);
+#endif
 #endif
 
   return;
