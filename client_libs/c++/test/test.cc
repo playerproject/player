@@ -163,6 +163,9 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "audiomixer") == 0 || strcmp(device, "all") == 0)
       test_audiomixer(&client, index);
 
+    if(strcmp(device, "blinkenlight") == 0 || strcmp(device, "all") == 0)
+      test_blinkenlight(&client, index);
+
 
     // BPS device
     /*
