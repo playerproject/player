@@ -68,6 +68,9 @@ class CBpsDevice : public CDevice
     public: virtual int Shutdown();
     public: virtual CLock* GetLock() {return &lock;};
 
+    // Device thread
+    public: void Main();
+    
     // Client interface
     public: virtual size_t GetData(unsigned char *, size_t maxsize);
     public: virtual void PutData(unsigned char *, size_t maxsize);
@@ -82,6 +85,9 @@ class CBpsDevice : public CDevice
     // Lock object for synchronization
     private: CLock lock;
 
+    // Our thread
+    private: pthread_t thread;
+    
     // Our index
     private: uint16_t index;
     
@@ -115,6 +121,9 @@ class CBpsDevice : public CDevice
 
     // Current error value
     private: double err;
+
+    // Current bps data
+    private: player_bps_data_t data;
 };
 
 

@@ -56,7 +56,8 @@
 #include "devicetable.h"
 
 extern CDeviceTable* deviceTable;
-
+static void *DummyMain(void *data);
+    
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -105,10 +106,12 @@ int CBpsDevice::Setup()
     this->err = 0;
 
     // Hack to get around mutex on GetData
-    player_bps_data_t bps_data;
-    GetLock()->PutData(this, (uint8_t*) &bps_data, sizeof(bps_data));
+    GetLock()->PutData(this, NULL, 0);
     
-    PLAYER_TRACE0("bps device: setup");
+    // Start our own thread
+    pthread_create(&this->thread, NULL, DummyMain, this );
+    
+    PLAYER_TRACE0("setup");
     return 0;
 }
 
@@ -118,80 +121,121 @@ int CBpsDevice::Setup()
 //
 int CBpsDevice::Shutdown()
 {
+    // Stop the thread
+    //
+    pthread_cancel(this->thread);
+    pthread_join(this->thread, NULL);
+    
     // Unsubscribe from the laser device
     //
     this->position->GetLock()->Unsubscribe(this->position);    
     this->laserbeacon->GetLock()->Unsubscribe(this->laserbeacon);
 
-    PLAYER_TRACE0("bps device: shutdown");
+    PLAYER_TRACE0("shutdown");
     return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Get data from buffer (called by client thread)
+// Dummy thread entry point
+static void *DummyMain(void *data)
+{
+    ((CBpsDevice*) data)->Main();
+    return NULL;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Device thread
 //
-size_t CBpsDevice::GetData(unsigned char *dest, size_t maxsize) 
+void CBpsDevice::Main()
 {
     uint32_t sec, usec;
     
-    // Get the odometry data
-    player_position_data_t position_data;
-    this->position->GetLock()->GetData(this->position, (uint8_t*) &position_data,
-                                       sizeof(position_data), &sec, &usec);
+    PLAYER_TRACE0("main");
 
-    // If odometry data is new, process it...
-    if (!(sec == this->position_sec && usec == this->position_usec))
+    while (TRUE)
     {
-        this->position_sec = sec;
-        this->position_usec = usec;
-            
-        // Compute odometric pose in SI units
-        this->odo_px = ((int) ntohl(position_data.xpos)) / 1000.0;
-        this->odo_py = ((int) ntohl(position_data.ypos)) / 1000.0;
-        this->odo_pa = ntohs(position_data.theta) * M_PI / 180;
-
-        //PLAYER_TRACE3("odometry : %f %f %f", this->odo_px, this->odo_py, this->odo_pa);
-    }
-        
-    // Get the beacon data
-    player_laserbeacon_data_t laserbeacon_data;
-    this->laserbeacon->GetLock()->GetData(this->laserbeacon, (uint8_t*) &laserbeacon_data,
-                                          sizeof(laserbeacon_data), &sec, &usec);
-
-    PLAYER_TRACE0("about to check beacon times");
-    // If beacon data is new, process it...
-    if (!(sec == this->beacon_sec && usec == this->beacon_usec))
-    {
-        PLAYER_TRACE0("beacons are new");
-        this->beacon_sec = sec;
-        this->beacon_usec = usec;
-
-        PLAYER_TRACE2("laserbeacon count: %u %u",
-                      laserbeacon_data.count,
-                      ntohs(laserbeacon_data.count));
-        // Process the beacons one-by-one
-        for (int i = 0; i < ntohs(laserbeacon_data.count); i++)
-        {
-            int id = laserbeacon_data.beacon[i].id;
-            PLAYER_TRACE1("considering beacon %d",id);
-            if (id == 0)
-                continue;
-            double r = ntohs(laserbeacon_data.beacon[i].range) / 1000.0;
-            double b = ((short) ntohs(laserbeacon_data.beacon[i].bearing)) * M_PI / 180.0;
-            double o = ((short) ntohs(laserbeacon_data.beacon[i].orient)) * M_PI / 180.0;
-            
-            err = ProcessBeacon(id, r, b, o);
+        pthread_testcancel();
+        usleep(10);
     
-            // Totally bogus filter on error term
-            if (err >= 0)
+        // Get the odometry data
+        player_position_data_t posdata;
+        this->position->GetLock()->GetData(this->position, (uint8_t*) &posdata,
+                                           sizeof(posdata), &sec, &usec);
+
+        // If odometry data is new, process it...
+        if (!(sec == this->position_sec && usec == this->position_usec))
+        {
+            PLAYER_TRACE2("odometry time : %u.%06u", sec, usec);
+            
+            this->position_sec = sec;
+            this->position_usec = usec;
+            
+            // Compute odometric pose in SI units
+            this->odo_px = ((int) ntohl(posdata.xpos)) / 1000.0;
+            this->odo_py = ((int) ntohl(posdata.ypos)) / 1000.0;
+            this->odo_pa = ntohs(posdata.theta) * M_PI / 180;
+
+            PLAYER_TRACE3("odometry : %f %f %f",
+                          this->odo_px, this->odo_py, this->odo_pa);
+
+            // Update our data
+            //
+            GetLock()->PutData(this, NULL, 0);
+        }
+                
+        // Get the beacon data
+        player_laserbeacon_data_t lbdata;
+        this->laserbeacon->GetLock()->GetData(this->laserbeacon,
+                                              (uint8_t*) &lbdata,
+                                              sizeof(lbdata), &sec, &usec);
+
+        // If beacon data is new, process it...
+        if (!(sec == this->beacon_sec && usec == this->beacon_usec))
+        {
+            PLAYER_TRACE2("beacon time : %u.%06u", sec, usec);
+            
+            this->beacon_sec = sec;
+            this->beacon_usec = usec;
+
+            for (int i = 0; i < ntohs(lbdata.count); i++)
             {
-                double tc = 0.5;
-                this->err = (1 - tc) * this->err + tc * err;
+                int id = lbdata.beacon[i].id;
+                if (id == 0)
+                    continue;
+
+                double r = ntohs(lbdata.beacon[i].range) / 1000.0;
+                double b = ((short) ntohs(lbdata.beacon[i].bearing)) * M_PI / 180.0;
+                double o = ((short) ntohs(lbdata.beacon[i].orient)) * M_PI / 180.0;
+
+                PLAYER_TRACE4("beacon : %d %f %f %f", id, r, b, o);
+
+                // Now process this beacon
+                err = ProcessBeacon(id, r, b, o);
+    
+                // Totally bogus filter on error term
+                if (err >= 0)
+                {
+                    double tc = 0.5;
+                    this->err = (1 - tc) * this->err + tc * err;
+                }
             }
+
+            // Update our data
+            //
+            GetLock()->PutData(this, NULL, 0);
         }
     }
-    
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Put data in buffer (called by device thread)
+// Note that the arguments are ignored.
+//
+void CBpsDevice::PutData(unsigned char *src, size_t maxsize)
+{
     // Compute current global pose
     double gx = this->org_px +
         this->odo_px * cos(this->org_pa) - this->odo_py * sin(this->org_pa);
@@ -200,26 +244,23 @@ size_t CBpsDevice::GetData(unsigned char *dest, size_t maxsize)
     double ga = this->org_pa + this->odo_pa;
 
     // Construct data packet
-    player_bps_data_t data;
-    data.px = htonl((int) (gx * 1000));
-    data.py = htonl((int) (gy * 1000));
-    data.pa = htonl((int) (ga * 180 / M_PI));
-    data.err = htonl((int) (this->err * 1e6));
-
-    // Copy results
-    ASSERT(maxsize >= sizeof(data));
-    memcpy(dest, &data, sizeof(data));
-    
-    return sizeof(data);
+    this->data.px = htonl((int) (gx * 1000));
+    this->data.py = htonl((int) (gy * 1000));
+    this->data.pa = htonl((int) (ga * 180 / M_PI));
+    this->data.err = htonl((int) (this->err * 1e6));
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Put data in buffer (called by device thread)
+// Get data from buffer (called by client thread)
 //
-void CBpsDevice::PutData(unsigned char *src, size_t maxsize)
+size_t CBpsDevice::GetData(unsigned char *dest, size_t maxsize) 
 {
+    assert(maxsize >= sizeof(this->data));
+    memcpy(dest, &this->data, sizeof(this->data));
+    return sizeof(this->data);
 }
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
