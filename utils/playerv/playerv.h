@@ -51,6 +51,7 @@
 #define COLOR_FRF                0xC0C080
 #define COLOR_FRF_SCAN           0xC0C080
 
+
 /***************************************************************************
  * Top-level GUI elements
  ***************************************************************************/
@@ -117,7 +118,8 @@ typedef struct
 
 
 // Create a srf device
-srf_t *srf_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+srf_t *srf_create(mainwnd_t *mainwnd, opt_t *opt,
+                  playerc_client_t *client, int index, int subscribe);
 
 // Destroy a srf device
 void srf_destroy(srf_t *srf);
@@ -151,7 +153,8 @@ typedef struct
 
 
 // Create a fiducial device
-fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt,
+                            playerc_client_t *client, int index, int subscribe);
 
 // Destroy a fiducial device
 void fiducial_destroy(fiducial_t *fiducial);
@@ -188,7 +191,8 @@ typedef struct
 
 
 // Create a position device
-position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+position_t *position_create(mainwnd_t *mainwnd, opt_t *opt,
+                            playerc_client_t *client, int index, int subscribe);
 
 // Destroy a position device
 void position_destroy(position_t *position);
@@ -224,7 +228,7 @@ typedef struct
 
 // Create a ptz device
 ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
-                  playerc_client_t *client, int index);
+                  playerc_client_t *client, int index, int subscribe);
 
 // Destroy a ptz device
 void ptz_destroy(ptz_t *ptz);
@@ -257,7 +261,8 @@ typedef struct
 
 
 // Create a frf device
-frf_t *frf_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+frf_t *frf_create(mainwnd_t *mainwnd, opt_t *opt,
+                  playerc_client_t *client, int index, int subscribe);
 
 // Destroy a frf device
 void frf_destroy(frf_t *frf);
@@ -296,7 +301,7 @@ typedef struct
 
 // Create a blobfinder device
 blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt,
-                        playerc_client_t *client, int index);
+                                playerc_client_t *client, int index, int subscribe);
 
 // Destroy a blobfinder device
 void blobfinder_destroy(blobfinder_t *blobfinder);
