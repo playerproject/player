@@ -172,16 +172,18 @@ test_fiducial(PlayerClient* client, int index)
 	
 	msg.target_id = fp.beacons[i].id;
 	snprintf( (char*)&msg.bytes, PLAYER_FIDUCIAL_MAX_MSG_LEN, 
-		  "message to %d", msg.target_id );
+		  "hello %d", msg.target_id );
 	msg.len = (uint8_t)strlen((char*)&msg.bytes);
 	
 	// attempt to send a message
-	TEST("broadcasting a message");
+	TEST("sending addressed message");
+
+	printf( "\"%s\" to %d ...", msg.bytes, msg.target_id ); 
 	
 	if( fp.SendMessage(&msg) < 0 )
 	  {
 	    FAIL();
-	    puts( "Messaging not supported" );
+	    puts( "Fail. Messaging probably not supported" );
 	    break;
 	  }
 	else
