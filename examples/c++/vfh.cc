@@ -17,7 +17,7 @@ char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
 
 int cmd_line_gotoxy = 0;
-int gotox, gotoy;
+int gotox, gotoy, gotot;
 
 /* easy little command line argument parser */
 void parse_args(int argc, char** argv) {
@@ -53,6 +53,9 @@ void parse_args(int argc, char** argv) {
         gotox = atoi(argv[i]);
         if (++i<argc) {
           gotoy = atoi(argv[i]);
+          if (++i<argc) {
+            gotot = atoi(argv[i]);
+          }
         } else {
           puts(USAGE);
           exit(1);
@@ -119,7 +122,7 @@ int main(int argc, char **argv) {
 
   // A goto command given on the command line
   if (cmd_line_gotoxy)
-    vfh_pp.GoTo(gotox, gotoy, 0);
+    vfh_pp.GoTo(gotox, gotoy, gotot);
 
   for(;;)
   {
