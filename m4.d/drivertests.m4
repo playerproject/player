@@ -262,6 +262,7 @@ AC_SUBST(AMCL_LIBPATH)
 AC_SUBST(AMCL_PF_LIB)
 AC_SUBST(AMCL_MAP_LIB)
 AC_SUBST(AMCL_MODELS_LIB)
+AC_SUBST(AMCL_EXTRA_LIB)
 
 dnl optionally compile the incremental nav driver -- disabled by default
 AC_ARG_WITH(inav,

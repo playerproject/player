@@ -222,6 +222,7 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
     
   header.stx = PLAYER_STXX;
   header.type = PLAYER_MSGTYPE_CMD;
+  header.robot = device->robot;
   header.device = device->code;
   header.device_index = device->index;
   header.size = len;

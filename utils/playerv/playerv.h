@@ -54,7 +54,7 @@
 #define COLOR_PTZ_CMD            0x00C000
 #define COLOR_SONAR              0xC0C080
 #define COLOR_SONAR_SCAN         0xC0C080
-#define COLOR_LOCALIZATION       0xFF0000
+#define COLOR_LOCALIZE           0xFF0000
 
 
 /***************************************************************************
@@ -426,10 +426,10 @@ void blobfinder_update(blobfinder_t *blobfinder);
 
 
 /***************************************************************************
- * localization device
+ * localize device
  ***************************************************************************/
 
-// localization device info
+// localize device info
 typedef struct
 {
   // Driver name
@@ -441,35 +441,34 @@ typedef struct
   rtk_menuitem_t *reset_item;
   rtk_menuitem_t *showmap_item;
 
-  // localization device proxy
-  playerc_localization_t *proxy;
+  // localize device proxy
+  playerc_localize_t *proxy;
 
   // Figures
-  int image_init;
   rtk_fig_t *map_fig;
+  rtk_fig_t *hypoth_fig;
 
-  // Internal map
-  player_localization_map_header_t map_header;
-  unsigned char* map_data;
-  uint8_t map_scale;
+  // Map image
+  uint16_t *map_image;
 
-  // Image scale (m/pixel)
-  double scale;
+  // Map magnification factor (1 = full size, 2 = half size, etc)
+  int map_mag;
+
   // Timestamp on most recent data
   double datatime;
   
-} localization_t;
+} localize_t;
 
 
-// Create a localization device
-localization_t *localization_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+// Create a localize device
+localize_t *localize_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
                                     int robot, int index,  const char *drivername, int subscribe);
 
-// Destroy a localization device
-void localization_destroy(localization_t *localization);
+// Destroy a localize device
+void localize_destroy(localize_t *localize);
 
-// Update a localization device
-void localization_update(localization_t *localization);
+// Update a localize device
+void localize_update(localize_t *localize);
 
 
 #endif
