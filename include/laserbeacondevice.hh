@@ -126,7 +126,6 @@ class CLaserBeaconDevice : public CDevice
     private: double m_max_depth;
     private: int m_max_bits;
     private: double m_bit_width;
-    private: int m_min_samples;
     private: int m_one_thresh, m_zero_thresh;  
 };
 

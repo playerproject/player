@@ -41,6 +41,8 @@
 //  are used to locate candidate beacons, determine their size and orientation.
 //  Intermediate bits can be used to encode a unique id.
 //
+//  Will return an id of zero if it can see a beacon, but cannot identify it.
+//
 // Known bugs:
 //  (empty)
 //
@@ -55,7 +57,7 @@
 #include "laserbeacondevice.hh"
 
  // *** TESTING -- remove this later
-#define ENABLE_TRACE 1
+#define ENABLE_TRACE 0
 #include "rtk-types.hh"
 
 
@@ -69,8 +71,8 @@ CLaserBeaconDevice::CLaserBeaconDevice(CDevice *laser)
 
     // Expected width of beacon
     //
-    m_min_width = 0.40 - 0.04;  
-    m_max_width = 0.40 + 0.04;
+    m_min_width = 0.40 - 0.05;  
+    m_max_width = 0.40 + 0.05;
 
     // Maximum variance in the flatness of the beacon
     //
@@ -81,10 +83,6 @@ CLaserBeaconDevice::CLaserBeaconDevice(CDevice *laser)
     m_max_bits = 8;
     m_bit_width = 0.05;
     
-    // Required number of samples for each beacon
-    //
-    m_min_samples = 3 * 8;
-
     // Histogram thresholds
     //
     m_one_thresh = +3;
@@ -199,7 +197,7 @@ int CLaserBeaconDevice::Shutdown()
 void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
                                BeaconData *beacon_data)
 {
-    TRACE0("searching");
+    //TRACE0("searching");
     
     beacon_data->count = 0;
 
@@ -247,18 +245,18 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
             double width = sqrt(dx * dx + dy * dy);
             double orient = atan2(dy, dx);
 
-            //printf("(%f %f) ", (double) width, (double) orient);
-            
+            // Check the width
+            //
             if (width < m_min_width || width > m_max_width)
-                continue;
-            if (bi - ai < m_min_samples)
                 continue;
 
             // Assign an id to this candidate beacon
-            // Will return 0 if the beacon is no good
+            // Will return -1 if this is not a beacon.
+            // Will return  0 if this is a beacon, but it cannot be identified.
+            // Will return beacon id otherwise
             //
             int id = IdentBeacon(ai, bi, ax, ay, orient, laser_data);
-            if (id <= 0)
+            if (id < 0)
                 continue;
 
             // Check for array overflow
@@ -280,7 +278,10 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Analyze the candidate beacon and return its id (0 == none)
+// Analyze the candidate beacon and return its id
+// Will return -1 if this is not a beacon.
+// Will return  0 if this is a beacon, but it cannot be identified.
+// Will return beacon id otherwise
 //
 int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double oth,
                                     const player_laser_data_t *laser_data)
@@ -288,8 +289,8 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
     int hist[PLAYER_NUM_LASER_SAMPLES];
     memset(hist, 0, sizeof(hist));
     
-    printf("candidate %d:%d  ", (int) a, (int) b);
-
+    //printf("candidate %d:%d  ", (int) a, (int) b);
+    
     // Scan through the readings that make up the candidate
     //
     for (int i = a; i <= b; i++)
@@ -311,7 +312,7 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
         // (ie candidate is not flat).
         //
         if (fabs(py) > m_max_depth)
-            return 0;
+            return -1;
 
         // Work out which bit this point corresponds to
         //
@@ -326,10 +327,11 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
         else
             hist[bin] -= 1;
         
-        printf("%d", (int) intensity);
+        //printf("%d", (int) intensity);
     }
-    printf("\n");
+    //printf("\n");
 
+    /*
     // Display histogram
     //
     printf("histogram ");
@@ -350,6 +352,7 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
             printf(" ?");
     }
     printf("\n");
+    */
 
     // Assign id by thresholding the bit-histogram.
     //
@@ -367,7 +370,7 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
         }
     }
 
-    printf("id %d\n", (int) id);
+    //printf("id %d\n", (int) id);
 
     return id;
 }
