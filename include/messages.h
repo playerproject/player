@@ -198,13 +198,21 @@ typedef struct
 } __attribute__ ((packed)) player_position_data_t;
 
 
-/* TODO: need to make structured buffers for config requests */
+// RTV - don't much like this config model - it should be a single
+// structured packet that contains all the state at once - but the c++ proxy
+// is set up to do it this way. i guess the real P2OS device does it this way
 
 /* the various configuration commands 
  * NOTE: these must not be the same as any other P2OS device! */
 #define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)1)
 #define PLAYER_POSITION_VELOCITY_CONTROL_REQ ((uint8_t)2)
 #define PLAYER_POSITION_RESET_ODOM_REQ        ((uint8_t)3)
+
+typedef struct
+{
+  uint8_t request; // one of the above request types
+  uint8_t value;  // value for the request (usually 0 or 1)
+} __attribute__ ((packed)) player_position_config_t;
  
 /*************************************************************************/
 
@@ -705,7 +713,7 @@ typedef struct
   uint8_t bumpers[2]; // booleans
 } __attribute__ ((packed)) player_descartes_data_t;
 
-// no configs for descarte
+// no configs for descartes
 
 /*************************************************************************/
 
