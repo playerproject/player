@@ -51,6 +51,10 @@
 #include <stdlib.h>
 #include <math.h>
 
+#ifndef MIN
+  #define MIN(a,b) (a < b) ? a : b
+#endif
+
 LocalizeProxy::~LocalizeProxy()
 { 
   if(map_cells)
