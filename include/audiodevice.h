@@ -97,6 +97,3 @@ class CAudioDevice:public CDevice {
 };
 
 #endif
-
-
-
