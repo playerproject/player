@@ -11,7 +11,7 @@ TCLLIBDIR = $(INSTALL_LIB)/tclPlayer
 all: 
 	echo "pkg_mkIndex ." | tclsh
 
-install:
+install: all
 	$(MKDIR) -p $(TCLLIBDIR)
 	$(INSTALL) -m 644 playerclient.tcl $(TCLLIBDIR)
 	$(INSTALL) -m 644 pkgIndex.tcl $(TCLLIBDIR)
@@ -19,6 +19,7 @@ install:
 uninstall:
 	$(RM) -f $(TCLLIBDIR)/playerclient.tcl 
 	$(RM) -f $(TCLLIBDIR)/pkgIndex.tcl 
+	$(RMDIR) --ignore-fail-on-non-empty $(TCLLIBDIR)
 
 clean:
 	$(RM) -f pkgIndex.tcl

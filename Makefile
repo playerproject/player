@@ -32,7 +32,7 @@ dep:
 	cd examples && make dep
 	cd utils && make dep
 
-install: install_server install_client_libs install_utils install_doc
+install: all install_server install_client_libs install_utils install_doc
 
 install_server:
 	cd src && make install
@@ -51,8 +51,8 @@ install_doc:
 	$(INSTALL) -m 644 doc/* $(INSTALL_DOC)
 
 uninstall:
-	cd src && make uninstall
-	cd client_libs && make uninstall
+	cd src && make -i uninstall
+	cd client_libs && make -i uninstall
 	cd examples && make -i uninstall
 	cd utils && make -i uninstall
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_BIN) 
@@ -60,6 +60,8 @@ uninstall:
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
 	$(RM) -f $(INSTALL_DOC)/*
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_DOC)
+	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
+	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_LIB)
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
 
 distro: clean
