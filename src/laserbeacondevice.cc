@@ -66,25 +66,6 @@ CLaserBeaconDevice::CLaserBeaconDevice(CDevice *laser)
 {
     m_laser = laser;
     ASSERT(m_laser != NULL);
-
-    // Maximum variance in the flatness of the beacon
-    //
-    m_max_depth = 0.05;
-
-    // Number of bits and size of each bit
-    //
-    m_max_bits = 8;
-    m_bit_width = 0.05;
-
-    // Expected width of beacon
-    //
-    m_min_width = m_max_bits * m_bit_width - m_bit_width;  
-    m_max_width = m_max_bits * m_bit_width + m_bit_width;
-    
-    // Histogram thresholds
-    //
-    m_one_thresh = +3;
-    m_zero_thresh = -3;    
 }
 
 
@@ -177,6 +158,11 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
     m_min_width = m_max_bits * m_bit_width - m_bit_width;  
     m_max_width = m_max_bits * m_bit_width + m_bit_width;
 
+    // Tolerance
+    //
+    m_one_thresh = +beacon_config->one_thresh;
+    m_zero_thresh = -beacon_config->zero_thresh;
+
     PLAYER_TRACE2("bits %d, width %f", m_max_bits, m_bit_width);
 }
 
@@ -186,6 +172,25 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
 //
 int CLaserBeaconDevice::Setup()
 {
+    // Maximum variance in the flatness of the beacon
+    //
+    m_max_depth = 0.05;
+
+    // Number of bits and size of each bit
+    //
+    m_max_bits = 8;
+    m_bit_width = 0.05;
+
+    // Expected width of beacon
+    //
+    m_min_width = m_max_bits * m_bit_width - m_bit_width;  
+    m_max_width = m_max_bits * m_bit_width + m_bit_width;
+    
+    // Histogram thresholds
+    //
+    m_one_thresh = +3;
+    m_zero_thresh = -3;
+    
     // Hack to get around mutex on GetData
     //
     player_laserbeacon_data_t beacon_data;

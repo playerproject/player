@@ -356,6 +356,8 @@ typedef struct
 {
     uint8_t bit_count;
     uint16_t bit_size;
+    uint8_t one_thresh;
+    uint8_t zero_thresh;
 } __attribute__ ((packed)) player_laserbeacon_config_t;
  
 #define LASERBEACON_DATA_BUFFER_SIZE ((int) sizeof(player_laserbeacon_data_t))
