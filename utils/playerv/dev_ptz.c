@@ -71,10 +71,18 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   // Construct figures
   ptz->data_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 10);
   ptz->cmd_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 11);
+  ptz->data_fig_tilt = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 12);
+  ptz->cmd_fig_tilt = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 13);
   rtk_fig_movemask(ptz->cmd_fig, RTK_MOVE_TRANS);
   rtk_fig_origin(ptz->cmd_fig, 1, 0, 0);
   rtk_fig_color_rgb32(ptz->cmd_fig, COLOR_PTZ_CMD);
   rtk_fig_ellipse(ptz->cmd_fig, 0, 0, 0, 0.2, 0.2, 0);
+  
+  rtk_fig_movemask(ptz->cmd_fig_tilt, RTK_MOVE_TRANS);
+  rtk_fig_origin(ptz->cmd_fig_tilt, 0.8, 0, 0);
+  rtk_fig_color_rgb32(ptz->cmd_fig_tilt, COLOR_PTZ_CMD_TILT);
+  rtk_fig_ellipse(ptz->cmd_fig_tilt, 0, 0, 0, 0.2, 0.2, 0);
+  
   
   return ptz;
 }
@@ -86,6 +94,8 @@ void ptz_destroy(ptz_t *ptz)
   // Destroy figures
   rtk_fig_destroy(ptz->cmd_fig);
   rtk_fig_destroy(ptz->data_fig);
+  rtk_fig_destroy(ptz->cmd_fig_tilt);
+  rtk_fig_destroy(ptz->data_fig_tilt);
 
   // Destroy menu items
   rtk_menuitem_destroy(ptz->subscribe_item);
@@ -129,6 +139,7 @@ void ptz_update(ptz_t *ptz)
   else
   {
     rtk_fig_show(ptz->data_fig, 0);
+    rtk_fig_show(ptz->data_fig_tilt, 0);
 
   }
 
@@ -136,10 +147,14 @@ void ptz_update(ptz_t *ptz)
   if (ptz->proxy->info.subscribed && rtk_menuitem_ischecked(ptz->command_item))
   {
     rtk_fig_show(ptz->cmd_fig, 1);
+    rtk_fig_show(ptz->cmd_fig_tilt, 1);
     ptz_move(ptz);
   }
   else
+  {
     rtk_fig_show(ptz->cmd_fig, 0);
+    rtk_fig_show(ptz->cmd_fig_tilt, 0);
+  }
 }
 
 
@@ -156,6 +171,8 @@ void ptz_draw(ptz_t *ptz)
   
   rtk_fig_show(ptz->data_fig, 1);      
   rtk_fig_clear(ptz->data_fig);
+  rtk_fig_show(ptz->data_fig_tilt, 1);      
+  rtk_fig_clear(ptz->data_fig_tilt);
 
   rtk_fig_color_rgb32(ptz->data_fig, COLOR_PTZ_DATA);
   ox = 100 * cos(ptz->proxy->pan);
@@ -175,19 +192,25 @@ void ptz_draw(ptz_t *ptz)
   bx = d * cos(ptz->proxy->pan - fx / 2);
   by = d * sin(ptz->proxy->pan - fx / 2);
   rtk_fig_line(ptz->data_fig, ax, ay, bx, by);
+  
+  rtk_fig_color_rgb32(ptz->data_fig_tilt, COLOR_PTZ_DATA_TILT);
+  ox = 100 * cos(ptz->proxy->tilt);
+  oy = 100 * sin(ptz->proxy->tilt);
+  rtk_fig_line(ptz->data_fig_tilt, 0, 0, ox, oy);
 }
 
 
 // Move the ptz
 void ptz_move(ptz_t *ptz)
 {
-  double ox, oy, oa;
+  double ox, oy, oa, oxt, oyt, oat;
   double pan, tilt, zoom, speed;
     
   rtk_fig_get_origin(ptz->cmd_fig, &ox, &oy, &oa);
+  rtk_fig_get_origin(ptz->cmd_fig_tilt, &oxt, &oyt, &oat);
 
   pan = atan2(oy, ox);
-  tilt = 0;
+  tilt = atan2(oyt,oxt);
   zoom = 2 * atan2(0.5, sqrt(ox * ox + oy * oy));
   speed = sqrt(oy*oy + ox*ox);
 

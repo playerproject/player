@@ -52,7 +52,9 @@
 #define COLOR_POSITION_CONTROL   0xFF0000
 #define COLOR_POWER              0x000000
 #define COLOR_PTZ_DATA           0x00C000
+#define COLOR_PTZ_DATA_TILT      0x0000C0
 #define COLOR_PTZ_CMD            0x00C000
+#define COLOR_PTZ_CMD_TILT       0x0000C0
 #define COLOR_SONAR              0xC0C080
 #define COLOR_SONAR_SCAN         0xC0C080
 #define COLOR_IR                 0xC0C080
@@ -345,7 +347,9 @@ typedef struct
 
   // Figures
   rtk_fig_t *data_fig;
+  rtk_fig_t *data_fig_tilt;
   rtk_fig_t *cmd_fig;
+  rtk_fig_t *cmd_fig_tilt;
   
   // Timestamp on most recent data
   double datatime;
