@@ -52,18 +52,6 @@ lbd_t *lbd_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int 
 
   snprintf(section, sizeof(section), "lbd:%d", index);
     
-  // Set initial device state
-  subscribe = opt_get_int(opt, section, "", 0);
-  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
-  if (subscribe)
-  {
-    if (playerc_lbd_subscribe(lbd->proxy, PLAYER_READ_MODE) != 0)
-      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-  }
-
-  // Create a figure
-  lbd->beacon_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
-
   // Construct the menu
   snprintf(label, sizeof(label), "lbd %d", index);
   lbd->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
@@ -72,7 +60,12 @@ lbd_t *lbd_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int 
   lbd->bits8_item = rtk_menuitem_create(lbd->menu, "8 bits", 0);
 
   // Set the initial menu state
-  rtk_menuitem_check(lbd->subscribe_item, lbd->proxy->info.subscribed);
+  subscribe = opt_get_int(opt, section, "", 0);
+  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
+  rtk_menuitem_check(lbd->subscribe_item, subscribe);
+  
+  // Create a figure
+  lbd->beacon_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
 
   return lbd;
 }
