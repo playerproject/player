@@ -50,9 +50,13 @@ class ClientManager
     int size_clients;
     CClientData** clients;
 
-    // to control access to client array
-    pthread_mutex_t client_mutex;
+    // ClientReaderThread locks these two:
+    pthread_mutex_t rthread_client_mutex;
     pthread_mutex_t ufd_mutex;
+    
+    // ClientWriterThread locks this one:
+    pthread_mutex_t wthread_client_mutex;
+
     
     // constructor
     ClientManager();
@@ -64,8 +68,8 @@ class ClientManager
     void AddClient(CClientData* client);
 
     // remove a client
-    void RemoveClient(int idx);
-    void RemoveBlanks();
+    void RemoveClient(int idx, bool have_rlock, bool have_wlock);
+    void RemoveBlanks(bool have_rlock, bool have_wlock);
 
     int Read();
 

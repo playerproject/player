@@ -85,7 +85,7 @@ class CClientData
     int BuildMsg( unsigned char *data, size_t maxsize );
 
  public:
-    // use this lock things like mode,frequency, and datarequested.
+    // use this lock things like mode,frequency, requested, and datarequested.
     // they are potentially read/written by both the ClientWriterThread and
     // ClientReaderThread
     pthread_mutex_t access;
