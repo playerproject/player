@@ -33,7 +33,7 @@
 #define TROGDOR_DEFAULT_PORT "/dev/usb/ttyUSB1"
 
 // might need to define a longer delay to wait for acks
-#define TROGDOR_DELAY_US 20000
+#define TROGDOR_DELAY_US 10000
 
 /************************************************************************/
 /* Physical constants, in meters, radians, seconds (unless otherwise noted) */
