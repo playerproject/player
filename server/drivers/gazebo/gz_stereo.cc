@@ -281,7 +281,10 @@ int GzStereo::Setup()
   // Open the interface
   if (gz_stereo_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
-  
+
+  // Add ourselves to the update list
+  GzClient::AddDriver(this);
+
   return 0;
 }
 
@@ -290,6 +293,9 @@ int GzStereo::Setup()
 // Shutdown the device (called by server thread).
 int GzStereo::Shutdown()
 {
+  // Remove ourselves to the update list
+  GzClient::DelDriver(this);
+
   gz_stereo_close(this->iface);
 
   return 0;
@@ -456,7 +462,7 @@ void GzStereo::SaveFrame(const char *filename, player_camera_data_t *data)
 
   if (data->format == PLAYER_CAMERA_FORMAT_MONO16)
   {
-    // Write pgm (in cm)
+    // Write pgm
     fprintf(file, "P5\n%d %d\n%d\n", width, height, 16);
     for (i = 0; i < height; i++)
       fwrite(data->image + i * width, 16, width, file);

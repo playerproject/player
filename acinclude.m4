@@ -419,6 +419,7 @@ dnl This macro does all the Gazebo tests
 AC_DEFUN([GAZEBO_DRIVERTESTS],[
 
 dnl Test individual drivers
+GAZEBO_TEST_DRIVER([sim],[sim])
 GAZEBO_TEST_DRIVER([camera],[camera])
 GAZEBO_TEST_DRIVER([factory],[factory])
 GAZEBO_TEST_DRIVER([fiducial],[fiducial])

@@ -155,6 +155,9 @@ int GzPosition3d::Setup()
   if (gz_position_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
 
+  // Add ourselves to the update list
+  GzClient::AddDriver(this);
+
   return 0;
 }
 
@@ -163,6 +166,9 @@ int GzPosition3d::Setup()
 // Shutdown the device (called by server thread).
 int GzPosition3d::Shutdown()
 {
+  // Remove ourselves to the update list
+  GzClient::DelDriver(this);
+
   gz_position_close(this->iface);
   
   return 0;

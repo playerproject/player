@@ -1479,7 +1479,7 @@ int main( int argc, char *argv[] )
       return(false);
     }
   }
-
+  
   // check for empty device table
   if(!(deviceTable->Size()))
   {

@@ -1867,7 +1867,6 @@ int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *na
     if (::lookup_interface(tokens[2], &interface) != 0)
     {
       CONFIG_ERR1("unknown interface: [%s]", this->fields[prop].line, tokens[2]);
-      free(str);
       return -1;
     }
 

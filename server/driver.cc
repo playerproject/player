@@ -58,6 +58,8 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
                size_t datasize, size_t commandsize, 
                size_t reqqueuelen, size_t repqueuelen)
 {
+  error = 0;
+  
   // Look for our default device id
   if (cf->ReadDeviceId(&this->device_id, section, "provides", interface, -1, NULL) != 0)
   {
@@ -76,7 +78,6 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
   subscriptions = 0;
   entries = 0;
   alwayson = false;
-  error = 0;
 
   pthread_mutex_init(&accessMutex,NULL);
   pthread_mutex_init(&condMutex,NULL);
