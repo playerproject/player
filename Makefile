@@ -32,7 +32,7 @@ dep:
 	cd examples && make dep
 	cd utils && make dep
 
-install: install_server install_client_libs install_examples install_doc\
+install: install_server install_client_libs install_doc\
          install_utils
 
 install_server:
@@ -87,6 +87,7 @@ clean_server:
 clean: clean_server clean_dep
 	cd client_libs && make clean
 	cd examples && make clean
+	cd rtk2 && make clean
 	cd utils && make clean
 
 clean_dep:
