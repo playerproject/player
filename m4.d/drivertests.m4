@@ -203,26 +203,48 @@ PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
 PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
 
-dnl pkg-config is REQUIRED to find the Stage-1.4 C++ library.
-dnl If we find stage, we also need libpnm for loading bitmaps
-if test "$PKG_CONFIG" != "no" ; then
-  PKG_CHECK_MODULES(STAGE1P4, stagecpp >= 1.4, 
-	[FOUND_STAGE1p4=yes],
-	[FOUND_STAGE1p4=no]
-)
 	
-dnl  if test "$FOUND_STAGE1P4" = "yes" ; then
-dnl    AC_CHECK_LIB(pnm, pnm_init)
-dnl    PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
-dnl	    [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
-dnl  fi
+dnl PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
+dnl                  [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
+
+dnl PLAYER_ADD_DRIVER doesn't support checking for installed packages a la
+dnl pkg-config, so do it manually
+AC_ARG_ENABLE(stage1p4,
+[  --disable-stage1p4           Don't compile the stage1p4 driver],,
+enable_stage1p4=yes)
+if test "x$enable_stage1p4" = "xyes"; then
+  dnl pkg-config is REQUIRED to find the Stage-1.4 C++ library.
+  dnl If we find stage, we also need libpnm for loading bitmaps
+  if test "$PKG_CONFIG" != "no" ; then
+    PKG_CHECK_MODULES(STAGE1P4, stagecpp >= 1.4, 
+	  enable_stage1p4=yes, enable_stage1p4=no)
+  else
+    enable_stage1p4=no
+    disable_reason="pkg-config unavailable; maybe you should install it"
+  fi
+else
+  disable_reason="disabled by user"
 fi
-PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
-                  [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
-AC_LANG_SAVE
-AC_LANG_C
-AC_CHECK_LIB(pnm, pnm_init)
-AC_LANG_RESTORE
+if test "x$enable_stage1p4" = "xyes"; then
+  AC_DEFINE(INCLUDE_STAGE1P4, 1, [[include the (new) Stage 1.4 drivers]])
+  STAGE1P4_LIB="libstage1p4.a"
+  PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $STAGE1P4_LIB"
+  PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/stage1p4/libstage1p4.a"
+  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STAGE1P4_LIBS"
+  PLAYER_DRIVERS="$PLAYER_DRIVERS stage1p4"
+
+  dnl Need to explicitly switch to C mode here, cause the test for pnm_init() 
+  dnl always fails if we're in C++ mode.
+  AC_LANG_SAVE
+  AC_LANG_C
+  AC_CHECK_LIB(pnm, pnm_init)
+  AC_LANG_RESTORE
+
+else
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:stage1p4 -- $disable_reason"
+fi
+AC_SUBST(STAGE1P4_LIB)
+AC_SUBST(STAGE1P4_CFLAGS)
 
 dnl Where is Gazebo?
 AC_ARG_WITH(gazebo, [  --with-gazebo=dir       Location of Gazebo],
