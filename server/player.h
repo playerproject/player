@@ -154,14 +154,6 @@
 /* The maximum number of devices the server will support. */
 #define PLAYER_MAX_DEVICES 256
 
-/* the largest possible message that the server will currently send
- * or receive */
-#ifdef PLAYER_BIG_MESSAGES
-#define PLAYER_MAX_MESSAGE_SIZE 2097152 /*2MB*/
-#else
-#define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
-#endif
-
 /* maximum size for request/reply.
  * this is a convenience so that the PlayerQueue can used fixed size elements.
  * need to think about this a little
