@@ -24,18 +24,33 @@ AM_INIT_AUTOMAKE(player,PLAYER_VERSION)
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
 
-
 dnl Generate a configuration header called <config.h> and put all the C
 dnl preprocessor defines in there
 AM_CONFIG_HEADER(config.h)
-
-dnl run RTK's configure as well
-AC_CONFIG_SUBDIRS(rtk2)
 
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
+
+dnl where's RTK?
+AC_ARG_WITH(rtk, [   --with-rtk=dir      Location of RTK],
+RTK_DIR=$with_rtk,
+RTK_DIR="${HOME}/rtk-2.1")
+AC_SUBST(RTK_DIR)
+
+dnl RTK2 uses libjpeg to export images.
+AC_CHECK_HEADER(jpeglib.h,
+  AC_DEFINE(HAVE_JPEGLIB_H,1,[include jpeg support])
+  LIBJPEG="-ljpeg",,)
+AC_SUBST(LIBJPEG)
+
+if test -f $RTK_DIR/include/rtk.h; then
+  with_rtk=yes
+else
+  with_rtk=no
+fi
+AM_CONDITIONAL(WITH_RTK, test x$with_rtk = xyes)
 
 dnl FreeBSD always invokes Tcl with a version, so i'll pick a reasonable one
 case $target in
@@ -67,8 +82,6 @@ CXX_SERVER=$CXX
 CXXFLAGS_SERVER=$CXXFLAGS
 AR_SERVER="ar"
 RANLIB_SERVER=$RANLIB
-
-RTK2_TESTS
 
 AC_ARG_WITH(server-arch,
 [  --with-server-arch=arm     Make the server for ARM (using LART)],
