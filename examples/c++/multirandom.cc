@@ -3,6 +3,7 @@
  *                  multiple robots
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h> /* for strcpy() */
 #include <stdlib.h>  /* for atoi(3),rand(3) */
@@ -31,6 +32,10 @@ int baseport;
 
 void sig_int(int num)
 {
+  struct timeval curr;
+  gettimeofday(&curr,NULL);
+  printf("# stopped at %s\n", ctime(&(curr.tv_sec)));
+  fprintf(stderr,"# stopped at %s\n", ctime(&(curr.tv_sec)));
   fflush(NULL);
   exit(0);
 }
@@ -53,22 +58,46 @@ parse_args(int argc, char** argv)
 #define STRAIGHT 0
 #define TURN 1
 
+#define IMG_WIDTH 3117
+#define IMG_HEIGHT 1189
+#define PPM 12.0
+
 int main(int argc, char** argv)
 {
   int randint;
   unsigned short minfrontdistance = 400;
   bool obs = false;
   bool write = false;
-  
-  signal(SIGINT,sig_int);
 
-  puts("# sx sy rx ry rth");
+  char* occ_grid = new char[IMG_WIDTH*IMG_HEIGHT];
+
+  bzero(occ_grid,IMG_HEIGHT*IMG_WIDTH);
+  
+  // to flush logs
+  signal(SIGINT,sig_int);
+  signal(SIGTERM,sig_int);
+  signal(SIGHUP,sig_int);
+
+  // log header stuff
+  puts("# Occupancy grid");
+  printf("# %s running %d robots\n", host,numclients);
+  struct timeval curr;
+  gettimeofday(&curr,NULL);
+  printf("# started at %s\n", ctime(&(curr.tv_sec)));
+  puts("# format (seconds and meters):");
+  puts("# t sx sy ");
+  
+  // log header stuff
+  fputs("# Robot position log\n",stderr);
+  fprintf(stderr,"# %s running %d robots\n", host,numclients);
+  fprintf(stderr,"# started at %s\n", ctime(&(curr.tv_sec)));
+  fputs("# format (seconds and meters and degrees):\n",stderr);
+  fputs("# t r0x r0y r0th .....\n",stderr);
 
   /* first, parse command line args */
   parse_args(argc,argv);
 
   // seed the RNG
-  struct timeval curr;
   gettimeofday(&curr,NULL);
   srand(curr.tv_usec);
 
@@ -97,14 +126,6 @@ int main(int argc, char** argv)
     gproxies[i] = new GpsProxy(clients[i],0,'r');
   }
 
-  /*
-  LaserProxy lp(&robot,0);
-  if (use_laser)
-    lp.ChangeAccess('r');
-  else
-    sp.ChangeAccess('r');
-   */
-
   int newturnrate=0,newspeed=0;
 
   if(mc.Read())
@@ -114,6 +135,7 @@ int main(int argc, char** argv)
   if(mc.Read())
     exit(1);
 
+  int count = 0;
   for(;;)
   {
     if(mc.Read())
@@ -126,6 +148,24 @@ int main(int argc, char** argv)
       write = true;
       if(clients[i]->fresh)
       {
+        // every so often, log robot positions
+        // at 10Hz, 50 cycles is 5 sec
+        if((i == 0) && !(++count % 50))
+        {
+          fprintf(stderr,"%f ",
+                    gproxies[i]->timestamp.tv_sec + 
+                    gproxies[i]->timestamp.tv_usec / 1000000.0);
+          for(int j=0;j<numclients;j++)
+          {
+            fprintf(stderr,"%.3f %.3f %d ",
+                    gproxies[j]->xpos/1000.0,
+                    gproxies[j]->ypos/1000.0,
+                    RTOD(NORMALIZE(DTOR(gproxies[j]->heading))));
+          }
+          fputs("\n",stderr);
+          count = 0;
+        }
+
         obs = (sproxies[i]->ranges[1] < minfrontdistance ||
                sproxies[i]->ranges[2] < minfrontdistance ||
                sproxies[i]->ranges[3] < minfrontdistance ||
@@ -226,10 +266,18 @@ int main(int argc, char** argv)
                   rx*sin(DTOR(gproxies[i]->heading)) +
                   ry*cos(DTOR(gproxies[i]->heading));
 
-          printf("%f %f %f %f %d\n", gx, gy, 
-                 gproxies[i]->xpos/1000.0,
-                 gproxies[i]->ypos/1000.0,
-                 gproxies[i]->heading);
+          int occ_x = (int)rint(gx * 12.0);
+          int occ_y = (int)rint(gy * 12.0);
+
+          if(!occ_grid[occ_x+occ_y*IMG_WIDTH])
+          {
+            occ_grid[occ_x+occ_y*IMG_WIDTH] = 1;
+
+            printf("%f %f %f\n", 
+                   sproxies[i]->timestamp.tv_sec + 
+                   sproxies[i]->timestamp.tv_usec / 1000000.0,
+                   gx, gy);
+          }
         }
 
         clients[i]->fresh = false;
@@ -241,23 +289,3 @@ int main(int argc, char** argv)
 }
     
 
-/*
-    // See if there is an obstacle in front
-    if (use_laser)
-    {
-        obs = false;
-        for (int i = 0; i < lp.range_count; i++)
-        {
-            if ((lp.ranges[i] & 0x1FFF) < minfrontdistance)
-                obs = true;
-        }
-    }
-
-            if(use_laser)
-            {
-              if(lp.min_left < lp.min_right)
-                newturnrate = -40;
-              else
-                newturnrate = 40;
-            }
- */
