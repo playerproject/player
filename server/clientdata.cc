@@ -292,6 +292,10 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                   mode = PLAYER_DATAMODE_PUSH_NEW;
                   requesttype = PLAYER_MSGTYPE_RESP_ACK;
                   break;
+                case PLAYER_DATAMODE_PUSH_ASYNC:
+                  mode = PLAYER_DATAMODE_PUSH_ASYNC;
+                  requesttype = PLAYER_MSGTYPE_RESP_ACK;
+                  break;
                 default:
                   PLAYER_WARN1("unknown I/O mode requested (%d)."
                          "Ignoring request", datamode.mode);
@@ -925,7 +929,7 @@ bool ClientData::CheckWritePermissions(player_device_id_t id)
 // them, and assemble the results into totalwritebuffer.  Returns the
 // total size of the data that was written into that buffer.
 size_t
-ClientData::BuildMsg()
+ClientData::BuildMsg(bool include_sync)
 {
   size_t size, totalsize=0;
   Driver* driver;
@@ -968,7 +972,8 @@ ClientData::BuildMsg()
 
         // if we're in an UPDATE mode, we only want this data if it is new
         if((mode == PLAYER_DATAMODE_PUSH_NEW) || 
-           (mode == PLAYER_DATAMODE_PULL_NEW))
+           (mode == PLAYER_DATAMODE_PULL_NEW) ||
+           (mode == PLAYER_DATAMODE_PUSH_ASYNC))
         {
           // if the data has the same timestamp as last time then
           // we don't want it, so skip it 
@@ -1002,23 +1007,26 @@ ClientData::BuildMsg()
     }
   }
 
-  // now add a zero-length SYNCH packet to the end of the buffer
-  hdr.stx = htons(PLAYER_STXX);
-  hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
-  hdr.device = htons(PLAYER_PLAYER_CODE);
-  hdr.device_index = htons(0);
-  hdr.reserved = 0;
-  hdr.size = 0;
+  if(include_sync)
+  {
+    // now add a zero-length SYNCH packet to the end of the buffer
+    hdr.stx = htons(PLAYER_STXX);
+    hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
+    hdr.device = htons(PLAYER_PLAYER_CODE);
+    hdr.device_index = htons(0);
+    hdr.reserved = 0;
+    hdr.size = 0;
 
-  if(GlobalTime->GetTime(&curr) == -1)
-    PLAYER_ERROR("GetTime() failed!!!!");
-  hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
-  hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
+    if(GlobalTime->GetTime(&curr) == -1)
+      PLAYER_ERROR("GetTime() failed!!!!");
+    hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
+    hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
 
 
-  FillWriteBuffer((unsigned char*)&hdr,totalsize,sizeof(hdr));
+    FillWriteBuffer((unsigned char*)&hdr,totalsize,sizeof(hdr));
 
-  totalsize += sizeof(hdr);
+    totalsize += sizeof(hdr);
+  }
 
   return(totalsize);
 }

@@ -46,6 +46,7 @@
 #include <sys/socket.h>  /* for accept(2) */
 #include <netdb.h> /* for gethostbyaddr(3) */
 #include <netinet/in.h> /* for struct sockaddr_in, SOCK_STREAM */
+#include <math.h>
 
 #include <socket_util.h> /* for create_and_bind_socket() */
 #include <deviceregistry.h> /* for register_devices() */
@@ -68,6 +69,8 @@
 //#include <fcntl.h>
 
 #include "replace.h"
+
+#include "timer.h"
 
 #if INCLUDE_STAGE
 #include <sys/mman.h> // for mmap
@@ -94,6 +97,9 @@
 //#define VERBOSE
 //#define DEBUG
 
+// default server update rate, in Hz
+#define DEFAULT_SERVER_UPDATE_RATE 100.0
+
 // true if the main loop should terminate
 bool quit = false;
 
@@ -107,10 +113,6 @@ bool use_stage = false;
 bool player_gerkey = false;
 
 size_t ioSize = 0; // size of the IO buffer
-
-// pid of the main server thread.  used in CDevice::DataAvailable() to
-// send a SIGUSR1 to this thread when new data is available
-//pid_t g_server_pid;
 
 // this table holds all the currently *available* drivers
 DriverTable* driverTable = new DriverTable();
@@ -156,6 +158,7 @@ $ player [options] <configfile>
 where [options] is one or more of the following:
 
 - -h             : Print usage message.
+- -p &lt;rate&gt;: set server update rate, in Hz.
 - -t {tcp | udp} : transport protocol to use.  Default: tcp.
 - -p &lt;port&gt;      : port where Player will listen. Default: 6665.
 - -s &lt;path&gt;      : use memory-mapped IO with Stage through the devices in this directory.
@@ -174,7 +177,8 @@ void Usage()
   puts("");
   fprintf(stderr, "USAGE:  player [options] [<configfile>]\n\n");
   fprintf(stderr, "Where [options] can be:\n");
-  fprintf(stderr, "  -h             : Print this message.\n");
+  fprintf(stderr, "  -h             : print this message.\n");
+  fprintf(stderr, "  -u <rate>      : set server update rate to <rate> in Hz\n");
   fprintf(stderr, "  -t {tcp | udp} : transport protocol to use.  Default: tcp\n");
   fprintf(stderr, "  -p <port>      : port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
@@ -232,16 +236,11 @@ Interrupt( int dummy )
   {
     printf("** Player [port %d] quitting **\n", global_playerport );
     exit(0);
-   }
+  }
   
   // Tell the main loop to quit
   if (mask_sigint == 0)
     quit = 1;
-}
-
-void
-DoNothing(int sig)
-{
 }
 
 /* setup some signal handlers */
@@ -281,12 +280,6 @@ SetupSignalHandlers()
   if(signal(SIGTERM, Interrupt) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGTERM");
-    exit(1);
-  }
-
-  if(signal(SIGUSR1, DoNothing) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGUSR1");
     exit(1);
   }
 }
@@ -1115,6 +1108,7 @@ int main( int argc, char *argv[] )
   char *gz_prefixid = NULL;
   char *readlog_filename = NULL;
   double readlog_speed = 1.0;
+  double update_rate = DEFAULT_SERVER_UPDATE_RATE;
   
   int *ports = NULL;
   ClientData** alwayson_devices = NULL;
@@ -1141,7 +1135,7 @@ int main( int argc, char *argv[] )
 
   //g_server_pid = getpid();
 
-  printf("** Player v%s (with multiple interface support)** ", playerversion);
+  printf("** Player v%s ** ", playerversion);
   fflush(stdout);
 
   // parse args
@@ -1156,6 +1150,18 @@ int main( int argc, char *argv[] )
     {
       puts("");
       exit(0);
+    }
+    else if(!strcmp(argv[i],"-u"))
+    {
+      if(++i<argc)
+      {
+        update_rate = atof(argv[i]);
+      }
+      else
+      {
+        Usage();
+        exit(-1);
+      }
     }
     else if(!strcmp(argv[i],"-s"))
     {
@@ -1441,17 +1447,28 @@ int main( int argc, char *argv[] )
       dev->driver->Prepare();
   }
 
-  // main loop: sleep the shortest amount possible, periodically updating
-  // the clientmanager.
+  // compute seconds and nanoseconds from the given server update rate
+  struct timespec ts;
+  ts.tv_sec = (time_t)floor(1.0/update_rate);
+  ts.tv_nsec = (long)floor(fmod(1.0/update_rate,1.0) * 1e9);
+  
+  // create and start the timer thread, which will periodically wake us
+  // up to service clients
+  Timer timer(clientmanager,ts);
+  timer.Start();
+
+  // main loop: keep updating the clientmanager until somebody says to stop
   while (!quit)
   {
-    //usleep(0);
     if(clientmanager->Update())
     {
       fputs("ClientManager::Update() errored; bailing.\n", stderr);
       exit(-1);
     }
   }
+
+  // stop the timer thread
+  timer.Stop();
 
   if(use_stage)
     puts("** Player quitting **" );
@@ -1477,7 +1494,7 @@ int main( int argc, char *argv[] )
   // tear down the driver table, for completeness
   delete driverTable;
   delete GlobalTime;
-  
+
   return(0);
 }
 

@@ -21,21 +21,22 @@ lib_LIBRARIES = libplayerqueue.a
 
 libplayerqueue_a_SOURCES = playerqueue.cc
 
-player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h device.cc device.h \
-								 drivertable.cc drivertable.h devicetable.cc devicetable.h \
-                 deviceregistry.cc deviceregistry.h \
-								 clientmanager.cc wallclocktime.cc main.cc \
+player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h \
+                 device.cc device.h drivertable.cc drivertable.h \
+		 devicetable.cc devicetable.h deviceregistry.cc \
+		 deviceregistry.h clientmanager.cc wallclocktime.cc main.cc \
                  playerqueue.cc configfile.cc playercommon.h \
                  player.h playerqueue.h  \
                  clientdata.h clientmanager.h socket_util.h \
-                 wallclocktime.h playertime.h configfile.h
+                 wallclocktime.h playertime.h configfile.h \
+		 timer.cc timer.h
 
 
 # Install these to $prefix/include so clients can use them
 include_HEADERS = playercommon.h player.h playerqueue.h
 
 # Install these to $prefix/include/player/ so plugin drivers can use them
-pkginclude_HEADERS = driver.h drivertable.h devicetable.h clientdata.h device.h configfile.h
+pkginclude_HEADERS = driver.h drivertable.h devicetable.h device.h configfile.h
 
 
 #

@@ -1,4 +1,3 @@
-
 # Desc: Example plugin makefile
 # CVS: $Id$
 
@@ -8,7 +7,7 @@ all: multidriver.so
 	$(CXX) -Wall -fpic -g3 -c $<
 
 %.so: %.o
-	$(CXX) -shared -nostartfiles -Wl,-exportdynamic -o $@ $<
+	$(CXX) -shared -nostartfiles -o $@ $<
 
 clean:
 	rm -f *.o *.so

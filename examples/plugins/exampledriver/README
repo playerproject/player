@@ -2,12 +2,12 @@ Here's a very simple example of how to write a driver and build it as a
 shared object.    For details on how to handle configuration requests, get
 commands, push out data, etc., consult the User Manual.
 
-To build this example, edit the Makefile according to where you've got the
-Player source tree laid out and then type 'make'.
+To build this example, edit the Makefile according to where you've got
+Player installed and then type 'make'.
 
 To try it, run:
 
-  $ player -d ./exampledriver.so example.cfg
+  $ player example.cfg
 
 
         brian gerkey

@@ -28,9 +28,6 @@
  * LinuxWiFi driver.  Reads the wireless info found in /proc/net/wireless.
  * sort of ad hoc right now, as I've only tested on our own orinoco
  * cards.  
- *
- * 
- * 
  */
 
 #include <ctype.h>
@@ -45,6 +42,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/if_ether.h>
+
+#include <time.h>
+
 #include <configfile.h>
 #include <driver.h>
 #include <drivertable.h>
@@ -61,16 +61,13 @@ class LinuxWiFi : public Driver
 public:
   LinuxWiFi( ConfigFile *cf, int section);
 
-  //  virtual void Main();
-
   ~LinuxWiFi();
 
-  size_t GetData(player_device_id_t id,
-                 void* dest, size_t len,
-                 struct timeval* timestamp);
   int PutConfig(player_device_id_t id, void *client, 
                 void* src, size_t len,
                 struct timeval* timestamp);
+
+  void Update(void);
 
   int Setup();
   int Shutdown();
@@ -93,8 +90,6 @@ protected:
 
   struct timeval last_update;
   int update_interval;
-
-  player_wifi_data_t data;
 };
 
 Driver * LinuxWiFi_Init( ConfigFile *cf, int section);
@@ -121,7 +116,8 @@ LinuxWiFi_Register(DriverTable *table)
 }
 
 LinuxWiFi::LinuxWiFi( ConfigFile *cf, int section) :
-  Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE, 0,0,0,1) 
+  Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE, 
+         sizeof(player_wifi_data_t),0,0,1) 
 {
   info_fp = NULL;
   
@@ -235,14 +231,11 @@ LinuxWiFi::Shutdown()
   return 0;
 }
 
-/* main loop.  just read info from file, update data, then sleep
- *
- * returns: 
+
+/* equivalent of main loop.  just read info from file, and PutData.
  */
-size_t
-LinuxWiFi::GetData(player_device_id_t id,
-                   void* dest, size_t maxsize,
-                   struct timeval* timestamp)
+void
+LinuxWiFi::Update(void)
 {
   int eth, status;
   int link, level, noise;
@@ -252,20 +245,18 @@ LinuxWiFi::GetData(player_device_id_t id,
   uint32_t throughput=0;
   int32_t bitrate =0; 
   uint8_t mode = 0;
+  player_wifi_data_t wifi_data;
   
   struct timeval curr;
 
   GlobalTime->GetTime(&curr);
 
   // check whether we should update...
-  if (((curr.tv_sec - last_update.tv_sec)*1000 +
-       (curr.tv_usec - last_update.tv_usec)/1000) < update_interval) {
-    // just copy old data
-    assert(sizeof(data) < maxsize);
-    memcpy(dest, &data, sizeof(data));
-    *timestamp = curr;
-    
-    return sizeof(data);
+  if(((curr.tv_sec - last_update.tv_sec)*1000 +
+       (curr.tv_usec - last_update.tv_usec)/1000) < update_interval)
+  {
+    // nope
+    return;
   }
 
   last_update.tv_sec = curr.tv_sec;
@@ -356,8 +347,8 @@ LinuxWiFi::GetData(player_device_id_t id,
   }
 
   // set interface data
-  data.throughput = htonl(throughput);
-  data.mode = mode;
+  wifi_data.throughput = htonl(throughput);
+  wifi_data.mode = mode;
   
   // get AP address
   if (ioctl(sfd, SIOCGIWAP, req) >= 0) {
@@ -365,9 +356,9 @@ LinuxWiFi::GetData(player_device_id_t id,
     struct sockaddr sa;
     memcpy(&sa, &(req->u.ap_addr), sizeof(sa));
     
-    PrintEther((char *)data.ap, (unsigned char *)sa.sa_data);
+    PrintEther((char *)wifi_data.ap, (unsigned char *)sa.sa_data);
   } else {
-    strncpy(data.ap, "00:00:00:00:00:00", sizeof(data.ap));
+    strncpy(wifi_data.ap, "00:00:00:00:00:00", sizeof(wifi_data.ap));
   }
   
   // get bitrate
@@ -376,27 +367,21 @@ LinuxWiFi::GetData(player_device_id_t id,
     bitrate = req->u.bitrate.value;
   }
 
-  data.bitrate = htonl(bitrate);
+  wifi_data.bitrate = htonl(bitrate);
     
-  data.link_count = htons(1);
-  strncpy(data.links[0].ip, "0.0.0.0", sizeof(data.links[0].ip));
-  data.links[0].qual = htons(wqual);
-  data.links[0].level = htons(wlevel);
-  data.links[0].noise = htons(wnoise);
+  wifi_data.link_count = htons(1);
+  strncpy(wifi_data.links[0].ip, "0.0.0.0", sizeof(wifi_data.links[0].ip));
+  wifi_data.links[0].qual = htons(wqual);
+  wifi_data.links[0].level = htons(wlevel);
+  wifi_data.links[0].noise = htons(wnoise);
 
-  data.maxqual = htons(wmaxqual);
-  data.maxlevel = htons(wmaxlevel);
-  data.maxnoise = htons(wmaxnoise);
+  wifi_data.maxqual = htons(wmaxqual);
+  wifi_data.maxlevel = htons(wmaxlevel);
+  wifi_data.maxnoise = htons(wmaxnoise);
  
-  data.qual_type = qual_type;
+  wifi_data.qual_type = qual_type;
   
-  assert(sizeof(data) < maxsize);
-  memcpy(dest, &data, sizeof(data));
-
-  GlobalTime->GetTime(&curr);
-  *timestamp = curr;
-    
-  return (sizeof(data));
+  this->PutData(&wifi_data, sizeof(player_wifi_data_t), NULL);
 }
 
 int
