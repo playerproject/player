@@ -20,7 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////
 //
 // Desc: jpeg compression and decompression routines
-// Author: Nate Koenig 
+// Author: Nate Koenig, Andrew Howard
 // Date: 31 Aug 2004
 // CVS: $Id$
 //
@@ -42,8 +42,8 @@ compresses it, and makes the compressed data available on a new interface.
 
 @par Configuration file options
 
-- rate
-  - Data rate (Hz); e.g., rate 20 will generate data at 10Hz.
+- camera 0
+  - Source camera (data from this camera will be compressed).
       
 @par Example 
 
