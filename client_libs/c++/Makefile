@@ -46,6 +46,7 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 sonarproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 speechproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 visionproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 gpsproxy.h $(INSTALL_INCLUDE)
 
 uninstall:
 	$(RM) -f $(INSTALL_LIB)/$(LIBNAME)
@@ -60,6 +61,7 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/sonarproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/speechproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/visionproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/gpsproxy.h
 
 clean:
 	$(RM) -f $(LIBNAME) *.o
