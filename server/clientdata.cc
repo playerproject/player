@@ -69,12 +69,16 @@ CClientData::CClientData(char* key, int myport)
 
   port = myport;
 
-  readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
-  replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
-  writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
+  assert(readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
+  assert(replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
+  assert(writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
 
   totalwritebuffersize = PLAYER_MAX_MESSAGE_SIZE;
-  totalwritebuffer = new unsigned char[totalwritebuffersize];
+  // totalwritebuffer is being malloc()ed, instead of new[]ed, so that it can 
+  // be realloc()ed later on (for some reason, C++ does not provide a builtin 
+  // equivalent of realloc()).  for consistency, we should probably pick either
+  // new[] or malloc() throughout this file.
+  assert(totalwritebuffer = (unsigned char*)malloc(totalwritebuffersize));
 
   bzero((char*)readbuffer, PLAYER_MAX_MESSAGE_SIZE);
   bzero((char*)writebuffer, PLAYER_MAX_MESSAGE_SIZE);
@@ -504,16 +508,16 @@ CClientData::~CClientData()
 	 port, socket);
 
   if(readbuffer)
-    delete readbuffer;
+    delete[] readbuffer;
 
   if(writebuffer)
-    delete writebuffer;
+    delete[] writebuffer;
 
   if(totalwritebuffer)
-    delete totalwritebuffer;
+    free(totalwritebuffer);
 
   if(replybuffer)
-    delete replybuffer;
+    delete[] replybuffer;
 }
 
 void CClientData::RemoveRequests() 

@@ -1138,6 +1138,7 @@ P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
   P2OSPacket packet;
   //static SIP sippacket;
   player_p2os_data_t data;
+  bzero(&data,sizeof(data));
 
   if((psos_fd >= 0) && sippacket)
   {

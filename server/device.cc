@@ -46,14 +46,24 @@ extern PlayerTime* GlobalTime;
 CDevice::CDevice(size_t datasize, size_t commandsize, 
                  int reqqueuelen, int repqueuelen)
 {
-  device_data = new unsigned char[datasize];
   device_datasize = device_used_datasize = datasize;
+  if(datasize)
+  {
+    device_data = new unsigned char[datasize];
+    assert(device_data);
+  }
+  else
+    device_data = NULL;
   
-  device_command = new unsigned char[commandsize];
   device_commandsize = device_used_commandsize = commandsize;
+  if(commandsize)
+  {
+    device_command = new unsigned char[commandsize];
+    assert(device_command);
+  }
+  else
+    device_command = NULL;
   
-  assert(device_data);
-  assert(device_command);
 
   device_reqqueue = new PlayerQueue(reqqueuelen);
   device_repqueue = new PlayerQueue(repqueuelen);
