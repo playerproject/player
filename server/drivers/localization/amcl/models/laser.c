@@ -47,8 +47,8 @@ laser_t *laser_alloc(map_t *map, pf_vector_t laser_pose)
   self->map = map;
   self->laser_pose = laser_pose;
 
-  self->range_cov = 0.05 * 0.05;
-  self->range_bad = 0.20;
+  self->range_cov = 0.10 * 0.10;
+  self->range_bad = 0.50;
 
   laser_precompute(self);
     
@@ -121,11 +121,14 @@ void laser_precompute(laser_t *self)
       // Simple gaussian model
       c = self->range_cov;
       z = orange - mrange;
-      p = self->range_bad + (1 - self->range_bad) *
-        (1 / (sqrt(2 * M_PI * c)) * exp(-(z * z) / (2 * c)));
+      p = self->range_bad + (1 - self->range_bad) * exp(-(z * z) / (2 * c));
 
+      //printf("%f %f %f\n", orange, mrange, p);
+      //assert(p >= 0 && p <= 1.0);
+      
       self->lut_probs[i + j * self->lut_size] = p;
     }
+    //printf("\n");
   }
 
   // TODO
@@ -139,6 +142,7 @@ void laser_precompute(laser_t *self)
 inline double laser_sensor_prob(laser_t *self, double obs_range, double map_range)
 {
   int i, j;
+  double p;
 
   i = (int) (map_range / self->lut_res + 0.5);
   j = (int) (obs_range / self->lut_res + 0.5);
@@ -151,7 +155,11 @@ inline double laser_sensor_prob(laser_t *self, double obs_range, double map_rang
   if (j >= self->lut_size)
     j = self->lut_size - 1;
 
-  return self->lut_probs[i + j * self->lut_size];
+  p = self->lut_probs[i + j * self->lut_size];
+
+  //assert(p >= 0 && p <= 1.0);
+  
+  return p;
 }
 
 
@@ -171,10 +179,18 @@ double laser_sensor_model(laser_t *self, pf_vector_t pose)
   for (i = 0; i < self->range_count; i++)
   {
     obs = self->ranges + i;
+
     map_range = map_calc_range(self->map,
                                pose.v[0], pose.v[1], pose.v[2] + obs->bearing, 8.0);
 
-    p *= laser_sensor_prob(self, obs->range, map_range);
+    if (obs->range >= 8.0 && map_range >= 8.0)
+      p *= 1.0;
+    else if (obs->range >= 8.0 && map_range < 8.0)
+      p *= self->range_bad;
+    else if (obs->range < 8.0 && map_range >= 8.0)
+      p *= self->range_bad;
+    else
+      p *= laser_sensor_prob(self, obs->range, map_range);
   }
 
   //printf("%e\n", p);
