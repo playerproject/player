@@ -134,7 +134,7 @@ protected:
   pthread_mutex_t latestData_mutex;
 
 private:
-  static SegwayIO *instance = NULL;
+  static SegwayIO *instance;
 };
 
 
