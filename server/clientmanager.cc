@@ -291,7 +291,7 @@ void ClientManager::RemoveBlanks()
   }
 
   // recount
-  for(i=0;clients[i];i++);
+  for(i=0;i<size_clients && clients[i];i++);
 
   num_clients = i;
 }
