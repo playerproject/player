@@ -97,8 +97,8 @@ class PSDevice : public CDevice
     void SetupStageBuffers(player_stage_info_t* info, 
                            int lockfd, int lockbyte );
 
-    void PutStageCommand(void* client, unsigned char* src, size_t len);
-    size_t GetStageData(void* client, unsigned char* dest, size_t len,
+    void PutStageCommand(void* client, void* src, size_t len);
+    size_t GetStageData(void* client, void* dest, size_t len,
                         uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 #endif
 };
