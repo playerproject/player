@@ -902,14 +902,14 @@ P2OS::Main()
     GetCommand((unsigned char*)&command, sizeof(command));
 
     newmotorspeed = false;
-    if( speedDemand != (short) ntohs(command.position.xspeed));
+    if( speedDemand != (int) ntohl(command.position.xspeed));
     newmotorspeed = true;
-    speedDemand = (short) ntohs(command.position.xspeed);
+    speedDemand = (int) ntohl(command.position.xspeed);
 
     newmotorturn = false;
-    if(turnRateDemand != (short) ntohs(command.position.yawspeed));
+    if(turnRateDemand != (int) ntohl(command.position.yawspeed));
     newmotorturn = true;
-    turnRateDemand = (short) ntohs(command.position.yawspeed);
+    turnRateDemand = (int) ntohl(command.position.yawspeed);
 
     newgrippercommand = false;
     if(gripperCmd != command.gripper.cmd || 

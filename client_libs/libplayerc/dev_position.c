@@ -139,9 +139,9 @@ int playerc_position_set_speed(playerc_position_t *device, double vx, double vy,
 {
   player_position_cmd_t cmd;
 
-  cmd.xspeed = htons((int) (vx * 1000.0));
-  cmd.yspeed = htons((int) (vy * 1000.0));
-  cmd.yawspeed = htons((int) (va * 180.0 / M_PI));
+  cmd.xspeed = htonl((int) (vx * 1000.0));
+  cmd.yspeed = htonl((int) (vy * 1000.0));
+  cmd.yawspeed = htonl((int) (va * 180.0 / M_PI));
 
   return playerc_client_write(device->info.client, &device->info, (char*) &cmd, sizeof(cmd));
 }
