@@ -26,6 +26,11 @@ typedef struct {
   int *oldranges;
   int num_bumpers;
   char *bumpers;
+  int voltage;
+  bool brake;
+  int lcd_x;
+  int lcd_y;
+  unsigned char * lcd_data;
 } rflex_status_t;
 
 static rflex_status_t status;
@@ -204,16 +209,6 @@ void rflex_odometry_off( int fd )
   cmdSend( fd, MOT_PORT, 0, MOT_SYSTEM_REPORT_REQ, 8, data );
 }
 
-//returns the last battery, timestamp and brake information
-void rflex_update_system( int fd , int *battery, 
-			    int *timestamp, int *brake)
-{
-  cmdSend( fd, SYS_PORT, 0, SYS_STATUS, 0, NULL );
-  
-  battery = battery;
-  timestamp = timestamp;
-  brake = brake;
-}
 
 void rflex_set_velocity( int fd, long tvel, long rvel,
 			   long acceleration )
@@ -372,6 +367,89 @@ static void parseMotReport( unsigned char *buffer )
    }
  }
 
+//processes a sys packet from the rflex - and saves the data in the
+//struct for later use, sys is primarily used for bat voltage & brake status
+static void parseSysReport( unsigned char *buffer )
+{
+   unsigned long timeStamp, voltage;
+   unsigned char opcode, length, brake;
+
+
+   opcode = buffer[4];
+   length = buffer[5];
+   
+
+	switch (opcode)
+	{
+		case SYS_LCD_DUMP:
+			// currently designed for 320x240 screen on b21r
+			// stored in packed format
+			if (length < 6)
+			{
+				fprintf(stderr, "Got bad Sys packet (lcd)\n");
+				break;
+			}
+			
+			unsigned char lcd_length, row;
+			timeStamp=convertBytes2UInt32(&(buffer[6]));
+			row = buffer[10];
+			lcd_length = buffer[11];
+			if (row > status.lcd_y || lcd_length > status.lcd_x)
+			{
+				fprintf(stderr,"LCD Data Overflow\n");
+				break;	
+			}
+			
+			memcpy(&status.lcd_data[row*status.lcd_x],&buffer[12],lcd_length);
+			
+			// if we got whole lcd dump to file
+/*			if (row == 239)
+			{
+				FILE * fout;
+				if ((fout = fopen("test.raw","w"))!=0)
+				{
+					for (int y=0; y<status.lcd_y; ++y)
+					{
+						for (int x=0; x<status.lcd_x;++x)					
+						{
+							unsigned char Temp = status.lcd_data[y*status.lcd_x + x];
+							for (int i = 0; i < 8; ++i)
+							{
+								if ((Temp >> i) & 0x01)
+
+									fprintf(fout,"%c",0x0);
+								else
+									fprintf(fout,"%c",0xFF);
+							}
+						}
+						fprintf(fout,"\n");
+					}
+				}
+				fclose(fout);
+			}*/
+									
+						
+			break;
+			
+		case SYS_STATUS:
+			if (length < 9)
+			{
+				fprintf(stderr, "Got bad Sys packet (status)\n");
+				break;
+			}
+			timeStamp=convertBytes2UInt32(&(buffer[6]));
+			// raw voltage measurement...needs calibration offset added
+			voltage=convertBytes2UInt32(&(buffer[10]));
+			brake=buffer[14];
+			
+			status.voltage = voltage;
+			status.brake = brake;
+			break;
+			
+		default:
+			fprintf(stderr,"Unknown sys opcode recieved\n");
+	}
+}
 
 //processes a sonar packet fromt the rflex, and saves the data in the
 //struct for later use
@@ -432,7 +510,8 @@ static int parseBuffer( unsigned char *buffer, unsigned int len )
       return(0);
     switch(port) {
     case SYS_PORT:
-      fprintf( stderr, "(sys)" );
+//      fprintf( stderr, "(sys)" );
+      parseSysReport( buffer );
       break;
     case MOT_PORT:
       parseMotReport( buffer );
@@ -443,9 +522,9 @@ static int parseBuffer( unsigned char *buffer, unsigned int len )
       parseSonarReport( buffer );
       break;
     case DIO_PORT:
+	    fprintf( stderr, "(dio)" );
 		parseDioReport( buffer );
-      fprintf( stderr, "(dio)" );
-      break;
+        break;
     case IR_PORT:
       fprintf( stderr, "(ir)" );
       break;
@@ -474,7 +553,7 @@ static void clear_incoming_data(int fd)
   }
 }
 
-//returns the odometry data saved int he struct
+//returns the odometry data saved in the struct
 void rflex_update_status(int fd, int *distance,  int *bearing, 
 			   int *t_vel, int *r_vel)
 {
@@ -538,6 +617,23 @@ void rflex_update_bumpers(int fd, int num_bumpers,
 }
 
 
+//returns the last battery, timestamp and brake information
+void rflex_update_system( int fd , int *battery, 
+			     int *brake)
+{
+  cmdSend( fd, SYS_PORT, 0, SYS_LCD_DUMP, 0, NULL );
+  cmdSend( fd, SYS_PORT, 0, SYS_STATUS, 0, NULL );
+  
+ 
+  clear_incoming_data(fd);
+  
+  *battery = status.voltage;
+  //timestamp = timestamp;
+  *brake = status.brake;
+}
+
+
+
 /* TODO - trans_pos rot_pos unused... AGAIN, fix this 
  * same effects are emulated at a higher level - is it possible to
  * do it here?
@@ -574,6 +670,14 @@ void rflex_initialize(int fd, int trans_acceleration,
   status.oldranges=(int*) malloc(rflex_configs.max_num_sonars*rflex_configs.sonar_age*sizeof(int));
   for(x=0;x<rflex_configs.max_num_sonars;x++)
     status.ranges[x]=-1;
+	
+	// initialise the LCD dump array
+	status.lcd_data=new unsigned char[320*240/8];
+	if (status.lcd_data != NULL)
+	{
+		status.lcd_x=320/8;
+		status.lcd_y=240;
+	}
 }
 
 
