@@ -26,10 +26,6 @@ odometry_t *odometry_alloc(map_t *map, double robot_radius)
   self->map = map;
   self->robot_radius = robot_radius;
   
-  self->init_gpdf = NULL;
-  self->init_dpdf = NULL;
-  self->action_pdf = NULL;
-
   odometry_init_cspace(self);
   
   return self;
@@ -85,18 +81,6 @@ void odometry_init_init(odometry_t *self, pf_vector_t pose, pf_matrix_t pose_cov
   pf_pdf_gaussian_t *gpdf;
   double *weights;
   pf_vector_t *ccell;
-
-  if (self->init_gpdf)
-  {
-    pf_pdf_gaussian_free(self->init_gpdf);
-    self->init_gpdf = NULL;
-  }
-
-  if (self->init_dpdf)
-  {
-    pf_pdf_discrete_free(self->init_dpdf);
-    self->init_dpdf = NULL;
-  }
   
   // Create an array to put weights in
   weights = malloc(self->ccell_count * sizeof(weights[0]));
