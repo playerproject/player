@@ -1,5 +1,6 @@
 
-#include <player.h>
+#include "playerpacket.h"
+
 
 // convert meters to Player mm in NBO in various sizes
 #define MM_32(A)  (htonl((int32_t)(A * 1000.0)))
@@ -182,7 +183,7 @@ void PositionSetOdomReqUnpack( player_position_set_odom_req_t* req,
 }
 
       
-// LASER
+/* LASER -------------------------------------------------------------------*/
 
 void LaserDataPack( player_laser_data_t* data, 
 		    double min_angle, //radians
@@ -200,16 +201,77 @@ void LaserDataPack( player_laser_data_t* data,
   data->max_angle = Deg_16(max_angle);
   data->resolution = Deg_U16(resolution);
   data->range_count = htons((uint16_t)range_count);
-
+  
   for( z=0; z<range_count; z++ )
     {
       data->ranges[z] = MM_16(ranges[z]);
       data->intensity[z] = (uint8_t)intensity[z];
     }
 }
-		    
 
-// FiducialFinder
+
+/* FiducialFinder ----------------------------------------------------------*/
+
+// convert from native (Stage) data to network-safe Player data type
+void FiducialDataPack(  player_fiducial_data_t *data, 
+			int count, 
+			int ids[], 
+			double poses[][3], 
+			double pose_errors[][3] )  
+{
+  int i;
+  
+  assert( data );
+  
+  data->count = htons( (uint16_t)count);
+  
+  for( i = 0; i < count; i++)
+    {
+      data->fiducials[i].id = htons((int16_t)ids[i]);
+      
+      data->fiducials[i].pose[0] = MM_16( poses[i][0] );
+      data->fiducials[i].pose[1] = Deg_16( poses[i][1] );
+      data->fiducials[i].pose[2] = Deg_16( poses[i][2] );
+      
+      data->fiducials[i].upose[0] = MM_16( pose_errors[i][0] );
+      data->fiducials[i].upose[1] = Deg_16( pose_errors[i][1] );
+      data->fiducials[i].upose[2] = Deg_16( pose_errors[i][2] );
+    }
+}
+
+// convert from network-safe Player data to native (Stage) data 
+void FiducialDataUnpack( player_fiducial_data_t *data, 
+			 int *count, 
+			 int ids[], 
+			 double poses[][3], 
+			 double pose_errors[][3] )  
+{
+  int i;
+  
+  assert( data );
+  
+  if(count) *count = (int)ntohs(data->count);
+  
+  for( i = 0; i < *count; i++)
+    {
+      if(ids) ids[i] = (int16_t)ntohs(data->fiducials[i].id);
+      
+      if(poses)
+	{
+	  poses[i][0] = M_16( data->fiducials[i].pose[0] );
+	  poses[i][1] = Rad_16( data->fiducials[i].pose[1] );
+	  poses[i][2] = Rad_16( data->fiducials[i].pose[2] );
+	}
+      
+      if(pose_errors)
+	{
+	  pose_errors[i][0] = M_16( data->fiducials[i].upose[0] );
+	  pose_errors[i][1] = Rad_16( data->fiducials[i].upose[1] );
+	  pose_errors[i][2] = Rad_16( data->fiducials[i].upose[2] );
+	}
+    }
+}
+
 
 void FiducialGeomPack(  player_fiducial_geom_t* geom,
 			double px, double py, double pth,

@@ -53,6 +53,12 @@ extern "C" {
   void PositionSetOdomReqUnpack( player_position_set_odom_req_t* req,
 				 double* x, double* y, double* a );
   
+  void FiducialDataPack(  player_fiducial_data_t* data, 
+			  int count, int ids[], double poses[][3], double pose_errors[][3] );
+  
+  void FiducialDataUnpack(  player_fiducial_data_t* data, 
+			    int *count, int ids[], double poses[][3], double pose_errors[][3] );
+  
   void FiducialGeomPack(  player_fiducial_geom_t* geom,
 			  double px, double py, double pth,
 			  double sensor_width, double sensor_height,
@@ -63,6 +69,8 @@ extern "C" {
 			    double* sensor_width, double* sensor_height,
 			    double* target_width, double* target_height );
   
+
+
 #ifdef __cplusplus
 }
 #endif
