@@ -196,6 +196,7 @@ proc toggle_lb {} {
   global display_lb display_laser
   if {$display_lb} {
     player_req_dev robot laserbeacon r
+    player_config_laserbeacon robot 5 102 60 60
   } else {
     player_req_dev robot laserbeacon c
   }
@@ -739,6 +740,7 @@ proc displayData {} {
   # display the laser beacons
   if {$display_lb && [llength [array names robot laserbeacon,*]]} {
     set i 0
+    if {[info exists robot(laserbeacon,numbeacons)]} {
     while {$i < $robot(laserbeacon,numbeacons)} {
       # draw each beaon
       set bearing [expr (-$robot(laserbeacon,$i,bearing)-90.0)*$PI/180.0]
@@ -759,6 +761,7 @@ proc displayData {} {
                                          [expr $x+$xoff] [expr $y+$yoff] \
                                          -fill green]]
       incr i
+    }
     }
   }
 }
