@@ -1,3 +1,10 @@
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+#if HAVE_SYS_FILIO_H
+  #include <sys/filio.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

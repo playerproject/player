@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 
 #include "player.h"
 #include "device.h"
@@ -564,8 +565,8 @@ void VFH_Class::Main() {
 //    gettimeofday(&time, 0);
 //    printf("Before VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
 
-    dist = sqrt(powf((goal_x - this->odom_pose[0]),2) + 
-                powf((goal_y - this->odom_pose[1]),2));
+    dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
+                pow((goal_y - this->odom_pose[1]),2));
     
     if (dist > 500) {
       Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]), (goal_x - this->odom_pose[0]))
@@ -797,9 +798,9 @@ int VFH_Class::Init(double cell_width, int window_diameter, int sector_angle, do
   for(x=0;x<WINDOW_DIAMETER;x++) {
     for(y=0;y<WINDOW_DIAMETER;y++) {
       Cell_Mag[x][y] = 0;
-      Cell_Dist[x][y] = sqrt(powf((CENTER_X - x), 2) + powf((CENTER_Y - y), 2)) * CELL_WIDTH;
+      Cell_Dist[x][y] = sqrt(pow((CENTER_X - x), 2) + pow((CENTER_Y - y), 2)) * CELL_WIDTH;
 
-      Cell_Base_Mag[x][y] = powf((3000.0 - Cell_Dist[x][y]), 4) / 100000000.0;
+      Cell_Base_Mag[x][y] = pow((3000.0 - Cell_Dist[x][y]), 4) / 100000000.0;
 
       if (x < CENTER_X) {
         if (y < CENTER_Y) {
@@ -1185,14 +1186,14 @@ int VFH_Class::Build_Masked_Polar_Histogram(int speed) {
 
       if ((Delta_Angle(Cell_Direction[x][y], theta) > 0) && 
 		(Delta_Angle(Cell_Direction[x][y], phi_r) <= 0)) {
-        dist_r = sqrt(powf((center_x_right - x), 2) + powf((center_y - y), 2)) * CELL_WIDTH;
+        dist_r = sqrt(pow((center_x_right - x), 2) + pow((center_y - y), 2)) * CELL_WIDTH;
         if (dist_r < total_dist) { 
           phi_r = Cell_Direction[x][y];
         }
       } else {
         if ((Delta_Angle(Cell_Direction[x][y], theta) <= 0) && 
 		(Delta_Angle(Cell_Direction[x][y], phi_l) > 0)) {
-          dist_l = sqrt(powf((center_x_left - x), 2) + powf((center_y - y), 2)) * CELL_WIDTH;
+          dist_l = sqrt(pow((center_x_left - x), 2) + pow((center_y - y), 2)) * CELL_WIDTH;
           if (dist_l < total_dist) { 
             phi_l = Cell_Direction[x][y];
           }
