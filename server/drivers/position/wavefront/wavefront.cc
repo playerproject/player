@@ -428,7 +428,6 @@ Wavefront::LocalizeToPosition(double* px, double* py, double* pa,
 void
 Wavefront::StopPosition()
 {
-  puts("stopping robot");
   PutPositionCommand(this->position_x,this->position_y,this->position_a);
 }
 
@@ -508,6 +507,7 @@ void Wavefront::Main()
                 ((this->localize_y - this->target_y) *
                  (this->localize_y - this->target_y)));
     angle = fabs(this->localize_a - this->target_a);
+    printf("angle: %f\teps:%f\n", angle, this->ang_eps);
     if(dist < this->dist_eps && angle < this->ang_eps)
     {
       // we're at the final target, so stop
@@ -529,15 +529,17 @@ void Wavefront::Main()
       if(dist < this->dist_eps)
       {
         // get next waypoint
-        if(!plan_get_waypoint(this->plan,curr_waypoint++,
+        if(!plan_get_waypoint(this->plan,curr_waypoint,
                               &this->waypoint_x,&this->waypoint_y))
         {
-          // no more waypoints, so stop
-          StopPosition();
-          curr_waypoint = -1;
+          // no more waypoints, so wait for target achievement
+          //StopPosition();
+          //curr_waypoint = -1;
           usleep(CYCLE_TIME_US);
           continue;
         }
+        else
+          curr_waypoint++;
       }
       //printf("waypoint: %f, %f\n", this->waypoint_x,this->waypoint_y);
       // transform to odometric frame
