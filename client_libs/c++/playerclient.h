@@ -910,12 +910,12 @@ class FiducialProxy : public ClientProxy
       \end{itemize} 
       Where each pose array is composed of:
       \begin{itemize} 
-      \item range (m)
-      \item bearing (radians)
-      \item orient (radians)
+      \item [0] = x position (m)
+      \item [1] = y position (m)
+      \item [2] = orientation (radians)
       \end{itemize}  */
   FiducialItem beacons[PLAYER_FIDUCIAL_MAX_SAMPLES];
-   
+     
   /** Constructor.  Leave the access field empty to start
       unconnected. */
   FiducialProxy(PlayerClient* pc, unsigned short index,
