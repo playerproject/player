@@ -355,7 +355,7 @@ bool ConfigFile::LoadTokenWord(FILE *file, int *line, int include)
       AddToken(TokenWord, token, include);
       return true;
     }
-    else if (isalpha(ch) || isdigit(ch) || strchr(".-_[]", ch))
+    else if (isalpha(ch) || isdigit(ch) || strchr(".-_[]:", ch))
     {
       token[len++] = ch;
     }

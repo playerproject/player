@@ -28,6 +28,11 @@ BUILDLASERBARCODE = liblaserbarcode.a
 else
 BUILDLASERBARCODE =
 endif
+if WITH_FIXEDTONES
+BUILDFIXEDTONES = libfixedtones.a
+else
+BUILDFIXEDTONES =
+endif
 
 SUBDIRS = p2os rwi stage
 
@@ -35,7 +40,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/server
 
 noinst_LIBRARIES = $(BUILDSICKLMS200) $(BUILDFESTIVAL) $(BUILDACTS) \
                    $(BUILDSONYEVID30) $(BUILDUDPBROADCAST) \
-		   $(BUILDLASERBARCODE)
+		   $(BUILDLASERBARCODE) $(BUILDFIXEDTONES)
 
 libsicklms200_a_SOURCES = sicklms200.cc
 libfestival_a_SOURCES = festival.cc
@@ -43,6 +48,7 @@ libacts_a_SOURCES = acts.cc
 libsonyevid30_a_SOURCES = sonyevid30.cc
 libudpbroadcast_a_SOURCES = udpbroadcast.cc
 liblaserbarcode_a_SOURCES = laserbarcode.cc
+libfixedtones_a_SOURCES = fixedtones.cc
 
 clean-local:
 	rm -f *.a

@@ -15,9 +15,9 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
 	      devicetable.h clientdata.h clientmanager.h socket_util.h \
 	      wallclocktime.h playertime.h configfile.h
 
-player_DEPENDENCIES = @SICKLMS200_LIB@ @FESTIVAL_LIB@ @ACTS_LIB@ @SONYEVID30_LIB@ @P2OS_LIB@ @UDPBROADCAST_LIB@ @LASERBARCODE_LIB@ @STAGE_LIB@ @RWI_LIB@
+player_DEPENDENCIES = @SICKLMS200_LIB@ @FESTIVAL_LIB@ @ACTS_LIB@ @SONYEVID30_LIB@ @P2OS_LIB@ @UDPBROADCAST_LIB@ @LASERBARCODE_LIB@ @STAGE_LIB@ @RWI_LIB@ @FIXEDTONES_LIB@
 
-player_LDADD   = -lpthread -lm -ldl @SICKLMS200_LIB@ @FESTIVAL_LIB@ @ACTS_LIB@ @SONYEVID30_LIB@ @P2OS_LIB@ @UDPBROADCAST_LIB@ @LASERBARCODE_LIB@ @STAGE_LIB@ @RWI_LIB@
+player_LDADD   = -lpthread -lm -ldl @SICKLMS200_LIB@ @FESTIVAL_LIB@ @ACTS_LIB@ @SONYEVID30_LIB@ @P2OS_LIB@ @UDPBROADCAST_LIB@ @LASERBARCODE_LIB@ @STAGE_LIB@ @RWI_LIB@ @FIXEDTONES_LIB@ @FIXEDTONES_EXTRA_LIB@
 
 include_HEADERS = defaults.h \
                   playercommon.h \
