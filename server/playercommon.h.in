@@ -191,29 +191,36 @@
 
 // Error macros
 #define PLAYER_ERROR(m) \
-    fprintf(stderr, "player error : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__)
+    fprintf(stderr, "error %s:%d : "m"\n", __FILE__, __LINE__)
 
 #define PLAYER_ERROR1(m, a) \
-    fprintf(stderr, "player error : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__, a)
+    fprintf(stderr, "error %s:%d : "m"\n", __FILE__, __LINE__, a)
 
 #define PLAYER_ERROR2(m, a, b) \
-    fprintf(stderr, "player error : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__, a, b)
+    fprintf(stderr, "error %s:%d : "m"\n", __FILE__, __LINE__, a, b)
 
 #define PLAYER_ERROR3(m, a, b, c) \
-    fprintf(stderr, "player error : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__, a, b, c)
+    fprintf(stderr, "error %s:%d : "m"\n", __FILE__, __LINE__, a, b, c)
+
+#define PLAYER_ERROR4(m, a, b, c, d) \
+    fprintf(stderr, "error %s:%d : "m"\n", __FILE__, __LINE__, a, b, c, d)
+
 
 // Warning macros
 #define PLAYER_WARN(m) \
-    fprintf(stderr, "\nplayer warning : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__)
+    fprintf(stderr, "warning %s:%d : "m"\n", __FILE__, __LINE__)
 
-#define PLAYER_WARN1(m, a)     fprintf(stderr, "\nplayer warning : %s:%s():\n    "m"\n",\
-                                     __FILE__, __FUNCTION__, a)
-#define PLAYER_WARN2(m, a, b)  fprintf(stderr, "\nplayer warning : %s:%s():\n    "m"\n",\
-                                     __FILE__, __FUNCTION__, a, b)
-#define PLAYER_WARN3(m, a, b, c) fprintf(stderr, "\nplayer warning : %s:%s():\n    "m"\n",\
-                                     __FILE__, __FUNCTION__, a, b, c)
-#define PLAYER_WARN4(m, a, b, c, d) fprintf(stderr, "\nplayer warning : %s:%s():\n    "m"\n",\
-                                       __FILE__, __FUNCTION__, a, b, c, d)
+#define PLAYER_WARN1(m, a) \
+    fprintf(stderr, "warning %s:%d : "m"\n", __FILE__, __LINE__, a)
+
+#define PLAYER_WARN2(m, a, b) \
+    fprintf(stderr, "warning %s:%d : "m"\n", __FILE__, __LINE__, a, b)
+
+#define PLAYER_WARN3(m, a, b, c) \
+    fprintf(stderr, "warning %s:%d : "m"\n", __FILE__, __LINE__, a, b, c)
+
+#define PLAYER_WARN4(m, a, b, c, d) \
+    fprintf(stderr, "warning %s:%d : "m"\n", __FILE__, __LINE__, a, b, c, d)
 
 
 #if PLAYER_ENABLE_MSG

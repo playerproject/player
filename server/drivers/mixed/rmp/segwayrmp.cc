@@ -228,8 +228,7 @@ SegwayRMP::Setup()
   if (this->position3d_id.code)
     ClearCommand(this->position3d_id);
 
-  printf("segwayrmp: CAN bus initializing...");
-  fflush(stdout);
+  PLAYER_MSG0("CAN bus initializing");
 
   if(!strcmp(this->caniotype, "kvaser"))
     assert(this->canio = new CANIOKvaser);
@@ -257,19 +256,14 @@ SegwayRMP::Setup()
 
   StartThread();
 
-  puts("done.");
-  printf("segwayrmp: max_xspeed: %d\tmax_yawspeed: %d\n",
-         this->max_xspeed, this->max_yawspeed);
-
   return(0);
 }
 
 int
 SegwayRMP::Shutdown()
 {
-  printf("segwayrmp: Shutting down CAN bus...");
+  PLAYER_MSG0("Shutting down CAN bus");
   fflush(stdout);
-
   
   // TODO: segfaulting in here somewhere on client disconnect, but only 
   // sometimes.  
@@ -292,7 +286,6 @@ SegwayRMP::Shutdown()
   delete canio;
   canio = NULL;
   
-  puts("done.");
   return(0);
 }
 
