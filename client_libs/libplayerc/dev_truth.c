@@ -101,7 +101,8 @@ void playerc_truth_putdata(playerc_truth_t *device, player_msghdr_t *header,
 
   device->px = ntohl(data->px) / 1000.0;
   device->py = ntohl(data->py) / 1000.0;
-  device->pa = ntohl(data->pa) * M_PI / 180;
+  //device->pa = ntohl(data->pa) * M_PI / 180;
+  device->pa = ((double)(int32_t)ntohl(data->pa)) * M_PI / 180;
 }
 
 
@@ -125,7 +126,8 @@ int playerc_truth_get_pose(playerc_truth_t *device, double *px, double *py, doub
 
   *px = ntohl(config.px) / 1000.0;
   *py = ntohl(config.py) / 1000.0;
-  *pa = ntohl(config.pa) * M_PI / 180;
+  //*pa = ntohl(config.pa) * M_PI / 180;
+  *pa = ((double)(int32_t)ntohl(config.pa)) * M_PI / 180;
 
   return 0;
 }

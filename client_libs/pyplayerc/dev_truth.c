@@ -24,13 +24,26 @@ typedef struct
   playerc_client_t *client;
   playerc_truth_t *truth;
   PyObject *px, *py, *pa;
-  PyObject *vx, *vy, *va;
 } truth_object_t;
 
 
 PyTypeObject truth_type;
 staticforward PyMethodDef truth_methods[];
 
+/* Callback for post-processing incoming data */
+static void truth_onread(truth_object_t *pytruth)
+{
+  thread_acquire();
+    
+  Py_DECREF(pytruth->px);
+  Py_DECREF(pytruth->py);
+  Py_DECREF(pytruth->pa);
+  pytruth->px = PyFloat_FromDouble(pytruth->truth->px);
+  pytruth->py = PyFloat_FromDouble(pytruth->truth->py);
+  pytruth->pa = PyFloat_FromDouble(pytruth->truth->pa);    
+    
+  thread_release();
+}
 
 /* Initialise (type function) */
 PyObject *truth_new(PyObject *self, PyObject *args)
@@ -45,6 +58,16 @@ PyObject *truth_new(PyObject *self, PyObject *args)
   pytruth = PyObject_New(truth_object_t, &truth_type);
   pytruth->client = pyclient->client;
   pytruth->truth = playerc_truth_create(pyclient->client, index);
+  pytruth->truth->info.user_data = pytruth;
+  pytruth->px = PyFloat_FromDouble(0);
+  pytruth->py = PyFloat_FromDouble(0);
+  pytruth->pa = PyFloat_FromDouble(0);
+
+  /* Add callback for post-processing incoming data */
+  playerc_client_addcallback(pyclient->client, 
+                             (playerc_device_t*) pytruth->truth,
+                             (playerc_callback_fn_t) truth_onread,
+                             (void*) pytruth);
     
   return (PyObject*) pytruth;
 }
@@ -72,6 +95,21 @@ static PyObject *truth_getattr(PyObject *self, char *attrname)
   result = NULL;
   if (strcmp(attrname, "datatime") == 0)
     result = PyFloat_FromDouble(pytruth->truth->info.datatime);
+  else if (strcmp(attrname, "px") == 0)
+  {
+    Py_INCREF(pytruth->px);
+    result = pytruth->px;
+  }
+  else if (strcmp(attrname, "py") == 0)
+  {
+    Py_INCREF(pytruth->py);
+    result = pytruth->py;
+  }
+  else if (strcmp(attrname, "pa") == 0)
+  {
+    Py_INCREF(pytruth->pa);
+    result = pytruth->pa;
+  }
   else
     result = Py_FindMethod(truth_methods, self, attrname);
 
@@ -92,7 +130,6 @@ static PyObject *truth_str(PyObject *self)
            pytruth->truth->info.datatime);
   return PyString_FromString(str);
 }
-
 
 /* Subscribe to the device. */
 static PyObject *truth_subscribe(PyObject *self, PyObject *args)
