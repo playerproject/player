@@ -29,6 +29,7 @@
 #endif
 
 #include <string.h> 
+#include <sys/types.h>
 #include <netinet/in.h>
 
 #include "playercommon.h"
