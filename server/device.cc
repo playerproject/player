@@ -341,9 +341,11 @@ void*
 CDevice::DummyMain(void *devicep)
 {
   // block signals that should be handled by the server thread
+#if HAVE_SIGBLOCK
   sigblock(SIGINT);
   sigblock(SIGHUP);
   sigblock(SIGTERM);
+#endif
 
   // Run the overloaded Main() in the subclassed device.
   ((CDevice*)devicep)->Main();
