@@ -100,27 +100,15 @@ void MultiDriver_Register(DriverTable* table)
 
 // Need access to the global driver table
 #include <drivertable.h>
-extern DriverTable* driverTable;
 
 /* need the extern to avoid C++ name-mangling  */
 extern "C"
 {
-  void _init(void)
-    //void __attribute__ ((constructor)) example_init(void)
+  int player_driver_init(DriverTable* table)
   {
-    puts("pluging init");
-    MultiDriver_Register(driverTable);
-  }
-
-  void _fini(void)
-    //void __attribute__ ((destructor)) example_fini(void)
-  {
-    puts("plugin fini");
-
-    /* probably don't need any code here; the destructor for the device
-     * will be called when Player shuts down.  this function is only useful
-     * if you want to dlclose() the shared object before Player exits
-     */
+    puts("plugin init");
+    MultiDriver_Register(table);
+    return(0);
   }
 }
 

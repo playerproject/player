@@ -802,11 +802,13 @@ bool
 LoadPlugin(const char* pluginname, const char* cfgfile)
 {
 #if HAVE_LIBDL
-  void* handle;
+  void* handle=NULL;
+  PluginInitFn initfunc;
   char fullpath[PATH_MAX];
   char* playerpath;
   char* tmp;
   char* cfgdir;
+  char* error;
   unsigned int i,j;
 
   // see if we got an absolute path
@@ -816,10 +818,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     printf("trying to load %s...", fullpath);
     fflush(stdout);
     if((handle = dlopen(fullpath, RTLD_NOW)))
-    {
       puts("success");
-      return(true);
-    }
     else
     {
       puts("failed");
@@ -830,7 +829,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   // we got a relative path, so search for the module
 
   // did the user set PLAYERPATH?
-  if((playerpath = getenv("PLAYERPATH")))
+  if(!handle && (playerpath = getenv("PLAYERPATH")))
   {
     printf("PLAYERPATH: %s\n", playerpath);
     // yep, now parse it, as a colon-separated list of directories
@@ -855,16 +854,17 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       if((handle = dlopen(fullpath, RTLD_NOW)))
       {
         puts("success");
-        return(true);
+        break;
       }
-      puts("failed");
+      else
+        puts("failed");
 
       i=j+1;
     }
   }
   
   // try to load it from the directory where the config file is
-  if(cfgfile)
+  if(!handle && cfgfile)
   {
     // Note that dirname() modifies the contents, so
     // we need to make a copy of the filename.
@@ -883,28 +883,49 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     printf("trying to load %s...", fullpath);
     fflush(stdout);
     if((handle = dlopen(fullpath, RTLD_NOW)))
-    {
       puts("success");
-      return(true);
-    }
-    puts("failed");
+    else
+      puts("failed");
   }
 
   // try to load it from prefix/lib/player/plugins
-  memset(fullpath,0,PATH_MAX);
-  strcpy(fullpath,PLAYER_INSTALL_PREFIX);
-  strcat(fullpath,"/lib/player/plugins/");
-  strcat(fullpath,pluginname);
-  printf("trying to load %s...", fullpath);
-  fflush(stdout);
-  if((handle = dlopen(fullpath, RTLD_NOW)))
+  if(!handle)
   {
+    memset(fullpath,0,PATH_MAX);
+    strcpy(fullpath,PLAYER_INSTALL_PREFIX);
+    strcat(fullpath,"/lib/player/plugins/");
+    strcat(fullpath,pluginname);
+    printf("trying to load %s...", fullpath);
+    fflush(stdout);
+    if((handle = dlopen(fullpath, RTLD_NOW)))
+      puts("success");
+    else
+      puts("failed");
+
+  }
+
+  // Now invoke the initialization function
+  if(handle)
+  {
+    printf("invoking player_driver_init()...");
+    fflush(stdout);
+    initfunc = (PluginInitFn)dlsym(handle,"player_driver_init");
+    if((error = dlerror()) != NULL)
+    {
+      printf("failed: %s\n", error);
+      return(false);
+    }
+    if((*initfunc)(driverTable) != 0)
+    {
+      puts("failed");
+      return(false);
+    }
     puts("success");
     return(true);
   }
-  puts("failed");
+  else
+    return(false);
 
-  return(false);
 #else
   PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins");
   exit(-1);
