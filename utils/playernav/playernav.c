@@ -32,6 +32,11 @@ typedef struct
   double canvas_zoom;
 } gui_data_t;
 
+#define METERS_TO_CANVAS_X(gui_data,x) \
+  ((((x) / (gui_data->mapdev->resolution)) + ((gui_data->mapdev->width) / 2.0)) / (gui_data->canvas_zoom))
+#define CANVAS_TO_METERS_X(gui_data,x) \
+  ((((x) * (gui_data->canvas_zoom)) - ((gui_data->mapdev->width) / 2.0)) * (gui_data->mapdev->resolution))
+
 // global quit flag
 char quit;
 
@@ -287,6 +292,8 @@ fini_player(playerc_mclient_t* mclient,
 void
 init_gui(gui_data_t* gui_data, int argc, char** argv)
 {
+  double t[6];
+
   g_type_init();
   gtk_init(&argc, &argv);
 
@@ -318,6 +325,11 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   g_assert((gui_data->map_canvas = (GnomeCanvas*)gnome_canvas_new_aa()));
   gtk_widget_pop_colormap();
   gtk_widget_pop_visual();
+
+  // Re-orient everything so it is the right way up
+  t[0] = +1; t[2] = 0; t[4] = 0;
+  t[1] = 0; t[3] = -1; t[5] = 0;
+  gnome_canvas_item_affine_absolute((GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas), t);
 
   // set canvas units to meters, scaled by window size
   gui_data->canvas_zoom = ((DEFAULT_DISPLAY_WIDTH - 20) / 
