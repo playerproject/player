@@ -393,20 +393,24 @@ if test "x$PYTHON_INTERP" != "xno"; then
 fi
 AC_MSG_RESULT([])
 
-if test "x$enable_playermap" = "xyes"; then
-  AC_MSG_RESULT([Playermap will be included])
-  AC_MSG_RESULT([])
-else
-  AC_MSG_RESULT([Playermap will NOT be included])
-  AC_MSG_RESULT([])
-fi
+dnl if test "x$enable_playermap" = "xyes"; then
+dnl  AC_MSG_RESULT([Playermap will be included])
+dnl  AC_MSG_RESULT([])
+dnl else
+dnl  AC_MSG_RESULT([Playermap will NOT be included])
+dnl  AC_MSG_RESULT([])
+dnl fi
 
 if test "x$enable_gazebo" = "xyes"; then
   AC_MSG_RESULT([Player will build Gazebo-based components using:])
   AC_MSG_RESULT([    CPPFLAGS: $GAZEBO_EXTRA_CPPFLAGS])
   AC_MSG_RESULT([    LDFLAGS: $GAZEBO_EXTRA_LDFLAGS])
   AC_MSG_RESULT([])
+else
+  AC_MSG_RESULT([Gazebo support will not be included -- $gazebo_disable_reason])
+  AC_MSG_RESULT([])
 fi
+
 AC_MSG_RESULT([The following device drivers will be included:])
 for player_lib in $PLAYER_DRIVERS; do
   if test -n $player_lib; then
