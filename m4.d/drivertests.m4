@@ -98,7 +98,8 @@ if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
     AC_CHECK_HEADER($header, 
                     enable_$1=yes,
                     enable_$1=no
-                    failed_header_check=yes,)
+                    failed_header_check=yes
+                    break,)
   done
 fi
 if test "x$enable_$1" = "xyes"; then
