@@ -195,7 +195,7 @@ typedef struct
   uint16_t code;
   uint16_t index;
   uint8_t access;
-  char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
+  uint8_t driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
 } __attribute__ ((packed)) player_device_resp_t;
 
 /* the valid datamode codes */
@@ -223,7 +223,7 @@ typedef struct
 typedef struct
 {
   uint16_t subtype;
-  char auth_key[PLAYER_KEYLEN];
+  uint8_t auth_key[PLAYER_KEYLEN];
 } __attribute__ ((packed)) player_device_auth_req_t;
 
 /* the format of a request for data (no args) */
@@ -760,14 +760,14 @@ typedef struct
 
 typedef struct
 {
-  unsigned char mesg[IDARBUFLEN];
+  uint8_t mesg[IDARBUFLEN];
   uint8_t len; //0-IDARBUFLEN
   uint8_t intensity; //0-255
 } __attribute__ ((packed)) idartx_t;
 
 typedef struct
 {
-  unsigned char mesg[IDARBUFLEN];
+  uint8_t mesg[IDARBUFLEN];
   uint8_t len; //0-255
   uint8_t intensity; //0-255
   uint8_t reflection; // true/false
