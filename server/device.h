@@ -59,6 +59,9 @@ class CDevice
     
     pthread_t devicethread;
 
+    // did we allocate memory, or did someone else?
+    bool allocp;
+
   protected:
     
     // buffers for data and command
@@ -92,7 +95,7 @@ class CDevice
     // number of current subscriptions
     int subscriptions;
 
-    virtual ~CDevice() {};
+    virtual ~CDevice();
 
     // this is the main constructor, used by most non-Stage devices.
     // storage will be allocated by this constructor
