@@ -385,8 +385,6 @@ proc player_req {obj device index req} {
     } else {
       # if not, eat other data
       read $arr(sock) $size
-      #puts "eating data"
-      #puts "type: $type  dev: $device_rep  ind: $index_rep"
     }
   }
 
@@ -444,19 +442,9 @@ proc player_read {obj} {
 
   # request a data packet
   if {$arr(reqrep)} {
-    #puts "requesting packet"
     player_req $obj player 0 \
       [binary format S $PLAYER_PLAYER_DATA_REQ]
   }
-
-  # how many devices are we reading from?
-  #set numdevices 0
-  #foreach dev [array names arr "*,access"] {
-    #if {![string compare $arr($dev) $PLAYER_READ_MODE] ||
-        #![string compare $arr($dev) $PLAYER_ALL_MODE]} {
-     #incr numdevices
-    #}
-  #}
 
   # read until we hit the SYNCH packet
   while {1} {
@@ -481,7 +469,6 @@ proc player_read {obj} {
       error "scan failed on header"
     }
 
-    #puts "reading data"
     # read the data
     set data [read $arr(sock) $size]
     if {[string length $data] != $size} {

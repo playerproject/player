@@ -8,7 +8,7 @@ include Makefile.common
 
 MANUAL_LOCATION = player-manual
 
-all: server client_libs examples
+all: server client_libs examples utils
 
 server: 
 	cd src && make all
@@ -23,7 +23,7 @@ examples:
 
 .PHONY: utils
 utils:
-	cd utils && make -i all
+	cd utils && make all
 
 dep:
 	cd src && make dep
@@ -31,7 +31,8 @@ dep:
 	cd examples && make dep
 	cd utils && make dep
 
-install: install_server install_client_libs install_examples install_doc
+install: install_server install_client_libs install_examples install_doc\
+         install_utils
 
 install_server:
 	cd src && make install
@@ -43,7 +44,7 @@ install_examples:
 	cd examples && make -i install
 
 install_utils:
-	cd utils && make -i install
+	cd utils && make install
 
 install_doc:
 	$(MKDIR) -p $(INSTALL_DOC)

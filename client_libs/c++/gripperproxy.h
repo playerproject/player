@@ -45,6 +45,10 @@
 #define GRIPpress  16
 #define LIFTcarry  17
 
+/** The {\tt GripperProxy} class is used to control the {\tt gripper} device.
+    The latest gripper data held in a handful of class attributes.
+    A single method provides user control.
+*/
 class GripperProxy : public ClientProxy
 {
 
@@ -52,7 +56,8 @@ class GripperProxy : public ClientProxy
     // the latest gripper data
     unsigned char state,beams;
 
-    // more meaningful representations of said data:
+    /** These boolean variables indicate the state of the gripper
+     */
     bool outer_break_beam,inner_break_beam,
          paddles_open,paddles_closed,paddles_moving,
          gripper_error,lift_up,lift_down,lift_moving,
@@ -66,11 +71,10 @@ class GripperProxy : public ClientProxy
 
     // these methods are the user's interface to this device
 
-    // send a gripper command
-    //
-    // Returns:
-    //   0 if everything's ok
-    //   -1 otherwise (that's bad)
+    /** Send a gripper command.  Look in the gripper manual for details
+        on the command and argument.\\
+        Returns 0 if everything's ok, and  -1 otherwise (that's bad).
+    */
     int SetGrip(unsigned char cmd, unsigned char arg=0);
 
     // interface that all proxies must provide

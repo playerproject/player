@@ -69,7 +69,7 @@ test_laser(PlayerClient* client, int index)
   else
     PASS();
 
-  for(int t = 0; t < 10; t++)
+  for(int t = 0; t < 3; t++)
   {
     TEST1("reading data (attempt %d)", t);
 

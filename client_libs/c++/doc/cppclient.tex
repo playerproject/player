@@ -138,103 +138,9 @@ the C++ client library.
 % From here on in, mostly include auto-generated files.
 \chapter{Class Reference}
 
-% I've cut'n'pasted this for now, but it should be auto-generated.
-\section{The {\tt PlayerClient} Class}
-One {\tt PlayerClient} object is used to control each connection to a Player
-server.  Contained within this object are methods for changing the connection 
-parameters and obtaining access to devices, which we explain next.
+\input{playerclient.h.tex}
 
-\subsection{Constructors}
-The {\tt PlayerClient} class has three different constructors:
-\begin{itemize}
-\item {\tt PlayerClient()} : Create a {\tt PlayerClient} proxy but do not 
-                                  to a server.
-\item {\tt PlayerClient(char* hostname)} : Create a {\tt PlayerClient} proxy 
-and (if {\tt hostname} is non-NULL) connect it to a server listening at
-{\tt hostname}:\DEFAULTPORT.
-\item {\tt PlayerClient(char* hostname,int port)} : Create a 
-{\tt PlayerClient} proxy and (if {\tt hostname} is non-NULL) connect it to 
-a server listening at {\tt hostname}:{\tt port}.
-\end{itemize}
-Note that the second and third forms will attempt to make a connection, which
-may fail for any number of reasons.  The constructor cannot indicate the 
-success or failure of the connection, so to be sure you should either: use
-the form and then call {\tt Connect()} yourself or use the second or third
-form and then call {\tt Connected()} to verify that you are indeed 
-connected (see below for information on both methods).
-
-\subsection{Connecting to the Server}
-If you have a {\tt PlayerClient} proxy that is not currently connected to
-a server, you can connect it with any of the three forms of the method
-{\tt Connect()}:
-\begin{itemize}
-\item {\tt int Connect()} : Connect to the server listening at
-{\tt localhost}:\DEFAULTPORT.
-\item {\tt int Connect(char* hostname)} : Connect to the server
-listening at {\tt hostname}:\DEFAULTPORT.
-\item {\tt int Connect(char* hostname, int port)} : Connect to the server
-listening at {\tt hostname}:{\tt port}.
-\end{itemize}
-
-These methods return 0 if the connection succeeded. If something
-went wrong, then -1 is returned, the connection is {\sl not} established,
-and a diagnostic error is printed to {\tt stderr}.
-
-\subsection{Disconnecting from the Server}
-If you have a {\tt PlayerClient} proxy that is currently connected to
-a server, you can disconnect it with the method:
-
-{\tt int Disconnect()}
-
-\noindent If the disconnection succeeded 0 is returned.  
-Otherwise -1 is returned (the connection was probably already closed).
-
-\subsection{Verifying Connection}
-In order to check whether or not your {\tt PlayerClient} proxy is currently
-connected, use the method:
-
-{\tt bool Connected()}
-
-\subsection{Reading Data}
-After your {\tt PlayerClient} proxy is connected and you have requested
-some devices (see below), you can read data with the method:
-
-{\tt int Read()}
-
-\noindent This method will read one round of data; that is, it will read
-one data packet for each device that is currently open for reading.  The
-data from each device will be processed by the appropriate device proxy
-and stored there for access by your program.  If no errors occurred 0
-is returned.  Otherwise, -1 is returned and diagnostic information is printed
-to {\tt stderr} (you should probably close the connection!).
-
-\subsection{Changing Data Delivery Frequency}
-You can change the rate at which your client receives data from the 
-server with the method:
-
-{\tt int SetFrequency(unsigned short freq)}
-
-\noindent The value of {\tt freq} is interpreted as Hz; this will be the
-new rate at which your client receives data (when in continuous mode).
-On error, -1 is returned; otherwise 0.
-
-\subsection{Changing Data Delivery Mode}
-You can toggle the mode in which the server sends data to your client with
-the method:
-
-{\tt int SetDataMode(unsigned char mode)}
-
-\noindent The {\tt mode} should be either 1 (for request/reply) or 0 (for
-continuous).  On error, -1 is returned; otherwise 0.
-
-\subsection{Requesting Data}
-When in request/reply mode, you can request a single round of data using
-the method:
-
-{\tt int RequestData()}
-
-\noindent On error -1 is returned; otherwise 0.
-
+\newpage
 \section{The Device Proxy Classes}
 Access to a device is provided by a device-specific proxy class.  These
 classes all inherit from the {\tt ClientProxy} class which defines an
@@ -296,9 +202,9 @@ plotting.
 \newpage \input{broadcastproxy.h.tex}
 \newpage \input{bpsproxy.h.tex}
 \newpage \input{gpsproxy.h.tex}
+\newpage \input{gripperproxy.h.tex}
 
 \newpage
 
 \end{document}
-
 

@@ -61,6 +61,10 @@ class VisionProxy : public ClientProxy
   public:
     // the latest vision data
 
+    /** Array containing the number of blobs detected on each channel 
+     */ 
+    char num_blobs[ACTS_NUM_CHANNELS];
+
     /** Array containing the latest blob data.
         Each blob contains the following information:
         \begin{verbatim}
@@ -72,11 +76,7 @@ class VisionProxy : public ClientProxy
         unsigned char top;
         unsigned char bottom;
         \end{verbatim}
-        The number of blobs in each channel is given by
-        {\tt num\_blobs}, i.e. the number of blobs in channel
-        {\tt i} is {\tt num\_blobs[i]}.
      */
-    char num_blobs[ACTS_NUM_CHANNELS];
     Blob* blobs[ACTS_NUM_CHANNELS];
    
     /** Constructor.
