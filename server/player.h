@@ -726,6 +726,7 @@ typedef struct
  *************************************************************************/
 
 /** [Synopsis]
+
     The laser interface provides access to a single-origin scanning range
     sensor, such as a SICK laser range-finder.
 */
@@ -743,6 +744,7 @@ typedef struct
 #define PLAYER_LASER_POWER_CONFIG 0x04
 
 /** [Data]
+
     Devices supporting the {\tt laser} interface can be configured to
     scan at different angles and resolutions.  As such, the data
     returned by the {\tt laser} interface can take different forms.
@@ -784,9 +786,12 @@ typedef struct player_laser_data
     This device accepts no commands.
 */
 
+
 /** [Configuration: get geometry]
+    
     The laser geometry (position and size) can be queried using
-    the PLAYER_LASER_GET_GEOM request.
+    the PLAYER_LASER_GET_GEOM request.  The request and
+    reply packets have the same format.
 */
 
 /** Request/reply packet for getting laser geometry. */
@@ -800,6 +805,7 @@ typedef struct player_laser_geom
 
   /** Laser dimensions (mm, mm). */
   int16_t size[2];
+
 } __attribute__ ((packed)) player_laser_geom_t;
 
 
@@ -861,57 +867,99 @@ typedef struct player_laser_power_config
  *************************************************************************/
 
 
-/*************************************************************************/
-/*
- * Blobfinder interface
+/*************************************************************************
+ ** begin section blobfinder
+ *************************************************************************/
+
+/** [Synopsis]
+    The blobfinder interface provides access to devices that detect
+    colored blobs.
+*/
+
+/** [Constants]
  */
 
-// TODO: move data format to a flat list of blobs
-
+/** The maximum number of unique color classes. */
 #define PLAYER_BLOBFINDER_MAX_CHANNELS 32
+
+/** The maximum number of blobs for each color class. */
 #define PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL 10
 
-typedef struct
+
+/** [Data]
+
+    The format of the {\tt blobfinder} data packet is very similar to
+    the ACTS v1.2/2.0 format, but a bit simpler.  The packet length is
+    variable, with each packet containing both a list of blobs and a
+    header that provides an index into that list.  For each channel,
+    the header entry tells you which blob to start with and how many
+    blobs there are.
+*/
+
+/** Blob index entry. */
+typedef struct player_blobfinder_header_elt
 {
-  uint16_t index, num;
+  /** Offset of the first blob for this channel. */
+  uint16_t index;
+
+  /** Number of blobs for this channel. */
+  uint16_t num;
+  
 } __attribute__ ((packed)) player_blobfinder_header_elt_t;
+
+
+/** Structure describing a single blob. */
+typedef struct player_blobfinder_blob_elt
+{
+  /** A descriptive color for the blob (useful for gui's).  The color
+      is stored as packed 32-bit RGB, i.e., 0x00RRGGBB. */
+  uint32_t color;
+
+  /** The blob area (pixels). */
+  uint32_t area;
+
+  /** The blob centroid (image coords). */
+  uint16_t x, y;
+
+  /** Bounding box for the blob (image coords). */
+  uint16_t left, right, top, bottom;
+
+  /** Range (mm) to the blob center */
+  uint16_t range;
+  
+} __attribute__ ((packed)) player_blobfinder_blob_elt_t;
+
+
+/** The list of detected blobs. */
+typedef struct player_blobfinder_data
+{
+  /** The image dimensions. */
+  uint16_t width, height;
+
+  /** An index into the list of blobs (blobs are indexed by channel). */
+  player_blobfinder_header_elt_t header[PLAYER_BLOBFINDER_MAX_CHANNELS];
+
+  /** The list of blobs. */
+  player_blobfinder_blob_elt_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL
+                                    * PLAYER_BLOBFINDER_MAX_CHANNELS];
+  
+} __attribute__ ((packed)) player_blobfinder_data_t;
+
 
 #define PLAYER_BLOBFINDER_HEADER_SIZE \
   (2*sizeof(uint16_t) + sizeof(player_blobfinder_header_elt_t)*PLAYER_BLOBFINDER_MAX_CHANNELS)
 
-typedef struct
-{
-  /* A descriptive color for the blob (useful for gui's).
-   * The color is stored as packed 32-bit RGB, i.e., 0x00RRGGBB. */
-  uint32_t color;
-
-  /* The blob area (pixels). */
-  uint32_t area;
-
-  /* The blob centroid (image coords). */
-  uint16_t x, y;
-
-  /* Bounding box for the blob (image coords). */
-  uint16_t left, right, top, bottom;
-
-  /* Range in mm to the blob center */
-  uint16_t range;
-} __attribute__ ((packed)) player_blobfinder_blob_elt_t;
-
 #define PLAYER_BLOBFINDER_BLOB_SIZE sizeof(player_blobfinder_blob_elt_t)
 
-typedef struct
-{
-  /* The image dimensions. */
-  uint16_t width, height;
 
-  /* The blobs (indexed by channel). */
-  player_blobfinder_header_elt_t header[PLAYER_BLOBFINDER_MAX_CHANNELS];
-  player_blobfinder_blob_elt_t 
-          blobs[PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL*
-                PLAYER_BLOBFINDER_MAX_CHANNELS];
-} __attribute__ ((packed)) player_blobfinder_data_t;
-/*************************************************************************/
+/** [Command]
+    This device accepts no commands.
+*/
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
 
 /*************************************************************************/
 /*
@@ -960,85 +1008,143 @@ typedef struct
 #define AUDIO_COMMAND_BUFFER_SIZE 3*sizeof(short)
 /*************************************************************************/
 
-/*************************************************************************/
-/*
- * Fiducial interface
+/*************************************************************************
+ ** begin section fiducial
+ *************************************************************************/
+
+/** [Synopsis]
+
+    The fiducial interface provides access to devices that detect
+    coded fiducials (markers) placed in the environment.
  */
 
+/** [Constants] */
+
+/** The maximum number of fiducials that can be detected at one time. */
 #define PLAYER_FIDUCIAL_MAX_SAMPLES 32
 
-/* The fiducial data packet (one fiducial). */
-typedef struct
+/** Request packet subtypes */
+#define PLAYER_FIDUCIAL_GET_GEOM   0x01
+
+/** [Data]
+
+    The fiducial data packet contains a list of the detected
+    fiducials.  Each fiducial is described by the player_fiducial_item
+    structure listed below.
+*/
+
+/** The fiducial data packet (one fiducial). */
+typedef struct player_fiducial_item
 {
-  /* The fiducial id.  Fiducials that cannot be identified get id -1. */
+  /** The fiducial id.  Fiducials that cannot be identified get id
+      -1. */
   int16_t id;
 
-  /* Fiducial pose relative to the detector (range, bearing, orient)
-   * in units (mm, degrees, degrees). */
+  /** Fiducial pose relative to the detector (range, bearing, orient)
+      in units (mm, degrees, degrees). */
   int16_t pose[3];
 
-  /* Uncertainty in the measured pose (range, bearing, orient) in
-   * units of (mm, degrees, degrees). */
+  /** Uncertainty in the measured pose (range, bearing, orient) in
+      units of (mm, degrees, degrees). */
   int16_t upose[3];
   
 } __attribute__ ((packed)) player_fiducial_item_t;
 
 
-/* The fiducial data packet (all fiducials). */
-typedef struct 
+/** The fiducial data packet (all fiducials). */
+typedef struct player_fiducial_data
 {
-  /* List of detected fiducials */
+  /** The number of detected fiducials */
   uint16_t count;
+
+  /** List of detected fiducials */
   player_fiducial_item_t fiducials[PLAYER_FIDUCIAL_MAX_SAMPLES];
   
 } __attribute__ ((packed)) player_fiducial_data_t;
 
 
-/* Request packet subtypes */
-#define PLAYER_FIDUCIAL_GET_GEOM   0x01
+/** [Command]
+    This device accepts no commands.
+*/
 
-/* Fiducial geometry packet. */
-typedef struct
+
+/** [Configuration: get geometry]
+
+    The geometry (pose and size) of the fiducial device can be queried
+    using the PLAYER_FIDUCIAL_GET_GEOM request.  The request and
+    reply packets have the same format.
+*/
+
+/** Fiducial geometry packet. */
+typedef struct player_fiducial_geom
 {
-  /* Packet subtype.  Must be PLAYER_FIDUCIAL_GET_GEOM. */
+  /** Packet subtype.  Must be PLAYER_FIDUCIAL_GET_GEOM. */
   uint8_t subtype;
 
-  /* Pose of the detector in the robot cs (x, y, orient) in units if
-   * (mm, mm, degrees). */
+  /** Pose of the detector in the robot cs (x, y, orient) in units if
+      (mm, mm, degrees). */
   uint16_t pose[3];
 
-  /* Size of the detector in units of (mm, mm) */
+  /** Size of the detector in units of (mm, mm) */
   uint16_t size[2];  
   
-  /* Dimensions of the fiducials in units of (mm, mm). */
+  /** Dimensions of the fiducials in units of (mm, mm). */
   uint16_t fiducial_size[2];
   
 } __attribute__ ((packed)) player_fiducial_geom_t;
 
-/*************************************************************************/
 
-/*************************************************************************/
-/*
- * Comms interface
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+
+/*************************************************************************
+ ** begin section comms
+ *************************************************************************/
+
+/** [Synopsis]
+    The comms interface allows clients to communicate with each other
+    through the Player server.
+ */
+
+
+/** [Data]
+    This interface returns unstructured, variable length binary
+    data.  The packet size must be less than or equal to
+    PLAYER_MAX_MESSAGE_SIZE.  Note that more than one data packet may
+    be returned in any given cycle (i.e. in the interval between two
+    SYNCH packets).
+*/
+
+/* Comms data packets.  I've made it a packet so we can add routing
+   instructions at some later date. */
+typedef struct
+{
+  /* The message. */
+  uint8_t msg;
+  
+} __attribute__ ((packed)) player_comms_data_t;
+
+/** [Command]
+    This interface accepts unstructred, variable length binary data.
+    The packet size must be less than or equal to
+    PLAYER_MAX_MESSAGE_SIZE.
  */
 
 /* Comms command packets.  I've made it a packet so we can add routing
-*  instructions at some later date. */
+   instructions at some later date. */
 typedef struct
 {
   /* The message. */
   uint8_t msg;
+  
 } __attribute__ ((packed)) player_comms_cmd_t;
 
 
-/* Comms data packets.  I've made it a packet so we can add routing
-*  instructions at some later date. */
-typedef struct
-{
-  /* The message. */
-  uint8_t msg;
-} __attribute__ ((packed)) player_comms_data_t;
-/*************************************************************************/
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 /*************************************************************************/
 /*

@@ -66,8 +66,9 @@ def parse_file(filename):
             name = tokens[3]
             section = Section(name)
         elif len(tokens) == 3 and tokens[:3] == ['**', 'end', 'section']:
-            sections.append(section)
-            section = None
+            if section:
+                sections.append(section)
+                section = None
 
         if section:
             section.lines.append(line)
@@ -154,13 +155,6 @@ def parse_code(section, index, block):
 
         if code:
             block.code.append(code)
-            #if block.code:
-            #    block.code += '\\\\\n'
-            #block.code += code
-
-        #if stripped[-1:] == '}':
-        #    break
-
         index += 1
 
     return index
