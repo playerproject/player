@@ -206,7 +206,7 @@ int Iwspy::Shutdown()
 
   // Stop pinging
   this->StopPing();
-  
+
   return 0;
 }
 
@@ -539,7 +539,10 @@ int Iwspy::StartPing()
 void Iwspy::StopPing()
 {
   int status;
-  
+
+  // Kill ping
+  kill(this->ping_pid, SIGKILL);
+    
   // Wait for the child to finish
   if (waitpid(this->ping_pid, &status, 0) < 0)
   {
