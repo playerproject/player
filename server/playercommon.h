@@ -42,6 +42,8 @@
   #include <stdint.h>
 #endif
 
+#include <limits.h>  // for PATH_MAX
+
 //cygwin doesn't appear to have them 
 //typedef unsigned int size_t; 
 //typedef unsigned int uint32_t;
@@ -51,8 +53,6 @@
 //typedef short int16_t;
 //typedef char int8_t;
 
-// INT_MAX is more portable - limits.h
-//#define MAXINT INT_MAX 
 
 /* debug malloc(3) */
 /* this should *not* be defined by default, because, as the man page says,
