@@ -64,9 +64,6 @@ form of a binary image (such as the one shown below).
 
 @par Configuration file options
 
-- camera 0
-  - Index of the input camera device.
-
 - model NULL
   - Filename of the model image file.  This should by a binary,
     grayscale image.
@@ -85,8 +82,8 @@ form of a binary image (such as the one shown below).
 driver
 (
   name "simpleshape"
-  devices ["blobfinder:1" "camera:1"]
-  camera 0
+  inputs ["camera:0"]
+  outputs ["blobfinder:1" "camera:1"]
   model "simpleshape_h.pgm"
 )
 @endverbatim
@@ -121,6 +118,9 @@ class FeatureSet
 
   // Elliptical variance
   public: double variance;
+
+  // Vertices
+  public: int vertexCount;
 };
 
 
@@ -179,7 +179,6 @@ class SimpleShape : public Driver
   private: player_device_id_t out_camera_id;
 
   // Input camera stuff
-  private: int cameraIndex;
   private: player_device_id_t camera_id;
   private: Driver *camera;
   private: struct timeval cameraTime;
@@ -229,21 +228,13 @@ void SimpleShape_Register(DriverTable* table)
 SimpleShape::SimpleShape( ConfigFile* cf, int section)
     : Driver(cf, section)
 {
-  player_device_id_t* ids;
-  int num_ids;
-
+  memset(&this->camera_id.code, 0, sizeof(player_device_id_t));
   memset(&this->blobfinder_id.code, 0, sizeof(player_device_id_t));
   memset(&this->out_camera_id.code, 0, sizeof(player_device_id_t));
 
-  // Parse devices section
-  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
   // Must have a blobfinder interface
-  if (cf->ReadDeviceId(&(this->blobfinder_id), ids, num_ids, PLAYER_BLOBFINDER_CODE, 0) != 0)
+  if (cf->ReadDeviceId(&this->blobfinder_id, section, "outputs",
+                       PLAYER_BLOBFINDER_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
     return;
@@ -256,7 +247,8 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
   }
 
   // Optionally have a camera interface
-  if (cf->ReadDeviceId(&(this->out_camera_id), ids, num_ids, PLAYER_CAMERA_CODE, 0) == 0)
+  if (cf->ReadDeviceId(&this->out_camera_id, section, "outputs",
+                       PLAYER_CAMERA_CODE, -1, NULL) == 0)
   {
     if (this->AddInterface(this->out_camera_id, PLAYER_READ_MODE,
                            sizeof(player_camera_data_t), 0, 1, 1) != 0)
@@ -266,8 +258,13 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
     }
   }
 
-  this->cameraIndex = cf->ReadInt(section, "camera", 0);
-  this->camera = NULL;
+  // Must have an input camera
+  if (cf->ReadDeviceId(&this->camera_id, section, "inputs",
+                       PLAYER_CAMERA_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
 
   this->inpImage = NULL;
   this->outImage = NULL;
@@ -294,11 +291,7 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
 int SimpleShape::Setup()
 {
   // Subscribe to the camera.
-  this->camera_id.code = PLAYER_CAMERA_CODE;
-  this->camera_id.index = this->cameraIndex;
-  this->camera_id.port = this->device_id.port;
   this->camera = deviceTable->GetDriver(this->camera_id);
-
   if (!this->camera)
   {
     PLAYER_ERROR("unable to locate suitable camera device");
@@ -547,7 +540,7 @@ void SimpleShape::ProcessImage()
 void SimpleShape::FindShapes()
 {
   int i;
-  double sim[3];
+  double sim[10];
   double area;
   FeatureSet featureSet;
   CvMemStorage *storage;
@@ -574,10 +567,10 @@ void SimpleShape::FindShapes()
   
   for(; contour != NULL; contour = contour->h_next)
   {
-    area = fabs(cvContourArea(contour));
     rect = cvBoundingRect(contour);
-        
-    // Discard very small contours
+    area = fabs(cvContourArea(contour));
+
+    // Discard small/open contours
     if (area < 5 * 5)
       continue;
 
@@ -589,6 +582,7 @@ void SimpleShape::FindShapes()
     if (rect.y + rect.height >= this->workImage->height - 5)
       continue;
 
+    
     // Draw eligable contour on the output image; useful for debugging
     if (this->out_camera_id.port)
       cvDrawContours(this->outSubImages + 2, contour, CV_RGB(255, 255, 255),
@@ -596,7 +590,7 @@ void SimpleShape::FindShapes()
 
     // Compute the contour features
     this->ExtractFeatureSet((CvContour*) contour, &featureSet);
-            
+
     // Compute similarity based on Hu moments (smaller is better)
     sim[0] = cvMatchShapes(contour, this->modelContour, CV_CONTOURS_MATCH_I2);
 
@@ -606,16 +600,24 @@ void SimpleShape::FindShapes()
     // Compute similarity based on elliptical variance (smaller is better)
     sim[2] = fabs(featureSet.variance - this->modelFeatureSet.variance);
 
-    printf("features %f %.4f/%.4f %.4f/%.4f\n",
-           sim[0],
+    sim[3] = abs(featureSet.vertexCount - this->modelFeatureSet.vertexCount);
+
+    printf("features %f %f %.4f %.4f %.4f %.4f %d %d\n",
+           sim[0], sim[0],
            featureSet.compact, this->modelFeatureSet.compact,
-           featureSet.variance, this->modelFeatureSet.variance);
-    
+           featureSet.variance, this->modelFeatureSet.variance,
+           featureSet.vertexCount, this->modelFeatureSet.vertexCount);
+
+    /*
     // Check if the contour matches the model
     for (i = 0; i < 3; i++)
       if (sim[i] > this->matchThresh[i])
         break;
     if (i < 3)
+      continue;
+    */
+
+    if (sim[3] > 0.5)
       continue;
 
     // Draw contour on the main image; useful for debugging
@@ -657,6 +659,8 @@ void SimpleShape::ExtractFeatureSet(CvContour *contour, FeatureSet *feature)
   int i;
   CvBox2D box;
   CvPoint *p;
+  CvRect rect;
+  CvSeq *poly;
   double aa, bb;
   double dx, dy;
   double var;
@@ -664,7 +668,9 @@ void SimpleShape::ExtractFeatureSet(CvContour *contour, FeatureSet *feature)
   // Get the moments (we will use the Hu invariants)
   cvMoments(contour, &feature->moments);
 
-  // Compute the compactness measure: perimeter squared divided by area
+  // Compute the compactness measure: perimeter squared divided by
+  // area.  
+  rect = cvBoundingRect(contour);
   feature->compact = (contour->total * contour->total) / fabs(cvContourArea(contour));
 
   // Compute elliptical variance
@@ -686,6 +692,11 @@ void SimpleShape::ExtractFeatureSet(CvContour *contour, FeatureSet *feature)
   var /= contour->total;
 
   feature->variance = var;
+
+  // Fit a polygon
+  poly = cvApproxPoly(contour, sizeof(CvContour), NULL, CV_POLY_APPROX_DP,
+                      cvContourPerimeter(contour) * 0.02, 0);
+  feature->vertexCount = poly->total;
 
   return;
 }
