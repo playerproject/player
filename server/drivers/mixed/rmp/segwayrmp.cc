@@ -93,7 +93,7 @@ void SegwayRMP_Register(DriverTable* table)
 
 SegwayRMP::SegwayRMP(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_position_data_t), 
-              sizeof(player_position_cmd_t), 0, 0)
+              sizeof(player_position_cmd_t), 10, 10)
 {
   segway = new SegwayIO();
 }

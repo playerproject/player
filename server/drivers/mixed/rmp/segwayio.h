@@ -7,6 +7,8 @@
 #include <pthread.h>
 #include <queue>
 
+using namespace std;
+
 #define RMP_CAN_ID_SHUTDOWN	0x0412
 #define RMP_CAN_ID_COMMAND	0x0413
 #define RMP_CAN_ID_MSG1		0x0400

@@ -69,6 +69,7 @@ SegwayIO::SegwayIO()
   pthread_mutex_init(&trans_command_mutex, NULL);
   pthread_mutex_init(&rot_command_mutex, NULL);
 
+  latestData.ready = 0x1F;
 }
 
 SegwayIO::~SegwayIO()
@@ -171,6 +172,7 @@ SegwayIO::ReadWriteLoop()
       while ((ret = canio->ReadPacket(&pkt, channel)) > 0) {
 	// then we got a new packet...
 
+	//	printf("SEGWAYIO: pkt: %s\n", pkt.toString());
 	// only take data from channel 0
 	if (channel == 0) {
 	  data_frame[channel].AddPacket(pkt);
@@ -301,7 +303,7 @@ SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
   rot_command = rot;
   pthread_mutex_unlock(&rot_command_mutex);
 
-  printf("SEGWAYIO: trans: %d rot: %d\n", trans_command, rot_command);
+  //  printf("SEGWAYIO: trans: %d rot: %d\n", trans_command, rot_command);
 
   // now we have to add an empty packet onto the command queue, so that
   // our read/write loop will send this new velocity
