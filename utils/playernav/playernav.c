@@ -100,15 +100,7 @@ main(int argc, char** argv)
           quit=1;
           break;
         }
-        // if we got a valid path, for the current goal, then draw it
-        if(gui_data.positions[i]->path_valid &&
-           (fabs(gui_data.positions[i]->gx - gui_data.goals[i][0]) 
-            < epsilon) &&
-           (fabs(gui_data.positions[i]->gy - gui_data.goals[i][1]) 
-            < epsilon))
-        {
-          draw_waypoints(&gui_data,i);
-        }
+        draw_waypoints(&gui_data,i);
       }
     }
     count++;
