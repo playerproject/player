@@ -58,8 +58,8 @@ void MapFile_Register(DriverTable* table);
 void MapCspace_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_MAPSUBSAMPLE
-void MapSubsample_Register(DriverTable* table);
+#ifdef INCLUDE_MAPSCALE
+void MapScale_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_AMTECPOWERCUBE
@@ -493,8 +493,8 @@ register_devices()
   MapCspace_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_MAPSUBSAMPLE
-  MapSubsample_Register(driverTable);
+#ifdef INCLUDE_MAPSCALE
+  MapScale_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_AMTECPOWERCUBE
