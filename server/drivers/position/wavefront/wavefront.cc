@@ -173,10 +173,12 @@ int Wavefront::Setup()
 
   memset(&cmd,0,sizeof(cmd));
   memset(&data,0,sizeof(data));
+  // HACK: in this context, stall indicates that we're at the goal
+  data.stall = 1;
   PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
   PutData((unsigned char*)&data,sizeof(data),0,0);
 
-  this->stopped = false;
+  this->stopped = true;
   this->target_x = this->target_y = this->target_a = 0.0;
   this->position_x = this->position_y = this->position_a = 0.0;
   this->localize_x = this->localize_y = this->localize_a = 0.0;
@@ -431,7 +433,13 @@ Wavefront::PutPositionData()
   data.xspeed = this->position_xspeed_be;
   data.yspeed = this->position_yspeed_be;
   data.yawspeed = this->position_aspeed_be;
-  data.stall = 0;
+
+  // HACK: set stall to 1 when we've reached the goal.
+  // TODO: move this notification out to its own data packet
+  if(this->stopped)
+    data.stall = 1;
+  else
+    data.stall = 0;
 
   PutData((unsigned char*)&data,sizeof(data),
           this->position_timesec, this->position_timeusec);
