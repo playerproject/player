@@ -5,21 +5,40 @@
 .SUFFIXES: .cc .o
 
 SERVERNAME = player
+DEVICELIBNAME = libplayerdevice.a
 
 INCLUDES = -I../include
 CPP = g++
 CFLAGS = -g -Wall
-LIBS = -lpthread -lm
+LIBDIRS = -L.
+LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm
 MAKEDEP = makedepend
 INSTALL = install
 MKDIR = mkdir
 RM = rm
+AR = ar
 RMDIR = rmdir
+
+# comment to exclude support for the Stage simulator
+INCLUDE_STAGE = -DINCLUDE_STAGE
+
+# comment each one to remove support for that device
+INCLUDE_LASER = -DINCLUDE_LASER
+INCLUDE_SONAR = -DINCLUDE_SONAR
+INCLUDE_VISION = -DINCLUDE_VISION
+INCLUDE_POSITION = -DINCLUDE_POSITION
+INCLUDE_GRIPPER = -DINCLUDE_GRIPPER
+INCLUDE_MISC = -DINCLUDE_MISC
+INCLUDE_PTZ = -DINCLUDE_PTZ
+
+INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
+                   $(INCLUDE_POSITION) $(INCLUDE_GRIPPER) $(INCLUDE_MISC) \
+		   $(INCLUDE_MISC) $(INCLUDE_PTZ) $(INCLUDE_STAGE)
 
 INSTALL_BIN = $(INSTALL_PREFIX)/bin
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
-OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o main.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenapositiondevice.o arenalaserdevice.o arenasonardevice.o arenavisiondevice.o arenalock.o ptzdevice.o arenaptzdevice.o devicetable.o stagedevice.o
+OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenapositiondevice.o arenalaserdevice.o arenasonardevice.o arenavisiondevice.o arenalock.o ptzdevice.o arenaptzdevice.o devicetable.o stagedevice.o
 
 all: $(SERVERNAME)
 
@@ -27,13 +46,17 @@ dep:
 	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.cc 2>/dev/null
 
 clean:
-	rm -f *.o *~ $(SERVERNAME) core
+	rm -f *.o *~ $(SERVERNAME) $(DEVICELIBNAME) core
 
-$(SERVERNAME): $(OBS)
-	$(CPP) $(OBS) -o $(SERVERNAME) $(LIBS)
+$(DEVICELIBNAME): $(OBS)
+	$(AR) cr $@ $(OBS)
+
+$(SERVERNAME): main.cc $(DEVICELIBNAME) 
+	$(CPP) $(CFLAGS) $(INCLUDES) $(INCLUDED_DEVICES) -o $@ $< $(LIBS)
 
 %.o: %.cc 
 	$(CPP) $(CFLAGS) $(INCLUDES) -c $<
+
 
 install: $(SERVERNAME)
 	$(MKDIR) -p $(INSTALL_BIN)
@@ -76,18 +99,13 @@ devicetable.o: ../include/offsets.h ../include/lock.h
 gripperdevice.o: ../include/gripperdevice.h ../include/p2osdevice.h
 gripperdevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
 gripperdevice.o: ../include/packet.h ../include/sip.h
-laserdevice.o: ../include/laserdevice.h ../include/lock.h ../include/device.h
-laserdevice.o: ../include/offsets.h
+laserdevice.o: ../include/rtk-types.hh ../include/laserdevice.h
+laserdevice.o: ../include/lock.h ../include/device.h ../include/offsets.h
 lock.o: ../include/device.h ../include/offsets.h ../include/lock.h
 lock.o: ../include/errors.h
-main.o: ../include/pubsub_util.h ../include/laserdevice.h ../include/lock.h
-main.o: ../include/device.h ../include/offsets.h ../include/sonardevice.h
-main.o: ../include/p2osdevice.h ../include/packet.h ../include/sip.h
-main.o: ../include/visiondevice.h ../include/positiondevice.h
-main.o: ../include/gripperdevice.h ../include/miscdevice.h
-main.o: ../include/ptzdevice.h ../include/clientdata.h
-main.o: ../include/devicetable.h ../include/counter.h ../include/nodevice.h
-main.o: ../include/stagedevice.hh ../include/arenalock.h
+main.o: ../include/pubsub_util.h ../include/clientdata.h
+main.o: ../include/devicetable.h ../include/device.h ../include/offsets.h
+main.o: ../include/lock.h ../include/counter.h ../include/nodevice.h
 miscdevice.o: ../include/miscdevice.h ../include/p2osdevice.h
 miscdevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
 miscdevice.o: ../include/packet.h ../include/sip.h
