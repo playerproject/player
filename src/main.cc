@@ -237,6 +237,7 @@ void *client_writer(void* arg)
   CClientData *clientData = (CClientData *) arg;
   unsigned char *data;
   int size;
+  unsigned long realsleep;
   
   sigblock(SIGINT);
   sigblock(SIGALRM);
@@ -274,7 +275,14 @@ void *client_writer(void* arg)
     
     if(clientData->mode == CONTINUOUS)
     {
-      usleep((unsigned long)(1000000.0 / clientData->frequency));
+      //printf("req. sleep for: %lu\n", 
+                      //(unsigned long)(1000000.0 / clientData->frequency));
+
+      // account for 10ms delay
+      realsleep = (unsigned long)(1000000.0 / clientData->frequency)-10000;
+      realsleep = max(realsleep,0);
+      //usleep((unsigned long)(1000000.0 / clientData->frequency));
+      usleep(realsleep);
     }
     else if(clientData->mode == REQUESTREPLY)
     {
@@ -320,19 +328,13 @@ int main( int argc, char *argv[] )
 
   pthread_mutex_init(&clients_mutex,NULL);
 
-  // printf("Player Robot Server v%s\n", PLAYER_VERSION);
-  
-  // new look to match Stage - revert if you don't like it! - RTV
   printf("** Player v%s ** ", PLAYER_VERSION);
 
   for( int i = 1; i < argc; i++ ) 
   {
-    //printf( "ARG: %s\n", argv[i] ); fflush( stdout );
-
     if ( strcmp( argv[i], "-lp") == 0 ) {
       i++;
       if (i<argc) { 
-	//strcpy( laserDevice->LASER_SERIAL_PORT, argv[i] );
 	strcpy( laserserialport, argv[i] );
 	printf("Assuming laser is connected to serial port \"%s\"\n",
 	       argv[i]);
@@ -370,9 +372,6 @@ int main( int argc, char *argv[] )
       i++;
       if (i<argc) { 
 	playerport = atoi(argv[i]);
-	//printf("Will run Player on port %d\n", playerport);
-	// new look to match Stage - what do you think?
-	// just chuck this out if you don't like it - RTV
 	printf("[Port %d]", playerport);
       }
       else {
