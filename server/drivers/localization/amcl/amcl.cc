@@ -33,20 +33,21 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
+#include <sys/types.h>
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 #include <sys/time.h>
 
 #define PLAYER_ENABLE_TRACE 0
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "player.h"
 #include "device.h"
@@ -384,7 +385,7 @@ int AdaptiveMCL::Setup(void)
   amcl_sensor_data_t sdata;
     
   PLAYER_TRACE0("setup");
-  
+
   // Initialise the underlying position device
   if (this->SetupOdom() != 0)
     return -1;
@@ -408,9 +409,13 @@ int AdaptiveMCL::Setup(void)
   assert(this->map == NULL);
   this->map = map_alloc(this->map_scale);
 
+  PLAYER_MSG1("loading map file [%s]", this->map_file);
+  
   // Load the map
   if (map_load_occ(this->map, this->map_file, this->map_negate) != 0)
     return -1;
+
+  PLAYER_MSG0("computing cspace");
 
   // Compute the c-space
   map_update_cspace(this->map, 2 * this->robot_radius);
