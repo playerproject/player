@@ -25,11 +25,14 @@
  *
  * a pure C client
  */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef PLAYERCCLIENT_H
+#define PLAYERCCLIENT_H
 
 #include <messages.h>
-
-#ifndef PLAYERCLIENT_H
-#define PLAYERCLIENT_H
 
 typedef struct
 {
@@ -179,3 +182,8 @@ void player_print_sonar(player_sonar_data_t data);
 void player_print_position(player_position_data_t data);
 
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+

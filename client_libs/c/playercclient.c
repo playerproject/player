@@ -34,7 +34,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
-#include <time.h>  /* temporary */
+/*#include <time.h>*/  /* temporary */
 
 /*
  * connects to server listening at host:port.  conn is filled in with
@@ -235,7 +235,7 @@ int player_request_device_access(player_connection_t* conn,
 int player_read(player_connection_t* conn, player_msghdr_t* hdr,
                 char* payload, size_t payloadlen)
 {
-  time_t timesec;
+  /*time_t timesec;*/
   int readcnt;
 
   hdr->stx = 0;
@@ -264,9 +264,9 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   hdr->time = ntohll(hdr->time);
   hdr->timestamp = ntohll(hdr->timestamp);
   hdr->size = ntohl(hdr->size);
-  //printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);
-  timesec = (time_t)(hdr->time / 1000);
-  printf("time: %s\n", ctime(&timesec));
+  /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
+  /*timesec = (time_t)(hdr->time / 1000);*/
+  /*printf("time: %s\n", ctime(&timesec));*/
   /*puts("got HDR");*/
 
   /* get the payload */
@@ -359,8 +359,8 @@ int player_read_position(player_connection_t* conn,player_position_data_t* data)
     return(-1);
   }
 
-  data->x = ntohl(data->x);
-  data->y = ntohl(data->y);
+  data->xpos = ntohl(data->xpos);
+  data->ypos = ntohl(data->ypos);
   data->theta = ntohs(data->theta);
   data->speed = ntohs(data->speed);
   data->turnrate = ntohs(data->turnrate);
@@ -516,10 +516,10 @@ void player_print_sonar(player_sonar_data_t data)
 }
 void player_print_position(player_position_data_t data)
 {
-  printf("pos: (%d,%d,%d)\n", data.x,data.y,data.theta);
+  printf("pos: (%d,%d,%d)\n", data.xpos,data.ypos,data.theta);
   printf("speed: %d  turnrate: %d\n", data.speed, data.turnrate);
   printf("compass: %d\n", data.compass);
-  printf("stall: %d\n", data.stall);
+  printf("stalls: %d\n", data.stalls);
 }
 
 /*
