@@ -182,6 +182,7 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   int tmpint;
+  double tmpfloat;
   int ch;
   uint32_t color;
 
@@ -209,11 +210,11 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
   // now, get the optionals
   bzero(minarea,sizeof(minarea));
   if((tmpint = cf->ReadInt(section, "pixels", -1)) >= 0)
-    sprintf(minarea,"%d",tmpint);
+    snprintf(minarea,sizeof(minarea),"%d",tmpint);
   portnum = cf->ReadInt(section, "port", DEFAULT_ACTS_PORT);
   bzero(fps,sizeof(fps));
   if((tmpint = cf->ReadInt(section, "fps", -1)) >= 0)
-    sprintf(fps,"%d",tmpint);
+    snprintf(fps,sizeof(fps),"%d",tmpint);
   bzero(drivertype,sizeof(drivertype));
   if(cf->ReadString(section, "drivertype", NULL))
     strncpy(drivertype, cf->ReadString(section, "drivertype", NULL), 
@@ -225,18 +226,18 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
             sizeof(devicepath)-1);
   bzero(channel,sizeof(channel));
   if((tmpint = cf->ReadInt(section, "channel", -1)) >= 0)
-    sprintf(channel,"%d",tmpint);
+    snprintf(channel,sizeof(channel),"%d",tmpint);
   bzero(norm,sizeof(norm));
   if(cf->ReadString(section, "norm", NULL))
     strncpy(norm, cf->ReadString(section, "norm", NULL), 
             sizeof(norm)-1);
   pxc200p = cf->ReadInt(section, "pxc200", -1);
   bzero(brightness,sizeof(brightness));
-  if((tmpint = cf->ReadInt(section, "brightness", -1)) >= 0)
-    sprintf(brightness,"%d",tmpint);
+  if((tmpfloat = cf->ReadFloat(section, "brightness", -1)) >= 0)
+    snprintf(brightness,sizeof(brightness),"%.3f",tmpfloat);
   bzero(contrast,sizeof(contrast));
-  if((tmpint = cf->ReadInt(section, "contrast", -1)) >= 0)
-    sprintf(contrast,"%d",tmpint);
+  if((tmpfloat = cf->ReadFloat(section, "contrast", -1)) >= 0)
+    snprintf(contrast,sizeof(brightness),"%.3f",tmpfloat);
 
   // set up some version-specific parameters
   switch(acts_version)
@@ -256,13 +257,13 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
   }
   header_elt_len = header_len / PLAYER_BLOBFINDER_MAX_CHANNELS;
   bzero(portnumstring, sizeof(portnumstring));
-  sprintf(portnumstring,"%d",portnum);
+  snprintf(portnumstring,sizeof(portnumstring),"%d",portnum);
   
   bzero(widthstring, sizeof(widthstring));
-  sprintf(widthstring,"%d",width);
+  snprintf(widthstring,sizeof(widthstring),"%d",width);
 
   bzero(heightstring, sizeof(heightstring));
-  sprintf(heightstring,"%d",height);
+  snprintf(heightstring,sizeof(heightstring),"%d",height);
 
 
   // Get the descriptive colors.
