@@ -35,7 +35,7 @@
 
 #include <devicetable.h>
 #include <clientdata.h>
-#include <counter.h>
+#include <clientmanager.h>
 #include <packet.h>
 
 #include <iostream.h> //some debug output it easier using stream IO
@@ -45,10 +45,10 @@
 #endif
 
 extern CDeviceTable* deviceTable;
-extern CCounter num_threads;
 extern CClientData* clients[];
 extern pthread_mutex_t clients_mutex;
-extern bool SHUTTING_DOWN;
+extern ClientManager* clientmanager;
+extern char playerversion[];
 
 extern int global_playerport; // used to generate useful output & debug
 
@@ -61,6 +61,11 @@ CClientData::CClientData(char* key)
   socket = 0;
   mode = CONTINUOUS;
   frequency = 10;
+
+  readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
+  writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
+
+  last_write = 0.0;
 
   if(strlen(key))
   {
@@ -124,7 +129,7 @@ bool CClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
     return(false);
 }
 
-void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,  
+int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,  
                                  unsigned int payload_size) 
 {
   bool request=false;
@@ -176,7 +181,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     else
     {
       fputs("Warning: failed authentication; closing connection.\n", stderr);
-      delete this;
+      return(-1);
+      //delete this;
     }
   }
   else
@@ -196,7 +202,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             printf("HandleRequests(): Player device got small ioctl: %d\n",
                    payload_size);
             //pthread_mutex_unlock( &requesthandling );
-            return;
+            return(0);
           }
 
           // what sort of ioctl is it?
@@ -404,7 +410,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     {
       perror("HandleRequests");
       pthread_mutex_unlock(&socketwrite);
-      delete this;
+      return(-1);
+      //delete this;
     }
     pthread_mutex_unlock(&socketwrite);
   }
@@ -412,6 +419,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   if(unlock_pending)
     pthread_mutex_unlock( &datarequested);
   //pthread_mutex_unlock( &requesthandling );
+  
+  return(0);
 }
 
 CClientData::~CClientData() 
@@ -421,45 +430,20 @@ CClientData::~CClientData()
   usleep(100000);
 
   pthread_mutex_lock( &access );
-  if (readThread) num_threads-=1;
-  if (writeThread) num_threads-=1;
 
   if (socket) close(socket);
   printf("** Player [port %d] killing client on socket %d **\n", 
 	 global_playerport, socket);
 
+  if(readbuffer)
+    delete readbuffer;
 
-  if (readThread && writeThread) 
-  {
-    // kill whichever threads that are not me
-    if(!pthread_equal(pthread_self(), readThread)) {
-      pthread_cancel(readThread);
-    }
-    if(!pthread_equal(pthread_self(), writeThread))
-    {
-      pthread_cancel(writeThread);
-    }
-    
-    if(!SHUTTING_DOWN)
-    {
-      //printf("client_writer() with id %ld - killed\n", 
-                      //writeThread);
-      //printf("client_reader() with id %ld - killed\n", 
-                      //readThread);
-    }
-    pthread_mutex_lock(&clients_mutex);
-    clients[client_index] = NULL;
-    pthread_mutex_unlock(&clients_mutex);
-  }
+  if(writebuffer)
+    delete writebuffer;
 
   pthread_mutex_destroy( &access );
-  //pthread_mutex_destroy( &requesthandling );
   pthread_mutex_destroy( &socketwrite );
   pthread_mutex_destroy( &datarequested );
-     
-  if(pthread_equal(pthread_self(),readThread) ||  
-     pthread_equal(pthread_self(),writeThread)) 
-    pthread_exit(0);
 }
 
 void CClientData::RemoveRequests() 
@@ -785,4 +769,132 @@ CClientData::PrintRequested(char* str)
   puts("");
 }
 
+int CClientData::Read()
+{
+  unsigned int readcnt;
+  player_msghdr_t hdr;
+
+  char c;
+  hdr.stx = 0;
+
+  /* wait for the STX */
+  while(hdr.stx != PLAYER_STXX)
+  {
+    //puts("looking for STX");
+
+    // make sure we don't get garbage
+    c = 0;
+
+    //printf("read %d bytes; reading now\n", readcnt);
+    if(read(socket,&c,1) <= 0)
+    {
+      // client must be gone. fuck 'em
+      //perror("client_reader(): read() while waiting for STX");
+      return(-1);
+    }
+    //printf("c:%x\n", c);
+
+    // This should be the high byte
+    hdr.stx = ((short) c) << 8;
+
+    if(read(socket,&c,1) <= 0)
+    {
+      // client must be gone. fuck 'em
+      //perror("client_reader(): read() while waiting for STX");
+      return(-1);
+    }
+    //printf("c:%x\n", c);
+
+    // This should be the low byte
+    hdr.stx |= ((short) c);
+
+    //printf("got:%x:\n",ntohs(hdr.stx));
+    readcnt = sizeof(hdr.stx);
+  }
+  //puts("got STX");
+
+  int thisreadcnt;
+  /* get the rest of the header */
+  while(readcnt < sizeof(player_msghdr_t))
+  {
+    if((thisreadcnt = read(socket, &(hdr.type), 
+                           sizeof(player_msghdr_t)-readcnt)) <= 0)
+    {
+      //perror("client_reader(): read() while reading header");
+      return(-1);
+    }
+    readcnt += thisreadcnt;
+  }
+
+  // byte-swap as necessary
+  hdr.type = ntohs(hdr.type);
+  hdr.device = ntohs(hdr.device);
+  hdr.device_index = ntohs(hdr.device_index);
+  hdr.time_sec = ntohl(hdr.time_sec);
+  hdr.time_usec = ntohl(hdr.time_usec);
+  hdr.timestamp_sec = ntohl(hdr.timestamp_sec);
+  hdr.timestamp_usec = ntohl(hdr.timestamp_usec);
+  hdr.size = ntohl(hdr.size);
+
+  //puts("got HDR");
+
+  /* get the payload */
+  if(hdr.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
+  {
+    printf("WARNING: client's message is too big (%d bytes). Ignoring\n",
+           hdr.size);
+    return(0);
+  }
+
+  for(readcnt  = read(socket,readbuffer,hdr.size);
+      readcnt != hdr.size;
+      readcnt += read(socket,readbuffer+readcnt,hdr.size-readcnt));
+
+  //if((readcnt = read(cd->socket,buffer,hdr.size)) != hdr.size)
+  // {
+  //printf("client_reader: tried to read client-specified %d bytes, but "
+  //"only got %d\n", hdr.size, readcnt);
+  //delete cd;
+  //}
+  //puts("got payload");
+
+  return(HandleRequests(hdr,readbuffer, hdr.size));
+}
+
+int
+CClientData::WriteIdentString()
+{
+  unsigned char data[PLAYER_IDENT_STRLEN];
+  // write back an identifier string
+  sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
+  bzero(((char*)data)+strlen((char*)data),
+        PLAYER_IDENT_STRLEN-strlen((char*)data));
+
+  pthread_mutex_lock(&socketwrite);
+  if(write(socket, data, PLAYER_IDENT_STRLEN) < 0 ) 
+  {
+    perror("ClientManager::Write():write()");
+    pthread_mutex_unlock(&socketwrite);
+    return(-1);
+  }
+  pthread_mutex_unlock(&socketwrite);
+  return(0);
+}
+
+int
+CClientData::Write()
+{
+  unsigned int size;
+
+  size = BuildMsg(writebuffer,PLAYER_MAX_MESSAGE_SIZE);
+
+  pthread_mutex_lock(&socketwrite);
+  if(size>0 && write(socket, writebuffer, size) < 0 ) 
+  {
+    perror("ClientManager::Write: write()");
+    return(-1);
+  }
+  pthread_mutex_unlock(&socketwrite);
+  return(0);
+}
 

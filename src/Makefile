@@ -29,7 +29,8 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
 #
 # definitely build the device-independent objects
 #
-OBS = nodevice.o clientdata.o lock.o pubsub_util.o devicetable.o 
+OBS = nodevice.o clientdata.o lock.o pubsub_util.o devicetable.o \
+      clientmanager.o
 
 #
 # only build the device-specific objects that we need (duplicate objects

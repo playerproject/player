@@ -81,8 +81,8 @@
 #endif
 
 #include <clientdata.h>
+#include <clientmanager.h>
 #include <devicetable.h>
-#include <counter.h>
 #include <nodevice.h>
 
 #include <sys/mman.h> // for mmap
@@ -96,9 +96,6 @@
 player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 size_t ioSize = 0; // size of the IO buffer
 
-CCounter num_threads;
-
-
 CDeviceTable* deviceTable = new CDeviceTable();
 
 // storage for the TruthDevice's info - there is no
@@ -107,17 +104,10 @@ CDeviceTable* deviceTable = new CDeviceTable();
 // in CreateStageDevices()
 //player_stage_info_t *truth_info = new player_stage_info_t();
 
-// this number divided by two (two threads per client) is
-// the maximum number of clients that the server will support
-// i don't know what a good number would be
-#define MAXNUMTHREADS 401
-#define MAXNUMCLIENTS MAXNUMTHREADS/2
-
 // keep track of the pointers to our various clients.
 // that way we can cancel them at Shutdown
-CClientData* clients[MAXNUMCLIENTS];
-pthread_mutex_t clients_mutex;
-bool SHUTTING_DOWN;
+ClientManager* clientmanager;
+char playerversion[] = PLAYER_VERSION;
 
 bool experimental = false;
 bool debug = false;
@@ -161,15 +151,14 @@ Usage()
 /* sighandler to shut everything down properly */
 void Interrupt( int dummy ) 
 {
-  // setting this will suppress print statements from the client deaths
-  SHUTTING_DOWN = true;
-  
+  delete clientmanager;
+
   // first, delete the clients
-  for(unsigned int i=0;i<MAXNUMCLIENTS;i++)
-  {
-    if(clients[i])
-      delete clients[i];
-  }
+  //for(unsigned int i=0;i<MAXNUMCLIENTS;i++)
+  //{
+    //if(clients[i])
+      //delete clients[i];
+  //}
 
   // next, delete the deviceTable; it will delete all the devices internally
   delete deviceTable;
@@ -669,7 +658,6 @@ int main( int argc, char *argv[] )
   bool special_config = false;
   bool already_sane = false;
   bool use_stage = false;
-  unsigned int j;
   struct sockaddr_in listener;
   char auth_key[PLAYER_KEYLEN] = "";
   //struct sockaddr_in sender;
@@ -682,8 +670,6 @@ int main( int argc, char *argv[] )
   int player_sock = 0;
 
   char arenaFile[MAX_FILENAME_SIZE]; // filename for mapped memory
-
-  pthread_mutex_init(&clients_mutex,NULL);
 
   // make a copy of argv, so that strtok in parse_device_string
   // doesn't screw with it 
@@ -876,6 +862,9 @@ int main( int argc, char *argv[] )
     exit(-1);
   }
 
+  // create the one client reader object
+  clientmanager = new ClientManager;
+
   while(1) 
   {
     clientData = new CClientData(auth_key);
@@ -889,48 +878,29 @@ int main( int argc, char *argv[] )
     }
 
     /* got conn */
-    if(num_threads.Value() < MAXNUMTHREADS)
-    {
-      printf("** Player [port %d] client accepted on socket %d **\n", 
-	     global_playerport, clientData->socket);
-      if(pthread_create(&clientData->writeThread, NULL, 
-			client_writer, clientData))
-      {
-        perror("pthread_create(3) failed");
-        exit(-1);
-      }
-      num_threads+=1;
+    printf("** Player [port %d] client accepted on socket %d **\n", 
+           global_playerport, clientData->socket);
 
-      if(pthread_create(&clientData->readThread, NULL, client_reader, 
-                        clientData))
-      {
-        perror("pthread_create(3) failed");
-        exit(-1);
-      }
-      num_threads+=1;
-      
-      pthread_mutex_lock(&clients_mutex);
-      // find a place to put it in our array
-      for(j=0;j<MAXNUMCLIENTS;j++)
-      {
-        if(!clients[j])
-          break;
-      }
-      if(j == MAXNUMCLIENTS)
-        puts("VERY bad. no free room to store new CClientData pointer");
-      else
-      {
-        clients[j] = clientData;
-        clientData->client_index = j;
-      }
-      pthread_mutex_unlock(&clients_mutex);
-    }
-    else
-    {
-      puts("No more connections accepted");
-      /* this cleans up nicely */     
-      delete clientData;
-    }
+    clientmanager->AddClient(clientData);
+
+    /*
+       if(pthread_create(&clientData->writeThread, NULL, 
+       client_writer, clientData))
+       {
+       perror("pthread_create(3) failed");
+       exit(-1);
+       }
+     */
+
+    /*
+       if(pthread_create(&clientData->readThread, NULL, client_reader, 
+       clientData))
+       {
+       perror("pthread_create(3) failed");
+       exit(-1);
+       }
+       num_threads+=1;
+     */
   }
 
   /* don't get here */

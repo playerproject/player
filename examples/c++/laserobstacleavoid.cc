@@ -64,14 +64,14 @@ int main(int argc, char **argv)
   parse_args(argc,argv);
 
   PlayerClient robot(host,port);
-  PositionProxy pp(&robot,0,'w');
+  //PositionProxy pp(&robot,0,'w');
   LaserProxy lp(&robot,0,'r');
 
   printf("%s\n",robot.conn.banner);
   
   /* maybe turn on the motors */
-  if(turnOnMotors && pp.SetMotorState(1))
-    exit(1);
+  //if(turnOnMotors && pp.SetMotorState(1))
+    //exit(1);
 
   int newspeed, newturnrate;
   /* go into read-think-act loop */
@@ -80,6 +80,7 @@ int main(int argc, char **argv)
     /* this blocks until new data comes; 10Hz by default */
     if(robot.Read())
       exit(1);
+    continue;
 
     /* print current sensor data to console */
     //lp.Print();
@@ -114,6 +115,6 @@ int main(int argc, char **argv)
     //printf("speed: %d\tturn:%d\n", *(robot.newspeed), *(robot.newturnrate));
                   
     /* write commands to robot */
-    pp.SetSpeed(newspeed,newturnrate);
+    //pp.SetSpeed(newspeed,newturnrate);
   }
 }
