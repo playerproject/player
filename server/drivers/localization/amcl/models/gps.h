@@ -39,6 +39,9 @@ extern "C" {
 // Model information
 typedef struct
 {
+  // UTM origin: UTM coord that maps to (0, 0) in global coords
+  double utm_base_e, utm_base_n;
+  
   // UTM grid coordinates
   double utm_e, utm_n;
 

@@ -52,11 +52,11 @@ int AdaptiveMCL::LoadImu(ConfigFile* cf, int section)
     // Create the imu model
     this->imu_model = imu_alloc();
 
-    // Offset added to yaw (heading) values to get UTM (true) north
-    this->imu_model->utm_offset = cf->ReadAngle(section, "imu_utm_offset", -13);
-
     // Expect error in yaw (heading) values
-    this->imu_model->err_head = cf->ReadAngle(section, "imu_err_yaw", 10.0);
+    this->imu_model->err_head = cf->ReadAngle(section, "imu_err_yaw", 10 * M_PI / 180);
+
+    // Offset added to yaw (heading) values to get UTM (true) north
+    this->imu_mag_dev = cf->ReadAngle(section, "imu_mag_dev", +13 * M_PI / 180);
   }
   
   return 0;
@@ -127,6 +127,7 @@ void AdaptiveMCL::GetImuData(amcl_sensor_data_t *data)
   size = this->imu->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
 
   data->imu_utm_head = ((int32_t) ntohl(ndata.yaw)) / 3600.0 * M_PI / 180;
+  data->imu_utm_head += this->imu_mag_dev;
   
   return;
 }
@@ -134,9 +135,13 @@ void AdaptiveMCL::GetImuData(amcl_sensor_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the imu sensor model
-void AdaptiveMCL::UpdateImuModel(amcl_sensor_data_t *data)
+bool AdaptiveMCL::UpdateImuModel(amcl_sensor_data_t *data)
 {
-  printf("utm_head %f\n", data->imu_utm_head * 180 / M_PI);
+  // If there is no imu device...
+  if (this->imu_index < 0)
+    return true;
+
+  printf("update imu %f\n", data->imu_utm_head * 180 / M_PI);
   
   // Update the imu sensor model with the latest imu measurements
   imu_set_utm(this->imu_model, data->imu_utm_head);
@@ -144,7 +149,7 @@ void AdaptiveMCL::UpdateImuModel(amcl_sensor_data_t *data)
   // Apply the imu sensor model
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) imu_sensor_model, this->imu_model);  
   
-  return;
+  return true;
 }
 
 #ifdef INCLUDE_RTKGUI
@@ -155,10 +160,14 @@ void AdaptiveMCL::DrawImuData(amcl_sensor_data_t *data)
 {
   double ox, oy, oa;
   
+  // If there is no imu device...
+  if (this->imu_index < 0)
+    return;
+
   rtk_fig_clear(this->imu_fig);
   rtk_fig_color_rgb32(this->imu_fig, 0xFF00FF);
   rtk_fig_get_origin(this->robot_fig, &ox, &oy, &oa);
-  rtk_fig_arrow(this->imu_fig, ox, oy, data->imu_utm_head, 1.0, 0.20);
+  rtk_fig_arrow(this->imu_fig, ox, oy, data->imu_utm_head + M_PI / 2, 1.0, 0.20);
 
   return;
 }

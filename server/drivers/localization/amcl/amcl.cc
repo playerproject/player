@@ -91,6 +91,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->occ_filename = cf->ReadFilename(section, "map_file", NULL);
   this->map_scale = cf->ReadLength(section, "map_scale", 0.05);
   this->occ_map_negate = cf->ReadInt(section, "map_negate", 0);
+
   this->map = NULL;
 
   // Odometry stuff
@@ -175,20 +176,24 @@ int AdaptiveMCL::Setup(void)
     
   PLAYER_TRACE0("setup");
 
-  assert(this->map == NULL);
-  this->map = map_alloc(this->map_scale);
-  
-  // Load the occupancy map
-  if (this->occ_filename != NULL)
+  // If we have a map...
+  if (this->occ_filename)
   {
-    PLAYER_MSG1("loading occupancy map file [%s]", this->occ_filename);
-    if (map_load_occ(this->map, this->occ_filename, this->occ_map_negate) != 0)
-      return -1;
-  }
+    assert(this->map == NULL);
+    this->map = map_alloc(this->map_scale);
+  
+    // Load the occupancy map
+    if (this->occ_filename != NULL)
+    {
+      PLAYER_MSG1("loading occupancy map file [%s]", this->occ_filename);
+      if (map_load_occ(this->map, this->occ_filename, this->occ_map_negate) != 0)
+        return -1;
+    }
 
-  // Compute the c-space
-  PLAYER_MSG0("computing cspace");
-  map_update_cspace(this->map, 2 * this->robot_radius);
+    // Compute the c-space
+    PLAYER_MSG0("computing cspace");
+    map_update_cspace(this->map, 2 * this->robot_radius);
+  }
 
   // Load the wifi maps
   for (i = 0; i < this->wifi_beacon_count; i++)
@@ -284,7 +289,8 @@ int AdaptiveMCL::Shutdown(void)
   this->pf = NULL;
 
   // Delete the map
-  map_free(this->map);
+  if (this->map)
+    map_free(this->map);
   this->map = NULL;
 
   PLAYER_TRACE0("shutdown done");
@@ -300,7 +306,7 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   int i, j, k;
   int datalen;
   player_localize_data_t data;
-  pf_vector_t odom_pose, odom_diff;
+  pf_vector_t odom_diff; // odom_pose;
   pf_vector_t pose;
   pf_matrix_t pose_cov;
   amcl_sensor_data_t sdata;
@@ -315,18 +321,19 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   // the rest of the sensor data onto the sensor queue.
   this->GetOdomData(&sdata);
 
+  /* REMOVE
   // See how far the robot has moved
   odom_pose = sdata.odom_pose;
   odom_diff = pf_vector_coord_sub(odom_pose, this->odom_pose);
 
   // Make sure we have moved a reasonable distance
   if (this->push_init == false ||
-      this->odom_index < 0 ||
       fabs(odom_diff.v[0]) > 0.20 ||
       fabs(odom_diff.v[1]) > 0.20 ||
       fabs(odom_diff.v[2]) > M_PI / 6)
   {
     this->odom_pose = sdata.odom_pose;
+  */
 
     // Get the current sonar data; we assume it is new data
     this->GetSonarData(&sdata);
@@ -346,10 +353,10 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
     // Push the data
     this->Push(&sdata);
     this->push_init = true;
-  }
+//  }
   
   // Compute the change in odometric pose
-  odom_diff = pf_vector_coord_sub(odom_pose, this->pf_odom_pose);
+  odom_diff = pf_vector_coord_sub(sdata.odom_pose, this->pf_odom_pose);
 
   // Record the number of pending observations
   data.pending_count = this->q_len;
@@ -492,6 +499,13 @@ void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
     return;
   }
 
+  if (this->map == NULL)
+  {
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+    return;
+  }
+
   //PLAYER_TRACE4("%d %d %f %d\n", this->map->size_x, this->map->size_y,
   //              this->map->scale, ntohl(info.scale));
   
@@ -623,10 +637,7 @@ void AdaptiveMCL::Main(void)
   // Open file for logging results
   this->outfile = fopen("amcl.out", "w+");
 #endif
-  
-  // Initialize the filter
-  // REMOVE this->InitFilter(this->pf_init_pose_mean, this->pf_init_pose_cov);
-  
+    
   while (true)
   {
 #ifdef INCLUDE_RTKGUI
@@ -666,7 +677,7 @@ void AdaptiveMCL::Main(void)
 
       pf_get_cep_stats(pf, &mean, &var);
 
-      printf("%.3f %.3f %f\n", mean.v[0], mean.v[1], mean.v[2] * 180 / M_PI);
+      //printf("amcl %.3f %.3f %f\n", mean.v[0], mean.v[1], mean.v[2] * 180 / M_PI);
             
       fprintf(this->outfile, "%d.%03d unknown 6665 localize 01 %d.%03d ",
               0, 0, data.odom_time_sec, data.odom_time_usec / 1000);
@@ -698,88 +709,51 @@ void AdaptiveMCL::MainQuit()
   return;
 }
 
-/* REMOVE
-////////////////////////////////////////////////////////////////////////////////
-// Initialize the filter
-void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
-{
-  int i;
-  double weight;
-  amcl_hyp_t *hyp;
-  
-  // Initialize the odometric model
-  odometry_init_init(this->odom_model, pose_mean, pose_cov);
-  
-  // Draw samples from the odometric distribution
-  pf_init(this->pf, (pf_init_model_fn_t) odometry_init_model, this->odom_model);
-  
-  odometry_init_term(this->odom_model);
-
-  this->Lock();
-
-  // Read out the current hypotheses
-  this->hyp_count = 0;
-  for (i = 0; (size_t) i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
-  {
-    if (!pf_get_cluster_stats(this->pf, i, &weight, &pose_mean, &pose_cov))
-      break;
-
-    hyp = this->hyps + this->hyp_count++;
-    hyp->weight = weight;
-    hyp->pf_pose_mean = pose_mean;
-    hyp->pf_pose_cov = pose_cov;
-  }
-
-  this->Unlock();
-  
-#ifdef INCLUDE_RTKGUI
-  // Draw the samples
-  if (this->enable_gui)
-  {
-    DrawPoseEst();
-    
-    rtk_fig_clear(this->pf_fig);
-    rtk_fig_color(this->pf_fig, 0, 0, 1);
-    pf_draw_samples(this->pf, this->pf_fig, 1000);
-    pf_draw_cep_stats(this->pf, this->pf_fig);
-    //rtk_fig_color(this->pf_fig, 0, 1, 0);
-    //pf_draw_hist(this->pf, this->pf_fig);
-  }
-#endif
-
-  return;
-}
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the filter with new sensor data
-void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
+bool AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 {
   int i;
   double weight;
   pf_vector_t pose_mean;
   pf_matrix_t pose_cov;
   amcl_hyp_t *hyp;
-
-  printf("update\n");
+  bool update;
+  
+  update = false;
   
   // If the distribution has not been initialized...
   if (this->pf_init == false)
   {
+    printf("init\n");
+    fflush(stdout);
+      
     // Initialize distribution from odometric model
     if (this->pf_init_odom)
+    {
       this->InitOdomModel(data);
+      this->pf_init = true;
+    }
 
     // Initialize distribution from GPS model
     if (this->pf_init_gps)
-      this->InitGpsModel(data);
-
-    this->pf_init = true;
+    {
+      if (this->InitGpsModel(data))
+      {
+        this->pf_init = true;
+        update = true;
+      }
+    }
   }
   
   // Apply odometry action and sensor models
-  this->UpdateOdomModel(data);
-  
+  update |= this->UpdateOdomModel(data);
+
+  // Nothing updated...
+  if (!update)
+    return false;
+
   // Apply sonar sensor model
   this->UpdateSonarModel(data);
 
@@ -800,10 +774,6 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 
   this->Lock();
 
-  this->pf_odom_pose = data->odom_pose;
-  this->pf_odom_time_sec = data->odom_time_sec;
-  this->pf_odom_time_usec = data->odom_time_usec;
-
   // Read out the current hypotheses
   this->hyp_count = 0;
   for (i = 0; (size_t) i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
@@ -823,12 +793,13 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   // Draw the samples
   if (this->enable_gui)
   {
-    DrawPoseEst();
+    this->DrawPoseEst();
     
     this->DrawSonarData(data);
     this->DrawLaserData(data);
     this->DrawWifiData(data);
     this->DrawGpsData(data);
+    this->DrawImuData(data);
     
     rtk_fig_clear(this->pf_fig);
     rtk_fig_color(this->pf_fig, 0, 0, 1);
@@ -839,8 +810,8 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
     //pf_draw_hist(this->pf, this->pf_fig);
   }
 #endif
-
-  return;
+  
+  return true;
 }
 
 
@@ -930,18 +901,33 @@ int AdaptiveMCL::SetupGUI(void)
 
   this->canvas = rtk_canvas_create(this->app);
   rtk_canvas_title(this->canvas, "AdaptiveMCL");
-  rtk_canvas_size(this->canvas, this->map->size_x, this->map->size_y);
-  rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
+
+  if (this->map != NULL)
+  {
+    rtk_canvas_size(this->canvas, this->map->size_x, this->map->size_y);
+    rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
+  }
+  else
+  {
+    rtk_canvas_size(this->canvas, 400, 400);
+    rtk_canvas_scale(this->canvas, 0.1, 0.1);
+  }
 
   this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
   this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 5);
 
   // Draw the map
-  map_draw_occ(this->map, this->map_fig);
-  //map_draw_cspace(this->map, this->map_fig);
+  if (this->map != NULL)
+  {
+    map_draw_occ(this->map, this->map_fig);
+    //map_draw_cspace(this->map, this->map_fig);
 
-  // HACK; testing
-  map_draw_wifi(this->map, this->map_fig, 0);
+    // HACK; testing
+    map_draw_wifi(this->map, this->map_fig, 0);
+  }
+
+  rtk_fig_line(this->map_fig, 0, -1000, 0, +1000);
+  rtk_fig_line(this->map_fig, -1000, 0, +1000, 0);
 
   this->robot_fig = rtk_fig_create(this->canvas, NULL, 9);
   this->sonar_fig = rtk_fig_create(this->canvas, this->robot_fig, 15);
@@ -956,6 +942,9 @@ int AdaptiveMCL::SetupGUI(void)
 
   // TESTING
   //rtk_fig_movemask(this->robot_fig, RTK_MOVE_TRANS | RTK_MOVE_ROT);
+
+  // Origin of display
+  //this->origin_ox = this->origin_oy = 0.0;
 
   rtk_app_main_init(this->app);
 
@@ -972,7 +961,7 @@ int AdaptiveMCL::ShutdownGUI(void)
   rtk_fig_destroy(this->sonar_fig);
   rtk_fig_destroy(this->robot_fig);
   rtk_fig_destroy(this->map_fig);
-  rtk_fig_destroy(this->pf_fig);  
+  rtk_fig_destroy(this->pf_fig);
   rtk_canvas_destroy(this->canvas);
   rtk_app_destroy(this->app);
 
@@ -988,10 +977,13 @@ void AdaptiveMCL::DrawPoseEst()
   int i;
   double max_weight;
   amcl_hyp_t *hyp;
+  pf_vector_t pose;
+  //int sx, sy;
+  //double mx, my;
   
   this->Lock();
 
-  max_weight = 0;
+  max_weight = -1;
   for (i = 0; i < this->hyp_count; i++)
   {
     hyp = this->hyps + i;
@@ -999,13 +991,35 @@ void AdaptiveMCL::DrawPoseEst()
     if (hyp->weight > max_weight)
     {
       max_weight = hyp->weight;
-      rtk_fig_origin(this->robot_fig, hyp->pf_pose_mean.v[0],
-                     hyp->pf_pose_mean.v[1], hyp->pf_pose_mean.v[2]);
+      pose = hyp->pf_pose_mean;
     }
   }
   
   this->Unlock();
-  
+
+  if (max_weight < 0.0)
+    return;
+
+  /* REMOVE
+  // Get the current origin
+  rtk_canvas_get_size(this->canvas, &sx, &sy);
+  rtk_canvas_get_scale(this->canvas, &mx, &my);  
+  mx *= sx; my *= sy;
+
+  // Shift the canvas if the robot goes off the canvas
+  if (fabs(pose.v[0] - this->origin_ox) > 0.7 * mx)
+    this->origin_ox = pose.v[0];
+  if (fabs(pose.v[1] - this->origin_oy) > 0.7 * my)
+    this->origin_oy = pose.v[1];
+
+  printf("draw est %f %f : %f %f\n", this->origin_ox, this->origin_oy, pose.v[0], pose.v[1]);
+  */
+
+  printf("draw est %f %f\n", pose.v[0], pose.v[1]);
+    
+  // Shift the robot figure
+  rtk_fig_origin(this->robot_fig, pose.v[0], pose.v[1], pose.v[2]);
+ 
   return;
 }
 

@@ -41,8 +41,14 @@ int AdaptiveMCL::LoadGps(ConfigFile* cf, int section)
   // Device stuff
   this->gps = NULL;
   this->gps_index = cf->ReadInt(section, "gps_index", -1);
-
-  this->gps_model = NULL;
+  
+  if (this->gps_index >= 0)
+  {
+    // Create the gps model
+    this->gps_model = gps_alloc();
+    this->gps_model->utm_base_e = cf->ReadTupleFloat(section, "utm_base", 0, -1);
+    this->gps_model->utm_base_n = cf->ReadTupleFloat(section, "utm_base", 1, -1);
+  }
 
   return 0;
 }
@@ -74,9 +80,6 @@ int AdaptiveMCL::SetupGps(void)
     return -1;
   }
 
-  // Create the gps model
-  this->gps_model = gps_alloc();
-
   return 0;
 }
 
@@ -92,9 +95,10 @@ int AdaptiveMCL::ShutdownGps(void)
   this->gps->Unsubscribe(this);
   this->gps = NULL;
 
+  // TODO: leaks
   // Delete the gps model
-  gps_free(this->gps_model);
-  this->gps_model = NULL;
+  //gps_free(this->gps_model);
+  //this->gps_model = NULL;
 
   return 0;
 }
@@ -114,6 +118,11 @@ void AdaptiveMCL::GetGpsData(amcl_sensor_data_t *data)
 
   // Get the gps device data
   size = this->gps->GetData(this, (uint8_t*) &ndata, sizeof(ndata), &tsec, &tusec);
+  if (size < sizeof(ndata))
+  {
+    data->gps_time = 0;
+    return;
+  }
 
   data->gps_time = ntohl(tsec) + ntohl(tusec) * 1e-6;
   data->gps_utm_e = ((int32_t) ntohl(ndata.utm_e)) / 100.0;
@@ -126,10 +135,23 @@ void AdaptiveMCL::GetGpsData(amcl_sensor_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize from the GPS sensor model
-void AdaptiveMCL::InitGpsModel(amcl_sensor_data_t *data)
+bool AdaptiveMCL::InitGpsModel(amcl_sensor_data_t *data)
 {
-  printf("init %f %f %f\n", data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
-  
+  if (data->gps_time == 0)
+    return false;
+
+  printf("init gps %.3f %f %f %f\n", data->gps_time,
+         data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
+
+  // Pick up UTM base coordinate
+  if (this->gps_model->utm_base_e < 0 || this->gps_model->utm_base_n < 0)
+  {
+    this->gps_model->utm_base_e = data->gps_utm_e;
+    this->gps_model->utm_base_n = data->gps_utm_n;
+    PLAYER_WARN2("UTM base coord not setting; defaulting to [%.3f %.3f]",
+                 this->gps_model->utm_base_e, this->gps_model->utm_base_n);
+  }
+
   // Update the gps sensor model with the latest gps measurements
   gps_set_utm(this->gps_model, data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
 
@@ -140,16 +162,20 @@ void AdaptiveMCL::InitGpsModel(amcl_sensor_data_t *data)
   ::pf_init(this->pf, (pf_init_model_fn_t) gps_init_model, this->gps_model);
   
   gps_init_term(this->gps_model);
-
-  return;
+  
+  return true;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the gps sensor model
-void AdaptiveMCL::UpdateGpsModel(amcl_sensor_data_t *data)
+bool AdaptiveMCL::UpdateGpsModel(amcl_sensor_data_t *data)
 {
-  printf("gps %f %f %f\n", data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
+  if (data->gps_time == this->gps_time)
+    return false;
+  
+  printf("update gps %.3f %f %f %f\n", data->gps_time,
+         data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
     
   // Update the gps sensor model with the latest gps measurements
   gps_set_utm(this->gps_model, data->gps_utm_e, data->gps_utm_n, data->gps_err_horz);
@@ -157,7 +183,9 @@ void AdaptiveMCL::UpdateGpsModel(amcl_sensor_data_t *data)
   // Apply the gps sensor model
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) gps_sensor_model, this->gps_model);  
 
-  return;
+  this->gps_time = data->gps_time;
+  
+  return true;
 }
 
 #ifdef INCLUDE_RTKGUI
@@ -168,7 +196,10 @@ void AdaptiveMCL::DrawGpsData(amcl_sensor_data_t *data)
 {
   rtk_fig_clear(this->gps_fig);
   rtk_fig_color_rgb32(this->gps_fig, 0xFF00FF);
-  rtk_fig_ellipse(this->gps_fig, data->gps_utm_e, data->gps_utm_n, 0,
+
+  rtk_fig_ellipse(this->gps_fig,
+                  data->gps_utm_e - this->gps_model->utm_base_e,
+                  data->gps_utm_n - this->gps_model->utm_base_n, 0,
                   data->gps_err_horz, data->gps_err_horz, 0);
   
   return;

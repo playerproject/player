@@ -160,13 +160,13 @@ void AdaptiveMCL::GetSonarData(amcl_sensor_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the sonar sensor model
-void AdaptiveMCL::UpdateSonarModel(amcl_sensor_data_t *data)
+bool AdaptiveMCL::UpdateSonarModel(amcl_sensor_data_t *data)
 {
   int i;
   
   // If there is no sonar device...
   if (this->sonar_index < 0)
-    return;
+    return false;
 
   // Update the sonar sensor model with the latest sonar measurements
   sonar_clear_ranges(this->sonar_model);
@@ -176,7 +176,7 @@ void AdaptiveMCL::UpdateSonarModel(amcl_sensor_data_t *data)
   // Apply the sonar sensor model
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) sonar_sensor_model, this->sonar_model);
 
-  return;
+  return true;
 }
 
 #ifdef INCLUDE_RTKGUI

@@ -31,6 +31,7 @@
 #include "config.h"
 #endif
 
+#include <math.h>
 #include "amcl.h"
 
 
@@ -71,7 +72,7 @@ int AdaptiveMCL::SetupOdom(void)
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
   }
-
+  
   // Create the odometry model
   this->odom_model = odometry_alloc(this->map, this->robot_radius);
   if (odometry_init_cspace(this->odom_model))
@@ -131,14 +132,20 @@ void AdaptiveMCL::GetOdomData(amcl_sensor_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize from the odom sensor model
-void AdaptiveMCL::InitOdomModel(amcl_sensor_data_t *data)
+bool AdaptiveMCL::InitOdomModel(amcl_sensor_data_t *data)
 {
   pf_vector_t pose_mean;
   pf_matrix_t pose_cov;
 
   if (this->odom_index < 0)
-    return;
+    return false;
 
+  if (this->map == NULL)
+  {
+    PLAYER_WARN("odometric init failed (no map)");
+    return false;
+  }
+  
   pose_mean = this->pf_init_pose_mean;
   pose_cov =  this->pf_init_pose_cov,
     
@@ -150,17 +157,32 @@ void AdaptiveMCL::InitOdomModel(amcl_sensor_data_t *data)
   
   odometry_init_term(this->odom_model);
 
-  return;
+  return true;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the odom sensor model
-void AdaptiveMCL::UpdateOdomModel(amcl_sensor_data_t *data)
+bool AdaptiveMCL::UpdateOdomModel(amcl_sensor_data_t *data)
 {
+  pf_vector_t odom_diff;
+  
   if (this->odom_index < 0)
-    return;
+    return false;
 
+  // See how far the robot has moved
+  odom_diff = pf_vector_coord_sub(data->odom_pose, this->pf_odom_pose);
+
+  // Make sure we have moved a reasonable distance
+  if (fabs(odom_diff.v[0]) < 0.20 &&
+      fabs(odom_diff.v[1]) < 0.20 &&
+      fabs(odom_diff.v[2]) < M_PI / 6)
+    return false;
+
+  printf("odom: %f %f %f : %f %f %f\n",
+         this->pf_odom_pose.v[0], this->pf_odom_pose.v[1], this->pf_odom_pose.v[2],
+         data->odom_pose.v[0], data->odom_pose.v[1], data->odom_pose.v[2]);
+  
   // Update the odometry sensor model with the latest odometry measurements
   odometry_action_init(this->odom_model, this->pf_odom_pose, data->odom_pose);
   odometry_sensor_init(this->odom_model);
@@ -174,5 +196,11 @@ void AdaptiveMCL::UpdateOdomModel(amcl_sensor_data_t *data)
   odometry_sensor_term(this->odom_model);
   odometry_action_term(this->odom_model);
 
-  return;
+  this->Lock();
+  this->pf_odom_pose = data->odom_pose;
+  this->pf_odom_time_sec = data->odom_time_sec;
+  this->pf_odom_time_usec = data->odom_time_usec;
+  this->Unlock();
+  
+  return true;
 }

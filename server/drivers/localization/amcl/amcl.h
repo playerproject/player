@@ -80,6 +80,7 @@ typedef struct
   double gps_err_horz;
 
   // IMU
+  double imu_time;
   double imu_utm_head;
   
 } amcl_sensor_data_t;
@@ -205,17 +206,17 @@ class AdaptiveMCL : public CDevice
   private: void InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov);
 
   // Update the filter with new sensor data
-  private: void UpdateFilter(amcl_sensor_data_t *data);
+  private: bool UpdateFilter(amcl_sensor_data_t *data);
 
   // Apply sensor models
-  private: void InitOdomModel(amcl_sensor_data_t *data);
-  private: void UpdateOdomModel(amcl_sensor_data_t *data);
-  private: void UpdateSonarModel(amcl_sensor_data_t *data);
-  private: void UpdateLaserModel(amcl_sensor_data_t *data);
-  private: void UpdateWifiModel(amcl_sensor_data_t *data);
-  private: void InitGpsModel(amcl_sensor_data_t *data);
-  private: void UpdateGpsModel(amcl_sensor_data_t *data);
-  private: void UpdateImuModel(amcl_sensor_data_t *data);
+  private: bool InitOdomModel(amcl_sensor_data_t *data);
+  private: bool UpdateOdomModel(amcl_sensor_data_t *data);
+  private: bool UpdateSonarModel(amcl_sensor_data_t *data);
+  private: bool UpdateLaserModel(amcl_sensor_data_t *data);
+  private: bool UpdateWifiModel(amcl_sensor_data_t *data);
+  private: bool InitGpsModel(amcl_sensor_data_t *data);
+  private: bool UpdateGpsModel(amcl_sensor_data_t *data);
+  private: bool UpdateImuModel(amcl_sensor_data_t *data);
 
 #ifdef INCLUDE_RTKGUI
   // Set up the GUI
@@ -338,6 +339,7 @@ class AdaptiveMCL : public CDevice
   // GPS device info
   private: CDevice *gps;
   private: int gps_index;
+  private: double gps_time;
 
   // GPS sensor model
   private: gps_model_t *gps_model;
@@ -347,6 +349,7 @@ class AdaptiveMCL : public CDevice
   private: int imu_index;
 
   // IMU sensor model
+  private: double imu_mag_dev;
   private: imu_model_t *imu_model;
 
 #ifdef INCLUDE_RTKGUI
@@ -362,6 +365,7 @@ class AdaptiveMCL : public CDevice
   private: rtk_fig_t *wifi_fig;
   private: rtk_fig_t *gps_fig;
   private: rtk_fig_t *imu_fig;
+  // REMOVE private: double origin_ox, origin_oy;
 #endif
 
 #ifdef INCLUDE_OUTFILE
