@@ -1162,6 +1162,9 @@ class PositionProxy : public ClientProxy
   /// Only supported by the reb_position driver.
   int DoDesiredHeading(int theta, int xspeed, int yawspeed);
 
+  /// Only supported by the segwayrmp driver
+  int SetStatus(uint8_t cmd, uint16_t value);
+
   /// Accessor method
   int32_t  Xpos () const { return xpos; }
   
@@ -1604,9 +1607,19 @@ public:
   int GetNoise(char * ip = NULL);
   int GetNoisedBm(char * ip = NULL) { return GetNoise(ip) - 0x100; }
 
+  uint16_t GetMaxLinkQuality() { return maxqual; }
+  uint8_t GetMode() { return op_mode; }
+
   int GetBitrate();
 
   char * GetMAC(char *buf, int len);
+
+  char * GetIP(char *buf, int len);
+  char * GetAP(char *buf, int len);
+
+  int AddSpyHost(char *address);
+  int RemoveSpyHost(char *address);
+
   void FillData(player_msghdr_t hdr, const char *buffer);
 
   /// Print out current data.
@@ -1621,6 +1634,7 @@ protected:
   uint32_t throughput;
   uint8_t op_mode;
   int32_t bitrate;
+  uint16_t qual_type, maxqual, maxlevel, maxnoise;
   
   char access_point[32];
 

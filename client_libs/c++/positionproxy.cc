@@ -365,6 +365,41 @@ PositionProxy::SetPositionSpeedProfile(short spd, short acc)
 			 (const char *)&req, sizeof(req));
 }
 
+/* For the segwayrmp driver, this allows us to send status commands
+ * to the RMP.  The cmd is one of PLAYER_POSITION_RMP_* and the values
+ * for each are detailed in the manual.  The driver just passes
+ * this straight through to the RMP
+ *
+ * returns: 0 on success, negative else
+ */
+int
+PositionProxy::SetStatus(uint8_t cmd, uint16_t value)
+{
+  if (!client) {
+    return -1;
+  }
+
+  if (cmd != PLAYER_POSITION_RMP_VELOCITY_SCALE &&
+      cmd != PLAYER_POSITION_RMP_ACCEL_SCALE &&
+      cmd != PLAYER_POSITION_RMP_TURN_SCALE &&
+      cmd != PLAYER_POSITION_RMP_GAIN_SCHEDULE &&
+      cmd != PLAYER_POSITION_RMP_CURRENT_LIMIT &&
+      cmd != PLAYER_POSITION_RMP_RST_INTEGRATORS) {
+    // not a valid config for this command
+    return -1;
+  }
+
+  player_rmp_config_t rmp_cfg;
+
+  rmp_cfg.subtype = cmd;
+
+  rmp_cfg.value = htons(value);
+
+  return client->Request(m_device_id,
+			 (const char *)&rmp_cfg, sizeof(rmp_cfg));
+}
+
+  
 
 void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {

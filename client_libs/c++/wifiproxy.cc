@@ -72,20 +72,20 @@ WiFiProxy::FillData(player_msghdr_t hdr, const char *buffer)
   // get access point/cell addr
   strncpy(access_point, d->ap, sizeof(access_point));
   
-  link_count = ntohl(d->link_count);
-  
+  link_count = ntohs(d->link_count);
+  qual_type = d->qual_type;  
+  maxqual = ntohs(d->maxqual);
+  maxlevel = ntohs(d->maxlevel);
+  maxnoise = ntohs(d->maxnoise);
+
   for (int i = 0; i < link_count; i++) {
-    links[i].qual_type = d->links[i].qual_type;
     links[i].qual = ntohs(d->links[i].qual);
     links[i].level = ntohs(d->links[i].level);
     links[i].noise = ntohs(d->links[i].noise);
-    links[i].maxqual = ntohs(d->links[i].maxqual);
-    links[i].maxlevel = ntohs(d->links[i].maxlevel);
-    links[i].maxnoise = ntohs(d->links[i].maxnoise);
-
     //    links[i].bitrate = ntohl(d->links[i].bitrate);
 
     memcpy(links[i].ip, d->links[i].ip, sizeof(links[i].ip));
+    printf("WIFIPROXY: FILL: IP: %s\n", links[i].ip);
   }
   
 }
@@ -134,17 +134,17 @@ WiFiProxy::Print()
     for (int i =0; i < link_count; i++) {
       printf("\tIP: %s", links[i].ip);
 
-      switch(links[i].qual_type) {
+      switch(qual_type) {
       case PLAYER_WIFI_QUAL_DBM:
 	printf("\tquality: %d/%d\tlevel: %d dBm\tnoise: %d dBm\n", 
-	       links[i].qual, links[i].maxqual,
+	       links[i].qual, maxqual,
 	       links[i].level - 0x100, links[i].noise - 0x100);
 	break;
       case PLAYER_WIFI_QUAL_REL:
 	printf("\tquality: %d/%d\tlevel: %d/%d\tnoise: %d/%d\n",
-	       links[i].qual, links[i].maxqual,
-	       links[i].level, links[i].maxlevel,
-	       links[i].noise, links[i].maxnoise);
+	       links[i].qual, maxqual,
+	       links[i].level, maxlevel,
+	       links[i].noise, maxnoise);
 	break;
       case PLAYER_WIFI_QUAL_UNKNOWN:
       default:
@@ -214,6 +214,7 @@ WiFiProxy::GetNoise(char *ip)
   return links[idx].level;
 }
 
+  
 /* 
  *
  * returns: bitrate for given IP
@@ -240,6 +241,11 @@ WiFiProxy::GetLinkIndex(char *ip)
   return -1;
 }
 
+/* ioctl for getting the MAC address of the robot that the linuxwifi
+ * driver is running on...
+ *
+ * returns: MAC address in ASCII format, also in arg mac
+ */
 char *
 WiFiProxy::GetMAC(char *mac, int len)
 {
@@ -259,6 +265,63 @@ WiFiProxy::GetMAC(char *mac, int len)
 
   return mac;
 }
-    
+
+/* 
+ *
+ * returns: IP address
+ */
+char *
+WiFiProxy::GetIP(char *ip, int len)
+{
+  strncpy(ip, links[0].ip, len);
+
+  return ip;
+}
+
+/* copies MAC address of current access point to buf
+ *
+ * returns: pointer to buf
+ */
+char *
+WiFiProxy::GetAP(char *buf, int len)
+{
+  strncpy(buf, access_point, len);
+  return buf;
+}
+
+/* add a host to the spy list
+ *
+ * returns: 
+ */
+int
+WiFiProxy::AddSpyHost(char *address)
+{
+  player_wifi_iwspy_addr_req_t req;
+
+  req.subtype = PLAYER_WIFI_IWSPY_ADD_REQ;
+  strncpy(req.address, address, sizeof(req.address));
+
+  printf("WIFIPROXY: add host %s\n", address);
+
+  int ret = client->Request(m_device_id, (const char *)&req, sizeof(req));
+  printf("WIFIPROXY: ret=%d\n", ret);
+  return ret;
+}
+
+/* remove a host from the spy list
+ *
+ * returns: 
+ */
+int
+WiFiProxy::RemoveSpyHost(char *address)
+{
+  player_wifi_iwspy_addr_req_t req;
+  
+  req.subtype = PLAYER_WIFI_IWSPY_DEL_REQ;
+  strncpy(req.address, address, sizeof(req.address));
+
+  return client->Request(m_device_id, (const char *)&req, sizeof(req));
+}
+
   
   

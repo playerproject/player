@@ -1,1 +1,1 @@
-SUBDIRS = p2os rwi reb
+SUBDIRS = p2os rwi reb rmp

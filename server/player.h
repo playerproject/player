@@ -537,6 +537,21 @@ typedef struct player_gripper_cmd
 #define PLAYER_POSITION_SPEED_PROF_REQ        ((uint8_t)8)
 #define PLAYER_POSITION_SET_ODOM_REQ          ((uint8_t)9)
 
+/** [Segway RMP]: these are possible config commands.. 
+    see the status command in the RMP manual */
+#define PLAYER_POSITION_RMP_VELOCITY_SCALE	((uint8_t)51)
+#define PLAYER_POSITION_RMP_ACCEL_SCALE		((uint8_t)52)
+#define PLAYER_POSITION_RMP_TURN_SCALE		((uint8_t)53)
+#define PLAYER_POSITION_RMP_GAIN_SCHEDULE	((uint8_t)54)
+#define PLAYER_POSITION_RMP_CURRENT_LIMIT	((uint8_t)55)
+#define PLAYER_POSITION_RMP_RST_INTEGRATORS	((uint8_t)56)
+
+/** [Segway RMP]: these are used for the set reset integrators part */
+#define PLAYER_POSITION_RMP_RST_INT_RIGHT	0x01
+#define PLAYER_POSITION_RMP_RST_INT_LEFT		0x02
+#define PLAYER_POSITION_RMP_RST_INT_YAW		0x04
+#define PLAYER_POSITION_RMP_RST_INT_FOREAFT	0x08
+
 /** [Data] */
 /**
 The {\tt position} interface returns data regarding the odometric pose and
@@ -702,6 +717,18 @@ typedef struct player_position_speed_prof_req
   /** max acceleration */
   int16_t acc;
 } __attribute__ ((packed)) player_position_speed_prof_req_t;
+
+/** [Configuration: Segway RMP-specific configuration */
+/** */
+typedef struct player_rmp_config 
+{
+  /** subtype: must be of PLAYER_RMP_* */
+  uint8_t subtype;
+
+  /** holds various values depending on the type of config.
+      See the "Status" command in the Segway manual. */
+  uint16_t value;
+} __attribute__ ((packed)) player_rmp_config_t;
 
 /*************************************************************************
  ** end section
@@ -1901,6 +1928,16 @@ typedef struct player_wifi_mac_req
   uint8_t		subtype;
 } __attribute__ ((packed)) player_wifi_mac_req_t;
 
+#define PLAYER_WIFI_IWSPY_ADD_REQ		((uint8_t)10)
+#define PLAYER_WIFI_IWSPY_DEL_REQ		((uint8_t)11)
+#define PLAYER_WIFI_IWSPY_PING_REQ		((uint8_t)12)
+
+typedef struct player_wifi_iwspy_addr_req
+{
+  uint8_t		subtype;
+  char			address[32];
+} __attribute__ ((packed)) player_wifi_iwspy_addr_req_t;
+
 /** [Data] */
 /** The {\tt wifi} interface returns data regarding the signal characteristics 
     of remote hosts as perceived through a wireless network interface; the 
@@ -1910,13 +1947,10 @@ typedef struct player_wifi_link
   /** IP address of destination. */
   char ip[32];
 
-  /** Indicates type of link quality info we have */
-  uint8_t qual_type;
   /** Link quality, level and noise information */
   // these could be uint8_t instead, <linux/wireless.h> will only
   // return that much.  maybe some other architecture needs larger??
   uint16_t qual, level, noise;
-  uint16_t maxqual, maxlevel, maxnoise;
 } __attribute__ ((packed)) player_wifi_link_t;
 
 
@@ -1924,8 +1958,8 @@ typedef struct player_wifi_link
 typedef struct player_wifi_data
 {
   /** A list of links */
-  int link_count;
   player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
+  uint16_t link_count;
 
   /** mysterious throughput calculated by driver */
   uint32_t throughput;
@@ -1935,6 +1969,12 @@ typedef struct player_wifi_data
 
   /** operating mode of device */
   uint8_t mode;
+
+  /** Indicates type of link quality info we have */
+  uint8_t qual_type;
+  
+  /** Maximum values for quality, level and noise. */
+  uint16_t maxqual, maxlevel, maxnoise;
 
   /** MAC address of current access point/cell */
   char ap[32];
@@ -1970,7 +2010,7 @@ typedef struct player_ir_data
   uint16_t range_count;
   /** voltages (units?) */
   uint16_t voltages[PLAYER_IR_MAX_SAMPLES];
-  /** ranges (mm?) */
+  /** ranges (mm) */
   uint16_t ranges[PLAYER_IR_MAX_SAMPLES];
 } __attribute__ ((packed)) player_ir_data_t;
 
@@ -2240,4 +2280,5 @@ typedef struct player_sound_cmd
 /*************************************************************************
  ** end section
  *************************************************************************/
+
 #endif /* PLAYER_H */
