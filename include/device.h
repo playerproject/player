@@ -57,8 +57,16 @@ class CDevice
     virtual void PutConfig( unsigned char * , size_t) = 0;
     virtual CLock* GetLock( void ) = 0;
 
+    // to record the time at which the device gathered the data
     uint32_t data_timestamp_sec;
     uint32_t data_timestamp_usec;
+
+    // quick hack to get around the fact that P2OS devices share a 
+    // subscription counter, which precludes us from determining, for
+    // example, how many clients are connected to the Sonar device,
+    // as opposed to the Position device.  solution: keep another
+    // per-device subscription counter here.
+    int subscrcount;
 };
 
 #endif

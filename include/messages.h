@@ -386,6 +386,7 @@ typedef struct
 
 /* Festival size stuff */
 #define SPEECH_MAX_STRING_LEN 256
+#define SPEECH_MAX_QUEUE_LEN 1
 
 typedef struct
 {

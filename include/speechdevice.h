@@ -50,6 +50,13 @@ class CSpeechDevice:public CDevice
     CLock lock;
 
   public:
+    /* a queue to hold incoming speech strings */
+    /*  what kind of replacement policy to use? */
+    char queue[SPEECH_MAX_QUEUE_LEN][SPEECH_MAX_STRING_LEN];
+    int queue_insert_idx;
+    int queue_remove_idx;
+    int queue_len;
+    bool read_pending;
     int sock;               // socket to Festival
     int portnum;  // port number where Festival will run (default 1314)
     player_speech_data_t* data;
