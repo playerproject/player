@@ -142,6 +142,7 @@ SegwayIO::Shutdown()
     pthread_cancel(read_write_thread);
     
     if (pthread_join(read_write_thread, &unused)) {
+      perror("SegwayIO: Shutdown:pthread_join()");
       return -1;
     }
     
@@ -188,6 +189,8 @@ SegwayIO::ReadWriteLoop()
 
   gettimeofday(&last, NULL);
 
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
   while (1) {
 
     gettimeofday(&curr, NULL);
@@ -308,6 +311,7 @@ SegwayIO::GetData(player_position_data_t *data)
   //  data->yawspeed = htonl( (int32_t) rint(rmp_data.yaw_dot / 
   //				 (double)RMP_COUNT_PER_DEG_PER_S) );
   data->yawspeed = htonl(rmp_data.yaw_dot);
+
 }
   
 /* marshals power related data into player format
