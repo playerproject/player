@@ -34,6 +34,7 @@
 #include <netinet/in.h>  // for struct sockaddr_in, htons(3)
 #include <errno.h>
 
+#include "replace.h"
 #include "playerc.h"
 #include "error.h"
 

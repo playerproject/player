@@ -29,8 +29,6 @@
 #ifndef PLAYERCLIENT_H
 #define PLAYERCLIENT_H
 
-#include <replace.h>
-
 #include <player.h>       /* from the server; gives message types */
 #include <playercclient.h>  /* pure C networking building blocks */
 

@@ -33,6 +33,7 @@
 #include <netinet/in.h>  // for struct sockaddr_in, htons(3)
 #include <errno.h>
 
+#include "replace.h"  /* for poll */
 #include "playerc.h"
 #include "error.h"
 
@@ -44,6 +45,7 @@ playerc_mclient_t *playerc_mclient_create()
 
   mclient = malloc(sizeof(playerc_mclient_t));
   memset(mclient, 0, sizeof(playerc_mclient_t));
+  mclient->pollfd = calloc(128,sizeof(struct pollfd));
 
   return mclient;
 }
@@ -52,6 +54,7 @@ playerc_mclient_t *playerc_mclient_create()
 // Destroy a multi-client
 void playerc_mclient_destroy(playerc_mclient_t *mclient)
 {
+  free(mclient->pollfd);
   free(mclient);
 }
 

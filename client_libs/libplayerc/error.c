@@ -5,8 +5,8 @@
  * CVS: $Id$
  **************************************************************************/
 
-#include "playerc.h"
-#include "error.h"
+//#include "playerc.h"
+//#include "error.h"
 
 
 // A place to put error strings
