@@ -120,6 +120,7 @@ _robot_button_callback(GnomeCanvasItem *item,
           if(onrobot && !setting_theta)
           {
             setting_goal=TRUE;
+            move_robot(gui_data->robot_goals[idx],pose);
             gnome_canvas_item_show(gui_data->robot_goals[idx]);
           }
         case 1:
@@ -162,8 +163,10 @@ _robot_button_callback(GnomeCanvasItem *item,
                   quit=1;
                   return(TRUE);
                 }
-                gui_data->new_goals[idx] = TRUE;
-                gui_data->positions[idx]->waypoint_count = 0;
+                gui_data->goals[idx][0] = mean[0];
+                gui_data->goals[idx][1] = mean[1];
+                gui_data->goals[idx][2] = mean[2];
+                gui_data->positions[idx]->waypoint_count = -1;
               }
 
               //move_robot(gui_data->robot_items[idx],pose);
@@ -589,11 +592,76 @@ move_robot(GnomeCanvasItem* item, pose_t pose)
 }
 
 void
-draw_waypoints(gui_data_t* gui_data, int robot_idx)
+draw_waypoints(gui_data_t* gui_data, int idx)
 {
   int i;
+  GnomeCanvasPoints* points;
+  GnomeCanvasPoints* linepoints;
+  GnomeCanvasItem* waypoint;
+  GnomeCanvasItem* line;
+  pose_t pose;
 
-  for(i=0;i<gui_data->positions[i]->waypoint_count;i++)
+  // TODO
+  /*
+  if(gui_data->robot_paths[idx])
+    g_object_unref((GObject*)gui_data->robot_paths[idx]);
+    */
+  if(gui_data->robot_paths[idx])
+    gnome_canvas_item_hide(gui_data->robot_paths[idx]);
+
+  g_assert((gui_data->robot_paths[idx] = 
+            gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
+                                  gnome_canvas_group_get_type(),
+                                  "x", 0.0, "y", 0.0,
+                                  NULL)));
+
+  g_assert((points = gnome_canvas_points_new(3)));
+  g_assert((linepoints = gnome_canvas_points_new(2)));
+
+  // a small triangle to mark each waypoint
+  points->coords[0] = 0.5 * ROBOT_RADIUS * cos(M_PI/2.0);
+  points->coords[1] = 0.5 * ROBOT_RADIUS * sin(M_PI/2.0);
+  points->coords[2] = 0.5 * ROBOT_RADIUS * cos(7*M_PI/6.0);
+  points->coords[3] = 0.5 * ROBOT_RADIUS * sin(7*M_PI/6.0);
+  points->coords[4] = 0.5 * ROBOT_RADIUS * cos(11*M_PI/6.0);
+  points->coords[5] = 0.5 * ROBOT_RADIUS * sin(11*M_PI/6.0);
+
+  for(i=0;i<gui_data->positions[idx]->waypoint_count;i++)
   {
+    g_assert((waypoint = 
+              gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_paths[idx],
+                                    gnome_canvas_polygon_get_type(),
+                                    "points", points,
+                                    "outline_color_rgba", COLOR_BLACK,
+                                    "fill_color_rgba", 
+                                    robot_colors[idx % num_robot_colors],
+                                    "width_pixels", 1,
+                                    NULL)));
+
+    pose.px =  gui_data->positions[idx]->waypoints[i][0];
+    pose.py =  gui_data->positions[idx]->waypoints[i][1];
+    pose.pa = 0.0;
+    move_robot(waypoint, pose);
+
+    if(i>0)
+    {
+      linepoints->coords[0] = gui_data->positions[idx]->waypoints[i-1][0];
+      linepoints->coords[1] = -gui_data->positions[idx]->waypoints[i-1][1];
+      linepoints->coords[2] = gui_data->positions[idx]->waypoints[i][0];
+      linepoints->coords[3] = -gui_data->positions[idx]->waypoints[i][1];
+
+      g_assert((line = 
+                gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_paths[idx],
+                                      gnome_canvas_line_get_type(),
+                                      "points", linepoints,
+                                      "width_pixels", 3,
+                                      "fill-color-rgba",
+                                      robot_colors[idx % num_robot_colors],
+                                      NULL)));
+    }
   }
+
+  gnome_canvas_points_unref(points);
+  gnome_canvas_points_unref(linepoints);
 }
+

@@ -160,6 +160,7 @@ MapFile::Setup()
 
   // Read data
   pixels = gdk_pixbuf_get_pixels(pixbuf);
+  // TODO: debug off-by-one error(s) in this loop
   for(j = 0; j < this->size_y; j++)
   {
     for (i = 0; i < this->size_x; i++)
@@ -209,6 +210,7 @@ MapFile::PutConfig(player_device_id_t* device, void* client,
     PLAYER_WARN("got zero length configuration request; ignoring");
     if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
       PLAYER_ERROR("PutReply() failed");
+    Unlock();
     return(0);
   }
 

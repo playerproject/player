@@ -116,7 +116,6 @@ class Wavefront : public CDevice
     void LocalizeToPosition(double* px, double* py, double* pa,
                             double lx, double ly, double la);
     void SetWaypoint(double wx, double wy, double wa);
-    void HandleRequests();
 
   public:
     // Constructor
@@ -125,6 +124,9 @@ class Wavefront : public CDevice
     // Setup/shutdown routines.
     virtual int Setup();
     virtual int Shutdown();
+
+    int PutConfig(player_device_id_t* device, void* client,
+                  void* request, size_t len);
 };
 
 
@@ -494,7 +496,6 @@ void Wavefront::Main()
     GetLocalizeData();
     GetPositionData();
     PutPositionData();
-    HandleRequests();
     GetCommand();
 
     if(this->new_goal)
@@ -808,44 +809,60 @@ Wavefront::ShutdownLocalize()
   return(this->localize->Unsubscribe(this));
 }
 
-void
-Wavefront::HandleRequests()
+int 
+Wavefront::PutConfig(player_device_id_t* device, void* client,
+                     void* request, size_t len)
 {
-  int len;
-  void *client;
-  char request[PLAYER_MAX_REQREP_SIZE];
   player_position_waypoints_req_t reply;
   double wx,wy;
   size_t replylen;
   
+  //Lock();
   memset(&reply,0,sizeof(player_position_waypoints_req_t));
-  while((len = GetConfig(&client, &request, sizeof(request))))
+  if(len > 0)
   {
-    switch(request[0])
+    switch(((unsigned char*)request)[0])
     {
       case PLAYER_POSITION_GET_WAYPOINTS_REQ:
         // return the list of waypoints
         reply.subtype = PLAYER_POSITION_GET_WAYPOINTS_REQ;
-        if(plan->waypoint_count > PLAYER_POSITION_MAX_WAYPOINTS)
+        // copy in the current goal
+        reply.goal[0] = ntohl((int)rint(this->target_x * 1e3));
+        reply.goal[1] = ntohl((int)rint(this->target_y * 1e3));
+        reply.goal[2] = ntohl((int)rint(RTOD(this->target_a)));
+        // if there's only 1 waypoint, it's the goal, and there's no path.
+        if(plan->waypoint_count <= 1)
         {
-          PLAYER_WARN("too many waypoints; truncating list");
-          reply.count = htons((unsigned short)PLAYER_POSITION_MAX_WAYPOINTS);
+          reply.path_valid = 0;
+          reply.count = ntohs(0);
+          replylen = sizeof(player_position_waypoints_req_t) - 
+                  PLAYER_POSITION_MAX_WAYPOINTS * 
+                  sizeof(player_position_waypoint_t);
         }
         else
-          reply.count = htons((unsigned short)plan->waypoint_count);
-        for(int i=0;i<(int)ntohs(reply.count);i++)
         {
-          if(!plan_get_waypoint(plan, i, &wx, &wy))
+          reply.path_valid = 1;
+          if(plan->waypoint_count > PLAYER_POSITION_MAX_WAYPOINTS)
           {
-            PLAYER_WARN("fewer waypoints than expected!");
-            break;
+            PLAYER_WARN("too many waypoints; truncating list");
+            reply.count = htons((unsigned short)PLAYER_POSITION_MAX_WAYPOINTS);
           }
-          reply.waypoints[i].x = htonl((int)rint(wx * 1e3));
-          reply.waypoints[i].y = htonl((int)rint(wy * 1e3));
+          else
+            reply.count = htons((unsigned short)plan->waypoint_count);
+          for(int i=0;i<(int)ntohs(reply.count);i++)
+          {
+            if(!plan_get_waypoint(plan, i, &wx, &wy))
+            {
+              PLAYER_WARN("fewer waypoints than expected!");
+              break;
+            }
+            reply.waypoints[i].x = htonl((int)rint(wx * 1e3));
+            reply.waypoints[i].y = htonl((int)rint(wy * 1e3));
+          }
+          replylen = sizeof(player_position_waypoints_req_t) - 
+                  (PLAYER_POSITION_MAX_WAYPOINTS - ntohs(reply.count)) * 
+                  sizeof(player_position_waypoint_t);
         }
-        replylen = sizeof(player_position_waypoints_req_t) - 
-                (PLAYER_POSITION_MAX_WAYPOINTS - ntohs(reply.count)) * 
-                sizeof(player_position_waypoint_t);
         if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
                     (void*)&reply, replylen))
           PLAYER_ERROR("PutReply() failed");
@@ -856,4 +873,5 @@ Wavefront::HandleRequests()
         break;
     }
   }
+  //Unlock();
 }

@@ -212,13 +212,20 @@ int playerc_position_get_waypoints(playerc_position_t *device)
     PLAYERC_ERR("got unexpected zero-length reply");
     return -1;
   }
+  
+  device->gx = ((int)htonl(config.goal[0])) / 1e3;
+  device->gy = ((int)htonl(config.goal[1])) / 1e3;
+  device->ga = DTOR((int)htonl(config.goal[0]));
+  device->path_valid = config.path_valid;
 
-  device->waypoint_count = (int)ntohs(config.count);
-  for(i=0;i<device->waypoint_count;i++)
+  if(device->path_valid)
   {
-    device->waypoints[i][0] = ((int)ntohl(config.waypoints[i].x)) / 1e3;
-    device->waypoints[i][1] = ((int)ntohl(config.waypoints[i].y)) / 1e3;
+    device->waypoint_count = (int)ntohs(config.count);
+    for(i=0;i<device->waypoint_count;i++)
+    {
+      device->waypoints[i][0] = ((int)ntohl(config.waypoints[i].x)) / 1e3;
+      device->waypoints[i][1] = ((int)ntohl(config.waypoints[i].y)) / 1e3;
+    }
   }
-
   return 0;
 }
