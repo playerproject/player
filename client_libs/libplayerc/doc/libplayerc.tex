@@ -486,9 +486,20 @@ is enabled (using the {\tt set\_config} function).
 \newpage
 \section{The {\tt localize} proxy}
 
-The {\tt localize} proxy provides an interface to localization drivers
-such as the Adaptive Monte-Carlo Localization driver ({\tt adaptive\_mcl}).
+The {\tt localize} proxy provides an interface to localization
+drivers.  Generally speaking, these are abstract drivers that attempt to localize the
+robot by matching sensor observations (odometry, laser and sonar)
+against a prior map of the environment (such as an occupancy grid).
+
+Since the pose may be ambiguous, the interface supports mulitple
+hypotheses, each of which has some mean and covariance.
+
+
+
+
 The proxy supports the following functions:
+
+
 \begin{quote}
 \lstinputlisting{localize.f.tex}
 \end{quote}

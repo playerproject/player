@@ -777,7 +777,7 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 
 
 /***************************************************************************
- * proxy : localization device
+ * proxy : localize interface
  **************************************************************************/
 
 // Hypothesis data
