@@ -34,21 +34,21 @@
   #include <config.h>
 #endif
 
-#include <sys/types.h>  /* for accept(2) */
-#include <dirent.h>
 #if HAVE_LIB_DL
   #include <dlfcn.h>
 #endif
 
+#include <sys/types.h>  /* for accept(2) */
+#include <dirent.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h> // for bzero()
 #include <stdlib.h>  /* free(3),exit(3) */
 #include <signal.h>
-#include <netinet/in.h> /* for struct sockaddr_in, SOCK_STREAM */
 #include <unistd.h>  /* for close(2) */
 #include <sys/socket.h>  /* for accept(2) */
 #include <netdb.h> /* for gethostbyaddr(3) */
+#include <netinet/in.h> /* for struct sockaddr_in, SOCK_STREAM */
 
 #include <socket_util.h> /* for create_and_bind_socket() */
 #include <deviceregistry.h> /* for register_devices() */

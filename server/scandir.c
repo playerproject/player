@@ -23,7 +23,8 @@
  * a fallback implementation when scandir() is not available. - BPG
  */
 
-#include <dirent.h>
+//#include <dirent.h>
+#include <replace.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>

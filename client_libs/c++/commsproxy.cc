@@ -26,6 +26,10 @@
 
 //#define PLAYER_ENABLE_TRACE 1
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <playerclient.h>
 
 #include <netinet/in.h>

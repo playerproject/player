@@ -11,7 +11,7 @@
 #include <pthread.h>
 #include <math.h>
 #include <string.h> /* for strcmp() */
-#include <values.h>  // for MAXINT
+#include <limits.h>
 
 #define radians(deg) deg*(M_PI/180.0)
 #define degrees(rad) rad*(180.0/M_PI)
@@ -118,7 +118,7 @@ SonarObstacleAvoidThread(void* arg)
   int newturnrate, newspeed;
   for(;;)
   {
-    newspeed = newturnrate = MAXINT;
+    newspeed = newturnrate = INT_MAX;
     
     //puts("obs");
     pthread_mutex_lock(&dataAccessMutex);
@@ -153,7 +153,7 @@ SonarObstacleAvoidThread(void* arg)
 
     pthread_mutex_unlock(&dataAccessMutex);
 
-    if(newspeed < MAXINT && newturnrate < MAXINT)
+    if(newspeed < INT_MAX && newturnrate < INT_MAX)
       pp->SetSpeed(newspeed, newturnrate);
 
     usleep(100000);
