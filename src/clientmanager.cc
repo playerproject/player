@@ -306,11 +306,7 @@ int ClientManager::Accept()
 {
   int num_connects;
   CClientData *clientData;
-#ifdef PLAYER_LINUX
   socklen_t sender_len;
-#else
-  int sender_len;
-#endif
 
   if((num_connects = poll(accept_ufds,num_accept_ufds,0)) < 0)
   {

@@ -500,11 +500,7 @@ void CBroadcastDevice::SendPacket(void *packet, size_t size)
 // Receive a packet
 int CBroadcastDevice::RecvPacket(void *packet, size_t size)
 {
-#ifdef PLAYER_LINUX
   size_t addr_len = sizeof(this->read_addr);    
-#else
-  int addr_len = (int)sizeof(this->read_addr);    
-#endif
   int packet_len = recvfrom(this->read_socket, (char*)packet, size,
                             0, (sockaddr*) &this->read_addr, &addr_len);
   if (packet_len < 0)
