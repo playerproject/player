@@ -44,13 +44,28 @@
 
 #include <pubsub_util.h> /* for create_and_bind_socket() */
 
+#ifdef INCLUDE_LASER
 #include <laserdevice.h>
+#endif
+#ifdef INCLUDE_SONAR
 #include <sonardevice.h>
+#endif
+#ifdef INCLUDE_VISION
 #include <visiondevice.h>
+#endif
+#ifdef INCLUDE_POSITION
 #include <positiondevice.h>
+#endif
+#ifdef INCLUDE_GRIPPER
 #include <gripperdevice.h>
+#endif
+#ifdef INCLUDE_MISC
 #include <miscdevice.h>
+#endif
+#ifdef INCLUDE_PTZ
 #include <ptzdevice.h>
+#endif
+
 #include <clientdata.h>
 #include <devicetable.h>
 #include <counter.h>
@@ -59,6 +74,7 @@
 #include <sys/mman.h> // for mmap
 #include <fcntl.h>
 
+#ifdef INCLUDE_STAGE
 #include "stagedevice.hh"
 //*** old - remove #include <arenalaserdevice.h>
 #include <arenasonardevice.h>
@@ -66,6 +82,7 @@
 #include <arenavisiondevice.h>
 #include <arenaptzdevice.h>
 //#include <arenamiscdevice.h>
+#endif
 
 caddr_t arenaIO; // the address for memory mapped IO to arena
 
@@ -97,12 +114,12 @@ CCounter num_threads;
 
 //*** old -- remove CLaserDevice* laserDevice =  NULL;
 CDevice *laserDevice = NULL;
-CSonarDevice* sonarDevice = NULL;
-CVisionDevice* visionDevice = NULL;
-CPositionDevice* positionDevice = NULL;
-CGripperDevice* gripperDevice = NULL;
-CMiscDevice* miscDevice = NULL;
-CPtzDevice* ptzDevice = NULL;
+CDevice* sonarDevice = NULL;
+CDevice* visionDevice = NULL;
+CDevice* positionDevice = NULL;
+CDevice* gripperDevice = NULL;
+CDevice* miscDevice = NULL;
+CDevice* ptzDevice = NULL;
 
 CDeviceTable* deviceTable = new CDeviceTable();
 
@@ -360,6 +377,7 @@ int main( int argc, char *argv[] )
   // create the devices dynamically 
   if( useArena )
   { 
+#ifdef INCLUDE_STAGE
     // create and test the shared memory connection to arena
 
 #ifdef VERBOSE
@@ -418,30 +436,63 @@ int main( int argc, char *argv[] )
     ptzDevice =    new CArenaPtzDevice(ptzserialport);
     
     // unsupported devices - CNoDevice::Setup() fails
+#ifdef INCLUDE_GRIPPER
     gripperDevice = (CGripperDevice*)new CNoDevice();
+#endif
+#ifdef INCLUDE_MISC
     miscDevice =    (CMiscDevice*)new CNoDevice();  
+#endif
+#endif
 
   }
   else 
   { // use the real robot devices
+#ifdef INCLUDE_LASER
     laserDevice =    new CLaserDevice(laserserialport);
+#endif
+#ifdef INCLUDE_SONAR
     sonarDevice =    new CSonarDevice(p2osport);
+#endif
+#ifdef INCLUDE_VISION
     visionDevice =  
       new CVisionDevice(visionport,visionconfigfile,useoldacts);
+#endif
+#ifdef INCLUDE_POSITION
     positionDevice = new CPositionDevice(p2osport);
+#endif
+#ifdef INCLUDE_GRIPPER
     gripperDevice =  new CGripperDevice(p2osport);
+#endif
+#ifdef INCLUDE_MISC
     miscDevice =     new CMiscDevice(p2osport);
+#endif
+#ifdef INCLUDE_PTZ
     ptzDevice =     new CPtzDevice(ptzserialport);
+#endif
   }
 
   // add the devices to the global table
+#ifdef INCLUDE_LASER
   deviceTable->AddDevice('l', 'r', laserDevice);
+#endif
+#ifdef INCLUDE_SONAR
   deviceTable->AddDevice('s', 'r', sonarDevice);
+#endif
+#ifdef INCLUDE_VISION
   deviceTable->AddDevice('v', 'r', visionDevice);
+#endif
+#ifdef INCLUDE_POSITION
   deviceTable->AddDevice('p', 'a', positionDevice);
+#endif
+#ifdef INCLUDE_GRIPPER
   deviceTable->AddDevice('g', 'a', gripperDevice);
+#endif
+#ifdef INCLUDE_MISC
   deviceTable->AddDevice('m', 'r', miscDevice);
+#endif
+#ifdef INCLUDE_PTZ
   deviceTable->AddDevice('z', 'a', ptzDevice);
+#endif
 
   /* set up to handle SIGPIPE (happens when the client dies) */
   if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
