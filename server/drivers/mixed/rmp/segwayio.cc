@@ -283,25 +283,31 @@ SegwayIO::GetData(player_position_data_t *data)
   assert(rmp_data.IsReady());
 
   // xpos is fore/aft integrated position?
-  data->xpos = htonl( (int32_t) rint((double)rmp_data.foreaft / 
-				     ((double)RMP_COUNT_PER_M/1000.0)) );
-  
+  //  data->xpos = htonl( (int32_t) rint((double)rmp_data.foreaft / 
+  //				     ((double)RMP_COUNT_PER_M/1000.0)) );
+  data->xpos = htonl(rmp_data.foreaft);
   
   // ypos is going to be pitch for now...
-  data->ypos = htonl( (int32_t) rint((double)rmp_data.pitch / 
-				     (double)RMP_COUNT_PER_DEG) );
-
-  // yaw is integrated yaw
-  data->yaw = htonl( rmp_data.yaw / 360 );
+  //  data->ypos = htonl( (int32_t) rint((double)rmp_data.pitch / 
+  //				     (double)RMP_COUNT_PER_DEG) );
+  data->ypos = htonl(rmp_data.pitch);
   
-  // don't know the conversion yet...
-  data->xspeed = htonl( (int32_t) rmp_data.left_dot / 
-			RMP_COUNT_PER_M_PER_S );
-    data->yspeed = htonl( (int32_t) rmp_data.right_dot / 
-			  RMP_COUNT_PER_M_PER_S );
+  // yaw is integrated yaw
+  //  data->yaw = htonl( rmp_data.yaw / 360 );
+  data->yaw = htonl(rmp_data.yaw);
 
-  data->yawspeed = htonl( (int32_t) rint(rmp_data.yaw_dot / 
-					 (double)RMP_COUNT_PER_DEG_PER_S) );
+  // don't know the conversion yet...
+  //  data->xspeed = htonl( (int32_t) rmp_data.left_dot / 
+  //  RMP_COUNT_PER_M_PER_S );
+  data->xspeed = htonl(rmp_data.left_dot);
+
+  //  data->yspeed = htonl( (int32_t) rmp_data.right_dot / 
+  //			RMP_COUNT_PER_M_PER_S );
+  data->yspeed = htonl(rmp_data.right_dot);
+
+  //  data->yawspeed = htonl( (int32_t) rint(rmp_data.yaw_dot / 
+  //				 (double)RMP_COUNT_PER_DEG_PER_S) );
+  data->yawspeed = htonl(rmp_data.yaw_dot);
 }
   
 /* marshals power related data into player format
