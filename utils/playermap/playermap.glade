@@ -1,0 +1,143 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
+
+<glade-interface>
+<requires lib="gnome"/>
+
+<widget class="GtkWindow" id="main_window">
+  <property name="visible">True</property>
+  <property name="title" translatable="yes">Simple Map Maker</property>
+  <property name="type">GTK_WINDOW_TOPLEVEL</property>
+  <property name="window_position">GTK_WIN_POS_NONE</property>
+  <property name="modal">False</property>
+  <property name="default_width">400</property>
+  <property name="default_height">400</property>
+  <property name="resizable">True</property>
+  <property name="destroy_with_parent">False</property>
+
+  <child>
+    <widget class="GtkVBox" id="vbox1">
+      <property name="visible">True</property>
+      <property name="homogeneous">False</property>
+      <property name="spacing">0</property>
+
+      <child>
+	<widget class="GtkToolbar" id="toolbar1">
+	  <property name="visible">True</property>
+	  <property name="orientation">GTK_ORIENTATION_HORIZONTAL</property>
+	  <property name="toolbar_style">GTK_TOOLBAR_TEXT</property>
+	  <property name="tooltips">False</property>
+
+	  <child>
+	    <widget class="toggle" id="pause">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Pause</property>
+	      <property name="use_underline">True</property>
+	      <property name="active">False</property>
+	      <property name="inconsistent">False</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="button" id="infer_links">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Links</property>
+	      <property name="use_underline">True</property>
+	      <property name="active">False</property>
+	      <property name="inconsistent">False</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="toggle" id="fit_strong">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Fit</property>
+	      <property name="use_underline">True</property>
+	      <property name="active">False</property>
+	      <property name="inconsistent">False</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="button" id="make_grid">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Make Grid</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="button" id="zoom_in">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Zoom In</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="button" id="zoom_out">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Zoom Out</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="button" id="rotate_left">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Rotate Left</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="button" id="rotate_right">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Rotate Right</property>
+	      <property name="use_underline">True</property>
+	    </widget>
+	  </child>
+	</widget>
+	<packing>
+	  <property name="padding">0</property>
+	  <property name="expand">False</property>
+	  <property name="fill">False</property>
+	</packing>
+      </child>
+
+      <child>
+	<widget class="GtkScrolledWindow" id="globalmap">
+	  <property name="visible">True</property>
+	  <property name="can_focus">True</property>
+	  <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
+	  <property name="vscrollbar_policy">GTK_POLICY_NEVER</property>
+	  <property name="shadow_type">GTK_SHADOW_NONE</property>
+	  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
+
+	  <child>
+	    <placeholder/>
+	  </child>
+	</widget>
+	<packing>
+	  <property name="padding">0</property>
+	  <property name="expand">True</property>
+	  <property name="fill">True</property>
+	</packing>
+      </child>
+
+      <child>
+	<widget class="GtkStatusbar" id="statusbar1">
+	  <property name="visible">True</property>
+	  <property name="has_resize_grip">True</property>
+	</widget>
+	<packing>
+	  <property name="padding">0</property>
+	  <property name="expand">False</property>
+	  <property name="fill">False</property>
+	</packing>
+      </child>
+    </widget>
+  </child>
+</widget>
+
+</glade-interface>
