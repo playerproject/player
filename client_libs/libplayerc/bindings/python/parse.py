@@ -53,11 +53,15 @@ def parse_file(filename):
     #all.ignore(fn)
     #all.ignore(typedef)
     #all.ignore(cpp)
-    all.ignore(cStyleComment)
-    all.ignore(cpp_comment)
+    #all.ignore(cStyleComment)
+    #all.ignore(cpp_comment)
     all.ignore(extern_c)
     all.ignore(forward)
     all.ignore(typedef_fn)
+
+
+    all.setDebug()
+    
     
     tokens = all.parseFile(filename)
 

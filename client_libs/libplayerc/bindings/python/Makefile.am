@@ -14,7 +14,7 @@ EXTRA_DIST = playerc.i setup.py parse.py playerc.py
 
 # Generate a OO interface file for libplayerc
 playerc_oo.i: ../../playerc.h
-	python parse.py ../../playerc.h playerc_oo.i
+	python parse2.py ../../playerc.h > playerc_oo.i
 
 # use this target to update the bindings
 playerc_wrap.c: playerc.i playerc_oo.i ../../playerc.h
