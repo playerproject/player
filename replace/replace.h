@@ -77,6 +77,7 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
 #endif // !HAVE_POLL
 
 #if !HAVE_SCANDIR
+#include <sys/types.h>
 #include <dirent.h>
 int scandir(const char *dir, struct dirent ***namelist,
             int (*select)(const struct dirent *),
