@@ -34,9 +34,6 @@ AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_C_BIGENDIAN
 
-dnl Check for library functions
-AC_CHECK_LIB(z, gzopen)
-
 dnl Change default installation prefix from /usr/local to user's home
 dnl AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
 
