@@ -70,6 +70,8 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->qlen = 0;
   client->qsize = sizeof(client->qitems, client->qitems[0]);
 
+  client->datatime = 0;
+
   return client;
 }
 
@@ -200,7 +202,10 @@ void *playerc_client_read(playerc_client_t *client)
 
   // Catch and ignore sync messages
   if (header.type == PLAYER_MSGTYPE_SYNCH)
+  {
+    client->datatime = header.timestamp_sec + header.timestamp_usec * 1e-6;
     return client;
+  }
   
   // Check the return type 
   if (header.type != PLAYER_MSGTYPE_DATA)

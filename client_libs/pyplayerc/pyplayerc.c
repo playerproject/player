@@ -256,6 +256,10 @@ static PyObject *client_getattr(PyObject *self, char *attrname)
     Py_INCREF(pyclient->idlist);
     result = pyclient->idlist;
   }
+  else if (strcmp(attrname, "datatime") == 0)
+  {
+    result = Py_BuildValue("d", pyclient->client->datatime);
+  }
   else
     result = Py_FindMethod(client_methods, self, attrname);
 
