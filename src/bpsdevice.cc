@@ -145,8 +145,8 @@ int CBpsDevice::Setup()
     assert(this->laserbeacon != NULL);
 
     // Subscribe to devices
-    this->position->Subscribe();
-    this->laserbeacon->Subscribe();
+    this->position->Subscribe(this);
+    this->laserbeacon->Subscribe(this);
     
     // Initialise configuration settings
     this->gain = 0.01;
@@ -201,8 +201,8 @@ int CBpsDevice::Shutdown()
     
     // Unsubscribe from the laser device
     //
-    this->position->Unsubscribe();
-    this->laserbeacon->Unsubscribe();
+    this->position->Unsubscribe(this);
+    this->laserbeacon->Unsubscribe(this);
 
 #ifdef INCLUDE_SELFTEST
     if (this->dumpfile)

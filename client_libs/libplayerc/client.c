@@ -346,7 +346,7 @@ int playerc_client_delcallback(playerc_client_t *client, playerc_device_t *devic
 
 // Issue request and await reply (blocking)
 int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinfo,
-                           char *req_data, int req_len, char *rep_data, int rep_len)
+                           void *req_data, int req_len, void *rep_data, int rep_len)
 {
   int i, len;
   char data[8192];
@@ -405,7 +405,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
     return -1;
   }
     
-  return 0;
+  return len;
 }
 
 

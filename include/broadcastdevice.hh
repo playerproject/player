@@ -36,40 +36,90 @@
 
 class CBroadcastDevice : public CDevice
 {
-    // Constructor
-    public: CBroadcastDevice(int argc, char** argv);
+  // Constructor
+  public: CBroadcastDevice(int argc, char** argv);
 
-    // Setup/shutdown routines
-    public: virtual int Setup();
-    public: virtual int Shutdown();
+  // Override the subscribe/unsubscribe calls, since we need to
+  // maintain our own subscription list.
+  public: virtual int Subscribe(void *client);
+  public: virtual int Unsubscribe(void *client);
 
-    // Client interface
-    public: virtual size_t GetData(unsigned char *, size_t maxsize,
-                                   uint32_t* timestamp_sec, 
-                                   uint32_t* timestamp_usec);
-    public: virtual void PutCommand(unsigned char *, size_t maxsize);
-    
-    // Send a packet
-    public: void SendPacket(unsigned char *packet, size_t size);
+  // Setup/shutdown routines
+  public: virtual int Setup();
+  public: virtual int Shutdown();
 
-    // Receive a packet
-    public: size_t RecvPacket(unsigned char *packet, size_t size);
+  // Handle requests.  We dont queue them up, but handle them immediately.
+  public: virtual int PutConfig(CClientData* client, unsigned char* data, size_t len);
 
-    // Local copy of broadcast data
-    private: player_broadcast_cmd_t cmd;
-    private: player_broadcast_data_t data;
+  // Dummy main (just calls real main)
+  private: static void* DummyMain(void *device);
 
-    // Address and port to broadcast on
-    private: char *addr;
-    private: int port;
+  // Main function for device thread
+  private: int Main();
 
-    // Write socket info
-    private: int write_socket;
-    private: sockaddr_in write_addr;
+  // Setup the message queues
+  private: int SetupQueues();
 
-    // Read socket info
-    private: int read_socket;
-    private: sockaddr_in read_addr;
+  // Shutdown the message queues
+  private: int ShutdownQueues();
+  
+  // Create a new queue
+  private: int AddQueue(void *client);
+
+  // Delete queue for a client
+  private: int DelQueue(void *client);
+
+  // Find the queue for a particular client.
+  private: int FindQueue(void *client);
+
+  // Push a message onto all of the queues
+  private: int PushQueue(void *msg, int len);
+
+  // Pop a message from a particular client's queue
+  private: int PopQueue(void *client, void *msg, int len);
+  
+  // Initialise the broadcast sockets
+  private: int SetupSockets();
+
+  // Shutdown the broadcast sockets
+  private: int ShutdownSockets();
+  
+  // Send a packet to the broadcast socket.
+  private: void SendPacket(void *packet, size_t size);
+
+  // Receive a packet from the broadcast socket.  This will block.
+  private: int RecvPacket(void *packet, size_t size);
+  
+  // Device thread
+  private: pthread_t thread;
+
+  // Queue used for each client.
+  private: struct queue_t
+  {
+    void *client;
+    int size, count, start, end;
+    int *msglen;
+    void **msg;
+  };
+
+  // Max messages to have in any given queue
+  private: int max_queue_size;
+  
+  // Message queue list (one for each client).
+  private: int qlist_size, qlist_count;
+  private: queue_t **qlist;
+  
+  // Address and port to broadcast on
+  private: char *addr;
+  private: int port;
+
+  // Write socket info
+  private: int write_socket;
+  private: sockaddr_in write_addr;
+
+  // Read socket info
+  private: int read_socket;
+  private: sockaddr_in read_addr;
 };
 
 #endif

@@ -123,7 +123,7 @@ int CLaserBeaconDevice::Setup()
   ASSERT(this->laser != NULL);
     
   // Subscribe to the laser device
-  this->laser->Subscribe();
+  this->laser->Subscribe(this);
 
   // Maximum variance in the flatness of the beacon
   this->max_depth = 0.05;
@@ -157,7 +157,7 @@ int CLaserBeaconDevice::Setup()
 int CLaserBeaconDevice::Shutdown()
 {
   // Unsubscribe from the laser device
-  this->laser->Unsubscribe();
+  this->laser->Unsubscribe(this);
 
   PLAYER_MSG0("laser beacon device: shutdown");
   return 0;

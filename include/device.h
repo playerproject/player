@@ -98,8 +98,12 @@ class CDevice
 
     // these are used to control subscriptions to the device; a device MAY
     // override them, but usually won't (P2OS being the main exception).
-    virtual int Subscribe();
-    virtual int Unsubscribe();
+    // The client pointer acts an identifier for devices that need to maintain
+    // their own client lists (such as the broadcast device).  It's a void*
+    // since it may refer to another device (such as when the laserbeacon device
+    // subscribes to the laser device).
+    virtual int Subscribe(void *client);
+    virtual int Unsubscribe(void *client);
 
     // these two MUST be implemented by the device itself
     virtual int Setup() = 0;

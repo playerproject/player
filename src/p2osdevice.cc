@@ -502,7 +502,7 @@ int CP2OSDevice::Shutdown()
   return(0);
 }
 
-int CP2OSDevice::Subscribe()
+int CP2OSDevice::Subscribe(void *client)
 {
   int setupResult;
 
@@ -528,7 +528,7 @@ int CP2OSDevice::Subscribe()
   return( setupResult );
 }
 
-int CP2OSDevice::Unsubscribe()
+int CP2OSDevice::Unsubscribe(void *client)
 {
   int shutdownResult;
 
