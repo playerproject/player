@@ -107,13 +107,13 @@ static PyObject *gps_getattr(PyObject *self, char *attrname)
 /* Get string representation (type function) */
 static PyObject *gps_str(PyObject *self)
 {
-  char str[128];
+  char str[1024];
   gps_object_t *pygps;
   pygps = (gps_object_t*) self;
 
   snprintf(str, sizeof(str),
            "gps %02d %013.3f"
-           " %+09.5 %+09.5f %+07.3f"
+           " %+09.5f %+09.5f %+07.3f"
            " %d %02d",
            pygps->gps->info.index,
            pygps->gps->info.datatime,

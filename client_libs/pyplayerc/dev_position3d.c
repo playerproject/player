@@ -169,7 +169,7 @@ static PyObject *position3d_getattr(PyObject *self, char *attrname)
 /* Get string representation (type function) */
 static PyObject *position3d_str(PyObject *self)
 {
-  char str[128];
+  char str[2048];
   position3d_object_t *pyposition3d;
   pyposition3d = (position3d_object_t*) self;
 
