@@ -37,11 +37,9 @@
 
 //#define DEBUG
 
-/*
-#include "stage_types.hh"
-#include "colors.hh"
-*/
 #include "configfile.h"
+
+#define COLOR_DATABASE "/usr/X11R6/lib/X11/rgb.txt"
 
 // the isblank() macro is not standard - it's a GNU extension
 // and it doesn't work for me, so here's an implementation - rtv
@@ -1346,13 +1344,8 @@ const char *ConfigFile::GetPropertyValue(int property, int index)
 {
   assert(property >= 0);
   CProperty *pproperty = this->properties + property;
-
-  // changed this as the assert prevents us for asking for a value
-  // that does not exist in the array - it should fail nicely rather
-  // than crashing out -rtv
-  //assert(index < pproperty->value_count);
   
-  if( !(index < pproperty->value_count) )
+  if(index >= pproperty->value_count)
     return NULL;
 
   pproperty->used = true;
@@ -1466,26 +1459,6 @@ double ConfigFile::ReadAngle(int entity, const char *name, double value)
   return atof(GetPropertyValue(property, 0)) * this->unit_angle;
 }
 
-/* REMOVE?
-///////////////////////////////////////////////////////////////////////////
-// Read a boolean
-bool ConfigFile::ReadBool(int entity, const char *name, bool value)
-{
-//return (bool) ReadInt(entity, name, value);
-  int property = GetProperty(entity, name);
-  if (property < 0)
-    return value;
-  const char *v = GetPropertyValue(property, 0);
-  if (strcmp(v, "true") == 0 || strcmp(v, "yes") == 0)
-    return true;
-  else if (strcmp(v, "false") == 0 || strcmp(v, "no") == 0)
-    return false;
-  CProperty *pproperty = this->properties + property;
-  PLAYER_WARN3("worldfile %s:%d : '%s' is not a valid boolean value; assuming 'false'",
-              this->filename, pproperty->line, v);
-  return false;
-}
-*/
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a color (included text -> RGB conversion).
@@ -1500,14 +1473,12 @@ uint32_t ConfigFile::ReadColor(int entity, const char *name, uint32_t value)
     return value;
   color = GetPropertyValue(property, 0);
 
-  // TODO: Hmmm, should do something with the default color here.
-  //return ::LookupColor(color);
-  return(0);
+  return LookupColor(color);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Read a file name
+// Read a file name.
 // Always returns an absolute path.
 // If the filename is entered as a relative path, we prepend
 // the world files path to it.
@@ -1558,6 +1529,7 @@ const char *ConfigFile::ReadFilename(int entity, const char *name, const char *v
   }
 }
 
+
 ///////////////////////////////////////////////////////////////////////////
 // Read a string from a tuple
 const char *ConfigFile::ReadTupleString(int entity, const char *name,
@@ -1568,6 +1540,7 @@ const char *ConfigFile::ReadTupleString(int entity, const char *name,
     return value;
   return GetPropertyValue(property, index);
 }
+
 
 ///////////////////////////////////////////////////////////////////////////
 // Write a string to a tuple
@@ -1593,6 +1566,7 @@ double ConfigFile::ReadTupleFloat(int entity, const char *name,
   return atof(GetPropertyValue(property, index));
 }
 
+
 ///////////////////////////////////////////////////////////////////////////
 // Write a float to a tuple
 void ConfigFile::WriteTupleFloat(int entity, const char *name,
@@ -1602,6 +1576,7 @@ void ConfigFile::WriteTupleFloat(int entity, const char *name,
   snprintf(default_str, sizeof(default_str), "%.3f", value);
   WriteTupleString(entity, name, index, default_str);
 }
+
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a length from a tuple (includes unit conversion)
@@ -1614,6 +1589,7 @@ double ConfigFile::ReadTupleLength(int entity, const char *name,
   return atof(GetPropertyValue(property, index)) * this->unit_length;
 }
 
+
 ///////////////////////////////////////////////////////////////////////////
 // Write a length to a tuple (includes unit conversion)
 void ConfigFile::WriteTupleLength(int entity, const char *name,
@@ -1623,6 +1599,7 @@ void ConfigFile::WriteTupleLength(int entity, const char *name,
   snprintf(default_str, sizeof(default_str), "%.3f", value / this->unit_length);
   WriteTupleString(entity, name, index, default_str);
 }
+
 
 ///////////////////////////////////////////////////////////////////////////
 // Read an angle from a tuple (includes unit conversion)
@@ -1635,6 +1612,7 @@ double ConfigFile::ReadTupleAngle(int entity, const char *name,
   return atof(GetPropertyValue(property, index)) * this->unit_angle;
 }
 
+
 ///////////////////////////////////////////////////////////////////////////
 // Write an angle to a tuple (includes unit conversion)
 void ConfigFile::WriteTupleAngle(int entity, const char *name,
@@ -1644,3 +1622,76 @@ void ConfigFile::WriteTupleAngle(int entity, const char *name,
   snprintf(default_str, sizeof(default_str), "%.3f", value / this->unit_angle);
   WriteTupleString(entity, name, index, default_str);
 }
+
+
+
+///////////////////////////////////////////////////////////////////////////
+// Read a color (included text -> RGB conversion).
+// We look up the color in one of the common color databases.
+uint32_t ConfigFile::ReadTupleColor(int entity, const char *name, int index, uint32_t value)
+{
+  int property;
+  const char *color;
+
+  property = GetProperty(entity, name);
+  if (property < 0)
+    return value;
+  color = GetPropertyValue(property, index);
+  if (!color)
+    return value;
+
+  return LookupColor(color);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Look up the color in a data based (transform color name -> color value).
+uint32_t ConfigFile::LookupColor(const char *name)
+{
+  FILE *file;
+  const char *filename;
+
+  filename = COLOR_DATABASE;
+  file = fopen(filename, "r");
+  if (!file)
+  {
+    PLAYER_ERROR2("unable to open color database %s : %s",
+                  filename, strerror(errno));
+    fclose(file);
+    return 0xFFFFFF;
+  }
+  
+  while (true)
+  {
+    char line[1024];
+    if (!fgets(line, sizeof(line), file))
+      break;
+
+    // it's a macro or comment line - ignore the line
+    if (line[0] == '!' || line[0] == '#' || line[0] == '%') 
+      continue;
+
+    // Trim the trailing space
+    while (strchr(" \t\n", line[strlen(line)-1]))
+      line[strlen(line)-1] = 0;
+
+    // Read the color
+    int r, g, b;
+    int chars_matched = 0;
+    sscanf( line, "%d %d %d %n", &r, &g, &b, &chars_matched );
+      
+    // Read the name
+    char* nname = line + chars_matched;
+
+    // If the name matches
+    if (strcmp(nname, name) == 0)
+    {
+      fclose(file);
+      return ((r << 16) | (g << 8) | b);
+    }
+  }
+  PLAYER_WARN1("unable to find color [%s]; using default (red)", name);
+  fclose(file);
+  return 0xFF0000;
+}
+

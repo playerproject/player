@@ -89,9 +89,6 @@ class ConfigFile
   // Read an angle (includes unit conversion)
   public: double ReadAngle(int entity, const char *name, double value);
 
-  // Read a boolean
-  // REMOVE? public: bool ReadBool(int entity, const char *name, bool value);
-
   // Read a color (includes text to RGB conversion)
   public: uint32_t ReadColor(int entity, 
                              const char *name, 
@@ -151,6 +148,12 @@ class ConfigFile
                                const char *name,
                                int index, 
                                double value);
+
+  // Read a color (includes text to RGB conversion)
+  public: uint32_t ReadTupleColor(int entity, 
+                                  const char *name,
+                                  int index, 
+                                  uint32_t value);
   
   // Get the number of entities.
   public: int GetEntityCount();
@@ -165,6 +168,7 @@ class ConfigFile
   // Get a entity's parent entity.
   // Returns -1 if there is no parent.
   public: int GetEntityParent(int entity);
+
 
   ////////////////////////////////////////////////////////////////////////////
   // Private methods used to load stuff from the config file
@@ -273,6 +277,9 @@ class ConfigFile
 
   // Dump the property list for debugging
   private: void DumpProperties();
+
+  // Look up the color in a data based (transform color name -> color value).
+  private: uint32_t LookupColor(const char *name);
 
   // Token types.
   public: enum
