@@ -33,46 +33,36 @@ public:
   StgPosition( ConfigFile* cf, int section );
   
   // override GetData
-  virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-
-  // overrride PutCommand
-  virtual void PutCommand(void* client, unsigned char* src, size_t len);
-    
-  // override PutConfig
-    virtual int PutConfig(player_device_id_t* device, void* client, 
-			  void* data, size_t len);
-protected:
+  virtual size_t GetData(player_device_id_t id,
+			 void* dest, size_t len,
+			 struct timeval* timestamp);
   
-  //player_position_data_t position_data;
-  //stg_pose_t geom_pose;
-  //stg_size_t geom_size;
+  /// override PutCommand
+  virtual void PutCommand(player_device_id_t id,
+			  void* src, size_t len,
+			  struct timeval* timestamp);
+  
+  // override PutConfig
+  virtual int PutConfig(player_device_id_t id, void *client, 
+			void* src, size_t len,
+			struct timeval* timestamp);
+protected:
 };
 
 
 // METHODS ///////////////////////////////////////////////////////////////
 
 StgPosition::StgPosition( ConfigFile* cf, int section ) 
-  : Stage1p4( interface, cf, section, 
+  : Stage1p4( cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
 	      sizeof(player_position_data_t), sizeof(player_position_cmd_t), 1, 1 )
 {
   PLAYER_MSG0( "STG_POSITION CONSTRUCTOR" );
-  
-  PLAYER_TRACE1( "constructing StgPosition with interface %s", interface );
 }
 
 Driver* StgPosition_Init( ConfigFile* cf, int section)
 {
   PLAYER_MSG0( "STG_POSITION INIT" );
-    
-  if(strcmp( PLAYER_POSITION_STRING))
-    {
-      PLAYER_ERROR1("driver \"stg_position\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else 
-    return((Driver*)(new StgPosition( cf, section)));
+  return((Driver*)(new StgPosition( cf, section)));
 }
 	      
 void StgPosition_Register(DriverTable* table)
@@ -80,8 +70,9 @@ void StgPosition_Register(DriverTable* table)
   table->AddDriver("stg_position",  StgPosition_Init);
 }
 
-size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
-			    uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+size_t StgPosition::GetData( player_device_id_t id,
+			     void* dest, size_t len,
+			     struct timeval* timestamp)
 {
   stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_DATA );
   
@@ -107,14 +98,17 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
       //printf( "getdata called at %lu ms\n", stage_client->stagetime );
       
       // publish this data
-      Driver::PutData( &position_data, sizeof(position_data), 0,0 ); 
+      Driver::PutData( &position_data, sizeof(position_data), NULL); 
     }
   
   // now inherit the standard data-getting behavior 
-  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  return Driver::GetData( id,dest,len,timestamp);
 }
   
-void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
+
+void  StgPosition::PutCommand(player_device_id_t id,
+			      void* src, size_t len,
+			      struct timeval* timestamp)
 {
   if( len == sizeof(player_position_cmd_t) )
     {
@@ -137,11 +131,12 @@ void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
 }
 
 
-int StgPosition::PutConfig(player_device_id_t* device, void* client, 
-			   void* data, size_t len)
+int StgPosition::PutConfig( player_device_id_t id, void *client, 
+			    void* src, size_t len,
+			    struct timeval* timestamp)
 {
   // switch on the config type (first byte)
-  uint8_t* buf = (uint8_t*)data;
+  uint8_t* buf = (uint8_t*)src;
   switch( buf[0] )
     {  
     case PLAYER_POSITION_GET_GEOM_REQ:
@@ -159,15 +154,16 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
 	pgeom.size[0] = ntohs((uint16_t)(1000.0 * geom.size.x)); 
 	pgeom.size[1] = ntohs((uint16_t)(1000.0 * geom.size.y)); 
 	
-	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		  &pgeom, sizeof(pgeom) );
+	PutReply( client, 
+		  PLAYER_MSGTYPE_RESP_ACK, 
+		  &pgeom, sizeof(pgeom), timestamp );
       }
       break;
 
     default:
       {
 	PLAYER_WARN1( "stage1p4 doesn't support config id %d", buf[0] );
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }

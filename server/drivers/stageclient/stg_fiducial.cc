@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <math.h>
 
 #define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 1
@@ -35,28 +36,26 @@ class StgFiducial:public Stage1p4
 public:
   StgFiducial( ConfigFile* cf, int section );
 
-  virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-
-  virtual int PutConfig(player_device_id_t* device, void* client, 
-			void* data, size_t len);
+  /// Read data from the driver; @a id specifies the interface to be read.
+  virtual size_t GetData(player_device_id_t id,
+			 void* dest, size_t len,
+			 struct timeval* timestamp);
+ 
+  /// override PutConfig to Write configuration request to driver.
+  virtual int PutConfig(player_device_id_t id, void *client, 
+			void* src, size_t len,
+			struct timeval* timestamp);
 };
 
 StgFiducial::StgFiducial( ConfigFile* cf, int section ) 
-  : Stage1p4( interface, cf, section, sizeof(player_fiducial_data_t), 0, 1, 1 )
+  : Stage1p4(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE, 
+	     sizeof(player_fiducial_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgFiducial with interface %s", interface );
 }
 
 Driver* StgFiducial_Init( ConfigFile* cf, int section)
 {
-  if(strcmp( PLAYER_FIDUCIAL_STRING))
-    {
-      PLAYER_ERROR1("driver \"stg_fiducial\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else 
     return((Driver*)(new StgFiducial( cf, section)));
 }
 
@@ -68,8 +67,9 @@ void StgFiducial_Register(DriverTable* table)
 
 // override GetData to get data from Stage on demand, rather than the
 // standard model of the source filling a buffer periodically
-size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+size_t StgFiducial::GetData(player_device_id_t id,
+			    void* dest, size_t len,
+			    struct timeval* timestamp )
 {
   PLAYER_TRACE2(" STG_FIDUCIAL GETDATA section %d -> model %d",
 		model->section, model->id_client );
@@ -90,26 +90,36 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
       for( int i=0; i<(int)fcount; i++ )
 	{
 	  pdata.fiducials[i].id = htons((int16_t)fids[i].id);
-	  pdata.fiducials[i].pose[0] = htons((int16_t)(fids[i].range*1000.0));
-	  pdata.fiducials[i].pose[1] = htons((int16_t)RTOD(fids[i].bearing));
-	  pdata.fiducials[i].pose[2] = htons((int16_t)RTOD(fids[i].geom.a));	      
+
+	  // 2D x,y only
+	  
+	  double xpos = fids[i].range * cos(fids[i].bearing);
+	  double ypos = fids[i].range * sin(fids[i].bearing);
+ 
+	  pdata.fiducials[i].pos[0] = htonl((int32_t)(xpos*1000.0));
+	  pdata.fiducials[i].pos[1] = htonl((int32_t)(ypos*1000.0));
+	  
+	  // yaw only
+	  pdata.fiducials[i].rot[2] = htonl((int32_t)(fids[i].geom.a*1000.0));	      
+
 	  // player can't handle per-fiducial size.
 	  // we leave uncertainty (upose) at zero
 	}
     }
   
   // publish this data
-  Driver::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+  Driver::PutData(id,&pdata, sizeof(pdata),NULL); // time gets filled in
   
   // now inherit the standard data-getting behavior 
-  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  return Driver::GetData(id,dest,len,timestamp);
 }
 
-int StgFiducial::PutConfig(player_device_id_t* device, void* client, 
-			   void* data, size_t len)
+int StgFiducial::PutConfig(player_device_id_t id, void *client, 
+			   void* src, size_t len,
+			   struct timeval* timestamp)
 {
   // switch on the config type (first byte)
-  uint8_t* buf = (uint8_t*)data;
+  uint8_t* buf = (uint8_t*)src;
   switch( buf[0] )
     {  
     case PLAYER_FIDUCIAL_GET_GEOM:
@@ -136,8 +146,8 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	pgeom.fiducial_size[0] = ntohs((uint16_t)100); // TODO - get this info
 	pgeom.fiducial_size[1] = ntohs((uint16_t)100);
 	
-	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		      &pgeom, sizeof(pgeom) ) != 0 )
+	if( PutReply( id, client, PLAYER_MSGTYPE_RESP_ACK,  
+		      &pgeom, sizeof(pgeom), NULL ) != 0 )
 	  PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_GEOM");      
       }
       break;
@@ -146,7 +156,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
       
       if( len == sizeof(player_fiducial_fov_t) )
 	{
-	  player_fiducial_fov_t* pfov = (player_fiducial_fov_t*)data;
+	  player_fiducial_fov_t* pfov = (player_fiducial_fov_t*)src;
 	  
 	  // convert from player to stage FOV packets
 	  stg_fiducial_config_t setcfg;
@@ -188,8 +198,8 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	pfov.max_range = htons((uint16_t)(1000.0 * cfg.max_range_anon));
 	pfov.view_angle = htons((uint16_t)RTOD(cfg.fov));
 	
-	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		      &pfov, sizeof(pfov) ) != 0 )
+	if( PutReply( id, client, PLAYER_MSGTYPE_RESP_ACK, 
+		      &pfov, sizeof(pfov), NULL ) != 0 )
 	  PLAYER_ERROR("PutReply() failed for "
 		       "PLAYER_FIDUCIAL_GET_FOV or PLAYER_FIDUCIAL_SET_FOV");      
       }
@@ -201,7 +211,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	{
 	  PLAYER_TRACE0( "setting fiducial id" );
 	  
-	  int id = ntohl(((player_fiducial_id_t*)data)->id);
+	  int id = ntohl(((player_fiducial_id_t*)src)->id);
 	  
 	  if( stg_model_prop_set( this->model, STG_PROP_FIDUCIALRETURN, 
 				  &id,sizeof(id)))
@@ -218,7 +228,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
   case PLAYER_FIDUCIAL_GET_ID:
       {
 	PLAYER_TRACE0( "requesting fiducial ID" );
-	puts( "requesting fiducial ID" );
+	//puts( "requesting fiducial ID" );
 	
 	int id = 0;
 	if( stg_model_prop_get( this->model, STG_PROP_FIDUCIALRETURN, 
@@ -226,12 +236,15 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	    != 0 )
 	  PLAYER_TRACE0( "error requesting STG_PROP_FIDUCIALRETURN" );
 		
+	//if( id == 0 )
+	//id = -1; // player says unidentified is -1
+
 	// fill in the data formatted player-like
 	player_fiducial_id_t pid;
 	pid.id = htonl(id);
 	
-	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		      &pid, sizeof(pid) ) != 0 )
+	if( PutReply( client, PLAYER_MSGTYPE_RESP_ACK, 
+		      &pid, sizeof(pid), NULL ) != 0 )
 	  PLAYER_ERROR("PutReply() failed for "
 		       "PLAYER_FIDUCIAL_GET_ID or PLAYER_FIDUCIAL_SET_ID");      
       }
@@ -241,7 +254,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
     default:
       {
 	printf( "Warning: stg_fiducial doesn't support config id %d\n", buf[0] );
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0) 
+        if (PutReply(id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0) 
           PLAYER_ERROR("PutReply() failed");
       }
     }

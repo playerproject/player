@@ -19,7 +19,7 @@
  * $Id$
  */
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
 #define PLAYER_ENABLE_MSG 1
 
 #include <stdlib.h>
@@ -32,7 +32,7 @@
 #include "stageclient.h"
 #include "stage.h"
 
-// DRIVER FOR LASER INTERFACE ////////////////////////////////////////////////////////
+// DRIVER FOR LASER INTERACE ////////////////////////////////////////////////////////
 
 class StgLaser:public Stage1p4
 {
@@ -42,30 +42,30 @@ public:
   virtual int Setup();
   virtual int Shutdown(); 
 
-  virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-
-  virtual int PutConfig(player_device_id_t* device, void* client, 
-			void* data, size_t len);
+  /// Read data from the driver; @a id specifies the interface to be read.
+  virtual size_t GetData(player_device_id_t id,
+			 void* dest, size_t len,
+			 struct timeval* timestamp);
+ 
+  /// override PutConfig to Write configuration request to driver.
+  virtual int PutConfig(player_device_id_t id, void *client, 
+			void* src, size_t len,
+			struct timeval* timestamp);
 };
 
 
 StgLaser::StgLaser( ConfigFile* cf, int section ) 
-  : Stage1p4( interface, cf, section, sizeof(player_laser_data_t), 0, 1, 1 )
+  : Stage1p4( cf, section, PLAYER_LASER_CODE, PLAYER_READ_MODE,
+	      sizeof(player_laser_data_t), 0, 1, 1 )
 {
-  PLAYER_TRACE1( "constructing StgLaser with interface %s", interface );
+  PRINT_DEBUG( "created Stage laser device" );
+  
+
 }
 
 Driver* StgLaser_Init( ConfigFile* cf, int section)
 {
-  if(strcmp( PLAYER_LASER_STRING))
-    {
-      PLAYER_ERROR1("driver \"stg_laser\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else 
-    return((Driver*)(new StgLaser( cf, section)));
+  return((Driver*)(new StgLaser( cf, section)));
 }
 
 
@@ -91,10 +91,12 @@ int StgLaser::Shutdown()
   return Stage1p4::Shutdown();
 }
 
-
-size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+size_t StgLaser::GetData(player_device_id_t id,
+			 void* dest, size_t len,
+			 struct timeval* timestamp)
 {
+  // Player wants our data, so we fetch the latest Stage data from the
+  // cache and convert it into Player format.
   stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_DATA);
   
   player_laser_data_t pdata;
@@ -142,21 +144,22 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 	    }
 	  
 	  // publish this data
-	  Driver::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+	  Driver::PutData( &pdata, sizeof(pdata), NULL ); // time gets filled in
 	}
     }
  
   // now inherit the standard data-getting behavior 
-  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
-  
-  //return 0;
+  return Driver::GetData( this->device_id, dest,len,timestamp);
 }
 
 
-int StgLaser::PutConfig(player_device_id_t* device, void* client, 
-			void* data, size_t len)
+int StgLaser::PutConfig(player_device_id_t device, void* client, 
+			void* data, size_t len, struct timeval* timestamp )
 {
   assert( data );
+
+  //PRINT_WARN1( "putconfig with %d bytes", (int)len );
+
 
   // switch on the config type (first byte)
   uint8_t* buf = (uint8_t*)data;
@@ -195,14 +198,14 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	    else
 	      PLAYER_TRACE0( "set laser config OK" );
 
-	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, plc, len) != 0)
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, plc, len, NULL) != 0)
 	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_SET_CONFIG");
 	  }
 	else
 	  {
 	    PLAYER_ERROR2("config request len is invalid (%d != %d)", 
 			  (int)len, (int)sizeof(player_laser_config_t));
-	    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+	    if(PutReply( client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
 	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_SET_CONFIG");
 	  }
       }
@@ -239,14 +242,14 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	    plc.range_res = htons(range_multiplier);
 	    plc.intensity = intensity;
 
-	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &plc, 
-			sizeof(plc)) != 0)
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &plc, 
+			sizeof(plc), NULL) != 0)
 	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_CONFIG");      
 	  }
 	else
 	  {
 	    PLAYER_ERROR2("config request len is invalid (%d != %d)", (int)len, 1);
-	    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
 	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_CONFIG");
 	  }
       }
@@ -277,8 +280,8 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	pgeom.size[0] = htons((uint16_t)(1000.0 * geom.size.x)); 
 	pgeom.size[1] = htons((uint16_t)(1000.0 * geom.size.y)); 
 	
-	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		      &pgeom, sizeof(pgeom) ) != 0 )
+	if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+		      &pgeom, sizeof(pgeom), NULL ) != 0 )
 	  PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_GEOM");      
       }
       break;
@@ -286,7 +289,7 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
     default:
       {
 	PLAYER_WARN1( "stage1p4 doesn't support config id %d", buf[0] );
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }

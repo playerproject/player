@@ -23,13 +23,14 @@
 // STAGE-1.4 DRIVER CLASS  /////////////////////////////////
 
 #include "device.h"
+#include "driver.h"
 #include "configfile.h"
 #include "stage.h"
 
 class Stage1p4 : public Driver
 {
  public:
-  Stage1p4(char* interface, ConfigFile* cf, int section, 
+  Stage1p4( ConfigFile* cf, int section, int interface, uint8_t access,
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen);
   virtual ~Stage1p4();
   
@@ -46,7 +47,7 @@ class Stage1p4 : public Driver
   static stg_client_t* stage_client;
   static stg_world_t* world;
 
-
+  
   stg_model_t* model; // points inside the shared stg_client_t to our
 		      // individual model data
   
