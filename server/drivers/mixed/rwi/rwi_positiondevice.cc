@@ -204,20 +204,36 @@ CRWIPositionDevice::Main()
 #ifdef USE_MOBILITY
     odo_data = odo_state->get_sample(0);
 
+    // AH: I've commented this out, since the coord transform is
+    // incorrect.  I'm pretty sure the rotation angle should be
+    // positive rather than negative (the angle is already negated in
+    // the reset function).
+    //
     // get ready to rotate our coordinate system (assumes 
     // position[0] returns x... if your RWI setup puts 
     // Y before X, this needs to be reversed)
+    /*
     tmp_x = odo_data->position[0] + odo_correct_x;
     tmp_y = odo_data->position[1] + odo_correct_y;
     cos_theta = cos(-odo_correct_theta);
     sin_theta = sin(-odo_correct_theta);
-      
+
     data.xpos = htonl((int32_t) ((cos_theta*tmp_x - sin_theta*tmp_y)
                                  * 1000.0));
     data.ypos = htonl((int32_t) ((sin_theta*tmp_x + cos_theta*tmp_y)
                                  * 1000.0));
     degrees = (int32_t)
       RTOD(NORMALIZE(odo_data->position[2] + odo_correct_theta));
+    */
+
+    // This one ignores the odometry reset
+    data.xpos = htonl((int32_t) ((odo_data->position[0]) * 1000.0));
+    data.ypos = htonl((int32_t) ((odo_data->position[1]) * 1000.0));
+    degrees = (int32_t) RTOD(NORMALIZE(odo_data->position[2]));
+    if (degrees < 0)
+      degrees += 360;
+    data.yaw = htonl((int32_t) degrees);
+    
     if (degrees < 0)
       degrees += 360;
     data.yaw = htonl((int32_t) degrees);
