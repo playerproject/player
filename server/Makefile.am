@@ -11,6 +11,8 @@ player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 #
 player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTK_LIBS@ $(top_builddir)/replace/libreplace.a
 
+player_LDFLAGS = -rdynamic
+
 
 bin_PROGRAMS = player
 
