@@ -139,6 +139,7 @@ void playerc_camera_decompress(playerc_camera_t *device)
   device->image_size = dst_size;
   assert(dst_size < sizeof(device->image));
   memcpy(device->image, dst, dst_size);
+  free(dst);
 
   // Pixels are now raw
   device->compression = PLAYER_CAMERA_COMPRESS_RAW;
