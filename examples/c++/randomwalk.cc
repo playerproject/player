@@ -110,9 +110,9 @@ int main(int argc, char** argv)
     if (use_laser)
     {
         obs = false;
-        for (int i = 0; i < 361; i++)
+        for (int i = 0; i < robot.laser->range_count; i++)
         {
-            if ((robot.laser[i] & 0x1FFF) < minfrontdistance)
+            if ((robot.laser->ranges[i] & 0x1FFF) < minfrontdistance)
                 obs = true;
         }
     }
