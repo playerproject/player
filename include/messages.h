@@ -192,7 +192,7 @@ typedef struct
 /* Position device command buffer */
 typedef struct
 {
-  int16_t speed, turnrate;
+  int16_t speed, sidespeed, turnrate;
 } __attribute__ ((packed)) player_position_cmd_t;
 
 /* Position device data buffer */
@@ -200,7 +200,7 @@ typedef struct
 {
   int32_t xpos,ypos;
   uint16_t theta;
-  int16_t speed, turnrate;
+  int16_t speed, sidespeed, turnrate;
   uint16_t compass;
   uint8_t stalls;
 } __attribute__ ((packed)) player_position_data_t;
