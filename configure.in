@@ -308,7 +308,7 @@ AC_CHECK_FUNCS(cfmakeraw sigblock)
 AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
-AC_CHECK_LIB(dl, dlopen)
+AC_CHECK_LIB(ltdl, lt_dlopenext)
 AC_CHECK_LIB(c_r, pthread_create, 
              [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 
