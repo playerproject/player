@@ -75,6 +75,8 @@ class VFH_Class : public CDevice
     CDevice *odom;
     int odom_index;
     double odom_time;
+    double dist_eps;
+    double ang_eps;
 
     // Odometric geometry (robot size and pose in robot cs)
     double odom_geom_pose[3];
@@ -706,6 +708,7 @@ void VFH_Class::Main()
     dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
                 pow((goal_y - this->odom_pose[1]),2));
 
+    
     /*
     printf("VFH: goal : %d,%d,%d\n",
            this->goal_x, this->goal_y, this->goal_t);
@@ -713,16 +716,17 @@ void VFH_Class::Main()
            this->odom_pose[0], this->odom_pose[1], this->odom_pose[2]);
     
     printf("VFH: dist: %f\n", dist);
-           */
-    if((dist < 500) && 
-       fabs(RTOD(NORMALIZE(DTOR(goal_t)-DTOR(this->odom_pose[2])))) < 10)
+    */
+
+    if((dist < (this->dist_eps * 1e3)) && 
+       (fabs(NORMALIZE(DTOR(goal_t)-DTOR(this->odom_pose[2]))) < this->ang_eps))
     {
-      //puts("VFH: goal reached");
+      puts("VFH: goal reached");
       this->active_goal = false;
       this->speed = this->turnrate = 0;
       PutCommand();
     }
-    else if (dist > 500)
+    else if (dist > (this->dist_eps * 1e3))
     {
       Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]), (goal_x - this->odom_pose[0]))
               * 180 / M_PI - this->odom_pose[2];
@@ -776,7 +780,7 @@ void VFH_Class::Main()
         angdiff += 360.0;
 
       speed = 0;
-      if(fabs(angdiff) > 10)
+      if(fabs(angdiff) > RTOD(this->ang_eps))
       {
         if(angdiff > 0)
           turnrate = MAX_TURNRATE;
@@ -860,6 +864,9 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
   obs_cutoff = cf->ReadLength(section, "obs_cutoff", free_space_cutoff);
   weight_desired_dir = cf->ReadLength(section, "weight_desired_dir", 5.0);
   weight_current_dir = cf->ReadLength(section, "weight_current_dir", 3.0);
+  
+  this->dist_eps = cf->ReadLength(section, "distance_epsilon", 0.5);
+  this->ang_eps = cf->ReadAngle(section, "angle_epsilon", DTOR(10.0));
 
   // Allocate and intialize with defaults, for now
   this->Init(cell_size, window_diameter, sector_angle, robot_radius,
