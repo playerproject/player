@@ -1651,6 +1651,10 @@ The {\tt gps} interface gives current global position and heading information;
 the format is: */
 typedef struct player_gps_data
 {
+  /** GPS (UTC) time, in seconds and microseconds since the epoch. */
+  uint32_t time_sec;  
+  uint32_t time_usec; 
+
   /** Latitude, in 1/60 of an arc-second (i.e., 1/216000 of a degree).  
       Positive is north of equator, negative is south of equator. */
   int32_t latitude;
@@ -1664,6 +1668,9 @@ typedef struct player_gps_data
       sea-level), and negative is below. */
   int32_t altitude;
 
+  /** UTM WGS84 coordinates, easting and northing (cm). */
+  int32_t utm_e, utm_n;
+
   /** Quality of fix 0 = invalid, 1 = GPS fix, 2 = DGPS fix */
   uint8_t quality;
      
@@ -1671,11 +1678,13 @@ typedef struct player_gps_data
   uint8_t num_sats;
 
   /** Horizontal dilution of position (HDOP), times 10 */
-  uint8_t hdop;
+  uint16_t hdop;
 
-  /** GPS time, in seconds and microseconds since the epoch. */
-  uint32_t time_sec;  
-  uint32_t time_usec; 
+  /** Horizonal error (mm) */
+  uint32_t err_horz;
+
+  /** Vertical error (mm) */
+  uint32_t err_vert;
 
 } __attribute__ ((packed)) player_gps_data_t;
 
