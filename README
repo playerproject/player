@@ -8,7 +8,7 @@ Player homepage is at:
 
 Contents
 -------------
-COPYING                GNU Public License
+COPYING                GNU General Public License
 Makefile.common        common Makefile; make your configuration changes here
 Makefile               the top-level Makefile; you shouldn't need to change it
 README                 this file
@@ -26,6 +26,7 @@ doc                    users manuals for Player and client libraries
 utils                  client-side utilities that you might find useful
 include                header files for Player
 src                    source for Player
+rtk2                   a graphical toolkit, used by some utilities
 
 Configuration 
 ------------------
@@ -72,8 +73,9 @@ Clean
 
 Further Info
 ------------
-- now you've got Player installed.  but, how to use it? user manual
-  is in ./doc.  for further info and updates, check:
+- now you've got Player installed.  but, how to use it? several user manuals
+  are in ./doc.  for further info and updates, check:
+
       http://playerstage.sourceforge.net
 
 
