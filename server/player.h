@@ -711,7 +711,7 @@ typedef struct player_position_set_odom_req
   /** X and Y (in mm?) */
   int32_t x, y;
   /** Heading (in degrees) */
-  uint16_t theta;
+  int32_t theta;
 }__attribute__ ((packed)) player_position_set_odom_req_t;
 
 /** [Configuration: Set velocity PID parameters] */
