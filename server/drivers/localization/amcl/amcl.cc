@@ -881,8 +881,11 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   cov.m[1][1] = ((int64_t) ntohll(req.cov[1][1])) / 1e6;
   cov.m[2][2] = ((int64_t) ntohll(req.cov[2][2])) / (3600.0 * 3600.0) * (M_PI / 180 * M_PI / 180);
 
-  // Initialize the filter
-  this->InitFilter(pose, cov);
+  // Re-initialize the filter
+  this->pf_init_pose_mean = pose;
+  this->pf_init_pose_cov = cov;
+  this->push_init = false;
+  this->pf_init = false;
 
   // Give them an ack
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
