@@ -47,7 +47,7 @@ class AMCLLaserData : public AMCLSensorData
 class AMCLLaser : public AMCLSensor
 {
   // Default constructor
-  public: AMCLLaser();
+  public: AMCLLaser(player_device_id_t id);
   
   // Load the model
   public: virtual int Load(ConfigFile* cf, int section);
@@ -75,9 +75,8 @@ class AMCLLaser : public AMCLSensor
   private: int SetupMap(void);
 
   // Device info
-  private: int map_index;
-  private: int laser_index;
   private: player_device_id_t laser_id;
+  private: player_device_id_t map_id;
   private: Driver *driver;
 
   // Current data timestamp

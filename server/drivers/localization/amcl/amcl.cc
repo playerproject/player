@@ -36,8 +36,297 @@
 /** @{ */
 /** @defgroup player_driver_amcl amcl
 
+The @p amcl driver implements the Adaptive Monte-Carlo
+Localization algorithm described by Dieter Fox.
+
+At the conceptual level, the @p amcl driver maintains a probability
+distribution over the set of all possible robot poses, and updates this
+distribution using data from odometry, sonar and/or laser range-finders.
+The driver also requires a pre-defined map of the environment against
+which to compare observed sensor values.
+
+At the implementation level, the @p amcl driver represents the probability
+distribution using a particle filter.  The filter is "adaptive" because
+it dynamically adjusts the number of particles in the filter: when the
+robot's pose is highly uncertain, the number of particles is increased;
+when the robot's pose is well determined, the number of particles
+is decreased.  The driver is therefore able make a trade-off between
+processing speed and localization accuracy.
+
+As an example, consider the sequence of images shown below.  This sequence
+shows the filter converging from an initial configuration in which the
+pose of the robot is entirely unknown to a final configuration in which
+the pose of the robot is well determined.  At the same time, the number
+of particles in the filter decreases from 100,000 to less than 100.
+Convergence in this case is relatively slow.
+
+@image html amcl-phe200-0010.jpg "t = 1 sec, approx 100,000 particles"
+@image html amcl-phe200-0400.jpg "t = 40 sec, approx 1,000 particles"
+@image html amcl-phe200-0800.jpg "t = 80 sec, approx 100 particles"
+@image html amcl-phe200-1200.jpg "t = 120 sec, approx 100 particles"
+
+
+The @p amcl driver has the the usual features --
+and failures -- associated with simple Monte-Carlo Localization
+techniques:
+  - If the robot's initial pose is specified as being completely
+  unknown, the driver's estimate will usually converge to correct
+  pose.  This assumes that the particle filter starts with a large
+  number of particles (to cover the space of possible poses), and that
+  the robot is driven some distance through the environment (to
+  collect observations).
+  - If the robot's initial pose is specified accurately, but
+  incorrectly, or if the robot becomes lost (e.g., by picking it up
+  and replacing it elsewhere) the driver's estimate will not converge
+  on the correct pose.  Such situations require the use of more
+  advanced techniques that have not yet been implemented.
+
+The @p amcl driver also has some slightly unusual temporal
+behavior:
+  - When the number of particles in the filter is large, data may
+  arrive from the sensors faster than it can be processed.  When this
+  happens, data is queued up for later processing, but the driver
+  continues to generate an up-to-date estimate for the robot pose.
+  Thus, for example, at time t = 10 sec, the driver may have only
+  processed sensor readings up until time t = 5 sec, but will
+  nevertheless generate an estimate (prediction) of where the robot is
+  at t = 10 sec.  The adaptive nature of the algorithm more-or-less
+  guarantees that the driver will eventual "catch up": as more
+  sensor readings are processed, the number of particles will
+  generally decrease, and the sensor update step of the algorithm will
+  run faster.
+
+@par Caveats
+
+At the time of writing, this driver is still evolving.  The sensor
+models, in particular, are currently over-simplified and
+under-parameterized (there are lots of magic numbers lurking about the
+place).  Consequently, while this driver is known to work for certain
+hardware configurations (think Pioneer2DX with a SICKLMS200 laser
+range-finder), other configurations may require some refinement of the
+sensor models.
+
+@par Provides
+
+- @ref player_interface_localize : this interface provides a (sort of)
+  representative sample of the current pose hypotheses, weighted by likelihood.
+- @ref player_interface_position : this interface provides just the
+  most-likely hypothesis, formatted as position data, which you can
+  (at your peril) pretend came from a perfect odometry system
+
+@par Requires
+
+The @p amcl driver requires the following interfaces, some of them named:
+
+- "odometry" @ref player_interface_position : source of odometry information
+- @ref player_interface_laser : source of laser scans
+- "laser" @ref player_interface_map : a map in which to localize the
+   robot, by fusing odometry and laser data.
+- In principle supported, but currently disabled are: 
+    - "imu" @ref player_interface_position
+    - @ref player_interface_sonar 
+    - @ref player_interface_gps
+    - @ref player_interface_wifi
+
+@par Configuration requests
+
+- TODO
+
+@par Configuration file options
+
+- Particle filter settings:
+  - odom_init (integer)
+    - Default: 1
+    - Use the odometry device as the "action" sensor
+  - pf_min_samples (integer)
+    - Default: 100
+    - Lower bound on the number of samples to maintain in the particle filter.
+  - pf_max_samples (integer)
+    - Default: 10000
+    - Upper bound on the number of samples to maintain in the particle filter.
+  - pf_err (float)
+    - Default: 0.01
+    - Control parameter for the particle set size.  See notes below.
+  - pf_z (float)
+    - Default: 3
+    - Control parameter for the particle set size.  See notes below.
+  - init_pose (tuple: [length length angle])
+    - Default: [0 0 0] (m m deg)
+    - Initial pose estimate (mean value) for the robot.
+  - init_pose_var (tuple: [length length angle])
+    - Default: [10^3 10^3 10^2] (m m deg)
+    - Uncertainty in the initial pose estimate.
+  - update_thresh (tuple: [length angle])
+    - Default: [0.2 30] (m deg)
+    - Minimum change required in action sensor to force update in
+      particle filter.
+- Laser settings:
+  - laser_pose (length tuple)
+    - Default: [0 0 0]
+    - Pose of the laser sensor in the robot's coordinate system
+  - laser_max_beams (integer)
+    - Default: 6
+    - Maximum number of range readings being used
+  - laser_range_max (length)
+    - Default: 8.192 m
+    - Maximum range returned by laser
+  - laser_range_var (length)
+    - Default: 0.1 m
+    - Variance in range data returned by laser
+  - laser_range_bad (float)
+    - Default 0.1
+    - ???
+- Debugging:
+  - enable_gui (integer)
+    - Default: 0
+    - Set this to 1 to enable the built-in driver GUI (useful
+      for debugging).  Player must also be built with @p configure
+      @p --enable-rtkgui for this option to have any effect.
+
+@par Notes
+
+- Coordinate System:
+The origin of the global coordinate system corresponds to the center
+of occupancy grid map.  Standard coordinate orientation is used; i.e.,
+positive x is towards the right of the map, positive y towards the top
+of the map.
+
+- Number of particles:
+The number of particles in the filter can be controlled using the
+configuration file parameters @p pf_err and @p pf_z.  Specifically, @p
+pf_err is the maximum allowed error between the true distribution and
+the estimated distribution, while @p pf_z is the upper standard normal
+quantile for (1 - p), where p is the probability that the error on the
+estimated distribution will be less than @p pf_err.  If you dont know
+what that means, dont worry, I'm not exactly sure either.  See Fox's
+paper for a more meaningful explanation.
+
+- Speed:
+Many factors affect the speed at which the @p amcl driver
+runs, but the following tips might be helpful:
+  - Reducing the number of laser range readings being used (@p
+    laser_max_beams in the configuration file) will significantly increase
+    driver speed, but may also lead to slower convergence and/or less
+    accurate localization.
+  - Increasing the allowed error @p pf_err and reducing the quantile
+    @p pf_z will lead to smaller particle sets and will hence increase
+    driver speed.  This may also lead, however, to over-convergence.
+As a benchmark, this driver has been successfully deployed on a
+Pioneer2DX equipped with a SICK LMS200 and a 266MHz Mobile Pentium
+with 32Mb of RAM.
+
+- Memory:
+The two key factors affecting memory usage are:
+  - The size and resolution of the map.
+  - The maximum number of particles.
+As currently configured, the @p amcl driver will typically use 10 to
+20Mb of memory.  On embedded systems, where memory is at a premium,
+users may have to decrease the map resolution or the maximum number of
+particles to achieve acceptable preformance.
+
+@par Example: Using the amcl driver with a Pioneer robot
+
+The following configuration file illustrates the use of the @p amcl
+driver on a Pioneer robot equipped with a SICK LMS200 scanning laser
+range finder:
+@verbatim
+driver
+(
+  name "p2os_position" 
+  provides ["odometry::position:0"]
+  port "/dev/ttyS0"
+)
+driver
+(
+  name "sicklms200" 
+  provides ["laser:0"]
+  port "/dev/ttyS2"
+)
+driver
+(
+  name "mapfile"
+  provides ["map:0"]
+  resolution 0.05
+  filename "mymap.pgm"
+)
+driver
+(
+  name "amcl"
+  provides ["localize:0"]
+  requires ["odometry::position:0" "laser:0" "laser::map:0"]
+)
+@endverbatim
+Naturally, the @p port, @p filename and @p resolution values should be
+changed to match your particular configuration.
+
+
+@par Example: Using the amcl driver with Stage 1.3.x
+
+The @p amcl driver is not supported natively in Stage 1.3.x.  Users must
+therefore employ a second Player server configured to use the @ref
+player_driver_passthrough driver.  The basic procedure is as follows.
+- Start Stage with a world file something like this:
+@verbatim
+...
+bitmap (file "cave.pnm" resolution 0.03)
+position (port 6665 laser ())
+...
+@endverbatim
+Stage will create one robot (position device) with a laser, and create
+a Player server on port 6665.
+- Start another Player server using the command
+@verbatim
+player -p 7000 amcl.cfg
+@endverbatim
+where the configuration file @p amcl.cfg looks like this:
+@verbatim
+driver
+(
+  name "passthrough"
+  provides ["position:0"]
+  remote_host "localhost"
+  remote_port 6665
+  remote_index 0
+  access "a"
+)
+driver
+(
+  name "passthrough"
+  provides ["laser:0"]
+  remote_host "localhost"
+  remote_port 6665
+  remote_index 0
+  access "r"
+)
+driver
+(
+  name "mapfile"
+  provides ["map:0"]
+  filename "cave.pnm"
+  resolution 0.03
+  negate 1
+)
+driver
+(
+  name "amcl"
+  provides ["localize:0"]
+  requires ["odometry::position:0" "laser:0" "laser::map:0"]
+)
+@endverbatim
+The second Player server will listen on port 7000; clients connecting
+to this server will see a robot with @ref player_interface_position,
+@ref player_interface_laser and @ref player_interface_localize devices.
+The map file @p cave.pnm can be the same file used by Stage to create the
+world bitmap (note the @p negate option to the @ref player_driver_mapfile
+driver, which inverts the colors in the image; this is necessary because
+Stage interprets black pixels as free and white pixels as obstacles).
+
+
 @todo
-Document amcl
+
+- Get the laser's pose from the laser, using the GET_GEOM request.
+- Implement / update other sensor models
+
 */
 
 /** @} */
@@ -137,22 +426,26 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   this->sensor_count = 0;
 
   /// @todo Use "requires"
+  player_device_id_t odom_id;
+  player_device_id_t laser_id;
   
   // Create odometry sensor
-  if (cf->ReadInt(section, "odom_index", -1) >= 0)
+  if(cf->ReadDeviceId(&odom_id, section, "requires",
+                      PLAYER_POSITION_CODE, -1, "odometry") == 0)
   {
     this->action_sensor = this->sensor_count;
     if (cf->ReadInt(section, "odom_init", 1))
       this->init_sensor = this->sensor_count;
-    sensor = new AMCLOdom();
+    sensor = new AMCLOdom(odom_id);
     sensor->is_action = 1;
     this->sensors[this->sensor_count++] = sensor;
   }
 
   // Create laser sensor
-  if (cf->ReadInt(section, "laser_index", -1) >= 0)
+  if(cf->ReadDeviceId(&laser_id, section, "requires",
+                      PLAYER_LASER_CODE, -1, NULL) == 0)
   {
-    sensor = new AMCLLaser();
+    sensor = new AMCLLaser(laser_id);
     sensor->is_action = 0;
     this->sensors[this->sensor_count++] = sensor;
   }

@@ -251,6 +251,13 @@ class Driver
     /// Calling this method will release any threads currently waiting
     /// on this driver.  Called automatically by the default PutData()
     /// implementation.
+    ///
+    /// @todo 
+    /// Fix the semantics of
+    /// DataAvailable() and Wait().  As currenly implemented, we Wait() on
+    /// devices, but call DataAvailable() on drivers.  For drivers with multiple
+    /// interfaces, this means than threads blocked on a wait will resume when
+    /// *any* of the driver's interfaces is updated (not the expected behavior).
     void DataAvailable(void);
 
     // a static version of DataAvailable that can be used as a
