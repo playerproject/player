@@ -47,8 +47,8 @@ public:
   capturev4l() {vid_fd = 0; current=0; captured_frame = false;}
   virtual ~capturev4l() {close();}
 
-  virtual bool initialize(char *device,int nwidth,int nheight,int nfmt);
-  bool initialize(int nwidth,int nheight)
+  bool initialize(char *device,int nwidth,int nheight,int nfmt);
+  virtual bool initialize(int nwidth,int nheight)
     {return(initialize(0,nwidth,nheight,0));}
   bool initialize()
     {return(initialize(0,0,0,0));}

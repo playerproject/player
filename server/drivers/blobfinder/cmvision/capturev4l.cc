@@ -95,7 +95,7 @@ bool capturev4l::initialize(char *device,int nwidth,int nheight,int nfmt)
     nheight = DEFAULT_IMAGE_HEIGHT;
   }
 
-  if (nfmt != DEFAULT_VIDEO_FORMAT | VIDEO_PALETTE_YUV420P) {
+  if (nfmt != (DEFAULT_VIDEO_FORMAT | VIDEO_PALETTE_YUV420P)) {
     printf("Error, Only YUV420 planar supported for now, sorry.\n");
     return false;
   }
