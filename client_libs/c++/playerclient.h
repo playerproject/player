@@ -791,16 +791,6 @@ class MoteProxy : public ClientProxy
 };
 
 
-#define REB_PPROXY_MOTOR_OFF 0
-#define REB_PPROXY_MOTOR_ON 1
-
-#define REB_PPROXY_POSITION_MODE 0
-#define REB_PPROXY_VELOCITY_MODE 1
-#define REB_PPROXY_TORQUE_MODE 2
-
-#define REB_PPROXY_PD_CONTROL 1
-#define REB_PPROXY_DIRECT_CONTROL 0
-
 /** The {\tt PositionProxy} class is used to control the {\tt position} device.
     The latest position data is contained in the attributes {\tt xpos, ypos}, etc.
  */
@@ -851,6 +841,9 @@ class PositionProxy : public ClientProxy
         Set {\tt mode} to 0 for direct wheel velocity control (default),
         or 1 for separate translational and rotational control.
         
+	For "reb_position": 0 is direct velocity control, 1 is for velocity-based
+	heading PD controller (uses DoDesiredHeading())
+
         Returns: 0 if everything's ok, -1 otherwise.
     */
     int SelectVelocityControl(unsigned char mode);
@@ -861,13 +854,27 @@ class PositionProxy : public ClientProxy
     int ResetOdometry();
 
     // the following ioctls are currently only supported by reb_position
-    int SelectPositionMode(unsigned char);
+    //
+
+    /** Select position mode on the REB.
+	Set {\tt mode} for 0 for velocity mode, 1 for position mode.
+
+	Returns: 0 if OK, -1 else
+    */
+    int SelectPositionMode(unsigned char mode);
+
+    /** Sets the odometry to the pose {\tt (x, y, theta)}.
+	Note that {\tt x} and {\tt y} are in mm and {\tt theta} is in degrees.
+	
+	Returns: 0 if OK, -1 else
+    */
     int SetOdometry(long x,long y,int t);
     int SetSpeedPID(int kp, int ki, int kd);
     int SetPositionPID(short kp, short ki, short kd);
     int SetPositionSpeedProfile(short spd, short acc);
     int DoStraightLine(int mm);
     int DoRotation(int deg);
+    int DoDesiredHeading(short theta, int xspeed, int yawspeed);
 
     /** Accessors
      */
@@ -1155,15 +1162,11 @@ class BlobfinderProxy : public ClientProxy
     void Print();
 };
 
-#define REB_IRPROXY_IR_OFF 0
-#define REB_IRPROXY_IR_ON 1
 
-// look in ircalib for irattrib.m to see how we got these values
+// these define default coefficients for our 
+// range and standard deviation estimates
 #define IRPROXY_DEFAULT_DIST_M_VALUE -0.661685227
 #define IRPROXY_DEFAULT_DIST_B_VALUE  10.477102515
-
-#define IRPROXY_DEFAULT_VAR_M_VALUE 3.826011121876
-#define IRPROXY_DEFAULT_VAR_B_VALUE -11.251715194794
 
 #define IRPROXY_DEFAULT_STD_M_VALUE  1.913005560938
 #define IRPROXY_DEFAULT_STD_B_VALUE -7.728130591833
@@ -1172,7 +1175,7 @@ class BlobfinderProxy : public ClientProxy
 #define IRPROXY_B_PARAM 1
 
 //this is the effective range of the sensor in mm
-#define REB_IRPROXY_MAX_RANGE 700
+#define IRPROXY_MAX_RANGE 700
 
 class IRProxy : public ClientProxy
 {
@@ -1191,7 +1194,7 @@ public:
           unsigned char access = 'c');
 
   // these are config methods
-  int SetIRState(unsigned char);
+  int SetIRState(unsigned char state);
 
   int GetIRPose();
 
@@ -1243,7 +1246,7 @@ class PowerProxy : public ClientProxy
                 unsigned char access ='c')
             : ClientProxy(pc,PLAYER_POWER_CODE,index,access) {}
 
-    uint8_t Charge () const { return charge; }
+    uint16_t Charge () const { return charge; }
 
     // interface that all proxies must provide
     void FillData (player_msghdr_t hdr, const char* buffer);
