@@ -163,17 +163,10 @@ size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
     printf("warning data available (%d bytes) > space in Player packet (%d bytes); ignoring data\n", data_avail, size );
     Unlock();
     return 0;
-
-    //data_avail = size;
   }
     
-
   // Copy the data
   memcpy(data, device_data, data_avail);
-
-  // TODO: should this still be here?
-  // no! and it wasted a good hour of my time.... - RTV
-  //m_info->data_avail = 0;// consume this data for testing purposes
 
   // store the timestamp in the device, because other devices may
   // wish to read it
@@ -230,58 +223,8 @@ void StageDevice::PutCommand(void* client,unsigned char *command, size_t len)
 }
 
 
-///////////////////////////////////////////////////////////////////////////
-// Write configuration to the device
-//
-/*
-int StageDevice::PutConfig(CClientData* client, unsigned char *config, 
-                            size_t len)
-{
-  Lock();
-
-  // Check for overflows
-  //
-  if (len > m_config_len)
-    PLAYER_ERROR("invalid config length; ignoring config");
-    
-  // Copy the data
-  memcpy(m_config_buffer, config, len);
-
-  // Set flag to indicate config has been changed
-  m_info->config_avail = len;
-
-  // set timestamp for this config
-  struct timeval tv;
-  GlobalTime->GetTime(&tv);
-
-  m_info->config_timestamp_sec = tv.tv_sec;
-  m_info->config_timestamp_usec = tv.tv_usec;
-
-  Unlock();
-
-  return(0);
-}
-*/
-
 void StageDevice::Lock( void )
 {
-  //printf( "P: LOCK %p\n", m_lock );
-
-//  #ifdef POSIX_SEM
-
-//      if( sem_wait( m_lock ) < 0 )
-//        {
-//          perror( "sem_wait failed" );
-//          return false;
-//        }
-
-//  #else
-
-//    // BSD file locking style
-//    flock( lock_fd, LOCK_EX );
-
-//  #endif
-
  // POSIX RECORD LOCKING METHOD
   struct flock cmd;
 
@@ -290,42 +233,19 @@ void StageDevice::Lock( void )
   cmd.l_start = this->lock_byte; // lock my unique byte
   cmd.l_len = 1; // lock 1 byte
 
-
-  //printf( "WAITING for byte %d\n", this->lock_byte );
-
-
-
   fcntl( this->lock_fd, F_SETLKW, &cmd );
-  //printf( "DONE WAITING\n" );
 }
 
 void StageDevice::Unlock( void )
 {
-  //printf( "P: UNLOCK %p\n", m_lock );
-
-//  #ifdef POSIX_SEM
-
-//    if( sem_post( m_lock ) < 0 )
-//    {
-//    perror( "sem_post failed" );
-//    return false;
-//    }
-
-//  #else
-
-//    // BSD file locking style
-//    flock( lock_fd, LOCK_UN );
-
-//  #endif
-
- // POSIX RECORD LOCKING METHOD
+  // POSIX RECORD LOCKING METHOD
   struct flock cmd;
-
+  
   cmd.l_type = F_UNLCK; // request  unlock
   cmd.l_whence = SEEK_SET; // count bytes from start of file
   cmd.l_start = this->lock_byte; // unlock my unique byte
   cmd.l_len = 1; // unlock 1 byte
-
+  
   fcntl( this->lock_fd, F_SETLKW, &cmd );
 }
 

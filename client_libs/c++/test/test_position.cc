@@ -152,6 +152,25 @@ test_position(PlayerClient* client, int index)
   sleep(3);
   PASS();
 
+  TEST("moving left and anticlockwise (testing omnidrive)");
+  if( pp.SetSpeed( 0, 100, 45 ) < 0 )
+    {
+      FAIL();
+      return(-1);
+    }
+  sleep(3);
+  PASS();
+
+
+  TEST("moving right and clockwise (testing omnidrive)");
+  if( pp.SetSpeed( 0, -100, -45 ) < 0 )
+    {
+      FAIL();
+      return(-1);
+    }
+  sleep(3);
+  PASS();
+
   TEST("stopping");
   if(pp.SetSpeed(0,0) < 0)
     {

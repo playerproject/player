@@ -29,6 +29,8 @@
 
 //#define P_8(A) 
 
+#define TWOPI (M_PI*2.0)
+
 void SonarDataPack( player_sonar_data_t* data, 
 		    int num_samples, double ranges[])
 {
@@ -113,7 +115,7 @@ void PositionDataPack( player_position_data_t* data,
   // commands for position control
   data->xpos = MM_32(xpos);
   data->ypos = MM_32(ypos);
-  data->yaw = Deg_32(yaw);
+  data->yaw = Deg_32(yaw); 
   
   //printf( "DATA RAW %.2f %.2f %.2f\n", xpos, ypos, yaw );
   //printf( "DATA PACKED %d %d %d\n", data->xpos, data->ypos, data->yaw );
@@ -131,11 +133,13 @@ void PositionDataUnpack( player_position_data_t* data,
   if(xpos) *xpos = M_32(data->xpos);
   if(xpos) *ypos = M_32(data->ypos);
   if(xpos) *yaw  = Rad_32(data->yaw);
-  
+
   if(xpos) *xspeed = M_32(data->xspeed);
   if(xpos) *yspeed = M_32(data->yspeed);
-  if(xpos) *yawspeed =Rad_32(data->yawspeed);
+  if(xpos) *yawspeed = Rad_32(data->yawspeed);
   
+
+
   if(stall) *stall = data->stall ? 1 : 0;
 }
 
@@ -178,6 +182,16 @@ void PositionSetOdomReqUnpack( player_position_set_odom_req_t* req,
 }
 
       
+
+
+
+
+
+
+
+
+
+
 
 
 

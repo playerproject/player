@@ -939,7 +939,7 @@ class PositionProxy : public ClientProxy
       Note that {\tt x} and {\tt y} are in mm and {\tt theta} is in degrees.
       Returns: 0 if OK, -1 else
   */
-  int SetOdometry(long x,long y,int t);
+  int SetOdometry(int x, int y, unsigned short t);
 
   /// Only supported by the reb_position driver.
   int SetSpeedPID(int kp, int ki, int kd);

@@ -27,7 +27,7 @@
  * information packets (SIPs)
  */
 #include <stdio.h>
-#include <values.h>
+#include <limits.h>
 #include <math.h>  /* rint(3) */
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -166,7 +166,7 @@ void SIP::Parse( unsigned char *buffer )
   newxpos = ((buffer[cnt] | (buffer[cnt+1] << 8))
 	     & 0xEFFF) % 4096; /* 15 ls-bits */
   
-  if (xpos!=MAXINT) {
+  if (xpos!=INT_MAX) {
     change = (int) rint(PositionChange( rawxpos, newxpos ) * 
 			PlayerRobotParams[param_idx].DistConvFactor);
     if (abs(change)>100)
@@ -182,7 +182,7 @@ void SIP::Parse( unsigned char *buffer )
   newypos = ((buffer[cnt] | (buffer[cnt+1] << 8))
 	     & 0xEFFF) % 4096; /* 15 ls-bits */
 
-  if (ypos!=MAXINT) {
+  if (ypos!=INT_MAX) {
     change = (int) rint(PositionChange( rawypos, newypos ) *
 			PlayerRobotParams[param_idx].DistConvFactor);
     if (abs(change)>100)
