@@ -16,11 +16,12 @@ test_SOURCES = test.c \
                test_camera.c \
                test_comms.c \
                test_fiducial.c \
+               test_gps.c \
+							 test_joystick.c \
                test_laser.c \
                test_localize.c \
-               test_gps.c \
-               test_map.c \
                test_log.c \
+               test_map.c \
                test_motor.c \
                test_position.c \
                test_position2d.c \

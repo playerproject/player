@@ -346,6 +346,7 @@ AC_OUTPUT(Makefile
           server/drivers/service_adv/Makefile
           server/drivers/blobfinder/shapetracker/Makefile
           server/drivers/map/Makefile
+          server/drivers/joystick/Makefile 
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile

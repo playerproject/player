@@ -203,6 +203,10 @@ void Aodv_Register(DriverTable *table);
 void Iwspy_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_LINUXJOYSTICK
+void LinuxJoystick_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_REB
 void REBPosition_Register(DriverTable *table);
 void REBIR_Register(DriverTable *table);
@@ -412,6 +416,7 @@ player_interface_t interfaces[] = {
   {PLAYER_PLANNER_CODE, PLAYER_PLANNER_STRING, "wavefront"},
   {PLAYER_POSITION2D_CODE, PLAYER_POSITION2D_STRING, "null"},
   {PLAYER_MOTOR_CODE, PLAYER_MOTOR_STRING, "null"},
+  {PLAYER_JOYSTICK_CODE, PLAYER_JOYSTICK_STRING, "linuxjoystick"},
   {0,NULL,NULL}
 };
 
@@ -662,6 +667,10 @@ register_devices()
 
 #ifdef INCLUDE_IWSPY
   Iwspy_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LINUXJOYSTICK
+  LinuxJoystick_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_REB

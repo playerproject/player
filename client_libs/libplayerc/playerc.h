@@ -693,6 +693,48 @@ int playerc_gps_unsubscribe(playerc_gps_t *device);
  ** end section
  **************************************************************************/
 
+
+/***************************************************************************
+ ** begin section joystick
+ **************************************************************************/
+
+/** [Synopsis] The {\tt joystick} proxy provides an interface to
+joysticks. */
+
+/** [Data] */
+
+/** Joystick device data. */
+typedef struct _playerc_joystick_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+  
+  /** Scaled joystick position (0 = centered, 1 = hard over). */
+  double px, py;
+
+  /** Button states (bitmask) */
+  double buttons;
+} playerc_joystick_t;
+
+/** [Methods] */
+
+/** Create a joystick device proxy. */
+playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index);
+
+/** Destroy a joystick device proxy. */
+void playerc_joystick_destroy(playerc_joystick_t *device);
+
+/** Subscribe to the joystick device */
+int playerc_joystick_subscribe(playerc_joystick_t *device, int access);
+
+/** Un-subscribe from the joystick device */
+int playerc_joystick_unsubscribe(playerc_joystick_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
+
+
 /***************************************************************************
  ** begin section map
  **************************************************************************/
