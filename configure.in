@@ -117,7 +117,13 @@ AC_SUBST(PYTHON_INTERP)
 dnl do we have pkg-config?
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 if test "PKG_CONFIG" = "no"; then
-  AC_MSG_RESULT([pkg-config not available.])
+  dnl need this line as a noop, because the AC_DEFUN below doesn't produce any
+  dnl text, resulting in an empty body of this if
+  AC_MSG_RESULT([])
+  dnl if pkg-config is not available, define its autoconf macro to invoke
+  dnl the given 'action-if-not-found' (4th arg), to act as if we looked and 
+  dnl couldn't find the package
+  AC_DEFUN([PKG_CHECK_MODULES],$4)
 fi
 
 dnl Set up RTK2 for the various GUIs 
@@ -136,10 +142,12 @@ if test "$RTK_USE_PKG_CONFIG" = "no"; then
     RTK_CHECK
     dnl we set the vars that pkg-config would have created
     dnl TODO - remove these duplicate vars
-    RTK_CFLAGS=$RTK_CPPFLAGS
-    RTK_LIBS=$RTK_LDADD
+    if test "x$with_rtk" = "xyes"; then
+      RTK_CFLAGS=$RTK_CPPFLAGS
+      RTK_LIBS=$RTK_LDADD
+    fi
     AC_SUBST(RTK_CFLAGS)
-    AC_SUBST(RTK_CLIBS)
+    AC_SUBST(RTK_LIBS)
 else
   dnl pkg-config is available, so we use it	
   dnl add prefix to the pkg-config path in case RTK or Stage was
@@ -167,7 +175,7 @@ else
       RTK_LIBS=$RTK_LDADD
     fi
     AC_SUBST(RTK_CFLAGS)
-    AC_SUBST(RTK_CLIBS)
+    AC_SUBST(RTK_LIBS)
   fi
 
   dnl lots of drivers use CPP flags instead of CFLAGS because that's 
