@@ -50,8 +50,11 @@
 
 #include <stdio.h>
 
-// Errors get written here
-extern char playerc_errorstr[];
+// Use this function to read the error string
+extern const char *playerc_error_str(void);
+
+// Use this function to set the error string
+extern char *playerc_error_set_str(void);
 
 // Useful error macros.
 // These print out the error
@@ -68,13 +71,13 @@ extern char playerc_errorstr[];
 
 // Useful error macros.
 // These ones store the error message.
-#define PLAYERC_ERR(msg)         sprintf(playerc_errorstr, msg)
-#define PLAYERC_ERR1(msg, a)     sprintf(playerc_errorstr, msg, a)
-#define PLAYERC_ERR2(msg, a, b)  sprintf(playerc_errorstr, msg, a, b)
-#define PLAYERC_ERR3(msg, a, b, c)  sprintf(playerc_errorstr, msg, a, b, c)
-#define PLAYERC_WARN(msg)        sprintf(playerc_errorstr, "warning : " msg)
-#define PLAYERC_WARN1(msg, a)    sprintf(playerc_errorstr, "warning : " msg, a)
-#define PLAYERC_WARN2(msg, a, b) sprintf(playerc_errorstr, "warning : " msg, a, b)
+#define PLAYERC_ERR(msg)         sprintf(playerc_error_set_str(), msg)
+#define PLAYERC_ERR1(msg, a)     sprintf(playerc_error_set_str(), msg, a)
+#define PLAYERC_ERR2(msg, a, b)  sprintf(playerc_error_set_str(), msg, a, b)
+#define PLAYERC_ERR3(msg, a, b, c)  sprintf(playerc_error_set_str(), msg, a, b, c)
+#define PLAYERC_WARN(msg)        sprintf(playerc_error_set_str(), "warning : " msg)
+#define PLAYERC_WARN1(msg, a)    sprintf(playerc_error_set_str(), "warning : " msg, a)
+#define PLAYERC_WARN2(msg, a, b) sprintf(playerc_error_set_str(), "warning : " msg, a, b)
 
 
 // DEBUG macros
