@@ -1699,10 +1699,10 @@ This interface has no commands or configuration requests.
 @{
 */
 
-/* Image dimensions. */
+/** Image dimensions. */
 #define PLAYER_CAMERA_IMAGE_WIDTH 640
 #define PLAYER_CAMERA_IMAGE_HEIGHT 480
-#define PLAYER_CAMERA_IMAGE_SIZE (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
+#define PLAYER_CAMERA_IMAGE_SIZE (640 * 480 * 4)
 
 /** Image format : 8-bit monochrome. */
 #define PLAYER_CAMERA_FORMAT_MONO8  1
