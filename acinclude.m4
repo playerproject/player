@@ -41,12 +41,14 @@ dnl
 AC_DEFUN([PLAYER_ADD_DRIVER], [
 AC_DEFUN([name_caps],translit($1,[a-z],[A-Z]))
 
-dnl TESTING
-dnl AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)
-
+user_override=no
 ifelse($3,[yes],
-  [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],,enable_$1=yes)],
-  [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)])
+  [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],user_override=yes,enable_$1=yes)],
+  [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],user_override=yes,enable_$1=no)])
+
+if test "x$enable_alldrivers" = "xno" -a "x$user_override" = "xno"; then
+  enable_$1=no
+fi
 
 failed_header_check=no
 failed_package_check=no
@@ -109,7 +111,7 @@ PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $name_caps[_LIBPATH]"
 AC_SUBST(name_caps[_EXTRA_CPPFLAGS])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
 
-])        
+])
 
 AC_DEFUN([PLAYER_DRIVERTESTS], [
 
@@ -309,9 +311,15 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
+user_override=no
+disable_reason="disabled by user"
 AC_ARG_ENABLE(amcl,
 [  --disable-amcl           Don't compile the amcl driver],
-  disable_reason="disabled by user",enable_amcl=yes)
+  user_override=yes,
+  enable_amcl=yes)
+if test "x$enable_alldrivers" = "xno" -a "x$user_override" = "xno"; then
+  enable_amcl=no
+fi
 if test "x$enable_amcl" = "xyes"; then
 
   PKG_CHECK_MODULES(GSL,gsl,
@@ -359,9 +367,15 @@ dnl Find Gazebo
 AC_DEFUN([GAZEBO_FIND],[
 
 dnl Include Gazebo?
+user_override=no
 AC_ARG_ENABLE(gazebo,
-[  --disable-gazebo           Don't compile the Gazebo driver],,
+[  --disable-gazebo           Don't compile the Gazebo driver],
+user_override=yes,
 enable_gazebo=yes)
+
+if test "x$enable_alldrivers" = "xno" -a "x$user_override" = "xno"; then
+  enable_gazebo=no
+fi
 
 if test "x$enable_gazebo"="xno"; then
   gazebo_disable_reason="disabled by user"
