@@ -6,6 +6,7 @@
 #ifndef _REPLACE_H
 #define _REPLACE_H
 
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif

@@ -4,7 +4,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/server -I$(srcdir)/../c
 
 lib_LIBRARIES = libplayerclient.a
 
-libplayerclient_a_LIBADD = ../c/playercclient.o
+libplayerclient_a_LIBADD = ../c/playercclient.o 
 libplayerclient_a_DEPENDENCIES = ../c/playercclient.o
 
 libplayerclient_a_SOURCES =   commsproxy.cc \
