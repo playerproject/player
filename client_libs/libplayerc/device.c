@@ -37,8 +37,8 @@ void playerc_device_term(playerc_device_t *device)
 // Subscribe/unsubscribe the device
 int playerc_device_subscribe(playerc_device_t *device, int access)
 {
-  if (playerc_client_subscribe(device->client, device->code,
-                               device->index, access) != 0)
+  if (playerc_client_subscribe(device->client, device->code, device->index, access,
+                               device->drivername, sizeof(device->drivername)) != 0)
     return -1;
   device->subscribed = 1;
   return 0;

@@ -51,7 +51,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   snprintf(section, sizeof(section), "laser:%d", index);
 
   // Construct the menu
-  snprintf(label, sizeof(label), "laser %d", index);
+  snprintf(label, sizeof(label), "laser %d (%s)", index, laser->proxy->info.drivername);
   laser->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   laser->subscribe_item = rtk_menuitem_create(laser->menu, "Subscribe", 1);
   laser->res025_item = rtk_menuitem_create(laser->menu, "0.25 deg resolution", 1);
@@ -160,13 +160,16 @@ void laser_update_config(laser_t *laser)
 
   // Set the laser configuration.
   if (update)
+  {
     if (playerc_laser_set_config(laser->proxy, min, max, res, intensity) != 0)
       PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
 
-  // Get the laser configuration (in case anyone else has changed it).
-  if (playerc_laser_get_config(laser->proxy, &min, &max, &res, &intensity) != 0)
-    PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+    // Get the laser configuration (in case anyone else has changed it).
+    //if (playerc_laser_get_config(laser->proxy, &min, &max, &res, &intensity) != 0)
+    //  PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+  }
 
+  res = (int) (laser->proxy->scan_res * 180 / M_PI * 100);
   rtk_menuitem_check(laser->res025_item, (res == 25));
   rtk_menuitem_check(laser->res050_item, (res == 50));
   rtk_menuitem_check(laser->res100_item, (res == 100));
@@ -225,7 +228,7 @@ void laser_draw(laser_t *laser)
       points[1][1] = r * sin(b - res);
       points[2][0] = r * cos(b + res);
       points[2][1] = r * sin(b + res);
-      rtk_fig_polygon(laser->scan_fig, 0, 0, 0, 3, points);
+      rtk_fig_polygon(laser->scan_fig, 0, 0, 0, 3, points, 1);
     }
 
     // Draw in the range scan (occupied space)

@@ -107,6 +107,7 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
     device->intensity[i] = data->intensity[i];
     b += db;
   }
+  device->scan_res = db;
   device->scan_count = data->range_count;
 }
 
@@ -136,8 +137,8 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
 
 
 // Get the laser configuration.
-int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double *max_angle,
-                              int *resolution, int *intensity)
+int playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double *max_angle,
+                             int *resolution, int *intensity)
 {
   int len;
   player_laser_config_t config;

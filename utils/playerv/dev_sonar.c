@@ -165,8 +165,7 @@ void sonar_draw(sonar_t *sonar)
     points[1][1] = dr * sin(-da);
     points[2][0] = dr * cos(+da);
     points[2][1] = dr * sin(+da);
-    rtk_fig_polygon(sonar->scan_fig[i], 0, 0, 0, 3, points);
-
+    rtk_fig_polygon(sonar->scan_fig[i], 0, 0, 0, 3, points, 1);
   }
 }
 

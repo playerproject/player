@@ -142,6 +142,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   unsigned short requesttype = 0;
   bool unlock_pending=false;
   bool devlistrequest=false;
+  bool driverinforequest=false;
   bool devicerequest=false;
   CDevice* devicep;
   player_device_req_t req;
@@ -227,7 +228,15 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                                 (player_device_devlist_t*) (replybuffer + sizeof(player_msghdr_t)));
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
-              
+
+              // Process driver info requests.
+            case PLAYER_PLAYER_DRIVERINFO_REQ:
+              driverinforequest = true;
+              HandleDriverInfoRequest((player_device_driverinfo_t*) payload,
+                                      (player_device_driverinfo_t*) (replybuffer + sizeof(player_msghdr_t)));
+              requesttype = PLAYER_MSGTYPE_RESP_ACK;
+              break;
+
             case PLAYER_PLAYER_DEV_REQ:
               devicerequest = true;
               if(payload_size < sizeof(player_device_req_t))
@@ -411,6 +420,13 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     {
       replysize = sizeof(player_device_devlist_t);
     }
+
+    /* if it was a player device list request... */
+    else if(driverinforequest)
+    {
+      replysize = sizeof(player_device_driverinfo_t);
+    }
+
     /* if it was a player device request, then the reply should
      * reflect what permissions were granted for the indicated devices */
     else if(devicerequest)
@@ -570,6 +586,31 @@ void CClientData::HandleListRequest(player_device_devlist_t *req,
   rep->subtype = htons(rep->subtype);
   rep->device_count = htons(rep->device_count);
 
+  return;
+}
+
+
+// Handle driver info requests.
+void CClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
+                                          player_device_driverinfo_t *rep)
+{
+  char *driver_name;
+  player_device_id_t id;
+
+  id.code = ntohs(req->id.code);
+  id.index = ntohs(req->id.index);
+  id.port = ntohs(req->id.port);
+
+  driver_name = deviceTable->GetDriver(id);
+  if (driver_name)
+    strcpy(rep->driver_name, driver_name);
+  else
+    strcpy(rep->driver_name, "unknown");
+
+  rep->subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
+  req->id.code = req->id.code;
+  req->id.index = req->id.index;
+  req->id.port = req->id.port;
   return;
 }
 
