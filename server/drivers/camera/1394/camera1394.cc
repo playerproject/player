@@ -42,6 +42,8 @@
 #include "drivertable.h"
 #include "playertime.h"
 
+#include "jpegcompress.h"
+
 #define NUM_DMA_BUFFERS 8
 
 // Time for timestamps
@@ -178,7 +180,8 @@ class Camera1394 : public CDevice
   // Data to send to server
   private: player_camera_data_t data;
 
-
+  private: const char *imageFormat;
+  private: double imageQuality;
 };
 
 
@@ -257,7 +260,10 @@ Camera1394::Camera1394(char* interface, ConfigFile* cf, int section)
      
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
-  
+
+  this->imageFormat = cf->ReadString(section, "image_format", "ppm");
+  this->imageQuality = cf->ReadFloat(section, "image_quality", 0.8);
+
   // display a test pattern?
   this->test = cf->ReadInt(section, "test", 0);
   if (this->test) {
@@ -318,7 +324,7 @@ int Camera1394::Setup()
   // The '1' parameters is the dropFrames parameter.
   if(DC1394_SUCCESS != dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
         this->format, this->mode, SPEED_400, this->frameRate, 
-        NUM_DMA_BUFFERS, 1, this->device, &this->camera))
+        NUM_DMA_BUFFERS, 1, 1, this->device, &this->camera))
   {
     PLAYER_ERROR("Camera1394 : Unable to setup camera.");
     return -1;
@@ -489,8 +495,18 @@ void Camera1394::WriteData()
     this->data.height = htons(this->height);
     this->data.depth = 8;
     this->data.image_size = htonl(this->width * this->height);
-    memcpy(this->data.image, this->testImage, this->width*this->height);
-    size = sizeof(this->data) - sizeof(this->data.image) + this->width * this->height;
+
+    if (strcmp(this->imageFormat,"jpg")==0)
+    {
+      jpeg_compress(this->testImage, &this->data, (int)(this->imageQuality*100));
+      size = sizeof(this->data) - sizeof(this->data.image) + 
+             ntohl(this->data.image_size);
+    } else {
+      memcpy(this->data.image, this->testImage, this->width*this->height);
+      size = sizeof(this->data) - sizeof(this->data.image) + 
+             this->width * this->height;
+    }
+
   } else {  
     // Set the image properties
     this->data.width = htons(this->camera.frame_width);
@@ -501,12 +517,20 @@ void Camera1394::WriteData()
 
     this->data.image_size = htonl(this->camera.dma_frame_size);
 
-    // Set the image pixels
-    assert((size_t) this->camera.dma_frame_size <= sizeof(this->data.image));
-    memcpy(this->data.image, this->frame, this->camera.dma_frame_size);
+    if (strcmp(this->imageFormat,"jpg")==0)
+    {
+      jpeg_compress(this->frame, &this->data, (int)(this->imageQuality*100));
+      size = sizeof(this->data) - sizeof(this->data.image) + 
+        ntohl(this->data.image_size);
+    } else {
 
-    // Copy data to server.
-    size = sizeof(this->data) - sizeof(this->data.image) + this->camera.dma_frame_size;
+      // Set the image pixels
+      assert((size_t) this->camera.dma_frame_size <= sizeof(this->data.image));
+      memcpy(this->data.image, this->frame, this->camera.dma_frame_size);
+
+      // Copy data to server.
+      size = sizeof(this->data) - sizeof(this->data.image) + this->camera.dma_frame_size;
+    }
   }
 
   PutData((void*) &this->data, size, this->tsec, this->tusec);

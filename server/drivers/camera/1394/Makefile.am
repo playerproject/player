@@ -1,6 +1,6 @@
 noinst_LIBRARIES = @CAMERA1394_LIB@
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I../jpeg -I$(top_srcdir)/server
 
 EXTRA_LIBRARIES = libcamera1394.a
 
