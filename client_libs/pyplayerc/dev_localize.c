@@ -218,11 +218,9 @@ static PyObject *localize_set_pose(localize_object_t *self, PyObject *args)
   double var[3];
   double cov[3][3];
     
-  puts("calling PyArg_ParseTuple");
   if (!PyArg_ParseTuple(args, "(ddd)(ddd)",
       pose,pose+1,pose+2,var,var+1,var+2))
     return NULL;
-  puts("done");
   self = (localize_object_t*) self;
   memset(cov,0,3*3*sizeof(double));
   cov[0][0] = var[0]*var[0];
