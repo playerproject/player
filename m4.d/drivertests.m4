@@ -67,9 +67,10 @@ PLAYER_ADD_DRIVER([udpbroadcast],[drivers/comms],[yes],)
 PLAYER_ADD_DRIVER([lasercspace],[drivers/laser],[yes],)
 
 PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],
-                  ["-lrfftw -lfftw"],[linux/wireless.h])
+                  [],[linux/wireless.h])
 
-PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[yes],[],[rfftw.h])
+PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[yes],
+                  ["-lrfftw -lfftw"],[rfftw.h])
 
 PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],[],[mobilitycomponents_i.h])
 
