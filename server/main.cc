@@ -1081,7 +1081,8 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
     // created yet.  instead, queue them up for later addition.
     //clientmanager->AddClient(clientdata);
     (*alwayson_devices)[(*num_alwayson_devices)++] = clientdata;
-        
+
+    // What does this do?
     req.code = device->id.code;
     req.index = device->id.index;
     req.access = PLAYER_READ_MODE;

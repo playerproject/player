@@ -153,8 +153,8 @@ void PTU46_Register(DriverTable* table);
 void FlockOfBirds_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_UDPBROADCAST
-void UDPBroadcast_Register(DriverTable* table);
+#ifdef INCLUDE_DUMMY
+void Dummy_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_PASSTHROUGH
@@ -587,8 +587,8 @@ register_devices()
   FlockOfBirds_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_UDPBROADCAST
-  UDPBroadcast_Register(driverTable);
+#ifdef INCLUDE_DUMMY
+  Dummy_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_PASSTHROUGH

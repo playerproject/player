@@ -220,7 +220,8 @@ void ClientManager::AddClient(ClientData* client)
   memset(((char*)data)+strlen((char*)data),0,
         PLAYER_IDENT_STRLEN-strlen((char*)data));
 
-  client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);
+  
+  client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);    
   retval= client->Write(PLAYER_IDENT_STRLEN);
 
   if(retval < 0)

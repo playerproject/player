@@ -162,10 +162,10 @@ class ConfigFile
                                   uint32_t value);
 
 
-  /// Parse the "devices" option in the given section.  Returns 0 if a
-  /// valid "devices" section is found, and -1 otherwise.  If 0 is returned,
-  /// then ids will point to a malloc()ed list of the parsed ids (which
-  /// the caller should free()), in the order they were given.
+  /// Parse the "devices" option in the given section.  On success,
+  /// returns the number of device ids found; on error, returns -1.
+  /// @arg ids will point to a malloc()ed list of the parsed ids
+  /// (which the caller should free()), in the order they were given.
   public: int ParseDeviceIds(int section, player_device_id_t** ids);
   
   /// Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
