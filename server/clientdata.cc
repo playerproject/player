@@ -128,7 +128,7 @@ bool CClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
 
   tmpreq.auth_key[sizeof(tmpreq.auth_key)-1] = '\0';
 
-  if(!strcmp(auth_key,tmpreq.auth_key))
+  if(!strcmp(auth_key,(const char*)tmpreq.auth_key))
     return(true);
   else
     return(false);
@@ -422,7 +422,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       resp.access = FindPermission(id);
 
       bzero(resp.driver_name, sizeof(resp.driver_name));
-      strncpy(resp.driver_name, deviceTable->GetDriver(id), 
+      strncpy((char*)resp.driver_name, deviceTable->GetDriver(id), 
               sizeof(resp.driver_name));
 
       memcpy(replybuffer+sizeof(player_msghdr_t),&resp,
