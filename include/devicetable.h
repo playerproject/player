@@ -36,6 +36,7 @@
 class CDeviceEntry
 {
   public:
+    int port;            // the player tcp port to which this device is tied
     unsigned short code;  // the 'name' by which we identify this kind of device
     unsigned short index;  // which device we mean
     unsigned char access;   // 'r', 'w', or 'a' (others?)
@@ -63,16 +64,17 @@ class CDeviceTable
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
     // returns 0 on success, non-zero on failure (device not added)
-    int AddDevice(unsigned short code, unsigned short index, 
+    int AddDevice(int port, unsigned short code, unsigned short index, 
                   unsigned char access, CDevice* devicep);
 
     // returns the controlling object for the given code (or NULL
     // on failure)
-    CDevice* GetDevice(unsigned short code, unsigned index);
+    CDevice* GetDevice(int port, unsigned short code, unsigned short index);
 
     // returns the code for access ('r', 'w', or 'a') for the given 
     // device, or 'e' on failure
-    unsigned char GetDeviceAccess(unsigned short code, unsigned short index);
+    unsigned char GetDeviceAccess(int port, unsigned short code, 
+                                  unsigned short index);
 };
 
 #endif

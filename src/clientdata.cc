@@ -59,13 +59,15 @@ extern bool player_gerkey;
 
 extern int global_playerport; // used to generate useful output & debug
 
-CClientData::CClientData(char* key) 
+CClientData::CClientData(char* key, int myport) 
 {
   requested = NULL;
   numsubs = 0;
   socket = 0;
   mode = CONTINUOUS;
   frequency = 10;
+
+  port = myport;
 
   readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
   writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
@@ -318,7 +320,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
           // pass the config request on the proper device
           // make sure we've got a non-NULL pointer
-          if((devicep = deviceTable->GetDevice(hdr.device,hdr.device_index)))
+          if((devicep = deviceTable->GetDevice(port,hdr.device,hdr.device_index)))
           {
             devicep->GetLock()->PutConfig(devicep,payload,payload_size);
           }
@@ -334,13 +336,13 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           //puts( "got permissions" );
 
           // check if we can write to this device
-          if((deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'w') ||
-             (deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'a'))
+          if((deviceTable->GetDeviceAccess(port,hdr.device,hdr.device_index) == 'w') ||
+             (deviceTable->GetDeviceAccess(port,hdr.device,hdr.device_index) == 'a'))
 
           {
             //puts( "got access" );
             // make sure we've got a non-NULL pointer
-            if((devicep = deviceTable->GetDevice(hdr.device,hdr.device_index)))
+            if((devicep = deviceTable->GetDevice(port,hdr.device,hdr.device_index)))
             {
               //puts( "got device" );
               if(player_gerkey && (hdr.device == PLAYER_POSITION_CODE))
@@ -497,7 +499,7 @@ void CClientData::MotorStop()
   *( short *)&command[0]=0;
   *( short *)&command[sizeof(short)]=0;
 
-  if((devicep = deviceTable->GetDevice(PLAYER_POSITION_CODE,0)))
+  if((devicep = deviceTable->GetDevice(port,PLAYER_POSITION_CODE,0)))
     devicep->GetLock()->PutCommand(devicep, command, 4);
 }
 
@@ -665,10 +667,10 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
   {
     if(thisub->access=='a' || thisub->access=='r') 
     {
-      if((deviceTable->GetDeviceAccess(thisub->code,thisub->index) == 'a') ||
-         (deviceTable->GetDeviceAccess(thisub->code,thisub->index) == 'r'))
+      if((deviceTable->GetDeviceAccess(port,thisub->code,thisub->index) == 'a') ||
+         (deviceTable->GetDeviceAccess(port,thisub->code,thisub->index) == 'r'))
       {
-        if((devicep = deviceTable->GetDevice(thisub->code,thisub->index)))
+        if((devicep = deviceTable->GetDevice(port,thisub->code,thisub->index)))
         {
           hdr.device = htons(thisub->code);
           hdr.device_index = htons(thisub->index);
@@ -738,7 +740,7 @@ int CClientData::Subscribe( unsigned short code, unsigned short index )
 {
   CDevice* devicep;
 
-  if((devicep = deviceTable->GetDevice(code,index)))
+  if((devicep = deviceTable->GetDevice(port,code,index)))
   {
     return(devicep->GetLock()->Subscribe(devicep));
   }
@@ -755,7 +757,7 @@ void CClientData::Unsubscribe( unsigned short code, unsigned short index )
 {
   CDevice* devicep;
 
-  if((devicep = deviceTable->GetDevice(code,index)))
+  if((devicep = deviceTable->GetDevice(port,code,index)))
   {
     devicep->GetLock()->Unsubscribe(devicep);
   }

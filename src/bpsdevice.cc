@@ -57,6 +57,7 @@
 #include "devicetable.h"
 
 extern CDeviceTable* deviceTable;
+extern int global_playerport; // used to get at devices
 static void *DummyMain(void *data);
 
 
@@ -134,8 +135,8 @@ CBpsDevice::CBpsDevice(int argc, char** argv)
 int CBpsDevice::Setup()
 {
     // Get pointers to other devices
-    this->position = deviceTable->GetDevice(PLAYER_POSITION_CODE, this->index);
-    this->laserbeacon = deviceTable->GetDevice(PLAYER_LASERBEACON_CODE, this->index);
+    this->position = deviceTable->GetDevice(global_playerport,PLAYER_POSITION_CODE, this->index);
+    this->laserbeacon = deviceTable->GetDevice(global_playerport,PLAYER_LASERBEACON_CODE, this->index);
     assert(this->position != NULL);
     assert(this->laserbeacon != NULL);
 

@@ -29,7 +29,7 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
 #
 # definitely build the device-independent objects
 #
-OBS = nodevice.o clientdata.o lock.o pubsub_util.o devicetable.o \
+OBS = clientdata.o lock.o pubsub_util.o devicetable.o \
       clientmanager.o
 
 #
@@ -116,5 +116,3 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/messages.h
 	$(RM) -f $(INSTALL_INCLUDE)/stage.h
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-

@@ -48,6 +48,7 @@ class CDeviceSubscription
     unsigned short index;
     unsigned char access;
 
+
     // record the last time we got fresh data
     uint32_t last_sec, last_usec; 
 
@@ -78,6 +79,9 @@ class CClientData
     unsigned char *writebuffer;
     unsigned char *replybuffer;
     player_msghdr_t hdrbuffer;
+    
+    // added this so Player can manage multiple robots in Stage mode
+    int port;
 
     // state machine for the read loop of this client
     player_read_state_t readstate;
@@ -117,7 +121,7 @@ class CClientData
     pthread_mutex_t socketwrite;
     int socket;
 
-    CClientData(char* key);
+    CClientData(char* key, int port);
     ~CClientData();
 
     int HandleRequests(player_msghdr_t hdr, unsigned char *payload,
