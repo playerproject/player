@@ -281,10 +281,9 @@ AC_ARG_ENABLE(stage1p4,
 disable_reason="disabled by user",
 enable_stage1p4=no)
 if test "x$enable_stage1p4" = "xyes"; then
-  dnl pkg-config is REQUIRED to find the Stage-1.4 C++ library.
-  dnl If we find stage, we also need libpnm for loading bitmaps
+  dnl pkg-config is REQUIRED to find the Stage-1.4 library.
   if test "x$have_pkg_config" = "xyes" ; then
-    PKG_CHECK_MODULES(STAGE1P4, stagecpp >= 1.4, 
+    PKG_CHECK_MODULES(STAGE1P4, stage >= 1.4, 
 	  enable_stage1p4=yes, 
           enable_stage1p4=no
           disable_reason="couldn't find Stage C library (libstage)")
@@ -293,7 +292,7 @@ if test "x$enable_stage1p4" = "xyes"; then
     disable_reason="pkg-config unavailable; maybe you should install it"
   fi
 else
-  disable_reason="disabled by user"
+  disable_reason="disabled by default; use --enable-stage1p4 to enable"
 fi
 if test "x$enable_stage1p4" = "xyes"; then
   AC_DEFINE(INCLUDE_STAGE1P4, 1, [[include the (new) Stage 1.4 drivers]])
@@ -302,14 +301,6 @@ if test "x$enable_stage1p4" = "xyes"; then
   PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/stage1p4/libstage1p4.a"
   PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STAGE1P4_LIBS"
   PLAYER_DRIVERS="$PLAYER_DRIVERS stage1p4"
-
-  dnl Need to explicitly switch to C mode here, cause the test for pnm_init() 
-  dnl always fails if we're in C++ mode.
-  AC_LANG_SAVE
-  AC_LANG_C
-  AC_CHECK_LIB(pnm, pnm_init)
-  AC_LANG_RESTORE
-
 else
   PLAYER_NODRIVERS="$PLAYER_NODRIVERS:stage1p4 -- $disable_reason"
 fi
