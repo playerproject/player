@@ -192,7 +192,7 @@ CDevice* LaserVisualBarcode_Init(char* interface, ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
   {
-    PLAYER_ERROR1("driver \"laserreflector\" does not support interface \"%s\"\n",
+    PLAYER_ERROR1("driver \"laservisualbarcode\" does not support interface \"%s\"\n",
                   interface);
     return (NULL);
   }
@@ -375,7 +375,7 @@ int LaserVisualBarcode::HandleRequests()
   {
     switch (request[0])
     {
-      case PLAYER_LASER_GET_GEOM:
+      case PLAYER_FIDUCIAL_GET_GEOM:
         HandleGetGeom(client, request, len);
         break;
 
