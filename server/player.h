@@ -526,7 +526,7 @@ typedef struct player_laser_data
 } __attribute__ ((packed)) player_laser_data_t;
 
 
-/** [Commands]
+/** [Command]
     This device accepts no commands.
 */
 
@@ -546,7 +546,6 @@ typedef struct player_laser_geom
 
   /** Laser dimensions (mm, mm). */
   int16_t size[2];
-  
 } __attribute__ ((packed)) player_laser_geom_t;
 
 
