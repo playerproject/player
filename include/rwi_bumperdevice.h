@@ -43,14 +43,12 @@ public:
 	
 private:
 
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	MobilityGeometry::PointState_var bumper_state;
-	#endif // USE_MOBILITY
+#endif // USE_MOBILITY
+	
 	// specify which bumper set to use
 	bool upper;
-	
-	// number of bumpers in the set
-	unsigned int bumper_count;
 };
 
 #endif // _RWI_BUMPERDEVICE_H

@@ -21,9 +21,6 @@
  *
  */
 
-#define PLAYER_ENABLE_MSG 1
-#define PLAYER_ENABLE_TRACE 1
-
 #include <rwidevice.h>
 #include <playertime.h>
 #include <devicetable.h>
@@ -52,6 +49,11 @@ CRWIDevice::CRWIDevice(int argc, char *argv[],
 	if (rwi_device_count == 0) {
 		PLAYER_TRACE0("Initializing helper pointer\n");
 		helper = new mbyClientHelper(argc, argv);
+		if (helper == NULL) {
+			fprintf(stderr, "Unable to allocate RWI device helper. "
+			        " Connections will fail.  Is your RWI-provided name"
+			        " server running?  (You should probably disconnect.)\n");
+		}
 	}
 	#endif				// USE_MOBILITY
 
@@ -59,22 +61,16 @@ CRWIDevice::CRWIDevice(int argc, char *argv[],
 	pthread_mutex_unlock(&rwi_counter_mutex);
 	
 	#ifdef USE_MOBILITY
-	bool name_found = false;
-	strcpy(name, "NoName");
+	strncpy(name, RWI_ROBOT_NAME_DEFAULT, RWI_ROBOT_NAME_MAX);
 	
 	// parse cmd line args to find name
 	for (int i = 0; i < argc; i++) {
-		if (!strcmp(argv[i], "name") && (i+1 < argc)) {
-			strcpy(name, argv[++i]);;
-			name_found = true;
+		if (!strcmp(argv[i], "name") && (++i < argc)) {
+			strncpy(name, argv[i], RWI_ROBOT_NAME_MAX);
+			// just in case:
+			name[sizeof(name)-1] = '\0';
+			name_provided = true;
 		}
-	}
-	
-	if (!name_found) {
-		fprintf(stderr, "Unable to locate robot name in device argument"
-		        " string.  Mobility connections MAY fail.  Please pass robot"
-		        " name in the form: -rwi_foo:0 \"name B21R"
-		        " extra_option\"\n");
 	}
 	#endif				// USE_MOBILITY
 }
@@ -98,14 +94,26 @@ int
 CRWIDevice::RWIConnect (CORBA::Object_ptr *corba_ptr, const char *path) const
 {
 	char full_path[RWI_MOBILITY_PATH_MAX];
-	//FIXME: does snprintf count the '\0'?
-	snprintf(full_path, RWI_MOBILITY_PATH_MAX, "%s%s", name, path);
+	
+	if (!name_provided) {
+		fprintf(stderr, "Robot name was not passed in device argument; using"
+		        " default name \"%s\".  Mobility connections MAY fail."
+		        "  Please pass robot name in the form: -rwi_foo:0 \"name"
+		        " B21R extra_options\"\n", RWI_ROBOT_NAME_DEFAULT);
+	}
+	
+	if (snprintf(full_path, RWI_MOBILITY_PATH_MAX, "%s%s", name, path) < 0) {
+		PLAYER_ERROR2("Mobility path:\n\t%s%s\n too long.  Please increase"
+		              " RWI_MOBILITY_PATH_MAX.\n", name, path);
+		return -1;
+	}
 	
 	try {
 	    *corba_ptr = helper->find_object(full_path);
 	    return 0;
 	} catch(...) {
-	    fprintf(stderr, "Unable to locate device %s for robot %s.\n",
+	    fprintf(stderr, "Unable to locate device %s for robot %s.  Is your"
+	            " RWI-provided base server running?\n",
 	            path, name);
 	    return -1;
 	}

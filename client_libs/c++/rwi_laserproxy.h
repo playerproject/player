@@ -44,6 +44,16 @@ public:
 
     // these methods are the user's interface to this device
 
+	/** Enable/disable the laser.
+        Set {\tt state} to 1 to enable, 0 to disable.
+        Note that when laser is disabled the client will still receive laser
+        data, but the ranges will always be the last value read from the
+        laser before it was disabled.
+        Returns 0 on success, -1 if there is a problem.
+     */
+    int SetLaserState (const unsigned char state) const;
+
+
     // returns the local rectangular coordinate of the i'th beam strike
     int CartesianCoordinate (const int i, int *x, int *y) const;
 

@@ -54,12 +54,12 @@ RWISonarProxy::FillData(player_msghdr_t hdr, const char *buffer)
     if (hdr.size != sizeof(player_sonar_data_t)) {
 		if (player_debug_level(-1) >= 1)
 	    	fprintf(stderr,
-		    	"WARNING: rwi_sonarproxy expected %d bytes of sonar data, but "
-		    	"received %d. Unexpected results may ensue.\n",
+		    	"WARNING: rwi_sonarproxy expected %d bytes of sonar data, but"
+		    	" received %d. Unexpected results may ensue.\n",
 		    	sizeof(player_sonar_data_t), hdr.size);
     }
 
-    bzero(ranges, sizeof(ranges));
+    memset(ranges, 0, sizeof(ranges));
     range_count = ntohs(((player_sonar_data_t *) buffer)->range_count);
     for (size_t i = 0; i < range_count; i++) {
 		ranges[i] = ntohs(((player_sonar_data_t *) buffer)->ranges[i]);
@@ -71,8 +71,13 @@ void
 RWISonarProxy::Print()
 {
     printf("#RWISonar(%d:%d) - %c\n", device, index, access);
-    printf("%d\n", range_count);
-    for (size_t i = 0; i < range_count; i++)
-		printf("%u ", ranges[i]);
-    puts("\n");
+    if (range_count <= PLAYER_NUM_SONAR_SAMPLES) {
+	    printf("%d\n", range_count);
+    	for (unsigned int i = 0; i < range_count; i++)
+			printf("%u ", ranges[i]);
+	} else {
+		// apparently invalid data packet
+		puts("0");
+	}
+    puts(" ");
 }

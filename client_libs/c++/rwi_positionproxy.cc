@@ -61,7 +61,7 @@ RWIPositionProxy::SetMotorState(const unsigned char state) const
 
 	player_rwi_config_t cfg;
 
-	cfg.request = PLAYER_RWI_POSITION_MOTOR_POWER_REQ;
+	cfg.request = PLAYER_POSITION_MOTOR_POWER_REQ;
 	cfg.value = state;
 
 
@@ -82,7 +82,7 @@ RWIPositionProxy::ResetOdometry() const
 
 	player_rwi_config_t cfg;
 
-	cfg.request = PLAYER_RWI_POSITION_RESET_ODO_REQ;
+	cfg.request = PLAYER_POSITION_RESET_ODOM_REQ;
 
 	return(client->Request(PLAYER_RWI_POSITION_CODE, index,
            (const char *) &cfg, sizeof(cfg)));
@@ -116,6 +116,5 @@ RWIPositionProxy::Print()
 	puts("#xpos\typos\ttheta\tspeed\tturn\tcompass\tstalls");
 	printf("%d\t%d\t%d\t%d\t%d\t%u\t%d",
 	       xpos,ypos,theta,speed,turn_rate,compass,stalls);
-	puts("\n");
+	puts(" ");
 }
-

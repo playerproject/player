@@ -131,6 +131,7 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
                    $(INCLUDE_RWI_POSITION) \
                    $(INCLUDE_RWI_SONAR) $(INCLUDE_RWI_LASER) \
                    $(INCLUDE_RWI_BUMPER) $(INCLUDE_RWI_POWER)
+                   #$(USE_MOBILITY)
 
 #######################################
 
