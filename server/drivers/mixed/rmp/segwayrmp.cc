@@ -164,23 +164,31 @@ CDevice*
 SegwayRMP::Instance(ConfigFile* cf, int section)
 {
   if(!SegwayRMP::instance)
-    SegwayRMP::instance = new SegwayRMP(cf,section);
+    SegwayRMP::instance = new SegwayRMP();
+
+  ((SegwayRMP*)SegwayRMP::instance)->ProcessConfigFile(cf,section);
 
   return(SegwayRMP::instance);
 }
 
-SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
+SegwayRMP::SegwayRMP()
     : CDevice(sizeof(player_segwayrmp_data_t), 
               sizeof(player_segwayrmp_cmd_t), 10, 10)
 {
+  this->caniotype = "kvaser";
+  this->max_xspeed = RMP_DEFAULT_MAX_XSPEED;
+  this->max_yawspeed = RMP_DEFAULT_MAX_YAWSPEED;
+}
+
+void
+SegwayRMP::ProcessConfigFile(ConfigFile* cf, int section)
+{
   this->canio = NULL;
-  this->caniotype = cf->ReadString(section, "canio", "kvaser");
-  this->max_xspeed = cf->ReadInt(section, "max_xspeed", 
-                                 RMP_DEFAULT_MAX_XSPEED);
+  this->caniotype = cf->ReadString(section, "canio", this->caniotype);
+  this->max_xspeed = cf->ReadInt(section, "max_xspeed", this->max_xspeed);
   if(this->max_xspeed < 0)
     this->max_xspeed = -this->max_xspeed;
-  this->max_yawspeed = cf->ReadInt(section, "max_yawspeed", 
-                                   RMP_DEFAULT_MAX_YAWSPEED);
+  this->max_yawspeed = cf->ReadInt(section, "max_yawspeed", this->max_yawspeed);
   if(this->max_yawspeed < 0)
     this->max_yawspeed = -this->max_yawspeed;
 }
@@ -312,7 +320,19 @@ SegwayRMP::Main()
    
     if(GetCommand((unsigned char *)&cmd, sizeof(cmd)))
     {
-      if(cmd.code == PLAYER_POSITION_CODE)
+      // zero the command buffer, so that we can timeout if a client doesn't
+      // send commands for a while
+      Lock();
+      this->device_used_commandsize = 0; 
+      Unlock();
+
+      if(!cmd.code)
+      {
+        timeout_counter=0;
+        xspeed = 0;
+        yawspeed = 0;
+      }
+      else if(cmd.code == PLAYER_POSITION_CODE)
       {
         // convert to host order; let MakeVelocityCommand do the rest
         xspeed = ntohl(cmd.position_cmd.xspeed);
@@ -331,16 +351,11 @@ SegwayRMP::Main()
         PLAYER_ERROR1("can't parse commands for interface %d", cmd.code);
         xspeed = 0;
         yawspeed = 0;
+        timeout_counter=0;
       }
     }
     else
       timeout_counter++;
-
-    // zero the command buffer, so that we can timeout if a client doesn't
-    // send commands for a while
-    Lock();
-    this->device_used_commandsize = 0; 
-    Unlock();
 
     if(timeout_counter >= RMP_TIMEOUT_CYCLES)
     {
@@ -725,7 +740,11 @@ SegwayRMP::Read()
 
           data.position3d_data.stall = 0;
           
-          // TODO: fill in data.power_data
+          // fill in power data.  the RMP returns a percentage of full,
+	  // and the specs for the HT say that it's a 72 volt system.  assuming
+	  // that the RMP is the same, we'll convert to decivolts for Player.
+	  data.power_data.charge = 
+	    ntohs((uint16_t)rint(data_frame[channel].battery * 7.2));
 
           firstread = false;
         }
