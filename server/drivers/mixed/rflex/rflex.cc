@@ -1,5 +1,4 @@
-/*
- *  Player - One Hell of a Robot Server
+/*  Player - One Hell of a Robot Server
  *  Copyright (C) 2000  
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
  *                      
@@ -727,13 +726,15 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp) {
     mm_odo_y += mm_displacement * sin(rad_odo_theta);
     d->position.xpos = htonl((long) mm_odo_x);
     d->position.ypos = htonl((long) mm_odo_y);
+    while(rad_odo_theta<0)
+      rad_odo_theta+=2*M_PI;
     d->position.yaw = htonl((long) RAD2DEG_CONV(rad_odo_theta) %360);
 
     d->position.xspeed = htonl((long) mmPsec_t_vel);
     d->position.yawspeed = htonl((long) RAD2DEG_CONV(radPsec_r_vel));
     //TODO - get better stall information (battery draw?)
-    d->position.stall = (unsigned char) 0;
   }
+  d->position.stall = false;
 
   arb_last_range_position = arb_new_range_position;
   arb_last_bearing_position = arb_new_bearing_position;
