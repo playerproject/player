@@ -192,7 +192,17 @@ void ClientManager::AddClient(ClientData* client)
 
   // add it to the array
   ufds[num_clients].fd = client->socket;
-  ufds[num_clients++].events = POLLIN;
+  if(!(client->socket))
+  {
+    // it's a dummy, representing an internal subscription, so don't set the
+    // events field.
+    ufds[num_clients++].events = 0;
+  }
+  else
+  {
+    // we're interested in read/accept events.
+    ufds[num_clients++].events = POLLIN;
+  }
     
   // try to write the ident string to the client, and kill the client if
   // it fails
@@ -440,6 +450,10 @@ ClientManagerTCP::Write()
 
   for(int i=0;i<num_clients;i++)
   {
+    // if this is a dummy, skip it.
+    if(!(clients[i]->socket))
+      continue;
+
     // if we're waiting for an authorization on this client, then skip it
     if(clients[i]->auth_pending)
       continue;

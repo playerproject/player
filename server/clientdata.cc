@@ -642,7 +642,7 @@ void ClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
 }
 
 
-void ClientData::UpdateRequested(player_device_req_t req)
+unsigned char ClientData::UpdateRequested(player_device_req_t req)
 {
   CDeviceSubscription* thisub;
   CDeviceSubscription* prevsub;
@@ -764,6 +764,8 @@ void ClientData::UpdateRequested(player_device_req_t req)
     printf("Unknown unused request \"%x:%x:%c\".\n",
                     req.code, req.index, req.access);
   }
+
+  return(thisub->access);
 }
 
 unsigned char 
