@@ -9,7 +9,8 @@ include ../../../Makefile.common
 .SUFFIXES: .c .o
 
 TEST = test
-OBS = test.o test_broadcast.o test_laser.o test_lbd.o  \
+OBS = test.o \
+			test_bps.o test_broadcast.o test_laser.o test_lbd.o  \
 			test_position.o test_ptz.o test_vision.o
 
 INCLUDES = -I. -I.. -I../../../include

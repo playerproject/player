@@ -77,8 +77,8 @@ int playerc_ptz_unsubscribe(playerc_ptz_t *device)
 void playerc_ptz_putdata(playerc_ptz_t *device, player_msghdr_t *header,
                          player_ptz_data_t *data, size_t len)
 {
-  device->pan = ntohs(data->pan) * M_PI / 180;
-  device->tilt = ntohs(data->tilt) * M_PI / 180;
+  device->pan = ((short) ntohs(data->pan)) * M_PI / 180;
+  device->tilt = ((short) ntohs(data->tilt)) * M_PI / 180;
   device->zoom = ntohs(data->zoom);
 }
 

@@ -510,9 +510,13 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, int zoom);
 
 // Description of a single blob.
 typedef struct
-{
+{  
   // The blob "channel"; i.e. the color class this blob belongs to.
   int channel;
+
+  // A descriptive color for the blob.  Stored as packed RGB 32, i.e.:
+  // 0x00RRGGBB.
+  uint32_t color;
 
   // Blob centroid (image coordinates).
   int x, y;
