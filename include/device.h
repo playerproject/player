@@ -123,13 +123,13 @@ class CDevice
     virtual size_t GetCommand( unsigned char *, size_t );
     virtual void PutCommand( unsigned char * , size_t );
     
-    virtual size_t GetConfig(CClientData** client, unsigned char *, size_t);
-    virtual int PutConfig(CClientData* client, unsigned char * , size_t);
+    virtual size_t GetConfig(void** client, void *data, size_t len);
+    virtual int PutConfig(void* client, void* data, size_t len);
 
-    virtual int GetReply(CClientData* client, unsigned short* type,
-                         struct timeval* ts, unsigned char *, size_t);
-    virtual int PutReply(CClientData* client, unsigned short type,
-                         struct timeval* ts, unsigned char * , size_t);
+    virtual int GetReply(void* client, unsigned short* type,
+                         struct timeval* ts, void* data, size_t len);
+    virtual int PutReply(void* client, unsigned short type,
+                         struct timeval* ts, void* data, size_t len);
 
     /* start a thread that will invoke Main() */
     virtual void StartThread();

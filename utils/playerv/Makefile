@@ -62,18 +62,23 @@ clean:
 
 dev_laserbeacon.o: playerv.h rtk2/rtk.h
 dev_laserbeacon.o: ../../client_libs/libplayerc/playerc.h
-dev_laserbeacon.o: ../../include/messages.h ../../include/playercommon.h
-dev_laserbeacon.o: ../../include/defaults.h error.h opt.h
+dev_laserbeacon.o: ../../include/player.h ../../include/messages.h
+dev_laserbeacon.o: ../../include/playercommon.h ../../include/defaults.h
+dev_laserbeacon.o: error.h opt.h
 dev_laser.o: playerv.h rtk2/rtk.h ../../client_libs/libplayerc/playerc.h
-dev_laser.o: ../../include/messages.h ../../include/playercommon.h
-dev_laser.o: ../../include/defaults.h error.h opt.h
+dev_laser.o: ../../include/player.h ../../include/messages.h
+dev_laser.o: ../../include/playercommon.h ../../include/defaults.h error.h
+dev_laser.o: opt.h
 dev_position.o: playerv.h rtk2/rtk.h ../../client_libs/libplayerc/playerc.h
-dev_position.o: ../../include/messages.h ../../include/playercommon.h
-dev_position.o: ../../include/defaults.h error.h opt.h
+dev_position.o: ../../include/player.h ../../include/messages.h
+dev_position.o: ../../include/playercommon.h ../../include/defaults.h error.h
+dev_position.o: opt.h
 mainwnd.o: playerv.h rtk2/rtk.h ../../client_libs/libplayerc/playerc.h
-mainwnd.o: ../../include/messages.h ../../include/playercommon.h
-mainwnd.o: ../../include/defaults.h error.h opt.h
+mainwnd.o: ../../include/player.h ../../include/messages.h
+mainwnd.o: ../../include/playercommon.h ../../include/defaults.h error.h
+mainwnd.o: opt.h
 opt.o: error.h opt.h
 playerv.o: playerv.h rtk2/rtk.h ../../client_libs/libplayerc/playerc.h
-playerv.o: ../../include/messages.h ../../include/playercommon.h
-playerv.o: ../../include/defaults.h error.h opt.h
+playerv.o: ../../include/player.h ../../include/messages.h
+playerv.o: ../../include/playercommon.h ../../include/defaults.h error.h
+playerv.o: opt.h

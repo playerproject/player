@@ -91,16 +91,66 @@ void playerc_laserbeacon_putdata(playerc_laserbeacon_t *device, player_msghdr_t 
 }
 
 
-// Configure the laserbeacon device
-int playerc_laserbeacon_configure(playerc_laserbeacon_t *device, int bit_count, double bit_width)
+// Set the device configuration
+int playerc_laserbeacon_set_config(playerc_laserbeacon_t *device,
+                                   int bit_count, double bit_width)
 {
-  player_laserbeacon_setbits_t config;
+  int len;
+  player_laserbeacon_config_t config;
 
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETBITS;
+  // Get the current device configuration.
+  config.subtype = PLAYER_LASERBEACON_SUBTYPE_GETCONFIG;
+  len = playerc_client_request(device->info.client, &device->info,
+                               (char*) &config, sizeof(config),
+                               (char*) &config, sizeof(config));
+  if (len < 0)
+    return -1;
+  if (len != sizeof(config))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
+    return -1;
+  }
+
+  // Change the bit size and the number of bits
+  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETCONFIG;
   config.bit_count = bit_count;
   config.bit_size = htons(bit_width * 1000);
-    
-  return playerc_client_request(device->info.client, &device->info,
-                                (char*) &config, sizeof(config),
-                                (char*) &config, sizeof(config));    
+  len = playerc_client_request(device->info.client, &device->info,
+                               (char*) &config, sizeof(config),
+                               (char*) &config, sizeof(config));
+  if (len < 0)
+    return -1;
+  if (len != sizeof(config))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
+    return -1;
+  }
+  return 0;
+}
+
+
+// Get the device configuration
+int playerc_laserbeacon_get_config(playerc_laserbeacon_t *device,
+                                   int *bit_count, double *bit_width)
+{
+  int len;
+  player_laserbeacon_config_t config;
+
+  // Get the current device configuration.
+  config.subtype = PLAYER_LASERBEACON_SUBTYPE_GETCONFIG;
+  len = playerc_client_request(device->info.client, &device->info,
+                               (char*) &config, sizeof(config),
+                               (char*) &config, sizeof(config));
+  if (len < 0)
+    return -1;
+  if (len != sizeof(config))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
+    return -1;
+  }
+
+  *bit_count = config.bit_count;
+  *bit_width = ntohs(config.bit_size) / 1000.0;
+  
+  return 0;
 }

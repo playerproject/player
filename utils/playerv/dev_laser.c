@@ -197,8 +197,10 @@ void laser_draw(laser_t *laser)
   rtk_fig_clear(laser->scan_fig);
   rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_SCAN);
 
+  // Draw in the laser itself
   rtk_fig_rectangle(laser->scan_fig, 0, 0, 0, 0.15, 0.15, 0);
-  
+
+  // Draw in the range scan
   for (i = 0; i < laser->proxy->scan_count; i++)
   {
     bx = laser->proxy->point[i][0];
@@ -211,6 +213,16 @@ void laser_draw(laser_t *laser)
     rtk_fig_line(laser->scan_fig, ax, ay, bx, by);
     ax = bx;
     ay = by;
+  }
+
+  // Draw in the intensity scan
+  for (i = 0; i < laser->proxy->scan_count; i++)
+  {
+    if (laser->proxy->intensity[i] == 0)
+      continue;
+    ax = laser->proxy->point[i][0];
+    ay = laser->proxy->point[i][1];
+    rtk_fig_rectangle(laser->scan_fig, ax, ay, 0, 0.05, 0.05, 1);
   }
 }
 

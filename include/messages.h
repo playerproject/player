@@ -314,52 +314,49 @@ typedef struct
  * Laser Device
  */
 
-/*
-   the laser data packet
-   
-   <min_angle> and <max_angle> specify the start and end angles
-   (in units of 0.01 degrees).  Valid range is -9000 to +9000.
-   <resolution> specifies the resolution (in units of 0.01 degrees).
-   Valid resolutions are 25, 50, 100.
-   <samples> indicates the total nuumber of samples.
-   <ranges> are in mm and start from <min_angle>.
- */
+/* The laser data packet. */
 typedef struct
 {
+  /* Start and end angles for the laser scan (in units of 0.01
+   * degrees). */
   int16_t min_angle;
   int16_t max_angle;
+
+  /* Angular resolution (in units of 0.01 degrees).  */
   uint16_t resolution;
+
+  /* Range readings.  <range_count> specifies the number of valid
+   * readings.  Reflectivity data is stored in the top three bits of
+   * each range reading.  */
   uint16_t range_count;
   uint16_t ranges[PLAYER_NUM_LASER_SAMPLES];
+  
 } __attribute__ ((packed)) player_laser_data_t;
 
-/*
- * Laser request subtypes.
- */
+
+/* Laser request subtypes. */
 #define PLAYER_LASER_SET_CONFIG 0x01
 #define PLAYER_LASER_GET_CONFIG 0x02
 
-/*
- * Laser configuration packet.
- */
+
+/* Laser configuration packet. */
 typedef struct
 {
-  /* Packet subtype.  Set to PLAYER_LASER_SET_CONFIG to set the laser
-   configuration; or set to PLAYER_LASER_GET_CONFIG to get the laser
-   configuration. */
+  /* The packet subtype.  Set this to PLAYER_LASER_SET_CONFIG to set
+   * the laser configuration; or set to PLAYER_LASER_GET_CONFIG to get
+   * the laser configuration.  */
   uint8_t subtype;
 
   /* Start and end angles for the laser scan (in units of 0.01
-   * degrees).  Valid range is -9000 to +9000. */
+   * degrees).  Valid range is -9000 to +9000.  */
   int16_t min_angle;
   int16_t max_angle;
 
- /* Scan resolution (in units of 0.01 degrees).  Valid resolutions are
-  * 25, 50, 100. */
+  /* Scan resolution (in units of 0.01 degrees).  Valid resolutions
+   * are 25, 50, 100.  */
   uint16_t resolution;
 
-  /* Enable reflection intensity data (returned in the top 3 bits of
-   * the range data. */
+  /* Enable reflection intensity data. */
   uint8_t  intensity;
   
 } __attribute__ ((packed)) player_laser_config_t;
@@ -429,6 +426,7 @@ typedef struct
 {
   uint16_t index, num;
 } __attribute__ ((packed)) player_vision_header_elt_t;
+
 #define VISION_HEADER_SIZE \
   (sizeof(player_vision_header_elt_t)*VISION_NUM_CHANNELS)
 
@@ -438,6 +436,7 @@ typedef struct
   uint16_t x, y;
   uint16_t left, right, top, bottom;
 } __attribute__ ((packed)) player_vision_blob_elt_t;
+
 #define VISION_BLOB_SIZE sizeof(player_vision_blob_elt_t)
 
 typedef struct
@@ -455,6 +454,34 @@ typedef struct
 //} __attribute__ ((packed)) player_internal_vision_data_t;
 //
 /*************************************************************************/
+
+
+
+/*************************************************************************/
+/*
+ * Broadcast device
+ */
+
+/* Request packet sub-types */
+#define PLAYER_BROADCAST_SUBTYPE_SEND 1
+#define PLAYER_BROADCAST_SUBTYPE_RECV 2
+
+/* Broadcast request/reply packet. */
+typedef struct
+{
+  /* Packet subtype.  Set to PLAYER_BROADCAST_SUBTYPE_SEND to send a
+   * broadcast messages.  Set to PLAYER_BROADCAST_SUBTYPE_RECV to read
+   * the next message in the incoming message queue. */
+  uint8_t subtype;
+
+  /* The message to send, or the message that was received*/
+  uint8_t data[PLAYER_MAX_REQREP_SIZE - 1];
+  
+} __attribute__ ((packed)) player_broadcast_msg_t;
+
+
+/*************************************************************************/
+
 
 /*************************************************************************/
 /*
@@ -482,6 +509,7 @@ typedef struct
 } __attribute__ ((packed)) player_speech_cmd_t;
 
 /*************************************************************************/
+
 
 /*************************************************************************/
 /*
@@ -514,65 +542,73 @@ typedef struct
   int32_t heading;
 } __attribute__ ((packed)) player_gps_config_t;
 
+
 /*************************************************************************/
+
 
 /*************************************************************************/
 /*
  * Laser beacon device
  */
 
-/*
- * the laser beacon data packet (one beacon)
- */
+/* The laser beacon data packet (one beacon). */
 typedef struct
 {
+  /* The beacon id.  Beacons that cannot be identified get id 0. */
   uint8_t id;
+
+  /* Beacon range (in mm) relative to the laser. */
   uint16_t range;
+
+  /* Beacon bearing and orientation (in degrees) relative to laser. */
   int16_t bearing;
   int16_t orient;
+  
 } __attribute__ ((packed)) player_laserbeacon_item_t;
 
+
 #define PLAYER_MAX_LASERBEACONS 32
-/*
- * the laser beacon data packet (all beacons)
- */
+
+/* The laser beacon data packet (all beacons). */
 typedef struct 
 {
-    uint16_t count;
-    player_laserbeacon_item_t beacon[PLAYER_MAX_LASERBEACONS]; 
+  /* List of detected beacons */
+  uint16_t count;
+  player_laserbeacon_item_t beacon[PLAYER_MAX_LASERBEACONS];
+  
 } __attribute__ ((packed)) player_laserbeacon_data_t;
 
-/* Request packet subtypes
- */
-#define PLAYER_LASERBEACON_SUBTYPE_SETBITS 1
-#define PLAYER_LASERBEACON_SUBTYPE_SETTHRESH 2
 
-/* Laser beacon request packet: set the number and size of bits in the beacon
- * subtype : must be PLAYER_LASERBEACON_SUBTYPE_SETBITS
- * bit_count : the number of bits in the beacon, including start and end markers
- * bit_size : the width of each bit, in mm
- */
+/* Request packet subtypes */
+#define PLAYER_LASERBEACON_SUBTYPE_SETCONFIG 0x01
+#define PLAYER_LASERBEACON_SUBTYPE_GETCONFIG 0x02
+
+
+/* Laser beacon request/reply packet. */
 typedef struct
 {
+  /* Packet subtype.  Set to PLAYER_LASERBEACON_SUBTYPE_SETCONFIG to
+   *  set the device configuration.  Set to
+   *  PLAYER_LASERBEACON_SUBTYPE_GETCONFIG to get the device
+   *  configuration. */
   uint8_t subtype;
+
+  /* The number of bits in the beacon, including start and end
+   * markers. */
   uint8_t bit_count;
-  uint16_t bit_size;
-} __attribute__ ((packed)) player_laserbeacon_setbits_t;
 
-/* Laser beacon request packet: set the bit acceptance thresholds
- * subtype : must be PLAYER_LASERBEACON_SUBTYPE_SETTHRESH
- * zero_thresh : minimum threshold for declaring a bit is zero (0-100)
- * one_thresh : minimum threshold for declaring a bit is one (0-100)
- */
-typedef struct
-{
-  uint8_t subtype;
+  /* The width of each bit, in mm. */
+  uint16_t bit_size;
+
+  /* Bit detection thresholds.  <zero_thresh> is the minimum threshold
+   * for declaring a bit is zero (0-100).  <one_thresh> is the minimum
+   * threshold for declaring a bit is one (0-100). */
   uint16_t zero_thresh;
   uint16_t one_thresh;
-} __attribute__ ((packed)) player_laserbeacon_setthresh_t;
+
+} __attribute__ ((packed)) player_laserbeacon_config_t;
 
 
- 
 /*************************************************************************/
 
 
@@ -641,54 +677,8 @@ typedef struct
 #define PLAYER_BPS_SUBTYPE_SETBEACON 2
 #define PLAYER_BPS_SUBTYPE_SETLASER 3
 
-/*************************************************************************/
-
 
 /*************************************************************************/
-/*
- * Broadcast device
- */
-
-/* Request packet sub-types */
-#define PLAYER_BROADCAST_SUBTYPE_SEND 1
-#define PLAYER_BROADCAST_SUBTYPE_RECV 2
-
-/* Broadcast request/reply packet. */
-typedef struct
-{
-  uint8_t subtype;
-  uint8_t data[1024];
-} __attribute__ ((packed)) player_broadcast_msg_t;
-
-
-// Broadcast command packet
-// Each packet may contain multiple messages.
-// len indicates the total length of the message buffer.
-// Messages are concatenated in the buffer, with each message having the
-// following format.
-//   message length -- two byte unsigned int
-//   message body -- arbitrary length data
-// The list is terminated by a message with zero length.
-typedef struct
-{
-    uint16_t len;
-    uint8_t  buffer[4096];
-} __attribute__ ((packed)) player_broadcast_cmd_t;
-
-
-// Data packet
-// Each packet may contain multiple messages.
-// len indicates the total length of the message buffer.
-// Messages are concatenated in the buffer, with each message having the
-// following format.
-//   message length -- two byte unsigned int
-//   message body -- arbitrary length data
-// The list is terminated by a message with zero length.
-typedef struct
-{
-    uint16_t len;
-    uint8_t  buffer[4096];
-} __attribute__ ((packed)) player_broadcast_data_t;
 
 
 /*************************************************************************/
@@ -797,6 +787,7 @@ typedef struct
 } __attribute__ ((packed)) player_generic_truth_t;
 
 /*************************************************************************/
+
 /*************************************************************************/
 /*
  * Occupancy device, exports the world background as an occupancy grid

@@ -116,13 +116,13 @@ void laserbeacon_update(laserbeacon_t *laserbeacon)
   if (rtk_menuitem_isactivated(laserbeacon->bits5_item))
   {    
     if (laserbeacon->proxy->info.subscribed)
-      if (playerc_laserbeacon_configure(laserbeacon->proxy, 5, 0.050) != 0)
+      if (playerc_laserbeacon_set_config(laserbeacon->proxy, 5, 0.050) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
   if (rtk_menuitem_isactivated(laserbeacon->bits8_item))
   {
     if (laserbeacon->proxy->info.subscribed)
-      if (playerc_laserbeacon_configure(laserbeacon->proxy, 8, 0.050) != 0)
+      if (playerc_laserbeacon_set_config(laserbeacon->proxy, 8, 0.050) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
 

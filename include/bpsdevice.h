@@ -85,8 +85,7 @@ class CBpsDevice : public CDevice
     public: virtual void PutData(unsigned char *, size_t maxsize,
                                  uint32_t timestamp_sec, 
                                  uint32_t timestamp_usec);
-    public: virtual int PutConfig(CClientData*, unsigned char *, 
-                                  size_t maxsize);
+    public: virtual int PutConfig(void *client, void *data, size_t len);
 
     // Estimateion functions
     private: void ProcessOdometry(double ox, double oy, double oa);
