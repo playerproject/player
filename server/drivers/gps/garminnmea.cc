@@ -348,7 +348,8 @@ GarminNMEA::ParseSentence(const char* buf)
   char tmp[8];
   const char* ptr = buf;
   int degrees;
-  double minutes, seconds, aseconds;
+  double minutes;
+  double arcseconds;
   char field[32];
 
   // get the header id out
@@ -372,19 +373,16 @@ GarminNMEA::ParseSentence(const char* buf)
     degrees = atoi(tmp);
     // next is minutes
     minutes = atof(field+2);
-    seconds = (minutes - rint(minutes)) * 60.0;
-    aseconds = (seconds - rint(seconds)) * 60.0;
+
+    arcseconds = ((degrees * 60.0) + minutes) * 60.0;
 
     if(!(ptr = GetNextField(field, sizeof(field), ptr)))
       return(-1);
     // 3rd field is N or S for north or south. adjust sign accordingly.
     if(field[0] == 'S')
-      degrees *= -1;
+      arcseconds *= -1;
 
-    data.lat_deg = htons(degrees);
-    data.lat_min = (uint8_t)rint(minutes);
-    data.lat_sec = (uint8_t)rint(seconds);
-    data.lat_asec = (uint8_t)rint(aseconds);
+    data.latitude = htonl((int32_t)rint(arcseconds * 60.0));
 
     if(!(ptr = GetNextField(field, sizeof(field), ptr)))
       return(-1);
@@ -394,19 +392,16 @@ GarminNMEA::ParseSentence(const char* buf)
     degrees = atoi(tmp);
     // next is minutes
     minutes = atof(field+3);
-    seconds = (minutes - rint(minutes)) * 60.0;
-    aseconds = (seconds - rint(seconds)) * 60.0;
+
+    arcseconds = ((degrees * 60.0) + minutes) * 60.0;
     
     if(!(ptr = GetNextField(field, sizeof(field), ptr)))
       return(-1);
     // 5th field is E or W for east or west. adjust sign accordingly.
     if(field[0] == 'W')
-      degrees *= -1;
+      arcseconds *= -1;
 
-    data.long_deg = htons(degrees);
-    data.long_min = (uint8_t)rint(minutes);
-    data.long_sec = (uint8_t)rint(seconds);
-    data.long_asec = (uint8_t)rint(aseconds);
+    data.longitude = htonl((int32_t)rint(arcseconds * 60.0));
 
     if(!(ptr = GetNextField(field, sizeof(field), ptr)))
       return(-1);
@@ -426,7 +421,7 @@ GarminNMEA::ParseSentence(const char* buf)
     if(!(ptr = GetNextField(field, sizeof(field), ptr)))
       return(-1);
     // 9th field is altitude, in meters.  we'll convert to mm.
-    data.hdop = htonl((int32_t)rint(atof(field) * 1000.0));
+    data.altitude = htonl((int32_t)rint(atof(field) * 1000.0));
 
     if(!(ptr = GetNextField(field, sizeof(field), ptr)))
       return(-1);

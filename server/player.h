@@ -1643,25 +1643,18 @@ The {\tt gps} interface gives current global position and heading information;
 the format is: */
 typedef struct player_gps_data
 {
-  /** Degrees of latitude.  Positive is north of equator, negative is south of
-      equator. */
-  int16_t lat_deg;
-  /** Minutes, seconds, and arc-seconds of latitude. */
-  uint8_t lat_min;
-  uint8_t lat_sec;
-  uint8_t lat_asec;
+  /** Latitude, in 1/60 of an arc-second (i.e., 1/216000 of a degree).  
+      Positive is north of equator, negative is south of equator. */
+  int32_t latitude;
 
-  /** Degrees of longitude.  Positive is east of prime meridian, negative is 
-      west of prime meridian. */
-  int16_t long_deg;
-  /** Minutes, seconds, and arc-seconds of longitude. */
-  uint8_t long_min;
-  uint8_t long_sec;
-  uint8_t long_asec;
+  /** Longitude, in 1/60 of an arc-second (i.e., 1/216000 of a degree).  
+      Positive is east of prime meridian, negative is west 
+      of prime meridian. */
+  int32_t longitude;
 
   /** Altitude, in millimeters.  Positive is above reference (e.g.,
       sea-level), and negative is below. */
-  int32_t alt;
+  int32_t altitude;
 
   /** Quality of fix 0 = invalid, 1 = GPS fix, 2 = DGPS fix */
   uint8_t quality;
