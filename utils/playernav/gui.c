@@ -207,7 +207,7 @@ _robot_button_callback(GnomeCanvasItem *item,
           if(onrobot && !setting_theta)
           {
             setting_goal=TRUE;
-            move_robot(gui_data->robot_goals[idx],pose);
+            move_item(gui_data->robot_goals[idx],pose,0);
             gnome_canvas_item_show(gui_data->robot_goals[idx]);
           }
         case 1:
@@ -305,9 +305,9 @@ _robot_button_callback(GnomeCanvasItem *item,
       if(dragging)
       {
         if(!setting_goal)
-          move_robot(item,pose);
+          move_item(item,pose,1);
         else
-          move_robot(gui_data->robot_goals[idx],pose);
+          move_item(gui_data->robot_goals[idx],pose,0);
       }
       else if(setting_theta)
       {
@@ -515,20 +515,6 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   //g_assert((gui_data->map_canvas = (GnomeCanvas*)gnome_canvas_new()));
   gtk_widget_pop_colormap();
   gtk_widget_pop_visual();
-
-  // TODO: figure out how to use the transformations
-  //
-  // Re-orient everything from graphics to right-handed coords
-  // (i.e., rotate by pi, then scale x by -1)
-  /*
-  t[0] = 1.0;
-  t[1] = 0.0;
-  t[2] = 0.0;
-  t[3] = -1.0;
-  t[4] = 0.0;
-  t[5] = 0.0;
-  gnome_canvas_item_affine_absolute((GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas), t);
-  */
 
   gnome_canvas_set_center_scroll_region(gui_data->map_canvas, TRUE);
   gnome_canvas_set_scroll_region(gui_data->map_canvas,
@@ -784,7 +770,7 @@ create_robot(gui_data_t* gui_data, int idx, pose_t pose)
                                   NULL)));
   gnome_canvas_item_hide(robot_text);
 
-  move_robot((GnomeCanvasItem*)robot,pose);
+  move_item((GnomeCanvasItem*)robot,pose,1);
 
   gui_data->robot_items[idx] = (GnomeCanvasItem*)robot;
   gui_data->robot_labels[idx] = robot_text;
@@ -796,7 +782,7 @@ create_robot(gui_data_t* gui_data, int idx, pose_t pose)
 }
 
 void
-move_robot(GnomeCanvasItem* item, pose_t pose)
+move_item(GnomeCanvasItem* item, pose_t pose, int raise)
 {
   double t[6];
 
@@ -807,7 +793,8 @@ move_robot(GnomeCanvasItem* item, pose_t pose)
   t[4] = pose.px;
   t[5] = -pose.py;
   gnome_canvas_item_affine_absolute(item, t);
-  gnome_canvas_item_raise_to_top(item);
+  if(raise)
+    gnome_canvas_item_raise_to_top(item);
 }
 
 void
@@ -867,7 +854,7 @@ draw_waypoints(gui_data_t* gui_data, int idx)
       pose.px =  gui_data->planners[idx]->waypoints[i][0];
       pose.py =  gui_data->planners[idx]->waypoints[i][1];
       pose.pa = 0.0;
-      move_robot(waypoint, pose);
+      move_item(waypoint, pose,0);
 
       if(i>0)
       {

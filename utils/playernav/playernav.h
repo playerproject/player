@@ -62,7 +62,7 @@ void init_gui(gui_data_t* gui_data,
               int argc, char** argv);
 void fini_gui(gui_data_t* gui_data);
 void create_robot(gui_data_t* gui_data, int idx, pose_t pose);
-void move_robot(GnomeCanvasItem* item, pose_t pose);
+void move_item(GnomeCanvasItem* item, pose_t pose, int raise);
 void canvas_to_meters(gui_data_t* gui_data, double* dx, double* dy, 
                       int cx, int cy);
 void meters_to_canvas(gui_data_t* gui_data, int* cx, int* cy, 

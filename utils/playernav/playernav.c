@@ -169,7 +169,7 @@ player_read_func(gpointer* arg)
            (gui_data->robot_poses[i].pa != robot_pose.pa))
         {
           //printf("moving robot %d\n", i);
-          move_robot(gui_data->robot_items[i],robot_pose);
+          move_item(gui_data->robot_items[i],robot_pose,1);
         }
       }
 
