@@ -46,7 +46,7 @@ class SIP
   unsigned short ptu, compass, timer, rawxpos; 
   unsigned short rawypos, frontbumpers, rearbumpers;
   short angle, lvel, rvel, control;
-  short sonars[PLAYER_NUM_SONAR_SAMPLES];
+  short sonars[PLAYER_MAX_FRF_SAMPLES];
   int xpos, ypos;
 
   /* returns 0 if Parsed correctly otherwise 1 */
@@ -58,7 +58,7 @@ class SIP
   SIP(int idx) 
   {
     param_idx = idx;
-    for(int i=0;i<(int)PLAYER_NUM_SONAR_SAMPLES;i++) 
+    for(int i=0;i<ARRAYSIZE(sonars);i++) 
       sonars[i] = 0;
 
     xpos = INT_MAX;

@@ -57,6 +57,8 @@
 #define PTZ_PAN_CONV_FACTOR (0x370 / PTZ_PAN_MAX)
 #define PTZ_TILT_CONV_FACTOR (0x12C / PTZ_TILT_MAX)
 
+#define DEFAULT_PTZ_PORT "/dev/ttyS2"
+
 class SonyEVID30:public CDevice 
 {
  private:

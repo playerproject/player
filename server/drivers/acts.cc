@@ -113,7 +113,7 @@ class Acts:public CDevice
 // a factory creation function
 CDevice* Acts_Init(char* interface, ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_VISION_STRING))
+  if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
   {
     PLAYER_ERROR1("driver \"acts\" does not support interface \"%s\"\n",
                   interface);
@@ -144,7 +144,7 @@ void QuitACTS(void* visiondevice);
 
 
 Acts::Acts(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_vision_data_t),0,0,0)
+  : CDevice(sizeof(player_blobfinder_data_t),0,0,0)
 {
   char tmpstr[MAX_FILENAME_SIZE];
 
@@ -183,7 +183,7 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
       blob_size = ACTS_BLOB_SIZE_1_2;
       break;
   }
-  header_elt_len = header_len / VISION_NUM_CHANNELS;
+  header_elt_len = header_len / PLAYER_BLOBFINDER_MAX_CHANNELS;
 }
     
 // returns the enum representation of the given version string, or
@@ -239,7 +239,7 @@ Acts::Setup()
          configfilepath,portnum);
   fflush(stdout);
 
-  player_vision_data_t dummy;
+  player_blobfinder_data_t dummy;
   bzero(&dummy,sizeof(dummy));
   // zero the data buffer
   PutData((unsigned char*)&dummy,
@@ -412,7 +412,7 @@ Acts::Main()
   int i;
 
   // we'll transform the data into this structured buffer
-  player_vision_data_t local_data;
+  player_blobfinder_data_t local_data;
 
   // first, we'll read into these two temporary buffers
   uint8_t acts_hdr_buf[sizeof(local_data.header)];
@@ -473,7 +473,7 @@ Acts::Main()
     /* convert the header, if necessary */
     if(acts_version == ACTS_VERSION_1_0)
     {
-      for(i=0;i<VISION_NUM_CHANNELS;i++)
+      for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
       {
         // convert 2-byte ACTS 1.0 encoded entries to byte-swapped integers
         // in a structured array
@@ -485,7 +485,7 @@ Acts::Main()
     }
     else
     {
-      for(i=0;i<VISION_NUM_CHANNELS;i++)
+      for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
       {
         // convert 4-byte ACTS 1.2 encoded entries to byte-swapped integers
         // in a structured array
@@ -509,7 +509,7 @@ Acts::Main()
 
     /* sum up the data we expect */
     num_blobs=0;
-    for(i=0;i<VISION_NUM_CHANNELS;i++)
+    for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
       num_blobs += ntohs(local_data.header[i].num);
 
     /* read in the blob data */
@@ -579,7 +579,7 @@ Acts::Main()
 
         // Figure out the blob channel number
         int ch = 0;
-        for (int j = 0; j < VISION_NUM_CHANNELS; j++)
+        for (int j = 0; j < PLAYER_BLOBFINDER_MAX_CHANNELS; j++)
         {
           if (i >= ntohs(local_data.header[j].index) &&
               i < ntohs(local_data.header[j].index) + ntohs(local_data.header[j].num))
@@ -646,7 +646,8 @@ Acts::Main()
 
     /* got the data. now fill it in */
     PutData((unsigned char*)&local_data, 
-                (VISION_HEADER_SIZE + num_blobs*VISION_BLOB_SIZE),0,0);
+                (PLAYER_BLOBFINDER_HEADER_SIZE + 
+                 num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),0,0);
   }
 
   pthread_cleanup_pop(1);

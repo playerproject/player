@@ -86,12 +86,12 @@ class LaserBarcode : public CDevice
                                 void *data, size_t len);
 
   // Analyze the laser data and return beacon data
-  private: void FindBeacons(const player_laser_data_t *laser_data,
-                            player_laserbeacon_data_t *beacon_data);
+  private: void FindBeacons(const player_srf_data_t *laser_data,
+                            player_fiducial_data_t *beacon_data);
 
   // Analyze the candidate beacon and return its id (0 == none)
   private: int IdentBeacon(int a, int b, double ox, double oy, double oth,
-                           const player_laser_data_t *laser_data);
+                           const player_srf_data_t *laser_data);
 
 #ifdef INCLUDE_SELFTEST
   // Beacon detector self-test
@@ -121,13 +121,13 @@ class LaserBarcode : public CDevice
 
   // The current data
   //
-  player_laserbeacon_data_t beacon_data;
+  player_fiducial_data_t beacon_data;
 };
   
 // Initialization function
 CDevice* LaserBarcode_Init(char* interface, ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_LASERBEACON_STRING))
+  if(strcmp(interface, PLAYER_FIDUCIAL_STRING))
   {
     PLAYER_ERROR1("driver \"laserbarcode\" does not support interface \"%s\"\n",
                   interface);
@@ -191,7 +191,7 @@ int LaserBarcode::Setup()
   // get the pointer to the laser
   player_device_id_t id;
   id.port = device_id.port;
-  id.code = PLAYER_LASER_CODE;
+  id.code = PLAYER_SRF_CODE;
   // if index was not overridden by an argument in the constructor, then we
   // use the device's own index
   if(this->index >= 0)
@@ -267,7 +267,7 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
   }
 
   // Get the laser data
-  player_laser_data_t laser_data;
+  player_srf_data_t laser_data;
   this->laser->GetData((unsigned char*) &laser_data, sizeof(laser_data), NULL, NULL);
 
   // Do some byte swapping
@@ -310,13 +310,13 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
 int LaserBarcode::PutConfig(player_device_id_t* device, void *client, 
                                   void *data, size_t len) 
 {
-  player_laserbeacon_config_t config;
+  player_laserbarcode_config_t config;
 
   memcpy(&config, data, min(sizeof(config),len));
 
   switch (config.subtype)
   {
-    case PLAYER_LASERBEACON_SET_CONFIG:
+    case PLAYER_LASERBARCODE_SET_CONFIG:
     {
       // Check the message length
       if (len != sizeof(config))
@@ -341,7 +341,7 @@ int LaserBarcode::PutConfig(player_device_id_t* device, void *client,
       break;
     }
 
-    case PLAYER_LASERBEACON_GET_CONFIG:
+    case PLAYER_LASERBARCODE_GET_CONFIG:
     {
       // Check the message length
       if (len != sizeof(config.subtype))
@@ -380,8 +380,8 @@ int LaserBarcode::PutConfig(player_device_id_t* device, void *client,
 ////////////////////////////////////////////////////////////////////////////////
 // Analyze the laser data and return beacon data
 //
-void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
-                                     player_laserbeacon_data_t *beacon_data)
+void LaserBarcode::FindBeacons(const player_srf_data_t *laser_data,
+                                     player_fiducial_data_t *beacon_data)
 {
   beacon_data->count = 0;
 
@@ -509,7 +509,7 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
 // Will return beacon id otherwise
 //
 int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
-                                    const player_laser_data_t *laser_data)
+                                    const player_srf_data_t *laser_data)
 {
   // Compute pose of laser relative to beacon
   double lx = -ox * cos(-oth) + oy * sin(-oth);
@@ -657,7 +657,7 @@ int LaserBarcode::SelfTest(const char *filename)
     if (strcmp(type, "laser") != 0)
       continue;
 
-    player_laser_data_t laser_data;
+    player_srf_data_t laser_data;
     strtok(NULL, " ");
     strtok(NULL, " ");
     laser_data.resolution = atoi(strtok(NULL, " "));
@@ -667,7 +667,7 @@ int LaserBarcode::SelfTest(const char *filename)
     for (int i = 0; i < laser_data.range_count; i++)
       laser_data.ranges[i] = atoi(strtok(NULL, " "));
 
-    player_laserbeacon_data_t beacon_data;
+    player_fiducial_data_t beacon_data;
     FindBeacons(&laser_data, &beacon_data);
 
     for (int i = 0; i < beacon_data.count; i++)

@@ -85,12 +85,17 @@
 
 #define P2OS_CONFIG_BUFFER_SIZE 256
 
+#define DEFAULT_P2OS_PORT "/dev/ttyS0"
+
 typedef struct
 {
   player_position_data_t position;
-  player_sonar_data_t sonar;
+  player_frf_data_t sonar;
   player_gripper_data_t gripper;
-  player_misc_data_t misc;
+  player_power_data_t power;
+  player_bumper_data_t bumper;
+  player_dio_data_t dio;
+  player_aio_data_t aio;
 } __attribute__ ((packed)) player_p2os_data_t;
 
 typedef struct

@@ -47,14 +47,15 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   //data->position.time = htonl((unsigned int)timeNow);
   data->position.xpos = htonl((unsigned int)xpos); 
   data->position.ypos = htonl((unsigned int)ypos); 
-  data->position.theta = htons((unsigned short)angle);
-  data->position.speed = htons((unsigned short) (((lvel) + (rvel) ) / 2));
-  data->position.turnrate = htons((unsigned short)
+  data->position.yaw = htons((unsigned short)angle);
+  data->position.xspeed = htons((unsigned short) (((lvel) + (rvel) ) / 2));
+  data->position.yawspeed = htons((unsigned short)
      (180*((double)(rvel - lvel) /
            (2.0/PlayerRobotParams[param_idx].DiffConvFactor)) / 
            M_PI));
-  data->position.compass = htons(compass);
-  data->position.stalls = (unsigned char)(lwstall || rwstall);
+  // TODO: where does compass go?
+  //data->position.compass = htons(compass);
+  data->position.stall = (unsigned char)(lwstall || rwstall);
 
   data->sonar.range_count = htons(PlayerRobotParams[param_idx].SonarNum);
   for(int i=0;i<(int)sizeof(sonars);i++)
@@ -63,11 +64,18 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   data->gripper.state = (unsigned char)(timer >> 8);
   data->gripper.beams = (unsigned char)digin;
 
-  data->misc.frontbumpers =  (unsigned char)frontbumpers;
-  data->misc.rearbumpers =  (unsigned char)rearbumpers;
-  data->misc.voltage = (unsigned char)battery;
-  data->misc.digin = (unsigned char)digin;
-  data->misc.analog = (unsigned char)analog;
+  data->bumper.bumper_count = 10;
+  int j = 0;
+  for(int i=4;i>=0;i--)
+    data->bumper.bumpers[j++] = (unsigned char)((frontbumpers >> i) & 0x01);
+  for(int i=4;i>=0;i--)
+    data->bumper.bumpers[j++] = (unsigned char)((rearbumpers >> i) & 0x01);
+  data->power.charge = (unsigned char)battery;
+  data->dio.count = (unsigned char)8;
+  data->dio.digin = (unsigned int)digin;
+  //TODO: should do this smarter, based on which analog input is selected
+  data->aio.count = (unsigned char)1;
+  data->aio.anin[0] = (unsigned char)analog;
 }
 
 int SIP::PositionChange( unsigned short from, unsigned short to ) 

@@ -497,7 +497,7 @@ void CClientData::MotorStop()
   id.code = PLAYER_POSITION_CODE;
   id.index = 0;
 
-  command.speed = command.sidespeed = command.turnrate = 0;
+  command.xspeed = command.yspeed = command.yawspeed = 0;
 
   if((devicep = deviceTable->GetDevice(id)))
   {
