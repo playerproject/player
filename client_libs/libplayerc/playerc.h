@@ -1949,6 +1949,34 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 /** @brief Get link state. */
 playerc_wifi_link_t *playerc_wifi_get_link(playerc_wifi_t *device, int link);
 
+/** @brief Simulation device proxy. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+} playerc_simulation_t;
+
+
+// Create a new simulation proxy
+playerc_simulation_t *playerc_simulation_create(playerc_client_t *client, int index);
+
+// Destroy a simulation proxy
+void playerc_simulation_destroy(playerc_simulation_t *device);
+
+// Subscribe to the simulation device
+int playerc_simulation_subscribe(playerc_simulation_t *device, int access);
+
+// Un-subscribe from the simulation device
+int playerc_simulation_unsubscribe(playerc_simulation_t *device);
+
+// Process incoming data
+void playerc_simulation_putdata(playerc_simulation_t *device, player_msghdr_t *header,
+				player_simulation_data_t *data, size_t len);
+
+int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
+                                  double gx, double gy, double ga);
+
 
 /** @} */
 /***************************************************************************/
