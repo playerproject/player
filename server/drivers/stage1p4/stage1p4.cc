@@ -66,13 +66,21 @@ public:
   {
     PLAYER_TRACE1( "Stage1p4 device created for interface %s\n", interface );
 
-    if( this->stage_client == NULL )
+    if(  Stage1p4::stage_client == NULL )
       {
-	this->world_file = (char*)cf->ReadString(section, "worldfile", DEFAULT_STG_WORLDFILE);
-	int stage_port = cf->ReadInt(section, "port", STG_DEFAULT_SERVER_PORT);
-	char* stage_host = (char*)cf->ReadString(section, "host", DEFAULT_STG_HOST);
-
-	this->stage_client = this->CreateStageClient(stage_host, stage_port, world_file);
+	Stage1p4::world_file = 
+	  (char*)cf->ReadString(section, "worldfile", DEFAULT_STG_WORLDFILE);
+	
+	int stage_port = 
+	  cf->ReadInt(section, "port", STG_DEFAULT_SERVER_PORT);
+	
+	char* stage_host = 
+	  (char*)cf->ReadString(section, "host", DEFAULT_STG_HOST);
+	
+	Stage1p4::stage_client = 
+	  this->CreateStageClient(stage_host, stage_port, world_file);
+	
+	//Stage1p4::table = g_hash_table_new( g_str_hash, g_str_equal );
       }
   }
   
@@ -94,11 +102,14 @@ private:
 
   static stg_client_t* stage_client;
   static char* world_file;
+
+  //static GHashTable* table;
 };
 
 // init static vars
 char* Stage1p4::world_file = DEFAULT_STG_WORLDFILE;
 stg_client_t* Stage1p4::stage_client = NULL;
+//GHashTable* Stage1p4::table = NULL;
 
 // methods start
 
@@ -111,18 +122,27 @@ stg_client_t* Stage1p4::CreateStageClient( char* host, int port, char* world )
 
   PLAYER_MSG1( "Uploading world from \"%s\"", world );
 
-
+  // TODO - move all this into the worldfile library
   // load a worldfile
   CWorldFile wf;
   wf.Load( world );
   
   stg_world_create_t world_cfg;
   strncpy(world_cfg.name, wf.ReadString( 0, "name", world ), STG_TOKEN_MAX );
+  strncpy(world_cfg.token, this->world_file , STG_TOKEN_MAX );
   world_cfg.width =  wf.ReadTupleFloat( 0, "size", 0, 10.0 );
   world_cfg.height =  wf.ReadTupleFloat( 0, "size", 1, 10.0 );
   world_cfg.resolution = wf.ReadFloat( 0, "resolution", 0.1 );
   stg_id_t root = stg_world_create( cli, &world_cfg );
   
+  // for every worldfile section, we may need to store a model ID in
+  // order to resolve parents
+  stg_id_t *created_models = new stg_id_t[ wf.GetEntityCount() ];
+  
+  // the default parent of every model is root
+  for( int m=0; m<wf.GetEntityCount(); m++ )
+    created_models[m] = root;
+
   // Iterate through sections and create entities as required
   for (int section = 1; section < wf.GetEntityCount(); section++)
   {
@@ -134,6 +154,10 @@ stg_client_t* Stage1p4::CreateStageClient( char* host, int port, char* world )
       {
 	// TODO - handle the line numbers
 	const int line = wf.ReadInt(section, "line", -1);
+
+	stg_id_t parent = created_models[ wf.GetEntityParent(section) ];
+
+	PRINT_WARN1( "creating child of parent %d", parent );
 	
 	stg_entity_create_t child;
 	char autoname[64];
@@ -144,16 +168,37 @@ stg_client_t* Stage1p4::CreateStageClient( char* host, int port, char* world )
 		STG_TOKEN_MAX );
 	strncpy(child.color, wf.ReadString(section,"color","red"), 
 		STG_TOKEN_MAX);
-	child.type = 0;
-	child.parent_id = root; // make a new entity on the root 
+	child.parent_id = parent; // make a new entity on the root 
+
+	// decode the token into a type number
+	if( strcmp( "position", child.token ) == 0 )
+	  child.type = STG_MODEL_POSITION;
+	else
+	  child.type = STG_MODEL_GENERIC;
+
 	stg_id_t banana = stg_model_create( cli, &child );
 	
-	PLAYER_WARN1( "created model %d", banana );
+	// remember the model id for this section
+	created_models[section] = banana;
 	
+	// associate the model name with its Stage id
+	//char* key  = new char[ strlen( child.name ) ];
+	//strcpy( key, child.name );	
+	//stg_id_t* data = new stg_id_t;
+	//*data = banana;
+	//g_hash_table_insert( Stage1p4::table, key, data );
+
+	PLAYER_MSG1( "created model %d", banana );
+
+	// TODO - is there a nicer way to handle unspecified settings?
+	// right now i set stupid defaults and test for them
+
 	stg_size_t sz;
-	sz.x = wf.ReadTupleFloat( section, "size", 0, 1.0 );
-	sz.y = wf.ReadTupleFloat( section, "size", 1, 1.0 );;
-	stg_model_set_size( cli, banana, &sz );
+	sz.x = wf.ReadTupleFloat( section, "size", 0, -99.0 );
+	sz.y = wf.ReadTupleFloat( section, "size", 1, -99.0 );
+
+	if( sz.x != -99 && sz.y != 99 )
+	  stg_model_set_size( cli, banana, &sz );
 	
 	stg_velocity_t vel;
 	vel.x = wf.ReadTupleFloat( section, "velocity", 0, 0.0 );
