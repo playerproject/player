@@ -33,7 +33,6 @@ void EncodeHex(const void *src, int len, char **dst)
     (*dst)[i * 2 + 0] = hex_table[sh];
     (*dst)[i * 2 + 1] = hex_table[sl];
   }
-  
   return;
 }
 
