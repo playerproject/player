@@ -291,7 +291,7 @@ int rflex_open_connection(char *device_name, int *fd)
   return 0;
 }
 
-//processes a motor packet fromt he rflex - and saves the data in the
+//processes a motor packet from the rflex - and saves the data in the
 //struct for later use
 static void parseMotReport( unsigned char *buffer )
 {
@@ -318,6 +318,60 @@ static void parseMotReport( unsigned char *buffer )
     break;
   }
 }
+
+ //processes a dio packet from the rflex - and saves the data in the
+ //struct for later use, dio report includes bump sensors...
+ static void parseDioReport( unsigned char *buffer )
+ {
+   unsigned long timeStamp;
+   unsigned char opcode, length, address;
+   unsigned short data;
+
+   opcode = buffer[4];
+   length = buffer[5];
+
+   if (status.num_bumpers== 0 && rflex_configs.bumper_count > 0)
+   {
+       status.bumpers = new char[rflex_configs.bumper_count];
+       if (status.bumpers != NULL)
+           status.num_bumpers = rflex_configs.bumper_count;
+   }
+
+   switch(opcode) {
+   case DIO_REPORT:
+       if (length < 6)
+   {
+       fprintf(stderr, "Bump Data Packet too small\n");
+       break;
+   }
+   timeStamp = convertBytes2UInt32(&(buffer[6]));
+   address = buffer[10];
+   data = convertBytes2UInt16(&(buffer[11]));
+
+   // on the b21r the bump packets are address 0x40 -> 0x4D, there are some other dio packets
+   // but dont know what they do so we throw them away
+   if ((address & 0xF0) != 0x40)
+   {
+       fprintf(stderr,"Bump Data doesnt appear to come from a bump panel, address: %2X \n",address);
+       break;
+   }
+
+	// Use the last byte of the address as the bumper index, print error and ignore if its too high
+   if ((address & 0xF) > status.num_bumpers)
+   {
+       fprintf(stderr,"More bumpers than specified in config: %d\n",address & 0xf);
+       break;
+   }
+
+   // assign low data byte to the bumpers (16 bit DIO data, low 4 bits give which corners or the panel are 'bumped')
+   status.bumpers[address & 0xF] = data & 0xFF;
+
+     break;
+   default:
+     break;
+   }
+ }
+
 
 //processes a sonar packet fromt the rflex, and saves the data in the
 //struct for later use
@@ -389,6 +443,7 @@ static int parseBuffer( unsigned char *buffer, unsigned int len )
       parseSonarReport( buffer );
       break;
     case DIO_PORT:
+		parseDioReport( buffer );
       fprintf( stderr, "(dio)" );
       break;
     case IR_PORT:
@@ -468,7 +523,7 @@ int rflex_update_sonar(int fd,int num_sonars, int * ranges){
  return 0;
 }
 
-//haven't bothered using this yet - as I have no bumpers, who wants it?
+// copies data from internal bumper list to the proper rflex bumper list
 void rflex_update_bumpers(int fd, int num_bumpers, 
 			    char *values)
 {

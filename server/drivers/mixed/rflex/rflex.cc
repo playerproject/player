@@ -37,6 +37,10 @@
  * this we retain our odometry data, whether anyone is connected or not
  */
 
+/* Modified by Toby Collett, University of Auckland 2003-02-25
+ * Added support for bump sensors for RWI b21r robot, uses DIO
+ */
+
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/stat.h>
@@ -349,6 +353,7 @@ RFLEX::Main()
   int i;
   int last_sonar_subscrcount;
   int last_position_subscrcount;
+  int last_bumper_subscrcount;
 
   player_device_id_t id;
 
@@ -359,9 +364,12 @@ RFLEX::Main()
   CDevice* sonarp = deviceTable->GetDevice(id);
   id.code = PLAYER_POSITION_CODE;
   CDevice* positionp = deviceTable->GetDevice(id);
+  id.code = PLAYER_BUMPER_CODE;
+  CDevice* bumperp = deviceTable->GetDevice(id);
   
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;
+  last_bumper_subscrcount = 0;
 
   GlobalTime->GetTime(&timeBegan_tv);
   while(1){
@@ -375,7 +383,15 @@ RFLEX::Main()
       
       last_sonar_subscrcount = sonarp->subscriptions;
     }
-    
+
+   // dont need to do anything with bumpers exactly, but may as well
+   // keep track of them ...
+     if(bumperp){
+       last_bumper_subscrcount = bumperp->subscriptions;
+     }
+
+
+
     // we want to reset the odometry and enable the motors if the first 
     // client just subscribed to the position device, and we want to stop 
     // and disable the motors if the last client unsubscribed.
@@ -476,8 +492,46 @@ RFLEX::Main()
 	    PLAYER_ERROR("failed to PutReply");
 	  break;
 	}
+	case PLAYER_BUMPER_CODE:
+	switch(config[0])
+	{
+		case PLAYER_BUMPER_GET_GEOM_REQ:
+		/* Return the bumper geometry. */
+		if(config_size != 1)
+		{
+			puts("Arg get bumper geom is wrong size; ignoring");
+			if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+				PLAYER_ERROR("failed to PutReply");
+			break;
+		}
+
+		// Assemble geometry structure for sending
+		player_bumper_geom_t geom;
+		geom.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
+		geom.bumper_count = htons((short) rflex_configs.bumper_count);
+		for (i = 0; i < rflex_configs.bumper_count; i++){
+			geom.bumper_def[i].x_offset = htons((short) rflex_configs.bumper_def[i].x_offset); //mm
+			geom.bumper_def[i].y_offset = htons((short) rflex_configs.bumper_def[i].y_offset); //mm
+			geom.bumper_def[i].th_offset = htons((short) rflex_configs.bumper_def[i].th_offset); //deg
+			geom.bumper_def[i].length = htons((short) rflex_configs.bumper_def[i].length); //mm
+			geom.bumper_def[i].radius = htons((short) rflex_configs.bumper_def[i].radius); //mm
+		}
+
+		// Send
+		if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)))
+			PLAYER_ERROR("failed to PutReply");
+		break;
+	
+		// Arent any request other than geometry
+		default:
+		puts("Bumper got unknown config request");
+		if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+			PLAYER_ERROR("failed to PutReply");
+		break;
+	}
 	break;
-      case PLAYER_POSITION_CODE:
+    
+	case PLAYER_POSITION_CODE:
 	switch(config[0]){
 	case PLAYER_POSITION_SET_ODOM_REQ:
 	  if(config_size != sizeof(player_position_set_odom_req_t)){
@@ -627,7 +681,7 @@ RFLEX::Main()
     }else
       rflex_stop_robot(rflex_fd,(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));
     /* Get data from robot */
-    update_everything(data,sonarp);
+    update_everything(data,sonarp,bumperp);
     pthread_testcancel();
     PutData((unsigned char*) data,sizeof(data),0,0);
     pthread_testcancel();
@@ -684,8 +738,9 @@ void RFLEX::set_odometry(long mm_x, long mm_y, short deg_theta) {
   rad_odo_theta=DEG2RAD_CONV(deg_theta);
 }
 
-void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp) {
+void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *bumperp) {
   int arb_ranges[rflex_configs.num_sonars];
+  char abumper_ranges[rflex_configs.bumper_count];
 
   static int initialized = 0;
 
@@ -699,7 +754,7 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp) {
   int arb_new_range_position;
   int arb_new_bearing_position;
   double mm_displacement;
-  short a_num_sonars;
+  short a_num_sonars, a_num_bumpers;
 
   //int time,batt,brake;
 
@@ -755,7 +810,22 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp) {
     }
   }
 
-  //this woudl get the battery,time, and brake state (if we cared)
+  // if someone is subscribed to bumpers copy internal data to device
+   if(bumperp->subscriptions)
+   {
+       a_num_bumpers=rflex_configs.bumper_count;
+
+       pthread_testcancel();
+	   // first make sure our internal state is up to date
+       rflex_update_bumpers(rflex_fd, a_num_bumpers, abumper_ranges);
+       pthread_testcancel();
+
+       d->bumper.bumper_count=(a_num_bumpers);
+       memcpy(d->bumper.bumpers,abumper_ranges,a_num_bumpers);
+   }
+
+
+  //this would get the battery,time, and brake state (if we cared)
   //update system (battery,time, and brake)
   //rflex_update_system(rflex_fd,&time,&batt,&brake);
 }
