@@ -4,6 +4,8 @@
 \usepackage{listings}
 \lstset{language=C,basicstyle=\footnotesize,frame=tb}
 
+\usepackage{tabularx}
+
 \def\VERSION {1.2}
 \def\DEFAULTPORT {6665}
 \def\HOMEPAGE {{\tt http://playerstage.sourceforge.net}}
@@ -265,7 +267,7 @@ value on error.  A descriptive error message will also be written into
 the error variable:
 \begin{quote}
 \begin{lstlisting}{}
-char *playerc\_errorstr;
+char *playerc_errorstr;
 \end{lstlisting}
 \end{quote}
 
@@ -300,14 +302,39 @@ internal use and should not be manipulated directly.
 \chapter{Device Reference}
 \label{chap.devices}
 
-\section{How to read this reference}
-
 This chapter contains information on the various proxies offered by
 \libplayerc.  It is not intended to provide a complete reference for
 all of the devices offered by Player, and should be read in
 conjunction with the Player User Manual.
 
 Device proxies are listed in alphabetical order.
+
+\section{Device Summary}
+
+\libplayerc has proxies for the following devices:
+
+\noindent
+\begin{tabularx}{\columnwidth}{lX}
+\hline
+{\tt bps} & Beacon-based positioning system: determines the absolute pose
+of the robot using pre-placed beacons.  {\bf Experimental.}\\
+{\tt broadcast} & Broadcast device: sends and receives packets between Player
+clients.\\
+{\tt laser} & Laser device: an interface to scanning laser range-finders
+such as the SICK LMS200.\\
+{\tt lbd} & Laser beacon detector: detects retro-reflective bar-codes in
+the laser scan.\\
+{\tt position} & Position device: for control of a mobile robot platform.\\
+{\tt ptz} & Pan-tilt-zoom device: an interface to a pan-tilt-zoom camera
+head such as the Sony EVID30 \\
+{\tt sonar} & Sonar device: an interface to an array of sonar range finders, 
+such as those built into a mobile robot base.\\
+{\tt truth} & Truth device: allows clients to get and set the pose of
+objects in the Stage simulator.  {\bf Simulator only.}\\
+{\tt vision} & Vision device: an interface to a color blob detector (the
+ACTS vision system).\\
+\hline
+\end{tabularx}
 
 
 \newpage
@@ -468,6 +495,14 @@ structure, which has the following elements.
 \lstinputlisting{vision.t.tex}
 \end{quote}
 
+
+\appendix
+
+\chapter{Complete Header Listing}
+
+This is a complete listing of {\tt playerc.h}.
+
+\lstinputlisting{../playerc.h}
 
 \end{document}
 
