@@ -275,11 +275,16 @@ AC_SUBST(STAGE1P4_LIB)
 AC_SUBST(STAGE1P4_CFLAGS)
 
 dnl Where is Gazebo?
+AC_ARG_ENABLE(gazebo,
+[  --disable-gazebo           Don't compile the Gazebo driver],
+disable_reason="disabled by user",
+enable_gazebo=yes)
 AC_ARG_WITH(gazebo, [  --with-gazebo=dir       Location of Gazebo],
             GAZEBO_DIR=$with_gazebo,GAZEBO_DIR=$prefix)
+if test "x$enable_gazebo" = "xyes"; then
 if test "x$GAZEBO_DIR" = "xNONE" -o "x$GAZEBO_DIR" = "xno"; then
   GAZEBO_HEADER=gazebo.h
-  GAZEBO_EXTRA_CPPFLAGS=
+  GAZEBO_EXTRA_CPPFLAGS="-DINCLUDE_GAZEBO"
   GAZEBO_EXTRA_LDFLAGS=-lgazebo
 elif test "x$GAZEBO_DIR" = "xyes"; then
   GAZEBO_HEADER=$prefix/include/gazebo.h
@@ -289,6 +294,10 @@ else
   GAZEBO_HEADER=$GAZEBO_DIR/include/gazebo.h
   GAZEBO_EXTRA_CPPFLAGS="-I$GAZEBO_DIR/include -DINCLUDE_GAZEBO"
   GAZEBO_EXTRA_LDFLAGS="-L$GAZEBO_DIR/lib -lgazebo"
+fi
+else 
+GAZEBO_EXTRA_CPPFLAGS=
+GAZEBO_EXTRA_LDFLAGS=
 fi
 
 dnl Add the Gazebo driver
