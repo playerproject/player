@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "error.h"
 #include "plan.h"
 
 // Test to see if once cell is reachable from another
@@ -37,8 +38,6 @@ void plan_update_waypoints(plan_t *plan, double px, double py)
 
   while (cell != NULL)
   {
-    //printf("%d %d\n", cell->ci, cell->cj);
-
     if (plan->waypoint_count >= plan->waypoint_size)
     {
       plan->waypoint_size *= 2;
@@ -57,11 +56,13 @@ void plan_update_waypoints(plan_t *plan, double px, double py)
     // Find the farthest cell in the path that is reachable from the
     // currrent cell.
     dist = 0;
-    for (ncell = cell; ncell->plan_next != NULL; ncell = ncell->plan_next)
+    for(ncell = cell; ncell->plan_next != NULL; ncell = ncell->plan_next)
     {
-      if (dist > 0.50)
-        if (!plan_test_reachable(plan, cell, ncell->plan_next))
+      if(dist > 0.50)
+      {
+        if(!plan_test_reachable(plan, cell, ncell->plan_next))
           break;
+      }
       dist += plan->scale;
     }
     if(ncell == cell)
@@ -102,7 +103,48 @@ void plan_convert_waypoint(plan_t* plan,
   *py = PLAN_WYGY(plan, waypoint->cj);
 }
 
+// Test to see if once cell is reachable from another.
+int plan_test_reachable(plan_t *plan, plan_cell_t *cell_a, plan_cell_t *cell_b)
+{
+  double theta;
+  double sinth, costh;
+  double i,j;
+  int lasti, lastj;
 
+  theta = atan2((double)(cell_b->cj - cell_a->cj), 
+                (double)(cell_b->ci - cell_a->ci));
+  sinth = sin(theta);
+  costh = cos(theta);
+
+  lasti = lastj = -1;
+  i = (double)cell_a->ci;
+  j = (double)cell_a->cj;
+
+  while((lasti != cell_b->ci) || (lastj != cell_b->cj))
+  {
+    if((lasti != (int)floor(i)) || (lastj != (int)floor(j)))
+    {
+      lasti = (int)floor(i);
+      lastj = (int)floor(j);
+      if(!PLAN_VALID(plan,lasti,lastj))
+      {
+        PLAYER_WARN("stepped off the map!");
+        return(0);
+      }
+      if(plan->cells[PLAN_INDEX(plan,lasti,lastj)].occ_dist <
+         plan->abs_min_radius)
+        return(0);
+    }
+    
+    if(lasti != cell_b->ci)
+      i += costh;
+    if(lastj != cell_b->cj)
+      j += sinth;
+  }
+  return(1);
+}
+
+#if 0
 // Test to see if once cell is reachable from another.
 // This could be improved.
 int plan_test_reachable(plan_t *plan, plan_cell_t *cell_a, plan_cell_t *cell_b)
@@ -186,4 +228,5 @@ int plan_test_reachable(plan_t *plan, plan_cell_t *cell_a, plan_cell_t *cell_b)
   }
   return 1;
 }
+#endif
 
