@@ -80,6 +80,7 @@ extern bool            P2OS::direct_wheel_vel_control;
 extern int             P2OS::psos_fd; 
 extern char            P2OS::psos_serial_port[];
 extern int             P2OS::radio_modemp;
+extern int             P2OS::joystickp;
 extern bool            P2OS::initdone;
 extern char            P2OS::num_loops_since_rvel;
 extern SIP*           P2OS::sippacket;
@@ -107,6 +108,7 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
     strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
     psos_fd = -1;
     radio_modemp = 0;
+    joystickp = 0;
   
     data = new player_p2os_data_t;
     command = new player_p2os_cmd_t;
@@ -150,6 +152,8 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
           cf->ReadString(section, "port", psos_serial_port),
           sizeof(psos_serial_port));
   radio_modemp = cf->ReadInt(section, "radio", radio_modemp);
+  joystickp = cf->ReadInt(section, "joystick", joystickp);
+  printf("joystick:%d\n", joystickp);
 
   // zero the subscription counter.
   subscriptions = 0;
@@ -419,6 +423,18 @@ int P2OS::Setup()
   sonarpacket.Build(sonarcommand, 4);
   SendReceive(&sonarpacket);
 
+  if(joystickp)
+  {
+    // enable joystick control
+    P2OSPacket js_packet;
+    unsigned char js_command[4];
+    js_command[0] = JOYDRIVE;
+    js_command[1] = 0x3B;
+    js_command[2] = 1;
+    js_command[3] = 0;
+    js_packet.Build(js_command, 4);
+    SendReceive(&js_packet);
+  }
 
   /* now spawn reading thread */
   StartThread();
