@@ -891,13 +891,13 @@ int playerc_position_get_geom(playerc_position_t *device);
     speed (m/s); this field is used by omni-drive robots only.  va :
     rotational speed (radians/s).  All speeds are defined in the robot
     coordinate system. */
-int  playerc_position_set_speed(playerc_position_t *device,
-                                double vx, double vy, double va);
+int playerc_position_set_cmd_vel(playerc_position_t *device,
+                                 double vx, double vy, double va, int state);
 
 /** Set the target pose (gx, gy, ga) is the target pose in the
     odometric coordinate system. */
 int playerc_position_set_cmd_pose(playerc_position_t *device,
-                                  double gx, double gy, double ga);
+                                  double gx, double gy, double ga, int state);
 
 /***************************************************************************
  ** end section
