@@ -405,7 +405,7 @@ void WriteLog::Main(void)
   while (1)
   {
     pthread_testcancel();
-
+    
     if (this->wait_index >= 0)
     {
       // Wait on some device
