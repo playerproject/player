@@ -134,7 +134,10 @@ int ReadLog::Setup()
   // Subscribe to the underlying reader
   if (this->manager->Subscribe(this->read_id, this) != 0)
     return -1;
-  
+
+  // Clear the data buffer
+  this->PutData(NULL, 0, 0, 0);
+    
   return 0;
 }
 

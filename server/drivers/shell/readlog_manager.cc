@@ -30,6 +30,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <math.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <stdlib.h>
@@ -310,6 +311,7 @@ void ReadLogManager::Main()
 ////////////////////////////////////////////////////////////////////////////
 // Unit conversion macros
 #define M_MM(x) ((x) * 1000.0)
+#define CM_MM(x) ((x) * 100.0)
 #define RAD_DEG(x) ((x) * 180.0 / M_PI)
 
 
@@ -362,8 +364,12 @@ int ReadLogManager::ParseData(CDevice *device, int linenum,
     return this->ParseLaser(device, linenum, token_count, tokens, tsec, tusec);
   else if (device->device_id.code == PLAYER_POSITION_CODE)
     return this->ParsePosition(device, linenum, token_count, tokens, tsec, tusec);
+  else if (device->device_id.code == PLAYER_POSITION3D_CODE)
+    return this->ParsePosition3d(device, linenum, token_count, tokens, tsec, tusec);
   else if (device->device_id.code == PLAYER_WIFI_CODE)
     return this->ParseWifi(device, linenum, token_count, tokens, tsec, tusec);
+  else if (device->device_id.code == PLAYER_GPS_CODE)
+    return this->ParseGps(device, linenum, token_count, tokens, tsec, tusec);
 
   PLAYER_WARN("unknown device code");
   return -1;
@@ -380,7 +386,7 @@ int ReadLogManager::ParseLaser(CDevice *device, int linenum,
 
   if (token_count < 12)
   {
-    PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
     return -1;
   }
 
@@ -418,7 +424,7 @@ int ReadLogManager::ParsePosition(CDevice *device, int linenum,
 
   if (token_count < 12)
   {
-    PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
     return -1;
   }
   
@@ -437,6 +443,43 @@ int ReadLogManager::ParsePosition(CDevice *device, int linenum,
 
 
 ////////////////////////////////////////////////////////////////////////////
+// Parse position3d data
+int ReadLogManager::ParsePosition3d(CDevice *device, int linenum,
+                                    int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
+{
+ player_position3d_data_t data;
+
+  if (token_count < 19)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+  
+  data.xpos = NINT32(M_MM(atof(tokens[6])));
+  data.ypos = NINT32(M_MM(atof(tokens[7])));
+  data.zpos = NINT32(M_MM(atof(tokens[8])));
+
+  data.roll = NINT32(RAD_DEG(3600 * atof(tokens[9])));
+  data.pitch = NINT32(RAD_DEG(3600 * atof(tokens[10])));
+  data.yaw = NINT32(RAD_DEG(3600 * atof(tokens[11])));
+
+  data.xspeed = NINT32(M_MM(atof(tokens[12])));
+  data.yspeed = NINT32(M_MM(atof(tokens[13])));
+  data.zspeed = NINT32(M_MM(atof(tokens[14])));
+
+  data.rollspeed = NINT32(RAD_DEG(3600 * atof(tokens[15])));
+  data.pitchspeed = NINT32(RAD_DEG(3600 * atof(tokens[16])));
+  data.yawspeed = NINT32(RAD_DEG(3600 * atof(tokens[17])));
+  
+  data.stall = atoi(tokens[18]);
+
+  device->PutData(&data, sizeof(data), tsec, tusec);
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
 // Parse wifi data
 int ReadLogManager::ParseWifi(CDevice *device, int linenum,
                               int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
@@ -447,7 +490,7 @@ int ReadLogManager::ParseWifi(CDevice *device, int linenum,
 
   if (token_count < 6)
   {
-    PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
     return -1;
   }
 
@@ -468,6 +511,41 @@ int ReadLogManager::ParseWifi(CDevice *device, int linenum,
     data.link_count++;
   }
   data.link_count = htons(data.link_count);
+
+  device->PutData(&data, sizeof(data), tsec, tusec);
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Parse GPS data
+int ReadLogManager::ParseGps(CDevice *device, int linenum,
+                             int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
+{
+  player_gps_data_t data;
+
+  if (token_count < 17)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+
+  data.time_sec = NUINT32((int) atof(tokens[6]));
+  data.time_usec = NUINT32((int) fmod(atof(tokens[6]), 1.0));
+  data.latitude = NINT32((int) (60 * 60 * 60 * atof(tokens[7])));
+  data.longitude = NINT32((int) (60 * 60 * 60 * atof(tokens[8])));
+  data.altitude = NINT32(M_MM(atof(tokens[9])));
+
+  data.utm_e = NINT32(CM_MM(atof(tokens[10])));
+  data.utm_n = NINT32(CM_MM(atof(tokens[11])));
+
+  data.hdop = NINT16((int) (10 * atof(tokens[12])));
+  data.err_horz = NUINT32(M_MM(atof(tokens[13])));
+  data.err_vert = NUINT32(M_MM(atof(tokens[14])));
+
+  data.quality = atoi(tokens[15]);
+  data.num_sats = atoi(tokens[16]);
 
   device->PutData(&data, sizeof(data), tsec, tusec);
 
