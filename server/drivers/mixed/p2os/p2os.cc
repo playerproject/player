@@ -1168,8 +1168,9 @@ P2OS::Main()
 
               player_position_geom_t geom;
               geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-              // TODO: figure out this offset somehow; it's not given in
-              //       the Saphira parameters
+              // TODO: Figure out this rotation offset somehow; it's not 
+              //       given in the Saphira parameters.  For now, -100 is 
+              //       about right for a Pioneer 2DX.
               geom.pose[0] = htons((short) (-100));
               geom.pose[1] = htons((short) (0));
               geom.pose[2] = htons((short) (0));
