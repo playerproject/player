@@ -2910,10 +2910,10 @@ typedef struct
 typedef struct
 {
   /** Current joystick position (unscaled) */
-  uint8_t xpos, ypos;
+  int16_t xpos, ypos;
 
   /** Scaling factors */
-  uint16_t xscale, yscale;
+  int16_t xscale, yscale;
 
   /** Button states (bitmask) */
   uint16_t buttons;
