@@ -184,7 +184,7 @@ void GzLaser::Update()
     // Pick the rage resolution to use (1, 10, 100)
     if (this->iface->data->max_range <= 8.192)
       range_res = 1.0;
-    else if (this->iface->data->max_range < 81.92)
+    else if (this->iface->data->max_range <= 81.92)
       range_res = 10.0;
     else
       range_res = 100.0;
