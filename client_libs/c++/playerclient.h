@@ -985,7 +985,7 @@ class PositionProxy : public ClientProxy
   int DoRotation(int deg);
 
   /// Only supported by the reb_position driver.
-  int DoDesiredHeading(short theta, int xspeed, int yawspeed);
+  int DoDesiredHeading(int theta, int xspeed, int yawspeed);
 
   /// Accessor method
   int32_t  Xpos () const { return xpos; }
@@ -1398,20 +1398,41 @@ class WiFiProxy: public ClientProxy
 {
 public:
 
-  /// The current wifi data.
-  unsigned short link, level, noise;
 
     /** Constructor.
         Leave the access field empty to start unconnected.
     */
   WiFiProxy(PlayerClient *pc, unsigned short index, 
 	       unsigned char access = 'c') : 
-    ClientProxy(pc, PLAYER_WIFI_CODE, index, access) {}
+    ClientProxy(pc, PLAYER_WIFI_CODE, index, access), link_count(0) {}
 
+
+  int GetLinkQuality(char * ip = NULL);
+  int GetLevel(char * ip = NULL);
+  int GetLeveldBm(char * ip = NULL) { return GetLevel(ip) - 0x100; }
+  int GetNoise(char * ip = NULL);
+  int GetNoisedBm(char * ip = NULL) { return GetNoise(ip) - 0x100; }
+
+  int GetBitrate();
+
+  char * GetMAC(char *buf, int len);
   void FillData(player_msghdr_t hdr, const char *buffer);
 
   /// Print out current data.
   void Print();
+
+protected:
+  int GetLinkIndex(char *ip);
+
+  /// The current wifi data.
+  int link_count;
+  player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
+  uint32_t throughput;
+  uint8_t op_mode;
+  int32_t bitrate;
+  
+  char access_point[32];
+
 };
 /*****************************************************************************
  ** end section
