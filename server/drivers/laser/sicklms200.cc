@@ -297,45 +297,71 @@ int SickLMS200::Setup()
   // Some Pioneers only power laser after the terminal is opened; wait
   // for the laser to initialized
   sleep(this->startup_delay);
-  
-  // Start out at 38400 with non-blocking io
-  if (ChangeTermSpeed(38400))
-    return 1;
 
-  PLAYER_MSG0("connecting at 38400");
-  if (SetLaserMode() != 0)
+  int rate = 0;
+  
+  // Try connecting at the given rate
+  PLAYER_MSG1("connecting at %d", this->port_rate);
+  if (ChangeTermSpeed(this->port_rate))
+    return 1;
+  if (SetLaserMode() == 0)
+    rate = this->port_rate;
+  else if (SetLaserMode() == 0)
+    rate = this->port_rate;
+
+  // Try connecting at 38400
+  if (rate < 38400)
   {
-    if (SetLaserMode() != 0)
-    {
-      PLAYER_MSG0("connect at 38400 failed, trying 9600");
-      if (ChangeTermSpeed(9600))
-        return 1;
-      if (SetLaserMode() != 0)
-      {
-        if (SetLaserMode() != 0)
-        {
-          PLAYER_ERROR("connection failed");
-          return 1;
-        }
-      }
-      PLAYER_MSG0("laser operating at 9600; changing to 38400");
-      if (SetLaserSpeed(38400))
-        return 1;
-      if (ChangeTermSpeed(38400))
-        return 1;
-    }
+    PLAYER_MSG0("connecting at 38400");
+    if (ChangeTermSpeed(38400))
+      return 1;
+    if (SetLaserMode() == 0)
+      rate = 38400;
+    else if (SetLaserMode() == 0)
+      rate = 38400;
   }
 
-  if (this->port_rate > 38400) {
-    printf("LASER: trying hi speed\n");
+  // Try connecting at 9600
+  if (rate < 9600)
+  {
+    PLAYER_MSG0("connecting at 9600");
+    if (ChangeTermSpeed(9600))
+      return 1;
+    if (SetLaserMode() == 0)
+      rate = 9600;
+    else if (SetLaserMode() == 0)
+      rate = 9600;
+  }
+
+  if (rate == 0)
+  {
+    PLAYER_ERROR("unable to connect to laser");
+    return 1;
+  }
+
+  // Jump up to 38400
+  if (rate < 38400)
+  {
+    PLAYER_MSG0("laser operating at 9600; changing to 38400");
+    if (SetLaserSpeed(38400))
+      return 1;
     sleep(1);
-    // now that we have a connection, let's set the port rate
-    // if necessary
-    SetLaserSpeed(this->port_rate);
+    if (ChangeTermSpeed(38400))
+      return 1;
+    sleep(1);
+  }
+
+  // Jump up to 500000
+  else if (rate < this->port_rate)
+  {
+    printf("LASER: trying hi speed\n");
+    if (SetLaserSpeed(this->port_rate))
+      return 1;
+    sleep(1);
+    if (ChangeTermSpeed(this->port_rate))
+      return 1;
     sleep(1);
     printf("LASER: changing term to hi speed\n");
-    ChangeTermSpeed(this->port_rate);
-    sleep(1);
   }
 
   printf("LASER: Get Type\n");
@@ -372,9 +398,11 @@ int SickLMS200::Shutdown()
   // shutdown laser device
   StopThread();
 
+  /* REMOVE?
   if (port_rate > 38400) {
     SetLaserSpeed(9600);
   }
+  */
 
   CloseTerm();
   puts("Laser has been shutdown");
@@ -1319,7 +1347,11 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
   {
     if (timeout >= 0)
       usleep(1000);
+
+    //printf("reading %d\n", timeout); fflush(stdout);
     bytes = ::read(this->laser_fd, header + sizeof(header) - 1, 1);
+    //printf("bytes read %d\n", bytes);
+    
     if (header[0] == STX && header[1] == 0x80)
     {
       if (!ack)
