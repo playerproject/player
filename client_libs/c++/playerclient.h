@@ -46,6 +46,7 @@
 #include <gpsproxy.h>  /* support for the GPS device */
 #include <bpsproxy.h>  /* support for the BPS device */
 #include <broadcastproxy.h> /* support for the broadcast device */
+#include <moteproxy.h> /* support for the broadcast device */
 
 //#include <idarproxy.h>  /* support for the IDAR device */
 //#include <descartesproxy.h>  /* support for the IDAR device */

@@ -32,8 +32,8 @@
 #include <stagedevice.h>
 #include <stage.h>
 
-//#define DEBUG
-//#define VERBOSE
+#define DEBUG
+#define VERBOSE
 
 ///////////////////////////////////////////////////////////////////////////
 // Minimal constructor

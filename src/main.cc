@@ -335,6 +335,7 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
         case PLAYER_GRIPPER_CODE:
         case PLAYER_IDAR_CODE:
         case PLAYER_DESCARTES_CODE:
+        case PLAYER_MOTE_CODE:
         {
           // Create a StageDevice with this IO base address and filedes
           dev = new CStageDevice( deviceIO, tfd );

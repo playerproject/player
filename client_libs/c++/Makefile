@@ -13,7 +13,7 @@ INCLUDES = -I. -I../c -I../../include
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
       laserbeaconproxy.o visionproxy.o truthproxy.o occupancyproxy.o \
-      gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o 
+      gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o
       #idarproxy.o descartesproxy.o
 
 all: $(LIBNAME)
@@ -42,8 +42,9 @@ $(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	$(LN) -fs $(PWD)/occupancyproxy.h ../../include
 	$(LN) -fs $(PWD)/gpsproxy.h ../../include
 	$(LN) -fs $(PWD)/bpsproxy.h ../../include
-	$(LN) -fs $(PWD)/broadcastproxy.h ../../include
 	$(LN) -fs $(PWD)/playermulticlient.h ../../include
+	$(LN) -fs $(PWD)/broadcastproxy.h ../../include
+	$(LN) -fs $(PWD)/moteproxy.h ../../include
 
 $(C_CLIENT_DIR)/$(C_CLIENT_OBJ):
 	cd $(C_CLIENT_DIR) && make $(C_CLIENT_OBJ)
@@ -78,8 +79,9 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 occupancyproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 gpsproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 bpsproxy.h $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 broadcastproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 playermulticlient.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 broadcastproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 moteproxy.h $(INSTALL_INCLUDE)
 #	$(INSTALL) -m 644 idarproxy.h $(INSTALL_INCLUDE)
 #	$(INSTALL) -m 644 descartesproxy.h $(INSTALL_INCLUDE)
 
@@ -101,9 +103,10 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/gpsproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/bpsproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/broadcastproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/moteproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/playermulticlient.h
-#	$(RM) -f $(INSTALL_INCLUDE)/idarproxy.h
 #	$(RM) -f $(INSTALL_INCLUDE)/descartesproxy.h
+#	$(RM) -f $(INSTALL_INCLUDE)/idarproxy.h
 
 
 clean:
@@ -125,6 +128,7 @@ clean:
 	$(RM) -f ../../include/occupancyproxy.h 
 	$(RM) -f ../../include/gpsproxy.h 
 	$(RM) -f ../../include/bpsproxy.h 
+	$(RM) -f ../../include/moteproxy.h 
 	$(RM) -f ../../include/broadcastproxy.h 
 	$(RM) -f ../../include/playermulticlient.h 
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND

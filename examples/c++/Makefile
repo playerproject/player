@@ -8,7 +8,8 @@ INCLUDES = -I../../client_libs/c++ -I../../client_libs/c -I../../include -I$(INS
 LIBDIRS = -L../../client_libs/c++ -L$(INSTALL_PREFIX)/lib -L/usr/local/player/lib
 LIBS = $(LIBDIRS) -lplayerclient $(PLATFORM_LIBS) -lm
 
-BINARIES = randomwalk \
+BINARIES = rsn \
+  	   randomwalk \
 	   visualservo \
            sonarobstacleavoid \
 	   goto \
@@ -20,7 +21,7 @@ BINARIES = randomwalk \
 	   grip \
 	   forage \
 	   multilogger stress autolayout 
-	#multirandom multiphero
+	   #multirandom multiphero
 
 all: $(BINARIES)
 
@@ -64,6 +65,7 @@ install: $(BINARIES)
 	$(INSTALL) -m 755 grip $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 forage $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 multilogger $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 rsn $(INSTALL_EXAMPLES)/c++
 
 uninstall: 
 	@echo "Uninstalling example source files"
