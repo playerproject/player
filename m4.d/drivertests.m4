@@ -29,6 +29,7 @@ ifelse($3,[yes],
                  enable_$1=yes)],
   [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,
                  enable_$1=no)])
+failed_header_check=no
 if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
   if test len($5) -gt 0; then
     header_list=$5
@@ -36,7 +37,10 @@ if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
     header_list=foo
   fi
   for header in $header_list; do
-    AC_CHECK_HEADER($header, enable_$1=yes, enable_$1=no,)
+    AC_CHECK_HEADER($header, 
+                    enable_$1=yes,
+                    enable_$1=no
+                    failed_header_check=yes,)
   done
 fi
 if test "x$enable_$1" = "xyes"; then
@@ -46,7 +50,13 @@ if test "x$enable_$1" = "xyes"; then
   name_caps[_EXTRA_LIB]=$4
   PLAYER_DRIVERS="$PLAYER_DRIVERS $1"
 else      
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS $1"
+  if test "x$3" = "xno"; then
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- disabled by default; use --enable-$1 to enable"
+  elif test "x$failed_header_check" = "xyes"; then
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- couldn't find (at least one of) $header_list"
+  else
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- disabled by user"
+  fi
 fi        
 AC_SUBST(name_caps[_LIB])
 PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $name_caps[_LIB]"
@@ -99,7 +109,7 @@ if test "x$enable_$1" = "xyes"; then
   other_name_caps[_EXTRA_LIB]=$6
   PLAYER_DRIVERS="$PLAYER_DRIVERS $1"
 else
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS $1"
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1"
 fi
 AC_SUBST(other_name_caps[_LIB])
 PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $other_name_caps[_LIB]"
@@ -231,7 +241,7 @@ if test "x$enable_laser" = "xyes"; then
   PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/fiducial/liblaserbar.a drivers/fiducial/liblaserbarcode.a drivers/fiducial/liblaservisualbarcode.a"
   PLAYER_DRIVERS="$PLAYER_DRIVERS laserbar laserbarcode laservisualbarcode"
 else
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS laserbar laserbarcode laservisualbarcode"
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:laserbar:laserbarcode:laservisualbarcode"
 fi
 AC_SUBST(LASERFIDUCIAL_LIBS)
 
@@ -253,7 +263,7 @@ if test "x$enable_amcl" = "xyes"; then
   PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lgsl -lgslcblas"
   PLAYER_DRIVERS="$PLAYER_DRIVERS amcl"
 else
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS amcl"
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:amcl"
 fi
 AC_SUBST(AMCL_LIB)
 AC_SUBST(AMCL_PF_LIB)
