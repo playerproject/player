@@ -21,7 +21,7 @@
  */
 
 /*
- * $Id: 
+ * $Id$
  *
  * Uses CMVision to retrieve the blob data
  */
@@ -53,6 +53,11 @@
   #include "captureV4L2.h"
 #endif
 
+#if INCLUDE_GAZEBO
+  #include "captureGazebo.h"
+  #include "gz_cam_init.h"
+#endif
+
 #define CMV_NUM_CHANNELS CMV_MAX_COLORS
 #define CMV_HEADER_SIZE 4*CMV_NUM_CHANNELS  
 #define CMV_BLOB_SIZE 16
@@ -77,7 +82,20 @@ private:
   int blob_size;  // size of each incoming blob
   
   CMVision *vision;
+
   capture *cap;
+  // for getting Gazebo gz_camera to intialize if needed.
+  // dirty hack ! :-(
+
+#if INCLUDE_GAZEBO 
+ char * gz_interface;
+  ConfigFile * gz_cf;
+  int gz_section;
+#endif
+
+     // ben -- adding bayer conversion
+     bool DoBayerConversion;
+     int BayerPattern;
 
   public:
 
@@ -112,22 +130,50 @@ CMVision_Register(DriverTable* table)
 }
 
 CMVisionBF::CMVisionBF(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_blobfinder_data_t),0,0,0)
+  :CDevice(sizeof(player_blobfinder_data_t),0,0,0)
 {
   vision=NULL;
   cap=NULL;
-
+  
+  //#ifdef HAVE_GAZEBO
+  
+#if INCLUDE_GAZEBO
+  gz_interface=interface;
+  gz_cf=cf;
+  gz_section=section;
+#endif
+  
   // first, get the necessary args
   width = cf->ReadInt(section, "width", DEFAULT_CMV_WIDTH);
   height = cf->ReadInt(section, "height", DEFAULT_CMV_HEIGHT);
   
   colorfile = cf->ReadString(section, "colorfile", "");
   capturetype = cf->ReadString(section, "capture", "1394");
+  
+#if HAVE_1394
+  // this might belong in capture1394.cc
+  // read config option to perform bayer color conversion
+  DoBayerConversion = false;
+  if (!strcmp(cf->ReadString(section, "do_bayer_conversion", ""),"BGGR")){
+       DoBayerConversion = true;
+       BayerPattern = BAYER_PATTERN_BGGR;
+  } else if (!strcmp(cf->ReadString(section, "do_bayer_conversion", ""),"GRBG")){
+       DoBayerConversion = true;
+       BayerPattern = BAYER_PATTERN_GRBG;
+  } else if (!strcmp(cf->ReadString(section, "do_bayer_conversion", ""),"RGGB")){
+       DoBayerConversion = true;
+       BayerPattern = BAYER_PATTERN_RGGB;
+  } else if (!strcmp(cf->ReadString(section, "do_bayer_conversion", ""),"GBRG")){
+       DoBayerConversion = true;
+       BayerPattern = BAYER_PATTERN_GBRG;
+  } else  
+       DoBayerConversion = false;
+#endif
 
   header_len = CMV_HEADER_SIZE;
   blob_size = CMV_BLOB_SIZE;
   header_elt_len = header_len / PLAYER_BLOBFINDER_MAX_CHANNELS;
-  
+    
 }
     
 int
@@ -140,7 +186,7 @@ CMVisionBF::Setup()
   if(!strcmp(capturetype, "1394"))
   {
 #if HAVE_1394
-    cap = new capture1394;
+    cap = new capture1394(DoBayerConversion,BayerPattern);
 #else
     PLAYER_ERROR("Sorry, support for capture from a 1394 camera was not "
                  "included at compile-time");
@@ -157,6 +203,19 @@ CMVisionBF::Setup()
     return(-1);
 #endif
   }
+ else if(!strcmp(capturetype, "GAZEBO"))
+  {
+    //#if HAVE_GAZEBO
+
+#if INCLUDE_GAZEBO
+    cap = new captureGazebo(gz_interface,gz_cf,gz_section);
+#else
+    PLAYER_ERROR("Sorry, support for capture from a Gazebo camera was not "
+                 "included at compile-time");
+    return(-1);
+#endif
+  }
+
   else
   {
     PLAYER_ERROR1("Unknown video capture type: \"%s\"", capturetype);
@@ -249,6 +308,10 @@ CMVisionBF::Main()
 	  continue; //no frame processed
 	}
       
+      // put image time in blob struct
+      //local_data.time_sec = htonl((uint32_t)(cap->getFrameTime()/1e9));
+      //local_data.time_usec = htonl((cap->getFrameTime()/1000)%1000000);
+
       for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
 	{
 	  //determine the index of the first entry for this channel
