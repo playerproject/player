@@ -574,8 +574,24 @@ class GpsProxy : public ClientProxy
 {
   public:
     
-    /// The latest global pose (in mm, mm, and degrees, respectively).
-    int xpos,ypos,heading;
+    /// Latitude and longitude, in degrees.
+    double latitude;
+    double longitude;
+
+    /// Altitude, in meters.
+    double altitude;
+
+    /// Number of satellites in view.
+    int satellites;
+
+    /// Fix quality
+    int quality;
+    
+    /// Horizontal dilution of position (HDOP)
+    double hdop;
+
+    /// Time, since the epoch
+    struct timeval time;
    
     /** Constructor.  Leave the access field empty to start
         unconnected.*/

@@ -26,17 +26,7 @@ test_gps(PlayerClient* client, int index)
   PASS();
   printf("DRIVER: %s\n", gp.driver_name);
 
-  /*
-  TEST("warping position");
-  if(gp.Warp(100,100,100) < 0)
-  {
-    FAIL();
-    return(-1);
-  }
-  PASS();
-  */
-
-  for(int t = 0; t < 3; t++)
+  for(int t = 0; t < 300; t++)
   {
     TEST1("reading data (attempt %d)", t);
 

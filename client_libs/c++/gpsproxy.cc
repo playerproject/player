@@ -52,6 +52,7 @@
 
 void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
+  player_gps_data_t* buf = (player_gps_data_t*)buffer;
   if(hdr.size != sizeof(player_gps_data_t))
   {
     if(player_debug_level(-1) >= 1)
@@ -60,11 +61,19 @@ void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_gps_data_t),hdr.size);
   }
 
-  // pos in integer mm
-  xpos = ntohl(((player_gps_data_t*)buffer)->xpos);
-  ypos = ntohl(((player_gps_data_t*)buffer)->ypos);
-  // heading in integer degrees
-  heading = ntohl(((player_gps_data_t*)buffer)->heading);
+  latitude = ((int)ntohl(buf->latitude)) * 60.0 * 60.0 * 60.0;
+  longitude = (int)ntohl(buf->longitude) * 60.0 * 60.0 * 60.0;
+
+  altitude = (int)ntohl(buf->altitude) / 1000.0;
+
+  satellites = buf->num_sats;
+
+  quality = buf->quality;
+
+  hdop = buf->hdop * 10.0;
+
+  time.tv_sec = ntohl(buf->time_sec);
+  time.tv_usec = ntohl(buf->time_usec);
 }
 
 // interface that all proxies SHOULD provide
@@ -72,7 +81,7 @@ void GpsProxy::Print()
 {
   printf("#GPS(%d:%d) - %c\n",
          m_device_id.code, m_device_id.index, access);
-  puts("#(Xmm,Ymm,THdeg)");
-  printf("%d\t%d\t%d\n", xpos,ypos,heading);
+  puts("#(fix,lat,long,alt,sats)");
+  printf("%d\t%f\t%f\t%f\t%d\n",quality,latitude,longitude,altitude,satellites);
 }
 
