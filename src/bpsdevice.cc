@@ -46,7 +46,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 
 #include <string.h>
 #include <math.h>
@@ -159,16 +159,22 @@ size_t CBpsDevice::GetData(unsigned char *dest, size_t maxsize)
     this->laserbeacon->GetLock()->GetData(this->laserbeacon, (uint8_t*) &laserbeacon_data,
                                           sizeof(laserbeacon_data), &sec, &usec);
 
+    PLAYER_TRACE0("about to check beacon times");
     // If beacon data is new, process it...
     if (!(sec == this->beacon_sec && usec == this->beacon_usec))
     {
+        PLAYER_TRACE0("beacons are new");
         this->beacon_sec = sec;
         this->beacon_usec = usec;
 
+        PLAYER_TRACE2("laserbeacon count: %u %u",
+                      laserbeacon_data.count,
+                      ntohs(laserbeacon_data.count));
         // Process the beacons one-by-one
         for (int i = 0; i < ntohs(laserbeacon_data.count); i++)
         {
             int id = laserbeacon_data.beacon[i].id;
+            PLAYER_TRACE1("considering beacon %d",id);
             if (id == 0)
                 continue;
             double r = ntohs(laserbeacon_data.beacon[i].range) / 1000.0;
