@@ -42,7 +42,7 @@ int main(int argc, char **argv)
   for(int i=0;i<num;i++)
   {
     clients[i] = new PlayerClient(host,baseport+i);
-    pproxies[i] = new P2PositionProxy(clients[i],0,'r');
+    pproxies[i] = new PositionProxy(clients[i],0,'r');
     sproxies[i] = new SonarProxy(clients[i],0,'r');
     multi.AddClient(clients[i]);
     //usleep(10000);

@@ -65,8 +65,7 @@ int main(int argc, char **argv)
 
   PlayerClient robot(host,port);
 
-  P2PositionProxy p2pp(&robot,0,'a');
-  PositionProxy &pp = p2pp;
+  PositionProxy pp(&robot,0,'a');
   //LaserProxy lp(&robot,0,'r');
   SonarProxy sp(&robot,0,'r');
 
@@ -129,6 +128,6 @@ int main(int argc, char **argv)
       newturnrate = 0;
 
     /* write commands to robot */
-    pp.SetSpeed(newspeed,newturnrate);
+    pp.SetSpeed(2*newspeed,newturnrate);
   }
 }

@@ -107,8 +107,7 @@ int main(int argc, char** argv)
   SonarProxy sp(&robot,0);
 
   /* request read access on the sonars and all access to the wheels */
-  P2PositionProxy p2pp(&robot,0,'a');
-  PositionProxy &pp = p2pp;
+  PositionProxy pp(&robot,0,'a');
 
   /*
   if (use_laser)
@@ -147,7 +146,7 @@ int main(int argc, char** argv)
                sp.ranges[5] < minfrontdistance);
     }
 
-    if(obs || avoidcount || pp.Stalls())
+    if(obs || avoidcount || pp.stalls)
     {
       newspeed = 0; //-150;
 

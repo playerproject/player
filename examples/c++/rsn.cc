@@ -88,8 +88,7 @@ int main(int argc, char **argv)
   }
 
   PlayerClient robot(host,port);
-  P2PositionProxy p2pp(&robot, 0, 'a');
-  PositionProxy &pp = p2pp;
+  PositionProxy pp(&robot,0,'a');
   MoteProxy mp(&robot,myindex,'a');
   SonarProxy sp(&robot, 0, 'a');
 

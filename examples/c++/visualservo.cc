@@ -91,8 +91,7 @@ int main(int argc, char** argv)
   VisionProxy vp(&robot,0,'r');
 
   /* request read access on the sonars and all access to the wheels */
-  P2PositionProxy p2pp(&robot,0,'a');
-  PositionProxy &pp = p2pp;
+  PositionProxy pp(&robot,0,'a');
 
   /* maybe turn on the motors */
   if(turnOnMotors && pp.SetMotorState(1))
@@ -115,7 +114,7 @@ int main(int argc, char** argv)
            sp[4] < minfrontdistance ||
            sp[5] < minfrontdistance);
 
-    if(obs || avoidcount || pp.Stalls())
+    if(obs || avoidcount || pp.stalls)
     {
       newspeed = 0; //-150;
 

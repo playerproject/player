@@ -64,8 +64,7 @@ int main(int argc, char **argv)
   parse_args(argc,argv);
 
   PlayerClient robot(host,port);
-  P2PositionProxy p2pp(&robot,0,'w');
-  PositionProxy &pp = p2pp;
+  PositionProxy pp(&robot,0,'w');
   LaserProxy lp(&robot,0,'r');
 
   printf("%s\n",robot.conn.banner);
