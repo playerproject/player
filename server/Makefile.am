@@ -1,15 +1,16 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage
+AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(top_srcdir)/replace
 
-player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@ @LIBOBJS@
+player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@ \
+			$(top_builddir)/replace/libreplace.a
 
 #
 # Note to everybody: please do NOT break the following assignment onto
 # separate lines with backslashes.  It makes the link line look like shit and 
 # hard to parse.  - BPG
 #
-player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTKGUI_EXTRA_LIB@ @LIBOBJS@
+player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTKGUI_EXTRA_LIB@ $(top_builddir)/replace/libreplace.a
 
 player_LDFLAGS = @RTKGUI_EXTRA_LDFLAGS@
 
@@ -25,7 +26,7 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
                  player.h playerqueue.h device.h deviceregistry.h \
                  devicetable.h clientdata.h clientmanager.h socket_util.h \
                  wallclocktime.h playertime.h configfile.h drivertable.cc \
-                 drivertable.h replace.h
+                 drivertable.h
 
 
 include_HEADERS = playercommon.h \

@@ -37,7 +37,10 @@
 #endif
 
 #include <sys/time.h>
-#include <sys/poll.h>
+//#include <sys/poll.h>
+// forward declaration so that we don't have to #include <sys/poll.h> in
+// this header (it's not available on every system)
+struct pollfd;
 #include <string.h>
 
 // Convert radians to degrees

@@ -217,7 +217,6 @@ Waveaudio::Main()
     data.depth = htons((unsigned short)depth);
     data.samples = htonl(bytes);
     
-    int freq = 0, minfreq = 1000, maxfreq = 5000;
     
     while(1) 
       {
@@ -227,11 +226,12 @@ Waveaudio::Main()
 
 #ifndef TEST_TONE
 	// SAMPLE DATA FROM THE DSP
-	if(read(fd, &(data.data), bytes) < (size_t)bytes ) 
+	if(read(fd, &(data.data), bytes) < (int)bytes ) 
 	  {
 	    PLAYER_WARN("not enough data read");
 	  } 
 #else
+        int freq = 0, minfreq = 1000, maxfreq = 5000;
 	// generate a series of test tones
 	double omega= freq * 2.0 * M_PI / RATE;
 	double amp = 32;

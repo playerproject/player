@@ -112,7 +112,7 @@ BumperProxy::Print()
 {
   printf("#Bumper(%d:%d) - %c\n", device, index, access);
   printf("%d\n", bumper_count);
-  for (int i = min(bumper_count, PLAYER_BUMPER_MAX_SAMPLES); i >= 0; i--)
+  for (int i = min(bumper_count, PLAYER_BUMPER_MAX_SAMPLES) - 1; i >= 0; i--)
     putchar((bumpers[i]) ? '1' : '0');
   puts(" ");
 }

@@ -20,14 +20,12 @@ dnl The C define INCLUDE_<name> and the autoconf variable <name>_LIB (with
 dnl <name> capitalized) will be conditionally defined to be 1 and 
 dnl lib<name>.a, respectively.
 dnl
-
-
 AC_DEFUN([PLAYER_ADD_DRIVER], [
 AC_DEFUN([name_caps],translit($1,[a-z],[A-Z]))
 ifelse($3,[yes],
-  [AC_ARG_ENABLE($1, [  --disable-$1     Don't compile the $1 driver],,
+  [AC_ARG_ENABLE($1,[  --disable-$1	  Don't compile the $1 driver],,
                  enable_$1=yes)],
-  [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,
+  [AC_ARG_ENABLE($1, [  --enable-$1	  Compile the $1 driver],,
                  enable_$1=no)])
 if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
   AC_CHECK_HEADER($5, enable_$1=yes, enable_$1=no,)
