@@ -61,8 +61,8 @@ void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_gps_data_t),hdr.size);
   }
 
-  latitude = ((int)ntohl(buf->latitude)) * 60.0 * 60.0 * 60.0;
-  longitude = (int)ntohl(buf->longitude) * 60.0 * 60.0 * 60.0;
+  latitude = ((int)ntohl(buf->latitude)) / 60.0 / 60.0 / 60.0;
+  longitude = (int)ntohl(buf->longitude) / 60.0 / 60.0 / 60.0;
 
   altitude = (int)ntohl(buf->altitude) / 1000.0;
 

@@ -587,9 +587,21 @@ typedef struct _playerc_gps_t
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
     
-  /** GPS pose estimate (in global coordinates). */
-  double px, py, pa;
-    
+  /** Latitude and logitude (degrees).  Latitudes are positive for
+      north, negative for south.  Logitudes are positive for east,
+      negative for west. */
+  double lat, lon;
+
+  /** Altitude (meters).  Positive is above sea-level, negative is
+      below. */
+  double alt;
+
+  /** Quality of fix 0 = invalid, 1 = GPS fix, 2 = DGPS fix */
+  int quality;
+     
+  /** Number of satellites in view. */
+  int num_sats;
+
 } playerc_gps_t;
 
 /** [Methods] */

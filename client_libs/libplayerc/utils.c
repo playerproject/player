@@ -66,6 +66,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_DIO_STRING;
     case PLAYER_FIDUCIAL_CODE:
       return PLAYER_FIDUCIAL_STRING;
+    case PLAYER_GPS_CODE:
+      return PLAYER_GPS_STRING;
     case PLAYER_LASER_CODE:
       return PLAYER_LASER_STRING;
     case PLAYER_LOCALIZE_CODE:
@@ -105,6 +107,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_DIO_CODE;
   if (strcmp(name, PLAYER_FIDUCIAL_STRING) == 0)
     return PLAYER_FIDUCIAL_CODE;
+  if (strcmp(name, PLAYER_GPS_STRING) == 0)
+    return PLAYER_GPS_CODE;
   if (strcmp(name, PLAYER_LASER_STRING) == 0)
     return PLAYER_LASER_CODE;
   if (strcmp(name, PLAYER_LOCALIZE_STRING) == 0)
