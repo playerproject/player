@@ -1,5 +1,3 @@
-#ifndef CMGAZEBO_CAMERA
-#define CMGAZEBO_CAMERA
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
@@ -28,6 +26,8 @@
 // CVS: $Id$
 //
 ///////////////////////////////////////////////////////////////////////////
+#if INCLUDE_GAZEBO
+
 #include "gz_camera.h"
 #define RGBSIZE 3
 

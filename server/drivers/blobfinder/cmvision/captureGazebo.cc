@@ -2,6 +2,8 @@
   #include <config.h>
 #endif
 
+#if INCLUDE_GAZEBO
+
 #include "conversions.h"
 #include "captureGazebo.h"
 
@@ -76,3 +78,5 @@ image_pixel * captureGazebo::uchar2impixel(unsigned char *image,int NumPixels)
    return impixel;
 }
 */
+
+#endif
