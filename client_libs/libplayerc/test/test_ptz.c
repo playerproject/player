@@ -39,7 +39,8 @@ int test_ptz(playerc_client_t *client, int index)
       PASS();
       printf("ptz: [%d %d %d]\n",
              (int) (device->pan * 180 / M_PI),
-             (int) (device->tilt * 180 / M_PI), device->zoom);
+             (int) (device->tilt * 180 / M_PI),
+             (int) (device->zoom * 180 / M_PI));
     }
     else
     {
