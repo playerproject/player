@@ -113,8 +113,17 @@ int CStageDevice::GetData(unsigned char *data)
 ///////////////////////////////////////////////////////////////////////////
 // Write a command to the device
 //
-void CStageDevice::PutCommand(unsigned char *cmd , int len)
+void CStageDevice::PutCommand(unsigned char *command, int len)
 {
+    ASSERT((size_t) len <= m_command_len);
+    
+    // Copy the command
+    //
+    memcpy(m_command_buffer, command, len);
+
+    // Set flag to indicate command has been changed
+    //
+    m_info_buffer[INFO_COMMAND_FLAG] = 1;
 }
 
 

@@ -58,43 +58,8 @@
 #include <time.h>
 #include <sys/time.h>
 
-#include <laserdevice.h>
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Error, msg, trace macros
-
-#define ENABLE_TRACE 1
-
-#define ASSERT(m) assert(m)
-
-#define ERROR(m)  printf("Error : CLaserDevice::%s : %s\n", __FUNCTION__, m)
-#define RETURN_ERROR(erc, msg)     {ERROR(msg); return erc;}
-
-#define MSG(m)       printf("Msg   : CLaserDevice::%s : "m"\n", __FUNCTION__)
-#define MSG1(m, a)   printf("Msg   : CLaserDevice::%s : "m"\n", __FUNCTION__, a)
-#define MSG2(m, a, b) printf("Msg   : CLaserDevice::%s : "m"\n", __FUNCTION__, a, b)
-#define MSG3(m, a, b, c) printf("Msg   : CLaserDevice::%s : "m"\n", __FUNCTION__, a, b, c)
-
-#if ENABLE_TRACE
-    #define TRACE(m)     printf("Debug : CLaserDevice::%s : "m"\n", __FUNCTION__)
-    #define TRACE1(m, a) printf("Debug : CLaserDevice::%s : "m"\n", __FUNCTION__, a)
-    #define TRACE2(m, a, b) printf("Debug : CLaserDevice::%s : "m"\n", __FUNCTION__, a, b)
-    #define TRACE3(m, a, b, c) printf("Debug : CLaserDevice::%s : "m"\n", __FUNCTION__, a, b, c)
-#else
-    #define TRACE(m)
-    #define TRACE1(m, a)
-    #define TRACE2(m, a, b)
-    #define TRACE3(m, a, b, c)
-#endif
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Useful macros
-//
-#define LOBYTE(w) ((BYTE) (w & 0xFF))
-#define HIBYTE(w) ((BYTE) ((w >> 8) & 0xFF))
-#define MAKEUINT16(lo, hi) (((unsigned int) (hi) << 8) | (unsigned int) (lo))
+#include "rtk-types.hh"
+#include "laserdevice.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,6 +70,12 @@
 #define NACK    0x92
 #define CRC16_GEN_POL 0x8005
 #define MAX_RETRIES 5
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Error macros
+//
+#define RETURN_ERROR(erc, m) {ERROR(m); return erc;}
 
 
 ////////////////////////////////////////////////////////////////////////////////
