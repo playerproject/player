@@ -1,4 +1,4 @@
-#include <netinet/in.h>
+//#include <netinet/in.h>
 #include "rflex-info.h"
 #include "rflex_commands.h"
 #include "rflex-io.h"
