@@ -73,6 +73,12 @@ AM_CONDITIONAL(INCLUDE_RTKGUI, test x$enable_rtkgui = xyes)
 AC_SUBST(RTKGUI_EXTRA_LIB)
 AC_SUBST(RTKGUI_EXTRA_LDFLAGS)
 
+dnl where's Mobility?
+AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],
+MOBILITY_DIR=$with_mobility,
+MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
+AC_SUBST(MOBILITY_DIR)
+
 dnl FreeBSD always invokes Tcl with a version, so i'll pick a reasonable one
 case $host in
 *-*-freebsd*) AC_CHECK_PROG([TCLPKGFILE], [tclsh8.0], [pkgIndex.tcl], [])
