@@ -29,6 +29,10 @@ dep:
 	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.cc 2>/dev/null
 	$(RM) -f Makefile.bak
 
+clean_dep:
+	$(MAKEDEP) -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND"
+	$(RM) -f Makefile.bak
+
 %.o: %.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ -c $<
 
@@ -72,3 +76,4 @@ uninstall:
 
 clean:
 	$(RM) -f $(LIBNAME) *.o
+# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND

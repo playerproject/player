@@ -19,6 +19,14 @@ $(LIBNAME): $(OBS)
 %.o: %.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ -c $<
 
+dep:
+	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.cc 2>/dev/null
+	$(RM) -f Makefile.bak
+
+clean_dep:
+	$(MAKEDEP) -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND"
+	$(RM) -f Makefile.bak
+
 install: $(LIBNAME)
 	$(MKDIR) -p $(INSTALL_LIB)
 	$(INSTALL) -m 644 $(LIBNAME) $(INSTALL_LIB)
@@ -33,3 +41,4 @@ uninstall:
 
 clean:
 	$(RM) -f $(LIBNAME) *.o
+# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND

@@ -14,3 +14,8 @@ uninstall:
 	$(RM) -f $(INSTALL_LIB)/playerclient.tcl 
 
 clean: 
+
+dep:
+
+clean_dep:
+

@@ -27,6 +27,14 @@ all: $(BINARIES)
 %: %.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS) -lpthread
 
+dep:
+	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.cc 2>/dev/null
+	$(RM) -f Makefile.bak
+
+clean_dep:
+	$(MAKEDEP) -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND"
+	$(RM) -f Makefile.bak
+
 install: $(BINARIES)
 	@echo "Installing C++ example sources"
 	$(MKDIR) -p $(INSTALL_EXAMPLES)/c++
@@ -88,3 +96,4 @@ uninstall:
 
 clean:
 	$(RM) -f *.o $(BINARIES) test
+# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND

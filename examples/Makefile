@@ -10,7 +10,6 @@ all:
 	cd oldc++ && make all
 	cd tcl && make all
 
-#cd java && make -i all
 
 install:
 	cd c && make install
@@ -18,7 +17,6 @@ install:
 	cd oldc++ && make install
 	cd tcl && make install
 
-#cd java && make -i install
 
 uninstall:
 	cd c && make uninstall
@@ -31,8 +29,11 @@ uninstall:
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_EXAMPLES)/c
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_EXAMPLES)
 
-#cd java && make uninstall
-#$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_EXAMPLES)/java
+dep:
+	cd c && make dep
+	cd c++ && make dep
+	cd oldc++ && make dep
+	cd tcl && make dep
 
 clean:
 	cd c && make clean
@@ -40,4 +41,9 @@ clean:
 	cd oldc++ && make clean
 	cd tcl && make clean
 
-#cd java && make clean
+clean_dep:
+	cd c && make clean_dep
+	cd c++ && make clean_dep
+	cd oldc++ && make clean_dep
+	cd tcl && make clean_dep
+
