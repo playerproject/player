@@ -119,7 +119,7 @@ void LaserBarcode_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserBarcode::LaserBarcode(char* interface, ConfigFile* cf, int section)
-    : CDevice(0,0,0,1)
+    : CDevice(0, 0, 0, 1)
 {
   // The default laser device to use
   this->laser_index = cf->ReadInt(section, "laser", 0);
@@ -129,12 +129,12 @@ LaserBarcode::LaserBarcode(char* interface, ConfigFile* cf, int section)
   this->bit_width = cf->ReadLength(section, "bit_width", 0.05);
   
   // Maximum variance in the flatness of the beacon
-  this->max_depth = 0.05;
+  this->max_depth = cf->ReadLength(section, "max_depth", 0.05);
 
   // Default thresholds
-  this->accept_thresh = 1.0;
-  this->zero_thresh = 0.60;
-  this->one_thresh = 0.60;
+  this->accept_thresh = cf->ReadFloat(section, "accept_thresh", 1.0);
+  this->zero_thresh = cf->ReadFloat(section, "zero_thresh", 0.60);
+  this->one_thresh = cf->ReadFloat(section, "one_thresh", 0.60);
 
   return;
 }

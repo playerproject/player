@@ -142,9 +142,6 @@ class LaserVisualBarcode : public CDevice
     
   // Update the device data (the data going back to the client).
   private: void UpdateData();
-
-  // Device pose relative to robot.
-  private: double pose[3];
   
   // Fiducial properties.
   private: int barcount;
@@ -152,6 +149,12 @@ class LaserVisualBarcode : public CDevice
 
   // Max time to spend looking at a fiducial.
   private: double max_ptz_attention;
+
+  // Retirement age for fiducials that havent been seen for a while.
+  private: double retire_time;
+
+  // Max distance between fiducials in successive laser scans.
+  private: double max_dist;
 
   // Laser stuff.
   private: int laser_index;
@@ -213,26 +216,21 @@ void LaserVisualBarcode_Register(DriverTable* table)
 LaserVisualBarcode::LaserVisualBarcode(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_fiducial_data_t), 0, 10, 10)
 {
-  // Device pose relative to robot.
-  this->pose[0] = 0;
-  this->pose[1] = 0;
-  this->pose[2] = 0;
-
-  // If laser_index is not overridden by an argument here, then we'll
-  // use the device's own index, which we can get in Setup() below.
-  this->laser_index = cf->ReadInt(section, "laser", -1);
+  this->laser_index = cf->ReadInt(section, "laser", 0);
   this->laser = NULL;
   this->laser_time = 0;
 
-  this->ptz_index = cf->ReadInt(section, "ptz", -1);
+  this->ptz_index = cf->ReadInt(section, "ptz", 0);
   this->ptz = NULL;
   this->ptz_time = 0;
 
-  this->blobfinder_index = cf->ReadInt(section, "blobfinder", -1);
+  this->blobfinder_index = cf->ReadInt(section, "blobfinder", 0);
   this->blobfinder = NULL;
   this->blobfinder_time = 0;
 
   this->max_ptz_attention = cf->ReadFloat(section, "max_ptz_attention", 2.0);
+  this->retire_time = cf->ReadFloat(section, "retire_time", 1.0);
+  this->max_dist = cf->ReadFloat(section, "max_dist", 0.2);
   
   // Default fiducial properties.
   this->barcount = cf->ReadInt(section, "barcount", 3);
@@ -247,6 +245,8 @@ LaserVisualBarcode::LaserVisualBarcode(char* interface, ConfigFile* cf, int sect
 
   // Reset blob list.
   this->blob_count = 0;
+
+  return;
 }
 
 
@@ -258,7 +258,7 @@ int LaserVisualBarcode::Setup()
   
   // Subscribe to the laser.
   id.code = PLAYER_LASER_CODE;
-  id.index = (this->laser_index >= 0 ? this->laser_index : this->device_id.index);
+  id.index = this->laser_index;
   id.port = this->device_id.port;
   this->laser = deviceTable->GetDevice(id);
   if (!this->laser)
@@ -272,15 +272,9 @@ int LaserVisualBarcode::Setup()
     return(-1);
   }
 
-  // Get the laser geometry.
-  // TODO: no support for this at the moment.
-  this->pose[0] = 0.10;
-  this->pose[1] = 0;
-  this->pose[2] = 0;
-  
   // Subscribe to the PTZ.
   id.code = PLAYER_PTZ_CODE;
-  id.index = (this->ptz_index >= 0 ? this->ptz_index : this->device_id.index);
+  id.index = this->ptz_index;
   id.port = this->device_id.port;
   this->ptz = deviceTable->GetDevice(id);
   if (!this->ptz)
@@ -296,7 +290,7 @@ int LaserVisualBarcode::Setup()
 
   // Subscribe to the blobfinder.
   id.code = PLAYER_BLOBFINDER_CODE;
-  id.index = (this->blobfinder_index >= 0 ? this->blobfinder_index : this->device_id.index);
+  id.index = this->blobfinder_index;
   id.port = this->device_id.port;
   this->blobfinder = deviceTable->GetDevice(id);
   if (!this->blobfinder)
@@ -309,6 +303,9 @@ int LaserVisualBarcode::Setup()
     PLAYER_ERROR("unable to subscribe to blobfinder device");
     return(-1);
   }
+
+  // Reset blob list.
+  this->blob_count = 0;
 
   // Start the driver thread.
   this->StartThread();
@@ -394,21 +391,31 @@ int LaserVisualBarcode::HandleRequests()
 // Handle geometry requests.
 void LaserVisualBarcode::HandleGetGeom(void *client, void *request, int len)
 {
-  player_fiducial_geom_t geom;
-
-  if (len != 1)
+  unsigned short reptype;
+  struct timeval ts;
+  int replen;
+  player_laser_geom_t lgeom;
+  player_fiducial_geom_t fgeom;
+    
+  // Get the geometry from the laser
+  replen = this->laser->Request(&this->laser->device_id, this, request, len,
+                                &reptype, &ts, &lgeom, sizeof(lgeom));
+  if (replen <= 0 || replen != sizeof(lgeom))
   {
-    PLAYER_ERROR2("geometry request len is invalid (%d != %d)", len, 1);
+    PLAYER_ERROR("unable to get geometry from laser device");
     if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
       PLAYER_ERROR("PutReply() failed");
-    return;
   }
 
-  geom.pose[0] = htons((short) (this->pose[0] * 1000));
-  geom.pose[1] = htons((short) (this->pose[1] * 1000));
-  geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
+  fgeom.pose[0] = lgeom.pose[0];
+  fgeom.pose[1] = lgeom.pose[1];
+  fgeom.pose[2] = lgeom.pose[2];
+  fgeom.size[0] = lgeom.size[0];
+  fgeom.size[1] = lgeom.size[1];
+  fgeom.fiducial_size[0] = ntohs((int) (this->barwidth * 1000));
+  fgeom.fiducial_size[1] = ntohs((int) (this->barwidth * 1000));
+    
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ts, &fgeom, sizeof(fgeom)) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -576,7 +583,7 @@ void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3])
   
   // Observations must be at least this close to the existing
   // fiducial.
-  mindr = 0.20;  // TODO get from config or use pose uncertainty.
+  mindr = this->max_dist;
   minfiducial = NULL;
 
   // Find the existing fiducial which is closest to the new
@@ -637,7 +644,7 @@ void LaserVisualBarcode::RetireLaserFiducials(double time, player_laser_data_t *
   {
     fiducial = this->fiducials + i;
 
-    if (time - fiducial->laser_time > 1.0) // TODO
+    if (time - fiducial->laser_time > this->retire_time)
     {
       if (this->ptz_fiducial == fiducial)
         this->ptz_fiducial = NULL;
