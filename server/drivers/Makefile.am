@@ -16,7 +16,7 @@ AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
 EXTRA_LIBRARIES = libfixedtones.a libwifi.a libacts.a libsicklms200.a \
 	libfestival.a libsonyevid30.a libudpbroadcast.a \
-	liblaserreflector.a liblaserbarcode.a liblaservisualbarcode.a 
+	liblaserreflector.a liblaserbarcode.a liblaservisualbarcode.a liblasercspace.a
 
 libsicklms200_a_SOURCES = sicklms200.cc
 libfestival_a_SOURCES = festival.cc
@@ -28,4 +28,8 @@ liblaserreflector_a_SOURCES = laserreflector.cc
 liblaservisualbarcode_a_SOURCES = laservisualbarcode.cc
 libfixedtones_a_SOURCES = fixedtones.cc
 libwifi_a_SOURCES = wifi.cc
+liblasercspace_a_SOURCES = lasercspace.cc
+
+
+
 
