@@ -29,7 +29,10 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <values.h>
+
+// #include <values.h>
+#include <limits.h> // POSIX replacement - rtv
+#include <float.h>  //  "
 
 #ifndef MIN 
 #define MIN(a,b) (((a)<(b))?(a):(b)) 

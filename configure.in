@@ -214,6 +214,12 @@ fi
 if test "x$PYTHON_INTERP" == "xno"; then
   enable_playermap=no
 fi
+
+dnl playermap also requires gsl - rtv
+AC_CHECK_HEADER(gsl/gsl_version.h,
+		enable_playermap=yes,
+                enable_playermap=no)
+
 AM_CONDITIONAL(WITH_PLAYERMAP, test "x$enable_playermap" = "xyes")
 
 dnl Checks for header files.

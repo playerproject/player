@@ -156,6 +156,9 @@ PTU46::PTU46(char * port, int rate)
 	
 	// save the current io settings
 	tcgetattr(fd, &oldtio);
+
+	// rtv - CBAUD is pre-POSIX and doesn't exist on OS X
+	// should replace this with ispeed and ospeed instead.
 	
 	// set up new settings
 	struct termios newtio;
