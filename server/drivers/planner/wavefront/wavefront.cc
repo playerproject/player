@@ -116,9 +116,23 @@ thinks it has already achieved it.
     the current goal from the current position).  Set to 0 (zero) for no 
     replanning (i.e, make a plan one time and then stick with it until the 
     goal is reached).  Replanning is pretty cheap computationally and can 
-    *really* help in dynamic environments.  Note that no changes are made 
+    really help in dynamic environments.  Note that no changes are made 
     to the map in order to replan; support is forthcoming for explicitly 
     replanning around obstacles that were not in the map.
+- cspace_file (filename)
+  - Default: "player.cspace"
+  - Use this file to cache the configuration space (c-space) data.
+    At startup, if this file can be read and if the metadata (e.g., size,
+    scale) in it matches the current map, then the c-space data is
+    read from the file.  Otherwise, the c-space data is computed.
+    In either case, the c-space data will be cached to this file for
+    use next time.  C-space computation can be expensive and so caching
+    can save a lot of time, especially when the planner is frequently
+    stopped and started.  An md5 hash of the map data is also cached,
+    to verify that the same map is being used.  As a result, c-space
+    caching is only available on systems with the libmd5 library, which
+    defines MD5_Init(), MD5_Update(), and MD5_Final().  This library is
+    part of the OpenSSL development kit.
 
 @par Example 
 
@@ -149,7 +163,7 @@ driver
 (
   name "amcl"
   provides ["localize:0"]
-  requires ["position:1" "laser:0" "map:0"]
+  requires ["odometry::position:1" "laser:0" "laser::map:0"]
 )
 driver
 (
@@ -237,7 +251,7 @@ class Wavefront : public Driver
     double dist_penalty;
     double dist_eps;
     double ang_eps;
-    //const char* cspace_fname;
+    const char* cspace_fname;
 
     // for filtering localize poses
     double lx_window[LOCALIZE_WINDOW_SIZE];
@@ -252,6 +266,8 @@ class Wavefront : public Driver
     Driver* position;
     Driver* localize;
 
+    // are we disabled?
+    bool enable;
     // current target (m,m,rad)
     double target_x, target_y, target_a;
     // index of current waypoint;
@@ -276,7 +292,10 @@ class Wavefront : public Driver
     // current localize pose, not byteswapped or unit converted, for
     // passing through.
     int32_t localize_x_be, localize_y_be, localize_a_be;
+    // have we told the underlying position device to stop?
     bool stopped;
+    // have we reached the goal (used to decide whether or not to replan)?
+    bool atgoal;
     // replan this often
     double replan_cycle;
 
@@ -358,6 +377,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->dist_eps = cf->ReadLength(section,"distance_epsilon", 0.5);
   this->ang_eps = cf->ReadAngle(section,"angle_epsilon",DTOR(10));
   this->replan_cycle = cf->ReadFloat(section,"replan_cycle",2.0);
+  this->cspace_fname = cf->ReadFilename(section,"cspace_file","player.cspace");
 }
 
 
@@ -375,6 +395,8 @@ Wavefront::Setup()
   PutData((unsigned char*)&data,sizeof(data),NULL);
 
   this->stopped = true;
+  this->atgoal = true;
+  this->enable = true;
   this->target_x = this->target_y = this->target_a = 0.0;
   this->position_x = this->position_y = this->position_a = 0.0;
   this->localize_x = this->localize_y = this->localize_a = 0.0;
@@ -432,12 +454,14 @@ Wavefront::GetCommand()
   player_planner_cmd_t cmd;
   double new_x, new_y, new_a;
   double eps = 1e-3;
+  char enable;
 
   Driver::GetCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
 
   new_x = ((int)ntohl(cmd.gx))/1e3;
   new_y = ((int)ntohl(cmd.gy))/1e3;
   new_a = DTOR((int)ntohl(cmd.ga));
+
   if((fabs(new_x - this->target_x) > eps) ||
      (fabs(new_y - this->target_y) > eps) ||
      (fabs(NORMALIZE(new_a - this->target_a)) > eps))
@@ -447,6 +471,7 @@ Wavefront::GetCommand()
     this->target_a = new_a;
     //printf("new goal: %f, %f, %f\n", target_x, target_y, target_a);
     this->new_goal = true;
+    this->atgoal = false;
   }
 }
 
@@ -596,7 +621,7 @@ Wavefront::PutPlannerData()
   data.waypoint_count = htons(this->plan->waypoint_count);
 
   // We should probably send new data even if we haven't moved.
-  if (this->newData)
+  if(this->newData)
   {
     struct timeval time;
     GlobalTime->GetTime(&time);
@@ -710,6 +735,13 @@ void Wavefront::Main()
     PutPlannerData();
     GetCommand();
 
+    if(!this->enable)
+    {
+      this->StopPosition();
+      usleep(CYCLE_TIME_US);
+      continue;
+    }
+
     this->newData = false;
 
     GlobalTime->GetTime(&curr);
@@ -717,7 +749,9 @@ void Wavefront::Main()
             (last_replan.tv_sec + last_replan.tv_usec/1e6);
 
     if(this->new_goal || 
-       (this->replan_cycle && (timediff > this->replan_cycle)))
+       (this->replan_cycle && 
+        (timediff > this->replan_cycle) && 
+        !this->atgoal))
     {
 
       this->newData = true;
@@ -767,6 +801,7 @@ void Wavefront::Main()
       StopPosition();
       this->curr_waypoint = -1;
       this->new_goal = false;
+      this->atgoal = true;
 
       this->newData = true;
     }
@@ -1063,10 +1098,7 @@ Wavefront::SetupMap()
   if(mapdevice->Unsubscribe(map_id) != 0)
     PLAYER_WARN("unable to unsubscribe from map device");
 
-  printf("Wavefront: Generating C-space...");
-  fflush(NULL);
-  plan_update_cspace(this->plan);
-  puts("done.");
+  plan_update_cspace(this->plan,this->cspace_fname);
   return(0);
 }
 
@@ -1090,6 +1122,7 @@ Wavefront::PutConfig(player_device_id_t id, void *client,
                      struct timeval* timestamp)
 {
   player_planner_waypoints_req_t reply;
+  player_planner_enable_req_t* enable_req;
   double wx,wy;
   size_t replylen;
   
@@ -1129,6 +1162,30 @@ Wavefront::PutConfig(player_device_id_t id, void *client,
         if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
                     (void*)&reply, replylen,NULL))
           PLAYER_ERROR("PutReply() failed");
+        break;
+      case PLAYER_PLANNER_ENABLE_REQ:
+        if(len != sizeof(player_planner_enable_req_t))
+        {
+          PLAYER_ERROR("incorrect size for planner enable request");
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+            PLAYER_ERROR("PutReply() failed");
+        }
+        else
+        {
+          enable_req = (player_planner_enable_req_t*)src;
+          if(enable_req->state)
+          {
+            this->enable = true;
+            PLAYER_MSG0(2,"Robot enabled");
+          }
+          else
+          {
+            this->enable = false;
+            PLAYER_MSG0(2,"Robot disabled");
+          }
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("PutReply() failed");
+        }
         break;
       default:
         if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)

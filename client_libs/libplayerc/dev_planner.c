@@ -125,7 +125,7 @@ void playerc_planner_putdata(playerc_planner_t *device, player_msghdr_t *header,
 
 
 int playerc_planner_set_cmd_pose(playerc_planner_t *device, double gx, double gy,
-                                  double ga, int state)
+                                  double ga)
 {
   player_planner_cmd_t cmd;
 
@@ -167,4 +167,19 @@ int playerc_planner_get_waypoints(playerc_planner_t *device)
     device->waypoints[i][2] = ((int)ntohl(config.waypoints[i].a)) * M_PI / 180;
   }
   return 0;
+}
+
+// Enable/disable robot motion
+int playerc_planner_enable(playerc_planner_t *device, int state)
+{
+  player_planner_enable_req_t config;
+
+  config.subtype = PLAYER_PLANNER_ENABLE_REQ;
+  config.state = state;
+
+  if(playerc_client_request(device->info.client, &device->info,
+                            &config, sizeof(config), NULL, 0) < 0)
+    return(-1);
+  else
+    return(0);
 }

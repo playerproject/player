@@ -70,7 +70,7 @@ PlannerProxy::~PlannerProxy()
 
 
 // Set a new goal point
-int PlannerProxy::SetCmdPose( double gx, double gy, double ga, int /*state*/)
+int PlannerProxy::SetCmdPose( double gx, double gy, double ga)
 {
   if (!client)
     return -1;
@@ -126,6 +126,22 @@ int PlannerProxy::GetWaypoints()
   return 0;
 }
 
+// Enable/disable the robot's motion.
+int PlannerProxy::Enable(int state)
+{
+  player_planner_enable_req_t config;
+
+  config.subtype = PLAYER_PLANNER_ENABLE_REQ;
+  config.state = state;
+
+  if(client->Request(m_device_id, (const char*)&config, sizeof(config)) < 0)
+  {
+    fprintf(stderr, "failed to enable/disable planner\n");
+    return(-1);
+  }
+  
+  return(0);
+}
 
 // Process incoming data
 void PlannerProxy::FillData( player_msghdr_t hdr, const char *buffer)

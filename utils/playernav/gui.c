@@ -43,6 +43,42 @@ _toggle_dump(GtkWidget *widget,
   return(TRUE);
 }
 
+static gboolean 
+_stop_all_robots(GtkWidget *widget,
+                 GdkEvent *event,
+                 gpointer data)
+{
+  int i;
+  playerc_planner_t* planner;
+  gui_data_t* gui_data = (gui_data_t*)widget; 
+
+  for(i=0;i<gui_data->num_robots;i++)
+  {
+    planner = gui_data->planners[i];
+    playerc_planner_enable(planner,0);
+    gui_data->robot_enable_states[i] = 0;
+  }
+  return(TRUE);
+}
+
+static gboolean 
+_go_all_robots(GtkWidget *widget,
+               GdkEvent *event,
+               gpointer data)
+{
+  int i;
+  playerc_planner_t* planner;
+  gui_data_t* gui_data = (gui_data_t*)widget; 
+
+  for(i=0;i<gui_data->num_robots;i++)
+  {
+    planner = gui_data->planners[i];
+    playerc_planner_enable(planner,1);
+    gui_data->robot_enable_states[i] = 1;
+  }
+  return(TRUE);
+}
+
 static void
 _zoom_callback(GtkAdjustment* adjustment,
                gpointer data)
@@ -129,6 +165,16 @@ _robot_button_callback(GnomeCanvasItem *item,
     case GDK_BUTTON_PRESS:
       switch(event->button.button)
       {
+        // Middle button enables/disables the robot
+        case 2:
+          if(onrobot && !setting_theta)
+          {
+            gui_data->robot_enable_states[idx] = 
+                    !gui_data->robot_enable_states[idx];
+            playerc_planner_enable(gui_data->planners[idx],
+                                   gui_data->robot_enable_states[idx]);
+          }
+          break;
         case 3:
           if(onrobot && !setting_theta)
           {
@@ -177,7 +223,7 @@ _robot_button_callback(GnomeCanvasItem *item,
                          idx, mean[0], mean[1], mean[2]);
                   if(playerc_planner_set_cmd_pose(gui_data->planners[idx],
                                                    mean[0], mean[1], 
-                                                   mean[2], 1) < 0)
+                                                   mean[2]) < 0)
                   {
                     fprintf(stderr, "error while setting goal on robot %d\n", 
                             idx);
@@ -316,51 +362,50 @@ make_menu(gui_data_t* gui_data)
 {
   GtkMenuBar* menu_bar;
   GtkMenu* file_menu;
-  //GtkMenuItem* open_item;
-  //GtkMenuItem* save_item;
+  GtkMenuItem* file_item;
   GtkCheckMenuItem* dump_item;
   GtkMenuItem* quit_item;
-  GtkMenuItem* file_item;
+  
+  GtkMenu* stop_menu;
+  GtkMenuItem* stop_item;
+  GtkMenuItem* stop_all_item;
+  GtkMenuItem* go_all_item;
 
   file_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
+  stop_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
 
   /* Create the menu items */
-  //open_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Open");
-  //save_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Save");
   quit_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Quit");
   dump_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Capture stills");
+  stop_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Stop all robots");
+  go_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Go all robots");
 
   /* Add them to the menu */
-  //gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)open_item);
-  //gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)save_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)dump_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)quit_item);
-
-  /* Attach the callback functions to the
-   * activate signal */
-  /*
-  g_signal_connect_swapped (G_OBJECT (open_item), "activate",
-                            G_CALLBACK (menuitem_response),
-                            (gpointer) "file.open");
-  g_signal_connect_swapped (G_OBJECT (save_item), "activate",
-                            G_CALLBACK (menuitem_response),
-                            (gpointer) "file.save");
-                            */
+  gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)stop_all_item);
+  gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)go_all_item);
 
   /* We can attach the Quit menu item to
    * our exit function */
-  g_signal_connect_swapped (G_OBJECT (quit_item), "activate",
-                            G_CALLBACK(_quit_callback),
-                            (gpointer) "file.quit");
-  g_signal_connect_swapped (G_OBJECT (dump_item), "activate",
-                            G_CALLBACK(_toggle_dump),
-                            (gpointer) "file.dump");
+  g_signal_connect_swapped(G_OBJECT (quit_item), "activate",
+                           G_CALLBACK(_quit_callback),
+                           (gpointer) "file.quit");
+  g_signal_connect_swapped(G_OBJECT (dump_item), "activate",
+                           G_CALLBACK(_toggle_dump),
+                           (gpointer) "file.dump");
+  g_signal_connect_swapped(G_OBJECT (stop_all_item), "activate",
+                           G_CALLBACK(_stop_all_robots),
+                           (gpointer) gui_data);
+  g_signal_connect_swapped(G_OBJECT (go_all_item), "activate",
+                           G_CALLBACK(_go_all_robots),
+                           (gpointer) gui_data);
 
   /* We do need to show menu items */
-  //gtk_widget_show((GtkWidget*)open_item);
-  //gtk_widget_show((GtkWidget*)save_item);
   gtk_widget_show((GtkWidget*)dump_item);
   gtk_widget_show((GtkWidget*)quit_item);
+  gtk_widget_show((GtkWidget*)stop_all_item);
+  gtk_widget_show((GtkWidget*)go_all_item);
 
   menu_bar = (GtkMenuBar*)gtk_menu_bar_new ();
   gtk_box_pack_start(gui_data->vbox,
@@ -370,9 +415,13 @@ make_menu(gui_data_t* gui_data)
 
   file_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("File");
   gtk_widget_show((GtkWidget*)file_item);
+  stop_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Stop/Go...");
+  gtk_widget_show((GtkWidget*)stop_item);
 
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), (GtkWidget*)file_menu);
   gtk_menu_bar_append(GTK_MENU_BAR (menu_bar), (GtkWidget*)file_item);
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(stop_item), (GtkWidget*)stop_menu);
+  gtk_menu_bar_append(GTK_MENU_BAR (menu_bar), (GtkWidget*)stop_item);
 }
 
 void

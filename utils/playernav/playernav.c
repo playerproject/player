@@ -94,6 +94,15 @@ path to the goal, with subsegments disappearing as waypoints are reached.
 You can set new localization hypotheses and target at any time, even
 while the robot is moving.
 
+@par Stopping robots
+
+To disable (i.e., stop) a robot, click it with the middle button.  To
+enable a robot, click it again with the middle button.  To enable/disable
+ALL robots, use the "Stop/Go..." menu.  The latter option is good in an
+emergency, or when it's too difficult to click on a misbehaving robot.
+When enabled, a robot will (or at least should) continue executing its
+previous plan, if any.
+
 @par Screenshots
 
 @image html playernav-example.jpg "Screenshot of playernav with three robots moving toward goals"
@@ -244,6 +253,11 @@ main(int argc, char** argv)
                                         gui_data.hostnames, 
                                         gui_data.ports, 
                                         DATA_FREQ));
+
+  // assume the robots all start enabled (should really get the current
+  // enable/disable state for each robot from the server).
+  for(i=0;i<gui_data.num_robots;i++)
+    gui_data.robot_enable_states[i] = 1;
 
   // we've read the map, so fill in the aspect ratio
   gui_data.mapdev = gui_data.maps[0];

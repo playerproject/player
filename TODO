@@ -1,249 +1,29 @@
 $Id$
 
-1.6 RELEASE:
-------------
-- test on Solaris
-- check compatibility with librtk 2.3.0
+writelog:
+- Add support for logging to multiple files during one execution of Player.
+  I.e., client-side control of logfile name.  Add textbox to playervcr to
+  allow the user to change it.
 
-NEXT RELEASE:
--------------
-- include <linux/limits.h> to get PATH_MAX for linux-arm crosscompile
+playernav:
++ Need emergency STOP buttons: one per bot, plus an ALL STOP.
+  Probably should send it directly to the underlying position device,
+  but passing through the planner might be sufficient.
 
-- test multiple data packets per frame
+wavefront:
++ Add dynamic replanning; use sensor inputs (generalized somehow, or
+  laser-specific?) to modify a local overlay on the given map, and
+  periodically (but quickly) replan the best path to goal.
 
-+ separate interface and driver docs
++ Speed up C-cspace generation.  Or at least support caching it to a file.
+  Ideally this would happen automagically, making use of a hash function to
+  determine when the C-space should be regenerated.
 
-- add docs for new drivers
+- Stop the robot if only alwayson is subscribed.
 
-- decide which drivers are "stable" and which are "experimental"
+sicklms200:
+- Figure out why I'm having so much trouble talking to the SICKs in the
+  obots.  Is it the USB-serial widgets?  Can the retry mechanism be made
+  more persistent/robust somehow?
 
-- add player-side record locking to stage device
 
-- add power, bumper, AIO DIO client support
-
-- rationalize position interface
-
-NOW:
-----
-- add client pointers to all device interface calls
-
-- Generalize gripper control to allow for any gripper, and modify command
-    and data specifications to be more natural
-
-
-(stage) fix client mode, at least for remote viewing functionality
-
-LATER:
-------
-
-- P2OS stuff:
-    - do error-checking on calls to:
-        - CPacket::Build()
-        - CPacket::Receive()
-        - CPacket::Send()
-        - others?
-    - add capability to reconnect
-        - but how?  symptom will be no SIP when one is expected.
-          maybe set a timer to go off after 15ms and wake up
-          the read, then do a Reconnect()?
-             - tried that; still very flaky...
-    + add position Reset.  DONE
-    + remove calls to exit() from packet.cc
-    + fix P2OSDevice::Setup() to not block waiting for SYNC0, thereby
-        able to detect lack of P2OS.
-    + failed startup occasionally, maybe especially on older 
-      versions.  
-        + hopefully fixed, because of tcflush().
-        + much more robust startup now
-
- - website - FAQ? 
-
-(stage) move to pyramid repn for matrix for increased raytrace efficiency
-
-(stage) add GNOME2 GUI device visualizations
-
-(stage) pull RTK2 code into library through GUI hooks
-
-(stage) audit for fixed-size buffers, etc. that limit populations
-
-(stage) developer docs - GUI interface, server interface
-
-LATENT:
--------
-
-DONE:
-------
-+ add CDevice method to ask devices how many data packets are available for
-  a particular client.
-
-+ add some kind of config file to Player.   need to specify
-    mappings from devices to ports and things like that.  still take
-    command-line args, though.
-
-+ test all configurable devices (esp. P2OS) with new request/reply method
-
-+ Add context-sensitive support for thread creation
-
-+ Create another device-table (or augment the current one), so as to remove
-    as many device-specific #ifdef's from main.cc as possible.
-       + no, use the existing DeviceTable.  just add some more stuff to it,
-         like permissible access modes, string representation, etc., and maybe
-         initialize the device pointer to NULL?
-
-+ remove non-portable pthread behavior.  should be confined to:
-      + pthread_kill_other_threads_np(). GONE
-      + unlocking mutex owned by other thread.  GONE
-
-+ add conditionals for connecting to 2-AT's.  should be easypeasyjapaneasy.
-
-+ acts on old robots (tanis&milka) takes a LONG time to start up the
-    first time (presumably before it's swapped in); Golem hangs.  wait
-    longer?
-
-+ update Java client?  nah, get the Danes to do it.
-
-+ change all 'a', 'r', and 'w' to the appropriate PLAYER_*_MODE
-
-+ 'finish' C client.  test (sim and robot).
-
-+ rework C++ client. test (sim and robot).
-     + add vision example (follow orange thing)
-
-+ add #defines in messages.h that are plain text references for 
-     devices, like for in arg parsing
-
-+ make STX a short, instead of string "xX"
-
-+ add method to get timestamp from devices
-   - now, CLock::PutData() can take a timestamp, and it will
-      store it in CDevice::data_timestamp.  Likewise, CLock::GetData()
-      takes a pointer to put the timestamp into.
-
-+ move repository to sagan/tobor
-
-+ check on timestamps. make sure byte-swapping works (server and client).
-    - defined macros htonll(x) && ntohll(x)
-
-+ on tanis & v.0.6.5, one time only got 720 bytes from a laser
-     data packet.  why?
-       - now running client ON tanis.  maybe that fixes it?  that
-           would be bad.
-       - happened more than once.  data's not queuing up, though...
-
-+ milka dead?
-    - replaced fuse.
-    - why did the fuse blow? blocked cooling fan?
-
-+ change mailing list to 'players@fnord'
-
-+ devicetable.cc: convert to 2-character codes.  need to dyanmically
-                create/delete them. yuck.
-
-+ add 'distro' target to Makefile.  should:
-    + latex && cp golem.ps to ./doc
-    + cd .. && tar hcvzf ..... 
-
-+ figure out Boyoon's Golem-0.7/Arena-0.6.6 problem.
-    - done.  was 'offsets.h' inconsistency.
-
-+ document:
-    + CRobot::ResetPosition()
-    + 'z' device.
-    + no commands to 'v' device.
-    + 'xR' command.
-    + talk about more robust P2OS control, mention direct wheel velocity...
-
-+ change 'xr' to 'xr<val>' to switch between req/rep and cont
-
-+ add ResetPosition() and ChangeVelocityMode() methods to CRobot class.
-
-+ check out hanging on lack of PTZ device.  maybe do a test
-   non-blocking read at first?
-     - yep, and it worked
-
-+ figure out direct wheel velocity control.  cuts down motor
-    command packet count to one per cycle.  just try to send
-    it every time; sometimes you block on the mutex because
-    someone else is writing a config command or whatever; no big 
-    deal.
-
-+ RunPsosThread will now just call SendReceive() with the
-    joint direct wheel velocity packet every run through.
-
-+ eXpert commands now are implemented as calls to SendReceive()
-    from the client_reader() thread.  not so bad, might block for
-    a bit.
-
-+ add private 'serial_mutex' to CP2OSDevice.  also public method
-   'SendReceive(CPacket pkt)', which will lock on the mutex,
-   send 'pkt', block on receive for a SIP, then return.
-
-+ MUTEX ACCESS TO CLIENT SOCKET!  why didn't we do that before.  that
-    HAS to be the reason for garbled responses to eXpert commands.
-    what the hell was i thinking.
-      - CClientData->socketwrite
-
-+ PTZ device hangs after many commands. why?
-    + also maybe it hangs Golem.  how?
-    + glitches in the messaging.  seems to be fixed now.
-        only have a problem after very stressful stop/restart
-
-+ debug the loss of control problem.  see if it's the server
-   or the client (hopefully the client).
-     - maybe it was the server overloading P2OS.  put in checks
-         so it only sends 'new' commands.  should cut down on serial
-         line usage.
-     - heavily cut down packet flow by removing unneeded GETAUX
-         commands.  reinvestigate if we need PTZ feedback. seems
-         solved now.
-
-+ segfault when Control-C server sometimes.  leaves P2OS open and
-    pinging.
-      - problem was that client_writer threads were calling <device>.GetData()
-          after <device> had been deleted, but before the main loop exited.
-          solution was to keep track of CClientData pointers, and delete
-          them one by one before deleting the devices.  nice shutdown
-          behavior now.
-
-+ after Control-C, says "Quitting", but then hangs sometimes.  especially 
-    after laser startup error.  mutex locked somewhere, i guess.
-      - can't reproduce on ant w/ no laser (v.0.5.1 8/18 BPG)
-      - can't reproduce on tanis w/ no laser (v.0.6.5 8/18 BPG)
-
-+ make read loop smarter in client_reader (main.cc).  should read 
-    whole messages. 
-      - added two-byte header and two-byte size specifier
-          to device request messages.  makes read loop
-          much better.  not to self: always include size
-          in variable length messages...
-
-+ when ACTS fails to start, server gives back error but does
-    not shut down P2OS connection.
-      - just had to Unsubscribe the positiondevice before returning
-        on all Setup() failures.
-
-+ robot.Request("pc",2) fails because the server never sends back a reply.
-   should it?
-     - yes.  adding 'c' permission descriptor. need to:
-        - make sure shutdown is detected. DONE
-        - make sure RemoveBlanks() works. DONE
-
-+ camera: set it back to "normal" state on shutdown of vision device.
-   DONE.
-
-+ Java client:
-  + ask esben how to layout .java files.
-      + what about a Makefile?
-      + how can source in examples/java load class from client_libs/java?
-
-+ document MAXNUMTHREADS (8) and implications
-
-(stage) Add cmdline flag to start with clock stopped.
-
-(stage) add a means to start/stop clock from a remote client
-	(perhaps toggled in response to SIGUSR1?). Could add start/stop
-	scripts to distro. 
-
-(stage) user docs - check cmdline options are correct & complete
-
-(stage) misc device -> power, bumper, etc devices

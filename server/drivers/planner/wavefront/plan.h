@@ -91,7 +91,7 @@ int plan_load_occ(plan_t *plan, const char *filename, double scale);
 #endif
 
 // Construct the configuration space from the occupancy grid.
-void plan_update_cspace(plan_t *plan);
+void plan_update_cspace(plan_t *plan, const char* cachefile);
 
 // Generate the plan
 void plan_update_plan(plan_t *plan, double gx, double gy);
@@ -111,12 +111,16 @@ void plan_draw_waypoints(plan_t *plan, struct _rtk_fig_t *fig);
 // Write the cspace occupancy distance values to a file, one per line.
 // Read them back in with plan_read_cspace().
 // Returns non-zero on error.
-int plan_write_cspace(plan_t *plan, const char* fname);
+int plan_write_cspace(plan_t *plan, const char* fname, short hash);
 
 // Read the cspace occupancy distance values from a file, one per line.
 // Write them in first with plan_read_cspace().
 // Returns non-zero on error.
-int plan_read_cspace(plan_t *plan, const char* fname);
+int plan_read_cspace(plan_t *plan, const char* fname, short hash);
+
+// Compute and return the 16-bit MD5 hash of the map data in the given plan
+// object.
+short plan_md5(plan_t* plan);
 
 /**************************************************************************
  * Plan manipulation macros

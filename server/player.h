@@ -3083,6 +3083,7 @@ The @p planner interface provides control of a 2-D motion planner.
 */
 
 #define PLAYER_PLANNER_GET_WAYPOINTS_REQ     ((uint8_t)10)
+#define PLAYER_PLANNER_ENABLE_REQ            ((uint8_t)11)
 
 /** maximum number of waypoints in a single plan */
 #define PLAYER_PLANNER_MAX_WAYPOINTS 128
@@ -3136,6 +3137,14 @@ typedef struct player_planner_waypoints_req
   player_planner_waypoint_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
 } __PACKED__ player_planner_waypoints_req_t;
 
+/** @brief Configuration request: Enable/disable robot motion */
+typedef struct player_planner_enable_req
+{
+  /** subtype: must be of PLAYER_PLANNER_ENABLE_REQ */
+  uint8_t subtype;
+  /** state: 1 to enable, 0 to disable */
+  uint8_t state;
+} __PACKED__ player_planner_enable_req_t;
 
 /** @} */
 /** @} */

@@ -54,6 +54,7 @@ typedef struct
   playerc_localize_t* localizes[MAX_NUM_ROBOTS];
   playerc_planner_t* planners[MAX_NUM_ROBOTS];
   double goals[MAX_NUM_ROBOTS][3];
+  int robot_enable_states[MAX_NUM_ROBOTS];
 } gui_data_t;
 
 void create_map_image(gui_data_t* gui_data);

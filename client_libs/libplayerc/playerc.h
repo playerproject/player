@@ -1356,7 +1356,7 @@ int playerc_planner_unsubscribe(playerc_planner_t *device);
 
 /** @brief Set the goal pose (gx, gy, ga) */
 int playerc_planner_set_cmd_pose(playerc_planner_t *device,
-                                  double gx, double gy, double ga, int state);
+                                  double gx, double gy, double ga);
 
 /** @brief Get the list of waypoints.
 
@@ -1365,6 +1365,13 @@ caller.
 
 */
 int playerc_planner_get_waypoints(playerc_planner_t *device);
+
+/** @brief Enable / disable the robot's motion
+
+Set state to 1 to enable, 0 to disable.
+
+*/
+int playerc_planner_enable(playerc_planner_t *device, int state);
 
 /** @} */
 /**************************************************************************/

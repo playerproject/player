@@ -5,6 +5,12 @@
  * Date: 10 Oct 2002
  * CVS: $Id$
 **************************************************************************/
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+#if HAVE_OPENSSL_MD5_H
+  #include <openssl/md5.h>
+#endif
 
 #include <assert.h>
 #include <math.h>
@@ -12,14 +18,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#include <errno.h>
+
+
 
 #include <playercommon.h>
 #include <error.h>
-
-#if 0
-// Use gdk-pixbuf for loading the images
-#include <gdk-pixbuf/gdk-pixbuf.h>
-#endif
 
 #include "plan.h"
 
@@ -91,94 +95,37 @@ void plan_reset(plan_t *plan)
 }
 
 
-#if 0
-// Load the occupancy map
-int plan_load_occ(plan_t *plan, const char *filename, double scale)
-{
-  int i, j;
-  int occ;
-  plan_cell_t *cell;
-  GdkPixbuf* pixbuf;
-  guchar* pixels;
-  guchar* p;
-  int rowstride, n_channels, bps;
-  GError* error = NULL;
-
-  // Initialize glib
-  g_type_init();
-
-  // Read the image
-  if(!(pixbuf = gdk_pixbuf_new_from_file(filename, &error)))
-  {
-    PLAYER_ERROR1("failed to open image file %s", filename);
-    return(-1);
-  }
-
-  plan->scale = scale;
-  plan->size_x = gdk_pixbuf_get_width(pixbuf);
-  plan->size_y = gdk_pixbuf_get_height(pixbuf);
-
-  rowstride = gdk_pixbuf_get_rowstride(pixbuf);
-  bps = gdk_pixbuf_get_bits_per_sample(pixbuf)/8;
-  n_channels = gdk_pixbuf_get_n_channels(pixbuf);
-  if(gdk_pixbuf_get_has_alpha(pixbuf))
-    n_channels++;
-
-  // Allocate space
-  if (plan->cells)
-    free(plan->cells);
-  plan->cells = calloc(plan->size_x * plan->size_y, sizeof(plan_cell_t));
-  //plan->image = calloc(plan->size_x * plan->size_y, sizeof(uint16_t));
-
-  // Reset the grid
-  plan_reset(plan);
-    
-  // Read data
-  pixels = gdk_pixbuf_get_pixels(pixbuf);
-  for(j = 0; j < plan->size_y; j++)
-  {
-    for (i = 0; i < plan->size_x; i++)
-    {
-      if (!PLAN_VALID(plan, i, plan->size_y-j))
-        continue;
-
-      p = pixels + j*rowstride + i*n_channels*bps;
-      
-      cell = plan->cells + PLAN_INDEX(plan, i, plan->size_y - j);
-
-      // HACK
-      occ = 100 - 100 * (*(p+bps) / 255);
-      if (occ > 90)
-      {
-        cell->occ_state = +1;
-        cell->occ_dist = 0;
-      }
-      else if (occ < 10)
-        cell->occ_state = -1;
-      else
-      {
-        cell->occ_state = 0;
-        cell->occ_dist = 0;
-      }
-    }
-  }
-  
-  gdk_pixbuf_unref(pixbuf);
-  
-  return 0;
-}
-#endif
-
-
 // Construct the configuration space from the occupancy grid.
 // This treats both occupied and unknown cells as bad.
-void plan_update_cspace(plan_t *plan)
+// 
+// If cachefile is non-NULL, then we try to read the c-space from that
+// file.  If that fails, then we construct the c-space as per normal and
+// then write it out to cachefile.
+void plan_update_cspace(plan_t *plan, const char* cachefile)
 {
   int i, j;
   int di, dj, dn;
   double r;
   plan_cell_t *cell, *ncell;
 
+#if HAVE_OPENSSL_MD5_H
+  short hash;
+  hash = plan_md5(plan);
+  if(cachefile)
+  {
+    PLAYER_MSG1(1,"Trying to read c-space from file %s", cachefile);
+    if(plan_read_cspace(plan,cachefile,hash) == 0)
+    {
+      // Reading from the cache file worked; we're done here.
+      PLAYER_MSG1(1,"Successfully read c-space from file %s", cachefile);
+      return;
+    }
+    PLAYER_MSG1(1, "Failed to read c-space from file %s", cachefile);
+  }
+#endif
+
+  PLAYER_MSG0(1,"Generating C-space....");
+          
   dn = (int) ceil(plan->max_radius / plan->scale);
   
   for (j = 0; j < plan->size_y; j++)
@@ -207,13 +154,19 @@ void plan_update_cspace(plan_t *plan)
       }
     }
   }
-  return;
+
+#if HAVE_OPENSSL_MD5_H
+  if(cachefile)
+    plan_write_cspace(plan,cachefile,hash);
+#endif
+
+  PLAYER_MSG0(1,"Done.");
 }
 
 // Write the cspace occupancy distance values to a file, one per line.
 // Read them back in with plan_read_cspace().
 // Returns non-zero on error.
-int plan_write_cspace(plan_t *plan, const char* fname)
+int plan_write_cspace(plan_t *plan, const char* fname, short hash)
 {
   plan_cell_t* cell;
   int i,j;
@@ -221,9 +174,14 @@ int plan_write_cspace(plan_t *plan, const char* fname)
 
   if(!(fp = fopen(fname,"w+")))
   {
-    perror("failed to open file");
+    PLAYER_MSG2(2,"Failed to open file %s to write c-space: %s",
+                fname,strerror(errno));
     return(-1);
   }
+
+  fprintf(fp,"%d\n%d\n", plan->size_x, plan->size_y);
+  fprintf(fp,"%lf\n%lf\n", plan->scale,plan->max_radius);
+  fprintf(fp,"%d\n", hash);
 
   for(j = 0; j < plan->size_y; j++)
   {
@@ -234,27 +192,49 @@ int plan_write_cspace(plan_t *plan, const char* fname)
     }
   }
 
-  if(fclose(fp))
-  {
-    perror("failed to close file");
-    return(-1);
-  }
-
+  fclose(fp);
   return(0);
 }
 
 // Read the cspace occupancy distance values from a file, one per line.
 // Write them in first with plan_read_cspace().
 // Returns non-zero on error.
-int plan_read_cspace(plan_t *plan, const char* fname)
+int plan_read_cspace(plan_t *plan, const char* fname, short hash)
 {
   plan_cell_t* cell;
   int i,j;
   FILE* fp;
+  int size_x, size_y;
+  double scale, max_radius;
+  short cached_hash;
 
   if(!(fp = fopen(fname,"r")))
   {
-    perror("failed to open file");
+    PLAYER_MSG1(2,"Failed to open file %s", fname);
+    return(-1);
+  }
+  
+  /* Read out the metadata */
+  if((fscanf(fp,"%d", &size_x) < 1) ||
+     (fscanf(fp,"%d", &size_y) < 1) ||
+     (fscanf(fp,"%lf", &scale) < 1) ||
+     (fscanf(fp,"%lf", &max_radius) < 1) ||
+     (fscanf(fp,"%d", &cached_hash) < 1))
+  {
+    PLAYER_MSG1(2,"Failed to read c-space metadata from file %s", fname);
+    fclose(fp);
+    return(-1);
+  }
+
+  /* Verify that metadata matches */
+  if((size_x != plan->size_x) ||
+     (size_y != plan->size_y) ||
+     (scale != plan->scale) ||
+     (max_radius != plan->max_radius) ||
+     (cached_hash != hash))
+  {
+    PLAYER_MSG1(2,"Mismatch in c-space metadata read from file %s", fname);
+    fclose(fp);
     return(-1);
   }
 
@@ -263,15 +243,39 @@ int plan_read_cspace(plan_t *plan, const char* fname)
     for(i = 0; i < plan->size_x; i++)
     {
       cell = plan->cells + PLAN_INDEX(plan, i, j);
-      fscanf(fp,"%f", &(cell->occ_dist));
+      if(fscanf(fp,"%f", &(cell->occ_dist)) < 1)
+      {
+        PLAYER_MSG3(2,"Failed to read c-space data for cell (%d,%d) from file %s",
+                     i,j,fname);
+        fclose(fp);
+        return(-1);
+      }
     }
   }
 
-  if(fclose(fp))
-  {
-    perror("failed to close file");
-    return(-1);
-  }
-
+  fclose(fp);
   return(0);
+}
+
+// Compute and return the 16-bit MD5 hash of the map data in the given plan
+// object.
+short
+plan_md5(plan_t* plan)
+{
+#if HAVE_OPENSSL_MD5_H
+  MD5_CTX c;
+  short digest;
+
+  MD5_Init(&c);
+
+  MD5_Update(&c,(unsigned char*)plan->cells,
+             (plan->size_x*plan->size_y)*sizeof(plan_cell_t));
+
+  MD5_Final((unsigned char*)&digest,&c);
+
+  return(digest);
+#else
+  PLAYER_ERROR("tried to compute md5 hash, but it's not available");
+  return(0);
+#endif
 }
