@@ -659,6 +659,10 @@ class GpsProxy : public ClientProxy
     /// Horizontal dilution of position (HDOP)
     double hdop;
 
+    /// UTM easting and northing (meters).
+    double utm_easting;
+    double utm_northing;
+
     /// Time, since the epoch
     struct timeval time;
    
