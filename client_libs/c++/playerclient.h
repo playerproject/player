@@ -2400,8 +2400,6 @@ private:
  *****************************************************************************/
 
 
-
-
 /*****************************************************************************
  ** begin section PlannerProxy
  *****************************************************************************/
@@ -2502,6 +2500,49 @@ public:
     double watts;
     bool charging;
 };
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+
+/*****************************************************************************
+ ** begin section MapProxy
+ *****************************************************************************/
+
+/** [Synopsis] The {\tt map} proxy provides an interface to a map.
+ */
+
+class MapProxy : public ClientProxy
+{
+  // Constructor
+  public: MapProxy (PlayerClient *pc, unsigned short indes,
+              unsigned char access='c');
+
+  // Destructor
+  public: ~MapProxy();
+
+  /** Get the map, which is stored in the proxy */
+  public: int GetMap();
+
+  /** Return the index of the (x,y) item in the cell array */
+  public: int GetCellIndex( int x, int y );
+
+  /** Return the (x,y) cell */
+  public: char GetCell( int x, int y);
+
+  // interface that all proxies must provide
+  public: void FillData (player_msghdr_t hde, const char *buffer);
+
+  /** Map resolution, m/cell */
+  public: double resolution;
+
+  /* Map size, in cells */
+  public: int width, height;
+
+  /** Occupancy for each cell (empty = -1, unknown = 0, occupied = +1) */
+  public: char *cells;
+};
+
 /*****************************************************************************
  ** end section
  *****************************************************************************/
