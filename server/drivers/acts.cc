@@ -115,6 +115,9 @@ class Acts:public CDevice
     char widthstring[128];
     char heightstring[128];
 
+    // Descriptive colors for each channel.
+    uint32_t colors[PLAYER_BLOBFINDER_MAX_CHANNELS];
+
   public:
     int sock;               // socket to ACTS
 
@@ -168,6 +171,8 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   int tmpint;
+  int ch;
+  uint32_t color;
 
   sock = -1;
 
@@ -248,6 +253,18 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
 
   bzero(heightstring, sizeof(heightstring));
   sprintf(heightstring,"%d",height);
+
+
+  // Get the descriptive colors.
+  for (ch = 0; ch < PLAYER_BLOBFINDER_MAX_CHANNELS; ch++)
+  {
+    printf("get color %d\n", ch);
+    color = cf->ReadTupleColor(section, "colors", ch, 0xFFFFFFFF);
+    printf("got color %X\n", color);
+    if (color == 0xFFFFFFFF)
+      break;
+    this->colors[ch] = color;
+  }
 }
     
 // returns the enum representation of the given version string, or
@@ -297,7 +314,6 @@ Acts::Setup()
   //char acts_configfile_flag[] = "-t";
   //char acts_port_flag[] = "-s";
 
-  char acts_port_num[MAX_FILENAME_SIZE];
   char* acts_args[32];
 
   static struct sockaddr_in server;
@@ -312,8 +328,6 @@ Acts::Setup()
   // zero the data buffer
   PutData((unsigned char*)&dummy,
           sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
-
-  sprintf(acts_port_num,"%d",portnum);
 
   i = 0;
   acts_args[i++] = acts_bin_name;
@@ -490,7 +504,6 @@ Acts::Setup()
 
     memcpy(&server.sin_addr, entp->h_addr_list[0], entp->h_length);
 
-
     server.sin_port = htons(portnum);
 
     /* ok, we'll make this a bit smarter.  first, we wait a baseline amount
@@ -571,10 +584,6 @@ Acts::Main()
 
   char acts_request_packet = ACTS_REQUEST_PACKET;
 
-  // TODO: put a descriptive color in here (I'm not sure where
-  // to get it from).  Some default colors...
-  int colors[] = {0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00};
-  
   /* make sure we aren't canceled at a bad time */
   if(pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL))
   {
