@@ -116,6 +116,20 @@ PlayerClient::PlayerClient()
   broadcast_data = (player_broadcast_data_t*)(thisentry->data);
   broadcast_cmd = (player_broadcast_cmd_t*)(thisentry->command);
   broadcast_msg_count = 0;
+  
+  // the zeroth gps device
+  devicedatatable->AddDevice(PLAYER_GPS_CODE, 0, 'c',
+                             sizeof(player_gps_data_t),
+                             0);
+  thisentry = devicedatatable->GetDeviceEntry(PLAYER_GPS_CODE,0);
+  gps = (player_gps_data_t*)(thisentry->data);
+
+  // the zeroth bps device
+  devicedatatable->AddDevice(PLAYER_BPS_CODE, 0, 'c',
+                             sizeof(player_bps_data_t),
+                             0);
+  thisentry = devicedatatable->GetDeviceEntry(PLAYER_BPS_CODE,0);
+  bps = (player_bps_data_t*)(thisentry->data);
 }
 
 PlayerClient::~PlayerClient()
@@ -265,6 +279,22 @@ void PlayerClient::ByteSwapData(void* data, player_msghdr_t hdr)
             temp->beacon[i].bearing = ntohs(temp->beacon[i].bearing);
             temp->beacon[i].orient = ntohs(temp->beacon[i].orient);
         }
+        break;
+    }
+    case PLAYER_GPS_CODE:
+    {
+        player_gps_data_t* temp = (player_gps_data_t*) data;
+        temp->xpos = ntohl(temp->xpos);
+        temp->ypos = ntohl(temp->ypos);
+        temp->heading = ntohl(temp->heading);
+        break;
+    }
+    case PLAYER_BPS_CODE:
+    {
+        player_bps_data_t* temp = (player_bps_data_t*) data;
+        temp->px = ntohl(temp->px);
+        temp->py = ntohl(temp->py);
+        temp->pa = ntohl(temp->pa);
         break;
     }
     default:
