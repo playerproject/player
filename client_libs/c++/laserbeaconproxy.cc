@@ -39,12 +39,14 @@ int LaserbeaconProxy::SetBits(unsigned char bit_count, unsigned short bit_size)
   if(!client)
     return(-1);
 
-  player_laserbeacon_setbits_t config;
+  player_laserbeacon_config_t config;
 
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETBITS;
+  // TODO: read existing config.
+  
+  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETCONFIG;
   config.bit_count = bit_count;
   config.bit_size = htons(bit_size);
-
+  
   return(client->Request(PLAYER_LASERBEACON_CODE,index,(const char*)&config,
                          sizeof(config)));
 }
@@ -55,9 +57,11 @@ int LaserbeaconProxy::SetThresh(unsigned short zero_thresh, unsigned short one_t
   if(!client)
     return(-1);
 
-  player_laserbeacon_setthresh_t config;
+  player_laserbeacon_config_t config;
 
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETTHRESH;
+  // TODO: read existing config.
+  
+  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETCONFIG;
   config.zero_thresh = htons(zero_thresh);
   config.one_thresh = htons(one_thresh);
 
@@ -67,6 +71,8 @@ int LaserbeaconProxy::SetThresh(unsigned short zero_thresh, unsigned short one_t
 
 void LaserbeaconProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
+  player_laserbeacon_data_t *data = (player_laserbeacon_data_t*) buffer;
+  
   if(hdr.size != sizeof(player_laserbeacon_data_t))
   {
     if(player_debug_level(-1) >= 1)
@@ -75,18 +81,15 @@ void LaserbeaconProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_laserbeacon_data_t),hdr.size);
   }
 
-  count = ntohs(((player_laserbeacon_data_t*)buffer)->count);
+  count = ntohs(data->count);
   bzero(beacons,sizeof(beacons));
-  for(unsigned short i=0;i<count && i<PLAYER_MAX_LASERBEACONS;i++)
+  for(unsigned short i = 0; i < count && i < PLAYER_MAX_LASERBEACONS; i++)
   {
     
-    beacons[i].id = ((player_laserbeacon_data_t*)buffer)->beacon[i].id;
-    beacons[i].range = 
-         ntohs(((player_laserbeacon_data_t*)buffer)->beacon[i].range);
-    beacons[i].bearing = 
-         (short)ntohs(((player_laserbeacon_data_t*)buffer)->beacon[i].bearing);
-    beacons[i].orient = 
-         (short)ntohs(((player_laserbeacon_data_t*)buffer)->beacon[i].orient);
+    beacons[i].id = data->beacon[i].id;
+    beacons[i].range = ntohs(data->beacon[i].range);
+    beacons[i].bearing = (short)ntohs(data->beacon[i].bearing);
+    beacons[i].orient = (short) ntohs(data->beacon[i].orient);
   }
 }
 

@@ -42,38 +42,27 @@
  */
 class BroadcastProxy : public ClientProxy
 {
-    /** Proxy constructor.
-        Leave the access field empty to start unconnected.
-        You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
-    */
-    public: BroadcastProxy(PlayerClient* pc, unsigned short index, unsigned char access ='c');
+  /** Proxy constructor.
+      Leave the access field empty to start unconnected.
+      You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
+  */
+  public: BroadcastProxy(PlayerClient* pc, unsigned short index, unsigned char access ='c');
 
-    /** Read a message from the incoming queue.
-        Returns the number of bytes read, or -1 if the queue is empty.
-    */
-    public: int Read(char *msg, int len);
+  /** Read a message from the incoming queue.
+      Returns the number of bytes read, or -1 if the queue is empty.
+  */
+  public: int Read(void *msg, int len);
 
-    /** Write a message to the outgoing queue.
-        Returns the number of bytes written, or -1 if the queue is full.
-    */
-    public: int Write(char *msg, int len);
+  /** Write a message to the outgoing queue.
+      Returns the number of bytes written, or -1 if the queue is full.
+  */
+  public: int Write(void *msg, int len);
 
-    /** Flush the outgoing message queue.
-        Returns the 0 on success, or -1 of there is a problem.
-    */
-    public: int Flush();
-
-    // interface that all proxies must provide
-    protected: void FillData(player_msghdr_t hdr, const char* buffer);
+  // interface that all proxies must provide
+  protected: void FillData(player_msghdr_t hdr, const char* buffer);
     
-    // interface that all proxies SHOULD provide
-    protected: void Print();
-    
-    // Queue of incoming messages
-    private: player_broadcast_data_t data;
-
-    // Queue of outgoing messages
-    private: player_broadcast_cmd_t cmd;
+  // interface that all proxies SHOULD provide
+  protected: void Print();
 };
 
 #endif
