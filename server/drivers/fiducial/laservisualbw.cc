@@ -131,11 +131,15 @@ class LaserVisualBW : public CDevice
   
   // Write the device data (the data going back to the client).
   private: void WriteData();
+
+  // Image processing
+  private: double edge_thresh;
   
   // Barcode tolerances
   private: int barcount;
   private: double barwidth;
   private: double guard_min, guard_tol;
+  private: double err_first, err_second;
 
   // Max time to spend looking at a fiducial.
   private: double max_ptz_attention;
@@ -146,7 +150,7 @@ class LaserVisualBW : public CDevice
   // Max distance between fiducials in successive laser scans.
   private: double max_dist;
 
-  // Laser stuff.
+  // Laser stuff
   private: int laser_index;
   private: CDevice *laser;
   private: double laser_time;
@@ -156,7 +160,7 @@ class LaserVisualBW : public CDevice
   private: CDevice *ptz;
   private: double ptz_time;
 
-  // Camera stuff.
+  // Camera stuff
   private: int camera_index;
   private: CDevice *camera;
   private: double camera_time;
@@ -215,9 +219,12 @@ LaserVisualBW::LaserVisualBW(char* interface, ConfigFile* cf, int section)
   this->camera = NULL;
   this->camera_time = 0;
 
-  this->max_ptz_attention = cf->ReadFloat(section, "max_ptz_attention", 2.0);
+  this->max_ptz_attention = cf->ReadFloat(section, "max_ptz_attention", 3.0);
   this->retire_time = cf->ReadFloat(section, "retire_time", 1.0);
   this->max_dist = cf->ReadFloat(section, "max_dist", 0.2);
+
+  // Image processing
+  this->edge_thresh = cf->ReadFloat(section, "edge_thresh", 20);
   
   // Default fiducial properties.
   this->barwidth = cf->ReadLength(section, "bit_width", 0.08);
@@ -226,6 +233,10 @@ LaserVisualBW::LaserVisualBW(char* interface, ConfigFile* cf, int section)
   // Barcode properties: minimum height (pixels), height tolerance (ratio).
   this->guard_min = cf->ReadInt(section, "guard_min", 4);
   this->guard_tol = cf->ReadLength(section, "guard_tol", 0.20);
+
+  // Error threshold on the first and second best digits
+  this->err_first = cf->ReadFloat(section, "digit_err_first", 0.5);
+  this->err_second = cf->ReadFloat(section, "digit_err_second", 1.0);
 
   // Reset fiducial list.
   this->fiducial_count = 0;
@@ -320,8 +331,8 @@ void LaserVisualBW::Main()
 {
   while (true)
   {
-    // Go to sleep for a while (this is a polling loop).
-    usleep(10000);
+    // Let the camera drive update rate
+    this->camera->Wait();
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
@@ -451,7 +462,7 @@ void LaserVisualBW::FindLaserFiducials(double time, player_laser_data_t *data)
   int i, h;
   int valid;
   double r, b;
-  double db, dr;
+  //double db, dr;
   double mn, mr, mb, mrr, mbb;
   double pose[3];
 
@@ -794,7 +805,11 @@ int LaserVisualBW::UpdateCamera()
   size_t size;
   uint32_t timesec, timeusec;
   double time;
-  
+  int id;
+  int x;
+  int symbol_count;
+  int symbols[480];
+
   // Get the camera data.
   size = this->camera->GetData(this, (unsigned char*) &this->camera_data,
                                sizeof(this->camera_data), &timesec, &timeusec);
@@ -809,41 +824,25 @@ int LaserVisualBW::UpdateCamera()
   this->camera_data.width = ntohs(this->camera_data.width);
   this->camera_data.height = ntohs(this->camera_data.height); 
   this->camera_data.depth = this->camera_data.depth;
+
+  // Use the center image column
+  x = this->camera_data.width / 2;
   
-  // TESTING: save the image
-  FILE *fp;
-  fp = fopen( "image.ppm", "wb" );
-  if (!fp)
+  // Extract raw symbols
+  symbol_count = this->ExtractSymbols(x, sizeof(symbols) / sizeof(symbols[0]), symbols);
+
+  // Identify barcode
+  id = this->ExtractCode(symbol_count, symbols);
+
+  // Assign id to fiducial we are currently looking at
+  if (id >= 0 && this->ptz_fiducial)
   {
-    PLAYER_ERROR1( "unable to open file %s\n for writing", "image.ppm" );
-    return 0;
+    if (this->ptz_fiducial->ptz_lockon_time >= 0)
+    {
+      this->ptz_fiducial->id = id;
+      this->ptz_fiducial->id_time = time;
+    }
   }
-  fprintf( fp, "P6\n# Gazebo\n%d %d\n255\n", this->camera_data.width, this->camera_data.height );
-  for (int i = 0; i < this->camera_data.height; i++)
-    fwrite( this->camera_data.image + i * this->camera_data.width * 3, 1,
-            this->camera_data.width * 3, fp );
-  fclose( fp );
-
-  int i, x;
-  int symbol_count;
-  int symbols[480];
-  int codes[16];
-  
-  // Look for barcodes; we try reading in several columns
-  for (i = 0; i < 1; i++)
-  {
-    x = this->camera_data.width / 2 + (i - 1);
-
-    // Extract raw symbols
-    symbol_count = this->ExtractSymbols(x, sizeof(symbols) / sizeof(symbols[0]), symbols);
-
-    // Look for barcodes
-    codes[i] = this->ExtractCode(symbol_count, symbols);
-  }
-
-  // Look for a consistent set of codes
-  // TODO
-  
   
   return 1;
 }
@@ -854,9 +853,10 @@ int LaserVisualBW::UpdateCamera()
 // the image and thresholds it.
 int LaserVisualBW::ExtractSymbols(int x, int symbol_max_count, int symbols[])
 {
-  int i, off, inc, pix;
-  uint8_t v, white_thresh, black_thresh;
+  int i, j, off, inc, pix;
+  double fn, fv;
   int state, start, symbol_count;
+  double kernel[] = {+1, +2, 0, -2, -1};
 
   // RGB24, use G channel
   if (this->camera_data.depth == 24)
@@ -864,42 +864,48 @@ int LaserVisualBW::ExtractSymbols(int x, int symbol_max_count, int symbols[])
     off = x * this->camera_data.depth / 8 + 1;
     inc = this->camera_data.width * this->camera_data.depth / 8;
   }
+
+  // RGB32, use G channel
+  else if (this->camera_data.depth == 32)
+  {
+    off = x * this->camera_data.depth / 8 + 1;
+    inc = this->camera_data.width * this->camera_data.depth / 8;
+  }
+
   else
   {
-    PLAYER_ERROR1("no support  for image depth %d", this->camera_data.depth);
+    PLAYER_ERROR1("no support for image depth %d", this->camera_data.depth);
     return 0;
   }
 
-  /* TODO
-  // Construct intensity histogram to determine thresholds
-  for (y = 0; y < this->camera_data.height; y++)
-  {
-  }
-  */
-
-  // TESTING
-  white_thresh = 128 + 20;
-  black_thresh = 128 - 20;
+  //FILE *file = fopen("edge.out", "a+");
 
   assert(symbol_max_count >= this->camera_data.height);
 
   state = -1;
   start = -1;
   symbol_count = 0;
-  
-  // Symbols; white pixels are space, black pixels are marks.
-  for (i = 0, pix = off; i < this->camera_data.height; i++, pix += inc)
-  {
-    v = this->camera_data.image[pix];
 
+  for (i = 2, pix = off + 2 * inc; i < this->camera_data.height - 2; i++, pix += inc)
+  {
+   // Run an edge detector
+    fn = fv = 0.0;
+    for (j = -2; j <= 2; j++)
+    {
+      fv += kernel[j + 2] * this->camera_data.image[pix + j * inc];
+      fn += fabs(kernel[j + 2]);
+    }
+    fv /= fn;
+    
+    // Pick the transitions
     if (state == -1)
     {
-      if (v < black_thresh)
+      if (fv > +this->edge_thresh)
       {
         state = 1;
         start = i;
       }
-      else if (v > white_thresh)
+      else if (fv < -this->edge_thresh)
       {
         state = 0;
         start = i;
@@ -907,23 +913,33 @@ int LaserVisualBW::ExtractSymbols(int x, int symbol_max_count, int symbols[])
     }
     else if (state == 0)
     {
-      if (v < black_thresh)
+      if (fv > +this->edge_thresh)
       {
-        symbols[symbol_count++] = -(i - start + 1);
+        symbols[symbol_count++] = -(i - start);
         state = 1;
         start = i;
       }
     }
     else if (state == 1)
     {
-      if (v > white_thresh)
+      if (fv < -this->edge_thresh)
       {
-        symbols[symbol_count++] = +(i - start + 1);
+        symbols[symbol_count++] = +(i - start);
         state = 0;
         start = i;
       }
     }
+
+    //fprintf(file, "%d %f %f %d\n", i, fv, fn, state);
   }
+
+  if (state == 0)
+    symbols[symbol_count++] = -(i - start);
+  else if (state == 1)
+    symbols[symbol_count++] = +(i - start);
+
+  //fprintf(file, "\n\n");
+  //fclose(file);
 
   return symbol_count;
 }
@@ -936,19 +952,37 @@ int LaserVisualBW::ExtractCode(int symbol_count, int symbols[])
   int i, j, k;
   double a, b, c;
   double mean, min, max, wm, wo;
+  int best_digit;
+  double best_err;
   double err[10];
-  double digits[][4] = {{-3,+2,-1,+1},
-                        {-2,+2,-2,+1},
-                        {-2,+1,-2,+2}};
 
+  // These are UPC the mark-space patterns for digits.  From:
+  // http://www.ee.washington.edu/conselec/Sp96/projects/ajohnson/proposal/project.htm
+  double digits[][4] =
+    {
+      {-3,+2,-1,+1}, // 0
+      {-2,+2,-2,+1}, // 1
+      {-2,+1,-2,+2}, // 2
+      {-1,+4,-1,+1}, // 3
+      {-1,+1,-3,+2}, // 4
+      {-1,+2,-3,+1}, // 5
+      {-1,+1,-1,+4}, // 6
+      {-1,+3,-1,+2}, // 7
+      {-1,+2,-1,+3}, // 8
+      {-3,+1,-1,+2}, // 9
+    };
+
+  best_digit = -1;
+  
   // Note that each code has seven symbols in it, not counting the
   // initial space.
-  
   for (i = 0; i < symbol_count - 7; i++)
   {
+    /*
     for (j = 0; j < 7; j++)
       printf("%+d", symbols[i + j]);
     printf("\n");
+    */
 
     a = symbols[i];
     b = symbols[i + 1];
@@ -969,27 +1003,53 @@ int LaserVisualBW::ExtractCode(int symbol_count, int symbols[])
 
       printf("guard %d %.2f\n", i, mean);
 
-      // Read the code digit (4 symbols) and compare against the know
+      best_err = this->err_first;
+      best_digit = -1;
+      
+      // Read the code digit (4 symbols) and compare against the known
       // digit patterns
-      for (k = 0; k < 3; k++)
+      for (k = 0; k < (int) (sizeof(digits) / sizeof(digits[0])); k++)
       {
         err[k] = 0;        
         for (j = 0; j < 4; j++)
         {
           wm = digits[k][j];
           wo = symbols[i + 3 + j] / mean;
-          printf("digit %d %.3f %.3f\n", k, wm, wo);
           err[k] += fabs(wo - wm);
+          //printf("digit %d = %.3f %.3f\n", k, wm, wo);
         }
-
         printf("digit %d = %.3f\n", k, err[k]);
+
+        if (err[k] < best_err)
+        {
+          best_err = err[k];
+          best_digit = k;
+        }
       }
+
+      // Id is good if it fits on and *only* one pattern.  So find the
+      // second best digit and make sure it has a much higher error.
+      for (k = 0; k < (int) (sizeof(digits) / sizeof(digits[0])); k++)
+      {
+        if (k == best_digit)
+          continue;
+        if (err[k] < this->err_second)
+        {
+          best_digit = -1;
+          break;
+        }
+      }
+
+      // Stop if we found a valid digit
+      if (best_digit >= 0)
+        break;
     }    
   }
 
-  printf("\n\n");
+  if (best_digit >= 0)
+    printf("best = %d\n", best_digit);
 
-  return -1;
+  return best_digit;
 }
 
 
@@ -1032,6 +1092,8 @@ void LaserVisualBW::WriteData()
   
   // Copy data to server.
   PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
+
+  return;
 }
 
 

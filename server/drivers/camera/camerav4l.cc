@@ -90,6 +90,9 @@ class CameraV4L : public CDevice
   // The current image (local copy)
   private: FRAME* frame;
 
+  // Write frames to disk?
+  private: int save;
+
   // Capture timestamp
   private: uint32_t tsec, tusec;
   
@@ -153,6 +156,9 @@ CameraV4L::CameraV4L(char* interface, ConfigFile* cf, int section)
   // Color
   this->depth = cf->ReadInt(section, "depth", 24);
 
+  // Save frames?
+  this->save = cf->ReadInt(section, "save", 0);
+
   return;
 }
 
@@ -182,6 +188,17 @@ int CameraV4L::Setup()
     fg_set_format(this->fg, VIDEO_PALETTE_RGB24 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB24 );
   }
+  else if (this->depth == 32)
+  {
+    fg_set_format(this->fg, VIDEO_PALETTE_RGB32 );
+    this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB32 );
+  }
+  else
+  {
+    PLAYER_ERROR2("image depth %d is not supported (add it yourself in %s)",
+                  this->depth, __FILE__);
+    return 1;
+  }
 
   // Start the driver thread.
   this->StartThread();
@@ -210,11 +227,15 @@ int CameraV4L::Shutdown()
 void CameraV4L::Main() 
 {
   struct timeval time;
+  int frameno;
+  char filename[256];
+
+  frameno = 0;
       
   while (true)
   {
     // Go to sleep for a while (this is a polling loop).
-    usleep(10000);
+    usleep(50000);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
@@ -229,12 +250,17 @@ void CameraV4L::Main()
 
     // Grab the next frame (blocking)
     fg_grab_frame(this->fg, this->frame);
-
+        
     // Write data to server
     this->WriteData();
-
-    // TESTING
-    frame_save(this->frame, "camerav4l-latest.ppm");
+    
+    // Save frames
+    if (this->save)
+    {
+      printf("click %d\n", frameno);
+      snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
+      frame_save(this->frame, filename);
+    }
   }
 }
 
@@ -284,6 +310,8 @@ void CameraV4L::HandleGetGeom(void *client, void *request, int len)
 // Update the device data (the data going back to the client).
 void CameraV4L::WriteData()
 {
+  //printf("%d %06d\n", this->tsec, this->tusec);
+  
   // Set the image properties
   this->data.width = htons(this->width);
   this->data.height = htons(this->height);
