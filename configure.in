@@ -10,7 +10,7 @@ define(PLAYER_VERSION,1.3)
 
 dnl Initialize automake with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AM_INIT_AUTOMAKE(player,PLAYER_VERSION)
+AM_INIT_AUTOMAKE(player-src,PLAYER_VERSION)
 
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
@@ -212,7 +212,8 @@ dnl autoconf 2.13.
 AC_MSG_RESULT([])
 AC_MSG_RESULT([*************************************************************])
 AC_MSG_RESULT([])
-AC_MSG_RESULT([Player will be built with the following tools:])
+AC_MSG_RESULT([Player will be built on a $build system to run])
+AC_MSG_RESULT([on a $host system, with the following tools:])
 AC_MSG_RESULT([    C   compiler: $CC $CFLAGS])
 AC_MSG_RESULT([    C++ compiler: $CXX $CXXFLAGS])
 AC_MSG_RESULT([])

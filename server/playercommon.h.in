@@ -39,6 +39,7 @@
  * header will be usable by anyone */
 #undef HAVE_STDINT_H
 #undef HAVE_STRINGS_H
+#undef WORDS_BIGENDIAN
 /*****************************************************************************/
 
 /* make sure we get the various types like 'uint8_t' */
@@ -93,13 +94,13 @@
 #define GETFIRSTUINT32(x) (*((uint32_t*)x))
 #define GETFIRSTINT32(x)  (*((int32_t*)x))
 
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if WORDS_BIGENDIAN
   #define htonll(n) (n)
 #else
   #define htonll(n) ((((unsigned long long) htonl(n)) << 32) + htonl((n) >> 32))
 #endif
 
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if WORDS_BIGENDIAN
   #define ntohll(n) (n)
 #else
   #define ntohll(n) ((((unsigned long long)ntohl(n)) << 32) + ntohl((n) >> 32))
