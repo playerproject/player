@@ -65,18 +65,18 @@ while {$i < $argc} {
 }
 
 connectToRobot $host
-requestFromRobot za
+requestFromRobot "drsz[binary format S 0]a"
 
 
 set dir 1
 while {1} {
-  readData z
+  readData
   puts "pan:$pan  tilt:$tilt  zoom:$zoom"
   if {$pan > 80 || $pan < -80} {
     set dir -$dir
     writeCameraCommand [expr $pan + ($dir * 10)] 0 0
     sleep 1
-    readData z
+    readData
   }
   writeCameraCommand [expr $pan + ($dir * 5)] 0 0
 }

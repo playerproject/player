@@ -25,7 +25,7 @@ examples:
 dep:
 	cd src && make dep
 
-install: install_server install_client_libs install_examples
+install: install_server install_client_libs
 
 install_server:
 	cd src && make INSTALL_PREFIX=$(INSTALL_PREFIX) install
