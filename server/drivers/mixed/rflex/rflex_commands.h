@@ -37,4 +37,6 @@
 				 long acceleration);
   void rflex_stop_robot(int fd, int deceleration);
 
+	static int clear_incoming_data(int fd);
+
 #endif
