@@ -57,8 +57,9 @@ int StgTime::GetTime(struct timeval* time)
   
   if( this->client ) // get the time from the Stage client
     {
-      time->tv_sec =  (long)client->stagetime;
-      time->tv_usec =  (long)(fmod( client->stagetime, 1.0) * 1000000.0);
+      // client->stagetime is in milliseconds
+      time->tv_sec  = client->stagetime / 1000;
+      time->tv_usec = (client->stagetime % 1000) * 1000;
     }
   else // no time data available
     memset( time, 0, sizeof(struct timeval) );
