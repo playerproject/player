@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h> /* for strcpy() */
 #include <stdlib.h>  /* for atoi(3),rand(3) */
-#include <playerclient.h>
+#include <oldplayerclient.h>
 
 #define USAGE \
   "USAGE: randomwalk [-h <host>] [-p <port>] [-m]\n" \

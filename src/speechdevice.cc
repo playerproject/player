@@ -117,6 +117,14 @@ CSpeechDevice::Setup()
   struct hostent* entp;
 
   pthread_attr_t attr;
+  
+  command_size = 0;
+  bzero(queue,SPEECH_MAX_QUEUE_LEN*SPEECH_MAX_STRING_LEN);
+  queue_len = 0;
+  queue_insert_idx = 0;
+  queue_remove_idx = 0;
+  read_pending = false;
+
 
   printf("Festival speech synthesis server connection initializing...");
   fflush(stdout);

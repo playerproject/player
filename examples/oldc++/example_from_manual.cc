@@ -1,4 +1,4 @@
-#include <playerclient.h>
+#include <oldplayerclient.h>
 #include <stdlib.h> /* for exit() */
 
 int main(int argc, char *argv[]) {

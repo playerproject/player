@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>  // for atoi(3)
-#include <playerclient.h>  // for player client stuff
+#include <oldplayerclient.h>  // for player client stuff
 #include <values.h>  // for MAXINT
 #include <string.h> /* for strcmp() */
 

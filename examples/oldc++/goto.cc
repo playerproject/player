@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h> // for atof()
 #include <unistd.h>
-#include <playerclient.h>
+#include <oldplayerclient.h>
 #include <pthread.h>
 #include <math.h>
 #include <string.h> /* for strcmp() */

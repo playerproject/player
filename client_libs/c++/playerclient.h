@@ -54,6 +54,9 @@ class ClientProxyNode
 class PlayerClient
 {
   private:
+    // special flag to indicate that we are being destroyed
+    bool destroyed;
+
     // list of proxies associated with us
     ClientProxyNode* proxies;
     int num_proxies;
