@@ -53,67 +53,76 @@
 #include "error.h"
 
 // Local declarations
-void playerc_wifi_putdata(playerc_wifi_t *device, player_msghdr_t *header,
+void playerc_wifi_putdata(playerc_wifi_t *self, player_msghdr_t *header,
                           player_wifi_data_t *data, size_t len);
 
 
 // Create a new wifi proxy
 playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index)
 {
-  playerc_wifi_t *device;
+  playerc_wifi_t *self;
 
-  device = malloc(sizeof(playerc_wifi_t));
-  memset(device, 0, sizeof(playerc_wifi_t));
-  playerc_device_init(&device->info, client, PLAYER_WIFI_CODE, index,
+  self = malloc(sizeof(playerc_wifi_t));
+  memset(self, 0, sizeof(playerc_wifi_t));
+  playerc_device_init(&self->info, client, PLAYER_WIFI_CODE, index,
                       (playerc_putdata_fn_t) playerc_wifi_putdata);
   
-  return device;
+  return self;
 }
 
 
 // Destroy a wifi proxy
-void playerc_wifi_destroy(playerc_wifi_t *device)
+void playerc_wifi_destroy(playerc_wifi_t *self)
 {
-  playerc_device_term(&device->info);
-  free(device);
+  playerc_device_term(&self->info);
+  free(self);
 }
 
 
 // Subscribe to the wifi device
-int playerc_wifi_subscribe(playerc_wifi_t *device, int access)
+int playerc_wifi_subscribe(playerc_wifi_t *self, int access)
 {
-  return playerc_device_subscribe(&device->info, access);
+  return playerc_device_subscribe(&self->info, access);
 }
 
 
 // Un-subscribe from the wifi device
-int playerc_wifi_unsubscribe(playerc_wifi_t *device)
+int playerc_wifi_unsubscribe(playerc_wifi_t *self)
 {
-  return playerc_device_unsubscribe(&device->info);
+  return playerc_device_unsubscribe(&self->info);
 }
 
 
 // Process incoming data
-void playerc_wifi_putdata(playerc_wifi_t *device, player_msghdr_t *header,
+void playerc_wifi_putdata(playerc_wifi_t *self, player_msghdr_t *header,
                           player_wifi_data_t *data, size_t len)
 {
   int i;
   
-  device->link_count = (uint16_t) ntohs(data->link_count);
+  self->link_count = (uint16_t) ntohs(data->link_count);
 
-  for (i = 0; i < device->link_count; i++)
+  for (i = 0; i < self->link_count; i++)
   {
-    strncpy(device->links[i].mac, data->links[i].mac, sizeof(device->links[i].mac));
-    strncpy(device->links[i].ip, data->links[i].ip, sizeof(device->links[i].ip));
-    strncpy(device->links[i].essid, data->links[i].essid, sizeof(device->links[i].essid));
-    device->links[i].mode = data->links[i].mode;
-    device->links[i].encrypt = data->links[i].encrypt;
-    device->links[i].freq = (double) (int16_t) ntohs(data->links[i].freq);
-    device->links[i].qual = (int16_t) ntohs(data->links[i].qual);
-    device->links[i].level = (int16_t) ntohs(data->links[i].level);
-    device->links[i].noise = (int16_t) ntohs(data->links[i].noise);
+    strncpy(self->links[i].mac, data->links[i].mac, sizeof(self->links[i].mac));
+    strncpy(self->links[i].ip, data->links[i].ip, sizeof(self->links[i].ip));
+    strncpy(self->links[i].essid, data->links[i].essid, sizeof(self->links[i].essid));
+    self->links[i].mode = data->links[i].mode;
+    self->links[i].encrypt = data->links[i].encrypt;
+    self->links[i].freq = (double) (int16_t) ntohs(data->links[i].freq);
+    self->links[i].qual = (int16_t) ntohs(data->links[i].qual);
+    self->links[i].level = (int16_t) ntohs(data->links[i].level);
+    self->links[i].noise = (int16_t) ntohs(data->links[i].noise);
   }
 
   return;
+}
+
+// Get link state
+playerc_wifi_link_t *playerc_wifi_get_link(playerc_wifi_t *self, int link)
+{
+  //if (link >= self->link_count)
+  //  return NULL;
+
+  return self->links + link;
 }
 

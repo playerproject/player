@@ -62,7 +62,7 @@
 extern "C" {
 #endif
 
-
+  
 /***************************************************************************
  * Useful constants (re-defined here so SWIG can pick them up easily
  **************************************************************************/
@@ -103,7 +103,7 @@ typedef struct
   void *data;
 } playerc_client_item_t;
 
-
+  
 // Typedefs for proxy callback functions
 typedef void (*playerc_putdata_fn_t) (void *device, char *header, char *data, size_t len);
 typedef void (*playerc_callback_fn_t) (void *data);
@@ -134,7 +134,7 @@ and non-zero value on error.  A descriptive error message will also be
 written into the error string. */
 
 /** Retrieve the last error (as a descriptive string). */
-extern const char *playerc_error_str(void);
+const char *playerc_error_str(void);
 
 /***************************************************************************
  ** end section
@@ -146,10 +146,10 @@ extern const char *playerc_error_str(void);
  **************************************************************************/
 
 // Get the name for a given device code.
-extern const char *playerc_lookup_name(int code);
+const char *playerc_lookup_name(int code);
 
 // Get the device code for a give name.
-extern int playerc_lookup_code(const char *name);
+int playerc_lookup_code(const char *name);
 
 
 /***************************************************************************
@@ -750,111 +750,6 @@ int playerc_joystick_unsubscribe(playerc_joystick_t *device);
 
 
 /***************************************************************************
- ** begin section map
- **************************************************************************/
-
-/** [Synopsis] The {\tt map} proxy provides an interface to a map.
- */
-
-/** [Data] */
-
-/** Map proxy data. */
-typedef struct _playerc_map_t
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-  /** Map resolution, m/cell */
-  double resolution;
-
-  /** Map size, in cells */
-  int width, height;
-
-  /** Occupancy for each cell (empty = -1, unknown = 0, occupied = +1) */
-  char* cells;
-} playerc_map_t;
-
-/** [Methods] */
-
-#define PLAYERC_MAP_INDEX(dev, i, j) ((dev->width) * (j) + (i))
-
-/** Create a map proxy. */
-playerc_map_t *playerc_map_create(playerc_client_t *client, int index);
-
-/** Destroy a map proxy. */
-void playerc_map_destroy(playerc_map_t *device);
-
-/** Subscribe to the map device. */
-int playerc_map_subscribe(playerc_map_t *device, int access);
-
-/** Un-subscribe from the map device. */
-int playerc_map_unsubscribe(playerc_map_t *device);
-
-/** Get the map, which is stored in the proxy. */
-int playerc_map_get_map(playerc_map_t* device);
-
-/***************************************************************************
- ** end section
- **************************************************************************/
-
-/***************************************************************************
- ** begin section log
- **************************************************************************/
-
-/** [Synopsis] The {\tt log} proxy provides start/stop control of data
-               logging
- */
-
-/** [Data] */
-
-/** Log proxy data. */
-typedef struct _playerc_log_t
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-  /** What kind of log device is this? Either PLAYER_LOG_TYPE_READ or
-      PLAYER_LOG_TYPE_WRITE. Call playerc_log_get_state() to fill it. */
-  int type;
-
-  /** Is logging/playback enabled? Call playerc_log_get_state() to 
-      fill it. */
-  int state;
-} playerc_log_t;
-
-/** [Methods] */
-
-/** Create a log proxy. */
-playerc_log_t *playerc_log_create(playerc_client_t *client, int index);
-
-/** Destroy a log proxy. */
-void playerc_log_destroy(playerc_log_t *device);
-
-/** Subscribe to the log device. */
-int playerc_log_subscribe(playerc_log_t *device, int access);
-
-/** Un-subscribe from the log device. */
-int playerc_log_unsubscribe(playerc_log_t *device);
-
-/** Start/stop logging */
-int playerc_log_set_write_state(playerc_log_t* device, int state);
-
-/** Start/stop playback */
-int playerc_log_set_read_state(playerc_log_t* device, int state);
-
-/** Rewind playback */
-int playerc_log_set_read_rewind(playerc_log_t* device);
-
-/** Get logging/playback state; the result is written into the proxy */
-int playerc_log_get_state(playerc_log_t* device);
-
-
-/***************************************************************************
- ** end section
- **************************************************************************/
-
-
-/***************************************************************************
  ** begin section laser
  **************************************************************************/
 
@@ -887,15 +782,13 @@ typedef struct _playerc_laser_t
 
   /** Scan data; range (m) and bearing (radians). */
   double scan[PLAYERC_LASER_MAX_SAMPLES][2];
-
-  //double test[10][2]; // TESTING
   
   /** Scan data; x, y position (m). */
   double point[PLAYERC_LASER_MAX_SAMPLES][2];
 
   /** Scan reflection intensity values (0-3).  Note that the intensity
       values will only be filled if intensity information is enabled
-      (using the {\tt set\_config} function). */
+      (using the set_config function). */
   int intensity[PLAYERC_LASER_MAX_SAMPLES];
   
 } playerc_laser_t;
@@ -1021,12 +914,12 @@ int playerc_localize_unsubscribe(playerc_localize_t *device);
 /** Set the the robot pose (mean and covariance). */
 int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3][3]);
 
+/* REMOVE
 // deprecated: get the map from the map interface now
-#if 0
 int playerc_localize_get_map_info(playerc_localize_t *device);
 int playerc_localize_get_map_tile(playerc_localize_t *device);
 int playerc_localize_get_map(playerc_localize_t *device);
-#endif
+*/
 
 /** Get the current configuration. */
 int playerc_localize_get_config(playerc_localize_t *device, player_localize_config_t *config);
@@ -1037,6 +930,113 @@ int playerc_localize_set_config(playerc_localize_t *device, player_localize_conf
 /***************************************************************************
  ** end section
  **************************************************************************/ 
+
+
+/***************************************************************************
+ ** begin section log
+ **************************************************************************/
+
+/** [Synopsis] The {\tt log} proxy provides start/stop control of data
+               logging
+ */
+
+/** [Data] */
+
+/** Log proxy data. */
+typedef struct _playerc_log_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** What kind of log device is this? Either PLAYER_LOG_TYPE_READ or
+      PLAYER_LOG_TYPE_WRITE. Call playerc_log_get_state() to fill it. */
+  int type;
+
+  /** Is logging/playback enabled? Call playerc_log_get_state() to 
+      fill it. */
+  int state;
+} playerc_log_t;
+
+/** [Methods] */
+
+/** Create a log proxy. */
+playerc_log_t *playerc_log_create(playerc_client_t *client, int index);
+
+/** Destroy a log proxy. */
+void playerc_log_destroy(playerc_log_t *device);
+
+/** Subscribe to the log device. */
+int playerc_log_subscribe(playerc_log_t *device, int access);
+
+/** Un-subscribe from the log device. */
+int playerc_log_unsubscribe(playerc_log_t *device);
+
+/** Start/stop logging */
+int playerc_log_set_write_state(playerc_log_t* device, int state);
+
+/** Start/stop playback */
+int playerc_log_set_read_state(playerc_log_t* device, int state);
+
+/** Rewind playback */
+int playerc_log_set_read_rewind(playerc_log_t* device);
+
+/** Get logging/playback state; the result is written into the proxy */
+int playerc_log_get_state(playerc_log_t* device);
+
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
+
+
+/***************************************************************************
+ ** begin section map
+ **************************************************************************/
+
+/** [Synopsis] The {\tt map} proxy provides an interface to a map.
+ */
+
+/** [Data] */
+
+/** Map proxy data. */
+typedef struct _playerc_map_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Map resolution, m/cell */
+  double resolution;
+
+  /** Map size, in cells */
+  int width, height;
+
+  /** Occupancy for each cell (empty = -1, unknown = 0, occupied = +1) */
+  char* cells;
+} playerc_map_t;
+
+/** [Methods] */
+
+#define PLAYERC_MAP_INDEX(dev, i, j) ((dev->width) * (j) + (i))
+
+/** Create a map proxy. */
+playerc_map_t *playerc_map_create(playerc_client_t *client, int index);
+
+/** Destroy a map proxy. */
+void playerc_map_destroy(playerc_map_t *device);
+
+/** Subscribe to the map device. */
+int playerc_map_subscribe(playerc_map_t *device, int access);
+
+/** Un-subscribe from the map device. */
+int playerc_map_unsubscribe(playerc_map_t *device);
+
+/** Get the map, which is stored in the proxy. */
+int playerc_map_get_map(playerc_map_t* device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
+
 
  /***************************************************************************
  ** begin section motor
@@ -1665,7 +1665,7 @@ typedef struct _playerc_wifi_link_t
 
 
 /** Wifi device proxy. */
-typedef struct _player_wifi_t
+typedef struct _playerc_wifi_t
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
@@ -1675,6 +1675,7 @@ typedef struct _player_wifi_t
   playerc_wifi_link_t links[PLAYERC_WIFI_MAX_LINKS];
   
 } playerc_wifi_t;
+
 
 /** [Methods] */
 
@@ -1689,6 +1690,10 @@ int playerc_wifi_subscribe(playerc_wifi_t *device, int access);
 
 /** Un-subscribe from the wifi device. */
 int playerc_wifi_unsubscribe(playerc_wifi_t *device);
+
+/** Get link state. */
+playerc_wifi_link_t *playerc_wifi_get_link(playerc_wifi_t *device, int link);
+
 
 /***************************************************************************
  ** end section

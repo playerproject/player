@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-
 from libplayerc import *
+from test_wifi import *
 
 
 
-def test():
+def test_position():
 
     c = playerc_client_create(None, 'localhost', 6665)
     if playerc_client_connect(c) != 0:
@@ -45,10 +45,17 @@ def test_laser(client):
 
 if __name__ == '__main__':
 
-    print PLAYERC_READ_MODE
 
-    c = playerc_client_create(None, 'localhost', 6665)
-    if playerc_client_connect(c) != 0:
+    server = ('localhost', 6665)
+    devices = [('wifi', 0)]
+
+    c = playerc_client(None, 'localhost', 6665)
+    if c.connect() != 0:
         raise playerc_error_str()
 
-    test_laser(c)
+    #c = playerc_client_create(None, 'localhost', 6665)
+    #if playerc_client_connect(c) != 0:
+    #    raise playerc_error_str()
+
+    for device in devices:
+        eval('test_%s(c, device[1])' % device[0])
