@@ -80,15 +80,15 @@ AC_DEFUN([PLAYER_DRIVERTESTS], [
 
 dnl Where's CANLIB?
 AC_ARG_WITH(canlib, [  --with-canlib=dir       Location of CANLIB],
-CANLIB_DIR=$with_canlib,CANLIB_DIR=$prefix)
+CANLIB_DIR=$with_canlib,CANLIB_DIR=NONE)
 if test "x$CANLIB_DIR" = "xNONE" -o "x$CANLIB_DIR" = "xno"; then
   SEGWAYRMP_HEADER=canlib.h
   SEGWAYRMP_EXTRA_CPPFLAGS=
   SEGWAYRMP_EXTRA_LDFLAGS=-lcanlib
-elif test "x$CANLIB_DIR" = "xyes"; then
-  SEGWAYRMP_HEADER=$prefix/include/canlib.h
-  SEGWAYRMP_EXTRA_CPPFLAGS="-I$prefix/include"
-  SEGWAYRMP_EXTRA_LDFLAGS="-L$prefix/lib -lcanlib"
+dnl elif test "x$CANLIB_DIR" = "xyes"; then
+dnl   SEGWAYRMP_HEADER=$prefix/include/canlib.h
+dnl   SEGWAYRMP_EXTRA_CPPFLAGS="-I$prefix/include"
+dnl   SEGWAYRMP_EXTRA_LDFLAGS="-L$prefix/lib -lcanlib"
 else
   SEGWAYRMP_HEADER=$CANLIB_DIR/include/canlib.h
   SEGWAYRMP_EXTRA_CPPFLAGS="-I$CANLIB_DIR/include"
