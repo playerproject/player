@@ -576,6 +576,40 @@ int playerc_sonar_get_geom(playerc_sonar_t *device);
 
 
 /***************************************************************************
+ * proxy : truth (simulator ground truth) device
+ **************************************************************************/
+
+// Truth device proxy
+typedef struct
+{
+  // Device info; must be at the start of all device structures.
+  playerc_device_t info;
+    
+} playerc_truth_t;
+
+
+// Create a truth proxy.
+playerc_truth_t *playerc_truth_create(playerc_client_t *client, int index);
+
+// Destroy a truth proxy.
+void playerc_truth_destroy(playerc_truth_t *device);
+
+// Subscribe to the truth device
+int playerc_truth_subscribe(playerc_truth_t *device, int access);
+
+// Un-subscribe from the truth device
+int playerc_truth_unsubscribe(playerc_truth_t *device);
+
+// Get the object pose.
+// px, py, pa : the pose (global coordinates).
+int playerc_truth_get_pose(playerc_truth_t *device, double *px, double *py, double *pa);
+
+// Set the object pose.
+// px, py, pa : the new pose (global coordinates).
+int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double pa);
+
+
+/***************************************************************************
  * proxy : vision device
  **************************************************************************/
 

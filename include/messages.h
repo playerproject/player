@@ -598,17 +598,6 @@ typedef struct
 } __attribute__ ((packed)) player_gps_data_t;
 
 
-/*
- * GPS config packet:
- *   xpos, ypos: new global position (in mm).
- *   heading: new global heading (in degrees).
- */
-typedef struct
-{
-  int32_t xpos,ypos;
-  int32_t heading;
-} __attribute__ ((packed)) player_gps_config_t;
-
 
 /*************************************************************************/
 
@@ -824,29 +813,35 @@ typedef struct
 
 /*************************************************************************/
 /*
- * Truth device, used for getting and setting data about all entities in Stage
- * for example by a GUI or a ground-truth logging system
+ * Truth device, used for getting and setting data about entities in Stage.
  */
 
-// identify an entity to Player
-/*
-typedef struct
-{
-  uint16_t port;
-  uint16_t index;
-  uint16_t type;
-} player_id_t;  
-*/
+// REMOVE
+///* Data packet with current state of truth object. */
+//typedef struct
+//{
+//  /* Object pose in world cs (mm, mm, degrees). */
+//  int32_t px, py, pa; 
+//
+//} __attribute__ ((packed)) player_truth_data_t;
+//*/
 
-// packet for truth device
+/* Request packet subtypes. */
+#define PLAYER_TRUTH_GET_POSE 0
+#define PLAYER_TRUTH_SET_POSE 1
+
+/* Config packet for setting state of truth object. */
 typedef struct
 {
-  player_device_id_t id;
-  player_device_id_t parent;
+  /* Packet subtype.  Use PLAYER_TRUTH_GET_POSE to get the pose.  Use
+  * PLAYER_TRUTH_SET_POSE to set the pose. */
+  uint8_t subtype;
   
-  uint32_t x, y; // mm, mm
-  uint16_t th, w, h; // degrees, mm, mm
-} __attribute__ ((packed)) player_generic_truth_t;
+  /* Object pose in world cs (mm, mm, degrees). */
+  int32_t px, py, pa; 
+
+} __attribute__ ((packed)) player_truth_pose_t;
+
 
 /*************************************************************************/
 

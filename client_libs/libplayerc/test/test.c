@@ -88,6 +88,10 @@ int main(int argc, const char *argv[])
     if (strcmp(device, "sonar") == 0 || strcmp(device, "all") == 0)
       test_sonar(client, index);
 
+    // Truth device
+    if (strcmp(device, "truth") == 0 || strcmp(device, "stage") == 0)
+      test_truth(client, index);
+
     // Vision device
     if (strcmp(device, "vision") == 0 || strcmp(device, "all") == 0)
       test_vision(client, index);

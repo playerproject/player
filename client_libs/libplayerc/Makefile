@@ -13,7 +13,8 @@ LIB = libplayerc.a
 OBS = mclient.o client.o device.o error.o \
 			dev_bps.o dev_broadcast.o dev_gps.o \
 		  dev_laser.o dev_lbd.o dev_position.o \
-			dev_ptz.o dev_sonar.o dev_vision.o
+			dev_ptz.o dev_sonar.o dev_truth.o \
+			dev_vision.o
 
 INCLUDES = -I. -I../../include
 CFLAGS = -g3 -Wall $(INCLUDES)
