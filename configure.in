@@ -239,6 +239,13 @@ for player_lib in $PLAYER_DRIVER_LIBS; do
   fi
 done
 AC_MSG_RESULT([])
+AC_MSG_RESULT([The following device drivers will NOT be included:])
+for player_lib in $PLAYER_NODRIVERS; do
+  if test -n $player_lib; then
+    AC_MSG_RESULT([[    $player_lib]])
+  fi
+done
+AC_MSG_RESULT([])
 AC_MSG_RESULT([Player will be installed in:])
 AC_MSG_RESULT([    $prefix/])
 AC_MSG_RESULT([])

@@ -94,6 +94,9 @@
 #define GETFIRSTUINT32(x) (*((uint32_t*)x))
 #define GETFIRSTINT32(x)  (*((int32_t*)x))
 
+/*
+ * 64-bit conversion macros
+ */
 #if WORDS_BIGENDIAN
   #define htonll(n) (n)
 #else

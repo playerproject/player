@@ -67,7 +67,7 @@ void map_free(map_t *map);
 map_cell_t *map_get_cell(map_t *map, double ox, double oy, double oa);
 
 // Load a map file (occupancy grid)
-int map_load_occ(map_t *map, const char *filename);
+int map_load_occ(map_t *map, const char *filename, int negate);
 
 // Update the cspace distances
 void map_update_cspace(map_t *map, double max_occ_dist);

@@ -45,8 +45,8 @@
 #include "device.h"
 #include "drivertable.h"
 
-// UNBELIEVABLE HACK
-#include "/home/ahoward/darpa-demo/gazebo-exp/src/gazebo.h"
+#include "gazebo.h"
+
 
 // Incremental navigation driver
 class GzPosition : public CDevice
