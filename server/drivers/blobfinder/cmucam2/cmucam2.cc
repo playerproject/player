@@ -22,7 +22,7 @@
 
 /*
  * $Id$
- *
+ *   by: Pouya Bastani      2004/05/1
  *   the P2 vision device.  it takes pan tilt zoom commands for the
  *   sony PTZ camera (if equipped), and returns color blob data gathered
  *   from CMUCAM2, which this device spawns and then talks to.
@@ -41,10 +41,9 @@
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h>  /* for pthread stuff */
 #include <socket_util.h>
-
 #include <drivertable.h>
 #include <player.h>
-
+#include <camera.h>
 
 class Cmucam2:public CDevice 
 {
@@ -52,15 +51,20 @@ class Cmucam2:public CDevice
 
     // Descriptive colors for each channel.
     uint32_t colors[PLAYER_BLOBFINDER_MAX_CHANNELS];
+    void get_blob(packet_t cam_packet, player_blobfinder_blob_elt *blob, color_config range);
+    int fd;
+    int num_of_blobs;
+    color_config color[PLAYER_BLOBFINDER_MAX_BLOBS];
+    Camera cam;
 
-  public:
+  public:  
 
     // constructor 
     //
     Cmucam2(char* interface, ConfigFile* cf, int section);
 
     virtual void Main();
-
+    virtual void MainQuit(void);
     int Setup();
     int Shutdown();
 };
@@ -85,8 +89,6 @@ Cmucam2_Register(DriverTable* table)
   table->AddDriver("cmucam2", PLAYER_READ_MODE, Cmucam2_Init);
 }
 
-
-
 Cmucam2::Cmucam2(char* interface, ConfigFile* cf, int section)
   : CDevice(sizeof(player_blobfinder_data_t),0,0,0)
 {
@@ -96,6 +98,24 @@ Cmucam2::Cmucam2(char* interface, ConfigFile* cf, int section)
 
   // you don't need to connect to the camera yet - do that in Setup();
 
+  num_of_blobs = cf->ReadInt(section, "num_of_blobs", 16);
+  char variable[10];
+  for(int j = 0; j < 10; j++)
+    variable[j] = '\0';
+  char blob_num[2];  
+  strcat(variable, "color");
+  
+  for(int i = 0; i < num_of_blobs; i++)
+  {
+    sprintf(blob_num, "%d", i);
+    strcat(variable, blob_num);
+    color[i].rmin = (int)cf->ReadTupleFloat(section, variable, 0, 16);
+    color[i].rmax = (int)cf->ReadTupleFloat(section, variable, 1, 16);
+    color[i].gmin = (int)cf->ReadTupleFloat(section, variable, 2, 16);
+    color[i].gmax = (int)cf->ReadTupleFloat(section, variable, 3, 16);
+    color[i].bmin = (int)cf->ReadTupleFloat(section, variable, 4, 16);
+    color[i].bmax = (int)cf->ReadTupleFloat(section, variable, 5, 16);
+  }
 }
     
 int
@@ -107,9 +127,12 @@ Cmucam2::Setup()
   PutData((unsigned char*)&dummy,
           sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
 
-
   // TODO set up the camera here
   // open a file descriptor, etc.
+  fd = cam.open_port();        // opening the serial port
+  if(fd<0)                     // if not successful, stop
+    return 0; 
+  cam.power(fd, 1);
 
   /* now spawn reading thread */
   StartThread();
@@ -117,12 +140,18 @@ Cmucam2::Setup()
   return(0);
 }
 
+void Cmucam2::MainQuit()
+{
+}
 int
 Cmucam2::Shutdown()
 {
   // TODO shutdown the camera nicely and close the file descriptor here
-
   StopThread();
+  cam.power(fd, 0);                   // shutdown the camera
+  //cam.stop_tracking(fd);
+  cam.close_port(fd);                 // close the serial port
+  printf("stopping\n");               
   return(0);
 }
 
@@ -130,21 +159,24 @@ Cmucam2::Shutdown()
 void
 Cmucam2::Main()
 {
-  int numread;
-  int num_blobs = 1;
+  printf("rmin: %d\n", color[0].rmin);
+  // int num_blobs = 1;
 
   // we'll transform the data into this structured buffer
   player_blobfinder_data_t local_data;
   memset( &local_data, 0, sizeof(local_data) );
 
-  local_data.width = htons((uint16_t)150);
-  local_data.height = htons((uint16_t)120);
+  local_data.width = htons((uint16_t)IMAGE_WIDTH);
+  local_data.height = htons((uint16_t)IMAGE_HEIGHT);
   
   local_data.header[0].index = 0;
-  local_data.header[0].num = htons((uint16_t)1);
+  local_data.header[0].num = htons((uint16_t)num_of_blobs);
  
+  packet_t blob_info;
+  player_blobfinder_blob_elt blob;
 
   /* loop and read */
+  int i;
   for(;;)
   {
     /* test if we are supposed to cancel */
@@ -152,46 +184,61 @@ Cmucam2::Main()
 
 
     // TODO read data from the CMUCam here
-
+    for(i = 0; i < num_of_blobs; i++)
+    {
+      cam.track_blob(fd, color[i]);
+      cam.get_t_packet(fd, &blob_info);
+      cam.stop_tracking(fd);
+      get_blob(blob_info, &blob, color[i]);
+      printf("confidence: %d  area: %d   x: %d   y: %d\n", blob_info.confidence, blob_info.blob_area,  blob_info.middle_x, blob_info.middle_y);
     
-    player_blobfinder_blob_elt_t blob;
-    blob.color = 0xFF0000;
-    blob.area = 40;
-    blob.x = 75;
-    blob.y = 60;
-    blob.left = blob.x - 30;
-    blob.right = blob.x + 30;
-    blob.top = blob.y - 40;
-    blob.bottom = blob.y + 40;
-    blob.range = 0;
+      blob.color = htonl(blob.color);
+      blob.area = htonl(blob.area);
+      blob.x = htons(blob.x);
+      blob.y = htons(blob.y);
+      blob.left = htons(blob.left);
+      blob.right = htons(blob.right);
+      blob.top = htons(blob.top);
+      blob.bottom = htons(blob.bottom);
+      blob.range = htons(blob.range);
 
-    blob.color = htonl(blob.color);
-    blob.area = htonl(blob.area);
-    blob.x = htons(blob.x);
-    blob.y = htons(blob.y);
-    blob.left = htons(blob.left);
-    blob.right = htons(blob.right);
-    blob.top = htons(blob.top);
-    blob.bottom = htons(blob.bottom);
-    blob.range = htons(blob.range);
-
-    memcpy( &local_data.blobs[0], &blob, sizeof(blob) );
-
-    //puts( "hello pouya" );
-    //sleep(1);
+      memcpy( &local_data.blobs[i], &blob, sizeof(blob) );
+    }
 
     // TODO - if things go badly wrong, 'break' here.
-
     // TODO package the data into the blobfinder data format
 
     /* got the data. now fill it in */
     PutData((unsigned char*)&local_data, 
-              (PLAYER_BLOBFINDER_HEADER_SIZE + 
-    
-           num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),0,0);
+	    (PLAYER_BLOBFINDER_HEADER_SIZE + num_of_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),0,0);
 
   }
-
+ 
   pthread_exit(NULL);
 }
 
+
+/**************************************************************************
+			                      *** GET BLOB ***
+**************************************************************************/
+/* Description: This function uses CMUcam's T packet for tracking to get
+                the blob information as described by Player
+   Parameters:  cam_packet: camera's T packet generated during tracking
+                color: the color range used in tracking
+   Returns:     The Player format for blob information
+*/
+void
+Cmucam2::get_blob(packet_t cam_packet, player_blobfinder_blob_elt *blob, color_config range)
+{  
+    unsigned char red = (range.rmin + range.rmax)/2;                   // a decriptive color for the blob
+    unsigned char green = (range.gmin + range.gmax)/2;
+    unsigned char blue = (range.bmin + range.bmax)/2;
+   (*blob).color = red << 16 + green << 8 + blue;   
+   (*blob).area = cam_packet.blob_area;       // the number of pixels in the blob
+   (*blob).x = cam_packet.middle_x;           // setting the bounding box for the blob
+   (*blob).y = cam_packet.middle_y;
+   (*blob).left = cam_packet.left_x;
+   (*blob).right = cam_packet.right_x;        // highest and lowest y-vlaue for top and bottom
+   (*blob).top = (cam_packet.left_y > cam_packet.right_y) ? cam_packet.left_y : cam_packet.right_y;
+   (*blob).bottom = (cam_packet.left_y <= cam_packet.right_y) ? cam_packet.left_y : cam_packet.right_y;
+}
