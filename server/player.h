@@ -1655,6 +1655,8 @@ typedef player_blinkenlight_data_t player_blinkenlight_cmd_t;
 #define PLAYER_FIDUCIAL_SEND_MSG     0x04
 #define PLAYER_FIDUCIAL_RECV_MSG     0x05
 #define PLAYER_FIDUCIAL_EXCHANGE_MSG 0x06
+#define PLAYER_FIDUCIAL_GET_ID       0x07
+#define PLAYER_FIDUCIAL_SET_ID       0x08
 
 
 /** [Data]
@@ -1697,7 +1699,6 @@ typedef struct player_fiducial_data
 /** [Command]
     This device accepts no commands.
 */
-
 
 /** [Configuration: get geometry]
 
@@ -1749,7 +1750,41 @@ typedef struct player_fiducial_fov
 } __attribute__ ((packed)) player_fiducial_fov_t;
 
 
+/** [Configuration: fiducial value]
+
+    Some fiducial finder devices display their own fiducial. They can
+    use the PLAYER_FIDUCIAL_GET_ID config to report the identifier
+    displayed by the fiducial. Make the request using the
+    player_fiducial_id_t structure. The device replies with the same
+    structure with the id field set.
+
+    Some devices can dynamically change the identifier they
+    display. They can use the PLAYER_FIDUCIAL_SET_ID config to allow a
+    client to set the currently displayed value. Make the request with
+    the player_fiducial_id_t structure. The device replies with the
+    same structure with the id field set to the value it actually
+    used. You should check this value, as the device may not be able
+    to display the value you requested. 
+
+    Currently supported by the stg_fiducial driver.
+*/
+
+/** Fiducial identifier packet */
+typedef struct
+{
+  /** Packet subtype. Must be PLAYER_FIDUCIAL_GET_ID or PLAYER_FIDUCIAL_SET_ID. */
+  uint8_t subtype;
+
+  /** The value displayed */
+  uint32_t id;
+} __attribute__ ((packed)) player_fiducial_id_t;
+
+
+
 /** [Configuration: fiducial messaging.]
+
+    META-NOTE: FIDUCIAL MESSAGING IS NOT WORKING IN STAGE CVS HEAD OR
+    STAGE-1.5
     
     NOTE: These configs are currently supported only by the Stage
     fiducial driver (stg_fidicial), but are intended to be a general

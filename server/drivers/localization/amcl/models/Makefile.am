@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/server
+AM_CPPFLAGS = -I$(top_srcdir)/server @GSL_CFLAGS@
 
 noinst_LIBRARIES = @AMCL_MODELS_LIB@
 

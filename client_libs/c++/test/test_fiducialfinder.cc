@@ -131,7 +131,35 @@ test_fiducial(PlayerClient* client, int index)
     // wait for a few cycles so we can see the change
     for(int i=0; i < 10; i++)
       client->Read();
+
+    // attempt to get and set fiducial values
+    TEST( "Getting device's fiducial id" );
+
+    int id = fp.GetId();
+
+    if( id > 0 )
+      PASS();
+    else
+      FAIL();
     
+    TEST( "Setting device's fiducial id to 66" );
+    
+    int new_id  = fp.SetId( 66 );
+    
+    if( new_id == 66 )
+      PASS();
+    else
+      FAIL();
+    
+    TEST( "Setting device's fiducial id back to original value" );
+    
+    new_id  = fp.SetId( id );
+    
+    if( new_id == id )
+      PASS();
+    else
+      FAIL();
+
     // attempt to send a message
     TEST("broadcasting a message");
     

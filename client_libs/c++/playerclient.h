@@ -904,6 +904,19 @@ class FiducialProxy : public ClientProxy
   /// Get the field of view 
   int GetFOV();
 
+  /** Set the fiducial identification value displayed by this device
+      (if supported) returns the value actually used by the device,
+      which may differ from the one requested, or -1 on error. Also
+      stores the returned id in the proxy's data member 'id'.
+  */
+  int SetId( int id );
+
+  /** Get the fiducial identification value displayed by this device
+      (if supported). returns the ID or -1 on error. Also stores the
+      returned id in the proxy's data member 'id'.
+  */
+  int GetId( void );
+
   /** Set the field of view, updating the proxy with the actual values
       achieved. Params are: minimum range in meters, maximum range in
       meters, view angle in radians 
@@ -924,7 +937,7 @@ class FiducialProxy : public ClientProxy
 
   int SendMessage( player_fiducial_msg_t* msg, bool consume );
   
-  /* Read a message received by the device. If a message is available,
+  /** Read a message received by the device. If a message is available,
      the recv_msg packet is filled in and 0 is returned.  no message can
      be retrieved from the device, returns -1. If consume is true, the
      message is deleted from the device on reading. If false, the

@@ -181,7 +181,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	if( stg_model_prop_get( this->model, STG_PROP_FIDUCIALCONFIG, 
 				&cfg,sizeof(cfg))
 	    != 0 )
-	  PLAYER_TRACE0( "error requesting STG_PROP_LASERCONFIG" );
+	  PLAYER_TRACE0( "error requesting STG_PROP_FIDUCIALCONFIG" );
 	
 	
 	// fill in the geometry data formatted player-like
@@ -192,10 +192,53 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	
 	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		      &pfov, sizeof(pfov) ) != 0 )
-	  PLAYER_ERROR("PutReply() failed for PLAYER_FIDUCIAL_GET_FOV");      
+	  PLAYER_ERROR("PutReply() failed for "
+		       "PLAYER_FIDUCIAL_GET_FOV or PLAYER_FIDUCIAL_SET_FOV");      
       }
       break;
       
+    case PLAYER_FIDUCIAL_SET_ID:
+      
+      if( len == sizeof(player_fiducial_id_t) )
+	{
+	  PLAYER_TRACE0( "setting fiducial id" );
+	  
+	  int id = ((player_fiducial_id_t*)data)->id;
+	  
+	  if( stg_model_prop_set( this->model, STG_PROP_FIDUCIALRETURN, 
+				  &id,sizeof(id)))
+	    PLAYER_ERROR( "error setting STG_PROP_FIDUCIALRETURN" );
+	  else
+	    PLAYER_TRACE0( "set fiducial id OK" );
+	}
+      else
+	PLAYER_ERROR2("Incorrect packet size setting fiducial ID (%d/%d)",
+		      (int)len, (int)sizeof(player_fiducial_id_t) );      
+      
+      // deliberate no-break - SET_ID needs the current ID as a reply
+
+  case PLAYER_FIDUCIAL_GET_ID:
+      {
+	PLAYER_TRACE0( "requesting fiducial ID" );
+	
+	int id = 0;
+	if( stg_model_prop_get( this->model, STG_PROP_FIDUCIALRETURN, 
+				&id,sizeof(id))
+	    != 0 )
+	  PLAYER_TRACE0( "error requesting STG_PROP_FIDUCIALRETURN" );
+		
+	// fill in the data formatted player-like
+	player_fiducial_id_t pid;
+	pid.id = htonl(id);
+	
+	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
+		      &pid, sizeof(pid) ) != 0 )
+	  PLAYER_ERROR("PutReply() failed for "
+		       "PLAYER_FIDUCIAL_GET_ID or PLAYER_FIDUCIAL_SET_ID");      
+      }
+      break;
+
+
     default:
       {
 	printf( "Warning: stg_fiducial doesn't support config id %d\n", buf[0] );
