@@ -126,7 +126,7 @@ $(DEVICELIBNAME): $(OBS)
 	$(AR) cr $@ $(OBS)
 
 $(SERVERNAME): $(DEVICELIBNAME) 
-	$(CPP) -rdynamic -o $@ $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
+	$(CPP) -rdynamic $(PROFILE_LINK) -o $@ $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
 
 main.o: main.cc
 	$(CPP) $(CFLAGS) -DPLAYER_VERSION=\"$(PLAYER_VERSION)\" $(INCLUDES) $(INCLUDE_STAGE) -c $<

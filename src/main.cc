@@ -779,7 +779,7 @@ int main( int argc, char *argv[] )
   // the clientmanager.
   for(;;) 
   {
-    usleep(0);
+    //usleep(0);
     if(clientmanager->Update())
     {
       fputs("ClientManager::Update() errored; bailing.\n", stderr);
