@@ -109,6 +109,8 @@ class PlayerClient
      vision_data* vision;
      player_laser_data_t *laser;
      player_laserbeacon_data_t* laserbeacon;
+     player_gps_data_t *gps;
+     player_bps_data_t *bps;
 
      // processed data
      unsigned short minfrontsonar;

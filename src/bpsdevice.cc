@@ -133,8 +133,6 @@ CBpsDevice::CBpsDevice(int argc, char** argv)
 // Set up the device
 int CBpsDevice::Setup()
 {
-#ifndef INCLUDE_SELFTEST
-    
     // Get pointers to other devices
     this->position = deviceTable->GetDevice(PLAYER_POSITION_CODE, this->index);
     this->laserbeacon = deviceTable->GetDevice(PLAYER_LASERBEACON_CODE, this->index);
@@ -144,8 +142,6 @@ int CBpsDevice::Setup()
     // Subscribe to devices
     this->position->GetLock()->Subscribe(this->position);
     this->laserbeacon->GetLock()->Subscribe(this->laserbeacon);
-    
-#endif  
     
     // Initialise configuration settings
     this->gain = 0.01;
@@ -177,13 +173,11 @@ int CBpsDevice::Setup()
         PLAYER_ERROR1("unable to open dump file, error [%s]", strerror(errno));
 #endif  
 
-#ifndef INCLUDE_SELFTEST
     // Hack to get around mutex on GetData
     GetLock()->PutData(this, NULL, 0);
     
     // Start our own thread
     pthread_create(&this->thread, NULL, DummyMain, this );
-#endif
     
     PLAYER_TRACE0("setup");
     return 0;
@@ -195,7 +189,6 @@ int CBpsDevice::Setup()
 //
 int CBpsDevice::Shutdown()
 {
-#ifndef INCLUDE_SELFTEST
     // Stop the thread
     //
     pthread_cancel(this->thread);
@@ -205,7 +198,6 @@ int CBpsDevice::Shutdown()
     //
     this->position->GetLock()->Unsubscribe(this->position);    
     this->laserbeacon->GetLock()->Unsubscribe(this->laserbeacon);
-#endif
 
 #ifdef INCLUDE_SELFTEST
     if (this->dumpfile)
@@ -522,10 +514,17 @@ void CBpsDevice::ProcessBeacon(int id, double r, double b, double o)
     if (!this->beacon[id].isset)
         return;
 
+    // Compute pose of laser in odometrics cs
+    double lx = this->odo_px + this->laser_px * cos(this->odo_pa) -
+        this->laser_py * sin(this->odo_pa);
+    double ly = this->odo_py + this->laser_px * sin(this->odo_pa) +
+        this->laser_py * cos(this->odo_pa);
+    double la = this->odo_pa + this->laser_pa;
+    
     // Compute pose of beacon in odometric cs
-    double bx = this->odo_px + r * cos(this->odo_pa + b);
-    double by = this->odo_py + r * sin(this->odo_pa + b);
-    double ba = this->odo_pa + o;
+    double bx = lx + r * cos(la + b);
+    double by = ly + r * sin(la + b);
+    double ba = la + o;
     
     // Create a new observation
     CBpsObs *obs = AllocObs(frame, NULL);
