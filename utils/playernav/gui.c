@@ -553,8 +553,10 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
 
   gtk_widget_push_visual(gdk_rgb_get_visual());
   gtk_widget_push_colormap(gdk_rgb_get_cmap());
-  g_assert((gui_data->map_canvas = (GnomeCanvas*)gnome_canvas_new_aa()));
-  //g_assert((gui_data->map_canvas = (GnomeCanvas*)gnome_canvas_new()));
+  if(gui_data->aa)
+    g_assert((gui_data->map_canvas = (GnomeCanvas*)gnome_canvas_new_aa()));
+  else
+    g_assert((gui_data->map_canvas = (GnomeCanvas*)gnome_canvas_new()));
   gtk_widget_pop_colormap();
   gtk_widget_pop_visual();
 

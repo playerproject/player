@@ -108,7 +108,7 @@ previous plan, if any.
 
 #include "playernav.h"
 
-#define USAGE "USAGE: playernav [-fps <dumprate>] [-zoom <zoom>] <host:port> [<host:port>...]"
+#define USAGE "USAGE: playernav [-fps <dumprate>] [-zoom <zoom>] [-aa {0|1}] <host:port> [<host:port>...]"
 
 // flag and index for robot currently being moved by user (if any)
 int robot_moving_p;
@@ -226,9 +226,10 @@ main(int argc, char** argv)
   dumpfreq = 5.0;
 
   gui_data.initial_zoom = 1.0;
+  gui_data.aa = 1;
 
   if(parse_args(argc-1, argv+1, &(gui_data.num_robots), gui_data.hostnames, 
-                gui_data.ports, &(gui_data.initial_zoom)) < 0)
+                gui_data.ports, &(gui_data.initial_zoom), &(gui_data.aa)) < 0)
   {
     puts(USAGE);
     exit(-1);
