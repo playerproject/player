@@ -170,7 +170,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   {
     player_position_cmd_t* cmd = (player_position_cmd_t*)payload;
     printf("speeds: %d %d\n", 
-           (short)ntohs(cmd->xspeed), (short)ntohs(cmd->yawspeed));
+           (int)ntohl(cmd->xspeed), (int)ntohl(cmd->yawspeed));
   }
 #endif
 
