@@ -4,4 +4,4 @@ noinst_LIBRARIES = @TROGDOR_LIB@
 
 EXTRA_LIBRARIES = libtrogdor.a
 
-libtrogdor_a_SOURCES = trogdor.cc
+libtrogdor_a_SOURCES = trogdor.cc trogdor_constants.h

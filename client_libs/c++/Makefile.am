@@ -50,7 +50,7 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
 
 include_HEADERS = playerclient.h playermcomtypes.h
 
-#dist-hook:
-#	mkdir -p $(top_distdir)/doc
-#	cd $(srcdir)/doc && make
-#	cp -p $(srcdir)/doc/cppclient.ps $(top_distdir)/doc
+dist-hook:
+	mkdir -p $(top_distdir)/doc
+	cd $(srcdir)/doc && make
+	cp -p $(srcdir)/doc/cppclient.ps $(top_distdir)/doc
