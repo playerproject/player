@@ -315,7 +315,7 @@ void ShapeTracker::FindShapes()
         CV_POLY_APPROX_DP, cvContourPerimeter(contour)*0.02, 0);
 
     
-    if ( result->total > 0 &&
+    if ( result->total > 4 &&
         (result->total/2.0 == (int)(result->total/2)) &&
         fabs(cvContourArea(result, CV_WHOLE_SEQ)) > 50)
     {
@@ -336,13 +336,17 @@ void ShapeTracker::FindShapes()
       {
         rect = cvBoundingRect(result,0);
 
-        this->shapes[this->shapeCount].id = result->total;
-        this->shapes[this->shapeCount].ax = rect.x;
-        this->shapes[this->shapeCount].ay = rect.y;
-        this->shapes[this->shapeCount].bx = rect.x + rect.width;
-        this->shapes[this->shapeCount].by = rect.y + rect.height;
+        if (rect.width < this->cameraData.width-10 && 
+            rect.height < this->cameraData.height-10)
+        {
+          this->shapes[this->shapeCount].id = result->total;
+          this->shapes[this->shapeCount].ax = rect.x;
+          this->shapes[this->shapeCount].ay = rect.y;
+          this->shapes[this->shapeCount].bx = rect.x + rect.width;
+          this->shapes[this->shapeCount].by = rect.y + rect.height;
 
-        this->shapeCount = (this->shapeCount+1) % 255;
+          this->shapeCount = (this->shapeCount+1) % 255;
+        }
 
         //cvDrawContours(this->workImage, result, 255, 0, 0, 5, 8);
         //cvDrawContours(this->mainImage, result, 255, 0, 0, 5, 8);
