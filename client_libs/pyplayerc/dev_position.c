@@ -193,7 +193,7 @@ static PyObject *position_subscribe(PyObject *self, PyObject *args)
 
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 
@@ -218,7 +218,7 @@ static PyObject *position_unsubscribe(PyObject *self, PyObject *args)
 
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 

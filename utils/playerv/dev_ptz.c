@@ -56,7 +56,7 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   if (subscribe)
   {
     if (playerc_ptz_subscribe(ptz->proxy, PLAYER_ALL_MODE) != 0)
-      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+      PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
 
   // Construct the menu
@@ -109,13 +109,13 @@ void ptz_update(ptz_t *ptz)
   {
     if (!ptz->proxy->info.subscribed)
       if (playerc_ptz_subscribe(ptz->proxy, PLAYER_ALL_MODE) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   else
   {
     if (ptz->proxy->info.subscribed)
       if (playerc_ptz_unsubscribe(ptz->proxy) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   rtk_menuitem_check(ptz->subscribe_item, ptz->proxy->info.subscribed);
 
@@ -191,7 +191,7 @@ void ptz_move(ptz_t *ptz)
   zoom = 2 * atan2(0.5, sqrt(ox * ox + oy * oy));
   
   if (playerc_ptz_set(ptz->proxy, pan, tilt, zoom) != 0)
-    PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+    PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 }
 
 

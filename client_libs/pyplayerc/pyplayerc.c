@@ -278,7 +278,7 @@ static PyObject *client_connect(PyObject *self, PyObject *args)
   thread_acquire();
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
   return PyInt_FromLong(result);
@@ -362,7 +362,7 @@ static PyObject *client_get_devlist(PyObject *self, PyObject *args)
 
   if (result)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 

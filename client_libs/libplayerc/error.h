@@ -10,6 +10,9 @@
 
 #include <stdio.h>
 
+// Errors get written here
+extern char playerc_errorstr[];
+
 // Useful error macros.
 // These print out the error
 /*

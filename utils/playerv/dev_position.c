@@ -113,11 +113,11 @@ void position_update(position_t *position)
     if (!position->proxy->info.subscribed)
     {
       if (playerc_position_subscribe(position->proxy, PLAYER_ALL_MODE) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
       // Get the robot geometry
       if (playerc_position_get_geom(position->proxy) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
       
       rtk_fig_color_rgb32(position->robot_fig, COLOR_POSITION_ROBOT);
       rtk_fig_rectangle(position->robot_fig, position->proxy->pose[0],
@@ -129,7 +129,7 @@ void position_update(position_t *position)
   {
     if (position->proxy->info.subscribed)
       if (playerc_position_unsubscribe(position->proxy) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   rtk_menuitem_check(position->subscribe_item, position->proxy->info.subscribed);
 
@@ -138,13 +138,13 @@ void position_update(position_t *position)
   {
     if (position->proxy->info.subscribed)
       if (playerc_position_enable(position->proxy, 1) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   if (rtk_menuitem_isactivated(position->disable_item))
   {
     if (position->proxy->info.subscribed)
       if (playerc_position_enable(position->proxy, 0) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   
   // Servo to the goal position
