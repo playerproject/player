@@ -2444,6 +2444,7 @@ for this interface. Suggestions welcome on playerstage-developers.
 
 /** Request packet subtypes. */
 #define PLAYER_SIMULATION_SET_POSE2D 0x00
+#define PLAYER_SIMULATION_GET_POSE2D 0x01
 
 /** the maximum length of a string indentifying a simulation object */
 #define PLAYER_SIMULATION_IDENTIFIER_MAXLEN 64
@@ -2470,18 +2471,27 @@ typedef struct player_simulation_cmd
 } __PACKED__ player_simulation_cmd_t;
 
 
-/** @brief Configuration request: set 2D pose of a named simulation object 
+/** @brief Configuration request: set or get 2D pose of a named simulation object 
 
-To set the pose of an object in a simulator, use this message. */
+To set or get the pose of an object in a simulator, use this message
+type. If the subtype is PLAYER_SIMULATION_SET_POSE2D, the server will
+ask the simulator to move the named object to the location specified
+by (x,y,a) and return ACK. If the subtype is
+PLAYER_SIMULATION_GET_POSE2D, the server will attempt to locate the
+named object and reply with the same packet with (x,y,a) filled
+in. For all message subtypes, if the named object does not exist, or
+some other error occurs, the request should reply NACK. */
 typedef struct player_simulation_pose2d_req
 { 
-   /** Packet subtype. Must be PLAYER_SIMULATION_SET_POSE2D */
+   /** Packet subtype. Must be one of 
+       PLAYER_SIMULATION_SET_POSE2D, 
+       PLAYER_SIMULATION_GET_POSE2D */
    uint8_t subtype;
 
   /** the identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
 
-  /** the desired pose in (mm,mm,degrees) */
+  /** the desired pose or returned pose in (mm,mm,degrees) */
   int32_t x, y, a;
 } __PACKED__ player_simulation_pose2d_req_t;
 

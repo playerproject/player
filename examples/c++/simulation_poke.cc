@@ -98,6 +98,10 @@ int main(int argc, char **argv)
   PlayerClient robot(host,port);
   SimulationProxy sp(&robot,device_index,'w');
 
+  PositionProxy pp1(&robot,0,'r');
+  PositionProxy pp2(&robot,1,'r');
+  PositionProxy pp3(&robot,2,'r');
+
   printf("%s\n",robot.conn.banner);
 
   if(sp.access != 'w')
@@ -112,14 +116,28 @@ int main(int argc, char **argv)
   printf( "Moving simulation object \"%s\" to random poses\n",
 	  simobject );
   
+  robot.Read();
+  
   for(;;)
     {
+      pp1.Print();
+      pp2.Print();
+      pp3.Print();
+      
       // move the named object to a random position about the origin
       sp.SetPose2D( simobject, 
 		  -width/2.0 + drand48() * width, 
 		    -height/2.0 + drand48() * height, 
 		    drand48() * M_PI * 2.0 );
+      
+      double x, y, a;
+      sp.GetPose2D( simobject, x, y, a );
+      
+      robot.Read();
 
+      printf( "Simulation reported \"%s\" pose as (%.2f, %.2f, %.2f)\n",
+	      simobject, x, y, a );
+      
       sleep(1);
   }
 }
