@@ -445,9 +445,6 @@ int playerc_comms_unsubscribe(playerc_comms_t *device);
 // Send a comms message.
 int playerc_comms_send(playerc_comms_t *device, void *msg, int len);
 
-// Read the next comms message.
-//REMOVE int playerc_comms_recv(playerc_comms_t *device, void *msg, int len);
-
 
 /***************************************************************************
  * proxy : gps (global positioning system)
