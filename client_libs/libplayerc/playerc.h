@@ -421,8 +421,8 @@ complete description of the drivers that support this interface.
 /** Description of a single blob. */
 typedef struct
 {  
-  /** The blob "channel"; i.e. the color class this blob belongs to. */
-  int channel;
+  /** The blob id; e.g. the color class this blob belongs to. */
+  int id;
 
   /** A descriptive color for the blob.  Stored as packed RGB 32, i.e.:
       0x00RRGGBB. */
@@ -431,11 +431,14 @@ typedef struct
   /** Blob centroid (image coordinates). */
   int x, y;
 
+  /** Bounding box for blob (image coordinates). */
+  int left, top, right, bottom;
+
   /** Blob area (pixels). */
   int area;
 
-  /** Bounding box for blob (image coordinates). */
-  int left, top, right, bottom;
+  /** Blob range (m). */
+  double range;
   
 } playerc_blobfinder_blob_t;
 

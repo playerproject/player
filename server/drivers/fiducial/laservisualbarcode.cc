@@ -800,17 +800,15 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
 // Process any new blobfinder data.
 int LaserVisualBarcode::UpdateBlobfinder()
 {
-  int i, ch, id;
+  int i, id;
   player_blobfinder_data_t data;
-  player_blobfinder_header_elt_t *channel;
-  player_blobfinder_blob_elt_t *blob;
+  player_blobfinder_blob_t *blob;
   size_t size;
   struct timeval timestamp;
   double time;
   
   // Get the blobfinder data.
-  size = this->blobfinder->GetData(this->blobfinder_id,(void*)&data, 
-                                   sizeof(data), &timestamp);
+  size = this->blobfinder->GetData(this->blobfinder_id, &data, sizeof(data), &timestamp);
   time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
   
   // Dont do anything if this is old data.
@@ -821,23 +819,18 @@ int LaserVisualBarcode::UpdateBlobfinder()
   // Do some byte-swapping
   data.width = ntohs(data.width);
   data.height = ntohs(data.height);
-  for (ch = 0; ch < PLAYER_BLOBFINDER_MAX_CHANNELS; ch++)
+  data.blob_count = ntohs(data.blob_count);
+  
+  for (i = 0; i < data.blob_count; i++)
   {
-    channel = data.header + ch;
-    channel->index = ntohs(channel->index);
-    channel->num = ntohs(channel->num);
-    
-    for (i = channel->index; i < channel->index + channel->num; i++)
-    {
-      blob = data.blobs + i;
-      blob->x = ntohs(blob->x);
-      blob->y = ntohs(blob->y);
-      blob->left = ntohs(blob->left);
-      blob->right = ntohs(blob->right);
-      blob->top = ntohs(blob->top);
-      blob->bottom = ntohs(blob->bottom);
-      blob->area = ntohl(blob->area);
-    }
+    blob = data.blobs + i;
+    blob->x = ntohs(blob->x);
+    blob->y = ntohs(blob->y);
+    blob->left = ntohs(blob->left);
+    blob->right = ntohs(blob->right);
+    blob->top = ntohs(blob->top);
+    blob->bottom = ntohs(blob->bottom);
+    blob->area = ntohl(blob->area);
   }
 
   // Extract valid blobs.
@@ -864,10 +857,9 @@ int LaserVisualBarcode::UpdateBlobfinder()
 // Find blobs with valid properties.
 void LaserVisualBarcode::FindBlobs(double time, player_blobfinder_data_t *data)
 {
-  int i, ch;
+  int i;
   blob_t *nblob;
-  player_blobfinder_header_elt_t *channel;
-  player_blobfinder_blob_elt_t *blob;
+  player_blobfinder_blob_t *blob;
   int width, height;
   int minx, maxx, miny, maxy;
   int minwidth, maxwidth, minheight, maxheight;
@@ -894,45 +886,40 @@ void LaserVisualBarcode::FindBlobs(double time, player_blobfinder_data_t *data)
   maxarea = maxwidth * maxheight;
 
   /*
-  printf("zoom %.3f %.3f\n", this->zoomwidth, this->zoomheight);
-  printf("image %d %d\n", data->width, data->height);
-  printf("w, h %d %d\n", width, height);
+    printf("zoom %.3f %.3f\n", this->zoomwidth, this->zoomheight);
+    printf("image %d %d\n", data->width, data->height);
+    printf("w, h %d %d\n", width, height);
   */
   
   this->blob_count = 0;
-  for (ch = 0; ch < PLAYER_BLOBFINDER_MAX_CHANNELS; ch++)
+  for (i = 0; i < data->blob_count; i++)
   {
-    channel = data->header + ch;
-    
-    for (i = channel->index; i < channel->index + channel->num; i++)
-    {
-      blob = data->blobs + i;
+    blob = data->blobs + i;
 
-      // Test the blob properties.
-      if (blob->x < minx || blob->x > maxx)
-        continue;
-      if (blob->y < miny || blob->y > maxy)
-        continue;
-      if ((blob->right - blob->left) < minwidth || (blob->right - blob->left) > maxwidth)
-        continue;
-      if ((blob->bottom - blob->top) < minheight || (blob->bottom - blob->top) > maxheight)
-        continue;
-      if ((int) blob->area < minarea || (int) blob->area > maxarea)
-        continue;
+    // Test the blob properties.
+    if (blob->x < minx || blob->x > maxx)
+      continue;
+    if (blob->y < miny || blob->y > maxy)
+      continue;
+    if ((blob->right - blob->left) < minwidth || (blob->right - blob->left) > maxwidth)
+      continue;
+    if ((blob->bottom - blob->top) < minheight || (blob->bottom - blob->top) > maxheight)
+      continue;
+    if ((int) blob->area < minarea || (int) blob->area > maxarea)
+      continue;
 
-      /*
+    /*
       printf("%d %d : %d %d : %d\n", blob->x, blob->y,
-             blob->right - blob->left, blob->bottom - blob->top, blob->area);
-      */
+      blob->right - blob->left, blob->bottom - blob->top, blob->area);
+    */
 
-      // Add to valid blob list.
-      if (this->blob_count < ARRAYSIZE(this->blobs))
-      {
-        nblob = this->blobs + this->blob_count++;
-        nblob->ch = ch;
-        nblob->x = blob->x;
-        nblob->y = blob->y;
-      }
+    // Add to valid blob list.
+    if (this->blob_count < ARRAYSIZE(this->blobs))
+    {
+      nblob = this->blobs + this->blob_count++;
+      nblob->ch = blob->id;
+      nblob->x = blob->x;
+      nblob->y = blob->y;
     }
   }
   

@@ -1531,41 +1531,37 @@ typedef struct player_laser_power_config
 /** @} */
 
 
-/*************************************************************************
- ** begin section blobfinder
- *************************************************************************/
 
-/** [Synopsis]
-    The blobfinder interface provides access to devices that detect
-    colored blobs.
+/***************************************************************************/
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup player_interface_blobfinder blobfinder
+
+The blobfinder interface provides access to devices that detect blobs
+in images.
+
+The format of the blobfinder data packet is very similar to the ACTS
+v1.2/2.0 format, but a bit simpler.  The packet length is variable,
+with each packet containing both a list of blobs and a header that
+provides an index into that list.  For each channel, the header entry
+tells you which blob to start with and how many blobs there are.
+
+@{
 */
-
-/** [Constants]
- */
-#define PLAYER_BLOBFINDER_SET_COLOR_REQ             ((uint8_t)1)
-#define PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ     ((uint8_t)2)
 
 /** The maximum number of unique color classes. */
-#define PLAYER_BLOBFINDER_MAX_CHANNELS 32
+// REMOVE #define PLAYER_BLOBFINDER_MAX_CHANNELS 32
 
 /** The maximum number of blobs for each color class. */
-#define PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL 10
+// REMOVE #define PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL 10
 
 /** The maximum number of blobs in total. */
-#define PLAYER_BLOBFINDER_MAX_BLOBS PLAYER_BLOBFINDER_MAX_CHANNELS * PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL
+#define PLAYER_BLOBFINDER_MAX_BLOBS 256
 
+// REMOVE PLAYER_BLOBFINDER_MAX_CHANNELS * PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL
 
-/** [Data]
-
-    The format of the {\tt blobfinder} data packet is very similar to
-    the ACTS v1.2/2.0 format, but a bit simpler.  The packet length is
-    variable, with each packet containing both a list of blobs and a
-    header that provides an index into that list.  For each channel,
-    the header entry tells you which blob to start with and how many
-    blobs there are.
-*/
-
-/** Blob index entry. */
+/// @todo Remove header array
+/** @brief Blob index entry. */
 typedef struct player_blobfinder_header_elt
 {
   /** Offset of the first blob for this channel. */
@@ -1577,9 +1573,12 @@ typedef struct player_blobfinder_header_elt
 } __PACKED__ player_blobfinder_header_elt_t;
 
 
-/** Structure describing a single blob. */
-typedef struct player_blobfinder_blob_elt
+/** @brief Structure describing a single blob. */
+typedef struct player_blobfinder_blob
 {
+  /** Blob id. */
+  int16_t id;
+
   /** A descriptive color for the blob (useful for gui's).  The color
       is stored as packed 32-bit RGB, i.e., 0x00RRGGBB. */
   uint32_t color;
@@ -1596,32 +1595,40 @@ typedef struct player_blobfinder_blob_elt
   /** Range (mm) to the blob center */
   uint16_t range;
   
-} __PACKED__ player_blobfinder_blob_elt_t;
+} __PACKED__ player_blobfinder_blob_t;
 
 
-/** The list of detected blobs. */
+/** @brief The list of detected blobs. */
 typedef struct player_blobfinder_data
 {
   /** The image dimensions. */
   uint16_t width, height;
 
   /** An index into the list of blobs (blobs are indexed by channel). */
-  player_blobfinder_header_elt_t header[PLAYER_BLOBFINDER_MAX_CHANNELS];
+  // REMOVE player_blobfinder_header_elt_t header[PLAYER_BLOBFINDER_MAX_CHANNELS];
 
   /** The list of blobs. */
-  player_blobfinder_blob_elt_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
+  uint16_t blob_count;
+  player_blobfinder_blob_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
   
 } __PACKED__ player_blobfinder_data_t;
 
 
+/* REMOVE (these dont belong in the player header)
 #define PLAYER_BLOBFINDER_HEADER_SIZE \
   (2*sizeof(uint16_t) + sizeof(player_blobfinder_header_elt_t)*PLAYER_BLOBFINDER_MAX_CHANNELS)
 
 #define PLAYER_BLOBFINDER_BLOB_SIZE sizeof(player_blobfinder_blob_elt_t)
+*/
 
 
-/** [Configuration: Set tracking color] */
-/**
+/** Config request codes */
+#define PLAYER_BLOBFINDER_SET_COLOR_REQ             ((uint8_t)1)
+#define PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ     ((uint8_t)2)
+
+
+/** @brief Set tracking color
+
 For some sensors (ie CMUcam), simple blob tracking tracks only one color.
 To set the tracking color, send a request with the format below, 
 including the RGB color ranges (max and min).  Values of -1
@@ -1631,18 +1638,19 @@ the tracking object in front of the lens.
 */
 typedef struct player_blobfinder_color_config
 { 
-  
   /** Must be PLAYER_BLOBFINDER_SET_COLOR_REQ. */
   uint8_t subtype;
+
   /** RGB minimum and max values (0-255) **/
   int16_t rmin, rmax;
   int16_t gmin, gmax;
   int16_t bmin, bmax;
+  
 } __PACKED__ player_blobfinder_color_config_t;
 
 
-/** [Configuration: Set imager params] */
-/**
+/** @brief Set imager params
+
 Imaging sensors that do blob tracking generally have some sorts of
 image quality parameters that you can tweak.  The following ones
 are implemented here:
@@ -1656,28 +1664,28 @@ values set to -1 will be left unchanged.
 */
 typedef struct player_blobfinder_imager_config
 { 
-   /** Must be PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ. */
-   uint8_t subtype;
+  /** Must be PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ. */
+  uint8_t subtype;
 
-   // Contrast & Brightness: (0-255)  -1=no change.
-   int16_t brightness;
-   int16_t contrast;
+  /** Contrast & Brightness: (0-255)  -1=no change. */
+  int16_t brightness;
+  int16_t contrast;
 
-   // Color Mode:  ( 0=RGB/AutoWhiteBalance Off,  1=RGB/AutoWhiteBalance On,
-   //                2=YCrCB/AWB Off, 3=YCrCb/AWB On)  -1=no change.
-   int8_t  colormode;
+  /** Color Mode
+      ( 0=RGB/AutoWhiteBalance Off,  1=RGB/AutoWhiteBalance On,
+      2=YCrCB/AWB Off, 3=YCrCb/AWB On)  -1=no change.
+  */
+  int8_t  colormode;
 
-   // AutoGain:   0=off, 1=on.  -1=no change.
-   int8_t  autogain;
+  /** AutoGain:   0=off, 1=on.  -1=no change. */
+  int8_t  autogain;
+  
 } __PACKED__ player_blobfinder_imager_config_t;
 
-/** [Command]
-    This device accepts no commands.
-*/
 
-/*************************************************************************
- ** end section
- *************************************************************************/
+/** @} */
+/** @} */
+
 
 /*************************************************************************/
 /** @addtogroup interfaces */
@@ -1769,39 +1777,6 @@ typedef struct player_ptz_controlmode_config
 /** @} */
 /** @} */
 
-/*************************************************************************
- ** begin section cmucam2
- *************************************************************************/
-/** [Synopsis]
-    The cmucam2 interface provides information that cmucam2 can collect.
-*/
-
-/** [Constants]
- */
-#define CMUCAM_CONFIG_SIZE sizeof(player_cmucam2_autoservo_config_t)
-
-typedef struct
-{
-  uint8_t subtype; // must be PLAYER_CMUCAM2_CFG_AUTOSERVO
-  uint8_t enable;
-}player_cmucam2_autoservo_config_t;
-
-typedef struct player_cmucam2_data
-{
-  player_ptz_data_t ptz_data;  
-  player_blobfinder_data_t blob;
-  //player_blobfinder_blob_elt_t blob;
-} __PACKED__ player_cmucam2_data_t;
-
-typedef struct player_cmucam2_cmd
-{
-  player_ptz_cmd_t ptz_data;    
-} __PACKED__ player_cmucam2_cmd_t;
-
-
-/*************************************************************************
- ** end section
- *************************************************************************/
 
 /*************************************************************************/
 /** @addtogroup interfaces */

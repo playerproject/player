@@ -108,18 +108,18 @@ int main(int argc, char **argv)
     {
       for (j=0; j < 5/*bp.num_blobs[i]*/; j++)
       {
-        if (j < bp.num_blobs[i])
+        if (j < bp.blob_count)
         {
           hp.SetColor( red );
           hp.SetStyle(0);
-          hp.DrawBox( i*10+j, bp.blobs[i][j].left,
-              bp.blobs[i][j].bottom,
-              bp.blobs[i][j].right, 
-              bp.blobs[i][j].top);
+          hp.DrawBox( i*10+j, bp.blobs[j].left,
+              bp.blobs[j].bottom,
+              bp.blobs[j].right, 
+              bp.blobs[j].top);
 
           hp.SetColor(blue);
           hp.SetStyle(1);
-          hp.DrawCircle( -i*10+j, bp.blobs[i][j].x, bp.blobs[i][j].y, 8 );
+          hp.DrawCircle( -i*10+j, bp.blobs[j].x, bp.blobs[j].y, 8 );
 
         } else {
           hp.Remove(i*10+j);

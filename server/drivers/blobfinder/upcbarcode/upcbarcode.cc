@@ -663,51 +663,34 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[][2], int *miny, int *
 void UPCBarcode::WriteBlobfinderData()
 {
   int i;
-  int blobCount, channel_count, channel;
   blob_t *blob;
+  size_t size;
   player_blobfinder_data_t data;
 
   data.width = htons(this->cameraData.width);
   data.height = htons(this->cameraData.height);
 
-  // Reset the header data
-  for (i = 0; i < PLAYER_BLOBFINDER_MAX_CHANNELS; i++)
-  {
-    data.header[i].index = 0;
-    data.header[i].num = 0;
-  }
-  blobCount = 0;
-
-  // Go through the blobs
-  for (channel = 0; channel < PLAYER_BLOBFINDER_MAX_CHANNELS; channel++)
-  {
-    data.header[channel].index = htons(blobCount);
-    channel_count = 0;
+  data.blob_count = htons(this->blobCount);
     
-    for (i = 0; i < this->blobCount; i++)
-    {
-      blob = this->blobs + i;
-      if (blob->id != channel)
-        continue;
+  for (i = 0; i < this->blobCount; i++)
+  {
+    blob = this->blobs + i;
 
-      data.blobs[blobCount].color = 0;  // TODO
-      data.blobs[blobCount].area = htonl((int) ((blob->bx - blob->ax) * (blob->by - blob->ay)));
-      data.blobs[blobCount].x = htons((int) ((blob->bx + blob->ax) / 2));
-      data.blobs[blobCount].y = htons((int) ((blob->by + blob->ay) / 2));
-      data.blobs[blobCount].left = htons((int) (blob->ax));
-      data.blobs[blobCount].right = htons((int) (blob->ay));
-      data.blobs[blobCount].top = htons((int) (blob->bx));
-      data.blobs[blobCount].bottom = htons((int) (blob->by));
-      data.blobs[blobCount].range = htons(0);
-      channel_count++;
-      blobCount++;
-    }
-
-    data.header[channel].num = htons(channel_count);
+    data.blobs[i].id = 0;  // TODO
+    data.blobs[i].color = 0;  // TODO
+    data.blobs[i].area = htonl((int) ((blob->bx - blob->ax) * (blob->by - blob->ay)));
+    data.blobs[i].x = htons((int) ((blob->bx + blob->ax) / 2));
+    data.blobs[i].y = htons((int) ((blob->by + blob->ay) / 2));
+    data.blobs[i].left = htons((int) (blob->ax));
+    data.blobs[i].right = htons((int) (blob->ay));
+    data.blobs[i].top = htons((int) (blob->bx));
+    data.blobs[i].bottom = htons((int) (blob->by));
+    data.blobs[i].range = htons(0);
   }
     
-  // Copy data to server.
-  PutData((unsigned char*) &data, sizeof(data), &this->cameraTime);
+  // Copy data to server
+  size = sizeof(data) - sizeof(data.blobs) + this->blobCount * sizeof(data.blobs[0]);
+  PutData((unsigned char*) &data, size, &this->cameraTime);
   
   return;
 }

@@ -185,7 +185,7 @@ void blobfinder_draw(blobfinder_t *blobfinder)
     {
       ox = PX(blob->x);
       oy = PY(blob->bottom);
-      snprintf(text, sizeof(text), "ch %d\narea %d", blob->channel, blob->area);
+      snprintf(text, sizeof(text), "ch %d\narea %d", blob->id, blob->area);
       rtk_fig_text(blobfinder->image_fig, ox, oy, 0, text);
     }
   }

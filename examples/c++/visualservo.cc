@@ -133,12 +133,14 @@ int main(int argc, char** argv)
       }
       avoidcount--;
     }
-    else if(vp.num_blobs[channel]>0)
+    else if(vp.blob_count>0)
     {
-      if(vp.blobs[channel][0].area < minarea)
+      if(vp.blobs[0].id != channel)
+        continue;
+      if(vp.blobs[0].area < minarea)
         continue;
 
-      int err = 80 - vp.blobs[channel][0].x;
+      int err = 80 - vp.blobs[0].x;
       if(abs(err) > 5)
       {
         newturnrate = DTOR(err / 3.0);

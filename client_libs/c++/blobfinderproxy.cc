@@ -55,18 +55,12 @@ BlobfinderProxy::BlobfinderProxy(PlayerClient* pc, unsigned short index,
             ClientProxy(pc,PLAYER_BLOBFINDER_CODE,index,access)
 {
   // zero everything
-  memset(num_blobs,0,sizeof(num_blobs));
+  blob_count = 0;
   memset(blobs,0,sizeof(blobs)); 
 }
 
 BlobfinderProxy::~BlobfinderProxy()
 {
-  // delete Blob structures
-  for(int i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
-  {
-    if(blobs[i])
-      delete blobs[i];
-  }
 }
 
 void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
@@ -75,7 +69,7 @@ void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
 
   if(firsttime)
   {
-    memset(num_blobs,0,sizeof(num_blobs));
+    blob_count = 0;
     memset(blobs,0,sizeof(blobs));
     firsttime = false;
   }
@@ -91,56 +85,30 @@ void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
   // get the dimensions
   width = ntohs(((player_blobfinder_data_t*)buffer)->width);
   height = ntohs(((player_blobfinder_data_t*)buffer)->height);
+  blob_count = ntohs(((player_blobfinder_data_t*)buffer)->blob_count);
  
   // fill the special blobfinder buffer.
   int tmp_numblobs,tmp_index;
-  for(int i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
+  for(int i=0;i<blob_count;i++)
   {
-    tmp_numblobs = ntohs(((player_blobfinder_data_t*)buffer)->header[i].num);
-    tmp_index = ntohs(((player_blobfinder_data_t*)buffer)->header[i].index);
-
-    if(tmp_numblobs <= 0)
-    {
-      num_blobs[i] = 0;
-    }
-    else
-    {
-      /* check to see if we need more room */
-      if(tmp_numblobs > num_blobs[i])
-      {
-        if(blobs[i])
-          delete blobs[i];
-        if(!(blobs[i] = new Blob[tmp_numblobs]))
-        {
-          if(player_debug_level(-1)>=0)
-            fputs("BlobfinderProxy::FillData(): new failed.  Out of memory?",
-                  stderr);
-          return;
-        }
-      }
-      for(int j=0;j<tmp_numblobs;j++)
-      {
-        blobs[i][j].color = 
-                ntohl(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].color);
-        blobs[i][j].area = 
-                ntohl(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].area);
-        blobs[i][j].x = 
-                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].x);
-        blobs[i][j].y = 
-                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].y);
-        blobs[i][j].left = 
-                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].left);
-        blobs[i][j].right = 
-                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].right);
-        blobs[i][j].top = 
-                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].top);
-        blobs[i][j].bottom = 
-                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].bottom);
-        blobs[i][j].range = 
-                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].range) / 1e3;
-      }
-      num_blobs[i] = tmp_numblobs;
-    }
+    blobs[i].color = 
+      ntohl(((player_blobfinder_data_t*)buffer)->blobs[i].color);
+    blobs[i].area = 
+      ntohl(((player_blobfinder_data_t*)buffer)->blobs[i].area);
+    blobs[i].x = 
+      ntohs(((player_blobfinder_data_t*)buffer)->blobs[i].x);
+    blobs[i].y = 
+      ntohs(((player_blobfinder_data_t*)buffer)->blobs[i].y);
+    blobs[i].left = 
+      ntohs(((player_blobfinder_data_t*)buffer)->blobs[i].left);
+    blobs[i].right = 
+      ntohs(((player_blobfinder_data_t*)buffer)->blobs[i].right);
+    blobs[i].top = 
+      ntohs(((player_blobfinder_data_t*)buffer)->blobs[i].top);
+    blobs[i].bottom = 
+      ntohs(((player_blobfinder_data_t*)buffer)->blobs[i].bottom);
+    blobs[i].range = 
+      ntohs(((player_blobfinder_data_t*)buffer)->blobs[i].range) / 1e3;
   }
 }
 
@@ -149,31 +117,26 @@ void BlobfinderProxy::Print()
 {
   printf("#Blobfinder(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
-  for(int i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
+  for(int i=0;i<blob_count;i++)
   {
-    if(num_blobs[i])
-    {
-      printf("#Channel %d (%d blob(s))\n", i,num_blobs[i]);
-      for(int j=0;j<num_blobs[i];j++)
-      {
-        printf("  blob %d:\n"
-               "             area: %d\n"
-               "                X: %d\n"
-               "                Y: %d\n"
-               "             Left: %d\n"
-               "            Right: %d\n"
-               "              Top: %d\n"
-               "           Bottom: %d\n",
-               j+1,
-               blobs[i][j].area,
-               blobs[i][j].x,
-               blobs[i][j].y,
-               blobs[i][j].left,
-               blobs[i][j].right,
-               blobs[i][j].top,
-               blobs[i][j].bottom);
-      }
-    }
+    printf("  blob %d:\n"
+           "               id: %d\n"
+           "             area: %d\n"
+           "                X: %d\n"
+           "                Y: %d\n"
+           "             Left: %d\n"
+           "            Right: %d\n"
+           "              Top: %d\n"
+           "           Bottom: %d\n",
+           i,
+           blobs[i].id,
+           blobs[i].area,
+           blobs[i].x,
+           blobs[i].y,
+           blobs[i].left,
+           blobs[i].right,
+           blobs[i].top,
+           blobs[i].bottom);
   }
 }
 

@@ -759,7 +759,7 @@ int SimpleShape::MatchFeatureSet(FeatureSet *a, FeatureSet *b)
 void SimpleShape::WriteBlobfinderData()
 {
   unsigned int i;
-  int shapeCount, channelCount, channel;
+  size_t size;
   Shape *shape;
   player_blobfinder_data_t data;
 
@@ -767,48 +767,28 @@ void SimpleShape::WriteBlobfinderData()
   data.width = htons(this->cameraData.width);
   data.height = htons(this->cameraData.height);
 
-  // Reset the header data
-  for (i = 0; i < PLAYER_BLOBFINDER_MAX_CHANNELS; i++)
-  {
-    data.header[i].index = 0;
-    data.header[i].num = 0;
-  }
-  shapeCount = 0;
-
-  // Go through the blobs
-  for (channel = 0; channel < PLAYER_BLOBFINDER_MAX_CHANNELS; channel++)
-  {
-    // Set the offest of the first shape for this channel
-    data.header[channel].index = htons(shapeCount);
-    channelCount = 0;
+  data.blob_count = htons(this->shapeCount);
     
-    for (i = 0; i < this->shapeCount; i++)
-    {
-      shape = this->shapes + i;
+  for (i = 0; i < this->shapeCount; i++)
+  {
+    shape = this->shapes + i;
 
-      // Make sure this shape belong to this channel
-      if (shape->id != channel)
-        continue;
-
-      // Set the data to pass back
-      data.blobs[shapeCount].color = 0;  // TODO
-      data.blobs[shapeCount].area = htonl((int) ((shape->bx - shape->ax) * (shape->by - shape->ay)));
-      data.blobs[shapeCount].x = htons((int) ((shape->bx + shape->ax) / 2));
-      data.blobs[shapeCount].y = htons((int) ((shape->by + shape->ay) / 2));
-      data.blobs[shapeCount].left = htons((int) (shape->ax));
-      data.blobs[shapeCount].top = htons((int) (shape->ay));
-      data.blobs[shapeCount].right = htons((int) (shape->bx));
-      data.blobs[shapeCount].bottom = htons((int) (shape->by));
-      data.blobs[shapeCount].range = htons(0);
-      channelCount++;
-      shapeCount++;
-    }
-
-    data.header[channel].num = htons(channelCount);
+    // Set the data to pass back
+    data.blobs[i].id = 0;  // TODO
+    data.blobs[i].color = 0;  // TODO
+    data.blobs[i].area = htonl((int) ((shape->bx - shape->ax) * (shape->by - shape->ay)));
+    data.blobs[i].x = htons((int) ((shape->bx + shape->ax) / 2));
+    data.blobs[i].y = htons((int) ((shape->by + shape->ay) / 2));
+    data.blobs[i].left = htons((int) (shape->ax));
+    data.blobs[i].top = htons((int) (shape->ay));
+    data.blobs[i].right = htons((int) (shape->bx));
+    data.blobs[i].bottom = htons((int) (shape->by));
+    data.blobs[i].range = htons(0);
   }
-   
-  // Copy data to server.
-  this->PutData(this->blobfinder_id, &data, sizeof(data), &this->cameraTime);
+
+  // Copy data to server
+  size = sizeof(data) - sizeof(data.blobs) + this->shapeCount * sizeof(data.blobs[0]);
+  this->PutData(this->blobfinder_id, &data, size, &this->cameraTime);
   
   return;
 }
