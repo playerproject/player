@@ -11,6 +11,7 @@ player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 #
 player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTKGUI_EXTRA_LDADD@ $(top_builddir)/replace/libreplace.a -lz
 
+
 bin_PROGRAMS = player
 
 
