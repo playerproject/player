@@ -794,6 +794,7 @@ void Wavefront::Main()
                sizeof(plan_cell_t*) * this->waypoint_count);
 
         this->curr_waypoint = 0;
+        this->new_goal = true;
       }
       last_replan = curr;
     }
