@@ -50,5 +50,5 @@ SoundProxy::Play(int index)
 
   cmd.index = htons(index);
 
-  return(client->Write(m_device_id,(const char*)&cmd,sizeof(cmd)));
+  return(client->Write(PLAYER_SOUND_CODE,index,(const char*)&cmd,sizeof(cmd)));
 }
