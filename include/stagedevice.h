@@ -57,7 +57,6 @@
 #include <arenalock.h>
 #include <stage.h>
 
-
 class CStageDevice : public CDevice
 {
     // Minimal constructor

@@ -43,7 +43,8 @@ int main(int argc, char **argv)
   /* create a multiclient to control them all */
   PlayerMultiClient multi;
   multi.AddClient(&r0);
-  multi.AddClient(&r1);
+  /*
+   multi.AddClient(&r1);
   multi.AddClient(&r2);
 
   multi.AddClient(&r3);
@@ -52,6 +53,7 @@ int main(int argc, char **argv)
   multi.AddClient(&r6);
   multi.AddClient(&r7);
   multi.AddClient(&r8);
+  */
 
   for(;;)
   {
@@ -59,6 +61,7 @@ int main(int argc, char **argv)
       exit(1);
 
     gp0.Print();
+    /*
     gp1.Print();
     gp2.Print();
     gp3.Print();
@@ -67,6 +70,7 @@ int main(int argc, char **argv)
     gp6.Print();
     gp7.Print();
     gp8.Print();
+    */
   }
 
   return(0);

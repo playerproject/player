@@ -578,10 +578,10 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
               //continue;
           }
           
-          hdr.size = htonl(size);
           gettimeofday(&curr,NULL);
           hdr.time_sec = htonl(curr.tv_sec);
           hdr.time_usec = htonl(curr.tv_usec);
+          hdr.size = htonl(size);
           memcpy(data+totalsize,&hdr,sizeof(hdr));
           totalsize += sizeof(hdr) + size;
         }

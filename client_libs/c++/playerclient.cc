@@ -121,6 +121,7 @@ int PlayerClient::Read()
     thisproxy->timestamp.tv_usec = hdr.timestamp_usec;
     thisproxy->senttime.tv_sec = hdr.time_sec;
     thisproxy->senttime.tv_usec = hdr.time_usec;
+    //printf("setting receivedtime: %ld %ld\n", curr.tv_sec,curr.tv_usec);
     thisproxy->receivedtime.tv_sec = curr.tv_sec;
     thisproxy->receivedtime.tv_usec = curr.tv_usec;
   }

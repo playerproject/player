@@ -81,7 +81,7 @@ int main(int argc, char** argv)
   unsigned short minfrontdistance = 450;
 
   // VISUAL SERVO / COLLECT
-  unsigned int minarea = 50;
+  unsigned int minarea = 1;
   unsigned int closearea = 6000;
 
   // HOMING
