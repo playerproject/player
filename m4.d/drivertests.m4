@@ -304,6 +304,9 @@ PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbw],[drivers/fiducial],[yes],[],[],[])
 
+dnl Camera drivers
+PLAYER_ADD_DRIVER([camerav4l],[drivers/camera],[yes],[linux/videodev.h],[],[])
+
 dnl Service Discovery
 dnl Don't need to do the language setting here, since C++ checking was done
 dnl earlier, seeing as Player is written in C++.
