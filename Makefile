@@ -8,6 +8,7 @@
 # if you want, but try to leave the version identifier on there; makes
 # things easier
 #
+PWD=$(shell pwd)
 INSTALL_BASE = /usr/local/player
 # get version from VERSION file
 VERSION=$(shell awk '{print substr($$3,2,length($$3)-2);}' $(PWD)/VERSION)
