@@ -499,9 +499,12 @@ void VFH_Class::Main() {
   sleeptime.tv_nsec = 1000000L;
 
   this->GetOdom();
+
+  /*REMOVE
   reset_odom_x = this->odom_pose[0];
   reset_odom_y = this->odom_pose[1];
   reset_odom_t = this->odom_pose[2];
+  */
 
   while (true) {
 //    gettimeofday(&stime, 0);
@@ -525,18 +528,21 @@ void VFH_Class::Main() {
 //    gettimeofday(&time, 0);
 //    printf("Before VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
 
-    dist = sqrt(powf((goal_x - (this->odom_pose[0] - reset_odom_x)),2) + 
-	powf(((this->odom_pose[1] - reset_odom_y) - goal_y),2));
+    dist = sqrt(powf((goal_x - this->odom_pose[0]),2) + 
+                powf((goal_y - this->odom_pose[1]),2));
     
     if (dist > 500) {
-      Desired_Angle = atan2((goal_x - (this->odom_pose[0] - reset_odom_x)), 
-		((this->odom_pose[1] - reset_odom_y) - goal_y)) * 
-		360.0 / 6.28 - this->odom_pose[2];
-      if (Desired_Angle < 0) {
+      Desired_Angle = atan2((goal_y - this->odom_pose[1]),
+                            (goal_x - this->odom_pose[0])) * 180 / M_PI - this->odom_pose[2];
+
+      while (Desired_Angle > 360.0) {
+        Desired_Angle -= 360.0;
+      }
+      while (Desired_Angle < 0) {
         Desired_Angle += 360.0;
       }
 //Desired_Angle = 90;
-//    printf("ANGLE: %f\tDIST: %f\n", Desired_Angle, dist);
+      printf("ANGLE: %f\tDIST: %f\n", Desired_Angle, dist);
 
       // Get new laser data.
       this->GetLaser();
@@ -570,7 +576,7 @@ void VFH_Class::GetCommand() {
 //    reset_odom_y = this->odom_pose[1];
 //    reset_odom_t = this->odom_pose[2];
 
-//    printf("Received command to go to: (%1.1f, %1.1f)\n", goal_x, goal_y);
+    //printf("Received command to go to: (%d, %d)\n", goal_x, goal_y);
   }
 }
 
@@ -907,7 +913,7 @@ int VFH_Class::Update_VFH() {
 
   Select_Direction();
 
-//printf("Picked Angle: %f\n", Picked_Angle);
+  printf("Picked Angle: %f\n", Picked_Angle);
 
   if (Picked_Angle != -9999) {
     Set_Motion();
