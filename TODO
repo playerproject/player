@@ -2,6 +2,8 @@ $Id$
 
 TOMORROW:
 --------
+- make STX a short, instead of string "xX"
+
 - add #defines in messages.h that are plain text references for 
      devices, like for in arg parsing
 
