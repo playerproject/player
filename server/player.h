@@ -1284,6 +1284,8 @@ typedef struct player_waveform_data
 
 /** Request packet subtypes */
 #define PLAYER_FIDUCIAL_GET_GEOM   0x01
+#define PLAYER_FIDUCIAL_GET_FOV    0x02
+#define PLAYER_FIDUCIAL_SET_FOV    0x03
 
 /** [Data]
 
@@ -1349,14 +1351,37 @@ typedef struct player_fiducial_geom
   
   /** Dimensions of the fiducials in units of (mm, mm). */
   uint16_t fiducial_size[2];
-  
 } __attribute__ ((packed)) player_fiducial_geom_t;
+
+/** [Configuration: sensor field of view]
+
+    The field of view of the fiducial device can be set using the
+    PLAYER_FIDUCIAL_SET_FOV request, and queried using the
+    PLAYER_FIDUCIAL_GET_FOV request. The device replies to a SET
+    request with the actual FOV achieved. In both cases the request
+    and reply packets have the same format.
+*/
+
+/** Fiducial geometry packet. */
+typedef struct player_fiducial_fov
+{
+  /** Packet subtype.  PLAYER_FIDUCIAL_GET_FOV or PLAYER_FIDUCIAL_SET_FOV. */
+  uint8_t subtype;
+
+  /** The minimum range of the sensor in mm */
+  uint16_t min_range;
+
+  /** The maximum range of the sensor in mm */
+  uint16_t max_range;  
+  
+  /** The receptive angle of the sensor in degrees. */
+  uint16_t view_angle;
+} __attribute__ ((packed)) player_fiducial_fov_t;
 
 
 /*************************************************************************
  ** end section
  *************************************************************************/
-
 
 /*************************************************************************
  ** begin section comms
