@@ -937,7 +937,7 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *
        rflex_update_ir(rflex_fd, a_num_ir, air_ranges);
        pthread_testcancel();
 
-       d->ir.range_count = a_num_ir;
+       d->ir.range_count = htons(a_num_ir);
 	   for (int i = 0; i < a_num_ir; ++i)
 	   {
 	   		d->ir.voltages[i] = htons(air_ranges[i]);
