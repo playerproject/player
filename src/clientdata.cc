@@ -65,7 +65,7 @@ CClientData::CClientData(char* key, int myport)
   requested = NULL;
   numsubs = 0;
   socket = 0;
-  mode = CONTINUOUS;
+  mode = PLAYER_DATAMODE_CONTINUOUS;
   frequency = 10;
 
   port = myport;
@@ -104,40 +104,28 @@ CClientData::CClientData(char* key, int myport)
 bool CClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
                             unsigned int payload_size)
 {
-  player_device_ioctl_t player_ioctl;
   player_device_auth_req_t tmpreq;
-  unsigned int real_payloadsize;
 
   if(hdr.device != PLAYER_PLAYER_CODE)
     return(false);
 
   // ignore the device_index.  can we have more than one player?
-  // is the payload big enough?
-  if(payload_size < sizeof(player_device_ioctl_t))
+  // is the payload in the right size range?
+  if((payload_size < sizeof(tmpreq.subtype)) || 
+     (payload_size > sizeof(player_device_auth_req_t)))
   {
-    printf("CheckAuth(): Player device got small ioctl: %d\n",
+    printf("CheckAuth(): Player device got wrong size ioctl: %d\n",
            payload_size);
     return(false);
   }
 
-  // what sort of ioctl is it?
-  memcpy(&player_ioctl,payload,sizeof(player_device_ioctl_t));
-  real_payloadsize = payload_size - sizeof(player_device_ioctl_t);
-  player_ioctl.subtype = ntohs(player_ioctl.subtype);
+  bzero((char*)&tmpreq,sizeof(player_device_auth_req_t));
+  tmpreq = *((player_device_auth_req_t*)payload);
 
-  if(player_ioctl.subtype != PLAYER_PLAYER_AUTH_REQ)
+  // is it the right kind of ioctl?
+  if(ntohs(tmpreq.subtype) != PLAYER_PLAYER_AUTH_REQ)
     return(false);
 
-  if(real_payloadsize > sizeof(player_device_auth_req_t))
-  {
-    printf("HandleRequests(): got big "
-           "arg for auth change: %d\n",real_payloadsize);
-    return(false);
-  }
-
-  bzero((char*)&tmpreq,sizeof(tmpreq));
-  memcpy(&tmpreq,payload+sizeof(player_device_ioctl_t),
-         real_payloadsize);
   tmpreq.auth_key[sizeof(tmpreq.auth_key)-1] = '\0';
 
   if(!strcmp(auth_key,tmpreq.auth_key))
@@ -152,15 +140,12 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   bool request=false;
   bool unlock_pending=false;
   bool devicerequest=false;
-  unsigned int i,j;
   CDevice* devicep;
-  player_device_ioctl_t player_ioctl;
   player_device_req_t req;
   player_device_datamode_req_t datamode;
   player_device_datafreq_req_t datafreq;
   player_msghdr_t reply_hdr;
   struct timeval curr;
-  unsigned int real_payloadsize;
 
   // clean the buffer every time for all-day freshness
   bzero((char*)replybuffer, PLAYER_MAX_MESSAGE_SIZE);
@@ -211,7 +196,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         {
           // ignore the device_index.  can we have more than one player?
           // is the payload big enough?
-          if(payload_size < sizeof(player_device_ioctl_t))
+          if(payload_size < sizeof(req.subtype))
           {
             printf("HandleRequests(): Player device got small ioctl: %d\n",
                    payload_size);
@@ -220,93 +205,91 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           }
 
           // what sort of ioctl is it?
-          memcpy(&player_ioctl,payload,sizeof(player_device_ioctl_t));
-          real_payloadsize = payload_size - sizeof(player_device_ioctl_t);
-          player_ioctl.subtype = ntohs(player_ioctl.subtype);
+          //memcpy(&player_ioctl,payload,sizeof(player_device_ioctl_t));
+          //real_payload_size = payload_size - sizeof(player_device_ioctl_t);
+          //player_ioctl.subtype = ntohs(player_ioctl.subtype);
 
-          switch(player_ioctl.subtype)
+          unsigned short subtype = 
+                  ntohs(((player_device_req_t*)payload)->subtype);
+          switch(subtype)
           {
             case PLAYER_PLAYER_DEV_REQ:
               devicerequest = true;
-              if(real_payloadsize < sizeof(player_device_req_t))
+              if(payload_size < sizeof(player_device_req_t))
               {
                 printf("HandleRequests(): got small player_device_req_t: %d\n",
-                       real_payloadsize);
+                       payload_size);
                 break;
               }
-              for(j=sizeof(player_device_ioctl_t);
-                  j<payload_size-(sizeof(player_device_req_t)-1);
-                  j+=sizeof(player_device_req_t))
-              {
-                memcpy(&req,payload+j,sizeof(player_device_req_t));
-                req.code = ntohs(req.code);
-                req.index = ntohs(req.index);
-                UpdateRequested(req);
-              }
-              //puts("done with requests");
-              if(j != payload_size)
-                puts("HandleRequests(): garbage following player DR ioctl");
+              req = *((player_device_req_t*)payload);
+              req.code = ntohs(req.code);
+              req.index = ntohs(req.index);
+              UpdateRequested(req);
               break;
             case PLAYER_PLAYER_DATAMODE_REQ:
-              if(real_payloadsize != sizeof(player_device_datamode_req_t))
+              if(payload_size != sizeof(player_device_datamode_req_t))
               {
                 printf("HandleRequests(): got wrong size "
-                       "player_device_datamode_req_t: %d\n",real_payloadsize);
+                       "player_device_datamode_req_t: %d\n",payload_size);
                 break;
               }
-              memcpy(&datamode,payload+sizeof(player_device_ioctl_t),
-                     sizeof(player_device_datamode_req_t));
+              datamode = *((player_device_datamode_req_t*)payload);
               // lock before changing mode
               pthread_mutex_lock(&access);
               switch(datamode.mode)
               {
-                case REQUESTREPLY:
-                  /* changet to request/reply */
+                case PLAYER_DATAMODE_REQUESTREPLY_UPDATE:
+                  /* change to update request/reply */
+                  datarequested=false;
+                  mode = PLAYER_DATAMODE_REQUESTREPLY_UPDATE;
+                  break;
+                case PLAYER_DATAMODE_REQUESTREPLY:
+                  /* change to request/reply */
                   //puts("changing to REQUESTREPLY");
                   datarequested=false;
-                  mode = REQUESTREPLY;
+                  mode = PLAYER_DATAMODE_REQUESTREPLY;
                   break;
-                case CONTINUOUS:
+                case PLAYER_DATAMODE_CONTINUOUS:
                   /* change to continuous mode */
                   //puts("changing to CONTINUOUS");
-                  mode = CONTINUOUS;
+                  mode = PLAYER_DATAMODE_CONTINUOUS;
                   break;
-                case UPDATE:
+                case PLAYER_DATAMODE_UPDATE:
                   /* change to update mode (doesn't re-send old data)*/
                   //puts("changing to UPDATE");
-                  mode = UPDATE;
+                  mode = PLAYER_DATAMODE_UPDATE;
                   break;
                 default:
                   printf("Player warning: unknown I/O mode requested (%d)."
                          "Ignoring request\n",
-                         datamode.mode );
+                         datamode.mode);
                   break;
-              } // end datamode switch
+              }
               pthread_mutex_unlock(&access);
               break;
             case PLAYER_PLAYER_DATA_REQ:
               // this ioctl takes no args
-              if(real_payloadsize != 0)
+              if(payload_size != sizeof(player_device_data_req_t))
               {
                 printf("HandleRequests(): got wrong size "
-                       "arg for player_data_req: %d\n",real_payloadsize);
+                       "arg for player_data_req: %d\n",payload_size);
                 break;
               }
-              if(mode != REQUESTREPLY)
+              if((mode != PLAYER_DATAMODE_REQUESTREPLY) &&
+                 (mode != PLAYER_DATAMODE_REQUESTREPLY_UPDATE))
                 puts("WARNING: got request for data when not in "
                      "request/reply mode");
               else
                 unlock_pending=true;
               break;
             case PLAYER_PLAYER_DATAFREQ_REQ:
-              if(real_payloadsize != sizeof(player_device_datafreq_req_t))
+              if(payload_size != sizeof(player_device_datafreq_req_t))
               {
                 printf("HandleRequests(): got wrong size "
-                       "arg for update frequency change: %d\n",real_payloadsize);
+                       "arg for update frequency change: %d\n",payload_size);
                 break;
               }
-              memcpy(&datafreq,payload+sizeof(player_device_ioctl_t),
-                     sizeof(player_device_datafreq_req_t));
+              datafreq = *((player_device_datafreq_req_t*)payload);
               pthread_mutex_lock(&access);
               frequency = ntohs(datafreq.frequency);
               pthread_mutex_unlock(&access);
@@ -315,7 +298,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               fputs("Warning: unnecessary authentication request.\n",stderr);
               break;
             default:
-              printf("Unknown server ioctl %x\n", player_ioctl.subtype);
+              printf("Unknown server ioctl %x\n", subtype);
               break;
           }
         }
@@ -388,17 +371,10 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
      * reflect what permissions were granted for the indicated devices */
     if(devicerequest)
     {
-      memcpy(replybuffer+sizeof(player_msghdr_t),payload,
-             sizeof(player_device_ioctl_t));
-      for(i=sizeof(player_msghdr_t)+sizeof(player_device_ioctl_t),
-          j=sizeof(player_device_ioctl_t);
-          j<payload_size-(sizeof(player_device_req_t)-1);
-          i+=sizeof(player_device_req_t),j+=sizeof(player_device_req_t))
-      {
-        memcpy(&req,payload+j,sizeof(player_device_req_t));
-        req.access = FindPermission(ntohs(req.code),ntohs(req.index));
-        memcpy(replybuffer+i,&req,sizeof(player_device_req_t));
-      }
+      req = *((player_device_req_t*)payload);
+      req.access = FindPermission(ntohs(req.code),ntohs(req.index));
+      memcpy(replybuffer+sizeof(player_msghdr_t),&req,
+             sizeof(player_device_req_t));
     }
     /* otherwise, just copy back the request, since we can't get result
      * codes here (yet)
@@ -445,7 +421,8 @@ CClientData::~CClientData()
 {
   RemoveRequests();
 
-  usleep(100000);
+  // why was this here?  - BPG
+  //usleep(100000);
 
   if (socket) close(socket);
   printf("** Player [port %d] killing client on socket %d **\n", 
@@ -695,24 +672,16 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
                                               &(hdr.timestamp_sec), 
                                               &(hdr.timestamp_usec));
 
-          // if we're in UPDATE mode, we only want this data if it is new
-          if( mode == UPDATE )
+          // if we're in an UPDATE mode, we only want this data if it is new
+          if((mode == PLAYER_DATAMODE_UPDATE) || 
+             (mode == PLAYER_DATAMODE_REQUESTREPLY_UPDATE))
           {
-            //printf( "last_sec: %u\tlast_usec: %u\n", 
-            //      thisub->last_sec, thisub->last_usec );
-
             // if the data has the same timestamp as last time then
-            // we don't want it - just send back an empty
-            // packet. (Byte order doesn't matter for the equality
-            // check)
+            // we don't want it, so skip it 
+            // (Byte order doesn't matter for the equality check)
             if( hdr.timestamp_sec == thisub->last_sec && 
                 hdr.timestamp_usec == thisub->last_usec )  
-            {
-              size = 0; // this prevents us copying in the data
-              //puts( "stale data" );
-            }
-            //else
-            //printf( "fresh data at %u sec.\n", ntohl(hdr.timestamp_sec) );
+              continue;
 
             // record the time we got data for this device
             // keep 'em in network byte order - it doesn't matter
@@ -723,7 +692,6 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
 
           hdr.size = htonl(size);
 
-          //gettimeofday(&curr,NULL);
           if(GlobalTime->GetTime(&curr) == -1)
             fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
           hdr.time_sec = htonl(curr.tv_sec);

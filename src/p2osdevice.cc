@@ -342,8 +342,6 @@ int CP2OSDevice::Setup()
 
 int CP2OSDevice::Shutdown()
 {
-  //puts("CP2OSDevice::Shutdown()");
-  //return(0);
   unsigned char command[20],buffer[20];
   CPacket packet; 
 
@@ -361,8 +359,8 @@ int CP2OSDevice::Shutdown()
   }
 
   command[0] = STOP;
-  packet.Build( command, 1);
-  packet.Send( psos_fd );
+  packet.Build(command, 1);
+  packet.Send(psos_fd);
   usleep(P2OS_CYCLETIME_USEC);
 
   command[0] = CLOSE;
@@ -373,7 +371,6 @@ int CP2OSDevice::Shutdown()
   close(psos_fd);
   psos_fd = -1;
   puts("P2OS has been shutdown");
-  //pthread_mutex_unlock(&serial_mutex);
   delete sippacket;
   sippacket = NULL;
 

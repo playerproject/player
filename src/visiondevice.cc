@@ -51,8 +51,11 @@
 #define ACTS_REQUEST_QUIT '1'
 #define ACTS_REQUEST_PACKET '0'
 
-/* time to let ACTS get going before trying to connect */
-#define ACTS_STARTUP_USEC 6000000
+/* the following setting mean that we first try to connect after 1 seconds,
+ * then try every 100ms for 6 more seconds before giving up */
+#define ACTS_STARTUP_USEC 1000000 /* wait before first connection attempt */
+#define ACTS_STARTUP_INTERVAL_USEC 100000 /* wait between connection attempts */
+#define ACTS_STARTUP_CONN_LIMIT 60 /* number of attempts to make */
 
 
 void* RunVisionThread(void* visiondevice);
@@ -183,6 +186,7 @@ int
 CVisionDevice::Setup()
 {
   int i = 0;
+  int j;
 
   char acts_bin_name[] = "acts";
   char acts_configfile_flag[] = "-t";
@@ -277,27 +281,35 @@ CVisionDevice::Setup()
 
     server.sin_port = htons(portnum);
 
-    /* make our socket */
-    if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
-    {
-      perror("CVisionDevice::Setup(): socket(2) failed");
-      KillACTS();
-      return(1);
-    }
-
-    /* wait a bit, then connect to the server */
+    /* ok, we'll make this a bit smarter.  first, we wait a baseline amount
+     * of time, then try to connect periodically for some predefined number
+     * of times
+     */
     usleep(ACTS_STARTUP_USEC);
 
-    /* 
-    * hook it up
-     */
-    if(connect(sock, (struct sockaddr*)&server, sizeof(server)) == -1)
+    for(j = 0;j<ACTS_STARTUP_CONN_LIMIT;j++)
+    {
+      /* 
+       * hook it up
+       */
+      
+      // make a new socket, because connect() screws with the old one somehow
+      if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+      {
+        perror("CVisionDevice::Setup(): socket(2) failed");
+        KillACTS();
+        return(1);
+      }
+      if(connect(sock,(struct sockaddr*)&server, sizeof(server)) == 0)
+        break;
+      usleep(ACTS_STARTUP_INTERVAL_USEC);
+    }
+    if(j == ACTS_STARTUP_CONN_LIMIT)
     {
       perror("CVisionDevice::Setup(): connect(2) failed");
       KillACTS();
       return(1);
     }
-
     puts("Done.");
 
     /* now spawn reading thread */
@@ -324,13 +336,13 @@ CVisionDevice::Shutdown()
   if(sock == -1)
     return(0);
 
-  if(pthread_cancel(thread))
-  {
-    fputs("CVisionDevice::Shutdown(): WARNING: pthread_cancel() on vision "
-          "reading thread failed; killing ACTS by hand\n",stderr);
-    QuitACTS(this);
-  }
+  pthread_cancel(thread);
+  // give it time
+  usleep(100000);
+  // just to be sure...
+  KillACTS();
 
+  sock = -1;
   puts("ACTS vision server has been shutdown");
   return(0);
 }

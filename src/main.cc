@@ -186,15 +186,7 @@ void Interrupt( int dummy )
     printf("** Player [port %d] quitting **\n", global_playerport );
   
 
-  // HACK - for some reason, a SIGINT (e.g., Ctrl-C) while a client is
-  //        subscribed to the vision device causes a segfault on the following
-  //        exit().  so, i've changed it to _exit(), which doesn't do
-  //        the cleanup stuff that exit() does.  seem to fix the problem for
-  //        some reason.  the fflush() is just to be sure all the data on
-  //        the sockets is pushed out.  - BPG
   exit(0);
-  //fflush(NULL);
-  //_exit(0);
 }
 
 /* used to name incoming client connections */
@@ -274,7 +266,7 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
   {
     printf( "PLAYER: opening lock file %s (%d)\n", lockfile, lockfd );
     perror("Failed to create lock device" );
-    return false;
+    return NULL;
   } 
  
   // open all the files in the IO directory
