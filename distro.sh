@@ -29,7 +29,7 @@ ln -s $DIRECTORY $DISTRO
 echo "Removing any exisiting tarball $DISTRO.tgz"
 /bin/rm -f $DISTRO.tgz
 echo "Creating tarball $DISTRO.tgz, excluding CVS directories"
-/bin/tar hcvzf $DISTRO.tgz $DISTRO --exclude "*CVS" --exclude "\.#*" --exclude "*distro.sh" --exclude "*copyright_header" --exclude "*python*" --exclude "*player-manual*"
+/bin/tar hcvzf $DISTRO.tgz $DISTRO --exclude "*CVS" --exclude "\.#*" --exclude "*distro.sh" --exclude "*copyright_header" --exclude "*python*" --exclude "*player-manual*" --exclude "*/client_libs/*/doc" --exclude "*/client_libs/*/doc/*"
 echo "Removing version link $DISTRO"
 rm -f $DISTRO
 mv $DISTRO.tgz $DIRECTORY
