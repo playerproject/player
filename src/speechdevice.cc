@@ -62,11 +62,6 @@
 #define FESTIVAL_CODE_ERR "ER\n"
 #define FESTIVAL_RETURN_LEN 39
 
-// don't change this unless you change the Festival init scripts as well
-#define FESTIVAL_DEFAULT_PORTNUM 1314
-
-// change this if Festival is installed somewhere else
-#define FESTIVAL_LIBDIR_PATH "/usr/local/festival/lib"
 
 /* time to let Festival to get going before trying to connect */
 #define FESTIVAL_STARTUP_USEC 3000000
@@ -74,11 +69,8 @@
 /* delay inside loop */
 #define FESTIVAL_DELAY_USEC 20000
 
-
 void* RunSpeechThread(void* speechdevice);
 void QuitFestival(void* speechdevice);
-
-
 
 CSpeechDevice::CSpeechDevice(int argc, char** argv)
 {
@@ -92,7 +84,35 @@ CSpeechDevice::CSpeechDevice(int argc, char** argv)
   queue_remove_idx = 0;
   read_pending = false;
 
-  portnum = FESTIVAL_DEFAULT_PORTNUM;
+  portnum = DEFAULT_FESTIVAL_PORTNUM;
+  strncpy(festival_libdir_value,DEFAULT_FESTIVAL_LIBDIR,
+          sizeof(festival_libdir_value));
+  for(int i=0;i<argc;i++)
+  {
+    if(!strcmp(argv[i],"port"))
+    {
+      if(++i<argc)
+        portnum = atoi(argv[i]);
+      else
+        fprintf(stderr, "CSpeechDevice: missing port; using default: %d\n",
+                portnum);
+    }
+    else if(!strcmp(argv[i],"libdir"))
+    {
+      if(++i<argc)
+      {
+        strncpy(festival_libdir_value,argv[i],sizeof(festival_libdir_value));
+        festival_libdir_value[sizeof(festival_libdir_value)-1] = '\0';
+      }
+      else
+        fprintf(stderr, "CSpeechDevice: missing configfile; "
+                "using default: \"%s\"\n", festival_libdir_value);
+    }
+    else
+      fprintf(stderr, "CSpeechDevice: ignoring unknown parameter \"%s\"\n",
+              argv[i]);
+  }
+
 }
 
 CSpeechDevice::~CSpeechDevice()
@@ -108,7 +128,7 @@ CSpeechDevice::Setup()
   char festival_bin_name[] = "festival";
   char festival_server_flag[] = "--server";
   char festival_libdir_flag[] = "--libdir";
-  char festival_libdir_value[] = FESTIVAL_LIBDIR_PATH;
+  //char festival_libdir_value[] = DEFAULT_FESTIVAL_LIBDIR;
 
   char* festival_args[8];
 

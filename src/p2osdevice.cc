@@ -85,7 +85,6 @@ extern CSIP*           CP2OSDevice::sippacket;
 extern bool           CP2OSDevice::arena_initialized_data_buffer;
 extern bool           CP2OSDevice::arena_initialized_command_buffer;
 
-#define DEFAULT_P2OS_PORT "/dev/ttyS0"
 
 void *RunPsosThread( void *p2osdevice );
 

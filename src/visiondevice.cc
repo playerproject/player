@@ -62,8 +62,6 @@
 void* RunVisionThread(void* visiondevice);
 void QuitACTS(void* visiondevice);
 
-#define DEFAULT_ACTS_PORT 5001
-#define DEFAULT_ACTS_CONFIGFILE "/usr/local/acts/actsconfig"
 
 CVisionDevice::CVisionDevice(int argc, char** argv)
 {
