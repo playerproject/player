@@ -1,83 +1,24 @@
 Player - one hell of a robot server
 ----------------------------------
-This is the Player device server, developed in the USC Robotics Research
-Lab and HRL Labs, and released under the GNU Public License (GPL).  The 
-Player homepage is at:
+This is the Player device server, developed at the USC Robotics Research
+Lab and HRL Labs (with help from many other places), and released under the 
+GNU General Public License (GPL).  The Player homepage is:
 
   http://playerstage.sourceforge.net
 
-Contents
--------------
-COPYING                GNU General Public License
-Makefile.common        common Makefile; make your configuration changes here
-Makefile               the top-level Makefile; you shouldn't need to change it
-README                 this file
-TODO                   we've got big plans...
-client_libs/c          source for the "reference" C client-side utilities
-client_libs/libplayerc source for the C client-side utilities
-client_libs/c++        source for the C++ client-side utilities
-client_libs/tcl        source for Tcl client-side utilities
-client_libs/lisp       source for Common LISP client-side utilities
-examples/c             source for "reference" C example clients
-examples/c++           source for C++ example clients
-examples/tcl           source for Tcl/Tk example clients
-examples/lisp          source for Common LISP example clients
-doc                    users manuals for Player and client libraries
-utils                  client-side utilities that you might find useful
-include                header files for Player
-src                    source for Player
-rtk2                   a graphical toolkit, used by some utilities
 
-Configuration 
-------------------
-- read Makefile.common! there are several compile-time configurations that 
-  you can change, such as your platform and compiler, the devices to include, 
-  and the directory to which the installation go.  they are all explained (and
-  can be changed) in Makefile.common.
-
-Build 
-------------------
-- in the top-level directory:
-
-     $ make
-
-
-Install 
---------------------
-- to install everything (server binary, client libraries and headers,
-    and examples) in the selected install directory (default is 
-    $(HOME)/player-<version>):
-
-      $ make install
-
-  the executable server itself will install (by default) as 
-  $(HOME)/player-<version>/bin/player.
-
-- if you want to install somewhere else (like in /usr/local)
-    change INSTALL_BASE in Makefile.common
-
-Uninstall
---------------------
-- to uninstall everything (server binary, client libraries and headers,
-    and examples) from wherever it was installed:
-
-      $ make uninstall
-
-Clean
---------------------
-- to clean up (remove all binaries, etc.).  doesn't uninstall from
-    the system.
-
-      $ make clean
-    
-
-Further Info
+Installation
 ------------
-- now you've got Player installed.  but, how to use it? several user manuals
-  are in ./doc.  for further info and updates, check:
+Read INSTALL for generic instructions.  For most people, the following
+sequence will suffice:
 
-      http://playerstage.sourceforge.net
+  $ ./configure
+  $ make
+  $ make install
+
+To see the options accepted by configure, do:
+
+  $ ./configure --help
 
 
                     - brian gerkey (gerkey@robotics.usc.edu)
-
