@@ -40,6 +40,7 @@
 #include <stdlib.h>       // for atoi(3)
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
+#include <sys/time.h>
 
 #define PLAYER_ENABLE_TRACE 1
 
@@ -49,6 +50,7 @@
 
 #include "player.h"
 #include "device.h"
+#include "psdevice.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
@@ -61,10 +63,21 @@
 #include "rtk.h"
 #endif
 
-#include <sys/time.h>
+
+// This is a god-awful hack; this structure must be duplicated in both
+// Player and Stage.
+// Shared Player/Stage configuration info
+typedef struct
+{
+  char map_file[PATH_MAX];
+  double map_scale;
+  
+} amcl_stage_data_t;
+
 
 // TESTING
-uint64_t gettime()
+// Time function used for profiling
+uint64_t gettime(void)
 {
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -73,47 +86,58 @@ uint64_t gettime()
 
 
 // Incremental navigation driver
-class AdaptiveMCL : public CDevice
+class AdaptiveMCL : public PSDevice
 {
   // Constructor
   public: AdaptiveMCL(char* interface, ConfigFile* cf, int section);
 
   // Destructor
-  public: virtual ~AdaptiveMCL();
+  public: virtual ~AdaptiveMCL(void);
 
   // Setup/shutdown routines.
-  public: virtual int Setup();
-  public: virtual int Shutdown();
-  
+  public: virtual int Setup(void);
+  public: virtual int Shutdown(void);
+
+#ifdef INCLUDE_STAGE
+  // Get the config settings specified in Stage.
+  private: int LoadStageConfig(void);
+#endif
+
+#ifdef INCLUDE_RTKGUI
+  // Set up the GUI
+  private: int SetupGUI(void);
+  private: int ShutdownGUI(void);
+#endif
+
   // Set up the odometry device.
-  private: int SetupOdom();
-  private: int ShutdownOdom();
+  private: int SetupOdom(void);
+  private: int ShutdownOdom(void);
 
   // Set up the laser device.
-  private: int SetupLaser();
-  private: int ShutdownLaser();
+  private: int SetupLaser(void);
+  private: int ShutdownLaser(void);
 
   // Get the current pose
   private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
                                   uint32_t* time_sec, uint32_t* time_usec);
 
   // Main function for device thread.
-  private: virtual void Main();
+  private: virtual void Main(void);
 
   // Get the current odometric pose
   private: void GetOdom(pf_vector_t *pose, uint32_t *time_sec, uint32_t *time_usec);
 
   // Check for new laser data
-  private: int GetLaser();
+  private: int GetLaser(void);
 
   // Initialize the filter
   private: void InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov);
 
   // Update the filter with new sensor data
-  private: void UpdateFilter();
+  private: void UpdateFilter(void);
 
   // Process requests.  Returns 1 if the configuration has changed.
-  private: int HandleRequests();
+  private: int HandleRequests(void);
 
   // Handle geometry requests.
   private: void HandleGetGeom(void *client, void *request, int len);
@@ -170,13 +194,11 @@ class AdaptiveMCL : public CDevice
   private: pf_matrix_t pf_pose_cov;
 
 #ifdef INCLUDE_RTKGUI
-
   // RTK stuff; for testing only
   private: rtk_app_t *app;
   private: rtk_canvas_t *canvas;
   private: rtk_fig_t *map_fig;
   private: rtk_fig_t *pf_fig;
-  
 #endif
 };
 
@@ -204,7 +226,7 @@ void AdaptiveMCL_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_localize_data_t), 0, 10, 10)
+    : PSDevice(sizeof(player_localize_data_t), 0, 10, 10)
 {
   double size;
   double u[3];
@@ -216,11 +238,6 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->laser_index = cf->ReadInt(section, "laser_index", 0);
   this->laser_time_sec = -1;
   this->laser_time_usec = -1;
-
-  // TESTING; should get this by querying the laser geometry
-  this->laser_pose.v[0] = cf->ReadTupleLength(section, "laser_pose", 0, 0);
-  this->laser_pose.v[1] = cf->ReadTupleLength(section, "laser_pose", 1, 0);
-  this->laser_pose.v[2] = cf->ReadTupleAngle(section, "laser_pose", 2, 0);
 
   // C-space info
   this->robot_radius = cf->ReadLength(section, "robot_radius", 0.20);
@@ -250,8 +267,8 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->pf_pose_mean.v[2] = cf->ReadTupleAngle(section, "init_pose", 2, 0);
 
   // Initial pose covariance
-  u[0] = cf->ReadTupleLength(section, "init_pose_var", 0, 3);
-  u[1] = cf->ReadTupleLength(section, "init_pose_var", 1, 3);
+  u[0] = cf->ReadTupleLength(section, "init_pose_var", 0, 1e3);
+  u[1] = cf->ReadTupleLength(section, "init_pose_var", 1, 1e3);
   u[2] = cf->ReadTupleAngle(section, "init_pose_var", 2, 1e2);
   this->pf_pose_cov = pf_matrix_zero();
   this->pf_pose_cov.m[0][0] = u[0] * u[0];
@@ -264,7 +281,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Destructor
-AdaptiveMCL::~AdaptiveMCL()
+AdaptiveMCL::~AdaptiveMCL(void)
 {
   return;
 }
@@ -272,9 +289,14 @@ AdaptiveMCL::~AdaptiveMCL()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int AdaptiveMCL::Setup()
+int AdaptiveMCL::Setup(void)
 {
   PLAYER_TRACE("setup");
+
+#ifdef INCLUDE_STAGE
+  if (this->LoadStageConfig() != 0)
+    return -1;
+#endif
   
   // Initialise the underlying position device.
   if (this->SetupOdom() != 0)
@@ -315,7 +337,12 @@ int AdaptiveMCL::Setup()
   // Set initial filter values
   this->GetOdom(&this->last_odom_pose, NULL, NULL);
   this->GetOdom(&this->curr_odom_pose, NULL, NULL);
-  
+
+#ifdef INCLUDE_RTKGUI
+  // Start the GUI
+  this->SetupGUI();
+#endif
+
   // Start the driver thread.
   this->StartThread();
   
@@ -325,10 +352,15 @@ int AdaptiveMCL::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int AdaptiveMCL::Shutdown()
+int AdaptiveMCL::Shutdown(void)
 {
   // Stop the driver thread.
   this->StopThread();
+    
+#ifdef INCLUDE_RTKGUI
+  // Stop the GUI
+  this->ShutdownGUI();
+#endif
 
   // Delete the particle filter
   pf_free(this->pf);
@@ -357,9 +389,81 @@ int AdaptiveMCL::Shutdown()
 }
 
 
+#ifdef INCLUDE_STAGE
+
+// Get the config settings specified in Stage.  This function will
+// disappear in future versions.
+int AdaptiveMCL::LoadStageConfig(void)
+{
+  amcl_stage_data_t data;
+  size_t data_len;
+    
+  data_len = this->GetStageData(this, &data, sizeof(data), NULL, NULL);
+  printf("%d\n", data_len);
+  if (data_len != sizeof(data))
+  {
+    PLAYER_ERROR("no configuration data");
+    return -1;
+  }
+
+  // This will leak mem (but this function will go away, so who cares)
+  this->map_file = strdup(data.map_file);
+  this->map_scale = data.map_scale;
+
+  PLAYER_TRACE("map file [%s] map scale [%f]", this->map_file, this->map_scale);
+  
+  return 0;
+}
+
+#endif
+
+
+#ifdef INCLUDE_RTKGUI
+
+////////////////////////////////////////////////////////////////////////////////
+// Set up the GUI
+int AdaptiveMCL::SetupGUI(void)
+{
+  // Initialize RTK
+  rtk_init(NULL, NULL);
+
+  this->app = rtk_app_create();
+
+  this->canvas = rtk_canvas_create(this->app);
+  rtk_canvas_title(this->canvas, "AdaptiveMCL");
+  rtk_canvas_size(this->canvas, this->map->size_x, this->map->size_y);
+  rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
+
+  this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
+  this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 0);
+  
+  // Draw the map
+  map_draw_occ(this->map, this->map_fig);
+  //map_draw_cspace(this->map, this->map_fig);
+
+  rtk_app_main_init(this->app);
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Shut down the GUI
+int AdaptiveMCL::ShutdownGUI(void)
+{
+  rtk_canvas_destroy(this->canvas);
+  rtk_app_main_term(this->app);
+  rtk_app_destroy(this->app);
+  
+  return 0;
+}
+  
+#endif
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the underlying odom device.
-int AdaptiveMCL::SetupOdom()
+int AdaptiveMCL::SetupOdom(void)
 {
   player_device_id_t id;
     
@@ -386,7 +490,7 @@ int AdaptiveMCL::SetupOdom()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the underlying odom device.
-int AdaptiveMCL::ShutdownOdom()
+int AdaptiveMCL::ShutdownOdom(void)
 {
   this->odom->Unsubscribe(this);
   return 0;
@@ -395,12 +499,13 @@ int AdaptiveMCL::ShutdownOdom()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the laser
-int AdaptiveMCL::SetupLaser()
+int AdaptiveMCL::SetupLaser(void)
 {
   uint8_t req;
   uint16_t reptype;
   player_device_id_t id;
   player_laser_geom_t geom;
+  struct timeval tv;
   
   id.robot = this->device_id.robot;
   id.code = PLAYER_LASER_CODE;
@@ -418,17 +523,17 @@ int AdaptiveMCL::SetupLaser()
     return -1;
   }
 
-  /*
   // Get the laser geometry
   req = PLAYER_POSITION_GET_GEOM_REQ;
-  if (this->laser->Request(&id, this, &req, 1, &reptype, NULL, &geom, sizeof(geom)) != 0)
+  if (this->laser->Request(&id, this, &req, 1, &reptype, &tv, &geom, sizeof(geom)) < 0)
   {
-    PLAYER_ERROR("unable to get position device geometry");
+    PLAYER_ERROR("unable to get laser geometry");
     return -1;
   }
 
-  printf("got laser geom\n");
-  */
+  this->laser_pose.v[0] = ((int16_t) ntohl(geom.pose[0])) / 1000.0;
+  this->laser_pose.v[1] = ((int16_t) ntohl(geom.pose[1])) / 1000.0;
+  this->laser_pose.v[2] = ((int16_t) ntohl(geom.pose[0])) * M_PI / 180.0;
 
   return 0;
 }
@@ -436,7 +541,7 @@ int AdaptiveMCL::SetupLaser()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
-int AdaptiveMCL::ShutdownLaser()
+int AdaptiveMCL::ShutdownLaser(void)
 {
   this->laser->Unsubscribe(this);
   return 0;
@@ -531,32 +636,9 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void AdaptiveMCL::Main() 
+void AdaptiveMCL::Main(void) 
 {
   struct timespec sleeptime;
-
-#ifdef INCLUDE_RTKGUI
-
-  rtk_init(NULL, NULL);
-
-  // Create the gui
-  this->app = rtk_app_create();
-
-  this->canvas = rtk_canvas_create(this->app);
-  rtk_canvas_title(this->canvas, "AdaptiveMCL");
-  rtk_canvas_size(this->canvas, this->map->size_x, this->map->size_y);
-  rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
-
-  this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
-  this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 0);
-  
-  // Draw the map
-  //map_draw_occ(this->map, this->map_fig);
-  map_draw_cspace(this->map, this->map_fig);
-
-  rtk_app_main_init(this->app);
-  
-#endif
   
   // WARNING: this only works for Linux
   // Run at a lower priority
@@ -568,7 +650,6 @@ void AdaptiveMCL::Main()
   while (true)
   {
 #ifdef INCLUDE_RTKGUI
-    rtk_canvas_render(this->canvas);
     rtk_app_main_loop(this->app);
 #endif
 
@@ -591,12 +672,6 @@ void AdaptiveMCL::Main()
     if (this->GetLaser())
       this->UpdateFilter();
   }
-  
-#ifdef INCLUDE_RTKGUI
-  rtk_app_main_term(this->app);
-  rtk_canvas_destroy(this->canvas);
-  rtk_app_destroy(this->app);
-#endif
 
   return;
 }
@@ -627,7 +702,7 @@ void AdaptiveMCL::GetOdom(pf_vector_t *pose, uint32_t *time_sec, uint32_t *time_
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new laser data
-int AdaptiveMCL::GetLaser()
+int AdaptiveMCL::GetLaser(void)
 {
   int i;
   size_t size;
@@ -678,6 +753,7 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
   rtk_fig_color(this->pf_fig, 1, 0, 0);
   pf_draw_samples(this->pf, this->pf_fig, 1000);
   pf_draw_stats(this->pf, this->pf_fig);
+  rtk_canvas_render(this->canvas);
 #endif
   
   this->Lock();
@@ -696,7 +772,7 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the filter with new sensor data
-void AdaptiveMCL::UpdateFilter()
+void AdaptiveMCL::UpdateFilter(void)
 {
   int i;
   pf_vector_t diff;
@@ -749,6 +825,7 @@ void AdaptiveMCL::UpdateFilter()
   rtk_fig_color(this->pf_fig, 1, 0, 0);
   pf_draw_samples(this->pf, this->pf_fig, 1000);
   pf_draw_stats(this->pf, this->pf_fig);
+  rtk_canvas_render(this->canvas);
 #endif
 
   this->Lock();
@@ -769,7 +846,7 @@ void AdaptiveMCL::UpdateFilter()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process requests.  Returns 1 if the configuration has changed.
-int AdaptiveMCL::HandleRequests()
+int AdaptiveMCL::HandleRequests(void)
 {
   int len;
   void *client;
@@ -779,12 +856,6 @@ int AdaptiveMCL::HandleRequests()
   {
     switch (request[0])
     {
-      /*
-      case PLAYER_POSITION_GET_GEOM_REQ:
-        HandleGetGeom(client, request, len);
-        break;
-      */
-
       case PLAYER_LOCALIZE_SET_POSE_REQ:
         HandleSetPose(client, request, len);
         break;
@@ -804,55 +875,6 @@ int AdaptiveMCL::HandleRequests()
     }
   }
   return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-void AdaptiveMCL::HandleGetGeom(void *client, void *request, int len)
-{
-  player_device_id_t id;
-  player_position_geom_t geom;
-  uint8_t req;
-  struct timeval ts;
-  uint16_t reptype;
-
-  printf("get geom\n");
-  
-  if (len != 1)
-  {
-    PLAYER_ERROR2("geometry request len is invalid (%d != %d)", len, 1);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  id.robot = this->device_id.robot;
-  id.code = PLAYER_POSITION_CODE;
-  id.index = this->odom_index;
-  
-  // Get underlying device geometry.
-  req = PLAYER_POSITION_GET_GEOM_REQ;
-  if (this->Request(&id, this, &req, 1, &reptype, &ts, &geom, sizeof(geom)) != 0)
-  {
-    PLAYER_ERROR("unable to get position device geometry");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-  if (reptype != PLAYER_MSGTYPE_RESP_ACK)
-  {
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  printf("got geom\n");
-  
-  return;
 }
 
 
@@ -889,11 +911,6 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   cov.m[1][0] = ((int64_t) ntohll(req.cov[1][0])) / 1e6;
   cov.m[1][1] = ((int64_t) ntohll(req.cov[1][1])) / 1e6;
   cov.m[2][2] = ((int64_t) ntohll(req.cov[2][2])) / (3600.0 * 3600.0) * (M_PI / 180 * M_PI / 180);
-
-  // TESTING
-  PLAYER_TRACE("pose, cov:");
-  pf_vector_fprintf(pose, stdout, "%f");
-  pf_matrix_fprintf(cov, stdout, "%f");
 
   // Initialize the filter
   this->InitFilter(pose, cov);

@@ -435,14 +435,21 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             }
             else
             {
-              CDevice *device = (*(entry->initfunc)) (PLAYER_LOCALIZE_STRING,
-                                                      &configFile, section);
+              PSDevice *device = (PSDevice*) (*(entry->initfunc)) (PLAYER_LOCALIZE_STRING,
+                                                                   &configFile, section);
             
               // add it to the instantiated device table
               deviceTable->AddDevice(deviceIO->player_id, 
                                      PLAYER_LOCALIZE_STRING,
                                      PLAYER_READ_MODE, 
                                      device);
+
+              // add this port to our listening list
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
+
+              // setup the Stage buffers
+              device->SetupStageBuffers(deviceIO, lockfd, 
+                                        deviceIO->lockbyte);
             }
           }
           else
