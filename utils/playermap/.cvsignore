@@ -3,3 +3,5 @@ Makefile.in
 playermap
 build
 .profile
+*.pyc
+*.gladep

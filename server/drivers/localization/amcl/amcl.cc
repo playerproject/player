@@ -51,7 +51,7 @@
 
 // TESTING
 #include "playertime.h"
-#define INCLUDE_OUTFILE 1
+//#define INCLUDE_OUTFILE 1
 extern PlayerTime* GlobalTime;
 
 #include "amcl.h"
@@ -167,6 +167,10 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->pf_init_pose_cov.m[0][0] = u[0] * u[0];
   this->pf_init_pose_cov.m[1][1] = u[1] * u[1];
   this->pf_init_pose_cov.m[2][2] = u[2] * u[2];
+
+  // Update distances
+  this->min_dr = cf->ReadTupleLength(section, "update_thresh", 0, 0.20);
+  this->min_da = cf->ReadTupleAngle(section, "update_thresh", 0, 30 * M_PI / 180);
 
   // Initial hypothesis list
   this->hyp_count = 0;
@@ -591,8 +595,9 @@ bool AdaptiveMCL::UpdateFilter(void)
   data = this->Pop();
   if (data == NULL)
     return false;
-  assert(data->sensor->is_action);
-
+  if (!data->sensor->is_action)
+    return false;
+  
   // Use the action timestamp 
   tsec = data->tsec;
   tusec = data->tusec;
@@ -603,15 +608,11 @@ bool AdaptiveMCL::UpdateFilter(void)
   // Compute change in pose
   delta = pf_vector_coord_sub(pose, this->pf_odom_pose);
 
-  // HACK: fix
-  double min_dr = 0.20;
-  double min_da = M_PI / 6;
-
   // If the robot has moved, update the filter
-  if (!this->pf_init ||
-      fabs(delta.v[0]) > min_dr || fabs(delta.v[1]) > min_dr || fabs(delta.v[2]) > min_da)
+  if (!this->pf_init || fabs(delta.v[0]) > this->min_dr ||
+      fabs(delta.v[1]) > this->min_dr || fabs(delta.v[2]) > this->min_da)
   {
-    pf_vector_fprintf(delta, stdout, "%.3f");
+    //pf_vector_fprintf(delta, stdout, "%.3f");
     
     // HACK
     // Modify the delta in the action data so the filter gets
@@ -627,10 +628,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     {
       data = this->Peek();
       if (data == NULL)
-      {
-        usleep(1000);
-        continue;
-      }
+        break;
       if (data->sensor->is_action)
         break;
       data = this->Pop();
@@ -684,10 +682,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     {
       data = this->Peek();
       if (data == NULL)
-      {
-        usleep(1000);
-        continue;
-      }
+        break;
       if (data->sensor->is_action)
         break;
       data = this->Pop();

@@ -6,8 +6,8 @@ EXTRA_LIBRARIES = libstage1p4.a
 
 libstage1p4_a_SOURCES = \
 	stage1p4.cc \
-        stage1p4.h \
-        stg_time.cc \
+  stage1p4.h \
+  stg_time.cc \
 	stg_position.cc \
 	stg_laser.cc \
 	stg_simulation.cc \
