@@ -495,7 +495,7 @@ CClientData::~CClientData()
   if (socket) close(socket);
 
   printf("** Player [port %d] killing client on socket %d **\n", 
-	 global_playerport, socket);
+	 port, socket);
 
   if(readbuffer)
     delete readbuffer;
