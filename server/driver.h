@@ -46,6 +46,7 @@ class ConfigFile;
 class Driver;
 class ClientData;
 
+#if 0
 // Macros to provide helpers for message handling, see rflex.cc for usage
 // MSG(player_device_id DeviceID, MessageType, SubType, Expected data size)
 // Make sure each MSG is matched with a MSG_END
@@ -58,6 +59,7 @@ class ClientData;
 	
 #define MSG_END return(0); }
 #define MSG_END_ACK return(PLAYER_MSGTYPE_RESP_ACK); }
+#endif
 
 /// @brief Base class for all drivers.
 ///
@@ -83,6 +85,14 @@ class Driver
 
     /// Mutex to go with condition variable cond.
     pthread_mutex_t condMutex;
+
+    // Dummy main (just calls real main).  This is used to simplify
+    // thread creation.
+    static void* DummyMain(void *driver);
+
+    // Dummy main cleanup (just calls real main cleanup).  This is
+    // used to simplify thread termination.
+    static void DummyMainQuit(void *driver);
     
   public:
     /// Default device id (single-interface drivers)
@@ -108,8 +118,6 @@ class Driver
 
     /// Queue for all incoming messages for this driver
     MessageQueue* InQueue;
-
-  public:
 
     /// @brief Constructor for single-interface drivers.
     //
@@ -198,8 +206,6 @@ class Driver
     /// @todo I think this can be deprecated.
     virtual void Prepare() {}
 
-  public:
-
     /// @brief Start the driver thread
     ///
     /// This method is usually called from the overloaded Setup() method to
@@ -225,6 +231,18 @@ class Driver
     /// driver thread exits.
     virtual void MainQuit(void);
 
+    /// @brief Helper for message processing.
+    ///
+    /// Returns true if @p hdr matches the supplied @p type, @p subtype, 
+    /// and @p id.
+    bool MatchMessage(player_msghdr_t* hdr, 
+                      uint8_t type, uint8_t subtype, player_device_id_t id)
+    {
+      return((hdr->type == type) && 
+             (hdr->subtype == subtype) && 
+             (hdr->device == id.code) && 
+             (hdr->device_index == id.index));
+    }
 
     /// Call this to automatically process messages using registered handler
     /// Processes messages until no messages remaining in the queue or
@@ -254,18 +272,6 @@ class Driver
                        int size, uint8_t * data, 
                        uint8_t * resp_data, int * resp_len);
 
-  private:
-
-    // Dummy main (just calls real main).  This is used to simplify
-    // thread creation.
-    static void* DummyMain(void *driver);
-
-    // Dummy main cleanup (just calls real main cleanup).  This is
-    // used to simplify thread termination.
-    static void DummyMainQuit(void *driver);
-
-  public:
-    
     /// @brief Wait on the condition variable associated with this driver.
     ///
     /// This method blocks until new data is available (as indicated

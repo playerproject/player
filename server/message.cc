@@ -32,6 +32,7 @@
 
 #include "message.h"
 #include "player.h"
+#include "error.h"
 
 Message::Message()
 {
@@ -139,6 +140,7 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
   this->Maxlen = _Maxlen;
   this->pTail = &this->Head;
   this->lock = new pthread_mutex_t;
+  this->Length = 0;
   assert(this->lock);
   pthread_mutex_init(this->lock,NULL);
 }
@@ -173,9 +175,19 @@ MessageQueue::Push(Message & msg)
       }
     }
   }
-  this->pTail = new MessageQueueElement(*this->pTail,msg);
-  this->Unlock();
-  return(this->pTail);
+  if(this->Length >= this->Maxlen)
+  {
+    PLAYER_WARN("tried to push onto a full message queue");
+    this->Unlock();
+    return(NULL);
+  }
+  else
+  {
+    this->pTail = new MessageQueueElement(*this->pTail,msg);
+    this->Length++;
+    this->Unlock();
+    return(this->pTail);
+  }
 }
 
 MessageQueueElement*
@@ -202,5 +214,6 @@ MessageQueue::Remove(MessageQueueElement* el)
     this->pTail = this->pTail->prev;
   else
     el->next->prev = el->prev;
+  this->Length--;
 }
 

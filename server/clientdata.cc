@@ -172,8 +172,9 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         // Process device list requests.
         case PLAYER_PLAYER_DEVLIST:
           requesttype = PLAYER_MSGTYPE_RESP_ACK;
-          replysize = HandleListRequest((player_device_devlist_t*) payload,
-                                        (player_device_devlist_t*)this->replybuffer);
+          HandleListRequest((player_device_devlist_t*) payload,
+                            (player_device_devlist_t*)this->replybuffer);
+          replysize = sizeof(player_device_devlist_t);
           break;
 
         // Process driver info requests.
@@ -349,8 +350,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   /* if it's a request, then we must generate a reply */
   if(requesttype)
   {
-    if(GlobalTime->GetTime(&curr) == -1)
-      PLAYER_ERROR("GetTime() failed!!!!");
+    GlobalTime->GetTime(&curr);
 
     PutMsg(requesttype, hdr.subtype, hdr.device, hdr.device_index, 
            &curr,replysize,replybuffer);
@@ -406,7 +406,7 @@ void ClientData::RemoveRequests()
 
 
 // Handle device list requests.
-int
+void
 ClientData::HandleListRequest(player_device_devlist_t *req,
                               player_device_devlist_t *rep)
 {
@@ -431,9 +431,6 @@ ClientData::HandleListRequest(player_device_devlist_t *req,
 
   // Do some byte swapping.
   rep->device_count = htons(rep->device_count);
-
-  return(sizeof(rep->device_count) + 
-         sizeof(player_device_id_t) * rep->device_count);
 }
 
 

@@ -156,6 +156,8 @@ class MessageQueue
     size_t Maxlen;
     /// Should we replace messages with newer ones from same device?
     bool Replace;
+    /// Current length of queue, in elements.
+    size_t Length;
 };
 
 #endif

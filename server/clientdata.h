@@ -93,8 +93,8 @@ class ClientData
 		   unsigned char* payload,
                    unsigned int payload_size);
     /// Handle device list requests.
-    int HandleListRequest(player_device_devlist_t *req,
-                          player_device_devlist_t *rep);
+    void HandleListRequest(player_device_devlist_t *req,
+                           player_device_devlist_t *rep);
     /// Handle driver info requests.
     void HandleDriverInfoRequest(player_device_driverinfo_t *req,
                                  player_device_driverinfo_t *rep);

@@ -58,6 +58,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   snprintf(label, sizeof(label), "laser:%d (%s)", index, laser->drivername);
   laser->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   laser->subscribe_item = rtk_menuitem_create(laser->menu, "Subscribe", 1);
+#if 0
   laser->res025_item = rtk_menuitem_create(laser->menu, "0.25 deg resolution", 1);
   laser->res050_item = rtk_menuitem_create(laser->menu, "0.50 deg resolution", 1);
   laser->res100_item = rtk_menuitem_create(laser->menu, "1.00 deg resolution", 1);
@@ -65,6 +66,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   laser->range_mm_item = rtk_menuitem_create(laser->menu, "mm Range Resolution",1);
   laser->range_cm_item = rtk_menuitem_create(laser->menu, "cm Range Resolution",1);
   laser->range_dm_item = rtk_menuitem_create(laser->menu, "dm Range Resolution",1);
+#endif
 
   // Set the initial menu state
   rtk_menuitem_check(laser->subscribe_item, subscribe);
@@ -85,12 +87,14 @@ void laser_destroy(laser_t *laser)
 
   rtk_fig_destroy(laser->scan_fig);
 
+#if 0
   rtk_menuitem_destroy(laser->res025_item);
   rtk_menuitem_destroy(laser->res050_item);
   rtk_menuitem_destroy(laser->res100_item);
   rtk_menuitem_destroy(laser->range_mm_item);
   rtk_menuitem_destroy(laser->range_cm_item);
   rtk_menuitem_destroy(laser->range_dm_item);
+#endif
   rtk_menuitem_destroy(laser->subscribe_item);
   rtk_menu_destroy(laser->menu);
 
@@ -129,9 +133,12 @@ void laser_update(laser_t *laser)
   }
   rtk_menuitem_check(laser->subscribe_item, laser->proxy->info.subscribed);
 
+  // Making config changes here causes X to go nuts.  Don't know why - BPG
+#if 0
   // Update the configuration stuff
-  //if (laser->proxy->info.subscribed)
-  //laser_update_config(laser);
+  if (laser->proxy->info.subscribed)
+    laser_update_config(laser);
+#endif
   
   if (laser->proxy->info.subscribed)
   {

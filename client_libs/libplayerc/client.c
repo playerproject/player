@@ -309,14 +309,14 @@ void *playerc_client_read(playerc_client_t *client)
 
 
 // Write a command
+// TODO: expose the subtype here.
 int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
                          void *cmd, int len)
 {
   player_msghdr_t header;
 
-  //if (!(device->access == PLAYER_WRITE_MODE || device->access == PLAYER_ALL_MODE))
-  //  PLAYERC_WARN("writing to device without write permission");
-    
+  memset(&header,0,sizeof(player_msghdr_t));
+
   header.stx = PLAYER_STXX;
   header.type = PLAYER_MSGTYPE_CMD;
   header.device = device->code;
