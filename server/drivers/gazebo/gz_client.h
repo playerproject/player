@@ -39,7 +39,7 @@ typedef struct gz_sim gz_sim_t;
 class GzClient
 {
   // Initialize 
-  public: static int Init(const char *serverid, const char *prefixid);
+  public: static int Init(int serverid, const char *prefixid);
 
   // Finalize
   public: static int Fini();
