@@ -1,8 +1,13 @@
+;
+; simple sonar-based obstacle avoidance
+;
+
 (load "playerclient.lisp")
 
-(setq client (player-connect "phat" 6665))
+(setq client (player-connect "ant"))
 (player-open-sonar client)
 (player-open-position client)
+(player-set-motorpower client 1)
 (setq mindist 400)
 
 (let ((avoidcount 0))
