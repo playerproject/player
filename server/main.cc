@@ -364,6 +364,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         case PLAYER_IDARTURRET_CODE:
         case PLAYER_DESCARTES_CODE:
         case PLAYER_MOTE_CODE:
+        case PLAYER_POWER_CODE:
         {
           // Create a StageDevice with this IO base address and filedes
           dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
@@ -445,7 +446,6 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 
           // devices not implemented
         case PLAYER_AUDIO_CODE:   
-        case PLAYER_POWER_CODE:
         case PLAYER_AIO_CODE:
         case PLAYER_DIO_CODE:
         case PLAYER_BUMPER_CODE:
