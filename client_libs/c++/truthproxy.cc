@@ -136,7 +136,7 @@ int TruthProxy::SetPoseOnRoot( double px, double py, double pa )
   config.py = htonl((int) (py * 1000));
   config.pa = htonl((int) (pa * 180 / M_PI)); 
   
-  len = client->Request( PLAYER_TRUTH_CODE, index, 
+  len = client->Request( m_device_id,
 			 (const char*)&config, sizeof(config));
   if (len < 0)
     return -1;

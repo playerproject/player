@@ -1304,6 +1304,9 @@ class TruthProxy : public ClientProxy
   */
   int SetPose( double px, double py, double pa );
 
+  /** ???
+   */
+  int SetPoseOnRoot( double px, double py, double pa );
 
   /** Request the value returned by a fiducialfinder (and possibly a
       foofinser, depending on its mode), when detecting this
