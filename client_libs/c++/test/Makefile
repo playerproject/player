@@ -12,8 +12,8 @@ OBS = test.o test_gps.o test_position.o test_sonar.o test_misc.o \
       test_lbd.o test_broadcast.o test_gripper.o
 
 INCLUDES = -I. -I.. -I../../c -I../../../include
-CFLAGS = -g3 -Wall $(INCLUDES)
-LFLAGS = -L.. -lplayerclient -lm
+CFLAGS += $(INCLUDES)
+LFLAGS = -L.. -lplayerclient -lm $(PLATFORM_LIBS)
 LIB = ../libplayerclient.a
 
 

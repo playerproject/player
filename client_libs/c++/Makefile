@@ -24,27 +24,47 @@ C_CLIENT_OBJ = playercclient.o
 $(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	ar cr $@ $(OBS) ../c/playercclient.o
 	$(MKDIR) -p ../../lib
-	$(LN) -fs $(PWD)/$@ ../../lib
+	$(RM) -f ../../lib/$@
+	$(LN) -s $(PWD)/$@ ../../lib
 	$(MKDIR) -p ../../include
-	$(LN) -fs $(PWD)/../c/playercclient.h ../../include
-	$(LN) -fs $(PWD)/playerclient.h ../../include
-	$(LN) -fs $(PWD)/clientproxy.h ../../include
-	$(LN) -fs $(PWD)/gripperproxy.h ../../include
-	$(LN) -fs $(PWD)/laserbeaconproxy.h ../../include
-	$(LN) -fs $(PWD)/laserproxy.h ../../include
-	$(LN) -fs $(PWD)/miscproxy.h ../../include
-	$(LN) -fs $(PWD)/positionproxy.h ../../include
-	$(LN) -fs $(PWD)/ptzproxy.h ../../include
-	$(LN) -fs $(PWD)/sonarproxy.h ../../include
-	$(LN) -fs $(PWD)/speechproxy.h ../../include
-	$(LN) -fs $(PWD)/visionproxy.h ../../include
-	$(LN) -fs $(PWD)/truthproxy.h ../../include
-	$(LN) -fs $(PWD)/occupancyproxy.h ../../include
-	$(LN) -fs $(PWD)/gpsproxy.h ../../include
-	$(LN) -fs $(PWD)/bpsproxy.h ../../include
-	$(LN) -fs $(PWD)/playermulticlient.h ../../include
-	$(LN) -fs $(PWD)/broadcastproxy.h ../../include
-	$(LN) -fs $(PWD)/moteproxy.h ../../include
+	$(RM) -f ../../include/playercclient.h 
+	$(LN) -s $(PWD)/../c/playercclient.h ../../include
+	$(RM) -f ../../include/playerclient.h 
+	$(LN) -s $(PWD)/playerclient.h ../../include
+	$(RM) -f ../../include/clientproxy.h 
+	$(LN) -s $(PWD)/clientproxy.h ../../include
+	$(RM) -f ../../include/gripperproxy.h 
+	$(LN) -s $(PWD)/gripperproxy.h ../../include
+	$(RM) -f ../../include/laserbeaconproxy.h 
+	$(LN) -s $(PWD)/laserbeaconproxy.h ../../include
+	$(RM) -f ../../include/laserproxy.h 
+	$(LN) -s $(PWD)/laserproxy.h ../../include
+	$(RM) -f ../../include/miscproxy.h 
+	$(LN) -s $(PWD)/miscproxy.h ../../include
+	$(RM) -f ../../include/positionproxy.h 
+	$(LN) -s $(PWD)/positionproxy.h ../../include
+	$(RM) -f ../../include/ptzproxy.h 
+	$(LN) -s $(PWD)/ptzproxy.h ../../include
+	$(RM) -f ../../include/sonarproxy.h 
+	$(LN) -s $(PWD)/sonarproxy.h ../../include
+	$(RM) -f ../../include/speechproxy.h 
+	$(LN) -s $(PWD)/speechproxy.h ../../include
+	$(RM) -f ../../include/visionproxy.h 
+	$(LN) -s $(PWD)/visionproxy.h ../../include
+	$(RM) -f ../../include/truthproxy.h 
+	$(LN) -s $(PWD)/truthproxy.h ../../include
+	$(RM) -f ../../include/occupancyproxy.h 
+	$(LN) -s $(PWD)/occupancyproxy.h ../../include
+	$(RM) -f ../../include/gpsproxy.h 
+	$(LN) -s $(PWD)/gpsproxy.h ../../include
+	$(RM) -f ../../include/bpsproxy.h 
+	$(LN) -s $(PWD)/bpsproxy.h ../../include
+	$(RM) -f ../../include/playermulticlient.h 
+	$(LN) -s $(PWD)/playermulticlient.h ../../include
+	$(RM) -f ../../include/broadcastproxy.h 
+	$(LN) -s $(PWD)/broadcastproxy.h ../../include
+	$(RM) -f ../../include/moteproxy.h 
+	$(LN) -s $(PWD)/moteproxy.h ../../include
 
 $(C_CLIENT_DIR)/$(C_CLIENT_OBJ):
 	cd $(C_CLIENT_DIR) && make $(C_CLIENT_OBJ)
