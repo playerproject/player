@@ -11,7 +11,7 @@ import os, termios, select
 import socket
 import sys
 import time
-
+import getopt
 
 
 # DGPS server class
@@ -19,11 +19,12 @@ class DGPSServer:
     """ Collect DGPS corrections from a base-station and broadcast
     them over the network using UDP.  """
 
-    def __init__(self, serial_port, udp_ip, udp_port):
+    def __init__(self, serial_port, udp_ip, udp_port, options):
 
         self.serial_port = serial_port
         self.udp_ip = udp_ip
         self.udp_port = udp_port
+        self.options = options
 
         self.udp_open()
         self.serial_open()
@@ -38,7 +39,12 @@ class DGPSServer:
         counter = 0
         while 1:
 
-            data = self.serial_read()
+            if '--test-udp' in self.options:
+                time.sleep(1)
+                data = 'test msg %d\0' % counter
+            else:
+                data = self.serial_read()
+
             self.udp_write(data)
 
             counter += 1
@@ -98,8 +104,14 @@ if __name__ == '__main__':
     serial_port = '/dev/ttyS0'
     udp_ip = '225.0.0.43'
     udp_port = 7778
+    options = []
 
-    server = DGPSServer(serial_port, udp_ip, udp_port)
+    # Get cmd line args
+    (opts, args) = getopt.getopt(sys.argv[1:], '', ['test-udp'])
+    for opt in opts:
+        options.append(opt[0])
+
+    server = DGPSServer(serial_port, udp_ip, udp_port, options)
 
     try:
         server.main()
