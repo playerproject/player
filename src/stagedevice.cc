@@ -131,7 +131,7 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size,
                         uint32_t* timestamp_usec)
 {
   Lock();
-#ifdef DEBUG
+//#ifdef DEBUG
   printf( "P: getting (%d,%d,%d) info at %p, data at %p, buffer len %d, %d bytes available, size parameter %d\n", 
           m_info->player_id.port, 
           m_info->player_id.type, 
@@ -141,7 +141,7 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size,
           m_info->data_avail,
           size );
   fflush( stdout );
-#endif
+//#endif
 
   // See if there is any data
   //

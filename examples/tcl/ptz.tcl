@@ -32,17 +32,10 @@
 # to get the 'sleep' command
 package require Tclx
 
-set PLAYER_VERSION 1.2-alpha
-
 #
 # get the robot client utilities
-if {[file exists ../../fclient_libs/tcl/playerclient.tcl]} {
-  source ../../client_libs/tcl/playerclient.tcl
-} elseif {[file exists ../../lib/playerclient.tcl]} {
-  source ../../lib/playerclient.tcl
-} else { 
-  source /usr/local/player-${PLAYER_VERSION}/lib/playerclient.tcl
-}
+lappend auto_path ../../client_libs
+package require Tclplayer
 
 set USAGE "USAGE: ptz.tcl \[-h <host>\] \[-p <port>\]"
 
