@@ -21,6 +21,7 @@
 #include <signal.h>
 #include <string.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include "playernav.h"
 
@@ -29,6 +30,8 @@
 // flag and index for robot currently being moved by user (if any)
 int robot_moving_p;
 int robot_moving_idx;
+
+double dumpfreq;
 
 static void
 _interrupt_callback(int signum)
@@ -44,6 +47,9 @@ player_read_func(gpointer* arg)
   static int count=0;
   pose_t robot_pose;
   gui_data_t* gui_data = (gui_data_t*)arg;
+  static struct timeval last = {0, 0};
+  struct timeval curr;
+  double diff;
 
   // read new data
   if(playerc_mclient_read(gui_data->mclient,10) < 0)
@@ -105,6 +111,19 @@ player_read_func(gpointer* arg)
       }
     }
   }
+
+  // dump screenshot
+  if(dumpfreq > 0)
+  {
+    gettimeofday(&curr,NULL);
+    diff = (curr.tv_sec + curr.tv_usec/1e6) - (last.tv_sec + last.tv_usec/1e6);
+    if(diff > 1.0/dumpfreq)
+    {
+      dump_screenshot(gui_data);
+      last = curr;
+    }
+  }
+
   count++;
   return(TRUE);
 }

@@ -19,6 +19,7 @@ static gboolean dragging=FALSE;
 static gboolean setting_theta=FALSE;
 static gboolean setting_goal=FALSE;
 
+extern double dumpfreq;
 
 /*
  * handle quit events, by setting a flag that will make the main loop exit
@@ -29,6 +30,18 @@ _quit_callback(GtkWidget *widget,
                gpointer data)
 {
   gtk_main_quit();
+  return(TRUE);
+}
+
+static gboolean 
+_toggle_dump(GtkWidget *widget,
+             GdkEvent *event,
+             gpointer data)
+{
+  if(!dumpfreq)
+    dumpfreq = 1.0;
+  else
+    dumpfreq = 0.0;
   return(TRUE);
 }
 
@@ -308,6 +321,7 @@ make_menu(gui_data_t* gui_data)
   //GtkMenuItem* open_item;
   //GtkMenuItem* save_item;
   GtkMenuItem* quit_item;
+  GtkMenuItem* dump_item;
   GtkMenuItem* file_item;
 
   file_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
@@ -315,11 +329,13 @@ make_menu(gui_data_t* gui_data)
   /* Create the menu items */
   //open_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Open");
   //save_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Save");
+  dump_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Toggle screenshots");
   quit_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Quit");
 
   /* Add them to the menu */
   //gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)open_item);
   //gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)save_item);
+  gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)dump_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)quit_item);
 
   /* Attach the callback functions to the
@@ -338,10 +354,14 @@ make_menu(gui_data_t* gui_data)
   g_signal_connect_swapped (G_OBJECT (quit_item), "activate",
                             G_CALLBACK(_quit_callback),
                             (gpointer) "file.quit");
+  g_signal_connect_swapped (G_OBJECT (dump_item), "activate",
+                            G_CALLBACK(_toggle_dump),
+                            (gpointer) "file.dump");
 
   /* We do need to show menu items */
   //gtk_widget_show((GtkWidget*)open_item);
   //gtk_widget_show((GtkWidget*)save_item);
+  gtk_widget_show((GtkWidget*)dump_item);
   gtk_widget_show((GtkWidget*)quit_item);
 
   menu_bar = (GtkMenuBar*)gtk_menu_bar_new ();
@@ -779,6 +799,34 @@ draw_waypoints(gui_data_t* gui_data, int idx)
 
     gnome_canvas_points_unref(points);
     gnome_canvas_points_unref(linepoints);
+  }
+}
+
+
+void
+dump_screenshot(gui_data_t* gui_data)
+{
+  static int idx = 0;
+  GdkWindow* win;
+  GdkPixbuf* screenshot;
+  char fname[PATH_MAX];
+  gint width, height;
+  
+  g_assert((win = ((GtkWidget*)gui_data->main_window)->window));
+  if(gdk_window_is_viewable(win))
+  {
+    gtk_window_get_size(gui_data->main_window, &width, &height);
+    g_assert((screenshot = gdk_pixbuf_get_from_drawable(NULL,(GdkDrawable*)win,
+                                                        gdk_colormap_get_system(),
+                                                        0,0,0,0,
+                                                        width,height)));
+    sprintf(fname,"playernav-img-%04d.png",idx);
+    printf("writing screenshot to %s\n", fname);
+    if(!(gdk_pixbuf_save(screenshot, fname, "png", NULL, NULL)))
+      puts("FAILED");
+
+    g_object_unref(screenshot);
+    idx++;
   }
 }
 

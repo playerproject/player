@@ -70,6 +70,7 @@ void item_to_meters(GnomeCanvasItem* item,
                     double* dx, double* dy, 
                     double ix, double iy);
 void draw_waypoints(gui_data_t* gui_data, int idx);
+void dump_screenshot(gui_data_t* gui_data);
 
 playerc_mclient_t* init_player(playerc_client_t** clients,
                                playerc_map_t** maps,
