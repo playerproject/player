@@ -201,6 +201,10 @@ class ReadLog: public Driver
   private: int ParseLaser(player_device_id_t id, int linenum,
                           int token_count, char **tokens, struct timeval time);
 
+  // Parse sonar data
+  private: int ParseSonar(player_device_id_t id, int linenum,
+                          int token_count, char **tokens, struct timeval time);
+
   // Parse position data
   private: int ParsePosition(player_device_id_t id, int linenum,
                              int token_count, char **tokens, struct timeval time);
@@ -220,6 +224,8 @@ class ReadLog: public Driver
   // List of provided devices
   private: int provide_count;
   private: player_device_id_t provide_ids[1024];
+  // spots to cache metadata for a device (e.g., sonar geometry)
+  private: void* provide_metadata[1024];
 
   // The log interface (at most one of these)
   private: player_device_id_t log_id;
@@ -286,11 +292,12 @@ void ReadLog_Register(DriverTable* table)
 ReadLog::ReadLog(ConfigFile* cf, int section)
     : Driver(cf, section)
 {  
-  int i;
+  int i,j;
   player_device_id_t id;
 
   this->provide_count = 0;
   memset(&this->log_id, 0, sizeof(this->log_id));
+  memset(this->provide_metadata,0,sizeof(this->provide_metadata));
 
   // Get a list of devices to provide
   for (i = 0; i < 1024; i++)
@@ -319,9 +326,23 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
     if (this->AddInterface(this->provide_ids[i], PLAYER_ALL_MODE,
                            PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1) != 0)
     {
+      for(j=0;j<this->provide_count;j++)
+      {
+        // free any allocated metadata slots
+        if(this->provide_metadata[j])
+        {
+          free(provide_metadata[j]);
+          provide_metadata[j] = NULL;
+        }
+      }
       this->SetError(-1);
       return;
     }
+
+    // if it's sonar, then make a spot to cache geometry info
+    if(this->provide_ids[i].code == PLAYER_SONAR_CODE)
+      assert((this->provide_metadata[i] = 
+              calloc(sizeof(player_sonar_geom_t),1)));
   }
 
   // Get replay options
@@ -684,12 +705,13 @@ int ReadLog::ProcessLogConfig()
 // Process generic requests
 int ReadLog::ProcessOtherConfig()
 {
-  int i;
+  int i,j;
   player_device_id_t id;
   char src[PLAYER_MAX_REQREP_SIZE];
   void *client;
   struct timeval time;
   size_t len;
+  size_t replen;
   
   // Check for request on all interfaces
   for (i = 0; i < this->provide_count; i++)
@@ -702,8 +724,36 @@ int ReadLog::ProcessOtherConfig()
     if (len == 0)
       continue;
 
-    if (this->PutReply(id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
+    // we handle sonar geometry requests
+    if((id.code == PLAYER_SONAR_CODE) && 
+       (((player_sonar_geom_t*)src)->subtype == PLAYER_SONAR_GET_GEOM_REQ))
+    {
+      player_sonar_geom_t* geom = 
+              (player_sonar_geom_t*)this->provide_metadata[i];
+      assert(geom);
+      player_sonar_geom_t rep;
+      rep.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+      rep.pose_count = htons(geom->pose_count);
+      for(j=0;j<geom->pose_count;j++)
+      {
+        rep.poses[j][0] = htons(geom->poses[j][0]);
+        rep.poses[j][1] = htons(geom->poses[j][1]);
+        rep.poses[j][2] = htons(geom->poses[j][2]);
+      }
+      replen = sizeof(uint8_t) + sizeof(uint16_t) + 
+              (geom->pose_count * 3 * sizeof(int16_t));
+
+      // TODO: handle timestamps more intelligently here.
+      if (this->PutReply(id, client, PLAYER_MSGTYPE_RESP_ACK, 
+                         (void*)&rep, replen, NULL) != 0)
+        PLAYER_ERROR("PutReply() failed");
+    }
+    // we don't handle any other requests
+    else
+    {
+      if (this->PutReply(id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
+        PLAYER_ERROR("PutReply() failed");
+    }
   }
 
   return 0;
@@ -787,6 +837,8 @@ int ReadLog::ParseData(player_device_id_t id, int linenum,
     return this->ParseJoystick(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_LASER_CODE)
     return this->ParseLaser(id, linenum, token_count, tokens, time);
+  else if (id.code == PLAYER_SONAR_CODE)
+    return this->ParseSonar(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_POSITION_CODE)
     return this->ParsePosition(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_POSITION3D_CODE)
@@ -1060,6 +1112,41 @@ int ReadLog::ParseLaser(player_device_id_t id, int linenum,
   */
 
   this->PutData(id, &data, sizeof(data), &time);
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse sonar data
+int ReadLog::ParseSonar(player_device_id_t id, int linenum,
+                               int token_count, char **tokens, struct timeval time)
+{
+  int i;
+  int idx = -1;
+
+  // finding matching id in provide_ids, to get the right slot in
+  // provide_metadata.
+  for(i=0;i<this->provide_count;i++)
+  {
+    // we already know it's sonar, just check index and port
+    if((this->provide_ids[i].index == id.index) && 
+       (this->provide_ids[i].port == id.port))
+    {
+      idx = i;
+      break;
+    }
+  }
+
+  if(idx < 0)
+  {
+    PLAYER_ERROR("couldn't find sonar id in list");
+    return -1;
+  }
+
+
+  // parse and cache sonar geom into this->provide_metadata[idx]
+
+  // parse and put sonar data
 
   return 0;
 }
