@@ -49,11 +49,16 @@ foreach fname $argv {
 
 foreach fname $argv {
   set robottype [file rootname [file tail $fname]]
-  # take out + characters, which will cause invalid C syntax
+  # take out + and - characters, which will cause invalid C syntax
   set idx [string first "+" $robottype]
   while {$idx >= 0} {
     set robottype [string replace $robottype $idx $idx "plus"]
     set idx [string first "+" $robottype]
+  }
+  set idx [string first "-" $robottype]
+  while {$idx >= 0} {
+    set robottype [string replace $robottype $idx $idx "_"]
+    set idx [string first "-" $robottype]
   }
 
   lappend robotlist $robottype
