@@ -262,7 +262,7 @@ def make_defines(file, section, blocks, index):
     
     block = blocks[index]
 
-    index += 1
+    #index += 1
     item_count = 0
     while index < len(blocks):
         block = blocks[index]

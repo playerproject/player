@@ -79,35 +79,32 @@
 class rmp_frame_t
 {
   public:
-    int16_t     	pitch;
-    int16_t	pitch_dot;
-    int16_t     	roll;
-    int16_t     	roll_dot;
-    int32_t      	yaw;
-    int16_t	yaw_dot;
-    int32_t      	left;
-    int16_t      	left_dot;
-    int32_t      	right;
-    int16_t      	right_dot;
-    int32_t      	foreaft;
+    int16_t pitch;
+    int16_t pitch_dot;
+    int16_t roll;
+    int16_t roll_dot;
+    uint32_t yaw;
+    int16_t yaw_dot;
+    uint32_t left;
+    int16_t left_dot;
+    uint32_t right;
+    int16_t right_dot;
+    uint32_t foreaft;
 
-    uint16_t     	frames;
-    uint16_t	battery;
-    uint8_t	ready;
+    uint16_t frames;
+    uint16_t battery;
+    uint8_t  ready;
 
-  /*  rmp_frame_t() : pitch(0.0), pitch_dot(0.0),
-      roll(0.0), roll_dot(0.0),
-      yaw_dot(0.0), left(0),
-      left_dot(0), right(0),
-      right_dot(0), travel(0),
-      turn(0), frames(0),
-      battery(0), ready(0) {}
-  */
     rmp_frame_t() : ready(0) {}
 
+    // Adds a new packet to this frame
     void AddPacket(const CanPacket &pkt);
+
+    // Is this frame ready (i.e., did we get all 5 messages)?
     bool IsReady() { return ready == 0x1F; }
+
 };
+    
 
 /* Takes a CAN packet from the RMP and parses it into a
  * rmp_frame_t struct.  sets the ready bitfield 
@@ -143,16 +140,16 @@ rmp_frame_t::AddPacket(const CanPacket &pkt)
       break;
 
     case RMP_CAN_ID_MSG4:
-      left = (int32_t)(((uint32_t)pkt.GetSlot(1) << 16) | 
-                       (uint32_t)pkt.GetSlot(0));
-      right = (int32_t)(((uint32_t)pkt.GetSlot(3) << 16) | 
-                        (uint32_t)pkt.GetSlot(2));
+      left = (uint32_t)(((uint32_t)pkt.GetSlot(1) << 16) | 
+                        (uint32_t)pkt.GetSlot(0));
+      right = (uint32_t)(((uint32_t)pkt.GetSlot(3) << 16) | 
+                         (uint32_t)pkt.GetSlot(2));
       break;
 
     case RMP_CAN_ID_MSG5:
-      foreaft = (int32_t) (((uint32_t)pkt.GetSlot(1) << 16) | 
+      foreaft = (uint32_t)(((uint32_t)pkt.GetSlot(1) << 16) | 
                            (uint32_t)pkt.GetSlot(0));
-      yaw = (int32_t) (((uint32_t)pkt.GetSlot(3) << 16) | 
+      yaw = (uint32_t)(((uint32_t)pkt.GetSlot(3) << 16) | 
                        (uint32_t)pkt.GetSlot(2));
       break;
     default:
@@ -184,6 +181,8 @@ class SegwayRMP : public CDevice
     player_power_data_t power_data;
 
   private: 
+    bool firstread;
+
     DualCANIO *canio;
 
     int16_t last_xspeed, last_yawspeed;
@@ -194,8 +193,10 @@ class SegwayRMP : public CDevice
 
     uint16_t interface_code;
 
+    // For handling rollover
+    uint32_t last_raw_yaw, last_raw_left, last_raw_right, last_raw_foreaft;
+
     // Odometry calculation
-    double odom_lin, odom_ang;
     double odom_x, odom_y, odom_yaw;
 
     // helper to handle config requests
@@ -203,6 +204,10 @@ class SegwayRMP : public CDevice
 
     // helper to read a cycle of data from the RMP
     int Read();
+    
+    // Calculate the difference between two raw counter values, taking care
+    // of rollover.
+    int Diff(uint32_t from, uint32_t to, bool first);
 
     // helper to write a packet
     int Write(CanPacket& pkt);
@@ -246,14 +251,11 @@ void SegwayRMP_Register(DriverTable* table)
 }
 
 SegwayRMP::SegwayRMP(uint16_t code, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position_data_t), 
-              sizeof(player_position_cmd_t), 10, 10)
+    : CDevice(sizeof(player_position3d_data_t), 
+              sizeof(player_position3d_cmd_t), 10, 10)
 {
-  last_xspeed = last_yawspeed = 0;
-  canio = NULL;
-  motor_enabled = false;
   interface_code = code;
-
+  canio = NULL;
   caniotype = cf->ReadString(section, "canio", "kvaser");
 }
 
@@ -285,7 +287,10 @@ SegwayRMP::Setup()
 
   // Initialize odometry
   this->odom_x = this->odom_y = this->odom_yaw = 0.0;
-  this->odom_lin = this->odom_ang = 0.0;
+
+  last_xspeed = last_yawspeed = 0;
+  motor_enabled = false;
+  firstread = true;
 
   StartThread();
 
@@ -299,9 +304,17 @@ SegwayRMP::Shutdown()
 {
   printf("segwayrmp: Shutting down CAN bus...");
   fflush(stdout);
+
   
   // TODO: segfaulting in here somewhere on client disconnect, but only 
-  // sometimes.
+  // sometimes.  
+  //
+  // UPDATE: This might have been fixed by moving the call to StopThread()
+  // to before the sending of zero velocities.   There could have been
+  // a race condition, since Shutdown() is called from the server's thread 
+  // context.
+
+  StopThread();
   
   // send zero velocities, for some semblance of safety
   CanPacket pkt;
@@ -311,10 +324,8 @@ SegwayRMP::Shutdown()
 
   // shutdown the CAN
   canio->Shutdown();
-  StopThread();
   delete canio;
-  motor_enabled = false;
-  last_xspeed = last_yawspeed = 0;
+  canio = NULL;
   
   puts("done.");
   return(0);
@@ -611,7 +622,7 @@ SegwayRMP::Read()
   int channel;
   int ret;
   rmp_frame_t data_frame[2];
-  double new_lin, new_ang;
+  int delta_lin_raw, delta_ang_raw;
   double delta_lin, delta_ang;
 
   data_frame[0].ready = 0;
@@ -639,69 +650,48 @@ SegwayRMP::Read()
         // from channel 1.
         if(channel == 1)
         {
+          // Get the new linear and angular encoder values and compute
+          // odometry.  Note that we do the same thing here, regardless of 
+          // whether we're presenting 2D or 3D position info.
+          delta_lin_raw = Diff(this->last_raw_foreaft,
+                               data_frame[channel].foreaft,
+                               this->firstread);
+          this->last_raw_foreaft = data_frame[channel].foreaft;
+
+          delta_ang_raw = Diff(this->last_raw_yaw,
+                               data_frame[channel].yaw,
+                               this->firstread);
+          this->last_raw_yaw = data_frame[channel].yaw;
+
+          delta_lin = (double)delta_lin_raw / (double)RMP_COUNT_PER_M;
+          delta_ang = (double)delta_ang_raw / (double)RMP_COUNT_PER_REV;
+                  
+          // First-order odometry integration
+          this->odom_x += delta_lin * cos(this->odom_yaw);
+          this->odom_y += delta_lin * sin(this->odom_yaw);
+          this->odom_yaw += delta_ang;
+
+          // Normalize yaw in [0, 360]
+          this->odom_yaw = atan2(sin(this->odom_yaw), cos(this->odom_yaw));
+          if (this->odom_yaw < 0)
+            this->odom_yaw += 2 * M_PI;
+
           // Are we presenting 2D or 3D info?
           if(interface_code == PLAYER_POSITION_CODE)
           {
+            position_data.xpos = htonl(((int32_t)this->odom_x * 1000));
+            position_data.ypos = htonl(((int32_t)this->odom_y * 1000));
+            position_data.yaw = htonl(((int32_t)(this->odom_yaw / M_PI * 180)));
 
-            // Get the new linear and angular encoder values
-	    //printf("foreaft: %d\tyaw: %d\n",
-              //data_frame[channel].foreaft,data_frame[channel].yaw);
-            new_lin = (double) data_frame[channel].foreaft / ((double) RMP_COUNT_PER_M);
-            new_ang = (double) data_frame[channel].yaw / (double) RMP_COUNT_PER_REV * 2 * M_PI;
-
-            delta_lin = new_lin - this->odom_lin;
-            delta_ang = new_ang - this->odom_ang;
-
-            // First-order odometry integration
-            this->odom_x += delta_lin * cos(this->odom_yaw);
-            this->odom_y += delta_lin * sin(this->odom_yaw);
-            this->odom_yaw += delta_ang;
-
-            // Normalize yaw in [0, 360]
-            this->odom_yaw = atan2(sin(this->odom_yaw), cos(this->odom_yaw));
-            if (this->odom_yaw < 0)
-              this->odom_yaw += 2 * M_PI;
-
-            position_data.xpos = htonl(((int32_t) this->odom_x * 1000));
-            position_data.ypos = htonl(((int32_t) this->odom_y * 1000));
-            position_data.yaw = htonl(((int32_t) (this->odom_yaw / M_PI * 180)));
-
+            /*
             printf("old %f %f : new %f %f : delta %f %f : odom %.2f %.2f %.2f\n",
                    this->odom_lin, this->odom_ang,
                    new_lin, new_ang,
                    delta_lin, delta_ang,
                    this->odom_x, this->odom_y, this->odom_yaw * 180 / M_PI);
+                   */
             
 
-            this->odom_lin = new_lin;
-            this->odom_ang = new_ang;
-            
-
-            /*
-            //
-            // xpos is fore/aft integrated position?
-            // change from counts to mm
-            position_data.xpos = 
-                    htonl((uint32_t)rint((double)data_frame[channel].foreaft / 
-                                         ((double)RMP_COUNT_PER_M/1000.0)));
-
-            // ypos is going to be pitch for now...
-            // change from counts to milli-degrees
-            position_data.ypos = 
-                    htonl((uint32_t)rint(((double)data_frame[channel].pitch / 
-                                          (double)RMP_COUNT_PER_DEG) 
-                                         * 1000.0));
-
-            // yaw is integrated yaw
-            // not sure about this one..
-            // from counts to degrees.
-            // TODO: handle rollover of yaw counter.
-            position_data.yaw = 
-                    htonl(((uint32_t) rint(((double)data_frame[channel].yaw /
-                                            (double)RMP_COUNT_PER_REV) * 360.0))
-                          % 360);
-            */
-            
             // combine left and right wheel velocity to get foreward velocity
             // change from counts/s into mm/s
             position_data.xspeed = 
@@ -716,47 +706,30 @@ SegwayRMP::Read()
             // from counts/sec into deg/sec.  also, take the additive
             // inverse, since the RMP reports clockwise angular velocity as
             // positive.
-            position_data.yawspeed = 
-                    htonl((uint32_t)(-rint((double)data_frame[channel].yaw_dot / 
-                                           (double)RMP_COUNT_PER_DEG_PER_S)));
+            position_data.yawspeed =
+                    htonl((int32_t)(-rint((double)data_frame[channel].yaw_dot / 
+                                          (double)RMP_COUNT_PER_DEG_PER_S)));
 
             position_data.stall = 0;
-
-            // TODO: fill in power_data
           }
           else if(interface_code == PLAYER_POSITION3D_CODE)
           {
-            //
-            // xpos is fore/aft integrated position?
-            // change from counts to mm
-            position3d_data.xpos = 
-                    htonl((uint32_t)rint((double)data_frame[channel].foreaft / 
-                                         ((double)RMP_COUNT_PER_M/1000.0)));
-
-            // ypos is going to be pitch for now...
-            // change from counts to milli-degrees
-            position3d_data.ypos = 
-                    htonl((uint32_t)rint(((double)data_frame[channel].pitch / 
-                                          (double)RMP_COUNT_PER_DEG) 
-                                         * 1000.0));
-
+            position3d_data.xpos = htonl(((int32_t)this->odom_x * 1000));
+            position3d_data.ypos = htonl(((int32_t)this->odom_y * 1000));
+            // this robot doesn't fly
             position3d_data.zpos = 0;
             
-            // TODO: fill this in
-            position3d_data.roll = 0;
-            
-            // TODO: fill this in
-            position3d_data.pitch = 0;
-
-            // yaw is integrated yaw
-            // not sure about this one..
-            // from counts to degrees.
-            // TODO: handle rollover of yaw counter.
+            position3d_data.roll = 
+                    htonl((int32_t)rint((double)data_frame[channel].roll /
+                                        (double)RMP_COUNT_PER_DEG
+                                        * 3600.0));
+            position3d_data.pitch = 
+                    htonl((int32_t)rint((double)data_frame[channel].pitch /
+                                        (double)RMP_COUNT_PER_DEG
+                                        * 3600.0));
             position3d_data.yaw = 
-                    htonl(((uint32_t) rint(((double)data_frame[channel].yaw /
-                                            (double)RMP_COUNT_PER_REV) * 360.0))
-                          % 360);
-
+                    htonl(((int32_t)(this->odom_yaw / M_PI * 180 * 3600.0)));
+            
             // combine left and right wheel velocity to get foreward velocity
             // change from counts/s into mm/s
             position3d_data.xspeed = 
@@ -764,31 +737,35 @@ SegwayRMP::Read()
                                           (double)data_frame[channel].right_dot) /
                                          (double)RMP_COUNT_PER_M_PER_S 
                                          * 1000.0 / 2.0));
-
             // no side or vertical speeds for this bot
             position3d_data.yspeed = 0;
             position3d_data.zspeed = 0;
             
-            // TODO: fill this in
-            position3d_data.rollspeed = 0;
-            
-            // TODO: fill this in
-            position3d_data.pitchspeed = 0;
-
-            // from counts/sec into deg/sec.  also, take the additive
+            position3d_data.rollspeed = 
+                    htonl((int32_t)rint((double)data_frame[channel].roll_dot /
+                                        (double)RMP_COUNT_PER_DEG_PER_S
+                                        * 3600.0));
+            position3d_data.pitchspeed = 
+                    htonl((int32_t)rint((double)data_frame[channel].pitch_dot /
+                                        (double)RMP_COUNT_PER_DEG_PER_S
+                                        * 3600.0));
+            // from counts/sec into arc-seconds/sec.  also, take the additive
             // inverse, since the RMP reports clockwise angular velocity as
             // positive.
             position3d_data.yawspeed = 
-                    htonl((uint32_t)(-rint((double)data_frame[channel].yaw_dot / 
-                                           (double)RMP_COUNT_PER_DEG_PER_S)));
+                    htonl((int32_t)-rint((double)data_frame[channel].yaw_dot / 
+                                         (double)RMP_COUNT_PER_DEG_PER_S
+                                         * 3600.0));
 
             position3d_data.stall = 0;
-
-            // TODO: fill in power_data
           }
           else
             PLAYER_ERROR1("can't format data into interface %d", 
                           interface_code);
+          
+          // TODO: fill in power_data
+
+          firstread = false;
         }
 
         data_frame[channel].ready = 0;
@@ -894,4 +871,30 @@ SegwayRMP::MakeShutdownCommand(CanPacket* pkt)
 
   printf("SEGWAYIO: SHUTDOWN: pkt: %s\n",
 	 pkt->toString());
+}
+
+// Calculate the difference between two raw counter values, taking care
+// of rollover.
+int
+SegwayRMP::Diff(uint32_t from, uint32_t to, bool first)
+{
+  int diff1, diff2;
+  uint32_t max = (uint32_t)pow(2,32)-1;
+
+  // if this is the first time, report no change
+  if(first)
+    return(0);
+
+  diff1 = to - from;
+
+  /* find difference in two directions and pick shortest */
+  if(to > from)
+    diff2 = -(from + max - to);
+  else 
+    diff2 = max - from + to;
+
+  if(abs(diff1) < abs(diff2)) 
+    return(diff1);
+  else
+    return(diff2);
 }
