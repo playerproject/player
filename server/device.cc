@@ -55,6 +55,8 @@ extern CDeviceTable* deviceTable;
 CDevice::CDevice(size_t datasize, size_t commandsize, 
                  int reqqueuelen, int repqueuelen)
 {
+  this->new_style = false;
+
   device_datasize = device_used_datasize = datasize;
   if(datasize)
   {
@@ -104,7 +106,9 @@ CDevice::CDevice(size_t datasize, size_t commandsize,
 // if any of the default Put/Get methods are to be used, then storage for 
 // the buffers must allocated, and SetupBuffers() called.
 CDevice::CDevice()
-{
+{ 
+  this->new_style = false;
+
   // ensure immediate segfault in case any of these are used without
   // SetupBuffers() having been called
   device_datasize = device_commandsize = 0;
