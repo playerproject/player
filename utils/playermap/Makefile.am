@@ -2,8 +2,10 @@ SUBDIRS = . cmodules
 
 # only build if Python was found by configure
 if WITH_PYTHON
+if WITH_PLAYERMAP
 noinst_DATA = pythonbuild
 PYTHONINSTALL = pythoninstall
+endif
 endif
 
 MAPPER_FILES = setup.py __init__.py main.py gui.py logfile.py map.py robot_mapper.py team_mapper.py geo_mapper.py geom.py
