@@ -2,7 +2,6 @@ $Id$
 
 1.6 RELEASE:
 ------------
-- document .cfg syntax
 - test on Solaris
 - check compatibility with librtk 2.3.0
 
