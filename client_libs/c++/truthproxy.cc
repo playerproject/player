@@ -51,6 +51,8 @@
 #include <string.h>
 #include <math.h>
 
+// angles must be transmitted as integers on [0..359]
+#define RAD_TO_POS_DEG(x) (((((int) (x * 180 / M_PI)) % 360) + 360) % 360)
 
 void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
@@ -63,8 +65,8 @@ void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
   }
 
   // convert pos from NBO integer mm to double meters
-  x = (double)ntohl(((player_truth_data_t*)buffer)->px)  / 1000.0;
-  y = (double)ntohl(((player_truth_data_t*)buffer)->py) / 1000.0;
+  x = ((int32_t)ntohl(((player_truth_data_t*)buffer)->px)) / 1e3;
+  y = ((int32_t)ntohl(((player_truth_data_t*)buffer)->py)) / 1e3;
   // heading in NBO integer degrees to double radians
   a = DTOR((double)(int32_t)ntohl(((player_truth_data_t*)buffer)->pa));
 }
@@ -91,8 +93,8 @@ int TruthProxy::GetPose( double *px, double *py, double *pa )
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
   
-  *px = (double)(int32_t)ntohl(config.px) / 1000.0;
-  *py = (double)(int32_t)ntohl(config.py) / 1000.0;
+  *px = ((int32_t)ntohl(config.px)) / 1e3;
+  *py = ((int32_t)ntohl(config.py)) / 1e3;
   *pa = DTOR((double)(int32_t)ntohl(config.pa));
   
   // update the internal pose record too.
@@ -103,9 +105,6 @@ int TruthProxy::GetPose( double *px, double *py, double *pa )
   return 0;
 }
 
-// angles must be transmitted as integers on [0..359]
-#define RAD_TO_POS_DEG(x) (((((int) (x * 180 / M_PI)) % 360) + 360) % 360)
-
 // Set the object pose by sending a config request
 int TruthProxy::SetPose( double px, double py, double pa )
 {
@@ -113,8 +112,8 @@ int TruthProxy::SetPose( double px, double py, double pa )
   player_truth_pose_t config;
   
   config.subtype = PLAYER_TRUTH_SET_POSE;
-  config.px = htonl((int) (px * 1000));
-  config.py = htonl((int) (py * 1000));
+  config.px = htonl((int32_t)(px * 1000));
+  config.py = htonl((int32_t)(py * 1000));
   config.pa = htonl(RAD_TO_POS_DEG(pa));
   
   len = client->Request(m_device_id,
@@ -134,8 +133,8 @@ int TruthProxy::SetPoseOnRoot( double px, double py, double pa )
   player_truth_pose_t config;
   
   config.subtype = PLAYER_TRUTH_SET_POSE_ON_ROOT;
-  config.px = htonl((int) (px * 1000));
-  config.py = htonl((int) (py * 1000));
+  config.px = htonl((int32_t)(px * 1000));
+  config.py = htonl((int32_t)(py * 1000));
   config.pa = htonl(RAD_TO_POS_DEG(pa));
   
   len = client->Request( m_device_id,
@@ -183,10 +182,3 @@ int TruthProxy::SetFiducialID( int16_t id )
   // TODO: check for a NACK
   return 0;
 }
-
-
-
-
-
-
-
