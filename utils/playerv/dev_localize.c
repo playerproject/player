@@ -119,9 +119,12 @@ void localize_update(localize_t *localize)
         PRINT_ERR1("subscribe failed : %s", playerc_error_str());
 
       // Load the map
+      printf("Loading map (this may take some time)...");
+      fflush(stdout);
 	    if (playerc_localize_get_map(localize->proxy) != 0)
         PRINT_ERR1("get_map_header failed : %s", playerc_error_str());
-
+      printf("done\n");
+      
       // Draw the map
       localize_draw_map(localize);
     }
