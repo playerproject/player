@@ -192,13 +192,13 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
           cf->ReadFilename(section, "configfile", DEFAULT_ACTS_CONFIGFILE),
           sizeof(configfilepath));
   strncpy(tmpstr,
-          cf->ReadString(section, "version", ACTS_VERSION_1_0_STRING),
+          cf->ReadString(section, "version", ACTS_VERSION_2_0_STRING),
           sizeof(tmpstr));
   if((acts_version = version_string_to_enum(tmpstr)) == ACTS_VERSION_UNKNOWN)
   {
     PLAYER_WARN2("unknown version \"%s\"; using default \"%s\"",
                  tmpstr, ACTS_VERSION_1_0_STRING);
-    acts_version = version_string_to_enum(ACTS_VERSION_1_0_STRING);
+    acts_version = version_string_to_enum(ACTS_VERSION_2_0_STRING);
   }
   width = cf->ReadInt(section, "width", DEFAULT_ACTS_WIDTH);
   height = cf->ReadInt(section, "height", DEFAULT_ACTS_HEIGHT);
