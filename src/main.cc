@@ -134,6 +134,7 @@ bool SHUTTING_DOWN;
 bool experimental = false;
 bool debug = false;
 bool useArena = false;
+int playerport = PLAYER_PORTNUM;
 
 void Interrupt( int dummy ) {
   // setting this will suppress print statements from the client
@@ -326,6 +327,7 @@ void *client_writer(void* arg)
   delete data;
 }
 
+
 int main( int argc, char *argv[] )
 {
   unsigned int j;
@@ -354,7 +356,6 @@ int main( int argc, char *argv[] )
   CDevice* gpsDevice = NULL;
 
   /* use these to temporarily store command-line args */
-  int playerport = PLAYER_PORTNUM;
   char p2osport[MAX_FILENAME_SIZE] = DEFAULT_P2OS_PORT;
   char laserserialport[MAX_FILENAME_SIZE] = DEFAULT_LASER_PORT;
   char ptzserialport[MAX_FILENAME_SIZE] = DEFAULT_PTZ_PORT;
@@ -682,7 +683,8 @@ int main( int argc, char *argv[] )
     /* got conn */
     if(num_threads.Value() < MAXNUMTHREADS)
     {
-      printf("** New client accepted on socket %d **\n", clientData->socket);
+      printf("** New client accepted on socket %d ** [Port %d]\n", 
+             clientData->socket,playerport);
       if(pthread_create(&clientData->writeThread, NULL, client_writer, clientData))
       {
         perror("pthread_create(3) failed");
