@@ -226,6 +226,7 @@ class VFH_Class : public Driver
 
     // how fast and how long to back up to escape from a stall
     double escape_speed;
+    double escape_max_turnspeed;
     double escape_time;
 
     // Odometric geometry (robot size and pose in robot cs)
@@ -768,6 +769,7 @@ void VFH_Class::Main()
   struct timeval startescape, curr;
   bool escaping = false;
   double timediff;
+  int escape_turnrate_deg;
 
   // bookkeeping to implement hysteresis when rotating at the goal
   int rotatedir;
@@ -860,7 +862,17 @@ void VFH_Class::Main()
       }
 
       this->speed = (int)rint(this->escape_speed * escapedir * 1e3);
-      this->turnrate = 0;
+      if(this->escape_max_turnspeed)
+      {
+        // pick a random turnrate in
+        // [-escape_max_turnspeed,escape_max_turnspeed]
+        escape_turnrate_deg = (int)rint(RTOD(this->escape_max_turnspeed));
+        this->turnrate = (int)(2.0 * escape_turnrate_deg *
+                               rand()/(RAND_MAX+1.0)) - 
+                escape_turnrate_deg/2 + 1;
+      }
+      else
+        this->turnrate = 0;
       PutCommand(this->speed, this->turnrate);
 
       this->turninginplace = false;
@@ -1038,6 +1050,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
 
   this->escape_speed = cf->ReadLength(section, "escape_speed", 0.0);
   this->escape_time = cf->ReadFloat(section, "escape_time", 0.0);
+  this->escape_max_turnspeed = cf->ReadAngle(section, "escape_max_turnrate", 0.0);
 
   // Instantiate the classes that handles histograms
   // and chooses directions
