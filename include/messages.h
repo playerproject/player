@@ -92,7 +92,7 @@
 #define PLAYER_LASERBEACON_CODE   ((uint16_t)10)
 #define PLAYER_BROADCAST_CODE     ((uint16_t)11)
 #define PLAYER_SPEECH_CODE        ((uint16_t)12)
-#define PLAYER_GPS_CODE           ((uint16_t)13) // broken?
+#define PLAYER_GPS_CODE           ((uint16_t)13)
 #define PLAYER_OCCUPANCY_CODE     ((uint16_t)14) // broken?
 #define PLAYER_TRUTH_CODE         ((uint16_t)15)
 #define PLAYER_BPS_CODE           ((uint16_t)16) // broken?

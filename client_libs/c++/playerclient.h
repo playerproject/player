@@ -46,6 +46,8 @@
 #include <occupancyproxy.h>  /* support for guess which device */
 #include <gpsproxy.h>  /* support for the GPS device */
 #include <bpsproxy.h>  /* support for the BPS device */
+#include <broadcastproxy.h> /* support for the broadcast device */
+
 
 // keep a linked list of proxies that we've got open
 class ClientProxyNode

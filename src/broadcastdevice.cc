@@ -46,7 +46,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
 
 #include <stdio.h>
 #include <string.h>
@@ -68,8 +68,8 @@
 //
 CBroadcastDevice::CBroadcastDevice(int argc, char** argv)
 {
-    m_read_socket = 0;
-    m_write_socket = 0;
+    this->read_socket = 0;
+    this->write_socket = 0;
 }
 
 
@@ -78,25 +78,23 @@ CBroadcastDevice::CBroadcastDevice(int argc, char** argv)
 //
 int CBroadcastDevice::Setup()
 {
-    printf("Broadcast device initialising...");
+    PLAYER_TRACE0("Broadcast device initialising...");
     
     // Set up the write socket
-    //
-    m_write_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (m_write_socket == -1)
+    this->write_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (this->write_socket == -1)
     {
         perror(__PRETTY_FUNCTION__);
         return 1;
     }
-    memset(&m_write_addr, 0, sizeof(m_write_addr));
-    m_write_addr.sin_family = AF_INET;
-    m_write_addr.sin_addr.s_addr = inet_addr(PLAYER_BROADCAST_IP);
-    m_write_addr.sin_port = htons(PLAYER_BROADCAST_PORT);
+    memset(&this->write_addr, 0, sizeof(this->write_addr));
+    this->write_addr.sin_family = AF_INET;
+    this->write_addr.sin_addr.s_addr = inet_addr(PLAYER_BROADCAST_IP);
+    this->write_addr.sin_port = htons(PLAYER_BROADCAST_PORT);
 
     // Set write socket options to allow broadcasting
-    //
     u_int broadcast = 1;
-    if (setsockopt(m_write_socket, SOL_SOCKET, SO_BROADCAST,
+    if (setsockopt(this->write_socket, SOL_SOCKET, SO_BROADCAST,
                    (const char*)&broadcast, sizeof(broadcast)) < 0)
     {
         perror(__PRETTY_FUNCTION__);
@@ -104,18 +102,16 @@ int CBroadcastDevice::Setup()
     }
     
     // Set up the read socket
-    //
-    m_read_socket = socket(PF_INET, SOCK_DGRAM, 0);
-    if (m_read_socket == -1)
+    this->read_socket = socket(PF_INET, SOCK_DGRAM, 0);
+    if (this->read_socket == -1)
     {
         perror(__PRETTY_FUNCTION__);
         return 1;
     }
 
     // Set socket options to allow sharing of port
-    //
     u_int share = 1;
-    if (setsockopt(m_read_socket, SOL_SOCKET, SO_REUSEADDR,
+    if (setsockopt(this->read_socket, SOL_SOCKET, SO_REUSEADDR,
                    (const char*)&share, sizeof(share)) < 0)
     {
         perror(__PRETTY_FUNCTION__);
@@ -123,30 +119,27 @@ int CBroadcastDevice::Setup()
     }
     
     // Bind socket to port
-    //
-    memset(&m_read_addr, 0, sizeof(m_read_addr));
-    m_read_addr.sin_family = AF_INET;
-    m_read_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    m_read_addr.sin_port = htons(PLAYER_BROADCAST_PORT);
-    if (bind(m_read_socket, (sockaddr*) &m_read_addr, sizeof(m_read_addr)) < 0)
+    memset(&this->read_addr, 0, sizeof(this->read_addr));
+    this->read_addr.sin_family = AF_INET;
+    this->read_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    this->read_addr.sin_port = htons(PLAYER_BROADCAST_PORT);
+    if (bind(this->read_socket, (sockaddr*) &this->read_addr, sizeof(this->read_addr)) < 0)
     {
         perror(__PRETTY_FUNCTION__);
         return 1;
     }
 
     // Set socket to non-blocking
-    //
-    if (fcntl(m_read_socket, F_SETFL, O_NONBLOCK) < 0)
+    if (fcntl(this->read_socket, F_SETFL, O_NONBLOCK) < 0)
     {
         perror(__PRETTY_FUNCTION__);
         return 1;
     }
 
     // Dummy call to get around #(*%&@ mutex
-    //
     GetLock()->PutData(this, NULL, 0);
 
-    printf("done\n");
+    PLAYER_TRACE0("done\n");
     
     return 0;
 }
@@ -157,60 +150,60 @@ int CBroadcastDevice::Setup()
 //
 int CBroadcastDevice::Shutdown()
 {
-    printf("Broadcast device shuting down...");
+    PLAYER_TRACE0("Broadcast device shuting down...");
     
     // Close sockets
     //
-    close(m_write_socket);
-    close(m_read_socket);
+    close(this->write_socket);
+    close(this->read_socket);
 
-    printf("done\n");
+    PLAYER_TRACE0("done\n");
     
     return 0;
 }
 
+
 ///////////////////////////////////////////////////////////////////////////
 // Get incoming data
-//
 size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize)
 {    
-    size_t len = 0;
-    
+    this->data.len = 0;
+
     // Read all the currently queued packets
     // and concatenate them into a broadcast data packet.
-    //
     while (true)
     {
-        size_t max_bytes = sizeof(m_data.buffer) - 2 - len;
-        size_t bytes = RecvPacket(m_data.buffer + len, max_bytes);
+        int max_bytes = sizeof(this->data.buffer) - this->data.len;
+        int bytes = RecvPacket(this->data.buffer + this->data.len, max_bytes);
         if (bytes == 0)
-            break;
-        else if (bytes == max_bytes)
         {
-            printf("Warning: broadcast packet overrun; packets have been discarded\n");
+            PLAYER_TRACE0("read no bytes");
             break;
         }
-        len += bytes;
+        if (bytes >= max_bytes)
+        {
+            PLAYER_TRACE0("broadcast packet overrun; packets have been discarded\n");
+            break;
+        }
+        PLAYER_TRACE1("read msg len = %d", bytes);
+        this->data.len += bytes;
     }
-
-    // Add an end marker to the data packet
-    //
-    ASSERT(len < sizeof(m_data.buffer) - 2);
-    memset(m_data.buffer + len, 0, 2);
-    len += 2;
     
-    // Copy the data
-    //
-    ASSERT(len <= maxsize);
-    memcpy(data, &m_data, len);
+    // Do some byte swapping
+    this->data.len = htons(this->data.len);
 
-    return len;
+    PLAYER_TRACE1("data.buffer [%s]", this->data.buffer);
+    
+    // Copy data
+    memcpy(data, &this->data, maxsize); 
+
+    // Return actual length of data
+    return this->data.len + sizeof(this->data.len);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Not used
-//
 void CBroadcastDevice::PutData(unsigned char *data, size_t maxsize)
 {
 }
@@ -218,7 +211,6 @@ void CBroadcastDevice::PutData(unsigned char *data, size_t maxsize)
 
 ///////////////////////////////////////////////////////////////////////////
 // Not used
-//
 void CBroadcastDevice::GetCommand(unsigned char *, size_t maxsize)
 {
 }
@@ -226,50 +218,23 @@ void CBroadcastDevice::GetCommand(unsigned char *, size_t maxsize)
 
 ///////////////////////////////////////////////////////////////////////////
 // Send data
-//
 void CBroadcastDevice::PutCommand(unsigned char *cmd, size_t maxsize)
 {
-    // Compute the total length of the packet to send over UDP
-    // Equals the size of the header + body.
-    //
-    size_t len = 2 + ntohs(((player_broadcast_cmd_t*) cmd)->len);
-    SendPacket(cmd, len);
+    assert(maxsize < sizeof(this->cmd));
+    memcpy(&this->cmd, cmd, maxsize);
+    
+    // Do some bute swapping
+    this->cmd.len = ntohs(((player_broadcast_cmd_t*) cmd)->len);
 
-    /*
-    size_t totalsize = sizeof(m_cmd);
+    // Send all the messages in the command at once
+    SendPacket(this->cmd.buffer, this->cmd.len);
 
-    // Copy command to local variable
-    //
-    ASSERT(totalsize <= maxsize);
-    memcpy(&m_cmd, cmd, totalsize);
-
-    // Do some byte-swapping
-    //
-    m_cmd.bufflen = ntohs(m_cmd.bufflen);
-    ASSERT(m_cmd.bufflen <= sizeof(m_cmd.buffer));
-
-    // Parse the command packet,
-    // extract and send messages
-    //
-    for (int offset = 0; offset < m_cmd.bufflen;)
-    {
-        uint8_t *msg = m_cmd.buffer + offset;
-        int len = ntohs(*((uint16_t*) msg));
-        if (len == 0)
-            break;
-
-        SendPacket(msg, len);
-
-        PLAYER_TRACE1("sent msg of len %d", (int) len);
-        offset += len;
-    }
-    */
+    PLAYER_TRACE2("cmd.buffer [%s] %d bytes", this->cmd.buffer, this->cmd.len);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Not used
-//
 size_t CBroadcastDevice::GetConfig(unsigned char *, size_t maxsize)
 {
     return 0;
@@ -278,7 +243,6 @@ size_t CBroadcastDevice::GetConfig(unsigned char *, size_t maxsize)
 
 ///////////////////////////////////////////////////////////////////////////
 // Not used
-//
 void CBroadcastDevice::PutConfig(unsigned char *, size_t maxsize)
 {
 }
@@ -286,32 +250,30 @@ void CBroadcastDevice::PutConfig(unsigned char *, size_t maxsize)
 
 ///////////////////////////////////////////////////////////////////////////
 // Send a packet
-//
 void CBroadcastDevice::SendPacket(unsigned char *packet, size_t size)
 {    
-    if (sendto(m_write_socket, (const char*)packet, size,
-                 0, (sockaddr*) &m_write_addr, sizeof(m_write_addr)) < 0)
+    if (sendto(this->write_socket, (const char*)packet, size,
+                 0, (sockaddr*) &this->write_addr, sizeof(this->write_addr)) < 0)
     {
         perror(__PRETTY_FUNCTION__);
         return;
     }
 
-    PLAYER_TRACE1("sent packet len = %d", (int) size);
+    PLAYER_TRACE1("sent msg len = %d", (int) size);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Receive a packet
-//
 size_t CBroadcastDevice::RecvPacket(unsigned char *packet, size_t size)
 {
 #ifdef PLAYER_LINUX
-    size_t addr_len = sizeof(m_read_addr);    
+    size_t addr_len = sizeof(this->read_addr);    
 #else
-    int addr_len = (int)sizeof(m_read_addr);    
+    int addr_len = (int)sizeof(this->read_addr);    
 #endif
-    size_t packet_len = recvfrom(m_read_socket, (char*)packet, size,
-                                 0, (sockaddr*) &m_read_addr, &addr_len);
+    size_t packet_len = recvfrom(this->read_socket, (char*)packet, size,
+                                 0, (sockaddr*) &this->read_addr, &addr_len);
     if ((int) packet_len < 0)
     {
         if (errno == EAGAIN)

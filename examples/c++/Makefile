@@ -98,5 +98,3 @@ uninstall:
 clean:
 	$(RM) -f *.o $(BINARIES) test
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-

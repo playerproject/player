@@ -6,14 +6,14 @@ include ../../Makefile.common
 
 LIBNAME = libplayerclient.a
 
-CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
-#CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
+#CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
+CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
       laserbeaconproxy.o visionproxy.o truthproxy.o occupancyproxy.o \
-      gpsproxy.o playermulticlient.o bpsproxy.o
+      gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o
 
 all: $(LIBNAME)
 
@@ -56,6 +56,7 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 occupancyproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 gpsproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 bpsproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 broadcastproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 playermulticlient.h $(INSTALL_INCLUDE)
 
 uninstall:
@@ -80,5 +81,3 @@ uninstall:
 clean:
 	$(RM) -f $(LIBNAME) *.o
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-

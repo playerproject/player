@@ -783,12 +783,15 @@ int PlayerClient::SetFrequency(unsigned short freq)
 //
 size_t PlayerClient::SetBroadcastMsg(const void *msg, size_t len)
 {
+    /* BROKEN AH
     if (len > sizeof(broadcast_cmd->msg))
         return 0;
     
     broadcast_cmd->len = len;
     memcpy(broadcast_cmd->msg, msg, len);
     return len;
+    */
+    return 0;
 }
 
 
@@ -796,9 +799,12 @@ size_t PlayerClient::SetBroadcastMsg(const void *msg, size_t len)
 //
 size_t PlayerClient::GetBroadcastMsg(int n, void *msg, size_t maxlen)
 {
+    /* BROKEN AH
     if (n < 0 || n >= broadcast_msg_count)
         return 0;
     size_t len = min(broadcast_msg[n]->len, maxlen);
     memcpy(msg, broadcast_msg[n]->msg, len);
     return len;
+    */
+    return 0;
 }
