@@ -917,8 +917,9 @@ Khepera::UpdatePosData(player_khepera_data_t *d)
 
   	// now write data
 	Lock();
-	x+=dx;
-	y+=dy;
+	double rad_Theta = DTOR(yaw);
+	x+=(dx*cos(rad_Theta) + dy*sin(rad_Theta));
+	y+=(dy*cos(rad_Theta) + dx*sin(rad_Theta));
   	d->position.xpos = htonl(static_cast<int> (x));
   	d->position.ypos = ntohl(static_cast<int> (y));
 	yaw += Theta;
