@@ -72,12 +72,31 @@ parse_args(int argc, char** argv)
 }
 
 
-/*
+
 typedef struct
 {
+  char type;
+  double range;
+} gradient_t;
 
-}
-*/
+typedef struct
+{
+  int sender;
+  int range;
+} grad_direction_t;
+
+#define storelen 10
+
+typedef struct
+{
+  FiducialProxy* fp;
+  PositionProxy* pp;
+  BlinkenlightProxy* bp;
+  SonarProxy* sp;
+  
+  grad_direction_t store[storelen];
+} swarmbot_t;
+
 
 int main(int argc, char **argv)
 {
@@ -86,24 +105,34 @@ int main(int argc, char **argv)
   printf( "starting %d swarbots\n", num_robots );
 
   PlayerClient robot(host,port);
-  robot.SetFrequency( 2 ); // request data at 10Hz
-  
-  FiducialProxy **fps = 
-    (FiducialProxy**)calloc( num_robots, sizeof(FiducialProxy*) ); 
+  robot.SetFrequency( 10 );
 
-  PositionProxy **pps = 
-    (PositionProxy**)calloc( num_robots, sizeof(PositionProxy*) ); 
+  swarmbot_t *bots = (swarmbot_t*)calloc( num_robots, sizeof(swarmbot_t) );
 
-  
   for( int r=0; r<num_robots; r++ )
-    {
-      fps[r] = new FiducialProxy(&robot,r,'a');
-      pps[r] = new PositionProxy(&robot,r,'a');
-    }
+    {  
+      bots[r].fp = new FiducialProxy(&robot,r,'a');
+      bots[r].pp = new PositionProxy(&robot,r,'a');
+      bots[r].bp = new BlinkenlightProxy(&robot,r,'a');
+      bots[r].sp = new SonarProxy(&robot,r,'a');
+
+      // create some dummy messages in the store
+      for( int s=0; s<storelen; s++ )
+	{
+	  bots[r].store[s].sender = 0;
+	  bots[r].store[s].range = 10000;
+	}   
+   }
   
   // try a few reads
-  for( int a=0; a<10; a++ )
+  for( int a=0; a<5; a++ )
     if(robot.Read()) exit(1);    
+  
+  // blink the zeroth robot's blinkenlight
+  bots[0].bp->SetLight( true, 500 );
+  
+  for( int r=1; r<num_robots; r++ )
+    bots[r].sp->GetSonarGeom();
 
   while( 1 )
     {
@@ -111,83 +140,140 @@ int main(int argc, char **argv)
       // a new array of visible neigbors, with their angles and ranges
       if(robot.Read()) exit(1);
       
-      for( int r=0; r<num_robots; r++ )
+      // robot zero sends out a message with hop count zero
+      gradient_t grad;
+      grad.type = 1;
+      grad.range = 0;
+      
+      // build a message incorporating the grad packet
+      player_fiducial_msg_t msg;		  
+      msg.target_id = -1;
+      memcpy(msg.bytes,&grad,sizeof(grad));
+      msg.len = sizeof(grad);
+      msg.intensity = 200;
+      
+      bots[0].fp->SendMessage( &msg, true );
+      
+      for( int r=1; r<num_robots; r++ )
 	{
+	  int upstream_bot = 0;
+	  
+	  // any messages for me?
+	  player_fiducial_msg_t recv;
+	  while( bots[r].fp->RecvMessage( &recv, true ) == 0 )
+	    {
+	      int sender = recv.target_id;
+	      
+	      if( sender != -1 && recv.len == sizeof(gradient_t) ) 
+		{
+		  gradient_t *grad = (gradient_t*)recv.bytes;
+		  
+		  // shift the array one place to the right
+		  for( int m=storelen-1; m > 0; m-- )
+		    memcpy( &bots[r].store[m], &bots[r].store[m-1], 
+			    sizeof(grad_direction_t) );
+		  
+		  // find the range of the fiducial with this id
+		  double range = 0;
+		  for( int f=0; f<bots[r].fp->count; f++ )
+		    {
+		      if( bots[r].fp->beacons[f].id == sender )
+			{
+			  bots[r].store[0].range = grad->range +  
+			    bots[r].fp->beacons[f].pose[0];
+			  bots[r].store[0].sender = sender;
+			  break;
+			} 
+		    }
+		}
+	    }
+	  
+	  // now look in the store to find the lowest hop count
+	  printf( "bot %d store:\n", r );
+	  
+	  int lowrange = 10000;
+	  for( int m=0; m <storelen; m++ )
+	    {
+	      //printf( "range %d  sender %d\n", 
+	      //      bots[r].store[m].range, 
+	      //      bots[r].store[m].sender );
+	      
+	      if( bots[r].store[m].range < lowrange )
+		{
+		  lowrange = bots[r].store[m].range;
+		  upstream_bot = bots[r].store[m].sender;
+		}
+	    }   
+	  
+	  printf( "lowrange: %d  upstream_bot %d\n",
+		  lowrange, upstream_bot );
+	  
+	 	  
+	  // find the direction of the fiducial that sent us the
+	  // lowest cumulative range
+	  int direction = 0;
+	  for( int f=0; f<bots[r].fp->count; f++ )
+	    {
+	      if( bots[r].fp->beacons[f].id == upstream_bot )
+		direction = bots[r].fp->beacons[f].pose[1];  
+	    } 
+	  
 	  // a little potential field algorithm for dispersal
 	  double dx=0.0, dy=0.0;
-	  double ax=0.0, ay=0.0;
-
+	  
 	  // for each neighbor detected
-	  for( int s=0; s< fps[r]->count; s++ )
+	  for( int s=0; s< bots[r].fp->count; s++ )
 	    {
-	      double range = fps[r]->beacons[s].pose[0] / 1000.0;
-	      double bearing = DTOR(fps[r]->beacons[s].pose[1]);   
+	      double range = bots[r].fp->beacons[s].pose[0] / 1000.0;
+	      double bearing = DTOR(bots[r].fp->beacons[s].pose[1]);   
 	      
-	      range = range - 1.0;
+	      range = range - 1.5;
 	      
-	      dx += range * cos( bearing ); 	  
-	      dy += range * sin( bearing ); 	   
-	      
-	      // also compute the average global heading
-	      ax += cos( DTOR(fps[r]->beacons[s].pose[2] ) ); 
-	      ay += sin( DTOR(fps[r]->beacons[s].pose[2] ) ); 
-	    }
-	 	  
-	  // find the average heading 
-	  //double angle = DTOR(pps[r]->theta);
-	  int turnrate_deg_sec = 0;
-	  int speed_mm_sec = 0;
-
-	  // error to the average angle of my buddies
-	  double buddy_error_angle = atan2( ay, ax );	  
-
-	  double position_error_angle = atan2( dy, dx );
-	  double position_error_distance = hypot( dy, dx );
-
-	  // if we're far from the ideal position
-	  if( fabs(position_error_distance) > 0.2 )
-	    {
-	      // minimize the position angle error
-	      turnrate_deg_sec = 2 * (int)RTOD(position_error_angle);
-	      
-	      // if we're pointing the right direction, move forwards
-	      if( fabs(position_error_angle) < 0.1 )
-		{
-		  // speed propotional to error
-		  speed_mm_sec = (int)( 500.0 * position_error_distance );
-		  if( speed_mm_sec < 100 ) 
-		    speed_mm_sec = 100;
-		}
-	    }
-	  else // we're close to where we want to be, so now point in the 
-	    {
-	      // average direction
-	      turnrate_deg_sec = 2 * (int)RTOD(buddy_error_angle);
-
-	      // if we're in just the right place, announce it
-	      if( fabs(buddy_error_angle) < 0.05 ) 
-		{
-		  player_fiducial_msg_t msg;
-		  
-		  msg.target_id = -1;
-		  strcpy( (char*)msg.bytes, "Aligned" );
-		  msg.len = strlen( (char*)msg.bytes );
-		  msg.intensity = 200;
-		  
-		  fps[r]->SendMessage( &msg, true );
-		}
+	      //dx += range * cos( bearing ); 	  
+	      //dy += range * sin( bearing ); 	   
 	    }
 	  
-	  //printf( "position_error_distance %.2f  "
-	  //  " position_error_angle %.2f  buddy_error_angle %.2f\n", 
-	  //  position_error_distance,
-	  //  position_error_angle,
-	  //  buddy_error_angle );
+	  // and for each range sensor
+	  for( int s=0; s<bots[r].sp->range_count; s++ )
+	    {
+	      double range = bots[r].sp->ranges[s] / 1000.0;
+	      double bearing = DTOR( bots[r].sp->sonar_pose.poses[s][3] );
+		
+	      dx -= range * cos( bearing ); 	  
+	      dy -= range * sin( bearing ); 	   
+	    }
+
+	  // threshold our turnrate
+	  int turnrate = direction;
+	  if( turnrate > 100 ) turnrate = 100.0;
+	  if( turnrate < -100 ) turnrate = -100.0;
 	  
-	  //printf( "%d %d\n", 
-	  //  speed_mm_sec, turnrate_deg_sec );
-	
-	  pps[r]->SetSpeed( speed_mm_sec, turnrate_deg_sec );
+	  // move!
+	  //bots[r].pp->SetSpeed( 200*dx, 200*dy, turnrate );
+	  bots[r].pp->SetSpeed( 200*dx, 200*dy, 0 );
+
+	  // if we're pointing to the source, switch on the light
+	  if( fabs(direction) < 3 )
+	    bots[r].bp->SetLight( true, 0 );
+	  else
+	    bots[r].bp->SetLight( false, 0 );
+
+	  // transmit my range estimate to the broadcast address (-1)
+	  if( lowrange < 10000 )
+	    {
+	      gradient_t grad;
+	      grad.type = 1;
+	      grad.range = lowrange;
+	      
+	      player_fiducial_msg_t send;
+	      send.target_id = -1;
+	      memcpy(send.bytes,&grad,sizeof(grad));
+	      send.len = sizeof(grad);
+	      send.intensity = 200;
+	      
+	      printf( "bot %d sends a message\n", r );
+	      bots[r].fp->SendMessage( &send, true );
+	    }
 	}
     }
 }

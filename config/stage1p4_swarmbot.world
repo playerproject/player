@@ -1,0 +1,92 @@
+
+# Desc: 1 robot with player, laser, sonar and gps
+# CVS: $Id$
+
+# the resolution of Stage's raytrace model in meters
+#
+resolution 0.03
+size [5 5]
+name "Player driver test"
+
+# GUI settings
+#
+gui
+(
+  size [ 502.000 506.000 ]
+  origin [5.018 4.950 0]
+  scale 0.021 # the size of each bitmap pixel in meters
+)
+
+# load a bitmapped environment from a file
+define background bg
+(
+  # this object should have a bounding box added
+  border "true"
+
+  # this object should not have a direction-indicating nose
+  nose "false"
+ 
+  # disable handling of this object with the mouse 
+  mouseable "false"
+
+  # a negative number will make this object the maximum
+  # possible size in that axis. Here we fill the whole world
+  size [-1 -1]
+
+  # TODO - add origin munging to match the size-munging above
+  origin [2.5 2.5 0]
+
+)
+
+background
+(
+  bitmap "test.pnm" 
+  color "purple"
+) 
+
+define indicatorlight light
+(
+  nose "no"
+  size [0.02 0.02]
+  light "blink"
+  matrix_render "false"
+)
+
+define swarmbot sb
+(
+  color "black"
+
+  size [0.1 0.1]
+ 
+  neighbor 1
+  neighbor_bounds [ 0.0 2.0 ]
+	
+  indicatorlight( color "red"     pose [ 0.030  0.000 0.000 ] light [0 500]) 
+  indicatorlight( color "green"   pose [ 0.000 -0.030 0.000 ] light [0 500] ) 
+  indicatorlight( color "blue"    pose [ 0.000  0.030 0.000 ] light [0 500]) 
+  indicatorlight( color "magenta" pose [-0.030  0.000 0.000 ] light [0 500]) 
+
+   ranger_count 8
+   ranger[0] [00.05 0.0     0.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
+   ranger[1] [00.05 00.05    45.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
+   ranger[2] [0.0 00.05    90.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
+   ranger[3] [-00.05 00.05  135.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
+   ranger[4] [-00.05 0.0  180.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
+   ranger[5] [-00.05 -00.05 225.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
+   ranger[6] [0.0 -00.05  270.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
+   ranger[7] [00.05 -00.05  315.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
+)
+	
+# color the zeroth robot red so we can identify it easily
+swarmbot( pose [0.226 0.214 1.919] color "red" )
+
+swarmbot( pose [2.588 3.247 -0.864] )
+swarmbot( pose [2.386 3.021 -0.600] )
+swarmbot( pose [2.024 3.216 -0.908] )
+swarmbot( pose [2.699 2.851 -1.349] )
+swarmbot( pose [2.455 2.721 -1.166] )
+swarmbot( pose [2.162 3.015 -0.762] )
+swarmbot( pose [2.130 2.781 -1.088] )
+swarmbot( pose [2.329 3.334 -2.172] )
+swarmbot( pose [2.618 3.040 4.304]  )
+

@@ -177,7 +177,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	//s_msg.consume = p_msg->consume;
 	s_msg.len = (size_t)p_msg->msg.len;
 
-	printf( "sending message len %d\n", s_msg.len );
+	//printf( "sending message len %d\n", s_msg.len );
 
 	if( s_msg.len > STG_LOS_MSG_MAX_LEN ) s_msg.len = STG_LOS_MSG_MAX_LEN;
 	memcpy( &s_msg.bytes, p_msg->msg.bytes, s_msg.len );
@@ -219,17 +219,17 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	else
 	  prop = STG_PROP_LOS_MSG;
 	  
-	puts( "GETTING MESSAGE" );
+	//puts( "GETTING MESSAGE" );
 
 	assert( stg_get_property( this->stage_client, this->stage_id, 
 				  prop, 
 				  (void**)&s_msg, &len ) == 0 );
 
-	printf( "message is %d bytes\n", len );
+	//printf( "message is %d bytes\n", len );
 
 	if( len == 0 )
 	  {
-	    puts( "no message to receive" );
+	    //puts( "no message to receive" );
 	    
 	    if( PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, 
 			  NULL, NULL, 0 ) != 0 )
@@ -245,7 +245,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	    reply.len = (uint8_t)s_msg->len;
 	    memcpy( reply.bytes, s_msg->bytes, s_msg->len );
 
-	    printf( "copied message (%s)\n", reply.bytes );
+	    //printf( "copied message (%s)\n", reply.bytes );
 
 	    free( s_msg );
 	    

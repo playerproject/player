@@ -232,11 +232,11 @@ int FiducialProxy::SendMessage( player_fiducial_msg_t* msg, bool consume )
 
   // copy the message into the send struct, byteswapping fields
   tx_req.msg.target_id = (int32_t)htonl(msg->target_id);
-  tx_req.msg.intensity = (uint16_t)htons(msg->intensity);
+  tx_req.msg.intensity = (uint8_t)msg->intensity;
   memcpy( tx_req.msg.bytes, msg->bytes, PLAYER_FIDUCIAL_MAX_MSG_LEN );
-  tx_req.msg.len = msg->len;
+  tx_req.msg.len = (uint8_t)msg->len;
   
-  printf( "sending message of %d bytes\n", msg->len );
+  //printf( "sending message of %d bytes\n", msg->len );
   
   player_msghdr_t hdr;
   if( client->Request(m_device_id,
@@ -274,7 +274,7 @@ int FiducialProxy::RecvMessage( player_fiducial_msg_t* recv_msg,
   rx_req.subtype = PLAYER_FIDUCIAL_RECV_MSG;
   rx_req.consume = (uint8_t)consume;
   
-  printf( "requesting receive message\n" );
+  //printf( "requesting receive message\n" );
   
   player_msghdr_t hdr;
   if( client->Request(m_device_id,
@@ -287,6 +287,9 @@ int FiducialProxy::RecvMessage( player_fiducial_msg_t* recv_msg,
        return(-1);
      }
   
+  // byteswap the fields for local use
+  recv_msg->target_id = ntohl( recv_msg->target_id );
+
   // Stage replies with NACK if the request failed, for example if no
   // message was available
   if(  hdr.type != PLAYER_MSGTYPE_RESP_ACK )
