@@ -26,6 +26,59 @@
  * the Sony EVI-D30 PTZ camera
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_sonyevid30 SonyEVI-D30 driver
+
+The sonyevid30 driver provides control of a Sony EVI-D30 pan-tilt-zoom
+camera unit.
+
+@par Interfaces
+
+- @ref player_interface_ptz
+
+@par Required devices
+
+- None
+
+@par Supported configuration requests
+
+- None
+
+@par Configuration file options
+
+- port "/dev/ttyS2"
+  - The serial port to be used.
+
+- fov [3 30]
+ - The minimum and maximum fields of view (in degrees), which will depend on
+   the lens(es) you are using.  Half-angle??
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name sonyevid30
+  devices ["ptz:0"]
+  port "/dev/ttyS2"
+  fov [3 30]
+)
+@endverbatim
+
+@par Notes
+
+-  The sonyevid30 operates over a direct serial link, not
+   through the P2OS microcontroller's AUX port, as is the normal configuration
+   for ActivMedia robots.  You may have to make or buy a cable to connect your
+   camera to a normal serial port.  Look 
+   <a href="http://playerstage.sourceforge.net/faq.html#evid30_wiring">here</a>
+   for more information and wiring instructions.
+- This driver likely only works in Linux.
+
+*/
+/** @} */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
