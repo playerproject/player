@@ -41,6 +41,15 @@
 #define PLAYER_MSGTYPE_REQ ((uint16_t)3)
 #define PLAYER_MSGTYPE_RESP ((uint16_t)4)
 
+/* the currently assigned device codes */
+#define PLAYER_MISC_CODE    0x006d  // 'm'
+#define PLAYER_GRIPPER_CODE 0x0067  // 'g'
+#define PLAYER_POSITION_CODE 0x0070  // 'p'
+#define PLAYER_SONAR_CODE   0x0073  // 's'
+#define PLAYER_LASER_CODE   0x006c  // 'l'
+#define PLAYER_VISION_CODE  0x0076  // 'v'
+#define PLAYER_PTZ_CODE     0x007a  // 'z'
+
 /* generic message header */
 typedef struct
 {
@@ -56,6 +65,21 @@ typedef struct
 
 /*************************************************************************/
 /*
+ * The "Player" device
+ */
+
+/* the format of a "device request" ioctl to Player */
+typedef struct
+{
+  uint16_t code;
+  uint16_t index;
+  uint16_t access;
+} __attribute__ ((packed)) player_device_req_t;
+
+/*************************************************************************/
+
+/*************************************************************************/
+/*
  * Position Device
  */
 
@@ -68,7 +92,6 @@ typedef struct
 /* Position device data buffer */
 typedef struct 
 {
-  // this time will be subsumed by the header timestamp(s)
   uint32_t time;
   int32_t x,y;
   uint16_t theta;

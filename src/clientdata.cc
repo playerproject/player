@@ -50,12 +50,13 @@ extern bool SHUTTING_DOWN;
 
 CClientData::CClientData() 
 {
+  requested = NULL;
+  numsubs = 0;
   readThread = 0;
   writeThread = 0;
   socket = 0;
   mode = CONTINUOUS;
   frequency = 10;
-  memset(requested, 0, 20);
   pthread_mutex_init( &access, NULL ); 
   pthread_mutex_init( &datarequested, NULL ); 
   pthread_mutex_init( &requesthandling, NULL ); 
@@ -68,6 +69,7 @@ void CClientData::HandleRequests( unsigned char *buffer,  int readcnt )
   int size = ntohs(*(unsigned short*)(buffer+2));
   int j;
   CDevice* devicep;
+  player_device_req_t req;
 
   static unsigned char reply[REQUEST_BUFFER_SIZE];
 
@@ -90,19 +92,25 @@ void CClientData::HandleRequests( unsigned char *buffer,  int readcnt )
       /* request message */
       request = true;
       for(j=0;j<size;j+=2)
-        UpdateRequested(buffer+2+sizeof(unsigned short)+j);
+      {
+        //UpdateRequested(buffer+2+sizeof(unsigned short)+j);
+        req.code = buffer[2+sizeof(unsigned short)+j];
+        req.index = 0;
+        req.access = buffer[2+sizeof(unsigned short)+j+1];
+        UpdateRequested(req);
+      }
       break;
     case 'c':
       /* command message */
-      if(CheckPermissions(buffer)) 
+      if(CheckPermissions(buffer[1],0))
       {
         // check if we can write to this device
-        if((deviceTable->GetDeviceAccess(buffer[1]) == 'w') ||
-           (deviceTable->GetDeviceAccess(buffer[1]) == 'a'))
+        if((deviceTable->GetDeviceAccess(buffer[1],0) == 'w') ||
+           (deviceTable->GetDeviceAccess(buffer[1],0) == 'a'))
         
         {
           // make sure we've got a non-NULL pointer
-          if((devicep = deviceTable->GetDevice(buffer[1])))
+          if((devicep = deviceTable->GetDevice(buffer[1],0)))
           {
             devicep->GetLock()->PutCommand(devicep,
                             &buffer[2+sizeof(unsigned short)],size);
@@ -195,7 +203,7 @@ void CClientData::HandleRequests( unsigned char *buffer,  int readcnt )
       {
         // pass the config request on the proper device
         // make sure we've got a non-NULL pointer
-        if((devicep = deviceTable->GetDevice(buffer[1])))
+        if((devicep = deviceTable->GetDevice(buffer[1],0)))
         {
           devicep->GetLock()->PutConfig(devicep,
                           &buffer[2+sizeof(unsigned short)],size);
@@ -217,7 +225,8 @@ void CClientData::HandleRequests( unsigned char *buffer,  int readcnt )
     {
       reply[1+sizeof(unsigned short)+j] = buffer[2+sizeof(unsigned short)+j];
       reply[2+sizeof(unsigned short)+j] =
-              FindPermission( buffer[2+sizeof(unsigned short)+j] );
+              FindPermission(buffer[2+sizeof(unsigned short)+j],0);
+              //FindPermission( buffer[2+sizeof(unsigned short)+j] );
     }
 
     pthread_mutex_lock(&socketwrite);
@@ -233,10 +242,7 @@ void CClientData::HandleRequests( unsigned char *buffer,  int readcnt )
 
 CClientData::~CClientData() 
 {
-  //puts("~CClientData():calling RemoveReadRequests");
-  RemoveReadRequests();
-  //puts("~CClientData():calling RemoveWriteRequests");
-  RemoveWriteRequests();
+  RemoveRequests();
 
   usleep(100000);
 
@@ -279,56 +285,35 @@ CClientData::~CClientData()
     pthread_exit(0);
 }
 
-void CClientData::RemoveBlanks() 
+void CClientData::RemoveRequests() 
 {
-  int freespot, takenspot;
-
-  //PrintRequested("RemoveBlanks()");
-  for( freespot=0; freespot<18; freespot+=2) {
-    if ( requested[freespot]==0) {
-      for( takenspot = freespot; takenspot<20; takenspot+=2) {
-	if ( requested[takenspot]!=0) {
-	  /* no zero entry found */
-	  requested[freespot]=requested[takenspot];
-	  requested[freespot+1]=requested[takenspot+1];
-	  requested[takenspot] = 0;
-	  requested[takenspot+1] = 0;
-          break;
-	}
-      }
-      
-      /* no more elements */
-      if (takenspot == 20 ) break;
-    }
-  }
-  //PrintRequested("RemoveBlanks()");
-}
-  
-void CClientData::RemoveReadRequests() 
-{
-  int i;
+  //int i;
+  CDeviceSubscription* thissub = requested;
+  CDeviceSubscription* tmpsub;
 
   pthread_mutex_lock( &access );
-  //PrintRequested("RemoveReadRequests()");
-  for(i=1;requested[i]!=0 ;i+=2) {
-    switch(requested[i]) {
-    case 'a':
-      requested[i]='w';
-      //printf("RemoveReadRequests(): Unsubscribe(%c)\n",requested[i-1]);
-      Unsubscribe( requested[i-1] );
-      break;
-    case 'r':
-      //printf("RemoveReadRequests(): Unsubscribe(%c)\n",requested[i-1]);
-      Unsubscribe( requested[i-1] );
-      requested[i]=0;
-      requested[i-1]=0;
-      break;
-    default:
-      break;
+  while(thissub)
+  {
+    switch(thissub->access) 
+    {
+      case 'a':
+        Unsubscribe(thissub->code, thissub->index);
+        Unsubscribe(thissub->code, thissub->index);
+        break;
+      case 'r':
+      case 'w':
+        Unsubscribe(thissub->code, thissub->index);
+        break;
+      default:
+        break;
     }
+    if(thissub->code == PLAYER_POSITION_CODE)
+      MotorStop();
+    tmpsub = thissub->next;
+    delete thissub;
+    thissub = tmpsub;
   }
-  //PrintRequested("RemoveReadRequests()");
-  RemoveBlanks();
+  requested = NULL;
   pthread_mutex_unlock( &access );
 }
 
@@ -340,182 +325,139 @@ void CClientData::MotorStop()
   *( short *)&command[0]=0;
   *( short *)&command[sizeof(short)]=0;
 
-  if((devicep = deviceTable->GetDevice('p')))
+  if((devicep = deviceTable->GetDevice(PLAYER_POSITION_CODE,0)))
     devicep->GetLock()->PutCommand(devicep, command, 4);
   else
-    puts("MotorStop(): got NULL for the 'p' device");
+    puts("MotorStop(): got NULL for the position device");
 }
 
-void CClientData::RemoveWriteRequests() 
+void CClientData::UpdateRequested(player_device_req_t req)
 {
-  int i;
-
-  pthread_mutex_lock( &access );
-  //PrintRequested("RemoveWriteRequests()");
-  for(i=1;requested[i]!=0;i+=2) {
-    switch(requested[i]) {
-    case 'a':
-      //printf("RemoveWriteRequests(): Unsubscribe(%c)\n",requested[i-1]);
-      Unsubscribe( requested[i-1] );
-      if (requested[i-1]=='p') 
-      {
-	/* stop motors for safety */
-	MotorStop();
-      }
-      requested[i]='r';
-      break;
-    case 'w':
-      //printf("RemoveWriteRequests(): Unsubscribe(%c)\n",requested[i-1]);
-      Unsubscribe( requested[i-1] );
-      if (requested[i-1]=='p') {
-	/* stop motors for safety */
-	MotorStop();
-      }
-      requested[i]=0;
-      requested[i-1]=0;
-      break;
-    default:
-      break;
-    }
-  }
-  //PrintRequested("RemoveWriteRequests()");
-  RemoveBlanks();
-  pthread_mutex_unlock( &access );
-}
-
-void CClientData::UpdateRequested( unsigned char *request ) 
-{
-  int i;
+  CDeviceSubscription* thisub;
+  CDeviceSubscription* prevsub;
 
   pthread_mutex_lock( &access );
 
-  //printf("UpdateRequested():request:%s:\n",request);
-  //PrintRequested("UpdateRequested():");
   // find place to place the update
-  for(i=0; requested[i]!=0; i+=2) {
-    if (request[0]==requested[i]) break;
+  for(thisub=requested,prevsub=NULL;thisub;
+      prevsub=thisub,thisub=thisub->next)
+  {
+    if((thisub->code == req.code) && (thisub->index == req.index))
+      break;
+  }
+
+  if(!thisub)
+  {
+    thisub = new CDeviceSubscription;
+    thisub->code = req.code;
+    thisub->index = req.index;
+    if(prevsub)
+      prevsub->next = thisub;
+    else
+      requested = thisub;
+    numsubs++;
   }
 
   /* UPDATE */
-  if ( (requested[i+1]=='w' && (request[1]=='r' || request[1]=='a')) ||
-       (requested[i+1]=='r' && (request[1]=='w' || request[1]=='a')) ||
-       (requested[i+1]=='e' && 
-          (request[1]=='w' || request[1]=='a' || request[1]=='r'))) { 
-    if ( Subscribe( request[0] ) == 0 )
-      requested[i+1]='a';
+  
+  // go from either 'r' or 'w' to 'a'
+  if((thisub->access=='w' && (req.access=='r' || req.access=='a')) ||
+     (thisub->access=='r' && (req.access=='w' || req.access=='a')))
+  { 
+    if(Subscribe(req.code,req.access) == 0)
+      thisub->access = 'a';
     else 
-      requested[i+1]='e';
+      thisub->access='e';
   }
-  else if (requested[i+1]=='a' && ( request[1]=='r' || request[1]=='w') ) {
-    requested[i+1]=request[1];
-    Unsubscribe( request[0] );
+  // go from 'a' to either 'r' or 'w'
+  else if(thisub->access=='a' && (req.access=='r' || req.access=='w')) 
+  {
+    Unsubscribe(req.code,req.access);
+    thisub->access=req.access;
   }
-
   /* CLOSE */
-  else if (request[1]=='c') {
+  else if(req.access=='c') 
+  {
     // close 
-    switch(requested[i+1]) {
-    case 'a':
-      //printf("UpdateRequested(): Unsubscribe(%c)\n",requested[i]);
-      Unsubscribe(requested[i]);      // we want to unsubscribe two times
-    case 'w':
-    case 'r':
-      //printf("UpdateRequested(): Unsubscribe(%c)\n",requested[i]);
-      Unsubscribe(requested[i]);
-      //requested[i]=0;
-      //requested[i+1]=0;
-      requested[i+1]='c';
-      RemoveBlanks();
-      break;
-    case 'c':
-    case 0:
-       printf("Device \"%c\" already closed\n", request[0]);
-       break;
-    default:
-      printf("Unknown access permission \"%c\"\n", requested[i+1]);
-      break;
-    }
-
-    /* check if it is time to shutdown */
-    if (requested[0]==0 || requested[1]=='c') {
-      pthread_mutex_unlock( &access );
-      /* nothing to do closing */
-      /* should we really close here? */
-      //delete this;
+    switch(thisub->access)
+    {
+      case 'a':
+        Unsubscribe(req.code,req.index);   // we want to unsubscribe two times
+      case 'w':
+      case 'r':
+        Unsubscribe(req.code,req.index);
+        thisub->access = 'c';
+        break;
+      case 'c':
+      case 'e':
+        printf("Device \"%d:%d\" already closed\n", req.code,req.index);
+        break;
+      default:
+        printf("Unknown access permission \"%c\"\n", req.access);
+        break;
     }
   }
-
   /* OPEN */
-  else if ( requested[i+1]==0 || requested[i+1]=='c') {
-    requested[i] = request[0];
-    switch( request[1] ) {
-    case 'a':
-      if ( Subscribe( request[0] )==0 && Subscribe( request[0] ) == 0)
-	requested[i+1]='a';
-      else
-	requested[i+1]='e';
-     break;
-    case 'w':
-      if (Subscribe( request[0] )==0) 
-	requested[i+1]='w';
-      else 
-	requested[i+1]='e';
-      break;
-    case 'r':
-      if (Subscribe( request[0] )==0) 
-	requested[i+1]='r';
-      else
-	requested[i+1]='e';
-      break;
-    default:
-      printf("Unknown request \"%c%c\"\n", request[0], request[1]);
+  else if((thisub->access == 'e') || (thisub->access=='c'))
+  {
+    switch(req.access) 
+    {
+      case 'a':
+        if((Subscribe(req.code,req.index)==0) && 
+           (Subscribe(req.code,req.index) == 0))
+          thisub->access='a';
+        else
+          thisub->access='e';
+        break;
+      case 'w':
+        if(Subscribe(req.code,req.index)==0)
+          thisub->access='w';
+        else 
+          thisub->access='e';
+        break;
+      case 'r':
+        if(Subscribe(req.code,req.index)==0)
+          thisub->access='r';
+        else
+          thisub->access='e';
+        break;
+      default:
+        printf("Unknown access \"%c\"\n", req.access);
     }
   }
-
   /* IGNORE */
-  else {
-    printf("The current access is \"%c%c\". ",requested[i], requested[i+1]);
-    printf("Unknown unused request \"%c%c\"\n", request[0], request[1]);
+  else 
+  {
+    printf("The current access is \"%d:%d:%c\". ",
+                    thisub->code, thisub->index, thisub->access);
+    printf("Unknown unused request \"%d:%d:%c\".\n",
+                    req.code, req.index, req.access);
   }
-
-  //PrintRequested("UpdateRequested():");
   pthread_mutex_unlock( &access );
 }
 
-unsigned char CClientData::FindPermission( unsigned char device ) {
-  for(int i=0;i<18;i+=2) {
-    if (requested[i]==device) return( requested[i+1] );
+unsigned char 
+CClientData::FindPermission(unsigned short code, unsigned short index)
+{
+  for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
+  {
+    if((thisub->code == code) && (thisub->index == index))
+      return(thisub->access);
   }
-			
   return( 'e' );
 }
 
-bool CClientData::CheckPermissions( unsigned char *command ) {
+bool CClientData::CheckPermissions(unsigned short code, unsigned short index)
+{
   bool permission = false;
   unsigned char letter;
 
   pthread_mutex_lock( &access );
  
-  switch( command[0] ) 
-  {
-    case 'l':
-    case 's':
-    case 'p':
-    case 'v':
-    case 'g':
-    case 'm':
-    case 'z':
-      letter = FindPermission( command[0] );
-      if ((letter=='a') || (command[0]==letter)) permission = true;
-      break;
-    case 'c':
-      letter = FindPermission( command[1] );
-      if ((letter=='a') || ('w'==letter)) permission = true;
-      break;
-    default:
-      printf("Expected device or command but got %c\n", command[0]);
-      break;
-  }
+  letter = FindPermission(code,index);
+  if((letter=='a') || ('w'==letter)) 
+    permission = true;
+
   pthread_mutex_unlock( &access );
 
   return(permission);
@@ -531,22 +473,24 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
 
   pthread_mutex_lock( &access );
 
-  for(int i=0;requested[i]!=0 && requested[i]!='c';i+=2) 
+  for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
-    if(requested[i+1]=='a' || requested[i+1]=='r') 
+    if(thisub->access=='a' || thisub->access=='r') 
     {
-      if((deviceTable->GetDeviceAccess(requested[i]) == 'a') ||
-         (deviceTable->GetDeviceAccess(requested[i]) == 'r'))
+      if((deviceTable->GetDeviceAccess(thisub->code,thisub->index) == 'a') ||
+         (deviceTable->GetDeviceAccess(thisub->code,thisub->index) == 'r'))
       {
-        if((devicep = deviceTable->GetDevice(requested[i])))
+        if((devicep = deviceTable->GetDevice(thisub->code,thisub->index)))
         {
-          data[totalsize] = requested[i];
-          size = devicep->GetLock()->GetData(devicep, &data[totalsize+3], maxsize-totalsize-3);
+          data[totalsize] = (unsigned char)(thisub->code);
+          size = devicep->GetLock()->GetData(devicep, 
+                                             &data[totalsize+3], 
+                                             maxsize-totalsize-3);
 
           // *** HACK -- ahoward
           // Skip this data if it is zero length
           //
-          if (size == 0)
+          if(size == 0)
           {
               puts("BuldMsg(): got zero length data; ignoring");
               continue;
@@ -557,13 +501,14 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
         }
         else
         {
-          printf("BuildMsg(): found NULL pointer for device '%c'\n",
-                          (char)requested[i]);
+          printf("BuildMsg(): found NULL pointer for device \"%d:%d\"\n",
+                          thisub->code, thisub->index);
         }
       }
       else
       {
-        printf("BuildMsg(): Unknown device \"%c\"\n", (char)requested[i]);
+        printf("BuildMsg(): Unknown device \"%d:%d\"\n",
+                        thisub->code,thisub->index);
       }
     }
   }
@@ -573,50 +518,44 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
   return(totalsize);
 }
 
-int CClientData::Subscribe( unsigned char device ) 
+int CClientData::Subscribe( unsigned short code, unsigned short index )
 {
   CDevice* devicep;
 
-  if((devicep = deviceTable->GetDevice(device)))
+  if((devicep = deviceTable->GetDevice(code,index)))
   {
     return(devicep->GetLock()->Subscribe(devicep));
   }
   else
   {
-    printf("Subscribe(): Unknown device \"%c\" - subscribe cancelled\n", 
-                    device);
-    return( 1 );
+    printf("Subscribe(): Unknown device \"%d:%d\" - subscribe cancelled\n", 
+                    code,index);
+    return(1);
   }
 }
 
 
-void CClientData::Unsubscribe( unsigned char device ) 
+void CClientData::Unsubscribe( unsigned short code, unsigned short index )
 {
   CDevice* devicep;
 
-  if((devicep = deviceTable->GetDevice(device)))
+  if((devicep = deviceTable->GetDevice(code,index)))
   {
     devicep->GetLock()->Unsubscribe(devicep);
   }
   else
   {
-    printf("Unsubscribe(): Unknown device \"%c\" - unsubscribe cancelled\n", 
-                    device);
+    printf("Unsubscribe(): Unknown device \"%d:%d\" - unsubscribe cancelled\n", 
+                    code,index);
   }
 }
 
 void
 CClientData::PrintRequested(char* str)
 {
-  int i;
   printf("%s:requested: ",str);
-  for(i=0;i<20;i++)
-  {
-    if(!requested[i])
-      printf("0");
-    else
-      printf("%c",requested[i]);
-  }
+  for(CDeviceSubscription* thissub=requested;thissub;thissub=thissub->next)
+    printf("%d:%d:%d ", thissub->code,thissub->index,thissub->access);
   puts("");
 }
 

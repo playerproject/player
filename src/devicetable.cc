@@ -30,23 +30,24 @@
 // initialize the table
 CDeviceTable::CDeviceTable()
 {
-  for(int i = 0; i < MAX_NUM_DEVICES; i++)
-  {
-    devices[i].access = 'e';
-    devices[i].devicep = (CDevice*)NULL;
-  }
+  numdevices = 0;
+  head = NULL;
   pthread_mutex_init(&mutex,NULL);
 }
 
 // tear down the table
 CDeviceTable::~CDeviceTable()
 {
+  CDeviceEntry* thisentry = head;
+  CDeviceEntry* tmpentry;
   // for each registered device, delete it.
   pthread_mutex_lock(&mutex);
-  for(int i=0;i<MAX_NUM_DEVICES;i++)
+  while(thisentry)
   {
-    if(devices[i].devicep)
-      delete devices[i].devicep;
+    tmpentry = thisentry->next;
+    delete thisentry;
+    numdevices--;
+    thisentry = tmpentry;
   }
   pthread_mutex_unlock(&mutex);
   
@@ -59,37 +60,75 @@ CDeviceTable::~CDeviceTable()
 // devicep is the controlling object (e.g., sonarDevice for sonar)
 //  
 // returns 0 on success, non-zero on failure (device not added)
-int CDeviceTable::AddDevice(char code, char access, CDevice* devicep)
+int CDeviceTable::AddDevice(unsigned short code, unsigned short index, 
+                            unsigned char access, CDevice* devicep)
 {
-  // right now, don't check for error, just overwrite the old
+  CDeviceEntry* thisentry;
+  CDeviceEntry* preventry;
+  // right now, don't check for preexisting device, just overwrite the old
   // device.  shouldn't really come up.
-
   pthread_mutex_lock(&mutex);
-  devices[code].access = access;
-  devices[code].devicep = devicep;
+  for(thisentry = head,preventry=NULL; thisentry; 
+      preventry=thisentry, thisentry=thisentry->next)
+  {
+    if((thisentry->code == code) && (thisentry->index == index))
+      break;
+  }
+
+  if(!thisentry)
+  {
+    thisentry = new CDeviceEntry;
+    if(preventry)
+      preventry->next = thisentry;
+    else
+      head = thisentry;
+    numdevices++;
+  }
+
+  thisentry->code = code;
+  thisentry->index = index;
+  thisentry->access = access;
+  thisentry->devicep = devicep;
   pthread_mutex_unlock(&mutex);
   return(0);
 }
 
 // returns the controlling object for the given code (or NULL
 // on failure)
-CDevice* CDeviceTable::GetDevice(char code)
+CDevice* CDeviceTable::GetDevice(unsigned short code, unsigned index)
 {
-  CDevice* devicep;
+  CDeviceEntry* thisentry;
+  CDevice* devicep = NULL;
   pthread_mutex_lock(&mutex);
-  devicep = devices[code].devicep;
+  for(thisentry=head;thisentry;thisentry=thisentry->next)
+  {
+    if((thisentry->code == code) && (thisentry->index == index))
+    {
+      devicep = thisentry->devicep;
+      break;
+    }
+  }
   pthread_mutex_unlock(&mutex);
   return(devicep);
 }
 
 // returns the code for access ('r', 'w', or 'a') for the given 
 // device, or 'e' on failure
-char CDeviceTable::GetDeviceAccess(char code)
+unsigned char CDeviceTable::GetDeviceAccess(unsigned short code, 
+                                            unsigned short index)
 {
-  char access;
+  CDeviceEntry* thisentry;
+  char access = 'e';
 
   pthread_mutex_lock(&mutex);
-  access = devices[code].access;
+  for(thisentry=head;thisentry;thisentry=thisentry->next)
+  {
+    if((thisentry->code == code) && (thisentry->index == index))
+    {
+      access = thisentry->access;
+      break;
+    }
+  }
   pthread_mutex_unlock(&mutex);
   return(access);
 }

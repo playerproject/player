@@ -122,12 +122,11 @@ CDeviceTable* deviceTable = new CDeviceTable();
 CClientData* clients[MAXNUMCLIENTS];
 pthread_mutex_t clients_mutex;
 bool SHUTTING_DOWN;
-  
+
 bool experimental = false;
 bool debug = false;
 
-void Interrupt( int dummy ) 
-{
+void Interrupt( int dummy ) {
   // setting this will suppress print statements from the client
   // deaths
   SHUTTING_DOWN = true;
@@ -138,9 +137,15 @@ void Interrupt( int dummy )
       delete clients[i];
   }
 
-  // the deviceTable now deletes all the devices that it contains
-  // on exit.
+  //delete laserDevice;
+  //delete sonarDevice;
+  //delete visionDevice;
+  //delete positionDevice;
+  //delete gripperDevice;
+  //delete miscDevice;
+  //delete ptzDevice;
   delete deviceTable;
+  //pthread_kill_other_threads_np();
   puts("Player quitting");
   exit(0);
 }
@@ -491,25 +496,25 @@ int main( int argc, char *argv[] )
 
   // add the devices to the global table
 #ifdef INCLUDE_LASER
-  deviceTable->AddDevice('l', 'r', laserDevice);
+  deviceTable->AddDevice('l', 0, 'r', laserDevice);
 #endif
 #ifdef INCLUDE_SONAR
-  deviceTable->AddDevice('s', 'r', sonarDevice);
+  deviceTable->AddDevice('s', 0, 'r', sonarDevice);
 #endif
 #ifdef INCLUDE_VISION
-  deviceTable->AddDevice('v', 'r', visionDevice);
+  deviceTable->AddDevice('v', 0, 'r', visionDevice);
 #endif
 #ifdef INCLUDE_POSITION
-  deviceTable->AddDevice('p', 'a', positionDevice);
+  deviceTable->AddDevice('p', 0, 'a', positionDevice);
 #endif
 #ifdef INCLUDE_GRIPPER
-  deviceTable->AddDevice('g', 'a', gripperDevice);
+  deviceTable->AddDevice('g', 0, 'a', gripperDevice);
 #endif
 #ifdef INCLUDE_MISC
-  deviceTable->AddDevice('m', 'r', miscDevice);
+  deviceTable->AddDevice('m', 0, 'r', miscDevice);
 #endif
 #ifdef INCLUDE_PTZ
-  deviceTable->AddDevice('z', 'a', ptzDevice);
+  deviceTable->AddDevice('z', 0, 'a', ptzDevice);
 #endif
 
   /* set up to handle SIGPIPE (happens when the client dies) */

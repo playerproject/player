@@ -32,22 +32,26 @@
 #include <device.h>
 #include <pthread.h>
 
-// since we're using a single character to identify devices, we
-// can have 256 (should be enough, i think)
-#define MAX_NUM_DEVICES 256
-
-typedef struct
+// one element in a linked list
+class CDeviceEntry
 {
-  char access;  // r, w, or a (read, write, or all)
-  CDevice* devicep; // pointer to the device object
-} device_info_t;
+  public:
+    unsigned short code;  // the 'name' by which we identify this kind of device
+    unsigned short index;  // which device we mean
+    unsigned char access;   // 'r', 'w', or 'a' (others?)
+    CDevice* devicep;  // the device itself
+    CDeviceEntry* next;  // next in list
+
+    CDeviceEntry() { devicep = NULL; next = NULL; }
+    ~CDeviceEntry() { if(devicep) delete devicep; }
+};
 
 class CDeviceTable
 {
   private:
     // we'll keep the device info here.
-    // yeah, yeah dynamic memory yadadyadayada...
-    device_info_t devices[MAX_NUM_DEVICES];
+    CDeviceEntry* head;
+    int numdevices;
     pthread_mutex_t mutex;
 
   public:
@@ -59,16 +63,16 @@ class CDeviceTable
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
     // returns 0 on success, non-zero on failure (device not added)
-    int AddDevice(char code, char access, CDevice* devicep);
+    int AddDevice(unsigned short code, unsigned short index, 
+                  unsigned char access, CDevice* devicep);
 
     // returns the controlling object for the given code (or NULL
     // on failure)
-    CDevice* GetDevice(char code);
+    CDevice* GetDevice(unsigned short code, unsigned index);
 
     // returns the code for access ('r', 'w', or 'a') for the given 
     // device, or 'e' on failure
-    char GetDeviceAccess(char code);
-
+    unsigned char GetDeviceAccess(unsigned short code, unsigned short index);
 };
 
 #endif

@@ -31,6 +31,7 @@
 #define _CLIENTDATA_H
 
 #include <pthread.h>
+#include <messages.h>
 
 typedef enum
 {
@@ -38,8 +39,23 @@ typedef enum
   REQUESTREPLY
 } server_mode_t;
 
-class CClientData {
-  unsigned char requested[20];
+// keep a linked list of these
+class CDeviceSubscription
+{
+  public:
+    unsigned short code;
+    unsigned short index;
+    unsigned char access;
+    CDeviceSubscription* next;
+
+    CDeviceSubscription() { next = NULL; access = 'e'; }
+};
+    
+
+class CClientData 
+{
+  CDeviceSubscription* requested;
+  int numsubs;
   pthread_mutex_t access, requesthandling;
 
   void MotorStop();
@@ -61,14 +77,13 @@ class CClientData {
 
   void HandleRequests( unsigned char *buffer, int readcnt );
   void RemoveBlanks();  
-  void RemoveReadRequests();
-  void RemoveWriteRequests();
-  void UpdateRequested( unsigned char *request );
-  bool CheckPermissions( unsigned char *command );
-  unsigned char FindPermission( unsigned char device );
+  void RemoveRequests();
+  void UpdateRequested(player_device_req_t req);
+  bool CheckPermissions(unsigned short code, unsigned short index);
+  unsigned char FindPermission( unsigned short code, unsigned short index);
   int BuildMsg( unsigned char *data, size_t maxsize );
-  void Unsubscribe( unsigned char device );
-  int Subscribe( unsigned char device );
+  void Unsubscribe( unsigned short code, unsigned short index );
+  int Subscribe( unsigned short code, unsigned short index );
 };
 
 

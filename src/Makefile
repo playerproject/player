@@ -63,18 +63,23 @@ install: $(SERVERNAME)
 	$(MKDIR) -p $(INSTALL_BIN)
 	$(INSTALL) -m 755 $(SERVERNAME) $(INSTALL_BIN)
 	$(MKDIR) -p $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 ../include/offsets.h $(INSTALL_INCLUDE)/offsets.h
+	$(INSTALL) -m 644 ../include/playercommon.h $(INSTALL_INCLUDE)/playercommon.h
+	$(INSTALL) -m 644 ../include/messages.h $(INSTALL_INCLUDE)/messages.h
+	$(INSTALL) -m 644 ../include/stage.h $(INSTALL_INCLUDE)/stage.h
 
 uninstall:
 	$(RM) -f $(INSTALL_BIN)/$(SERVERNAME)
-	$(RM) -f $(INSTALL_INCLUDE)/offsets.h
+	$(RM) -f $(INSTALL_INCLUDE)/playercommon.h
+	$(RM) -f $(INSTALL_INCLUDE)/messages.h
+	$(RM) -f $(INSTALL_INCLUDE)/stage.h
 
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
 
 arenalock.o: ../include/device.h ../include/lock.h ../include/arenalock.h
 arenalock.o: ../include/errors.h
 clientdata.o: ../include/devicetable.h ../include/device.h ../include/lock.h
-clientdata.o: ../include/clientdata.h ../include/counter.h
+clientdata.o: ../include/clientdata.h ../include/messages.h
+clientdata.o: ../include/playercommon.h ../include/counter.h
 clientdata.o: ../include/packet.h
 devicetable.o: ../include/devicetable.h ../include/device.h ../include/lock.h
 gripperdevice.o: ../include/gripperdevice.h ../include/p2osdevice.h
@@ -85,6 +90,7 @@ laserdevice.o: ../include/playercommon.h ../include/laserdevice.h
 laserdevice.o: ../include/lock.h ../include/device.h ../include/messages.h
 lock.o: ../include/device.h ../include/lock.h ../include/errors.h
 main.o: ../VERSION ../include/pubsub_util.h ../include/clientdata.h
+main.o: ../include/messages.h ../include/playercommon.h
 main.o: ../include/devicetable.h ../include/device.h ../include/lock.h
 main.o: ../include/counter.h ../include/nodevice.h
 miscdevice.o: ../include/miscdevice.h ../include/p2osdevice.h
