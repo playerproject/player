@@ -634,7 +634,13 @@ typedef struct
 
   /** Relative beacon orientation (r, p, y). */
   double rot[3];
-  
+
+  /** Position uncertainty (x, y, z). */
+  double upos[3];
+
+  /** Orientation uncertainty (r, p, y). */
+  double urot[3];
+
 } playerc_fiducial_item_t;
 
 

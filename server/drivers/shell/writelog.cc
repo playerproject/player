@@ -409,7 +409,6 @@ void WriteLog::Main(void)
     if (this->wait_index >= 0)
     {
       // Wait on some device
-      // TODO: should be able to wait on any device
       device = this->devices + this->wait_index;
       device->device->Wait();
     }
@@ -717,18 +716,26 @@ void WriteLog::WriteTruth(player_truth_data_t *data)
 // Write fiducial data to file
 void WriteLog::WriteFiducial(player_fiducial_data_t *data)
 {
-  // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw>] ...
+  // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw> <ux> <uy> <uz> etc] ...
   fprintf(this->file, "%d", HUINT16(data->count));
   for(int i=0;i<HUINT16(data->count);i++)
   {
-    fprintf(this->file, " %d %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
+    fprintf(this->file, " %d"
+            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f"
+            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
             HINT16(data->fiducials[i].id),
             MM_M(HINT32(data->fiducials[i].pos[0])),
             MM_M(HINT32(data->fiducials[i].pos[1])),
             MM_M(HINT32(data->fiducials[i].pos[2])),
             MM_M(HINT32(data->fiducials[i].rot[0])),
             MM_M(HINT32(data->fiducials[i].rot[1])),
-            MM_M(HINT32(data->fiducials[i].rot[2])));
+            MM_M(HINT32(data->fiducials[i].rot[2])),
+            MM_M(HINT32(data->fiducials[i].upos[0])),
+            MM_M(HINT32(data->fiducials[i].upos[1])),
+            MM_M(HINT32(data->fiducials[i].upos[2])),
+            MM_M(HINT32(data->fiducials[i].urot[0])),
+            MM_M(HINT32(data->fiducials[i].urot[1])),
+            MM_M(HINT32(data->fiducials[i].urot[2])));
   }
   
   return;

@@ -110,10 +110,15 @@ void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *heade
     device->fiducials[i].pos[0] = ((int32_t) ntohl(fiducial->pos[0])) / 1000.0;
     device->fiducials[i].pos[1] = ((int32_t) ntohl(fiducial->pos[1])) / 1000.0;
     device->fiducials[i].pos[2] = ((int32_t) ntohl(fiducial->pos[2])) / 1000.0;
-
     device->fiducials[i].rot[0] = ((int32_t) ntohl(fiducial->rot[0])) / 1000.0;
     device->fiducials[i].rot[1] = ((int32_t) ntohl(fiducial->rot[1])) / 1000.0;
     device->fiducials[i].rot[2] = ((int32_t) ntohl(fiducial->rot[2])) / 1000.0;
+    device->fiducials[i].upos[0] = ((int32_t) ntohl(fiducial->upos[0])) / 1000.0;
+    device->fiducials[i].upos[1] = ((int32_t) ntohl(fiducial->upos[1])) / 1000.0;
+    device->fiducials[i].upos[2] = ((int32_t) ntohl(fiducial->upos[2])) / 1000.0;
+    device->fiducials[i].urot[0] = ((int32_t) ntohl(fiducial->urot[0])) / 1000.0;
+    device->fiducials[i].urot[1] = ((int32_t) ntohl(fiducial->urot[1])) / 1000.0;
+    device->fiducials[i].urot[2] = ((int32_t) ntohl(fiducial->urot[2])) / 1000.0;
 
     device->fiducials[i].range = sqrt(device->fiducials[i].pos[0] * device->fiducials[i].pos[0] +
                                       device->fiducials[i].pos[1] * device->fiducials[i].pos[1]);
