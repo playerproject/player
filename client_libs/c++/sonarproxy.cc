@@ -73,11 +73,12 @@ SonarProxy::GetSonarGeom()
      (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
     return(-1);
 
-  for(int i=0;i<PLAYER_NUM_SONAR_SAMPLES;i++)
+  sonar_pose.pose_count = ntohs(sonar_pose.pose_count);
+  for(int i=0;i<sonar_pose.pose_count;i++)
   {
-    sonar_pose.pose[i][0] = ntohs(sonar_pose.pose[i][0]);
-    sonar_pose.pose[i][1] = ntohs(sonar_pose.pose[i][1]);
-    sonar_pose.pose[i][2] = ntohs(sonar_pose.pose[i][2]);
+    sonar_pose.poses[i][0] = ntohs(sonar_pose.poses[i][0]);
+    sonar_pose.poses[i][1] = ntohs(sonar_pose.poses[i][1]);
+    sonar_pose.poses[i][2] = ntohs(sonar_pose.poses[i][2]);
   }
 
   return(0);

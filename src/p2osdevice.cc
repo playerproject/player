@@ -780,12 +780,13 @@ CP2OSDevice::Main()
 
               player_sonar_geom_t geom;
               geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+              geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
               for (int i = 0; i < PLAYER_NUM_SONAR_SAMPLES; i++)
               {
                 sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
-                geom.pose[i][0] = htons((short) (pose.x));
-                geom.pose[i][1] = htons((short) (pose.y));
-                geom.pose[i][2] = htons((short) (pose.th));
+                geom.poses[i][0] = htons((short) (pose.x));
+                geom.poses[i][1] = htons((short) (pose.y));
+                geom.poses[i][2] = htons((short) (pose.th));
               }
 
               if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 

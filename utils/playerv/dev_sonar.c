@@ -108,11 +108,11 @@ void sonar_update(sonar_t *sonar)
       if (playerc_sonar_get_geom(sonar->proxy) != 0)
         PRINT_ERR1("get_geom failed : %s", playerc_errorstr);    
 
-      for (i = 0; i < PLAYERC_SONAR_MAX_SCAN; i++)
+      for (i = 0; i < sonar->proxy->pose_count; i++)
         rtk_fig_origin(sonar->scan_fig[i],
-                       sonar->proxy->pose[i][0],
-                       sonar->proxy->pose[i][1],
-                       sonar->proxy->pose[i][2]);
+                       sonar->proxy->poses[i][0],
+                       sonar->proxy->poses[i][1],
+                       sonar->proxy->poses[i][2]);
     }
   }
   else

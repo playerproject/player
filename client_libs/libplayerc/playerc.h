@@ -545,9 +545,12 @@ typedef struct
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
+  // Number of pose values.
+  int pose_count;
+  
   // Pose of each sonar relative to robot (m, m, radians).  This
   // structure is filled by calling playerc_sonar_get_geom().
-  double pose[PLAYERC_SONAR_MAX_SCAN][3];
+  double poses[PLAYERC_SONAR_MAX_SCAN][3];
   
   // Number of points in the scan.
   int scan_count;

@@ -271,6 +271,9 @@ typedef struct
 /* the sonar data packet */
 typedef struct
 {
+  /* The number of valid range readings. */
+  uint16_t range_count;
+  
   /* start at the front left sonar and number clockwise */
   uint16_t ranges[PLAYER_NUM_SONAR_SAMPLES];
   
@@ -280,8 +283,12 @@ typedef struct
 /* Packet for configuring the sonar. */
 typedef struct
 {
-  uint8_t cmd;
+  /* Packet subtype.  Must be PLAYER_SONAR_POWER_REQ. */
+  uint8_t subtype;
+
+  /* Turn sonars on or off. */
   uint8_t arg;
+  
 } __attribute__ ((packed)) player_sonar_config_t;
 
 
@@ -291,8 +298,11 @@ typedef struct
   /* Packet subtype.  Must be PLAYER_SONAR_GET_GEOM. */
   uint8_t subtype;
 
+  /* The number of valid poses. */
+  uint16_t pose_count;
+
   /* Pose of each sonar, in robot cs (mm, mm, degrees). */
-  int16_t pose[PLAYER_NUM_SONAR_SAMPLES][3];
+  int16_t poses[PLAYER_NUM_SONAR_SAMPLES][3];
   
 } __attribute__ ((packed)) player_sonar_geom_t;
 
