@@ -126,22 +126,3 @@ int Stage1p4::Shutdown()
     }
   return 0;
 };
-
-
-// void Stage1p4::Save()
-// {
-//   puts( "SAVING" );
-  
-//   // TODO - get the current state of everything that was specified in
-//   // the world file
-
-//   // loop through all the models, requesting their position and
-//   // writing it to the worldfile
-//   //stg_client_world_foreach
-// }
-
-// void Stage1p4::Load()
-// {
-//   puts( "LOADING NOT YET IMPLEMENTED" );
-// }
-

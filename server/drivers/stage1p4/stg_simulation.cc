@@ -144,12 +144,7 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
     stg_world_model_name_lookup( Stage1p4::world, "root" );
   assert(root);
   
-  //stg_model_subscribe( root, STG_PROP_TIME, 100 ); //100ms
-  
-  // register the Save callback
-  //stg_client_install_save( Stage1p4::stage_client, Stage1p4::Save );
-  // register the Load callback
-  //stg_client_install_load( Stage1p4::stage_client, Stage1p4::Load );
+  stg_model_subscribe( root, STG_PROP_TIME, 100 ); //100ms
   
   // start the simulation
   printf( "    Stage driver starting world clock... " ); fflush(stdout);

@@ -81,7 +81,7 @@ void print_tv( char* str, struct timeval* tv  )
 
 int main(int argc, char **argv)
 {
-  int minR, minL;
+  double minR, minL;
 
   parse_args(argc,argv);
 
@@ -93,13 +93,20 @@ int main(int argc, char **argv)
 
   if(lp.access != 'r')
     exit(-1);
-    
   
+  for(int c=0; c<10; c++ )
+    robot.Read();
+    
+  lp.GetConfigure();
+
+  printf( "scan count %d\n",
+	  lp.scan_count );
+
   /* maybe turn on the motors */
   //if(turnOnMotors && pp.SetMotorState(1))
   //exit(1);
 
-  int newspeed, newturnrate;
+  double newspeed, newturnrate;
   /* go into read-think-act loop */
   for(;;)
   {
@@ -113,7 +120,7 @@ int main(int argc, char **argv)
     //print_tv( "laser.received", &lp.receivedtime );
 
     int small = INT_MAX;
-    for( int l=0; l<361; l++ )
+    for( int l=0; l<lp.scan_count; l++ )
       if( small>lp[l] ) small=lp[l];
 
     printf( "laser min %d\n", small );
@@ -126,22 +133,28 @@ int main(int argc, char **argv)
      * laser avoid (stolen from esben's java example)
      */
 
-    minL=INT_MAX; 
-    minR=INT_MAX;
-    for (int j=0; j<180; j++) {
+    minL=99999.9; 
+    minR=99999.9;
+
+    int scan_left_start = 0;
+    int scan_left_end = lp.scan_count / 2;
+    int scan_right_start = lp.scan_count / 2;
+    int scan_right_end = lp.scan_count;
+
+    for (int j=scan_left_start; j<scan_left_end; j++) {
       //printf("laser(%d):%d\n", j,robot.laser.ranges[j] & 0x1FFF);
       if (minR>lp[j])
         minR=lp[j];
     }
-    for (int j=181; j<361; j++) {
+    for (int j=scan_right_start; j<scan_right_end; j++) {
       if (minL>lp[j])
         minL=lp[j];
     }
  
-   printf("minR:%d\tminL:%d\n", minR,minL);
+   printf("minR:%f\tminL:%f\n", minR,minL);
 
-    int l=(100*minR)/500-100;
-    int r=(100*minL)/500-100;
+    int l=(1e5*minR)/500-100;
+    int r=(1e5*minL)/500-100;
     if (l>100) 
       l=100; 
     if (r>100) 
@@ -156,7 +169,7 @@ int main(int argc, char **argv)
     double v = newspeed / 1000.0;
     double w = DTOR(newturnrate);
 
-    printf( "v:%d  w:%d\n", v, w );
+    printf( "v:%f  w:%f\n", v, w );
               
     /* write commands to robot */
     pp.SetSpeed(v,w);

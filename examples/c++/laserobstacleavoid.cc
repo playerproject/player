@@ -71,19 +71,25 @@ parse_args(int argc, char** argv)
 
 int main(int argc, char **argv)
 {
-  int minR, minL;
+  double minR, minL;
 
   parse_args(argc,argv);
 
   PlayerClient robot(host,port);
+  PositionProxy pp(&robot,device_index,'w');
+  LaserProxy lp(&robot,device_index,'r');
 
   printf("%s\n",robot.conn.banner);
 
+  if(lp.access != 'r')
+    exit(-1);
+    
+ 
   /* maybe turn on the motors */
   //if(turnOnMotors && pp.SetMotorState(1))
   //exit(1);
 
-  int newspeed, newturnrate;
+  double newspeed, newturnrate;
   /* go into read-think-act loop */
   for(;;)
   {
@@ -99,30 +105,34 @@ int main(int argc, char **argv)
      * laser avoid (stolen from esben's java example)
      */
 
-    /*minL=INT_MAX; 
-    minR=INT_MAX;
-    for (int j=0; j<180; j++) {
+    minL=1e9;
+    minR=1e9;
+    for (int j=0; j<lp.scan_count/2; j++) {
       if (minR>lp[j])
         minR=lp[j];
     }
-    for (int j=181; j<361; j++) {
+    for (int j=lp.scan_count/2; j<lp.scan_count; j++) {
       if (minL>lp[j])
         minL=lp[j];
     }
-    int l=(100*minR)/500-100;
-    int r=(100*minL)/500-100;
+    printf("minR:%.3f\tminL:%.3f\n", minR,minL);
+    double l=(1e5*minR)/500-100;
+    double r=(1e5*minL)/500-100;
     if (l>100) 
       l=100; 
     if (r>100) 
       r=100;
-    newspeed = r+l;
-    newturnrate = r-l;
+
+    newspeed = (r+l)/1e3;
+
+    newturnrate = (r-l);
     newturnrate = min(newturnrate,40);
     newturnrate = max(newturnrate,-40);
-    */
-                  
+    newturnrate = DTOR(newturnrate);
+
+    printf( "speed %f  turn %f\n", newspeed, newturnrate );
+    
     /* write commands to robot */
-//    pp.SetSpeed(newspeed,newturnrate);
-//    pp.SetSpeed(0,0);
+    pp.SetSpeed( newspeed, newturnrate );
   }
 }

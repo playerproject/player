@@ -82,6 +82,15 @@ define chatterbox model
   spose[6] [  0.0   -0.050 270 ]
   spose[7] [  0.035 -0.035 315 ]
 
+  sbounds[0] [ 0 0.5 ]
+  sbounds[1] [ 0 0.5 ]
+  sbounds[2] [ 0 0.5 ]
+  sbounds[3] [ 0 0.5 ]
+  sbounds[4] [ 0 0.5 ]
+  sbounds[5] [ 0 0.5 ]
+  sbounds[6] [ 0 0.5 ]
+  sbounds[7] [ 0 0.5 ]
+
   size [0.10 0.10]
   nose 1
 )
