@@ -179,6 +179,9 @@ WriteLog::WriteLog(int code, ConfigFile* cf, int section)
     
     // Add to our device table
     device = this->devices + this->device_count++;
+    // TODO: should do something smarter here, to allow for logging from
+    //       devices on different ports.
+    device->id.port = global_playerport;
     device->id.code = iface.code;
     device->id.index = index;
     device->device = NULL;
