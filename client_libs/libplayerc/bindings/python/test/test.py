@@ -12,6 +12,7 @@ import threading
 
 from playerc import *
 
+from test_camera import *
 from test_position import *
 from test_laser import *
 from test_wifi import *

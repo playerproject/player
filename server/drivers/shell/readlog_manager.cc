@@ -41,6 +41,7 @@
 #include "driver.h"
 #include "deviceregistry.h"
 #include "clientmanager.h"
+#include "encode.h"
 
 #include "readlog_manager.h"
 
@@ -50,7 +51,7 @@ extern ClientManager* clientmanager;
 
 ////////////////////////////////////////////////////////////////////////////
 // Pointer to the one-and-only manager
-static ReadLogManager *manager;
+static ReadLogManager *manager = NULL;
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -58,7 +59,8 @@ static ReadLogManager *manager;
 int ReadLogManager_Init(const char *filename, double speed)
 {
   manager = new ReadLogManager(filename, speed);
-  return manager->Startup();
+  printf("manager 1 %p\n", manager);
+  return manager->Init();
 }
 
 
@@ -66,10 +68,28 @@ int ReadLogManager_Init(const char *filename, double speed)
 // Finalize the manager
 int ReadLogManager_Fini()
 {
-  manager->Shutdown();
+  manager->Fini();
   delete manager;
   manager = NULL;
   return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Start the reader
+int ReadLogManager_Startup()
+{
+  assert(manager);
+  printf("manager 2 %p\n", manager);
+  return manager->Startup();
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Stop the reader
+int ReadLogManager_Shutdown()
+{
+  return manager->Shutdown();
 }
 
 
@@ -106,10 +126,9 @@ ReadLogManager::~ReadLogManager()
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////////
 // Initialize driver
-int ReadLogManager::Startup()
+int ReadLogManager::Init()
 {
   // Reset the time
   this->server_time = 0;
@@ -121,14 +140,7 @@ int ReadLogManager::Startup()
     PLAYER_ERROR2("unable to open [%s]: %s\n", this->filename, strerror(errno));
     return -1;
   }
-
-  // Start our own driver thread
-  if (pthread_create(&this->thread, NULL, &DummyMain, this) != 0)
-  {
-    PLAYER_ERROR("unable to create device thread");
-    return -1;
-  }
-
+  
   // Playback enabled by default
   this->enable = true;
 
@@ -138,22 +150,54 @@ int ReadLogManager::Startup()
   // Autorewind not on by default
   this->autorewind = false;
 
+  // Make some space for parsing data from the file.  This size is not
+  // an exact upper bound; it's just my best guess.
+  this->line_size = 4 * PLAYER_MAX_MESSAGE_SIZE;
+  this->line = (char*) malloc(this->line_size);
+
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
 // Finalize the driver
+int ReadLogManager::Fini()
+{
+  // Free allocated mem
+  free(this->line);
+  
+  // Close the file
+  gzclose(this->file);
+  this->file = NULL;
+  
+  return 0;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////
+// Start the driver
+int ReadLogManager::Startup()
+{
+  // Start our own driver thread
+  if (pthread_create(&this->thread, NULL, &DummyMain, this) != 0)
+  {
+    PLAYER_ERROR("unable to create device thread");
+    return -1;
+  }
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Stop the driver
 int ReadLogManager::Shutdown()
 {
   // Stop the driver thread
   pthread_cancel(this->thread);
   if (pthread_join(this->thread, NULL) != 0)
     PLAYER_WARN("error joining device thread");
-
-  // Close the file
-  gzclose(this->file);
-  this->file = NULL;
   
   return 0;
 }
@@ -220,7 +264,6 @@ void *ReadLogManager::DummyMain(void *_this)
 void ReadLogManager::Main()
 {
   int i, len, linenum;
-  char line[8192];
   int token_count;
   char *tokens[4096];
 
@@ -285,7 +328,7 @@ void ReadLogManager::Main()
     }
 
     // Read a line from the file
-    if(gzgets(this->file, line, sizeof(line)) == NULL)
+    if (gzgets(this->file, this->line, this->line_size) == NULL)
     {
       // File is done, so just loop forever, unless we're on auto-rewind,
       // or until a client requests rewind.
@@ -300,6 +343,9 @@ void ReadLogManager::Main()
       this->rewind_requested = true;
       continue;
     }
+
+    // Possible buffer overflow, so bail
+    assert(strlen(this->line) < this->line_size);
 
     linenum += 1;
 
@@ -369,6 +415,7 @@ void ReadLogManager::Main()
   return;
 }
 
+
 ////////////////////////////////////////////////////////////////////////////
 // Signed int conversion macros
 #define NINT16(x) (htons((int16_t)(x)))
@@ -429,7 +476,9 @@ int ReadLogManager::ParseHeader(int linenum, int token_count, char **tokens,
 int ReadLogManager::ParseData(Driver *device, int linenum,
                               int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
-  if (device->device_id.code == PLAYER_LASER_CODE)
+  if (device->device_id.code == PLAYER_CAMERA_CODE)
+    return this->ParseCamera(device, linenum, token_count, tokens, tsec, tusec);
+  else if (device->device_id.code == PLAYER_LASER_CODE)
     return this->ParseLaser(device, linenum, token_count, tokens, tsec, tusec);
   else if (device->device_id.code == PLAYER_POSITION_CODE)
     return this->ParsePosition(device, linenum, token_count, tokens, tsec, tusec);
@@ -442,6 +491,56 @@ int ReadLogManager::ParseData(Driver *device, int linenum,
 
   PLAYER_WARN("unknown device code");
   return -1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Parse camera data
+int ReadLogManager::ParseCamera(Driver *device, int linenum,
+                               int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
+{
+  player_camera_data_t *data;
+  size_t src_size, dst_size;
+  
+  if (token_count < 13)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+
+  data = (player_camera_data_t*) malloc(sizeof(player_camera_data_t));
+  assert(data);
+
+  printf("%s %s %s %s %s %s %d\n",
+         tokens[6], tokens[7], tokens[8], tokens[9],
+         tokens[10], tokens[11], strlen(tokens[12]));
+    
+  data->width = NUINT16(atoi(tokens[6]));
+  data->height = NUINT16(atoi(tokens[7]));
+  data->depth = atoi(tokens[8]);
+  data->format = atoi(tokens[9]);
+  data->compression = atoi(tokens[10]);
+  data->image_size = NUINT16(atoi(tokens[11]));
+  
+  // Check sizes
+  src_size = NUINT16(data->image_size);
+  assert(strlen(tokens[12]) == src_size);
+  dst_size = ::DecodeHexSize(src_size);
+  assert(dst_size < sizeof(data->image));
+
+  printf("%d %d %d\n", strlen(tokens[12]), src_size, dst_size);
+
+  // Decode string
+  ::DecodeHex(data->image, dst_size, tokens[12], src_size);
+              
+  struct timeval ts;
+  ts.tv_sec = tsec;
+  ts.tv_usec = tusec;
+  device->PutData(data, sizeof(*data) - sizeof(data->image) + dst_size, &ts);
+
+  free(data);
+  
+  return 0;
 }
 
 

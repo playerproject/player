@@ -27,6 +27,68 @@
  * The writelog driver will write data from another device to a log file.
  * The readlog driver will replay the data as if it can from the real sensors.
  */
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_readlog Readlog driver
+
+The readlog driver can be used to ``replay'' data stored in a log
+file.  This is particularly useful for debugging client programs,
+since users may run their clients against the same data set over and
+over again.  Suitable log files can be generated using the @ref
+player_driver_writelog driver.
+
+Note that, to make use of log file data, Player must be started in a
+special mode:
+
+@verbatim
+  $ player -r <logfile> <configfile>
+@endverbatim
+
+The <pre>-r</pre> switch instructs Player to load the given log file,
+and replay the data according the configuration specified in the
+configuration file.  See the below for some usage examples of the
+readlog driver.
+
+
+@par Interfaces
+
+- @ref player_interface_log
+
+
+@par Supported configuration requests
+
+- TODO
+
+@par Configuration file options
+
+- index 0
+  - If there is more than one entry in the log file for a given
+    interface type (e.g., two different position devices have recorded data),
+    the index option can be used to specify which of these will be read.
+
+      
+@par Example 
+
+@verbatim
+driver
+(
+  name "readlog"
+  devices ["laser:0"]
+  index 0
+)
+@endverbatim
+
+driver
+(
+  name "readlog"
+  devices ["log:0"]
+  index 0
+  enable 1
+  alwayson 1
+)
+@endverbatim
+*/
+/** @} */
 
 #include <assert.h>
 #include <ctype.h>
@@ -155,7 +217,7 @@ int ReadLog::Setup()
   }
 
   // Clear the data buffer
-  this->PutData(NULL, 0, NULL);
+  //TESTIG this->PutData(NULL, 0, NULL);
     
   return 0;
 }
