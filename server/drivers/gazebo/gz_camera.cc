@@ -196,6 +196,8 @@ void GzCamera::Update()
     this->data.width = htons(this->iface->data->width);
     this->data.height = htons(this->iface->data->height);
     this->data.depth = this->iface->data->depth;
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
     this->data.image_size = htonl(this->iface->data->image_size);
 
     // Set the image pixels

@@ -607,8 +607,9 @@ void WriteLog::WriteCamera(player_camera_data_t *data)
   char *str;
 
   // Image format
-  fprintf(this->file, "%d %d %d %d %d",
-          HUINT16(data->width), HUINT16(data->height), data->depth, data->compression,
+  fprintf(this->file, "%d %d %d %d %d %d",
+          HUINT16(data->width), HUINT16(data->height),
+          data->depth, data->format, data->compression,
           HUINT32(data->image_size));
 
   // Write image bytes
