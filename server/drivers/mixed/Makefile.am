@@ -1,1 +1,1 @@
-SUBDIRS = p2os rwi reb rmp rflex botrics clodbuster nomad khepera evolution
+SUBDIRS = p2os rwi reb rmp rflex botrics clodbuster nomad khepera evolution cmucam2
