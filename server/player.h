@@ -249,6 +249,7 @@ typedef struct
 /*
  * Power interface
  */
+
 typedef struct
 {
   uint16_t  charge;
@@ -256,6 +257,14 @@ typedef struct
 
 // TODO: what does this do?
 #define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
+
+/* Packet for requesting power config  - replies with a player_power_data_t*/
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_MAIN_POWER_REQ. */
+  uint8_t subtype;
+} __attribute__ ((packed)) player_power_config_t;
+
 /*************************************************************************/
 
 
@@ -434,7 +443,7 @@ typedef struct
   /* Packet subtype.  Must be PLAYER_P2OS_SONAR_POWER_REQ. */
   uint8_t subtype;
 
-  /* Turn sonars on or off. */
+  /* Turn power off (0) or on (>0) */
   uint8_t value;
 } __attribute__ ((packed)) player_sonar_power_config_t;
 /*************************************************************************/
