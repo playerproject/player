@@ -168,7 +168,7 @@ PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
 PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[no],[opencv/cv.h],[],["-lopencv"])
 
-PLAYER_ADD_DRIVER([festival],[drivers/speech],[no],[],[],[])
+PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
 
@@ -228,9 +228,6 @@ PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[no],[],[],[])
 PLAYER_ADD_DRIVER([khepera],[drivers/mixed/khepera],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[yes],[],[],[])
-
-PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],[gsl/gsl_version.h],[],
-                  ["-lgsl -lgslcblas"])
 
 PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
