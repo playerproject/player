@@ -27,10 +27,10 @@ extern "C" {
 			int* num_samples, double ranges[]);
   
   void SonarGeomPack( player_sonar_geom_t* geom, 
-		      int num_samples, double** poses );
+		      int num_samples, double poses[][3] );
   
   void SonarGeomUnpack( player_sonar_geom_t* geom, 
-			int* num_samples, double** poses );
+			int* num_samples, double poses[][3] );
   
   void PositionDataPack( player_position_data_t* data,
 			 double xpos, double ypos, double yaw,

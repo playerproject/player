@@ -58,12 +58,11 @@ void SonarDataUnpack( player_sonar_data_t* data,
   // convert from integer mm to double m
   for (s = 0; s < *num_samples; s++)
     ranges[s] = M_U16(data->ranges[s]);
-  //ranges[s] = (double)ntohs(data->ranges[s]) / 1000.0;
 }
 
 
 void SonarGeomPack( player_sonar_geom_t* geom, 
-		    int num_samples, double** poses )
+		    int num_samples, double poses[][3] )
 {
   int s;
   
@@ -79,7 +78,7 @@ void SonarGeomPack( player_sonar_geom_t* geom,
 }
 
 void SonarGeomUnpack( player_sonar_geom_t* geom, 
-		      int* num_samples, double** poses )
+		      int* num_samples, double poses[][3] )
 {
   int s;
   
