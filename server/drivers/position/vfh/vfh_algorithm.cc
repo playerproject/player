@@ -1,5 +1,6 @@
 #include "vfh_algorithm.h"
 
+#include <stdio.h>
 #include <assert.h>
 #include <playertime.h>
 #include <math.h>
