@@ -119,6 +119,7 @@ class VFH_Class : public CDevice
     int HIST_SIZE;
     int MAX_SPEED;
     int MAX_TURNRATE;
+    int MIN_TURNRATE;
 
     vector<vector<float> > Cell_Direction;
     vector<vector<float> > Cell_Base_Mag;
@@ -138,7 +139,7 @@ class VFH_Class : public CDevice
     int *Min_Turning_Radius;
     int Init(double cell_width, int window_diameter, int sector_angle,
                 double robot_radius, double safety_dist, int max_speed, 
-		int max_turnrate, double binary_hist_low, 
+		int max_turnrate, int min_turnrate, double binary_hist_low, 
 		double binary_hist_high, double u1, double u2); 
     int VFH_Allocate();
     int Update_VFH();
@@ -784,9 +785,9 @@ void VFH_Class::Main()
       {
         turnrate = (int)rint((angdiff/180.0) * MAX_TURNRATE);
         if(turnrate < 0)
-          turnrate = MIN(turnrate,-10);
+          turnrate = MIN(turnrate,-this->MIN_TURNRATE);
         else
-          turnrate = MAX(turnrate,10);
+          turnrate = MAX(turnrate,this->MIN_TURNRATE);
       }
       else
         turnrate = 0;
@@ -829,7 +830,7 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
   double size;
   double cell_size, robot_radius, safety_dist, free_space_cutoff, obs_cutoff;
   double weight_desired_dir, weight_current_dir;
-  int window_diameter, sector_angle, max_speed, max_turnrate;
+  int window_diameter, sector_angle, max_speed, max_turnrate, min_turnrate;
 
   this->speed = 0;
   this->turnrate = 0;
@@ -859,8 +860,9 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
   sector_angle = cf->ReadInt(section, "sector_angle", 5);
   robot_radius = cf->ReadLength(section, "robot_radius", 0.25) * 1000.0;
   safety_dist = cf->ReadLength(section, "safety_dist", 0.1) * 1000.0;
-  max_speed = (int) (1000 * cf->ReadLength(section, "max_speed", 0.2));
-  max_turnrate = (int) (180 / M_PI * cf->ReadAngle(section, "max_turnrate", 40 * M_PI / 180));
+  max_speed = (int) rint(1000 * cf->ReadLength(section, "max_speed", 0.2));
+  max_turnrate = (int) rint(RTOD(cf->ReadAngle(section, "max_turnrate", DTOR(40))));
+  min_turnrate = (int) rint(RTOD(cf->ReadAngle(section, "min_turnrate", DTOR(10))));
   free_space_cutoff = cf->ReadLength(section, "free_space_cutoff", 2000000.0);
   obs_cutoff = cf->ReadLength(section, "obs_cutoff", free_space_cutoff);
   weight_desired_dir = cf->ReadLength(section, "weight_desired_dir", 5.0);
@@ -871,8 +873,9 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
 
   // Allocate and intialize with defaults, for now
   this->Init(cell_size, window_diameter, sector_angle, robot_radius,
-		  safety_dist, max_speed, max_turnrate, free_space_cutoff,
-		  obs_cutoff, weight_desired_dir, weight_current_dir);
+		  safety_dist, max_speed, max_turnrate, min_turnrate,
+		  free_space_cutoff, obs_cutoff, weight_desired_dir,
+		  weight_current_dir);
 
   this->truth = NULL;
   this->truth_index = cf->ReadInt(section, "truth_index", -1);
@@ -967,9 +970,12 @@ int VFH_Class::VFH_Allocate() {
   return(1);
 }
 
-int VFH_Class::Init(double cell_width, int window_diameter, int sector_angle, double robot_radius,
-		double safety_dist, int max_speed, int max_turnrate, double binary_hist_low, double binary_hist_high,
-		double u1, double u2) {
+int VFH_Class::Init(double cell_width, int window_diameter, 
+                    int sector_angle, double robot_radius,
+                    double safety_dist, int max_speed, int max_turnrate,
+                    int min_turnrate, double binary_hist_low, double
+                    binary_hist_high, double u1, double u2) 
+{
   int x, y, i;
   float plus_dir, neg_dir, plus_sector, neg_sector;
   bool plus_dir_bw, neg_dir_bw, dir_around_sector;
@@ -990,6 +996,7 @@ int VFH_Class::Init(double cell_width, int window_diameter, int sector_angle, do
 
   MAX_SPEED = max_speed;
   MAX_TURNRATE = max_turnrate;
+  MIN_TURNRATE = min_turnrate;
 
   Binary_Hist_Low = binary_hist_low;
   Binary_Hist_High = binary_hist_high;
