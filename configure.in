@@ -274,7 +274,7 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 #AC_HEADER_TIME
 
 dnl Checks for library functions.
-AC_REPLACE_FUNCS(scandir)
+AC_REPLACE_FUNCS(scandir poll)
 AC_CHECK_FUNCS(cfmakeraw sigblock)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
