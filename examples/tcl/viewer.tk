@@ -20,6 +20,7 @@
 
 
 
+# for the 'signal' command
 package require Tclx
 
 # get the robot client utilities
@@ -31,17 +32,15 @@ if {[file exists ../../client_libs/tcl/playerclient.tcl]} {
 
 set CANVAS_WIDTH 800
 set CANVAS_HEIGHT 800
+set PI 3.14159
 
 # max range of 8 meters
 set MAX_RANGE 8000.0
 
-
  
 set host localhost
-# default device string
-set device_str "[binary format SS $PLAYER_POSITION_CODE 0]a[binary format SS $PLAYER_SONAR_CODE 0]r[binary format SS $PLAYER_LASER_CODE 0]r[binary format SS $PLAYER_VISION_CODE 0]r[binary format SS $PLAYER_PTZ_CODE 0]a"
 
-set USAGE "USAGE: viewer.tk -- \[-h <host>\] \[-p <port>\] \[-d <device_string>\] \[-s <size>\]\n  -h <host> : hostname/IP where Player is running (default: $host)\n  -p <port> : TCP port where Player is running (default: $port)\n  -d <device_string> : Player device request string (default: $device_str)\n  -s <size> : width/height (in pixels) of the sensor display (default: $CANVAS_HEIGHT)"
+set USAGE "USAGE: viewer.tk -- \[-h <host>\] \[-p <port>\] \[-s <size>\]\n  -h <host> : hostname/IP where Player is running (default: $host)\n  -p <port> : TCP port where Player is running (default: $player_port)\n -s <size> : width/height (in pixels) of the sensor display (default: $CANVAS_HEIGHT)"
        
 set i 0
 while {$i < $argc} {
@@ -58,14 +57,7 @@ while {$i < $argc} {
       puts $USAGE 
       exit 1
     }
-    set port [lindex $argv $i]
-  } elseif {![string compare [lindex $argv $i] "-d"]} {
-    incr i
-    if {$i == $argc} {
-      puts $USAGE 
-      exit 1
-    }
-    set device_str [lindex $argv $i]
+    set player_port [lindex $argv $i]
   } elseif {![string compare [lindex $argv $i] "-s"]} {
     incr i
     if {$i == $argc} {
@@ -81,26 +73,51 @@ while {$i < $argc} {
   incr i
 }
 
+# we'll multiply values in mm by this in order to display them
 set CANVAS_CONV_FACTOR [expr ($CANVAS_HEIGHT / 2.0)  / $MAX_RANGE]
 
-array set sonar_positions [list\
-  0,x [expr $CANVAS_CONV_FACTOR * -130] 0,y  [expr $CANVAS_CONV_FACTOR * -115]\
-  1,x [expr $CANVAS_CONV_FACTOR * -115] 1,y  [expr $CANVAS_CONV_FACTOR * -155]\
-  2,x [expr $CANVAS_CONV_FACTOR * -80] 2,y   [expr $CANVAS_CONV_FACTOR * -190]\
-  3,x [expr $CANVAS_CONV_FACTOR * -25] 3,y   [expr $CANVAS_CONV_FACTOR * -210]\
-  4,x [expr $CANVAS_CONV_FACTOR * 25] 4,y    [expr $CANVAS_CONV_FACTOR * -210]\
-  5,x [expr $CANVAS_CONV_FACTOR * 80] 5,y    [expr $CANVAS_CONV_FACTOR * -190]\
-  6,x [expr $CANVAS_CONV_FACTOR * 115] 6,y   [expr $CANVAS_CONV_FACTOR * -155]\
-  7,x [expr $CANVAS_CONV_FACTOR * 130] 7,y   [expr $CANVAS_CONV_FACTOR * -115]\
-  8,x [expr $CANVAS_CONV_FACTOR * 130] 8,y    [expr $CANVAS_CONV_FACTOR * 115]\
-  9,x [expr $CANVAS_CONV_FACTOR * 115] 9,y    [expr $CANVAS_CONV_FACTOR * 155]\
-  10,x [expr $CANVAS_CONV_FACTOR * 80] 10,y    [expr $CANVAS_CONV_FACTOR * 190]\
-  11,x [expr $CANVAS_CONV_FACTOR * 25] 11,y    [expr $CANVAS_CONV_FACTOR * 210]\
-  12,x [expr $CANVAS_CONV_FACTOR * -25] 12,y   [expr $CANVAS_CONV_FACTOR * 210]\
-  13,x [expr $CANVAS_CONV_FACTOR * -80] 13,y   [expr $CANVAS_CONV_FACTOR * 190]\
-  14,x [expr $CANVAS_CONV_FACTOR * -115] 14,y  [expr $CANVAS_CONV_FACTOR * 155]\
-  15,x [expr $CANVAS_CONV_FACTOR * -130] 15,y  [expr $CANVAS_CONV_FACTOR * 115]]
+# precompute trig operations on laser angles
+# saves lots of time later
+array set laser_angles {}
+set i 0
+while {$i < $PLAYER_NUM_LASER_SAMPLES}  {
+  set laser_angles($i,cos) [expr cos(((-90 + ($i * 0.5)) * $PI) / 180.0)]
+  set laser_angles($i,sin) [expr sin(((-90 + ($i * 0.5)) * $PI) / 180.0)]
+  incr i
+}
 
+
+# from the ActivMedia specs, these are the positions of the sonars (and thus
+# the border of the robot)
+array set sonar_positions [list\
+  0,x  -130 0,y  -115 0,theta   90\
+  1,x  -115 1,y  -155 1,theta   50\
+  2,x   -80 2,y  -190 2,theta   30\
+  3,x   -25 3,y  -210 3,theta   10\
+  4,x    25 4,y  -210 4,theta  -10\
+  5,x    80 5,y  -190 5,theta  -30\
+  6,x   115 6,y  -155 6,theta  -50\
+  7,x   130 7,y  -115 7,theta  -90\
+  8,x   130 8,y   115 8,theta  -90\
+  9,x   115 9,y   155 9,theta -130\
+  10,x   80 10,y  190 10,theta -150\
+  11,x   25 11,y  210 11,theta -170\
+  12,x  -25 12,y  210 12,theta  170\
+  13,x  -80 13,y  190 13,theta  150\
+  14,x -115 14,y  155 14,theta  130\
+  15,x -130 15,y  115 15,theta   90]
+
+# precompute trig operations on sonar angles
+# saves lots of time later
+array set sonar_angles {}
+set i 0
+while {$i < $PLAYER_NUM_SONAR_SAMPLES}  {
+  set sonar_angles($i,cos) \
+    [expr cos((($sonar_positions($i,theta) * $PI)/180.0))]
+  set sonar_angles($i,sin) \
+    [expr sin((($sonar_positions($i,theta) * $PI)/180.0))]
+  incr i
+}
 
 proc toggle_motor_state {} {
   global motor_state
@@ -108,7 +125,10 @@ proc toggle_motor_state {} {
   ChangeMotorState $motor_state
 }
 
-#set bitmap_path [file join [file dirname $argv0] bitmaps]
+#########################################################################
+# following are definitions for the arrow bitmaps used on the control
+# buttons
+#
 set leftarrow [image create bitmap -data \
  "#define leftarrow_width 12 #define leftarrow_height 12 static char leftarrow_bits[] = { 0x80,0x00,0xc0,0x00,0xe0,0x00,0xf0,0x00,0xf8,0x00,0xfc,0x00,0xfc,0x00,0xf8, 0x00,0xf0,0x00,0xe0,0x00,0xc0,0x00,0x80,0x00};"]
 set rightarrow [image create bitmap -data \
@@ -117,7 +137,7 @@ set uparrow [image create bitmap -data \
  "#define uparrow_width 12 #define uparrow_height 12 static char uparrow_bits[] = { 0x00,0x00,0x00,0x00,0x60,0x00,0xf0,0x00,0xf8,0x01,0xfc,0x03,0xfe,0x07,0xff, 0x0f,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};"]
 set downarrow [image create bitmap -data \
   "#define downarrow_width 12 #define downarrow_height 12 static char downarrow_bits[] = { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xff,0x0f,0xfe,0x07,0xfc,0x03,0xf8, 0x01,0xf0,0x00,0x60,0x00,0x00,0x00,0x00,0x00};"]
-
+#########################################################################
 
 proc createControlPanel {} {
   global motor_state leftarrow rightarrow uparrow downarrow
@@ -149,50 +169,54 @@ proc createControlPanel {} {
 }
 
 proc createStatusPanel {} {
-  global time xpos ypos battery heading compass frontbumpers rearbumpers
+  global current_time xpos ypos battery heading compass frontbumpers rearbumpers
   global stall
 
   frame .status_panel
 
-  label .status_panel.time -text Time:
-  label .status_panel.time_value -textvariable time -width 8 -anchor e
+  label .status_panel.time_sec -text "Time (sec):"
+  label .status_panel.time_value_sec -textvariable current_time_sec -width 10 -anchor e
+  label .status_panel.time_usec -text "       (usec):"
+  label .status_panel.time_value_usec -textvariable current_time_usec -width 10 -anchor e
   label .status_panel.xpos -text X:
-  label .status_panel.xpos_value -textvariable xpos -width 8 -anchor e
+  label .status_panel.xpos_value -textvariable xpos -width 10 -anchor e
   label .status_panel.ypos -text Y:
-  label .status_panel.ypos_value -textvariable ypos -width 8 -anchor e
+  label .status_panel.ypos_value -textvariable ypos -width 10 -anchor e
   label .status_panel.heading -text Heading:
-  label .status_panel.heading_value -textvariable heading -width 8 -anchor e
+  label .status_panel.heading_value -textvariable heading -width 10 -anchor e
   label .status_panel.compass -text Compass:
-  label .status_panel.compass_value -textvariable compass -width 8 -anchor e
+  label .status_panel.compass_value -textvariable compass -width 10 -anchor e
   label .status_panel.battery -text Battery:
-  label .status_panel.battery_value -textvariable battery -width 8 -anchor e
-  label .status_panel.frontbump -text "Front Bumpers:"
-  label .status_panel.frontbump_value -textvariable frontbumpers -width 8 \
-                                                -anchor e
-  label .status_panel.rearbump -text "Rear Bumpers:"
-  label .status_panel.rearbump_value -textvariable rearbumpers -width 8 \
-                                                -anchor e
+  label .status_panel.battery_value -textvariable battery -width 10 -anchor e
+  #label .status_panel.frontbump -text "Front Bumpers:"
+  #label .status_panel.frontbump_value -textvariable frontbumpers -width 10 \
+                                                #-anchor e
+  #label .status_panel.rearbump -text "Rear Bumpers:"
+  #label .status_panel.rearbump_value -textvariable rearbumpers -width 10 \
+                                                #-anchor e
   label .status_panel.stall -text Stall:
-  label .status_panel.stall_value -textvariable stall -width 8 -anchor e
+  label .status_panel.stall_value -textvariable stall -width 10 -anchor e
 
-  grid configure .status_panel.time -column 0 -row 0 -sticky w
-  grid configure .status_panel.time_value -column 1 -row 0 -sticky w
-  grid configure .status_panel.xpos -column 0 -row 1 -sticky w
-  grid configure .status_panel.xpos_value -column 1 -row 1 -sticky w
-  grid configure .status_panel.ypos -column 0 -row 2 -sticky w
-  grid configure .status_panel.ypos_value -column 1 -row 2 -sticky w
-  grid configure .status_panel.heading -column 0 -row 3 -sticky w
-  grid configure .status_panel.heading_value -column 1 -row 3 -sticky w
-  grid configure .status_panel.compass -column 0 -row 4 -sticky w
-  grid configure .status_panel.compass_value -column 1 -row 4 -sticky w
-  grid configure .status_panel.battery -column 0 -row 5 -sticky w
-  grid configure .status_panel.battery_value -column 1 -row 5 -sticky w
-  grid configure .status_panel.frontbump -column 0 -row 6 -sticky w
-  grid configure .status_panel.frontbump_value -column 1 -row 6 -sticky w
-  grid configure .status_panel.rearbump -column 0 -row 7 -sticky w
-  grid configure .status_panel.rearbump_value -column 1 -row 7 -sticky w
-  grid configure .status_panel.stall -column 0 -row 8 -sticky w
-  grid configure .status_panel.stall_value -column 1 -row 8 -sticky w
+  grid configure .status_panel.time_sec -column 0 -row 0 -sticky w
+  grid configure .status_panel.time_value_sec -column 1 -row 0 -sticky w
+  grid configure .status_panel.time_usec -column 0 -row 1 -sticky w
+  grid configure .status_panel.time_value_usec -column 1 -row 1 -sticky w
+  grid configure .status_panel.xpos -column 0 -row 2 -sticky w
+  grid configure .status_panel.xpos_value -column 1 -row 2 -sticky w
+  grid configure .status_panel.ypos -column 0 -row 3 -sticky w
+  grid configure .status_panel.ypos_value -column 1 -row 3 -sticky w
+  grid configure .status_panel.heading -column 0 -row 4 -sticky w
+  grid configure .status_panel.heading_value -column 1 -row 4 -sticky w
+  grid configure .status_panel.compass -column 0 -row 5 -sticky w
+  grid configure .status_panel.compass_value -column 1 -row 5 -sticky w
+  grid configure .status_panel.battery -column 0 -row 6 -sticky w
+  grid configure .status_panel.battery_value -column 1 -row 6 -sticky w
+  #grid configure .status_panel.frontbump -column 0 -row 7 -sticky w
+  #grid configure .status_panel.frontbump_value -column 1 -row 7 -sticky w
+  #grid configure .status_panel.rearbump -column 0 -row 8 -sticky w
+  #grid configure .status_panel.rearbump_value -column 1 -row 8 -sticky w
+  grid configure .status_panel.stall -column 0 -row 7 -sticky w
+  grid configure .status_panel.stall_value -column 1 -row 7 -sticky w
 
 }
 
@@ -226,7 +250,7 @@ proc createVisionPanel {} {
 
   canvas .vision_panel.canvas -width 160 -height 120 -bg black
 
-  checkbutton .vision_panel.vision_check \
+  checkbutton .vision_panel.vision_check -command toggle_vision\
     -variable display_vision -text "Display Vision"
 
   set display_vision 0
@@ -281,62 +305,92 @@ proc createVisionPanel {} {
 }
 
 
-proc toggle_sonar_buttons {} {
+#########################################################################
+# these toggle_* procs are called when the corresponding checkbuttons
+# are pressed.  they open and close the appropriate device
+#
+proc toggle_vision {} {
+  global display_vision
+  global PLAYER_VISION_CODE PLAYER_READ_MODE PLAYER_CLOSE_MODE
+  if {$display_vision} {
+    requestDeviceAccess $PLAYER_VISION_CODE 0 $PLAYER_READ_MODE
+  } else {
+    requestDeviceAccess $PLAYER_VISION_CODE 0 $PLAYER_CLOSE_MODE
+  }
+}
+proc toggle_sonar {} {
   global display_sonar
-
+  global PLAYER_SONAR_CODE PLAYER_READ_MODE PLAYER_CLOSE_MODE
   if {$display_sonar} {
-    .robot_panel.sonar_line configure -state normal
-    .robot_panel.sonar_dot configure -state normal
+    requestDeviceAccess $PLAYER_SONAR_CODE 0 $PLAYER_READ_MODE
   } else {
-    .robot_panel.sonar_line configure -state disabled
-    .robot_panel.sonar_dot configure -state disabled
+    requestDeviceAccess $PLAYER_SONAR_CODE 0 $PLAYER_CLOSE_MODE
   }
 }
-proc toggle_laser_buttons {} {
+proc toggle_laser {} {
   global display_laser
-
+  global PLAYER_LASER_CODE PLAYER_READ_MODE PLAYER_CLOSE_MODE
   if {$display_laser} {
-    .robot_panel.laser_line configure -state normal
-    .robot_panel.laser_dot configure -state normal
+    requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE
   } else {
-    .robot_panel.laser_line configure -state disabled
-    .robot_panel.laser_dot configure -state disabled
+    requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_CLOSE_MODE
   }
 }
+#########################################################################
 
 proc createRobotPanel {} {
   global display_sonar display_laser CANVAS_WIDTH CANVAS_HEIGHT
-  global display_sonar_mode display_laser_mode sonar_positions
-  global display_bumpers MAX_RANGE CANVAS_CONV_FACTOR
+  #global display_sonar_mode display_laser_mode 
+  global display_bumpers MAX_RANGE CANVAS_CONV_FACTOR sonar_positions
 
   frame .robot_panel
 
   # make a canvas to draw on
-  canvas .robot_panel.canvas -width $CANVAS_WIDTH -height $CANVAS_HEIGHT \
+  canvas .robot_panel.canvas \
+    -width [expr $CANVAS_WIDTH*1.1] \
+    -height [expr $CANVAS_HEIGHT*1.1] \
     -xscrollincrement 1 -yscrollincrement 1 -bg black
   # center the origin (it starts in the top left corner)
-  .robot_panel.canvas xview scroll -[expr $CANVAS_WIDTH/ 2] units
-  .robot_panel.canvas yview scroll -[expr $CANVAS_HEIGHT /2] units
+  .robot_panel.canvas xview scroll -[expr round($CANVAS_WIDTH * 1.1 / 2)] units
+  .robot_panel.canvas yview scroll -[expr round($CANVAS_HEIGHT * 1.1 / 2)] units
 
   # draw the robot
-  .robot_panel.canvas create line $sonar_positions(0,x) $sonar_positions(0,y)\
-                                  $sonar_positions(1,x) $sonar_positions(1,y)\
-                                  $sonar_positions(2,x) $sonar_positions(2,y)\
-                                  $sonar_positions(3,x) $sonar_positions(3,y)\
-                                  $sonar_positions(4,x) $sonar_positions(4,y)\
-                                  $sonar_positions(5,x) $sonar_positions(5,y)\
-                                  $sonar_positions(6,x) $sonar_positions(6,y)\
-                                  $sonar_positions(7,x) $sonar_positions(7,y)\
-                                  $sonar_positions(8,x) $sonar_positions(8,y)\
-                                  $sonar_positions(9,x) $sonar_positions(9,y)\
-                                  $sonar_positions(10,x) $sonar_positions(10,y)\
-                                  $sonar_positions(11,x) $sonar_positions(11,y)\
-                                  $sonar_positions(12,x) $sonar_positions(12,y)\
-                                  $sonar_positions(13,x) $sonar_positions(13,y)\
-                                  $sonar_positions(14,x) $sonar_positions(14,y)\
-                                  $sonar_positions(15,x) $sonar_positions(15,y)\
-                                  $sonar_positions(0,x) $sonar_positions(0,y)\
-                                  -fill red
+  .robot_panel.canvas create line \
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(0,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(0,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(1,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(1,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(2,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(2,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(3,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(3,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(4,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(4,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(5,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(5,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(6,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(6,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(7,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(7,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(8,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(8,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(9,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(9,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(10,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(10,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(11,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(11,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(12,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(12,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(13,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(13,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(14,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(14,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(15,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(15,y)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(0,x)]\
+    [expr $CANVAS_CONV_FACTOR * $sonar_positions(0,y)]\
+    -fill red
 
   # draw circles 1m apart
   set i 1000.0
@@ -347,18 +401,10 @@ proc createRobotPanel {} {
     set i [expr $i + 1000.0]
   }
 
-  checkbutton .robot_panel.sonar_check -command toggle_sonar_buttons\
+  checkbutton .robot_panel.sonar_check -command toggle_sonar\
     -variable display_sonar -text "Display Sonars"
-  radiobutton .robot_panel.sonar_line -value line -state disabled\
-    -variable display_sonar_mode -text "As Lines"
-  radiobutton .robot_panel.sonar_dot -value dot -state disabled\
-    -variable display_sonar_mode -text "As Dots"
-  checkbutton .robot_panel.laser_check -command toggle_laser_buttons\
+  checkbutton .robot_panel.laser_check -command toggle_laser\
     -variable display_laser -text "Display Laser"
-  radiobutton .robot_panel.laser_line -value line -state disabled\
-    -variable display_laser_mode -text "As Lines" 
-  radiobutton .robot_panel.laser_dot -value dot -state disabled\
-    -variable display_laser_mode -text "As Dots" 
   checkbutton .robot_panel.bumper_check \
     -variable display_bumpers -text "Display Bumpers"
 
@@ -366,18 +412,9 @@ proc createRobotPanel {} {
   set display_laser 0
   set display_bumpers 0
 
-  set display_sonar_mode line
-  set display_laser_mode line
-
   grid configure .robot_panel.canvas -column 0 -row 0 -columnspan 5
-
   grid configure .robot_panel.sonar_check -column 0 -row 1 -columnspan 2
-  grid configure .robot_panel.sonar_line -column 0 -row 2
-  grid configure .robot_panel.sonar_dot -column 1 -row 2
-
   grid configure .robot_panel.laser_check -column 2 -row 1 -columnspan 2
-  grid configure .robot_panel.laser_line -column 2 -row 2
-  grid configure .robot_panel.laser_dot -column 3 -row 2
   grid configure .robot_panel.bumper_check -column 4 -row 1 -columnspan 1
 }
 
@@ -388,6 +425,9 @@ proc gridAll {} {
   grid configure .vision_panel -column 1 -row 2 
 }
 
+#
+# helper proc to create the necessary widgets
+#
 proc go {} {
   createControlPanel
   createStatusPanel
@@ -396,10 +436,8 @@ proc go {} {
   gridAll
 }
 
-set laser_count 0
 proc drawobs {xoff yoff angle dist line_or_dot color} {
-  global CANVAS_CONV_FACTOR laser_count
-  set PI 3.14159
+  global CANVAS_CONV_FACTOR PI
 
   set xoff [expr $xoff * $CANVAS_CONV_FACTOR]
   set yoff [expr $yoff * $CANVAS_CONV_FACTOR]
@@ -412,48 +450,32 @@ proc drawobs {xoff yoff angle dist line_or_dot color} {
   if {$line_or_dot == "line"} {
     return [.robot_panel.canvas create line $xoff $yoff $x $y -fill $color]
   } else {
-    #
-    # i tried crosses instead of ovals....turns out it's slower...
-    #
-    #return [concat \
-      #[.robot_panel.canvas create line \
-                           #[expr $x - 2.0] $y \
-                           #[expr $x + 2.0] $y \
-                           #-fill $color] \
-      #[.robot_panel.canvas create line \
-                           #$x [expr $y - 2.0] \
-                           #$x [expr $y +2.0] \
-                           #-fill $color]]
-    # number every 4th dot
-    #if {![expr $laser_count % 10]} {
-      #return [concat \
-        #[.robot_panel.canvas create oval \
-                             #[expr $x - 2.0] [expr $y - 2.0] \
-                             #[expr $x +2.0] [expr $y +2.0] \
-                             #-fill $color] \
-        #[.robot_panel.canvas create text $x [expr $y - 3.0] \
-                             #-font {Courier -10} -text $laser_count -fill red]]
-    #} else {
-      return [.robot_panel.canvas create oval \
+    return [.robot_panel.canvas create oval \
                              [expr $x - 2.0] [expr $y - 2.0] \
                              [expr $x +2.0] [expr $y +2.0] \
                              -fill $color]
-    #}
   }
 }
 
 set obslist {}
 set vision_obslist {}
+#
+# this proc reads and displays one round of data.  an alarm goes off
+# every 100ms or so and calls the proc
+#
 proc displayData {} {
-  global laser_count
-  global sonar display_sonar display_sonar_mode 
+  global sonar sonar_positions display_sonar display_sonar_mode 
   global laser display_laser display_laser_mode 
   global frontbumpers rearbumpers display_bumpers 
   global display_vision vision
   global obslist vision_obslist
+  global CANVAS_CONV_FACTOR PI
+  global laser_angles sonar_angles
 
+  # read one round of data
   readData
 
+  # delete the old data from the display
   eval .robot_panel.canvas delete $obslist
   eval .vision_panel.canvas delete $vision_obslist
 
@@ -463,6 +485,9 @@ proc displayData {} {
   # length in mm from activmedia specs
   set BUMPER_LENGTH 100.838
 
+  #
+  # display the vision device data
+  #
   if {$display_vision && [lsearch [array names vision] 0,numblobs] > -1} {
     # draw the first two channels.
     set i 0
@@ -540,6 +565,9 @@ proc displayData {} {
 
   }
       
+  #
+  # display the bumper data (from the misc device)
+  #
   if {$display_bumpers} {
     if {[expr $frontbumpers >> 0 & 1]} {
       set obslist [concat $obslist \
@@ -583,44 +611,79 @@ proc displayData {} {
         [drawobs 207.85 152.01 142.0096 $BUMPER_LENGTH line yellow]]
     }
   }
+
+  #
+  # display the sonar device data
+  #
   if {$display_sonar} {
+    set sonar_points {}
+    foreach index [lsort -integer [array names sonar]] {
+      set xoff [expr $sonar_positions($index,x) * $CANVAS_CONV_FACTOR]
+      set yoff [expr $sonar_positions($index,y) * $CANVAS_CONV_FACTOR]
+      #set angle $sonar_positions($index,theta)
+      set dist [expr $sonar($index) * $CANVAS_CONV_FACTOR]
+    
+      #set theta [expr $angle * $PI / 180.0]
+      #set x [expr $xoff + -$dist * sin($theta)]
+      #set y [expr $yoff + -$dist * cos($theta)]
+      set x [expr $xoff + -$dist * $sonar_angles($index,sin)]
+      set y [expr $yoff + -$dist * $sonar_angles($index,cos)]
+    
+      lappend sonar_points $x $y
+    #set obslist [concat $obslist \
+      #[drawobs  -130 -115  90 $sonar(0) $display_sonar_mode green]\
+      #[drawobs  -115 -155  50 $sonar(1) $display_sonar_mode green]\
+      #[drawobs  -80  -190  30 $sonar(2) $display_sonar_mode green]\
+      #[drawobs  -25  -210   10 $sonar(3) $display_sonar_mode green]\
+      #[drawobs  25  -210  -10 $sonar(4) $display_sonar_mode green]\
+      #[drawobs  80  -190  -30 $sonar(5) $display_sonar_mode green]\
+      #[drawobs  115  -155  -50 $sonar(6) $display_sonar_mode green]\
+      #[drawobs  130  -115  -90 $sonar(7) $display_sonar_mode green]\
+      #[drawobs 130   115  -90 $sonar(8) $display_sonar_mode green]\
+      #[drawobs 115   155 -130 $sonar(9) $display_sonar_mode green]\
+      #[drawobs 80   190 -150 $sonar(10) $display_sonar_mode green]\
+      #[drawobs 25   210 -170 $sonar(11) $display_sonar_mode green]\
+      #[drawobs -25   210  170 $sonar(12) $display_sonar_mode green]\
+      #[drawobs -80   190  150 $sonar(13) $display_sonar_mode green]\
+      #[drawobs -115   155  130 $sonar(14) $display_sonar_mode green]\
+      #[drawobs -130   115   90 $sonar(15) $display_sonar_mode green]]
+    }
+    # add the first point at the end to close the polygon
+    set sonar_points [concat $sonar_points [lrange $sonar_points 0 1]]
     set obslist [concat $obslist \
-      [drawobs  -130 -115  90 $sonar(0) $display_sonar_mode green]\
-      [drawobs  -115 -155  50 $sonar(1) $display_sonar_mode green]\
-      [drawobs  -80  -190  30 $sonar(2) $display_sonar_mode green]\
-      [drawobs  -25  -210   10 $sonar(3) $display_sonar_mode green]\
-      [drawobs  25  -210  -10 $sonar(4) $display_sonar_mode green]\
-      [drawobs  80  -190  -30 $sonar(5) $display_sonar_mode green]\
-      [drawobs  115  -155  -50 $sonar(6) $display_sonar_mode green]\
-      [drawobs  130  -115  -90 $sonar(7) $display_sonar_mode green]\
-      [drawobs 130   115  -90 $sonar(8) $display_sonar_mode green]\
-      [drawobs 115   155 -130 $sonar(9) $display_sonar_mode green]\
-      [drawobs 80   190 -150 $sonar(10) $display_sonar_mode green]\
-      [drawobs 25   210 -170 $sonar(11) $display_sonar_mode green]\
-      [drawobs -25   210  170 $sonar(12) $display_sonar_mode green]\
-      [drawobs -80   190  150 $sonar(13) $display_sonar_mode green]\
-      [drawobs -115   155  130 $sonar(14) $display_sonar_mode green]\
-      [drawobs -130   115   90 $sonar(15) $display_sonar_mode green]]
+      [eval .robot_panel.canvas create line $sonar_points -fill green]]
   }
 
+  #
+  # display the laser device data
+  #
   if {$display_laser} {
-    set laser_count 0
+    set laser_points {}
     foreach index [lsort -integer [array names laser]] {
-      set obslist [concat $obslist \
-        [drawobs  0 0 [expr -90 + ($index * 0.5)] $laser($index) \
-                     $display_laser_mode red]]
-      incr laser_count
+      set dist [expr $laser($index) * $CANVAS_CONV_FACTOR]
+      set x [expr -$dist * $laser_angles($index,sin)]
+      set y [expr -$dist * $laser_angles($index,cos)]
+    
+      lappend laser_points $x $y
     }
+
+    set obslist [concat $obslist \
+      [eval .robot_panel.canvas create line $laser_points -fill red]]
   }
 }
 
 proc startRobot {} {
-  global host device_str PLAYER_PLAYER_DEV_REQ PLAYER_PLAYER_CODE
+  global host PLAYER_PLAYER_DEV_REQ PLAYER_PLAYER_CODE
+  global PLAYER_POSITION_CODE PLAYER_PTZ_CODE PLAYER_MISC_CODE
+  global PLAYER_ALL_MODE
 
   connectToRobot $host
-  requestFromRobot $PLAYER_PLAYER_CODE 0 "[binary format S $PLAYER_PLAYER_DEV_REQ]${device_str}"
-  signal trap SIGALRM {displayData;alarm 1.5}
-  alarm 1.5
+  # try to connect to ptz, position, and misc (but ignore errors)
+  catch {requestDeviceAccess $PLAYER_POSITION_CODE 0 $PLAYER_ALL_MODE}
+  catch {requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE}
+  catch {requestDeviceAccess $PLAYER_MISC_CODE 0 $PLAYER_ALL_MODE}
+  signal trap SIGALRM {displayData;alarm .1}
+  alarm .1
 }
 
 proc stopRobot {} {
