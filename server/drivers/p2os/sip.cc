@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <values.h>
 #include <math.h>  /* rint(3) */
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <sip.h>
 #include <stdlib.h> /* for abs() */

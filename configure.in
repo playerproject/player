@@ -12,6 +12,7 @@ dnl upgrade to newer Autotools, this can probably go away.
 AC_CANONICAL_SYSTEM
 case $target in
 *-*-solaris*) AC_DEFINE(PLAYER_SOLARIS,1,[building for Solaris]);;
+*-*-linux*) AC_DEFINE(PLAYER_LINUX,1,[building for Linux]);;
 esac
 
 AC_DEFINE_UNQUOTED(TARGET_OS, $target_os, [The target OS])
@@ -33,7 +34,13 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
-AC_CHECK_PROG([TCLPKGFILE], [tclsh], [pkgIndex.tcl], [])
+case $target in
+*-*-freebsd*) AC_CHECK_PROG([TCLPKGFILE], [tclsh8.0], [pkgIndex.tcl], [])
+              TCLSH=tclsh8.0;;
+*-*-*) AC_CHECK_PROG([TCLPKGFILE], [tclsh], [pkgIndex.tcl], [])
+       TCLSH=tclsh;;
+esac
+AC_SUBST(TCLSH)
 
 dnl Change default installation prefix from /usr/local to user's home
 AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
@@ -297,6 +304,8 @@ AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(rt, sem_wait)
 AC_CHECK_LIB(posix4, sem_wait)
 AC_CHECK_LIB(dl, dlopen)
+AC_CHECK_LIB(c_r, pthread_create, 
+[LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 #AC_FUNC_MMAP
 #AC_FUNC_SETPGRP
 #AC_TYPE_SIGNAL
