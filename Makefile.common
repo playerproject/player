@@ -1,0 +1,110 @@
+#
+# $Id$
+#
+# common Makefile that is included by other Makefiles.  make your
+# configuration changes here.
+
+#######################################
+# Version definition
+#
+# you probably shouldn't change this, unless you're making changes
+# to the Player server source and you want to distinguish your version
+# from the 'original'.  the value of PLAYER_VERSION will be included
+# in the server binary (it's printed out on console when Player runs, and
+# sent back to the client when it connects), and is used below to construct
+# the directory name for installation.
+PLAYER_VERSION = 1.1.1gamma
+
+#######################################
+# Compiler selection
+#
+#   normally, you'll use the standard 'g++' and 'gcc' compilers. 
+#
+#   however, if you're running a glibc-2.2-based system (e.g., RedHat 7.x), 
+#   and you want to run the resultant binaries on a glibc-2.1-based system
+#   (e.g., RedHat 6.x), then use the 'i386-glibc21-linux-g++' and
+#   'i386-glibc21-linux-gcc' compilers. note that you must have installed 
+#   the compatibility compiler and library packages (they are included with 
+#   the RedHat 7.x distro):
+#     compat-libs-6.2-3
+#     compat-glibc-6.2-2.1.3.2
+#     compat-egcs-c++-6.2-1.1.2.14
+#     compat-libstdc++-6.2-2.9.0.14
+#     compat-egcs-6.2-1.1.2.14
+CPP = g++
+#CPP = i386-glibc21-linux-g++
+
+CC = gcc
+#CC = i386-glibc21-linux-gcc
+
+#######################################
+# Install location selection
+#
+#
+# player will be installed under the directory INSTALL_PREFIX.  by default,
+# this directory name is constructed by appending PLAYER_VERSION to 
+# INSTALL_BASE (e.g. '/usr/local/player0.8c'). change INSTALL_BASE 
+# if you want to install somewhere else, but try to leave the version 
+# identifier on there; makes things easier. 
+#
+PWD=$(shell pwd)
+INSTALL_BASE = /usr/local/player
+
+INSTALL_PREFIX=$(INSTALL_BASE)$(PLAYER_VERSION)
+
+INSTALL_BIN = $(INSTALL_PREFIX)/bin
+INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
+INSTALL_LIB = $(INSTALL_PREFIX)/lib
+INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples
+
+
+#######################################
+# Platform selection
+#
+
+# for Linux (x86 and PPC are known to work), uncomment the following line
+PLAYER_PLATFORM = -DPLAYER_LINUX
+
+# for Solaris (Sparc), uncomment the following 2 lines
+#PLAYER_PLATFORM = -DPLAYER_SOLARIS
+#PLATFORM_LIBS = -lxnet
+#######################################
+
+#######################################
+# Device support
+#
+# for each of the following devices, uncomment to compile in, comment to
+# leave out.  
+
+# comment to exclude support for the Stage simulator
+INCLUDE_STAGE = -DINCLUDE_STAGE
+
+# comment each one to remove support for that device
+INCLUDE_LASER = -DINCLUDE_LASER
+INCLUDE_SONAR = -DINCLUDE_SONAR
+INCLUDE_VISION = -DINCLUDE_VISION
+INCLUDE_POSITION = -DINCLUDE_POSITION
+INCLUDE_GRIPPER = -DINCLUDE_GRIPPER
+INCLUDE_MISC = -DINCLUDE_MISC
+INCLUDE_PTZ = -DINCLUDE_PTZ
+INCLUDE_LASERBEACON = -DINCLUDE_LASERBEACON
+INCLUDE_BROADCAST = -DINCLUDE_BROADCAST
+INCLUDE_SPEECH = -DINCLUDE_SPEECH
+
+# for audio device support, uncomment the following line; note
+# that you need the Fast Fourier Transform libraries
+#INCLUDE_AUDIO = -DINCLUDE_AUDIO
+
+#######################################
+
+
+############## You shouldn't need to change below here ############## 
+RM = rm
+INSTALL = install
+MKDIR = mkdir
+RMDIR = rmdir
+LN = ln
+AR = ar
+MAKEDEP = makedepend
+
+

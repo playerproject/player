@@ -1,14 +1,12 @@
-JAVAC = javac
-RM = rm
-MKDIR = mkdir
-RMDIR = rmdir
-INSTALL = install
+#
+# $Id$
+#
 
-#INSTALL_PREFIX = /usr/local/golem
+include ../../Makefile.common
+
+JAVAC = javac
 
 GOLEMCLASSPATH = -classpath ../../client_libs/java:$(INSTALL_PREFIX)/lib:$(JAVA_HOME)/lib
-
-INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples/java
 
 BINARIES =  ObstacleAvoidanceUsingLaser.class \
             ObstacleAvoidanceUsingSonar.class
@@ -19,18 +17,18 @@ all: $(BINARIES)
 	$(JAVAC) $(GOLEMCLASSPATH) $<
 
 install: $(BINARIES)
-	$(MKDIR) -p $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 ObstacleAvoidanceUsingSonar.java $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 ObstacleAvoidanceUsingSonar.class $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 ObstacleAvoidanceUsingLaser.java $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 ObstacleAvoidanceUsingLaser.class $(INSTALL_EXAMPLES)
+	$(MKDIR) -p $(INSTALL_EXAMPLES)/java
+	$(INSTALL) -m 644 ObstacleAvoidanceUsingSonar.java $(INSTALL_EXAMPLES)/java
+	$(INSTALL) -m 644 ObstacleAvoidanceUsingSonar.class $(INSTALL_EXAMPLES)/java
+	$(INSTALL) -m 644 ObstacleAvoidanceUsingLaser.java $(INSTALL_EXAMPLES)/java
+	$(INSTALL) -m 644 ObstacleAvoidanceUsingLaser.class $(INSTALL_EXAMPLES)/java
 
 uninstall: 
-	$(RM) -f $(INSTALL_EXAMPLES)/ObstacleAvoidanceUsingSonar.java
-	$(RM) -f $(INSTALL_EXAMPLES)/ObstacleAvoidanceUsingSonar.class
-	$(RM) -f $(INSTALL_EXAMPLES)/ObstacleAvoidanceUsingLaser.java
-	$(RM) -f $(INSTALL_EXAMPLES)/ObstacleAvoidanceUsingLaser.class
-	$(RM) -f $(INSTALL_EXAMPLES)/PlayerClient.class
+	$(RM) -f $(INSTALL_EXAMPLES)/java/ObstacleAvoidanceUsingSonar.java
+	$(RM) -f $(INSTALL_EXAMPLES)/java/ObstacleAvoidanceUsingSonar.class
+	$(RM) -f $(INSTALL_EXAMPLES)/java/ObstacleAvoidanceUsingLaser.java
+	$(RM) -f $(INSTALL_EXAMPLES)/java/ObstacleAvoidanceUsingLaser.class
+	$(RM) -f $(INSTALL_EXAMPLES)/java/PlayerClient.class
 
 clean:
 	$(RM) -f *.class

@@ -24,6 +24,8 @@ TOMORROW:
 
 NOW:
 ----
+- fix make problem on Solaris.  something about 'ifdef' it doesn't like
+
 - add some kind of config file to Player.   need to specify
     mappings from devices to ports and things like that.  still take
     command-line args, though.

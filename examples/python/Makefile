@@ -2,16 +2,7 @@
 # $Id$
 #
 
-CPP = g++
-RM = rm
-LN = ln
-INSTALL = install
-MKDIR = mkdir
-RMDIR = rmdir
-
-#INSTALL_PREFIX = /usr/local/golem
-INSTALL_BIN = $(INSTALL_PREFIX)/bin
-INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples/python
+include ../../Makefile.common
 
 all:
 

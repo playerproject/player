@@ -1,12 +1,10 @@
-JAVAC = javac
-LN = ln
-RM = rm
-INSTALL = install
-MKDIR = mkdir
-RMDIR = rmdir
+#
+# $Id$
+#
 
-INSTALL_LIB = $(INSTALL_PREFIX)/lib
-#INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples/java
+include ../../Makefile.common
+
+JAVAC = javac
 
 all: PlayerClient.class
 

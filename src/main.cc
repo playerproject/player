@@ -28,10 +28,6 @@
 
 //#define VERBOSE
 
-// suck in the version string from the file in the top level directory
-#include "../VERSION"
-
-
 #include <stdio.h>
 #include <errno.h>
 #include <string.h> // for bzero()
@@ -358,7 +354,7 @@ int main( int argc, char *argv[] )
   char ptzserialport[MAX_FILENAME_SIZE] = DEFAULT_PTZ_PORT;
   int  visionport = DEFAULT_ACTS_PORT;
   char visionconfigfile[MAX_FILENAME_SIZE] = DEFAULT_ACTS_CONFIGFILE;
-  bool useoldacts = false;
+  //bool useoldacts = false;
 
   int useArena = false;
   char arenaFile[128]; // filename for mapped memory
@@ -517,12 +513,10 @@ int main( int argc, char *argv[] )
     fflush( stdout );
 #endif
 
-#ifdef INCLUDE_MISC
     miscDevice = new CStageDevice( arenaIO + MISC_DATA_START,
                                    MISC_DATA_BUFFER_SIZE,
                                    MISC_COMMAND_BUFFER_SIZE,
                                    MISC_CONFIG_BUFFER_SIZE);
-#endif
     
     positionDevice = new CStageDevice( arenaIO + POSITION_DATA_START,
                                        POSITION_DATA_BUFFER_SIZE,
@@ -548,28 +542,19 @@ int main( int argc, char *argv[] )
                                  PTZ_DATA_BUFFER_SIZE,
                                  PTZ_COMMAND_BUFFER_SIZE,
                                  PTZ_CONFIG_BUFFER_SIZE);
-#ifdef INCLUDE_LASERBEACON
     laserbeaconDevice = new CStageDevice(arenaIO + LASERBEACON_DATA_START,
                                          LASERBEACON_DATA_BUFFER_SIZE,
                                          LASERBEACON_COMMAND_BUFFER_SIZE,
                                          LASERBEACON_CONFIG_BUFFER_SIZE);
-#endif
 
-#ifdef INCLUDE_BROADCAST
     broadcastDevice = new CStageDevice(arenaIO + BROADCAST_DATA_START,
                                        BROADCAST_DATA_BUFFER_SIZE,
                                        BROADCAST_COMMAND_BUFFER_SIZE,
                                        BROADCAST_CONFIG_BUFFER_SIZE); 
-#endif    
-
     
     // unsupported devices - CNoDevice::Setup() fails
-#ifdef INCLUDE_GRIPPER
-    gripperDevice = (CGripperDevice*)new CNoDevice();
-#endif
-#ifdef INCLUDE_AUDIO
-    audioDevice =  (CAudioDevice*)new CNoDevice();
-#endif
+    gripperDevice = (CDevice*)new CNoDevice();
+    audioDevice =  (CDevice*)new CNoDevice();
 #endif
 
   }
@@ -583,7 +568,7 @@ int main( int argc, char *argv[] )
 #endif
 #ifdef INCLUDE_VISION
     visionDevice =  
-      new CVisionDevice(visionport,visionconfigfile,useoldacts);
+      new CVisionDevice(visionport,visionconfigfile,false);
 #endif
 #ifdef INCLUDE_POSITION
     positionDevice = new CPositionDevice(p2osport);
@@ -612,39 +597,28 @@ int main( int argc, char *argv[] )
   }
 
   // add the devices to the global table
-#ifdef INCLUDE_LASER
-  deviceTable->AddDevice(PLAYER_LASER_CODE, 0, PLAYER_READ_MODE, laserDevice);
-#endif
-#ifdef INCLUDE_SONAR
-  deviceTable->AddDevice(PLAYER_SONAR_CODE, 0, PLAYER_READ_MODE, sonarDevice);
-#endif
-#ifdef INCLUDE_VISION
-  deviceTable->AddDevice(PLAYER_VISION_CODE, 0, PLAYER_READ_MODE, visionDevice);
-#endif
-#ifdef INCLUDE_POSITION
-  deviceTable->AddDevice(PLAYER_POSITION_CODE, 0, PLAYER_ALL_MODE, positionDevice);
-#endif
-#ifdef INCLUDE_GRIPPER
-  deviceTable->AddDevice(PLAYER_GRIPPER_CODE, 0, PLAYER_ALL_MODE, gripperDevice);
-#endif
-#ifdef INCLUDE_MISC
-  deviceTable->AddDevice(PLAYER_MISC_CODE, 0, PLAYER_READ_MODE, miscDevice);
-#endif
-#ifdef INCLUDE_PTZ
-  deviceTable->AddDevice(PLAYER_PTZ_CODE, 0, PLAYER_ALL_MODE, ptzDevice);
-#endif
-#ifdef INCLUDE_AUDIO
-  deviceTable->AddDevice(PLAYER_AUDIO_CODE, 0, PLAYER_ALL_MODE, audioDevice);
-#endif
-#ifdef INCLUDE_LASERBEACON
-  deviceTable->AddDevice(PLAYER_LASERBEACON_CODE, 0, PLAYER_READ_MODE, laserbeaconDevice);
-#endif
-#ifdef INCLUDE_BROADCAST
-  deviceTable->AddDevice(PLAYER_BROADCAST_CODE, 0, PLAYER_ALL_MODE, broadcastDevice);
-#endif
-#ifdef INCLUDE_SPEECH
-  deviceTable->AddDevice(PLAYER_SPEECH_CODE, 0, PLAYER_WRITE_MODE, speechDevice);
-#endif
+  if(laserDevice)
+    deviceTable->AddDevice(PLAYER_LASER_CODE, 0, PLAYER_READ_MODE, laserDevice);
+  if(sonarDevice)
+    deviceTable->AddDevice(PLAYER_SONAR_CODE, 0, PLAYER_READ_MODE, sonarDevice);
+  if(visionDevice)
+    deviceTable->AddDevice(PLAYER_VISION_CODE, 0, PLAYER_READ_MODE, visionDevice);
+  if(positionDevice)
+    deviceTable->AddDevice(PLAYER_POSITION_CODE, 0, PLAYER_ALL_MODE, positionDevice);
+  if(gripperDevice)
+    deviceTable->AddDevice(PLAYER_GRIPPER_CODE, 0, PLAYER_ALL_MODE, gripperDevice);
+  if(miscDevice)
+    deviceTable->AddDevice(PLAYER_MISC_CODE, 0, PLAYER_READ_MODE, miscDevice);
+  if(ptzDevice)
+    deviceTable->AddDevice(PLAYER_PTZ_CODE, 0, PLAYER_ALL_MODE, ptzDevice);
+  if(audioDevice)
+    deviceTable->AddDevice(PLAYER_AUDIO_CODE, 0, PLAYER_ALL_MODE, audioDevice);
+  if(laserbeaconDevice)
+    deviceTable->AddDevice(PLAYER_LASERBEACON_CODE, 0, PLAYER_READ_MODE, laserbeaconDevice);
+  if(broadcastDevice)
+    deviceTable->AddDevice(PLAYER_BROADCAST_CODE, 0, PLAYER_ALL_MODE, broadcastDevice);
+  if(speechDevice)
+    deviceTable->AddDevice(PLAYER_SPEECH_CODE, 0, PLAYER_WRITE_MODE, speechDevice);
 
   /* set up to handle SIGPIPE (happens when the client dies) */
   if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
@@ -682,7 +656,7 @@ int main( int argc, char *argv[] )
 
     /* block here */
     //if((clientData->socket = accept(player_sock,(struct sockaddr *)&sender,&sender_len)) == -1)
-    if((clientData->socket = accept(player_sock,(struct sockaddr *)NULL,(socklen_t*) &sender_len)) == -1)
+    if((clientData->socket = accept(player_sock,(struct sockaddr *)NULL, &sender_len)) == -1)
     {
       perror("accept(2) failed: ");
       exit(-1);
