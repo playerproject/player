@@ -144,7 +144,7 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
     stg_world_model_name_lookup( Stage1p4::world, "root" );
   assert(root);
   
-  stg_model_subscribe( root, STG_PROP_TIME, 100 ); //100ms
+  //stg_model_subscribe( root, STG_PROP_TIME, 100 ); //100ms
   
   // register the Save callback
   //stg_client_install_save( Stage1p4::stage_client, Stage1p4::Save );
@@ -156,6 +156,7 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
   stg_world_resume( world );
   puts( "done." );
 
+  this->subscribe_prop = STG_PROP_TIME;
   
   // make Player call Update() on this device even when noone is subscribed
   this->alwayson = TRUE;
