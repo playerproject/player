@@ -40,9 +40,9 @@ to begin with. Try the MDNS service discovery driver instead (player_driver_serv
 This driver has no client proxy. The driver responds to queries in a background
 thread when loaded and initialized.
 
-The service is advertised using a URL in this format: player://<hostname>:<port>.
+The service is advertised using a URL in this format: player://hostname:port.
 In addition to any service_tags given in the configuration file, a tag is added
-for each device currently loaded, in the format: <device name>#<index>(<driver name).
+for each device currently loaded, in the format: devicename#index(<driver name).
 
 @par Compile-time dependencies
 

@@ -227,7 +227,7 @@ PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
 PLAYER_ADD_DRIVER([wavefront],[drivers/planner/wavefront],[yes],[],[],[])
-dnl The wavefront driver can make use MD5 hash functions, if present
+dnl The wavefront driver can make use of MD5 hash functions, if present
 AC_CHECK_HEADERS(openssl/md5.h)
 AC_CHECK_LIB(md5,MD5_Init)
 
