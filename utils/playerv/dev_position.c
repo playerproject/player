@@ -90,7 +90,7 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   rtk_fig_ellipse(self->control_fig, 0, 0, 0, 0.20, 0.20, 0);
   rtk_fig_movemask(self->control_fig, RTK_MOVE_TRANS);
   self->path_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 2);
-
+  
   self->goal_px = self->goal_py = self->goal_pa = 0.0;
   
   return self;
@@ -302,12 +302,24 @@ void position_servo_vel(position_t *self)
     rtk_fig_show(self->path_fig, 0);
     return;
   }
-  
-  min_vr = -0.10; max_vr = 0.50;
-  min_va = -M_PI/4; max_va = +M_PI/4;
 
+  // Good for P2DX
+  min_vr = -0.10;
+  max_vr = 0.50;
+  min_va = -M_PI/4;
+  max_va = +M_PI/4;
   kr = max_vr / 1.00;
   ka = max_va / 1.00;
+
+  /*
+  // Good for P2AT
+  min_vr = -2.00;
+  max_vr = +2.00;
+  min_va = -2 * M_PI;
+  max_va = +2 * M_PI;
+  kr = max_vr / 2.00;
+  ka = max_va / 2.00;
+  */
 
   if (rtk_fig_mouse_selected(self->control_fig))
   {
@@ -336,7 +348,9 @@ void position_servo_vel(position_t *self)
     va = max_va;
   if (va < min_va)
     va = min_va;
-
+    
+  //printf("%f %f\n", vr, va);
+      
   // Set the new speed
   playerc_position_set_speed(self->proxy, vr, 0, va);
 
