@@ -47,6 +47,8 @@ class Acoustics : public CDevice
   public:
     // Constructor
     Acoustics(char* interface, ConfigFile* cf, int section);
+    // Destructor
+    ~Acoustics();
 
     int Setup();
     int Shutdown();
@@ -54,7 +56,6 @@ class Acoustics : public CDevice
     size_t GetCommand(void* dest, size_t maxsize);
 
   private:
-
     // Open or close the device
     int OpenDevice( int flag );
     int CloseDevice();
@@ -109,6 +110,7 @@ class Acoustics : public CDevice
     int N; // The length(in bytes) of the audio buffer to process
     short nHighestPeaks; // Number of peaks to find
     player_audiodsp_data_t data; // The data to return to the user
+    double* fft; // reused storage for samples, to be passed into the GSL
 };
 
 Acoustics::Acoustics(char* interface, ConfigFile* cf, int section)
@@ -118,6 +120,16 @@ Acoustics::Acoustics(char* interface, ConfigFile* cf, int section)
   peakFreq(NULL),peakAmp(NULL),N(1024),nHighestPeaks(5)
 {
   deviceName = cf->ReadString(section,"device",DEFAULT_DEVICE);
+  assert(fft = new double[this->N]);
+}
+
+Acoustics::~Acoustics()
+{
+  if(this->fft)
+  {
+    delete this->fft;
+    this->fft = NULL;
+  }
 }
 
 CDevice* Acoustics_Init(char* interface, ConfigFile* cf, int section)
@@ -172,6 +184,7 @@ size_t Acoustics::GetCommand(void* dest, size_t maxsize)
     memcpy(dest,device_command,device_used_commandsize);
     device_used_commandsize = 0;
   }
+  memset(dest,0,maxsize);
   return(retval);
 }
 
@@ -526,7 +539,8 @@ int Acoustics::ListenForTones()
     int amplitude[this->N/2];
 
     // We will just do a Fourer transform over the first 1024 samples.
-    double* fft = new double[this->N];
+    //double* fft = new double[this->N];
+    memset(fft,0,sizeof(double)*this->N);
     if( this->bytesPerSample == 2 )
     {
       char* index = this->audioBuffer;

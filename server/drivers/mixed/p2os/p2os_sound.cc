@@ -59,7 +59,8 @@ P2OSSound_Register(DriverTable* table)
 
 P2OSSound::~P2OSSound()
 {
-  ((player_p2os_cmd_t*)device_command)->sound.index = 0x00;
+  if(command)
+    command->sound.index = 0x00;
 }
 
 

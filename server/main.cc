@@ -68,8 +68,6 @@
 #include <sys/mman.h> // for mmap
 #include <stagetime.h>
 #include <stagedevice.h>
-player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
-char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
 
 // Gazebo stuff
@@ -323,6 +321,7 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
       // don't try to load the clock here - we'll do it below
       if( strcmp( STAGE_CLOCK_NAME, namelist[m]->d_name ) == 0 )
       {
+        free(namelist[m]);
         m++;
         continue;
       }
@@ -330,6 +329,7 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
       // don't try to open the lock here - we already did it above
       if( strcmp( STAGE_LOCK_NAME, namelist[m]->d_name ) == 0 )
       {
+        free(namelist[m]);
         m++;
         continue;
       }
@@ -804,6 +804,7 @@ int main( int argc, char *argv[] )
   struct pollfd *ufds = NULL;
   int num_ufds = 0;
   int protocol = PLAYER_TRANSPORT_TCP;
+  char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 
   // Register the available drivers in the driverTable.  
   //

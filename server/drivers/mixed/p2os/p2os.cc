@@ -177,11 +177,13 @@ P2OS::~P2OS()
   {
     delete data;
     data = NULL;
+    device_data = NULL;
   }
   if(command)
   {
     delete command;
     command = NULL;
+    device_command = NULL;
   }
 }
 

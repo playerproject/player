@@ -119,12 +119,14 @@ ClientManager::~ClientManager()
         delete clients[i];
       }
     }
-    delete clients;
+    delete[] clients;
   }
   if(ufds)
-    delete ufds;
+    delete[] ufds;
   if(accept_ufds)
-    delete accept_ufds;
+    delete[] accept_ufds;
+  if(accept_ports)
+    delete[] accept_ports;
 }
 
 // add a client to our watch list

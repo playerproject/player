@@ -53,6 +53,8 @@ class PlayerQueue
     playerqueue_elt_t* queue;
     // the size of the queue (i.e., # of elements)
     int len;
+    // did we allocate memory for the queue?
+    bool allocp;
 
   public:
     // basic constructor; makes a PlayerQueue that will dynamically allocate
@@ -62,6 +64,9 @@ class PlayerQueue
     // constructor for Stage; creates a PlayerQueue with a chunk of memory
     // already set aside
     PlayerQueue(void* tmpqueue, int tmpqueuelen);
+
+    // destructor
+    ~PlayerQueue();
 
     // push a new element on the queue.  returns the index of the new
     // element in the queue, or -1 if the queue is full

@@ -54,6 +54,7 @@ PlayerQueue::PlayerQueue(int tmpqueuelen)
   else
     queue = NULL;
   bzero(queue, sizeof(playerqueue_elt_t)*len);
+  allocp = true;
 }
 
 // constructor for Stage; creates a PlayerQueue with a chunk of memory
@@ -63,6 +64,14 @@ PlayerQueue::PlayerQueue(void* tmpqueue, int tmpqueuelen)
   queue = (playerqueue_elt_t*)tmpqueue;
   len = tmpqueuelen;
   bzero(queue, sizeof(playerqueue_elt_t)*len);
+  allocp = false;
+}
+
+// destructor
+PlayerQueue::~PlayerQueue()
+{
+  if(allocp && queue)
+    delete[] queue;
 }
 
 // push a new element on the queue.  returns the index of the new

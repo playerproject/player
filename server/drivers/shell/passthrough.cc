@@ -120,6 +120,7 @@ PassThrough::PassThrough(const char* hostname, int port,
   this->remote_port = port;
   this->remote_device_id = id;
   this->remote_access = (unsigned char)cf->ReadString(section, "access", "a")[0];
+  this->conn.protocol = PLAYER_TRANSPORT_TCP;
 
   assert(this->remote_data = (char*)calloc(PLAYER_MAX_PAYLOAD_SIZE,1));
   assert(this->remote_command = (char*)calloc(PLAYER_MAX_PAYLOAD_SIZE,1));

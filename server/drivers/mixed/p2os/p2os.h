@@ -133,9 +133,6 @@ class P2OS:public CDevice
     // Setup() and Shutdown()
     static int p2os_subscriptions;
 
-    static player_p2os_data_t* data;
-    static player_p2os_cmd_t* command;
-
     static unsigned char* reqqueue;
     static unsigned char* repqueue;
 
@@ -158,6 +155,9 @@ class P2OS:public CDevice
     static bool initdone;
 
   protected:
+    static player_p2os_data_t* data;
+    static player_p2os_cmd_t* command;
+
     void Lock();
     void Unlock();
 
