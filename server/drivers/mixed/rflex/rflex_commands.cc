@@ -379,16 +379,6 @@ static void parseDioReport( unsigned char *buffer )
 	opcode = buffer[4];
 	length = buffer[5];
 
-	// allocate bumper storage if we havent already
-	// must be a better place to do this but it works
-	// *** watch out this is duplicated ***
-	if (status.num_bumpers != rflex_configs.bumper_count)
-	{
-   		delete status.bumpers;
-		status.bumpers = new char[rflex_configs.bumper_count];
-		if (status.bumpers != NULL)
-			status.num_bumpers = rflex_configs.bumper_count;
-	}
 
 	switch(opcode) 
 	{
@@ -789,13 +779,13 @@ void rflex_update_bumpers(int fd, int num_bumpers, char *values)
 	// allocate bumper storage if we havent already
 	// must be a better place to do this but it works
 	// *** watch out this is duplicated ***
-	if (status.num_bumpers != rflex_configs.bumper_count)
+/*	if (status.num_bumpers != rflex_configs.bumper_count)
 	{
    		delete status.bumpers;
 		status.bumpers = new char[rflex_configs.bumper_count];
 		if (status.bumpers != NULL)
 			status.num_bumpers = rflex_configs.bumper_count;
-	}
+	}*/
 
 	if (num_bumpers > status.num_bumpers) 
 	{
@@ -887,6 +877,20 @@ void rflex_initialize(int fd, int trans_acceleration,
 		status.lcd_x=320/8;
 		status.lcd_y=240;
 	}
+	
+	// allocate bumper storage if we havent already
+	// must be a better place to do this but it works
+	// *** watch out this is duplicated ***
+	if (status.num_bumpers != rflex_configs.bumper_count)
+	{
+   		delete status.bumpers;
+		status.bumpers = new char[rflex_configs.bumper_count];
+		if (status.bumpers != NULL)
+			status.num_bumpers = rflex_configs.bumper_count;
+		for (int i = 0; i < status.num_bumpers; ++i)
+			status.bumpers[i] = 0;
+	}
+	
 }
 
 
