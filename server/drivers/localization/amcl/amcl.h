@@ -85,19 +85,7 @@ class AdaptiveMCL : public Driver
 
   // Check for updated sensor data
   public: virtual void Update(void);
-
-  /* REMOVE
-  // Process configuration requests
-  public: virtual int PutConfig(player_device_id_t* device, void* client, 
-                                void* data, size_t len);
-
-  // Handle map info request
-  private: void HandleGetMapInfo(void *client, void *request, int len);
-
-  // Handle map data request
-  private: void HandleGetMapData(void *client, void *request, int len);
-  */
-
+  
   ///////////////////////////////////////////////////////////////////////////
   // Middle methods: these methods facilitate communication between the top
   // and bottom halfs.

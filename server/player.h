@@ -708,15 +708,17 @@ typedef struct player_motor_power_config
 /*************************************************************************
  ** end section
  *************************************************************************/
-/*************************************************************************
- ** begin section position
- *************************************************************************/
 
-/** [Synopsis] 
-The {\tt position} interface is used to control a planar 
-mobile robot base. */
 
-/** [Constants] */
+/***************************************************************************/
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup player_interface_position position
+
+The position3d interface is used to control mobile robot bases in 2D.
+
+@{
+*/
 
 /**
 The various configuration request types. */
@@ -748,10 +750,9 @@ the RMP manual */
 #define PLAYER_POSITION_RMP_RST_INT_FOREAFT     0x08
 
 
-/** [Data] */
 /**
-The {\tt position} interface returns data regarding the odometric pose and
-velocity of the robot, as well as motor stall information; the format is: */
+The @p position interface returns data regarding the odometric pose and
+velocity of the robot, as well as motor stall information. */
 typedef struct player_position_data
 {
   /** X and Y position, in mm */
@@ -766,11 +767,10 @@ typedef struct player_position_data
   uint8_t stall;
 } __PACKED__ player_position_data_t;
 
-/** [Commands] */
 /**
-The {\tt position} interface accepts new positions and/or velocities
+The @p position interface accepts new positions and/or velocities
 for the robot's motors (drivers may support position control, speed control,
-or both); the format is */
+or both). */
 typedef struct player_position_cmd
 {
   /** X and Y position, in mm */
@@ -787,11 +787,10 @@ typedef struct player_position_cmd
   uint8_t type;
 } __PACKED__ player_position_cmd_t;
 
-/** [Configuration: Query geometry] */
-
-/** To request robot geometry, set the subtype to PLAYER_POSITION_GET_GEOM_REQ
-    and leave the other fields empty.  The server will reply with the 
-    pose and size fields filled in. */
+/** Query geometry.
+To request robot geometry, set the subtype to
+PLAYER_POSITION_GET_GEOM_REQ and leave the other fields empty.  The
+server will reply with the pose and size fields filled in. */
 typedef struct player_position_geom
 {
   /** Packet subtype.  Must be PLAYER_POSITION_GET_GEOM_REQ. */
@@ -805,8 +804,8 @@ typedef struct player_position_geom
   
 } __PACKED__ player_position_geom_t;
 
-/** [Configuration: Motor power] */
-/**
+
+/** Motor power
 On some robots, the motor power can be turned on and off from software.
 To do so, send a request with the format given below, and with the
 appropriate {\tt state} (zero for motors off and non-zero for motors on).
@@ -823,13 +822,29 @@ typedef struct player_position_power_config
   uint8_t value; 
 } __PACKED__ player_position_power_config_t;
 
-/** [Configuration: Change velocity control] */
-/**
+/** Change velocity control
 Some robots offer different velocity control modes.
 It can be changed by sending a request with the format given below,
 including the appropriate mode.  No matter which mode is used, the external
 client interface to the {\tt position} device remains the same.   The server 
-will reply with a zero-length acknowledgement*/
+will reply with a zero-length acknowledgement.
+
+The @p p2os_position driver offers two modes of velocity control:
+separate translational and rotational control and direct wheel
+control.  When in the separate mode, the robot's microcontroller
+internally computes left and right wheel velocities based on the
+currently commanded translational and rotational velocities and then
+attenuates these values to match a nice predefined acceleration
+profile.  When in the direct mode, the microcontroller simply passes
+on the current left and right wheel velocities.  Essentially, the
+separate mode offers smoother but slower (lower acceleration) control,
+and the direct mode offers faster but jerkier (higher acceleration)
+control.  Player's default is to use the direct mode.  Set @a mode to
+zero for direct control and non-zero for separate control.
+
+For the @p reb_position driver, 0 is direct velocity control, 1 is for
+velocity-based heading PD controller.
+*/
 typedef struct player_position_velocitymode_config
 {
   /** subtype; must be PLAYER_POSITION_VELOCITY_MODE_REQ */
@@ -838,34 +853,17 @@ typedef struct player_position_velocitymode_config
   uint8_t value; 
 } __PACKED__ player_position_velocitymode_config_t;
 
-/** The {\tt p2os_position} driver offers two modes of velocity control: 
- separate translational and rotational control and direct wheel control.  When
-in the separate mode, the robot's microcontroller internally computes left
-and right wheel velocities based on the currently commanded translational
-and rotational velocities and then attenuates these values to match a nice
-predefined acceleration profile.  When in the direct mode, the microcontroller
-simply passes on the current left and right wheel velocities.  Essentially,
-the separate mode offers smoother but slower (lower acceleration) control,
-and the direct mode offers faster but jerkier (higher acceleration) control.
-Player's default is to use the direct mode.  Set {\tt mode} to zero for
-direct control and non-zero for separate control.
-
-For the {\tt reb_position} driver, 0 is direct velocity control, 1 is for 
-      velocity-based heading PD controller.
-*/
-
-/** [Configuration: Reset odometry] */
-/** To reset the robot's odometry to $(x,y,\theta) = (0,0,0)$, use the
- following request.  The server will reply with a zero-length 
- acknowledgement. */
+/** Reset odometry
+To reset the robot's odometry to $(x,y,\theta) = (0,0,0)$, use the
+ollowing request.  The server will reply with a zero-length
+acknowledgement. */
 typedef struct player_position_resetodom_config
 {
   /** subtype; must be PLAYER_POSITION_RESET_ODOM_REQ */
   uint8_t request; 
 } __PACKED__ player_position_resetodom_config_t;
 
-/** [Configuration: Change position control] */
-/** */
+/** Change position control */
 typedef struct player_position_position_mode_req
 {
   /** subtype;  must be PLAYER_POSITION_POSITION_MODE_REQ */
@@ -874,8 +872,8 @@ typedef struct player_position_position_mode_req
   uint8_t state; 
 } __PACKED__ player_position_position_mode_req_t;
 
-/** [Configuration: Set odometry] */
-/** To set the robot's odometry to a particular state, use this request: */
+/** Set odometry
+    To set the robot's odometry to a particular state, use this request: */
 typedef struct player_position_set_odom_req
 {
   /** subtype; must be PLAYER_POSITION_SET_ODOM_REQ */
@@ -886,8 +884,7 @@ typedef struct player_position_set_odom_req
   int32_t theta;
 }__PACKED__ player_position_set_odom_req_t;
 
-/** [Configuration: Set velocity PID parameters] */
-/** */
+/** Set velocity PID parameters */
 typedef struct player_position_speed_pid_req
 {
   /** subtype; must be PLAYER_POSITION_SPEED_PID_REQ */
@@ -896,8 +893,7 @@ typedef struct player_position_speed_pid_req
   int32_t kp, ki, kd;
 } __PACKED__ player_position_speed_pid_req_t;
 
-/** [Configuration: Set position PID parameters] */
-/** */
+/** Set position PID parameters */
 typedef struct player_position_position_pid_req
 {
   /** subtype; must be PLAYER_POSITION_POSITION_PID_REQ */
@@ -906,8 +902,7 @@ typedef struct player_position_position_pid_req
   int32_t kp, ki, kd;
 } __PACKED__ player_position_position_pid_req_t;
 
-/** [Configuration: Set speed profile parameters] */
-/** */
+/** Set speed profile parameters */
 typedef struct player_position_speed_prof_req
 {
   /** subtype; must be PLAYER_POSITION_SPEED_PROF_REQ */
@@ -918,8 +913,7 @@ typedef struct player_position_speed_prof_req
   int16_t acc;
 } __PACKED__ player_position_speed_prof_req_t;
 
-/** [Configuration: Segway RMP-specific configuration] */
-/** */
+/** Segway RMP-specific configuration */
 typedef struct player_rmp_config 
 {
   /** subtype: must be of PLAYER_RMP_* */
@@ -930,9 +924,11 @@ typedef struct player_rmp_config
   uint16_t value;
 } __PACKED__ player_rmp_config_t;
 
-/*************************************************************************
- ** end section
- *************************************************************************/
+
+/** @} */
+/** @} */
+
+
 
 /*************************************************************************
  ** begin section position2d
