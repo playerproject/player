@@ -586,7 +586,10 @@ typedef struct _playerc_gps_t
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
-    
+
+  /** UTC time (seconds since the epoch) */
+  double utc_time;
+  
   /** Latitude and logitude (degrees).  Latitudes are positive for
       north, negative for south.  Logitudes are positive for east,
       negative for west. */
@@ -595,6 +598,15 @@ typedef struct _playerc_gps_t
   /** Altitude (meters).  Positive is above sea-level, negative is
       below. */
   double alt;
+
+  /** UTM easting and northing (meters). */
+  double utm_e, utm_n;
+
+  /** Horizontal dilution of precision. */
+  double hdop;
+
+  /** Horizontal and vertical error (meters). */
+  double err_horz, err_vert;
 
   /** Quality of fix 0 = invalid, 1 = GPS fix, 2 = DGPS fix */
   int quality;

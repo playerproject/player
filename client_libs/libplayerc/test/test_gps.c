@@ -40,11 +40,12 @@ int test_gps(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("gps: [%+11.6f] [%+11.6f] [%+7.3f] : "
-             "[%+3.0f D %02.4f M] [%+3.0f D %02.4f M] [%d %2d]\n",
+      printf("gps: [%+14.3f] [%+14.3f] [%+11.6f] [%+11.6f] [%+7.3f] "
+             "[%.3f %.3f] [%.3f %.3f] [%d %2d]\n",
+             device->info.datatime, device->utc_time,
              device->lat, device->lon, device->alt,
-             device->lat, fmod(fabs(device->lat) * 60, 60),
-             device->lon, fmod(fabs(device->lon) * 60, 60),
+             device->utm_e, device->utm_n,
+             device->err_horz, device->err_vert,
              device->quality, device->sat_count);
     }
     else
