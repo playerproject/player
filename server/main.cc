@@ -34,6 +34,10 @@
   #include <config.h>
 #endif
 
+#if HAVE_SYS_TYPES_H
+  #include <sys/types.h>  /* for accept(2) */
+#endif
+
 #include <dirent.h>
 
 #if !HAVE_SCANDIR
@@ -44,7 +48,10 @@ extern "C" {
 }
 #endif
 
+#if HAVE_LIB_DL
 #include <dlfcn.h>
+#endif
+
 #include <stdio.h>
 #include <errno.h>
 #include <string.h> // for bzero()
@@ -52,7 +59,6 @@ extern "C" {
 #include <signal.h>
 #include <netinet/in.h> /* for struct sockaddr_in, SOCK_STREAM */
 #include <unistd.h>  /* for close(2) */
-#include <sys/types.h>  /* for accept(2) */
 #include <sys/socket.h>  /* for accept(2) */
 #include <netdb.h> /* for gethostbyaddr(3) */
 
@@ -708,6 +714,7 @@ int main( int argc, char *argv[] )
     }
     else if(!strcmp(argv[i], "-d"))
     {
+#if HAVE_LIB_DL
       if(++i<argc) 
       { 
         void* handle;
@@ -725,6 +732,10 @@ int main( int argc, char *argv[] )
         Usage();
         exit(-1);
       }
+#else
+      PLAYER_ERROR("Sorry, no support for shared libraries");
+      exit(-1);
+#endif
     }
     else if(!strcmp(argv[i], "-p"))
     {

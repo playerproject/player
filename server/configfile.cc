@@ -27,7 +27,6 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <libgen.h> // for dirname(3)
 #include <limits.h> // for PATH_MAX
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +34,13 @@
 #include <unistd.h>
 #include <math.h>
 
-//#define DEBUG
+#if HAVE_DIRNAME
+  #include <libgen.h> // for dirname(3)
+#else
+extern "C" {
+  char * dirname (char *path);
+}
+#endif
 
 #include "configfile.h"
 

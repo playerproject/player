@@ -596,7 +596,7 @@ int UDPBroadcast::RecvPacket(void *packet, size_t size)
 {
   // BAD HACK - this is an indirect test for SunOS, older versions (e.g., 5.6)
   // which require the last arg to recvfrom() to be signed
-#if HAVE_STDINT_H
+#if HAVE_STDINT_H && HAVE_POLL
   socklen_t addr_len = sizeof(this->read_addr);    
 #else
   int addr_len = sizeof(this->read_addr);    

@@ -25,7 +25,7 @@
 
 #include "poll.h"
 
-#include <alloca.h>
+//#include <alloca.h>
 #include <sys/types.h>
 #include <errno.h>
 #include <string.h>
@@ -53,13 +53,13 @@ poll(struct pollfd* fds, unsigned long int nfds, int timeout)
   if (!max_fd_size)
     max_fd_size = getdtablesize ();
 
-  bytes = howmany (max_fd_size, __NFDBITS);
+  bytes = howmany (max_fd_size, NFDBITS);
   rset = alloca (bytes);
   wset = alloca (bytes);
   xset = alloca (bytes);
 
   /* We can't call FD_ZERO, since FD_ZERO only works with sets
-     of exactly __FD_SETSIZE size.  */
+     of exactly FD_SETSIZE size.  */
   bzero (rset, bytes);
   bzero (wset, bytes);
   bzero (xset, bytes);
@@ -77,8 +77,8 @@ poll(struct pollfd* fds, unsigned long int nfds, int timeout)
 	      fd_set *nrset, *nwset, *nxset;
 	      int nbytes;
 
-	      max_fd_size = roundup (f->fd, __NFDBITS);
-	      nbytes = howmany (max_fd_size, __NFDBITS);
+	      max_fd_size = roundup (f->fd, NFDBITS);
+	      nbytes = howmany (max_fd_size, NFDBITS);
 
 	      nrset = alloca (nbytes);
 	      nwset = alloca (nbytes);

@@ -24,9 +24,7 @@ player_DEPENDENCIES = drivers/stage/libstage.a \
 # separate lines with backslashes.  It makes the link line look like shit and 
 # hard to parse.  - BPG
 #
-player_LDADD   = -lpthread -lm -ldl drivers/stage/libstage.a @REB_LIBPATH@ @P2OS_LIBPATH@ @SICK_LIBPATH@ @FESTIVAL_LIBPATH@ @ACTS_LIBPATH@ @SONY_LIBPATH@ @UDPBCAST_LIBPATH@ @LASER_LIBPATH@ @WIFI_LIBPATH@ @RWI_LIBPATH@ @FIXEDTONES_LIBPATH@ @FIXEDTONES_EXTRA_LIB@ @ISENSE_LIBPATH@ @ISENSE_EXTRA_LIB@ @LIBOBJS@
-
-
+player_LDADD   = -lpthread -lm drivers/stage/libstage.a @REB_LIBPATH@ @P2OS_LIBPATH@ @SICK_LIBPATH@ @FESTIVAL_LIBPATH@ @ACTS_LIBPATH@ @SONY_LIBPATH@ @UDPBCAST_LIBPATH@ @LASER_LIBPATH@ @WIFI_LIBPATH@ @RWI_LIBPATH@ @FIXEDTONES_LIBPATH@ @FIXEDTONES_EXTRA_LIB@ @ISENSE_LIBPATH@ @ISENSE_EXTRA_LIB@ @LIBOBJS@ 
 
 AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage
 
