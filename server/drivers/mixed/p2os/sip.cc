@@ -47,9 +47,9 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   
   /* time and position */
   //data->position.time = htonl((unsigned int)timeNow);
-  data->position.xpos = htonl((int32_t)xpos); 
-  data->position.ypos = htonl((int32_t)ypos); 
-  data->position.yaw = htonl((int32_t)angle);
+  data->position.xpos = htonl((int32_t)(xpos + x_offset)); 
+  data->position.ypos = htonl((int32_t)(ypos + y_offset)); 
+  data->position.yaw = htonl((int32_t)(angle + angle_offset));
   data->position.xspeed = htonl((int32_t) (((lvel) + (rvel) ) / 2));
   data->position.yawspeed = htonl((int32_t)
      (180*((double)(rvel - lvel) /

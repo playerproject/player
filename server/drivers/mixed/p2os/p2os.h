@@ -69,6 +69,7 @@
 #define GRIPPERVAL 36
 #define TTY2 42
 #define GETAUX 43
+#define JOYDRIVE 47
 
 /* gripper stuff */
 #define GRIPopen   1
@@ -145,6 +146,7 @@ class P2OS:public CDevice
     // device used to communicate with p2os
     static char psos_serial_port[MAX_FILENAME_SIZE]; 
     static int radio_modemp; // are we using a radio modem?
+    static int joystickp; // are we using a joystick?
 
     static struct timeval timeBegan_tv;
 
