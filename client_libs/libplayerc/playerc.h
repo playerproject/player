@@ -40,6 +40,7 @@
 
 #define PLAYERC_LASER_MAX_SCAN 401
 #define PLAYERC_LBD_MAX_BEACONS 64
+#define PLAYERC_SONAR_MAX_SCAN 16
 #define PLAYERC_VISION_MAX_BLOBS 64
 
 
@@ -221,6 +222,9 @@ typedef struct
   // Robot pose estimate (global coordinates).
   double px, py, pa;
 
+  // Robot pose uncertainty (global coordinates).
+  double ux, uy, ua;
+
   // Residual error in estimates pose.
   double err;
     
@@ -239,19 +243,21 @@ int playerc_bps_subscribe(playerc_bps_t *device, int access);
 // Un-subscribe from the bps device
 int playerc_bps_unsubscribe(playerc_bps_t *device);
 
-//REMOVE? int  playerc_bps_setgain(playerc_bps_t *device, double gain);
-
-// Set the pose of the laser relative to the robot.
-// px, py, pa : pose of laser (robot coordinates)
-int  playerc_bps_setlaser(playerc_bps_t *device, double px, double py, double pa);
-
-// Set the pose a beacon in global coordinates.
+// Set the pose of a beacon in global coordinates.
 // id : the beacon id.
 // px, py, pa : the beacon pose (global coordinates).
 // ux, uy, ua : the uncertainty in the beacon pose.
-int  playerc_bps_setbeacon(playerc_bps_t *device, int id,
-                           double px, double py, double pa,
-                           double ux, double uy, double ua);
+int  playerc_bps_set_beacon(playerc_bps_t *device, int id,
+                            double px, double py, double pa,
+                            double ux, double uy, double ua);
+
+// Get the pose of a beacon in global coordinates.
+// id : the beacon id.
+// px, py, pa : the beacon pose (global coordinates).
+// ux, uy, ua : the uncertainty in the beacon pose.
+int  playerc_bps_get_beacon(playerc_bps_t *device, int id,
+                            double *px, double *py, double *pa,
+                            double *ux, double *uy, double *ua);
 
 
 /***************************************************************************
@@ -502,6 +508,38 @@ int playerc_ptz_unsubscribe(playerc_ptz_t *device);
 
 // Set the pan, tilt and zoom values.
 int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, int zoom);
+
+
+/***************************************************************************
+ * Sonar device
+ **************************************************************************/
+
+// Sonar device data
+typedef struct
+{
+  // Device info; must be at the start of all device structures.
+  playerc_device_t info;
+
+  // Number of points in the scan.
+  int scan_count;
+
+  // Scan data: range (m)
+  double scan[PLAYERC_SONAR_MAX_SCAN];
+  
+} playerc_sonar_t;
+
+
+// Create a sonar proxy
+playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index);
+
+// Destroy a sonar proxy
+void playerc_sonar_destroy(playerc_sonar_t *device);
+
+// Subscribe to the sonar device
+int playerc_sonar_subscribe(playerc_sonar_t *device, int access);
+
+// Un-subscribe from the sonar device
+int playerc_sonar_unsubscribe(playerc_sonar_t *device);
 
 
 /***************************************************************************

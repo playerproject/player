@@ -77,5 +77,72 @@ int playerc_bps_unsubscribe(playerc_bps_t *device)
 void playerc_bps_putdata(playerc_bps_t *device, player_msghdr_t *header,
                          player_bps_data_t *data, size_t len)
 {
+  assert(sizeof(*data) <= len);
+  
+  device->px = (int32_t) ntohl(data->px) / 1000.0;
+  device->py = (int32_t) ntohl(data->py) / 1000.0;
+  device->pa = (int32_t) ntohl(data->pa) * M_PI / 180;
+  device->ux = (int32_t) ntohl(data->ux) / 1000.0;
+  device->uy = (int32_t) ntohl(data->uy) / 1000.0;
+  device->ua = (int32_t) ntohl(data->ua) * M_PI / 180;
+  device->err = (int32_t) ntohl(data->err) * 1e6;
 }
+
+
+// Set the pose a beacon in global coordinates.
+int  playerc_bps_set_beacon(playerc_bps_t *device, int id, double px, double py, double pa,
+                            double ux, double uy, double ua)
+{
+  int len;
+  player_bps_beacon_t beacon;
+
+  beacon.subtype = PLAYER_BPS_SET_BEACON;
+  beacon.id = id;
+  beacon.px = htonl((int32_t) (px * 1000));
+  beacon.py = htonl((int32_t) (py * 1000));
+  beacon.pa = htonl((int32_t) (pa * 180 / M_PI));
+  beacon.ux = htonl((int32_t) (ux * 1000));
+  beacon.uy = htonl((int32_t) (uy * 1000));
+  beacon.ua = htonl((int32_t) (ua * 180 / M_PI));
+
+  len = playerc_client_request(device->info.client, &device->info,
+                               &beacon, sizeof(beacon), &beacon, sizeof(beacon));
+  if (len < 0)
+    return -1;
+
+  // TODO: check for NACK
+  
+  return 0;
+}
+
+// Get the pose of a beacon in global coordinates.
+int  playerc_bps_get_beacon(playerc_bps_t *device, int id, double *px, double *py, double *pa,
+                            double *ux, double *uy, double *ua)
+{
+  int len;
+  player_bps_beacon_t beacon;
+
+  beacon.subtype = PLAYER_BPS_GET_BEACON;
+  beacon.id = id;
+
+  len = playerc_client_request(device->info.client, &device->info,
+                               &beacon, sizeof(beacon), &beacon, sizeof(beacon));
+  if (len < 0)
+    return -1;
+  if (len != sizeof(beacon))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(beacon));
+    return -1;
+  }
+
+  *px = (int32_t) ntohl(beacon.px) / 1000.0;
+  *py = (int32_t) ntohl(beacon.py) / 1000.0;
+  *pa = (int32_t) ntohl(beacon.pa) * M_PI / 180;
+  *ux = (int32_t) ntohl(beacon.ux) / 1000.0;
+  *uy = (int32_t) ntohl(beacon.uy) / 1000.0;
+  *ua = (int32_t) ntohl(beacon.ua) * M_PI / 180;
+
+  return 0;
+}
+
 

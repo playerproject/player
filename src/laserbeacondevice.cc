@@ -51,7 +51,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #define PLAYER_ENABLE_TRACE 0
-#define PLAYER_ENABLE_MSG 1
+#define PLAYER_ENABLE_MSG 0
 
 #include <errno.h>
 #include <string.h>
@@ -227,7 +227,7 @@ int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len)
 
   switch (config.subtype)
   {
-    case PLAYER_LASERBEACON_SUBTYPE_SETCONFIG:
+    case PLAYER_LASERBEACON_SET_CONFIG:
     {
       // Check the message length
       if (len != sizeof(config))
@@ -247,12 +247,12 @@ int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len)
       this->one_thresh = ntohs(config.one_thresh) / 100.0;
       Unlock();
       
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
 
-    case PLAYER_LASERBEACON_SUBTYPE_GETCONFIG:
+    case PLAYER_LASERBEACON_GET_CONFIG:
     {
       // Check the message length
       if (len != sizeof(config.subtype))
@@ -274,45 +274,14 @@ int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
-  }
-  
-  /* FIX
-  if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETBITS)
-  {
-    if (maxsize != sizeof(player_laserbeacon_setbits_t))
-    {
-      PLAYER_ERROR("config packet size is incorrect");
 
+    default:
+    {
       if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
         PLAYER_ERROR("PutReply() failed");
-      
-      // return OK; otherwise the server would send a ERROR response,
-      // and we've already sent a NACK response
-      return(0);
+      break;
     }
-
-    player_laserbeacon_setbits_t *config = (player_laserbeacon_setbits_t*) src;
-
-    this->max_bits = config->bit_count;
-    this->max_bits = max(this->max_bits, 3);
-    this->max_bits = min(this->max_bits, 8);
-    this->bit_width = ntohs(config->bit_size) / 1000.0;
-
-    PLAYER_TRACE2("bits %d, width %f", this->max_bits, this->bit_width);
   }
-  else if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETTHRESH)
-  {
-    if (maxsize != sizeof(player_laserbeacon_setthresh_t))
-      PLAYER_ERROR("config packet size is incorrect");
-
-    player_laserbeacon_setthresh_t *config =
-            (player_laserbeacon_setthresh_t*) src;
-
-    this->zero_thresh = ntohs(config->zero_thresh) / 100.0;
-    this->one_thresh = ntohs(config->one_thresh) / 100.0;
-  }
-
-  */
     
   return(0);
 }
@@ -571,77 +540,77 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
 // Beacon detector self-test
 int CLaserBeaconDevice::SelfTest(const char *filename)
 {
-    int id = 21;
+  int id = 21;
     
-    // Zero the filters
-    for (int i = 0; i < ARRAYSIZE(this->filter); i++)
-        this->filter[i] = 0;
+  // Zero the filters
+  for (int i = 0; i < ARRAYSIZE(this->filter); i++)
+    this->filter[i] = 0;
     
-    FILE *file = fopen(filename, "r");
-    if (!file)
-    {
-        PLAYER_ERROR2("unable to open [%s] : error [%s]", filename, strerror(errno));
-        return -1;
-    }
+  FILE *file = fopen(filename, "r");
+  if (!file)
+  {
+    PLAYER_ERROR2("unable to open [%s] : error [%s]", filename, strerror(errno));
+    return -1;
+  }
 
-    // Histogram of errors
-    int hist[3] = {0};
+  // Histogram of errors
+  int hist[3] = {0};
     
-    printf("# self test -- start\n");
-    while (TRUE)
-    {
-        char line[4096];
-        if (!fgets(line, sizeof(line), file))
-            break;
+  printf("# self test -- start\n");
+  while (TRUE)
+  {
+    char line[4096];
+    if (!fgets(line, sizeof(line), file))
+      break;
         
-        char *type = strtok(line, " ");
-        if (strcmp(type, "laser") != 0)
-            continue;
+    char *type = strtok(line, " ");
+    if (strcmp(type, "laser") != 0)
+      continue;
 
-        player_laser_data_t laser_data;
-        strtok(NULL, " ");
-        strtok(NULL, " ");
-        laser_data.resolution = atoi(strtok(NULL, " "));
-        laser_data.min_angle = atoi(strtok(NULL, " "));
-        laser_data.max_angle = atoi(strtok(NULL, " "));
-        laser_data.range_count = atoi(strtok(NULL, " "));
-        for (int i = 0; i < laser_data.range_count; i++)
-            laser_data.ranges[i] = atoi(strtok(NULL, " "));
+    player_laser_data_t laser_data;
+    strtok(NULL, " ");
+    strtok(NULL, " ");
+    laser_data.resolution = atoi(strtok(NULL, " "));
+    laser_data.min_angle = atoi(strtok(NULL, " "));
+    laser_data.max_angle = atoi(strtok(NULL, " "));
+    laser_data.range_count = atoi(strtok(NULL, " "));
+    for (int i = 0; i < laser_data.range_count; i++)
+      laser_data.ranges[i] = atoi(strtok(NULL, " "));
 
-        player_laserbeacon_data_t beacon_data;
-        FindBeacons(&laser_data, &beacon_data);
+    player_laserbeacon_data_t beacon_data;
+    FindBeacons(&laser_data, &beacon_data);
 
-        for (int i = 0; i < beacon_data.count; i++)
-        {
-            if (beacon_data.beacon[i].id == id)
-                hist[0] += 1;
-            else if (beacon_data.beacon[i].id == 0)
-                hist[1] += 1;
-            else
-                hist[2] += 1;
+    for (int i = 0; i < beacon_data.count; i++)
+    {
+      if (beacon_data.beacon[i].id == id)
+        hist[0] += 1;
+      else if (beacon_data.beacon[i].id == 0)
+        hist[1] += 1;
+      else
+        hist[2] += 1;
 
-            if (beacon_data.beacon[i].id == id)            
-                printf("beacon %d %d %d %d 0 0 0 0 0 0\n", (int) beacon_data.beacon[i].id,
-                       beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
-                       beacon_data.beacon[i].orient);
-            else if (beacon_data.beacon[i].id == 0)
-                printf("beacon %d 0 0 0 %d %d %d 0 0 0\n", (int) beacon_data.beacon[i].id,
-                       beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
-                       beacon_data.beacon[i].orient);
-            else
-                printf("beacon %d 0 0 0 0 0 0 0 %d %d %d\n", (int) beacon_data.beacon[i].id,
-                       beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
-                       beacon_data.beacon[i].orient);
-        }
+      if (beacon_data.beacon[i].id == id)            
+        printf("beacon %d %d %d %d 0 0 0 0 0 0\n", (int) beacon_data.beacon[i].id,
+               beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
+               beacon_data.beacon[i].orient);
+      else if (beacon_data.beacon[i].id == 0)
+        printf("beacon %d 0 0 0 %d %d %d 0 0 0\n", (int) beacon_data.beacon[i].id,
+               beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
+               beacon_data.beacon[i].orient);
+      else
+        printf("beacon %d 0 0 0 0 0 0 0 %d %d %d\n", (int) beacon_data.beacon[i].id,
+               beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
+               beacon_data.beacon[i].orient);
     }
+  }
 
-    printf("# hist : %d %d %d\n", hist[0], hist[1], hist[2]);
+  printf("# hist : %d %d %d\n", hist[0], hist[1], hist[2]);
     
-    printf("# self test -- end\n");
+  printf("# self test -- end\n");
     
-    fclose(file);
+  fclose(file);
 
-    return 0;
+  return 0;
 }
 
 #endif

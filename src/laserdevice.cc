@@ -262,7 +262,6 @@ int CLaserDevice::UpdateConfig()
   {
     switch (config.subtype)
     {
-      // Process set config requests.
       case PLAYER_LASER_SET_CONFIG:
       {
         if (len != sizeof(config))
@@ -331,7 +330,6 @@ int CLaserDevice::UpdateConfig()
         break;
       }
 
-      // Process get config requests
       case PLAYER_LASER_GET_CONFIG:
       {
         if (len != sizeof(config.subtype))
@@ -343,21 +341,20 @@ int CLaserDevice::UpdateConfig()
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
-        if (len != sizeof(config))
-        {
-          // This is an invalid configuration
-          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 
-                        sizeof(config));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
+
         config.intensity = this->intensity;
         config.resolution = htons(this->scan_res);
         config.min_angle = htons((short) this->min_angle);
         config.max_angle = htons((short) this->max_angle);
         
         if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+
+      default:
+      {
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }

@@ -45,10 +45,3 @@ clean:
 	$(RM) -f ../../lib/$(LIBNAME)
 	$(RM) -f ../../include/playercclient.h
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-helpers.o: playercclient.h ../../include/messages.h
-helpers.o: ../../include/playercommon.h ../../include/defaults.h
-playercclient.o: playercclient.h ../../include/messages.h
-playercclient.o: ../../include/playercommon.h ../../include/defaults.h
-print.o: playercclient.h ../../include/messages.h
-print.o: ../../include/playercommon.h ../../include/defaults.h

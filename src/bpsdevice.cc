@@ -64,12 +64,6 @@ extern int global_playerport; // used to get at devices
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Useful macros
-// this one is defined in playercommon.h - BPG
-//#define NORMALIZE(a) atan2(sin(a), cos(a))
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Structures used internally
 
 struct CBpsFrame
@@ -90,11 +84,11 @@ struct CBpsObs
     double ux, uy, ua;
 };
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-//
 CBpsDevice::CBpsDevice(int argc, char** argv) :
-  CDevice(sizeof(player_bps_data_t),0,0,1)
+  CDevice(sizeof(player_bps_data_t),0,1,1)
 {
   this->index = 0;
   for(int i=0;i<argc;i++)
@@ -135,55 +129,52 @@ CBpsDevice::CBpsDevice(int argc, char** argv) :
 // Set up the device
 int CBpsDevice::Setup()
 {
-    // Get pointers to other devices
-    this->position = deviceTable->GetDevice(global_playerport,PLAYER_POSITION_CODE, this->index);
-    this->laserbeacon = deviceTable->GetDevice(global_playerport,PLAYER_LASERBEACON_CODE, this->index);
-    assert(this->position != NULL);
-    assert(this->laserbeacon != NULL);
+  // Get pointers to other devices
+  this->position = deviceTable->GetDevice(global_playerport,PLAYER_POSITION_CODE, this->index);
+  this->laserbeacon = deviceTable->GetDevice(global_playerport,PLAYER_LASERBEACON_CODE, this->index);
+  assert(this->position != NULL);
+  assert(this->laserbeacon != NULL);
 
-    // Subscribe to devices, but fail if they do
-    if((this->position->Subscribe(this) != 0) ||
-       (this->laserbeacon->Subscribe(this) != 0))
-      return(-1);
+  // Subscribe to devices, but fail if they do
+  if((this->position->Subscribe(this) != 0) ||
+     (this->laserbeacon->Subscribe(this) != 0))
+    return(-1);
     
-    // Initialise configuration settings
-    this->gain = 0.01;
-    this->laser_px = this->laser_py = this->laser_pa = 0;
-    memset(this->beacon, 0, sizeof(this->beacon));
-    this->max_frames = 8;
-    this->max_obs = 16;
-    assert(this->max_obs * this->max_frames < ARRAYSIZE(this->obs));
+  // Initialise configuration settings
+  this->gain = 0.01;
+  this->laser_px = this->laser_py = this->laser_pa = 0;
+  memset(this->beacons, 0, sizeof(this->beacons));
+  this->max_frames = 8;
+  this->max_obs = 16;
+  assert(this->max_obs * this->max_frames < ARRAYSIZE(this->obs));
 
-    this->odo_px = this->odo_py = this->odo_pa = 0;
+  this->odo_px = this->odo_py = this->odo_pa = 0;
 
-    // Initialise frame and observation lists
-    this->frame_count = 0;
-    this->obs_count = 0;
+  // Initialise frame and observation lists
+  this->frame_count = 0;
+  this->obs_count = 0;
 
-    // Create an initial frame
-    this->current = AllocFrame();
-    this->current->gx = 0;
-    this->current->gy = 0;
-    this->current->ga = 0;
-    this->current->ox = 0;
-    this->current->oy = 0;
-    this->current->oa = 0;
-    this->current->err = 0;
+  // Create an initial frame
+  this->current = AllocFrame();
+  this->current->gx = 0;
+  this->current->gy = 0;
+  this->current->ga = 0;
+  this->current->ox = 0;
+  this->current->oy = 0;
+  this->current->oa = 0;
+  this->current->err = 0;
     
 #ifdef INCLUDE_SELFTEST
-    this->dumpfile = fopen("bpsdevice.out", "w+");
-    if (!this->dumpfile)
-        PLAYER_ERROR1("unable to open dump file, error [%s]", strerror(errno));
+  this->dumpfile = fopen("bpsdevice.out", "w+");
+  if (!this->dumpfile)
+    PLAYER_ERROR1("unable to open dump file, error [%s]", strerror(errno));
 #endif  
 
-    // Hack to get around mutex on GetData
-    //GetLock()->PutData(this, NULL, 0);
+  // Start our own thread
+  StartThread();
     
-    // Start our own thread
-    StartThread();
-    
-    PLAYER_TRACE0("setup");
-    return 0;
+  PLAYER_TRACE0("setup");
+  return 0;
 }
 
 
@@ -192,28 +183,28 @@ int CBpsDevice::Setup()
 //
 int CBpsDevice::Shutdown()
 {
-    // Stop the thread
-    //
-    StopThread();
+  // Stop the thread
+  //
+  StopThread();
     
-    // Unsubscribe from the laser device
-    //
-    this->position->Unsubscribe(this);
-    this->laserbeacon->Unsubscribe(this);
+  // Unsubscribe from the laser device
+  //
+  this->position->Unsubscribe(this);
+  this->laserbeacon->Unsubscribe(this);
 
 #ifdef INCLUDE_SELFTEST
-    if (this->dumpfile)
-        fclose(this->dumpfile);
+  if (this->dumpfile)
+    fclose(this->dumpfile);
 #endif
 
-    // Clear the frame and observation lists
-    while (this->obs_count > 0)
-        DestroyObs(this->obs[0]);
-    while (this->frame_count > 0)
-        DestroyFrame(this->frames[0]);
+  // Clear the frame and observation lists
+  while (this->obs_count > 0)
+    DestroyObs(this->obs[0]);
+  while (this->frame_count > 0)
+    DestroyFrame(this->frames[0]);
     
-    PLAYER_TRACE0("shutdown");
-    return 0;
+  PLAYER_TRACE0("shutdown");
+  return 0;
 }
 
 
@@ -222,306 +213,346 @@ int CBpsDevice::Shutdown()
 //
 void CBpsDevice::Main()
 {
-    uint32_t sec, usec;
+  uint32_t sec, usec;
 
-    PLAYER_TRACE0("main");
+  PLAYER_TRACE0("main");
 
-    // Nice ourself down so we dont interfere with other threads
-    nice(10);
+  // Nice ourself down so we dont interfere with other threads
+  nice(10);
 
-    while (TRUE)
-    {
-        pthread_testcancel();
+  while (TRUE)
+  {
+    pthread_testcancel();
 
 #ifdef INCLUDE_SELFTEST
-        // Dump current frames, obs etc
-        Dump();
+    // Dump current frames, obs etc
+    Dump();
 #endif
 
-        // Update our pose estimate
-        // TODO: this should probably run for a set amount of time
-        for (int i = 0; i < 100; i++)
-            UpdateEstimate();
-
-        // Now sleep for a while so we dont use all the cpu cycles
-        usleep(10);
+    // See if there is any new configuration data
+    UpdateConfig();
     
+    // Update our pose estimate
+    // TODO: this should probably run for a set amount of time
+    for (int i = 0; i < 100; i++)
+      UpdateEstimate();
 
-                
-        // Get the beacon data
-        player_laserbeacon_data_t lbdata;
-        this->laserbeacon->GetData((uint8_t*) &lbdata, sizeof(lbdata), 
-                                   &sec, &usec);
+    // Now sleep for a while so we dont use all the cpu cycles
+    usleep(10);
+    
+    // Get the beacon data
+    player_laserbeacon_data_t lbdata;
+    this->laserbeacon->GetData((uint8_t*) &lbdata, sizeof(lbdata), 
+                               &sec, &usec);
 
-        // If beacon data is new, process it...
-        if (!(sec == this->beacon_sec && usec == this->beacon_usec))
-        {
-            PLAYER_TRACE2("beacon time : %u.%06u", sec, usec);
+    // If beacon data is new, process it...
+    if (!(sec == this->beacon_sec && usec == this->beacon_usec))
+    {
+      PLAYER_TRACE2("beacon time : %u.%06u", sec, usec);
             
-            this->beacon_sec = sec;
-            this->beacon_usec = usec;
+      this->beacon_sec = sec;
+      this->beacon_usec = usec;
 
-            if(!ntohs(lbdata.count))
-              this->err = 1;
-            else
-              this->err = 0;
-            for (int i = 0; i < ntohs(lbdata.count); i++)
-            {
-                int id = lbdata.beacon[i].id;
-                if (id == 0)
-                    continue;
+      if(!ntohs(lbdata.count))
+        this->err = 1;
+      else
+        this->err = 0;
+      for (int i = 0; i < ntohs(lbdata.count); i++)
+      {
+        int id = lbdata.beacon[i].id;
+        if (id == 0)
+          continue;
 
-                double r = ntohs(lbdata.beacon[i].range) / 1000.0;
-                double b = ((short) ntohs(lbdata.beacon[i].bearing)) * M_PI / 180.0;
-                double o = ((short) ntohs(lbdata.beacon[i].orient)) * M_PI / 180.0;
-                PLAYER_TRACE4("beacon : %d %f %f %f", id, r, b, o);
+        double r = ntohs(lbdata.beacon[i].range) / 1000.0;
+        double b = ((short) ntohs(lbdata.beacon[i].bearing)) * M_PI / 180.0;
+        double o = ((short) ntohs(lbdata.beacon[i].orient)) * M_PI / 180.0;
+        PLAYER_TRACE4("beacon : %d %f %f %f", id, r, b, o);
 
-                // Now process this beacon measurement
-                ProcessBeacon(id, r, b, o);
-            }
-        }
-        
-        // Get the odometry data
-        player_position_data_t posdata;
-        this->position->GetData((uint8_t*) &posdata, sizeof(posdata), 
-                                &sec, &usec);
-        
-        // If odometry data is new, process it...
-        if (!(sec == this->position_sec && usec == this->position_usec))
-        {
-            PLAYER_TRACE2("odometry time : %u.%06u", sec, usec);
-            
-            this->position_sec = sec;
-            this->position_usec = usec;
-
-            // Compute odometric pose in SI units
-            double ox = ((int) ntohl(posdata.xpos)) / 1000.0;
-            double oy = ((int) ntohl(posdata.ypos)) / 1000.0;
-            double oa = ntohs(posdata.theta) * M_PI / 180;
-
-            // Process this odometry measurement
-            ProcessOdometry(ox, oy, oa);
-            
-            // Update our data
-            PutData(NULL, 0,0,0);
-        }
+        // Now process this beacon measurement
+        ProcessBeacon(id, r, b, o);
+      }
     }
+        
+    // Get the odometry data
+    player_position_data_t posdata;
+    this->position->GetData((uint8_t*) &posdata, sizeof(posdata), 
+                            &sec, &usec);
+        
+    // If odometry data is new, process it...
+    if (!(sec == this->position_sec && usec == this->position_usec))
+    {
+      PLAYER_TRACE2("odometry time : %u.%06u", sec, usec);
+            
+      this->position_sec = sec;
+      this->position_usec = usec;
+
+      // Compute odometric pose in SI units
+      double ox = ((int) ntohl(posdata.xpos)) / 1000.0;
+      double oy = ((int) ntohl(posdata.ypos)) / 1000.0;
+      double oa = ntohs(posdata.theta) * M_PI / 180;
+
+      // Process this odometry measurement
+      ProcessOdometry(ox, oy, oa);
+            
+      // Update our data
+      PutData(NULL, 0,0,0);
+    }
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Update the device configuration
+int CBpsDevice::UpdateConfig()
+{
+  int len;
+  void *client;
+  char buffer[PLAYER_MAX_REQREP_SIZE];
+  player_bps_config_t *config;
+  player_bps_beacon_t *beacon;
+
+  while ((len = GetConfig(&client, buffer, sizeof(buffer))) > 0)
+  {
+    switch (buffer[0])
+    {
+      case PLAYER_BPS_SET_CONFIG:
+      {
+        config = (player_bps_config_t*) buffer;
+        
+        if (len != sizeof(*config))
+        {
+          // This is an invalid configuration
+          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        
+        // TODO: there is no configration info at the moment.
+        
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, config, sizeof(*config)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        
+        break;
+      }
+
+      case PLAYER_BPS_GET_CONFIG:
+      {
+        config = (player_bps_config_t*) buffer;
+
+        if (len != sizeof(config->subtype))
+        {
+          // This is an invalid configuration
+          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config->subtype));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        
+        // TODO: there is no configration info at the moment.
+        
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, config, sizeof(*config)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+
+      case PLAYER_BPS_SET_BEACON:
+      {
+        beacon = (player_bps_beacon_t*) buffer;
+        
+        if (len != sizeof(*beacon))
+        {
+          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(*beacon));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        
+        int id = beacon->id;
+        if (id < 0 || id >= ARRAYSIZE(this->beacons))
+        {
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+        }
+        
+        this->beacons[id].px = (int) ntohl(beacon->px) / 1000.0;
+        this->beacons[id].py = (int) ntohl(beacon->py) / 1000.0;
+        this->beacons[id].pa = (int) ntohl(beacon->pa) * M_PI / 180.0;
+        this->beacons[id].ux = (int) ntohl(beacon->ux) / 1000.0;
+        this->beacons[id].uy = (int) ntohl(beacon->uy) / 1000.0;
+        this->beacons[id].ua = (int) ntohl(beacon->ua) * M_PI / 180.0;
+        this->beacons[id].isset = true;
+
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+
+      case PLAYER_BPS_GET_BEACON:
+      {
+        beacon = (player_bps_beacon_t*) buffer;
+                
+        if ((size_t) len < (sizeof(beacon->subtype) + sizeof(beacon->id)))
+        {
+          PLAYER_ERROR2("config request len is invalid (%d < %d)", len,
+                        (sizeof(beacon->subtype) + sizeof(beacon->id)));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+
+        int id = beacon->id;
+        if (id < 0 || id >= ARRAYSIZE(this->beacons))
+        {
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+        }
+
+        // Reply with NACK if the beacon is not being used.
+        if (!this->beacons[id].isset)
+        {
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        
+        beacon->px = htonl((int32_t) (this->beacons[id].px * 1000));
+        beacon->py = htonl((int32_t) (this->beacons[id].py * 1000));
+        beacon->pa = htonl((int32_t) (this->beacons[id].pa * 180 / M_PI));        
+        beacon->ux = htonl((int32_t) (this->beacons[id].ux * 1000));
+        beacon->uy = htonl((int32_t) (this->beacons[id].uy * 1000));
+        beacon->ua = htonl((int32_t) (this->beacons[id].ua * 180 / M_PI));        
+        
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, beacon, sizeof(*beacon)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+      }
+
+      default:
+      {
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+    }
+  }
+  return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Put data in buffer (called by device thread)
 // Note that the arguments are ignored.
-//
 void CBpsDevice::PutData(unsigned char *src, size_t maxsize,
                          uint32_t timestamp_sec, 
                          uint32_t timestamp_usec)
 {
-    CBpsFrame *frame = this->current;
+  CBpsFrame *frame = this->current;
 
-    // Get robot odometric pose
-    double ox = this->odo_px;
-    double oy = this->odo_py;
-    double oa = this->odo_pa;
+  // Get robot odometric pose
+  double ox = this->odo_px;
+  double oy = this->odo_py;
+  double oa = this->odo_pa;
 
-    // Compute robot pose relative to current frame
-    double rx = +(ox - frame->ox) * cos(frame->oa) + (oy - frame->oy) * sin(frame->oa);
-    double ry = -(ox - frame->ox) * sin(frame->oa) + (oy - frame->oy) * cos(frame->oa);
-    double ra = oa - frame->oa;
+  // Compute robot pose relative to current frame
+  double rx = +(ox - frame->ox) * cos(frame->oa) + (oy - frame->oy) * sin(frame->oa);
+  double ry = -(ox - frame->ox) * sin(frame->oa) + (oy - frame->oy) * cos(frame->oa);
+  double ra = oa - frame->oa;
     
-    // Compute current global pose
-    double gx = frame->gx + rx * cos(frame->ga) - ry * sin(frame->ga);
-    double gy = frame->gy + rx * sin(frame->ga) + ry * cos(frame->ga);
-    double ga = frame->ga + ra;
+  // Compute current global pose
+  double gx = frame->gx + rx * cos(frame->ga) - ry * sin(frame->ga);
+  double gy = frame->gy + rx * sin(frame->ga) + ry * cos(frame->ga);
+  double ga = frame->ga + ra;
 
-    Lock();
+  Lock();
     
-    // Construct data packet
-    ((player_bps_data_t*)this->device_data)->px = 
-            htonl((int) (gx * 1000));
-    ((player_bps_data_t*)this->device_data)->py = 
-            htonl((int) (gy * 1000));
-    ((player_bps_data_t*)this->device_data)->pa = 
-            htonl((int) (ga * 180 / M_PI));
-    // TODO htonl((int) (this->err * 1e6));
-    ((player_bps_data_t*)this->device_data)->err = 0; 
+  // Construct data packet
+  ((player_bps_data_t*)this->device_data)->px = 
+    htonl((int) (gx * 1000));
+  ((player_bps_data_t*)this->device_data)->py = 
+    htonl((int) (gy * 1000));
+  ((player_bps_data_t*)this->device_data)->pa = 
+    htonl((int) (ga * 180 / M_PI));
+  // TODO htonl((int) (this->err * 1e6));
+  ((player_bps_data_t*)this->device_data)->err = 0; 
 
-    if(timestamp_sec == 0)
-    {
-      struct timeval curr;
-      GlobalTime->GetTime(&curr);
-      timestamp_sec = curr.tv_sec;
-      timestamp_usec = curr.tv_usec;
-    }
-    data_timestamp_sec = timestamp_sec;
-    data_timestamp_usec = timestamp_usec;
+  if(timestamp_sec == 0)
+  {
+    struct timeval curr;
+    GlobalTime->GetTime(&curr);
+    timestamp_sec = curr.tv_sec;
+    timestamp_usec = curr.tv_usec;
+  }
+  data_timestamp_sec = timestamp_sec;
+  data_timestamp_usec = timestamp_usec;
 
-    Unlock();
+  Unlock();
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Put configuration in buffer (called by client thread)
-//
-int CBpsDevice::PutConfig(void *client, void *data, size_t len) 
-{
-  /* FIX
-  if (maxsize == sizeof(player_bps_setgain_t))
-  {
-    player_bps_setgain_t *setgain = (player_bps_setgain_t*) src;
-    if (setgain->subtype != PLAYER_BPS_SUBTYPE_SETGAIN)
-    {
-      PLAYER_ERROR("config packet has incorrect subtype");
-
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
-        PLAYER_ERROR("PutReply() failed");
-
-      // return OK; otherwise the server would send a ERROR response,
-      // and we've already sent a NACK response
-      return(0);
-    }
-    this->gain = ntohl(setgain->gain) / 1e6;
-  }
-  else if (maxsize == sizeof(player_bps_setlaser_t))
-  {
-    player_bps_setlaser_t *setlaser = (player_bps_setlaser_t*) src;
-    if (setlaser->subtype != PLAYER_BPS_SUBTYPE_SETLASER)
-    {
-      PLAYER_ERROR("config packet has incorrect subtype");
-
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
-        PLAYER_ERROR("PutReply() failed");
-
-      // return OK; otherwise the server would send a ERROR response,
-      // and we've already sent a NACK response
-      return(0);
-    }
-
-    this->laser_px = (int) ntohl(setlaser->px) / 1000.0;
-    this->laser_py = (int) ntohl(setlaser->py) / 1000.0;
-    this->laser_pa = (int) ntohl(setlaser->pa) * M_PI / 180.0;
-
-    PLAYER_TRACE3("set laser to %f %f %f",
-                  this->laser_px, this->laser_py, this->laser_pa);
-  }
-  else if (maxsize == sizeof(player_bps_setbeacon_t))
-  {
-    player_bps_setbeacon_t *setbeacon = (player_bps_setbeacon_t*) src;
-    if (setbeacon->subtype != PLAYER_BPS_SUBTYPE_SETBEACON)
-    {
-      PLAYER_ERROR("config packet has incorrect subtype");
-
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
-        PLAYER_ERROR("PutReply() failed");
-
-      // return OK; otherwise the server would send a ERROR response,
-      // and we've already sent a NACK response
-      return(0);
-    }
-
-    int id = setbeacon->id;
-    this->beacon[id].px = (int) ntohl(setbeacon->px) / 1000.0;
-    this->beacon[id].py = (int) ntohl(setbeacon->py) / 1000.0;
-    this->beacon[id].pa = (int) ntohl(setbeacon->pa) * M_PI / 180.0;
-    this->beacon[id].ux = (int) ntohl(setbeacon->ux) / 1000.0;
-    this->beacon[id].uy = (int) ntohl(setbeacon->uy) / 1000.0;
-    this->beacon[id].ua = (int) ntohl(setbeacon->ua) * M_PI / 180.0;
-    this->beacon[id].isset = true;
-
-    PLAYER_TRACE4("set beacon %d to %f %f %f", id,
-                  this->beacon[id].px, 
-                  this->beacon[id].py, 
-                  this->beacon[id].pa);
-  }
-  else
-  {
-    PLAYER_ERROR("config packet size is incorrect");
-
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
-      PLAYER_ERROR("PutReply() failed");
-
-    // return OK; otherwise the server would send a ERROR response,
-    // and we've already sent a NACK response
-    return(0);
-  }
-
-  */
-  
-  // until it's fixed, push a dummy reply - BPG
-
-  // everything's cool; send the client an ACK
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return(0);
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process odometry
 // (ox, oy, oa) is the robot pose in the odometric cs
 void CBpsDevice::ProcessOdometry(double ox, double oy, double oa)
 {
-    double kr = 1.0;
-    double ka = 1 / M_PI;
+  double kr = 1.0;
+  double ka = 1 / M_PI;
 
-    CBpsFrame *frame = this->current;
+  CBpsFrame *frame = this->current;
     
-    // Compute distance travelled since last update
-    double dx = ox - this->odo_px;
-    double dy = oy - this->odo_py;
-    double da = NORMALIZE(oa - this->odo_pa);
+  // Compute distance travelled since last update
+  double dx = ox - this->odo_px;
+  double dy = oy - this->odo_py;
+  double da = NORMALIZE(oa - this->odo_pa);
 
-    // Store current odometric pose for later use
-    this->odo_px = ox;
-    this->odo_py = oy;
-    this->odo_pa = oa;    
+  // Store current odometric pose for later use
+  this->odo_px = ox;
+  this->odo_py = oy;
+  this->odo_pa = oa;    
     
-    // Compute accumulated uncertainty
-    //frame->err += kr * dx * dx + kr * dy * dy + ka * da * da;
-    frame->err += kr * fabs(dx) + kr * fabs(dy) + ka * fabs(da);
+  // Compute accumulated uncertainty
+  //frame->err += kr * dx * dx + kr * dy * dy + ka * da * da;
+  frame->err += kr * fabs(dx) + kr * fabs(dy) + ka * fabs(da);
     
-    // If the uncertainty is still small,
-    // do nothing; otherwise, continue on to create new frame.
-    if (frame->err <= 1)
-        return;
+  // If the uncertainty is still small,
+  // do nothing; otherwise, continue on to create new frame.
+  if (frame->err <= 1)
+    return;
 
-    // Create a new frame
-    CBpsFrame *newframe = AllocFrame();
+  // Create a new frame
+  CBpsFrame *newframe = AllocFrame();
 
-    // Create a new observation
-    CBpsObs *obs = AllocObs(frame, newframe);
+  // Create a new observation
+  CBpsObs *obs = AllocObs(frame, newframe);
 
-    // Compute current robot pose relative to current frame
-    obs->ax = +(ox - frame->ox) * cos(frame->oa) + (oy - frame->oy) * sin(frame->oa);
-    obs->ay = -(ox - frame->ox) * sin(frame->oa) + (oy - frame->oy) * cos(frame->oa);
-    obs->aa = oa - frame->oa;
+  // Compute current robot pose relative to current frame
+  obs->ax = +(ox - frame->ox) * cos(frame->oa) + (oy - frame->oy) * sin(frame->oa);
+  obs->ay = -(ox - frame->ox) * sin(frame->oa) + (oy - frame->oy) * cos(frame->oa);
+  obs->aa = oa - frame->oa;
 
-    // Compute current robot pose relative to new frame
-    // Is zero by definition.
-    obs->bx = 0;
-    obs->by = 0;
-    obs->ba = 0;
+  // Compute current robot pose relative to new frame
+  // Is zero by definition.
+  obs->bx = 0;
+  obs->by = 0;
+  obs->ba = 0;
 
-    // Compute uncertainty in observation
-    obs->ux = 0.10; // TODO
-    obs->uy = 0.10;
-    obs->ua = 0.10;
+  // Compute uncertainty in observation
+  obs->ux = 0.10; // TODO
+  obs->uy = 0.10;
+  obs->ua = 0.10;
 
-    // Compute initial pose of new frame in global cs
-    newframe->gx = frame->gx + obs->ax * cos(frame->ga) - obs->ay * sin(frame->ga);
-    newframe->gy = frame->gy + obs->ax * sin(frame->ga) + obs->ay * cos(frame->ga);
-    newframe->ga = frame->ga + obs->aa;
+  // Compute initial pose of new frame in global cs
+  newframe->gx = frame->gx + obs->ax * cos(frame->ga) - obs->ay * sin(frame->ga);
+  newframe->gy = frame->gy + obs->ax * sin(frame->ga) + obs->ay * cos(frame->ga);
+  newframe->ga = frame->ga + obs->aa;
 
-    // Set pose of new frame in odometric cs
-    newframe->ox = ox;
-    newframe->oy = oy;
-    newframe->oa = oa;
+  // Set pose of new frame in odometric cs
+  newframe->ox = ox;
+  newframe->oy = oy;
+  newframe->oa = oa;
 
-    newframe->err = 0;
+  newframe->err = 0;
     
-    // Now start using the new frame
-    this->current = newframe;
+  // Now start using the new frame
+  this->current = newframe;
 }
 
 
@@ -531,47 +562,47 @@ void CBpsDevice::ProcessOdometry(double ox, double oy, double oa)
 // relative to the sensor.
 void CBpsDevice::ProcessBeacon(int id, double r, double b, double o)
 {
-    CBpsFrame *frame = this->current;
+  CBpsFrame *frame = this->current;
 
-    // Check that the beacon id is valid and informative
-    assert(id > 0 && id <= 255);
-    if (!this->beacon[id].isset)
-        return;
+  // Check that the beacon id is valid and informative
+  assert(id > 0 && id <= 255);
+  if (!this->beacons[id].isset)
+    return;
 
-    // Compute pose of laser in odometrics cs
-    double lx = this->odo_px + this->laser_px * cos(this->odo_pa) -
-        this->laser_py * sin(this->odo_pa);
-    double ly = this->odo_py + this->laser_px * sin(this->odo_pa) +
-        this->laser_py * cos(this->odo_pa);
-    double la = this->odo_pa + this->laser_pa;
+  // Compute pose of laser in odometrics cs
+  double lx = this->odo_px + this->laser_px * cos(this->odo_pa) -
+    this->laser_py * sin(this->odo_pa);
+  double ly = this->odo_py + this->laser_px * sin(this->odo_pa) +
+    this->laser_py * cos(this->odo_pa);
+  double la = this->odo_pa + this->laser_pa;
     
-    // Compute pose of beacon in odometric cs
-    double bx = lx + r * cos(la + b);
-    double by = ly + r * sin(la + b);
-    double ba = la + o;
+  // Compute pose of beacon in odometric cs
+  double bx = lx + r * cos(la + b);
+  double by = ly + r * sin(la + b);
+  double ba = la + o;
     
-    // Create a new observation
-    CBpsObs *obs = AllocObs(frame, NULL);
+  // Create a new observation
+  CBpsObs *obs = AllocObs(frame, NULL);
     
-    // Compute and store measured beacon pose relative to current frame
-    obs->ax = +(bx - frame->ox) * cos(frame->oa) + (by - frame->oy) * sin(frame->oa);
-    obs->ay = -(bx - frame->ox) * sin(frame->oa) + (by - frame->oy) * cos(frame->oa);
-    obs->aa = ba - frame->oa;
+  // Compute and store measured beacon pose relative to current frame
+  obs->ax = +(bx - frame->ox) * cos(frame->oa) + (by - frame->oy) * sin(frame->oa);
+  obs->ay = -(bx - frame->ox) * sin(frame->oa) + (by - frame->oy) * cos(frame->oa);
+  obs->aa = ba - frame->oa;
 
-    // Compute and store uncertainty in observation
-    obs->ux = 0.10; // TODO
-    obs->uy = 0.10;
-    obs->ua = 0.10;
+  // Compute and store uncertainty in observation
+  obs->ux = 0.10; // TODO
+  obs->uy = 0.10;
+  obs->ua = 0.10;
 
-    // Compute and store modelled beacon pose relative to global cs
-    obs->bx = this->beacon[id].px;
-    obs->by = this->beacon[id].py;
-    obs->ba = this->beacon[id].pa;
+  // Compute and store modelled beacon pose relative to global cs
+  obs->bx = this->beacons[id].px;
+  obs->by = this->beacons[id].py;
+  obs->ba = this->beacons[id].pa;
 
-    // Compute and store uncertainty in model
-    obs->ux += this->beacon[id].ux;
-    obs->uy += this->beacon[id].uy;
-    obs->ua += this->beacon[id].ua;
+  // Compute and store uncertainty in model
+  obs->ux += this->beacons[id].ux;
+  obs->uy += this->beacons[id].uy;
+  obs->ua += this->beacons[id].ua;
 }
 
 
@@ -580,39 +611,39 @@ void CBpsDevice::ProcessBeacon(int id, double r, double b, double o)
 // Returns: total energy
 double CBpsDevice::UpdateEstimate()
 {
-    double kr = 1e-5;
-    double ka = 1e-5;
-    double k = 1;
+  double kr = 1e-5;
+  double ka = 1e-5;
+  double k = 1;
 
-    double u = 0;
+  double u = 0;
     
-    // Zero all forces
-    for (int i = 0; i < this->frame_count; i++)
-    {
-        CBpsFrame *frame = this->frames[i];
-        frame->fx = frame->fy = frame->fa = 0;
-    }
+  // Zero all forces
+  for (int i = 0; i < this->frame_count; i++)
+  {
+    CBpsFrame *frame = this->frames[i];
+    frame->fx = frame->fy = frame->fa = 0;
+  }
 
-    // Compute force generated by each observation
-    for (int i = 0; i < this->obs_count; i++)
-    {
-        CBpsObs *obs = this->obs[i];
-        u += ComputeForce(obs);
-    }
+  // Compute force generated by each observation
+  for (int i = 0; i < this->obs_count; i++)
+  {
+    CBpsObs *obs = this->obs[i];
+    u += ComputeForce(obs);
+  }
 
-    // Now apply the forces
-    for (int i = 0; i < this->frame_count; i++)
-    {
-        CBpsFrame *frame = this->frames[i];
+  // Now apply the forces
+  for (int i = 0; i < this->frame_count; i++)
+  {
+    CBpsFrame *frame = this->frames[i];
 
-        //*** printf("%f %f %f\n", frame->fx, frame->fy, frame->fa);
+    //*** printf("%f %f %f\n", frame->fx, frame->fy, frame->fa);
 
-        frame->gx += k * kr * frame->fx;
-        frame->gy += k * kr * frame->fy;
-        frame->ga += k * ka * frame->fa;
-    }
+    frame->gx += k * kr * frame->fx;
+    frame->gy += k * kr * frame->fy;
+    frame->ga += k * ka * frame->fa;
+  }
 
-    return u;
+  return u;
 }
 
 
@@ -621,104 +652,104 @@ double CBpsDevice::UpdateEstimate()
 // Returns: energy stored in observation
 double CBpsDevice::ComputeForce(CBpsObs *obs)
 {
-    double ax, ay, aa;
-    double bx, by, ba;
-    double cx, cy, ca;
-    double kx, ky, ka, u;
-    double du_dcx, du_dcy, du_dca;
-    double dax_dgx, dax_dgy, dax_dga;
-    double day_dgx, day_dgy, day_dga;
-    double daa_dgx, daa_dgy, daa_dga;
-    // i added the following initializations to quash the compiler warnings
-    //       - BPG
-    double dbx_dgx=0, dbx_dgy=0, dbx_dga=0;
-    double dby_dgx=0, dby_dgy=0, dby_dga=0;
-    double dba_dgx=0, dba_dgy=0, dba_dga=0;
-    double fax, fay, faa;
-    double fbx, fby, fba;
+  double ax, ay, aa;
+  double bx, by, ba;
+  double cx, cy, ca;
+  double kx, ky, ka, u;
+  double du_dcx, du_dcy, du_dca;
+  double dax_dgx, dax_dgy, dax_dga;
+  double day_dgx, day_dgy, day_dga;
+  double daa_dgx, daa_dgy, daa_dga;
+  // i added the following initializations to quash the compiler warnings
+  //       - BPG
+  double dbx_dgx=0, dbx_dgy=0, dbx_dga=0;
+  double dby_dgx=0, dby_dgy=0, dby_dga=0;
+  double dba_dgx=0, dba_dgy=0, dba_dga=0;
+  double fax, fay, faa;
+  double fbx, fby, fba;
     
-    // Compute pose in global cs according to a
-    ax = obs->a_frame->gx +
-        obs->ax * cos(obs->a_frame->ga) - obs->ay * sin(obs->a_frame->ga);
-    ay = obs->a_frame->gy +
-        obs->ax * sin(obs->a_frame->ga) + obs->ay * cos(obs->a_frame->ga);
-    aa = obs->a_frame->ga + obs->aa;
+  // Compute pose in global cs according to a
+  ax = obs->a_frame->gx +
+    obs->ax * cos(obs->a_frame->ga) - obs->ay * sin(obs->a_frame->ga);
+  ay = obs->a_frame->gy +
+    obs->ax * sin(obs->a_frame->ga) + obs->ay * cos(obs->a_frame->ga);
+  aa = obs->a_frame->ga + obs->aa;
 
-    dax_dgx = 1;
-    dax_dgy = 0;
-    dax_dga = -obs->ax * sin(obs->a_frame->ga) - obs->ay * cos(obs->a_frame->ga);
-    day_dgx = 0;
-    day_dgy = 1;
-    day_dga = +obs->ax * cos(obs->a_frame->ga) - obs->ay * sin(obs->a_frame->ga);
-    daa_dgx = 0;
-    daa_dgy = 0;
-    daa_dga = 1;
+  dax_dgx = 1;
+  dax_dgy = 0;
+  dax_dga = -obs->ax * sin(obs->a_frame->ga) - obs->ay * cos(obs->a_frame->ga);
+  day_dgx = 0;
+  day_dgy = 1;
+  day_dga = +obs->ax * cos(obs->a_frame->ga) - obs->ay * sin(obs->a_frame->ga);
+  daa_dgx = 0;
+  daa_dgy = 0;
+  daa_dga = 1;
     
-    // Compute pose in global cs according to b
-    if (obs->b_frame)
-    {
-        bx = obs->b_frame->gx +
-            obs->bx * cos(obs->b_frame->ga) - obs->by * sin(obs->b_frame->ga);
-        by = obs->b_frame->gy +
-            obs->bx * sin(obs->b_frame->ga) + obs->by * cos(obs->b_frame->ga);
-        ba = obs->b_frame->ga + obs->ba;
+  // Compute pose in global cs according to b
+  if (obs->b_frame)
+  {
+    bx = obs->b_frame->gx +
+      obs->bx * cos(obs->b_frame->ga) - obs->by * sin(obs->b_frame->ga);
+    by = obs->b_frame->gy +
+      obs->bx * sin(obs->b_frame->ga) + obs->by * cos(obs->b_frame->ga);
+    ba = obs->b_frame->ga + obs->ba;
 
-        dbx_dgx = 1;
-        dbx_dgy = 0;
-        dbx_dga = -obs->bx * sin(obs->b_frame->ga) - obs->by * cos(obs->b_frame->ga);
-        dby_dgx = 0;
-        dby_dgy = 1;
-        dby_dga = +obs->bx * cos(obs->b_frame->ga) - obs->by * sin(obs->b_frame->ga);
-        dba_dgx = 0;
-        dba_dgy = 0;
-        dba_dga = 1;
-    }
-    else
-    {
-        bx = obs->bx;
-        by = obs->by;
-        ba = obs->ba;
-    }
+    dbx_dgx = 1;
+    dbx_dgy = 0;
+    dbx_dga = -obs->bx * sin(obs->b_frame->ga) - obs->by * cos(obs->b_frame->ga);
+    dby_dgx = 0;
+    dby_dgy = 1;
+    dby_dga = +obs->bx * cos(obs->b_frame->ga) - obs->by * sin(obs->b_frame->ga);
+    dba_dgx = 0;
+    dba_dgy = 0;
+    dba_dga = 1;
+  }
+  else
+  {
+    bx = obs->bx;
+    by = obs->by;
+    ba = obs->ba;
+  }
 
-    // Compute spring constants
-    kx = 1 / (obs->ux * obs->ux + 0.01);
-    ky = 1 / (obs->uy * obs->uy + 0.01);
-    ka = 1 / (obs->ua * obs->ua + 0.01);
+  // Compute spring constants
+  kx = 1 / (obs->ux * obs->ux + 0.01);
+  ky = 1 / (obs->uy * obs->uy + 0.01);
+  ka = 1 / (obs->ua * obs->ua + 0.01);
 
-    // Compute the difference
-    cx = bx - ax;
-    cy = by - ay;
-    ca = NORMALIZE(ba - aa);
+  // Compute the difference
+  cx = bx - ax;
+  cy = by - ay;
+  ca = NORMALIZE(ba - aa);
 
-    // Compute weighted energy term
-    u = kx * cx * cx / 2 + ky * cy * cy / 2 + ka * ca * ca / 2;
+  // Compute weighted energy term
+  u = kx * cx * cx / 2 + ky * cy * cy / 2 + ka * ca * ca / 2;
 
-    // Compute basic derivatives
-    du_dcx = kx * cx;
-    du_dcy = ky * cy;
-    du_dca = ka * ca;
+  // Compute basic derivatives
+  du_dcx = kx * cx;
+  du_dcy = ky * cy;
+  du_dca = ka * ca;
 
-    // Now compute total derivatives
-    fax = +du_dcx * dax_dgx + du_dcy * day_dgx + du_dca * daa_dgx;
-    fay = +du_dcx * dax_dgy + du_dcy * day_dgy + du_dca * daa_dgy;
-    faa = +du_dcx * dax_dga + du_dcy * day_dga + du_dca * daa_dga;
+  // Now compute total derivatives
+  fax = +du_dcx * dax_dgx + du_dcy * day_dgx + du_dca * daa_dgx;
+  fay = +du_dcx * dax_dgy + du_dcy * day_dgy + du_dca * daa_dgy;
+  faa = +du_dcx * dax_dga + du_dcy * day_dga + du_dca * daa_dga;
 
-    obs->a_frame->fx += fax;
-    obs->a_frame->fy += fay;
-    obs->a_frame->fa += faa;
+  obs->a_frame->fx += fax;
+  obs->a_frame->fy += fay;
+  obs->a_frame->fa += faa;
 
-    if (obs->b_frame)
-    {
-        fbx = -du_dcx * dbx_dgx - du_dcy * dby_dgx - du_dca * dba_dgx;
-        fby = -du_dcx * dbx_dgy - du_dcy * dby_dgy - du_dca * dba_dgy;
-        fba = -du_dcx * dbx_dga - du_dcy * dby_dga - du_dca * dba_dga;
+  if (obs->b_frame)
+  {
+    fbx = -du_dcx * dbx_dgx - du_dcy * dby_dgx - du_dca * dba_dgx;
+    fby = -du_dcx * dbx_dgy - du_dcy * dby_dgy - du_dca * dba_dgy;
+    fba = -du_dcx * dbx_dga - du_dcy * dby_dga - du_dca * dba_dga;
 
-        obs->b_frame->fx += fbx;
-        obs->b_frame->fy += fby;
-        obs->b_frame->fa += fba;
-    }
+    obs->b_frame->fx += fbx;
+    obs->b_frame->fy += fby;
+    obs->b_frame->fa += fba;
+  }
 
-    return u;
+  return u;
 }
 
 
@@ -727,31 +758,31 @@ double CBpsDevice::ComputeForce(CBpsObs *obs)
 // This may destroy an old frame to make room.
 CBpsFrame *CBpsDevice::AllocFrame()
 {
-    // If we alread have lots of frames, remove an old one
-    if (this->frame_count >= this->max_frames)
+  // If we alread have lots of frames, remove an old one
+  if (this->frame_count >= this->max_frames)
+  {
+    // Pick a frame to remove
+    CBpsFrame *frame = this->frames[0];
+
+    // Remove all observations pointing to this frame
+    for (int i = 0; i < this->obs_count; )
     {
-        // Pick a frame to remove
-        CBpsFrame *frame = this->frames[0];
+      CBpsObs *obs = this->obs[i];
 
-        // Remove all observations pointing to this frame
-        for (int i = 0; i < this->obs_count; )
-        {
-            CBpsObs *obs = this->obs[i];
-
-            if (obs->a_frame == frame || obs->b_frame == frame)
-                DestroyObs(obs);
-            else
-                i++;
-        }
-
-        // Destroy the frame
-        DestroyFrame(frame);
+      if (obs->a_frame == frame || obs->b_frame == frame)
+        DestroyObs(obs);
+      else
+        i++;
     }
 
-    CBpsFrame *frame = CreateFrame();
-    frame->obs_count = 0;
+    // Destroy the frame
+    DestroyFrame(frame);
+  }
 
-    return frame;
+  CBpsFrame *frame = CreateFrame();
+  frame->obs_count = 0;
+
+  return frame;
 }
 
 
@@ -760,29 +791,29 @@ CBpsFrame *CBpsDevice::AllocFrame()
 // This may destroy an old observation to make room
 CBpsObs *CBpsDevice::AllocObs(CBpsFrame *a_frame, CBpsFrame *b_frame)
 {
-    // If we already have lots of observations for this frame,
-    // remove an old one
-    if (a_frame->obs_count >= this->max_obs)
+  // If we already have lots of observations for this frame,
+  // remove an old one
+  if (a_frame->obs_count >= this->max_obs)
+  {
+    for (int i = 0; i < this->obs_count; i++)
     {
-        for (int i = 0; i < this->obs_count; i++)
-        {
-            CBpsObs *obs = this->obs[i];
+      CBpsObs *obs = this->obs[i];
 
-            if (obs->a_frame == a_frame)
-            {
-                a_frame->obs_count--;
-                DestroyObs(obs);
-                break;
-            }
-        }
+      if (obs->a_frame == a_frame)
+      {
+        a_frame->obs_count--;
+        DestroyObs(obs);
+        break;
+      }
     }
+  }
     
-    CBpsObs *obs = CreateObs();
-    obs->a_frame = a_frame;
-    obs->b_frame = b_frame;
-    a_frame->obs_count++;
+  CBpsObs *obs = CreateObs();
+  obs->a_frame = a_frame;
+  obs->b_frame = b_frame;
+  a_frame->obs_count++;
   
-    return obs;
+  return obs;
 }
 
 
@@ -790,14 +821,14 @@ CBpsObs *CBpsDevice::AllocObs(CBpsFrame *a_frame, CBpsFrame *b_frame)
 // Create a frame
 CBpsFrame *CBpsDevice::CreateFrame()
 {
-    // Create a new frame
-    CBpsFrame *frame = new CBpsFrame;
+  // Create a new frame
+  CBpsFrame *frame = new CBpsFrame;
 
-    // Store it in the list
-    assert(this->frame_count < ARRAYSIZE(this->frames));
-    this->frames[this->frame_count++] = frame;
+  // Store it in the list
+  assert(this->frame_count < ARRAYSIZE(this->frames));
+  this->frames[this->frame_count++] = frame;
 
-    return frame;
+  return frame;
 }
 
 
@@ -805,17 +836,17 @@ CBpsFrame *CBpsDevice::CreateFrame()
 // Destroy a frame
 void CBpsDevice::DestroyFrame(CBpsFrame *frame)
 {
-    for (int i = 0; i < this->frame_count; i++)
+  for (int i = 0; i < this->frame_count; i++)
+  {
+    if (this->frames[i] == frame)
     {
-        if (this->frames[i] == frame)
-        {
-            memmove(this->frames + i, this->frames + i + 1,
-                    (this->frame_count - i - 1) * sizeof(this->frames[0]));
-            this->frame_count--;
-            break;
-        }
+      memmove(this->frames + i, this->frames + i + 1,
+              (this->frame_count - i - 1) * sizeof(this->frames[0]));
+      this->frame_count--;
+      break;
     }
-    delete frame;
+  }
+  delete frame;
 }
 
 
@@ -823,14 +854,14 @@ void CBpsDevice::DestroyFrame(CBpsFrame *frame)
 // Create an observation
 CBpsObs *CBpsDevice::CreateObs()
 {
-    // Create a new obstacle
-    CBpsObs *obs = new CBpsObs;
+  // Create a new obstacle
+  CBpsObs *obs = new CBpsObs;
 
-    // Store it in the list
-    assert(this->obs_count < ARRAYSIZE(this->obs));
-    this->obs[this->obs_count++] = obs;
+  // Store it in the list
+  assert(this->obs_count < ARRAYSIZE(this->obs));
+  this->obs[this->obs_count++] = obs;
 
-    return obs;
+  return obs;
 }
 
 
@@ -838,17 +869,17 @@ CBpsObs *CBpsDevice::CreateObs()
 // Destroy an observation
 void CBpsDevice::DestroyObs(CBpsObs *obs)
 {
-    for (int i = 0; i < this->obs_count; i++)
+  for (int i = 0; i < this->obs_count; i++)
+  {
+    if (this->obs[i] == obs)
     {
-        if (this->obs[i] == obs)
-        {
-            memmove(this->obs + i, this->obs + i + 1,
-                    (this->obs_count - i - 1) * sizeof(this->obs[0]));
-            this->obs_count--;
-            break;
-        }
+      memmove(this->obs + i, this->obs + i + 1,
+              (this->obs_count - i - 1) * sizeof(this->obs[0]));
+      this->obs_count--;
+      break;
     }
-    delete obs;
+  }
+  delete obs;
 }
 
 #ifdef INCLUDE_SELFTEST
@@ -857,91 +888,91 @@ void CBpsDevice::DestroyObs(CBpsObs *obs)
 // Read in and process a log-file
 void CBpsDevice::Test(const char *filename)
 {
-    double gps_px, gps_py, gps_pa;
+  double gps_px, gps_py, gps_pa;
     
-    FILE *file = fopen(filename, "r");
-    if (!file)
+  FILE *file = fopen(filename, "r");
+  if (!file)
+  {
+    PLAYER_ERROR2("unable to open [%s] : error [%s]", filename, strerror(errno));
+    return;
+  }
+
+  while (true)
+  {
+    char line[4096];
+    if (!fgets(line, sizeof(line), file))
+      break;
+        
+    char *type = strtok(line, " ");
+
+    // Look for 'beacon' entries;
+    // this is a sneaky way of loading the map
+    if (strcmp(type, "beacon") == 0)
     {
-        PLAYER_ERROR2("unable to open [%s] : error [%s]", filename, strerror(errno));
-        return;
+      int id = atoi(strtok(NULL, " "));
+      this->beacons[id].px = atof(strtok(NULL, " "));
+      this->beacons[id].py = atof(strtok(NULL, " "));
+      this->beacons[id].pa = atof(strtok(NULL, " ")) * M_PI / 180;
+      this->beacons[id].ux = 0;
+      this->beacons[id].uy = 0;
+      this->beacons[id].ua = 0;
+      this->beacons[id].isset = true;
     }
 
-    while (true)
+    // Look for gps entries;
+    // this is useful comparing with ground-truth
+    if (strcmp(type, "gps") == 0)
     {
-        char line[4096];
-        if (!fgets(line, sizeof(line), file))
-            break;
+      strtok(NULL, " ");
+      strtok(NULL, " ");
+      gps_px = atof(strtok(NULL, " ")) / 1000;
+      gps_py = atof(strtok(NULL, " ")) / 1000;
+      gps_pa = atof(strtok(NULL, " ")) * M_PI / 180;
+    }
         
-        char *type = strtok(line, " ");
+    if (strcmp(type, "position") == 0)
+    {
+      strtok(NULL, " ");
+      strtok(NULL, " ");
+      double ox = atof(strtok(NULL, " ")) / 1000;
+      double oy = atof(strtok(NULL, " ")) / 1000;
+      double oa = atof(strtok(NULL, " ")) * M_PI / 180;
+      ProcessOdometry(ox, oy, oa);
 
-        // Look for 'beacon' entries;
-        // this is a sneaky way of loading the map
-        if (strcmp(type, "beacon") == 0)
-        {
-            int id = atoi(strtok(NULL, " "));
-            this->beacon[id].px = atof(strtok(NULL, " "));
-            this->beacon[id].py = atof(strtok(NULL, " "));
-            this->beacon[id].pa = atof(strtok(NULL, " ")) * M_PI / 180;
-            this->beacon[id].ux = 0;
-            this->beacon[id].uy = 0;
-            this->beacon[id].ua = 0;
-            this->beacon[id].isset = true;
-        }
-
-        // Look for gps entries;
-        // this is useful comparing with ground-truth
-        if (strcmp(type, "gps") == 0)
-        {
-            strtok(NULL, " ");
-            strtok(NULL, " ");
-            gps_px = atof(strtok(NULL, " ")) / 1000;
-            gps_py = atof(strtok(NULL, " ")) / 1000;
-            gps_pa = atof(strtok(NULL, " ")) * M_PI / 180;
-        }
+      // Update our pose
+      PutData(NULL, 0,0,0);
+    }
         
-        if (strcmp(type, "position") == 0)
-        {
-            strtok(NULL, " ");
-            strtok(NULL, " ");
-            double ox = atof(strtok(NULL, " ")) / 1000;
-            double oy = atof(strtok(NULL, " ")) / 1000;
-            double oa = atof(strtok(NULL, " ")) * M_PI / 180;
-            ProcessOdometry(ox, oy, oa);
+    if (strcmp(type, "laser_beacon") == 0)
+    {
+      strtok(NULL, " ");
+      strtok(NULL, " ");
 
-            // Update our pose
-            PutData(NULL, 0,0,0);
-        }
-        
-        if (strcmp(type, "laser_beacon") == 0)
-        {
-            strtok(NULL, " ");
-            strtok(NULL, " ");
+      while (true)
+      {
+        char *sid = strtok(NULL, " \n");
+        if (!sid)
+          break;
+        int id = atoi(sid);
+        double range = atof(strtok(NULL, " ")) / 1000;
+        double bearing = atof(strtok(NULL, " ")) * M_PI / 180;
+        double orient = atof(strtok(NULL, " ")) * M_PI / 180;
 
-            while (true)
-            {
-                char *sid = strtok(NULL, " \n");
-                if (!sid)
-                    break;
-                int id = atoi(sid);
-                double range = atof(strtok(NULL, " ")) / 1000;
-                double bearing = atof(strtok(NULL, " ")) * M_PI / 180;
-                double orient = atof(strtok(NULL, " ")) * M_PI / 180;
+        if (id > 0)
+          ProcessBeacon(id, range, bearing, orient);
+      }
 
-                if (id > 0)
-                    ProcessBeacon(id, range, bearing, orient);
-            }
+      for (int i = 0; i < 100; i++)
+        UpdateEstimate();
+    }
 
-            for (int i = 0; i < 100; i++)
-                UpdateEstimate();
-        }
-
-        double gx = (int) ntohl(this->data.px) / 1000.0;
-        double gy = (int) ntohl(this->data.py) / 1000.0;
-        double ga = (int) ntohl(this->data.pa) * M_PI / 180.0;    
-        printf("%f %f %f %f %f %f\n", gps_px, gps_py, gps_pa, gx, gy, ga);
+    double gx = (int) ntohl(this->data.px) / 1000.0;
+    double gy = (int) ntohl(this->data.py) / 1000.0;
+    double ga = (int) ntohl(this->data.pa) * M_PI / 180.0;    
+    printf("%f %f %f %f %f %f\n", gps_px, gps_py, gps_pa, gx, gy, ga);
                       
-        Dump();
-    }
+    Dump();
+  }
 }
 
 
@@ -949,28 +980,28 @@ void CBpsDevice::Test(const char *filename)
 // Dump out frames, observations
 void CBpsDevice::Dump()
 {
-    if (!this->dumpfile)
-        return;
+  if (!this->dumpfile)
+    return;
     
-    for (int i = 0; i < this->frame_count; i++)
-    {
-        CBpsFrame *frame = this->frames[i];
+  for (int i = 0; i < this->frame_count; i++)
+  {
+    CBpsFrame *frame = this->frames[i];
 
-        fprintf(this->dumpfile, "frame %p %f %f %f %f\n",
-                frame, frame->gx, frame->gy, frame->ga,
-                frame->err);
-    }
+    fprintf(this->dumpfile, "frame %p %f %f %f %f\n",
+            frame, frame->gx, frame->gy, frame->ga,
+            frame->err);
+  }
 
-    for (int i = 0; i < this->obs_count; i++)
-    {
-        CBpsObs *obs = this->obs[i];
+  for (int i = 0; i < this->obs_count; i++)
+  {
+    CBpsObs *obs = this->obs[i];
 
-        fprintf(this->dumpfile, "obs %p %p %f %f %f %f %f %f\n",
-                obs->a_frame, obs->b_frame, obs->ax, obs->ay, obs->aa,
-                obs->bx, obs->by, obs->ba);
-    }
+    fprintf(this->dumpfile, "obs %p %p %f %f %f %f %f %f\n",
+            obs->a_frame, obs->b_frame, obs->ax, obs->ay, obs->aa,
+            obs->bx, obs->by, obs->ba);
+  }
 
-    fprintf(this->dumpfile, "\n");
+  fprintf(this->dumpfile, "\n");
 }
 
 #endif
@@ -987,9 +1018,9 @@ void CBpsDevice::Dump()
 double CBpsDevice::ProcessBeacon(int id, double r, double b, double o)
 {
     assert(id > 0 && id <= 255);
-    if (!this->beacon[id].isset)
+    if (!this->beacons[id].isset)
         return -1;
-
+ 
     PLAYER_TRACE4("beacon in laser cs: %d %f %f %f", id, r * cos(b), r * sin(b), o);
     
     // Get robot pose in odometric cs
@@ -1016,9 +1047,9 @@ double CBpsDevice::ProcessBeacon(int id, double r, double b, double o)
     PLAYER_TRACE4("beacon in global cs: %d %f %f %f", id, ax, ay, aa);
     
     // Get true beacon pose in global cs
-    double bx = this->beacon[id].px;
-    double by = this->beacon[id].py;
-    double ba = this->beacon[id].pa;
+    double bx = this->beacons[id].px;
+    double by = this->beacons[id].py;
+    double ba = this->beacons[id].pa;
     PLAYER_TRACE4("true beacon pose   : %d %f %f %f", id, bx, by, ba);
 
     // Compute difference in pose

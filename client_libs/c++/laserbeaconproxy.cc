@@ -46,7 +46,7 @@ int LaserbeaconProxy::SetBits(unsigned char tmp_bit_count,
   if(GetConfig() < 0)
     return(-1);
   
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETCONFIG;
+  config.subtype = PLAYER_LASERBEACON_SET_CONFIG;
   config.bit_count = tmp_bit_count;
   config.bit_size = htons(tmp_bit_size);
   config.zero_thresh = htons(zero_thresh);
@@ -69,7 +69,7 @@ int LaserbeaconProxy::SetThresh(unsigned short tmp_zero_thresh,
   if(GetConfig() < 0)
     return(-1);
   
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETCONFIG;
+  config.subtype = PLAYER_LASERBEACON_SET_CONFIG;
   config.bit_count = bit_count;
   config.bit_size = htons(bit_size);
   config.zero_thresh = htons(tmp_zero_thresh);
@@ -125,7 +125,7 @@ int LaserbeaconProxy::GetConfig()
   player_laserbeacon_config_t config;
   player_msghdr_t hdr;
 
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_GETCONFIG;
+  config.subtype = PLAYER_LASERBEACON_GET_CONFIG;
 
   if(client->Request(PLAYER_LASERBEACON_CODE,index,
                          (const char*)&config, sizeof(config.subtype),

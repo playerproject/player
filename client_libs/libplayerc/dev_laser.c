@@ -119,11 +119,12 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
   config.intensity = (intensity ? 1 : 0);
 
   len = playerc_client_request(device->info.client, &device->info,
-                               (char*) &config, sizeof(config),
-                               (char*) &config, sizeof(config));
+                               &config, sizeof(config), &config, sizeof(config));
   if (len < 0)
     return -1;
 
+  // TODO: check for NACK
+  
   return 0;
 }
 
@@ -138,17 +139,14 @@ int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double
   config.subtype = PLAYER_LASER_GET_CONFIG;
 
   len = playerc_client_request(device->info.client, &device->info,
-                             &config, sizeof(config.subtype), &config, 
-                             sizeof(config));
+                               &config, sizeof(config.subtype), &config, sizeof(config));
   if (len < 0)
     return -1;
-
   if (len != sizeof(config))
   {
     PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
     return -1;
   }
-  
   
   *min_angle = (short) ntohs(config.min_angle) / 100.0 * M_PI / 180;
   *max_angle = (short) ntohs(config.max_angle) / 100.0 * M_PI / 180;

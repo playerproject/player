@@ -56,10 +56,3 @@ uninstall:
 clean:
 	$(RM) -f *.o $(BINARIES)
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-laserobstacleavoid.o: ../../include/playercclient.h ../../include/messages.h
-laserobstacleavoid.o: ../../include/playercommon.h ../../include/defaults.h
-ptz.o: ../../include/playercclient.h ../../include/messages.h
-ptz.o: ../../include/playercommon.h ../../include/defaults.h
-randomwalk.o: ../../include/playercclient.h ../../include/messages.h
-randomwalk.o: ../../include/playercommon.h ../../include/defaults.h
