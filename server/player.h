@@ -408,10 +408,9 @@ typedef struct
   uint16_t resolution;
 
   /* Range readings.  <range_count> specifies the number of valid
-   * readings.  Reflectivity data is stored in the top three bits of
-   * each range reading.  */
+   * readings.  Note that some drivers can produce negative range values. */
   uint16_t range_count;
-  uint16_t ranges[PLAYER_LASER_MAX_SAMPLES];
+  int16_t ranges[PLAYER_LASER_MAX_SAMPLES];
 
   /* Intensity readings. */
   uint8_t intensity[PLAYER_LASER_MAX_SAMPLES];
