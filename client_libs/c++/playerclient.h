@@ -2603,5 +2603,34 @@ class SpeechRecognitionProxy : public ClientProxy
 /** @} */
 /** @} */
 
+/*****************************************************************************
+ ** begin section SimulationProxy
+ *****************************************************************************/
 
+/** [Synopsis] The {\tt simulation} proxy provides an interface to a simulator.
+ */
+
+class SimulationProxy : public ClientProxy
+{
+ public: 
+
+  /** constructor */
+  SimulationProxy (PlayerClient* pc, unsigned short index,
+		   unsigned char access = 'c')
+    : ClientProxy(pc,PLAYER_SIMULATION_CODE,index,access) 
+    {}
+  
+  /** destructor */
+  ~SimulationProxy()
+    {}
+  
+  /** set the 2D pose of an object in the simulator, identified by the
+      string */
+  int SetPose2D( char* identifier, double x, double y, double a );
+
+  virtual void FillData(player_msghdr_t hdr, const char* buffer);  
+  virtual void Print();
+};	   
+	   
 #endif
+	   

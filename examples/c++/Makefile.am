@@ -19,13 +19,15 @@ noinst_PROGRAMS = randomwalk \
                   lookupport \
                   vfh \
                   manualGrip \
-									shapetracker
+                  shapetracker \
+                  simulation_poke
 
 #multilogger
 #forage
 #goto
 #swarmbot
 
+simulation_poke_SOURCES = simulation_poke.cc
 waveformread_SOURCES = waveformread.cc
 audioread_SOURCES = audioread.cc
 audiowrite_SOURCES = audiowrite.cc
