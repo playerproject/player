@@ -204,7 +204,7 @@ PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
 PLAYER_ADD_DRIVER([wavefront],[drivers/planner/wavefront],[yes],[],[],[])
 PLAYER_ADD_DRIVER([mapfile],[drivers/map],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
-PLAYER_ADD_DRIVER([mapsubsample],[drivers/map],[yes],[],
+PLAYER_ADD_DRIVER([mapscale],[drivers/map],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GDK_PIXBUF_LIBS"
 

@@ -22,7 +22,7 @@
  * $Id$
  *
  * A driver to read an occupancy grid map from another map device and
- * subsample it to produce a map with a different given resolution.
+ * scale it to produce a map with a different given resolution.
  */
 
 #include <stdlib.h>
@@ -48,7 +48,7 @@ extern CDeviceTable* deviceTable;
 
 extern int global_playerport;
 
-class MapSubsample : public CDevice
+class MapScale : public CDevice
 {
   private:
     double resolution;
@@ -63,7 +63,7 @@ class MapSubsample : public CDevice
     // get the map from the underlying map device
     int GetMap();
     // interpolate the map
-    int Subsample();
+    int Scale();
     
     // Handle map info request
     void HandleGetMapInfo(void *client, void *request, int len);
@@ -71,8 +71,8 @@ class MapSubsample : public CDevice
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapSubsample(int index, double new_resolution);
-    ~MapSubsample();
+    MapScale(int index, double new_resolution);
+    ~MapScale();
     virtual int Setup();
     virtual int Shutdown();
     virtual int PutConfig(player_device_id_t* device, void* client,
@@ -80,14 +80,14 @@ class MapSubsample : public CDevice
 };
 
 CDevice*
-MapSubsample_Init(char* interface, ConfigFile* cf, int section)
+MapScale_Init(char* interface, ConfigFile* cf, int section)
 {
   int index;
   double resolution;
 
   if(strcmp(interface, PLAYER_MAP_STRING))
   {
-    PLAYER_ERROR1("driver \"mapsubsample\" does not support interface \"%s\"\n",
+    PLAYER_ERROR1("driver \"mapscale\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
@@ -103,19 +103,19 @@ MapSubsample_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
 
-  return((CDevice*)(new MapSubsample(index, resolution)));
+  return((CDevice*)(new MapScale(index, resolution)));
 }
 
 // a driver registration function
 void 
-MapSubsample_Register(DriverTable* table)
+MapScale_Register(DriverTable* table)
 {
-  table->AddDriver("mapsubsample", PLAYER_READ_MODE, MapSubsample_Init);
+  table->AddDriver("mapscale", PLAYER_READ_MODE, MapScale_Init);
 }
 
 
 // this one has no data or commands, just configs
-MapSubsample::MapSubsample(int index, double res) :
+MapScale::MapScale(int index, double res) :
   CDevice(0,0,100,100)
 {
   this->mapdata = this->new_mapdata = NULL;
@@ -125,16 +125,16 @@ MapSubsample::MapSubsample(int index, double res) :
   this->new_resolution = res;
 }
 
-MapSubsample::~MapSubsample()
+MapScale::~MapScale()
 {
 }
 
 int
-MapSubsample::Setup()
+MapScale::Setup()
 {
   if(this->GetMap() < 0)
     return(-1);
-  if(this->Subsample() < 0)
+  if(this->Scale() < 0)
     return(-1);
 
   return(0);
@@ -142,7 +142,7 @@ MapSubsample::Setup()
 
 // get the map from the underlying map device
 int
-MapSubsample::GetMap()
+MapScale::GetMap()
 {
   player_device_id_t map_id;
   CDevice* mapdevice;
@@ -168,7 +168,7 @@ MapSubsample::GetMap()
     return(-1);
   }
 
-  printf("MapSubsample: Loading map from map:%d...\n", this->map_index);
+  printf("MapScale: Loading map from map:%d...\n", this->map_index);
   fflush(NULL);
 
   // Fill in the map structure
@@ -261,14 +261,14 @@ MapSubsample::GetMap()
   // Read data
 
   puts("Done.");
-  printf("MapSubsample read a %d X %d map, at %.3f m/pix\n",
+  printf("MapScale read a %d X %d map, at %.3f m/pix\n",
          this->size_x, this->size_y, this->resolution);
   return(0);
 }
 
 // interpolate the map
 int
-MapSubsample::Subsample()
+MapScale::Scale()
 {
   int i,j;
   double scale_factor;
@@ -283,7 +283,7 @@ MapSubsample::Subsample()
   guchar* p;
   int new_rowstride;
 
-  printf("MapSubsample subsampling to resolution %.3fm...",
+  printf("MapScale scaling to resolution %.3fm...",
          this->new_resolution);
   fflush(NULL);
 
@@ -342,12 +342,12 @@ MapSubsample::Subsample()
       // fill the corresponding map cell
       p = new_map_pixels + (this->new_size_y-j-1)*new_rowstride + i*n_channels;
 
-      if(*p == 255)
+      if(*p > 0.9 * 255)
         this->new_mapdata[NEW_MAP_IDX(this,i,j)] = -1;
-      else if(*p == 127)
-        this->new_mapdata[NEW_MAP_IDX(this,i,j)] = 0;
-      else
+      else if(*p < 0.1 * 255)
         this->new_mapdata[NEW_MAP_IDX(this,i,j)] = 1;
+      else
+        this->new_mapdata[NEW_MAP_IDX(this,i,j)] = 0;
     }
   }
 
@@ -361,7 +361,7 @@ MapSubsample::Subsample()
 }
 
 int
-MapSubsample::Shutdown()
+MapScale::Shutdown()
 {
   free(this->new_mapdata);
   return(0);
@@ -370,7 +370,7 @@ MapSubsample::Shutdown()
 
 // Process configuration requests
 int 
-MapSubsample::PutConfig(player_device_id_t* device, void* client,
+MapScale::PutConfig(player_device_id_t* device, void* client,
                    void* data, size_t len)
 {
   // Discard bogus empty packets
@@ -404,7 +404,7 @@ MapSubsample::PutConfig(player_device_id_t* device, void* client,
 
 // Handle map info request
 void 
-MapSubsample::HandleGetMapInfo(void *client, void *request, int len)
+MapScale::HandleGetMapInfo(void *client, void *request, int len)
 {
   int reqlen;
   player_map_info_t info;
@@ -444,7 +444,7 @@ MapSubsample::HandleGetMapInfo(void *client, void *request, int len)
 
 // Handle map data request
 void 
-MapSubsample::HandleGetMapData(void *client, void *request, int len)
+MapScale::HandleGetMapData(void *client, void *request, int len)
 {
   int i, j;
   int oi, oj, si, sj;
