@@ -129,7 +129,7 @@ typedef struct _playerc_device_t
   // Pointer to the client proxy.
   playerc_client_t *client;
 
-  // Device code, index, etc.
+  // Device code, index
   int code, index;
 
   // The driver name
@@ -830,7 +830,7 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 
 
 /***************************************************************************
- * proxy : localization device
+ * proxy : localize device
  **************************************************************************/
 
 // Hypothesis data

@@ -102,8 +102,8 @@ int playerc_position_enable(playerc_position_t *device, int enable)
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
-                                (char*) &config, sizeof(config),
-                                (char*) &config, sizeof(config));    
+                                &config, sizeof(config),
+                                &config, sizeof(config));    
 }
 
 
@@ -113,8 +113,8 @@ int playerc_position_get_geom(playerc_position_t *device)
 {
   int len;
   player_position_geom_t config;
-  memset( &config, 0, sizeof(config) );
 
+  memset(&config, 0, sizeof(config));
   config.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 
   len = playerc_client_request(device->info.client, &device->info,

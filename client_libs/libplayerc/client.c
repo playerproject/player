@@ -34,9 +34,19 @@
 #include <netinet/in.h>  // for struct sockaddr_in, htons(3)
 #include <errno.h>
 
-#include "replace.h"
+#include "replace.h"  // for poll(2)
 #include "playerc.h"
 #include "error.h"
+
+// Player message structure for subscibing to devices.  This one is
+// easier to use than the one defined in messages.h.
+typedef struct
+{
+    uint16_t subtype;
+    uint16_t device;
+    uint16_t index;
+    uint8_t access;
+} __attribute__ ((packed)) playerc_msg_subscribe_t;
 
 
 // Local functions
@@ -190,12 +200,14 @@ void *playerc_client_read(playerc_client_t *client)
   int len;
   char data[8192];
 
-  len = sizeof(data);
+
 
   // See if there is any queued data.
+  len = sizeof(data);
   if (playerc_client_pop(client, &header, data, &len) < 0)
   {
     // If there is no queued data, read a packet (blocking).
+    len = sizeof(data);
     if (playerc_client_readpacket(client, &header, data, &len) < 0)
       return NULL;
   }
@@ -224,7 +236,10 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
                          void *cmd, int len)
 {
   player_msghdr_t header;
-    
+
+  //if (!(device->access == PLAYER_WRITE_MODE || device->access == PLAYER_ALL_MODE))
+  //  PLAYERC_WARN("writing to device without write permission");
+
   header.stx = PLAYER_STXX;
   header.type = PLAYER_MSGTYPE_CMD;
   header.device = device->code;
@@ -461,6 +476,7 @@ int playerc_client_get_devlist(playerc_client_t *client)
   {
     client->ids[i].code = ntohs(config.devices[i].code);
     client->ids[i].index = ntohs(config.devices[i].index);
+    client->ids[i].port = ntohs(config.devices[i].port);
   }
   client->id_count = config.device_count;
 
@@ -482,6 +498,7 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
     req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
     req.id.code = htons(client->ids[i].code);
     req.id.index = htons(client->ids[i].index);
+    req.id.port = htons(client->ids[i].port);
 
     len = playerc_client_request(client, NULL,
                                  &req, sizeof(req), &rep, sizeof(rep));
@@ -650,7 +667,7 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
 
   if (header->size > *len)
   {
-    PLAYERC_ERR1("packet is too large, %d bytes", ntohl(header->size));
+    PLAYERC_ERR1("packet is too large, %d bytes", header->size);
     return -1;
   }
 

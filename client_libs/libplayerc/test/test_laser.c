@@ -24,12 +24,10 @@ int test_laser(playerc_client_t *client, int index)
   device = playerc_laser_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_laser_subscribe(device, PLAYER_READ_MODE) != 0)
-  {
+  if (playerc_laser_subscribe(device, PLAYER_READ_MODE) == 0)
+    PASS();
+  else
     FAIL();
-    return -1;
-  }
-  PASS();
   
   TEST("set configuration");
   min = -M_PI/2;

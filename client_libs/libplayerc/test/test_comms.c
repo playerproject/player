@@ -12,7 +12,7 @@
 // Basic comms device test
 int test_comms(playerc_client_t *client, int index)
 {
-  int i, len;
+  int i;
   char msg[128];
   void *rdevice;
   playerc_comms_t *comms;
