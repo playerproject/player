@@ -334,18 +334,6 @@ static PyObject *position_set_cmd_pose(PyObject *self, PyObject *args)
   return PyInt_FromLong(playerc_position_set_cmd_pose(pyposition->position, px, py, pa, state));
 }
 
-static PyObject *position_get_waypoints(PyObject *self, PyObject *args)
-{
-  position_object_t *pyposition;
-
-  pyposition = (position_object_t*) self;
-  if (!PyArg_ParseTuple(args, ""))
-    return NULL;
-
-  return PyInt_FromLong(playerc_position_get_waypoints(pyposition->position));
-}
-
-
 /* Assemble python position type
  */
 PyTypeObject position_type = 
@@ -377,7 +365,6 @@ static PyMethodDef position_methods[] =
   {"enable", position_enable, METH_VARARGS},
   {"set_cmd_vel", position_set_cmd_vel, METH_VARARGS},
   {"set_cmd_pose", position_set_cmd_pose, METH_VARARGS},
-  {"get_waypoints", position_get_waypoints, METH_VARARGS},
   {NULL, NULL}
 };
 
