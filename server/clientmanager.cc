@@ -440,10 +440,19 @@ int ClientManager::Write()
     if(clients[i]->auth_pending)
       continue;
 
+    // if this client has data waiting to be sent, try to send it
+    if(clients[i]->leftover_size)
+    {
+      if(clients[i]->Write(clients[i]->leftover_size) < 0)
+        MarkClientForDeletion(i);
+
+      // even if the Write() succeeded, skip this client for this round
+      continue;
+    }
+
     // look for pending replies intended for this client.  we only need to 
     // look in the devices to which this client is subscribed, thus we
-    // iterate through the client's own subscription list (this structure
-    // is already locked above by the 'access' mutex).
+    // iterate through the client's own subscription list.
     for(CDeviceSubscription* thisub = clients[i]->requested;
         thisub;
         thisub = thisub->next)
@@ -453,6 +462,11 @@ int ClientManager::Write()
       struct timeval ts;
       player_device_id_t id;
       bzero(&id,sizeof(id));
+
+      // if this client has built up leftover outgoing data as a result of a
+      // previous reply not getting sent, don't add any more replies.
+      if(clients[i]->leftover_size)
+        break;
 
       // is this a valid device
       if(thisub->devicep)
@@ -494,21 +508,25 @@ int ClientManager::Write()
           memcpy(clients[i]->replybuffer,&reply_hdr,
                  sizeof(player_msghdr_t));
 
-          if(write(clients[i]->socket, clients[i]->replybuffer, 
-                   replysize+sizeof(player_msghdr_t)) < 0) 
+          clients[i]->FillWriteBuffer(clients[i]->replybuffer,
+                                      0,
+                                      replysize+sizeof(player_msghdr_t));
+
+          if(clients[i]->Write(replysize+sizeof(player_msghdr_t)) < 0)
           {
-            if(errno != EAGAIN)
-            {
-              perror("ClientWriterThread: write()");
-              // dump this client
-              MarkClientForDeletion(i);
-              // break out of device loop
-              break;
-            }
+            // dump this client
+            MarkClientForDeletion(i);
+            // break out of device loop
+            break;
           }
         }
       }
     }
+
+    // if this client has built up leftover outgoing data as a result of a
+    // reply not getting sent, don't add any data
+    if(clients[i]->leftover_size)
+      continue;
 
     // is it time to write?
     if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
@@ -523,7 +541,8 @@ int ClientManager::Write()
           clients[i]->last_write) >= 
          (1.0/clients[i]->frequency))
       {
-        if(clients[i]->Write() == -1)
+        size_t msglen = clients[i]->BuildMsg();
+        if(clients[i]->Write(msglen) == -1)
         {
           // write must have errored. dump it
           MarkClientForDeletion(i);
@@ -537,7 +556,8 @@ int ClientManager::Write()
             (clients[i]->datarequested))
     {
       clients[i]->datarequested = false;
-      if(clients[i]->Write() == -1)
+      size_t msglen = clients[i]->BuildMsg();
+      if(clients[i]->Write(msglen) == -1)
       {
         // write must have errored. dump it
         MarkClientForDeletion(i);
