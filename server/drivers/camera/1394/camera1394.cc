@@ -176,10 +176,16 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
     this->mode = MODE_320x240_YUV422;
     this->frameSize = 320 * 240 * 2;
   }
+  /*
   else if (0==strcmp(str,"mode_640x480_yuv411"))
+  {
     this->mode = MODE_640x480_YUV411;
+  }
   else if (0==strcmp(str,"mode_640x480_yuv422"))
+  {
     this->mode = MODE_640x480_YUV422;
+  }
+  */
   else if (0==strcmp(str,"mode_640x480_rgb"))
   {
     this->mode = MODE_640x480_RGB;
@@ -190,8 +196,13 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
     this->mode = MODE_640x480_MONO;
     this->frameSize = 640 * 480 * 1;
   }
+  /*
   else if (0==strcmp(str,"mode_640x480_mono16"))
+  {
     this->mode = MODE_640x480_MONO16;
+    assert(false);
+  }
+  */
   else
   {
     PLAYER_ERROR1("unknown video mode [%s]", str);
@@ -236,14 +247,15 @@ int Camera1394::Setup()
     return -1;
   }
 
-  // TESTING
+  // TODO: need to indicate what formats the camera supports somewhere
+  // Remove; leave?
   //dc1394_print_feature_set(&this->features);
 
   // Get the ISO channel and speed of the video
   if (DC1394_SUCCESS != dc1394_get_iso_channel_and_speed(this->handle, this->camera.node, 
                                                          &channel, &speed))
   {
-    PLAYER_ERROR("Unable to get iso channel and speed");
+    PLAYER_ERROR("Unable to get iso data; is the camera plugged in?");
     return -1;
   }
       
@@ -336,7 +348,7 @@ void Camera1394::Main()
     pthread_testcancel();
 
     // Process any pending requests.
-    //HandleRequests();
+    HandleRequests();
 
     // Get the time
     GlobalTime->GetTime(&this->frameTime);
@@ -424,8 +436,8 @@ int Camera1394::ConvertFrame()
   {
     case MODE_320x240_YUV422:
     {
-      this->data.depth = 8;
-      this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
+      this->data.bpp = 8;
+      this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
       this->data.image_size = this->frameSize / 2;
       assert(this->data.image_size <= sizeof(this->data.image));
 
@@ -443,8 +455,8 @@ int Camera1394::ConvertFrame()
 
     case MODE_640x480_MONO:
     {
-      this->data.depth = 8;
-      this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
+      this->data.bpp = 8;
+      this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
       this->data.image_size = this->frameSize;
       assert(this->data.image_size <= sizeof(this->data.image));
       memcpy(this->data.image, this->frame, this->data.image_size);
@@ -453,7 +465,7 @@ int Camera1394::ConvertFrame()
 
     case MODE_640x480_RGB:
     {
-      this->data.depth = 8;
+      this->data.bpp = 24;
       this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
       this->data.image_size = this->frameSize;
       assert(this->data.image_size <= sizeof(this->data.image));
@@ -506,7 +518,7 @@ int Camera1394::SaveFrame(const char *filename)
 
   switch (this->data.format)
   {
-    case PLAYER_CAMERA_FORMAT_GREY8:
+    case PLAYER_CAMERA_FORMAT_MONO8:
       fprintf(fp,"P5\n%u %u\n255\n", ntohs(this->data.width), ntohs(this->data.height));
       fwrite((unsigned char*)this->data.image, 1, ntohl(this->data.image_size), fp);
       break;
