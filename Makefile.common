@@ -82,6 +82,9 @@ PLAYER_PLATFORM = -DPLAYER_LINUX
 # comment to exclude support for the Stage simulator
 INCLUDE_STAGE = -DINCLUDE_STAGE
 
+# comment out to get rid of self-test routines
+INCLUDE_SELFTEST = -DINCLUDE_SELFTEST
+
 # comment each one to remove support for that device
 INCLUDE_LASER = -DINCLUDE_LASER
 INCLUDE_SONAR = -DINCLUDE_SONAR
