@@ -105,6 +105,9 @@ ReadLogManager::~ReadLogManager()
 // Initialize driver
 int ReadLogManager::Startup()
 {
+  // Reset the time
+  this->server_time = 0;
+  
   // Open the file
   this->file = fopen(this->filename, "r");
   if (this->file == NULL)
@@ -210,9 +213,17 @@ void ReadLogManager::Main()
   player_device_id_t device_id;
   player_device_id_t header_id;
   uint64_t stime, dtime;
-  
+
+  // If nobody is subscribed, we will just loop here until they do
+  while (this->device_count == 0)
+  {
+    usleep(100000);
+    pthread_testcancel();
+    this->server_time += 100000;
+  }
+
+  // Now read the file
   linenum = 0;
-  
   while (true)
   {
     pthread_testcancel();
@@ -268,7 +279,15 @@ void ReadLogManager::Main()
       }
     }
   }
-  
+
+  // File is done, so just loop forever
+  while (1)
+  {
+    usleep(100000);
+    pthread_testcancel();
+    this->server_time += 100000;
+  }
+
   return;
 }
 
