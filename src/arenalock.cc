@@ -96,12 +96,12 @@ int CArenaLock::Shutdown( CDevice *obj )
   return( obj->Shutdown() );
 }
 
-inline int CArenaLock::Lock( void )
+int CArenaLock::Lock( void )
 {
   return( semop( semid, lock_ops, 1 ) );
 }
 
-inline int CArenaLock::Unlock( void )
+int CArenaLock::Unlock( void )
 {
   return( semop( semid, unlock_ops, 1 ) );
 }
