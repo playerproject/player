@@ -80,7 +80,7 @@ REBIR::GetData(void* client,unsigned char *dest, size_t maxsize,
 		      uint32_t *timestamp_sec, uint32_t *timestamp_usec)
 {
   Lock();
-  
+
   *((player_ir_data_t *)dest) = ((player_reb_data_t *)device_data)->ir;
 
   *timestamp_sec = data_timestamp_sec;
