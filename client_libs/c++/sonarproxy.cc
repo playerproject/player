@@ -40,14 +40,13 @@ SonarProxy::SetSonarState(unsigned char state)
   if(!client)
     return(-1);
 
-  char buffer[2];
+  player_sonar_power_config_t config;
 
-  buffer[0] = PLAYER_P2OS_SONAR_POWER_REQ;
-  buffer[1] = state;
+  config.subtype = PLAYER_SONAR_POWER_REQ;
+  config.value = state;
 
-
-  return(client->Request(PLAYER_SONAR_CODE,index,(const char*)buffer,
-                         sizeof(buffer)));
+  return(client->Request(PLAYER_SONAR_CODE,index,(const char*)&config,
+                         sizeof(config)));
 }
 
 int 
@@ -58,12 +57,10 @@ SonarProxy::GetSonarGeom()
   if(!client)
     return(-1);
 
-  char buffer[1];
+  sonar_pose.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 
-  buffer[0] = PLAYER_SONAR_GET_GEOM_REQ;
-
-  if((client->Request(PLAYER_SONAR_CODE,index,(const char*)buffer,
-                      sizeof(buffer), &hdr, (char*)&sonar_pose, 
+  if((client->Request(PLAYER_SONAR_CODE,index,(const char*)&sonar_pose,
+                      sizeof(sonar_pose.subtype), &hdr, (char*)&sonar_pose, 
                       sizeof(sonar_pose)) < 0) ||
      (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
     return(-1);

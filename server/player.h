@@ -288,8 +288,11 @@ typedef struct
   uint8_t stall;
 } __attribute__ ((packed)) player_position_data_t;
 
-/* the various configuration commands */
+/* the various configuration subtypes */
 #define PLAYER_POSITION_GET_GEOM_REQ          ((uint8_t)1)
+#define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
+#define PLAYER_POSITION_VELOCITY_MODE_REQ  ((uint8_t)3)
+#define PLAYER_POSITION_RESET_ODOM_REQ        ((uint8_t)4)
 
 /* Packet for getting the position geometry. */
 typedef struct
@@ -304,6 +307,23 @@ typedef struct
   uint16_t size[2];
   
 } __attribute__ ((packed)) player_position_geom_t;
+
+typedef struct
+{
+  uint8_t request; // must be PLAYER_POSITION_MOTOR_POWER_REQ
+  uint8_t value;  // 0 or 1
+} __attribute__ ((packed)) player_position_power_config_t;
+
+typedef struct
+{
+  uint8_t request; // must be PLAYER_POSITION_VELOCITY_CONTROL_REQ
+  uint8_t value;  // 0=direct wheel vel control, 1=separate trans and rot
+} __attribute__ ((packed)) player_position_velocitymode_config_t;
+
+typedef struct
+{
+  uint8_t request; // must be PLAYER_POSITION_RESET_ODOM_REQ
+} __attribute__ ((packed)) player_position_resetodom_config_t;
 /*************************************************************************/
 
 
@@ -324,7 +344,9 @@ typedef struct
   
 } __attribute__ ((packed)) player_sonar_data_t;
 
+// the request types
 #define PLAYER_SONAR_GET_GEOM_REQ   ((uint8_t)1)
+#define PLAYER_SONAR_POWER_REQ      ((uint8_t)2)
 
 /* Packet for getting the sonar geometry. */
 typedef struct
@@ -339,6 +361,16 @@ typedef struct
   int16_t poses[PLAYER_SONAR_MAX_SAMPLES][3];
   
 } __attribute__ ((packed)) player_sonar_geom_t;
+
+/* Packet for powering on/off the sonars. */
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_P2OS_SONAR_POWER_REQ. */
+  uint8_t subtype;
+
+  /* Turn sonars on or off. */
+  uint8_t value;
+} __attribute__ ((packed)) player_sonar_power_config_t;
 /*************************************************************************/
 
 /*************************************************************************/
@@ -547,6 +579,8 @@ typedef struct
 
 /* Request packet subtypes */
 #define PLAYER_FIDUCIAL_GET_GEOM   0x01
+#define PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG 0x02
+#define PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG 0x03
 
 /* Fiducial geometry packet. */
 typedef struct
@@ -562,6 +596,29 @@ typedef struct
   uint16_t size[2];
   
 } __attribute__ ((packed)) player_fiducial_geom_t;
+
+/* laserbarcode configuration packet. */
+typedef struct
+{
+  /* Packet subtype.  Set to PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG to set the
+   *  device configuration.  Set to PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG to
+   *  get the device configuration. */
+  uint8_t subtype;
+
+  /* The number of bits in the beacon, including start and end
+   * markers. */
+  uint8_t bit_count;
+
+  /* The width of each bit, in mm. */
+  uint16_t bit_size;
+
+  /* Bit detection thresholds.  <zero_thresh> is the minimum threshold
+   * for declaring a bit is zero (0-100).  <one_thresh> is the minimum
+   * threshold for declaring a bit is one (0-100). */
+  uint16_t zero_thresh;
+  uint16_t one_thresh;
+} __attribute__ ((packed)) player_fiducial_laserbarcode_config_t;
+
 /*************************************************************************/
 
 /*************************************************************************/
@@ -890,6 +947,11 @@ typedef struct
  * All RWI devices use the same struct for sending config commands.
  * The request numbers are found near the devices to which they
  * pertain.
+ *
+ * TODO: this struct should be renamed in an interface-specific way and moved
+ *       up into the section(s) for which is pertains.  also, request type
+ *       codes should be claimed for each one (requests are now part of the
+ *       device interface)
  */
 
 typedef struct
@@ -898,86 +960,5 @@ typedef struct
   uint8_t   value;
 } __attribute__ ((packed)) player_rwi_config_t;
 /*************************************************************************/
-
-/*************************************************************************/
-/*
- * The p2os_sonar driver
- */
-
-/* the various configuration commands 
- * NOTE: these must not be the same as any other P2OS device! */
-#define PLAYER_P2OS_SONAR_POWER_REQ      ((uint8_t)2)
-
-/* Packet for configuring the Pioneer sonar. */
-typedef struct
-{
-  /* Packet subtype.  Must be PLAYER_P2OS_SONAR_POWER_REQ. */
-  uint8_t subtype;
-
-  /* Turn sonars on or off. */
-  uint8_t arg;
-} __attribute__ ((packed)) player_p2os_sonar_config_t;
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * The p2os_position driver
- */
-#define PLAYER_P2OS_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
-#define PLAYER_P2OS_POSITION_VELOCITY_CONTROL_REQ  ((uint8_t)3)
-#define PLAYER_P2OS_POSITION_RESET_ODOM_REQ        ((uint8_t)4)
-
-// 
-typedef struct
-{
-  uint8_t request; // one of the above request types
-  uint8_t value;  // value for the request (usually 0 or 1)
-} __attribute__ ((packed)) player_p2os_position_config_t;
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * The acts driver
- */
-
-#define ACTS_NUM_CHANNELS 32
-#define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  
-#define ACTS_HEADER_SIZE_1_2 4*ACTS_NUM_CHANNELS  
-#define ACTS_BLOB_SIZE_1_0 10
-#define ACTS_BLOB_SIZE_1_2 16
-#define ACTS_MAX_BLOBS_PER_CHANNEL 10
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * The laserbarcode driver
- */
-
-#define PLAYER_LASERBARCODE_SET_CONFIG 0x02
-#define PLAYER_LASERBARCODE_GET_CONFIG 0x03
-
-/* laserbarcode configuration packet. */
-typedef struct
-{
-  /* Packet subtype.  Set to PLAYER_LASERBARCODE_SET_CONFIG to set the
-   *  device configuration.  Set to PLAYER_LASERBARCODE_GET_CONFIG to
-   *  get the device configuration. */
-  uint8_t subtype;
-
-  /* The number of bits in the beacon, including start and end
-   * markers. */
-  uint8_t bit_count;
-
-  /* The width of each bit, in mm. */
-  uint16_t bit_size;
-
-  /* Bit detection thresholds.  <zero_thresh> is the minimum threshold
-   * for declaring a bit is zero (0-100).  <one_thresh> is the minimum
-   * threshold for declaring a bit is one (0-100). */
-  uint16_t zero_thresh;
-  uint16_t one_thresh;
-} __attribute__ ((packed)) player_laserbarcode_config_t;
-/*************************************************************************/
-
 
 #endif /* PLAYER_H */

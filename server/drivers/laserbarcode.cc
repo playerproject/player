@@ -254,13 +254,13 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
 int LaserBarcode::PutConfig(player_device_id_t* device, void *client, 
                                   void *data, size_t len) 
 {
-  player_laserbarcode_config_t config;
+  player_fiducial_laserbarcode_config_t config;
 
   memcpy(&config, data, min(sizeof(config),len));
 
   switch (config.subtype)
   {
-    case PLAYER_LASERBARCODE_SET_CONFIG:
+    case PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG:
     {
       // Check the message length
       if (len != sizeof(config))
@@ -285,7 +285,7 @@ int LaserBarcode::PutConfig(player_device_id_t* device, void *client,
       break;
     }
 
-    case PLAYER_LASERBARCODE_GET_CONFIG:
+    case PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG:
     {
       // Check the message length
       if (len != sizeof(config.subtype))

@@ -94,9 +94,9 @@ void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *heade
 // Enable/disable the motors
 int playerc_position_enable(playerc_position_t *device, int enable)
 {
-  player_p2os_position_config_t config;
+  player_position_power_config_t config;
 
-  config.request = PLAYER_P2OS_POSITION_MOTOR_POWER_REQ;
+  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
