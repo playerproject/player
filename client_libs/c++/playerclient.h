@@ -2727,6 +2727,12 @@ public:
 
    // prints out basic statistics of the camera
    void Print();
+
+   void SaveFrame(const char *prefix);
+
+private:
+   char filename[256];
+   int frameNo;
 };
 
 /*****************************************************************************

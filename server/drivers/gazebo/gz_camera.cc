@@ -53,6 +53,7 @@
 #include "gazebo.h"
 #include "gz_client.h"
 
+#include "jpegcompress.h"
 
 // Incremental navigation driver
 class GzCamera : public CDevice
@@ -91,6 +92,9 @@ class GzCamera : public CDevice
 
   // Timestamp on last data update
   private: double datatime;
+
+  private: const char *imageFormat;
+  private: double imageQuality;
 };
 
 
@@ -133,6 +137,9 @@ GzCamera::GzCamera(char* interface, ConfigFile* cf, int section)
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
   this->frameno = 0;
+
+  this->imageFormat = cf->ReadString(section, "image_format", "ppm");
+  this->imageQuality = cf->ReadFloat(section, "image_quality", 0.8);
 
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -200,21 +207,31 @@ void GzCamera::Update()
     this->data.depth = this->iface->data->depth;
     this->data.image_size = htonl(this->iface->data->image_size);
 
-    // Set the image pixels
-    assert((size_t) this->iface->data->image_size < sizeof(this->data.image));
-    memcpy(this->data.image, this->iface->data->image, this->iface->data->image_size);
+    if (strcmp(this->imageFormat,"jpg")==0)
+    {
+      jpeg_compress(this->iface->data->image, &this->data,
+          (int)(this->imageQuality*100));
 
-    // Send data to server
-    size = sizeof(this->data) - sizeof(this->data.image) + this->iface->data->image_size;
-    this->PutData(&this->data, size, tsec, tusec);
+    } else {
+      // Set the image pixels
+      assert((size_t) this->iface->data->image_size < sizeof(this->data.image));
+      memcpy(this->data.image, this->iface->data->image, 
+          this->iface->data->image_size);
+    }
+
+    size = sizeof(this->data) - sizeof(this->data.image) + 
+      ntohl(this->data.image_size);
 
     // Save frames
     if (this->save)
     {
-      printf("click %d\n", this->frameno);
-      snprintf(filename, sizeof(filename), "click-%04d.ppm", this->frameno++);
+      //printf("click %d\n", this->frameno);
+      snprintf(filename, sizeof(filename), "click-%04d.%s",this->frameno++,
+          this->imageFormat);
       this->SaveFrame(filename);
     }
+
+    this->PutData(&this->data, size, tsec, tusec);
   }
 
   gz_camera_unlock(this->iface);
@@ -233,24 +250,31 @@ void GzCamera::SaveFrame(const char *filename)
 
   file = fopen(filename, "w+");
 
-  width = ntohs(this->data.width);
-  height = ntohs(this->data.height);
-  
-  // Write ppm header
-  fprintf(file, "P6\n%d %d\n%d\n", width, height, 255);
-
-  pix = this->data.image;
-  
-  // Write pixels here
-  for (j = width - 1; j >= 0; j--)
+  if (strcmp(this->imageFormat,"jpg")==0)
   {
-    for (i = 0; i < width; i++)
+    fwrite(this->data.image,1,this->data.image_size, file);
+  } else {
+
+    width = ntohs(this->data.width);
+    height = ntohs(this->data.height);
+
+    // Write ppm header
+    fprintf(file, "P6\n%d %d\n%d\n", width, height, 255);
+
+    pix = this->data.image;
+
+    // Write pixels here
+    for (j = width - 1; j >= 0; j--)
     {
-      fputc(pix[0], file);
-      fputc(pix[1], file);
-      fputc(pix[2], file);
-      pix += 3;
+      for (i = 0; i < width; i++)
+      {
+        fputc(pix[0], file);
+        fputc(pix[1], file);
+        fputc(pix[2], file);
+        pix += 3;
+      }
     }
+
   }
 
   fclose(file);

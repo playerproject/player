@@ -256,6 +256,8 @@ dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
 PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
 
+PLAYER_ADD_DRIVER([jpegcompress],[drivers/camera/jpeg],[yes],[jpeglib.h],[],[-ljpeg])
+
 dnl Service Discovery with libservicediscovery
 AC_LANG_SAVE
 AC_LANG_CPLUSPLUS
