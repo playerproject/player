@@ -15,10 +15,11 @@ MANNAME = cppclient
 # Header files to scan
 MANFILES = ../playerclient.h
 
+MAKEDOC = ../../../server/codetools/makedoc/makedoc.py
 
 # Build the manual
 manual: 
-	./docker.py $(MANFILES)
+	$(MAKEDOC) $(MANFILES)
 	latex $(MANNAME)
 	dvips -t letter -f $(MANNAME).dvi > $(MANNAME).ps	
 

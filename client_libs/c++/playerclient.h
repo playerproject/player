@@ -44,7 +44,11 @@
 class PlayerClient;
 
 
-/* Base class for all proxy devices.
+/*****************************************************************************
+ ** begin section ClientProxy
+ *****************************************************************************/
+
+/** Base class for all proxy devices.
  */
 class ClientProxy
 {
@@ -104,6 +108,15 @@ class ClientProxyNode
     ClientProxy* proxy;
     ClientProxyNode* next;
 };
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+
+/*****************************************************************************
+ ** begin section PlayerClient
+ *****************************************************************************/
 
 /** One {\tt PlayerClient} object is used to control each connection to
     a Player server.  Contained within this object are methods for changing the
@@ -233,9 +246,9 @@ class PlayerClient
     
     /**
       Request access to a device; meant mostly for use by client-side device 
-      proxy constructors.\\
-      {\tt req\_access} is requested access.\\
-      {\tt grant\_access}, if non-NULL, will be filled with the granted access.\\
+      proxy constructors.
+      {\tt req_access} is requested access.
+      {\tt grant_access}, if non-NULL, will be filled with the granted access.
       Returns 0 if everything went OK or -1 if something went wrong.
     */
     int RequestDeviceAccess(unsigned short device,
@@ -280,6 +293,11 @@ class PlayerClient
     // remove a proxy from the list
     void RemoveProxy(ClientProxy* proxy);
 };
+
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
 
 
 class PlayerMultiClient
@@ -332,28 +350,21 @@ class PlayerMultiClient
     int ReadLatest( int max_reads );
 };
 
+
+/*****************************************************************************
+ ** begin section CommsProxy
+ *****************************************************************************/
+
 /** The {\tt CommsProxy} class controls the {\tt broadcast} device.
-    Data may be read one message at a time from the incoming broadcast
-    queue using the {\tt Read} method.
-    Data may be written one message at a time to the outgoing broadcast
-    queue using the {\tt Write} method.
-    Note that outgoing messages are not actually sent to the server
-    until the {\tt Flush} method is called.
- */
+Data may be written one message at a time to the outgoing broadcast
+queue using the {\tt Write} method.  Incoming data may be read from
+the {\tt msg} field.  */
 class CommsProxy : public ClientProxy
 {
-  /** Proxy constructor.
-      Leave the access field empty to start unconnected.
-      You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
-  */
+  /** Proxy constructor.  Leave the access field empty to start
+  unconnected.  You can change the access later using {\tt
+  PlayerProxy::RequestDeviceAccess}.  */
   public: CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access ='c');
-
-  /** Read a message from the incoming queue.
-      Returns the number of bytes read, or -1 if the queue is empty.
-  */
-  /* REMOVE
-  public: int Read(void *msg, int len);
-  */
 
   /** Write a message to the outgoing queue.
       Returns the number of bytes written, or -1 if the queue is full.
@@ -366,10 +377,17 @@ class CommsProxy : public ClientProxy
   // interface that all proxies SHOULD provide
   public: void Print();
 
-  // The most recently read message
+  /// Length of the most recently read message.
   public: size_t msg_len;
+
+  /// The most recently read message.
   public: uint8_t msg[PLAYER_MAX_MESSAGE_SIZE];
 };
+
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
 
 
 class DescartesProxy : public ClientProxy
@@ -405,25 +423,22 @@ class DescartesProxy : public ClientProxy
     void GetPos( double* x, double* y, double* th );
 };
 
+
+/*****************************************************************************
+ ** begin section GpsProxy
+ *****************************************************************************/
+
 /** The {\tt GpsProxy} class is used to control the {\tt gps} device.
-    The latest pose data is stored in three class attributes.  The robot
-    can be ``teleported'' with the {\tt Warp()} method
-  */
+    The latest pose data is stored in three class attributes.  */
 class GpsProxy : public ClientProxy
 {
-
   public:
-    // the latest GPS data
-
-    /** The latest global pose (in mm, mm, and degrees, respectively)
-     */
+    /** The latest global pose (in mm, mm, and degrees, respectively). */
     int xpos,ypos,heading;
    
-    /** Constructor.
-        Leave the access field empty to start unconnected.
-        You can change the access later using
-        {\tt PlayerProxy::RequestDeviceAccess()}.
-    */
+    /** Constructor.  Leave the access field empty to start
+        unconnected.  You can change the access later using {\tt
+        PlayerProxy::RequestDeviceAccess()}.  */
     GpsProxy(PlayerClient* pc, unsigned short index, 
               unsigned char access='c') :
             ClientProxy(pc,PLAYER_GPS_CODE,index,access) {}
@@ -434,6 +449,16 @@ class GpsProxy : public ClientProxy
     // interface that all proxies SHOULD provide
     void Print();
 };
+
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+
+/*****************************************************************************
+ ** begin section GripperProxy
+ *****************************************************************************/
 
 /* gripper stuff */
 #define GRIPopen   1
@@ -486,6 +511,12 @@ class GripperProxy : public ClientProxy
     // interface that all proxies SHOULD provide
     void Print();
 };
+
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
 
 class IDARProxy : public ClientProxy
 {
@@ -552,79 +583,72 @@ class IDARTurretProxy : public ClientProxy
 };
 
 
-/** The {\tt FiducialProxy} class is used to control the
-    {\tt fiducial} device.
-    The latest set of detected beacons is stored in the
-    {\tt beacons} array.
-    The {\tt fiducial} device may be configured using
-    the {\tt SetBits()} and {\tt SetThresh()} methods.
-*/
+/*****************************************************************************
+ ** begin section FiducialProxy
+ *****************************************************************************/
+
+/** The {\tt FiducialProxy} class is used to control {\tt fiducial}
+    devices.  The latest set of detected beacons is stored in the {\tt
+    beacons} array.  */
 class FiducialProxy : public ClientProxy
 {
 
   public:
-    // the latest laser beacon data
+  // the latest laser beacon data
 
-    /** The latest laser beacon data.
-        Each beacon has the following information:
-        \begin{verbatim}
-        uint8_t id;
-        uint16_t range;
-        int16_t bearing;
-        int16_t orient;
-        \end{verbatim}
-        where {\tt range} is measured in mm, and {\tt bearing} and
-        {\tt orient} are measured in degrees.
-     */
-    player_fiducial_item_t beacons[PLAYER_FIDUCIAL_MAX_SAMPLES];
+  /** The number of beacons detected */
+  unsigned short count;
 
-    /** The number of beacons detected
-     */
-    unsigned short count;
+  /** The latest laser beacon data.  Each beacon has the following
+      information: \begin{verbatim} uint8_t id; uint16_t range;
+      int16_t bearing; int16_t orient; \end{verbatim} where {\tt
+      range} is measured in mm, and {\tt bearing} and {\tt orient}
+      are measured in degrees.  */
+  player_fiducial_item_t beacons[PLAYER_FIDUCIAL_MAX_SAMPLES];
    
-    /** Constructor.
-        Leave the access field empty to start unconnected.
-        You can change the access later using
-        {\tt PlayerProxy::RequestDeviceAccess()}.
-    */
-    FiducialProxy(PlayerClient* pc, unsigned short index,
-                     unsigned char access='c'):
-            ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access) {}
+  /** Constructor.  Leave the access field empty to start
+      unconnected.  You can change the access later using {\tt
+      PlayerProxy::RequestDeviceAccess()}.  */
+  FiducialProxy(PlayerClient* pc, unsigned short index,
+                unsigned char access='c'):
+    ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access) {}
     
-    // interface that all proxies must provide
-    void FillData(player_msghdr_t hdr, const char* buffer);
+  // interface that all proxies must provide
+  void FillData(player_msghdr_t hdr, const char* buffer);
     
-    // interface that all proxies SHOULD provide
-    void Print();
+  // interface that all proxies SHOULD provide
+  void Print();
 };
 
-/** The {\tt LaserProxy} class is used to control the {\tt laser} device.
-    The latest scan data is held in two arrays: {\tt ranges} and {\tt
-    intensity}.  The laser scan range, resolution and so on can be
-    configured using the {\tt Configure()} method.
-*/
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+
+/*****************************************************************************
+ ** begin section LaserProxy
+ *****************************************************************************/
+
+/** The {\tt LaserProxy} class is used to control the {\tt laser}
+device.  The latest scan data is held in two arrays: {\tt ranges} and
+{\tt intensity}.  The laser scan range, resolution and so on can be
+configured using the {\tt Configure()} method.  */
 class LaserProxy : public ClientProxy
 {
 
   public:
 
-    // the latest laser scan data
-    
-    /** Scan range for the latest set of data.
-        Angles are measured in units of $0.01^{\circ}$,
-        in the range -9000 ($-90^{\circ}$) to
-        +9000 ($+90^{\circ}$).
-    */
+    /** Scan range for the latest set of data.  Angles are measured in
+        units of $0.01^{\circ}$, in the range -9000 ($-90^{\circ}$) to
+        +9000 ($+90^{\circ}$).  */
     short min_angle; short max_angle;
 
-    /** Scan resolution for the latest set of data.
-        Resolution is measured in units of $0.01^{\circ}$.
-        Valid values are: 25, 50, and 100.
-    */
+    /** Scan resolution for the latest set of data.  Resolution is
+        measured in units of $0.01^{\circ}$.  Valid values are: 25,
+        50, and 100.  */
     unsigned short resolution;
 
-    /** Whether or not reflectance values are returned.
-      */
+    /** Whether or not reflectance values are returned.  */
     bool intensity;
 
     /// The number of range measurements in the latest set of data.
@@ -639,11 +663,9 @@ class LaserProxy : public ClientProxy
 
     unsigned short min_right,min_left;
    
-    /** Constructor.
-        Leave the access field empty to start unconnected.
-        You can change the access later using
-        {\tt PlayerProxy::RequestDeviceAccess()}.
-    */
+    /** Constructor.  Leave the access field empty to start
+        unconnected.  You can change the access later using {\tt
+        PlayerProxy::RequestDeviceAccess()}.  */
     LaserProxy(PlayerClient* pc, unsigned short index, 
                unsigned char access='c'):
         ClientProxy(pc,PLAYER_LASER_CODE,index,access) {}
@@ -663,27 +685,23 @@ class LaserProxy : public ClientProxy
     int CartesianCoordinate( int i, int *x, int *y );
 
     // configure the laser scan.
-    /** Configure the laser scan pattern.
-        Angles {\tt min\_angle} and {\tt max\_angle} are measured in
-        units of $0.1^{\circ}$, in the range -9000
-        ($-90^{\circ}$) to +9000 ($+90^{\circ}$).  {\tt
-        resolution} is also measured in units of $0.1^{\circ}$; valid
-        values are: 25 ($0.25^{\circ}$), 50 ($0.5^{\circ}$) and $100
-        (1^{\circ}$).  Set {\tt intensity} to {\tt true} to enable
-        intensity measurements, or {\tt false} to disable.\\
-        Returns the 0 on success, or -1 of there is a problem.
-    */
+    /** Configure the laser scan pattern.  Angles {\tt min\_angle} and
+        {\tt max\_angle} are measured in units of $0.1^{\circ}$, in
+        the range -9000 ($-90^{\circ}$) to +9000 ($+90^{\circ}$).
+        {\tt resolution} is also measured in units of $0.1^{\circ}$;
+        valid values are: 25 ($0.25^{\circ}$), 50 ($0.5^{\circ}$) and
+        $100 (1^{\circ}$).  Set {\tt intensity} to {\tt true} to
+        enable intensity measurements, or {\tt false} to disable.\\
+        Returns the 0 on success, or -1 of there is a problem.  */
     int Configure(short min_angle, short max_angle, 
                   unsigned short resolution, bool intensity);
 
     /** Get the current laser configuration; it is read into the
-        relevant class attributes.\\
-        Returns the 0 on success, or -1 of there is a problem.
-      */
+        relevant class attributes.\\ Returns the 0 on success, or -1
+        of there is a problem.  */
     int GetConfigure();
 
-    /** Accessors
-     */
+    /** Accessors */
     int  RangeCount () { return range_count; }
     uint16_t Ranges (const unsigned int index)
     {
@@ -694,11 +712,11 @@ class LaserProxy : public ClientProxy
     }
     uint16_t MinLeft () { return min_left; }
     uint16_t MinRight () { return min_right; }
-    /** Range access operator.
-        This operator provides an alternate way of access the range data.
-        For example, given an {\tt LaserProxy} named {\tt lp}, the following
-        expressions are equivalent: \verb+lp.Ranges(0)+ and \verb+lp[0]+.
-    */
+
+    /** Range access operator.  This operator provides an alternate
+        way of access the range data.  For example, given an {\tt
+        LaserProxy} named {\tt lp}, the following expressions are
+        equivalent: \verb+lp.Ranges(0)+ and \verb+lp[0]+.  */
     uint16_t operator [] (unsigned int index)
     {
       return Ranges(index);
@@ -711,6 +729,9 @@ class LaserProxy : public ClientProxy
     void Print();
 };
 
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
 
 #define MAX_RX_BUF_SIZE 1024
 
@@ -753,6 +774,10 @@ class MoteProxy : public ClientProxy
 };
 
 
+/*****************************************************************************
+ ** begin section PositionProxy
+ *****************************************************************************/
+
 /** The {\tt PositionProxy} class is used to control the {\tt position} device.
     The latest position data is contained in the attributes {\tt xpos, ypos}, etc.
  */
@@ -760,101 +785,107 @@ class PositionProxy : public ClientProxy
 {
 
   public:
-    /// Robot pose (according to odometry) in mm, mm, degrees.
-    int xpos,ypos; unsigned short theta;
+  /// Robot pose (according to odometry) in mm, mm, degrees.
+  int xpos,ypos; unsigned short theta;
 
-    /// Robot speed in mm/sec, degrees/sec.
-    short speed, turnrate;
+  /// Robot speed in mm/sec, degrees/sec.
+  short speed, turnrate;
 
-    /// Compass value (only valid if the compass is installed).
-    //unsigned short compass;
+  /// Compass value (only valid if the compass is installed).
+  //unsigned short compass;
 
-    /// Stall flag: 1 if the robot is stalled and 0 otherwise.
-    unsigned char stall;
+  /// Stall flag: 1 if the robot is stalled and 0 otherwise.
+  unsigned char stall;
    
-    /** Constructor.
-        Leave the access field empty to start unconnected.
-        You can change the access later using
-        {\tt PlayerProxy::RequestDeviceAccess()}.
-    */
-    PositionProxy(PlayerClient* pc, unsigned short index,
-                  unsigned char access ='c') :
-        ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
+  /** Constructor.
+      Leave the access field empty to start unconnected.
+      You can change the access later using
+      {\tt PlayerProxy::RequestDeviceAccess()}.
+  */
+  PositionProxy(PlayerClient* pc, unsigned short index,
+                unsigned char access ='c') :
+    ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
 
-    // these methods are the user's interface to this device
+  // these methods are the user's interface to this device
 
-    /** Send a motor command.
-        Specify the linear and angular speed in mm/s and degrees/sec,
-        respectively.\\
-        Returns: 0 if everything's ok, -1 otherwise.
-    */
-    int SetSpeed(int speed, int turnrate);
+  /** Send a motor command.
+      Specify the linear and angular speed in mm/s and degrees/sec,
+      respectively.\\
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int SetSpeed(int speed, int turnrate);
 
-    /** Enable/disable the motors.
-        Set {\tt state} to 0 to disable (default) or 1 to enable.
-        Be VERY careful with this method!  Your robot is likely to run across the
-        room with the charger still attached.
+  /** Enable/disable the motors.
+      Set {\tt state} to 0 to disable (default) or 1 to enable.
+      Be VERY careful with this method!  Your robot is likely to run across the
+      room with the charger still attached.
         
-        Returns: 0 if everything's ok, -1 otherwise.
-    */
-    int SetMotorState(unsigned char state);
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int SetMotorState(unsigned char state);
     
-    /** Select velocity control mode for the Pioneer 2.
-        Set {\tt mode} to 0 for direct wheel velocity control (default),
-        or 1 for separate translational and rotational control.
+  /** Select velocity control mode for the Pioneer 2.
+      Set {\tt mode} to 0 for direct wheel velocity control (default),
+      or 1 for separate translational and rotational control.
         
-	For "reb\_position": 0 is direct velocity control, 1 is for velocity-based
-	heading PD controller (uses DoDesiredHeading())
+      For "reb_position": 0 is direct velocity control, 1 is for velocity-based
+      heading PD controller (uses DoDesiredHeading())
 
-        Returns: 0 if everything's ok, -1 otherwise.
-    */
-    int SelectVelocityControl(unsigned char mode);
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int SelectVelocityControl(unsigned char mode);
    
-    /** Reset odometry to (0,0,0).
-        Returns: 0 if everything's ok, -1 otherwise.
-    */
-    int ResetOdometry();
+  /** Reset odometry to (0,0,0).
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int ResetOdometry();
 
-    // the following ioctls are currently only supported by reb_position
-    //
+  // the following ioctls are currently only supported by reb_position
+  //
 
-    /** Select position mode on the REB.
-	Set {\tt mode} for 0 for velocity mode, 1 for position mode.
+  /** Select position mode on the REB.
+      Set {\tt mode} for 0 for velocity mode, 1 for position mode.
 
-	Returns: 0 if OK, -1 else
-    */
-    int SelectPositionMode(unsigned char mode);
+      Returns: 0 if OK, -1 else
+  */
+  int SelectPositionMode(unsigned char mode);
 
-    /** Sets the odometry to the pose {\tt (x, y, theta)}.
-	Note that {\tt x} and {\tt y} are in mm and {\tt theta} is in degrees.
+  /** Sets the odometry to the pose {\tt (x, y, theta)}.
+      Note that {\tt x} and {\tt y} are in mm and {\tt theta} is in degrees.
 	
-	Returns: 0 if OK, -1 else
-    */
-    int SetOdometry(long x,long y,int t);
-    int SetSpeedPID(int kp, int ki, int kd);
-    int SetPositionPID(short kp, short ki, short kd);
-    int SetPositionSpeedProfile(short spd, short acc);
-    int DoStraightLine(int mm);
-    int DoRotation(int deg);
-    int DoDesiredHeading(short theta, int xspeed, int yawspeed);
+      Returns: 0 if OK, -1 else
+  */
+  int SetOdometry(long x,long y,int t);
+  int SetSpeedPID(int kp, int ki, int kd);
+  int SetPositionPID(short kp, short ki, short kd);
+  int SetPositionSpeedProfile(short spd, short acc);
+  int DoStraightLine(int mm);
+  int DoRotation(int deg);
+  int DoDesiredHeading(short theta, int xspeed, int yawspeed);
 
-    /** Accessors
-     */
-    int32_t  Xpos () const { return xpos; }
-    int32_t  Ypos () const { return ypos; }
-    uint16_t Theta () const { return theta; }
-    int16_t  Speed () const { return speed; }
-    int16_t  TurnRate () const { return turnrate; }
-    //unsigned short Compass () const { return compass; }
-    unsigned char Stall () const { return stall; }
+  /** Accessors */
+  int32_t  Xpos () const { return xpos; }
+  int32_t  Ypos () const { return ypos; }
+  uint16_t Theta () const { return theta; }
+  int16_t  Speed () const { return speed; }
+  int16_t  TurnRate () const { return turnrate; }
+  //unsigned short Compass () const { return compass; }
+  unsigned char Stall () const { return stall; }
 
-    // interface that all proxies must provide
-    void FillData(player_msghdr_t hdr, const char* buffer);
+  // interface that all proxies must provide
+  void FillData(player_msghdr_t hdr, const char* buffer);
     
-    // interface that all proxies SHOULD provide
-    void Print();
+  // interface that all proxies SHOULD provide
+  void Print();
 };
 
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+/*****************************************************************************
+ ** begin section PtzProxy
+ *****************************************************************************/
 
 /** The {\tt PtzProxy} class is used to control the {\tt ptz} device.
     The state of the camera can be read from the {\tt pan, tilt, zoom}
@@ -893,6 +924,14 @@ class PtzProxy : public ClientProxy
     // interface that all proxies SHOULD provide
     void Print();
 };
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+/*****************************************************************************
+ ** begin section SonarProxy
+ *****************************************************************************/
 
 /** The {\tt SonarProxy} class is used to control the {\tt sonar} device.
     The most recent sonar range measuremts can be read from the {\tt range}
@@ -964,6 +1003,10 @@ class SonarProxy : public ClientProxy
     void Print();
 };
 
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
 /** The {\tt SpeechProxy} class is used to control the
     {\tt speech} device.
     Use the {\tt say} method to send things to say.
@@ -1008,6 +1051,11 @@ class SpeechProxy : public ClientProxy
 #ifndef NORMALIZE
 #define NORMALIZE(z) atan2(sin(z), cos(z))
 #endif
+
+
+/*****************************************************************************
+ ** begin section TruthProxy
+ *****************************************************************************/
 
 /** The {\tt TruthProxy} gets and sets the {\em true} pose of a truth
     device [worldfile tag: truth()]. This may be different from the
@@ -1063,6 +1111,15 @@ class TruthProxy : public ClientProxy
   int SetPose( double px, double py, double pa );
 };
 
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+
+/*****************************************************************************
+ ** begin section BlobfinderProxy
+ *****************************************************************************/
 
 class Blob
 {
@@ -1123,6 +1180,11 @@ class BlobfinderProxy : public ClientProxy
     // interface that all proxies SHOULD provide
     void Print();
 };
+
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
 
 
 // these define default coefficients for our 
