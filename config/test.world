@@ -4,9 +4,9 @@
 
 # the resolution of Stage's raytrace model in meters
 #
-resolution 0.02
-size [15.0 5.0]
-name "crazy mixed up world"
+resolution 0.1
+size [5.0 5.0]
+name "Player driver test"
 
 # GUI settings
 #
@@ -19,21 +19,22 @@ gui
 
 # load a bitmapped environment from a file
 #
-bitmap
-(
-  color "purple"
-  file "cave.pnm.gz" 
-  resolution 0.02
-)
+#bitmap
+#(
+#  color "purple"
+#  file "cave.pnm.gz" 
+#  resolution 0.02
+#)
 
-# create a robot, setting its start position and Player port, 
+# create a robot, setting its start position
 # and equipping it with a laser range scanner
 #
 position
 (
  name "pioneer"
- pose [1.0 1.0 20]
- size [0.5 0.42]
- #laser( size [0.1 0.1] )
+ velocity [0.2 0.0 0.5]
+
+ #pose [1.0 1.0 20]
+ laser( size [0.1 0.1] color "blue" )
 ) 
 
