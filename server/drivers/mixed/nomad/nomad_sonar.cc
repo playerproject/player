@@ -66,10 +66,6 @@ Richard Vaughan, Pawel Zebrowski
 */
 /** @} */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/stat.h>

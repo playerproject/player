@@ -97,9 +97,6 @@ David Feil-Seifer
 */
 /** @} */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
 
 #define PI 3.1415927
 

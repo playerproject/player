@@ -104,9 +104,8 @@ playerv provides teleoperation of the following kinds of devices:
 
 /** @} */
 
-
-#if HAVE_CONFIG_H
-  #include <config.h>
+#ifdef HAVE_CONFIG_H
+  #include "config.h"
 #endif
 
 #include <signal.h>

@@ -88,10 +88,6 @@ Andy Martignoni III, Brian Gerkey, Brendan Burns, Ben Grocholsky
 
 /** @} */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
