@@ -8,6 +8,16 @@
 include "pioneer.inc"
 
 
+
+
+
+
+
+
+
+
+
+
 #size [120 45]
 #bitmap "bitmaps/hospital.png"
 
@@ -15,6 +25,7 @@ size [20 20]
 bitmap "bitmaps/autolab.png"
 
 resolution 0.02  # meters per pixel
+
 interval_sim 100  # milliseconds per update step
 interval_real 100 # real-time milliseconds per update step
 
@@ -67,7 +78,6 @@ pioneer2dx( name "r9" pose [3.642 6.395 -20.840] )
 #pioneer2dx( name "r17" pose [3.815 3.409 -20.840] )
 #pioneer2dx( name "r18" pose [7.350 3.990 -20.840] )
 #pioneer2dx( name "r19" pose [7.900 8.406 -20.840] )
-
 
 define chatterbox model
 (

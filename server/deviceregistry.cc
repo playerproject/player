@@ -308,6 +308,8 @@ void StgSimulation_Register(DriverTable *table);
 void StgLaser_Register(DriverTable *table);
 void StgPosition_Register(DriverTable *table);
 void StgSonar_Register(DriverTable *table);
+void StgEnergy_Register(DriverTable *table);
+void StgBlobfinder_Register(DriverTable *table);
 //void StgFiducial_Register(DriverTable *table);
 //void StgBlinkenlight_Register(DriverTable *table);
 #endif
@@ -359,6 +361,7 @@ player_interface_t interfaces[] = {
   {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sickpls"},
   {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, "camerav4l"},
   {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING, "nomad"},
+  {PLAYER_ENERGY_CODE, PLAYER_ENERGY_STRING, "stg_energy"},
   {0,NULL,NULL}
 };
 
@@ -703,6 +706,8 @@ register_devices()
   StgLaser_Register(driverTable);
   StgPosition_Register(driverTable);
   StgSonar_Register(driverTable);
+  StgEnergy_Register(driverTable);
+  StgBlobfinder_Register(driverTable);
   //StgFiducial_Register(driverTable);
   //StgBlinkenlight_Register(driverTable);
 #endif

@@ -340,7 +340,8 @@ AC_OUTPUT(Makefile
           utils/playerv/Makefile
           utils/tkviewer/Makefile
           utils/playerjoy/Makefile
-          config/Makefile)
+          config/Makefile
+          config/stage/Makefile)
 
 #server/drivers/blobfinder/shapetracker/Makefile
 

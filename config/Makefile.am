@@ -1,3 +1,5 @@
+SUBDIRS = stage
+
 configdir = $(prefix)/share/player/config
 
 config_DATA = usc_pioneer.cfg \
