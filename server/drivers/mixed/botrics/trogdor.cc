@@ -361,6 +361,9 @@ Trogdor::Main()
     final_lvel = (int)rint(command_lvel / TROGDOR_MPS_PER_TICK);
     final_rvel = (int)rint(command_rvel / TROGDOR_MPS_PER_TICK);
 
+    // TODO: do this min threshold smarter, to preserve desired travel 
+    // direction
+
     /* to account for our bad low-level PID motor controller */
     if(abs(final_rvel) > 0 && abs(final_rvel) < TROGDOR_MIN_WHEELSPEED_TICKS)
     {
