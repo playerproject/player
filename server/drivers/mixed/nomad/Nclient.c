@@ -246,7 +246,7 @@ static unsigned char voltageMotor;
 
 /* function declaration */
 
-int gethostname(char *name, int len);
+//int gethostname(char *name, int len);
 static int posDataProcess  (long *buffer, int current, PosData *posData);
 static int timeDataProcess (long *buffer, int current, TimeData *theTime );
 static int voltDataProcess (long *buffer, int current, 
