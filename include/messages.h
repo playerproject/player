@@ -667,6 +667,8 @@ typedef struct
   uint8_t len; //0-255
   uint8_t intensity; //0-255
   uint8_t reflection; // true/false
+  uint32_t timestamp_sec;
+  uint32_t timestamp_usec;
   uint16_t ranges[ RAYS_PER_SENSOR ]; // useful for debugging & visualization
 } __attribute ((packed)) idarrx_t; 
 
