@@ -404,6 +404,7 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   gtk_widget_push_visual(gdk_rgb_get_visual());
   gtk_widget_push_colormap(gdk_rgb_get_cmap());
   g_assert((gui_data->map_canvas = (GnomeCanvas*)gnome_canvas_new_aa()));
+  //g_assert((gui_data->map_canvas = (GnomeCanvas*)gnome_canvas_new()));
   gtk_widget_pop_colormap();
   gtk_widget_pop_visual();
 
@@ -680,6 +681,7 @@ create_robot(gui_data_t* gui_data, int idx, pose_t pose)
   gui_data->robot_items[idx] = (GnomeCanvasItem*)robot;
   gui_data->robot_labels[idx] = robot_text;
   gui_data->robot_goals[idx] = robot_goal;
+  gui_data->robot_poses[idx] = pose;
 
   gtk_signal_connect(GTK_OBJECT(robot), "event",
                      (GtkSignalFunc)_robot_button_callback, (void*)gui_data);

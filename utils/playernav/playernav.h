@@ -43,6 +43,7 @@ typedef struct
   size_t num_robots;
   char* hostnames[MAX_NUM_ROBOTS];
   int ports[MAX_NUM_ROBOTS];
+  pose_t robot_poses[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_items[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_labels[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_goals[MAX_NUM_ROBOTS];
