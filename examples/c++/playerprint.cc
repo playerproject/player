@@ -91,6 +91,8 @@ int main(int argc, char **argv)
   PlayerClient pclient(host,port);
   if(!strcmp(dev,PLAYER_POSITION_STRING))
     assert(cp = (ClientProxy*)new PositionProxy(&pclient,idx,'r'));
+  else if(!strcmp(dev,PLAYER_POSITION3D_STRING))
+    assert(cp = (ClientProxy*)new Position3DProxy(&pclient,idx,'r'));
   else if(!strcmp(dev,PLAYER_TRUTH_STRING))
     assert(cp = (ClientProxy*)new TruthProxy(&pclient,idx,'r'));
   else if(!strcmp(dev,PLAYER_SONAR_STRING))
