@@ -522,7 +522,7 @@ ClientManagerTCP::Write()
       if(thisub->devicep)
       {
         // does this device have a reply ready for this client?
-        if((replysize = thisub->devicep->GetReply(&id, clients[i], &type, &ts,
+        if((replysize = thisub->devicep->GetReplyEx(thisub->id, clients[i], &type, &ts,
                   clients[i]->replybuffer+sizeof(player_msghdr_t), 
                   PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))) >= 0)
         {
@@ -805,7 +805,7 @@ ClientManagerUDP::Write()
       if(thisub->devicep)
       {
         // does this device have a reply ready for this client?
-        if((replysize = thisub->devicep->GetReply(&id, clients[i], &type, &ts,
+        if((replysize = thisub->devicep->GetReplyEx(thisub->id, clients[i], &type, &ts,
                   clients[i]->replybuffer+sizeof(player_msghdr_t), 
                   PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))) >= 0)
         {

@@ -358,7 +358,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             if((devicep = deviceTable->GetDevice(id)))
             {
               // try to push it on the request queue
-              if(devicep->PutConfig(&id,this,payload,payload_size))
+              if(devicep->PutConfigEx(id,this,payload,payload_size))
               {
                 // queue was full
                 requesttype = PLAYER_MSGTYPE_RESP_ERR;
@@ -394,7 +394,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             // make sure we've got a non-NULL pointer
             if((devicep = deviceTable->GetDevice(id)))
             {
-              devicep->PutCommand(this,payload,payload_size);
+              devicep->PutCommandEx(id,this,payload,payload_size);
             }
             else
               PLAYER_WARN2("found NULL pointer for device %x:%x",
@@ -851,7 +851,7 @@ ClientData::BuildMsg()
         }
 
         // how many packets are available for this client?
-        numdata = devicep->GetNumData(this);
+        numdata = devicep->GetNumDataEx(thisub->id, this);
         while(numdata > 0)
         {
           numdata--;
@@ -860,10 +860,11 @@ ClientData::BuildMsg()
           hdr.device_index = htons(thisub->id.index);
           hdr.reserved = 0;
 
-          size = devicep->GetData(this, writebuffer+sizeof(hdr),
-                                  PLAYER_MAX_MESSAGE_SIZE-sizeof(hdr),
-                                  &(hdr.timestamp_sec), 
-                                  &(hdr.timestamp_usec));
+          size = devicep->GetDataEx(thisub->id, this,
+                                    writebuffer+sizeof(hdr),
+                                    PLAYER_MAX_MESSAGE_SIZE-sizeof(hdr),
+                                    &(hdr.timestamp_sec), 
+                                    &(hdr.timestamp_usec));
 
           hdr.timestamp_sec = htonl(hdr.timestamp_sec);
           hdr.timestamp_usec = htonl(hdr.timestamp_usec);
