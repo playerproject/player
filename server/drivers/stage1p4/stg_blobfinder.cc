@@ -51,7 +51,7 @@ StgBlobfinder::StgBlobfinder(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgBlobfinder with interface %s", interface );
 
-  this->subscribe_prop = STG_PROP_BLOBS;
+  this->subscribe_prop = STG_PROP_BLOBDATA;
    
 }
 

@@ -9,16 +9,6 @@ include "pioneer.inc"
 
 
 
-
-
-
-
-
-
-
-
-
-
 #size [120 45]
 #bitmap "bitmaps/hospital.png"
 
@@ -36,7 +26,7 @@ interval_real 100 # real-time milliseconds per update step
 
 
   # GUI settings
-  #
+  # 
   #gui
   #(
    # size [ 502.000 506.000 ]
@@ -59,16 +49,16 @@ interval_real 100 # real-time milliseconds per update step
     color "blue"
   )
 
-pioneer2dx( name "r0" pose [3.393 10.480 6998.135] color "blue" )
+pioneer2dx( name "r0" pose [9.846 6.641 7102.763] color "blue" )
 pioneer2dx( name "r1" pose [1.328 11.223 -20.084] color "green")
 pioneer2dx( name "r2" pose [1.419 11.927 -71.250] color "magenta" )
-pioneer2dx( name "r3" pose [1.302 7.349 -20.084] )
+pioneer2dx( name "r3" pose [1.467 7.321 -20.084] )
 pioneer2dx( name "r4" pose [1.309 8.327 -20.084] )
 pioneer2dx( name "r5" pose [1.313 9.257 -20.084] )
 pioneer2dx( name "r6" pose [1.301 10.269 -20.084] )
 pioneer2dx( name "r7" pose [3.682 13.808 -20.084] )
-pioneer2dx( name "r8" pose [2.949 3.189 -20.084] )
-pioneer2dx( name "r9" pose [3.642 6.395 -20.840] )
+pioneer2dx( name "r8" pose [7.383 7.265 -20.084] )
+pioneer2dx( name "r9" pose [7.910 6.202 -20.840] )
 #pioneer2dx( name "r10" pose [6.549 9.302 -20.840] )
 #pioneer2dx( name "r11" pose [6.518 8.139 -20.840] )
 #pioneer2dx( name "r12" pose [5.873 6.300 -20.840] )
@@ -83,21 +73,39 @@ pioneer2dx( name "r9" pose [3.642 6.395 -20.840] )
 define chatterbox model
 (
   scount 8
-  spose[0] [  0.075  0.0   0 ]
-  spose[1] [  0.075  0.075  45 ]
-  spose[2] [  0.0    0.075  90 ]
-  spose[3] [ -0.075  0.075 135 ]
-  spose[4] [ -0.075  0.0 180 ]
-  spose[5] [ -0.075 -0.075 225 ]
-  spose[6] [  0.0   -0.075 270 ]
-  spose[7] [  0.075 -0.075 315 ]
+  spose[0] [  0.050  0.0   0 ]
+  spose[1] [  0.035  0.035  45 ]
+  spose[2] [  0.0    0.050  90 ]
+  spose[3] [ -0.035  0.035 135 ]
+  spose[4] [ -0.050  0.0 180 ]
+  spose[5] [ -0.035 -0.035 225 ]
+  spose[6] [  0.0   -0.050 270 ]
+  spose[7] [  0.035 -0.035 315 ]
 
-  size [0.15 0.15]
+  size [0.10 0.10]
   nose 1
+)
+
+define bluechatterbox chatterbox
+(
+  color "blue"
+
+)
+
+define redchatterbox chatterbox
+(
   color "red"
 )
 
-chatterbox( name "ch1" pose [10.579 18.439 0.000] )
-chatterbox( name "ch2" pose [10.632 19.314 -53.892] )
-chatterbox( name "ch3" pose [11.466 18.523 -28.297] )
-chatterbox( name "ch4" pose [11.384 19.258 -54.883] )
+
+bluechatterbox( name "bch0" pose [12.369 18.511 0.000] )
+bluechatterbox( name "bch1" pose [12.493 18.836 -171.141] )
+bluechatterbox( name "bch2" pose [11.940 19.197 -159.523] )
+bluechatterbox( name "bch3" pose [12.000 18.647 -28.297] )
+bluechatterbox( name "bch4" pose [12.387 19.271 -108.654] )
+
+redchatterbox( name "rch0" pose [10.677 18.647 0.000] )
+redchatterbox( name "rch1" pose [11.139 18.374 0.000] )
+redchatterbox( name "rch2" pose [10.912 19.386 -53.892] )
+redchatterbox( name "rch3" pose [11.180 18.959 -28.297] )
+redchatterbox( name "rch4" pose [10.674 19.037 -54.883] )

@@ -37,6 +37,9 @@ class StgLaser:public Stage1p4
 public:
   StgLaser(char* interface, ConfigFile* cf, int section );
 
+  virtual int Setup();
+  virtual int Shutdown(); 
+
   virtual size_t GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 
@@ -72,6 +75,23 @@ void StgLaser_Register(DriverTable* table)
 }
 
 
+int StgLaser::Setup()
+{
+  // subscribe to laser config as well as our regular data
+  stg_model_subscribe( this->model, STG_PROP_LASERCONFIG, 100 ); // 100ms    
+  
+  return Stage1p4::Setup();
+}
+
+int StgLaser::Shutdown()
+{
+  // unsubscribe to laser config
+  stg_model_unsubscribe( this->model, STG_PROP_LASERCONFIG );  
+  
+  return Stage1p4::Shutdown();
+}
+
+
 size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
@@ -82,36 +102,48 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
   
   if( prop ) 
     {      
+      //stg_laser_config_t* cfg = (stg_laser_config_t*)prop->data;
+      stg_laser_sample_t* samples = (stg_laser_sample_t*)prop->data;
+      //	(((char*)prop->data) + sizeof(stg_laser_config_t));
+      
+      int sample_count = prop->len / sizeof( stg_laser_sample_t );
+
+      // we get the config to stick into Player's packet
+      stg_property_t* prop = 
+	stg_model_get_prop_cached( model, STG_PROP_LASERCONFIG );
+      assert( prop );
+      
       stg_laser_config_t* cfg = (stg_laser_config_t*)prop->data;
-      stg_laser_sample_t* samples = (stg_laser_sample_t*)
-	(((char*)prop->data) + sizeof(stg_laser_config_t));
-      
-      //int sample_count = cfg->samples;
-      
-      assert( prop->len == sizeof(stg_laser_config_t) + cfg->samples * sizeof(stg_laser_sample_t) );
-      
-      
-      double min_angle = -RTOD(cfg->fov/2.0);
-      double max_angle = +RTOD(cfg->fov/2.0);
-      double angular_resolution = RTOD(cfg->fov / cfg->samples);
-      double range_multiplier = 1; // TODO - support multipliers
 
-      pdata.min_angle = htons( (int16_t)(min_angle * 100 )); // degrees / 100
-      pdata.max_angle = htons( (int16_t)(max_angle * 100 )); // degrees / 100
-      pdata.resolution = htons( (uint16_t)(angular_resolution * 100)); // degrees / 100
-      pdata.range_res = htons( (uint16_t)range_multiplier);
-      pdata.range_count = htons( (uint16_t)cfg->samples );
-      
-      for( int i=0; i<cfg->samples; i++ )
+      if( sample_count != cfg->samples )
 	{
-	  //printf( "range %d %d\n", i, samples[i].range);
-
-	  pdata.ranges[i] = htons( (uint16_t)(samples[i].range) );
-	  pdata.intensity[i] = 0;
+	  PRINT_ERR2( "bad laser data: got %d/%d samples",
+		      sample_count, cfg->samples );
 	}
-
-      // publish this data
-      CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+      else
+	{      
+	  double min_angle = -RTOD(cfg->fov/2.0);
+	  double max_angle = +RTOD(cfg->fov/2.0);
+	  double angular_resolution = RTOD(cfg->fov / cfg->samples);
+	  double range_multiplier = 1; // TODO - support multipliers
+	  
+	  pdata.min_angle = htons( (int16_t)(min_angle * 100 )); // degrees / 100
+	  pdata.max_angle = htons( (int16_t)(max_angle * 100 )); // degrees / 100
+	  pdata.resolution = htons( (uint16_t)(angular_resolution * 100)); // degrees / 100
+	  pdata.range_res = htons( (uint16_t)range_multiplier);
+	  pdata.range_count = htons( (uint16_t)cfg->samples );
+	  
+	  for( int i=0; i<cfg->samples; i++ )
+	    {
+	      //printf( "range %d %d\n", i, samples[i].range);
+	      
+	      pdata.ranges[i] = htons( (uint16_t)(samples[i].range) );
+	      pdata.intensity[i] = 0;
+	    }
+	  
+	  // publish this data
+	  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+	}
     }
  
   // now inherit the standard data-getting behavior 
