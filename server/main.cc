@@ -584,7 +584,8 @@ parse_config_file(char* fname)
     // did the user specify a different driver?
     driver = (char*)configFile.ReadString(i, "driver", driver);
 
-    printf("loading driver \"%s\" for interface \"%s\"\n", driver, interface);
+    printf("loading driver \"%s\" as device \"%s:%d\"\n", 
+           driver, interface, index);
     /* look for the indicated driver in the available device table */
     if(!(entry = driverTable->GetDriverEntry(driver)))
     {

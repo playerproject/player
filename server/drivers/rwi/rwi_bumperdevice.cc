@@ -111,73 +111,60 @@ CRWIBumperDevice::Main()
 		perror("rwi_bumper call to pthread_setcanceltype failed");
     }
 
-	while (true) {
-	
-		// First, check for a configuration request
-		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
-		    switch (cfg.request) {
-			    case PLAYER_BUMPER_POWER_REQ:
-		    		// RWI does not turn off bumper power: all we can do is
-		    		// stop updating the data
-		    		if (cfg.value == 0)
-		    			enabled = false;
-		    		else
-		    			enabled = true;
-		    			
-		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_bumperdevice.\n");
-		    		}
-					break;
-				case PLAYER_BUMPER_GET_GEOM_REQ:
-					// FIXME: not yet implemented
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_bumperdevice.\n");
-		    		}
-					break;
-				default:
-					printf("rwi_bumper device received unknown %s",
-					       "configuration request\n");
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_bumperdevice.\n");
-		    		}
-					break;
-	    	}
-		}
+	while (true) 
+        {
 
-		// Bumpers take no commands to process
-	
-		// Finally, collect new data
-		if (enabled) {
+          // First, check for a configuration request
+          if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
+            switch (cfg.request) {
+              case PLAYER_BUMPER_GET_GEOM_REQ:
+                // FIXME: not yet implemented
+                if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+                             NULL, NULL, 0)) {
+                  PLAYER_ERROR("Failed to PutReply in "
+                               "rwi_bumperdevice.\n");
+                }
+                break;
+              default:
+                printf("rwi_bumper device received unknown %s",
+                       "configuration request\n");
+                if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+                             NULL, NULL, 0)) {
+                  PLAYER_ERROR("Failed to PutReply in "
+                               "rwi_bumperdevice.\n");
+                }
+                break;
+            }
+          }
+
+          // Bumpers take no commands to process
+
+          // Finally, collect new data
+          if (enabled) {
 #ifdef USE_MOBILITY
-			//bumper_data = bumper_state->get_sample(0);
-		
-			data.bumper_count = bumper_data->point.length();
-			bzero(data.bumpers, sizeof(data.bumpers));
-				
-			for (unsigned int i = 0; (i < bumper_data->point.length())
-			                         && (i < PLAYER_MAX_BUMPER_SAMPLES); i++) {
-			    if (bumper_data->point[i].flags == 1)
-					data.bumpers[i] = 1;
-			    else
-					data.bumpers[i] = 0;
-			}
+            //bumper_data = bumper_state->get_sample(0);
+
+            data.bumper_count = bumper_data->point.length();
+            bzero(data.bumpers, sizeof(data.bumpers));
+
+            for (unsigned int i = 0; (i < bumper_data->point.length())
+                 && (i < PLAYER_MAX_BUMPER_SAMPLES); i++) {
+              if (bumper_data->point[i].flags == 1)
+                data.bumpers[i] = 1;
+              else
+                data.bumpers[i] = 0;
+            }
 #else
-			data.bumper_count = 0;
-			bzero(data.bumpers, sizeof(data.bumpers));
+            data.bumper_count = 0;
+            bzero(data.bumpers, sizeof(data.bumpers));
 #endif			// USE_MOBILITY
 
-			PutData((unsigned char *) &data, sizeof(data), 0, 0);
-		}
-	
-	    pthread_testcancel();
-	}
-	
+            PutData((unsigned char *) &data, sizeof(data), 0, 0);
+          }
+
+          pthread_testcancel();
+        }
+
 	// should not reach this point
 	pthread_exit(NULL);
 }

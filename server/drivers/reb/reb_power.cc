@@ -51,8 +51,7 @@ public:
 CDevice *
 REBPower_Init(char *interface, ConfigFile *cf, int section) 
 {
-  if (!strcmp(interface, PLAYER_POWER_STRING) ||
-      !strcmp(interface, PLAYER_REB_POWER_STRING)) {
+  if (!strcmp(interface, PLAYER_POWER_STRING)) {
     return (CDevice *) new REBPower(interface, cf, section);
   } else {
     PLAYER_ERROR1("driver \"reb_power\" does not support interface \"%s\"\n",

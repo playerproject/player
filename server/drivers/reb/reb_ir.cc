@@ -51,7 +51,7 @@ public:
 CDevice *
 REBIR_Init(char *interface, ConfigFile *cf, int section)
 {
-  if (!strcmp(interface, PLAYER_REB_IR_STRING)) {
+  if (!strcmp(interface, PLAYER_IR_STRING)) {
     return (CDevice *) new REBIR(interface, cf, section);
   } else {
     PLAYER_ERROR1("driver \"reb_ir\" does not support interface \"%s\"\n",
@@ -81,11 +81,11 @@ REBIR::GetData(unsigned char *dest, size_t maxsize,
 {
   Lock();
   
-  *((player_reb_ir_data_t *)dest) = ((player_reb_data_t *)device_data)->ir;
+  *((player_ir_data_t *)dest) = ((player_reb_data_t *)device_data)->ir;
 
   *timestamp_sec = data_timestamp_sec;
   *timestamp_usec = data_timestamp_usec;
   Unlock();
 
-  return sizeof(player_reb_ir_data_t);
+  return sizeof(player_ir_data_t);
 }

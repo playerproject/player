@@ -87,7 +87,7 @@
 
 typedef struct {
   player_position_data_t position;
-  player_reb_ir_data_t ir;
+  player_ir_data_t ir;
   player_power_data_t power;
 } __attribute__ ((packed)) player_reb_data_t;
 
