@@ -79,7 +79,7 @@ int main(int argc, char **argv)
   {
     printf("Saying \"%s\"...\n", str);
     fp.Say(str);
-    usleep(100000);
+    sleep(2);
   }
 
   /* wait a little to make sure that it gets out to the sound card */

@@ -116,6 +116,9 @@ class CP2OSDevice:public CDevice
     // use this mutex instead of the one declared in CDevice.
     static pthread_mutex_t p2os_accessMutex;
 
+    // and this one protects calls to Setup and Shutdown
+    static pthread_mutex_t p2os_setupMutex;
+
     // likewise, we need one P2OS-wide subscription count to manage calls to
     // Setup() and Shutdown()
     static int p2os_subscriptions;
@@ -126,6 +129,9 @@ class CP2OSDevice:public CDevice
   protected:
     void Lock();
     void Unlock();
+
+    void SetupLock();
+    void SetupUnlock();
 
   public:
     static int param_idx;  // index in the RobotParams table for this robot
@@ -157,7 +163,6 @@ class CP2OSDevice:public CDevice
     static struct timeval timeBegan_tv;
 
     CP2OSDevice(int argc, char** argv);
-    ~CP2OSDevice();
 
     // we override these, because we will maintain our own subscription count
     virtual int Subscribe();

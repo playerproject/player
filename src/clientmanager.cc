@@ -31,7 +31,6 @@
 #include <string.h>  // for memcpy(3)
 #include <stdlib.h>  // for exit(3)
 #include <signal.h>  // for sigblock(2)
-#include <sys/time.h>  // for gettimeofday(2)
 #include <unistd.h>  // for usleep(2)
 
 #include <playertime.h>

@@ -49,20 +49,25 @@ void *RunPtzThread(void *ptzdevice);
 CPtzDevice::CPtzDevice(int argc, char** argv) :
   CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),0,0)
 {
-  //data = new player_ptz_data_t;
-  //command = new player_ptz_cmd_t;
-
   ptz_fd = -1;
   command_pending1 = false;
   command_pending2 = false;
+  player_ptz_data_t data;
+  player_ptz_cmd_t cmd;
 
-  ((player_ptz_data_t*)device_data)->pan = 0;
-  ((player_ptz_data_t*)device_data)->tilt = 0;
-  ((player_ptz_data_t*)device_data)->zoom = 0;
+  data.pan = data.tilt = data.zoom = 0;
+  cmd.pan = cmd.tilt = cmd.zoom = 0;
 
-  ((player_ptz_cmd_t*)device_command)->pan = 0;
-  ((player_ptz_cmd_t*)device_command)->tilt = 0;
-  ((player_ptz_cmd_t*)device_command)->zoom = 0;
+  //((player_ptz_data_t*)device_data)->pan = 0;
+  //((player_ptz_data_t*)device_data)->tilt = 0;
+  //((player_ptz_data_t*)device_data)->zoom = 0;
+
+  PutData((unsigned char*)&data,sizeof(data),0,0);
+  PutCommand((unsigned char*)&cmd,sizeof(cmd));
+
+  //((player_ptz_cmd_t*)device_command)->pan = 0;
+  //((player_ptz_cmd_t*)device_command)->tilt = 0;
+  //((player_ptz_cmd_t*)device_command)->zoom = 0;
 
   strncpy(ptz_serial_port,DEFAULT_PTZ_PORT,sizeof(ptz_serial_port));
   for(int i=0;i<argc;i++)
@@ -90,6 +95,9 @@ CPtzDevice::Setup()
   struct termios term;
   short pan,tilt;
   int flags;
+
+  player_ptz_cmd_t cmd;
+  cmd.pan = cmd.tilt = cmd.zoom = 0;
 
   printf("PTZ connection initializing (%s)...", ptz_serial_port);
   fflush(stdout);
@@ -160,39 +168,37 @@ CPtzDevice::Setup()
   ptz_fd_blocking = true;
   puts("Done.");
 
+  // zero the command buffer
+  PutCommand((unsigned char*)&cmd,sizeof(cmd));
+
   // start the thread to talk with the camera
   pthread_create( &thread, NULL, &RunPtzThread, this );
 
   return(0);
 }
 
-CPtzDevice::~CPtzDevice()
-{
-  Shutdown();
-}
-
 int 
 CPtzDevice::Shutdown()
 {
+  puts("CPtzDevice::Shutdown");
   void* dummy;
-  player_ptz_cmd_t cmd;
 
   if(ptz_fd == -1)
     return(0);
 
+  pthread_cancel( thread );
+  if(pthread_join(thread,&dummy))
+    perror("CPtzDevice::Shutdown():pthread_join()");
+
   // put the camera back to center
-  cmd.pan = 0;
-  cmd.tilt = 0;
-  cmd.zoom = 0;
-  PutCommand((unsigned char*)&cmd,sizeof(player_ptz_cmd_t));
-  usleep(3*PTZ_SLEEP_TIME_USEC);
+  usleep(PTZ_SLEEP_TIME_USEC);
+  SendAbsPanTilt(0,0);
+  usleep(PTZ_SLEEP_TIME_USEC);
+  SendAbsZoom(0);
 
   if(close(ptz_fd))
     perror("CPtzDevice::Shutdown():close():");
   ptz_fd = -1;
-  pthread_cancel( thread );
-  if(pthread_join(thread,&dummy))
-    perror("CPtzDevice::Shutdown():pthread_join()");
   puts("PTZ camera has been shutdown");
   return(0);
 }
@@ -586,7 +592,6 @@ void *RunPtzThread(void *ptzdevice)
   player_ptz_data_t data;
   player_ptz_cmd_t command;
   short pan,tilt,zoom;
-  //int cnt;
   short pandemand=0, tiltdemand=0, zoomdemand=0;
   bool newpantilt=true, newzoom=true;
 

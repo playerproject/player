@@ -63,11 +63,10 @@ void QuitACTS(void* visiondevice);
 
 
 CVisionDevice::CVisionDevice(int argc, char** argv)
-  : CDevice(sizeof(player_internal_vision_data_t),0,0,0)
+  : CDevice(sizeof(player_vision_data_t),0,0,0)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   sock = -1;
-  //data = new player_internal_vision_data_t;
 
   strncpy(configfilepath,DEFAULT_ACTS_CONFIGFILE,sizeof(configfilepath));
   strncpy(binarypath,DEFAULT_ACTS_PATH,sizeof(binarypath));
@@ -176,13 +175,6 @@ int CVisionDevice::version_enum_to_string(acts_version_t versionnum,
   }
 }
 
-CVisionDevice::~CVisionDevice()
-{
-  Shutdown();
-  if(sock != -1)
-    QuitACTS(this);
-}
-
 int
 CVisionDevice::Setup()
 {
@@ -203,6 +195,11 @@ CVisionDevice::Setup()
   printf("ACTS vision server connection initializing (%s,%d)...",
          configfilepath,portnum);
   fflush(stdout);
+
+  player_vision_data_t dummy;
+  bzero(&dummy,sizeof(dummy));
+  // zero the data buffer
+  PutData((unsigned char*)&dummy,sizeof(dummy.header),0,0);
 
   sprintf(acts_port_num,"%d",portnum);
 
@@ -352,13 +349,14 @@ CVisionDevice::KillACTS()
     perror("CVisionDevice::KillACTS(): some error while killing ACTS");
 }
 
+/*
 size_t
 CVisionDevice::GetData(unsigned char* dest, size_t maxsize,
                        uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   int size;
   Lock();
-  /* size is stored at first two bytes */
+  // size is stored at first two bytes
   *((player_vision_data_t*)dest) = 
           ((player_internal_vision_data_t*)device_data)->data;
   size=((player_internal_vision_data_t*)device_data)->size;
@@ -367,6 +365,7 @@ CVisionDevice::GetData(unsigned char* dest, size_t maxsize,
   Unlock();
   return(size);
 }
+*/
 
 void* 
 RunVisionThread(void* visiondevice)
@@ -378,11 +377,11 @@ RunVisionThread(void* visiondevice)
   CVisionDevice* vd = (CVisionDevice*)visiondevice;
 
   // we'll transform the data into this structured buffer
-  player_internal_vision_data_t local_data;
+  player_vision_data_t local_data;
   
   // first, we'll read into these two temporary buffers
-  uint8_t acts_hdr_buf[sizeof(local_data.data.header)];
-  uint8_t acts_blob_buf[sizeof(local_data.data.blobs)];
+  uint8_t acts_hdr_buf[sizeof(local_data.header)];
+  uint8_t acts_blob_buf[sizeof(local_data.blobs)];
 
   char acts_request_packet = ACTS_REQUEST_PACKET;
 
@@ -406,6 +405,9 @@ RunVisionThread(void* visiondevice)
   /* loop and read */
   for(;;)
   {
+    // clean our buffers
+    bzero(&local_data,sizeof(local_data));
+
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
@@ -438,9 +440,9 @@ RunVisionThread(void* visiondevice)
       {
         // convert 2-byte ACTS 1.0 encoded entries to byte-swapped integers
         // in a structured array
-        local_data.data.header[i].index = 
+        local_data.header[i].index = 
                 htons(acts_hdr_buf[vd->header_elt_len*i]-1);
-        local_data.data.header[i].num = 
+        local_data.header[i].num = 
                 htons(acts_hdr_buf[vd->header_elt_len*i+1]-1);
       }
     }
@@ -450,28 +452,28 @@ RunVisionThread(void* visiondevice)
       {
         // convert 4-byte ACTS 1.2 encoded entries to byte-swapped integers
         // in a structured array
-        local_data.data.header[i].index = acts_hdr_buf[vd->header_elt_len*i]-1;
-        local_data.data.header[i].index = 
-                local_data.data.header[i].index << 6;
-        local_data.data.header[i].index |= 
+        local_data.header[i].index = acts_hdr_buf[vd->header_elt_len*i]-1;
+        local_data.header[i].index = 
+                local_data.header[i].index << 6;
+        local_data.header[i].index |= 
                 acts_hdr_buf[vd->header_elt_len*i+1]-1;
-        local_data.data.header[i].index = 
-                htons(local_data.data.header[i].index);
+        local_data.header[i].index = 
+                htons(local_data.header[i].index);
 
-        local_data.data.header[i].num = acts_hdr_buf[vd->header_elt_len*i+2]-1;
-        local_data.data.header[i].num = 
-                local_data.data.header[i].num << 6;
-        local_data.data.header[i].num |= 
+        local_data.header[i].num = acts_hdr_buf[vd->header_elt_len*i+2]-1;
+        local_data.header[i].num = 
+                local_data.header[i].num << 6;
+        local_data.header[i].num |= 
                 acts_hdr_buf[vd->header_elt_len*i+3]-1;
-        local_data.data.header[i].num = 
-                htons(local_data.data.header[i].num);
+        local_data.header[i].num = 
+                htons(local_data.header[i].num);
       }
     }
 
     /* sum up the data we expect */
     num_blobs=0;
     for(i=0;i<VISION_NUM_CHANNELS;i++)
-      num_blobs += ntohs(local_data.data.header[i].num);
+      num_blobs += ntohs(local_data.header[i].num);
 
     /* read in the blob data */
     if((numread = read(vd->sock,acts_blob_buf,num_blobs*vd->blob_size)) == -1)
@@ -490,118 +492,93 @@ RunVisionThread(void* visiondevice)
     if(vd->acts_version == ACTS_VERSION_1_0)
     {
       // convert 10-byte ACTS 1.0 blobs to new byte-swapped structured array
-      for(i=0;i<VISION_NUM_CHANNELS;i++)
+      for(i=0;i<num_blobs;i++)
       {
         int tmpptr = vd->blob_size*i;
         // get the 4-byte area first
-        local_data.data.blobs[i].area = 0;
+        local_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
         {
-          local_data.data.blobs[i].area = 
-                  local_data.data.blobs[i].area << 6;
-          local_data.data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
+          local_data.blobs[i].area = local_data.blobs[i].area << 6;
+          local_data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
         }
-        local_data.data.blobs[i].area = 
-                htonl(local_data.data.blobs[i].area);
+        local_data.blobs[i].area = htonl(local_data.blobs[i].area);
 
         // convert the other 6 one-byte entries to byte-swapped shorts
-        local_data.data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].x = 
-                htons(local_data.data.blobs[i].x);
+        local_data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].x = htons(local_data.blobs[i].x);
 
-        local_data.data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].y = 
-                htons(local_data.data.blobs[i].y);
+        local_data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].y = htons(local_data.blobs[i].y);
 
-        local_data.data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].left = 
-                htons(local_data.data.blobs[i].left);
+        local_data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].left = htons(local_data.blobs[i].left);
 
-        local_data.data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].right = 
-                htons(local_data.data.blobs[i].right);
+        local_data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].right = htons(local_data.blobs[i].right);
 
-        local_data.data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].top = 
-                htons(local_data.data.blobs[i].top);
+        local_data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].top = htons(local_data.blobs[i].top);
 
-        local_data.data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].bottom = 
-                htons(local_data.data.blobs[i].bottom);
+        local_data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].bottom = htons(local_data.blobs[i].bottom);
       }
     }
     else
     {
       // convert 16-byte ACTS 1.2 blobs to new byte-swapped structured array
-      for(i=0;i<VISION_NUM_CHANNELS;i++)
+      for(i=0;i<num_blobs;i++)
       {
         int tmpptr = vd->blob_size*i;
         
         // get the 4-byte area first
-        local_data.data.blobs[i].area = 0;
+        local_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
         {
-          local_data.data.blobs[i].area = 
-                  local_data.data.blobs[i].area << 6;
-          local_data.data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
+          local_data.blobs[i].area = local_data.blobs[i].area << 6;
+          local_data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
         }
-        local_data.data.blobs[i].area = 
-                htonl(local_data.data.blobs[i].area);
+        local_data.blobs[i].area = htonl(local_data.blobs[i].area);
         
         // convert the other 6 two-byte entries to byte-swapped shorts
-        local_data.data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].x = local_data.data.blobs[i].x << 6;
-        local_data.data.blobs[i].x |= acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].x = 
-                htons(local_data.data.blobs[i].x);
+        local_data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].x = local_data.blobs[i].x << 6;
+        local_data.blobs[i].x |= acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].x = htons(local_data.blobs[i].x);
 
-        local_data.data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].y = local_data.data.blobs[i].y << 6;
-        local_data.data.blobs[i].y |= acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].y = 
-                htons(local_data.data.blobs[i].y);
+        local_data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].y = local_data.blobs[i].y << 6;
+        local_data.blobs[i].y |= acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].y = htons(local_data.blobs[i].y);
 
-        local_data.data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].left = 
-                local_data.data.blobs[i].left << 6;
-        local_data.data.blobs[i].left |= acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].left = 
-                htons(local_data.data.blobs[i].left);
+        local_data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].left = local_data.blobs[i].left << 6;
+        local_data.blobs[i].left |= acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].left = htons(local_data.blobs[i].left);
 
-        local_data.data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].right = 
-                local_data.data.blobs[i].right << 6;
-        local_data.data.blobs[i].right |= acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].right = 
-                htons(local_data.data.blobs[i].right);
+        local_data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].right = local_data.blobs[i].right << 6;
+        local_data.blobs[i].right |= acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].right = htons(local_data.blobs[i].right);
 
-        local_data.data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].top = 
-                local_data.data.blobs[i].top << 6;
-        local_data.data.blobs[i].top |= acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].top = 
-                htons(local_data.data.blobs[i].top);
+        local_data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].top = local_data.blobs[i].top << 6;
+        local_data.blobs[i].top |= acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].top = htons(local_data.blobs[i].top);
 
-        local_data.data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].bottom = 
-                local_data.data.blobs[i].bottom << 6;
-        local_data.data.blobs[i].bottom |= acts_blob_buf[tmpptr++] - 1;
-        local_data.data.blobs[i].bottom = 
-                htons(local_data.data.blobs[i].bottom);
+        local_data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].bottom = local_data.blobs[i].bottom << 6;
+        local_data.blobs[i].bottom |= acts_blob_buf[tmpptr++] - 1;
+        local_data.blobs[i].bottom = htons(local_data.blobs[i].bottom);
       }
     }
     
-    /* don't byte-swap anything; the ACTS encoding is sufficient */
-
-    /* store total size */
-    local_data.size = (uint16_t)(VISION_HEADER_SIZE + 
-                                 num_blobs*VISION_BLOB_SIZE);
-
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
     /* got the data. now fill it in */
-    vd->PutData((unsigned char*)&local_data, sizeof(local_data),0,0);
+    vd->PutData((unsigned char*)&local_data, 
+                (VISION_HEADER_SIZE + num_blobs*VISION_BLOB_SIZE),0,0);
   }
 
   pthread_cleanup_pop(1);

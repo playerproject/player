@@ -62,18 +62,14 @@ class CVisionDevice:public CDevice
 
 
   public:
-    int sock;               // laser device file descriptor
-    int portnum;  // port number where we'll run ACTS
+    int sock;               // socket to ACTS
+    int portnum;  // port number where we'll connect to ACTS
     char configfilepath[MAX_FILENAME_SIZE];  // path to configfile
     char binarypath[MAX_FILENAME_SIZE];  // path to executable
-    acts_version_t acts_version;  // the above string converted to an enum
+    acts_version_t acts_version;  // the ACTS version, as an enum
     int header_len; // length of incoming packet header (varies by version)
     int header_elt_len; // length of each header element (varies by version)
     int blob_size;  // size of each incoming blob (varies by version)
-
-    // where the most recent data sits, ACTS-encoded
-    //player_internal_vision_data_t* data;
-    
 
     // constructor 
     //
@@ -81,14 +77,10 @@ class CVisionDevice:public CDevice
     //
     CVisionDevice(int argc, char** argv);
 
-    ~CVisionDevice();
     void KillACTS();
 
     int Setup();
     int Shutdown();
-
-    size_t GetData(unsigned char *, size_t maxsize,
-                   uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
 #endif

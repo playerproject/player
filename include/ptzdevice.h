@@ -79,7 +79,6 @@ class CPtzDevice:public CDevice
   char ptz_serial_port[MAX_FILENAME_SIZE]; 
 
   CPtzDevice(int argc, char** argv);
-  ~CPtzDevice();
 
   virtual int Setup();
   virtual int Shutdown();

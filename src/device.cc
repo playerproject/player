@@ -36,41 +36,22 @@
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
-/* these are necessary to make the static fields visible to the linker */
-extern unsigned char* CDevice::device_data;
-extern unsigned char* CDevice::device_command;
-extern size_t CDevice::device_datasize;
-extern size_t CDevice::device_commandsize;
-extern PlayerQueue* CDevice::device_reqqueue;
-extern PlayerQueue* CDevice::device_repqueue;
-//extern pthread_mutex_t CDevice::accessMutex;
-//extern int CDevice::subscriptions;
-    
 // this is the main constructor, used by most non-Stage devices.
 // storage will be allocated by this constructor
 CDevice::CDevice(size_t datasize, size_t commandsize, 
                  int reqqueuelen, int repqueuelen)
 {
-  //printf("CDevice allocating constructor:%d:%d:%d:%d\n",
-         //datasize, commandsize, reqqueuelen, repqueuelen);
-  if(!device_data)
-  {
-    device_data = new unsigned char[datasize];
-    device_datasize = datasize;
-  }
-  if(!device_command)
-  {
-    device_command = new unsigned char[commandsize];
-    device_commandsize = commandsize;
-  }
+  device_data = new unsigned char[datasize];
+  device_datasize = device_used_datasize = datasize;
+  
+  device_command = new unsigned char[commandsize];
+  device_commandsize = device_used_commandsize = commandsize;
   
   assert(device_data);
   assert(device_command);
 
-  if(!device_reqqueue)
-    device_reqqueue = new PlayerQueue(reqqueuelen);
-  if(!device_repqueue)
-    device_repqueue = new PlayerQueue(repqueuelen);
+  device_reqqueue = new PlayerQueue(reqqueuelen);
+  device_repqueue = new PlayerQueue(repqueuelen);
 
   assert(device_reqqueue);
   assert(device_repqueue);
@@ -78,6 +59,7 @@ CDevice::CDevice(size_t datasize, size_t commandsize,
   subscriptions = 0;
 
   pthread_mutex_init(&accessMutex,NULL);
+  pthread_mutex_init(&setupMutex,NULL);
 }
     
 // this is the other constructor, used mostly by Stage devices.
@@ -88,11 +70,13 @@ CDevice::CDevice()
   // ensure immediate segfault in case any of these are used without
   // SetupBuffers() having been called
   device_datasize = device_commandsize = 0;
+  device_used_datasize = device_used_commandsize = 0;
   device_data = device_command = NULL;
   device_reqqueue = device_repqueue = NULL;
  
   // this may be unnecessary, but what the hell...
   pthread_mutex_init(&accessMutex,NULL);
+  pthread_mutex_init(&setupMutex,NULL);
 }
 
 // this method is used by devices that allocate their own storage, but wish to
@@ -103,9 +87,9 @@ void CDevice::SetupBuffers(unsigned char* data, size_t datasize,
                            unsigned char* repqueue, int repqueuelen)
 {
   device_data = data;
-  device_datasize = datasize;
+  device_datasize = device_used_datasize = datasize;
   device_command = command;
-  device_commandsize = commandsize;
+  device_commandsize = device_used_commandsize = commandsize;
   device_reqqueue = new PlayerQueue(reqqueue, reqqueuelen);
   device_repqueue = new PlayerQueue(repqueue, repqueuelen);
 }
@@ -134,12 +118,11 @@ size_t CDevice::GetData(unsigned char* dest, size_t len,
                         uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   int size;
-  puts("CDevice::GetData");
   Lock();
 
-  assert(len >= device_datasize);
-  memcpy(dest,device_data,device_datasize);
-  size = device_datasize;
+  assert(len >= device_used_datasize);
+  memcpy(dest,device_data,device_used_datasize);
+  size = device_used_datasize;
   if(timestamp_sec)
     *timestamp_sec = data_timestamp_sec;
   if(timestamp_usec)
@@ -165,6 +148,9 @@ void CDevice::PutData(unsigned char* src, size_t len,
   memcpy(device_data,src,len);
   data_timestamp_sec = timestamp_sec;
   data_timestamp_usec = timestamp_usec;
+
+  // store the amount we copied, for later reference
+  device_used_datasize = len;
   Unlock();
 }
 
@@ -172,9 +158,9 @@ size_t CDevice::GetCommand( unsigned char* dest, size_t len)
 {
   int size;
   Lock();
-  assert(len >= device_commandsize);
-  memcpy(dest,device_command,device_commandsize);
-  size = device_commandsize;
+  assert(len >= device_used_commandsize);
+  memcpy(dest,device_command,device_used_commandsize);
+  size = device_used_commandsize;
   Unlock();
   return(size);
 }
@@ -184,6 +170,8 @@ void CDevice::PutCommand( unsigned char* src, size_t len)
   Lock();
   assert(len <= device_commandsize);
   memcpy(device_command,src,len);
+  // store the amount we wrote
+  device_used_commandsize = len;
   Unlock();
 }
 
@@ -196,12 +184,22 @@ void CDevice::Unlock()
 {
   pthread_mutex_unlock(&accessMutex);
 }
+    
+// these methods are used to control calls to Setup and Shutdown
+void CDevice::SetupLock()
+{
+  pthread_mutex_lock(&setupMutex);
+}
+void CDevice::SetupUnlock()
+{
+  pthread_mutex_unlock(&setupMutex);
+}
 
 int CDevice::Subscribe()
 {
   int setupResult;
 
-  Lock();
+  SetupLock();
 
   if(subscriptions == 0) 
   {
@@ -215,7 +213,7 @@ int CDevice::Subscribe()
     setupResult = 0;
   }
   
-  Unlock();
+  SetupUnlock();
   return( setupResult );
 }
 
@@ -223,7 +221,7 @@ int CDevice::Unsubscribe()
 {
   int shutdownResult;
 
-  Lock();
+  SetupLock();
   
   if(subscriptions == 0) 
     shutdownResult = -1;
@@ -240,7 +238,7 @@ int CDevice::Unsubscribe()
     shutdownResult = 0;
   }
   
-  Unlock();
+  SetupUnlock();
 
   return( shutdownResult );
 }

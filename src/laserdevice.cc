@@ -56,8 +56,9 @@
 #include <unistd.h>
 #include <signal.h>  /* for sigblock */
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
-#include <time.h>
-#include <sys/time.h>
+
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
 
 #define PLAYER_ENABLE_MSG 0
 #define PLAYER_ENABLE_TRACE 0
@@ -370,8 +371,9 @@ int CLaserDevice::Main()
         // Get the time at which we started reading
         // This will be a pretty good estimate of when the phenomena occured
         //
-        timeval time;
-        gettimeofday(&time, NULL);
+        struct timeval time;
+        //gettimeofday(&time, NULL);
+	GlobalTime->GetTime(&time);
         
         // Process incoming data
         //
@@ -1060,8 +1062,9 @@ unsigned short CLaserDevice::CreateCRC(uint8_t* data, ssize_t len)
 //
 int64_t CLaserDevice::GetTime()
 {
-  timeval tv;
-  gettimeofday(&tv, NULL);
+  struct timeval tv;
+  //gettimeofday(&tv, NULL);
+  GlobalTime->GetTime(&tv);
   return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
 }
 
