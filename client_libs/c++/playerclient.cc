@@ -35,7 +35,7 @@
 #endif
 
 // just make a client, and connect, if instructed
-PlayerClient::PlayerClient(char* hostname = NULL, int port=PLAYER_PORTNUM)
+PlayerClient::PlayerClient(const char* hostname = NULL, int port=PLAYER_PORTNUM)
 {
   destroyed = false;
   // so we know we're not connected
@@ -68,7 +68,7 @@ PlayerClient::~PlayerClient()
   Disconnect();
 }
 
-int PlayerClient::Connect(char* hostname, int port)
+int PlayerClient::Connect(const char* hostname, int port)
 {
   // store the hostname and port
   strncpy( this->hostname, hostname, 255 );
