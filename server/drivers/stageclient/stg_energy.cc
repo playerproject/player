@@ -26,7 +26,7 @@
 #include "drivertable.h"
 #include "player.h"
 #include <stdlib.h>
-#include "stage1p4.h"
+#include "stageclient.h"
 
 // DRIVER FOR ENERGY INTERFACE ///////////////////////////////////////////
 

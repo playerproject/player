@@ -28,7 +28,7 @@
 #include "playercommon.h"
 #include "drivertable.h"
 #include "player.h"
-#include "stage1p4.h"
+#include "stageclient.h"
 
 class StgFiducial:public Stage1p4
 {

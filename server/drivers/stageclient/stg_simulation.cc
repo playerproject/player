@@ -21,7 +21,7 @@
 #include "playercommon.h"
 #include "drivertable.h"
 #include "player.h"
-#include "stage1p4.h"
+#include "stageclient.h"
 
 #include "stg_time.h"
 extern PlayerTime* GlobalTime;

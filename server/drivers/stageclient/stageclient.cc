@@ -42,7 +42,7 @@
 #include <math.h>
 #include <unistd.h>
 
-#include "stage1p4.h"
+#include "stageclient.h"
 #include "stg_time.h"
 
 // init static vars

@@ -322,7 +322,7 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/evolution/Makefile
           server/drivers/mixed/evolution/er1/Makefile
 	  server/drivers/stage/Makefile 
-          server/drivers/stage1p4/Makefile 
+          server/drivers/stageclient/Makefile 
           server/drivers/gazebo/Makefile 
           server/drivers/planner/Makefile 
           server/drivers/planner/wavefront/Makefile 
