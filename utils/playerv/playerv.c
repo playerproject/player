@@ -180,6 +180,9 @@ int main(int argc, char **argv)
   
   while (!quit)
   {
+    // Let gui process messages
+    rtk_app_main_loop(app);
+
     // Wait for some data.  We rely on getting the sync messages if no
     // devices are subscribed.
     count = playerc_client_peek(client, 50);
@@ -191,30 +194,27 @@ int main(int argc, char **argv)
     if (count > 0)
     {
       proxy = playerc_client_read(client);
-      if (proxy == NULL)
-      {
-        PRINT_ERR1("%s", playerc_errorstr);
-        break;
+      //if (proxy == NULL)
+      //{
+      //  PRINT_ERR1("%s", playerc_errorstr);
+      //  break;
+      //}
+
+      // Update everything on the sync packet.
+      if (proxy == client)
+      {      
+        // Update all the subscribed devices
+        for (i = 0; i < device_count; i++)
+        {
+          device = devices + i;
+          if (device->proxy)
+            (*(device->fnupdate)) (device->proxy);
+        }
+
+        // Update the main window
+        if (mainwnd_update(mainwnd) != 0)
+          break;
       }
-    }
-
-    // Let gui process messages
-    rtk_app_main_loop(app);
-
-    // Update everything on the sync packet.
-    if (proxy == client)
-    {      
-      // Update all the subscribed devices
-      for (i = 0; i < device_count; i++)
-      {
-        device = devices + i;
-        if (device->proxy)
-          (*(device->fnupdate)) (device->proxy);
-      }
-
-      // Update the main window
-      if (mainwnd_update(mainwnd) != 0)
-        break;
     }
   }
   
