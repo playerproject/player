@@ -208,6 +208,7 @@ void StgSimulation_Register(DriverTable *table);
 void StgLaser_Register(DriverTable *table);
 void StgPosition_Register(DriverTable *table);
 void StgFiducial_Register(DriverTable *table);
+void StgSonar_Register(DriverTable *table);
 #endif
 
 /* this array lists the interfaces that Player knows how to load, along with
@@ -479,5 +480,6 @@ register_devices()
   StgLaser_Register(driverTable);
   StgPosition_Register(driverTable);
   StgFiducial_Register(driverTable);
+  StgSonar_Register(driverTable);
 #endif
 }
