@@ -833,6 +833,7 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   pf_matrix_t pose_cov;
   amcl_sensor_data_t sdata;
   amcl_hyp_t *hyp;
+  double scale[3];
   
   this->Lock();
 
@@ -888,24 +889,28 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
       pf_matrix_fprintf(pose_cov, stderr, "%e");
       assert(0);
     }
+
+    scale[0] = 1000;
+    scale[1] = 1000;
+    scale[2] = 3600 * 180 / M_PI;
     
     data.hypoths[i].alpha = (uint32_t) (hyp->weight * 1e6);
         
-    data.hypoths[i].mean[0] = (int32_t) (pose.v[0] * 1000);
-    data.hypoths[i].mean[1] = (int32_t) (pose.v[1] * 1000);
-    data.hypoths[i].mean[2] = (int32_t) (pose.v[2] * 180 * 3600 / M_PI);
+    data.hypoths[i].mean[0] = (int32_t) (pose.v[0] * scale[0]);
+    data.hypoths[i].mean[1] = (int32_t) (pose.v[1] * scale[1]);
+    data.hypoths[i].mean[2] = (int32_t) (pose.v[2] * scale[2]);
   
-    data.hypoths[i].cov[0][0] = (int64_t) (pose_cov.m[0][0] * 1000 * 1000);
-    data.hypoths[i].cov[0][1] = (int64_t) (pose_cov.m[0][1] * 1000 * 1000);
+    data.hypoths[i].cov[0][0] = (int64_t) (pose_cov.m[0][0] * scale[0] * scale[0]);
+    data.hypoths[i].cov[0][1] = (int64_t) (pose_cov.m[0][1] * scale[1] * scale[1]);
     data.hypoths[i].cov[0][2] = 0;
   
-    data.hypoths[i].cov[1][0] = (int64_t) (pose_cov.m[1][0] * 1000 * 1000);
-    data.hypoths[i].cov[1][1] = (int64_t) (pose_cov.m[1][1] * 1000 * 1000);
+    data.hypoths[i].cov[1][0] = (int64_t) (pose_cov.m[1][0] * scale[0] * scale[0]);
+    data.hypoths[i].cov[1][1] = (int64_t) (pose_cov.m[1][1] * scale[1] * scale[1]);
     data.hypoths[i].cov[1][2] = 0;
 
     data.hypoths[i].cov[2][0] = 0;
     data.hypoths[i].cov[2][1] = 0;
-    data.hypoths[i].cov[2][2] = (int64_t) (pose_cov.m[2][2] * 180 * 3600 / M_PI * 180 * 3600 / M_PI);
+    data.hypoths[i].cov[2][2] = (int64_t) (pose_cov.m[2][2] * scale[2] * scale[2]);
   }
 
   this->Unlock();
@@ -922,7 +927,7 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
       for (k = 0; k < 3; k++)
         data.hypoths[i].cov[j][k] = htonll(data.hypoths[i].cov[j][k]);
     }
-    data.hypoths[i].alpha = htons(data.hypoths[i].alpha);
+    data.hypoths[i].alpha = htonl(data.hypoths[i].alpha);
   }
   data.hypoth_count = htonl(data.hypoth_count);
 
