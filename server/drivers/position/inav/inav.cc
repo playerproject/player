@@ -181,6 +181,7 @@ class INav : public CDevice
   
 #ifdef INCLUDE_RTKGUI
   // RTK stuff; for testing only
+  private: int rtk_enable;
   private: rtk_app_t *app;
   private: rtk_canvas_t *canvas;
   private: rtk_fig_t *map_fig;
@@ -255,6 +256,10 @@ INav::INav(char* interface, ConfigFile* cf, int section)
   // Create the controller
   this->con = icon_alloc(this->map, 0.30);
 
+#ifdef INCLUDE_RTKGUI
+  this->rtk_enable = cf->ReadInt(section, "gui_enable", 0);
+#endif
+  
   return;
 }
 
@@ -283,7 +288,8 @@ int INav::Setup()
   
 #ifdef INCLUDE_RTKGUI
   // Start the GUI
-  this->SetupGUI();
+  if (this->rtk_enable)
+    this->SetupGUI();
 #endif
 
   // Start the driver thread.
@@ -302,7 +308,8 @@ int INav::Shutdown()
 
 #ifdef INCLUDE_RTKGUI
   // Stop the GUI
-  this->ShutdownGUI();
+  if (this->rtk_enable)
+    this->ShutdownGUI();
 #endif
 
   // Stop the laser
@@ -500,23 +507,26 @@ void INav::Main()
     pthread_testcancel();
 
 #ifdef INCLUDE_RTKGUI
-    // Re-draw the map occasionally
-    if (update - map_update >= 10)
+    if (this->rtk_enable)
     {
-      this->DrawMap();
-      map_update = update;
-      rtk_canvas_render(this->canvas);      
-    }
+      // Re-draw the map occasionally
+      if (update - map_update >= 10)
+      {
+        this->DrawMap();
+        map_update = update;
+        rtk_canvas_render(this->canvas);      
+      }
                      
-    // Re-draw the robot frequently
-    if (update - robot_update >= 1)
-    {
-      this->DrawRobot();
-      robot_update = update;
-      rtk_canvas_render(this->canvas);
-    }
+      // Re-draw the robot frequently
+      if (update - robot_update >= 1)
+      {
+        this->DrawRobot();
+        robot_update = update;
+        rtk_canvas_render(this->canvas);
+      }
 
-    rtk_app_main_loop(this->app);
+      rtk_app_main_loop(this->app);
+    }
 #endif
 
     // Process any pending requests.
