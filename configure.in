@@ -162,8 +162,10 @@ else
     RTK_CHECK
     dnl we set the vars that pkg-config would have created
     dnl TODO - remove these duplicate vars
-    RTK_CFLAGS=$RTK_CPPFLAGS
-    RTK_LIBS=$RTK_LDADD
+    if test "$with_rtk" = "yes"; then
+      RTK_CFLAGS=$RTK_CPPFLAGS
+      RTK_LIBS=$RTK_LDADD
+    fi
     AC_SUBST(RTK_CFLAGS)
     AC_SUBST(RTK_CLIBS)
   fi
