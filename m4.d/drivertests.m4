@@ -64,8 +64,7 @@ PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],)
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],)
 
-PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],
-                  ["-lraw1394 -ldc1394_control"],[])
+PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],,)
 dnl Check for video-related headers, to see which support can be compiled into
 dnl the CMVision driver.
 AC_CHECK_HEADER(libraw1394/raw1394.h, have_raw1394=yes, have_raw1394=no)
@@ -76,6 +75,7 @@ if test "x$have_raw1394" = "xyes" -a "x$have_dc1394" = "xyes"; then
   AC_MSG_RESULT([support will be included in the CMVision driver])
   AC_MSG_RESULT([***************************************************])
   AC_DEFINE(HAVE_1394, 1, [do we have the low-level 1394 libs?])
+  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lraw1394 -ldc1394_control"
 else
   AC_MSG_RESULT([***************************************************])
   AC_MSG_RESULT([Couldn't find the 1394 (firewire) headers. 1394])
@@ -141,7 +141,8 @@ enable_laser=yes)
 if test "x$enable_laser" = "xyes"; then
   AC_DEFINE(INCLUDE_LASERFIDUCIAL, 1, [[include the LASER-based fiducial drivers]])
   LASERFIDUCIAL_LIBS="liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a"
-  LASERFIDUCIAL_LIBSPATH="drivers/fiducial/liblaserbar.a drivers/fiducial/liblaserbarcode.a drivers/fiducial/liblaservisualbarcode.a"
+  PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $LASERFIDUCIAL_LIBS"
+  PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/fiducial/liblaserbar.a drivers/fiducial/liblaserbarcode.a drivers/fiducial/liblaservisualbarcode.a"
   PLAYER_DRIVERS="$PLAYER_DRIVERS laserbar laserbarcode laservisualbarcode"
 else
   PLAYER_NODRIVERS="$PLAYER_NODRIVERS laserbar laserbarcode laservisualbarcode"
@@ -161,30 +162,20 @@ fi
 if test "x$enable_amcl" = "xyes"; then
   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
   AMCL_LIB="libamcl.a"
-  AMCL_LIBPATH="drivers/localization/amcl/libamcl.a"
+  PLAYER_DRIVERS_LIBS="$PLAYER_DRIVERS_LIBS $AMCL_LIB"
+  PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/localization/amcl/libamcl.a"
   AMCL_PF_LIB="libpf.a"
   AMCL_MAP_LIB="libmap.a"
   AMCL_MODELS_LIB="libmodels.a"
-  AMCL_EXTRA_LIB="-lgsl -lgslcblas"
+  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lgsl -lgslcblas"
   PLAYER_DRIVERS="$PLAYER_DRIVERS amcl"
 else
   PLAYER_NODRIVERS="$PLAYER_NODRIVERS amcl"
 fi
 AC_SUBST(AMCL_LIB)
-AC_SUBST(AMCL_LIBPATH)
 AC_SUBST(AMCL_PF_LIB)
 AC_SUBST(AMCL_MAP_LIB)
 AC_SUBST(AMCL_MODELS_LIB)
-AC_SUBST(AMCL_EXTRA_LIB)
-
-
-dnl Manually append LIB, LIBPATH, and EXTRA_LIB vars for those drivers that
-dnl the PLAYER_ADD_DRIVER macro wasn't called.
-PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $LASERFIDUCIAL_LIBS $INAV_LIB $AMCL_LIB"
-
-PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $LASERFIDUCIAL_LIBSPATH $INAV_LIBPATH $AMCL_LIBPATH"
-
-PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $INAV_EXTRA_LIB $AMCL_EXTRA_LIB"
 
 AC_SUBST(PLAYER_DRIVER_LIBS)
 AC_SUBST(PLAYER_DRIVER_LIBPATHS)
