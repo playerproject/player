@@ -312,6 +312,7 @@ Wavefront::GetLocalizeData()
     return;
 
   // is this new data?
+  /*
   if((last_timesec == timesec) && (last_timeusec == timeusec))
     return;
 
@@ -323,6 +324,7 @@ Wavefront::GetLocalizeData()
 
   this->l_lag = (curr.tv_sec + curr.tv_usec / 1e6) - 
           (timesec + timeusec / 1e6);
+          */
 
   // just take the first hypothesis, on the assumption that it's the
   // highest weight.
