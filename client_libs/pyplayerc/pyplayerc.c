@@ -413,193 +413,6 @@ static PyMethodDef client_methods[] =
 
 
 
-
-
-/***************************************************************************
- * lbd device
- **************************************************************************/
-
-
-/* Python wrapper for fiducial type */
-typedef struct
-{
-    PyObject_HEAD
-    playerc_client_t *client;
-    playerc_fiducial_t *fiducial;
-    PyObject *fiducials;
-} fiducial_object_t;
-
-/* Local declarations */
-static void fiducial_onread(fiducial_object_t *fiducialob);
-
-staticforward PyTypeObject fiducial_type;
-staticforward PyMethodDef fiducial_methods[];
-
- 
-static PyObject *fiducial_new(PyObject *self, PyObject *args)
-{
-    client_object_t *clientob;
-    fiducial_object_t *fiducialob;
-    int index;
-    char access;
-
-    if (!PyArg_ParseTuple(args, "Oic", &clientob, &index, &access))
-        return NULL;
-
-    fiducialob = PyObject_New(fiducial_object_t, &fiducial_type);
-    fiducialob->client = clientob->client;
-    fiducialob->fiducial = playerc_fiducial_create(clientob->client, index);
-    fiducialob->fiducials = PyList_New(0);
-    
-    /* Add callback for post-processing incoming data */
-    playerc_client_addcallback(clientob->client,
-                               (playerc_device_t*) fiducialob->fiducial,
-                               (playerc_callback_fn_t) fiducial_onread,
-                               (void*) fiducialob);
-    
-    return (PyObject*) fiducialob;
-}
-
-
-static void fiducial_del(PyObject *self)
-{
-    fiducial_object_t *fiducialob;
-    fiducialob = (fiducial_object_t*) self;
-
-    playerc_client_delcallback(fiducialob->client,
-                               (playerc_device_t*) fiducialob->fiducial,
-                               (playerc_callback_fn_t) fiducial_onread,
-                               (void*) fiducialob);    
-    playerc_fiducial_destroy(fiducialob->fiducial);
-    PyObject_Del(self);
-}
-
-
-static PyObject *fiducial_getattr(PyObject *self, char *attrname)
-{
-    PyObject *result;
-    fiducial_object_t *fiducialob;
-
-    fiducialob = (fiducial_object_t*) self;
-
-    if (strcmp(attrname, "datatime") == 0)
-    {
-        result = PyFloat_FromDouble(fiducialob->fiducial->info.datatime);
-    }
-    else if (strcmp(attrname, "fiducials") == 0)
-    {
-        Py_INCREF(fiducialob->fiducials);
-        result = fiducialob->fiducials;
-    }
-    else
-        result = Py_FindMethod(fiducial_methods, self, attrname);
-
-    return result;
-}
-
-
-/* Get string representation (type function) */
-static PyObject *fiducial_str(PyObject *self)
-{
-  int i;
-  char s[64];
-  char str[8192];
-  fiducial_object_t *fiducialob;
-  fiducialob = (fiducial_object_t*) self;
-
-  snprintf(str, sizeof(str),
-           "fiducial %02d %013.3f ",
-           fiducialob->fiducial->info.index,
-           fiducialob->fiducial->info.datatime);
-
-  for (i = 0; i < fiducialob->fiducial->fiducial_count; i++)
-  {
-    snprintf(s, sizeof(s), "%03d %05.3f %+05.3f %+05.3f ",
-             fiducialob->fiducial->fiducials[i].id,
-             fiducialob->fiducial->fiducials[i].range,
-             fiducialob->fiducial->fiducials[i].bearing,
-             fiducialob->fiducial->fiducials[i].orient);
-    assert(strlen(str) + strlen(s) < sizeof(str));
-    strcat(str, s);
-  }
-  return PyString_FromString(str);
-}
-
-
-/* Callback for post-processing incoming data */
-static void fiducial_onread(fiducial_object_t *fiducialob)
-{
-  int i;
-  PyObject *tuple;
-
-  thread_acquire();
-    
-  Py_DECREF(fiducialob->fiducials);
-  fiducialob->fiducials = PyList_New(fiducialob->fiducial->fiducial_count);
-    
-  for (i = 0; i < fiducialob->fiducial->fiducial_count; i++)
-  {
-    tuple = PyTuple_New(4);
-    PyTuple_SetItem(tuple, 0, PyInt_FromLong(fiducialob->fiducial->fiducials[i].id));
-    PyTuple_SetItem(tuple, 1, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].range));
-    PyTuple_SetItem(tuple, 2, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].bearing));
-    PyTuple_SetItem(tuple, 3, PyFloat_FromDouble(fiducialob->fiducial->fiducials[i].orient));
-    PyList_SetItem(fiducialob->fiducials, i, tuple);
-  }
-    
-  thread_release();
-}
-
-
-/* Configure fiducial
-   (bit_count, bit_width)
-*/
-static PyObject *fiducial_configure(PyObject *self, PyObject *args)
-{
-  int bit_count;
-  double bit_width;
-  fiducial_object_t *fiducialob;
-    
-  if (!PyArg_ParseTuple(args, "id", &bit_count, &bit_width))
-    return NULL;
-  fiducialob = (fiducial_object_t*) self;
-
-  return PyInt_FromLong(playerc_fiducial_set_config(fiducialob->fiducial,
-                                                    bit_count, bit_width));
-}
-
-
-/* Assemble python fiducial type
- */
-static PyTypeObject fiducial_type = 
-{
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "fiducial",
-    sizeof(fiducial_object_t),
-    0,
-    fiducial_del, /*tp_dealloc*/
-    0,          /*tp_print*/
-    fiducial_getattr, /*tp_getattr*/
-    0,          /*tp_setattr*/
-    0,          /*tp_compare*/
-    0,          /*tp_repr*/
-    0,          /*tp_as_number*/
-    0,          /*tp_as_sequence*/
-    0,          /*tp_as_mapping*/
-    0,          /*tp_hash */
-    0,          /*tp_call*/
-    fiducial_str,  /*tp_string*/
-};
-
-
-static PyMethodDef fiducial_methods[] =
-{
-    {"configure", fiducial_configure, METH_VARARGS},
-    {NULL, NULL}
-};
-
-
 /***************************************************************************
  * gps device
  **************************************************************************/
@@ -1055,6 +868,12 @@ static PyMethodDef comms_methods[] =
  * module level stuff
  **************************************************************************/
 
+extern PyTypeObject blobfinder_type;
+extern PyObject *blobfinder_new(PyObject *self, PyObject *args);
+
+extern PyTypeObject fiducial_type;
+extern PyObject *fiducial_new(PyObject *self, PyObject *args);
+
 extern PyTypeObject laser_type;
 extern PyObject *laser_new(PyObject *self, PyObject *args);
 
@@ -1064,8 +883,6 @@ extern PyObject *position_new(PyObject *self, PyObject *args);
 extern PyTypeObject ptz_type;
 extern PyObject *ptz_new(PyObject *self, PyObject *args);
 
-extern PyTypeObject blobfinder_type;
-extern PyObject *blobfinder_new(PyObject *self, PyObject *args);
 
 
 static PyMethodDef module_methods[] =
