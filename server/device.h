@@ -131,7 +131,7 @@ class CDevice
                          uint32_t timestamp_sec, uint32_t timestamp_usec);
     
     virtual size_t GetCommand(void* dest, size_t len);
-    virtual void PutCommand(void* client, void* src, size_t len);
+    virtual void PutCommand(void* client, unsigned char* src, size_t len);
     
     virtual size_t GetConfig(void** client, void *data, size_t len);
     /* a "long form" GetConfig, this one returns the target device ID */

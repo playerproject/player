@@ -295,8 +295,6 @@ void localize_draw_hypoth(localize_t *localize)
     sx = 6 * sqrt(eval[0]) / mag;
     sy = 6 * sqrt(eval[1]) / mag;
 
-    printf("%f %f %f %f %f\n", ox, oy, oa, sx, sy);
-    
     rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa, sx);
     rtk_fig_line_ex(localize->hypoth_fig, ox, oy, oa + M_PI / 2, sy);
     rtk_fig_ellipse(localize->hypoth_fig, ox, oy, oa, sx, sy, 0);

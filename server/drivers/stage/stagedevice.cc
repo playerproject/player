@@ -24,8 +24,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+//#define DEBUG 1
 #define PLAYER_ENABLE_TRACE 0
-
 
 #include <string.h> // for memcpy()
 #include <stagedevice.h>
@@ -47,7 +47,7 @@ StageDevice::StageDevice(player_stage_info_t* info,
 {
 #ifdef DEBUG
   printf( "P: Creating Stage device (%d,%d,%d) locking %d:%d\n", 
-          info->player_id.port, 
+          info->player_id.robot, 
           info->player_id.code, 
           info->player_id.index,
 	  lockfd, lockbyte ); 
@@ -84,7 +84,7 @@ StageDevice::StageDevice(player_stage_info_t* info,
 
 #ifdef DEBUG
   PLAYER_TRACE4("creating device at addr: %p %p %p %p %p", 
-                m_info, data_buffer, command_buffer, 
+                data_buffer, command_buffer, 
                 config_buffer, reply_buffer);
   fflush( stdout );
 #endif
@@ -121,9 +121,11 @@ size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
                         uint32_t* timestamp_usec)
 {
   Lock();
+  
 #ifdef DEBUG
+  /*
   printf( "P: getting (%d,%d,%d) info at %p, data at %p, buffer len %d, %d bytes available, size parameter %d\n", 
-          m_info->player_id.port, 
+          m_info->player_id.robot, 
           m_info->player_id.code, 
           m_info->player_id.index, 
           m_info, device_data,
@@ -131,6 +133,7 @@ size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
           m_info->data_avail,
           size );
   fflush( stdout );
+  */
 #endif
 
   // See if there is any data
@@ -190,12 +193,13 @@ size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
 //
 void StageDevice::PutCommand(void* client,unsigned char *command, size_t len)
 {
+
   Lock();
 
 #ifdef DEBUG
   printf( "P: StageDevice::PutCommand (%d,%d,%d) info at %p,"
 	  " command at %p\n", 
-          m_info->player_id.port, 
+          m_info->player_id.robot, 
           m_info->player_id.code, 
           m_info->player_id.index, 
           m_info, command);

@@ -266,7 +266,7 @@ size_t CDevice::GetCommand( void* dest, size_t len)
   return(size);
 }
 
-void CDevice::PutCommand(void* client, void* src, size_t len)
+void CDevice::PutCommand(void* client, unsigned char* src, size_t len)
 {
   Lock();
   assert(len <= device_commandsize);

@@ -379,6 +379,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         }
         break;
       case PLAYER_MSGTYPE_CMD:
+
         /* command message */
         if(CheckWritePermissions(id))
         {
@@ -389,7 +390,9 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           {
             // make sure we've got a non-NULL pointer
             if((devicep = deviceTable->GetDevice(id)))
+            {
               devicep->PutCommand(this,payload,payload_size);
+            }
             else
               printf("HandleRequests(): found NULL pointer for device %x:%x\n",
                      id.code,id.index);
