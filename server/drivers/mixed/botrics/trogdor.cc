@@ -91,6 +91,7 @@ class Trogdor : public CDevice
     void UpdateOdom(int ltics, int rtics);
     unsigned char ComputeChecksum(unsigned char *ptr, size_t len);
     int SendCommand(unsigned char cmd, int val1, int val2);
+    int ComputeTickDiff(int from, int to);
 
   public:
     int fd; // device file descriptor
@@ -297,6 +298,10 @@ Trogdor::Main()
   void* client;
   char config[256];
   int config_size;
+  int final_lvel, final_rvel;
+  int last_final_lvel, last_final_rvel;
+
+  last_final_rvel = last_final_lvel = 0;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -330,10 +335,9 @@ Trogdor::Main()
         command.xspeed = (int32_t)rint(-TROGDOR_MAX_XSPEED*1e3);
     }
 
-    //printf("tv: %d\trv: %d\n", command.xspeed, command.yawspeed);
 
     // convert (tv,rv) to (lv,rv) and send to robot
-    rotational_term = DTOR(command.yawspeed) * TROGDOR_AXLE_LENGTH / 4.0;
+    rotational_term = DTOR(command.yawspeed) * TROGDOR_AXLE_LENGTH / 2.0;
     command_rvel = (command.xspeed/1e3) + rotational_term;
     command_lvel = (command.xspeed/1e3) - rotational_term;
     //printf("rot: %f lv: %f rv: %f\n",
@@ -341,11 +345,18 @@ Trogdor::Main()
 
     // TODO: sanity check on per-wheel speeds
 
-    if(SetVelocity((int)rint(command_lvel / TROGDOR_MPS_PER_TICK),
-                   (int)rint(command_rvel / TROGDOR_MPS_PER_TICK)) < 0)
+    final_lvel = (int)rint(command_lvel / TROGDOR_MPS_PER_TICK);
+    final_rvel = (int)rint(command_rvel / TROGDOR_MPS_PER_TICK);
+    if((final_lvel != last_final_lvel) ||
+       (final_rvel != last_final_rvel))
     {
-      PLAYER_ERROR("failed to set velocity");
-      pthread_exit(NULL);
+      if(SetVelocity(final_lvel,final_rvel) < 0)
+      {
+        PLAYER_ERROR("failed to set velocity");
+        pthread_exit(NULL);
+      }
+      last_final_lvel = final_lvel;
+      last_final_rvel = final_rvel;
     }
 
     if(GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
@@ -356,13 +367,19 @@ Trogdor::Main()
 
     UpdateOdom(ltics,rtics);
 
+    double tmp_angle;
     data.xpos = htonl((int32_t)rint(this->px * 1e3));
     data.ypos = htonl((int32_t)rint(this->py * 1e3));
-    data.yaw = htonl((int32_t)rint(RTOD(this->pa)));
+    if(this->pa < 0)
+      tmp_angle = this->pa + 2*M_PI;
+    else
+      tmp_angle = this->pa;
+
+    data.yaw = htonl((int32_t)floor(RTOD(tmp_angle)));
 
     data.yspeed = 0;
-    lvel_mps = lvel / TROGDOR_MPS_PER_TICK;
-    rvel_mps = rvel / TROGDOR_MPS_PER_TICK;
+    lvel_mps = lvel * TROGDOR_MPS_PER_TICK;
+    rvel_mps = rvel * TROGDOR_MPS_PER_TICK;
     data.xspeed = htonl((int32_t)rint(1e3 * (lvel_mps + rvel_mps) / 2.0));
     data.yawspeed = htonl((int32_t)rint(RTOD((rvel_mps-lvel_mps) / 
                                              TROGDOR_AXLE_LENGTH)));
@@ -449,23 +466,24 @@ Trogdor::ReadBuf(unsigned char* s, size_t len)
 int
 Trogdor::WriteBuf(unsigned char* s, size_t len)
 {
-  int numwritten;
-  int bytesperwrite = 1;
+  size_t numwritten;
+  int thisnumwritten;
   unsigned char ack[1];
 
-  // TODO: see about writing more than one byte at a time
-  // apparently the underlying PIC gets overwhelmed if we write too fast
-  for(size_t i=0;i<len;i++)
+  numwritten=0;
+  while(numwritten < len)
   {
-    //printf("writing byte %d\n", i);
-    if((numwritten = write(this->fd,s+i,bytesperwrite)) < 0)
+    if((thisnumwritten = write(this->fd,s+numwritten,len-numwritten)) < 0)
     {
+      if(!this->fd_blocking && errno == EAGAIN)
+      {
+        usleep(TROGDOR_DELAY_US);
+        continue;
+      }
       PLAYER_ERROR1("write() failed: %s", strerror(errno));
       return(-1);
     }
-    if(numwritten != bytesperwrite)
-      PLAYER_WARN("short write");
-    //usleep(10);
+    numwritten += thisnumwritten;
   }
 
   // get acknowledgement
@@ -564,12 +582,38 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
   return(0);
 }
 
+int 
+Trogdor::ComputeTickDiff(int from, int to) 
+{
+  unsigned int positive_from, positive_to;
+  int diff1, diff2;
+
+  positive_from = (unsigned int)from + TROGDOR_MAX_TICS;
+  positive_to = (unsigned int)to + TROGDOR_MAX_TICS;
+
+  // find difference in two directions and pick shortest
+  if(positive_to > positive_from) 
+  {
+    diff1 = positive_to - positive_from;
+    diff2 = -(positive_from + 2*TROGDOR_MAX_TICS - positive_to);
+  }
+  else 
+  {
+    diff1 = positive_to - positive_from;
+    diff2 = 2*TROGDOR_MAX_TICS - positive_from + positive_to;
+  }
+
+  if(abs(diff1) < abs(diff2)) 
+    return(diff1);
+  else
+    return(diff2);
+}
+
 void
 Trogdor::UpdateOdom(int ltics, int rtics)
 {
   int ltics_delta, rtics_delta;
   double l_delta, r_delta, a_delta, d_delta;
-  double inner_radius;
 
   if(!this->odom_initialized)
   {
@@ -579,45 +623,19 @@ Trogdor::UpdateOdom(int ltics, int rtics)
     return;
   }
 
-  ltics_delta = ltics - last_ltics;
-  rtics_delta = rtics - last_rtics;
-
-  /* what's this for? */
-  /*
-  if (left_delta_tick > SHRT_MAX/2)
-    left_delta_tick += SHRT_MIN;
-  if (left_delta_tick < -SHRT_MAX/2)
-    left_delta_tick -= SHRT_MIN;
-  if (right_delta_tick > SHRT_MAX/2)
-    right_delta_tick += SHRT_MIN;
-  if (right_delta_tick < -SHRT_MAX/2)
-    right_delta_tick -= SHRT_MIN;
-   */
+  ltics_delta = ComputeTickDiff(last_ltics,ltics);
+  rtics_delta = ComputeTickDiff(last_rtics,rtics);
 
   l_delta = ltics_delta * TROGDOR_M_PER_TICK;
   r_delta = rtics_delta * TROGDOR_M_PER_TICK;
 
-  if(fabs(r_delta - l_delta) < .001) 
-    a_delta = 0.0;
-  else
-  {
-    if(fabs(l_delta) > 0) 
-    {
-      inner_radius = (l_delta * TROGDOR_AXLE_LENGTH) / (r_delta - l_delta);
-      a_delta = l_delta / inner_radius;  
-    } 
-    else
-    {
-      inner_radius = (r_delta * TROGDOR_AXLE_LENGTH) / (l_delta - r_delta);
-      a_delta = r_delta / inner_radius;
-    } 
-  }
-
+  a_delta = (r_delta - l_delta) / TROGDOR_AXLE_LENGTH;
   d_delta = (l_delta + r_delta) / 2.0;
 
   this->px += d_delta * cos(this->pa);
   this->py += d_delta * sin(this->pa);
   this->pa += a_delta;
+  this->pa = NORMALIZE(this->pa);
 
   this->last_ltics = ltics;
   this->last_rtics = rtics;
