@@ -422,7 +422,7 @@ int ReadLogManager::ParsePosition(CDevice *device, int linenum,
 {
   player_position_data_t data;
 
-  if (token_count < 12)
+  if (token_count < 11) // 12
   {
     PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
     return -1;
@@ -434,7 +434,7 @@ int ReadLogManager::ParsePosition(CDevice *device, int linenum,
   data.xspeed = NINT32(M_MM(atof(tokens[9])));
   data.yspeed = NINT32(M_MM(atof(tokens[10])));
   data.yawspeed = NINT32(RAD_DEG(atof(tokens[11])));
-  data.stall = atoi(tokens[12]);
+  //data.stall = atoi(tokens[12]);
 
   device->PutData(&data, sizeof(data), tsec, tusec);
 
@@ -533,6 +533,7 @@ int ReadLogManager::ParseGps(CDevice *device, int linenum,
 
   data.time_sec = NUINT32((int) atof(tokens[6]));
   data.time_usec = NUINT32((int) fmod(atof(tokens[6]), 1.0));
+
   data.latitude = NINT32((int) (60 * 60 * 60 * atof(tokens[7])));
   data.longitude = NINT32((int) (60 * 60 * 60 * atof(tokens[8])));
   data.altitude = NINT32(M_MM(atof(tokens[9])));
