@@ -20,7 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////
 //
 // Desc: 1394 camera capture
-// Author: Nate Koenig 
+// Author: Nate Koenig, Andrew Howard
 // Date: 03 June 2004
 // CVS: $Id$
 //
