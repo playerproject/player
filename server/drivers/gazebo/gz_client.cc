@@ -34,8 +34,15 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Data
+gz_client_t *GzClient::client = NULL;
+gz_sim_t *GzClient::sim = NULL;
+const char *GzClient::prefix_id = "";
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Initialize 
-int GzClient::Init(const char *serverid)
+int GzClient::Init(const char *serverid, const char *prefixid)
 {
   GzClient::client = gz_client_alloc();
 
@@ -45,6 +52,9 @@ int GzClient::Init(const char *serverid)
   GzClient::sim = gz_sim_alloc();
   if (gz_sim_open(GzClient::sim, GzClient::client, "default") != 0)
     return -1;
+
+  if (prefixid != NULL)
+    GzClient::prefix_id = prefixid;
 
   return 0;
 }
@@ -68,7 +78,3 @@ int GzClient::Fini()
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Data
-gz_client_t *GzClient::client = NULL;
-gz_sim_t *GzClient::sim = NULL;

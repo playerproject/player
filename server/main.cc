@@ -795,6 +795,7 @@ int main( int argc, char *argv[] )
   char auth_key[PLAYER_KEYLEN] = "";
   char *configfile = NULL;
   char *gz_serverid = NULL;
+  char *gz_prefixid = NULL;
   char *readlog_filename = NULL;
   double readlog_speed = 1.0;
   
@@ -859,6 +860,18 @@ int main( int argc, char *argv[] )
       if(++i<argc)
       {
         gz_serverid = argv[i];
+      }
+      else
+      {
+        Usage();
+        exit(-1);
+      }
+    }
+    else if(!strcmp(argv[i], "--gazebo-prefix"))
+    {
+      if(++i<argc)
+      {
+        gz_prefixid = argv[i];
       }
       else
       {
@@ -1011,7 +1024,7 @@ int main( int argc, char *argv[] )
   {
 #ifdef INCLUDE_GAZEBO
     // Initialize gazebo client
-    if (GzClient::Init(gz_serverid) != 0)
+    if (GzClient::Init(gz_serverid, gz_prefixid) != 0)
       exit(-1);
 
     // Use the clock from Gazebo
