@@ -325,8 +325,19 @@ bool ConfigFile::LoadTokens(FILE *file, int include)
       token[1] = 0;
       AddToken(TokenCloseTuple, token, include);
     }
-    else if (ch == '\n')
+    else if ( 0x0d == ch )
     {
+      ch = fgetc(file);
+      if ( 0x0a != ch ) 
+        ungetc(ch, file);
+      line++;
+      AddToken(TokenEOL, "\n", include);
+    }
+    else if ( 0x0a == ch )
+    {
+      ch = fgetc(file);
+      if ( 0x0d != ch ) 
+        ungetc(ch, file);
       line++;
       AddToken(TokenEOL, "\n", include);
     }
@@ -361,7 +372,7 @@ bool ConfigFile::LoadTokenComment(FILE *file, int *line, int include)
       AddToken(TokenComment, token, include);
       return true;
     }
-    else if (ch == '\n')
+    else if ( 0x0a == ch || 0x0d == ch )
     {
       ungetc(ch, file);
       AddToken(TokenComment, token, include);
