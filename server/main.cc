@@ -31,8 +31,9 @@
   #include <config.h>
 #endif
 
-#if HAVE_LIBDL
-  #include <dlfcn.h>
+
+#if HAVE_LIBLTDL
+ #include <ltdl.h>
 #endif
 
 #include <sys/types.h>  /* for accept(2) */
@@ -729,8 +730,23 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
 bool
 LoadPlugin(const char* pluginname, const char* cfgfile)
 {
-#if HAVE_LIBDL
-  void* handle=NULL;
+#if HAVE_LIBLTDL
+
+  static int init_done = 0;
+  
+  if( !init_done )
+    {
+      int errors = 0;
+      if((errors = lt_dlinit()))
+	PLAYER_ERROR2( "Error(s) initializing dynamic loader (%d, %s)",
+		      errors, lt_dlerror() );
+      else
+	init_done = 1;
+    }
+  
+  //void* handle=NULL;
+  
+  lt_dlhandle handle=NULL;
   PluginInitFn initfunc;
   char fullpath[PATH_MAX];
   char* playerpath;
@@ -745,11 +761,12 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     strcpy(fullpath,pluginname);
     printf("trying to load %s...", fullpath);
     fflush(stdout);
-    if((handle = dlopen(fullpath, RTLD_NOW)))
+    //if((handle = dlopen(fullpath, RTLD_NOW)))
+    if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
       puts("success");
     else
     {
-      printf("failed (%s)\n", dlerror() );
+      printf("failed (%s)\n", lt_dlerror() );
       return(false);
     }
   }
@@ -779,13 +796,15 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       strcat(fullpath,pluginname);
       printf("trying to load %s...", fullpath);
       fflush(stdout);
-      if((handle = dlopen(fullpath, RTLD_NOW)))
+      //if((handle = dlopen(fullpath, RTLD_NOW)))
+      if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
       {
         puts("success");
         break;
       }
       else
-	printf("failed (%s)\n", dlerror() );
+	//printf("failed (%s)\n", dlerror() );
+	printf("failed (%s)\n", lt_dlerror() );
 
       i=j+1;
     }
@@ -810,10 +829,11 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     free(tmp);
     printf("trying to load %s...", fullpath);
     fflush(stdout);
-    if((handle = dlopen(fullpath, RTLD_NOW)))
+    //if((handle = dlopen(fullpath, RTLD_NOW)))
+    if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
       puts("success");
     else
-      printf("failed (%s)\n", dlerror() );
+      printf("failed (%s)\n", lt_dlerror() );
   }
 
 // I can't find a way to do @prefix@ substitution in server/prefix.h that
@@ -828,17 +848,17 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     strcat(fullpath,pluginname);
     printf("trying to load %s...", fullpath);
     fflush(stdout);
-    if((handle = dlopen(fullpath, RTLD_NOW)))
+    if((handle = lt_dlopenext(fullpath)))
       puts("success");
     else
-      printf("failed (%s)\n", dlerror() );
+      printf("failed (%s)\n", lt_dlerror() );
 
   }
 #endif
 
   if (handle == NULL)
   {
-    PLAYER_ERROR1("error loading plugin: %s", dlerror());
+    PLAYER_ERROR1("error loading plugin: %s", lt_dlerror());
     return false;
   }
   
@@ -847,8 +867,10 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   {
     printf("invoking player_driver_init()...");
     fflush(stdout);
-    initfunc = (PluginInitFn)dlsym(handle,"player_driver_init");
-    if((error = dlerror()) != NULL)
+    //initfunc = (PluginInitFn)dlsym(handle,"player_driver_init");
+    initfunc = (PluginInitFn)lt_dlsym(handle,"player_driver_init");
+    //if((error = dlerror()) != NULL)
+    if((error = lt_dlerror()) != NULL)
     {
       printf("failed: %s\n", error);
       return(false);
@@ -856,7 +878,8 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((*initfunc)(driverTable) != 0)
     {
       puts("failed");
-      PLAYER_ERROR1("error loading plugin: %s", dlerror());
+      //PLAYER_ERROR1("error loading plugin: %s", dlerror());
+      PLAYER_ERROR1("error loading plugin: %s", lt_dlerror());
       return(false);
     }
     puts("success");
