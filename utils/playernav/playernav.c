@@ -3,7 +3,12 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <signal.h>
+
 #include <gtk/gtk.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
+#include <libgnomecanvas/libgnomecanvas.h>
+
 #include <playerc.h>
 
 #define DEFAULT_DISPLAY_WIDTH 800
@@ -15,27 +20,66 @@
 
 #define USAGE "USAGE: playernav <host:port> [<host:port>...]"
 
-GtkWindow* map_window;
-GtkImage* map_image;
-// aspect ratio (width / height)
-double aspect;
-int map_display_width, map_display_height;
+typedef struct
+{
+  GtkWindow* main_window;
+  GtkWindow* map_window;
+  GnomeCanvas* map_canvas;
+  // aspect ratio (width / height)
+  double aspect;
+  playerc_map_t* mapdev;
+  // pixels per canvas unit
+  double canvas_zoom;
+} gui_data_t;
 
 // global quit flag
 char quit;
 
-// forward declarations
-static gboolean _quit_callback(GtkWidget *widget,
-                               GdkEvent *event,
-                               gpointer data);
-static void _resize_window(GtkWidget *widget,
-                           GtkAllocation* allocation,
-                           gpointer data);
-int display_map(playerc_map_t* map_device);
-void init_gui(int argc, char** argv, playerc_map_t* mapdev);
+/*
+ * handle quit events, by setting a flag that will make the main loop exit
+ */
+static gboolean 
+_quit_callback(GtkWidget *widget,
+               GdkEvent *event,
+               gpointer data)
+{
+  quit = 1;
+  return(TRUE);
+}
+
+void
+_interrupt_callback(int signum)
+{
+  quit=1;
+}
+
+/*
+ * Handle window resize events.
+ */
+static void 
+_resize_window(GtkWidget *widget,
+               GtkAllocation* allocation,
+               gpointer data)
+{
+  gui_data_t* gui_data = (gui_data_t*)data;
+
+  gui_data->canvas_zoom = ((allocation->width - 20) / 
+                           (gui_data->mapdev->width * 
+                            gui_data->mapdev->resolution));
+
+
+  // set canvas units to meters, scaled by window size
+  gnome_canvas_set_pixels_per_unit(gui_data->map_canvas, 
+                                   gui_data->canvas_zoom);
+}
+
+void create_map_image(gui_data_t* gui_data);
+void init_gui(gui_data_t* gui_data, 
+              int argc, char** argv);
 void fini_gui();
 playerc_mclient_t* init_player(playerc_client_t** clients,
                                playerc_map_t** maps,
+                               playerc_localize_t** localizes,
                                int num_bots,
                                char** hostnames,
                                int* ports,
@@ -57,6 +101,9 @@ main(int argc, char** argv)
   playerc_mclient_t* mclient;
   playerc_client_t* clients[MAX_NUM_ROBOTS];
   playerc_map_t* maps[MAX_NUM_ROBOTS];
+  playerc_localize_t* localizes[MAX_NUM_ROBOTS];
+
+  gui_data_t gui_data;
 
   if(parse_args(argc-1, argv+1, &num_bots, hostnames, ports) < 0)
   {
@@ -64,15 +111,20 @@ main(int argc, char** argv)
     exit(-1);
   }
 
-  assert(mclient = init_player(clients, maps, num_bots, 
+  assert(signal(SIGINT, _interrupt_callback) != SIG_ERR);
+
+  assert(mclient = init_player(clients, maps, localizes, num_bots, 
                                hostnames, ports, DATA_FREQ));
 
   // we've read the map, so fill in the aspect ratio
-  aspect = maps[0]->width / (double)(maps[0]->height);
+  gui_data.mapdev = maps[0];
+  gui_data.aspect = gui_data.mapdev->width / (double)(gui_data.mapdev->height);
 
-  init_gui(argc, argv, maps[0]);
+  init_gui(&gui_data, argc, argv);
 
-  display_map(maps[0]);
+  create_map_image(&gui_data);
+
+  gtk_widget_show((GtkWidget*)(gui_data.main_window));
 
   while(!quit)
   {
@@ -88,6 +140,7 @@ main(int argc, char** argv)
   }
 
   fini_player(mclient,clients,maps,num_bots);
+  fini_gui(&gui_data);
 
   return(0);
 }
@@ -141,6 +194,7 @@ parse_args(int argc, char** argv,
 playerc_mclient_t*
 init_player(playerc_client_t** clients,
             playerc_map_t** maps,
+            playerc_localize_t** localizes,
             int num_bots,
             char** hostnames,
             int* ports,
@@ -171,6 +225,12 @@ init_player(playerc_client_t** clients,
     {
       fprintf(stderr, "Failed to subscribe to map\n");
       return(NULL);
+    }
+    assert(localizes[i] = playerc_localize_create(clients[i], 0));
+    if(playerc_localize_subscribe(localizes[i],PLAYER_READ_MODE) < 0)
+    {
+      fprintf(stderr, "Failed to subscribe to localize\n");
+      //return(NULL);
     }
     // hostnames were strdup'd in parse_args()
     free(hostnames[i]);
@@ -225,164 +285,148 @@ fini_player(playerc_mclient_t* mclient,
 }
 
 void
-init_gui(int argc, char** argv, playerc_map_t* mapdev)
+init_gui(gui_data_t* gui_data, int argc, char** argv)
 {
   g_type_init();
   gtk_init(&argc, &argv);
 
-  map_display_width = DEFAULT_DISPLAY_WIDTH;
-  map_display_height = (int)rint(DEFAULT_DISPLAY_WIDTH / aspect);
-
-  g_assert((map_window = (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL)));
-  gtk_widget_set_size_request((GtkWidget*)map_window,
+  g_assert((gui_data->main_window = 
+            (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL)));
+  gtk_widget_set_size_request((GtkWidget*)(gui_data->main_window),
                               MIN_DISPLAY_WIDTH,MIN_DISPLAY_WIDTH);
-  gtk_window_resize(map_window,
-                    map_display_width,
-                    map_display_height);
+  gtk_window_resize(gui_data->main_window,
+                    DEFAULT_DISPLAY_WIDTH,
+                    (int)rint(DEFAULT_DISPLAY_WIDTH / gui_data->aspect));
 
-  g_assert((map_image = (GtkImage*)gtk_image_new()));
-  gtk_container_add(GTK_CONTAINER(map_window),(GtkWidget*)map_image);
+  g_assert((gui_data->map_window = 
+            (GtkWindow*)gtk_scrolled_window_new(NULL, NULL)));
+      
+  /* the policy is one of GTK_POLICY AUTOMATIC, or GTK_POLICY_ALWAYS.
+   * GTK_POLICY_AUTOMATIC will automatically decide whether you
+   * need scrollbars, whereas GTK_POLICY_ALWAYS will always
+   * leave the scrollbars there.  The first one is the horizontal
+   * scrollbar, the second, the vertical. 
+   */
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(gui_data->map_window),
+                                 GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  gtk_container_add(GTK_CONTAINER(gui_data->main_window),
+                    (GtkWidget*)gui_data->map_window);
+  gtk_widget_show((GtkWidget*)(gui_data->map_window));
 
-  g_signal_connect(G_OBJECT(map_window),"delete-event",
+  gtk_widget_push_visual(gdk_rgb_get_visual());
+  gtk_widget_push_colormap(gdk_rgb_get_cmap());
+  g_assert((gui_data->map_canvas = (GnomeCanvas*)gnome_canvas_new_aa()));
+  gtk_widget_pop_colormap();
+  gtk_widget_pop_visual();
+
+  // set canvas units to meters, scaled by window size
+  gui_data->canvas_zoom = ((DEFAULT_DISPLAY_WIDTH - 20) / 
+                           (gui_data->mapdev->width * 
+                            gui_data->mapdev->resolution));
+
+  gnome_canvas_set_pixels_per_unit(gui_data->map_canvas, 
+                                   gui_data->canvas_zoom);
+                                   
+  //gnome_canvas_set_center_scroll_region(gui_data->map_canvas, TRUE);
+  gnome_canvas_set_scroll_region(gui_data->map_canvas,0,0,
+                                 gui_data->mapdev->width * 
+                                 gui_data->mapdev->resolution,
+                                 gui_data->mapdev->height * 
+                                 gui_data->mapdev->resolution);
+
+  gtk_container_add(GTK_CONTAINER(gui_data->map_window),
+                    (GtkWidget*)(gui_data->map_canvas));
+  gtk_widget_show((GtkWidget*)(gui_data->map_canvas));
+
+  g_signal_connect(G_OBJECT(gui_data->main_window),"delete-event",
                    G_CALLBACK(_quit_callback),NULL);
-  g_signal_connect(G_OBJECT(map_window),"destroy-event",
+  g_signal_connect(G_OBJECT(gui_data->main_window),"destroy-event",
                    G_CALLBACK(_quit_callback),NULL);
-  g_signal_connect(G_OBJECT(map_window),"size-allocate",
-                   G_CALLBACK(_resize_window),(void*)mapdev);
-
+  g_signal_connect(G_OBJECT(gui_data->main_window),"size-allocate",
+                   G_CALLBACK(_resize_window),(void*)gui_data);
 }
 
 void
-fini_gui()
+fini_gui(gui_data_t* gui_data)
 {
-  assert(map_window);
-  gtk_widget_destroy((GtkWidget*)map_window);
+  assert(gui_data->main_window);
+  gtk_widget_destroy((GtkWidget*)(gui_data->main_window));
 }
 
-int
-display_map(playerc_map_t* map_device)
+/*
+ * create the background map image and put it on the canvas
+ */
+void
+create_map_image(gui_data_t* gui_data)
 {
-  static char firsttime=1;
   GdkPixbuf* pixbuf;
-  GdkPixbuf* scaled_pixbuf;
   static guchar* pixels = NULL;
   int i,j;
-
-  if(firsttime)
-  {
-    gtk_widget_show((GtkWidget*)map_image);
-    gtk_widget_show((GtkWidget*)map_window);
-    firsttime=0;
-  }
+  GnomeCanvasItem* imageitem;
 
   if(pixels)
     free(pixels);
   assert(pixels = (guchar*)malloc(sizeof(unsigned char) * 3 *
-                                  map_device->width *
-                                  map_device->height));
+                                  gui_data->mapdev->width *
+                                  gui_data->mapdev->height));
 
-  for(j=0; j < map_device->height; j++)
+  for(j=0; j < gui_data->mapdev->height; j++)
   {
-    for(i=0; i < map_device->width; i++)
+    for(i=0; i < gui_data->mapdev->width; i++)
     {
-      if(map_device->cells[PLAYERC_MAP_INDEX(map_device,i,j)] == -1)
+      if(gui_data->mapdev->cells[PLAYERC_MAP_INDEX(gui_data->mapdev,i,j)] == -1)
       {
-        pixels[(map_device->width * (map_device->height - j-1) + i)*3] = 255;
-        pixels[(map_device->width * (map_device->height - j-1) + i)*3+1] = 255;
-        pixels[(map_device->width * (map_device->height - j-1) + i)*3+2] = 255;
+        pixels[(gui_data->mapdev->width * 
+                (gui_data->mapdev->height - j-1) + i)*3] = 255;
+        pixels[(gui_data->mapdev->width * 
+                (gui_data->mapdev->height - j-1) + i)*3+1] = 255;
+        pixels[(gui_data->mapdev->width * 
+                (gui_data->mapdev->height - j-1) + i)*3+2] = 255;
       }
-      else if(map_device->cells[PLAYERC_MAP_INDEX(map_device,i,j)] == 0)
+      else if(gui_data->mapdev->cells[PLAYERC_MAP_INDEX(gui_data->mapdev,i,j)] == 0)
       {
-        pixels[(map_device->width * (map_device->height - j-1) + i)*3] = 100;
-        pixels[(map_device->width * (map_device->height - j-1) + i)*3+1] = 100;
-        pixels[(map_device->width * (map_device->height - j-1) + i)*3+2] = 100;
+        pixels[(gui_data->mapdev->width * 
+                (gui_data->mapdev->height - j-1) + i)*3] = 100;
+        pixels[(gui_data->mapdev->width * 
+                (gui_data->mapdev->height - j-1) + i)*3+1] = 100;
+        pixels[(gui_data->mapdev->width * 
+                (gui_data->mapdev->height - j-1) + i)*3+2] = 100;
       }
       else
       {
-        pixels[(map_device->width * (map_device->height - j-1) + i)*3] = 0;
-        pixels[(map_device->width * (map_device->height - j-1) + i)*3+1] = 0;
-        pixels[(map_device->width * (map_device->height - j-1) + i)*3+2] = 0;
+        pixels[(gui_data->mapdev->width * 
+                (gui_data->mapdev->height - j-1) + i)*3] = 0;
+        pixels[(gui_data->mapdev->width * 
+                (gui_data->mapdev->height - j-1) + i)*3+1] = 0;
+        pixels[(gui_data->mapdev->width * 
+                (gui_data->mapdev->height - j-1) + i)*3+2] = 0;
       }
     }
   }
   
   // create the pixbuf
-  if(!(pixbuf = gdk_pixbuf_new_from_data(pixels,
-                                         GDK_COLORSPACE_RGB,
-                                         FALSE,
-                                         8,
-                                         map_device->width, 
-                                         map_device->height, 
-                                         3*map_device->width,
-                                         NULL,
-                                         NULL)))
-  {
-    fprintf(stderr, "Failed to create image\n");
-    return(-1);
-  }
+  g_assert((pixbuf = gdk_pixbuf_new_from_data(pixels,
+                                              GDK_COLORSPACE_RGB,
+                                              FALSE,
+                                              8,
+                                              gui_data->mapdev->width, 
+                                              gui_data->mapdev->height, 
+                                              3*gui_data->mapdev->width,
+                                              NULL,
+                                              NULL)));
 
-  // scale the pixbuf
-  g_assert((scaled_pixbuf = 
-            gdk_pixbuf_scale_simple(pixbuf,
-                                    map_display_width,
-                                    map_display_height,
-                                    GDK_INTERP_NEAREST)));
-
+  g_assert((imageitem = 
+            gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas), 
+                                  gnome_canvas_pixbuf_get_type(),
+                                  "width-set", TRUE,
+                                  "height-set", TRUE,
+                                  "width", gui_data->mapdev->width *
+                                  gui_data->mapdev->resolution,
+                                  "height", gui_data->mapdev->height *
+                                  gui_data->mapdev->resolution,
+                                  "pixbuf", pixbuf,
+                                  NULL)));
 
   g_object_unref((GObject*)pixbuf);
-
-  // render to the image
-  gtk_image_set_from_pixbuf(map_image,scaled_pixbuf);
-  gtk_window_resize(map_window,
-                    map_display_width,
-                    map_display_height);
-
-  g_object_unref((GObject*)scaled_pixbuf);
-
-  return(0);
-}
-
-static gboolean 
-_quit_callback(GtkWidget *widget,
-               GdkEvent *event,
-               gpointer data)
-{
-  quit = 1;
-  return(TRUE);
-}
-
-/*
- * Handle window resize events.  Scale and redraw the image(s)
- */
-static void 
-_resize_window(GtkWidget *widget,
-               GtkAllocation* allocation,
-               gpointer data)
-{
-  playerc_map_t* mapdev = (playerc_map_t*)data;
-
-  // which window was resized?
-  if(widget == (GtkWidget*)map_window)
-  {
-    if((map_display_width != allocation->width) ||
-       (map_display_height != allocation->height))
-    {
-      if(map_display_width != allocation->width)
-      {
-        map_display_width = allocation->width;
-        map_display_height = (int)rint(allocation->width / aspect);
-      }
-      else
-      {
-        map_display_height = allocation->height;
-        map_display_width = (int)rint(allocation->height * aspect);
-      }
-      display_map(mapdev);
-    }
-  }
-  else
-  {
-    fprintf(stderr, "Got resize event for unknown widget!\n");
-  }
 }
 
