@@ -211,6 +211,37 @@ int PlayerMultiClient::Read()
   return(0);
 }
 
+// return a client pointer from a host and port, zero if not connected 
+// to that address
+PlayerClient* PlayerMultiClient::GetClient( char* host, int port )
+{
+  //printf( "searching for %s:%d\n",
+  //host, port );
+  for( int c=0; c<num_ufds; c++ )
+    {
+      //printf( "checking [%d] %s:%d\n",
+      //    c, clients[c]->hostname, clients[c]->port );
+	    
+      if( (strcmp(clients[c]->hostname, host) == 0 ) 
+	  && clients[c]->port == port )
+	return clients[c];
+    }
+  return 0;
+};
+    
+// return a client pointer from an address and port, zero if not connected 
+// to that address
+PlayerClient* PlayerMultiClient::GetClient( struct in_addr* addr, int port )
+{
+  //printf( "searching for %s:%d\n",
+  //host, port );
+  for( int c=0; c<num_ufds; c++ )
+    if( clients[c]->hostaddr.s_addr == addr->s_addr 
+	&& clients[c]->port == port )
+      return clients[c];
+  return 0;
+};
+ 
 // reads all available data, so we end up with only the freshest
 //
 // max_reads is a maximum numer of reads as a sanity check to avoid

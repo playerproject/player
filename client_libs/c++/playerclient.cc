@@ -30,6 +30,8 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <netdb.h> // for gethostbyname(3)
+
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
 #endif
@@ -46,6 +48,7 @@ PlayerClient::PlayerClient(const char* hostname = NULL, int port=PLAYER_PORTNUM)
   fresh = false;
 
   memset( this->hostname, 0, 256 );
+  memset( &this->hostaddr, 0, sizeof(struct in_addr) );
   this->port = 0;
 
   this->timestamp.tv_sec = 0;
@@ -64,6 +67,41 @@ PlayerClient::PlayerClient(const char* hostname = NULL, int port=PLAYER_PORTNUM)
   }
 }
 
+// alternate constructor using a binary IP instead of a hostname
+// just make a client, and connect, if instructed
+PlayerClient::PlayerClient(const struct in_addr* hostaddr = NULL, 
+			   const int port=PLAYER_PORTNUM)
+{
+  destroyed = false;
+  // so we know we're not connected
+  conn.sock = -1;
+  bzero(conn.banner,sizeof(conn.banner));
+  proxies = (ClientProxyNode*)NULL;
+  num_proxies = 0;
+  fresh = false;
+
+  memset( this->hostname, 0, 256 );
+  memset( &this->hostaddr, 0, sizeof(struct in_addr) );
+  this->port = 0;
+
+  this->timestamp.tv_sec = 0;
+  this->timestamp.tv_usec = 0;
+  
+  reserved = 0;
+
+  if(hostaddr)
+  {
+    if(Connect(hostaddr, port))
+    {
+      if(player_debug_level(-1) >= 2)
+        fprintf(stderr, "WARNING: unable to connect to \"%s\" on port %d\n",
+                hostname, port);
+    }
+  }
+}
+
+
+
 // destructor
 PlayerClient::~PlayerClient()
 {
@@ -73,13 +111,47 @@ PlayerClient::~PlayerClient()
 
 int PlayerClient::Connect(const char* hostname, int port)
 {
-  // store the hostname and port
-  strncpy( this->hostname, hostname, 255 );
-  this->port = port;
-
-  Disconnect();
-  return(player_connect(&conn, hostname, port));
+  // look up the IP address from the hostname
+  struct hostent *entp = gethostbyname( hostname );
+  
+  // check for valid address
+  if( entp && 
+      entp->h_addr_list[0] && 
+      (entp->h_length > 0)  && // looks good - try a connect
+      Connect( &this->hostaddr, port) == 0 )
+    {
+      // connect good - store the hostname and returm sucess
+      strncpy( this->hostname, hostname, 255 );     
+      return(0);
+    }
+  else
+    return(1); // fail - forget this hostname
+  
 }
+
+int PlayerClient::Connect(const struct in_addr* addr, int port)
+{
+  // if we connect this way, we don't bother doing a reverse DNS lookup.
+  // we make the hostname blank.
+  // this would mess up clients that check the hostname, but they should
+  // connect using the hostname and all would be well.
+ 
+  Disconnect(); // make sure we're cleaned up first
+
+  // attempt a connect
+  if( player_connect_ip(&conn, addr, port) == 0 )
+    {
+      // connect good - store the address and port
+      memcpy( &this->hostaddr, addr, sizeof(struct in_addr) );
+      this->port = port;
+      this->hostname[0] = 0; // nullify the string
+      
+      return(0);
+    }
+  else
+    return(1);
+}
+
 
 int PlayerClient::Disconnect()
 {
