@@ -766,8 +766,11 @@ int main( int argc, char *argv[] )
   // check for empty device table
   if(!(deviceTable->Size()))
   {
-    PLAYER_WARN("No devices instantiated; perhaps you should supply " 
-                "a configuration file?");
+    if( use_stage )
+      PLAYER_WARN("No devices instantiated; no valid Player devices in worldfile?");
+    else
+      PLAYER_WARN("No devices instantiated; perhaps you should supply " 
+		  "a configuration file?");
   }
 
   if(!use_stage)
