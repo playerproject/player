@@ -5,6 +5,10 @@
 // global quit flag
 extern char quit;
 
+// flag and index for robot currently being moved by user (if any)
+extern int robot_moving_p;
+extern int robot_moving_idx;
+
 #define ROBOT_ALPHA 128
 guint32 robot_colors[] = { GNOME_CANVAS_COLOR_A(255,0,0,ROBOT_ALPHA),
                            GNOME_CANVAS_COLOR_A(0,255,0,ROBOT_ALPHA),
@@ -186,6 +190,8 @@ _robot_button_callback(GnomeCanvasItem *item,
               gnome_canvas_item_hide(setting_theta_line);
               setting_theta = FALSE;
               setting_goal = FALSE;
+
+              robot_moving_p = 0;
             }
           }
           else
@@ -195,6 +201,11 @@ _robot_button_callback(GnomeCanvasItem *item,
                                    GDK_BUTTON_RELEASE_MASK,
                                    NULL, event->button.time);
             dragging = TRUE;
+
+            // set these so that the robot's pose won't be updated in the
+            // GUI while we're dragging (that happens in playernav.c)
+            robot_moving_p = 1;
+            robot_moving_idx = idx;
           }
           break;
         default:
