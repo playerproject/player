@@ -521,6 +521,12 @@ parse_device_string(char* str1, char* str2)
   uint16_t index = 0;
   CDevice* tmpdevice;
 
+  // if we haven't initialized the PlayerTime pointer yet, do it now,
+  // because it might be referenced by CDevice::PutData(), which can be
+  // called by a device's constructor
+  if(!GlobalTime)
+    GlobalTime = (PlayerTime*)(new WallclockTime());
+
   if(!str1 || (str1[0] != '-') || (strlen(str1) < 2))
     return(-1);
 
@@ -980,7 +986,7 @@ int main( int argc, char *argv[] )
     ufds[0].events = POLLIN;
     ports[0] = global_playerport;
 
-    GlobalTime = (PlayerTime*)(new WallclockTime());
+    //GlobalTime = (PlayerTime*)(new WallclockTime());
   }
 
   // create the client manager object.

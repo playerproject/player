@@ -44,7 +44,7 @@ class StageTime : public PlayerTime
     //
     int lock_fd;
     int lock_byte;
-    bool InstallLock( int fd, int index )
+    void InstallLock( int fd, int index )
               {lock_fd = fd; lock_byte = index;}
     void Lock();
     void Unlock();

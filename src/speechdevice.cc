@@ -80,8 +80,8 @@ CSpeechDevice::CSpeechDevice(int argc, char** argv) :
 {
   int queuelen = SPEECH_MAX_QUEUE_LEN;
   sock = -1;
-  command_size = 0;
   read_pending = false;
+
 
   portnum = DEFAULT_FESTIVAL_PORTNUM;
   strncpy(festival_libdir_value,DEFAULT_FESTIVAL_LIBDIR,
@@ -147,7 +147,8 @@ CSpeechDevice::Setup()
   char host[] = "localhost";
   struct hostent* entp;
 
-  command_size = 0;
+  // start out with a clean slate
+  PutCommand((unsigned char*)"",0);
   queue->Flush();
   read_pending = false;
 
@@ -295,9 +296,15 @@ CSpeechDevice::KillFestival()
 size_t 
 CSpeechDevice::GetCommand(unsigned char* dest, size_t maxsize)
 {
-  *((player_speech_cmd_t*)dest) = *((player_speech_cmd_t*)device_command);
-  command_size = 0;
-  return(device_commandsize);
+  int retval = device_used_commandsize;
+
+  if(device_used_commandsize)
+  {
+    //*((player_speech_cmd_t*)dest) = *((player_speech_cmd_t*)device_command);
+    memcpy(dest,device_command,device_used_commandsize);
+    device_used_commandsize = 0;
+  }
+  return(retval);
 }
 void 
 CSpeechDevice::PutCommand(unsigned char* src, size_t maxsize)
@@ -319,7 +326,8 @@ CSpeechDevice::PutCommand(unsigned char* src, size_t maxsize)
   (((player_speech_cmd_t*)device_command)->string)[sizeof(player_speech_cmd_t)-1] = '\0';
   
   // now strlen() should return the right length
-  command_size = strlen((const char*)(((player_speech_cmd_t*)device_command)->string));
+  device_used_commandsize = 
+          strlen((const char*)(((player_speech_cmd_t*)device_command)->string));
 
   Unlock();
 }
@@ -360,11 +368,8 @@ RunSpeechThread(void* speechdevice)
     pthread_testcancel();
 
     /* did we get a new command? */
-    if(sd->command_size)
+    if(sd->GetCommand((unsigned char*)&cmd,sizeof(cmd)))
     {
-      /* get the string */
-      sd->GetCommand((unsigned char*)&cmd,sizeof(cmd));
-
       /* if there's space, put it in the queue */
       if(sd->queue->Push((unsigned char*)&cmd,sizeof(cmd)) < 0)
         fprintf(stderr, "CSpeechDevice: not enough room in queue; discarding "

@@ -102,12 +102,17 @@ class CStageDevice : public CDevice
     //
     private: int lock_fd;
     private: int lock_byte;
-    private: bool InstallLock( int fd, int index )
+    private: void InstallLock( int fd, int index )
               {lock_fd = fd; lock_byte = index;}
 
     // these two methods are overrides of the CDevice definitions.
     private: virtual void Lock();
     private: virtual void Unlock();
+
+    // these are also overrides of CDevice; for Stage, they just
+    // call Lock() and Unlock()
+    private: virtual void SetupLock() { Lock(); }
+    private: virtual void SetupUnlock() { Unlock(); }
 
     // Pointer to shared info buffers
     //

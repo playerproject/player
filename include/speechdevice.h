@@ -60,7 +60,6 @@ class CSpeechDevice:public CDevice
 
     bool read_pending;
     int sock;               // socket to Festival
-    int command_size; // zeroed by thread (commands are consumed)
 
     // constructor 
     //

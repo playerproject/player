@@ -34,7 +34,8 @@
 #include <unistd.h>
 #include <stdlib.h> /* for exit() */
 
-#include <sys/time.h>
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
 
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
@@ -185,7 +186,7 @@ int CPacket::Send( int fd)
   if(debug)
   {
     struct timeval dummy;
-    gettimeofday(&dummy, NULL);
+    GlobalTime->GetTime(&dummy);
     printf("CPacket::Send():%ld:%ld\n", dummy.tv_sec, dummy.tv_usec);
   }
   return(0);

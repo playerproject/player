@@ -53,21 +53,29 @@ class CDevice
     // locking mechanism (and overrides locking methods)
     pthread_mutex_t accessMutex;
 
+    // this mutex is used to mutually exclude calls to Setup and Shutdown
+    pthread_mutex_t setupMutex;
+
 
   public:
     // number of current subscriptions
     int subscriptions;
     
     // buffers for data and command
-    static unsigned char* device_data;
-    static unsigned char* device_command;
+    unsigned char* device_data;
+    unsigned char* device_command;
 
-    static size_t device_datasize;
-    static size_t device_commandsize;
+    // maximum sizes of data and command buffers
+    size_t device_datasize;
+    size_t device_commandsize;
+
+    // amount at last write into each respective buffer
+    size_t device_used_datasize;
+    size_t device_used_commandsize;
 
     // queues for incoming requests and outgoing replies
-    static PlayerQueue* device_reqqueue;
-    static PlayerQueue* device_repqueue;
+    PlayerQueue* device_reqqueue;
+    PlayerQueue* device_repqueue;
 
     virtual ~CDevice() {};
 
@@ -123,6 +131,10 @@ class CDevice
     // in CStageDevice
     virtual void Lock();
     virtual void Unlock();
+
+    // these methods are used to control calls to Setup and Shutdown
+    virtual void SetupLock();
+    virtual void SetupUnlock();
 };
 
 #endif

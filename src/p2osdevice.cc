@@ -84,6 +84,7 @@ extern char            CP2OSDevice::num_loops_since_rvel;
 extern CSIP*           CP2OSDevice::sippacket;
 extern int             CP2OSDevice::param_idx;
 extern pthread_mutex_t CP2OSDevice::p2os_accessMutex;
+extern pthread_mutex_t CP2OSDevice::p2os_setupMutex;
 extern int             CP2OSDevice::p2os_subscriptions;
 extern player_p2os_data_t*  CP2OSDevice::data;
 extern player_p2os_cmd_t*  CP2OSDevice::command;
@@ -100,6 +101,11 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
   {
     initialize_robot_params();
     robotparamsdone = true;
+  
+    // also, install default parameter values.
+    strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
+    psos_fd = -1;
+    radio_modemp = false;
   }
   
   if(!data)
@@ -125,10 +131,6 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
   ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
   ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
 
-  // install defaults
-  strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
-  psos_fd = -1;
-  radio_modemp = false;
 
   // parse command-line args
   for(int i=0;i<argc;i++)
@@ -169,14 +171,9 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
   //pthread_mutex_init(&serial_mutex,NULL);
 
   pthread_mutex_init(&p2os_accessMutex,NULL);
+  pthread_mutex_init(&p2os_setupMutex,NULL);
 
   last_client_id = -1;
-}
-
-CP2OSDevice::~CP2OSDevice()
-{
-  Shutdown();
-  //pthread_mutex_destroy(&serial_mutex);
 }
 
 void CP2OSDevice::Lock()
@@ -186,6 +183,15 @@ void CP2OSDevice::Lock()
 void CP2OSDevice::Unlock()
 {
   pthread_mutex_unlock(&p2os_accessMutex);
+}
+
+void CP2OSDevice::SetupLock()
+{
+  pthread_mutex_lock(&p2os_setupMutex);
+}
+void CP2OSDevice::SetupUnlock()
+{
+  pthread_mutex_unlock(&p2os_setupMutex);
 }
 
 int CP2OSDevice::Setup()
@@ -501,7 +507,7 @@ int CP2OSDevice::Subscribe()
 {
   int setupResult;
 
-  Lock();
+  SetupLock();
 
   if(p2os_subscriptions == 0) 
   {
@@ -519,7 +525,7 @@ int CP2OSDevice::Subscribe()
     setupResult = 0;
   }
   
-  Unlock();
+  SetupUnlock();
   return( setupResult );
 }
 
@@ -527,13 +533,13 @@ int CP2OSDevice::Unsubscribe()
 {
   int shutdownResult;
 
-  Lock();
+  SetupLock();
   
-  if(subscriptions == 0) 
+  if(p2os_subscriptions == 0) 
   {
     shutdownResult = -1;
   }
-  else if ( subscriptions == 1) 
+  else if(p2os_subscriptions == 1) 
   {
     shutdownResult = Shutdown();
     if (shutdownResult == 0 ) 
@@ -550,7 +556,7 @@ int CP2OSDevice::Unsubscribe()
     shutdownResult = 0;
   }
   
-  Unlock();
+  SetupUnlock();
 
   return( shutdownResult );
 }
@@ -677,7 +683,7 @@ void *RunPsosThread( void *p2osdevice )
   sigblock(SIGALRM);
 #endif
 
-  gettimeofday(&pd->timeBegan_tv, NULL);
+  GlobalTime->GetTime(&pd->timeBegan_tv);
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
