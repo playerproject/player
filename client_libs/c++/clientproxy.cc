@@ -55,7 +55,8 @@ ClientProxy::ClientProxy(PlayerClient* pc,
   if(client && req_access!='c')
   {
     client->RequestDeviceAccess(req_device, req_index, 
-                                req_access, &grant_access);
+                                req_access, &grant_access,
+                                driver_name, sizeof(driver_name));
 
     if((req_access != grant_access) && (player_debug_level(-1) >= 1))
       printf("WARNING: tried to get '%c' access to device %d:%d but got "
@@ -93,7 +94,8 @@ int ClientProxy::ChangeAccess(unsigned char req_access,
   if(client)
   {
     if(client->RequestDeviceAccess(device, index, req_access, 
-                                   &our_grant_access ) )
+                                   &our_grant_access,
+                                   driver_name, sizeof(driver_name)))
     {
       if(player_debug_level(-1) >= 1)
         puts("WARNING: RequestDeviceAccess() errored");

@@ -143,6 +143,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   bool devicerequest=false;
   CDevice* devicep;
   player_device_req_t req;
+  player_device_resp_t resp;
   player_device_datamode_req_t datamode;
   player_device_datafreq_req_t datafreq;
   player_msghdr_t reply_hdr;
@@ -410,16 +411,23 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
      * reflect what permissions were granted for the indicated devices */
     else if(devicerequest)
     {
-      req = *((player_device_req_t*)payload);
+      resp.subtype = ((player_device_req_t*)payload)->subtype;
+      resp.code = ((player_device_req_t*)payload)->code;
+      resp.index = ((player_device_req_t*)payload)->index;
 
       player_device_id_t id;
-      id.code = ntohs(req.code);
-      id.index = ntohs(req.index);
+      id.code = ntohs(resp.code);
+      id.index = ntohs(resp.index);
+      resp.access = FindPermission(id);
 
-      req.access = FindPermission(id);
-      memcpy(replybuffer+sizeof(player_msghdr_t),&req,
-             sizeof(player_device_req_t));
-      replysize = payload_size;
+      bzero(resp.driver_name, sizeof(resp.driver_name));
+      strncpy(resp.driver_name, deviceTable->GetDriver(id), 
+              sizeof(resp.driver_name));
+
+      memcpy(replybuffer+sizeof(player_msghdr_t),&resp,
+             sizeof(player_device_resp_t));
+
+      replysize = sizeof(player_device_resp_t);
     }
     /* otherwise, leave it empty */
     else

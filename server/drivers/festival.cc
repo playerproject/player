@@ -368,6 +368,7 @@ Festival::Main()
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
+    bzero(&cmd,sizeof(cmd));
     /* did we get a new command? */
     if(GetCommand((unsigned char*)&cmd,sizeof(cmd)))
     {

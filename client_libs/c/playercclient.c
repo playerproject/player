@@ -285,9 +285,12 @@ int player_request_device_access(player_connection_t* conn,
                                  uint16_t device,
                                  uint16_t device_index,
                                  uint8_t req_access,
-                                 uint8_t* grant_access )
+                                 uint8_t* grant_access,
+                                 char* driver_name,
+                                 int driver_name_len)
 {
   player_device_req_t this_req;
+  player_device_resp_t this_resp;
   unsigned char payload[sizeof(player_device_req_t)];
   player_msghdr_t replyhdr;
   unsigned char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
@@ -304,17 +307,12 @@ int player_request_device_access(player_connection_t* conn,
                     &replyhdr, replybuffer, sizeof(replybuffer)) == -1)
     return(-1);
 
-  memcpy(&this_req, replybuffer, sizeof(player_device_req_t));
+  memcpy(&this_resp, replybuffer, sizeof(player_device_resp_t));
 
   if(grant_access)
-    *grant_access = this_req.access;
-  else if(memcmp(payload,replybuffer,sizeof(payload)))
-  {
-    if(player_debug_level(-1) >= 2)
-      fprintf(stderr, "player_request_device_access(): requested '%c' access "
-              "to device %x:%x, but got '%c' access\n",
-              req_access, device, device_index, this_req.access);
-  }
+    *grant_access = this_resp.access;
+  if(driver_name)
+    strncpy(driver_name, this_resp.driver_name, driver_name_len);
 
   return(0);
 }

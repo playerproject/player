@@ -65,6 +65,7 @@ class ClientProxy
     unsigned char access;   // 'r', 'w', or 'a' (others?)
     unsigned short device; // the name by which we identify this kind of device
     unsigned short index;  // which device we mean
+    char driver_name[PLAYER_MAX_DEVICE_STRING_LEN]; // driver in use
 
     struct timeval timestamp;  // time at which this data was sensed
     struct timeval senttime;   // time at which this data was sent
@@ -240,7 +241,9 @@ class PlayerClient
     int RequestDeviceAccess(unsigned short device,
                             unsigned short index,
                             unsigned char req_access,
-                            unsigned char* grant_access );
+                            unsigned char* grant_access,
+                            char* driver_name = NULL,
+                            int driver_name_len = 0);
 
     // Player device configurations
 

@@ -82,6 +82,7 @@ PlayerQueue::Push(player_device_id_t* device, void* client,
       if(device)
         queue[i].device = *device;
 
+      bzero(queue[i].data, PLAYER_MAX_REQREP_SIZE);
       memcpy(queue[i].data,data,queue[i].size);
       queue[i].type = type;
 

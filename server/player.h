@@ -186,9 +186,18 @@ typedef struct
   uint16_t code;
   uint16_t index;
   uint8_t access;
-  //uint8_t consume;
 } __attribute__ ((packed)) player_device_req_t;
-  
+
+/* the format of a "device response" ioctl from Player */
+typedef struct
+{
+  uint16_t subtype;
+  uint16_t code;
+  uint16_t index;
+  uint8_t access;
+  char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
+} __attribute__ ((packed)) player_device_resp_t;
+
 /* the valid datamode codes */
 #define PLAYER_DATAMODE_PUSH_ALL 0 // all data at fixed frequency
 #define PLAYER_DATAMODE_PULL_ALL 1 // all data on demand
@@ -272,19 +281,27 @@ typedef struct
 /* Position device command buffer */
 typedef struct
 {
-  int32_t xpos, ypos, zpos;
-  int32_t yaw, pitch, roll;
-  int32_t xspeed, yspeed, zspeed;
-  int32_t yawspeed, pitchspeed, rollspeed;
+  int32_t xpos, ypos;
+  //int32_t zpos;
+  int32_t yaw; 
+  //int32_t pitch, roll;
+  int32_t xspeed, yspeed; 
+  //int32_t zspeed;
+  int32_t yawspeed;
+  //int32_t pitchspeed, rollspeed;
 } __attribute__ ((packed)) player_position_cmd_t;
 
 /* Position device data buffer */
 typedef struct 
 {
-  int32_t xpos, ypos, zpos;
-  int32_t yaw, pitch, roll;
-  int32_t xspeed, yspeed, zspeed;
-  int32_t yawspeed, pitchspeed, rollspeed;
+  int32_t xpos, ypos;
+  //int32_t zpos;
+  int32_t yaw; 
+  //int32_t pitch, roll;
+  int32_t xspeed, yspeed; 
+  //int32_t zspeed;
+  int32_t yawspeed;
+  //int32_t pitchspeed, rollspeed;
   uint8_t stall;
 } __attribute__ ((packed)) player_position_data_t;
 

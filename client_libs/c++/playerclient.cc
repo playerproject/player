@@ -307,13 +307,25 @@ int PlayerClient::Request(unsigned short device,
 int PlayerClient::RequestDeviceAccess(unsigned short device,
                                       unsigned short index,
                                       unsigned char req_access,
-                                      unsigned char* grant_access )
+                                      unsigned char* grant_access,
+                                      char* driver_name = NULL,
+                                      int driver_name_len = 0)
 {
+  int retval;
+
   if(!Connected())
     return(-1);
   
-  return(player_request_device_access(&conn, device, index, 
-                                      req_access, grant_access ));
+  retval = player_request_device_access(&conn, device, index, 
+                                        req_access, grant_access, 
+                                        driver_name, driver_name_len);
+
+  /*
+  if(driver_name)
+    printf("%d:%d with driver %s\n", device, index, driver_name);
+   */
+
+  return(retval);
 }
     
 // Player device configurations
