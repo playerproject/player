@@ -275,7 +275,9 @@ void BumperSafe::PutCommand()
     temp_cmd.yawspeed = 0;
   }
 
-  this->position->PutCommand((void*) &temp_cmd, sizeof(temp_cmd),NULL);
+  this->position->PutCommand(this->position_id, 
+                             (void*) &temp_cmd, 
+                             sizeof(temp_cmd),NULL);
 
   return;
 }
