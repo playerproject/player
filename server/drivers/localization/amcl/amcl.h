@@ -149,8 +149,9 @@ class AdaptiveMCL : public Driver
   // Properties
   ///////////////////////////////////////////////////////////////////////////
 
-  // Which interface we are using
-  private: char *interface;
+  // interfaces we might be using
+  private: player_device_id_t position_id;
+  private: player_device_id_t localize_id;
   
   // List of all sensors
   private: int sensor_count;

@@ -103,7 +103,6 @@ class LinuxJoystick : public Driver
   private: uint16_t buttons;
 
   // Joystick
-  private: player_device_id_t joy_id;
   private: player_joystick_data_t joy_data;
 };
 
@@ -135,21 +134,9 @@ void LinuxJoystick_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section)
-    : Driver(cf, section)
+    : Driver(cf, section, PLAYER_JOYSTICK_CODE, PLAYER_READ_MODE,
+             sizeof(player_joystick_data_t), 0, 10, 10)
 {
-  // Create wifi interface
-  if (cf->ReadDeviceId(section, 0, PLAYER_JOYSTICK_CODE, &this->joy_id) != 0)
-  {
-    this->SetError(-1);
-    return;
-  }  
-  if (this->AddInterface(this->joy_id, PLAYER_READ_MODE,
-                         sizeof(player_joystick_data_t), 0, 10, 10) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
   // Ethernet interface to monitor
   this->dev = cf->ReadString(section, "port", "/dev/js0");
 
@@ -277,7 +264,7 @@ void LinuxJoystick::RefreshData()
   this->joy_data.xscale = htons(AXIS_MAX);
   this->joy_data.yscale = htons(AXIS_MAX);
   this->joy_data.buttons = htons(this->buttons);
-  this->PutData(this->joy_id, &this->joy_data, sizeof(this->joy_data), NULL);
+  this->PutData(&this->joy_data, sizeof(this->joy_data), NULL);
 
   return;
 }
@@ -290,9 +277,9 @@ void LinuxJoystick::CheckConfig()
   void *client;
   unsigned char buffer[PLAYER_MAX_REQREP_SIZE];
   
-  while(this->GetConfig(this->joy_id, &client, &buffer, sizeof(buffer), NULL) > 0)
+  while(this->GetConfig(&client, &buffer, sizeof(buffer), NULL) > 0)
   {
-    if (this->PutReply(this->joy_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 

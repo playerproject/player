@@ -89,23 +89,10 @@ PassThrough_Register(DriverTable* table)
 }
 
 PassThrough::PassThrough(ConfigFile* cf, int section)
-    : Driver(cf, section)
+    : Driver(cf, section, -1, PLAYER_ALL_MODE,
+             PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
 {
-  // Figure out our device id
-  if (cf->ReadDeviceId(section, 0, -1, &this->local_id) != 0)
-  {
-    this->SetError(-1);
-    return;
-  }
-
-  // Create an interface
-  if (this->AddInterface(this->local_id, PLAYER_ALL_MODE,
-                         PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
+  this->local_id = this->device_id;
   // Figure out remote device location
   this->remote_hostname = cf->ReadString(section, "remote_host", "localhost");
 

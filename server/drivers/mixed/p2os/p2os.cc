@@ -72,6 +72,18 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   // for gyro and camera data.
   this->blobfinder_id.code = this->gyro_id.code = 0;
 
+  memset(&this->position_id, 0, sizeof(player_device_id_t));
+  memset(&this->sonar_id, 0, sizeof(player_device_id_t));
+  memset(&this->aio_id, 0, sizeof(player_device_id_t));
+  memset(&this->dio_id, 0, sizeof(player_device_id_t));
+  memset(&this->gripper_id, 0, sizeof(player_device_id_t));
+  memset(&this->bumper_id, 0, sizeof(player_device_id_t));
+  memset(&this->power_id, 0, sizeof(player_device_id_t));
+  memset(&this->compass_id, 0, sizeof(player_device_id_t));
+  memset(&this->gyro_id, 0, sizeof(player_device_id_t));
+  memset(&this->blobfinder_id, 0, sizeof(player_device_id_t));
+  memset(&this->sound_id, 0, sizeof(player_device_id_t));
+
   // Parse devices section
   if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
   {

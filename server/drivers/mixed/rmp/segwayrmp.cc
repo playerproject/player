@@ -149,47 +149,56 @@ void SegwayRMP_Register(DriverTable* table)
 SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
     : Driver(cf, section)
 {
+  player_device_id_t* ids;
+  int num_ids;
 
-  // Create a position interface
-  if (cf->ReadDeviceId(section, 0, PLAYER_POSITION_CODE, &this->position_id) != 0)
-  {
-    this->SetError(-1);
-    return;
-  }
-  if (this->AddInterface(this->position_id, PLAYER_ALL_MODE,
-                         sizeof(player_position_data_t),
-                         sizeof(player_position_cmd_t), 1, 1) != 0)
+  memset(&this->position_id.code, 0, sizeof(player_device_id_t));
+  memset(&this->position3d_id.code, 0, sizeof(player_device_id_t));
+
+  // Parse devices section
+  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
   {
     this->SetError(-1);    
     return;
   }
 
-  // Create a position3d interface
-  if (cf->ReadDeviceId(section, 1, PLAYER_POSITION3D_CODE, &this->position3d_id) != 0)
+  // Do we create a position interface?
+  if(cf->ReadDeviceId(&(this->position_id), ids, num_ids, 
+                      PLAYER_POSITION_CODE, 0) == 0)
   {
-    this->SetError(-1);
-    return;
-  }
-  if (this->AddInterface(this->position3d_id, PLAYER_ALL_MODE,
-                         sizeof(player_position3d_data_t),
-                         sizeof(player_position3d_cmd_t), 1, 1) != 0)
-  {
-    this->SetError(-1);    
-    return;
+    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
+                          sizeof(player_position_data_t),
+                          sizeof(player_position_cmd_t), 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      return;
+    }
   }
 
-  // Create a power interface
-  if (cf->ReadDeviceId(section, 2, PLAYER_POWER_CODE, &this->power_id) != 0)
+  // Do we create a position3d interface?
+  if(cf->ReadDeviceId(&(this->position3d_id), ids, num_ids, 
+                      PLAYER_POSITION3D_CODE, 0) == 0)
   {
-    this->SetError(-1);
-    return;
+    if(this->AddInterface(this->position3d_id, PLAYER_ALL_MODE,
+                          sizeof(player_position3d_data_t),
+                          sizeof(player_position3d_cmd_t), 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      return;
+    }
   }
-  if (this->AddInterface(this->power_id, PLAYER_READ_MODE,
-                         sizeof(player_power_data_t),
-                         0, 1, 1) != 0)
+
+  // Do we create a power interface?
+  if(cf->ReadDeviceId(&(this->power_id), ids, num_ids, 
+                      PLAYER_POWER_CODE, 0) == 0)
   {
-    this->SetError(-1);    
-    return;
+    if(this->AddInterface(this->power_id, PLAYER_READ_MODE,
+                          sizeof(player_power_data_t),
+                          0, 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      return;
+    }
   }
 
   this->canio = NULL;
@@ -318,7 +327,8 @@ SegwayRMP::Main()
             sizeof(this->position_data), NULL);
     PutData(this->position3d_id, &this->position3d_data, 
             sizeof(this->position3d_data), NULL);
-    PutData(this->power_id, &this->power_data, sizeof(this->power_data), NULL);
+    PutData(this->power_id, &this->power_data, 
+            sizeof(this->power_data), NULL);
     
     // check for config requests from the position interface
     if((buffer_len = GetConfig(this->position_id, &client, buffer, sizeof(buffer),NULL)) > 0)

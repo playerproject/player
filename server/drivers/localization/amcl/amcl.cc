@@ -90,40 +90,59 @@ void AdaptiveMCL_Register(DriverTable* table)
 AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
     : Driver(cf, section)
 {
-  int i;
-  double u[3];
-  AMCLSensor *sensor;
+  player_device_id_t* ids;
+  int num_ids;
 
-  // Work out what interface we should use
-  if (cf->ReadDeviceId(section, 0, -1, &this->device_id) != 0)
-  {
-    this->SetError(-1);
-    return;
-  }
+  memset(&this->localize_id, 0, sizeof(player_device_id_t));
+  memset(&this->position_id, 0, sizeof(player_device_id_t));
 
-  // Create an interface 
-  if (this->AddInterface(this->device_id, PLAYER_READ_MODE, 
-                         AMCL_DATASIZE, 0, 100, 100) != 0)
+  // Parse devices section
+  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
   {
     this->SetError(-1);    
     return;
   }
 
-  // Check for compatible codes
-  if (!(this->device_id.code == PLAYER_LOCALIZE_CODE ||
-        this->device_id.code == PLAYER_POSITION_CODE))
+  int i;
+  double u[3];
+  AMCLSensor *sensor;
+
+  // Do we create a localize interface?
+  if(cf->ReadDeviceId(&(this->localize_id), ids, num_ids,
+                      PLAYER_LOCALIZE_CODE, 0) == 0)
   {
-    PLAYER_ERROR1("driver \"amcl\" does not support interface \"%s\"\n",
-                  ::lookup_interface_name(0, this->device_id.code));
+    if(this->AddInterface(this->localize_id, PLAYER_READ_MODE, 
+                          sizeof(player_localize_data_t), 0, 100, 100) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a position interface?
+  if(cf->ReadDeviceId(&(this->position_id), ids, num_ids,
+                      PLAYER_POSITION_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->position_id, PLAYER_READ_MODE, 
+                          sizeof(player_position_data_t), 0, 100, 100) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // check for unused ids
+  if(cf->UnusedIds(section,ids,num_ids))
+  {
     this->SetError(-1);
+    free(ids);
     return;
   }
 
-  // HACK; fix this later
-  // Remember which interface we go opened for
-  this->interface = strdup(::lookup_interface_name(0, this->device_id.code));
-  
-  
+  free(ids);
+
   this->init_sensor = -1;
   this->action_sensor = -1;
   this->sensor_count = 0;
@@ -227,8 +246,6 @@ AdaptiveMCL::~AdaptiveMCL(void)
     delete this->sensors[i];
   }
   this->sensor_count = 0;
-
-  free(this->interface);
 
   return;
 }
@@ -639,10 +656,8 @@ bool AdaptiveMCL::UpdateFilter(void)
 #endif
     
     // Encode data to send to server
-    if (strcmp(this->interface, PLAYER_LOCALIZE_STRING) == 0)
-      this->PutDataLocalize(tsec, tusec);
-    else if (strcmp(this->interface, PLAYER_POSITION_STRING) == 0)
-      this->PutDataPosition(tsec, tusec, delta);
+    this->PutDataLocalize(tsec, tusec);
+    this->PutDataPosition(tsec, tusec, delta);
 
     return true;
   }
@@ -663,8 +678,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     
     // Encode data to send to server; only the position interface
     // gets updates every cycle
-    if (strcmp(this->interface, PLAYER_POSITION_STRING) == 0)
-      this->PutDataPosition(tsec, tusec, delta);
+    this->PutDataPosition(tsec, tusec, delta);
 
     return false;
   }
@@ -778,7 +792,7 @@ void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
   timestamp.tv_sec = tsec;
   timestamp.tv_usec = tusec;
   // Copy data to server
-  ((Driver*) this)->PutData((char*) &data, datalen, &timestamp);
+  ((Driver*) this)->PutData(this->localize_id, (char*) &data, datalen, &timestamp);
   
   return;
 }
@@ -843,7 +857,7 @@ void AdaptiveMCL::PutDataPosition(uint32_t tsec, uint32_t tusec, pf_vector_t del
   timestamp.tv_sec = tsec;
   timestamp.tv_usec = tusec;
   // Copy data to server
-  ((Driver*) this)->PutData((char*) &data, sizeof(data), &timestamp);
+  ((Driver*) this)->PutData(this->position_id, (char*) &data, sizeof(data), &timestamp);
   
   return;
 }
@@ -857,7 +871,8 @@ int AdaptiveMCL::HandleRequests(void)
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
   
-  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
+  while ((len = GetConfig(this->localize_id, &client, 
+                          &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {

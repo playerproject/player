@@ -159,12 +159,28 @@ class ConfigFile
                                   uint32_t value);
 
 
+  // Parse the "devices" option in the given section.  Returns 0 if a
+  // valid "devices" section is found, and -1 otherwise.  If 0 is returned,
+  // then ids will point to a malloc()ed list of the parsed ids (which
+  // the caller should free()), in the order they were given.
+  public: int ParseDeviceIds(int section, player_device_id_t** ids);
   
-  // Read a device id from the config file (helper function for
-  // new-style drivers).  Note that code is the *expected* interface
-  // type; returns 0 if a suitable device id is found.
-  public: int ReadDeviceId(int entity, int index,
-                           int expected_code, player_device_id_t *id);
+  // Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
+  // num_ids, if there exists an i'th id with the given code, fills in id
+  // appropriately, and returns 0.
+  //
+  // "Consumes" the selected id in the list, by setting the code to 0.  Thus,
+  // after calling ReadDeviceId() for each supported interface, you can call
+  // UnusedIds() to determine whether the user gave any extra interfaces.
+  //
+  // Returns -1 if no such id can be found.
+  public: int ReadDeviceId(player_device_id_t* id, player_device_id_t* ids,
+                           int num_ids, int code, int i);
+
+  // Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
+  // num_ids, tells whether there remain any "unused" ids.  An id is unused
+  // if its code is nonzero.
+  public:  int UnusedIds(int section, player_device_id_t* ids, int num_ids);
 
   // Get the number of entities.
   public: int GetEntityCount();

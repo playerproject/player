@@ -903,7 +903,7 @@ bool ParseDeviceEx(ConfigFile *cf, int section)
   }
 
   // Get the driver name
-  drivername = cf->ReadString(section, "driver", NULL);
+  drivername = cf->ReadString(section, "name", NULL);
   if (drivername == NULL)
   {
     PLAYER_ERROR1("No driver name specified in section %d", section);
@@ -1034,139 +1034,6 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
       if (!ParseDeviceEx(&configFile, i))
         return false;
     }
-
-    /* REMOVE/FIX
-    // Load old-style device blocks
-    // TODO: remove the port addition stuff; the port list
-    // is now extracted directly from the devicetable (see below)
-    else
-    {
-      // get the interface name
-      strncpy(interface, (const char*)(configFile.entities[i].type), 
-              sizeof(interface));
-      interface[sizeof(interface)-1] = '\0';
-
-      // look for a colon and trailing index
-      if((colon = strchr(interface,':')))
-      {
-        // strip off the end
-        //interface[colon-interface] = '\0';
-        *colon = '\0';
-      }
-      // look for the new robot:<port>:<name> syntax
-      if(!strcmp(interface,"robot"))
-      {
-        port = -1;
-        robotname[0]='\0';
-        if(colon && strlen(colon+1))
-        {
-          if((colon2 = strchr(colon+1,':')))
-          {
-            // strip off the end
-            *colon2 = '\0';
-            if(strlen(colon2+1))
-            {
-              strncpy(robotname,colon2+1,sizeof(robotname));
-              robotname[sizeof(robotname)-1]='\0';
-            }
-          }
-          // was a port number actually supplied?
-          if(strlen(colon+1))
-          {
-            port = atoi(colon+1);
-            // add this port to our watchlist.  could check for duplicates
-            // here, but we'll just let bind() do that checking for us later
-            (*ports)[(*num_ports)++] = port;
-          }
-        }
-        continue;
-      }
-      else
-      {
-        // get the index out
-        if(colon && strlen(colon+1))
-          index = atoi(colon+1);
-        else
-          index = 0;
-
-        // if we're using the old single robot syntax (i.e., no robot blocks)
-        // and this is the first device, then we have to add the single port
-        // to our watchlist
-        if(firstdevice && (*num_ports == 0))
-          (*ports)[(*num_ports)++] = port;
-      }
-
-      // TODO: implement auto-assignment of ports
-      if(port < 0)
-      {
-        PLAYER_ERROR("Sorry, auto-assigning ports not yet supported");
-        return(false);
-      }
-
-      driver = NULL;
-      // find the default driver for this interface
-      player_interface_t tmpint;
-      if(lookup_interface(interface, &tmpint) == 0)
-      {
-        driver = tmpint.default_driver;
-        code = tmpint.code;
-      }
-      if(!driver)
-      {
-        PLAYER_ERROR1("Couldn't find interface \"%s\"", interface);
-        return(false);
-      }
-
-      // did the user specify a different driver?
-      driver = (char*)configFile.ReadString(i, "driver", driver);
-
-      // Load any required plugins
-      pluginname = configFile.ReadString(i, "plugin", NULL);
-      if (pluginname != NULL)
-      {
-        if(!LoadPlugin(pluginname,configFile.filename))
-        {
-          PLAYER_ERROR1("failed to load plugin: %s", pluginname);
-          return (false);
-        }
-      }
-
-      printf("  loading driver \"%s\" as device \"%d:%s:%d\"\n", 
-             driver, port, interface, index);
-      // look for the indicated driver in the available device table
-      if(!(entry = driverTable->GetDriverEntry(driver)))
-      {
-        PLAYER_ERROR1("Couldn't find driver \"%s\"", driver);
-        return(false);
-      }
-      else
-      {
-        player_device_id_t id;
-        id.code = code;
-        id.port = port;
-        id.index = index;
-
-        // Create the driver
-        if(!(tmpdriver = (*(entry->initfunc))(interface,&configFile,i)))
-        {
-          PLAYER_ERROR2("Initialization failed for driver \"%s\" as interface \"%s\"\n",
-                        driver, interface);
-          return(false);
-        }
-
-        // Add driver to the device table
-        if (deviceTable->AddDevice(id, driver, robotname, entry->access, tmpdriver) != 0)
-          return(false);
-
-        firstdevice=false;
-
-        // should this device be "always on"?
-        if(configFile.ReadInt(i, "alwayson", 0))
-          tmpdriver->alwayson = true;
-      }
-    }
-    */      
-
   }
 
   // Warn of any unused variables

@@ -56,12 +56,36 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
                size_t datasize, size_t commandsize, 
                size_t reqqueuelen, size_t repqueuelen)
 {
-  // Figure out our device id (from the configuration file)
-  if (cf->ReadDeviceId(section, 0, interface, &this->device_id) != 0)
+  player_device_id_t* ids;
+  int num_ids;
+
+  // Parse devices section
+  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
   {
+    this->SetError(-1);    
+    return;
+  }
+
+  // Take on the first id given in the config file, but make sure it has
+  // the right code
+  this->device_id = ids[0];
+  if((interface > 0) && (this->device_id.code != interface))
+  {
+    PLAYER_ERROR2("section [%d]: interface %s is not supported",
+                  section, ::lookup_interface_name(0,ids[0].code));
     this->SetError(-1);
     return;
   }
+
+  // consume the id, then check for superfluous ids
+  ids[0].port = 0;
+  if(cf->UnusedIds(section, ids,num_ids))
+  {
+    this->SetError(-1);    
+    free(ids);
+    return;
+  }
+  free(ids);
 
   // Create an interface 
   if (this->AddInterface(this->device_id, access,
@@ -173,8 +197,11 @@ Driver::PutData(player_device_id_t id,
   device = deviceTable->GetDevice(id);
   if (device == NULL)
   {
-    PLAYER_ERROR("data buffer not found; did you AddInterface()?");
-    assert(false);
+    // Ignore, on the assumption that this id refers to an interface
+    // supported by the driver but not requested by the user.  This allows
+    // the driver to always PutData() to all its supported interfaces,
+    // without checking whether the user wants to use them.
+    return;
   }
 
   // Store data in the device buffer
@@ -268,8 +295,11 @@ Driver::GetCommand(player_device_id_t id,
   device = deviceTable->GetDevice(id);
   if (device == NULL)
   {
-    PLAYER_ERROR("interface not found; did you AddInterface()?");
-    assert(false);
+    // Ignore, on the assumption that this id refers to an interface
+    // supported by the driver but not requested by the user.  This allows
+    // the driver to always GetCommand() from all its supported interfaces,
+    // without checking whether the user wants to use them.
+    return(0);
   }
   
   Lock();
@@ -355,9 +385,11 @@ Driver::GetConfig(player_device_id_t id, void **client,
   device = deviceTable->GetDevice(id);
   if (device == NULL)
   {
-    PLAYER_ERROR3("device \"%d:%s:%d\" not found; did you AddInterface()?",
-                  id.port,::lookup_interface_name(0, id.code),id.index);
-    assert(false);
+    // Ignore, on the assumption that this id refers to an interface
+    // supported by the driver but not requested by the user.  This allows
+    // the driver to always GetConfig() from all its supported interfaces,
+    // without checking whether the user wants to use them.
+    return(0);
   }
 
   // Pop device from request queue
@@ -393,8 +425,11 @@ Driver::PutReply(player_device_id_t id, void* client,
   device = deviceTable->GetDevice(id);
   if (device == NULL)
   {
-    PLAYER_ERROR("interface not found; did you AddInterface()?");
-    assert(false);
+    // Ignore, on the assumption that this id refers to an interface
+    // supported by the driver but not requested by the user.  This allows
+    // the driver to always PutReply() to all its supported interfaces,
+    // without checking whether the user wants to use them.
+    return(0);
   }
 
   Lock();
