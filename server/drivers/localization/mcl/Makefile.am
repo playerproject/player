@@ -1,4 +1,4 @@
-noinst_LIBRARIES = @LOCALIZATION_LIB@ 
+noinst_LIBRARIES = @MCL_LIB@ 
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/server/drivers/stage
 

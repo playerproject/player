@@ -234,16 +234,34 @@ fi
 AC_SUBST(WAVEAUDIO_LIB)
 AC_SUBST(WAVEAUDIO_LIBPATH)
 
-dnl optionally compile the localization driver -- disabled by default
-AC_ARG_WITH(localization,
-[  --with-localization     Compile the localization driver],,with_localization=no)
-if test "x$with_localization" = "xyes"; then
-  AC_DEFINE(INCLUDE_LOCALIZATION, 1, [[include the LOCALIZATION driver]])
-  LOCALIZATION_LIB="libmcl.a"
-  LOCALIZATION_LIBPATH="drivers/localization/mcl/libmcl.a"
+dnl optionally compile the mcl driver -- disabled by default
+AC_ARG_WITH(mcl,
+[  --with-mcl     Compile the mcl driver],,with_mcl=no)
+if test "x$with_mcl" = "xyes"; then
+  AC_DEFINE(INCLUDE_MCL, 1, [[include the MCL driver]])
+  MCL_LIB="libmcl.a"
+  MCL_LIBPATH="drivers/localization/mcl/libmcl.a"
 fi
-AC_SUBST(LOCALIZATION_LIB)
-AC_SUBST(LOCALIZATION_LIBPATH)
+AC_SUBST(MCL_LIB)
+AC_SUBST(MCL_LIBPATH)
+
+dnl optionally compile the amcl driver -- disabled by default
+AC_ARG_WITH(amcl,
+[  --with-amcl     Compile the amcl driver],,with_amcl=no)
+if test "x$with_amcl" = "xyes"; then
+  AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
+  AMCL_LIB="libamcl.a"
+  AMCL_LIBPATH="drivers/localization/amcl/libamcl.a"
+  AMCL_PF_LIB="libpf.a"
+  AMCL_MAP_LIB="libmap.a"
+  AMCL_MODELS_LIB="libmodels.a"
+  AMCL_EXTRA_LIB="-lgsl -lgslcblas"
+fi
+AC_SUBST(AMCL_LIB)
+AC_SUBST(AMCL_LIBPATH)
+AC_SUBST(AMCL_PF_LIB)
+AC_SUBST(AMCL_MAP_LIB)
+AC_SUBST(AMCL_MODELS_LIB)
 
 dnl optionally compile the incremental nav driver -- disabled by default
 AC_ARG_WITH(inav,
@@ -252,13 +270,13 @@ if test "x$with_inav" = "xyes"; then
   AC_DEFINE(INCLUDE_INAV, 1, [[include the INAV driver]])
   INAV_LIB="libinav.a"
   INAV_LIBPATH="drivers/position/inav/libinav.a"
+  INAV_IMAP_LIB="libimap.a"
   INAV_EXTRA_LIB="-lgsl -lgslcblas"
-  IMAP_LIB="libimap.a"
 fi
 AC_SUBST(INAV_LIB)
 AC_SUBST(INAV_LIBPATH)
 AC_SUBST(INAV_EXTRA_LIB)
-AC_SUBST(IMAP_LIB)
+AC_SUBST(INAV_IMAP_LIB)
 
 ])
 

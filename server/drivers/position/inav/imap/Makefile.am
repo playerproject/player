@@ -1,6 +1,6 @@
 AM_CPPFLAGS = -I$(top_srcdir)/server
 
-noinst_LIBRARIES = @IMAP_LIB@
+noinst_LIBRARIES = @INAV_IMAP_LIB@
 
 EXTRA_LIBRARIES = libimap.a
 

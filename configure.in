@@ -168,6 +168,10 @@ AC_OUTPUT(Makefile
           server/drivers/position/inav/imap/Makefile 
           server/drivers/localization/Makefile
           server/drivers/localization/mcl/Makefile
+          server/drivers/localization/amcl/Makefile
+          server/drivers/localization/amcl/pf/Makefile
+          server/drivers/localization/amcl/map/Makefile
+          server/drivers/localization/amcl/models/Makefile
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile
