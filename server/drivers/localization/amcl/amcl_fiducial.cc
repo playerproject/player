@@ -438,8 +438,13 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
       p *= pz;
       p *= pz;
       p *= pz;
+      p *= pz;
+      p *= pz;
       
       //bearing a little less
+      p *= pb;
+      p *= pb;
+      p *= pb;
       p *= pb;
       p *= pb;
       p *= pb;
