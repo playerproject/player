@@ -83,6 +83,7 @@ Andrew Howard
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <stdlib.h>       // for atoi(3)
+#include <unistd.h>
 
 #include "player.h"
 #include "error.h"
@@ -192,16 +193,17 @@ void GzSim::Main()
   
   while (true)
   {
+#ifdef HAVE_GZ_CLIENT_WAIT
     if (gz_client_wait(this->client))
     {
       PLAYER_ERROR("wait returned error; exiting simulation loop");
       break;
-    }    
+    }
+#else
+    usleep(100000);
+#endif
+    
     pthread_testcancel();
-
-    gz_sim_lock(this->sim, 1);
-    //printf("%f  \n", this->sim->data->sim_time);
-    gz_sim_unlock(this->sim);
 
     // Let each registered driver have a bite of the cherry.  Note
     // that this duplicates the behavior of the Player kernel, but
