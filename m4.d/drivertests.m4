@@ -94,10 +94,10 @@ AC_SUBST(LASERFIDUCIAL_LIBS)
 AC_SUBST(LASERFIDUCIAL_LIBSPATH)
 
 AC_ARG_WITH(lasercspace, 
-[  --without-lasercspace     Don't compile the lasercspace driver],,
+[  --without-lasercspace   Don't compile the lasercspace driver],,
 with_lasercspace=yes)
 if test "x$with_lasercspace" = "xyes"; then
-  AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])
+  AC_DEFINE(INCLUDE_LASERCSPACE, 1, [[include the lasercspace driver]])
   LASERCSPACE_LIB="liblasercspace.a"
   LASERCSPACE_LIBPATH="drivers/laser/liblasercspace.a"
 fi
@@ -116,7 +116,7 @@ AC_SUBST(LINUXWIFI_LIB)
 AC_SUBST(LINUXWIFI_LIBPATH)
 
 AC_ARG_WITH(aodv, 
-[  --without-aodv     Don't compile the aodv driver],,
+[  --without-aodv          Don't compile the aodv driver],,
 with_aodv=no)
 if test "x$with_aodv" = "xyes"; then
   AC_DEFINE(INCLUDE_AODV, 1, [[include the AODV driver]])
@@ -127,7 +127,7 @@ AC_SUBST(AODV_LIB)
 AC_SUBST(AODV_LIBPATH)
 
 AC_ARG_WITH(iwspy, 
-[  --with-iwspy     Compile the iwspy driver],,
+[  --with-iwspy            Compile the iwspy driver],,
 with_iwspy=no)
 if test "x$with_iwspy" = "xyes"; then
   AC_DEFINE(INCLUDE_IWSPY, 1, [[include the iwspy driver]])

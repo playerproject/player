@@ -30,6 +30,7 @@
 
 #include <netinet/in.h>
 #include <string.h>
+#include <stdlib.h>
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -37,8 +38,23 @@
 CommsProxy::CommsProxy(PlayerClient* pc, unsigned short index, unsigned char access)
     : ClientProxy(pc, PLAYER_COMMS_CODE, index, access)
 {
-  this->msg_len = 0;
+  this->listlen = 10;
+  this->msg = (uint8_t**)calloc(this->listlen,sizeof(uint8_t*));
+  this->msg_len = (size_t*)calloc(this->listlen,sizeof(size_t));
+  this->msg_ts = (struct timeval*)calloc(this->listlen,sizeof(struct timeval));
+  this->msg_num = 0;
   return;
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Destructor
+CommsProxy::~CommsProxy()
+{
+  for(int i=0;i<this->msg_num;i++)
+    free(this->msg[i]);
+  free(this->msg);
+  free(this->msg_len);
+  free(this->msg_ts);
 }
 
  
@@ -68,18 +84,57 @@ void CommsProxy::FillData(player_msghdr_t hdr, const char* buffer)
     return;
   }
   
-  this->msg_len = hdr.size;
-  memcpy(this->msg, buffer, hdr.size);
+  // might have to resize the list
+  if(this->listlen == this->msg_num)
+  {
+    this->listlen *= 2;
+    this->msg = (uint8_t**)realloc(this->msg,this->listlen * sizeof(uint8_t*));
+    this->msg_len = (size_t*)realloc(this->msg_len,this->listlen * sizeof(size_t));
+    this->msg_ts = (struct timeval*)realloc(this->msg_ts,this->listlen * sizeof(struct timeval));
+  }
+
+  this->msg[this->msg_num] = (uint8_t*)malloc(hdr.size);
+  memcpy(this->msg[this->msg_num], buffer, hdr.size);
+  this->msg_len[this->msg_num] = hdr.size;
+  this->msg_ts[this->msg_num].tv_sec = hdr.timestamp_sec;
+  this->msg_ts[this->msg_num].tv_usec = hdr.timestamp_usec;
+  this->msg_num++;
 
   return;
 }
+
+///////////////////////////////////////////////////////////////////////////
+// Delete a message (and shift the rest down)
+int CommsProxy::Delete(int index)
+{
+  if((index < 0) || (index >= this->msg_num))
+    return(-1);
+
+  free(this->msg[index]);
+  for(int i=index;i<this->msg_num-1;i++)
+  {
+    this->msg[i] = this->msg[i+1];
+    this->msg_len[i] = this->msg_len[i+1];
+    this->msg_ts[i] = this->msg_ts[i+1];
+  }
+  this->msg_num--;
+  return(0);
+}
+
+
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Debugging function (does nothing)
 void CommsProxy::Print()
 {
-  printf("# Comms(%d:%d) - %c\n", device, index, access);
-  printf("# len %d msg [%s]\n", this->msg_len, this->msg);
+  printf("# Comms(%d:%d) - %c : %d messages\n", device, index, access,
+         this->msg_num);
+  for(int i=0;i<this->msg_num;i++)
+  {
+    printf("# len %d msg [%s]\n", this->msg_len[i], this->msg[i]);
+    printf("# timestamp: %d:%d\n", 
+           this->msg_ts[i].tv_sec, this->msg_ts[i].tv_usec);
+  }
   return;
 }

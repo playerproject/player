@@ -279,7 +279,7 @@ def make_defines(file, section, blocks, index):
                 if len(line) > maxchars:
                     file.write('\\multicolumn{2}{l}{\\tt %s}\\\\\n' % line)
                 else:
-                    file.write('{\\tt %s} ' % line)
+                    file.write('{\\tt %s}\\\\' % line)
             file.write('& %s \\\\ \n' % block.desc)
             
             index += 1
@@ -323,6 +323,8 @@ def make_struct(file, section, blocks, index):
                     file.write('\\multicolumn{2}{l}{\\tt %s}\\\\\n' % line)
                 else:
                     file.write('{\\tt %s} ' % line)
+                    if len(block.code) > 1:
+                      file.write('\\\\')
             file.write('& %s \\\\ \n' % block.desc)
 
             index += 1
