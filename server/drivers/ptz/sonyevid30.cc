@@ -87,9 +87,6 @@ class SonyEVID30:public CDevice
   virtual void PrintPacket(char* str, unsigned char* cmd, int len);
 
  public:
-  player_ptz_cmd_t* command;
-  player_ptz_data_t* data;
-
   int ptz_fd; // ptz device file descriptor
   /* device used to communicate with the ptz */
   char ptz_serial_port[MAX_FILENAME_SIZE];
