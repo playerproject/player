@@ -235,6 +235,7 @@ int LaserBarcode::ReadLaser()
   
   // Do some byte swapping
   this->laser_data.resolution = ntohs(this->laser_data.resolution);
+  this->laser_data.range_res = ntohs(this->laser_data.range_res);
   this->laser_data.min_angle = ntohs(this->laser_data.min_angle);
   this->laser_data.max_angle = ntohs(this->laser_data.max_angle);
   this->laser_data.range_count = ntohs(this->laser_data.range_count);
@@ -268,7 +269,7 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
   // Find the beacons in this scan
   for (int i = 0; i < laser_data->range_count; i++)
   {
-    double range = (double) (laser_data->ranges[i]) / 1000;
+    double range = (double) (laser_data->ranges[i] * laser_data->range_res) / 1000;
     double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
       / 100.0 * M_PI / 180;
     int intensity = (int) (laser_data->intensity[i]);
@@ -360,7 +361,7 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
   // Scan through the readings that make up the candidate.
   for (int i = a; i <= b; i++)
   {
-    double range = (double) (laser_data->ranges[i] & 0x1FFF) / 1000;
+    double range = (double) (laser_data->ranges[i] * laser_data->range_res) / 1000;
     double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
       / 100.0 * M_PI / 180;
     int intensity = (int) (laser_data->intensity[i]);

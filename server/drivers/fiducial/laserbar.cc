@@ -196,6 +196,7 @@ size_t LaserBar::GetData(void* client,unsigned char *dest, size_t maxsize,
   {
     // Do some byte swapping
     this->ldata.resolution = ntohs(this->ldata.resolution);
+    this->ldata.range_res = ntohs(this->ldata.range_res);
     this->ldata.min_angle = ntohs(this->ldata.min_angle);
     this->ldata.max_angle = ntohs(this->ldata.max_angle);
     this->ldata.range_count = ntohs(this->ldata.range_count);
@@ -231,7 +232,7 @@ size_t LaserBar::GetData(void* client,unsigned char *dest, size_t maxsize,
 // Put configuration in buffer (called by server thread)
 int LaserBar::PutConfig(player_device_id_t* device, void *client, void *data, size_t len) 
 {
-  int subtype;
+ int subtype;
 
   if (len < 1)
   {
@@ -318,7 +319,7 @@ void LaserBar::Find()
   // Look for a candidate patch in scan.
   for (i = 0; i < this->ldata.range_count; i++)
   {
-    r = (double) (this->ldata.ranges[i]) / 1000;
+    r = (double) (this->ldata.ranges[i] * this->ldata.range_res) / 1000;
     b = (double) (this->ldata.min_angle + i * this->ldata.resolution) / 100.0 * M_PI / 180;
     h = (int) (this->ldata.intensity[i]);
 
@@ -403,7 +404,7 @@ void LaserBar::FitCircle(int first, int last,
 
   for (i = first; i <= last; i++)
   {
-    r = (double) (this->ldata.ranges[i]) / 1000;
+    r = (double) (this->ldata.ranges[i] * this->ldata.range_res) / 1000;
     b = (double) (this->ldata.min_angle + i * this->ldata.resolution) / 100.0 * M_PI / 180;
 
     if (r < mr)
