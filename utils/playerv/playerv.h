@@ -69,10 +69,11 @@ typedef struct
   rtk_menu_t *file_menu;
   rtk_menuitem_t *exit_item;
 
-  // Menu containing grid settings
-  rtk_menu_t *grid_menu;
-  rtk_menuitem_t *grid_item_1m;
-  rtk_menuitem_t *grid_item_2f;
+  // Menu containing view settings
+  rtk_menu_t *view_menu;
+  rtk_menuitem_t *view_item_rotate;
+  rtk_menuitem_t *view_item_1m;
+  rtk_menuitem_t *view_item_2f;
   
   // Menu containing the device list
   rtk_menu_t *device_menu;
@@ -89,42 +90,6 @@ void mainwnd_destroy(mainwnd_t *wnd);
 // Update the window
 // Returns 1 if the program should quit.
 int mainwnd_update(mainwnd_t *wnd);
-
-
-/***************************************************************************
- * Position device
- ***************************************************************************/
-
-// Position device info
-typedef struct
-{
-  // Menu stuff
-  rtk_menu_t *menu;
-  rtk_menuitem_t *subscribe_item;
-  rtk_menuitem_t *enable_item, *disable_item;
-
-  // Figures
-  rtk_fig_t *robot_fig;
-  rtk_fig_t *control_fig;
-  rtk_fig_t *path_fig;
-  
-  // Position device proxy
-  playerc_position_t *proxy;
-
-  // Timestamp on most recent data
-  double datatime;
-
-} position_t;
-
-
-// Create a position device
-position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
-
-// Destroy a position device
-void position_destroy(position_t *position);
-
-// Update a position device
-void position_update(position_t *position);
 
 
 /***************************************************************************
@@ -196,6 +161,43 @@ void lbd_update(lbd_t *lbd);
 
 
 /***************************************************************************
+ * Position device
+ ***************************************************************************/
+
+// Position device info
+typedef struct
+{
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *command_item;
+  rtk_menuitem_t *enable_item, *disable_item;
+
+  // Figures
+  rtk_fig_t *robot_fig;
+  rtk_fig_t *control_fig;
+  rtk_fig_t *path_fig;
+  
+  // Position device proxy
+  playerc_position_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+} position_t;
+
+
+// Create a position device
+position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+
+// Destroy a position device
+void position_destroy(position_t *position);
+
+// Update a position device
+void position_update(position_t *position);
+
+
+/***************************************************************************
  * PTZ (pan-tilt-zoom) device
  ***************************************************************************/
 
@@ -208,7 +210,7 @@ typedef struct
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
-  rtk_menuitem_t *enable_item;
+  rtk_menuitem_t *command_item;
 
   // Figures
   rtk_fig_t *data_fig;

@@ -51,10 +51,11 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
   wnd->file_menu = rtk_menu_create(wnd->canvas, "File");
   wnd->exit_item = rtk_menuitem_create(wnd->file_menu, "Exit", 0);
 
-  // Create grid menu
-  wnd->grid_menu = rtk_menu_create(wnd->canvas, "Grid");
-  wnd->grid_item_1m = rtk_menuitem_create(wnd->grid_menu, "1 m", 1);
-  wnd->grid_item_2f = rtk_menuitem_create(wnd->grid_menu, "2 foot", 1);
+  // Create view menu
+  wnd->view_menu = rtk_menu_create(wnd->canvas, "View");
+  wnd->view_item_rotate = rtk_menuitem_create(wnd->view_menu, "Rotate", 1);
+  wnd->view_item_1m = rtk_menuitem_create(wnd->view_menu, "Grid 1 m", 1);
+  wnd->view_item_2f = rtk_menuitem_create(wnd->view_menu, "Grid 2 feet", 1);
 
   // Create device menu
   wnd->device_menu = rtk_menu_create(wnd->canvas, "Devices");
@@ -67,8 +68,9 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
 
   // Set the initial grid state (this is a bit of a hack, since
   // it duplicated the code in update()).
-  rtk_menuitem_check(wnd->grid_item_1m, 1);
-  rtk_menuitem_check(wnd->grid_item_2f, 0);
+  rtk_menuitem_check(wnd->view_item_rotate, 0);
+  rtk_menuitem_check(wnd->view_item_1m, 1);
+  rtk_menuitem_check(wnd->view_item_2f, 0);
   rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
   rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 0.2);
   rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
@@ -82,9 +84,10 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
 void mainwnd_destroy(mainwnd_t *wnd)
 {
   // Destroy the grid menu
-  rtk_menuitem_destroy(wnd->grid_item_1m);
-  rtk_menuitem_destroy(wnd->grid_item_2f);
-  rtk_menu_destroy(wnd->grid_menu);
+  rtk_menuitem_destroy(wnd->view_item_rotate);
+  rtk_menuitem_destroy(wnd->view_item_1m);
+  rtk_menuitem_destroy(wnd->view_item_2f);
+  rtk_menu_destroy(wnd->view_menu);
   
   // Destroy device menu
   rtk_menu_destroy(wnd->device_menu);
@@ -112,31 +115,40 @@ int mainwnd_update(mainwnd_t *wnd)
   if (rtk_menuitem_isactivated(wnd->exit_item))
     return 1;
 
+  // Rotate the display
+  if (rtk_menuitem_isactivated(wnd->view_item_rotate))
+  {
+    if (rtk_menuitem_ischecked(wnd->view_item_rotate))
+      rtk_fig_origin(wnd->robot_fig, 0, 0, M_PI / 2);
+    else
+      rtk_fig_origin(wnd->robot_fig, 0, 0, 0);
+  }
+  
   // Draw in the grid, perhaps
-  if (rtk_menuitem_isactivated(wnd->grid_item_1m))
+  if (rtk_menuitem_isactivated(wnd->view_item_1m))
   {
     rtk_fig_clear(wnd->grid_fig);
-    if (rtk_menuitem_ischecked(wnd->grid_item_1m))
+    if (rtk_menuitem_ischecked(wnd->view_item_1m))
     {
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
       rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 0.2);
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
       rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 1);
-      rtk_menuitem_check(wnd->grid_item_2f, 0);
+      rtk_menuitem_check(wnd->view_item_2f, 0);
     }
   }
 
   // Draw in the grid, perhaps
-  if (rtk_menuitem_isactivated(wnd->grid_item_2f))
+  if (rtk_menuitem_isactivated(wnd->view_item_2f))
   {
     rtk_fig_clear(wnd->grid_fig);
-    if (rtk_menuitem_ischecked(wnd->grid_item_2f))
+    if (rtk_menuitem_ischecked(wnd->view_item_2f))
     {
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
       rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 4 * 0.0254);
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
       rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 2 * 12 * 0.0254);
-      rtk_menuitem_check(wnd->grid_item_1m, 0);
+      rtk_menuitem_check(wnd->view_item_1m, 0);
     }
   }
 
