@@ -234,14 +234,14 @@ int PlayerClient::Read()
   
   struct timeval curr;
   ClientProxy* thisproxy;
-  static char *buffer = NULL;
+  char *buffer;
 
-  if(!buffer)
-    assert(buffer = new char[PLAYER_MAX_MESSAGE_SIZE]);
+  assert(buffer = new char[PLAYER_MAX_MESSAGE_SIZE]);
   
   if(!Connected())
   {
     fprintf(stderr,"ERROR PlayerClient not connected\n" );
+    delete[] buffer;
     return(-1);
   }
   
@@ -252,6 +252,7 @@ int PlayerClient::Read()
     {
       if(player_debug_level(-1) >= 2)
         fputs("WARNING: player_read() errored\n", stderr);
+      delete[] buffer;
       return(-1);
     }
     gettimeofday(&curr,NULL);
@@ -325,6 +326,7 @@ int PlayerClient::Read()
     }
   }
 
+  delete[] buffer;
   return(0);
 }
     
