@@ -57,6 +57,7 @@
 #define PLAYER_LASERBEACON_CODE   ((uint16_t)10)
 #define PLAYER_BROADCAST_CODE     ((uint16_t)11)
 #define PLAYER_SPEECH_CODE        ((uint16_t)12)
+#define PLAYER_GPS_CODE           ((uint16_t)13)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -398,6 +399,31 @@ typedef struct
 #define SPEECH_DATA_BUFFER_SIZE sizeof(player_speech_data_t)
 #define SPEECH_COMMAND_BUFFER_SIZE sizeof(player_speech_cmd_t)
 #define SPEECH_CONFIG_BUFFER_SIZE 0
+
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * GPS Device
+ *
+ *   A global positioning device.  Ideas for the future:
+ *     - orientation (for now, use the compass in the position device)
+ *     - variance
+ *     - commandable (for warping)
+ */
+
+/*
+ * GPS data packet:
+ *   xpos, ypos: current global position.
+ */
+typedef struct
+{
+  int32_t xpos,ypos;
+} __attribute__ ((packed)) player_gps_data_t;
+
+#define GPS_DATA_BUFFER_SIZE sizeof(player_gps_data_t)
+#define GPS_COMMAND_BUFFER_SIZE 0
+#define GPS_CONFIG_BUFFER_SIZE 0
 
 /*************************************************************************/
 

@@ -18,7 +18,8 @@ BINARIES = randomwalk \
            example_from_manual\
 	   say \
 	   grip \
-	   forage
+	   forage \
+	   multilogger
 
 all: $(BINARIES)
 

@@ -236,7 +236,13 @@ void PlayerClient::AddProxy(ClientProxy* proxy)
     // if nothing in the list, make a head
     if(!proxies)
     {
-      proxies = new ClientProxyNode;
+      if(!(proxies = new ClientProxyNode))
+      {
+        if(player_debug_level(-1)>=0)
+          fputs("PlayerClient::AddProxy(): new failed. Out of memory?",
+                stderr);
+        return;
+      }
       proxies->proxy = proxy;
       proxies->next = (ClientProxyNode*)NULL;
     }
@@ -245,7 +251,13 @@ void PlayerClient::AddProxy(ClientProxy* proxy)
       ClientProxyNode* thisnode;
       for(thisnode = proxies; thisnode->next; thisnode = thisnode->next);
 
-      thisnode->next = new ClientProxyNode;
+      if(!(thisnode->next = new ClientProxyNode))
+      {
+        if(player_debug_level(-1)>=0)
+          fputs("PlayerClient::AddProxy(): new failed. Out of memory?",
+                stderr);
+        return;
+      }
       thisnode->next->proxy = proxy;
       thisnode->next->next = (ClientProxyNode*)NULL;
 

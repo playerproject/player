@@ -85,8 +85,8 @@ int main(int argc, char** argv)
   unsigned int closearea = 6000;
 
   // HOMING
-  int home_x = 0;
-  int home_y = 0;
+  int home_x = 7000;
+  int home_y = 7000;
   double home_size = 500; // mm
 
   // REVERSE HOMING
@@ -98,13 +98,13 @@ int main(int argc, char** argv)
 
   /* Connect to the Player server */
   PlayerClient robot(host,port);
+
+  // get device access
+  PositionProxy pp(&robot,0,'a');
   SonarProxy sp(&robot,0,'r');
   VisionProxy vp(&robot,0,'r');
   GripperProxy gp(&robot,0,'a');
-
-  /* request read access on the sonars and all access to the wheels */
-  PositionProxy pp(&robot,0,'a');
-
+  GpsProxy gpsp(&robot,0,'r');
 
   int newturnrate,newspeed;
   //int lastdir = 1;
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
     /* this blocks until new data comes; 10Hz by default */
     if(robot.Read())
       exit(1);
-    pp.Print();
+    //pp.Print();
 
     /* open the gripper */
     if(!gp.inner_break_beam)
@@ -148,8 +148,8 @@ int main(int argc, char** argv)
     else if(gp.inner_break_beam)
     {
       //HOMING
-      double dx = home_x-pp.xpos;
-      double dy = home_y-pp.ypos;
+      double dx = home_x-gpsp.xpos;
+      double dy = home_y-gpsp.ypos;
 
       double dist = sqrt(dx*dx+dy*dy);
 
@@ -164,13 +164,13 @@ int main(int argc, char** argv)
       else
       {
         // go to home
-        double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.theta)));
+        double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.compass-90)));
         if(fabs(bearing)>170.0)
           bearing=170.0;
 
-        puts("HOMING");
-        printf("dx: %f\tdy: %f\n", dx,dy);
-        printf("dist:%f bearing:%f\n", dist, bearing);
+        //puts("HOMING");
+        //printf("dx: %f\tdy: %f\n", dx,dy);
+        //printf("dist:%f bearing:%f\n", dist, bearing);
         newspeed = 200 - (int)(70000.0/dist);
         newturnrate = (int)(bearing/3.0);
       }
@@ -178,24 +178,24 @@ int main(int argc, char** argv)
     else if(reverse_homing)
     {
       // REVERSE HOMING
-      double dx = home_x-pp.xpos;
-      double dy = home_y-pp.ypos;
+      double dx = home_x-gpsp.xpos;
+      double dy = home_y-gpsp.ypos;
       double dist = sqrt(dx*dx+dy*dy);
-      double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.theta)+M_PI));
+      double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.compass-90)+M_PI));
 
       if(last_bearing < MAXDOUBLE && fabs(last_bearing-bearing) > 180)
         bearing=last_bearing;
       else
         last_bearing=bearing;
 
-      newspeed = 200 - (int)(70000.0/dist);
+      newspeed = 200 - (int)(50000.0/dist);
       newturnrate = (int)(-bearing/3.0);
 
       reverse_homing--;
 
-      puts("REVERSE HOMING");
-      printf("dx: %f\tdy: %f\n", dx,dy);
-      printf("dist:%f bearing:%f\n", dist, bearing);
+      //puts("REVERSE HOMING");
+      //printf("dx: %f\tdy: %f\n", dx,dy);
+      //printf("dist:%f bearing:%f\n", dist, bearing);
     }
     else if(vp.num_blobs[channel]>0)
     {

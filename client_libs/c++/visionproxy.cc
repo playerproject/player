@@ -71,7 +71,13 @@ void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
       {
         if(blobs[i])
           delete blobs[i];
-        blobs[i] = new Blob[buffer[2*i+1]-1];
+        if(!(blobs[i] = new Blob[buffer[2*i+1]-1]))
+        {
+          if(player_debug_level(-1)>=0)
+            fputs("VisionProxy::FillData(): new failed.  Out of memory?",
+                  stderr);
+          return;
+        }
       }
       for(j=0;j<buffer[2*i+1]-1;j++)
       {
