@@ -131,6 +131,9 @@ dnl PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[$GAZEBO
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],
                   [$GAZEBO_EXTRA_CPPFLAGS],[])
 
+PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
+
+
 if test "x$enable_cmvision" = "xyes"; then
   dnl Check for video-related headers, to see which support can be compiled into
   dnl the CMVision driver.
@@ -305,6 +308,8 @@ PLAYER_ADD_DRIVER([laserbar],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbw],[drivers/fiducial],[yes],[],[],[])
+
+
 
 dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera],[yes],[linux/videodev.h],[],[])
