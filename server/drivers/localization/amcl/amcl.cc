@@ -699,6 +699,21 @@ bool AdaptiveMCL::UpdateFilter(void)
   }
 }
 
+// this function will be passed to qsort(3) to sort the hypoths before
+// sending them out.  the idea is to sort them in descending order of
+// weight.
+int
+hypoth_compare(const void* h1, const void* h2)
+{
+  const player_localize_hypoth_t* hyp1 = (const player_localize_hypoth_t*)h1;
+  const player_localize_hypoth_t* hyp2 = (const player_localize_hypoth_t*)h2;
+  if(hyp1->alpha < hyp2->alpha)
+    return(1);
+  else if(hyp1->alpha == hyp2->alpha)
+    return(0);
+  else
+    return(-1);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Output data on the localize interface
@@ -761,6 +776,10 @@ void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
     data.hypoths[i].cov[2][1] = 0;
     data.hypoths[i].cov[2][2] = (int64_t) (pose_cov.m[2][2] * scale[2] * scale[2]);
   }
+
+  // sort according to weight
+  qsort((void*)data.hypoths,data.hypoth_count,
+        sizeof(player_localize_hypoth_t),&hypoth_compare);
 
   // Compute the length of the data packet
   datalen = sizeof(data) - sizeof(data.hypoths) + data.hypoth_count * sizeof(data.hypoths[0]);
