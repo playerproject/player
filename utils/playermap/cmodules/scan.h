@@ -52,6 +52,10 @@ typedef struct _scan_point_t
 } scan_point_t;
 
 
+/**************************************************************************
+ * Scan contour functions
+ **************************************************************************/
+
 // A scan contour
 typedef struct _scan_contour_t
 {
@@ -73,6 +77,9 @@ scan_contour_t *scan_contour_alloc();
 // Destroy a contour
 void scan_contour_free(scan_contour_t *self);
 
+// Empty points from the contour
+void scan_contour_reset(scan_contour_t *self);
+
 // Append a point to a contour
 scan_point_t *scan_contour_add_point(scan_contour_t *self);
 
@@ -87,6 +94,55 @@ int scan_contour_test_inside(scan_contour_t *self, const scan_point_t p);
 double scan_contour_test_nearest(scan_contour_t *self, const scan_point_t p,
                                  scan_point_t *na, scan_point_t *nb);
 
+// TODO: make this test for nearness rather than intersection
+// See if the given line intersects the contour 
+int scan_contour_test_line_intersect(scan_contour_t *self,
+                                     scan_point_t pa, scan_point_t pb);
+
+
+
+/**************************************************************************
+ * Scan solid functions
+ **************************************************************************/
+
+// A scan solid
+typedef struct _scan_solid_t
+{  
+  // Number of contour in the contour
+  int contour_count, contour_max_count;
+
+  // The contours
+  scan_contour_t **contours;
+  
+} scan_solid_t;
+
+
+// Create a new solid
+scan_solid_t *scan_solid_alloc();
+
+// Destroy a solid
+void scan_solid_free(scan_solid_t *self);
+
+// Reset a solid to empty
+void scan_solid_reset(scan_solid_t *self);
+
+// Take union of solid with a contour
+void scan_solid_union(scan_solid_t *self, vector_t pose, scan_contour_t *contour);
+
+// Test to see if a point is inside the solid
+int scan_solid_test_inside(scan_solid_t *self, scan_point_t p);
+
+// Find the line that is nearest the given point.  Returns the
+// distance to the line.
+double scan_solid_test_nearest(scan_solid_t *self, scan_point_t p,
+                               scan_point_t *na, scan_point_t *nb);
+
+
+
+/**************************************************************************
+ * Scan functions
+ **************************************************************************/
+
 // Range scan data
 typedef struct _scan_t
 {
@@ -94,7 +150,7 @@ typedef struct _scan_t
   double min_range, max_range;
 
   // Free-space contour extraction
-  double free_err, free_len;
+  double free_points, free_err, free_len;
 
   // Hit point clustering distance
   double hit_dist;
@@ -106,14 +162,13 @@ typedef struct _scan_t
   scan_contour_t *free;
 
   // Hit list
-  scan_contour_t *hit;
+  scan_contour_t *hits;
+
+  // Site list
+  scan_contour_t *sites;
 
 } scan_t;
 
-
-/**************************************************************************
- * Scan functions
- **************************************************************************/
 
 // Create a new scan
 scan_t *scan_alloc();
@@ -122,16 +177,51 @@ scan_t *scan_alloc();
 void scan_free(scan_t *self);
 
 // Add range readings to the scan
-void scan_add_ranges(scan_t *self, vector_t pose, int range_count, double ranges[][2]);
+int scan_add_ranges(scan_t *self, vector_t pose, int range_count, double ranges[][2]);
 
-// Generate frontiers
-void scan_create_fronts(scan_t *self);
+// Test a point to see if it lies within free space; if ourside free
+// space, return -1, if inside free space, returns the distance to the
+// nearest boundary
+double scan_test_free(scan_t *self, scan_point_t point);
 
-// Test a point to see if it lies within free space
-int scan_test_free(scan_t *self, scan_point_t point);
+// Test a line to see if it lies entire within free space
+int scan_test_free_line(scan_t *self, scan_point_t pa, scan_point_t pb);
 
 // Test a point to see if it lies within occupied space
 int scan_test_occ(scan_t *self, scan_point_t point, double dist);
+
+
+/**************************************************************************
+ * Scan group functions
+ **************************************************************************/
+
+// Scan group object
+typedef struct _scan_group_t
+{
+  // Hit point clustering distance
+  double hit_dist;
+
+  // Free-space polysolid (approximated)
+  scan_solid_t *free;
+
+  // Hit point list (clustered)
+  scan_contour_t *hits;
+  
+} scan_group_t;
+
+
+// Create a new scan group
+scan_group_t *scan_group_alloc();
+
+// Destroy a scan group
+void scan_group_free(scan_group_t *self);
+
+// Reset the scan group (discards all scans)
+void scan_group_reset(scan_group_t *self);
+
+// Add a scan to the group
+void scan_group_add(scan_group_t *self, vector_t pose, scan_t *scan);
+
 
 
 /**************************************************************************
@@ -143,6 +233,9 @@ typedef struct _scan_pair_t
 {
   // Pair type (point-point, point-line, line-point)
   int type;
+
+  // Point indices
+  int ia, ib;
 
   // Weight
   double w;
@@ -158,7 +251,8 @@ typedef struct _scan_pair_t
 typedef struct _scan_match_t
 {
   // The two scans being compared
-  scan_t *scan_a, *scan_b;
+  scan_group_t *scan_a;
+  scan_group_t *scan_b;
   
   // Point pairs
   int pair_count, pair_max_count;
@@ -171,7 +265,7 @@ typedef struct _scan_match_t
 
 
 // Create a scan match
-scan_match_t *scan_match_alloc(scan_t *scan_a, scan_t *scan_b);
+scan_match_t *scan_match_alloc(scan_group_t *scan_a, scan_group_t *scan_b);
 
 // Destroy a scan match
 void scan_match_free(scan_match_t *self);

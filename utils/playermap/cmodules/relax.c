@@ -540,11 +540,13 @@ void relax_ls_link(relax_t *self, relax_link_t *link, vector_t pose_a, vector_t 
  **************************************************************************/
 
 // Relax the graph
-double relax_relax_nl(relax_t *self, int steps, double epsabs, double step, double tol)
+double relax_relax_nl(relax_t *self, int *steps, double epsabs, double epsrel,
+                      double step, double tol, double *stats)
 {
-  int i, p;
+  int i, j, p;
   double err, lasterr;
   relax_node_t *node;
+  relax_link_t *link;
   const gsl_multimin_fdfminimizer_type *type;
   gsl_multimin_function_fdf func;
   gsl_multimin_fdfminimizer *solver;
@@ -593,26 +595,33 @@ double relax_relax_nl(relax_t *self, int steps, double epsabs, double step, doub
 
   // TESTING
   //printf("n = %d l = %d\n", p, self->link_count);
-  
-  // Iterate the solver
-  err = 0.0;
-  lasterr = DBL_MAX / 2;
-  for (i = 0; i < steps; i++)
+
+  // Initial error value
+  lasterr = gsl_multimin_fdfminimizer_minimum(solver);
+  err = lasterr;
+
+  if (lasterr > 0)
   {
-    if (gsl_multimin_fdfminimizer_iterate(solver) != 0)
-      break;
+    // Iterate the solver
+    for (i = 0; i < *steps;)
+    {
+      for (j = 0; j < 2; j++, i++)
+        if (gsl_multimin_fdfminimizer_iterate(solver) != 0)
+          break;
 
-    err = gsl_multimin_fdfminimizer_minimum(solver);
-
-    //if (fabs(err - lasterr) < epsabs)
-    // break;
-    if (fabs(err - lasterr) / (lasterr + 1e-16) < epsabs)
-     break;
-
-    lasterr = err;
+      err = gsl_multimin_fdfminimizer_minimum(solver);
+      if (fabs(err - lasterr) < epsabs)
+        break;
+      if (fabs(err - lasterr) / (lasterr + 1e-16) < epsrel)
+        break;
+      lasterr = err;
+    }
   }
 
   //printf("err = %d %f\n", i, err);
+
+  // Record number of relaxation steps performed
+  *steps = i;
 
   // Get the improved fit
   for (i = 0; i < self->node_count; i++)
@@ -627,6 +636,19 @@ double relax_relax_nl(relax_t *self, int steps, double epsabs, double step, doub
   }
 
   err = gsl_multimin_fdfminimizer_minimum(solver);
+
+  // Get the current link errors for stats
+  relax_nl_fdf(solver->x, self, NULL, NULL);
+  
+  // Compute stats on error distribution
+  stats[0] = stats[1] = stats[2] = 0.0;
+  for (i = 0; i < self->link_count; i++)
+  {
+    link = self->links[i];
+    stats[0] += 1;
+    stats[1] += link->err;
+    stats[2] += link->err * link->err;
+  }
   
   // Destroy the solver
   gsl_multimin_fdfminimizer_free(solver);
@@ -860,6 +882,8 @@ void relax_nl_fdf(const gsl_vector *x, relax_t *self, double *f, gsl_vector *df)
         df->data[node_b->index + 2] += grad_b.v[2];
       }
     }
+
+    link->err = err;
   }
 
   return;

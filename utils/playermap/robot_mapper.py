@@ -33,6 +33,11 @@ from cmodules import grid
 from cmodules import relax
 
 
+class FitData:
+    """Data from scan fitting."""
+    pass
+
+
 class RobotMapper:
     """Build the map using data from a single robot."""
 
@@ -46,54 +51,31 @@ class RobotMapper:
         self.update_dist = float(options.get('--update-dist', 0.20))
         self.update_angle = float(options.get('--update-angle', 10)) * math.pi / 180
         self.patch_dist = float(options.get('--patch-dist', '2.0'))
+        self.patch_angle = float(options.get('--patch-angle', 45)) * math.pi / 180
+        self.nhood_dist = float(options.get('--nhood-dist', '8.0'))
         self.outlier_dist = float(options.get('--outlier-dist', '0.40'))
+        self.fit_steps = int(options.get('--fit-steps', 100))
         self.odom_w = float(options.get('--odom-w', '0.10'))
         self.no_scan_match = '--disable-scan-match' in options
     
         self.curr_odom_pose = None
         self.curr_odom_dist = 0.0
-        self.laser_ranges = None
-        self.anon_fids = []
-        self.robot_fids = []
+        self.curr_laser_ranges = None
 
-        self.incoming = []
+        self.curr_patch = None
+        self.curr_pose = None
+        self.curr_nhood = []
+        self.curr_scan = None
+        self.curr_local_group = scan.scan_group()
 
         self.update_odom_dist = 0.0
         self.update_odom_pose = None
-        self.front_time = 0.0
-        
-        self.curr_patch = None
-        self.curr_pose = None
-        self.curr_scan = None
-        self.curr_npatches = []
-
-        # Scan fitting diagnostics
-        self.fit_err = 0
-        self.fit_steps = 0
-        self.fit_consts = 0
-
-        # TESTING
-        self.pairs = []
 
         if self.root_fig:
             self.robot_fig = rtk3.Fig(self.root_fig)
             self.nhood_fig = rtk3.Fig(self.root_fig)
             self.robot_fig.connect(self.on_robot_press, None)
         return
-
-
-    def get_location(self):
-        """Get the current robot pose."""
-
-        patch = self.curr_patch
-        if patch == None:
-            return (None, None)
-
-        # Offset pose by the accumulated odometry pose
-        diff = geom.coord_sub(self.curr_odom_pose, self.update_odom_pose)
-        pose = geom.coord_add(diff, self.curr_pose)
-
-        return (patch, pose)
     
 
     def update_odom(self, odom):
@@ -127,39 +109,24 @@ class RobotMapper:
     def update_laser(self, laser):
         """Process new laser data."""
 
-        self.laser_ranges = laser.laser_ranges
+        self.curr_laser_ranges = laser.laser_ranges
         return
     
 
     def update_sync(self, sync):
         """Process sync packets."""
 
+        if self.curr_odom_dist == None:
+            return
         if self.curr_odom_pose == None:
             return
-        if self.laser_ranges == None:
+        if self.curr_laser_ranges == None:
             return
 
-        # Queue up data to be processed
-        self.incoming += [(self.curr_odom_dist, self.curr_odom_pose, self.laser_ranges)]
-        if len(self.incoming) < 3:
-            return
-
-        odom_pose_a = self.incoming[0][1]
-        odom_pose_b = self.incoming[1][1]
-        odom_pose_c = self.incoming[2][1]
-        
-        dba = geom.coord_sub(odom_pose_b, odom_pose_a)
-        dcb = geom.coord_sub(odom_pose_c, odom_pose_b)
-
-        # Dont process fast turns
-        #if abs(dba[2]) > 2 * math.pi / 180 or abs(dcb[2]) > 2 * math.pi / 180:
-        #    print 'discarding (fast turn)'
-        #    self.incoming.pop(0)
-        #    return
-
-        # Get the message that is second in the queue (throw the first away)
-        (odom_dist, odom_pose, laser_ranges) = self.incoming[1]
-        self.incoming.pop(0)
+        # Get the new sensor data
+        odom_dist = self.curr_odom_dist
+        odom_pose = self.curr_odom_pose
+        laser_ranges = self.curr_laser_ranges
 
         update = 0
 
@@ -169,7 +136,7 @@ class RobotMapper:
         # Update if we have accumulated some distance on the wheels
         update = update or (odom_dist - self.update_odom_dist > self.update_dist)
 
-        # Update if we have changed odometric pose
+        # Update if we have changed odometric pose significantly
         if self.update_odom_pose != None:
             diff = geom.coord_sub(odom_pose, self.update_odom_pose)
             dr = math.sqrt(diff[0] * diff[0] + diff[1] * diff[1])
@@ -180,12 +147,9 @@ class RobotMapper:
         if not update:
             return
 
-        # Generate a scan from the laser data
-        self.curr_scan = scan.Scan()
-        self.curr_scan.add_ranges(self.laser_pose, laser_ranges)
 
         # Update the pose and the map
-        self.update_pose(odom_dist, odom_pose, self.curr_scan, laser_ranges)
+        self.update_pose(odom_dist, odom_pose, laser_ranges)
 
         # Draw the current state
         self.draw_state()
@@ -194,15 +158,19 @@ class RobotMapper:
         return 1
     
 
-    def update_pose(self, odom_dist, odom_pose, laser_scan, laser_ranges):
+    def update_pose(self, odom_dist, odom_pose, laser_ranges):
         """Update the robot pose."""
 
+        # Generate a scan from the laser data
+        laser_scan = scan.scan()
+        laser_scan.add_ranges(self.laser_pose, laser_ranges)
+
         if self.update_odom_pose == None:
-            
+
             patch = None
             island = None
             pose = (0, 0, 0)
-            npatches = []
+            nhood = []
 
         else:
         
@@ -211,104 +179,113 @@ class RobotMapper:
             island = patch.island
 
             # Use odometry to update pose estimate
-            pose = geom.coord_add(self.curr_pose, patch.pose)
             diff = geom.coord_sub(odom_pose, self.update_odom_pose)
-            pose = geom.coord_add(diff, pose)
+            pose = geom.coord_add(diff, self.curr_pose)
 
-            # Find the set of overlapping patches
-            npatches = self.find_overlapping(patch, pose, laser_scan)
-            assert(patch in npatches)
+            # Find the neighborhood
+            nhood = self.find_nhood(patch, pose, laser_scan)
+            assert(patch in nhood)
 
-            # Fit the scan
+            # Generate local scan group
+            self.curr_local_group.reset()
+            for npatch in nhood:
+                self.curr_local_group.add_scan(npatch.pose, npatch.scan)
+
+            # Refine the pose estimate with scan matching
             if not self.no_scan_match:
-                old_err = 1e6
-                base_pose = pose
-                for i in range(20):
-                    (pose, err, consts) = self.fit(npatches, base_pose, pose, laser_scan)
-                    if abs(err - old_err) / (old_err + 1e-16) < 1e-3:  # Magic
-                        break
-                    old_err = err
-
-                print 'scan fit %d %d %.6f %.6f' % \
-                      (i, consts, err, abs(err - old_err) / (old_err + 1e-16))
-
-                self.fit_err = err
-                self.fit_steps = i
-                self.fit_consts = consts
-
-        # See how far we are from the patch origin
-        if patch == None:
-            dist = 1e6
-        else:
-            dist = geom.coord_sub(pose, patch.pose)
-
-            # HACK
-            if abs(geom.normalize(dist[2])) > 45 * math.pi / 180:
-                dist = 1e6
+                fit = self.fit(patch, nhood, pose, self.curr_local_group, laser_scan)
+                pose = fit.pose
             else:
-                dist = math.sqrt(dist[0] * dist[0] + dist[1] * dist[1])
+                fit = None
 
-                
-        # Test if any patch in the neighborhood matches the criteria,
-        # only if no patches match should a new patch be created.
-        if dist > self.patch_dist:
+        # See if we should switch to a new patch
+        min_dist = 1e16
+        new_patch = None
+        for npatch in nhood:
+
+            # Compute robot pose relative to patch
+            npose = geom.coord_add(pose, patch.pose)
+            npose = geom.coord_sub(npose, npatch.pose)
+
+            dist = math.sqrt(npose[0] * npose[0] + npose[1] * npose[1])
+            angle = abs(geom.normalize(npose[2]))
+
+            # Robot must lie within free space of patch or near
+            # to the patch origin (for turning in place)
+            if dist > 0.10 and npatch.scan.test_free(npose[:2]) < 0:
+                continue
+
+            # Robot must lie within certain distance of patch
+            if dist > self.patch_dist:
+                continue
+
+            # Robot must lie within certain angle of patch
+            if angle > self.patch_angle:
+                continue
+
+            # If all criteria are met, choose closest patch as switch patch
+            if dist < min_dist:
+                min_dist = dist
+                new_patch = npatch                
+                new_pose = npose
+
+        # If no patches are valid, we need to create a brand-new patch
+        if new_patch == None:
+
+            print 'new patch'
 
             # Create a new patch in the map
-            patch = self.map.create_patch(island)
-            patch.pose = pose
-            patch.odom_pose = odom_pose
-            patch.odom_dist = odom_dist
+            new_patch = self.map.create_patch(island)
+            if patch == None:
+                new_patch.pose = (0, 0, 0)
+            else:
+                new_patch.pose = geom.coord_add(pose, patch.pose)
+            new_patch.odom_pose = odom_pose
+            new_patch.odom_dist = odom_dist
+            new_patch.scan = laser_scan
+            new_patch.draw()
 
-            # Add this new patch to the neighborhood
-            npatches.append(patch)
-
-            # Update the scan
-            rpose = geom.coord_sub(pose, patch.pose)
-            rpose = geom.coord_add(self.laser_pose, rpose)
-            patch.scan.add_ranges(rpose, laser_ranges)
-
-        # Generate any missing links for the neighborhood
-        for npatch in npatches:
-            if npatch == patch:
-                continue
-            if npatch not in self.map.find_connected(patch):
-                link = self.map.create_link(npatch, patch)
+            # Create links to all patches in the neighborhood (we got
+            # fitted to all of them)
+            for npatch in nhood:
+                link = self.map.create_link(new_patch, npatch)
                 link.scan_w = 1.0
                 link.scan_pose_ba = geom.coord_sub(link.patch_b.pose, link.patch_a.pose)
                 link.scan_pose_ab = geom.coord_sub(link.patch_a.pose, link.patch_b.pose)
                 link.draw()
 
-        # Remember the raw range scans
-        rpose = geom.coord_sub(pose, patch.pose)
-        rpose = geom.coord_add(self.laser_pose, rpose)
+            # Add this new patch to the neighborhood
+            nhood.append(new_patch)
+
+            # Set new pose
+            new_pose = (0, 0, 0)
+
+        # If the patch has changed, we need to recompute the neighborhood
+        if new_patch != patch:
+
+            if patch:
+                print 'switch patch %d to %d' % (patch.id, new_patch.id)
+                                
+                # Refresh the old patch with any changes we made
+                patch.draw()
+                            
+            patch = new_patch
+            pose = new_pose
+
+        # Remember the raw range scans for grid reconstruction
+        rpose = geom.coord_add(self.laser_pose, pose)
         patch.ranges.append((rpose, laser_ranges))
+
+        # Update state variables
+        self.curr_patch = patch
+        self.curr_pose = pose
+        self.curr_nhood = nhood
+        self.curr_scan = laser_scan
+        self.update_odom_dist = odom_dist
+        self.update_odom_pose = odom_pose
 
         # Redraw patch
         patch.draw()
-
-        # Find the closest patch
-        min_dist = 1e16
-        min_patch = None
-        for npatch in npatches:        
-            diff = geom.coord_sub(npatch.pose, pose)
-            dist = math.sqrt(diff[0] * diff[0] + diff[1] * diff[1])
-            if dist < min_dist:
-                min_dist = dist
-                min_patch = npatch
-        assert(min_patch != None)
-
-        # Use closest patch as the current patch
-        # and find the new set of overlapping patches
-        if min_patch != patch:
-            patch = min_patch
-            npatches = self.find_overlapping(patch, pose, laser_scan)
-            assert(patch in npatches)
-
-        self.curr_patch = patch
-        self.curr_pose = geom.coord_sub(pose, patch.pose)
-        self.curr_npatches = npatches
-        self.update_odom_dist = odom_dist
-        self.update_odom_pose = odom_pose
         return
 
 
@@ -319,13 +296,13 @@ class RobotMapper:
 
             pose = self.robot_fig.get_origin()
 
-            npatches = self.curr_npatches
+            nhood = self.curr_nhood
             laser_scan = self.curr_scan
             base_pose = pose
 
             old_err = 1e6
             for i in range(10):
-                (pose, err, consts) = self.fit(npatches, base_pose, pose, laser_scan)
+                (pose, err, consts) = self.fit(nhood, base_pose, pose, laser_scan)
                 if abs(old_err - err) < 1e-6:
                     break
                 old_err = err
@@ -339,136 +316,203 @@ class RobotMapper:
         return
 
 
-    def find_overlapping(self, patch, pose, scan_):
-        """Starting from the given patch, find the contiguous set of
-        patches that overlap the given scan."""
+    def find_nhood(self, patch, pose, laser_scan):
+        """Determine the current neighborhood."""
+
+        # TODO: this should constrain the nhood based on certainty of
+        # fit
 
         outlier = 1e16
-        
+        pose = geom.coord_add(pose, patch.pose)
         patches = [patch]
-        opatches = [(patch, 0.0)]
-        cpatches = [patch]
 
-        while len(opatches) > 0:
-            
-            (npatch, ndist) = opatches.pop(0)
+        for npatch in self.map.find_nhood(patch, self.nhood_dist):
 
-            # Get all the patches connected to this patch and check if
-            # they overlap
-            for link in self.map.get_patch_links(npatch):
+            # Generate link only if there are some points to match
+            #match = scan.scan_match(scan_, npatch.scan)
+            #pairs = match.pairs(pose, npatch.pose, outlier)
 
-                if link.patch_a == npatch:
-                    mpatch = link.patch_b
-                elif link.patch_b == npatch:
-                    mpatch = link.patch_a
-                else:
-                    assert(0)
+            # If this patch overlaps, include it in the overlap list
+            # and add its connected patches to the open list
+            # Magic numbers
+            #if len(pairs) >= 4:
 
-                # If this patch is already in the closed list, skip it
-                if mpatch in cpatches:
-                    continue
-
-                # Compute the overlap area
-                match = scan.ScanMatch(mpatch.scan, scan_)
-                pairs = match.pairs(mpatch.pose, pose, outlier)
-
-                #diff = geom.coord_sub(mpatch.pose, npatch.pose)
-                #dist = math.sqrt(diff[0] * diff[0] + diff[1] * diff[1])
-                #mdist = ndist + dist
-                mdist = 0
-
-                # If this patch overlaps, include it in the overlap list
-                # and add its connected patches to the open list
-                # Magic numbers
-                if len(pairs) >= 4:
-                    patches += [mpatch]
-                    cpatches += [mpatch]
-                    opatches += [(mpatch, mdist)]
-                else:
-                    cpatches += [mpatch]
+            # TESTING
+            patches += [npatch]
 
         return patches
 
 
-    def fit(self, npatches, base_pose, init_pose, scan_):
-        """Improve fit for the given scan."""
+    def fit(self, patch, nhood, pose, local_group, laser_scan):
+        """Fit the scan; may reject the initial pose."""
 
-        rgraph = relax.Relax()
+        # HACK
+        fit_thresh = 0.05 ** 2
 
-        # Create relax patch for the scan
-        rnode = relax.Node(rgraph)
-        rnode.pose = init_pose
-        rnode.free = 1
+        # Do the full fit against the entire neighborhood        
+        best_fit = self.fit_for_pose(patch, nhood, pose, local_group, laser_scan)
 
-        # Create relax nodes for the connected patches
-        for npatch in npatches:
-            npatch.rnode = relax.Node(rgraph)
-            npatch.rnode.pose = npatch.pose
-            npatch.rnode.free = 0
-
-        scan_w = 0.0
-        rlinks = []
+        # If the fit is ok...
+        if best_fit.stats[2] < fit_thresh:
+            return best_fit
 
         # TESTING
-        self.pairs = []
+        return best_fit
+
+        print 'bad fit - trying other angles'
+
+        # Try fitting other initial angles
+        for i in range(-45, 45, 5):  # HACK
+            pa = i * math.pi / 180 
+            npose = (pose[0], pose[1], pose[2] + pa)
+            fit = self.fit_for_pose(patch, nhood, npose, laser_scan)
+
+            # If this looks better initially, do the full fit for this value
+            #if fit.err < best_fit.err:
+            if fit.stats[2] < fit_thresh and fit.err < best_fit.err:
+                best_fit = fit
+        
+        return best_fit
+
+
+    def fit_diagnostics(self, patch, nhood, pose, local_group, laser_scan):
+        """Save fitting diagnostics."""
+
+        # Try fitting other initial angles
+        for i in range(-90, 90, 1):  # HACK
+            pa = i * math.pi / 180 
+            npose = (pose[0], pose[1], pose[2] + pa)
+            #fit = self.fit_for_pose(patch, nhood, npose, laser_scan)
+            fit = self.fit_step(0, patch, nhood, pose, npose, local_group, laser_scan)
+
+            self.fitfile.write('%f %f %f %f %f\n' %
+                               (pa, fit.err,
+                                fit.stats[0], fit.stats[1], fit.stats[2]))
+
+        self.fitfile.write('\n\n')
+        return
+
+
+    def fit_for_pose(self, patch, nhood, pose, local_group, laser_scan):
+        """Fit the scan for one initial pose."""
+
+        steps = self.fit_steps
+        last_err = 1e6
+        init_pose = pose
+
+        for i in range(20):
+            fit = self.fit_step(steps, patch, nhood, init_pose, pose, local_group, laser_scan)
+            if abs(fit.err - last_err) / (last_err + 1e-16) < 1e-3:  # Magic
+                break
+            print 'scan fit %d %d %.6f %.6f : %d %.6f %.6f' % \
+                  (i, fit.steps, fit.err, abs(fit.err - last_err) / (last_err + 1e-16),
+                   fit.stats[0], fit.stats[1], fit.stats[2])
+            pose = fit.pose
+            last_err = fit.err
+
+            
+        return fit
+
+
+    def fit_step(self, steps, patch, nhood, base_pose, init_pose, local_group, laser_scan):
+        """Improve fit for the given scan (one step)."""
+
+        outlier = self.outlier_dist
+
+        # Compute poses in the global cs
+        base_pose = geom.coord_add(base_pose, patch.pose)
+        init_pose = geom.coord_add(init_pose, patch.pose)
+        
+        graph = relax.Relax()
+
+        # Create relax node for the scan
+        scan_node = relax.Node(graph)
+        scan_node.pose = init_pose
+        scan_node.free = 1
+
+        # Create relax node for the local map
+        map_node = relax.Node(graph)
+        map_node.pose = (0, 0, 0)
+        map_node.free = 0
+
+        # Create a scan group for the laser
+        laser_group = scan.scan_group()
+        laser_group.add_scan((0, 0, 0), laser_scan)
+
+        # Find correspondance points
+        match = scan.scan_match(local_group, laser_group)
+        pairs = match.pairs((0, 0, 0), init_pose, self.outlier_dist)
+
+        scan_w = 0.0
+        links = []
+        scan_hits = {}
         
         # Create all the links
-        for npatch in npatches:
+        for pair in pairs:
+            link = relax.Link(graph, map_node, scan_node)
+            link.type = (pair[0],)
+            link.w = (pair[2],)
+            scan_w += pair[2]
+            link.outlier = (outlier,)
+            link.pa = pair[3]
+            link.pb = pair[4]
+            link.la = pair[5]
+            link.lb = pair[6]
+            links += [link]
 
-            match = scan.ScanMatch(scan_, npatch.scan)                
-            pairs = match.pairs(init_pose, npatch.pose, self.outlier_dist)
-
-            for pair in pairs:
-                rlink = relax.Link(rgraph, rnode, npatch.rnode)
-                rlink.type = (pair[0],)
-                rlink.w = (pair[1],) # Magic
-                scan_w += pair[1]
-                rlink.outlier = (self.outlier_dist,)
-                rlink.pa = pair[2]
-                rlink.pb = pair[3]
-                rlink.la = pair[4]
-                rlink.lb = pair[5]
-                rlinks += [rlink]
-
-        consts = len(rlinks)
-
-        # Create a patch for the global pose
-        base_rnode = relax.Node(rgraph)
-        base_rnode.pose = base_pose
-        base_rnode.free = 0
+            # Record which hit points got matched
+            if pair[0] == 1:
+                scan_hits[pair[1][0]] = 1
 
         # Create a link for the base pose estimate
-        rlink = relax.Link(rgraph, base_rnode, rnode)
-        rlink.type = (0,)
-        rlink.w = (self.odom_w * scan_w,)
-        rlink.outlier = (1e6,)
-        rlink.pa = (0, 0)
-        rlink.pb = (0, 0)
-        rlinks += [rlink]
+        link = relax.Link(graph, map_node, scan_node)
+        link.type = (0,)
+        link.w = (self.odom_w * scan_w,)
+        link.outlier = (1e6,)
+        link.pa = base_pose[:2]
+        link.pb = (0, 0)
+        links += [link]
+
+        # Create another link to capture the orientation
+        link = relax.Link(graph, map_node, scan_node)
+        link.type = (0,)
+        link.w = (self.odom_w * scan_w * 0.1,)  # HACK: use different weight
+        link.outlier = (1e6,)
+        link.pa = geom.coord_add((1, 0), base_pose)
+        link.pb = (1, 0)
+        links += [link]
 
         # Relax the graph
-        #err = rgraph.relax_ls(100, 1e-3, 0) # Magic
-        #err = rgraph.relax_nl(100, 1e-3, 1e-4, 1e-4)
-        err = self.fit_relax(rgraph)
-        #print err
+        (err, steps, m) = self.fit_relax(steps, graph)
+        stats = (m[0], m[1] / m[0], m[2] / m[0] - (m[1] / m[0]) ** 2)
 
         # Read the relaxed pose
-        pose = rnode.pose
+        pose = scan_node.pose
+        pose = geom.coord_sub(pose, patch.pose)
 
-        # Record the number of constraints
-        #consts = len(rlinks)
+        # Return fit data
+        fit = FitData()
+        fit.err = err
+        fit.pose = pose
+        fit.steps = steps
+        fit.stats = stats
+        fit.scan_hits = len(scan_hits)
 
-        # Delete temp variables
-        for npatch in npatches:
-            del npatch.rnode
-
-        return (pose, err, consts)
+        return fit
 
 
-    def fit_relax(self, graph):
-        """Dummy function for profiling  the relaxation part."""
+    def fit_match(self, pose_a, scan_a, pose_b, scan_b):
+        """Dummy function for profiling the matching part."""
 
-        return graph.relax_nl(100, 1e-3, 1e-3, 1e-4)
+        match = scan.scan_match(scan_a, scan_b)                
+        pairs = match.pairs(pose_a, pose_b, self.outlier_dist)
+        return pairs
+        
+
+    def fit_relax(self, steps, graph):
+        """Dummy function for profiling the relaxation part."""
+
+        return graph.relax_nl(steps, 1e-3, 1e-7, 1e-2, 1e-2)
 
 
     def draw_state(self):
@@ -509,7 +553,14 @@ class RobotMapper:
         self.nhood_fig.clear()
         self.nhood_fig.fgcolor((255, 0, 0, 255))
         self.nhood_fig.bgcolor((255, 0, 0, 128))
-        for patch in self.curr_npatches:
+        for patch in self.curr_nhood:
             self.nhood_fig.circle(patch.pose[:2], 0.40)
+
+        # Draw the local scan group
+        self.nhood_fig.bgcolor((255, 0, 0, 64))
+        for c in self.curr_local_group.get_free():
+            self.nhood_fig.polygon((0, 0, 0), c)
+        for (s, w) in self.curr_local_group.get_hits():
+            self.nhood_fig.circle((s[0], s[1]), 0.05)
 
         return

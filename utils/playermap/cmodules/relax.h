@@ -69,6 +69,9 @@ typedef struct
   geom_point_t pa, pb;
   geom_line_t la, lb;
 
+  // Error value associated with link
+  double err;
+  
 } relax_link_t;
 
 
@@ -108,6 +111,7 @@ void relax_link_free(relax_t *relax, relax_link_t *link);
 double relax_relax_ls(relax_t *relax, int steps, double epsabs, double epsrel);
 
 // Relax the graph using non-linear minimization
-double relax_relax_nl(relax_t *relax, int steps, double epsabs, double step, double tol);
+double relax_relax_nl(relax_t *relax, int *steps, double epsabs, double epsrel,
+                      double step, double tol, double *stats);
 
 #endif

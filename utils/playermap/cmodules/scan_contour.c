@@ -65,6 +65,15 @@ void scan_contour_free(scan_contour_t *self)
 
 
 ////////////////////////////////////////////////////////////////////////////
+// Empty points from the contour
+void scan_contour_reset(scan_contour_t *self)
+{
+  self->point_count = 0;
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
 // Create a new contour point
 scan_point_t *scan_contour_add_point(scan_contour_t *self)
 {
@@ -184,5 +193,36 @@ double scan_contour_test_nearest(scan_contour_t *self, scan_point_t p,
   }
 
   return min_d;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// See if the given line intersects the contour
+int scan_contour_test_line_intersect(scan_contour_t *self,
+                                     scan_point_t pa, scan_point_t pb)
+{
+  int i;
+  geom_line_t line, test;
+  
+  test.pa.x = pa.x;
+  test.pa.y = pa.y;
+  test.pb.x = pb.x;
+  test.pb.y = pb.y;
+  
+  line.pa.x = self->points[0].x;
+  line.pa.y = self->points[0].y;
+    
+  for (i = 1; i <= self->point_count; i++)
+  {
+    line.pb.x = self->points[i % self->point_count].x;
+    line.pb.y = self->points[i % self->point_count].y;    
+
+    if (geom_line_test_intersect(&line, &test, NULL))
+      return 1;
+
+    line.pa = line.pb;
+  }
+
+  return 0;
 }
 

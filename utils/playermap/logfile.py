@@ -167,55 +167,6 @@ class LogFile:
                 data.fids = fids
 
                 return data
-
-            # Process old-style fiducials
-            elif iface == 'robot':
-
-                index = int(tokens[4])
-                datatime = float(tokens[5])
-
-                fids = []
-                for i in range(6, len(tokens), 5):
-                    id = tokens[i + 0]
-                    r = float(tokens[i + 1])
-                    b = float(tokens[i + 2])
-                    fids += [(id, r, b)]
-
-                data = LogFileEntry()
-                data.ctime = ctime
-                data.rid = rid
-                data.iface = 'mutual'
-                data.index = index
-                data.datatime = datatime
-                data.fids = fids
-
-                return data
             
-
-##             # Process scans
-##             elif iface == 'scan':
-
-##                 index = int(tokens[4])
-##                 datatime = float(tokens[5])
-
-##                 pose = (float(tokens[6]), float(tokens[7]), float(tokens[8]))
-                
-##                 ranges = []
-##                 for i in range(9, len(tokens), 2):
-##                     r = float(tokens[i + 0])
-##                     b = float(tokens[i + 1])
-##                     ranges += [(r, b)]
-
-##                 data = LogFileEntry()
-##                 data.ctime = ctime
-##                 data.rid = rid
-##                 data.iface = iface
-##                 data.index = index
-##                 data.datatime = datatime
-##                 data.odom_pose = pose
-##                 data.laser_ranges = ranges
-
-##                 return data
-
         return None
 

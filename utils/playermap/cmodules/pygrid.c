@@ -147,6 +147,25 @@ static PyObject *pygrid_save_occ(PyObject *self, PyObject *args)
 }
 
 
+// Save the path
+static PyObject *pygrid_save_path(PyObject *self, PyObject *args)
+{
+  char *filename;
+  pygrid_t *pygrid;
+  
+  pygrid = (pygrid_t*) self;
+
+  if (!PyArg_ParseTuple(args, "s", &filename))
+    return NULL;
+
+  if (grid_save_path(pygrid->grid, filename) != 0)
+    return NULL;
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+
 // Add range data to the grid (fast)
 static PyObject *pygrid_add_ranges_fast(PyObject *self, PyObject *args)
 {
@@ -170,7 +189,8 @@ static PyObject *pygrid_add_ranges_fast(PyObject *self, PyObject *args)
   }
 
   grid_add_ranges_fast(pygrid->grid, ox, oy, oa, range_count, ranges);
-
+  grid_set_visited(pygrid->grid, ox, oy);
+  
   Py_INCREF(Py_None);
   return Py_None;
 }
@@ -315,6 +335,7 @@ static PyMethodDef grid_methods[] =
   {"reset", pygrid_reset, METH_VARARGS},
   {"set_model", pygrid_set_model, METH_VARARGS},  
   {"save_occ", pygrid_save_occ, METH_VARARGS},
+  {"save_path", pygrid_save_path, METH_VARARGS},
   {"add_ranges_fast", pygrid_add_ranges_fast, METH_VARARGS},
   {"add_ranges_slow", pygrid_add_ranges_slow, METH_VARARGS},
   {"get_occ", (PyCFunction) pygrid_get_occ, METH_VARARGS},

@@ -31,16 +31,15 @@ from cmodules import scan
 import cmodules.grid
 
 
-class MapSite:
-    """A site is a location that can be visited by a robot."""
+class MapPin:
+    """A global reference point for the map."""
 
     def __init__(self):
 
-        self.patch = None
+        self.id = None
         self.pos = None
-        self.dist = None
-        self.parent = None
-        self.children = []
+        self.pos_var = None
+        self.patches = []
         return
 
 
@@ -56,7 +55,6 @@ class MapPatch:
         self.odom_dist = None
         self.scan = None
         self.ranges = []
-        self.sites = []
         self.fig = None
         self.site_fig = None
         return
@@ -97,46 +95,17 @@ class MapPatch:
                 #self.fig.circle(s, 0.05)
                 self.fig.rectangle((s[0], s[1], 0), (0.05, 0.05))
 
-        # Draw occupied cells
-        #self.fig.fgcolor((0, 0, 0, 255))
-        #self.fig.bgcolor((0, 0, 0, 255))
-        #for s in self.grid.get_occ():
-        #    self.fig.circle(s, 0.05)
-
-        # Draw the frontier points
-        #self.fig.fgcolor((0, 192, 128, 255))
-        #self.fig.bgcolor((0, 192, 128, 255)) 
-        #for s in self.scan.get_fronts():
-        #    self.fig.circle(s, 0.10)
-
-        # Draw the consolidated frontier points
-        #self.fig.fgcolor((0, 192, 128, 255))
-        #self.fig.bgcolor((0, 192, 128, 255)) 
-        #for s in self.fronts:
-        #    self.fig.circle(s, 0.10)
+        # REMOVE
+        # Draw pins
+        #for (pos, pin) in self.pins:
+        #    self.fig.fgcolor((255, 0, 255, 255))
+        #    self.fig.bgcolor((255, 0, 255, 32))
+        #    pos_a = pos
+        #    pos_b = geom.coord_sub(pin.pos, self.pose)
+        #    self.fig.polyline((pos_a, pos_b))
 
         return
 
-
-    def draw_sites(self):
-        """Draw the sites for this node."""
-
-        if not self.site_fig:
-            return
-
-        self.site_fig.clear()
-
-        self.site_fig.fgcolor((128, 0, 128, 255))
-        self.site_fig.bgcolor((0, 0, 0, 0))
-        #self.site_fig.elevate(1000)
-
-        for site in self.sites:
-            self.site_fig.circle(site.pos, 0.10)
-            for nsite in site.children:
-                npos = geom.coord_add(nsite.pos, nsite.patch.pose)
-                npos = geom.coord_sub(npos, self.pose)
-                self.site_fig.polyline([site.pos, npos])
-        return
 
 
 
@@ -180,6 +149,7 @@ class Map:
         self.links = []
         self.links_a = {}
         self.links_b = {}
+        self.pins = []
         self.patch_id = 0
         self.patch_callback = None
         return
@@ -195,7 +165,6 @@ class Map:
             patch.island = island
         else:
             patch.island = patch.id
-        patch.scan = scan.Scan()
 
         if self.root_fig:
             patch.fig = rtk3.Fig(self.root_fig)
@@ -233,6 +202,8 @@ class Map:
 
     def create_link(self, patch_a, patch_b):
         """Create a link between two patches."""
+
+        assert(patch_a != patch_b)
 
         link = MapLink(patch_a, patch_b)
         self.links += [link]
@@ -301,77 +272,33 @@ class Map:
         return patches
 
 
-    def print_graph(self):
+    def find_nhood(self, patch, max_dist):
+        """Find all the patches in the neighborhood of the given patch
+        (does not include the givne patch)."""
 
-        for patch in self.patches:
-            print patch.id, ' : out : ',
-            for link in self.links_a[patch]:
-                print link.patch_b.id,
-                assert(link.patch_a == patch)
-                assert(link.patch_b in self.patches)
-            print
-            print patch.id, ' : in : ',
-            for link in self.links_b[patch]:
-                print link.patch_a.id,
-                assert(link.patch_b == patch)
-                assert(link.patch_a in self.patches)
-            print
-        print
-        return
+        open = self.find_connected(patch)
+        closed = [patch]
+        patches = []
 
+        while open:
 
-    def save(self, filename):
-        """Save the map to a file."""
+            npatch = open.pop(0)
 
-        file = open(filename, 'w+')
-
-        file.write('# map graph\n')
-
-        for patch in self.patches:
-            file.write('patch %s %-.3f %-.3f %-.3f ' %
-                       (patch.id, patch.pose[0], patch.pose[1], patch.pose[2]))
-            for (r, b) in patch.scan.get_raw():
-                file.write('%-.3f %-.5f ' % (r, b))
-            file.write('\n')
-
-        return
-
-
-    def load(self, filename):
-        """Load the map from a file."""
-
-        file = open(filename, 'r')
-
-        while 1:
-            line = file.readline()
-            if not line:
-                break
-
-            tokens = string.split(line)
-
-            # Skip comments
-            if tokens[0] == '#':
+            pose = geom.coord_sub(npatch.pose, patch.pose)
+            dist = math.sqrt(pose[0] * pose[0] + pose[1] * pose[1])
+            
+            if dist > max_dist:
                 continue
+            patches.append(npatch)
+            closed.append(npatch)
 
-            # Read patches
-            if tokens[0] == 'patch':
+            for mpatch in self.find_connected(npatch):
+                if mpatch in open:
+                    continue
+                if mpatch in closed:
+                    continue
+                open.append(mpatch)
 
-                patch = self.create_patch(None, None)
-
-                patch.id = tokens[1]
-                patch.pose = (float(tokens[2]), float(tokens[3]), float(tokens[4]))
-
-                ranges = []
-                for i in range(len(tokens[5:]) / 2):
-                    ranges += [(float(tokens[5 + 2 * i]),
-                               float(tokens[6 + 2 * i]))]
-
-                # HACK
-                err = 0.10
-                dst = 0.50
-                patch.scan = scan.Scan()
-                patch.scan.add_ranges((0, 0, 0), ranges)
-                patch.scan.reduce(err, dst)
-
-        return
+        assert(patch not in patches)
+        return patches
     

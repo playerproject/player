@@ -36,7 +36,7 @@
 
 ////////////////////////////////////////////////////////////////////////////
 // Create a new scan match
-scan_match_t *scan_match_alloc(scan_t *scan_a, scan_t *scan_b)
+scan_match_t *scan_match_alloc(scan_group_t *scan_a, scan_group_t *scan_b)
 {
   scan_match_t *self;
 
@@ -45,7 +45,7 @@ scan_match_t *scan_match_alloc(scan_t *scan_a, scan_t *scan_b)
   self->scan_b = scan_b;
 
   self->pair_count = 0;
-  self->pair_max_count = scan_a->hit->point_count + scan_b->hit->point_count;
+  self->pair_max_count = scan_a->hits->point_count + scan_b->hits->point_count;
   self->pairs = calloc(self->pair_max_count, sizeof(self->pairs[0]));
 
   return self;
@@ -64,7 +64,7 @@ void scan_match_free(scan_match_t *self)
 
 
 ////////////////////////////////////////////////////////////////////////////
-// Generate point-pairs for the two scans
+// Generate correspondance points
 void scan_match_pairs(scan_match_t *self, vector_t pose_a, vector_t pose_b)
 {
   int i;
@@ -84,9 +84,9 @@ void scan_match_pairs(scan_match_t *self, vector_t pose_a, vector_t pose_b)
   self->pair_count = 0;
 
   // For each hit point in A...
-  for (i = 0; i < self->scan_a->hit->point_count; i++)
+  for (i = 0; i < self->scan_a->hits->point_count; i++)
   {
-    sa = self->scan_a->hit->points[i];
+    sa = self->scan_a->hits->points[i];
 
     // Compute point in global cs
     p.x = pose_a.v[0] + sa.x * cos_a - sa.y * sin_a;
@@ -97,10 +97,10 @@ void scan_match_pairs(scan_match_t *self, vector_t pose_a, vector_t pose_b)
     q.y = -(p.x - pose_b.v[0]) * sin_b + (p.y - pose_b.v[1]) * cos_b;
     
     // See if A's hit point is inside the free space solid for B...
-    if (scan_contour_test_inside(self->scan_b->free, q))
+    if (scan_solid_test_inside(self->scan_b->free, q))
     {
       // Get the nearest line segment
-      s = scan_contour_test_nearest(self->scan_b->free, q, &sb1, &sb2);
+      s = scan_solid_test_nearest(self->scan_b->free, q, &sb1, &sb2);
       if (s > self->outlier_dist)
         continue;
       
@@ -109,6 +109,8 @@ void scan_match_pairs(scan_match_t *self, vector_t pose_a, vector_t pose_b)
       
       pair->type = 1;
       pair->w = sa.w;
+      pair->ia = i;
+      pair->ib = -1;
       pair->pa.x = sa.x;
       pair->pa.y = sa.y;
       pair->lb.pa.x = sb1.x;
@@ -119,9 +121,9 @@ void scan_match_pairs(scan_match_t *self, vector_t pose_a, vector_t pose_b)
   }
 
   // For each hit point in B...
-  for (i = 0; i < self->scan_b->hit->point_count; i++)
+  for (i = 0; i < self->scan_b->hits->point_count; i++)
   {
-    sb = self->scan_b->hit->points[i];
+    sb = self->scan_b->hits->points[i];
 
     // Compute point in global cs
     p.x = pose_b.v[0] + sb.x * cos_b - sb.y * sin_b;
@@ -132,10 +134,10 @@ void scan_match_pairs(scan_match_t *self, vector_t pose_a, vector_t pose_b)
     q.y = -(p.x - pose_a.v[0]) * sin_a + (p.y - pose_a.v[1]) * cos_a;
     
     // See if A's hit point is inside the free space solid for B...
-    if (scan_contour_test_inside(self->scan_a->free, q))
+    if (scan_solid_test_inside(self->scan_a->free, q))
     {
       // Get the nearest line segment
-      s = scan_contour_test_nearest(self->scan_a->free, q, &sa1, &sa2);
+      s = scan_solid_test_nearest(self->scan_a->free, q, &sa1, &sa2);
       if (s > self->outlier_dist)
         continue;
       
@@ -143,6 +145,8 @@ void scan_match_pairs(scan_match_t *self, vector_t pose_a, vector_t pose_b)
       pair = self->pairs + self->pair_count++;
 
       pair->type = 2;
+      pair->ia = -1;
+      pair->ib = i;
       pair->w = sb.w;
       pair->la.pa.x = sa1.x;
       pair->la.pa.y = sa1.y;

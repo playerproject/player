@@ -42,6 +42,9 @@ typedef struct
 // Return a zero vector
 vector_t vector_zero();
 
+// Return a vector with the given components
+vector_t vector_set(double a, double b, double c);
+
 // Check for NAN or INF in any component
 int vector_test_finite(vector_t a);
 

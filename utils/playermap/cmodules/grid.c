@@ -86,7 +86,6 @@ void grid_reset(grid_t *self)
       cell->occ_state = 0;
       cell->occ_dist = self->max_dist;
       cell->visited = 0;
-      cell->front = 0;
     }
   }
   return;
@@ -123,6 +122,21 @@ int grid_test_free(grid_t *self, double ox, double oy)
     return 1;
 
   return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Mark a cell as visited (useful for displaying paths)
+void grid_set_visited(grid_t *self, double ox, double oy)
+{
+  grid_cell_t *cell;
+
+  cell = grid_get_cell(self, ox, oy);
+  if (cell == NULL)
+    return;
+
+  cell->visited = 1;
+  return;
 }
 
 

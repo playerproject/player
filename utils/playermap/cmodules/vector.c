@@ -27,6 +27,19 @@ vector_t vector_zero()
 }
 
 
+// Return a vector with the given components
+vector_t vector_set(double a, double b, double c)
+{
+  vector_t v;
+
+  v.v[0] = a;
+  v.v[1] = b;
+  v.v[2] = c;
+  
+  return v;
+}
+
+
 // Check for NAN or INF in any component
 int vector_test_finite(vector_t a)
 {
