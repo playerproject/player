@@ -30,12 +30,22 @@
 /** @{ */
 /** @defgroup player_driver_sicklms200 sicklms200
 
+
 The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
 
-@par Interfaces
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
 - @ref player_interface_laser
 
-@par Supported configuration requests
+@par Requires
+
+- none
+
+@par Configuration requests
 
 - PLAYER_LASER_GET_GEOM
 - PLAYER_LASER_GET_CONFIG
@@ -43,25 +53,30 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
   
 @par Configuration file options
 
-- port "/dev/ttyS1"
+- port (string)
+  - Default: "/dev/ttyS1"
   - Serial port to which laser is attached.  If you are using a
     USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
 
-- rate 38400
-  - Default baud rate.  Valid values are 38400 (RS232 or RS422) and
+- rate (integer)
+  - Default: 38400
+  - Baud rate.  Valid values are 38400 (RS232 or RS422) and
     500000 (RS422 only).
   
-- delay 0
+- delay (integer)
+  - Default: 0
   - Delay (in seconds) before laser is initialized (set this to 35 if
     you have a newer generation Pioneer whose laser is switched on
     when the serial port is open).
 
-- resolution 50
+- resolution (integer)
+  - Default: 50
   - Angular resolution.  Valid values are:
     - resolution 50 : 0.5 degree increments, 361 readings @ 5Hz (38400) or 32Hz (500000).
     - resolution 100 : 1 degree increments, 181 readings @ 10Hz (38400) or 75Hz (500000).
 
-- range_res 1
+- range_res (integer)
+  - Default: 1
   - Range resolution.  Valid values are:
     - range_res 1 : 1mm precision, 8.192m max range.
     - range_res 10 : 10mm precision, 81.92m max range.
@@ -73,12 +88,16 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
 driver
 (
   name "sicklms200"
-  devices ["laser:0"]
+  provides ["laser:0"]
   port "/dev/ttyS0"
   resolution 100   # Angular resolution 1 degree (181 readings @ 10Hz)
   range_res 10     # Range resolution 1 cm (maximum range 81.92m)
 )
 @endverbatim
+
+@par Authors
+
+Andrew Howard, Richard Vaughan, Kasper Stoy
 */
 /** @} */
   

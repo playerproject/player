@@ -30,35 +30,48 @@
 /** @{ */
 /** @defgroup player_driver_camerav4l camerav4l
 
+
 The camerav4l driver captures images from V4l-compatible cameras.  See
 below for notes on specific camera/frame grabber combinations.
 
+@par Compile-time dependencies
 
-@par Interfaces
+- &lt;linux/videodev.h&gt;
+
+@par Provides
+
 - @ref player_interface_camera
 
-@par Supported configuration requests
+@par Requires
 
-- None
+- none
 
+@par Configuration requests
+
+- none
 
 @par Configuration file options
 
-- port "/dev/video0"
+- port (string)
+  - Default: "/dev/video0"
   - Device to read video data from.
 
-- source 3
+- source (integer)
+  - Default: 3
   - Some capture cards have multiple input sources; use this field to
     select which one is used.
 
-- norm "ntsc"
-  - Capture format "ntsc" or "pal"
+- norm (string)
+  - Default: "ntsc"
+  - Capture format; "ntsc" or "pal"
 
-- size [640 480]
+- size (integer tuple)
+  - Default: varies with norm
   - Desired image size.   This may not be honoured if the driver does
     not support the requested size).
 
-- mode "RGB24"
+- mode (string)
+  - Default: "RGB24"
   - Desired capture mode.  Can be one of:
     - GREY (8-bit monochrome)
     - RGB565 (16-bit RGB)
@@ -69,7 +82,8 @@ below for notes on specific camera/frame grabber combinations.
   format; in these modes, images will be translated to the closest matching
   internal format (e.g., RGB32 -> RGB888).
     
-- save 0
+- save (integer)
+  - Default: 0
   - Debugging option: set this to write each frame as an image file on disk.
 
 Note that some of these options may not be honoured by the underlying
@@ -109,6 +123,10 @@ the kernel source (add a product id in a couple of places in pwc-if.c).  Milage 
 vary for other kernel versions.  Also, the binary-only pwcx.o module is needed to
 access frame sizes larger than 160x120; good luck finding this and/or getting
 it to work (the developer spat the dummy and took down his website).
+
+@par Authors
+
+Andrew Howard
 
 */
 /** @} */

@@ -391,7 +391,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = mainpage.html classes.html ../main.cc ../player.h ../driver.h ../configfile.h ../drivers/
+INPUT                  = mainpage.html classes.html utils.html ../main.cc ../player.h ../driver.h ../configfile.h ../drivers/ ../../utils/playerv/playerv.c ../../utils/playernav/playernav.c ../../utils/playerjoy/playerjoy.cc ../../utils/playerprint/playerprint.cc ../../utils/playervcr/playervcr.c ../../utils/dgps_server/dgps_server.dox ../../utils/playermap/playermap.dox
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -449,7 +449,7 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see 
 # the \image command).
 
-IMAGE_PATH             = ../drivers/blobfinder
+IMAGE_PATH             = ../drivers/blobfinder ../../utils/playerv ../../utils/playervcr ../../utils/playernav
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should 
 # invoke to filter for each input file. Doxygen will invoke the filter program 

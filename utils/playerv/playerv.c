@@ -23,6 +23,88 @@
  * Date: 28 Mar 2002
  * CVS: $Id$
  *************************************************************************/
+
+/** @addtogroup utils Utilities */
+/** @{ */
+/** @defgroup player_util_playerv playerv
+
+@par Synopsis
+
+playerv is a GUI client program that visualizes sensor data from
+a player server.  It also provides some teleoperation capabilities.
+
+playerv requires librtk.  To use playerv, you must install librtk before
+building player.
+
+@par Usage
+
+playerv is installed alongside player in $prefix/bin, so if player is
+in your PATH, then playerv should also be.  Command-line usage is:
+@verbatim
+$ playerv [-h <hostname>] [-p <port>] [--<device>:<index>] [--<device>:<index>] ... 
+@endverbatim
+For example, to connect to Player on localhost at the default port
+(6665), and subscribe to the 0th position and sonar devices:
+@verbatim
+$ playerv --position:0 --sonar:0
+@endverbatim
+To connect to Player on another machine (foo) at a non-default port
+(7000), and not subscribe to any devices:
+@verbatim
+$ playerv -h foo -p 7000
+@endverbatim
+
+When playerv starts, a window will pop up.  Click and drag with the left
+mouse button to pan the window.  Click and drag with the right mouse
+buttom to zoom the window.  These are the same controls as Stage 1.3.x.
+
+Use the "Devices" menu to control device subscriptions.  For devices
+that can be teleoperated via playerv, click the "Command" item in the
+submenu for that device.  See below for how to teleoperate different
+kinds of devices.
+
+The "View" menu offers options for changing the look of the display.
+
+The "File" menu offers options for dumping JPG and PPM screenshots and
+making MPEG movies (to make movies, you must have enabled movie support
+when building librtk).
+
+@par Features
+
+playerv can visualize data from the following kinds of devices:
+- @ref player_interface_blobfinder
+- @ref player_interface_bumper
+- @ref player_interface_fiducial
+- @ref player_interface_ir
+- @ref player_interface_laser
+- @ref player_interface_localize
+- @ref player_interface_position
+- @ref player_interface_power
+- @ref player_interface_ptz
+- @ref player_interface_sonar
+- @ref player_interface_wifi
+
+playerv provides teleoperation of the following kinds of devices:
+- @ref player_interface_position : In velocity mode (the default),
+  click and drag with the left mouse button to set desired velocity vector
+  (this will only work if the underlying driver supports velocity control;
+  most position drivers do).  In position mode (select "Position mode"
+  from the device's submenu), click and drag with the left mouse button
+  to set a position target (this will only work if the underlying driver
+  support position control; @ref player_driver_vfh is one example).
+- @ref player_interface_ptz : Click and drag the green circle to pan and zoom; 
+  click and drag the blue circle to tilt.
+
+
+@par Screenshots
+@image html playerv-sonar.jpg "Screenshot of playerv showing position and sonar data"
+@image html playerv-laser-blobfinder-ptz.jpg "Screenshot of playerv showing position, laser, blobfinder, and ptz data"
+
+*/
+
+/** @} */
+
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif

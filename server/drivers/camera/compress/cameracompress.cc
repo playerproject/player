@@ -30,21 +30,32 @@
 /** @{ */
 /** @defgroup player_driver_cameracompress cameracompress
 
+
 The cameracompress driver accepts data from another camera device,
 compresses it, and makes the compressed data available on a new
 interface.
 
-@par Interfaces
-- This driver supports the @ref player_interface_camera interface.
+@par Compile-time dependencies
 
-@par Supported configuration requests
+- libjpeg
 
-- None.
+@par Provides
+
+- Compressed image data is provided via a @ref player_interface_camera
+  device.
+
+@par Requires
+
+- Image data to be compressed is read from a @ref player_interface_camera
+  device.
+
+@par Configuration requests
+
+- none
 
 @par Configuration file options
 
-- camera 0
-  - Source camera (data from this camera will be compressed).
+- none
       
 @par Example 
 
@@ -52,10 +63,15 @@ interface.
 driver
 (
   name "cameracompress"
-  devices ["camera:1"]
-  camera 0  # Compress data from device camera:0
+  provides ["camera:1"]
+  requires ["camera:0"]  # Compress data from device camera:0
 )
 @endverbatim
+
+@par Authors
+
+Nate Koenig, Andrew Howard
+
 */
 /** @} */
 
@@ -128,7 +144,13 @@ CameraCompress::CameraCompress( ConfigFile *cf, int section)
 
   this->frameno = 0;
 
-  this->camera_index = cf->ReadInt(section,"camera", 0);
+  // Must have an input camera
+  if (cf->ReadDeviceId(&this->camera_id, section, "requires",
+                       PLAYER_CAMERA_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   
   this->save = cf->ReadInt(section,"save",0);
   this->quality = cf->ReadFloat(section, "image_quality", 0.8);
@@ -142,9 +164,6 @@ int CameraCompress::Setup()
 {
 
   // Subscribe to the camera
-  this->camera_id.code = PLAYER_CAMERA_CODE;
-  this->camera_id.index = this->camera_index;
-  this->camera_id.port = this->device_id.port;
   this->camera = deviceTable->GetDriver(this->camera_id);
   
   if (!this->camera)

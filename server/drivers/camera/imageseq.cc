@@ -37,21 +37,32 @@ etc.
 
 Note that only grayscale images are currently supported.
 
-@par Interfaces
+@par Compile-time dependencies
+
+- OpenCV
+
+@par Provides
+
 - This driver supports the @ref player_interface_camera interface.
 
-@par Supported configuration requests
+@par Requires
 
-- None.
+- none
+
+@par Configuration requests
+
+- none
 
 @par Configuration file options
 
-- rate
+- rate (float)
+  - Default: 10
   - Data rate (Hz); e.g., rate 20 will generate data at 20Hz.
 
-- pattern "image_%04d.pnm"
+- pattern (string)
+  - Default: "image_%04d.pnm"
   - A printf-style format string for describing the image filenames; the
-  format string must contain at most one integer argument.
+    format string must contain at most one integer argument.
 
 @par Example 
 
@@ -59,7 +70,7 @@ Note that only grayscale images are currently supported.
 driver
 (
   name "imageseq"
-  devices ["camera:1"]
+  provides ["camera:1"]
   rate 10
   pattern "image_%04d.pnm"
 )
@@ -67,6 +78,10 @@ driver
 
 
 @todo Add support for color images.
+
+@par Authors
+
+Andrew Howard
 
 */
 /** @} */

@@ -1,6 +1,59 @@
 /*
  * a utility to print out data from any of a number of interfaces
  */
+
+/** @addtogroup utils Utilities */
+/** @{ */
+/** @defgroup player_util_playerprint playerprint
+
+@par Synopsis
+
+playerprint prints out sensor data to the console.  It is useful mainly
+for verifying that a device is working during the setup or debugging
+process.  If you want to visualize data, try @ref player_util_playerv.
+If you want to log data to a file, try the @ref player_driver_writelog
+driver.
+
+@par Usage
+
+playerprint is installed alongside player in $prefix/bin, so if player is
+in your PATH, then playerprint should also be.  Command-line usage is:
+@verbatim
+$ playerprint [-t] [-u <rate>] [-h <host>] [-p <port>] <device>
+@endverbatim
+Where the options are:
+- -h &lt;host&gt;: connect to Player on this host (default: localhost)
+- -p &lt;port&gt;: connect to Player on this TCP port (default: 6665)
+- -t : print the timestamp before the data (default: don't print timestamps)
+- -u &lt;rate&gt;: request data update at &lt;rate&gt; in Hz (default: 10Hz)
+
+For example:
+<pre>
+  $ playerprint -p 7000 laser
+</pre>
+
+@par Features
+
+playerprint can print out data for the following kinds of devices:
+- @ref player_interface_position
+- @ref player_interface_position3d
+- @ref player_interface_truth
+- @ref player_interface_sonar
+- @ref player_interface_laser
+- @ref player_interface_localize
+- @ref player_interface_fiducial
+- @ref player_interface_gps
+- @ref player_interface_ptz
+- @ref player_interface_blobfinder
+- @ref player_interface_ir
+- @ref player_interface_energy
+- @ref player_interface_bumper
+- @ref player_interface_wifi
+
+*/
+
+/** @} */
+
 #include <stdio.h>
 #include <stdlib.h>  // for atoi(3)
 #include <playerclient.h>  // for player client stuff

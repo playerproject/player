@@ -7,6 +7,55 @@
  * $Id$
  */
 
+/** @addtogroup utils Utilities */
+/** @{ */
+/** @defgroup player_util_playerjoy playerjoy
+
+@par Synopsis
+
+playerjoy is a console-based client that provides planar,
+differential-drive teleoperation of @ref player_interface_position and
+@ref player_interface_position3d devices.  In other words, playerjoy
+allows you to manually drive your (physical or simulated) robot around.
+playerjoy uses velocity control, and so will only work when the underlying
+driver supports velocity control (most drivers do).
+
+
+@par Usage
+
+playerjoy is installed alongside player in $prefix/bin, so if player is
+in your PATH, then playerjoy should also be.  Command-line usage is:
+@verbatim
+$ playerjoy [options] <host:port> [<host:port>] ...
+@endverbatim
+Where options can be:
+- -v   : verbose mode; print Player device state on stdout
+- -3d  : connect to position3d interface (instead of position)
+- -c   : continuously send commands, instead of sending commands only on
+         change (useful with drivers with watchdog timers, like the
+         @ref player_driver_segwayrmp)
+- -n   : dont send commands or enable motors (debugging)
+- -k   : use keyboard control
+- -p   : print out speeds on the console
+- -udp : use UDP instead of TCP
+- -speed     : maximum linear speed (m/sec)
+- -turnspeed : maximum angular speed (deg/sec)
+- &lt;host:port&gt; : connect to a Player on this host and port
+
+playerjoy supports both joystick and keyboard control, although joysticks
+are only supported in Linux.  If supported, joystick control is used
+by default.  Keyboard control will be used if: the -k option is given,
+or playerjoy fails to open /dev/js0 (i.e., there is no joystick).
+
+Joystick control is as follows: forward/backward sets translational (x)
+velocity, left/right sets rotational (yaw) velocity.
+
+Details of keyboard control are printed out on the console.
+
+*/
+
+/** @} */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif

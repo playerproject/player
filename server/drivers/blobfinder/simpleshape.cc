@@ -37,6 +37,9 @@ form of a binary image (such as the one shown below).
 
 @image html simpleshape_h.gif "Sample model for the simpleshape detector"
 
+@par Compile-time dependencies
+
+- OpenCV
 
 @par Requires
 
@@ -58,21 +61,22 @@ form of a binary image (such as the one shown below).
 
 @image html simpleshape_output.gif "Output image (debugging)"
 
-@par Supported configuration requests
+@par Configuration requests
 
-- None.
+- none
 
 @par Configuration file options
 
-- model NULL
+- model (string)
+  - Default: NULL
   - Filename of the model image file.  This should by a binary,
     grayscale image.
 
-- canny_thresh [40 20]
+- canny_thresh (float tuple) 
+  - Default: [40 20]
   - Thresholds for the Canny edge detector.
 
-
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -83,6 +87,10 @@ driver
   model "simpleshape_h.pgm"
 )
 @endverbatim
+
+@par Authors
+
+Andrew Howard
 */
 /** @} */
 
