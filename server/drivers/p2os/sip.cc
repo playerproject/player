@@ -59,7 +59,7 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   data->position.stall = (unsigned char)(lwstall || rwstall);
 
   data->sonar.range_count = htons(PlayerRobotParams[param_idx].SonarNum);
-  for(int i=0;i<(int)sizeof(sonars);i++)
+  for(int i=0;i<PlayerRobotParams[param_idx].SonarNum;i++)
     data->sonar.ranges[i] = htons((unsigned short)sonars[i]);
 
   data->gripper.state = (unsigned char)(timer >> 8);
