@@ -2447,10 +2447,10 @@ class PlannerProxy : public ClientProxy
   /** Current waypoint index (handy if you already have the list
       of waypoints). May be negative if there's no plan, or if 
       the plan is done */
-  public: int currWaypoint;
+  public: short currWaypoint;
 
   /** Number of waypoints in the plan */
-  public: int waypointCount;
+  public: short waypointCount;
 
   /** List of waypoints in the current plan (m,m,radians).*/
   public: double waypoints[PLAYER_PLANNER_MAX_WAYPOINTS][3];
