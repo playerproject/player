@@ -18,7 +18,6 @@ noinst_PROGRAMS = randomwalk \
                   audiodspread \
                   lookupport \
                   vfh \
-                  playerprint \
                   manualGrip \
 									shapetracker
 
@@ -44,7 +43,6 @@ lookupport_SOURCES = lookupport.cc
 audiodspread_SOURCES = audiodspread.cc
 vfh_SOURCES = vfh.cc
 swarmbot_target_SOURCES = swarmbot_target.cc
-playerprint_SOURCES = playerprint.cc
 manualGrip_SOURCES = manualGrip.cc
 shapetracker_SOURCES = shapetracker.cc
 #goto_SOURCES = goto.cc
