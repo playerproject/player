@@ -61,7 +61,7 @@ int test_truth(playerc_client_t *client, int index)
   printf("truth: [%6.3f] [%6.3f] [%6.3f]\n", f_px, f_py, f_pa);
 
   TEST("checking values for consitency");
-  if (f_px != i_px || f_py != i_py || f_pa != i_pa)
+  if (fabs(f_px - i_px) > 0.001 || fabs(f_py - i_py) > 0.001 || fabs(f_pa - i_pa) > 0.001)
   {
     FAIL();
     return -1;

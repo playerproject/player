@@ -84,6 +84,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_PTZ_STRING;
     case PLAYER_SONAR_CODE:
       return PLAYER_SONAR_STRING;
+    case PLAYER_TRUTH_CODE:
+      return PLAYER_TRUTH_STRING;
     case PLAYER_WIFI_CODE:
       return PLAYER_WIFI_STRING;
       return PLAYER_LOCALIZE_STRING;
@@ -127,6 +129,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_PTZ_CODE;
   if (strcmp(name, PLAYER_SONAR_STRING) == 0)
     return PLAYER_SONAR_CODE;
+  if (strcmp(name, PLAYER_TRUTH_STRING) == 0)
+    return PLAYER_TRUTH_CODE;
   if (strcmp(name, PLAYER_WIFI_STRING) == 0)
     return PLAYER_WIFI_CODE;
   return -1;
