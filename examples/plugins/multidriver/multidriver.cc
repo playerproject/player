@@ -40,9 +40,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "drivertable.h"
-#include "driver.h"
 #include "player.h"
+#include "player/drivertable.h"
+#include "player/driver.h"
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +99,7 @@ void MultiDriver_Register(DriverTable* table)
 // Extra stuff for building a shared object.
 
 // Need access to the global driver table
-#include <drivertable.h>
+#include <player/drivertable.h>
 
 /* need the extern to avoid C++ name-mangling  */
 extern "C"
@@ -118,8 +119,18 @@ extern "C"
 MultiDriver::MultiDriver(ConfigFile* cf, int section)
     : Driver(cf, section)
 {
+  player_device_id_t* ids;
+  int num_ids;
+
+  // Parse devices section
+  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+
   // Create position interface
-  if (cf->ReadDeviceId(section, 0, PLAYER_POSITION_CODE, &this->position_id) != 0)
+  if (cf->ReadDeviceId(&(this->position_id), ids, num_ids, PLAYER_POSITION_CODE, 0) != 0)
   {
     this->SetError(-1);
     return;
@@ -133,7 +144,7 @@ MultiDriver::MultiDriver(ConfigFile* cf, int section)
   }
 
   // Create laser interface
-  if (cf->ReadDeviceId(section, 1, PLAYER_LASER_CODE, &this->laser_id) != 0)
+  if (cf->ReadDeviceId(&(this->laser_id), ids, num_ids, PLAYER_LASER_CODE, 0) != 0)
   {
     this->SetError(-1);
     return;
@@ -214,20 +225,19 @@ void MultiDriver::Main()
 void MultiDriver::CheckConfig()
 {
   void *client;
-  player_device_id_t dummy;
   unsigned char buffer[PLAYER_MAX_REQREP_SIZE];
   
-  while (this->GetConfig(this->position_id, &dummy, &client, &buffer, sizeof(buffer)) > 0)
+  while (this->GetConfig(this->position_id, &client, &buffer, sizeof(buffer), NULL) > 0)
   {
     printf("got position request\n");
-    if (this->PutReply(this->position_id, &dummy, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+    if (this->PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, 0, NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
-  while (this->GetConfig(this->laser_id, &dummy, &client, &buffer, sizeof(buffer)) > 0)
+  while (this->GetConfig(this->laser_id, &client, &buffer, sizeof(buffer), NULL) > 0)
   {
     printf("got laser request\n");
-    if (this->PutReply(this->laser_id, &dummy, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+    if (this->PutReply(this->laser_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, 0, NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
@@ -236,7 +246,7 @@ void MultiDriver::CheckConfig()
 
 void MultiDriver::CheckCommands()
 {
-  this->GetCommand(this->position_id, &this->position_cmd, sizeof(this->position_cmd));
+  this->GetCommand(this->position_id, &this->position_cmd, sizeof(this->position_cmd), NULL);
 
   printf("%d %d\n", ntohl(this->position_cmd.xspeed), ntohl(this->position_cmd.yawspeed));
   
@@ -248,11 +258,11 @@ void MultiDriver::RefreshData()
 
   // Write position data
   memset(&this->position_data, 0, sizeof(this->position_data));
-  this->PutData(this->position_id, &this->position_data, sizeof(this->position_data), 0, 0);
+  this->PutData(this->position_id, &this->position_data, sizeof(this->position_data), NULL);
 
   // Write laser data
   memset(&this->laser_data, 0, sizeof(this->laser_data));
-  this->PutData(this->laser_id, &this->laser_data, sizeof(this->laser_data), 0, 0);
+  this->PutData(this->laser_id, &this->laser_data, sizeof(this->laser_data), NULL);
 
   return;
 }

@@ -1,13 +1,11 @@
 
-# path to the Player source tree
-PLAYER_SRC_DIR = ../../..
-
-INCLUDES = -I$(PLAYER_SRC_DIR)/server
+# Desc: Example plugin makefile
+# CVS: $Id$
 
 all: exampledriver.so
 
 %.o: %.cc
-	$(CXX) -Wall -g3 $(INCLUDES) -c $<
+	$(CXX) -Wall -g3 -c $<
 
 %.so: %.o
 	$(CXX) -shared -nostartfiles -o $@ $<
