@@ -29,12 +29,12 @@
  */
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_readlog Readlog driver
+/** @defgroup player_driver_readlog readlog
 
-The readlog driver can be used to ``replay'' data stored in a log
-file.  This is particularly useful for debugging client programs,
-since users may run their clients against the same data set over and
-over again.  Suitable log files can be generated using the @ref
+The readlog driver can be used to replay data stored in a log file.
+This is particularly useful for debugging client programs, since users
+may run their clients against the same data set over and over again.
+Suitable log files can be generated using the @ref
 player_driver_writelog driver.
 
 To make use of log file data, Player must be started in a special

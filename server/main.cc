@@ -31,9 +31,12 @@
   #include <config.h>
 #endif
 
-
 #if HAVE_LIBLTDL
- #include <ltdl.h>
+  #include <ltdl.h>
+#endif
+
+#if HAVE_OPENCV
+  #include <opencv/cv.h>
 #endif
 
 #include <sys/types.h>  /* for accept(2) */
@@ -283,6 +286,33 @@ SetupSignalHandlers()
     perror("signal(2) failed while setting up for SIGTERM");
     exit(1);
   }
+}
+
+
+#ifdef HAVE_OPENCV
+/* OpenCV error handler */
+int CV_CDECL
+cvErrorCallback(int status, const char* func_name,
+                const char* err_msg, const char* file_name, int line, void *user)
+{
+  char msg[1024];
+  snprintf(msg, sizeof(msg), "opencv %s:%d : %s", file_name, line, err_msg);
+  PLAYER_ERROR_NULL(msg);
+  return 0;
+}
+#endif
+
+/* Trap errors from third-party libs */
+void
+SetupErrorHandlers()
+{
+
+#ifdef HAVE_OPENCV
+  // OpenCV handler
+  cvRedirectError(cvErrorCallback);
+#endif
+
+  return;
 }
 
 
@@ -1094,6 +1124,9 @@ int main( int argc, char *argv[] )
   
   // Trap ^C
   SetupSignalHandlers();
+
+  // Trap errors from third-party libs
+  SetupErrorHandlers();
 
   //g_server_pid = getpid();
 

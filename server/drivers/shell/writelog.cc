@@ -28,11 +28,16 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_writelog WriteLog driver
+/** @defgroup player_driver_writelog writelog
 
-The writelog driver will write data from another device to a log file
-(the readlog driver can be used to later replay the data as if it can
-from the real sensors).
+The writelog driver will write data from another device to a log file.
+Data is logged to the current directory, to a file named
+"writelog_YYYY_MM_DD_HH_MM.log", where YYYY is the year, MM is the
+month, etc.
+
+The @ref player_driver_readlog driver can be used to replay the data
+(to client programs, the replayed data will appear to come from the real
+sensors).
 
 
 @par Interfaces
@@ -54,6 +59,11 @@ from the real sensors).
 
 - enable 0
   - Default log state; set to 1 for continous logging.
+
+- camera_save_images 0
+  - Save camera data to image files as well as to the log file.  The image files
+  are named "writelog_YYYY_MM_DD_HH_MM_camera_II_NNNNNNN.pnm", where II is the device
+  index and NNNNNNN is the frame number.
       
 @par Example 
 
@@ -99,6 +109,7 @@ class WriteLogDevice
   public: player_device_id_t id;
   public: Driver *device;
   public: struct timeval time;
+  public: int cameraFrame;
 };
 
 
@@ -126,12 +137,14 @@ class WriteLog: public Driver
   private: virtual void Main(void);
 
   // Write data to file
-  private: void Write(void *data, size_t size,
-                      const player_device_id_t *id, uint32_t sec, uint32_t usec);
+  private: void Write(WriteLogDevice *device, void *data, size_t size, struct timeval time);
 
   // Write camera data to file
   private: void WriteCamera(player_camera_data_t *data);
-  
+
+  // Write camera data to image file as well 
+  private: void WriteCameraImage(WriteLogDevice *device, player_camera_data_t *data, struct timeval *ts);
+
   // Write fiducial data to file
   private: void WriteFiducial(player_fiducial_data_t *data);
   
@@ -160,6 +173,7 @@ class WriteLog: public Driver
   private: void WriteWiFi(player_wifi_data_t *data);
 
   // File to read data from
+  private: char default_basename[1024];
   private: char default_filename[1024];
   private: const char *filename;
   private: FILE *file;
@@ -174,6 +188,9 @@ class WriteLog: public Driver
   // Is writing enabled? (client can start/stop)
   private: bool enable;
   private: bool enable_default;
+
+  // Save camera frames to image files as well?
+  private: bool cameraSaveImages;
 };
 
 
@@ -221,8 +238,10 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   // correct semantics for working with simulators.
   time(&t);
   ts = localtime(&t);
-  strftime(this->default_filename, sizeof(this->default_filename),
-           "writelog_%Y_%m_%d_%H_%M.log", ts);
+  strftime(this->default_basename, sizeof(this->default_filename),
+           "writelog_%Y_%m_%d_%H_%M", ts);
+  snprintf(this->default_filename, sizeof(this->default_filename), "%s.log",
+           this->default_basename);
 
   // Let user override default filename
   this->filename = cf->ReadString(section, "filename", this->default_filename);
@@ -267,10 +286,14 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
     device->device = NULL;
     device->time.tv_sec = 0;
     device->time.tv_usec = 0;
+    device->cameraFrame = 0;
   }
 
   // See which device we should wait on
   this->wait_index = cf->ReadInt(section, "wait_index", -1);
+
+  // Camera specific settings
+  this->cameraSaveImages = cf->ReadInt(section, "camera_save_images", 0);
 
   return;
 }
@@ -450,7 +473,7 @@ void WriteLog::Main(void)
 {
   int i;
   size_t size, maxsize;
-  struct timeval ts;
+  struct timeval time;
   void *data;
   WriteLogDevice *device;
   
@@ -483,21 +506,21 @@ void WriteLog::Main(void)
       device = this->devices + i;
       
       // Read data from underlying device
-      size = device->device->GetData(device->id, (void*) data, maxsize, &ts);
+      size = device->device->GetData(device->id, (void*) data, maxsize, &time);
       assert(size < maxsize);
 
       // Check for new data
-      if((device->time.tv_sec == ts.tv_sec) && 
-         (device->time.tv_usec == ts.tv_usec))
+      if((device->time.tv_sec == time.tv_sec) && 
+         (device->time.tv_usec == time.tv_usec))
         continue;
-      device->time = ts;
+      device->time = time;
   
       // Write data to file
-      this->Write(data, size, &device->id, ts.tv_sec,ts.tv_usec);
+      this->Write(device, data, size, time);
     }
 
     // Write the sync packet
-    this->Write(NULL, 0, NULL, 0, 0);
+    this->Write(NULL, NULL, 0, time);
   }
 
   free(data);
@@ -508,8 +531,7 @@ void WriteLog::Main(void)
 
 ////////////////////////////////////////////////////////////////////////////
 // Write data to file
-void WriteLog::Write(void *data, size_t size,
-                     const player_device_id_t *id, uint32_t sec, uint32_t usec)
+void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct timeval time)
 {
   char host[256];
   int port, index;
@@ -520,18 +542,17 @@ void WriteLog::Write(void *data, size_t size,
   GlobalTime->GetTime(&stime);
 
   // Get interface name
-  if (id)
+  if (device)
   {
-    lookup_interface_code(id->code, &iface);
-    index = id->index;
+    lookup_interface_code(device->id.code, &iface);
+    index = device->id.index;
   }
   else
   {
     iface.name = "sync";
     iface.code = PLAYER_PLAYER_CODE;
     index = 0;
-    sec = stime.tv_sec;
-    usec = stime.tv_usec;
+    time = stime;
   }
 
   gethostname(host, sizeof(host));
@@ -541,13 +562,15 @@ void WriteLog::Write(void *data, size_t size,
   fprintf(this->file, "%014.3f %s %d %s %02d %014.3f ",
            (double) stime.tv_sec + (double) stime.tv_usec * 1e-6,
            host, port, iface.name, index,
-           (double) sec + (double) usec * 1e-6);
+           (double) time.tv_sec + (double) time.tv_usec * 1e-6);
 
   // Write the data
   switch (iface.code)
   {
     case PLAYER_CAMERA_CODE:
       this->WriteCamera((player_camera_data_t*) data);
+      if (this->cameraSaveImages)
+        this->WriteCameraImage(device, (player_camera_data_t*) data, &time);
       break;
     case PLAYER_FIDUCIAL_CODE:
       this->WriteFiducial((player_fiducial_data_t*) data);
@@ -624,6 +647,53 @@ void WriteLog::WriteCamera(player_camera_data_t *data)
   // Write image bytes
   fprintf(this->file, str);
   free(str);
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Write camera data to image file as well 
+void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *data, struct timeval *time)
+{
+  int i;
+  uint8_t pix;
+  FILE *file;
+  char filename[1024];
+
+  snprintf(filename, sizeof(filename), "%s_camera_%02d_%06d.pnm",
+           this->default_basename, device->id.index, device->cameraFrame++);
+  
+  file = fopen(filename, "w+");
+  if (file == NULL)
+    return;
+
+  // Write ppm header
+  fprintf(file, "P6\n%d %d\n%d\n", HUINT16(data->width), HUINT16(data->height), 255);
+  
+  // Write data here
+  for (i = 0; i < (int) HUINT32(data->image_size); i++)
+  {
+    if (data->format == PLAYER_CAMERA_FORMAT_RGB888)
+    {
+      pix = data->image[i];
+      fputc(pix, file);
+    }
+    else if (data->format == PLAYER_CAMERA_FORMAT_GREY8)
+    {
+      pix = data->image[i];
+      fputc(pix, file);
+      fputc(pix, file);
+      fputc(pix, file);
+    }
+    else
+    {
+      printf("unsupported image format");
+      break;
+    }
+  }
+
+  fclose(file);
   
   return;
 }

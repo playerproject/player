@@ -190,6 +190,10 @@
 #include <stdio.h>
 
 // Error macros
+
+#define PLAYER_ERROR_NULL(m) \
+    fprintf(stderr, "%s\n", m)
+
 #define PLAYER_ERROR(m) \
     fprintf(stderr, "error %s:%d : "m"\n", __FILE__, __LINE__)
 

@@ -27,7 +27,7 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_segwayrmp Segway RMP driver
+/** @defgroup player_driver_segwayrmp segwayrmp
 
 The segwayrmp driver provides control of a Segway RMP (Robotic
 Mobility Platform), which is an experimental robotic version of the

@@ -308,8 +308,13 @@ AC_CHECK_LIB(ltdl, lt_dlopenext)
 AC_CHECK_LIB(c_r, pthread_create, 
              [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 
-dnl AC_CHECK_LIB(jpeg, jpeg_create_compress, 
-dnl		   [], [echo "Warning: JPEG support will not be included"] )
+dnl Check for OpenCV
+if test "x$have_pkg_config" = "xyes"; then
+   PKG_CHECK_MODULES(OPENCV, opencv, with_opencv=yes, with_gtk=no)
+   if test "x$with_opencv" = "xyes"; then
+      AC_DEFINE(HAVE_OPENCV, 1, [OpenCV library is present])
+   fi
+fi
 
 dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile
@@ -327,7 +332,6 @@ AC_OUTPUT(Makefile
           server/drivers/camera/Makefile 
           server/drivers/camera/v4l/Makefile
           server/drivers/camera/1394/Makefile
-          dnl server/drivers/camera/jpegStream/Makefile
           server/drivers/camera/compress/Makefile
           server/drivers/fiducial/Makefile 
           server/drivers/ptz/Makefile 
