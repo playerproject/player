@@ -84,6 +84,10 @@ void UDPBroadcast_Register(DriverTable* table);
 void PassThrough_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_READLOG
+void ReadLog_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_P2OS
 void P2OSGripper_Register(DriverTable* table);
 void P2OSPower_Register(DriverTable* table);
@@ -265,6 +269,10 @@ register_devices()
 
 #ifdef INCLUDE_PASSTHROUGH
   PassThrough_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_READLOG
+  ReadLog_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_P2OS
