@@ -59,7 +59,7 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   data->position.stall = (unsigned char)(lwstall || rwstall);
 
   data->sonar.range_count = htons(PlayerRobotParams[param_idx].SonarNum);
-  for(int i=0;i<PlayerRobotParams[param_idx].SonarNum;i++)
+  for(int i=0;i<min(PlayerRobotParams[param_idx].SonarNum,ARRAYSIZE(sonars));i++)
     data->sonar.ranges[i] = htons((unsigned short)sonars[i]);
 
   data->gripper.state = (unsigned char)(timer >> 8);
@@ -151,11 +151,23 @@ void SIP::Parse( unsigned char *buffer )
 
   status = buffer[cnt];
   cnt += sizeof(unsigned char);
-
-  newxpos = ( (*(unsigned short *)&buffer[cnt]) & 0xEFFF) % 4096; /* 15 ls-bits */
+  /*
+   * Remember P2OS uses little endian: 
+   * for a 2 byte short (called integer on P2OS)
+   * byte0 is low byte, byte1 is high byte
+   * The following code is host-machine endian independant
+   * Also we must or (|) bytes together instead of casting to a
+   * short * since on ARM architectures short * must be even byte aligned!
+   * You can get away with this on a i386 since shorts * can be
+   * odd byte aligned. But on ARM, the last bit of the pointer will be ignored!
+   * The or'ing will work on either arch.
+   */
+  newxpos = ((buffer[cnt] | (buffer[cnt+1] << 8))
+	     & 0xEFFF) % 4096; /* 15 ls-bits */
+  
   if (xpos!=MAXINT) {
     change = (int) rint(PositionChange( rawxpos, newxpos ) * 
-                PlayerRobotParams[param_idx].DistConvFactor);
+			PlayerRobotParams[param_idx].DistConvFactor);
     if (abs(change)>100)
       puts("Change is not valid");
     else
@@ -165,11 +177,13 @@ void SIP::Parse( unsigned char *buffer )
     xpos = 0;
   rawxpos = newxpos;
   cnt += sizeof(short);
-  
-  newypos = ( (*(unsigned short *)&buffer[cnt]) & 0xEFFF) % 4096; /* 15 ls-bits */
+
+  newypos = ((buffer[cnt] | (buffer[cnt+1] << 8))
+	     & 0xEFFF) % 4096; /* 15 ls-bits */
+
   if (ypos!=MAXINT) {
-    change = (int) rint(PositionChange( rawypos, newypos ) * 
-                PlayerRobotParams[param_idx].DistConvFactor);
+    change = (int) rint(PositionChange( rawypos, newypos ) *
+			PlayerRobotParams[param_idx].DistConvFactor);
     if (abs(change)>100)
       puts("Change is not valid");
     else
@@ -180,15 +194,21 @@ void SIP::Parse( unsigned char *buffer )
   rawypos = newypos;
   cnt += sizeof(short);
 
-  angle = (short)rint(*(short *)&buffer[cnt] *
-        PlayerRobotParams[param_idx].AngleConvFactor * 180.0/M_PI);
+  angle = (short)
+    rint(((short)(buffer[cnt] | (buffer[cnt+1] << 8))) *
+	 PlayerRobotParams[param_idx].AngleConvFactor * 180.0/M_PI);
   cnt += sizeof(short);
-  lvel = (short)rint(*(short *)&buffer[cnt] * 
-                     PlayerRobotParams[param_idx].VelConvFactor);
+
+  lvel = (short)
+    rint(((short)(buffer[cnt] | (buffer[cnt+1] << 8))) *
+	 PlayerRobotParams[param_idx].VelConvFactor);
   cnt += sizeof(short);
-  rvel = (short)rint(*(short *)&buffer[cnt] * 
-                     PlayerRobotParams[param_idx].VelConvFactor);
+
+  rvel = (short)
+    rint(((short)(buffer[cnt] | (buffer[cnt+1] << 8))) *
+	 PlayerRobotParams[param_idx].VelConvFactor);
   cnt += sizeof(short);
+
   battery = buffer[cnt];
   cnt += sizeof(unsigned char);
   
@@ -200,33 +220,46 @@ void SIP::Parse( unsigned char *buffer )
   frontbumpers = buffer[cnt] >> 1;
   cnt += sizeof(unsigned char);
 
-  control = (short)rint(*(short *) &buffer[cnt] * 
-          PlayerRobotParams[param_idx].AngleConvFactor);
+  control = (short)
+    rint(((short)(buffer[cnt] | (buffer[cnt+1] << 8))) *
+	 PlayerRobotParams[param_idx].AngleConvFactor);
   cnt += sizeof(short);
-  ptu = *(unsigned short *) &buffer[cnt];
+
+  ptu = (buffer[cnt] | (buffer[cnt+1] << 8));
   cnt += sizeof(short);
+
   //compass = buffer[cnt]*2;
   if(buffer[cnt] != 255 && buffer[cnt] != 0 && buffer[cnt] != 181)
     compass = (buffer[cnt]-1)*2;
   cnt += sizeof(unsigned char);
+
   sonarreadings = buffer[cnt];
   cnt += sizeof(unsigned char);
-  
+
+  //printf("%hu:", sonarreadings);
   for(unsigned char i = 0;i < sonarreadings;i++) {
-    sonars[buffer[cnt]]= 
-            (short)rint(*(unsigned short*)&buffer[cnt+1] *
-                   PlayerRobotParams[param_idx].RangeConvFactor);
+    sonars[buffer[cnt]]=   (unsigned short)
+      rint((buffer[cnt+1] | (buffer[cnt+2] << 8)) *
+	   PlayerRobotParams[param_idx].RangeConvFactor);
+    //printf("%d %hu:",buffer[cnt],*((unsigned short *)&buffer[cnt+1]));
+    //     
     //printf("%hu %hu %hu\n", buffer[cnt], buffer[cnt+1], buffer[cnt+2]);
     //printf("index %d value %hu\n", buffer[cnt], sonars[buffer[cnt]]);
     cnt += 3*sizeof(unsigned char);
   }
+  //printf("\n");
 
-  timer = *(unsigned short *) &buffer[cnt];
+  timer = (buffer[cnt] | (buffer[cnt+1] << 8));
   cnt += sizeof(short);
+
   analog = buffer[cnt];
   cnt += sizeof(unsigned char);
+
   digin = buffer[cnt];
   cnt += sizeof(unsigned char);
+
   digout = buffer[cnt];
   cnt += sizeof(unsigned char);
+  // for debugging:
+  //Print();
 }

@@ -323,9 +323,9 @@ void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 
   xpos = (int)ntohl(((player_position_data_t*)buffer)->xpos);
   ypos = (int)ntohl(((player_position_data_t*)buffer)->ypos);
-  theta = ntohs(((player_position_data_t*)buffer)->yaw);
-  speed = (short)ntohs(((player_position_data_t*)buffer)->xspeed);
-  turnrate = (short)ntohs(((player_position_data_t*)buffer)->yawspeed);
+  theta = ntohl(((player_position_data_t*)buffer)->yaw);
+  speed = (short)ntohl(((player_position_data_t*)buffer)->xspeed);
+  turnrate = (short)ntohl(((player_position_data_t*)buffer)->yawspeed);
   //compass = ntohs(((player_position_data_t*)buffer)->compass);
   stall = ((player_position_data_t*)buffer)->stall;
 }
