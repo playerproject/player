@@ -90,10 +90,10 @@
 
 #ifdef INCLUDE_STAGE
 #include <stagedevice.h>
+player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 //#include <truthdevice.h>
 #endif
 
-player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 size_t ioSize = 0; // size of the IO buffer
 
 CCounter num_threads;
@@ -380,6 +380,7 @@ void *client_writer(void* arg)
   //delete data;
 }
 
+#ifdef INCLUDE_STAGE
 bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
 {
   player_stage_info_t *end = (player_stage_info_t*)((char*)arenaIO + ioSize);
@@ -472,6 +473,7 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
   
   return true;
 }
+#endif
 
 /*
  * parses strings that look like "-laser:2"

@@ -15,7 +15,7 @@ DEVICELIBNAME = libplayerdevice.a
 
 INCLUDES = -I../include
 
-#CFLAGS = -g -Wall $(PLAYER_PLATFORM)
+#CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
 CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
 LIBDIRS = -L.
 LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm
@@ -108,4 +108,4 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/playercommon.h
 	$(RM) -f $(INSTALL_INCLUDE)/messages.h
 	$(RM) -f $(INSTALL_INCLUDE)/stage.h
-# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
+
