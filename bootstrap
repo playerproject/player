@@ -2,7 +2,7 @@
 
 aclocal
 autoheader
-automake --gnu --add-missing --copy
+automake --gnu --add-missing
 autoconf
 ./configure "$@"
 
