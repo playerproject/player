@@ -44,7 +44,8 @@ class RobotMapper:
 
         self.laser_pose = (0.05, 0, 0)
         self.update_dist = 0.20
-        self.place_dist = float(options.get('--place-dist', '4.0'))
+        self.update_angle = float(options.get('--odom-angle', 15)) * math.pi / 180
+        self.patch_dist = float(options.get('--patch-dist', '4.0'))
         self.outlier_dist = float(options.get('--outlier-dist', '0.20'))
         self.odom_w = float(options.get('--odom-w', '0.50'))
         self.no_scan_match = '--disable-scan-match' in options
@@ -112,11 +113,10 @@ class RobotMapper:
 
         # Sanity check for bad odometry
         if dist > 0.50:
-            print
+            print '*** bad odometry ***'
             print dist
             print '%.3f %.3f %.3f' % self.curr_odom_pose
             print '%.3f %.3f %.3f' % odom_pose
-            assert(0)
 
         self.odom_time = odom.datatime
         self.curr_odom_pose = odom_pose
@@ -161,10 +161,24 @@ class RobotMapper:
         (odom_dist, odom_pose, laser_ranges) = self.incoming[1]
         self.incoming.pop(0)
 
-        # Dont process if we havent moved much
-        if self.curr_patch != None and odom_dist - self.update_odom_dist < self.update_dist:
+        update = 0
+
+        # Update if we have no patches yet
+        update = update or (self.curr_patch == None)
+
+        # Update if we have accumulated some distance on the wheels
+        update = update or (odom_dist - self.update_odom_dist > self.update_dist)
+
+        # Update if we have changed odometric pose
+        if self.update_odom_pose != None:
+            diff = geom.coord_sub(odom_pose, self.update_odom_pose)
+            dr = math.sqrt(diff[0] * diff[0] + diff[1] * diff[1])
+            da = abs(diff[2])
+            update = update or (dr > self.update_dist)
+            update = update or (da > self.update_angle)
+
+        if not update:
             return
-        self.update_odom_dist = odom_dist
 
         # Generate a scan from the laser data
         self.curr_scan = scan.Scan()
@@ -237,7 +251,7 @@ class RobotMapper:
                 
         # Test if any patch in the neighborhood matches the criteria,
         # only if no patches match should a new patch be created.
-        if dist > self.place_dist:
+        if dist > self.patch_dist:
 
             # Create a new patch in the map
             patch = self.map.create_patch(island)
@@ -293,6 +307,7 @@ class RobotMapper:
         self.curr_patch = patch
         self.curr_pose = geom.coord_sub(pose, patch.pose)
         self.curr_npatches = npatches
+        self.update_odom_dist = odom_dist
         self.update_odom_pose = odom_pose
         return
 
