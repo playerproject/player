@@ -1,0 +1,23 @@
+Usage:
+  ./mkserialize.tcl < player.h
+
+This Tcl script will parse a C header, such as <player.h>, and produce two
+files:
+  serialize.h
+  serialize.c
+Together, these files prototype and implement a pair of serialization and
+deserialization functions for each struct declared in the header.
+
+The parser is *very* primitive, and the ways in which you can confuse and/or
+break it while still using valid C syntax are far too numerous to discuss
+here.  Some hints to make it work right:
+
+  - don't use multi-line comments
+  - start every struct with a left-aligned '{' on its own line
+  - don't mix differently-typed fields on the same line, such as:
+       int x; short y;
+  - however, you can do things like:
+       int x,y;
+
+
+        brian gerkey (gerkey@users.sourceforge.net)
