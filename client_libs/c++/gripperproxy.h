@@ -32,6 +32,19 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+/* gripper stuff */
+#define GRIPopen   1
+#define GRIPclose  2
+#define GRIPstop   3
+#define LIFTup     4
+#define LIFTdown   5
+#define LIFTstop   6
+#define GRIPstore  7
+#define GRIPdeploy 8
+#define GRIPhalt   15
+#define GRIPpress  16
+#define LIFTcarry  17
+
 class GripperProxy : public ClientProxy
 {
 

@@ -89,6 +89,7 @@ int main(int argc, char** argv)
   PlayerClient robot(host,port);
   SonarProxy sp(&robot,0,'r');
   VisionProxy vp(&robot,0,'r');
+  GripperProxy gp(&robot,0,'w');
 
   /* request read access on the sonars and all access to the wheels */
   PositionProxy pp(&robot,0,'a');
