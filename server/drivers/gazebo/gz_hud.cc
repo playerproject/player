@@ -95,7 +95,7 @@ CDevice* GzHUD_Init(char* interface, ConfigFile* cf, int section)
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_SIMULATION_STRING) != 0)
+  if (strcmp(interface, PLAYER_HUD_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"gz_hud\" does not support interface \"%s\"\n", interface);
     return (NULL);

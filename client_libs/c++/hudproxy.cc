@@ -55,7 +55,7 @@
 // Constructor
 HUDProxy::HUDProxy( PlayerClient *pc, unsigned short index,
     unsigned char access)
-  : ClientProxy(pc, PLAYER_SIMULATION_CODE, index, access)
+  : ClientProxy(pc, PLAYER_HUD_CODE, index, access)
 {
 }
 

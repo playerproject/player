@@ -48,6 +48,8 @@
 #include "devicetable.h"
 #include "drivertable.h"
 
+//#include "orientation.h"
+
 // Info on potential shapes.
 class Shape 
 {
@@ -110,6 +112,17 @@ class ShapeTracker : public CDevice
 
   private: Shape shapes[256];
   private: unsigned int shapeCount;
+
+  // Kalmna filters used to track a shape
+  private: CvKalman *kalmanX;
+  private: CvKalman *kalmanY;
+  private: int kalmanFirst;
+
+  private: CvPoint orientPoint;
+  private: double trackVelocityX;
+  private: double trackVelocityY;
+  private: double trackHeading;
+
 };
 
 
@@ -279,6 +292,8 @@ int ShapeTracker::UpdateCamera()
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Find all the shapes in the image
 void ShapeTracker::FindShapes()
 {
   double s, t1;
@@ -333,7 +348,7 @@ void ShapeTracker::FindShapes()
         //cvDrawContours(this->mainImage, result, 255, 0, 0, 5, 8);
 
         //cvSaveImage("main2.jpg", this->mainImage);
-        //orientpoint = getcentralpoint(init_image, result);
+        //this->orientPoint = getcentralpoint(this->mainImage, result);
       }
     }
   }
@@ -341,85 +356,104 @@ void ShapeTracker::FindShapes()
   cvReleaseMemStorage(&storage);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Run a Kalman filter 
 void ShapeTracker::KalmanFilter()
 {
-/*  // TODO: image processing
-  CvMat *corrx, *corry;
-  CvMat *predictionx, *predictiony;
-  float xmeanp, ymeanp, xmeanvp, ymeanvp;
-  int xmean, ymean;
-  //float orientation = 0.0;
-  CvMoments moments;
-  float vx, vy;
+  /*CvMoments moments;
   CvPoint pt3, pt4;
-  CvPoint tmp_orient;
-  double heading;
+  int xmean, ymean;
 
-  cvMoments(tmp_image2, &moments, 1);
+
+  float xmeanp, ymeanp, xmeanvp, ymeanvp;
+  //float orientation = 0.0;
+  float vx, vy;
+
+  //Calculates all moments up to third order of a polygon or rasterized shape
+  cvMoments(this->workImage, &moments, 1);
+
   xmean = (int)(moments.m10/moments.m00);
   ymean = (int)(moments.m01/moments.m00);
-  //orientation = 0.0f;
 
-  if((xmean != 0) && (ymean != 0)){
+  if ((xmean != 0) && (ymean != 0))
+  {
+    CvPoint tmpOrient;
+
+    // Retrieves central moment from moment state structure
     float cm02 = cvGetCentralMoment(&moments, 0, 2);
     float cm20 = cvGetCentralMoment(&moments, 2, 0);
     float cm11 = cvGetCentralMoment(&moments, 1, 1);
-    tmp_orient.x = xmean;
-    tmp_orient.y = ymean;
-    heading = getorientation(tmp_orient, orientpoint);
+
+    tmpOrient.x = xmean;
+    tmpOrient.y = ymean;
+
+    this->trackHeading = getorientation(tmpOrient, this->orientPoint);
+
     //fprintf(stderr, " heading %f\n", heading);
     //orientation = atan2(cm20 -cm02, 2*cm11)*180.0/(2*M_PI);
-    if(first == 1){
+    if(this->kalmanFirst == 1)
+    {
       fprintf(stderr, " x %f %f\n", (float)xmean, (float)ymean);
-      kalmanx->state_post->data.fl[0] = (float) xmean;
-      kalmanx->state_post->data.fl[1] = (float) 0.0;
+      this->kalmanX->state_post->data.fl[0] = (float) xmean;
+      this->kalmanY->state_post->data.fl[1] = (float) 0.0;
+
       kalmany->state_post->data.fl[0] = (float) ymean;
       kalmany->state_post->data.fl[1] = (float) 0.0;
-      first = 0;
+      this->kalmanFirst = 0;
     }
   }
-  if(xmean == 0 && ymean == 0){
-    xmean = (width/2);
-    ymean = (height/2);
+
+
+  // If we have no x and y point, assume center of image
+  if (xmean == 0 && ymean == 0)
+  {
+    xmean = (this->cameraData.width/2);
+    ymean = (this->cameraData.height/2);
   }
-  if(first == 0){
-    predictionx = cvKalmanPredict(kalmanx, 0);
-    predictiony = cvKalmanPredict(kalmany, 0);
 
-    xmeanp = predictionx->data.fl[0];
-    ymeanp = predictiony->data.fl[0];
-    xmeanvp = predictionx->data.fl[1];
-    ymeanvp = predictiony->data.fl[1];
 
-    if(debug > 1){
-      fprintf(stderr, "predict %f %f %f %f\n",xmeanp,xmeanvp,ymeanp, ymeanvp);
-      fprintf(stderr, "meas %f %f\n",(float)xmean, (float)ymean);
-    }
-    if(xmean == (width/2) && ymean == (height/2)){
+  if (this->kalmanFirst == 0)
+  {
+    CvMat *predictionx, *predictiony;
+
+    // Predict the next position
+    predictionx = cvKalmanPredict(this->kalmanX, 0);
+    predictiony = cvKalmanPredict(this->kalmanY, 0);
+
+    //if(debug > 1)
+      //{
+        //xmeanp = predictionx->data.fl[0];
+        //ymeanp = predictiony->data.fl[0];
+
+        //xmeanvp = predictionx->data.fl[1];
+        // ymeanvp = predictiony->data.fl[1];
+        //fprintf(stderr, "predict %f %f %f %f\n",xmeanp,xmeanvp,ymeanp, ymeanvp);
+        //fprintf(stderr, "meas %f %f\n",(float)xmean, (float)ymean);
+    //}
+
+    if(xmean == (width/2) && ymean == (height/2))
+    {
+
       pt3.x=(int)predictionx->data.fl[0];
       pt4.x=(int)predictionx->data.fl[1];
+
       pt3.y = (int)predictiony->data.fl[0];
       pt4.y=(int)predictiony->data.fl[1];
 
-      //used for stealthy
-      tracked_values[0].heading = tracked_values[1].heading;
-      tracked_values[0].point.x = tracked_values[1].point.x;
-      tracked_values[0].point.y = tracked_values[1].point.y;
+      this->kalmanX->state_post->data.fl[0] = predictionx->data.fl[0];
+      this->kalmanX->state_post->data.fl[1] = predictionx->data.fl[1];
+      this->kalmanY->state_post->data.fl[0] = predictiony->data.fl[0];
+      this->kalmanY->state_post->data.fl[1] = predictiony->data.fl[1];
+    } else {
 
-      tracked_values[1].heading = heading;
-      tracked_values[1].point.x = pt3.x;
-      tracked_values[1].point.y = pt3.y;
+      CvMat *corrx, *corry;
 
-      kalmanx->state_post->data.fl[0]=predictionx->data.fl[0];
-      kalmanx->state_post->data.fl[1]=predictionx->data.fl[1];
-      kalmany->state_post->data.fl[0]=predictiony->data.fl[0];
-      kalmany->state_post->data.fl[1]=predictiony->data.fl[1];
-    }else{
-      measurementx->data.fl[0] = (float)xmean;
-      measurementy->data.fl[0] = (float)ymean;
+      this->measurementX->data.fl[0] = (float)xmean;
+      this->measurementY->data.fl[0] = (float)ymean;
 
-      corrx = cvKalmanCorrect(kalmanx, measurementx);
-      corry = cvKalmanCorrect(kalmany, measurementy);
+      corrx = cvKalmanCorrect(this->kalmanX, this->measurementX);
+      corry = cvKalmanCorrect(this->kalmanY, this->measurementY);
 
       pt3.x=(int)(corrx->data.fl[0]);
       pt4.x=(int)(corrx->data.fl[1]);
@@ -427,66 +461,73 @@ void ShapeTracker::KalmanFilter()
       pt4.x=(int)(corry->data.fl[1]);
 
     }
-    if(debug == 3){
-      fprintf(stderr, "post %d %d %d %d\n", pt3.x, pt3.y, pt4.x, pt4.y);
-      fprintf(stderr, "pre after %f %f %f %f\n",
-          kalmanx->state_post->data.fl[0],
-          kalmany->state_post->data.fl[0],
-          kalmanx->state_post->data.fl[1],
-          kalmany->state_post->data.fl[1]);
-    }
 
-    cvCircle(init_image, pt3, 15.0, CV_RGB(255,0,0), 2);
 
-    vx = (float)(pt3.x - (width/2))/(width/2);
-    vy = (float)(-pt3.y + (height/2))/(height/2);
-    //cvReleaseMat(&predictionx);
-    //cvReleaseMat(&predictiony);
-    //cvReleaseMat(&corrx);
-    //cvReleaseMat(&corry);
+    //if(debug == 3)
+    //{
+      //fprintf(stderr, "post %d %d %d %d\n", pt3.x, pt3.y, pt4.x, pt4.y);
+      //fprintf(stderr, "pre after %f %f %f %f\n",
+          //this->kalmanX->state_post->data.fl[0],
+          //this->kalmanY->state_post->data.fl[0],
+          //this->kalmanX->state_post->data.fl[1],
+          //this->kalmanY->state_post->data.fl[1]);
+    //}
 
-  }    
+    //cvCircle(init_image, pt3, 15.0, CV_RGB(255,0,0), 2);
 
-  if(reset_kalman == 1){
-    if(debug == 2){
-      fprintf(stderr, " xmean  %d, ymean %d\n",xmean, ymean);
-    }
-    vx = (float)(xmean - (width/2))/(width/2);
-    vy = (float)(-ymean + (height/2))/(height/2);
-    first =1; // reset the kalman filter
-  }
-  if(vx > 1.0)
-    vx = 1.0;
-  if(vx < -1.0)
-    vx = -1.0;
-  if(vy > 1.0)
-    vy = 1.0;
-  if(vy < -1.0)
-    vy = -1.0;
+    this->trackVelocityX = (float)(pt3.x - (this->cameraData.width/2)) / 
+      (this->cameraData.width/2);
+    this->trackVelocityY = (float)(-pt3.y + (this->cameraData.height/2)) /
+      (this->cameraData.height/2);
 
-  visual_servo_command.vel_right = vx;
-  visual_servo_command.vel_forward = vy;
-  visual_servo_command.heading_offset = (float)heading;
-  visual_servo_command.tracking_state = HV_OBJECT_TRACK_STATE;
-
-  if(debug > 1 ){
-    fprintf(stderr, "Sent x %f, y %f, z %f, state %d\n",
-        visual_servo_command.vel_right,
-        visual_servo_command.vel_forward,
-        visual_servo_command.heading_offset,
-        visual_servo_command.tracking_state);
   }
 
+  //if(reset_kalman == 1)
+  //{
+    //if(debug == 2)
+    //{
+      //fprintf(stderr, " xmean  %d, ymean %d\n",xmean, ymean);
+    //}
+    //vx = (float)(xmean - (width/2))/(width/2);
+    //vy = (float)(-ymean + (height/2))/(height/2);
+    //this->kalmanFirst =1; // reset the kalman filter
+  //}
 
+  if(this->trackVelocityX > 1.0)
+    this->trackVelocityX = 1.0;
+  if(this->trackVelocityX < -1.0)
+    this->trackVelocityX = -1.0;
 
-  put_data_on_image(width, height, vx, vy, heading, font);
-  draw_lines(width, height, heading, pt3);
-  deploymote(width, height, xmean, ymean, &deploy_mote, debug);
-  */
+  if(this->trackVelocityY > 1.0)
+    this->trackVelocityY = 1.0;
+  if(this->trackVelocityY < -1.0)
+    this->trackVelocityY = -1.0;
 
+  //visual_servo_command.vel_right = vx;
+  //visual_servo_command.vel_forward = vy;
+  //visual_servo_command.heading_offset = (float)heading;
+  //visual_servo_command.tracking_state = HV_OBJECT_TRACK_STATE;
+
+  //if(debug > 1 ){
+    //fprintf(stderr, "Sent x %f, y %f, z %f, state %d\n",
+        //visual_servo_command.vel_right, 
+        //visual_servo_command.vel_forward,
+        //visual_servo_command.heading_offset,
+        //visual_servo_command.tracking_state);
+  //}
+
+  //put_data_on_image(width, height, vx, vy, heading, font);
+  //draw_lines(width, height, heading, pt3);
+*/
   return;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Reset the kalman filter
+/*void ShapeTracker::ResetKalman()
+{
+  this->kalmanFirst = 1;
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Look for stuff in the image.

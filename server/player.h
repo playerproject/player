@@ -92,6 +92,7 @@
 #define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo)
 #define PLAYER_ENERGY_CODE         ((uint16_t)41)  // energy consumption & charging
 #define PLAYER_MAP_CODE            ((uint16_t)42)  // get a map
+#define PLAYER_HUD_CODE            ((uint16_t)43)  // get a HUD interface
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
@@ -133,6 +134,7 @@
 #define PLAYER_NOMAD_STRING         "nomad"
 #define PLAYER_ENERGY_STRING        "energy"
 #define PLAYER_MAP_STRING           "map"
+#define PLAYER_HUD_STRING           "hud"
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"

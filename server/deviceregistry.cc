@@ -380,6 +380,7 @@ player_interface_t interfaces[] = {
   {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING, "nomad"},
   {PLAYER_ENERGY_CODE, PLAYER_ENERGY_STRING, "stg_energy"},
   {PLAYER_MAP_CODE, PLAYER_MAP_STRING, "mapfile"},
+  {PLAYER_HUD_CODE, PLAYER_HUD_STRING, "gz_hud"},
   {0,NULL,NULL}
 };
 
