@@ -123,7 +123,8 @@ fi
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
+PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
+
 if test "x$enable_cmvision" = "xyes"; then
   dnl Check for video-related headers, to see which support can be compiled into
   dnl the CMVision driver.
@@ -282,11 +283,11 @@ if test "x$GAZEBO_DIR" = "xNONE" -o "x$GAZEBO_DIR" = "xno"; then
   GAZEBO_EXTRA_LDFLAGS=-lgazebo
 elif test "x$GAZEBO_DIR" = "xyes"; then
   GAZEBO_HEADER=$prefix/include/gazebo.h
-  GAZEBO_EXTRA_CPPFLAGS="-I$prefix/include"
+  GAZEBO_EXTRA_CPPFLAGS="-I$prefix/include -DINCLUDE_GAZEBO"
   GAZEBO_EXTRA_LDFLAGS="-L$prefix/lib -lgazebo"
 else
   GAZEBO_HEADER=$GAZEBO_DIR/include/gazebo.h
-  GAZEBO_EXTRA_CPPFLAGS="-I$GAZEBO_DIR/include"
+  GAZEBO_EXTRA_CPPFLAGS="-I$GAZEBO_DIR/include -DINCLUDE_GAZEBO"
   GAZEBO_EXTRA_LDFLAGS="-L$GAZEBO_DIR/lib -lgazebo"
 fi
 
