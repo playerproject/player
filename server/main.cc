@@ -532,9 +532,9 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
 
         case PLAYER_SERVICE_ADV_CODE:
         {
-            DriverEntry* entry = driverTable->GetDriverEntry("service_adv_lsd");
+            DriverEntry* entry = driverTable->GetDriverEntry("service_adv_mdns");
             if(!entry) {
-                puts("WARNING: Player support for service_adv_lsd is unavailable!");
+                puts("WARNING: Player support for service_adv_mdns is unavailable!");
                 break;
             }
             int section = configFile.AddEntity(globalparent, PLAYER_SERVICE_ADV_STRING);

@@ -45,6 +45,7 @@
 //#endif
 
 #include <string>
+#include <iostream>
 using namespace std;
 
 #include <servicediscovery/servicedirectory.hh>
@@ -188,7 +189,7 @@ void SrvAdv_LSD::Main()
 {
     while(true) {
         serviceDir->handleIncoming();
-//        cerr << "service_adv_lsd: pong\n";
+        cerr << "service_adv_lsd: pong\n";
     }
 }
 

@@ -326,6 +326,18 @@ void GzHUD_Register(DriverTable *table);
 void ServiceAdvLSD_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_SERVICE_ADV_MDNS
+void ServiceAdvMDNS_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_SERVICE_ADV_MDNS
+#define DEFAULT_SERVICE_ADV_DRIVER "service_adv_mdns"
+#elif INCLUDE_SERVICE_ADV_LSD
+#define DEFAULT_SERVICE_ADV_DRIVER "service_adv_lsd"
+#else
+#define DEFAULT_SERVICE_ADV_DRIVER "service_adv--NO_DEFAULT_DRIVER_AVAILABLE"
+#endif
+
 #ifdef INCLUDE_STAGE1P4
 void StgSimulation_Register(DriverTable *table);
 void StgLaser_Register(DriverTable *table);
@@ -379,7 +391,7 @@ player_interface_t interfaces[] = {
   {PLAYER_POSITION3D_CODE, PLAYER_POSITION3D_STRING, "segwayrmp"},
   {PLAYER_TRUTH_CODE, PLAYER_TRUTH_STRING, "passthrough"},
   {PLAYER_GPS_CODE, PLAYER_GPS_STRING, "garminnmea"},
-  {PLAYER_SERVICE_ADV_CODE, PLAYER_SERVICE_ADV_STRING, "service_adv_lsd"},
+  {PLAYER_SERVICE_ADV_CODE, PLAYER_SERVICE_ADV_STRING, DEFAULT_SERVICE_ADV_DRIVER},
   {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING, "stg_simulation"},
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_BLINKENLIGHT_STRING, "stg_blinkenlight"},
   {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sickpls"},
@@ -741,6 +753,10 @@ register_devices()
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
   ServiceAdvLSD_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SERVICE_ADV_MDNS
+  ServiceAdvMDNS_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_NOMAD
