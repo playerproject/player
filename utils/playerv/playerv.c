@@ -202,7 +202,7 @@ int main(int argc, char **argv)
 
       // Update everything on the sync packet.
       if (proxy == client)
-      {      
+      {
         // Update all the subscribed devices
         for (i = 0; i < device_count; i++)
         {
