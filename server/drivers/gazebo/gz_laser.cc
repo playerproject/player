@@ -72,11 +72,10 @@ class GzLaser : public CDevice
   public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
 
   // Gazebo id
-  private: const char *gz_id;
+  private: int gz_id;
 
-  // MMap file
-  private: int mmap_fd;
-  private: gz_laser_t *mmap;
+  // Interface
+  private: gz_laser_t *iface;
 };
 
 
@@ -107,7 +106,10 @@ GzLaser::GzLaser(char* interface, ConfigFile* cf, int section)
 {
 
   // Get the id of the device in Gazebo
-  this->gz_id = cf->ReadString(section, "gz_id", 0);
+  this->gz_id = cf->ReadInt(section, "gz_id", 0);
+
+  // Create an interface
+  this->iface = gz_laser_alloc();
   
   return;
 }
@@ -125,27 +127,8 @@ GzLaser::~GzLaser()
 // Set up the device (called by server thread).
 int GzLaser::Setup()
 {
-  char filename[128];
-
-  snprintf(filename, sizeof(filename), "/tmp/gazebo.%s.mmap", this->gz_id);
-  printf("opening %s\n", filename);
-
-  // Open the mmap file
-  this->mmap_fd = ::open(filename, O_RDWR);
-  if (this->mmap_fd <= 0)
-  {
-    PLAYER_ERROR1("error opening device file: %s", strerror(errno));
+  if (gz_laser_open(this->iface, this->gz_id) != 0)
     return -1;
-  }
-
-  // Map the mmap file
-  this->mmap = (gz_laser_t*) ::mmap(0, sizeof(gz_laser_t), PROT_READ | PROT_WRITE,
-                                       MAP_SHARED, this->mmap_fd, 0);
-  if ((int) this->mmap <= 0)
-  {
-    PLAYER_ERROR1("error mapping device file: %s", strerror(errno));
-    exit(1);
-  }
   
   return 0;
 }
@@ -155,13 +138,7 @@ int GzLaser::Setup()
 // Shutdown the device (called by server thread).
 int GzLaser::Shutdown()
 {
-  ::munmap(this->mmap, sizeof(gz_laser_t));
-  ::close(this->mmap_fd);
-
-  this->mmap = NULL;
-  this->mmap_fd = 0;
-
-  return 0;
+  return gz_laser_close(this->iface);
 }
 
 
@@ -173,14 +150,14 @@ size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
   int i;
   player_laser_data_t data;
 
-  data.min_angle = htons((int) (this->mmap->min_angle * 100 * 180 / M_PI));
-  data.max_angle = htons((int) (this->mmap->max_angle * 100 * 180 / M_PI));
-  data.resolution = htons((int) (this->mmap->resolution * 100 * 180 / M_PI));
-  data.range_count = htons((int) (this->mmap->range_count));
+  data.min_angle = htons((int) (this->iface->data->min_angle * 100 * 180 / M_PI));
+  data.max_angle = htons((int) (this->iface->data->max_angle * 100 * 180 / M_PI));
+  data.resolution = htons((int) (this->iface->data->resolution * 100 * 180 / M_PI));
+  data.range_count = htons((int) (this->iface->data->range_count));
   
-  for (i = 0; i < this->mmap->range_count; i++)
+  for (i = 0; i < this->iface->data->range_count; i++)
   {
-    data.ranges[i] = htons((int) (this->mmap->ranges[i] * 1000));
+    data.ranges[i] = htons((int) (this->iface->data->ranges[i] * 1000));
     data.intensity[i] = htons(0);
   }
 
@@ -188,9 +165,9 @@ size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
   memcpy(dest, &data, sizeof(data));
 
   if (timestamp_sec)
-    *timestamp_sec = (int) (this->mmap->time);
+    *timestamp_sec = (int) (this->iface->data->time);
   if (timestamp_usec)
-    *timestamp_usec = (int) (fmod(this->mmap->time, 1) * 1e6);
+    *timestamp_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
   return sizeof(data);
 }
@@ -209,7 +186,6 @@ void GzLaser::PutCommand(void* client, unsigned char* src, size_t len)
 // Handle requests
 int GzLaser::PutConfig(player_device_id_t* device, void* client, void* data, size_t len)
 {
-
   // TODO
 
   if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
