@@ -10,13 +10,17 @@
 #define ENCODE_H_
 
 
-/// Encode binary data to ascii hex.  The caller is reponsible for
-/// freeing the destination string.
-void EncodeHex(const void *src, int len, char **dst);
+/// Determine the size of the destination buffer for hex encoding
+size_t EncodeHexSize(size_t src_len);
 
-/// Decodes ascii hex to binary data.  The caller is reponsible for
-/// freeing the destination buffer.
-void DecodeHex(const char *src, char **dst, int *len);
+/// Encode binary data to ascii hex.
+void EncodeHex(char *dst, size_t dst_len, const void *src, size_t src_len);
+
+/// Determine the size of the destination buffer for hex decoding
+size_t DecodeHexSize(size_t src_len);
+
+/// Decodes ascii hex to binary data.  
+void DecodeHex(void *dst, size_t dst_len, const char *src, size_t src_len);
 
 
 #endif

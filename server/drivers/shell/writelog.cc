@@ -605,15 +605,23 @@ void WriteLog::Write(void *data, size_t size,
 void WriteLog::WriteCamera(player_camera_data_t *data)
 {
   char *str;
+  size_t src_size, dst_size;
 
   // Image format
-  fprintf(this->file, "%d %d %d %d %d %d",
+  fprintf(this->file, "%d %d %d %d %d %d " ,
           HUINT16(data->width), HUINT16(data->height),
           data->depth, data->format, data->compression,
           HUINT32(data->image_size));
+  
+  // Check image size
+  src_size = HUINT32(data->image_size);
+  dst_size = ::EncodeHexSize(src_size);
+  str = (char*) malloc(dst_size + 1);
+
+  // Encode image into string
+  ::EncodeHex(str, dst_size, data->image, src_size);
 
   // Write image bytes
-  ::EncodeHex(data->image, HUINT32(data->image_size), &str);
   fprintf(this->file, str);
   free(str);
   

@@ -49,6 +49,12 @@ int ReadLogManager_Init(const char *filename, double speed);
 // Finalize the manager
 int ReadLogManager_Fini();
 
+// Start the reader
+int ReadLogManager_Startup();
+
+// Stop the reader
+int ReadLogManager_Shutdown();
+
 // Get the pointer to the one-and-only instance
 ReadLogManager *ReadLogManager_Get();
 
@@ -60,6 +66,12 @@ class ReadLogManager
 
   // Destructor
   public: virtual ~ReadLogManager();  
+
+  // Initialize the reader
+  public: int Init();
+
+  // Finalize the reader
+  public: int Fini();
 
   // Start the reader; read data from the given device
   public: int Startup();
@@ -87,6 +99,9 @@ class ReadLogManager
   private: int ParseData(Driver *device, int linenum,
                          int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
+  // Parse camera data
+  private: int ParseCamera(Driver *device, int linenum,
+                          int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
   // Parse laser data
   private: int ParseLaser(Driver *device, int linenum,
                           int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
@@ -110,6 +125,9 @@ class ReadLogManager
   // File to read data from
   private: char *filename;
   private: gzFile file;
+
+  private: size_t line_size;
+  private: char *line;
 
   // File format
   private: char *format;

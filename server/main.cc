@@ -1468,6 +1468,17 @@ int main( int argc, char *argv[] )
       dev->driver->Prepare();
   }
 
+#ifdef INCLUDE_LOGFILE
+  // Everything is set up, so now is the time to start the readlog
+  // manager, if we have one
+  if (readlog_filename != NULL)
+  {
+    // Start the readlog reader
+    if (ReadLogManager_Startup() != 0)
+      exit(-1);
+  }
+#endif
+  
   // compute seconds and nanoseconds from the given server update rate
   struct timespec ts;
   ts.tv_sec = (time_t)floor(1.0/update_rate);
@@ -1499,7 +1510,10 @@ int main( int argc, char *argv[] )
 #if INCLUDE_LOGFILE
   // Finalize ReadLog manager
   if (readlog_filename != NULL)
+  {
+    ReadLogManager_Shutdown();
     ReadLogManager_Fini();
+  }
 #endif
 
 #if INCLUDE_GAZEBO

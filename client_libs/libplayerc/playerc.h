@@ -541,19 +541,19 @@ typedef struct
   playerc_device_t info;
 
   /** Image dimensions (pixels). */
-  uint16_t width, height;
+  int width, height;
 
   /** Image depth (8, 16, 24). */
-  uint8_t depth;
+  int depth;
 
   /** Image format (e.g., RGB888). */
   uint8_t format;
 
   /** Image compression method. */
-  uint8_t compression;
+  int compression;
 
   /** Size of image data (bytes) */
-  uint32_t image_size;
+  int image_size;
   
   /** Image data (packed format). */
   uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];

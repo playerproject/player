@@ -6,6 +6,7 @@
  * CVS: $Id$
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,42 +17,56 @@ static char hex_table[] = "0123456789ABCDEF";
 
 
 ////////////////////////////////////////////////////////////////////////////
-// Encode binary data to ascii hex
-void EncodeHex(const void *src, int len, char **dst)
+/// Determine the size of the destination buffer for hex encoding
+size_t EncodeHexSize(size_t src_len)
 {
-  int i;
-  int s, sl, sh;
-  
-  // Create a buffer for the data
-  *dst = (char*) calloc(2 * len + 1, 1);
+  return src_len * 2;
+}
 
-  for (i = 0; i < len; i++)
+
+////////////////////////////////////////////////////////////////////////////
+// Encode binary data to ascii hex
+void EncodeHex(char *dst, size_t dst_len, const void *src, size_t src_len)
+{
+  size_t i;
+  int s, sl, sh;
+
+  assert(dst_len >= 2 * src_len);
+  
+  for (i = 0; i < src_len; i++)
   {
     s = ((const unsigned char*) src)[i];
     sl = s & 0x0F;
     sh = (s >> 4) & 0x0F;
-    (*dst)[i * 2 + 0] = hex_table[sh];
-    (*dst)[i * 2 + 1] = hex_table[sl];
+    dst[i * 2 + 0] = hex_table[sh];
+    dst[i * 2 + 1] = hex_table[sl];
   }
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
-// Decodes ascii hex to binary data.  
-void DecodeHex(const char *src, void **dst, int *len)
+/// Determine the size of the destination buffer for hex decoding
+size_t DecodeHexSize(size_t src_len)
 {
-  int i;
+  return src_len / 2;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Decodes ascii hex to binary data.  
+void DecodeHex(void *dst, size_t dst_len, const char *src, size_t src_len)
+{
+  size_t i;
   int sl, sh;
 
-  *len = strlen(src) / 2;
-  *dst = calloc(*len, 1);
+  assert(dst_len >= src_len / 2);
 
-  for (i = 0; i < *len; i++)
+  for (i = 0; i < dst_len; i++)
   {
     sh = src[2 * i + 0];
     sl = src[2 * i + 1];
-    ((unsigned char*) *dst) = (sh << 4) | sl;
+    ((char*) dst)[i] = (sh << 4) | sl;
   }
   
   return;
