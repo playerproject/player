@@ -38,6 +38,8 @@
 #include <counter.h>
 #include <packet.h>
 
+#include <iostream.h> //some debug output it easier using stream IO
+
 #ifdef PLAYER_SOLARIS
   #include <strings.h>  /* for bzero */
 #endif
@@ -47,8 +49,8 @@ extern CCounter num_threads;
 extern CClientData* clients[];
 extern pthread_mutex_t clients_mutex;
 extern bool SHUTTING_DOWN;
-extern int playerport;
 
+extern int global_playerport; // used to generate useful output & debug
 
 CClientData::CClientData() 
 {
@@ -58,7 +60,9 @@ CClientData::CClientData()
   writeThread = 0;
   socket = 0;
   mode = CONTINUOUS;
+  //mode = UPDATE; // RTV - default for testing
   frequency = 10;
+
   pthread_mutex_init( &access, NULL ); 
   pthread_mutex_init( &datarequested, NULL ); 
   //pthread_mutex_init( &requesthandling, NULL ); 
@@ -81,9 +85,16 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   struct timeval curr;
   unsigned int real_payloadsize;
 
-  static unsigned char reply[PLAYER_MAX_MESSAGE_SIZE];
+  //static unsigned char reply[PLAYER_MAX_MESSAGE_SIZE]; // old style
 
-  bzero(reply,sizeof(reply));
+  static int reply_size = PLAYER_MAX_MESSAGE_SIZE;
+  static unsigned char* reply = 0;
+
+  // allocate storage just the first time this is called
+  if( reply == 0 ) reply = new unsigned char[ reply_size ];
+
+  // but clean the buffer every time for all-day freshness
+  bzero(reply, reply_size );
 
   if(0)
   {
@@ -156,21 +167,33 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             }
             memcpy(&datamode,payload+sizeof(player_device_ioctl_t),
                             sizeof(player_device_datamode_req_t));
-            if(datamode.mode)
-            {
-              /* changet to request/reply */
-              //puts("changing to REQUESTREPLY");
-              mode = REQUESTREPLY;
-              pthread_mutex_unlock(&datarequested);
-              pthread_mutex_lock(&datarequested);
-            }
-            else
-            {
-              /* change to continuous mode */
-              //puts("changing to CONTINUOUS");
-              mode = CONTINUOUS;
-              pthread_mutex_unlock(&datarequested);
-            }
+            switch(datamode.mode)
+	      {
+              case REQUESTREPLY:
+		/* changet to request/reply */
+		//puts("changing to REQUESTREPLY");
+		mode = REQUESTREPLY;
+		pthread_mutex_unlock(&datarequested);
+		pthread_mutex_lock(&datarequested);
+		break;
+	      case CONTINUOUS:
+		/* change to continuous mode */
+		//puts("changing to CONTINUOUS");
+		mode = CONTINUOUS;
+		pthread_mutex_unlock(&datarequested);
+		break;
+	      case UPDATE:
+		/* change to continuous mode */
+		//puts("changing to UPDATE");
+		mode = UPDATE;
+		pthread_mutex_unlock(&datarequested);
+		break;
+	      default:
+		printf("Player warning: unknown I/O mode requested (%d)."
+		       "Ignoring request\n",
+		       datamode.mode );
+		break;
+	      } // end datamode switch
             break;
           case PLAYER_PLAYER_DATA_REQ:
             // this ioctl takes no args
@@ -218,17 +241,24 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       }
       break;
     case PLAYER_MSGTYPE_CMD:
+      
+      //puts( "processing command message" );
+
       /* command message */
       if(CheckPermissions(hdr.device,hdr.device_index))
       {
+	//puts( "got permissions" );
+
         // check if we can write to this device
         if((deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'w') ||
            (deviceTable->GetDeviceAccess(hdr.device,hdr.device_index) == 'a'))
         
         {
+	  //puts( "got access" );
           // make sure we've got a non-NULL pointer
           if((devicep = deviceTable->GetDevice(hdr.device,hdr.device_index)))
           {
+	    //puts( "got device" );
             devicep->GetLock()->PutCommand(devicep,payload,payload_size);
           }
           else
@@ -320,7 +350,9 @@ CClientData::~CClientData()
   if (writeThread) num_threads-=1;
 
   if (socket) close(socket);
-  printf("** Killing client on socket %d ** [Port %d]\n", socket,playerport);
+  printf("** Player [port %d] killing client on socket %d **\n", 
+	 global_playerport, socket);
+
 
   if (readThread && writeThread) 
   {
@@ -418,6 +450,10 @@ void CClientData::UpdateRequested(player_device_req_t req)
     thisub = new CDeviceSubscription;
     thisub->code = req.code;
     thisub->index = req.index;
+
+    thisub->last_sec = 0; // init the freshness timer
+    thisub->last_usec = 0;
+
     if(prevsub)
       prevsub->next = thisub;
     else
@@ -568,29 +604,49 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
           hdr.device = htons(thisub->code);
           hdr.device_index = htons(thisub->index);
           hdr.reserved = 0;
-          
+
           //puts("CClientData::BuildMsg() calling GetData");
           size = devicep->GetLock()->GetData(devicep, 
                                              data+totalsize+sizeof(hdr),
                                              maxsize-totalsize-sizeof(hdr),
-                                             &(hdr.timestamp_sec), &(hdr.timestamp_usec));
+                                             &(hdr.timestamp_sec), 
+					     &(hdr.timestamp_usec));
+	  
           //puts("CClientData::BuildMsg() called GetData");
 
-          // *** HACK -- ahoward
-          // Skip this data if it is zero length
-          //
-          if(size == 0)
-          {
-              //puts("BuldMsg(): got zero length data; continuing");
-              continue;
-          }
-          
+	  // if we're in UPDATE mode, we only want this data if it is new
+	  if( mode == UPDATE )
+	    {
+	      //printf( "last_sec: %u\tlast_usec: %u\n", 
+	      //      thisub->last_sec, thisub->last_usec );
+
+	      // if the data has the same timestamp as last time then
+	      // we don;t want it - just send back an empty
+	      // packet. (Byte order doesn't matter for the equality
+	      // check)
+	      if( hdr.timestamp_sec == thisub->last_sec && 
+		  hdr.timestamp_usec == thisub->last_usec )  
+		{
+		  size = 0; // this prevents us copying in the data
+		  //puts( "stale data" );
+		}
+	      //else
+	      //printf( "fresh data at %u sec.\n", ntohl(hdr.timestamp_sec) );
+
+	      // record the time we got data for this device
+	      // keep 'em in network byte order - it doesn't matter
+	      // as long as we remember to swap them for printing
+	      thisub->last_sec = hdr.timestamp_sec;
+	      thisub->last_usec = hdr.timestamp_usec;
+	    }
+	 
+	  hdr.size = htonl(size);
+	  memcpy(data+totalsize,&hdr,sizeof(hdr));
+	  totalsize += sizeof(hdr) + size; 
+
           gettimeofday(&curr,NULL);
           hdr.time_sec = htonl(curr.tv_sec);
           hdr.time_usec = htonl(curr.tv_usec);
-          hdr.size = htonl(size);
-          memcpy(data+totalsize,&hdr,sizeof(hdr));
-          totalsize += sizeof(hdr) + size;
         }
         else
         {

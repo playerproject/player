@@ -33,17 +33,21 @@
 #include <messages.h>
 #include <sys/time.h> // for struct timeval
 
+// devices on this port are visible to all players
+#define GLOBALPORT 1
+
 // Notes on stage/player shared memory format.
 //
 // Each device is allocateed a block of shared memory.
 // Each simulated device is allocated a block of shared memory.
-// This block is subdivided into 4 parts:
-//      info buffer -- flags (subscribed, new data, new command, new configuration)
+// This block is subdivided into 5 parts:
+//      info buffer -- device ids, plus timestamps and available byte-counts
 //      data buffer
 //      command buffer
 //      config buffer
+//      truth buffer
 
-
+// these notes might be a little wrong - check stage's entity.cc behavior:
 // player/stage info buffer
 // available is set by stage and read by player.
 // subscribed is set by player and read by stage.
@@ -52,89 +56,31 @@
 // command_len is set by player.
 // config_len is set by player and reset (to zero) by stage.
 //
-typedef struct
+
+typedef struct player_stage_info
 {
-    uint8_t available;
-    uint8_t subscribed;
-    uint32_t data_timestamp_sec;
-    uint32_t data_timestamp_usec;
-    uint16_t data_len;
-    uint16_t command_len;
-    uint16_t config_len;
+  player_id_t player_id;  // identify this entity to Player
+  uint32_t len;           // total size of this struct + all the buffers
+  uint8_t subscribed;     // the number of Players connected to this device
+
+  // the type-specific stuff is stored in variable length buffers
+  // after this header - we store useful info about the availability
+  // and freshness of that data here
+  uint32_t data_len;
+  uint32_t data_avail;
+  uint32_t data_timestamp_sec;
+  uint32_t data_timestamp_usec;
+
+  uint32_t command_len;
+  uint32_t command_avail;
+  uint32_t command_timestamp_sec;
+  uint32_t command_timestamp_usec;
+
+  uint32_t config_len;
+  uint32_t config_avail;
+  uint32_t config_timestamp_sec;
+  uint32_t config_timestamp_usec;
+
 } __attribute__ ((packed)) player_stage_info_t;
 
-
-#define INFO_BUFFER_SIZE    sizeof(player_stage_info_t)
-
-#define MISC_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
-                              + MISC_DATA_BUFFER_SIZE \
-                              + MISC_COMMAND_BUFFER_SIZE \
-                              + MISC_CONFIG_BUFFER_SIZE
-
-#define POSITION_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
-                              + POSITION_DATA_BUFFER_SIZE \
-                              + POSITION_COMMAND_BUFFER_SIZE \
-                              + POSITION_CONFIG_BUFFER_SIZE
-
-#define LASER_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
-                              + LASER_DATA_BUFFER_SIZE \
-                              + LASER_COMMAND_BUFFER_SIZE \
-                              + LASER_CONFIG_BUFFER_SIZE
-
-#define ACTS_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
-                             + ACTS_DATA_BUFFER_SIZE \
-                             + ACTS_COMMAND_BUFFER_SIZE \
-                             + ACTS_CONFIG_BUFFER_SIZE
-
-#define SONAR_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE + \
-                                 SONAR_DATA_BUFFER_SIZE + \
-                                 SONAR_COMMAND_BUFFER_SIZE + \
-                                 SONAR_CONFIG_BUFFER_SIZE 
-
-#define PTZ_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE + \
-                              PTZ_DATA_BUFFER_SIZE + \
-                              PTZ_COMMAND_BUFFER_SIZE + \
-                              PTZ_CONFIG_BUFFER_SIZE
-
-#define LASERBEACON_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
-                              + LASERBEACON_DATA_BUFFER_SIZE \
-                              + LASERBEACON_COMMAND_BUFFER_SIZE \
-                              + LASERBEACON_CONFIG_BUFFER_SIZE
-
-#define BROADCAST_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE + \
-                              BROADCAST_DATA_BUFFER_SIZE + \
-                              BROADCAST_COMMAND_BUFFER_SIZE + \
-                              BROADCAST_CONFIG_BUFFER_SIZE 
-
-#define GRIPPER_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE + \
-                              GRIPPER_DATA_BUFFER_SIZE + \
-                              GRIPPER_COMMAND_BUFFER_SIZE + \
-                              GRIPPER_CONFIG_BUFFER_SIZE 
-
-#define GPS_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE + \
-                              GPS_DATA_BUFFER_SIZE + \
-                              GPS_COMMAND_BUFFER_SIZE + \
-                              GPS_CONFIG_BUFFER_SIZE 
-
-// Make space for memory test
-//
-#define TEST_TOTAL_BUFFER_SIZE 64
-
-// Lay out memory mapped area
-//
-#define TEST_DATA_START 0
-#define MISC_DATA_START TEST_DATA_START + TEST_TOTAL_BUFFER_SIZE
-#define POSITION_DATA_START MISC_DATA_START + MISC_TOTAL_BUFFER_SIZE
-#define SONAR_DATA_START POSITION_DATA_START + POSITION_TOTAL_BUFFER_SIZE
-#define LASER_DATA_START SONAR_DATA_START + SONAR_TOTAL_BUFFER_SIZE
-#define PTZ_DATA_START LASER_DATA_START + LASER_TOTAL_BUFFER_SIZE
-#define ACTS_DATA_START PTZ_DATA_START + PTZ_TOTAL_BUFFER_SIZE
-#define LASERBEACON_DATA_START ACTS_DATA_START + ACTS_TOTAL_BUFFER_SIZE
-#define BROADCAST_DATA_START LASERBEACON_DATA_START + LASERBEACON_TOTAL_BUFFER_SIZE
-#define GRIPPER_DATA_START BROADCAST_DATA_START + BROADCAST_TOTAL_BUFFER_SIZE
-#define GPS_DATA_START GRIPPER_DATA_START + GRIPPER_TOTAL_BUFFER_SIZE
-
-#define TOTAL_SHARED_MEMORY_BUFFER_SIZE GPS_DATA_START + GPS_TOTAL_BUFFER_SIZE
-
-#endif
-
+#endif // _STAGE_H

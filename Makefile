@@ -44,10 +44,6 @@ uninstall:
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_INCLUDE)
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
 
-
-#manual:
-	#cd tex && make install
-
 distro: clean
 	$(MKDIR) doc
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc

@@ -13,7 +13,8 @@
 # in the server binary (it's printed out on console when Player runs, and
 # sent back to the client when it connects), and is used below to construct
 # the directory name for installation.
-PLAYER_VERSION = 0.9.1-Bleeding
+
+PLAYER_VERSION = 1.0a
 
 #######################################
 # Compiler selection
@@ -50,7 +51,10 @@ CC = gcc
 PWD=$(shell pwd)
 INSTALL_BASE = /usr/local/player
 
-INSTALL_PREFIX=$(INSTALL_BASE)$(PLAYER_VERSION)
+# RTV - added a dash between INSTALL_BASE and PLAYER_VERSION to make the name
+# format more conventional; i.e. foosoft-1.0 rather than foosoft1.0
+
+INSTALL_PREFIX=$(INSTALL_BASE)-$(PLAYER_VERSION)
 
 INSTALL_BIN = $(INSTALL_PREFIX)/bin
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include

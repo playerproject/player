@@ -27,6 +27,7 @@
  */
 
 //#define VERBOSE
+//#define DEBUG
 
 #include <stdio.h>
 #include <errno.h>
@@ -89,17 +90,22 @@
 
 #ifdef INCLUDE_STAGE
 #include <stagedevice.h>
+//#include <truthdevice.h>
 #endif
 
-caddr_t arenaIO; // the address for memory mapped IO to arena
-
-
-
+player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
+size_t ioSize = 0; // size of the IO buffer
 
 CCounter num_threads;
 
 
 CDeviceTable* deviceTable = new CDeviceTable();
+
+// storage for the TruthDevice's info - there is no
+// space in shared memory for this device
+// this is zeroed, then passed into the TruthDevice's constructor
+// in CreateStageDevices()
+//player_stage_info_t *truth_info = new player_stage_info_t();
 
 // this number divided by two (two threads per client) is
 // the maximum number of clients that the server will support
@@ -115,7 +121,8 @@ bool SHUTTING_DOWN;
 
 bool experimental = false;
 bool debug = false;
-int playerport = PLAYER_PORTNUM;
+
+int global_playerport = PLAYER_PORTNUM; // used to gen. useful output & debug
 
 char* sane_spec[] = { "-misc:0",
                       "-gripper:0",
@@ -128,7 +135,6 @@ char* sane_spec[] = { "-misc:0",
                       "-laserbeacon:0",
                       "-broadcast:0",
                       "-speech:0" };
-
 
 /* Usage statement */
 void
@@ -168,8 +174,8 @@ void Interrupt( int dummy )
   // next, delete the deviceTable; it will delete all the devices internally
   delete deviceTable;
 
-  // we're done
-  puts("Player quitting");
+  printf("** Player [port %d] quitting **\n", global_playerport );
+
   exit(0);
 }
 
@@ -278,6 +284,7 @@ void *client_reader(void* arg)
     hdr.timestamp_sec = ntohl(hdr.timestamp_sec);
     hdr.timestamp_usec = ntohl(hdr.timestamp_usec);
     hdr.size = ntohl(hdr.size);
+    
     //puts("got HDR");
 
     /* get the payload */
@@ -293,8 +300,8 @@ void *client_reader(void* arg)
         readcnt += read(cd->socket,buffer+readcnt,hdr.size-readcnt));
 
     //if((readcnt = read(cd->socket,buffer,hdr.size)) != hdr.size)
-    //{
-      //printf("client_reader: tried to read client-specified %d bytes, but "
+    // {
+    //printf("client_reader: tried to read client-specified %d bytes, but "
                       //"only got %d\n", hdr.size, readcnt);
       //delete cd;
     //}
@@ -350,7 +357,7 @@ void *client_writer(void* arg)
     }
     pthread_mutex_unlock(&(clientData->socketwrite));
     
-    if(clientData->mode == CONTINUOUS)
+    if(clientData->mode == CONTINUOUS || clientData->mode == UPDATE )
     {
       //printf("req. sleep for: %lu\n", 
                       //(unsigned long)(1000000.0 / clientData->frequency));
@@ -369,6 +376,98 @@ void *client_writer(void* arg)
   pthread_cleanup_pop(1);
 
   //delete data;
+}
+
+bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
+{
+  player_stage_info_t *end = (player_stage_info_t*)((char*)arenaIO + ioSize);
+  
+  // iterate through the mmapped buffer
+  for( player_stage_info_t *info = arenaIO; 
+       info < end; 
+       info = (player_stage_info_t*)((char*)info + (size_t)(info->len) ))
+    {      
+#ifdef DEBUG
+      printf( "Processing mmap at base: %p info: %p (len: %d total: %d)" 
+	      "next: %p end: %p\r", 
+	      arenaIO, info, info->len, ioSize, 
+	      (char*)info + info->len , end );
+      fflush( stdout );
+#endif	  
+
+      CStageDevice *dev = 0; // declare outside switch statement
+      
+      switch( info->player_id.type )
+	{
+	  //create a generic stage IO device for these types:
+	case PLAYER_PLAYER_CODE: 
+	case PLAYER_MISC_CODE:
+	case PLAYER_POSITION_CODE:
+	case PLAYER_SONAR_CODE:
+	case PLAYER_LASER_CODE:
+	case PLAYER_VISION_CODE:  
+	case PLAYER_PTZ_CODE:     
+	case PLAYER_LASERBEACON_CODE: 
+	case PLAYER_BROADCAST_CODE:   
+	case PLAYER_TRUTH_CODE:
+	case PLAYER_OCCUPANCY_CODE:
+	   
+	  // Create a StageDevice with this IO base address
+	  dev = new CStageDevice( info );
+	  
+	  // only devices on the my port or the global port are
+	  // available to clients
+	  if( info->player_id.port == playerport || 
+	      info->player_id.port == GLOBALPORT )
+	    deviceTable->AddDevice( info->player_id.type, 
+				    info->player_id.index, 
+				    PLAYER_ALL_MODE, dev );
+	  
+
+#ifdef DEBUG
+      printf( "Player [port %d] created StageDevice (%d,%d,%d)\n", 
+	      playerport,
+	      info->player_id.port, 
+	      info->player_id.type, 
+	      info->player_id.index ); 
+      fflush( stdout );
+#endif	  
+
+	  break;
+	      
+	  // devices not implemented
+	case PLAYER_AUDIO_CODE:   
+	case PLAYER_GRIPPER_CODE:
+#ifdef VERBOSE
+	  printf( "Device type %d not yet implemented in Stage\n", 
+		  info->player_id.type);
+	  fflush( stdout );
+#endif
+	  break;
+	      
+	case 0:
+#ifdef VERBOSE
+	  printf( "Player ignoring Stage device type %d\n", 
+		  info->player_id.type);
+	  fflush( stdout );
+#endif
+	  break;	  
+
+	  // unknown device 
+	  default: printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   info->player_id.type, 
+			   info->player_id.port, 
+			   info->player_id.type, 
+			   info->player_id.index ); 
+	  break;
+	}
+    }
+
+#ifdef DEBUG  
+  printf( "finished creating stage devices\n" );
+  fflush( stdout );
+#endif
+  
+  return true;
 }
 
 /*
@@ -578,9 +677,6 @@ int main( int argc, char *argv[] )
   CClientData *clientData;
   int player_sock = 0;
 
-  // devices
-  CDevice* tmpdevice = NULL;
-
   char arenaFile[MAX_FILENAME_SIZE]; // filename for mapped memory
 
   pthread_mutex_init(&clients_mutex,NULL);
@@ -608,8 +704,9 @@ int main( int argc, char *argv[] )
     {
       if(++i<argc) 
       { 
-	playerport = atoi(argv[i]);
-	printf("[Port %d]", playerport);
+	global_playerport = atoi(argv[i]);
+	
+	printf("[Port %d]", global_playerport);
       }
       else 
       {
@@ -663,136 +760,51 @@ int main( int argc, char *argv[] )
   }
 
   puts( "" ); // newline, flush
-
+  
   // create the devices dynamically 
+
+#ifdef INCLUDE_STAGE
+
   if( use_stage )
   { 
-#ifdef INCLUDE_STAGE
-    // create and test the shared memory connection to arena
-
+      // create the shared memory connection to Stage
+      
 #ifdef VERBOSE
-    printf( "Mapping shared memory through %s\n", arenaFile );
+      printf( "Mapping shared memory through %s\n", arenaFile );
 #endif
-
-    int tfd = 0;
+      
+      int tfd = 0;
     if( (tfd = open( arenaFile, O_RDWR )) < 0 )
-    {
-      perror( "Failed to open file" );
-      exit( -1 );
-    }
+      {
+	perror( "Failed to open file" );
+	exit( -1 );
+      }
     
-    size_t areaSize = TOTAL_SHARED_MEMORY_BUFFER_SIZE;
     
-    if( (arenaIO = (caddr_t)mmap( NULL, areaSize, PROT_READ | PROT_WRITE, 
-			     MAP_SHARED, tfd, (off_t)0 ))  == MAP_FAILED )
-    {
-      perror( "Failed to map memory" );
-      exit( -1 );
-    }
+    // find out how big the file is - we need to mmap that many bytes
+    ioSize = lseek( tfd, 0, SEEK_END );
+    
+#ifdef VERBOSE
+    printf( "Mapping %d bytes.\n", ioSize );
+    fflush( stdout );
+#endif
+    
+    if( (arenaIO = 
+	 (player_stage_info_t*)mmap( NULL, ioSize, PROT_READ | PROT_WRITE, 
+				     MAP_SHARED, tfd, (off_t)0 ))  
+	== MAP_FAILED )
+      {
+	perror( "Failed to map memory" );
+	exit( -1 );
+      }
       
     close( tfd ); // can close fd once mapped
 
-#ifdef VERBOSE
-    puts( "Testing memory map...");
-    fflush( stdout );
-#endif
+    // make all the stage devices, scan
+    CreateStageDevices( arenaIO, global_playerport );
+  }  
 
-    for(int c = 0; c < TEST_TOTAL_BUFFER_SIZE; c++ )
-    {
-        if( c != ((unsigned char*)arenaIO)[TEST_DATA_START + c] )
-        {
-            perror( "Warning: memory check failed" );
-            break;
-        } 
-    }
-
-#ifdef VERBOSE
-    puts( "ok.\n" );
-    fflush( stdout );
-#endif
-
-    /* this will all be obviated by Richard's new stuff... */
-    int index = 0;
-    tmpdevice = new CStageDevice( arenaIO + MISC_DATA_START,
-                                   MISC_DATA_BUFFER_SIZE,
-                                   MISC_COMMAND_BUFFER_SIZE,
-                                   MISC_CONFIG_BUFFER_SIZE);
-    deviceTable->AddDevice(PLAYER_MISC_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-    
-    tmpdevice = new CStageDevice( arenaIO + POSITION_DATA_START,
-                                       POSITION_DATA_BUFFER_SIZE,
-                                       POSITION_COMMAND_BUFFER_SIZE,
-                                       POSITION_CONFIG_BUFFER_SIZE);
-    deviceTable->AddDevice(PLAYER_POSITION_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-
-    tmpdevice =    new CStageDevice( arenaIO + SONAR_DATA_START,
-                                       SONAR_DATA_BUFFER_SIZE,
-                                       SONAR_COMMAND_BUFFER_SIZE,
-                                       SONAR_CONFIG_BUFFER_SIZE); 
-    deviceTable->AddDevice(PLAYER_SONAR_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-    
-    tmpdevice = new CStageDevice(arenaIO + LASER_DATA_START,
-                                   LASER_DATA_BUFFER_SIZE,
-                                   LASER_COMMAND_BUFFER_SIZE,
-                                   LASER_CONFIG_BUFFER_SIZE); 
-    deviceTable->AddDevice(PLAYER_LASER_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
- 
-    tmpdevice = new CStageDevice(arenaIO + ACTS_DATA_START,
-                                    ACTS_DATA_BUFFER_SIZE,
-                                    ACTS_COMMAND_BUFFER_SIZE,
-                                    ACTS_CONFIG_BUFFER_SIZE);
-    deviceTable->AddDevice(PLAYER_VISION_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-
-    tmpdevice = new CStageDevice(arenaIO + PTZ_DATA_START,
-                                 PTZ_DATA_BUFFER_SIZE,
-                                 PTZ_COMMAND_BUFFER_SIZE,
-                                 PTZ_CONFIG_BUFFER_SIZE);
-    deviceTable->AddDevice(PLAYER_PTZ_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-
-    tmpdevice = new CStageDevice(arenaIO + LASERBEACON_DATA_START,
-                                         LASERBEACON_DATA_BUFFER_SIZE,
-                                         LASERBEACON_COMMAND_BUFFER_SIZE,
-                                         LASERBEACON_CONFIG_BUFFER_SIZE);
-    deviceTable->AddDevice(PLAYER_LASERBEACON_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-
-    tmpdevice = new CStageDevice(arenaIO + BROADCAST_DATA_START,
-                                       BROADCAST_DATA_BUFFER_SIZE,
-                                       BROADCAST_COMMAND_BUFFER_SIZE,
-                                       BROADCAST_CONFIG_BUFFER_SIZE); 
-    deviceTable->AddDevice(PLAYER_BROADCAST_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-
-    tmpdevice = new CStageDevice(arenaIO + GRIPPER_DATA_START,
-                                     GRIPPER_DATA_BUFFER_SIZE,
-                                     GRIPPER_COMMAND_BUFFER_SIZE,
-                                     GRIPPER_CONFIG_BUFFER_SIZE);
-    deviceTable->AddDevice(PLAYER_GRIPPER_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-
-    tmpdevice = new CStageDevice(arenaIO + GPS_DATA_START,
-                                     GPS_DATA_BUFFER_SIZE,
-                                     GPS_COMMAND_BUFFER_SIZE,
-                                     GPS_CONFIG_BUFFER_SIZE);
-    deviceTable->AddDevice(PLAYER_GPS_CODE, index, 
-                           PLAYER_READ_MODE, tmpdevice);
-    
-    // unsupported devices - CNoDevice::Setup() fails
-    tmpdevice =  (CDevice*)new CNoDevice();
-    deviceTable->AddDevice(PLAYER_AUDIO_CODE, index, 
-                           PLAYER_ALL_MODE, tmpdevice);
-    tmpdevice =  (CDevice*)new CNoDevice();
-    deviceTable->AddDevice(PLAYER_SPEECH_CODE, index, 
-                           PLAYER_WRITE_MODE, tmpdevice);
-#endif
-
-  }
+#endif // INCLUDE_STAGE  
 
   /* set up to handle SIGPIPE (happens when the client dies) */
   if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
@@ -813,7 +825,8 @@ int main( int argc, char *argv[] )
     exit(1);
   }
 
-  if((player_sock = create_and_bind_socket(&listener,1,playerport,SOCK_STREAM,200)) 
+  if((player_sock = 
+      create_and_bind_socket(&listener,1,global_playerport,SOCK_STREAM,200)) 
                   == -1)
   {
     fputs("create_and_bind_socket() failed; quitting", stderr);
@@ -835,10 +848,10 @@ int main( int argc, char *argv[] )
     /* got conn */
     if(num_threads.Value() < MAXNUMTHREADS)
     {
-      printf("** New client accepted on socket %d ** [Port %d]\n", 
-             clientData->socket,playerport);
-      if(pthread_create(&clientData->writeThread, NULL, client_writer, 
-                        clientData))
+      printf("** Player [port %d] client accepted on socket %d **\n", 
+	     global_playerport, clientData->socket);
+      if(pthread_create(&clientData->writeThread, NULL, 
+			client_writer, clientData))
       {
         perror("pthread_create(3) failed");
         exit(-1);
@@ -880,4 +893,7 @@ int main( int argc, char *argv[] )
   /* don't get here */
   return(0);
 }
+
+
+
 

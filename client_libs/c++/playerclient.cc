@@ -105,6 +105,9 @@ int PlayerClient::Read()
     }
     gettimeofday(&curr,NULL);
 
+    //printf( "PlayerClient::Read() %d reads: (X,%d,%d)\n",
+    //    numreads, hdr.device, hdr.device_index );
+
     if(!(thisproxy = GetProxy(hdr.device,hdr.device_index)))
     {
       if(player_debug_level(-1) >= 3)

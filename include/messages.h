@@ -90,7 +90,9 @@
 #define PLAYER_LASERBEACON_CODE   ((uint16_t)10)
 #define PLAYER_BROADCAST_CODE     ((uint16_t)11)
 #define PLAYER_SPEECH_CODE        ((uint16_t)12)
-#define PLAYER_GPS_CODE           ((uint16_t)13)
+#define PLAYER_GPS_CODE           ((uint16_t)13) // broken?
+#define PLAYER_OCCUPANCY_CODE     ((uint16_t)14) // broken?
+#define PLAYER_TRUTH_CODE         ((uint16_t)15)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -100,7 +102,8 @@
 
 /* the largest possible message that the server will currently send
  * or receive */
-#define PLAYER_MAX_MESSAGE_SIZE 8192
+//#define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
+#define PLAYER_MAX_MESSAGE_SIZE 1048575 /*1MB*/
 
 /* the default player port */
 #define PLAYER_PORTNUM 6665
@@ -161,6 +164,7 @@ typedef struct
   uint16_t frequency;
 } __attribute__ ((packed)) player_device_datafreq_req_t;
 
+
 /* the various configuration commands */
 #define PLAYER_PLAYER_DEV_REQ      ((uint16_t)1)
 #define PLAYER_PLAYER_DATA_REQ     ((uint16_t)2)
@@ -190,9 +194,6 @@ typedef struct
   uint8_t stalls;
 } __attribute__ ((packed)) player_position_data_t;
 
-#define POSITION_DATA_BUFFER_SIZE sizeof(player_position_data_t)
-#define POSITION_COMMAND_BUFFER_SIZE sizeof(player_position_cmd_t)
-#define POSITION_CONFIG_BUFFER_SIZE 32
 
 /* TODO: need to make structured buffers for config requests */
 
@@ -215,10 +216,6 @@ typedef struct
 {
   uint16_t ranges[16]; /* start at the front left sonar and number clockwise */
 } __attribute__ ((packed)) player_sonar_data_t;
-
-#define SONAR_DATA_BUFFER_SIZE sizeof(player_sonar_data_t)
-#define SONAR_CONFIG_BUFFER_SIZE 32
-#define SONAR_COMMAND_BUFFER_SIZE 0
 
 /* the various configuration commands 
  * NOTE: these must not be the same as any other P2OS device! */
@@ -245,9 +242,6 @@ typedef struct
   uint8_t state, beams;
 } __attribute__ ((packed)) player_gripper_data_t;
 
-#define GRIPPER_DATA_BUFFER_SIZE sizeof(player_gripper_data_t)
-#define GRIPPER_COMMAND_BUFFER_SIZE sizeof(player_gripper_cmd_t)
-#define GRIPPER_CONFIG_BUFFER_SIZE 0
 
 /*************************************************************************/
 
@@ -264,9 +258,6 @@ typedef struct
   uint8_t voltage;  /* battery voltage in decivolts */
 } __attribute__ ((packed)) player_misc_data_t;
 
-#define MISC_DATA_BUFFER_SIZE sizeof(player_misc_data_t)
-#define MISC_COMMAND_BUFFER_SIZE 0
-#define MISC_CONFIG_BUFFER_SIZE 0
 
 /*************************************************************************/
 
@@ -313,9 +304,6 @@ typedef struct
   uint8_t  intensity;
 } __attribute__ ((packed)) player_laser_config_t;
 
-#define LASER_DATA_BUFFER_SIZE ((int)sizeof(player_laser_data_t))
-#define LASER_COMMAND_BUFFER_SIZE 0
-#define LASER_CONFIG_BUFFER_SIZE ((int)sizeof(player_laser_config_t))
 
 /*************************************************************************/
 
@@ -344,10 +332,6 @@ typedef struct
   int16_t tilt; /* -25 to 25 degrees. increases up */
   uint16_t zoom; /* 0 to 1023. 0 is wide, 1023 is telefoto */
 } __attribute__ ((packed)) player_ptz_data_t;
-
-#define PTZ_COMMAND_BUFFER_SIZE sizeof(player_ptz_cmd_t)
-#define PTZ_DATA_BUFFER_SIZE sizeof(player_ptz_data_t)
-#define PTZ_CONFIG_BUFFER_SIZE 0
 
 /*************************************************************************/
 
@@ -391,11 +375,6 @@ typedef struct
   uint16_t size;
   player_vision_data_t data;
 } __attribute__ ((packed)) player_internal_vision_data_t;
-
-// Player needs 2 bytes to store the packet length
-#define ACTS_DATA_BUFFER_SIZE sizeof(player_internal_vision_data_t)
-#define ACTS_COMMAND_BUFFER_SIZE 0
-#define ACTS_CONFIG_BUFFER_SIZE 0
 
 /*************************************************************************/
 
@@ -460,7 +439,6 @@ typedef struct
 
 /*************************************************************************/
 
-
 /*************************************************************************/
 /*
  * Laser beacon device
@@ -497,11 +475,8 @@ typedef struct
     uint16_t zero_thresh;
     uint16_t one_thresh;
 } __attribute__ ((packed)) player_laserbeacon_config_t;
- 
-#define LASERBEACON_DATA_BUFFER_SIZE ((int) sizeof(player_laserbeacon_data_t))
-#define LASERBEACON_COMMAND_BUFFER_SIZE 0
-#define LASERBEACON_CONFIG_BUFFER_SIZE ((int) sizeof(player_laserbeacon_config_t))
 
+ 
 /*************************************************************************/
 
 
@@ -533,11 +508,50 @@ typedef struct
 } __attribute ((packed)) player_broadcast_data_t;
 
 
-#define BROADCAST_DATA_BUFFER_SIZE ((int) sizeof(player_broadcast_data_t))
-#define BROADCAST_COMMAND_BUFFER_SIZE ((int) sizeof(player_broadcast_cmd_t))
-#define BROADCAST_CONFIG_BUFFER_SIZE 0
+/*************************************************************************/
 
 /*************************************************************************/
+/*
+ * Truth device, used for getting and setting data about all entities in Stage
+ * for example by a GUI or a ground-truth logging system
+ */
+
+// identify an entity to Player
+typedef struct
+{
+  uint16_t port;
+  uint16_t index;
+  uint16_t type;
+} player_id_t;  
+
+// packet for truth device
+typedef struct
+{
+  player_id_t id;
+  player_id_t parent;
+  
+  uint32_t x, y; // mm, mm
+  uint16_t th, w, h; // degrees, mm, mm
+} __attribute ((packed)) player_generic_truth_t;
+
+/*************************************************************************/
+/*************************************************************************/
+/*
+ * Occupancy device, exports the world background as an occupancy grid
+ */
+
+typedef struct
+{
+  uint16_t width, height, ppm;
+  uint32_t num_pixels;
+  
+} __attribute ((packed)) player_occupancy_data_t;
+
+typedef struct
+{
+  uint16_t x, y, color;
+} __attribute ((packed)) pixel_t;
+
 
 #endif
 

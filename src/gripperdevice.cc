@@ -39,12 +39,12 @@ CGripperDevice::~CGripperDevice()
 size_t CGripperDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
   *((player_gripper_data_t*)dest) = data->gripper;
-  return(GRIPPER_DATA_BUFFER_SIZE);
+  return( sizeof( player_gripper_data_t) );
 }
 
 void CGripperDevice::PutCommand(unsigned char *src, size_t size) 
 {
-  if(size != GRIPPER_COMMAND_BUFFER_SIZE)
+  if(size != sizeof( player_gripper_cmd_t ) )
     puts("CGripperDevice::PutCommand(): command wrong size. ignoring.");
   else
     command->gripper = *((player_gripper_cmd_t*)src);

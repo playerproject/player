@@ -37,7 +37,10 @@ class PlayerClient;
 
 class ClientProxy
 {
-  friend PlayerClient;
+  // GCC 3.0 requires this new syntax
+  friend class PlayerClient; // ANSI C++ syntax?
+  // friend PlayerClient; // syntax deprecated
+
   protected:
     unsigned short device; // the name by which we identify this kind of device
     unsigned short index;  // which device we mean

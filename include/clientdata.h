@@ -36,7 +36,8 @@
 typedef enum
 {
   CONTINUOUS,
-  REQUESTREPLY
+  REQUESTREPLY,
+  UPDATE //RTV - new fresh data only mode
 } server_mode_t;
 
 // keep a linked list of these
@@ -46,6 +47,10 @@ class CDeviceSubscription
     unsigned short code;
     unsigned short index;
     unsigned char access;
+
+    // record the last time we got fresh data
+    uint32_t last_sec, last_usec; 
+
     CDeviceSubscription* next;
 
     CDeviceSubscription() { next = NULL; access = 'e'; }

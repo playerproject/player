@@ -35,6 +35,6 @@
 size_t CMiscDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
   *((player_misc_data_t*)dest) = data->misc;
-  return(MISC_DATA_BUFFER_SIZE);
+  return( sizeof( player_misc_data_t ));
 }
 

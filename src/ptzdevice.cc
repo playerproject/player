@@ -700,3 +700,8 @@ size_t CPtzDevice::GetConfig( unsigned char *dest, size_t maxsize)
 void CPtzDevice::PutConfig( unsigned char *src, size_t size)
 {
 }
+
+
+
+
+
