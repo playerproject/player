@@ -351,7 +351,9 @@ class CommsProxy : public ClientProxy
   /** Read a message from the incoming queue.
       Returns the number of bytes read, or -1 if the queue is empty.
   */
+  /* REMOVE
   public: int Read(void *msg, int len);
+  */
 
   /** Write a message to the outgoing queue.
       Returns the number of bytes written, or -1 if the queue is full.
@@ -362,7 +364,11 @@ class CommsProxy : public ClientProxy
   protected: void FillData(player_msghdr_t hdr, const char* buffer);
     
   // interface that all proxies SHOULD provide
-  protected: void Print();
+  public: void Print();
+
+  // The most recently read message
+  public: size_t msg_len;
+  public: uint8_t msg[PLAYER_MAX_MESSAGE_SIZE];
 };
 
 

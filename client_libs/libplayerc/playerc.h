@@ -363,7 +363,7 @@ typedef struct
 
   // The most recent incoming message
   size_t msg_len;
-  void *msg;
+  uint8_t msg[PLAYER_MAX_MESSAGE_SIZE];
     
 } playerc_comms_t;
 

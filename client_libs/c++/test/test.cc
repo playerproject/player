@@ -114,8 +114,8 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "laserbeacon") == 0 || strcmp(device, "all") == 0)
       test_lbd(&client, index);
     
-    // Broadcast device
-    if(strcmp(device, "broadcast") == 0 || strcmp(device, "all") == 0)
+    // Comms device
+    if(strcmp(device, "comms") == 0 || strcmp(device, "all") == 0)
       test_broadcast(&client, index);
     
     // GPS device
