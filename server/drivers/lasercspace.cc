@@ -68,27 +68,8 @@ class LaserCSpace : public CDevice
   // updated.
   private: int UpdateLaser();
 
-  // Write laser data to a file (testing).
-  private: int WriteLaser();
-
-  // Read laser data from a file (testing).
-  private: int ReadLaser();
-
-  // Segment the scan into straight-line segments.
-  private: void SegmentLaser();
-
-  // Update the line filter.  Returns an error signal.
-  private: double UpdateFilter(double x[2], double P[2][2], double Q[2][2],
-                               double R, double z, double res);
-
-  // Fit lines to the segments.
-  private: void FitSegments();
-
-  // Merge overlapping segments with similar properties.
-  private: void MergeSegments();
-
-  // Update the device data (the data going back to the client).
-  private: void UpdateData();
+  // Compute the maximum free-space range for sample n.
+  private: double FreeRange(int n);
 
   // Process requests.  Returns 1 if the configuration has changed.
   private: int HandleRequests();
@@ -104,6 +85,9 @@ class LaserCSpace : public CDevice
   private: CDevice *laser_device;
   private: player_laser_data_t laser_data;
   private: uint32_t laser_timesec, laser_timeusec;
+
+  // Step size for subsampling the scan (saves CPU cycles)
+  private: int sample_step;
 
   // Robot radius.
   private: double radius;
@@ -151,7 +135,11 @@ LaserCSpace::LaserCSpace(char* interface, ConfigFile* cf, int section)
   this->laser_timesec = 0;
   this->laser_timeusec = 0;
 
-  // Fiducial data.
+  // Settings.
+  this->radius = cf->ReadLength(section, "radius", 0.50);
+  this->sample_step = cf->ReadInt(section, "step", 10);
+  
+  // Outgoing data
   this->timesec = 0;
   this->timeusec = 0;
   memset(&this->data, 0, sizeof(this->data));
@@ -165,7 +153,7 @@ LaserCSpace::LaserCSpace(char* interface, ConfigFile* cf, int section)
 int LaserCSpace::Setup()
 {
   player_device_id_t id;
-
+  
   // Subscribe to the laser.
   id.code = PLAYER_LASER_CODE;
   id.index = (this->laser_index >= 0 ? this->laser_index : this->device_id.index);
@@ -206,7 +194,7 @@ int LaserCSpace::Shutdown()
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by client thread)
 size_t LaserCSpace::GetData(unsigned char *dest, size_t maxsize,
-                             uint32_t* timesec, uint32_t* timeusec)
+                            uint32_t* timesec, uint32_t* timeusec)
 {
   // Get the current laser data.
   this->laser_device->GetData((uint8_t*) &this->laser_data, sizeof(this->laser_data),
@@ -215,11 +203,8 @@ size_t LaserCSpace::GetData(unsigned char *dest, size_t maxsize,
   // If there is new laser data, update our data.  Otherwise, we will
   // just reuse the existing data.
   if (this->laser_timesec != this->timesec || this->laser_timeusec != this->timeusec)
-  {
     this->UpdateLaser();
-    this->UpdateData();
-  }
-  
+
   // Copy results
   ASSERT(maxsize >= sizeof(this->data));
   memcpy(dest, &this->data, sizeof(this->data));
@@ -239,6 +224,7 @@ size_t LaserCSpace::GetData(unsigned char *dest, size_t maxsize,
 int LaserCSpace::UpdateLaser()
 {
   int i;
+  double r;
   
   // Do some byte swapping on the laser data.
   this->laser_data.resolution = ntohs(this->laser_data.resolution);
@@ -248,25 +234,93 @@ int LaserCSpace::UpdateLaser()
   for (i = 0; i < this->laser_data.range_count; i++)
     this->laser_data.ranges[i] = ntohs(this->laser_data.ranges[i]);
 
-  /*
+  // Construct the outgoing laser packet
+  this->data.resolution = this->laser_data.resolution;
+  this->data.min_angle = this->laser_data.min_angle;
+  this->data.max_angle = this->laser_data.max_angle;
+  this->data.range_count = this->laser_data.range_count;
+  
   for (i = 0; i < this->laser_data.range_count; i++)
   {
-    r = (double) (this->laser_data.ranges[i]) / 1000;
-    b = (double) (this->laser_data.min_angle) / 100.0 * M_PI / 180 + i * res;
+    r = FreeRange(i);
+    this->data.ranges[i] = (int16_t) (r * 1000);
   }
-  */
+
+    // Do some byte swapping on the outgoing data.
+  this->data.resolution = htons(this->data.resolution);
+  this->data.min_angle = htons(this->data.min_angle);
+  this->data.max_angle = htons(this->data.max_angle);
+  for (i = 0; i < this->data.range_count; i++)
+    this->data.ranges[i] = htons(this->data.ranges[i]);
+  this->data.range_count = htons(this->data.range_count);
 
   return 1;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Update the device data (the data going back to the client).
-void LaserCSpace::UpdateData()
-{
 
-  // TODO
+////////////////////////////////////////////////////////////////////////////////
+// Compute the maximum free-space range for sample n.
+double LaserCSpace::FreeRange(int n)
+{
+  int i, step;
+  double r, b, x, y;
+  double r_, b_, x_, y_;
+  double s, nr, nx, ny, dx, dy;
+  double d, h;
+  double max_r;
+
+  // Step size for subsampling the scan (saves CPU cycles)
+  step = this->sample_step;
   
-  return;
+  // Range and bearing of this reading.
+  r = (double) (this->laser_data.ranges[n]) / 1000;
+  b = (double) (this->laser_data.min_angle +
+                this->laser_data.resolution * n) / 100.0 * M_PI / 180;
+  x = r * cos(b);
+  y = r * sin(b);
+
+  max_r = r - this->radius;
+
+  // Look for intersections with obstacles.
+  for (i = 0; i < this->laser_data.range_count; i += step)
+  {
+    r_ = (double) (this->laser_data.ranges[i]) / 1000;
+    b_ = (double) (this->laser_data.min_angle +
+                   this->laser_data.resolution * i) / 100.0 * M_PI / 180;
+    x_ = r_ * cos(b_);
+    y_ = r_ * sin(b_);
+
+    // Compute parametric point on ray that is nearest the obstacle.
+    s = (x * x_ + y * y_) / (x * x + y * y);
+    if (s < 0 || s > 1)
+      continue;
+
+    // Compute the nearest point.
+    nr = s * r;
+    nx = s * x;
+    ny = s * y;
+
+    // Compute distance from nearest point to obstacle.
+    dx = nx - x_;
+    dy = ny - y_;
+    d = sqrt(dx * dx + dy * dy);
+    
+    if (d > this->radius)
+      continue;
+    
+    // Compute the shortened range.
+    h = nr - sqrt(this->radius * this->radius - d * d);
+    if (h < max_r)
+      max_r = h;
+
+    //printf("%d %d %f %f %f %f\n", n, i, s, d, r, max_r);
+  }
+
+  // Clip negative ranges.
+  if (max_r < 0)
+    max_r = 0;
+
+  return max_r;
 }
 
 
@@ -309,6 +363,8 @@ void LaserCSpace::HandleGetGeom(void *client, void *request, int len)
   geom.pose[0] = htons((short) (this->pose[0] * 1000));
   geom.pose[1] = htons((short) (this->pose[1] * 1000));
   geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
+  geom.size[0] = htons((short) (0.15 * 1000)); // TODO
+  geom.size[1] = htons((short) (0.15 * 1000));
 
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
     PLAYER_ERROR("PutReply() failed");
