@@ -12,9 +12,9 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_blobfinder.c \
                        dev_comms.c \
                        dev_fiducial.c \
-                       dev_frf.c \
+                       dev_laser.c \
                        dev_gps.c \
-                       dev_srf.c \
+                       dev_sonar.c \
                        dev_position.c \
                        dev_ptz.c \
                        dev_truth.c \
