@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 dnl Start autoconf with this file.  Not really sure why it needs a filename.
-AC_INIT(src/main.cc)
+AC_INIT(server/main.cc)
 
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
@@ -23,77 +23,69 @@ AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
 dnl Define the options of type --with-foo that configure should accept,
 dnl along with defaults.  These options are mostly used to include/exclude 
 dnl device drivers.
-AC_ARG_WITH(laser, [  --without-laser          Do not include laser driver],,
-with_laser=yes)
-if test "x$with_laser" = "xyes"; then
-  LASER_OBJ="laserdevice.o"
-  AC_DEFINE(INCLUDE_LASER,1,[include the laser driver])
+AC_ARG_WITH(festival, [  --without-festival          Do not include Festival driver],,
+with_festival=yes)
+if test "x$with_festival" = "xyes"; then
+  FESTIVAL_LIB="drivers/libfestival.a"
+  AC_DEFINE(INCLUDE_FESTIVAL,1,[include the Festival driver])
 fi
-AC_SUBST(LASER_OBJ)
+AC_SUBST(FESTIVAL_LIB)
 
-AC_ARG_WITH(vision, [  --without-vision          Do not include vision driver],,
-with_vision=yes)
-if test "x$with_vision" = "xyes"; then
-  VISION_OBJ="visiondevice.o"
-  AC_DEFINE(INCLUDE_VISION,1,[include the vision driver])
+AC_ARG_WITH(sicklms200, [  --without-sicklms200          Do not include SICK LMS 200 driver],,
+with_sicklms200=yes)
+if test "x$with_sicklms200" = "xyes"; then
+  SICKLMS200_LIB="drivers/libsicklms200.a"
+  AC_DEFINE(INCLUDE_SICKLMS200,1,[include the SICK LMS 200 driver])
 fi
-AC_SUBST(VISION_OBJ)
+AC_SUBST(SICKLMS200_LIB)
 
-AC_ARG_WITH(ptz, [  --without-ptz          Do not include ptz driver],,
-with_ptz=yes)
-if test "x$with_ptz" = "xyes"; then
-  PTZ_OBJ="ptzdevice.o"
-  AC_DEFINE(INCLUDE_PTZ,1,[include the ptz driver])
+AC_ARG_WITH(acts, [  --without-acts          Do not include ACTS driver],,
+with_acts=yes)
+if test "x$with_acts" = "xyes"; then
+  ACTS_LIB="drivers/libacts.a"
+  AC_DEFINE(INCLUDE_ACTS,1,[include the ACTS driver])
 fi
-AC_SUBST(PTZ_OBJ)
+AC_SUBST(ACTS_LIB)
 
-AC_ARG_WITH(audio, [  --with-audio          Include audio driver],,
-with_audio=no)
-if test "x$with_audio" = "xyes"; then
-  AUDIO_OBJ="audiodevice.o"
-  AC_DEFINE(INCLUDE_AUDIO,1,[include the audio driver])
+AC_ARG_WITH(sonyevid30, [  --without-sonyevid30          Do not include Sony EVID 30 driver],,
+with_sonyevid30=yes)
+if test "x$with_sonyevid30" = "xyes"; then
+  SONYEVID30_LIB="drivers/libsonyevid30.a"
+  AC_DEFINE(INCLUDE_SONYEVID30,1,[include the Sony EVID 30 driver])
 fi
-AC_SUBST(AUDIO_OBJ)
-
-AC_ARG_WITH(laserbeacon, [  --without-laserbeacon          Do not include laserbeacon driver],,
-with_laserbeacon=yes)
-if test "x$with_laserbeacon" = "xyes"; then
-  LASERBEACON_OBJ="laserbeacondevice.o"
-  AC_DEFINE(INCLUDE_LASERBEACON,1,[include the laserbeacon driver])
-fi
-AC_SUBST(LASERBEACON_OBJ)
-
-AC_ARG_WITH(broadcast, [  --without-broadcast          Do not include broadcast driver],,
-with_broadcast=yes)
-if test "x$with_broadcast" = "xyes"; then
-  BROADCAST_OBJ="broadcastdevice.o"
-  AC_DEFINE(INCLUDE_BROADCAST,1,[include the broadcast driver])
-fi
-AC_SUBST(BROADCAST_OBJ)
-
-AC_ARG_WITH(speech, [  --without-speech          Do not include speech driver],,
-with_speech=yes)
-if test "x$with_speech" = "xyes"; then
-  SPEECH_OBJ="speechdevice.o"
-  AC_DEFINE(INCLUDE_SPEECH,1,[include the speech driver])
-fi
-AC_SUBST(SPEECH_OBJ)
-
-AC_ARG_WITH(bps, [  --without-bps          Do not include bps driver],,
-with_bps=yes)
-if test "x$with_bps" = "xyes"; then
-  BPS_OBJ="bpsdevice.o"
-  AC_DEFINE(INCLUDE_BPS,1,[include the bps driver])
-fi
-AC_SUBST(BPS_OBJ)
+AC_SUBST(SONYEVID30_LIB)
 
 AC_ARG_WITH(p2os, [  --without-p2os          Do not include P2OS driver],,
 with_p2os=yes)
 if test "x$with_p2os" = "xyes"; then
-  P2OS_OBJ="p2osdevice.o packet.o robot_params.o sip.o sonardevice.o positiondevice.o gripperdevice.o miscdevice.o"
+  P2OS_LIB="drivers/p2os/libp2os.a"
   AC_DEFINE(INCLUDE_P2OS,1,[include the P2OS driver])
 fi
-AC_SUBST(P2OS_OBJ)
+AC_SUBST(P2OS_LIB)
+
+AC_ARG_WITH(udpbroadcast, [  --without-udpbroadcast          Do not include UDP broadcast driver],,
+with_udpbroadcast=yes)
+if test "x$with_udpbroadcast" = "xyes"; then
+  UDPBROADCAST_LIB="drivers/libudpbroadcast.a"
+  AC_DEFINE(INCLUDE_UDPBROADCAST,1,[include the UDP broadcast driver])
+fi
+AC_SUBST(UDPBROADCAST_LIB)
+
+AC_ARG_WITH(laserbarcode, [  --without-laserbarcode          Do not include laser barcode driver],,
+with_laserbarcode=yes)
+if test "x$with_laserbarcode" = "xyes"; then
+  LASERBARCODE_LIB="drivers/liblaserbarcode.a"
+  AC_DEFINE(INCLUDE_LASERBARCODE,1,[include the laser barcode driver])
+fi
+AC_SUBST(LASERBARCODE_LIB)
+
+AC_ARG_WITH(stage, [  --without-stage          Do not include stage driver],,
+with_stage=yes)
+if test "x$with_stage" = "xyes"; then
+  STAGE_LIB="drivers/stage/libstage.a"
+  AC_DEFINE(INCLUDE_STAGE,1,[include the stage driver])
+fi
+AC_SUBST(STAGE_LIB)
 
 AC_ARG_WITH(rwi, [  --with-rwi          Include RWI driver],,
 with_rwi=no)
@@ -104,17 +96,27 @@ if test "x$with_rwi" = "xyes"; then
 fi
 AC_SUBST(RWI_OBJ)
 
-AC_ARG_WITH(stage, [  --without-stage          Do not include stage driver],,
-with_stage=yes)
-if test "x$with_stage" = "xyes"; then
-  STAGE_OBJ="stagedevice.o stagetime.o"
-  AC_DEFINE(INCLUDE_STAGE,1,[include the stage driver])
-fi
-AC_SUBST(STAGE_OBJ)
-
 AC_ARG_WITH(tests, [  --with-tests          Build tests],,
 with_tests=no)
 AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
+
+dnl below here are the old ones that haven't been changed
+#AC_ARG_WITH(audio, [  --with-audio          Include audio driver],,
+#with_audio=no)
+#if test "x$with_audio" = "xyes"; then
+  #AUDIO_OBJ="audiodevice.o"
+  #AC_DEFINE(INCLUDE_AUDIO,1,[include the audio driver])
+#fi
+#AC_SUBST(AUDIO_OBJ)
+
+#AC_ARG_WITH(bps, [  --without-bps          Do not include bps driver],,
+#with_bps=yes)
+#if test "x$with_bps" = "xyes"; then
+  #BPS_OBJ="bpsdevice.o"
+  #AC_DEFINE(INCLUDE_BPS,1,[include the bps driver])
+#fi
+#AC_SUBST(BPS_OBJ)
+
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -140,7 +142,11 @@ dnl Checks for library functions.
 
 dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile 
-          src/Makefile 
+          server/Makefile 
+          server/drivers/Makefile 
+          server/drivers/p2os/Makefile 
+          server/drivers/rwi/Makefile 
+          server/drivers/stage/Makefile 
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile
