@@ -28,6 +28,7 @@
  *
  */
 
+#include <linux/joystick.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <stdio.h>
@@ -44,27 +45,6 @@
 #include "driver.h"
 #include "player.h"
 
-
-/////////////////////////////////////////////////////////////////////
-// this is the event structure from the linux joystick driver v2.0.0
-// I have blind-copied this from Brian's playerjoy, but shouldnt this
-// be in header file somewhere? - ahoward
-
-// indeed there is - rtv
-// #include <linux/joystick.h>
-
-struct js_event
-{
-  uint32_t time;     /* event timestamp in milliseconds */
-  int16_t value;    /* value */
-  uint8_t type;      /* event type */
-  uint8_t number;    /* axis/button number */
-};
-
-#define JS_EVENT_BUTTON         0x01    /* button pressed/released */
-#define JS_EVENT_AXIS           0x02    /* joystick moved */
-#define JS_EVENT_INIT           0x80    /* initial state of device */
-
 #define XAXIS 0
 #define YAXIS 1
 #define XAXIS2 2
@@ -75,7 +55,6 @@ struct js_event
 #define YAXIS4 7
 
 #define AXIS_MAX ((int16_t) 32767)
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
