@@ -78,16 +78,14 @@ int main(int argc, char **argv)
   
   printf( "starting %d swarbots\n", num_robots );
 
-  //PlayerClient *robots = malloc( num_robots * sizeof(PlayerClient*) );
-  
-  //for( int r=0; r<num_robots; r++ )
-  //robots[r] = 
-
   PlayerClient robot(host,port);
-  robot.SetFrequency( 10 ); // request data at 10Hz
+  robot.SetFrequency( 2 ); // request data at 10Hz
   
-  FiducialProxy **fps = (FiducialProxy**)calloc( num_robots, sizeof(FiducialProxy*) ); 
-  PositionProxy **pps = (PositionProxy**)calloc( num_robots, sizeof(PositionProxy*) ); 
+  FiducialProxy **fps = 
+    (FiducialProxy**)calloc( num_robots, sizeof(FiducialProxy*) ); 
+
+  PositionProxy **pps = 
+    (PositionProxy**)calloc( num_robots, sizeof(PositionProxy*) ); 
 
   
   for( int r=0; r<num_robots; r++ )
@@ -106,12 +104,10 @@ int main(int argc, char **argv)
       // a new array of visible neigbors, with their angles and ranges
       if(robot.Read()) exit(1);
       
-
-      for( int r=1; r<num_robots; r++ )
+      for( int r=0; r<num_robots; r++ )
 	{
 	  // a little potential field algorithm for dispersal
 	  double dx=0.0, dy=0.0;
-	  
 	  double ax=0.0, ay=0.0;
 
 	  // for each neighbor detected
@@ -119,50 +115,57 @@ int main(int argc, char **argv)
 	    {
 	      double range = fps[r]->beacons[s].pose[0] / 1000.0;
 	      double bearing = DTOR(fps[r]->beacons[s].pose[1]);   
-
+	      
 	      range = range - 1.0;
 	      
 	      dx += range * cos( bearing ); 	  
 	      dy += range * sin( bearing ); 	   
-
+	      
 	      // also compute the average global heading
 	      ax += cos( DTOR(fps[r]->beacons[s].pose[2] ) ); 
 	      ay += sin( DTOR(fps[r]->beacons[s].pose[2] ) ); 
 	    }
-
+	 	  
 	  // find the average heading 
 	  //double angle = DTOR(pps[r]->theta);
 	  int turnrate_deg_sec = 0;
-	  
-	  // normalize
-	  //while( angle > M_PI )
-	  //angle -= 2.0 * M_PI;
-	  
-	  //while( angle < -M_PI )
-	  //angle += 2.0 * M_PI;
+	  int speed_mm_sec = 0;
 
-	  // find the error
-	  double angle = atan2( ay, ax );	  
+	  // error to the average angle of my buddies
+	  double buddy_error_angle = atan2( ay, ax );	  
 
-	  printf( "theta error %.2f\n", angle );
+	  double position_error_angle = atan2( dy, dx );
+	  double position_error_distance = hypot( dy, dx );
 
-	  turnrate_deg_sec = 10 * (int)RTOD( angle );
-	  //if( angle >  0.1 ) turnrate_deg_sec = 45;
-	  //if( angle < -0.1 ) turnrate_deg_sec = -45;
-	  
-	  // turn towards the average heading
+	  // if we're far from the ideal position
+	  if( fabs(position_error_distance) > 0.2 )
+	    {
+	      // minimize the position angle error
+	      turnrate_deg_sec = 2 * (int)RTOD(position_error_angle);
+	      
+	      // if we're pointing the right direction, move forwards
+	      if( fabs(position_error_angle) < 0.1 )
+		{
+		  // speed propotional to error
+		  speed_mm_sec = (int)( 500.0 * position_error_distance );
+		  if( speed_mm_sec < 100 ) 
+		    speed_mm_sec = 100;
+		}
+	    }
+	  else // we're close to where we want to be, so now point in the 
+	     // average direction
+	      turnrate_deg_sec = 2 * (int)RTOD(buddy_error_angle);
 
-	  int xspeed = (int)( 500.0 * dx ); 
-	  int yspeed = (int)( 500.0 * dy ); 
+	  //printf( "position_error_distance %.2f  "
+	  //  " position_error_angle %.2f  buddy_error_angle %.2f\n", 
+	  //  position_error_distance,
+	  //  position_error_angle,
+	  //  buddy_error_angle );
 	  
-	  int wspeed = (int)( 500.0 * hypot(dy,dx) );
-
-	  printf( "dx: %.2f  dy: %.2f  head: %.2f  -- %d %d %d\n", 
-		  dx, dy, angle, xspeed, yspeed, turnrate_deg_sec );
-	  
-	  
-	  pps[r]->SetSpeed( xspeed, yspeed, turnrate_deg_sec );
-	  //pps[r]->SetSpeed( 0, 0, turnrate_deg_sec );
+	  //printf( "%d %d\n", 
+	  //  speed_mm_sec, turnrate_deg_sec );
+	
+	  pps[r]->SetSpeed( speed_mm_sec, turnrate_deg_sec );
 	}
     }
 }
