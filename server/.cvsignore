@@ -4,3 +4,4 @@ player
 stamp-h*
 playercommon.h
 prefix.h
+player.pc

@@ -1,6 +1,7 @@
 Makefile
 Makefile.in
 playerc_wrap.c
+playerc.c
 playerc_oo.i
 playerc.py
 build

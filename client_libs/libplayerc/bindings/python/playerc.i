@@ -4,6 +4,79 @@
 #include "playerc.h"
 %}
 
+// Provide array (write) access
+%typemap(in) double [ANY] (double temp[$1_dim0])
+{
+  int i;
+  if (!PySequence_Check($input))
+  {
+    PyErr_SetString(PyExc_ValueError,"Expected a sequence");
+    return NULL;
+  }
+  if (PySequence_Length($input) != $1_dim0) {
+    PyErr_SetString(PyExc_ValueError,"Size mismatch. Expected $1_dim0 elements");
+    return NULL;
+  }
+  for (i = 0; i < $1_dim0; i++) 
+  {
+    PyObject *o = PySequence_GetItem($input,i);
+    if (PyNumber_Check(o)) 
+    {
+      temp[i] = (float) PyFloat_AsDouble(o);
+    } 
+    else 
+    {
+      PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");      
+      return NULL;
+    }
+  }
+  $1 = temp;
+}
+
+// Provide array (write) access
+%typemap(in) double [ANY][ANY] (double temp[$1_dim0][$1_dim1])
+{
+  int i,j;
+  if (!PySequence_Check($input))
+  {
+    PyErr_SetString(PyExc_ValueError,"Expected a sequence");
+    return NULL;
+  }
+  if (PySequence_Length($input) != $1_dim0) {
+    PyErr_SetString(PyExc_ValueError,"Size mismatch. Expected $1_dim0 elements");
+    return NULL;
+  }
+  for (i = 0; i < $1_dim0; i++) 
+  {
+    PyObject *olist = PySequence_GetItem($input,i);
+    if (!PySequence_Check(olist))
+    {
+      PyErr_SetString(PyExc_ValueError,"Expected a sequence");
+      return NULL;
+    }
+    if (PySequence_Length(olist) != $1_dim1) {
+      PyErr_SetString(PyExc_ValueError,"Size mismatch. Expected $1_dim1 elements");
+      return NULL;
+    }
+
+    for (j = 0; j < $1_dim1; j++) 
+    {
+      PyObject *o = PySequence_GetItem(olist,j);
+
+      if (PyNumber_Check(o)) 
+      {
+        temp[i][j] = (float) PyFloat_AsDouble(o);
+      } 
+      else 
+      {
+        PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");      
+        return NULL;
+      }
+    }
+  }
+  $1 = temp;
+}
+
 // Integer types
 %typemap(out) uint16_t
 {
