@@ -159,7 +159,8 @@ int playerc_position_get_geom(playerc_position_t *device)
 
 
 // Set the robot speed
-int playerc_position_set_speed(playerc_position_t *device, double vx, double vy, double va)
+int playerc_position_set_cmd_vel(playerc_position_t *device, double vx, double vy,
+                                 double va, int state)
 {
   player_position_cmd_t cmd;
 
@@ -167,13 +168,16 @@ int playerc_position_set_speed(playerc_position_t *device, double vx, double vy,
   cmd.xspeed = htonl((int) (vx * 1000.0));
   cmd.yspeed = htonl((int) (vy * 1000.0));
   cmd.yawspeed = htonl((int) (va * 180.0 / M_PI));
+  cmd.state = state;
+  cmd.type = 0;
 
   return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }
 
 
 // Set the target pose
-int playerc_position_set_cmd_pose(playerc_position_t *device, double gx, double gy, double ga)
+int playerc_position_set_cmd_pose(playerc_position_t *device, double gx, double gy,
+                                  double ga, int state)
 {
   player_position_cmd_t cmd;
 
@@ -181,6 +185,8 @@ int playerc_position_set_cmd_pose(playerc_position_t *device, double gx, double 
   cmd.xpos = htonl((int) (gx * 1000.0));
   cmd.ypos = htonl((int) (gy * 1000.0));
   cmd.yaw = htonl((int) (ga * 180.0 / M_PI));
+  cmd.state = state;
+  cmd.type = 1;
 
   return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }

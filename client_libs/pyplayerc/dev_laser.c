@@ -51,6 +51,7 @@
  *
  **************************************************************************/
 
+#include <float.h>
 #include <pthread.h>
 #include "Python.h"
 #include "playerc.h"
@@ -309,6 +310,54 @@ static PyObject *laser_set_config(PyObject *self, PyObject *args)
 }
 
 
+/* Find the min and max values in a zone
+ */
+static PyObject *laser_zone_test(PyObject *self, PyObject *args)
+{
+  int i;
+  double ax, ay, bx, by;
+  double px, py;
+  double r, b;
+  double min_r, min_b;
+  double max_r, max_b;
+  laser_object_t *laserob;
+  
+  if (!PyArg_ParseTuple(args, "dddd", &ax, &ay, &bx, &by))
+    return NULL;
+  laserob = (laser_object_t*) self;
+
+  min_r = +DBL_MAX;
+  max_r = -DBL_MAX;
+
+  for (i = 0; i < laserob->laser->scan_count; i++)
+  {
+    r = laserob->laser->scan[i][0];
+    b = laserob->laser->scan[i][1];
+    px = laserob->laser->point[i][0];
+    py = laserob->laser->point[i][1];
+
+    if (px < ax || px > bx)
+      continue;
+    if (py < ay || py > by)
+      continue;
+    
+    if (r < min_r)
+    {
+      min_r = r;
+      min_b = b;
+    }
+    if (r > max_r)
+    {
+      max_r = r;
+      max_b = b;
+    }
+  }
+
+  return Py_BuildValue("(dd)(dd)", min_r, min_b, max_r, max_b);
+}
+
+
+
 /* Assemble python laser type
  */
 PyTypeObject laser_type = 
@@ -339,5 +388,6 @@ static PyMethodDef laser_methods[] =
   {"unsubscribe", laser_unsubscribe, METH_VARARGS},  
   {"ignore", laser_ignore, METH_VARARGS},
   {"set_config", laser_set_config, METH_VARARGS},
+  {"zone_test", laser_zone_test, METH_VARARGS},
   {NULL, NULL}
 };

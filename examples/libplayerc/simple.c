@@ -54,7 +54,7 @@ int main(int argc, const char **argv)
     return -1;
 
   // Make the robot spin!
-  if (playerc_position_set_speed(position, 0, 0, 0.1) != 0)
+  if (playerc_position_set_speed(position, 0, 0, 0.1, 1) != 0)
     return -1;
   
   for (i = 0; i < 200; i++)

@@ -289,35 +289,37 @@ static PyObject *position_enable(PyObject *self, PyObject *args)
 }
 
 
-/* Set the target speed
-   (vx, vy, va)
+/* Set the target velocity
+   (vx, vy, va, state)
 */
-static PyObject *position_set_speed(PyObject *self, PyObject *args)
+static PyObject *position_set_cmd_vel(PyObject *self, PyObject *args)
 {
+  int state;
   double vx, vy, va;
   position_object_t *pyposition;
     
-  if (!PyArg_ParseTuple(args, "ddd", &vx, &vy, &va))
+  if (!PyArg_ParseTuple(args, "dddi", &vx, &vy, &va, &state))
     return NULL;
   pyposition = (position_object_t*) self;
 
-  return PyInt_FromLong(playerc_position_set_speed(pyposition->position, vx, vy, va));
+  return PyInt_FromLong(playerc_position_set_cmd_vel(pyposition->position, vx, vy, va, state));
 }
 
 
 /* Set the target pose (for drivers with position control)
-   (vx, vy, va)
+   (vx, vy, va, state)
 */
 static PyObject *position_set_cmd_pose(PyObject *self, PyObject *args)
 {
+  int state;
   double px, py, pa;
   position_object_t *pyposition;
 
   pyposition = (position_object_t*) self;
-  if (!PyArg_ParseTuple(args, "ddd", &px, &py, &pa))
+  if (!PyArg_ParseTuple(args, "dddi", &px, &py, &pa, &state))
     return NULL;
 
-  return PyInt_FromLong(playerc_position_set_cmd_pose(pyposition->position, px, py, pa));
+  return PyInt_FromLong(playerc_position_set_cmd_pose(pyposition->position, px, py, pa, state));
 }
 
 
@@ -350,7 +352,7 @@ static PyMethodDef position_methods[] =
   {"subscribe", position_subscribe, METH_VARARGS},
   {"unsubscribe", position_unsubscribe, METH_VARARGS},  
   {"enable", position_enable, METH_VARARGS},
-  {"set_speed", position_set_speed, METH_VARARGS},
+  {"set_cmd_vel", position_set_cmd_vel, METH_VARARGS},
   {"set_cmd_pose", position_set_cmd_pose, METH_VARARGS},
   {NULL, NULL}
 };
