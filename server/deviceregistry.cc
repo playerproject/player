@@ -299,6 +299,10 @@ void StgBlinkenlight_Register(DriverTable *table);
 
 #ifdef INCLUDE_NOMAD
 void Nomad_Register(DriverTable *driverTable);
+void NomadPosition_Register(DriverTable *driverTable);
+//void NomadSonar_Register(DriverTable *driverTable);
+//void NomadBumper_Register(DriverTable *driverTable);
+//void NomadSpeech_Register(DriverTable *driverTable);
 #endif
 
 
@@ -339,6 +343,7 @@ player_interface_t interfaces[] = {
   {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING, "stg_simulation"},
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_BLINKENLIGHT_STRING, "stg_blinkenlight"},
   {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, "camerav4l"},
+  {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING, "nomad"},
   {0,NULL,NULL}
 };
 
@@ -659,6 +664,10 @@ register_devices()
 
 #ifdef INCLUDE_NOMAD
   Nomad_Register(driverTable);
+  NomadPosition_Register(driverTable);
+  //NomadSonar_Register(driverTable);
+  //NomadBumper_Register(driverTable);
+  //NomadSpeech_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_STAGE1P4

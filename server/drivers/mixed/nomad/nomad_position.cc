@@ -52,8 +52,6 @@
 #include <devicetable.h>
 extern CDeviceTable* deviceTable;
 
-#define CFG_BUFFER_LEN 5
-
 class NomadPosition:public CDevice 
 {
   public:
@@ -79,7 +77,7 @@ CDevice* NomadPosition_Init(char* interface, ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POSITION_STRING))
     {
-      PLAYER_ERROR1("driver \"nomad\" does not support interface \"%s\"\n",
+      PLAYER_ERROR1("driver \"nomad_position\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
@@ -90,7 +88,7 @@ CDevice* NomadPosition_Init(char* interface, ConfigFile* cf, int section)
 // a driver registration function
 void NomadPosition_Register(DriverTable* table)
 {
-  table->AddDriver("nomad", PLAYER_ALL_MODE, NomadPosition_Init);
+  table->AddDriver( "nomad_position", PLAYER_ALL_MODE, NomadPosition_Init);
 }
 
 
@@ -101,7 +99,7 @@ NomadPosition::NomadPosition(char* interface, ConfigFile* cf, int section)
 	     sizeof(player_position_cmd_t), 1, 1 )
 {
   this->nomad_id.code = PLAYER_NOMAD_CODE;
-  this->nomad_id.port = cf->ReadInt(section, "nomad_port", device_id.port );
+  this->nomad_id.port = cf->ReadInt(section, "nomad_port", 0 );
   this->nomad_id.index = cf->ReadInt(section, "nomad_index", 0 );
 }
 
@@ -112,13 +110,18 @@ NomadPosition::~NomadPosition()
 
 int NomadPosition::Setup()
 {
-  printf("NomadPosition Setup..");
+  printf("NomadPosition Setup.. ");
   fflush(stdout);
   
-  printf( "connecting to Nomad (%d:%d:%d) ",
+  // if we didn't specify a port for the nomad, use the same port as
+  // this device
+  if( this->nomad_id.port == 0 )
+    this->nomad_id.port = device_id.port;
+  
+  printf( "finding Nomad (%d:%d:%d).. ",
 	  this->nomad_id.port,
 	  this->nomad_id.code,
-	  this->nomad_id.index );
+	  this->nomad_id.index ); fflush(stdout);
 
   // get the pointer to the Nomad
   this->nomad = deviceTable->GetDevice(nomad_id);
@@ -128,7 +131,9 @@ int NomadPosition::Setup()
     PLAYER_ERROR("unable to find nomad device");
     return(-1);
   }
-    
+  
+  else printf( " OK.\n" );
+ 
   // Subscribe to the nomad device, but fail if it fails
   if(this->nomad->Subscribe(this) != 0)
   {
@@ -139,7 +144,7 @@ int NomadPosition::Setup()
   /* now spawn reading thread */
   StartThread();
 
-  puts( "done" );
+  puts( "NomadPosition setup done" );
   return(0);
 }
 
@@ -156,12 +161,11 @@ int NomadPosition::Shutdown()
 
 void NomadPosition::Update()
 {
-  unsigned char config[CFG_BUFFER_LEN];
+  unsigned char config[NOMAD_CONFIG_BUFFER_SIZE];
   
   void* client;
   player_device_id_t id;
   size_t config_size = 0;
-  //player_position_data_t
   
   // first, check if there is a new config command
   if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
@@ -180,7 +184,6 @@ void NomadPosition::Update()
 		break;
 	      }
 	    
-	    // TODO : get values from somewhere.
 	    player_position_geom_t geom;
 	    geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 	    geom.pose[0] = htons((short) (0)); // x offset
@@ -210,14 +213,20 @@ void NomadPosition::Update()
       // consume the command
       device_used_commandsize = 0;
       
-      /* write the command to the robot */      
-      int v = ntohl(command.xspeed);
-      int w = ntohl(command.yawspeed);
-      int turret = ntohl(command.yspeed);
-      printf( "command: v:%d w:%d turret:%d\n", v,w,turret ); 
+      // convert from the generic position interface to the
+      // Nomad-specific command
+      player_nomad_cmd_t cmd;
+      memset( &cmd, 0, sizeof(cmd) );
+      cmd.vel_trans = ntohl(command.xspeed);
+      cmd.vel_steer = ntohl(command.yawspeed);
+      cmd.vel_turret = ntohl(command.yspeed);
       
-      //setSpeed( v, w, turret );
-      //setSpeed( 0, v );
+      printf( "nomad command: trans:%d steer:%d turret:%d\n", 
+	      cmd.vel_trans, cmd.vel_steer, cmd.vel_turret ); 
+      
+      // command the Nomad device
+      // TODO: is this the right syntax?
+      this->nomad->PutCommand( this, (unsigned char*)&cmd, sizeof(cmd) ); 
     }
 }
 

@@ -1,3 +1,12 @@
+/* This file was obtained from the nomadics respository on
+   Sourceforge. I understand that it was released under the GPL by the
+   copyright holders. Anyone with more information about the licensing
+   or authorship of this code, please contact Richard Vaughan
+   (vaughan@sfu.ca).
+
+   $Header$
+*/
+
 /*
  * Nclient.c
  *
@@ -10,8 +19,6 @@
 /* -- fixed a bug where initializing with an invalid robot id hung because
  *    Nclient tried to initialize sensors anyway -- rak, 16jun99
  */
-
-char cvsid_host_client_Nclient_c[] = "$Header$";
 
 /* defines */
 
@@ -212,8 +219,8 @@ int    SERV_TCP_PORT           = 7019;
 
 char   ROBOT_MACHINE_NAME[80] = "";
 int    CONN_TYPE       = -1;
-char   SERIAL_PORT[40] = "";
-int    SERIAL_BAUD     = -1;
+char   NOMAD_SERIAL_PORT[256] = "";
+int    NOMAD_SERIAL_BAUD     = -1;
 int    ROBOT_TCP_PORT  = -1;
 
 double LASER_CALIBRATION[8];

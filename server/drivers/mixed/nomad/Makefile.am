@@ -4,12 +4,16 @@ noinst_LIBRARIES = @NOMAD_LIB@
 
 EXTRA_LIBRARIES = libnomad.a
 
-# for direct connection to a robot
-# libnomad_a_SOURCES = nomad.cc direct.c Nclient.h mother.cc
+# CHOOSE A NOMADICS INTERFACE
+#
+# for connection via Nserver simulator/visualization (good for debugging)
+NOMADICS_INTERFACE = Nclient.c
 
-# for connection via Nserver (good for debugging)
+# for direct connection to a robot
+#NOMADICS_INTERFACE = direct.c
+
 libnomad_a_SOURCES = \
-  nomad.cc \
-  Nclient.c \
   Nclient.h \
+  ${NOMADICS_INTERFACE} \
+  nomad.cc \
   nomad_position.cc

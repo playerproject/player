@@ -2,7 +2,8 @@
 /* This file was obtained from the nomadics respository on
    Sourceforge. I understand that it was released under the GPL by the
    copyright holders. Anyone with more information about the licensing
-   of this code, please contact Richard Vaughan (vaughan@sfu.ca).
+   or authorship of this code, please contact Richard Vaughan
+   (vaughan@sfu.ca).
 
    $Header$
 */
@@ -14,6 +15,7 @@
  * the Nserver program.
  *
  * Copyright 1991-1998, Nomadic Technologies, Inc.
+ * Revised 2004 Richard Vaughan (vaughan@sfu.ca)
  *
  */
 
@@ -35,8 +37,10 @@ char cvsid_host_client_Ndirect_c[] = "$Header$";
 #include <sys/types.h>          
 #include <sys/socket.h>
 #include <sys/time.h>           
+#include <stdlib.h> // for abs(3)
 
 #include "Nclient.h"
+#include "player.h"
 
 /* defines */
 
@@ -181,7 +185,6 @@ int    connect_type           = 1;
 int    model;
 char  *device;
 int    conn_value;
-int    DEFAULT_SERIAL_BAUD    = 38400;
 int    DEFAULT_ROBOT_TCP_PORT = 65001;
 double LASER_CALIBRATION[8]   = { -0.003470,  0.000008, 0.011963,  0.001830,
 				  27.5535913, 0.000428, 0.031102, -0.444624 };
@@ -457,7 +460,7 @@ static unsigned char GETC(int fd, int conn_type)
  */
 static int Read_Pkg(int fd, int conn_type, unsigned char *inbuf)
 {
-  int i, length, chk_sum;
+  int i=0, length=0, chk_sum=0;
   unsigned char ichar, ichar2;
 
   if (!(serial_ready (fd, wait_time))) {
@@ -1493,7 +1496,7 @@ int open_serial(char *port, unsigned short baud)
   if ((Fd=open(port, O_RDWR|O_NONBLOCK)) < 0)
     {
       perror("Error opening serial port");
-      return 0;
+      return FALSE;
     }
   
   if (tcgetattr(Fd, &info) < 0) 
@@ -1501,7 +1504,7 @@ int open_serial(char *port, unsigned short baud)
       perror("Error using TCGETS in ioctl.");
       close(Fd);
       Fd = -1;
-      return 0;
+      return FALSE;
     }
   
   /* restore old values to unhang the bastard, if hung */
@@ -1538,9 +1541,9 @@ int open_serial(char *port, unsigned short baud)
     if (baud != 0)
     {
       fprintf(stderr, "Invalid baud rate %d, using %d\n", baud,
-              DEFAULT_SERIAL_BAUD);
+              NOMAD_SERIAL_BAUD);
     }
-    baud = DEFAULT_SERIAL_BAUD;
+    baud = NOMAD_SERIAL_BAUD;
   }
   
   info.c_iflag = 0;
@@ -1632,8 +1635,9 @@ int connect_robot(long robot_id, ...)
   
   if (connect_type == 1) 
   {
-    open_serial(device, conn_value);
-    
+    if( !open_serial(device, conn_value) )
+      return FALSE; // fail - rtv
+      
     /* Send init_sensors to make sure that server and robot are synchronized */
     if (model == MODEL_N200)
     {

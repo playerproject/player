@@ -483,8 +483,8 @@ extern int Laser[2*NUM_LASER+1];
  *     ROBOT_MACHINE_NAME
  * usually don't need to be changed:
  *     CONN_TYPE
- *     SERIAL_PORT
- *     SERIAL_BAUD
+ *     NOMAD_SERIAL_PORT
+ *     NOMAD_SERIAL_BAUD
  *     ROBOT_TCP_PORT
  *
  * If an application program should run with Nclient.o and Ndirect.o
@@ -520,12 +520,12 @@ extern int CONN_TYPE;
 /* SERIAL_PORT is a string containing the filename of the serial port you
  * choose to communicate to the robot on.  The default is "/dev/ttyS0".
  */
-extern char SERIAL_PORT[40];
+//extern char NOMAD_SERIAL_PORT[256];
 
 /* SERIAL_BAUD is the baud rate to set the serial communication to.  It
  * defaults to 9600.
  */
-extern int SERIAL_BAUD;
+//extern int NOMAD_SERIAL_BAUD;
 
 /* ROBOT_TCP_PORT is the port number the robot listens on for request of
  * connection.  It defaults (and should always be set) to 65001 for the
