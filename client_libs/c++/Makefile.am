@@ -3,15 +3,11 @@ SUBDIRS = . test
 AM_CPPFLAGS = -I$(top_srcdir)/server -I$(srcdir)/../c -I$(srcdir)/../libplayerpacket -I$(top_srcdir)/replace
 
 lib_LIBRARIES = libplayerclient.a
-#lib_LTLIBRARIES = libplayerclient.la
 
-libplayerclient_a_LIBADD = $(srcdir)/../c/playercclient.o $(top_builddir)/replace/*.o $(srcdir)/../libplayerpacket/playerpacket.o 
-#libplayerclient_la_LIBADD = $(srcdir)/../c/playercclient.lo $(top_builddir)/replace/*.lo $(srcdir)/../libplayerpacket/playerpacket.lo 
+libplayerclient_a_LIBADD = $(top_builddir)/client_libs/c/playercclient.o $(top_builddir)/replace/*.o $(top_builddir)/client_libs/libplayerpacket/playerpacket.o 
 
-libplayerclient_a_DEPENDENCIES = $(srcdir)/../c/playercclient.o  $(srcdir)/../libplayerpacket/playerpacket.o 
-#libplayerclient_la_DEPENDENCIES = $(srcdir)/../c/playercclient.lo  $(srcdir)/../libplayerpacket/playerpacket.lo 
+libplayerclient_a_DEPENDENCIES = $(top_builddir)/client_libs/c/playercclient.o  $(top_builddir)/client_libs/libplayerpacket/playerpacket.o 
 
-#libplayerclient_la_LDFLAGS =   -version-info 1:0:0
 
 libplayerclient_a_SOURCES =   commsproxy.cc \
                               clientproxy.cc \
@@ -58,7 +54,8 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
 
 include_HEADERS = playerclient.h playermcomtypes.h
 
-dist-hook:
-	mkdir -p $(top_distdir)/doc
-	cd $(srcdir)/doc && make
-	cp -p $(srcdir)/doc/cppclient.ps $(top_distdir)/doc
+# REMOVE; docs are no longer built in the distribution
+#dist-hook:
+#	mkdir -p $(top_distdir)/doc
+#	cd $(srcdir)/doc && make
+#	cp -p $(srcdir)/doc/cppclient.ps $(top_distdir)/doc

@@ -44,7 +44,7 @@
 #include <drivertable.h>
 #include <player.h>
 
-#include <replace/replace.h>
+#include <replace.h>
 
 #define PTZ_SLEEP_TIME_USEC 100000
 

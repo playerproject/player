@@ -45,6 +45,7 @@
 #include "devicetable.h"
 #include "device.h"
 
+#include "replace.h"  /* for poll(2) */
 
 // the externed vars are declared in main.cc
 #include <playertime.h>

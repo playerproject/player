@@ -76,7 +76,7 @@
 #include <drivertable.h>
 #include <player.h>
 
-#include <replace/replace.h>
+#include <replace.h>
 
 #define DEFAULT_PTZ_PORT "/dev/ttyR1"
 #define PTZ_SLEEP_TIME_USEC 100000
