@@ -1369,7 +1369,9 @@ typedef struct player_bumper_geom
  ** begin section truth
  *************************************************************************/
 /** [Synopsis]
-The {\tt truth} interface provides access to the absolute state of entities. 
+The {\tt truth} interface provides access to the absolute state of
+entities.  Note that, unless your robot has superpowers, {\tt truth}
+devices are only avilable in Stage.
 */
 
 /** [Constants] */
@@ -1921,13 +1923,11 @@ typedef struct player_localize_map_data
 /** size of the data field in messages */
 #define MCOM_DATA_LEN           128     
 #define MCOM_COMMAND_BUFFER_SIZE    (sizeof(player_mcom_config_t))
-#define MCOM_DATA_BUFFER_SIZE   0       // we don't actually need any "data", 
-                                        // just "configuration" commands aro used.
+#define MCOM_DATA_BUFFER_SIZE   0       
 /** number of buffers to keep per channel */
 #define MCOM_N_BUFS             10      
 /** size of channel name */
 #define MCOM_CHANNEL_LEN        8       
-
 /** request ids */
 #define PLAYER_MCOM_PUSH_REQ    0
 #define PLAYER_MCOM_POP_REQ     1
@@ -1978,11 +1978,30 @@ typedef struct player_mcom_return
  ** end section
  *************************************************************************/
 
-/**
- * Sound interface. Use this interface to playback a sound through the robot
- * It takes an index of a pre-recorded sound file as argument to the command
+/*************************************************************************
+ ** begin section sound
+ *************************************************************************/
+/** [Synopsis]
+   The {\tt sound} interface allows playback of a pre-recorded sound (e.g.,
+   on an Amigobot).
  */
-typedef struct player_sound_cmd {
+
+/** [Data]
+    This interface provides no data.
+*/
+
+/** [Commands] */
+/** 
+The {\tt sound} interface accepts an index of a pre-recorded sound file to 
+play.  */
+typedef struct player_sound_cmd 
+{
+  /** Index of sound to be played. */
   uint16_t index;
 } __attribute__ ((packed)) player_sound_cmd_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
 #endif /* PLAYER_H */
