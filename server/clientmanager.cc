@@ -209,28 +209,33 @@ void ClientManager::AddClient(ClientData* client)
     ufds[num_clients++].events = POLLIN;
   }
     
-  // try to write the ident string to the client, and kill the client if
-  // it fails
-  unsigned char data[PLAYER_IDENT_STRLEN];
-  // write back an identifier string
-  if(use_stage)
-    sprintf((char*)data, "%s%s (stage)", PLAYER_IDENT_STRING, playerversion);
-  else
-    sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
-  memset(((char*)data)+strlen((char*)data),0,
-        PLAYER_IDENT_STRLEN-strlen((char*)data));
-
-  
-  client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);    
-  retval= client->Write(PLAYER_IDENT_STRLEN);
-
-  if(retval < 0)
+  // If the client's socket fd is 0, then there's not really a client; this
+  // devices is alwayson.  So don't send the ident string.
+  if(client->socket != 0)
   {
-    if(errno != EAGAIN)
+    // Try to write the ident string to the client, and kill the client if
+    // it fails.  
+    unsigned char data[PLAYER_IDENT_STRLEN];
+    // write back an identifier string
+    if(use_stage)
+      sprintf((char*)data, "%s%s (stage)", PLAYER_IDENT_STRING, playerversion);
+    else
+      sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
+    memset(((char*)data)+strlen((char*)data),0,
+           PLAYER_IDENT_STRLEN-strlen((char*)data));
+
+
+    client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);    
+    retval= client->Write(PLAYER_IDENT_STRLEN);
+
+    if(retval < 0)
     {
-      PLAYER_ERROR1("%s",strerror(errno));
-      MarkClientForDeletion(num_clients-1);
-      RemoveBlanks();
+      if(errno != EAGAIN)
+      {
+        PLAYER_ERROR1("%s",strerror(errno));
+        MarkClientForDeletion(num_clients-1);
+        RemoveBlanks();
+      }
     }
   }
 }
