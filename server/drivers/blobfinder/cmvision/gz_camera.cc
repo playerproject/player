@@ -31,7 +31,7 @@
   #include <config.h>
 #endif
 
-#if INCLUDE_GAZEBO
+#if INCLUDE_GAZEBO_CAMERA
 
 #include "gz_camera.h"
 #define RGBSIZE 3

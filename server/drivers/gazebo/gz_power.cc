@@ -31,6 +31,10 @@
 #include "config.h"
 #endif
 
+#ifndef INCLUDE_GAZEBO_POWER
+#warning "gz_power not supported by libgazebo; skipping"
+#else
+
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
@@ -226,3 +230,5 @@ int GzPower::PutConfig(player_device_id_t* device, void* client, void* data, siz
   }
   return 0;
 }
+
+#endif

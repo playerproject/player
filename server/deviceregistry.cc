@@ -202,12 +202,31 @@ void AdaptiveMCL_Register(DriverTable* table);
 void LifoMCom_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_GAZEBO
+#ifdef INCLUDE_GAZEBO_CAMERA
 void GzCamera_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_GAZEBO_FACTORY
+void GzFactory_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_GAZEBO_FIDUCIAL
 void GzFiducial_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_GAZEBO_LASER
 void GzLaser_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_GAZEBO_POSITION
 void GzPosition_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_GAZEBO_POWER
 void GzPower_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_GAZEBO_PTZ
 void GzPtz_Register(DriverTable *table);
 #endif
 
@@ -488,12 +507,31 @@ register_devices()
   LifoMCom_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_GAZEBO
+#ifdef INCLUDE_GAZEBO_CAMERA
   GzCamera_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_GAZEBO_FACTORY
+  GzFactory_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_GAZEBO_FIDUCIAL
   GzFiducial_Register(driverTable);
+#endif
+  
+#ifdef INCLUDE_GAZEBO_LASER
   GzLaser_Register(driverTable);
+#endif
+  
+#ifdef INCLUDE_GAZEBO_POSITION
   GzPosition_Register(driverTable);
+#endif
+  
+#ifdef INCLUDE_GAZEBO_POWER
   GzPower_Register(driverTable);
+#endif
+  
+#ifdef INCLUDE_GAZEBO_PTZ
   GzPtz_Register(driverTable);
 #endif
 

@@ -1175,7 +1175,7 @@ ClientDataTCP::Write(size_t len)
               totalwritebuffer+byteswritten, 
               leftover_size);
 
-      PLAYER_WARN1("%d bytes leftover on write() to client", leftover_size);
+      //SHUT UP PLAYER_WARN1("%d bytes leftover on write() to client", leftover_size);
     }
     else
       leftover_size=0;

@@ -1,10 +1,6 @@
 dnl This macro does all the checking for RTK, taking into account --prefix
 dnl and --with-rtk
 AC_DEFUN([RTK_CHECK],[
-dnl where's RTK?
-AC_ARG_WITH(rtk, [  --with-rtk=dir          Location of RTK],
-RTK_DIR=$with_rtk,
-RTK_DIR=$prefix)
 
 dnl RTK2 uses libjpeg to export images.
 AC_CHECK_HEADER(jpeglib.h,

@@ -31,6 +31,10 @@
 #include "config.h"
 #endif
 
+#ifndef INCLUDE_GAZEBO_PTZ
+#warning "gz_ptz not supported by libgazebo; skipping"
+#else
+
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
@@ -242,3 +246,5 @@ void GzPtz::HandleGetGeom(void *client, void *req, int reqlen)
   return;
 }
 */
+
+#endif

@@ -31,6 +31,10 @@
 #include "config.h"
 #endif
 
+#ifndef INCLUDE_GAZEBO_FACTORY
+#warning "gz_factory not supported by libgazebo; skipping"
+#else
+
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
@@ -202,3 +206,4 @@ int GzFactory::PutConfig(player_device_id_t* device, void* client, void* req, si
   return 0;
 }
 
+#endif

@@ -170,7 +170,7 @@ void GzLaser::Update()
   int i;
   player_laser_data_t data;
   uint32_t tsec, tusec;
-  double range_res;
+  double range_res, angle_res;
   
   gz_laser_lock(this->iface, 1);
 
@@ -180,6 +180,7 @@ void GzLaser::Update()
     tsec = (int) (this->iface->data->time);
     tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
+#if HAS_GAZEBO_LASER_MAX_RANGE
     // Pick the rage resolution to use (1, 10, 100)
     if (this->iface->data->max_range <= 8.192)
       range_res = 1.0;
@@ -187,12 +188,17 @@ void GzLaser::Update()
       range_res = 10.0;
     else
       range_res = 100.0;
+    angle_res = this->iface->data->res_angle;
+#else
+    range_res = 1.0;
+    angle_res = this->iface->data->resolution;
+#endif
 
     //printf("range res = %f %f\n", range_res, this->iface->data->max_range);
   
     data.min_angle = htons((int) (this->iface->data->min_angle * 100 * 180 / M_PI));
     data.max_angle = htons((int) (this->iface->data->max_angle * 100 * 180 / M_PI));
-    data.resolution = htons((int) (this->iface->data->res_angle * 100 * 180 / M_PI));
+    data.resolution = htons((int) (angle_res * 100 * 180 / M_PI));
     data.range_res = htons((int) range_res);
     data.range_count = htons((int) (this->iface->data->range_count));
   

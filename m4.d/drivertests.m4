@@ -121,6 +121,10 @@ if test "x$enable_highspeedsick" = "xno"; then
   AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[[disable 500Kbps comms with SICK]])
 fi
 
+dnl More gazebo tests can be found in m4.d/gazebotest.m4
+PLAYER_ADD_DRIVER([gazebo],[drivers/gazebo],[yes],[$GAZEBO_HEADER],
+                  [$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
+
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
@@ -279,36 +283,6 @@ else
 fi
 AC_SUBST(STAGE1P4_LIB)
 AC_SUBST(STAGE1P4_CFLAGS)
-
-dnl Where is Gazebo?
-AC_ARG_ENABLE(gazebo,
-[  --disable-gazebo           Don't compile the Gazebo driver],
-disable_reason="disabled by user",
-enable_gazebo=yes)
-AC_ARG_WITH(gazebo, [  --with-gazebo=dir       Location of Gazebo],
-            GAZEBO_DIR=$with_gazebo,GAZEBO_DIR=$prefix)
-if test "x$enable_gazebo" = "xyes"; then
-if test "x$GAZEBO_DIR" = "xNONE" -o "x$GAZEBO_DIR" = "xno"; then
-  GAZEBO_HEADER=gazebo.h
-  GAZEBO_EXTRA_CPPFLAGS=
-  GAZEBO_EXTRA_LDFLAGS=-lgazebo
-elif test "x$GAZEBO_DIR" = "xyes"; then
-  GAZEBO_HEADER=$prefix/include/gazebo.h
-  GAZEBO_EXTRA_CPPFLAGS="-I$prefix/include"
-  GAZEBO_EXTRA_LDFLAGS="-L$prefix/lib -lgazebo"
-else
-  GAZEBO_HEADER=$GAZEBO_DIR/include/gazebo.h
-  GAZEBO_EXTRA_CPPFLAGS="-I$GAZEBO_DIR/include"
-  GAZEBO_EXTRA_LDFLAGS="-L$GAZEBO_DIR/lib -lgazebo"
-fi
-else 
-GAZEBO_EXTRA_CPPFLAGS=
-GAZEBO_EXTRA_LDFLAGS=
-fi
-
-dnl Add the Gazebo driver
-PLAYER_ADD_DRIVER([gazebo],[drivers/gazebo],[yes],[$GAZEBO_HEADER],
-                  [$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
 
 PLAYER_ADD_DRIVER([laserbar],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])

@@ -2,7 +2,7 @@
   #include <config.h>
 #endif
 
-#if INCLUDE_GAZEBO
+#if INCLUDE_GAZEBO_CAMERA
 
 #include "conversions.h"
 #include "captureGazebo.h"

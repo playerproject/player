@@ -56,6 +56,7 @@ int GzClient::Init(const char *serverid, const char *prefixid)
   if (gz_sim_open(GzClient::sim, GzClient::client, "default") != 0)
     return -1;
 
+#ifdef LIBGAZEBO_VERSION
   // Check that version numbers match
   if (((gz_data_t*) GzClient::sim->iface->mmap)->version != LIBGAZEBO_VERSION)
   {
@@ -64,6 +65,10 @@ int GzClient::Init(const char *serverid, const char *prefixid)
                   ((gz_data_t*) GzClient::sim->iface->mmap)->version, LIBGAZEBO_VERSION);
     return -1;
   }
+#else
+  PLAYER_WARN("libgazebo has no version number\n"
+              "Consider upgrading Gazebo and then re-building Player");
+#endif
 
   if (prefixid != NULL)
     GzClient::prefix_id = prefixid;

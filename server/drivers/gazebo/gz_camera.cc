@@ -1,5 +1,3 @@
-#ifndef GAZEBO_CAMERA
-#define GAZEBO_CAMERA
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
@@ -32,6 +30,13 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#ifndef INCLUDE_GAZEBO_CAMERA
+#warning "gz_camera not supported by libgazebo; skipping"
+#else
+
+#ifndef GAZEBO_CAMERA
+#define GAZEBO_CAMERA
 
 #include <assert.h>
 #include <errno.h>
@@ -176,7 +181,7 @@ size_t GzCamera::GetData(void* client, unsigned char* dest, size_t len,
 
 #endif
 
-
+#endif
 
 
 
