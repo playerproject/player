@@ -151,6 +151,8 @@ test_fiducial(PlayerClient* client, int index)
     else
       FAIL();
     
+    sleep(2);
+
     TEST( "Setting device's fiducial id back to original value" );
     
     new_id  = fp.SetId( id );
