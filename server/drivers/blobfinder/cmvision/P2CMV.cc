@@ -52,6 +52,9 @@
 #if HAVE_V4L2
   #include "captureV4L2.h"
 #endif
+#if HAVE_V4L
+  #include "capturev4l.h"
+#endif
 
 #if INCLUDE_GAZEBO
   #include "captureGazebo.h"
@@ -215,7 +218,16 @@ CMVisionBF::Setup()
     return(-1);
 #endif
   }
-
+  else if(!strcmp(capturetype, "V4L"))
+  {
+#if HAVE_V4L
+    cap = new capturev4l;
+#else
+    PLAYER_ERROR("Sorry, support for capture from a V4L camera was not "
+                 "included at compile-time");
+    return(-1);
+#endif
+  }
   else
   {
     PLAYER_ERROR1("Unknown video capture type: \"%s\"", capturetype);

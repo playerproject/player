@@ -17,7 +17,7 @@ class capture
     bool captured_frame;
 
   public:
-    capture() {current=NULL; captured_frame = false;}
+    capture() {current=0; captured_frame = false;}
 
     // you must define these in the subclass
     virtual bool initialize(int nwidth,int nheight) = 0;
