@@ -5,6 +5,8 @@
 # generic LaTeX makefile
 #
 
+VERSION = 1.4
+
 MAKEDOC = ../makedoc2.py
 LATEX = latex
 BIBTEX = bibtex
@@ -60,7 +62,11 @@ pdf: $(NAME).pdf
 $(NAME).pdf: $(NAME).ps
 	$(PS2PDF) $<
 
-manual: ps
+distro: ps pdf html
+	gzip $(NAME).ps && mv libplayerc.ps.gz Player-libplayerc-$(VERSION).ps.gz
+	mv libplayerc.pdf Player-libplayerc-$(VERSION).pdf
+	mv html_docs Player-libplayerc-$(VERSION)-html && tar cvzf Player-libplayerc-$(VERSION)-html.tgz Player-libplayerc-$(VERSION)-html
+
 
 clean:
 	rm -rf $(NAME).ps $(NAME).dvi $(NAME).log \
