@@ -38,6 +38,7 @@
 #include <netinet/in.h>   /* for sockaddr_in type */
 
 #include "player.h"
+#include "error.h"
 
 /*
  * this function creates a socket of the indicated type and binds it to 

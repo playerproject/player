@@ -33,6 +33,7 @@
 #include <fcntl.h>  // for debugging file writes 
 #include <netinet/in.h>
 
+#include "error.h"
 #include "conversions.h"
 #include "captureCamera.h"
 

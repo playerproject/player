@@ -49,7 +49,7 @@
 #include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
-
+#include <stdio.h>
 #include "playerpacket.h"
 
 void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
@@ -240,7 +240,7 @@ int FiducialProxy::SetId( int id )
   int result_id = ntohl( pid.id );
 
   if( result_id != id )
-    PLAYER_WARN2( "Setting fiducial ID: result (%d) differs from request (%d)",
+    fprintf(stderr, "Setting fiducial ID: result (%d) differs from request (%d)",
 		 result_id, id );
 
   return result_id;

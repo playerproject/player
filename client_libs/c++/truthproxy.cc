@@ -49,6 +49,7 @@
 #include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <stdio.h>
 #include <math.h>
 
 // angles must be transmitted as integers on [0..359]

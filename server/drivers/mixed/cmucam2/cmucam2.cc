@@ -45,6 +45,8 @@
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h>  /* for pthread stuff */
 #include <socket_util.h>
+
+#include <error.h>
 #include <driver.h>
 #include <drivertable.h>
 #include <player.h>

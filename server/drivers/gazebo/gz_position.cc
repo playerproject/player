@@ -40,6 +40,7 @@
 #include <netinet/in.h>
 
 #include "player.h"
+#include "error.h"
 #include "driver.h"
 #include "drivertable.h"
 

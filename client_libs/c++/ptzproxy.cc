@@ -49,6 +49,7 @@
 #include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <stdio.h>
 #include <math.h>
     
 // send a camera command

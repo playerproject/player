@@ -118,6 +118,7 @@ driver
 #define PLAYER_ENABLE_MSG 0
 
 #include "player.h"
+#include "error.h"
 #include "driver.h"
 #include "drivertable.h"
 
@@ -221,7 +222,7 @@ SegwayRMP::Setup()
   if (this->position3d_id.code)
     ClearCommand(this->position3d_id);
 
-  PLAYER_MSG0("CAN bus initializing");
+  PLAYER_MSG0(2, "CAN bus initializing");
 
   if(!strcmp(this->caniotype, "kvaser"))
     assert(this->canio = new CANIOKvaser);
@@ -255,7 +256,7 @@ SegwayRMP::Setup()
 int
 SegwayRMP::Shutdown()
 {
-  PLAYER_MSG0("Shutting down CAN bus");
+  PLAYER_MSG0(2, "Shutting down CAN bus");
   fflush(stdout);
   
   // TODO: segfaulting in here somewhere on client disconnect, but only 
@@ -294,11 +295,13 @@ SegwayRMP::Main()
   CanPacket pkt;
   int32_t xspeed,yawspeed;
   bool got_command;
+  bool first;
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
-  PLAYER_MSG0("starting main loop");
+  first = true;  
+  PLAYER_MSG0(2, "starting main loop");
   
   for(;;)
   {
@@ -311,7 +314,12 @@ SegwayRMP::Main()
       pthread_exit(NULL);
     }
 
-    PLAYER_MSG0("got data from rmp");
+    // Note that we got some data
+    if (first)
+    {
+      first = false;
+      PLAYER_MSG0(2, "got data from rmp");
+    }
 
     // TODO: report better timestamps, possibly using time info from the RMP
 

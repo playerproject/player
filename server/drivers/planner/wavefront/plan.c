@@ -14,6 +14,7 @@
 #include <sys/types.h>
 
 #include <playercommon.h>
+#include <error.h>
 
 // Use gdk-pixbuf for loading the images
 #include <gdk-pixbuf/gdk-pixbuf.h>

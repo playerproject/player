@@ -32,6 +32,7 @@
 #include "playercommon.h"
 #include "drivertable.h"
 #include "driver.h"
+#include "error.h"
 #include "player.h"
 
 #define DEFAULT_DEVICE "/dev/mixer"

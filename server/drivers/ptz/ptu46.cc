@@ -73,6 +73,7 @@
 // Includes needed for player
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <driver.h>
+#include <error.h>
 #include <drivertable.h>
 #include <player.h>
 

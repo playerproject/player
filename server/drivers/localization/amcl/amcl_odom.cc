@@ -34,6 +34,7 @@
 #include <sys/types.h> // required by Darwin
 #include <netinet/in.h>
 #include <math.h>
+#include "error.h"
 #include "devicetable.h"
 #include "amcl_odom.h"
 

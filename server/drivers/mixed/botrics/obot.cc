@@ -47,6 +47,7 @@
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
+#include <error.h>
 #include <driver.h>
 #include <drivertable.h>
 #include <player.h>

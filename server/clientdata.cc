@@ -39,6 +39,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 
+#include <error.h>
 #include <device.h>
 #include <devicetable.h>
 #include <deviceregistry.h>

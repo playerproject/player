@@ -46,6 +46,7 @@
 
 #include <khepera.h>
 
+#include <error.h>
 #include <driver.h>
 #include <drivertable.h>
 

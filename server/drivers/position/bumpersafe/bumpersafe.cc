@@ -8,6 +8,7 @@
 #include <math.h>
 
 #include "player.h"
+#include "error.h"
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"

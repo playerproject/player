@@ -38,6 +38,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include "error.h"
 #include "devicetable.h"
 #include "amcl_laser.h"
 
@@ -169,7 +170,7 @@ AMCLLaser::SetupMap(void)
   // Create the map
   this->map = map_alloc();
   //PLAYER_MSG1("loading map file [%s]", map_filename);
-  PLAYER_MSG1("reading map from map:%d", this->map_index);
+  PLAYER_MSG1(2, "reading map from map:%d", this->map_index);
   //if(map_load_occ(this->map, map_filename, map_scale, map_negate) != 0)
     //return -1;
 

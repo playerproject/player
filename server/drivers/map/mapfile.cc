@@ -33,6 +33,7 @@
 #include <player.h>
 #include <drivertable.h>
 #include <driver.h>
+#include <error.h>
 
 // use gdk-pixbuf for image loading
 #include <gdk-pixbuf/gdk-pixbuf.h>

@@ -50,6 +50,7 @@
  */
 
 #include <playerclient.h>
+#include <stdio.h>
 #include <math.h>
 #include <netinet/in.h>
 

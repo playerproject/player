@@ -47,6 +47,7 @@
  */
 
 #include <math.h>
+#include <stdio.h>
 
 #include <playerclient.h>
 
@@ -82,7 +83,7 @@ int MapProxy::GetMap()
   if (client->Request( m_device_id, (const char*)&infoReq,
         sizeof(infoReq.subtype), &hdr, (char*)&infoReq, sizeof(infoReq)) <0)
   {
-    PLAYER_ERROR("failed to get map info");
+    fprintf(stderr, "failed to get map info");
     return -1;
   }
 
@@ -121,10 +122,10 @@ int MapProxy::GetMap()
     if (client->Request(m_device_id, (const char*)&dataReq,
             reqlen, &hdr, (char *)&dataReq, sizeof(dataReq)) != 0)
     {
-      PLAYER_ERROR("failed to get map data");
+      fprintf(stderr, "failed to get map data");
       return -1;
     } else if (hdr.size != (reqlen + si * sj)) {
-      PLAYER_ERROR2("go less map data than expected (%d != %d)",
+      fprintf(stderr, "go less map data than expected (%d != %d)",
           hdr.size, reqlen + si*sj);
       return -1;
     }

@@ -43,6 +43,7 @@
 #include "playercommon.h"
 #include "drivertable.h"
 #include "driver.h"
+#include "error.h"
 #include "player.h"
 
 #define XAXIS 0

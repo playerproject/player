@@ -51,7 +51,7 @@ server performance.
 driver
 (
   name "dummy"
-  devices ["laser:0"]  # Generate dummy laser data
+  provides ["laser:0"]  # Generate dummy laser data
   rate 75              # Generate data at 75Hz
 )
 @endverbatim
@@ -66,6 +66,7 @@ driver
 #include <netinet/in.h>
 
 #include "player.h"
+#include "error.h"
 #include "driver.h"
 #include "drivertable.h"
 #include "deviceregistry.h"
@@ -126,7 +127,7 @@ Dummy::Dummy(ConfigFile* cf, int section)
     : Driver(cf, section)
 {
   // Look for our default device id
-  if (cf->ReadDeviceId(&this->local_id, section, "outputs", 0, -1, NULL) != 0)
+  if (cf->ReadDeviceId(&this->local_id, section, "provides", 0, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;

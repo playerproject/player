@@ -54,6 +54,7 @@
 //#define INCLUDE_OUTFILE 1
 extern PlayerTime* GlobalTime;
 
+#include "error.h"
 #include "deviceregistry.h"
 #include "amcl.h"
 
@@ -237,7 +238,7 @@ int AdaptiveMCL::Setup(void)
 {
   int i;
     
-  PLAYER_TRACE0("setup");
+  PLAYER_MSG0(2, "setup");
 
   // Create the particle filter
   assert(this->pf == NULL);
@@ -260,7 +261,7 @@ int AdaptiveMCL::Setup(void)
   this->hyp_count = 0;
   
   // Start the driver thread.
-  PLAYER_MSG0("running");
+  PLAYER_MSG0(2, "running");
   this->StartThread();
   
   return 0;
@@ -273,7 +274,7 @@ int AdaptiveMCL::Shutdown(void)
 {
   int i;
   
-  PLAYER_TRACE0("shutting down");
+  PLAYER_MSG0(2, "shutting down");
     
   // Stop the driver thread.
   this->StopThread();
@@ -286,7 +287,7 @@ int AdaptiveMCL::Shutdown(void)
   pf_free(this->pf);
   this->pf = NULL;
 
-  PLAYER_TRACE0("shutdown done");
+  PLAYER_MSG0(2, "shutdown done");
   return 0;
 }
 

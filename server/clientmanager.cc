@@ -44,6 +44,7 @@
 #include "clientmanager.h"
 #include "devicetable.h"
 #include "device.h"
+#include "error.h"
 
 #include "replace.h"  /* for poll(2) */
 

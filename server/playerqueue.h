@@ -30,9 +30,11 @@
 #ifndef _PLAYERQUEUE_H
 #define _PLAYERQUEUE_H
 
-//#include <clientdata.h>
-#include <player.h>
+#include <stdio.h>
 #include <sys/time.h>
+
+#include <player.h>
+
 
 // a queue contains elements of the following type.
 typedef struct

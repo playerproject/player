@@ -10,7 +10,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "playercommon.h"
+#include "error.h"
 
 #include "pf.h"
 #include "pf_pdf.h"

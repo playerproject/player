@@ -32,6 +32,7 @@
 #include <stage1p3.h>
 #include <sys/file.h> //for flock
 
+#include <error.h>
 #include <devicetable.h>
 extern DeviceTable* deviceTable;
 
