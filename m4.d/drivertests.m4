@@ -127,7 +127,9 @@ PLAYER_ADD_DRIVER([gazebo],[drivers/gazebo],[yes],[$GAZEBO_HEADER],
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
+dnl PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
+PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],
+                  [$GAZEBO_EXTRA_CPPFLAGS],[])
 
 if test "x$enable_cmvision" = "xyes"; then
   dnl Check for video-related headers, to see which support can be compiled into
@@ -174,6 +176,19 @@ if test "x$enable_cmvision" = "xyes"; then
   else
     AC_MSG_RESULT([***************************************************])
     AC_MSG_RESULT([Couldn't find the Video4Linux2 headers. V4L2 camera])
+    AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
+    AC_MSG_RESULT([***************************************************])
+  fi
+
+  if test "x$enable_gazebo" = "xyes"; then
+    AC_MSG_RESULT([***************************************************])
+    AC_MSG_RESULT([Found Gazebo. Gazebo camera support])
+    AC_MSG_RESULT([will be included in the CMVision driver])
+    AC_MSG_RESULT([***************************************************])
+    PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_EXTRA_LDFLAGS"
+  else
+    AC_MSG_RESULT([***************************************************])
+    AC_MSG_RESULT([Couldn't find Gazebo. Gazebo camera])
     AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
     AC_MSG_RESULT([***************************************************])
   fi
