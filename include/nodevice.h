@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,20 +19,22 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
  * the SICK laser device
  */
 
-#ifndef NODEVICE
-#define NODEVICE
+#ifndef _NODEVICE_H
+#define _NODEVICE_H
 
-#include "device.h"
-#include "lock.h"
+#include <device.h>
+#include <lock.h>
 
 
-class CNoDevice:public CDevice {
+class CNoDevice:public CDevice 
+{
     CLock lock;
 
  public:  

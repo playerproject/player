@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,19 +19,24 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
  * the Sony EVI-D30 PTZ camera device
  */
 
-#ifndef PTZDEVICE
-#define PTZDEVICE
+#ifndef _PTZDEVICE_H
+#define _PTZDEVICE_H
+
 #include <pthread.h>
 #include <unistd.h>
 
-#include "lock.h"
-#include "device.h"
+#include <lock.h>
+#include <device.h>
+
+#include <playercommon.h>
+#include <messages.h>
 
 #define PTZ_SLEEP_TIME_USEC 100000
 
@@ -50,7 +56,8 @@
 #define PTZ_TILT_CONV_FACTOR (0x12C / PTZ_TILT_MAX)
 
 
-class CPtzDevice:public CDevice {
+class CPtzDevice:public CDevice 
+{
  private:
   pthread_t thread; // the thread that continuously reads from the laser 
   bool command_pending1;  // keep track of how many commands are pending;
@@ -67,12 +74,12 @@ class CPtzDevice:public CDevice {
   int SendRequest(unsigned char* str, int len, unsigned char* reply);
 
  public:
-  // RTV - new dynamic buffer allocation
-  unsigned char* command;   // array holding the client's commands
-  unsigned char* data;      // array holding the most recent feedback
-  // !RTV 
+  player_ptz_cmd_t* command;
+  player_ptz_data_t* data; 
+
   int ptz_fd; // ptz device file descriptor
-  char ptz_serial_port[LASER_SERIAL_PORT_NAME_SIZE]; // device used to communicate with the ptz
+  /* device used to communicate with the ptz */
+  char ptz_serial_port[MAX_FILENAME_SIZE]; 
 
   CPtzDevice(char *port);
   ~CPtzDevice();

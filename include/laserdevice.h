@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,23 +46,16 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef LASERDEVICE
-#define LASERDEVICE
+#ifndef _LASERDEVICE_H
+#define _LASERDEVICE_H
 #include <pthread.h>
 #include <unistd.h>
 
-#include "lock.h"
-#include "device.h"
+#include <lock.h>
+#include <device.h>
 
-// Some length-specific types
-//
-#ifndef BYTE
-#define BYTE unsigned char
-#endif
-#ifndef UINT16
-#define UINT16 unsigned short
-#endif
-
+#include <playercommon.h>
+#include <messages.h>
 
 // The laser device class
 //
@@ -139,15 +133,15 @@ class CLaserDevice : public CDevice
 
     // Write a packet to the laser
     //
-    ssize_t WriteToLaser(BYTE *data, ssize_t len); 
+    ssize_t WriteToLaser(uint8_t *data, ssize_t len); 
     
     // Read a packet from the laser
     //
-    ssize_t ReadFromLaser(BYTE *data, ssize_t maxlen, bool ack = false, int timeout = -1);
+    ssize_t ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack = false, int timeout = -1);
 
     // Calculates CRC for a telegram
     //
-    unsigned short CreateCRC(BYTE *data, ssize_t len);
+    unsigned short CreateCRC(uint8_t *data, ssize_t len);
 
     // Get the time (in ms)
     //
@@ -164,13 +158,13 @@ class CLaserDevice : public CDevice
 
     // Most recent scan data
     //
-    BYTE* data;
+    uint8_t* data;
 
     // Config data
     // PutConfig sets the data and the size, and GetConfig reads and zeros it
     //
     ssize_t config_size;
-    BYTE* config;
+    uint8_t* config;
 
     // Turn intensity data on/off
     //
@@ -183,7 +177,7 @@ class CLaserDevice : public CDevice
  public:
     
     // device used to communicate with the laserk
-    char LASER_SERIAL_PORT[LASER_SERIAL_PORT_NAME_SIZE];
+    char LASER_SERIAL_PORT[MAX_FILENAME_SIZE];
 };
 
 

@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,8 +27,9 @@
  *   these and uses it to control access to common data buffers.
  */
 
-#ifndef LOCK
-#define LOCK
+#ifndef _LOCK_H
+#define _LOCK_H
+
 #include <pthread.h>
 #include <device.h>
 
@@ -47,6 +49,7 @@ private:
   pthread_mutex_t setupDataMutex;
 
   bool firstdata;
+
  protected:
   int subscriptions;
 

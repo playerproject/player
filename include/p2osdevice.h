@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -27,15 +29,16 @@
  *   "devices" communicate with this thread by putting into and getting
  *   data out of shared buffers.
  */
-#ifndef P2OSDEVICE
-#define P2OSDEVICE
+#ifndef _P2OSDEVICE_H
+#define _P2OSDEVICE_H
 
 #include <pthread.h>
 #include <sys/time.h>
 #include <device.h>
 #include <lock.h>
 #include <packet.h>
-#include <sip.h>
+#include <playercommon.h>
+#include <messages.h>
    
 #define P2OS_MOTORS_REQUEST_ON 0
 #define P2OS_MOTORS_ON 1
@@ -86,6 +89,67 @@
 #define GRIPpress  16
 #define LIFTcarry  17
 
+/*
+ * P2OS device stuff
+ *
+ *   this device's 'data' buffer is shared among many devices.  here
+ *   is the layout (in this order):
+ *     'position' data:
+ *       3 ints: time X Y
+ *       4 shorts: heading, forwardvel, turnrate, compass
+ *       1 chars: stalls
+ *     'sonar' data:
+ *       16 shorts: 16 sonars
+ *     'gripper' data:
+ *       2 chars: gripstate,gripbeams
+ *     'misc' data:
+ *       2 chars: frontbumper,rearbumpers
+ *       1 char:  voltage
+ */
+#define P2OS_DATA_BUFFER_SIZE POSITION_DATA_BUFFER_SIZE + \
+                              SONAR_DATA_BUFFER_SIZE + \
+                              GRIPPER_DATA_BUFFER_SIZE + \
+                              MISC_DATA_BUFFER_SIZE
+#define POSITION_DATA_OFFSET 0
+#define SONAR_DATA_OFFSET POSITION_DATA_OFFSET + POSITION_DATA_BUFFER_SIZE
+#define GRIPPER_DATA_OFFSET SONAR_DATA_OFFSET + SONAR_DATA_BUFFER_SIZE
+#define MISC_DATA_OFFSET GRIPPER_DATA_OFFSET + GRIPPER_DATA_BUFFER_SIZE
+
+/*
+ * the P2OS device 'command' buffer is shared by several devices.
+ * here is the layout (in this order):
+ *    'position' command:
+ *       2 shorts: forwardspeed (mm/sec), turnspeed (deg/sec)
+ *    'gripper' command:
+ *       2 chars: gripcommand, optional gripcommand
+ */
+#define P2OS_COMMAND_BUFFER_SIZE POSITION_COMMAND_BUFFER_SIZE + \
+                                 GRIPPER_COMMAND_BUFFER_SIZE
+#define P2OS_CONFIG_BUFFER_SIZE 256
+
+#define POSITION_COMMAND_OFFSET 0
+#define GRIPPER_COMMAND_OFFSET POSITION_COMMAND_OFFSET + \
+                               POSITION_COMMAND_BUFFER_SIZE
+
+typedef struct
+{
+  player_position_data_t position;
+  player_sonar_data_t sonar;
+  player_gripper_data_t gripper;
+  player_misc_data_t misc;
+} __attribute__ ((packed)) player_p2os_data_t;
+
+typedef struct
+{
+  player_position_cmd_t position;
+  player_gripper_cmd_t gripper;
+} __attribute__ ((packed)) player_p2os_cmd_t;
+
+// this is here because we need the above typedef's before including it.
+#include <sip.h>
+
+class CSIP;
+
 class CP2OSDevice:public CDevice 
 {
 private:
@@ -98,28 +162,13 @@ private:
   static bool direct_wheel_vel_control;  // false -> separate trans and rot vel
   static char num_loops_since_rvel;  
   static int psos_fd;               // p2os device file descriptor
-  static char psos_serial_port[16]; // device used to communicate with p2os
+  static char psos_serial_port[MAX_FILENAME_SIZE]; // device used to communicate with p2os
   
   static bool arena_initialized_data_buffer;
   static bool arena_initialized_command_buffer;
 
-  /*
-   * in this order:
-   *   ints: time X Y
-   *   shorts: heading, forwardvel, turnrate, compass
-   *   chars: stalls
-   *   shorts: 16 sonars
-   *   chars: gripstate,gripbeams
-   *   chars: bumpers,voltage
-   */
-  static unsigned char* data;
-
-  /*
-   * in this order:
-   *   shorts: speed, turnrate
-   *   short: gripper
-   */
-  static unsigned char* command;
+  static player_p2os_data_t* data;
+  static player_p2os_cmd_t* command;
 
   /*
    * in this order:

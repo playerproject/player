@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,18 +19,20 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
  *   the Pioneer 2 gripper device
  */
 
-#ifndef GRIPPERDEVICE
-#define GRIPPERDEVICE
+#ifndef _GRIPPERDEVICE_H
+#define _GRIPPERDEVICE_H
 
-#include "p2osdevice.h"
+#include <p2osdevice.h>
 
-class CGripperDevice: public CP2OSDevice {
+class CGripperDevice: public CP2OSDevice 
+{
  public:
   ~CGripperDevice();
   CGripperDevice::CGripperDevice(char* port):CP2OSDevice(port){}

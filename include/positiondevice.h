@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -25,12 +27,13 @@
  *   wheel speeds, and returns data on x,y,theta,compass, etc.
  */
 
-#ifndef POSITIONDEVICE
-#define POSITIONDEVICE
+#ifndef _POSITIONDEVICE_H
+#define _POSITIONDEVICE_H
 
-#include "p2osdevice.h"
+#include <p2osdevice.h>
 
-class CPositionDevice: public CP2OSDevice {
+class CPositionDevice: public CP2OSDevice 
+{
  public:
     ~CPositionDevice();
     CPositionDevice::CPositionDevice(char* port):CP2OSDevice(port){}
