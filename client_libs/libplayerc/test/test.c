@@ -125,6 +125,11 @@ int main(int argc, const char *argv[])
         test_gps(client, client->ids[i].index);
         break;
 
+      // map device
+      case PLAYER_MAP_CODE:
+        test_map(client, client->ids[i].index);
+        break;
+
       // Laser device
       case PLAYER_LASER_CODE:
         test_laser(client, client->ids[i].index);

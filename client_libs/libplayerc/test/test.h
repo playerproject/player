@@ -28,6 +28,9 @@ extern int test_broadcast(playerc_client_t *client, int index);
 // Basic test for GPS device.i
 extern int test_gps(playerc_client_t *client, int index);
 
+// Basic test for map device
+extern int test_map(playerc_client_t *client, int index);
+
 // Basic laser test
 extern int test_laser(playerc_client_t *client, int index);
 
