@@ -1791,6 +1791,11 @@ typedef struct player_camera_data
   /** Image format (must be compatable with depth). */
   uint8_t format;
 
+  /** Some images (such as disparity maps) use scaled pixel values;
+      for these images, fdiv specifies the scale divisor (i.e., divide
+      the integer pixel value by fdiv to recover the real pixel value). */
+  uint16_t fdiv;
+
   /** Image compression; PLAYER_CAMERA_COMPRESS_RAW indicates no
       compression. */
   uint8_t compression;
