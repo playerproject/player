@@ -33,6 +33,77 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_upcbarcode upcbarcode
+
+The upcbarcode driver searches for standard, single-digit UPC barcodes
+in a camera image (a sample barcode is shown below)
+
+@image html upc.jpg "Sample UPC barcode (one digit)"
+
+@par Compile-time dependencies
+
+- OpenCV
+
+@par Provides
+
+- @ref player_interface_blobfinder : outputs blob information on detected 
+  barcodes
+- @ref player_interface_camera : passes through image data from underlying 
+  camera device (optional)
+
+@par Requires
+
+- @ref player_interface_camera
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- edgeThresh (float)
+  - Default: 20
+  - Edge threshold
+- bit_width (length)
+  - Default: 0.08 m
+  - Width of a single bit
+- bit_count (integer)
+  - Default: 3
+  - Number of bits per digit
+- guardMin (integer)
+  - Default: 3
+  - Minimum height of bit (pixels)
+- guardTol (length)
+  - Default: 0.2 m
+  - Height tolerance for bit (ratio)
+- digit_errFirst (float)
+  - Default: 0.5
+  - Error threshold on the best bit
+- digit_errSecond (float)
+  - Default: 1.0
+  - Error threshold on the second-best bit
+
+@par Example
+
+@verbatim
+driver
+(
+  name "upcbarcode"
+  provides ["blobfinder:0"]
+  requires ["camera:0"]
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+
+*/
+
+/** @} */
+
 #include "player.h"
 
 #include <errno.h>

@@ -35,6 +35,91 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_laserbarcode laserbarcode
+
+The laser barcode detector searches for specially constructed barcodes in
+the laser range finder data.  An example laser barcode is shown below.
+The barcode is constructed using strips of retro-reflective paper.
+Each retro-reflective strip represents a `1' bit; each non-reflective
+strip represents a `0' bit.  By default, the laserbarcode driver
+searches for barcodes containing 8 bits, each of which is exactly 50mm
+wide (the total barcode width is thus 400m).  The first and last bits
+are used as start and end markers, and the remaining bits are used to
+determine the identity of the barcode; with an 8-bit barcode there are
+64 unique IDs.  The number of bits and the width of each bit can be set
+in the configuration file.
+
+The range at which barcodes can be detected identified is dependent on the
+bit width and the angular resolution of the laser.  With 50mm bits and an
+angular resolution of 0.5 deg, barcodes can be detected and identified
+at a range of about 2.5m.  With the laser resolution set to  0.25 deg,
+this distance is roughly doubled to about 5m.
+
+See also the @ref player_driver_laserbar and
+@ref player_driver_laservisualbarcode drivers.
+
+@image html beacon.jpg "A sample laser barcode.  This barcode has 8 bits, each of which is 50mm wide."
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- This driver provides detected target information through a @ref
+  player_interface_fiducial device.
+
+@par Requires
+
+- This driver finds targets in scans from a @ref player_interface_laser
+  device.
+
+@par Configuration requests
+
+- PLAYER_FIDUCIAL_GET_GEOM
+
+@par Configuration file options
+
+- bit_count (integer)
+  - Default: 8
+  - Number of bits in each barcode.
+- bit_width (length)
+  - Default: 0.05 m
+  - Width of each bit.
+- max_depth (length)
+  - Default: 0.05 m
+  - Maximum variance in the flatness of the beacon.
+- accept_thresh (float)
+  - Default: 1.0
+  - Acceptance threshold
+- zero_thresh (float)
+  - Default: 0.6
+  - Zero threshold
+- one_thresh (float)
+  - Default: 0.6
+  - One threshold
+
+@par Example
+
+@verbatim
+driver
+(
+  name "laserbarcode"
+  requires ["laser:0"]
+  provides ["fiducial:0"]
+  bit_count 5
+  bit_width 0.1
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+*/
+/** @} */
+
 #define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 0
 
@@ -88,7 +173,6 @@ class LaserBarcode : public Driver
   private: void HandleGetGeom(void *client, void *request, size_t len);
 
   // Pointer to laser to get data from
-  private: int laser_index;
   private: player_device_id_t laser_id;
   private: Driver *laser_driver;
   
@@ -126,8 +210,13 @@ LaserBarcode::LaserBarcode( ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
              sizeof(player_fiducial_data_t), 0, 10, 10)
 {
-  // The default laser device to use
-  this->laser_index = cf->ReadInt(section, "laser", 0);
+  // Must have an input laser
+  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
+                       PLAYER_LASER_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
 
   // Get beacon settings.
   this->bit_count = cf->ReadInt(section, "bit_count", 8);
@@ -149,10 +238,6 @@ LaserBarcode::LaserBarcode( ConfigFile* cf, int section)
 // Set up the device
 int LaserBarcode::Setup()
 {
-  // get the pointer to the laser
-  this->laser_id.port = device_id.port;
-  this->laser_id.code = PLAYER_LASER_CODE;
-  this->laser_id.index = this->laser_index;
   this->laser_driver = deviceTable->GetDriver(this->laser_id);
   if(!this->laser_driver)
   {

@@ -70,7 +70,7 @@ PLAYER_PTZ_CONTROL_MODE_REQ request.
 
 */
 
-/** } */
+/** @} */
 
 /* This file is divided into two classes, the first simply deals with 
  * the control of the pan-tilt unit, providing simple interfaces such as

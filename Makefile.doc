@@ -3,8 +3,8 @@ all: doc
 
 doc:
 	cd server/doc && make
-	cd client_libs/libplayerc/doc && make
+	#cd client_libs/libplayerc/doc && make
 
 upload:
 	./upload_doc.sh server/doc/html Player-cvs-html player
-	./upload_doc.sh client_libs/doc/html Player-cvs-html libplayerc
+	#./upload_doc.sh client_libs/doc/html Player-cvs-html libplayerc

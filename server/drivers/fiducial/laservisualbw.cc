@@ -36,6 +36,82 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_laservisualbw laservisualbw
+
+Parses a laser scan to find the retro-reflective patches (lines or
+circles), then points the camera at the patch, zooms in, and attempts
+to read the B&W barcode.  Will not return sensible orientations for
+circular patches.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- This driver provides detected target information through a @ref
+  player_interface_fiducial device.
+
+@par Requires
+
+- @ref player_interface_laser
+- @ref player_interface_ptz
+- @ref player_interface_camera
+
+@par Configuration requests
+
+- PLAYER_FIDUCIAL_GET_GEOM
+
+@par Configuration file options
+
+- max_ptz_attention (float)
+  - Default: 6.0
+  - ??
+- retire_time (float)
+  - Default: 1.0
+  - ??
+- max_dist (float) (should be a length?)
+  - Default: 0.2
+  - ??
+- bit_count (integer)
+  - Default: 3
+  - Number of bits in visual barcode
+- bit_width (length)
+  - Default: 0.08 m
+  - Width of each bit in visual barcode
+- guard_min (integer)
+  - Default: 4
+  - Minimum height of bit (pixels)
+- guard_tol (length)
+  - Default: 0.2 m
+  - Height tolerance of bit (ratio)
+- digit_err_first (float)
+  - Default: 0.5
+  - Error threshold on the best bit
+- digit_err_second (float)
+  - Default: 1.0
+  - Error threshold on the second-best bit
+
+@par Example
+
+@verbatim
+driver
+(
+  name "laserbar"
+  requires ["laser:0"]
+  provides ["fiducial:0"]
+  width 0.2
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+*/
+/** @} */
+
 #include "player.h"
 
 #include <errno.h>
@@ -152,19 +228,16 @@ class LaserVisualBW : public Driver
   private: double max_dist;
 
   // Laser stuff
-  private: int laser_index;
   private: Driver *laser;
   private: player_device_id_t laser_id;
   private: double laser_time;
 
   // PTZ stuff
-  private: int ptz_index;
   private: Driver *ptz;
   private: player_device_id_t ptz_id;
   private: double ptz_time;
 
   // Camera stuff
-  private: int camera_index;
   private: Driver *camera;
   private: player_device_id_t camera_id;
   private: double camera_time;
@@ -206,15 +279,33 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
              sizeof(player_fiducial_data_t), 0, 10, 10)
 {
-  this->laser_index = cf->ReadInt(section, "laser", 0);
+  // Must have an input laser
+  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
+                       PLAYER_LASER_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->laser = NULL;
   this->laser_time = 0;
 
-  this->ptz_index = cf->ReadInt(section, "ptz", 0);
+  // Must have a ptz
+  if (cf->ReadDeviceId(&this->ptz_id, section, "requires",
+                       PLAYER_PTZ_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->ptz = NULL;
   this->ptz_time = 0;
 
-  this->camera_index = cf->ReadInt(section, "camera", 0);
+  // Must have a camera
+  if (cf->ReadDeviceId(&this->camera_id, section, "requires",
+                       PLAYER_CAMERA_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->camera = NULL;
   this->camera_time = 0;
 
@@ -252,9 +343,6 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
 int LaserVisualBW::Setup()
 {
   // Subscribe to the laser.
-  this->laser_id.code = PLAYER_LASER_CODE;
-  this->laser_id.index = this->laser_index;
-  this->laser_id.port = this->device_id.port;
   this->laser = deviceTable->GetDriver(this->laser_id);
   if (!this->laser)
   {
@@ -268,9 +356,6 @@ int LaserVisualBW::Setup()
   }
 
   // Subscribe to the PTZ.
-  this->ptz_id.code = PLAYER_PTZ_CODE;
-  this->ptz_id.index = this->ptz_index;
-  this->ptz_id.port = this->device_id.port;
   this->ptz = deviceTable->GetDriver(this->ptz_id);
   if (!this->ptz)
   {
@@ -284,9 +369,6 @@ int LaserVisualBW::Setup()
   }
 
   // Subscribe to the camera.
-  this->camera_id.code = PLAYER_CAMERA_CODE;
-  this->camera_id.index = this->camera_index;
-  this->camera_id.port = this->device_id.port;
   this->camera = deviceTable->GetDriver(this->camera_id);
   if (!this->camera)
   {

@@ -137,7 +137,7 @@ Chris Jones, Brian Gerkey, Alex Brooks
 
 */
 
-/** } */
+/** @} */
 
 class VFH_Class : public Driver 
 {

@@ -21,6 +21,55 @@
  *
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_acoustics acoustics
+
+TODO
+
+@par Compile-time dependencies
+
+- GSL
+- &lt;sys/soundcard.h&gt;
+
+@par Provides
+
+- @ref player_interface_audiodsp
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+- PLAYER_AUDIODSP_SET_CONFIG
+- PLAYER_AUDIODSP_GET_CONFIG
+
+@par Configuration file options
+
+- device (string)
+  - Default: "/dev/dsp"
+  - Audio device to use.
+
+@par Example
+
+@verbatim
+driver
+(
+  name "acoustics"
+  provides ["audiodsp:0"]
+  device "/dev/dsp""
+)
+@endverbatim
+
+@par Authors
+
+- Nate Koenig
+
+*/
+
+/** @} */
+
 #include <sys/soundcard.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>

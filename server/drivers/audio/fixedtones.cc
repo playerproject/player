@@ -60,7 +60,7 @@ want to try the @ref player_driver_audio driver instead.
 
 */
 
-/** } */
+/** @} */
 
 #include <string.h>
 #include <sys/stat.h>
