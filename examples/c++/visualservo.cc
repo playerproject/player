@@ -106,6 +106,8 @@ int main(int argc, char** argv)
     if(robot.Read())
       exit(1);
 
+    vp.Print();
+
     /* See if there is an obstacle in front */
     obs = (sp[2] < minfrontdistance ||
            sp[3] < minfrontdistance ||
@@ -132,7 +134,6 @@ int main(int argc, char** argv)
     }
     else if(vp.num_blobs[channel]>0)
     {
-      //vp.Print();
       if(vp.blobs[channel][0].area < minarea)
         continue;
 

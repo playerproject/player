@@ -41,7 +41,7 @@ VisionProxy::VisionProxy(PlayerClient* pc, unsigned short index,
 VisionProxy::~VisionProxy()
 {
   // delete Blob structures
-  for(int i=0;i<ACTS_NUM_CHANNELS;i++)
+  for(int i=0;i<VISION_NUM_CHANNELS;i++)
   {
     if(blobs[i])
       delete blobs[i];
@@ -59,34 +59,33 @@ void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
     firsttime = false;
   }
 
-  if(hdr.size > ACTS_TOTAL_MAX_SIZE)
+  if(hdr.size > sizeof(player_vision_data_t))
   {
     if(player_debug_level(-1) >= 1)
       fprintf(stderr,"WARNING: expected less than %d bytes of vision data, but "
               "received %d. Unexpected results may ensue.\n",
-              ACTS_TOTAL_MAX_SIZE,hdr.size);
+              sizeof(player_vision_data_t),hdr.size);
   }
   // fill the special vision buffer.
-  int i,j,k;
-  int area;
-  int bufptr;
 
-  bufptr = ACTS_HEADER_SIZE;
-  for(i=0;i<ACTS_NUM_CHANNELS;i++)
+  int tmp_numblobs,tmp_index;
+  for(int i=0;i<VISION_NUM_CHANNELS;i++)
   {
-    //printf("%d blobs starting at %d on %d\n", buf[2*i+1]-1,buf[2*i]-1,i+1);
-    if((buffer[2*i+1]-1)<=0)
+    tmp_numblobs = ntohs(((player_vision_data_t*)buffer)->header[i].num);
+    tmp_index = ntohs(((player_vision_data_t*)buffer)->header[i].index);
+
+    if(tmp_numblobs <= 0)
     {
       num_blobs[i] = 0;
     }
     else
     {
       /* check to see if we need more room */
-      if(buffer[2*i+1]-1 > num_blobs[i])
+      if(tmp_numblobs > num_blobs[i])
       {
         if(blobs[i])
           delete blobs[i];
-        if(!(blobs[i] = new Blob[buffer[2*i+1]-1]))
+        if(!(blobs[i] = new Blob[tmp_numblobs]))
         {
           if(player_debug_level(-1)>=0)
             fputs("VisionProxy::FillData(): new failed.  Out of memory?",
@@ -94,26 +93,24 @@ void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
           return;
         }
       }
-      for(j=0;j<buffer[2*i+1]-1;j++)
+      for(int j=0;j<tmp_numblobs;j++)
       {
-        /* first compute the area */
-        area=0;
-        for(k=0;k<4;k++)
-        {
-          area = area << 6;
-          area |= buffer[bufptr + k] - 1;
-        }
-        blobs[i][j].area = area;
-        blobs[i][j].x = buffer[bufptr + 4] - 1;
-        blobs[i][j].y = buffer[bufptr + 5] - 1;
-        blobs[i][j].left = buffer[bufptr + 6] - 1;
-        blobs[i][j].right = buffer[bufptr + 7] - 1;
-        blobs[i][j].top = buffer[bufptr + 8] - 1;
-        blobs[i][j].bottom = buffer[bufptr + 9] - 1;
-
-        bufptr += ACTS_BLOB_SIZE;
+        blobs[i][j].area = 
+                ntohl(((player_vision_data_t*)buffer)->blobs[tmp_index+j].area);
+        blobs[i][j].x = 
+                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].x);
+        blobs[i][j].y = 
+                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].y);
+        blobs[i][j].left = 
+                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].left);
+        blobs[i][j].right = 
+                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].right);
+        blobs[i][j].top = 
+                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].top);
+        blobs[i][j].bottom = 
+                ntohs(((player_vision_data_t*)buffer)->blobs[tmp_index+j].bottom);
       }
-      num_blobs[i] = buffer[2*i+1]-1;
+      num_blobs[i] = tmp_numblobs;
     }
   }
 }
@@ -122,11 +119,11 @@ void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 void VisionProxy::Print()
 {
   printf("#Vision(%d:%d) - %c\n", device, index, access);
-  for(int i=0;i<ACTS_NUM_CHANNELS;i++)
+  for(int i=0;i<VISION_NUM_CHANNELS;i++)
   {
     if(num_blobs[i])
     {
-      printf("#Channel %d:\n", i);
+      printf("#Channel %d (%d blob(s))\n", i,num_blobs[i]);
       for(int j=0;j<num_blobs[i];j++)
       {
         printf("  blob %d:\n"

@@ -31,7 +31,7 @@
 #include <visiondevice.h>
 
 #include <stdio.h>
-#include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execlp(3),fork(2)*/
+#include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
 #include <netdb.h> /* for gethostbyname(3) */
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <sys/types.h>  /* for socket(2) */
@@ -51,10 +51,6 @@
 #define ACTS_REQUEST_QUIT '1'
 #define ACTS_REQUEST_PACKET '0'
 
-#define OLD_ACTS_PORT_NUM 5441
-#define OUR_OLD_ACTS_PORT_NUM 5440
-#define OLD_ACTS_CONNECT_STRING "T bfoo pbar n0 F bACTS pBlobInfo s N r0"
-
 /* time to let ACTS get going before trying to connect */
 #define ACTS_STARTUP_USEC 6000000
 
@@ -65,12 +61,21 @@ void QuitACTS(void* visiondevice);
 
 CVisionDevice::CVisionDevice(int argc, char** argv)
 {
+  char tmpstr[MAX_FILENAME_SIZE];
   sock = -1;
-  //data = new unsigned char[sizeof(unsigned short)+ACTS_TOTAL_MAX_SIZE];
   data = new player_internal_vision_data_t;
 
   strncpy(configfilepath,DEFAULT_ACTS_CONFIGFILE,sizeof(configfilepath));
+  
+  // default is to give no path; in this case, use execvp() and user's PATH
+  bzero(binarypath,sizeof(binarypath));
+
+  // default is to use older ACTS (until we change our robots)
+  acts_version = ACTS_VERSION_1_0;
+  //acts_version = ACTS_VERSION_1_2;
+
   portnum=DEFAULT_ACTS_PORT;
+
   for(int i=0;i<argc;i++)
   {
     if(!strcmp(argv[i],"port"))
@@ -92,12 +97,85 @@ CVisionDevice::CVisionDevice(int argc, char** argv)
         fprintf(stderr, "CVisionDevice: missing configfile; "
                 "using default: \"%s\"\n", configfilepath);
     }
+    else if(!strcmp(argv[i],"path"))
+    {
+      if(++i<argc)
+      {
+        strncpy(binarypath,argv[i],sizeof(binarypath));
+        binarypath[sizeof(binarypath)-1] = '\0';
+      }
+      else
+        fputs("CVisionDevice: missing path to executable; "
+                "will look for 'acts' in your PATH.\n",stderr);
+    }
+    else if(!strcmp(argv[i],"version"))
+    {
+      version_enum_to_string(acts_version,tmpstr,sizeof(tmpstr));
+
+      if(++i<argc)
+      {
+        if(version_string_to_enum(argv[i]) == ACTS_VERSION_UNKNOWN)
+          fprintf(stderr, "CVisionDevice: unknown ACTS version given; "
+                          "using default: \"%s\"\n", tmpstr);
+        else
+          acts_version = version_string_to_enum(argv[i]);
+      }
+      else
+        fprintf(stderr, "CVisionDevice: missing version string; "
+                "using default: \"%s\"\n", tmpstr);
+    }
     else
       fprintf(stderr, "CVisionDevice: ignoring unknown parameter \"%s\"\n",
               argv[i]);
   }
-  // just don't deal with old acts
-  useoldacts = false;
+
+  // set up some version-specific parameters
+  switch(acts_version)
+  {
+    case ACTS_VERSION_1_0:
+      header_len = ACTS_HEADER_SIZE_1_0;
+      blob_size = ACTS_BLOB_SIZE_1_0;
+      portnum = htons(portnum);
+      break;
+    case ACTS_VERSION_1_2:
+    default:
+      header_len = ACTS_HEADER_SIZE_1_2;
+      blob_size = ACTS_BLOB_SIZE_1_2;
+      break;
+  }
+  header_elt_len = header_len / VISION_NUM_CHANNELS;
+}
+    
+// returns the enum representation of the given version string, or
+// -1 on failure to match.
+acts_version_t CVisionDevice::version_string_to_enum(char* versionstr)
+{
+  if(!strcmp(versionstr,ACTS_VERSION_1_0_STRING))
+    return(ACTS_VERSION_1_0);
+  else if(!strcmp(versionstr,ACTS_VERSION_1_2_STRING))
+    return(ACTS_VERSION_1_2);
+  else
+    return(ACTS_VERSION_UNKNOWN);
+}
+
+// writes the string representation of the given version number into
+// versionstr, up to len.
+// returns  0 on success
+//         -1 on failure to match.
+int CVisionDevice::version_enum_to_string(acts_version_t versionnum, 
+                                          char* versionstr, int len)
+{
+  switch(versionnum)
+  {
+    case ACTS_VERSION_1_0:
+      strncpy(versionstr, ACTS_VERSION_1_0_STRING, len);
+      return(0);
+    case ACTS_VERSION_1_2:
+      strncpy(versionstr, ACTS_VERSION_1_2_STRING, len);
+      return(0);
+    default:
+      return(-1);
+  }
 }
 
 CVisionDevice::~CVisionDevice()
@@ -116,21 +194,12 @@ CVisionDevice::Setup()
   char acts_configfile_flag[] = "-t";
   char acts_port_flag[] = "-s";
 
-  char msg[] = OLD_ACTS_CONNECT_STRING;
-
-  char old_acts_bin_name[] = "ACTSServer";
-  char old_acts_configfile_flag[] = "-s";
-
   char acts_port_num[MAX_FILENAME_SIZE];
   char* acts_args[8];
 
   static struct sockaddr_in server;
-  struct sockaddr_in dummy;
   char host[] = "localhost";
   struct hostent* entp;
-
-  int num_read;
-  char buffer[64];
 
   pthread_attr_t attr;
 
@@ -138,30 +207,17 @@ CVisionDevice::Setup()
          configfilepath,portnum);
   fflush(stdout);
 
-  if(useoldacts)
-  {
-    acts_args[i++] = old_acts_bin_name;
-    if(strlen(configfilepath))
-    {
-      acts_args[i++] = old_acts_configfile_flag;
-      acts_args[i++] = configfilepath;
-    }
-    acts_args[i] = (char*)NULL;
-  }
-  else
-  {
-    sprintf(acts_port_num,"%d",portnum);
+  sprintf(acts_port_num,"%d",portnum);
 
-    acts_args[i++] = acts_bin_name;
-    if(strlen(configfilepath))
-    {
-      acts_args[i++] = acts_configfile_flag;
-      acts_args[i++] = configfilepath;
-    }
-    acts_args[i++] = acts_port_flag;
-    acts_args[i++] = acts_port_num;
-    acts_args[i] = (char*)NULL;
+  acts_args[i++] = acts_bin_name;
+  if(strlen(configfilepath))
+  {
+    acts_args[i++] = acts_configfile_flag;
+    acts_args[i++] = configfilepath;
   }
+  acts_args[i++] = acts_port_flag;
+  acts_args[i++] = acts_port_num;
+  acts_args[i] = (char*)NULL;
 
   if(!(pid = fork()))
   {
@@ -178,14 +234,30 @@ CVisionDevice::Setup()
       exit(1);
     }
 
-    if(execvp((useoldacts) ? old_acts_bin_name : acts_bin_name,acts_args) == -1)
+    // if no path to the binary was given, search the user's PATH
+    if(!strlen(binarypath))
     {
-      /* 
-       * some error.  print it here.  it will really be detected
-       * later when the parent tries to connect(2) to it
-       */
-      perror("CVisionDevice:Setup(): error while execlp()ing ACTS");
-      exit(1);
+      if(execvp(acts_bin_name,acts_args) == -1)
+      {
+        /* 
+        * some error.  print it here.  it will really be detected
+        * later when the parent tries to connect(2) to it
+         */
+        perror("CVisionDevice:Setup(): error while execvp()ing ACTS");
+        exit(1);
+      }
+    }
+    else
+    {
+      if(execv(binarypath,acts_args) == -1)
+      {
+        /* 
+        * some error.  print it here.  it will really be detected
+        * later when the parent tries to connect(2) to it
+         */
+        perror("CVisionDevice:Setup(): error while execv()ing ACTS");
+        exit(1);
+      }
     }
   }
   else
@@ -209,72 +281,27 @@ CVisionDevice::Setup()
     memcpy(&server.sin_addr, entp->h_addr_list[0], entp->h_length);
 
 
-    if(useoldacts)
+    server.sin_port = htons(portnum);
+
+    /* make our socket */
+    if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
     {
-      /* make our socket */
-      if((sock = create_and_bind_socket(&dummy, 1, OUR_OLD_ACTS_PORT_NUM,
-                                      SOCK_DGRAM, 0)) < 0)
-      {
-        perror("CVisionDevice::Setup(): create_and_bind_socket() failed");
-        KillACTS();
-        return(1);
-      }
-
-      /* wait a bit, then connect to the server */
-      usleep(ACTS_STARTUP_USEC);
-
-      server.sin_port = htons(OLD_ACTS_PORT_NUM);
-
-      puts("sending conn string");
-      /* send the ayllu string to get the server spitting out data */
-      if(sendto(sock, (const char*)msg, strlen(msg), 0, 
-            (const struct sockaddr*)&server, sizeof(server)) == -1)
-      {
-        perror("CVisionDevice::Setup():sendto() failed");
-        sock = -1;
-        KillACTS();
-        return(1);
-      }
-
-      puts("getting ACK");
-      /* get the ACK */
-      if((num_read = recvfrom(sock, (char*)buffer, sizeof(buffer), 0, NULL, 
-                                      0)) == -1)
-      {
-        perror("CVisionDevice::Setup():recvfrom() failed");
-        sock = -1;
-        KillACTS();
-        return(1);
-      }
-      puts("got ACK");
+      perror("CVisionDevice::Setup(): socket(2) failed");
+      KillACTS();
+      return(1);
     }
-    else
+
+    /* wait a bit, then connect to the server */
+    usleep(ACTS_STARTUP_USEC);
+
+    /* 
+    * hook it up
+     */
+    if(connect(sock, (struct sockaddr*)&server, sizeof(server)) == -1)
     {
-      /* should be htons(5001), but ACTS got it wrong, and it's actually
-       * listening on unswapped 5001, which is 35091...*/
-      //server.sin_port = htons(portnum);
-      server.sin_port = portnum;
-
-      /* make our socket */
-      if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
-      {
-        perror("CVisionDevice::Setup(): socket(2) failed");
-        KillACTS();
-        return(1);
-      }
-
-      /* wait a bit, then connect to the server */
-      usleep(ACTS_STARTUP_USEC);
-
-      /* 
-       * hook it up
-       */
-      if(connect(sock, (struct sockaddr*)&server, sizeof(server)) == -1)
-      {
-        perror("CVisionDevice::Setup(): connect(2) failed");
-        KillACTS();
-        return(1);
-      }
+      perror("CVisionDevice::Setup(): connect(2) failed");
+      KillACTS();
+      return(1);
     }
 
     puts("Done.");
@@ -317,7 +344,7 @@ CVisionDevice::Shutdown()
 void 
 CVisionDevice::KillACTS()
 {
-  if(kill(pid,SIGINT) == -1)
+  if(kill(pid,SIGKILL) == -1)
     perror("CVisionDevice::KillACTS(): some error while killing ACTS");
 }
 
@@ -364,11 +391,15 @@ RunVisionThread(void* visiondevice)
 
   CVisionDevice* vd = (CVisionDevice*)visiondevice;
 
+  // we'll transform the data into this structured buffer
   player_internal_vision_data_t local_data;
+  
+  // first, we'll read into these two temporary buffers
+  uint8_t acts_hdr_buf[sizeof(local_data.data.header)];
+  uint8_t acts_blob_buf[sizeof(local_data.data.blobs)];
 
   char acts_request_packet = ACTS_REQUEST_PACKET;
 
-  bzero(&local_data,sizeof(local_data));
 
   /* make sure we aren't canceled at a bad time */
   if(pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL))
@@ -392,18 +423,6 @@ RunVisionThread(void* visiondevice)
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
-    //if(vd->useoldacts)
-    //{
-      ///* get the packet */
-      //if((num_read = recvfrom(vd->sock, (void*)local_data, sizeof(local_data), 
-                                      //0, NULL, 0)) == -1)
-      //{
-        //perror("RunVisionThread:recvfrom() failed");
-        //break;
-      //}
-    //}
-    //else
-    //{
     /* request a packet from ACTS */
     if(write(vd->sock,&acts_request_packet,sizeof(acts_request_packet)) == -1)
     {
@@ -413,53 +432,191 @@ RunVisionThread(void* visiondevice)
     }
 
     /* get the header first */
-    if((numread = read(vd->sock,local_data.data.header,ACTS_HEADER_SIZE)) == -1)
+    if((numread = read(vd->sock,acts_hdr_buf,vd->header_len)) == -1)
     {
       perror("RunVisionThread: read() failed for header: exiting");
       break;
     }
-    else if(numread != ACTS_HEADER_SIZE)
+    else if(numread != vd->header_len)
     {
       fprintf(stderr,"RunVisionThread: something went wrong\n"
              "              expected %d bytes of header, but only got %d\n", 
-             ACTS_HEADER_SIZE,numread);
+             vd->header_len,numread);
       break;
     }
 
-    /* sum up the data we expect */
-    for(num_blobs=0,i=1;i<ACTS_HEADER_SIZE;i+=2)
+    /* convert the header, if necessary */
+    if(vd->acts_version == ACTS_VERSION_1_0)
     {
-      num_blobs += local_data.data.header[i]-1;
+      for(i=0;i<VISION_NUM_CHANNELS;i++)
+      {
+        // convert 2-byte ACTS 1.0 encoded entries to byte-swapped integers
+        // in a structured array
+        local_data.data.header[i].index = 
+                htons(acts_hdr_buf[vd->header_elt_len*i]-1);
+        local_data.data.header[i].num = 
+                htons(acts_hdr_buf[vd->header_elt_len*i+1]-1);
+      }
+    }
+    else
+    {
+      for(i=0;i<VISION_NUM_CHANNELS;i++)
+      {
+        // convert 4-byte ACTS 1.2 encoded entries to byte-swapped integers
+        // in a structured array
+        local_data.data.header[i].index = acts_hdr_buf[vd->header_elt_len*i]-1;
+        local_data.data.header[i].index = 
+                local_data.data.header[i].index << 6;
+        local_data.data.header[i].index |= 
+                acts_hdr_buf[vd->header_elt_len*i+1]-1;
+        local_data.data.header[i].index = 
+                htons(local_data.data.header[i].index);
+
+        local_data.data.header[i].num = acts_hdr_buf[vd->header_elt_len*i+2]-1;
+        local_data.data.header[i].num = 
+                local_data.data.header[i].num << 6;
+        local_data.data.header[i].num |= 
+                acts_hdr_buf[vd->header_elt_len*i+3]-1;
+        local_data.data.header[i].num = 
+                htons(local_data.data.header[i].num);
+      }
     }
 
+    /* sum up the data we expect */
+    num_blobs=0;
+    for(i=0;i<VISION_NUM_CHANNELS;i++)
+      num_blobs += ntohs(local_data.data.header[i].num);
 
-    if((numread = read(vd->sock,local_data.data.blobs,
-                                    num_blobs*ACTS_BLOB_SIZE)) == -1)
+    /* read in the blob data */
+    if((numread = read(vd->sock,acts_blob_buf,num_blobs*vd->blob_size)) == -1)
     {
       perror("RunVisionThread: read() failed on blob data; exiting.");
       break;
     }
-    else if(numread != num_blobs*ACTS_BLOB_SIZE)
+    else if(numread != num_blobs*vd->blob_size)
     {
       fprintf(stderr,"RunVisionThread: something went wrong\n"
              "              expected %d bytes of blob data, but only got %d\n", 
-             num_blobs*ACTS_BLOB_SIZE,numread);
+             num_blobs*vd->blob_size,numread);
       break;
     }
+
+    if(vd->acts_version == ACTS_VERSION_1_0)
+    {
+      // convert 10-byte ACTS 1.0 blobs to new byte-swapped structured array
+      for(i=0;i<VISION_NUM_CHANNELS;i++)
+      {
+        int tmpptr = vd->blob_size*i;
+        // get the 4-byte area first
+        local_data.data.blobs[i].area = 0;
+        for(int j=0;j<4;j++)
+        {
+          local_data.data.blobs[i].area = 
+                  local_data.data.blobs[i].area << 6;
+          local_data.data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
+        }
+        local_data.data.blobs[i].area = 
+                htonl(local_data.data.blobs[i].area);
+
+        // convert the other 6 one-byte entries to byte-swapped shorts
+        local_data.data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].x = 
+                htons(local_data.data.blobs[i].x);
+
+        local_data.data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].y = 
+                htons(local_data.data.blobs[i].y);
+
+        local_data.data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].left = 
+                htons(local_data.data.blobs[i].left);
+
+        local_data.data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].right = 
+                htons(local_data.data.blobs[i].right);
+
+        local_data.data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].top = 
+                htons(local_data.data.blobs[i].top);
+
+        local_data.data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].bottom = 
+                htons(local_data.data.blobs[i].bottom);
+      }
+    }
+    else
+    {
+      // convert 16-byte ACTS 1.2 blobs to new byte-swapped structured array
+      for(i=0;i<VISION_NUM_CHANNELS;i++)
+      {
+        int tmpptr = vd->blob_size*i;
+        
+        // get the 4-byte area first
+        local_data.data.blobs[i].area = 0;
+        for(int j=0;j<4;j++)
+        {
+          local_data.data.blobs[i].area = 
+                  local_data.data.blobs[i].area << 6;
+          local_data.data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
+        }
+        local_data.data.blobs[i].area = 
+                htonl(local_data.data.blobs[i].area);
+        
+        // convert the other 6 two-byte entries to byte-swapped shorts
+        local_data.data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].x = local_data.data.blobs[i].x << 6;
+        local_data.data.blobs[i].x |= acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].x = 
+                htons(local_data.data.blobs[i].x);
+
+        local_data.data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].y = local_data.data.blobs[i].y << 6;
+        local_data.data.blobs[i].y |= acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].y = 
+                htons(local_data.data.blobs[i].y);
+
+        local_data.data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].left = 
+                local_data.data.blobs[i].left << 6;
+        local_data.data.blobs[i].left |= acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].left = 
+                htons(local_data.data.blobs[i].left);
+
+        local_data.data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].right = 
+                local_data.data.blobs[i].right << 6;
+        local_data.data.blobs[i].right |= acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].right = 
+                htons(local_data.data.blobs[i].right);
+
+        local_data.data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].top = 
+                local_data.data.blobs[i].top << 6;
+        local_data.data.blobs[i].top |= acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].top = 
+                htons(local_data.data.blobs[i].top);
+
+        local_data.data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].bottom = 
+                local_data.data.blobs[i].bottom << 6;
+        local_data.data.blobs[i].bottom |= acts_blob_buf[tmpptr++] - 1;
+        local_data.data.blobs[i].bottom = 
+                htons(local_data.data.blobs[i].bottom);
+      }
+    }
     
-    /* byte-swap everything */
-    /* no, don't.  since the vision data is a sequence of
-     * individual bytes, there's nothing to be swapped */
+    /* don't byte-swap anything; the ACTS encoding is sufficient */
 
     /* store total size */
-    local_data.size = (uint16_t)(ACTS_HEADER_SIZE + num_blobs*ACTS_BLOB_SIZE);
+    local_data.size = (uint16_t)(VISION_HEADER_SIZE + 
+                                 num_blobs*VISION_BLOB_SIZE);
 
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
     /* got the data. now fill it in */
-    vd->GetLock()->PutData(vd, (unsigned char*)&local_data, sizeof(local_data));
-    //}
+    vd->GetLock()->PutData(vd,(unsigned char*)&local_data,
+                           sizeof(local_data));
   }
 
   pthread_cleanup_pop(1);

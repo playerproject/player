@@ -37,6 +37,17 @@
 #include <device.h>
 #include <messages.h>
 
+// a variable of this type tells the vision device how to interact with ACTS
+typedef enum
+{
+  ACTS_VERSION_UNKNOWN = 0,
+  ACTS_VERSION_1_0 = 1,
+  ACTS_VERSION_1_2 = 2
+} acts_version_t;
+
+#define ACTS_VERSION_1_0_STRING "1.0"
+#define ACTS_VERSION_1_2_STRING "1.2"
+
 class CVisionDevice:public CDevice 
 {
   private:
@@ -45,27 +56,37 @@ class CVisionDevice:public CDevice
     int pid;      // ACTS's pid so we can kill it later
 
     CLock lock;
+    
+    // returns the enum representation of the given version string, or
+    // ACTS_VERSION_UNKNOWN on failure to match.
+    acts_version_t version_string_to_enum(char* versionstr);
+    
+    // writes the string representation of the given version number into
+    // versionstr, up to len.
+    // returns  0 on success
+    //         -1 on failure to match.
+    int version_enum_to_string(acts_version_t versionnum, char* versionstr, 
+                               int len);
+
 
   public:
-    bool useoldacts;    // whether or not we use old ACTS
     int sock;               // laser device file descriptor
     int portnum;  // port number where we'll run ACTS
     char configfilepath[MAX_FILENAME_SIZE];  // path to configfile
-    // array holding the most recent blob data; plus two bytes for size
-    //   sizeof(unsigned short)+ACTS_TOTAL_MAX_SIZE
+    char binarypath[MAX_FILENAME_SIZE];  // path to executable
+    acts_version_t acts_version;  // the above string converted to an enum
+    int header_len; // length of incoming packet header (varies by version)
+    int header_elt_len; // length of each header element (varies by version)
+    int blob_size;  // size of each incoming blob (varies by version)
+
+    // where the most recent data sits, ACTS-encoded
     player_internal_vision_data_t* data;
-    //unsigned char* data;
+    
 
     // constructor 
-    //    num is the port number for ACTS to listen on.  use zero for
-    //    default (it's 5001/35091 right now)
     //
-    //    configfile is path to config file.  use NULL for none (that
-    //    would be dumb, of course...).
+    //    takes argc,argv from command-line args
     //
-    //    oldacts is a boolean that tells whether or not to use
-    //    the old ACTS
-    //CVisionDevice(int num, char* configfile, bool oldacts);
     CVisionDevice(int argc, char** argv);
 
     ~CVisionDevice();

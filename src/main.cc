@@ -177,7 +177,16 @@ void Interrupt( int dummy )
 
   printf("** Player [port %d] quitting **\n", global_playerport );
 
-  exit(0);
+
+  // HACK - for some reason, a SIGINT (e.g., Ctrl-C) while a client is
+  //        subscribed to the vision device causes a segfault on the following
+  //        exit().  so, i've changed it to _exit(), which doesn't do
+  //        the cleanup stuff that exit() does.  seem to fix the problem for
+  //        some reason.  the fflush() is just to be sure all the data on
+  //        the sockets is pushed out.  - BPG
+  //exit(0);
+  fflush(NULL);
+  _exit(0);
 }
 
 /* used to name incoming client connections */
@@ -957,6 +966,9 @@ int main( int argc, char *argv[] )
 
     if((num_connects = poll(ufds,num_ufds,-1)) < 0)
     {
+      if(errno == EINTR)
+        continue;
+
       perror("poll() failed.");
       exit(-1);
     }
@@ -994,15 +1006,6 @@ int main( int argc, char *argv[] )
 
         /* got conn */
 	
-        // lookup the name of the client
-        //struct hostent* clientName
-        //= gethostbyaddr( &(cliaddr.sin_addr), sender_len, AF_INET );
-        //if( clientName && clientName->h_name )
-        //printf("** Player [port %d] client accepted from %s "
-        // "on socket %d **\n", 
-        // global_playerport, clientName->h_name, clientData->socket);
-
-
         // now reports the port number that was connected, instead of the 
         // global player port - RTV
 	
