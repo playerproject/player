@@ -150,6 +150,32 @@ int playerc_client_disconnect(playerc_client_t *client)
 }
 
 
+// Test to see if there is pending data.
+int playerc_client_peek(playerc_client_t *client, int timeout)
+{
+  int count;
+  struct pollfd fd;
+
+  fd.fd = client->sock;
+  fd.events = POLLIN | POLLHUP;
+  fd.revents = 0;
+
+  // Wait for incoming data 
+  count = poll(&fd, 1, timeout);
+  if (count < 0)
+  {
+    PLAYERC_ERR1("poll returned error [%s]", strerror(errno));
+    return -1;
+  }  
+  if (count > 0 && (fd.revents & POLLHUP))
+  {
+    PLAYERC_ERR("socket disconnected");
+    return -1;
+  }
+  return count;
+}
+
+
 // Read and process a packet (blocking)
 void *playerc_client_read(playerc_client_t *client)
 {
@@ -485,8 +511,8 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
   // Look for STX
   for (bytes = 0; bytes < 2;)
   {
-    nbytes = recv(client->sock, (char*) header + bytes, 2 - bytes, 0);    
-    if (nbytes < 0)
+    nbytes = recv(client->sock, (char*) header + bytes, 2 - bytes, 0);
+    if (nbytes <= 0)
     {
       PLAYERC_ERR1("recv on stx failed with error [%s]", strerror(errno));
       return -1;
@@ -509,7 +535,7 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
   {
     nbytes = recv(client->sock, (char*) header + 2 + bytes,
                   sizeof(player_msghdr_t) - 2 - bytes, 0);
-    if (nbytes < 0)
+    if (nbytes <= 0)
     {
       PLAYERC_ERR1("recv on header failed with error [%s]", strerror(errno));
       return -1;
@@ -542,7 +568,7 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
   while (total_bytes < header->size)
   {
     bytes = recv(client->sock, data + total_bytes, header->size - total_bytes, 0);
-    if (bytes < 0)
+    if (bytes <= 0)
     {
       PLAYERC_ERR1("recv on body failed with error [%s]", strerror(errno));
       return -1;
