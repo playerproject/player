@@ -26,7 +26,7 @@
  * the core functions for a pure C client for Player
  */
 
-#include <playercclient.h>
+#include "playercclient.h"
 #include <netdb.h>
 #include <unistd.h>
 #include <string.h> /* for bzero() */

@@ -413,7 +413,7 @@ void *RunPsosThread( void *p2osdevice )
     {
       switch(config[0])
       {
-        case 's':
+        case PLAYER_SONAR_POWER_REQ:
           /*
            * 1 = enable sonars
            * 0 = disable sonar
@@ -430,7 +430,7 @@ void *RunPsosThread( void *p2osdevice )
           motorpacket.Build(motorcommand, 4);
           pd->SendReceive(&motorpacket);
           break;
-        case 'm':
+        case PLAYER_POSITION_MOTOR_POWER_REQ:
           /* motor state change request 
            *   1 = enable motors
            *   0 = disable motors (default)
@@ -447,7 +447,7 @@ void *RunPsosThread( void *p2osdevice )
           motorpacket.Build(motorcommand, 4);
           pd->SendReceive(&motorpacket);//,false);
           break;
-        case 'v':
+        case PLAYER_POSITION_VELOCITY_CONTROL_REQ:
           /* velocity control mode:
            *   0 = direct wheel velocity control (default)
            *   1 = separate translational and rotational control
@@ -463,7 +463,7 @@ void *RunPsosThread( void *p2osdevice )
           else
             pd->direct_wheel_vel_control = true;
           break;
-        case 'R':
+        case PLAYER_POSITION_RESET_ODOM_REQ:
           /* reset position to 0,0,0: no args */
 	  if(config_size-1 != 0)
           {

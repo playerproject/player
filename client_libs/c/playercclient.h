@@ -25,12 +25,13 @@
  *
  * a pure C client
  */
+#ifndef PLAYERCCLIENT_H
+#define PLAYERCCLIENT_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifndef PLAYERCCLIENT_H
-#define PLAYERCCLIENT_H
 
 #include <messages.h>
 
@@ -108,7 +109,10 @@ int player_write(player_connection_t* conn,
                  uint16_t device, uint16_t device_index,
                  char* command, size_t commandlen);
 
-/******* helper functions *********/
+
+/********************************************************/
+/* helper functions */
+
 /*
  * write to position
  */
@@ -184,9 +188,11 @@ void player_print_laser(player_laser_data_t data);
 void player_print_sonar(player_sonar_data_t data);
 void player_print_position(player_position_data_t data);
 
-#endif
+
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 

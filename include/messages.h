@@ -126,6 +126,7 @@ typedef struct
   uint16_t frequency;
 } __attribute__ ((packed)) player_device_datafreq_req_t;
 
+/* the various configuration commands */
 #define PLAYER_PLAYER_DEV_REQ      ((uint16_t)1)
 #define PLAYER_PLAYER_DATA_REQ     ((uint16_t)2)
 #define PLAYER_PLAYER_DATAMODE_REQ ((uint16_t)3)
@@ -157,6 +158,12 @@ typedef struct
 #define POSITION_DATA_BUFFER_SIZE sizeof(player_position_data_t)
 #define POSITION_COMMAND_BUFFER_SIZE sizeof(player_position_cmd_t)
 #define POSITION_CONFIG_BUFFER_SIZE 32
+
+/* the various configuration commands 
+ * NOTE: these must not be the same as any other P2OS device! */
+#define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)1)
+#define PLAYER_POSITION_VELOCITY_CONTROL_REQ ((uint8_t)2)
+#define PLAYER_POSITION_RESET_ODOM_REQ        ((uint8_t)3)
  
 /*************************************************************************/
 
@@ -175,6 +182,10 @@ typedef struct
 #define SONAR_DATA_BUFFER_SIZE sizeof(player_sonar_data_t)
 #define SONAR_CONFIG_BUFFER_SIZE 0
 #define SONAR_COMMAND_BUFFER_SIZE 0
+
+/* the various configuration commands 
+ * NOTE: these must not be the same as any other P2OS device! */
+#define PLAYER_SONAR_POWER_REQ      ((uint8_t)4)
 
 /*************************************************************************/
 

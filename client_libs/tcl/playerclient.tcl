@@ -74,6 +74,11 @@ set PLAYER_PLAYER_DATA_REQ     2
 set PLAYER_PLAYER_DATAMODE_REQ 3
 set PLAYER_PLAYER_DATAFREQ_REQ 4
 
+# the position device
+set PLAYER_POSITION_MOTOR_POWER_REQ       1
+set PLAYER_POSITION_VELOCITY_CONTROL_REQ  2
+set PLAYER_POSITION_RESET_ODOM_REQ        3
+
 # the vision device
 set ACTS_NUM_CHANNELS 32
 set ACTS_HEADER_SIZE [expr 2*$ACTS_NUM_CHANNELS]
@@ -82,6 +87,7 @@ set ACTS_BLOB_SIZE 10
 
 # the sonar device
 set PLAYER_NUM_SONAR_SAMPLES  16
+set PLAYER_SONAR_POWER_REQ     4
 
 # the laser device
 set PLAYER_NUM_LASER_SAMPLES  361
@@ -416,7 +422,7 @@ proc parseData {device device_index data size} {
       set laser($j) [expr ($laser($j) + 0x10000) % 0x10000]
       # TODO: why does stage return laser values of 11392?????
       if {$laser($j) > $PLAYER_MAX_LASER_VALUE} {
-        set laser($j) $PLAYER_MAX_LASER_VALUE
+        #set laser($j) $PLAYER_MAX_LASER_VALUE
       }
       incr j
     }
@@ -478,13 +484,27 @@ proc printData {devices} {
 }
 
 proc ChangeMotorState {state} {
-  global PLAYER_POSITION_CODE
+  global PLAYER_POSITION_CODE PLAYER_POSITION_MOTOR_POWER_REQ
   if {$state == 1} {
     #requestFromRobot "xp[binary format S 2]m[binary format c 1]"
-    requestFromRobot $PLAYER_POSITION_CODE 0 "m[binary format c 1]"
+    requestFromRobot $PLAYER_POSITION_CODE 0 \
+       "[binary format cc $PLAYER_POSITION_MOTOR_POWER_REQ 1]"
   } else {
     #requestFromRobot "xp[binary format S 2]m[binary format c 0]"
-    requestFromRobot $PLAYER_POSITION_CODE 0 "m[binary format c 0]"
+    requestFromRobot $PLAYER_POSITION_CODE 0 \
+       "[binary format cc $PLAYER_POSITION_MOTOR_POWER_REQ 0]"
+  }
+}
+
+proc ChangeSonarState {state} {
+  global PLAYER_SONAR_CODE PLAYER_SONAR_POWER_REQ
+  if {$state == 1} {
+    requestFromRobot $PLAYER_SONAR_CODE 0 \
+       "[binary format cc $PLAYER_SONAR_POWER_REQ 1]"
+  } else {
+    #requestFromRobot "xp[binary format S 2]m[binary format c 0]"
+    requestFromRobot $PLAYER_SONAR_CODE 0 \
+       "[binary format cc $PLAYER_SONAR_POWER_REQ 0]"
   }
 }
 

@@ -93,6 +93,8 @@ int main(int argc, char** argv)
   /* maybe turn on the motors */
   //if(turnOnMotors && robot.ChangeMotorState(1))
     //exit(1);
+  if(robot.ChangeSonarState(0))
+    exit(1);
 
   /* go into read-think-act loop */
   for(;;)
