@@ -225,7 +225,8 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *device,
 void *playerc_client_read(playerc_client_t *client);
 
 // Write data to the server (private).
-int playerc_client_write(playerc_client_t *client, playerc_device_t *device, void *cmd, int len);
+int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
+                         void *cmd, int len);
 
 
 /***************************************************************************
@@ -242,6 +243,61 @@ void playerc_device_term(playerc_device_t *device);
 // Subscribe/unsubscribe the device
 int playerc_device_subscribe(playerc_device_t *device, int access);
 int playerc_device_unsubscribe(playerc_device_t *device);
+
+
+/***************************************************************************
+ * proxy : blobfinder (visual color blob detector)
+ **************************************************************************/
+
+// Description of a single blob.
+typedef struct
+{  
+  // The blob "channel"; i.e. the color class this blob belongs to.
+  int channel;
+
+  // A descriptive color for the blob.  Stored as packed RGB 32, i.e.:
+  // 0x00RRGGBB.
+  uint32_t color;
+
+  // Blob centroid (image coordinates).
+  int x, y;
+
+  // Blob area (pixels).
+  int area;
+
+  // Bounding box for blob (image coordinates).
+  int left, top, right, bottom;
+  
+} playerc_blobfinder_blob_t;
+
+
+// Blobfinder device data
+typedef struct
+{
+  // Device info; must be at the start of all device structures.
+  playerc_device_t info;
+
+  // Image dimensions
+  int width, height;
+  
+  // A list of detected blobs
+  int blob_count;
+  playerc_blobfinder_blob_t blobs[PLAYERC_BLOBFINDER_MAX_BLOBS];
+  
+} playerc_blobfinder_t;
+
+
+// Create a blobfinder proxy
+playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int index);
+
+// Destroy a blobfinder proxy
+void playerc_blobfinder_destroy(playerc_blobfinder_t *device);
+
+// Subscribe to the blobfinder device
+int playerc_blobfinder_subscribe(playerc_blobfinder_t *device, int access);
+
+// Un-subscribe from the blobfinder device
+int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
 
 
 /***************************************************************************
@@ -296,7 +352,7 @@ int  playerc_bps_get_beacon(playerc_bps_t *device, int id,
 
 
 /***************************************************************************
- * proxy : broadcast comms.
+ * proxy : comms (broadcast UDP nework communications)
  **************************************************************************/
 
 // Comms proxy.
@@ -328,7 +384,7 @@ int playerc_comms_recv(playerc_comms_t *device, void *msg, int len);
 
 
 /***************************************************************************
- * proxy : gps (global positioning system) device
+ * proxy : gps (global positioning system)
  **************************************************************************/
 
 // GPS device data
@@ -424,7 +480,7 @@ int playerc_laser_get_geom(playerc_laser_t *device);
 
 
 /***************************************************************************
- * proxy : fiducial detector 
+ * proxy : fiducial (fiducial detector)
  **************************************************************************/ 
 
 // Description for a single fiducial
@@ -656,61 +712,6 @@ int playerc_truth_get_pose(playerc_truth_t *device, double *px, double *py, doub
 // Set the object pose.
 // px, py, pa : the new pose (global coordinates).
 int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double pa);
-
-
-/***************************************************************************
- * proxy : visual blobfinder
- **************************************************************************/
-
-// Description of a single blob.
-typedef struct
-{  
-  // The blob "channel"; i.e. the color class this blob belongs to.
-  int channel;
-
-  // A descriptive color for the blob.  Stored as packed RGB 32, i.e.:
-  // 0x00RRGGBB.
-  uint32_t color;
-
-  // Blob centroid (image coordinates).
-  int x, y;
-
-  // Blob area (pixels).
-  int area;
-
-  // Bounding box for blob (image coordinates).
-  int left, top, right, bottom;
-  
-} playerc_blobfinder_blob_t;
-
-
-// Blobfinder device data
-typedef struct
-{
-  // Device info; must be at the start of all device structures.
-  playerc_device_t info;
-
-  // Image dimensions
-  int width, height;
-  
-  // A list of detected blobs
-  int blob_count;
-  playerc_blobfinder_blob_t blobs[PLAYERC_BLOBFINDER_MAX_BLOBS];
-  
-} playerc_blobfinder_t;
-
-
-// Create a blobfinder proxy
-playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int index);
-
-// Destroy a blobfinder proxy
-void playerc_blobfinder_destroy(playerc_blobfinder_t *device);
-
-// Subscribe to the blobfinder device
-int playerc_blobfinder_subscribe(playerc_blobfinder_t *device, int access);
-
-// Un-subscribe from the blobfinder device
-int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
 
 
 /***************************************************************************

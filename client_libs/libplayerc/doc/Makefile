@@ -23,16 +23,15 @@ dvi: $(NAME).dvi
 $(NAME).dvi: $(NAME).tex \
 						client.f.tex \
 						device.t.tex \
-						bps.t.tex bps.f.tex \
-						broadcast.t.tex broadcast.f.tex \
+						blobfinder.t.tex blobfinder.f.tex \
+						comms.t.tex comms.f.tex \
+						fiducial.t.tex fiducial.f.tex \
 						gps.t.tex gps.f.tex \
 						laser.t.tex laser.f.tex \
-						lbd.t.tex lbd.f.tex \
 						position.t.tex position.f.tex \
 						ptz.t.tex ptz.f.tex \
 						sonar.t.tex sonar.f.tex \
-						truth.t.tex truth.f.tex \
-						vision.t.tex vision.f.tex
+						truth.t.tex truth.f.tex
 	$(LATEX) $< && $(LATEX) $<
 
 light: $(NAME).tex
