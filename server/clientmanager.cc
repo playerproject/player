@@ -37,8 +37,8 @@
 #include <string.h>  // for memcpy(3)
 #include <stdlib.h>  // for exit(3)
 #include <sys/types.h>  // for accept(2)
-#include <netinet/in.h>  // for byte-swappers
 #include <sys/socket.h>  // for accept(2)
+#include <netinet/in.h>  // for byte-swappers
 #include <fcntl.h>  // for fcntl(2)
 #include <unistd.h>  // for fnctl(2)
 

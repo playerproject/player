@@ -9,10 +9,12 @@ LDADD = -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm
 
 noinst_PROGRAMS = $(BUILDTEST)
 
+#test_DEPENDENCIES = @LIBOBJS@
+
 test_SOURCES = test.c \
                test.h \
                test_blobfinder.c \
-							 test_comms.c \
+               test_comms.c \
                test_fiducial.c \
                test_laser.c \
                test_gps.c \

@@ -28,7 +28,7 @@
 #define PLAYERC_H
 
 #include <stdio.h>
-#include <sys/poll.h>
+#include <replace.h>
 
 // Get the message structures from Player
 #include "player.h"

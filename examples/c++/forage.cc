@@ -7,7 +7,7 @@
 #include <stdlib.h>  /* for atoi(3),rand(3) */
 #include <playerclient.h>
 #include <math.h>
-#include <values.h>
+#include <float.h>
 #include <time.h> // to seed the RNG
 
 #define USAGE \
@@ -168,7 +168,7 @@ int main(int argc, char** argv)
         newspeed = 0;
         gp.SetGrip(GRIPopen,0);
         reverse_homing = 100;
-        last_bearing = MAXDOUBLE;
+        last_bearing = DBL_MAX;
       }
       else
       {
@@ -197,7 +197,7 @@ int main(int argc, char** argv)
       //double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.compass-90)+M_PI));
       double bearing = 0;
 
-      if(last_bearing < MAXDOUBLE && fabs(last_bearing-bearing) > 180)
+      if(last_bearing < DBL_MAX && fabs(last_bearing-bearing) > 180)
         bearing=last_bearing;
       else
         last_bearing=bearing;
