@@ -97,6 +97,8 @@ class ShapeTracker : public CDevice
   // Calculate angle between three points
   private: double CalcAngle( CvPoint *pt1, CvPoint *pt2, CvPoint *pt0);
 
+  private: void ContrastStretch( IplImage *src, IplImage *gray );
+
   // Camera stuff
   private: int cameraIndex;
   private: CDevice *camera;
@@ -106,6 +108,12 @@ class ShapeTracker : public CDevice
 
   private: IplImage *mainImage;
   private: IplImage *workImage;
+
+  // Histogram attributes
+  private: CvHistogram *hist;
+  private: int histSize;
+  private: unsigned char lut[256];
+  private: CvMat *lutMat; 
 
   private: double threshold;
   private: int vertices;
@@ -158,6 +166,7 @@ ShapeTracker::ShapeTracker(char* interface, ConfigFile* cf, int section)
 
   this->mainImage = NULL;
   this->workImage = NULL;
+  this->hist = NULL;
 
   this->threshold = 80;
   this->vertices = 8;
@@ -551,6 +560,18 @@ void ShapeTracker::ProcessImage()
     workImage = cvCreateImage( cvSize(this->cameraData.width,
           this->cameraData.height), IPL_DEPTH_8U, 1);
 
+
+  if (this->hist == NULL)
+  {
+    this->histSize = 256;
+    float range0[] = {0, 256};
+    float *ranges[] = {range0};
+
+    this->hist = cvCreateHist(1, &histSize, CV_HIST_ARRAY, ranges, 1);
+    this->lutMat = cvCreateMatHeader(1, 256, CV_8UC1);
+    cvSetData(this->lutMat, this->lut, 0);
+  }
+
   // Initialize the main image
   memcpy(this->mainImage->imageData, this->cameraData.image, 
          this->mainImage->imageSize);
@@ -558,14 +579,23 @@ void ShapeTracker::ProcessImage()
   // Make dest a gray scale image
   cvCvtColor(this->mainImage, this->workImage, CV_BGR2GRAY);
 
+  //cvSaveImage("orig.jpg", this->mainImage);
+
+  this->ContrastStretch( this->mainImage, this->workImage );
+
+  //cvSaveImage("hist.jpg", this->mainImage);
+
+  cvCvtColor(this->mainImage, this->workImage, CV_BGR2GRAY);
+
   // Create a binary image
   cvThreshold(this->workImage, this->workImage, this->threshold, 255, 
       CV_THRESH_BINARY);
 
+  //cvSaveImage("final.jpg", this->workImage);
+
   // Find all the shapes in the image
   this->FindShapes();
 
-  //cvSaveImage("work.jpg", this->workImage);
 
   //this->KalmanFilter();
   return;
@@ -646,3 +676,52 @@ double ShapeTracker::CalcAngle( CvPoint *pt1, CvPoint *pt2, CvPoint *pt0)
   double dy2 = pt2->y - pt0->y;
   return (dx1*dx2 + dy1*dy2)/sqrt((dx1*dx1 + dy1*dy1)*(dx2*dx2 + dy2*dy2) + 1e-10);
 }
+
+void ShapeTracker::ContrastStretch( IplImage *src, IplImage *gray )
+{
+  int high = 0;
+  int low = 0;
+  int index;
+  float hist_value;
+  float scale_factor;
+  IplImage *R = cvCreateImage(cvGetSize(src), src->depth, 1);                     IplImage *G = cvCreateImage(cvGetSize(src), src->depth, 1);
+  IplImage *B = cvCreateImage(cvGetSize(src), src->depth, 1);
+
+  cvCalcHist(&gray, this->hist, 0, NULL);
+
+  for(index = 0; index < this->histSize; index++){
+    hist_value = cvQueryHistValue_1D(this->hist, index);
+    if(hist_value != 0){
+      low = index;
+      break;
+    }
+  } 
+
+  for(index = this->histSize-1; index >= 0; index--){
+    hist_value = cvQueryHistValue_1D(this->hist, index);
+    if(hist_value != 0){
+      high = index;
+      break;
+    }
+  }             
+
+  scale_factor = 255.0f/(float)(high - low);
+  for(index = 0; index < 256; index++){
+    if((index >= low) && (index <= high))
+    {
+      this->lut[index] = (unsigned char)((float)(index - low)*scale_factor);
+    }
+    if(index > high) this->lut[index] = 255;
+  }
+
+  cvCvtPixToPlane(src, R, G, B, NULL);
+  cvLUT(R, R, this->lutMat);
+  cvLUT(G, G, this->lutMat);
+  cvLUT(B, B, this->lutMat);
+  cvCvtPlaneToPix(R, G, B, NULL, src);
+
+  cvReleaseImage(&R);
+  cvReleaseImage(&G);
+  cvReleaseImage(&B);
+}
+
