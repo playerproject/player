@@ -62,7 +62,7 @@ StageTime::StageTime(const char *directory)
   clock = (stage_clock_t*) mmap( NULL, sizeof(struct timeval),
                                  PROT_READ | PROT_WRITE, 
                                  MAP_SHARED, tfd, (off_t) 0);
-  if (clock == MAP_FAILED)
+  if ((char*)clock == MAP_FAILED)
   {
     perror( "Failed to map clock memory" );
     exit( -1 );

@@ -11,6 +11,8 @@
 /* Don't touch these.  They are replaced during the configure with the right
  * values for the build system.  That way, the installed version of this
  * header will be usable by anyone */
+ /* TODO: figure out why these are not getting replaced, at least not on 
+    OS X and Cygwin */
 #define HAVE_STDINT_H 1
 #define HAVE_STRINGS_H 1
 /* #undef WORDS_BIGENDIAN  */
