@@ -34,6 +34,12 @@
 (setq *PLAYER-PLAYER-DATAMODE-CONTINUOUS* 0)
 (setq *PLAYER-PLAYER-DATAMODE-REQREP* 1)
 
+(setq *PLAYER-READ-MODE* #x72)
+(setq *PLAYER-WRITE-MODE* #x77)
+(setq *PLAYER-ALL-MODE* #x61)
+(setq *PLAYER-CLOSE-MODE* #x63)
+(setq *PLAYER-ERROR-MODE* #x65)
+
 ; shorter (and more familiar) names for binary types
 (setq uint8 '(unsigned-byte 8))
 (setq uint16 '(unsigned-byte 16))
@@ -42,9 +48,7 @@
 (setq int16 '(signed-byte 16))
 (setq int32 '(signed-byte 32))
 
-(setq *PLAYER-READ-MODE* #x72)
-(setq *PLAYER-WRITE-MODE* #x77)
-(setq *PLAYER-ALL-MODE* #x61)
-(setq *PLAYER-CLOSE-MODE* #x63)
-(setq *PLAYER-ERROR-MODE* #x65)
+(setq *SHORTMAX* 65536)
+(setq *HALF-SHORTMAX* (/ *SHORTMAX* 2))
+(setq *HALF-INTMAX* 2147483648)
 
