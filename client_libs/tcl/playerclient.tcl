@@ -20,46 +20,32 @@
 #
 # $Id$
 #
+# Tcl client utilities for Player
 
-# client utilities
+#########################################################################
+# Global constants and defaults necessary for Player
+# 
 
-# globals
-set port 6665
-if {![string length [info var sock]]} {
-  set sock -1
-}
-array set devices {}
-set frontbumpers 0
-set rearbumpers 0
-set battery 0
-array set sonar {}
-array set laser {}
-array set vision {}
-set pan 0
-set tilt 0
-set zoom 0
-set time 0
-set xpos 0 
-set ypos 0
-set heading 0
-set speed 0 
-set turnrate 0
-set compass 0
-set stall 0
-set host ""
+# the default TCP port for Player
+set PLAYER_DEFAULT_PORT 6665
+set PLAYER_DEFAULT_HOST "localhost"
 
-set ACTS_NUM_CHANNELS 32
-set ACTS_HEADER_SIZE [expr 2*$ACTS_NUM_CHANNELS]
-set ACTS_BLOB_SIZE 10
+# the message start symbol
+set PLAYER_STX 0x5878
 
+# length of indentifier string that Player will send
 set PLAYER_IDENT_STRLEN 32
-set PLAYER_HEADER_LEN 32
 
+# length of Player message header (minus the STX
+set PLAYER_HEADER_LEN 30
+
+# message types
 set PLAYER_MSGTYPE_DATA 1
 set PLAYER_MSGTYPE_CMD  2
 set PLAYER_MSGTYPE_REQ  3
 set PLAYER_MSGTYPE_RESP 4
 
+# device codes
 set PLAYER_PLAYER_CODE         1
 set PLAYER_MISC_CODE           2
 set PLAYER_GRIPPER_CODE        3
@@ -72,78 +58,166 @@ set PLAYER_AUDIO_CODE          9
 set PLAYER_LASERBEACON_CODE   10
 set PLAYER_BROADCAST_CODE     11
 
-set PLAYER_STX "xX" 
+# access modes
+set PLAYER_READ_MODE   "r"
+set PLAYER_WRITE_MODE  "w"
+set PLAYER_ALL_MODE    "a"
+set PLAYER_CLOSE_MODE  "c"
 
+#
+# Device-specific values
+#
+
+# the player device
 set PLAYER_PLAYER_DEV_REQ      1
 set PLAYER_PLAYER_DATA_REQ     2
 set PLAYER_PLAYER_DATAMODE_REQ 3
 set PLAYER_PLAYER_DATAFREQ_REQ 4
 
+# the vision device
+set ACTS_NUM_CHANNELS 32
+set ACTS_HEADER_SIZE [expr 2*$ACTS_NUM_CHANNELS]
+set ACTS_BLOB_SIZE 10
 
+
+# the sonar device
+set PLAYER_NUM_SONAR_SAMPLES  16
+
+# the laser device
+set PLAYER_NUM_LASER_SAMPLES  361
+set PLAYER_MAX_LASER_VALUE 8000
+
+#########################################################################
+
+#########################################################################
+#
+# initialize various data
+#
+
+if {![string length [info var player_port]]} {
+  set player_port $PLAYER_DEFAULT_PORT
+}
+if {![string length [info var player_host]]} {
+  set player_host $PLAYER_DEFAULT_HOST
+}
+if {![string length [info var player_sock]]} {
+  set player_sock -1
+}
+
+# this array holds access modes for the devices that we've opened.
+#    device_access($device,$index) = $access
+array set device_access {}
+
+#########################################################################
+# data from Player will be stored in these vars
+
+# the position device
+set xpos 0 
+set ypos 0
+set heading 0
+set speed 0 
+set turnrate 0
+set compass 0
+set stall 0
+
+# the sonar device
+array set sonar {}
+
+# the laser device
+array set laser {}
+
+# the vision device
+array set vision {}
+
+# the ptz device
+set pan 0
+set tilt 0
+set zoom 0
+
+# the misc device
+set frontbumpers 0
+set rearbumpers 0
+set battery 0
+
+# current time (latched from the most recent data packet)
+set current_time_sec 0
+set current_time_usec 0
+
+#########################################################################
 
 proc connectToRobot {robot} {
-  global sock port host PLAYER_IDENT_STRLEN PLAYER_PLAYER_CODE \
+  global player_sock player_port player_host PLAYER_IDENT_STRLEN PLAYER_PLAYER_CODE \
          PLAYER_PLAYER_DATAMODE_REQ
 
-  set sock [socket $robot $port]
-  fconfigure $sock -blocking 1 -translation binary
+  set player_sock [socket $robot $player_port]
+  fconfigure $player_sock -blocking 1 -translation binary
   # print out who we're talking to
-  puts "Connected to [read $sock $PLAYER_IDENT_STRLEN]"
+  puts "Connected to [read $player_sock $PLAYER_IDENT_STRLEN]"
   # make it request/reply
   requestFromRobot $PLAYER_PLAYER_CODE 0 "[binary format Sc $PLAYER_PLAYER_DATAMODE_REQ 1]"
-  set host $robot
+  set player_host $robot
 }
+
 proc disconnectFromRobot {} {
-  global sock
-  if {$sock == -1} {
+  global player_sock
+  if {$player_sock == -1} {
     error "ERROR: robot connection not set up"
   }
-  close $sock
-  set sock -1
+  close $player_sock
+  set player_sock -1
 }
+
 proc requestFromRobot {device index req} {
-  global sock host PLAYER_STX PLAYER_PLAYER_CODE PLAYER_PLAYER_CODE \
-         PLAYER_MSGTYPE_REQ devices PLAYER_PLAYER_DEV_REQ \
-         zero16 zero32 PLAYER_HEADER_LEN PLAYER_MSGTYPE_RESP
+  global player_sock PLAYER_STX device_access 
+  global PLAYER_PLAYER_CODE PLAYER_PLAYER_CODE
+  global PLAYER_MSGTYPE_REQ PLAYER_PLAYER_DEV_REQ
+  global PLAYER_HEADER_LEN PLAYER_MSGTYPE_RESP
+  global zero16 zero32 current_time_sec current_time_usec
 
   set size [string length $req]
-  if {$sock == -1} {
+  if {$player_sock == -1} {
     error "ERROR: robot connection not set up"
   }
   set isdevicerequest 0
 
-  #puts "Requesting \"$req\" (length: [string length $req])"
-
-  puts -nonewline $sock "${PLAYER_STX}[binary format SSSIIIIII $PLAYER_MSGTYPE_REQ $device $index 0 0 0 0 0 $size]${req}"
-  flush $sock
+  # write the request
+  puts -nonewline $player_sock "[binary format SSSSIIIIII $PLAYER_STX $PLAYER_MSGTYPE_REQ $device $index 0 0 0 0 0 $size]${req}"
+  flush $player_sock
 
   #
   # get the reply
   #
   while {1} {
-     set header [read $sock $PLAYER_HEADER_LEN]
-     if {[binary scan $header a2SSSIIIIII \
-                  stx type device device_index time0 time1\
-                  timestamp0 timestamp1 reserved size] != 10} {
-      error "scanning header"
+     # wait for the STX
+     while {1} {
+       if {[binary scan [read $player_sock 2] S stx] != 1} {
+         error "while waiting for STX"
+       }
+       if {$stx == $PLAYER_STX} {
+         break
+       }
+     }
+
+     set header [read $player_sock $PLAYER_HEADER_LEN]
+     if {[binary scan $header SSSIIIIII \
+                  type device device_index time_sec time_usec\
+                  timestamp_sec timestamp_usec reserved size] != 9} {
+      error "while scanning message header"
     }
-    #puts "stx: $stx"
-    #puts "type: $type"
-    #puts "device: $device"
-    #puts "device_index: $device_index"
-    #puts "time0: $time0"
-    #puts "time1: $time1"
-    #puts "timestamp0: $timestamp0"
-    #puts "timestamp1: $timestamp1"
-    #puts "reserved: $reserved"
-    #puts "size: $size"
+
+    # update current time
+    set current_time_sec $time_sec
+    set current_time_usec $time_usec
+
+    # is a reply?
     if {$type == $PLAYER_MSGTYPE_RESP} {
         break;
+    } else {
+      # if not, eat other data
+      read $player_sock $size
     }
-    # eat other data
-    read $sock $size
   }
-  set reply [read $sock $size]
+  set reply [read $player_sock $size]
 
   #
   # if this is a device request, keep track of it accordingly
@@ -156,7 +230,7 @@ proc requestFromRobot {device index req} {
             SSa device index access] != 3} {
         error "Unable to determine device/index for bookkeeping"
       }
-      set devices($device,$index) $access
+      set device_access($device,$index) $access
       incr i 5
     }
 
@@ -169,174 +243,200 @@ proc requestFromRobot {device index req} {
   }
 }
 
-proc readData {} {
-  global sock devices
-  global battery frontbumpers rearbumpers
-  global sonar
-  global time xpos ypos heading speed turnrate compass stall
-  global laser vision
-  global pan tilt zoom PLAYER_PLAYER_CODE
-  global ACTS_BLOB_SIZE ACTS_NUM_CHANNELS ACTS_HEADER_SIZE 
-  global PLAYER_HEADER_LEN PLAYER_POSITION_CODE PLAYER_MISC_CODE
-  global PLAYER_VISION_CODE PLAYER_LASER_CODE PLAYER_GRIPPER_CODE 
-  global PLAYER_PTZ_CODE PLAYER_SONAR_CODE PLAYER_PLAYER_DATA_REQ
+#
+# a helper to make device access requests easier
+#
+proc requestDeviceAccess {device index access} {
+  global PLAYER_PLAYER_CODE PLAYER_PLAYER_DEV_REQ
 
-  if {$sock == -1} {
+  requestFromRobot $PLAYER_PLAYER_CODE 0 "[binary format SSSa $PLAYER_PLAYER_DEV_REQ $device $index $access]"
+}
+
+#
+# this proc reads one entire round of data from the server, based on the 
+# access modes listed in the 'device_access' array
+# 
+# resultant data will be stored in the appropriate global vars
+#
+proc readData {} {
+  global player_sock device_access PLAYER_STX
+  global PLAYER_READ_MODE PLAYER_ALL_MODE PLAYER_HEADER_LEN 
+  global PLAYER_PLAYER_CODE PLAYER_PLAYER_DATA_REQ
+
+  if {$player_sock == -1} {
     error "ERROR: robot connection not set up"
   }
 
-  set i 0
-  # request a packet
+  # request a data packet
   requestFromRobot $PLAYER_PLAYER_CODE 0 [binary format S $PLAYER_PLAYER_DATA_REQ]
+
   # how many devices are we reading from?
   set numdevices 0
-  foreach dev [array names devices] {
-    if {![string compare $devices($dev) "r"] ||
-        ![string compare $devices($dev) "a"]} {
+  foreach dev [array names device_access] {
+    if {![string compare $device_access($dev) $PLAYER_READ_MODE] ||
+        ![string compare $device_access($dev) $PLAYER_ALL_MODE]} {
      incr numdevices
     }
   }
 
+  set i 0
   while {$i < $numdevices} {
-    set header [read $sock $PLAYER_HEADER_LEN]
-    if {[binary scan $header a2SSSIIIIII \
-                  stx type device device_index time0 time1\
-                  timestamp0 timestamp1 reserved size] != 10} {
-      error "scanning header"
+    # wait for the STX
+    while {1} {
+      if {[binary scan [read $player_sock 2] S stx] != 1} {
+        error "while waiting for STX"
+      }
+      if {$stx == $PLAYER_STX} {
+        break
+      }
     }
 
-    #puts "stx: $stx"
-    #puts "type: $type"
-    #puts "device: $device"
-    #puts "device_index: $device_index"
-    #puts "time0: $time0"
-    #puts "time1: $time1"
-    #puts "timestamp0: $timestamp0"
-    #puts "timestamp1: $timestamp1"
-    #puts "reserved: $reserved"
-    #puts "size: $size"
-  
-    set data [read $sock $size]
+    # read the rest of the header
+    set header [read $player_sock $PLAYER_HEADER_LEN]
+    if {[binary scan $header SSSIIIIII \
+                  type device device_index time0 time1\
+                  timestamp0 timestamp1 reserved size] != 9} {
+      error "while scanning header"
+    }
+
+    # read the data
+    set data [read $player_sock $size]
     if {[string length $data] != $size} {
       error "expected $size bytes, but only got [string length $data]"
     }
   
-    if {![string compare $device $PLAYER_VISION_CODE]} {
-      # vision data packet
-      set bufptr $ACTS_HEADER_SIZE
-      set l 0
-      while {$l < $ACTS_NUM_CHANNELS} {
-        if {[binary scan $data "x[expr 2*$l+1]c" numblobs] != 1} {
-          error "failed to get number of blobs for channel $l"
-        }
-        set vision($l,numblobs) [expr $numblobs - 1]
-        set j 0
-        while {$j < $vision($l,numblobs)} {
-          if {[binary scan $data "x[expr $bufptr]cccccccccc" \
-                    areabits(0) areabits(1) areabits(2) areabits(3)\
-                    x y left right top bottom] != 10} {
-            error "failed to get blob info for ${j}th blob on ${l}th channel"
-          }
-          # make everything unsigned
-          set x [expr ( $x + 0x100 ) % 0x100]
-          set y [expr ( $y + 0x100 ) % 0x100]
-          set left [expr ( $left + 0x100 ) % 0x100]
-          set right [expr ( $right + 0x100 ) % 0x100]
-          set top [expr ( $top + 0x100 ) % 0x100]
-          set bottom [expr ( $bottom + 0x100 ) % 0x100]
-
-          # first compute the area
-          set area 0
-          set k 0
-          while {$k < 4} {
-            set area [expr $area << 6]
-            set area [expr $area | ($areabits($k) - 1)]
-            incr k
-          }
-          set vision($l,$j,area) $area
-          set vision($l,$j,x) [expr $x - 1]
-          set vision($l,$j,y) [expr $y - 1]
-          set vision($l,$j,left) [expr $left - 1]
-          set vision($l,$j,right) [expr $right - 1]
-          set vision($l,$j,top) [expr $top - 1]
-          set vision($l,$j,bottom) [expr $bottom - 1]
-
-          incr bufptr $ACTS_BLOB_SIZE
-          incr j
-        }
-        incr l
-      }
-    } elseif {![string compare $device $PLAYER_PTZ_CODE]} {
-      # ptz data packet
-      if {[binary scan $data SSS pan tilt zoom] != 3} {
-        error "failed to get pan/tilt/zoom"
-      }
-    } elseif {![string compare $device $PLAYER_MISC_CODE]} {
-      # misc data packet
-      if {[binary scan $data ccc frontbumpers rearbumpers battery] != 3} {
-        error "failed to get bumpers and battery"
-      }
-      # make them unsigned
-      set frontbumpers [expr ( $frontbumpers + 0x100 ) % 0x100]
-      set rearbumpers [expr ( $rearbumpers + 0x100 ) % 0x100]
-      set battery [expr (( $battery + 0x100 ) % 0x100) / 10.0]
-    } elseif {![string compare $device $PLAYER_SONAR_CODE]} {
-      # sonar data packet
-      if {[binary scan $data SSSSSSSSSSSSSSSS\
-                     sonar(0)\
-                     sonar(1)\
-                     sonar(2)\
-                     sonar(3)\
-                     sonar(4)\
-                     sonar(5)\
-                     sonar(6)\
-                     sonar(7)\
-                     sonar(8)\
-                     sonar(9)\
-                     sonar(10)\
-                     sonar(11)\
-                     sonar(12)\
-                     sonar(13)\
-                     sonar(14)\
-                     sonar(15)] != 16} {
-        error "failed to get sonars"
-      }
-    } elseif {![string compare $device $PLAYER_POSITION_CODE]} {
-      # position data packet
-      if {[binary scan $data IISSSSc\
-                   xpos ypos heading \
-                   speed turnrate compass stall] != 7} {
-        error "failed to get position data"
-      }
-    } elseif {![string compare $device $PLAYER_LASER_CODE]} {
-      set j 0
-      while {$j < [expr $size / 2]} {
-        if {[binary scan $data "x[expr 2 * $j]S" laser($j)] != 1} {
-          error "failed to get laser scan $j"
-        }
-        set laser($j) [expr ($laser($j) + 0x10000) % 0x10000]
-        incr j
-      }
-    } else {
-      error "got unexpected message \"$data\""
-    }
+    # get the data out and put it in global vars
+    parseData $device $device_index $data $size
     incr i
   }
-  return
+}
+
+# get the data out and put it in global vars
+proc parseData {device device_index data size} {
+  global battery frontbumpers rearbumpers
+  global sonar
+  global time xpos ypos heading speed turnrate compass stall
+  global laser vision
+  global pan tilt zoom 
+  global ACTS_BLOB_SIZE ACTS_NUM_CHANNELS ACTS_HEADER_SIZE 
+  global PLAYER_POSITION_CODE PLAYER_MISC_CODE
+  global PLAYER_VISION_CODE PLAYER_LASER_CODE PLAYER_GRIPPER_CODE 
+  global PLAYER_PTZ_CODE PLAYER_SONAR_CODE 
+  global PLAYER_NUM_SONAR_SAMPLES PLAYER_NUM_LASER_SAMPLES
+  global PLAYER_MAX_LASER_VALUE
+
+  if {![string compare $device $PLAYER_VISION_CODE]} {
+    # vision data packet
+    set bufptr $ACTS_HEADER_SIZE
+    set l 0
+    while {$l < $ACTS_NUM_CHANNELS} {
+      if {[binary scan $data "x[expr 2*$l+1]c" numblobs] != 1} {
+        error "failed to get number of blobs for channel $l"
+      }
+      set vision($l,numblobs) [expr $numblobs - 1]
+      set j 0
+      while {$j < $vision($l,numblobs)} {
+        if {[binary scan $data "x[expr $bufptr]cccccccccc" \
+                  areabits(0) areabits(1) areabits(2) areabits(3)\
+                  x y left right top bottom] != 10} {
+          error "failed to get blob info for ${j}th blob on ${l}th channel"
+        }
+        # make everything unsigned
+        set x [expr ( $x + 0x100 ) % 0x100]
+        set y [expr ( $y + 0x100 ) % 0x100]
+        set left [expr ( $left + 0x100 ) % 0x100]
+        set right [expr ( $right + 0x100 ) % 0x100]
+        set top [expr ( $top + 0x100 ) % 0x100]
+        set bottom [expr ( $bottom + 0x100 ) % 0x100]
+
+        # first compute the area
+        set area 0
+        set k 0
+        while {$k < 4} {
+          set area [expr $area << 6]
+          set area [expr $area | ($areabits($k) - 1)]
+          incr k
+        }
+        set vision($l,$j,area) $area
+        set vision($l,$j,x) [expr $x - 1]
+        set vision($l,$j,y) [expr $y - 1]
+        set vision($l,$j,left) [expr $left - 1]
+        set vision($l,$j,right) [expr $right - 1]
+        set vision($l,$j,top) [expr $top - 1]
+        set vision($l,$j,bottom) [expr $bottom - 1]
+
+        incr bufptr $ACTS_BLOB_SIZE
+        incr j
+      }
+      incr l
+    }
+  } elseif {![string compare $device $PLAYER_PTZ_CODE]} {
+    # ptz data packet
+    if {[binary scan $data SSS pan tilt zoom] != 3} {
+      error "failed to get pan/tilt/zoom"
+    }
+  } elseif {![string compare $device $PLAYER_MISC_CODE]} {
+    # misc data packet
+    if {[binary scan $data ccc frontbumpers rearbumpers battery] != 3} {
+      error "failed to get bumpers and battery"
+    }
+    # make them unsigned
+    set frontbumpers [expr ( $frontbumpers + 0x100 ) % 0x100]
+    set rearbumpers [expr ( $rearbumpers + 0x100 ) % 0x100]
+    set battery [expr (( $battery + 0x100 ) % 0x100) / 10.0]
+  } elseif {![string compare $device $PLAYER_SONAR_CODE]} {
+    # sonar data packet
+    if {[expr $size / 2] != $PLAYER_NUM_SONAR_SAMPLES} {
+      puts "Warning: expected $PLAYER_NUM_SONAR_SAMPLES sonar readings, but received [expr $size/2] readings"
+    }
+    set j 0
+    while {$j < [expr $size / 2]} {
+      if {[binary scan $data "x[expr 2 * $j]S" sonar($j)] != 1} {
+        error "failed to get sonar scan $j"
+      }
+      set sonar($j) [expr ($sonar($j) + 0x10000) % 0x10000]
+      incr j
+    }
+  } elseif {![string compare $device $PLAYER_POSITION_CODE]} {
+    # position data packet
+    if {[binary scan $data IISSSSc\
+                 xpos ypos heading \
+                 speed turnrate compass stall] != 7} {
+      error "failed to get position data"
+    }
+  } elseif {![string compare $device $PLAYER_LASER_CODE]} {
+    if {[expr $size / 2] != $PLAYER_NUM_LASER_SAMPLES} {
+      puts "Warning: expected $PLAYER_NUM_LASER_SAMPLES laser readings, but received [expr $size/2] readings"
+    }
+    set j 0
+    while {$j < [expr $size / 2]} {
+      if {[binary scan $data "x[expr 2 * $j]S" laser($j)] != 1} {
+        error "failed to get laser scan $j"
+      }
+      set laser($j) [expr ($laser($j) + 0x10000) % 0x10000]
+      # TODO: why does stage return laser values of 11392?????
+      if {$laser($j) > $PLAYER_MAX_LASER_VALUE} {
+        set laser($j) $PLAYER_MAX_LASER_VALUE
+      }
+      incr j
+    }
+  } else {
+    error "got unexpected message \"$data\""
+  }
 }
 
 proc writeCommand {device index str} {
-  global sock PLAYER_STX PLAYER_MSGTYPE_CMD zero32
-  if {$sock == -1} {
+  global player_sock PLAYER_STX PLAYER_MSGTYPE_CMD zero32
+  if {$player_sock == -1} {
     error "ERROR: robot connection not set up"
   }
 
   set size [string length $str]
   set device_index [binary format S $index]
   #set cmd "c${device}${size}${str}"
-  set cmd "${PLAYER_STX}[binary format SSSIIIIII $PLAYER_MSGTYPE_CMD $device $index 0 0 0 0 0 $size]${str}"
-  puts -nonewline $sock $cmd
-  flush $sock
+  set cmd "[binary format SSSSIIIIII $PLAYER_STX $PLAYER_MSGTYPE_CMD $device $index 0 0 0 0 0 $size]${str}"
+  puts -nonewline $player_sock $cmd
+  flush $player_sock
 }
 
 proc writeMotorCommand {fv tv} {
