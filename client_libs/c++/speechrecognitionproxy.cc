@@ -102,3 +102,13 @@ void SpeechRecognitionProxy::FillData (player_msghdr_t hdr, const char *buffer)
     }
   }
 }
+
+void SpeechRecognitionProxy::Clear()
+{
+  this->wordCount = 0;
+
+  for (int i=0; i<20; i++)
+  {
+    this->words[i] = "\0";
+  }
+}
