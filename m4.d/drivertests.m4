@@ -148,7 +148,6 @@ else
   PLAYER_NODRIVERS="$PLAYER_NODRIVERS laserbar laserbarcode laservisualbarcode"
 fi
 AC_SUBST(LASERFIDUCIAL_LIBS)
-AC_SUBST(LASERFIDUCIAL_LIBSPATH)
 
 PLAYER_ADD_DRIVER([mcl],[drivers/localization/mcl],[no],)
 
