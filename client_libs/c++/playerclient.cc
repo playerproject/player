@@ -173,6 +173,7 @@ int PlayerClient::Disconnect()
 int PlayerClient::Read()
 {
   player_msghdr_t hdr;
+  
   char buffer[PLAYER_MAX_MESSAGE_SIZE];
   struct timeval curr;
   ClientProxy* thisproxy;

@@ -797,13 +797,11 @@ typedef struct
 * 
 */
 
-#define MAX_MOTE_DATA_SIZE 64
+#define MAX_MOTE_DATA_SIZE 32
+#define MAX_MOTE_Q_LEN     10
 
 typedef struct
 {
-  /* just a TOS AM packet maybe ?? */
-  uint8_t src;
-  uint8_t dest;
   uint8_t len;
   uint8_t buf[MAX_MOTE_DATA_SIZE];
   float   rssi;
@@ -811,7 +809,6 @@ typedef struct
 
 typedef struct
 {
-  /* only "sense" the radio has is signal strength */
   uint8_t strength;
 } __attribute__ ((packed)) player_mote_config_t;
 
