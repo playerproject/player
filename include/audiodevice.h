@@ -18,14 +18,16 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
- * the Sony EVI-D30 AUDIO camera device
+ * the AUDIO device
  */
 
 #ifndef AUDIODEVICE
 #define AUDIODEVICE
+
 #include <pthread.h>
 #include <unistd.h>
 
@@ -62,10 +64,8 @@ class CAudioDevice:public CDevice {
   CLock lock;
 
  public:
-  // RTV - new dynamic buffer allocation
   unsigned char* command;   // array holding the client's commands
   unsigned char* data;      // array holding the most recent feedback
-  // !RTV 
 
   // Esbens own additions
   int audio_fd; // audio device file descriptor
