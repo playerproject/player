@@ -34,11 +34,11 @@ AC_PROG_INSTALL
 AC_C_BIGENDIAN
 
 dnl don't need AC_PROG_RANLIB when using AM_PROG_LIBTOOL
-dnl AC_PROG_RANLIB
+AC_PROG_RANLIB
 
 dnl by default, don't build any shared libs
-AC_DISABLE_SHARED
-AM_PROG_LIBTOOL
+dnl AC_DISABLE_SHARED
+dnl AM_PROG_LIBTOOL
 
 dnl where's RTK?
 AC_ARG_WITH(rtk, [  --with-rtk=dir          Location of RTK],

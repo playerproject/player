@@ -68,7 +68,6 @@
 #include <sys/mman.h> // for mmap
 #include <stagetime.h>
 #include <stagedevice.h>
-#include <psdevice.h>
 player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
@@ -365,7 +364,7 @@ CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num
       
       // declare outside switch statement
       StageDevice *dev = 0; 
-      PSDevice* devicep = 0;
+      //PSDevice* devicep = 0;
 
       // prime the configFile parser
       int globalparent = configFile.AddEntity(-1,"");
@@ -408,10 +407,13 @@ CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num
 
         case PLAYER_LOCALIZE_CODE:
         {
+          PLAYER_WARN("Localization drivers cannot be loaded from a .world "
+                      "file.\nYou must run an auxillary instance of Player "
+                      "and use the passthrough driver.");
+          
+          /*
           int section = configFile.AddEntity(globalparent,
                                              PLAYER_LOCALIZE_STRING);
-          // you could insert config file options manually here.
-
           // Regular MCL
           if (strcmp((const char*) deviceIO->drivername, "regular_mcl") == 0)
           {
@@ -470,10 +472,7 @@ CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num
                                         deviceIO->lockbyte);
             }
           }
-          else
-          {
-            PLAYER_WARN1("Player device %s not recognized.", deviceIO->drivername);
-          }
+          */
         }
         break;
 
