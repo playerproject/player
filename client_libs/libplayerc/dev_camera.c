@@ -42,6 +42,9 @@
  * Date: 26 May 2002
  * CVS: $Id$
  **************************************************************************/
+#if HAVE_CONFIG_H
+  #include "config.h"
+#endif
 
 #include <assert.h>
 #include <math.h>
@@ -50,11 +53,9 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
-#include <playerpacket.h>
-
 #include "playerc.h"
+#include "playerpacket.h"
 #include "error.h"
-
 
 // Local declarations
 void playerc_camera_putdata(playerc_camera_t *device, player_msghdr_t *header,
@@ -120,6 +121,7 @@ void playerc_camera_putdata(playerc_camera_t *device, player_msghdr_t *header,
 // Decompress image data
 void playerc_camera_decompress(playerc_camera_t *device)
 {
+#if HAVE_JPEGLIB_H
   int dst_size;
   unsigned char *dst;
 
@@ -140,6 +142,12 @@ void playerc_camera_decompress(playerc_camera_t *device)
 
   // Pixels are now raw
   device->compression = PLAYER_CAMERA_COMPRESS_RAW;
+
+#else
+
+  PLAYERC_ERR("JPEG decompression support was not included at compile-time");
+ 
+#endif
 
   return;
 }
