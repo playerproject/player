@@ -291,20 +291,6 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 // Returns -1 on error and -2 on NACK. (private)
 int playerc_client_request(playerc_client_t *client, struct _playerc_device_t *device,
                            void *req_data, int req_len, void *rep_data, int rep_len);
-
-/* Enable these if Brian changes to server to accept multiple requests.
-// Issue request only; use in conjunction with
-// playerc_client_request_recv() to issue multiple requests and get
-// multiple replies.
-int playerc_client_request_send(playerc_client_t *client, playerc_device_t *deviceinfo,
-                                void *req_data, int req_len);
-
-// Wait for a reply; use in conjunction with
-// playerc_client_request_send() to issue multiple requests and get
-// multiple replies.
-int playerc_client_request_recv(playerc_client_t *client, playerc_device_t *deviceinfo,
-                                void *rep_data, int rep_len);
-*/
                                 
 /** Test to see if there is pending data.
     Returns -1 on error, 0 or 1 otherwise. */
