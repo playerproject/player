@@ -630,17 +630,17 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
   {
     mac = data->links[i].mac;
     if (strlen(mac) == 0)
-      mac = "(none)";
+      mac = "''";
 
     ip = data->links[i].ip;
     if (strlen(ip) == 0)
-      ip = "(none)";
+      ip = "''";
 
     essid = data->links[i].essid;
     if (strlen(essid) == 0)
-      essid = "(none)";
+      essid = "''";
 
-    fprintf(this->file, "%s %s %s %d %d %d %d %d %d ",
+    fprintf(this->file, "'%s' '%s' '%s' %d %d %d %d %d %d ",
             mac, ip, essid,
             data->links[i].mode, HUINT16(data->links[i].freq),
             data->links[i].encrypt,

@@ -697,7 +697,8 @@ void ShapeTracker::ContrastStretch( IplImage *src, IplImage *gray )
   int index;
   float hist_value;
   float scale_factor;
-  IplImage *R = cvCreateImage(cvGetSize(src), src->depth, 1);                     IplImage *G = cvCreateImage(cvGetSize(src), src->depth, 1);
+  IplImage *R = cvCreateImage(cvGetSize(src), src->depth, 1);
+  IplImage *G = cvCreateImage(cvGetSize(src), src->depth, 1);
   IplImage *B = cvCreateImage(cvGetSize(src), src->depth, 1);
 
   cvCalcHist(&gray, this->hist, 0, NULL);

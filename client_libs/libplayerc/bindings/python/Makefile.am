@@ -1,14 +1,16 @@
 
 if INCLUDE_LIBPLAYERC_PY
+
 noinst_DATA = pythonbuild
 PYTHONINSTALL = pythoninstall
+
+# files that must be built first
+BUILT_SOURCES = playerc_wrap.c
+
 endif
 
 # files that go in distribution
 EXTRA_DIST = playerc.i libplayerc.py setup.py
-
-# files that must be built first
-BUILT_SOURCES = playerc_wrap.c
 
 # use this target to update the bindings
 playerc_wrap.c: playerc.i test.i
