@@ -6,5 +6,5 @@ Name: libplayerc
 Description: Andrew Howard's Player C client library - part of the Player/Stage Project
 Version: @VERSION@
 Requires: 
-Libs: -L${prefix}/lib -lplayerc
+Libs: -L${prefix}/lib -lplayerc -lm
 Cflags: -I${prefix}/include
