@@ -28,11 +28,12 @@ $(NAME).dvi: $(NAME).tex \
 						fiducial.t.tex fiducial.f.tex \
 						gps.t.tex gps.f.tex \
 						laser.t.tex laser.f.tex \
+						localize.t.tex localize.f.tex \
 						position.t.tex position.f.tex \
 						ptz.t.tex ptz.f.tex \
 						sonar.t.tex sonar.f.tex \
 						truth.t.tex truth.f.tex \
-						localize.t.tex localize.f.tex
+						wifi.t.tex wifi.f.tex
 	$(LATEX) $< && $(LATEX) $<
 
 light: $(NAME).tex
