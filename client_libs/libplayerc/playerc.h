@@ -958,11 +958,6 @@ typedef struct _playerc_position_t
   
   /** Stall flag [0, 1]. */
   int stall;
-
-  char path_valid;
-  double gx, gy, ga;
-  int waypoint_count;
-  double waypoints[PLAYER_POSITION_MAX_WAYPOINTS][2];
 } playerc_position_t;
 
 /** [Methods] */
@@ -997,10 +992,6 @@ int playerc_position_set_cmd_vel(playerc_position_t *device,
     odometric coordinate system. */
 int playerc_position_set_cmd_pose(playerc_position_t *device,
                                   double gx, double gy, double ga, int state);
-
-/** Get the list of waypoints (for position devices that plan paths).  
-    Writes the result into the proxy rather than returning it to the caller. */
-int playerc_position_get_waypoints(playerc_position_t *device);
 
 /***************************************************************************
  ** end section
@@ -1427,6 +1418,75 @@ int playerc_wifi_subscribe(playerc_wifi_t *device, int access);
 
 /** Un-subscribe from the wifi device. */
 int playerc_wifi_unsubscribe(playerc_wifi_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
+/***************************************************************************
+ ** begin section planner
+ **************************************************************************/
+
+/** [Synopsis] The {\tt planner} proxy provides an interface to a
+2D motion planner. */
+
+/** [Data] */
+
+/** Planner device data. */
+typedef struct _playerc_planner_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Did the planner find a valid path? */
+  char path_valid;
+
+  /** Have we arrived at the goal? */
+  char path_done;
+
+  /** Current pose (m, m, radians). */
+  double px, py, pa;
+
+  /** Goal location (m, m, radians) */
+  double gx, gy, ga;
+
+  /** Current waypoint location (m, m, radians) */
+  double wx, wy, wa;
+
+  /** Current waypoint index (handy if you already have the list
+      of waypoints). May be negative if there's no plan, or if 
+      the plan is done */
+  int curr_waypoint;
+
+  /** Number of waypoints in the plan */
+  int waypoint_count;
+
+  /** List of waypoints in the current plan (m,m,radians).  Call
+      playerc_planner_get_waypoints() to fill this in. */
+  double waypoints[PLAYER_PLANNER_MAX_WAYPOINTS][3];
+} playerc_planner_t;
+
+/** [Methods] */
+
+/** Create a planner device proxy. */
+playerc_planner_t *playerc_planner_create(playerc_client_t *client, int index);
+
+/** Destroy a planner device proxy. */
+void playerc_planner_destroy(playerc_planner_t *device);
+
+/** Subscribe to the planner device */
+int playerc_planner_subscribe(playerc_planner_t *device, int access);
+
+/** Un-subscribe from the planner device */
+int playerc_planner_unsubscribe(playerc_planner_t *device);
+
+/** Set the goal pose (gx, gy, ga) */
+int playerc_planner_set_cmd_pose(playerc_planner_t *device,
+                                  double gx, double gy, double ga, int state);
+
+/** Get the list of waypoints. Writes the result into the proxy rather
+    than returning it to the caller. */
+int playerc_planner_get_waypoints(playerc_planner_t *device);
 
 /***************************************************************************
  ** end section

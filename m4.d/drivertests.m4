@@ -199,7 +199,7 @@ PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],
 PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
-PLAYER_ADD_DRIVER([wavefront],[drivers/position/wavefront],[yes],[],
+PLAYER_ADD_DRIVER([wavefront],[drivers/planner/wavefront],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
 PLAYER_ADD_DRIVER([mapfile],[drivers/map],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])

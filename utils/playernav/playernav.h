@@ -51,7 +51,7 @@ typedef struct
   playerc_client_t* clients[MAX_NUM_ROBOTS];
   playerc_map_t* maps[MAX_NUM_ROBOTS];
   playerc_localize_t* localizes[MAX_NUM_ROBOTS];
-  playerc_position_t* positions[MAX_NUM_ROBOTS];
+  playerc_planner_t* planners[MAX_NUM_ROBOTS];
   double goals[MAX_NUM_ROBOTS][3];
 } gui_data_t;
 
@@ -73,7 +73,7 @@ void draw_waypoints(gui_data_t* gui_data, int idx);
 playerc_mclient_t* init_player(playerc_client_t** clients,
                                playerc_map_t** maps,
                                playerc_localize_t** localizes,
-                               playerc_position_t** positions,
+                               playerc_planner_t** planners,
                                int num_bots,
                                char** hostnames,
                                int* ports,
