@@ -172,8 +172,11 @@ int P2OS::Setup()
   unsigned char sonarcommand[4];
   P2OSPacket sonarpacket; 
   int i;
-  //int bauds[] = {B38400, B19200, B9600};
-  int bauds[] = {B9600, B19200, B38400};
+  // this is the order in which we'll try the possible baud rates. we try 9600
+  // first because most robots use it, and because otherwise the radio modem
+  // connection code might not work (i think that the radio modems operate at
+  // 9600).
+  int bauds[] = {B9600, B38400, B19200};
   int numbauds = sizeof(bauds);
   int currbaud = 0;
 
@@ -289,7 +292,7 @@ int P2OS::Setup()
     }
   }
 
-  int num_sync_attempts = 5;
+  int num_sync_attempts = 3;
   while(psos_state != READY)
   {
     //printf("psos_state: %d\n", psos_state);
@@ -354,11 +357,14 @@ int P2OS::Setup()
             psos_fd = -1;
             return(1);
           }
-          num_sync_attempts = 5;
+          num_sync_attempts = 3;
           continue;
         }
         else
+        {
+          // tried all speeds; bail
           break;
+        }
       }
     }
     //receivedpacket.PrintHex();
@@ -1125,18 +1131,10 @@ P2OS::Main()
   pthread_exit(NULL);
 }
 
-struct timeval p2oscurr;
-struct timeval p2oslast;
-
 /* send the packet, then receive and parse an SIP */
 int
 P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
 {
-  gettimeofday(&p2oscurr,NULL);
-  printf("cycle time: %lf\n",
-         (p2oscurr.tv_sec + (p2oscurr.tv_usec / 1000000.0)) -
-         (p2oslast.tv_sec + (p2oslast.tv_usec / 1000000.0)));
-  p2oslast = p2oscurr;
   P2OSPacket packet;
   //static SIP sippacket;
   player_p2os_data_t data;
