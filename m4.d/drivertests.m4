@@ -66,7 +66,7 @@ dnl <name> capitalized) will be conditionally defined to be 1 and
 dnl lib<name>.a, respectively.
 dnl
 AC_DEFUN([PLAYER_ADD_DRIVER_EX], [
-AC_DEFUN([name_caps],translit($1,[a-z],[A-Z]))
+AC_DEFUN([other_name_caps],translit($1,[a-z],[A-Z]))
 ifelse($3,[yes],
   [AC_ARG_ENABLE($1,[  --disable-$1	  Don't compile the $1 driver],,
                  enable_$1=yes)],
@@ -76,20 +76,20 @@ if test "x$enable_$1" = "xyes" -a len($4) -gt 0; then
   AC_CHECK_HEADER($4, enable_$1=yes, enable_$1=no,)
 fi
 if test "x$enable_$1" = "xyes"; then
-  AC_DEFINE([INCLUDE_]name_caps, 1, [include the $1 driver])
-  name_caps[_LIB]=[lib]$1[.a]
-  name_caps[_LIBPATH]=$2/$name_caps[_LIB]
-  name_caps[_EXTRA_CPPFLAGS]=$5
-  name_caps[_EXTRA_LIB]=$6
+  AC_DEFINE([INCLUDE_]other_name_caps, 1, [include the $1 driver])
+  other_name_caps[_LIB]=[lib]$1[.a]
+  other_name_caps[_LIBPATH]=$2/$other_name_caps[_LIB]
+  other_name_caps[_EXTRA_CPPFLAGS]=$5
+  other_name_caps[_EXTRA_LIB]=$6
   PLAYER_DRIVERS="$PLAYER_DRIVERS $1"
 else
   PLAYER_NODRIVERS="$PLAYER_NODRIVERS $1"
 fi
-AC_SUBST(name_caps[_LIB])
-PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $name_caps[_LIB]"
-PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $name_caps[_LIBPATH]"
-AC_SUBST(name_caps[_EXTRA_CPPFLAGS])
-PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
+AC_SUBST(other_name_caps[_LIB])
+PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $other_name_caps[_LIB]"
+PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $other_name_caps[_LIBPATH]"
+AC_SUBST(other_name_caps[_EXTRA_CPPFLAGS])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $other_name_caps[_EXTRA_LIB]"
 ])
 
 

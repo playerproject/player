@@ -12,7 +12,7 @@ int
 test_fiducial(PlayerClient* client, int index)
 {
   unsigned char access;
-  FiducialProxy fp(client,index,'c',robot);
+  FiducialProxy fp(client,index,'c');
 
   printf("device [fiducialfinder] index [%d]\n", index);
 

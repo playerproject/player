@@ -17,7 +17,8 @@ noinst_PROGRAMS = rsn \
                   pherobot \
 		  audioread \
 		  audiowrite \
-                  waveformread
+                  waveformread \
+		  lookupport
 
 waveformread_SOURCES = waveformread.cc
 audioread_SOURCES = audioread.cc
@@ -36,4 +37,5 @@ forage_SOURCES = forage.cc
 multilogger_SOURCES = multilogger.cc
 stress_SOURCES = stress.cc
 pherobot_SOURCES = pherobot.cc
+lookupport_SOURCES = lookupport.cc
 

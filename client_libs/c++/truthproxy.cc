@@ -52,7 +52,7 @@ void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void TruthProxy::Print()
 {
-  printf("#GROUND TRUTH POSE (%d:%d:%d) - %c\n", m_device_id.robot, 
+  printf("#GROUND TRUTH POSE (%d:%d) - %c\n", 
          m_device_id.code, m_device_id.index, access);
   puts("#(Xm,Ym,THradians)");
   printf("%.3f\t%.3f\t%.3f\n", x,y,a);

@@ -12,7 +12,7 @@ int
 test_gripper(PlayerClient* client, int index)
 {
   unsigned char access;
-  GripperProxy gp(client,index,'c',robot);
+  GripperProxy gp(client,index,'c');
 
   printf("device [gripper] index [%d]\n", index);
 

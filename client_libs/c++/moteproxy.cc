@@ -9,8 +9,8 @@
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
 MoteProxy::MoteProxy(PlayerClient* pc, unsigned short index, 
-                     unsigned char access, unsigned short robot)
-        : ClientProxy(pc, PLAYER_MOTE_CODE, index, access,robot)
+                     unsigned char access)
+        : ClientProxy(pc, PLAYER_MOTE_CODE, index, access)
 {
   memset(&this->m_config, 0, sizeof(this->m_config));
   rx_queue = (player_mote_data_t*)malloc(sizeof(player_mote_data_t)

@@ -12,7 +12,7 @@ int
 test_position(PlayerClient* client, int index)
 {
   unsigned char access;
-  PositionProxy pp(client,index,'c',robot);
+  PositionProxy pp(client,index,'c');
 
   printf("device [position] index [%d]\n", index);
 

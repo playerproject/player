@@ -100,6 +100,10 @@ class CClientData
     void HandleDriverInfoRequest(player_device_driverinfo_t *req,
                                  player_device_driverinfo_t *rep);
 
+    // Handle nameservice requests.
+    void HandleNameserviceRequest(player_device_nameservice_req_t *req,
+                                  player_device_nameservice_req_t *rep);
+
     void UpdateRequested(player_device_req_t req);
     bool CheckWritePermissions(player_device_id_t id);
     bool CheckOpenPermissions(player_device_id_t id);

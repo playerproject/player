@@ -1,1 +1,2 @@
-SUBDIRS = tkviewer playerv playerjoy
+#playerv
+SUBDIRS = tkviewer playerjoy

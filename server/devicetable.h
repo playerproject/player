@@ -32,6 +32,7 @@
 #include <device.h>
 #include <pthread.h>
 #include <configfile.h>
+#include <string.h>
 
 // one element in a linked list
 class CDeviceEntry
@@ -39,11 +40,16 @@ class CDeviceEntry
   public:
     player_device_id_t id;  // id for this device
     unsigned char access;   // allowed access mode: 'r', 'w', or 'a'
-    char name[PLAYER_MAX_DEVICE_STRING_LEN]; // the string name for the driver
+    // the string name for the driver
+    char drivername[PLAYER_MAX_DEVICE_STRING_LEN]; 
+    // the string name for the robot (only used with Stage)
+    char robotname[PLAYER_MAX_DEVICE_STRING_LEN]; 
     CDevice* devicep;  // the device itself
     CDeviceEntry* next;  // next in list
 
-    CDeviceEntry() { devicep = NULL; next = NULL; }
+    CDeviceEntry() { devicep = NULL; next = NULL; 
+                     bzero(drivername, sizeof(drivername));
+                     bzero(robotname, sizeof(robotname));}
     ~CDeviceEntry() 
     { 
       if(devicep) 
@@ -78,7 +84,8 @@ class CDeviceTable
     // access is the access for the device (e.g., 'r' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
-    int AddDevice(player_device_id_t id, char* name, unsigned char access, 
+    int AddDevice(player_device_id_t id, char* drivername, 
+                  char* robotname, unsigned char access, 
                   CDevice* devicep);
 
     // returns the controlling object for the given id 

@@ -75,6 +75,7 @@ typedef struct player_stage_info
 
   player_device_id_t player_id;  // identify this entity to Player
   uint8_t drivername[PLAYER_MAX_DEVICE_STRING_LEN]; // name of simulated driver
+  uint8_t robotname[PLAYER_MAX_DEVICE_STRING_LEN]; // name of robot
   uint32_t len;           // total size of this struct + all the buffers
   uint8_t subscribed;     // the number of Players connected to this device
   uint8_t local;

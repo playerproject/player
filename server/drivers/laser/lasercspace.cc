@@ -155,7 +155,7 @@ int LaserCSpace::Setup()
   // Subscribe to the laser.
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
-  id.robot = this->device_id.robot;
+  id.port = this->device_id.port;
   this->laser_device = deviceTable->GetDevice(id);
   if (!this->laser_device)
   {

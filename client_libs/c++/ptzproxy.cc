@@ -68,7 +68,7 @@ void PtzProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void PtzProxy::Print()
 {
-  printf("#Ptz(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+  printf("#Ptz(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#pan\ttilt\tzoom");
   printf("%d\t%d\t%u\n", pan,tilt,zoom);

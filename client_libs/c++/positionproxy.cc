@@ -368,7 +368,7 @@ void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void PositionProxy::Print()
 {
-  printf("#Position(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+  printf("#Position(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#xpos\typos\ttheta\tspeed\tsidespeed\tturn\tstall");
   printf("%d\t%d\t%u\t%d\t%d\t%d\t%u\n", 

@@ -12,9 +12,6 @@
 
 bool use_stage;
 
-// hack
-int robot;
-
 int main(int argc, const char *argv[])
 {
   const char *host;
@@ -49,15 +46,6 @@ int main(int argc, const char *argv[])
         exit(-1);
       }
       port = atoi(argv[i]);
-    }
-    else if (strcmp(argv[i], "-r") == 0)
-    {
-      if(++i >= argc)
-      {
-        puts("missing robot id");
-        exit(-1);
-      }
-      robot = atoi(argv[i]);
     }
     else if(!strcmp(argv[i],"-stage"))
       use_stage = true;
@@ -105,6 +93,10 @@ int main(int argc, const char *argv[])
     // Sonar device
     if(strcmp(device, "sonar") == 0 || strcmp(device, "all") == 0)
       test_sonar(&client, index);
+    
+    // Name lookup
+    if(strcmp(device, "lookup") == 0 || strcmp(device, "all") == 0)
+      test_lookup(&client, index);
     
     // Laser device
     if(strcmp(device, "laser") == 0 || strcmp(device, "all") == 0)

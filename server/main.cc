@@ -107,6 +107,7 @@ char playerversion[] = VERSION;
 
 bool experimental = false;
 bool debug = false;
+bool autoassign_ports = false;
 
 int global_playerport = PLAYER_PORTNUM; // used to gen. useful output & debug
 
@@ -391,10 +392,11 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 	  
           deviceTable->AddDevice(deviceIO->player_id, 
                                  (char*)(deviceIO->drivername),
+                                 (char*)(deviceIO->robotname),
                                  PLAYER_ALL_MODE, dev);
 	  
           // add this port to our listening list
-          StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
+          StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
         }
         break;
 
@@ -419,12 +421,13 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
                                                         &configFile, section);
               // add it to the instantiated device table
               deviceTable->AddDevice(deviceIO->player_id, 
-                                     PLAYER_LOCALIZE_STRING,
+                                     "regular_mcl",
+                                     (char*)(deviceIO->robotname),
                                      PLAYER_READ_MODE, 
                                      devicep);
 
               // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
 
               // setup the Stage buffers
               devicep->SetupStageBuffers(deviceIO, lockfd, 
@@ -448,12 +451,13 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             
               // add it to the instantiated device table
               deviceTable->AddDevice(deviceIO->player_id, 
-                                     PLAYER_LOCALIZE_STRING,
+                                     "adaptive_mcl",
+                                     (char*)(deviceIO->robotname),
                                      PLAYER_READ_MODE, 
                                      device);
 
               // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
 
               // setup the Stage buffers
               device->SetupStageBuffers(deviceIO, lockfd, 
@@ -487,12 +491,13 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
               int section = configFile.AddEntity(globalparent, "mcom");
               // add it to the instantiated device table
               deviceTable->AddDevice(deviceIO->player_id, "mcom",
+                                     (char*)(deviceIO->robotname),
                                      PLAYER_ALL_MODE, 
                                      (*(entry->initfunc))(PLAYER_MCOM_STRING,
                                                    &configFile, section));
  
               // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
             }
           }
           break;
@@ -525,13 +530,14 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             else
             {
               // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id, PLAYER_COMMS_STRING,
+              deviceTable->AddDevice(deviceIO->player_id, "udpbroadcast",
+                                     (char*)(deviceIO->robotname),
                                      PLAYER_ALL_MODE, 
                                      (*(entry->initfunc))(PLAYER_COMMS_STRING,
                                                           &configFile, section));
  
               // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
             }
           }
           break;
@@ -584,7 +590,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         default:
           printf( "Unknown device type %d for object ID (%d,%d,%d)\n",
                   deviceIO->player_id.code, 
-                  deviceIO->player_id.robot, 
+                  deviceIO->player_id.port, 
                   deviceIO->player_id.code, 
                   deviceIO->player_id.index ); 
           break;
@@ -727,7 +733,7 @@ parse_config_file(char* fname)
     {
       player_device_id_t id;
       id.code = code;
-      id.robot = global_playerport;
+      id.port = global_playerport;
       id.index = index;
 
       if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
@@ -736,7 +742,7 @@ parse_config_file(char* fname)
                       driver, interface);
         exit(-1);
       }
-      deviceTable->AddDevice(id, driver, entry->access, tmpdevice);
+      deviceTable->AddDevice(id, driver, NULL, entry->access, tmpdevice);
 
       // should this device be "always on"?
       if(configFile.ReadInt(i, "alwayson", 0))
@@ -874,6 +880,10 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
+    else if(!strcmp(argv[i], "-a"))
+    {
+      autoassign_ports = true;
+    }
     else if(i == (argc-1))
     {
       // assume that this is a config file
@@ -900,38 +910,91 @@ int main( int argc, char *argv[] )
     stage_clock_t * sclock = CreateStageDevices( stage_io_directory, 
 						 &ports, &num_ufds );
     assert( sclock ); 
-    /*
     //printf( "created %d ports (1: %d 2: %d...)\n",
     //    num_ufds, ports[0], ports[1] );
-
+    
     // allocate storage for poll structures
     assert( ufds = new struct pollfd[num_ufds] );
-    
+
 #ifdef VERBOSE
     printf( "[Port ");
 #endif
 
-    // bind a socket on each port
-    for(int i=0;i<num_ufds;i++)
+    if(!autoassign_ports)
     {
-#ifdef VERBOSE
-      printf( " %d", ports[i] ); fflush( stdout );
-#endif      
-      // setup the socket to listen on
-      if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
-                                              SOCK_STREAM,200)) == -1)
+      // bind a socket on each port
+      for(int i=0;i<num_ufds;i++)
       {
-        fputs("create_and_bind_socket() failed; quitting", stderr);
+#ifdef VERBOSE
+        printf( " %d", ports[i] ); fflush( stdout );
+#endif      
+        // setup the socket to listen on
+        if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
+                                                SOCK_STREAM,200)) == -1)
+        {
+          fputs("create_and_bind_socket() failed; quitting", stderr);
+          exit(-1);
+        }
+
+        ufds[i].events = POLLIN;
+      }
+    }
+    else
+    {
+      // we're supposed to auto-assign ports.  first, we must get the
+      // baseport.  then we'll get whichever other ports we can.
+      int curr_ufd = 0;
+      int curr_port = global_playerport;
+      CDeviceEntry* entry;
+
+      puts("  Auto-assigning ports; Player is listening on the following ports:");
+      printf("    [ ");
+      fflush(stdout);
+      while((curr_port < 65536) && (curr_ufd < num_ufds))
+      {
+        if((ufds[curr_ufd].fd = 
+            create_and_bind_socket(&listener,1,curr_port,
+                                   SOCK_STREAM,200)) == -1)
+        {
+          if(!curr_ufd)
+          {
+            PLAYER_ERROR1("couldn't get base port %d", global_playerport);
+            exit(-1);
+          }
+        }
+        else
+        {
+          printf("%d ", curr_port);
+          fflush(stdout);
+          ufds[curr_ufd].events = POLLIN;
+          // now, go through the device table and change all references to
+          // this port.
+          for(entry = deviceTable->GetFirstEntry();
+              entry;
+              entry = deviceTable->GetNextEntry(entry))
+          {
+            if(entry->id.port == ports[curr_ufd])
+              entry->id.port = curr_port;
+          }
+          // also have to fix the port list
+          ports[curr_ufd] = curr_port;
+          curr_ufd++;
+        }
+        curr_port++;
+      }
+
+      if(curr_port == 65536)
+      {
+        PLAYER_ERROR("couldn't find enough free ports");
         exit(-1);
       }
-	
-      ufds[i].events = POLLIN;
+
+      puts("]");
     }
     
 #ifdef VERBOSE
     puts( "]" );
 #endif
-*/
 
 #else
     PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
@@ -949,8 +1012,8 @@ int main( int argc, char *argv[] )
 		  "a configuration file?");
   }
 
-  //if(!use_stage)
-  //{
+  if(!use_stage)
+  {
     num_ufds = 1;
     if(!(ufds = new struct pollfd[num_ufds]) || !(ports = new int[num_ufds]))
     {
@@ -969,7 +1032,7 @@ int main( int argc, char *argv[] )
 
     ufds[0].events = POLLIN;
     ports[0] = global_playerport;
-  //}
+  }
 
   // create the client manager object.
   clientmanager = new ClientManager(ufds,ports,num_ufds,auth_key);

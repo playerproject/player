@@ -110,10 +110,10 @@ BumperProxy::FillData(player_msghdr_t hdr, const char *buffer)
 void 
 BumperProxy::Print()
 {
-  printf("#Bumper(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code, 
+  printf("#Bumper(%d:%d) - %c\n", m_device_id.code, 
          m_device_id.index, access);
   printf("%d\n", bumper_count);
-  for (int i = min(bumper_count, PLAYER_BUMPER_MAX_SAMPLES); i >= 0; i--)
+  for (int i = min(bumper_count, PLAYER_BUMPER_MAX_SAMPLES) - 1; i >= 0; i--)
     putchar((bumpers[i]) ? '1' : '0');
   puts(" ");
 }
