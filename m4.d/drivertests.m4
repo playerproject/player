@@ -203,20 +203,15 @@ PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
 PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
 
-dnl Where is Stage-1.4?
-AC_ARG_WITH(stage, [  --with-stage=dir       Location of Stage],
-                   STAGE_DIR=$with_stage, STAGE_DIR=$prefix)
+dnl pkg-config is REQUIRED to find the Stage-1.4 C++ library.
+dnl If we find stage, we also need libpnm for loading bitmaps
+if test "$PKG_CONFIG" != "no" ; then
+  PKG_CHECK_MODULES(STAGE1P4, stagecpp >= 1.4, AC_CHECK_LIB(pnm, pnm_init),)
 
-dnl Who needs pnm, and why?
-dnl AC_CHECK_LIB(pnm, pnm_init)
+  PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
+	  [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
+fi
 
-STAGE_HEADER=$STAGE_DIR/stage.h
-STAGE_EXTRA_CPPFLAGS="-I$STAGE_DIR"
-STAGE_EXTRA_LDFLAGS="-L$STAGE_DIR -lstageio -lstageworldfile"
-
-dnl add the Stage-1.4 driver
-PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
-		  [$STAGE_HEADER],[$STAGE_EXTRA_CPPFLAGS],[$STAGE_EXTRA_LDFLAGS])
 dnl Where is Gazebo?
 AC_ARG_WITH(gazebo, [  --with-gazebo=dir       Location of Gazebo],
             GAZEBO_DIR=$with_gazebo,GAZEBO_DIR=$prefix)

@@ -7,4 +7,5 @@ EXTRA_LIBRARIES = libstage.a
 libstage_a_SOURCES = stagedevice.cc stagedevice.h stage.h stagetime.cc \
                      stagetime.h
 
-include_HEADERS = stage.h
+# this messes up the Stage 1,4 installation.
+#include_HEADERS = stage.h

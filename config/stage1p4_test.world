@@ -8,6 +8,8 @@ resolution 0.02
 size [10.0 10.0]
 name "Player driver test"
 
+test 1
+
 # GUI settings
 #
 gui
@@ -27,36 +29,6 @@ gui
   #color "blue"
 #)
 
-
-define stagebot position
-(
- size [0.1 0.1]
- neighbor 1
-)
-
-stagebot( name "sb1" pose [1 1 0] color "red" )
-stagebot( name "sb2" pose [1 2 0] color "green" )
-stagebot( name "sb3" pose [1 3 0] color "blue" )
-
-#entity
-#(
-  #pose [2.5 2.5 0.0]
-  #size [5.0 5.0]
-#  bitmap "test.pnm" 
-  #bitmap "hospital.pnm" 
-#  color "green"
-#)
-
-#define robot entity
-#(	
-#   size [1.0 0.3]		
-#   velocity [0.0 0.0 1.0]
-#
-#  color "darkred"
-#  bitmap "stage.pnm" 
-#) 
-#robot(   name "stage1" pose [4.0 4.5 0.0] )
-
 #entity
 #(
 #  color "purple"
@@ -66,36 +38,47 @@ stagebot( name "sb3" pose [1 3 0] color "blue" )
 #  size [ 0.7 0.4 ]
 #)
 
-# create a robot, setting its start position
-# and equipping it with a laser range scanner
-#
-#position
-#(
-  #size [0.5 0.4]		
-#  name "pioneer"
-  #velocity [0.2 0.0 0.5]
+sonarbot
+(
+  size [0.5 0.5]
 
-# pose [3.0 4.0 0.0]
+   name "sonarbot"
 
-   #transducer_count 1
-   #transducer[0] [-0.1 0.0 180.0 0.03 0.03]
+   transducer_count 8
+   transducer[0] [0.1 0.0   0.0 0.02 0.03]
+   transducer[1] [0.1 0.1  45.0 0.02 0.03]
+   transducer[2] [0.0 0.1  90.0 0.02 0.03]
+   transducer[3] [-0.1 0.1 135.0 0.02 0.03]
+   transducer[4] [-0.1 0.0 180.0 0.02 0.03]
+   transducer[5] [-0.1 -0.1 225.0 0.02 0.03]
+   transducer[6] [0.0 -0.1 270.0 0.02 0.03]
+   transducer[7] [0.1 -0.1 315.0 0.02 0.03]
 
-# laser
-#  ( 
-#   pose [ 0.1 0 0 ]
-#   name "sick" 
-#   size [0.1 0.1] 
-#   color "blue" 
+   pose [ 3 3 0 ]
+)
 
-   #transducer_count 8
-   #transducer[0] [0.1 0.0   0.0 0.02 0.03]
-   #transducer[1] [0.1 0.1  45.0 0.02 0.03]
-   #transducer[2] [0.0 0.1  90.0 0.02 0.03]
-   #transducer[3] [-0.1 0.1 135.0 0.02 0.03]
-   #transducer[4] [-0.1 0.0 180.0 0.02 0.03]
-   #transducer[5] [-0.1 -0.1 225.0 0.02 0.03]
-   #transducer[6] [0.0 -0.1 270.0 0.02 0.03]
-   #transducer[7] [0.1 -0.1 315.0 0.02 0.03]
- # )
-#) 
+define indicatorlight foo
+(
+  nose "no"
+  size [0.02 0.02]
+  light "blink"
+)
 
+define swarmbot bar
+(
+  size [0.1 0.1]
+
+  light "blink"
+	
+  neighbor 1
+
+  #indicatorlight( color "red"    pose [0.03 0 0] ) 
+  #indicatorlight( color "green"  pose [0 0.03 0] ) 
+  #indicatorlight( color "blue"   pose [-0.03 0 0] ) 
+  #indicatorlight( color "yellow" pose [0 -0.03 0] ) 
+)
+
+swarmbot( name "swarm1" pose [4 3 0] )
+swarmbot( name "swarm2" pose [4 3.2 0] )
+swarmbot( name "swarm3" pose [4 3.5 0] )
+swarmbot( name "swarm4" pose [4 3.8 0] )

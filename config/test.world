@@ -31,11 +31,11 @@ gui
 #
 position
 (
- name "pioneer"
+ name "sneezy"
  #velocity [0.2 0.0 0.5]
- bitmap "test.pnm" 
+ #bitmap "test.pnm" 
 
- #pose [1.0 1.0 20]
- laser( name "sick" size [0.1 0.1] color "blue" )
+ pose [1.0 1.0 20]
+ #laser( name "sick" size [0.1 0.1] color "blue" )
 ) 
 

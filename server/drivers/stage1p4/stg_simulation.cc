@@ -18,7 +18,9 @@
  *
  * $Id$
  */
-
+#include "playercommon.h"
+#include "drivertable.h"
+#include "player.h"
 #include "stage1p4.h"
 
 // DRIVER FOR SIMULATION INTERFACE //////////////////////////////////////////////////////
