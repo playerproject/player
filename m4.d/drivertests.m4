@@ -124,17 +124,10 @@ if test "x$enable_highspeedsick" = "xno"; then
   AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[[disable 500Kbps comms with SICK]])
 fi
 
-dnl More gazebo tests can be found in m4.d/gazebotest.m4
-PLAYER_ADD_DRIVER([gazebo],[drivers/gazebo],[yes],[$GAZEBO_HEADER],
-                  [$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
-
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([cmucam2],[drivers/blobfinder/cmucam2],[no],[],[],[])
-
-dnl PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
-PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],
-                  [$GAZEBO_EXTRA_CPPFLAGS],[])
+PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
 PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[yes],[],[],[])
@@ -192,19 +185,6 @@ dnl     AC_MSG_RESULT([***************************************************])
 dnl   fi
 dnl ----------------------------------------------------------------------
 
-dnl REMOVE
-dnl  if test "x$enable_gazebo" = "xyes"; then
-dnl    AC_MSG_RESULT([***************************************************])
-dnl    AC_MSG_RESULT([Found Gazebo. Gazebo camera support])
-dnl    AC_MSG_RESULT([will be included in the CMVision driver])
-dnl    AC_MSG_RESULT([***************************************************])
-dnl    PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_EXTRA_LDFLAGS"
-dnl  else
-dnl    AC_MSG_RESULT([***************************************************])
-dnl    AC_MSG_RESULT([Couldn't find Gazebo. Gazebo camera])
-dnl    AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
-dnl    AC_MSG_RESULT([***************************************************])
-dnl  fi
 fi
 
 PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])

@@ -8,6 +8,3 @@ autoheader
 automake --gnu --add-missing
 autoconf
 ./configure "$@"
-
-# Run rtk3 boostrap recusively
-#cd rtk3 && ./bootstrap

@@ -129,15 +129,13 @@ dnl ************************************************************************
 dnl Start of macros from m4.d
 dnl ************************************************************************
 
-dnl Look for Gazebo
-GAZEBO_FIND
-
 dnl Do the standard driver tests (including gazebo)
 PLAYER_DRIVERTESTS
 
 dnl Do some additional gazebo tests (may omit some gazebo drivers)
+GAZEBO_FIND
 if test "x$enable_gazebo" = "xyes"; then
-   GAZEBO_TESTS
+   GAZEBO_DRIVERTESTS
 fi
 
 dnl ************************************************************************
