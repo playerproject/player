@@ -32,6 +32,7 @@
 #include <device.h>
 #include <lock.h>
 #include <errors.h>
+#include <sys/time.h>
 
 
 CLock::CLock() 
@@ -77,13 +78,16 @@ int CLock::Shutdown( CDevice *obj )
   return(retval);
 }
 
-size_t CLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize ) 
+size_t CLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize,
+                uint64_t* timestamp) 
 {
   int size;
 
   pthread_mutex_lock( &setupDataMutex );
   pthread_mutex_lock( &dataAccessMutex );
   size = obj->GetData(dest, maxsize);
+  if(timestamp)
+    *timestamp = obj->data_timestamp;
   pthread_mutex_unlock( &dataAccessMutex );
   pthread_mutex_unlock( &setupDataMutex );
   return(size);
@@ -91,8 +95,12 @@ size_t CLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize )
 
 void CLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize) 
 {
+  struct timeval curr;
+  gettimeofday(&curr,NULL);
   pthread_mutex_lock( &dataAccessMutex );
   obj->PutData(dest, maxsize);
+  obj->data_timestamp = htonll((uint64_t)((((uint64_t)curr.tv_sec) * 1000000) + 
+                                      (uint64_t)curr.tv_usec));
   pthread_mutex_unlock( &dataAccessMutex );
   if (firstdata) 
   {
