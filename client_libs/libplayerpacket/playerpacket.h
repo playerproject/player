@@ -53,7 +53,31 @@ extern "C" {
   void PositionSetOdomReqUnpack( player_position_set_odom_req_t* req,
 				 double* x, double* y, double* a );
   
+  void FiducialDataPack(  player_fiducial_data_t* data, 
+			  int count, int ids[], double poses[][3], double pose_errors[][3] );
   
+  void FiducialDataUnpack(  player_fiducial_data_t* data, 
+			    int *count, int ids[], double poses[][3], double pose_errors[][3] );
+  
+  void FiducialGeomPack(  player_fiducial_geom_t* geom,
+			  double px, double py, double pth,
+			  double sensor_width, double sensor_height,
+			  double target_width, double target_height );
+  
+  void FiducialGeomUnpack(  player_fiducial_geom_t* geom,
+			    double* px, double* py, double* pth,
+			    double* sensor_width, double* sensor_height,
+			    double* target_width, double* target_height );
+  
+  void FiducialFovPack( player_fiducial_fov_t* fov, int setflag,
+			double min_range, double max_range, 
+			double view_angle );
+
+  
+  void FiducialFovUnpack( player_fiducial_fov_t* fov,
+			  double* min_range, double* max_range, 
+			  double* view_angle );
+
 #ifdef __cplusplus
 }
 #endif
