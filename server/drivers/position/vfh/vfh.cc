@@ -682,7 +682,7 @@ void VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate ) {
     cmd.yawspeed = (int32_t) (this->con_vel[2]);
   }
 
-  if (abs(cmd.yawspeed) > vfh_Algorithm->GetMaxTurnrate())
+  if (abs(cmd.yawspeed) > vfh_Algorithm->GetMaxTurnrate(cmd.xspeed))
     PLAYER_WARN1("fast turn %d", cmd.yawspeed);
 
   cmd.xspeed = htonl(cmd.xspeed);
@@ -920,7 +920,7 @@ void VFH_Class::Main()
       // Turn in place in the appropriate direction, with speed
       // proportional to the angular distance to the goal orientation.
       turnrate = (int)rint(fabs(angdiff/180.0) * 
-                           vfh_Algorithm->GetMaxTurnrate());
+                           vfh_Algorithm->GetMaxTurnrate(speed));
 
       // If we've just gotten to the goal, pick a direction to turn;
       // otherwise, keep turning the way we started (to prevent
@@ -1001,47 +1001,66 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
              sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
-  //double size;
-  double cell_size, safety_dist, free_space_cutoff, obs_cutoff;
-  double weight_desired_dir, weight_current_dir;
-  int window_diameter, sector_angle, max_speed, max_turnrate, min_turnrate;
+  double cell_size;
+  int window_diameter;
+  int sector_angle;
+  double safety_dist_0ms;
+  double safety_dist_1ms; 
+  int max_speed;
+  int max_speed_narrow_opening;
+  int max_speed_wide_opening;
   int max_acceleration;
+  int min_turnrate;
+  int max_turnrate_0ms;
+  int max_turnrate_1ms;
+  double min_turn_radius_safety_factor;
+  double free_space_cutoff_0ms;
+  double obs_cutoff_0ms;
+  double free_space_cutoff_1ms;
+  double obs_cutoff_1ms;
+  double weight_desired_dir;
+  double weight_current_dir;
+
 
   this->speed = 0;
   this->turnrate = 0;
 
-  // AlexB: This all seems to get over-written just below..
-//   this->CELL_WIDTH = 200.0;
-//   this->WINDOW_DIAMETER = 41;
-//   this->SECTOR_ANGLE = 5;
-//   this->ROBOT_RADIUS = 200.0;
-//   this->SAFETY_DIST = 200.0;
-
-//   this->CENTER_X = (int)floor(this->WINDOW_DIAMETER / 2.0);
-//   this->CENTER_Y = this->CENTER_X;
-//   this->HIST_SIZE = (int)rint(360.0 / this->SECTOR_ANGLE);
-
-//   this->MAX_SPEED = 200;
-//   this->MAX_TURNRATE = 40;
-
-//   this->U1 = 5;
-//   this->U2 = 3;
-
-//   this->Desired_Angle = 90;
-//   this->Picked_Angle = 90;
-//   this->Last_Picked_Angle = this->Picked_Angle;
-
-  cell_size = cf->ReadLength(section, "cell_size", 0.1) * 1000.0;
+  cell_size = cf->ReadLength(section, "cell_size", 0.1) * 1e3;
   window_diameter = cf->ReadInt(section, "window_diameter", 61);
   sector_angle = cf->ReadInt(section, "sector_angle", 5);
-  //robot_radius = cf->ReadLength(section, "robot_radius", 0.25) * 1000.0;
-  safety_dist = cf->ReadLength(section, "safety_dist", 0.1) * 1000.0;
-  max_speed = (int) rint(1000 * cf->ReadLength(section, "max_speed", 0.2));
-  max_acceleration = (int) rint(1000 * cf->ReadLength(section, "max_acceleration", 0.2));
-  max_turnrate = (int) rint(RTOD(cf->ReadAngle(section, "max_turnrate", DTOR(40))));
-  min_turnrate = (int) rint(RTOD(cf->ReadAngle(section, "min_turnrate", DTOR(10))));
-  free_space_cutoff = cf->ReadFloat(section, "free_space_cutoff", 2000000.0);
-  obs_cutoff = cf->ReadFloat(section, "obs_cutoff", free_space_cutoff);
+  safety_dist_0ms = cf->ReadLength(section, "safety_dist_0ms", 0.1) * 1e3;
+  safety_dist_1ms = cf->ReadLength(section, "safety_dist_1ms", 
+                                   safety_dist_0ms/1e3) * 1e3;
+  max_speed = (int)rint(1e3 * cf->ReadLength(section, "max_speed", 0.2));
+  max_speed_narrow_opening = 
+          (int)rint(1e3 * cf->ReadLength(section, 
+                                         "max_speed_narrow_opening", 
+                                         max_speed/1e3));
+  max_speed_wide_opening = 
+          (int)rint(1e3 * cf->ReadLength(section, 
+                                         "max_speed_wide_opening", 
+                                         max_speed/1e3));
+  max_acceleration = (int)rint(1e3 * cf->ReadLength(section, "max_acceleration", 0.2));
+  min_turnrate = (int)rint(RTOD(cf->ReadAngle(section, "min_turnrate", DTOR(10))));
+  max_turnrate_0ms = (int) rint(RTOD(cf->ReadAngle(section, "max_turnrate_0ms", DTOR(40))));
+  max_turnrate_1ms = 
+          (int) rint(RTOD(cf->ReadAngle(section, 
+                                        "max_turnrate_1ms", 
+                                        DTOR(max_turnrate_0ms))));
+  min_turn_radius_safety_factor = 
+          cf->ReadFloat(section, "min_turn_radius_safety_factor", 1.0);
+  free_space_cutoff_0ms = cf->ReadFloat(section, 
+                                        "free_space_cutoff_0ms", 
+                                        2000000.0);
+  obs_cutoff_0ms = cf->ReadFloat(section, 
+                                 "obs_cutoff_0ms", 
+                                 free_space_cutoff_0ms);
+  free_space_cutoff_1ms = cf->ReadFloat(section, 
+                                        "free_space_cutoff_1ms", 
+                                        free_space_cutoff_0ms);
+  obs_cutoff_1ms = cf->ReadFloat(section, 
+                                 "obs_cutoff_1ms", 
+                                 free_space_cutoff_1ms);
   weight_desired_dir = cf->ReadFloat(section, "weight_desired_dir", 5.0);
   weight_current_dir = cf->ReadFloat(section, "weight_current_dir", 3.0);
 
@@ -1054,19 +1073,25 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
 
   // Instantiate the classes that handles histograms
   // and chooses directions
-  this->vfh_Algorithm = new VFH_Algorithm( cell_size,
-                                           window_diameter,
-                                           sector_angle,
-                                           safety_dist,
-                                           max_speed,
-                                           max_acceleration,
-                                           min_turnrate,
-                                           max_turnrate,
-                                           free_space_cutoff,
-                                           obs_cutoff,
-                                           weight_desired_dir,
-                                           weight_current_dir );
-  
+  this->vfh_Algorithm = new VFH_Algorithm(cell_size,
+                                          window_diameter,
+                                          sector_angle,
+                                          safety_dist_0ms,
+                                          safety_dist_1ms, 
+                                          max_speed,
+                                          max_speed_narrow_opening,
+                                          max_speed_wide_opening,
+                                          max_acceleration,
+                                          min_turnrate,
+                                          max_turnrate_0ms,
+                                          max_turnrate_1ms,
+                                          min_turn_radius_safety_factor,
+                                          free_space_cutoff_0ms,
+                                          obs_cutoff_0ms,
+                                          free_space_cutoff_1ms,
+                                          obs_cutoff_1ms,
+                                          weight_desired_dir,
+                                          weight_current_dir);
   this->truth = NULL;
   if (cf->ReadDeviceId(&this->truth_id, section, "requires",
                        PLAYER_TRUTH_CODE, -1, NULL) != 0)
