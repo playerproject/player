@@ -1,1 +1,1 @@
-SUBDIRS = isense microstrain
+SUBDIRS = isense microstrain inav

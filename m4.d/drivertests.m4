@@ -245,5 +245,16 @@ fi
 AC_SUBST(LOCALIZATION_LIB)
 AC_SUBST(LOCALIZATION_LIBPATH)
 
+dnl optionally compile the incremental nav driver -- disabled by default
+AC_ARG_WITH(inav,
+[  --with-inav     Compile the inav driver],,with_inav=no)
+if test "x$with_inav" = "xyes"; then
+  AC_DEFINE(INCLUDE_INAV, 1, [[include the INAV driver]])
+  INAV_LIB="libinav.a"
+  INAV_LIBPATH="drivers/position/inav/libinav.a"
+fi
+AC_SUBST(INAV_LIB)
+AC_SUBST(INAV_LIBPATH)
+
 ])
 
