@@ -5,6 +5,16 @@
 // global quit flag
 extern char quit;
 
+#define ROBOT_ALPHA 128
+guint32 robot_colors[] = { GNOME_CANVAS_COLOR_A(255,0,0,ROBOT_ALPHA),
+                           GNOME_CANVAS_COLOR_A(0,255,0,ROBOT_ALPHA),
+                           GNOME_CANVAS_COLOR_A(0,0,255,ROBOT_ALPHA),
+                           GNOME_CANVAS_COLOR_A(255,0,255,ROBOT_ALPHA),
+                           GNOME_CANVAS_COLOR_A(255,255,0,ROBOT_ALPHA),
+                           GNOME_CANVAS_COLOR_A(0,255,255,ROBOT_ALPHA) };
+size_t num_robot_colors = sizeof(robot_colors) / sizeof(robot_colors[0]);
+
+
 /*
  * handle quit events, by setting a flag that will make the main loop exit
  */
@@ -33,14 +43,15 @@ _zoom_callback(GtkAdjustment* adjustment,
  * Handle window resize events.
  */
 static void 
-_resize_window(GtkWidget *widget,
+_resize_window_callback(GtkWidget *widget,
                GtkAllocation* allocation,
                gpointer data)
 {
   gui_data_t* gui_data = (gui_data_t*)data;
 
   gui_data->zoom_adjustment->lower = 
-          allocation->width / (double)(gui_data->mapdev->width);
+          allocation->width / 
+          (gui_data->mapdev->width * gui_data->mapdev->resolution);
   gui_data->zoom_adjustment->upper = 10.0 * gui_data->zoom_adjustment->lower;
   gui_data->zoom_adjustment->step_increment = 
           (gui_data->zoom_adjustment->upper - 
@@ -62,9 +73,208 @@ _resize_window(GtkWidget *widget,
   gtk_adjustment_value_changed(gui_data->zoom_adjustment);
 }
 
+static gboolean
+_robot_button_callback(GnomeCanvasItem *item,
+                       GdkEvent *event,
+                       gpointer data)
+{
+  static int idx;
+  gboolean onrobot=FALSE;
+  double theta;
+  static gboolean dragging=FALSE;
+  static gboolean setting_theta=FALSE;
+  static gboolean setting_goal=FALSE;
+  static GnomeCanvasPoints* points = NULL;
+  static GnomeCanvasItem* setting_theta_line = NULL;
+  pose_t pose;
+  double mean[3];
+  static double cov[3][3] = {{0.5*0.5, 0.0, 0.0},
+                             {0.0, 0.5*0.5, 0.0},
+                             {0.0, 0.0, (M_PI/6.0)*(M_PI/6.0)}};
+
+  gui_data_t* gui_data = (gui_data_t*)data;
+
+  pose.pa = 0.0;
+  pose.px = event->button.x;
+  pose.py = -event->button.y;
+  
+  // lookup (and store) which robot was clicked
+  if(item != (GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas))
+  {
+    for(idx=0;idx<gui_data->num_robots;idx++)
+    {
+      if(item == gui_data->robot_items[idx])
+        break;
+    }
+    assert(idx < gui_data->num_robots);
+    gnome_canvas_item_hide(gui_data->robot_labels[idx]);
+    onrobot=TRUE;
+  }
+
+  switch(event->type)
+  {
+    case GDK_BUTTON_PRESS:
+      switch(event->button.button)
+      {
+        case 3:
+          if(onrobot && !setting_theta)
+          {
+            setting_goal=TRUE;
+            gnome_canvas_item_show(gui_data->robot_goals[idx]);
+          }
+        case 1:
+          if(item == (GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas))
+          {
+            if(setting_theta)
+            {
+              theta = atan2(-points->coords[3] + points->coords[1],
+                            points->coords[2] - points->coords[0]);
+
+              mean[0] = points->coords[0];
+              mean[1] = -points->coords[1];
+              mean[2] = theta;
+
+              if(!setting_goal)
+              {
+
+                printf("setting pose for robot %d to (%.3f, %.3f, %.3f)\n",
+                       idx, mean[0], mean[1], mean[2]);
+
+                if(playerc_localize_set_pose(gui_data->localizes[idx], 
+                                             mean, cov) < 0)
+                {
+                  fprintf(stderr, "error while setting pose on robot %d\n", 
+                          idx);
+                  quit=1;
+                  return(TRUE);
+                }
+              }
+              else
+              {
+                printf("setting goal for robot %d to (%.3f, %.3f, %.3f)\n",
+                       idx, mean[0], mean[1], mean[2]);
+                if(playerc_position_set_cmd_pose(gui_data->positions[idx],
+                                                 mean[0], mean[1], 
+                                                 mean[2], 1) < 0)
+                {
+                  fprintf(stderr, "error while setting goal on robot %d\n", 
+                          idx);
+                  quit=1;
+                  return(TRUE);
+                }
+                gui_data->new_goals[idx] = TRUE;
+                gui_data->positions[idx]->waypoint_count = 0;
+              }
+
+              //move_robot(gui_data->robot_items[idx],pose);
+              gnome_canvas_item_hide(setting_theta_line);
+              setting_theta = FALSE;
+              setting_goal = FALSE;
+            }
+          }
+          else
+          {
+            gnome_canvas_item_grab(item,
+                                   GDK_POINTER_MOTION_MASK | 
+                                   GDK_BUTTON_RELEASE_MASK,
+                                   NULL, event->button.time);
+            dragging = TRUE;
+          }
+          break;
+        default:
+          break;
+      }
+      break;
+    case GDK_MOTION_NOTIFY:
+      if(onrobot)
+        gnome_canvas_item_show(gui_data->robot_labels[idx]);
+      if(dragging)
+      {
+        if(!setting_goal)
+          move_robot(item,pose);
+        else
+          move_robot(gui_data->robot_goals[idx],pose);
+      }
+      else if(setting_theta)
+      {
+        points->coords[2] = pose.px;
+        points->coords[3] = -pose.py;
+        gnome_canvas_item_set(setting_theta_line,
+                              "points",points,
+                              NULL);
+      }
+      break;
+    case GDK_BUTTON_RELEASE:
+      if(dragging)
+      {
+        dragging = FALSE;
+        setting_theta = TRUE;
+
+        if(!points)
+          g_assert((points = gnome_canvas_points_new(2)));
+        points->coords[0] = pose.px;
+        points->coords[1] = -pose.py;
+        points->coords[2] = pose.px;
+        points->coords[3] = -pose.py;
+        if(!setting_theta_line)
+        {
+          g_assert((setting_theta_line = 
+                  gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
+                                        gnome_canvas_line_get_type(),
+                                        "points", points,
+                                        "width_pixels", 1,
+                                        "fill-color-rgba", COLOR_BLACK,
+                                        NULL)));
+        }
+        else
+        {
+          gnome_canvas_item_set(setting_theta_line,
+                                "points",points,
+                                NULL);
+          gnome_canvas_item_show(setting_theta_line);
+        }
+
+        gnome_canvas_item_ungrab(item, event->button.time);
+      }
+      break;
+    default:
+      break;
+  }
+
+  return(TRUE);
+}
+
+void
+canvas_to_meters(gui_data_t* gui_data, double* dx, double* dy, int cx, int cy)
+{
+  gnome_canvas_c2w(gui_data->map_canvas,cx,cy,dx,dy);
+  *dy = -*dy;
+}
+
+void
+item_to_meters(GnomeCanvasItem* item,
+               double* dx, double* dy, 
+               double ix, double iy)
+{
+  *dx=ix;
+  *dy=iy;
+  gnome_canvas_item_i2w(item, dx, dy);
+  *dy = -*dy;
+}
+
+void
+meters_to_canvas(gui_data_t* gui_data, int* cx, int* cy, double dx, double dy)
+{
+  double x,y;
+  x=dx;
+  y=-dy;
+  gnome_canvas_w2c(gui_data->map_canvas,x,y,cx,cy);
+}
+
 void
 init_gui(gui_data_t* gui_data, int argc, char** argv)
 {
+  //double t[6];
   double initial_zoom, max_zoom;
 
   g_type_init();
@@ -108,15 +318,20 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
 
   gnome_canvas_set_center_scroll_region(gui_data->map_canvas, TRUE);
   gnome_canvas_set_scroll_region(gui_data->map_canvas,
-                                 -gui_data->mapdev->width/2.0,
-                                 -gui_data->mapdev->height/2.0,
-                                 gui_data->mapdev->width/2.0,
-                                 gui_data->mapdev->height/2.0);
+                                 -(gui_data->mapdev->width * 
+                                   gui_data->mapdev->resolution)/2.0,
+                                 -(gui_data->mapdev->height *
+                                   gui_data->mapdev->resolution)/2.0,
+                                 (gui_data->mapdev->width *
+                                   gui_data->mapdev->resolution)/2.0,
+                                 (gui_data->mapdev->width *
+                                   gui_data->mapdev->resolution)/2.0);
 
   // the zoom scrollbar
 
   // set canvas zoom to make the map fill the window
-  initial_zoom = DEFAULT_DISPLAY_WIDTH / (double)(gui_data->mapdev->width);
+  initial_zoom = DEFAULT_DISPLAY_WIDTH / 
+          (gui_data->mapdev->width * gui_data->mapdev->resolution);
   max_zoom = 10.0 * initial_zoom;
 
   g_assert((gui_data->zoom_adjustment = 
@@ -152,11 +367,14 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   g_signal_connect(G_OBJECT(gui_data->zoom_adjustment),"value-changed",
                    G_CALLBACK(_zoom_callback),(void*)gui_data);
 
+  gtk_signal_connect(GTK_OBJECT(gnome_canvas_root(gui_data->map_canvas)),
+                     "event",
+                     (GtkSignalFunc)(_robot_button_callback),(void*)gui_data);
 
   gtk_adjustment_set_value(gui_data->zoom_adjustment,initial_zoom);
   gtk_adjustment_value_changed(gui_data->zoom_adjustment);
   g_signal_connect(G_OBJECT(gui_data->main_window),"size-allocate",
-                   G_CALLBACK(_resize_window),(void*)gui_data);
+                   G_CALLBACK(_resize_window_callback),(void*)gui_data);
 }
 
 void
@@ -248,13 +466,134 @@ create_map_image(gui_data_t* gui_data)
                                   gnome_canvas_pixbuf_get_type(),
                                   "width-set", TRUE,
                                   "height-set", TRUE,
-                                  "width", (double)gui_data->mapdev->width,
-                                  "height", (double)gui_data->mapdev->height,
-                                  "x", -gui_data->mapdev->width/2.0,
-                                  "y", -gui_data->mapdev->height/2.0,
+                                  "width", gui_data->mapdev->width *
+                                  gui_data->mapdev->resolution,
+                                  "height", gui_data->mapdev->height *
+                                  gui_data->mapdev->resolution,
+                                  "x", -(gui_data->mapdev->width *
+                                         gui_data->mapdev->resolution)/2.0,
+                                  "y", -(gui_data->mapdev->height *
+                                         gui_data->mapdev->resolution)/2.0,
                                   "pixbuf", pixbuf,
                                   NULL)));
 
   g_object_unref((GObject*)pixbuf);
 }
 
+void
+create_robot(gui_data_t* gui_data, int idx, pose_t pose)
+{
+  GnomeCanvasGroup* robot;
+  GnomeCanvasItem* robot_circle;
+  GnomeCanvasItem* robot_v;
+  GnomeCanvasItem* robot_text;
+  GnomeCanvasItem* robot_goal;
+  GnomeCanvasPoints* points;
+  char robotname[256];
+
+  assert(idx < gui_data->num_robots);
+
+  g_assert((robot = (GnomeCanvasGroup*)
+            gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
+                                  gnome_canvas_group_get_type(),
+                                  "x", 0.0, "y", 0.0,
+                                  NULL)));
+
+  g_assert((robot_circle = 
+            gnome_canvas_item_new(robot,
+                                  gnome_canvas_ellipse_get_type(),
+                                  "x1", -ROBOT_RADIUS,
+                                  "y1", -ROBOT_RADIUS,
+                                  "x2",  ROBOT_RADIUS,
+                                  "y2",  ROBOT_RADIUS,
+                                  "outline_color_rgba", COLOR_BLACK,
+                                  "fill_color_rgba", 
+                                  robot_colors[idx % num_robot_colors],
+                                  "width_pixels", 1,
+                                  NULL)));
+  g_assert((points = gnome_canvas_points_new(3)));
+  points->coords[0] = ROBOT_RADIUS * cos(ROBOT_V_ANGLE);
+  points->coords[1] = ROBOT_RADIUS * sin(ROBOT_V_ANGLE);
+  points->coords[2] = 0.0;
+  points->coords[3] = 0.0;
+  points->coords[4] = ROBOT_RADIUS * cos(ROBOT_V_ANGLE);
+  points->coords[5] = ROBOT_RADIUS * sin(-ROBOT_V_ANGLE);
+
+  g_assert((robot_v = 
+            gnome_canvas_item_new(robot,
+                                  gnome_canvas_line_get_type(),
+                                  "points", points,
+                                  "fill_color_rgba", COLOR_BLACK,
+                                  "width_pixels", 1,
+                                  NULL)));
+
+  // a triangle to mark the goal
+  points->coords[0] = ROBOT_RADIUS * cos(M_PI/2.0);
+  points->coords[1] = ROBOT_RADIUS * sin(M_PI/2.0);
+  points->coords[2] = ROBOT_RADIUS * cos(7*M_PI/6.0);
+  points->coords[3] = ROBOT_RADIUS * sin(7*M_PI/6.0);
+  points->coords[4] = ROBOT_RADIUS * cos(11*M_PI/6.0);
+  points->coords[5] = ROBOT_RADIUS * sin(11*M_PI/6.0);
+
+  g_assert((robot_goal = 
+            gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
+                                  gnome_canvas_polygon_get_type(),
+                                  "points", points,
+                                  "outline_color_rgba", COLOR_BLACK,
+                                  "fill_color_rgba", 
+                                  robot_colors[idx % num_robot_colors],
+                                  "width_pixels", 1,
+                                  NULL)));
+  gnome_canvas_item_hide(robot_goal);
+
+
+  gnome_canvas_points_unref(points);
+
+
+  sprintf(robotname, "%s:%d", 
+          gui_data->hostnames[idx], gui_data->ports[idx]);
+  g_assert((robot_text =
+            gnome_canvas_item_new(robot,
+                                  gnome_canvas_text_get_type(),
+                                  "text", robotname,
+                                  "x", 0.0,
+                                  "y", 0.0,
+                                  "x-offset", 2.0*ROBOT_RADIUS,
+                                  "y-offset", -2.0*ROBOT_RADIUS,
+                                  "fill-color-rgba", COLOR_BLACK,
+                                  NULL)));
+  gnome_canvas_item_hide(robot_text);
+
+  move_robot((GnomeCanvasItem*)robot,pose);
+
+  gui_data->robot_items[idx] = (GnomeCanvasItem*)robot;
+  gui_data->robot_labels[idx] = robot_text;
+  gui_data->robot_goals[idx] = robot_goal;
+
+  gtk_signal_connect(GTK_OBJECT(robot), "event",
+                     (GtkSignalFunc)_robot_button_callback, (void*)gui_data);
+}
+
+void
+move_robot(GnomeCanvasItem* item, pose_t pose)
+{
+  double t[6];
+
+  t[0] = cos(pose.pa);
+  t[1] = -sin(pose.pa);
+  t[2] = sin(pose.pa);
+  t[3] = cos(pose.pa);
+  t[4] = pose.px;
+  t[5] = -pose.py;
+  gnome_canvas_item_affine_absolute(item, t);
+}
+
+void
+draw_waypoints(gui_data_t* gui_data, int robot_idx)
+{
+  int i;
+
+  for(i=0;i<gui_data->positions[i]->waypoint_count;i++)
+  {
+  }
+}

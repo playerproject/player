@@ -9,6 +9,7 @@ playerc_mclient_t*
 init_player(playerc_client_t** clients,
             playerc_map_t** maps,
             playerc_localize_t** localizes,
+            playerc_position_t** positions,
             int num_bots,
             char** hostnames,
             int* ports,
@@ -44,10 +45,14 @@ init_player(playerc_client_t** clients,
     if(playerc_localize_subscribe(localizes[i],PLAYER_READ_MODE) < 0)
     {
       fprintf(stderr, "Failed to subscribe to localize\n");
-      //return(NULL);
+      return(NULL);
     }
-    // hostnames were strdup'd in parse_args()
-    free(hostnames[i]);
+    assert(positions[i] = playerc_position_create(clients[i], 0));
+    if(playerc_position_subscribe(positions[i],PLAYER_ALL_MODE) < 0)
+    {
+      fprintf(stderr, "Failed to subscribe to position\n");
+      return(NULL);
+    }
   }
 
   /* Get the map from the first robot */
