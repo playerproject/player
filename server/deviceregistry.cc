@@ -214,6 +214,10 @@ void GzFactory_Register(DriverTable *table);
 void GzFiducial_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_GAZEBO_GPS
+void GzGps_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_GAZEBO_LASER
 void GzLaser_Register(DriverTable *table);
 #endif
@@ -518,7 +522,11 @@ register_devices()
 #ifdef INCLUDE_GAZEBO_FIDUCIAL
   GzFiducial_Register(driverTable);
 #endif
-  
+
+#ifdef INCLUDE_GAZEBO_GPS
+  GzGps_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_GAZEBO_LASER
   GzLaser_Register(driverTable);
 #endif
