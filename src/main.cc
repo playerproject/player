@@ -411,6 +411,7 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
 	case PLAYER_BROADCAST_CODE:   
 	case PLAYER_TRUTH_CODE:
 	case PLAYER_OCCUPANCY_CODE:
+	case PLAYER_GPS_CODE:
 	   
 	  // Create a StageDevice with this IO base address
 	  dev = new CStageDevice( info );
