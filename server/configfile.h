@@ -176,12 +176,14 @@ class ConfigFile
                                   int index, 
                                   uint32_t value); 
 
+  /// @deprecated
   /// Parse the "devices" option in the given section.  On success,
   /// returns the number of device ids found; on error, returns -1.
   /// @arg ids will point to a malloc()ed list of the parsed ids
   /// (which the caller should free()), in the order they were given.
-  public: int ParseDeviceIds(int section, player_device_id_t** ids);
-  
+  //public: int ParseDeviceIds(int section, player_device_id_t** ids);
+
+  /// @deprecated
   /// Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
   /// num_ids, if there exists an i'th id with the given code, fills in id
   /// appropriately, and returns 0.
@@ -191,13 +193,14 @@ class ConfigFile
   /// UnusedIds() to determine whether the user gave any extra interfaces.
   ///
   /// Returns -1 if no such id can be found.
-  public: int ReadDeviceId(player_device_id_t* id, player_device_id_t* ids,
-                           int num_ids, int code, int i);
+  //public: int ReadDeviceId(player_device_id_t* id, player_device_id_t* ids,
+  //                         int num_ids, int code, int i);
 
+  /// @deprecated
   /// Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
   /// num_ids, tells whether there remain any "unused" ids.  An id is unused
   /// if its code is nonzero.
-  public:  int UnusedIds(int section, player_device_id_t* ids, int num_ids);
+  //public:  int UnusedIds(int section, player_device_id_t* ids, int num_ids);
 
   /// @brief Read a device id.
   ///
