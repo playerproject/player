@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <math.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -113,10 +114,17 @@ SegwayIO::Init()
     }
     
     // start the read/write thread...
-    if (pthread_create(&read_write_thread, NULL, &DummyMain, this)) {
+    if (pthread_create(&read_thread, NULL, &DummyReadLoop, this)) {
       fprintf(stderr, "SEGWAYIO: error creating read/write thread.\n");
       return -1;
     }
+
+    // start the read/write thread...
+    if (pthread_create(&write_thread, NULL, &DummyWriteLoop, this)) {
+      fprintf(stderr, "SEGWAYIO: error creating read/write thread.\n");
+      return -1;
+    }
+
     canioInit = true;
     canioShutdown = false;
   }
@@ -139,13 +147,19 @@ SegwayIO::Shutdown()
 
   // shutdown if started and no one else is using...
   if (!canioShutdown && !usageCount) {
-    pthread_cancel(read_write_thread);
-    
-    if (pthread_join(read_write_thread, &unused)) {
-      perror("SegwayIO: Shutdown:pthread_join()");
+    pthread_cancel(read_thread);
+    pthread_cancel(write_thread);
+
+    if (pthread_join(read_thread, &unused)) {
+      perror("SegwayIO: Shutdown:pthread_join(read)");
       return -1;
     }
-    
+
+    if (pthread_join(write_thread, &unused)) {
+      perror("SegwayIO: Shutdown:pthread_join(write)");
+      return -1;
+    }
+
     // shutdown the CAN
     canio->Shutdown();
 
@@ -161,27 +175,35 @@ SegwayIO::Shutdown()
  * returns: 
  */
 void *
-SegwayIO::DummyMain(void *p)
+SegwayIO::DummyReadLoop(void *p)
 {
-  ((SegwayIO *)p)->ReadWriteLoop();
+  ((SegwayIO *)p)->ReadLoop();
 
+  pthread_exit(NULL);
 }
-/* Performs the main read/write loop using the CAN bus.  We read packets
- * off the bus (on both channels) til empty.  then we write the latest
- * command we have onto the bus.
+
+void *
+SegwayIO::DummyWriteLoop(void *p)
+{
+  ((SegwayIO *)p)->WriteLoop();
+
+  pthread_exit(NULL);
+}
+
+/* performs the read loop.  reads packets from the CAN bus and
+ * creates player data structures
+ * 
  *
  * returns: 
  */
 void 
-SegwayIO::ReadWriteLoop()
+SegwayIO::ReadLoop()
 {
-  // store the last command packet so we can repeat it, even if we haven't gotten
-  // new command from player
-  static can_packet_t last_command; 
   can_packet_t pkt;
   int channel = 0;
   int ret;
   rmp_frame_t data_frame[2];
+  int loopmillis;
 
   data_frame[0].ready = 0;
   data_frame[1].ready = 0;
@@ -192,15 +214,20 @@ SegwayIO::ReadWriteLoop()
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
   while (1) {
 
     gettimeofday(&curr, NULL);
 
-    if ( ((curr.tv_sec - last.tv_sec)*1000 +
-	  (curr.tv_usec - last.tv_usec)/1000) < RMP_READ_WRITE_PERIOD) {
+    loopmillis = ((curr.tv_sec - last.tv_sec)*1000 +
+		  (curr.tv_usec - last.tv_usec)/1000);
+
+    if (loopmillis < RMP_READ_WRITE_PERIOD) {
       continue;
     }
     
+    last = curr;
+
     // look for cancellation requests
     pthread_testcancel();
 
@@ -221,7 +248,7 @@ SegwayIO::ReadWriteLoop()
 	    pthread_mutex_lock(&latestData_mutex);
 	    latestData = data_frame[channel];
 	    pthread_mutex_unlock(&latestData_mutex);
-	  
+	    
 	    data_frame[channel].ready = 0;
 	  }
 	}
@@ -231,50 +258,106 @@ SegwayIO::ReadWriteLoop()
 		ret, channel);
       }
     }
+  }
+}
+
+
+
+void
+SegwayIO::WriteLoop()
+{
+  can_packet_t pkt;
+  rmp_frame_t data_frame[2];
+  int loopmillis;
+
+  data_frame[0].ready = 0;
+  data_frame[1].ready = 0;
+
+  struct timeval curr, last;
+
+  gettimeofday(&last, NULL);
+
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
+  while (1) {
+
+    pthread_testcancel();
+
+    gettimeofday(&curr, NULL);
+
+    loopmillis = ((curr.tv_sec - last.tv_sec)*1000 +
+		  (curr.tv_usec - last.tv_usec)/1000);
+
+
+    if (loopmillis < RMP_READ_WRITE_PERIOD) {
+      continue;
+    }
+
+    last = curr;
 
     // now we want to send the latest command...
 
-    // DO COMMAND STUFF HERE
-    // MAKE A COMMAND PACKET AND WRITE IT
-    while (!command_queue.empty()) {
-      pthread_mutex_lock(&command_queue_mutex);
-      if (!command_queue.empty()) {
-	pkt = command_queue.front();
-	command_queue.pop();
+    // want to write a packet at no more than 100 Hz, so 
+    // just do one each time through the loop
+    if (!command_queue.empty()) {
+      if (pthread_mutex_trylock(&command_queue_mutex) == EBUSY) {
+	// lock is busy, so make a blank pkt to send this time
+	pkt = can_packet_t();
+	pkt.id = RMP_CAN_ID_COMMAND;
+	pkt.PutSlot(2, (uint16_t)RMP_CAN_CMD_NONE);
       } else {
+	if (!command_queue.empty()) {
+	  pkt = command_queue.front();
+	  command_queue.pop();
+	} else {
+	  pkt = can_packet_t();
+	  pkt.id = RMP_CAN_ID_COMMAND;
+	  pkt.PutSlot(2, (uint16_t)RMP_CAN_CMD_NONE);
+	}
+	
 	pthread_mutex_unlock(&command_queue_mutex);
-	continue;
-      }
-
-      pthread_mutex_unlock(&command_queue_mutex);
-      // now we have a new command...  these are just going to be 
-      // "status commands" ie, slots 2 & 3 in the message
-      // the velocities are in trans_command and rot_command
-      
+	// now we have a new command...  these are just going to be 
+	// "status commands" ie, slots 2 & 3 in the message
+	// the velocities are in trans_command and rot_command
+	
       // this way we can send a command and keep the velocity the same
-
-      pthread_mutex_lock(&trans_command_mutex);
-      pkt.PutSlot(0, (uint16_t)trans_command);
-      pthread_mutex_unlock(&trans_command_mutex);
-
-      pthread_mutex_lock(&rot_command_mutex);
-      pkt.PutSlot(1, (uint16_t)rot_command);
-      pthread_mutex_unlock(&rot_command_mutex);
-
-      if (pkt.GetSlot(2) != 0) {
-	printf("SEGWAYIO: STATUS: pkt: %s\n", pkt.toString());
       }
-      if (pkt.GetSlot(0) != 0 ||
-	  pkt.GetSlot(1) != 0) {
-	printf("SEGWAYIO: VELOCITY pkt: %s\n",
-	       pkt.toString());
-      }
-
-      // write it out!
-      canio->WritePacket(pkt);
+    } else {
+      // no status command, so make a blank one
+      pkt = can_packet_t();
+      pkt.id = RMP_CAN_ID_COMMAND;
+      pkt.PutSlot(2, (uint16_t)RMP_CAN_CMD_NONE);
     }
+
+    // now pkt is filled with either a status command
+    // or blank, awaiting velocity commands
+
+    // fill in the latest rot & trans velocities
+    pthread_mutex_lock(&trans_command_mutex);
+    pkt.PutSlot(0, (uint16_t)trans_command);
+    pthread_mutex_unlock(&trans_command_mutex);
+    
+    pthread_mutex_lock(&rot_command_mutex);
+    pkt.PutSlot(1, (uint16_t)rot_command);
+    pthread_mutex_unlock(&rot_command_mutex);
+
+    /*
+    if (pkt.GetSlot(0) != 0 ||
+	pkt.GetSlot(1) != 0 ||
+	pkt.GetSlot(2) != 0) {
+      printf("SEGWAYIO: %d ms WRITE: pkt: %s\n", loopmillis,
+	     pkt.toString());
+    }
+    */
+    //    printf("SEGWAYIO: %d ms WRITE: %s\n", loopmillis, pkt.toString());
+
+    // write it out!
+    canio->WritePacket(pkt);
   }
 }
+
+  
 
 /* Marshals the feedback info from the RMP into a player
  * position data format, in a network ready format too
@@ -297,32 +380,32 @@ SegwayIO::GetData(player_position_data_t *data)
 
   // xpos is fore/aft integrated position?
   // change from counts to mm
-  data->xpos = htonl( (int32_t) rint((double)rmp_data.foreaft / 
+  data->xpos = htonl( (uint32_t) rint((double)rmp_data.foreaft / 
   				     ((double)RMP_COUNT_PER_M/1000.0)) );
 
   
   // ypos is going to be pitch for now...
   // change from counts to milli-degrees
-  data->ypos = htonl( (int32_t) rint(((double)rmp_data.pitch / 
+  data->ypos = htonl( (uint32_t) rint(((double)rmp_data.pitch / 
 				       (double)RMP_COUNT_PER_DEG) * 1000.0));
   
   // yaw is integrated yaw
   // not sure about this one..
   // from counts/rev to degrees.  one rev is 360 degree?
-  data->yaw = htonl((int32_t) rint( ((double)rmp_data.yaw /
+  data->yaw = htonl((uint32_t) rint( ((double)rmp_data.yaw /
 				      (double)RMP_COUNT_PER_REV) * 360.0));
 
   // don't know the conversion yet...
   // change from counts/m/s into mm/s
-  data->xspeed = htonl( (int32_t) rint( ((double)rmp_data.left_dot / 
+  data->xspeed = htonl( (uint32_t) rint( ((double)rmp_data.left_dot / 
 					 (double)RMP_COUNT_PER_M_PER_S)*1000.0 ));
   
-  data->yspeed = htonl( (int32_t) rint( ((double)rmp_data.right_dot / 
+  data->yspeed = htonl( (uint32_t) rint( ((double)rmp_data.right_dot / 
 					 (double)RMP_COUNT_PER_M_PER_S)*1000.0) );
   
   // from counts/deg/sec into mill-deg/sec
-  data->yawspeed = htonl( (int32_t) rint(((double)rmp_data.yaw_dot / 
-					 (double)RMP_COUNT_PER_DEG_PER_S))*1000.0 );
+  data->yawspeed = htonl( (uint32_t) (rint(((double)rmp_data.yaw_dot / 
+					 (double)RMP_COUNT_PER_DEG_PER_S))*1000.0) );
 
 }
   
@@ -405,8 +488,6 @@ SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
 
   // now we have to add an empty packet onto the command queue, so that
   // our read/write loop will send this new velocity
-  pkt.id = RMP_CAN_ID_COMMAND;
-  pkt.PutSlot(2, (uint16_t)RMP_CAN_CMD_NONE);
 
   if (rot_command != last_rot ||
       trans_command != last_trans) {
