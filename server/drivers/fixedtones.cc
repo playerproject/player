@@ -233,7 +233,7 @@ FixedTones::Main()
   {
     pthread_testcancel();
     GetCommand(command, sizeof(command));
-    PutCommand(zero, sizeof(zero));
+    PutCommand(this,zero, sizeof(zero));
     
     if( command[0]!=255 ) {
       cnt = 0;

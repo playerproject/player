@@ -61,7 +61,7 @@ class LaserReflector : public CDevice
   public: virtual int Shutdown();
 
   // Data configuration.
-  public: virtual size_t GetData(unsigned char *, size_t maxsize,
+  public: virtual size_t GetData(void*,unsigned char *, size_t maxsize,
                                  uint32_t* timestamp_sec,
                                  uint32_t* timestamp_usec);
   public: virtual int PutConfig(player_device_id_t* device, void *client, 
@@ -192,7 +192,7 @@ int LaserReflector::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by server thread).
-size_t LaserReflector::GetData(unsigned char *dest, size_t maxsize,
+size_t LaserReflector::GetData(void* client,unsigned char *dest, size_t maxsize,
                                uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   int i;
@@ -200,7 +200,7 @@ size_t LaserReflector::GetData(unsigned char *dest, size_t maxsize,
   uint32_t laser_time_sec, laser_time_usec;
   
   // Get the laser data.
-  laser_size = this->laser->GetData((unsigned char*) &this->ldata, sizeof(this->ldata),
+  laser_size = this->laser->GetData(this,(unsigned char*) &this->ldata, sizeof(this->ldata),
                                     &laser_time_sec, &laser_time_usec);
   assert(laser_size <= sizeof(this->ldata));
   

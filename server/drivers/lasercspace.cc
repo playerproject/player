@@ -57,8 +57,9 @@ class LaserCSpace : public CDevice
   public: virtual int Shutdown();
 
   // Client interface (this device has no thread).
-  public: virtual size_t GetData(unsigned char *dest, size_t maxsize,
-                                 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+  public: virtual size_t GetData(void* client,unsigned char *dest, 
+                                 size_t maxsize, uint32_t* timestamp_sec, 
+                                 uint32_t* timestamp_usec);
 
   // Client interface (this device has no thread).
   public: virtual int PutConfig(player_device_id_t* device, void *client, 
@@ -193,7 +194,7 @@ int LaserCSpace::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by client thread)
-size_t LaserCSpace::GetData(unsigned char *dest, size_t maxsize,
+size_t LaserCSpace::GetData(void* client,unsigned char *dest, size_t maxsize,
                             uint32_t* timesec, uint32_t* timeusec)
 {
   // Get the current laser data.

@@ -476,7 +476,8 @@ REB::Main()
         position_cmd.xspeed = 0;
         position_cmd.yawspeed = 0;
 	position_cmd.yaw = 0;
-        pos->PutCommand((unsigned char*)(&position_cmd), 
+        // TODO: who should really be the client here?
+        pos->PutCommand(this,(unsigned char*)(&position_cmd), 
 			sizeof(position_cmd));
       }
       

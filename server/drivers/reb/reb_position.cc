@@ -42,11 +42,11 @@ public:
     REB(interface, cf, section) {}
   ~REBPosition();
   
-  virtual size_t GetData(unsigned char *, size_t maxsize,
+  virtual size_t GetData(void*,unsigned char *, size_t maxsize,
 			 uint32_t *timestamp_sec, 
 			 uint32_t *timestamp_usec);
 
-  void PutCommand(unsigned char *, size_t maxsize);
+  void PutCommand(void*,unsigned char *, size_t maxsize);
 };
 
 CDevice * REBPosition_Init(char *interface, ConfigFile *cf, int section);
@@ -95,7 +95,7 @@ REBPosition::~REBPosition()
  * returns: size of data copied
  */
 size_t
-REBPosition::GetData(unsigned char *dest, size_t maxsize,
+REBPosition::GetData(void* client,unsigned char *dest, size_t maxsize,
 			    uint32_t *timestamp_sec, uint32_t *timestamp_usec)
 {
   Lock();
@@ -115,7 +115,7 @@ REBPosition::GetData(unsigned char *dest, size_t maxsize,
  * returns:
  */
 void
-REBPosition::PutCommand(unsigned char *src, size_t size)
+REBPosition::PutCommand(void* client,unsigned char *src, size_t size)
 {
   if (size != sizeof(player_position_cmd_t) ) {
     fprintf(stderr, "REBPosition: PutCommand(): command wrong size. ignoring (%d)/%d\n", size,

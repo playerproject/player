@@ -40,7 +40,7 @@ public:
   REBPower(char *interface, ConfigFile *cf, int section) : 
     REB(interface, cf, section) {}
   
-  size_t GetData(unsigned char *dest, size_t maxsize,
+  size_t GetData(void*,unsigned char *dest, size_t maxsize,
 		 uint32_t *ts_sec, uint32_t *ts_usec);
 };
 
@@ -72,7 +72,7 @@ REBPower_Register(DriverTable *table)
 }
 
 size_t
-REBPower::GetData(unsigned char *dest, size_t maxsize,
+REBPower::GetData(void* client,unsigned char *dest, size_t maxsize,
 			uint32_t *ts_sec, uint32_t *ts_usec)
 {
   Lock();

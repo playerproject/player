@@ -425,7 +425,7 @@ int LaserVisualBarcode::UpdateLaser()
   double time;
   
   // Get the laser data.
-  size = this->laser->GetData((unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->laser->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
   time = (double) timesec + ((double) timeusec) * 1e-6;
   
   // Dont do anything if this is old data.
@@ -659,7 +659,7 @@ int LaserVisualBarcode::UpdatePtz()
   double time;
   
   // Get the ptz data.
-  size = this->ptz->GetData((unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->ptz->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
   time = (double) timesec + ((double) timeusec) * 1e-6;
   
   // Dont do anything if this is old data.
@@ -778,7 +778,7 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
   cmd.pan = htons(((int16_t) (pan * 180 / M_PI)));
   cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
   cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
-  this->ptz->PutCommand((unsigned char*) &cmd, sizeof(cmd));
+  this->ptz->PutCommand(this,(unsigned char*) &cmd, sizeof(cmd));
 
   // Compute the dimensions of the image at the range of the target fiducial.
   this->zoomwidth = 2 * r * tan(data->zoom * M_PI / 180 / 2);
@@ -801,7 +801,7 @@ int LaserVisualBarcode::UpdateBlobfinder()
   double time;
   
   // Get the blobfinder data.
-  size = this->blobfinder->GetData((unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->blobfinder->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
   time = (double) timesec + ((double) timeusec) * 1e-6;
   
   // Dont do anything if this is old data.

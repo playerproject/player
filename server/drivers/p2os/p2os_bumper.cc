@@ -32,7 +32,7 @@ class P2OSBumper: public P2OS
 
    P2OSBumper(char* interface, ConfigFile* cf, int section) : 
            P2OS(interface, cf, section){}
-   size_t GetData( unsigned char *, size_t maxsize, 
+   size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
@@ -55,7 +55,7 @@ P2OSBumper_Register(DriverTable* table)
   table->AddDriver("p2os_bumper", PLAYER_READ_MODE, P2OSBumper_Init);
 }
 
-size_t P2OSBumper::GetData(unsigned char *dest, size_t maxsize,
+size_t P2OSBumper::GetData(void* client,unsigned char *dest, size_t maxsize,
                             uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   Lock();

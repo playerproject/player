@@ -1,21 +1,14 @@
 $Id$
 
-TOMORROW:
---------
-- Generalize gripper control to allow for any gripper, and modify command
-    and data specifications to be more natural
-
-- test all configurable devices (esp. P2OS) with new request/reply method
-
 NOW:
 ----
-- add some kind of config file to Player.   need to specify
-    mappings from devices to ports and things like that.  still take
-    command-line args, though.
+- add client pointers to all device interface calls
 
-- what to do when a client disconnects? should 'zero' all relevant
-    command buffers for safety.  if other clients want to overwrite, they
-    can.
+- add CDevice method to ask devices how many data packets are available for
+  a particular client.
+
+- Generalize gripper control to allow for any gripper, and modify command
+    and data specifications to be more natural
 
 LATER:
 ------
@@ -45,6 +38,12 @@ LATENT:
 
 DONE:
 ------
++ add some kind of config file to Player.   need to specify
+    mappings from devices to ports and things like that.  still take
+    command-line args, though.
+
++ test all configurable devices (esp. P2OS) with new request/reply method
+
 + Add context-sensitive support for thread creation
 
 + Create another device-table (or augment the current one), so as to remove

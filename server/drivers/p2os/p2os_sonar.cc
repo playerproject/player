@@ -35,7 +35,7 @@ class P2OSSonar: public P2OS
    P2OSSonar(char* interface, ConfigFile* cf, int section) :
            P2OS(interface, cf, section){}
    
-   virtual size_t GetData( unsigned char *, size_t maxsize,
+   virtual size_t GetData(void*, unsigned char *, size_t maxsize,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
@@ -58,7 +58,7 @@ P2OSSonar_Register(DriverTable* table)
   table->AddDriver("p2os_sonar", PLAYER_READ_MODE, P2OSSonar_Init);
 }
 
-size_t P2OSSonar::GetData(unsigned char *dest, size_t maxsize,
+size_t P2OSSonar::GetData(void* client,unsigned char *dest, size_t maxsize,
                              uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   Lock();
