@@ -230,8 +230,8 @@ SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
   read_pfd.events = POLLIN;
 
   // TODO: check field of view values.
-  this->minfov = (int) RTOD(cf->ReadTupleAngle(section, "fov", 0, 3));
-  this->maxfov = (int) RTOD(cf->ReadTupleAngle(section, "fov", 1, 30));
+  this->minfov = (int) RTOD(cf->ReadTupleAngle(section, "fov", 0, DTOR(3)));
+  this->maxfov = (int) RTOD(cf->ReadTupleAngle(section, "fov", 1, DTOR(30)));
 
   movement_mode = (int) cf->ReadInt(section, "movement", 0);
 
