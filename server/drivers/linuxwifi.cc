@@ -163,7 +163,7 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
   fscanf(this->info_fp, "  eth%d: %d %lf %lf %lf", &eth, &status,
 	 &link, &level, &noise);
 
-  printf("LinuxWiFi: %lf %lf %lf\n", link,level,noise);
+  //printf("LinuxWiFi: %lf %lf %lf\n", link,level,noise);
   
   wlink = (unsigned short)link;
   wlevel = (unsigned short) level;
