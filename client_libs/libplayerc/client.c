@@ -105,6 +105,9 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->qsize = sizeof(client->qitems) / sizeof(client->qitems[0]);
 
   client->datatime = 0;
+
+  /* this is the server's default */
+  client->mode = PLAYER_DATAMODE_PUSH_NEW;
   
   return client;
 }
@@ -195,6 +198,9 @@ int playerc_client_datamode(playerc_client_t *client, int mode)
 
   if (playerc_client_request(client, NULL, &req, sizeof(req), NULL, 0) < 0)
     return -1;
+
+  /* cache the change */
+  client->mode = mode;
   
   return 0;
 }
@@ -239,6 +245,16 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
   return count;
 }
 
+// Request a round of data; only valid when in a request/reply 
+// (aka PULL) mode
+int
+playerc_client_requestdata(playerc_client_t* client)
+{
+  player_device_data_req_t req;
+
+  req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
+  return(playerc_client_request(client, NULL, &req, sizeof(req), NULL, 0));
+}
 
 // Read and process a packet (blocking)
 void *playerc_client_read(playerc_client_t *client)
@@ -251,6 +267,15 @@ void *playerc_client_read(playerc_client_t *client)
   if (playerc_client_pop(client, &header, client->data, &len) < 0)
   {
     // If there is no queued data, read a packet (blocking).
+
+    // If we're in a PULL mode, first request a round of data.
+    if((client->mode == PLAYER_DATAMODE_PULL_NEW) ||
+       (client->mode == PLAYER_DATAMODE_PULL_ALL))
+    {
+       if(playerc_client_requestdata(client) < 0)
+         return NULL;
+    }
+
     len = PLAYER_MAX_MESSAGE_SIZE;
     if (playerc_client_readpacket(client, &header, client->data, &len) < 0)
       return NULL;
