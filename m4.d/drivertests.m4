@@ -154,7 +154,8 @@ else
 fi
 AC_SUBST(LASERFIDUCIAL_LIBS)
 
-PLAYER_ADD_DRIVER([mcl],[drivers/localization/mcl],[no],)
+dnl Deprecated
+dnl PLAYER_ADD_DRIVER([mcl],[drivers/localization/mcl],[no],)
 
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
