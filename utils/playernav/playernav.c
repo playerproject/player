@@ -30,11 +30,6 @@ main(int argc, char** argv)
   playerc_map_t* maps[MAX_NUM_ROBOTS];
   playerc_localize_t* localizes[MAX_NUM_ROBOTS];
 
-  int i;
-  double dx, dy, da;
-  GnomeCanvasItem *item;
-  GnomeCanvasPoints *points;
-
   gui_data_t gui_data;
 
   if(parse_args(argc-1, argv+1, &num_bots, hostnames, ports) < 0)
@@ -55,27 +50,6 @@ main(int argc, char** argv)
   init_gui(&gui_data, argc, argv);
 
   create_map_image(&gui_data);
-
-
-  points = gnome_canvas_points_new(4);
-  for (i = 0; i < 4; i++)
-  {
-    da = i * M_PI / 2 + M_PI / 4;
-    dx = cos(da) * sqrt(2) * 10.0 / 2;
-    dy = sin(da) * sqrt(2) * 10.0 / 2;
-    points->coords[2 * i + 0] = 0.0 + dx * cos(0.0) - dy * sin(0.0);
-    points->coords[2 * i + 1] = 0.0 + dx * sin(0.0) + dy * cos(0.0);
-  }
-  item = gnome_canvas_item_new(gnome_canvas_root(gui_data.map_canvas),
-                               gnome_canvas_polygon_get_type(),
-                               "points", points,
-                               "outline_color_rgba",
-                               GNOME_CANVAS_COLOR_A(255,0,0,255),
-                               "fill_color_rgba", 
-                               GNOME_CANVAS_COLOR_A(0,255,0,127),
-                               "width_pixels", 1,
-                               NULL);
-  gnome_canvas_points_unref(points);
 
   gtk_widget_show((GtkWidget*)(gui_data.main_window));
 
