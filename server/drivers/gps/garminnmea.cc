@@ -60,7 +60,7 @@
 // out of the geko 201
 #define NMEA_GPRMB "GPRMB"
 #define NMEA_GPRMC "GPRMC"
-#define NMEA_GPGGA "GGA"
+#define NMEA_GPGGA "GPGGA"
 #define NMEA_GPGSA "GPGSA"
 #define NMEA_GPGSV "GPGSV"
 #define NMEA_GPGLL "GPGLL"
@@ -306,8 +306,8 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
 
 
   // copy in all but the carriage return and line feed
-  strncpy(buf,nmea_buf,sentlen-2);
-  buf[sentlen-2] = '\0';
+  strncpy(buf+1,nmea_buf,sentlen-1);
+  buf[sentlen-1] = '\0';
 
   // verify the checksum, if present.  two hex digits are the XOR of all the 
   // characters between the $ and *.
@@ -325,6 +325,11 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
     {
       PLAYER_WARN("checksum mismatch; discarding sentence");
       buf=NULL;
+    }
+    else
+    {
+      // strip off checksum
+      ptr='\0';
     }
   }
 
@@ -390,14 +395,20 @@ GarminNMEA::ParseSentence(const char* buf)
   if(!buf)
     return(0);
 
+  // copy in the sentence header, for checking
+  strncpy(tmp,buf,5);
+  tmp[5]='\0';
+
   // the GGA msg has the position data that we want
-  if((ptr = strstr(ptr, NMEA_GPGGA)))
+  if(!strcmp(tmp,NMEA_GPGGA))
   {
     printf("got GGA (%s)\n", buf);
 
     if(!(ptr = GetNextField(field, sizeof(field), ptr)))
       return(-1);
-    // first field is time. skip it
+    // first field is time of day.
+    // TODO: convert this to seconds since the epoch (how?)
+    //       and fill it in.
 
     if(!(ptr = GetNextField(field, sizeof(field), ptr)))
       return(-1);
