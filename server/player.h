@@ -489,124 +489,190 @@ typedef struct player_gripper_cmd
  ** end section
  *************************************************************************/
 
-
-
 /*************************************************************************
- * begin section position
+ ** begin section position
  *************************************************************************/
 
-/* Position device command buffer */
-typedef struct
-{
-  int32_t xpos, ypos;
-  //int32_t zpos;
-  int32_t yaw; 
-  //int32_t pitch, roll;
-  int32_t xspeed, yspeed; 
-  //int32_t zspeed;
-  int32_t yawspeed;
-  //int32_t pitchspeed, rollspeed;
-} __attribute__ ((packed)) player_position_cmd_t;
+/** [Synopsis] The {\tt position} interface is used to control a planar 
+ mobile robot base. */
 
-/* Position device data buffer */
-typedef struct 
-{
-  int32_t xpos, ypos;
-  //int32_t zpos;
-  int32_t yaw; 
-  //int32_t pitch, roll;
-  int32_t xspeed, yspeed; 
-  //int32_t zspeed;
-  int32_t yawspeed;
-  //int32_t pitchspeed, rollspeed;
-  uint8_t stall;
-} __attribute__ ((packed)) player_position_data_t;
-
-/* the various configuration subtypes */
+/** [Constants] */
+/** the various configuration subtypes */
 #define PLAYER_POSITION_GET_GEOM_REQ          ((uint8_t)1)
 #define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
 #define PLAYER_POSITION_VELOCITY_MODE_REQ     ((uint8_t)3)
 #define PLAYER_POSITION_RESET_ODOM_REQ        ((uint8_t)4)
-
 #define PLAYER_POSITION_POSITION_MODE_REQ     ((uint8_t)5)
 #define PLAYER_POSITION_SPEED_PID_REQ         ((uint8_t)6)
 #define PLAYER_POSITION_POSITION_PID_REQ      ((uint8_t)7)
 #define PLAYER_POSITION_SPEED_PROF_REQ        ((uint8_t)8)
 #define PLAYER_POSITION_SET_ODOM_REQ          ((uint8_t)9)
 
-/* Packet for getting the position geometry. */
-typedef struct
+/** [Data] */
+/**
+The {\tt position} interface returns data regarding the odometric pose and
+velocity of the robot, as well as motor stall information; the format is: */
+typedef struct player_position_data
 {
-  /* Packet subtype.  Must be PLAYER_POSITION_GET_GEOM_REQ. */
+  /** X and Y position, in mm */
+  int32_t xpos, ypos;
+  /** Yaw, in degrees */
+  int32_t yaw; 
+  /** X and Y translational velocities, in mm/sec */
+  int32_t xspeed, yspeed; 
+  /** Angular velocity, in degrees/sec */
+  int32_t yawspeed;
+  /** Are the motors stalled? */
+  uint8_t stall;
+} __attribute__ ((packed)) player_position_data_t;
+
+/** [Commands] */
+/**
+The {\tt position} interface accepts new positions and/or velocities
+for the robot's motors (drivers may support position control, speed control,
+or both); the format is */
+typedef struct player_position_cmd
+{
+  /** X and Y position, in mm */
+  int32_t xpos, ypos;
+  /** Yaw, in degrees */
+  int32_t yaw; 
+  /** X and Y translational velocities, in mm/sec */
+  int32_t xspeed, yspeed; 
+  /** Angular velocity, in degrees/sec */
+  int32_t yawspeed;
+} __attribute__ ((packed)) player_position_cmd_t;
+
+/** [Configuration: Query geometry] */
+
+/** To request robot geometry, set the subtype to PLAYER_POSITION_GET_GEOM_REQ
+    and leave the other fields empty.  The server will reply with the 
+    pose and size fields filled in. */
+typedef struct player_position_geom
+{
+  /** Packet subtype.  Must be PLAYER_POSITION_GET_GEOM_REQ. */
   uint8_t subtype;
 
-  /* Pose of the robot base, in the robot cs (mm, mm, degrees). */
+  /** Pose of the robot base, in the robot cs (mm, mm, degrees). */
   uint16_t pose[3];
 
-  /* Dimensions of the base (mm, mm). */
+  /** Dimensions of the base (mm, mm). */
   uint16_t size[2];
   
 } __attribute__ ((packed)) player_position_geom_t;
 
-typedef struct
-{
-  uint8_t request; // must be PLAYER_POSITION_MOTOR_POWER_REQ
-  uint8_t value;  // 0 or 1
+/** [Configuration: Motor power] */
+/**
+On some robots, the motor power can be turned on and off from software.
+To do so, send a request with the format given below, and with the
+appropriate {\tt state} (zero for motors off and non-zero for motors on).
+Be VERY careful with this command!  You are very likely to start the robot 
+running across the room at high speed with the battery charger still attached.
+*/
+typedef struct player_position_power_config
+{ 
+  /** subtype; must be PLAYER_POSITION_MOTOR_POWER_REQ */
+  uint8_t request;
+  /** 0 for off, 1 for on */
+  uint8_t value; 
 } __attribute__ ((packed)) player_position_power_config_t;
 
-typedef struct
+/** [Constants: Change velocity control] */
+/**
+Some robots offer different velocity control modes.
+It can be changed by sending a request with the format given below,
+including the appropriate mode.  No matter which mode is used, the external
+client interface to the {\tt position} device remains the same. */
+typedef struct player_position_velocitymode_config
 {
-  uint8_t request; // must be PLAYER_POSITION_VELOCITY_MODE_REQ
-  uint8_t value;  // 0=direct wheel vel control, 1=separate trans and rot
+  /** subtype; must be PLAYER_POSITION_VELOCITY_MODE_REQ */
+  uint8_t request; 
+  /** driver-specific */
+  uint8_t value; 
 } __attribute__ ((packed)) player_position_velocitymode_config_t;
 
-typedef struct
+/** The {\tt p2os_position} driver offers two modes of velocity control: 
+ separate translational and rotational control and direct wheel control.  When
+in the separate mode, the robot's microcontroller internally computes left
+and right wheel velocities based on the currently commanded translational
+and rotational velocities and then attenuates these values to match a nice
+predefined acceleration profile.  When in the direct mode, the microcontroller
+simply passes on the current left and right wheel velocities.  Essentially,
+the separate mode offers smoother but slower (lower acceleration) control,
+and the direct mode offers faster but jerkier (higher acceleration) control.
+Player's default is to use the direct mode.  Set {\tt mode} to zero for
+direct control and non-zero for separate control.
+
+For the {\tt reb_position} driver, 0 is direct velocity control, 1 is for 
+      velocity-based heading PD controller.
+*/
+
+/** [Configuration: Reset odometry] */
+/** To reset the robot's odometry to $(x,y,\theta) = (0,0,0)$, use the
+ following request: */
+typedef struct player_position_resetodom_config
 {
-  uint8_t request; // must be PLAYER_POSITION_RESET_ODOM_REQ
+  /** subtype; must be PLAYER_POSITION_RESET_ODOM_REQ */
+  uint8_t request; 
 } __attribute__ ((packed)) player_position_resetodom_config_t;
 
-typedef struct 
+/** [Configuration: Change position control] */
+/** */
+typedef struct player_position_position_mode_req
 {
-  uint8_t subtype; // must be PLAYER_POSITION_POSITION_MODE_REQ
-  uint8_t state; // 0 for velocity mode, 1 for position mode
+  /** subtype;  must be PLAYER_POSITION_POSITION_MODE_REQ */
+  uint8_t subtype; 
+  /** 0 for velocity mode, 1 for position mode */
+  uint8_t state; 
 } __attribute__ ((packed)) player_position_position_mode_req_t;
 
-
-typedef struct
+/** [Configuration: Set odometry] */
+/** To set the robot's odometry to a particular state, use this request: */
+typedef struct player_position_set_odom_req
 {
-  uint8_t subtype; // must be PLAYER_SET_ODOM_REQ
-  int32_t x;
-  int32_t y;
+  /** subtype; must be PLAYER_SET_ODOM_REQ */
+  uint8_t subtype; 
+  /** X and Y (in mm?) */
+  int32_t x, y;
+  /** Heading (in degrees) */
   uint16_t theta;
 }__attribute__ ((packed)) player_position_set_odom_req_t;
 
-typedef struct 
+/** [Configuration: Set velocity PID parameters] */
+/** */
+typedef struct player_position_speed_pid_req
 {
-  uint8_t subtype; // must be PLAYER_POSITION_SPEED_PID_REQ
-  int32_t kp;
-  int32_t ki;
-  int32_t kd;
+  /** subtype; must be PLAYER_POSITION_SPEED_PID_REQ */
+  uint8_t subtype;
+  /** PID parameters */
+  int32_t kp, ki, kd;
 } __attribute__ ((packed)) player_position_speed_pid_req_t;
 
-typedef struct 
+/** [Configuration: Set position PID parameters] */
+/** */
+typedef struct player_position_position_pid_req
 {
-  uint8_t subtype; // must be PLAYER_POSITION_POSITION_PID_REQ
-  int32_t kp;
-  int32_t ki;
-  int32_t kd;
+  /** subtype; must be PLAYER_POSITION_POSITION_PID_REQ */
+  uint8_t subtype; 
+  /** PID parameters */
+  int32_t kp, ki, kd;
 } __attribute__ ((packed)) player_position_position_pid_req_t;
 
-typedef struct 
+/** [Configuration: Set speed profile parameters] */
+/** */
+typedef struct player_position_speed_prof_req
 {
-  uint8_t subtype; // must be PLAYER_POSITION_SPEED_PROF_REQ
-  int16_t speed; //max speed
-  int16_t acc; //max acceleration
+  /** subtype; must be PLAYER_POSITION_SPEED_PROF_REQ */
+  uint8_t subtype; 
+  /** max speed */
+  int16_t speed;
+  /** max acceleration */
+  int16_t acc;
 } __attribute__ ((packed)) player_position_speed_prof_req_t;
 
 /*************************************************************************
- * end section
+ ** end section
  *************************************************************************/
-
 
 /*************************************************************************/
 /*
@@ -1314,55 +1380,6 @@ typedef struct
   uint8_t   request;
   uint8_t   value;
 } __attribute__ ((packed)) player_rwi_config_t;
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * The p2os_sonar driver
- */
-
-/* the various configuration commands 
- * NOTE: these must not be the same as any other P2OS device! */
-#define PLAYER_P2OS_SONAR_POWER_REQ      ((uint8_t)2)
-
-/* Packet for configuring the Pioneer sonar. */
-typedef struct
-{
-  /* Packet subtype.  Must be PLAYER_P2OS_SONAR_POWER_REQ. */
-  uint8_t subtype;
-
-  /* Turn sonars on or off. */
-  uint8_t arg;
-} __attribute__ ((packed)) player_p2os_sonar_config_t;
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * The p2os_position driver
- */
-#define PLAYER_P2OS_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
-#define PLAYER_P2OS_POSITION_VELOCITY_CONTROL_REQ  ((uint8_t)3)
-#define PLAYER_P2OS_POSITION_RESET_ODOM_REQ        ((uint8_t)4)
-
-// 
-typedef struct
-{
-  uint8_t request; // one of the above request types
-  uint8_t value;  // value for the request (usually 0 or 1)
-} __attribute__ ((packed)) player_p2os_position_config_t;
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * The acts driver
- */
-
-#define ACTS_NUM_CHANNELS 32
-#define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  
-#define ACTS_HEADER_SIZE_1_2 4*ACTS_NUM_CHANNELS  
-#define ACTS_BLOB_SIZE_1_0 10
-#define ACTS_BLOB_SIZE_1_2 16
-#define ACTS_MAX_BLOBS_PER_CHANNEL 10
 /*************************************************************************/
 
 /*************************************************************************/
