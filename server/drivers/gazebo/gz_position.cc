@@ -73,8 +73,11 @@ class GzPosition : public CDevice
   public: virtual int PutConfig(player_device_id_t* device, void* client,
                                 void* req, size_t reqlen);
 
-  // Handle geometry requests.
+  // Handle geometry requests
   private: void HandleGetGeom(void *client, void *req, int reqlen);
+
+  // Handle motor configuration
+  private: void HandleMotorPower(void *client, void *req, int reqlen);
 
   // Gazebo id
   private: char *gz_id;
@@ -216,16 +219,14 @@ size_t GzPosition::GetData(void* client, unsigned char* dest, size_t len,
 void GzPosition::PutCommand(void* client, unsigned char* src, size_t len)
 {
   player_position_cmd_t *cmd;
-
-  gz_position_lock(this->iface, 1);
     
   assert(len >= sizeof(player_position_cmd_t));
   cmd = (player_position_cmd_t*) src;
 
+  gz_position_lock(this->iface, 1);
   this->iface->data->cmd_vel[0] = ((int) ntohl(cmd->xspeed)) / 1000.0;
   this->iface->data->cmd_vel[1] = ((int) ntohl(cmd->yspeed)) / 1000.0;
   this->iface->data->cmd_vel[2] = ((int) ntohl(cmd->yawspeed)) * M_PI / 180;
-
   gz_position_unlock(this->iface);
     
   return;
@@ -242,6 +243,10 @@ int GzPosition::PutConfig(player_device_id_t* device, void* client, void* req, s
       HandleGetGeom(client, req, req_len);
       break;
 
+    case PLAYER_POSITION_MOTOR_POWER_REQ:
+      HandleMotorPower(client, req, req_len);
+      break;
+
     default:
       if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
         PLAYER_ERROR("PutReply() failed");
@@ -249,7 +254,6 @@ int GzPosition::PutConfig(player_device_id_t* device, void* client, void* req, s
   }
   return 0;
 }
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -268,6 +272,26 @@ void GzPosition::HandleGetGeom(void *client, void *req, int reqlen)
   geom.size[1] = htons((int) (0.38 * 1000));
 
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
+    PLAYER_ERROR("PutReply() failed");
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Handle motor power 
+void GzPosition::HandleMotorPower(void *client, void *req, int reqlen)
+{
+  player_position_power_config_t *power;
+  
+  assert((size_t) reqlen >= sizeof(player_position_power_config_t));
+  power = (player_position_power_config_t*) req;
+
+  gz_position_lock(this->iface, 1);
+  this->iface->data->cmd_enable_motors = power->value;
+  gz_position_unlock(this->iface);
+
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
     PLAYER_ERROR("PutReply() failed");
   
   return;
