@@ -2559,6 +2559,8 @@ class SpeechRecognitionProxy : public ClientProxy
   // interface that all proxies must provide
   public: void FillData (player_msghdr_t hde, const char *buffer);
 
+  public: void Clear();
+
   public: char rawText[SPEECH_RECOGNITION_TEXT_LEN];
 
   // Just estimating that no more than 20 words will be spoken between updates.
