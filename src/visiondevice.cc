@@ -194,7 +194,7 @@ CVisionDevice::Setup()
   char acts_port_flag[] = "-s";
 
   char acts_port_num[MAX_FILENAME_SIZE];
-  char* acts_args[8];
+  char* acts_args[32];
 
   static struct sockaddr_in server;
   char host[] = "localhost";
@@ -218,28 +218,42 @@ CVisionDevice::Setup()
     acts_args[i++] = acts_configfile_flag;
     acts_args[i++] = configfilepath;
   }
-  acts_args[i++] = acts_port_flag;
-  acts_args[i++] = acts_port_num;
-  acts_args[i] = (char*)NULL;
+
+  if (acts_version == ACTS_VERSION_1_0 ||
+      acts_version == ACTS_VERSION_1_2)
+  {
+    acts_args[i++] = acts_port_flag;
+    acts_args[i++] = acts_port_num;
+  }
 
   // Extra args for ACTS2.0
-  if (acts_version == ACTS_VERSION_2_0)
+  else if (acts_version == ACTS_VERSION_2_0)
   {
+    acts_args[i++] = "-p";
+    acts_args[i++] = acts_port_num;
     acts_args[i++] = "-G";
     acts_args[i++] = "bttv";
     acts_args[i++] = "-n";
     acts_args[i++] = "0";
+    acts_args[i++] = "-W";
+    acts_args[i++] = "160";
+    acts_args[i++] = "-H";
+    acts_args[i++] = "120";
     acts_args[i++] = "-d";
     acts_args[i++] = "/dev/video0";
+
+    printf("port %s\n", acts_port_num);
   }
 
+  acts_args[i] = (char*)NULL;
+    
   if(!(pid = fork()))
   {
     // make sure we don't get that "ACTS: Packet" bullshit on the console
-    int dummy_fd = open("/dev/null",O_RDWR);
-    dup2(dummy_fd,0);
-    dup2(dummy_fd,1);
-    dup2(dummy_fd,2);
+    //int dummy_fd = open("/dev/null",O_RDWR);
+    //dup2(dummy_fd,0);
+    //dup2(dummy_fd,1);
+    //dup2(dummy_fd,2);
 
     /* detach from controlling tty, so we don't get pesky SIGINTs and such */
     if(setpgrp() == -1)
