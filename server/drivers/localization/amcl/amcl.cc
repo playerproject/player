@@ -418,10 +418,10 @@ int AdaptiveMCL::SetupLaser()
     return -1;
   }
 
-  /* TODO
+  /*
   // Get the laser geometry
   req = PLAYER_POSITION_GET_GEOM_REQ;
-  if (this->Request(&id, this, &req, 1, &reptype, NULL, &geom, sizeof(geom)) != 0)
+  if (this->laser->Request(&id, this, &req, 1, &reptype, NULL, &geom, sizeof(geom)) != 0)
   {
     PLAYER_ERROR("unable to get position device geometry");
     return -1;
