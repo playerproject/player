@@ -206,9 +206,6 @@ void LaserBarcode::Main(void)
     // Wait for new data from the laser
     this->laser_device->Wait();
 
-    // Test for thread cancellation
-    pthread_testcancel();
-
     // Read the new laser data
     this->ReadLaser();
     
@@ -217,6 +214,9 @@ void LaserBarcode::Main(void)
 
     // Write out the fiducials
     this->WriteFiducial();
+
+    // Process any pending requests
+    this->HandleConfig();
   }
   
   return;
@@ -250,7 +250,6 @@ int LaserBarcode::ReadLaser()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analyze the laser data and return beacon data
-//
 void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
                                player_fiducial_data_t *data)
 {
