@@ -12,9 +12,9 @@ libstage1p4_a_SOURCES = \
  stg_time.cc \
  stg_time.h \
  stg_simulation.cc \
-  stg_laser.cc 
+ stg_laser.cc \
+ stg_position.cc 
 
-#	stg_position.cc \
 #	stg_fiducial.cc \
 #	stg_sonar.cc \
 #	stg_blinkenlight.cc

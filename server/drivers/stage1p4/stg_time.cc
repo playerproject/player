@@ -64,6 +64,7 @@ int StgTime::GetTime(struct timeval* time)
       stg_msg_t* msg = NULL;      
       while( (msg = stg_client_read( client )) )
 	{
+	  //puts( "a message!" );
 	  stg_client_handle_message( client, msg );
 	  free( msg );
 	}
