@@ -55,7 +55,8 @@ typedef enum
 {
   ACTS_VERSION_UNKNOWN = 0,
   ACTS_VERSION_1_0 = 1,
-  ACTS_VERSION_1_2 = 2
+  ACTS_VERSION_1_2 = 2,
+  ACTS_VERSION_2_0 = 3
 } acts_version_t;
 #define DEFAULT_ACTS_PORT 5001
 /* default is to use older ACTS (until we change our robots) */

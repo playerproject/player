@@ -40,6 +40,7 @@
 
 #define ACTS_VERSION_1_0_STRING "1.0"
 #define ACTS_VERSION_1_2_STRING "1.2"
+#define ACTS_VERSION_2_0_STRING "2.0"
 
 class CVisionDevice:public CDevice 
 {

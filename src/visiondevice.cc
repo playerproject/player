@@ -136,9 +136,11 @@ CVisionDevice::CVisionDevice(int argc, char** argv)
       portnum = htons(portnum);
       break;
     case ACTS_VERSION_1_2:
-    default:
+    case ACTS_VERSION_2_0:
       header_len = ACTS_HEADER_SIZE_1_2;
       blob_size = ACTS_BLOB_SIZE_1_2;
+      break;
+    default:
       break;
   }
   header_elt_len = header_len / VISION_NUM_CHANNELS;
@@ -152,6 +154,8 @@ acts_version_t CVisionDevice::version_string_to_enum(char* versionstr)
     return(ACTS_VERSION_1_0);
   else if(!strcmp(versionstr,ACTS_VERSION_1_2_STRING))
     return(ACTS_VERSION_1_2);
+  else if(!strcmp(versionstr,ACTS_VERSION_2_0_STRING))
+    return(ACTS_VERSION_2_0);
   else
     return(ACTS_VERSION_UNKNOWN);
 }
@@ -170,6 +174,9 @@ int CVisionDevice::version_enum_to_string(acts_version_t versionnum,
       return(0);
     case ACTS_VERSION_1_2:
       strncpy(versionstr, ACTS_VERSION_1_2_STRING, len);
+      return(0);
+    case ACTS_VERSION_2_0:
+      strncpy(versionstr, ACTS_VERSION_2_0_STRING, len);
       return(0);
     default:
       return(-1);
@@ -214,6 +221,17 @@ CVisionDevice::Setup()
   acts_args[i++] = acts_port_flag;
   acts_args[i++] = acts_port_num;
   acts_args[i] = (char*)NULL;
+
+  // Extra args for ACTS2.0
+  if (acts_version == ACTS_VERSION_2_0)
+  {
+    acts_args[i++] = "-G";
+    acts_args[i++] = "bttv";
+    acts_args[i++] = "-n";
+    acts_args[i++] = "0";
+    acts_args[i++] = "-d";
+    acts_args[i++] = "/dev/video0";
+  }
 
   if(!(pid = fork()))
   {
