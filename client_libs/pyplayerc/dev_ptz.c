@@ -37,23 +37,23 @@ static void ptz_onread(ptz_object_t *ptzob);
 /* Initialise (type function) */
 PyObject *ptz_new(PyObject *self, PyObject *args)
 {
-  client_object_t *clientob;
+  pyclient_t *pyclient;
   ptz_object_t *ptzob;
   int index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &clientob, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   ptzob = PyObject_New(ptz_object_t, &ptz_type);
-  ptzob->client = clientob->client;
-  ptzob->ptz = playerc_ptz_create(clientob->client, index);
+  ptzob->client = pyclient->client;
+  ptzob->ptz = playerc_ptz_create(pyclient->client, index);
   ptzob->ptz->info.user_data = ptzob;
   ptzob->pan = PyFloat_FromDouble(0);
   ptzob->tilt = PyFloat_FromDouble(0);
   ptzob->zoom = PyFloat_FromDouble(0);
 
   /* Add callback for post-processing incoming data */
-  playerc_client_addcallback(clientob->client, (playerc_device_t*) ptzob->ptz,
+  playerc_client_addcallback(pyclient->client, (playerc_device_t*) ptzob->ptz,
                              (playerc_callback_fn_t) ptz_onread,
                              (void*) ptzob);
     

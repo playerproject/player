@@ -32,7 +32,7 @@ staticforward PyMethodDef wifi_methods[];
 
 PyObject *wifi_new(PyObject *self, PyObject *args)
 {
-  client_object_t *pyclient;
+  pyclient_t *pyclient;
   pywifi_t *pywifi;
   int index;
 

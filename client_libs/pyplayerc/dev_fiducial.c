@@ -31,21 +31,21 @@ staticforward PyMethodDef fiducial_methods[];
  
 PyObject *fiducial_new(PyObject *self, PyObject *args)
 {
-  client_object_t *clientob;
+  pyclient_t *pyclient;
   fiducial_object_t *fiducialob;
   int index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &clientob, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   fiducialob = PyObject_New(fiducial_object_t, &fiducial_type);
-  fiducialob->client = clientob->client;
-  fiducialob->fiducial = playerc_fiducial_create(clientob->client, index);
+  fiducialob->client = pyclient->client;
+  fiducialob->fiducial = playerc_fiducial_create(pyclient->client, index);
   fiducialob->fiducial->info.user_data = fiducialob;
   fiducialob->fiducials = PyList_New(0);
     
   /* Add callback for post-processing incoming data */
-  playerc_client_addcallback(clientob->client,
+  playerc_client_addcallback(pyclient->client,
                              (playerc_device_t*) fiducialob->fiducial,
                              (playerc_callback_fn_t) fiducial_onread,
                              (void*) fiducialob);

@@ -458,6 +458,9 @@ extern PyObject *laser_new(PyObject *self, PyObject *args);
 extern PyTypeObject position_type;
 extern PyObject *position_new(PyObject *self, PyObject *args);
 
+extern PyTypeObject power_type;
+extern PyObject *power_new(PyObject *self, PyObject *args);
+
 extern PyTypeObject ptz_type;
 extern PyObject *ptz_new(PyObject *self, PyObject *args);
 
@@ -475,6 +478,7 @@ static PyMethodDef module_methods[] =
   {"client", client_new, METH_VARARGS},
   {"laser", laser_new, METH_VARARGS},
   {"position", position_new, METH_VARARGS},
+  {"power", power_new, METH_VARARGS},
   {"ptz", ptz_new, METH_VARARGS},
   {"blobfinder", blobfinder_new, METH_VARARGS},
   {"fiducial", fiducial_new, METH_VARARGS},
@@ -495,6 +499,7 @@ void initplayerc(void)
   client_type.ob_type = &PyType_Type;
   laser_type.ob_type = &PyType_Type;
   position_type.ob_type = &PyType_Type;
+  power_type.ob_type = &PyType_Type;
   ptz_type.ob_type = &PyType_Type;
   blobfinder_type.ob_type = &PyType_Type;
   fiducial_type.ob_type = &PyType_Type;

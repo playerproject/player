@@ -36,23 +36,23 @@ staticforward PyMethodDef blobfinder_methods[];
 
 PyObject *blobfinder_new(PyObject *self, PyObject *args)
 {
-  client_object_t *clientob;
+  pyclient_t *pyclient;
   blobfinder_object_t *blobfinderob;
   int index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &clientob, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   blobfinderob = PyObject_New(blobfinder_object_t, &blobfinder_type);
-  blobfinderob->client = clientob->client;
-  blobfinderob->blobfinder = playerc_blobfinder_create(clientob->client, index);
+  blobfinderob->client = pyclient->client;
+  blobfinderob->blobfinder = playerc_blobfinder_create(pyclient->client, index);
   blobfinderob->blobfinder->info.user_data = blobfinderob;
   blobfinderob->width = PyInt_FromLong(0);
   blobfinderob->height = PyInt_FromLong(0);
   blobfinderob->blobs = PyList_New(0);
 
   /* Add callback for post-processing incoming data */
-  playerc_client_addcallback(clientob->client, (playerc_device_t*) blobfinderob->blobfinder,
+  playerc_client_addcallback(pyclient->client, (playerc_device_t*) blobfinderob->blobfinder,
                              (playerc_callback_fn_t) blobfinder_onread,
                              (void*) blobfinderob);
     
