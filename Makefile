@@ -23,6 +23,7 @@ examples:
 
 .PHONY: utils
 utils:
+	cd rtk2 && make all
 	cd utils && make all
 
 dep:
@@ -68,12 +69,14 @@ distro: clean
 	cd client_libs/tcl/doc && make manual
 	cd client_libs/oldc++/doc && make manual
 	cd client_libs/lisp/doc && make manual
+	cd client_libs/libplayerc/doc && make manual
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` $(PLAYER_VERSION)
 
 distro_bleeding: clean
 	$(MKDIR) -p doc
 	cd client_libs/c++/doc && make manual
+	cd client_libs/libplayerc/doc && make manual
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` Bleeding
 
