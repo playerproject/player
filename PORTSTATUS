@@ -7,16 +7,16 @@
 # U = UNTESTED
 
 -------------------------------------------------------------------------------
-Machine       |   OS           |  Clients?  | Hardware?  |  Stage? |  GUI? 
+Machine       |   OS           |  Clients?  | Hardware?  |  Stage? |  RTKGUI? 
 -------------------------------------------------------------------------------
-x86            Linux 2.[24]         Y           Y           Y           Y
-Sparc          SunOS 5.8            Y           U           Y           Y
-Sparc64        Linux 2.4 
+x86            Linux 2.2, 2.4       Y           Y           Y           Y
+Sparc          SunOS 5.6, 5.8       Y           U           Y           Y
+Sparc64        Linux 2.4            Y           U           Y           U
 SA110          Linux ??
 SA1110 (iPAQ)  Linux ??
 Alpha          Linux 2.2            Y           U           Y           U
-PowerPC        OS X.2
 x86            FreeBSD 4.7          Y           U           Y           U
+PowerPC        OS X.2
 -------------------------------------------------------------------------------
 
 
