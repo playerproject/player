@@ -44,18 +44,18 @@ install: $(BINARIES)
 	$(INSTALL) -m 644 forage.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 multilogger.cc $(INSTALL_EXAMPLES)/c++
 	@echo "Installing C++ example binaries"
-	$(INSTALL) -m 644 randomwalk $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 visualservo $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 sonarobstacleavoid $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 goto $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 ptz $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 laserobstacleavoid $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 example_from_manual $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 say $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 truth $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 grip $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 forage $(INSTALL_EXAMPLES)/c++
-	$(INSTALL) -m 644 multilogger $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 randomwalk $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 visualservo $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 sonarobstacleavoid $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 goto $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 ptz $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 laserobstacleavoid $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 example_from_manual $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 say $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 truth $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 grip $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 forage $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 multilogger $(INSTALL_EXAMPLES)/c++
 
 uninstall: 
 	@echo "Uninstalling example source files"
