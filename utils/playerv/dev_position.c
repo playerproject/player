@@ -129,13 +129,13 @@ void position_update(position_t *self)
       if (playerc_position_subscribe(self->proxy, PLAYER_ALL_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
-      puts( "getting position geom" );
+      //puts( "getting position geom" );
 
       // Get the robot geometry
       if (playerc_position_get_geom(self->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
       
-      puts( "done" );
+      //puts( "done" );
 
       rtk_fig_color_rgb32(self->robot_fig, COLOR_POSITION_ROBOT);
       rtk_fig_rectangle(self->robot_fig, self->proxy->pose[0],
@@ -154,7 +154,9 @@ void position_update(position_t *self)
   // HACK
   // Use this device as our global cs
   if (rtk_menuitem_ischecked(self->frame_item) == 1)
+  {
     rtk_fig_origin(self->mainwnd->robot_fig, self->proxy->px, self->proxy->py, self->proxy->pa);
+  }
   
   // Check enable flag
   if (rtk_menuitem_isactivated(self->enable_item))

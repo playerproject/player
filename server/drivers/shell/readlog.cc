@@ -116,6 +116,10 @@ driver
 )
 @endverbatim
 
+@par Authors
+
+Andrew Howard
+
 */
 /** @} */
 
@@ -1044,7 +1048,7 @@ int ReadLog::ParseJoystick(player_device_id_t id, int linenum,
 ////////////////////////////////////////////////////////////////////////////
 // Parse laser data
 int ReadLog::ParseLaser(player_device_id_t id, int linenum,
-                               int token_count, char **tokens, struct timeval time)
+                        int token_count, char **tokens, struct timeval time)
 {
   int i, count;
   player_laser_data_t data;

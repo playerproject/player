@@ -322,6 +322,9 @@ world bitmap (note the @p negate option to the @ref player_driver_mapfile
 driver, which inverts the colors in the image; this is necessary because
 Stage interprets black pixels as free and white pixels as obstacles).
 
+@par Authors
+
+Andrew Howard
 
 @todo
 - Get the laser's pose from the laser, using the GET_GEOM request.

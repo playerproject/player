@@ -1736,7 +1736,9 @@ typedef struct player_camera_data
   uint8_t compression;
   /** Size of image data as stored in image buffer (bytes) */
   uint32_t image_size;
-  /** Compressed image data. */
+  /** Compressed image data (byte-aligned, row major order).
+      Multi-byte image formats (such as MONO16) must be converted
+      to network byte ordering. */
   uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
 } __PACKED__ player_camera_data_t;
 

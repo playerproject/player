@@ -102,6 +102,11 @@ driver
   autorecord 1
 )
 @endverbatim
+
+@par Authors
+
+Andrew Howard
+
 */
 /** @} */
 

@@ -95,7 +95,7 @@ int playerc_position3d_unsubscribe(playerc_position3d_t *device)
 
 // Process incoming data
 void playerc_position3d_putdata(playerc_position3d_t *device, player_msghdr_t *header,
-                              player_position3d_data_t *data, size_t len)
+                                player_position3d_data_t *data, size_t len)
 {
   device->pos_x = (long) ntohl(data->xpos) / 1000.0;
   device->pos_y = (long) ntohl(data->ypos) / 1000.0;
