@@ -41,7 +41,7 @@
 #include <clientmanager.h>
 #include <packet.h>
 
-#include <iostream.h> //some debug output it easier using stream IO
+#include <iostream> //some debug output it easier using stream IO
 
 #ifdef PLAYER_SOLARIS
   #include <strings.h>  /* for bzero */

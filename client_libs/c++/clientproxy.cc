@@ -119,8 +119,17 @@ int ClientProxy::ChangeAccess(unsigned char req_access,
 // interface that all proxies must provide
 void ClientProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
-  if(player_debug_level(-1) >= 1)
-    fputs("WARNING: virtual FillData() was called.\n",stderr);
+  // we can use this base class as a generic device
+  // to just pull data out of player
+
+  // copy in the data in a generic sort of way - don't attempt to parse it.
+  memcpy( last_data, buffer, hdr.size );
+
+  // store the header, too.
+  memcpy( &last_header, &hdr, sizeof( hdr ) );
+
+  //if(player_debug_level(-1) >= 1)
+  //fputs("WARNING: virtual FillData() was called.\n",stderr);
 }
 
 // interface that all proxies SHOULD provide

@@ -11,7 +11,7 @@ LIBDIRS = -L../../lib -L$(INSTALL_PREFIX)/lib \
 LIBS = $(LIBDIRS) -lplayerclient $(PLATFORM_LIBS) -lm
 
 BINARIES = rsn \
-  	   randomwalk \
+           randomwalk \
 	   visualservo \
            sonarobstacleavoid \
 	   goto \
@@ -21,7 +21,9 @@ BINARIES = rsn \
 	   say \
 	   grip \
 	   forage \
-	   multilogger stress
+	   multilogger \
+           stress \
+           pherobot
 	   #multirandom multiphero
 
 all: $(BINARIES)

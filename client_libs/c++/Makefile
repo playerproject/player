@@ -15,8 +15,7 @@ OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       laserbeaconproxy.o visionproxy.o  \
       gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o \
       rwi_positionproxy.o rwi_sonarproxy.o rwi_laserproxy.o rwi_bumperproxy.o \
-      rwi_powerproxy.o truthproxy.o
-      #occupancyproxy.o idarproxy.o descartesproxy.o
+      rwi_powerproxy.o truthproxy.o descartesproxy.o idarproxy.o 
 
 all: $(LIBNAME)
 
@@ -77,6 +76,10 @@ $(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	$(LN) -s $(PWD)/rwi_bumperproxy.h ../../include
 	$(RM) -f ../../include/rwi_powerproxy.h
 	$(LN) -s $(PWD)/rwi_powerproxy.h ../../include
+	$(RM) -f ../../include/descartesproxy.h 
+	$(LN) -s $(PWD)/descartesproxy.h ../../include
+	$(RM) -f ../../include/idarproxy.h 
+	$(LN) -s $(PWD)/idarproxy.h ../../include
 
 $(C_CLIENT_DIR)/$(C_CLIENT_OBJ):
 	cd $(C_CLIENT_DIR) && make $(C_CLIENT_OBJ)
@@ -121,8 +124,8 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 rwi_laserproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 rwi_bumperproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 rwi_powerproxy.h $(INSTALL_INCLUDE)
-#	$(INSTALL) -m 644 idarproxy.h $(INSTALL_INCLUDE)
-#	$(INSTALL) -m 644 descartesproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 idarproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 descartesproxy.h $(INSTALL_INCLUDE)
 
 uninstall:
 	$(RM) -f $(INSTALL_LIB)/$(LIBNAME)
@@ -149,8 +152,8 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/rwi_laserproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/rwi_bumperproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/rwi_powerproxy.h
-#	$(RM) -f $(INSTALL_INCLUDE)/descartesproxy.h
-#	$(RM) -f $(INSTALL_INCLUDE)/idarproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/descartesproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/idarproxy.h
 
 
 clean:
@@ -181,4 +184,6 @@ clean:
 	$(RM) -f ../../include/rwi_laserproxy.h
 	$(RM) -f ../../include/rwi_bumperproxy.h
 	$(RM) -f ../../include/rwi_powerproxy.h
+	$(RM) -f ../../include/descartesproxy.h 
+	$(RM) -f ../../include/idarproxy.h 
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND

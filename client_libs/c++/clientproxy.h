@@ -44,8 +44,15 @@ class ClientProxy
   friend class PlayerClient; // ANSI C++ syntax?
   // friend PlayerClient; // syntax deprecated
 
+ 
   public:         
     PlayerClient* client;  // our controlling client object
+
+    // if this generic proxy is not subclassed, the most recent 
+    // data and header get copied in here. that way we can use this
+    // base class on it's own as a generic proxy
+    unsigned char last_data[4096];
+    player_msghdr_t last_header;
 
     unsigned char access;   // 'r', 'w', or 'a' (others?)
     unsigned short device; // the name by which we identify this kind of device
