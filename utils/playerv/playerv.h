@@ -74,8 +74,24 @@ typedef struct
   
   // Menu containing file options
   rtk_menu_t *file_menu;
-  rtk_menuitem_t *stills_item;
   rtk_menuitem_t *exit_item;
+  
+  // The stills menu
+  rtk_menu_t *stills_menu;
+  rtk_menuitem_t *stills_jpeg_menuitem;
+  rtk_menuitem_t *stills_ppm_menuitem;
+
+  // Export stills info
+  int stills_series;
+  int stills_count;
+
+  // The movie menu
+  rtk_menu_t *movie_menu;
+  rtk_menuitem_t *movie_x1_menuitem;
+  rtk_menuitem_t *movie_x2_menuitem;
+
+  // Export movie info
+  int movie_count;
 
   // Menu containing view settings
   rtk_menu_t *view_menu;
@@ -85,9 +101,6 @@ typedef struct
   
   // Menu containing the device list
   rtk_menu_t *device_menu;
-
-  // Export info.
-  int stills_count;
   
 } mainwnd_t;
 

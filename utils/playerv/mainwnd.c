@@ -29,6 +29,10 @@
 #include "playerv.h"
 
 
+// Process export options
+void mainwnd_update_export(mainwnd_t *wnd);
+
+
 // Create the main window
 mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
 {
@@ -52,10 +56,20 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
 
   // Create file menu
   wnd->file_menu = rtk_menu_create(wnd->canvas, "File");
-  wnd->stills_item = rtk_menuitem_create(wnd->file_menu, "Export stills", 1);
+  wnd->stills_menu = rtk_menu_create_sub(wnd->file_menu, "Capture stills");
+  wnd->movie_menu = rtk_menu_create_sub(wnd->file_menu, "Capture movie");
   wnd->exit_item = rtk_menuitem_create(wnd->file_menu, "Exit", 0);
 
+  // Stills sub-menu
+  wnd->stills_jpeg_menuitem = rtk_menuitem_create(wnd->stills_menu, "JPEG format", 1);
+  wnd->stills_ppm_menuitem = rtk_menuitem_create(wnd->stills_menu, "PPM format", 1);
+  wnd->stills_series = 0;
   wnd->stills_count = 0;
+
+  // Movie sub-menu
+  wnd->movie_x1_menuitem = rtk_menuitem_create(wnd->movie_menu, "Speed x1", 1);
+  wnd->movie_x2_menuitem = rtk_menuitem_create(wnd->movie_menu, "Speed x2", 1);
+  wnd->movie_count = 0;
   
   // Create view menu
   wnd->view_menu = rtk_menu_create(wnd->canvas, "View");
@@ -123,15 +137,9 @@ int mainwnd_update(mainwnd_t *wnd)
   if (rtk_menuitem_isactivated(wnd->exit_item))
     return 1;
 
-  // Export stills.
-  if (rtk_menuitem_ischecked(wnd->stills_item))
-  {
-    snprintf(filename, sizeof(filename), "playerv-%s-%d-%04d.jpg",
-             wnd->host, wnd->port, wnd->stills_count++);
-    printf("saving [%s]\n", filename);
-    rtk_canvas_export_image(wnd->canvas, filename, RTK_IMAGE_FORMAT_JPEG);
-  }
-
+  // Handle export stuff
+  mainwnd_update_export(wnd);
+  
   // Rotate the display
   if (rtk_menuitem_isactivated(wnd->view_item_rotate))
   {
@@ -176,8 +184,87 @@ int mainwnd_update(mainwnd_t *wnd)
 }
 
 
+// Process export options
+void mainwnd_update_export(mainwnd_t *wnd)
+{
+  char filename[1024];
+  
+  // Start/stop export (jpeg)
+  if (rtk_menuitem_isactivated(wnd->stills_jpeg_menuitem))
+  {
+    if (rtk_menuitem_ischecked(wnd->stills_jpeg_menuitem))
+    {
+      wnd->stills_series++;
+      rtk_menuitem_enable(wnd->stills_ppm_menuitem, 0);
+    }
+    else
+      rtk_menuitem_enable(wnd->stills_ppm_menuitem, 1);      
+  }
+  if (rtk_menuitem_ischecked(wnd->stills_jpeg_menuitem))
+  {
+    snprintf(filename, sizeof(filename), "stage-%03d-%04d.jpg",
+             wnd->stills_series, wnd->stills_count++);
+    printf("saving [%s]\n", filename);
+    rtk_canvas_export_image(wnd->canvas, filename, RTK_IMAGE_FORMAT_JPEG);
+  }
 
+  // Start/stop export (ppm)
+  if (rtk_menuitem_isactivated(wnd->stills_ppm_menuitem))
+  {
+    if (rtk_menuitem_ischecked(wnd->stills_ppm_menuitem))
+    {
+      wnd->stills_series++;
+      rtk_menuitem_enable(wnd->stills_jpeg_menuitem, 0);
+    }
+    else
+      rtk_menuitem_enable(wnd->stills_jpeg_menuitem, 1);      
+  }
+  if (rtk_menuitem_ischecked(wnd->stills_ppm_menuitem))
+  {
+    snprintf(filename, sizeof(filename), "playerv-%03d-%04d.ppm",
+             wnd->stills_series, wnd->stills_count++);
+    printf("saving [%s]\n", filename);
+    rtk_canvas_export_image(wnd->canvas, filename, RTK_IMAGE_FORMAT_PPM);
+  }
 
+  // Start/stop movie (x1)
+  if (rtk_menuitem_isactivated(wnd->movie_x1_menuitem))
+  {
+    if (rtk_menuitem_ischecked(wnd->movie_x1_menuitem))
+    {
+      snprintf(filename, sizeof(filename), "playerv-%03d.mpg", wnd->movie_count++);
+      rtk_canvas_movie_start(wnd->canvas, filename, 10, 1);
+      rtk_menuitem_enable(wnd->movie_x2_menuitem, 0);
+    }
+    else
+    {
+      rtk_canvas_movie_stop(wnd->canvas);
+      rtk_menuitem_enable(wnd->movie_x2_menuitem, 1);
+    }
+  }
+  if (rtk_menuitem_ischecked(wnd->movie_x1_menuitem))
+    rtk_canvas_movie_frame(wnd->canvas);
+
+  // Start/stop movie (x2)
+  if (rtk_menuitem_isactivated(wnd->movie_x2_menuitem))
+  {
+    if (rtk_menuitem_ischecked(wnd->movie_x2_menuitem))
+    {
+      snprintf(filename, sizeof(filename), "playerv-%03d.mpg", wnd->movie_count++);
+      rtk_canvas_movie_start(wnd->canvas, filename, 10, 2);
+      rtk_menuitem_enable(wnd->movie_x1_menuitem, 0);
+    }
+    else
+    {
+      rtk_canvas_movie_stop(wnd->canvas);
+      rtk_menuitem_enable(wnd->movie_x1_menuitem, 1);
+    }
+  }
+  if (rtk_menuitem_ischecked(wnd->movie_x2_menuitem))
+    rtk_canvas_movie_frame(wnd->canvas);
+
+  return;
+}
 
 
 
