@@ -26,7 +26,7 @@ char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
 char auth_key[PLAYER_KEYLEN];
 
-unsigned short minfrontdistance = 450;
+unsigned short minfrontdistance = 350;
 short speed = 200;
 short avoidspeed = 0; // -150;
 short turnrate = 40;
@@ -158,6 +158,12 @@ int main(int argc, char** argv)
   /* maybe turn on the motors */
   if(turnOnMotors && pp.SetMotorState(1))
     exit(1);
+
+  for(int j=0;j<10;j++)
+  {
+    if(robot.Read())
+      exit(1);
+  }
 
   int newturnrate=0,newspeed=0;
   /* go into read-think-act loop */

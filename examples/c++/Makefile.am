@@ -19,7 +19,8 @@ noinst_PROGRAMS = randomwalk \
                   waveformread \
                   audiodspread \
 		  lookupport \
-	          vfh
+	          vfh \
+		  playerprint
 
 #multilogger
 #forage
@@ -45,3 +46,4 @@ audiodspread_SOURCES = audiodspread.cc
 vfh_SOURCES = vfh.cc
 swarmbot_SOURCES = swarmbot.cc
 swarmbot_target_SOURCES = swarmbot_target.cc
+playerprint_SOURCES = playerprint.cc
