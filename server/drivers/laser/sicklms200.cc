@@ -372,7 +372,7 @@ void SickLMS200::Main()
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
         data.intensity[i] = ((data.ranges[i] >> 13) & 0x000E);
-        data.ranges[i] = htons(((data.ranges[i] & 0x1FFF) * this->range_res) & 0xFFFF);
+        data.ranges[i] = htons((uint16_t) (((data.ranges[i] & 0x1FFF) * this->range_res) & 0xFFFF));
       }
 
       // Make data available
