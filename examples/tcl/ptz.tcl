@@ -28,6 +28,7 @@
 #  from side to side
 #
 
+# to get the 'sleep' command
 package require Tclx
 
 #
@@ -65,7 +66,7 @@ while {$i < $argc} {
 }
 
 connectToRobot $host
-requestFromRobot "drsz[binary format S 0]a"
+requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE
 
 
 set dir 1
