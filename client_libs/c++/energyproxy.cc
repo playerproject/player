@@ -36,9 +36,12 @@ EnergyProxy::FillData(player_msghdr_t hdr, const char *buffer)
               sizeof(player_energy_data_t), hdr.size);
   }
   
-  this->joules = (double)((player_energy_data_t *)buffer)->mjoules / 1000.0;
-  this->watts = (double)((player_energy_data_t *)buffer)->mwatts / 1000.0;
-  this->charging = (bool)((player_energy_data_t *)buffer)->charging;
+  player_energy_data_t *penergy = (player_energy_data_t *)buffer;
+  
+  this->joules = ntohl(penergy->mjoules) / 1000.0;
+  this->watts = ntohl(penergy->mwatts) / 1000.0;
+  this->charging = (bool)penergy->charging;
+
 }
 
 // interface that all proxies SHOULD provide
