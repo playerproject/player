@@ -814,14 +814,15 @@ static PyObject *comms_read(PyObject *self, PyObject *args)
 {
   comms_object_t *commsob;
   int len;
-  char msg[1024];
+  char *msg;
     
   if (!PyArg_ParseTuple(args, ""))
     return NULL;
   commsob = (comms_object_t*) self;
 
   thread_release();
-  len = playerc_comms_recv(commsob->comms, msg, sizeof(msg));
+  len = commsob->comms->msg_len;
+  msg = commsob->comms->msg;
   thread_acquire();
 
   if (len <= 0)
