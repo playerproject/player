@@ -7,7 +7,9 @@ extern "C"
 #include <termios.h>
 #include <stdio.h>
 #include <time.h>
-//#include "cmucam.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /**************************************************************************
 			    *** CONSTANST ***
