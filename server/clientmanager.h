@@ -76,6 +76,8 @@ class ClientManager
     void MarkClientForDeletion(int idx);
     // remove a client
     void RemoveBlanks();
+    // call Update() on all subscribed devices
+    void UpdateDevices();
 
     // These 3 methods are the primary interface to the ClientManager.
     // They must be implemented by any subclass.

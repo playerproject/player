@@ -42,6 +42,7 @@
 #include <sys/time.h>  // temporary
 
 #include "clientmanager.h"
+#include "devicetable.h"
 #include "device.h"
 
 
@@ -228,6 +229,25 @@ void ClientManager::AddClient(ClientData* client)
     }
   }
 }
+    
+// call Update() on all subscribed devices
+void 
+ClientManager::UpdateDevices()
+{
+  for(CDeviceEntry* dev = deviceTable->GetFirstEntry();
+      dev;
+      dev = deviceTable->GetNextEntry(dev))
+  {
+    if(dev->devicep->subscriptions)
+    {
+      //printf("calling Update on %d:%d:%d\n",
+             //dev->id.port,
+             //dev->id.code,
+             //dev->id.index);
+      dev->devicep->Update();
+    }
+  }
+}
 
 // Update the ClientManager
 int ClientManager::Update()
@@ -245,6 +265,8 @@ int ClientManager::Update()
     printf("Read() returned %d\n", retval);
     return(retval);
   }
+
+  UpdateDevices();
 
   if((retval = Write()))
   {
