@@ -8,10 +8,10 @@ playerv_SOURCES = playerv.c \
                   mainwnd.c \
                   dev_blobfinder.c \
                   dev_fiducial.c \
-                  dev_frf.c \
+                  dev_laser.c \
                   dev_position.c \
                   dev_ptz.c \
-									dev_srf.c \
+									dev_sonar.c \
                   error.h \
                   opt.c \
                   opt.h
