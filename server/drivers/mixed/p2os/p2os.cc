@@ -153,7 +153,6 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
           sizeof(psos_serial_port));
   radio_modemp = cf->ReadInt(section, "radio", radio_modemp);
   joystickp = cf->ReadInt(section, "joystick", joystickp);
-  printf("joystick:%d\n", joystickp);
 
   // zero the subscription counter.
   subscriptions = 0;
