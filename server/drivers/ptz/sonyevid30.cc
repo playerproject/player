@@ -28,7 +28,7 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_sonyevid30 SonyEVI-D30 driver
+/** @defgroup player_driver_sonyevid30 Sony EVI-D30 driver
 
 The sonyevid30 driver provides control of a Sony EVI-D30 pan-tilt-zoom
 camera unit.
@@ -43,7 +43,7 @@ camera unit.
 
 @par Supported configuration requests
 
-- None
+- PLAYER_PTZ_GENERIC_CONFIG_REQ
 
 @par Configuration file options
 
