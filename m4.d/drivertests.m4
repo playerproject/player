@@ -99,6 +99,8 @@ PLAYER_ADD_DRIVER([readlog],[drivers/shell],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],)
+
 PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])

@@ -173,6 +173,7 @@ AC_OUTPUT(Makefile
           server/drivers/wifi/Makefile 
           server/drivers/speech/Makefile 
           server/drivers/mixed/p2os/Makefile 
+          server/drivers/mixed/rflex/Makefile 
           server/drivers/mixed/rwi/Makefile 
           server/drivers/mixed/reb/Makefile 
 	  server/drivers/mixed/rmp/Makefile

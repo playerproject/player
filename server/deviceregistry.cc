@@ -109,6 +109,14 @@ void P2OSSound_Register(DriverTable* table);
 void P2OSCMUcam_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_RFLEX
+void RFLEXPower_Register(DriverTable* table);
+void RFLEXaio_Register(DriverTable* table);
+void RFLEXdio_Register(DriverTable* table);
+void RFLEXPosition_Register(DriverTable* table);
+void RFLEXSonar_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_LINUXWIFI
 void LinuxWiFi_Register(DriverTable *table);
 #endif
@@ -283,6 +291,16 @@ register_devices()
 
 #ifdef INCLUDE_LASERCSPACE
   LaserCSpace_Register(driverTable);
+#endif
+  
+  printf("ARE WE REGISTERING RFLEX DEVICES?\n");
+#ifdef INCLUDE_RFLEX
+  printf("REGISTERING RFLEX DEVICES\n");
+  RFLEXPower_Register(driverTable);
+  RFLEXaio_Register(driverTable);
+  RFLEXdio_Register(driverTable);
+  RFLEXPosition_Register(driverTable);
+  RFLEXSonar_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SONYEVID30

@@ -307,7 +307,7 @@ bool ConfigFile::LoadTokens(FILE *file, int include)
 // Read in a comment token
 bool ConfigFile::LoadTokenComment(FILE *file, int *line, int include)
 {
-  char token[256];
+  char token[1024];
   int len;
   int ch;
 
@@ -340,7 +340,7 @@ bool ConfigFile::LoadTokenComment(FILE *file, int *line, int include)
 // Read in a word token
 bool ConfigFile::LoadTokenWord(FILE *file, int *line, int include)
 {
-  char token[256];
+  char token[1024];
   int len;
   int ch;
   
@@ -490,7 +490,7 @@ bool ConfigFile::LoadTokenInclude(FILE *file, int *line, int include)
 // Read in a number token
 bool ConfigFile::LoadTokenNum(FILE *file, int *line, int include)
 {
-  char token[256];
+  char token[1024];
   int len;
   int ch;
   
@@ -528,7 +528,7 @@ bool ConfigFile::LoadTokenString(FILE *file, int *line, int include)
 {
   int ch;
   int len;
-  char token[256];
+  char token[1024];
   
   len = 0;
   memset(token, 0, sizeof(token));
@@ -565,7 +565,7 @@ bool ConfigFile::LoadTokenSpace(FILE *file, int *line, int include)
 {
   int ch;
   int len;
-  char token[256];
+  char token[1024];
   
   len = 0;
   memset(token, 0, sizeof(token));
