@@ -127,7 +127,7 @@ class CDevice
     virtual size_t GetNumData(void* client);
     virtual size_t GetData(void* client, unsigned char* dest, size_t len,
                         uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-    virtual void PutData(unsigned char* src, size_t len,
+    virtual void PutData(void* src, size_t len,
                          uint32_t timestamp_sec, uint32_t timestamp_usec);
     
     virtual size_t GetCommand(unsigned char* dest, size_t len);

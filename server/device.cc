@@ -233,7 +233,7 @@ size_t CDevice::GetData(void* client, unsigned char* dest, size_t len,
   return(size);
 }
 
-void CDevice::PutData(unsigned char* src, size_t len,
+void CDevice::PutData(void* src, size_t len,
                       uint32_t timestamp_sec, uint32_t timestamp_usec)
 {
   if (timestamp_sec == 0)
