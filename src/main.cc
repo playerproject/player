@@ -41,7 +41,7 @@
 #include <sys/types.h>  /* for accept(2) */
 #include <sys/socket.h>  /* for accept(2) */
 #include <sys/poll.h>  /* for poll(2) */
-
+#include <netdb.h> /* for gethostbyaddr(3) */
 #include <pubsub_util.h> /* for create_and_bind_socket() */
 
 #ifdef PLAYER_SOLARIS
@@ -185,6 +185,29 @@ void Interrupt( int dummy )
   exit(0);
 }
 
+/* used to name incoming client connections */
+int
+make_dotted_ip_address(char* dest, int len, uint32_t addr)
+{
+  char tmp[512];
+  int mask = 0xff;
+
+  sprintf(tmp, "%u.%u.%u.%u",
+                  addr>>0 & mask,
+                  addr>>8 & mask,
+                  addr>>16 & mask,
+                  addr>>24 & mask);
+
+  if((strlen(tmp) + 1) > (unsigned int)len)
+  {
+    return(-1);
+  }
+  else
+  {
+    strncpy(dest, tmp, len);
+    return(0);
+  }
+}
 
 /* for debugging */
 void PrintHeader(player_msghdr_t hdr)
@@ -243,20 +266,18 @@ struct timeval* CreateStageDevices( player_stage_info_t *arenaIO)
         // Create a StageDevice with this IO base address
         dev = new CStageDevice( info );
 
-        // took out this check, since now we'll handle all ports - BPG
-        //
-        // only devices on the my port or the global port are
-        // available to clients
-        /*
-           if( info->player_id.port == playerport || 
-           info->player_id.port == GLOBALPORT )
-         */
-        deviceTable->AddDevice( info->player_id.port,
-                                info->player_id.type, 
-                                info->player_id.index, 
-                                PLAYER_ALL_MODE, dev );
-
-
+	// XX should be checking the host names here!
+	// this is probably a nasty bug!
+	// check by using unique  ports in a distributed
+	// experiment, then making the ports the same... boom!
+	// fix with a local flag in the info buffer like so:
+	
+	if( info->local )
+	  deviceTable->AddDevice( info->player_id.port,
+				  info->player_id.type, 
+				  info->player_id.index, 
+				  PLAYER_ALL_MODE, dev );
+	
 #ifdef DEBUG
         printf( "Player created StageDevice (%d,%d,%d)\n", 
                 info->player_id.port, 
@@ -592,19 +613,35 @@ int main( int argc, char *argv[] )
       player_gerkey = true;
     }
     else if(!strcmp(new_argv[i], "-port"))
-    {
-      if(++i<argc) 
-      { 
-	global_playerport = atoi(new_argv[i]);
-	
-	printf("[Port %d]", global_playerport);
-      }
-      else 
       {
-	Usage();
-	exit(-1);
+	if(++i<argc) 
+	  { 
+	    global_playerport = atoi(new_argv[i]);
+	    
+	    printf("[Port %d]", global_playerport);
+	  }
+	else 
+	  {
+	    Usage();
+	    exit(-1);
+	  }
       }
-    }
+    // added a distinct command-line option to handle multiple ports
+    // for a subtle but reassuring difference in output - RTV
+    else if(!strcmp(new_argv[i], "-ports"))
+      {
+	if(++i<argc) 
+	  { 
+	    global_playerport = atoi(new_argv[i]);
+	    
+	    printf("[Ports %d]", global_playerport);
+      }
+	else 
+	  {
+	    Usage();
+	    exit(-1);
+	  }
+      }
     else if(!strcmp(new_argv[i], "-sane"))
     {
       for(int i=0;i<ARRAYSIZE(sane_spec);i++)
@@ -753,11 +790,15 @@ int main( int argc, char *argv[] )
       exit(-1);
     }
 
+    //printf( "[Port" );
+
     // read in the ports
     for(int i=0;i<global_playerport;i++)
     {
       if(scanf("%d", ports+i) != 1)
         printf("scanf failed to get port %d\n", i);
+
+      //printf( " %d", *(ports+i) ); fflush( stdout );
       
       // setup the socket to listen on
       if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
@@ -769,6 +810,8 @@ int main( int argc, char *argv[] )
 
       ufds[i].events = POLLIN;
     }
+
+    //puts( "]" );
 
     // set up the stagetime object
     GlobalTime = (PlayerTime*)(new StageTime(simtimep));
@@ -826,9 +869,16 @@ int main( int argc, char *argv[] )
       {
         clientData = new CClientData(auth_key,ports[i]);
 
-        /* shouldn't block here */
-        if((clientData->socket = accept(ufds[i].fd,(struct sockaddr *)NULL, 
-                                        &sender_len)) == -1)
+	struct sockaddr_in cliaddr;
+	sender_len = sizeof(cliaddr);
+	memset( &cliaddr, 0, sizeof(cliaddr) );
+
+	        /* shouldn't block here */
+        if((clientData->socket = accept(ufds[i].fd, 
+					(struct sockaddr*)&cliaddr, 
+					&sender_len)) == -1)
+	  //if((clientData->socket = accept(ufds[i].fd, NULL, 
+	  //                          &sender_len)) == -1)
         {
           perror("accept(2) failed: ");
           exit(-1);
@@ -842,9 +892,28 @@ int main( int argc, char *argv[] )
         }
 
         /* got conn */
-        printf("** Player [port %d] client accepted on socket %d **\n", 
-               global_playerport, clientData->socket);
-
+	
+	// lookup the name of the client
+	//struct hostent* clientName
+	//= gethostbyaddr( &(cliaddr.sin_addr), sender_len, AF_INET );
+	//if( clientName && clientName->h_name )
+	//printf("** Player [port %d] client accepted from %s "
+	// "on socket %d **\n", 
+	// global_playerport, clientName->h_name, clientData->socket);
+	
+	char clientIp[64];
+	if( make_dotted_ip_address( clientIp, 64, 
+				    (uint32_t)(cliaddr.sin_addr.s_addr) ) )
+	  {
+	    // couldn't get the ip
+	    printf("** Player [port %d] client accepted on socket %d **\n",
+		   global_playerport,  clientData->socket);
+	  }
+	else
+	  printf("** Player [port %d] client accepted from %s "
+		  "on socket %d **\n", 
+		  global_playerport, clientIp, clientData->socket);
+	
         /* add it to the manager's list */
         clientmanager->AddClient(clientData);
       }

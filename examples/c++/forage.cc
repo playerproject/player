@@ -8,6 +8,7 @@
 #include <playerclient.h>
 #include <math.h>
 #include <values.h>
+#include <time.h> // to seed the RNG
 
 #define USAGE \
   "USAGE: forage [-h <host>] [-p <port>] [-c <channel>] [-m]\n" \
@@ -106,6 +107,9 @@ int main(int argc, char** argv)
   VisionProxy vp(&robot,0,'r');
   GripperProxy gp(&robot,0,'a');
   GpsProxy gpsp(&robot,0,'r');
+
+  // seed the RNG
+  srand( (unsigned int)time(0) );
 
   int newturnrate,newspeed;
   //int lastdir = 1;

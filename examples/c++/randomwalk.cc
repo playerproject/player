@@ -6,6 +6,7 @@
 #include <string.h> /* for strcpy() */
 #include <stdlib.h>  /* for atoi(3),rand(3) */
 #include <playerclient.h>
+#include <time.h>
 
 #define USAGE \
   "USAGE: randomwalk [-h <host>] [-p <port>] [-m]\n" \
@@ -87,6 +88,9 @@ int main(int argc, char** argv)
 
   /* first, parse command line args */
   parse_args(argc,argv);
+
+  // seed the RNG
+  srand( (unsigned int)time(0) );
 
   /* Connect to the Player server */
   PlayerClient robot(host,port);
