@@ -128,8 +128,8 @@ int mainwnd_update(mainwnd_t *wnd)
   {
     snprintf(filename, sizeof(filename), "playerv-%s-%d-%04d.jpg",
              wnd->host, wnd->port, wnd->stills_count++);
-    printf("exporting %s\n", filename);
-    rtk_canvas_export_jpeg(wnd->canvas, filename);
+    printf("saving [%s]\n", filename);
+    rtk_canvas_export_image(wnd->canvas, filename, RTK_IMAGE_FORMAT_JPEG);
   }
 
   // Rotate the display
