@@ -1,0 +1,25 @@
+###########################################################################
+# Desc: Non-automake Makefile for python extension modules.
+# Author: Andrew Howard
+# Date: 21 Aug 2002
+# CVS: $Id$
+# TODO: Figure out how to make automake generate this file.
+###########################################################################
+
+# Variables to be replaced by the configure script.
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+
+all:
+	python setup.py build
+
+clean:
+	python setup.py clean
+
+install:
+	python setup.py install --install-platlib=$(libdir)/python
+
+distdir:
+	echo 'NOT IMPLEMENTED'
+
