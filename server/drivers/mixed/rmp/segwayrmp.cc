@@ -32,6 +32,7 @@
 #include "drivertable.h"
 
 #include "canio.h"
+#include "canio_kvaser.h"
 
 #define RMP_CAN_ID_SHUTDOWN	0x0412
 #define RMP_CAN_ID_COMMAND	0x0413
@@ -183,11 +184,12 @@ class SegwayRMP : public CDevice
 
   private: 
     DualCANIO *canio;
-    bool canioInit;
 
     int16_t last_xspeed, last_yawspeed;
 
     bool motor_enabled;
+
+    const char* caniotype;
 
     // helper to handle config requests
     int HandleConfig(void* client, unsigned char* buffer, size_t len);
@@ -219,6 +221,7 @@ CDevice* SegwayRMP_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
+
   return ((CDevice*) (new SegwayRMP(interface, cf, section)));
 }
 
@@ -234,9 +237,10 @@ SegwayRMP::SegwayRMP(char* interface, ConfigFile* cf, int section)
               sizeof(player_position_cmd_t), 10, 10)
 {
   last_xspeed = last_yawspeed = 0;
-  assert(canio = new DualCANIO);
-  canioInit = false;
+  canio = NULL;
   motor_enabled = false;
+
+  caniotype = cf->ReadString(section, "canio", "kvaser");
 }
 
 SegwayRMP::~SegwayRMP()
@@ -248,19 +252,27 @@ SegwayRMP::~SegwayRMP()
 int
 SegwayRMP::Setup()
 {
-  // setup the CAN stuff
-  if(!canioInit) 
+  printf("CAN bus initializing...");
+  fflush(stdout);
+
+  if(!strcmp(caniotype, "kvaser"))
+    assert(canio = new CANIOKvaser);
+  else
   {
-    // start the CAN at 500 kpbs
-    if(canio->Init(BAUD_500K) < 0) 
-    {
-      PLAYER_ERROR("error on CAN Init");
-      return(-1);
-    }
-    
-    canioInit = true;
-    StartThread();
+    PLAYER_ERROR1("Unknown CAN I/O type: \"%s\"", caniotype);
+    return(-1);
   }
+
+  // start the CAN at 500 kpbs
+  if(canio->Init(BAUD_500K) < 0) 
+  {
+    PLAYER_ERROR("error on CAN Init");
+    return(-1);
+  }
+
+  StartThread();
+
+  puts("done.");
 
   return(0);
 }
@@ -275,14 +287,11 @@ SegwayRMP::Shutdown()
   Write(pkt);
 
   // shutdown the CAN
-  if(canioInit)
-  {
-    canio->Shutdown();
-    canioInit = false;
-    StopThread();
-    motor_enabled = false;
-    last_xspeed = last_yawspeed = 0;
-  }
+  canio->Shutdown();
+  StopThread();
+  delete canio;
+  motor_enabled = false;
+  last_xspeed = last_yawspeed = 0;
   
   return(0);
 }
