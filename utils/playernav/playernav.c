@@ -331,6 +331,7 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   t[1] = 0; t[3] = -1; t[5] = 0;
   gnome_canvas_item_affine_absolute((GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas), t);
 
+
   // set canvas units to meters, scaled by window size
   gui_data->canvas_zoom = ((DEFAULT_DISPLAY_WIDTH - 20) / 
                            (gui_data->mapdev->width * 
@@ -435,6 +436,8 @@ create_map_image(gui_data_t* gui_data)
                                   "width", gui_data->mapdev->width *
                                   gui_data->mapdev->resolution,
                                   "height", gui_data->mapdev->height *
+                                  gui_data->mapdev->resolution,
+                                  "y", gui_data->mapdev->height *
                                   gui_data->mapdev->resolution,
                                   "pixbuf", pixbuf,
                                   NULL)));
