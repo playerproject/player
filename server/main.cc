@@ -381,7 +381,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // Create a StageDevice with this IO base address and filedes
           dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	  
-	  deviceTable->AddDevice(deviceIO->player_id, 
+          deviceTable->AddDevice(deviceIO->player_id, 
                                  (char*)(deviceIO->drivername),
                                  PLAYER_ALL_MODE, dev);
 	  
@@ -390,39 +390,68 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         }
         break;
 
-	case PLAYER_LOCALIZATION_CODE:
+        case PLAYER_LOCALIZE_CODE:
         {
           int section = configFile.AddEntity(globalparent,
-                                             PLAYER_LOCALIZATION_STRING);
+                                             PLAYER_LOCALIZE_STRING);
           // you could insert config file options manually here.
 
-          // find the localization device in the available device table
-	  player_interface_t interface;
-          DriverEntry* entry;
-	  if ((lookup_interface(PLAYER_LOCALIZATION_STRING, &interface) < 0) ||
-	      !(entry = driverTable->GetDriverEntry(interface.default_driver)))
-            PLAYER_WARN("Player support for localization device unavailable.");
-          else
+          // Regular MCL
+          if (strcmp((const char*) deviceIO->drivername, "regular_mcl") == 0)
           {
-            devicep = (PSDevice*)(*(entry->initfunc))(PLAYER_LOCALIZATION_STRING, 
-                                         &configFile, section);
-            // add it to the instantiated device table
-            deviceTable->AddDevice(deviceIO->player_id, 
-                                   PLAYER_LOCALIZATION_STRING,
-                                   PLAYER_READ_MODE, 
-                                   devicep);
+            DriverEntry* entry;
+            entry = driverTable->GetDriverEntry((char*) deviceIO->drivername);
+            if (!entry)
+            { 
+              PLAYER_WARN("Player support for %s device unavailable.", deviceIO->drivername);
+            }
+            else
+            {
+              devicep = (PSDevice*)(*(entry->initfunc))(PLAYER_LOCALIZE_STRING, 
+                                                        &configFile, section);
+              // add it to the instantiated device table
+              deviceTable->AddDevice(deviceIO->player_id, 
+                                     PLAYER_LOCALIZE_STRING,
+                                     PLAYER_READ_MODE, 
+                                     devicep);
 
-            // add this port to our listening list
-            StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
+              // add this port to our listening list
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
 
-            // setup the Stage buffers
-            devicep->SetupStageBuffers(deviceIO, lockfd, 
-                                       deviceIO->lockbyte);
+              // setup the Stage buffers
+              devicep->SetupStageBuffers(deviceIO, lockfd, 
+                                         deviceIO->lockbyte);
+            }
           }
 
+          // Adaptive MCL
+          if (strcmp((const char*) deviceIO->drivername, "adaptive_mcl") == 0)
+          {
+            DriverEntry* entry;
+            entry = driverTable->GetDriverEntry((char*) deviceIO->drivername);
+            if (!entry)
+            {
+              PLAYER_WARN("Player support for %s device unavailable.", deviceIO->drivername);
+            }
+            else
+            {
+              CDevice *device = (*(entry->initfunc)) (PLAYER_LOCALIZE_STRING,
+                                                      &configFile, section);
+            
+              // add it to the instantiated device table
+              deviceTable->AddDevice(deviceIO->player_id, 
+                                     PLAYER_LOCALIZE_STRING,
+                                     PLAYER_READ_MODE, 
+                                     device);
+            }
+          }
+          else
+          {
+            PLAYER_WARN("Player device %s not recognized.", deviceIO->drivername);
+          }
         }
         break;
-	  
+
         case PLAYER_COMMS_CODE:   
           // Create broadcast device as per normal
           //
@@ -454,7 +483,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
               deviceTable->AddDevice(deviceIO->player_id, PLAYER_COMMS_STRING,
                                      PLAYER_ALL_MODE, 
                                      (*(entry->initfunc))(PLAYER_COMMS_STRING,
-                                                   &configFile, section));
+                                                          &configFile, section));
  
               // add this port to our listening list
               StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
@@ -463,31 +492,31 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           break;
 
           /*
-        case PLAYER_BPS_CODE:   
-          // Create broadcast device as per normal
+            case PLAYER_BPS_CODE:   
+            // Create broadcast device as per normal
           
-          // FIXME: apparently deviceIO->local is *not* currently being set
-          // by Stage...
-          if(deviceIO->local || !deviceIO->local)
-          {
+            // FIXME: apparently deviceIO->local is *not* currently being set
+            // by Stage...
+            if(deviceIO->local || !deviceIO->local)
+            {
             // find the bps device in the available device table
             DriverEntry* entry;
             if(!(entry = driverTable->GetDriverEntry("bps")))
             {
-              puts("WARNING: Player support for bps device unavailable.");
+            puts("WARNING: Player support for bps device unavailable.");
             }
             else
             {
-              // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
-                           (*(entry->initfunc))(PLAYER_BPS_STRING,
-                                                &configFile,0));
+            // add it to the instantiated device table
+            deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
+            (*(entry->initfunc))(PLAYER_BPS_STRING,
+            &configFile,0));
  
-              // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+            // add this port to our listening list
+            StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
             }
-          }
-          break;
+            }
+            break;
           */
 
           // devices not implemented
@@ -537,7 +566,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   // open and map the stage clock
   char clockname[MAX_FILENAME_SIZE];
   snprintf( clockname, MAX_FILENAME_SIZE-1, "%s/%s", 
-	    directory, STAGE_CLOCK_NAME );
+            directory, STAGE_CLOCK_NAME );
   
 #ifdef DEBUG
   printf("Opening %s\n", clockname );
@@ -556,7 +585,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   stage_clock_t *clock = 0;
 
   if( (clock = (stage_clock_t*)mmap( NULL, sizeof(struct timeval),
-				     PROT_READ | PROT_WRITE, 
+                                     PROT_READ | PROT_WRITE, 
                                      MAP_SHARED, tfd, (off_t)0 ) )
       == MAP_FAILED )
   {

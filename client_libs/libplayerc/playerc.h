@@ -800,51 +800,66 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device);
  * proxy : localization device
  **************************************************************************/
 
-// localization device data
+// Hypothesis data
+typedef struct
+{
+  // Pose estimate (m, m, radians)
+  double mean[3];
+
+  // Covariance
+  double cov[3][3];
+
+  // Weight associated with this hypothesis
+  double weight;
+  
+} playerc_localize_hypoth_t;
+
+// Localize device data
 typedef struct
 {
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
-  // Number of hypothesis.
-  uint32_t num_hypothesis;
-  
-  // Pose of each hypothesis in global coordnate sytems (m, m, radians).
-  player_localization_hypothesis_t hypothesis[PLAYER_LOCALIZATION_MAX_HYPOTHESIS];
-  
-} playerc_localization_t;
+  // Map dimensions (cells)
+  int map_size_x, map_size_y;
+
+  // Map scale (m/cell)
+  double map_scale;
+
+  // Map data (empty = -1, unknown = 0, occupied = +1)
+  int8_t *map_cells;
+
+  // List of possible poses
+  int hypoth_count;
+  playerc_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
+
+} playerc_localize_t;
 
 
-// Create a localization proxy
-playerc_localization_t *playerc_localization_create(playerc_client_t *client, int robot, int index);
+// Create a localize proxy
+playerc_localize_t *playerc_localize_create(playerc_client_t *client, int robot, int index);
 
-// Destroy a localization proxy
-void playerc_localization_destroy(playerc_localization_t *device);
+// Destroy a localize proxy
+void playerc_localize_destroy(playerc_localize_t *device);
 
-// Subscribe to the localization device
-int playerc_localization_subscribe(playerc_localization_t *device, int access);
+// Subscribe to the localize device
+int playerc_localize_subscribe(playerc_localize_t *device, int access);
 
-// Un-subscribe from the localization device
-int playerc_localization_unsubscribe(playerc_localization_t *device);
+// Un-subscribe from the localize device
+int playerc_localize_unsubscribe(playerc_localize_t *device);
 
-// Reset the localization device
-int playerc_localization_reset(playerc_localization_t *device);
+// Reset the localize device
+int playerc_localize_reset(playerc_localize_t *device);
+
+// Retrieve the occupancy map.  The map is written into the proxy
+// structure.
+int playerc_localize_get_map(playerc_localize_t *device);
 
 // Get the current configuration.
-int playerc_localization_get_config(playerc_localization_t *device,
-	player_localization_config_t *config);
+int playerc_localize_get_config(playerc_localize_t *device, player_localize_config_t *config);
 
 // Modify the current configuration.
-int playerc_localization_set_config(playerc_localization_t *device,
-	player_localization_config_t config);
-
-// Retrieve the information of the internal grid map
-int playerc_localization_get_map_header(playerc_localization_t *device,
-	uint8_t scale, player_localization_map_header_t *header);
-
-// Retrieve the scaled grid map
-int playerc_localization_get_map(playerc_localization_t *device,
-	uint8_t scale, player_localization_map_header_t *header, char *data);
+int playerc_localize_set_config(playerc_localize_t *device, player_localize_config_t config);
 
 
 /***************************************************************************

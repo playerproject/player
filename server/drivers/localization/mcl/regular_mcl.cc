@@ -374,154 +374,154 @@ void RegularMCL::Main(void)
 // Process configuration requests.
 void RegularMCL::UpdateConfig(void)
 {
-    int len;
-    void *client;
-    static char buffer[PLAYER_MAX_REQREP_SIZE];
+  int len;
+  void *client;
+  static char buffer[PLAYER_MAX_REQREP_SIZE];
   
-    while ((len = GetConfig(&client, &buffer, sizeof(buffer))))
+  while ((len = GetConfig(&client, &buffer, sizeof(buffer))))
+  {
+    switch (buffer[0])
     {
-	switch (buffer[0])
-	{
 	    case PLAYER_LOCALIZATION_RESET_REQ:
 	    {
-		player_localization_reset_t reset;
-		// check if the config request is valid
-		if (len != sizeof(player_localization_reset_t))
-		{
-		    PLAYER_ERROR2("config request len is invalid (%d != %d)",
-			    len, sizeof(reset));
-		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-			PLAYER_ERROR("PutReply() failed");
-		    continue;
-		}
-		// reset MCL device
-		this->Reset();
-		// send an acknowledgement to the client
-	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &reset, sizeof(reset)) != 0)
-		    PLAYER_ERROR("PutReply() failed");
-		break;
+        player_localization_reset_t reset;
+        // check if the config request is valid
+        if (len != sizeof(player_localization_reset_t))
+        {
+          PLAYER_ERROR2("config request len is invalid (%d != %d)",
+                        len, sizeof(reset));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        // reset MCL device
+        this->Reset();
+        // send an acknowledgement to the client
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &reset, sizeof(reset)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
 	    }
 
 	    case PLAYER_LOCALIZATION_GET_CONFIG_REQ:
 	    {
-		player_localization_config_t config;
-		// check if the config request is valid
-		if (len != sizeof(config.subtype))
-		{
-		    PLAYER_ERROR2("config request len is invalid (%d != %d)",
-			    len, sizeof(config.subtype));
-		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-			PLAYER_ERROR("PutReply() failed");
-		    continue;
-		}
-		// load configuration info
-		config.num_particles = htonl(this->config.num_particles);
-		// send the information to the client
-	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
-		    PLAYER_ERROR("PutReply() failed");
-		break;
+        player_localization_config_t config;
+        // check if the config request is valid
+        if (len != sizeof(config.subtype))
+        {
+          PLAYER_ERROR2("config request len is invalid (%d != %d)",
+                        len, sizeof(config.subtype));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        // load configuration info
+        config.num_particles = htonl(this->config.num_particles);
+        // send the information to the client
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
 	    }
 
 	    case PLAYER_LOCALIZATION_SET_CONFIG_REQ:
 	    {
-		player_localization_config_t config;
-		// check if the config request is valid
-		if (len != sizeof(player_localization_config_t))
-		{
-		    PLAYER_ERROR2("config request len is invalid (%d != %d)",
-			    len, sizeof(config));
-		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-			PLAYER_ERROR("PutReply() failed");
-		    continue;
-		}
-		// change the current configuration
-		memcpy(&config, buffer, sizeof(config));
-		this->config.num_particles = (uint32_t) ntohl(config.num_particles);
-		// reset the device after changing configuration
-		this->Reset();
-		// send an acknowledgement to the client
-	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
-		    PLAYER_ERROR("PutReply() failed");
-		break;
+        player_localization_config_t config;
+        // check if the config request is valid
+        if (len != sizeof(player_localization_config_t))
+        {
+          PLAYER_ERROR2("config request len is invalid (%d != %d)",
+                        len, sizeof(config));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        // change the current configuration
+        memcpy(&config, buffer, sizeof(config));
+        this->config.num_particles = (uint32_t) ntohl(config.num_particles);
+        // reset the device after changing configuration
+        this->Reset();
+        // send an acknowledgement to the client
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
 	    }
 
 	    case PLAYER_LOCALIZATION_GET_MAP_HDR_REQ:
 	    {
-		player_localization_map_header_t map_header;
-		// check if the config request is valid
-		if (len != sizeof(map_header.subtype)+sizeof(map_header.scale))
-		{
-		    PLAYER_ERROR2("config request len is invalid (%d != %d)",
-			    len, sizeof(map_header.subtype)+sizeof(map_header.scale));
-		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-			PLAYER_ERROR("PutReply() failed");
-		    continue;
-		}
-		// load the size information of map
-		memcpy(&map_header, buffer, sizeof(map_header));
-		uint8_t scale = map_header.scale;
-		map_header.width = htonl((uint32_t)(this->map->width / float(scale) + 0.5));
-		map_header.height = htonl((uint32_t)(this->map->height / float(scale) + 0.5));
-		map_header.ppkm = htonl((uint32_t)(this->map->ppm * 1000 / float(scale) + 0.5));
-		// send the information to the client
-	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &map_header, sizeof(map_header)) != 0)
-		    PLAYER_ERROR("PutReply() failed");
-		break;
+        player_localization_map_header_t map_header;
+        // check if the config request is valid
+        if (len != sizeof(map_header.subtype)+sizeof(map_header.scale))
+        {
+          PLAYER_ERROR2("config request len is invalid (%d != %d)",
+                        len, sizeof(map_header.subtype)+sizeof(map_header.scale));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        // load the size information of map
+        memcpy(&map_header, buffer, sizeof(map_header));
+        uint8_t scale = map_header.scale;
+        map_header.width = htonl((uint32_t)(this->map->width / float(scale) + 0.5));
+        map_header.height = htonl((uint32_t)(this->map->height / float(scale) + 0.5));
+        map_header.ppkm = htonl((uint32_t)(this->map->ppm * 1000 / float(scale) + 0.5));
+        // send the information to the client
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &map_header, sizeof(map_header)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
 	    }
 
 	    case PLAYER_LOCALIZATION_GET_MAP_DATA_REQ:
 	    {
-		player_localization_map_data_t map_data;
-		// check if the config request is valid
-		if (len != sizeof(map_data.subtype) +
-			   sizeof(map_data.scale) +
-			   sizeof(map_data.row))
-		{
-		    PLAYER_ERROR2("config request len is invalid (%d != %d)",
-			    len, sizeof(map_data.subtype) +
-			    sizeof(map_data.scale) + sizeof(map_data.row));
-		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-			PLAYER_ERROR("PutReply() failed");
-		    continue;
-		}
-		// retrieve user input
-		memcpy(&map_data, buffer, sizeof(map_data));
-		uint32_t scale = map_data.scale;
-		uint32_t row = (uint32_t) ntohs(map_data.row);
-		// compute the size of scaled world
-		uint32_t width = (uint32_t)(this->map->width / float(scale) + 0.5);
-		uint32_t height = (uint32_t)(this->map->height / float(scale) + 0.5);
-		// check if the request is valid
-		if (width >= PLAYER_MAX_REQREP_SIZE-4 || row >= height) {
-		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-			PLAYER_ERROR("PutReply() failed");
-		    continue;
-		}
-		// fill out the map data
-		memset(map_data.data, 255, sizeof(map_data.data));
-		uint32_t nrows = sizeof(map_data.data) / width;
-		if (row+nrows > height) nrows = height - row;
-		for (uint32_t i=0; i<nrows; i++, row++)
-		    for (uint32_t h=row*scale; h<(row+1)*scale; h++)
-			for (uint32_t w=0; w<this->map->width; w++) {
-			    uint8_t np = this->map->map[h*this->map->width + w];
-			    uint32_t idx = i*width + (uint32_t)(w/float(scale)+0.5);
-			    if (map_data.data[idx] > np) map_data.data[idx] = np;
-			}
-		// send the information to the client
-	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &map_data, sizeof(map_data)) != 0)
-		    PLAYER_ERROR("PutReply() failed");
-		break;
+        player_localization_map_data_t map_data;
+        // check if the config request is valid
+        if (len != sizeof(map_data.subtype) +
+            sizeof(map_data.scale) +
+            sizeof(map_data.row))
+        {
+          PLAYER_ERROR2("config request len is invalid (%d != %d)",
+                        len, sizeof(map_data.subtype) +
+                        sizeof(map_data.scale) + sizeof(map_data.row));
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        // retrieve user input
+        memcpy(&map_data, buffer, sizeof(map_data));
+        uint32_t scale = map_data.scale;
+        uint32_t row = (uint32_t) ntohs(map_data.row);
+        // compute the size of scaled world
+        uint32_t width = (uint32_t)(this->map->width / float(scale) + 0.5);
+        uint32_t height = (uint32_t)(this->map->height / float(scale) + 0.5);
+        // check if the request is valid
+        if (width >= PLAYER_MAX_REQREP_SIZE-4 || row >= height) {
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+        // fill out the map data
+        memset(map_data.data, 255, sizeof(map_data.data));
+        uint32_t nrows = sizeof(map_data.data) / width;
+        if (row+nrows > height) nrows = height - row;
+        for (uint32_t i=0; i<nrows; i++, row++)
+          for (uint32_t h=row*scale; h<(row+1)*scale; h++)
+            for (uint32_t w=0; w<this->map->width; w++) {
+              uint8_t np = this->map->map[h*this->map->width + w];
+              uint32_t idx = i*width + (uint32_t)(w/float(scale)+0.5);
+              if (map_data.data[idx] > np) map_data.data[idx] = np;
+            }
+        // send the information to the client
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &map_data, sizeof(map_data)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
 	    }
 
 	    default:
 	    {
-		if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-		    PLAYER_ERROR("PutReply() failed");
-		break;
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
 	    }
-	}
     }
+  }
 }
 
 

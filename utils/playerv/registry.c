@@ -73,11 +73,11 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fndestroy = (fndestroy_t) sonar_destroy;
       device->fnupdate = (fnupdate_t) sonar_update;
       break;
-    case PLAYER_LOCALIZATION_CODE:
-      device->proxy = localization_create(mainwnd, opt, client, device->robot,
+    case PLAYER_LOCALIZE_CODE:
+      device->proxy = localize_create(mainwnd, opt, client, device->robot,
                                  device->index, device->drivername, device->subscribe);
-      device->fndestroy = (fndestroy_t) localization_destroy;
-      device->fnupdate = (fnupdate_t) localization_update;
+      device->fndestroy = (fndestroy_t) localize_destroy;
+      device->fnupdate = (fnupdate_t) localize_update;
       break;
     default:
       device->proxy = NULL;

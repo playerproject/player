@@ -56,6 +56,18 @@ else
 fi
 AM_CONDITIONAL(WITH_RTK, test x$with_rtk = xyes)
 
+dnl Include RTK gui support (for debugging)
+AC_ARG_WITH(rtkgui, 
+[  --with-rtkgui           Include RTK GUI in server (debugging)],, with_rtkgui=no)
+if test "x$with_rtkgui" = "xyes"; then
+  AC_DEFINE(INCLUDE_RTKGUI, 1, [[include the RTK GUI in server (debugging)]])
+  RTKGUI_EXTRA_LIB="-L$RTK_DIR/lib -lrtk $LIBJPEG"
+  RTKGUI_EXTRA_LDFLAGS="`gtk-config --libs gtk gthread`"
+fi
+AM_CONDITIONAL(INCLUDE_RTKGUI, test x$with_rtkgui = xyes)
+AC_SUBST(RTKGUI_EXTRA_LIB)
+AC_SUBST(RTKGUI_EXTRA_LDFLAGS)
+
 dnl FreeBSD always invokes Tcl with a version, so i'll pick a reasonable one
 case $host in
 *-*-freebsd*) AC_CHECK_PROG([TCLPKGFILE], [tclsh8.0], [pkgIndex.tcl], [])
