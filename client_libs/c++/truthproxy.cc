@@ -104,3 +104,24 @@ int TruthProxy::SetPose( double px, double py, double pa )
   return 0;
 }
 
+// Set the object pose by sending a config request
+int TruthProxy::SetPoseOnRoot( double px, double py, double pa )
+{
+  int len;
+  player_truth_pose_t config;
+  
+  config.subtype = PLAYER_TRUTH_SET_POSE_ON_ROOT;
+  config.px = htonl((int) (px * 1000));
+  config.py = htonl((int) (py * 1000));
+  config.pa = htonl((int) (pa * 180 / M_PI)); 
+  
+  len = client->Request( PLAYER_TRUTH_CODE, index, 
+			 (const char*)&config, sizeof(config));
+  if (len < 0)
+    return -1;
+  
+  // TODO: check for a NACK
+  
+  return 0;
+}
+

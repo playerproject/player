@@ -1219,6 +1219,12 @@ class TruthProxy : public ClientProxy
       if there is a problem.  
   */
   int SetPose( double px, double py, double pa );
+
+  /** Request a change in pose (m,m,radians) and place the model on
+      the background. Useful for repositioning pucks that have been
+      picked up. Returns 0 on success, -1 if there is a problem.
+  */
+  int SetPoseOnRoot( double px, double py, double pa );
 };
 
 

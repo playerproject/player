@@ -1376,6 +1376,7 @@ The {\tt truth} interface provides access to the absolute state of entities.
 /** Request packet subtypes. */
 #define PLAYER_TRUTH_GET_POSE 0x00
 #define PLAYER_TRUTH_SET_POSE 0x01
+#define PLAYER_TRUTH_SET_POSE_ON_ROOT 0x02
 
 /** [Data] */
 /** The {\tt truth} interface returns data concerning the current state of
@@ -1396,7 +1397,9 @@ typedef struct player_truth_data
 typedef struct player_truth_pose
 {
   /** Packet subtype.  Must be either PLAYER_TRUTH_GET_POSE or
-    PLAYER_TRUTH_SET_POSE */
+    PLAYER_TRUTH_SET_POSE or PLAYER_TRUTH_SET_POSE_ON_ROOT. The last
+    option places the object on the background and sets its
+    pose. Great for repositioning pucks that have been picked up.*/
   uint8_t subtype;
   
   /** Object pose in world cs (mm, mm, degrees). */
