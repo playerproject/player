@@ -16,8 +16,8 @@ static void test_camera_save(playerc_camera_t *device, const char *filename);
 int test_camera(playerc_client_t *client, int index)
 {
   int t;
-  double i_px, i_py, i_pa;
-  double f_px, f_py, f_pa;
+  //double i_px, i_py, i_pa;
+  //double f_px, f_py, f_pa;
   void *rdevice;
   playerc_camera_t *device;
   char filename[128];

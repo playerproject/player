@@ -449,7 +449,7 @@ FlockOfBirds_Device::Shutdown()
 int
 FlockOfBirds_Device::HandleConfig(void *client, unsigned char *buffer, size_t len)
 {
-	bool success = false;
+	//bool success = false;
 
 	// we dont support any config, so just NACK them all
 	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK)) {
@@ -468,8 +468,8 @@ FlockOfBirds_Device::Main()
   char buffer[256];
   size_t buffer_len;
   void *client;
-  short pan=0, tilt=0;
-  short panspeed=0, tiltspeed=0;
+  //short pan=0, tilt=0;
+  //short panspeed=0, tiltspeed=0;
   
   while(1) 
   {

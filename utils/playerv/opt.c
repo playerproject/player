@@ -193,7 +193,7 @@ int opt_load(opt_t *opt, const char *filename)
   if (file == NULL)
   {
     PRINT_ERR1("unable to open config file %s", filename);
-    PRINT_ERRNO("");
+    PRINT_ERRNO("%s");
     return -1;
   }
 
@@ -265,7 +265,7 @@ int opt_save(opt_t *opt, const char *filename)
   if (file == NULL)
   {
     PRINT_ERR1("unable to open/create config file %s", filename);
-    PRINT_ERRNO("");
+    PRINT_ERRNO("%s");
     return -1;
   }
 

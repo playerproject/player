@@ -48,7 +48,7 @@ parse_args(int argc, char** argv)
 int main(int argc, char **argv)
 { 
   parse_args(argc,argv);
-  unsigned char bitString[15] = {1,1,1,0,0,0,1,1,1,0,0,0,1,1,1};
+  //unsigned char bitString[15] = {1,1,1,0,0,0,1,1,1,0,0,0,1,1,1};
 
   /* Connect to Player server */
   PlayerClient robot(host,port);

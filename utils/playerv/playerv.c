@@ -30,6 +30,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "playerv.h"
 
@@ -155,7 +156,7 @@ int main(int argc, char **argv)
   }
     
   // Print the list of available devices.
-  printf("Available devices:\n", host, port);
+  printf("Available devices: %s:%d\n", host, port);
   for (i = 0; i < device_count; i++)
   {
     device = devices + i;

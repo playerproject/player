@@ -315,13 +315,13 @@ Wavefront::GetLocalizeData()
 {
   player_localize_data_t data;
   unsigned int timesec, timeusec;
-  double timediff;
+  //double timediff;
   double lx,ly,la;
   double dist;
   double lx_sum, ly_sum;
   double lx_avg, ly_avg;
   double la_tmp;
-  struct timeval curr;
+  //struct timeval curr;
 
   if(!this->localize->GetData(this,(unsigned char*)&data,sizeof(data),
                               &timesec, &timeusec) || !data.hypoth_count)
@@ -512,7 +512,7 @@ void Wavefront::Main()
 {
   int curr_waypoint;
   double dist, angle;
-  double lag;
+  //double lag;
   static bool rotate_waypoint=false;
   static bool goal_hack=false;
 

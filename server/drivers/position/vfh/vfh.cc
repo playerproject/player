@@ -247,7 +247,7 @@ int VFH_Class::Shutdown() {
 // Set up the underlying truth device (optional).
 int VFH_Class::SetupTruth() 
 {
-  struct timeval ts;
+  //struct timeval ts;
   player_device_id_t id;
   
   // if the user didn't specify a truth device, don't do anything
@@ -406,7 +406,7 @@ int VFH_Class::ShutdownLaser() {
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new odometry data
 int VFH_Class::GetOdom() {
-  int i;
+  //int i;
   size_t size;
   player_position_data_t data;
   uint32_t timesec, timeusec;
@@ -446,7 +446,7 @@ int VFH_Class::GetOdom() {
 // Check for new truth data (optional)
 int VFH_Class::GetTruth() 
 {
-  int i;
+  //int i;
   size_t size;
   player_truth_data_t data;
   uint32_t timesec, timeusec;
@@ -508,7 +508,7 @@ int VFH_Class::GetLaser() {
   range_res = ((int16_t) ntohs(data.range_res));
 
   this->laser_count = ntohs(data.range_count);
-  assert(this->laser_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
+  assert(this->laser_count < (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
 
   // Read and byteswap the range data
   for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) {
@@ -677,9 +677,9 @@ void VFH_Class::Main()
 {
   struct timespec sleeptime;
   float dist;
-  struct timeval stime, time;
-  int gt, ct;
-  bool newodom,newtruth;
+  //struct timeval stime, time;
+  //int gt, ct;
+  //bool newodom,newtruth;
   double angdiff;
 
   sleeptime.tv_sec = 0;
@@ -883,7 +883,7 @@ void VFH_Class::GetCommand()
 VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
-  double size;
+  //double size;
   double cell_size, robot_radius, safety_dist, free_space_cutoff, obs_cutoff;
   double weight_desired_dir, weight_current_dir;
   int window_diameter, sector_angle, max_speed, max_turnrate, min_turnrate;
@@ -1322,7 +1322,8 @@ void VFH_Class::Print_Cells_Dist() {
 }
 
 void VFH_Class::Print_Cells_Sector() {
-  int x, y, i;
+  int x, y;
+  unsigned int i;
 
   printf("\nCell Sectors:\n");
   printf("****************\n");
@@ -1393,7 +1394,8 @@ for(x=0;x<=360;x++) {
 }
 
 int VFH_Class::Build_Primary_Polar_Histogram() {
-  int x, y, i;
+  int x, y;
+  unsigned int i;
 
   for(x=0;x<HIST_SIZE;x++) {
     Hist[x] = 0;
@@ -1516,7 +1518,7 @@ int VFH_Class::Bisect_Angle(int angle1, int angle2) {
 }
 
 int VFH_Class::Select_Candidate_Angle() {
-  int i;
+  unsigned int i;
   float weight, min_weight;
 
   if (Candidate_Angle.size() == 0) {
@@ -1582,7 +1584,7 @@ int VFH_Class::Select_Direction() {
     }
   }
 
-  for(i=0;i<border.size();i++) {
+  for(i=0;i<(int)border.size();i++) {
 //printf("BORDER: %f %f\n", border[i].first, border[i].second);
     angle = Delta_Angle(border[i].first, border[i].second);
 
@@ -1621,7 +1623,7 @@ int VFH_Class::Select_Direction() {
 }
 
 int VFH_Class::Set_Motion() { 
-  int i;
+  //int i;
 
   // This happens if all directions blocked, so just spin in place
   if (speed <= 0) {

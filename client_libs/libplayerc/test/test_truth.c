@@ -8,6 +8,8 @@
 #include "test.h"
 #include "playerc.h"
 
+#include <math.h>
+
 
 // Basic test for truth device.
 int test_truth(playerc_client_t *client, int index)

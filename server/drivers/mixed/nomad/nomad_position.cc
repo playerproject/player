@@ -232,7 +232,7 @@ void
 NomadPosition::Main()
 {  
   player_nomad_data_t nomad_data;
-  struct timeval tv;
+  //struct timeval tv;
 
   for(;;)
     {

@@ -134,7 +134,7 @@ void mainwnd_destroy(mainwnd_t *wnd)
 // Returns 1 if the program should quit.
 int mainwnd_update(mainwnd_t *wnd)
 {
-  char filename[256];
+  //char filename[256];
   
   // See if we should quit
   if (rtk_canvas_isclosed(wnd->canvas))

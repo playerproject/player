@@ -62,7 +62,7 @@ CDevice* RFLEXPosition_Init(char* interface, ConfigFile* cf, int section)
 }
 
 void RFLEXPosition::GetOptions(ConfigFile * cf,int section, rflex_config_t *rflex_configs){
-  char temp[1024];
+  //char temp[1024];
   Lock();
   //length
   rflex_configs->mm_length=
