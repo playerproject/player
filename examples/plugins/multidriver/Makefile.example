@@ -4,7 +4,7 @@
 all: multidriver.so
 
 %.o: %.cc
-	$(CXX) -Wall -fpic -g3 -c $<
+	$(CXX) -Wall -fpic -g3 `pkg-config --cflags player` -c $<
 
 %.so: %.o
 	$(CXX) -shared -nostartfiles -o $@ $<
