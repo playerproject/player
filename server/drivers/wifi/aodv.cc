@@ -64,30 +64,21 @@ class Aodv : public Driver
 // Instantiate driver for given interface
 Driver * Aodv_Init( ConfigFile *cf, int section)
 { 
-  if(strcmp( PLAYER_WIFI_STRING))
-  {
-    PLAYER_ERROR1("driver \"linuxwifi\" does not support interface \"%s\"\n",
-                  interface);
-    return NULL;
-  }
-  else
-  {
-    return ((Driver*)(new Aodv( cf, section)));
-  }
+  return ((Driver*)(new Aodv(cf, section)));
 }
 
 
 // Register driver type
 void Aodv_Register(DriverTable *table)
 {
-  table->AddDriver("aodv", PLAYER_READ_MODE, Aodv_Init);
+  table->AddDriver("aodv", Aodv_Init);
   return;
 }
 
 
 // Constructor
 Aodv::Aodv( ConfigFile *cf, int section)
-    : Driver(cf, section, 0, 0, 0, 1)
+    : Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE, 0, 0, 0, 0)
 {
   return;
 }
@@ -154,7 +145,7 @@ size_t Aodv::GetData(player_device_id_t id,
 
     link = data.links + link_count++;
     strncpy(link->ip, ip, sizeof(link->ip));
-    link->qual_type = PLAYER_WIFI_QUAL_UNKNOWN;
+    //link->qual_type = PLAYER_WIFI_QUAL_UNKNOWN;
     link->qual = htons(qual);
     link->level = htons(level);
     link->noise = htons(noise);

@@ -50,7 +50,6 @@
 // and position objects
 #include <drivertable.h>
 #include <devicetable.h>
-extern DriverTable* deviceTable;
 
 class NomadPosition:public Driver 
 {
@@ -75,14 +74,7 @@ protected:
 // a factory creation function
 Driver* NomadPosition_Init( ConfigFile* cf, int section)
 {
-  if(strcmp( PLAYER_POSITION_STRING))
-    {
-      PLAYER_ERROR1("driver \"nomad_position\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else
-    return((Driver*)(new NomadPosition( cf, section)));
+  return((Driver*)(new NomadPosition( cf, section)));
 }
 
 // a driver registration function
@@ -95,8 +87,9 @@ void NomadPosition_Register(DriverTable* table)
 
 
 NomadPosition::NomadPosition( ConfigFile* cf, int section)
-  : Driver(cf, section,  sizeof(player_position_data_t), 
-	     sizeof(player_position_cmd_t), 1, 1 )
+  : Driver(cf, section,  PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
+           sizeof(player_position_data_t), 
+           sizeof(player_position_cmd_t), 1, 1 )
 {
   this->nomad_id.code = PLAYER_NOMAD_CODE;
   this->nomad_id.port = cf->ReadInt(section, "nomad_port", 0 );
@@ -135,7 +128,7 @@ int NomadPosition::Setup()
   else printf( " OK.\n" );
  
   // Subscribe to the nomad device, but fail if it fails
-  if(this->nomad->Subscribe(this) != 0)
+  if(this->nomad->Subscribe(this->nomad_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to nomad device");
     return(-1);
@@ -153,7 +146,7 @@ int NomadPosition::Shutdown()
   StopThread(); 
 
   // Unsubscribe from the laser device
-  this->nomad->Unsubscribe(this);
+  this->nomad->Unsubscribe(this->nomad_id);
 
   puts("NomadPosition has been shutdown");
   return(0);
@@ -164,11 +157,10 @@ void NomadPosition::Update()
   unsigned char config[NOMAD_CONFIG_BUFFER_SIZE];
   
   void* client;
-  player_device_id_t id;
   size_t config_size = 0;
   
   // first, check if there is a new config command
-  if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
+  if((config_size = GetConfig(&client, (void*)config, sizeof(config),NULL)))
     {
       switch(config[0])
 	{
@@ -178,8 +170,7 @@ void NomadPosition::Update()
 	    if(config_size != 1)
 	      {
 		puts("Arg get robot geom is wrong size; ignoring");
-		if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-			    NULL, NULL, 0))
+		if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 		  PLAYER_ERROR("failed to PutReply");
 		break;
 	      }
@@ -192,15 +183,14 @@ void NomadPosition::Update()
 	    geom.size[0] = htons((short) (2 * NOMAD_RADIUS_MM )); // x size
 	    geom.size[1] = htons((short) (2 * NOMAD_RADIUS_MM )); // y size
 	    
-	    if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-			sizeof(geom)))
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                        &geom, sizeof(geom),NULL))
 	      PLAYER_ERROR("failed to PutReply");
 	    break;
 	  }
 	default:
 	  puts("Position got unknown config request");
-	  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-		      NULL, NULL, 0))
+	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 	    PLAYER_ERROR("failed to PutReply");
 	  break;
 	}
@@ -208,10 +198,10 @@ void NomadPosition::Update()
   
   /* read the latest Player client commands */
   player_position_cmd_t command;
-  if( GetCommand((unsigned char*)&command, sizeof(command)) )
+  if( GetCommand((void*)&command, sizeof(command),NULL) )
     {
       // consume the command
-      device_used_commandsize = 0;
+      this->ClearCommand();
       
       // convert from the generic position interface to the
       // Nomad-specific command
@@ -223,7 +213,7 @@ void NomadPosition::Update()
       
       // command the Nomad device
       // CHECK: is this the right syntax?
-      this->nomad->PutCommand( this, (unsigned char*)&cmd, sizeof(cmd) ); 
+      this->nomad->PutCommand((void*)&cmd, sizeof(cmd),NULL ); 
     }
 }
 
@@ -240,8 +230,8 @@ NomadPosition::Main()
       this->nomad->Wait();
       
       // Get the Nomad data.
-      size_t len = this->nomad->
-	GetData(this, (uint8_t*)&nomad_data, sizeof(nomad_data), NULL, NULL );
+      size_t len = this->nomad->GetData(this->nomad_id,(void*)&nomad_data, 
+                                        sizeof(nomad_data), NULL);
       
       assert( len == sizeof(nomad_data) );
       
@@ -255,7 +245,7 @@ NomadPosition::Main()
       pos.xspeed = nomad_data.vel_trans;
       pos.yawspeed = nomad_data.vel_steer;
       
-      PutData((uint8_t*)&pos, sizeof(pos), 0,0 );
+      PutData((void*)&pos, sizeof(pos), NULL);
     }
   pthread_exit(NULL);
 }

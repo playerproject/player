@@ -86,8 +86,9 @@ class Festival:public Driver
     int Setup();
     int Shutdown();
 
-    size_t GetCommand(unsigned char *, size_t maxsize);
-    void PutCommand(unsigned char *, size_t maxsize);
+    virtual void PutCommand(player_device_id_t id,
+                            void* src, size_t len,
+                            struct timeval* timestamp);
 };
 
 
@@ -172,7 +173,6 @@ Festival::Setup()
   struct hostent* entp;
 
   // start out with a clean slate
-  PutCommand((unsigned char*)"",0);
   queue->Flush();
   read_pending = false;
 
@@ -183,8 +183,11 @@ Festival::Setup()
   int i=0;
   festival_args[i++] = festival_bin_name;
   festival_args[i++] = festival_server_flag;
-  festival_args[i++] = festival_libdir_flag;
-  festival_args[i++] = festival_libdir_value;
+  if(strcmp(DEFAULT_FESTIVAL_LIBDIR,festival_libdir_value))
+  {
+    festival_args[i++] = festival_libdir_flag;
+    festival_args[i++] = festival_libdir_value;
+  }
   festival_args[i] = (char*)NULL;
 
   if(!(pid = fork()))
@@ -308,41 +311,33 @@ Festival::KillFestival()
   sock = -1;
 }
 
-size_t 
-Festival::GetCommand(unsigned char* dest, size_t maxsize)
-{
-  int retval = device_used_commandsize;
-
-  if(device_used_commandsize)
-  {
-    //*((player_speech_cmd_t*)dest) = *((player_speech_cmd_t*)device_command);
-    memcpy(dest,device_command,device_used_commandsize);
-    device_used_commandsize = 0;
-  }
-  return(retval);
-}
 void 
-Festival::PutCommand(unsigned char* src, size_t maxsize)
+Festival::PutCommand(player_device_id_t id,
+                     void* src, size_t len,
+                     struct timeval* timestamp)
 {
-  Lock();
+  player_speech_cmd_t cmd;
 
-  *((player_speech_cmd_t*)device_command) = *((player_speech_cmd_t*)src);
-  // NULLify extra bytes at end
-  if(maxsize > sizeof(player_speech_cmd_t))
+  memset(&cmd,0,sizeof(player_speech_cmd_t));
+
+  if(len > sizeof(player_speech_cmd_t))
   {
-    fputs("RunSpeechThread: got command too large; ignoring extra bytes\n",
-          stderr);
+    PLAYER_WARN("got command too large; ignoring extra bytes");
+    len = sizeof(player_speech_cmd_t);
   }
-  else
-    memset((((player_speech_cmd_t*)device_command)->string)+maxsize,0,
-          sizeof(player_speech_cmd_t)-maxsize);
+
+  memcpy(&cmd,src,len);
   
   // make ABSOLUTELY sure we've got one NULL
-  (((player_speech_cmd_t*)device_command)->string)[sizeof(player_speech_cmd_t)-1] = '\0';
-  
+  cmd.string[PLAYER_SPEECH_MAX_STRING_LEN-1] = '\0';
   // now strlen() should return the right length
-  device_used_commandsize = 
-          strlen((const char*)(((player_speech_cmd_t*)device_command)->string));
+  
+  Lock();
+
+  /* if there's space, put it in the queue */
+  if(this->queue->Push(cmd.string,strlen((const char*)cmd.string)) < 0)
+    PLAYER_WARN1("not enough room in queue; discarding "
+                 "string:\n   \"%s\"\n", (const char*)cmd.string);
 
   Unlock();
 }
@@ -369,22 +364,13 @@ Festival::Main()
     pthread_testcancel();
 
     memset(&cmd,0,sizeof(cmd));
-    /* did we get a new command? */
-    if(GetCommand((unsigned char*)&cmd,sizeof(cmd)))
-    {
-      /* if there's space, put it in the queue */
-      if(queue->Push((unsigned char*)&cmd,sizeof(cmd)) < 0)
-        fprintf(stderr, "Festival: not enough room in queue; discarding "
-                "string:\n   \"%s\"\n", (const char*)(cmd.string));
-    }
-
     /* do we have a string to send and is there not one pending? */
     if(!(queue->Empty()) && !(read_pending))
     {
       /* send prefix to Festival */
       if(write(sock,(const void*)prefix,strlen(prefix)) == -1)
       {
-        perror("RunSpeechThread: write() failed sending prefix; exiting.");
+        perror("festival: write() failed sending prefix; exiting.");
         break;
       }
 
@@ -394,14 +380,14 @@ Festival::Main()
       /* send the first string from the queue to Festival */
       if(write(sock,tmpstr,tmpstrlen) == -1)
       {
-        perror("RunSpeechThread: write() failed sending string; exiting.");
+        perror("festival: write() failed sending string; exiting.");
         break;
       }
 
       /* send suffix to Festival */
       if(write(sock,(const void*)suffix,strlen(suffix)) == -1)
       {
-        perror("RunSpeechThread: write() failed sending suffix; exiting.");
+        perror("festival: write() failed sending suffix; exiting.");
         break;
       }
       read_pending = true;
@@ -419,7 +405,7 @@ Festival::Main()
           continue;
         else
         {
-          perror("RunSpeechThread: read() failed for code: exiting");
+          perror("festival: read() failed for code: exiting");
           break;
         }
       }
@@ -436,7 +422,7 @@ Festival::Main()
             continue;
           else 
           {
-            perror("RunSpeechThread: read() failed for code: exiting");
+            perror("festival: read() failed for code: exiting");
             break;
           }
         }
@@ -444,7 +430,7 @@ Festival::Main()
       }
       if((size_t)numread != strlen(FESTIVAL_CODE_OK))
       {
-        fprintf(stderr,"RunSpeechThread: something went wrong\n"
+        PLAYER_WARN2("something went wrong\n"
                 "              expected %d bytes of code, but got %d\n", 
                 (int) strlen(FESTIVAL_CODE_OK),numread);
         break;
@@ -466,7 +452,7 @@ Festival::Main()
               continue;
             else
             {
-              perror("RunSpeechThread: read() failed for code: exiting");
+              perror("festival: read() failed for code: exiting");
               break;
             }
           }
@@ -474,14 +460,14 @@ Festival::Main()
         }
         if(numread != FESTIVAL_RETURN_LEN)
         {
-          fputs("RunSpeechThread: something went wrong while reading\n",stderr);
+          PLAYER_WARN("something went wrong while reading");
           break;
         }
       }
       else
       {
         /* got wrong code back */
-        fprintf(stderr, "RunSpeechThread: got strange code back: %s\n", buf);
+        PLAYER_WARN1("got strange code back: %s\n", buf);
       }
 
       read_pending = false;
@@ -504,7 +490,7 @@ QuitFestival(void* speechdevice)
   /* send quit cmd to Festival */
   if(write(sd->sock,(const void*)quit,strlen(quit)) == -1)
   {
-    perror("RunSpeechThread: write() failed sending quit.");
+    perror("festival: write() failed sending quit.");
   }
   /* don't know how to tell the Festival server to exit yet, so Kill */
   sd->KillFestival();
