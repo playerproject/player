@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -DINCLUDE_GUI -I$(top_srcdir)/rtk2 -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/include `gtk-config --cflags`
+AM_CPPFLAGS = -DINCLUDE_GUI -I$(top_srcdir)/rtk2 -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/server `gtk-config --cflags`
 
 bin_PROGRAMS = playerv
 
