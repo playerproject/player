@@ -60,10 +60,14 @@ class CDeviceSubscription
 class CClientData 
 {
   private:
+    // these are locked by access:
     CDeviceSubscription* requested;
     int numsubs;
-    pthread_mutex_t access;
+
     char auth_key[PLAYER_KEYLEN];
+    unsigned char *readbuffer;
+    unsigned char *writebuffer;
+    unsigned char *replybuffer;
 
     void MotorStop();
     void PrintRequested(char*);
@@ -78,26 +82,36 @@ class CClientData
     unsigned char FindPermission( unsigned short code, unsigned short index);
     void Unsubscribe( unsigned short code, unsigned short index );
     int Subscribe( unsigned short code, unsigned short index );
+    int BuildMsg( unsigned char *data, size_t maxsize );
 
  public:
+    // use this lock things like mode,frequency, requested, and datarequested.
+    // they are potentially read/written by both the ClientWriterThread and
+    // ClientReaderThread
+    pthread_mutex_t access;
+
+    // these are locked by access:
     bool auth_pending;
-  int client_index;
-  //int writeThreadId, readThreadId;
-  pthread_t writeThread, readThread;
+    server_mode_t mode;
+    unsigned short frequency;  // Hz
+    bool datarequested;
 
-  server_mode_t mode;
-  unsigned short frequency;  // Hz
-  pthread_mutex_t datarequested, socketwrite;
+    // this is used in the ClientWriterThread to decide when to write
+    double last_write;
 
-  int socket;
+    // use this to lock the socket for output
+    pthread_mutex_t socketwrite;
+    int socket;
 
-  CClientData(char* key);
-  ~CClientData();
+    CClientData(char* key);
+    ~CClientData();
 
-  //void HandleRequests( unsigned char *buffer, int readcnt );
-  void HandleRequests(player_msghdr_t hdr, unsigned char *payload,
-                                 unsigned int payload_size);
-  int BuildMsg( unsigned char *data, size_t maxsize );
+    int HandleRequests(player_msghdr_t hdr, unsigned char *payload,
+                        unsigned int payload_size);
+
+    int Read();
+    int Write();
+    int WriteIdentString();
 };
 
 

@@ -67,7 +67,6 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
   int flags;                  /* temp for old socket access flags */
   int address_size;           /* size of server address struct */
   int one = 1;
-  const int on = 1;
 
   char* first_dot;
   struct hostent* entp;
@@ -169,8 +168,6 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
    */
   (*serverp).sin_family = PF_INET;
   (*serverp).sin_addr.s_addr = INADDR_ANY;
-
-  setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on) );
 
   if(bind(sock, (struct sockaddr*)serverp, sizeof(*serverp)) == -1) 
   {

@@ -70,8 +70,8 @@ int main(int argc, char **argv)
   printf("%s\n",robot.conn.banner);
   
   /* maybe turn on the motors */
-  if(turnOnMotors && pp.SetMotorState(1))
-    exit(1);
+  //if(turnOnMotors && pp.SetMotorState(1))
+    //exit(1);
 
   int newspeed, newturnrate;
   /* go into read-think-act loop */
@@ -80,6 +80,7 @@ int main(int argc, char **argv)
     /* this blocks until new data comes; 10Hz by default */
     if(robot.Read())
       exit(1);
+    continue;
 
     /* print current sensor data to console */
     //lp.Print();
