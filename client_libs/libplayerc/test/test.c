@@ -135,6 +135,11 @@ int main(int argc, const char *argv[])
         test_position(client, client->ids[i].index);
         break;
 
+      // Position device
+      case PLAYER_POSITION3D_CODE:
+        test_position3d(client, client->ids[i].index);
+        break;
+
       // Power device
       case PLAYER_POWER_CODE:
         test_power(client, client->ids[i].index);
