@@ -794,15 +794,17 @@ proc player_parse_data {obj device device_index data size} {
   } elseif {$device == $PLAYER_SPEECH_CODE} {
     # speech goes here...
   } elseif {$device == $PLAYER_GPS_CODE} {
-    if {[binary scan $data II \
+    if {[binary scan $data III \
           arr($name,$device_index,x)\
-          arr($name,$device_index,y)] != 2} {
-      puts "Warning: failed to get gps X,Y"
+          arr($name,$device_index,y)\
+          arr($name,$device_index,heading)] != 3} {
+      puts "Warning: failed to get gps X,Y,theta"
       return
     }
     if {!$device_index} {
       set arr($name,x) $arr($name,$device_index,x)
       set arr($name,y) $arr($name,$device_index,y)
+      set arr($name,heading) $arr($name,$device_index,heading)
     }
   } elseif {$device == $PLAYER_BPS_CODE} {
     if {[binary scan $data IIIIIII \
