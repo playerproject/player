@@ -36,6 +36,10 @@
 /* the message start signifier */
 #define PLAYER_STXX ((uint16_t) 0x5878)
 
+/* the player transport protocol types */
+#define PLAYER_TRANSPORT_TCP 1
+#define PLAYER_TRANSPORT_UDP 2
+
 /* the player message types */
 #define PLAYER_MSGTYPE_DATA      ((uint16_t)1)
 #define PLAYER_MSGTYPE_CMD       ((uint16_t)2)

@@ -73,6 +73,12 @@ int player_debug_level(int level)
   return(debug_level);
 }
 
+int
+player_connect(player_connection_t* conn, const char* host, int port)
+{
+  return(player_connect_host(conn,host,port));
+}
+
 /*
  * connects to server listening at host:port.  conn is filled in with
  * relevant information, and is used in subsequent player function
@@ -82,7 +88,8 @@ int player_debug_level(int level)
  *    0 if everything is OK (connection opened)
  *   -1 if something went wrong (connection NOT opened)
  */
-int player_connect(player_connection_t* conn, const char* host, int port)
+int
+player_connect_host(player_connection_t* conn, const char* host, int port)
 {
   struct hostent* entp;
   struct sockaddr_in server;
@@ -93,7 +100,7 @@ int player_connect(player_connection_t* conn, const char* host, int port)
   
   /* 
    * this is okay to do, because gethostbyname(3) does no lookup if the 
-   * 'host' * arg is already an IP addr
+   * 'host' arg is already an IP addr
    */
   if((entp = gethostbyname(host)) == NULL)
   {
@@ -139,10 +146,10 @@ int player_connect_ip(player_connection_t* conn,
 
   /* bounds check before copying in the address */
   assert(sizeof(server.sin_addr) <= sizeof(addr->s_addr));
-  memcpy(&server.sin_addr, &addr->s_addr, sizeof(addr->s_addr) );
+  memcpy(&server.sin_addr, &addr->s_addr, sizeof(addr->s_addr));
   
   /* make the connection */
-  return player_connect_sockaddr( conn, &server );
+  return player_connect_sockaddr(conn, &server);
 }
 
 /*
@@ -159,51 +166,118 @@ int player_connect_sockaddr(player_connection_t* conn,
   int sock;
   char banner[PLAYER_IDENT_STRLEN];
   int thisnumread,numread;
+  player_msghdr_t hdr;
+  struct sockaddr_in client;
 
   /* pointers must be good */
   assert(conn);
   assert(server);
 
-  /* make our socket (and leave it blocking) */
-  if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+  if(conn->protocol == PLAYER_TRANSPORT_TCP)
   {
-    if(player_debug_level(-1) >= 2)
-      perror("player_connect(): socket() failed");
-    return(-1);
-  }
-
-  /* 
-   * hook it up
-   */
-  if(connect(sock, (struct sockaddr*)server, sizeof(*server)) == -1)
-  {
-    if(player_debug_level(-1) >= 2)
-      perror("player_connect(): connect() failed");
-    close(sock);
-    return(-1);
-  }
-
-  /*
-   * read the banner from the server
-   */
-  numread = 0;
-  while(numread < PLAYER_IDENT_STRLEN)
-  {
-    if((thisnumread = 
-        read(sock,banner+numread,PLAYER_IDENT_STRLEN-numread)) < 0)
+    /* make our socket (and leave it blocking) */
+    if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
     {
       if(player_debug_level(-1) >= 2)
-        perror("player_connect(): read() failed");
+        perror("player_connect(): socket() failed");
+      return(-1);
+    }
+
+    /* 
+     * hook it up
+     */
+    if(connect(sock, (struct sockaddr*)server, sizeof(*server)) == -1)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_connect(): connect() failed");
       close(sock);
       return(-1);
     }
 
-    numread += thisnumread;
+    /*
+     * read the banner from the server
+     */
+    numread = 0;
+    while(numread < PLAYER_IDENT_STRLEN)
+    {
+      if((thisnumread = 
+          read(sock,banner+numread,PLAYER_IDENT_STRLEN-numread)) < 0)
+      {
+        if(player_debug_level(-1) >= 2)
+          perror("player_connect(): read() failed");
+        close(sock);
+        return(-1);
+      }
+
+      numread += thisnumread;
+    }
+    conn->sock = sock;
+  }
+  else if(conn->protocol == PLAYER_TRANSPORT_UDP)
+  {
+    /* make our socket (and leave it blocking) */
+    if((sock = socket(PF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_connect(): socket() failed");
+      return(-1);
+    }
+
+    client.sin_family = PF_INET;
+    client.sin_addr.s_addr = INADDR_ANY;
+    client.sin_port = 0;
+
+    if(bind(sock, (struct sockaddr*)&client, sizeof(client)) == -1) 
+    {
+      perror("player_connect_sockaddr():bind() failed:");
+      close(sock);
+      return(-1);
+    }
+
+    /* send an initial packet to get things going */
+    hdr.stx = htons(PLAYER_STXX);
+    hdr.type = htons(PLAYER_MSGTYPE_REQ);
+    hdr.device = htons(PLAYER_PLAYER_CODE);
+    hdr.device_index = 0;
+    hdr.reserved = 0;
+    hdr.size = 0;
+    if(sendto(sock,(unsigned char*)&hdr,sizeof(hdr),0,
+              (struct sockaddr*)server,sizeof(*server)) < 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_connect(): sendto() failed");
+      return(-1);
+    }
+
+    /* read the banner */
+    if((numread = recvfrom(sock,banner,sizeof(banner),0,NULL,NULL)) < 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_connect(): recvfrom() failed");
+      return(-1);
+    }
+    printf("Connected to %s\n", banner);
+    
+    conn->sock = sock;
+
+    /* read the ACK that gives us our ID */
+    if(player_read_udp(conn,&hdr,NULL,0))
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_connect(): recvfrom() failed");
+      return(-1);
+    }
+    conn->id = ntohs(hdr.reserved >> 16);
+  }
+  else
+  {
+    fputs("player_connect_sockaddr():Unknown protocol\n", stderr);
+    return(-1);
   }
 
-  /* fill in the caller's structure */
-  (*conn).sock = sock;
+  /* fill in the rest of the caller's structure */
   memcpy((*conn).banner,banner,PLAYER_IDENT_STRLEN);
+  conn->server_addr = *server;
 
   return(0);
 }
@@ -262,7 +336,10 @@ int player_request(player_connection_t* conn,
   hdr.time_usec = 0;
   hdr.timestamp_sec = 0;
   hdr.timestamp_usec = 0;
-  hdr.reserved = 0;
+  if(conn->protocol == PLAYER_TRANSPORT_UDP)
+    hdr.reserved = htons(conn->id) << 16;
+  else
+    hdr.reserved = 0;
   hdr.size = htonl(payloadlen);
 
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
@@ -272,10 +349,29 @@ int player_request(player_connection_t* conn,
     return(-1);
 
   /* write the request */
-  if(write((*conn).sock,buffer, sizeof(player_msghdr_t)+payloadlen) == -1)
+  if(conn->protocol == PLAYER_TRANSPORT_TCP)
   {
-    if(player_debug_level(-1) >= 2)
-      perror("player_request(): write() failed.");
+    if(write(conn->sock,buffer, sizeof(player_msghdr_t)+payloadlen) == -1)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_request(): write() failed.");
+      return(-1);
+    }
+  }
+  else if(conn->protocol == PLAYER_TRANSPORT_UDP)
+  {
+    if(sendto(conn->sock,buffer,sizeof(player_msghdr_t)+payloadlen,0,
+              (struct sockaddr*)&conn->server_addr,
+              sizeof(conn->server_addr)) < 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_request(): sendto() failed.");
+      return(-1);
+    }
+  }
+  else
+  {
+    puts("Unknown protocol");
     return(-1);
   }
 
@@ -288,7 +384,6 @@ int player_request(player_connection_t* conn,
   {
     if(player_read(conn, &hdr, buffer, sizeof(buffer)) == -1)
       return(-1);
-
   }
 
   /* did they want the reply? */
@@ -339,6 +434,7 @@ int player_request_device_access(player_connection_t* conn,
   return(0);
 }
 
+#if 0
 /*
  * read one message header from the indicated connection. 
  *
@@ -423,6 +519,7 @@ int player_read_payload(player_connection_t* conn, char* payload, size_t payload
 
   return(0);
 }
+#endif
 
 /*
  * read one complete message from the indicated connection.  put the 
@@ -434,6 +531,21 @@ int player_read_payload(player_connection_t* conn, char* payload, size_t payload
  */
 int player_read(player_connection_t* conn, player_msghdr_t* hdr,
                 char* payload, size_t payloadlen)
+{
+  if(conn->protocol == PLAYER_TRANSPORT_TCP)
+    return(player_read_tcp(conn,hdr,payload,payloadlen));
+  else if(conn->protocol == PLAYER_TRANSPORT_UDP)
+    return(player_read_udp(conn,hdr,payload,payloadlen));
+  else
+  {
+    if(player_debug_level(-1) >= 2)
+      fputs("Unknown protocol\n", stderr);
+    return(-1);
+  }
+}
+
+int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
+                    char* payload, size_t payloadlen)
 {
   /*time_t timesec;*/
   int mincnt; 
@@ -516,6 +628,82 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   return(0);
 }
 
+int player_read_udp(player_connection_t* conn, player_msghdr_t* hdr,
+                    char* payload, size_t payloadlen)
+{
+  char buffer[PLAYER_MAX_MESSAGE_SIZE];
+  int numread;
+
+  if(conn->sock < 0)
+    return(-1);
+
+  if((numread = recvfrom(conn->sock,buffer,sizeof(buffer),0,NULL,NULL)) < 0)
+  {
+    if(player_debug_level(-1) >= 2)
+      perror("player_read_udp():read()");
+    return(-1);
+  }
+
+  if(numread < sizeof(player_msghdr_t))
+  {
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr,"player_read_udp(): packet header too small (%d bytes); "
+              "discarding\n",
+              numread);
+    return(-1);
+  }
+
+  /* copy in the header */
+  memcpy(hdr,buffer,sizeof(player_msghdr_t));
+
+  /* byte-swap as necessary */
+  hdr->stx = ntohs(hdr->stx);
+  if(hdr->stx != PLAYER_STXX)
+  {
+    if(player_debug_level(-1) >= 2)
+      fputs("player_read_udp(): no STX; discarding\n",stderr);
+    return(-1);
+  }
+  hdr->type = ntohs(hdr->type);
+  hdr->device = ntohs(hdr->device);
+  hdr->device_index = ntohs(hdr->device_index);
+  hdr->time_sec = ntohl(hdr->time_sec);
+  hdr->time_usec = ntohl(hdr->time_usec);
+  hdr->timestamp_sec = ntohl(hdr->timestamp_sec);
+  hdr->timestamp_usec = ntohl(hdr->timestamp_usec);
+  // don't byteswap here, cause the first 2 bytes are the client ID
+  //hdr->reserved = ntohl(hdr->reserved);
+  hdr->size = ntohl(hdr->size);
+
+  if((numread - sizeof(player_msghdr_t)) < hdr->size)
+  {
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr,"player_read_udp(): packet payload too small (%d bytes); "
+              "discarding\n",
+              numread-sizeof(player_msghdr_t));
+    return(-1);
+  }
+  else if((numread - sizeof(player_msghdr_t)) > hdr->size)
+  {
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr,"player_read_udp(): packet payload too big (%d bytes); "
+              "discarding\n",
+              numread-sizeof(player_msghdr_t));
+    return(-1);
+  }
+
+  if(hdr->size > payloadlen)
+  {
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr,"player_read_udp(): packet payload too big (%d bytes); "
+              "discarding\n", hdr->size);
+    return(-1);
+  }
+
+  memcpy(payload,buffer+sizeof(player_msghdr_t),hdr->size);
+  return(0);
+}
+
 /*
  * write commands to the indicated connection. writes the data contained
  * in command, up to commandlen.
@@ -527,13 +715,6 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 int player_write(player_connection_t* conn, 
                  uint16_t device, uint16_t device_index,
                  const char* command, size_t commandlen)
-{
-  return(_player_write(conn,device,device_index,command,commandlen,0));
-}
-
-int _player_write(player_connection_t* conn, 
-                 uint16_t device, uint16_t device_index,
-                 const char* command, size_t commandlen, int reserved)
 {
   char buffer[PLAYER_MAX_MESSAGE_SIZE];
   player_msghdr_t hdr;
@@ -556,7 +737,10 @@ int _player_write(player_connection_t* conn,
   hdr.time_usec = 0;
   hdr.timestamp_sec = 0;
   hdr.timestamp_usec = 0;
-  hdr.reserved = htonl(reserved);
+  if(conn->protocol == PLAYER_TRANSPORT_UDP)
+    hdr.reserved = htons(conn->id) << 16;
+  else
+    hdr.reserved = 0;
   hdr.size = htonl(commandlen);
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
   memcpy(buffer+sizeof(player_msghdr_t),command,commandlen);
@@ -564,14 +748,27 @@ int _player_write(player_connection_t* conn,
   if(conn->sock < 0)
     return(-1);
 
-  if(write((*conn).sock, buffer, sizeof(player_msghdr_t)+commandlen) !=
-                  sizeof(player_msghdr_t)+commandlen)
+  if(conn->protocol == PLAYER_TRANSPORT_TCP)
   {
-    if(player_debug_level(-1) >= 2)
-      perror("player_write(): write() errored.");
-    return(-1);
+    if(write(conn->sock, buffer, sizeof(player_msghdr_t)+commandlen) !=
+       sizeof(player_msghdr_t)+commandlen)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_write(): write() errored.");
+      return(-1);
+    }
   }
-
+  else if(conn->protocol == PLAYER_TRANSPORT_UDP)
+  {
+    if(sendto(conn->sock,buffer,sizeof(player_msghdr_t)+commandlen,
+              0,(struct sockaddr*)&(conn->server_addr),
+              sizeof(conn->server_addr)) < 0)
+    {
+      if(player_debug_level(-1) >= 2)
+        perror("player_write(): sendto() errored.");
+      return(-1);
+    }
+  }
   return(0);
 }
 

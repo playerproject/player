@@ -226,8 +226,8 @@ class PlayerClient
     // are we connected? 
     bool connected;
 
-    void SetReserved(int res) { reserved = res; }
-    int GetReserved() { return(reserved); }
+    //void SetReserved(int res) { reserved = res; }
+    //int GetReserved() { return(reserved); }
 
     /** Flag set if data has just been read into this client.  If you
         use it, you must set it to false yourself after examining the data.
@@ -256,12 +256,16 @@ class PlayerClient
         If {\tt hostname} is omitted (or NULL) then the client will {\em not}
         be connected.  In that cast, call {\tt Connect()} yourself later.
      */
-    PlayerClient(const char* hostname=NULL, const int port=PLAYER_PORTNUM);
+    PlayerClient(const char* hostname=NULL,
+                 const int port=PLAYER_PORTNUM,
+                 const int protocol=PLAYER_TRANSPORT_TCP);
 
     /** Make a client and connect it as indicated, using a binary IP instead 
         of a hostname
       */
-    PlayerClient(const struct in_addr* hostaddr, const int port);
+    PlayerClient(const struct in_addr* hostaddr,
+                 const int port,
+                 const int protocol=PLAYER_TRANSPORT_TCP);
 
     // destructor
     ~PlayerClient();

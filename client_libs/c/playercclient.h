@@ -61,6 +61,14 @@ typedef struct
 {
   /* the socket we will talk on */
   int sock;
+  /* transport that we'll use (either PLAYER_TRANSPORT_TCP or
+   * PLAYER_TRANSPORT_UDP) */
+  int protocol;
+  /* our server-supplied unique id; it gets inserted into the first two
+   * bytes of the reserved field on all messages sent in UDP mode */
+  uint16_t id;
+  /* the server's address */
+  struct sockaddr_in server_addr;
   /* the banner given back by the server after connection */
   char banner[PLAYER_IDENT_STRLEN];
 } player_connection_t;
@@ -89,6 +97,10 @@ int player_debug_level(int level);
 int player_connect(player_connection_t* conn, 
 		   const char* host, 
 		   const int port);
+
+int player_connect_host(player_connection_t* conn, 
+                        const char* host, 
+                        const int port);
 
 /*
  * connects to server listening at addr:port.  conn is filled in with
@@ -167,6 +179,12 @@ int player_request_device_access(player_connection_t* conn,
 int player_read(player_connection_t* conn, player_msghdr_t* hdr,
                 char* payload, size_t payloadlen);
 
+int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
+                    char* payload, size_t payloadlen);
+
+int player_read_udp(player_connection_t* conn, player_msghdr_t* hdr,
+                    char* payload, size_t payloadlen);
+
 /*
  * read one message header from the indicated connection. 
  *
@@ -174,7 +192,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
  *    0 if everything went OK
  *   -1 if something went wrong (you should probably close the connection!)
  */
-  int player_read_header(player_connection_t* conn, player_msghdr_t* hdr );
+/*  int player_read_header(player_connection_t* conn, player_msghdr_t* hdr );*/
 
 /*
  * read the data part of a message from the indicated connection.  put the 
@@ -184,7 +202,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
  *    0 if everything went OK
  *   -1 if something went wrong (you should probably close the connection!)
  */
-int player_read_payload(player_connection_t* conn, char* payload, size_t payloadlen);
+/*int player_read_payload(player_connection_t* conn, char* payload, size_t payloadlen);*/
 
 
 /*
@@ -198,9 +216,12 @@ int player_read_payload(player_connection_t* conn, char* payload, size_t payload
 int player_write(player_connection_t* conn, 
                  uint16_t device, uint16_t device_index,
                  const char* command, size_t commandlen);
-int _player_write(player_connection_t* conn, 
-                 uint16_t device, uint16_t device_index,
-                 const char* command, size_t commandlen,int reserved);
+int player_write_tcp(player_connection_t* conn, 
+                     uint16_t device, uint16_t device_index,
+                     const char* command, size_t commandlen);
+int player_write_udp(player_connection_t* conn, 
+                     uint16_t device, uint16_t device_index,
+                     const char* command, size_t commandlen);
 
 
 /********************************************************/
