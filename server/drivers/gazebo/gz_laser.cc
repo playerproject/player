@@ -71,7 +71,7 @@ class GzLaser : public CDevice
   public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
 
   // Gazebo device id
-  private: const char *gz_id;
+  private: char *gz_id;
 
   // Gazebo client object
   private: gz_client_t *client;
@@ -111,13 +111,15 @@ void GzLaser_Register(DriverTable* table)
 GzLaser::GzLaser(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_laser_data_t), 0, 10, 10)
 {
-
-  // Get the id of the device in Gazebo
-  this->gz_id = cf->ReadString(section, "gz_id", 0);
-
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
-  
+
+  // Get the id of the device in Gazebo.
+  // TODO: fix potential buffer overflow
+  this->gz_id = (char*) calloc(1024, sizeof(char));
+  strcat(this->gz_id, GzClient::prefix_id);
+  strcat(this->gz_id, cf->ReadString(section, "gz_id", ""));
+
   // Create an interface
   this->iface = gz_laser_alloc();
   

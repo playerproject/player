@@ -77,7 +77,7 @@ class GzPosition : public CDevice
   private: void HandleGetGeom(void *client, void *req, int reqlen);
 
   // Gazebo id
-  private: const char *gz_id;
+  private: char *gz_id;
 
   // Gazebo client object
   private: gz_client_t *client;
@@ -117,12 +117,14 @@ void GzPosition_Register(DriverTable* table)
 GzPosition::GzPosition(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
-
-  // Get the id of the device in Gazebo
-  this->gz_id = cf->ReadString(section, "gz_id", 0);
-
-  // Get the globally defined Gazebo client (one per instance of Player)
+    // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
+
+  // Get the id of the device in Gazebo.
+  // TODO: fix potential buffer overflow
+  this->gz_id = (char*) calloc(1024, sizeof(char));
+  strcat(this->gz_id, GzClient::prefix_id);
+  strcat(this->gz_id, cf->ReadString(section, "gz_id", ""));
   
   // Create an interface
   this->iface = gz_position_alloc();

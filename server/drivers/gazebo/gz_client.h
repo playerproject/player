@@ -39,7 +39,7 @@ typedef struct _gz_sim_t gz_sim_t;
 class GzClient
 {
   // Initialize 
-  public: static int Init(const char *serverid);
+  public: static int Init(const char *serverid, const char *prefixid);
 
   // Finalize
   public: static int Fini();
@@ -49,6 +49,9 @@ class GzClient
 
   // The simulator control interface
   public: static gz_sim_t *sim;
+
+  // The prefix used for all gazebo ID's
+  public: static const char *prefix_id;
 };
 
 #endif
