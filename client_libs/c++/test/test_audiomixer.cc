@@ -3,7 +3,7 @@
 #include "test.h"
 #include <unistd.h>
 #include <math.h>
-#include <linux/soundcard.h>
+//#include <linux/soundcard.h>
 
 int
 test_audiomixer(PlayerClient* client, int index)
