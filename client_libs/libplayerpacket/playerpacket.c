@@ -182,11 +182,75 @@ void PositionSetOdomReqUnpack( player_position_set_odom_req_t* req,
 }
 
       
+// LASER
 
+void LaserDataPack( player_laser_data_t* data, 
+		    double min_angle, //radians
+		    double max_angle, //radians
+		    double resolution, //radians
+		    int range_count,
+		    double ranges[], // meters
+		    int intensity[] )
+{
+  int z;
 
+  assert(data);
 
+  data->min_angle = Deg_16(min_angle);
+  data->max_angle = Deg_16(max_angle);
+  data->resolution = Deg_U16(resolution);
+  data->range_count = htons((uint16_t)range_count);
 
+  for( z=0; z<range_count; z++ )
+    {
+      data->ranges[z] = MM_16(ranges[z]);
+      data->intensity[z] = (uint8_t)intensity[z];
+    }
+}
+		    
 
+// FiducialFinder
+
+void FiducialGeomPack(  player_fiducial_geom_t* geom,
+			double px, double py, double pth,
+			double sensor_width, double sensor_height,
+			double target_width, double target_height )
+{  
+  assert( geom );
+  
+  geom->subtype = PLAYER_FIDUCIAL_GET_GEOM;
+  
+  geom->pose[0] = MM_U16( px );
+  geom->pose[1] = MM_U16( py );
+  geom->pose[2] = Deg_U16( px );
+  
+  geom->size[0] = MM_U16( sensor_width );
+  geom->size[1] = MM_U16( sensor_height );
+  
+  geom->fiducial_size[0] = MM_U16( target_width );
+  geom->fiducial_size[1] = MM_U16( target_height );
+}
+
+void FiducialGeomUnpack(  player_fiducial_geom_t* geom,
+			  double* px, double* py, double* pth,
+			  double* sensor_width, double* sensor_height,
+			  double* target_width, double* target_height )
+{  
+  assert( geom );
+  
+  // check we are parsing the right type of packet
+  assert( geom->subtype == PLAYER_FIDUCIAL_GET_GEOM );
+  
+  if(px) *px = M_U16( geom->pose[0] );
+  if(py) *py = M_U16( geom->pose[1] );
+  if(pth) *pth = Rad_U16( geom->pose[2] );
+  
+  if(sensor_width) *sensor_width = M_U16( geom->size[0] ); 
+  if(sensor_height) *sensor_height = M_U16( geom->size[1] ); 
+  
+  if(target_width) *target_width = M_U16( geom->fiducial_size[0] ); 
+  if(target_height) *target_height = M_U16( geom->fiducial_size[1] ); 
+}
 
 
 
