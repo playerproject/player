@@ -67,12 +67,13 @@ extern PlayerTime* GlobalTime;
 // Create an instance of the driver
 CDevice* AdaptiveMCL_Init(char* interface, ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_LOCALIZE_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"amcl\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new AdaptiveMCL(interface, cf, section)));
+  if (strcmp(interface, PLAYER_LOCALIZE_STRING) == 0)
+    return ((CDevice*) (new AdaptiveMCL(interface, cf, section)));
+  else if (strcmp(interface, PLAYER_POSITION_STRING) == 0)
+    return ((CDevice*) (new AdaptiveMCL(interface, cf, section)));
+
+  PLAYER_ERROR1("driver \"amcl\" does not support interface \"%s\"\n", interface);
+  return (NULL);
 }
 
 
@@ -84,16 +85,23 @@ void AdaptiveMCL_Register(DriverTable* table)
   return;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Useful macros
+#define AMCL_DATASIZE MAX(sizeof(player_localize_data_t), sizeof(player_position_data_t))
 
+  
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_localize_data_t), 0, 100, 100)
+    : CDevice(AMCL_DATASIZE, 0, 100, 100)
 {
   int i;
   double u[3];
   AMCLSensor *sensor;
 
+  // Remember which interface we go opened for
+  this->interface = strdup(interface);
+  
   this->init_sensor = -1;
   this->action_sensor = -1;
   this->sensor_count = 0;
@@ -189,6 +197,8 @@ AdaptiveMCL::~AdaptiveMCL(void)
   }
   this->sensor_count = 0;
 
+  free(this->interface);
+
   return;
 }
 
@@ -280,6 +290,7 @@ void AdaptiveMCL::Update(void)
 }
 
 
+/* TODO: fix
 ////////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
 int AdaptiveMCL::PutConfig(player_device_id_t* device, void* client,
@@ -294,7 +305,6 @@ int AdaptiveMCL::PutConfig(player_device_id_t* device, void* client,
     return 0;
   }
 
-  /* TODO: fix
   // Process some of the requests immediately
   switch (((char*) data)[0])
   {
@@ -305,18 +315,15 @@ int AdaptiveMCL::PutConfig(player_device_id_t* device, void* client,
       HandleGetMapData(client, data, len);
       return 0;
   }
-  */
 
   // Let the device thread get the rest
   return CDevice::PutConfig(device, client, data, len);
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Handle map info request
 void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
 {
-  /* FIX
   int reqlen;
   player_localize_map_info_t info;
 
@@ -349,7 +356,7 @@ void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
   // Send map info to the client
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &info, sizeof(info)) != 0)
     PLAYER_ERROR("PutReply() failed");
-  */  
+
   return;
 }
 
@@ -358,7 +365,6 @@ void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
 // Handle map data request
 void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
 {
-  /* FIX
   int i, j;
   int oi, oj, si, sj;
   int reqlen;
@@ -405,9 +411,10 @@ void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
   // Send map info to the client
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &data, sizeof(data)) != 0)
     PLAYER_ERROR("PutReply() failed");
-  */  
   return;
 }
+
+*/  
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -530,6 +537,9 @@ void AdaptiveMCL::Main(void)
       fflush(this->outfile);
 #endif
     }
+
+    // Filter must now be initialized
+    this->pf_init = true;
   }
   return;
 }
@@ -559,7 +569,6 @@ void AdaptiveMCL::MainQuit()
 void AdaptiveMCL::InitFilter(void)
 {
   ::pf_init(this->pf, this->pf_init_pose_mean, this->pf_init_pose_cov);
-  this->pf_init = true;
   
   return;
 }
@@ -572,6 +581,7 @@ bool AdaptiveMCL::UpdateFilter(void)
   int i;
   uint32_t tsec, tusec;
   double weight;
+  pf_vector_t pose, delta;
   pf_vector_t pose_mean;
   pf_matrix_t pose_cov;
   amcl_hyp_t *hyp;
@@ -582,64 +592,122 @@ bool AdaptiveMCL::UpdateFilter(void)
   if (data == NULL)
     return false;
   assert(data->sensor->is_action);
-  
-  // Use the action data to update the filter
-  data->sensor->UpdateAction(this->pf, data);
 
   // Use the action timestamp 
   tsec = data->tsec;
   tusec = data->tusec;
 
-  delete data; data = NULL;
-  
-  // Process the remaining sensor data
-  while (1)
+  // HACK
+  pose = ((AMCLOdomData*) data)->pose;
+
+  // Compute change in pose
+  delta = pf_vector_coord_sub(pose, this->pf_odom_pose);
+
+  // HACK: fix
+  double min_dr = 0.20;
+  double min_da = M_PI / 6;
+
+  // If the robot has moved, update the filter
+  if (!this->pf_init ||
+      fabs(delta.v[0]) > min_dr || fabs(delta.v[1]) > min_dr || fabs(delta.v[2]) > min_da)
   {
-    data = this->Peek();
-    if (data == NULL)
-      break;
-    if (data->sensor->is_action)
-      break;
-    data = this->Pop();
-    assert(data);
-
-    // Use the data to update the filter
-    data->sensor->UpdateSensor(this->pf, data);
-
-    delete data; data = NULL;
-  }
+    pf_vector_fprintf(delta, stdout, "%.3f");
     
-  // Resample the particles
-  pf_update_resample(this->pf);
-
-  // Read out the current hypotheses
-  this->hyp_count = 0;
-  for (i = 0; (size_t) i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
-  {
-    if (!pf_get_cluster_stats(this->pf, i, &weight, &pose_mean, &pose_cov))
-      break;
-    hyp = this->hyps + this->hyp_count++;
-    hyp->weight = weight;
-    hyp->pf_pose_mean = pose_mean;
-    hyp->pf_pose_cov = pose_cov;
-  }
-
-  // Encode data to send to server
-  this->PutData(tsec, tusec);
+    // HACK
+    // Modify the delta in the action data so the filter gets
+    // updated correctly
+    ((AMCLOdomData*) data)->delta = delta;
+    
+    // Use the action data to update the filter
+    data->sensor->UpdateAction(this->pf, data);
+    delete data; data = NULL;
   
+    // Process the remaining sensor data up to the next action data
+    while (1)
+    {
+      data = this->Peek();
+      if (data == NULL)
+      {
+        usleep(1000);
+        continue;
+      }
+      if (data->sensor->is_action)
+        break;
+      data = this->Pop();
+      assert(data);
+
+      // Use the data to update the filter
+      data->sensor->UpdateSensor(this->pf, data);
+      delete data; data = NULL;
+    }
+    
+    // Resample the particles
+    pf_update_resample(this->pf);
+
+    // Read out the current hypotheses
+    this->hyp_count = 0;
+    for (i = 0; (size_t) i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
+    {
+      if (!pf_get_cluster_stats(this->pf, i, &weight, &pose_mean, &pose_cov))
+        break;
+      hyp = this->hyps + this->hyp_count++;
+      hyp->weight = weight;
+      hyp->pf_pose_mean = pose_mean;
+      hyp->pf_pose_cov = pose_cov;
+    }
+    
 #ifdef INCLUDE_RTKGUI
-  // Update the GUI
-  if (this->enable_gui)
-    this->UpdateGUI();
+    // Update the GUI
+    if (this->enable_gui)
+      this->UpdateGUI();
 #endif
-  
-  return true;
+    
+    // Change in pose since last filter update
+    this->pf_odom_pose = pose;
+    delta = pf_vector_zero();
+
+    // Encode data to send to server
+    if (strcmp(this->interface, PLAYER_LOCALIZE_STRING) == 0)
+      this->PutDataLocalize(tsec, tusec);
+    else if (strcmp(this->interface, PLAYER_POSITION_STRING) == 0)
+      this->PutDataPosition(tsec, tusec, delta);
+
+    return true;
+  }
+  else
+  {
+    // Delete action data
+    delete data; data = NULL;
+
+    // Process the remaining sensor data up to the next action data
+    while (1)
+    {
+      data = this->Peek();
+      if (data == NULL)
+      {
+        usleep(1000);
+        continue;
+      }
+      if (data->sensor->is_action)
+        break;
+      data = this->Pop();
+      assert(data);
+      delete data; data = NULL;
+    }
+    
+    // Encode data to send to server; only the position interface
+    // gets updates every cycle
+    if (strcmp(this->interface, PLAYER_POSITION_STRING) == 0)
+      this->PutDataPosition(tsec, tusec, delta);
+
+    return false;
+  }
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Put new data
-void AdaptiveMCL::PutData(uint32_t tsec, uint32_t tusec)
+// Output data on the localize interface
+void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
 {
   int i, j, k;
   amcl_hyp_t *hyp;
@@ -722,6 +790,68 @@ void AdaptiveMCL::PutData(uint32_t tsec, uint32_t tusec)
 
   // Copy data to server
   ((CDevice*) this)->PutData((char*) &data, datalen, tsec, tusec);
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Output data on the position interface
+void AdaptiveMCL::PutDataPosition(uint32_t tsec, uint32_t tusec, pf_vector_t delta)
+{
+  int i;
+  amcl_hyp_t *hyp;
+  pf_vector_t pose;
+  pf_matrix_t pose_cov;
+  player_position_data_t data;
+  double max_weight;
+
+  data.xpos = data.ypos = data.yaw = 0;
+  data.xspeed = data.yspeed = data.yawspeed = 0;
+  data.stall = 0;
+
+  max_weight = 0.0;
+  
+  // Encode the hypotheses
+  for (i = 0; i < this->hyp_count; i++)
+  {
+    hyp = this->hyps + i;
+
+    // Get the current estimate
+    pose = hyp->pf_pose_mean;
+    pose_cov = hyp->pf_pose_cov;
+
+    // Add the accumulated odometric change
+    pose = pf_vector_coord_add(delta, pose);
+
+    // Check for bad values
+    if (!pf_vector_finite(pose))
+    {
+      pf_vector_fprintf(pose, stderr, "%e");
+      assert(0);
+    }
+    if (!pf_matrix_finite(pose_cov))
+    {
+      pf_matrix_fprintf(pose_cov, stderr, "%e");
+      assert(0);
+    }
+
+    if (hyp->weight > max_weight)
+    {
+      max_weight = hyp->weight;
+      data.xpos = (int) (1000 * pose.v[0]);
+      data.ypos = (int) (1000 * pose.v[1]);
+      data.yaw = (int) (180 / M_PI * pose.v[2]);
+    }
+  }
+
+  // Byte-swap
+  data.xpos = htonl(data.xpos);
+  data.ypos = htonl(data.ypos);
+  data.yaw = htonl(data.yaw);
+  
+  // Copy data to server
+  ((CDevice*) this)->PutData((char*) &data, sizeof(data), tsec, tusec);
   
   return;
 }

@@ -87,6 +87,9 @@ class AMCLLaser : public AMCLSensor
   // Max beams to consider
   private: int max_beams;
 
+  // Max valid laser range
+  private: double range_max;
+  
   // Laser range variance
   private: double range_var;
 

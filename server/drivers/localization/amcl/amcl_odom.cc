@@ -115,7 +115,7 @@ AMCLSensorData *AMCLOdom::GetData(void)
 {
   size_t size;
   uint32_t tsec, tusec;
-  pf_vector_t pose, delta;
+  pf_vector_t pose;
   player_position_data_t data;
   AMCLOdomData *ndata;
 
@@ -138,30 +138,22 @@ AMCLSensorData *AMCLOdom::GetData(void)
   pose.v[1] = (double) ((int32_t) data.ypos) / 1000.0;
   pose.v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
 
-  // If this is not the first pass...
-  if (this->tsec == 0 && this->tusec == 0)
-  {
-    ndata = new AMCLOdomData;
+  ndata = new AMCLOdomData;
 
-    ndata->sensor = this;
-    ndata->tsec = tsec;
-    ndata->tusec = tusec;
+  ndata->sensor = this;
+  ndata->tsec = tsec;
+  ndata->tusec = tusec;
 
-    ndata->pose = pose;
-    ndata->delta = pf_vector_zero();
+  ndata->pose = pose;
+  ndata->delta = pf_vector_zero();
 
-    this->last_pose = pose;
-    this->tsec = tsec;
-    this->tusec = tusec;
+  this->last_pose = pose;
+  this->tsec = tsec;
+  this->tusec = tusec;
     
-    return ndata;
-  }
-  else
-  {
-    this->tsec = tsec;
-    this->tusec = tusec;
-  }
+  return ndata;
 
+  /* MOVE
   // Compute change in pose
   delta = pf_vector_coord_sub(pose, this->last_pose);
 
@@ -186,6 +178,7 @@ AMCLSensorData *AMCLOdom::GetData(void)
   }
 
   return NULL;
+  */
   
   /* TESTING
      double valid_dist, valid_yaw;
