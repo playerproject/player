@@ -10,7 +10,8 @@
 %import "player.h"
 
 // Provide array access
-%typemap(out) double [ANY] {
+%typemap(out) double [ANY] 
+{
   int i;
   $result = PyList_New($1_dim0);
   for (i = 0; i < $1_dim0; i++) 
@@ -22,7 +23,8 @@
 
 
 // Provide array access doubly-dimensioned arrays
-%typemap(out) double [ANY][ANY] {
+%typemap(out) double [ANY][ANY] 
+{
   int i, j;
   $result = PyList_New($1_dim0);
   for (i = 0; i < $1_dim0; i++) 
@@ -37,4 +39,9 @@
   }
 }
 
-%include "playerc.h"
+// Regular c-bindings
+//%include "playerc.h"
+
+// Object-oriented bindings
+%include "test.i"
+

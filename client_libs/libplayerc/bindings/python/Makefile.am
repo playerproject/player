@@ -11,8 +11,8 @@ EXTRA_DIST = playerc.i libplayerc.py setup.py
 BUILT_SOURCES = playerc_wrap.c
 
 # use this target to update the bindings
-playerc_wrap.c: playerc.i
-	swig -I../.. -I$(top_srcdir)/server -python -dascii playerc.i
+playerc_wrap.c: playerc.i test.i
+	swig -I../.. -I$(top_srcdir)/server -python playerc.i
 
 # use distutils to build
 pythonbuild: playerc_wrap.c
