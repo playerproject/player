@@ -94,6 +94,9 @@ class PlayerClient
     char hostname[256]; 
     int port;
 
+    // the current time on the server
+    struct timeval timestamp;
+
     // constructors
     // 
     // make a client and connect it as indicated.
