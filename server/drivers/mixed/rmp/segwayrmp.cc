@@ -33,35 +33,20 @@
 #include "drivertable.h"
 
 
-// copied from can.h
-#define CAN_MSG_LENGTH 8
-
-struct canmsg_t 
-{       
-  short           flags;
-  int             cob;
-  unsigned long   id;
-  unsigned long   timestamp;
-  unsigned int    length;
-  char            data[CAN_MSG_LENGTH];
-} __attribute__ ((packed));
-
-
-
 // Driver for robotic Segway
 class SegwayRMP : public CDevice
 {
-  public: 
-    // Constructor	  
-    SegwayRMP(char* interface, ConfigFile* cf, int section);
+public: 
+  // Constructor	  
+  SegwayRMP(char* interface, ConfigFile* cf, int section);
   ~SegwayRMP();
-
-    // Setup/shutdown routines.
-    virtual int Setup();
-    virtual int Shutdown();
-
-  private: 
-
+  
+  // Setup/shutdown routines.
+  virtual int Setup();
+  virtual int Shutdown();
+  
+private: 
+  
   SegwayIO *segway;
   
   bool motor_enabled;
@@ -95,12 +80,11 @@ SegwayRMP::SegwayRMP(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_position_data_t), 
               sizeof(player_position_cmd_t), 10, 10)
 {
-  segway = new SegwayIO();
+  segway = SegwayIO::Instance();
 }
 
 SegwayRMP::~SegwayRMP()
 {
-  delete segway;
 }
 
 int
@@ -281,19 +265,23 @@ SegwayRMP::Main()
       // segway wants it in host order
       cmd.xspeed = ntohl(cmd.xspeed);
 
+      /*
       if (cmd.xspeed > RMP_MAX_TRANS_VEL_MM_S) {
 	cmd.xspeed = RMP_MAX_TRANS_VEL_MM_S;
       } else if (cmd.xspeed < -RMP_MAX_TRANS_VEL_MM_S) {
 	cmd.xspeed = -RMP_MAX_TRANS_VEL_MM_S;
       }
+      */
 
       cmd.yawspeed = ntohl(cmd.yawspeed);
 
+      /*
       if (cmd.yawspeed > RMP_MAX_ROT_VEL_DEG_S) {
 	cmd.yawspeed = RMP_MAX_ROT_VEL_DEG_S;
       } else if (cmd.yawspeed < -RMP_MAX_ROT_VEL_DEG_S) {
 	cmd.yawspeed = -RMP_MAX_ROT_VEL_DEG_S;
       }
+      */
 
     } else {
       cmd.xspeed = 0;
@@ -306,13 +294,6 @@ SegwayRMP::Main()
     // get new RMP data
     segway->GetData(&data);
 
-    data.xpos = htonl(data.xpos);
-    data.ypos = htonl(data.ypos);
-    data.yaw = htonl(data.yaw);
-    data.xspeed = htonl(data.xspeed);
-    data.yspeed = htonl(data.yspeed);
-    data.yawspeed = htonl(data.yawspeed);
-    
     // now give this data to clients
     PutData((unsigned char *)&data, sizeof(data), 0, 0);
   }
