@@ -11,7 +11,7 @@ player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 #
 player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTK_LIBS@ $(top_builddir)/replace/libreplace.a
 
-player_LDFLAGS = -rdynamic
+player_LDFLAGS = -Wl -export-dynamic #-rdynamic
 
 
 bin_PROGRAMS = player
@@ -21,10 +21,10 @@ lib_LIBRARIES = libplayerqueue.a
 
 libplayerqueue_a_SOURCES = playerqueue.cc
 
-player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
+player_SOURCES = clientdata.cc socket_util.cc devicetable.cc deviceentry.cc device.cc \
                  deviceregistry.cc clientmanager.cc wallclocktime.cc main.cc \
                  playerqueue.cc configfile.cc playercommon.h \
-                 player.h playerqueue.h device.h deviceregistry.h \
+                 player.h playerqueue.h deviceentry.h device.h deviceregistry.h \
                  devicetable.h clientdata.h clientmanager.h socket_util.h \
                  wallclocktime.h playertime.h configfile.h drivertable.cc \
                  drivertable.h
