@@ -709,8 +709,8 @@ typedef struct
 /* data buffer */
 typedef struct 
 {
-  int32_t xpos,ypos; // mm, mm, degrees
-  int16_t theta; //speed, distance_remaining;
+  int32_t xpos,ypos; // mm, mm
+  int16_t theta; //  degrees
   uint8_t bumpers[2]; // booleans
 } __attribute__ ((packed)) player_descartes_data_t;
 
