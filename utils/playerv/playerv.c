@@ -195,6 +195,13 @@ int main(int argc, char **argv)
     return -1;
   }
 
+  // Change the server's data delivery mode.
+  if (playerc_client_datamode(client, PLAYERC_DATAMODE_PUSH_NEW) != 0)
+  {
+    PRINT_ERR1("%s", playerc_error_str());
+    return -1;
+  }
+
   // Get the available devices.
   if (playerc_client_get_devlist(client) != 0)
   {
