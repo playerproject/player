@@ -37,7 +37,7 @@ class PlayerMultiClient
   private:
     // dynamically managed array of our clients
     PlayerClient** clients;
-    int num_clients;
+    //int num_clients;
     int size_clients;
 
     // dynamically managed array of structs that we'll give to poll(2)
@@ -53,17 +53,23 @@ class PlayerMultiClient
     ~PlayerMultiClient();
 
     // how many clients are we managing?
-    int GetNumClients( void ){ return num_clients; };
+    int GetNumClients( void ){ return num_ufds; };
 
     // return a client pointer from a host and port, zero if not connected 
     // to that address
     PlayerClient* GetClient( char* host, int port )
       {
-	for( int c=0; c<num_clients; c++ )
+	printf( "searching for %s:%d\n",
+		host, port );
+	for( int c=0; c<num_ufds; c++ )
+	  {
+	    printf( "checking [%d] %s:%d\n",
+		    c, clients[c]->hostname, clients[c]->port );
+
 	  if( (strcmp(clients[c]->hostname, host) == 0 ) 
 	      && clients[c]->port == port )
 	    return clients[c];
-	
+	  }
 	return 0;
       };
     

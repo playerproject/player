@@ -44,8 +44,7 @@ PlayerMultiClient::PlayerMultiClient()
     return;
   }
   size_clients = initial_size;
-  num_clients = 0;
-
+ 
   if(!(ufds = new pollfd[initial_size]))
   {
     if(player_debug_level(-1)>=0)
@@ -76,7 +75,7 @@ void PlayerMultiClient::AddClient(PlayerClient* client)
   // First, add it to the array of clients
 
   // do we need more room?
-  if(num_clients >= size_clients)
+  if(num_ufds >= size_clients)
   {
     PlayerClient** tmp_clients;
 
@@ -90,7 +89,7 @@ void PlayerMultiClient::AddClient(PlayerClient* client)
     }
 
     // copy existing data
-    memcpy(tmp_clients,clients,sizeof(PlayerClient*)*num_clients);
+    memcpy(tmp_clients,clients,sizeof(PlayerClient*)*num_ufds);
 
     // kill the old array
     delete clients;
@@ -100,7 +99,7 @@ void PlayerMultiClient::AddClient(PlayerClient* client)
     size_clients = 2*size_clients;
   }
 
-  clients[num_clients++] = client;
+  clients[num_ufds] = client;
 
   // Now, add it to our poll watchlist
 
@@ -138,26 +137,19 @@ void PlayerMultiClient::RemoveClient(PlayerClient* client)
 {
   if( !client ) return;
 
-  if( num_clients != num_ufds )
-    {
-      printf( "\nMultiClient warning: clients != ufds." );
-      fflush( stdout );
-    }
-
   // find the client* in the client* array
   int c;
-  for( c=0; c<num_clients; c++ )
+  for( c=0; c<num_ufds; c++ )
     if( clients[c] == client ) break;
   
-  if( c == num_clients ) return; // it wasn't in the array!
+  if( c == num_ufds ) return; // it wasn't in the array!
   
   // we have one less client now.
-  num_clients--;
   num_ufds--;
   
   // shift everything after client one slot left
   int d = c;
-  while( d < num_clients )
+  while( d < num_ufds )
     clients[d] = clients[d++ +1];
   
   // do the same for the ufds
@@ -181,7 +173,7 @@ void PlayerMultiClient::RemoveClient(PlayerClient* client)
 int PlayerMultiClient::Read()
 {
   // clear the fresh flags in the client objects
-  for( int c=0; c<num_clients; c++ )
+  for( int c=0; c<num_ufds; c++ )
     clients[c]->fresh = false;
   
   int num_to_read,retval;
