@@ -92,8 +92,45 @@ void pf_free(pf_t *pf)
 }
 
 
+// Initialize the filter using a guassian
+void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
+{
+  int i;
+  pf_sample_set_t *set;
+  pf_sample_t *sample;
+  pf_pdf_gaussian_t *pdf;
+  
+  set = pf->sets + pf->current_set;
+  
+  // Create the kd tree for adaptive sampling
+  pf_kdtree_clear(set->kdtree);
+
+  set->sample_count = pf->max_samples;
+
+  pdf = pf_pdf_gaussian_alloc(mean, cov);
+    
+  // Compute the new sample poses
+  for (i = 0; i < set->sample_count; i++)
+  {
+    sample = set->samples + i;
+    sample->weight = 1.0 / pf->max_samples;
+    sample->pose = pf_pdf_gaussian_sample(pdf);
+
+    // Add sample to histogram
+    pf_kdtree_insert(set->kdtree, sample->pose, sample->weight);
+  }
+
+  pf_pdf_gaussian_free(pdf);
+    
+  // Re-compute cluster statistics
+  pf_cluster_stats(pf, set);
+
+  return;
+}
+
+
 // Initialize the filter using some model
-void pf_init(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
+void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
 {
   int i;
   pf_sample_set_t *set;

@@ -33,6 +33,16 @@
 #include "map/map.h"
 #include "models/laser.h"
 
+
+// Laser sensor data
+class AMCLLaserData : public AMCLSensorData
+{
+  // Laser range data (range, bearing tuples)
+  public: int range_count;
+  public: double ranges[PLAYER_LASER_MAX_SAMPLES][2];
+};
+
+
 // Laseretric sensor model
 class AMCLLaser : public AMCLSensor
 {
@@ -52,31 +62,36 @@ class AMCLLaser : public AMCLSensor
   public: virtual int Shutdown(void);
 
   // Check for new sensor measurements
-  private: virtual bool GetData(void);
-
+  private: virtual AMCLSensorData *GetData(void);
+  
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
-  public: virtual bool UpdateSensor(pf_t *pf);
-  
+  public: virtual bool UpdateSensor(pf_t *pf, AMCLSensorData *data);
+
+  // Determine the probability for the given pose
+  private: static double SensorModel(AMCLLaserData *data, pf_vector_t pose);
+
   // Device info
   private: int laser_index;
   private: CDevice *device;
 
-  // The laser map
-  private: map_t *map;
-  
-  // Max ranges to consider
-  private: int max_ranges;
-  
-  // Laser sensor/action model
-  private: laser_t *model;
-
   // Current data timestamp
   private: uint32_t tsec, tusec;
 
-  // Current laser data
-  private: int range_count;
-  private: double ranges[PLAYER_LASER_MAX_SAMPLES][2];
+  // The laser map
+  private: map_t *map;
+
+  // Laser offset relative to robot
+  private: pf_vector_t laser_pose;
+  
+  // Max beams to consider
+  private: int max_beams;
+
+  // Laser range variance
+  private: double range_var;
+
+  // Probability of bad range readings
+  private: double range_bad;
 
 #ifdef INCLUDE_RTKGUI
   // Setup the GUI
@@ -86,9 +101,12 @@ class AMCLLaser : public AMCLSensor
   private: virtual void ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
 
   // Draw sensor data
-  private: virtual void UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
+  //private: virtual void UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
 
-  // Figuers
+  // Draw sensor data
+  private: void UpdateGUI(AMCLLaserData *data);
+
+  // Figures
   private: rtk_fig_t *fig, *map_fig;
 #endif
 };

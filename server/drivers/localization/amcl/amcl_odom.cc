@@ -37,12 +37,14 @@
 
 extern int global_playerport;
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
 AMCLOdom::AMCLOdom()
 {
   this->device = NULL;
-  this->model = NULL;
+  this->action_pdf = NULL;
+  
   return;
 }
 
@@ -53,8 +55,9 @@ int AMCLOdom::Load(ConfigFile* cf, int section)
 {
   this->odom_index = cf->ReadInt(section, "odom_index", 0);
 
-  // Create the odometry model
-  this->model = odometry_alloc();
+  this->tsec = 0;
+  this->tusec = 0;
+  this->last_pose = pf_vector_zero();
 
   return 0;
 }
@@ -63,10 +66,7 @@ int AMCLOdom::Load(ConfigFile* cf, int section)
 ////////////////////////////////////////////////////////////////////////////////
 // Unload the model
 int AMCLOdom::Unload(void)
-{
-  odometry_free(this->model);
-  this->model = NULL;
-  
+{  
   return 0;
 }
 
@@ -111,128 +111,158 @@ int AMCLOdom::Shutdown(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get the current odometry reading
-bool AMCLOdom::GetData(void)
+AMCLSensorData *AMCLOdom::GetData(void)
 {
   size_t size;
   uint32_t tsec, tusec;
+  pf_vector_t pose, delta;
   player_position_data_t data;
+  AMCLOdomData *ndata;
 
   // Get the odom device data.
   size = this->device->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
   if (size == 0)
     return false;
 
+  // See if this is a new reading
   if (tsec == this->tsec && tusec == this->tusec)
-    return false;
+    return NULL;
 
-  this->tsec = tsec;
-  this->tusec = tusec;
-  
   // Byte swap
   data.xpos = ntohl(data.xpos);
   data.ypos = ntohl(data.ypos);
   data.yaw = ntohl(data.yaw);
 
-  this->tsec = tsec;
-  this->tusec = tusec;
-  this->pose.v[0] = (double) ((int32_t) data.xpos) / 1000.0;
-  this->pose.v[1] = (double) ((int32_t) data.ypos) / 1000.0;
-  this->pose.v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
+  // Compute new robot pose
+  pose.v[0] = (double) ((int32_t) data.xpos) / 1000.0;
+  pose.v[1] = (double) ((int32_t) data.ypos) / 1000.0;
+  pose.v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
 
-  return true;
-}
+  // If this is not the first pass...
+  if (this->tsec == 0 && this->tusec == 0)
+  {
+    ndata = new AMCLOdomData;
 
+    ndata->sensor = this;
+    ndata->tsec = tsec;
+    ndata->tusec = tusec;
 
-////////////////////////////////////////////////////////////////////////////////
-// Initialize the action model
-bool AMCLOdom::InitAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec)
-{
-  this->tsec = 0;
-  this->tusec = 0;
+    ndata->pose = pose;
+    ndata->delta = pf_vector_zero();
 
-  if (!this->GetData())
-    return false;
+    this->last_pose = pose;
+    this->tsec = tsec;
+    this->tusec = tusec;
+    
+    return ndata;
+  }
+  else
+  {
+    this->tsec = tsec;
+    this->tusec = tusec;
+  }
 
-  this->last_pose = this->pose;
+  // Compute change in pose
+  delta = pf_vector_coord_sub(pose, this->last_pose);
+
+  // HACK: fix
+  double min_dr = 0.20;
+  double min_da = M_PI / 6;
+
+  // Make sure we have moved a reasonable distance
+  if (fabs(delta.v[0]) > min_dr || fabs(delta.v[1]) > min_dr || fabs(delta.v[2]) > min_da)
+  {
+    ndata = new AMCLOdomData;
+
+    ndata->sensor = this;
+    ndata->tsec = tsec;
+    ndata->tusec = tusec;
+    ndata->pose = pose;
+    ndata->delta = delta;
+
+    this->last_pose = pose;
+
+    return ndata;
+  }
+
+  return NULL;
   
-  return true;
+  /* TESTING
+     double valid_dist, valid_yaw;
+     valid_dist = 1.0;
+     valid_yaw = M_PI;
+
+     // Check for jumps in odometry.  This shouldnt happen, but the P2OS
+     // driver doesnt always produce correct odometry on the P2AT.
+     if (fabs(diff.v[0]) > valid_dist || fabs(diff.v[1]) > valid_dist || fabs(diff.v[2]) > valid_yaw)
+     {
+     PLAYER_WARN3("invalid odometry change [%f %f %f]; ignoring",
+     diff.v[0], diff.v[1], diff.v[2]);
+     *tsec = this->tsec;
+     *tusec = this->tusec;
+     this->last_pose = this->pose;
+     return false;
+     }
+  
+  */
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the action model
-bool AMCLOdom::UpdateAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec)
+bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
 {
-  pf_vector_t diff;
-  double valid_dist, valid_yaw;
+  AMCLOdomData *ndata;
+  pf_vector_t x;
+  pf_matrix_t cx;
+  double ux, uy, ua;
+  ndata = (AMCLOdomData*) data;
 
-  valid_dist = 1.0;
-  valid_yaw = M_PI;
-
-  // Check for new data
-  if (!this->GetData())
-    return false;
-  
-  // See how far the robot has moved
-  diff = pf_vector_coord_sub(this->pose, this->last_pose);
-
-  /* TESTING
-  // Check for jumps in odometry.  This shouldnt happen, but the P2OS
-  // driver doesnt always produce correct odometry on the P2AT.
-  if (fabs(diff.v[0]) > valid_dist || fabs(diff.v[1]) > valid_dist || fabs(diff.v[2]) > valid_yaw)
-  {
-    PLAYER_WARN3("invalid odometry change [%f %f %f]; ignoring",
-                 diff.v[0], diff.v[1], diff.v[2]);
-    *tsec = this->tsec;
-    *tusec = this->tusec;
-    this->last_pose = this->pose;
-    return false;
-  }
-  */
-  
-  // Make sure we have moved a reasonable distance
-  if (fabs(diff.v[0]) < 0.20 && fabs(diff.v[1]) < 0.20 && fabs(diff.v[2]) < M_PI / 6)
-    return false;
-
+  /*
   printf("odom: %f %f %f : %f %f %f\n",
-         this->last_pose.v[0], this->last_pose.v[1], this->last_pose.v[2],
-         this->pose.v[0], this->pose.v[1], this->pose.v[2]);
-  
-  // Apply the odometry action model
-  odometry_action_init(this->model, this->last_pose, this->pose);
-  pf_update_action(pf, (pf_action_model_fn_t) odometry_action_model, this->model);
-  odometry_action_term(this->model);
+         ndata->pose.v[0], ndata->pose.v[1], ndata->pose.v[2],
+         ndata->delta.v[0], ndata->delta.v[1], ndata->delta.v[2]);
+  */
+         
+  // See how far the robot has moved
+  x = ndata->delta;
 
-  *tsec = this->tsec;
-  *tusec = this->tusec;
-  this->last_pose = this->pose;
+  // HACK - FIX
+  ux = 0.2 * x.v[0];
+  uy = 0.2 * x.v[1];
+  ua = fabs(0.2 * x.v[2]) + fabs(0.2 * x.v[0]);
+
+  cx = pf_matrix_zero();
+  cx.m[0][0] = ux * ux;
+  cx.m[1][1] = uy * uy;
+  cx.m[2][2] = ua * ua;
+
+  //printf("x = %f %f %f\n", x.v[0], x.v[1], x.v[2]);
+  
+  // Create a pdf with suitable characterisitics
+  this->action_pdf = pf_pdf_gaussian_alloc(x, cx); 
+
+  // Update the filter
+  pf_update_action(pf, (pf_action_model_fn_t) ActionModel, this);  
+
+  // Delete the pdf
+  pf_pdf_gaussian_free(this->action_pdf);
+  this->action_pdf = NULL;
   
   return true;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Initialize the filter
-bool AMCLOdom::InitSensor(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
-{    
-  // Initialize the odometric model
-  odometry_init_init(this->model, mean, cov);
-  
-  // Draw samples from the odometric distribution
-  pf_init(pf, (pf_init_model_fn_t) odometry_init_model, this->model);
-  
-  odometry_init_term(this->model);
-
-  return true;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Apply the sensor model
-bool AMCLOdom::UpdateSensor(pf_t *pf)
+// The action model function (static method)
+pf_vector_t AMCLOdom::ActionModel(AMCLOdom *self, pf_vector_t pose)
 {
-  // We dont have a sensor model; do nothing
-  return false;
+  pf_vector_t z, npose;
+  
+  z = pf_pdf_gaussian_sample(self->action_pdf);
+  npose = pf_vector_coord_add(z, pose);
+    
+  return npose; 
 }
 
 
@@ -249,14 +279,6 @@ void AMCLOdom::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the GUI
 void AMCLOdom::ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
-{
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Draw sensor data
-void AMCLOdom::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 {
   return;
 }

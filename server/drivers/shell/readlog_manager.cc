@@ -405,6 +405,7 @@ int ReadLogManager::ParseLaser(CDevice *device, int linenum,
     data.min_angle = NINT16(RAD_DEG(atof(tokens[6])) * 100);
     data.max_angle = NINT16(RAD_DEG(atof(tokens[7])) * 100);
     data.resolution = NUINT16(RAD_DEG(atof(tokens[8])) * 100);
+    data.range_res = NUINT16(1);
     data.range_count = NUINT16(atoi(tokens[9]));
     
     count = 0;
@@ -448,6 +449,7 @@ int ReadLogManager::ParseLaser(CDevice *device, int linenum,
     data.min_angle = NINT16(data.min_angle);
     data.max_angle = NINT16(data.max_angle);
     data.resolution = NUINT16(data.resolution);
+    data.range_res = NUINT16(1);
   }
 
   device->PutData(&data, sizeof(data), tsec, tusec);

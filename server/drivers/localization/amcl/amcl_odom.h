@@ -30,17 +30,17 @@
 #define AMCL_ODOM_H
 
 #include "amcl_sensor.h"
-#include "models/odometry.h"
+#include "pf/pf_pdf.h"
 
 
 // Odometric sensor data
 class AMCLOdomData : public AMCLSensorData
 {
-  // Data time-stamp
-  public: uint32_t time_sec, time_usec;
-
   // Odometric pose
   public: pf_vector_t pose;
+
+  // Change in odometric pose
+  public: pf_vector_t delta;
 };
 
 
@@ -49,7 +49,7 @@ class AMCLOdom : public AMCLSensor
 {
   // Default constructor
   public: AMCLOdom();
-  
+
   // Load the model
   public: virtual int Load(ConfigFile* cf, int section);
 
@@ -63,36 +63,27 @@ class AMCLOdom : public AMCLSensor
   public: virtual int Shutdown(void);
 
   // Check for new sensor measurements
-  private: virtual bool GetData(void);
-
-  // Initialize the action model; returns true if the model has been initialized.
-  public: virtual bool InitAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec);
+  private: virtual AMCLSensorData *GetData(void);
 
   // Update the filter based on the action model.  Returns true if the filter
   // has been updated.
-  public: virtual bool UpdateAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec);
+  public: virtual bool UpdateAction(pf_t *pf, AMCLSensorData *data);
 
-  // Initialize the filter based on the sensor model.  Returns true if the
-  // filter has been initialized.
-  public: virtual bool InitSensor(pf_t *pf, pf_vector_t mean, pf_matrix_t cov);
-
-  // Update the filter based on the sensor model.  Returns true if the
-  // filter has been updated.
-  public: virtual bool UpdateSensor(pf_t *pf);
+  // The action model callback (static method)
+  public: static pf_vector_t ActionModel(AMCLOdom *self, pf_vector_t pose);
   
   // Device info
   private: int odom_index;
   private: CDevice *device;
 
-  // Odometry sensor/action model
-  private: odometry_t *model;
-
   // Current data timestamp
   private: uint32_t tsec, tusec;
   
   // Last odometric value used to update filter
-  private: pf_vector_t pose;
   private: pf_vector_t last_pose;
+
+  // PDF used to generate action samples
+  private: pf_pdf_gaussian_t *action_pdf;
 
 #ifdef INCLUDE_RTKGUI
   // Setup the GUI
@@ -100,9 +91,6 @@ class AMCLOdom : public AMCLSensor
 
   // Finalize the GUI
   private: virtual void ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
-
-  // Draw sensor data
-  private: virtual void UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
 #endif
 };
 

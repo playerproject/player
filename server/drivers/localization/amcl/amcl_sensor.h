@@ -34,10 +34,8 @@
 #include "pf/pf.h"
 
 
-// Base class for all AMCL sensor measurements
-class AMCLSensorData
-{
-};
+// Forward declarations
+class AMCLSensorData;
 
 
 // Base class for all AMCL sensors
@@ -58,20 +56,27 @@ class AMCLSensor
   // Finalize the model
   public: virtual int Shutdown(void);
 
-  // Initialize the action model; returns true if the model has been initialized.
-  public: virtual bool InitAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec);
+  // Get new sensor data (non-blocking)
+  public: virtual AMCLSensorData *GetData(void);
 
+  // Initialize the action model; returns true if the model has been initialized.
+  // REMOVE public: virtual bool InitAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec);
+  
   // Update the filter based on the action model.  Returns true if the filter
   // has been updated.
-  public: virtual bool UpdateAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec);
+  public: virtual bool UpdateAction(pf_t *pf, AMCLSensorData *data);
 
   // Initialize the filter based on the sensor model.  Returns true if the
   // filter has been initialized.
-  public: virtual bool InitSensor(pf_t *pf, pf_vector_t mean, pf_matrix_t cov);
+  public: virtual bool InitSensor(pf_t *pf, AMCLSensorData *data);
 
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
-  public: virtual bool UpdateSensor(pf_t *pf);
+  public: virtual bool UpdateSensor(pf_t *pf, AMCLSensorData *data);
+
+  // Flag is true if this is the action sensor
+  public: bool is_action;
+  
 
 #ifdef INCLUDE_RTKGUI
   // Setup the GUI
@@ -85,6 +90,17 @@ class AMCLSensor
 #endif
 };
 
+
+
+// Base class for all AMCL sensor measurements
+class AMCLSensorData
+{
+  // Pointer to sensor that generated the data
+  public: AMCLSensor *sensor;
+
+  // Data timestamp
+  public: uint32_t tsec, tusec;
+};
 
 
 
