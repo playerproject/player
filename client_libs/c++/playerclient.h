@@ -1165,6 +1165,7 @@ class PositionProxy : public ClientProxy
   /// Only supported by the segwayrmp driver
   int SetStatus(uint8_t cmd, uint16_t value);
 
+  /// Only supported by the segwayrmp driver
   int PlatformShutdown();
 
   /// Accessor method
@@ -1247,6 +1248,45 @@ class Position3DProxy : public ClientProxy
     
   /// Print current position device state.
   void Print();
+
+  /// Accessor method
+  int32_t  Xpos() const { return xpos; }
+  
+  /// Accessor method
+  int32_t  Ypos() const { return ypos; }
+  
+  /// Accessor method
+  int32_t  Zpos() const { return zpos; }
+  
+  /// Accessor method
+  double  Roll() const { return roll; }
+  
+  /// Accessor method
+  double  Pitch() const { return pitch; }
+  
+  /// Accessor method
+  double  Yaw() const { return yaw; }
+  
+  /// Accessor method
+  int32_t  XSpeed() const { return xspeed; }
+
+  /// Accessor method
+  int32_t  YSpeed() const { return yspeed; }
+
+  /// Accessor method
+  int32_t  ZSpeed() const { return zspeed; }
+
+  /// Accessor method
+  double  RollSpeed() const { return rollspeed; }
+
+  /// Accessor method
+  double  PitchSpeed() const { return pitchspeed; }
+
+  /// Accessor method
+  double  YawSpeed() const { return yawspeed; }
+
+  /// Accessor method
+  unsigned char Stall () const { return stall; }
 };
 
 /*****************************************************************************
