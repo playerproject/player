@@ -761,8 +761,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     strcpy(fullpath,pluginname);
     printf("trying to load %s...", fullpath);
     fflush(stdout);
-    //if((handle = dlopen(fullpath, RTLD_NOW)))
-    if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
+    if((handle = lt_dlopenext(fullpath)))
       puts("success");
     else
     {
@@ -796,14 +795,12 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       strcat(fullpath,pluginname);
       printf("trying to load %s...", fullpath);
       fflush(stdout);
-      //if((handle = dlopen(fullpath, RTLD_NOW)))
       if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
       {
         puts("success");
         break;
       }
       else
-        //printf("failed (%s)\n", dlerror() );
         printf("failed (%s)\n", lt_dlerror() );
 
       i=j+1;
@@ -829,7 +826,6 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     free(tmp);
     printf("trying to load %s...", fullpath);
     fflush(stdout);
-    //if((handle = dlopen(fullpath, RTLD_NOW)))
     if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
       puts("success");
     else
@@ -867,9 +863,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   {
     printf("invoking player_driver_init()...");
     fflush(stdout);
-    //initfunc = (PluginInitFn)dlsym(handle,"player_driver_init");
     initfunc = (PluginInitFn)lt_dlsym(handle,"player_driver_init");
-    //if((error = dlerror()) != NULL)
     if((error = lt_dlerror()) != NULL)
     {
       printf("failed: %s\n", error);
@@ -878,7 +872,6 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((*initfunc)(driverTable) != 0)
     {
       puts("failed");
-      //PLAYER_ERROR1("error loading plugin: %s", dlerror());
       PLAYER_ERROR1("error loading plugin: %s", lt_dlerror());
       return(false);
     }

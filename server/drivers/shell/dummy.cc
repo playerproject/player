@@ -62,6 +62,7 @@ driver
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h> // required for in.h on OS X
 #include <netinet/in.h>
 
 #include "player.h"

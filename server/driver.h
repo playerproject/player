@@ -75,6 +75,9 @@ class Driver
     void DataAvailable(void);
 
   public:
+    // a static version of DataAvailable that can be used as a
+    // callback from libraries. It calls driver->DataAvailable(). 
+    static void DataAvailableStatic( Driver* driver );
 
     // Default device id (single-interface drivers)
     player_device_id_t device_id;
