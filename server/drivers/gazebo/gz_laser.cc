@@ -172,17 +172,21 @@ size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
   int i;
   player_laser_data_t data;
   uint32_t tsec, tusec;
+  double range_res;
   
   gz_laser_lock(this->iface, 1);
+
+  range_res = 1.0;
   
   data.min_angle = htons((int) (this->iface->data->min_angle * 100 * 180 / M_PI));
   data.max_angle = htons((int) (this->iface->data->max_angle * 100 * 180 / M_PI));
   data.resolution = htons((int) (this->iface->data->resolution * 100 * 180 / M_PI));
+  data.range_res = htons((int) range_res);
   data.range_count = htons((int) (this->iface->data->range_count));
   
   for (i = 0; i < this->iface->data->range_count; i++)
   {
-    data.ranges[i] = htons((int) (this->iface->data->ranges[i] * 1000));
+    data.ranges[i] = htons((int) (this->iface->data->ranges[i] * 1000 / range_res));
     data.intensity[i] = (uint8_t) (int) this->iface->data->intensity[i];
   }
 
