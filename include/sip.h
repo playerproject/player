@@ -29,7 +29,9 @@
 #ifndef _SIP_H
 #define _SIP_H
 
-#include <values.h>
+//#include <values.h> // deprecated
+#include <limits.h> // 
+#include <float.h>  // use these instead
 #include <messages.h>
 #include <p2osdevice.h>
 

@@ -55,7 +55,7 @@ ClientManager::ClientManager()
           "Out of memory? bailing\n", stderr);
     exit(1);
   }
-  bzero(clients,sizeof(CClientData*)*initial_size);
+  bzero((char*)clients,sizeof(CClientData*)*initial_size);
   size_clients = initial_size;
   num_clients = 0;
 
@@ -65,7 +65,7 @@ ClientManager::ClientManager()
           "Out of memory? bailing \n", stderr);
     exit(1);
   }
-  bzero(ufds,sizeof(struct pollfd)*initial_size);
+  bzero((char*)ufds,sizeof(struct pollfd)*initial_size);
 
   pthread_mutex_init(&rthread_client_mutex,NULL);
   pthread_mutex_init(&wthread_client_mutex,NULL);
@@ -136,7 +136,7 @@ void ClientManager::AddClient(CClientData* client)
     }
 
     // zero it
-    bzero(tmp_clients,sizeof(CClientData*)*2*size_clients);
+    bzero((char*)tmp_clients,sizeof(CClientData*)*2*size_clients);
 
     // copy existing data
     memcpy(tmp_clients,clients,sizeof(CClientData*)*num_clients);
@@ -159,7 +159,7 @@ void ClientManager::AddClient(CClientData* client)
     }
     
     // zero it
-    bzero(tmp_ufds,sizeof(struct pollfd)*2*size_clients);
+    bzero((char*)tmp_ufds,sizeof(struct pollfd)*2*size_clients);
 
     // copy existing data
     memcpy(tmp_ufds,ufds,sizeof(struct pollfd)*num_clients);
