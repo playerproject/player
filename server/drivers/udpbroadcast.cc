@@ -70,10 +70,16 @@ class UDPBroadcast : public CDevice
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Handle requests.  We dont queue them up, but handle them immediately.
-  public: virtual int PutConfig(player_device_id_t* device, void *client, 
-                                void *data, size_t len);
+  // Process commands from a particular client (called in server thread).
+  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
 
+  // Get the number of data packets to be returned to a particular client.
+  public: virtual size_t GetNumData(void* client);
+
+  // Get data for a particular client (called in server thread).
+  public: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
+                                 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+  
   // Main function for device thread
   private: virtual void Main();
 
@@ -91,6 +97,9 @@ class UDPBroadcast : public CDevice
 
   // Find the queue for a particular client.
   private: int FindQueue(void *client);
+
+  // Determine the length of the queue for a particular client.
+  private: int LenQueue(void *client);
 
   // Push a message onto all of the queues
   private: int PushQueue(void *msg, int len);
@@ -138,8 +147,10 @@ class UDPBroadcast : public CDevice
   private: int read_socket;
   private: sockaddr_in read_addr;
 };
- 
-// Init function
+
+
+///////////////////////////////////////////////////////////////////////////
+// Instantiate an instance of this driver
 CDevice* UDPBroadcast_Init(char* interface, ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_COMMS_STRING))
@@ -151,29 +162,31 @@ CDevice* UDPBroadcast_Init(char* interface, ConfigFile* cf, int section)
   else
     return((CDevice*)(new UDPBroadcast(interface, cf, section)));
 }
-  
-// a driver registration function
-void 
-UDPBroadcast_Register(DriverTable* table)
+
+
+///////////////////////////////////////////////////////////////////////////
+// Register driver
+void UDPBroadcast_Register(DriverTable* table)
 {
   table->AddDriver("udpbroadcast", PLAYER_ALL_MODE, UDPBroadcast_Init);
 }
 
+
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
-UDPBroadcast::UDPBroadcast(char* interface, ConfigFile* cf, int section) :
-  CDevice(0,0,0,100)
+UDPBroadcast::UDPBroadcast(char* interface, ConfigFile* cf, int section)
+    : CDevice(0,0,0,0)
 {
   this->max_queue_size = 100;
   this->read_socket = 0;
   this->write_socket = 0;
 
-  strncpy(this->addr,
-          cf->ReadString(section, "addr", DEFAULT_BROADCAST_IP),
-          sizeof(this->addr));
+  strncpy(this->addr, cf->ReadString(section, "addr", DEFAULT_BROADCAST_IP), sizeof(this->addr));
   this->port = cf->ReadInt(section, "port", DEFAULT_BROADCAST_PORT);
 
   PLAYER_TRACE2("broadcasting on %s:%d", this->addr, this->port);
+
+  return;
 }
 
 
@@ -258,66 +271,56 @@ int UDPBroadcast::Shutdown()
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Handle requests.  We dont queue them up, but handle them immediately.
-int UDPBroadcast::PutConfig(player_device_id_t* id, void *client, 
-                                void *data, size_t len)
+// Process commands from a particular client (called in server thread).
+void UDPBroadcast::PutCommand(void* client, unsigned char* src, size_t len)
 {
-  player_comms_msg_t *request;
-  player_comms_msg_t reply;
-  int replen;
-
-  request = (player_comms_msg_t*) data;
-
-  switch (request->subtype)
-  {
-    case PLAYER_COMMS_SUBTYPE_SEND:
-    {
-      // Write the message to the broadcast socket, and give client an ACK.
-      SendPacket(request->data, len);
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    }
-    case PLAYER_COMMS_SUBTYPE_RECV:
-    {
-      // Pop the next waiting packet from the queue and send it back
-      // to the client.  If there are no waiting packets, send a NACK.
-      Lock();
-      replen = PopQueue(client, reply.data, sizeof(reply));
-      Unlock();
-
-      if (replen > 0)
-      {
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
-                     (unsigned char*) &reply, (size_t) replen) != 0)
-          PLAYER_ERROR("PutReply() failed");
-      }
-      else
-      {
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-          PLAYER_ERROR("PutReply() failed");
-      }
-      break;
-    }
-  }
-  return 0;
+  PLAYER_TRACE3("client %p sent %d bytes [%s]", client, len, src);
+  SendPacket(src, len);
+  return;
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// Get the number of data packets to be returned to a particular client.
+size_t UDPBroadcast::GetNumData(void* client)
+{
+  PLAYER_TRACE2("client %p has %d pending messages", client, LenQueue(client));
+  return LenQueue(client);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Get data for a particular client (called in server thread).
+size_t UDPBroadcast::GetData(void* client, unsigned char* dest, size_t len,
+                             uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+{
+  size_t dlen;
+  
+  // Pop the next waiting packet from the queue and send it back
+  // to the client.
+  Lock();
+  dlen = PopQueue(client, dest, len);
+  Unlock();
+
+  PLAYER_TRACE3("client %p got %d bytes [%s]", client, dlen, dest);
+
+  return dlen;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void
-UDPBroadcast::Main() 
+void UDPBroadcast::Main() 
 {
   int len;
-  player_comms_msg_t msg;
+  uint8_t msg[PLAYER_MAX_MESSAGE_SIZE];
   
   PLAYER_TRACE0("thread running");
 
   while (true)
   {
     // Get incoming messages; this is a blocking call.
-    len = RecvPacket(&msg, sizeof(msg));
+    len = RecvPacket(msg, sizeof(msg));
 
     // Test for thread termination; this will make the function exit
     // immediately.
@@ -431,6 +434,25 @@ int UDPBroadcast::FindQueue(void *client)
       return i;
   }
   return -1;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Determine the length of the queue for a particular client.
+int UDPBroadcast::LenQueue(void *client)
+{
+  int index;
+  queue_t *queue;
+  
+  index = FindQueue(client);
+  if (index < 0)
+  {
+    PLAYER_ERROR1("queue for client %p not found", client);
+    return -1;
+  }
+  queue = this->qlist[index];
+
+  return queue->count;
 }
 
 
