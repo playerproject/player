@@ -78,7 +78,7 @@
 
 #define NMEA_START_CHAR '$'
 #define NMEA_END_CHAR '\n'
-#define NMEA_CHKSUM_LEN 2
+#define NMEA_CHKSUM_CHAR '*'
 
 class GarminNMEA:public CDevice 
 {
@@ -267,6 +267,9 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
 {
   char* ptr;
   size_t sentlen;
+  char tmp[8];
+  int chksum;
+  int oursum; 
 
   while(!(ptr = strchr((const char*)nmea_buf, NMEA_START_CHAR)))
   {
@@ -276,32 +279,56 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
       return(-1);
   }
 
-  memmove(nmea_buf,ptr,strlen(ptr)+1);
   nmea_buf_len = strlen(ptr);
+  memmove(nmea_buf,ptr,strlen(ptr)+1);
+  //printf("found start char:%s:%d\n", nmea_buf,nmea_buf_len);
 
   while(!(ptr = strchr((const char*)nmea_buf, NMEA_END_CHAR)))
   {
     if(nmea_buf_len >= sizeof(nmea_buf) - 1)
     {
       // couldn't get an end char and the buffer is full.
+      PLAYER_WARN("couldn't find an end character; discarding data");
       buf = NULL;
       return(0);
     }
     if(FillBuffer())
       return(-1);
   }
+  //printf("found end char:%s:\n", nmea_buf);
 
-  sentlen = strlen(nmea_buf) - strlen(ptr) + 1;
+  sentlen = nmea_buf_len - strlen(ptr) + 1;
   if(sentlen > len - 1)
   {
     PLAYER_WARN1("NMEA sentence too long (%d bytes); truncating", sentlen);
     sentlen = len - 1;
   }
 
-  strncpy(buf,nmea_buf,sentlen);
-  buf[sentlen] = '\0';
 
-  memmove(nmea_buf,ptr,nmea_buf_len-sentlen);
+  // copy in all but the carriage return and line feed
+  strncpy(buf,nmea_buf,sentlen-2);
+  buf[sentlen-2] = '\0';
+
+  // verify the checksum, if present.  two hex digits are the XOR of all the 
+  // characters between the $ and *.
+  if((ptr = strchr((const char*)buf,NMEA_CHKSUM_CHAR)) && 
+     (strlen(ptr) == 3))
+  {
+    strncpy(tmp,ptr+1,2);
+    tmp[2]='\0';
+    chksum = strtol(tmp,NULL,16);
+    oursum=0;
+    for(int i=1;i<(int)(strlen(buf)-strlen(ptr));i++)
+      oursum ^= buf[i];
+
+    if(oursum != chksum)
+    {
+      PLAYER_WARN("checksum mismatch; discarding sentence");
+      buf=NULL;
+    }
+  }
+
+  memmove(nmea_buf,ptr+1,strlen(ptr));
   nmea_buf_len -= sentlen;
   nmea_buf[nmea_buf_len]='\0';
   return(0);
