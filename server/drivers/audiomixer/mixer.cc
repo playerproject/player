@@ -105,6 +105,8 @@ int Mixer::Shutdown()
   close(mixerFD);
 
   puts("Mixer has been shutdown");
+
+  return 0;
 }
 
 size_t Mixer::GetCommand(void* dest, size_t maxsize)
