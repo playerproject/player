@@ -41,7 +41,7 @@ AC_C_BIGENDIAN
 dnl where's RTK?
 AC_ARG_WITH(rtk, [  --with-rtk=dir          Location of RTK],
 RTK_DIR=$with_rtk,
-RTK_DIR="${HOME}/librtk-2.1")
+RTK_DIR=$prefix)
 AC_SUBST(RTK_DIR)
 
 dnl RTK2 uses libjpeg to export images.
