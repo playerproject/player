@@ -33,5 +33,4 @@ install:
 uninstall:
 	$(RM) -f $(INSTALL_UTILS)/viewer.tk
 	$(RM) -f $(INSTALL_UTILS)/README.tkplayerv
-	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_UTILS)
 

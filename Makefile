@@ -53,7 +53,6 @@ install_doc:
 uninstall:
 	cd src && make -i uninstall
 	cd client_libs && make -i uninstall
-	cd examples && make -i uninstall
 	cd utils && make -i uninstall
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_BIN) 
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_INCLUDE)
