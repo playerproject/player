@@ -161,6 +161,7 @@ struct controller
   bool dirty; // use this flag to determine when we need to send commands
 };
 
+#if JOYSTICK_SUPPORT
 // open a joystick device and read from it, scaling the values and
 // putting them into the controller struct
 void*
@@ -173,16 +174,12 @@ joystick_handler(void* arg)
   
   int buttons_state = 0;
 
-  //puts("Reading from joystick");
-
   // loop around a joystick read
   for(;;)
   {
     // get the next event from the joystick
     read (jfd, &event, sizeof(struct js_event));
 
-    //puts( "JS" );
-      
     if ((event.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON) {
       if (event.value)
         buttons_state |= (1 << event.number);
@@ -190,15 +187,9 @@ joystick_handler(void* arg)
         buttons_state &= ~(1 << event.number);
     }
       
-    /*
-      printf( "value % d type %u  number %u state %d \n", 
-      event.value, event.type, event.number, buttons_state );
-    */
-      
     // ignore the startup events
     if( event.type & JS_EVENT_INIT )
     {
-      //puts( "init" );
       continue;
     }
 
@@ -228,7 +219,9 @@ joystick_handler(void* arg)
   }
   return(NULL);
 }
+#endif
 
+#if KEYBOARD_SUPPORT
 // read commands from the keyboard 
 void*
 keyboard_handler(void* arg)
@@ -367,12 +360,12 @@ keyboard_handler(void* arg)
   }
   return(NULL);
 }
+#endif
       
 Client::Client(char* host, int port )
 {
-  //if( g_verbose )
-    printf( "Connecting to Player at %s:%d - ", host, port );
-    fflush( stdout );
+  printf( "Connecting to Player at %s:%d - ", host, port );
+  fflush( stdout );
   
   /* Connect to the Player server */
   assert( player = new PlayerClient(host,port,protocol) );  
@@ -400,7 +393,7 @@ Client::Client(char* host, int port )
   {
     if(player->Read() < 0 )
     {
-      puts( " - Failed. Quitting." );
+      PLAYER_ERROR("Read failed. Quitting.");
       exit( -1 );
     }
   }
@@ -409,17 +402,17 @@ Client::Client(char* host, int port )
   if(!threed)
   {
     if(pp->SetMotorState(1))
-      puts("WARNING: failed to turn on motor power");
+      PLAYER_WARN("Failed to turn on motor power");
   }
   else
   {
     if(pp3->SetMotorState(1))
-      puts("WARNING: failed to turn on motor power");
+      PLAYER_WARN("Failed to turn on motor power");
   }
   
   gettimeofday(&lastcommand,NULL);
 
-  puts( "Success" );
+  puts("Success");
 }
 
 void Client::Read( void )
@@ -467,16 +460,18 @@ void Client::Update( struct controller* cont )
   {
     if(!stopped)
     {
-      cont->speed = cont->turnrate = 0;
+      cont->speed = cont->turnrate = 0.0;
       if(!debug_mode)
       {
+        if(print_speeds)
+          printf("%5.3f %5.3f\n", cont->speed, RTOD(cont->turnrate));
         if(!threed)
           pp->SetSpeed(0,0);
         else
           pp3->SetSpeed(0,0);
       }
       else
-        printf("%d %d\n", cont->speed, cont->turnrate);
+        printf("%5.3f %5.3f\n", cont->speed, cont->turnrate);
       stopped = true;
     }
   }
@@ -569,13 +564,14 @@ int main(int argc, char** argv)
     if(jfd < 1)
     {
       perror("Failed to open joystick");
-      puts("Falling back on keyboard control");
+      PLAYER_WARN("Falling back on keyboard control");
       use_keyboard = true;
     }
     else
       pthread_create(&dummy, NULL, &joystick_handler, (void*)&cont); 
 #else
-    puts("Joystick support not included; falling back on keyboard control");
+    PLAYER_WARN("Joystick support not included; falling back on keyboard control");
+    use_keyboard = true;
 #endif
   }
 
@@ -584,7 +580,7 @@ int main(int argc, char** argv)
 #if KEYBOARD_SUPPORT
     pthread_create(&dummy, NULL, &keyboard_handler, (void*)&cont); 
 #else
-    puts("Keyboard support not include; bailing.");
+    PLAYER_ERROR("Keyboard support not include; bailing.");
     exit(-1);
 #endif
   }
