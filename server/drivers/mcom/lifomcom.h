@@ -56,6 +56,7 @@ private:
     private:
         player_mcom_data_t dat[MCOM_N_BUFS];
         int top;
+      int capacity;
     public:
         int type;
         char channel[MCOM_CHANNEL_LEN];
@@ -66,6 +67,8 @@ private:
         player_mcom_data_t Read();
         void Clear();
         void print();
+      void SetCapacity(int cap);
+      int GetCapacity() { return capacity; }
     };
 
     struct Link{
@@ -83,6 +86,9 @@ private:
         player_mcom_data_t Pop(int type, char channel[MCOM_CHANNEL_LEN]);
         player_mcom_data_t Read(int type,char channel[MCOM_CHANNEL_LEN]);
         void Clear(int type,char channel[MCOM_CHANNEL_LEN]);
+      void SetCapacity(int type, char channel[MCOM_CHANNEL_LEN], 
+		       unsigned char cap);
+      Link * FindLink(int type, char channel[MCOM_CHANNEL_LEN]);
     };
 
     LinkList Data;
