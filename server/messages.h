@@ -654,9 +654,22 @@ typedef struct
 /* Request packet subtypes */
 #define PLAYER_LASERBEACON_SET_CONFIG 0x01
 #define PLAYER_LASERBEACON_GET_CONFIG 0x02
+#define PLAYER_LASERBEACON_GET_GEOM   0x03
 
 
-/* Laser beacon request/reply packet. */
+/* Laser beacon geometry packet. */
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_LASERBEACON_GET_GEOM. */
+  uint8_t subtype;
+
+  /* Pose of the robot base, in the robot cs (mm, mm, degrees). */
+  uint16_t pose[3];
+
+} __attribute__ ((packed)) player_laserbeacon_geom_t;
+
+
+/* Laser beacon configuration packet. */
 typedef struct
 {
   /* Packet subtype.  Set to PLAYER_LASERBEACON_SET_CONFIG to set the

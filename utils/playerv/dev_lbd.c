@@ -101,8 +101,20 @@ void lbd_update(lbd_t *lbd)
   if (rtk_menuitem_ischecked(lbd->subscribe_item))
   {
     if (!lbd->proxy->info.subscribed)
+    {
       if (playerc_lbd_subscribe(lbd->proxy, PLAYER_READ_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+
+      // Get the geometry
+      if (playerc_lbd_get_geom(lbd->proxy) != 0)
+        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+
+      rtk_fig_origin(lbd->beacon_fig,
+                     lbd->proxy->pose[0],
+                     lbd->proxy->pose[1],
+                     lbd->proxy->pose[2]);
+
+    }
   }
   else
   {
