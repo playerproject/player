@@ -256,20 +256,20 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
       {	
 	PLAYER_TRACE0( "requesting laser geom" );
 
-	stg_geom_t geom;
-	if( stg_model_prop_get( this->model, STG_PROP_LASERGEOM, &geom,sizeof(geom)))
-	  PLAYER_ERROR( "error requesting STG_PROP_LASERGEOM" );
-	else
-	  PLAYER_TRACE0( "got laser geom OK" );
+	stg_laser_config_t slc;
+	if( stg_model_prop_get( this->model, STG_PROP_LASERCONFIG, &slc,sizeof(slc))
+	    != 0 )
+	  PLAYER_TRACE0( "error requesting STG_PROP_LASERCONFIG" );
+	
       
 	// fill in the geometry data formatted player-like
 	player_laser_geom_t pgeom;
-	pgeom.pose[0] = htons((uint16_t)(1000.0 * geom.pose.x));
-	pgeom.pose[1] = htons((uint16_t)(1000.0 * geom.pose.y));
-	pgeom.pose[2] = htons((uint16_t)RTOD( geom.pose.a));
+	pgeom.pose[0] = htons((uint16_t)(1000.0 * slc.geom.pose.x));
+	pgeom.pose[1] = htons((uint16_t)(1000.0 * slc.geom.pose.y));
+	pgeom.pose[2] = htons((uint16_t)RTOD( slc.geom.pose.a));
 	
-	pgeom.size[0] = htons((uint16_t)(1000.0 * geom.size.x)); 
-	pgeom.size[1] = htons((uint16_t)(1000.0 * geom.size.y)); 
+	pgeom.size[0] = htons((uint16_t)(1000.0 * slc.geom.size.x)); 
+	pgeom.size[1] = htons((uint16_t)(1000.0 * slc.geom.size.y)); 
 	
 	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		      &pgeom, sizeof(pgeom) ) != 0 )
