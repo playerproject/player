@@ -528,7 +528,7 @@ void Client::Update( struct controller* cont )
           pp3->SetSpeed(0,0);
       }
       else
-	printf("%d %d\n", cont->speed, cont->turnrate);
+        printf("%d %d\n", cont->speed, cont->turnrate);
       stopped = true;
     }
   }
