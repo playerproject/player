@@ -906,6 +906,9 @@ typedef struct player_laser_power_config
 /** The maximum number of blobs for each color class. */
 #define PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL 10
 
+/** The maximum number of blobs in total. */
+#define PLAYER_BLOBFINDER_MAX_BLOBS PLAYER_BLOBFINDER_MAX_CHANNELS * PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL
+
 
 /** [Data]
 
@@ -961,8 +964,7 @@ typedef struct player_blobfinder_data
   player_blobfinder_header_elt_t header[PLAYER_BLOBFINDER_MAX_CHANNELS];
 
   /** The list of blobs. */
-  player_blobfinder_blob_elt_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL
-                                    * PLAYER_BLOBFINDER_MAX_CHANNELS];
+  player_blobfinder_blob_elt_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
   
 } __attribute__ ((packed)) player_blobfinder_data_t;
 
@@ -1291,19 +1293,8 @@ typedef struct player_bumper_data
 /** To query the geometry of a bumper array, give the following request,
     filling in only the subtype.  The server will repond with the other fields
     filled in. */
-typedef struct player_bumper_define
-{
-  /** Packet subtype.  Must be PLAYER_BUMPER_GET_GEOM_REQ. */
-  uint8_t subtype;
 
-  /** The number of valid bumper definitions. */
-  uint16_t bumper_count;
-
-  /** geometry of each bumper */
-  player_bumper_define_t bumper_def[PLAYER_BUMPER_MAX_SAMPLES];
-} __attribute__ ((packed)) player_bumper_geom_t;
-
-/**  the geometry of a single bumper */
+/** The geometry of a single bumper */
 typedef struct player_bumper_define
 {
   /** the local pose of a single bumper in mm */
@@ -1313,6 +1304,21 @@ typedef struct player_bumper_define
   /** radius of curvature in mm - zero for straight lines */
   uint16_t radius; 
 } __attribute__ ((packed)) player_bumper_define_t;
+
+/** The geometry for all bumpers. */
+typedef struct player_bumper_geom
+{
+  /** Packet subtype.  Must be PLAYER_BUMPER_GET_GEOM_REQ. */
+  uint8_t subtype;
+
+  /** The number of valid bumper definitions. */
+  uint16_t bumper_count;
+
+  /** geometry of each bumper */
+  player_bumper_define_t bumper_def[PLAYER_BUMPER_MAX_SAMPLES];
+  
+} __attribute__ ((packed)) player_bumper_geom_t;
+
 /*************************************************************************
  ** end section
  *************************************************************************/
@@ -1675,13 +1681,6 @@ typedef struct player_ir_data
 /** [Configuration: Query pose] */
 /** To query the pose of the IRs, use the following request, filling in only
     the subtype.  The server will respond with the other fields filled in. */
-typedef struct player_ir_pose
-{
-  /** subtype; must be PLAYER_IR_POSE_REQ */
-  uint8_t subtype; 
-  /** poses? */
-  player_ir_pose_t poses[PLAYER_IR_MAX_SAMPLES];
-} __attribute__ ((packed)) player_ir_pose_req_t;
 
 /** what is this for? */
 typedef struct player_ir_pose
@@ -1689,6 +1688,16 @@ typedef struct player_ir_pose
   /** ?? */
   short poses[PLAYER_IR_MAX_SAMPLES][3];
 } __attribute__ ((packed)) player_ir_pose_t;
+
+/** ? */
+typedef struct player_ir_pose_req
+{
+  /** subtype; must be PLAYER_IR_POSE_REQ */
+  uint8_t subtype; 
+  /** poses? */
+  player_ir_pose_t poses[PLAYER_IR_MAX_SAMPLES];
+} __attribute__ ((packed)) player_ir_pose_req_t;
+
 
 // some defines
 //#define PLAYER_REB_IR_M_PARAM 1
