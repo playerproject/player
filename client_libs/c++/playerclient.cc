@@ -454,10 +454,13 @@ int CRobot::ExactRead( unsigned char buf[], unsigned short size )
     int numread = 0;
     while (numread < size)
     {
+      errno = 0;
         numread += read(sock, buf + numread, size - numread);
         if (errno != 0 && errno != EINTR)
         {
-            puts("WARNING: error on read\n");
+            puts("WARNING: error on read");
+	    puts( strerror( errno ) ); 
+	    
             return 1;
         }
     }
