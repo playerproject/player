@@ -168,7 +168,9 @@ FRAMEGRABBER* fg_open( const char* dev )
                      fg->fd,                  // File handle
                      0 );                     // Offset
 
-  if ( (int)fg->mb_map < 0 )
+
+
+  if ( MAP_FAILED == fg->mb_map )
   {
     perror( "fg_open(): mmap buffer" );
     free( fg->device );
