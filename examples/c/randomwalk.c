@@ -89,7 +89,7 @@ parse_args(int argc, char** argv)
 int main(int argc, char** argv)
 {
   player_connection_t conn;
-  player_sonar_data_t sonar;
+  player_frf_data_t sonar;
   player_position_cmd_t poscmd;
   int randint;
   int randcount = 0;
@@ -103,15 +103,20 @@ int main(int argc, char** argv)
   if(player_connect(&conn, host, portnum))
     exit(1);
 
+  if(player_set_datamode(&conn,PLAYER_DATAMODE_PUSH_ALL))
+    exit(1);
+
   /* request read access on the sonars and write access to the wheels */
   if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'w',NULL) == -1)
     exit(1);
-  if(player_request_device_access(&conn, PLAYER_SONAR_CODE, 0, 'r',NULL) == -1)
+  if(player_request_device_access(&conn, PLAYER_FRF_CODE, 0, 'r',NULL) == -1)
     exit(1);
 
-  /* maybe turn on the motors */
-  /*if(turnOnMotors && robot.ChangeMotorState(1))
-    exit(1);*/
+  if(motorson)
+  {
+    if(player_change_motor_state(&conn,1))
+      exit(1);
+  }
 
   /* go into read-think-act loop */
   for(;;)
@@ -132,7 +137,7 @@ int main(int argc, char** argv)
        sonar.ranges[5] < minfrontdistance ||
        avoidcount)
     {
-      poscmd.speed = -150;
+      poscmd.xspeed = -150;
 
       /* once we start avoiding, continue avoiding for 2 seconds */
       /* (we run at about 10Hz, so 20 loop iterations is about 2 sec) */
@@ -142,16 +147,16 @@ int main(int argc, char** argv)
         randcount = 0;
 
         if(sonar.ranges[1]+sonar.ranges[15] < sonar.ranges[7]+sonar.ranges[8])
-          poscmd.turnrate = -40;
+          poscmd.yawspeed = -40;
         else
-          poscmd.turnrate = 40;
+          poscmd.yawspeed = 40;
       }
       avoidcount--;
     }
     else
     {
       avoidcount = 0;
-      poscmd.speed = 200;
+      poscmd.xspeed = 200;
 
       /* update turnrate every 3 seconds */
       if(!randcount)
@@ -159,7 +164,7 @@ int main(int argc, char** argv)
         /* make random int tween -20 and 20 */
         randint = (1+(int)(40.0*rand()/(RAND_MAX+1.0))) - 20; 
 
-        poscmd.turnrate = randint;
+        poscmd.yawspeed = randint;
         randcount = 20;
       }
       randcount--;
@@ -170,7 +175,7 @@ int main(int argc, char** argv)
   }
 
   /* it's not necessary, but we could close the devices like this: */
-  if(player_request_device_access(&conn, PLAYER_SONAR_CODE, 0, 'c',NULL))
+  if(player_request_device_access(&conn, PLAYER_FRF_CODE, 0, 'c',NULL))
     exit(1);
   if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'c',NULL))
     exit(1);
