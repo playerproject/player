@@ -38,7 +38,13 @@ public:
 		: CRWIDevice(argc, argv,
 		             sizeof(player_position_data_t),
 		             sizeof(player_position_cmd_t),
-		             1,1)
+		             1,1),
+		  old_xpos(0),
+		  old_ypos(0),
+		  old_theta(0),
+		  moving(false),
+		  last_known_speed(0),
+		  last_known_turnrate(0)
 		{}
 	
 	static CDevice * Init (int argc, char *argv[])
@@ -57,10 +63,20 @@ private:
 	MobilityActuator::ActuatorState_var base_state;
 	MobilityActuator::ActuatorState_var odo_state;
 	
+	// for "resetting" the odometry
 	double odo_correct_x, odo_correct_y, odo_correct_theta;
 	#endif // USE_MOBILITY
 	
-	void PositionCommand (int16_t speed, int16_t rot_speed);
+	// for determining whether we are stalled
+	int32_t old_xpos, old_ypos;
+	uint16_t old_theta;
+	bool moving;
+	
+	// sometimes velocity cannot be read
+	uint16_t last_known_speed;
+	int16_t last_known_turnrate;
+	
+	void PositionCommand (const int16_t speed, const int16_t rot_speed);
 	void ResetOdometry ();
 };
 

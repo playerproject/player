@@ -51,7 +51,7 @@ CRWISonarDevice::CRWISonarDevice(int argc, char **argv)
 int
 CRWISonarDevice::Setup()
 {
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	CORBA::Object_ptr temp;
 	char *path = upper ? "/Sonar/Segment" : "/BaseSonar/Segment";
 	
@@ -61,14 +61,14 @@ CRWISonarDevice::Setup()
 	} else {
 	    sonar_state = MobilityGeometry::SegmentState::_narrow(temp);
 	}
-	#else
+#else
 	printf("Cannot create rwi_sonar device without mobility.\n");
 	return -1;
-	#endif			// USE_MOBILITY
+#endif			// USE_MOBILITY
 	
 	// Zero the common buffer
 	player_sonar_data_t data;
-	bzero(&data, sizeof(data));
+	memset(&data, 0, sizeof(data));
 	PutData((unsigned char *) &data, sizeof(data), 0, 0);	
 	
 	StartThread();
@@ -91,31 +91,58 @@ CRWISonarDevice::Shutdown()
 void
 CRWISonarDevice::Main()
 {
+	// start enabled
+	bool enabled = true;
+
 	// Working buffer space
 	player_rwi_config_t cfg;
 	player_sonar_data_t data;
 	
 	void *client;
 	
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	MobilityGeometry::SegmentData_var sonar_data;
-	#endif // USE_MOBILITY
+#endif // USE_MOBILITY
 		
-    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+    if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0) {
+		perror("rwi_sonar call to pthread_setcanceltype failed");
+    }
 
 	while (true) {
 	
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
 		    switch (cfg.request) {
-			    case PLAYER_RWI_SONAR_POWER_REQ:
-		    		// RWI does not turn off sonar power: always on
-		    		PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+			    case PLAYER_SONAR_POWER_REQ:
+		    		// RWI does not turn off sonar power; all we can do is
+		    		// stop updating the data
+		    		if (cfg.value == 0)
+		    			enabled = false;
+		    		else
+		    			enabled = true;
+		    			
+		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_sonardevice.\n");
+		    		}
+					break;
+				case PLAYER_SONAR_GET_GEOM_REQ:
+					// FIXME: not yet implemented
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_sonardevice.\n");
+		    		}
 					break;
 				default:
 					printf("rwi_sonar device received unknown %s",
 					       "configuration request\n");
-					PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0);
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_sonardevice.\n");
+		    		}
 					break;
 	    	}
 		}
@@ -123,25 +150,25 @@ CRWISonarDevice::Main()
 		// Sonar takes no commands to process
 	
 		// Finally, collect new data
+		if (enabled) {
 #ifdef USE_MOBILITY
-		sonar_data = sonar_state->get_sample(0);
+			sonar_data = sonar_state->get_sample(0);
 		
-		data.range_count = htons((uint16_t) sonar_data->org.length());
-		
-		for (unsigned int i = 0;
-		     (i < sonar_data->org.length()) && (i < PLAYER_NUM_SONAR_SAMPLES);
-		     i++) {
-		    data.ranges[i] = htons((uint16_t) (1000.0 *
-				sqrt(((sonar_data->org[i].x - sonar_data->end[i].x) *
-				      (sonar_data->org[i].x - sonar_data->end[i].x)) +
-				     ((sonar_data->org[i].y - sonar_data->end[i].y) *
-				      (sonar_data->org[i].y - sonar_data->end[i].y)))));
-		}
+			data.range_count = htons((uint16_t) sonar_data->org.length());
+			for (unsigned int i = 0; (i < sonar_data->org.length())
+			                         && (i < PLAYER_NUM_SONAR_SAMPLES); i++) {
+			    data.ranges[i] = htons((uint16_t) (1000.0 *
+					sqrt(((sonar_data->org[i].x - sonar_data->end[i].x) *
+					      (sonar_data->org[i].x - sonar_data->end[i].x)) +
+					     ((sonar_data->org[i].y - sonar_data->end[i].y) *
+					      (sonar_data->org[i].y - sonar_data->end[i].y)))));
+			}
 #else
-		data.range_count = 0;
+			data.range_count = 0;
 #endif			// USE_MOBILITY
-
-	    PutData((unsigned char *) &data, sizeof(data), 0, 0);
+		
+			PutData((unsigned char *) &data, sizeof(data), 0, 0);
+		}
 	
 	    pthread_testcancel();
 	}

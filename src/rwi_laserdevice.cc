@@ -21,8 +21,6 @@
  *
  */
 
-#define PLAYER_ENABLE_TRACE 1
-
 #include <rwi_laserdevice.h>
 #include <stdio.h>
 #include <netinet/in.h>
@@ -51,7 +49,7 @@ CRWILaserDevice::Setup()
 		
 	// Zero the common buffer
 	player_laser_data_t data;
-	bzero(&data, sizeof(data));
+	memset(&data, 0, sizeof(data));
 	PutData((unsigned char *) &data, sizeof(data), 0, 0);	
 	
 	StartThread();
@@ -74,31 +72,58 @@ CRWILaserDevice::Shutdown()
 void
 CRWILaserDevice::Main()
 {
+	// start enabled
+	bool enabled = true;
+	
 	// Working buffer space
 	player_rwi_config_t cfg;
 	player_laser_data_t data;
 	
 	void *client;
 	
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	MobilityGeometry::SegmentData_var laser_data;
-	#endif // USE_MOBILITY
+#endif // USE_MOBILITY
 		
-    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+    if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0) {
+		perror("rwi_laser call to pthread_setcanceltype failed");
+    }
 
 	while (true) {
 	
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
 		    switch (cfg.request) {
-			    case PLAYER_RWI_LASER_POWER_REQ:
-		    		// RWI does not turn off laser power: always on
-		    		PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+			    case PLAYER_LASER_POWER_REQ:
+		    		// RWI does not turn off laser power: all we can do is
+		    		// stop updating the data
+		    		if (cfg.value == 0)
+		    			enabled = false;
+		    		else
+		    			enabled = true;
+		    			
+		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_laserdevice.\n");
+		    		}
+					break;
+				case PLAYER_LASER_GET_GEOM:
+					// FIXME: not yet implemented
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_laserdevice.\n");
+		    		}
 					break;
 				default:
 					printf("rwi_laser device received unknown %s",
 					       "configuration request\n");
-					PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0);
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_laserdevice.\n");
+		    		}
 					break;
 	    	}
 		}
@@ -106,23 +131,24 @@ CRWILaserDevice::Main()
 		// Laser takes no commands to process
 	
 		// Finally, collect new data
+		if (enabled) {
 #ifdef USE_MOBILITY
-		laser_data = laser_state->get_sample(0);
+			laser_data = laser_state->get_sample(0);
 		
-		data.range_count = htons((uint16_t) laser_data->end.length());
+			data.range_count = htons((uint16_t) laser_data->end.length());
 		
-		for (unsigned int i = 0;
-		     (i < laser_data->end.length()) && (i < PLAYER_NUM_LASER_SAMPLES);
-		     i++) {
-		    data.ranges[i] = htons((uint16_t) (1000.0 *
-		    	sqrt(laser_data->end[i].x * laser_data->end[i].x +
-		    	     laser_data->end[i].y * laser_data->end[i].y)));
-		}
+			for (unsigned int i = 0; (i < laser_data->end.length())
+			                         && (i < PLAYER_NUM_LASER_SAMPLES); i++) {
+			    data.ranges[i] = htons((uint16_t) (1000.0 *
+			    	sqrt(laser_data->end[i].x * laser_data->end[i].x +
+			    	     laser_data->end[i].y * laser_data->end[i].y)));
+			}
 #else
-		data.range_count = 0;
+			data.range_count = 0;
 #endif			// USE_MOBILITY
 
-	    PutData((unsigned char *) &data, sizeof(data), 0, 0);
+	    	PutData((unsigned char *) &data, sizeof(data), 0, 0);
+	    }
 	
 	    pthread_testcancel();
 	}

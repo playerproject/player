@@ -62,11 +62,16 @@ protected:
 #ifdef USE_MOBILITY
 	#define RWI_ROBOT_NAME_MAX 25
 	#define RWI_MOBILITY_PATH_MAX 100
+	#define RWI_ROBOT_NAME_DEFAULT "B21R"
 	
 	// Used to access the devices managed by mobility.  Most rwi_devices
 	// should not need to use this helper directly.  Instead, use the
 	// RWIConnect function below.	
 	static mbyClientHelper *helper;
+	
+	// Keep track of whether a `name' parameter was passed on the command
+	// line for this device, or the default name is being used.
+	bool name_provided;
 	
 	// This name is the first part of the "path" used to access any of
 	// your robot's devices in mobility (or MOM).  It is necessary for

@@ -35,53 +35,60 @@
 int
 RWIBumperProxy::SetBumperState(const unsigned char state) const
 {
-  if(!client)
-    return(-1);
+	if(!client)
+		return(-1);
 
-  player_rwi_config_t cfg;
+	player_rwi_config_t cfg;
 
-  cfg.request = PLAYER_RWI_BUMPER_POWER_REQ;
-  cfg.value = state;
+	cfg.request = PLAYER_BUMPER_POWER_REQ;
+	cfg.value = state;
 
 
-  return(client->Request(PLAYER_RWI_BUMPER_CODE, index,
-         (const char *) &cfg, sizeof(cfg)));
+	return(client->Request(PLAYER_RWI_BUMPER_CODE, index,
+	       (const char *) &cfg, sizeof(cfg)));
 }
 
-int
+bool
 RWIBumperProxy::BumpedAny() const
 {
-	return bumpfield ? 1 : 0;
+	for (int i=0; (i < bumper_count)&&(i < PLAYER_NUM_BUMPER_SAMPLES); i++) {
+		if (bumpfield & (1 << i))
+			return true;
+	}
+	// if we got this far...
+	return false;
 }
 
-int
+bool
 RWIBumperProxy::Bumped(const unsigned int i) const
 {
 	if (i < bumper_count)
-		return (bumpfield & (1 << i)) ? 1 : 0;
+		return (bumpfield & (1 << i)) ? true : false;
 	else
-		return 0;
+		return false;
 }
 
 void
 RWIBumperProxy::FillData(player_msghdr_t hdr, const char *buffer)
 {
-  if(hdr.size != sizeof(player_bumper_data_t))
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: rwi_bumperproxy expected %d bytes of bumper "
-              "data, but received %d. Unexpected results may ensue.\n",
-              sizeof(player_bumper_data_t), hdr.size);
-  }
+	if(hdr.size != sizeof(player_bumper_data_t)) {
+		if(player_debug_level(-1) >= 1)
+			fprintf(stderr,"WARNING: rwi_bumperproxy expected %d bytes of"
+			        " bumper data, but received %d. Unexpected results may"
+			        " ensue.\n",
+			        sizeof(player_bumper_data_t), hdr.size);
+	}
 
-  bumper_count = ((player_bumper_data_t *)buffer)->bumper_count;
-  bumpfield = ((player_bumper_data_t *)buffer)->bumpfield;
+	bumper_count = ((player_bumper_data_t *)buffer)->bumper_count;
+	bumpfield = ((player_bumper_data_t *)buffer)->bumpfield;
 }
 
 // interface that all proxies SHOULD provide
 void RWIBumperProxy::Print()
 {
-  printf("#RWIBumper(%d:%d) - %c\n", device, index, access);
-  printf("%0d ", bumpfield);
-  puts("");
+	printf("#RWIBumper(%d:%d) - %c\n", device, index, access);
+	printf("%d\n", bumper_count);
+	for (int i = min(bumper_count, PLAYER_NUM_BUMPER_SAMPLES); i >= 0; i--)
+		putchar((bumpfield & (1 << i)) ? '1' : '0');
+	puts(" ");
 }

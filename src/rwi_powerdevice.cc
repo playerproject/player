@@ -32,7 +32,7 @@
 int
 CRWIPowerDevice::Setup()
 {
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	CORBA::Object_ptr temp;
 	
 	if (RWIConnect(&temp, "/Power") < 0) {
@@ -41,14 +41,14 @@ CRWIPowerDevice::Setup()
 	} else {
 	    power_state = MobilityData::PowerManagementState::_narrow(temp);
 	}
-	#else
+#else
 	printf("Cannot create rwi_power device without mobility.\n");
 	return -1;
-	#endif			// USE_MOBILITY
+#endif			// USE_MOBILITY
 	
 	// Zero the common buffer
 	player_power_data_t data;
-	bzero(&data, sizeof(data));
+	memset(&data, 0, sizeof(data));
 	PutData((unsigned char *) &data, sizeof(data), 0, 0);	
 	
 	StartThread();
@@ -71,25 +71,37 @@ CRWIPowerDevice::Main()
 	
 	void *client;
 	
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	MobilityData::PowerManagementStatus *power_data;
-	#endif // USE_MOBILITY
+#endif // USE_MOBILITY
 		
-    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+    if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0) {
+		perror("rwi_power call to pthread_setcanceltype failed");
+    }
 
 	while (true) {
 	
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
 		    switch (cfg.request) {
-			    case PLAYER_RWI_MAIN_POWER_REQ:
-		    		// RWI does not turn off main power: always on
-		    		PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+			    case PLAYER_MAIN_POWER_REQ:
+		    		// RWI does not turn off main power:
+		    		// ignore this request
+		    		
+		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_powerdevice.\n");
+		    		}
 					break;
 				default:
 					printf("rwi_power device received unknown %s",
 					       "configuration request\n");
-					PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0);
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_powerdevice.\n");
+		    		}
 					break;
 	    	}
 		}
@@ -99,14 +111,14 @@ CRWIPowerDevice::Main()
 		// Finally, collect new data
 #ifdef USE_MOBILITY
 		power_data = power_state->get_sample(0);
-		
+	
 		data.charge = htons((uint16_t)
 		                    (100.0 * power_data->RegulatorVoltage[0]));
 #else
 		data.charge = 0;
 #endif			// USE_MOBILITY
 
-	    PutData((unsigned char *) &data, sizeof(data), 0, 0);
+		PutData((unsigned char *) &data, sizeof(data), 0, 0);
 	
 	    pthread_testcancel();
 	}

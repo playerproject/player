@@ -30,6 +30,27 @@
   #include <strings.h>
 #endif
 
+// enable/disable the laser
+//
+// Returns:
+//   0 if everything's ok
+//   -1 otherwise (that's bad)
+int
+RWILaserProxy::SetLaserState(const unsigned char state) const
+{
+    if (!client)
+		return (-1);
+
+    player_rwi_config_t cfg;
+
+    cfg.request = PLAYER_LASER_POWER_REQ;
+    cfg.value = state;
+
+    return (client->Request(PLAYER_RWI_LASER_CODE, index,
+			(const char *) &cfg, sizeof(cfg)));
+}
+
+
 void
 RWILaserProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
@@ -41,7 +62,7 @@ RWILaserProxy::FillData(player_msghdr_t hdr, const char* buffer)
 			        sizeof(player_laser_data_t), hdr.size);
 	}
 
-	bzero(ranges,sizeof(ranges));
+	memset(ranges, 0, sizeof(ranges));
 	range_count = ntohs(((player_laser_data_t *) buffer)->range_count);
 	for (unsigned short i = 0; i < range_count; i++) {
 		ranges[i] = ntohs(((player_laser_data_t *)buffer)->ranges[i]);
@@ -62,7 +83,8 @@ RWILaserProxy::CartesianCoordinate(const int i, int *x, int *y) const
 	if(i < 0 || i > range_count)
 		return -1;
   	
-	// FIXME: generalize to work for range_count<>180
+	// FIXME: generalize to work for range_count != 180
+	// but what do these lasers look like?
 	*x = (int)(ranges[i] * cos(DTOR(i)));
 	*y = (int)(ranges[i] * sin(DTOR(i)));
 
@@ -73,9 +95,13 @@ RWILaserProxy::CartesianCoordinate(const int i, int *x, int *y) const
 void RWILaserProxy::Print()
 {
 	printf("#RWILaser(%d:%d) - %c\n", device, index, access);
-	printf("%d\n", range_count);
-	for(unsigned int i = 0; i < range_count; i++)
-		printf("%u ", ranges[i]);
-	puts("\n");
+	if (range_count < PLAYER_NUM_LASER_SAMPLES) {
+		printf("%d\n", range_count);
+		for(unsigned int i = 0; i < range_count; i++)
+			printf("%u ", ranges[i]);
+	} else {
+		// apparently invalid data packet
+		puts("0");
+	}
+	puts(" ");
 }
-

@@ -56,10 +56,11 @@ public:
     /** These methods return 1 if the specified bumper(s)
         have been bumped, 0 otherwise.
       */
-    int Bumped (const unsigned int i) const;
-    int BumpedAny () const;
+    bool Bumped (const unsigned int i) const;
+    bool BumpedAny () const;
 
-    uint32_t GetBumpfield () const { return bumpfield; }
+    uint8_t BumperCount () const { return bumper_count; }
+    uint32_t Bumpfield () const { return bumpfield; }
 
     // interface that all proxies must provide
     void FillData (player_msghdr_t hdr, const char* buffer);

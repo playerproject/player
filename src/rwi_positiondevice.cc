@@ -39,7 +39,7 @@
 int
 CRWIPositionDevice::Setup()
 {
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	CORBA::Object_ptr temp;
 	
 	if (RWIConnect(&temp, "/Drive/Command") < 0) {
@@ -60,18 +60,18 @@ CRWIPositionDevice::Setup()
 	
 	odo_correct_x = odo_correct_y = odo_correct_theta = 0.0;
 
-	#else
+#else
 	printf("Cannot create rwi_position device without mobility.\n");
 	return -1;
-	#endif			// USE_MOBILITY
+#endif			// USE_MOBILITY
 	
 	// Zero the common buffers
 	player_position_cmd_t cmd;
-	bzero(&cmd, sizeof(cmd));
+	memset(&cmd, 0, sizeof(cmd));
 	PutCommand((unsigned char *) &cmd, sizeof(cmd));
 	
 	player_position_data_t data;
-	bzero(&data, sizeof(data));
+	memset(&data, 0, sizeof(data));
 	PutData((unsigned char *) &data, sizeof(data), 0, 0);	
 	
 	ResetOdometry();
@@ -98,6 +98,9 @@ CRWIPositionDevice::Shutdown()
 void
 CRWIPositionDevice::Main()
 {
+	// start enabled
+	bool enabled = true;
+	
 	// Working buffer space
 	player_rwi_config_t    cfg;
 	player_position_cmd_t  cmd;
@@ -105,40 +108,70 @@ CRWIPositionDevice::Main()
 	
 	void *client;
 	
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	MobilityActuator::ActuatorData_var odo_data;
-	
 	int16_t degrees;
-	#endif // USE_MOBILITY
+#endif // USE_MOBILITY
 	
-    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+    if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0) {
+		perror("rwi_position call to pthread_setcanceltype failed");
+    }
 
 	while (true) {
 	
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
 		    switch (cfg.request) {
-		    	case PLAYER_RWI_POSITION_MOTOR_POWER_REQ:
+		    	case PLAYER_POSITION_MOTOR_POWER_REQ:
 		    		// RWI does not turn off motor power:
-		    		// the motors are always on when connected
-		    		PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+		    		// the motors are always on when connected.
+		    		// we simply stop processing movement commands
+		    		if (cfg.value == 0)
+		    			enabled = false;
+		    		else
+		    			enabled = true;
+		    		
+		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_positiondevice.\n");
+		    		}
 					break;
-			    case PLAYER_RWI_POSITION_RESET_ODO_REQ:
+			    case PLAYER_POSITION_RESET_ODOM_REQ:
 					ResetOdometry();
-					PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_positiondevice.\n");
+		    		}
+					break;
+				case PLAYER_POSITION_GET_GEOM_REQ:
+					// FIXME: not yet implemented
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_positiondevice.\n");
+		    		}
 					break;
 				default:
 					printf("rwi_position device received unknown %s",
 					       "configuration request\n");
-					PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0);
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_positiondevice.\n");
+		    		}
 					break;
 	    	}
 		}
 
 		// Next, process a command
 		GetCommand((unsigned char *) &cmd, sizeof(cmd));
-		// always apply the latest speed command: RWI stops us otherwise
-    	PositionCommand(ntohs(cmd.speed), ntohs(cmd.turnrate));
+		
+		if (enabled) {
+			// always apply the latest speed command: RWI stops us otherwise
+    		PositionCommand(ntohs(cmd.speed), ntohs(cmd.turnrate));
+    	}
 	
 		// Finally, collect new data
 #ifdef USE_MOBILITY
@@ -151,20 +184,27 @@ CRWIPositionDevice::Main()
 		                             * 1000.0));
 		degrees = (int16_t)
 		           RTOD(NORMALIZE(odo_data->position[2] + odo_correct_theta));
-		if (degrees < 0) degrees += 180;
-		data.theta = htons(degrees);
+		if (degrees < 0)
+			degrees += 360;
+		data.theta = htons((uint16_t) degrees);
 				
 		// velocity array seems to be flaky... not always there
 		if (odo_data->velocity.length()) {
 			data.speed = htons((uint16_t) (1000.0*
-			sqrt(odo_data->velocity[0]*odo_data->velocity[0] +
-			     odo_data->velocity[1]*odo_data->velocity[1])));
-			degrees = (int16_t) RTOD(NORMALIZE(odo_data->velocity[2]));
+				sqrt(odo_data->velocity[0]*odo_data->velocity[0] +
+				     odo_data->velocity[1]*odo_data->velocity[1])));
+			degrees = (int16_t) RTOD(odo_data->velocity[2]);
 			data.turnrate = (int16_t) htons(degrees);
+			
+			// just in case we cannot get them next time
+			last_known_speed = data.speed;
+			last_known_turnrate = data.turnrate;
+			
 		} else {
 			PLAYER_TRACE0("MOBILITY SUCKS: Unable to read velocity data!\n");
-			data.speed = 0;
-			data.turnrate = 0;
+			// replay the last valid values
+			data.speed = last_known_speed;
+			data.turnrate = last_known_turnrate;
 		}
 #else
 		data.xpos = data.ypos = 0;
@@ -174,8 +214,18 @@ CRWIPositionDevice::Main()
 		// FIXME: I do not have a compass, so I don't know how to find it		
 		data.compass = 0;
 		
-		// FIXME: I can implement this
-		data.stalls = 0;
+		// determine stall value
+		if (moving && old_xpos == data.xpos && old_ypos == data.ypos
+		    && old_theta == data.theta) {
+		    data.stalls = 1;
+		} else {
+			data.stalls = 0;
+		}
+		
+		// Keep a copy of our new data for stall computation
+		old_xpos = data.xpos;
+		old_ypos = data.ypos;
+		old_theta = data.theta;
 	
 	    PutData((unsigned char *) &data, sizeof(data), 0, 0);
 	
@@ -187,8 +237,14 @@ CRWIPositionDevice::Main()
 }
 
 void
-CRWIPositionDevice::PositionCommand(int16_t speed, int16_t rot_speed)
+CRWIPositionDevice::PositionCommand(const int16_t speed,
+                                    const int16_t rot_speed)
 {
+	if (speed == 0 && rot_speed == 0)
+		moving = false;
+	else
+		moving = true;
+		
 #ifdef USE_MOBILITY
     MobilityActuator::ActuatorData position;
     position.velocity.length(2);
@@ -204,7 +260,9 @@ CRWIPositionDevice::PositionCommand(int16_t speed, int16_t rot_speed)
 void
 CRWIPositionDevice::ResetOdometry()
 {
-    PLAYER_TRACE0("Resetting RWI Odometry");
+	// Update stall detection variables as well
+	old_xpos = old_ypos = 0;
+	old_theta = 0;
 #ifdef USE_MOBILITY
     MobilityActuator::ActuatorData_var odo_data;
     odo_data = odo_state->get_sample(0);

@@ -40,12 +40,10 @@
 /*********************************************************/
 
 /* need to put this stuff somewhere else? maybe run-time config? */
-#define PLAYER_NUM_SONAR_SAMPLES 24
-#define PLAYER_NUM_LASER_SAMPLES 401
-#define PLAYER_NUM_IDAR_SAMPLES  8
-
-#define PLAYER_NUM_RWI_BUMPERS_UPPER  24
-#define PLAYER_NUM_RWI_BUMPERS_LOWER  32
+#define PLAYER_NUM_SONAR_SAMPLES  24
+#define PLAYER_NUM_LASER_SAMPLES  401
+#define PLAYER_NUM_IDAR_SAMPLES   8
+#define PLAYER_NUM_BUMPER_SAMPLES 32
 
 /* the message start signifier */
 #define PLAYER_STXX ((uint16_t) 0x5878)
@@ -400,6 +398,7 @@ typedef struct
 #define PLAYER_LASER_SET_CONFIG 0x01
 #define PLAYER_LASER_GET_CONFIG 0x02
 #define PLAYER_LASER_GET_GEOM   0x03
+#define PLAYER_LASER_POWER_REQ  0x04
 
 
 /* Laser configuration packet. */
@@ -923,6 +922,9 @@ typedef struct
   uint32_t bumpfield;
 } __attribute__ ((packed)) player_bumper_data_t;
 
+#define PLAYER_BUMPER_POWER_REQ             ((uint8_t)13)
+#define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)14)
+
 /*************************************************************************/
 
 
@@ -949,12 +951,16 @@ typedef struct
   uint16_t  charge;
 } __attribute__ ((packed)) player_power_data_t;
 
+#define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
+
 /*************************************************************************/
 /*************************************************************************/
 /*
  * RWI Devices
  *
  * All RWI devices use the same struct for sending config commands.
+ * The request numbers are found near the devices to which they
+ * pertain.
  */
 
 typedef struct
@@ -963,17 +969,6 @@ typedef struct
   uint8_t   value;
 } __attribute__ ((packed)) player_rwi_config_t;
 
-/*
- * Many of these do not actually affect RWI robots as currently
- * implemented thru mobility, but they are provided for completeness,
- * and in view of a future generic interface.
- */
-#define PLAYER_RWI_POSITION_MOTOR_POWER_REQ ((uint8_t)1)
-#define PLAYER_RWI_POSITION_RESET_ODO_REQ   ((uint8_t)2)
-#define PLAYER_RWI_SONAR_POWER_REQ          ((uint8_t)3)
-#define PLAYER_RWI_LASER_POWER_REQ          ((uint8_t)4)
-#define PLAYER_RWI_BUMPER_POWER_REQ         ((uint8_t)5)
-#define PLAYER_RWI_MAIN_POWER_REQ           ((uint8_t)6)
 /*************************************************************************/
 
 #endif

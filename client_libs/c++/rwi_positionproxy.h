@@ -45,7 +45,7 @@ public:
     // these methods are the user's interface to this device
 
     /** Send a motor command.
-        Specify the linear and angular speed in m/s and degrees/sec? (FIXME),
+        Specify the linear and angular speed in m/s and degrees/sec,
         respectively.\\
         Returns: 0 if everything's ok, -1 otherwise.
     */
@@ -86,7 +86,7 @@ private:
     int32_t  xpos, ypos;
     uint16_t theta;
 
-    /// Robot speed in (FIXME) some units.
+    /// Robot speed in mm/s and degrees/s.
     int16_t speed, turn_rate;
 
     /// Compass value (only valid if the compass is installed).
