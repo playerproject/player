@@ -350,6 +350,7 @@ SegwayRMP::Main()
         // degrees/sec
         xspeed = ntohl(cmd.position3d_cmd.xspeed);
         yawspeed = (int32_t) (((double) (int32_t) ntohl(cmd.position3d_cmd.yawspeed)) / 1000 * 180 / M_PI);
+        motor_enabled = cmd.position3d_cmd.state;
         timeout_counter=0;
       }
       else
