@@ -51,11 +51,16 @@ StgTime::~StgTime()
 int StgTime::GetTime(struct timeval* time)
 {
   //puts( "get time" );
+  
+  double seconds = 0.0;
+  double *seconds_ptr = (double*)Stage1p4::prop_buffer[STG_WORLD_TIME]->data;
 
- time->tv_sec =  floor(Stage1p4::time);
- time->tv_usec =  floor(fmod(Stage1p4::time, 1.0) * 1e6);
- 
- printf( "time now %d sec %d usec\n", time->tv_sec, time->tv_usec );
+  if( seconds_ptr ) seconds = *seconds_ptr;
 
- return 0;
+  time->tv_sec =  floor(seconds);
+  time->tv_usec =  floor(fmod(seconds, 1.0) * 1e6);
+  
+  //printf( "time now %d sec %d usec\n", time->tv_sec, time->tv_usec );
+  
+  return 0;
 }

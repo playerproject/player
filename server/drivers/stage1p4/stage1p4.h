@@ -40,6 +40,7 @@ public:
   static ConfigFile* config;
   static char* world_file;
   static stg_client_t* stage_client;
+  static stg_client_t* stage_config_client;
   static stg_name_id_t* created_models;
   static int created_models_count;
   static CWorldFile wf;
@@ -49,6 +50,7 @@ public:
   static char* stage_host;
 
   static stg_property_t* prop_buffer[];
+  static char subs[];
 
   Stage1p4(char* interface, ConfigFile* cf, int section, 
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen);

@@ -78,20 +78,29 @@ int StgSonar::Setup()
 
   Stage1p4::Setup();
 
-    // subscribe to sonar data
-  stg_property_t* reply = stg_send_property( Stage1p4::stage_client,
-					     this->stage_id, 
-					     STG_MOD_RANGERS, 
-					     STG_SUBSCRIBE,
-					     NULL, 0 );
+  // subscribe to sonar data
+  stg_property_t* prop =  stg_property_create();
+  prop->id = this->stage_id;
+  prop->timestamp = 1.0;
+  prop->property = STG_MOD_RANGERS;
+  prop->action = STG_SUBSCRIBE;
+  stg_property_write( Stage1p4::stage_client, prop );
+  stg_property_free( prop );
   
-  if( !(reply && (reply->action == STG_ACK) ))
+  // wait until a reply shows up in the buffer
+  int timeout = 500;
+  while( subs[STG_MOD_RANGERS] == 0 )
     {
-      PLAYER_ERROR( "stage1p4: sonar subscription failed" );
-      exit(-1);
+      if( --timeout == 0 )
+	break;
+      usleep(100);
     }
   
-  stg_property_free(reply);
+  if( subs[STG_MOD_RANGERS] == 0 )
+    {
+      PLAYER_ERROR( "stage1p4: sonar subscription failed (timeout)" );
+      exit(-1);
+    }
 
   puts( "STG_SONAR setup done" );
 
@@ -147,25 +156,15 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
   switch( buf[0] )
     {  
     case PLAYER_SONAR_GET_GEOM_REQ:
-      {
+      {  
+	// wait 'til there's some data
+	while( prop_buffer[STG_MOD_RANGERS] == NULL )
+	  usleep(100);
+	
 	puts( "getting ranger geom from Stage" );
-
-	stg_client_t* cli = 
-	  stg_client_create( Stage1p4::stage_host, 
-			     Stage1p4::stage_port, 
-			     STG_TOS_SUBSCRIPTION );
-	assert(cli);
-	
-	// request ranger data from Stage  
-	stg_ranger_t *rangers;
-	size_t rcount;
-	assert( stg_get_property( cli, this->stage_id, 
-				  STG_MOD_RANGERS,
-				  (void**)&rangers, &rcount ) == 0 );
-
-	puts( "done" );
-	
-	rcount /= sizeof(stg_ranger_t);
+	stg_ranger_t *rangers = (stg_ranger_t*)Stage1p4::prop_buffer[STG_MOD_RANGERS];
+	size_t rcount = 
+	  Stage1p4::prop_buffer[STG_MOD_RANGERS]->len / sizeof(stg_ranger_t);
 	
 	// convert the ranger data into Player-format sonar poses
 	
@@ -194,7 +193,6 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
 	  }
 	
 	free( rangers );
-	stg_client_free( cli );
 
 	if(PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		     &pgeom, sizeof(pgeom) ) )
