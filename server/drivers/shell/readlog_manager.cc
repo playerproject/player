@@ -264,7 +264,8 @@ void ReadLogManager::Main()
     if (header_id.code == PLAYER_PLAYER_CODE)
     {
       // HACK
-      usleep(100000);
+      //usleep(100000);
+      usleep(1000);
       continue;
     }
     else
