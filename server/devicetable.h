@@ -44,7 +44,15 @@ class CDeviceEntry
     CDeviceEntry* next;  // next in list
 
     CDeviceEntry() { devicep = NULL; next = NULL; }
-    ~CDeviceEntry() { if(devicep) delete devicep; }
+    ~CDeviceEntry() 
+    { 
+      if(devicep) 
+      {
+        if(devicep->subscriptions)
+          devicep->Shutdown();
+        delete devicep;
+      }
+    }
 };
 
 class CDeviceTable

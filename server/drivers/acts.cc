@@ -61,6 +61,8 @@
 #define ACTS_VERSION_1_2_STRING "1.2"
 #define ACTS_VERSION_2_0_STRING "2.0"
 
+#define DEFAULT_ACTS_PORT 5001
+
 /* a variable of this type tells the vision device how to interact with ACTS */
 typedef enum
 {
@@ -205,7 +207,7 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
   bzero(minarea,sizeof(minarea));
   if((tmpint = cf->ReadInt(section, "pixels", -1)) >= 0)
     sprintf(minarea,"%d",tmpint);
-  portnum = cf->ReadInt(section, "port", -1);
+  portnum = cf->ReadInt(section, "port", DEFAULT_ACTS_PORT);
   bzero(fps,sizeof(fps));
   if((tmpint = cf->ReadInt(section, "fps", -1)) >= 0)
     sprintf(fps,"%d",tmpint);
@@ -239,8 +241,8 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
     case ACTS_VERSION_1_0:
       header_len = ACTS_HEADER_SIZE_1_0;
       blob_size = ACTS_BLOB_SIZE_1_0;
-      if(portnum >= 0)
-        portnum = htons(portnum);
+      // extra byte-swap cause ACTS 1.0 got it wrong
+      portnum = htons(portnum);
       break;
     case ACTS_VERSION_1_2:
     case ACTS_VERSION_2_0:
@@ -251,9 +253,8 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
   }
   header_elt_len = header_len / PLAYER_BLOBFINDER_MAX_CHANNELS;
   bzero(portnumstring, sizeof(portnumstring));
-  if(portnum >= 0)
-    sprintf(portnumstring,"%d",portnum);
-
+  sprintf(portnumstring,"%d",portnum);
+  
   bzero(widthstring, sizeof(widthstring));
   sprintf(widthstring,"%d",width);
 
@@ -264,9 +265,7 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
   // Get the descriptive colors.
   for (ch = 0; ch < PLAYER_BLOBFINDER_MAX_CHANNELS; ch++)
   {
-    printf("get color %d\n", ch);
     color = cf->ReadTupleColor(section, "colors", ch, 0xFFFFFFFF);
-    printf("got color %X\n", color);
     if (color == 0xFFFFFFFF)
       break;
     this->colors[ch] = color;

@@ -639,6 +639,8 @@ int main( int argc, char *argv[] )
   int* ports = 0;
   int num_ufds = 0;
 
+  SetupSignalHandlers();
+
   printf("** Player v%s ** ", playerversion);
   fflush(stdout);
 
@@ -727,7 +729,6 @@ int main( int argc, char *argv[] )
 
   puts( "" ); // newline, flush
 
-  SetupSignalHandlers();
   
   if( use_stage )
   {
