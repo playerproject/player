@@ -125,6 +125,7 @@ FixedTones_Register(DriverTable* table)
 FixedTones::FixedTones(char* interface, ConfigFile* cf, int section) :
   CDevice(AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
 {
+  fd=-1;
 }
 
 int 
@@ -249,6 +250,7 @@ FixedTones::Main()
   memset( zero, 255, AUDIO_COMMAND_BUFFER_SIZE);
   memset(data,0,AUDIO_DATA_BUFFER_SIZE);
   PutData(data, sizeof(data),0,0);
+  PutCommand(this,zero, sizeof(zero));
 
   while(1) 
   {
