@@ -62,13 +62,14 @@
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <sys/ioctl.h>
 #include <playertime.h>
-#ifdef HAVE_LINUX_SERIAL_H
-#include <linux/serial.h>
-#define HAVE_HI_SPEED_SERIAL
-#else
-#undef HAVE_HI_SPEED_SERIAL
-#endif
 
+#undef HAVE_HI_SPEED_SERIAL
+#ifdef HAVE_LINUX_SERIAL_H
+  #ifndef DISABLE_HIGHSPEEDSICK
+    #include <linux/serial.h>
+    #define HAVE_HI_SPEED_SERIAL
+  #endif
+#endif
 
 extern PlayerTime* GlobalTime;
 
@@ -185,6 +186,10 @@ class SickLMS200 : public CDevice
     // Turn intensity data on/off
     bool intensity;
 
+    // Is the laser upside-down? (if so, we'll reverse the ordering of the
+    // readings)
+    int invert;
+
   bool can_do_hi_speed;
   int port_rate;
 #ifdef HAVE_HI_SPEED_SERIAL
@@ -250,6 +255,7 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
   this->scan_max_segment = 360;
   this->intensity = true;
   this->range_res = cf->ReadInt(section, "range_res", 1);
+  this->invert = cf->ReadInt(section, "invert", 0);
 
   this->port_rate = cf->ReadInt(section, "rate", DEFAULT_LASER_PORT_RATE);
 
@@ -370,6 +376,7 @@ int SickLMS200::Shutdown()
 // Main function for device thread
 void SickLMS200::Main() 
 {
+  uint16_t tmp;
   // Ask the laser to send data
   for (int retry = 0; retry < MAX_RETRIES; retry++)
   {
@@ -423,7 +430,26 @@ void SickLMS200::Main()
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
         data.intensity[i] = ((data.ranges[i] >> 13) & 0x000E);
-	data.ranges[i] = htons((uint16_t) (data.ranges[i] & 0x1FFF));
+        data.ranges[i] = htons((uint16_t) (data.ranges[i] & 0x1FFF));
+      }
+
+      // if the laser is upside-down, reverse the data and intensity
+      // arrays, in place.  this could probably be made more efficient by
+      // burying it in a lower-level loop where the data is being read, but
+      // i can't be bothered to figure out where.
+      if(this->invert)
+      {
+        for (int i = 0; 
+             i < (this->scan_max_segment - this->scan_min_segment + 1)/2; 
+             i++)
+        {
+          tmp=data.ranges[i];
+          data.ranges[i]=data.ranges[this->scan_max_segment-this->scan_min_segment-i];
+          data.ranges[this->scan_max_segment-this->scan_min_segment-i] = tmp;
+          tmp=data.intensity[i];
+          data.intensity[i]=data.intensity[this->scan_max_segment-this->scan_min_segment-i];
+          data.intensity[this->scan_max_segment-this->scan_min_segment-i] = tmp;
+        }
       }
 
       // Make data available
