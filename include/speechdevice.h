@@ -49,6 +49,10 @@ class CSpeechDevice:public CDevice
 
     CLock lock;
 
+    int portnum;  // port number where Festival will run (default 1314)
+    char festival_libdir_value[MAX_FILENAME_SIZE]; // the libdir
+
+
   public:
     /* a queue to hold incoming speech strings */
     /*  what kind of replacement policy to use? */
@@ -58,7 +62,6 @@ class CSpeechDevice:public CDevice
     int queue_len;
     bool read_pending;
     int sock;               // socket to Festival
-    int portnum;  // port number where Festival will run (default 1314)
     player_speech_data_t* data;
     player_speech_cmd_t* command;
     int command_size; // zeroed by thread (commands are consumed)

@@ -75,7 +75,6 @@
 #define CRC16_GEN_POL 0x8005
 #define MAX_RETRIES 5
 
-#define DEFAULT_LASER_PORT "/dev/ttyS1"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Error macros

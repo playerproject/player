@@ -41,7 +41,6 @@
   #include <strings.h>
 #endif
 
-#define DEFAULT_PTZ_PORT "/dev/ttyS2"
 
 #include <ptzdevice.h>
 
