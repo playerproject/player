@@ -170,7 +170,7 @@ elif test "x$with_rtk" = "xyes"; then
                     with_gnomecanvas=no)
 fi
 AM_CONDITIONAL(WITH_RTK, test x$with_rtk = xyes)
-AM_CONDITIONAL(WITH_GNOMECAVNAS, test x$with_gnomecanvas = xyes)
+AM_CONDITIONAL(WITH_GNOMECANVAS, test x$with_gnomecanvas = xyes)
 
 dnl Include RTK gui support (for debugging)
 AC_ARG_ENABLE(rtkgui, 

@@ -18,6 +18,10 @@
  *
  */
 
+// TODO:
+//   - allow a waypoint to be skipped, if the robot gets near a later
+//      waypoint
+
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -506,7 +510,7 @@ void Wavefront::Main()
       // compute a path to the goal from the current position
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
 
-      if(this->plan->waypoint_count == 1)
+      if(!this->plan->waypoint_count)
       {
         PLAYER_WARN("no path!");
         curr_waypoint = -1;
@@ -525,8 +529,10 @@ void Wavefront::Main()
         curr_waypoint = 0;
 
         double wx,wy;
+        /*
         for(int i=0;plan_get_waypoint(this->plan,i++,&wx,&wy);)
           printf("waypoint %d: %f,%f\n", i, wx, wy);
+          */
       }
     }
       
@@ -584,7 +590,7 @@ void Wavefront::Main()
         if((dist > this->dist_eps) &&
            fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0)
         {
-          puts("adding rotational waypoint");
+          //puts("adding rotational waypoint");
           this->waypoint_x = this->localize_x;
           this->waypoint_y = this->localize_y;
           this->waypoint_a = angle;
@@ -682,7 +688,7 @@ Wavefront::SetupMap()
     return -1;
   }
 
-  if(!(this->plan = plan_alloc(this->robot_radius,
+  if(!(this->plan = plan_alloc(this->robot_radius+this->safety_dist,
                                this->robot_radius+this->safety_dist,
                                this->max_radius,
                                this->dist_penalty)))

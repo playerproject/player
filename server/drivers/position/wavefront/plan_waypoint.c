@@ -44,7 +44,10 @@ void plan_update_waypoints(plan_t *plan, double px, double py)
     plan->waypoints[plan->waypoint_count++] = cell;
 
     if (cell->plan_next == NULL)
+    {
+      // done
       break;
+    }
 
     // Find the farthest cell in the path that is reachable from the
     // currrent cell.
@@ -57,7 +60,11 @@ void plan_update_waypoints(plan_t *plan, double px, double py)
       dist += plan->scale;
     }
     if (ncell == cell)
+    {
+      // no path
+      plan->waypoint_count = 0;
       break;
+    }
     
     cell = ncell;
   }

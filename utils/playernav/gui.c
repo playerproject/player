@@ -363,13 +363,13 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
 
   // Initialize horizontal scroll bars
   adjust = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gui_data->map_window));
-  adjust->step_increment = 10;
+  adjust->step_increment = 5;
   gtk_adjustment_changed(adjust);
   gtk_adjustment_set_value(adjust, adjust->value - GTK_WIDGET(gui_data->map_window)->allocation.width / 2);
 
   // Initialize vertical scroll bars
   adjust = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gui_data->map_window));
-  adjust->step_increment = 10;
+  adjust->step_increment = 5;
   gtk_adjustment_changed(adjust);
   gtk_adjustment_set_value(adjust, adjust->value - GTK_WIDGET(gui_data->map_window)->allocation.height / 2);
 
@@ -669,6 +669,7 @@ move_robot(GnomeCanvasItem* item, pose_t pose)
   t[4] = pose.px;
   t[5] = -pose.py;
   gnome_canvas_item_affine_absolute(item, t);
+  gnome_canvas_item_raise_to_top(item);
 }
 
 void
@@ -681,13 +682,8 @@ draw_waypoints(gui_data_t* gui_data, int idx)
   GnomeCanvasItem* line;
   pose_t pose;
 
-  // TODO
-  /*
   if(gui_data->robot_paths[idx])
-    g_object_unref((GObject*)gui_data->robot_paths[idx]);
-    */
-  if(gui_data->robot_paths[idx])
-    gnome_canvas_item_hide(gui_data->robot_paths[idx]);
+    gtk_object_destroy(GTK_OBJECT(gui_data->robot_paths[idx]));
 
   g_assert((gui_data->robot_paths[idx] = 
             gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
