@@ -130,6 +130,9 @@ class GarminNMEA:public CDevice
     char nmea_buf[NMEA_MAX_SENTENCE_LEN+1];
     size_t nmea_buf_len;
 
+    // Status
+    int read_count;
+
     // Filtered GPS geodetic coords; for outlier rejection
     double filter_a, filter_thresh;
     double filter_lat, filter_lon;
@@ -202,6 +205,8 @@ GarminNMEA::GarminNMEA(char* interface, ConfigFile* cf, int section) :
 
   gps_serial_port = cf->ReadString(section, "port", DEFAULT_GPS_PORT);
 
+  read_count = 0;
+  
   filter_a = 0.80;
   filter_thresh = 1.0;
   filter_lat = 0;
@@ -419,6 +424,7 @@ GarminNMEA::ShutdownSocket()
 void
 GarminNMEA::Main()
 {
+  int len;
   char buf[NMEA_MAX_SENTENCE_LEN];
   struct pollfd fds[2];
 
@@ -453,21 +459,15 @@ GarminNMEA::Main()
     // Read incoming DGPS corrections from the socket
     if (fds[1].revents)
     {
-      if (ReadSocket(buf, sizeof(buf)) != 0)
+      len = ReadSocket(buf, sizeof(buf));
+      if (len < 0)
         pthread_exit(NULL);
-            
-      // Check that we have a properly formed sentence
-      if (strnlen(buf, sizeof(buf)) >= sizeof(buf))
-      {
-        PLAYER_ERROR("unterminated DGPS sentence; bailing");
-        pthread_exit(NULL);
-      }
 
-      printf("got udp packet [%s]\n", buf);
+      printf("got udp packet of length %d\n", len);
             
       // Write the DGPS sentence to the GPS unit
-      //if (WriteSentence(buf, strlen(buf)) != 0)
-      //  pthread_exit(NULL);
+      if (WriteSentence(buf, len) != 0)
+        pthread_exit(NULL);
     }
   }
 
@@ -827,8 +827,13 @@ int GarminNMEA::ParseGPGGA(const char *buf)
     data.utm_n = htonl((int32_t) rint(utm_n * 100));
   }
 
-  if (filter_good)
+  // Need to parse to sentences before write data
+  read_count += 1;
+  if (filter_good && filter_good >= 2)
+  {
     PutData(&data,sizeof(player_gps_data_t),0,0);
+    read_count = 0;
+  }
 
   return 0;
 }
@@ -918,8 +923,13 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   data.time_sec = htonl((uint32_t) utc);
   data.time_usec = htonl((uint32_t) 0);
 
-  if (filter_good)
+    // Need to parse to sentences before write data
+  read_count += 1;
+  if (filter_good && filter_good >= 2)
+  {
     PutData(&data,sizeof(player_gps_data_t),0,0);
+    read_count = 0;
+  }
 
   return 0;
 }
@@ -990,7 +1000,7 @@ int GarminNMEA::ReadSocket(char *buf, size_t len)
     PLAYER_ERROR1("error reading from udp socket [%s]", strerror(errno));
     return -1;
   }
-  return 0;
+  return plen;
 }
 
 
@@ -1000,32 +1010,32 @@ int GarminNMEA::ReadSocket(char *buf, size_t len)
 void GarminNMEA::UTM(double lat, double lon, double *x, double *y)
 {
 	// constants
-	const static float m0 = (1 - UTM_E2/4 - 3*UTM_E4/64 - 5*UTM_E6/256);
-	const static float m1 = -(3*UTM_E2/8 + 3*UTM_E4/32 + 45*UTM_E6/1024);
-	const static float m2 = (15*UTM_E4/256 + 45*UTM_E6/1024);
-	const static float m3 = -(35*UTM_E6/3072);
+	const static double m0 = (1 - UTM_E2/4 - 3*UTM_E4/64 - 5*UTM_E6/256);
+	const static double m1 = -(3*UTM_E2/8 + 3*UTM_E4/32 + 45*UTM_E6/1024);
+	const static double m2 = (15*UTM_E4/256 + 45*UTM_E6/1024);
+	const static double m3 = -(35*UTM_E6/3072);
 
 	// compute the central meridian
 	int cm = (lon >= 0.0) ? ((int)lon - ((int)lon)%6 + 3) : ((int)lon - ((int)lon)%6 - 3);
 
 	// convert degrees into radians
-	float rlat = lat * M_PI/180;
-	float rlon = lon * M_PI/180;
-	float rlon0 = cm * M_PI/180;
+	double rlat = lat * M_PI/180;
+	double rlon = lon * M_PI/180;
+	double rlon0 = cm * M_PI/180;
 
 	// compute trigonometric functions
-	float slat = sin(rlat);
-	float clat = cos(rlat);
-	float tlat = tan(rlat);
+	double slat = sin(rlat);
+	double clat = cos(rlat);
+	double tlat = tan(rlat);
 
 	// decide the flase northing at origin
-	float fn = (lat > 0) ? UTM_FN_N : UTM_FN_S;
+	double fn = (lat > 0) ? UTM_FN_N : UTM_FN_S;
 
-	float T = tlat * tlat;
-	float C = UTM_EP2 * clat * clat;
-	float A = (rlon - rlon0) * clat;
-	float M = WGS84_A * (m0*rlat + m1*sin(2*rlat) + m2*sin(4*rlat) + m3*sin(6*rlat));
-	float V = WGS84_A / sqrt(1 - UTM_E2*slat*slat);
+	double T = tlat * tlat;
+	double C = UTM_EP2 * clat * clat;
+	double A = (rlon - rlon0) * clat;
+	double M = WGS84_A * (m0*rlat + m1*sin(2*rlat) + m2*sin(4*rlat) + m3*sin(6*rlat));
+	double V = WGS84_A / sqrt(1 - UTM_E2*slat*slat);
 
 	// compute the easting-northing coordinates
 	*x = UTM_FE + UTM_K0 * V * (A + (1-T+C)*pow(A,3)/6 + (5-18*T+T*T+72*C-58*UTM_EP2)*pow(A,5)/120);
