@@ -15,11 +15,20 @@ INCLUDES = -I../../client_libs/c -I../../include -I/usr/local/player/include
 LIBDIRS = -L../../client_libs/c -L/usr/local/player/lib 
 LIBS = $(LIBDIRS) -lplayercclient
 
-BINARIES = simple
+BINARIES = randomwalk laserobstacleavoid ptz test
 
 all: $(BINARIES)
 
-simple: simple.c
+test: test.c
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
+
+randomwalk: randomwalk.c
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
+
+laserobstacleavoid: laserobstacleavoid.c
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
+
+ptz: ptz.c
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
 
 clean:
