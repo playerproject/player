@@ -77,6 +77,7 @@
 #define PLAYER_WIFI_CODE	   ((uint16_t)23)  // wifi card status
 #define PLAYER_WAVEFORM_CODE	   ((uint16_t)24)  // fetch raw waveforms
 #define PLAYER_LOCALIZE_CODE   ((uint16_t)25)  // localize
+#define PLAYER_MCOM_CODE           ((uint16_t)26)  // multicoms
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -106,6 +107,7 @@
 #define PLAYER_WIFI_STRING           "wifi"
 #define PLAYER_WAVEFORM_STRING       "waveform"
 #define PLAYER_LOCALIZE_STRING   "localize"
+#define PLAYER_MCOM_STRING           "mcom"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -638,7 +640,7 @@ typedef struct player_position_position_mode_req
 /** To set the robot's odometry to a particular state, use this request: */
 typedef struct player_position_set_odom_req
 {
-  /** subtype; must be PLAYER_SET_ODOM_REQ */
+  /** subtype; must be PLAYER_POSITION_SET_ODOM_REQ */
   uint8_t subtype; 
   /** X and Y (in mm?) */
   int32_t x, y;
@@ -1926,6 +1928,60 @@ typedef struct player_localize_map_data
 /*************************************************************************
  ** end section
  *************************************************************************/
+
+/*************************************************************************
+ ** begin section MCom
+ *************************************************************************/
+
+/*  MCom device by Matthew Brewer <mbrewer@andrew.cmu.edu> (updated for 1.3 by 
+ *  Reed Hedges <reed@zerohour.net>) at the Laboratory for Perceptual 
+ *  Robotics, Dept. of Computer Science, University of Massachusetts,
+ *  Amherst.
+ */
+
+#define MCOM_DATA_LEN           128     // size of the data field in messages
+#define MCOM_COMMAND_BUFFER_SIZE    (sizeof(player_mcom_config_t))
+#define MCOM_DATA_BUFFER_SIZE   0       // we don't actually need any "data", 
+                                        // just "configuration" commands aro used.
+#define MCOM_N_BUFS             10      // number of buffers to keep per channel
+#define MCOM_CHANNEL_LEN        8       // size of channel name
+
+// command ids
+#define PLAYER_MCOM_PUSH_REQ    0
+#define PLAYER_MCOM_POP_REQ     1
+#define PLAYER_MCOM_READ_REQ    2
+#define PLAYER_MCOM_CLEAR_REQ   3
+
+// XXX this might be GCC-specific
+#define _PACKED_ __attribute__ ((packed))
+
+//a piece of data as used by the com device
+typedef struct {
+    char full;  // a flag
+    char data[MCOM_DATA_LEN];
+} _PACKED_ player_mcom_data_t;
+
+
+//config messages to client registry
+typedef struct {
+    uint16_t command;
+    uint16_t type;
+    char channel[MCOM_CHANNEL_LEN];
+    player_mcom_data_t data;
+} _PACKED_ player_mcom_config_t;
+
+//listing returned by reply
+typedef struct {
+    uint16_t subtype; // should be PLAYER_COM_DATA_REPLY
+    uint16_t type;
+    char channel[MCOM_CHANNEL_LEN];
+    player_mcom_data_t data;
+} _PACKED_ player_mcom_return_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+ 
 
 
 #endif /* PLAYER_H */

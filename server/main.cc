@@ -464,6 +464,36 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         }
         break;
 
+        case PLAYER_MCOM_CODE:
+          // Create mcom device as per normal
+          //
+          // FIXME: apparently deviceIO->local is *not* currently being set
+          // by Stage?...
+          if(deviceIO->local || !deviceIO->local)
+          {
+            // no options in world file.
+              
+            // find the broadcast device in the available device table
+            DriverEntry* entry;
+            if(!(entry = driverTable->GetDriverEntry("mcom")))
+            {
+              puts("WARNING: Player support for mcom device unavailable.");
+            }
+            else
+            {
+              int section = configFile.AddEntity(globalparent, "mcom");
+              // add it to the instantiated device table
+              deviceTable->AddDevice(deviceIO->player_id, "mcom",
+                                     PLAYER_ALL_MODE, 
+                                     (*(entry->initfunc))(PLAYER_MCOM_STRING,
+                                                   &configFile, section));
+ 
+              // add this port to our listening list
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
+            }
+          }
+          break;
+
         case PLAYER_COMMS_CODE:   
           // Create broadcast device as per normal
           //
@@ -502,6 +532,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             }
           }
           break;
+
 
           /*
             case PLAYER_BPS_CODE:   
