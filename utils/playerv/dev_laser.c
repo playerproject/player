@@ -190,11 +190,14 @@ void laser_draw(laser_t *laser)
   rtk_fig_clear(laser->scan_fig);
 
   // TESTING (should use menu option)
-  style = 1;
+  if (laser->proxy->info.index == 0)
+    style = 1;
+  else
+    style = 0;
   
   if (style == 0)
   {
-    rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_EMP);
+    rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_OCC);
       
     // Draw in the range scan
     for (i = 0; i < laser->proxy->scan_count; i++)
