@@ -101,8 +101,8 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
       PLAYER_MSG2( "Creating client to Stage server on %s:%d", 
 		   stage_host, stage_port );
       
-      Stage1p4::stage_client = stg_client_create( stage_host, stage_port );
-      assert( Stage1p4::stage_client );
+      Stage1p4::stage_client = stg_client_create( stage_host, stage_port);
+      assert(Stage1p4::stage_client);
       
       // load a worldfile and create a passel of Stage models
       Stage1p4::world_file = 

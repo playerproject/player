@@ -68,19 +68,21 @@ parse_args(int argc, char** argv)
 
 int main(int argc, char **argv)
 { 
-  int robotport;
   parse_args(argc,argv);
+  int robotport;
+  /*
   PlayerClient robot;
-
   if(robot.ConnectRNS(robotname,host,port) < 0)
     exit(-1);
-
   for(;;)
     robot.Read();
+    */
 
-  //PlayerClient robot(host,port);
-  //robotport = robot.LookupPort(robotname);
-  //printf("Robot \"%s\" is on port %d\n", robotname, robotport);
+  PlayerClient robot(host,port);
+  if((robotport = robot.LookupPort(robotname)))
+    printf("Robot \"%s\" is on port %d\n", robotname, robotport);
+  else
+    printf("Robot \"%s\" not found!\n", robotname);
 
   return(0);
 }

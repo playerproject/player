@@ -668,21 +668,35 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
 #endif
 
 bool
-parse_config_file(char* fname)
+parse_config_file(char* fname, int** ports, int* num_ports)
 {
   DriverEntry* entry;
   CDevice* tmpdevice;
   char interface[PLAYER_MAX_DEVICE_STRING_LEN];
   char* colon;
+  char* colon2;
   int index;
   char* driver;
   int code = 0;
+  int port = global_playerport;
+  char robotname[PLAYER_MAX_DEVICE_STRING_LEN];
+  bool firstdevice=true;
+
+  robotname[0]='\0';
+
   
   // parse the file
   printf("\nParsing configuration file \"%s\"...\n", fname);
 
   if(!configFile.Load(fname))
     return(false);
+  
+  // a safe upper bound on the number of ports we'll need is the number of
+  // entities in the config file (yes, i'm too lazy to dynamically
+  // reallocate this buffer for a tighter bound).
+  assert(*ports = new int[configFile.GetEntityCount()]);
+  // we'll increment this counter as we go
+  *num_ports=0;
 
   // load each device specified in the file
   for(int i = 1; i < configFile.GetEntityCount(); i++)
@@ -696,22 +710,60 @@ parse_config_file(char* fname)
     interface[sizeof(interface)-1] = '\0';
 
     // look for a colon and trailing index
-    if((colon = strchr(interface,':')) && strlen(colon) >= 2)
+    if((colon = strchr(interface,':')))
     {
-      // get the index out
-      index = atoi(colon+1);
-      // strip the index off the end
-      interface[colon-interface] = '\0';
+      // strip off the end
+      //interface[colon-interface] = '\0';
+      *colon = '\0';
     }
-    else
-      index = 0;
-
-    // look for the new robot block syntax
+    // look for the new robot:<port>:<name> syntax
     if(!strcmp(interface,"robot"))
     {
-      // need to recurse into this section
-      puts("skipping robot block");
+      port = -1;
+      robotname[0]='\0';
+      if(colon && strlen(colon+1))
+      {
+        if((colon2 = strchr(colon+1,':')))
+        {
+          // strip off the end
+          *colon2 = '\0';
+          if(strlen(colon2+1))
+          {
+            strncpy(robotname,colon2+1,sizeof(robotname));
+            robotname[sizeof(robotname)-1]='\0';
+          }
+        }
+        // was a port number actually supplied?
+        if(strlen(colon+1))
+        {
+          port = atoi(colon+1);
+          // add this port to our watchlist.  could check for duplicates
+          // here, but we'll just let bind() do that checking for us later
+          (*ports)[(*num_ports)++] = port;
+        }
+      }
       continue;
+    }
+    else
+    {
+      // get the index out
+      if(colon && strlen(colon+1))
+        index = atoi(colon+1);
+      else
+        index = 0;
+
+      // if we're using the old single robot syntax (i.e., no robot blocks)
+      // and this is the first device, then we have to add the single port
+      // to our watchlist
+      if(firstdevice && (*num_ports == 0))
+        (*ports)[(*num_ports)++] = port;
+    }
+
+    // TODO: implement auto-assignment of ports
+    if(port < 0)
+    {
+      PLAYER_ERROR("Sorry, auto-assigning ports not yet supported");
+      return(false);
     }
 
     driver = NULL;
@@ -731,8 +783,8 @@ parse_config_file(char* fname)
     // did the user specify a different driver?
     driver = (char*)configFile.ReadString(i, "driver", driver);
 
-    printf("  loading driver \"%s\" as device \"%s:%d\"\n", 
-           driver, interface, index);
+    printf("  loading driver \"%s\" as device \"%d:%s:%d\"\n", 
+           driver, port, interface, index);
     /* look for the indicated driver in the available device table */
     if(!(entry = driverTable->GetDriverEntry(driver)))
     {
@@ -743,7 +795,7 @@ parse_config_file(char* fname)
     {
       player_device_id_t id;
       id.code = code;
-      id.port = global_playerport;
+      id.port = port;
       id.index = index;
 
       if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
@@ -752,7 +804,8 @@ parse_config_file(char* fname)
                       driver, interface);
         exit(-1);
       }
-      deviceTable->AddDevice(id, driver, NULL, entry->access, tmpdevice);
+      deviceTable->AddDevice(id, driver, robotname, entry->access, tmpdevice);
+      firstdevice=false;
 
       // should this device be "always on"?
       if(configFile.ReadInt(i, "alwayson", 0))
@@ -1066,6 +1119,14 @@ int main( int argc, char *argv[] )
     assert(GlobalTime);
   }
 
+  if(configfile != NULL)
+  {
+    // Parse the config file and instantiate drivers.  It builds up a list
+    // of ports that we need to listen on.
+    if (!parse_config_file(configfile, &ports, &num_ufds))
+      exit(-1);
+  }
+
   // Instantiate devices
   if (use_stage)
   {
@@ -1079,22 +1140,22 @@ int main( int argc, char *argv[] )
   }
   else
   {
-    num_ufds = 1;
-    assert((ufds = new struct pollfd[num_ufds]) && 
-           (ports = new int[num_ufds]));
+    assert(ufds = new struct pollfd[num_ufds]);
 
     struct sockaddr_in listener;
 
-    // setup the socket to listen on
-    if((ufds[0].fd = create_and_bind_socket(&listener,1,global_playerport,
-                                            protocol,200)) == -1)
+    for(int i=0;i<num_ufds;i++)
     {
-      fputs("create_and_bind_socket() failed; quitting", stderr);
-      exit(-1);
+      // setup the socket to listen on
+      if((ufds[i].fd = create_and_bind_socket(&listener,1,ports[i],
+                                              protocol,200)) == -1)
+      {
+        PLAYER_ERROR("create_and_bind_socket() failed; quitting");
+        exit(-1);
+      }
+      ufds[i].events = POLLIN;
+      printf("listening on port %d\n", ports[i]);
     }
-
-    ufds[0].events = POLLIN;
-    ports[0] = global_playerport;
   }
   
   // create the client manager object.
@@ -1108,14 +1169,6 @@ int main( int argc, char *argv[] )
   {
     PLAYER_ERROR("Unknown transport protocol");
     exit(-1);
-  }
-
-
-  if(configfile != NULL)
-  {
-    // Parse the config file and instantiate drivers
-    if (!parse_config_file(configfile))
-      exit(-1);
   }
 
   // check for empty device table
