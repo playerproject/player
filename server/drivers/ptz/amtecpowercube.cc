@@ -44,8 +44,9 @@
 #include <drivertable.h>
 #include <player.h>
 
-// assuming that we're using a usb->serial gagdet
-#define DEFAULT_AMTEC_PORT "/dev/usb/tts/0"
+#define DEFAULT_AMTEC_PORT "/dev/ttyS0"
+
+#define AMTEC_SLEEP_TIME_USEC 100000
 
 // start, end, and escape chars
 #define AMTEC_STX       0x02
@@ -55,19 +56,25 @@
 // sizes
 #define AMTEC_MAX_CMDSIZE     48
 
+// module IDs
+#define AMTEC_MODULE_TILT       11
+#define AMTEC_MODULE_PAN        12
+
 // command IDs
 #define AMTEC_CMD_RESET        0x00
 #define AMTEC_CMD_HOME         0x01
 #define AMTEC_CMD_HALT         0x02
 #define AMTEC_CMD_SET_EXT      0x08
 #define AMTEC_CMD_GET_EXT      0x0a
+#define AMTEC_CMD_SET_MOTION   0x0b
+#define AMTEC_CMD_SET_ISTEP    0x0d
 
 // parameter IDs
 #define AMTEC_PARAM_GET_POS   0x3c
 
-// module IDs
-#define AMTEC_MODULE_TILT_ID                         11
-#define AMTEC_MODULE_PAN_ID                          12
+// motion IDs
+#define AMTEC_MOTION_FRAMP      0x04
+#define AMTEC_MOTION_FRAMP_ACK  0x14
 
 class AmtecPowerCube:public CDevice 
 {
@@ -80,12 +87,15 @@ class AmtecPowerCube:public CDevice
     int WriteData(unsigned char *buf, size_t len);
 
     int GetAbsPanTilt(short* pan, short* tilt);
+    int SetAbsPan(short pan);
+    int SetAbsTilt(short tilt);
+    int Home();
+    int Reset();
 
-    long BytesWaiting(int sd);
-    int AwaitAnswer(unsigned char *buf, int *len);
-    int WaitForETX(unsigned char *buf, int  *len);
-    int ReadAnswer(unsigned char *cmd, int *len);
-    void ConvertBuffer(unsigned char *cmd, int *len);
+    int AwaitAnswer(unsigned char* buf, size_t len);
+    int AwaitETX(unsigned char* buf, size_t len);
+    int ReadAnswer(unsigned char* buf, size_t len);
+    size_t ConvertBuffer(unsigned char* buf, size_t len);
 
   public:
     int fd; // amtec device file descriptor
@@ -132,6 +142,66 @@ AmtecPowerCube::AmtecPowerCube(char* interface, ConfigFile* cf, int section) :
   PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 
   serial_port = cf->ReadString(section, "port", DEFAULT_AMTEC_PORT);
+}
+
+int 
+AmtecPowerCube::Reset()
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[1];
+
+  cmd[0] = AMTEC_CMD_RESET;
+  if(SendCommand(AMTEC_MODULE_PAN,cmd,1) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+  if(SendCommand(AMTEC_MODULE_TILT,cmd,1) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+  return(0);
+}
+
+int 
+AmtecPowerCube::Home()
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[1];
+
+  cmd[0] = AMTEC_CMD_HOME;
+  if(SendCommand(AMTEC_MODULE_PAN,cmd,1) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+  if(SendCommand(AMTEC_MODULE_TILT,cmd,1) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+  return(0);
 }
 
 int 
@@ -187,7 +257,7 @@ AmtecPowerCube::Setup()
   /* try to get current state, just to make sure we actually have a camera */
   if(GetAbsPanTilt(&pan,&tilt))
   {
-    printf("Couldn't connect to PTZ device most likely because the camera\n"
+    printf("Couldn't connect to Amtec PowerCube most likely because the unit\n"
                     "is not connected or is connected not to %s\n", 
                     serial_port);
     close(fd);
@@ -222,8 +292,45 @@ AmtecPowerCube::Setup()
   return(0);
 }
 
-// The following method is based on one found in CARMEN.  Thanks to the
+int
+AmtecPowerCube::Shutdown()
+{
+  if(fd == -1)
+    return(0);
+
+  StopThread();
+
+  // TODO: put the unit back to home
+
+  if(close(fd))
+    PLAYER_ERROR1("close() failed:%s",strerror(errno));
+  fd = -1;
+  puts("Amtec PowerCube has been shutdown");
+  return(0);
+}
+
+////////////////////////////////////////////////////////////////////////////
+// The following methods are based on some found in CARMEN.  Thanks to the
 // authors.
+
+// NOTE: this only works on little-endian machines (the Amtec protocol also
+// uses little-endian).
+float
+BytesToFloat(unsigned char *bytes)
+{
+  float f;
+  memcpy((void*)&f, bytes, 4);
+  return(f);
+}
+
+// NOTE: this only works on little-endian machines (the Amtec protocol also
+// uses little-endian).
+void
+FloatToBytes(unsigned char *bytes, float f)
+{
+  memcpy(bytes, (void*)&f, 4);
+}
+
 int 
 AmtecPowerCube::SendCommand(int id, unsigned char* cmd, size_t len)
 {
@@ -234,14 +341,6 @@ AmtecPowerCube::SendCommand(int id, unsigned char* cmd, size_t len)
   unsigned char umnr;
   unsigned char lmnr;
 
-#ifdef IO_DEBUG
-  fprintf( stderr, "\n---> " );
-  for (i=0;i<len;i++) {
-    fprintf( stderr, "(0x%s%x)", cmd[i]<16?"0":"", cmd[i] );
-  }
-  fprintf( stderr, "\n" );
-#endif
-  
   add  = 0;
   lmnr = id & 7;
   lmnr = lmnr << 5;
@@ -301,22 +400,15 @@ AmtecPowerCube::SendCommand(int id, unsigned char* cmd, size_t len)
   }
   rcmd[ctr++] = AMTEC_ETX;
 
-#ifdef IO_DEBUG
-  fprintf( stderr, "-*-> " );
-  for (i=0;i<ctr;i++) {
-    fprintf( stderr, "(0x%s%x)", rcmd[i]<16?"0":"", rcmd[i] );
-  }
-  fprintf( stderr, "\n" );
-#endif
-  
-  if(WriteData(rcmd, ctr)) 
+  if(WriteData(rcmd, ctr) == ctr)
     return(0);
   else
+  {
+    PLAYER_ERROR("short write");
     return(-1);
+  }
 }
 
-// The following method is based on one found in CARMEN.  Thanks to the
-// authors.
 int
 AmtecPowerCube::WriteData(unsigned char *buf, size_t len)
 {
@@ -333,134 +425,130 @@ AmtecPowerCube::WriteData(unsigned char *buf, size_t len)
 
     written += tmp;
   }
-  return(0);
+  return(written);
 }
 
-long 
-AmtecPowerCube::BytesWaiting(int sd)
-{
-  long available=0;
-  if(ioctl(sd, FIONREAD, &available) == 0 )
-    return available;
-  else
-    return -1;
-}    
-
 int
-AmtecPowerCube::WaitForETX(unsigned char *buf, int  *len)
+AmtecPowerCube::AwaitETX(unsigned char* buf, size_t len)
 {
-  static int pos, loop, val;
-#ifdef IO_DEBUG
-  int i;
-#endif
+  int pos, loop, numread, totalnumread;
   pos = 0; loop = 0;
-  while( loop<MAX_NUM_LOOPS ) {
-    val = BytesWaiting(fd );
-    if (val>0) {
-      read(fd, &(buf[pos]), val);
-#ifdef IO_DEBUG
-      for (i=0;i<val;i++)
-	fprintf( stderr, "[0x%s%x]", buf[pos+i]<16?"0":"", buf[pos+i] );
-#endif
-      if(buf[pos+val-1]==AMTEC_ETX) {
-	*len = pos+val-1;
-#ifdef IO_DEBUG
-	fprintf( stderr, "\n" );
-#endif
-	return(0);
-      }
-      pos += val;
-    } else {
-      usleep(1000);
+  while(loop<10)
+  {
+    if((numread = read(fd,buf+pos,len-pos)) < 0)
+    {
+      PLAYER_ERROR1("read() failed:%s", strerror(errno));
+      return(-1);
+    }
+    else if(!numread)
+    {
+      if(!fd_blocking)
+        usleep(10000);
       loop++;
     }
+    else
+    {
+      if(buf[pos+numread-1]==AMTEC_ETX)
+      {
+	totalnumread = pos+numread-1;
+	return(totalnumread);
+      }
+      pos += numread;
+    }
   }
-#ifdef IO_DEBUG
-  fprintf( stderr, "\n" );
-#endif
+  PLAYER_ERROR("never found ETX");
   return(-1);
 }
 
 int
-AmtecPowerCube::AwaitAnswer(unsigned char *buf, int *len)
+AmtecPowerCube::AwaitAnswer(unsigned char* buf, size_t len)
 {
-  int loop = 0;
-  *len = 0;
-#ifdef IO_DEBUG
-  fprintf( stderr, "<--- " );
-#endif
-  while(loop<10) {
-    if (BytesWaiting(fd)) {
-      read(fd, &(buf[0]), 1 );
-#ifdef IO_DEBUG
-      fprintf( stderr, "(0x%s%x)", buf[0]<16?"0":"", buf[0] );
-#endif
-      if (buf[0]==AMTEC_STX) {
-	return(WaitForETX(buf,len));
+  int numread;
+
+  // if we're not blocking, give the unit some time to respond
+  if(!fd_blocking)
+    usleep(AMTEC_SLEEP_TIME_USEC);
+
+  for(;;)
+  {
+    if((numread = read(fd, buf, 1)) < 0)
+    {
+      PLAYER_ERROR1("read() failed:%s", strerror(errno));
+      return(-1);
+    }
+    else if(!numread)
+    {
+      // hmm...we were expecting something, yet we read
+      // zero bytes. some glitch.  drain input, and return
+      // zero.  we'll get a message next time through.
+      PLAYER_WARN("read 0 bytes");
+      if(tcflush(fd, TCIFLUSH ) < 0 )
+      {
+        PLAYER_ERROR1("tcflush() failed:%s",strerror(errno));
+        return(-1);
       }
-    } else {
-      usleep(1000);
-      loop++;
+      return(0);
+    }
+    else
+    {
+      if(buf[0]==AMTEC_STX) 
+        return(AwaitETX(buf,len));
+      else
+        continue;
     }
   }
-#ifdef IO_DEBUG
-  fprintf( stderr, "\n" );
-#endif
-  return(-1);
 }
 
-void
-AmtecPowerCube::ConvertBuffer(unsigned char *cmd, int *len)
+size_t
+AmtecPowerCube::ConvertBuffer(unsigned char* buf, size_t len)
 {
-  int i, j;
-  for (i=0;i<*len;i++) {
-    if (cmd[i]==B_DLE) {
-      switch(cmd[i+1]) {
-      case 0x82:
-	cmd[i] = 0x02;
-	for (j=i+2;j<*len;j++) cmd[j-1] = cmd[j];
-	(*len)--;
-	break;
-      case 0x83:
-	cmd[i] = 0x03;
-	for (j=i+2;j<*len;j++) cmd[j-1] = cmd[j];
-	(*len)--;
-	break;
-      case 0x90:
-	cmd[i] = 0x10;
-	for (j=i+2;j<*len;j++) cmd[j-1] = cmd[j];
-	(*len)--;
-	break;
+  size_t i, j, actual_len;
+
+  actual_len = len;
+
+  for (i=0;i<len;i++) 
+  {
+    if(buf[i]==AMTEC_DLE) 
+    {
+      switch(buf[i+1]) 
+      {
+        case 0x82:
+          buf[i] = 0x02;
+          for(j=i+2;j<len;j++) 
+            buf[j-1] = buf[j];
+          actual_len--;
+          break;
+        case 0x83:
+          buf[i] = 0x03;
+          for(j=i+2;j<len;j++) 
+            buf[j-1] = buf[j];
+          actual_len--;
+          break;
+        case 0x90:
+          buf[i] = 0x10;
+          for(j=i+2;j<len;j++) 
+            buf[j-1] = buf[j];
+          actual_len--;
+          break;
       }
     }
   }
+  return(actual_len);
 }
 
 int
-AmtecPowerCube::ReadAnswer(unsigned char *cmd, int *len)
+AmtecPowerCube::ReadAnswer(unsigned char* buf, size_t len)
 {
-#ifdef IO_DEBUG
-  int i;
-#endif
-  if (WaitForAnswer(cmd, len)) {
-#ifdef IO_DEBUG
-    fprintf( stderr, "<=== " );
-    for (i=0;i<*len;i++)
-      fprintf( stderr, "[0x%s%x]", cmd[i]<16?"0":"", cmd[i] );
-    fprintf( stderr, "\n" );
-#endif
-    ConvertBuffer( cmd, len );
-#ifdef IO_DEBUG
-    fprintf( stderr, "<=p= " );
-    for (i=0;i<*len;i++)
-      fprintf( stderr, "[0x%s%x]", cmd[i]<16?"0":"", cmd[i] );
-    fprintf( stderr, "\n" );
-#endif
-    return(0);
-  } else {
-    return(-1);
-  }
+  int actual_len;
+
+  if((actual_len = AwaitAnswer(buf, len)) <= 0)
+    return(actual_len);
+  else
+    return((int)ConvertBuffer(buf, (size_t)actual_len));
 }
+// The preceding methods are based some found in CARMEN.  Thanks to the
+// authors.
+////////////////////////////////////////////////////////////////////////////
 
 int
 AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
@@ -471,8 +559,8 @@ AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
   cmd[0] = AMTEC_CMD_GET_EXT;
   cmd[1] = AMTEC_PARAM_GET_POS;
 
-  // get the pan first
-  if(SendCommand(AMTEC_MODULE_PAN_ID, cmd, 2) < 0)
+  // get the pan
+  if(SendCommand(AMTEC_MODULE_PAN, cmd, 2) < 0)
   {
     PLAYER_ERROR("SendCommand() failed");
     return(-1);
@@ -484,6 +572,137 @@ AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
     return(-1);
   }
 
+  *pan = (short)(RTOD(BytesToFloat(buf+4)));
+  //printf("pan: %d\n", *pan);
+  
+  // get the tilt
+  if(SendCommand(AMTEC_MODULE_TILT, cmd, 2) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+
+  *tilt = (short)(RTOD(BytesToFloat(buf+4)));
+  //printf("tilt: %d\n", *tilt);
+
   return(0);
+}
+
+int
+AmtecPowerCube::SetAbsPan(short pan)
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[8];
+  float newpan;
+
+  newpan = DTOR(pan);
+
+  cmd[0] = AMTEC_CMD_SET_MOTION;
+  cmd[1] = AMTEC_MOTION_FRAMP_ACK;
+  FloatToBytes(cmd+2,newpan);
+  printf("sending pan command: %d (%f)\n", pan, newpan);
+  if(SendCommand(AMTEC_MODULE_PAN,cmd,6) < 0)
+    return(-1);
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+    return(-1);
+  printf("module state:0x%x\n", buf[6]);
+  return(0);
+}
+
+int
+AmtecPowerCube::SetAbsTilt(short tilt)
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[8];
+  float newtilt;
+
+  newtilt = DTOR(tilt);
+
+  cmd[0] = AMTEC_CMD_SET_MOTION;
+  cmd[1] = AMTEC_MOTION_FRAMP;
+  FloatToBytes(cmd+2,newtilt);
+  if(SendCommand(AMTEC_MODULE_TILT,cmd,6) < 0)
+    return(-1);
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+    return(-1);
+  return(0);
+}
+
+void 
+AmtecPowerCube::Main()
+{
+  player_ptz_data_t data;
+  player_ptz_cmd_t command;
+  short lastpan, lasttilt;
+  short newpan, newtilt;
+  short currpan, currtilt;
+
+  lastpan = lasttilt = 0;
+
+  // first things first.  reset and home the unit.
+  if(Reset() < 0)
+  {
+    PLAYER_ERROR("Reset() failed; bailing.");
+    pthread_exit(NULL);
+  }
+  if(Home() < 0)
+  {
+    PLAYER_ERROR("Home() failed; bailing.");
+    pthread_exit(NULL);
+  }
+
+  for(;;)
+  {
+    pthread_testcancel();
+
+    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    newpan = (short)ntohs(command.pan);
+    newtilt = (short)ntohs(command.tilt);
+    printf("newpan: %d\tnewtilt: %d\n", newpan, newtilt);
+
+    if(newpan != lastpan)
+    {
+      // send new pan position
+      if(SetAbsPan(newpan))
+      {
+        PLAYER_ERROR("SetAbsPan() failed(); bailing.");
+        pthread_exit(NULL);
+      }
+
+      lastpan = newpan;
+    }
+
+    if(newtilt != lasttilt)
+    {
+      // send new tilt position
+      if(SetAbsTilt(newtilt))
+      {
+        PLAYER_ERROR("SetAbsTilt() failed(); bailing.");
+        pthread_exit(NULL);
+      }
+
+      lasttilt = newtilt;
+    }
+
+    if(GetAbsPanTilt(&currpan,&currtilt))
+    {
+      PLAYER_ERROR("GetAbsPanTilt() failed(); bailing.");
+      pthread_exit(NULL);
+    }
+
+    data.pan = htons(currpan);
+    data.tilt = htons(currtilt);
+    data.zoom = 0;
+
+    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
+
+    usleep(AMTEC_SLEEP_TIME_USEC);
+  }
 }
 
