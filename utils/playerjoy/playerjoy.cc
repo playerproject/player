@@ -82,7 +82,7 @@ struct js_event {
 // define the speed limits for the robot
 
 // at full joystick depression you'll go this fast
-#define MAX_SPEED    450 // mm/second
+#define MAX_SPEED    1000 // mm/second
 #define MAX_TURN    50 // degrees/second
 
 // this is the speed that the camera will pan when you press the
