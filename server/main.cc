@@ -544,27 +544,40 @@ parse_config_file(char* fname)
   CDeviceEntry* entry;
   CDevice* tmpdevice;
   char* devname;
+  char* colon;
+  int index;
   
   // parse the file
   if(!configFile.Load(fname))
     return(false);
 
   // load each device specified in the file
-  //for(int i = 0; i < configFile.GetEntityCount(); i++)
   for(int i = 1; i < configFile.GetEntityCount(); i++)
   {
     if(configFile.entities[i].type < 0)
       continue;
 
-    devname = (char*)(configFile.entities[i].type);
-    printf(":%s:\n", devname);
+    // get the interface name
+    devname = strdup((const char*)(configFile.entities[i].type));
+
+    // look for a colon and trailing index
+    if((colon = strchr(devname,':')) && strlen(colon) >= 2)
+    {
+      // get the index out
+      index = atoi(colon+1);
+      // strip the index off the end
+      devname[colon-devname] = '\0';
+    }
+    else
+      index = 0;
 
     /* look for the indicated device in the available device table */
     if(!(entry = availableDeviceTable->GetDeviceEntry(devname)))
     {
       fprintf(stderr,"\nError: couldn't instantiate requested device \"%s\";\n"
               "  Perhaps support for it was not compiled into this binary?\n", 
-              devname+1);
+              devname);
+      free(devname);
       return(false);
     }
     else
@@ -572,12 +585,13 @@ parse_config_file(char* fname)
       player_device_id_t id;
       id = entry->id;
       id.port = global_playerport;
-      //id.index = index;
-      id.index = 0;
+      id.index = index;
 
       //tmpdevice = (*(entry->initfunc))(argc,argv);
       tmpdevice = (*(entry->initfunc))(0,NULL);
       deviceTable->AddDevice(id, entry->access, tmpdevice);
+
+      free(devname);
     }
   }
 

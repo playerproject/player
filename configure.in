@@ -109,15 +109,22 @@ AC_ARG_WITH(tests, [  --with-tests          Build tests],,
 with_tests=no)
 AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
 
-dnl below here are the old ones that haven't been changed
-#AC_ARG_WITH(audio, [  --with-audio          Include audio driver],,
-#with_audio=no)
-#if test "x$with_audio" = "xyes"; then
-  #AUDIO_OBJ="audiodevice.o"
-  #AC_DEFINE(INCLUDE_AUDIO,1,[include the audio driver])
-#fi
-#AC_SUBST(AUDIO_OBJ)
+AC_ARG_WITH(fixedtones, [  --with-fixedtones          Include fixed tones driver],,
+with_fixedtones=no)
+if test "x$with_fixedtones" = "xyes"; then
+  FIXEDTONES_LIB="drivers/libfixedtones.a"
+  FIXEDTONES_EXTRA_LIB="-lrfftw -lfftw"
+  AC_DEFINE(INCLUDE_FIXEDTONES,1,[include the fixed tones driver])
+fi
+AC_SUBST(FIXEDTONES_LIB)
+AC_SUBST(FIXEDTONES_EXTRA_LIB)
+AM_CONDITIONAL(WITH_FIXEDTONES, test x$with_fixedtones = xyes)
 
+#AC_CHECK_LIB(rfftw,rfftw_one,FIXEDTONES_LIB="drivers/libfixedtones.a",,
+#-lrfftw)
+#AC_SUBST(FIXEDTONES_LIB)
+
+dnl below here are the old ones that haven't been changed
 #AC_ARG_WITH(bps, [  --without-bps          Do not include bps driver],,
 #with_bps=yes)
 #if test "x$with_bps" = "xyes"; then

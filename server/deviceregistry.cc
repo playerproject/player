@@ -55,7 +55,9 @@ CDevice* UDPBroadcast_Init(int argc, char** argv);
 #ifdef INCLUDE_LASERBARCODE
 CDevice* LaserBarcode_Init(int argc, char** argv);
 #endif
-
+#ifdef INCLUDE_FIXEDTONES
+CDevice* FixedTones_Init(int argc, char** argv);
+#endif
 #ifdef INCLUDE_RWI
 CDevice* RWIBumper_Init(int argc, char *argv[]);
 CDevice* RWILaser_Init(int argc, char *argv[]);
@@ -70,9 +72,6 @@ CDevice* RWIJoystick_Init(int argc, char *argv[]);
 
 // the devices below need work before they can be included
 /*
-#ifdef INCLUDE_AUDIO
-#include <audiodevice.h>
-#endif
 #ifdef INCLUDE_BPS
 #include <bpsdevice.h>
 #endif
@@ -163,6 +162,10 @@ register_devices()
   availableDeviceTable->AddDevice(PLAYER_LASERBEACON_CODE,PLAYER_READ_MODE,
                                   PLAYER_LASERBEACON_STRING,LaserBarcode_Init);
 #endif
+#ifdef INCLUDE_FIXEDTONES
+  availableDeviceTable->AddDevice(PLAYER_AUDIO_CODE, PLAYER_ALL_MODE,
+                                  PLAYER_AUDIO_STRING,FixedTones_Init);
+#endif
 #ifdef INCLUDE_RWI
   availableDeviceTable->AddDevice(PLAYER_RWI_POSITION_CODE, PLAYER_ALL_MODE,
                                   PLAYER_RWI_POSITION_STRING, RWIPosition_Init);
@@ -182,10 +185,6 @@ register_devices()
 
 // the devices below need work before they can be included
 /*
-#ifdef INCLUDE_AUDIO
-  availableDeviceTable->AddDevice(PLAYER_AUDIO_CODE, PLAYER_ALL_MODE,
-                                  PLAYER_AUDIO_STRING,CAudioDevice::Init);
-#endif
 #ifdef INCLUDE_BPS
   availableDeviceTable->AddDevice(PLAYER_BPS_CODE, PLAYER_READ_MODE,
                                   PLAYER_BPS_STRING, CBpsDevice::Init);
