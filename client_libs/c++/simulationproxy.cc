@@ -78,3 +78,23 @@ int SimulationProxy::SetPose2D( char* identifier, double x, double y, double a )
   return client->Request( m_device_id,
 			  (const char *)&req, sizeof(req));
 }
+
+int SimulationProxy::GetPose2D( char* identifier, double& x, double& y, double& a )
+{
+  player_msghdr_t hdr;  
+  player_simulation_pose2d_req_t cfg;
+  
+  cfg.subtype = PLAYER_SIMULATION_GET_POSE2D;
+  strncpy( cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
+  
+  if(client->Request(m_device_id,
+                     (const char*)&cfg, sizeof(cfg.subtype),
+                     &hdr, (char*)&cfg, sizeof(cfg)) < 0)
+    return(-1);
+  
+  x =  ((int32_t)ntohl(cfg.x)) / 1e3;
+  y =  ((int32_t)ntohl(cfg.y)) / 1e3;
+  a =  DTOR((int32_t)ntohl(cfg.a));
+  
+  return 0;
+}

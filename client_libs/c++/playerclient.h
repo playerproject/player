@@ -2631,8 +2631,12 @@ class SimulationProxy : public ClientProxy
     {}
   
   /** set the 2D pose of an object in the simulator, identified by the
-      string */
+      string. Returns 0 on success, else a non-zero error code. */
   int SetPose2D( char* identifier, double x, double y, double a );
+
+  /** get the pose of an object in the simulator, identified by the
+      string Returns 0 on success, else a non-zero error code.  */
+  int GetPose2D( char* identifier, double& x, double& y, double& a );
 
   virtual void FillData(player_msghdr_t hdr, const char* buffer);  
   virtual void Print();
