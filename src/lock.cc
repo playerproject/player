@@ -96,14 +96,20 @@ size_t CLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize,
   return(size);
 }
 
-void CLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize) 
+void CLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize,
+                     uint32_t timestamp_sec, uint32_t timestamp_usec) 
 {
-  struct timeval curr;
-  gettimeofday(&curr,NULL);
+  if (timestamp_sec == 0)
+  {
+    struct timeval curr;
+    gettimeofday(&curr,NULL);
+    timestamp_sec = curr.tv_sec;
+    timestamp_usec = curr.tv_usec;
+  }
   pthread_mutex_lock( &dataAccessMutex );
   obj->PutData(dest, maxsize);
-  obj->data_timestamp_sec = curr.tv_sec;
-  obj->data_timestamp_usec = curr.tv_usec;
+  obj->data_timestamp_sec = timestamp_sec;
+  obj->data_timestamp_usec = timestamp_usec;
   pthread_mutex_unlock( &dataAccessMutex );
   if (firstdata) 
   {

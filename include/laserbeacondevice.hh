@@ -98,13 +98,12 @@ class CLaserBeaconDevice : public CDevice
     private: CDevice *m_laser;
 
     // Magic numbers
-    // See constructor for definitions
+    // See setup for definitions
     //
-    private: double m_min_width, m_max_width;
-    private: double m_max_depth;
     private: int m_max_bits;
     private: double m_bit_width;
-    private: int m_one_thresh, m_zero_thresh;  
+    private: double m_max_depth;
+    private: double m_filter[256];
 };
 
 

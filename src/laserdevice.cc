@@ -364,7 +364,9 @@ int CLaserDevice::Main()
         {
             // Change any config settings
             //
-            if (SetLaserMode() == 0)
+            if (SetLaserMode())
+                PLAYER_ERROR("request for config mode failed");
+            else
             {
                 SetLaserRes(m_scan_width, m_scan_res);
                 SetLaserConfig(m_intensity);
@@ -372,8 +374,15 @@ int CLaserDevice::Main()
 
             // Issue a new request for data
             //
-            RequestLaserData(m_scan_min_segment, m_scan_max_segment);
+            if (RequestLaserData(m_scan_min_segment, m_scan_max_segment))
+                PLAYER_ERROR("request for laser data failed");
         }
+
+        // Get the time at which we started reading
+        // This will be a pretty good estimate of when the phenomena occured
+        //
+        timeval time;
+        gettimeofday(&time, NULL);
         
         // Process incoming data
         //
@@ -391,7 +400,8 @@ int CLaserDevice::Main()
 
             // Make data available
             //
-            GetLock()->PutData(this, (uint8_t*) &data, sizeof(data));
+            GetLock()->PutData(this, (uint8_t*) &data, sizeof(data),
+                               time.tv_sec, time.tv_usec);
         }
     }
 

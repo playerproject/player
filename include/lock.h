@@ -66,7 +66,8 @@ public:
 
   virtual size_t GetData(CDevice *, unsigned char *, size_t,
                          uint32_t* timestamp_sec, uint32_t *timestamp_usec);
-  virtual void PutData(CDevice *, unsigned char *, size_t);
+  virtual void PutData(CDevice *, unsigned char *, size_t,
+                       uint32_t timestamp_sec = 0, uint32_t timestamp_usec = 0);
 
   virtual void GetCommand(CDevice *, unsigned char *, size_t );
   virtual void PutCommand(CDevice *, unsigned char *, size_t);
