@@ -128,6 +128,9 @@ Usage()
   fprintf(stderr, "  -k <key>      : require client authentication with the "
           "given key\n");
   fprintf(stderr, "  <configfile>  : load the the indicated config file\n");
+  fprintf(stderr, "\nAvailable drivers:\n");
+  for(int i=0;i<driverTable->Size();i++)
+    fprintf(stderr, "  %s\n", driverTable->GetDriverName(i));
   fprintf(stderr,"\n\nPart of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
   fprintf(stderr, "Copyright (C) 2000 - 2003 Brian Gerkey, Richard Vaughan, Andrew Howard,\nand contributors.\n");
   fprintf(stderr,"\nReleased under the GNU General Public License.\n");
