@@ -47,7 +47,8 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               blinkenlightproxy.cc \
 															cameraproxy.cc \
 															aioproxy.cc \
-															hudproxy.cc
+															hudproxy.cc \
+															plannerproxy.cc
                               #bpsproxy.cc
                               #bpsproxy.h
 
