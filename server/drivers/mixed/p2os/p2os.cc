@@ -33,6 +33,10 @@
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
+
 
 #include <fcntl.h>
 #include <signal.h>
