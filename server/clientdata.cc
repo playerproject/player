@@ -742,6 +742,7 @@ int CClientData::BuildMsg()
   CDevice* devicep;
   player_msghdr_t hdr;
   struct timeval curr;
+  size_t numdata;
   
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_DATA);
@@ -753,8 +754,20 @@ int CClientData::BuildMsg()
 
       if((access == PLAYER_ALL_MODE) || (access == PLAYER_READ_MODE)) 
       {
-        if((devicep = deviceTable->GetDevice(thisub->id)))
+        // make sure we've got a good pointer
+        if(!(devicep = deviceTable->GetDevice(thisub->id)))
         {
+          printf("BuildMsg(): found NULL pointer for device \"%x:%x\"\n",
+                          thisub->id.code, thisub->id.index);
+          continue;
+        }
+
+        // how many packets are available for this client?
+        numdata = devicep->GetNumData(this);
+        while(numdata > 0)
+        {
+          numdata--;
+
           hdr.device = htons(thisub->id.code);
           hdr.device_index = htons(thisub->id.index);
           hdr.reserved = 0;
@@ -809,11 +822,6 @@ int CClientData::BuildMsg()
                  writebuffer,
                  sizeof(hdr) + size);
           totalsize += sizeof(hdr) + size;
-        }
-        else
-        {
-          printf("BuildMsg(): found NULL pointer for device \"%x:%x\"\n",
-                          thisub->id.code, thisub->id.index);
         }
       }
       else

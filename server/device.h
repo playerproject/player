@@ -124,6 +124,7 @@ class CDevice
 
     // these MAY be overridden by the device itself, but then the device
     // is reponsible for Lock()ing and Unlock()ing appropriately
+    virtual size_t GetNumData(void* client);
     virtual size_t GetData(void* client, unsigned char* dest, size_t len,
                         uint32_t* timestamp_sec, uint32_t* timestamp_usec);
     virtual void PutData(unsigned char* src, size_t len,
