@@ -45,7 +45,7 @@ class StageTime : public PlayerTime
   public:
     StageTime(struct timeval* thissimtimep) { simtimep = thissimtimep; }
     ~StageTime() { }
-    virtual int GetTime(struct timeval* time);
+    int GetTime(struct timeval* time);
 
 };
 
