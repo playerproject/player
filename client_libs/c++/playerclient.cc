@@ -473,6 +473,7 @@ void PlayerClient::FillData(void* dest, void* src, player_msghdr_t hdr)
       break;
     default:
       // no transformations to be done; just copy
+      ASSERT(hdr.size < PLAYER_MAX_MESSAGE_SIZE);
       memcpy(dest,src,hdr.size);
       break;
   }
@@ -484,6 +485,8 @@ void PlayerClient::FillCommand(void* dest, void* src, uint16_t device)
   int datasize,commandsize;
 
   devicedatatable->GetDeviceSizes(device, &datasize, &commandsize);
+  ASSERT(commandsize <= PLAYER_MAX_MESSAGE_SIZE);
+  
   switch(device)
   {
     default:
