@@ -88,8 +88,8 @@
 #define PLAYER_SIMULATION_CODE     ((uint16_t)31)  // simulators
 #define PLAYER_SERVICE_ADV_CODE    ((uint16_t)32)  // LAN service advertisement
 #define PLAYER_BLINKENLIGHT_CODE   ((uint16_t)33)  // blinking lights 
+#define PLAYER_NOMAD_CODE          ((uint16_t)34)   // Nomad robot
 #define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo)
-#define PLAYER_NOMAD_CODE          ((uint16_t)41)   // Nomad robot
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -2714,8 +2714,11 @@ typedef struct player_mcom_return
 #define NOMAD_SONAR_COUNT 16
 #define NOMAD_BUMPER_COUNT 16
 #define NOMAD_IR_COUNT 16
-#define NOMAD_RADIUS_MM 400 // TODO: measure the Nomad to get this exactly right
-#define NOMAD_CONFIG_BUFFER_SIZE 256 // this should be bigger than the biggest config we could receive
+/** TODO: measure the Nomad to get this exactly right */
+#define NOMAD_RADIUS_MM 400 
+#define NOMAD_CONFIG_BUFFER_SIZE 256
+#define NOMAD_SERIAL_PORT "/dev/ttyS0"
+#define NOMAD_SERIAL_BAUD  9600
 
 /** [Data]
 The {\tt nomad} interface provides a pose estimate and sonar range readings.

@@ -56,26 +56,24 @@ extern PlayerTime* GlobalTime;
 #include <drivertable.h>
 #include <devicetable.h>
 extern CDeviceTable* deviceTable;
-extern int global_playerport; // used to get at devices
-
-#define NOMAD_DEFAULT_SERIAL_PORT "/dev/ttyS0"
 
 // this is the old 'official' Nomad interface code from Nomadics
 // released GPL when Nomadics went foom.
 #include "Nclient.h"
 
+
 /////////////////////////////////////////////////////////////////////////
 // converts tens of inches to millimeters
 int inchesToMM(int inches)
 {
-	return (int)(inches * 2.54);
+  return (int)(inches * 2.54);
 }
 
 /////////////////////////////////////////////////////////////////////////
 // converts millimeters to tens of inches
 int mmToInches(int mm)
 {
-	return (int)(mm / 2.54);
+  return (int)(mm / 2.54);
 }
 
 
@@ -91,6 +89,10 @@ class Nomad:public CDevice
   
   virtual int Setup();
   virtual int Shutdown();
+
+protected:
+  char* serial_device;
+  int serial_speed;
 };
 
 
@@ -110,7 +112,7 @@ CDevice* Nomad_Init(char* interface, ConfigFile* cf, int section)
 // a driver registration function
 void Nomad_Register(DriverTable* table)
 {
-  table->AddDriver("nomad", PLAYER_ALL_MODE, Nomad_Init);
+  table->AddDriver(PLAYER_NOMAD_STRING, PLAYER_ALL_MODE, Nomad_Init);
 }
 
 
@@ -120,7 +122,10 @@ Nomad::Nomad(char* interface, ConfigFile* cf, int section)
   : CDevice( sizeof(player_position_data_t), 
 	     sizeof(player_position_cmd_t), 1, 1 )
 {
-
+  this->serial_device = cf->ReadString( section, "serial_device", NOMAD_SERIAL_PORT );
+  this->serial_speed = cf->ReadInt( section, "serial_speed", NOMAD_SERIAL_BAUD );
+  //this->server_host = cf->ReadString( section, "server_host", "" );
+  //this->serverPort = cf->ReadInt( section, "server_port", 0 );
 }
 
 Nomad::~Nomad()
@@ -130,15 +135,29 @@ Nomad::~Nomad()
 
 int Nomad::Setup()
 {
-  printf("Nomad Setup..");
+  printf("Nomad Setup: connecting to robot... ");
   fflush(stdout);
   
-  printf( "connecting to %s:%d\n", SERVER_MACHINE_NAME, SERV_TCP_PORT );
+  // connect to the robot 
+  int success = FALSE;  
+  if( SERV_TCP_PORT > 0 ) // if we were compiled using Nclient
+    {
+      printf( "TCP: %s:%d... ", SERVER_MACHINE_NAME, SERV_TCP_PORT ); 
+      fflush(stdout);
+      success = connect_robot(1); // uses default parameters
+    }
+  else
+    {
+      printf( "Serial: %s:%d... ", this->serial_device, this->serial_speed );
+      fflush(stdout);
+      success = connect_robot(1, MODEL_N200, this->serial_device, this->serial_speed );
+    }
   
-  // connect to the robot (connection parameters specified in a 
-  // supplementary file, i believe)
-  //connect_robot(1,MODEL_N200, SERVER_MACHINE_NAME, SERV_TCP_PORT );
-  connect_robot(1);
+  if( !success )
+    {
+      printf( "Nomad setup failed!\n" );
+      return( 1 ); 
+    }
   
   // set the robot timeout, in seconds.  The robot will stop if no commands
   // are sent before the timeout expires.
@@ -162,7 +181,7 @@ int Nomad::Setup()
   /* now spawn reading thread */
   StartThread();
 
-	 puts( "done" );
+  puts( "Nomad setup done." );
   return(0);
 }
 
@@ -181,26 +200,24 @@ Nomad::Main()
   
   for(;;)
     {
+      // handle configs --------------------------------------------------------
+      
       void* client;
       player_device_id_t id;
       size_t config_size = 0;
-      //player_position_data_t
-
-      // first, check if there is a new config command
+      
       if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
 	switch( config[0] )
 	  {
 	  default:
-	    puts("Position got unknown config request");
+	    puts("Nomad got unknown config request");
 	    if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
 			NULL, NULL, 0))
 	      PLAYER_ERROR("failed to PutReply");
 	    break;
 	  }
       
-      /* read the latest data from the robot */
-      //printf( "read data from robot" );
-      gs();
+      // handle commands--------------------------------------------------------
       
       /* read the latest Player client commands */
       player_nomad_cmd_t command;
@@ -215,6 +232,13 @@ Nomad::Main()
       // set the speed
       vm(mmToInches(v), w*10, turret*10);
 
+
+      // produce data-------------------------------------------------------
+
+      /* read the latest data from the robot */
+      //printf( "read data from robot" );
+      gs(); // fills the structure 'State'
+      
       player_nomad_data_t data;
       memset(&data,0,sizeof(data));
 
@@ -225,7 +249,7 @@ Nomad::Main()
       data.vel_steer = State[ STATE_VEL_STEER ] / 10;
       data.vel_turret = State[ STATE_VEL_TURRET ] / 10;
 
-	
+      // player's byteswapping
       data.x = htonl(data.x);
       data.y = htonl(data.y);
       data.a = htonl(data.a);
