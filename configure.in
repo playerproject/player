@@ -6,17 +6,6 @@ AC_INIT(server/main.cc)
 dnl Define this so that we can refer to it twice below
 define(PLAYER_VERSION,1.3)
 
-dnl determine system type.  this is used in a couple of places to infer the 
-dnl types of arguments to some networking library functions.  if/when we 
-dnl upgrade to newer Autotools, this can probably go away.
-AC_CANONICAL_SYSTEM
-case $host in
-*-*-solaris*) AC_DEFINE(PLAYER_SOLARIS,1,[building for Solaris]);;
-*-*-linux*) AC_DEFINE(PLAYER_LINUX,1,[building for Linux]);;
-esac
-
-AC_DEFINE_UNQUOTED(TARGET_OS, $target_os, [The target OS])
-
 dnl Initialize automake with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.
 AM_INIT_AUTOMAKE(player,PLAYER_VERSION)
@@ -108,7 +97,7 @@ dnl ************************************************************************
 
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(stdint.h strings.h)
+AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h)
 
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply dnl use AC_CHECK_TYPE because socklen_t 
@@ -120,6 +109,21 @@ AC_TRY_COMPILE(
         [AC_MSG_RESULT(yes)],
          [AC_MSG_RESULT(no)
           AC_DEFINE(socklen_t, int, must define this on BSD-based platforms)])
+
+dnl Test for O_SYNC and define it to 0 if it's not there (it gets ORed with
+dnl flags, so 0 is harmless).
+dnl Note that we can't simply dnl use AC_CHECK_TYPE because O_SYNC
+dnl isn't in the standard headers (autoconf-2.5 has better methods for this)
+AC_MSG_CHECKING(if O_SYNC is defined)
+AC_TRY_COMPILE(
+     [#include <sys/types.h>
+      #include <sys/stat.h>
+      #include <fcntl.h>],
+     [int fd = open("foo",O_SYNC); return fd;],
+        [AC_MSG_RESULT(yes)],
+         [AC_MSG_RESULT(no)
+          AC_DEFINE(O_SYNC, 0, must define this on some non-Linux platforms)])
+
 
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(scandir poll dirname)
