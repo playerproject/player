@@ -15,7 +15,8 @@ noinst_PROGRAMS = rsn \
 	          multilogger \
                   stress \
                   pherobot \
-	          joystick
+	          joystick \
+		rebtest
 	          #multirandom multiphero
 
 rsn_SOURCES = rsn.cc
@@ -33,6 +34,7 @@ multilogger_SOURCES = multilogger.cc
 stress_SOURCES = stress.cc
 pherobot_SOURCES = pherobot.cc
 joystick_SOURCES = joystick.cc
+rebtest_SOURCES = rebtest.cc
 
 goto_LDADD = $(LDADD) -lpthread
 joystick_LDADD = $(LDADD) -lpthread

@@ -1,11 +1,48 @@
 SUBDIRS = drivers
 
+CXX = @CXX_SERVER@
+AR = @AR_SERVER@
+RANLIB = @RANLIB_SERVER@
+CXXFLAGS = @CXXFLAGS_SERVER@
+
+
+player_DEPENDENCIES = drivers/stage/libstage.a \
+			@P2OS_LIBPATH@ \
+		       	@SICK_LIBPATH@ \
+		       	@FESTIVAL_LIBPATH@ \
+			@ACTS_LIBPATH@ \
+			@SONY_LIBPATH@ \
+		 	@UDPBCAST_LIBPATH@ \
+			@LASER_LIBPATH@ \
+			@RWI_LIBPATH@ \
+			@WIFI_LIBPATH@ \
+			@FIXEDTONES_LIBPATH@ @ISENSE_LIBPATH@ @LIBOBJS@ 
+
+
+player_LDADD   = -lpthread -lm -ldl drivers/stage/libstage.a \
+	@REB_LIBPATH@ \
+	@P2OS_LIBPATH@ \
+        @SICK_LIBPATH@ \
+	@FESTIVAL_LIBPATH@ \
+	@ACTS_LIBPATH@ \
+	@SONY_LIBPATH@ \
+	@UDPBCAST_LIBPATH@ \
+	@LASER_LIBPATH@ \
+	@WIFI_LIBPATH@ \
+	@RWI_LIBPATH@ @FIXEDTONES_LIBPATH@ @FIXEDTONES_EXTRA_LIB@ \
+	@ISENSE_LIBPATH@ @ISENSE_EXTRA_LIB@ @LIBOBJS@ 
+
+
+
 AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage
+
 
 bin_PROGRAMS = player
 
+
 lib_LIBRARIES = libplayerqueue.a 
 #libserialize.a
+
 
 libplayerqueue_a_SOURCES = playerqueue.cc
 #libserialize_a_SOURCES = serialize.c serialize.h
@@ -19,16 +56,8 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
                  drivertable.h 
 		 #serialize.c serialize.h
 
-player_DEPENDENCIES = drivers/p2os/libp2os.a drivers/stage/libstage.a \
-                      drivers/libsicklms200.a drivers/libfestival.a \
-                      drivers/libacts.a drivers/libsonyevid30.a \
-                      drivers/libudpbroadcast.a drivers/liblaserbarcode.a \
-                      drivers/liblasercspace.a drivers/liblaserfeature.a \
-                      drivers/liblaserreflector.a \
-                      drivers/liblaservisualbarcode.a @RWI_LIBPATH@ \
-                      @FIXEDTONES_LIBPATH@ @ISENSE_LIBPATH@ @LIBOBJS@
 
-player_LDADD   = -lpthread -lm -ldl drivers/p2os/libp2os.a drivers/stage/libstage.a drivers/libsicklms200.a drivers/libfestival.a drivers/libacts.a drivers/libsonyevid30.a drivers/libudpbroadcast.a drivers/liblaserbarcode.a drivers/liblasercspace.a drivers/liblaserfeature.a drivers/liblaserreflector.a drivers/liblaservisualbarcode.a @RWI_LIBPATH@ @FIXEDTONES_LIBPATH@ @FIXEDTONES_EXTRA_LIB@ @ISENSE_LIBPATH@ @ISENSE_EXTRA_LIB@ @LIBOBJS@
+
 
 include_HEADERS = playercommon.h \
                   player.h \
