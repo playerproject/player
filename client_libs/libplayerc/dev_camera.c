@@ -49,7 +49,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
-#include "playerpacket.h"
+#include <playerpacket.h>
+
 #include "playerc.h"
 #include "error.h"
 
