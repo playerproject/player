@@ -116,8 +116,8 @@ set PLAYER_POSITION_RESET_ODOM_REQ        3
 
 # the vision device
 set VISION_NUM_CHANNELS 32
-set VISION_HEADER_SIZE [expr 4*$VISION_NUM_CHANNELS]
-set VISION_BLOB_SIZE 16
+set VISION_HEADER_SIZE [expr 4+4*$VISION_NUM_CHANNELS]
+set VISION_BLOB_SIZE 20
 
 # the sonar device
 set PLAYER_NUM_SONAR_SAMPLES  16
@@ -668,10 +668,21 @@ proc player_parse_data {obj device device_index data size} {
     }
   } elseif {$device == $PLAYER_VISION_CODE} {
 
+   if {[binary scan $data SS \
+         arr($name,$device_index,width) \
+         arr($name,$device_index,height)] != 2} {
+      puts "Warning: failed to get vision image dimensions"
+      return
+    }
+    if {!$device_index} {
+      set arr($name,width) $arr($name,$device_index,width)
+      set arr($name,height) $arr($name,$device_index,height)
+    }
+    #puts "vision: width X height: $arr($name,width) $arr($name,height)"
     set bufptr $VISION_HEADER_SIZE
     set l 0
     while {$l < $VISION_NUM_CHANNELS} {
-      if {[binary scan $data "x[expr 4*$l+2]S" numblobs] != 1} {
+      if {[binary scan $data "x[expr 4+4*$l+2]S" numblobs] != 1} {
         puts "Warning: failed to get number of blobs for channel $l"
         return
       }
@@ -683,13 +694,12 @@ proc player_parse_data {obj device device_index data size} {
       }
       set j 0
       while {$j < $arr($name,$device_index,$l,numblobs)} {
-        if {[binary scan $data "x${bufptr}IISSSSSS" \
+        if {[binary scan $data "x${bufptr}x1H6ISSSSSS" \
                   color area x y left right top bottom] != 8} {
           puts "Warning: failed to get blob info for ${j}th blob on ${l}th channel"
           return
         }
         # make everything unsigned
-        #set area [expr $area & 0xFFFFFFFF]
         set x [expr $x & 0xFFFF]
         set y [expr $y & 0xFFFF]
         set left [expr $left & 0xFFFF]
@@ -697,7 +707,7 @@ proc player_parse_data {obj device device_index data size} {
         set top [expr $top & 0xFFFF]
         set bottom [expr $bottom & 0xFFFF]
 
-        set arr($name,$device_index,$l,$j,color) $color
+        set arr($name,$device_index,$l,$j,color) "\#$color"
         set arr($name,$device_index,$l,$j,area) $area
         set arr($name,$device_index,$l,$j,x) $x
         set arr($name,$device_index,$l,$j,y) $y
@@ -705,6 +715,15 @@ proc player_parse_data {obj device device_index data size} {
         set arr($name,$device_index,$l,$j,right) $right
         set arr($name,$device_index,$l,$j,top) $top
         set arr($name,$device_index,$l,$j,bottom) $bottom
+
+        #puts "color: $color"
+        #puts "area: $area"
+        #puts "x: $x"
+        #puts "y: $y"
+        #puts "left: $left"
+        #puts "right: $right"
+        #puts "top; $top"
+        #puts "bottom: $bottom"
 
         if {!$device_index} {
           set arr($name,$l,$j,color) $arr($name,$device_index,$l,$j,color)
