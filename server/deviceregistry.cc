@@ -78,6 +78,10 @@ void Acts_Register(DriverTable* table);
 void CMVision_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_UPCBARCODE
+void UPCBarcode_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_FESTIVAL
 void Festival_Register(DriverTable* table);
 #endif 
@@ -405,6 +409,10 @@ register_devices()
 
 #ifdef INCLUDE_CMVISION
   CMVision_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_UPCBARCODE
+  UPCBarcode_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FESTIVAL
