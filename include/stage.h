@@ -55,7 +55,8 @@ typedef struct
 {
     uint8_t available;
     uint8_t subscribed;
-    uint64_t data_timestamp;
+    uint32_t data_timestamp_sec;
+    uint32_t data_timestamp_usec;
     uint16_t data_len;
     uint16_t command_len;
     uint16_t config_len;
@@ -103,23 +104,6 @@ typedef struct
                               BROADCAST_DATA_BUFFER_SIZE + \
                               BROADCAST_COMMAND_BUFFER_SIZE + \
                               BROADCAST_CONFIG_BUFFER_SIZE 
-
-/* *** RETIRE -- ahoward
-
-// Player/arena interface shared memory locations
-
-// subscription flags for player/arena interface 
-// - stored at the top of the memory map
-#define SUB_MOTORS 0
-#define SUB_SONAR  SUB_MOTORS + 1
-#define SUB_LASER  SUB_SONAR + 2
-#define SUB_VISION SUB_MOTORS + 3     
-#define SUB_GRIPPER SUB_MOTORS + 4    //   NOT YET IMPLEMENTED IN ARENA
-#define SUB_MISC SUB_MOTORS + 5       //              "
-#define SUB_PTZ  SUB_MOTORS + 6
-
-#define SUB_BUFFER_SIZE 7
-*/
 
 // Make space for memory test
 //
