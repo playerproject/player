@@ -6,4 +6,4 @@ all:
 	doxygen player.dox
 
 upload_cvs: all
-	./upload_www.sh $(NAME)
+	./upload_www.sh $(CVS_NAME)

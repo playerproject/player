@@ -83,6 +83,7 @@ extern PlayerTime* GlobalTime;
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
 #define DEFAULT_LASER_PORT_RATE 38400
 
+
 // The laser device class.
 class SickLMS200 : public CDevice
 {
@@ -235,7 +236,63 @@ void SickLMS200_Register(DriverTable* table)
 // Error macros
 #define RETURN_ERROR(erc, m) {PLAYER_ERROR(m); return erc;}
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup sicklms200 SickLMS200 driver
 
+Driver for the SICK LMS200 scanning laser range-finder.
+
+@par Interfaces
+- @ref laser
+
+@par Supported configuration requests
+
+- PLAYER_LASER_GET_GEOM
+- PLAYER_LASER_GET_CONFIG
+- PLAYER_LASER_SET_CONFIG
+  
+@par Configuration file options
+
+- port "/dev/ttyS1"
+  - Serial port to which laser is attached.  If you are using a
+    USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
+
+- rate 38400
+  - Default baud rate.  Valid values are 38400 (RS232 or RS422) and
+    500000 (RS422 only).
+  
+- delay 0
+  - Delay (in seconds) before laser is initialized (set this to 35 if
+    you have a newer generation Pioneer whose laser is switched on
+    when the serial port is open).
+
+- resolution 50
+  - Angular resolution.  Valid values are:
+    - resolution 50 : 0.5 degree increments, 361 readings @ 5Hz (38400) or 32Hz (500000).
+    - resolution 100 : 1 degree increments, 181 readings @ 10Hz (38400) or 75Hz (500000).
+
+- range_res 1
+  - Range resolution.  Valid valies are:
+    - range_res 1 : 1mm precision, 8.192m max range.
+    - range_res 10 : 10mm precision, 81.92m max range.
+    - range_res 100 : 100mm precision, 819.2m max range.
+      
+@par Example 
+
+@verbatim
+device
+(
+  driver sicklms200
+  interfaces ["laser:0"]
+  port "/dev/ttyS0"
+  resolution 100   # Angular resolution 1 degree (181 readings @ 10Hz)
+  range_res 10     # Range resolution 1 cm (maximum range 81.92m)
+)
+@endverbatim
+*/
+/** @} */
+  
+ 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
@@ -248,8 +305,25 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
   this->size[0] = 0.15;
   this->size[1] = 0.15;
 
-  // Default serial port
+  // Serial port
   this->device_name = cf->ReadString(section, "port", DEFAULT_LASER_PORT);
+
+  // Serial rate
+  this->port_rate = cf->ReadInt(section, "rate", DEFAULT_LASER_PORT_RATE);
+  this->current_rate = this->port_rate;
+
+#ifdef HAVE_HI_SPEED_SERIAL
+  this->can_do_hi_speed = true;
+#else
+  this->can_do_hi_speed = false;
+#endif
+
+  if (!this->can_do_hi_speed && this->port_rate > 38400)
+  {
+    PLAYER_ERROR("sicklms200: requested hi speed serial, but no support compiled in.
+Defaulting to 38400 bps.");
+    this->port_rate = 38400;
+  }
 
   // Set default configuration
   this->startup_delay = cf->ReadInt(section, "delay", 0);
@@ -263,23 +337,10 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
   this->range_res = cf->ReadInt(section, "range_res", 1);
   this->invert = cf->ReadInt(section, "invert", 0);
 
-  this->port_rate = cf->ReadInt(section, "rate", DEFAULT_LASER_PORT_RATE);
-  this->current_rate = this->port_rate;
-
-#ifdef HAVE_HI_SPEED_SERIAL
-  this->can_do_hi_speed = true;
-#else
-  this->can_do_hi_speed = false;
-#endif
-
-  if (!this->can_do_hi_speed && this->port_rate > 38400) {
-    fprintf(stderr, "sicklms200: requested hi speed serial, but no support compiled in.  Defaulting to 38400 bps.\n");
-    this->port_rate = 38400;
-  }
-
   if (this->CheckScanConfig() != 0)
     PLAYER_ERROR("invalid scan configuration");
 
+  
   return;
 }
 
@@ -1469,32 +1530,4 @@ int64_t SickLMS200::GetTime()
   return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
 }
 
-
-/* demo of how to make a shared object for Player to load at runtime */
-#if 0
-#include <drivertable.h>
-extern DriverTable* driverTable;
-
-/* need the extern to avoid C++ name-mangling  */
-extern "C" {
-  void _init(void)
-  {
-    puts("Laser device initializing");
-    SickLMS200_Register(driverTable);
-    puts("Laser device done");
-  }
-
-  void _fini(void)
-  {
-    puts("Laser device closing");
-
-    /* probably don't need any code here; the destructor for the device
-     * will be called when Player shuts down.  this function is only useful
-     * if you want to dlclose() the shared object before Player exits
-     */
-
-    puts("Laser device closed");
-  }
-}
-#endif
 
