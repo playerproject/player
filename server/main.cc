@@ -139,7 +139,6 @@ printout( int dummy )
   exit(-1);
 }
 
-
 /* sighandler to shut everything down properly */
 void 
 Interrupt( int dummy ) 
@@ -602,6 +601,16 @@ parse_config_file(char* fname)
         exit(-1);
       }
       deviceTable->AddDevice(id, driver, entry->access, tmpdevice);
+
+      // should this device be "always on"?
+      if(configFile.ReadInt(i, "alwayson", 0))
+      {
+        if(tmpdevice->Subscribe(NULL))
+        {
+          PLAYER_ERROR1("failed to subscribe to interface \"%s\"", interface);
+          exit(-1);
+        }
+      }
     }
   }
 

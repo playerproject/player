@@ -32,6 +32,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <signal.h>
 #include <netinet/in.h>
 
 #include <playertime.h>
@@ -342,6 +343,11 @@ CDevice::DummyMain(void *devicep)
   // Defer thread cancellation; the thread will run until
   // pthread_testcancel() is called.
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
+  // block signals that should be handled by the server thread
+  sigblock(SIGINT);
+  sigblock(SIGHUP);
+  sigblock(SIGTERM);
 
   // Run the overloaded Main() in the subclassed device.
   ((CDevice*)devicep)->Main();
