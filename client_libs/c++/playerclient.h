@@ -2431,11 +2431,15 @@ class PlannerProxy : public ClientProxy
   public: virtual ~PlannerProxy();
 
   /** Set the goal pose (gx, gy, ga) */
-  public: int SetCmdPose( double gx, double gy, double ga, int state);
+  public: int SetCmdPose( double gx, double gy, double ga);
 
   /** Get the list of waypoints. Writes the result into the proxy
       rather than returning it to the caller. */
   public: int GetWaypoints();
+
+  /** Enable/disable the robot's motion.  Set state to 1 to enable, 0 to
+      disable. */
+  public: int Enable(int state);
 
   // interface that all proxies must provide
   public: void FillData( player_msghdr_t hdr, const char *buffer);
