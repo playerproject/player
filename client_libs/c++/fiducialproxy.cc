@@ -37,13 +37,13 @@ int FiducialProxy::SetBits(unsigned char tmp_bit_count,
   if(!client)
     return(-1);
 
-  player_laserbarcode_config_t config;
+  player_fiducial_laserbarcode_config_t config;
 
   // read existing config.
   if(GetConfig() < 0)
     return(-1);
   
-  config.subtype = PLAYER_LASERBARCODE_SET_CONFIG;
+  config.subtype = PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG;
   config.bit_count = tmp_bit_count;
   config.bit_size = htons(tmp_bit_size);
   config.zero_thresh = htons(zero_thresh);
@@ -60,13 +60,13 @@ int FiducialProxy::SetThresh(unsigned short tmp_zero_thresh,
   if(!client)
     return(-1);
 
-  player_laserbarcode_config_t config;
+  player_fiducial_laserbarcode_config_t config;
 
   // read existing config.
   if(GetConfig() < 0)
     return(-1);
   
-  config.subtype = PLAYER_LASERBARCODE_SET_CONFIG;
+  config.subtype = PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG;
   config.bit_count = bit_count;
   config.bit_size = htons(bit_size);
   config.zero_thresh = htons(tmp_zero_thresh);
@@ -119,10 +119,10 @@ void FiducialProxy::Print()
  */
 int FiducialProxy::GetConfig()
 {
-  player_laserbarcode_config_t config;
+  player_fiducial_laserbarcode_config_t config;
   player_msghdr_t hdr;
 
-  config.subtype = PLAYER_LASERBARCODE_GET_CONFIG;
+  config.subtype = PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG;
 
   if(client->Request(PLAYER_FIDUCIAL_CODE,index,
                          (const char*)&config, sizeof(config.subtype),

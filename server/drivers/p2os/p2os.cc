@@ -611,9 +611,6 @@ P2OS::Main()
   int last_sonar_subscrcount;
   int last_position_subscrcount;
 
-  //unsigned char configreq[4];
-  //P2OSPacket configpacket;
-
   player_device_id_t id;
   id.port = global_playerport;
   id.index = 0;
@@ -723,12 +720,12 @@ P2OS::Main()
         case PLAYER_SONAR_CODE:
           switch(config[0])
           {
-            case PLAYER_P2OS_SONAR_POWER_REQ:
+            case PLAYER_SONAR_POWER_REQ:
               /*
                * 1 = enable sonars
                * 0 = disable sonar
                */
-              if(config_size-1 != 1)
+              if(config_size != sizeof(player_sonar_power_config_t))
               {
                 puts("Arg to sonar state change request wrong size; ignoring");
                 if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
@@ -736,9 +733,12 @@ P2OS::Main()
                   PLAYER_ERROR("failed to PutReply");
                 break;
               }
+              player_sonar_power_config_t sonar_config;
+              sonar_config = *((player_sonar_power_config_t*)config);
+
               motorcommand[0] = SONAR;
               motorcommand[1] = 0x3B;
-              motorcommand[2] = config[1];
+              motorcommand[2] = sonar_config.value;
               motorcommand[3] = 0;
               motorpacket.Build(motorcommand, 4);
               SendReceive(&motorpacket);
@@ -784,12 +784,12 @@ P2OS::Main()
         case PLAYER_POSITION_CODE:
           switch(config[0])
           {
-            case PLAYER_P2OS_POSITION_MOTOR_POWER_REQ:
+            case PLAYER_POSITION_MOTOR_POWER_REQ:
               /* motor state change request 
                *   1 = enable motors
                *   0 = disable motors (default)
                */
-              if(config_size-1 != 1)
+              if(config_size != sizeof(player_position_power_config_t))
               {
                 puts("Arg to motor state change request wrong size; ignoring");
                 if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
@@ -797,9 +797,13 @@ P2OS::Main()
                   PLAYER_ERROR("failed to PutReply");
                 break;
               }
+
+              player_position_power_config_t power_config;
+              power_config = *((player_position_power_config_t*)config);
+
               motorcommand[0] = ENABLE;
               motorcommand[1] = 0x3B;
-              motorcommand[2] = config[1];
+              motorcommand[2] = power_config.value;
               motorcommand[3] = 0;
               motorpacket.Build(motorcommand, 4);
               SendReceive(&motorpacket);
@@ -808,12 +812,12 @@ P2OS::Main()
                 PLAYER_ERROR("failed to PutReply");
               break;
 
-            case PLAYER_P2OS_POSITION_VELOCITY_CONTROL_REQ:
+            case PLAYER_POSITION_VELOCITY_MODE_REQ:
               /* velocity control mode:
                *   0 = direct wheel velocity control (default)
                *   1 = separate translational and rotational control
                */
-              if(config_size-1 != sizeof(char))
+              if(config_size != sizeof(player_position_velocitymode_config_t))
               {
                 puts("Arg to velocity control mode change request is wrong "
                      "size; ignoring");
@@ -822,7 +826,12 @@ P2OS::Main()
                   PLAYER_ERROR("failed to PutReply");
                 break;
               }
-              if(config[1])
+
+              player_position_velocitymode_config_t velmode_config;
+              velmode_config = 
+                      *((player_position_velocitymode_config_t*)config);
+
+              if(velmode_config.value)
                 direct_wheel_vel_control = false;
               else
                 direct_wheel_vel_control = true;
@@ -831,9 +840,9 @@ P2OS::Main()
                 PLAYER_ERROR("failed to PutReply");
               break;
 
-            case PLAYER_P2OS_POSITION_RESET_ODOM_REQ:
+            case PLAYER_POSITION_RESET_ODOM_REQ:
               /* reset position to 0,0,0: no args */
-              if(config_size-1 != 0)
+              if(config_size != sizeof(player_position_resetodom_config_t))
               {
                 puts("Arg to reset position request is wrong size; ignoring");
                 if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 

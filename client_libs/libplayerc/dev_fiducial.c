@@ -129,10 +129,10 @@ int playerc_fiducial_set_config(playerc_fiducial_t *device,
                            int bit_count, double bit_width)
 {
   int len;
-  player_laserbarcode_config_t config;
+  player_fiducial_laserbarcode_config_t config;
 
   // Get the current device configuration.
-  config.subtype = PLAYER_LASERBARCODE_GET_CONFIG;
+  config.subtype = PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG;
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype),
                                &config, sizeof(config));
@@ -145,7 +145,7 @@ int playerc_fiducial_set_config(playerc_fiducial_t *device,
   }
 
   // Change the bit size and the number of bits
-  config.subtype = PLAYER_LASERBARCODE_SET_CONFIG;
+  config.subtype = PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG;
   config.bit_count = bit_count;
   config.bit_size = htons((uint16_t)(bit_width * 1000));
   len = playerc_client_request(device->info.client, &device->info,
@@ -164,10 +164,10 @@ int playerc_fiducial_get_config(playerc_fiducial_t *device,
                            int *bit_count, double *bit_width)
 {
   int len;
-  player_laserbarcode_config_t config;
+  player_fiducial_laserbarcode_config_t config;
 
   // Get the current device configuration.
-  config.subtype = PLAYER_LASERBARCODE_GET_CONFIG;
+  config.subtype = PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG;
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
   if (len < 0)

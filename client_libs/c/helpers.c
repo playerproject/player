@@ -216,8 +216,8 @@ int player_set_datamode(player_connection_t* conn, char mode)
 
 int player_change_motor_state(player_connection_t* conn, char mode)
 {
-  player_p2os_position_config_t req;
-  req.request = PLAYER_P2OS_POSITION_MOTOR_POWER_REQ;
+  player_position_power_config_t req;
+  req.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   req.value = mode;
   return(player_request(conn, PLAYER_POSITION_CODE, 0, (char*)&req, sizeof(req),
                         NULL, NULL, 0));

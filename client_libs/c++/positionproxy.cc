@@ -59,14 +59,14 @@ int PositionProxy::SetMotorState(unsigned char state)
   if(!client)
     return(-1);
 
-  char buffer[2];
+  player_position_power_config_t config;
 
-  buffer[0] = PLAYER_P2OS_POSITION_MOTOR_POWER_REQ;
-  buffer[1] = state;
+  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+  config.value = state;
 
 
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)buffer,
-                         sizeof(buffer)));
+  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
+                         sizeof(config)));
 }
 
 // select velocity control mode for the Pioneer 2
@@ -81,13 +81,13 @@ int PositionProxy::SelectVelocityControl(unsigned char mode)
   if(!client)
     return(-1);
 
-  char buffer[2];
+  player_position_velocitymode_config_t config;
 
-  buffer[0] = PLAYER_P2OS_POSITION_VELOCITY_CONTROL_REQ;
-  buffer[1] = mode;
+  config.request = PLAYER_POSITION_VELOCITY_MODE_REQ;
+  config.value = mode;
 
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)buffer,
-                         sizeof(buffer)));
+  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
+                         sizeof(config)));
 }
 
 // reset odometry to (0,0,0)
@@ -100,12 +100,12 @@ int PositionProxy::ResetOdometry()
   if(!client)
     return(-1);
 
-  char buffer[1];
+  player_position_resetodom_config_t config;
 
-  buffer[0] = PLAYER_P2OS_POSITION_RESET_ODOM_REQ;
+  config.request = PLAYER_POSITION_RESET_ODOM_REQ;
 
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)buffer,
-                         sizeof(buffer)));
+  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
+                         sizeof(config)));
 }
 
 void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
