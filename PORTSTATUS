@@ -16,7 +16,7 @@ SA1110 (Bitsy) Linux 2.4.19	    U		Y	    N		N
 SA1110 (iPAQ)  Linux ??
 Alpha          Linux 2.2            Y           U           Y           U
 x86            FreeBSD 4.7          Y           U           Y           U
-PowerPC        OS X.2
+PowerPC        OS X.2               Y           U           Y           Y
 -------------------------------------------------------------------------------
 
 
