@@ -74,7 +74,6 @@ extern pthread_t       CP2OSDevice::thread;
 extern struct timeval  CP2OSDevice::timeBegan_tv;
 extern bool            CP2OSDevice::direct_wheel_vel_control;
 extern int             CP2OSDevice::psos_fd; 
-extern int             CP2OSDevice::last_client_id; 
 extern char            CP2OSDevice::psos_serial_port[];
 extern bool            CP2OSDevice::radio_modemp;
 extern bool            CP2OSDevice::initdone;
@@ -122,15 +121,18 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
     ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
     ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
 
+    p2os_subscriptions = 0;
+
+    pthread_mutex_init(&p2os_accessMutex,NULL);
+    pthread_mutex_init(&p2os_setupMutex,NULL);
+
     initdone = true; 
   }
   else
   {
     // every sub-device gets its own queue object (but they all point to the
     // same chunk of memory)
-    reqqueue = (unsigned char*)(new playerqueue_elt_t[reqqueuelen]);
-    repqueue = (unsigned char*)(new playerqueue_elt_t[repqueuelen]);
-
+    
     // every sub-device needs to get its various pointers set up
     SetupBuffers((unsigned char*)data, sizeof(player_p2os_data_t),
                  (unsigned char*)command, sizeof(player_p2os_cmd_t),
@@ -173,15 +175,8 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
               argv[i]);
   }
 
-  // zero the subscription counters.
-  subscriptions = p2os_subscriptions = 0;
-
-  //pthread_mutex_init(&serial_mutex,NULL);
-
-  pthread_mutex_init(&p2os_accessMutex,NULL);
-  pthread_mutex_init(&p2os_setupMutex,NULL);
-
-  last_client_id = -1;
+  // zero the subscription counter.
+  subscriptions = 0;
 }
 
 void CP2OSDevice::Lock()
@@ -493,8 +488,6 @@ int CP2OSDevice::Shutdown()
   delete sippacket;
   sippacket = NULL;
 
-  last_client_id = -1;
-
   return(0);
 }
 
@@ -701,8 +694,6 @@ CP2OSDevice::Main()
 
         // reset odometry
         ResetRawPositions();
-
-        last_client_id = -1;
       }
       else if(last_position_subscrcount && !(positionp->subscriptions))
       {
