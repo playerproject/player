@@ -44,6 +44,10 @@
 #include <errno.h>
 #include <stddef.h>
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #define PLAYER_ENABLE_TRACE 0
 
 #include <playertime.h>

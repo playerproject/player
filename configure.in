@@ -245,10 +245,10 @@ AC_SUBST(ISENSE_LIB)
 AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
 
-dnl optionally compile MicroStrain IMU drivers
+dnl optionally compile MicroStrain IMU drivers - disabled by default
 AC_ARG_WITH(microstrain,
-[  --without-microstrain         Don't compile the MicroStrain IMU drivers],,
-with_microstrain=yes)
+[  --with-microstrain         Don't compile the MicroStrain IMU drivers],,
+with_microstrain=no)
 if test "x$with_microstrain" = "xyes"; then
   AC_DEFINE(INCLUDE_MICROSTRAIN, 1, [[include the MICROSTRAIN driver]])
   MICROSTRAIN_LIB="libmicrostrain.a"
@@ -264,6 +264,19 @@ AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
 
 dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h strings.h)
+
+dnl Test for socklen_t and define it to int if it's not there.
+dnl socklen_t should be used with functions like getpeername and
+dnl recvfrom because some platforms use int*'s and some use size_t*'s. 
+dnl Note that we can't simply dnl use AC_CHECK_TYPE because socklen_t 
+dnl isn't in the standard headers (until we move to autoconf-2.5)
+AC_MSG_CHECKING(if socklen_t is defined)
+AC_TRY_COMPILE(
+     [#include <sys/socket.h>],
+     [socklen_t len = 42; return len;],
+        [AC_MSG_RESULT(yes)],
+         [AC_MSG_RESULT(no)
+          AC_DEFINE(socklen_t, int, need to define this on BSD platforms)])
 
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(scandir poll dirname)
