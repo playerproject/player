@@ -18,35 +18,20 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-
 ///////////////////////////////////////////////////////////////////////////
 //
-// File: laserbeacondevice.cc
+// Desc: Driver for detecting laser barcodes.
 // Author: Andrew Howard
 // Date: 29 Jan 2001
-// Desc: Detects beacons in laser data
-//
-// CVS info:
-//  $Source$
-//  $Author$
-//  $Revision$
-//
-// Usage:
-//  (empty)
+// CVS: $Id$
 //
 // Theory of operation:
 //  Will detect binary coded beacons (i.e. bar-codes) in laser data.
 //  Reflectors represent '1' bits, non-reflectors represent '0' bits.
-//  The first and second bits of the beacon must be '1' and '0' respectively.
-//  More significant bits can be used to encode a unique id.
+//  The first and last bits of the beacon must be '1'.
 //
-//  Will return an id of zero if it can see a beacon, but cannot identify it.
-//
-// Known bugs:
-//  (empty)
-//
-// Possible enhancements:
-//  (empty)
+// Requires: laser
+// Provides: fiducial
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -66,7 +51,7 @@
 #include "player.h"
 
 
-// The laser beacon device class
+// The laser barcode detector.
 class LaserBarcode : public CDevice
 {
   // Constructor
@@ -92,21 +77,13 @@ class LaserBarcode : public CDevice
   private: int IdentBeacon(int a, int b, double ox, double oy, double oth,
                            const player_laser_data_t *laser_data);
 
-#ifdef INCLUDE_SELFTEST
-  // Beacon detector self-test
-  private: int SelfTest(const char *filename);
-
-  // Filename for self-test
-  private: char *test_filename;
-#endif
-
   // Pointer to laser to get data from
   private: int index;
   private: CDevice *laser;
 
   // Defaults
   private: int default_bitcount;
-  private: double default_bitsize;
+  private: double default_bitwidth;
   
   // Magic numbers
   // See setup for definitions
@@ -115,13 +92,11 @@ class LaserBarcode : public CDevice
   private: double max_depth;
   private: double accept_thresh, zero_thresh, one_thresh;
 
-  // Filter array (beacons must appear in multiple frames to be accepted)
-  private: double filter[256];
-
   // The current data
-  player_fiducial_data_t data;
+  private: player_fiducial_data_t data;
 };
-  
+
+
 // Initialization function
 CDevice* LaserBarcode_Init(char* interface, ConfigFile* cf, int section)
 {
@@ -152,32 +127,12 @@ LaserBarcode::LaserBarcode(char* interface, ConfigFile* cf, int section) :
   // if index is not overridden by an argument here, then we'll use the
   // device's own index, which we can get in Setup() below.
   this->index = cf->ReadInt(section, "index", -1);
+
+  // Get beacon settings.
   this->default_bitcount = cf->ReadInt(section, "bitcount", 8);
-  this->default_bitsize = cf->ReadFloat(section, "bitsize", 0.05);
-  
-  // FIXME: need to redo this self-test thing somehow
-  /*
-#if INCLUDE_SELFTEST
-    else if (!strcmp(argv[i], "test"))
-    {
-      if (i + 5 < argc)
-      {
-        this->max_depth = 0.05;
-        this->max_bits = atoi(argv[i + 1]);
-        this->bit_width = atof(argv[i + 2]);
-        this->zero_thresh = atof(argv[i + 3]);
-        this->one_thresh = atof(argv[i + 4]);
-        SelfTest(argv[i + 5]);
-        exit(0);
-      }
-      else
-      {
-        fprintf(stderr, "LaserBarcode: missing parameters\n");
-        exit(0);
-      }
-    }
-#endif
-   */
+  this->default_bitwidth = cf->ReadLength(section, "bitwidth", 0.05);
+
+  return;
 }
 
 
@@ -214,16 +169,12 @@ int LaserBarcode::Setup()
 
   // Number of bits and size of each bit
   this->max_bits = this->default_bitcount;
-  this->bit_width = this->default_bitsize;;
+  this->bit_width = this->default_bitwidth;
 
   // Default thresholds
   this->accept_thresh = 1.0;
   this->zero_thresh = 0.60;
   this->one_thresh = 0.60;
-
-  // Zero the filters
-  for (int i = 0; i < ARRAYSIZE(this->filter); i++)
-    this->filter[i] = 0;
     
   PLAYER_MSG2("laser beacon device: bitcount [%d] bitwidth [%fm]",
               this->max_bits, this->bit_width);
@@ -281,6 +232,7 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
   // Do some byte-swapping
   for (int i = 0; i < this->data.count; i++)
   {
+    this->data.fiducials[i].id = htons(this->data.fiducials[i].id);
     this->data.fiducials[i].pose[0] = htons(this->data.fiducials[i].pose[0]);
     this->data.fiducials[i].pose[1] = htons(this->data.fiducials[i].pose[1]);
     this->data.fiducials[i].pose[2] = htons(this->data.fiducials[i].pose[2]);
@@ -391,20 +343,11 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
   //
   double min_width = (this->max_bits - 1) * this->bit_width;
   double max_width = (this->max_bits + 1) * this->bit_width;
-    
-  // Update the filters
-  // We filter ids across multiple frames.
-  //
-  double filter_gain = 0.50;
-  //double filter_thresh = 0.80;
-  for (int i = 0; i < ARRAYSIZE(this->filter); i++)
-    this->filter[i] *= (1 - filter_gain);
 
   ax = ay = 0;
   bx = by = 0;
     
   // Find the beacons in this scan
-  //
   for (int i = 0; i < laser_data->range_count; i++)
   {
     double range = (double) (laser_data->ranges[i]) / 1000;
@@ -444,7 +387,6 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
     }
 
     // Assign an id to the beacon
-    //
     double orient = atan2(by - ay, bx - ax);
     int id = IdentBeacon(ai, bi, ax, ay, orient, laser_data);
 
@@ -457,49 +399,32 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
     //
     if (id < 0)
       continue;
-        
-    // Do some additional filtering on the id
-    // We make sure the id is present in multiple laser scans,
-    // thereby eliminating most false matches.
-    //
-    /* *** TESTING
-       if (id > 0)
-       {
-       assert(id >= 0 && id < ARRAYSIZE(this->filter));
-       this->filter[id] += filter_gain;
-       if (this->filter[id] < filter_thresh)
-       id = 0;
-       }
-    */
-        
-    // Check for array overflow
-    //
-    if (data->count < ARRAYSIZE(data->fiducials))
-    {
-      double ox = (bx + ax) / 2;
-      double oy = (by + ay) / 2;
-      double range = sqrt(ox * ox + oy * oy);
-      double bearing = atan2(oy, ox);
+                
+    // Check for array overflow.
+    if (data->count >= ARRAYSIZE(data->fiducials))
+      continue;
+    
+    double ox = (bx + ax) / 2;
+    double oy = (by + ay) / 2;
+    range = sqrt(ox * ox + oy * oy);
+    bearing = atan2(oy, ox);
 
-      // Create an entry for this beacon
-      // Note that we return the surface normal for the beacon orientation.
-      //
-      data->fiducials[data->count].id = id;
-      data->fiducials[data->count].pose[0] = (int) (range * 1000);
-      data->fiducials[data->count].pose[1] = (int) (bearing * 180 / M_PI);
-      data->fiducials[data->count].pose[2] = (int) (NORMALIZE(orient + M_PI/2) * 180 / M_PI);
-      data->count++;
-    }
+    // Create an entry for this beacon.
+    // Note that we return the surface normal for the beacon orientation.
+    data->fiducials[data->count].id = (id > 0 ? id : -1);
+    data->fiducials[data->count].pose[0] = (int) (range * 1000);
+    data->fiducials[data->count].pose[1] = (int) (bearing * 180 / M_PI);
+    data->fiducials[data->count].pose[2] = (int) (NORMALIZE(orient + M_PI/2) * 180 / M_PI);
+    data->count++;
   }
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Analyze the candidate beacon and return its id
+// Analyze the candidate beacon and return its id.
 // Will return -1 if this is not a beacon.
 // Will return  0 if this is a beacon, but it cannot be identified.
-// Will return beacon id otherwise
-//
+// Will return beacon id otherwise.
 int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
                                     const player_laser_data_t *laser_data)
 {
@@ -508,29 +433,26 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
   double ly = -ox * sin(-oth) - oy * cos(-oth);
   double la = -oth;
 
-  // Initialise our probability distribution
+  // Initialise our probability distribution.
   // We determine the probability that each bit is set using Bayes law.
-  //
   double prob[8][2];
   for (int bit = 0; bit < ARRAYSIZE(prob); bit++)
     prob[bit][0] = prob[bit][1] = 0;
 
-  // Scan through the readings that make up the candidate
-  //
+  // Scan through the readings that make up the candidate.
   for (int i = a; i <= b; i++)
   {
-    int intensity = (int) (laser_data->ranges[i] >> 13);
     double range = (double) (laser_data->ranges[i] & 0x1FFF) / 1000;
     double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
       / 100.0 * M_PI / 180;
+    int intensity = (int) (laser_data->intensity[i]);
     double res = (double) laser_data->resolution / 100.0 * M_PI / 180;
 
     // Compute point relative to beacon
     double py = ly + range * sin(la + bearing);
 
-    // Discard candidate points are not close to x-axis
-    // (ie candidate is not flat).
-    //
+    // Discard candidate points are not close to x-axis (ie candidate
+    // is not flat).
     if (fabs(py) > this->max_depth)
       return -1;
 
@@ -538,11 +460,6 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
     //double cx = lx + ly * tan(la + bearing + M_PI/2);
     double ax = lx + ly * tan(la + bearing - res/2 + M_PI/2);
     double bx = lx + ly * tan(la + bearing + res/2 + M_PI/2);
-
-#ifdef INCLUDE_SELFTEST
-    //if (intensity > 0)
-    //    printf("%f %f %f %f\n", cx, py, ax, bx);
-#endif
 
     // Update our probability distribution
     // Use Bayes law
@@ -583,12 +500,7 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
     }
   }
 
-#ifdef INCLUDE_SELFTEST
-  //printf("\n\n");
-#endif
-
   // Now assign the id
-  //
   int id = 0;
   for (int bit = 0; bit < this->max_bits; bit++)
   {
@@ -614,101 +526,4 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
     
   return id;
 }
-
-
-#ifdef INCLUDE_SELFTEST
-
-////////////////////////////////////////////////////////////////////////////////
-// Beacon detector self-test
-int LaserBarcode::SelfTest(const char *filename)
-{
-  int id = 21;
-    
-  // Zero the filters
-  for (int i = 0; i < ARRAYSIZE(this->filter); i++)
-    this->filter[i] = 0;
-    
-  FILE *file = fopen(filename, "r");
-  if (!file)
-  {
-    PLAYER_ERROR2("unable to open [%s] : error [%s]", filename, strerror(errno));
-    return -1;
-  }
-
-  // Histogram of errors
-  int hist[3] = {0};
-    
-  printf("# self test -- start\n");
-  while (TRUE)
-  {
-    char line[4096];
-    if (!fgets(line, sizeof(line), file))
-      break;
-        
-    char *type = strtok(line, " ");
-    if (strcmp(type, "laser") != 0)
-      continue;
-
-    player_laser_data_t laser_data;
-    strtok(NULL, " ");
-    strtok(NULL, " ");
-    laser_data.resolution = atoi(strtok(NULL, " "));
-    laser_data.min_angle = atoi(strtok(NULL, " "));
-    laser_data.max_angle = atoi(strtok(NULL, " "));
-    laser_data.range_count = atoi(strtok(NULL, " "));
-    for (int i = 0; i < laser_data.range_count; i++)
-      laser_data.ranges[i] = atoi(strtok(NULL, " "));
-
-    player_fiducial_data_t data;
-    FindBeacons(&laser_data, &data);
-
-    for (int i = 0; i < data.count; i++)
-    {
-      if (data.fiducials[i].id == id)
-        hist[0] += 1;
-      else if (data.fiducials[i].id == 0)
-        hist[1] += 1;
-      else
-        hist[2] += 1;
-
-      if (data.fiducials[i].id == id)            
-        printf("beacon %d %d %d %d 0 0 0 0 0 0\n", (int) data.fiducials[i].id,
-               data.fiducials[i].range, data.fiducials[i].bearing,
-               data.fiducials[i].orient);
-      else if (data.fiducials[i].id == 0)
-        printf("beacon %d 0 0 0 %d %d %d 0 0 0\n", (int) data.fiducials[i].id,
-               data.fiducials[i].range, data.fiducials[i].bearing,
-               data.fiducials[i].orient);
-      else
-        printf("beacon %d 0 0 0 0 0 0 0 %d %d %d\n", (int) data.fiducials[i].id,
-               data.fiducials[i].range, data.fiducials[i].bearing,
-               data.fiducials[i].orient);
-    }
-  }
-
-  printf("# hist : %d %d %d\n", hist[0], hist[1], hist[2]);
-    
-  printf("# self test -- end\n");
-    
-  fclose(file);
-
-  return 0;
-}
-
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
