@@ -520,7 +520,8 @@ void ClientData::RemoveRequests()
   while(thissub)
   {
     // Stop position devices if we're the last one to use it (safety)
-    if((thissub->access != PLAYER_CLOSE_MODE) && 
+    if(((thissub->access != PLAYER_CLOSE_MODE) &&
+        (thissub->access != PLAYER_ERROR_MODE)) && 
        (thissub->id.code == PLAYER_POSITION_CODE) &&
        (((thissub->access == PLAYER_ALL_MODE) &&
          (thissub->devicep->subscriptions == 2)) ||
@@ -671,6 +672,8 @@ unsigned char ClientData::UpdateRequested(player_device_req_t req)
 
     thisub->last_sec = 0; // init the freshness timer
     thisub->last_usec = 0;
+
+    thisub->access = PLAYER_ERROR_MODE;
 
     if(prevsub)
       prevsub->next = thisub;
