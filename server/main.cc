@@ -925,7 +925,8 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     return(false);
 
 #else
-  PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins");
+  PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins.");
+  PLAYER_ERROR("You should install libltdl, which is part of GNU libtool, then re-compile player.");
   return false;
 #endif
 }
