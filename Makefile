@@ -24,6 +24,8 @@ examples:
 
 dep:
 	cd src && make dep
+	cd client_libs && make dep
+	cd examples && make dep
 
 install: install_server install_client_libs install_examples
 
@@ -58,7 +60,12 @@ distro_bleeding: clean
 clean_server: 
 	cd src && make clean
 
-clean: clean_server
+clean: clean_server clean_dep
 	$(RM) -rf doc
 	cd client_libs && make clean
 	cd examples && make clean
+
+clean_dep:
+	cd src && make clean_dep
+	cd client_libs && make clean_dep
+	cd examples && make clean_dep

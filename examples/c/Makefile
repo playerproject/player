@@ -13,6 +13,14 @@ BINARIES = randomwalk laserobstacleavoid ptz
 
 all: $(BINARIES)
 
+dep:
+	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.c 2>/dev/null
+	$(RM) -f Makefile.bak
+
+clean_dep:
+	$(MAKEDEP) -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND"
+	$(RM) -f Makefile.bak
+
 test: test.c
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ test.c $(LIBS)
 
@@ -46,3 +54,4 @@ uninstall:
 
 clean:
 	$(RM) -f *.o $(BINARIES)
+# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND

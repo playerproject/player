@@ -22,6 +22,10 @@ all: ptz.tcl viewer.tk sonarobstacleavoid.tcl
 
 force:
 
+dep:
+
+clean_dep:
+
 install: 
 	$(MKDIR) -p $(INSTALL_EXAMPLES)/tcl
 	$(INSTALL) -m 755 viewer.tk $(INSTALL_EXAMPLES)/tcl

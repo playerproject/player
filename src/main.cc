@@ -643,6 +643,7 @@ int main( int argc, char *argv[] )
     if( (tfd = open( arenaFile, O_RDWR )) < 0 )
       {
 	perror( "Failed to open file" );
+        printf("Tried to open file \"%s\"\n", arenaFile);
 	exit( -1 );
       }
     
