@@ -394,7 +394,8 @@ void ReadLogManager::Main()
 
     if (header_id.code == PLAYER_PLAYER_CODE)
     {
-      usleep((int) (100000 / this->speed) - 20000);
+      // TODO: this needs a radical re-design
+      usleep((int) (100000 / this->speed));
       continue;
     }
     else
@@ -474,7 +475,9 @@ int ReadLogManager::ParseHeader(int linenum, int token_count, char **tokens,
 int ReadLogManager::ParseData(Driver *device, int linenum,
                               int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
-  if (device->device_id.code == PLAYER_CAMERA_CODE)
+  if (device->device_id.code == PLAYER_BLOBFINDER_CODE)
+    return this->ParseBlobfinder(device, linenum, token_count, tokens, tsec, tusec);
+  else if (device->device_id.code == PLAYER_CAMERA_CODE)
     return this->ParseCamera(device, linenum, token_count, tokens, tsec, tusec);
   else if (device->device_id.code == PLAYER_GPS_CODE)
     return this->ParseGps(device, linenum, token_count, tokens, tsec, tusec);
@@ -489,6 +492,58 @@ int ReadLogManager::ParseData(Driver *device, int linenum,
 
   PLAYER_WARN("unknown device code");
   return -1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Parse blobfinder data
+int ReadLogManager::ParseBlobfinder(Driver *device, int linenum,
+                                    int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
+{
+  player_blobfinder_data_t data;
+  player_blobfinder_blob_t *blob;
+  size_t size;
+  int i, blob_count;
+  
+  if (token_count < 9)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+    
+  data.width = NUINT16(atoi(tokens[6]));
+  data.height = NUINT16(atoi(tokens[7]));
+  blob_count = atoi(tokens[8]);
+  data.blob_count = NUINT16(blob_count);
+
+  if (token_count < 9 + blob_count * 10)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+
+  for (i = 0; i < blob_count; i++)
+  {
+    blob = data.blobs + i;
+    blob->id =  NINT16(atoi(tokens[9 + i]));
+    blob->color = NUINT32(atoi(tokens[10 + i]));
+    blob->area = NUINT32(atoi(tokens[11 + i]));
+    blob->x = NUINT16(atoi(tokens[12 + i]));
+    blob->y = NUINT16(atoi(tokens[13 + i]));
+    blob->left = NUINT16(atoi(tokens[14 + i]));
+    blob->right = NUINT16(atoi(tokens[15 + i]));
+    blob->top = NUINT16(atoi(tokens[16 + i]));
+    blob->bottom = NUINT16(atoi(tokens[17 + i]));
+    blob->range = NUINT16(M_MM(atof(tokens[18 + i])));
+  }
+  
+  struct timeval ts;
+  ts.tv_sec = tsec;
+  ts.tv_usec = tusec;
+  size = sizeof(data) - sizeof(data.blobs) + blob_count * sizeof(data.blobs[0]);
+  device->PutData(&data, size, &ts);
+
+  return 0;
 }
 
 

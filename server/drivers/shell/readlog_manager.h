@@ -99,9 +99,14 @@ class ReadLogManager
   private: int ParseData(Driver *device, int linenum,
                          int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
+  // Parse blobfinder data
+  private: int ParseBlobfinder(Driver *device, int linenum,
+                               int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
+
   // Parse camera data
   private: int ParseCamera(Driver *device, int linenum,
                           int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
+
   // Parse laser data
   private: int ParseLaser(Driver *device, int linenum,
                           int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
