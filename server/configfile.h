@@ -49,130 +49,132 @@ class ConfigFile
   // Set filename to NULL to save back into the original file
   public: bool Save(const char *filename);
 
-  // Check for unused properties and print warnings
+  // Check for unused fields and print warnings
   public: bool WarnUnused();
 
   // Read a string
-  public: const char *ReadString(int entity, 
+  public: const char *ReadString(int section, 
                                  const char *name, 
                                  const char *value);
 
   // Write a string
-  public: void WriteString(int entity, 
+  public: void WriteString(int section, 
                            const char *name, 
                            const char *value);
 
   // Read an integer 
-  public: int ReadInt(int entity, 
+  public: int ReadInt(int section, 
                       const char *name, 
                       int value);
 
   // Write an integer
-  public: void WriteInt(int entity, 
+  public: void WriteInt(int section, 
                         const char *name, 
                         int value);
 
   // Read a float 
-  public: double ReadFloat(int entity, 
+  public: double ReadFloat(int section, 
                            const char *name, 
                            double value);
 
   // Write a float
-  public: void WriteFloat(int entity, 
+  public: void WriteFloat(int section, 
                           const char *name, 
                           double value);
 
   // Read a length (includes unit conversion)
-  public: double ReadLength(int entity, 
+  public: double ReadLength(int section, 
                             const char *name, 
                             double value);
 
   // Write a length (includes units conversion)
-  public: void WriteLength(int entity, 
+  public: void WriteLength(int section, 
                            const char *name, 
                            double value);
   
   // Read an angle (includes unit conversion)
-  public: double ReadAngle(int entity, const char *name, double value);
+  public: double ReadAngle(int section, const char *name, double value);
 
   // Read a color (includes text to RGB conversion)
-  public: uint32_t ReadColor(int entity, 
+  public: uint32_t ReadColor(int section, 
                              const char *name, 
                              uint32_t value);
 
   // Read a file name.  Always returns an absolute path.  If the
   // filename is entered as a relative path, we prepend the config
   // file's path to it.
-  public: const char *ReadFilename(int entity, 
+  public: const char *ReadFilename(int section, 
                                    const char *name, 
                                    const char *value);
-  
+
+  // Get the number of values in a tuple
+  public: int GetTupleCount(int section, const char *name);
+
   // Read a string from a tuple
-  public: const char *ReadTupleString(int entity, 
+  public: const char *ReadTupleString(int section, 
                                       const char *name,
                                       int index, 
                                       const char *value);
   
   // Write a string to a tuple
-  public: void WriteTupleString(int entity, 
+  public: void WriteTupleString(int section, 
                                 const char *name,
                                 int index, 
                                 const char *value);
   
   // Read a int from a tuple
-  public: int ReadTupleInt(int entity, 
+  public: int ReadTupleInt(int section, 
                            const char *name,
                            int index, 
                            int value);
 
   // Write a int to a tuple
-  public: void WriteTupleInt(int entity, 
+  public: void WriteTupleInt(int section, 
                              const char *name,
                              int index, 
                              int value);
   
   // Read a float from a tuple
-  public: double ReadTupleFloat(int entity, 
+  public: double ReadTupleFloat(int section, 
                                 const char *name,
                                 int index, 
                                 double value);
 
   // Write a float to a tuple
-  public: void WriteTupleFloat(int entity, 
+  public: void WriteTupleFloat(int section, 
                                const char *name,
                                int index, 
                                double value);
 
   // Read a length from a tuple (includes units conversion)
-  public: double ReadTupleLength(int entity, 
+  public: double ReadTupleLength(int section, 
                                  const char *name,
                                  int index, 
                                  double value);
 
   // Write a to a tuple length (includes units conversion)
-  public: void WriteTupleLength(int entity, 
+  public: void WriteTupleLength(int section, 
                                 const char *name,
                                 int index, 
                                 double value);
 
   // Read an angle form a tuple (includes units conversion)
-  public: double ReadTupleAngle(int entity, 
+  public: double ReadTupleAngle(int section, 
                                 const char *name,
                                 int index, 
                                 double value);
 
   // Write an angle to a tuple (includes units conversion)
-  public: void WriteTupleAngle(int entity, 
+  public: void WriteTupleAngle(int section, 
                                const char *name,
                                int index, 
                                double value);
 
   // Read a color (includes text to RGB conversion)
-  public: uint32_t ReadTupleColor(int entity, 
+  public: uint32_t ReadTupleColor(int section, 
                                   const char *name,
                                   int index, 
-                                  uint32_t value);
-
+                                  uint32_t value); 
 
   /// Parse the "devices" option in the given section.  On success,
   /// returns the number of device ids found; on error, returns -1.
@@ -197,19 +199,34 @@ class ConfigFile
   /// if its code is nonzero.
   public:  int UnusedIds(int section, player_device_id_t* ids, int num_ids);
 
-  // Get the number of entities.
-  public: int GetEntityCount();
+  /// @brief Read a device id.
+  ///
+  /// Reads a device id from the named field of the given section.
+  /// The returned id will match the given code, index and key values.
+  //
+  /// @param id[out] ID field to be filled in.
+  /// @param section[in] File section.
+  /// @param name[in] Field name.
+  /// @param code[in] Interface type code (use 0 to match all interface types).
+  /// @param index[in] Tuple index (use -1 to match all indices).
+  /// @param key[in] Device key value (use NULL to match all key vales).
+  /// @return Non-zero on error.
+  public: int ReadDeviceId(player_device_id_t *id, int section, const char *name,
+                           int code, int index, const char *key);
 
-  // Get a entity (returns the entity type value)
-  public: const char *GetEntityType(int entity);
+  // Get the number of sections.
+  public: int GetSectionCount();
 
-  // Lookup a entity number by type name
-  // Returns -1 if there is entity with this type
-  public: int LookupEntity(const char *type);
+  // Get a section (returns the section type value)
+  public: const char *GetSectionType(int section);
+
+  // Lookup a section number by type name
+  // Returns -1 if there is section with this type
+  public: int LookupSection(const char *type);
   
-  // Get a entity's parent entity.
+  // Get a section's parent section.
   // Returns -1 if there is no parent.
-  public: int GetEntityParent(int entity);
+  public: int GetSectionParent(int section);
 
 
   ////////////////////////////////////////////////////////////////////////////
@@ -263,24 +280,24 @@ class ConfigFile
   // Parse a macro definition
   private: bool ParseTokenDefine(int *index, int *line);
 
-  // Parse an word (could be a entity or an property) from the token list.
-  private: bool ParseTokenWord(int entity, int *index, int *line);
+  // Parse an word (could be a section or an field) from the token list.
+  private: bool ParseTokenWord(int section, int *index, int *line);
 
-  // Parse a entity from the token list.
-  private: bool ParseTokenEntity(int entity, int *index, int *line);
+  // Parse a section from the token list.
+  private: bool ParseTokenSection(int section, int *index, int *line);
 
-  // Parse an property from the token list.
-  private: bool ParseTokenProperty(int entity, int *index, int *line);
+  // Parse an field from the token list.
+  private: bool ParseTokenField(int section, int *index, int *line);
 
   // Parse a tuple.
-  private: bool ParseTokenTuple(int entity, int property, 
+  private: bool ParseTokenTuple(int section, int field, 
                                 int *index, int *line);
 
   // Clear the macro list
   private: void ClearMacros();
 
   // Add a macro
-  private: int AddMacro(const char *macroname, const char *entityname,
+  private: int AddMacro(const char *macroname, const char *sectionname,
                         int line, int starttoken, int endtoken);
 
   // Lookup a macro by name
@@ -290,35 +307,39 @@ class ConfigFile
   // Dump the macro list for debugging
   private: void DumpMacros();
 
-  // Clear the entity list
-  private: void ClearEntities();
+  // Clear the section list
+  private: void ClearSections();
 
-  // Add a entity
-  public: int AddEntity(int parent, const char *type);
+  // Add a section
+  public: int AddSection(int parent, const char *type);
 
-  // Dump the entity list for debugging
-  public: void DumpEntities();
+  // Dump the section list for debugging
+  public: void DumpSections();
 
-  // Clear the property list
-  private: void ClearProperties();
+  // Clear the field list
+  private: void ClearFields();
 
-  // Add an property
-  public: int AddProperty(int entity, const char *name, int line);
+  // Add a field
+  public: int AddField(int section, const char *name, int line);
 
-  // Add an property value.
-  public: void AddPropertyValue(int property, int index, int value_token);
+  // Add a field value.
+  public: void AddFieldValue(int field, int index, int value_token);
   
-  // Get an property
-  private: int GetProperty(int entity, const char *name);
+  // Get a field
+  private: int GetField(int section, const char *name);
 
-  // Set the value of an property.
-  private: void SetPropertyValue(int property, int index, const char *value);
+  // Get the number of elements for this field
+  private: int GetFieldValueCount(int field);
 
-  // Get the value of an property.
-  private: const char *GetPropertyValue(int property, int index);
+  // Get the value of an field element
+  // Set flag_used to true mark the field element as read.
+  private: const char *GetFieldValue(int field, int index, bool flag_used = true);
 
-  // Dump the property list for debugging
-  public: void DumpProperties();
+  // Set the value of an field.
+  private: void SetFieldValue(int field, int index, const char *value);
+
+  // Dump the field list for debugging
+  public: void DumpFields();
 
   // Look up the color in a data based (transform color name -> color value).
   private: uint32_t LookupColor(const char *name);
@@ -328,13 +349,13 @@ class ConfigFile
   {
     TokenComment,
     TokenWord, TokenNum, TokenString,
-    TokenOpenEntity, TokenCloseEntity,
+    TokenOpenSection, TokenCloseSection,
     TokenOpenTuple, TokenCloseTuple,
     TokenSpace, TokenEOL
   };
 
   // Token structure.
-  private: struct CToken
+  private: struct Token
   {
     // Non-zero if token is from an include file.
     int include;
@@ -349,7 +370,7 @@ class ConfigFile
   // A list of tokens loaded from the file.
   // Modified values are written back into the token list.
   private: int token_size, token_count;
-  private: CToken *tokens;
+  private: Token *tokens;
 
   // Private macro class
   private: struct CMacro
@@ -357,8 +378,8 @@ class ConfigFile
     // Name of macro
     const char *macroname;
 
-    // Name of entity
-    const char *entityname;
+    // Name of section
+    const char *sectionname;
 
     // Line the macro definition starts on.
     int line;
@@ -372,46 +393,45 @@ class ConfigFile
   private: int macro_count;
   private: CMacro *macros;
   
-  // Private entity class
-  private: struct CEntity
+  // Private section class
+  private: struct Section
   {
-    // Parent entity
+    // Parent section
     int parent;
 
-    // Type of entity (i.e. position, laser, etc).
+    // Type of section (i.e. position, laser, etc).
     const char *type;
   };
 
-  // Entity list
-  private: int entity_size;
-  private: int entity_count;
-  //private: CEntity *entities;
-  public: CEntity *entities;
+  // Section list
+  private: int section_size;
+  private: int section_count;
+  private: Section *sections;
 
-  // Private property class
-  private: struct CProperty
+  // Private field class
+  private: struct Field
   {
-    // Index of entity this property belongs to
-    int entity;
+    // Index of section this field belongs to
+    int section;
 
-    // Name of property
+    // Name of field
     const char *name;
     
     // A list of token indexes
     int value_count;
     int *values;
 
-    // Line this property came from
-    int line;
+    // Flag set if field value has been used
+    bool *useds;
 
-    // Flag set if property has been used
-    bool used;
+    // Line this field came from
+    int line;
   };
   
-  // Property list
-  private: int property_size;
-  private: int property_count;
-  private: CProperty *properties;
+  // Field list
+  private: int field_size;
+  private: int field_count;
+  private: Field *fields;
 
   // Name of the file we loaded
   public: char *filename;

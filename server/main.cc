@@ -1043,18 +1043,19 @@ ParseConfigFile(char* fname, int** ports, int* num_ports)
   // a safe upper bound on the number of ports we'll need is the number of
   // entities in the config file (yes, i'm too lazy to dynamically
   // reallocate this buffer for a tighter bound).
-  assert(*ports = new int[configFile.GetEntityCount()]);
+  assert(*ports = new int[configFile.GetSectionCount()]);
   // we'll increment this counter as we go
   *num_ports=0;
 
   // load each device specified in the file
-  for(int i = 1; i < configFile.GetEntityCount(); i++)
+  for(int i = 1; i < configFile.GetSectionCount(); i++)
   {
-    if(configFile.entities[i].type < 0)
-      continue;
+    // AH Why is this here?  REMOVE
+    //if(configFile.sections[i].type < 0)
+    //  continue;
 
     // Check for new-style device block
-    if (strcmp(configFile.GetEntityType(i), "driver") == 0)
+    if (strcmp(configFile.GetSectionType(i), "driver") == 0)
     {
       if (!ParseDeviceEx(&configFile, i))
         return false;
@@ -1447,8 +1448,8 @@ int main( int argc, char *argv[] )
     req.access = device->access;
     if(clientdata->UpdateRequested(req) != device->access)
     {
-      PLAYER_ERROR2("Initial subscription failed to driver \"%s\" as interface \"%s\"\n",
-                    device->drivername, lookup_interface_name(0, device->id.code));
+      PLAYER_ERROR1("Initial subscription failed for driver [%s]",
+                    device->drivername);
       return(false);
     }
   }
@@ -1460,7 +1461,7 @@ int main( int argc, char *argv[] )
       PLAYER_ERROR("No devices instantiated; no valid Player devices in worldfile?");
     else
       PLAYER_ERROR("No devices instantiated; perhaps you should supply " 
-                  "a configuration file?");
+                   "a configuration file?");
     exit(-1);
   }
 

@@ -40,7 +40,26 @@ The @ref player_driver_readlog driver can be used to replay the data
 sensors).
 
 
-@par Interfaces
+@par Inputs
+
+The writelog driver takes as input a list of devices to log data from.
+The driver with the <b>highest data rate</b> should be placed first in the list.
+The writelog driver can will log data from the following interfaces.
+
+- @ref player_inteface_camera
+- @ref player_inteface_fiducial
+- @ref player_inteface_gps
+- @ref player_inteface_joystick
+- @ref player_inteface_laser
+- @ref player_inteface_position
+- @ref player_inteface_position3d
+- @ref player_inteface_power
+- @ref player_inteface_truth
+- @ref player_inteface_wifi
+
+
+@par Outputs
+
 - @ref player_interface_log
 
 @par Supported configuration requests
@@ -49,13 +68,6 @@ sensors).
 - PLAYER_LOG_GET_STATE
   
 @par Configuration file options
-
-- log_devices [""]
-  - List of devices to log data from.
-
-- wait_index -1
-  - Device to wait on (index into log_devices list); set the to the device
-  with the highest data rate to get all data.
 
 - enable 0
   - Default log state; set to 1 for continous logging.
@@ -71,9 +83,8 @@ sensors).
 driver
 (
   name "writelog"
-  devices ["log:0"]
-  log_devices ["position:0" "laser:0"]
-  wait_index 1
+  inputs ["laser:0" "position:0"]
+  outputs ["log:0"]
   alwayson 1
   enable 1
 )
@@ -182,9 +193,6 @@ class WriteLog: public Driver
   private: int device_count;
   private: WriteLogDevice devices[1024];
 
-  // Device we are waiting on
-  private: int wait_index;
-
   // Is writing enabled? (client can start/stop)
   private: bool enable;
   private: bool enable_default;
@@ -223,10 +231,8 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_LOG_CODE, PLAYER_ALL_MODE,
              PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
 {
-  int i, index;
-  const char *desc;
-  char name[64];
-  player_interface_t iface;
+  int i;
+  player_device_id_t id;
   WriteLogDevice *device;
   time_t t;
   struct tm *ts;
@@ -253,44 +259,25 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
     this->enable_default = false;
 
   this->device_count = 0;
-
-  for (i = 0; true; i++)
+  
+  // Get a list of input devices
+  for (i = 0; i < cf->GetTupleCount(section, "inputs"); i++)
   {
-    desc = cf->ReadTupleString(section, "log_devices", i, NULL);
-    if (!desc)
-      break;
-      
-    // Parse the interface and index
-    if (sscanf(desc, "%64[^:]:%d", name, &index) < 2)
+    if (cf->ReadDeviceId(&id, section, "inputs", -1, i, NULL) != 0)
     {
-      PLAYER_WARN1("invalid device spec; skipping [%s]", desc);
-      continue;
+      this->SetError(-1);
+      return;
     }
-
-    // Lookup the interface
-    if (lookup_interface(name, &iface) != 0)
-    {
-      PLAYER_WARN1("unknown interface spec; skipping [%s]", name);
-      continue;
-    }
-
-    assert(this->device_count < (int) (sizeof(this->devices) / sizeof(this->devices[0])));
     
     // Add to our device table
+    assert(this->device_count < (int) (sizeof(this->devices) / sizeof(this->devices[0])));
     device = this->devices + this->device_count++;
-    // TODO: should do something smarter here, to allow for logging from
-    //       devices on different ports.
-    device->id.port = global_playerport;
-    device->id.code = iface.code;
-    device->id.index = index;
+    device->id = id;
     device->device = NULL;
     device->time.tv_sec = 0;
     device->time.tv_usec = 0;
     device->cameraFrame = 0;
   }
-
-  // See which device we should wait on
-  this->wait_index = cf->ReadInt(section, "wait_index", -1);
 
   // Camera specific settings
   this->cameraSaveImages = cf->ReadInt(section, "camera_save_images", 0);
@@ -314,13 +301,6 @@ int WriteLog::Setup()
   int i;
   WriteLogDevice *device;
 
-  // Check for valid wait device
-  if (this->wait_index >= this->device_count)
-  {
-    PLAYER_ERROR("invalid wait device");
-    return -1;
-  }
-  
   // Subscribe to the underlying devices
   for (i = 0; i < this->device_count; i++)
   {
@@ -329,7 +309,7 @@ int WriteLog::Setup()
     device->device = deviceTable->GetDriver(device->id);
     if (!device->device)
     {
-      PLAYER_ERROR3("unable to locate device \"%d:%s:%d\" for logging",
+      PLAYER_ERROR3("unable to locate device [%d:%s:%d] for logging",
                     device->id.port,
                     ::lookup_interface_name(0, device->id.code),
                     device->id.index);
@@ -484,17 +464,10 @@ void WriteLog::Main(void)
   {
     pthread_testcancel();
     
-    if (this->wait_index >= 0)
-    {
-      // Wait on some device
-      device = this->devices + this->wait_index;
-      device->device->Wait();
-    }
-    else
-    {
-      // Default 10Hz data rate
-      usleep(100000);
-    }
+    // Wait on the first device
+    assert(this->device_count > 0);
+    device = this->devices;
+    device->device->Wait();
 
     // If logging is stopped, then don't log
     if(!this->enable)
@@ -688,7 +661,7 @@ void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *da
     }
     else
     {
-      printf("unsupported image format");
+      PLAYER_WARN("unsupported image format");
       break;
     }
   }

@@ -46,17 +46,29 @@ extern int global_playerport;
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Useful macros for dumping parser errors
-#define TOKEN_ERR(z, l) \
-  PLAYER_ERROR2("%s:%d : " z, this->filename, l)
-#define PARSE_ERR(z, l) \
-  PLAYER_ERROR2("%s:%d : " z, this->filename, l)
-
 // the isblank() macro is not standard - it's a GNU extension
 // and it doesn't work for me, so here's an implementation - rtv
 #ifndef isblank
   #define isblank(a) (a == ' ' || a == '\t')
 #endif
+
+
+///////////////////////////////////////////////////////////////////////////
+// Useful macros for dumping parser errors
+#define TOKEN_ERR(z, l) \
+  fprintf(stderr, "%s:%d error: " z, this->filename, l)
+#define PARSE_ERR(z, l) \
+  fprintf(stderr, "%s:%d error: " z, this->filename, l)
+
+#define CONFIG_WARN1(z, line, a) \
+  fprintf(stderr, "%s:%d warning: " z "\n", this->filename, line, a)
+#define CONFIG_WARN2(z, line, a, b) \
+  fprintf(stderr, "%s:%d warning: " z "\n", this->filename, line, a, b)
+
+#define CONFIG_ERR1(z, line, a) \
+  fprintf(stderr, "%s:%d error: " z "\n", this->filename, line, a)
+#define CONFIG_ERR2(z, line, a, b) \
+  fprintf(stderr, "%s:%d error: " z "\n", this->filename, line, a, b)
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -73,13 +85,13 @@ ConfigFile::ConfigFile()
   this->macro_size = 0;
   this->macros = NULL;
 
-  this->entity_count = 0;
-  this->entity_size = 0;
-  this->entities = NULL;
+  this->section_count = 0;
+  this->section_size = 0;
+  this->sections = NULL;
 
-  this->property_count = 0;
-  this->property_size = 0;
-  this->properties = NULL;
+  this->field_count = 0;
+  this->field_size = 0;
+  this->fields = NULL;
 
   // Set defaults units
   this->unit_length = 1.0;
@@ -94,9 +106,9 @@ ConfigFile::ConfigFile()
 // Destructor
 ConfigFile::~ConfigFile()
 {
-  ClearProperties();
+  ClearFields();
   ClearMacros();
-  ClearEntities();
+  ClearSections();
   ClearTokens();
 
   if (this->filename)
@@ -133,7 +145,7 @@ bool ConfigFile::Load(const char *filename)
     return false;
   }
 
-  // Parse the tokens to identify entities
+  // Parse the tokens to identify sections
   if (!ParseTokens())
   {
     //DumpTokens();
@@ -147,8 +159,8 @@ bool ConfigFile::Load(const char *filename)
     PLAYER_ERROR("this is a test file; quitting");
     DumpTokens();
     DumpMacros();
-    DumpEntities();
-    DumpProperties();
+    DumpSections();
+    DumpFields();
     fclose(file);
     return false;
   }
@@ -180,7 +192,7 @@ bool ConfigFile::Load(const char *filename)
 bool ConfigFile::Save(const char *filename)
 {
   // Debugging
-  //DumpProperties();
+  //DumpFields();
   
   // If no filename is supplied, use default
   if (!filename)
@@ -208,18 +220,34 @@ bool ConfigFile::Save(const char *filename)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Check for unused properties and print warnings
+// Check for unused fields and print warnings
 bool ConfigFile::WarnUnused()
 {
   bool unused = false;
-  for (int i = 0; i < this->property_count; i++)
+  for (int i = 0; i < this->field_count; i++)
   {
-    CProperty *property = this->properties + i;
-    if (!property->used)
+    Field *field = this->fields + i;
+
+    if (field->value_count <= 1)
     {
-      unused = true;
-      PLAYER_WARN3("configfile %s:%d : property [%s] is defined but not used",
-                  this->filename, property->line, property->name);
+      if (!field->useds[0])
+      {
+        unused = true;
+        CONFIG_WARN1("field [%s] is defined but not used",
+                     field->line, field->name);
+      }
+    }
+    else
+    {
+      for (int j = 0; j < field->value_count; j++)
+      {
+        if (!field->useds[j])
+        {
+          unused = true;
+          CONFIG_WARN2("field [%s] has unused elements",
+                       field->line, field->name, j);
+        }
+      }
     }
   }
   return unused;
@@ -276,13 +304,13 @@ bool ConfigFile::LoadTokens(FILE *file, int include)
     {
       token[0] = ch;
       token[1] = 0;
-      AddToken(TokenOpenEntity, token, include);
+      AddToken(TokenOpenSection, token, include);
     }
     else if (strchr(")", ch))
     {
       token[0] = ch;
       token[1] = 0;
-      AddToken(TokenCloseEntity, token, include);
+      AddToken(TokenCloseSection, token, include);
     }
     else if (strchr("[", ch))
     {
@@ -609,7 +637,7 @@ bool ConfigFile::LoadTokenSpace(FILE *file, int *line, int include)
 bool ConfigFile::SaveTokens(FILE *file)
 {
   int i;
-  CToken *token;
+  Token *token;
   
   for (i = 0; i < this->token_count; i++)
   {
@@ -631,7 +659,7 @@ bool ConfigFile::SaveTokens(FILE *file)
 void ConfigFile::ClearTokens()
 {
   int i;
-  CToken *token;
+  Token *token;
 
   for (i = 0; i < this->token_count; i++)
   {
@@ -652,7 +680,7 @@ bool ConfigFile::AddToken(int type, const char *value, int include)
   if (this->token_count >= this->token_size)
   {
     this->token_size += 1000;
-    this->tokens = (CToken*) realloc(this->tokens, this->token_size * sizeof(this->tokens[0]));
+    this->tokens = (Token*) realloc(this->tokens, this->token_size * sizeof(this->tokens[0]));
   }
 
   this->tokens[this->token_count].include = include;  
@@ -709,19 +737,19 @@ void ConfigFile::DumpTokens()
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Parse tokens into entities and properties.
+// Parse tokens into sections and fields.
 bool ConfigFile::ParseTokens()
 {
   int i;
-  int entity;
+  int section;
   int line;
-  CToken *token;
+  Token *token;
 
-  ClearEntities();
-  ClearProperties();
+  ClearSections();
+  ClearFields();
   
-  // Add in the "global" entity.
-  entity = AddEntity(-1, "");
+  // Add in the "global" section.
+  section = AddSection(-1, "");
   line = 1;
   
   for (i = 0; i < this->token_count; i++)
@@ -743,7 +771,7 @@ bool ConfigFile::ParseTokens()
         }
         else
         {
-          if (!ParseTokenWord(entity, &i, &line))
+          if (!ParseTokenWord(section, &i, &line))
             return false;
         }
         break;
@@ -768,7 +796,7 @@ bool ConfigFile::ParseTokens()
 bool ConfigFile::ParseTokenInclude(int *index, int *line)
 {
   int i;
-  CToken *token;
+  Token *token;
 
   for (i = *index + 1; i < this->token_count; i++)
   {
@@ -799,13 +827,13 @@ bool ConfigFile::ParseTokenDefine(int *index, int *line)
 {
   int i;
   int count;
-  const char *macroname, *entityname;
+  const char *macroname, *sectionname;
   int starttoken;
-  CToken *token;
+  Token *token;
 
   count = 0;
   macroname = NULL;
-  entityname = NULL;
+  sectionname = NULL;
   starttoken = -1;
 
   for (i = *index + 1; i < this->token_count; i++)
@@ -819,9 +847,9 @@ bool ConfigFile::ParseTokenDefine(int *index, int *line)
         {
           if (macroname == NULL)
             macroname = GetTokenValue(i);
-          else if (entityname == NULL)
+          else if (sectionname == NULL)
           {
-            entityname = GetTokenValue(i);
+            sectionname = GetTokenValue(i);
             starttoken = i;
           }
           else
@@ -837,21 +865,21 @@ bool ConfigFile::ParseTokenDefine(int *index, int *line)
             PARSE_ERR("missing name in macro definition", *line);
             return false;
           }
-          if (entityname == NULL)
+          if (sectionname == NULL)
           {
             PARSE_ERR("missing name in macro definition", *line);
             return false;
           }
         }
         break;
-      case TokenOpenEntity:
+      case TokenOpenSection:
         count++;
         break;
-      case TokenCloseEntity:
+      case TokenCloseSection:
         count--;
         if (count == 0)
         {
-          AddMacro(macroname, entityname, *line, starttoken, i);
+          AddMacro(macroname, sectionname, *line, starttoken, i);
           *index = i;
           return true;
         }
@@ -871,11 +899,11 @@ bool ConfigFile::ParseTokenDefine(int *index, int *line)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Parse something starting with a word; could be a entity or an property.
-bool ConfigFile::ParseTokenWord(int entity, int *index, int *line)
+// Parse something starting with a word; could be a section or an field.
+bool ConfigFile::ParseTokenWord(int section, int *index, int *line)
 {
   int i;
-  CToken *token;
+  Token *token;
 
   for (i = *index + 1; i < this->token_count; i++)
   {
@@ -890,12 +918,12 @@ bool ConfigFile::ParseTokenWord(int entity, int *index, int *line)
       case TokenEOL:
         (*line)++;
         break;
-      case TokenOpenEntity:
-        return ParseTokenEntity(entity, index, line);
+      case TokenOpenSection:
+        return ParseTokenSection(section, index, line);
       case TokenNum:
       case TokenString:
       case TokenOpenTuple:
-        return ParseTokenProperty(entity, index, line);
+        return ParseTokenField(section, index, line);
       default:
         PARSE_ERR("syntax error 2", *line);
         return false;
@@ -907,27 +935,27 @@ bool ConfigFile::ParseTokenWord(int entity, int *index, int *line)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Parse a entity from the token list.
-bool ConfigFile::ParseTokenEntity(int entity, int *index, int *line)
+// Parse a section from the token list.
+bool ConfigFile::ParseTokenSection(int section, int *index, int *line)
 {
   int i;
   int macro;
   int name;
-  CToken *token;
+  Token *token;
 
   name = *index;
   macro = LookupMacro(GetTokenValue(name));
   
-  // If the entity name is a macro...
+  // If the section name is a macro...
   if (macro >= 0)
   {
     // This is a bit of a hack
-    int nentity = this->entity_count;
+    int nsection = this->section_count;
     int mindex = this->macros[macro].starttoken;
     int mline = this->macros[macro].line;
-    if (!ParseTokenEntity(entity, &mindex, &mline))
+    if (!ParseTokenSection(section, &mindex, &mline))
       return false;
-    entity = nentity;
+    section = nsection;
 
     for (i = *index + 1; i < this->token_count; i++)
     {
@@ -935,13 +963,13 @@ bool ConfigFile::ParseTokenEntity(int entity, int *index, int *line)
 
       switch (token->type)
       {
-        case TokenOpenEntity:
+        case TokenOpenSection:
           break;
         case TokenWord:
-          if (!ParseTokenWord(entity, &i, line))
+          if (!ParseTokenWord(section, &i, line))
             return false;
           break;
-        case TokenCloseEntity:
+        case TokenCloseSection:
           *index = i;
           return true;
         case TokenComment:
@@ -958,7 +986,7 @@ bool ConfigFile::ParseTokenEntity(int entity, int *index, int *line)
     }
     PARSE_ERR("missing ')'", *line);
   }
-  // If the entity name is not a macro...
+  // If the section name is not a macro...
   else
   {
     for (i = *index + 1; i < this->token_count; i++)
@@ -967,14 +995,14 @@ bool ConfigFile::ParseTokenEntity(int entity, int *index, int *line)
 
       switch (token->type)
       {
-        case TokenOpenEntity:
-          entity = AddEntity(entity, GetTokenValue(name));
+        case TokenOpenSection:
+          section = AddSection(section, GetTokenValue(name));
           break;
         case TokenWord:
-          if (!ParseTokenWord(entity, &i, line))
+          if (!ParseTokenWord(section, &i, line))
             return false;
           break;
-        case TokenCloseEntity:
+        case TokenCloseSection:
           *index = i;
           return true;
         case TokenComment:
@@ -996,12 +1024,12 @@ bool ConfigFile::ParseTokenEntity(int entity, int *index, int *line)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Parse an property from the token list.
-bool ConfigFile::ParseTokenProperty(int entity, int *index, int *line)
+// Parse an field from the token list.
+bool ConfigFile::ParseTokenField(int section, int *index, int *line)
 {
-  int i, property;
+  int i, field;
   int name, value, count;
-  CToken *token;
+  Token *token;
 
   name = *index;
   value = -1;
@@ -1014,18 +1042,18 @@ bool ConfigFile::ParseTokenProperty(int entity, int *index, int *line)
     switch (token->type)
     {
       case TokenNum:
-        property = AddProperty(entity, GetTokenValue(name), *line);
-        AddPropertyValue(property, 0, i);
+        field = AddField(section, GetTokenValue(name), *line);
+        AddFieldValue(field, 0, i);
         *index = i;
         return true;
       case TokenString:
-        property = AddProperty(entity, GetTokenValue(name), *line);
-        AddPropertyValue(property, 0, i);
+        field = AddField(section, GetTokenValue(name), *line);
+        AddFieldValue(field, 0, i);
         *index = i;
         return true;
       case TokenOpenTuple:
-        property = AddProperty(entity, GetTokenValue(name), *line);
-        if (!ParseTokenTuple(entity, property, &i, line))
+        field = AddField(section, GetTokenValue(name), *line);
+        if (!ParseTokenTuple(section, field, &i, line))
           return false;
         *index = i;
         return true;
@@ -1042,10 +1070,10 @@ bool ConfigFile::ParseTokenProperty(int entity, int *index, int *line)
 
 ///////////////////////////////////////////////////////////////////////////
 // Parse a tuple.
-bool ConfigFile::ParseTokenTuple(int entity, int property, int *index, int *line)
+bool ConfigFile::ParseTokenTuple(int section, int field, int *index, int *line)
 {
   int i, count;
-  CToken *token;
+  Token *token;
 
   count = 0;
   
@@ -1056,11 +1084,11 @@ bool ConfigFile::ParseTokenTuple(int entity, int property, int *index, int *line
     switch (token->type)
     {
       case TokenNum:
-        AddPropertyValue(property, count++, i);
+        AddFieldValue(field, count++, i);
         *index = i;
         break;
       case TokenString:
-        AddPropertyValue(property, count++, i);
+        AddFieldValue(field, count++, i);
         *index = i;
         break;
       case TokenCloseTuple:
@@ -1091,7 +1119,7 @@ void ConfigFile::ClearMacros()
 
 ///////////////////////////////////////////////////////////////////////////
 // Add a macro
-int ConfigFile::AddMacro(const char *macroname, const char *entityname,
+int ConfigFile::AddMacro(const char *macroname, const char *sectionname,
                          int line, int starttoken, int endtoken)
 {
   if (this->macro_count >= this->macro_size)
@@ -1103,7 +1131,7 @@ int ConfigFile::AddMacro(const char *macroname, const char *entityname,
 
   int macro = this->macro_count;
   this->macros[macro].macroname = macroname;
-  this->macros[macro].entityname = entityname;
+  this->macros[macro].sectionname = sectionname;
   this->macros[macro].line = line;
   this->macros[macro].starttoken = starttoken;
   this->macros[macro].endtoken = endtoken;
@@ -1140,7 +1168,7 @@ void ConfigFile::DumpMacros()
   {
     CMacro *macro = this->macros + i;
 
-    printf("## [%s][%s]", macro->macroname, macro->entityname);
+    printf("## [%s][%s]", macro->macroname, macro->sectionname);
     for (int j = macro->starttoken; j <= macro->endtoken; j++)
     {
       if (this->tokens[j].type == TokenEOL)
@@ -1155,183 +1183,184 @@ void ConfigFile::DumpMacros()
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Clear the entity list
-void ConfigFile::ClearEntities()
+// Clear the section list
+void ConfigFile::ClearSections()
 {
-  free(this->entities);
-  this->entities = NULL;
-  this->entity_size = 0;
-  this->entity_count = 0;
+  free(this->sections);
+  this->sections = NULL;
+  this->section_size = 0;
+  this->section_count = 0;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Add a entity
-int ConfigFile::AddEntity(int parent, const char *type)
+// Add a section
+int ConfigFile::AddSection(int parent, const char *type)
 {
-  if (this->entity_count >= this->entity_size)
+  if (this->section_count >= this->section_size)
   {
-    this->entity_size += 100;
-    this->entities = (CEntity*)
-      realloc(this->entities, this->entity_size * sizeof(this->entities[0]));
+    this->section_size += 100;
+    this->sections = (Section*)
+      realloc(this->sections, this->section_size * sizeof(this->sections[0]));
   }
 
-  int entity = this->entity_count;
-  this->entities[entity].parent = parent;
-  this->entities[entity].type = type;
-  this->entity_count++;
+  int section = this->section_count;
+  this->sections[section].parent = parent;
+  this->sections[section].type = type;
+  this->section_count++;
   
-  return entity;
+  return section;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Get the number of entities
-int ConfigFile::GetEntityCount()
+// Get the number of sections
+int ConfigFile::GetSectionCount()
 {
-  return this->entity_count;
+  return this->section_count;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Get a entity's parent entity
-int ConfigFile::GetEntityParent(int entity)
+// Get a section's parent section
+int ConfigFile::GetSectionParent(int section)
 {
-  if (entity < 0 || entity >= this->entity_count)
+  if (section < 0 || section >= this->section_count)
     return -1;
-  return this->entities[entity].parent;
+  return this->sections[section].parent;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Get a entity (returns the entity type value)
-const char *ConfigFile::GetEntityType(int entity)
+// Get a section (returns the section type value)
+const char *ConfigFile::GetSectionType(int section)
 {
-  if (entity < 0 || entity >= this->entity_count)
+  if (section < 0 || section >= this->section_count)
     return NULL;
-  return this->entities[entity].type;
+  return this->sections[section].type;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-// Lookup a entity number by type name
-// Returns -1 if there is no entity with this type
-int ConfigFile::LookupEntity(const char *type)
+// Lookup a section number by type name
+// Returns -1 if there is no section with this type
+int ConfigFile::LookupSection(const char *type)
 {
-  for (int entity = 0; entity < GetEntityCount(); entity++)
+  for (int section = 0; section < GetSectionCount(); section++)
   {
-    if (strcmp(GetEntityType(entity), type) == 0)
-      return entity;
+    if (strcmp(GetSectionType(section), type) == 0)
+      return section;
   }
   return -1;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Dump the entity list for debugging
-void ConfigFile::DumpEntities()
+// Dump the section list for debugging
+void ConfigFile::DumpSections()
 {
-  printf("\n## begin entities\n");
-  for (int i = 0; i < this->entity_count; i++)
+  printf("\n## begin sections\n");
+  for (int i = 0; i < this->section_count; i++)
   {
-    CEntity *entity = this->entities + i;
+    Section *section = this->sections + i;
 
-    printf("## [%d][%d]", i, entity->parent);
-    printf("[%s]\n", entity->type);
+    printf("## [%d][%d]", i, section->parent);
+    printf("[%s]\n", section->type);
   }
-  printf("## end entities\n");
+  printf("## end sections\n");
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Clear the property list
-void ConfigFile::ClearProperties()
+// Clear the field list
+void ConfigFile::ClearFields()
 {
   int i;
-  CProperty *property;
+  Field *field;
 
-  for (i = 0; i < this->property_count; i++)
+  for (i = 0; i < this->field_count; i++)
   {
-    property = this->properties + i;
-    free(property->values);
+    field = this->fields + i;
+    free(field->values);
   }
-  free(this->properties);
-  this->properties = NULL;
-  this->property_size = 0;
-  this->property_count = 0;
+  free(this->fields);
+  this->fields = NULL;
+  this->field_size = 0;
+  this->field_count = 0;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Add an property
-int ConfigFile::AddProperty(int entity, const char *name, int line)
+// Add an field
+int ConfigFile::AddField(int section, const char *name, int line)
 {
   int i;
-  CProperty *property;
+  Field *field;
   
-  // See if this property already exists; if it does, we dont need to
+  // See if this field already exists; if it does, we dont need to
   // add it again.
-  for (i = 0; i < this->property_count; i++)
+  for (i = 0; i < this->field_count; i++)
   {
-    property = this->properties + i;
-    if (property->entity != entity)
+    field = this->fields + i;
+    if (field->section != section)
       continue;
-    if (strcmp(property->name, name) == 0)
+    if (strcmp(field->name, name) == 0)
       return i;
   }
 
-  // Expand property array if necessary.
-  if (i >= this->property_size)
+  // Expand field array if necessary.
+  if (i >= this->field_size)
   {
-    this->property_size += 100;
-    this->properties = (CProperty*)
-      realloc(this->properties, this->property_size * sizeof(this->properties[0]));
+    this->field_size += 100;
+    this->fields = (Field*)
+      realloc(this->fields, this->field_size * sizeof(this->fields[0]));
   }
 
-  property = this->properties + i;
-  memset(property, 0, sizeof(CProperty));
-  property->entity = entity;
-  property->name = name;
-  property->value_count = 0;
-  property->values = NULL;
-  property->line = line;
-  property->used = false;
+  field = this->fields + i;
+  memset(field, 0, sizeof(Field));
+  field->section = section;
+  field->name = name;
+  field->value_count = 0;
+  field->values = NULL;
+  field->useds = NULL;
+  field->line = line;
 
-  this->property_count++;
+  this->field_count++;
 
   return i;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Add a property value
-void ConfigFile::AddPropertyValue(int property, int index, int value_token)
+// Add a field value
+void ConfigFile::AddFieldValue(int field, int index, int value_token)
 {
-  assert(property >= 0);
-  CProperty *pproperty = this->properties + property;
+  assert(field >= 0);
+  Field *pfield = this->fields + field;
 
   // Expand the array if it's too small
-  if (index >= pproperty->value_count)
+  if (index >= pfield->value_count)
   {
-    pproperty->value_count = index + 1;
-    pproperty->values = (int*) realloc(pproperty->values, pproperty->value_count * sizeof(int));
+    pfield->value_count = index + 1;
+    pfield->values = (int*) realloc(pfield->values, pfield->value_count * sizeof(int));
+    pfield->useds = (bool*) realloc(pfield->useds, pfield->value_count * sizeof(bool));
   }
 
   // Set the relevant value
-  pproperty->values[index] = value_token;
+  pfield->values[index] = value_token;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Get a property 
-int ConfigFile::GetProperty(int entity, const char *name)
+// Get a field 
+int ConfigFile::GetField(int section, const char *name)
 {
-  // Find first instance of property
-  for (int i = 0; i < this->property_count; i++)
+  // Find first instance of field
+  for (int i = 0; i < this->field_count; i++)
   {
-    CProperty *property = this->properties + i;
-    if (property->entity != entity)
+    Field *field = this->fields + i;
+    if (field->section != section)
       continue;
-    if (strcmp(property->name, name) == 0)
+    if (strcmp(field->name, name) == 0)
       return i;
   }
   return -1;
@@ -1339,152 +1368,163 @@ int ConfigFile::GetProperty(int entity, const char *name)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Set the value of an property
-void ConfigFile::SetPropertyValue(int property, int index, const char *value)
+// Get the number of elements for this field
+int ConfigFile::GetFieldValueCount(int field)
 {
-  //assert(property >= 0 && property < this->property_count);
-  CProperty *pproperty = this->properties + property;
-  assert(index >= 0 && index < pproperty->value_count);
+  Field *pfield = this->fields + field;
+  return pfield->value_count;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Set the value of an field
+void ConfigFile::SetFieldValue(int field, int index, const char *value)
+{
+  //assert(field >= 0 && field < this->field_count);
+  Field *pfield = this->fields + field;
+  assert(index >= 0 && index < pfield->value_count);
 
   // Set the relevant value
-  SetTokenValue(pproperty->values[index], value);
+  SetTokenValue(pfield->values[index], value);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Get the value of an property 
-const char *ConfigFile::GetPropertyValue(int property, int index)
+// Get the value of an field 
+const char *ConfigFile::GetFieldValue(int field, int index, bool flag_used)
 {
-  assert(property >= 0);
-  CProperty *pproperty = this->properties + property;
+  assert(field >= 0);
+  Field *pfield = this->fields + field;
   
-  if(index >= pproperty->value_count)
+  if(index >= pfield->value_count)
     return NULL;
 
-  pproperty->used = true;
-  return GetTokenValue(pproperty->values[index]);
+  if (flag_used)
+    pfield->useds[index] = true;
+  
+  return GetTokenValue(pfield->values[index]);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Dump the property list for debugging
-void ConfigFile::DumpProperties()
+// Dump the field list for debugging
+void ConfigFile::DumpFields()
 {
-  printf("\n## begin properties\n");
-  for (int i = 0; i < this->property_count; i++)
+  printf("\n## begin fields\n");
+  for (int i = 0; i < this->field_count; i++)
   {
-    CProperty *property = this->properties + i;
-    CEntity *entity = this->entities + property->entity;
+    Field *field = this->fields + i;
+    Section *section = this->sections + field->section;
     
-    printf("## [%d]", property->entity);
-    printf("[%s]", entity->type);
-    printf("[%s]", property->name);
-    for (int j = 0; j < property->value_count; j++)
-      printf("[%s]", GetTokenValue(property->values[j]));
+    printf("## [%d]", field->section);
+    printf("[%s]", section->type);
+    printf("[%s]", field->name);
+    for (int j = 0; j < field->value_count; j++)
+      printf("[%s]", GetTokenValue(field->values[j]));
     printf("\n");
   }
-  printf("## end properties\n");
+  printf("## end fields\n");
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a string
-const char *ConfigFile::ReadString(int entity, const char *name, const char *value)
+const char *ConfigFile::ReadString(int section, const char *name, const char *value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return GetPropertyValue(property, 0);
+  return GetFieldValue(field, 0);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Write a string
-void ConfigFile::WriteString(int entity, const char *name, const char *value)
+void ConfigFile::WriteString(int section, const char *name, const char *value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return;
-  SetPropertyValue(property, 0, value);  
+  SetFieldValue(field, 0, value);  
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read an int
-int ConfigFile::ReadInt(int entity, const char *name, int value)
+int ConfigFile::ReadInt(int section, const char *name, int value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return atoi(GetPropertyValue(property, 0));
+  return atoi(GetFieldValue(field, 0));
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Write an int
-void ConfigFile::WriteInt(int entity, const char *name, int value)
+void ConfigFile::WriteInt(int section, const char *name, int value)
 {
   char default_str[64];
   snprintf(default_str, sizeof(default_str), "%d", value);
-  WriteString(entity, name, default_str);
+  WriteString(section, name, default_str);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a float
-double ConfigFile::ReadFloat(int entity, const char *name, double value)
+double ConfigFile::ReadFloat(int section, const char *name, double value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return atof(GetPropertyValue(property, 0));
+  return atof(GetFieldValue(field, 0));
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a length (includes unit conversion)
-double ConfigFile::ReadLength(int entity, const char *name, double value)
+double ConfigFile::ReadLength(int section, const char *name, double value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return atof(GetPropertyValue(property, 0)) * this->unit_length;
+  return atof(GetFieldValue(field, 0)) * this->unit_length;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Write a length (includes units conversion)
-void ConfigFile::WriteLength(int entity, const char *name, double value)
+void ConfigFile::WriteLength(int section, const char *name, double value)
 {
   char default_str[64];
   snprintf(default_str, sizeof(default_str), "%.3f", value / this->unit_length);
-  WriteString(entity, name, default_str);
+  WriteString(section, name, default_str);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read an angle (includes unit conversion)
-double ConfigFile::ReadAngle(int entity, const char *name, double value)
+double ConfigFile::ReadAngle(int section, const char *name, double value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return atof(GetPropertyValue(property, 0)) * this->unit_angle;
+  return atof(GetFieldValue(field, 0)) * this->unit_angle;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a color (included text -> RGB conversion).
 // We look up the color in one of the common color databases.
-uint32_t ConfigFile::ReadColor(int entity, const char *name, uint32_t value)
+uint32_t ConfigFile::ReadColor(int section, const char *name, uint32_t value)
 {
-  int property;
+  int field;
   const char *color;
   
-  property = GetProperty(entity, name);
-  if (property < 0)
+  field = GetField(section, name);
+  if (field < 0)
     return value;
-  color = GetPropertyValue(property, 0);
+  color = GetFieldValue(field, 0);
 
   return LookupColor(color);
 }
@@ -1495,13 +1535,13 @@ uint32_t ConfigFile::ReadColor(int entity, const char *name, uint32_t value)
 // Always returns an absolute path.
 // If the filename is entered as a relative path, we prepend
 // the world files path to it.
-const char *ConfigFile::ReadFilename(int entity, const char *name, const char *value)
+const char *ConfigFile::ReadFilename(int section, const char *name, const char *value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
 
-  const char *filename = GetPropertyValue(property, 0);
+  const char *filename = GetFieldValue(field, 0);
   
   if( filename[0] == '/' || filename[0] == '~' )
     return filename;
@@ -1519,7 +1559,7 @@ const char *ConfigFile::ReadFilename(int entity, const char *name, const char *v
     strcat( fullpath, filename );
     assert(strlen(fullpath) + 1 < PATH_MAX);
 
-    SetPropertyValue(property, 0, fullpath);
+    SetFieldValue(field, 0, fullpath);
     
     free(fullpath);
     free(tmp);
@@ -1539,13 +1579,13 @@ const char *ConfigFile::ReadFilename(int entity, const char *name, const char *v
     strcat( fullpath, filename );
     assert(strlen(fullpath) + 1 < PATH_MAX);
 
-    SetPropertyValue(property, 0, fullpath);
+    SetFieldValue(field, 0, fullpath);
     
     free(fullpath);
     free(tmp);
   }
 
-  filename = GetPropertyValue(property, 0);
+  filename = GetFieldValue(field, 0);
   assert(filename[0] == '/' || filename[0] == '~');
 
   return filename;
@@ -1553,122 +1593,133 @@ const char *ConfigFile::ReadFilename(int entity, const char *name, const char *v
 
 
 ///////////////////////////////////////////////////////////////////////////
+// Get the number of values in a tuple
+int ConfigFile::GetTupleCount(int section, const char *name)
+{
+  int field = GetField(section, name);
+  if (field < 0)
+    return 0;
+  return GetFieldValueCount(field);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
 // Read a string from a tuple
-const char *ConfigFile::ReadTupleString(int entity, const char *name,
+const char *ConfigFile::ReadTupleString(int section, const char *name,
                                         int index, const char *value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return GetPropertyValue(property, index);
+  return GetFieldValue(field, index);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Write a string to a tuple
-void ConfigFile::WriteTupleString(int entity, const char *name,
+void ConfigFile::WriteTupleString(int section, const char *name,
                                   int index, const char *value)
 {
-  int property = GetProperty(entity, name);
+  int field = GetField(section, name);
   /* TODO
-  if (property < 0)
-    property = InsertProperty(entity, name);
+  if (field < 0)
+    field = InsertField(section, name);
   */
-  SetPropertyValue(property, index, value);  
+  SetFieldValue(field, index, value);  
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a int from a tuple
-int ConfigFile::ReadTupleInt(int entity, const char *name,
+int ConfigFile::ReadTupleInt(int section, const char *name,
                              int index, int value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return atoi(GetPropertyValue(property, index));
+  return atoi(GetFieldValue(field, index));
   
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Write a int to a tuple
-void ConfigFile::WriteTupleInt(int entity, const char *name,
+void ConfigFile::WriteTupleInt(int section, const char *name,
                                  int index, int value)
 {
   char default_str[64];
   snprintf(default_str, sizeof(default_str), "%d", value);
-  WriteTupleString(entity, name, index, default_str);
+  WriteTupleString(section, name, index, default_str);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a float from a tuple
-double ConfigFile::ReadTupleFloat(int entity, const char *name,
+double ConfigFile::ReadTupleFloat(int section, const char *name,
                                   int index, double value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return atof(GetPropertyValue(property, index));
+  return atof(GetFieldValue(field, index));
   
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Write a float to a tuple
-void ConfigFile::WriteTupleFloat(int entity, const char *name,
+void ConfigFile::WriteTupleFloat(int section, const char *name,
                                  int index, double value)
 {
   char default_str[64];
   snprintf(default_str, sizeof(default_str), "%.3f", value);
-  WriteTupleString(entity, name, index, default_str);
+  WriteTupleString(section, name, index, default_str);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a length from a tuple (includes unit conversion)
-double ConfigFile::ReadTupleLength(int entity, const char *name,
+double ConfigFile::ReadTupleLength(int section, const char *name,
                                    int index, double value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return atof(GetPropertyValue(property, index)) * this->unit_length;
+  return atof(GetFieldValue(field, index)) * this->unit_length;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Write a length to a tuple (includes unit conversion)
-void ConfigFile::WriteTupleLength(int entity, const char *name,
+void ConfigFile::WriteTupleLength(int section, const char *name,
                                  int index, double value)
 {
   char default_str[64];
   snprintf(default_str, sizeof(default_str), "%.3f", value / this->unit_length);
-  WriteTupleString(entity, name, index, default_str);
+  WriteTupleString(section, name, index, default_str);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Read an angle from a tuple (includes unit conversion)
-double ConfigFile::ReadTupleAngle(int entity, const char *name,
+double ConfigFile::ReadTupleAngle(int section, const char *name,
                                   int index, double value)
 {
-  int property = GetProperty(entity, name);
-  if (property < 0)
+  int field = GetField(section, name);
+  if (field < 0)
     return value;
-  return atof(GetPropertyValue(property, index)) * this->unit_angle;
+  return atof(GetFieldValue(field, index)) * this->unit_angle;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Write an angle to a tuple (includes unit conversion)
-void ConfigFile::WriteTupleAngle(int entity, const char *name,
+void ConfigFile::WriteTupleAngle(int section, const char *name,
                                  int index, double value)
 {
   char default_str[64];
   snprintf(default_str, sizeof(default_str), "%.3f", value / this->unit_angle);
-  WriteTupleString(entity, name, index, default_str);
+  WriteTupleString(section, name, index, default_str);
 }
 
 
@@ -1676,15 +1727,15 @@ void ConfigFile::WriteTupleAngle(int entity, const char *name,
 ///////////////////////////////////////////////////////////////////////////
 // Read a color (included text -> RGB conversion).
 // We look up the color in one of the common color databases.
-uint32_t ConfigFile::ReadTupleColor(int entity, const char *name, int index, uint32_t value)
+uint32_t ConfigFile::ReadTupleColor(int section, const char *name, int index, uint32_t value)
 {
-  int property;
+  int field;
   const char *color;
 
-  property = GetProperty(entity, name);
-  if (property < 0)
+  field = GetField(section, name);
+  if (field < 0)
     return value;
-  color = GetPropertyValue(property, index);
+  color = GetFieldValue(field, index);
   if (!color)
     return value;
 
@@ -1750,27 +1801,27 @@ uint32_t ConfigFile::LookupColor(const char *name)
 int
 ConfigFile::ParseDeviceIds(int section, player_device_id_t** ids)
 {
-  int property_idx;
-  CProperty* property;
+  int field_idx;
+  Field* field;
   const char *str;
   int port, ind;
   char s[128];
   player_interface_t interface;
 
-  if((property_idx = GetProperty(section,"devices")) < 0)
+  if((field_idx = GetField(section,"devices")) < 0)
   {
     PLAYER_ERROR1("section [%d]: missing devices entry", section);
     return -1;
   }
 
-  property = this->properties + property_idx;
+  field = this->fields + field_idx;
 
-  assert(*ids = (player_device_id_t*)malloc(property->value_count * 
+  assert(*ids = (player_device_id_t*)malloc(field->value_count * 
                                             sizeof(player_device_id_t)));
 
-  for(int i=0; i<property->value_count; i++)
+  for(int i=0; i<field->value_count; i++)
   {
-    assert(str = GetPropertyValue(property_idx,i));
+    assert(str = GetFieldValue(field_idx,i));
     // Look for port:interface:index
     if(sscanf(str, "%d:%127[^:]:%d", &port, s, &ind) < 3)
     {
@@ -1798,7 +1849,7 @@ ConfigFile::ParseDeviceIds(int section, player_device_id_t** ids)
     (*ids)[i].port = port;
   }
 
-  return(property->value_count);
+  return(field->value_count);
 }
 
 // Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
@@ -1852,4 +1903,105 @@ ConfigFile::UnusedIds(int section, player_device_id_t* ids, int num_ids)
     }
   }
   return(unused);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Read a device id.
+int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *name,
+                             int code, int index, const char *key)
+{
+  int prop;
+  int i, j, count;
+  char str[128];
+  char *tokens[4];
+  int token_count;
+  int port, ind;
+  const char *s, *k;
+  player_interface_t interface;
+
+  // Get the field index
+  if ((prop = GetField(section, name)) < 0)
+  {
+    CONFIG_ERR1("missing field [%s]", this->fields[prop].line, name);
+    return -1;
+  }
+
+  // Find the number of values in the field
+  count = GetFieldValueCount(prop);
+  
+  // Consider all the values, looking for a match
+  for (i = 0; i < count; i++)
+  {
+    assert(sizeof(str) > strlen(GetFieldValue(prop, i, false)));
+    strcpy(str, GetFieldValue(prop, i, false));
+
+    memset(tokens, 0, sizeof(tokens));
+    token_count = 4;
+
+    // Split the string inplace using ':' as the delimiter.
+    // Note that we do this backwards (leading fields are optional).
+    // The expected syntax is key:port:interface:index.
+    for (j = strlen(str) - 1; j >= 0 && token_count > 0; j--)
+    {
+      if (str[j] == ':')
+      {
+        tokens[--token_count] = str + j + 1;
+        str[j] = 0;
+      }
+    }
+    if (token_count > 0)
+      tokens[--token_count] = str;
+
+    /* REMOVE
+    printf("\n");
+    printf("[%s] [%s] [%s] [%s]\n", tokens[0], tokens[1], tokens[2], tokens[3]);
+    */
+    
+    // We require at least an interface:index pair
+    if (!(tokens[2] && tokens[3]))
+    {
+      CONFIG_ERR1("missing interface or index in field [%s]", this->fields[prop].line, name);
+      return -1;
+    }
+
+    // Extract the fields from the tokens (with default values)
+    k = tokens[0];
+    port = global_playerport;
+    if (tokens[1] && strlen(tokens[1]))
+      port = atoi(tokens[1]);
+    s = tokens[2];
+    ind = atoi(tokens[3]);
+        
+    // Find the interface
+    if (::lookup_interface(tokens[2], &interface) != 0)
+    {
+      CONFIG_ERR1("unknown interface: [%s]", this->fields[prop].line, tokens[2]);
+      free(str);
+      return -1;
+    }
+
+    // Match the code
+    if (code > 0 && interface.code != code)
+      continue;
+
+    // Match the tuple index
+    if (index > 0 && i != index)
+      continue;
+    
+    // Match the key (if present)
+    if (key && k && strcmp(key, k) != 0)
+      continue;
+
+    // Read the field again, just to mark it as read
+    GetFieldValue(prop, i, true);
+
+    id->port = port;
+    id->code = interface.code;
+    id->index = ind;
+    return 0;
+ 
+  }
+
+  return -1;
 }
