@@ -105,6 +105,9 @@ typedef struct _playerc_client_t
   // A circular queue used to buffer incoming data packets.
   int qfirst, qlen, qsize;
   playerc_client_item_t qitems[128];
+
+  // Data time stamp on the last SYNC packet
+  double datatime;
     
 } playerc_client_t;
 
@@ -116,7 +119,7 @@ typedef struct _playerc_device_t
   playerc_client_t *client;
 
   // Device code, index, etc.
-  int robot, code, index; //REMOVE, access;
+  int robot, code, index;
 
   // The driver name
   char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
