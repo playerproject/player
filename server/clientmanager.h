@@ -29,7 +29,12 @@
 #ifndef _CLIENTMANAGER_H
 #define _CLIENTMANAGER_H
 
-#include <sys/poll.h>   // for poll(2) and associated structs
+#if HAVE_POLL
+#include <sys/poll.h>  /* for poll(2) */
+#else
+#include "poll.h"  /* for poll(2) */
+#endif
+
 #include "clientdata.h"   
 
 class ClientManager

@@ -45,7 +45,7 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
                  player.h playerqueue.h device.h deviceregistry.h \
                  devicetable.h clientdata.h clientmanager.h socket_util.h \
                  wallclocktime.h playertime.h configfile.h drivertable.cc \
-                 drivertable.h 
+                 drivertable.h
 
 
 

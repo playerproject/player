@@ -23,8 +23,9 @@
  * a fallback implementation when poll() is not available. - BPG
  */
 
+#include "poll.h"
+
 #include <alloca.h>
-#include <sys/poll.h>
 #include <sys/types.h>
 #include <errno.h>
 #include <string.h>
@@ -39,7 +40,7 @@
    or -1 for errors.  */
 
 int
-foopoll(struct pollfd* fds, unsigned long int nfds, int timeout)
+poll(struct pollfd* fds, unsigned long int nfds, int timeout)
 {
   static int max_fd_size;
   struct timeval tv;
