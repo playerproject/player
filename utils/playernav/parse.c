@@ -9,7 +9,7 @@ extern double dumpfreq;
 /* Parse command line arguments, of the form host:port */
 int
 parse_args(int argc, char** argv,
-           int* num_bots, char** hostnames, int* ports)
+           int* num_bots, char** hostnames, int* ports, double* zoom)
 {
   char* idx;
   int port;
@@ -26,6 +26,15 @@ parse_args(int argc, char** argv,
       else
         return(-1);
     }
+    else if(!strcmp(argv[i],"-zoom"))
+    {
+      if(++i < argc)
+        *zoom = atof(argv[i]);
+      else
+        return(-1);
+    }
+    else
+      return(-1);
   }
 
   if(i>=argc)
@@ -47,7 +56,6 @@ parse_args(int argc, char** argv,
       hostlen = strlen(argv[i]);
     }
 
-    
     // Store the hostnames and port numbers
     assert((hostlen > 0) && (hostlen < (MAX_HOSTNAME_LEN - 1)));
     argv[i][hostlen] = '\0';

@@ -1,6 +1,8 @@
 #include <math.h>
 #include <sys/time.h>
 
+#include <gdk/gdkkeysyms.h>
+
 #include "playercommon.h"
 #include "playernav.h"
 
@@ -118,6 +120,7 @@ _zoom_callback(GtkAdjustment* adjustment,
   gnome_canvas_set_pixels_per_unit(gui_data->map_canvas, newzoom);
 }
 
+#if 0
 /*
  * Handle window resize events.
  */
@@ -151,6 +154,7 @@ _resize_window_callback(GtkWidget *widget,
                              gui_data->zoom_adjustment->upper);
   gtk_adjustment_value_changed(gui_data->zoom_adjustment);
 }
+#endif
 
 static gboolean
 _robot_button_callback(GnomeCanvasItem *item,
@@ -403,6 +407,12 @@ make_menu(gui_data_t* gui_data)
   GtkMenuItem* stop_all_item;
   GtkMenuItem* go_all_item;
 
+  GtkAccelGroup *accel_group;
+
+  /* Create a GtkAccelGroup and add it to the main window. */
+  accel_group = gtk_accel_group_new();
+  gtk_window_add_accel_group(gui_data->main_window, accel_group);
+
   file_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
   view_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
   stop_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
@@ -413,6 +423,29 @@ make_menu(gui_data_t* gui_data)
   show_names_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Show robot names");
   stop_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Stop all robots");
   go_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Go all robots");
+
+  /* Setup accelerators:
+       Ctrl-s stops all robots (handy in an emergency)
+       Ctrl-g goes all robots
+       Ctrl-q quits
+       Ctrl-n toggles showing robot names
+       Ctrl-d toggles dumping screenshots
+   */
+  gtk_widget_add_accelerator((GtkWidget*)stop_all_item, "activate", 
+                             accel_group, GDK_s, GDK_CONTROL_MASK, 
+                             GTK_ACCEL_VISIBLE);
+  gtk_widget_add_accelerator((GtkWidget*)go_all_item, "activate", 
+                             accel_group, GDK_g, GDK_CONTROL_MASK, 
+                             GTK_ACCEL_VISIBLE);
+  gtk_widget_add_accelerator((GtkWidget*)quit_item, "activate", 
+                             accel_group, GDK_q, GDK_CONTROL_MASK, 
+                             GTK_ACCEL_VISIBLE);
+  gtk_widget_add_accelerator((GtkWidget*)show_names_item, "activate", 
+                             accel_group, GDK_n, GDK_CONTROL_MASK, 
+                             GTK_ACCEL_VISIBLE);
+  gtk_widget_add_accelerator((GtkWidget*)dump_item, "activate", 
+                             accel_group, GDK_d, GDK_CONTROL_MASK, 
+                             GTK_ACCEL_VISIBLE);
 
   /* Add them to the menu */
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)dump_item);
@@ -481,10 +514,10 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
             (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL)));
   gtk_widget_set_size_request((GtkWidget*)(gui_data->main_window),
                               MIN_DISPLAY_WIDTH,MIN_DISPLAY_WIDTH);
+  // display the map "natural size" + a bit for the scrollbars
   gtk_window_resize(gui_data->main_window,
-                    DEFAULT_DISPLAY_WIDTH,
-                    (int)rint(DEFAULT_DISPLAY_WIDTH / gui_data->aspect));
-
+                    (gui_data->initial_zoom * gui_data->mapdev->width)+40,
+                    (gui_data->initial_zoom * gui_data->mapdev->height)+40);
 
   /* a box to hold everything else */
   g_assert((gui_data->vbox = (GtkBox*)gtk_vbox_new(FALSE, 5)));
@@ -524,14 +557,15 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
                                    gui_data->mapdev->resolution)/2.0,
                                  (gui_data->mapdev->width *
                                    gui_data->mapdev->resolution)/2.0,
-                                 (gui_data->mapdev->width *
+                                 (gui_data->mapdev->height *
                                    gui_data->mapdev->resolution)/2.0);
 
   // the zoom scrollbar
 
   // set canvas zoom to make the map fill the window
-  initial_zoom = DEFAULT_DISPLAY_WIDTH / 
-          (gui_data->mapdev->width * gui_data->mapdev->resolution);
+  initial_zoom = (gui_data->initial_zoom) * 
+          (1.0 / gui_data->mapdev->resolution);
+  // zoom in at most 10 times
   max_zoom = 10.0 * initial_zoom;
 
   g_assert((gui_data->zoom_adjustment = 
@@ -579,8 +613,10 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
 
   gtk_adjustment_set_value(gui_data->zoom_adjustment,initial_zoom);
   gtk_adjustment_value_changed(gui_data->zoom_adjustment);
+#if 0
   g_signal_connect(G_OBJECT(gui_data->main_window),"size-allocate",
                    G_CALLBACK(_resize_window_callback),(void*)gui_data);
+#endif
 }
 
 void

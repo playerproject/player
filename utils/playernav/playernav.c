@@ -108,7 +108,7 @@ previous plan, if any.
 
 #include "playernav.h"
 
-#define USAGE "USAGE: playernav [-fps <dumprate>] <host:port> [<host:port>...]"
+#define USAGE "USAGE: playernav [-fps <dumprate>] [-zoom <zoom>] <host:port> [<host:port>...]"
 
 // flag and index for robot currently being moved by user (if any)
 int robot_moving_p;
@@ -225,8 +225,10 @@ main(int argc, char** argv)
 
   dumpfreq = 5.0;
 
-  if(parse_args(argc-1, argv+1, &(gui_data.num_robots), 
-                gui_data.hostnames, gui_data.ports) < 0)
+  gui_data.initial_zoom = 1.0;
+
+  if(parse_args(argc-1, argv+1, &(gui_data.num_robots), gui_data.hostnames, 
+                gui_data.ports, &(gui_data.initial_zoom)) < 0)
   {
     puts(USAGE);
     exit(-1);
@@ -248,9 +250,8 @@ main(int argc, char** argv)
   for(i=0;i<gui_data.num_robots;i++)
     gui_data.robot_enable_states[i] = 1;
 
-  // we've read the map, so fill in the aspect ratio
+  // we've read the map
   gui_data.mapdev = gui_data.maps[0];
-  gui_data.aspect = gui_data.mapdev->width / (double)(gui_data.mapdev->height);
 
   init_gui(&gui_data, argc, argv);
 
