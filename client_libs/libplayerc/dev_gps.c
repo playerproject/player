@@ -104,7 +104,7 @@ void playerc_gps_putdata(playerc_gps_t *device, player_msghdr_t *header,
   device->alt = (int32_t) ntohl(data->altitude) / 1000.0;
 
   device->quality = data->quality;
-  device->num_sats = data->num_sats;
+  device->sat_count = data->num_sats;
 
   return;
 }

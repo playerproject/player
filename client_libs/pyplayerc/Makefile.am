@@ -16,7 +16,7 @@ EXTRA_DIST = dev_blobfinder.c \
 						 dev_gps.c \
              dev_laser.c \
 						 dev_localize.c \
-             dev_position.c \
+             dev_position.c dev_position3d.c \
              dev_power.c \
              dev_ptz.c \
 						 dev_truth.c \

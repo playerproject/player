@@ -23,7 +23,6 @@ typedef struct
   PyObject_HEAD
   playerc_client_t *client;
   playerc_gps_t *gps;
-  PyObject *px, *py, *pa;
 } gps_object_t;
 
 
@@ -48,9 +47,6 @@ PyObject *gps_new(PyObject *self, PyObject *args)
   pygps->client = pyclient->client;
   pygps->gps = playerc_gps_create(pyclient->client, index);
   pygps->gps->info.user_data = pygps;
-  pygps->px = PyFloat_FromDouble(0);
-  pygps->py = PyFloat_FromDouble(0);
-  pygps->pa = PyFloat_FromDouble(0);
 
   /* Add callback for post-processing incoming data */
   playerc_client_addcallback(pyclient->client, (playerc_device_t*) pygps->gps,
@@ -71,9 +67,6 @@ static void gps_del(PyObject *self)
                              (playerc_callback_fn_t) gps_onread,
                              (void*) pygps);    
 
-  Py_DECREF(pygps->px);
-  Py_DECREF(pygps->py);
-  Py_DECREF(pygps->pa);
   playerc_gps_destroy(pygps->gps);
   PyObject_Del(self);
 }
@@ -92,21 +85,18 @@ static PyObject *gps_getattr(PyObject *self, char *attrname)
   {
     result = PyFloat_FromDouble(pygps->gps->info.datatime);
   }
-  else if (strcmp(attrname, "px") == 0)
-  {
-    Py_INCREF(pygps->px);
-    result = pygps->px;
-  }
-  else if (strcmp(attrname, "py") == 0)
-  {
-    Py_INCREF(pygps->py);
-    result = pygps->py;
-  }
-  else if (strcmp(attrname, "pa") == 0)
-  {
-    Py_INCREF(pygps->pa);
-    result = pygps->pa;
-  }
+
+  else if (strcmp(attrname, "lat") == 0)
+    result = PyFloat_FromDouble(pygps->gps->lat);
+  else if (strcmp(attrname, "lon") == 0)
+    result = PyFloat_FromDouble(pygps->gps->lon);
+  else if (strcmp(attrname, "alt") == 0)
+    result = PyFloat_FromDouble(pygps->gps->alt);
+  else if (strcmp(attrname, "quality") == 0)
+    result = PyInt_FromLong(pygps->gps->quality);
+  else if (strcmp(attrname, "sat_count") == 0)
+    result = PyInt_FromLong(pygps->gps->sat_count);
+
   else
     result = Py_FindMethod(gps_methods, self, attrname);
 
@@ -123,12 +113,16 @@ static PyObject *gps_str(PyObject *self)
 
   snprintf(str, sizeof(str),
            "gps %02d %013.3f"
-           " %+07.3f %+07.3f %+04.3f",
+           " %+09.5 %+09.5f %+07.3f"
+           " %d %02d",
            pygps->gps->info.index,
            pygps->gps->info.datatime,
-           pygps->gps->px,
-           pygps->gps->py,
-           pygps->gps->pa);
+           pygps->gps->lat,
+           pygps->gps->lon,
+           pygps->gps->alt,
+           pygps->gps->quality,
+           pygps->gps->sat_count);
+  
   return PyString_FromString(str);
 }
 
@@ -136,16 +130,13 @@ static PyObject *gps_str(PyObject *self)
 /* Callback for post-processing incoming data */
 static void gps_onread(gps_object_t *pygps)
 {
-  thread_acquire();
+  //thread_acquire();
     
-  Py_DECREF(pygps->px);
-  Py_DECREF(pygps->py);
-  Py_DECREF(pygps->pa);
-  pygps->px = PyFloat_FromDouble(pygps->gps->px);
-  pygps->py = PyFloat_FromDouble(pygps->gps->py);
-  pygps->pa = PyFloat_FromDouble(pygps->gps->pa);    
+  // Do nothing
     
-  thread_release();
+  //thread_release();
+  
+  return;
 }
 
 

@@ -495,6 +495,9 @@ extern PyObject *localize_new(PyObject *self, PyObject *args);
 extern PyTypeObject position_type;
 extern PyObject *position_new(PyObject *self, PyObject *args);
 
+extern PyTypeObject position3d_type;
+extern PyObject *position3d_new(PyObject *self, PyObject *args);
+
 extern PyTypeObject power_type;
 extern PyObject *power_new(PyObject *self, PyObject *args);
 
@@ -520,6 +523,7 @@ static PyMethodDef module_methods[] =
   {"laser", laser_new, METH_VARARGS},
   {"localize", localize_new, METH_VARARGS},
   {"position", position_new, METH_VARARGS},
+  {"position3d", position3d_new, METH_VARARGS},
   {"power", power_new, METH_VARARGS},
   {"ptz", ptz_new, METH_VARARGS},
   {"truth", truth_new, METH_VARARGS},
@@ -542,6 +546,7 @@ void initplayerc(void)
   laser_type.ob_type = &PyType_Type;
   localize_type.ob_type = &PyType_Type;
   position_type.ob_type = &PyType_Type;
+  position3d_type.ob_type = &PyType_Type;
   power_type.ob_type = &PyType_Type;
   ptz_type.ob_type = &PyType_Type;
   wifi_type.ob_type = &PyType_Type;
@@ -556,5 +561,7 @@ void initplayerc(void)
      we will may try to release it at some point.
   */
   PyEval_InitThreads();
+
+  return;
 }
 

@@ -41,10 +41,11 @@ int test_gps(playerc_client_t *client, int index)
     {
       PASS();
       printf("gps: [%+11.6f] [%+11.6f] [%+7.3f] : "
-             "[%+3.0f D %02.4f M] [%+3.0f D %02.4f M]\n",
+             "[%+3.0f D %02.4f M] [%+3.0f D %02.4f M] [%d %2d]\n",
              device->lat, device->lon, device->alt,
              device->lat, fmod(fabs(device->lat) * 60, 60),
-             device->lon, fmod(fabs(device->lon) * 60, 60));
+             device->lon, fmod(fabs(device->lon) * 60, 60),
+             device->quality, device->sat_count);
     }
     else
       FAIL();
