@@ -42,9 +42,7 @@ public:
   // override PutConfig
     virtual int PutConfig(player_device_id_t* device, void* client, 
 			  void* data, size_t len);
-  protected:
-  virtual int Setup(){ this->StageSubscribe( STG_MOD_POSE ); return 0;};
-  virtual int Shutdown(){ this->StageUnsubscribe( STG_MOD_POSE ); return 0;};
+protected:
   
   player_position_data_t position_data;
 };
@@ -59,7 +57,8 @@ StgPosition::StgPosition(char* interface, ConfigFile* cf, int section )
   PLAYER_MSG0( "STG_POSITION CONSTRUCTOR" );
   
   PLAYER_TRACE1( "constructing StgPosition with interface %s", interface );
-  
+
+  this->subscribe_prop = STG_MOD_POSE;
 }
 
 CDevice* StgPosition_Init(char* interface, ConfigFile* cf, int section)
@@ -84,13 +83,11 @@ void StgPosition_Register(DriverTable* table)
 size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 			    uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  stg_model_t* model = &Stage1p4::models[this->section];
-
   // request position data from Stage
-  this->WaitForData( model->stage_id, STG_MOD_POSE );
+  stg_model_property_wait( model, STG_MOD_POSE );
   
   // copy data from Stage    
-  stg_property_t* prop = model->props[STG_MOD_POSE];
+  stg_property_t* prop = stg_model_property( model, STG_MOD_POSE );
   
   stg_pose_t* pose = (stg_pose_t*)prop->data;
   size_t plen = prop->len;
@@ -123,10 +120,12 @@ void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
   vel.y = ((double)((int32_t)ntohl(pcmd->yspeed))) / 1000.0;
   vel.a = DTOR((double)((int32_t)ntohl(pcmd->yawspeed)));
   
-  assert( stg_set_property( this->stage_client, 
-			    Stage1p4::models[this->section].stage_id,
-			    STG_MOD_VELOCITY, (void**)&vel, sizeof(vel) ) 
-	  == 0 );
+  stg_model_property_set_ex( model, 
+			     0.0,
+			     STG_MOD_VELOCITY, 
+			     STG_PR_NONE,
+			     (void*)&vel, 
+			     sizeof(vel) );
   
   // we ignore position for now.
 
@@ -139,33 +138,26 @@ void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
 int StgPosition::PutConfig(player_device_id_t* device, void* client, 
 			   void* data, size_t len)
 {
-  stg_model_t* model = &Stage1p4::models[this->section];
-
-  // rather than push the request onto the request queue, we'll handle
-  // it right away
-  
   // switch on the config type (first byte)
   uint8_t* buf = (uint8_t*)data;
   switch( buf[0] )
     {  
     case PLAYER_POSITION_GET_GEOM_REQ:
       {
-	stg_pose_t* org = NULL;
-	size_t len = 0;
-	assert( stg_get_property( this->stage_client, model->stage_id, 
-				  STG_MOD_ORIGIN,
-				  (void**)&org, &len ) == 0 );
+	// todo? delete old geom data?
+
+	// request data from Stage
+	stg_model_property_req( model, STG_MOD_ORIGIN );
+	stg_model_property_req( model, STG_MOD_SIZE);
 	
-	assert( len == sizeof(stg_pose_t) );
-	
-	stg_size_t* sz = NULL;
-	len = 0;
-	assert( stg_get_property( this->stage_client, model->stage_id, 
-				  STG_MOD_SIZE,
-				  (void**)&sz, &len ) == 0 );
-	
-	assert( sz );
-	assert( len == sizeof(stg_size_t) );
+	// wait for it to show up
+	stg_model_property_wait( model, STG_MOD_ORIGIN);
+	stg_model_property_wait( model, STG_MOD_SIZE);
+  
+	stg_pose_t *org = 
+	  (stg_pose_t*)stg_model_property_data( model, STG_MOD_ORIGIN );
+	stg_size_t *sz = 
+	  (stg_size_t*)stg_model_property_data( model, STG_MOD_SIZE );
 	
 	// fill in the geometry data formatted player-like
 	player_position_geom_t pgeom;
