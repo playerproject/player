@@ -50,7 +50,7 @@ esac
 AC_SUBST(TCLSH)
 
 dnl client tests are compiled by default
-AC_ARG_ENABLE(tests, [  --enable-tests          Don't build client tests],,
+AC_ARG_ENABLE(tests, [  --enable-tests          Build client tests],,
 enable_tests=yes)
 AM_CONDITIONAL(WITH_TESTS, test x$enable_tests = xyes)
 
