@@ -126,6 +126,14 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "truth") == 0 || strcmp(device, "all") == 0)
       test_truth(&client, index);
 
+    // IDAR device
+    if(strcmp(device, "idar") == 0 || strcmp(device, "all") == 0)
+      test_idar(&client, index);
+
+    // IDAR turret device
+    if(strcmp(device, "idarturret") == 0 || strcmp(device, "all") == 0)
+      test_idarturret(&client, index);
+
     free(arg);
   }
     

@@ -503,6 +503,9 @@ class IDARProxy : public ClientProxy
   // get message and transmission details 
   int GetMessage( idarrx_t* rx );  
 
+  // get message and transmission details without flushing the buffer
+  int GetMessageNoFlush( idarrx_t* rx );  
+
   // send and get a message
   int SendGetMessage( idartx_t* tx, idarrx_t* rx );  
 

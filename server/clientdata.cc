@@ -416,6 +416,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       resp.index = ((player_device_req_t*)payload)->index;
 
       player_device_id_t id;
+      id.port = port; 
       id.code = ntohs(resp.code);
       id.index = ntohs(resp.index);
       resp.access = FindPermission(id);
