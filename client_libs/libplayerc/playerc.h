@@ -413,6 +413,10 @@ typedef struct
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
+  // Geometry in robot cs.  These values are filled in by
+  // playerc_lbd_get_geom().
+  double pose[3];
+  
   // List of detected beacons.
   int beacon_count;
   playerc_lbd_beacon_t beacons[PLAYERC_LBD_MAX_BEACONS];
@@ -431,6 +435,10 @@ int playerc_lbd_subscribe(playerc_lbd_t *device, int access);
 
 // Un-subscribe from the lbd device
 int playerc_lbd_unsubscribe(playerc_lbd_t *device);
+
+// Get the laser geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int playerc_lbd_get_geom(playerc_lbd_t *device);
 
 // Set the device configuration.
 // bit_count : the number of bits in the barcode.

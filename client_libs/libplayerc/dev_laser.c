@@ -46,7 +46,13 @@ playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index)
   memset(device, 0, sizeof(playerc_laser_t));
   playerc_device_init(&device->info, client, PLAYER_LASER_CODE, index,
                       (playerc_putdata_fn_t) playerc_laser_putdata);
-    
+
+  device->pose[0] = 0.0;
+  device->pose[1] = 0.0;
+  device->pose[2] = 0.0;
+  device->size[0] = 0.15;
+  device->size[1] = 0.15;
+
   return device;
 }
 
