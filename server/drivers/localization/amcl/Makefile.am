@@ -1,6 +1,10 @@
 SUBDIRS = pf map models
 
+if INCLUDE_RTKGUI
+AM_CPPFLAGS = -I$(top_srcdir)/server -I@RTK_DIR@/include `gtk-config --cflags`
+else
 AM_CPPFLAGS = -I$(top_srcdir)/server
+endif
 
 noinst_LIBRARIES = @AMCL_LIB@
 

@@ -26,7 +26,7 @@ typedef struct
   int occ_state;
 
   // Distance to the nearest occupied cell
-  float occ_dist;
+  double occ_dist;
 
 } map_cell_t;
 
@@ -39,6 +39,9 @@ typedef struct
   
   // Map scale (m/cell)
   double scale;
+
+  // Max occupancy distance value
+  double max_occ_dist;
 
   // Map dimensions (number of cells)
   int size_x, size_y;
@@ -60,11 +63,15 @@ map_t *map_alloc(double scale);
 // Destroy a map
 void map_free(map_t *map);
 
+// Get the cell at the given point
+map_cell_t *map_get_cell(map_t *map, double ox, double oy, double oa);
+
 // Load a map file (occupancy grid)
 int map_load_occ(map_t *map, const char *filename);
 
-// Get the cell at the given point
-map_cell_t *map_get_cell(map_t *map, double ox, double oy, double oa);
+// Update the distance values
+void map_update_dist(map_t *map, double max_occ_dist);
+
 
 
 /**************************************************************************
@@ -79,6 +86,9 @@ map_cell_t *map_get_cell(map_t *map, double ox, double oy, double oa);
 
 // Draw the occupancy grid
 void map_draw_occ(map_t *map, struct _rtk_fig_t *fig);
+
+// Draw the cspace map
+void map_draw_cspace(map_t *map, struct _rtk_fig_t *fig);
 
 
 /**************************************************************************

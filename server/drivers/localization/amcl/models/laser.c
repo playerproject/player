@@ -77,8 +77,9 @@ double laser_sensor_model(laser_t *sensor, pf_vector_t pose)
   {
     obs = sensor->ranges + i;
 
-    model_range = map_calc_range(sensor->map,
-                                  pose.v[0], pose.v[1], pose.v[2] + obs->bearing);
+    // TODO
+    //model_range = map_calc_range(sensor->map,
+    //                              pose.v[0], pose.v[1], pose.v[2] + obs->bearing);
 
     //printf("%d %f %f\n", i, obs->range, model_range);
     z = (obs->range - model_range);

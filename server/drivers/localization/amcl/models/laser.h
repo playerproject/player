@@ -12,7 +12,11 @@
 #include "../pf/pf.h"
 #include "../map/map.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+  
 // Info for a single range measurement
 typedef struct
 {
@@ -48,6 +52,11 @@ void laser_add_range(laser_t *sensor, double range, double bearing);
 
 // The sensor model function
 double laser_sensor_model(laser_t *sensor, pf_vector_t pose);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
