@@ -38,12 +38,13 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
 INSTALL_BIN = $(INSTALL_PREFIX)/bin
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
-OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenapositiondevice.o arenalaserdevice.o arenasonardevice.o arenavisiondevice.o arenalock.o ptzdevice.o arenaptzdevice.o devicetable.o stagedevice.o
+OBS = nodevice.o clientdata.o laserdevice.o p2osdevice.o lock.o sonardevice.o positiondevice.o pubsub_util.o visiondevice.o gripperdevice.o miscdevice.o packet.o sip.o arenalock.o devicetable.o stagedevice.o ptzdevice.o 
 
 all: $(SERVERNAME)
 
 dep:
 	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.cc 2>/dev/null
+	$(RM) -f Makefile.bak
 
 clean:
 	rm -f *.o *~ $(SERVERNAME) $(DEVICELIBNAME) core
@@ -70,27 +71,8 @@ uninstall:
 
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
 
-arenalaserdevice.o: ../include/arenalaserdevice.h ../include/arenalock.h
-arenalaserdevice.o: ../include/lock.h ../include/device.h
-arenalaserdevice.o: ../include/offsets.h ../include/laserdevice.h
 arenalock.o: ../include/device.h ../include/offsets.h ../include/lock.h
 arenalock.o: ../include/arenalock.h ../include/errors.h
-arenapositiondevice.o: ../include/arenapositiondevice.h
-arenapositiondevice.o: ../include/arenalock.h ../include/lock.h
-arenapositiondevice.o: ../include/device.h ../include/offsets.h
-arenapositiondevice.o: ../include/positiondevice.h ../include/p2osdevice.h
-arenapositiondevice.o: ../include/packet.h ../include/sip.h
-arenaptzdevice.o: ../include/arenaptzdevice.h ../include/arenalock.h
-arenaptzdevice.o: ../include/lock.h ../include/device.h ../include/offsets.h
-arenaptzdevice.o: ../include/ptzdevice.h
-arenasonardevice.o: ../include/arenasonardevice.h ../include/arenalock.h
-arenasonardevice.o: ../include/lock.h ../include/device.h
-arenasonardevice.o: ../include/offsets.h ../include/sonardevice.h
-arenasonardevice.o: ../include/p2osdevice.h ../include/packet.h
-arenasonardevice.o: ../include/sip.h
-arenavisiondevice.o: ../include/arenavisiondevice.h ../include/arenalock.h
-arenavisiondevice.o: ../include/lock.h ../include/device.h
-arenavisiondevice.o: ../include/offsets.h ../include/visiondevice.h
 clientdata.o: ../include/devicetable.h ../include/device.h
 clientdata.o: ../include/offsets.h ../include/lock.h ../include/clientdata.h
 clientdata.o: ../include/counter.h ../include/packet.h
@@ -103,7 +85,7 @@ laserdevice.o: ../include/rtk-types.hh ../include/laserdevice.h
 laserdevice.o: ../include/lock.h ../include/device.h ../include/offsets.h
 lock.o: ../include/device.h ../include/offsets.h ../include/lock.h
 lock.o: ../include/errors.h
-main.o: ../include/pubsub_util.h ../include/clientdata.h
+main.o: ../VERSION ../include/pubsub_util.h ../include/clientdata.h
 main.o: ../include/devicetable.h ../include/device.h ../include/offsets.h
 main.o: ../include/lock.h ../include/counter.h ../include/nodevice.h
 miscdevice.o: ../include/miscdevice.h ../include/p2osdevice.h
@@ -125,8 +107,9 @@ sip.o: ../include/offsets.h ../include/lock.h ../include/packet.h
 sonardevice.o: ../include/sonardevice.h ../include/p2osdevice.h
 sonardevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
 sonardevice.o: ../include/packet.h ../include/sip.h
-stagedevice.o: ../include/stagedevice.hh ../include/device.h
-stagedevice.o: ../include/offsets.h ../include/lock.h ../include/arenalock.h
+stagedevice.o: ../include/stagedevice.hh ../include/rtk-types.hh
+stagedevice.o: ../include/device.h ../include/offsets.h ../include/lock.h
+stagedevice.o: ../include/arenalock.h
 visiondevice.o: ../include/visiondevice.h ../include/lock.h
 visiondevice.o: ../include/device.h ../include/offsets.h
 visiondevice.o: ../include/pubsub_util.h
