@@ -241,7 +241,7 @@ in Player's robot coordinate system.
 driver
 (
   name "rflex" 
-  provides ["position:1" "bumper:0" "sonar:0" "sonar:1" "power:0" "ir:0"]
+  provides ["position:1" "bumper:0" "sonar::sonar:0" "sonar2::sonar:1" "power:0" "ir:0"]
 
   rflex_serial_port 		"/dev/ttyR0" 
   mm_length 			500.0
