@@ -67,12 +67,16 @@ CClientData::CClientData(char* key, int myport)
   port = myport;
 
   readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
-  writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
   replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
+  writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
+
+  totalwritebuffersize = PLAYER_MAX_MESSAGE_SIZE;
+  totalwritebuffer = new unsigned char[totalwritebuffersize];
 
   bzero((char*)readbuffer, PLAYER_MAX_MESSAGE_SIZE);
   bzero((char*)writebuffer, PLAYER_MAX_MESSAGE_SIZE);
   bzero((char*)replybuffer, PLAYER_MAX_MESSAGE_SIZE);
+  bzero((char*)totalwritebuffer, totalwritebuffersize);
   bzero((char*)&hdrbuffer, sizeof(player_msghdr_t));
 
   readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
@@ -468,6 +472,9 @@ CClientData::~CClientData()
   if(writebuffer)
     delete writebuffer;
 
+  if(totalwritebuffer)
+    delete totalwritebuffer;
+
   if(replybuffer)
     delete replybuffer;
 }
@@ -719,13 +726,12 @@ bool CClientData::CheckWritePermissions(player_device_id_t id)
   return(permission);
 }
 
-int CClientData::BuildMsg(unsigned char *data, size_t maxsize) 
+int CClientData::BuildMsg()
 {
   unsigned short size, totalsize=0;
   CDevice* devicep;
   player_msghdr_t hdr;
   struct timeval curr;
-  bool needsynch = true; // Should always send a synch (ahoward)
   
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_DATA);
@@ -733,7 +739,6 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
   {
     if(thisub->access==PLAYER_ALL_MODE || thisub->access==PLAYER_READ_MODE) 
     {
-      // REMOVE needsynch = true;
       char access = deviceTable->GetDeviceAccess(thisub->id);
 
       if((access == PLAYER_ALL_MODE) || (access == PLAYER_READ_MODE)) 
@@ -744,8 +749,8 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
           hdr.device_index = htons(thisub->id.index);
           hdr.reserved = 0;
 
-          size = devicep->GetData(data+totalsize+sizeof(hdr),
-                                  maxsize-totalsize-sizeof(hdr),
+          size = devicep->GetData(writebuffer+sizeof(hdr),
+                                  PLAYER_MAX_MESSAGE_SIZE-sizeof(hdr),
                                   &(hdr.timestamp_sec), 
                                   &(hdr.timestamp_usec));
 
@@ -779,8 +784,21 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
           hdr.time_sec = htonl(curr.tv_sec);
           hdr.time_usec = htonl(curr.tv_usec);
 
-          memcpy(data+totalsize,&hdr,sizeof(hdr));
-          totalsize += sizeof(hdr) + size; 
+          memcpy(writebuffer,&hdr,sizeof(hdr));
+
+          while((totalsize + sizeof(hdr) + size) > totalwritebuffersize)
+          {
+            // need more memory
+            totalwritebuffersize *= 2;
+            assert(totalwritebuffer = 
+                   (unsigned char*)realloc(totalwritebuffer, 
+                                           totalwritebuffersize));
+          }
+
+          memcpy(totalwritebuffer + totalsize,
+                 writebuffer,
+                 sizeof(hdr) + size);
+          totalsize += sizeof(hdr) + size;
         }
         else
         {
@@ -797,23 +815,29 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
   }
 
   // now add a zero-length SYNCH packet to the end of the buffer
-  if(needsynch)
+  hdr.stx = htons(PLAYER_STXX);
+  hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
+  hdr.device = htons(PLAYER_PLAYER_CODE);
+  hdr.device_index = htons(0);
+  hdr.reserved = 0;
+  hdr.size = 0;
+
+  if(GlobalTime->GetTime(&curr) == -1)
+    fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
+  hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
+  hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
+
+
+  while((totalsize + sizeof(hdr)) > totalwritebuffersize)
   {
-    hdr.stx = htons(PLAYER_STXX);
-    hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
-    hdr.device = htons(PLAYER_PLAYER_CODE);
-    hdr.device_index = htons(0);
-    hdr.reserved = 0;
-    hdr.size = 0;
-
-    if(GlobalTime->GetTime(&curr) == -1)
-      fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
-    hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
-    hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
-
-    memcpy(data+totalsize,&hdr,sizeof(hdr));
-    totalsize += sizeof(hdr);
+    // need more memory
+    totalwritebuffersize *= 2;
+    assert(totalwritebuffer = 
+           (unsigned char*)realloc(totalwritebuffer, totalwritebuffersize));
   }
+
+  memcpy(totalwritebuffer + totalsize, &hdr, sizeof(hdr));
+  totalsize += sizeof(hdr);
 
   return(totalsize);
 }
@@ -1035,9 +1059,9 @@ CClientData::Write()
 {
   unsigned int size;
 
-  size = BuildMsg(writebuffer,PLAYER_MAX_MESSAGE_SIZE);
+  size = BuildMsg();
 
-  if(size>0 && write(socket, writebuffer, size) < 0 ) 
+  if(size>0 && write(socket, totalwritebuffer, size) < 0 ) 
   {
     if(errno != EAGAIN)
       return(-1);

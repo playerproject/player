@@ -114,9 +114,8 @@ void
 Usage()
 {
   puts("");
-  fprintf(stderr, "USAGE: player [-p <port>] [-s <path>] [<configfile>]"
-          "[-dl <shlib>] \n");
-  fprintf(stderr, "              [-k <key>]  [DEVICE]...\n");
+  fprintf(stderr, "USAGE: player [-p <port>] [-s <path>] [-dl <shlib>] "
+          "[-k <key>] [<configfile>]\n");
   fprintf(stderr, "  -p <port>     : TCP port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
   fprintf(stderr, "  -s <path>     : use memory-mapped IO with Stage "

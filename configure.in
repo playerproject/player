@@ -97,4 +97,5 @@ AC_OUTPUT(Makefile
           rtk2/Makefile
           utils/Makefile
           utils/playerv/Makefile
-          utils/tkviewer/Makefile)
+          utils/tkviewer/Makefile
+          config/Makefile)
