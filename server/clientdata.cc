@@ -78,6 +78,7 @@ ClientData::ClientData(char* key, int myport)
   // equivalent of realloc()).  for consistency, we should probably pick either
   // new[] or malloc() throughout this file.
   assert(totalwritebuffer = (unsigned char*)malloc(totalwritebuffersize));
+  memset(totalwritebuffer,0,totalwritebuffersize);
 
   memset((char*)readbuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
   memset((char*)writebuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
