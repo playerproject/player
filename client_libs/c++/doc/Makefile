@@ -11,6 +11,7 @@
 
 # Name for the manual we are creating
 MANNAME = cppclient
+PS2PDF = ps2pdf
 
 # Header files to scan
 MANFILES = ../playerclient.h
@@ -24,12 +25,21 @@ $(MANNAME).ps: *.tex
 	latex $(MANNAME) && latex $(MANNAME)
 	dvips -t letter -f $(MANNAME).dvi > $(MANNAME).ps	
 
+pdf: $(MANNAME).pdf
+
+$(MANNAME).pdf: $(MANNAME).ps
+	$(PS2PDF) $<
+
 # Dummy target to make the interfaces
 interfaces: $(MANFILES)
 	$(MAKEDOC) $(MANFILES)
 
+html:
+	rm -rf html_docs
+	latex2html -split 4 -toc_depth 3 -html_version 3.2,table,math -show_section_numbers -mkdir -dir html_docs $(MANNAME).tex
+
 # Clean up everything
 clean:
 	$(RM) -rf *Client.tex *Proxy.tex $(MANNAME).aux $(MANNAME).log \
-	          $(MANNAME).dvi $(MANNAME).ps
+	          $(MANNAME).dvi $(MANNAME).ps html_docs
 
