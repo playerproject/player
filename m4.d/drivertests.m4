@@ -122,10 +122,7 @@ dnl do it manually
 AC_ARG_ENABLE(amcl,
 [  --enable-amcl           Compile the amcl driver],,enable_amcl=yes)
 if test "x$enable_amcl" = "xyes"; then
-  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,
-    AC_MSG_WARN([The GNU Scientific Library (gsl) is required to build the
-                  amcl driver.] 
-    enable_amcl=no))
+  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,enable_amcl=no)
 fi
 if test "x$enable_amcl" = "xyes"; then
   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
