@@ -787,7 +787,7 @@ int main( int argc, char *argv[] )
   {
     int num_connects;
 
-    if((num_connects = poll(ufds,num_ufds,100)) < 0)
+    if((num_connects = poll(ufds,num_ufds,-1)) < 0)
     {
       perror("poll() failed.");
       exit(-1);
