@@ -91,7 +91,7 @@ else
   SEGWAYRMP_EXTRA_LDFLAGS="-L$CANLIB_DIR/lib -lcanlib"
 fi
 
-PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[no],
+PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[yes],
 	[$SEGWAYRMP_HEADER], [$SEGWAYRMP_EXTRA_CPPFLAGS],
 	[$SEGWAYRMP_EXTRA_LDFLAGS])
 
@@ -106,7 +106,7 @@ PLAYER_ADD_DRIVER([logfile],[drivers/shell],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[no],[],[],[])
+PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
@@ -186,22 +186,22 @@ PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],
 PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
-PLAYER_ADD_DRIVER([waveaudio],[drivers/waveform],[no],[sys/soundcard.h],[],[])
+PLAYER_ADD_DRIVER([waveaudio],[drivers/waveform],[yes],[sys/soundcard.h],[],[])
 
 PLAYER_ADD_DRIVER([aodv],[drivers/wifi],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([iwspy],[drivers/wifi],[no],[],[],[])
+PLAYER_ADD_DRIVER([iwspy],[drivers/wifi],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[no],[],[],[])
+PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[no],[],[],[])
+PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],[gsl/gsl_version.h],[],
                   ["-lgsl -lgslcblas"])
 
-PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[no],)
+PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
-PLAYER_ADD_DRIVER([stage],[drivers/stage],[no],[],[],[])
+PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
 
 dnl Where is Stage-1.4?
 AC_ARG_WITH(stage, [  --with-stage=dir       Location of Stage],
@@ -231,7 +231,7 @@ else
 fi
 
 dnl Add the Gazebo driver
-PLAYER_ADD_DRIVER([gazebo],[drivers/gazebo],[no],[$GAZEBO_HEADER],
+PLAYER_ADD_DRIVER([gazebo],[drivers/gazebo],[yes],[$GAZEBO_HEADER],
                   [$GAZEBO_EXTRA_CPPFLAGS],[$GAZEBO_EXTRA_LDFLAGS])
 
 PLAYER_ADD_DRIVER([laserbar],[drivers/fiducial],[yes],[],[],[])
