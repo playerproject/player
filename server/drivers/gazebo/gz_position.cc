@@ -169,6 +169,8 @@ size_t GzPosition::GetData(void* client, unsigned char* dest, size_t len,
 {
   player_position_data_t data;
 
+  gz_position_lock(this->iface, 1);
+    
   data.xpos = htonl((int) (this->iface->data->odom_pose[0] * 1000));
   data.ypos = htonl((int) (this->iface->data->odom_pose[1] * 1000));
   data.yaw = htonl((int) (this->iface->data->odom_pose[2] * 180 / M_PI));
@@ -180,7 +182,9 @@ size_t GzPosition::GetData(void* client, unsigned char* dest, size_t len,
     *timestamp_sec = (int) (this->iface->data->time);
   if (timestamp_usec)
     *timestamp_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
-  
+
+  gz_position_unlock(this->iface);
+    
   return sizeof(data);
 }
 
@@ -191,13 +195,17 @@ void GzPosition::PutCommand(void* client, unsigned char* src, size_t len)
 {
   player_position_cmd_t *cmd;
 
+  gz_position_lock(this->iface, 1);
+    
   assert(len >= sizeof(player_position_cmd_t));
   cmd = (player_position_cmd_t*) src;
 
   this->iface->data->cmd_vel[0] = ((int) ntohl(cmd->xspeed)) / 1000.0;
   this->iface->data->cmd_vel[1] = ((int) ntohl(cmd->yspeed)) / 1000.0;
   this->iface->data->cmd_vel[2] = ((int) ntohl(cmd->yawspeed)) * M_PI / 180;
-  
+
+  gz_position_unlock(this->iface);
+    
   return;
 }
 
