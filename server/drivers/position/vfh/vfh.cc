@@ -170,6 +170,7 @@ class VFH_Class : public Driver
 
   private:
      bool active_goal;
+     bool turninginplace;
     
     // Set up the truth device (optional).
     int SetupTruth();
@@ -287,6 +288,7 @@ int VFH_Class::Setup()
   Driver::PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
   this->active_goal = false;
+  this->turninginplace = false;
   this->goal_x = this->goal_y = this->goal_t = 0;
 
   
@@ -768,7 +770,6 @@ void VFH_Class::Main()
   double timediff;
 
   // bookkeeping to implement hysteresis when rotating at the goal
-  bool turninginplace;
   int rotatedir;
 
   // bookkeeping to implement smarter escape policy
@@ -785,7 +786,6 @@ void VFH_Class::Main()
   if(this->truth)
     this->GetTruth();
 
-  turninginplace = false;
   escapedir = 1;
   while (true)
   {
@@ -863,7 +863,7 @@ void VFH_Class::Main()
       this->turnrate = 0;
       PutCommand(this->speed, this->turnrate);
 
-      turninginplace = false;
+      this->turninginplace = false;
     }
     // CASE 2: The robot is at the goal, within user-specified tolerances, so
     //         stop.
@@ -873,7 +873,7 @@ void VFH_Class::Main()
       this->active_goal = false;
       this->speed = this->turnrate = 0;
       PutCommand( this->speed, this->turnrate );
-      turninginplace = false;
+      this->turninginplace = false;
     }
     // CASE 3: The robot is too far from the goal position, so invoke VFH to
     //         get there.
@@ -896,7 +896,7 @@ void VFH_Class::Main()
                                  (int)ntohl(this->odom_vel_be[0]),
                                  this->speed, this->turnrate );
       PutCommand( this->speed, this->turnrate );
-      turninginplace = false;
+      this->turninginplace = false;
     }
     // CASE 4: The robot is at the goal position, but still needs to turn
     //         in place to reach the desired orientation.
@@ -913,9 +913,9 @@ void VFH_Class::Main()
       // If we've just gotten to the goal, pick a direction to turn;
       // otherwise, keep turning the way we started (to prevent
       // oscillation)
-      if(!turninginplace)
+      if(!this->turninginplace)
       {
-        turninginplace = true;
+        this->turninginplace = true;
         if(angdiff < 0)
           rotatedir = -1;
         else
@@ -973,6 +973,7 @@ void VFH_Class::GetCommand()
       if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
       {
         this->active_goal = true;
+        this->turninginplace = false;
         this->goal_x = x;
         this->goal_y = y;
         this->goal_t = t;
