@@ -186,6 +186,8 @@ PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],)
 PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],
                   ["../client_libs/c/playercclient.o"])
 
+PLAYER_ADD_DRIVER([readlog],[drivers/shell],[yes],)
+
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],)
 
 PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],)

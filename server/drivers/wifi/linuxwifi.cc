@@ -253,7 +253,7 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
   int link, level, noise;
   uint16_t wqual=0, wlevel=0, wnoise=0;
   uint16_t  wmaxqual=0, wmaxlevel=0, wmaxnoise=0;
-  uint8_t qual_type;
+  uint8_t qual_type=0;
   uint32_t throughput=0;
   int32_t bitrate =0; 
   uint8_t mode = 0;

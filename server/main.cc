@@ -78,6 +78,12 @@ char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #include "gz_time.h"
 #endif
 
+// Log file stuff
+#if INCLUDE_READLOG
+#include "readlog_manager.h"
+#include "readlog_time.h"
+#endif
+
 //#define VERBOSE
 //#define DEBUG
 
@@ -789,7 +795,8 @@ int main( int argc, char *argv[] )
 {
   char auth_key[PLAYER_KEYLEN] = "";
   char *configfile = NULL;
-  char* gz_serverid = NULL;
+  char *gz_serverid = NULL;
+  char *readlog_filename = NULL;
   
   int *ports = NULL;
   struct pollfd *ufds = NULL;
@@ -840,6 +847,8 @@ int main( int argc, char *argv[] )
       exit(-1);
 #endif
     }
+
+    // Gazebo support
     else if(!strcmp(argv[i], "-g"))
     {
       if(++i<argc)
@@ -852,6 +861,22 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
+
+    // ReadLog support
+    else if(!strcmp(argv[i], "-r"))
+    {
+      if(++i<argc)
+      {
+        readlog_filename = argv[i];
+      }
+      else
+      {
+        Usage();
+        exit(-1);
+      }
+    }
+
+    // Authorization key
     else if(!strcmp(argv[i], "-k"))
     {
       if(++i<argc) 
@@ -944,6 +969,14 @@ int main( int argc, char *argv[] )
   }
 #endif
 
+#ifndef INCLUDE_READLOG
+  if (readlog_filename != NULL)
+  {
+    PLAYER_ERROR("Sorry, support for log files not included at compile-time.");
+    exit(-1);
+  }
+#endif
+
   
   if (use_stage)
   {
@@ -962,6 +995,18 @@ int main( int argc, char *argv[] )
 
     // Use the clock from Gazebo
     GlobalTime = new GzTime();
+    assert(GlobalTime);
+#endif
+  }
+  else if (readlog_filename != NULL)
+  {
+#ifdef INCLUDE_READLOG
+    // Initialize the readlog reader
+    if (ReadLogManager_Init(readlog_filename) != 0)
+      exit(-1);
+
+    // Use the clock from Gazebo
+    GlobalTime = new ReadLogTime();
     assert(GlobalTime);
 #endif
   }
@@ -1033,6 +1078,15 @@ int main( int argc, char *argv[] )
       fputs("ClientManager::Update() errored; bailing.\n", stderr);
       exit(-1);
     }
+  }
+
+  // Finalize ReadLog manager
+  // AH: I know we never get here, but we should, dammit!
+  if (readlog_filename != NULL)
+  {
+#if INCLUDE_READLOG
+    ReadLogManager_Fini();
+#endif
   }
   
   // Finalize gazebo client

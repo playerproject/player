@@ -450,7 +450,7 @@ Festival::Main()
       {
         fprintf(stderr,"RunSpeechThread: something went wrong\n"
                 "              expected %d bytes of code, but got %d\n", 
-                strlen(FESTIVAL_CODE_OK),numread);
+                (int) strlen(FESTIVAL_CODE_OK),numread);
         break;
       }
       // NULLify the end
