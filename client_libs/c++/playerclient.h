@@ -47,6 +47,12 @@
 #include <bpsproxy.h>  /* support for the BPS device */
 #include <broadcastproxy.h> /* support for the broadcast device */
 #include <moteproxy.h> /* support for the broadcast device */
+#include <rwi_positionproxy.h> /* support for the RWI position device */
+#include <rwi_sonarproxy.h> /* support for the RWI sonar device */
+#include <rwi_laserproxy.h> /* support for the RWI laser device */
+#include <rwi_bumperproxy.h> /* support for the RWI bumper device */
+//#include <rwi_joystickproxy.h> /* support for the RWI joystick device */
+#include <rwi_powerproxy.h> /* support for the RWI power device */
 
 //#include <idarproxy.h>  /* support for the IDAR device */
 //#include <descartesproxy.h>  /* support for the IDAR device */

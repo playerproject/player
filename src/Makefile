@@ -70,6 +70,32 @@ endif
 ifdef INCLUDE_SPEECH
   OBS += speechdevice.o
 endif
+ifdef USE_MOBILITY
+  INCLUDES += -DUSE_MOBILITY -D_POSIX_THREADS -D_POSIX_THREAD_SAFE_FUNCTIONS \
+              -D_REENTRANT -DPOSIX -D__x86__ -D__linux__ -D__OSVERSION__=2 \
+              -I$(MOBILITY_ROOT)/include -I$(MOBILITY_ROOT)/tools/include
+  LIBS += -L$(MOBILITY_ROOT)/lib -L$(MOBILITY_ROOT)/tools/lib -lmby \
+          -lidlmby -lomniDynamic2 -lomniORB2 -ltcpwrapGK -lomnithread
+endif
+ifdef INCLUDE_RWI_POSITION
+  OBS += rwi_positiondevice.o rwidevice.o
+endif
+ifdef INCLUDE_RWI_SONAR
+  OBS += rwi_sonardevice.o rwidevice.o
+endif
+ifdef INCLUDE_RWI_LASER
+  OBS += rwi_laserdevice.o rwidevice.o
+endif
+ifdef INCLUDE_RWI_BUMPER
+  OBS += rwi_bumperdevice.o rwidevice.o
+endif
+#not yet complete
+#ifdef INCLUDE_RWI_JOYSTICK
+#  OBS += rwi_joystickdevice.o rwidevice.o
+#endif
+ifdef INCLUDE_RWI_POWER
+  OBS += rwi_powerdevice.o rwidevice.o
+endif
 
 #SHARED_OBJS = laserdevice.so
 
@@ -136,3 +162,5 @@ uninstall:
 	$(RM) -f $(INSTALL_LIB)/libplayerqueue.a
 
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
+
+
