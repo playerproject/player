@@ -144,6 +144,7 @@ AC_SUBST(LIBOBJS)
 
 dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile 
+          replace/Makefile 
           server/Makefile 
           server/drivers/Makefile 
           server/drivers/mixed/Makefile 
