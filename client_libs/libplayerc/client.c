@@ -231,7 +231,7 @@ void *playerc_client_read(playerc_client_t *client)
 {
   player_msghdr_t header;
   int len;
-  char data[8192];
+  char data[PLAYER_MAX_MESSAGE_SIZE];
 
   // See if there is any queued data.
   len = sizeof(data);
@@ -287,7 +287,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
                            void *req_data, int req_len, void *rep_data, int rep_len)
 {
   int i, len;
-  char data[8192];
+  char data[PLAYER_MAX_REQREP_SIZE];
   player_msghdr_t req_header, rep_header;
 
   if (deviceinfo == NULL)

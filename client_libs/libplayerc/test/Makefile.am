@@ -13,6 +13,7 @@ noinst_PROGRAMS = $(BUILDTEST)
 test_SOURCES = test.c \
                test.h \
                test_blobfinder.c \
+							 test_camera.c \
 							 test_comms.c \
                test_fiducial.c \
                test_laser.c \

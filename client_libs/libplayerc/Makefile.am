@@ -10,6 +10,7 @@ libplayerc_a_SOURCES = playerc.h \
                        device.c \
 											 utils.c \
                        dev_blobfinder.c \
+											 dev_camera.c \
                        dev_comms.c \
                        dev_fiducial.c \
                        dev_laser.c \

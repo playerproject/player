@@ -60,6 +60,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_BLOBFINDER_STRING;
     case PLAYER_BUMPER_CODE:
       return PLAYER_BUMPER_STRING;
+    case PLAYER_CAMERA_CODE:
+      return PLAYER_CAMERA_STRING;
     case PLAYER_COMMS_CODE:
       return PLAYER_COMMS_STRING;
     case PLAYER_DIO_CODE:
@@ -74,8 +76,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_LOCALIZE_STRING;
     case PLAYER_GRIPPER_CODE:
       return PLAYER_GRIPPER_STRING;
-	case PLAYER_IR_CODE:
-	  return PLAYER_IR_STRING;
+    case PLAYER_IR_CODE:
+      return PLAYER_IR_STRING;
     case PLAYER_POSITION_CODE:
       return PLAYER_POSITION_STRING;
     case PLAYER_POSITION3D_CODE:
@@ -86,8 +88,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_PTZ_STRING;
     case PLAYER_SONAR_CODE:
       return PLAYER_SONAR_STRING;
-	case PLAYER_SPEECH_CODE:
-	  return PLAYER_SPEECH_STRING;
+    case PLAYER_SPEECH_CODE:
+      return PLAYER_SPEECH_STRING;
     case PLAYER_TRUTH_CODE:
       return PLAYER_TRUTH_STRING;
     case PLAYER_WIFI_CODE:
@@ -109,6 +111,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_BLOBFINDER_CODE;
   if (strcmp(name, PLAYER_BUMPER_STRING) == 0)
     return PLAYER_BUMPER_CODE;
+  if (strcmp(name, PLAYER_CAMERA_STRING) == 0)
+    return PLAYER_CAMERA_CODE;
   if (strcmp(name, PLAYER_COMMS_STRING) == 0)
     return PLAYER_COMMS_CODE;
   if (strcmp(name, PLAYER_DIO_STRING) == 0)

@@ -30,12 +30,14 @@ class MainWin:
         self.canvas = rtk3.Canvas(1)
         self.canvas.addto(self.glade.get_widget('globalmap'))
 
-        self.canvas_scale = 0.05
+        #self.canvas_scale = 0.05
+        self.canvas_scale = 0.06
         self.canvas.set_scale(self.canvas_scale)
         self.canvas.set_extent((-100, -100), (100, 100))
 
         self.root_fig = rtk3.Fig(self.canvas.root())
-        self.root_fig.bgcolor((128, 128, 128, 255))
+        #self.root_fig.bgcolor((128, 128, 128, 255))
+        self.root_fig.bgcolor((255, 255, 255, 255))
         self.root_fig.rectangle((0, 0, 0), (200, 200))
         self.root_fig.connect(self.on_root_event, None)
 

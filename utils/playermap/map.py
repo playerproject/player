@@ -74,14 +74,16 @@ class MapPatch:
         self.fig.bgcolor((0, 0, 255, 255))
         self.fig.circle((0, 0), 0.20)
 
-        self.fig.text((0.50, 0.50), '%d' % (self.id))
+        #self.fig.text((0.50, 0.50), '%d' % (self.id))
 
         #self.fig.polyline([(-0.10, 0), (+0.10, 0)])
         #self.fig.polyline([(0, -0.10), (0, +0.10)])
 
         # Draw free space
-        self.fig.fgcolor((255, 255, 255, 16))
-        self.fig.bgcolor((255, 255, 255, 16))
+        #self.fig.fgcolor((255, 255, 255, 16))
+        #self.fig.bgcolor((255, 255, 255, 16))
+        self.fig.fgcolor((0, 0, 0, 16))
+        self.fig.bgcolor((128, 128, 0, 64))
         self.fig.polygon((0, 0, 0), self.scan.get_free())
 
         # Draw the hit points
@@ -133,7 +135,12 @@ class MapLink:
             self.fig.fgcolor((128, 0, 128, 128))
         else:
             self.fig.fgcolor((0, 0, 255, 128))
-        self.fig.polyline([self.patch_a.pose[:2], self.patch_b.pose[:2]])
+
+        self.fig.line_width_pixels(2)
+
+        if self.child:
+            self.fig.polyline([self.patch_a.pose[:2], self.patch_b.pose[:2]])
+            
         self.fig.lower(1000)
         return
     
@@ -207,6 +214,9 @@ class Map:
 
         link = MapLink(patch_a, patch_b)
         self.links += [link]
+
+        # TESTING
+        link.child = 0
 
         # Add link to list of all outgoing links for patch_a
         self.links_a[patch_a] += [link]

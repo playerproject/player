@@ -255,6 +255,10 @@ AC_TRY_COMPILE(
          [AC_MSG_RESULT(no)
           AC_DEFINE(O_SYNC, 0, must define this on some non-Linux platforms)])
 
+dnl big message support
+AC_ARG_ENABLE(bigmess, [  --enable-bigmess   Allow big message packets (experimental)],
+       AC_DEFINE(PLAYER_BIG_MESSAGES, 1, [allow big message packets (experimental)]),)
+
 
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(scandir poll dirname alphasort)
