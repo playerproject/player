@@ -100,6 +100,8 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
       position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
       position_data.yaw = ntohl((int32_t)(RTOD(pose->a)));
 
+      position_data.stall = pose->stall ? 1 : 0;
+
       //printf( "getdata called at %lu ms\n", stage_client->stagetime );
       
       // publish this data
