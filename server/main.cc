@@ -446,7 +446,7 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
       player_stage_info_t* deviceIO = 0;
       
       
-      if((deviceIO = 
+      if((char*)(deviceIO = 
           (player_stage_info_t*)mmap( NULL, ioSize, PROT_READ | PROT_WRITE, 
                                       MAP_SHARED, tfd, (off_t)0 ))  
          == MAP_FAILED )

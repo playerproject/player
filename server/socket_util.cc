@@ -130,10 +130,13 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
    */
   if(fcntl(sock, F_SETOWN, getpid()) == -1)
   {
-    perror("create_and_bind_socket():fcntl() failed while setting socket "
-           "pid ownership; socket not created.");
+    /* I'm making this non-fatal because it always fails under Cygwin and
+     * yet doesn't seem to matter -BPG */
+    PLAYER_WARN("fcntl() failed while setting socket pid ownership");
+#if 0
     close(sock);
     return(-1);
+#endif
   }
 
   if(!blocking)

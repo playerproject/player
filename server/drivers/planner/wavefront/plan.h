@@ -13,8 +13,6 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-
 // Forward declarations
 struct _rtk_fig_t *fig;
 

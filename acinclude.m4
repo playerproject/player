@@ -78,6 +78,7 @@ if test "x$enable_$1" = "xyes" -a len($7) -gt 0 -a len($8) -gt 0; then
       failed_package_check=yes)
   else
     no_pkg_config=yes
+    enable_$1=no
   fi
 fi
 
