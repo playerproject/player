@@ -84,9 +84,8 @@ fi
 dnl Optionally build the python client if the header is available
 PYTHON_VERSION=2.2
 AC_ARG_WITH(python,
-[  --without-python        Don't compile the python client libraries],
-[AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)],
-with_python=no)
+[  --without-python        Don't compile the python client libraries],,
+[AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)])
 AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
 
 
