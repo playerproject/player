@@ -11,11 +11,13 @@
   "USAGE: randomwalk [-h <host>] [-p <port>] [-m]\n" \
   "       -h <host>: connect to Player on this host\n" \
   "       -p <port>: connect to Player on this TCP port\n" \
+  "       -l       : use laser instead of sonar\n" \
   "       -m       : turn on motors (be CAREFUL!)"
                
 
 PlayerClient robot;
 bool turnOnMotors = false;
+bool use_laser = false;
 
 /* parse command-line args */
 void
@@ -50,6 +52,10 @@ parse_args(int argc, char** argv)
     {
       turnOnMotors = true;
     }
+    else if(!strcmp(argv[i],"-l"))
+    {
+      use_laser = true;
+    }
     else
     {
       puts(USAGE);
@@ -64,7 +70,8 @@ int main(int argc, char** argv)
   int randint;
   int randcount = 0;
   int avoidcount = 0;
-  unsigned short minfrontdistance = 350;
+  bool obs = false;
+  unsigned short minfrontdistance = 450;
 
   /* first, parse command line args */
   parse_args(argc,argv);
@@ -76,8 +83,12 @@ int main(int argc, char** argv)
   /* request read access on the sonars and all access to the wheels */
   if(robot.RequestDeviceAccess(PLAYER_POSITION_CODE,PLAYER_ALL_MODE))
     exit(1);
-  if(robot.RequestDeviceAccess(PLAYER_SONAR_CODE,PLAYER_READ_MODE))
-    exit(1);
+  if (use_laser)
+    if(robot.RequestDeviceAccess(PLAYER_LASER_CODE,PLAYER_READ_MODE))
+      exit(1);
+  else
+    if(robot.RequestDeviceAccess(PLAYER_SONAR_CODE,PLAYER_READ_MODE))
+      exit(1);
 
   /* maybe turn on the motors */
   //if(turnOnMotors && robot.ChangeMotorState(1))
@@ -91,15 +102,29 @@ int main(int argc, char** argv)
       exit(1);
 
     /* print current sensor data to console */
-    robot.Print();
+    /*robot.Print();*/
 
-    if(robot.sonar[2] < minfrontdistance ||
-       robot.sonar[3] < minfrontdistance ||
-       robot.sonar[4] < minfrontdistance ||
-       robot.sonar[5] < minfrontdistance ||
-       avoidcount || robot.position->stalls)
+    /* See if there is an obstacle in front */
+    if (use_laser)
     {
-      *robot.newspeed = -150;
+        obs = false;
+        for (int i = 0; i < 361; i++)
+        {
+            if ((robot.laser[i] & 0x1FFF) < minfrontdistance)
+                obs = true;
+        }
+    }
+    else
+    {
+        obs = (robot.sonar[2] < minfrontdistance ||
+               robot.sonar[3] < minfrontdistance ||
+               robot.sonar[4] < minfrontdistance ||
+               robot.sonar[5] < minfrontdistance);
+    }
+
+    if(obs || avoidcount || robot.position->stalls)
+    {
+      *robot.newspeed = 0; //-150;
 
       /* once we start avoiding, continue avoiding for 2 seconds */
       /* (we run at about 10Hz, so 20 loop iterations is about 2 sec) */
@@ -124,7 +149,8 @@ int main(int argc, char** argv)
       if(!randcount)
       {
         /* make random int tween -20 and 20 */
-        randint = (1+(int)(40.0*rand()/(RAND_MAX+1.0))) - 20; 
+        //randint = (1+(int)(40.0*rand()/(RAND_MAX+1.0))) - 20;
+        randint = rand() % 41 - 20;
 
         *robot.newturnrate = randint;
         randcount = 20;
