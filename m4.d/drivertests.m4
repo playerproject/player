@@ -203,7 +203,7 @@ AC_ARG_WITH(stage, [  --with-stage=dir       Location of Stage],
             STAGE_DIR=$with_stage,STAGE_DIR=$prefix)
 STAGE_HEADER=$STAGE_DIR/stage.h
 STAGE_EXTRA_CPPFLAGS="-I$STAGE_DIR"
-STAGE_EXTRA_LDFLAGS="-L$STAGE_DIR -lstageio"
+STAGE_EXTRA_LDFLAGS="-L$STAGE_DIR -lstageio -lstageworldfile"
 
 dnl add the Stage-1.4 driver
 PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[yes],
