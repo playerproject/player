@@ -79,19 +79,18 @@ set PLAYER_PLAYER_DATA_REQ     2
 set PLAYER_PLAYER_DATAMODE_REQ 3
 set PLAYER_PLAYER_DATAFREQ_REQ 4
 
-set zero16 [binary format S 0]
-set zero32 [binary format I 0]
 
 
 proc connectToRobot {robot} {
-  global sock port host PLAYER_IDENT_STRLEN
+  global sock port host PLAYER_IDENT_STRLEN PLAYER_PLAYER_CODE \
+         PLAYER_PLAYER_DATAMODE_REQ
 
   set sock [socket $robot $port]
   fconfigure $sock -blocking 1 -translation binary
   # print out who we're talking to
   puts "Connected to [read $sock $PLAYER_IDENT_STRLEN]"
   # make it request/reply
-  requestFromRobot "dm[binary format c 1]"
+  requestFromRobot $PLAYER_PLAYER_CODE 0 "[binary format Sc $PLAYER_PLAYER_DATAMODE_REQ 1]"
   set host $robot
 }
 proc disconnectFromRobot {} {
@@ -102,12 +101,12 @@ proc disconnectFromRobot {} {
   close $sock
   set sock -1
 }
-proc requestFromRobot {req} {
+proc requestFromRobot {device index req} {
   global sock host PLAYER_STX PLAYER_PLAYER_CODE PLAYER_PLAYER_CODE \
          PLAYER_MSGTYPE_REQ devices PLAYER_PLAYER_DEV_REQ \
          zero16 zero32 PLAYER_HEADER_LEN PLAYER_MSGTYPE_RESP
 
-  set size [binary format I [string length $req]]
+  set size [string length $req]
   if {$sock == -1} {
     error "ERROR: robot connection not set up"
   }
@@ -115,7 +114,7 @@ proc requestFromRobot {req} {
 
   #puts "Requesting \"$req\" (length: [string length $req])"
 
-  puts -nonewline $sock "${PLAYER_STX}${PLAYER_MSGTYPE_REQ}${PLAYER_PLAYER_CODE}${zero16}${zero32}${zero32}${zero32}${zero32}${zero32}${size}${req}"
+  puts -nonewline $sock "${PLAYER_STX}[binary format SSSIIIIII $PLAYER_MSGTYPE_REQ $device $index 0 0 0 0 0 $size]${req}"
   flush $sock
 
   #
@@ -138,7 +137,7 @@ proc requestFromRobot {req} {
     #puts "timestamp1: $timestamp1"
     #puts "reserved: $reserved"
     #puts "size: $size"
-    if {![string compare $type $PLAYER_MSGTYPE_RESP]} {
+    if {$type == $PLAYER_MSGTYPE_RESP} {
         break;
     }
     # eat other data
@@ -149,16 +148,16 @@ proc requestFromRobot {req} {
   #
   # if this is a device request, keep track of it accordingly
   #
-  if {![string compare [string range $req 0 1] $PLAYER_PLAYER_DEV_REQ]} {
+  if {([binary scan $req S subtype] == 1) && \
+      ($subtype == $PLAYER_PLAYER_DEV_REQ)} {
     set i 2
     while {$i < [string length $reply]} {
-      if {[binary scan [string range $reply [expr $i + 2] [expr $i + 3]] \
-            S index] != 1} {
-        error "Unable to determine device index for bookkeeping"
+      if {[binary scan [string range $reply $i [expr $i + 4]] \
+            SSa device index access] != 3} {
+        error "Unable to determine device/index for bookkeeping"
       }
-      set devices([string range $reply $i [expr $i +1]],$index) \
-            [string index $reply [expr $i + 4]]
-      set i [expr $i + 5]
+      set devices($device,$index) $access
+      incr i 5
     }
 
     if {![string compare $reply $req]} {
@@ -176,11 +175,11 @@ proc readData {} {
   global sonar
   global time xpos ypos heading speed turnrate compass stall
   global laser vision
-  global pan tilt zoom
+  global pan tilt zoom PLAYER_PLAYER_CODE
   global ACTS_BLOB_SIZE ACTS_NUM_CHANNELS ACTS_HEADER_SIZE 
   global PLAYER_HEADER_LEN PLAYER_POSITION_CODE PLAYER_MISC_CODE
   global PLAYER_VISION_CODE PLAYER_LASER_CODE PLAYER_GRIPPER_CODE 
-  global PLAYER_PTZ_CODE PLAYER_SONAR_CODE
+  global PLAYER_PTZ_CODE PLAYER_SONAR_CODE PLAYER_PLAYER_DATA_REQ
 
   if {$sock == -1} {
     error "ERROR: robot connection not set up"
@@ -188,7 +187,7 @@ proc readData {} {
 
   set i 0
   # request a packet
-  requestFromRobot "dp"
+  requestFromRobot $PLAYER_PLAYER_CODE 0 [binary format S $PLAYER_PLAYER_DATA_REQ]
   # how many devices are we reading from?
   set numdevices 0
   foreach dev [array names devices] {
@@ -200,7 +199,7 @@ proc readData {} {
 
   while {$i < $numdevices} {
     set header [read $sock $PLAYER_HEADER_LEN]
-    if {[binary scan $header a2a2a2SIIIIII \
+    if {[binary scan $header a2SSSIIIIII \
                   stx type device device_index time0 time1\
                   timestamp0 timestamp1 reserved size] != 10} {
       error "scanning header"
@@ -332,10 +331,10 @@ proc writeCommand {device index str} {
     error "ERROR: robot connection not set up"
   }
 
-  set size [binary format I [string length $str]]
+  set size [string length $str]
   set device_index [binary format S $index]
   #set cmd "c${device}${size}${str}"
-  set cmd "${PLAYER_STX}${PLAYER_MSGTYPE_CMD}${device}${device_index}${zero32}${zero32}${zero32}${zero32}${zero32}${size}${str}"
+  set cmd "${PLAYER_STX}[binary format SSSIIIIII $PLAYER_MSGTYPE_CMD $device $index 0 0 0 0 0 $size]${str}"
   puts -nonewline $sock $cmd
   flush $sock
 }
@@ -379,10 +378,13 @@ proc printData {devices} {
 }
 
 proc ChangeMotorState {state} {
+  global PLAYER_POSITION_CODE
   if {$state == 1} {
     #requestFromRobot "xp[binary format S 2]m[binary format c 1]"
+    requestFromRobot $PLAYER_POSITION_CODE 0 "m[binary format c 1]"
   } else {
     #requestFromRobot "xp[binary format S 2]m[binary format c 0]"
+    requestFromRobot $PLAYER_POSITION_CODE 0 "m[binary format c 0]"
   }
 }
 

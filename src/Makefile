@@ -9,7 +9,7 @@ DEVICELIBNAME = libplayerdevice.a
 
 INCLUDES = -I../include
 CPP = g++
-CFLAGS = -g -Wall
+CFLAGS = -g -g -g -Wall
 LIBDIRS = -L.
 LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm
 MAKEDEP = makedepend

@@ -39,7 +39,7 @@ set MAX_RANGE 8000.0
  
 set host localhost
 # default device string
-set device_str "pp[binary format S 0]aps[binary format S 0]rsl[binary format S 0]rav[binary format S 0]rsz[binary format S 0]a"
+set device_str "[binary format SS $PLAYER_POSITION_CODE 0]a[binary format SS $PLAYER_SONAR_CODE 0]r[binary format SS $PLAYER_LASER_CODE 0]r[binary format SS $PLAYER_VISION_CODE 0]r[binary format SS $PLAYER_PTZ_CODE 0]a"
 
 set USAGE "USAGE: viewer.tk -- \[-h <host>\] \[-p <port>\] \[-d <device_string>\] \[-s <size>\]\n  -h <host> : hostname/IP where Player is running (default: $host)\n  -p <port> : TCP port where Player is running (default: $port)\n  -d <device_string> : Player device request string (default: $device_str)\n  -s <size> : width/height (in pixels) of the sensor display (default: $CANVAS_HEIGHT)"
        
@@ -615,10 +615,10 @@ proc displayData {} {
 }
 
 proc startRobot {} {
-  global host device_str PLAYER_PLAYER_DEV_REQ
+  global host device_str PLAYER_PLAYER_DEV_REQ PLAYER_PLAYER_CODE
 
   connectToRobot $host
-  requestFromRobot ${PLAYER_PLAYER_DEV_REQ}${device_str}
+  requestFromRobot $PLAYER_PLAYER_CODE 0 "[binary format S $PLAYER_PLAYER_DEV_REQ]${device_str}"
   signal trap SIGALRM {displayData;alarm 1.5}
   alarm 1.5
 }
