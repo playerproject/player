@@ -57,6 +57,8 @@ GzTime::~GzTime()
 int GzTime::GetTime(struct timeval* time)
 {
   //printf("%.3f\n", this->sim->data->sim_time);
+
+  // TODO: put gz_sim_lock in here ?
   
   time->tv_sec = (int) floor(this->sim->data->sim_time);
   time->tv_usec = (int) floor(fmod(this->sim->data->sim_time, 1.0) * 1e6);
