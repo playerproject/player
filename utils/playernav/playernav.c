@@ -43,28 +43,28 @@ player_read_func(gpointer* arg)
   int i;
   static int count=0;
   pose_t robot_pose;
-  gui_data_t gui_data = *(gui_data_t*)arg;
+  gui_data_t* gui_data = (gui_data_t*)arg;
 
   // read new data
-  if(playerc_mclient_read(gui_data.mclient,10) < 0)
+  if(playerc_mclient_read(gui_data->mclient,10) < 0)
   {
     fprintf(stderr, "Error on read\n");
     gtk_main_quit();
   }
-  for(i=0;i<gui_data.num_robots;i++)
+  for(i=0;i<gui_data->num_robots;i++)
   {
-    if(gui_data.localizes[i] && gui_data.localizes[i]->info.fresh)
+    if(gui_data->localizes[i] && gui_data->localizes[i]->info.fresh)
     {
-      assert(gui_data.localizes[i]->hypoth_count > 0);
-      robot_pose.px = gui_data.localizes[i]->hypoths[0].mean[0];
-      robot_pose.py = gui_data.localizes[i]->hypoths[0].mean[1];
-      robot_pose.pa = gui_data.localizes[i]->hypoths[0].mean[2];
+      assert(gui_data->localizes[i]->hypoth_count > 0);
+      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean[0];
+      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean[1];
+      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean[2];
 
       // if it's off the map, put it in the middle
       if((fabs(robot_pose.px) >=
-          (gui_data.mapdev->width * gui_data.mapdev->resolution / 2.0)) ||
+          (gui_data->mapdev->width * gui_data->mapdev->resolution / 2.0)) ||
          (fabs(robot_pose.py) >=
-          (gui_data.mapdev->height * gui_data.mapdev->resolution / 2.0)))
+          (gui_data->mapdev->height * gui_data->mapdev->resolution / 2.0)))
       {
         robot_pose.px = robot_pose.py = 0.0;
       }
@@ -74,34 +74,34 @@ player_read_func(gpointer* arg)
       if(!robot_moving_p || (robot_moving_idx != i))
       {
         // also don't draw it if the pose hasn't changed since last time
-        if((gui_data.robot_poses[i].px != robot_pose.px) ||
-           (gui_data.robot_poses[i].py != robot_pose.py) ||
-           (gui_data.robot_poses[i].pa != robot_pose.pa))
+        if((gui_data->robot_poses[i].px != robot_pose.px) ||
+           (gui_data->robot_poses[i].py != robot_pose.py) ||
+           (gui_data->robot_poses[i].pa != robot_pose.pa))
         {
           //printf("moving robot %d\n", i);
-          move_robot(gui_data.robot_items[i],robot_pose);
+          move_robot(gui_data->robot_items[i],robot_pose);
         }
       }
 
       // regardless, store this pose for comparison on next iteration
-      gui_data.robot_poses[i] = robot_pose;
+      gui_data->robot_poses[i] = robot_pose;
 
-      gui_data.localizes[i]->info.fresh = 0;
+      gui_data->localizes[i]->info.fresh = 0;
     }
 
     // every once in a while, get the latest path from each robot
-    if(!(count % (DATA_FREQ * 10 * gui_data.num_robots)))
+    if(!(count % (DATA_FREQ * 10 * gui_data->num_robots)))
     {
-      if(gui_data.planners[i])
+      if(gui_data->planners[i])
       {
-        if(playerc_planner_get_waypoints(gui_data.planners[i]) < 0)
+        if(playerc_planner_get_waypoints(gui_data->planners[i]) < 0)
         {
           fprintf(stderr, "error while getting waypoints for robot %d\n", i);
           gtk_main_quit();
           break;
         }
         //puts("drawing waypoints");
-        draw_waypoints(&gui_data,i);
+        draw_waypoints(gui_data,i);
       }
     }
   }
