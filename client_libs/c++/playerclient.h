@@ -1426,7 +1426,10 @@ class SonarProxy : public ClientProxy
     SonarProxy(PlayerClient* pc, unsigned short index, 
                unsigned char access = 'c') :
             ClientProxy(pc,PLAYER_SONAR_CODE,index,access)
-    { bzero(&sonar_pose,sizeof(sonar_pose)); }
+    { 
+      memset(&sonar_pose,0,sizeof(sonar_pose)); 
+      range_count=0;
+    }
 
     // these methods are the user's interface to this device
     
