@@ -32,11 +32,13 @@
 
 
 class CNoDevice:public CDevice {
+    CLock lock;
+
  public:  
   CNoDevice( void );
   ~CNoDevice( void );
   
-  CLock* GetLock( void ){ return NULL; };
+  CLock* GetLock( void ) {return &lock;};
   
   int Setup();
   int Shutdown();
