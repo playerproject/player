@@ -12,9 +12,6 @@ else
 fi
 echo "assuming your SourceForge username is $_SFUSER..."
 
-# Name of file/directory we will upload
-#NAME=Player-libplayerc-$VERSION-html
-
 # Create a tarball with the correct name and layout
 rm -rf $NAME
 cp -r html $NAME

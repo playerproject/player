@@ -1,6 +1,6 @@
 
 
-CVS_NAME=Player-libplayerc-CVS-html
+CVS_NAME=Player-libplayerc-cvs-html
 
 all:
 	doxygen libplayerc.dox

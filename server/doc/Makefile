@@ -1,6 +1,6 @@
 
 
-CVS_NAME=Player-player-CVS-html
+CVS_NAME=Player-player-cvs-html
 
 all:
 	doxygen player.dox
