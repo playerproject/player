@@ -117,8 +117,9 @@ void
 Usage()
 {
   puts("");
-  fprintf(stderr, "USAGE: player [-p <port>] [-s <path>] [-dl <shlib>] "
-          "[-k <key>] [<configfile>]\n");
+  fprintf(stderr, "USAGE:\nplayer [-h] [-p <port>] [-s <path>] [-dl <shlib>] "
+          "[-k <key>] [<configfile>]\n\n");
+  fprintf(stderr, "  -h            : Print this message.\n");
   fprintf(stderr, "  -p <port>     : TCP port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
   fprintf(stderr, "  -s <path>     : use memory-mapped IO with Stage "
@@ -127,6 +128,10 @@ Usage()
   fprintf(stderr, "  -k <key>      : require client authentication with the "
           "given key\n");
   fprintf(stderr, "  <configfile>  : load the the indicated config file\n");
+  fprintf(stderr,"\n\nPart of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
+  fprintf(stderr, "Copyright (C) 2000 - 2003 Brian Gerkey, Richard Vaughan, Andrew Howard,\nand contributors.\n");
+  fprintf(stderr,"\nReleased under the GNU General Public License.\n");
+  fprintf(stderr,"\nPlayer comes with ABSOLUTELY NO WARRANTY.  This is free software, and you are\nwelcome to redistribute it under certain conditions; see COPYING for details.\n\n");
 }
 
 /* just so we know when we've segfaulted, even when running under stage */
