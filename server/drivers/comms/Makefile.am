@@ -1,4 +1,4 @@
-noinst_LIBRARIES = @UDPBCAST_LIB@ 
+noinst_LIBRARIES = @UDPBROADCAST_LIB@ 
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 

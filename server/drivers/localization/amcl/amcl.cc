@@ -407,7 +407,7 @@ int AdaptiveMCL::LoadStageConfig(void)
   this->map_file = strdup(data.map_file);
   this->map_scale = data.map_scale;
 
-  PLAYER_TRACE("map file [%s] map scale [%f]", this->map_file, this->map_scale);
+  PLAYER_TRACE2("map file [%s] map scale [%f]", this->map_file, this->map_scale);
   
   return 0;
 }
@@ -760,7 +760,7 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
   // Re-compute the pose estimate
   pf_calc_stats(this->pf, &this->pf_pose_mean, &this->pf_pose_cov);
 
-  PLAYER_TRACE("pf: %f %f %f",
+  PLAYER_TRACE3("pf: %f %f %f",
                this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
   
   this->Unlock();
@@ -835,7 +835,7 @@ void AdaptiveMCL::UpdateFilter(void)
   // Re-compute the pose estimate
   pf_calc_stats(this->pf, &this->pf_pose_mean, &this->pf_pose_cov);
 
-  PLAYER_TRACE("pf: %f %f %f",
+  PLAYER_TRACE3("pf: %f %f %f",
                this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
   
   this->last_odom_pose = this->curr_odom_pose;
@@ -895,7 +895,7 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   // check if the config request is valid
   if (len != reqlen)
   {
-    PLAYER_ERROR("config request len is invalid (%d != %d)", len, reqlen);
+    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
     if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
@@ -938,13 +938,13 @@ void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
   // check if the config request is valid
   if (len != reqlen)
   {
-    PLAYER_ERROR("config request len is invalid (%d != %d)", len, reqlen);
+    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
     if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
 
-  PLAYER_TRACE("%d %d %f %d\n", this->map->size_x, this->map->size_y, this->map->scale, ntohl(info.scale));
+  PLAYER_TRACE4("%d %d %f %d\n", this->map->size_x, this->map->size_y, this->map->scale, ntohl(info.scale));
   
   info.scale = htonl((int32_t) (1000.0 / this->map->scale + 0.5));
   info.width = htonl((int32_t) (this->map->size_x));
@@ -974,7 +974,7 @@ void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
   // check if the config request is valid
   if (len != reqlen)
   {
-    PLAYER_ERROR("config request len is invalid (%d != %d)", len, reqlen);
+    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
     if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
@@ -988,7 +988,7 @@ void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
   si = ntohl(data.width);
   sj = ntohl(data.height);
 
-  PLAYER_TRACE("%d %d %d %d\n", oi, oj, si, sj);
+  PLAYER_TRACE4("%d %d %d %d\n", oi, oj, si, sj);
 
   // Grab the pixels from the map
   for (j = 0; j < sj; j++)

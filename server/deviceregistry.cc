@@ -42,7 +42,7 @@ extern DriverTable* driverTable;
 extern PlayerTime* GlobalTime;
 
 /* prototype device-specific init funcs */
-#ifdef INCLUDE_SICK
+#ifdef INCLUDE_SICKLMS200
 void SickLMS200_Register(DriverTable* table);
 #endif
 
@@ -64,11 +64,11 @@ void LaserVisualBarcode_Register(DriverTable* table);
 void LaserCSpace_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_SONY
+#ifdef INCLUDE_SONYEVID30
 void SonyEVID30_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_UDPBCAST
+#ifdef INCLUDE_UDPBROADCAST
 void UDPBroadcast_Register(DriverTable* table);
 #endif
 
@@ -86,7 +86,7 @@ void P2OSPosition_Register(DriverTable* table);
 void P2OSSonar_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_WIFI
+#ifdef INCLUDE_LINUXWIFI
 void LinuxWiFi_Register(DriverTable *table);
 #endif
 
@@ -195,7 +195,7 @@ lookup_interface(char* name, player_interface_t* interface)
 void
 register_devices()
 {
-#ifdef INCLUDE_SICK
+#ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
 #endif
 
@@ -217,11 +217,11 @@ register_devices()
   LaserCSpace_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_SONY
+#ifdef INCLUDE_SONYEVID30
   SonyEVID30_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_UDPBCAST
+#ifdef INCLUDE_UDPBROADCAST
   UDPBroadcast_Register(driverTable);
 #endif
 
@@ -251,7 +251,7 @@ register_devices()
   RWIPower_Register(driverTable);
 #endif
   
-#ifdef INCLUDE_WIFI
+#ifdef INCLUDE_LINUXWIFI
   LinuxWiFi_Register(driverTable);
 #endif
 
