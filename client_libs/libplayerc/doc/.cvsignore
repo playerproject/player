@@ -1,6 +1,7 @@
 xx00
 xx01
 *.f.tex
+pass1-00
 pass1-01
 *.t.tex
 *.log *.dvi *.aux *.ps *.pdf *.toc
