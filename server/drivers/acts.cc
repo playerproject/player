@@ -51,19 +51,18 @@
 #include <drivertable.h>
 
 
-// note: acts_version_t is declared in defaults.h
-
 #define ACTS_VERSION_1_0_STRING "1.0"
 #define ACTS_VERSION_1_2_STRING "1.2"
+#define ACTS_VERSION_2_0_STRING "2.0"
 
 /* a variable of this type tells the vision device how to interact with ACTS */
 typedef enum
 {
   ACTS_VERSION_UNKNOWN = 0,
   ACTS_VERSION_1_0 = 1,
-  ACTS_VERSION_1_2 = 2
+  ACTS_VERSION_1_2 = 2,
+  ACTS_VERSION_2_0 = 3
 } acts_version_t;
-#define DEFAULT_ACTS_PORT 5001
 /* default is to use older ACTS (until we change our robots) */
 #define DEFAULT_ACTS_VERSION ACTS_VERSION_1_0
 #define DEFAULT_ACTS_CONFIGFILE "/usr/local/acts/actsconfig"
@@ -92,14 +91,29 @@ class Acts:public CDevice
     int version_enum_to_string(acts_version_t versionnum, char* versionstr, 
                                int len);
 
-    int portnum;  // port number where we'll connect to ACTS
-    char configfilepath[MAX_FILENAME_SIZE];  // path to configfile
-    char binarypath[MAX_FILENAME_SIZE];  // path to executable
+    // stuff that will be used on the cmdline to start ACTS
     acts_version_t acts_version;  // the ACTS version, as an enum
+    char binarypath[MAX_FILENAME_SIZE];  // path to executable
+    char configfilepath[MAX_FILENAME_SIZE];  // path to configfile (-t)
+    char minarea[8];  // min num of pixels for tracking (-w)
+    int portnum;  // port number where we'll connect to ACTS (-p)
+    char fps[8]; // capture rate (-R)
+    char drivertype[8]; // e.g., bttv, bt848 (-G)
+    char invertp; // invert the image? (-i)
+    char devicepath[MAX_FILENAME_SIZE]; // e.g., /dev/video0 (-d)
+    char channel[8]; // channel to use (-n)
+    char norm[8]; // PAL or NTSC (-V)
+    char pxc200p; // using PXC200? (-x)
+    char brightness[8]; // brightness of image (-B)
+    char contrast[8]; // contrast of image (-C)
+    int width, height;  // the image dimensions. (-W, -H)
+
     int header_len; // length of incoming packet header (varies by version)
     int header_elt_len; // length of each header element (varies by version)
     int blob_size;  // size of each incoming blob (varies by version)
-    int width, height;  // the image dimensions.
+    char portnumstring[128]; // string version of portnum
+    char widthstring[128];
+    char heightstring[128];
 
   public:
     int sock;               // socket to ACTS
@@ -153,15 +167,17 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
   : CDevice(sizeof(player_blobfinder_data_t),0,0,0)
 {
   char tmpstr[MAX_FILENAME_SIZE];
+  int tmpint;
 
   sock = -1;
 
-  strncpy(configfilepath, 
-          cf->ReadFilename(section, "configfile", DEFAULT_ACTS_CONFIGFILE),
-          sizeof(configfilepath));
+  // first, get the necessary args
   strncpy(binarypath,
           cf->ReadFilename(section, "path", DEFAULT_ACTS_PATH),
           sizeof(binarypath));
+  strncpy(configfilepath, 
+          cf->ReadFilename(section, "configfile", DEFAULT_ACTS_CONFIGFILE),
+          sizeof(configfilepath));
   strncpy(tmpstr,
           cf->ReadString(section, "version", ACTS_VERSION_1_0_STRING),
           sizeof(tmpstr));
@@ -171,9 +187,40 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
                  tmpstr, ACTS_VERSION_1_0_STRING);
     acts_version = version_string_to_enum(ACTS_VERSION_1_0_STRING);
   }
-  portnum=cf->ReadInt(section, "port", DEFAULT_ACTS_PORT);
   width = cf->ReadInt(section, "width", DEFAULT_ACTS_WIDTH);
   height = cf->ReadInt(section, "height", DEFAULT_ACTS_HEIGHT);
+  
+  // now, get the optionals
+  bzero(minarea,sizeof(minarea));
+  if((tmpint = cf->ReadInt(section, "pixels", -1)) >= 0)
+    sprintf(minarea,"%d",tmpint);
+  portnum = cf->ReadInt(section, "port", -1);
+  bzero(fps,sizeof(fps));
+  if((tmpint = cf->ReadInt(section, "fps", -1)) >= 0)
+    sprintf(fps,"%d",tmpint);
+  bzero(drivertype,sizeof(drivertype));
+  if(cf->ReadString(section, "drivertype", NULL))
+    strncpy(drivertype, cf->ReadString(section, "drivertype", NULL), 
+            sizeof(drivertype)-1);
+  invertp = cf->ReadInt(section, "invert", -1);
+  bzero(devicepath,sizeof(devicepath));
+  if(cf->ReadString(section, "devicepath", NULL))
+    strncpy(devicepath, cf->ReadString(section, "devicepath", NULL), 
+            sizeof(devicepath)-1);
+  bzero(channel,sizeof(channel));
+  if((tmpint = cf->ReadInt(section, "channel", -1)) >= 0)
+    sprintf(channel,"%d",tmpint);
+  bzero(norm,sizeof(norm));
+  if(cf->ReadString(section, "norm", NULL))
+    strncpy(norm, cf->ReadString(section, "norm", NULL), 
+            sizeof(norm)-1);
+  pxc200p = cf->ReadInt(section, "pxc200", -1);
+  bzero(brightness,sizeof(brightness));
+  if((tmpint = cf->ReadInt(section, "brightness", -1)) >= 0)
+    sprintf(brightness,"%d",tmpint);
+  bzero(contrast,sizeof(contrast));
+  if((tmpint = cf->ReadInt(section, "contrast", -1)) >= 0)
+    sprintf(contrast,"%d",tmpint);
 
   // set up some version-specific parameters
   switch(acts_version)
@@ -181,15 +228,26 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
     case ACTS_VERSION_1_0:
       header_len = ACTS_HEADER_SIZE_1_0;
       blob_size = ACTS_BLOB_SIZE_1_0;
-      portnum = htons(portnum);
+      if(portnum >= 0)
+        portnum = htons(portnum);
       break;
     case ACTS_VERSION_1_2:
+    case ACTS_VERSION_2_0:
     default:
       header_len = ACTS_HEADER_SIZE_1_2;
       blob_size = ACTS_BLOB_SIZE_1_2;
       break;
   }
   header_elt_len = header_len / PLAYER_BLOBFINDER_MAX_CHANNELS;
+  bzero(portnumstring, sizeof(portnumstring));
+  if(portnum >= 0)
+    sprintf(portnumstring,"%d",portnum);
+
+  bzero(widthstring, sizeof(widthstring));
+  sprintf(widthstring,"%d",width);
+
+  bzero(heightstring, sizeof(heightstring));
+  sprintf(heightstring,"%d",height);
 }
     
 // returns the enum representation of the given version string, or
@@ -200,6 +258,8 @@ acts_version_t Acts::version_string_to_enum(char* versionstr)
     return(ACTS_VERSION_1_0);
   else if(!strcmp(versionstr,ACTS_VERSION_1_2_STRING))
     return(ACTS_VERSION_1_2);
+  else if(!strcmp(versionstr,ACTS_VERSION_2_0_STRING))
+    return(ACTS_VERSION_2_0);
   else
     return(ACTS_VERSION_UNKNOWN);
 }
@@ -219,6 +279,9 @@ int Acts::version_enum_to_string(acts_version_t versionnum,
     case ACTS_VERSION_1_2:
       strncpy(versionstr, ACTS_VERSION_1_2_STRING, len);
       return(0);
+    case ACTS_VERSION_2_0:
+      strncpy(versionstr, ACTS_VERSION_2_0_STRING, len);
+      return(0);
     default:
       return(-1);
   }
@@ -227,7 +290,7 @@ int Acts::version_enum_to_string(acts_version_t versionnum,
 int
 Acts::Setup()
 {
-  int i = 0;
+  int i;
   int j;
 
   char acts_bin_name[] = "acts";
@@ -241,8 +304,7 @@ Acts::Setup()
   char host[] = "localhost";
   struct hostent* entp;
 
-  printf("ACTS vision server connection initializing (%s,%d)...",
-         configfilepath,portnum);
+  printf("ACTS vision server connection initializing...");
   fflush(stdout);
 
   player_blobfinder_data_t dummy;
@@ -253,36 +315,119 @@ Acts::Setup()
 
   sprintf(acts_port_num,"%d",portnum);
 
-  /* HACK - I've customized for ACTS2.0.  ahoward
+  i = 0;
   acts_args[i++] = acts_bin_name;
-  if(strlen(configfilepath))
+  // build the argument list, based on version
+  switch(acts_version)
   {
-    acts_args[i++] = acts_configfile_flag;
-    acts_args[i++] = configfilepath;
+    case ACTS_VERSION_1_0:
+      acts_args[i++] = "-t";
+      acts_args[i++] = configfilepath;
+      if(strlen(portnumstring))
+      {
+        acts_args[i++] = "-s";
+        acts_args[i++] = portnumstring;
+      }
+      if(strlen(devicepath))
+      {
+        acts_args[i++] = "-d";
+        acts_args[i++] = devicepath;
+      }
+      break;
+    case ACTS_VERSION_1_2:
+      acts_args[i++] = "-t";
+      acts_args[i++] = configfilepath;
+      if(strlen(portnumstring))
+      {
+        acts_args[i++] = "-p";
+        acts_args[i++] = portnumstring;
+      }
+      if(strlen(devicepath))
+      {
+        acts_args[i++] = "-d";
+        acts_args[i++] = devicepath;
+      }
+      if(strlen(contrast))
+      {
+        acts_args[i++] = "-C";
+        acts_args[i++] = contrast;
+      }
+      if(strlen(brightness))
+      {
+        acts_args[i++] = "-B";
+        acts_args[i++] = brightness;
+      }
+      acts_args[i++] = "-W";
+      acts_args[i++] = widthstring;
+      acts_args[i++] = "-H";
+      acts_args[i++] = heightstring;
+      break;
+    case ACTS_VERSION_2_0:
+      acts_args[i++] = "-t";
+      acts_args[i++] = configfilepath;
+      if(strlen(minarea))
+      {
+        acts_args[i++] = "-w";
+        acts_args[i++] = minarea;
+      }
+      if(strlen(portnumstring))
+      {
+        acts_args[i++] = "-p";
+        acts_args[i++] = portnumstring;
+      }
+      if(strlen(fps))
+      {
+        acts_args[i++] = "-R";
+        acts_args[i++] = fps;
+      }
+      if(strlen(drivertype))
+      {
+        acts_args[i++] = "-G";
+        acts_args[i++] = drivertype;
+      }
+      if(invertp > 0)
+        acts_args[i++] = "-i";
+      if(strlen(devicepath))
+      {
+        acts_args[i++] = "-d";
+        acts_args[i++] = devicepath;
+      }
+      if(strlen(channel))
+      {
+        acts_args[i++] = "-n";
+        acts_args[i++] = channel;
+      }
+      if(strlen(norm))
+      {
+        acts_args[i++] = "-V";
+        acts_args[i++] = norm;
+      }
+      if(pxc200p > 0)
+        acts_args[i++] = "-x";
+      if(strlen(brightness))
+      {
+        acts_args[i++] = "-B";
+        acts_args[i++] = brightness;
+      }
+      if(strlen(contrast))
+      {
+        acts_args[i++] = "-C";
+        acts_args[i++] = contrast;
+      }
+      acts_args[i++] = "-W";
+      acts_args[i++] = widthstring;
+      acts_args[i++] = "-H";
+      acts_args[i++] = heightstring;
+      break;
   }
-  acts_args[i++] = acts_port_flag;
-  acts_args[i++] = acts_port_num;
   acts_args[i] = (char*)NULL;
-  */
 
-  // HACK - custom for ACTS2.0
-  acts_args[i++] = acts_bin_name;
-  if(strlen(configfilepath))
-  {
-    acts_args[i++] = "-t";
-    acts_args[i++] = configfilepath;
-  }
-  acts_args[i++] = "-p";
-  acts_args[i++] = acts_port_num;
-  acts_args[i++] = "-G";
-  acts_args[i++] = "bttv";
-  acts_args[i++] = "-d";
-  acts_args[i++] = "/dev/video0";
-  acts_args[i++] = "-n";
-  acts_args[i++] = "0";
-  acts_args[i++] = "-x";
-  acts_args[i] = (char*)NULL;
   assert((unsigned int)i <= sizeof(acts_args) / sizeof(acts_args[0]));
+
+  printf("\ninvoking ACTS with:\n\n    ");
+  for(int j=0;acts_args[j];j++)
+    printf("%s ", acts_args[j]);
+  puts("\n");
   
   if(!(pid = fork()))
   {
@@ -493,7 +638,7 @@ Acts::Main()
     {
       for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
       {
-        // convert 4-byte ACTS 1.2 encoded entries to byte-swapped integers
+        // convert 4-byte ACTS 1.2/2.0 encoded entries to byte-swapped integers
         // in a structured array
         local_data.header[i].index = acts_hdr_buf[header_elt_len*i]-1;
         local_data.header[i].index = 
@@ -578,7 +723,7 @@ Acts::Main()
     }
     else
     {
-      // convert 16-byte ACTS 1.2 blobs to new byte-swapped structured array
+      // convert 16-byte ACTS 1.2/2.0 blobs to new byte-swapped structured array
       for(i=0;i<num_blobs;i++)
       {
         int tmpptr = blob_size*i;
