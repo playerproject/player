@@ -15,6 +15,7 @@ EXTRA_DIST = dev_blobfinder.c \
              dev_fiducial.c \
 						 dev_gps.c \
              dev_laser.c \
+						 dev_localize.c \
              dev_position.c \
              dev_power.c \
              dev_ptz.c \
@@ -22,7 +23,7 @@ EXTRA_DIST = dev_blobfinder.c \
 						 dev_wifi.c \
              pyplayerc.c \
              pyplayerc.h \
-	     setup.py
+				     setup.py
 
 clean-local:
 	rm -rf build

@@ -40,8 +40,8 @@
 /***************************************************************************
  *
  * Author: Andrew H
- * Date: 24 Aug 2001
- * Desc: Python bindings for power device
+ * Date: 22 May 2003
+ * Desc: Python bindings for localize device
  *
  * CVS info:
  * $Source$
@@ -56,103 +56,108 @@
 #include "pyplayerc.h"
 
 
-/* Python wrapper for power type */
+/* Python wrapper for localize type */
 typedef struct
 {
   PyObject_HEAD
   playerc_client_t *client;
-  playerc_power_t *power;
-} power_object_t;
+  playerc_localize_t *obj;
+  PyObject *hypoths;
+} localize_object_t;
 
 
-PyTypeObject power_type;
-staticforward PyMethodDef power_methods[];
+PyTypeObject localize_type;
+staticforward PyMethodDef localize_methods[];
 
 
 /* Initialise (type function) */
-PyObject *power_new(PyObject *self, PyObject *args)
+PyObject *localize_new(localize_object_t *self, PyObject *args)
 {
   pyclient_t *pyclient;
-  power_object_t *pypower;
   int index;
 
   if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
-  pypower = PyObject_New(power_object_t, &power_type);
-  pypower->client = pyclient->client;
-  pypower->power = playerc_power_create(pyclient->client, index);
-  pypower->power->info.user_data = pypower;
+  self = PyObject_New(localize_object_t, &localize_type);
+  self->client = pyclient->client;
+  self->obj = playerc_localize_create(pyclient->client, index);
+  self->obj->info.user_data = self;
+  self->hypoths = PyList_New(0);
     
-  return (PyObject*) pypower;
+  return (PyObject*) self;
 }
 
 
 /* Finailize (type function) */
-static void power_del(PyObject *self)
+static void localize_del(localize_object_t *self)
 {
-  power_object_t *pypower;
-  pypower = (power_object_t*) self;
-
-  playerc_power_destroy(pypower->power);
+  playerc_localize_destroy(self->obj);
   PyObject_Del(self);
 }
 
 
 /* Get attributes (type function) */
-static PyObject *power_getattr(PyObject *self, char *attrname)
+static PyObject *localize_getattr(localize_object_t *self, char *attrname)
 {
   PyObject *result;
-  power_object_t *pypower;
-
-  pypower = (power_object_t*) self;
 
   result = NULL;
   if (strcmp(attrname, "datatime") == 0)
   {
-    result = PyFloat_FromDouble(pypower->power->info.datatime);
+    result = PyFloat_FromDouble(self->obj->info.datatime);
   }
-  else if (strcmp(attrname, "charge") == 0)
+  else if (strcmp(attrname, "hypoths") == 0)
   {
-    result = Py_BuildValue("d", pypower->power->charge);
+    Py_INCREF(self->hypoths);
+    return self->hypoths;
   }
   else
-    result = Py_FindMethod(power_methods, self, attrname);
+    result = Py_FindMethod(localize_methods, (PyObject*) self, attrname);
 
   return result;
 }
 
 
 /* Get string representation (type function) */
-static PyObject *power_str(PyObject *self)
+static PyObject *localize_str(localize_object_t *self)
 {
-  char str[128];
-  power_object_t *pypower;
-  pypower = (power_object_t*) self;
+  int i;
+  char s[1024], str[4096];
+  playerc_localize_hypoth_t *h;
 
   snprintf(str, sizeof(str),
-           "power %02d %013.3f"
-           " %+07.3f",
-           pypower->power->info.index,
-           pypower->power->info.datatime,
-           pypower->power->charge);
+           "localize %02d %013.3f ",
+           self->obj->info.index,
+           self->obj->info.datatime);
+
+  for (i = 0; i < self->obj->hypoth_count; i++)
+  {
+    h = self->obj->hypoths + i;
+    snprintf(s, sizeof(s), "%e %e %e %e %e %e %e %e %e %e %e %e %e ",
+             h->weight, h->mean[0], h->mean[1], h->mean[2],
+             h->cov[0][0], h->cov[0][1], h->cov[0][2],
+             h->cov[1][0], h->cov[1][1], h->cov[1][2],
+             h->cov[2][0], h->cov[2][1], h->cov[2][2]);
+    assert(strlen(str) + strlen(s) < sizeof(str));
+    strcat(str, s);
+  }
+  
   return PyString_FromString(str);
 }
 
 
 /* Subscribe to the device. */
-static PyObject *power_subscribe(PyObject *self, PyObject *args)
+static PyObject *localize_subscribe(localize_object_t *self, PyObject *args)
 {
   char access;
-  power_object_t *pypower;
   int result;
     
   if (!PyArg_ParseTuple(args, "c", &access))
     return NULL;
-  pypower = (power_object_t*) self;
 
   thread_release();
-  result = playerc_power_subscribe(pypower->power, access);
+  result = playerc_localize_subscribe(self->obj, access);
   thread_acquire();
 
   if (result < 0)
@@ -167,17 +172,16 @@ static PyObject *power_subscribe(PyObject *self, PyObject *args)
 
 
 /* Unsubscribe from the device. */
-static PyObject *power_unsubscribe(PyObject *self, PyObject *args)
+static PyObject *localize_unsubscribe(localize_object_t *self, PyObject *args)
 {
-  power_object_t *pypower;
   int result;
     
   if (!PyArg_ParseTuple(args, ""))
     return NULL;
-  pypower = (power_object_t*) self;
+  self = (localize_object_t*) self;
 
   thread_release();
-  result = playerc_power_unsubscribe(pypower->power);
+  result = playerc_localize_unsubscribe(self->obj);
   thread_acquire();
 
   if (result < 0)
@@ -191,18 +195,18 @@ static PyObject *power_unsubscribe(PyObject *self, PyObject *args)
 }
 
 
-/* Assemble python power type
+/* Assemble python localize type
  */
-PyTypeObject power_type = 
+PyTypeObject localize_type = 
 {
   PyObject_HEAD_INIT(NULL)
   0,
-  "power",
-  sizeof(power_object_t),
+  "localize",
+  sizeof(localize_object_t),
   0,
-  power_del, /*tp_dealloc*/
+  localize_del, /*tp_dealloc*/
   0,          /*tp_print*/
-  power_getattr, /*tp_getattr*/
+  localize_getattr, /*tp_getattr*/
   0,          /*tp_setattr*/
   0,          /*tp_compare*/
   0,          /*tp_repr*/
@@ -211,14 +215,14 @@ PyTypeObject power_type =
   0,          /*tp_as_mapping*/
   0,          /*tp_hash*/
   0,          /*tp_call*/
-  power_str, /*tp_string*/
+  localize_str, /*tp_string*/
 };
 
 
-static PyMethodDef power_methods[] =
+static PyMethodDef localize_methods[] =
 {
-  {"subscribe", power_subscribe, METH_VARARGS},
-  {"unsubscribe", power_unsubscribe, METH_VARARGS},  
+  {"subscribe", localize_subscribe, METH_VARARGS},
+  {"unsubscribe", localize_unsubscribe, METH_VARARGS},  
   {NULL, NULL}
 };
 

@@ -101,6 +101,7 @@ void playerc_localize_putdata(playerc_localize_t *device, player_msghdr_t *heade
                               player_localize_data_t *data, size_t len)
 {
   int i, j, k;
+  double scale[3];
 
   assert(len >= sizeof(*data) - sizeof(data->hypoths));
   
@@ -116,23 +117,21 @@ void playerc_localize_putdata(playerc_localize_t *device, player_msghdr_t *heade
     data->hypoths[i].alpha = ntohl(data->hypoths[i].alpha);
   }
 
+  scale[0] = 1000;
+  scale[1] = 1000;
+  scale[2] = 3600 * 180 / M_PI;
+  
   // Read the data; unit conversion
   for (i = 0; i < data->hypoth_count; i++)
   {
-    // Linear components
-    for (j = 0; j < 2; j++)
+    device->hypoths[i].weight = data->hypoths[i].alpha * (1e-6);
+
+    for (j = 0; j < 3; j++)
     {
-      device->hypoths[i].mean[j] = data->hypoths[i].mean[j] / 1000.0;      
-      for (k = 0; k < 2; k++)
-        device->hypoths[i].cov[j][k] = data->hypoths[i].cov[j][k] / (1000.0 * 1000.0);
+      device->hypoths[i].mean[j] = data->hypoths[i].mean[j] / scale[j];      
+      for (k = 0; k < 3; k++)
+        device->hypoths[i].cov[j][k] = data->hypoths[i].cov[j][k] / scale[j] / scale[k];
     }
-
-    // Angular components
-    device->hypoths[i].mean[2] = data->hypoths[i].mean[2] * M_PI / (180 * 3600);
-    device->hypoths[i].cov[2][2] = data->hypoths[i].cov[2][2] / (M_PI / (180 * 3600) * M_PI / (180 * 3600));
-
-    // Weights
-    device->hypoths[i].weight = data->hypoths[i].alpha / (1e6);
   }
   device->hypoth_count = data->hypoth_count;
 
