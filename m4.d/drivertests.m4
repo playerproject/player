@@ -182,7 +182,7 @@ PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([flockofbirds],[drivers/position/ascension],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[yes],[],[],[])
+PLAYER_ADD_DRIVER([obot],[drivers/mixed/botrics],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])
 

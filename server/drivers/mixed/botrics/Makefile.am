@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
-noinst_LIBRARIES = @TROGDOR_LIB@ 
+noinst_LIBRARIES = @OBOT_LIB@ 
 
-EXTRA_LIBRARIES = libtrogdor.a
+EXTRA_LIBRARIES = libobot.a
 
-libtrogdor_a_SOURCES = trogdor.cc trogdor_constants.h
+libobot_a_SOURCES = obot.cc obot_constants.h
