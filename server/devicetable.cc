@@ -78,8 +78,7 @@ CDeviceTable::AddDevice(player_device_id_t id, char* drivername,
   CDeviceEntry* thisentry;
   CDeviceEntry* preventry;
   
-  // right now, don't check for preexisting device, just overwrite the old
-  // device.  shouldn't really come up.
+  // check for preexisting device, and return -1 
   pthread_mutex_lock(&mutex);
   for(thisentry = head,preventry=NULL; thisentry; 
       preventry=thisentry, thisentry=thisentry->next)
@@ -88,21 +87,18 @@ CDeviceTable::AddDevice(player_device_id_t id, char* drivername,
        (thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index))
     {
-      if(thisentry->devicep)
-        delete thisentry->devicep;
-      break;
+      PLAYER_ERROR3("collision for device ID %d:%d:%d",
+                    id.port, id.code, id.index);
+      return(-1);
     }
   }
 
-  if(!thisentry)
-  {
-    thisentry = new CDeviceEntry;
-    if(preventry)
-      preventry->next = thisentry;
-    else
-      head = thisentry;
-    numdevices++;
-  }
+  thisentry = new CDeviceEntry;
+  if(preventry)
+    preventry->next = thisentry;
+  else
+    head = thisentry;
+  numdevices++;
 
   thisentry->id = id;
   strncpy(thisentry->drivername, drivername, sizeof(thisentry->drivername));
