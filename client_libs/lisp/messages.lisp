@@ -56,6 +56,11 @@
   (list (cond ((>= tv 0) tv) (T (+ *SHORTMAX* tv))) uint16
         (cond ((>= rv 0) rv) (T (+ *SHORTMAX* rv))) uint16))
 (setq *PLAYER-POSITION-COMMAND-SIZE* 4)
+
+(defun player-make-position-motorpower (state)
+  (list *PLAYER-POSITION-MOTOR-POWER-REQ* uint8
+        state uint8))
+(setq *PLAYER-POSITION-MOTOR-POWER-REQ-SIZE* 2)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
