@@ -40,7 +40,17 @@
 #undef HAVE_STDINT_H
 #undef HAVE_STRINGS_H
 #undef WORDS_BIGENDIAN
+#undef PLAYER_BIG_MESSAGES
 /*****************************************************************************/
+
+/* the largest possible message that the server will currently send
+ * or receive */
+#ifdef PLAYER_BIG_MESSAGES
+#define PLAYER_MAX_MESSAGE_SIZE 2097152 /*2MB*/
+#else
+#define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
+#endif
+
 
 /* make sure we get the various types like 'uint8_t' */
 #include <sys/types.h>
