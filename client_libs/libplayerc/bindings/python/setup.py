@@ -3,7 +3,7 @@ from distutils.core import setup, Extension
 
 
 module = Extension('_playerc',
-                   sources = ['playerc_wrap.c'],
+                   sources = ['playerc.i'],
                    include_dirs = ['../..', '../../../../server'],
                    library_dirs = ['../..'],
                    libraries = ['playerc'])
