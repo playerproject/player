@@ -413,3 +413,60 @@ int playerc_localize_set_config(playerc_localize_t *device,
 
   return 0;
 }
+
+// Get the particle set
+int playerc_localize_get_particles(playerc_localize_t *device)
+{
+  int len;
+  int i;
+  player_localize_get_particles_t* req;
+
+  assert(req = calloc(1,sizeof(player_localize_get_particles_t)));
+
+  req->subtype = PLAYER_LOCALIZE_GET_PARTICLES_REQ;
+    
+  len = playerc_client_request(device->info.client, &device->info,
+                               req, sizeof(req->subtype), req, 
+                               sizeof(player_localize_get_particles_t));
+
+  if (len < 0)
+  {
+    free(req);
+    return -1;
+  }
+
+  // TODO: better length checking here
+
+  // byteswap
+  device->mean[0] = ((int32_t)ntohl(req->mean[0])) / 1e3;
+  device->mean[1] = ((int32_t)ntohl(req->mean[1])) / 1e3;
+  device->mean[2] = (((int32_t)ntohl(req->mean[2])) / 3600.0) * M_PI/180.0;
+
+  device->variance = ((uint64_t)ntohll(req->variance)) / (1e3 * 1e3);
+
+  device->num_particles = (int32_t)ntohl(req->num_particles);
+
+  for(i=0;i<device->num_particles;i++)
+  {
+    if(i >= PLAYER_LOCALIZE_PARTICLES_MAX)
+    {
+      device->num_particles = i;
+      PLAYERC_WARN("too many particles");
+      break;
+    }
+
+    device->particles[i].pose[0] = 
+            ((int32_t)ntohl(req->particles[i].pose[0])) / 1e3;
+    device->particles[i].pose[1] = 
+            ((int32_t)ntohl(req->particles[i].pose[1])) / 1e3;
+    device->particles[i].pose[2] = 
+            (((int32_t)ntohl(req->particles[i].pose[2])) / 3600.0) * 
+            M_PI / 180.0;
+    device->particles[i].weight = 
+            ((uint32_t)ntohl(req->particles[i].alpha)) / 1e6;
+  }
+
+  free(req);
+
+  return 0;
+}

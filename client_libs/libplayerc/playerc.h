@@ -1090,6 +1090,12 @@ typedef struct
   
 } playerc_localize_hypoth_t;
 
+typedef struct playerc_localize_particle
+{
+  double pose[3];
+  double weight;
+} playerc_localize_particle_t;
+
 
 /** @brief Localization device data. */
 typedef struct
@@ -1119,6 +1125,11 @@ typedef struct
   int hypoth_count;
   playerc_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
 
+  double mean[3];
+  double variance;
+  int num_particles;
+  playerc_localize_particle_t particles[PLAYER_LOCALIZE_PARTICLES_MAX];
+
 } playerc_localize_t;
 
 
@@ -1143,6 +1154,9 @@ int playerc_localize_get_config(playerc_localize_t *device, player_localize_conf
 /** @brief Modify the current configuration. */
 int playerc_localize_set_config(playerc_localize_t *device, player_localize_config_t config);
 
+/* @brief Get the particle set.  Caller must supply sufficient storage for
+   the result. */
+int playerc_localize_get_particles(playerc_localize_t *device);
 
 /** @} */
 /**************************************************************************/
