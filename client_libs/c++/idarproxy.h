@@ -45,7 +45,7 @@ class IDARProxy : public ClientProxy
   // reads the receive buffers from player
   //void FillData(player_msghdr_t hdr, const char* buffer);
   
-    // interface that all proxies SHOULD provide
+  // interface that all proxies SHOULD provide
   void Print();
   
   // tx parameter is optional; defaults to 0
@@ -53,6 +53,9 @@ class IDARProxy : public ClientProxy
   
   // get message and transmission details 
   int GetMessage( idarrx_t* rx );  
+
+  // pretty print a message
+  void PrintMessage(idarrx_t* rx); 
 };
 
 #endif
