@@ -39,6 +39,24 @@
 #endif
 
 /*
+ * use this to turn off debug ouput.
+ *
+ * higher numbers are more output, 0 is none.
+ *
+ * incidentally, it returns the current level, and if you give 
+ * -1 for <level>, then the current level is unchanged
+ */
+int player_debug_level(int level)
+{
+  static int debug_level = PLAYER_CCLIENT_DEBUG_LEVEL_DEFAULT;
+
+  if(level >= 0)
+    debug_level = level;
+
+  return(debug_level);
+}
+
+/*
  * connects to server listening at host:port.  conn is filled in with
  * relevant information, and is used in subsequent player function
  * calls
@@ -64,7 +82,8 @@ int player_connect(player_connection_t* conn, const char* host, int port)
    */
   if((entp = gethostbyname(host)) == NULL)
   {
-    fprintf(stderr, "player_connect() \"%s\" is an unknown host\n", host);
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr, "player_connect() \"%s\" is an unknown host\n", host);
     return(-1);
   }
 
@@ -74,7 +93,8 @@ int player_connect(player_connection_t* conn, const char* host, int port)
   /* make our socket (and leave it blocking) */
   if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
   {
-    perror("player_connect(): socket() failed");
+    if(player_debug_level(-1) >= 2)
+      perror("player_connect(): socket() failed");
     return(-1);
   }
 
@@ -83,7 +103,8 @@ int player_connect(player_connection_t* conn, const char* host, int port)
    */
   if(connect(sock, (struct sockaddr*)&server, sizeof(server)) == -1)
   {
-    perror("player_connect(): connect() failed");
+    if(player_debug_level(-1) >= 2)
+      perror("player_connect(): connect() failed");
     close(sock);
     return(-1);
   }
@@ -93,7 +114,8 @@ int player_connect(player_connection_t* conn, const char* host, int port)
    */
   if((numread = read(sock,banner,PLAYER_IDENT_STRLEN)) != PLAYER_IDENT_STRLEN)
   {
-    perror("player_connect(): read() failed");
+    if(player_debug_level(-1) >= 2)
+      perror("player_connect(): read() failed");
     close(sock);
     return(-1);
   }
@@ -117,7 +139,8 @@ int player_disconnect(player_connection_t* conn)
 {
   if(close((*conn).sock) == -1)
   {
-    perror("player_disconnect(): close() failed");
+    if(player_debug_level(-1) >= 2)
+      perror("player_disconnect(): close() failed");
     return(-1);
   }
   (*conn).sock = -1;
@@ -141,12 +164,14 @@ int player_request(player_connection_t* conn,
   unsigned char buffer[PLAYER_MAX_MESSAGE_SIZE];
   player_msghdr_t hdr;
 
+
   if(payloadlen > (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)))
   {
-    fprintf(stderr, "player_request(): tried to send too large of a payload"
-                    "(%d bytes > %d bytes); message NOT sent.\n", 
-                    payloadlen, 
-                    (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)));
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr, "player_request(): tried to send too large of a payload"
+              "(%d bytes > %d bytes); message NOT sent.\n", 
+              payloadlen, 
+              (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)));
     return(-1);
   }
   hdr.stx = htons(PLAYER_STXX);
@@ -169,18 +194,27 @@ int player_request(player_connection_t* conn,
   /* write the request */
   if(write((*conn).sock,buffer, sizeof(player_msghdr_t)+payloadlen) == -1)
   {
-    perror("player_request(): write() failed.");
+    if(player_debug_level(-1) >= 2)
+      perror("player_request(): write() failed.");
     return(-1);
   }
 
-  bzero(replyhdr,sizeof(player_msghdr_t));
+  bzero(&hdr,sizeof(hdr));
   /* eat data until the response comes back */
-  while((replyhdr->type != PLAYER_MSGTYPE_RESP) || 
-        (replyhdr->device != device) ||
-        (replyhdr->device_index != device_index))
+  while((hdr.type != PLAYER_MSGTYPE_RESP) || 
+        (hdr.device != device) ||
+        (hdr.device_index != device_index))
   {
-    if(player_read(conn, replyhdr, reply, replylen) == -1)
+    if(player_read(conn, &hdr, buffer, sizeof(buffer)) == -1)
       return(-1);
+  }
+
+  // did they want the reply?
+  if(replyhdr && reply && replylen >= hdr.size)
+  {
+    *replyhdr = hdr;
+    memcpy(reply,buffer,replyhdr->size);
+    replylen = replyhdr->size;
   }
 
   return(0);
@@ -224,9 +258,10 @@ int player_request_device_access(player_connection_t* conn,
     *grant_access = this_req.access;
   else if(memcmp(payload,replybuffer,sizeof(payload)))
   {
-    fprintf(stderr, "player_request_device_access(): requested '%c' access "
-	    "to device %x:%x, but got '%c' access\n",
-	    req_access, device, device_index, this_req.access);
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr, "player_request_device_access(): requested '%c' access "
+              "to device %x:%x, but got '%c' access\n",
+              req_access, device, device_index, this_req.access);
   }
 
   return(0);
@@ -257,18 +292,19 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   {
     if((readcnt = read((*conn).sock,&(hdr->stx),sizeof(hdr->stx))) <= 0)
     {
-      perror("player_read(): read() errored while looking for STX");
+      if(player_debug_level(-1) >= 2)
+        perror("player_read(): read() errored while looking for STX");
       return(-1);
     }
   }
-  /*puts("got STX");*/
 
   /* get the rest of the header */
   if((readcnt += read((*conn).sock, &(hdr->type),
                       sizeof(player_msghdr_t)-sizeof(hdr->stx))) != 
                   sizeof(player_msghdr_t))
   {
-    perror("player_read(): read() errored while reading header.");
+    if(player_debug_level(-1) >= 2)
+      perror("player_read(): read() errored while reading header.");
     return(-1);
   }
 
@@ -288,8 +324,9 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 
   /* get the payload */
   if(hdr->size > payloadlen)
-    fprintf(stderr,"WARNING: server's message is too big (%d bytes). "
-                    "Truncating data.", hdr->size);
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr,"WARNING: server's message is too big (%d bytes). "
+              "Truncating data.", hdr->size);
 
   mincnt = min(hdr->size, payloadlen);
 
@@ -304,14 +341,6 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
           readcnt += read((*conn).sock,dummy,hdr->size-readcnt));
   }
 
-  //if((readcnt = read((*conn).sock,payload,min(hdr->size,payloadlen)))
-                  //!= min(hdr->size,payloadlen))
-  //{
-    //fprintf(stderr, "client_reader: tried to read server-specified %d bytes,"
-                    //"but only got %d\n", hdr->size, readcnt);
-    //return(-1);
-  //}
-  /*puts("got payload");*/
   return(0);
 }
 
@@ -325,17 +354,18 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
  */
 int player_write(player_connection_t* conn, 
                  uint16_t device, uint16_t device_index,
-                 char* command, size_t commandlen)
+                 const char* command, size_t commandlen)
 {
   char buffer[PLAYER_MAX_MESSAGE_SIZE];
   player_msghdr_t hdr;
 
   if(commandlen > PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
   {
-    fprintf(stderr, "player_write(): tried to send too large of a command"
-                    "(%d bytes > %d bytes); message NOT sent.\n", 
-                    commandlen, 
-                    (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)));
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr, "player_write(): tried to send too large of a command"
+              "(%d bytes > %d bytes); message NOT sent.\n", 
+              commandlen, 
+              (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)));
     return(-1);
   }
 
@@ -358,7 +388,8 @@ int player_write(player_connection_t* conn,
   if(write((*conn).sock, buffer, sizeof(player_msghdr_t)+commandlen) !=
                   sizeof(player_msghdr_t)+commandlen)
   {
-    perror("player_write(): write() errored.");
+    if(player_debug_level(-1) >= 2)
+      perror("player_write(): write() errored.");
     return(-1);
   }
 

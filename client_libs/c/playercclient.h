@@ -43,6 +43,18 @@ typedef struct
   char banner[PLAYER_IDENT_STRLEN];
 } player_connection_t;
 
+#define PLAYER_CCLIENT_DEBUG_LEVEL_DEFAULT 5
+
+/*
+ * use this to turn off debug ouput.
+ *
+ * higher numbers are more output, 0 is none.
+ *
+ * incidentally, it returns the current level, and if you give 
+ * -1 for <level>, then the current level is unchanged
+ */
+int player_debug_level(int level);
+
 /*
  * connects to server listening at host:port.  conn is filled in with
  * relevant information, and is used in subsequent player function
@@ -115,7 +127,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
  */
 int player_write(player_connection_t* conn, 
                  uint16_t device, uint16_t device_index,
-                 char* command, size_t commandlen);
+                 const char* command, size_t commandlen);
 
 
 /********************************************************/
