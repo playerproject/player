@@ -159,13 +159,13 @@ void AdaptiveMCL::GetLaserData(amcl_sensor_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the laser sensor model
-void AdaptiveMCL::UpdateLaserModel(amcl_sensor_data_t *data)
+bool AdaptiveMCL::UpdateLaserModel(amcl_sensor_data_t *data)
 {
   int i, step;
 
   // If there is no laser device...
   if (this->laser_index < 0)
-    return;
+    return false;
   
   // Update the laser sensor model with the latest laser measurements
   if (this->laser_max_samples >= 2)
@@ -180,7 +180,7 @@ void AdaptiveMCL::UpdateLaserModel(amcl_sensor_data_t *data)
     pf_update_sensor(this->pf, (pf_sensor_model_fn_t) laser_sensor_model, this->laser_model);
   }
 
-  return;
+  return true;
 }
 
 #ifdef INCLUDE_RTKGUI

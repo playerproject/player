@@ -57,7 +57,6 @@ void gps_set_utm(gps_model_t *self, double utm_e, double utm_n, double err_horz)
   self->utm_e = utm_e;
   self->utm_n = utm_n;
   self->err_horz = err_horz;
-  
   return;
 }
 
@@ -69,13 +68,14 @@ void gps_init_init(gps_model_t *self)
   pf_matrix_t xc;
   
   x = pf_vector_zero();
-  x.v[0] = self->utm_e;
-  x.v[1] = self->utm_n;
+  x.v[0] = self->utm_e - self->utm_base_e;
+  x.v[1] = self->utm_n - self->utm_base_n;
   x.v[2] = 0;
 
   xc = pf_matrix_zero();
   xc.m[0][0] = self->err_horz * self->err_horz;
   xc.m[1][1] = self->err_horz * self->err_horz;
+  xc.m[2][2] = M_PI;
   
   self->pdf = pf_pdf_gaussian_alloc(x, xc);
 
@@ -105,9 +105,9 @@ double gps_sensor_model(gps_model_t *self, pf_vector_t pose)
   double dx, dy, sigma;
   double z, p;
   
-  dx = self->utm_e - pose.v[0];
-  dy = self->utm_n - pose.v[1];
-  sigma = self->err_horz;
+  dx = (self->utm_e - self->utm_base_e) - pose.v[0];
+  dy = (self->utm_n - self->utm_base_n) - pose.v[1];
+  sigma = self->err_horz / 3;
   
   z = (dx * dx + dy * dy) / (2 * sigma * sigma);
   p = exp(-z);

@@ -160,11 +160,11 @@ void AdaptiveMCL::GetWifiData(amcl_sensor_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the wifi sensor model
-void AdaptiveMCL::UpdateWifiModel(amcl_sensor_data_t *data)
+bool AdaptiveMCL::UpdateWifiModel(amcl_sensor_data_t *data)
 {
   // If there is no wifi device...
   if (this->wifi_index < 0)
-    return;
+    return false;
   
   // Update the wifi sensor model with the latest wifi measurements
   wifi_set_levels(this->wifi_model, data->wifi_level_count, data->wifi_levels);
@@ -172,7 +172,7 @@ void AdaptiveMCL::UpdateWifiModel(amcl_sensor_data_t *data)
   // Apply the wifi sensor model
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) wifi_sensor_model, this->wifi_model);  
 
-  return;
+  return true;
 }
 
 #ifdef INCLUDE_RTKGUI

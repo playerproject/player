@@ -62,6 +62,9 @@ int odometry_init_cspace(odometry_t *self)
   map_cell_t *cell;
   pf_vector_t *ccell;
 
+  if (self->map == NULL)
+    return 0;
+
   self->ccell_count = 0;
   self->ccells = malloc(self->map->size_x * self->map->size_y * sizeof(self->ccells[0]));
     
@@ -168,9 +171,9 @@ void odometry_action_init(odometry_t *self, pf_vector_t old_pose, pf_vector_t ne
   x = pf_vector_coord_sub(new_pose, old_pose);
 
   // HACK - FIX
-  ux = 0.1 * x.v[0];
-  uy = 0.1 * x.v[1];
-  ua = fabs(0.1 * x.v[2]) + fabs(0.1 * x.v[0]);
+  ux = 0.2 * x.v[0];
+  uy = 0.2 * x.v[1];
+  ua = fabs(0.2 * x.v[2]) + fabs(0.2 * x.v[0]);
 
   cx = pf_matrix_zero();
   cx.m[0][0] = ux * ux;
@@ -226,7 +229,10 @@ double odometry_sensor_model(odometry_t *self, pf_vector_t pose)
 {  
   double p;
   map_cell_t *cell;  
-  
+
+  if (self->map == NULL)
+    return 1.0;
+    
   cell = map_get_cell(self->map, pose.v[0], pose.v[1], pose.v[2]);
   if (!cell)
     return 0;

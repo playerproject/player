@@ -60,15 +60,13 @@ void imu_set_utm(imu_model_t *self, double utm_head)
 }
 
 
-// The sensor model function.  This applies a simple circular
-// Gaussian.
+// The sensor model function.  This applies a simple Gaussian.
 double imu_sensor_model(imu_model_t *self, pf_vector_t pose)
 {
   double da, sigma;
   double z, p;
 
-  // TODO: check this
-  da = self->utm_head + self->utm_offset + M_PI / 2 - pose.v[2];
+  da = (M_PI / 2 + self->utm_head) - pose.v[2];
   
   da = atan2(sin(da), cos(da));
   sigma = self->err_head;
