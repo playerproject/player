@@ -191,6 +191,9 @@ void *client_reader(void* arg)
     {
       //puts("looking for STX");
 
+      // make sure we don't get garbage
+      c = 0;
+
       //printf("read %d bytes; reading now\n", readcnt);
       if(read(cd->socket,&c,1) <= 0)
       {
