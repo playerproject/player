@@ -1,3 +1,7 @@
+/* $Id$
+ *
+ * Derived class implements 1394 data feed to CMVision
+ */
 #ifndef __CAPTURE1394_H__
 #define __CAPTURE1394_H__
 
@@ -16,6 +20,8 @@
 
 #include "capture.h"
 
+#include "conversions.h"
+
 #define DEFAULT_IMAGE_WIDTH   320
 #define DEFAULT_IMAGE_HEIGHT  240
 //we only have one buffer that I know of...
@@ -32,9 +38,20 @@ class capture1394 : public capture
   int numCameras;
   raw1394handle_t handle;
   nodeid_t * camera_nodes;
-
+  // extra members for bayer coded cameras
+  bool DoBayerConversion;
+  int BayerPattern;
+  unsigned char * current_rgb;
+  unsigned char * current_YUV;
 public:
-  capture1394():capture() {camera_nodes=NULL;}
+  capture1394():capture() {camera_nodes=NULL; DoBayerConversion=false;}
+  // extra constructor for bayer coded cameras
+  capture1394(bool doBayer, int pattern):capture() 
+       {
+	    camera_nodes=NULL; 
+	    DoBayerConversion=doBayer;
+	    BayerPattern=pattern;
+       }
   virtual ~capture1394() {close();}
 
   virtual bool initialize(int nwidth,int nheight);

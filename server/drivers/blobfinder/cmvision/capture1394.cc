@@ -1,3 +1,8 @@
+/* $Id$
+ *
+ * Derived class implements 1394 data feed to CMVision
+ */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
@@ -87,15 +92,43 @@ bool capture1394::initialize(int nwidth,int nheight)
   /*-----------------------------------------------------------------------
    *  setup capture
    *-----------------------------------------------------------------------*/
+  printf("init called nwidth=%d,nheight=%d,width=%d,height=%d,DoBayer=%d,Pattern=%d\n",
+	 nwidth,nheight,width,height,DoBayerConversion,BayerPattern);
+
+  // set video mode and format
+  int videoMode = MODE_320x240_YUV422; // defaults 
+  int videoFormat = FORMAT_VGA_NONCOMPRESSED;
+  if(DoBayerConversion)
+       {    // colour image is really 8bpp mono
+	    // there is no mono 320x240 mode
+	    if (nwidth==640&nheight==480)
+		 videoMode = MODE_640x480_MONO; 
+	    else if (nwidth==800&nheight==600)
+		 videoMode = MODE_800x600_MONO; 
+	    else if (nwidth==1024&nheight==768){
+		 videoMode = MODE_1024x768_MONO;
+		 videoFormat = FORMAT_SVGA_NONCOMPRESSED_1;
+	    }
+       }
+  else
+       {
+	    if (nwidth==640&nheight==480)
+		 videoMode = MODE_640x480_YUV422;     
+	    else if (nwidth==800&nheight==600)
+		 videoMode = MODE_800x600_YUV422; 
+	    else if (nwidth==1024&nheight==768){
+		 videoMode = MODE_1024x768_YUV422; 
+		 videoFormat = FORMAT_SVGA_NONCOMPRESSED_1;
+	    }
+       }   
 
   if (dc1394_setup_capture(handle,camera_nodes[0],
                            0, 
-                           FORMAT_VGA_NONCOMPRESSED,
-			   //MODE_160x120_YUV444,
-                           MODE_320x240_YUV422,
-			   //MODE_640x480_RGB,
+			   videoFormat,
+			   videoMode,
                            SPEED_400,
-                           FRAMERATE_15,
+			   FRAMERATE_15,
+                           //FRAMERATE_30,
                            &camera)!=DC1394_SUCCESS) 
   {
     fprintf( stderr,"unable to setup camera-\n"
@@ -139,6 +172,14 @@ bool capture1394::initialize(int nwidth,int nheight)
   width = camera.frame_width;
   height = camera.frame_height;
 
+  /*----------------------------------------------
+   * initialize storage for bayer conversion
+   *---------------------------------------------*/
+  if (DoBayerConversion){
+       current_rgb = (unsigned char *) malloc(width*height*3);
+       current_YUV = (unsigned char *) malloc(width*height*2);
+  }
+
   return true;
 }
 
@@ -150,6 +191,11 @@ void capture1394::close()
   dc1394_release_camera(handle,&camera);
   raw1394_destroy_handle(handle);
   camera_nodes=NULL;
+
+  if (DoBayerConversion){
+       free(current_rgb);
+       free(current_YUV);
+  }
 }
 
 
@@ -182,7 +228,34 @@ unsigned char *capture1394::captureFrame()
   gettimeofday(&t,NULL);
   timestamp = (stamp_t)((t.tv_sec + t.tv_usec/1.0E6) * 1.0E9);
 
-  return current;
+  if (DoBayerConversion){
+       // do bayer conversion for cameras that require it.
+       // e.g. Pt Grey Dragonfly
+       // put do_bayer_conversion "????" (insert pattern e.g. BGGR)
+       // in the blobfinder:? section of player cfg file to turn it on.
+
+       // use latest conversions.h from coriander 
+       BayerEdgeSense(current, current_rgb, width, height,(bayer_pattern_t)BayerPattern);
+       // bayer2rgb(NEAREST_NEIGHBOR, current, current_rgb, width, height);
+       // bayer2rgb(BILERP, current, current_rgb, width, height);
+       
+       //FILE *ftmp = fopen("frame_tmp.raw","w");
+       //fwrite(current_rgb,width * height*3,1,ftmp);
+       //fclose(ftmp);
+       
+       // convert to yuv422
+       // use 2001 version of conversions.h from Dan Dennedy  <dan@dennedy.org>
+       // rgb2yuy2(current_rgb, current_YUV, width * height);
+       // use latest conversions.h from coriander 
+       rgb2uyvy(current_rgb, current_YUV, width * height);
+       
+       //ftmp = fopen("frame_tmp.yuv","w");
+       //fwrite(current_YUV,width * height*2,1,ftmp);
+       //fclose(ftmp);
+       
+       return current_YUV;
+  }else
+       return current;
 }
 
 #endif // HAVE_1394
