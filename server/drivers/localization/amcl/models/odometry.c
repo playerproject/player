@@ -89,12 +89,12 @@ int odometry_init_cspace(odometry_t *self)
   return 0;
 }
 
+
 // Prepare to initialize the distribution; pose is the robot's initial
 // pose estimate.
 void odometry_init_init(odometry_t *self, pf_vector_t pose, pf_matrix_t pose_cov)
 {
   int i;
-  //pf_pdf_gaussian_t *gpdf;
   double *weights;
   pf_vector_t *ccell;
   
