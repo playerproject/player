@@ -275,7 +275,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                   mode = CONTINUOUS;
                   break;
                 case UPDATE:
-                  /* change to continuous mode */
+                  /* change to update mode (doesn't re-send old data)*/
                   //puts("changing to UPDATE");
                   mode = UPDATE;
                   break;
@@ -535,6 +535,9 @@ void CClientData::UpdateRequested(player_device_req_t req)
     thisub->code = req.code;
     thisub->index = req.index;
 
+    // RTV - set the data consume flag (experimental!)
+    //thisub->consume = req.consume;
+
     thisub->last_sec = 0; // init the freshness timer
     thisub->last_usec = 0;
 
@@ -678,21 +681,35 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
   {
     if(thisub->access=='a' || thisub->access=='r') 
     {
-      if((deviceTable->GetDeviceAccess(port,thisub->code,thisub->index) == 'a') ||
-         (deviceTable->GetDeviceAccess(port,thisub->code,thisub->index) == 'r'))
-      {
-        if((devicep = deviceTable->GetDevice(port,thisub->code,thisub->index)))
-        {
-          hdr.device = htons(thisub->code);
-          hdr.device_index = htons(thisub->index);
-          hdr.reserved = 0;
+      char access = 
+	deviceTable->GetDeviceAccess(port,thisub->code,thisub->index);
+      
+      if( (access == 'a') || (access == 'r') ) 
+	{
+	  if((devicep = 
+	      deviceTable->GetDevice(port,thisub->code,thisub->index)))
+	    {
+	      hdr.device = htons(thisub->code);
+	      hdr.device_index = htons(thisub->index);
+	      hdr.reserved = 0;
 
-          size = devicep->GetLock()->GetData(devicep, 
-                                             data+totalsize+sizeof(hdr),
-                                             maxsize-totalsize-sizeof(hdr),
-                                             &(hdr.timestamp_sec), 
-					     &(hdr.timestamp_usec));
-	  
+	      
+	      //if( thisub->consume )
+	      //size = devicep->
+	      //  GetLock()->ConsumeData(devicep, 
+	      //			 data+totalsize+sizeof(hdr),
+	      //			 maxsize-totalsize-sizeof(hdr),
+	      //			 &(hdr.timestamp_sec), 
+	      //			 &(hdr.timestamp_usec));
+	      //
+	      // else
+		size = devicep->
+		  GetLock()->GetData(devicep, 
+				     data+totalsize+sizeof(hdr),
+				     maxsize-totalsize-sizeof(hdr),
+				     &(hdr.timestamp_sec), 
+				     &(hdr.timestamp_usec));
+
 	  // if we're in UPDATE mode, we only want this data if it is new
 	  if( mode == UPDATE )
           {
@@ -748,6 +765,7 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
 
   return(totalsize);
 }
+
 
 int CClientData::Subscribe( unsigned short code, unsigned short index )
 {

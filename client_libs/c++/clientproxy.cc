@@ -86,14 +86,15 @@ ClientProxy::~ClientProxy()
 
 // methods for changing access mode
 int ClientProxy::ChangeAccess(unsigned char req_access, 
-                              unsigned char* grant_access=NULL)
+                              unsigned char* grant_access=NULL )
+			      
 {
   unsigned char our_grant_access = access;
 
   if(client)
   {
     if(client->RequestDeviceAccess(device, index, req_access, 
-                                   &our_grant_access))
+                                   &our_grant_access ) )
     {
       if(player_debug_level(-1) >= 1)
         puts("WARNING: RequestDeviceAccess() errored");

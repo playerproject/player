@@ -56,6 +56,9 @@ class CArenaLock : public CLock{
 
   virtual size_t GetData(CDevice *, unsigned char *, size_t,
                          uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+  virtual size_t ConsumeData(CDevice *, unsigned char *, size_t,
+                         uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+
   virtual void PutData( CDevice *obj,  unsigned char *dest, size_t maxsize );
   virtual void GetCommand( CDevice *obj , unsigned char *dest, size_t maxsize); 
   virtual void PutCommand(CDevice *obj ,unsigned char *dest, size_t maxsize); 

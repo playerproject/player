@@ -49,13 +49,20 @@ class CDevice
 
     virtual int Setup() = 0;
     virtual int Shutdown() = 0;
-    virtual size_t GetData( unsigned char *, size_t ) = 0;
+    virtual size_t GetData( unsigned char *, size_t ) = 0;    
     virtual void PutData(unsigned char *, size_t ) = 0;
     virtual void GetCommand( unsigned char *, size_t ) = 0;
     virtual void PutCommand( unsigned char * , size_t ) = 0;
     virtual size_t GetConfig( unsigned char *, size_t ) = 0;
     virtual void PutConfig( unsigned char * , size_t) = 0;
     virtual CLock* GetLock( void ) = 0;
+
+    virtual size_t ConsumeData( unsigned char * data, size_t sz ) 
+      {
+	puts( "PLAYER WARNING: ConsumeData() not implemented"
+	      " for this device. Calling GetData() instead" );
+	return GetData( data, sz );
+      }
 
     // to record the time at which the device gathered the data
     uint32_t data_timestamp_sec;

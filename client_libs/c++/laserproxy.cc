@@ -29,6 +29,8 @@
 #include <laserproxy.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <math.h>
+
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
 #endif
@@ -82,6 +84,28 @@ void LaserProxy::FillData(player_msghdr_t hdr, const char* buffer)
     else if(i<(range_count/2) && ranges[i] < min_right)
       min_right = ranges[i];
   }
+}
+
+// returns coords in mm of laser hit relative to sensor position
+// x axis is forwards
+int LaserProxy::CartesianCoordinate( int i, int *x, int *y )
+{
+  // bounds check
+  if( i < 0 || i > range_count ) return false;
+
+  double min = DTOR(min_angle / 100.0);
+  double max = DTOR(max_angle / 100.0);
+  double fov = (double)( max - min );
+  double angle_per_ray = fov /(double)range_count; 
+  double angle = min + i * angle_per_ray; 
+  int range = ranges[i];
+ 
+  *x = (int)(range * cos( angle ));
+  *y = (int)(range * sin( angle ));
+
+  //printf( "x: %.2f   y: %.2f\n", x, y );
+
+  return true;
 }
 
 // interface that all proxies SHOULD provide

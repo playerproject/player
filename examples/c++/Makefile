@@ -21,7 +21,8 @@ BINARIES = randomwalk \
 	   truth \
 	   grip \
 	   forage \
-	   multilogger stress autolayout multirandom
+	   multilogger stress autolayout 
+	#multirandom multiphero
 
 all: $(BINARIES)
 
@@ -98,5 +99,3 @@ uninstall:
 clean:
 	$(RM) -f *.o $(BINARIES) test
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
-
-

@@ -47,6 +47,8 @@
 #include <bpsproxy.h>  /* support for the BPS device */
 #include <broadcastproxy.h> /* support for the broadcast device */
 
+//#include <idarproxy.h>  /* support for the IDAR device */
+//#include <descartesproxy.h>  /* support for the IDAR device */
 
 // keep a linked list of proxies that we've got open
 class ClientProxyNode
@@ -172,7 +174,7 @@ class PlayerClient
     int RequestDeviceAccess(unsigned short device,
                             unsigned short index,
                             unsigned char req_access,
-                            unsigned char* grant_access);
+                            unsigned char* grant_access );
 
     // Player device configurations
 

@@ -57,6 +57,11 @@
 #include <arenalock.h>
 #include <stage.h>
 
+// this is the root of the stage device filesystem name
+// actual directories have the username and instance appended
+// e.g. /tmp/stageIO.vaughan.0
+#define IOFILENAME "/tmp/stageIO"
+
 class CStageDevice : public CDevice
 {
     // Minimal constructor
@@ -77,6 +82,10 @@ class CStageDevice : public CDevice
     // Read data from the device
     //
     public: virtual size_t GetData( unsigned char *, size_t maxsize);
+
+    // Read data from the device and mark the data buffer as empty
+    //
+    public: virtual size_t ConsumeData( unsigned char *, size_t );
 
     // Write data to the device
     //
@@ -126,10 +135,11 @@ class CStageDevice : public CDevice
     protected: void *m_config_buffer;
     protected: size_t m_config_len;
 
+    // DEPRECATED
     // Pointer to shared truth buffers
     //
-    public: void *m_truth_buffer;
-    public: size_t m_truth_len;
+    //public: void *m_truth_buffer;
+    //public: size_t m_truth_len;
 };
 
 #endif

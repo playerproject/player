@@ -62,7 +62,7 @@ class ClientProxy
     ClientProxy(PlayerClient* pc, 
 		unsigned short req_device,
 		unsigned short req_index,
-		unsigned char req_access = 'c');
+		unsigned char req_access = 'c' );
 
     // destructor will try to close access to the device
     virtual ~ClientProxy();
@@ -71,7 +71,7 @@ class ClientProxy
 
     // methods for changin access mode
     int ChangeAccess(unsigned char req_access, 
-                     unsigned char* grant_access=NULL);
+                     unsigned char* grant_access=NULL );
     int Close() { return(ChangeAccess('c')); }
 
     // interface that all proxies must provide
