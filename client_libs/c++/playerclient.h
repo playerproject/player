@@ -97,7 +97,7 @@ class PlayerClient
     // constructors
     // 
     // make a client and connect it as indicated.
-    PlayerClient(char* hostname=NULL, int port=PLAYER_PORTNUM);
+    PlayerClient(const char* hostname=NULL, int port=PLAYER_PORTNUM);
 
     // destructor
     ~PlayerClient();
@@ -107,8 +107,8 @@ class PlayerClient
     //    0 if everything is OK (connection opened)
     //   -1 if something went wrong (connection NOT opened)
     //  
-    int Connect(char* hostname, int port);
-    int Connect(char* hostname) { return(Connect(hostname,PLAYER_PORTNUM)); }
+    int Connect(const char* hostname, int port);
+    int Connect(const char* hostname) { return(Connect(hostname,PLAYER_PORTNUM)); }
     int Connect() { return(Connect("localhost",PLAYER_PORTNUM)); }
 
     // disconnect from server
