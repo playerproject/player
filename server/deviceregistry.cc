@@ -74,6 +74,10 @@ void SegwayRMPPower_Register(DriverTable* table);
 #ifdef INCLUDE_SICKLMS200
 void SickLMS200_Register(DriverTable* table);
 #endif
+                                                                               
+#ifdef INCLUDE_SICKPLS
+void SickPLS_Register(DriverTable* table);
+#endif
 
 #ifdef INCLUDE_ACTS
 void Acts_Register(DriverTable* table);
@@ -352,6 +356,7 @@ player_interface_t interfaces[] = {
   {PLAYER_SERVICE_ADV_CODE, PLAYER_SERVICE_ADV_STRING, "service_adv_lsd"},
   {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING, "stg_simulation"},
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_BLINKENLIGHT_STRING, "stg_blinkenlight"},
+  {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sickpls"},
   {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, "camerav4l"},
   {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING, "nomad"},
   {0,NULL,NULL}
@@ -455,6 +460,10 @@ register_devices()
 
 #ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
+#ifdef INCLUDE_SICKPLS
+  SickPLS_Register(driverTable);
+#endif
+
 #endif
 
 #ifdef INCLUDE_ACTS
