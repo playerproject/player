@@ -93,7 +93,7 @@ void UDPBroadcast_Register(DriverTable* table);
 void PassThrough_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_READLOG
+#ifdef INCLUDE_LOGFILE
 void WriteLog_Register(DriverTable* table);
 void ReadLog_Register(DriverTable* table);
 #endif
@@ -238,7 +238,7 @@ player_interface_t interfaces[] = {
 int
 lookup_interface(char* name, player_interface_t* interface)
 {
-  for(int i=0; interfaces[i].name; i++)
+  for(int i=0; interfaces[i].code; i++)
   {
     if(!strcmp(name, interfaces[i].name))
     {
@@ -257,7 +257,7 @@ lookup_interface(char* name, player_interface_t* interface)
 int
 lookup_interface_code(int code, player_interface_t* interface)
 {
-  for(int i=0; interfaces[i].name; i++)
+  for(int i=0; interfaces[i].code; i++)
   {
     if(code == interfaces[i].code)
     {
@@ -338,7 +338,7 @@ register_devices()
   PassThrough_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_READLOG
+#ifdef INCLUDE_LOGFILE
   WriteLog_Register(driverTable);  
   ReadLog_Register(driverTable);
 #endif

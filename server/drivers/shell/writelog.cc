@@ -103,6 +103,7 @@ class WriteLog: public CDevice
 ////////////////////////////////////////////////////////////////////////////
 // Pointer to the one-and-only time
 extern PlayerTime* GlobalTime;
+extern int global_playerport;
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -290,6 +291,9 @@ void WriteLog::Main(void)
   {
     pthread_testcancel();
 
+    // Default 10Hz data rate
+    usleep(100000);
+
     // Walk the device list
     for (i = 0; i < this->device_count; i++)
     {
@@ -308,6 +312,9 @@ void WriteLog::Main(void)
       // Write data to file
       this->Write(data, size, &device->id, tsec, tusec);
     }
+
+    // Write the sync packet
+    this->Write(NULL, 0, NULL, 0, 0);
   }
 
   free(data);
@@ -321,8 +328,8 @@ void WriteLog::Main(void)
 void WriteLog::Write(void *data, size_t size,
                      const player_device_id_t *id, uint32_t sec, uint32_t usec)
 {
-  char *host;
-  int port;
+  char host[256];
+  int port, index;
   player_interface_t iface;
   struct timeval stime;
 
@@ -330,19 +337,31 @@ void WriteLog::Write(void *data, size_t size,
   GlobalTime->GetTime(&stime);
 
   // Get interface name
-  lookup_interface_code(id->code, &iface);
+  if (id)
+  {
+    lookup_interface_code(id->code, &iface);
+    index = id->index;
+  }
+  else
+  {
+    iface.name = "sync";
+    iface.code = PLAYER_PLAYER_CODE;
+    index = 0;
+    sec = stime.tv_sec;
+    usec = stime.tv_usec;
+  }
 
-  host = "";
-  port = 0;
+  gethostname(host, sizeof(host));
+  port = global_playerport;
   
   // Write header info
   fprintf(this->file, "%014.3f %s %d %s %02d %014.3f ",
            (double) stime.tv_sec + (double) stime.tv_usec * 1e-6,
-           host, port, iface.name, id->index,
+           host, port, iface.name, index,
            (double) sec + (double) usec * 1e-6);
 
   // Write the data
-  switch (id->code)
+  switch (iface.code)
   {
     case PLAYER_POSITION_CODE:
       this->WritePosition((player_position_data_t*) data, size);
@@ -360,10 +379,10 @@ void WriteLog::Write(void *data, size_t size,
 
 ////////////////////////////////////////////////////////////////////////////
 // Signed int conversion macros
-#define N_INT16(x) ((int16_t) ntohs(x))
-#define N_UINT16(x) ((uint16_t) ntohs(x))
-#define N_INT32(x) ((int32_t) ntohl(x))
-#define N_UINT32(x) ((uint32_t) ntohl(x))
+#define HINT16(x) ((int16_t) ntohs(x))
+#define HUINT16(x) ((uint16_t) ntohs(x))
+#define HINT32(x) ((int32_t) ntohl(x))
+#define HUINT32(x) ((uint32_t) ntohl(x))
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -377,8 +396,8 @@ void WriteLog::Write(void *data, size_t size,
 void WriteLog::WritePosition(player_position_data_t *data, size_t size)
 {
   fprintf(this->file, "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
-          MM_M(N_INT32(data->xpos)), MM_M(N_INT32(data->ypos)), DEG_RAD(N_INT32(data->yaw)),
-          MM_M(N_INT32(data->xspeed)), MM_M(N_INT32(data->yspeed)), DEG_RAD(N_INT32(data->yspeed)),
+          MM_M(HINT32(data->xpos)), MM_M(HINT32(data->ypos)), DEG_RAD(HINT32(data->yaw)),
+          MM_M(HINT32(data->xspeed)), MM_M(HINT32(data->yspeed)), DEG_RAD(HINT32(data->yspeed)),
           data->stall);
 
   return;
@@ -392,11 +411,11 @@ void WriteLog::WriteLaser(player_laser_data_t *data, size_t size)
   int i;
   
   fprintf(this->file, "%+07.4f %+07.4f %+07.4f %04d ",
-          DEG_RAD(N_INT16(data->min_angle) * 0.01), DEG_RAD(N_INT16(data->max_angle) * 0.01),
-          DEG_RAD(N_UINT16(data->resolution) * 0.01), N_UINT16(data->range_count));
+          DEG_RAD(HINT16(data->min_angle) * 0.01), DEG_RAD(HINT16(data->max_angle) * 0.01),
+          DEG_RAD(HUINT16(data->resolution) * 0.01), HUINT16(data->range_count));
 
   for (i = 0; i < ntohs(data->range_count); i++)
-    fprintf(this->file, "%.3f %2d ", MM_M(N_UINT16(data->ranges[i])), data->intensity[i]);
+    fprintf(this->file, "%.3f %2d ", MM_M(HUINT16(data->ranges[i])), data->intensity[i]);
 
   return;
 }

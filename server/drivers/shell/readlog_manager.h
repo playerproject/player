@@ -85,19 +85,19 @@ class ReadLogManager
 
   // Parse some data
   private: int ParseData(CDevice *device, int linenum,
-                         int token_count, char **tokens, uint64_t dtime);
+                         int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // Parse laser data
   private: int ParseLaser(CDevice *device, int linenum,
-                          int token_count, char **tokens, uint64_t dtime);
+                          int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // Parse position data
   private: int ParsePosition(CDevice *device, int linenum,
-                             int token_count, char **tokens, uint64_t dtime);
+                             int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // Parse wifi data
   private: int ParseWifi(CDevice *device, int linenum,
-                         int token_count, char **tokens, uint64_t dtime);
+                         int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // File to read data from
   private: char *filename;
