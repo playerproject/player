@@ -491,6 +491,9 @@ void WriteLog::Write(void *data, size_t size,
     case PLAYER_FIDUCIAL_CODE:
       this->WriteFiducial((player_fiducial_data_t*) data);
       break;
+    case PLAYER_WIFI_CODE:
+      this->WriteWiFi((player_wifi_data_t*) data);
+      break;
   }
 
   fprintf(this->file, "\n");
