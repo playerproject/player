@@ -32,17 +32,26 @@ The dummy driver generates dummy data and consumes dummy commands for
 any interface; useful for debugging client libraries and benchmarking
 server performance.
 
+@par Compile-time dependencies
 
-@par Interfaces
+- none
+
+@par Provides
+
 - This driver will support any interface.
 
-@par Supported configuration requests
+@par Requires
+
+- none
+
+@par Configuration requests
 
 - This driver will consume any configuration requests.
 
 @par Configuration file options
 
-- rate
+- rate (float)
+  - Default: 10
   - Data rate (Hz); e.g., rate 20 will generate data at 20Hz.
       
 @par Example 
@@ -55,6 +64,10 @@ driver
   rate 75              # Generate data at 75Hz
 )
 @endverbatim
+
+@par Authors
+
+Andrew Howard
 */
 /** @} */
   

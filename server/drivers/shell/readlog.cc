@@ -54,10 +54,13 @@ id's specified in the provides field must match those stored in the
 log file (i.e., data logged as "position:0" must also be read back as
 "position:0").
 
+For help in controlling playback, try @ref player_util_playervcr.
+Note that you must declare a @ref player_interface_log device to allow
+playback control.
 
-@par See also
+@par Compile-time dependencies
 
-@ref player_driver_writelog
+- none
 
 
 @par Provides
@@ -73,20 +76,31 @@ The readlog driver can provide the following device interfaces.
 - @ref player_interface_position3d
 - @ref player_interface_wifi
 
-
 The driver also provides an interface for controlling the playback:
 
 - @ref player_interface_log
 
+@par Requires
 
-@par Supported configuration requests
+- none
 
-- TODO
+@par Configuration requests
+
+- PLAYER_LOG_SET_READ_STATE_REQ
+- PLAYER_LOG_GET_STATE_REQ
+- PLAYER_LOG_SET_READ_REWIND_REQ
 
 @par Configuration file options
 
-- None
-
+- enable (integer)
+  - Default: 1
+  - Begin playing back log data when first client subscribes
+    (as opposed to waiting for the client to tell the @ref 
+    player_interface_log device to play).
+- autorewind (integer)
+  - Default: 0
+  - Automatically rewind and play the log file again when the end is
+    reached (as opposed to not producing any more data).
       
 @par Example 
 

@@ -20,9 +20,120 @@
 /** @{ */
 /** @defgroup player_driver_vfh vfh
 
-The vfh driver implements the Vector Field Histogram goal-seeking 
-obstacle-avoidance algorithm.  This driver works very well for local 
-navigation.
+The vfh driver implements the Vector Field Histogram Plus local
+navigation method by Ulrich and Borenstein.  VFH+ provides real-time
+obstacle avoidance and path following capabilities for mobile robots.
+Layered on top of a laser-equipped robot, vfh works great as a local
+navigation system (for global navigation, you can layer the @ref
+player_driver_wavefront driver on top of vfh).
+
+The primary parameters to tweak to get reliable performance are
+safety_dist and free_space_cutoff.  In general, safety_dist determines how
+close the robot will come to an obstacle while turning (around a corner
+for instance) and free_space_cutoff determines how close a robot will
+get to an obstacle in the direction of motion before turning to avoid.
+From experience, it is recommeded that max_turnrate should be at least
+15% of max_speed.
+
+To get initiated to VFH, I recommend starting with the default
+values for all parameters and experimentally adjusting safety_dist
+and free_space_cutoff to get a feeling for how the parameters affect
+performance.  Once comfortable, increase max_speed and max_turnrate.
+Unless you are familiar with the VFH algorithm, I don't recommend
+deviating from the default values for cell_size, window_diameter,
+or sector_angle.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_position : accepts target poses, to which vfh will
+  attempt to drive the robot.  Also passes through the data from the
+  underlying @ref player_interface_position device.  All data and commands
+  are in the odometric frame of the underlying device.
+
+@par Requires
+
+- @ref player_interface_position : the underlying robot that will be
+  controlled by vfh.
+
+- @ref player_laser_interface : the laser that will be used to avoid
+  obstacles
+
+@par Configuration requests
+
+- PLAYER_POSITION_GET_GEOM_REQ
+- PLAYER_POSITION_MOTOR_POWER_REQ
+
+@par Configuration file options
+
+- cell_size (length)
+  - Default: 0.1 m
+  - Local occupancy map grid size
+- window_diameter (integer)
+  - Default: 61
+  - Dimensions of occupancy map (map consists of window_diameter X
+    window_diameter cells).
+- sector_angle (integer)
+  - Default: 5
+  - Histogram angular resolution, in degrees.
+- safety_dist (length)
+  - Default: 0.1 m
+  - The minimum distance the robot is allowed to get to obstacles.
+- max_speed (length / sec)
+  - Default: 0.2 m/sec
+  - The maximum allowable speed of the robot.
+- max_turnrate (angle / sec)
+  - Default: 40 deg/sec
+  - The maximum allowable turnrate of the robot.
+- free_space_cutoff (float)
+  - Default: 2000000.0
+  - Unitless value.  The higher the value, the closer the robot will
+    get to obstacles before avoiding.
+- obs_cutoff (float)
+  - Default: free_space_cutoff
+  - ???
+- weight_desired_dir (float)
+  - Default: 5.0  
+  - Bias for the robot to turn to move toward goal position.
+- weight_current_dir (float)
+  - Default: 3.0
+  - Bias for the robot to continue moving in current direction of travel.
+- distance_epsilon (length)
+  - Default: 0.5 m
+  - Planar distance from the target position that will be considered
+    acceptable.
+- angle_epsilon (angle)
+  - Default: 10 deg
+  - Angular difference from target angle that will considered acceptable.
+
+@par Example
+@verbatim
+driver
+(
+  name "vfh"
+  provides ["position:0"]
+  requires ["position:1" "laser:0"]
+  cell_size 0.1
+  window_diameter 61
+  sector_angle 1
+  safety_dist 0.10
+  max_speed 0.5
+  min_turnrate 20
+  max_turnrate 120
+  free_space_cutoff  1000000.0
+  weight_desired_dir 5.0
+  weight_current_dir 3.0
+  distance_epsilon 0.3
+  angle_epsilon 5
+)
+@endverbatim
+
+@par Authors
+
+Chris Jones, Brian Gerkey, Alex Brooks
 
 */
 
@@ -86,13 +197,12 @@ class VFH_Class : public Driver
     // Truth device info
     Driver *truth;
     player_device_id_t truth_id;
-    int truth_index;
+    int use_truth;
     double truth_time;
 
     // Odometry device info
     Driver *odom;
     player_device_id_t odom_id;
-    int odom_index;
     double odom_time;
     double dist_eps;
     double ang_eps;
@@ -114,7 +224,6 @@ class VFH_Class : public Driver
     // Laser device info
     Driver *laser;
     player_device_id_t laser_id;
-    int laser_index;
     double laser_time;
 
     // Laser geometry (pose of laser in robot cs)
@@ -135,7 +244,8 @@ class VFH_Class : public Driver
 };
 
 // Initialization function
-Driver* VFH_Init( ConfigFile* cf, int section) 
+Driver* 
+VFH_Init(ConfigFile* cf, int section) 
 {
   return ((Driver*) (new VFH_Class( cf, section)));
 } 
@@ -207,15 +317,8 @@ int VFH_Class::SetupTruth()
   //struct timeval ts;
   
   // if the user didn't specify a truth device, don't do anything
-  if(this->truth_index < 0)
+  if(!this->use_truth)
     return(0);
-
-// EDIT?
-//  id.robot = this->device_id.robot;
-  this->truth_id.port = this->device_id.port;
-  this->truth_id.code = PLAYER_TRUTH_CODE;
-  this->truth_id.index = this->truth_index;
-
 
   if(!(this->truth = deviceTable->GetDriver(this->truth_id)))
   {
@@ -251,12 +354,6 @@ int VFH_Class::SetupOdom()
   unsigned short reptype;
   struct timeval ts;
   player_position_geom_t geom;
-
-// EDIT?
-//  id.robot = this->device_id.robot;
-  this->odom_id.port = this->device_id.port;
-  this->odom_id.code = PLAYER_POSITION_CODE;
-  this->odom_id.index = this->odom_index;
 
   this->odom = deviceTable->GetDriver(this->odom_id);
   if (!this->odom)
@@ -322,12 +419,6 @@ int VFH_Class::SetupLaser() {
   unsigned short reptype;
   struct timeval ts;
   player_laser_geom_t geom;
-
-// EDIT ?
-//  id.robot = this->device_id.robot;
-  this->laser_id.port = this->device_id.port;
-  this->laser_id.code = PLAYER_LASER_CODE;
-  this->laser_id.index = this->laser_index;
 
   this->laser = deviceTable->GetDriver(this->laser_id);
   if (!this->laser)
@@ -897,10 +988,10 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   max_speed = (int) rint(1000 * cf->ReadLength(section, "max_speed", 0.2));
   max_turnrate = (int) rint(RTOD(cf->ReadAngle(section, "max_turnrate", DTOR(40))));
   min_turnrate = (int) rint(RTOD(cf->ReadAngle(section, "min_turnrate", DTOR(10))));
-  free_space_cutoff = cf->ReadLength(section, "free_space_cutoff", 2000000.0);
-  obs_cutoff = cf->ReadLength(section, "obs_cutoff", free_space_cutoff);
-  weight_desired_dir = cf->ReadLength(section, "weight_desired_dir", 5.0);
-  weight_current_dir = cf->ReadLength(section, "weight_current_dir", 3.0);
+  free_space_cutoff = cf->ReadFloat(section, "free_space_cutoff", 2000000.0);
+  obs_cutoff = cf->ReadFloat(section, "obs_cutoff", free_space_cutoff);
+  weight_desired_dir = cf->ReadFloat(section, "weight_desired_dir", 5.0);
+  weight_current_dir = cf->ReadFloat(section, "weight_current_dir", 3.0);
 
   this->dist_eps = cf->ReadLength(section, "distance_epsilon", 0.5);
   this->ang_eps = cf->ReadAngle(section, "angle_epsilon", DTOR(10.0));
@@ -918,13 +1009,22 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
                                            obs_cutoff,
                                            weight_desired_dir,
                                            weight_current_dir );
-
+  
   this->truth = NULL;
-  this->truth_index = cf->ReadInt(section, "truth_index", -1);
+  if (cf->ReadDeviceId(&this->truth_id, section, "requires",
+                       PLAYER_TRUTH_CODE, -1, NULL) != 0)
+    this->use_truth = 0;
+  else
+    this->use_truth = 1;
   this->truth_time = 0.0;
   
   this->odom = NULL;
-  this->odom_index = cf->ReadInt(section, "position_index", 0);
+  if (cf->ReadDeviceId(&this->odom_id, section, "requires",
+                       PLAYER_POSITION_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->odom_time = 0.0;
   
   // The actual odometry geometry is read from the odometry device
@@ -937,7 +1037,12 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   this->odom_geom_size[2] = 0.0;
 
   this->laser = NULL;
-  this->laser_index = cf->ReadInt(section, "laser_index", 0);
+  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
+                       PLAYER_LASER_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->laser_time = 0.0;
 
   // The actual laser geometry is read from the laser device
