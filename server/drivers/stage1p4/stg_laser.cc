@@ -81,7 +81,7 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
   stg_laser_data_t* sdata = NULL;
   size_t slen = 0;
   assert( stg_get_property( this->stage_client, this->stage_id, 
-			    STG_PROP_LASER_DATA,
+			    STG_MOD_LASER_DATA,
 			    (void**)&sdata, &slen ) == 0 );
   
   assert( sdata );
@@ -131,7 +131,7 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	stg_laser_data_t* sdata = NULL;
 	size_t slen = 0;
 	assert( stg_get_property( this->stage_client, this->stage_id, 
-				  STG_PROP_LASER_DATA,
+				  STG_MOD_LASER_DATA,
 				  (void**)&sdata, &slen ) == 0 );
 	
 	assert( sdata );

@@ -74,7 +74,7 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
   stg_neighbor_t *nbors;
   size_t ncount = 0;
   assert( stg_get_property( this->stage_client, this->stage_id, 
-			    STG_PROP_NEIGHBORS,
+			    STG_MOD_NEIGHBORS,
 			    (void**)&nbors, &ncount ) == 0 );
   
   ncount /= sizeof(stg_neighbor_t);
@@ -129,14 +129,14 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	stg_pose_t* org;
 	size_t len;
 	assert( stg_get_property( this->stage_client, this->stage_id, 
-				  STG_PROP_ORIGIN,
+				  STG_MOD_ORIGIN,
 				  (void**)&org, &len ) == 0 );
 	
 	assert( len == sizeof(stg_pose_t) );
 	
 	stg_size_t* sz;	
 	assert( stg_get_property( this->stage_client, this->stage_id, 
-				  STG_PROP_SIZE,
+				  STG_MOD_SIZE,
 				  (void**)&sz, &len ) == 0 );
 	
 	assert( len == sizeof(stg_size_t) );
@@ -185,9 +185,9 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	stg_prop_id_t propid;
 	
 	if( p_msg->consume )
-	  propid = STG_PROP_LOS_MSG_CONSUME;
+	  propid = STG_MOD_LOS_MSG_CONSUME;
 	else
-	  propid = STG_PROP_LOS_MSG;
+	  propid = STG_MOD_LOS_MSG;
 	
 	if( stg_set_property(  this->stage_client, this->stage_id,
 			       propid, (void*)&s_msg, sizeof(s_msg))
@@ -215,9 +215,9 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	stg_prop_id_t prop;
 	
 	if( req->consume )
-	  prop = STG_PROP_LOS_MSG_CONSUME;
+	  prop = STG_MOD_LOS_MSG_CONSUME;
 	else
-	  prop = STG_PROP_LOS_MSG;
+	  prop = STG_MOD_LOS_MSG;
 	  
 	//puts( "GETTING MESSAGE" );
 

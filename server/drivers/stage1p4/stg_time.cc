@@ -20,7 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////
 //
 // Desc: Stage (simulator) time
-// Author: Richard Vaughan, based on Andrew Howard's gz_time.cc
+// Author: Richard Vaughan
 // Date: 7 May 2003
 // CVS: $Id$
 //
@@ -50,32 +50,12 @@ StgTime::~StgTime()
 // Get the simulator time
 int StgTime::GetTime(struct timeval* time)
 {
- puts( "get time" );
+  //puts( "get time" );
 
-  // get the time from Stage. 
+ time->tv_sec =  floor(Stage1p4::time);
+ time->tv_usec =  floor(fmod(Stage1p4::time, 1.0) * 1e6);
+ 
+ printf( "time now %d sec %d usec\n", time->tv_sec, time->tv_usec );
 
-  // this mechanism could be more efficient,
-  // but it's nice and simple for now.
-  
- if( Stage1p4::created_models_count < 3 )
-   {
-     memset( time, 0, sizeof(struct timeval) );
-     return 0;
-   }
-
- stg_property_t *prop = 
-   stg_send_property( Stage1p4::stage_client, 
-		      Stage1p4::created_models[2].stage_id, 
-		      STG_PROP_TIME, STG_GET, NULL, 0 );
- 
- printf( "time is %.4f\n", prop->timestamp );
- 
- assert( prop );
- 
- time->tv_sec = (int) floor(prop->timestamp);
- time->tv_usec = (int) floor(fmod(prop->timestamp, 1.0) * 1e6);
- 
- stg_property_free(prop);
- 
  return 0;
 }
