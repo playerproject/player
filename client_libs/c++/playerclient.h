@@ -39,6 +39,7 @@
 #endif
 
 #include <sys/time.h>
+//#include <sys/poll.h>
 #include <string.h>
 
 // Convert radians to degrees
@@ -356,6 +357,10 @@ class PlayerClient
 /*****************************************************************************
  ** begin section PlayerMultiClient
  *****************************************************************************/
+
+// forward declaration to avoid including <sys/poll.h>, which may not be
+// available when people are building clients against this lib
+struct pollfd;
 
 /**
   The PlayerMultiClient makes it easy to control multiple Player connections 
