@@ -102,7 +102,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   }
 
   // Create an interface 
-  if (this->AddInterface(this->device_id, PLAYER_ALL_MODE,
+  if (this->AddInterface(this->device_id, PLAYER_READ_MODE, 
                          AMCL_DATASIZE, 0, 100, 100) != 0)
   {
     this->SetError(-1);    

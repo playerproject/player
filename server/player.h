@@ -249,7 +249,7 @@ typedef struct player_device_id
   uint16_t code;
   /** The index of the device */
   uint16_t index;
-  /** The TCP port of the device (only useful with Stage)*/
+  /** The TCP port of the device */
   uint16_t port;
 } __PACKED__ player_device_id_t;
 

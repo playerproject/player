@@ -88,25 +88,19 @@ class CMVisionBF:public Driver
 // a factory creation function
 Driver* CMVision_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
-  {
-    PLAYER_ERROR1("driver \"cmvision\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new CMVisionBF(interface, cf, section)));
+  return((Driver*)(new CMVisionBF( cf, section)));
 }
 
 // a driver registration function
 void 
 CMVision_Register(DriverTable* table)
 {
-  table->AddDriver("cmvision", PLAYER_READ_MODE, CMVision_Init);
+  table->AddDriver("cmvision", CMVision_Init);
 }
 
 CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
-  :Driver(sizeof(player_blobfinder_data_t),0,0,0)
+  :Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE,
+          sizeof(player_blobfinder_data_t),0,0,0)
 {
   vision=NULL;
   cap=NULL;

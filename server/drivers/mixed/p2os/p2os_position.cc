@@ -48,26 +48,26 @@ class P2OSPosition: public P2OS
 
 Driver* P2OSPosition_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp( PLAYER_POSITION_STRING))
   {
     PLAYER_ERROR1("driver \"p2os_position\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new P2OSPosition(interface, cf, section)));
+    return((Driver*)(new P2OSPosition( cf, section)));
 }
 
 // a driver registration function
 void 
 P2OSPosition_Register(DriverTable* table)
 {
-  table->AddDriver("p2os_position", PLAYER_ALL_MODE, P2OSPosition_Init);
+  table->AddDriver("p2os_position",  P2OSPosition_Init);
 }
 
 
 P2OSPosition::P2OSPosition( ConfigFile* cf, int section)
-    : P2OS(interface, cf, section)
+    : P2OS( cf, section)
 {
   motor_max_speed = cf->ReadInt(section, "max_xspeed", MOTOR_DEF_MAX_SPEED);
   motor_max_turnspeed = cf->ReadInt(section, "max_yawspeed", MOTOR_DEF_MAX_TURNSPEED);

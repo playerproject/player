@@ -75,20 +75,20 @@ protected:
 // a factory creation function
 Driver* NomadPosition_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp( PLAYER_POSITION_STRING))
     {
       PLAYER_ERROR1("driver \"nomad_position\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else
-    return((Driver*)(new NomadPosition(interface, cf, section)));
+    return((Driver*)(new NomadPosition( cf, section)));
 }
 
 // a driver registration function
 void NomadPosition_Register(DriverTable* table)
 {
-  table->AddDriver( "nomad_position", PLAYER_ALL_MODE, NomadPosition_Init);
+  table->AddDriver( "nomad_position",  NomadPosition_Init);
 }
 
 
@@ -124,7 +124,7 @@ int NomadPosition::Setup()
 	  this->nomad_id.index ); fflush(stdout);
 
   // get the pointer to the Nomad
-  this->nomad = deviceTable->GetDevice(nomad_id);
+  this->nomad = deviceTable->GetDriver(nomad_id);
 
   if(!this->nomad)
   {

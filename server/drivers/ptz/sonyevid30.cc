@@ -40,7 +40,7 @@
 #include <unistd.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
@@ -122,14 +122,7 @@ public:
 // initialization function
 Driver* SonyEVID30_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_PTZ_STRING))
-  {
-    PLAYER_ERROR1("driver \"sonyevid30\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new SonyEVID30(interface, cf, section)));
+  return((Driver*)(new SonyEVID30( cf, section)));
 }
 
 /* how to make this work for multiple cameras...
@@ -159,11 +152,12 @@ Driver* SonyEVID30_Init( ConfigFile* cf, int section)
 void 
 SonyEVID30_Register(DriverTable* table)
 {
-  table->AddDriver("sonyevid30", PLAYER_ALL_MODE, SonyEVID30_Init);
+  table->AddDriver("sonyevid30",  SonyEVID30_Init);
 }
 
 SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
-  Driver(cf, section, sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
+         sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
   ptz_fd = -1;
   command_pending1 = false;

@@ -47,7 +47,7 @@
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
@@ -99,21 +99,21 @@ class Trogdor : public Driver
 // initialization function
 Driver* Trogdor_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp( PLAYER_POSITION_STRING))
   {
     PLAYER_ERROR1("driver \"trogdor\" does not support interface "
                   "\"%s\"\n", interface);
     return(NULL);
   }
   else
-    return((Driver*)(new Trogdor(interface, cf, section)));
+    return((Driver*)(new Trogdor( cf, section)));
 }
 
 // a driver registration function
 void 
 Trogdor_Register(DriverTable* table)
 {
-  table->AddDriver("trogdor", PLAYER_ALL_MODE, Trogdor_Init);
+  table->AddDriver("trogdor",  Trogdor_Init);
 }
 
 Trogdor::Trogdor( ConfigFile* cf, int section) :

@@ -26,7 +26,7 @@ captureCamera::captureCamera(int camera_index) : capture()
   id.code = PLAYER_CAMERA_CODE;
   id.index = this->camera_index;
   id.port = global_playerport;
-  this->camera = deviceTable->GetDevice(id);
+  this->camera = deviceTable->GetDriver(id);
   if (!this->camera)
   {
     PLAYER_ERROR("unable to locate suitable camera device");

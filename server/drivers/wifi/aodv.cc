@@ -31,7 +31,7 @@
 #include <string.h>
 #include <netinet/in.h>
 
-#include <device.h>
+#include <driver.h>
 #include <configfile.h>
 #include <playertime.h>
 #include <drivertable.h>
@@ -63,7 +63,7 @@ class Aodv : public Driver
 // Instantiate driver for given interface
 Driver * Aodv_Init( ConfigFile *cf, int section)
 { 
-  if(strcmp(interface, PLAYER_WIFI_STRING))
+  if(strcmp( PLAYER_WIFI_STRING))
   {
     PLAYER_ERROR1("driver \"linuxwifi\" does not support interface \"%s\"\n",
                   interface);
@@ -71,7 +71,7 @@ Driver * Aodv_Init( ConfigFile *cf, int section)
   }
   else
   {
-    return ((Driver*)(new Aodv(interface, cf, section)));
+    return ((Driver*)(new Aodv( cf, section)));
   }
 }
 

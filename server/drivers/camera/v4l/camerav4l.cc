@@ -104,27 +104,22 @@ class CameraV4L : public Driver
 // Initialization function
 Driver* CameraV4L_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_CAMERA_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"camerav4l\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-  return ((Driver*) (new CameraV4L(interface, cf, section)));
+  return ((Driver*) (new CameraV4L( cf, section)));
 }
 
 
 // a driver registration function
 void CameraV4L_Register(DriverTable* table)
 {
-  table->AddDriver("camerav4l", PLAYER_READ_MODE, CameraV4L_Init);
+  table->AddDriver("camerav4l", CameraV4L_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 CameraV4L::CameraV4L( ConfigFile* cf, int section)
-  : Driver(cf, section, sizeof(player_camera_data_t), 0, 10, 10)
+  : Driver(cf, section, PLAYER_CAMERA_CODE, PLAYER_READ_MODE,
+           sizeof(player_camera_data_t), 0, 10, 10)
 {
   const char *snorm;
   

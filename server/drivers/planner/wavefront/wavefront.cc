@@ -148,28 +148,22 @@ class Wavefront : public Driver
 // Initialization function
 Driver* Wavefront_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_PLANNER_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"wavefront\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-  return ((Driver*) (new Wavefront(interface, cf, section)));
+  return ((Driver*) (new Wavefront( cf, section)));
 }
 
 
 // a driver registration function
 void Wavefront_Register(DriverTable* table)
 {
-  table->AddDriver("wavefront", PLAYER_ALL_MODE, Wavefront_Init);
+  table->AddDriver("wavefront",  Wavefront_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Wavefront::Wavefront( ConfigFile* cf, int section)
-    : Driver(cf, section, sizeof(player_planner_data_t), sizeof(player_planner_cmd_t), 
-              1, 1)
+    : Driver(cf, section, PLAYER_PLANNER_CODE, PLAYER_ALL_MODE,
+             sizeof(player_planner_data_t), sizeof(player_planner_cmd_t), 1, 1)
 {
   this->position_index = cf->ReadInt(section,"position_index",-1);
   this->localize_index = cf->ReadInt(section,"localize_index",-1);
@@ -693,7 +687,7 @@ Wavefront::SetupPosition()
   id.port = this->device_id.port;
 
   // Subscribe to the position device.
-  if(!(this->position = deviceTable->GetDevice(id)))
+  if(!(this->position = deviceTable->GetDriver(id)))
   {
     PLAYER_ERROR("unable to locate suitable position device");
     return(-1);
@@ -734,7 +728,7 @@ Wavefront::SetupLocalize()
   id.port = this->device_id.port;
 
   // Subscribe to the localize device.
-  if(!(this->localize = deviceTable->GetDevice(id)))
+  if(!(this->localize = deviceTable->GetDriver(id)))
   {
     PLAYER_ERROR("unable to locate suitable localize device");
     return(-1);
@@ -761,7 +755,7 @@ Wavefront::SetupMap()
   map_id.code = PLAYER_MAP_CODE;
   map_id.index = this->map_index;
 
-  if(!(mapdevice = deviceTable->GetDevice(map_id)))
+  if(!(mapdevice = deviceTable->GetDriver(map_id)))
   {
     PLAYER_ERROR("unable to locate suitable map device");
     return -1;

@@ -91,6 +91,8 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
 // the buffers must allocated, and SetupBuffers() called.
 Driver::Driver(ConfigFile *cf, int section)
 {
+  device_id.code = INT_MAX;
+  
   // don't forget to make changes to both constructors!
   // it took me a few hours to figure out that the subscription
   // counter needs to be zeroed in the other constuctor - it produced
@@ -185,8 +187,8 @@ size_t Driver::GetNumData(player_device_id_t id, void* client)
 
 // New-style GetData; [id] specifies the interface to be read
 size_t Driver::GetData(player_device_id_t id, void* client, 
-                          unsigned char* dest, size_t len,
-                          uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+                       void* dest, size_t len,
+                       uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   Device *device;
   size_t size;
@@ -215,7 +217,7 @@ size_t Driver::GetData(player_device_id_t id, void* client,
 
 
 // New-style: Write a new command to the device
-void Driver::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
+void Driver::PutCommand(player_device_id_t id, void* client, void* src, size_t len)
 {
   Device *device;
 
@@ -261,6 +263,26 @@ size_t Driver::GetCommand(player_device_id_t id, void* dest, size_t len)
   return(size);
 }
 
+
+// New-style: Clear the current command buffer
+void Driver::ClearCommand(player_device_id_t id)
+{
+  Device *device;
+  
+  // Find the matching device in the device table
+  device = deviceTable->GetDevice(id);
+  if (device == NULL)
+  {
+    PLAYER_ERROR("interface not found; did you AddInterface()?");
+    assert(false);
+  }
+
+  Lock();
+  device->command_used_size = 0;
+  Unlock();
+
+  return;
+}
 
 
 // New-style: Write configuration request to device

@@ -41,7 +41,7 @@
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
@@ -154,21 +154,21 @@ class AmtecPowerCube:public Driver
 // initialization function
 Driver* AmtecPowerCube_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_PTZ_STRING))
+  if(strcmp( PLAYER_PTZ_STRING))
   {
     PLAYER_ERROR1("driver \"amtecpowercube\" does not support interface "
                   "\"%s\"\n", interface);
     return(NULL);
   }
   else
-    return((Driver*)(new AmtecPowerCube(interface, cf, section)));
+    return((Driver*)(new AmtecPowerCube( cf, section)));
 }
 
 // a driver registration function
 void 
 AmtecPowerCube_Register(DriverTable* table)
 {
-  table->AddDriver("amtecpowercube", PLAYER_ALL_MODE, AmtecPowerCube_Init);
+  table->AddDriver("amtecpowercube",  AmtecPowerCube_Init);
 }
 
 AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section) :

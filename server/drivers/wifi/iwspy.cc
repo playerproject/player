@@ -43,7 +43,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include <device.h>
+#include <driver.h>
 #include <configfile.h>
 #include <playertime.h>
 #include <drivertable.h>
@@ -115,16 +115,7 @@ class Iwspy : public Driver
 // Instantiate driver for given interface
 Driver * Iwspy_Init( ConfigFile *cf, int section)
 { 
-  if(strcmp(interface, PLAYER_WIFI_STRING))
-  {
-    PLAYER_ERROR1("driver \"iwspy\" does not support interface \"%s\"\n",
-                  interface);
-    return NULL;
-  }
-  else
-  {
-    return ((Driver*)(new Iwspy(interface, cf, section)));
-  }
+  return ((Driver*)(new Iwspy( cf, section)));
 }
 
 
@@ -132,7 +123,7 @@ Driver * Iwspy_Init( ConfigFile *cf, int section)
 // Register driver type
 void Iwspy_Register(DriverTable *table)
 {
-  table->AddDriver("iwspy", PLAYER_READ_MODE, Iwspy_Init);
+  table->AddDriver("iwspy", Iwspy_Init);
   return;
 }
 
@@ -140,7 +131,8 @@ void Iwspy_Register(DriverTable *table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Iwspy::Iwspy( ConfigFile *cf, int section)
-    : Driver(cf, section, sizeof(player_wifi_data_t), 0, 0, 0)
+    : Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE,
+             sizeof(player_wifi_data_t), 0, 0, 0)
 {
   int i;
   char key[64];

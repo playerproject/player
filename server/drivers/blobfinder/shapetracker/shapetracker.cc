@@ -140,14 +140,14 @@ class ShapeTracker : public Driver
 // Initialization function
 Driver* ShapeTracker_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_BLOBFINDER_STRING) != 0)
+  if (strcmp( PLAYER_BLOBFINDER_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"shapetracker\" does not support interface \"%s\"\n",
                   interface);
     return (NULL);
   }
 
-  return ((Driver*) (new ShapeTracker(interface, cf, section)));
+  return ((Driver*) (new ShapeTracker( cf, section)));
 }
 
 
@@ -190,7 +190,7 @@ int ShapeTracker::Setup()
   id.code = PLAYER_CAMERA_CODE;
   id.index = this->cameraIndex;
   id.port = this->device_id.port;
-  this->camera = deviceTable->GetDevice(id);
+  this->camera = deviceTable->GetDriver(id);
 
   if (!this->camera)
   {

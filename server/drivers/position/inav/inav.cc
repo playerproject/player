@@ -204,19 +204,19 @@ class INav : public Driver
 // Initialization function
 Driver* INav_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_POSITION_STRING) != 0)
+  if (strcmp( PLAYER_POSITION_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"inav\" does not support interface \"%s\"\n", interface);
     return (NULL);
   }
-  return ((Driver*) (new INav(interface, cf, section)));
+  return ((Driver*) (new INav( cf, section)));
 }
 
 
 // a driver registration function
 void INav_Register(DriverTable* table)
 {
-  table->AddDriver("inav", PLAYER_ALL_MODE, INav_Init);
+  table->AddDriver("inav",  INav_Init);
   return;
 }
 
@@ -406,7 +406,7 @@ int INav::SetupOdom()
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
 
-  this->odom = deviceTable->GetDevice(id);
+  this->odom = deviceTable->GetDriver(id);
   if (!this->odom)
   {
     PLAYER_ERROR("unable to locate suitable position device");
@@ -464,7 +464,7 @@ int INav::SetupLaser()
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
 
-  this->laser = deviceTable->GetDevice(id);
+  this->laser = deviceTable->GetDriver(id);
   if (!this->laser)
   {
     PLAYER_ERROR("unable to locate suitable laser device");

@@ -51,20 +51,20 @@ StgEnergy::StgEnergy( ConfigFile* cf, int section )
 
 Driver* StgEnergy_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_ENERGY_STRING))
+  if(strcmp( PLAYER_ENERGY_STRING))
     {
       PLAYER_ERROR1("driver \"stg_energy\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((Driver*)(new StgEnergy(interface, cf, section)));
+    return((Driver*)(new StgEnergy( cf, section)));
 }
 
 
 void StgEnergy_Register(DriverTable* table)
 {
-  table->AddDriver("stg_energy", PLAYER_ALL_MODE, StgEnergy_Init);
+  table->AddDriver("stg_energy",  StgEnergy_Init);
 }
 
 // override GetData to get data from Stage on demand, rather than the

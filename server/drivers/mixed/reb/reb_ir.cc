@@ -37,7 +37,7 @@ class REBIR : public REB
 {
 public:
   REBIR(char *interface, ConfigFile *cf, int section) :
-    REB(interface, cf, section) {}
+    REB( cf, section) {}
 
 
   virtual size_t GetData(void*, unsigned char *dest, size_t maxsize,
@@ -51,8 +51,8 @@ public:
 Driver *
 REBIR_Init(char *interface, ConfigFile *cf, int section)
 {
-  if (!strcmp(interface, PLAYER_IR_STRING)) {
-    return (Driver *) new REBIR(interface, cf, section);
+  if (!strcmp( PLAYER_IR_STRING)) {
+    return (Driver *) new REBIR( cf, section);
   } else {
     PLAYER_ERROR1("driver \"reb_ir\" does not support interface \"%s\"\n",
 		  interface);

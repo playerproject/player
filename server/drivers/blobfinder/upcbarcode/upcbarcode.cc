@@ -116,27 +116,22 @@ class UPCBarcode : public Driver
 // Initialization function
 Driver* UPCBarcode_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_BLOBFINDER_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"upcbarcode\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-  return ((Driver*) (new UPCBarcode(interface, cf, section)));
+  return ((Driver*) (new UPCBarcode( cf, section)));
 }
 
 
 // a driver registration function
 void UPCBarcode_Register(DriverTable* table)
 {
-  table->AddDriver("upcbarcode", PLAYER_READ_MODE, UPCBarcode_Init);
+  table->AddDriver("upcbarcode", UPCBarcode_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 UPCBarcode::UPCBarcode( ConfigFile* cf, int section)
-    : Driver(cf, section, sizeof(player_blobfinder_data_t), 0, 10, 10)
+    : Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE,
+             sizeof(player_blobfinder_data_t), 0, 10, 10)
 {
   this->camera_index = cf->ReadInt(section, "camera", 0);
   this->camera = NULL;
@@ -174,7 +169,7 @@ int UPCBarcode::Setup()
   id.code = PLAYER_CAMERA_CODE;
   id.index = this->camera_index;
   id.port = this->device_id.port;
-  this->camera = deviceTable->GetDevice(id);
+  this->camera = deviceTable->GetDriver(id);
   if (!this->camera)
   {
     PLAYER_ERROR("unable to locate suitable camera device");

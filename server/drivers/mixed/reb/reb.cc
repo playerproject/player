@@ -69,7 +69,6 @@ extern PlayerTime* GlobalTime;
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
 #include <devicetable.h>
-extern DriverTable* deviceTable;
 extern int global_playerport; // used to get at devices
 
 // we need to debug different things at different times
@@ -119,7 +118,7 @@ extern int			REB::slocks;
 extern struct pollfd		REB::write_pfd;
 extern struct pollfd		REB::read_pfd;
 
-REB::REB(char *interface, ConfigFile *cf, int section)
+REB::REB(ConfigFile *cf, int section)
 {
   int reqqueuelen = 1;
   int repqueuelen = 1;
@@ -407,7 +406,7 @@ REB::PutData( unsigned char* src, size_t maxsize,
   player_device_id_t id = device_id;
 
   id.code = PLAYER_IR_CODE;
-  Driver* ir = deviceTable->GetDevice(id);
+  Driver* ir = deviceTable->GetDriver(id);
   if(ir)
   {
     ir->data_timestamp_sec = this->data_timestamp_sec;
@@ -415,7 +414,7 @@ REB::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_POWER_CODE;
-  Driver* power = deviceTable->GetDevice(id);
+  Driver* power = deviceTable->GetDriver(id);
   if(power)
   {
     power->data_timestamp_sec = this->data_timestamp_sec;
@@ -423,7 +422,7 @@ REB::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_POSITION_CODE;
-  Driver* position = deviceTable->GetDevice(id);
+  Driver* position = deviceTable->GetDriver(id);
   if(position)
   {
     position->data_timestamp_sec = this->data_timestamp_sec;
@@ -448,13 +447,13 @@ REB::Main()
   player_device_id_t id = device_id;
 
   id.code = PLAYER_IR_CODE;
-  Driver *ir = deviceTable->GetDevice(id);
+  Driver *ir = deviceTable->GetDriver(id);
 
   id.code = PLAYER_POSITION_CODE;
-  Driver *pos = deviceTable->GetDevice(id);
+  Driver *pos = deviceTable->GetDriver(id);
 
   id.code = PLAYER_POWER_CODE;
-  Driver *power = deviceTable->GetDevice(id);
+  Driver *power = deviceTable->GetDriver(id);
 
   this->pos_subscriptions = 0;
   this->ir_subscriptions = 0;

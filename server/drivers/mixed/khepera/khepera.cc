@@ -167,7 +167,7 @@ Khepera::Khepera(char *interface, ConfigFile *cf, int section)
 	if (geometry->scale == 0)
 		geometry->scale = cf->ReadFloat(section, "scale_factor", KHEPERA_DEFAULT_SCALE);
   
-  	if (!strcmp(interface,PLAYER_POSITION_STRING))
+  	if (!strcmp(PLAYER_POSITION_STRING))
   	{
 		// set sub type here
 		geometry->position.subtype = PLAYER_POSITION_GET_GEOM_REQ;
@@ -183,7 +183,7 @@ Khepera::Khepera(char *interface, ConfigFile *cf, int section)
 		geometry->position.size[0] = khtons(static_cast<unsigned short> (cf->ReadTupleFloat(section,"size",0,57)));
 		geometry->position.size[1] = khtons(static_cast<unsigned short> (cf->ReadTupleFloat(section,"size",1,57)));
 	}
-	else if (!strcmp(interface,PLAYER_IR_STRING))
+	else if (!strcmp(PLAYER_IR_STRING))
 	{
 		// load ir geometry config
 		geometry->ir.pose_count = (cf->ReadInt(section,"pose_count", 8));
@@ -445,7 +445,7 @@ Khepera::PutData( unsigned char* src, size_t maxsize,
   player_device_id_t id = device_id;
 
   id.code = PLAYER_IR_CODE;
-  Driver* ir = deviceTable->GetDevice(id);
+  Driver* ir = deviceTable->GetDriver(id);
   if(ir)
   {
     ir->data_timestamp_sec = this->data_timestamp_sec;
@@ -453,7 +453,7 @@ Khepera::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_POSITION_CODE;
-  Driver* position = deviceTable->GetDevice(id);
+  Driver* position = deviceTable->GetDriver(id);
   if(position)
   {
     position->data_timestamp_sec = this->data_timestamp_sec;
@@ -472,10 +472,10 @@ Khepera::Main()
 	player_device_id_t id = device_id;
 
 	id.code = PLAYER_IR_CODE;
-	Driver *ir = deviceTable->GetDevice(id);
+	Driver *ir = deviceTable->GetDriver(id);
 
 	id.code = PLAYER_POSITION_CODE;
-	Driver *pos = deviceTable->GetDevice(id);
+	Driver *pos = deviceTable->GetDriver(id);
 
 	this->pos_subscriptions = 0;
 	this->ir_subscriptions = 0;

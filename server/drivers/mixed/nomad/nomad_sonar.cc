@@ -76,20 +76,20 @@ protected:
 // a factory creation function
 Driver* NomadSonar_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_SONAR_STRING))
+  if(strcmp( PLAYER_SONAR_STRING))
     {
       PLAYER_ERROR1("driver \"nomad_sonar\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else
-    return((Driver*)(new NomadSonar(interface, cf, section)));
+    return((Driver*)(new NomadSonar( cf, section)));
 }
 
 // a driver registration function
 void NomadSonar_Register(DriverTable* table)
 {
-  table->AddDriver( "nomad_sonar", PLAYER_ALL_MODE, NomadSonar_Init);
+  table->AddDriver( "nomad_sonar",  NomadSonar_Init);
 }
 
 
@@ -124,7 +124,7 @@ int NomadSonar::Setup()
 	  this->nomad_id.index ); fflush(stdout);
 
   // get the pointer to the Nomad
-  this->nomad = deviceTable->GetDevice(nomad_id);
+  this->nomad = deviceTable->GetDriver(nomad_id);
 
   if(!this->nomad)
   {

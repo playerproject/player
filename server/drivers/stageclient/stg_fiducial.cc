@@ -55,20 +55,20 @@ StgFiducial::StgFiducial( ConfigFile* cf, int section )
 
 Driver* StgFiducial_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_FIDUCIAL_STRING))
+  if(strcmp( PLAYER_FIDUCIAL_STRING))
     {
       PLAYER_ERROR1("driver \"stg_fiducial\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((Driver*)(new StgFiducial(interface, cf, section)));
+    return((Driver*)(new StgFiducial( cf, section)));
 }
 
 
 void StgFiducial_Register(DriverTable* table)
 {
-  table->AddDriver("stg_fiducial", PLAYER_ALL_MODE, StgFiducial_Init);
+  table->AddDriver("stg_fiducial",  StgFiducial_Init);
 }
 
 // override GetData to get data from Stage on demand, rather than the

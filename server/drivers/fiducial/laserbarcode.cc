@@ -88,7 +88,7 @@ class LaserBarcode : public Driver
 
   // Pointer to laser to get data from
   private: int laser_index;
-  private: Driver *laser_device;
+  private: Driver *laser_driver;
   
   // Magic numbers
   private: int bit_count;
@@ -108,27 +108,21 @@ class LaserBarcode : public Driver
 // Initialization function
 Driver* LaserBarcode_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_FIDUCIAL_STRING))
-  {
-    PLAYER_ERROR1("driver \"laserbarcode\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new LaserBarcode(interface, cf, section)));
+  return((Driver*)(new LaserBarcode( cf, section)));
 }
 
 // a driver registration function
 void LaserBarcode_Register(DriverTable* table)
 {
-  table->AddDriver("laserbarcode", PLAYER_READ_MODE, LaserBarcode_Init);
+  table->AddDriver("laserbarcode", LaserBarcode_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserBarcode::LaserBarcode( ConfigFile* cf, int section)
-    : Driver(cf, section, sizeof(player_fiducial_data_t), 0, 10, 10)
+    : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
+             sizeof(player_fiducial_data_t), 0, 10, 10)
 {
   // The default laser device to use
   this->laser_index = cf->ReadInt(section, "laser", 0);
@@ -158,15 +152,15 @@ int LaserBarcode::Setup()
   id.port = device_id.port;
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
-  this->laser_device = deviceTable->GetDevice(id);
-  if(!this->laser_device)
+  this->laser_driver = deviceTable->GetDriver(id);
+  if(!this->laser_driver)
   {
     PLAYER_ERROR("unable to find laser device");
     return(-1);
   }
     
   // Subscribe to the laser device, but fail if it fails
-  if(this->laser_device->Subscribe(this) != 0)
+  if(this->laser_driver->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
@@ -189,7 +183,7 @@ int LaserBarcode::Shutdown()
   this->StopThread();
 
   // Unsubscribe from the laser device
-  this->laser_device->Unsubscribe(this);
+  this->laser_driver->Unsubscribe(this);
 
   PLAYER_MSG0("laserbarcode device: shutdown");
   return 0;
@@ -203,7 +197,7 @@ void LaserBarcode::Main(void)
   while (true)
   {
     // Wait for new data from the laser
-    this->laser_device->Wait();
+    this->laser_driver->Wait();
 
     // Read the new laser data
     this->ReadLaser();
@@ -229,7 +223,7 @@ int LaserBarcode::ReadLaser()
   size_t size;
   
   // Get the laser data.
-  size = this->laser_device->GetData(this, (uint8_t*) &this->laser_data, sizeof(this->laser_data),
+  size = this->laser_driver->GetData(this, (uint8_t*) &this->laser_data, sizeof(this->laser_data),
                                      &this->laser_tsec, &this->laser_tusec);
   assert(size <= sizeof(this->laser_data));
   
@@ -514,7 +508,7 @@ void LaserBarcode::HandleGetGeom(void *client, void *request, size_t len)
   player_fiducial_geom_t fgeom;
     
   // Get the geometry from the laser
-  replen = this->laser_device->Request(&this->laser_device->device_id, this, request, len,
+  replen = this->laser_driver->Request(&this->laser_driver->device_id, this, request, len,
                                        &reptype, &ts, &lgeom, sizeof(lgeom));
   if (replen <= 0 || replen != sizeof(lgeom))
   {

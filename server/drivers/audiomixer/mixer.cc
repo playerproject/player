@@ -31,6 +31,7 @@
 
 #include "playercommon.h"
 #include "drivertable.h"
+#include "driver.h"
 #include "player.h"
 
 #define DEFAULT_DEVICE "/dev/mixer"
@@ -63,26 +64,20 @@ class Mixer : public Driver
 };
 
 Mixer::Mixer( ConfigFile* cf, int section)
-  : Driver(cf, section, 0,sizeof(player_audiomixer_cmd_t),1,1)
+  : Driver(cf, section, PLAYER_AUDIOMIXER_CODE, PLAYER_ALL_MODE,
+           0,sizeof(player_audiomixer_cmd_t),1,1)
 {
   deviceName = cf->ReadString(section,"device",DEFAULT_DEVICE);
 }
 
 Driver* Mixer_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_AUDIOMIXER_STRING))
-  {
-    PLAYER_ERROR1("driver \"mixer\" does not support interface \"%s\"\n", 
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new Mixer(interface, cf, section)));
+  return((Driver*)(new Mixer(cf, section)));
 }
 
 void Mixer_Register(DriverTable* table)
 {
-  table->AddDriver("mixer", PLAYER_ALL_MODE, Mixer_Init );
+  table->AddDriver("mixer", Mixer_Init );
 }
 
 int Mixer::Setup()

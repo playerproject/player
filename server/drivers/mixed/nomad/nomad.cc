@@ -103,20 +103,20 @@ protected:
 // a factory creation function
 Driver* Nomad_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_NOMAD_STRING))
+  if(strcmp( PLAYER_NOMAD_STRING))
     {
       PLAYER_ERROR1("driver \"nomad\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else
-    return((Driver*)(new Nomad(interface, cf, section)));
+    return((Driver*)(new Nomad( cf, section)));
 }
 
 // a driver registration function
 void Nomad_Register(DriverTable* table)
 {
-  table->AddDriver(PLAYER_NOMAD_STRING, PLAYER_ALL_MODE, Nomad_Init);
+  table->AddDriver(PLAYER_NOMAD_STRING,  Nomad_Init);
 }
 
 

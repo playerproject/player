@@ -125,13 +125,13 @@ class InertiaCube2 : public Driver
 // Initialization function
 Driver* InertiaCube2_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_POSITION_STRING) != 0)
+  if (strcmp( PLAYER_POSITION_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"inertiacube2\" does not support interface \"%s\"\n",
                   interface);
     return (NULL);
   }
-  return ((Driver*) (new InertiaCube2(interface, cf, section)));
+  return ((Driver*) (new InertiaCube2( cf, section)));
 }
 
 
@@ -206,7 +206,7 @@ int InertiaCube2::SetupPosition()
   id.port = this->device_id.port;
 
   // Subscribe to the position device.
-  this->position = deviceTable->GetDevice(id);
+  this->position = deviceTable->GetDriver(id);
   if (!this->position)
   {
     PLAYER_ERROR("unable to locate suitable position device");

@@ -59,20 +59,20 @@ StgSonar::StgSonar( ConfigFile* cf, int section )
 
 Driver* StgSonar_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_SONAR_STRING))
+  if(strcmp( PLAYER_SONAR_STRING))
     {
       PLAYER_ERROR1("driver \"stg_sonar\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((Driver*)(new StgSonar(interface, cf, section)));
+    return((Driver*)(new StgSonar( cf, section)));
 }
 
 
 void StgSonar_Register(DriverTable* table)
 {
-  table->AddDriver("stg_sonar", PLAYER_ALL_MODE, StgSonar_Init);
+  table->AddDriver("stg_sonar",  StgSonar_Init);
 }
 
 // override GetData to get data from Stage on demand, rather than the

@@ -31,7 +31,7 @@
 
 Driver* RWIPower_Init( ConfigFile* cf, int section)
 {
-  return((Driver *)(new CRWIPowerDevice(interface, cf, section)));
+  return((Driver *)(new CRWIPowerDevice( cf, section)));
 }
 
 void 

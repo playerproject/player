@@ -49,7 +49,7 @@
 class ReadLog: public Driver 
 {
   // Constructor
-  public: ReadLog(int code, ConfigFile* cf, int section);
+  public: ReadLog(ConfigFile* cf, int section);
 
   // Destructor
   public: ~ReadLog();
@@ -66,6 +66,9 @@ class ReadLog: public Driver
 
   // Our manager
   private: ReadLogManager *manager;
+
+  // Our local device id
+  private: player_device_id_t local_id;
   
   // The part of the log file to read
   private: player_device_id_t read_id;
@@ -75,21 +78,15 @@ class ReadLog: public Driver
 
 ////////////////////////////////////////////////////////////////////////////
 // Create a driver for reading log files
-Driver* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
+Driver* ReadReadLog_Init(ConfigFile* cf, int section)
 {
-  player_interface_t interface;
-
-  if (lookup_interface(name, &interface) != 0)
-  {
-    PLAYER_ERROR1("interface \"%s\" is not supported", name);
-    return NULL;
-  }
   if (ReadLogManager_Get() == NULL)
   {
     PLAYER_ERROR("no log file specified; did you forget to use -r <filename>?");
     return NULL;
   }
-  return ((Driver*) (new ReadLog(interface.code, cf, section)));
+
+  return ((Driver*) (new ReadLog(cf, section)));
 }
 
 
@@ -97,25 +94,41 @@ Driver* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
 // Device factory registration
 void ReadLog_Register(DriverTable* table)
 {
-  table->AddDriver("readlog", PLAYER_READ_MODE, ReadReadLog_Init);
+  table->AddDriver("readlog", ReadReadLog_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
-ReadLog::ReadLog(int code, ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
+ReadLog::ReadLog(ConfigFile* cf, int section)
+    : Driver(cf, section)
 {
+  // Figure out our device id
+  if (cf->ReadDeviceId(section, 0, -1, &this->local_id) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
+
+  // Create an interface
+  if (this->AddInterface(this->local_id, PLAYER_READ_MODE,
+                         PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+
+  
   // Get our manager
   this->manager = ReadLogManager_Get();
   assert(this->manager != NULL);
   
   // Get the part of the log file we wish to read
-  this->read_id.code = code;
+  this->read_id.code = this->local_id.code;
   this->read_id.index = cf->ReadInt(section, "index", 0);
 
-  if(code == PLAYER_LOG_CODE)
+  if(this->local_id.code == PLAYER_LOG_CODE)
   {
     if(cf->ReadInt(section, "enable", 1) > 0)
       this->manager->enable = true;
@@ -147,7 +160,7 @@ int ReadLog::Setup()
   // Subscribe to the underlying reader, unless we're the 'log' device,
   // which doesn't produce any data, but rather allows the client to
   // start/stop data playback.
-  if(this->device_id.code != PLAYER_LOG_CODE)
+  if(this->local_id.code != PLAYER_LOG_CODE)
   {
     if(this->manager->Subscribe(this->read_id, this) != 0)
       return -1;

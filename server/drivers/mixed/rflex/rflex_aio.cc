@@ -28,21 +28,21 @@ class RFLEXaio: public RFLEX
  public:
 
    RFLEXaio( ConfigFile* cf, int section) : 
-           RFLEX(interface, cf, section){}
+           RFLEX( cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
 Driver* RFLEXaio_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_AIO_STRING))
+  if(strcmp( PLAYER_AIO_STRING))
   {
     PLAYER_ERROR1("driver \"rflex_aio\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((RFLEX::AIODev = (Driver*)new RFLEXaio(interface, cf, section)));
+    return((RFLEX::AIODev = (Driver*)new RFLEXaio( cf, section)));
 }
 
 // a driver registration function

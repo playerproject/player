@@ -159,14 +159,7 @@ class UDPBroadcast : public Driver
 // Instantiate an instance of this driver
 Driver* UDPBroadcast_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_COMMS_STRING))
-  {
-    PLAYER_ERROR1("driver \"udpbroadcast\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new UDPBroadcast(interface, cf, section)));
+  return((Driver*)(new UDPBroadcast( cf, section)));
 }
 
 
@@ -174,14 +167,15 @@ Driver* UDPBroadcast_Init( ConfigFile* cf, int section)
 // Register driver
 void UDPBroadcast_Register(DriverTable* table)
 {
-  table->AddDriver("udpbroadcast", PLAYER_ALL_MODE, UDPBroadcast_Init);
+  table->AddDriver("udpbroadcast",  UDPBroadcast_Init);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
 UDPBroadcast::UDPBroadcast( ConfigFile* cf, int section)
-    : Driver(cf, section, 0,0,0,0)
+    : Driver(cf, section, PLAYER_COMMS_CODE, PLAYER_ALL_MODE,
+             0,0,0,0)
 {
   this->max_queue_size = 160;
   this->read_socket = 0;

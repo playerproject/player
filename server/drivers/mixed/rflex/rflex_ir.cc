@@ -31,7 +31,7 @@ class RFLEXIr: public RFLEX
 {
  public:
   RFLEXIr( ConfigFile* cf, int section) :
-    RFLEX(interface, cf, section){}
+    RFLEX( cf, section){}
   
   virtual size_t GetData(void*, unsigned char *, size_t maxsize,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
@@ -40,14 +40,14 @@ class RFLEXIr: public RFLEX
 
 Driver* RFLEXIr_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_IR_STRING))
+  if(strcmp( PLAYER_IR_STRING))
     {
       PLAYER_ERROR1("driver \"rflex_ir\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else{
-    RFLEXIr* tmp=new RFLEXIr(interface, cf, section);
+    RFLEXIr* tmp=new RFLEXIr( cf, section);
     tmp->GetOptions(cf,section,&rflex_configs);
 	RFLEX::IrDev = (Driver*)tmp;
     return (Driver*)tmp;

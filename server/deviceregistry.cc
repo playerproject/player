@@ -83,8 +83,7 @@ void Wavefront_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_SEGWAYRMP
-void SegwayRMPPosition_Register(DriverTable* table);
-void SegwayRMPPower_Register(DriverTable* table);
+void SegwayRMP_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_SICKLMS200
@@ -530,16 +529,15 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_SEGWAYRMP
-  SegwayRMPPosition_Register(driverTable);
-  SegwayRMPPower_Register(driverTable);
+  SegwayRMP_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
+#endif
+  
 #ifdef INCLUDE_SICKPLS
   SickPLS_Register(driverTable);
-#endif
-
 #endif
 
 #ifdef INCLUDE_ACTS

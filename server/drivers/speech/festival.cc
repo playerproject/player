@@ -51,6 +51,7 @@
 #include <socket_util.h>
 
 #include <drivertable.h>
+#include <driver.h>
 #include <player.h>
 
 /* don't change this unless you change the Festival init scripts as well*/
@@ -93,21 +94,14 @@ class Festival:public Driver
 // a factory creation function
 Driver* Festival_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_SPEECH_STRING))
-  {
-    PLAYER_ERROR1("driver \"festival\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new Festival(interface, cf, section)));
+  return((Driver*)(new Festival( cf, section)));
 }
 
 // a driver registration function
 void 
 Festival_Register(DriverTable* table)
 {
-  table->AddDriver("festival", PLAYER_WRITE_MODE, Festival_Init);
+  table->AddDriver("festival", Festival_Init);
 }
 
 #define FESTIVAL_SAY_STRING_PREFIX "(SayText \""
@@ -132,7 +126,8 @@ Festival_Register(DriverTable* table)
 void QuitFestival(void* speechdevice);
 
 Festival::Festival( ConfigFile* cf, int section) :
-  Driver(cf, section, 0,sizeof(player_speech_cmd_t),0,0)
+  Driver(cf, section, PLAYER_SPEECH_CODE, PLAYER_WRITE_MODE,
+         0,sizeof(player_speech_cmd_t),0,0)
 {
   int queuelen;
   sock = -1;

@@ -83,7 +83,7 @@ class LaserCSpace : public Driver
 
   // Laser stuff.
   private: int laser_index;
-  private: Driver *laser_device;
+  private: Driver *laser_driver;
   private: player_laser_data_t laser_data;
   private: uint32_t laser_timesec, laser_timeusec;
 
@@ -105,31 +105,25 @@ class LaserCSpace : public Driver
 // Initialization function
 Driver* LaserCSpace_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_LASER_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"lasercspace\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-  return ((Driver*) (new LaserCSpace(interface, cf, section)));
+  return ((Driver*) (new LaserCSpace( cf, section)));
 }
 
 
 // a driver registration function
 void LaserCSpace_Register(DriverTable* table)
 {
-  table->AddDriver("lasercspace", PLAYER_READ_MODE, LaserCSpace_Init);
+  table->AddDriver("lasercspace", LaserCSpace_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
-    : Driver(cf, section, 0, 0, 0, 1)
+    : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_READ_MODE, 0, 0, 0, 1)
 {
   // Info for the underlying laser device.
   this->laser_index = cf->ReadInt(section, "laser", 0);
-  this->laser_device = NULL;
+  this->laser_driver = NULL;
   this->laser_timesec = 0;
   this->laser_timeusec = 0;
 
@@ -156,18 +150,18 @@ int LaserCSpace::Setup()
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
   id.port = this->device_id.port;
-  this->laser_device = deviceTable->GetDevice(id);
-  if (!this->laser_device)
+  this->laser_driver = deviceTable->GetDriver(id);
+  if (!this->laser_driver)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
   }
-  if (this->laser_device == this)
+  if (this->laser_driver == this)
   {
     PLAYER_ERROR("attempt to subscribe to self");
     return(-1);
   }
-  if (this->laser_device->Subscribe(this) != 0)
+  if (this->laser_driver->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
@@ -182,7 +176,7 @@ int LaserCSpace::Setup()
 int LaserCSpace::Shutdown()
 {
   // Unsubscribe from devices.
-  this->laser_device->Unsubscribe(this);
+  this->laser_driver->Unsubscribe(this);
   
   return 0;
 }
@@ -194,7 +188,7 @@ size_t LaserCSpace::GetData(void* client, unsigned char *dest, size_t maxsize,
                             uint32_t* timesec, uint32_t* timeusec)
 {
   // Get the current laser data.
-  this->laser_device->GetData(client, (uint8_t*) &this->laser_data, sizeof(this->laser_data),
+  this->laser_driver->GetData(client, (uint8_t*) &this->laser_data, sizeof(this->laser_data),
                               &this->laser_timesec, &this->laser_timeusec);
   
   // If there is new laser data, update our data.  Otherwise, we will
@@ -384,7 +378,7 @@ void LaserCSpace::HandleGetGeom(void *client, void *request, int len)
   int replen;
     
   // Get the geometry from the laser
-  replen = this->laser_device->Request(&this->laser_device->device_id, this, request, len,
+  replen = this->laser_driver->Request(&this->laser_driver->device_id, this, request, len,
                                        &reptype, &ts, &rep, sizeof(rep));
   if (replen <= 0 || replen != sizeof(rep))
   {

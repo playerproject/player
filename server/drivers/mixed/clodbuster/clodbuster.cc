@@ -103,21 +103,21 @@ extern unsigned char*    ClodBuster::repqueue;
 // initialization function
 Driver* ClodBuster_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp( PLAYER_POSITION_STRING))
     {
       PLAYER_ERROR1("driver \"clodbuster\" does not support interface "
 		    "\"%s\"\n", interface);
       return(NULL);
     }
   else
-    return((Driver*)(new ClodBuster(interface, cf, section)));
+    return((Driver*)(new ClodBuster( cf, section)));
 }
 
 // a driver registration function
 void 
 ClodBuster_Register(DriverTable* table)
 {
-  table->AddDriver("clodbuster", PLAYER_ALL_MODE, ClodBuster_Init);
+  table->AddDriver("clodbuster",  ClodBuster_Init);
 }
 
 
@@ -427,7 +427,7 @@ void ClodBuster::PutData( unsigned char* src, size_t maxsize,
 
 
   id.code = PLAYER_POSITION_CODE;
-  Driver* positionp = deviceTable->GetDevice(id);
+  Driver* positionp = deviceTable->GetDriver(id);
   if(positionp)
     {
       positionp->data_timestamp_sec = this->data_timestamp_sec;
@@ -458,7 +458,7 @@ ClodBuster::Main()
   id.index = 0;
 
   id.code = PLAYER_POSITION_CODE;
-  Driver* positionp = deviceTable->GetDevice(id);
+  Driver* positionp = deviceTable->GetDriver(id);
 
   last_position_subscrcount = 0;
 

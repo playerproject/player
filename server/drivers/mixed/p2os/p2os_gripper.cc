@@ -34,7 +34,7 @@ class P2OSGripper: public P2OS
  public:
    ~P2OSGripper();
    P2OSGripper( ConfigFile* cf, int section) :
-           P2OS(interface, cf, section){}
+           P2OS( cf, section){}
    size_t GetData(void*,unsigned char *, size_t maxsize,
                   uint32_t* timestamp_sec, uint32_t* timestamp_usec );
    void PutCommand(void*, unsigned char *, size_t maxsize);
@@ -42,21 +42,21 @@ class P2OSGripper: public P2OS
 
 Driver* P2OSGripper_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_GRIPPER_STRING))
+  if(strcmp( PLAYER_GRIPPER_STRING))
   {
     PLAYER_ERROR1("driver \"p2os_gripper\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new P2OSGripper(interface, cf, section)));
+    return((Driver*)(new P2OSGripper( cf, section)));
 }
 
 // a driver registration function
 void 
 P2OSGripper_Register(DriverTable* table)
 {
-  table->AddDriver("p2os_gripper", PLAYER_ALL_MODE, P2OSGripper_Init);
+  table->AddDriver("p2os_gripper",  P2OSGripper_Init);
 }
 
 P2OSGripper::~P2OSGripper()

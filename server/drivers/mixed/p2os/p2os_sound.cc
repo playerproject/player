@@ -34,27 +34,27 @@ class P2OSSound: public P2OS
  public:
    ~P2OSSound();
    P2OSSound( ConfigFile* cf, int section) :
-           P2OS(interface, cf, section){}
+           P2OS( cf, section){}
    void PutCommand(void*, unsigned char *, size_t maxsize);
 };
 
 Driver* P2OSSound_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_SOUND_STRING))
+  if(strcmp( PLAYER_SOUND_STRING))
   {
     PLAYER_ERROR1("driver \"p2os_sound\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new P2OSSound(interface, cf, section)));
+    return((Driver*)(new P2OSSound( cf, section)));
 }
 
 // a driver registration function
 void 
 P2OSSound_Register(DriverTable* table)
 {
-  table->AddDriver("p2os_sound", PLAYER_ALL_MODE, P2OSSound_Init);
+  table->AddDriver("p2os_sound",  P2OSSound_Init);
 }
 
 P2OSSound::~P2OSSound()

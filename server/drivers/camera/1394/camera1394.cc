@@ -185,26 +185,22 @@ class Camera1394 : public Driver
 // Initialization function
 Driver* Camera1394_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_CAMERA_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"camera1394\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((Driver*) (new Camera1394(interface, cf, section)));
+  return ((Driver*) (new Camera1394( cf, section)));
 }
 
 
 // a driver registration function
 void Camera1394_Register(DriverTable* table)
 {
-  table->AddDriver("camera1394", PLAYER_READ_MODE, Camera1394_Init);
+  table->AddDriver("camera1394", Camera1394_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Camera1394::Camera1394( ConfigFile* cf, int section)
-  : Driver(cf, section, sizeof(player_camera_data_t), 0, 10, 10)
+  : Driver(cf, section, PLAYER_CAMERA_CODE, PLAYER_READ_MODE,
+           sizeof(player_camera_data_t), 0, 10, 10)
 {
   float fps;
   

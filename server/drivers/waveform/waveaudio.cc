@@ -41,7 +41,7 @@
 
 #include <pthread.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 
 // If set, we generate tones instead of sampling from the device. This
@@ -83,25 +83,19 @@ public:
 
 Driver* Waveaudio_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_WAVEFORM_STRING))
-  {
-    PLAYER_ERROR1("driver \"wave_audio\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new Waveaudio(interface, cf, section)));
+  return((Driver*)(new Waveaudio( cf, section)));
 }
 
 // a driver registration function
 void 
 Waveaudio_Register(DriverTable* table)
 {
-  table->AddDriver("wave_audio", PLAYER_ALL_MODE, Waveaudio_Init);
+  table->AddDriver("wave_audio",  Waveaudio_Init);
 }
 
 Waveaudio::Waveaudio( ConfigFile* cf, int section) :
-  Driver(cf, section, sizeof(player_waveform_data_t),0,0,0)
+  Driver(cf, section, PLAYER_WAVEFORM_CODE, PLAYER_ALL_MODE,
+         sizeof(player_waveform_data_t),0,0,0)
 {
 }
 

@@ -29,7 +29,7 @@ class captureCamera : public capture
 *************************/
    private: 
      int camera_index;
-     CDevice *camera;
+     Driver *camera;
      bool camera_open;
      int width,height,depth,image_size;
      //unsigned char * current_rgb;

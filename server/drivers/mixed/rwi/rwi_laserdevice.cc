@@ -31,7 +31,7 @@
 
 Driver* RWILaser_Init( ConfigFile* cf, int section)
 {
-  return((Driver *)(new CRWILaserDevice(interface, cf, section)));
+  return((Driver *)(new CRWILaserDevice( cf, section)));
 }
 
 void 

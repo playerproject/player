@@ -39,7 +39,7 @@ class KheperaIR : public Khepera
 {
 public:
   KheperaIR(char *interface, ConfigFile *cf, int section) :
-    Khepera(interface, cf, section) {}
+    Khepera( cf, section) {}
 
 
   virtual size_t GetData(void*, unsigned char *dest, size_t maxsize,
@@ -53,8 +53,8 @@ public:
 Driver *
 KheperaIR_Init(char *interface, ConfigFile *cf, int section)
 {
-  if (!strcmp(interface, PLAYER_IR_STRING)) {
-    return (Driver *) new KheperaIR(interface, cf, section);
+  if (!strcmp( PLAYER_IR_STRING)) {
+    return (Driver *) new KheperaIR( cf, section);
   } else {
     PLAYER_ERROR1("driver \"khepera_ir\" does not support interface \"%s\"\n",
 		  interface);

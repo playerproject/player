@@ -40,7 +40,7 @@ class KheperaPosition: public Khepera
 public:
   // constructor just calls Khepera Device constructor
   KheperaPosition(char *interface, ConfigFile *cf, int section) : 
-    Khepera(interface, cf, section) {}
+    Khepera( cf, section) {}
   ~KheperaPosition();
   
   virtual size_t GetData(void*,unsigned char *, size_t maxsize,
@@ -61,8 +61,8 @@ void KheperaPosition_Register(DriverTable *table);
 Driver *
 KheperaPosition_Init(char *interface, ConfigFile *cf, int section)
 {
-  if (!strcmp(interface, PLAYER_POSITION_STRING)) {
-    return ( (Driver *) new KheperaPosition(interface, cf, section));
+  if (!strcmp( PLAYER_POSITION_STRING)) {
+    return ( (Driver *) new KheperaPosition( cf, section));
   } else {
     PLAYER_ERROR1("driver \"khepera_position\" does not support interface \"%s\"\n",
 		  interface);
@@ -77,7 +77,7 @@ KheperaPosition_Init(char *interface, ConfigFile *cf, int section)
 void
 KheperaPosition_Register(DriverTable *table) 
 {
-  table->AddDriver("khepera_position", PLAYER_ALL_MODE, KheperaPosition_Init);
+  table->AddDriver("khepera_position",  KheperaPosition_Init);
 }
 
 /* destructor.  just set commanded speed to nil

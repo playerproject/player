@@ -43,6 +43,7 @@
 #include <socket_util.h>
 
 #include <drivertable.h>
+#include <driver.h>
 #include <player.h>
 
 #define ACTS_NUM_CHANNELS 32
@@ -139,21 +140,14 @@ class Acts:public Driver
 // a factory creation function
 Driver* Acts_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
-  {
-    PLAYER_ERROR1("driver \"acts\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new Acts(interface, cf, section)));
+  return((Driver*)(new Acts( cf, section)));
 }
 
 // a driver registration function
 void 
 Acts_Register(DriverTable* table)
 {
-  table->AddDriver("acts", PLAYER_READ_MODE, Acts_Init);
+  table->AddDriver("acts", Acts_Init);
 }
 
 #define ACTS_REQUEST_QUIT '1'
@@ -170,7 +164,8 @@ void QuitACTS(void* visiondevice);
 
 
 Acts::Acts( ConfigFile* cf, int section)
-  : Driver(cf, section, sizeof(player_blobfinder_data_t),0,0,0)
+  : Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_ALL_MODE,
+           sizeof(player_blobfinder_data_t),0,0,0)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   int tmpint;

@@ -35,7 +35,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
    
@@ -92,7 +92,7 @@ typedef struct
 
 // this is here because we need the above typedef's before including it.
 
-class RFLEX:public CDevice 
+class RFLEX:public Driver 
 {
   private:
     static pthread_t thread;
@@ -100,7 +100,7 @@ class RFLEX:public CDevice
   
     // since we have several child classes that must use the same lock, we 
     // declare our own static mutex here and override Lock() and Unlock() to 
-    // use this mutex instead of the one declared in CDevice.
+    // use this mutex instead of the one declared in Driver.
     static pthread_mutex_t rflex_accessMutex;
 
     // and this one protects calls to Setup and Shutdown
@@ -133,7 +133,7 @@ class RFLEX:public CDevice
     int initialize_robot();
     void reset_odometry();
     void set_odometry(long,long,short);
-    void update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice* bumperp, CDevice* irp);    
+    void update_everything(player_rflex_data_t* d, Driver* sonarp, Driver* bumperp, Driver* irp);    
 
     void set_config_defaults();
   protected:
@@ -169,13 +169,13 @@ class RFLEX:public CDevice
 
 	static int joy_control;
 
-	static CDevice * PositionDev;
-	static CDevice * SonarDev;
-	static CDevice * IrDev;
-	static CDevice * BumperDev;
-	static CDevice * PowerDev;
-	static CDevice * AIODev;
-	static CDevice * DIODev;
+	static Driver * PositionDev;
+	static Driver * SonarDev;
+	static Driver * IrDev;
+	static Driver * BumperDev;
+	static Driver * PowerDev;
+	static Driver * AIODev;
+	static Driver * DIODev;
 
 
 };

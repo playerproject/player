@@ -30,7 +30,7 @@
 // a factory creation function
 Driver* RWIBumper_Init( ConfigFile* cf, int section)
 {
-  return((Driver *)(new CRWIBumperDevice(interface, cf, section)));
+  return((Driver *)(new CRWIBumperDevice( cf, section)));
 }
 
 void 
@@ -41,7 +41,7 @@ RWIBumper_Register(DriverTable* table)
 	
 
 CRWIBumperDevice::CRWIBumperDevice( ConfigFile* cf, int section)
-    : CRWIDevice(interface, cf, section,
+    : CRWIDevice( cf, section,
                  sizeof(player_bumper_data_t),
                  0 /* no commands for bumpers */,
 		         1,1)

@@ -76,7 +76,7 @@ int AdaptiveMCL::SetupWifi(void)
   id.code = PLAYER_WIFI_CODE;
   id.index = this->wifi_index;
 
-  this->wifi = deviceTable->GetDevice(id);
+  this->wifi = deviceTable->GetDriver(id);
   if (!this->wifi)
   {
     PLAYER_ERROR("unable to locate suitable wifi device");

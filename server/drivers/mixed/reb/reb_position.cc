@@ -39,7 +39,7 @@ class REBPosition: public REB
 public:
   // constructor just calls REBDevice constructor
   REBPosition(char *interface, ConfigFile *cf, int section) : 
-    REB(interface, cf, section) {}
+    REB( cf, section) {}
   ~REBPosition();
   
   virtual size_t GetData(void*,unsigned char *, size_t maxsize,
@@ -60,8 +60,8 @@ void REBPosition_Register(DriverTable *table);
 Driver *
 REBPosition_Init(char *interface, ConfigFile *cf, int section)
 {
-  if (!strcmp(interface, PLAYER_POSITION_STRING)) {
-    return ( (Driver *) new REBPosition(interface, cf, section));
+  if (!strcmp( PLAYER_POSITION_STRING)) {
+    return ( (Driver *) new REBPosition( cf, section));
   } else {
     PLAYER_ERROR1("driver \"reb_position\" does not support interface \"%s\"\n",
 		  interface);
@@ -76,7 +76,7 @@ REBPosition_Init(char *interface, ConfigFile *cf, int section)
 void
 REBPosition_Register(DriverTable *table) 
 {
-  table->AddDriver("reb_position", PLAYER_ALL_MODE, REBPosition_Init);
+  table->AddDriver("reb_position",  REBPosition_Init);
 }
 
 /* destructor.  just set commanded speed to nil

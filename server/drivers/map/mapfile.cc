@@ -30,7 +30,7 @@
 
 #include <player.h>
 #include <drivertable.h>
-#include <devicetable.h>
+#include <driver.h>
 
 // use gdk-pixbuf for image loading
 #include <gdk-pixbuf/gdk-pixbuf.h>
@@ -41,7 +41,6 @@
 // check that given coords are valid (i.e., on the map)
 #define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->size_x) && (j >= 0) && (j < mf->size_y))
 
-extern DriverTable* deviceTable;
 
 extern int global_playerport;
 
@@ -60,7 +59,7 @@ class MapFile : public Driver
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapFile(const char* file, double res, int neg);
+    MapFile(ConfigFile* cf, int section, const char* file, double res, int neg);
     ~MapFile();
     virtual int Setup();
     virtual int Shutdown();
@@ -69,18 +68,11 @@ class MapFile : public Driver
 };
 
 Driver*
-MapFile_Init( ConfigFile* cf, int section)
+MapFile_Init(ConfigFile* cf, int section)
 {
   const char* filename;
   double resolution;
   int negate;
-
-  if(strcmp(interface, PLAYER_MAP_STRING))
-  {
-    PLAYER_ERROR1("driver \"mapfile\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
 
   if(!(filename = cf->ReadFilename(section,"filename", NULL)))
   {
@@ -94,20 +86,21 @@ MapFile_Init( ConfigFile* cf, int section)
   }
   negate = cf->ReadInt(section,"negate",0);
 
-  return((Driver*)(new MapFile(filename, resolution, negate)));
+  return((Driver*)(new MapFile(cf, section, filename, resolution, negate)));
 }
 
 // a driver registration function
 void 
 MapFile_Register(DriverTable* table)
 {
-  table->AddDriver("mapfile", PLAYER_READ_MODE, MapFile_Init);
+  table->AddDriver("mapfile", MapFile_Init);
 }
 
 
 // this one has no data or commands, just configs
-MapFile::MapFile(const char* file, double res, int neg) : 
-  Driver(cf, section, 0,0,100,100)
+MapFile::MapFile(ConfigFile* cf, int section, const char* file, double res, int neg) : 
+  Driver(cf, section, PLAYER_MAP_CODE, PLAYER_READ_MODE,
+         0,0,100,100)
 {
   this->mapdata = NULL;
   this->size_x = this->size_y = 0;

@@ -58,19 +58,19 @@ Driver* StgBlinkenlight_Init( ConfigFile* cf, int section)
 {
   PLAYER_MSG0( "STG_BLINKENLIGHT INIT" );
     
-  if(strcmp(interface, PLAYER_BLINKENLIGHT_STRING))
+  if(strcmp( PLAYER_BLINKENLIGHT_STRING))
     {
       PLAYER_ERROR1("driver \"stg_blinkenlight\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((Driver*)(new StgBlinkenlight(interface, cf, section)));
+    return((Driver*)(new StgBlinkenlight( cf, section)));
 }
 	      
 void StgBlinkenlight_Register(DriverTable* table)
 {
-  table->AddDriver("stg_blinkenlight", PLAYER_ALL_MODE, StgBlinkenlight_Init);
+  table->AddDriver("stg_blinkenlight",  StgBlinkenlight_Init);
 }
 
 // override GetData to get data from Stage on demand, rather than the

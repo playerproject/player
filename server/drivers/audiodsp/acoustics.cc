@@ -35,6 +35,7 @@
 
 #include "playercommon.h"
 #include "drivertable.h"
+#include "driver.h"
 #include "player.h"
 
 #define DEFAULT_DEVICE "/dev/dsp"
@@ -112,7 +113,8 @@ class Acoustics : public Driver
 };
 
 Acoustics::Acoustics( ConfigFile* cf, int section)
-  : Driver(cf, section, sizeof(player_audiodsp_data_t),sizeof(player_audiodsp_cmd_t),1,1),
+  : Driver(cf, section, PLAYER_AUDIODSP_CODE, 
+           sizeof(player_audiodsp_data_t),sizeof(player_audiodsp_cmd_t),1,1),
   audioFD(-1),deviceName(NULL),openFlag(-1),channels(1),sampleFormat(16),
   sampleRate(8000),audioBuffSize(4096),audioBuffer(NULL),bytesPerSample(1),
   peakFreq(NULL),peakAmp(NULL),N(1024),nHighestPeaks(5)
@@ -132,19 +134,12 @@ Acoustics::~Acoustics()
 
 Driver* Acoustics_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_AUDIODSP_STRING))
-  {
-    PLAYER_ERROR1("driver \"acoustics\" does not support interface \"%s\"\n", 
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new Acoustics(interface, cf, section)));
+  return((Driver*)(new Acoustics(cf, section)));
 }
 
 void Acoustics_Register(DriverTable* table)
 {
-  table->AddDriver("acoustics", PLAYER_ALL_MODE, Acoustics_Init );
+  table->AddDriver("acoustics", Acoustics_Init );
 }
 
 int Acoustics::Setup()

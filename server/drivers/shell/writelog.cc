@@ -136,15 +136,8 @@ extern int global_playerport;
 
 ////////////////////////////////////////////////////////////////////////////
 // Create a driver for reading log files
-Driver* ReadWriteLog_Init(char* name, ConfigFile* cf, int section)
+Driver* WriteLog_Init(ConfigFile* cf, int section)
 {
-  //if (lookup_interface(name, &interface) != 0)
-  if(strcmp(name,PLAYER_LOG_STRING))
-  {
-    PLAYER_ERROR1("driver \"writelog\" does not support interface \"%s\"\n",
-                  name);
-    return NULL;
-  }
   return ((Driver*) (new WriteLog(cf, section)));
 }
 
@@ -153,7 +146,7 @@ Driver* ReadWriteLog_Init(char* name, ConfigFile* cf, int section)
 // Device factory registration
 void WriteLog_Register(DriverTable* table)
 {
-  table->AddDriver("writelog", PLAYER_READ_MODE, ReadWriteLog_Init);
+  table->AddDriver("writelog", WriteLog_Init);
   return;
 }
 
@@ -161,7 +154,8 @@ void WriteLog_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
 WriteLog::WriteLog(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
+    : Driver(cf, section, PLAYER_LOG_CODE, PLAYER_ALL_MODE,
+             PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
 {
   int i, index;
   const char *desc;
@@ -239,7 +233,7 @@ int WriteLog::Setup()
   {
     device = this->devices + i;
 
-    device->device = deviceTable->GetDevice(device->id);
+    device->device = deviceTable->GetDriver(device->id);
     if (!device->device)
     {
       PLAYER_ERROR("unable to locate device for logging");
@@ -416,7 +410,7 @@ void WriteLog::Main(void)
       device = this->devices + i;
       
       // Read data from underlying device
-      size = device->device->GetDataEx(device->id, this, (unsigned char*) data, maxsize, &tsec, &tusec);
+      size = device->device->GetData(device->id, this, (unsigned char*) data, maxsize, &tsec, &tusec);
       assert(size < maxsize);
 
       // Check for new data

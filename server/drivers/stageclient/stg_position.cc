@@ -68,19 +68,19 @@ Driver* StgPosition_Init( ConfigFile* cf, int section)
 {
   PLAYER_MSG0( "STG_POSITION INIT" );
     
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp( PLAYER_POSITION_STRING))
     {
       PLAYER_ERROR1("driver \"stg_position\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((Driver*)(new StgPosition(interface, cf, section)));
+    return((Driver*)(new StgPosition( cf, section)));
 }
 	      
 void StgPosition_Register(DriverTable* table)
 {
-  table->AddDriver("stg_position", PLAYER_ALL_MODE, StgPosition_Init);
+  table->AddDriver("stg_position",  StgPosition_Init);
 }
 
 size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,

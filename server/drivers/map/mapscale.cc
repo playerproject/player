@@ -44,8 +44,6 @@
 #define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->size_x) && (j >= 0) && (j < mf->size_y))
 #define NEW_MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->new_size_x) && (j >= 0) && (j < mf->new_size_y))
 
-extern DriverTable* deviceTable;
-
 extern int global_playerport;
 
 class MapScale : public Driver
@@ -71,7 +69,7 @@ class MapScale : public Driver
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapScale(int index, double new_resolution);
+    MapScale(ConfigFile* cf, int section, int index, double new_resolution);
     ~MapScale();
     virtual int Setup();
     virtual int Shutdown();
@@ -80,17 +78,10 @@ class MapScale : public Driver
 };
 
 Driver*
-MapScale_Init( ConfigFile* cf, int section)
+MapScale_Init(ConfigFile* cf, int section)
 {
   int index;
   double resolution;
-
-  if(strcmp(interface, PLAYER_MAP_STRING))
-  {
-    PLAYER_ERROR1("driver \"mapscale\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
 
   if((index = cf->ReadInt(section,"map_index",-1)) < 0)
   {
@@ -103,20 +94,21 @@ MapScale_Init( ConfigFile* cf, int section)
     return(NULL);
   }
 
-  return((Driver*)(new MapScale(index, resolution)));
+  return((Driver*)(new MapScale(cf, section, index, resolution)));
 }
 
 // a driver registration function
 void 
 MapScale_Register(DriverTable* table)
 {
-  table->AddDriver("mapscale", PLAYER_READ_MODE, MapScale_Init);
+  table->AddDriver("mapscale", MapScale_Init);
 }
 
 
 // this one has no data or commands, just configs
-MapScale::MapScale(int index, double res) :
-  Driver(cf, section, 0,0,100,100)
+MapScale::MapScale(ConfigFile* cf, int section, int index, double res) :
+  Driver(cf, section, PLAYER_MAP_CODE, PLAYER_READ_MODE,
+         0,0,100,100)
 {
   this->mapdata = this->new_mapdata = NULL;
   this->size_x = this->size_y = 0;
@@ -152,7 +144,7 @@ MapScale::GetMap()
   map_id.code = PLAYER_MAP_CODE;
   map_id.index = this->map_index;
 
-  if(!(mapdevice = deviceTable->GetDevice(map_id)))
+  if(!(mapdevice = deviceTable->GetDriver(map_id)))
   {
     PLAYER_ERROR("unable to locate suitable map device");
     return(-1);

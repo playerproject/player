@@ -76,17 +76,17 @@ class BumperSafe : public Driver
 // Initialization function
 Driver* BumperSafe_Init( ConfigFile* cf, int section) 
 {
-  if (strcmp(interface, PLAYER_POSITION_STRING) != 0) { 
+  if (strcmp( PLAYER_POSITION_STRING) != 0) { 
     PLAYER_ERROR1("driver \"bumper_safe\" does not support interface \"%s\"\n", interface);
     return (NULL);
   }
-  return ((Driver*) (new BumperSafe(interface, cf, section)));
+  return ((Driver*) (new BumperSafe( cf, section)));
 } 
 
 // a driver registration function
 void BumperSafe_Register(DriverTable* table)
 { 
-  table->AddDriver("bumper_safe", PLAYER_ALL_MODE, BumperSafe_Init);
+  table->AddDriver("bumper_safe",  BumperSafe_Init);
   return;
 } 
 
@@ -140,7 +140,7 @@ int BumperSafe::SetupPosition()
   id.code = PLAYER_POSITION_CODE;
   id.index = this->position_index;
 
-  this->position = deviceTable->GetDevice(id);
+  this->position = deviceTable->GetDriver(id);
   if (!this->position)
   {
     PLAYER_ERROR("unable to locate suitable position device");
@@ -182,7 +182,7 @@ int BumperSafe::SetupBumper() {
   id.code = PLAYER_BUMPER_CODE;
   id.index = this->bumper_index;
 
-  this->bumper = deviceTable->GetDevice(id);
+  this->bumper = deviceTable->GetDriver(id);
   if (!this->bumper)
   {
     PLAYER_ERROR("unable to locate suitable laser device");

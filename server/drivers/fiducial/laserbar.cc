@@ -88,7 +88,7 @@ class LaserBar : public Driver
   
   // Pointer to laser to get data from.
   private: int laser_index;
-  private: Driver *laser_device;
+  private: Driver *laser_driver;
 
   // Reflector properties.
   private: double reflector_width;
@@ -98,6 +98,7 @@ class LaserBar : public Driver
   private: player_laser_data_t ldata;
 
   // Local copy of the current fiducial data.
+  private: uint32_t data_time_sec, data_time_usec;
   private: player_fiducial_data_t fdata;
 };
 
@@ -105,27 +106,22 @@ class LaserBar : public Driver
 // Initialization function
 Driver* LaserBar_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"laserbar\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-  return ((Driver*) (new LaserBar(interface, cf, section)));
+  return ((Driver*) (new LaserBar( cf, section)));
 }
 
 
 // a driver registration function
 void LaserBar_Register(DriverTable* table)
 {
-  table->AddDriver("laserbar", PLAYER_READ_MODE, LaserBar_Init);
+  table->AddDriver("laserbar", LaserBar_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserBar::LaserBar( ConfigFile* cf, int section)
-    : Driver(cf, section, 0, 0, 0, 1)
+    : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
+             0, 0, 0, 1)
 {
   // The default laser device to use
   this->laser_index = cf->ReadInt(section, "laser_index", 0);
@@ -147,14 +143,14 @@ int LaserBar::Setup()
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
   
-  if (!(this->laser_device = deviceTable->GetDevice(id)))
+  if (!(this->laser_driver = deviceTable->GetDriver(id)))
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
   }
     
   // Subscribe to the laser device, but fail if it fails
-  if (this->laser_device->Subscribe(this) != 0)
+  if (this->laser_driver->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
@@ -169,7 +165,7 @@ int LaserBar::Setup()
 int LaserBar::Shutdown()
 {
   // Unsubscribe from the laser device
-  this->laser_device->Unsubscribe(this);
+  this->laser_driver->Unsubscribe(this);
 
   return 0;
 }
@@ -185,14 +181,13 @@ size_t LaserBar::GetData(void* client,unsigned char *dest, size_t maxsize,
   uint32_t laser_time_sec, laser_time_usec;
   
   // Get the laser data.
-  laser_size = this->laser_device->GetData(this, (uint8_t*) &this->ldata, sizeof(this->ldata),
+  laser_size = this->laser_driver->GetData(this, (uint8_t*) &this->ldata, sizeof(this->ldata),
                                            &laser_time_sec, &laser_time_usec);
   assert(laser_size <= sizeof(this->ldata));
   
   // If the laser doesnt have new data, just return a copy of our old
   // data.
-  if (laser_time_sec != this->data_timestamp_sec ||
-      laser_time_usec != this->data_timestamp_usec)
+  if (laser_time_sec != this->data_time_sec || laser_time_usec != this->data_time_usec)
   {
     // Do some byte swapping
     this->ldata.resolution = ntohs(this->ldata.resolution);
@@ -223,6 +218,9 @@ size_t LaserBar::GetData(void* client,unsigned char *dest, size_t maxsize,
   // Copy the laser timestamp
   *time_sec = laser_time_sec;
   *time_usec = laser_time_usec;
+
+  this->data_time_sec = laser_time_sec;
+  this->data_time_usec = laser_time_usec;
   
   return (sizeof(this->fdata));
 }
@@ -271,7 +269,7 @@ void LaserBar::HandleGetGeom(void *client, void *request, int len)
   player_fiducial_geom_t fgeom;
     
   // Get the geometry from the laser
-  replen = this->laser_device->Request(&this->laser_device->device_id, this, request, len,
+  replen = this->laser_driver->Request(&this->laser_driver->device_id, this, request, len,
                                        &reptype, &ts, &lgeom, sizeof(lgeom));
   if (replen <= 0 || replen != sizeof(lgeom))
   {

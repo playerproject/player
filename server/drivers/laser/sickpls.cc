@@ -203,14 +203,14 @@ class SickPLS : public Driver
 // a factory creation function
 Driver* SickPLS_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_LASER_STRING))
+  if(strcmp( PLAYER_LASER_STRING))
   {
     PLAYER_ERROR1("driver \"sickpls\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new SickPLS(interface, cf, section)));
+    return((Driver*)(new SickPLS( cf, section)));
 }
 
 // a driver registration function

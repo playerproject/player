@@ -93,7 +93,7 @@ Driver* GzWifi_Init(ConfigFile* cf, int section)
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_WIFI_STRING) != 0)
+  if (strcmp( PLAYER_WIFI_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"gz_wifi\" does not support interface \"%s\"\n", interface);
     return (NULL);
@@ -105,7 +105,7 @@ Driver* GzWifi_Init(ConfigFile* cf, int section)
 // a driver registration function
 void GzWifi_Register(DriverTable* table)
 {
-  table->AddDriver("gz_wifi", PLAYER_READ_MODE, GzWifi_Init);
+  table->AddDriver("gz_wifi", GzWifi_Init);
   return;
 }
 

@@ -38,7 +38,7 @@ class REBPower: public REB
 public:
 
   REBPower(char *interface, ConfigFile *cf, int section) : 
-    REB(interface, cf, section) {}
+    REB( cf, section) {}
   
   size_t GetData(void*,unsigned char *dest, size_t maxsize,
 		 uint32_t *ts_sec, uint32_t *ts_usec);
@@ -51,8 +51,8 @@ public:
 Driver *
 REBPower_Init(char *interface, ConfigFile *cf, int section) 
 {
-  if (!strcmp(interface, PLAYER_POWER_STRING)) {
-    return (Driver *) new REBPower(interface, cf, section);
+  if (!strcmp( PLAYER_POWER_STRING)) {
+    return (Driver *) new REBPower( cf, section);
   } else {
     PLAYER_ERROR1("driver \"reb_power\" does not support interface \"%s\"\n",
 		  interface);

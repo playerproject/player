@@ -128,17 +128,13 @@ class VFH_Class : public Driver
 // Initialization function
 Driver* VFH_Init( ConfigFile* cf, int section) 
 {
-  if (strcmp(interface, PLAYER_POSITION_STRING) != 0) { 
-    PLAYER_ERROR1("driver \"vfh\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((Driver*) (new VFH_Class(interface, cf, section)));
+  return ((Driver*) (new VFH_Class( cf, section)));
 } 
 
 // a driver registration function
 void VFH_Register(DriverTable* table)
 { 
-  table->AddDriver("vfh", PLAYER_ALL_MODE, VFH_Init);
+  table->AddDriver("vfh",  VFH_Init);
   return;
 } 
 
@@ -213,7 +209,7 @@ int VFH_Class::SetupTruth()
   id.index = this->truth_index;
 
 
-  if(!(this->truth = deviceTable->GetDevice(id)))
+  if(!(this->truth = deviceTable->GetDriver(id)))
   {
     PLAYER_ERROR("unable to locate suitable truth device");
     return -1;
@@ -255,7 +251,7 @@ int VFH_Class::SetupOdom()
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
 
-  this->odom = deviceTable->GetDevice(id);
+  this->odom = deviceTable->GetDriver(id);
   if (!this->odom)
   {
     PLAYER_ERROR("unable to locate suitable position device");
@@ -326,7 +322,7 @@ int VFH_Class::SetupLaser() {
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
 
-  this->laser = deviceTable->GetDevice(id);
+  this->laser = deviceTable->GetDriver(id);
   if (!this->laser)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
@@ -848,7 +844,8 @@ void VFH_Class::GetCommand()
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 VFH_Class::VFH_Class( ConfigFile* cf, int section)
-    : Driver(cf, section, sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
+    : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
+             sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
   //double size;
   double cell_size, robot_radius, safety_dist, free_space_cutoff, obs_cutoff;

@@ -32,7 +32,7 @@
 
 Driver* RWISonar_Init( ConfigFile* cf, int section)
 {
-  return((Driver *)(new CRWISonarDevice(interface, cf, section)));
+  return((Driver *)(new CRWISonarDevice( cf, section)));
 }
 
 void 
@@ -42,7 +42,7 @@ RWISonar_Register(DriverTable* table)
 }
 	
 CRWISonarDevice::CRWISonarDevice( ConfigFile* cf, int section)
-    : CRWIDevice(interface, cf, section,
+    : CRWIDevice( cf, section,
                  sizeof(player_sonar_data_t),
                  0 /* no commands for sonar */,
 		         1,1)

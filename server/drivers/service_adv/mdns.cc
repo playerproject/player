@@ -88,17 +88,17 @@ class SrvAdv_MDNS : public Driver {
 
 
 Driver* SrvAdv_MDNS_Init( ConfigFile* cf, int section) {
-    if(strcmp(interface, PLAYER_SERVICE_ADV_STRING)) {
+    if(strcmp( PLAYER_SERVICE_ADV_STRING)) {
         PLAYER_ERROR1("driver \"service_adv_mdns\" does not support interface \"%s\"\n", interface);
         return(0);
     }
-    return new SrvAdv_MDNS(interface, cf, section);
+    return new SrvAdv_MDNS( cf, section);
 }
 
 // a driver registration function
 void ServiceAdvMDNS_Register(DriverTable* table)
 {
-  table->AddDriver("service_adv_mdns", PLAYER_ALL_MODE, SrvAdv_MDNS_Init);
+  table->AddDriver("service_adv_mdns",  SrvAdv_MDNS_Init);
 }
 
 

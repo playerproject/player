@@ -60,20 +60,20 @@ StgLaser::StgLaser( ConfigFile* cf, int section )
 
 Driver* StgLaser_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_LASER_STRING))
+  if(strcmp( PLAYER_LASER_STRING))
     {
       PLAYER_ERROR1("driver \"stg_laser\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((Driver*)(new StgLaser(interface, cf, section)));
+    return((Driver*)(new StgLaser( cf, section)));
 }
 
 
 void StgLaser_Register(DriverTable* table)
 {
-  table->AddDriver("stg_laser", PLAYER_ALL_MODE, StgLaser_Init);
+  table->AddDriver("stg_laser",  StgLaser_Init);
 }
 
 

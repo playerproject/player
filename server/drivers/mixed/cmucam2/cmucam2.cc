@@ -78,14 +78,14 @@ class Cmucam2:public Driver
 // a factory creation function
 Driver* Cmucam2_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_CMUCAM2_STRING))
+  if(strcmp( PLAYER_CMUCAM2_STRING))
   {
     PLAYER_ERROR1("driver \"cmucam2\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new Cmucam2(interface, cf, section)));
+    return((Driver*)(new Cmucam2( cf, section)));
 }
 
 // a driver registration function

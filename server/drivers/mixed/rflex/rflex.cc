@@ -283,7 +283,7 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_SONAR_CODE;
   pthread_testcancel();
-  //Driver* sonarp = deviceTable->GetDevice(id);
+  //Driver* sonarp = deviceTable->GetDriver(id);
   Driver* sonarp = SonarDev;
   pthread_testcancel();
   if(sonarp)
@@ -294,7 +294,7 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_POWER_CODE;
   pthread_testcancel();
-  //Driver* powerp = deviceTable->GetDevice(id);
+  //Driver* powerp = deviceTable->GetDriver(id);
   Driver* powerp = PowerDev;
   pthread_testcancel();
   if(powerp)
@@ -305,7 +305,7 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_BUMPER_CODE;
   pthread_testcancel();
-  //Driver* bumperp = deviceTable->GetDevice(id);
+  //Driver* bumperp = deviceTable->GetDriver(id);
   Driver* bumperp = BumperDev;
   pthread_testcancel();
   if(bumperp)
@@ -316,7 +316,7 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_IR_CODE;
   pthread_testcancel();
-  //Driver* ir = deviceTable->GetDevice(id);
+  //Driver* ir = deviceTable->GetDriver(id);
   Driver* ir = IrDev;
   pthread_testcancel();
   if(ir)
@@ -327,7 +327,7 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_AIO_CODE;
   pthread_testcancel();
-  //Driver* aio = deviceTable->GetDevice(id);
+  //Driver* aio = deviceTable->GetDriver(id);
   Driver* aio = AIODev;
   pthread_testcancel();
   if(aio)
@@ -338,7 +338,7 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_DIO_CODE;
   pthread_testcancel();
-  //Driver* dio = deviceTable->GetDevice(id);
+  //Driver* dio = deviceTable->GetDriver(id);
   Driver* dio = DIODev;
   pthread_testcancel();
   if(dio)
@@ -349,7 +349,7 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_POSITION_CODE;
   pthread_testcancel();
-  //Driver* positionp = deviceTable->GetDevice(id);
+  //Driver* positionp = deviceTable->GetDriver(id);
   Driver * positionp = PositionDev;
   pthread_testcancel();
   if(positionp)
@@ -397,13 +397,13 @@ RFLEX::Main()
 
 
 	id.code = PLAYER_SONAR_CODE;
-	Driver* sonarp = deviceTable->GetDevice(id);
+	Driver* sonarp = deviceTable->GetDriver(id);
 	id.code = PLAYER_POSITION_CODE;
-	Driver* positionp = deviceTable->GetDevice(id);
+	Driver* positionp = deviceTable->GetDriver(id);
 	id.code = PLAYER_BUMPER_CODE;
-	Driver* bumperp = deviceTable->GetDevice(id);
+	Driver* bumperp = deviceTable->GetDriver(id);
 	id.code = PLAYER_IR_CODE;
-	Driver* irp = deviceTable->GetDevice(id);*/
+	Driver* irp = deviceTable->GetDriver(id);*/
 	
 	Driver* sonarp = SonarDev;
 	Driver* positionp = PositionDev;

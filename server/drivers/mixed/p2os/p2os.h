@@ -35,7 +35,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <packet.h>
 #include <player.h>
@@ -146,7 +146,7 @@ typedef struct
 
 class SIP;
 
-class P2OS:public CDevice 
+class P2OS:public Driver 
 {
   private:
     static pthread_t thread;
@@ -155,7 +155,7 @@ class P2OS:public CDevice
   
     // since we have several child classes that must use the same lock, we 
     // declare our own static mutex here and override Lock() and Unlock() to 
-    // use this mutex instead of the one declared in CDevice.
+    // use this mutex instead of the one declared in Driver.
     static pthread_mutex_t p2os_accessMutex;
 
     // and this one protects calls to Setup and Shutdown

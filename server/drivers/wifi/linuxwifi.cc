@@ -46,7 +46,7 @@
 #include <sys/types.h>
 #include <netinet/if_ether.h>
 #include <configfile.h>
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 #include <playertime.h>
@@ -107,13 +107,7 @@ void LinuxWiFi_Register(DriverTable *table);
 Driver *
 LinuxWiFi_Init( ConfigFile *cf, int section)
 { 
-  if(strcmp(interface, PLAYER_WIFI_STRING)) {
-    PLAYER_ERROR1("driver \"linuxwifi\" does not support interface \"%s\"\n",
-		  interface);
-    return NULL;
-  } else {
-    return ((Driver*)(new LinuxWiFi(interface, cf, section)));
-  }
+  return ((Driver*)(new LinuxWiFi( cf, section)));
 }
 
 /* register with drivertable
@@ -123,11 +117,11 @@ LinuxWiFi_Init( ConfigFile *cf, int section)
 void
 LinuxWiFi_Register(DriverTable *table)
 {
-  table->AddDriver("linuxwifi", PLAYER_READ_MODE, LinuxWiFi_Init);
+  table->AddDriver("linuxwifi", LinuxWiFi_Init);
 }
 
 LinuxWiFi::LinuxWiFi( ConfigFile *cf, int section) :
-  Driver(cf, section, 0,0,0,1) 
+  Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE, 0,0,0,1) 
 {
   info_fp = NULL;
   

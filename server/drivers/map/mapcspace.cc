@@ -31,6 +31,7 @@
 
 #include <player.h>
 #include <drivertable.h>
+#include <driver.h>
 #include <devicetable.h>
 
 // compute linear index for given map coords
@@ -38,8 +39,6 @@
 
 // check that given coords are valid (i.e., on the map)
 #define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->size_x) && (j >= 0) && (j < mf->size_y))
-
-extern DriverTable* deviceTable;
 
 extern int global_playerport;
 
@@ -69,7 +68,7 @@ class MapCspace : public Driver
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapCspace(int index, robot_shape_t shape, double radius);
+    MapCspace(ConfigFile* cf, int section, int index, robot_shape_t shape, double radius);
     ~MapCspace();
     virtual int Setup();
     virtual int Shutdown();
@@ -78,19 +77,12 @@ class MapCspace : public Driver
 };
 
 Driver*
-MapCspace_Init( ConfigFile* cf, int section)
+MapCspace_Init(ConfigFile* cf, int section)
 {
   const char* shapestring;
   int index;
   double radius;
   robot_shape_t shape;
-
-  if(strcmp(interface, PLAYER_MAP_STRING))
-  {
-    PLAYER_ERROR1("driver \"mapfile\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
 
   if((index = cf->ReadInt(section,"map_index",-1)) < 0)
   {
@@ -117,20 +109,22 @@ MapCspace_Init( ConfigFile* cf, int section)
     return(NULL);
   }
 
-  return((Driver*)(new MapCspace(index, shape, radius)));
+  return((Driver*)(new MapCspace(cf, section, index, shape, radius)));
 }
 
 // a driver registration function
 void 
 MapCspace_Register(DriverTable* table)
 {
-  table->AddDriver("mapcspace", PLAYER_READ_MODE, MapCspace_Init);
+  table->AddDriver("mapcspace", MapCspace_Init);
 }
 
 
 // this one has no data or commands, just configs
-MapCspace::MapCspace(int index, robot_shape_t shape, double radius) :
-  Driver(cf, section, 0,0,100,100)
+MapCspace::MapCspace(ConfigFile* cf, int section,
+                     int index, robot_shape_t shape, double radius) :
+  Driver(cf, section, PLAYER_MAP_CODE, PLAYER_READ_MODE,
+         0,0,100,100)
 {
   this->mapdata = NULL;
   this->size_x = this->size_y = 0;
@@ -166,7 +160,7 @@ MapCspace::GetMap()
   map_id.code = PLAYER_MAP_CODE;
   map_id.index = this->map_index;
 
-  if(!(mapdevice = deviceTable->GetDevice(map_id)))
+  if(!(mapdevice = deviceTable->GetDriver(map_id)))
   {
     PLAYER_ERROR("unable to locate suitable map device");
     return(-1);

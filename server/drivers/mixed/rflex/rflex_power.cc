@@ -29,7 +29,7 @@ class RFLEXPower: public RFLEX
  public:
 
    RFLEXPower( ConfigFile* cf, int section) : 
-           RFLEX(interface, cf, section){}
+           RFLEX( cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
    void GetOptions(ConfigFile * cf, int section, rflex_config_t * rflex_configs);
@@ -39,14 +39,14 @@ class RFLEXPower: public RFLEX
 
 Driver* RFLEXPower_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POWER_STRING))
+  if(strcmp( PLAYER_POWER_STRING))
   {
     PLAYER_ERROR1("driver \"rflex_power\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else{
-    RFLEXPower * tmp= new RFLEXPower(interface, cf, section);
+    RFLEXPower * tmp= new RFLEXPower( cf, section);
 	tmp->GetOptions(cf,section,&rflex_configs);
 	
     return RFLEX::PowerDev = static_cast<Driver *> (tmp);

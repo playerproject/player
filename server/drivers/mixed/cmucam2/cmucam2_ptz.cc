@@ -79,20 +79,20 @@ The {\tt ptz} interface is used to control a pan-tilt-zoom unit. */
 /** [Constants] */
 
 /** Configuration request codes */
-  if(strcmp(interface, PLAYER_PTZ_STRING))
+  if(strcmp( PLAYER_PTZ_STRING))
     {
       PLAYER_ERROR1("driver \"cmucam2_ptz\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else
-    return((Driver*)(new Cmucam2ptz(interface, cf, section)));
+    return((Driver*)(new Cmucam2ptz( cf, section)));
 }
 
 // a driver registration function
 void Cmucam2ptz_Register(DriverTable* table)
 {
-  table->AddDriver( "cmucam2_ptz", PLAYER_ALL_MODE, Cmucam2ptz_Init);
+  table->AddDriver( "cmucam2_ptz",  Cmucam2ptz_Init);
 }
 
 Cmucam2ptz::Cmucam2ptz( ConfigFile* cf, int section)
@@ -124,7 +124,7 @@ int Cmucam2ptz::Setup()
 	  this->cmucam2_id.index ); fflush(stdout);
 
   // get the pointer to the Cmucam2
-  this->cmucam2 = deviceTable->GetDevice(cmucam2_id);
+  this->cmucam2 = deviceTable->GetDriver(cmucam2_id);
 
   if(!this->cmucam2)
   {

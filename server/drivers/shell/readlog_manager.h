@@ -68,10 +68,10 @@ class ReadLogManager
   public: int Shutdown();
   
   // Subscribe 
-  public: int Subscribe(player_device_id_t id, CDevice *device);
+  public: int Subscribe(player_device_id_t id, Driver *device);
 
   // Unsubscribe
-  public: int Unsubscribe(player_device_id_t id, CDevice *device);
+  public: int Unsubscribe(player_device_id_t id, Driver *device);
 
   // Dummy main
   private: static void *DummyMain(void *_this);
@@ -84,27 +84,27 @@ class ReadLogManager
                            player_device_id_t *id, uint64_t *stime, uint64_t *dtime);
 
   // Parse some data
-  private: int ParseData(CDevice *device, int linenum,
+  private: int ParseData(Driver *device, int linenum,
                          int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // Parse laser data
-  private: int ParseLaser(CDevice *device, int linenum,
+  private: int ParseLaser(Driver *device, int linenum,
                           int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // Parse position data
-  private: int ParsePosition(CDevice *device, int linenum,
+  private: int ParsePosition(Driver *device, int linenum,
                              int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // Parse position3d data
-  private: int ParsePosition3d(CDevice *device, int linenum,
+  private: int ParsePosition3d(Driver *device, int linenum,
                                int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // Parse wifi data
-  private: int ParseWifi(CDevice *device, int linenum,
+  private: int ParseWifi(Driver *device, int linenum,
                          int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // Parse gps data
-  private: int ParseGps(CDevice *device, int linenum,
+  private: int ParseGps(Driver *device, int linenum,
                         int token_count, char **tokens, uint32_t tsec, uint32_t tusec);
 
   // File to read data from
@@ -131,7 +131,7 @@ class ReadLogManager
 
   // Subscribed device list
   private: int device_count;
-  private: CDevice *devices[1024];
+  private: Driver *devices[1024];
   private: player_device_id_t device_ids[1024];
 
   // Device thread

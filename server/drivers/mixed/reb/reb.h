@@ -46,7 +46,7 @@
 #include <replace/replace.h>
 //#include <sys/poll.h>
 
-#include <device.h>
+#include <driver.h>
 #include <playercommon.h>
 #include <player.h>
 #include <drivertable.h>
@@ -99,7 +99,7 @@ typedef struct {
 } __attribute__ ((packed)) player_reb_cmd_t;
 
 
-class REB : public CDevice 
+class REB : public Driver 
 {
 public:
   
@@ -176,7 +176,7 @@ private:
   
   // since we have several child classes that must use the same lock, we 
   // declare our own static mutex here and override Lock() and Unlock() to 
-  // use this mutex instead of the one declared in CDevice.
+  // use this mutex instead of the one declared in Driver.
   static pthread_mutex_t reb_accessMutex;
   
   // and this one protects calls to Setup and Shutdown

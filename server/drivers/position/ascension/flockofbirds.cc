@@ -14,7 +14,7 @@
 
 // Player includes
 #include <player.h>
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 
 // Flock of Birds Serial device interface...
@@ -369,13 +369,13 @@ class FlockOfBirds_Device : public Driver
 // initialization function
 Driver* FlockOfBirds_Init( ConfigFile* cf, int section)
 {
-	if(strcmp(interface, PLAYER_POSITION3D_STRING))
+	if(strcmp( PLAYER_POSITION3D_STRING))
 	{
 		PLAYER_ERROR1("driver \"flockofbirds\" does not support interface \"%s\"\n", interface);
     		return(NULL);
   	}
   	else
-    		return static_cast<Driver*> (new FlockOfBirds_Device(interface, cf, section));
+    		return static_cast<Driver*> (new FlockOfBirds_Device( cf, section));
 }
 
 
@@ -383,7 +383,7 @@ Driver* FlockOfBirds_Init( ConfigFile* cf, int section)
 void 
 FlockOfBirds_Register(DriverTable* table)
 {
-	table->AddDriver("flockofbirds", PLAYER_ALL_MODE, FlockOfBirds_Init);
+	table->AddDriver("flockofbirds",  FlockOfBirds_Init);
 }
 
 FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section) :

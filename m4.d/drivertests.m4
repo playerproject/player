@@ -36,11 +36,11 @@ AC_DEFUN([PLAYER_ADD_DRIVER], [
 AC_DEFUN([name_caps],translit($1,[a-z],[A-Z]))
 
 dnl TESTING
-AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)
+dnl AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)
 
-dnl ifelse($3,[yes],
-dnl   [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],,enable_$1=yes)],
-dnl   [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)])
+ifelse($3,[yes],
+  [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],,enable_$1=yes)],
+  [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)])
 
 failed_header_check=no
 failed_package_check=no
@@ -133,11 +133,11 @@ PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],[],[],
 
 PLAYER_ADD_DRIVER([logfile],[drivers/shell],[yes],[zlib.h],[],[-lz])
 
-PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
+PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[yes],[asm/ioctls.h],[],[])
+PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[no],[asm/ioctls.h],[],[])
 
-PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],[],[],[])
+PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[np],[],[],[])
 
 PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
@@ -162,13 +162,13 @@ fi
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[yes],[],[],[])
+PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[no],[],[],[])
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
 PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[no],[opencv/cv.h],[],["-lopencv"])
 
-PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])
+PLAYER_ADD_DRIVER([festival],[drivers/speech],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
 
@@ -178,7 +178,7 @@ PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([flockofbirds],[drivers/position/ascension],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[yes],[],[],[])
+PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])
 
@@ -191,18 +191,18 @@ PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],[linux/wireless.h],[],[])
 PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[yes],[rfftw.h],[],
                   ["-lrfftw -lfftw"])
 
-PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[yes],
+PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[no],
                   ["gsl/gsl_fft_real.h sys/soundcard.h"],[],
                   ["-lgsl -lgslcblas"])
 
-PLAYER_ADD_DRIVER([mixer],[drivers/audiomixer],[yes],[sys/soundcard.h],[],[])
+PLAYER_ADD_DRIVER([mixer],[drivers/audiomixer],[no],[sys/soundcard.h],[],[])
 
 dnl where's Mobility?
 AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],
 MOBILITY_DIR=$with_mobility,
 MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
 
-PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],
+PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[no],
                   [$MOBILITY_DIR/include/mbylistbase.h],
                   ["-I$MOBILITY_DIR/include -I$MOBILITY_DIR/tools/include -DUSE_MOBILITY -D__x86__ -D__linux__ -D__OSVERSION__=2"],
                   ["-L$MOBILITY_DIR/lib -L$MOBILITY_DIR/tools/lib -lmby -lidlmby -lomniDynamic2 -lomniORB2 -ltcpwrapGK -lomnithread"])
@@ -225,9 +225,9 @@ PLAYER_ADD_DRIVER([aodv],[drivers/wifi],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([iwspy],[drivers/wifi],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[yes],[],[],[])
+PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([khepera],[drivers/mixed/khepera],[yes],[],[],[])
+PLAYER_ADD_DRIVER([khepera],[drivers/mixed/khepera],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[yes],[],[],[])
 
@@ -238,7 +238,7 @@ PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
 PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
+PLAYER_ADD_DRIVER([stage],[drivers/stage],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([stageclient],[drivers/stageclient],[yes],
                   [],[],[],[STAGECLIENT],[stage >= 1.5])

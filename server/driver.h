@@ -77,7 +77,7 @@ class Driver
 
   public:
 
-    // Device id for the default interface (single-interface drivers)
+    // Default device id (single-interface drivers)
     player_device_id_t device_id;
         
     // likewise, we sometimes need to access subscriptions from outside
@@ -165,15 +165,18 @@ class Driver
     // New-style GetData; [id] specifies the interface to be read
     virtual size_t GetNumData(player_device_id_t id, void* client);
     virtual size_t GetData(player_device_id_t id, void* client,  
-                           unsigned char* dest, size_t len,
+                           void* dest, size_t len,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 
     // New-style: Write a new command to the driver
     virtual void PutCommand(player_device_id_t id, void* client,
-                            unsigned char* src, size_t len);
+                            void* src, size_t len);
 
     // New-style: Read the current command for the driver
     virtual size_t GetCommand(player_device_id_t id, void* dest, size_t len);
+
+    // New-style: Clear the current command buffer
+    virtual void ClearCommand(player_device_id_t id);
 
     // New-style: Write configuration request to driver
     // The src_id field is a legacy hack for p2os-syle request/reply tom-foolery.

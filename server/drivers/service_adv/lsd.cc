@@ -98,11 +98,11 @@ class SrvAdv_LSD : public Driver {
 
 
 Driver* SrvAdv_LSD_Init( ConfigFile* cf, int section) {
-    if(strcmp(interface, PLAYER_SERVICE_ADV_STRING)) {
+    if(strcmp( PLAYER_SERVICE_ADV_STRING)) {
         PLAYER_ERROR1("driver \"service_adv_lsd\" does not support interface \"%s\"\n", interface);
         return(0);
     }
-    SrvAdv_LSD* dev = new SrvAdv_LSD(interface, cf, section);
+    SrvAdv_LSD* dev = new SrvAdv_LSD( cf, section);
     return dev;
 }
 
@@ -110,7 +110,7 @@ Driver* SrvAdv_LSD_Init( ConfigFile* cf, int section) {
 void ServiceAdvLSD_Register(DriverTable* table)
 {
   printf("player: service_adv_lsd register function called.\n");
-  table->AddDriver("service_adv_lsd", PLAYER_ALL_MODE, SrvAdv_LSD_Init);
+  table->AddDriver("service_adv_lsd",  SrvAdv_LSD_Init);
 }
 
 

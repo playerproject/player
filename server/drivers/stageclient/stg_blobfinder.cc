@@ -58,20 +58,20 @@ StgBlobfinder::StgBlobfinder( ConfigFile* cf, int section )
 
 Driver* StgBlobfinder_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
+  if(strcmp( PLAYER_BLOBFINDER_STRING))
     {
       PLAYER_ERROR1("driver \"stg_blobfinder\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((Driver*)(new StgBlobfinder(interface, cf, section)));
+    return((Driver*)(new StgBlobfinder( cf, section)));
 }
 
 
 void StgBlobfinder_Register(DriverTable* table)
 {
-  table->AddDriver("stg_blobfinder", PLAYER_ALL_MODE, StgBlobfinder_Init);
+  table->AddDriver("stg_blobfinder",  StgBlobfinder_Init);
 }
 
 // override GetData to get data from Stage on demand, rather than the

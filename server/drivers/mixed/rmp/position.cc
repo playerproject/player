@@ -54,9 +54,9 @@ Driver* SegwayRMPPosition_Init( ConfigFile* cf, int section)
 {
   uint16_t code;
 
-  if(!strcmp(interface, PLAYER_POSITION_STRING))
+  if(!strcmp( PLAYER_POSITION_STRING))
     code = PLAYER_POSITION_CODE;
-  else if(!strcmp(interface, PLAYER_POSITION3D_STRING))
+  else if(!strcmp( PLAYER_POSITION3D_STRING))
     code = PLAYER_POSITION3D_CODE;
   else
   {
@@ -71,7 +71,7 @@ Driver* SegwayRMPPosition_Init( ConfigFile* cf, int section)
 // a driver registration function
 void SegwayRMPPosition_Register(DriverTable* table)
 {
-  table->AddDriver("rmpposition", PLAYER_ALL_MODE, 
+  table->AddDriver("rmpposition",  
                    SegwayRMPPosition_Init);
 }
 

@@ -31,21 +31,21 @@ class P2OSaio: public P2OS
  public:
 
    P2OSaio( ConfigFile* cf, int section) : 
-           P2OS(interface, cf, section){}
+           P2OS( cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
 Driver* P2OSaio_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_AIO_STRING))
+  if(strcmp( PLAYER_AIO_STRING))
   {
     PLAYER_ERROR1("driver \"p2os_aio\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new P2OSaio(interface, cf, section)));
+    return((Driver*)(new P2OSaio( cf, section)));
 }
 
 // a driver registration function

@@ -41,14 +41,14 @@ class P2OSCMUcam: public P2OS
 
 Driver* P2OSCMUcam_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
+  if(strcmp( PLAYER_BLOBFINDER_STRING))
   {
     PLAYER_ERROR1("driver \"p2os_cmucam\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new P2OSCMUcam(interface, cf, section)));
+    return((Driver*)(new P2OSCMUcam( cf, section)));
 }
 
 // a driver registration function
@@ -60,7 +60,7 @@ P2OSCMUcam_Register(DriverTable* table)
 
 // Constructor
 P2OSCMUcam::P2OSCMUcam( ConfigFile* cf, int section):
-           P2OS(interface, cf, section)
+           P2OS( cf, section)
 {
     P2OS::cmucam = 1;	// Activate the CMUcam code in p2os.cc
 }

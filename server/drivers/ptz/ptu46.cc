@@ -72,7 +72,7 @@
 
 // Includes needed for player
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
@@ -541,13 +541,7 @@ class PTU46_Device:public Driver
 // initialization function
 Driver* PTU46_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_PTZ_STRING))
-  {
-    PLAYER_ERROR1("driver \"ptu46\" does not support interface \"%s\"\n", interface);
-    return(NULL);
-  }
-  else
-    return static_cast<Driver*> (new PTU46_Device(interface, cf, section));
+  return static_cast<Driver*> (new PTU46_Device( cf, section));
 }
 
 
@@ -555,11 +549,12 @@ Driver* PTU46_Init( ConfigFile* cf, int section)
 void 
 PTU46_Register(DriverTable* table)
 {
-  table->AddDriver("ptu46", PLAYER_ALL_MODE, PTU46_Init);
+  table->AddDriver("ptu46",  PTU46_Init);
 }
 
 PTU46_Device::PTU46_Device( ConfigFile* cf, int section) :
-  Driver(cf, section, sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
+         sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
   player_ptz_data_t data;
   player_ptz_cmd_t cmd;

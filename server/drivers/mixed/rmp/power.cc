@@ -50,7 +50,7 @@ class SegwayRMPPower : public Driver
 // Initialization function
 Driver* SegwayRMPPower_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POWER_STRING))
+  if(strcmp( PLAYER_POWER_STRING))
   {
     PLAYER_ERROR1("driver \"rmppower\" does not support "
                   "interface \"%s\"\n", interface);

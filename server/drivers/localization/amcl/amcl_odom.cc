@@ -42,7 +42,7 @@ extern int global_playerport;
 // Default constructor
 AMCLOdom::AMCLOdom()
 {
-  this->device = NULL;
+  this->driver = NULL;
   this->action_pdf = NULL;
   
   return;
@@ -85,22 +85,22 @@ int AMCLOdom::Unload(void)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Set up the underlying odom device.
+// Set up the underlying odom driver.
 int AMCLOdom::Setup(void)
 {
   player_device_id_t id;
   
-  // Subscribe to the odometry device
+  // Subscribe to the odometry driver
   id.port = global_playerport;
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
-  this->device = deviceTable->GetDevice(id);
-  if (!this->device)
+  this->driver = deviceTable->GetDriver(id);
+  if (!this->driver)
   {
-    PLAYER_ERROR("unable to locate suitable position device");
+    PLAYER_ERROR("unable to locate suitable position driver");
     return -1;
   }
-  if (this->device->driver->Subscribe(this) != 0)
+  if (this->driver->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
@@ -115,8 +115,8 @@ int AMCLOdom::Setup(void)
 int AMCLOdom::Shutdown(void)
 {
   // Unsubscribe from device
-  this->device->driver->Unsubscribe(this);
-  this->device = NULL;
+  this->driver->Unsubscribe(this);
+  this->driver = NULL;
   
   return 0;
 }
@@ -133,7 +133,7 @@ AMCLSensorData *AMCLOdom::GetData(void)
   AMCLOdomData *ndata;
 
   // Get the odom device data.
-  size = this->device->driver->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
+  size = this->driver->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
   if (size == 0)
     return NULL;
 

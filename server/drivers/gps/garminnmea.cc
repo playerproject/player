@@ -62,7 +62,7 @@
 //#include <sys/poll.h>
 #include <replace.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
@@ -190,14 +190,7 @@ class GarminNMEA:public Driver
 // initialization function
 Driver* GarminNMEA_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_GPS_STRING))
-  {
-    PLAYER_ERROR1("driver \"garminnmea\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new GarminNMEA(interface, cf, section)));
+  return((Driver*)(new GarminNMEA( cf, section)));
 }
 
 
@@ -206,13 +199,14 @@ Driver* GarminNMEA_Init( ConfigFile* cf, int section)
 void 
 GarminNMEA_Register(DriverTable* table)
 {
-  table->AddDriver("garminnmea", PLAYER_ALL_MODE, GarminNMEA_Init);
+  table->AddDriver("garminnmea",  GarminNMEA_Init);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 GarminNMEA::GarminNMEA( ConfigFile* cf, int section) :
-  Driver(cf, section, sizeof(player_gps_data_t),0,0,0)
+  Driver(cf, section, PLAYER_GPS_CODE, PLAYER_READ_MODE,
+         sizeof(player_gps_data_t),0,0,0)
 {
   memset(&data,0,sizeof(data));
 

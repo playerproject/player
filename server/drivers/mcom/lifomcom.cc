@@ -43,26 +43,20 @@ LifoMCom(int argc, char** argv):Driver(1,1,20,20),Data(){
 */
 
 LifoMCom::LifoMCom( ConfigFile* cf, int section) :
-  Driver(cf, section, sizeof(player_mcom_data_t), 0, 20, 20)
+  Driver(cf, section, PLAYER_MCOM_CODE, PLAYER_ALL_MODE,
+         sizeof(player_mcom_data_t), 0, 20, 20)
 {
 }
 
 
 Driver* LifoMCom_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_MCOM_STRING))
-  {
-    PLAYER_ERROR2("the mcom device driver does not support interface \"%s\" (use \"%s\")\n",
-                  interface, PLAYER_MCOM_STRING);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new LifoMCom(interface, cf, section)));
+  return((Driver*)(new LifoMCom( cf, section)));
 }
 
 
 void LifoMCom_Register(DriverTable* t) {
-    t->AddDriver("lifomcom", PLAYER_ALL_MODE, LifoMCom_Init);
+    t->AddDriver("lifomcom",  LifoMCom_Init);
 }
 
 // called by player with config requests

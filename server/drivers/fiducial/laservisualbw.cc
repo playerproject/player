@@ -185,27 +185,22 @@ class LaserVisualBW : public Driver
 // Initialization function
 Driver* LaserVisualBW_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"laservisualbarcode\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-  return ((Driver*) (new LaserVisualBW(interface, cf, section)));
+  return ((Driver*) (new LaserVisualBW( cf, section)));
 }
 
 
 // a driver registration function
 void LaserVisualBW_Register(DriverTable* table)
 {
-  table->AddDriver("laservisualbw", PLAYER_READ_MODE, LaserVisualBW_Init);
+  table->AddDriver("laservisualbw", LaserVisualBW_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
-    : Driver(cf, section, sizeof(player_fiducial_data_t), 0, 10, 10)
+    : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
+             sizeof(player_fiducial_data_t), 0, 10, 10)
 {
   this->laser_index = cf->ReadInt(section, "laser", 0);
   this->laser = NULL;
@@ -258,7 +253,7 @@ int LaserVisualBW::Setup()
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
   id.port = this->device_id.port;
-  this->laser = deviceTable->GetDevice(id);
+  this->laser = deviceTable->GetDriver(id);
   if (!this->laser)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
@@ -274,7 +269,7 @@ int LaserVisualBW::Setup()
   id.code = PLAYER_PTZ_CODE;
   id.index = this->ptz_index;
   id.port = this->device_id.port;
-  this->ptz = deviceTable->GetDevice(id);
+  this->ptz = deviceTable->GetDriver(id);
   if (!this->ptz)
   {
     PLAYER_ERROR("unable to locate suitable PTZ device");
@@ -290,7 +285,7 @@ int LaserVisualBW::Setup()
   id.code = PLAYER_CAMERA_CODE;
   id.index = this->camera_index;
   id.port = this->device_id.port;
-  this->camera = deviceTable->GetDevice(id);
+  this->camera = deviceTable->GetDriver(id);
   if (!this->camera)
   {
     PLAYER_ERROR("unable to locate suitable camera device");

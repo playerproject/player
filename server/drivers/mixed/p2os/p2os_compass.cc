@@ -31,21 +31,21 @@ class P2OSCompass: public P2OS
  public:
 
    P2OSCompass( ConfigFile* cf, int section) : 
-           P2OS(interface, cf, section){}
+           P2OS( cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
 Driver* P2OSCompass_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp( PLAYER_POSITION_STRING))
   {
     PLAYER_ERROR1("driver \"p2os_compass\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new P2OSCompass(interface, cf, section)));
+    return((Driver*)(new P2OSCompass( cf, section)));
 }
 
 // a driver registration function

@@ -38,21 +38,21 @@ class P2OSGyro: public P2OS
 };
 
 P2OSGyro::P2OSGyro( ConfigFile* cf, int section) : 
-  P2OS(interface, cf, section)
+  P2OS( cf, section)
 {
   P2OS::gyro = 1;    // Activate the gyro code in p2os.cc
 }
 
 Driver* P2OSGyro_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp( PLAYER_POSITION_STRING))
   {
     PLAYER_ERROR1("driver \"p2os_gyro\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new P2OSGyro(interface, cf, section)));
+    return((Driver*)(new P2OSGyro( cf, section)));
 }
 
 // a driver registration function

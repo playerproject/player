@@ -35,7 +35,7 @@ class RFLEXbumper: public RFLEX
  public:
 
    RFLEXbumper( ConfigFile* cf, int section) : 
-           RFLEX(interface, cf, section){}
+           RFLEX( cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
    void GetOptions(ConfigFile * cf, int section, rflex_config_t * rflex_configs);
@@ -43,14 +43,14 @@ class RFLEXbumper: public RFLEX
 
 Driver* RFLEXbumper_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BUMPER_STRING))
+  if(strcmp( PLAYER_BUMPER_STRING))
   {
     PLAYER_ERROR1("driver \"rflex_bumper\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else{
-  	RFLEXbumper * tmp =new RFLEXbumper(interface, cf, section);
+  	RFLEXbumper * tmp =new RFLEXbumper( cf, section);
 	tmp->GetOptions(cf,section,&rflex_configs);
 	RFLEX::BumperDev = static_cast<Driver *> (tmp);
     return static_cast<Driver *> (tmp);

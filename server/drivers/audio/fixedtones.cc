@@ -44,7 +44,7 @@
 
 #include <pthread.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 
 #define AUDIO_SLEEP_TIME_USEC 100000
@@ -105,21 +105,21 @@ class FixedTones:public Driver
 
 Driver* FixedTones_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_AUDIO_STRING))
+  if(strcmp( PLAYER_AUDIO_STRING))
   {
     PLAYER_ERROR1("driver \"fixedtones\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else
-    return((Driver*)(new FixedTones(interface, cf, section)));
+    return((Driver*)(new FixedTones( cf, section)));
 }
 
 // a driver registration function
 void 
 FixedTones_Register(DriverTable* table)
 {
-  table->AddDriver("fixedtones", PLAYER_ALL_MODE, FixedTones_Init);
+  table->AddDriver("fixedtones",  FixedTones_Init);
 }
 
 FixedTones::FixedTones( ConfigFile* cf, int section) :

@@ -76,20 +76,20 @@ protected:
 // a factory creation function
 Driver* Cmucam2blobfinder_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
+  if(strcmp( PLAYER_BLOBFINDER_STRING))
     {
       PLAYER_ERROR1("driver \"cmucam2_blobfinder\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else
-    return((Driver*)(new Cmucam2blobfinder(interface, cf, section)));
+    return((Driver*)(new Cmucam2blobfinder( cf, section)));
 }
 
 // a driver registration function
 void Cmucam2blobfinder_Register(DriverTable* table)
 {
-  table->AddDriver( "cmucam2_blobfinder", PLAYER_ALL_MODE, Cmucam2blobfinder_Init);
+  table->AddDriver( "cmucam2_blobfinder",  Cmucam2blobfinder_Init);
 }
 
 
@@ -124,7 +124,7 @@ int Cmucam2blobfinder::Setup()
 	  this->cmucam2_id.index ); fflush(stdout);
 
   // get the pointer to the Cmucam2
-  this->cmucam2 = deviceTable->GetDevice(cmucam2_id);
+  this->cmucam2 = deviceTable->GetDriver(cmucam2_id);
 
   if(!this->cmucam2)
   {
