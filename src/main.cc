@@ -555,10 +555,15 @@ int main( int argc, char *argv[] )
                                        BROADCAST_DATA_BUFFER_SIZE,
                                        BROADCAST_COMMAND_BUFFER_SIZE,
                                        BROADCAST_CONFIG_BUFFER_SIZE); 
+
+    gripperDevice = new CStageDevice(arenaIO + GRIPPER_DATA_START,
+                                     GRIPPER_DATA_BUFFER_SIZE,
+                                     GRIPPER_COMMAND_BUFFER_SIZE,
+                                     GRIPPER_CONFIG_BUFFER_SIZE);
     
     // unsupported devices - CNoDevice::Setup() fails
-    gripperDevice = (CDevice*)new CNoDevice();
     audioDevice =  (CDevice*)new CNoDevice();
+    speechDevice =  (CDevice*)new CNoDevice();
 #endif
 
   }

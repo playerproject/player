@@ -16,7 +16,8 @@ BINARIES = randomwalk \
 	   ptz \
 	   laserobstacleavoid \
            example_from_manual\
-	   say
+	   say \
+	   grip
 
 all: $(BINARIES)
 

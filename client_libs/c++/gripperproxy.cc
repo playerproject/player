@@ -49,7 +49,7 @@ int GripperProxy::SetGrip(unsigned char cmd, unsigned char arg)
   command.arg = arg;
 
   return(client->Write(PLAYER_GRIPPER_CODE,index,
-                       (const char*)&command,sizeof(cmd)));
+                       (const char*)&command,sizeof(command)));
 }
 
 void GripperProxy::FillData(player_msghdr_t hdr, const char* buffer)
