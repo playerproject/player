@@ -558,6 +558,7 @@ void Wavefront::Main()
       // we're at the final target, so stop
       StopPosition();
       curr_waypoint = -1;
+      this->new_goal = false;
     }
     else if(curr_waypoint < 0)
     {
@@ -593,7 +594,7 @@ void Wavefront::Main()
                        (this->target_x - this->waypoint_x)) +
                       ((this->target_y - this->waypoint_y) *
                        (this->target_y - this->waypoint_y)));
-          if(!goal_hack && (dist > 1.0))
+          if(!goal_hack && (dist > 2.0))
           {
             printf("Goal hack: setting %f,%f,%f\n",
                    this->target_x,this->target_y,this->target_a);
