@@ -223,8 +223,6 @@ void Dummy::Main(void)
   req.tv_sec = (time_t) (1.0 / this->rate);
   req.tv_nsec = (long) (fmod(1e9 / this->rate, 1e9));
 
-  printf("%ld %ld\n", req.tv_sec, req.tv_nsec);
-  
   while (1)
   {
     pthread_testcancel();

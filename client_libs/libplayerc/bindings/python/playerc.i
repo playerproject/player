@@ -55,10 +55,10 @@
 %typemap(out) playerc_blobfinder_blob_t [ANY]
 {
   int i;
-  $result = PyTuple_New(arg1->devinfo_count);
-  for (i = 0; i < arg1->devinfo_count; i++) 
+  $result = PyTuple_New(arg1->blob_count);
+  for (i = 0; i < arg1->blob_count; i++) 
   {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_blobfinder_blob, 0);
+    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_blobfinder_blob_t, 0);
     PyTuple_SetItem($result,i,o);
   }
 }
@@ -67,10 +67,10 @@
 %typemap(out) playerc_fiducial_item_t [ANY]
 {
   int i;
-  $result = PyTuple_New(arg1->item_count);
-  for (i = 0; i < arg1->item_count; i++) 
+  $result = PyTuple_New(arg1->fiducial_count);
+  for (i = 0; i < arg1->fiducial_count; i++) 
   {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_fiducial_item, 0);
+    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_fiducial_item_t, 0);
     PyTuple_SetItem($result,i,o);
   }
 }
@@ -82,7 +82,7 @@
   $result = PyTuple_New(arg1->hypoth_count);
   for (i = 0; i < arg1->hypoth_count; i++) 
   {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_localize_hypoth, 0);
+    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_localize_hypoth_t, 0);
     PyTuple_SetItem($result,i,o);
   }
 }
@@ -94,7 +94,7 @@
   $result = PyTuple_New(arg1->link_count);
   for (i = 0; i < arg1->link_count; i++) 
   {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_wifi_link, 0);
+    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_wifi_link_t, 0);
     PyTuple_SetItem($result,i,o);
   }
 }

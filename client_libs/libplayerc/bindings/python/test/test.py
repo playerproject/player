@@ -39,8 +39,12 @@ def main(server, test, context):
                devinfo.index, devinfo.drivername)
     print '----------------------------------------------------------------------'
 
+    # Switch to async mode
+    c.datamode(PLAYERC_DATAMODE_PUSH_ASYNC)
 
     eval('test_%s(c, %d, context)' % (test[0], test[1]))
+
+    c.disconnect()
     return
 
 
