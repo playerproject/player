@@ -36,8 +36,6 @@
 typedef CDevice* (*DriverInitFn) (char *interface, ConfigFile *cf, int section);
 typedef CDevice* (*DriverInitFnEx) (ConfigFile *cf, int section);
 
-
-
 // one element in a linked list
 class DriverEntry
 {
@@ -89,5 +87,7 @@ class DriverTable
     // get the ith driver name; returns NULL if there is no such driver
     char* GetDriverName(int idx);
 };
+
+typedef int (*PluginInitFn) (DriverTable* table);
 
 #endif

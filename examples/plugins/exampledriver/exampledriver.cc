@@ -170,27 +170,15 @@ void ExampleDriver::Main()
 
 // Need access to the global driver table
 #include <drivertable.h>
-extern DriverTable* driverTable;
 
 /* need the extern to avoid C++ name-mangling  */
 extern "C" {
-  void _init(void)
+  int player_driver_init(DriverTable* table)
   {
     puts("Example driver initializing");
-    ExampleDriver_Register(driverTable);
+    ExampleDriver_Register(table);
     puts("Example driver done");
-  }
-
-  void _fini(void)
-  {
-    puts("Example driver closing");
-
-    /* probably don't need any code here; the destructor for the device
-     * will be called when Player shuts down.  this function is only useful
-     * if you want to dlclose() the shared object before Player exits
-     */
-
-    puts("Example driver closed");
+    return(0);
   }
 }
 
