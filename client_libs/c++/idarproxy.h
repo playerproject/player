@@ -54,6 +54,9 @@ class IDARProxy : public ClientProxy
   // get message and transmission details 
   int GetMessage( idarrx_t* rx );  
 
+  // send and get a message
+  int SendGetMessage( idartx_t* tx, idarrx_t* rx );  
+
   // pretty print a message
   void PrintMessage(idarrx_t* rx); 
 };
