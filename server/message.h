@@ -49,73 +49,73 @@ class ClientData;
 
 class Message
 {
-	public:
-		/// create a NULL message
-		Message(); 
-		/// create a new message
-		Message(const struct player_msghdr & Header, const unsigned char * data,unsigned int data_size, ClientData * client = NULL); 
-		/// create raw message
-		Message(const unsigned char * data,unsigned int data_size, ClientData * client = NULL);
-		/// copy pointers from existing message and increment refcounts
-		Message(const Message & rhs); 
-		/// destroy message, dec ref counts and delete data if ref count == 0
-		~Message(); 
-		
-		/// GetData from message
-		unsigned char * GetData() {return Data;};
-		/// Get pointer to header
-		player_msghdr_t * GetHeader() {return reinterpret_cast<player_msghdr_t *> (Data);};
-		/// Get pointer to payload
-		uint8_t * GetPayload() {return (&Data[sizeof(player_msghdr_t)]);};
-		/// Get Payload size
-		size_t GetPayloadSize() {return Size - sizeof(player_msghdr_t);};
-		
-		/// Size of message data
-		unsigned int GetSize() {return Size;};
-		
-		ClientData * Client;
-		
-		unsigned int * RefCount;
-	private:
-		uint8_t * Data;
-		unsigned int Size;
-		pthread_mutex_t * Lock;
+  public:
+    /// create a NULL message
+    Message(); 
+    /// create a new message
+    Message(const struct player_msghdr & Header, const unsigned char * data,unsigned int data_size, ClientData * client = NULL); 
+    /// create raw message
+    Message(const unsigned char * data,unsigned int data_size, ClientData * client = NULL);
+    /// copy pointers from existing message and increment refcounts
+    Message(const Message & rhs); 
+    /// destroy message, dec ref counts and delete data if ref count == 0
+    ~Message(); 
+
+    /// GetData from message
+    unsigned char * GetData() {return Data;};
+    /// Get pointer to header
+    player_msghdr_t * GetHeader() {return reinterpret_cast<player_msghdr_t *> (Data);};
+    /// Get pointer to payload
+    uint8_t * GetPayload() {return (&Data[sizeof(player_msghdr_t)]);};
+    /// Get Payload size
+    size_t GetPayloadSize() {return Size - sizeof(player_msghdr_t);};
+
+    /// Size of message data
+    unsigned int GetSize() {return Size;};
+
+    ClientData * Client;
+
+    unsigned int * RefCount;
+  private:
+    uint8_t * Data;
+    unsigned int Size;
+    pthread_mutex_t * Lock;
 };
 
 class MessageQueueElement
 {
-	public:
-		MessageQueueElement();
-		MessageQueueElement(MessageQueueElement & Parent, Message & Msg);
-		~MessageQueueElement();
-		
-		Message msg;
-	private:
-		MessageQueueElement * prev;
-		MessageQueueElement * next;
-		
-		friend class MessageQueue;
+  public:
+    MessageQueueElement();
+    MessageQueueElement(MessageQueueElement & Parent, Message & Msg);
+    ~MessageQueueElement();
+
+    Message msg;
+  private:
+    MessageQueueElement * prev;
+    MessageQueueElement * next;
+
+    friend class MessageQueue;
 };
 
 class MessageQueue
 {
-	public:
-		MessageQueue();
-		~MessageQueue();
-		
-		/// should we replace messages with newer ones from same device
-		bool Replace;
-				
-		MessageQueueElement * AddMessage(Message & msg);
-		MessageQueueElement * Pop();
-	private:
-		void Lock() {pthread_mutex_lock(lock);};
-		void Unlock() {pthread_mutex_unlock(lock);};
+  public:
+    MessageQueue();
+    ~MessageQueue();
 
-		MessageQueueElement Head;
-		MessageQueueElement * pTail;
+    /// should we replace messages with newer ones from same device
+    bool Replace;
 
-		pthread_mutex_t * lock;
+    MessageQueueElement * AddMessage(Message & msg);
+    MessageQueueElement * Pop();
+  private:
+    void Lock() {pthread_mutex_lock(lock);};
+    void Unlock() {pthread_mutex_unlock(lock);};
+
+    MessageQueueElement Head;
+    MessageQueueElement * pTail;
+
+    pthread_mutex_t * lock;
 };
 
 #endif

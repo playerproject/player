@@ -108,8 +108,8 @@ class Driver
     /// constructors
     int error;
 
-	/// Queue for all incoming messages for this driver
-	MessageQueue InQueue; // queue for all incoming requests
+    /// Queue for all incoming messages for this driver
+    MessageQueue InQueue; // queue for all incoming requests
 
   public:
 
@@ -216,29 +216,34 @@ class Driver
     virtual void MainQuit(void);
 
 
-	/// Call this to automatically process messages using registered handler
-	/// Processes messages until no messages remaining in the queue or
-	/// a message with no handler is reached
-	void ProcessMessages();
+    /// Call this to automatically process messages using registered handler
+    /// Processes messages until no messages remaining in the queue or
+    /// a message with no handler is reached
+    void ProcessMessages();
 	
-	/// This function is called once for each message in the incoming queue
-	/// Reimplement it to provide message handling
-	/// Return 0 for no response, otherwise with player_msgtype if response needed
-	/// If calling this method from outside the driver lock the driver mutex first
-	/// When writing the driver make sure to protect accesses that could clash in the 
-	/// main thread with mutex locks...
-	/// resp_data will be filled out with the response data and resp_len set to 
-	/// the actual response size, resp_data should be able to take make player msg size
-	virtual int ProcessMessage(ClientData * client, player_msghdr * hdr, 
-									uint8_t * data, uint8_t * resp_data,
-									int * resp_len) 
-									{return -1;};
+    /// This function is called once for each message in the incoming queue.
+    /// Reimplement it to provide message handling.
+    /// Return 0 for no response, otherwise with player_msgtype if response 
+    /// needed.
+    /// If calling this method from outside the driver lock the driver mutex 
+    /// first.
+    /// When writing the driver make sure to protect accesses that could 
+    /// clash in the main thread with mutex locks.
+    /// @p resp_data will be filled out with the response data and 
+    /// @p resp_len set to the actual response size; @p resp_data should be 
+    /// able to take max player msg size.
+    virtual int ProcessMessage(ClientData * client, player_msghdr * hdr, 
+                               uint8_t * data, uint8_t * resp_data,
+                               int * resp_len) 
+    {return -1;};
 
-	/// Helper function that creates the header and then calls driver ProcessMessage
-	/// for use by drivers for internal requests
-	int ProcessMessage(ClientData * client, uint16_t Type, player_device_id_t device,
-						int size, uint8_t * data, uint8_t * resp_data, int * resp_len);
-	
+    /// Helper function that creates the header and then calls driver ProcessMessage
+    /// for use by drivers for internal requests
+    int ProcessMessage(ClientData * client, uint16_t Type,
+                       player_device_id_t device,
+                       int size, uint8_t * data, 
+                       uint8_t * resp_data, int * resp_len);
+
   private:
 
     // Dummy main (just calls real main).  This is used to simplify
@@ -303,7 +308,6 @@ class Driver
     // in CStageDriver
     virtual void Lock(void);
     virtual void Unlock(void);
-
 };
 
 

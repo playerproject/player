@@ -653,47 +653,45 @@ Driver::MainQuit()
 /// a message with no handler is reached
 void Driver::ProcessMessages()
 {
-	uint8_t RespData[PLAYER_MAX_MESSAGE_SIZE];
-	// If we have subscriptions, then see if we have and pending messages
-	// and process them
-	MessageQueueElement * el;
-	while ((el=InQueue.Pop()))
-	{
-		int RespLen = PLAYER_MAX_MESSAGE_SIZE;
+  uint8_t RespData[PLAYER_MAX_MESSAGE_SIZE];
+  // If we have subscriptions, then see if we have and pending messages
+  // and process them
+  MessageQueueElement * el;
+  while ((el=InQueue.Pop()))
+  {
+    int RespLen = PLAYER_MAX_MESSAGE_SIZE;
 
-		player_msghdr * hdr = el->msg.GetHeader();
-		uint8_t * data = el->msg.GetPayload();
+    player_msghdr * hdr = el->msg.GetHeader();
+    uint8_t * data = el->msg.GetPayload();
 
-		if (el->msg.GetPayloadSize() != hdr->size)
-			PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",el->msg.GetSize() - sizeof(player_msghdr),hdr->size);
+    if (el->msg.GetPayloadSize() != hdr->size)
+      PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",el->msg.GetSize() - sizeof(player_msghdr),hdr->size);
 
-		int ret = ProcessMessage(el->msg.Client, hdr, data, RespData, &RespLen);
-		if (ret > 0)
-			PutMsg(hdr, el->msg.Client, ret, RespData, RespLen, NULL);
-		else if (ret < 0)
-			PLAYER_WARN5("Unhandled message for driver device=%d:%d type=%d len=%d subtype=%d\n",hdr->device, hdr->device_index, hdr->type, hdr->size, hdr->size ? data[0] : 0);
-		pthread_testcancel();
-	}
+    int ret = ProcessMessage(el->msg.Client, hdr, data, RespData, &RespLen);
+    if (ret > 0)
+      PutMsg(hdr, el->msg.Client, ret, RespData, RespLen, NULL);
+    else if (ret < 0)
+      PLAYER_WARN5("Unhandled message for driver device=%d:%d type=%d len=%d subtype=%d\n",hdr->device, hdr->device_index, hdr->type, hdr->size, hdr->size ? data[0] : 0);
+    pthread_testcancel();
+  }
 }
 
-int Driver::ProcessMessage(ClientData * client, uint16_t Type, player_device_id_t device,
-						int size, uint8_t * data, uint8_t * resp_data, int * resp_len)
+int Driver::ProcessMessage(ClientData * client, uint16_t Type, 
+                           player_device_id_t device,
+                           int size, uint8_t * data, 
+                           uint8_t * resp_data, int * resp_len)
 {
-	player_msghdr hdr;
-	hdr.stx = PLAYER_STXX;
-	hdr.type=Type;
-	hdr.device=device.code;
-	hdr.device_index=device.index;
-	hdr.timestamp_sec=0;
-	hdr.timestamp_usec=0;
-	hdr.size=size; // size of message data	
-	
-	return ProcessMessage(client, &hdr, data, resp_data, resp_len);
+  player_msghdr hdr;
+  hdr.stx = PLAYER_STXX;
+  hdr.type=Type;
+  hdr.device=device.code;
+  hdr.device_index=device.index;
+  hdr.timestamp_sec=0;
+  hdr.timestamp_usec=0;
+  hdr.size=size; // size of message data	
+
+  return ProcessMessage(client, &hdr, data, resp_data, resp_len);
 }
-
-
-
-
 
 // A helper method for internal use; e.g., when one device wants to make a
 // request of another device
@@ -764,10 +762,3 @@ Driver::Wait(void)
   pthread_cleanup_pop(1);
 }
 
-// do we still need this?
-#if 0
-size_t Driver::GetNumData(void* client)
-{
-  return(1);
-}
-#endif
