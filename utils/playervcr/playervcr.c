@@ -143,6 +143,8 @@ parse_args(gui_data_t* gui_data, int argc, char** argv)
       else
         return(-1);
     }
+    else
+      return(-1);
   }
 
   return(0);
