@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/termios.h>
+#include <termio.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <stdlib.h>

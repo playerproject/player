@@ -187,7 +187,7 @@ class SickLMS200 : public CDevice
 
   bool can_do_hi_speed;
   int port_rate;
-  struct serial_struct old_serial;
+  //struct serial_struct old_serial;
 };
 
 // a factory creation function
