@@ -145,25 +145,25 @@ static PyObject *mclient_disconnect(PyObject *self, PyObject *args)
 */
 static PyObject *mclient_read(PyObject *self, PyObject *args)
 {
-    int result;
-    double timeout;
-    mclient_object_t *mclientob;
-    mclientob = (mclient_object_t*) self;
+  int result;
+  double timeout;
+  mclient_object_t *mclientob;
+  mclientob = (mclient_object_t*) self;
 
-    if (!PyArg_ParseTuple(args, "d", &timeout))
-        return NULL;
+  if (!PyArg_ParseTuple(args, "d", &timeout))
+    return NULL;
 
-    thread_release();
-    result = playerc_mclient_read(mclientob->mclient, (int) (timeout * 1000));
-    thread_acquire();
+  thread_release();
+  result = playerc_mclient_read(mclientob->mclient, (int) (timeout * 1000));
+  thread_acquire();
 
-    if (result < 0)
-    {
-        PyErr_SetString(errorob, "");
-        return NULL;
-    }
+  if (result < 0)
+  {
+    PyErr_SetString(errorob, "");
+    return NULL;
+  }
     
-    return PyInt_FromLong(result);
+  return PyInt_FromLong(result);
 }
 
 
@@ -250,7 +250,9 @@ static PyObject *client_getattr(PyObject *self, char *attrname)
 
   result = NULL;
   if (strcmp(attrname, "host") == 0)
+  {
     result = PyString_FromString(clientob->client->host);
+  }
   else if (strcmp(attrname, "devlist") == 0)
   {
     Py_INCREF(clientob->idlist);
@@ -281,6 +283,7 @@ static PyObject *client_connect(PyObject *self, PyObject *args)
   }
   return PyInt_FromLong(result);
 }
+
 
 /* Disconnect from server
  */
@@ -884,6 +887,9 @@ extern PyObject *position_new(PyObject *self, PyObject *args);
 extern PyTypeObject ptz_type;
 extern PyObject *ptz_new(PyObject *self, PyObject *args);
 
+extern PyTypeObject wifi_type;
+extern PyObject *wifi_new(PyObject *self, PyObject *args);
+
 
 
 static PyMethodDef module_methods[] =
@@ -896,8 +902,8 @@ static PyMethodDef module_methods[] =
   {"blobfinder", blobfinder_new, METH_VARARGS},
   {"fiducial", fiducial_new, METH_VARARGS},
   {"gps", gps_new, METH_VARARGS},
-//  {"bps", bps_new, METH_VARARGS},
   {"comms", comms_new, METH_VARARGS},
+  {"wifi", wifi_new, METH_VARARGS},
   {NULL, NULL}
 };
 
@@ -915,7 +921,7 @@ void initplayerc(void)
   blobfinder_type.ob_type = &PyType_Type;
   fiducial_type.ob_type = &PyType_Type;
   gps_type.ob_type = &PyType_Type;
-//  bps_type.ob_type = &PyType_Type;
+  wifi_type.ob_type = &PyType_Type;
     
   moduleob = Py_InitModule("playerc", module_methods);
 

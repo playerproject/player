@@ -1,17 +1,21 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 
 # Desc: Test program for the Python player client (extension module).
 # Author: Andrew Howard
 # Date: 21 Aug 2002
 # CVS: $Id$
 
-import playerc
 import sys
+import playerc
+
+
+from test_wifi import test_wifi
+
 
 def test():
     """Run the tests."""
 
-    host = 'ant'
+    host = 'fly'
     port = 6665
 
     client = playerc.client(None, host, port)
@@ -22,7 +26,7 @@ def test():
 
     print client.devlist
 
-
+    test_wifi(client, 0)
 
     client.disconnect()
 
