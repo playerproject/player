@@ -34,30 +34,31 @@ typedef struct
 {
   // Map a
   imap_t *imap_a;
-
   int imap_a_cell_count;
   imap_fit_cell_t *imap_a_cells;
 
   // Map b
   imap_t *imap_b;
-
   int imap_b_cell_count;
   imap_fit_cell_t *imap_b_cells;
 
-  // The pose of b wrt a
-  double ox, oy, oa;
+  // Initial pose of map_b relative to map_a
+  double map_pose[3];
   
 } imap_fit_t;
 
+// Compute the best fit pose between two maps.
+double imap_fit(imap_t *imap_a, imap_t *imap_b, double robot_pose[3]);
+
 // Create the fit data; involves some pre-processing of the grid to
 // save time during optimization.
-imap_fit_t *imap_fit_alloc(imap_t *imap_a, imap_t *imap_b, double ox, double oy, double oa);
+imap_fit_t *imap_fit_alloc(imap_t *imap_a, imap_t *imap_b, double robot_pose[3]);
 
 // Free the fit data
 void imap_fit_free(imap_fit_t *fit);
 
-// Compute the best fit pose between two maps.
-double imap_fit(imap_t *imap_a, imap_t *imap_b, double *ox, double *oy, double *oa);
+// Compute the fit error (gsl callback)
+double imap_fit_func(double x, imap_fit_t *fit);
 
 // Compute the fit error (gsl callback)
 double imap_fit_f(const gsl_vector *x, imap_fit_t *fit);
@@ -76,52 +77,125 @@ double imap_fit_compare(imap_fit_t *fit, double pose[3], double grad[3]);
 
 
 // Compute the best fit pose between a range scan and the map
-double imap_fit_ranges(imap_t *imap, double *ox, double *oy, double *oa,
+double imap_fit_ranges(imap_t *imap, double robot_pose[3], double laser_pose[3],
                        int range_count, double ranges[][2])
 {
   double err;
-  double da;
-  imap_t *imap_new;
-
-  // TESTING
-  static int count;
-  char filename[64];
+  double zero_pose[3];
+  imap_t *imap_laser;
 
   // HACK: size
   // Create a new map
-  imap_new = imap_alloc(16.0 / imap->scale, 16.0 / imap->scale, imap->scale,
-                        imap->max_fit_dist, imap->max_fit_dist);
-  //imap_new = imap_alloc(imap->size_x, imap->size_y, imap->scale,
-  //                      imap->max_fit_dist, imap->max_fit_dist);
+  imap_laser = imap_alloc(16.0 / imap->scale, 16.0 / imap->scale, imap->scale,
+                          imap->max_fit_dist, imap->max_fit_dist);
 
   // Set the sensor model parameters so that cells
   // get assigned immediately to occupied or empty.
-  imap_new->model_occ_thresh = imap_new->model_occ_inc;
-  imap_new->model_emp_thresh = imap_new->model_emp_inc;
+  imap_laser->model_occ_thresh = imap_laser->model_occ_inc;
+  imap_laser->model_emp_thresh = imap_laser->model_emp_inc;
   
   // Add the laser scan to the new map
-  imap_add_ranges(imap_new, 0, 0, *oa, range_count, ranges);
+  zero_pose[0] = 0.0;
+  zero_pose[1] = 0.0;
+  zero_pose[2] = 0.0;
+  imap_add_ranges(imap_laser, zero_pose, laser_pose, range_count, ranges);
   
-  // TESTING
-  snprintf(filename, sizeof(filename), "laser_%04d.pgm", count++);
-  imap_save_occ(imap_new, filename);
-
   // Find the best fit between the new map and the old map
-  da = 0.0;
-  err = imap_fit(imap, imap_new, ox, oy, &da);
-  *oa += da;
+  err = imap_fit(imap, imap_laser, robot_pose);
 
   // Free the temp map; we're done with it
-  imap_free(imap_new);
+  imap_free(imap_laser);
   
   return err;
 }
 
 
+// Compute the best fit pose between two maps.
+double imap_fit(imap_t *imap_a, imap_t *imap_b, double map_pose[3])
+{
+  int i, status;
+  double err;
+  imap_fit_t *fit;
+  double x, xlower, xupper;
+  double e, elower, eupper;
+  gsl_function f;
+  gsl_min_fminimizer *s;
+  
+  // Initialize fit data
+  fit = imap_fit_alloc(imap_a, imap_b, map_pose);
+
+  // Create a minimizer
+  s = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
+  assert(s != NULL);
+  
+  // Set the function to minimize
+  f.function = imap_fit_func;
+  f.params = fit;
+
+  // Initial guess
+  x = map_pose[2];
+  xlower = x - 30 * M_PI / 180;
+  xupper = x + 30 * M_PI / 180;
+
+  /*
+  // TESTING
+  for (i = -50; i <= 50; i++)
+  {
+    printf("%d %f %f\n", i,
+           x + i * (xupper - xlower) / 100,
+           imap_fit_func(x + i * (xupper - xlower) / 100, fit));
+  }
+  printf("\n\n");
+  */
+  
+  e = imap_fit_func(x, fit);
+  elower = imap_fit_func(xlower, fit);
+  eupper = imap_fit_func(xupper, fit);
+
+  // Must enclose a minimum to work
+  if (e >= elower || e >= eupper)
+  {
+    //printf("%f %f %f\n", elower, e, eupper);
+    //printf("0 0 0\n");
+    //printf("\n\n");
+    return e;
+  }
+
+  // Initialize minimizer
+  status = gsl_min_fminimizer_set_with_values(s, &f, x, e, xlower, elower, xupper, eupper);
+  assert(status == 0);
+
+  // Do the fitting
+  for (i = 0; i < 20; i++)
+  {
+    status = gsl_min_fminimizer_iterate(s);
+    if (status == GSL_FAILURE)
+      break;
+    if (status != 0)
+    {
+      fprintf(stderr, "gsl error: %s\n", gsl_strerror(status));
+      break;
+    }
+
+    // TESTING
+    //err = gsl_min_fminimizer_f_minimum(s);
+    //x = gsl_min_fminimizer_x_minimum(s);
+    //printf("%d %f %f\n", i, x, err);
+  }
+  //printf("\n\n");
+  
+  err = gsl_min_fminimizer_f_minimum(s);
+  map_pose[2] = gsl_min_fminimizer_x_minimum(s);
+
+  gsl_min_fminimizer_free(s);
+  imap_fit_free(fit);
+  
+  return err;
+}
+
 
 // Compute the best fit pose between two imaps.
-double imap_fit(imap_t *imap_a, imap_t *imap_b,
-                double *ox, double *oy, double *oa)
+double imap_fit_x(imap_t *imap_a, imap_t *imap_b, double map_pose[3])
 {
   int i, status;
   double err;
@@ -134,7 +208,7 @@ double imap_fit(imap_t *imap_a, imap_t *imap_b,
   double pose[3], grad[3];
   
   // Initialize fit data
-  fit = imap_fit_alloc(imap_a, imap_b, *ox, *oy, *oa);
+  fit = imap_fit_alloc(imap_a, imap_b, map_pose);
 
   /*
   // TESTING
@@ -168,9 +242,9 @@ double imap_fit(imap_t *imap_a, imap_t *imap_b,
 
   // Initial guess
   x = gsl_vector_alloc(3);
-  gsl_vector_set(x, 0, *ox);
-  gsl_vector_set(x, 1, *oy);
-  gsl_vector_set(x, 2, *oa);
+  gsl_vector_set(x, 0, map_pose[0]);
+  gsl_vector_set(x, 1, map_pose[1]);
+  gsl_vector_set(x, 2, map_pose[2]);
 
   // Initialize minimizer
   status = gsl_multimin_fdfminimizer_set(s, &f, x, 1e-3, 1e-6);
@@ -181,7 +255,7 @@ double imap_fit(imap_t *imap_a, imap_t *imap_b,
   //       gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 1), gsl_vector_get(s->x, 2));
 
   // Do the fitting
-  for (i = 0; i < 10; i++)
+  for (i = 0; i < 5; i++)
   {
     // TESTING
     //printf("%d %f %f %f %f\n", i, s->f,
@@ -208,9 +282,9 @@ double imap_fit(imap_t *imap_a, imap_t *imap_b,
   //printf("\n\n");
 
   err = s->f;
-  *ox = gsl_vector_get(s->x, 0);
-  *oy = gsl_vector_get(s->x, 1);
-  *oa = gsl_vector_get(s->x, 2);
+  map_pose[0] = gsl_vector_get(s->x, 0);
+  map_pose[1] = gsl_vector_get(s->x, 1);
+  map_pose[2] = gsl_vector_get(s->x, 2);
 
   gsl_multimin_fdfminimizer_free(s);
   gsl_vector_free(x);
@@ -222,7 +296,7 @@ double imap_fit(imap_t *imap_a, imap_t *imap_b,
 
 // Create the fit data; involves some pre-processing of the grid to
 // save time during optimization.
-imap_fit_t *imap_fit_alloc(imap_t *imap_a, imap_t *imap_b, double ox, double oy, double oa)
+imap_fit_t *imap_fit_alloc(imap_t *imap_a, imap_t *imap_b, double map_pose[3])
 {
   int i, j;
   imap_fit_t *fit;
@@ -233,9 +307,10 @@ imap_fit_t *imap_fit_alloc(imap_t *imap_a, imap_t *imap_b, double ox, double oy,
 
   fit->imap_a = imap_a;
   fit->imap_b = imap_b;
-  fit->ox = ox;
-  fit->oy = oy;
-  fit->oa = oa;
+  
+  fit->map_pose[0] = map_pose[0];
+  fit->map_pose[1] = map_pose[1];
+  fit->map_pose[2] = map_pose[2];
 
   // Allocate the max possible space for occupied cells
   fit->imap_a_cells = malloc(imap_a->size_x * imap_a->size_y * sizeof(imap_fit_cell_t));
@@ -294,6 +369,17 @@ void imap_fit_free(imap_fit_t *fit)
 
 
 // Compute the error
+double imap_fit_func(double x, imap_fit_t *fit)
+{
+  double pose[3];
+  pose[0] = fit->map_pose[0];
+  pose[1] = fit->map_pose[1];
+  pose[2] = x;
+  return imap_fit_compare(fit, pose, NULL);
+}
+
+
+// Compute the error
 double imap_fit_f(const gsl_vector *x, imap_fit_t *fit)
 {
   return imap_fit_compare(fit, x->data, NULL);
@@ -326,6 +412,7 @@ double imap_fit_compare(imap_fit_t *fit, double pose[3], double grad[3])
   double cb, sb;
   double k;
   double f, d;
+  double u[3], um;
   double df[3];
   double dfda[2], dadp[2][3];
   double dfdb[2], dbdp[2][3];
@@ -342,16 +429,24 @@ double imap_fit_compare(imap_fit_t *fit, double pose[3], double grad[3])
   df[2] = 0.0;
 
   // HACK
-  k = 1 / 0.10;
+  k = 0;
+  u[0] = 0.10;
+  u[1] = 0.10;
+  u[2] = 45 * M_PI / 180;
+  um = 0.05;
 
   // Start with odometric estimate
-  dx = (pose[0] - fit->ox);
-  dy = (pose[1] - fit->oy);
-  da = NORMALIZE(pose[2] - fit->oa);
-  f += k * k * (dx * dx + dy * dy + da * da);
-  df[0] += k * dx;
-  df[1] += k * dy;
-  df[2] += k * da;
+  dx = (pose[0] - fit->map_pose[0]) / u[0];
+  dy = (pose[1] - fit->map_pose[1]) / u[1];
+  da = NORMALIZE(pose[2] - fit->map_pose[2]) / u[2];
+  f += k * (dx * dx + dy * dy + da * da);
+
+  if (grad)
+  {
+    df[0] += k * dx;
+    df[1] += k * dy;
+    df[2] += k * da;
+  }
   
   // Iterate over the occupied cells in imap B
   for (i = 0; i < fit->imap_b_cell_count; i++)
@@ -386,36 +481,39 @@ double imap_fit_compare(imap_fit_t *fit, double pose[3], double grad[3])
         ax = IMAP_WXGX(fit->imap_a, ai);
         ay = IMAP_WYGY(fit->imap_a, aj);
 
-        dx = bx - ax;
-        dy = by - ay;
+        dx = (bx - ax) / um;
+        dy = (by - ay) / um;
 
         d = sqrt(dx * dx + dy * dy);
         f += d * d;
 
-        dfdb[0] = dx;
-        dfdb[1] = dy;
+        if (grad)
+        {
+          dfdb[0] = dx;
+          dfdb[1] = dy;
 
-        dbdp[0][0] = 1;
-        dbdp[0][1] = 0;
-        dbdp[0][2] = -nx * sb - ny * cb;
+          dbdp[0][0] = 1;
+          dbdp[0][1] = 0;
+          dbdp[0][2] = -nx * sb - ny * cb;
 
-        dbdp[1][0] = 0;
-        dbdp[1][1] = 1;
-        dbdp[1][2] = +nx * cb - ny * sb;
+          dbdp[1][0] = 0;
+          dbdp[1][1] = 1;
+          dbdp[1][2] = +nx * cb - ny * sb;
 
-        df[0] += dfdb[0] * dbdp[0][0] + dfdb[1] * dbdp[1][0];
-        df[1] += dfdb[0] * dbdp[0][1] + dfdb[1] * dbdp[1][1];
-        df[2] += dfdb[0] * dbdp[0][2] + dfdb[1] * dbdp[1][2];
+          df[0] += dfdb[0] * dbdp[0][0] + dfdb[1] * dbdp[1][0];
+          df[1] += dfdb[0] * dbdp[0][1] + dfdb[1] * dbdp[1][1];
+          df[2] += dfdb[0] * dbdp[0][2] + dfdb[1] * dbdp[1][2];
+        }
       }
       else
       {
-        d = fit->imap_a->max_fit_dist;
+        d = fit->imap_a->max_fit_dist / um;
         f += d * d;
       }
     }
     else
     {
-      d = fit->imap_a->max_fit_dist;
+      d = fit->imap_a->max_fit_dist / um;
       f += d * d;
     }
   }
@@ -454,36 +552,39 @@ double imap_fit_compare(imap_fit_t *fit, double pose[3], double grad[3])
         bx = IMAP_WXGX(fit->imap_b, bi);
         by = IMAP_WYGY(fit->imap_b, bj);
 
-        dx = ax - bx;
-        dy = ay - by;
+        dx = (ax - bx) / um;
+        dy = (ay - by) / um;
 
         d = sqrt(dx * dx + dy * dy);
         f += d * d;
 
-        dfda[0] = dx;
-        dfda[1] = dy;
+        if (grad)
+        {
+          dfda[0] = dx;
+          dfda[1] = dy;
 
-        dadp[0][0] = -cb;
-        dadp[0][1] = -sb;
-        dadp[0][2] = -(nx - pose[0]) * sb + (ny - pose[1]) * cb; 
+          dadp[0][0] = -cb;
+          dadp[0][1] = -sb;
+          dadp[0][2] = -(nx - pose[0]) * sb + (ny - pose[1]) * cb; 
 
-        dadp[1][0] = +sb;
-        dadp[1][1] = -cb;
-        dadp[1][2] = -(nx - pose[0]) * cb - (ny - pose[1]) * sb; 
+          dadp[1][0] = +sb;
+          dadp[1][1] = -cb;
+          dadp[1][2] = -(nx - pose[0]) * cb - (ny - pose[1]) * sb; 
 
-        df[0] += dfda[0] * dadp[0][0] + dfda[1] * dadp[1][0];
-        df[1] += dfda[0] * dadp[0][1] + dfda[1] * dadp[1][1];
-        df[2] += dfda[0] * dadp[0][2] + dfda[1] * dadp[1][2];
+          df[0] += dfda[0] * dadp[0][0] + dfda[1] * dadp[1][0];
+          df[1] += dfda[0] * dadp[0][1] + dfda[1] * dadp[1][1];
+          df[2] += dfda[0] * dadp[0][2] + dfda[1] * dadp[1][2];
+        }
       }
       else
       {
-        d = fit->imap_b->max_fit_dist;
+        d = fit->imap_b->max_fit_dist / um;
         f += d * d;
       }
     }
     else
     {
-      d = fit->imap_b->max_fit_dist;
+      d = fit->imap_b->max_fit_dist / um;
       f += d * d;
     }
   }

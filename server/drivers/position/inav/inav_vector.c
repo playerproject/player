@@ -29,6 +29,12 @@
 #include <math.h>
 #include "inav_vector.h"
 
+// Normalize an angle
+double inav_vector_normalize(double a)
+{
+  return atan2(sin(a), cos(a));
+}
+
 
 // Transform from local to global coords (a + b)
 inav_vector_t inav_vector_cs_add(inav_vector_t a, inav_vector_t b)
@@ -37,7 +43,7 @@ inav_vector_t inav_vector_cs_add(inav_vector_t a, inav_vector_t b)
 
   c.v[0] = b.v[0] + a.v[0] * cos(b.v[2]) - a.v[1] * sin(b.v[2]);
   c.v[1] = b.v[1] + a.v[0] * sin(b.v[2]) + a.v[1] * cos(b.v[2]);
-  c.v[2] = b.v[2] + a.v[2];
+  c.v[2] = inav_vector_normalize(b.v[2] + a.v[2]);
   
   return c;
 }
@@ -50,7 +56,7 @@ inav_vector_t inav_vector_cs_sub(inav_vector_t a, inav_vector_t b)
 
   c.v[0] = +(a.v[0] - b.v[0]) * cos(b.v[2]) + (a.v[1] - b.v[1]) * sin(b.v[2]);
   c.v[1] = -(a.v[0] - b.v[0]) * sin(b.v[2]) + (a.v[1] - b.v[1]) * cos(b.v[2]);
-  c.v[2] = a.v[2] - b.v[2];
+  c.v[2] = inav_vector_normalize(a.v[2] - b.v[2]);
   
   return c;
 }
