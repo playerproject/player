@@ -46,9 +46,6 @@
 #include <player.h>
 
 #define AMTEC_DEFAULT_PORT "/dev/ttyS0"
-#define AMTEC_DEFAULT_VEL_DEG_PER_SEC 40
-#define AMTEC_DEFAULT_MIN_PAN_DEG -90
-#define AMTEC_DEFAULT_MAX_PAN_DEG 90
 
 #define AMTEC_SLEEP_TIME_USEC 20000
 
@@ -77,6 +74,8 @@
 #define AMTEC_PARAM_ACT_POS   0x3c
 #define AMTEC_PARAM_MIN_POS   0x45
 #define AMTEC_PARAM_MAX_POS   0x46
+#define AMTEC_PARAM_CUBESTATE 0x27
+#define AMTEC_PARAM_MAXCURR   0x4c
 
 // motion IDs
 #define AMTEC_MOTION_FRAMP       4
@@ -84,34 +83,50 @@
 #define AMTEC_MOTION_FSTEP_ACK  16
 #define AMTEC_MOTION_FVEL_ACK   17
 
+// module state bitmasks
+#define AMTEC_STATE_ERROR     0x01
+#define AMTEC_STATE_HOME_OK   0x02
+#define AMTEC_STATE_HALTED    0x04
+
 class AmtecPowerCube:public CDevice 
 {
   private:
     // this function will be run in a separate thread
     virtual void Main();
+
+    // bookkeeping
     bool fd_blocking;
     int return_to_home;
-    int target_vel_degpersec;
     int minpan, maxpan;
+    int mintilt, maxtilt;
 
+    // low-level methods to interact with the device
     int SendCommand(int id, unsigned char* cmd, size_t len);
     int WriteData(unsigned char *buf, size_t len);
+    int AwaitAnswer(unsigned char* buf, size_t len);
+    int AwaitETX(unsigned char* buf, size_t len);
+    int ReadAnswer(unsigned char* buf, size_t len);
+    size_t ConvertBuffer(unsigned char* buf, size_t len);
+    int GetFloatParam(int id, int param, float* val);
+    int GetUint32Param(int id, int param, unsigned int* val);
+    int SetFloatParam(int id, int param, float val);
 
+    // data (de)marshalling helpers
+    // NOTE: these currently assume little-endianness, which is NOT
+    //       portable (but works fine on x86).
+    float BytesToFloat(unsigned char* bytes);
+    unsigned int BytesToUint32(unsigned char* bytes);
+    void FloatToBytes(unsigned char *bytes, float f);
+    void Uint16ToBytes(unsigned char *bytes, unsigned short s);
+
+    // higher-level methods for common use
     int GetAbsPanTilt(short* pan, short* tilt);
     int SetAbsPan(short oldpan, short pan);
     int SetAbsTilt(short oldtilt, short tilt);
     int Home();
     int Halt();
     int Reset();
-
-    int AwaitAnswer(unsigned char* buf, size_t len);
-    int AwaitETX(unsigned char* buf, size_t len);
-    int ReadAnswer(unsigned char* buf, size_t len);
-    size_t ConvertBuffer(unsigned char* buf, size_t len);
-
-    float BytesToFloat(unsigned char *bytes);
-    void FloatToBytes(unsigned char *bytes, float f);
-    void Uint16ToBytes(unsigned char *bytes, unsigned short s);
+    int SetLimits();
 
   public:
     int fd; // amtec device file descriptor
@@ -157,10 +172,8 @@ AmtecPowerCube::AmtecPowerCube(char* interface, ConfigFile* cf, int section) :
   PutData((unsigned char*)&data,sizeof(data),0,0);
   PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 
-  serial_port = cf->ReadString(section, "port", AMTEC_DEFAULT_PORT);
-  return_to_home = cf->ReadInt(section, "home", 0);
-  target_vel_degpersec = cf->ReadInt(section, "speed",
-                                  AMTEC_DEFAULT_VEL_DEG_PER_SEC);
+  this->serial_port = cf->ReadString(section, "port", AMTEC_DEFAULT_PORT);
+  this->return_to_home = cf->ReadInt(section, "home", 0);
 }
 
 int 
@@ -198,6 +211,7 @@ AmtecPowerCube::Home()
 {
   unsigned char buf[AMTEC_MAX_CMDSIZE];
   unsigned char cmd[1];
+  unsigned int state;
 
   cmd[0] = AMTEC_CMD_HOME;
   if(SendCommand(AMTEC_MODULE_PAN,cmd,1) < 0)
@@ -210,6 +224,18 @@ AmtecPowerCube::Home()
     PLAYER_ERROR("ReadAnswer() failed");
     return(-1);
   }
+  // poll the device state, wait for homing to finish
+  for(;;)
+  {
+    usleep(AMTEC_SLEEP_TIME_USEC);
+    if(GetUint32Param(AMTEC_MODULE_PAN, AMTEC_PARAM_CUBESTATE, &state) < 0)
+    {
+      PLAYER_ERROR("GetUint32Param() failed");
+      return(-1);
+    }
+    if(state & AMTEC_STATE_HOME_OK)
+      break;
+  }
   if(SendCommand(AMTEC_MODULE_TILT,cmd,1) < 0)
   {
     PLAYER_ERROR("SendCommand() failed");
@@ -219,6 +245,18 @@ AmtecPowerCube::Home()
   {
     PLAYER_ERROR("ReadAnswer() failed");
     return(-1);
+  }
+  // poll the device state, wait for homing to finish
+  for(;;)
+  {
+    usleep(AMTEC_SLEEP_TIME_USEC);
+    if(GetUint32Param(AMTEC_MODULE_TILT, AMTEC_PARAM_CUBESTATE, &state) < 0)
+    {
+      PLAYER_ERROR("GetUint32Param() failed");
+      return(-1);
+    }
+    if(state & AMTEC_STATE_HOME_OK)
+      break;
   }
   return(0);
 }
@@ -335,6 +373,22 @@ AmtecPowerCube::Setup()
   // zero the command buffer
   PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 
+  // reset and home the unit.
+  if(Reset() < 0)
+  {
+    PLAYER_ERROR("Reset() failed; bailing.");
+    close(fd);
+    fd = -1;
+    return(-1);
+  }
+  if(Home() < 0)
+  {
+    PLAYER_ERROR("Home() failed; bailing.");
+    close(fd);
+    fd = -1;
+    return(-1);
+  }
+
   // start the thread to talk with the camera
   StartThread();
 
@@ -376,6 +430,13 @@ AmtecPowerCube::BytesToFloat(unsigned char *bytes)
   float f;
   memcpy((void*)&f, bytes, 4);
   return(f);
+}
+unsigned int
+AmtecPowerCube::BytesToUint32(unsigned char* bytes)
+{
+  unsigned int i;
+  memcpy((void*)&i, bytes, 4);
+  return(i);
 }
 void
 AmtecPowerCube::FloatToBytes(unsigned char *bytes, float f)
@@ -608,47 +669,146 @@ AmtecPowerCube::ReadAnswer(unsigned char* buf, size_t len)
 ////////////////////////////////////////////////////////////////////////////
 
 int
-AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
+AmtecPowerCube::GetFloatParam(int id, int param, float* val)
 {
   unsigned char buf[AMTEC_MAX_CMDSIZE];
   unsigned char cmd[2];
 
   cmd[0] = AMTEC_CMD_GET_EXT;
-  cmd[1] = AMTEC_PARAM_ACT_POS;
+  cmd[1] = param;
+
+  if(SendCommand(id, cmd, 2) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+
+  *val = BytesToFloat(buf+4);
+  return(0);
+}
+
+int
+AmtecPowerCube::GetUint32Param(int id, int param, unsigned int* val)
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[2];
+
+  cmd[0] = AMTEC_CMD_GET_EXT;
+  cmd[1] = param;
+
+  if(SendCommand(id, cmd, 2) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+
+  *val = BytesToUint32(buf+4);
+  return(0);
+}
+
+int
+AmtecPowerCube::SetFloatParam(int id, int param, float val)
+{
+  unsigned char buf[AMTEC_MAX_CMDSIZE];
+  unsigned char cmd[6];
+
+  cmd[0] = AMTEC_CMD_SET_EXT;
+  cmd[1] = param;
+  FloatToBytes(cmd+2, val);
+
+  if(SendCommand(id, cmd, 6) < 0)
+  {
+    PLAYER_ERROR("SendCommand() failed");
+    return(-1);
+  }
+
+  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  {
+    PLAYER_ERROR("ReadAnswer() failed");
+    return(-1);
+  }
+
+  return(0);
+}
+
+int
+AmtecPowerCube::GetAbsPanTilt(short* pan, short* tilt)
+{
+  float tmp;
 
   // get the pan
-  if(SendCommand(AMTEC_MODULE_PAN, cmd, 2) < 0)
+  if(GetFloatParam(AMTEC_MODULE_PAN, AMTEC_PARAM_ACT_POS, &tmp) < 0)
   {
-    PLAYER_ERROR("SendCommand() failed");
+    PLAYER_ERROR("GetFloatParam() failed");
     return(-1);
   }
-
-  if(ReadAnswer(buf,sizeof(buf)) < 0)
-  {
-    PLAYER_ERROR("ReadAnswer() failed");
-    return(-1);
-  }
-
   // reverse pan angle, to increase ccw, then normalize
-  *pan = -(short)RTOD(NORMALIZE(BytesToFloat(buf+4)));
-  //printf("pan: %d\n", *pan);
+  *pan = -(short)RTOD(NORMALIZE(tmp));
   
   // get the tilt
-  if(SendCommand(AMTEC_MODULE_TILT, cmd, 2) < 0)
+  if(GetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_ACT_POS, &tmp) < 0)
   {
-    PLAYER_ERROR("SendCommand() failed");
+    PLAYER_ERROR("GetFloatParam() failed");
     return(-1);
   }
+  *tilt = (short)(RTOD(tmp));
 
-  if(ReadAnswer(buf,sizeof(buf)) < 0)
+  return(0);
+}
+
+int
+AmtecPowerCube::SetLimits()
+{
+  // have to reverse the signs for the pan limits, since the Amtec unit
+  // counts up clockwise, rather than ccw.
+  if(this->minpan != INT_MAX)
   {
-    PLAYER_ERROR("ReadAnswer() failed");
-    return(-1);
+    if(SetFloatParam(AMTEC_MODULE_PAN, AMTEC_PARAM_MAX_POS, 
+                     NORMALIZE(DTOR(-this->minpan))) < 0)
+    {
+      PLAYER_ERROR("SetFloatParam() failed");
+      return(-1);
+    }
   }
-
-  *tilt = (short)(RTOD(BytesToFloat(buf+4)));
-  //printf("tilt: %d\n", *tilt);
-
+  if(this->maxpan != INT_MAX)
+  {
+    if(SetFloatParam(AMTEC_MODULE_PAN, AMTEC_PARAM_MIN_POS, 
+                     NORMALIZE(DTOR(-this->maxpan))) < 0)
+    {
+      PLAYER_ERROR("SetFloatParam() failed");
+      return(-1);
+    }
+  }
+  if(this->mintilt != INT_MAX)
+  {
+    if(SetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_MIN_POS, 
+                     NORMALIZE(DTOR(this->mintilt))) < 0)
+    {
+      PLAYER_ERROR("SetFloatParam() failed");
+      return(-1);
+    }
+  }
+  if(this->maxtilt != INT_MAX)
+  {
+    if(SetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_MAX_POS, 
+                     NORMALIZE(DTOR(this->maxtilt))) < 0)
+    {
+      PLAYER_ERROR("SetFloatParam() failed");
+      return(-1);
+    }
+  }
   return(0);
 }
 
@@ -658,21 +818,10 @@ AmtecPowerCube::SetAbsPan(short oldpan, short pan)
   unsigned char buf[AMTEC_MAX_CMDSIZE];
   unsigned char cmd[8];
   float newpan;
-  unsigned short time;
 
   newpan = DTOR(pan);
 
-  // compute time, in milliseconds, to achieve given target velocity
-  time = (unsigned short)rint(((double)abs(pan - oldpan) / 
-                               (double)target_vel_degpersec)
-                              *1000.0);
-
   cmd[0] = AMTEC_CMD_SET_MOTION;
-  /*
-  cmd[1] = AMTEC_MOTION_FSTEP_ACK;
-  FloatToBytes(cmd+2,newpan);
-  Uint16ToBytes(cmd+6,time);
-  */
   cmd[1] = AMTEC_MOTION_FVEL_ACK;
   FloatToBytes(cmd+2,newpan);
   printf("sending pan command: %d (%f)\n", pan, newpan);
@@ -680,7 +829,7 @@ AmtecPowerCube::SetAbsPan(short oldpan, short pan)
     return(-1);
   if(ReadAnswer(buf,sizeof(buf)) < 0)
     return(-1);
-  printf("module state:0x%x\n", buf[6]);
+  //printf("module state:0x%x\n", buf[6]);
   return(0);
 }
 
@@ -712,18 +861,7 @@ AmtecPowerCube::Main()
   short newpan, newtilt;
   short currpan, currtilt;
 
-  // first things first.  reset and home the unit.
-  if(Reset() < 0)
-  {
-    PLAYER_ERROR("Reset() failed; bailing.");
-    pthread_exit(NULL);
-  }
-  if(return_to_home && (Home() < 0))
-  {
-    PLAYER_ERROR("Home() failed; bailing.");
-    pthread_exit(NULL);
-  }
-
+  // read the current state
   if(GetAbsPanTilt(&lastpan,&lasttilt) < 0)
   {
     PLAYER_ERROR("GetAbsPanTilt() failed; bailing.");
@@ -774,6 +912,22 @@ AmtecPowerCube::Main()
     data.zoom = 0;
 
     PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
+
+    // get the module state (for debugging and warning)
+    unsigned int state;
+    if(GetUint32Param(AMTEC_MODULE_PAN, AMTEC_PARAM_CUBESTATE, &state) < 0)
+    {
+      PLAYER_ERROR("GetUint32Param() failed; bailing");
+      pthread_exit(NULL);
+    }
+    printf("state: 0x%x\n", state);
+    if(state & AMTEC_STATE_ERROR)
+    {
+      PLAYER_ERROR1("the Amtec unit has encountered an error and will need\n"
+                    "    to be reset; bailing.   Current module state: 0x%x", 
+                    state);
+      pthread_exit(NULL);
+    }
 
     usleep(AMTEC_SLEEP_TIME_USEC);
   }
