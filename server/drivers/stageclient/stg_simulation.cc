@@ -140,11 +140,14 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
   
   // subscribe to something so we get the clock updates 
   // (there's always a model called "root" )
-  stg_model_t* root = 
-    stg_world_model_name_lookup( Stage1p4::world, "root" );
-  assert(root);
+  //stg_model_t* root = 
+  //stg_world_model_name_lookup( Stage1p4::world, "root" );
+  //assert(root);
   
-  stg_model_subscribe( root, STG_PROP_TIME, 100 ); //100ms
+  int zero = 0;
+  stg_model_t* dummy = g_hash_table_lookup( Stage1p4::world->models_id, &zero );
+  assert(dummy);
+  stg_model_subscribe( dummy, STG_PROP_TIME, 100 ); //100ms
   
   // start the simulation
   printf( "    Stage driver starting world clock... " ); fflush(stdout);
