@@ -35,6 +35,10 @@ This driver is experimental and should be treated with caution. At
 this point it supports the @ref player_interface_position and 
 @ref player_interface_ir interfaces.
 
+TODO: 
+ - Add support for position control (currently only velocity control)
+ - Add proper calibration for IR sensors
+
 @par Compile-time dependencies
 
 - none
