@@ -44,6 +44,7 @@ extern PlayerTime* GlobalTime;
 /* prototype device-specific init funcs */
 #ifdef INCLUDE_SEGWAYRMP
 void SegwayRMP_Register(DriverTable* table);
+void RMPPower_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_SICKLMS200
@@ -239,6 +240,7 @@ register_devices()
 {
 #ifdef INCLUDE_SEGWAYRMP
   SegwayRMP_Register(driverTable);
+  RMPPower_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKLMS200

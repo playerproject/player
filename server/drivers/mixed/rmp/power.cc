@@ -61,14 +61,22 @@ RMPPower_Register(DriverTable *table)
 }
 
 RMPPower::RMPPower(char *interface, ConfigFile *cf, int section) :
-  segway(NULL)
+  CDevice(sizeof(player_power_data_t), 
+	  sizeof(player_power_data_t), 5, 5), segway(NULL)
 {
 }
 
 int
 RMPPower::Setup()
 {
+  int ret;
+
   segway = SegwayIO::Instance();
+
+  if ((ret = segway->Init()) < 0) {
+    PLAYER_ERROR1("RMPPOWER: error on segwayIO init (%d)\n",ret);
+    return -1;
+  }
 
   return 0;
 }
