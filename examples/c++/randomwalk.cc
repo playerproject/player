@@ -26,10 +26,10 @@ char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
 char auth_key[PLAYER_KEYLEN];
 
-unsigned short minfrontdistance = 350;
-short speed = 200;
-short avoidspeed = 0; // -150;
-short turnrate = 40;
+double minfrontdistance = 0.350;
+double speed = 0.200;
+double avoidspeed = 0; // -150;
+double turnrate = DTOR(40);
 
 
 /* parse command-line args */
@@ -82,19 +82,19 @@ parse_args(int argc, char** argv)
     }
     else if(!strcmp(argv[i], "-s"))
     {
-      speed = atoi(argv[++i]);
+      speed = atof(argv[++i]);
     }
     else if(!strcmp(argv[i], "-a"))
     {
-      avoidspeed = atoi(argv[++i]);
+      avoidspeed = atof(argv[++i]);
     }
     else if(!strcmp(argv[i], "-d"))
     {
-      minfrontdistance = atoi(argv[++i]);
+      minfrontdistance = atof(argv[++i]);
     }
     else if(!strcmp(argv[i], "-t"))
     { 
-      minfrontdistance = atoi(argv[++i]);
+      minfrontdistance = atof(argv[++i]);
     } 
     else
     {
@@ -165,7 +165,7 @@ int main(int argc, char** argv)
       exit(1);
   }
 
-  int newturnrate=0,newspeed=0;
+  double newturnrate=0,newspeed=0;
   /* go into read-think-act loop */
   for(;;)
   {
@@ -176,20 +176,20 @@ int main(int argc, char** argv)
     /* See if there is an obstacle in front */
     if (use_laser)
     {
-        obs = false;
-        for (int i = 0; i < lp.range_count; i++)
-        {
-            if ((lp.ranges[i] & 0x1FFF) < minfrontdistance)
-                obs = true;
-        }
+      obs = false;
+      for (int i = 0; i < lp.scan_count; i++)
+      {
+        if(lp.scan[i][0] < minfrontdistance)
+          obs = true;
+      }
     }
     else
     {
-        //printf("comparing minfrontdiatance=%d to ranges 2=%d, 3=%d, 4=%d,  5=%d.\n", minfrontdistance, sp.ranges[2], sp.ranges[3], sp.ranges[4], sp.ranges[5]);
-        obs = ( (sp.ranges[2] < minfrontdistance) ||   // 0?
-                (sp.ranges[3] < minfrontdistance) ||   
-                (sp.ranges[4] < minfrontdistance) ||   // 0?
-                (sp.ranges[5] < minfrontdistance) );    
+      //printf("comparing minfrontdiatance=%d to ranges 2=%d, 3=%d, 4=%d,  5=%d.\n", minfrontdistance, sp.ranges[2], sp.ranges[3], sp.ranges[4], sp.ranges[5]);
+      obs = ((sp.ranges[2] < minfrontdistance) ||   // 0?
+             (sp.ranges[3] < minfrontdistance) ||   
+             (sp.ranges[4] < minfrontdistance) ||   // 0?
+             (sp.ranges[5] < minfrontdistance) );    
     }
 
     if(obs || avoidcount || pp.stall)
@@ -232,7 +232,7 @@ int main(int argc, char** argv)
         //randint = (1+(int)(40.0*rand()/(RAND_MAX+1.0))) - 20;
         randint = rand() % 41 - 20;
 
-        newturnrate = randint;
+        newturnrate = DTOR(randint);
         randcount = 20;
       }
       randcount--;

@@ -49,13 +49,14 @@
 #include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <math.h>
     
 // send a motor command
 //
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int Position3DProxy::SetSpeed(int xspeed, int yspeed, int yawspeed)
+int Position3DProxy::SetSpeed(double xspeed, double yspeed, double yawspeed)
 {
   if(!client)
     return(-1);
@@ -65,12 +66,12 @@ int Position3DProxy::SetSpeed(int xspeed, int yspeed, int yawspeed)
 
   cmd.xpos = cmd.ypos = cmd.zpos = 0;
   cmd.roll = cmd.pitch = cmd.yaw = 0;
-  cmd.xspeed = (int32_t)htonl(xspeed);
-  cmd.yspeed = (int32_t)htonl(yspeed);
+  cmd.xspeed = (int32_t)htonl((int)rint(xspeed*1e3));
+  cmd.yspeed = (int32_t)htonl((int)rint(yspeed*1e3));
   cmd.zspeed = 0;
   cmd.rollspeed = 0;
   cmd.pitchspeed = 0;
-  cmd.yawspeed = (int32_t)htonl(yawspeed);
+  cmd.yawspeed = (int32_t)htonl((int)rint(RTOD(yawspeed) * 3600.0));
 
   return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
@@ -81,7 +82,10 @@ int Position3DProxy::SetSpeed(int xspeed, int yspeed, int yawspeed)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int Position3DProxy::SetSpeed(int xspeed, int yspeed, int zspeed,int yawspeed)
+int Position3DProxy::SetSpeed(double xspeed, 
+                              double yspeed, 
+                              double zspeed,
+                              double yawspeed)
 {
   if(!client)
     return(-1);
@@ -91,12 +95,12 @@ int Position3DProxy::SetSpeed(int xspeed, int yspeed, int zspeed,int yawspeed)
 
   cmd.xpos = cmd.ypos = cmd.zpos = 0;
   cmd.roll = cmd.pitch = cmd.yaw = 0;
-  cmd.xspeed = (int32_t)htonl(xspeed);
-  cmd.yspeed = (int32_t)htonl(yspeed);
-  cmd.zspeed = (int32_t)htonl(zspeed);
+  cmd.xspeed = (int32_t)htonl((int)rint(1e3*xspeed));
+  cmd.yspeed = (int32_t)htonl((int)rint(1e3*yspeed));
+  cmd.zspeed = (int32_t)htonl((int)rint(1e3*zspeed));
   cmd.rollspeed = 0;
   cmd.pitchspeed = 0;
-  cmd.yawspeed = (int32_t)htonl(yawspeed);
+  cmd.yawspeed = (int32_t)htonl((int)rint(RTOD(yawspeed) * 3600.0));
 
   return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
@@ -114,21 +118,21 @@ void Position3DProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_position3d_data_t),hdr.size);
   }
 
-  xpos = (int)ntohl(buf->xpos);
-  ypos = (int)ntohl(buf->ypos);
-  zpos = (int)ntohl(buf->zpos);
+  xpos = ((int)ntohl(buf->xpos)) / 1e3;
+  ypos = ((int)ntohl(buf->ypos)) / 1e3;
+  zpos = ((int)ntohl(buf->zpos)) / 1e3;
 
-  roll = (double)ntohl(buf->roll) / 3600.0;
-  pitch = (double)ntohl(buf->pitch) / 3600.0;
-  yaw = (double)ntohl(buf->yaw) / 3600.0;
+  roll = DTOR(((double)(int)ntohl(buf->roll)) / 3600.0);
+  pitch = DTOR(((double)(int)ntohl(buf->pitch)) / 3600.0);
+  yaw = DTOR(((double)(int)ntohl(buf->yaw)) / 3600.0);
 
-  xspeed = (int)ntohl(buf->xspeed);
-  yspeed = (int)ntohl(buf->yspeed);
-  zspeed = (int)ntohl(buf->zspeed);
+  xspeed = ((int)ntohl(buf->xspeed)) / 1e3;
+  yspeed = ((int)ntohl(buf->yspeed)) / 1e3;
+  zspeed = ((int)ntohl(buf->zspeed)) / 1e3;
 
-  rollspeed = (int)ntohl(buf->rollspeed) / 3600;
-  pitchspeed = (int)ntohl(buf->pitchspeed) / 3600;
-  yawspeed = (int)ntohl(buf->yawspeed) / 3600;
+  rollspeed = DTOR(((double)(int)ntohl(buf->rollspeed)) / 3600.0);
+  pitchspeed = DTOR(((double)(int)ntohl(buf->pitchspeed)) / 3600.0);
+  yawspeed = DTOR(((double)(int)ntohl(buf->yawspeed)) / 3600.0);
 
   stall = buf->stall;
 }
@@ -139,10 +143,10 @@ void Position3DProxy::Print()
   printf("#Position(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#xpos\typos\tzpos\troll\tpitch\tyaw");
-  printf("%4d\t%4d\t%4d\t%4f\t%5f\t%3f\n",
+  printf("%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n",
          xpos,ypos,zpos,roll,pitch,yaw);
   puts("#xspeed\tyspeed\tzspeed\trollspeed\tpitchspeed\tyawspeed");
-  printf("%5d\t%5d\t%5d\t%9f\t%10f\t%8f\n",
+  printf("%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n",
          xspeed,yspeed,zspeed,rollspeed,pitchspeed,yawspeed);
 }
 

@@ -49,13 +49,14 @@
 #include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <math.h>
     
 // send a camera command
 //
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PtzProxy::SetCam(short pan, short tilt, short zoom)
+int PtzProxy::SetCam(double pan, double tilt, double zoom)
 {
   if(!client)
     return(-1);
@@ -63,15 +64,15 @@ int PtzProxy::SetCam(short pan, short tilt, short zoom)
   player_ptz_cmd_t cmd;
 
   memset(&cmd,0,sizeof(cmd));
-  cmd.pan = htons(pan);
-  cmd.tilt = htons(tilt);
-  cmd.zoom = htons(zoom);
+  cmd.pan = htons((short)rint(RTOD(pan)));
+  cmd.tilt = htons((short)rint(RTOD(tilt)));
+  cmd.zoom = htons((short)rint(RTOD(zoom)));
 
   return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
 }
 
-int PtzProxy::SetSpeed(short panspeed, short tiltspeed)
+int PtzProxy::SetSpeed(double panspeed, double tiltspeed)
 {
   if(!client)
     return(-1);
@@ -79,8 +80,8 @@ int PtzProxy::SetSpeed(short panspeed, short tiltspeed)
   player_ptz_cmd_t cmd;
 
   memset(&cmd,0,sizeof(cmd));
-  cmd.panspeed = htons(panspeed);
-  cmd.tiltspeed = htons(tiltspeed);
+  cmd.panspeed = htons((short)rint(RTOD(panspeed)));
+  cmd.tiltspeed = htons((short)rint(RTOD(tiltspeed)));
 
   return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
@@ -137,11 +138,11 @@ void PtzProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_ptz_data_t),hdr.size);
   }
 
-  pan = (short)ntohs(((player_ptz_data_t*)buffer)->pan);
-  tilt = (short)ntohs(((player_ptz_data_t*)buffer)->tilt);
-  zoom = (short)ntohs(((player_ptz_data_t*)buffer)->zoom);
-  panspeed = (short)ntohs(((player_ptz_data_t*)buffer)->panspeed);
-  tiltspeed = (short)ntohs(((player_ptz_data_t*)buffer)->tiltspeed);
+  pan = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->pan));
+  tilt = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->tilt));
+  zoom = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->zoom));
+  panspeed = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->panspeed));
+  tiltspeed = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->tiltspeed));
 }
 
 // interface that all proxies SHOULD provide
@@ -150,6 +151,6 @@ void PtzProxy::Print()
   printf("#Ptz(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#pan\ttilt\tzoom\tpanspeed\ttiltspeed");
-  printf("%d\t%d\t%u\t%d\t%d\n", pan,tilt,zoom,panspeed,tiltspeed);
+  printf("%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n", pan,tilt,zoom,panspeed,tiltspeed);
 }
 

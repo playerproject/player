@@ -74,6 +74,7 @@ int
 SonarProxy::GetSonarGeom()
 {
   player_msghdr_t hdr;
+  player_sonar_geom_t sonar_pose;
 
   if(!client)
     return(-1);
@@ -86,12 +87,12 @@ SonarProxy::GetSonarGeom()
      (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
     return(-1);
 
-  sonar_pose.pose_count = ntohs(sonar_pose.pose_count);
-  for(int i=0;i<sonar_pose.pose_count;i++)
+  pose_count = ntohs(sonar_pose.pose_count);
+  for(int i=0;i<pose_count;i++)
   {
-    sonar_pose.poses[i][0] = ntohs(sonar_pose.poses[i][0]);
-    sonar_pose.poses[i][1] = ntohs(sonar_pose.poses[i][1]);
-    sonar_pose.poses[i][2] = ntohs(sonar_pose.poses[i][2]);
+    poses[i][0] = ((short)ntohs(sonar_pose.poses[i][0])) / 1e3;
+    poses[i][1] = ((short)ntohs(sonar_pose.poses[i][1])) / 1e3;
+    poses[i][2] = DTOR((short)ntohs(sonar_pose.poses[i][2]));
   }
 
   return(0);
@@ -111,7 +112,7 @@ void SonarProxy::FillData(player_msghdr_t hdr, const char* buffer)
   memset(ranges,0,sizeof(ranges));
   for(size_t i=0;i<range_count;i++)
   {
-    ranges[i] = ntohs(((player_sonar_data_t*)buffer)->ranges[i]);
+    ranges[i] = ntohs(((player_sonar_data_t*)buffer)->ranges[i]) / 1e3;
   }
 }
 
@@ -121,7 +122,7 @@ void SonarProxy::Print()
   printf("#Sonar(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   for(size_t i=0;i<range_count;i++)
-    printf("%u ", ranges[i]);
+    printf("%.3f ", ranges[i]);
   puts("");
 }
 

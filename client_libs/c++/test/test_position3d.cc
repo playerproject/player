@@ -48,9 +48,9 @@ test_position3d(PlayerClient* client, int index)
     pp.Print();
   }
 
+  /*  
   const int ox = 100, oy = -200;
   const unsigned short oa = 180;
-  /*  
   TEST("Setting odometry" );
   if( pp.SetOdometry(ox, oy, oa) < 0 )
     {
@@ -108,7 +108,7 @@ test_position3d(PlayerClient* client, int index)
   TEST("moving forward");
   for(int i=1;i<2;i++)
     { 
-      if(pp.SetSpeed(2000,0,0,0) < 0)
+      if(pp.SetSpeed(2.0,0.0,0.0,0.0) < 0)
 	{
 	  FAIL();
 	  //return(-1);
@@ -125,7 +125,7 @@ test_position3d(PlayerClient* client, int index)
  for(int i=1;i<2;i++)
     { 
 
-      if(pp.SetSpeed(-2000,0,0,0) < 0)
+      if(pp.SetSpeed(-2.0,0.0,0.0,0.0) < 0)
 	{
 	  FAIL();
 	  //return(-1);
@@ -142,7 +142,7 @@ test_position3d(PlayerClient* client, int index)
   for(int i=1;i<20;i++)
     { 
      
-      if(pp.SetSpeed(0,0,1000,0) < 0)
+      if(pp.SetSpeed(0.0,0.0,1.0,0.0) < 0)
 	{
       FAIL();
       //return(-1);
@@ -156,7 +156,7 @@ test_position3d(PlayerClient* client, int index)
   TEST("moving down");
    for(int i=1;i<20;i++)
     { 
-  if(pp.SetSpeed(0,0,-1000,0) < 0)
+  if(pp.SetSpeed(0.0,0.0,-1.0,0.0) < 0)
     {
       FAIL();
       //return(-1);
@@ -168,7 +168,7 @@ test_position3d(PlayerClient* client, int index)
     }
     }
   TEST("turning right");
-  if(pp.SetSpeed(0,0,0,-25) < 0)
+  if(pp.SetSpeed(0,0,0,DTOR(-25.0)) < 0)
     {
       FAIL();
       //return(-1);
@@ -180,7 +180,7 @@ test_position3d(PlayerClient* client, int index)
     }
 
   TEST("turning left");
-  if(pp.SetSpeed(0,0,0,25) < 0)
+  if(pp.SetSpeed(0,0,0,DTOR(25.0)) < 0)
     {
       FAIL();
       //return(-1);

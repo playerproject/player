@@ -71,7 +71,7 @@ parse_args(int argc, char** argv)
 
 int main(int argc, char **argv)
 {
-  int minR, minL;
+  double minR, minL;
 
   parse_args(argc,argv);
 
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
   //if(turnOnMotors && pp.SetMotorState(1))
   //exit(1);
 
-  int newspeed, newturnrate;
+  double newspeed, newturnrate;
   /* go into read-think-act loop */
   for(;;)
   {
@@ -105,28 +105,28 @@ int main(int argc, char **argv)
      * laser avoid (stolen from esben's java example)
      */
 
-    minL=INT_MAX; 
-    minR=INT_MAX;
-    for (int j=0; j<180; j++) {
-      //printf("laser(%d):%d\n", j,robot.laser.ranges[j] & 0x1FFF);
+    minL=1e9;
+    minR=1e9;
+    for (int j=0; j<lp.scan_count/2; j++) {
       if (minR>lp[j])
         minR=lp[j];
     }
-    for (int j=181; j<361; j++) {
+    for (int j=lp.scan_count/2; j<lp.scan_count; j++) {
       if (minL>lp[j])
         minL=lp[j];
     }
-    //printf("minR:%d\tminL:%d\n", minR,minL);
-    int l=(100*minR)/500-100;
-    int r=(100*minL)/500-100;
+    printf("minR:%.3f\tminL:%.3f\n", minR,minL);
+    double l=(1e5*minR)/500-100;
+    double r=(1e5*minL)/500-100;
     if (l>100) 
       l=100; 
     if (r>100) 
       r=100;
-    newspeed = r+l;
-    newturnrate = r-l;
-    newturnrate = min(newturnrate,40);
-    newturnrate = max(newturnrate,-40);
+    printf("R:%.3f\tL:%.3f\n", r,l);
+    newspeed = (r+l)/1e3;
+    newturnrate = (r-l)/1e3;
+    newturnrate = DTOR(min(newturnrate,40));
+    newturnrate = DTOR(max(newturnrate,-40));
                   
     /* write commands to robot */
     pp.SetSpeed(newspeed,newturnrate);

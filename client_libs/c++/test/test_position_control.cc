@@ -7,6 +7,7 @@
 #include "playerclient.h"
 #include "test.h"
 #include <unistd.h>
+#include <math.h>
 
 int
 test_position_control(PlayerClient* client, int index)
@@ -58,11 +59,11 @@ test_position_control(PlayerClient* client, int index)
   }
   PASS();
 
-  int poses[][3] = { {400,400,45}, 
-		     {400,-400,315}, 
-		     {-400,400,225}, 
-		     {-400,-400,135}, 
-		     {0,0,0}
+  double poses[][3] = { {0.4,0.4,DTOR(45)}, 
+    {0.4,-0.4,DTOR(315)}, 
+    {-0.4,0.4,DTOR(225)}, 
+    {-0.4,-0.4,DTOR(135)}, 
+    {0,0,0}
   };
 
   int num_poses = 5;
@@ -74,7 +75,7 @@ test_position_control(PlayerClient* client, int index)
   int ytolerance = 50; //mm
   int atolerance = 5; //degrees
 
-  int xerror, yerror, aerror;
+  double xerror, yerror, aerror;
   
   for( int p=0; p<num_poses; p++ )
     {
@@ -86,13 +87,13 @@ test_position_control(PlayerClient* client, int index)
 	{
 	  client->Read();
 	  
-	  xerror = abs(poses[p][0]-pp.xpos);
-	  yerror = abs(poses[p][1]-pp.ypos);
-	  aerror = abs(poses[p][2]-pp.theta);
+	  xerror = fabs(poses[p][0]-pp.xpos);
+	  yerror = fabs(poses[p][1]-pp.ypos);
+	  aerror = fabs(poses[p][2]-pp.theta);
 
-	  printf( "\r Goal: [%d %d %u]"
-		  " Actual: [%d %d %u]"
-		  " Error: [%d %d %u]"
+	  printf( "\r Goal: [%.3f %.3f %.3f]"
+		  " Actual: [%.3f %.3f %.3f]"
+		  " Error: [%.3f %.3f %.3f]"
 		  " Step %d/%d                 ", 
 		  poses[p][0],  poses[p][1], poses[p][2], 
 		  pp.xpos, pp.ypos, pp.theta,

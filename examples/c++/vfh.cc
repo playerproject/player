@@ -17,7 +17,7 @@ char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
 
 int cmd_line_gotoxy = 0;
-int gotox, gotoy, gotot;
+double gotox, gotoy, gotot;
 
 /* easy little command line argument parser */
 void parse_args(int argc, char** argv) {
@@ -50,11 +50,11 @@ void parse_args(int argc, char** argv) {
     {
       cmd_line_gotoxy = 1;
       if(++i<argc) {
-        gotox = atoi(argv[i]);
+        gotox = atof(argv[i]);
         if (++i<argc) {
-          gotoy = atoi(argv[i]);
+          gotoy = atof(argv[i]);
           if (++i<argc) {
-            gotot = atoi(argv[i]);
+            gotot = atof(argv[i]);
           }
         } else {
           puts(USAGE);
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
   // as in a normal position device, vfh_pp.xpos, vfh_pp.ypos, vfh_pp.theta
   // are the robots x, y, and theta odometry data
 
-  // vfh_pp.GoTo(x, y, theta) in millimeters and degrees
+  // vfh_pp.GoTo(x, y, theta) in meters and radians
   // goto x, y, theta -- theta is ignored for now
   // (x,y,theta) is in the robots global odometric
   // coordinate system -- i.e., (0,0,0) is the location when odometry
@@ -130,14 +130,22 @@ int main(int argc, char **argv) {
       exit(1);
 
     if (!cmd_line_gotoxy) {
-// right wall follow
-//      vfh_pp.GoTo((int)rint(vfh_pp.xpos + sin(vfh_pp.theta * 6.28 / 360.0) * 200000.0), (int)rint(vfh_pp.ypos - cos(vfh_pp.theta * 6.28 / 360.0) * 200000.0), 0);
+      /*
+      // right wall follow
+      vfh_pp.GoTo((int)rint(vfh_pp.xpos + sin(vfh_pp.theta) * 200.0), 
+                  (int)rint(vfh_pp.ypos - cos(vfh_pp.theta) * 200.0), 
+                  0);
 
-// left wall follow
-//      vfh_pp.GoTo((int)rint(vfh_pp.xpos - sin(vfh_pp.theta * 6.28 / 360.0) * 200000.0), (int)rint(vfh_pp.ypos + cos(vfh_pp.theta * 6.28 / 360.0) * 200000.0), 0);
+      // left wall follow
+      vfh_pp.GoTo((int)rint(vfh_pp.xpos - sin(vfh_pp.theta) * 200.0), 
+                  (int)rint(vfh_pp.ypos + cos(vfh_pp.theta) * 200.0), 
+                  0);
+                  */
 
-// always try to go straight
-      vfh_pp.GoTo((int)rint(vfh_pp.xpos + cos(vfh_pp.theta * 6.28 / 360.0) * 200000.0), (int)rint(vfh_pp.ypos + sin(vfh_pp.theta * 6.28 / 360.0) * 200000.0), 0);
+      // always try to go straight
+      vfh_pp.GoTo((int)rint(vfh_pp.xpos + cos(vfh_pp.theta) * 200.0), 
+                  (int)rint(vfh_pp.ypos + sin(vfh_pp.theta) * 200.0), 
+                  0);
     }
   }
 }

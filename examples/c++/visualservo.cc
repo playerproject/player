@@ -79,7 +79,7 @@ int main(int argc, char** argv)
   int randcount = 0;
   int avoidcount = 0;
   bool obs = false;
-  unsigned short minfrontdistance = 450;
+  double minfrontdistance = 0.450;
   unsigned int minarea = 50;
 
   /* first, parse command line args */
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
     exit(1);
 
 //  vp.SetTrackingColor(47,100,95,118,20,66);
-  int newturnrate=0,newspeed=0;
+  double newturnrate=0,newspeed=0;
   //int lastdir = 1;
   /* go into read-think-act loop */
   for(;;)
@@ -127,9 +127,9 @@ int main(int argc, char** argv)
         randcount = 0;
 
         if(sp[1]+sp[15] < sp[7]+sp[8])
-          newturnrate = -40;
+          newturnrate = DTOR(-40);
         else
-          newturnrate = 40;
+          newturnrate = DTOR(40);
       }
       avoidcount--;
     }
@@ -141,18 +141,18 @@ int main(int argc, char** argv)
       int err = 80 - vp.blobs[channel][0].x;
       if(abs(err) > 5)
       {
-        newturnrate = (int)(err / 3.0);
+        newturnrate = DTOR(err / 3.0);
       }
       else
         newturnrate = 0;
       
       //newspeed = 0;
-      newspeed = 200;
+      newspeed = 0.200;
     }
     else
     {
       avoidcount = 0;
-      newspeed = 200;
+      newspeed = 0.200;
 
       /* update turnrate every 3 seconds */
       if(!randcount)
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
         //randint = (1+(int)(40.0*rand()/(RAND_MAX+1.0))) - 20;
         randint = rand() % 41 - 20;
 
-        newturnrate = randint;
+        newturnrate = DTOR(randint);
         randcount = 20;
       }
       randcount--;

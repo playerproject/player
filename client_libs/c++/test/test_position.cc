@@ -7,6 +7,7 @@
 #include "playerclient.h"
 #include "test.h"
 #include <unistd.h>
+#include <math.h>
 
 int
 test_position(PlayerClient* client, int index)
@@ -48,34 +49,36 @@ test_position(PlayerClient* client, int index)
     pp.Print();
   }
 
-  const int ox = 100, oy = -200;
-  const unsigned short oa = 180;
+  const double ox = 0.1, oy = -0.2;
+  const int oa = 180;
   
   TEST("Setting odometry" );
-  if( pp.SetOdometry(ox, oy, oa) < 0 )
+  if( pp.SetOdometry(ox, oy, DTOR((double)oa)) < 0 )
     {
       FAIL();
       //return(-1);
     }
   else
     {
-      printf("\n - initial \t[%d %d %u]\n"
-	     " - requested \t[%d %d %u]\n", 
-	     pp.xpos, pp.ypos, pp.theta, 
-	     ox, oy, oa );
+      printf("\n - initial \t[%.3f %.3f %.3f]\n"
+	     " - requested \t[%.3f %.3f %.3f]\n", 
+	     pp.xpos, pp.ypos, RTOD(pp.theta), 
+	     ox, oy, (double)oa);
       
       
       for( int s=0; s<10; s++ )
 	{
 	  client->Read();
-	  printf( " - reading \t[%d %d %u]\r", 
-		  pp.xpos, pp.ypos, pp.theta );
+	  printf( " - reading \t[%.3f %.3f %.3f]\r", 
+		  pp.xpos, pp.ypos, RTOD(pp.theta) );
 	  fflush(stdout);
 	}
   
       puts("");
       
-      if( pp.xpos != ox || pp.ypos != oy || pp.theta != oa )
+      if((pp.xpos != ox) || 
+         (pp.ypos != oy) || 
+         ((int)rint(RTOD(pp.theta)) != oa))
 	{
 	  FAIL();
 	  //return(-1);
@@ -106,7 +109,7 @@ test_position(PlayerClient* client, int index)
     PASS();
 
   TEST("moving forward");
-  if(pp.SetSpeed(100,0) < 0)
+  if(pp.SetSpeed(0.1,0) < 0)
     {
       FAIL();
       //return(-1);
@@ -118,7 +121,7 @@ test_position(PlayerClient* client, int index)
     }
   
   TEST("moving backward");
-  if(pp.SetSpeed(-100,0) < 0)
+  if(pp.SetSpeed(-0.1,0) < 0)
     {
       FAIL();
       //return(-1);
@@ -130,7 +133,7 @@ test_position(PlayerClient* client, int index)
     }
   
   TEST("moving left");
-  if(pp.SetSpeed(0,100,0) < 0)
+  if(pp.SetSpeed(0,0.1,0) < 0)
     {
       FAIL();
       //return(-1);
@@ -142,7 +145,7 @@ test_position(PlayerClient* client, int index)
     }
   
   TEST("moving right");
-  if(pp.SetSpeed(0,-100,0) < 0)
+  if(pp.SetSpeed(0,-0.1,0) < 0)
     {
       FAIL();
       //return(-1);
@@ -154,7 +157,7 @@ test_position(PlayerClient* client, int index)
     }
   
   TEST("turning right");
-  if(pp.SetSpeed(0,-25) < 0)
+  if(pp.SetSpeed(0,DTOR(-25.0)) < 0)
     {
       FAIL();
       //return(-1);
@@ -166,7 +169,7 @@ test_position(PlayerClient* client, int index)
     }
 
   TEST("turning left");
-  if(pp.SetSpeed(0,25) < 0)
+  if(pp.SetSpeed(0,DTOR(25.0)) < 0)
     {
       FAIL();
       //return(-1);
@@ -178,7 +181,7 @@ test_position(PlayerClient* client, int index)
     }
 
   TEST("moving left and anticlockwise (testing omnidrive)");
-  if( pp.SetSpeed( 0, 100, 45 ) < 0 )
+  if( pp.SetSpeed( 0, 0.1, DTOR(45.0) ) < 0 )
     {
       FAIL();
       //return(-1);
@@ -191,7 +194,7 @@ test_position(PlayerClient* client, int index)
   
   
   TEST("moving right and clockwise (testing omnidrive)");
-  if( pp.SetSpeed( 0, -100, -45 ) < 0 )
+  if( pp.SetSpeed( 0, -0.1, DTOR(-45) ) < 0 )
     {
       FAIL();
       //return(-1);

@@ -85,12 +85,12 @@ void LocalizeProxy::FillData(player_msghdr_t hdr, const char* buffer)
     // Unit conversions 
     hypoths[i].mean[0] /= 1000.0;
     hypoths[i].mean[1] /= 1000.0;
-    hypoths[i].mean[2] /= 3600.0;
+    hypoths[i].mean[2] = DTOR(hypoths[i].mean[2]/3600.0);
     hypoths[i].cov[0][0] /= (1000.0 * 1000.0);
     hypoths[i].cov[0][1] /= (1000.0 * 1000.0);
     hypoths[i].cov[1][0] /= (1000.0 * 1000.0);
     hypoths[i].cov[1][1] /= (1000.0 * 1000.0);
-    hypoths[i].cov[2][2] /= (3600.0 * 3600.0);
+    hypoths[i].cov[2][2] = DTOR(hypoths[i].cov[2][2]/(3600.0 * 3600.0));
     hypoths[i].weight /= 1e6;
   }
 }
@@ -103,7 +103,7 @@ LocalizeProxy::SetPose(double pose[3], double cov[3][3])
 
   req.mean[0] = htonl((int)(pose[0] * 1000.0));
   req.mean[1] = htonl((int)(pose[1] * 1000.0));
-  req.mean[2] = htonl((int)(pose[2] * 3600));
+  req.mean[2] = htonl((int)(RTOD(pose[2]) * 3600));
 
   req.cov[0][0] = htonll((int64_t)(cov[0][0] * 1000.0 * 1000.0));
   req.cov[0][1] = htonll((int64_t)(cov[0][1] * 1000.0 * 1000.0));
@@ -115,7 +115,7 @@ LocalizeProxy::SetPose(double pose[3], double cov[3][3])
 
   req.cov[2][0] = 0;
   req.cov[2][1] = 0;
-  req.cov[2][2] = htonll((int64_t)(cov[2][2] * 3600 * 3600));
+  req.cov[2][2] = htonll((int64_t)(RTOD(cov[2][2]) * 3600 * 3600));
 
   return(client->Request(m_device_id,(const char*)&req,sizeof(req)));
 }

@@ -69,12 +69,12 @@ void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
   for(unsigned short i = 0; i < count && i < PLAYER_FIDUCIAL_MAX_SAMPLES; i++)
   {
     beacons[i].id = ntohs(data->fiducials[i].id);
-    beacons[i].pose[0] = (short)ntohs(data->fiducials[i].pose[0]);
-    beacons[i].pose[1] = (short)ntohs(data->fiducials[i].pose[1]);
-    beacons[i].pose[2] = (short) ntohs(data->fiducials[i].pose[2]);
-    beacons[i].upose[0] = (short)ntohs(data->fiducials[i].upose[0]);
-    beacons[i].upose[1] = (short)ntohs(data->fiducials[i].upose[1]);
-    beacons[i].upose[2] = (short) ntohs(data->fiducials[i].upose[2]);
+    beacons[i].pose[0] = ((int16_t)ntohs(data->fiducials[i].pose[0])) / 1e3;
+    beacons[i].pose[1] = DTOR((double)(int16_t)ntohs(data->fiducials[i].pose[1]));
+    beacons[i].pose[2] = DTOR((double)(int16_t)ntohs(data->fiducials[i].pose[2]));
+    beacons[i].upose[0] = ((int16_t)ntohs(data->fiducials[i].upose[0])) / 1e3;
+    beacons[i].upose[1] = DTOR((double)(int16_t)ntohs(data->fiducials[i].upose[1]));
+    beacons[i].upose[2] = DTOR((double)(int16_t)ntohs(data->fiducials[i].upose[2]));
   }
 }
 
@@ -87,7 +87,7 @@ void FiducialProxy::Print()
   printf("%d\n", count);
   puts("#id\trange\tbear\torient\tr_err\tb_err\to_err");
   for(unsigned short i=0;i<count && i<PLAYER_FIDUCIAL_MAX_SAMPLES;i++)
-    printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
+    printf("%d\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n", 
 	   beacons[i].id, 
 	   beacons[i].pose[0], beacons[i].pose[1], beacons[i].pose[2],
 	   beacons[i].upose[0], beacons[i].upose[1], beacons[i].upose[2]);
@@ -145,11 +145,11 @@ int FiducialProxy::GetConfigure()
       return(-1);
     }
   
-  this->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
-  this->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
-  this->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
-  this->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
-  this->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
+  this->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1e3;
+  this->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1e3;
+  this->pose[2] = DTOR((double)(int16_t) ntohs(config.pose[2]));
+  this->size[0] = ((int16_t) ntohs(config.size[0])) / 1e3;
+  this->size[1] = ((int16_t) ntohs(config.size[1])) / 1e3;
   
   this->fiducial_size[0] = 
     ((int16_t) ntohs(config.fiducial_size[0])) / 1000.0;
