@@ -65,10 +65,6 @@ class DeviceDataTable
     
     // (mostly) internal method for searching list; returns NULL if not found
     DeviceDataEntry* GetDeviceEntry(uint16_t device, uint16_t index);
-    
-    // method for finding sizes of data and command buffers
-    // for various buffers.
-    int GetDeviceSizes(uint16_t device, int* datasize, int* commandsize);
 
     //
     // add a new device to our table.  if there was already an entry
@@ -78,6 +74,10 @@ class DeviceDataTable
     //  returns 0 on success; -1 on failure (likely due to failed malloc())
     int AddDevice(uint16_t device, uint16_t index, uint8_t access, 
                     int data_size, int command_size);
+    
+    // method for finding sizes of data and command buffers
+    // for various buffers.
+    int GetDeviceSizes(uint16_t device, int* datasize, int* commandsize);
 
     //
     //  a convenience function.  checks to see if the device entry exists;

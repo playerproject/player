@@ -162,25 +162,39 @@ uint8_t DeviceDataTable::GetDeviceAccess(uint16_t device, uint16_t index)
 int DeviceDataTable::UpdateAccess(uint16_t device, uint16_t index, 
                                   uint8_t access)
 {
-  int datasize,commandsize;
+    // *** remove 1int datasize,commandsize;
   
   if(GetDeviceEntry(device, index))
   {
     return(SetDeviceAccess(device,index,access));
   }
+  return (-1);
 
+  /*** REMOVE
   // didn't find the device. need to create new one
   if(GetDeviceSizes(device, &datasize, &commandsize) == -1)
     return(-1);
 
   return(AddDevice(device,index, access, datasize, commandsize));
+  */
 }
 
-// internal method for finding sizes of data and command buffers
+
+// method for finding sizes of data and command buffers
 // for various buffers.
 int DeviceDataTable::GetDeviceSizes(uint16_t device, int* datasize, 
                                     int* commandsize)
 {
+  DeviceDataEntry* entry = GetDeviceEntry(device, 0);
+  if (entry == NULL)
+      return (-1);
+
+  *datasize = entry->datasize;
+  *commandsize = entry->commandsize;
+
+  return (0);
+
+  /* *** REMOVE
   switch(device)
   {
     case PLAYER_POSITION_CODE:
@@ -219,5 +233,5 @@ int DeviceDataTable::GetDeviceSizes(uint16_t device, int* datasize,
       return(-1);
   }
   return(0);
+  */
 }
-
