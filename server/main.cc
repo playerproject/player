@@ -1020,7 +1020,7 @@ int main( int argc, char *argv[] )
   struct pollfd *ufds = NULL;
   int num_ufds = 0;
   int protocol = PLAYER_TRANSPORT_TCP;
-  //char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
+  char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 
   global_argc = argc;
   global_argv = argv;
