@@ -762,6 +762,10 @@ parse_config_file(char* fname)
   return(true);
 }
 
+// some drivers use libraries that need the arguments for initialization
+int global_argc;
+char** global_argv;
+
 int main( int argc, char *argv[] )
 {
   char auth_key[PLAYER_KEYLEN] = "";
@@ -775,6 +779,9 @@ int main( int argc, char *argv[] )
   int num_ufds = 0;
   int protocol = PLAYER_TRANSPORT_TCP;
   char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
+
+  global_argc = argc;
+  global_argv = argv;
 
   // Register the available drivers in the driverTable.  
   //

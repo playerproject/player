@@ -4,7 +4,6 @@ AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(src
 
 player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 
-
 #
 # Note to everybody: please do NOT break the following assignment onto
 # separate lines with backslashes.  It makes the link line look like shit and 

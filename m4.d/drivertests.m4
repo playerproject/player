@@ -198,27 +198,19 @@ PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[no],)
 
 PLAYER_ADD_DRIVER([stage],[drivers/stage],[no],[],[],[])
 
-
 dnl Where is Stage-1.4?
 AC_ARG_WITH(stage, [  --with-stage=dir       Location of Stage],
                    STAGE_DIR=$with_stage, STAGE_DIR=$prefix)
 
-dnl Stage needs glib-2.0
-dnl PKG_CHECK_MODULES(GLIB, glib-2.0,,	
-dnl AC_MSG_WARN([no suitable glib-2.0 was found. ]))
-dnl with-stage not specified
+AC_CHECK_LIB(pnm, pnm_init)
 
 STAGE_HEADER=$STAGE_DIR/stage.h
 STAGE_EXTRA_CPPFLAGS="-I$STAGE_DIR"
 STAGE_EXTRA_LDFLAGS="-L$STAGE_DIR -lstageio -lstageworldfile"
-dnl STAGE_EXTRA_CPPFLAGS="-I$STAGE_DIR @GLIB_CFLAGS@"
-dnl STAGE_EXTRA_LDFLAGS="-L$STAGE_DIR -lstageio -lstageworldfile @GLIB_LIBS@"
 
 dnl add the Stage-1.4 driver
 PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
 		  [$STAGE_HEADER],[$STAGE_EXTRA_CPPFLAGS],[$STAGE_EXTRA_LDFLAGS])
-
-
 dnl Where is Gazebo?
 AC_ARG_WITH(gazebo, [  --with-gazebo=dir       Location of Gazebo],
             GAZEBO_DIR=$with_gazebo,GAZEBO_DIR=$prefix)

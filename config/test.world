@@ -33,6 +33,7 @@ position
 (
  name "pioneer"
  #velocity [0.2 0.0 0.5]
+ bitmap "test.pnm" 
 
  #pose [1.0 1.0 20]
  laser( name "sick" size [0.1 0.1] color "blue" )
