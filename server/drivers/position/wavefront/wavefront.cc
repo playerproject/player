@@ -437,7 +437,7 @@ Wavefront::StopPosition()
 void Wavefront::Main() 
 {
   int curr_waypoint;
-  double dist;
+  double dist, angle;
   double wx_odom, wy_odom, wa_odom;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
@@ -503,13 +503,12 @@ void Wavefront::Main()
       this->new_goal = false;
     }
       
-    // TODO: check angle
     dist = sqrt(((this->localize_x - this->target_x) *
                  (this->localize_x - this->target_x)) +
                 ((this->localize_y - this->target_y) *
                  (this->localize_y - this->target_y)));
-    //printf("distance to goal: %f\n", dist);
-    if(dist < this->dist_eps)
+    angle = fabs(this->localize_a - this->target_a);
+    if(dist < this->dist_eps && angle < this->ang_eps)
     {
       // we're at the final target, so stop
       StopPosition();
@@ -527,8 +526,6 @@ void Wavefront::Main()
                    (this->localize_x - this->waypoint_x)) +
                   ((this->localize_y - this->waypoint_y) *
                    (this->localize_y - this->waypoint_y)));
-      //printf("distance to next waypoint: %f\n", dist);
-      // TODO: check angle
       if(dist < this->dist_eps)
       {
         // get next waypoint
