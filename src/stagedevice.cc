@@ -54,6 +54,30 @@ CStageDevice::CStageDevice(void *buffer, size_t data_len, size_t command_len, si
 
 
 ///////////////////////////////////////////////////////////////////////////
+// Initialise the device
+//
+int CStageDevice::Setup()
+{
+    // Set the subscribed flag
+    //
+    m_info_buffer[INFO_SUBSCRIBE_FLAG] = 1;
+    return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Terminate the device
+//
+int CStageDevice::Shutdown()
+{
+    // Reset the subscribed flag
+    //
+    m_info_buffer[INFO_SUBSCRIBE_FLAG] = 0;
+    return 0;
+};
+
+
+///////////////////////////////////////////////////////////////////////////
 // Read data from the device
 //
 int CStageDevice::GetData(unsigned char *data)
@@ -99,4 +123,13 @@ void CStageDevice::PutCommand(unsigned char *cmd , int len)
 //
 void CStageDevice::PutConfig(unsigned char *config, int len)
 {
+    ASSERT((size_t) len <= m_config_len);
+    
+    // Copy the data
+    //
+    memcpy(m_config_buffer, config, len);
+
+    // Set flag to indicate config has been changed
+    //
+    m_info_buffer[INFO_CONFIG_FLAG] = 1;
 }
