@@ -31,17 +31,11 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <vector>
-#include <iostream>
-
 using std::vector;
-using std::cout;
-using std::cerr;
-using std::endl;
 
-#include <psdevice.h>
+#include <device.h>
 #include <drivertable.h>
 #include <player.h>
-
 
 #include "mcl_types.h"
 #include "world_model.h"
@@ -50,13 +44,47 @@ using std::endl;
 #include "clustering.h"
 
 
-class RegularMCL : public PSDevice
+
+class RegularMCL : public CDevice 
 {
     private:
+	// configuration : update speed
+	float frequency;			// "frequency <float>"
 
-	// configuration
-	mcl_config_t config;
+	// configuration : the number of particles
+	unsigned int num_particles;		// "num_particles <int>"
 
+	// configuration : distance sensor
+	mcl_sensor_t sensor_type;		// "sensor_type <string>"
+	int sensor_index;			// "sensor_index <int>"
+	uint16_t sensor_max;			// "sensor_max <int>"
+	uint16_t sensor_num_samples;		// "sensor_num_samples <int>"
+
+	// configuration : motion sensor
+	int motion_index;			// "motion_index <int>"
+
+	// configuration : world model (map)
+	const char *map_file;			// "map <string>"
+	uint16_t map_ppm;			// "map_ppm <int>"
+	uint8_t map_threshold;			// "map_threshold <int>"
+
+	// configuration : sensor model
+	float sm_s_hit;				// "sm_s_hit" <float>
+	float sm_lambda;			// "sm_lambda" <float>
+	float sm_o_small;			// "sm_o_small" <float>
+	float sm_z_hit;				// "sm_z_hit" <float>
+	float sm_z_unexp;			// "sm_z_unexp" <float>
+	float sm_z_max;				// "sm_z_max" <float>
+	float sm_z_rand;			// "sm_z_rand" <float>
+	int sm_precompute;			// "sm_precompute" <int>
+
+	// configuration : action model
+	float am_a1;				// "am_a1" <float>
+	float am_a2;				// "am_a2" <float>
+	float am_a3;				// "am_a3" <float>
+	float am_a4;				// "am_a4" <float>
+
+    protected:
 	// for synchronization
 	double period;
 
@@ -86,14 +114,7 @@ class RegularMCL : public PSDevice
 	// Motion sensor data
 	pose_t p_odometry;			// previous odometry reading
 
-	// MCL result
-	player_localization_data_t mcl_data;	// result
-	pthread_mutex_t mcl_mutex;		// for synchronization
-	void LockHypothesis(void) { pthread_mutex_lock(&mcl_mutex); }
-	void UnlockHypothesis(void) { pthread_mutex_unlock(&mcl_mutex); }
-
     protected:
-
 	// Main function for device thread
 	virtual void Main(void);
 
@@ -102,6 +123,7 @@ class RegularMCL : public PSDevice
 
 	// Reset MCL device
 	void Reset(void);
+
 
 	// Read the configuration of a distance sensor
 	void ReadConfiguration(void);
@@ -112,9 +134,8 @@ class RegularMCL : public PSDevice
 	// Read odometry data from a motion sensor
 	bool ReadOdometry(pose_t& pose);
 
-	//---------------------------------------------------------------------
+	//////////////////////////////////////////////////////////////////////
 	// Monte-Carlo Localization Algorithm
-	//---------------------------------------------------------------------
 	//
 	// [step 1] : draw new samples from the previous PDF
 	void SamplingImportanceResampling(pose_t from, pose_t to);
@@ -125,45 +146,17 @@ class RegularMCL : public PSDevice
 	// [step 3] : construct hypothesis by grouping particles
 	void HypothesisConstruction(player_localization_data_t& data);
 	//
-	//---------------------------------------------------------------------
+	//////////////////////////////////////////////////////////////////////
+
 
     public:
-
 	// Constructor
 	RegularMCL(char* interface, ConfigFile* cf, int section);
 
 	// When the first client subscribes to a device
 	virtual int Setup(void);
-
 	// When the last client unsubscribes from a device
 	virtual int Shutdown(void);
-
-	// When the server thread requested data
-	virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-			       uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-
-
-#ifdef INCLUDE_STAGE
-
-    protected:
-
-	// data coming from Stage
-	stage_data_t stage_data;
-
-	// command going to Stage
-	stage_command_t stage_command;
-
-	// override default parameter values with user preference
-	// specified in a stage world file
-	void LoadStageConfiguration(void);
-
-	// send the current data set to Stage for visualization
-	void SendStageData(player_localization_data_t& data);
-
-	// send a command 'stop update' to Stage
-	inline void StopStageUpdate(void);
-
-#endif
 
 };
 

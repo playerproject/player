@@ -31,7 +31,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <cstring>
 #include <cmath>
 
 using std::ifstream;

@@ -33,96 +33,85 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-
-// to get the current time
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
-// to access the deviceTable
+// so we can access the deviceTable and extract pointers to the sonar
+// and position objects
 #include <devicetable.h>
 extern CDeviceTable* deviceTable;
-
-// to access the use_stage flag
-extern bool use_stage;
+extern int global_playerport; // used to get at devices
 
 
 // constructor
 RegularMCL::RegularMCL(char* interface, ConfigFile* cf, int section)
-    : PSDevice(sizeof(player_localization_data_t),0,10,10)
+    : CDevice(sizeof(player_localization_data_t),0,10,10)
 {
     // load configuration : update speed
-    this->config.frequency = cf->ReadFloat(section, "frequency", 1.0);
+    this->frequency = cf->ReadFloat(section, "frequency", 1.0);
 
     // load configuration : the number of particles
-    this->config.num_particles = cf->ReadInt(section, "num_particles", 5000);
+    this->num_particles = cf->ReadInt(section, "num_particles", 5000);
 
     // load configuration : a distance sensor
     const char *sensor_str = cf->ReadString(section, "sensor_type", "sonar");
     if (strcmp(sensor_str, "sonar") == 0)
-	this->config.sensor_type = PLAYER_MCL_SONAR;
+	this->sensor_type = PLAYER_MCL_SONAR;
     else if (strcmp(sensor_str, "laser") == 0)
-	this->config.sensor_type = PLAYER_MCL_LASER;
+	this->sensor_type = PLAYER_MCL_LASER;
     else
-	this->config.sensor_type = PLAYER_MCL_NOSENSOR;
-    this->config.sensor_index = cf->ReadInt(section, "sensor_index", 0);
-    this->config.sensor_max = cf->ReadInt(section, "sensor_max", 5000);
-    this->config.sensor_num_ranges = cf->ReadInt(section, "sensor_num_ranges", 0);
+	this->sensor_type = PLAYER_MCL_NOSENSOR;
+    this->sensor_index = cf->ReadInt(section, "sensor_index", 0);
+    this->sensor_max = cf->ReadInt(section, "sensor_max", 5000);
+    this->sensor_num_samples = cf->ReadInt(section, "sensor_num_samples", 0);
 
     // load configuration : a motion sensor
-    this->config.motion_index = cf->ReadInt(section, "motion_index", 0);
+    this->motion_index = cf->ReadInt(section, "motion_index", 0);
 
     // load configuration : a world model (map)
-    strcpy(this->config.map_file, cf->ReadString(section, "map", ""));
-    this->config.map_ppm = cf->ReadInt(section, "map_ppm", 10);
-    this->config.map_threshold = cf->ReadInt(section, "map_threshold", 240);
+    this->map_file = cf->ReadString(section, "map", NULL);
+    this->map_ppm = cf->ReadInt(section, "map_ppm", 10);
+    this->map_threshold = cf->ReadInt(section, "map_threshold", 240);
 
     // load configuration : a sensor model
-    this->config.sm_s_hit = cf->ReadFloat(section, "sm_s_hit", 300.0);
-    this->config.sm_lambda = cf->ReadFloat(section, "sm_lambda", 0.001);
-    this->config.sm_o_small = cf->ReadFloat(section, "sm_o_small", 100.0);
-    this->config.sm_z_hit = cf->ReadFloat(section, "sm_z_hit", 50.0);
-    this->config.sm_z_unexp = cf->ReadFloat(section, "sm_z_unexp", 30.0);
-    this->config.sm_z_max = cf->ReadFloat(section, "sm_z_max", 5.0);
-    this->config.sm_z_rand = cf->ReadFloat(section, "sm_z_rand", 200.0);
-    this->config.sm_precompute = cf->ReadInt(section, "sm_precompute", 1);
+    this->sm_s_hit = cf->ReadFloat(section, "sm_s_hit", 300.0);
+    this->sm_lambda = cf->ReadFloat(section, "sm_lambda", 0.001);
+    this->sm_o_small = cf->ReadFloat(section, "sm_o_small", 100.0);
+    this->sm_z_hit = cf->ReadFloat(section, "sm_z_hit", 50.0);
+    this->sm_z_unexp = cf->ReadFloat(section, "sm_z_unexp", 30.0);
+    this->sm_z_max = cf->ReadFloat(section, "sm_z_max", 5.0);
+    this->sm_z_rand = cf->ReadFloat(section, "sm_z_rand", 200.0);
+    this->sm_precompute = cf->ReadInt(section, "sm_precompute", 1);
 
     // load configuration : an action model
-    this->config.am_a1 = cf->ReadFloat(section, "am_a1", 0.01);
-    this->config.am_a2 = cf->ReadFloat(section, "am_a2", 0.0002);
-    this->config.am_a3 = cf->ReadFloat(section, "am_a3", 0.03);
-    this->config.am_a4 = cf->ReadFloat(section, "am_a4", 0.1);
+    this->am_a1 = cf->ReadFloat(section, "am_a1", 0.01);
+    this->am_a2 = cf->ReadFloat(section, "am_a2", 0.0002);
+    this->am_a3 = cf->ReadFloat(section, "am_a3", 0.03);
+    this->am_a4 = cf->ReadFloat(section, "am_a4", 0.1);
 
     // initialize clustering algorithm
-    this->clustering = new MCLClustering(this->config.num_particles);
+    this->clustering = new MCLClustering(this->num_particles);
 }
 
 
 // when the first client subscribes to a device
 int RegularMCL::Setup(void)
 {
-    cerr << "RegularMCL initialising..." << endl;
-
-#ifdef INCLUDE_STAGE
-    if (use_stage) {
-	// override the default parameter values with user preference
-	// specified in a stage world file.
-	this->LoadStageConfiguration();
-    }
-#endif
+    printf("RegularMCL initialising...\n");
 
     // set update speed
-    this->period = 1.0 / this->config.frequency;
+    this->period = 1.0 / this->frequency;
 
     // get the pointer to the distance sensor
     player_device_id_t device;
     device.port = device_id.port;
-    if (this->config.sensor_type == PLAYER_MCL_SONAR) device.code = PLAYER_SONAR_CODE;
-    else if (this->config.sensor_type == PLAYER_MCL_LASER) device.code = PLAYER_LASER_CODE;
+    if (this->sensor_type == PLAYER_MCL_SONAR) device.code = PLAYER_SONAR_CODE;
+    else if (this->sensor_type == PLAYER_MCL_LASER) device.code = PLAYER_LASER_CODE;
     else {
 	PLAYER_ERROR("  invalid distance sensor.");
 	return 1;
     }
-    device.index = this->config.sensor_index;
+    device.index = this->sensor_index;
     this->distance_device = deviceTable->GetDevice(device);
     if (!this->distance_device) {
 	PLAYER_ERROR("  unable to find a distance sensor device");
@@ -141,7 +130,7 @@ int RegularMCL::Setup(void)
     // get the pointer to the motion sensor
     device.port = device_id.port;
     device.code = PLAYER_POSITION_CODE;
-    device.index = this->config.motion_index;
+    device.index = this->motion_index;
     this->motion_device = deviceTable->GetDevice(device);
     if (!this->motion_device) {
 	PLAYER_ERROR("  unable to find a motion sensor device");
@@ -155,32 +144,35 @@ int RegularMCL::Setup(void)
     }
 
     // construct a world model (map)
-    this->map = new WorldModel(this->config.map_file,
-	    		       this->config.map_ppm,
-			       this->config.sensor_max,
-			       this->config.map_threshold);
+    this->map = new WorldModel(this->map_file,
+	    		       this->map_ppm,
+			       this->sensor_max,
+			       this->map_threshold);
     if (! this->map->isLoaded())
-	PLAYER_ERROR1("  cannot load the map file (%s)", this->config.map_file);
+	PLAYER_ERROR1("  cannot load the map file (%s)", this->map_file);
 
     // construct a sensor model
-    this->sensor_model = new MCLSensorModel(this->config.sensor_type,
+    this->sensor_model = new MCLSensorModel(this->sensor_type,
 	    				    this->num_ranges,
 					    this->poses,
-					    this->config.sensor_max,
-					    this->config.sm_s_hit,
-					    this->config.sm_lambda,
-					    this->config.sm_o_small,
-					    this->config.sm_z_hit,
-					    this->config.sm_z_unexp,
-					    this->config.sm_z_max,
-					    this->config.sm_z_rand,
-					    (this->config.sm_precompute)?true:false);
+					    this->sensor_max,
+					    this->sm_s_hit,
+					    this->sm_lambda,
+					    this->sm_o_small,
+					    this->sm_z_hit,
+					    this->sm_z_unexp,
+					    this->sm_z_max,
+					    this->sm_z_rand,
+					    (this->sm_precompute)?true:false);
 
     // construct an action model
-    this->action_model = new MCLActionModel(this->config.am_a1,
-					    this->config.am_a2,
-					    this->config.am_a3,
-					    this->config.am_a4);
+    this->action_model = new MCLActionModel(this->am_a1,
+					    this->am_a2,
+					    this->am_a3,
+					    this->am_a4);
+
+    // initialize particles
+    this->Reset();
 
     // wait until the sensors are ready
     while (this->distance_device->GetNumData(this) == 0)
@@ -188,11 +180,8 @@ int RegularMCL::Setup(void)
     while (this->motion_device->GetNumData(this) == 0)
 	usleep(10000);
 
-    // initialize particles
-    this->Reset();
-
     // done
-    cerr << "RegularMCL is ready." << endl;
+    puts("RegularMCL is ready.");
 
     // start the device thread
     StartThread();
@@ -211,13 +200,6 @@ int RegularMCL::Shutdown(void)
     // shutdown MCL device
     StopThread();
 
-#ifdef INCLUDE_STAGE
-    if (use_stage) {
-	// send a command 'stop update' to Stage
-	this->StopStageUpdate();
-    }
-#endif
-
     // delete models
     delete this->map;
     delete this->sensor_model;
@@ -231,71 +213,6 @@ int RegularMCL::Shutdown(void)
     puts("RegularMCL has been shutdown");
 
     return 0;
-}
-
-
-// When the server thread requested data
-size_t RegularMCL::GetData(void* client, unsigned char* dest, size_t len,
-			   uint32_t* timestamp_sec, uint32_t* timestamp_usec)
-{
-    // read the latest hypothesis
-    pose_t p_odometry;
-    player_localization_data_t data;
-    this->LockHypothesis();
-    data = this->mcl_data;
-    p_odometry = this->p_odometry;
-    this->UnlockHypothesis();
-
-    // add the odometry offset
-    pose_t c_odometry;
-    if (this->ReadOdometry(c_odometry)) {
-	int32_t ox = (int32_t)(c_odometry.x - p_odometry.x);
-	int32_t oy = (int32_t)(c_odometry.y - p_odometry.y);
-	int32_t oa = (int32_t)(c_odometry.a - p_odometry.a);
-	for (uint32_t i=0; i<data.num_hypothesis; i++) {
-	    data.hypothesis[i].mean[0] += ox;
-	    data.hypothesis[i].mean[1] += oy;
-	    data.hypothesis[i].mean[2] += oa;
-	}
-    }
-
-#ifdef INCLUDE_STAGE
-    if (use_stage) {
-	// Send visualization data to Stage
-	this->SendStageData(data);
-    }
-#endif
-
-    // byte swapping
-    int num = (int)data.num_hypothesis;
-    data.num_hypothesis = htonl(data.num_hypothesis);
-    for (int i=0; i<num; i++) {
-	data.hypothesis[i].alpha = htonl(data.hypothesis[i].alpha);
-	data.hypothesis[i].mean[0] = (int32_t)htonl(data.hypothesis[i].mean[0]);
-	data.hypothesis[i].mean[1] = (int32_t)htonl(data.hypothesis[i].mean[1]);
-	data.hypothesis[i].mean[2] = (int32_t)htonl(data.hypothesis[i].mean[2]);
-	data.hypothesis[i].cov[0][0] = (int32_t)htonl(data.hypothesis[i].cov[0][0]);
-	data.hypothesis[i].cov[0][1] = (int32_t)htonl(data.hypothesis[i].cov[0][1]);
-	data.hypothesis[i].cov[0][2] = (int32_t)htonl(data.hypothesis[i].cov[0][2]);
-	data.hypothesis[i].cov[1][0] = (int32_t)htonl(data.hypothesis[i].cov[1][0]);
-	data.hypothesis[i].cov[1][1] = (int32_t)htonl(data.hypothesis[i].cov[1][1]);
-	data.hypothesis[i].cov[1][2] = (int32_t)htonl(data.hypothesis[i].cov[1][2]);
-	data.hypothesis[i].cov[2][0] = (int32_t)htonl(data.hypothesis[i].cov[2][0]);
-	data.hypothesis[i].cov[2][1] = (int32_t)htonl(data.hypothesis[i].cov[2][1]);
-	data.hypothesis[i].cov[2][2] = (int32_t)htonl(data.hypothesis[i].cov[2][2]);
-    }
-
-    // store the result
-    len = sizeof(data);
-    memcpy((void*)dest, (void*)&data, len);
-
-    // set the stamp
-    struct timeval time;
-    GlobalTime->GetTime(&time);
-    *timestamp_sec = time.tv_sec;
-    *timestamp_usec = time.tv_usec;
-
-    return len;
 }
 
 
@@ -322,44 +239,41 @@ void RegularMCL::Main(void)
 	{
 	    // collect sensor data
 	    pose_t c_odometry;
-	    if (!this->ReadRanges(this->ranges) || !this->ReadOdometry(c_odometry))
-	    {
+	    if (!this->ReadRanges(this->ranges) || !this->ReadOdometry(c_odometry)) {
 		usleep(100000);
 		continue;		// do nothing until sensors are ready
 	    }
 
 	    // when a robot didn't move, don't update particles
-	    if (c_odometry == this->p_odometry)
-	    {
+	    if (c_odometry == this->p_odometry) {
 		player_localization_data_t data;
 		HypothesisConstruction(data);
-		this->LockHypothesis();
-		this->mcl_data = data;
-		this->UnlockHypothesis();
+		PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
+		last = current;
+		usleep(100);
+		continue;
 	    }
-	    else
-	    {
-		//////////////////////////////////////////////////////////////////
-		// Monte-Carlo Localization Algorithm
-		//
-		// [step 1] : draw new samples from the previous PDF
-		SamplingImportanceResampling(this->p_odometry, c_odometry);
 
-		// [step 2] : update importance factors based on the sensor model
-		ImportanceFactorUpdate(this->ranges);
+	    //////////////////////////////////////////////////////////////////
+	    // Monte-Carlo Localization Algorithm
+	    //
+	    // [step 1] : draw new samples from the previous PDF
+	    SamplingImportanceResampling(this->p_odometry, c_odometry);
 
-		// [step 3] : generate hypothesis by grouping particles
-		player_localization_data_t data;
-		HypothesisConstruction(data);
-		//
-		//////////////////////////////////////////////////////////////////
+	    // [step 2] : update importance factors based on the sensor model
+	    ImportanceFactorUpdate(this->ranges);
 
-		// store the latest result in a local storage
-		this->LockHypothesis();
-		this->mcl_data = data;
-		this->p_odometry = c_odometry;
-		this->UnlockHypothesis();
-	    }
+	    // [step 3] : generate hypothesis by grouping particles
+	    player_localization_data_t data;
+	    HypothesisConstruction(data);
+	    //
+	    //////////////////////////////////////////////////////////////////
+
+	    // remember the current odometry information
+	    this->p_odometry = c_odometry;
+
+	    // Make data available
+	    PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
 
 	    // remember when MCL is performed last time
 	    last = current;
@@ -374,154 +288,146 @@ void RegularMCL::Main(void)
 // Process configuration requests.
 void RegularMCL::UpdateConfig(void)
 {
-  int len;
-  void *client;
-  static char buffer[PLAYER_MAX_REQREP_SIZE];
+    int len;
+    void *client;
+    static char buffer[PLAYER_MAX_REQREP_SIZE];
   
-  while ((len = GetConfig(&client, &buffer, sizeof(buffer))))
-  {
-    switch (buffer[0])
+    while ((len = GetConfig(&client, &buffer, sizeof(buffer))))
     {
+	switch (buffer[0])
+	{
 	    case PLAYER_LOCALIZATION_RESET_REQ:
 	    {
-        player_localization_reset_t reset;
-        // check if the config request is valid
-        if (len != sizeof(player_localization_reset_t))
-        {
-          PLAYER_ERROR2("config request len is invalid (%d != %d)",
-                        len, sizeof(reset));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
-        // reset MCL device
-        this->Reset();
-        // send an acknowledgement to the client
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &reset, sizeof(reset)) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
+		player_localization_reset_t reset;
+		// check if the config request is valid
+		if (len != sizeof(player_localization_reset_t))
+		{
+		    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(reset));
+		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+			PLAYER_ERROR("PutReply() failed");
+		    continue;
+		}
+		// reset MCL device
+		this->Reset();
+		// send an acknowledgement to the client
+	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &reset, sizeof(reset)) != 0)
+		    PLAYER_ERROR("PutReply() failed");
+		break;
 	    }
 
 	    case PLAYER_LOCALIZATION_GET_CONFIG_REQ:
 	    {
-        player_localization_config_t config;
-        // check if the config request is valid
-        if (len != sizeof(config.subtype))
-        {
-          PLAYER_ERROR2("config request len is invalid (%d != %d)",
-                        len, sizeof(config.subtype));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
-        // load configuration info
-        config.num_particles = htonl(this->config.num_particles);
-        // send the information to the client
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
+		player_localization_config_t config;
+		// check if the config request is valid
+		if (len != sizeof(config.subtype))
+		{
+		    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config.subtype));
+		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+			PLAYER_ERROR("PutReply() failed");
+		    continue;
+		}
+		// load configuration info
+		config.num_particles = htonl(this->num_particles);
+		// send the information to the client
+	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+		    PLAYER_ERROR("PutReply() failed");
+		break;
 	    }
 
 	    case PLAYER_LOCALIZATION_SET_CONFIG_REQ:
 	    {
-        player_localization_config_t config;
-        // check if the config request is valid
-        if (len != sizeof(player_localization_config_t))
-        {
-          PLAYER_ERROR2("config request len is invalid (%d != %d)",
-                        len, sizeof(config));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
-        // change the current configuration
-        memcpy(&config, buffer, sizeof(config));
-        this->config.num_particles = (uint32_t) ntohl(config.num_particles);
-        // reset the device after changing configuration
-        this->Reset();
-        // send an acknowledgement to the client
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
+		player_localization_config_t config;
+		// check if the config request is valid
+		if (len != sizeof(player_localization_config_t))
+		{
+		    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
+		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+			PLAYER_ERROR("PutReply() failed");
+		    continue;
+		}
+		// change the current configuration
+		memcpy(&config, buffer, sizeof(config));
+		this->num_particles = (uint32_t) ntohl(config.num_particles);
+		// reset the device after changing configuration
+		this->Reset();
+		// send an acknowledgement to the client
+	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+		    PLAYER_ERROR("PutReply() failed");
+		break;
 	    }
 
 	    case PLAYER_LOCALIZATION_GET_MAP_HDR_REQ:
 	    {
-        player_localization_map_header_t map_header;
-        // check if the config request is valid
-        if (len != sizeof(map_header.subtype)+sizeof(map_header.scale))
-        {
-          PLAYER_ERROR2("config request len is invalid (%d != %d)",
-                        len, sizeof(map_header.subtype)+sizeof(map_header.scale));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
-        // load the size information of map
-        memcpy(&map_header, buffer, sizeof(map_header));
-        uint8_t scale = map_header.scale;
-        map_header.width = htonl((uint32_t)(this->map->width / float(scale) + 0.5));
-        map_header.height = htonl((uint32_t)(this->map->height / float(scale) + 0.5));
-        map_header.ppkm = htonl((uint32_t)(this->map->ppm * 1000 / float(scale) + 0.5));
-        // send the information to the client
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &map_header, sizeof(map_header)) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
+		player_localization_map_header_t map_header;
+		// check if the config request is valid
+		if (len != sizeof(player_localization_map_header_t))
+		{
+		    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(map_header));
+		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+			PLAYER_ERROR("PutReply() failed");
+		    continue;
+		}
+		// load the size information of map
+		memcpy(&map_header, buffer, sizeof(map_header));
+		uint8_t scale = map_header.scale;
+		map_header.width = htonl((uint32_t)(this->map->width / float(scale) + 0.5));
+		map_header.height = htonl((uint32_t)(this->map->height / float(scale) + 0.5));
+		map_header.ppkm = htonl((uint32_t)(this->map->ppm * 1000 / float(scale) + 0.5));
+		// send the information to the client
+	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &map_header, sizeof(map_header)) != 0)
+		    PLAYER_ERROR("PutReply() failed");
+		break;
 	    }
 
 	    case PLAYER_LOCALIZATION_GET_MAP_DATA_REQ:
 	    {
-        player_localization_map_data_t map_data;
-        // check if the config request is valid
-        if (len != sizeof(map_data.subtype) +
-            sizeof(map_data.scale) +
-            sizeof(map_data.row))
-        {
-          PLAYER_ERROR2("config request len is invalid (%d != %d)",
-                        len, sizeof(map_data.subtype) +
-                        sizeof(map_data.scale) + sizeof(map_data.row));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
-        // retrieve user input
-        memcpy(&map_data, buffer, sizeof(map_data));
-        uint32_t scale = map_data.scale;
-        uint32_t row = (uint32_t) ntohs(map_data.row);
-        // compute the size of scaled world
-        uint32_t width = (uint32_t)(this->map->width / float(scale) + 0.5);
-        uint32_t height = (uint32_t)(this->map->height / float(scale) + 0.5);
-        // check if the request is valid
-        if (width >= PLAYER_MAX_REQREP_SIZE-4 || row >= height) {
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
-        // fill out the map data
-        memset(map_data.data, 255, sizeof(map_data.data));
-        uint32_t nrows = sizeof(map_data.data) / width;
-        if (row+nrows > height) nrows = height - row;
-        for (uint32_t i=0; i<nrows; i++, row++)
-          for (uint32_t h=row*scale; h<(row+1)*scale; h++)
-            for (uint32_t w=0; w<this->map->width; w++) {
-              uint8_t np = this->map->map[h*this->map->width + w];
-              uint32_t idx = i*width + (uint32_t)(w/float(scale)+0.5);
-              if (map_data.data[idx] > np) map_data.data[idx] = np;
-            }
-        // send the information to the client
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &map_data, sizeof(map_data)) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
+		player_localization_map_data_t map_data;
+		// check if the config request is valid
+		if (len != sizeof(player_localization_map_data_t))
+		{
+		    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(map_data));
+		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+			PLAYER_ERROR("PutReply() failed");
+		    continue;
+		}
+		// retrieve user input
+		memcpy(&map_data, buffer, sizeof(map_data));
+		uint32_t scale = map_data.scale;
+		uint32_t row = (uint32_t) ntohs(map_data.row);
+		// compute the size of scaled world
+		uint32_t width = (uint32_t)(this->map->width / float(scale) + 0.5);
+		uint32_t height = (uint32_t)(this->map->height / float(scale) + 0.5);
+		// check if the request is valid
+		if (width >= PLAYER_MAX_REQREP_SIZE-4 || row >= height) {
+		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+			PLAYER_ERROR("PutReply() failed");
+		    continue;
+		}
+		// fill out the map data
+		memset(map_data.data, 255, sizeof(map_data.data));
+		uint32_t nrows = sizeof(map_data.data) / width;
+		if (row+nrows > height) nrows = height - row;
+		for (uint32_t i=0; i<nrows; i++, row++)
+		    for (uint32_t h=row*scale; h<(row+1)*scale; h++)
+			for (uint32_t w=0; w<this->map->width; w++) {
+			    uint8_t np = this->map->map[h*this->map->width + w];
+			    uint32_t idx = i*width + (uint32_t)(w/float(scale)+0.5);
+			    if (map_data.data[idx] > np) map_data.data[idx] = np;
+			}
+		// send the information to the client
+	        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &map_data, sizeof(map_data)) != 0)
+		    PLAYER_ERROR("PutReply() failed");
+		break;
 	    }
 
 	    default:
 	    {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
+		if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+		    PLAYER_ERROR("PutReply() failed");
+		break;
 	    }
+	}
     }
-  }
 }
 
 
@@ -534,11 +440,11 @@ void RegularMCL::Reset(void)
     float yaw_ratio = float(RAND_MAX) / 360;
 
     // re-generate particles in random
-    this->unit_importance = 1.0f / this->config.num_particles;
+    this->unit_importance = 1.0f / this->num_particles;
     this->particles.clear();
     this->p_buffer.clear();
     particle_t p;
-    for (uint32_t i=0; i<this->config.num_particles; i++) {
+    for (uint32_t i=0; i<this->num_particles; i++) {
 	// random pose
 	p.pose.x = int(rand() / width_ratio);
 	p.pose.y = int(rand() / height_ratio);
@@ -566,7 +472,7 @@ void RegularMCL::ReadConfiguration(void)
     unsigned short reptype;
 
     // read a sonar configuration
-    if (this->config.sensor_type == PLAYER_MCL_SONAR) {
+    if (this->sensor_type == PLAYER_MCL_SONAR) {
 	player_sonar_geom_t config;
 	config.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 	this->distance_device->Request(&(this->distance_device->device_id), this,
@@ -576,16 +482,16 @@ void RegularMCL::ReadConfiguration(void)
 	    PLAYER_ERROR("  could not read a sonar configuration");
 	// store proper settings
 	int pose_count = (uint16_t) ntohs(config.pose_count);
-	if (this->config.sensor_num_ranges) {		// subsampling is required
-	    int subsampling = pose_count / this->config.sensor_num_ranges;
-	    this->num_ranges = this->config.sensor_num_ranges;
-	    this->poses = new pose_t[this->config.sensor_num_ranges];
-	    for (int i=0, s_idx=0; i<this->config.sensor_num_ranges; i++, s_idx+=subsampling) {
+	if (this->sensor_num_samples) {		// subsampling is required
+	    int subsampling = pose_count / this->sensor_num_samples;
+	    this->num_ranges = this->sensor_num_samples;
+	    this->poses = new pose_t[this->sensor_num_samples];
+	    for (int i=0, s_idx=0; i<this->sensor_num_samples; i++, s_idx+=subsampling) {
 		this->poses[i].x = (int16_t) ntohs(config.poses[s_idx][0]);
 		this->poses[i].y = (int16_t) ntohs(config.poses[s_idx][1]);
 		this->poses[i].a = (int16_t) ntohs(config.poses[s_idx][2]);
 	    }
-	    this->ranges = new uint16_t[this->config.sensor_num_ranges];
+	    this->ranges = new uint16_t[this->sensor_num_samples];
 	    this->inc = subsampling;
 	}
 	else {					// use a sensor default
@@ -602,7 +508,7 @@ void RegularMCL::ReadConfiguration(void)
     }
 
     // read a laser configuration
-    else if (this->config.sensor_type == PLAYER_MCL_LASER) {
+    else if (this->sensor_type == PLAYER_MCL_LASER) {
 	player_laser_geom_t geom;
 	geom.subtype = PLAYER_LASER_GET_GEOM;
 	this->distance_device->Request(&(this->distance_device->device_id), this,
@@ -625,16 +531,16 @@ void RegularMCL::ReadConfiguration(void)
 	float min_angle = (int16_t) ntohs(config.min_angle) / 100.0;
 	float resolution = (uint16_t) ntohs(config.resolution) / 100.0;
 	int pose_count = int((max_angle - min_angle) / resolution);
-	if (this->config.sensor_num_ranges) {		// subsampling is required
-	    int subsampling = pose_count / this->config.sensor_num_ranges;
-	    this->num_ranges = this->config.sensor_num_ranges;
-	    this->poses = new pose_t[this->config.sensor_num_ranges];
-	    for (int i=0, s_idx=0; i<this->config.sensor_num_ranges; i++, s_idx+=subsampling) {
+	if (this->sensor_num_samples) {		// subsampling is required
+	    int subsampling = pose_count / this->sensor_num_samples;
+	    this->num_ranges = this->sensor_num_samples;
+	    this->poses = new pose_t[this->sensor_num_samples];
+	    for (int i=0, s_idx=0; i<this->sensor_num_samples; i++, s_idx+=subsampling) {
 		this->poses[i].x = cx;
 		this->poses[i].y = cy;
 		this->poses[i].a = ca + min_angle + (i*resolution*subsampling);
 	    }
-	    this->ranges = new uint16_t[this->config.sensor_num_ranges];
+	    this->ranges = new uint16_t[this->sensor_num_samples];
 	    this->inc = subsampling;
 	}
 	else {					// use a sensor default
@@ -659,7 +565,7 @@ bool RegularMCL::ReadRanges(uint16_t* buffer)
     uint32_t ts_sec, ts_usec;
 
     // retrieve data from a sonar device
-    if (this->config.sensor_type == PLAYER_MCL_SONAR) {
+    if (this->sensor_type == PLAYER_MCL_SONAR) {
 	player_sonar_data_t data;
 	size_t r = this->distance_device->GetData(this, (unsigned char*)&data, sizeof(data),
 						  &ts_sec, &ts_usec);
@@ -672,7 +578,7 @@ bool RegularMCL::ReadRanges(uint16_t* buffer)
     }
 
     // retrieve data from a laser device
-    else if (this->config.sensor_type == PLAYER_MCL_LASER) {
+    else if (this->sensor_type == PLAYER_MCL_LASER) {
 	player_laser_data_t data;
 	size_t r = this->distance_device->GetData(this, (unsigned char*)&data, sizeof(data),
 						  &ts_sec, &ts_usec);
@@ -709,12 +615,12 @@ bool RegularMCL::ReadOdometry(pose_t& pose)
 // draw new sample from the previous PDF
 void RegularMCL::SamplingImportanceResampling(pose_t from, pose_t to)
 {
-    for (uint32_t i=0; i<this->config.num_particles; i++)
+    for (uint32_t i=0; i<this->num_particles; i++)
     {
 	// select a random particle according to the current PDF
 	double selected = rand() / double(RAND_MAX);
 	int start = 0;
-	int end = this->config.num_particles - 1;
+	int end = this->num_particles - 1;
 	while (end - start > 1) {
 	    int center = (end + start) / 2;
 	    if (this->particles[center].cumulative > selected)
@@ -791,108 +697,31 @@ void RegularMCL::HypothesisConstruction(player_localization_data_t& data)
     this->clustering->cluster(this->particles);
 
     // Prepare packet and byte swap
-    uint32_t n = 0;
+    int n = 0;
     for (int i=0; i<PLAYER_LOCALIZATION_MAX_HYPOTHESIS; i++)
     {
 	if (this->clustering->pi[i] > 0.0) {
-	    data.hypothesis[n].alpha = (uint32_t)(this->clustering->pi[i] * 1000000000);
+	    data.hypothesis[n].alpha = htonl((uint32_t)(this->clustering->pi[i] * 1000000000));
 
-	    data.hypothesis[n].mean[0] = (int32_t)(this->clustering->mean[i][0]);
-	    data.hypothesis[n].mean[1] = (int32_t)(this->clustering->mean[i][1]);
-	    data.hypothesis[n].mean[2] = (int32_t)(this->clustering->mean[i][2]);
+	    data.hypothesis[n].mean[0] = htonl((int32_t)(this->clustering->mean[i][0]));
+	    data.hypothesis[n].mean[1] = htonl((int32_t)(this->clustering->mean[i][1]));
+	    data.hypothesis[n].mean[2] = htonl((int32_t)(this->clustering->mean[i][2]));
 
-	    data.hypothesis[n].cov[0][0] = (int32_t)(this->clustering->cov[i][0][0]);
-	    data.hypothesis[n].cov[0][1] = (int32_t)(this->clustering->cov[i][0][1]);
-	    data.hypothesis[n].cov[0][2] = (int32_t)(this->clustering->cov[i][0][2]);
-	    data.hypothesis[n].cov[1][0] = (int32_t)(this->clustering->cov[i][1][0]);
-	    data.hypothesis[n].cov[1][1] = (int32_t)(this->clustering->cov[i][1][1]);
-	    data.hypothesis[n].cov[1][2] = (int32_t)(this->clustering->cov[i][1][2]);
-	    data.hypothesis[n].cov[2][0] = (int32_t)(this->clustering->cov[i][2][0]);
-	    data.hypothesis[n].cov[2][1] = (int32_t)(this->clustering->cov[i][2][1]);
-	    data.hypothesis[n].cov[2][2] = (int32_t)(this->clustering->cov[i][2][2]);
+	    data.hypothesis[n].cov[0][0] = htonl((int32_t)(this->clustering->cov[i][0][0]));
+	    data.hypothesis[n].cov[0][1] = htonl((int32_t)(this->clustering->cov[i][0][1]));
+	    data.hypothesis[n].cov[0][2] = htonl((int32_t)(this->clustering->cov[i][0][2]));
+	    data.hypothesis[n].cov[1][0] = htonl((int32_t)(this->clustering->cov[i][1][0]));
+	    data.hypothesis[n].cov[1][1] = htonl((int32_t)(this->clustering->cov[i][1][1]));
+	    data.hypothesis[n].cov[1][2] = htonl((int32_t)(this->clustering->cov[i][1][2]));
+	    data.hypothesis[n].cov[2][0] = htonl((int32_t)(this->clustering->cov[i][2][0]));
+	    data.hypothesis[n].cov[2][1] = htonl((int32_t)(this->clustering->cov[i][2][1]));
+	    data.hypothesis[n].cov[2][2] = htonl((int32_t)(this->clustering->cov[i][2][2]));
 
 	    n++;
 	}
     }
-    data.num_hypothesis = n;
+    data.num_hypothesis = htonl(n);
 }
-
-
-#ifdef INCLUDE_STAGE
-
-// override default parameter values with user preference specified in a stage world file
-void RegularMCL::LoadStageConfiguration(void)
-{
-    cerr << "   retrieving configuration from Stage... ";
-
-    // send the request to Stage for configuration
-    stage_command.command = MCL_CMD_CONFIG;
-    PutStageCommand((void*)this, (unsigned char*)&stage_command, sizeof(stage_command.command));
-
-    // wait until Stage send a configuration
-    size_t ret;
-    do {
-	usleep(10000);
-        ret = GetStageData((void*)this, (unsigned char*)&stage_data, sizeof(stage_data_t),
-			   NULL, NULL);
-    } while (ret != sizeof(stage_data));
-
-    // override the current default parameters if necessary
-    this->config = stage_data;
-
-    cerr << "done." << endl;
-}
-
-
-// send the current data set to Stage for visualization
-void RegularMCL::SendStageData(player_localization_data_t& data)
-{
-    // it is an update request
-    this->stage_command.command = MCL_CMD_UPDATE;
-
-    // hypothesis set
-    stage_command.num_hypothesis = data.num_hypothesis;
-    for (uint32_t i=0; i<data.num_hypothesis; i++) {
-	stage_command.hypothesis[i].alpha = data.hypothesis[i].alpha / 1000000000.0;
-	stage_command.hypothesis[i].mean[0] = data.hypothesis[i].mean[0];
-	stage_command.hypothesis[i].mean[1] = data.hypothesis[i].mean[1];
-	stage_command.hypothesis[i].mean[2] = data.hypothesis[i].mean[2];
-	stage_command.hypothesis[i].cov[0][0] = data.hypothesis[i].cov[0][0];
-	stage_command.hypothesis[i].cov[0][1] = data.hypothesis[i].cov[0][1];
-	stage_command.hypothesis[i].cov[0][2] = data.hypothesis[i].cov[0][2];
-	stage_command.hypothesis[i].cov[1][0] = data.hypothesis[i].cov[1][0];
-	stage_command.hypothesis[i].cov[1][1] = data.hypothesis[i].cov[1][1];
-	stage_command.hypothesis[i].cov[1][2] = data.hypothesis[i].cov[1][2];
-	stage_command.hypothesis[i].cov[2][0] = data.hypothesis[i].cov[2][0];
-	stage_command.hypothesis[i].cov[2][1] = data.hypothesis[i].cov[2][1];
-	stage_command.hypothesis[i].cov[2][2] = data.hypothesis[i].cov[2][2];
-    }
-
-    // particle set
-    stage_command.num_particles = (this->config.num_particles < MCL_MAX_PARTICLES) ?
-			this->config.num_particles : MCL_MAX_PARTICLES;
-    vector<particle_t>::iterator p = this->particles.begin();
-    for (uint32_t i=0; i<stage_command.num_particles; i++, p++)
-	stage_command.particles[i] = *p;
-
-    // send data
-    size_t size = sizeof(bool) +		// stage_command.request
-		  sizeof(uint32_t) +		// stage_command.num_hypothesis
-		  sizeof(mcl_hypothesis_t) * PLAYER_LOCALIZATION_MAX_HYPOTHESIS +
-		  sizeof(uint32_t) +		// stage_command.num_particles
-		  sizeof(particle_t) * stage_command.num_particles;
-    PutStageCommand((void*)this, (unsigned char*)&stage_command, size);
-}
-
-
-// send a command 'stop update' to Stage
-void RegularMCL::StopStageUpdate(void)
-{
-    stage_command.command = MCL_CMD_STOP;
-    PutStageCommand((void*)this, (unsigned char*)&stage_command, sizeof(stage_command.command));
-}
-
-#endif
 
 
 // a factory create function
