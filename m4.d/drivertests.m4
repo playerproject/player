@@ -232,6 +232,12 @@ PLAYER_ADD_DRIVER([laserbar],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
 
+dnl Service Discovery
+AC_LANG_PUSH(C++)
+PLAYER_ADD_DRIVER([service_adv_lsd], [drivers/service_adv], [yes],
+    [servicediscovery/servicedirectory.hh], [], [-lservicediscovery])
+AC_LANG_POP(C++)
+
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
 AC_ARG_ENABLE(amcl,

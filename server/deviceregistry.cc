@@ -195,6 +195,10 @@ void GzPosition_Register(DriverTable *table);
 void GzLaser_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_SERVICE_ADV_LSD
+void ServiceAdvLSD_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_STAGE1P4
 void StgLaser_Register(DriverTable *table);
 void StgPosition_Register(DriverTable *table);
@@ -233,6 +237,7 @@ player_interface_t interfaces[] = {
   {PLAYER_POSITION3D_CODE, PLAYER_POSITION3D_STRING, "segwayrmp"},
   {PLAYER_TRUTH_CODE, PLAYER_TRUTH_STRING, "passthrough"},
   {PLAYER_GPS_CODE, PLAYER_GPS_STRING, "garminnmea"},
+  {PLAYER_SERVICE_ADV_CODE, PLAYER_SERVICE_ADV_STRING, "service_adv_lsd"},
   {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING, "stg_simulation"},
   {0,NULL,NULL}
 };
@@ -277,6 +282,24 @@ lookup_interface_code(int code, player_interface_t* interface)
 
 
 
+
+/*
+ * looks through the array of interfaces, starting at startpos, for the first
+ * entry that has the given code, and return the name.
+ * leturns 0 when the end of the * array is reached.
+ */
+char*
+lookup_device_name(unsigned int startpos, int code) {
+    if(startpos > sizeof(interfaces))
+            return 0;
+    for(int i = startpos; interfaces[i].code != 0; i++)
+    {
+        if(code == interfaces[i].code) {
+            return interfaces[i].name;
+        }
+    }
+    return 0;
+} 
 
 /*
  * this function will be called at startup.  all available devices should
@@ -436,6 +459,10 @@ register_devices()
 #ifdef INCLUDE_GAZEBO
   GzPosition_Register(driverTable);
   GzLaser_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SERVICE_ADV_LSD
+  ServiceAdvLSD_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_STAGE1P4

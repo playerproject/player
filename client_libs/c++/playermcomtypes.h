@@ -52,7 +52,8 @@
 
 /** Message types (See data structures below) */
 enum MComMessageType {
-    MCOM_MSG_STRING = 1,    ///< Just a string
+    MCOM_MSG_NULL,
+    MCOM_MSG_STRING,        ///< Just a string
     MCOM_MSG_VELOCITY,      ///< Set velocities
     MCOM_MSG_POSITION,      ///< Set goal position and orientation
     MCOM_MSG_HEADING,       ///< Set goal heading
@@ -117,7 +118,8 @@ typedef union {
 
 /** Codes to use with Feedback (See feedback struct above) */
 enum MComFeedbackCode {
-    MCOM_FB_POSTED_GOAL = 1,
+    MCOM_FB_NULL,
+    MCOM_FB_POSTED_GOAL,
     MCOM_FB_REACHED_GOAL,
     MCOM_FB_INVALID_LOCATION,
     MCOM_FB_DIFFICULT_OBSTACLES,

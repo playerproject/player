@@ -222,11 +222,13 @@ SetupSignalHandlers()
     exit(1);
   }
 
+  /*
   if(signal(SIGINT, Interrupt ) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGINT");
     exit(1);
   }
+  */
 
   if(signal(SIGHUP, Interrupt ) == SIG_ERR)
   {
@@ -508,6 +510,26 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
           }
           break;
 
+        case PLAYER_SERVICE_ADV_CODE:
+        {
+            DriverEntry* entry = driverTable->GetDriverEntry("service_adv_lsd");
+            if(!entry) {
+                puts("WARNING: Player support for service_adv_lsd is unavailable!");
+                break;
+            }
+            int section = configFile.AddEntity(globalparent, PLAYER_SERVICE_ADV_STRING);
+            // TODO: maybe get some stuff out of the world file and add it here?
+
+            deviceTable->AddDevice(deviceIO->player_id, PLAYER_SERVICE_ADV_STRING,
+                (char*) deviceIO->robotname, PLAYER_ALL_MODE,
+                (* (entry->initfunc) ) (PLAYER_SERVICE_ADV_STRING, 
+                                        &configFile, section)
+            );
+
+            StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+            break;
+        }
+
         // devices not implemented
         case PLAYER_AUDIO_CODE:   
         case PLAYER_AUDIODSP_CODE:
@@ -728,6 +750,9 @@ parse_config_file(char* fname)
 
       // should this device be "always on"?
       if(configFile.ReadInt(i, "alwayson", 0))
+          tmpdevice->alwayson = true;
+
+      if(tmpdevice->alwayson)
       {
         // In order to allow safe shutdown, we need to create a dummy
         // clientdata object and add it to the clientmanager.  It will then
@@ -752,6 +777,7 @@ parse_config_file(char* fname)
           exit(-1);
         }
       }
+
     }
   }
 
@@ -1082,6 +1108,16 @@ int main( int argc, char *argv[] )
       PLAYER_ERROR("No devices instantiated; perhaps you should supply " 
                   "a configuration file?");
     exit(-1);
+  }
+
+  // give the devices one last chance to get ready, then it's damn the
+  // torpedoes, etc.
+  // WARNING: this feature is experimental and may be removed in the future
+  for(CDeviceEntry* dev = deviceTable->GetFirstEntry(); 
+          dev != 0; 
+          dev = deviceTable->GetNextEntry(dev))
+  {
+      dev->devicep->Prepare();
   }
 
   // main loop: sleep the shortest amount possible, periodically updating

@@ -106,6 +106,13 @@ class CDevice
     // number of current subscriptions
     int subscriptions;
 
+    // If true, device should be "always on", i.e., player will "subscribe" 
+    // at startup, before any clients subscribe. The "alwayson" parameter in
+    // the config file can be used to turn this feature on as well (in which
+    // case this flag will be set to reflect that setting)
+    // WARNING: this feature is experimental and may be removed in the future
+    bool alwayson;
+
     virtual ~CDevice();
 
     // this is the main constructor, used by most non-Stage devices.
@@ -132,10 +139,21 @@ class CDevice
     virtual int Subscribe(void *client);
     virtual int Unsubscribe(void *client);
 
+    // these are called when the first client subscribes, and when the last
+    // client unsubscribes, respectively.
     // these two MUST be implemented by the device itself
     virtual int Setup() = 0;
     virtual int Shutdown() = 0;
 
+
+    // This method is called by Player on each device after all devices have
+    // been loaded, and immediately before entering the main loop, so override
+    // it in your device subclass if you need to do some last minute setup with
+    // Player all set up and ready to go
+    // WANRING: this feature is experimental and may be removed in the future
+    virtual void Prepare() {
+    }
+    
     // these MAY be overridden by the device itself, but then the device
     // is reponsible for Lock()ing and Unlock()ing appropriately
     virtual size_t GetNumData(void* client);

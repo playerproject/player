@@ -79,6 +79,8 @@ CDevice::CDevice(size_t datasize, size_t commandsize,
   // a very nasty heisenbug. boo.
   subscriptions = 0;
 
+  alwayson = false;
+
   pthread_mutex_init(&accessMutex,NULL);
   pthread_mutex_init(&setupMutex,NULL);
   pthread_mutex_init(&condMutex,NULL);
