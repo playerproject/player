@@ -150,9 +150,6 @@ class CP2OSDevice:public CDevice
     void Lock();
     void Unlock();
 
-    void SetupLock();
-    void SetupUnlock();
-
     /* start a thread that will invoke Main() */
     virtual void StartThread();
     /* cancel (and wait for termination) of the thread */

@@ -276,21 +276,9 @@ void CDevice::Unlock()
   pthread_mutex_unlock(&accessMutex);
 }
     
-// these methods are used to control calls to Setup and Shutdown
-void CDevice::SetupLock()
-{
-  pthread_mutex_lock(&setupMutex);
-}
-void CDevice::SetupUnlock()
-{
-  pthread_mutex_unlock(&setupMutex);
-}
-
 int CDevice::Subscribe(void *client)
 {
   int setupResult;
-
-  SetupLock();
 
   if(subscriptions == 0) 
   {
@@ -304,7 +292,6 @@ int CDevice::Subscribe(void *client)
     setupResult = 0;
   }
   
-  SetupUnlock();
   return( setupResult );
 }
 
@@ -312,8 +299,6 @@ int CDevice::Unsubscribe(void *client)
 {
   int shutdownResult;
 
-  SetupLock();
-  
   if(subscriptions == 0) 
     shutdownResult = -1;
   else if ( subscriptions == 1) 
@@ -329,8 +314,6 @@ int CDevice::Unsubscribe(void *client)
     shutdownResult = 0;
   }
   
-  SetupUnlock();
-
   return( shutdownResult );
 }
 

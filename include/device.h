@@ -177,9 +177,6 @@ class CDevice
     virtual void Lock();
     virtual void Unlock();
 
-    // these methods are used to control calls to Setup and Shutdown
-    virtual void SetupLock();
-    virtual void SetupUnlock();
 };
 
 #endif
