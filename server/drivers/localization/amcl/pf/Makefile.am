@@ -5,7 +5,7 @@ noinst_LIBRARIES = @AMCL_PF_LIB@
 EXTRA_LIBRARIES = libpf.a
 
 if INCLUDE_RTKGUI
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I@RTK_DIR@/include `gtk-config --cflags`
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @RTK_CPPFLAGS@
 else
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 endif

@@ -1,5 +1,52 @@
 dnl Here are the tests for inclusion of Player's various device drivers
 
+dnl This macro does all the checking for RTK, taking into account --prefix
+dnl and --with-rtk
+AC_DEFUN([RTK_CHECK],[
+dnl where's RTK?
+AC_ARG_WITH(rtk, [  --with-rtk=dir          Location of RTK],
+RTK_DIR=$with_rtk,
+RTK_DIR=$prefix)
+
+dnl RTK2 uses libjpeg to export images.
+AC_CHECK_HEADER(jpeglib.h,
+  AC_DEFINE(HAVE_JPEGLIB_H,1,[include jpeg support])
+  LIBJPEG="-ljpeg",,)
+AC_SUBST(LIBJPEG)
+
+AC_CHECK_PROG([have_gtk], [gtk-config], [yes], [no])
+if test "x$have_gtk" = "xyes"; then
+  if test "x$RTK_DIR" = "xNONE"; then
+    AC_CHECK_LIB(rtk,rtk_init,with_rtk=yes,with_rtk=no,
+                 [$LIBJPEG `gtk-config --libs gtk gthread`])
+    RTK_CPPFLAGS="`gtk-config --cflags`"
+    RTK_LDADD="-lrtk $LIBJPEG `gtk-config --libs gtk gthread`"
+  elif test ! "x$RTK_DIR" = "xno"; then
+    AC_MSG_CHECKING(for $RTK_DIR/lib/librtk.a)
+    if test -f $RTK_DIR/lib/librtk.a; then
+      with_rtk=yes
+      RTK_CPPFLAGS="-I$RTK_DIR/include `gtk-config --cflags`"
+      RTK_LDADD="-L$RTK_DIR/lib -lrtk $LIBJPEG `gtk-config --libs gtk gthread`"
+      AC_MSG_RESULT(yes)
+    else
+      with_rtk=no
+      AC_MSG_RESULT(no)
+    fi
+  fi
+else
+  with_rtk=no
+fi
+if test "x$with_rtk" = "xno"; then
+  AC_MSG_WARN([***************************************************])
+  AC_MSG_WARN([Couldn't find RTK so I won't build RTK-based GUIs])
+  AC_MSG_WARN([Maybe you should download and install RTK?])
+  AC_MSG_WARN([If you have RTK installed, try --with-rtk=path])
+  AC_MSG_WARN([***************************************************])
+fi
+AM_CONDITIONAL(WITH_RTK, test x$with_rtk = xyes)
+AC_SUBST(RTK_CPPFLAGS)
+AC_SUBST(RTK_LDADD)
+])
 PLAYER_DRIVERS=
 PLAYER_DRIVER_LIBS=
 PLAYER_DRIVER_LIBPATHS=

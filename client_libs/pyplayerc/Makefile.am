@@ -7,7 +7,7 @@ endif
 # use distutils to build
 pythonbuild: dev_blobfinder.c dev_comms.c dev_fiducial.c dev_gps.c dev_laser.c \
              dev_position.c dev_ptz.c dev_truth.c dev_wifi.c pyplayerc.c pyplayerc.h setup.py
-					   @PYTHON_INTERP@ setup.py build
+	@PYTHON_INTERP@ setup.py build
 
 
 EXTRA_DIST = dev_blobfinder.c \
@@ -36,5 +36,5 @@ pythoninstall:
 
 # seems that distutils doesn't support 'uninstall', so we'll hack it manually
 uninstall-local:
-	rm -rf $(libdir)/python
+	rm -rf $(libdir)/python/playerc.so
 
