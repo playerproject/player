@@ -370,6 +370,14 @@ if test "x$enable_gazebo" = "xyes"; then
   fi
 fi
 
+dnl Check for some functions in 0.5
+if test "x$enable_gazebo" = "xyes"; then
+  AC_CHECK_LIB(gazebo,gz_client_wait,have_gz_client_wait=yes)
+  if test "x$have_gz_client_wait" = "xyes"; then
+    AC_DEFINE(HAVE_GZ_CLIENT_WAIT,1,[gz_client_wait is defined])
+  fi
+fi
+
 dnl If gazebo is not built; make sure the correct messages are
 dnl printed
 if test "x$enable_gazebo" = "xyes"; then
