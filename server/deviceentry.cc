@@ -59,6 +59,8 @@ CDeviceEntry::CDeviceEntry(player_device_id_t id, CDevice *device, unsigned char
   this->data = NULL;
   this->command_size = 0;
   this->command = NULL;
+  this->reqqueue = NULL;
+  this->repqueue = NULL;
 
   return;
 }
