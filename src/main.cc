@@ -77,13 +77,7 @@
 #include <fcntl.h>
 
 #ifdef INCLUDE_STAGE
-#include "stagedevice.hh"
-#include <arenalaserdevice.h>
-#include <arenasonardevice.h>
-#include <arenapositiondevice.h>
-#include <arenavisiondevice.h>
-#include <arenaptzdevice.h>
-//#include <arenamiscdevice.h>
+#include <stagedevice.hh>
 #endif
 
 caddr_t arenaIO; // the address for memory mapped IO to arena
