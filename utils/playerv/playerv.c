@@ -49,7 +49,7 @@ void print_usage()
 {
   printf("\nPlayerViewer %s, ", VERSION);
   printf("a visualization tool for the Player robot device server.\n");
-  printf("Usage  : playerv [-h <hostname>] [-p <port>]\n");
+  printf("Usage  : playerv [-h <hostname>] [-p <port>] [-r <robot>]\n");
   printf("                 [--<device>:<index>] [--<device>:<index>] ... \n");
   printf("Example: playerv -p 6665 --position:0 --sonar:0\n");
   printf("\n");
@@ -64,8 +64,8 @@ int main(int argc, char **argv)
   mainwnd_t *mainwnd;
   opt_t *opt;
   const char *host;
+  int port, robot;
   int i;
-  int port;
   int rate;
   int count;
   char section[256];
@@ -97,9 +97,14 @@ int main(int argc, char **argv)
   host = opt_get_string(opt, "", "host", NULL);
   if (!host)
     host = opt_get_string(opt, "", "h", "localhost");
+  
   port = opt_get_int(opt, "", "port", -1);
   if (port < 0)
     port = opt_get_int(opt, "", "p", 6665);
+
+  robot = opt_get_int(opt, "", "robot", -1);
+  if (robot < 0)
+    robot = opt_get_int(opt, "", "r", 0);
 
   // Connect to the server
   printf("Connecting to [%s:%d]\n", host, port);
@@ -122,14 +127,20 @@ int main(int argc, char **argv)
   app = rtk_app_create();
 
   // Create a window for most of the sensor data
-  mainwnd = mainwnd_create(app, host, port);
+  mainwnd = mainwnd_create(app, host, port, robot);
   if (!mainwnd)
     return -1;
   
   // Create a list of available devices, with their gui proxies.
+  device_count = 0;
   for (i = 0; i < client->id_count; i++)
   {
-    device = devices + i;
+    if (client->ids[i].robot != robot)
+      continue;
+
+    device = devices + device_count;
+    
+    device->robot = client->ids[i].robot;
     device->code = client->ids[i].code;
     device->index = client->ids[i].index;
     device->drivername = strdup(client->drivernames[i]);
@@ -147,16 +158,16 @@ int main(int argc, char **argv)
 
     // Create the GUI proxy for this device.
     create_proxy(device, opt, mainwnd, client);
+
+    device_count++;
   }
-  device_count = client->id_count;
     
   // Print the list of available devices.
   printf("Available devices:\n", host, port);
   for (i = 0; i < device_count; i++)
   {
     device = devices + i;
-    snprintf(section, sizeof(section), "%s:%d",
-             playerc_lookup_name(device->code), device->index);
+    snprintf(section, sizeof(section), "%s:%d", playerc_lookup_name(device->code), device->index);
     printf("%-16s %-40s", section, device->drivername);
     if (device->proxy)
     {

@@ -10,7 +10,7 @@
 
 
 // Basic test for wifi device.
-int test_wifi(playerc_client_t *client, int index)
+int test_wifi(playerc_client_t *client, int robot, int index)
 {
   int i, t;
   double i_px, i_py, i_pa;
@@ -20,7 +20,7 @@ int test_wifi(playerc_client_t *client, int index)
 
   printf("device [wifi] index [%d]\n", index);
 
-  device = playerc_wifi_create(client, index);
+  device = playerc_wifi_create(client, robot, index);
 
   TEST("subscribing (read)");
   if (playerc_wifi_subscribe(device, PLAYER_READ_MODE) != 0)

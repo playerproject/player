@@ -10,7 +10,7 @@
 
 
 // Basic sonar test
-int test_sonar(playerc_client_t *client, int index)
+int test_sonar(playerc_client_t *client, int robot, int index)
 {
   int t, i;
   void *rdevice;
@@ -18,7 +18,7 @@ int test_sonar(playerc_client_t *client, int index)
 
   printf("device [sonar] index [%d]\n", index);
 
-  device = playerc_sonar_create(client, index);
+  device = playerc_sonar_create(client, robot, index);
 
   TEST("subscribing (read)");
   if (playerc_sonar_subscribe(device, PLAYER_READ_MODE) == 0)

@@ -39,13 +39,13 @@ void playerc_localization_putdata(playerc_localization_t *device, player_msghdr_
                            player_localization_data_t *data, size_t len);
 
 // Create a new localization proxy
-playerc_localization_t *playerc_localization_create(playerc_client_t *client, int index)
+playerc_localization_t *playerc_localization_create(playerc_client_t *client, int robot, int index)
 {
   playerc_localization_t *device;
 
   device = malloc(sizeof(playerc_localization_t));
   memset(device, 0, sizeof(playerc_localization_t));
-  playerc_device_init(&device->info, client, PLAYER_LOCALIZATION_CODE, index,
+  playerc_device_init(&device->info, client, robot, PLAYER_LOCALIZATION_CODE, index,
                       (playerc_putdata_fn_t) playerc_localization_putdata);
     
   return device;

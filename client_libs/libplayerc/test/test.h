@@ -20,34 +20,34 @@
 #define FAIL() (1 ? printf("\033[41mfail\033[0m\n%s\n", playerc_error_str()), fflush(stdout) : 0)
 
 // Basic test for BPS device.
-int test_bps(playerc_client_t *client, int index);
+int test_bps(playerc_client_t *client, int robot, int index);
 
 // Basic broadcast test
-int test_broadcast(playerc_client_t *client, int index);
+int test_broadcast(playerc_client_t *client, int robot, int index);
 
 // Basic test for GPS device.
-int test_gps(playerc_client_t *client, int index);
+int test_gps(playerc_client_t *client, int robot, int index);
 
 // Basic laser test
-int test_laser(playerc_client_t *client, int index);
+int test_laser(playerc_client_t *client, int robot, int index);
 
 // Basic test for the LBD (laser beacon detector) device.
-int test_lbd(playerc_client_t *client, int index);
+int test_lbd(playerc_client_t *client, int robot, int index);
 
 // Basic test for position device.
-int test_position(playerc_client_t *client, int index);
+int test_position(playerc_client_t *client, int robot, int index);
 
 // Basic test for ptz device.
-int test_ptz(playerc_client_t *client, int index);
+int test_ptz(playerc_client_t *client, int robot, int index);
 
 // Basic test for sonar device.
-int test_sonar(playerc_client_t *client, int index);
+int test_sonar(playerc_client_t *client, int robot, int index);
 
 // Basic test for truth device.
-int test_truth(playerc_client_t *client, int index);
+int test_truth(playerc_client_t *client, int robot, int index);
 
 // Basic vision test.
-int test_vision(playerc_client_t *client, int index);
+int test_vision(playerc_client_t *client, int robot, int index);
 
 
 #endif // TEST_H

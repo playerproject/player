@@ -39,14 +39,14 @@ void power_draw(power_t *power);
 
 // Create a power device
 power_t *power_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                      int index, const char *drivername, int subscribe)
+                      int robot, int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
   power_t *power;
   
   power = malloc(sizeof(power_t));
-  power->proxy = playerc_power_create(client, index);
+  power->proxy = playerc_power_create(client, robot, index);
   power->drivername = strdup(drivername);
   power->datatime = 0;
 

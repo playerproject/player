@@ -34,14 +34,14 @@ PyObject *wifi_new(PyObject *self, PyObject *args)
 {
   pyclient_t *pyclient;
   pywifi_t *pywifi;
-  int index;
+  int robot, index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
+  if (!PyArg_ParseTuple(args, "Oii", &pyclient, &robot, &index))
     return NULL;
 
   pywifi = PyObject_New(pywifi_t, &wifi_type);
   pywifi->client = pyclient->client;
-  pywifi->wifi = playerc_wifi_create(pyclient->client, index);
+  pywifi->wifi = playerc_wifi_create(pyclient->client, robot, index);
   pywifi->wifi->info.user_data = pywifi;
   pywifi->pylinks = PyTuple_New(0);
 

@@ -39,13 +39,13 @@ void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *h
                             player_blobfinder_data_t *data, size_t len);
 
 // Create a new blobfinder proxy
-playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int index)
+playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int robot, int index)
 {
   playerc_blobfinder_t *device;
 
   device = malloc(sizeof(playerc_blobfinder_t));
   memset(device, 0, sizeof(playerc_blobfinder_t));
-  playerc_device_init(&device->info, client, PLAYER_BLOBFINDER_CODE, index,
+  playerc_device_init(&device->info, client, robot, PLAYER_BLOBFINDER_CODE, index,
                       (playerc_putdata_fn_t) playerc_blobfinder_putdata);
     
   return device;

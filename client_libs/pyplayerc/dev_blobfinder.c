@@ -38,14 +38,14 @@ PyObject *blobfinder_new(PyObject *self, PyObject *args)
 {
   pyclient_t *pyclient;
   blobfinder_object_t *blobfinderob;
-  int index;
+  int robot, index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
+  if (!PyArg_ParseTuple(args, "Oii", &pyclient, &robot, &index))
     return NULL;
 
   blobfinderob = PyObject_New(blobfinder_object_t, &blobfinder_type);
   blobfinderob->client = pyclient->client;
-  blobfinderob->blobfinder = playerc_blobfinder_create(pyclient->client, index);
+  blobfinderob->blobfinder = playerc_blobfinder_create(pyclient->client, robot, index);
   blobfinderob->blobfinder->info.user_data = blobfinderob;
   blobfinderob->width = PyInt_FromLong(0);
   blobfinderob->height = PyInt_FromLong(0);

@@ -13,7 +13,7 @@
 #endif
 
 // Basic test for the laser beacon device.
-int test_fiducial(playerc_client_t *client, int index)
+int test_fiducial(playerc_client_t *client, int robot, int index)
 {
   int t, i;
   int bit_count; double bit_width;
@@ -22,7 +22,7 @@ int test_fiducial(playerc_client_t *client, int index)
 
   printf("device [fiducial] index [%d]\n", index);
 
-  device = playerc_fiducial_create(client, index);
+  device = playerc_fiducial_create(client, robot, index);
 
   TEST("subscribing (read/write)");
   if (playerc_fiducial_subscribe(device, PLAYER_ALL_MODE) < 0)

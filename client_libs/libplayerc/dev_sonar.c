@@ -39,13 +39,13 @@ void playerc_sonar_putdata(playerc_sonar_t *device, player_msghdr_t *header,
                            player_sonar_data_t *data, size_t len);
 
 // Create a new sonar proxy
-playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index)
+playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int robot, int index)
 {
   playerc_sonar_t *device;
 
   device = malloc(sizeof(playerc_sonar_t));
   memset(device, 0, sizeof(playerc_sonar_t));
-  playerc_device_init(&device->info, client, PLAYER_SONAR_CODE, index,
+  playerc_device_init(&device->info, client, robot, PLAYER_SONAR_CODE, index,
                       (playerc_putdata_fn_t) playerc_sonar_putdata);
     
   return device;

@@ -10,7 +10,7 @@
 
 
 // Basic test for power device.
-int test_power(playerc_client_t *client, int index)
+int test_power(playerc_client_t *client, int robot, int index)
 {
   int t;
   void *rdevice;
@@ -18,7 +18,7 @@ int test_power(playerc_client_t *client, int index)
 
   printf("device [power] index [%d]\n", index);
 
-  device = playerc_power_create(client, index);
+  device = playerc_power_create(client, robot, index);
 
   TEST("subscribing (read/write)");
   if (playerc_power_subscribe(device, PLAYER_ALL_MODE) != 0)

@@ -39,14 +39,14 @@ PyObject *ptz_new(PyObject *self, PyObject *args)
 {
   pyclient_t *pyclient;
   ptz_object_t *ptzob;
-  int index;
+  int robot, index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
+  if (!PyArg_ParseTuple(args, "Oii", &pyclient, &robot, &index))
     return NULL;
 
   ptzob = PyObject_New(ptz_object_t, &ptz_type);
   ptzob->client = pyclient->client;
-  ptzob->ptz = playerc_ptz_create(pyclient->client, index);
+  ptzob->ptz = playerc_ptz_create(pyclient->client, robot, index);
   ptzob->ptz->info.user_data = ptzob;
   ptzob->pan = PyFloat_FromDouble(0);
   ptzob->tilt = PyFloat_FromDouble(0);
