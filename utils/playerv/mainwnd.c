@@ -80,6 +80,8 @@ void mainwnd_destroy(mainwnd_t *wnd)
 int mainwnd_update(mainwnd_t *wnd)
 {
   // See if we should quit
+  if (rtk_canvas_isclosed(wnd->canvas))
+    return 1;
   if (rtk_menuitem_isactivated(wnd->exit_item))
     return 1;
   return 0;
