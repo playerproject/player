@@ -11,19 +11,19 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 // Basic test for the laser beacon device.
-int test_lbd(playerc_client_t *client, int index)
+int test_fiducial(playerc_client_t *client, int index)
 {
   int t, i;
   int bit_count; double bit_width;
   void *rdevice;
-  playerc_lbd_t *device;
+  playerc_fiducial_t *device;
 
-  printf("device [lbd] index [%d]\n", index);
+  printf("device [fiducial] index [%d]\n", index);
 
-  device = playerc_lbd_create(client, index);
+  device = playerc_fiducial_create(client, index);
 
   TEST("subscribing (read/write)");
-  if (playerc_lbd_subscribe(device, PLAYER_ALL_MODE) < 0)
+  if (playerc_fiducial_subscribe(device, PLAYER_ALL_MODE) < 0)
   {
     FAIL();
     return -1;
@@ -31,13 +31,13 @@ int test_lbd(playerc_client_t *client, int index)
   PASS();
     
   TEST("set configuration");
-  if (playerc_lbd_set_config(device, 5, 0.05) == 0)
+  if (playerc_fiducial_set_config(device, 5, 0.05) == 0)
     PASS();
   else
     FAIL();
 
   TEST("get configuration");
-  if (playerc_lbd_get_config(device, &bit_count, &bit_width) == 0)
+  if (playerc_fiducial_get_config(device, &bit_count, &bit_width) == 0)
     PASS();
   else
     FAIL();
@@ -60,11 +60,11 @@ int test_lbd(playerc_client_t *client, int index)
     {
       PASS();
 
-      printf("lbd: [%d] ", device->beacon_count);
-      for (i = 0; i < MIN(3, device->beacon_count); i++)
-        printf("[%d %6.3f, %6.3f, %6.3f] ", device->beacons[i].id,
-               device->beacons[i].range, device->beacons[i].bearing,
-               device->beacons[i].orient);
+      printf("fiducial: [%d] ", device->item_count);
+      for (i = 0; i < MIN(3, device->item_count); i++)
+        printf("[%d %6.3f, %6.3f, %6.3f] ", device->items[i].id,
+               device->items[i].range, device->items[i].bearing,
+               device->items[i].orient);
       printf("\n");
     }
     else
@@ -75,14 +75,14 @@ int test_lbd(playerc_client_t *client, int index)
   }
   
   TEST("unsubscribing");
-  if (playerc_lbd_unsubscribe(device) != 0)
+  if (playerc_fiducial_unsubscribe(device) != 0)
   {
     FAIL();
     return -1;
   }
   PASS();
   
-  playerc_lbd_destroy(device);
+  playerc_fiducial_destroy(device);
   
   return 0;
 }

@@ -18,7 +18,7 @@
  *
  */
 /***************************************************************************
- * Desc: Laser device proxy
+ * Desc: Scanning range finder (SRF) proxy
  * Author: Andrew Howard
  * Date: 13 May 2002
  * CVS: $Id$
@@ -34,18 +34,18 @@
 
 
 // Local declarations
-void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
-                           player_laser_data_t *data, size_t len);
+void playerc_srf_putdata(playerc_srf_t *device, player_msghdr_t *header,
+                           player_srf_data_t *data, size_t len);
 
-// Create a new laser proxy
-playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index)
+// Create a new srf proxy
+playerc_srf_t *playerc_srf_create(playerc_client_t *client, int index)
 {
-  playerc_laser_t *device;
+  playerc_srf_t *device;
 
-  device = malloc(sizeof(playerc_laser_t));
-  memset(device, 0, sizeof(playerc_laser_t));
-  playerc_device_init(&device->info, client, PLAYER_LASER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_laser_putdata);
+  device = malloc(sizeof(playerc_srf_t));
+  memset(device, 0, sizeof(playerc_srf_t));
+  playerc_device_init(&device->info, client, PLAYER_SRF_CODE, index,
+                      (playerc_putdata_fn_t) playerc_srf_putdata);
 
   device->pose[0] = 0.0;
   device->pose[1] = 0.0;
@@ -57,31 +57,31 @@ playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index)
 }
 
 
-// Destroy a laser proxy
-void playerc_laser_destroy(playerc_laser_t *device)
+// Destroy a srf proxy
+void playerc_srf_destroy(playerc_srf_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
 }
 
 
-// Subscribe to the laser device
-int playerc_laser_subscribe(playerc_laser_t *device, int access)
+// Subscribe to the srf device
+int playerc_srf_subscribe(playerc_srf_t *device, int access)
 {
   return playerc_device_subscribe(&device->info, access);
 }
 
 
-// Un-subscribe from the laser device
-int playerc_laser_unsubscribe(playerc_laser_t *device)
+// Un-subscribe from the srf device
+int playerc_srf_unsubscribe(playerc_srf_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
 }
 
 
 // Process incoming data
-void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
-                           player_laser_data_t *data, size_t len)
+void playerc_srf_putdata(playerc_srf_t *device, player_msghdr_t *header,
+                           player_srf_data_t *data, size_t len)
 {
   int i;
   double r, b, db;
@@ -111,14 +111,14 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
 }
 
 
-// Configure the laser.
-int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double max_angle,
+// Configure the srf.
+int  playerc_srf_set_config(playerc_srf_t *device, double min_angle, double max_angle,
                               int resolution, int intensity)
 {
   int len;
-  player_laser_config_t config;
+  player_srf_config_t config;
 
-  config.subtype = PLAYER_LASER_SET_CONFIG;
+  config.subtype = PLAYER_SRF_SET_CONFIG;
   config.min_angle = htons((unsigned int) (int) (min_angle * 180.0 / M_PI * 100));
   config.max_angle = htons((unsigned int) (int) (max_angle * 180.0 / M_PI * 100));
   config.resolution = htons(resolution);
@@ -135,14 +135,14 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
 }
 
 
-// Get the laser configuration.
-int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double *max_angle,
+// Get the srf configuration.
+int  playerc_srf_get_config(playerc_srf_t *device, double *min_angle, double *max_angle,
                               int *resolution, int *intensity)
 {
   int len;
-  player_laser_config_t config;
+  player_srf_config_t config;
 
-  config.subtype = PLAYER_LASER_GET_CONFIG;
+  config.subtype = PLAYER_SRF_GET_CONFIG;
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
@@ -163,14 +163,14 @@ int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double
 }
 
 
-// Get the laser geometry.  The writes the result into the proxy
+// Get the srf geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int playerc_laser_get_geom(playerc_laser_t *device)
+int playerc_srf_get_geom(playerc_srf_t *device)
 {
   int len;
-  player_laser_geom_t config;
+  player_srf_geom_t config;
 
-  config.subtype = PLAYER_LASER_GET_GEOM;
+  config.subtype = PLAYER_SRF_GET_GEOM;
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));

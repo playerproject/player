@@ -10,19 +10,19 @@
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-// Basic vision test
-int test_vision(playerc_client_t *client, int index)
+// Basic blobfinder test
+int test_blobfinder(playerc_client_t *client, int index)
 {
   int t, i;
   void *rdevice;
-  playerc_vision_t *device;
+  playerc_blobfinder_t *device;
 
-  printf("device [vision] index [%d]\n", index);
+  printf("device [blobfinder] index [%d]\n", index);
 
-  device = playerc_vision_create(client, index);
+  device = playerc_blobfinder_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_vision_subscribe(device, PLAYER_READ_MODE) == 0)
+  if (playerc_blobfinder_subscribe(device, PLAYER_READ_MODE) == 0)
     PASS();
   else
     FAIL();
@@ -38,7 +38,7 @@ int test_vision(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("vision: [%d, %d] [%d] ", device->width, device->height, device->blob_count);
+      printf("blobfinder: [%d, %d] [%d] ", device->width, device->height, device->blob_count);
       for (i = 0; i < MIN(3, device->blob_count); i++)
         printf("[%d : (%d %d) (%d %d %d %d) : %d] ", device->blobs[i].channel,
                device->blobs[i].x, device->blobs[i].y,
@@ -55,12 +55,12 @@ int test_vision(playerc_client_t *client, int index)
   }
   
   TEST("unsubscribing");
-  if (playerc_vision_unsubscribe(device) == 0)
+  if (playerc_blobfinder_unsubscribe(device) == 0)
     PASS();
   else
     FAIL();
   
-  playerc_vision_destroy(device);
+  playerc_blobfinder_destroy(device);
   
   return 0;
 }

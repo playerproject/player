@@ -80,23 +80,23 @@ void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *heade
 {
   device->px = (long) ntohl(data->xpos) / 1000.0;
   device->py = (long) ntohl(data->ypos) / 1000.0;
-  device->pa = (short) ntohs(data->theta) * M_PI / 180.0;
+  device->pa = (short) ntohs(data->yaw) * M_PI / 180.0;
   device->pa = atan2(sin(device->pa), cos(device->pa));
   
-  device->vx = (short) ntohs(data->speed) / 1000.0;
-  device->vy = (short) ntohs(data->sidespeed) / 1000.0;
-  device->va = (short) ntohs(data->turnrate) * M_PI / 180.0;
+  device->vx = (short) ntohs(data->xspeed) / 1000.0;
+  device->vy = (short) ntohs(data->yspeed) / 1000.0;
+  device->va = (short) ntohs(data->yawspeed) * M_PI / 180.0;
   
-  device->stall = data->stalls;
+  device->stall = data->stall;
 }
 
 
 // Enable/disable the motors
 int playerc_position_enable(playerc_position_t *device, int enable)
 {
-  player_position_config_t config;
+  player_p2os_position_config_t config;
 
-  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+  config.request = PLAYER_P2OS_POSITION_MOTOR_POWER_REQ;
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
@@ -139,9 +139,9 @@ int playerc_position_set_speed(playerc_position_t *device, double vx, double vy,
 {
   player_position_cmd_t cmd;
 
-  cmd.speed = htons((int) (vx * 1000.0));
-  cmd.sidespeed = htons((int) (vy * 1000.0));
-  cmd.turnrate = htons((int) (va * 180.0 / M_PI));
+  cmd.xspeed = htons((int) (vx * 1000.0));
+  cmd.yspeed = htons((int) (vy * 1000.0));
+  cmd.yawspeed = htons((int) (va * 180.0 / M_PI));
 
   return playerc_client_write(device->info.client, &device->info, (char*) &cmd, sizeof(cmd));
 }

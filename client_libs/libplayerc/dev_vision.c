@@ -18,7 +18,7 @@
  *
  */
 /***************************************************************************
- * Desc: Vision device proxy
+ * Desc: Visual blob finder proxy
  * Author: Andrew Howard
  * Date: 24 May 2002
  * CVS: $Id$
@@ -34,59 +34,59 @@
 
 
 // Local declarations
-void playerc_vision_putdata(playerc_vision_t *device, player_msghdr_t *header,
-                            player_vision_data_t *data, size_t len);
+void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *header,
+                            player_blobfinder_data_t *data, size_t len);
 
-// Create a new vision proxy
-playerc_vision_t *playerc_vision_create(playerc_client_t *client, int index)
+// Create a new blobfinder proxy
+playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int index)
 {
-  playerc_vision_t *device;
+  playerc_blobfinder_t *device;
 
-  device = malloc(sizeof(playerc_vision_t));
-  memset(device, 0, sizeof(playerc_vision_t));
-  playerc_device_init(&device->info, client, PLAYER_VISION_CODE, index,
-                      (playerc_putdata_fn_t) playerc_vision_putdata);
+  device = malloc(sizeof(playerc_blobfinder_t));
+  memset(device, 0, sizeof(playerc_blobfinder_t));
+  playerc_device_init(&device->info, client, PLAYER_BLOBFINDER_CODE, index,
+                      (playerc_putdata_fn_t) playerc_blobfinder_putdata);
     
   return device;
 }
 
 
-// Destroy a vision proxy
-void playerc_vision_destroy(playerc_vision_t *device)
+// Destroy a blobfinder proxy
+void playerc_blobfinder_destroy(playerc_blobfinder_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
 }
 
 
-// Subscribe to the vision device
-int playerc_vision_subscribe(playerc_vision_t *device, int access)
+// Subscribe to the blobfinder device
+int playerc_blobfinder_subscribe(playerc_blobfinder_t *device, int access)
 {
   return playerc_device_subscribe(&device->info, access);
 }
 
 
-// Un-subscribe from the vision device
-int playerc_vision_unsubscribe(playerc_vision_t *device)
+// Un-subscribe from the blobfinder device
+int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
 }
 
 
 // Process incoming data
-void playerc_vision_putdata(playerc_vision_t *device, player_msghdr_t *header,
-                           player_vision_data_t *data, size_t len)
+void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *header,
+                           player_blobfinder_data_t *data, size_t len)
 {
   int i, ch;
   int offset, count;
-  player_vision_blob_elt_t *src;
-  playerc_vision_blob_t *dest;
+  player_blobfinder_blob_elt_t *src;
+  playerc_blobfinder_blob_t *dest;
 
   device->width = ntohs(data->width);
   device->height = ntohs(data->height);
   
   device->blob_count = 0;
-  for (ch = 0; ch < VISION_NUM_CHANNELS; ch++)
+  for (ch = 0; ch < PLAYER_BLOBFINDER_MAX_CHANNELS; ch++)
   {
     offset = ntohs(data->header[ch].index);
     count = ntohs(data->header[ch].num);
@@ -94,7 +94,7 @@ void playerc_vision_putdata(playerc_vision_t *device, player_msghdr_t *header,
     for (i = 0; i < count; i++)
     {
       src = data->blobs + i + offset;
-      if (device->blob_count >= PLAYERC_VISION_MAX_BLOBS)
+      if (device->blob_count >= PLAYERC_BLOBFINDER_MAX_BLOBS)
         break;
       dest = device->blobs + device->blob_count++;
 

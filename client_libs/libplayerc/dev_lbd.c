@@ -34,18 +34,18 @@
 
 
 // Local declarations
-void playerc_lbd_putdata(playerc_lbd_t *device, player_msghdr_t *header,
-                         player_laserbeacon_data_t *data, size_t len);
+void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *header,
+                              player_fiducial_data_t *data, size_t len);
 
-// Create a new lbd proxy
-playerc_lbd_t *playerc_lbd_create(playerc_client_t *client, int index)
+// Create a new fiducial proxy
+playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index)
 {
-  playerc_lbd_t *device;
+  playerc_fiducial_t *device;
 
-  device = malloc(sizeof(playerc_lbd_t));
-  memset(device, 0, sizeof(playerc_lbd_t));
-  playerc_device_init(&device->info, client, PLAYER_LASERBEACON_CODE, index,
-                      (playerc_putdata_fn_t) playerc_lbd_putdata);
+  device = malloc(sizeof(playerc_fiducial_t));
+  memset(device, 0, sizeof(playerc_fiducial_t));
+  playerc_device_init(&device->info, client, PLAYER_FIDUCIAL_CODE, index,
+                      (playerc_putdata_fn_t) playerc_fiducial_putdata);
 
   device->pose[0] = 0.0;
   device->pose[1] = 0.0;
@@ -55,54 +55,54 @@ playerc_lbd_t *playerc_lbd_create(playerc_client_t *client, int index)
 }
 
 
-// Destroy a lbd proxy
-void playerc_lbd_destroy(playerc_lbd_t *device)
+// Destroy a fiducial proxy
+void playerc_fiducial_destroy(playerc_fiducial_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
 }
 
 
-// Subscribe to the lbd device
-int playerc_lbd_subscribe(playerc_lbd_t *device, int access)
+// Subscribe to the fiducial device
+int playerc_fiducial_subscribe(playerc_fiducial_t *device, int access)
 {
   return playerc_device_subscribe(&device->info, access);
 }
 
 
-// Un-subscribe from the lbd device
-int playerc_lbd_unsubscribe(playerc_lbd_t *device)
+// Un-subscribe from the fiducial device
+int playerc_fiducial_unsubscribe(playerc_fiducial_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
 }
 
 
 // Process incoming data
-void playerc_lbd_putdata(playerc_lbd_t *device, player_msghdr_t *header,
-                         player_laserbeacon_data_t *data, size_t len)
+void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *header,
+                         player_fiducial_data_t *data, size_t len)
 {
   int i;
 
-  device->beacon_count = ntohs(data->count);
+  device->item_count = ntohs(data->count);
 
-  for (i = 0; i < device->beacon_count; i++)
+  for (i = 0; i < device->item_count; i++)
   {
-    device->beacons[i].id = data->beacon[i].id;
-    device->beacons[i].range = ntohs(data->beacon[i].range) / 1000.0;
-    device->beacons[i].bearing = ((int) (int16_t) ntohs(data->beacon[i].bearing)) * M_PI / 180;
-    device->beacons[i].orient = ((int) (int16_t) ntohs(data->beacon[i].orient)) * M_PI / 180;
+    device->items[i].id = data->beacon[i].id;
+    device->items[i].range = ntohs(data->beacon[i].range) / 1000.0;
+    device->items[i].bearing = ((int) (int16_t) ntohs(data->beacon[i].bearing)) * M_PI / 180;
+    device->items[i].orient = ((int) (int16_t) ntohs(data->beacon[i].orient)) * M_PI / 180;
   }
 }
 
 
-// Get the lbd geometry.  The writes the result into the proxy
+// Get the fiducial geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int playerc_lbd_get_geom(playerc_lbd_t *device)
+int playerc_fiducial_get_geom(playerc_fiducial_t *device)
 {
   int len;
-  player_laserbeacon_geom_t config;
+  player_fiducial_geom_t config;
 
-  config.subtype = PLAYER_LASERBEACON_GET_GEOM;
+  config.subtype = PLAYER_FIDUCIAL_GET_GEOM;
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
@@ -123,14 +123,14 @@ int playerc_lbd_get_geom(playerc_lbd_t *device)
 
 
 // Set the device configuration
-int playerc_lbd_set_config(playerc_lbd_t *device,
+int playerc_fiducial_set_config(playerc_fiducial_t *device,
                            int bit_count, double bit_width)
 {
   int len;
-  player_laserbeacon_config_t config;
+  player_laserbarcode_config_t config;
 
   // Get the current device configuration.
-  config.subtype = PLAYER_LASERBEACON_GET_CONFIG;
+  config.subtype = PLAYER_LASERBARCODE_GET_CONFIG;
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype),
                                &config, sizeof(config));
@@ -143,7 +143,7 @@ int playerc_lbd_set_config(playerc_lbd_t *device,
   }
 
   // Change the bit size and the number of bits
-  config.subtype = PLAYER_LASERBEACON_SET_CONFIG;
+  config.subtype = PLAYER_LASERBARCODE_SET_CONFIG;
   config.bit_count = bit_count;
   config.bit_size = htons((uint16_t)(bit_width * 1000));
   len = playerc_client_request(device->info.client, &device->info,
@@ -158,14 +158,14 @@ int playerc_lbd_set_config(playerc_lbd_t *device,
 
 
 // Get the device configuration
-int playerc_lbd_get_config(playerc_lbd_t *device,
+int playerc_fiducial_get_config(playerc_fiducial_t *device,
                            int *bit_count, double *bit_width)
 {
   int len;
-  player_laserbeacon_config_t config;
+  player_laserbarcode_config_t config;
 
   // Get the current device configuration.
-  config.subtype = PLAYER_LASERBEACON_GET_CONFIG;
+  config.subtype = PLAYER_LASERBARCODE_GET_CONFIG;
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
   if (len < 0)

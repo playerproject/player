@@ -61,8 +61,8 @@ int main(int argc, const char *argv[])
     index = (sindex ? atoi(sindex) : 0);
 
     // BPS device
-    if (strcmp(device, "bps") == 0 || strcmp(device, "all") == 0)
-      test_bps(client, index);
+    //if (strcmp(device, "bps") == 0 || strcmp(device, "all") == 0)
+    //  test_bps(client, index);
 
     // Broadcast device
     if (strcmp(device, "broadcast") == 0 || strcmp(device, "all") == 0)
@@ -72,13 +72,13 @@ int main(int argc, const char *argv[])
     if (strcmp(device, "gps") == 0 || strcmp(device, "all") == 0)
       test_gps(client, index);
 
-    // Laser device
-    if (strcmp(device, "laser") == 0 || strcmp(device, "all") == 0)
-      test_laser(client, index);
+    // SRF device
+    if (strcmp(device, "srf") == 0 || strcmp(device, "all") == 0)
+      test_srf(client, index);
 
-    // LBD (laser beacon detector) device
-    if (strcmp(device, "lbd") == 0 || strcmp(device, "all") == 0)
-      test_lbd(client, index);
+    // Fiducial detector
+    if (strcmp(device, "fiducial") == 0 || strcmp(device, "all") == 0)
+      test_fiducial(client, index);
 
     // Position device
     if (strcmp(device, "position") == 0 || strcmp(device, "all") == 0)
@@ -88,17 +88,17 @@ int main(int argc, const char *argv[])
     if (strcmp(device, "ptz") == 0 || strcmp(device, "all") == 0)
       test_ptz(client, index);
 
-    // Sonar device
-    if (strcmp(device, "sonar") == 0 || strcmp(device, "all") == 0)
-      test_sonar(client, index);
+    // FRF device
+    if (strcmp(device, "frf") == 0 || strcmp(device, "all") == 0)
+      test_frf(client, index);
 
     // Truth device
     if (strcmp(device, "truth") == 0 || strcmp(device, "stage") == 0)
       test_truth(client, index);
 
-    // Vision device
-    if (strcmp(device, "vision") == 0 || strcmp(device, "all") == 0)
-      test_vision(client, index);
+    // Blobfinder device
+    if (strcmp(device, "blobfinder") == 0 || strcmp(device, "all") == 0)
+      test_blobfinder(client, index);
     
     free(arg);
   }
