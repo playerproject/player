@@ -40,12 +40,14 @@
  * Default colors
  ***************************************************************************/
 
-#define COLOR_POSITION_ROBOT     0xC00000
-#define COLOR_POSITION_CONTROL   0xFF0000
 #define COLOR_LASER_SCAN         0x0000C0
 #define COLOR_LBD_BEACON         0x0000C0
+#define COLOR_POSITION_ROBOT     0xC00000
+#define COLOR_POSITION_CONTROL   0xFF0000
 #define COLOR_PTZ_DATA           0x00C000
 #define COLOR_PTZ_CMD            0x00C000
+#define COLOR_SONAR              0xC0C080
+#define COLOR_SONAR_SCAN         0xC0C080
 
 /***************************************************************************
  * Top-level GUI elements
@@ -250,6 +252,39 @@ void ptz_update(ptz_t *ptz);
 
 
 /***************************************************************************
+ * Sonar device
+ ***************************************************************************/
+
+// Sonar device info
+typedef struct
+{
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+
+  // Figures for drawing the sonar scan
+  rtk_fig_t *scan_fig[16];
+  
+  // Sonar device proxy
+  playerc_sonar_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+  
+} sonar_t;
+
+
+// Create a sonar device
+sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+
+// Destroy a sonar device
+void sonar_destroy(sonar_t *sonar);
+
+// Update a sonar device
+void sonar_update(sonar_t *sonar);
+
+
+/***************************************************************************
  * Vision device
  ***************************************************************************/
 
@@ -268,9 +303,6 @@ typedef struct
   
   // Timestamp on most recent data
   double datatime;
-
-  // Image dimensions
-  int width, height;
   
 } vision_t;
 

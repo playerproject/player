@@ -751,6 +751,31 @@ CP2OSDevice::Main()
           if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
             PLAYER_ERROR("failed to PutReply");
           break;
+
+        case PLAYER_SONAR_GET_GEOM:
+          /* Return the sonar geometry. */
+          if(config_size != 1)
+          {
+            puts("Arg get sonar geom is wrong size; ignoring");
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+              PLAYER_ERROR("failed to PutReply");
+            break;
+          }
+
+          player_sonar_geom_t geom;
+          geom.subtype = PLAYER_SONAR_GET_GEOM;
+          for (int i = 0; i < PLAYER_NUM_SONAR_SAMPLES; i++)
+          {
+            double *pose = PlayerRobotParams[param_idx].Sonar.pose[i];
+            geom.pose[i][0] = htons((short) (pose[0]));
+            geom.pose[i][1] = htons((short) (pose[1]));
+            geom.pose[i][2] = htons((short) (pose[2]));
+          }
+          
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)))
+            PLAYER_ERROR("failed to PutReply");
+          break;
+          
         case PLAYER_POSITION_MOTOR_POWER_REQ:
           /* motor state change request 
            *   1 = enable motors

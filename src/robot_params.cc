@@ -210,6 +210,10 @@ RobotParams_Accessories_t p2dx_Accessories =
 RobotParams_Sonar_t p2dx_Sonar = 
 {
   16,
+  {
+    {115, 130, 90},
+    {155, 115, 50},
+  },
 };
 
 RobotParams_General_t p2it_General = 

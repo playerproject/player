@@ -61,7 +61,7 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, imagewnd_t *imagewnd, opt_t *opt,
   }
 
   // Construct the menu
-  snprintf(label, sizeof(label), "PTZ %d", index);
+  snprintf(label, sizeof(label), "ptz %d", index);
   ptz->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   ptz->subscribe_item = rtk_menuitem_create(ptz->menu, "Subscribe", 1);
   ptz->enable_item = rtk_menuitem_create(ptz->menu, "Enable", 1);

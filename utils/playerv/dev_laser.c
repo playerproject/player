@@ -40,48 +40,18 @@ void laser_draw(laser_t *laser);
 laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index)
 {
   int subscribe;
-  double ox, oy, oa;
   char label[64];
   char section[64];
   laser_t *laser;
   
   laser = malloc(sizeof(laser_t));
-
   laser->proxy = playerc_laser_create(client, index);
   laser->datatime = 0;
 
   snprintf(section, sizeof(section), "laser:%d", index);
 
-  // Get laser geometry
-  // TESTING
-  if (index == 1)
-  {
-    ox = 0;
-    oy = 0;
-    oa = M_PI;
-  }
-  else
-  {
-    ox = 0;
-    oy = 0;
-    oa = 0;
-  }
-
-  // Set initial device state
-  subscribe = opt_get_int(opt, section, "", 0);
-  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
-  if (subscribe)
-  {
-    if (playerc_laser_subscribe(laser->proxy, PLAYER_READ_MODE) != 0)
-      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-  }
-
-  // Construct figures
-  laser->scan_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
-  rtk_fig_origin(laser->scan_fig, ox, oy, oa);
-    
   // Construct the menu
-  snprintf(label, sizeof(label), "Laser %d", index);
+  snprintf(label, sizeof(label), "laser %d", index);
   laser->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   laser->subscribe_item = rtk_menuitem_create(laser->menu, "Subscribe", 1);
   laser->res025_item = rtk_menuitem_create(laser->menu, "0.25 deg resolution", 1);
@@ -89,8 +59,13 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, 
   laser->res100_item = rtk_menuitem_create(laser->menu, "1.00 deg resolution", 1);
 
   // Set the initial menu state
-  rtk_menuitem_check(laser->subscribe_item, laser->proxy->info.subscribed);
+  subscribe = opt_get_int(opt, section, "", 0);
+  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
+  rtk_menuitem_check(laser->subscribe_item, subscribe);
 
+  // Construct figures
+  laser->scan_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
+  
   return laser;
 }
 
@@ -121,8 +96,19 @@ void laser_update(laser_t *laser)
   if (rtk_menuitem_ischecked(laser->subscribe_item))
   {
     if (!laser->proxy->info.subscribed)
+    {
       if (playerc_laser_subscribe(laser->proxy, PLAYER_READ_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+
+      // Get the laser geometry
+      if (playerc_laser_get_geom(laser->proxy) != 0)
+        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+      
+      rtk_fig_origin(laser->scan_fig,
+                     laser->proxy->pose[0],
+                     laser->proxy->pose[1],
+                     laser->proxy->pose[2]);
+    }
   }
   else
   {
@@ -198,7 +184,8 @@ void laser_draw(laser_t *laser)
   rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_SCAN);
 
   // Draw in the laser itself
-  rtk_fig_rectangle(laser->scan_fig, 0, 0, 0, 0.15, 0.15, 0);
+  rtk_fig_rectangle(laser->scan_fig, 0, 0, 0,
+                    laser->proxy->size[0], laser->proxy->size[1], 0);
 
   // Draw in the range scan
   for (i = 0; i < laser->proxy->scan_count; i++)

@@ -71,6 +71,9 @@ CVisionDevice::CVisionDevice(int argc, char** argv)
   acts_version = DEFAULT_ACTS_VERSION;
   portnum=DEFAULT_ACTS_PORT;
 
+  this->width = 160;
+  this->height = 120;
+
   for(int i=0;i<argc;i++)
   {
     if(!strcmp(argv[i],"port"))
@@ -348,13 +351,12 @@ CVisionDevice::Main()
 
   // we'll transform the data into this structured buffer
   player_vision_data_t local_data;
-  
+
   // first, we'll read into these two temporary buffers
   uint8_t acts_hdr_buf[sizeof(local_data.header)];
   uint8_t acts_blob_buf[sizeof(local_data.blobs)];
 
   char acts_request_packet = ACTS_REQUEST_PACKET;
-
 
   /* make sure we aren't canceled at a bad time */
   if(pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL))
@@ -372,7 +374,11 @@ CVisionDevice::Main()
   {
     // clean our buffers
     bzero(&local_data,sizeof(local_data));
-
+    
+    // put in some stuff that doesnt change
+    local_data.width = htons(this->width);
+    local_data.height = htons(this->height);
+    
     /* test if we are supposed to cancel */
     pthread_testcancel();
 

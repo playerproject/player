@@ -39,9 +39,9 @@ imagewnd_t *imagewnd_create(rtk_app_t *app, const char *host, int port)
   wnd->canvas = rtk_canvas_create(app);
 
   // Set up the canvas
-  rtk_canvas_size(wnd->canvas, 256, 256);
+  rtk_canvas_size(wnd->canvas, 320, 240);
   rtk_canvas_scale(wnd->canvas, 1, -1);
-  rtk_canvas_origin(wnd->canvas, 128, 128);
+  rtk_canvas_origin(wnd->canvas, 320/2, 240/2);
 
   snprintf(title, sizeof(title), "PlayerViewer %s:%d (image)", host, port);
   rtk_canvas_title(wnd->canvas, title);

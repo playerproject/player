@@ -131,6 +131,10 @@ class CLaserDevice : public CDevice
     
   protected:
 
+    // Laser pose in robot cs.
+    double pose[3];
+    double size[2];
+    
     // Name of device used to communicate with the laser
     char device_name[MAX_FILENAME_SIZE];
     

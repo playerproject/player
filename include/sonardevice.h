@@ -37,9 +37,11 @@ class CSonarDevice: public CP2OSDevice
    {
      return((CDevice*)(new CSonarDevice(argc,argv)));
    }
+
    CSonarDevice(int argc, char** argv):CP2OSDevice(argc, argv){}
-   size_t GetData( unsigned char *, size_t maxsize,
-                   uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+   
+   virtual size_t GetData( unsigned char *, size_t maxsize,
+                           uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
 #endif

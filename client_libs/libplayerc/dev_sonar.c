@@ -81,8 +81,39 @@ void playerc_sonar_putdata(playerc_sonar_t *device, player_msghdr_t *header,
 
   assert(sizeof(*data) <= len);
 
-  device->scan_count = 16;
-  for (i = 0; i < 16; i++)
+  device->scan_count = PLAYERC_SONAR_MAX_SCAN;
+  for (i = 0; i < PLAYERC_SONAR_MAX_SCAN; i++)
     device->scan[i] = ntohs(data->ranges[i]) / 1000.0;
 }
+
+
+// Get the sonar geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int playerc_sonar_get_geom(playerc_sonar_t *device)
+{
+  int i, len;
+  player_sonar_geom_t config;
+
+  config.subtype = PLAYER_SONAR_GET_GEOM;
+
+  len = playerc_client_request(device->info.client, &device->info,
+                               &config, sizeof(config.subtype), &config, sizeof(config));
+  if (len < 0)
+    return -1;
+  if (len != sizeof(config))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
+    return -1;
+  }
+
+  for (i = 0; i < PLAYERC_SONAR_MAX_SCAN; i++)
+  {
+    device->pose[i][0] = ((int16_t) ntohs(config.pose[i][0])) / 1000.0;
+    device->pose[i][1] = ((int16_t) ntohs(config.pose[i][1])) / 1000.0;
+    device->pose[i][2] = ((int16_t) ntohs(config.pose[i][2])) * M_PI / 180;
+  }
+
+  return 0;
+}
+
 

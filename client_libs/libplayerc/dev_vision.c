@@ -82,6 +82,9 @@ void playerc_vision_putdata(playerc_vision_t *device, player_msghdr_t *header,
   player_vision_blob_elt_t *src;
   playerc_vision_blob_t *dest;
 
+  device->width = ntohs(data->width);
+  device->height = ntohs(data->height);
+  
   device->blob_count = 0;
   for (ch = 0; ch < VISION_NUM_CHANNELS; ch++)
   {

@@ -65,7 +65,7 @@ lbd_t *lbd_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int 
   lbd->beacon_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
 
   // Construct the menu
-  snprintf(label, sizeof(label), "Lbd %d", index);
+  snprintf(label, sizeof(label), "lbd %d", index);
   lbd->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   lbd->subscribe_item = rtk_menuitem_create(lbd->menu, "Subscribe", 1);
   lbd->bits5_item = rtk_menuitem_create(lbd->menu, "5 bits", 0);
