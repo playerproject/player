@@ -4,10 +4,12 @@ EXTRA_DIST = config.simulation config.p2os
 
 dist-hook:
 	mkdir -p $(top_distdir)/doc
-	#cd $(srcdir)/player-manual && make manual
-	#cp -p $(srcdir)/player-manual/player.ps $(top_distdir)/doc
 	cp -p $(srcdir)/player-manual/player.1 $(top_distdir)/doc
 	cp -p $(srcdir)/player-manual/README $(top_distdir)/doc
+
+#cd $(srcdir)/player-manual && make manual
+#cp -p $(srcdir)/player-manual/player.ps $(top_distdir)/doc
+
 
 #docdir = $(prefix)/share/doc
 install-data-hook:
