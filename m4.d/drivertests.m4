@@ -153,7 +153,7 @@ fi
 
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cmucam2],[drivers/blobfinder/cmucam2],[no],[],[],[])
+PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[yes],[],[],[])
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])

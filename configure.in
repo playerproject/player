@@ -306,10 +306,10 @@ AC_OUTPUT(Makefile
           server/drivers/comms/Makefile 
           server/drivers/blobfinder/Makefile 
           server/drivers/blobfinder/cmvision/Makefile
-          server/drivers/blobfinder/cmucam2/Makefile
           server/drivers/blobfinder/upcbarcode/Makefile
           server/drivers/wifi/Makefile 
           server/drivers/speech/Makefile 
+          server/drivers/mixed/cmucam2/Makefile
           server/drivers/mixed/p2os/Makefile 
           server/drivers/mixed/rflex/Makefile 
           server/drivers/mixed/rwi/Makefile 
