@@ -70,6 +70,8 @@
 #define RMP_MAX_TRANS_VEL_COUNT		1176
 #define RMP_MAX_ROT_VEL_COUNT		1024
 
+#define RMP_GEOM_WHEEL_SEP 0.54
+
 // this holds all the RMP data it gives us
 class rmp_frame_t
 {
@@ -130,7 +132,7 @@ rmp_frame_t::AddPacket(const CanPacket &pkt)
     case RMP_CAN_ID_MSG3:
       left_dot = (int16_t) pkt.GetSlot(0);
       right_dot = (int16_t) pkt.GetSlot(1);
-      yaw_dot = pkt.GetSlot(2);
+      yaw_dot = (int16_t) pkt.GetSlot(2);
       frames = pkt.GetSlot(3);
       break;
 
@@ -677,18 +679,18 @@ SegwayRMP::UpdateData(rmp_frame_t * data_frame)
   // odometry.  Note that we do the same thing here, regardless of 
   // whether we're presenting 2D or 3D position info.
   delta_lin_raw = Diff(this->last_raw_foreaft,
-		       data_frame->foreaft,
-		       this->firstread);
+                       data_frame->foreaft,
+                       this->firstread);
   this->last_raw_foreaft = data_frame->foreaft;
   
   delta_ang_raw = Diff(this->last_raw_yaw,
-		       data_frame->yaw,
-		       this->firstread);
+                       data_frame->yaw,
+                       this->firstread);
   this->last_raw_yaw = data_frame->yaw;
   
   delta_lin = (double)delta_lin_raw / (double)RMP_COUNT_PER_M;
   delta_ang = DTOR((double)delta_ang_raw / 
-		   (double)RMP_COUNT_PER_REV * 360.0);
+                   (double)RMP_COUNT_PER_REV * 360.0);
   
   // First-order odometry integration
   this->odom_x += delta_lin * cos(this->odom_yaw);
@@ -709,9 +711,9 @@ SegwayRMP::UpdateData(rmp_frame_t * data_frame)
   // change from counts/s into mm/s
   data.position_data.xspeed = 
     htonl((uint32_t)rint(((double)data_frame->left_dot +
-			  (double)data_frame->right_dot) /
-			 (double)RMP_COUNT_PER_M_PER_S 
-			 * 1000.0 / 2.0));
+                          (double)data_frame->right_dot) /
+                         (double)RMP_COUNT_PER_M_PER_S 
+                         * 1000.0 / 2.0));
   
   // no side speeds for this bot
   data.position_data.yspeed = 0;
@@ -721,7 +723,7 @@ SegwayRMP::UpdateData(rmp_frame_t * data_frame)
   // positive.
   data.position_data.yawspeed =
     htonl((int32_t)(-rint((double)data_frame->yaw_dot / 
-			  (double)RMP_COUNT_PER_DEG_PER_S)));
+                          (double)RMP_COUNT_PER_DEG_PER_S)));
   
   data.position_data.stall = 0;
   
@@ -733,14 +735,14 @@ SegwayRMP::UpdateData(rmp_frame_t * data_frame)
   
   // normalize angles to [0,360]
   tmp = NORMALIZE(DTOR((double)data_frame->roll /
-		       (double)RMP_COUNT_PER_DEG));
+                       (double)RMP_COUNT_PER_DEG));
   if(tmp < 0)
     tmp += 2*M_PI;
   data.position3d_data.roll = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
   
   // normalize angles to [0,360]
   tmp = NORMALIZE(DTOR((double)data_frame->pitch /
-		       (double)RMP_COUNT_PER_DEG));
+                       (double)RMP_COUNT_PER_DEG));
   if(tmp < 0)
     tmp += 2*M_PI;
   data.position3d_data.pitch = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
@@ -752,28 +754,33 @@ SegwayRMP::UpdateData(rmp_frame_t * data_frame)
   // change from counts/s into mm/s
   data.position3d_data.xspeed = 
     htonl((uint32_t)rint(((double)data_frame->left_dot +
-			  (double)data_frame->right_dot) /
-			 (double)RMP_COUNT_PER_M_PER_S 
-			 * 1000.0 / 2.0));
+                          (double)data_frame->right_dot) /
+                         (double)RMP_COUNT_PER_M_PER_S 
+                         * 1000.0 / 2.0));
   // no side or vertical speeds for this bot
   data.position3d_data.yspeed = 0;
   data.position3d_data.zspeed = 0;
   
   data.position3d_data.rollspeed = 
     htonl((int32_t)rint((double)data_frame->roll_dot /
-			(double)RMP_COUNT_PER_DEG_PER_S
-			* 3600.0));
+                        (double)RMP_COUNT_PER_DEG_PER_S
+                        * 3600.0));
   data.position3d_data.pitchspeed = 
     htonl((int32_t)rint((double)data_frame->pitch_dot /
-			(double)RMP_COUNT_PER_DEG_PER_S
-			* 3600.0));
-  // from counts/sec into arc-seconds/sec.  also, take the additive
+                        (double)RMP_COUNT_PER_DEG_PER_S
+                        * 3600.0));
+  // from counts/sec into millirad/sec.  also, take the additive
   // inverse, since the RMP reports clockwise angular velocity as
   // positive.
+
+  // This one uses left_dot and right_dot, which comes from odometry
   data.position3d_data.yawspeed = 
-    htonl((int32_t)(-rint((double)data_frame->yaw_dot / 
-			  (double)RMP_COUNT_PER_DEG_PER_S
-			  * 3600.0)));
+    htonl((int32_t)(rint((double)(data_frame->right_dot - data_frame->left_dot) /
+                         (RMP_COUNT_PER_M_PER_S * RMP_GEOM_WHEEL_SEP * M_PI) * 1000)));
+  // This one uses yaw_dot, which comes from the IMU
+  //data.position3d_data.yawspeed = 
+  //  htonl((int32_t)(-rint((double)data_frame->yaw_dot / 
+  //                        (double)RMP_COUNT_PER_DEG_PER_S * M_PI / 180 * 1000)));
   
   data.position3d_data.stall = 0;
   
@@ -823,7 +830,6 @@ SegwayRMP::MakeStatusCommand(CanPacket* pkt, uint16_t cmd, uint16_t val)
     rot = RMP_MAX_ROT_VEL_COUNT;
   else if(rot < -RMP_MAX_ROT_VEL_COUNT)
     rot = -RMP_MAX_ROT_VEL_COUNT;
-
 
   // put in the last speed commands as well
   pkt->PutSlot(0,(uint16_t)trans);
@@ -891,10 +897,10 @@ SegwayRMP::MakeVelocityCommand(CanPacket* pkt,
   this->last_yawspeed = yawspeed;
 
   // rotational RMP command \in [-1024, 1024]
-  // this is ripped from rmi_demo... to go from deg/s^2 to counts
-  // deg/s^2 -> count = 1/0.013805056
+  // this is ripped from rmi_demo... to go from deg/s to counts
+  // deg/s -> count = 1/0.013805056
   int16_t rot = (int16_t) rint((double)yawspeed * 
-                               (double)RMP_COUNT_PER_DEG_PER_SS);
+                               (double)RMP_COUNT_PER_DEG_PER_S);
 
   if(rot > RMP_MAX_ROT_VEL_COUNT)
     rot = RMP_MAX_ROT_VEL_COUNT;
