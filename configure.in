@@ -193,7 +193,7 @@ dnl check for the fftw library (by way of one of its headers) and compile
 dnl the fixed tones driver if its found
 AC_ARG_WITH(fixedtones,
 [  --without-fixedtones    Don't compile the fixedtones driver],,
-AC_CHECK_HEADER(rfftw.h, with_fixedtones=yes,,))
+[AC_CHECK_HEADER(rfftw.h, with_fixedtones=yes,,)])
 if test "x$with_fixedtones" = xyes; then
   AC_DEFINE(INCLUDE_FIXEDTONES,1,[include the fixed tones driver])
   FIXEDTONES_LIB="libfixedtones.a"
@@ -208,7 +208,7 @@ dnl check for Mobility (by way of one of its headers) and compile
 dnl the RWI driver if it's found
 AC_ARG_WITH(rwi,
 [  --without-rwi           Don't compile the rwi drivers],,
-AC_CHECK_HEADER(mobilitycomponents_i.h, with_rwi=yes,,))
+[AC_CHECK_HEADER(mobilitycomponents_i.h, with_rwi=yes,,)])
 if test "x$with_rwi" = "xyes"; then
   AC_DEFINE(INCLUDE_RWI,1,[include the RWI driver])
   AC_DEFINE(USE_MOBILITY,1,[use the RWI Mobility interface])
@@ -222,7 +222,7 @@ dnl check for the isense library (by way of one of its headers) and compile
 dnl the Intersense drivers if foune.
 AC_ARG_WITH(isense,
 [  --without-isense        Don't compile the isense drivers],,
-AC_CHECK_HEADER(isense/isense.h, with_isense=yes,,))
+[AC_CHECK_HEADER(isense/isense.h, with_isense=yes,,)])
 if test "x$with_isense" = "xyes"; then
   AC_DEFINE(INCLUDE_ISENSE,1,[include the InterSense driver])
   ISENSE_LIB="libisense.a"
@@ -238,7 +238,7 @@ PYTHON_VERSION=2.2
 AC_ARG_WITH(python,
 [  --without-python        Don't compile the python client libraries],
 with_python=no,
-AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no))
+[AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)])
 AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
 
 
