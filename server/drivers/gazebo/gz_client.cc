@@ -29,6 +29,9 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#define PLAYER_ENABLE_MSG 1
+
+#include "player.h"
 #include "gazebo.h"
 #include "gz_client.h"
 

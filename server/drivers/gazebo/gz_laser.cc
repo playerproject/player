@@ -125,9 +125,9 @@ GzLaser::GzLaser(char* interface, ConfigFile* cf, int section)
 
   // Create an interface
   this->iface = gz_laser_alloc();
-
+  
   this->tsec = this->tusec = 0;
-    
+
   return;
 }
 
@@ -176,11 +176,17 @@ size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
   
   gz_laser_lock(this->iface, 1);
 
-  range_res = 1.0;
+  // Pick the rage resolution to use (1, 10, 100)
+  if (this->iface->data->max_range < 8.192)
+    range_res = 1.0;
+  else if (this->iface->data->max_range < 81.92)
+    range_res = 10.0;
+  else
+    range_res = 100.0;
   
   data.min_angle = htons((int) (this->iface->data->min_angle * 100 * 180 / M_PI));
   data.max_angle = htons((int) (this->iface->data->max_angle * 100 * 180 / M_PI));
-  data.resolution = htons((int) (this->iface->data->resolution * 100 * 180 / M_PI));
+  data.resolution = htons((int) (this->iface->data->res_angle * 100 * 180 / M_PI));
   data.range_res = htons((int) range_res);
   data.range_count = htons((int) (this->iface->data->range_count));
   
