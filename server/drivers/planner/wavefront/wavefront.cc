@@ -698,8 +698,15 @@ Wavefront::SetWaypoint(double wx, double wy, double wa)
 
   // transform to odometric frame
   LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, wx, wy, wa);
+
   // hand down waypoint
   PutPositionCommand(wx_odom, wy_odom, wa_odom);
+
+  // cache this waypoint, odometric coords
+  this->waypoint_odom_x = wx_odom;
+  this->waypoint_odom_y = wy_odom;
+  this->waypoint_odom_a = wa_odom;
+
   this->stopped = false;
 }
 
@@ -852,13 +859,12 @@ void Wavefront::Main()
       // robot gets there and VFH stops, but here we don't realize we're done
       // because the localization heading hasn't changed sufficiently).
       if(this->new_goal ||
-         ((dist < this->dist_eps) &&
-          (!rotate_waypoint ||
-           (fabs(NORMALIZE(this->waypoint_odom_a - this->position_a))
-            < this->ang_eps))))
+         (rotate_waypoint &&
+          (fabs(NORMALIZE(this->waypoint_odom_a - this->position_a))
+           < M_PI/6.0)) ||
+         (!rotate_waypoint && (dist < this->dist_eps)))
       {
         this->new_goal = false;
-
 
         this->newData = true;
         if(this->curr_waypoint == this->waypoint_count)
@@ -891,37 +897,13 @@ void Wavefront::Main()
           this->waypoint_a = angle;
           this->curr_waypoint--;
           rotate_waypoint=true;
-          //printf("adding rotational waypoint: %f,%f,%f\n",
-                 //this->waypoint_x, this->waypoint_y, this->waypoint_a);
         }
         else
           rotate_waypoint=false;
 
-        SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
-        // cache this waypoint, in odometric coords
-        LocalizeToPosition(&this->waypoint_odom_x,
-                           &this->waypoint_odom_y,
-                           &this->waypoint_odom_a,
-                           this->waypoint_x,
-                           this->waypoint_y,
-                           this->waypoint_a);
       }
-
-      // This check causes hangups if the robot is poorly localized and
-      // then becomes better localized while turning.  Why was it here in
-      // the first place?
-      //if(!rotate_waypoint)
-      if(1)
-      {
-        SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
-        // cache this waypoint, in odometric coords
-        LocalizeToPosition(&this->waypoint_odom_x,
-                           &this->waypoint_odom_y,
-                           &this->waypoint_odom_a,
-                           this->waypoint_x,
-                           this->waypoint_y,
-                           this->waypoint_a);
-      }
+      
+      SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
     }
 
 
