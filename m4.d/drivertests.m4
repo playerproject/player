@@ -219,7 +219,10 @@ dnl  fi
 fi
 PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
                   [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
+AC_LANG_SAVE
+AC_LANG_C
 AC_CHECK_LIB(pnm, pnm_init)
+AC_LANG_RESTORE
 
 dnl Where is Gazebo?
 AC_ARG_WITH(gazebo, [  --with-gazebo=dir       Location of Gazebo],
