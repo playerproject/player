@@ -147,6 +147,42 @@ int PlayerClient::Connect(const struct in_addr* addr, int port)
     return(1);
 }
 
+int 
+PlayerClient::ConnectRNS(const char* robotname, const char* hostname, int port)
+{
+  PlayerClient tmppc;
+  int robotport;
+
+  if(tmppc.Connect(hostname, port))
+  {
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr, 
+              "WARNING: couldn't get name service from %s:%d\n",
+              hostname, port);
+    return(-1);
+  }
+
+  if((robotport = tmppc.LookupPort(robotname)) < 0)
+  {
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr, 
+              "WARNING: name service failed at %s:%d\n",
+              hostname, port);
+    return(-1);
+  }
+  if(!robotport)
+  {
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr, 
+              "WARNING: name service at %s:%d couldn't find robot \"%s\"\n",
+              hostname, port, robotname);
+    return(-1);
+  }
+
+  tmppc.Disconnect();
+
+  return(Connect(hostname,robotport));
+}
 
 int PlayerClient::Disconnect()
 {
@@ -410,7 +446,7 @@ int PlayerClient::Authenticate(char* key)
 // use nameservice to get corresponding port for a robot name (only with
 // Stage)
 int
-PlayerClient::LookupPort(char* name)
+PlayerClient::LookupPort(const char* name)
 {
   player_device_id_t id;
   player_device_nameservice_req_t req, rep;

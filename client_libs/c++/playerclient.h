@@ -256,6 +256,13 @@ class PlayerClient
      */
     int Connect(const struct in_addr* addr, int port);
 
+    /** Connect to a robot, based on its name, by using the Player robot name 
+        service (RNS) on the indicated host and port.  Returns 0 on success; 
+        -1 on error.
+     */
+    int ConnectRNS(const char* robotname, const char* hostname="localhost",
+                   int port=PLAYER_PORTNUM);
+
     /** Disconnect from server.\\
         Returns 0 on success; -1 on error.
       */
@@ -348,7 +355,7 @@ class PlayerClient
 
     /** Documentation on LookupPort goes here
      */
-    int LookupPort(char* name);
+    int LookupPort(const char* name);
     
     // proxy list management methods
 
