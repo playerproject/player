@@ -120,7 +120,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             {
               printf("HandleRequests(): got small player_device_req_t: %d\n",
                               real_payloadsize);
-              return;
+              break;
+              //return;
             }
             for(j=sizeof(player_device_ioctl_t);
                 j<payload_size-(sizeof(player_device_req_t)-1);
@@ -141,7 +142,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             {
               printf("HandleRequests(): got wrong size "
                      "player_device_datamode_req_t: %d\n",real_payloadsize);
-              return;
+              break;
             }
             memcpy(&datamode,payload+sizeof(player_device_ioctl_t),
                             sizeof(player_device_datamode_req_t));
@@ -167,7 +168,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             {
               printf("HandleRequests(): got wrong size "
                      "arg for player_data_req: %d\n",real_payloadsize);
-              return;
+              break;
             }
             if(mode != REQUESTREPLY)
               puts("WARNING: got request for data when not in "
