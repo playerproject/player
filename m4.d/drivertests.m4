@@ -1,91 +1,101 @@
 dnl Here are the tests for inclusion of Player's various device drivers
 
-define(PLAYER_DRIVERTESTS, [
+PLAYER_DRIVER_LIBS=
+PLAYER_DRIVER_LIBPATHS=
+PLAYER_DRIVER_EXTRA_LIBS=
 
-dnl the following drivers will install by default
-AC_ARG_WITH(p2os,
-[  --without-p2os          Don't compile the p2os drivers],,
-with_p2os=yes)
-if test "x$with_p2os" = "xyes"; then
-  AC_DEFINE(INCLUDE_P2OS, 1, [[include the P2OS driver]])
-  P2OS_LIB="libp2os.a"
-  P2OS_LIBPATH="drivers/mixed/p2os/libp2os.a"
+dnl This macro can be used to setup the testing and associated autoconf 
+dnl variables and C defines for a device driver.
+dnl
+dnl PLAYER_ADD_DRIVER(name,path,default,[ldadd],[header])
+dnl
+dnl Args:
+dnl   name:    name; driver library should take the name lib<name>.a
+dnl   path:    path, relative to server, to where driver library will be built
+dnl   default: should this driver be included by default? ("yes" or "no")
+dnl   ldadd:   link flags to be added to Player (e.g., "-lgsl -lcblas")
+dnl   header:  a single header file that is required to build the driver
+dnl
+dnl The C define INCLUDE_<name> and the autoconf variable <name>_LIB (with 
+dnl <name> capitalized) will be conditionally defined to be 1 and 
+dnl lib<name>.a, respectively.
+dnl
+AC_DEFUN([PLAYER_ADD_DRIVER], [
+AC_DEFUN([name_caps],translit($1,[a-z],[A-Z]))
+ifelse($3,[yes],
+  [AC_ARG_ENABLE($1, [  --disable-$1   Don't compile the $1 driver],,
+                 enable_$1=yes)],
+  [AC_ARG_ENABLE($1, [  --enable-$1   Compile the $1 driver],,
+                 enable_$1=no)])
+if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
+  AC_CHECK_HEADER($5, enable_$1=yes, enable_$1=no,)
 fi
-AC_SUBST(P2OS_LIB)
-AC_SUBST(P2OS_LIBPATH)
-
-
-AC_ARG_WITH(sick,
-[  --without-sick          Don't compile the sicklms200 driver],,
-with_sick=yes)
-if test "x$with_sick" = "xyes"; then
-  AC_DEFINE(INCLUDE_SICK, 1, [[include the SICK driver]])
-  SICK_LIB="libsicklms200.a"
-  SICK_LIBPATH="drivers/laser/libsicklms200.a"
+if test "x$enable_$1" = "xyes"; then
+  AC_DEFINE([INCLUDE_]name_caps, 1, [include the $1 driver])
+  name_caps[_LIB]=[lib]$1[.a]
+  name_caps[_LIBPATH]=$2/$name_caps[_LIB]
+  name_caps[_EXTRA_LIB]=$4
 fi
-AC_SUBST(SICK_LIB)
-AC_SUBST(SICK_LIBPATH)
-
-AC_ARG_WITH(acts,
-[  --without-acts          Don't compile the acts driver],,
-with_acts=yes)
-if test "x$with_acts" = "xyes"; then
-  AC_DEFINE(INCLUDE_ACTS, 1, [[include the ACTS driver]])
-  ACTS_LIB="libacts.a"
-  ACTS_LIBPATH="drivers/blobfinder/libacts.a"
-fi
-AC_SUBST(ACTS_LIB)
-AC_SUBST(ACTS_LIBPATH)
+AC_SUBST(name_caps[_LIB])
+PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $name_caps[_LIB]"
+PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $name_caps[_LIBPATH]"
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
+])
 
 
-AC_ARG_WITH(festival,
-[  --without-festival      Don't compile the festival driver],,
-with_festival=yes)
-if test "x$with_festival" = "xyes"; then
-  AC_DEFINE(INCLUDE_FESTIVAL, 1, [[include the FESTIVAL driver]])
-  FESTIVAL_LIB="libfestival.a"
-  FESTIVAL_LIBPATH="drivers/speech/libfestival.a"
-fi
-AC_SUBST(FESTIVAL_LIB)
-AC_SUBST(FESTIVAL_LIBPATH)
+AC_DEFUN([PLAYER_DRIVERTESTS], [
 
-AC_ARG_WITH(sony,
-[  --without-sony          Don't compile the sonyevid30 driver],,
-with_sony=yes)
-if test "x$with_sony" = "xyes"; then
-  AC_DEFINE(INCLUDE_SONY, 1, [[include the SONY driver]])
-  SONY_LIB="libsonyevid30.a"
-  SONY_LIBPATH="drivers/ptz/libsonyevid30.a"
-fi
-AC_SUBST(SONY_LIB)
-AC_SUBST(SONY_LIBPATH)
+PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],
+                  ["-L../client_libs/c -lplayercclient"])
 
-AC_ARG_WITH(stage,
-[  --without-stage         Don't compile the stage driver],,
-with_stage=yes)
-if test "x$with_stage" = "xyes"; then
-  AC_DEFINE(INCLUDE_STAGE, 1, [[include the STAGE driver]])
-  STAGE_LIB="libstage.a"
-  STAGE_LIBPATH="drivers/stage/libstage.a"
-fi
-AC_SUBST(STAGE_LIB)
-AC_SUBST(STAGE_LIBPATH)
+PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],)
 
-AC_ARG_WITH(udpbcast,
-[  --without-udpbcast      Don't compile the udpbroadcast driver],,
-with_udpbcast=yes)
-if test "x$with_udpbcast" = "xyes"; then
-  AC_DEFINE(INCLUDE_UDPBCAST, 1, [[include the UDPBCAST driver]])
-  UDPBCAST_LIB="libudpbroadcast.a"
-  UDPBCAST_LIBPATH="drivers/comms/libudpbroadcast.a"
-fi
-AC_SUBST(UDPBCAST_LIB)
-AC_SUBST(UDPBCAST_LIBPATH)
+PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],)
 
-AC_ARG_WITH(laser,
-[  --without-laser         Don't compile the laser-based fiducial drivers],,
-with_laser=yes)
-if test "x$with_laser" = "xyes"; then
+PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],)
+
+PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],)
+
+PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],)
+
+PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],)
+
+PLAYER_ADD_DRIVER([udpbroadcast],[drivers/comms],[yes],)
+
+PLAYER_ADD_DRIVER([lasercspace],[drivers/laser],[yes],)
+
+PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],
+                  [],[linux/wireless.h])
+
+PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[yes],
+                  ["-lrfftw -lfftw"],[rfftw.h])
+
+PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],[],[mobilitycomponents_i.h])
+
+PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],
+                  ["-lisense"],[isense/isense.h])
+
+PLAYER_ADD_DRIVER([waveaudio],[drivers/waveform],[no],[],[sys/soundcard.h])
+
+dnl the following must use --enable to be built
+PLAYER_ADD_DRIVER([aodv],[drivers/wifi],[no],)
+
+PLAYER_ADD_DRIVER([iwspy],[drivers/wifi],[no],)
+
+PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[no],)
+
+PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[no],)
+
+PLAYER_ADD_DRIVER([localization],[drivers/localization],[no],)
+
+dnl PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],["-lgsl -lgslcblas"],[gsl/gsl_version.h])
+
+dnl PLAYER_ADD_DRIVER doesn't handle multiple libraries in <name>_LIB, so
+dnl do it manually
+AC_ARG_ENABLE(laser,
+[  --disable-laser         Don't compile the laser-based fiducial drivers],,
+enable_laser=yes)
+if test "x$enable_laser" = "xyes"; then
   AC_DEFINE(INCLUDE_LASERFIDUCIAL, 1, [[include the LASER-based fiducial drivers]])
   LASERFIDUCIAL_LIBS="liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a"
   LASERFIDUCIAL_LIBSPATH="drivers/fiducial/liblaserbar.a drivers/fiducial/liblaserbarcode.a drivers/fiducial/liblaservisualbarcode.a"
@@ -93,144 +103,40 @@ fi
 AC_SUBST(LASERFIDUCIAL_LIBS)
 AC_SUBST(LASERFIDUCIAL_LIBSPATH)
 
-AC_ARG_WITH(lasercspace, 
-[  --without-lasercspace   Don't compile the lasercspace driver],,
-with_lasercspace=yes)
-if test "x$with_lasercspace" = "xyes"; then
-  AC_DEFINE(INCLUDE_LASERCSPACE, 1, [[include the lasercspace driver]])
-  LASERCSPACE_LIB="liblasercspace.a"
-  LASERCSPACE_LIBPATH="drivers/laser/liblasercspace.a"
-fi
-AC_SUBST(LASERCSPACE_LIB)
-AC_SUBST(LASERCSPACE_LIBPATH)
+dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
+dnl do it manually
+dnl AC_ARG_ENABLE(amcl,
+dnl [  --enable-amcl           Compile the amcl driver],,enable_amcl=no)
+dnl if test "x$enable_amcl" = "xyes"; then
+dnl   AC_CHECK_HEADER(gsl/gsl_version.h,,
+dnl     AC_MSG_ERROR([The GNU Scientific Library (gsl) is required to build the
+dnl                   amcl driver; pass --disable-amcl to configure.]))
+dnl   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
+dnl   AMCL_LIB="libamcl.a"
+dnl   AMCL_LIBPATH="drivers/localization/amcl/libamcl.a"
+dnl   AMCL_PF_LIB="libpf.a"
+dnl   AMCL_MAP_LIB="libmap.a"
+dnl   AMCL_MODELS_LIB="libmodels.a"
+dnl   AMCL_EXTRA_LIB="-lgsl -lgslcblas"
+dnl fi
+dnl AC_SUBST(AMCL_LIB)
+dnl AC_SUBST(AMCL_LIBPATH)
+dnl AC_SUBST(AMCL_PF_LIB)
+dnl AC_SUBST(AMCL_MAP_LIB)
+dnl AC_SUBST(AMCL_MODELS_LIB)
+dnl AC_SUBST(AMCL_EXTRA_LIB)
 
-AC_ARG_WITH(linuxwifi, 
-[  --without-linuxwifi     Don't compile the linuxwifi driver],,
-with_linuxwifi=yes)
-if test "x$with_linuxwifi" = "xyes"; then
-  AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])
-  LINUXWIFI_LIB="liblinuxwifi.a"
-  LINUXWIFI_LIBPATH="drivers/wifi/liblinuxwifi.a"
-fi
-AC_SUBST(LINUXWIFI_LIB)
-AC_SUBST(LINUXWIFI_LIBPATH)
+dnl Manually append LIB, LIBPATH, and EXTRA_LIB vars for those drivers that
+dnl the PLAYER_ADD_DRIVER macro wasn't called.
+PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $LASERFIDUCIAL_LIBS $INAV_LIB $AMCL_LIB"
 
-AC_ARG_WITH(aodv, 
-[  --without-aodv          Don't compile the aodv driver],,
-with_aodv=no)
-if test "x$with_aodv" = "xyes"; then
-  AC_DEFINE(INCLUDE_AODV, 1, [[include the AODV driver]])
-  AODV_LIB="libaodv.a"
-  AODV_LIBPATH="drivers/wifi/libaodv.a"
-fi
-AC_SUBST(AODV_LIB)
-AC_SUBST(AODV_LIBPATH)
+PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $LASERFIDUCIAL_LIBSPATH $INAV_LIBPATH $AMCL_LIBPATH"
 
-AC_ARG_WITH(iwspy, 
-[  --with-iwspy            Compile the iwspy driver],,
-with_iwspy=no)
-if test "x$with_iwspy" = "xyes"; then
-  AC_DEFINE(INCLUDE_IWSPY, 1, [[include the iwspy driver]])
-  IWSPY_LIB="libiwspy.a"
-  IWSPY_LIBPATH="drivers/wifi/libiwspy.a"
-fi
-AC_SUBST(IWSPY_LIB)
-AC_SUBST(IWSPY_LIBPATH)
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $INAV_EXTRA_LIB $AMCL_EXTRA_LIB"
 
-dnl check for the fftw library (by way of one of its headers) and compile
-dnl the fixed tones driver if its found
-AC_ARG_WITH(fixedtones,
-[  --without-fixedtones    Don't compile the fixedtones driver],,
-[AC_CHECK_HEADER(rfftw.h, with_fixedtones=yes,,)])
-if test "x$with_fixedtones" = xyes; then
-  AC_DEFINE(INCLUDE_FIXEDTONES,1,[include the fixed tones driver])
-  FIXEDTONES_LIB="libfixedtones.a"
-  FIXEDTONES_LIBPATH="drivers/audio/libfixedtones.a"
-  FIXEDTONES_EXTRA_LIB="-lrfftw -lfftw"
-fi
-AC_SUBST(FIXEDTONES_LIB)
-AC_SUBST(FIXEDTONES_LIBPATH)
-AC_SUBST(FIXEDTONES_EXTRA_LIB)
-
-dnl check for Mobility (by way of one of its headers) and compile
-dnl the RWI driver if it's found
-AC_ARG_WITH(rwi,
-[  --without-rwi           Don't compile the rwi drivers],,
-[AC_CHECK_HEADER(mobilitycomponents_i.h, with_rwi=yes,,)])
-if test "x$with_rwi" = "xyes"; then
-  AC_DEFINE(INCLUDE_RWI,1,[include the RWI driver])
-  AC_DEFINE(USE_MOBILITY,1,[use the RWI Mobility interface])
-  RWI_LIB="librwi.a"
-  RWI_LIBPATH="drivers/mixed/rwi/librwi.a"
-fi
-AC_SUBST(RWI_LIB)
-AC_SUBST(RWI_LIBPATH)
-
-dnl check for the isense library (by way of one of its headers) and compile
-dnl the Intersense drivers if foune.
-AC_ARG_WITH(isense,
-[  --without-isense        Don't compile the isense drivers],,
-[AC_CHECK_HEADER(isense/isense.h, with_isense=yes,,)])
-if test "x$with_isense" = "xyes"; then
-  AC_DEFINE(INCLUDE_ISENSE,1,[include the InterSense driver])
-  ISENSE_LIB="libisense.a"
-  ISENSE_LIBPATH="drivers/position/isense/libisense.a"
-  ISENSE_EXTRA_LIB="-lisense"
-fi
-AC_SUBST(ISENSE_LIB)
-AC_SUBST(ISENSE_LIBPATH)
-AC_SUBST(ISENSE_EXTRA_LIB)
-
-dnl the following must use --with to be built
-AC_ARG_WITH(reb,
-[  --with-reb              Compile the reb drivers],,
-with_reb=no)
-if test "x$with_reb" = "xyes"; then
-  AC_DEFINE(INCLUDE_REB, 1, [[include the REB driver]])
-  REB_LIB="libreb.a"
-  REB_LIBPATH="drivers/mixed/reb/libreb.a"
-fi
-AC_SUBST(REB_LIB)
-AC_SUBST(REB_LIBPATH)
-
-
-dnl optionally compile MicroStrain IMU drivers - disabled by default
-AC_ARG_WITH(microstrain,
-[  --with-microstrain      Compile the MicroStrain IMU drivers],,
-with_microstrain=no)
-if test "x$with_microstrain" = "xyes"; then
-  AC_DEFINE(INCLUDE_MICROSTRAIN, 1, [[include the MICROSTRAIN driver]])
-  MICROSTRAIN_LIB="libmicrostrain.a"
-  MICROSTRAIN_LIBPATH="drivers/position/microstrain/libmicrostrain.a"
-fi
-AC_SUBST(MICROSTRAIN_LIB)
-AC_SUBST(MICROSTRAIN_LIBPATH)
-
-dnl optionally compile the audio waveform driver - disabled by default
-AC_ARG_WITH(waveaudio,
-[  --with-waveaudio        Compile the wave audio driver],,with_waveaudio=no)
-if test "x$with_waveaudio" = "xyes"; then
-  dnl check that we have the soundcard header available
-  AC_CHECK_HEADER(sys/soundcard.h, with_waveaudio=yes, with_waveaudio=no,)
-  if test "x$with_waveaudio" = "xyes"; then
-    AC_DEFINE(INCLUDE_WAVEAUDIO, 1, [[include the WAVEAUDIO driver]])
-    WAVEAUDIO_LIB="libwaveaudio.a"
-    WAVEAUDIO_LIBPATH="drivers/waveform/libwaveaudio.a"
-  fi
-fi
-AC_SUBST(WAVEAUDIO_LIB)
-AC_SUBST(WAVEAUDIO_LIBPATH)
-
-dnl optionally compile the localization driver -- disabled by default
-AC_ARG_WITH(localization,
-[  --with-localization     Compile the localization driver],,with_localization=no)
-if test "x$with_localization" = "xyes"; then
-  AC_DEFINE(INCLUDE_LOCALIZATION, 1, [[include the LOCALIZATION driver]])
-  LOCALIZATION_LIB="liblocalization.a"
-  LOCALIZATION_LIBPATH="drivers/localization/liblocalization.a"
-fi
-AC_SUBST(LOCALIZATION_LIB)
-AC_SUBST(LOCALIZATION_LIBPATH)
+AC_SUBST(PLAYER_DRIVER_LIBS)
+AC_SUBST(PLAYER_DRIVER_LIBPATHS)
+AC_SUBST(PLAYER_DRIVER_EXTRA_LIBS)
 
 ])
 

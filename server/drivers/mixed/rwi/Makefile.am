@@ -1,6 +1,6 @@
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
-noinst_LIBRARIES = $(RWI_LIB)
+noinst_LIBRARIES = @RWI_LIB@
 
 EXTRA_LIBRARIES = librwi.a
 

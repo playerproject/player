@@ -1,4 +1,4 @@
-noinst_LIBRARIES = @SICK_LIB@ @LASERCSPACE_LIB@
+noinst_LIBRARIES = @SICKLMS200_LIB@ @LASERCSPACE_LIB@
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 

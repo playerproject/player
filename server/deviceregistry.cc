@@ -72,6 +72,10 @@ void SonyEVID30_Register(DriverTable* table);
 void UDPBroadcast_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_PASSTHROUGH
+void PassThrough_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_P2OS
 void P2OSGripper_Register(DriverTable* table);
 void P2OSPower_Register(DriverTable* table);
@@ -211,6 +215,10 @@ register_devices()
 
 #ifdef INCLUDE_UDPBCAST
   UDPBroadcast_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_PASSTHROUGH
+  PassThrough_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_P2OS

@@ -91,7 +91,8 @@ PassThrough_Init(char* interface, ConfigFile* cf, int section)
   }
   host = cf->ReadString(section, "host", "localhost");
   port = cf->ReadInt(section, "port", global_playerport);
-  id.robot = cf->ReadInt(section, "robot", 0);
+  //id.robot = cf->ReadInt(section, "robot", 0);
+  id.port = port;
   id.code = interf.code;
   id.index = cf->ReadInt(section, "index", 0);
 
@@ -167,12 +168,13 @@ PassThrough::Setup()
   puts("Done");
 
   printf("Passthrough opening device %d:%d:%d...", 
-         this->remote_device_id.robot,
+         this->remote_device_id.port,
          this->remote_device_id.code,
          this->remote_device_id.index);
   // open the device
   if((player_request_device_access(&this->conn,
-                                   this->remote_device_id,
+                                   this->remote_device_id.code,
+                                   this->remote_device_id.index,
                                    this->remote_access,
                                    &grant_access,
                                    this->remote_drivername,
@@ -225,8 +227,9 @@ PassThrough::Main()
         GetConfig(&id,&client,this->remote_config,PLAYER_MAX_PAYLOAD_SIZE)) > 0)
     {
       // send it
-      if(player_request(&this->conn,this->remote_device_id,
-                        this->remote_config,len_config,&replyhdr,
+      if(player_request(&this->conn,this->remote_device_id.code,
+                        this->remote_device_id.index,this->remote_config,
+                        len_config,&replyhdr,
                         this->remote_reply,PLAYER_MAX_PAYLOAD_SIZE) < 0)
       {
         PLAYER_ERROR("got error while sending request; bailing");
@@ -245,8 +248,9 @@ PassThrough::Main()
     if((len_command = GetCommand((unsigned char*)this->remote_command,
                          PLAYER_MAX_PAYLOAD_SIZE)) > 0)
     {
-      if(player_write(&this->conn,this->remote_device_id,
-                      this->remote_command,len_command) < 0)
+      if(player_write(&this->conn,this->remote_device_id.code,
+                      this->remote_device_id.index,this->remote_command,
+                      len_command) < 0)
       {
         PLAYER_ERROR("got error while writing command; bailing");
         CloseConnection();
@@ -263,7 +267,7 @@ PassThrough::Main()
     }
 
     if((hdr.type == PLAYER_MSGTYPE_DATA) &&
-       (hdr.robot == this->remote_device_id.robot) &&
+       //(hdr.robot == this->remote_device_id.robot) &&
        (hdr.device == this->remote_device_id.code) &&
        (hdr.device_index == this->remote_device_id.index))
     {

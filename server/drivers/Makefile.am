@@ -1,2 +1,2 @@
-SUBDIRS = position waveform comms ptz laser fiducial audio wifi speech \
+SUBDIRS = shell position waveform comms ptz laser fiducial audio wifi speech \
           blobfinder stage mixed localization
