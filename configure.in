@@ -181,8 +181,14 @@ AC_SUBST(RTKGUI_EXTRA_LDADD)
 dnl Include RTK3 gui support (used by utilities)
 dnl RTK3 is included in the Player distro.
 AC_ARG_ENABLE(rtk3,
-[  --enable-rtk3          Build RTK3-based components],, enable_rtk3=yes)
-AM_CONDITIONAL(WITH_RTK3, test x$enable_rtk3 = xyes)
+[  --enable-rtk3          Build RTK3-based components],,enable_rtk3=yes)
+dnl Recursively configure RTK3 (if enabled)
+configrtk3=
+if test "x$enable_rtk3" = "xyes"; then
+  configrtk3="rtk3"
+fi
+AC_CONFIG_SUBDIRS($configrtk3)
+AM_CONDITIONAL(WITH_RTK3, test "x$enable_rtk3" = "xyes")
 
 dnl Build the playermap utility; requires RTK3 components to work
 dnl AC_ARG_ENABLE(playermap,
@@ -232,11 +238,6 @@ AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(c_r, pthread_create, 
              [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
-
-dnl Recursively configure RTK3 (if enabled)
-if test "x$enable_rtk3" = "xyes"; then
-  AC_CONFIG_SUBDIRS(rtk3)
-fi
 
 dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile
