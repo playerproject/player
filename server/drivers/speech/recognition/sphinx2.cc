@@ -400,7 +400,7 @@ void Sphinx2::Main()
 
     strncpy(data.text, hypothesis, SPEECH_RECOGNITION_TEXT_LEN);
 
-    //printf ("%d: %s\n", frames, hypothesis); fflush (stdout);
+    printf ("%d: %s\n", frames, hypothesis); fflush (stdout);
 
     PutData( (uint8_t*)&data, sizeof(data), &time);
 
