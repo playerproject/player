@@ -28,7 +28,7 @@
 
 //#define VERBOSE
 
-#define PLAYER_VERSION "0.7.4b - dev"
+#define PLAYER_VERSION "0.7.4b - dev2"
 #define READ_BUFFER_SIZE 128
 
 #include <stdio.h>
@@ -76,7 +76,7 @@
 
 #ifdef INCLUDE_STAGE
 #include "stagedevice.hh"
-//*** old - remove #include <arenalaserdevice.h>
+#include <arenalaserdevice.h>
 #include <arenasonardevice.h>
 #include <arenapositiondevice.h>
 #include <arenavisiondevice.h>
@@ -222,12 +222,13 @@ void *client_writer(void* arg)
   printf("client_writer() with id %ld and socket %d - created\n", 
 	 clientData->writeThread, clientData->socket);
 
-  data = new unsigned char[1024];
+  int data_buffer_size = 8192;
+  data = new unsigned char[data_buffer_size];
 
   for(;;)
   {
-    size = clientData->BuildMsg( data );
-    
+    size = clientData->BuildMsg( data, data_buffer_size );
+          
     pthread_mutex_lock(&(clientData->socketwrite));
     if( size>0 && write(clientData->socket, data, size) < 0 ) {
       perror("client_writer");
@@ -423,26 +424,32 @@ int main( int argc, char *argv[] )
     fflush( stdout );
 #endif
 
-    // use the arena type devices
-    //*** old, remove laserDevice =    new CArenaLaserDevice(laserserialport);
-    laserDevice = new CStageDevice(arenaIO + LASER_DATA_START,
-                                   LASER_DATA_BUFFER_SIZE,
-                                   LASER_COMMAND_BUFFER_SIZE,
-                                   LASER_CONFIG_BUFFER_SIZE); 
-
+    //laserDevice = new CArenaLaserDevice(laserserialport);
+    //sonarDevice =    new CArenaSonarDevice(p2osport);
+    //positionDevice = new CArenaPositionDevice(p2osport);
+    //visionDevice =  new CArenaVisionDevice( visionport,visionconfigfile,useoldacts);   
+        
+    // use the stage type devicesc
     positionDevice = new CStageDevice( arenaIO + P2OS_DATA_START,
                                    P2OS_DATA_BUFFER_SIZE,
                                    P2OS_COMMAND_BUFFER_SIZE,
-                                   P2OS_CONFIG_BUFFER_SIZE); 
+                                   P2OS_CONFIG_BUFFER_SIZE);
 
     sonarDevice =    new CStageDevice( arenaIO + SSONAR_DATA_START,
                                    SSONAR_DATA_BUFFER_SIZE,
                                    SSONAR_COMMAND_BUFFER_SIZE,
                                    SSONAR_CONFIG_BUFFER_SIZE); 
+    
+    laserDevice = new CStageDevice(arenaIO + LASER_DATA_START,
+                                   LASER_DATA_BUFFER_SIZE,
+                                   LASER_COMMAND_BUFFER_SIZE,
+                                   LASER_CONFIG_BUFFER_SIZE); 
+ 
+    visionDevice = new CStageDevice(arenaIO + ACTS_DATA_START,
+                                    ACTS_DATA_BUFFER_SIZE,
+                                    ACTS_COMMAND_BUFFER_SIZE,
+                                    ACTS_CONFIG_BUFFER_SIZE);
 
-
-    visionDevice =  new 
-                   CArenaVisionDevice( visionport,visionconfigfile,useoldacts);
     ptzDevice =    new CArenaPtzDevice(ptzserialport);
     
     // unsupported devices - CNoDevice::Setup() fails

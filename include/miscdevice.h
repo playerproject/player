@@ -35,7 +35,7 @@
 class CMiscDevice: public CP2OSDevice {
  public:
   CMiscDevice::CMiscDevice(char* port):CP2OSDevice(port){}
-  int GetData( unsigned char * );
+  size_t GetData( unsigned char *, size_t maxsize);
 };
 
 #endif

@@ -28,7 +28,8 @@
 #include <string.h>  /* for memcpy() */
 #include <netinet/in.h>
 
-int CSonarDevice::GetData( unsigned char *dest ) {
+size_t CSonarDevice::GetData( unsigned char *dest, size_t maxsize)
+{
 
   /*
    * in this order:

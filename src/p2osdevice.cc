@@ -326,23 +326,23 @@ int CP2OSDevice::Shutdown()
   return(0);
 }
 
-int CP2OSDevice::GetData( unsigned char* dest)
+size_t CP2OSDevice::GetData( unsigned char* dest, size_t maxsize)
 {
   return(0);
 }
-void CP2OSDevice::PutData( unsigned char* src)
+void CP2OSDevice::PutData( unsigned char* src, size_t maxsize)
 {
   memcpy( data, src, P2OS_DATA_BUFFER_SIZE);
 }
 
-void CP2OSDevice::GetCommand( unsigned char* dest)
+void CP2OSDevice::GetCommand( unsigned char* dest, size_t maxsize)
 {
   memcpy( dest, command, P2OS_COMMAND_BUFFER_SIZE);
 }
-void CP2OSDevice::PutCommand( unsigned char* src, int size)
+void CP2OSDevice::PutCommand( unsigned char* src, size_t maxsize)
 {
 }
-int CP2OSDevice::GetConfig( unsigned char* dest)
+size_t CP2OSDevice::GetConfig( unsigned char* dest, size_t maxsize)
 {
   if(config_size)
   {
@@ -350,7 +350,7 @@ int CP2OSDevice::GetConfig( unsigned char* dest)
   }
   return(config_size);
 }
-void CP2OSDevice::PutConfig( unsigned char* src, int size)
+void CP2OSDevice::PutConfig( unsigned char* src, size_t size)
 {
   if(size > P2OS_CONFIG_BUFFER_SIZE)
     puts("CP2OSDevice::PutConfig(): config request too big. ignoring");
@@ -404,7 +404,7 @@ void *RunPsosThread( void *p2osdevice )
   for(;;)
   {
     // first, check if there is a new config command
-    if((config_size = pd->GetLock()->GetConfig(pd,config)))
+    if((config_size = pd->GetLock()->GetConfig(pd,config, sizeof(config))))
     {
       switch(config[0])
       {
@@ -462,7 +462,7 @@ void *RunPsosThread( void *p2osdevice )
     }
 
     /* read the clients' commands from the common buffer */
-    pd->GetLock()->GetCommand(pd,command);
+    pd->GetLock()->GetCommand(pd,command, sizeof(command));
 
     cnt = POSITION_COMMAND_OFFSET;
     newmotorspeed = false;
@@ -649,7 +649,7 @@ CP2OSDevice::SendReceive(CPacket* pkt, bool already_have_lock)
       sippacket->Parse( &packet.packet[3] );
       sippacket->Fill(data, timeBegan_tv );
 
-      GetLock()->PutData(this,data);
+      GetLock()->PutData(this,data, sizeof(data));
     }
     else 
     {

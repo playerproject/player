@@ -100,7 +100,7 @@ CLaserDevice::CLaserDevice(char *port)
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by client thread)
 //
-int CLaserDevice::GetData( unsigned char *dest ) 
+size_t CLaserDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
     if(!data_swapped)
     {
@@ -116,7 +116,7 @@ int CLaserDevice::GetData( unsigned char *dest )
 ////////////////////////////////////////////////////////////////////////////////
 // Put data in buffer (called by device thread)
 //
-void CLaserDevice::PutData( unsigned char *src )
+void CLaserDevice::PutData( unsigned char *src, size_t maxsize )
 {
     memcpy( data, src, LASER_DATA_BUFFER_SIZE );
     data_swapped = false;
@@ -126,7 +126,7 @@ void CLaserDevice::PutData( unsigned char *src )
 ////////////////////////////////////////////////////////////////////////////////
 // Get command from buffer (called by device thread)
 //
-void CLaserDevice::GetCommand( unsigned char *dest ) 
+void CLaserDevice::GetCommand( unsigned char *dest, size_t maxsize ) 
 {
 }
 
@@ -134,7 +134,7 @@ void CLaserDevice::GetCommand( unsigned char *dest )
 ////////////////////////////////////////////////////////////////////////////////
 // Put command in buffer (called by client thread)
 //
-void CLaserDevice::PutCommand( unsigned char *src ,int size) 
+void CLaserDevice::PutCommand( unsigned char *src, size_t maxsize) 
 {
 }
 
@@ -142,7 +142,7 @@ void CLaserDevice::PutCommand( unsigned char *src ,int size)
 ////////////////////////////////////////////////////////////////////////////////
 // Get configuration from buffer (called by device thread)
 //
-int CLaserDevice::GetConfig( unsigned char *dest ) 
+size_t CLaserDevice::GetConfig(unsigned char *dest, size_t maxsize) 
 {
     if (config_size == 0)
         return 0;
@@ -167,16 +167,16 @@ int CLaserDevice::GetConfig( unsigned char *dest )
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by client thread)
 //
-void CLaserDevice::PutConfig( unsigned char *src ,int size) 
+void CLaserDevice::PutConfig( unsigned char *src, size_t maxsize) 
 {
-    if (size > LASER_CONFIG_BUFFER_SIZE)
+    if (maxsize > LASER_CONFIG_BUFFER_SIZE)
     {
         ERROR("config request too big; ignoring");
         return;
     }
 
-    memcpy(config, src, size);
-    config_size = size;
+    memcpy(config, src, maxsize);
+    config_size = maxsize;
 }
 
 
@@ -312,7 +312,7 @@ int CLaserDevice::Main()
 
         // Look for configuration requests
         //
-        if (GetLock()->GetConfig(this, NULL))
+        if (GetLock()->GetConfig(this, NULL, 0))
         {
             // Change any config settings
             //
@@ -682,7 +682,7 @@ int CLaserDevice::ProcessLaserData()
             final_data[dest + 1] = raw_data[src + 1];
         }
     
-        GetLock()->PutData(this, final_data);
+        GetLock()->PutData(this, final_data, 2 * count);
     }
     else if (raw_data[0] == 0xB7)
     {
@@ -708,7 +708,7 @@ int CLaserDevice::ProcessLaserData()
             final_data[dest + 1] = raw_data[src + 1];
         }
     
-        GetLock()->PutData(this, final_data);
+        GetLock()->PutData(this, final_data, 2 * count);
     }
     else
         RETURN_ERROR(1, "unexpected packet type");

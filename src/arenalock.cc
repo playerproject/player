@@ -78,17 +78,17 @@ inline int CArenaLock::Unlock( void )
 }
 
 
-int CArenaLock::GetData( CDevice *obj , unsigned char *dest )
+size_t CArenaLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize)
 {
   int size;
   Lock();
   //puts( "AL: get data" );
-  size = obj->GetData(dest);
+  size = obj->GetData(dest, maxsize);
   Unlock();
   return(size);
 }
 
-void CArenaLock::PutCommand(CDevice *obj ,unsigned char *dest, int size)
+void CArenaLock::PutCommand(CDevice *obj ,unsigned char *dest, size_t size)
 {  
   Lock();
   //puts( "AL: put command" );
@@ -96,16 +96,16 @@ void CArenaLock::PutCommand(CDevice *obj ,unsigned char *dest, int size)
   Unlock();
 }
 
-void CArenaLock::PutData( CDevice *obj,  unsigned char *dest ) 
+void CArenaLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize) 
 {
   puts( "Warning: attempt to put data in Arena mode" );
 }
 
-void CArenaLock::GetCommand( CDevice *obj , unsigned char *dest ) 
+void CArenaLock::GetCommand( CDevice *obj , unsigned char *dest, size_t maxsize) 
 {
   puts( "Warning: attempt to get commands in Arena mode" );
 }
-void CArenaLock::PutConfig( CDevice *obj,  unsigned char *dest,int size ) 
+void CArenaLock::PutConfig( CDevice *obj,  unsigned char *dest, size_t size) 
 {
   Lock();
   //puts( "AL: put config" );
@@ -113,7 +113,7 @@ void CArenaLock::PutConfig( CDevice *obj,  unsigned char *dest,int size )
   Unlock();
 }
 
-int CArenaLock::GetConfig( CDevice *obj , unsigned char *dest ) 
+size_t CArenaLock::GetConfig( CDevice *obj , unsigned char *dest, size_t maxsize) 
 {
   puts( "Warning: attempt to get commands in Arena mode" );
   return(0);

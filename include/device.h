@@ -31,6 +31,10 @@
 #include <offsets.h>
 #include <lock.h>
 
+// For size_t
+//
+#include <stddef.h>
+
 extern bool debug;
 extern bool experimental;
 
@@ -44,12 +48,12 @@ class CDevice
 
     virtual int Setup() = 0;
     virtual int Shutdown() = 0;
-    virtual int GetData( unsigned char * ) = 0;
-    virtual void PutData( unsigned char * ) = 0;
-    virtual void GetCommand( unsigned char * ) = 0;
-    virtual void PutCommand( unsigned char * , int) = 0;
-    virtual int GetConfig( unsigned char * ) = 0;
-    virtual void PutConfig( unsigned char * , int) = 0;
+    virtual size_t GetData( unsigned char *, size_t ) = 0;
+    virtual void PutData( unsigned char *, size_t ) = 0;
+    virtual void GetCommand( unsigned char *, size_t ) = 0;
+    virtual void PutCommand( unsigned char * , size_t ) = 0;
+    virtual size_t GetConfig( unsigned char *, size_t ) = 0;
+    virtual void PutConfig( unsigned char * , size_t) = 0;
     virtual CLock* GetLock( void ) = 0;
 };
 

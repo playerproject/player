@@ -527,7 +527,7 @@ bool CClientData::CheckPermissions( unsigned char *command ) {
   return(permission);
 }
 
-int CClientData::BuildMsg( unsigned char *data ) 
+int CClientData::BuildMsg( unsigned char *data, size_t maxsize) 
 {
   unsigned short size, totalsize=0;
   CDevice* devicep;
@@ -547,7 +547,7 @@ int CClientData::BuildMsg( unsigned char *data )
         if((devicep = deviceTable->GetDevice(requested[i])))
         {
           data[totalsize] = requested[i];
-          size = devicep->GetLock()->GetData(devicep, &data[totalsize+3]);
+          size = devicep->GetLock()->GetData(devicep, &data[totalsize+3], maxsize-totalsize-3);
           *(unsigned short *)&data[totalsize+1] = htons ( size );
           totalsize+=size+3;
         }

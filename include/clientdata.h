@@ -44,7 +44,7 @@ class CClientData {
   void UpdateRequested( unsigned char *request );
   bool CheckPermissions( unsigned char *command );
   unsigned char FindPermission( unsigned char device );
-  int BuildMsg( unsigned char *data );
+  int BuildMsg( unsigned char *data, size_t maxsize );
   void Unsubscribe( unsigned char device );
   int Subscribe( unsigned char device );
 };

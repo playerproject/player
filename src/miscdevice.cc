@@ -30,7 +30,7 @@
 #include <miscdevice.h>
 #include <string.h> /* for memcpy() */
 
-int CMiscDevice::GetData( unsigned char *dest ) {
+size_t CMiscDevice::GetData( unsigned char *dest, size_t maxsize ) {
   /*
    * in this order:
    *   ints: time X Y

@@ -117,6 +117,15 @@
 #define ACTS_TOTAL_MAX_SIZE \
   ACTS_MAX_BLOB_DATA_SIZE+ACTS_HEADER_SIZE
 
+// Players needs 2 bytes to store the packet length
+#define ACTS_DATA_BUFFER_SIZE 2 + ACTS_TOTAL_MAX_SIZE
+#define ACTS_COMMAND_BUFFER_SIZE 0
+#define ACTS_CONFIG_BUFFER_SIZE 0
+#define ACTS_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
+                             + ACTS_DATA_BUFFER_SIZE \
+                             + ACTS_COMMAND_BUFFER_SIZE \
+                             + ACTS_CONFIG_BUFFER_SIZE
+
 /*
  * P2OS device stuff
  *
@@ -216,9 +225,6 @@
 
 #define SUB_BUFFER_SIZE 7
 
-// Player needs 2 bytes to store the size of the ACTS packet
-#define ACTS_SHARED_MEM_SIZE  ACTS_TOTAL_MAX_SIZE + 2
-
 #define ARENA_SUB_START 0
 #define P2OS_DATA_START ARENA_SUB_START + SUB_BUFFER_SIZE
 #define P2OS_COMMAND_START P2OS_DATA_START + P2OS_DATA_BUFFER_SIZE
@@ -230,7 +236,7 @@
 #define ACTS_DATA_START PTZ_DATA_START + PTZ_DATA_BUFFER_SIZE
 
 // ACTS is the last thing in the shared memory
-#define TOTAL_SHARED_MEMORY_BUFFER_SIZE ACTS_DATA_START + ACTS_SHARED_MEM_SIZE
+#define TOTAL_SHARED_MEMORY_BUFFER_SIZE ACTS_DATA_START + ACTS_TOTAL_BUFFER_SIZE
 
 // !RTV ---------------------------------------------------------------------
 

@@ -567,7 +567,7 @@ void *RunPtzThread(void *ptzdevice)
   while(1) 
   {
     pthread_testcancel();
-    zd->GetLock()->GetCommand(zd, command);
+    zd->GetLock()->GetCommand(zd, command, sizeof(command));
     pthread_testcancel();
 
     cnt = 0;
@@ -630,7 +630,7 @@ void *RunPtzThread(void *ptzdevice)
 
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    zd->GetLock()->PutData( zd, data );
+    zd->GetLock()->PutData( zd, data, sizeof(data) );
 
     newpantilt = false;
     newzoom = false;
@@ -639,31 +639,34 @@ void *RunPtzThread(void *ptzdevice)
   }
 }
 
-int CPtzDevice::GetData( unsigned char *dest ) 
+size_t CPtzDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
   memcpy( dest, data, PTZ_DATA_BUFFER_SIZE );
   return(PTZ_DATA_BUFFER_SIZE);
 }
 
-void CPtzDevice::PutData( unsigned char *src ) {
+void CPtzDevice::PutData( unsigned char *src, size_t maxsize )
+{
   memcpy( data, src, PTZ_DATA_BUFFER_SIZE );
 }
 
-void CPtzDevice::GetCommand( unsigned char *dest ) {
+void CPtzDevice::GetCommand( unsigned char *dest, size_t maxsize )
+{
   memcpy( dest, command, PTZ_COMMAND_BUFFER_SIZE);
 }
 
-void CPtzDevice::PutCommand( unsigned char *src, int size) {
+void CPtzDevice::PutCommand( unsigned char *src, size_t size)
+{
   if(size != PTZ_COMMAND_BUFFER_SIZE)
     puts("CPtzDevice::PutCommand(): command wrong size. ignoring.");
   else
     memcpy(command,src,PTZ_COMMAND_BUFFER_SIZE);
 }
-int CPtzDevice::GetConfig( unsigned char *dest)
+size_t CPtzDevice::GetConfig( unsigned char *dest, size_t maxsize)
 {
   return(0);
 }
 
-void CPtzDevice::PutConfig( unsigned char *src, int size)
+void CPtzDevice::PutConfig( unsigned char *src, size_t size)
 {
 }

@@ -35,7 +35,7 @@ class CArenaPositionDevice: public CPositionDevice {
   
   virtual CLock* GetLock( void ){ return &alock; };
  
-  virtual int GetData( unsigned char * );
+  virtual size_t GetData( unsigned char * , size_t maxsize);
   virtual int Setup();
   virtual int Shutdown();
 };
