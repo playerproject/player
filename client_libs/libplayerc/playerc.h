@@ -1977,6 +1977,8 @@ void playerc_simulation_putdata(playerc_simulation_t *device, player_msghdr_t *h
 int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
                                   double gx, double gy, double ga);
 
+int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier, 
+				  double *x, double *y, double *a);
 
 /** @} */
 /***************************************************************************/
@@ -1993,7 +1995,3 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
 #endif
 
 #endif
-
-
-
-

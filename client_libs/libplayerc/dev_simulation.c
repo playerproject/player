@@ -50,6 +50,7 @@
 #include <netinet/in.h>
 
 #include "playerc.h"
+#include "playercommon.h"
 #include "error.h"
 
 // Local declarations
@@ -120,3 +121,20 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name, doub
                                 &cmd, sizeof(cmd), &cmd, sizeof(cmd));
 }
 
+// Get the current pose
+int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier, 
+				  double *x, double *y, double *a)
+{
+  player_simulation_pose2d_req_t cfg;
+  
+  memset(&cfg, 0, sizeof(cfg));
+  cfg.subtype = PLAYER_SIMULATION_GET_POSE2D;
+  strncpy( cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
+  if (playerc_client_request(device->info.client, &device->info, 
+			     &cfg, sizeof(cfg), &cfg, sizeof(cfg)) < 0)
+    return (-1);
+  *x =  ((int32_t)ntohl(cfg.x)) / 1e3;
+  *y =  ((int32_t)ntohl(cfg.y)) / 1e3;
+  *a =  DTOR((int32_t)ntohl(cfg.a));
+  return 0;
+}

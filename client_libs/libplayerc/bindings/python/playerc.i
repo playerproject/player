@@ -1,5 +1,10 @@
 
 %module playerc
+%include cpointer.i
+
+/* Create some functions for working with "double *" */
+%pointer_class(double, doublep);
+
 %{
 #include "playerc.h"
 %}
