@@ -48,6 +48,7 @@
 
 /* data for the p2-dx robot from p2 operation manual */
 #define P2OS_CYCLETIME_USEC 100000
+//#define P2OS_CYCLETIME_USEC 50000
 
 /* p2os constants */
 #define SYNC0 0
