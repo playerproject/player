@@ -23,7 +23,7 @@ const int MESSAGE_LEN = 4;
 
 int num_robots = 1;
 
-/* easy little command line argument parser */
+/* command line argument parser */
 void
 parse_args(int argc, char** argv)
 {
@@ -71,8 +71,6 @@ parse_args(int argc, char** argv)
   }
 }
 
-
-
 typedef struct
 {
   char type;
@@ -89,10 +87,10 @@ typedef struct
 
 typedef struct
 {
+  PlayerClient* pc;
   FiducialProxy* fp;
   PositionProxy* pp;
   BlinkenlightProxy* bp;
-  SonarProxy* sp;
   
   grad_direction_t store[storelen];
 } swarmbot_t;
@@ -104,17 +102,14 @@ int main(int argc, char **argv)
   
   printf( "starting %d swarbots\n", num_robots );
 
-  PlayerClient robot(host,port);
-  robot.SetFrequency( 10 );
-
   swarmbot_t *bots = (swarmbot_t*)calloc( num_robots, sizeof(swarmbot_t) );
 
   for( int r=0; r<num_robots; r++ )
     {  
-      bots[r].fp = new FiducialProxy(&robot,r,'a');
-      bots[r].pp = new PositionProxy(&robot,r,'a');
-      bots[r].bp = new BlinkenlightProxy(&robot,r,'a');
-      bots[r].sp = new SonarProxy(&robot,r,'a');
+      bots[r].pc = new PlayerClient(host,port++);      
+      bots[r].fp = new FiducialProxy(bots[r].pc,0,'a');
+      bots[r].pp = new PositionProxy(bots[r].pc,0,'a');
+      bots[r].bp = new BlinkenlightProxy(bots[r].pc,0,'a');
 
       // create some dummy messages in the store
       for( int s=0; s<storelen; s++ )
@@ -122,24 +117,16 @@ int main(int argc, char **argv)
 	  bots[r].store[s].sender = 0;
 	  bots[r].store[s].range = 10000;
 	}   
-   }
-  
-  // try a few reads
-  for( int a=0; a<5; a++ )
-    if(robot.Read()) exit(1);    
+      
+      for( int a=0; a<5; a++ )
+	if( bots[r].pc->Read()) exit(1);
+    }
   
   // blink the zeroth robot's blinkenlight
   bots[0].bp->SetLight( true, 500 );
   
-  for( int r=1; r<num_robots; r++ )
-    bots[r].sp->GetSonarGeom();
-
   while( 1 )
     {
-      // wait for the playerclient to get new data. each read we have
-      // a new array of visible neigbors, with their angles and ranges
-      if(robot.Read()) exit(1);
-      
       // robot zero sends out a message with hop count zero
       gradient_t grad;
       grad.type = 1;
@@ -152,10 +139,15 @@ int main(int argc, char **argv)
       msg.len = sizeof(grad);
       msg.intensity = 200;
       
+      bots[0].pc->Read();
       bots[0].fp->SendMessage( &msg, true );
       
       for( int r=1; r<num_robots; r++ )
 	{
+	  // wait for the playerclient to get new data. each read we have
+	  // a new array of visible neigbors, with their angles and ranges
+	  bots[r].pc->Read();
+      
 	  int upstream_bot = 0;
 	  
 	  // any messages for me?
@@ -188,16 +180,10 @@ int main(int argc, char **argv)
 		}
 	    }
 	  
-	  // now look in the store to find the lowest hop count
-	  printf( "bot %d store:\n", r );
-	  
+	  // now look in the store to find the smallest range
 	  int lowrange = 10000;
 	  for( int m=0; m <storelen; m++ )
 	    {
-	      //printf( "range %d  sender %d\n", 
-	      //      bots[r].store[m].range, 
-	      //      bots[r].store[m].sender );
-	      
 	      if( bots[r].store[m].range < lowrange )
 		{
 		  lowrange = bots[r].store[m].range;
@@ -205,10 +191,6 @@ int main(int argc, char **argv)
 		}
 	    }   
 	  
-	  printf( "lowrange: %d  upstream_bot %d\n",
-		  lowrange, upstream_bot );
-	  
-	 	  
 	  // find the direction of the fiducial that sent us the
 	  // lowest cumulative range
 	  int direction = 0;
@@ -229,30 +211,19 @@ int main(int argc, char **argv)
 	      
 	      range = range - 1.5;
 	      
-	      //dx += range * cos( bearing ); 	  
-	      //dy += range * sin( bearing ); 	   
+	      dx += range * cos( bearing ); 	  
+	      dy += range * sin( bearing ); 	   
 	    }
 	  
-	  // and for each range sensor
-	  for( int s=0; s<bots[r].sp->range_count; s++ )
-	    {
-	      double range = bots[r].sp->ranges[s] / 1000.0;
-	      double bearing = DTOR( bots[r].sp->sonar_pose.poses[s][3] );
-		
-	      dx -= range * cos( bearing ); 	  
-	      dy -= range * sin( bearing ); 	   
-	    }
-
 	  // threshold our turnrate
 	  int turnrate = direction;
 	  if( turnrate > 100 ) turnrate = 100.0;
 	  if( turnrate < -100 ) turnrate = -100.0;
 	  
 	  // move!
-	  //bots[r].pp->SetSpeed( 200*dx, 200*dy, turnrate );
-	  bots[r].pp->SetSpeed( 200*dx, 200*dy, 0 );
+	  bots[r].pp->SetSpeed( 200*dx, 200*dy, turnrate );
 
-	  // if we're pointing to the source, switch on the light
+	  // enable the light if we're pointing to the source
 	  if( fabs(direction) < 3 )
 	    bots[r].bp->SetLight( true, 0 );
 	  else
@@ -271,7 +242,6 @@ int main(int argc, char **argv)
 	      send.len = sizeof(grad);
 	      send.intensity = 200;
 	      
-	      printf( "bot %d sends a message\n", r );
 	      bots[r].fp->SendMessage( &send, true );
 	    }
 	}

@@ -79,6 +79,9 @@ ClientProxy::ClientProxy(PlayerClient* pc,
   if(client)
     client->AddProxy(this);
 
+  //printf( "requesting access to device %d:%d:%d\n",
+  //  m_device_id.port, m_device_id.code, m_device_id.index );
+
   if(client && req_access!='c')
   {
     client->RequestDeviceAccess(m_device_id,
@@ -86,9 +89,11 @@ ClientProxy::ClientProxy(PlayerClient* pc,
                                 driver_name, sizeof(driver_name));
 
     if((req_access != grant_access) && (player_debug_level(-1) >= 1))
-      printf("WARNING: tried to get '%c' access to device %d:%d but got "
-             "'%c' access.\n", req_access,
-             m_device_id.code, m_device_id.code, grant_access);
+      printf("WARNING: tried to get '%c' access to device %d:%d:%d but got "
+             "'%c' access.\n", 
+	     req_access,
+             m_device_id.port, m_device_id.code, m_device_id.index, 
+	     grant_access);
   }
   else
   {

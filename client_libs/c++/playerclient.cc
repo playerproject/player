@@ -142,6 +142,7 @@ int PlayerClient::Connect(const char* hostname, int port)
 
     if(Connect(&this->hostaddr, port) == 0)
     {
+      // printf( "connected  to Player on port %d\n", port );
       // connect good - store the hostname and returm sucess
       strncpy(this->hostname, hostname, 255);     
       return(0);
@@ -392,10 +393,11 @@ int PlayerClient::RequestDeviceAccess(player_device_id_t device_id,
                                         req_access, grant_access, 
                                         driver_name, driver_name_len);
 
-  /*
-  if(driver_name)
-    printf("%d:%d with driver %s\n", device, index, driver_name);
-   */
+  
+  /* if(driver_name)
+    printf("%d:%d:%d with driver %s\n", 
+	   this->port, device_id.code, device_id.index, driver_name);
+  */
 
   return(retval);
 }
