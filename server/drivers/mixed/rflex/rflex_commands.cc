@@ -621,6 +621,7 @@ static void parseSonarReport( unsigned char *buffer )
 // joystick command enabled
 static void parseJoyReport( int fd, unsigned char *buffer )
 {
+	static bool JoystickWasOn = false;
 
 	int x,y;
   unsigned char opcode, dlen, buttons;
@@ -641,16 +642,17 @@ static void parseJoyReport( int fd, unsigned char *buffer )
 	
 	if ((buttons & 1) == 1)
 	{
-//		rflex_set_velocity(fd,static_cast<long> (y * rflex_configs.odo_distance_conversion* rflex_configs.joy_pos_ratio), static_cast<long> (x* rflex_configs.joy_ang_ratio * rflex_configs.odo_angle_conversion), static_cast<long> (rflex_configs.mmPsec2_trans_acceleration));
+		JoystickWasOn = true;
 		rflex_set_velocity(fd,(long) MM2ARB_ODO_CONV(y * rflex_configs.joy_pos_ratio),(long) RAD2ARB_ODO_CONV(x * rflex_configs.joy_ang_ratio),(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
-
-
 		RFLEX::joy_control = 5;
-//		RFLEX::command->position.xspeed = static_cast<int> (y * rflex_configs.joy_pos_ratio);
-//		RFLEX::command->position.yawspeed = static_cast<int> (x * rflex_configs.joy_ang_ratio);
-		
 	}
-//	printf("JoystickState: %d %d %d %d %d\n",x,y,buttons,0,0);//RFLEX::command->position.xspeed,RFLEX::command->position.yawspeed);
+	else if (JoystickWasOn)
+	{
+		JoystickWasOn = false;
+		rflex_set_velocity(fd,0,0,(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
+		RFLEX::joy_control = 5;	
+	}
+
     break;
   default:
     break;
