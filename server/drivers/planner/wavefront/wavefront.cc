@@ -905,11 +905,12 @@ void Wavefront::Main()
                            this->waypoint_y,
                            this->waypoint_a);
       }
-      //printf("waiting for achievement of %f,%f,%f\n",
-             //this->waypoint_x, this->waypoint_y, RTOD(this->waypoint_a));
-      //printf("current pose %f,%f,%f\n",
-             //this->localize_x, this->localize_y, RTOD(this->localize_a));
-      if(!rotate_waypoint)
+
+      // This check causes hangups if the robot is poorly localized and
+      // then becomes better localized while turning.  Why was it here in
+      // the first place?
+      //if(!rotate_waypoint)
+      if(1)
       {
         SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
         // cache this waypoint, in odometric coords

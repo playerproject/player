@@ -175,7 +175,8 @@ _robot_button_callback(GnomeCanvasItem *item,
   pose.py = -event->button.y;
   
   // lookup (and store) which robot was clicked
-  if(item != (GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas))
+  if((item != (GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas)) &&
+     !setting_theta && !setting_goal)
   {
     for(idx=0;idx<gui_data->num_robots;idx++)
     {
@@ -211,71 +212,70 @@ _robot_button_callback(GnomeCanvasItem *item,
             gnome_canvas_item_show(gui_data->robot_goals[idx]);
           }
         case 1:
-          if(item == (GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas))
+          if((item == 
+              (GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas)) ||
+             setting_theta)
           {
-            if(setting_theta)
+            theta = atan2(-points->coords[3] + points->coords[1],
+                          points->coords[2] - points->coords[0]);
+
+            mean[0] = points->coords[0];
+            mean[1] = -points->coords[1];
+            mean[2] = theta;
+
+            if(!setting_goal)
             {
-              theta = atan2(-points->coords[3] + points->coords[1],
-                            points->coords[2] - points->coords[0]);
-
-              mean[0] = points->coords[0];
-              mean[1] = -points->coords[1];
-              mean[2] = theta;
-
-              if(!setting_goal)
+              if(gui_data->localizes[idx])
               {
-                if(gui_data->localizes[idx])
-                {
-                  printf("setting pose for robot %d to (%.3f, %.3f, %.3f)\n",
-                         idx, mean[0], mean[1], mean[2]);
+                printf("setting pose for robot %d to (%.3f, %.3f, %.3f)\n",
+                       idx, mean[0], mean[1], mean[2]);
 
-                  if(playerc_localize_set_pose(gui_data->localizes[idx], 
-                                               mean, cov) < 0)
-                  {
-                    fprintf(stderr, "error while setting pose on robot %d\n", 
-                            idx);
-                    gtk_main_quit();
-                    return(TRUE);
-                  }
-                }
-                else
+                if(playerc_localize_set_pose(gui_data->localizes[idx], 
+                                             mean, cov) < 0)
                 {
-                  puts("WARNING: NOT setting pose; couldn't connect to localize\n");
+                  fprintf(stderr, "error while setting pose on robot %d\n", 
+                          idx);
+                  gtk_main_quit();
+                  return(TRUE);
                 }
               }
               else
               {
-                if(gui_data->planners[idx])
-                {
-                  printf("setting goal for robot %d to (%.3f, %.3f, %.3f)\n",
-                         idx, mean[0], mean[1], mean[2]);
-                  if(playerc_planner_set_cmd_pose(gui_data->planners[idx],
-                                                   mean[0], mean[1], 
-                                                   mean[2]) < 0)
-                  {
-                    fprintf(stderr, "error while setting goal on robot %d\n", 
-                            idx);
-                    gtk_main_quit();
-                    return(TRUE);
-                  }
-                  gui_data->goals[idx][0] = mean[0];
-                  gui_data->goals[idx][1] = mean[1];
-                  gui_data->goals[idx][2] = mean[2];
-                  gui_data->planners[idx]->waypoint_count = -1;
-                }
-                else
-                {
-                  puts("WARNING: NOT setting goal; couldn't connect to planner\n");
-                }
+                puts("WARNING: NOT setting pose; couldn't connect to localize\n");
               }
-
-              //move_robot(gui_data->robot_items[idx],pose);
-              gnome_canvas_item_hide(setting_theta_line);
-              setting_theta = FALSE;
-              setting_goal = FALSE;
-
-              robot_moving_p = 0;
             }
+            else
+            {
+              if(gui_data->planners[idx])
+              {
+                printf("setting goal for robot %d to (%.3f, %.3f, %.3f)\n",
+                       idx, mean[0], mean[1], mean[2]);
+                if(playerc_planner_set_cmd_pose(gui_data->planners[idx],
+                                                mean[0], mean[1], 
+                                                mean[2]) < 0)
+                {
+                  fprintf(stderr, "error while setting goal on robot %d\n", 
+                          idx);
+                  gtk_main_quit();
+                  return(TRUE);
+                }
+                gui_data->goals[idx][0] = mean[0];
+                gui_data->goals[idx][1] = mean[1];
+                gui_data->goals[idx][2] = mean[2];
+                gui_data->planners[idx]->waypoint_count = -1;
+              }
+              else
+              {
+                puts("WARNING: NOT setting goal; couldn't connect to planner\n");
+              }
+            }
+
+            //move_robot(gui_data->robot_items[idx],pose);
+            gnome_canvas_item_hide(setting_theta_line);
+            setting_theta = FALSE;
+            setting_goal = FALSE;
+
+            robot_moving_p = 0;
           }
           else
           {
