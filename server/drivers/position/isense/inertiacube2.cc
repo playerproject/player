@@ -145,7 +145,7 @@ void InertiaCube2_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 InertiaCube2::InertiaCube2(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_fiducial_data_t), 0, 10, 10)
+    : CDevice(sizeof(player_position_data_t), 0, 10, 10)
 {
   this->port = cf->ReadString(section, "port", "/dev/ttyS3");
   

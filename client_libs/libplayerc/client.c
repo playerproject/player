@@ -185,6 +185,20 @@ int playerc_client_datamode(playerc_client_t *client, int mode)
   return 0;
 }
 
+// Change the server's data delivery frequency (freq is in Hz)
+int playerc_client_datafreq(playerc_client_t *client, int freq)
+{
+  player_device_datafreq_req_t req;
+
+  req.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
+  req.frequency = htons(freq);
+
+  if (playerc_client_request(client, NULL, &req, sizeof(req), NULL, 0) < 0)
+    return -1;
+  
+  return 0;
+}
+
 
 // Test to see if there is pending data.
 int playerc_client_peek(playerc_client_t *client, int timeout)

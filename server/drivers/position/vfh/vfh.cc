@@ -1559,7 +1559,7 @@ void VFH_Class::PutPose()
   data.xspeed = (int32_t)rint(this->odom_vel[0]);
   data.yspeed = (int32_t)rint(this->odom_vel[1]);
   data.yawspeed = (int32_t)rint(this->odom_vel[2]);
-  
+
   // Byte swap
   data.xpos = htonl(data.xpos);
   data.ypos = htonl(data.ypos);

@@ -1,4 +1,4 @@
 # a simple configuration that enables the trogdor driver and leaves out
 # stuff that requires 3rd party libs that are not installed by default on
 # RedHat 9
-./configure --disable-gazebo --prefix=/home/gerkey/ps-1.4 --disable-segwayrmp --enable-trogdor --disable-cmvision --disable-fixedtones --enable-rtkgui
+./bootstrap --disable-gazebo --prefix=/home/gerkey/ps-1.4 --disable-segwayrmp --enable-trogdor --disable-cmvision --disable-fixedtones --enable-rtkgui --enable-wavefront
