@@ -89,6 +89,7 @@ class Camera1394 : public Driver
   // Capture method: RAW or VIDEO (DMA)
   private: enum {methodRaw, methodVideo};
   private: int method;
+  private: bool forceRaw;
 
   // Framerate.An  enum defined in libdc1394/dc1394_control.h
   private: unsigned int frameRate;
@@ -142,6 +143,9 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
 
   // The node inside the port
   this->node = cf->ReadInt(section, "node", 0);
+
+  // Force into raw mode
+  this->forceRaw = cf->ReadInt(section, "force_raw", 0);
 
   // Video frame rate
   fps = cf->ReadFloat(section, "framerate", 15);
@@ -249,7 +253,7 @@ int Camera1394::Setup()
 
   // TODO: need to indicate what formats the camera supports somewhere
   // Remove; leave?
-  //dc1394_print_feature_set(&this->features);
+  dc1394_print_feature_set(&this->features);
 
   // Get the ISO channel and speed of the video
   if (DC1394_SUCCESS != dc1394_get_iso_channel_and_speed(this->handle, this->camera.node, 
@@ -261,9 +265,11 @@ int Camera1394::Setup()
       
   // Set camera to use DMA, improves performance.
   // The '1' parameters is the dropFrames parameter.
-  if (dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
-                               this->format, this->mode, speed, this->frameRate, 
-                               NUM_DMA_BUFFERS, 1, NULL, &this->camera) == DC1394_SUCCESS)
+  if (!this->forceRaw &&
+      dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
+                               this->format, this->mode, speed,
+                               this->frameRate, NUM_DMA_BUFFERS, 1, NULL,
+                               &this->camera) == DC1394_SUCCESS)
   {
     this->method = methodVideo;
   }
