@@ -43,7 +43,7 @@
 #define COLOR_POSITION_ROBOT     0xC00000
 #define COLOR_POSITION_CONTROL   0xFF0000
 #define COLOR_LASER_SCAN         0x0000C0
-#define COLOR_LASERBEACON_BEACON 0x0000C0
+#define COLOR_LBD_BEACON         0x0000C0
 #define COLOR_PTZ_DATA           0x00C000
 #define COLOR_PTZ_CMD            0x00C000
 
@@ -180,10 +180,10 @@ void laser_update(laser_t *laser);
 
 
 /***************************************************************************
- * Laser beacon device
+ * LBD (laser beacon detector) device
  ***************************************************************************/
 
-// LaserBeacon device info
+// LBD device info
 typedef struct
 {
   // Menu stuff
@@ -194,28 +194,27 @@ typedef struct
   // Figure for drawing the beacons
   rtk_fig_t *beacon_fig;
   
-  // LaserBeacon device proxy
+  // Lbd device proxy
   playerc_lbd_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
   
-} laserbeacon_t;
+} lbd_t;
 
 
-// Create a laserbeacon device
-laserbeacon_t *laserbeacon_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                                  int index);
+// Create a lbd device
+lbd_t *lbd_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
 
-// Destroy a laserbeacon device
-void laserbeacon_destroy(laserbeacon_t *laserbeacon);
+// Destroy a lbd device
+void lbd_destroy(lbd_t *lbd);
 
-// Update a laserbeacon device
-void laserbeacon_update(laserbeacon_t *laserbeacon);
+// Update a lbd device
+void lbd_update(lbd_t *lbd);
 
 
 /***************************************************************************
- * PTZ device
+ * PTZ (pan-tilt-zoom) device
  ***************************************************************************/
 
 // PTZ device info
@@ -241,7 +240,7 @@ typedef struct
 
 // Create a ptz device
 ptz_t *ptz_create(mainwnd_t *mainwnd, imagewnd_t *imagewnd, opt_t *opt,
-                        playerc_client_t *client, int index);
+                  playerc_client_t *client, int index);
 
 // Destroy a ptz device
 void ptz_destroy(ptz_t *ptz);
@@ -269,6 +268,9 @@ typedef struct
   
   // Timestamp on most recent data
   double datatime;
+
+  // Image dimensions
+  int width, height;
   
 } vision_t;
 
