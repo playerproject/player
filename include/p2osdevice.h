@@ -165,8 +165,8 @@ class CP2OSDevice:public CDevice
     CP2OSDevice(int argc, char** argv);
 
     // we override these, because we will maintain our own subscription count
-    virtual int Subscribe();
-    virtual int Unsubscribe();
+    virtual int Subscribe(void *client);
+    virtual int Unsubscribe(void *client);
 
     virtual int Setup();
     virtual int Shutdown();

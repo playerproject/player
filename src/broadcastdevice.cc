@@ -27,7 +27,7 @@
 //
 // Theory of operation:
 //  This device uses IPv4 broadcasting (not multicasting).  Be careful
-//  not to run this on the university nets: you will get disconnected
+//  not to run this on the USC university nets: you will get disconnected
 //  and spanked!
 //
 ///////////////////////////////////////////////////////////////////////////
@@ -43,18 +43,19 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
 #include "broadcastdevice.hh"
 
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
+
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
-//
 CBroadcastDevice::CBroadcastDevice(int argc, char** argv) :
-  CDevice(0,0,0,0)
+  CDevice(0,0,0,100)
 {
+  this->max_queue_size = 100;
   this->addr = DEFAULT_BROADCAST_IP;
   this->port = DEFAULT_BROADCAST_PORT;
   this->read_socket = 0;
@@ -83,17 +84,360 @@ CBroadcastDevice::CBroadcastDevice(int argc, char** argv) :
 
 
 ///////////////////////////////////////////////////////////////////////////
+// Subscribe new clients to this device.  This will create a new message
+// queue for each client.
+int CBroadcastDevice::Subscribe(void *client)
+{
+  int result;
+  
+  // Do default subscription.
+  result = CDevice::Subscribe(client);
+  if (result != 0)
+    return result;
+
+  // Create a new queue
+  Lock();
+  AddQueue(client);
+  Unlock();
+  
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Unsubscribe clients from this device.  This will destroy the corresponding
+// message queue.
+int CBroadcastDevice::Unsubscribe(void *client)
+{
+  // Delete queue for this client
+  Lock();
+  DelQueue(client);
+  Unlock();
+
+  // Do default unsubscribe
+  return CDevice::Unsubscribe(client);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
 // Start device
-//
 int CBroadcastDevice::Setup()
 {
-  PLAYER_TRACE0("Broadcast device initialising...");
+  PLAYER_TRACE0("initializing");
     
+  // Setup the sockets
+  if (SetupSockets() != 0)
+    return 1;
+
+  // Setup the message queues
+  if (SetupQueues() != 0)
+    return 1;
+
+  // Start device thread
+  pthread_create(&this->thread, NULL, &DummyMain, this );
+  
+  PLAYER_TRACE0("initializing ... done");
+    
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Shutdown device
+int CBroadcastDevice::Shutdown()
+{
+  void* dummy;
+  
+  PLAYER_TRACE0("shuting down");
+  
+  // Shutdown device thread
+  pthread_cancel(this->thread);
+  if (pthread_join(this->thread, &dummy) != 0)
+    PLAYER_ERROR1("error joining thread : %s", strerror(errno));
+
+  // Shutdown the message queues
+  ShutdownQueues();
+  
+  // Shutdown the sockets
+  ShutdownSockets();
+  
+  PLAYER_TRACE0("shutting down ... done");
+    
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Handle requests.  We dont queue them up, but handle them immediately.
+int CBroadcastDevice::PutConfig(CClientData* client, unsigned char* data, size_t len)
+{
+  player_broadcast_msg_t *request;
+  player_broadcast_msg_t reply;
+  int replen;
+
+  request = (player_broadcast_msg_t*) data;
+
+  switch (request->subtype)
+  {
+    case PLAYER_BROADCAST_SUBTYPE_SEND:
+    {
+      // Write the message to the broadcast socket, and give client an ACK.
+      SendPacket(request->data, len);
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    }
+    case PLAYER_BROADCAST_SUBTYPE_RECV:
+    {
+      // Pop the next waiting packet from the queue and send it back
+      // to the client.  If there are no waiting packets, send a NACK.
+      Lock();
+      replen = PopQueue(client, reply.data, sizeof(reply));
+      Unlock();
+
+      // TESTING
+      printf("popped %d [%s]\n", replen, reply.data);
+      
+      if (replen > 0)
+      {
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
+                     (unsigned char*) &reply, (size_t) replen) != 0)
+          PLAYER_ERROR("PutReply() failed");
+      }
+      else
+      {
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          PLAYER_ERROR("PutReply() failed");
+      }
+      break;
+    }
+  }
+  return 0;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Dummy main (just calls real main)
+void* CBroadcastDevice::DummyMain(void *device)
+{
+  ((CBroadcastDevice*) device)->Main();
+  return NULL;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Main function for device thread
+int CBroadcastDevice::Main() 
+{
+  int len;
+  player_broadcast_msg_t msg;
+  
+  PLAYER_TRACE0("thread running");
+
+  // Defer thread cancellation; the thread will run until
+  // pthread_testcancel() is called.
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
+  while (true)
+  {
+    // Get incoming messages; this is a blocking call.
+    len = RecvPacket(&msg, sizeof(msg));
+    //PLAYER_TRACE1("got message, len [%d]", len);
+
+    // Test for thread termination; this will make the function exit
+    // immediately.
+    pthread_testcancel();
+
+    // TESTING
+    printf("pushing %d [%s]\n", len, msg.data);
+    
+    // Push incoming messages on the queue.
+    Lock();
+    PushQueue(&msg, len);
+    Unlock();
+  }
+
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Setup the message queues.
+// This is a list of queues (one queue for each client) implemented as a
+// dynamic array of pointers to queues.
+int CBroadcastDevice::SetupQueues()
+{
+  this->qlist_count = 0;
+  this->qlist_size = 10;
+  this->qlist = (queue_t**) malloc(this->qlist_size * sizeof(queue_t*));
+
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Shutdown the message queues.
+// First delete any queues we still have, then delete the array of
+// pointers to queues.
+int CBroadcastDevice::ShutdownQueues()
+{
+  int i;
+  
+  for (i = 0; i < this->qlist_count; i++)
+    free(this->qlist[i]);
+  this->qlist_count = 0;
+
+  free(this->qlist);
+  this->qlist_size = 0;
+  
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Create a new queue.
+// We may have to increase the size of the list.
+int CBroadcastDevice::AddQueue(void *client)
+{
+  queue_t *queue;
+
+  PLAYER_TRACE1("adding queue for client %p", client);
+
+  if (this->qlist_count == this->qlist_size)
+  {
+    this->qlist_size *= 2;
+    this->qlist = (queue_t**) realloc(this->qlist, this->qlist_size * sizeof(queue_t*));
+  }
+  assert(this->qlist_count < this->qlist_size);
+
+  queue = (queue_t*) malloc(sizeof(queue_t));
+  queue->client = client;
+  queue->size = 10;
+  queue->count = 0;
+  queue->start = queue->end = 0;
+  queue->msg = (void**) malloc(queue->size * sizeof(void*));
+  queue->msglen = (int*) malloc(queue->size * sizeof(int));
+  
+  this->qlist[this->qlist_count++] = queue;
+  
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Delete queue for a client.
+// We have to find the queue, then shift all the other entries in the list.
+int CBroadcastDevice::DelQueue(void *client)
+{
+  int index;
+
+  PLAYER_TRACE1("deleting queue for client %p", client);
+      
+  index = FindQueue(client);
+  if (index < 0)
+  {
+    PLAYER_ERROR1("queue for client %p not found", client);
+    return 1;
+   }
+
+  free(this->qlist[index]);
+  memmove(this->qlist + index, this->qlist + index + 1,
+          (this->qlist_count - 1) * sizeof(this->qlist[0]));
+  this->qlist_count--;
+  
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Find the queue for a particular client.
+int CBroadcastDevice::FindQueue(void *client)
+{
+  int i;
+
+  for (i = 0; i < this->qlist_count; i++)
+  {
+    if (this->qlist[i]->client == client)
+      return i;
+  }
+  return -1;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Push a message onto all of the queues
+int CBroadcastDevice::PushQueue(void *msg, int len)
+{
+  int i;
+  queue_t *queue;
+  
+  for (i = 0; i < this->qlist_count; i++)
+  {
+    queue = this->qlist[i];
+
+    // Resize queue if we've run out of space.
+    if (queue->count ==  queue->size)
+    {
+      if (queue->size >= this->max_queue_size)
+        continue;
+      queue->size *= 2;
+      queue->msg = (void**) realloc(queue->msg, queue->size * sizeof(void*));
+      queue->msglen = (int*) realloc(queue->msglen, queue->size * sizeof(int));
+    }
+    assert(queue->count < queue->size);
+
+    queue->msg[queue->end] = malloc(len);
+    memcpy(queue->msg[queue->end], msg, len);
+    queue->msglen[queue->end] = len;
+    
+    queue->end = (queue->end + 1) % queue->size;
+    queue->count += 1;
+  }
+
+  return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Pop a message from a particular client's queue
+int CBroadcastDevice::PopQueue(void *client, void *msg, int len)
+{
+  int index, msglen;
+  queue_t *queue;
+  
+  index = FindQueue(client);
+  if (index < 0)
+  {
+    PLAYER_ERROR1("queue for client %p not found", client);
+    return -1;
+  }
+  queue = this->qlist[index];
+
+  if (queue->count == 0)
+    return 0;
+  
+  msglen = queue->msglen[queue->start];
+  assert(msglen <= len);
+  memcpy(msg, queue->msg[queue->start], msglen);
+  free(queue->msg[queue->start]);
+
+  queue->start = (queue->start + 1) % queue->size;
+  queue->count -= 1;
+
+  return msglen;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Initialise the broadcast sockets
+int CBroadcastDevice::SetupSockets()
+{
   // Set up the write socket
   this->write_socket = socket(AF_INET, SOCK_DGRAM, 0);
   if (this->write_socket == -1)
   {
-    perror(__PRETTY_FUNCTION__);
+    PLAYER_ERROR1("error initializing socket : %s", strerror(errno));
     return 1;
   }
   memset(&this->write_addr, 0, sizeof(this->write_addr));
@@ -106,7 +450,7 @@ int CBroadcastDevice::Setup()
   if (setsockopt(this->write_socket, SOL_SOCKET, SO_BROADCAST,
                  (const char*)&broadcast, sizeof(broadcast)) < 0)
   {
-    perror(__PRETTY_FUNCTION__);
+    PLAYER_ERROR1("error initializing socket : %s", strerror(errno));
     return 1;
   }
     
@@ -114,7 +458,7 @@ int CBroadcastDevice::Setup()
   this->read_socket = socket(PF_INET, SOCK_DGRAM, 0);
   if (this->read_socket == -1)
   {
-    perror(__PRETTY_FUNCTION__);
+    PLAYER_ERROR1("error initializing socket : %s", strerror(errno));
     return 1;
   }
 
@@ -123,7 +467,7 @@ int CBroadcastDevice::Setup()
   if (setsockopt(this->read_socket, SOL_SOCKET, SO_REUSEADDR,
                  (const char*)&share, sizeof(share)) < 0)
   {
-    perror(__PRETTY_FUNCTION__);
+    PLAYER_ERROR1("error initializing socket : %s", strerror(errno));
     return 1;
   }
     
@@ -134,159 +478,67 @@ int CBroadcastDevice::Setup()
   this->read_addr.sin_port = htons(this->port);
   if (bind(this->read_socket, (sockaddr*) &this->read_addr, sizeof(this->read_addr)) < 0)
   {
-    perror(__PRETTY_FUNCTION__);
+    PLAYER_ERROR1("error initializing socket : %s", strerror(errno));
     return 1;
   }
 
   // Set socket to non-blocking
-  if (fcntl(this->read_socket, F_SETFL, O_NONBLOCK) < 0)
-  {
-    perror(__PRETTY_FUNCTION__);
-    return 1;
-  }
+  //if (fcntl(this->read_socket, F_SETFL, O_NONBLOCK) < 0)
+  //{
+  //  PLAYER_ERROR1("error initializing socket : %s", strerror(errno));
+  //  return 1;
+  //}
 
-  // Dummy call to get around #(*%&@ mutex
-  //GetLock()->PutData(this, NULL, 0);
-
-  PLAYER_TRACE0("done\n");
-    
   return 0;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Shutdown device
-//
-int CBroadcastDevice::Shutdown()
+// Shutdown the broadcast sockets
+int CBroadcastDevice::ShutdownSockets()
 {
-  PLAYER_TRACE0("Broadcast device shuting down...");
-    
   // Close sockets
-  //
   close(this->write_socket);
   close(this->read_socket);
 
-  PLAYER_TRACE0("done\n");
-    
   return 0;
 }
 
-
-///////////////////////////////////////////////////////////////////////////
-// Get incoming data
-size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize,
-                                 uint32_t* timestamp_sec, 
-                                 uint32_t* timestamp_usec)
-{    
-  int size;
-
-  Lock();
-
-  this->data.len = 0;
-
-  // Read all the currently queued packets
-  // and concatenate them into a broadcast data packet.
-  while (this->data.len < sizeof(this->data.buffer))
-  {
-    int max_bytes = sizeof(this->data.buffer) - this->data.len;
-    int bytes = RecvPacket(this->data.buffer + this->data.len, max_bytes);
-    if (bytes == 0)
-    {
-      PLAYER_TRACE0("read no bytes");
-      break;
-    }
-    else if (bytes >= max_bytes)
-    {
-      PLAYER_TRACE0("broadcast packet overrun; packets have been discarded\n");
-      break;
-    }
-    PLAYER_TRACE1("read msg len = %d", bytes);
-    this->data.len += bytes;
-  }
-
-  PLAYER_TRACE1("data.len = %d", this->data.len);
-    
-  // Do some byte swapping
-  this->data.len = htons(this->data.len);
-    
-  // Copy data
-  memcpy(data, &this->data, maxsize); 
-  // fill in the timestamp
-  struct timeval curr;
-  GlobalTime->GetTime(&curr);
-  *timestamp_sec = curr.tv_sec;
-  *timestamp_usec = curr.tv_usec;
-
-  // Return actual length of data
-  size = ntohs(this->data.len) + sizeof(this->data.len);
-
-  Unlock();
-
-  return(size);
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-// Send data
-void CBroadcastDevice::PutCommand(unsigned char *cmd, size_t maxsize)
-{
-  PLAYER_TRACE1("maxsize %d", maxsize);
-
-  assert(maxsize <= sizeof(this->cmd));
-  memcpy(&this->cmd, cmd, maxsize);
-    
-  // Do some bute swapping
-  this->cmd.len = ntohs(((player_broadcast_cmd_t*) cmd)->len);
-
-  PLAYER_TRACE1("cmd.len %d", this->cmd.len);
-  PLAYER_TRACE1("buffer.len %d", ntohs(*((uint16_t*) this->cmd.buffer)));
-  
-  // Send all the messages in the command at once
-  SendPacket(this->cmd.buffer, this->cmd.len);
-
-  PLAYER_TRACE2("cmd.buffer [%s] %d bytes", this->cmd.buffer, this->cmd.len);
-}
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Send a packet
-void CBroadcastDevice::SendPacket(unsigned char *packet, size_t size)
+void CBroadcastDevice::SendPacket(void *packet, size_t size)
 {    
   if (sendto(this->write_socket, (const char*)packet, size,
              0, (sockaddr*) &this->write_addr, sizeof(this->write_addr)) < 0)
   {
-    perror(__PRETTY_FUNCTION__);
+    PLAYER_ERROR1("error writing to broadcast socket: %s", strerror(errno));
     return;
   }
 
-  PLAYER_TRACE1("sent msg len = %d", (int) size);
+  //PLAYER_TRACE1("sent msg len = %d", (int) size);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // Receive a packet
-size_t CBroadcastDevice::RecvPacket(unsigned char *packet, size_t size)
+int CBroadcastDevice::RecvPacket(void *packet, size_t size)
 {
 #ifdef PLAYER_LINUX
   size_t addr_len = sizeof(this->read_addr);    
 #else
   int addr_len = (int)sizeof(this->read_addr);    
 #endif
-  size_t packet_len = recvfrom(this->read_socket, (char*)packet, size,
-                               0, (sockaddr*) &this->read_addr, &addr_len);
-  if ((int) packet_len < 0)
+  int packet_len = recvfrom(this->read_socket, (char*)packet, size,
+                            0, (sockaddr*) &this->read_addr, &addr_len);
+  if (packet_len < 0)
   {
-    if (errno == EAGAIN)
-      return 0;
-    else
-    {
-      perror(__PRETTY_FUNCTION__);
-      return 0;
-    }
+    PLAYER_ERROR1("error reading from broadcast socket: %s", strerror(errno));
+    return 0;
   }
 
-  PLAYER_TRACE1("read packet len = %d", (int) packet_len);
-    
+  //PLAYER_TRACE1("read packet len = %d", packet_len);
   return packet_len;
 }
 

@@ -235,7 +235,7 @@ void CDevice::SetupUnlock()
   pthread_mutex_unlock(&setupMutex);
 }
 
-int CDevice::Subscribe()
+int CDevice::Subscribe(void *client)
 {
   int setupResult;
 
@@ -257,7 +257,7 @@ int CDevice::Subscribe()
   return( setupResult );
 }
 
-int CDevice::Unsubscribe() 
+int CDevice::Unsubscribe(void *client) 
 {
   int shutdownResult;
 

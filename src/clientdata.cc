@@ -802,7 +802,7 @@ int CClientData::Subscribe( unsigned short code, unsigned short index )
 
   if((devicep = deviceTable->GetDevice(port,code,index)))
   {
-    subscribe_result = devicep->Subscribe();
+    subscribe_result = devicep->Subscribe(this);
     return(subscribe_result);
   }
   else
@@ -820,7 +820,7 @@ void CClientData::Unsubscribe( unsigned short code, unsigned short index )
 
   if((devicep = deviceTable->GetDevice(port,code,index)))
   {
-    devicep->Unsubscribe();
+    devicep->Unsubscribe(this);
   }
   else
   {

@@ -132,8 +132,7 @@ int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double
   config.subtype = PLAYER_LASER_GET_CONFIG;
 
   if (playerc_client_request(device->info.client, &device->info,
-                             (char*) &config, sizeof(config),
-                             (char*) &config, sizeof(config)) != 0)
+                             &config, sizeof(config), &config, sizeof(config)) != 0)
     return -1;
 
   *min_angle = (short) ntohs(config.min_angle) / 100.0 * M_PI / 180;

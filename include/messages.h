@@ -647,6 +647,17 @@ typedef struct
  * Broadcast device
  */
 
+/* Request packet sub-types */
+#define PLAYER_BROADCAST_SUBTYPE_SEND 1
+#define PLAYER_BROADCAST_SUBTYPE_RECV 2
+
+/* Broadcast request/reply packet. */
+typedef struct
+{
+  uint8_t subtype;
+  uint8_t data[1024];
+} __attribute__ ((packed)) player_broadcast_msg_t;
+
 
 // Broadcast command packet
 // Each packet may contain multiple messages.

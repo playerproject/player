@@ -172,7 +172,7 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 // Issue a request to the server and await a reply (blocking).
 int playerc_client_request(playerc_client_t *client, playerc_device_t *device,
-                           char *req_data, int req_len, char *rep_data, int rep_len);
+                           void *req_data, int req_len, void *rep_data, int rep_len);
 
 // Read data from the server (blocking).
 int  playerc_client_read(playerc_client_t *client);
@@ -336,6 +336,40 @@ int playerc_laserbeacon_configure(playerc_laserbeacon_t *device, int bit_count, 
 
 
 /***************************************************************************
+ * Broadcast device
+ **************************************************************************/
+
+// Broadcast device data
+typedef struct
+{
+  // Device info; must be at the start of all device structures.
+  playerc_device_t info;
+    
+} playerc_broadcast_t;
+
+
+// Create a broadcast proxy
+playerc_broadcast_t *playerc_broadcast_create(playerc_client_t *client, int index);
+
+// Destroy a broadcast proxy
+void playerc_broadcast_destroy(playerc_broadcast_t *device);
+
+// Subscribe to the broadcast device
+int playerc_broadcast_subscribe(playerc_broadcast_t *device, int access);
+
+// Un-subscribe from the broadcast device
+int playerc_broadcast_unsubscribe(playerc_broadcast_t *device);
+
+// Send a broadcast message.
+int playerc_broadcast_send(playerc_broadcast_t *device, void *msg, int len);
+
+// Read the next broadcast message.
+int playerc_broadcast_recv(playerc_broadcast_t *device, void *msg, int len);
+
+
+
+
+/***************************************************************************
  * GPS device
  **************************************************************************/
 
@@ -384,32 +418,6 @@ int  playerc_bps_setlaser(playerc_bps_t *device, double px, double py, double pa
 int  playerc_bps_setbeacon(playerc_bps_t *device, int id, double px, double py, double pa,
                            double ux, double uy, double ua);
 
-
-/***************************************************************************
- * Broadcast device
- **************************************************************************/
-
-/* Broadcast device data */
-typedef struct
-{
-  /* Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-    
-  /* Incoming message queue */
-  char *in_data;
-  int in_len, in_size;
-
-} playerc_broadcast_t;
-
-
-/* Broadcast methods */
-playerc_broadcast_t *playerc_broadcast_create(playerc_client_t *client,
-                                              int index, int access);
-void playerc_broadcast_destroy(playerc_broadcast_t *device);
-int  playerc_broadcast_read(playerc_broadcast_t *device,
-                            char *msg, int len);
-int  playerc_broadcast_write(playerc_broadcast_t *device,
-                             const char *msg, int len);
 
 #endif
 
