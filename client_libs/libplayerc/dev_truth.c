@@ -45,7 +45,7 @@ playerc_truth_t *playerc_truth_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_truth_t));
   memset(device, 0, sizeof(playerc_truth_t));
-  playerc_device_init(&device->info, client, PLAYER_TRUTH_CODE, index, 
+  playerc_device_init(&device->info, client, PLAYER_TRUTH_TYPE, index,
                       (playerc_putdata_fn_t) playerc_truth_putdata); 
   return device;
 }

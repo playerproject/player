@@ -44,7 +44,7 @@ playerc_ptz_t *playerc_ptz_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_ptz_t));
   memset(device, 0, sizeof(playerc_ptz_t));
-  playerc_device_init(&device->info, client, PLAYER_PTZ_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_PTZ_TYPE, index,
                       (playerc_putdata_fn_t) playerc_ptz_putdata);
     
   return device;

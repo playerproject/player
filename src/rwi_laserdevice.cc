@@ -21,6 +21,10 @@
  *
  */
 
+/*
+ * $Id$
+ */
+
 #include <rwi_laserdevice.h>
 #include <stdio.h>
 #include <netinet/in.h>
@@ -118,9 +122,9 @@ CRWILaserDevice::Main()
 					break;
 				case PLAYER_LASER_GET_CONFIG:
 					// I don't know of any other valid values for RWI robots
-					cfg.min_angle = 9000;
-					cfg.max_angle = -9000;
-					cfg.resolution = 1000;
+					cfg.min_angle = htons(-9000);
+					cfg.max_angle = htons(9000);
+					cfg.resolution = htons(100);
 					cfg.intensity = 0;
 					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
 					             &cfg, sizeof(cfg))) {
@@ -129,11 +133,15 @@ CRWILaserDevice::Main()
 					}
 					break;
 				case PLAYER_LASER_GET_GEOM:
-					// FIXME: not yet implemented
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
+					// FIXME: evil hack, no actual data
+					player_laser_geom_t geom;
+					geom.subtype = PLAYER_LASER_GET_GEOM;
+					geom.pose[0] = geom.pose[1] = geom.pose[2] = 0;
+					geom.size[0] = geom.pose[1] = htons((uint16_t)500);
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		    		             NULL, &geom, sizeof(geom))) {
 		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_laserdevice.\n");
+		    			             "rwi_positiondevice.\n");
 		    		}
 					break;
 				default:
@@ -152,6 +160,10 @@ CRWILaserDevice::Main()
 	
 		// Finally, collect new data
 		if (enabled) {
+			// FIXME: does this need to be generalized?
+			data.min_angle = htons(-9000);
+			data.max_angle = htons(9000);
+			data.resolution = htons(100);
 #ifdef USE_MOBILITY
 			laser_data = laser_state->get_sample(0);
 		

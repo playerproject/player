@@ -21,6 +21,10 @@
  *
  */
 
+/*
+ * $Id$
+ */
+
 #ifndef _RWI_BUMPERDEVICE_H
 #define _RWI_BUMPERDEVICE_H
 

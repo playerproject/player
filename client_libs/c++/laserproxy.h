@@ -141,7 +141,7 @@ class LaserProxy : public ClientProxy
         For example, given a {\tt LaserProxy} named {\tt lp}, the following
         expressions are equivalent: \verb+lp.ranges[0]+ and \verb+lp[0]+.
     */
-    unsigned short operator [](unsigned int index)
+    unsigned short operator [](unsigned int index) const
     { 
       if(index < range_count)
         return(ranges[index]);

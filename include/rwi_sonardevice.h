@@ -21,6 +21,10 @@
  *
  */
 
+/*
+ * $Id$
+ */
+
 #ifndef _RWI_SONARDEVICE_H
 #define _RWI_SONARDEVICE_H
 
@@ -48,6 +52,9 @@ private:
 	
 	// specify which sonar ring to use
 	bool upper;
+	
+	// keep track of number of sonars for geometry information
+	uint8_t range_count;
 };
 
 #endif // _RWI_SONARDEVICE_H

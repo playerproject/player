@@ -44,7 +44,7 @@ playerc_vision_t *playerc_vision_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_vision_t));
   memset(device, 0, sizeof(playerc_vision_t));
-  playerc_device_init(&device->info, client, PLAYER_VISION_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_VISION_TYPE, index,
                       (playerc_putdata_fn_t) playerc_vision_putdata);
     
   return device;

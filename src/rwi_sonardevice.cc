@@ -21,6 +21,10 @@
  *
  */
 
+/*
+ * $Id$
+ */
+
 #include <rwi_sonardevice.h>
 #include <stdio.h>
 #include <netinet/in.h>
@@ -38,6 +42,9 @@ CRWISonarDevice::CRWISonarDevice(int argc, char **argv)
 {
 	// default to upper ring if none is specified
 	upper = true;
+	
+	// FIXME: since I happen to know the correct answer for my robot:
+	range_count = 24;
 	
 	// parse cmd line args
 	for (int i = 0; i < argc; i++) {
@@ -128,9 +135,16 @@ CRWISonarDevice::Main()
 		    		}
 					break;
 				case PLAYER_SONAR_GET_GEOM_REQ:
-					// FIXME: not yet implemented
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
+					// FIXME: evil hack, no actual information
+					player_sonar_geom_t geom;
+					geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+					geom.pose_count = htons(range_count);
+					for (int16_t i = 0; i < range_count; i++) {
+						geom.poses[i][0] = geom.poses[i][1] = 0;
+						geom.poses[i][2] = (int16_t) htons((int16_t)(i * 360/range_count));
+					}
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		    		             NULL, &geom, sizeof(geom))) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_sonardevice.\n");
 		    		}
@@ -154,6 +168,7 @@ CRWISonarDevice::Main()
 #ifdef USE_MOBILITY
 			sonar_data = sonar_state->get_sample(0);
 		
+			range_count = sonar_data->org.length();
 			data.range_count = htons((uint16_t) sonar_data->org.length());
 			for (unsigned int i = 0; (i < sonar_data->org.length())
 			                         && (i < PLAYER_NUM_SONAR_SAMPLES); i++) {

@@ -84,7 +84,7 @@ class SonarProxy : public ClientProxy
         For example, given a {\tt SonarProxy} named {\tt sp}, the following
         expressions are equivalent: \verb+sp.ranges[0]+ and \verb+sp[0]+.
      */
-    unsigned short operator [](unsigned int index) 
+    unsigned short operator [](unsigned int index) const
     { 
       if(index < sizeof(ranges))
         return(ranges[index]);

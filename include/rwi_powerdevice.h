@@ -21,6 +21,10 @@
  *
  */
 
+/*
+ * $Id$
+ */
+
 #ifndef _RWI_POWERDEVICE_H
 #define _RWI_POWERDEVICE_H
 

@@ -21,6 +21,10 @@
  *
  */
 
+/*
+ * $Id$
+ */
+
 #ifndef _RWI_LASERDEVICE_H
 #define _RWI_LASERDEVICE_H
 

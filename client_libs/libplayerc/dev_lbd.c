@@ -44,7 +44,7 @@ playerc_lbd_t *playerc_lbd_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_lbd_t));
   memset(device, 0, sizeof(playerc_lbd_t));
-  playerc_device_init(&device->info, client, PLAYER_LASERBEACON_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_LASERBEACON_TYPE, index,
                       (playerc_putdata_fn_t) playerc_lbd_putdata);
 
   return device;

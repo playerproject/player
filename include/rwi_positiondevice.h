@@ -22,6 +22,8 @@
  */
 
 /*
+ * $Id$
+ *
  *   the RWI position device.  accepts commands for changing
  *   speed and rotation, and returns data on x, y, theta.
  *   (Compass data will come later).

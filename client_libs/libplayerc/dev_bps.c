@@ -45,7 +45,7 @@ playerc_bps_t *playerc_bps_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_bps_t));
   memset(device, 0, sizeof(playerc_bps_t));
-  playerc_device_init(&device->info, client, PLAYER_BPS_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_BPS_TYPE, index,
                       (playerc_putdata_fn_t) playerc_bps_putdata);
     
   return device;

@@ -21,6 +21,10 @@
  *
  */
 
+/*
+ * $Id$
+ */
+
 #include <rwi_powerdevice.h>
 #include <stdio.h>
 #include <netinet/in.h>

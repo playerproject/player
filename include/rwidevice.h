@@ -22,11 +22,11 @@
  */
 
 /*
+ * $Id$
+ *
  * Currently equiped only to interface with the mobility drivers, this base class
- * handles the actual interaction between the devices on the RWI robot and some
- * underlying system. Since it acts as a proxy for the actual devices, it must
- * contain specific logic for each subclass/device which it is capable of
- * operating.  Similar to the P2OS device.
+ * handles the connection and common logic between the devices on the RWI robot
+ * and some underlying system.
  */
 
 #ifndef _RWIDEVICE_H

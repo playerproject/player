@@ -393,14 +393,14 @@ int ClientManager::Write()
           // if the device code is 0 (which is invalid), then the device
           // didn't specify it, so assume that the identifying info in the
           // subscription entry is correct
-          if(!id.code)
+          if(!id.type)
           {
-            reply_hdr.device = htons(thisub->id.code);
+            reply_hdr.device = htons(thisub->id.type);
             reply_hdr.device_index = htons(thisub->id.index);
           }
           else
           {
-            reply_hdr.device = htons(id.code);
+            reply_hdr.device = htons(id.type);
             reply_hdr.device_index = htons(id.index);
           }
           reply_hdr.reserved = (uint32_t)0;

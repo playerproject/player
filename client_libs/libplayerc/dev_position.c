@@ -44,7 +44,7 @@ playerc_position_t *playerc_position_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_position_t));
   memset(device, 0, sizeof(playerc_position_t));
-  playerc_device_init(&device->info, client, PLAYER_POSITION_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_POSITION_TYPE, index,
                       (playerc_putdata_fn_t) playerc_position_putdata);
 
   

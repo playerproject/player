@@ -44,7 +44,7 @@ playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_sonar_t));
   memset(device, 0, sizeof(playerc_sonar_t));
-  playerc_device_init(&device->info, client, PLAYER_SONAR_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_SONAR_TYPE, index,
                       (playerc_putdata_fn_t) playerc_sonar_putdata);
     
   return device;
@@ -106,7 +106,7 @@ int playerc_sonar_get_geom(playerc_sonar_t *device)
     return -1;
   }
 
-  device->pose_count = htons(config.pose_count);
+  device->pose_count = ntohs(config.pose_count);
   for (i = 0; i < device->pose_count; i++)
   {
     device->poses[i][0] = ((int16_t) ntohs(config.poses[i][0])) / 1000.0;

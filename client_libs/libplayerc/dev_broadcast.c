@@ -40,8 +40,8 @@ playerc_broadcast_t *playerc_broadcast_create(playerc_client_t *client, int inde
 
   device = malloc(sizeof(playerc_broadcast_t));
   memset(device, 0, sizeof(playerc_broadcast_t));
-  playerc_device_init(&device->info, client, PLAYER_BROADCAST_CODE, index, NULL);
-    
+  playerc_device_init(&device->info, client, PLAYER_BROADCAST_TYPE, index,
+NULL);
   return device;
 }
 

@@ -22,6 +22,8 @@
  */
 
 /*
+ * $Id$
+ *
  *   the RWI position device.  accepts commands for changing
  *   speed and rotation, and returns data on x,y,theta.
  *   (Compass data will come).
@@ -156,9 +158,13 @@ CRWIPositionDevice::Main()
 		    		}
 					break;
 				case PLAYER_POSITION_GET_GEOM_REQ:
-					// FIXME: not yet implemented
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
+					// FIXME: evil hack, no actual data
+					player_position_geom_t geom;
+					geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+					geom.pose[0] = geom.pose[1] = geom.pose[2] = 0;
+					geom.size[0] = geom.pose[1] = htons((uint16_t)700);
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		    		             NULL, &geom, sizeof(geom))) {
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_positiondevice.\n");
 		    		}
@@ -191,12 +197,12 @@ CRWIPositionDevice::Main()
 		// (remembering that RWI puts y before x)
 		tmp_y = odo_data->position[0] + odo_correct_y;
 		tmp_x = odo_data->position[1] + odo_correct_x;
-		cos_theta = cos(odo_correct_theta);
-		sin_theta = sin(odo_correct_theta);
+		cos_theta = cos(-odo_correct_theta);
+		sin_theta = sin(-odo_correct_theta);
 		
-		data.ypos = htonl((int32_t) ((cos_theta*tmp_x - sin_theta*tmp_y)
+		data.xpos = htonl((int32_t) ((cos_theta*tmp_x - sin_theta*tmp_y)
 		                             * 1000.0));
-		data.xpos = htonl((int32_t) ((sin_theta*tmp_x + cos_theta*tmp_y)
+		data.ypos = htonl((int32_t) ((sin_theta*tmp_x + cos_theta*tmp_y)
 		                             * 1000.0));
 		degrees = (int16_t)
 		           RTOD(NORMALIZE(odo_data->position[2] + odo_correct_theta));
@@ -266,8 +272,7 @@ CRWIPositionDevice::PositionCommand(const int16_t speed,
     position.velocity.length(2);
 
     position.velocity[0] = speed / 1000.0;
-    // player measures angles mathematically backwards
-    position.velocity[1] = -DTOR(rot_speed);
+    position.velocity[1] = DTOR(rot_speed);
 
     base_state->new_sample(position, 0);
 #endif				// USE_MOBILITY
@@ -287,7 +292,6 @@ CRWIPositionDevice::ResetOdometry()
     // yes, this looks backwards, but RWI puts Y before X
     odo_correct_y = -odo_data->position[0];
     odo_correct_x = -odo_data->position[1];
-    // player measures angles mathematically backwards
-    odo_correct_theta = odo_data->position[2];
+    odo_correct_theta = -odo_data->position[2];
 #endif				// USE_MOBILITY
 }

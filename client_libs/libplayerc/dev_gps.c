@@ -44,7 +44,7 @@ playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_gps_t));
   memset(device, 0, sizeof(playerc_gps_t));
-  playerc_device_init(&device->info, client, PLAYER_GPS_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_GPS_TYPE, index,
                       (playerc_putdata_fn_t) playerc_gps_putdata);
     
   return device;
