@@ -46,32 +46,30 @@
 // Notes on stage/player shared memory format.
 //
 // Each device is allocateed a block of shared memory.
+// Each simulated device is allocated a block of shared memory.
 // This block is subdivided into 4 parts:
 //      info buffer -- flags (subscribed, new data, new command, new configuration)
 //      data buffer
 //      command buffer
 //      config buffer
-// The info buffer is identical for all devices.  It contains the following flags:
-//      subscribe : WR : 1 if client has subscribed to device; 0 otherwise
-//      data      : RW : 1 if there is new data available; 0 otherwise
-//      command   : WR : 1 if there is a new command available; 0 otherwise
-//      config    : WR : 1 if there is a new configuration  available; 0 otherwise
-// Flags marked WR are written by player and read by stage.
-// Flags marked RW are written by stage and read by player.
-//
-// As at 29 Nov, only the laser supports this format.
-//
-// ahoward
 
 
-// Info buffer format
-// Each simulated device is allocated a block of shared memory.
+// player/stage info buffer
+// data_len is set by stage and indicates the number of bytes available.
+// command_len is set by player.
+// config_len is set by player and reset (to zero) by stage.
 //
-#define INFO_BUFFER_SIZE    4
-#define INFO_SUBSCRIBE_FLAG 0
-#define INFO_DATA_FLAG      1
-#define INFO_COMMAND_FLAG   2
-#define INFO_CONFIG_FLAG    3
+typedef struct PlayerStageInfo
+{
+    BYTE available;
+    BYTE subscribed;
+    UINT16 data_len;
+    UINT16 command_len;
+    UINT16 config_len;
+} __attribute__ ((packed));
+
+#define INFO_BUFFER_SIZE    sizeof(PlayerStageInfo)
+
 
 // Position device command buffer
 //

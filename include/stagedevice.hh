@@ -84,7 +84,7 @@ class CStageDevice : public CDevice
 
     // Pointer to shared info buffers
     //
-    private: BYTE *m_info_buffer;
+    private: PlayerStageInfo *m_info;
     private: size_t m_info_len;
 
     // Pointer to shared data buffers
