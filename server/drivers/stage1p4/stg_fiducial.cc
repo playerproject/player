@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 1
 
 #include "playercommon.h"
@@ -96,8 +96,7 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
 	      pdata.fiducials[i].id = htons((int16_t)fids[i].id);
 	      pdata.fiducials[i].pose[0] = htons((int16_t)(fids[i].range*1000.0));
 	      pdata.fiducials[i].pose[1] = htons((int16_t)RTOD(fids[i].bearing));
-	      pdata.fiducials[i].pose[2] = htons((int16_t)RTOD(fids[i].geom.a));
-	      
+	      pdata.fiducials[i].pose[2] = htons((int16_t)RTOD(fids[i].geom.a));	      
 	      // player can't handle per-fiducial size.
 	      // we leave uncertainty (upose) at zero
 	    }
@@ -141,8 +140,8 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	pgeom.size[0] = htons((uint16_t)(1000.0 * geom.size.x)); 
 	pgeom.size[1] = htons((uint16_t)(1000.0 * geom.size.y)); 
 	
-	pgeom.fiducial_size[0] = ntohs((uint16_t)0); // TODO - get this info
-	pgeom.fiducial_size[1] = ntohs((uint16_t)0);
+	pgeom.fiducial_size[0] = ntohs((uint16_t)100); // TODO - get this info
+	pgeom.fiducial_size[1] = ntohs((uint16_t)100);
 	
 	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		      &pgeom, sizeof(pgeom) ) != 0 )
