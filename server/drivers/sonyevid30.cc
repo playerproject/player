@@ -655,8 +655,6 @@ SonyEVID30::Main()
   short pandemand=0, tiltdemand=0, zoomdemand=0;
   bool newpantilt=true, newzoom=true;
 
-  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-
   while(1) 
   {
     pthread_testcancel();
