@@ -193,6 +193,8 @@ void GzPosition::Update()
     data.yspeed = htonl((int) (this->iface->data->odom_vel[1] * 1000));
     data.yawspeed = htonl((int) (this->iface->data->odom_vel[2] * 180 / M_PI));
 
+    data.stall = (uint8_t) this->iface->data->stall;
+
     this->PutData(&data, sizeof(data), tsec, tusec);    
   }
 
