@@ -50,7 +50,7 @@ class CDevice
     virtual int Setup() = 0;
     virtual int Shutdown() = 0;
     virtual size_t GetData( unsigned char *, size_t ) = 0;
-    virtual void PutData(unsigned char *, size_t, uint64_t timestamp=0) = 0;
+    virtual void PutData(unsigned char *, size_t ) = 0;
     virtual void GetCommand( unsigned char *, size_t ) = 0;
     virtual void PutCommand( unsigned char * , size_t ) = 0;
     virtual size_t GetConfig( unsigned char *, size_t ) = 0;
