@@ -75,7 +75,7 @@ main(int argc, char** argv)
     // non-blocking GTK event servicing
     while(gtk_events_pending())
     {
-      puts("gtk_main_iteration_do");
+      //puts("gtk_main_iteration_do");
       gtk_main_iteration_do(1);
     }
 
@@ -112,7 +112,7 @@ main(int argc, char** argv)
              (gui_data.robot_poses[i].py != robot_pose.py) ||
              (gui_data.robot_poses[i].pa != robot_pose.pa))
           {
-            printf("moving robot %d\n", i);
+            //printf("moving robot %d\n", i);
             move_robot(gui_data.robot_items[i],robot_pose);
           }
         }
@@ -124,7 +124,7 @@ main(int argc, char** argv)
       }
 
       // every once in a while, get the latest path from each robot
-      if(!(count % (DATA_FREQ * 50 * gui_data.num_robots)))
+      if(!(count % (DATA_FREQ * 10 * gui_data.num_robots)))
       {
         if(gui_data.planners[i])
         {
@@ -134,7 +134,7 @@ main(int argc, char** argv)
             quit=1;
             break;
           }
-          puts("drawing waypoints");
+          //puts("drawing waypoints");
           draw_waypoints(&gui_data,i);
         }
       }

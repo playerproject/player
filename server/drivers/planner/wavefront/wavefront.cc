@@ -519,7 +519,15 @@ void Wavefront::Main()
   // block until we get initial data from underlying devices
   this->position->Wait();
   GetPositionData();
-  this->localize->Wait();
+  
+  // HACK!
+  // Blocking here means that the planner won't start until the localizer
+  // generates a *new* pose estimate, even if the localizer already has
+  // converged to a good value.  That's a pain. So we'll try not sleeping
+  // briefly instead.  Clearly not a good solution.
+  
+  //this->localize->Wait();
+  usleep(2000000);
   GetLocalizeData();
   StopPosition();
 
