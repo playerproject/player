@@ -42,10 +42,11 @@ class CArenaLock : public CLock{
   struct sembuf lock_ops[1];
   struct sembuf unlock_ops[1];
 
-  int Lock( void );
-  int Unlock( void );
 
  public:
+
+  int Lock( void );
+  int Unlock( void );
 
   CArenaLock( void );
   ~CArenaLock( void );

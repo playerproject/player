@@ -303,7 +303,7 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
     // We filter ids across multiple frames.
     //
     double filter_gain = 0.50;
-    double filter_thresh = 0.80;
+    //double filter_thresh = 0.80;
     for (int i = 0; i < ARRAYSIZE(this->filter); i++)
         this->filter[i] *= (1 - filter_gain);
 
@@ -439,7 +439,7 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
             return -1;
 
         // Compute intercept with beacon
-        double cx = lx + ly * tan(la + bearing + M_PI/2);
+        //double cx = lx + ly * tan(la + bearing + M_PI/2);
         double ax = lx + ly * tan(la + bearing - res/2 + M_PI/2);
         double bx = lx + ly * tan(la + bearing + res/2 + M_PI/2);
 

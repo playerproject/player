@@ -18,6 +18,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -87,8 +88,11 @@
 #include <clientdata.h>
 #include <clientmanager.h>
 #include <devicetable.h>
-// don't think we need this one anymore. bpg
-//#include <nodevice.h>
+
+// the base class and two derived classes for timefeeds:
+#include <playertime.h>
+#include <wallclocktime.h>
+#include <stagetime.h>
 
 #include <sys/mman.h> // for mmap
 #include <fcntl.h>
@@ -105,6 +109,11 @@ bool player_gerkey = false;
 size_t ioSize = 0; // size of the IO buffer
 
 CDeviceTable* deviceTable = new CDeviceTable();
+
+// the global PlayerTime object has a method 
+//   int GetTime(struct timeval*)
+// which everyone must use to get the current time
+PlayerTime* GlobalTime;
 
 // storage for the TruthDevice's info - there is no
 // space in shared memory for this device
@@ -191,95 +200,99 @@ void PrintHeader(player_msghdr_t hdr)
 }
 
 #ifdef INCLUDE_STAGE
-bool CreateStageDevices( player_stage_info_t *arenaIO)
+struct timeval* CreateStageDevices( player_stage_info_t *arenaIO)
 {
   player_stage_info_t *end = (player_stage_info_t*)((char*)arenaIO + ioSize);
+  player_stage_info_t *info;
   
   // iterate through the mmapped buffer
-  for( player_stage_info_t *info = arenaIO; 
-       info < end; 
+  //
+  // but don't go all the way to the end; stop 8 bytes short, because
+  // the last 8 bytes are used for the current time feed from stage.
+  for( info = arenaIO; 
+       info < (player_stage_info_t*)((char*)end - sizeof(struct timeval)); 
        info = (player_stage_info_t*)((char*)info + (size_t)(info->len) ))
-    {      
+  {      
 #ifdef DEBUG
-      printf( "[] Processing mmap at base: %p info: %p (len: %d total: %d)" 
-	      "next: %p end: %p\n", 
-	      arenaIO, info, info->len, ioSize, 
-	      (char*)info + info->len , end );
-      fflush( stdout );
+    printf( "[] Processing mmap at base: %p info: %p (len: %d total: %d)" 
+            "next: %p end: %p\n", 
+            arenaIO, info, info->len, ioSize, 
+            (char*)info + info->len , end );
+    fflush( stdout );
 #endif	  
 
-      CStageDevice *dev = 0; // declare outside switch statement
-      
-      switch( info->player_id.type )
-	{
-	  //create a generic stage IO device for these types:
-	case PLAYER_PLAYER_CODE: 
-	case PLAYER_MISC_CODE:
-	case PLAYER_POSITION_CODE:
-	case PLAYER_SONAR_CODE:
-	case PLAYER_LASER_CODE:
-	case PLAYER_VISION_CODE:  
-	case PLAYER_PTZ_CODE:     
-	case PLAYER_LASERBEACON_CODE: 
-	case PLAYER_BROADCAST_CODE:   
-	case PLAYER_TRUTH_CODE:
-	case PLAYER_OCCUPANCY_CODE:
-	case PLAYER_GPS_CODE:
-	case PLAYER_GRIPPER_CODE:
-	   
-	  // Create a StageDevice with this IO base address
-	  dev = new CStageDevice( info );
-	  
-          // took out this check, since now we'll handle all ports - BPG
-          //
-	  // only devices on the my port or the global port are
-	  // available to clients
-          /*
-	  if( info->player_id.port == playerport || 
-	      info->player_id.port == GLOBALPORT )
-              */
-          deviceTable->AddDevice( info->player_id.port,
-                                  info->player_id.type, 
-                                  info->player_id.index, 
-                                  PLAYER_ALL_MODE, dev );
-	  
+    CStageDevice *dev = 0; // declare outside switch statement
+
+    switch( info->player_id.type )
+    {
+      //create a generic stage IO device for these types:
+      case PLAYER_PLAYER_CODE: 
+      case PLAYER_MISC_CODE:
+      case PLAYER_POSITION_CODE:
+      case PLAYER_SONAR_CODE:
+      case PLAYER_LASER_CODE:
+      case PLAYER_VISION_CODE:  
+      case PLAYER_PTZ_CODE:     
+      case PLAYER_LASERBEACON_CODE: 
+      case PLAYER_BROADCAST_CODE:   
+      case PLAYER_TRUTH_CODE:
+      case PLAYER_OCCUPANCY_CODE:
+      case PLAYER_GPS_CODE:
+      case PLAYER_GRIPPER_CODE:
+
+        // Create a StageDevice with this IO base address
+        dev = new CStageDevice( info );
+
+        // took out this check, since now we'll handle all ports - BPG
+        //
+        // only devices on the my port or the global port are
+        // available to clients
+        /*
+           if( info->player_id.port == playerport || 
+           info->player_id.port == GLOBALPORT )
+         */
+        deviceTable->AddDevice( info->player_id.port,
+                                info->player_id.type, 
+                                info->player_id.index, 
+                                PLAYER_ALL_MODE, dev );
+
 
 #ifdef DEBUG
-      printf( "Player created StageDevice (%d,%d,%d)\n", 
-	      info->player_id.port, 
-	      info->player_id.type, 
-	      info->player_id.index ); 
-      fflush( stdout );
+        printf( "Player created StageDevice (%d,%d,%d)\n", 
+                info->player_id.port, 
+                info->player_id.type, 
+                info->player_id.index ); 
+        fflush( stdout );
 #endif	  
 
-	  break;
-	      
-	  // devices not implemented
-	case PLAYER_AUDIO_CODE:   
-#ifdef VERBOSE
-	  printf( "Device type %d not yet implemented in Stage\n", 
-		  info->player_id.type);
-	  fflush( stdout );
-#endif
-	  break;
-      
-	case 0:
-#ifdef VERBOSE
-	  printf( "Player ignoring Stage device type %d\n", 
-		  info->player_id.type);
-	  fflush( stdout );
-#endif
-	  break;	  
+        break;
 
-	  // unknown device 
-	  default: printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   
-			   info->player_id.type, 
-			   info->player_id.port, 
-			   info->player_id.type, 
-			   info->player_id.index ); 
-	  break;
-	}
+        // devices not implemented
+      case PLAYER_AUDIO_CODE:   
+#ifdef VERBOSE
+        printf( "Device type %d not yet implemented in Stage\n", 
+                info->player_id.type);
+        fflush( stdout );
+#endif
+        break;
+
+      case 0:
+#ifdef VERBOSE
+        printf( "Player ignoring Stage device type %d\n", 
+                info->player_id.type);
+        fflush( stdout );
+#endif
+        break;	  
+
+        // unknown device 
+      default: printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   
+                       info->player_id.type, 
+                       info->player_id.port, 
+                       info->player_id.type, 
+                       info->player_id.index ); 
+               break;
     }
+  }
 
 #ifdef INCLUDE_BPS
   // DOUBLE-HACK -- now this won't work in stage, because we don't know to 
@@ -296,8 +309,12 @@ bool CreateStageDevices( player_stage_info_t *arenaIO)
   printf( "finished creating stage devices\n" );
   fflush( stdout );
 #endif
-  
-  return true;
+
+  // return pointer to the location of the struct timeval
+  //printf("current time: %d %d\n", 
+         //((struct timeval*)info)->tv_sec,
+         //((struct timeval*)info)->tv_usec);
+  return((struct timeval*)info);
 }
 #endif
 
@@ -722,7 +739,9 @@ int main( int argc, char *argv[] )
     close( tfd ); // can close fd once mapped
 
     // make all the stage devices, scan
-    CreateStageDevices( arenaIO);
+    //
+    // returns pointer to the timeval struct at the end of the list
+    struct timeval* simtimep = CreateStageDevices( arenaIO);
 
     // make room to store all the sockets
     //  (when in stage mode, the command-line given port is the number of
@@ -750,6 +769,9 @@ int main( int argc, char *argv[] )
 
       ufds[i].events = POLLIN;
     }
+
+    // set up the stagetime object
+    GlobalTime = (PlayerTime*)(new StageTime(simtimep));
   }  
 
 #endif // INCLUDE_STAGE  
@@ -774,6 +796,8 @@ int main( int argc, char *argv[] )
 
     ufds[0].events = POLLIN;
     ports[0] = global_playerport;
+
+    GlobalTime = (PlayerTime*)(new WallclockTime());
   }
 
   // create the client manager object.
