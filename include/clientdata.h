@@ -75,7 +75,9 @@ class CClientData
   CClientData();
   ~CClientData();
 
-  void HandleRequests( unsigned char *buffer, int readcnt );
+  //void HandleRequests( unsigned char *buffer, int readcnt );
+  void HandleRequests(player_msghdr_t hdr, unsigned char *payload,
+                                 unsigned int payload_size);
   void RemoveBlanks();  
   void RemoveRequests();
   void UpdateRequested(player_device_req_t req);
