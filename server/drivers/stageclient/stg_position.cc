@@ -60,7 +60,8 @@ StgPosition::StgPosition(char* interface, ConfigFile* cf, int section )
   
   PLAYER_TRACE1( "constructing StgPosition with interface %s", interface );
 
-  this->subscribe_prop = STG_PROP_POSE;
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_POSE));
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_VELOCITY));
 }
 
 CDevice* StgPosition_Init(char* interface, ConfigFile* cf, int section)
@@ -85,20 +86,30 @@ void StgPosition_Register(DriverTable* table)
 size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 			    uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
+  stg_property_t* prop_pose = 
+    stg_model_get_prop_cached( model,  STG_PROP_POSE );
+
+  stg_property_t* prop_speed = 
+    stg_model_get_prop_cached( model,  STG_PROP_VELOCITY );
   
-  if( prop && prop->len == sizeof(stg_pose_t) ) 
+  if( prop_pose && prop_pose->len == sizeof(stg_pose_t) && 
+      prop_speed && prop_speed->len == sizeof(stg_velocity_t) ) 
     {      
-      stg_pose_t* pose = (stg_pose_t*)prop->data;
+      stg_pose_t* pose = (stg_pose_t*)prop_pose->data;
+      stg_velocity_t* vel = (stg_velocity_t*)prop_speed->data;
 
       //PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose->x, pose->y, pose->a );
-
       player_position_data_t position_data;
       memset( &position_data, 0, sizeof(position_data) );
       // pack the data into player format
       position_data.xpos = ntohl((int32_t)(1000.0 * pose->x));
       position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
       position_data.yaw = ntohl((int32_t)(RTOD(pose->a)));
+
+      // speeds
+      position_data.xspeed= ntohl((int32_t)(1000.0 * vel->x)); // mm/sec
+      position_data.yspeed = ntohl((int32_t)(1000.0 * vel->y));// mm/sec
+      position_data.yawspeed = ntohl((int32_t)(RTOD(vel->a))); // deg/sec
 
       position_data.stall = pose->stall ? 1 : 0;
 

@@ -151,7 +151,9 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
   stg_world_resume( world );
   puts( "done." );
 
-  this->subscribe_prop = STG_PROP_TIME;
+  //this->subscribe_prop = STG_PROP_TIME;
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_TIME));
+
   
   // make Player call Update() on this device even when noone is subscribed
   this->alwayson = TRUE;

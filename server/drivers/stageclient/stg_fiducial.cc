@@ -47,7 +47,10 @@ StgFiducial::StgFiducial(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgFiducial with interface %s", interface );
 
-  this->subscribe_prop = STG_PROP_FIDUCIALDATA;
+  //this->subscribe_prop = STG_PROP_FIDUCIALDATA;
+   
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_FIDUCIALDATA));
+
 }
 
 CDevice* StgFiducial_Init(char* interface, ConfigFile* cf, int section)
@@ -76,7 +79,7 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
   PLAYER_TRACE2(" STG_FIDUCIAL GETDATA section %d -> model %d",
 		model->section, model->id_client );
   
-  stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
+  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_FIDUCIALDATA);
 
   player_fiducial_data_t pdata;
   memset( &pdata, 0, sizeof(pdata) );

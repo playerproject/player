@@ -51,7 +51,8 @@ StgBlobfinder::StgBlobfinder(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgBlobfinder with interface %s", interface );
 
-  this->subscribe_prop = STG_PROP_BLOBDATA;
+  //this->subscribe_prop = STG_PROP_BLOBDATA;
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_BLOBDATA));
    
 }
 
@@ -79,7 +80,7 @@ size_t StgBlobfinder::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {  
   
-  stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
+  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_BLOBDATA);
   
   if( prop )
     {
@@ -130,7 +131,7 @@ size_t StgBlobfinder::GetData(void* client, unsigned char* dest, size_t len,
       // now run through the blobs, packing them into the player buffer
       // counting the number of blobs in each channel and making entries
       // in the acts header 
-      int b;
+      unsigned int b;
       for( b=0; b<bcount; b++ )
 	{
 	  // I'm not sure the ACTS-area is really just the area of the

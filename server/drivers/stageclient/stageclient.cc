@@ -59,12 +59,14 @@ void Interrupt( int dummy );
 //
 Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section, 
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen) :
-  CDevice(datasz,cmdsz,rqlen,rplen)
+  CDevice(datasz,cmdsz,1,1)//rqlen,rplen)
 {
   PLAYER_TRACE1( "Stage1p4 device created for interface %s\n", interface );
   
   this->config = cf;
     
+  this->subscribe_list = NULL;
+
   const char *enttype = config->GetEntityType(section);
 
   if( strcmp( enttype, "simulation" ) == 0 )
@@ -102,27 +104,48 @@ Stage1p4::~Stage1p4()
 }
 
 
+
+void subscribe_to_property_cb( gpointer data, gpointer user )
+{
+  int prop = GPOINTER_TO_INT(data);
+  stg_model_t* model = (stg_model_t*)user; 
+    
+    printf( "subscribing to model %d:%s\n",
+	    model->id_server, 
+	    stg_property_string( prop) );
+  
+  stg_model_subscribe( model, prop, 100 ); // 100ms  - fix this
+}
+
+void unsubscribe_to_property_cb( gpointer data, gpointer user )
+{
+  int prop = GPOINTER_TO_INT(data);
+  stg_model_t* model = (stg_model_t*)user;
+    
+    printf( "unsubscribing to model %d:%s\n",
+	    model->id_server, 
+	    stg_property_string( prop) );
+  
+  stg_model_unsubscribe( model, prop );
+}
+
+
 int Stage1p4::Setup()
 { 
-  if( this->model && this->subscribe_prop )
-    {
-      printf( "subscribing to model %d:%s\n",
-	      this->model->id_server, 
-	      stg_property_string( this->subscribe_prop) );
-
-      // TODO - get this subscription speed correctly
-      //puts( "SUBSCRIBING" );
-      stg_model_subscribe( this->model, this->subscribe_prop, 100 ); // 100ms 
-    }
+  printf( "SETUP" );
+  if( this->model && this->subscribe_list )
+    g_list_foreach( this->subscribe_list, 
+		    subscribe_to_property_cb, 
+		    (gpointer)this->model );
   return 0;
 };
 
 int Stage1p4::Shutdown()
 { 
-  if( this->model && this->subscribe_prop )
-    {
-      //puts( "UNSUBSCRIBING" );
-      stg_model_unsubscribe( this->model, this->subscribe_prop );  
-    }
+  printf( "SHUTDOWN" );
+  if( this->model && this->subscribe_list )
+    g_list_foreach( this->subscribe_list, 
+		    unsubscribe_to_property_cb, 
+		    (gpointer)this->model );
   return 0;
 };

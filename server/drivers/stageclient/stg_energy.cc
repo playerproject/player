@@ -44,7 +44,9 @@ StgEnergy::StgEnergy(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgEnergy with interface %s", interface );
   
-  this->subscribe_prop = STG_PROP_ENERGYDATA;
+  //this->subscribe_prop = STG_PROP_ENERGYDATA;
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_ENERGYDATA));
+
 }
 
 CDevice* StgEnergy_Init(char* interface, ConfigFile* cf, int section)
@@ -71,7 +73,7 @@ size_t StgEnergy::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {  
   
-  stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
+  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_ENERGYDATA);
   
   if( prop )
     {
