@@ -72,16 +72,16 @@ struct js_event {
 #define YAXIS 1
 #define XAXIS2 2
 #define YAXIS2 3
-#define XAXIS3 4
-#define YAXIS3 5
+#define PAN    4
+#define TILT   5
 #define XAXIS4 6
 #define YAXIS4 7
 
 // define the speed limits for the robot
 
 // at full joystick depression you'll go this fast
-#define MAX_SPEED    400 // mm/second
-#define MAX_TURN    45 // degrees/second
+#define MAX_SPEED    250 // mm/second
+#define MAX_TURN    50 // degrees/second
 
 // this is the speed that the camera will pan when you press the
 // hatswitches in degrees/sec
@@ -137,8 +137,10 @@ void joystick_handler( struct controller* cont )
 	  buttons_state &= ~(1 << event.number);
       }
       
-      //printf( "value % d type %u  number %u state %d \n", 
-      //      event.value, event.type, event.number, buttons_state );
+      /*
+      printf( "value % d type %u  number %u state %d \n", 
+            event.value, event.type, event.number, buttons_state );
+            */
       
       // ignore the startup events
       if( event.type & JS_EVENT_INIT )
@@ -148,11 +150,16 @@ void joystick_handler( struct controller* cont )
 	}
 
       switch( event.type )
-	{
-	case JS_EVENT_BUTTON:
-	  break;
-
-	case JS_EVENT_AXIS:
+      {
+        case JS_EVENT_BUTTON:
+          if(event.number == 2 && buttons_state)
+            cont->pan += PAN_SPEED;
+          else if(event.number == 3 && buttons_state)
+            cont->pan -= PAN_SPEED;
+          else if(event.number == 2 || event.number == 3)
+            cont->pan = 0;
+      
+        case JS_EVENT_AXIS:
 	  {
 	    //puts( "AXIS" );
 
@@ -166,9 +173,8 @@ void joystick_handler( struct controller* cont )
 		//puts( "turn left" );
 
 		// set the robot turn rate
-		cont->turnrate = (int)NORMALIZE_TURN(-event.value);
-		cont->dirty = true;
-
+                cont->turnrate = (int)NORMALIZE_TURN(-event.value);
+                cont->dirty = true;
 		break;
 
 		// FORWARD-AND-BACK
@@ -179,20 +185,13 @@ void joystick_handler( struct controller* cont )
 		//puts( "backwards" );
 
 		// set the robot velocity
-		cont->speed = (int)NORMALIZE_SPEED(-event.value);
-		cont->dirty = true;
+                cont->speed = (int)NORMALIZE_SPEED(-event.value);
+                cont->dirty = true;
 
 		break;
 		
 		// TWISTING
 	      case XAXIS2:
-		//if( event.value > 0 ) 
-		//puts( "twist left" );
-		//else
-		//puts( "twist right" );
-		break;
-		
-		// THROTTLE
 	      case YAXIS2:
 		//if( event.value > 0 ) 
 		//puts( "zoom out" );
@@ -204,30 +203,42 @@ void joystick_handler( struct controller* cont )
 		break;
 
 		// HAT UP DOWN
-	      case XAXIS3:
-		//if( event.value > 0 ) 
-		//puts( "pan right" );
-		//else
-		//puts( "stop pan right" );
+	      case TILT:
+                /*
+		if( event.value > 0 ) 
+                  puts( "tilt down" );
+                else if( event.value < 0 ) 
+                  puts( "tilt up" );
+		else
+                  puts( "stop tilt" );
+                  */
 		
 		if( event.value > 0 )
-		  cont->pan = -PAN_SPEED;
+		  cont->tilt = -TILT_SPEED;
+                else if( event.value < 0 )
+		  cont->tilt = TILT_SPEED;
 		else
-		  cont->pan = 0;
+		  cont->tilt = 0;
 	
 		//cont->dirty = true;
 	
 		break;
 		
 		// HAT LEFT RIGHT
-	      case YAXIS3:
-		//if( event.value > 0 ) 
-		//puts( "pan left" );
-		//else
-		//puts( "stop pan left" );
+	      case PAN:
+                /*
+		if( event.value > 0 ) 
+                  puts( "pan right" );
+                else if( event.value < 0 ) 
+                  puts( "pan left" );
+                else
+                  puts( "stop pan" );
+                  */
 	
 		if( event.value > 0 )
-		  cont->pan = +PAN_SPEED;
+		  cont->pan = -PAN_SPEED;
+                else if( event.value < 0 )
+		  cont->pan = PAN_SPEED;
 		else
 		  cont->pan = 0;
 		
@@ -263,11 +274,17 @@ Client::Client(char* host, int port )
   
   // try a few reads
   for( int i=0; i<4; i++ )
+  {
     if( player->Read() < 0 )
-      {
-	puts( " - Failed. Quitting." );
-	exit( -1 );
-      }
+    {
+      puts( " - Failed. Quitting." );
+      exit( -1 );
+    }
+  }
+
+  // turn on the motors
+  if(pp->SetMotorState(1))
+    exit(-1);
   
   // store a local copy of the initial p&t
   pan = ptzp->pan;
@@ -284,7 +301,8 @@ Client::Client(char* host, int port )
 
 void Client::Read( void )
 {
-  player->Read();
+  if(player->Read())
+    exit(-1);
 }
 
 void Client::Update( struct controller* cont )
