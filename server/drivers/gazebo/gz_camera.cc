@@ -35,9 +35,6 @@
 #warning "gz_camera not supported by libgazebo; skipping"
 #else
 
-#ifndef GAZEBO_CAMERA
-#define GAZEBO_CAMERA
-
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
@@ -205,38 +202,27 @@ void GzCamera::Update()
 
     if (strcmp(this->imageFormat,"jpg")==0)
     {
-      jpeg_compress(this->iface->data->image, &this->data,
-          (int)(this->imageQuality*100));
-
-    } else {
+      jpeg_compress(this->iface->data->image, &this->data, (int)(this->imageQuality*100));
+    }
+    else
+    {
       // Set the image pixels
       assert((size_t) this->iface->data->image_size < sizeof(this->data.image));
-      memcpy(this->data.image, this->iface->data->image, 
-          this->iface->data->image_size);
+      memcpy(this->data.image, this->iface->data->image, this->iface->data->image_size);
     }
 
-// multiple_interface merge resulted in the following conflict:
-#if 0
-<<<<<<< gz_camera.cc
-    size = sizeof(this->data) - sizeof(this->data.image) + 
-      ntohl(this->data.image_size);
-=======
     // Send data to server
     size = sizeof(this->data) - sizeof(this->data.image) + this->iface->data->image_size;
     this->PutData(&this->data, size, &ts);
->>>>>>> 1.7.2.2
-#endif
-
+    
     // Save frames
     if (this->save)
     {
       //printf("click %d\n", this->frameno);
       snprintf(filename, sizeof(filename), "click-%04d.%s",this->frameno++,
-          this->imageFormat);
+               this->imageFormat);
       this->SaveFrame(filename);
     }
-
-    this->PutData(&this->data, size, &ts);
   }
 
   gz_camera_unlock(this->iface);
@@ -258,8 +244,9 @@ void GzCamera::SaveFrame(const char *filename)
   if (strcmp(this->imageFormat,"jpg")==0)
   {
     fwrite(this->data.image,1,this->data.image_size, file);
-  } else {
-
+  }
+  else
+  {
     width = ntohs(this->data.width);
     height = ntohs(this->data.height);
 
@@ -287,6 +274,4 @@ void GzCamera::SaveFrame(const char *filename)
   return;
 }
 
-
-#endif
 #endif
