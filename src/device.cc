@@ -100,7 +100,7 @@ int CDevice::GetReply(CClientData* client, unsigned short* type,
   int size;
 
   Lock();
-  size = device_repqueue->Match(client, type, ts, data, len);
+  size = device_repqueue->Match((void*)client, type, ts, data, len);
   Unlock();
 
   return(size);
@@ -109,10 +109,15 @@ int CDevice::GetReply(CClientData* client, unsigned short* type,
 int CDevice::PutReply(CClientData* client, unsigned short type,
                       struct timeval* ts, unsigned char* data, size_t len)
 {
-  int retval;
+  struct timeval curr;
+
+  if(ts)
+    curr = *ts;
+  else
+    GlobalTime->GetTime(&curr);
 
   Lock();
-  retval = device_repqueue->Push(client, type, ts, data, len);
+  device_repqueue->Push((void*)client, type, &curr, data, len);
   Unlock();
 
   return(0);
@@ -124,7 +129,7 @@ size_t CDevice::GetConfig(CClientData** client, unsigned char * data,size_t len)
 
   Lock();
 
-  if((size = device_reqqueue->Pop(client, data, len)) < 0)
+  if((size = device_reqqueue->Pop((void**)client, data, len)) < 0)
   {
     Unlock();
     return(0);
@@ -138,7 +143,7 @@ int CDevice::PutConfig(CClientData* client, unsigned char* data, size_t len)
 {
   Lock();
 
-  if(device_reqqueue->Push(client, PLAYER_MSGTYPE_REQ, NULL, data, len) < 0)
+  if(device_reqqueue->Push((void*)client, PLAYER_MSGTYPE_REQ, NULL, data, len) < 0)
   {
     // queue was full
     Unlock();

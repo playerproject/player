@@ -31,8 +31,8 @@
 #include <stdlib.h> // for exit(3)
 #include <string.h> // for bzero(3)
 
-#include <playertime.h>
-extern PlayerTime* GlobalTime;
+//#include <playertime.h>
+//extern PlayerTime* GlobalTime;
     
 // basic constructor; makes a PlayerQueue that will dynamically allocate
 // memory for the queue
@@ -56,7 +56,7 @@ PlayerQueue::PlayerQueue(unsigned char* tmpqueue, int tmpqueuelen)
 // push a new element on the queue.  returns the index of the new
 // element in the queue, or -1 if the queue is full
 int 
-PlayerQueue::Push(CClientData* client, unsigned short type, struct timeval* ts,
+PlayerQueue::Push(void* client, unsigned short type, struct timeval* ts,
                   unsigned char* data, int size)
 {
   // search for an empty spot, from front to back
@@ -80,7 +80,10 @@ PlayerQueue::Push(CClientData* client, unsigned short type, struct timeval* ts,
       if(ts)
         queue[i].timestamp = *ts;
       else
-        GlobalTime->GetTime(&(queue[i].timestamp));
+      {
+        queue[i].timestamp.tv_sec = 0;
+        queue[i].timestamp.tv_usec = 0;
+      }
 
       queue[i].valid = 1;
       return(i);
@@ -99,7 +102,7 @@ PlayerQueue::Push(unsigned char* data, int size)
 // pop an element off the queue. returns the size of the element,
 // or -1 if the queue is empty
 int 
-PlayerQueue::Pop(CClientData** client, unsigned char* data, int size)
+PlayerQueue::Pop(void** client, unsigned char* data, int size)
 {
   int tmpsize;
 
@@ -170,7 +173,7 @@ PlayerQueue::Empty()
 // the first such element and returns its size, or -1 if no such element
 // is found
 int 
-PlayerQueue::Match(CClientData* client, unsigned short* type,
+PlayerQueue::Match(void* client, unsigned short* type,
                    struct timeval* ts, unsigned char* data, int size)
 {
   int tmpsize;

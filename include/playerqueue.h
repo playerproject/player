@@ -30,14 +30,15 @@
 #ifndef _PLAYERQUEUE_H
 #define _PLAYERQUEUE_H
 
-#include <clientdata.h>
+//#include <clientdata.h>
+#include <messages.h>
 #include <sys/time.h>
 
 // a queue contains elements of the following type.
 typedef struct
 {
   char valid;  // is this entry used?
-  CClientData* client;  // pointer to the client who is expecting a reply
+  void* client;  // pointer to the client who is expecting a reply
   unsigned short type;    // player message type (only really used for replies)
   struct timeval timestamp;  // time that configuration was made (only replies)
   int size;             // size (in bytes) of the request/reply
@@ -63,7 +64,7 @@ class PlayerQueue
 
     // push a new element on the queue.  returns the index of the new
     // element in the queue, or -1 if the queue is full
-    int Push(CClientData* client, unsigned short type, struct timeval* ts,
+    int Push(void* client, unsigned short type, struct timeval* ts,
              unsigned char* data, int size);
 
     // another form of Push, this one doesn't set the client pointer
@@ -71,7 +72,7 @@ class PlayerQueue
 
     // pop an element off the queue. returns the size of the element,
     // or -1 if the queue is empty
-    int Pop(CClientData** client, unsigned char* data, int size);
+    int Pop(void** client, unsigned char* data, int size);
     
     // another form of Pop, this one doesn't set the client pointer
     int Pop(unsigned char* data, int size);
@@ -80,7 +81,7 @@ class PlayerQueue
     // element in which the client pointer matches the one provided.  Pops
     // the first such element and returns its size, or -1 if no such element
     // is found
-    int Match(CClientData* client, unsigned short* type, struct timeval* ts,
+    int Match(void* client, unsigned short* type, struct timeval* ts,
               unsigned char* data, int size);
 
     // clear the queue; returns 0 on success; -1 on failure

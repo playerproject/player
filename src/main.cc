@@ -168,6 +168,13 @@ Usage()
   fprintf(stderr, "    -laser:0 \"port /dev/ttyS0\"\n");
 }
 
+void printout( int dummy ) 
+{
+  puts("got SIGSEGV!");
+  exit(-1);
+}
+
+
 /* sighandler to shut everything down properly */
 void Interrupt( int dummy ) 
 {
@@ -893,6 +900,13 @@ int main( int argc, char *argv[] )
   }
 
   puts( "" ); // newline, flush
+
+  if(signal(SIGSEGV, printout) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGSEGV");
+    exit(1);
+  }
+
 
   /* set up to handle SIGPIPE (happens when the client dies) */
   if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)

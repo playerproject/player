@@ -31,6 +31,8 @@
 
 /* get types and device-specific packet formats */
 #include <messages.h>
+/* for playerqueue functionality (used in configuration req/rep) */
+#include <playerqueue.h>
 #include <sys/time.h> // for struct timeval
 #include <semaphore.h> // for sem_t
 
@@ -87,11 +89,17 @@ typedef struct player_stage_info
   uint32_t command_timestamp_sec;
   uint32_t command_timestamp_usec;
 
-  uint32_t config_len;
+  // config_len is this the # of elts in the queue, NOT the # of bytes used!
+  uint32_t config_len;  
   uint32_t config_avail;
   uint32_t config_timestamp_sec;
   uint32_t config_timestamp_usec;
 
+  // reply_len is this the # of elts in the queue, NOT the # of bytes used!
+  uint32_t reply_len;
+  uint32_t reply_avail;
+  uint32_t reply_timestamp_sec;
+  uint32_t reply_timestamp_usec;
 } __attribute__ ((packed)) player_stage_info_t;
 
 

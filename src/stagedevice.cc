@@ -53,34 +53,39 @@ CStageDevice::CStageDevice(player_stage_info_t* info,
 	  lockfd, lockbyte ); 
 #endif
 
+  void* data_buffer;
+  size_t data_len;
+  void* command_buffer;
+  size_t command_len;
+  void* config_buffer;
+  void* reply_buffer;
+
   m_info = info;
   m_info_len = sizeof( player_stage_info_t );
   
-  m_data_buffer = (uint8_t*)((caddr_t)m_info + sizeof( player_stage_info_t) );
-  m_data_len = m_info->data_len;
+  data_buffer = (uint8_t*)((caddr_t)m_info + sizeof( player_stage_info_t) );
+  data_len = m_info->data_len;
   
-  m_command_buffer = (uint8_t*)((caddr_t)m_data_buffer + m_info->data_len );
-  m_command_len = m_info->command_len;
-  
-  m_config_buffer = (uint8_t*)
-    ((caddr_t)m_command_buffer + m_info->command_len );
-  m_config_len = m_info->config_len;
+  command_buffer = (uint8_t*)((caddr_t)data_buffer + m_info->data_len );
+  command_len = m_info->command_len;
+
+  config_buffer = (uint8_t*)((caddr_t)command_buffer + m_info->command_len);
+  reply_buffer = (uint8_t*)((caddr_t)config_buffer + 
+                            (m_info->config_len * sizeof(playerqueue_elt_t)));
+
+  SetupBuffers((unsigned char*)data_buffer, data_len,
+               (unsigned char*)command_buffer, command_len,
+               (unsigned char*)config_buffer, m_info->config_len,
+               (unsigned char*)reply_buffer, m_info->reply_len);
   
   next = 0; // initialize linked list pointer
-
-  // setup the lock object
-  //printf( "installing sem %p\n", &info->lock );
-//  #ifdef POSIX_SEM
-//    m_lock.InstallLock( &info->lock);
-//  #else
-//    m_lock.InstallLock( lockfd );
-//  #endif
 
   InstallLock( lockfd, lockbyte );
 
 #ifdef DEBUG
-  PLAYER_TRACE4("creating device at addr: %p %p %p %p %p", 
-                m_info, m_data_buffer, m_command_buffer, m_config_buffer );
+  PLAYER_TRACE4("creating device at addr: %p %p %p %p %p %p", 
+                m_info, data_buffer, command_buffer, 
+                config_buffer, reply_buffer);
   fflush( stdout );
 #endif
 }
@@ -131,17 +136,17 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size,
                         uint32_t* timestamp_usec)
 {
   Lock();
-//#ifdef DEBUG
+#ifdef DEBUG
   printf( "P: getting (%d,%d,%d) info at %p, data at %p, buffer len %d, %d bytes available, size parameter %d\n", 
           m_info->player_id.port, 
           m_info->player_id.type, 
           m_info->player_id.index, 
-          m_info, m_data_buffer,
+          m_info, device_data,
           m_info->data_len,
           m_info->data_avail,
           size );
   fflush( stdout );
-//#endif
+#endif
 
   // See if there is any data
   //
@@ -158,9 +163,9 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size,
 
   // Check for overflows 2
   //
-  if (data_avail > m_data_len )
+  if (data_avail > device_datasize )
   {
-    printf("warning: available data (%d bytes) > buffer size (%d bytes); ignoring data\n", data_avail, m_data_len );
+    printf("warning: available data (%d bytes) > buffer size (%d bytes); ignoring data\n", data_avail, device_datasize );
     Unlock();
     return 0;
     //data_avail = m_data_len;
@@ -179,8 +184,9 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size,
     
 
   // Copy the data
-  memcpy(data, m_data_buffer, data_avail);
+  memcpy(data, device_data, data_avail);
 
+  // TODO: should this still be here?
   m_info->data_avail = 0;// consume this data for testing purposes
 
   // store the timestamp in the device, because other devices may
@@ -218,11 +224,11 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
 #endif
 
   // Check for overflows
-  if (len > m_command_len)
+  if (len > device_commandsize)
     PLAYER_ERROR("invalid command length; ignoring command");
     
   // Copy the command
-  memcpy(m_command_buffer, command, len);
+  memcpy(device_command, command, len);
 
   // Set flag to indicate command has been set
   m_info->command_avail = len;
@@ -241,6 +247,7 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
 ///////////////////////////////////////////////////////////////////////////
 // Write configuration to the device
 //
+/*
 int CStageDevice::PutConfig(CClientData* client, unsigned char *config, 
                             size_t len)
 {
@@ -268,6 +275,7 @@ int CStageDevice::PutConfig(CClientData* client, unsigned char *config,
 
   return(0);
 }
+*/
 
 void CStageDevice::Lock( void )
 {

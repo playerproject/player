@@ -33,6 +33,7 @@
 #include <pthread.h>
 
 #include <stddef.h> /* for size_t */
+#include <clientdata.h>
 #include <playercommon.h>
 #include <playerqueue.h>
 
