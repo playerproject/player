@@ -173,16 +173,17 @@ void *RunAudioThread(void *audiodevice)
   sigblock(SIGALRM);
 
   memset( command, 0, AUDIO_COMMAND_BUFFER_SIZE);
-  memset( zero, 0, AUDIO_COMMAND_BUFFER_SIZE);
+  memset( zero, 255, AUDIO_COMMAND_BUFFER_SIZE);
   memset(data,0,AUDIO_DATA_BUFFER_SIZE);
   ad->GetLock()->PutData( ad, data, sizeof(data) );
 
   while(1) {
+
     pthread_testcancel();
     ad->GetLock()->GetCommand(ad, command, sizeof(command));
     ad->GetLock()->PutCommand(ad, zero, sizeof(zero));
     
-    if( strcmp( (char *) command, (char *) zero ) != 0 ) {
+    if( command[0]!=255 ) {
       cnt = 0;
       playFrq = (short)ntohs((unsigned short)(*(short*)(&command[cnt])));
       cnt += sizeof(short);
@@ -204,11 +205,15 @@ void *RunAudioThread(void *audiodevice)
 	}
 	
 	playDuration = (int)((playDur)*(RATE/10)*sizeof(char));
-	printf("pd: %hd\n", playDuration);
+	// printf("pd: %hd\n", playDuration);
 	current = 0;
+      } else {
+	current=playDuration;
       }
     }
     
+    // printf("%i  (%i) \n",state,(playDuration-current));
+
     if ( current < playDuration ) {
       /* still playing an old sound */
       remaining = playDuration - current;
@@ -219,8 +224,7 @@ void *RunAudioThread(void *audiodevice)
 	  if (phase>M_PI*2) phase-=M_PI*2;
 	  buf[i]=(char)(127+(int)(playAmp*sin(phase)));
 	}
-      }
-      else {
+      } else {
 	for ( i=0 ; i < remaining ; i++,current++) {
 	  phase+=omega;
 	  if (phase>M_PI*2) phase-=M_PI*2;
@@ -229,8 +233,8 @@ void *RunAudioThread(void *audiodevice)
       }
       write(fd, buf, i);
       pthread_testcancel();
-    }
-    else {    
+      usleep(20000);
+    } else {    
       if (state != LISTENING ) {
 	ad->openDSPforRead();
 	state = LISTENING;
