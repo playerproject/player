@@ -175,6 +175,13 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
   player_log_get_state_t greq;
   uint8_t subtype;
 
+  if(device->code != PLAYER_LOG_CODE)
+  {
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+    return(0);
+  }
+
   if(len < sizeof(sreq.subtype))
   {
     PLAYER_WARN2("request was too small (%d < %d)",
