@@ -208,7 +208,7 @@ bool ConfigFile::WarnUnused()
     if (!property->used)
     {
       unused = true;
-      PRINT_WARN3("worldfile %s:%d : property [%s] is defined but not used",
+      PLAYER_WARN3("worldfile %s:%d : property [%s] is defined but not used",
                   this->filename, property->line, property->name);
     }
   }
@@ -1482,7 +1482,7 @@ bool ConfigFile::ReadBool(int entity, const char *name, bool value)
   else if (strcmp(v, "false") == 0 || strcmp(v, "no") == 0)
     return false;
   CProperty *pproperty = this->properties + property;
-  PRINT_WARN3("worldfile %s:%d : '%s' is not a valid boolean value; assuming 'false'",
+  PLAYER_WARN3("worldfile %s:%d : '%s' is not a valid boolean value; assuming 'false'",
               this->filename, pproperty->line, v);
   return false;
 }

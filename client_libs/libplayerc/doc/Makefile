@@ -16,9 +16,6 @@ NAME = libplayerc
 # Library include file
 INCLUDE = ../playerc.h
 
-# Destination for the manual when its done (for distribution)
-MANPATH = ../../../doc
-
 all: dvi ps pdf
 
 dvi: $(NAME).dvi
@@ -56,7 +53,6 @@ $(NAME).pdf: $(NAME).ps
 	$(PS2PDF) $<
 
 manual: ps
-	cp $(NAME).ps $(MANPATH)
 
 clean:
 	rm -rf $(NAME).ps $(NAME).dvi $(NAME).log \

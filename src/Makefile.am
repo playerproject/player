@@ -1,7 +1,10 @@
-
-INCLUDES = -I$(top_builddir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include
 
 bin_PROGRAMS = player
+
+lib_LIBRARIES = libplayerqueue.a
+
+libplayerqueue_a_SOURCES = playerqueue.cc
 
 player_SOURCES = clientdata.cc pubsub_util.cc devicetable.cc device.cc \
               deviceregistry.cc clientmanager.cc wallclocktime.cc main.cc \
@@ -29,19 +32,12 @@ player_DEPENDENCIES   = @LASER_OBJ@ \
                         @P2OS_OBJ@ \
                         @STAGE_OBJ@
 
-player_LDADD   = -lpthread -lm -ldl \
-                 @LASER_OBJ@ \
-                 @VISION_OBJ@ \
-                 @SONAR_OBJ@ \
-                 @POSITION_OBJ@ \
-                 @GRIPPER_OBJ@ \
-                 @MISC_OBJ@ \
-                 @PTZ_OBJ@ \
-                 @AUDIO_OBJ@ \
-                 @LASERBEACON_OBJ@ \
-                 @BROADCAST_OBJ@ \
-                 @SPEECH_OBJ@ \
-                 @BPS_OBJ@ \
-                 @P2OS_OBJ@ \
-                 @STAGE_OBJ@
+player_LDADD   = -lpthread -lm -ldl @LASER_OBJ@ @VISION_OBJ@ @SONAR_OBJ@ @POSITION_OBJ@ @GRIPPER_OBJ@ @MISC_OBJ@ @PTZ_OBJ@ @AUDIO_OBJ@ @LASERBEACON_OBJ@ @BROADCAST_OBJ@ @SPEECH_OBJ@ @BPS_OBJ@ @P2OS_OBJ@ @STAGE_OBJ@
+
+include_HEADERS = $(top_builddir)/include/defaults.h \
+                  $(top_builddir)/include/playercommon.h \
+                  $(top_builddir)/include/player.h \
+                  $(top_builddir)/include/messages.h \
+                  $(top_builddir)/include/playerqueue.h \
+                  $(top_builddir)/include/stage.h
 

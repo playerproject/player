@@ -114,7 +114,7 @@ int playerc_lbd_set_config(playerc_lbd_t *device,
   // Change the bit size and the number of bits
   config.subtype = PLAYER_LASERBEACON_SET_CONFIG;
   config.bit_count = bit_count;
-  config.bit_size = htons(bit_width * 1000);
+  config.bit_size = htons((uint16_t)(bit_width * 1000));
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config), &config, sizeof(config));
   if (len < 0)

@@ -24,6 +24,11 @@
  * $Id$
  */
 
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
+
 /* conditionally include device-specific headers */
 #ifdef INCLUDE_LASER
 #include <laserdevice.h>

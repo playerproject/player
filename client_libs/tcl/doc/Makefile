@@ -12,9 +12,6 @@ PS2PDF = ps2pdf
 
 BASE_NAME = tclplayer
 
-# destination for the manual when its done (for distribution)
-MANPATH = ../../../doc
-
 dvi: $(BASE_NAME).dvi
 
 $(BASE_NAME).dvi: $(BASE_NAME).tex 
@@ -39,7 +36,6 @@ $(BASE_NAME).pdf: $(BASE_NAME).ps
 	$(PS2PDF) $<
 
 manual: ps
-	cp $(BASE_NAME).ps $(MANPATH)
 
 clean:
 	rm -rf $(BASE_NAME).ps $(BASE_NAME).dvi $(BASE_NAME).log \
