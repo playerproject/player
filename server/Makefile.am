@@ -1,6 +1,10 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/stage1p4 -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace @STAGECLIENT_CFLAGS@
+AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace
+
+# create the pkg-config entry for the server headers
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = player.pc
 
 player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 
@@ -33,10 +37,10 @@ player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h \
 
 
 # Install these to $prefix/include so clients can use them
-include_HEADERS = playercommon.h player.h playerqueue.h
+include_HEADERS = playercommon.h player.h playerqueue.h 
 
 # Install these to $prefix/include/player/ so plugin drivers can use them
-pkginclude_HEADERS = driver.h drivertable.h devicetable.h device.h configfile.h
+pkginclude_HEADERS = driver.h drivertable.h devicetable.h device.h configfile.h playertime.h
 
 
 #

@@ -749,7 +749,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       puts("success");
     else
     {
-      puts("failed");
+      printf("failed (%s)\n", dlerror() );
       return(false);
     }
   }
@@ -785,7 +785,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
         break;
       }
       else
-        puts("failed");
+	printf("failed (%s)\n", dlerror() );
 
       i=j+1;
     }
@@ -813,7 +813,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((handle = dlopen(fullpath, RTLD_NOW)))
       puts("success");
     else
-      puts("failed");
+      printf("failed (%s)\n", dlerror() );
   }
 
 // I can't find a way to do @prefix@ substitution in server/prefix.h that
@@ -831,7 +831,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((handle = dlopen(fullpath, RTLD_NOW)))
       puts("success");
     else
-      puts("failed");
+      printf("failed (%s)\n", dlerror() );
 
   }
 #endif

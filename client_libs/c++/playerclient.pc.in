@@ -1,0 +1,10 @@
+prefix=@prefix@
+
+# this gives access to the player header files for compiling plugins
+
+Name: playerclient
+Description: Player robot server and libraries - part of the Player/Stage Project
+Version: @VERSION@
+Requires: playercclient
+Libs: -L${prefix}/lib -lplayerclient
+Cflags: -I${prefix}/include

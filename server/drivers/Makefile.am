@@ -20,6 +20,5 @@ service_adv \
 shell \
 speech \
 stage \
-stageclient \
 waveform \
 wifi 

@@ -320,7 +320,8 @@ int player_request(player_connection_t* conn,
   unsigned char *buffer;
 
   // Get memory from the heap, not the stack
-  buffer = malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
+  buffer = (unsigned char *)
+    malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   if(payloadlen > (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)))
   {
@@ -418,7 +419,8 @@ int player_request_device_access(player_connection_t* conn,
   unsigned char *replybuffer;
 
   // Get memory from the heap, not the stack
-  replybuffer = malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
+  replybuffer = (unsigned char *)
+    malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   this_req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
   this_req.code = htons(device);
@@ -564,7 +566,7 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
   char *dummy;
 
   // Get memory from the heap, not the stack
-  dummy = malloc(sizeof(char*)*PLAYER_MAX_MESSAGE_SIZE);
+  dummy = (char*)malloc(sizeof(char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   if(conn->sock < 0)
     return(-1);
@@ -651,7 +653,8 @@ int player_read_udp(player_connection_t* conn, player_msghdr_t* hdr,
   int numread;
 
   // Get memory from the heap, not the stack
-  buffer = malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
+  buffer = (unsigned char *)
+    malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   if(conn->sock < 0)
     return(-1);
@@ -740,7 +743,8 @@ int player_write(player_connection_t* conn,
   player_msghdr_t hdr;
 
   // Get memory from the heap, not the stack
-  buffer = malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
+  buffer = (unsigned char *)
+    malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   if(commandlen > PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
   {

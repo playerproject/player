@@ -2,6 +2,10 @@ SUBDIRS = . test bindings
 
 AM_CPPFLAGS = -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
+# create the pkg-config entry	
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libplayerc.pc
+
 lib_LIBRARIES = libplayerc.a
 
 libplayerc_a_SOURCES = playerc.h \
