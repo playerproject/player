@@ -73,14 +73,18 @@
 #define SGN(x) ((x) < 0 ? -1 : 1)
 #endif
 
+/*
 typedef struct {
   player_position_data_t position;
   player_ir_data_t ir;
 } __attribute__ ((packed)) player_khepera_data_t;
+*/
 
+/*
 typedef struct {
   player_position_cmd_t position;
 } __attribute__ ((packed)) player_khepera_cmd_t;
+*/
 
 typedef struct {
 	char * PortName;
@@ -97,25 +101,21 @@ class Khepera : public Driver
 {
 public:
   
-  Khepera(char *interface, ConfigFile *cf, int section);
+  Khepera(ConfigFile *cf, int section);
 
   /* the main thread */
   virtual void Main();
-  
-  // we override these, because we will maintain our own subscription count
-  virtual int Subscribe(void *client);
-  virtual int Unsubscribe(void *client);
+
+  virtual int Subscribe(player_device_id_t id);
+  virtual int Unsubscribe(player_device_id_t id);
   
   virtual int Setup();
   virtual int Shutdown();
   
-  virtual void PutData(unsigned char *, size_t maxsize,
-		       uint32_t timestamp_sec, uint32_t timestamp_usec);
+  //  void Restart();
 
-//  void Restart();
-
-short khtons(short in);
-short ntokhs(short in);
+  short khtons(short in);
+  short ntokhs(short in);
 
   void ReadConfig();
 
@@ -126,14 +126,14 @@ short ntokhs(short in);
 
   void UpdateData(void);
 
-  void UpdateIRData(player_khepera_data_t *);
-  void UpdatePosData(player_khepera_data_t *);
+  void UpdateIRData(player_ir_data_t *);
+  void UpdatePosData(player_position_data_t *);
 
   // the following are all interface functions to the REB
   // this handles the A/D device which deals with IR for us
   //void ConfigAD(int, int);
   unsigned short ReadAD(int);
-  int ReadAllIR();
+  int ReadAllIR(player_ir_data_t *);
 
   // this handles motor control
   int SetSpeed(int, int);
@@ -146,88 +146,49 @@ short ntokhs(short in);
   
   //unsigned char ReadStatus(int, int *, int *);
 
-protected:
-
-  void Lock();
-  void Unlock();
-  
-  void SetupLock();
-  void SetupUnlock();
-  
-  /* start a thread that will invoke Main() */
-  virtual void StartThread();
-  /* cancel (and wait for termination) of the thread */
-  virtual void StopThread();
-
 private:
-	KheperaSerial * Serial;
+  player_device_id_t ir_id;
+  player_device_id_t position_id;
+  int position_subscriptions;
+  int ir_subscriptions;
+
+  KheperaSerial * Serial;
 
 
-/*  int write_serial(char *, int);
-  int read_serial_until(char *, int, char *, int);
-  int write_command(char *buf, int len, int maxsize);*/
-  
-  static pthread_t thread;
-  
-  // since we have several child classes that must use the same lock, we 
-  // declare our own static mutex here and override Lock() and Unlock() to 
-  // use this mutex instead of the one declared in Driver.
-  static pthread_mutex_t khepera_accessMutex;
-  
-  // and this one protects calls to Setup and Shutdown
-  static pthread_mutex_t khepera_setupMutex;
-  
-  // likewise, we need one Khepera-wide subscription count to manage calls to
-  static int khepera_subscriptions;
-  
-  static int ir_subscriptions;
-  static int pos_subscriptions;
-  
-  static player_khepera_data_t* data;
-  static player_khepera_cmd_t* command;
-  static player_khepera_geom_t* geometry;
-  
-  
-  static unsigned char* reqqueue;
-  static unsigned char* repqueue;
-    
-  static int param_index;  // index in the RobotParams table for this robot
-  static int khepera_fd;               // khepera device file descriptor
-  
-  static struct timeval last_position; // last position update
-  static bool refresh_last_position;
-  static int last_lpos, last_rpos;
-  static double x,y,yaw;
-  static int last_x_f, last_y_f;
-  static double last_theta;
+  /*  int write_serial(char *, int);
+      int read_serial_until(char *, int, char *, int);
+      int write_command(char *buf, int len, int maxsize);*/
 
-  static struct timeval last_pos_update; // time of last pos update
-  static struct timeval last_ir_update;
+  player_khepera_geom_t* geometry;
 
-  static int pos_update_period;
+  int param_index;  // index in the RobotParams table for this robot
+  int khepera_fd;               // khepera device file descriptor
+  
+  struct timeval last_position; // last position update
+  bool refresh_last_position;
+  int last_lpos, last_rpos;
+  double x,y,yaw;
+  int last_x_f, last_y_f;
+  double last_theta;
 
-  static short desired_heading;
+  struct timeval last_pos_update; // time of last pos update
+  struct timeval last_ir_update;
 
-  static int ir_sequence;
-  static struct timeval last_ir;
+  int pos_update_period;
 
-  static bool motors_enabled;
-  static bool velocity_mode;
-  static bool direct_velocity_control;
+  short desired_heading;
+
+  int ir_sequence;
+  struct timeval last_ir;
+
+  bool motors_enabled;
+  bool velocity_mode;
+  bool direct_velocity_control;
 
   // device used to communicate with reb
-  static char khepera_serial_port[MAX_FILENAME_SIZE]; 
+  char khepera_serial_port[MAX_FILENAME_SIZE]; 
 
-  static struct timeval timeBegan_tv;
-  
-  // did we initialize the common data segments yet?
-  static bool initdone;
-  
-  static int locks, slocks;
-
-  static struct pollfd write_pfd, read_pfd;
-
-  
+  struct pollfd write_pfd, read_pfd;
 };
 
 
