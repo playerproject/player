@@ -224,6 +224,10 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 int playerc_client_request(playerc_client_t *client, playerc_device_t *device,
                            void *req_data, int req_len, void *rep_data, int rep_len);
 
+// Test to see if there is pending data.
+// Returns -1 on error, 0 or 1 otherwise.
+int playerc_client_peek(playerc_client_t *client, int timeout);
+
 // Read data from the server (blocking).  For data packets, will
 // return a pointer to the device proxy that got the data; for synch
 // packets, will return a pointer to the client itself; on error, will
