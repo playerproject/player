@@ -39,13 +39,15 @@
 // Minimal constructor
 // buffer points to a single buffer containing the data, command and configuration buffers.
 //
-CStageDevice::CStageDevice(player_stage_info_t* info, int lockfd )
+CStageDevice::CStageDevice(player_stage_info_t* info, 
+			   int lockfd, int lockbyte )
 {
 #ifdef DEBUG
-  printf( "P: Creating Stage device (%d,%d,%d)\n", 
+  printf( "P: Creating Stage device (%d,%d,%d) locking %d:%d\n", 
           info->player_id.port, 
           info->player_id.type, 
-          info->player_id.index ); 
+          info->player_id.index,
+	  lockfd, lockbyte ); 
 #endif
 
   m_info = info;
@@ -65,11 +67,13 @@ CStageDevice::CStageDevice(player_stage_info_t* info, int lockfd )
 
   // setup the lock object
   //printf( "installing sem %p\n", &info->lock );
-#ifdef POSIX_SEM
-  m_lock.InstallLock( &info->lock);
-#else
-  m_lock.InstallLock( lockfd );
-#endif
+//  #ifdef POSIX_SEM
+//    m_lock.InstallLock( &info->lock);
+//  #else
+//    m_lock.InstallLock( lockfd );
+//  #endif
+
+  m_lock.InstallLock( lockfd, lockbyte );
 
 #ifdef DEBUG
   PLAYER_TRACE4("creating device at addr: %p %p %p %p %p", 

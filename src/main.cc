@@ -264,6 +264,20 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
   
   int* portstmp = new int[MAXPORTS];
 
+
+  // open the lock file
+  char lockfile[ MAX_FILENAME_SIZE ];
+  sprintf( lockfile, "%s/%s", directory, STAGE_LOCK_NAME );
+
+  int lockfd = -1;
+
+  if( (lockfd = open( lockfile, O_RDWR )) < 1 )
+  {
+    printf( "PLAYER: opening lock file %s (%d)\n", lockfile, lockfd );
+    perror("Failed to create lock device" );
+    return false;
+  } 
+ 
   // open all the files in the IO directory
   n = scandir( directory, &namelist, MatchDeviceName, 0);
   if (n < 0)
@@ -275,7 +289,7 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
     {
 
       // don't try to load the clock here - we'll do it below
-      if( strcmp( "clock", namelist[n]->d_name ) == 0 )
+      if( strcmp( STAGE_CLOCK_NAME, namelist[n]->d_name ) == 0 )
         break;
 
 #ifdef DEBUG      
@@ -312,7 +326,7 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
         exit( -1 );
       }
       
-      //close( tfd ); // can close fd once mapped
+      close( tfd ); // can close fd once mapped
       
       CStageDevice *dev = 0; // declare outside switch statement
 
@@ -338,7 +352,7 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
         case PLAYER_MOTE_CODE:
         {
           // Create a StageDevice with this IO base address and filedes
-          dev = new CStageDevice( deviceIO, tfd );
+          dev = new CStageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	    
           deviceTable->AddDevice( deviceIO->player_id.port,
                                   deviceIO->player_id.type, 
@@ -438,7 +452,8 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
 
   // open and map the stage clock
   char clockname[MAX_FILENAME_SIZE];
-  snprintf( clockname, MAX_FILENAME_SIZE-1, "%s/clock", directory );
+  snprintf( clockname, MAX_FILENAME_SIZE-1, "%s/%s", 
+	    directory, STAGE_CLOCK_NAME );
   
 #ifdef DEBUG
   printf("Opening %s\n", clockname );

@@ -35,11 +35,14 @@
 StageTime::StageTime( stage_clock_t* clock, int fd ) 
 { 
   simtimep = &clock->time; 
-#ifdef POSIX_SEM 
-  stagelock.InstallLock( &clock->lock );
-#else
-  stagelock.InstallLock( fd );
-#endif
+//  #ifdef POSIX_SEM 
+//    stagelock.InstallLock( &clock->lock );
+//  #else
+//    stagelock.InstallLock( fd );
+//  #endif
+
+  // use the first byte of the clock file to synchronize access
+  stagelock.InstallLock( fd, 0 );
 }
 
 

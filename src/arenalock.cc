@@ -53,29 +53,29 @@ CArenaLock::~CArenaLock()
   //puts( "AL: destruct" );
 }
 
-#ifdef POSIX_SEM
-bool CArenaLock::InstallLock( sem_t* sem )
-{
-  // get the pointer to the semaphore structure in shared memory
-  // this is called from main.cc CreateStageDevices()
+//  #ifdef POSIX_SEM
+//  bool CArenaLock::InstallLock( sem_t* sem )
+//  {
+//    // get the pointer to the semaphore structure in shared memory
+//    // this is called from main.cc CreateStageDevices()
  
-  m_lock = sem;
+//    m_lock = sem;
 
-  //printf( "Player: device lock at %p\n", m_lock );
-  return(true);
-}
-#else
-bool CArenaLock::InstallLock( int fd )
-{
-  // get the pointer to the semaphore structure in shared memory
-  // this is called from main.cc CreateStageDevices()
+//    //printf( "Player: device lock at %p\n", m_lock );
+//    return(true);
+//  }
+//  #else
+//  bool CArenaLock::InstallLock( int fd )
+//  {
+//    // get the pointer to the semaphore structure in shared memory
+//    // this is called from main.cc CreateStageDevices()
  
-  lock_fd = fd;
+//    lock_fd = fd;
 
-  //printf( "Player: device lock at %d\n", lock_fd );
-  return(true);
-}
-#endif
+//    //printf( "Player: device lock at %d\n", lock_fd );
+//    return(true);
+//  }
+//  #endif
 
 
 int CArenaLock::Setup( CDevice *obj ) 
@@ -94,20 +94,36 @@ bool CArenaLock::Lock( void )
 {
   //printf( "P: LOCK %p\n", m_lock );
 
-#ifdef POSIX_SEM
+//  #ifdef POSIX_SEM
 
-    if( sem_wait( m_lock ) < 0 )
-      {
-        perror( "sem_wait failed" );
-        return false;
-      }
+//      if( sem_wait( m_lock ) < 0 )
+//        {
+//          perror( "sem_wait failed" );
+//          return false;
+//        }
 
-#else
+//  #else
 
-  // BSD file locking style
-  flock( lock_fd, LOCK_EX );
+//    // BSD file locking style
+//    flock( lock_fd, LOCK_EX );
 
-#endif
+//  #endif
+
+ // POSIX RECORD LOCKING METHOD
+  struct flock cmd;
+
+  cmd.l_type = F_WRLCK; // request write lock
+  cmd.l_whence = SEEK_SET; // count bytes from start of file
+  cmd.l_start = this->lock_byte; // lock my unique byte
+  cmd.l_len = 1; // lock 1 byte
+
+
+  //printf( "WAITING for byte %d\n", this->lock_byte );
+
+
+
+  fcntl( this->lock_fd, F_SETLKW, &cmd );
+  //printf( "DONE WAITING\n" );
 
    return true;
 }
@@ -116,20 +132,30 @@ bool CArenaLock::Unlock( void )
 {
   //printf( "P: UNLOCK %p\n", m_lock );
 
-#ifdef POSIX_SEM
+//  #ifdef POSIX_SEM
 
-  if( sem_post( m_lock ) < 0 )
-  {
-  perror( "sem_post failed" );
-  return false;
-  }
+//    if( sem_post( m_lock ) < 0 )
+//    {
+//    perror( "sem_post failed" );
+//    return false;
+//    }
 
-#else
+//  #else
 
-  // BSD file locking style
-  flock( lock_fd, LOCK_UN );
+//    // BSD file locking style
+//    flock( lock_fd, LOCK_UN );
 
-#endif
+//  #endif
+
+ // POSIX RECORD LOCKING METHOD
+  struct flock cmd;
+
+  cmd.l_type = F_UNLCK; // request  unlock
+  cmd.l_whence = SEEK_SET; // count bytes from start of file
+  cmd.l_start = this->lock_byte; // unlock my unique byte
+  cmd.l_len = 1; // unlock 1 byte
+
+  fcntl( this->lock_fd, F_SETLKW, &cmd );
 
   return true;
 }
@@ -185,12 +211,12 @@ void CArenaLock::PutCommand(CDevice *obj ,unsigned char *dest, size_t size)
 
 void CArenaLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize) 
 {
-  puts( "Warning: attempt to put data in Arena mode" );
+  puts( "Warning: attempt to put data in Stage mode" );
 }
 
 void CArenaLock::GetCommand( CDevice *obj , unsigned char *dest, size_t maxsize) 
 {
-  puts( "Warning: attempt to get commands in Arena mode" );
+  puts( "Warning: attempt to get commands in Stage mode" );
 }
 void CArenaLock::PutConfig( CDevice *obj,  unsigned char *dest, size_t size) 
 {
@@ -202,7 +228,7 @@ void CArenaLock::PutConfig( CDevice *obj,  unsigned char *dest, size_t size)
 
 size_t CArenaLock::GetConfig( CDevice *obj , unsigned char *dest, size_t maxsize) 
 {
-  puts( "Warning: attempt to get commands in Arena mode" );
+  puts( "Warning: attempt to get commands in Stage mode" );
   return(0);
 }
 
