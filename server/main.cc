@@ -85,6 +85,9 @@
 //#define VERBOSE
 //#define DEBUG
 
+// true if the main loop should terminate
+bool quit = false;
+
 // true if we're connecting to Stage instead of a real robot
 bool use_stage = false;
 
@@ -185,21 +188,17 @@ printout_bus( int dummy )
 void 
 Interrupt( int dummy ) 
 {
-  if(dummy != SIGTERM)
+  if (dummy == SIGTERM)
   {
-    // delete the manager; it will delete the clients
-    delete clientmanager;
-
-    // next, delete the deviceTable; it will delete all the devices internally
-    delete deviceTable;
+    if(use_stage)
+      puts("** Player quitting (SIGTERM) **" );
+    else
+      printf("** Player [port %d] quitting **\n", global_playerport );
+    exit(0);
   }
 
-  if(use_stage)
-    puts("** Player quitting **" );
-  else
-    printf("** Player [port %d] quitting **\n", global_playerport );
-  
-  exit(0);
+  // Tell the main loop to quit
+  quit = 1;
 }
 
 /* setup some signal handlers */
@@ -434,71 +433,8 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
         case PLAYER_LOCALIZE_CODE:
         {
           PLAYER_WARN("Localization drivers cannot be loaded from a .world "
-                      "file.\nYou must run an auxillary instance of Player "
+                      "file.\nYou must run a separate instance of Player "
                       "and use the passthrough driver.");
-          
-          /*
-          int section = configFile.AddEntity(globalparent,
-                                             PLAYER_LOCALIZE_STRING);
-          // Regular MCL
-          if (strcmp((const char*) deviceIO->drivername, "regular_mcl") == 0)
-          {
-            DriverEntry* entry;
-            entry = driverTable->GetDriverEntry((char*) deviceIO->drivername);
-            if (!entry)
-            { 
-              PLAYER_WARN1("Player support for %s device unavailable.", deviceIO->drivername);
-            }
-            else
-            {
-              devicep = (PSDevice*)(*(entry->initfunc))(PLAYER_LOCALIZE_STRING, 
-                                                        &configFile, section);
-              // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id, 
-                                     "regular_mcl",
-                                     (char*)(deviceIO->robotname),
-                                     PLAYER_READ_MODE, 
-                                     devicep);
-
-              // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
-
-              // setup the Stage buffers
-              devicep->SetupStageBuffers(deviceIO, lockfd, 
-                                         deviceIO->lockbyte);
-            }
-          }
-
-          // Adaptive MCL
-          if (strcmp((const char*) deviceIO->drivername, "adaptive_mcl") == 0)
-          {
-            DriverEntry* entry;
-            entry = driverTable->GetDriverEntry((char*) deviceIO->drivername);
-            if (!entry)
-            {
-              PLAYER_WARN1("Player support for %s device unavailable.", deviceIO->drivername);
-            }
-            else
-            {
-              PSDevice *device = (PSDevice*) (*(entry->initfunc)) (PLAYER_LOCALIZE_STRING,
-                                                                   &configFile, section);
-            
-              // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id, 
-                                     "adaptive_mcl",
-                                     (char*)(deviceIO->robotname),
-                                     PLAYER_READ_MODE, 
-                                     device);
-
-              // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
-
-              // setup the Stage buffers
-              device->SetupStageBuffers(deviceIO, lockfd, 
-                                        deviceIO->lockbyte);
-            }
-          }
-          */
         }
         break;
 
@@ -1123,7 +1059,7 @@ int main( int argc, char *argv[] )
 
   // main loop: sleep the shortest amount possible, periodically updating
   // the clientmanager.
-  for(;;) 
+  while (!quit)
   {
     //usleep(0);
     if(clientmanager->Update())
@@ -1133,8 +1069,12 @@ int main( int argc, char *argv[] )
     }
   }
 
+  if(use_stage)
+    puts("** Player quitting **" );
+  else
+    printf("** Player [port %d] quitting **\n", global_playerport );
+  
   // Finalize ReadLog manager
-  // AH: I know we never get here, but we should, dammit!
   if (readlog_filename != NULL)
   {
 #if INCLUDE_READLOG
@@ -1143,7 +1083,6 @@ int main( int argc, char *argv[] )
   }
   
   // Finalize gazebo client
-  // AH: I know we never get here, but we should, dammit!
   if (gz_serverid != NULL)
   {
 #if INCLUDE_GAZEBO
