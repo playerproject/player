@@ -123,6 +123,47 @@ test_fiducial(PlayerClient* client, int index)
     // wait for a few cycles so we can see the change
     for(int i=0; i < 10; i++)
       client->Read();
+    
+    for( int i=0; i<10; i++ )
+      {
+	player_fiducial_msg_t msg;
+	memset( &msg, 0, sizeof(msg) );
+	msg.target_id = 13;
+	snprintf( (char*)&msg.bytes, PLAYER_FIDUCIAL_MAX_MSG_LEN, 
+		  "test message %d", i );
+	msg.len = (uint8_t)strlen((char*)&msg.bytes);
+	msg.consume = 1;
+	
+	// attempt to send a message
+	TEST("broadcasting a message");
+	
+	if( fp.SendMessage(&msg) < 0 )
+	  {
+	    FAIL();
+	    puts( "Messaging not supported" );
+	    break;
+	  }
+	else
+	  PASS();
+	
+	// attempt to read a message
+	TEST("reading a message");
+	
+	player_fiducial_msg_t recv;
+	if( fp.RecvMessage(&recv,1) < 0 )
+	  {
+	    FAIL();
+	    puts( "Messaging not supported" );
+	    break;
+	  }
+	else
+	  PASS();
+
+	// wait for a few cycles so we can see the messages
+	for(int i=0; i < 5; i++)
+	  client->Read();
+      }
+
 
     TEST("unsubscribing");
     if((fp.ChangeAccess(PLAYER_CLOSE_MODE,&access) < 0) ||

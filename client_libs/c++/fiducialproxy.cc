@@ -215,3 +215,50 @@ int FiducialProxy::SetFOV( double min_range,
   
   return 0; // OK
 }
+
+/*
+  Attempt to send a message to a fiducial. See the Player manual
+  for details of the message packet. Use a target_id of -1 to
+  broadcast. Note: these message functions use configs that are
+  probably only supported by Stage-1.4 (or later) fiducial
+  driver.
+*/
+
+int FiducialProxy::SendMessage( player_fiducial_msg_t* msg )
+{
+  int len;
+  player_msghdr_t hdr;
+  
+  msg->subtype = PLAYER_FIDUCIAL_SEND_MSG;
+  
+  // byteswap the fields
+  msg->target_id = (int32_t)htonl(msg->target_id);
+  msg->power = (uint16_t)htons(msg->power);
+  // the other fields are single-byte
+
+  printf( "sending message of %d bytes\n", msg->len );
+
+  len = client->Request(m_device_id,
+			(const char*)msg, sizeof(player_fiducial_msg_t) );
+  
+  if( len == -1 )
+    {
+      puts( "fiducial send message request failed" );
+      return(-1);
+    }
+  
+  return 0; // OK
+}
+
+/* Read the last message received from a fiducial. The packet is
+   completely filled in by the. If consume is true, the message is
+   deleted ffom the device on reading. If false, the message is
+   kept and can be read again. Note: these message functions use
+   configs that are probably only supported by Stage-1.4 (or later)
+   fiducial driver.
+*/
+
+int FiducialProxy::RecvMessage( player_fiducial_msg_t* msg, bool consume )
+{
+  return 0; // ok
+}
