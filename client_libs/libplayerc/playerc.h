@@ -80,6 +80,11 @@ typedef struct _playerc_client_t
     
   // Socket descriptor
   int sock;
+
+  // List of ids for available devices.  This list is filled in by
+  // playerc_client_get_devlist().
+  int id_count;
+  player_device_id_t ids[PLAYER_MAX_DEVICES];
     
   // List of subscribed devices
   int device_count;
@@ -176,6 +181,10 @@ int  playerc_client_addcallback(playerc_client_t *client, playerc_device_t *devi
                                 playerc_callback_fn_t callback, void *data);
 int  playerc_client_delcallback(playerc_client_t *client, playerc_device_t *device,
                                 playerc_callback_fn_t callback, void *data);
+
+// Get the list of available device ids.  The data is written into the
+// proxy structure rather than returned to the caller.
+int playerc_client_get_devlist(playerc_client_t *client);
 
 // Subscribe/unsubscribe a device from the sever (private)
 int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access);

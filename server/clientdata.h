@@ -88,6 +88,11 @@ class CClientData
 
     void RemoveBlanks();  
     void RemoveRequests();
+
+    // Handle device list requests.
+    void HandleListRequest(player_device_devlist_t *req,
+                           player_device_devlist_t *rep);
+
     void UpdateRequested(player_device_req_t req);
     bool CheckWritePermissions(player_device_id_t id);
     bool CheckOpenPermissions(player_device_id_t id);

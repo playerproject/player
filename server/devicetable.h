@@ -74,6 +74,12 @@ class CDeviceTable
     // returns the code for access ('r', 'w', or 'a') for the given 
     // device, or 'e' on failure
     unsigned char GetDeviceAccess(player_device_id_t id);
+
+    // Get the first device entry.
+    CDeviceEntry *GetFirstEntry() {return head;}
+
+    // Get the next device entry.
+    CDeviceEntry *GetNextEntry(CDeviceEntry *entry) {return entry->next;}
 };
 
 #endif
