@@ -389,11 +389,11 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // you could insert config file options manually here.
 
           // find the localization device in the available device table
+	  player_interface_t interface;
           DriverEntry* entry;
-          if(!(entry = 
-               driverTable->GetDriverEntry(PLAYER_LOCALIZATION_STRING)))
-            PLAYER_WARN("Player support for localization device "
-                        "unavailable.");
+	  if ((lookup_interface(PLAYER_LOCALIZATION_STRING, &interface) < 0) ||
+	      !(entry = driverTable->GetDriverEntry(interface.default_driver)))
+            PLAYER_WARN("Player support for localization device unavailable.");
           else
           {
             devicep = (PSDevice*)(*(entry->initfunc))(PLAYER_LOCALIZATION_STRING, 
