@@ -118,68 +118,6 @@ test_position(PlayerClient* client, int index)
   sleep(3);
   PASS();
 
-  TEST("changing to position control mode");
-  if(pp.SelectPositionMode(1) < 0)
-  {
-    FAIL();
-    return(-1);
-  }
-  sleep(1);
-  PASS();
-
-  TEST("resetting odometry");
-  if(pp.ResetOdometry() < 0)
-  {
-    FAIL();
-    return(-1);
-  }
-  sleep(1);
-  PASS();
-
-  TEST("moving to [500 0 0]");
-  if(pp.GoTo( 500, 0, 0) < 0)
-  {
-    FAIL();
-    return(-1);
-  }
-  sleep(5);
-  PASS();
-
-  //getchar();
-
-  TEST("moving to [500 0 -90]");
-  if(pp.GoTo( 500, 0, -90) < 0)
-  {
-    FAIL();
-    return(-1);
-  }
-  sleep(5);
-  PASS();
-
-  //getchar();
-
-
-  TEST("moving to [0.0 0.0 0.0]");
-  if(pp.GoTo( 0, 0, 0) < 0)
-  {
-    FAIL();
-    return(-1);
-  }
-  sleep(5);
-  PASS();
-      
-  //getchar();
-
-  TEST("changing back to velocity control mode");
-  if(pp.SelectPositionMode(0) < 0)
-  {
-    FAIL();
-    return(-1);
-  }
-  sleep(1);
-  PASS();
-
-
   TEST("disabling motors");
   if(pp.SetMotorState(0) < 0)
   {

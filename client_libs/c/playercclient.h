@@ -257,9 +257,5 @@ int player_set_datamode(player_connection_t* conn, char mode);
 int player_change_motor_state(player_connection_t* conn, char mode);
 
 
-#ifdef __cplusplus
-}
-#endif
-
 #endif
 
