@@ -389,7 +389,7 @@ int playerc_device_unsubscribe(playerc_device_t *device);
 
 
 /***************************************************************************/
-/** @defgroup blobfinder blobfinder
+/** @defgroup playerc_proxy_blobfinder blobfinder
 
 The blobfinder proxy provides an interface to color blob detectors
 such as the ACTS vision system.  See the Player User Manual for a
@@ -454,7 +454,7 @@ int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
 
 
 /**************************************************************************/
-/** @defgroup bumper bumper
+/** @defgroup playerc_proxy_bumper bumper
 
 The bumper proxy provides an interface to the bumper sensors built
 into robots such as the RWI B21R.
@@ -507,7 +507,7 @@ int playerc_bumper_get_geom(playerc_bumper_t *device);
 
 
 /***************************************************************************/
-/** @defgroup camera camera
+/** @defgroup playerc_proxy_camera camera
 
 The camera proxy can be used to get images from a camera.
 
@@ -552,7 +552,7 @@ int playerc_camera_unsubscribe(playerc_camera_t *device);
 
 
 /***************************************************************************/
-/** @defgroup comms comms
+/** @defgroup playerc_proxy_comms comms
 
 The comms proxy provides an interface to the network broadcast device.
 This device broadcasts any message sent to it onto the local network,
@@ -599,7 +599,7 @@ int playerc_comms_send(playerc_comms_t *device, void *msg, int len);
 
 
 /***************************************************************************/
-/** @defgroup fiducial fiducial
+/** @defgroup playerc_proxy_fiducial fiducial
 
 The fiducial proxy provides an interface to a fiducial detector.  This
 device looks for fiducials (markers or beacons) in the laser scan, and
@@ -666,7 +666,7 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device);
 
 
 /***************************************************************************/
-/** @defgroup gps gps
+/** @defgroup playerc_proxy_gps gps
 
 The gps proxy provides an interface to a GPS-receiver.
 
@@ -726,7 +726,7 @@ int playerc_gps_unsubscribe(playerc_gps_t *device);
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup ir ir
+/** @defgroup playerc_proxy_ir ir
 
 The ir proxy provides an interface to the ir sensors built into robots
 such as the RWI B21R.
@@ -771,7 +771,7 @@ int playerc_ir_get_geom(playerc_ir_t *device);
 
 
 /***************************************************************************/
-/** @defgroup joystick joystick
+/** @defgroup playerc_proxy_joystick joystick
 
 The joystick proxy provides an interface to joysticks.
 
@@ -815,11 +815,13 @@ void playerc_joystick_putdata(playerc_joystick_t *device, player_msghdr_t *heade
 
 
 /***************************************************************************/
-/** @defgroup laser laser
+/** @defgroup playerc_proxy_laser laser
     
-The laser proxy provides an interface to a scanning laser range finder
-such as the SICK LMS200.  See the Player User Manual for a complete
-description of this device.
+The laser proxy provides an interface to scanning laser range finders
+such as the @ref player_driver_sicklms200.  Data is returned in the
+playerc_laser_t structure.
+
+This proxy wraps the low-level @ref player_interface_laser interface.
 
 @{
 */
@@ -903,7 +905,7 @@ int playerc_laser_get_geom(playerc_laser_t *device);
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup localize localize
+/** @defgroup playerc_proxy_localize localize
 
 The localize proxy provides an interface to localization drivers.
 Generally speaking, these are abstract drivers that attempt to
@@ -997,7 +999,7 @@ int playerc_localize_set_config(playerc_localize_t *device, player_localize_conf
 
 
 /***************************************************************************/
-/** @defgroup log log
+/** @defgroup playerc_proxy_log log
 
 The log proxy provides start/stop control of data logging
 
@@ -1050,7 +1052,7 @@ int playerc_log_get_state(playerc_log_t* device);
 
 
 /***************************************************************************/
-/** @defgroup map map
+/** @defgroup playerc_proxy_map map
 
 The map proxy provides an interface to a map.
 
@@ -1097,7 +1099,7 @@ int playerc_map_get_map(playerc_map_t* device);
 
 
 /***************************************************************************/
-/** @defgroup motor motor
+/** @defgroup playerc_proxy_motor motor
 
 The motor proxy provides an interface a simple, single motor.
 
@@ -1153,7 +1155,7 @@ int playerc_motor_set_cmd_pose(playerc_motor_t *device,
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup planner planner
+/** @defgroup playerc_proxy_planner planner
 
 The planner proxy provides an interface to a 2D motion planner.
 
@@ -1222,7 +1224,7 @@ int playerc_planner_get_waypoints(playerc_planner_t *device);
 
 
 /***************************************************************************/
-/** @defgroup position position 
+/** @defgroup playerc_proxy_position position 
 
 The position proxy provides an interface to a mobile robot base, such
 as the ActiveMedia Pioneer series.  The proxy supports both
@@ -1294,7 +1296,7 @@ int playerc_position_set_cmd_pose(playerc_position_t *device,
 
  
 /***************************************************************************/
-/** @defgroup position2d position2d
+/** @defgroup playerc_proxy_position2d position2d
 
 The position2d proxy provides an interface to a mobile robot base,
 such as the ActiveMedia Pioneer series.  The proxy supports both
@@ -1365,7 +1367,7 @@ int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
 
 
 /***************************************************************************/
-/** @defgroup position3d position3d
+/** @defgroup playerc_proxy_position3d position3d
 
 The position3d proxy provides an interface to a mobile robot base,
 such as the Segway RMP series.  The proxy supports both differential
@@ -1456,7 +1458,7 @@ int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup power power
+/** @defgroup playerc_proxy_power power
 
 The power proxy provides an interface through which battery levels can
     be monitored.
@@ -1495,7 +1497,7 @@ int playerc_power_unsubscribe(playerc_power_t *device);
 
 
 /***************************************************************************/
-/** @defgroup ptz ptz
+/** @defgroup playerc_proxy_ptz ptz
 
 The ptz proxy provides an interface to pan-tilt units such as the Sony
 PTZ camera.
@@ -1544,7 +1546,7 @@ int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zo
 
 
 /***************************************************************************/
-/** @defgroup sonar sonar
+/** @defgroup playerc_proxy_sonar sonar
 
 The sonar proxy provides an interface to the sonar range sensors built
 into robots such as the ActiveMedia Pioneer series.
@@ -1595,7 +1597,7 @@ int playerc_sonar_get_geom(playerc_sonar_t *device);
 
 
 /***************************************************************************/
-/** @defgroup truth truth
+/** @defgroup playerc_proxy_truth truth
  
 The truth proxy can be used to get and set the pose of objects in a  simulator.
 
@@ -1641,7 +1643,7 @@ int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double
 
 
 /***************************************************************************/
-/** @defgroup wifi wifi
+/** @defgroup playerc_proxy_wifi wifi
 
 The wifi proxy is used to query the state of a wireless network.  It
 returns information such as the link quality and signal strength of

@@ -1152,7 +1152,7 @@ typedef struct player_position2d_speed_prof_req
 /***************************************************************************/
 /** @addtogroup interfaces */
 /** @{ */
-/** @defgroup position3d position3d
+/** @defgroup player_interface_position3d position3d
 
 The position3d interface is used to control mobile robot bases in 3D
 (i.e., pitch and roll are important).
@@ -1405,7 +1405,7 @@ typedef struct player_sonar_power_config
 /*************************************************************************/
 /** @addtogroup interfaces */
 /** @{ */
-/** @defgroup laser laser
+/** @defgroup player_interface_laser laser
 
 The laser interface provides access to a single-origin scanning range
 sensor, such as a SICK laser range-finder.

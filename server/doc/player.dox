@@ -429,7 +429,7 @@ EXCLUDE_PATTERNS       =
 # directories that contain example code fragments that are included (see 
 # the \include command).
 
-EXAMPLE_PATH           = 
+EXAMPLE_PATH           = ../../client_libs/libplayerc/doc
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the 
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -955,7 +955,7 @@ TAGFILES               =
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create 
 # a tag file that is based on the input files it reads.
 
-GENERATE_TAGFILE       = 
+GENERATE_TAGFILE       = player.tag
 
 # If the ALLEXTERNALS tag is set to YES all external classes will be listed 
 # in the class index. If set to NO only the inherited external classes 
@@ -967,7 +967,7 @@ ALLEXTERNALS           = NO
 # in the modules index. If set to NO, only the current project's groups will 
 # be listed.
 
-EXTERNAL_GROUPS        = YES
+EXTERNAL_GROUPS        = NO
 
 # The PERL_PATH should be the absolute path and name of the perl script 
 # interpreter (i.e. the result of `which perl').

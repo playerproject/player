@@ -18,7 +18,9 @@ Player also makes no assumptions about how you might want to structure
 your robot control programs; i.e., Player is architecturally neutral.
 
 
-@section usage Quick-start Guide
+@section mainpage_usage Quick-start Guide
+
+@par Starting the Player server
 
 The Player server is run as follows:
 @verbatim
@@ -26,7 +28,8 @@ $ player [options] <configfile>
 @endverbatim
 
 The configuration file is a text file describing the set of devices to
-be instantiated; for example:
+be instantiated; for example, if you have an ActivMedia Pioneer and a
+SICKLMS200 scanning laser range finder:
 
 @verbatim
 device
@@ -44,10 +47,10 @@ device
 @endverbatim
 
 This file instructs the server to create two devices:
-  - A Pioneer P2OS driver, supporting the @ref position interface.
-  - A Sick LMS200 driver, supporting the @ref laser interface.
+  - A Pioneer P2OS driver, supporting the @ref player_interface_position interface.
+  - A Sick LMS200 driver, supporting the @ref player_interface_laser interface.
 Client programs can subsequently connect to these devices, read data,
-send commands and so forth.
+send commands and so forth (see below).
 
 Note the important distinction between drivers, interfaces and devices:
   - A @b driver supports a @e specific piece of hardware, such as a SICK LMS200
@@ -55,18 +58,52 @@ Note the important distinction between drivers, interfaces and devices:
   - An @b interface is a @e generic mechanism for getting data and/or
     sending commands to a piece of hardware.
   - A @b device describes a specific driver/interface pairing; e.g., a SICK LMS200
-    driver which supports the @ref laser interface.
+    driver which supports the @ref player_interface_laser interface.
 .
 Devices are also given an @b index to facilitate unique addressing
 (e.g., "laser:0" or "laser:1"); this allows the server to instantiate
 more than one device with the same interface.
 
-@section info Further information
 
-More detailed information can be found at these locations:
+@par Writing a Player client
+
+Users can write programs to communicate with the Player server.  In
+principle, this can be done using Player's low-level
+network-socket-base protocol.  In practice, most users will avail
+themselves of one of the existing @e client @e libraries; the
+libraries manage the network interactions, data marshalling and so on,
+and present a much more convenient API.  
+
+For example, the following code fragment demonstrates a simple client
+using the <a href="../libplayerc/">libplayerc</a> library.
+
+@include simpleclient.c
+
+This example can be built using the commands:
+@verbatim
+$ gcc -c simple.c -o simple.o
+$ gcc -lm -lplayerc simple.o -o simple
+@endverbatim
+
+With the server already started, you can run the example with:
+@verbatim
+$ ./simple
+@endverbatim
+
+Assuming everything is plugged in and turned on, your robot should
+scoot across the room.
+
+Client libraries also exist for C, C++, Tcl, LISP, Java, and Python.
+
+
+@section mainpage_info Further information
+
+More detailed information can be found here:
   - @ref commandline
   - @ref configfile 
-  - @ref interfaces 
   - @ref drivers 
+  - @ref clientlibs
+  - @ref interfaces 
+
 
 */
