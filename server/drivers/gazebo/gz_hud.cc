@@ -108,7 +108,6 @@ CDevice* GzHUD_Init(char* interface, ConfigFile* cf, int section)
 // a driver registration function
 void GzHUD_Register(DriverTable* table)
 {
-  printf ("Registering HUD\n");
   table->AddDriver("gz_hud", PLAYER_ALL_MODE, GzHUD_Init);
   return;
 }
