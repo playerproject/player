@@ -26,6 +26,14 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 
+dnl should we include the RTK GUI?
+AC_ARG_WITH(gui,    [   --without-gui         Don't include the GUI],,
+with_gui=yes)
+if test "x$with_gui" = "xyes"; then
+  AC_DEFINE(INCLUDE_RTK2,1,[include the RTK GUI])
+fi
+AM_CONDITIONAL(WITH_GUI, test x$with_gui = xyes)
+
 dnl client tests are not compiled unless the user asks for them
 AC_ARG_WITH(tests, [  --with-tests          Build tests],,
 with_tests=no)
