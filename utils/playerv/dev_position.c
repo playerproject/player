@@ -211,7 +211,7 @@ void position_update_servo(position_t *position)
     return;
   }
   
-  min_vr = -0.10; max_vr = 0.20;
+  min_vr = -0.10; max_vr = 0.30;
   min_va = -M_PI/8; max_va = +M_PI/8;
 
   kr = max_vr / 1.00;
