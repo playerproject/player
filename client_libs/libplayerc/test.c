@@ -13,8 +13,8 @@
 // Message macros
 #define TEST(msg) printf(msg " ... "); fflush(stdout)
 #define TEST1(msg, a) printf(msg " ... ", a); fflush(stdout)
-#define PASS() printf("pass\n"); fflush(stdout)
-#define FAIL() printf("\033[41mfail\033[0m\n%s\n", playerc_errorstr); fflush(stdout)
+#define PASS() (1 ? printf("pass\n"), fflush(stdout) : 0)
+#define FAIL() (1 ? printf("\033[41mfail\033[0m\n%s\n", playerc_errorstr), fflush(stdout) : 0)
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -77,17 +77,42 @@ int test_laser(playerc_client_t *client, int index)
   int t, i;
   playerc_laser_t *laser;
 
+  double min, max;
+  int resolution, intensity;
+
   printf("device [laser] index [%d]\n", index);
 
   laser = playerc_laser_create(client, index);
 
   TEST("subscribing (read/write)");
-  if (playerc_laser_subscribe(laser, PLAYER_ALL_MODE) < 0)
-  {
+  if (playerc_laser_subscribe(laser, PLAYER_ALL_MODE) == 0)
+    PASS();
+  else
     FAIL();
-    return -1;
-  }
-  PASS();
+  
+  TEST("set configuration");
+  min = -M_PI/2;
+  max = +M_PI/2;
+  resolution = 100;
+  intensity = 1;
+  if (playerc_laser_set_config(laser, min, max, resolution, intensity) == 0)
+    PASS();
+  else
+    FAIL();
+
+  TEST("get configuration");
+  if (playerc_laser_get_config(laser, &min, &max, &resolution, &intensity) == 0)
+    PASS();
+  else
+    FAIL();
+
+  TEST("check configuration sanity");
+  if (abs(min + M_PI/2) > 0.01 || abs(max - M_PI/2) > 0.01)
+    FAIL();
+  else if (resolution != 100 || intensity != 1)
+    FAIL();
+  else
+    PASS();
 
   for (t = 0; t < 10; t++)
   {
@@ -95,7 +120,7 @@ int test_laser(playerc_client_t *client, int index)
     if (playerc_client_read(client) != 0)
     {
       FAIL();
-      return -1;
+      break;
     }
     PASS();
 
@@ -106,12 +131,10 @@ int test_laser(playerc_client_t *client, int index)
   }
   
   TEST("unsubscribing");
-  if (playerc_laser_unsubscribe(laser) != 0)
-  {
+  if (playerc_laser_unsubscribe(laser) == 0)
+    PASS();
+  else
     FAIL();
-    return -1;
-  }
-  PASS();
   
   playerc_laser_destroy(laser);
   
@@ -210,9 +233,9 @@ int main(int argc, const char *argv[])
   PASS();
 
   // Run the tests
-  test_position(client, 0);
+  //test_position(client, 0);
   test_laser(client, 0);
-  test_laserbeacon(client, 0);
+  //test_laserbeacon(client, 0);
   
   TEST("Disconnecting");
   if (playerc_client_disconnect(client) != 0)

@@ -31,7 +31,7 @@
 #include <sys/poll.h>
 
 // Get the message structures from Player
-#include "messages.h"
+#include "player.h"
 
 
 /***************************************************************************
@@ -248,16 +248,16 @@ typedef struct
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
-  // Number of points in scan
+  // Number of points in the scan.
   int scan_count;
 
-  // Laser scan data (range and bearing)
+  // Scan data; range (m) and bearing (radians).
   double scan[401][2];
 
-  // Laser scan data (position)
+  // Scan data; x, y position (m).
   double point[402][2];
 
-  // Laser scan intensity values (0-3)
+  // Scan reflection intensity values (0-3).
   int intensity[402];
   
 } playerc_laser_t;
@@ -276,8 +276,18 @@ int playerc_laser_subscribe(playerc_laser_t *device, int access);
 int playerc_laser_unsubscribe(playerc_laser_t *device);
 
 // Configure the laser.
-int  playerc_laser_configure(playerc_laser_t *device, double min_angle, double max_angle,
-                             double resolution, int intensity);
+// <min_angle>, <max_angle> : Start and end angles for the scan.
+// <resolution> : Resolution in 0.01 degree increments.  Valid values are 25, 50, 100.
+// <intensity> : Intensity flag; set to 1 to enable reflection intensity data.
+int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double max_angle,
+                              int resolution, int intensity);
+
+// Get the laser configuration
+// <min_angle>, <max_angle> : Start and end angles for the scan.
+// <resolution> : Resolution in 0.01 degree increments.
+// <intensity> : Intensity flag; set to 1 to enable reflection intensity data.
+int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double *max_angle,
+                              int *resolution, int *intensity);
 
 
 /***************************************************************************

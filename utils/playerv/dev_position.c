@@ -133,7 +133,7 @@ void position_update(position_t *position)
   if (rtk_menuitem_ischecked(position->subscribe_item))
   {
     if (!position->proxy->info.subscribed)
-      if (playerc_position_subscribe(position->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_position_subscribe(position->proxy, PLAYER_ALL_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
   else

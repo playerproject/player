@@ -184,70 +184,70 @@ CClientData* CLaserDevice::ParseConfig()
 //
 int CLaserDevice::Setup()
 {   
-    // Set default configuration
-    //
-    m_scan_width = 180;
-    m_scan_res = 50;
-    m_scan_min_segment = 0;
-    m_scan_max_segment = 360;
-    m_intensity = true;
+  // Set default configuration
+  //
+  m_scan_width = 180;
+  m_scan_res = 50;
+  m_scan_min_segment = 0;
+  m_scan_max_segment = 360;
+  m_intensity = true;
 
-    printf("Laser initialising (%s)\n", m_laser_name);
+  printf("Laser initialising (%s)\n", m_laser_name);
     
-    // Open the terminal
-    if (OpenTerm())
-        return 1;
+  // Open the terminal
+  if (OpenTerm())
+    return 1;
 
-    // Start out at 38400 with non-blocking io
-    //
-    if (ChangeTermSpeed(38400))
-        return 1;
+  // Start out at 38400 with non-blocking io
+  //
+  if (ChangeTermSpeed(38400))
+    return 1;
 
-    PLAYER_MSG0("connecting at 38400");
+  PLAYER_MSG0("connecting at 38400");
+  if (SetLaserMode() != 0)
+  {
     if (SetLaserMode() != 0)
     {
+      PLAYER_MSG0("connect at 38400 failed, trying 9600");
+      if (ChangeTermSpeed(9600))
+        return 1;
+      if (SetLaserMode() != 0)
+      {
         if (SetLaserMode() != 0)
         {
-            PLAYER_MSG0("connect at 38400 failed, trying 9600");
-            if (ChangeTermSpeed(9600))
-                return 1;
-            if (SetLaserMode() != 0)
-            {
-                if (SetLaserMode() != 0)
-                {
-                    PLAYER_ERROR("connection failed");
-                    return 1;
-                }
-            }
-            PLAYER_MSG0("laser operating at 9600; changing to 38400");
-            if (SetLaserSpeed(38400))
-                return 1;
-            if (ChangeTermSpeed(38400))
-                return 1;
+          PLAYER_ERROR("connection failed");
+          return 1;
         }
+      }
+      PLAYER_MSG0("laser operating at 9600; changing to 38400");
+      if (SetLaserSpeed(38400))
+        return 1;
+      if (ChangeTermSpeed(38400))
+        return 1;
     }
+  }
 
-    // Display the laser type
-    //
-    char type[64];
-    if (GetLaserType(type, sizeof(type)))
-        return 1;
-    PLAYER_MSG1("SICK laser type [%s]", (char*) type);
+  // Display the laser type
+  //
+  char type[64];
+  if (GetLaserType(type, sizeof(type)))
+    return 1;
+  PLAYER_MSG1("SICK laser type [%s]", (char*) type);
 
-    // Configure the laser
-    //
-    if (SetLaserRes(m_scan_width, m_scan_res))
-        return 1;
-    if (SetLaserConfig(m_intensity))
-        return 1;
+  // Configure the laser
+  //
+  if (SetLaserRes(m_scan_width, m_scan_res))
+    return 1;
+  if (SetLaserConfig(m_intensity))
+    return 1;
 
-    puts("laser ready");
+  puts("laser ready");
 
-    // Start the device thread
-    //
-    Run();
+  // Start the device thread
+  //
+  Run();
 
-    return 0;
+  return 0;
 }
 
 
@@ -282,8 +282,8 @@ void CLaserDevice::Run()
 //
 void* CLaserDevice::DummyMain(void *laserdevice)
 {
-    ((CLaserDevice*) laserdevice)->Main();
-    return NULL;
+  ((CLaserDevice*) laserdevice)->Main();
+  return NULL;
 }
 
 
@@ -292,89 +292,88 @@ void* CLaserDevice::DummyMain(void *laserdevice)
 //
 int CLaserDevice::Main() 
 {
-    PLAYER_MSG0("laser thread is running");
+  PLAYER_MSG0("laser thread is running");
     
-    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
-    // Ask the laser to send data
+  // Ask the laser to send data
+  //
+  for (int retry = 0; retry < MAX_RETRIES; retry++)
+  {
+    if (RequestLaserData(m_scan_min_segment, m_scan_max_segment) == 0)
+      break;
+    else if (retry >= MAX_RETRIES)
+      RETURN_ERROR(1, "laser not responding; exiting laser thread");
+  }
+
+  while (true)
+  {
+    //usleep(1000);
+
+    // test if we are supposed to cancel
     //
-    for (int retry = 0; retry < MAX_RETRIES; retry++)
+    pthread_testcancel();
+
+    // Look for configuration requests
+    //
+    CClientData* client;
+    if((client = ParseConfig()))
     {
-        if (RequestLaserData(m_scan_min_segment, m_scan_max_segment) == 0)
-            break;
-        else if (retry >= MAX_RETRIES)
-            RETURN_ERROR(1, "laser not responding; exiting laser thread");
+      // Change any config settings
+      //
+      if (SetLaserMode())
+      {
+        PLAYER_ERROR("request for config mode failed");
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+          PLAYER_ERROR("failed to PutReply");
+      }
+      else
+      {
+        SetLaserRes(m_scan_width, m_scan_res);
+        SetLaserConfig(m_intensity);
+      }
+
+      // Issue a new request for data
+      //
+      if (RequestLaserData(m_scan_min_segment, m_scan_max_segment))
+      {
+        PLAYER_ERROR("request for laser data failed");
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+          PLAYER_ERROR("failed to PutReply");
+      }
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+        PLAYER_ERROR("failed to PutReply");
     }
 
-    while (true)
-    {
-        //usleep(1000);
-
-        // test if we are supposed to cancel
-        //
-        pthread_testcancel();
-
-        // Look for configuration requests
-        //
-        CClientData* client;
-        if((client = ParseConfig()))
-        {
-          // Change any config settings
-          //
-          if (SetLaserMode())
-          {
-            PLAYER_ERROR("request for config mode failed");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-              PLAYER_ERROR("failed to PutReply");
-          }
-          else
-          {
-            SetLaserRes(m_scan_width, m_scan_res);
-            SetLaserConfig(m_intensity);
-          }
-
-          // Issue a new request for data
-          //
-          if (RequestLaserData(m_scan_min_segment, m_scan_max_segment))
-          {
-            PLAYER_ERROR("request for laser data failed");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-              PLAYER_ERROR("failed to PutReply");
-          }
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-            PLAYER_ERROR("failed to PutReply");
-        }
-
-        // Get the time at which we started reading
-        // This will be a pretty good estimate of when the phenomena occured
-        //
-        struct timeval time;
-        //gettimeofday(&time, NULL);
-	GlobalTime->GetTime(&time);
+    // Get the time at which we started reading
+    // This will be a pretty good estimate of when the phenomena occured
+    //
+    struct timeval time;
+    GlobalTime->GetTime(&time);
         
-        // Process incoming data
-        //
-        player_laser_data_t data;
-        if (ReadLaserData(data.ranges, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
-        {
-            // Prepare packet and byte swap
-            //
-            data.min_angle = htons(m_scan_min_segment * m_scan_res - m_scan_width * 50);
-            data.max_angle = htons(m_scan_max_segment * m_scan_res - m_scan_width * 50);
-            data.resolution = htons(m_scan_res);
-            data.range_count = htons(m_scan_max_segment - m_scan_min_segment + 1);
-            for (int i = 0; i < m_scan_max_segment - m_scan_min_segment + 1; i++)
-                data.ranges[i] = htons(data.ranges[i]);
+    // Process incoming data
+    //
+    player_laser_data_t data;
+    if (ReadLaserData(data.ranges, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
+    {
+      // Prepare packet and byte swap
+      //
+      data.min_angle = htons(m_scan_min_segment * m_scan_res - m_scan_width * 50);
+      data.max_angle = htons(m_scan_max_segment * m_scan_res - m_scan_width * 50);
+      data.resolution = htons(m_scan_res);
+      data.range_count = htons(m_scan_max_segment - m_scan_min_segment + 1);
+      for (int i = 0; i < m_scan_max_segment - m_scan_min_segment + 1; i++)
+        data.ranges[i] = htons(data.ranges[i]);
 
-            // Make data available
-            //
-            PutData((uint8_t*) &data, sizeof(data),
-                    time.tv_sec, time.tv_usec);
-        }
+      // Make data available
+      //
+      PutData((uint8_t*) &data, sizeof(data),
+              time.tv_sec, time.tv_usec);
     }
+  }
 
-    PLAYER_TRACE0("exiting laser thread");
-    return 0;
+  PLAYER_TRACE0("exiting laser thread");
+  return 0;
 }
 
 
@@ -385,35 +384,35 @@ int CLaserDevice::Main()
 //
 int CLaserDevice::OpenTerm()
 {
-    m_laser_fd = ::open(m_laser_name, O_RDWR | O_SYNC , S_IRUSR | S_IWUSR );
-    if (m_laser_fd < 0)
-    {
-        PLAYER_ERROR1("unable to open serial port [%s]", (char*) m_laser_name);
-        perror("");
-        return 1;
-    }
+  m_laser_fd = ::open(m_laser_name, O_RDWR | O_SYNC , S_IRUSR | S_IWUSR );
+  if (m_laser_fd < 0)
+  {
+    PLAYER_ERROR1("unable to open serial port [%s]", (char*) m_laser_name);
+    perror("");
+    return 1;
+  }
 
-    // set the serial port speed to 9600 to match the laser
-    // later we can ramp the speed up to the SICK's 38K
-    //
-    struct termios term;
-    if( tcgetattr( m_laser_fd, &term ) < 0 )
-        RETURN_ERROR(1, "Unable to get serial port attributes");
+  // set the serial port speed to 9600 to match the laser
+  // later we can ramp the speed up to the SICK's 38K
+  //
+  struct termios term;
+  if( tcgetattr( m_laser_fd, &term ) < 0 )
+    RETURN_ERROR(1, "Unable to get serial port attributes");
   
 #ifdef PLAYER_LINUX
-    cfmakeraw( &term );
+  cfmakeraw( &term );
 #endif
-    cfsetispeed( &term, B9600 );
-    cfsetospeed( &term, B9600 );
+  cfsetispeed( &term, B9600 );
+  cfsetospeed( &term, B9600 );
   
-    if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
-        RETURN_ERROR(1, "Unable to set serial port attributes");
+  if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
+    RETURN_ERROR(1, "Unable to set serial port attributes");
 
-    // Make sure queue is empty
-    //
-    tcflush(m_laser_fd, TCIOFLUSH);
+  // Make sure queue is empty
+  //
+  tcflush(m_laser_fd, TCIOFLUSH);
     
-    return 0;
+  return 0;
 }
 
 
@@ -423,8 +422,8 @@ int CLaserDevice::OpenTerm()
 //
 int CLaserDevice::CloseTerm()
 {
-    ::close(m_laser_fd);
-    return 0;
+  ::close(m_laser_fd);
+  return 0;
 }
 
 
@@ -435,40 +434,40 @@ int CLaserDevice::CloseTerm()
 //
 int CLaserDevice::ChangeTermSpeed(int speed)
 {
-    struct termios term;
+  struct termios term;
     
-    if (speed == 9600)
-    {
-        PLAYER_MSG0("terminal speed to 9600");
-        if( tcgetattr( m_laser_fd, &term ) < 0 )
-            RETURN_ERROR(1, "unable to get device attributes");
+  if (speed == 9600)
+  {
+    PLAYER_MSG0("terminal speed to 9600");
+    if( tcgetattr( m_laser_fd, &term ) < 0 )
+      RETURN_ERROR(1, "unable to get device attributes");
         
 #ifdef PLAYER_LINUX
-        cfmakeraw( &term );
+    cfmakeraw( &term );
 #endif
-        cfsetispeed( &term, B9600 );
-        cfsetospeed( &term, B9600 );
+    cfsetispeed( &term, B9600 );
+    cfsetospeed( &term, B9600 );
         
-        if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
-            RETURN_ERROR(1, "unable to set device attributes");
-    }
-    else if (speed == 38400)
-    {
-        PLAYER_MSG0("terminal speed to 38400");
-        if( tcgetattr( m_laser_fd, &term ) < 0 )
-            RETURN_ERROR(1, "unable to get device attributes");
+    if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
+      RETURN_ERROR(1, "unable to set device attributes");
+  }
+  else if (speed == 38400)
+  {
+    PLAYER_MSG0("terminal speed to 38400");
+    if( tcgetattr( m_laser_fd, &term ) < 0 )
+      RETURN_ERROR(1, "unable to get device attributes");
         
 #ifdef PLAYER_LINUX
-        cfmakeraw( &term );
+    cfmakeraw( &term );
 #endif
-        cfsetispeed( &term, B38400 );
-        cfsetospeed( &term, B38400 );
+    cfsetispeed( &term, B38400 );
+    cfsetospeed( &term, B38400 );
         
-        if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
-            RETURN_ERROR(1, "unable to set device attributes");
-    }
+    if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
+      RETURN_ERROR(1, "unable to set device attributes");
+  }
     
-    return 0;
+  return 0;
 }
 
 
@@ -477,45 +476,45 @@ int CLaserDevice::ChangeTermSpeed(int speed)
 //
 int CLaserDevice::SetLaserMode()
 {
-    ssize_t len;
-    uint8_t packet[20];
+  ssize_t len;
+  uint8_t packet[20];
 
-    packet[0] = 0x20; /* mode change command */
-    packet[1] = 0x00; /* configuration mode */
-    packet[2] = 0x53; // S - the password 
-    packet[3] = 0x49; // I
-    packet[4] = 0x43; // C
-    packet[5] = 0x4B; // K
-    packet[6] = 0x5F; // _
-    packet[7] = 0x4C; // L
-    packet[8] = 0x4D; // M
-    packet[9] = 0x53; // S
-    len = 10;
+  packet[0] = 0x20; /* mode change command */
+  packet[1] = 0x00; /* configuration mode */
+  packet[2] = 0x53; // S - the password 
+  packet[3] = 0x49; // I
+  packet[4] = 0x43; // C
+  packet[5] = 0x4B; // K
+  packet[6] = 0x5F; // _
+  packet[7] = 0x4C; // L
+  packet[8] = 0x4D; // M
+  packet[9] = 0x53; // S
+  len = 10;
   
-    PLAYER_TRACE0("sending configuration mode request to laser");
-    if (WriteToLaser(packet, len) < 0)
-        return 1;
+  PLAYER_TRACE0("sending configuration mode request to laser");
+  if (WriteToLaser(packet, len) < 0)
+    return 1;
 
-    // Wait for laser to return ack
-    // This could take a while...
-    //
-    PLAYER_TRACE0("waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 1000);
-    if (len < 0)
-        RETURN_ERROR(1, "error reading from laser")
-    else if (len < 1)
-    {
+  // Wait for laser to return ack
+  // This could take a while...
+  //
+  PLAYER_TRACE0("waiting for acknowledge");
+  len = ReadFromLaser(packet, sizeof(packet), true, 1000);
+  if (len < 0)
+    RETURN_ERROR(1, "error reading from laser")
+      else if (len < 1)
+      {
         PLAYER_TRACE0("no reply from laser");
         return 1;
-    }
-    else if (packet[0] == NACK)
-        RETURN_ERROR(1, "request denied by laser")
-    else if (packet[0] != ACK)
+      }
+  else if (packet[0] == NACK)
+    RETURN_ERROR(1, "request denied by laser")
+      else if (packet[0] != ACK)
         RETURN_ERROR(1, "unexpected packet type");
 
-    PLAYER_TRACE0("configuration mode request ok");
+  PLAYER_TRACE0("configuration mode request ok");
 
-    return 0;
+  return 0;
 }
 
 
@@ -526,34 +525,34 @@ int CLaserDevice::SetLaserMode()
 //
 int CLaserDevice::SetLaserSpeed(int speed)
 {
-    ssize_t len;
-    uint8_t packet[20];
+  ssize_t len;
+  uint8_t packet[20];
 
-    packet[0] = 0x20;
-    packet[1] = (speed == 9600 ? 0x42 : 0x40);
-    len = 2;
+  packet[0] = 0x20;
+  packet[1] = (speed == 9600 ? 0x42 : 0x40);
+  len = 2;
 
-    PLAYER_TRACE0("sending baud rate request to laser");
-    if (WriteToLaser(packet, len) < 0)
-        return 1;
+  PLAYER_TRACE0("sending baud rate request to laser");
+  if (WriteToLaser(packet, len) < 0)
+    return 1;
             
-    // Wait for laser to return ack
-    // This could take a while...
-    //
-    PLAYER_TRACE0("waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 2000);
-    if (len < 0)
-        return 1;
-    else if (len < 1)
-        RETURN_ERROR(1, "no reply from laser")
-    else if (packet[0] == NACK)
+  // Wait for laser to return ack
+  // This could take a while...
+  //
+  PLAYER_TRACE0("waiting for acknowledge");
+  len = ReadFromLaser(packet, sizeof(packet), true, 2000);
+  if (len < 0)
+    return 1;
+  else if (len < 1)
+    RETURN_ERROR(1, "no reply from laser")
+      else if (packet[0] == NACK)
         RETURN_ERROR(1, "request denied by laser")
-    else if (packet[0] != ACK)
-        RETURN_ERROR(1, "unexpected packet type");
+          else if (packet[0] != ACK)
+            RETURN_ERROR(1, "unexpected packet type");
 
-    PLAYER_TRACE0("baud rate request ok");
+  PLAYER_TRACE0("baud rate request ok");
             
-    return 0;
+  return 0;
 }
 
 
@@ -562,41 +561,41 @@ int CLaserDevice::SetLaserSpeed(int speed)
 //
 int CLaserDevice::GetLaserType(char *buffer, size_t bufflen)
 {
-    ssize_t len;
-    uint8_t packet[512];
+  ssize_t len;
+  uint8_t packet[512];
 
-    packet[0] = 0x3A;
-    len = 1;
+  packet[0] = 0x3A;
+  len = 1;
 
-    PLAYER_TRACE0("sending get type request to laser");
-    if (WriteToLaser(packet, len) < 0)
-        return 1;
+  PLAYER_TRACE0("sending get type request to laser");
+  if (WriteToLaser(packet, len) < 0)
+    return 1;
 
-    // Wait for laser to return data
-    // This could take a while...
-    //
-    PLAYER_TRACE0("waiting for reply");
-    len = ReadFromLaser(packet, sizeof(packet), false, -1);
-    if (len < 0)
-        return 1;
-    else if (len < 1)
-        RETURN_ERROR(1, "no reply from laser")
-    else if (packet[0] == NACK)
-        RETURN_ERROR(1, "request denied by laser")
-    else if (packet[0] != 0xBA)
-        RETURN_ERROR(1, "unexpected packet type");
+  // Wait for laser to return data
+  // This could take a while...
+  //
+  PLAYER_TRACE0("waiting for reply");
+  len = ReadFromLaser(packet, sizeof(packet), false, -1);
+  if (len < 0)
+    return 1;
+  else if (len < 1)
+    RETURN_ERROR(1, "no reply from laser")
+  else if (packet[0] == NACK)
+    RETURN_ERROR(1, "request denied by laser")
+  else if (packet[0] != 0xBA)
+    RETURN_ERROR(1, "unexpected packet type");
 
-    // NULL terminate the return string
-    //
-    assert((size_t) len + 1 < sizeof(packet));
-    packet[len + 1] = 0;
+  // NULL terminate the return string
+  //
+  assert((size_t) len + 1 < sizeof(packet));
+  packet[len + 1] = 0;
 
-    // Copy to buffer
-    //
-    assert(bufflen >= (size_t) len - 1);
-    strcpy(buffer, (char*) (packet + 1));
+  // Copy to buffer
+  //
+  assert(bufflen >= (size_t) len - 1);
+  strcpy(buffer, (char*) (packet + 1));
 
-    return 0;
+  return 0;
 }
 
 
@@ -606,57 +605,57 @@ int CLaserDevice::GetLaserType(char *buffer, size_t bufflen)
 //
 int CLaserDevice::SetLaserConfig(bool intensity)
 {
-    ssize_t len;
-    uint8_t packet[512];
+  ssize_t len;
+  uint8_t packet[512];
 
-    packet[0] = 0x74;
-    len = 1;
+  packet[0] = 0x74;
+  len = 1;
 
-    PLAYER_TRACE0("sending get configuration request to laser");
-    if (WriteToLaser(packet, len) < 0)
-        return 1;
+  PLAYER_TRACE0("sending get configuration request to laser");
+  if (WriteToLaser(packet, len) < 0)
+    return 1;
 
-    // Wait for laser to return data
-    // This could take a while...
-    //
-    PLAYER_TRACE0("waiting for reply");
-    len = ReadFromLaser(packet, sizeof(packet), false, -1);
-    if (len < 0)
-        return 1;
-    else if (len < 1)
-        RETURN_ERROR(1, "no reply from laser")
-    else if (packet[0] == NACK)
-        RETURN_ERROR(1, "request denied by laser")
-    else if (packet[0] != 0xF4)
-        RETURN_ERROR(1, "unexpected packet type");
+  // Wait for laser to return data
+  // This could take a while...
+  //
+  PLAYER_TRACE0("waiting for reply");
+  len = ReadFromLaser(packet, sizeof(packet), false, -1);
+  if (len < 0)
+    return 1;
+  else if (len < 1)
+    RETURN_ERROR(1, "no reply from laser")
+  else if (packet[0] == NACK)
+    RETURN_ERROR(1, "request denied by laser")
+  else if (packet[0] != 0xF4)
+    RETURN_ERROR(1, "unexpected packet type");
 
-    PLAYER_TRACE0("get configuration request ok");
+  PLAYER_TRACE0("get configuration request ok");
 
-    // Modify the configuration and send it back
-    //
-    packet[0] = 0x77;
-    packet[6] = (intensity ? 0x01 : 0x00); // Return intensity in top 3 data bits
+  // Modify the configuration and send it back
+  //
+  packet[0] = 0x77;
+  packet[6] = (intensity ? 0x01 : 0x00); // Return intensity in top 3 data bits
 
-    PLAYER_TRACE0("sending set configuration request to laser");
-    if (WriteToLaser(packet, len) < 0)
-        return 1;
+  PLAYER_TRACE0("sending set configuration request to laser");
+  if (WriteToLaser(packet, len) < 0)
+    return 1;
 
-    // Wait for the change to "take"
-    //
-    PLAYER_TRACE0("waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), false, -1);
-    if (len < 0)
-        return 1;
-    else if (len < 1)
-        RETURN_ERROR(1, "no reply from laser")
-    else if (packet[0] == NACK)
-        RETURN_ERROR(1, "request denied by laser")
-    else if (packet[0] != 0xF7)
-        RETURN_ERROR(1, "unexpected packet type");
+  // Wait for the change to "take"
+  //
+  PLAYER_TRACE0("waiting for acknowledge");
+  len = ReadFromLaser(packet, sizeof(packet), false, -1);
+  if (len < 0)
+    return 1;
+  else if (len < 1)
+    RETURN_ERROR(1, "no reply from laser")
+  else if (packet[0] == NACK)
+    RETURN_ERROR(1, "request denied by laser")
+  else if (packet[0] != 0xF7)
+    RETURN_ERROR(1, "unexpected packet type");
 
-    PLAYER_TRACE0("set configuration request ok");
+  PLAYER_TRACE0("set configuration request ok");
 
-    return 0;
+  return 0;
 }
 
 
@@ -667,40 +666,40 @@ int CLaserDevice::SetLaserConfig(bool intensity)
 //
 int CLaserDevice::SetLaserRes(int width, int res)
 {
-    ssize_t len;
-    uint8_t packet[512];
+  ssize_t len;
+  uint8_t packet[512];
 
-    len = 0;
-    packet[len++] = 0x3B;
-    packet[len++] = (width & 0xFF);
-    packet[len++] = (width >> 8);
-    packet[len++] = (res & 0xFF);
-    packet[len++] = (res >> 8);
+  len = 0;
+  packet[len++] = 0x3B;
+  packet[len++] = (width & 0xFF);
+  packet[len++] = (width >> 8);
+  packet[len++] = (res & 0xFF);
+  packet[len++] = (res >> 8);
 
-    PLAYER_TRACE0("sending set variant request to laser");
-    if (WriteToLaser(packet, len) < 0)
-        return 1;
+  PLAYER_TRACE0("sending set variant request to laser");
+  if (WriteToLaser(packet, len) < 0)
+    return 1;
 
-    // Wait for laser to return data
-    // This could take a while...
-    //
-    PLAYER_TRACE0("waiting for reply");
-    len = ReadFromLaser(packet, sizeof(packet), false, -1);
-    if (len < 0)
-        return 1;
-    else if (len < 1)
-        RETURN_ERROR(1, "no reply from laser")
-    else if (packet[0] == NACK)
-        RETURN_ERROR(1, "request denied by laser")
-    else if (packet[0] != 0xBB)
-        RETURN_ERROR(1, "unexpected packet type");
+  // Wait for laser to return data
+  // This could take a while...
+  //
+  PLAYER_TRACE0("waiting for reply");
+  len = ReadFromLaser(packet, sizeof(packet), false, -1);
+  if (len < 0)
+    return 1;
+  else if (len < 1)
+    RETURN_ERROR(1, "no reply from laser")
+  else if (packet[0] == NACK)
+    RETURN_ERROR(1, "request denied by laser")
+  else if (packet[0] != 0xBB)
+    RETURN_ERROR(1, "unexpected packet type");
 
-    // See if the request was accepted
-    //
-    if (packet[1] == 0)
-        RETURN_ERROR(1, "variant request ignored");
+  // See if the request was accepted
+  //
+  if (packet[1] == 0)
+    RETURN_ERROR(1, "variant request ignored");
         
-    return 0;
+  return 0;
 }
 
 
@@ -710,51 +709,51 @@ int CLaserDevice::SetLaserRes(int width, int res)
 //
 int CLaserDevice::RequestLaserData(int min_segment, int max_segment)
 {
-    ssize_t len = 0;
-    uint8_t packet[20];
+  ssize_t len = 0;
+  uint8_t packet[20];
     
-    packet[len++] = 0x20; /* mode change command */
+  packet[len++] = 0x20; /* mode change command */
     
-    if (min_segment == 0 && max_segment == 360)
-    {
-        // Use this for raw scan data...
-        //
-        packet[len++] = 0x24;
-    }
-    else
-    {        
-        // Or use this for selected scan data...
-        //
-        int first = min_segment + 1;
-        int last = max_segment + 1;
-        packet[len++] = 0x27;
-        packet[len++] = (first & 0xFF);
-        packet[len++] = (first >> 8);
-        packet[len++] = (last & 0xFF);
-        packet[len++] = (last >> 8);
-    }
-
-    PLAYER_TRACE0("sending scan data request to laser");
-    if (WriteToLaser(packet, len) < 0)
-        return 1;
-
-    // Wait for laser to return ack
-    // This should be fairly prompt
+  if (min_segment == 0 && max_segment == 360)
+  {
+    // Use this for raw scan data...
     //
-    PLAYER_TRACE0("waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, -1);
-    if (len < 0)
-        return 1;
-    else if (len < 1)
-        RETURN_ERROR(1, "no reply from laser")
-    else if (packet[0] == NACK)
-        RETURN_ERROR(1, "request denied by laser")
-    else if (packet[0] != ACK)
-        RETURN_ERROR(1, "unexpected packet type");
+    packet[len++] = 0x24;
+  }
+  else
+  {        
+    // Or use this for selected scan data...
+    //
+    int first = min_segment + 1;
+    int last = max_segment + 1;
+    packet[len++] = 0x27;
+    packet[len++] = (first & 0xFF);
+    packet[len++] = (first >> 8);
+    packet[len++] = (last & 0xFF);
+    packet[len++] = (last >> 8);
+  }
 
-    PLAYER_TRACE0("scan data request ok");
+  PLAYER_TRACE0("sending scan data request to laser");
+  if (WriteToLaser(packet, len) < 0)
+    return 1;
+
+  // Wait for laser to return ack
+  // This should be fairly prompt
+  //
+  PLAYER_TRACE0("waiting for acknowledge");
+  len = ReadFromLaser(packet, sizeof(packet), true, -1);
+  if (len < 0)
+    return 1;
+  else if (len < 1)
+    RETURN_ERROR(1, "no reply from laser")
+  else if (packet[0] == NACK)
+    RETURN_ERROR(1, "request denied by laser")
+  else if (packet[0] != ACK)
+    RETURN_ERROR(1, "unexpected packet type");
+
+  PLAYER_TRACE0("scan data request ok");
    
-    return 0;
+  return 0;
 }
 
 
@@ -763,62 +762,62 @@ int CLaserDevice::RequestLaserData(int min_segment, int max_segment)
 //
 int CLaserDevice::ReadLaserData(uint16_t *data, size_t datalen)
 {
-    uint8_t raw_data[1024];
+  uint8_t raw_data[1024];
 
-    // Read a packet from the laser
+  // Read a packet from the laser
+  //
+  int len = ReadFromLaser(raw_data, sizeof(raw_data));
+  if (len == 0)
+  {
+    PLAYER_TRACE0("empty packet");
+    return 1;
+  }
+
+  // Process raw packets
+  //
+  if (raw_data[0] == 0xB0)
+  {
+    // Determine the number of values returned
     //
-    int len = ReadFromLaser(raw_data, sizeof(raw_data));
-    if (len == 0)
-    {
-        PLAYER_TRACE0("empty packet");
-        return 1;
-    }
+    //int units = raw_data[2] >> 6;
+    int count = (int) raw_data[1] | ((int) (raw_data[2] & 0x3F) << 8);
+    assert((size_t) count <= datalen);
 
-    // Process raw packets
+    // Strip the status info and shift everything down a few bytes
+    // to remove packet header.
     //
-    if (raw_data[0] == 0xB0)
+    for (int i = 0; i < count; i++)
     {
-        // Determine the number of values returned
-        //
-        //int units = raw_data[2] >> 6;
-        int count = (int) raw_data[1] | ((int) (raw_data[2] & 0x3F) << 8);
-        assert((size_t) count <= datalen);
-
-        // Strip the status info and shift everything down a few bytes
-        // to remove packet header.
-        //
-        for (int i = 0; i < count; i++)
-        {
-            int src = 2 * i + 3;
-            data[i] = raw_data[src + 0] | (raw_data[src + 1] << 8);
-        }
+      int src = 2 * i + 3;
+      data[i] = raw_data[src + 0] | (raw_data[src + 1] << 8);
     }
-    else if (raw_data[0] == 0xB7)
-    {
-        // Determine which values were returned
-        //
-        //int first = ((int) raw_data[1] | ((int) raw_data[2] << 8)) - 1;
-        //int last =  ((int) raw_data[3] | ((int) raw_data[4] << 8)) - 1;
+  }
+  else if (raw_data[0] == 0xB7)
+  {
+    // Determine which values were returned
+    //
+    //int first = ((int) raw_data[1] | ((int) raw_data[2] << 8)) - 1;
+    //int last =  ((int) raw_data[3] | ((int) raw_data[4] << 8)) - 1;
         
-        // Determine the number of values returned
-        //
-        //int units = raw_data[6] >> 6;
-        int count = (int) raw_data[5] | ((int) (raw_data[6] & 0x3F) << 8);
-        assert((size_t) count <= datalen);
+    // Determine the number of values returned
+    //
+    //int units = raw_data[6] >> 6;
+    int count = (int) raw_data[5] | ((int) (raw_data[6] & 0x3F) << 8);
+    assert((size_t) count <= datalen);
 
-        // Strip the status info and shift everything down a few bytes
-        // to remove packet header.
-        //
-        for (int i = 0; i < count; i++)
-        {
-            int src = 2 * i + 7;
-            data[i] = raw_data[src + 0] | (raw_data[src + 1] << 8);
-        }
+    // Strip the status info and shift everything down a few bytes
+    // to remove packet header.
+    //
+    for (int i = 0; i < count; i++)
+    {
+      int src = 2 * i + 7;
+      data[i] = raw_data[src + 0] | (raw_data[src + 1] << 8);
     }
-    else
-        RETURN_ERROR(1, "unexpected packet type");
+  }
+  else
+    RETURN_ERROR(1, "unexpected packet type");
 
-    return 0;
+  return 0;
 }
 
 
@@ -827,42 +826,42 @@ int CLaserDevice::ReadLaserData(uint16_t *data, size_t datalen)
 //
 ssize_t CLaserDevice::WriteToLaser(uint8_t *data, ssize_t len)
 {
-    uint8_t buffer[4 + 1024 + 2];
-    assert(4 + len + 2 < (ssize_t) sizeof(buffer));
+  uint8_t buffer[4 + 1024 + 2];
+  assert(4 + len + 2 < (ssize_t) sizeof(buffer));
 
-    // Create header
-    //
-    buffer[0] = STX;
-    buffer[1] = 0;
-    buffer[2] = LOBYTE(len);
-    buffer[3] = HIBYTE(len);
+  // Create header
+  //
+  buffer[0] = STX;
+  buffer[1] = 0;
+  buffer[2] = LOBYTE(len);
+  buffer[3] = HIBYTE(len);
 
-    // Copy body
-    //
-    memcpy(buffer + 4, data, len);
+  // Copy body
+  //
+  memcpy(buffer + 4, data, len);
 
-    // Create footer (CRC)
-    //
-    uint16_t crc = CreateCRC(buffer, 4 + len);
-    buffer[4 + len + 0] = LOBYTE(crc);
-    buffer[4 + len + 1] = HIBYTE(crc);
+  // Create footer (CRC)
+  //
+  uint16_t crc = CreateCRC(buffer, 4 + len);
+  buffer[4 + len + 0] = LOBYTE(crc);
+  buffer[4 + len + 1] = HIBYTE(crc);
 
-    // Make sure both input and output queues are empty
-    //
-    tcflush(m_laser_fd, TCIOFLUSH);
+  // Make sure both input and output queues are empty
+  //
+  tcflush(m_laser_fd, TCIOFLUSH);
     
-    // Write the data to the port
-    //
-    ssize_t bytes = ::write( m_laser_fd, buffer, 4 + len + 2);
+  // Write the data to the port
+  //
+  ssize_t bytes = ::write( m_laser_fd, buffer, 4 + len + 2);
 
-    // Make sure the queue is drained
-    // Synchronous IO doesnt always work
-    //
-    ::tcdrain(m_laser_fd);
+  // Make sure the queue is drained
+  // Synchronous IO doesnt always work
+  //
+  ::tcdrain(m_laser_fd);
     
-    // Return the actual number of bytes sent, including header and footer
-    //
-    return bytes;
+  // Return the actual number of bytes sent, including header and footer
+  //
+  return bytes;
 }
 
 
@@ -874,132 +873,132 @@ ssize_t CLaserDevice::WriteToLaser(uint8_t *data, ssize_t len)
 //
 ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int timeout)
 {
-    // If the timeout is infinite,
-    // go to blocking io
-    //
-    if (timeout < 0)
+  // If the timeout is infinite,
+  // go to blocking io
+  //
+  if (timeout < 0)
+  {
+    PLAYER_TRACE0("using blocking io");
+    int flags = ::fcntl(m_laser_fd, F_GETFL);
+    if (flags < 0)
     {
-        PLAYER_TRACE0("using blocking io");
-        int flags = ::fcntl(m_laser_fd, F_GETFL);
-        if (flags < 0)
-        {
-            PLAYER_ERROR("unable to get device flags");
-            return 0;
-        }
-        if (::fcntl(m_laser_fd, F_SETFL, flags & (~O_NONBLOCK)) < 0)
-        {
-            PLAYER_ERROR("unable to set device flags");
-            return 0;
-        }
+      PLAYER_ERROR("unable to get device flags");
+      return 0;
     }
-    //
-    // Otherwise, use non-blocking io
-    //
-    else
+    if (::fcntl(m_laser_fd, F_SETFL, flags & (~O_NONBLOCK)) < 0)
     {
-        PLAYER_TRACE0("using non-blocking io");
-        int flags = ::fcntl(m_laser_fd, F_GETFL);
-        if (flags < 0)
-        {
-            PLAYER_ERROR("unable to get device flags");
-            return 0;
-        }
-        if (::fcntl(m_laser_fd, F_SETFL, flags | O_NONBLOCK) < 0)
-        {
-            PLAYER_ERROR("unable to set device flags");
-            return 0;
-        }
+      PLAYER_ERROR("unable to set device flags");
+      return 0;
     }
+  }
+  //
+  // Otherwise, use non-blocking io
+  //
+  else
+  {
+    PLAYER_TRACE0("using non-blocking io");
+    int flags = ::fcntl(m_laser_fd, F_GETFL);
+    if (flags < 0)
+    {
+      PLAYER_ERROR("unable to get device flags");
+      return 0;
+    }
+    if (::fcntl(m_laser_fd, F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+      PLAYER_ERROR("unable to set device flags");
+      return 0;
+    }
+  }
 
-    int64_t start_time = GetTime();
-    int64_t stop_time = start_time + timeout;
+  int64_t start_time = GetTime();
+  int64_t stop_time = start_time + timeout;
 
-    PLAYER_TRACE2("%Ld %Ld", start_time, stop_time);
+  PLAYER_TRACE2("%Ld %Ld", start_time, stop_time);
 
-    int bytes = 0;
-    uint8_t header[5] = {0};
-    uint8_t footer[3];
+  int bytes = 0;
+  uint8_t header[5] = {0};
+  uint8_t footer[3];
     
-    // Read until we get a valid header
-    // or we timeout
-    //
-    while (true)
+  // Read until we get a valid header
+  // or we timeout
+  //
+  while (true)
+  {
+    if (timeout >= 0)
+      usleep(1000);
+    bytes = ::read(m_laser_fd, header + sizeof(header) - 1, 1);
+    if (header[0] == STX && header[1] == 0x80)
     {
-        if (timeout >= 0)
-            usleep(1000);
-        bytes = ::read(m_laser_fd, header + sizeof(header) - 1, 1);
-        if (header[0] == STX && header[1] == 0x80)
-        {
-            if (!ack)
-                break;
-            if (header[4] == ACK || header[4] == NACK)
-                break;
-        }
-        memmove(header, header + 1, sizeof(header) - 1);
-        if (timeout >= 0 && GetTime() >= stop_time)
-        {
-            PLAYER_TRACE2("%Ld %Ld", GetTime(), stop_time);
-            PLAYER_TRACE0("timeout on read (1)");
-            return 0;
-        }
+      if (!ack)
+        break;
+      if (header[4] == ACK || header[4] == NACK)
+        break;
     }
-
-    // Determine data length
-    // Includes status, but not CRC, so subtract status to get data packet length.
-    //
-    ssize_t len = ((int) header[2] | ((int) header[3] << 8)) - 1;
-    
-    // Check for buffer overflows
-    //
-    if (len > maxlen)
-        RETURN_ERROR(0, "buffer overflow (len > max_len)");
-
-    // Read in the data
-    // Note that we smooge the packet type from the header
-    // onto the front of the data buffer.
-    //
-    bytes = 0;
-    data[bytes++] = header[4];
-    while (bytes < len)
+    memmove(header, header + 1, sizeof(header) - 1);
+    if (timeout >= 0 && GetTime() >= stop_time)
     {
-        if (timeout >= 0)
-            usleep(1000);
-        bytes += ::read(m_laser_fd, data + bytes, len - bytes);
-        if (timeout >= 0 && GetTime() >= stop_time)
-        {
-            PLAYER_TRACE2("%Ld %Ld", GetTime(), stop_time);
-            RETURN_ERROR(0, "timeout on read (3)");
-        }
+      PLAYER_TRACE2("%Ld %Ld", GetTime(), stop_time);
+      PLAYER_TRACE0("timeout on read (1)");
+      return 0;
     }
+  }
 
-    // Read in footer
-    //
-    bytes = 0;
-    while (bytes < 3)
+  // Determine data length
+  // Includes status, but not CRC, so subtract status to get data packet length.
+  //
+  ssize_t len = ((int) header[2] | ((int) header[3] << 8)) - 1;
+    
+  // Check for buffer overflows
+  //
+  if (len > maxlen)
+    RETURN_ERROR(0, "buffer overflow (len > max_len)");
+
+  // Read in the data
+  // Note that we smooge the packet type from the header
+  // onto the front of the data buffer.
+  //
+  bytes = 0;
+  data[bytes++] = header[4];
+  while (bytes < len)
+  {
+    if (timeout >= 0)
+      usleep(1000);
+    bytes += ::read(m_laser_fd, data + bytes, len - bytes);
+    if (timeout >= 0 && GetTime() >= stop_time)
     {
-        if (timeout >= 0)
-            usleep(1000);
-        bytes += ::read(m_laser_fd, footer + bytes, 3 - bytes);
-        if (timeout >= 0 && GetTime() >= stop_time)
-        {
-            PLAYER_TRACE2("%Ld %Ld", GetTime(), stop_time);
-            RETURN_ERROR(0, "timeout on read (4)");
-        }
+      PLAYER_TRACE2("%Ld %Ld", GetTime(), stop_time);
+      RETURN_ERROR(0, "timeout on read (3)");
     }
+  }
+
+  // Read in footer
+  //
+  bytes = 0;
+  while (bytes < 3)
+  {
+    if (timeout >= 0)
+      usleep(1000);
+    bytes += ::read(m_laser_fd, footer + bytes, 3 - bytes);
+    if (timeout >= 0 && GetTime() >= stop_time)
+    {
+      PLAYER_TRACE2("%Ld %Ld", GetTime(), stop_time);
+      RETURN_ERROR(0, "timeout on read (4)");
+    }
+  }
     
-    // Construct entire packet
-    // And check the CRC
-    //
-    uint8_t buffer[4 + 1024 + 1];
-    assert(4 + len + 1 < (ssize_t) sizeof(buffer));
-    memcpy(buffer, header, 4);
-    memcpy(buffer + 4, data, len);
-    memcpy(buffer + 4 + len, footer, 1);
-    uint16_t crc = CreateCRC(buffer, 4 + len + 1);
-    if (crc != MAKEUINT16(footer[1], footer[2]))
-        RETURN_ERROR(0, "CRC error, ignoring packet");
+  // Construct entire packet
+  // And check the CRC
+  //
+  uint8_t buffer[4 + 1024 + 1];
+  assert(4 + len + 1 < (ssize_t) sizeof(buffer));
+  memcpy(buffer, header, 4);
+  memcpy(buffer + 4, data, len);
+  memcpy(buffer + 4 + len, footer, 1);
+  uint16_t crc = CreateCRC(buffer, 4 + len + 1);
+  if (crc != MAKEUINT16(footer[1], footer[2]))
+    RETURN_ERROR(0, "CRC error, ignoring packet");
     
-    return len;
+  return len;
 }
 
            
@@ -1008,29 +1007,29 @@ ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int
 //
 unsigned short CLaserDevice::CreateCRC(uint8_t* data, ssize_t len)
 {
-    uint16_t uCrc16;
-    uint8_t abData[2];
+  uint16_t uCrc16;
+  uint8_t abData[2];
   
-    uCrc16 = 0;
-    abData[0] = 0;
+  uCrc16 = 0;
+  abData[0] = 0;
   
-    while(len-- )
-    {
-        abData[1] = abData[0];
-        abData[0] = *data++;
+  while(len-- )
+  {
+    abData[1] = abData[0];
+    abData[0] = *data++;
     
-        if( uCrc16 & 0x8000 )
-        {
-            uCrc16 = (uCrc16 & 0x7fff) << 1;
-            uCrc16 ^= CRC16_GEN_POL;
-        }
-        else
-        {    
-            uCrc16 <<= 1;
-        }
-        uCrc16 ^= MAKEUINT16(abData[0],abData[1]);
+    if( uCrc16 & 0x8000 )
+    {
+      uCrc16 = (uCrc16 & 0x7fff) << 1;
+      uCrc16 ^= CRC16_GEN_POL;
     }
-    return (uCrc16); 
+    else
+    {    
+      uCrc16 <<= 1;
+    }
+    uCrc16 ^= MAKEUINT16(abData[0],abData[1]);
+  }
+  return (uCrc16); 
 }
 
 

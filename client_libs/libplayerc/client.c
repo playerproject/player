@@ -167,7 +167,7 @@ int playerc_client_read(playerc_client_t *client)
     return -1;
   }
 
-  // Dispatch 
+  // Dispatch
   playerc_client_dispatch(client, &header, data, len);
 
   return 0;
@@ -175,12 +175,16 @@ int playerc_client_read(playerc_client_t *client)
 
 
 // Dispatch a packet
-void playerc_client_dispatch(playerc_client_t *client,
-                             player_msghdr_t *header, char *data, int len)
+void playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
+                             char *data, int len)
 {
   int i, j;
   playerc_device_t *device;
 
+  // We get zero-length packets sometimes
+  if (len == 0)
+    return;
+  
   // Look for a device proxy to handle this data 
   for (i = 0; i < client->device_count; i++)
   {
@@ -203,7 +207,8 @@ void playerc_client_dispatch(playerc_client_t *client,
 
 
 // Write a command
-int playerc_client_write(playerc_client_t *client, playerc_device_t *device, char *cmd, int len)
+int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
+                         char *cmd, int len)
 {
   player_msghdr_t header;
 
@@ -378,18 +383,14 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
     {
       playerc_client_dispatch(client, &rep_header, data, len);
     }
-    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
+    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK ||
+             rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
     {
       assert(rep_header.device == req_header.device);
       assert(rep_header.device_index == req_header.device_index);
       assert(rep_header.size <= rep_len);
       memcpy(rep_data, data, rep_len);
       break;
-    }
-    else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
-    {
-      PLAYERC_ERR("got NACK from request");
-      return -1;
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
     {
