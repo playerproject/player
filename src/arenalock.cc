@@ -34,9 +34,8 @@
 #include <device.h>
 #include <arenalock.h>
 #include <errors.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
 #include <netinet/in.h>
+#include <sys/file.h> //for flock
 
 #include "stagedevice.h"
 
@@ -47,42 +46,6 @@ CArenaLock::CArenaLock():CLock()
   // nothing to do here these days...
 
   //puts( "AL: construct" );
-
-  // create a single semaphore to sync access to the shared memory segments
-  //puts( "Obtaining semaphore" );
-
-  // reworked semaphore code to be POSIX instead of SYSV
-
-  ///semKey = SEMKEY;
-
-//    union semun
-//      {
-//        int val;
-//        struct semid_ds *buf;
-//        ushort *array;
-//    } argument;
-
-//    argument.val = 0; // initial semaphore value
-
-//    semid = semget( semKey, 1, 0666 );
-
-//    if( semid < 0 ) // semget failed
-//      {
-//        perror( "Can't find Arena's semaphore" );
-//        exit( -1 );
-//      }
-   //else
-  //puts( "found semaphore" );
-
-//    // setup locking operation buffer
-//    lock_ops[0].sem_num = 0;
-//    lock_ops[0].sem_op = 1;
-//    lock_ops[0].sem_flg = 0;
-  
-//    // setup unlocking operation buffer
-//    unlock_ops[0].sem_num = 0;
-//    unlock_ops[0].sem_op = -1;
-//    unlock_ops[0].sem_flg = 0;
 }
 
 CArenaLock::~CArenaLock() 
@@ -90,18 +53,29 @@ CArenaLock::~CArenaLock()
   //puts( "AL: destruct" );
 }
 
-
-bool CArenaLock::InstallSemaphore( sem_t* sem )
+#ifdef POSIX_SEM
+bool CArenaLock::InstallLock( sem_t* sem )
 {
   // get the pointer to the semaphore structure in shared memory
   // this is called from main.cc CreateStageDevices()
  
   m_lock = sem;
 
-  printf( "Player: device lock at %p\n", m_lock );
+  //printf( "Player: device lock at %p\n", m_lock );
   return(true);
 }
+#else
+bool CArenaLock::InstallLock( int fd )
+{
+  // get the pointer to the semaphore structure in shared memory
+  // this is called from main.cc CreateStageDevices()
+ 
+  lock_fd = fd;
 
+  //printf( "Player: device lock at %d\n", lock_fd );
+  return(true);
+}
+#endif
 
 
 int CArenaLock::Setup( CDevice *obj ) 
@@ -120,11 +94,21 @@ bool CArenaLock::Lock( void )
 {
   //printf( "P: LOCK %p\n", m_lock );
 
-  if( sem_wait( m_lock ) < 0 )
-  {
-    perror( "sem_wait failed" );
-    return false;
-  }
+#ifdef POSIX_SEM
+
+    if( sem_wait( m_lock ) < 0 )
+      {
+        perror( "sem_wait failed" );
+        return false;
+      }
+
+#else
+
+  // BSD file locking style
+  flock( lock_fd, LOCK_EX );
+
+#endif
+
    return true;
 }
 
@@ -132,11 +116,21 @@ bool CArenaLock::Unlock( void )
 {
   //printf( "P: UNLOCK %p\n", m_lock );
 
+#ifdef POSIX_SEM
+
   if( sem_post( m_lock ) < 0 )
   {
-    perror( "sem_post failed" );
-    return false;
+  perror( "sem_post failed" );
+  return false;
   }
+
+#else
+
+  // BSD file locking style
+  flock( lock_fd, LOCK_UN );
+
+#endif
+
   return true;
 }
 

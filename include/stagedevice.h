@@ -64,10 +64,11 @@
 
 class CStageDevice : public CDevice
 {
-    // Minimal constructor
-    // buffer points to a single buffer containing the data, command and configuration buffers.
-    //
-    public: CStageDevice( player_stage_info_t* info );
+  // constructor - info points to a single buffer containing the
+  // data, command and configuration buffers.  lock fd is an open
+  // filedescriptor we'll use to lock access to
+  // this device
+    public: CStageDevice( player_stage_info_t* info, int lockfd );
 
      public: CStageDevice* next; // used to keep a list of objects
 

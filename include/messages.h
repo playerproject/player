@@ -31,6 +31,7 @@
 
 #include <playercommon.h>
 #include <defaults.h>
+#include <stdint.h>
 
 /*********************************************************/
 

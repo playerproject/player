@@ -27,8 +27,8 @@
  * client reader/writer threads.
  */
 
-#define VERBOSE
-#define DEBUG
+//#define VERBOSE
+//#define DEBUG
 
 #include <dirent.h>
 #include <dlfcn.h>
@@ -306,7 +306,7 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
         exit( -1 );
       }
       
-      close( tfd ); // can close fd once mapped
+      //close( tfd ); // can close fd once mapped
       
       CStageDevice *dev = 0; // declare outside switch statement
 
@@ -330,8 +330,8 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
         case PLAYER_IDAR_CODE:
         case PLAYER_DESCARTES_CODE:
         {
-          // Create a StageDevice with this IO base address
-          dev = new CStageDevice( deviceIO );
+          // Create a StageDevice with this IO base address and filedes
+          dev = new CStageDevice( deviceIO, tfd );
 	    
           deviceTable->AddDevice( deviceIO->player_id.port,
                                   deviceIO->player_id.type, 
@@ -458,7 +458,7 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
       exit( -1 );
     }
   
-  close( tfd ); // can close fd once mapped
+  //close( tfd ); // can close fd once mapped
 
   
 #ifdef DEBUG  
@@ -466,6 +466,10 @@ stage_clock_t* CreateStageDevices( char* directory, int** ports,
   fflush( stdout );
 #endif
   
+  // set up the stagetime object
+  assert( clock );
+  assert( GlobalTime = (PlayerTime*)(new StageTime( clock, tfd )) );
+
  
   return( clock );
 }
@@ -897,6 +901,7 @@ int main( int argc, char *argv[] )
     stage_clock_t * sclock = CreateStageDevices( stage_io_directory, 
 						 &ports, &num_ufds );
     
+    assert( sclock ); 
     //printf( "created %d ports (1: %d 2: %d...)\n",
     //    num_ufds, ports[0], ports[1] );
 
@@ -928,9 +933,6 @@ int main( int argc, char *argv[] )
     puts( "]" );
 #endif
 
-    // set up the stagetime object
-    assert( sclock );
-    assert( GlobalTime = (PlayerTime*)(new StageTime( sclock )) );
   }  
 
 #endif // INCLUDE_STAGE  
@@ -1037,5 +1039,6 @@ int main( int argc, char *argv[] )
   /* don't get here */
   return(0);
 }
+
 
 
