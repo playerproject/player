@@ -201,6 +201,9 @@ Wavefront::Setup()
   this->target_x = this->target_y = this->target_a = 0.0;
   this->position_x = this->position_y = this->position_a = 0.0;
   this->localize_x = this->localize_y = this->localize_a = 0.0;
+  this->waypoint_x = this->waypoint_y = this->waypoint_a = 0.0;
+
+  this->newData = false;
 
   /*
   this->position_xspeed_be = 
@@ -237,9 +240,9 @@ Wavefront::Setup()
     return(-1);
   }
 
-  if(SetupMap() < 0)
-    return(-1);
   if(SetupPosition() < 0)
+    return(-1);
+  if(SetupMap() < 0)
     return(-1);
   if(SetupLocalize() < 0)
     return(-1);
@@ -308,6 +311,7 @@ Wavefront::GetLocalizeData()
   double la_tmp;
   //struct timeval curr;
 
+  memset(&data,0,sizeof(data));
   if(!this->localize->GetData(this,(unsigned char*)&data,sizeof(data),
                               &timesec, &timeusec) || !data.hypoth_count)
     return;
@@ -443,12 +447,6 @@ Wavefront::PutPlannerData()
   data.curr_waypoint = (short)htons(this->curr_waypoint);
   data.waypoint_count = htons(this->plan->waypoint_count);
 
-  /*
-  data.xspeed = this->position_xspeed_be;
-  data.yspeed = this->position_yspeed_be;
-  data.yawspeed = this->position_aspeed_be;
-  */
-
   // We should probably send new data even if we haven't moved.
   if (this->newData)
   {
@@ -542,7 +540,7 @@ void Wavefront::Main()
   // HACK!
   // Blocking here means that the planner won't start until the localizer
   // generates a *new* pose estimate, even if the localizer already has
-  // converged to a good value.  That's a pain. So we'll try not sleeping
+  // converged to a good value.  That's a pain. So we'll try sleeping
   // briefly instead.  Clearly not a good solution.
   
   //this->localize->Wait();
