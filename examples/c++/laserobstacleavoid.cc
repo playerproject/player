@@ -82,8 +82,10 @@ int main(int argc, char **argv)
   printf("%s\n",robot.conn.banner);
 
   if(lp.access != 'r')
-    exit(-1);
-    
+    {
+      puts( "can't read from laser" );
+      exit(-1);
+    }  
  
   /* maybe turn on the motors */
   //if(turnOnMotors && pp.SetMotorState(1))
