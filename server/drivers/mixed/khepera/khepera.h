@@ -39,7 +39,7 @@
 #include <errno.h>
 
 // for poll
-#include <replace/replace.h>
+#include <replace.h>
 //#include <sys/poll.h>
 
 #include <driver.h>

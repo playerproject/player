@@ -43,8 +43,7 @@
 #include <errno.h>
 
 // for poll
-#include <replace/replace.h>
-//#include <sys/poll.h>
+#include <replace.h>
 
 #include <driver.h>
 #include <playercommon.h>

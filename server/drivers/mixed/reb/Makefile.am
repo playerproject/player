@@ -1,4 +1,5 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
 noinst_LIBRARIES = @REB_LIB@
 
