@@ -129,12 +129,6 @@ static PyObject *mclient_peek(PyObject *self, PyObject *args)
   thread_release();
   result = playerc_mclient_peek(mpyclient->mclient, (int) (timeout * 1000));
   thread_acquire();
-
-  if (result < 0)
-  {
-    PyErr_SetString(errorob, "");
-    return NULL;
-  }
     
   return PyInt_FromLong(result);
 }
@@ -155,12 +149,10 @@ static PyObject *mclient_read(PyObject *self, PyObject *args)
   result = playerc_mclient_read(mpyclient->mclient, (int) (timeout * 1000));
   thread_acquire();
 
-  if (result < 0)
-  {
-    PyErr_SetString(errorob, "");
-    return NULL;
-  }
-    
+  // Dont throw our own exceptions here, since they will mask
+  // exceptions such as SIGINT.  I dont quite understand how to do
+  // this properly at the moment.
+  
   return PyInt_FromLong(result);
 }
 
