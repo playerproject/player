@@ -39,6 +39,7 @@
 
 #include <unistd.h>
 #include <string.h>
+#include <netinet/in.h>
 
 #include <player/drivertable.h>
 #include <player/driver.h>
@@ -118,18 +119,8 @@ extern "C"
 MultiDriver::MultiDriver(ConfigFile* cf, int section)
     : Driver(cf, section)
 {
-  player_device_id_t* ids;
-  int num_ids;
-
-  // Parse devices section
-  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
   // Create position interface
-  if (cf->ReadDeviceId(&(this->position_id), ids, num_ids, PLAYER_POSITION_CODE, 0) != 0)
+  if (cf->ReadDeviceId(&(this->position_id), section, "provides", PLAYER_POSITION_CODE, 0, NULL) != 0)
   {
     this->SetError(-1);
     return;
@@ -143,7 +134,7 @@ MultiDriver::MultiDriver(ConfigFile* cf, int section)
   }
 
   // Create laser interface
-  if (cf->ReadDeviceId(&(this->laser_id), ids, num_ids, PLAYER_LASER_CODE, 0) != 0)
+  if (cf->ReadDeviceId(&(this->laser_id), section, "provides", PLAYER_LASER_CODE, 0, NULL) != 0)
   {
     this->SetError(-1);
     return;
