@@ -10,7 +10,11 @@ dnl determine system type.  this is used in a couple of places to infer the
 dnl types of arguments to some networking library functions.  if/when we 
 dnl upgrade to newer Autotools, this can probably go away.
 AC_CANONICAL_SYSTEM
-AC_DEFINE(TARGET_OS, $target_os, [The target OS])
+case $target in
+*-*-solaris*) AC_DEFINE(PLAYER_SOLARIS,1,[building for Solaris]);;
+esac
+
+AC_DEFINE_UNQUOTED(TARGET_OS, $target_os, [The target OS])
 
 dnl Initialize automake with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.

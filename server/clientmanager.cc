@@ -313,11 +313,10 @@ int ClientManager::Accept()
 {
   int num_connects;
   CClientData *clientData;
-  // BAD HACK - this is an indirect check for solaris
-#if HAVE_STDINT_H && HAVE_POLL
-  socklen_t sender_len;
-#else
+#if PLAYER_SOLARIS
   int sender_len;
+#else
+  socklen_t sender_len;
 #endif
 
   if((num_connects = poll(accept_ufds,num_accept_ufds,0)) < 0)
