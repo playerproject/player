@@ -102,7 +102,8 @@ class Iwspy : public CDevice
   private: nic_t nics[8];
 
   // PID of the ping process
-  private: pid_t ping_pid;
+  private: int ping_count;
+  private: pid_t ping_pid[8];
 };
 
 
@@ -141,6 +142,9 @@ Iwspy::Iwspy(char *interface, ConfigFile *cf, int section)
   char key[64];
   const char *ip, *mac;
 
+  // Read the number of pings to start
+  this->ping_count = 5;
+  
   // Read IP addresses to monitor
   this->nic_count = 0;
   for (i = 0; i < 8; i++)
@@ -206,7 +210,7 @@ int Iwspy::Shutdown()
 
   // Stop pinging
   this->StopPing();
-  
+
   return 0;
 }
 
@@ -244,7 +248,7 @@ void Iwspy::Main()
       {
         link = data.links + data.link_count++;
         strcpy(link->ip, nic->ip);
-        link->link = htons(nic->link);
+        link->qual = htons(nic->link);
         link->level = htons(nic->level);
         link->noise = htons(nic->noise);
         nic->out_count = nic->in_count;
@@ -314,6 +318,7 @@ void Iwspy::UpdateIwSpy()
 {
   int status;
   pid_t pid;
+  int dummy_fd;
   int stdout_pipe[2];
 
   // Create pipes
@@ -333,6 +338,10 @@ void Iwspy::UpdateIwSpy()
     dup(stdout_pipe[1]);
     close(stdout_pipe[0]);
     close(stdout_pipe[1]);
+
+    // Pipe stderr output to /dev/null
+    dummy_fd = open("/dev/null", O_RDWR);
+    dup2(dummy_fd, 2);
 
     // Run iwspy
     if (execl("/sbin/iwspy", "iwspy", "eth0", NULL) != 0)
@@ -372,7 +381,7 @@ void Iwspy::Parse(int fd)
   ssize_t bytes;
   char buffer[80 * 25];
   char line[1024];
-  char mac[16];
+  char mac[32];
   int link, level, noise;
   char status[16];
   nic_t *nic;
@@ -396,10 +405,18 @@ void Iwspy::Parse(int fd)
     
     //printf("[%s]\n", line);
 
+    // See if there is new data (data is new if we get a status value)
     if (sscanf(line, " %s : Quality:%d/%*d Signal level:%d dBm  Noise level:%d dBm (%s)",
                mac, &link, &level, &noise, status) < 5)
+    {
+      //status[0] = 0;
+      //if (sscanf(line, " %s : Quality:%d/%*d Signal level:%d dBm  Noise level:%d dBm",
+      //           mac, &link, &level, &noise) < 4)
       continue;
+    }
 
+    //printf("mac [%s]\n", mac);
+    
     // Update the appropriate entry in the nic list.
     for (j = 0; j < this->nic_count; j++)
     {
@@ -411,7 +428,7 @@ void Iwspy::Parse(int fd)
         nic->level = level;
         nic->noise = noise;
         nic->in_count++;
-        printf("iwspy: %s %d %d %d\n", nic->ip, link, level, noise);
+        //printf("iwspy: %s %d %d %d\n", nic->ip, link, level, noise);
         break;
       }
     }
@@ -493,30 +510,39 @@ int Iwspy::ArpLookup(const char *ip, char *mac)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Start ping
+// Start ping.  This is a hack; we really should generate our own ICMP packets.
 int Iwspy::StartPing()
 {
+  int i;
   int dummy_fd;
   
-  // Fork here
-  this->ping_pid = fork();
-
-  // If in the child process...
-  if (this->ping_pid == 0)
+  for (i = 0; i < this->ping_count; i++)
   {
-    // Pipe all the output to /dev/null
-    dummy_fd = open("/dev/null", O_RDWR);
-    dup2(dummy_fd,0);
-    dup2(dummy_fd,1);
-    dup2(dummy_fd,2);
+    assert(i < (int) (sizeof(this->ping_pid) / sizeof(this->ping_pid[0])));
 
-    // Run ping
-    if (execl("/bin/ping", "ping", "-b", "10.0.0.0", NULL) != 0)
+    // Space the pings out over 1 second
+    usleep(1000000 / this->ping_count);
+    
+    // Fork here
+    this->ping_pid[i] = fork();
+
+    // If in the child process...
+    if (this->ping_pid[i] == 0)
     {
-      PLAYER_ERROR1("error on exec: [%s]", strerror(errno));
-      exit(errno);
+      // Pipe all the output to /dev/null
+      dummy_fd = open("/dev/null", O_RDWR);
+      dup2(dummy_fd,0);
+      dup2(dummy_fd,1);
+      dup2(dummy_fd,2);
+
+      // Run ping
+      if (execl("/bin/ping", "ping", "-b", "10.0.0.0", NULL) != 0)
+      {
+        PLAYER_ERROR1("error on exec: [%s]", strerror(errno));
+        exit(errno);
+      }
+      assert(false);
     }
-    assert(false);
   }
   return 0;
 }
@@ -526,13 +552,20 @@ int Iwspy::StartPing()
 // Stop ping
 void Iwspy::StopPing()
 {
+  int i;
   int status;
-  
-  // Wait for the child to finish
-  if (waitpid(this->ping_pid, &status, 0) < 0)
+
+  for (i = 0; i < this->ping_count; i++)
   {
-    PLAYER_ERROR1("error on waitpid: [%s]", strerror(errno));
-    return;
+    // Kill ping
+    kill(this->ping_pid[i], SIGKILL);
+    
+    // Wait for the child to finish
+    if (waitpid(this->ping_pid[i], &status, 0) < 0)
+    {
+      PLAYER_ERROR1("error on waitpid: [%s]", strerror(errno));
+      return;
+    }
   }
   return;
 }
