@@ -25,14 +25,53 @@
 // File: mdns.cc
 // Author: Reed Hedges, LPR, Dept. of Computer Science, UMass, Amherst
 // Date: 23 June 2003
-// Desc: Service advertisement driver for howl MDNS (Zeroconf aka "Rendezvous").
-//       Requires libhowl, available at http://www.porchdogsoft.com
-//
-//       Note that the service_adv device has no client proxy, and 
-//       clients cannot "subscribe" and read from it: the Init function
-//       just starts the Howl threads and they run "in the background" forever.
-//
+//       
 ///////////////////////////////////////////////////////////////////////////
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_service_adv_mdns service_adv_mdns
+
+Service advertisement driver for howl MDNS (Zeroconf aka "Rendezvous").
+Note that the service_adv_mdns driver has no client proxy, and clients
+cannot "subscribe" and read from it: the Init function just starts the
+Howl threads and they run "in the background" forever.
+
+@par Compile-time dependencies
+
+- <a href=http://www.porchdogsoft.com>libhowl</a>
+
+@par Provides
+
+- none
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- none
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "service_adv_mdns"
+)
+@endverbatim
+
+@par Authors
+
+Reed Hedges
+
+*/
+/** @} */
 
 #if HAVE_CONFIG_H
 # include <config.h>

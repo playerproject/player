@@ -46,6 +46,85 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_sickpls sickpls
+
+
+The sickpls driver controls the SICK PLS scanning laser range-finder.
+This driver will likely be merged into the @ref player_driver_sicklms200
+driver (eventually).
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_laser
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+- PLAYER_LASER_GET_GEOM
+- PLAYER_LASER_GET_CONFIG
+- PLAYER_LASER_SET_CONFIG
+  
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS1"
+  - Serial port to which laser is attached.  If you are using a
+    USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
+
+- rate (integer)
+  - Default: 9600
+  - Baud rate.  Valid values are 9600, 38400 (RS232 or RS422) and
+    500000 (RS422 only).
+  
+- delay (integer)
+  - Default: 0
+  - Delay (in seconds) before laser is initialized (set this to 35 if
+    you have a newer generation Pioneer whose laser is switched on
+    when the serial port is open).
+
+- resolution (integer)
+  - Default: 50
+  - Angular resolution.  Valid values are:
+    - resolution 50 : 0.5 degree increments, 361 readings @ 5Hz (38400) or 32Hz (500000).
+    - resolution 100 : 1 degree increments, 181 readings @ 10Hz (38400) or 75Hz (500000).
+
+- invert (integer)
+  - Default: 0
+  - Is the laser physically inverted (i.e., upside-down)?  Is so, scan data 
+    will be reversed accordingly.
+
+- pose (length tuple)
+  - Default: [0.0 0.0 0.0]
+  - Pose (x,y,theta) of the laser, relative to its parent object (e.g.,
+    the robot to which the laser is attached).
+      
+@par Example 
+
+@verbatim
+driver
+(
+  name "sickpls"
+  provides ["laser:0"]
+  port "/dev/ttyS0"
+)
+@endverbatim
+
+@par Authors
+
+Yannick Brosseau, Andrew Howard
+
+*/
+/** @} */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif

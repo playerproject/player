@@ -25,6 +25,75 @@
  * convolve it with a robot to create the C-space.
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_mapcspace mapcspace
+
+The mapcspace driver reads a occupancy grid map from another @ref
+player_interface_map device and convolves it with a robot of a particular
+shape and size to create the configuration space (C-space) map.  That is,
+this driver "grows" obstacles in the map to produce a new map in which,
+for path-planning purposes, you can consider the robot to be a point.
+
+Both occupied and unknown cells are grown.
+
+Note that @ref player_interface_map devices produce no data; the map is
+delivered via a sequence of configuration requests.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_map : the resulting C-space map
+
+@par Requires
+
+- @ref player_interface_map : the raw map, from which to make the C-space map
+
+@par Configuration requests
+
+- PLAYER_MAP_GET_INFO_REQ
+- PLAYER_MAP_GET_DATA_REQ
+
+@par Configuration file options
+
+- robot_radius (length)
+  - Default: -1.0
+  - The radius of the robot to convolve with the map
+- robot_shape (string)
+  - Default: "circle"
+  - The shape of the robot to convolve with the map.  Should be one of:
+    "circle".
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "mapfile"
+  provides ["map:0"]
+  filename "mymap.pgm"
+  resolution 0.1  # 10cm per pixel
+)
+driver
+(
+  name "mapcspace"
+  requires ["map:0"]  # read from map:0
+  provides ["map:1"]  # output C-space map on map:1
+  robot_shape "circle"
+  robot_radius 0.5 m
+)
+@endverbatim
+
+@par Authors
+
+Brian Gerkey
+
+*/
+/** @} */
+
 #include <sys/types.h> // required by Darwin
 #include <netinet/in.h>
 #include <stdlib.h>
@@ -56,7 +125,7 @@ class MapCspace : public Driver
     double resolution;
     int size_x, size_y;
     char* mapdata;
-    int map_index;
+    player_device_id_t map_id;
     robot_shape_t robot_shape;
     double robot_radius;
 
@@ -71,7 +140,7 @@ class MapCspace : public Driver
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapCspace(ConfigFile* cf, int section, int index, robot_shape_t shape, double radius);
+    MapCspace(ConfigFile* cf, int section, player_device_id_t id, robot_shape_t shape, double radius);
     ~MapCspace();
     int Setup();
     int Shutdown();
@@ -84,13 +153,15 @@ Driver*
 MapCspace_Init(ConfigFile* cf, int section)
 {
   const char* shapestring;
-  int index;
   double radius;
   robot_shape_t shape;
+  player_device_id_t map_id;
 
-  if((index = cf->ReadInt(section,"map_index",-1)) < 0)
+  // Must have an input map
+  if (cf->ReadDeviceId(&map_id, section, "requires",
+                       PLAYER_MAP_CODE, -1, NULL) != 0)
   {
-    PLAYER_ERROR("must specify positive map index");
+    PLAYER_ERROR("must specify input map");
     return(NULL);
   }
   if((radius = cf->ReadLength(section,"robot_radius",-1.0)) < 0)
@@ -113,7 +184,7 @@ MapCspace_Init(ConfigFile* cf, int section)
     return(NULL);
   }
 
-  return((Driver*)(new MapCspace(cf, section, index, shape, radius)));
+  return((Driver*)(new MapCspace(cf, section, map_id, shape, radius)));
 }
 
 // a driver registration function
@@ -126,13 +197,13 @@ MapCspace_Register(DriverTable* table)
 
 // this one has no data or commands, just configs
 MapCspace::MapCspace(ConfigFile* cf, int section,
-                     int index, robot_shape_t shape, double radius) :
+                     player_device_id_t id, robot_shape_t shape, double radius) :
   Driver(cf, section, PLAYER_MAP_CODE, PLAYER_READ_MODE,
          0,0,100,100)
 {
   this->mapdata = NULL;
   this->size_x = this->size_y = 0;
-  this->map_index = index;
+  this->map_id = id;
   this->robot_shape = shape;
   this->robot_radius = radius;
 }
@@ -157,13 +228,9 @@ MapCspace::Setup()
 int
 MapCspace::GetMap()
 {
-  player_device_id_t map_id;
   Driver* mapdevice;
 
   // Subscribe to the map device
-  map_id.port = global_playerport;
-  map_id.code = PLAYER_MAP_CODE;
-  map_id.index = this->map_index;
 
   if(!(mapdevice = deviceTable->GetDriver(map_id)))
   {
@@ -181,7 +248,7 @@ MapCspace::GetMap()
     return(-1);
   }
 
-  printf("MapCspace: Loading map from map:%d...\n", this->map_index);
+  printf("MapCspace: Loading map from map:%d...\n", this->map_id.index);
   fflush(NULL);
 
   // Fill in the map structure

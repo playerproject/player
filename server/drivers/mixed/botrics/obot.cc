@@ -23,13 +23,53 @@
 /*
  * $Id$
  *
- * Driver for the so-called "Obot" robots, made by Botrics.  They're
- * small, very fast robots that carry SICK lasers (talk to the laser over a
- * normal serial port using the sicklms200 driver).  
  *
  * Some of this code is borrowed and/or adapted from the 'cerebellum'
  * module of CARMEN; thanks to the authors of that module.
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_obot obot
+
+The obot driver controls for the Obot robot, made by Botrics.  It's a
+small, very fast robot that can carry a SICK laser (talk to the laser
+over a normal serial port using the @ref player_driver_sicklms200 driver).
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_position
+
+@par Supported configuration requests
+
+- PLAYER_POSITION_GET_GEOM_REQ
+- PLAYER_POSITION_MOTOR_POWER_REQ
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/usb/ttyUSB1"
+  - Serial port used to communicate with the robot.
+  
+@par Example 
+
+@verbatim
+driver
+(
+  name "obot"
+  provides ["position:0"]
+)
+@endverbatim
+
+@par Authors
+
+Brian Gerkey
+*/
+/** @} */
 
 #if HAVE_CONFIG_H
   #include <config.h>

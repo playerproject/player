@@ -24,6 +24,78 @@
  * A driver to read an occupancy grid map from an image file.
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_mapfile mapfile
+
+The mapfile driver reads a occupancy grid map from a bitmap image file and
+provides the map to others via the @ref player_interface_map interface.
+Since gdk-pixbuf is used to load the file, pretty much all bitmap formats
+are supported.
+
+Each cell in an occupancy grid map takes 1 of 3 states: occupied (1),
+unknown (0), and free (-1).  The mapfile driver converts each pixel of an
+image to a cell with one of these states in the following way: average
+the color values; divide this average by max value to get a ratio; if
+this ratio is greater than .95, the cell is occupied; if ratio is less
+than 0.1, the cell is free; otherwise it is unknown.  In other words,
+"blacker" pixels are occupied, "whiter" pixels are free, and those in
+between are unknown.
+
+Note that @ref player_interface_map devices produce no data; the map is
+delivered via a sequence of configuration requests.
+
+@par Compile-time dependencies
+
+- gdk-pixbuf-2.0 (usually installed as part of GTK)
+
+@par Provides
+
+- @ref player_interface_map
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- PLAYER_MAP_GET_INFO_REQ
+- PLAYER_MAP_GET_DATA_REQ
+
+@par Configuration file options
+
+- filename (string)
+  - Default: NULL
+  - The image file to read.
+- resolution (length)
+  - Default: -1.0
+  - Resolution (length per pixel) of the image.
+- negate (integer)
+  - Default: 0
+  - Should we negate (i.e., invert) the colors in the image before
+    reading it?  Useful if you're using the same image file as the
+    world bitmap for Stage 1.3.x, which has the opposite semantics for
+    free/occupied pixels.
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "mapfile"
+  provides ["map:0"]
+  filename "mymap.pgm"
+  resolution 0.1  # 10cm per pixel
+)
+@endverbatim
+
+@par Authors
+
+Brian Gerkey
+
+*/
+/** @} */
+
 #include <sys/types.h> // required by Darwin
 #include <netinet/in.h>
 #include <stdlib.h>
@@ -83,7 +155,7 @@ MapFile_Init(ConfigFile* cf, int section)
     PLAYER_ERROR("must specify map filename");
     return(NULL);
   }
-  if((resolution = cf->ReadFloat(section,"resolution",-1.0)) < 0)
+  if((resolution = cf->ReadLength(section,"resolution",-1.0)) < 0)
   {
     PLAYER_ERROR("must specify positive map resolution");
     return(NULL);

@@ -27,6 +27,52 @@
  * CVS: $Id$
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_microstrain3dmg microstrain3dmg
+
+The microstrain3dmg driver controls the MicroStrain 3DM-G IMU.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_position
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS1"
+  - The serial port where the IMU is connected.
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "microstrain3dmg"
+  provides ["position:0"]
+  port "/dev/ttyS1"
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+
+*/
+/** @} */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif

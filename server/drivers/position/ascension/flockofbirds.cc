@@ -1,3 +1,61 @@
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_flockofbirds flockofbirds
+
+The flockofbirds driver provides a basic interface to the ascension
+Flock of Birds 6DOF position tracker.
+
+This driver ignores all commands and configuration requests and simple
+provides a continuous stream of @ref player_interface_position updates
+from a single flock of birds controller.
+
+There is currently no support for multiple trackers.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_position
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS0"
+  - The serial port to be used.
+
+- baudrate (integer)
+  - Default: 115200
+  - The baud rate to be used.
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "flockofbirds"
+  provides ["position:0"]
+  port "/dev/ttyS0"
+  baudrate 115200
+)
+@endverbatim
+
+@par Authors
+
+Toby Collett
+
+*/
+/** @} */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>

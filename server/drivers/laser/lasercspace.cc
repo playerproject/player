@@ -32,6 +32,76 @@
 // Requires - Laser device.
 //
 ///////////////////////////////////////////////////////////////////////////
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_lasercspace lasercspace
+
+
+The lasercspace driver processes a laser scan to compute the
+configuration space (`C-space') boundary.  That is, it shortens the
+range of each laser scan such that the resultant scan delimits the
+obstacle-free portion of the robot's configuration space.  This driver
+is particular useful for writing obstacle avoidance algorithms, since the
+robot may safely move to any point in the obstacle-free portion of the 
+configuration space.
+
+Note that driver computes the configuration space for a robot of some
+fixed radius; this radius may be set in the configuration file.
+
+@image html lasercspace-1.jpg "Standard laser scan"
+@image html lasercspace-2.jpg "Corresponding C-space scan for a robot of 0.5 m"
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_laser : output of the C-space scan
+
+@par Requires
+
+- @ref player_interface_laser : raw laser data from which to make C-space scan
+
+@par Configuration requests
+
+- PLAYER_LASER_GET_GEOM
+  
+@par Configuration file options
+
+- radius (length)
+  - Default: 0.5 m
+  - Radius of robot for which to make C-space scan
+- step (integer)
+  - Default: 1
+  - Step size for subsampling the scan (saves CPU cycles)
+      
+@par Example 
+
+@verbatim
+driver
+(
+  name "sicklms200"
+  provides ["laser:0"]
+  port "/dev/ttyS0"
+)
+driver
+(
+  name "lasercspace"
+  requires ["laser:0"] # read from laser:0
+  provides ["laser:1"] # output results on laser:1
+  radius 0.5
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+
+*/
+/** @} */
+
 #include "player.h"
 
 #include <errno.h>
@@ -84,7 +154,6 @@ class LaserCSpace : public Driver
   private: void HandleGetGeom(void *client, void *req, int reqlen);
 
   // Laser stuff.
-  private: int laser_index;
   private: Driver *laser_driver;
   private: player_device_id_t laser_id;
   private: player_laser_data_t laser_data;
@@ -124,8 +193,13 @@ void LaserCSpace_Register(DriverTable* table)
 LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_READ_MODE, 0, 0, 0, 1)
 {
-  // Info for the underlying laser device.
-  this->laser_index = cf->ReadInt(section, "laser", 0);
+  // Must have an input laser
+  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
+                       PLAYER_LASER_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->laser_driver = NULL;
   this->laser_timestamp.tv_sec = 0;
   this->laser_timestamp.tv_usec = 0;
@@ -148,9 +222,6 @@ LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
 int LaserCSpace::Setup()
 {
   // Subscribe to the laser.
-  this->laser_id.code = PLAYER_LASER_CODE;
-  this->laser_id.index = this->laser_index;
-  this->laser_id.port = this->device_id.port;
   this->laser_driver = deviceTable->GetDriver(this->laser_id);
   if (!this->laser_driver)
   {

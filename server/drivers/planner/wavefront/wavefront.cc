@@ -18,6 +18,157 @@
  *
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_wavefront wavefront
+
+The wavefront driver implements a global path planner for a planar
+mobile robot.
+
+This driver works in the following way: upon receiving a new @ref
+player_interface_planner target, a path is planned from the robot's
+current pose, as reported by the underlying @ref player_interface_localize
+device.  The waypoints in this path are handed down, in sequence,
+to the underlying @ref player_interface_position device, which should
+be capable of local navigation (the @ref player_driver_vfh driver is a
+great candidate). By tying everything together in this way, this driver
+offers the mythical "global goto" for your robot.
+
+The planner first creates a configuration space of grid cells from the
+map that is given, treating both occupied and unknown cells as occupied.
+The planner assigns a cost to each of the free cells based on their
+distance to the nearest obstacle. The nearer the obstacle, the higher
+the cost. Beyond the max_radius given by the user, the cost in the
+c-space cells is zero.
+
+When the planner is given a new goal, it finds a path by working its
+way outwards from the goal cell, assigning plan costs to the cells as
+it expands (like a wavefront expanding outwards in water). The plan
+cost in each cell is dependant on its distance from the goal, as well
+as the obstacle cost assigned in the configuration space step. Once the
+plan costs for all the cells have been evaluated, the robot can simply
+follow the gradient of each lowest adjacent cell all the way to the goal.
+
+In order to function effectively with an underlying obstacle avoidance
+algorithm, such as Vector Field Histogram (the @ref player_driver_vfh
+driver), the planner only hands off waypoints, not the entire path. The
+wavefront planner finds the longest straight-line distances that don't
+cross obstacles between cells that are on the path. The endpoints of
+these straight lines become sequential goal locations for the underlying
+device driving the robot.
+
+For help in using this driver, try the @ref player_util_playernav utility.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_planner
+
+@par Requires
+
+- @ref player_interface_position : robot to be controlled;
+  this device must be capable of position control (usually you would
+  use the @ref player_driver_vfh driver)
+- @ref player_interface_localize : localization system (usually you
+  would use the @ref player_driver_amcl driver)
+- @ref player_interface_map : the map to plan paths in
+
+@par Configuration requests
+
+- PLAYER_PLANNER_GET_WAYPOINTS_REQ
+
+@par Configuration file options
+
+Note that the various thresholds should be set to GREATER than the
+underlying position device; otherwise the planner could wait indefinitely
+for the position device to achieve a target, when the position device
+thinks it has already achieved it.
+
+- safety_dist (length)
+  - Default: 0.25 m
+  - Don't plan a path any closer than this distance to any obstacle.
+    Set this to be GREATER than the corresponding threshold of
+    the underlying position device!
+- max_radius (length)
+  - Default: 1.0 m
+  - For planning purposes, all cells that are at least this far from
+    any obstacle are equally good (save CPU cycles).
+- dist_penalty (float)
+  - Default: 1.0
+  - Extra cost to discourage cutting corners
+- distance_epsilon (length)
+  - Default: 0.5 m
+  - Planar distance from the target position that will be considered
+    acceptable.  
+    Set this to be GREATER than the corresponding threshold of
+    the underlying position device!
+- angle_epsilon (angle)
+  - Default: 10 deg
+  - Angular difference from target angle that will considered acceptable.
+    Set this to be GREATER than the corresponding threshold of the
+    underlying position device!
+
+@par Example 
+
+This example shows how to use the wavefront driver to plan and execute paths
+on a laser-equipped Pioneer.
+
+@verbatim
+driver
+(
+  name "p2os"
+  provides ["odometry::position:1"]
+  port "/dev/ttyS0"
+)
+driver
+(
+  name "sicklms200"
+  provides ["laser:0"]
+  port "/dev/ttyS1"
+)
+driver
+(
+  name "mapfile"
+  provides ["map:0"]
+  filename "mymap.pgm"
+  resolution 0.1
+)
+driver
+(
+  name "amcl"
+  provides ["localize:0"]
+  requires ["position:1" "laser:0" "map:0"]
+)
+driver
+(
+  name "vfh"
+  provides ["position:0"]
+  requires ["position:1" "laser:0"]
+  safety_dist 0.1
+  distance_epsilon 0.3
+  angle_epsilon 5
+)
+driver
+(
+  name "wavefront"
+  provides ["planner:0"]
+  requires ["position:0" "localize:0" "map:0"]
+  safety_dist 0.15
+  distance_epsilon 0.5
+  angle_epsilon 10
+)
+@endverbatim
+
+@par Authors
+
+Brian Gerkey, Andrew Howard
+
+*/
+/** @} */
+
 // TODO:
 //   - allow a waypoint to be skipped, if the robot gets near a later
 //      waypoint
@@ -69,8 +220,7 @@ class Wavefront : public Driver
     // bookkeeping
     player_device_id_t position_id;
     player_device_id_t localize_id;
-    int position_index;
-    int localize_index;
+    player_device_id_t map_id;
     double map_res;
     double robot_radius;
     double safety_dist;
@@ -78,7 +228,6 @@ class Wavefront : public Driver
     double dist_penalty;
     double dist_eps;
     double ang_eps;
-    int map_index;
     //const char* cspace_fname;
 
     // for filtering localize poses
@@ -171,11 +320,27 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_PLANNER_CODE, PLAYER_ALL_MODE,
              sizeof(player_planner_data_t), sizeof(player_planner_cmd_t), 1, 1)
 {
-  this->position_index = cf->ReadInt(section,"position_index",-1);
-  this->localize_index = cf->ReadInt(section,"localize_index",-1);
-  this->map_index = cf->ReadInt(section,"map_index",-1);
-  //this->cspace_fname = cf->ReadString(section,"cspace_filename",NULL);
-  //this->robot_radius = cf->ReadLength(section,"robot_radius",0.15);
+  // Must have a position device
+  if (cf->ReadDeviceId(&this->position_id, section, "requires",
+                       PLAYER_POSITION_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
+  // Must have a localize device
+  if (cf->ReadDeviceId(&this->localize_id, section, "requires",
+                       PLAYER_LOCALIZE_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
+  // Must have a map device
+  if (cf->ReadDeviceId(&this->map_id, section, "requires",
+                       PLAYER_MAP_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
   this->safety_dist = cf->ReadLength(section,"safety_dist", 0.25);
   this->max_radius = cf->ReadLength(section,"max_radius",1.0);
   this->dist_penalty = cf->ReadFloat(section,"dist_penalty",1.0);
@@ -218,22 +383,6 @@ Wavefront::Setup()
   memset(this->ly_window,0,sizeof(this->ly_window));
   this->l_window_size = 0;
   this->l_window_ptr = 0;
-
-  if(this->position_index < 0)
-  {
-    PLAYER_ERROR("must specify position index");
-    return(-1);
-  }
-  if(this->localize_index < 0)
-  {
-    PLAYER_ERROR("must specify localize index");
-    return(-1);
-  }
-  if(this->map_index < 0)
-  {
-    PLAYER_ERROR("must specify map index");
-    return(-1);
-  }
 
   if(SetupPosition() < 0)
     return(-1);
@@ -701,10 +850,6 @@ Wavefront::SetupPosition()
   struct timeval ts;
   unsigned short reptype;
 
-  this->position_id.code = PLAYER_POSITION_CODE;
-  this->position_id.index = this->position_index;
-  this->position_id.port = this->device_id.port;
-
   // Subscribe to the position device.
   if(!(this->position = deviceTable->GetDriver(this->position_id)))
   {
@@ -741,10 +886,6 @@ Wavefront::SetupPosition()
 int 
 Wavefront::SetupLocalize()
 {
-  this->localize_id.code = PLAYER_LOCALIZE_CODE;
-  this->localize_id.index = this->localize_index;
-  this->localize_id.port = this->device_id.port;
-
   // Subscribe to the localize device.
   if(!(this->localize = deviceTable->GetDriver(this->localize_id)))
   {
@@ -765,16 +906,11 @@ Wavefront::SetupLocalize()
 int
 Wavefront::SetupMap()
 {
-  player_device_id_t map_id;
   Driver* mapdevice;
   plan_cell_t* cell;
 
   // Subscribe to the map device
-  map_id.port = global_playerport;
-  map_id.code = PLAYER_MAP_CODE;
-  map_id.index = this->map_index;
-
-  if(!(mapdevice = deviceTable->GetDriver(map_id)))
+  if(!(mapdevice = deviceTable->GetDriver(this->map_id)))
   {
     PLAYER_ERROR("unable to locate suitable map device");
     return -1;
@@ -794,7 +930,7 @@ Wavefront::SetupMap()
     return(-1);
   }
 
-  printf("Wavefront: Loading map from map:%d...\n", this->map_index);
+  printf("Wavefront: Loading map from map:%d...\n", this->map_id.index);
   fflush(NULL);
 
   // Fill in the map structure (I'm doing it here instead of in libmap, 

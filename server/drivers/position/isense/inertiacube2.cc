@@ -36,6 +36,69 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_inertiacube2 inertiacube2
+
+Uses an iSense InertiaCube2 inertial orientation sensor to correct
+the odometry coming from a robot.  The assumption is that the position
+device we subscribe to has good position information but poor orientation
+information.
+
+Neither configuration requests nor commands are passed through to the
+underlying @ref player_interface_position device.
+
+@par Compile-time dependencies
+
+- &lt;isense/isense.h&gt;
+
+@par Provides
+
+- @ref player_interface_position : corrected pose information
+
+@par Requires
+
+- @ref player_interface_position : source of raw odometry
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS3"
+  - The serial port where the InertiaCube2 is connected
+
+- compass (integer)
+  - Default: 2
+  - Compass setting (0 = off, 1 = partial, 2 = full).
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "p2os"
+  provides ["odometry::position:1"]
+  port "/dev/ttyS0"
+)
+driver
+(
+  name "inertiacube2"
+  requires ["position:1"]  # get odometry from position:1
+  provides ["position:0"]  # produce corrected pose on position:0
+  port "/dev/ttyS1"
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+
+*/
+/** @} */
+
 #include <errno.h>
 #include <string.h>
 #include <math.h>
@@ -106,7 +169,7 @@ class InertiaCube2 : public Driver
   private: const char *port;
 
   // Position device info (the one we are subscribed to).
-  private: int position_index;
+  private: player_device_id_t position_id;
   private: Driver *position;
   private: double position_time;
   private: double position_old_pose[3];
@@ -149,7 +212,13 @@ InertiaCube2::InertiaCube2( ConfigFile* cf, int section)
 {
   this->port = cf->ReadString(section, "port", "/dev/ttyS3");
   
-  this->position_index = cf->ReadInt(section, "position_index", 0);
+  // Must have a position device
+  if (cf->ReadDeviceId(&this->position_id, section, "requires",
+                       PLAYER_POSITION_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->position = NULL;
   this->position_time = 0;
 
@@ -199,14 +268,8 @@ int InertiaCube2::Shutdown()
 // Set up the underlying position device.
 int InertiaCube2::SetupPosition()
 {
-  player_device_id_t id;
-
-  id.code = PLAYER_POSITION_CODE;
-  id.index = this->position_index;
-  id.port = this->device_id.port;
-
   // Subscribe to the position device.
-  this->position = deviceTable->GetDriver(id);
+  this->position = deviceTable->GetDriver(this->position_id);
   if (!this->position)
   {
     PLAYER_ERROR("unable to locate suitable position device");

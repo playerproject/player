@@ -59,7 +59,7 @@ or sector_angle.
 - @ref player_interface_position : the underlying robot that will be
   controlled by vfh.
 
-- @ref player_laser_interface : the laser that will be used to avoid
+- @ref player_interface_laser : the laser that will be used to avoid
   obstacles
 
 @par Configuration requests
@@ -113,19 +113,22 @@ or sector_angle.
 @verbatim
 driver
 (
+  name "p2os"
+  provides ["odometry::position:1"]
+  port "/dev/ttyS0"
+)
+driver
+(
+  name "sicklms200"
+  provides ["laser:0"]
+  port "/dev/ttyS1"
+)
+driver
+(
   name "vfh"
-  provides ["position:0"]
   requires ["position:1" "laser:0"]
-  cell_size 0.1
-  window_diameter 61
-  sector_angle 1
+  provides ["position:0"]
   safety_dist 0.10
-  max_speed 0.5
-  min_turnrate 20
-  max_turnrate 120
-  free_space_cutoff  1000000.0
-  weight_desired_dir 5.0
-  weight_current_dir 3.0
   distance_epsilon 0.3
   angle_epsilon 5
 )

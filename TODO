@@ -11,6 +11,7 @@ $Id$
 - document driver API
 - document plugin building procedure (mention libtool)
 - roll client lib docs into Player package
+- check compatibility with librtk 2.3.0
 
 NEXT RELEASE:
 -------------

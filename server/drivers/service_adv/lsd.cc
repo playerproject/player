@@ -25,16 +25,52 @@
 // File: lsd.cc
 // Author: Reed Hedges, LPR, Dept. of Computer Science, UMass, Amherst
 // Date: 23 June 2003
-// Desc: Driver for libservicediscovery.
-//       Based in part on Andrew Howard's SICK laser driver.
-//       Requires libservicediscovery, available at:
-//       http://interreality.org/software/servicediscovery
-//
-//       Note that the service_adv device has no client proxy, and 
-//       clients cannot "subscribe" and read from it: the Init function
-//       just starts the man thread and it runs "in the background" forever.
-//
 ///////////////////////////////////////////////////////////////////////////
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_service_adv_lsd service_adv_lsd
+
+Driver for libservicediscovery.  Note that the service_adv_lsd driver has
+no client proxy, and clients cannot "subscribe" and read from it: the
+Init function just starts the man thread and it runs "in the background"
+forever.
+
+@par Compile-time dependencies
+
+- <a href=http://interreality.org/software/servicediscovery>libservicediscovery</a>
+
+@par Provides
+
+- none
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- none
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "service_adv_lsd"
+)
+@endverbatim
+
+@par Authors
+
+Reed Hedges
+
+*/
+/** @} */
 
 #if HAVE_CONFIG_H
 # include <config.h>

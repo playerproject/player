@@ -26,6 +26,49 @@
  * $Id$
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_aodv aodv
+
+The aodv driver reports signal strengths for AODV ah-hoc network software.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_wifi
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- none
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "aodv"
+  provides ["wifi:0"]
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+
+*/
+/** @} */
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>

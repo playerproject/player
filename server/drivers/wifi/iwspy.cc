@@ -30,6 +30,56 @@
  *  
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_iwspy iwspy
+
+This driver works like iwspy; it uses the linux wireless extensions
+to get signal strengths to wireless NICS.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_wifi
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- eth (string)
+  - Default: "eth1"
+  - Network interface to report on
+- nic_%d (string tuple)
+  - Default: NULL
+  - Each nic_%d option is a tuple [IP MAC] of IP address and MAC address to 
+    monitor.
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "iwspy"
+  provides ["wifi:0"]
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+
+*/
+/** @} */
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
