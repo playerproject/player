@@ -262,7 +262,7 @@ void CameraV4L::Main()
     // Save frames
     if (this->save)
     {
-      printf("click %d\n", frameno);
+      //printf("click %d\n", frameno);
       snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
       frame_save(this->frame, filename);
     }

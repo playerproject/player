@@ -219,7 +219,7 @@ LaserVisualBW::LaserVisualBW(char* interface, ConfigFile* cf, int section)
   this->camera = NULL;
   this->camera_time = 0;
 
-  this->max_ptz_attention = cf->ReadFloat(section, "max_ptz_attention", 3.0);
+  this->max_ptz_attention = cf->ReadFloat(section, "max_ptz_attention", 6.0);
   this->retire_time = cf->ReadFloat(section, "retire_time", 1.0);
   this->max_dist = cf->ReadFloat(section, "max_dist", 0.2);
 
@@ -700,11 +700,13 @@ void LaserVisualBW::SelectPtzTarget(double time, player_ptz_data_t *data)
   fiducial_t *fiducial;
 
   // Consider the currently selected target for a while to
-  // give the camera time to identify it.
+  // give the camera time to identify it.  If the target has
+  // been identified, move on to another one.
   if (this->ptz_fiducial != NULL)
   {
-    if (time - this->ptz_fiducial->ptz_select_time < this->max_ptz_attention)
-      return;
+    if (this->ptz_fiducial->id_time < 0)
+      if (time - this->ptz_fiducial->ptz_select_time < this->max_ptz_attention)
+        return;
   }
 
   // Find one we havent looked at for while.
@@ -727,6 +729,7 @@ void LaserVisualBW::SelectPtzTarget(double time, player_ptz_data_t *data)
   {
     this->ptz_fiducial->ptz_select_time = time;
     this->ptz_fiducial->ptz_lockon_time = -1;
+    this->ptz_fiducial->id_time = -1;
   }
   
   return;
@@ -737,12 +740,16 @@ void LaserVisualBW::SelectPtzTarget(double time, player_ptz_data_t *data)
 // Servo the PTZ to a target fiducial.
 void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
 {
+  int i;
   double dx, dy, r, pan, tilt, zoom;
   fiducial_t *fiducial;
   player_ptz_cmd_t cmd;
   double maxtilt;
   double deadpan, deadzoom;
 
+  // Tilt pattern
+  double pattern[] = {0, 0.5, 1.0, 0.5, 0, -0.5, -1.0, -0.5};
+  
   // Max tilt value.
   maxtilt = 5 * M_PI / 180;
 
@@ -780,8 +787,11 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
     if (fiducial->ptz_lockon_time < 0)
       tilt = 0;
     else
-      tilt = maxtilt * sin((time - fiducial->ptz_lockon_time) /
-                           this->max_ptz_attention * 2 * M_PI);
+    {
+      i = (int) floor((time - fiducial->ptz_lockon_time) / this->max_ptz_attention * 8);
+      tilt = maxtilt * pattern[i];        
+      //tilt = sin((time - fiducial->ptz_lockon_time) / this->max_ptz_attention * 2 * M_PI);
+    }
   }
   
   // Compose the command packet to send to the PTZ device.
@@ -805,7 +815,7 @@ int LaserVisualBW::UpdateCamera()
   size_t size;
   uint32_t timesec, timeusec;
   double time;
-  int id;
+  int id, best_id;
   int x;
   int symbol_count;
   int symbols[480];
@@ -825,21 +835,39 @@ int LaserVisualBW::UpdateCamera()
   this->camera_data.height = ntohs(this->camera_data.height); 
   this->camera_data.depth = this->camera_data.depth;
 
-  // Use the center image column
-  x = this->camera_data.width / 2;
+  best_id = -1;
   
-  // Extract raw symbols
-  symbol_count = this->ExtractSymbols(x, sizeof(symbols) / sizeof(symbols[0]), symbols);
+  // Barcode may not be centered, so look across entire image
+  for (x = 0; x < this->camera_data.width; x += 16)
+  {
+    // Extract raw symbols
+    symbol_count = this->ExtractSymbols(x, sizeof(symbols) / sizeof(symbols[0]), symbols);
 
-  // Identify barcode
-  id = this->ExtractCode(symbol_count, symbols);
+    // Identify barcode
+    id = this->ExtractCode(symbol_count, symbols);
 
-  // Assign id to fiducial we are currently looking at
-  if (id >= 0 && this->ptz_fiducial)
+    // If we see multiple barcodes, we dont know which is the correct one
+    if (id >= 0)
+    {
+      if (best_id < 0)
+      {
+        best_id = id;
+      }
+      else if (best_id != id)
+      {
+        best_id = -1;
+        break;
+      }
+    }
+  }
+
+  // Assign id to fiducial we are currently looking at.
+  // TODO: check for possible aliasing (not looking at the correct barcode).
+  if (best_id >= 0 && this->ptz_fiducial)
   {
     if (this->ptz_fiducial->ptz_lockon_time >= 0)
     {
-      this->ptz_fiducial->id = id;
+      this->ptz_fiducial->id = best_id;
       this->ptz_fiducial->id_time = time;
     }
   }
@@ -1008,7 +1036,7 @@ int LaserVisualBW::ExtractCode(int symbol_count, int symbols[])
       if ((max - mean) / mean > this->guard_tol)
         continue;
 
-      printf("guard %d %.2f\n", i, mean);
+      //printf("guard %d %.2f\n", i, mean);
 
       best_err = this->err_first;
       best_digit = -1;
@@ -1025,7 +1053,7 @@ int LaserVisualBW::ExtractCode(int symbol_count, int symbols[])
           err[k] += fabs(wo - wm);
           //printf("digit %d = %.3f %.3f\n", k, wm, wo);
         }
-        printf("digit %d = %.3f\n", k, err[k]);
+        //printf("digit %d = %.3f\n", k, err[k]);
 
         if (err[k] < best_err)
         {
@@ -1053,8 +1081,8 @@ int LaserVisualBW::ExtractCode(int symbol_count, int symbols[])
     }    
   }
 
-  if (best_digit >= 0)
-    printf("best = %d\n", best_digit);
+  //if (best_digit >= 0)
+  //  printf("best = %d\n", best_digit);
 
   return best_digit;
 }
