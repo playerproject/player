@@ -46,7 +46,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#define PLAYER_ENABLE_TRACE 1
+//#define PLAYER_ENABLE_TRACE 1
 
 #include <stdio.h>
 #include <string.h>
@@ -56,6 +56,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "broadcastdevice.hh"
 
 #define PLAYER_BROADCAST_IP "10.255.255.255"
@@ -198,7 +199,7 @@ void CBroadcastDevice::GetCommand(unsigned char *, size_t maxsize)
 //
 void CBroadcastDevice::PutCommand(unsigned char *data, size_t maxsize)
 {
-    //SendPacket(data, maxsize);
+    SendPacket(data, maxsize);
 }
 
 
@@ -223,13 +224,15 @@ void CBroadcastDevice::PutConfig(unsigned char *, size_t maxsize)
 // Send a packet
 //
 void CBroadcastDevice::SendPacket(unsigned char *packet, size_t size)
-{
+{    
     if (sendto(m_write_socket, packet, size,
                  0, (sockaddr*) &m_write_addr, sizeof(m_write_addr)) < 0)
     {
         perror(__PRETTY_FUNCTION__);
         return;
     }
+
+    PLAYER_TRACE1("sent packet len = %d", (int) size);
 }
 
 
@@ -238,18 +241,21 @@ void CBroadcastDevice::SendPacket(unsigned char *packet, size_t size)
 //
 size_t CBroadcastDevice::RecvPacket(unsigned char *packet, size_t size)
 {
-    PLAYER_TRACE0("reading packet");
-    
     size_t addr_len = sizeof(m_read_addr);    
     size_t packet_len = recvfrom(m_read_socket, packet, size,
                                  0, (sockaddr*) &m_read_addr, &addr_len);
-    if (packet_len < 0)
+    if ((int) packet_len < 0)
     {
-        perror(__PRETTY_FUNCTION__);
-        return 0;
+        if (errno == EAGAIN)
+            return 0;
+        else
+        {
+            perror(__PRETTY_FUNCTION__);
+            return 0;
+        }
     }
 
-    PLAYER_TRACE0("reading packet -- done");
+    PLAYER_TRACE1("read packet len = %d", (int) packet_len);
     
     return packet_len;
 }
