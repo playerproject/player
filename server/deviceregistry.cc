@@ -50,6 +50,10 @@ void GarminNMEA_Register(DriverTable* table);
 void MapFile_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_MAPCSPACE
+void MapCspace_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_AMTECPOWERCUBE
 void AmtecPowerCube_Register(DriverTable* table);
 #endif
@@ -458,6 +462,10 @@ register_devices()
 
 #ifdef INCLUDE_MAPFILE
   MapFile_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_MAPCSPACE
+  MapCspace_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_AMTECPOWERCUBE
