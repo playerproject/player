@@ -258,83 +258,93 @@ def make_text(file, section, block):
 
 
 def make_defines(file, section, blocks, index):
+    """Defined constants."""
+    
+    block = blocks[index]
 
-    maxchars = 30
-
-    file.write('\\begin{center}')
-    file.write('\\begin{footnotesize}')
-    file.write('\\begin{tabularx}{\\columnwidth}{lX}\n')
-    file.write('\\hline\n')
-    file.write('Name/Value & Meaning \\\\\n')
-    file.write('\\hline\n')
-
+    index += 1
+    item_count = 0
     while index < len(blocks):
         block = blocks[index]
     
         if block.type == 'define':
 
+            if item_count == 0:
+                file.write('\\begin{itemize}\n')
+
+            file.write('\\item[]\n')
+
+            file.write('\\begin{minipage}[t]{0.80\\columnwidth}\n')
+            line_count = 0
             for line in block.code:
                 line = string.replace(line, '_', '\\_')
-                line = string.replace(line, '#define', '')
-                if len(line) > maxchars:
-                    file.write('\\multicolumn{2}{l}{\\tt %s}\\\\\n' % line)
-                else:
-                    file.write('{\\tt %s}\\\\' % line)
-            file.write('& %s \\\\ \n' % block.desc)
-            
+                line = string.replace(line, '#', '\#')
+                line = string.strip(line)
+                if len(line) == 0:
+                    continue
+                if line_count > 0:
+                    file.write('\\\\\n')
+                file.write('{\\bf %s}\n' % line)
+                line_count += 1
+            file.write('\\end{minipage}\n')
+
+            file.write('\\begin{quote}\n')
+            file.write('%s\n' % block.desc)
+            file.write('\\end{quote}\n')
+
+            item_count += 1
             index += 1
         else:
             break
 
-    file.write('\\hline\n')
-    file.write('\\end{tabularx}\n')
-    file.write('\\end{footnotesize}')
-    file.write('\\end{center}')
+    if item_count > 0:
+        file.write('\\end{itemize}\n\n');
     return index
 
 
-def make_struct(file, section, blocks, index):
-    """Generate a class entry."""
 
-    maxchars = 30
+def make_struct(file, section, blocks, index):
+    """Generate a structure entry."""
 
     block = blocks[index]
 
-    file.write('\n\n\\vspace{1em}\\noindent \\verb+%s+ : %s' % (block.name + '_t', block.desc));
+    name = string.replace(block.name, '_', '\\_')
+    file.write('\n\n\\vspace{1em}\\noindent {\\bf struct %s} : %s\n' % (name, block.desc));
+    #file.write('\\noindent\{\\\n')
     
     index += 1
-
-    file.write('\\begin{center}')    
-    file.write('\\begin{footnotesize}')
-    file.write('\\begin{tabularx}{\\columnwidth}{lX}\n')
-    file.write('\\hline\n')
-    file.write('Type/Field & Meaning \\\\\n')
-    file.write('\\hline\n')
+    file.write('\\begin{itemize}\n')
 
     while index < len(blocks):
         block = blocks[index]
     
         if block.type == 'data':
 
-            # If the code part is long, use the multi-column format
+            file.write('\\item[]\n')
+
+            file.write('\\begin{minipage}[t]{0.80\\columnwidth}\n')
+            line_count = 0
             for line in block.code:
                 line = string.replace(line, '_', '\\_')
-                if len(line) > maxchars:
-                    file.write('\\multicolumn{2}{l}{\\tt %s}\\\\\n' % line)
-                else:
-                    file.write('{\\tt %s} ' % line)
-                    if len(block.code) > 1:
-                      file.write('\\\\')
-            file.write('& %s \\\\ \n' % block.desc)
+                line = string.strip(line)
+                if len(line) == 0:
+                    continue
+                if line_count > 0:
+                    file.write('\\\\\n')
+                file.write('{\\bf %s}\n' % line)
+                line_count += 1
+            file.write('\\end{minipage}\n')
+
+            file.write('\\begin{quote}\n')
+            file.write('%s\n' % block.desc)
+            file.write('\\end{quote}\n')
 
             index += 1
         else:
             break
 
-    file.write('\\hline\n')
-    file.write('\\end{tabularx}\n')
-    file.write('\\end{footnotesize}')
-    file.write('\\end{center}')
+    file.write('\\end{itemize}\n\n');
+    #file.write('\\noindent\}\n')
     return index
 
 
