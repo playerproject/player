@@ -15,14 +15,14 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               idarproxy.cc \
                               idarturretproxy.cc \
                               fiducialproxy.cc \
-                              srfproxy.cc \
+                              laserproxy.cc \
                               moteproxy.cc \
                               playerclient.cc \
                               playerclient.h \
                               playermulticlient.cc \
                               positionproxy.cc \
                               ptzproxy.cc \
-                              frfproxy.cc \
+                              sonarproxy.cc \
                               speechproxy.cc \
                               truthproxy.cc \
                               blobfinderproxy.cc
