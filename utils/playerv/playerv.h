@@ -42,14 +42,14 @@
 
 #define COLOR_GRID_MAJOR         0xC0C0C0
 #define COLOR_GRID_MINOR         0xE0E0E0
-#define COLOR_LASER_SCAN         0x0000C0
-#define COLOR_LBD_BEACON         0x0000C0
+#define COLOR_SRF_SCAN           0x0000C0
+#define COLOR_FIDUCIAL           0x0000C0
 #define COLOR_POSITION_ROBOT     0xC00000
 #define COLOR_POSITION_CONTROL   0xFF0000
 #define COLOR_PTZ_DATA           0x00C000
 #define COLOR_PTZ_CMD            0x00C000
-#define COLOR_SONAR              0xC0C080
-#define COLOR_SONAR_SCAN         0xC0C080
+#define COLOR_FRF                0xC0C080
+#define COLOR_FRF_SCAN           0xC0C080
 
 /***************************************************************************
  * Top-level GUI elements
@@ -93,10 +93,10 @@ int mainwnd_update(mainwnd_t *wnd);
 
 
 /***************************************************************************
- * Laser device
+ * Scanning range-finder (SRF)
  ***************************************************************************/
 
-// Laser device info
+// SRF device info
 typedef struct
 {
   // Menu stuff
@@ -104,33 +104,33 @@ typedef struct
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *res025_item, *res050_item, *res100_item;
 
-  // Figure for drawing the laser scan
+  // Figure for drawing the scan
   rtk_fig_t *scan_fig;
   
   // Laser device proxy
-  playerc_laser_t *proxy;
+  playerc_srf_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
   
-} laser_t;
+} srf_t;
 
 
-// Create a laser device
-laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+// Create a srf device
+srf_t *srf_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
 
-// Destroy a laser device
-void laser_destroy(laser_t *laser);
+// Destroy a srf device
+void srf_destroy(srf_t *srf);
 
-// Update a laser device
-void laser_update(laser_t *laser);
+// Update a srf device
+void srf_update(srf_t *srf);
 
 
 /***************************************************************************
- * LBD (laser beacon detector) device
+ * Fiducla detector
  ***************************************************************************/
 
-// LBD device info
+// Fiducial detector info
 typedef struct
 {
   // Menu stuff
@@ -138,26 +138,26 @@ typedef struct
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *bits5_item, *bits8_item;
 
-  // Figure for drawing the beacons
-  rtk_fig_t *beacon_fig;
+  // Figure for drawing the fiducials.
+  rtk_fig_t *fig;
   
-  // Lbd device proxy
-  playerc_lbd_t *proxy;
+  // Fiducial device proxy
+  playerc_fiducial_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
   
-} lbd_t;
+} fiducial_t;
 
 
-// Create a lbd device
-lbd_t *lbd_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+// Create a fiducial device
+fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
 
-// Destroy a lbd device
-void lbd_destroy(lbd_t *lbd);
+// Destroy a fiducial device
+void fiducial_destroy(fiducial_t *fiducial);
 
-// Update a lbd device
-void lbd_update(lbd_t *lbd);
+// Update a fiducial device
+void fiducial_update(fiducial_t *fiducial);
 
 
 /***************************************************************************
@@ -234,54 +234,54 @@ void ptz_update(ptz_t *ptz);
 
 
 /***************************************************************************
- * Sonar device
+ * Fixed range-finder (FRF) device
  ***************************************************************************/
 
-// Sonar device info
+// FRF device info
 typedef struct
 {
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
 
-  // Figures for drawing the sonar scan
-  rtk_fig_t *scan_fig[PLAYERC_SONAR_MAX_SCAN];
+  // Figures for drawing the frf scan
+  rtk_fig_t *scan_fig[PLAYERC_FRF_MAX_SAMPLES];
   
-  // Sonar device proxy
-  playerc_sonar_t *proxy;
+  // Frf device proxy
+  playerc_frf_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
   
-} sonar_t;
+} frf_t;
 
 
-// Create a sonar device
-sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
+// Create a frf device
+frf_t *frf_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, int index);
 
-// Destroy a sonar device
-void sonar_destroy(sonar_t *sonar);
+// Destroy a frf device
+void frf_destroy(frf_t *frf);
 
-// Update a sonar device
-void sonar_update(sonar_t *sonar);
+// Update a frf device
+void frf_update(frf_t *frf);
 
 
 /***************************************************************************
- * Vision device
+ * Blobfinder device
  ***************************************************************************/
 
-// Vision device info
+// Blobfinder device info
 typedef struct
 {
-  // Vision device proxy
-  playerc_vision_t *proxy;
+  // Blobfinder device proxy
+  playerc_blobfinder_t *proxy;
 
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *stats_item;
 
-  // Figure for drawing the vision scan
+  // Figure for drawing the blobfinder scan
   rtk_fig_t *image_fig;
   int image_init;
 
@@ -291,18 +291,18 @@ typedef struct
   // Timestamp on most recent data
   double datatime;
   
-} vision_t;
+} blobfinder_t;
 
 
-// Create a vision device
-vision_t *vision_create(mainwnd_t *mainwnd, opt_t *opt,
+// Create a blobfinder device
+blobfinder_t *blobfinder_create(mainwnd_t *mainwnd, opt_t *opt,
                         playerc_client_t *client, int index);
 
-// Destroy a vision device
-void vision_destroy(vision_t *vision);
+// Destroy a blobfinder device
+void blobfinder_destroy(blobfinder_t *blobfinder);
 
-// Update a vision device
-void vision_update(vision_t *vision);
+// Update a blobfinder device
+void blobfinder_update(blobfinder_t *blobfinder);
 
 
 

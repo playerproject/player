@@ -68,11 +68,11 @@ int main(int argc, char **argv)
 
   // Devices
   position_t *position;
-  laser_t *laser[2];
-  lbd_t *lbd[2];
+  srf_t *srf[2];
+  fiducial_t *fiducial[2];
   ptz_t *ptz;
-  sonar_t *sonar;
-  vision_t *vision;
+  frf_t *frf;
+  blobfinder_t *blobfinder;
 
   printf("PlayerViewer %s\n", VERSION);
 
@@ -119,13 +119,13 @@ int main(int argc, char **argv)
 
   // Create (but dont subscribe) devices
   position = position_create(mainwnd, opt, client, 0);
-  laser[0] = laser_create(mainwnd, opt, client, 0);
-  laser[1] = laser_create(mainwnd, opt, client, 1);
-  lbd[0] = lbd_create(mainwnd, opt, client, 0);
-  lbd[1] = lbd_create(mainwnd, opt, client, 1);
+  srf[0] = srf_create(mainwnd, opt, client, 0);
+  srf[1] = srf_create(mainwnd, opt, client, 1);
+  fiducial[0] = fiducial_create(mainwnd, opt, client, 0);
+  fiducial[1] = fiducial_create(mainwnd, opt, client, 1);
   ptz = ptz_create(mainwnd, opt, client, 0);
-  sonar = sonar_create(mainwnd, opt, client, 0);
-  vision = vision_create(mainwnd, opt, client, 0);
+  frf = frf_create(mainwnd, opt, client, 0);
+  blobfinder = blobfinder_create(mainwnd, opt, client, 0);
   
   // Print out a list of unused options.
   opt_warn_unused(opt);
@@ -146,26 +146,26 @@ int main(int argc, char **argv)
 
     // Update devices
     position_update(position);
-    laser_update(laser[0]);
-    laser_update(laser[1]);
-    lbd_update(lbd[0]);
-    lbd_update(lbd[1]);
+    srf_update(srf[0]);
+    srf_update(srf[1]);
+    fiducial_update(fiducial[0]);
+    fiducial_update(fiducial[1]);
     ptz_update(ptz);
-    sonar_update(sonar);
-    vision_update(vision);
+    frf_update(frf);
+    blobfinder_update(blobfinder);
   }
   
   // Stop the gui
   rtk_app_stop(app);
 
   // Destroy devices
-  vision_destroy(vision);
-  sonar_destroy(sonar);
+  blobfinder_destroy(blobfinder);
+  frf_destroy(frf);
   ptz_destroy(ptz);
-  lbd_destroy(lbd[1]);
-  lbd_destroy(lbd[0]);
-  laser_destroy(laser[1]);
-  laser_destroy(laser[0]);
+  fiducial_destroy(fiducial[1]);
+  fiducial_destroy(fiducial[0]);
+  srf_destroy(srf[1]);
+  srf_destroy(srf[0]);
   position_destroy(position);
 
   // Destroy the windows

@@ -2,18 +2,18 @@ AM_CPPFLAGS = -DINCLUDE_GUI -I$(top_srcdir)/rtk2 -I$(top_srcdir)/client_libs/lib
 
 bin_PROGRAMS = playerv
 
-playerv_SOURCES = dev_laser.c \
-                  dev_lbd.c \
+playerv_SOURCES = playerv.c \
+                  playerv.h \
+                  mainwnd.c \
+                  dev_blobfinder.c \
+                  dev_fiducial.c \
+                  dev_frf.c \
                   dev_position.c \
                   dev_ptz.c \
-                  dev_sonar.c \
-                  dev_vision.c \
+									dev_srf.c \
                   error.h \
-                  mainwnd.c \
                   opt.c \
-                  opt.h \
-                  playerv.c \
-                  playerv.h
+                  opt.h
 
 playerv_LDADD = -L$(top_builddir)/rtk2 -L$(top_builddir)/client_libs/libplayerc -lrtk -lplayerc 
 playerv_LDFLAGS = `gtk-config --libs gtk gthread`
