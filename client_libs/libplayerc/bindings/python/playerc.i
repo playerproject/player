@@ -91,6 +91,11 @@
   $result = PyInt_FromLong((long) (unsigned long) $1);
 }
 
+%typemap(out) uint32_t
+{
+  $result = PyInt_FromLong((long) (unsigned long long) $1);
+}
+
 // Provide array access
 %typemap(out) double [ANY] 
 {
