@@ -332,6 +332,14 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
   this->startup_delay = cf->ReadInt(section, "delay", 0);
   this->scan_width = 180;
   this->scan_res = cf->ReadInt(section, "resolution", 50);
+  if((this->scan_res != 25) && 
+     (this->scan_res != 50) && 
+     (this->scan_res != 100))
+  {
+    PLAYER_ERROR1("Invalid angular resolution %d. Defaulting to 50 (0.5 degree)", 
+                  this->scan_res);
+    this->scan_res = 50;
+  }
   this->min_angle = -9000;
   this->max_angle = +9000;
   this->scan_min_segment = 0;
