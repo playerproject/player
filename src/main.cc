@@ -579,6 +579,9 @@ int main( int argc, char *argv[] )
     }
   }
 
+  // This argv shit apparently segfaults on Linux 2.2. Fuck it.
+  //
+  /*
   // get rid of our argv copy
   for(int i = 0;i<argc;i++)
     free(new_argv[i]);
@@ -597,6 +600,7 @@ int main( int argc, char *argv[] )
   if(len<(int)sizeof(buffer))
     argv[0] = (char*)realloc(argv[0],sizeof(buffer));
   strcpy(argv[0],buffer);
+  */
 
   puts( "" ); // newline, flush
   

@@ -27,6 +27,7 @@
  */
 
 #include "clientmanager.h"
+#include <errno.h>
 #include <string.h>  // for memcpy(3)
 #include <stdlib.h>  // for exit(3)
 #include <signal.h>  // for sigblock(2)
@@ -63,7 +64,8 @@ ClientManager::ClientManager()
   }
   bzero(ufds,sizeof(struct pollfd)*initial_size);
 
-  pthread_mutex_init(&client_mutex,NULL);
+  pthread_mutex_init(&rthread_client_mutex,NULL);
+  pthread_mutex_init(&wthread_client_mutex,NULL);
   pthread_mutex_init(&ufd_mutex,NULL);
 
   // start the reader thread
@@ -85,15 +87,23 @@ ClientManager::ClientManager()
 ClientManager::~ClientManager()
 {
   pthread_cancel(readthread);
+  pthread_cancel(writethread);
   
   // tear down dynamic structures here
   if(clients)
+  {
+    for(int i=0;i<num_clients;i++)
+    {
+      if(clients[i])
+      {
+        //printf("deleting client %d (sock %d)\n", i, clients[i]->socket);
+        delete clients[i];
+      }
+    }
     delete clients;
+  }
   if(ufds)
     delete ufds;
-
-  pthread_mutex_destroy(&client_mutex);
-  pthread_mutex_destroy(&ufd_mutex);
 }
 
 // add a client to our watch list
@@ -103,7 +113,8 @@ void ClientManager::AddClient(CClientData* client)
     return;
 
   pthread_mutex_lock(&ufd_mutex);
-  pthread_mutex_lock(&client_mutex);
+  pthread_mutex_lock(&rthread_client_mutex);
+  pthread_mutex_lock(&wthread_client_mutex);
 
   // First, add it to the array of clients
 
@@ -168,48 +179,54 @@ void ClientManager::AddClient(CClientData* client)
     
   if(client->WriteIdentString() == -1)
   {
-    RemoveClient(num_clients-1);
-    RemoveBlanks();
+    RemoveClient(num_clients-1,true,true);
+    RemoveBlanks(true,true);
   }
-  pthread_mutex_unlock(&client_mutex);
+  pthread_mutex_unlock(&wthread_client_mutex);
+  pthread_mutex_unlock(&rthread_client_mutex);
   pthread_mutex_unlock(&ufd_mutex);
 }
     
 // remove a client
-void ClientManager::RemoveClient(int idx)
+void ClientManager::RemoveClient(int idx, bool have_rlock, bool have_wlock)
 {
-  if(clients[idx])
-  {
-    delete clients[idx];
-    clients[idx] = (CClientData*)NULL;
-  }
+  if(!have_rlock)
+    pthread_mutex_lock(&rthread_client_mutex);
+  if(!have_wlock)
+    pthread_mutex_lock(&wthread_client_mutex);
 
-  if(ufds[idx].events)
-  {
-    ufds[idx].fd = -1;
-    ufds[idx].events = 0;
-  }
+  delete clients[idx];
+  clients[idx] = (CClientData*)NULL;
+
+  ufds[idx].fd = -1;
+  ufds[idx].events = 0;
+
+  if(!have_wlock)
+    pthread_mutex_unlock(&wthread_client_mutex);
+  if(!have_rlock)
+    pthread_mutex_unlock(&rthread_client_mutex);
 }
 
 // shift the clients and ufds down so that they're contiguous
-void ClientManager::RemoveBlanks()
+void ClientManager::RemoveBlanks(bool have_rlock, bool have_wlock)
 {
   int i,j;
 
-  /*
-  static int count = 0;
-  count++;
-  if(!(count % 10))
-  {
-    puts("RemoveBlanks()");
-    printf("num:%d\n", num_clients);
-    for(i=0;i<8;i++)
-      printf("clients[%d]: %d\n", i, clients[i]);
-  }
-  */
-
   if(!num_clients)
     return;
+
+  if(!have_rlock)
+  {
+    //printf("%d RemoveBlanks locking rthread_client_mutex\n",pthread_self());
+    pthread_mutex_lock(&rthread_client_mutex);
+  }
+  if(!have_wlock)
+  {
+    //printf("%d RemoveBlanks locking wthread_client_mutex\n",pthread_self());
+    pthread_mutex_lock(&wthread_client_mutex);
+  }
+  //puts("done");
+
   for(i=0;i<num_clients;)
   {
     if(!clients[i])
@@ -241,14 +258,16 @@ void ClientManager::RemoveBlanks()
 
   num_clients = i;
 
-  /*
-  if(!(count % 10))
+  if(!have_wlock)
   {
-    printf("num:%d\n", num_clients);
-    for(i=0;i<8;i++)
-      printf("clients[%d]: %d\n", i, clients[i]);
+    //printf("%d RemoveBlanks UNlocking wthread_client_mutex\n", pthread_self());
+    pthread_mutex_unlock(&wthread_client_mutex);
   }
-  */
+  if(!have_rlock)
+  {
+    //printf("%d RemoveBlanks UNlocking rthread_client_mutex\n", pthread_self());
+    pthread_mutex_unlock(&rthread_client_mutex);
+  }
 }
 
 // get the index corresponding to a CClientData pointer
@@ -277,13 +296,16 @@ int ClientManager::Read()
 
   if((num_to_read = poll(ufds,num_clients,100)) == -1)
   {
-    perror("ClientManager::Read(): poll(2) failed:");
-    pthread_mutex_unlock(&ufd_mutex);
-    return(-1);
+    if(errno != EINTR)
+    {
+      perror("ClientManager::Read(): poll(2) failed:");
+      pthread_mutex_unlock(&ufd_mutex);
+      return(-1);
+    }
   }
 
 
-  pthread_mutex_lock(&client_mutex);
+  pthread_mutex_lock(&rthread_client_mutex);
   //if(num_to_read)
     //printf("%d to read\n", num_to_read);
   //printf("EVENTS: %d\n", num_to_read);
@@ -294,22 +316,31 @@ int ClientManager::Read()
     if(ufds[i].revents & POLLIN)
     {
       num_to_read--;
+      // maybe it was just deleted?
+      if(!clients[i])
+        continue;
       //printf("reading from: %d 0x%x\n", i,ufds[i].events);
       if((clients[i]->Read()) == -1)
       {
         // read(2) must have errored. client is probably gone
-        RemoveClient(i);
+        pthread_mutex_unlock(&rthread_client_mutex);
+        RemoveClient(i,false,false);
+        pthread_mutex_lock(&rthread_client_mutex);
       }
     }
     else if(ufds[i].revents)
     {
-      printf("ClientManager::Read() got strange revent 0x%x for "
-             "client %d\n", ufds[i].revents,i);
+      if(!(ufds[i].revents & POLLHUP))
+        printf("ClientManager::Read() got strange revent 0x%x for "
+               "client %d; killing it\n", ufds[i].revents,i);
+      pthread_mutex_unlock(&rthread_client_mutex);
+      RemoveClient(i,false,false);
+      pthread_mutex_lock(&rthread_client_mutex);
     }
   }
-  RemoveBlanks();
 
-  pthread_mutex_unlock(&client_mutex);
+  pthread_mutex_unlock(&rthread_client_mutex);
+  RemoveBlanks(false,false);
   pthread_mutex_unlock(&ufd_mutex);
   return(0);
 }
@@ -367,8 +398,8 @@ ClientWriterThread(void* arg)
     // we just get the scheduler delay of 10ms?).  usleep(1) sleeps for an 
     // average of 20ms (timer resolution of 10ms plus scheduler delay of 10ms?)
     //
-    usleep(1);
-    //usleep(0);
+    //usleep(1);
+    usleep(0);
 
     // to be REALLY fancy, you could do nanosleep(), but it's a bit dangerous
     //nanosleep(&ts,NULL);
@@ -378,10 +409,13 @@ ClientWriterThread(void* arg)
     //lasttime = curr.tv_sec + curr.tv_usec / 1000000.0;
 
     // lock access to the array of clients
-    pthread_mutex_lock(&(cr->client_mutex));
+    pthread_mutex_lock(&(cr->wthread_client_mutex));
 
     for(int i=0;i<cr->num_clients;i++)
     {
+      // maybe it's just been deleted?
+      if(!cr->clients[i])
+        continue;
       // lock access to the client's internal state
       pthread_mutex_lock(&(cr->clients[i]->access));
       if(cr->clients[i]->auth_pending)
@@ -399,9 +433,12 @@ ClientWriterThread(void* arg)
           if(cr->clients[i]->Write() == -1)
           {
             // write must have errored. dump it
-            cr->RemoveClient(i);
+            pthread_mutex_unlock(&(cr->wthread_client_mutex));
+            cr->RemoveClient(i,false,false);
+            pthread_mutex_lock(&(cr->wthread_client_mutex));
           }
-          cr->clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
+          else
+            cr->clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
         }
       }
       else if(cr->clients[i]->mode == REQUESTREPLY && 
@@ -411,13 +448,16 @@ ClientWriterThread(void* arg)
         if(cr->clients[i]->Write() == -1)
         {
           // write must have errored. dump it
-          cr->RemoveClient(i);
+          pthread_mutex_unlock(&(cr->wthread_client_mutex));
+          cr->RemoveClient(i,false,false);
+          pthread_mutex_lock(&(cr->wthread_client_mutex));
         }
       }
-      pthread_mutex_unlock(&(cr->clients[i]->access));
+      if(cr->clients[i])
+        pthread_mutex_unlock(&(cr->clients[i]->access));
     }
-    cr->RemoveBlanks();
-    pthread_mutex_unlock(&(cr->client_mutex));
+    pthread_mutex_unlock(&(cr->wthread_client_mutex));
+    cr->RemoveBlanks(false,false);
   }
 }
 

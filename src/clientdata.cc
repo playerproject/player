@@ -397,9 +397,9 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     pthread_mutex_lock(&socketwrite);
     if(write(socket, replybuffer, payload_size+sizeof(player_msghdr_t)) < 0) 
     {
-      if(errno != EAGAIN)
+      if(errno != EAGAIN && errno != EINTR)
       {
-        perror("HandleRequests");
+        perror("HandleRequests: write()");
         pthread_mutex_unlock(&socketwrite);
         return(-1);
       }
@@ -423,8 +423,6 @@ CClientData::~CClientData()
 
   usleep(100000);
 
-  pthread_mutex_lock( &access );
-
   if (socket) close(socket);
   printf("** Player [port %d] killing client on socket %d **\n", 
 	 global_playerport, socket);
@@ -437,14 +435,10 @@ CClientData::~CClientData()
 
   if(replybuffer)
     delete replybuffer;
-
-  pthread_mutex_destroy( &access );
-  pthread_mutex_destroy( &socketwrite );
 }
 
 void CClientData::RemoveRequests() 
 {
-  pthread_mutex_lock( &access );
   CDeviceSubscription* thissub = requested;
   CDeviceSubscription* tmpsub;
 
@@ -470,7 +464,6 @@ void CClientData::RemoveRequests()
     thissub = tmpsub;
   }
   requested = NULL;
-  pthread_mutex_unlock( &access );
 }
 
 void CClientData::MotorStop() 
@@ -691,12 +684,14 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
           }
 
           hdr.size = htonl(size);
-          memcpy(data+totalsize,&hdr,sizeof(hdr));
-          totalsize += sizeof(hdr) + size; 
 
           gettimeofday(&curr,NULL);
           hdr.time_sec = htonl(curr.tv_sec);
           hdr.time_usec = htonl(curr.tv_usec);
+
+          memcpy(data+totalsize,&hdr,sizeof(hdr));
+          totalsize += sizeof(hdr) + size; 
+
         }
         else
         {
@@ -779,12 +774,12 @@ int CClientData::Read()
     //printf("read %d bytes; reading now\n", readcnt);
     if(read(socket,&c,1) <= 0)
     {
-      if(errno == EAGAIN)
+      if(errno == EAGAIN || errno == EINTR)
         return(0);
       else
       {
         // client must be gone. fuck 'em
-        //perror("client_reader(): read() while waiting for STX");
+        perror("client_reader(): read() while waiting for STX");
         return(-1);
       }
     }
@@ -795,12 +790,12 @@ int CClientData::Read()
 
     if(read(socket,&c,1) <= 0)
     {
-      if(errno == EAGAIN)
+      if(errno == EAGAIN || errno == EINTR)
         return(0);
       else
       {
         // client must be gone. fuck 'em
-        //perror("client_reader(): read() while waiting for STX");
+        perror("client_reader(): read() while waiting for STX");
         return(-1);
       }
     }
@@ -820,11 +815,11 @@ int CClientData::Read()
     if((thisreadcnt = read(socket, &(hdr.type), 
                            sizeof(player_msghdr_t)-readcnt)) <= 0)
     {
-      if(errno == EAGAIN)
+      if(errno == EAGAIN || errno == EINTR)
         return(0);
       else
       {
-        //perror("client_reader(): read() while reading header");
+        perror("client_reader(): read() while reading header");
         return(-1);
       }
     }
@@ -857,7 +852,7 @@ int CClientData::Read()
   {
     if((thisreadcnt = read(socket,readbuffer+readcnt,hdr.size-readcnt)) <= 0)
     {
-      if(thisreadcnt < 0 && errno != EAGAIN)
+      if(thisreadcnt < 0 && errno != EAGAIN && errno != EINTR)
       {
         perror("CClientData::Read(): read() errored");
         return(-1);
@@ -889,7 +884,7 @@ CClientData::WriteIdentString()
   pthread_mutex_lock(&socketwrite);
   if(write(socket, data, PLAYER_IDENT_STRLEN) < 0 ) 
   {
-    if(errno != EAGAIN)
+    if(errno != EAGAIN && errno != EINTR)
     {
       perror("ClientManager::Write():write()");
       pthread_mutex_unlock(&socketwrite);
@@ -910,7 +905,7 @@ CClientData::Write()
   pthread_mutex_lock(&socketwrite);
   if(size>0 && write(socket, writebuffer, size) < 0 ) 
   {
-    if(errno != EAGAIN)
+    if(errno != EAGAIN && errno != EINTR)
     {
       perror("CClientData::Write: write()");
       pthread_mutex_unlock(&socketwrite);
