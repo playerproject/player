@@ -29,6 +29,8 @@
  *
  * NMEA and proprietary Garmin codes can be found at
  * http://home.mira.net/~gnb/gps/nmea.html
+ *
+ * Authors: Brian Gerkey, Andrew Howard
  */
 
 
@@ -123,12 +125,17 @@ class GarminNMEA:public CDevice
 
     // file descriptor for the DGPS UDP socket
     int dgps_fd;
-
+    bool gps_fd_blocking;
+  
     char nmea_buf[NMEA_MAX_SENTENCE_LEN+1];
     size_t nmea_buf_len;
 
-    bool gps_fd_blocking;
-
+    // Filtered GPS geodetic coords; for outlier rejection
+    double filter_a, filter_thresh;
+    double filter_lat, filter_lon;
+    bool filter_good;
+  
+    // Current GPS data packet
     player_gps_data_t data;
 
     int SetupSerial();
@@ -195,6 +202,11 @@ GarminNMEA::GarminNMEA(char* interface, ConfigFile* cf, int section) :
 
   gps_serial_port = cf->ReadString(section, "port", DEFAULT_GPS_PORT);
 
+  filter_a = 0.80;
+  filter_thresh = 1.0;
+  filter_lat = 0;
+  filter_lon = 0;
+  
   dgps_group = cf->ReadString(section, "dgsp_group", DEFAULT_DGPS_GROUP);
   dgps_port = cf->ReadInt(section, "dgps_port", DEFAULT_DGPS_PORT);
 
@@ -534,7 +546,7 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
     if(oursum != chksum)
     {
       PLAYER_WARN2("checksum mismatch (0x%2x != 0x%2x); discarding sentence",
-        oursum, chksum);
+                   oursum, chksum);
       buf=NULL;
     }
     else
@@ -545,7 +557,8 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
   }
   else
   {
-    //PLAYER_WARN("no checksum");
+    PLAYER_WARN1("no checksum: [%s]", buf);
+    buf = NULL;
   }
 
   memmove(nmea_buf,ptr+1,strlen(ptr));
@@ -703,7 +716,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   double lat, lon;
   double utm_e, utm_n;
   
-  printf("got GGA (%s)\n", buf);
+  //printf("got GGA (%s)\n", buf);
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
@@ -787,15 +800,35 @@ int GarminNMEA::ParseGPGGA(const char *buf)
 
   // fields 13 and 14 are for DGPS. ignore them.
 
-  // Compute the UTM coordindates
-  UTM(lat, lon, &utm_e, &utm_n);
 
-  printf("utm: %.3f %.3f\n", utm_e, utm_n);
+  // Update the filtered lat/lon, and see if the new values are any
+  // good
+  filter_lat = filter_a * lat + (1 - filter_a) * filter_lat;
+  filter_lon = filter_a * lon + (1 - filter_a) * filter_lon;
+
+  // Reject outliers
+  filter_good = true;
+  if (fabs(lat - filter_lat) > filter_thresh)
+    filter_good = false;
+  if (fabs(lon - filter_lon) > filter_thresh)
+    filter_good = false;
+
+  if (!filter_good)
+    PLAYER_WARN4("rejected: %f %f (should be %f %f)\n", lat, lon, filter_lat, filter_lon);
   
-  data.utm_e = htonl((int32_t) rint(utm_e * 100));
-  data.utm_n = htonl((int32_t) rint(utm_n * 100));
-    
-  PutData(&data,sizeof(player_gps_data_t),0,0);
+  // Compute the UTM coordindates
+  if (filter_good)
+  {
+    UTM(lat, lon, &utm_e, &utm_n);
+
+    //printf("utm: %.3f %.3f\n", utm_e, utm_n);
+  
+    data.utm_e = htonl((int32_t) rint(utm_e * 100));
+    data.utm_n = htonl((int32_t) rint(utm_n * 100));
+  }
+
+  if (filter_good)
+    PutData(&data,sizeof(player_gps_data_t),0,0);
 
   return 0;
 }
@@ -812,7 +845,7 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   struct tm tms;
   time_t utc;
   
-  printf("got RMC (%s)\n", buf);
+  //printf("got RMC (%s)\n", buf);
 
   memset(&tms, 0, sizeof(tms));
       
@@ -884,8 +917,9 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   
   data.time_sec = htonl((uint32_t) utc);
   data.time_usec = htonl((uint32_t) 0);
-  
-  PutData(&data,sizeof(player_gps_data_t),0,0);
+
+  if (filter_good)
+    PutData(&data,sizeof(player_gps_data_t),0,0);
 
   return 0;
 }
@@ -901,7 +935,7 @@ int GarminNMEA::ParsePGRME(const char *buf)
   char field[32];
   double err;
   
-  printf("got PGRME (%s)\n", buf);
+  //printf("got PGRME (%s)\n", buf);
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);

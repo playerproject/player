@@ -40,24 +40,32 @@ int test_position3d(playerc_client_t *client, int index)
   {
     TEST1("reading data (attempt %d)", t);
 
-    do
+    while (1)
+    {
       rdevice = playerc_client_read(client);
-    while (rdevice == client);
 
-    if (rdevice == device)
-    {
-      PASS();
-      printf("position3d: [%14.3f] [%+7.3f %+7.3f %+7.3f] [%+7.3f %+7.3f %+7.3f] [%d]\n",
-             device->info.datatime,
-             device->pos_x, device->pos_y, device->pos_z,
-             device->pos_roll * 180/M_PI, device->pos_pitch * 180/M_PI, device->pos_yaw * 180/M_PI,
-             device->stall);
-    }
-    else
-    {
-      //printf("error: %s", playerc_error_str());
-      FAIL();
-      break;
+      if (rdevice == client)
+      {
+        printf("sync\n");
+        break;
+      }
+
+      if (rdevice == device)
+      {
+        PASS();
+        printf("position3d: [%14.3f] [%+7.3f %+7.3f %+7.3f] [%+7.3f %+7.3f %+7.3f]\n",
+               device->info.datatime,
+               device->pos_x, device->pos_y, device->pos_z,
+               device->pos_roll * 180/M_PI,
+               device->pos_pitch * 180/M_PI,
+               device->pos_yaw * 180/M_PI);
+      }
+      else
+      {
+        //printf("error: %s", playerc_error_str());
+        FAIL();
+        break;
+      }
     }
   }
   
