@@ -133,8 +133,14 @@ static PyObject *laser_getattr(PyObject *self, char *attrname)
   else if (strcmp(attrname, "scan_str") == 0)
   {
     // Return the laser scan as a string (good for compact storage)
-    result = PyString_FromStringAndSize(laserob->laser->scan,
+    result = PyString_FromStringAndSize((void*) laserob->laser->scan,
                                         laserob->laser->scan_count * sizeof(laserob->laser->scan[0]));
+  }
+  else if (strcmp(attrname, "intensity_str") == 0)
+  {
+    // Return the laser intensities as a string (good for compact storage)
+    result = PyString_FromStringAndSize((void*) laserob->laser->intensity,
+                                        laserob->laser->scan_count * sizeof(laserob->laser->intensity[0]));
   }
   else
     result = Py_FindMethod(laser_methods, self, attrname);

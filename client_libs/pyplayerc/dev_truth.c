@@ -125,9 +125,13 @@ static PyObject *truth_str(PyObject *self)
   pytruth = (truth_object_t*) self;
 
   snprintf(str, sizeof(str),
-           "truth %02d %013.3f",
+           "truth %02d %013.3f"
+           " %+07.3f %+07.3f %+04.3f",
            pytruth->truth->info.index,
-           pytruth->truth->info.datatime);
+           pytruth->truth->info.datatime,
+           pytruth->truth->px,
+           pytruth->truth->py,
+           pytruth->truth->pa);
   return PyString_FromString(str);
 }
 
