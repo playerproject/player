@@ -46,7 +46,7 @@ int SpeechProxy::Say(char* str)
   if(str)
     strncpy((char*)(cmd.string),str,PLAYER_SPEECH_MAX_STRING_LEN);
 
-  return(client->Write(PLAYER_SPEECH_CODE,index,
+  return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
 }
 

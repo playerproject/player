@@ -138,7 +138,7 @@ int CDevice::PutReply(player_device_id_t* device, void* client,
   {
     // stick a dummy device code on it; when the server calls GetReply,
     // it will know what to do
-    id.code = id.index = id.port = 0;
+    id.code = id.index = id.robot = 0;
   }
   else
     id = *device;

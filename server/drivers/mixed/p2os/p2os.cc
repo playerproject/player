@@ -629,7 +629,7 @@ P2OS::Main()
   int last_position_subscrcount;
 
   player_device_id_t id;
-  id.port = global_playerport;
+  id.robot = global_playerport;
   id.index = 0;
 
   id.code = PLAYER_SONAR_CODE;

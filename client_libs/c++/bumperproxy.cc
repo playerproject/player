@@ -58,7 +58,7 @@ BumperProxy::GetBumperGeom( player_bumper_geom_t* bumper_geom )
 
   bumper_geom->subtype = PLAYER_BUMPER_GET_GEOM_REQ;
 
-  if((client->Request(PLAYER_BUMPER_CODE,index,(const char*)bumper_geom,
+  if((client->Request(m_device_id,(const char*)bumper_geom,
                       sizeof(bumper_geom->subtype), &hdr, (char*)bumper_geom, 
                       sizeof(*bumper_geom)) < 0) ||
      (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
@@ -110,7 +110,8 @@ BumperProxy::FillData(player_msghdr_t hdr, const char *buffer)
 void 
 BumperProxy::Print()
 {
-  printf("#Bumper(%d:%d) - %c\n", device, index, access);
+  printf("#Bumper(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code, 
+         m_device_id.index, access);
   printf("%d\n", bumper_count);
   for (int i = min(bumper_count, PLAYER_BUMPER_MAX_SAMPLES); i >= 0; i--)
     putchar((bumpers[i]) ? '1' : '0');

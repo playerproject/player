@@ -193,7 +193,8 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   else
   {
     player_device_id_t id;
-    id.port = port;
+    //id.port = port;
+    id.robot = hdr.robot;
     id.code = hdr.device;
     id.index = hdr.device_index;
 
@@ -247,8 +248,9 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                 break;
               }
               req = *((player_device_req_t*)payload);
-              req.code = ntohs(req.code);
-              req.index = ntohs(req.index);
+              req.id.robot = ntohs(req.id.robot);
+              req.id.code = ntohs(req.id.code);
+              req.id.index = ntohs(req.id.index);
               UpdateRequested(req);
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
@@ -411,9 +413,10 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   {
     reply_hdr.stx = htons(PLAYER_STXX);
     reply_hdr.type = htons(requesttype);
+    reply_hdr.robot = 0;
     reply_hdr.device = htons(hdr.device);
     reply_hdr.device_index = htons(hdr.device_index);
-    reply_hdr.reserved = (uint32_t)0;
+    reply_hdr.reserved = 0;
 
     /* if it was a player device list request... */
     if(devlistrequest)
@@ -432,13 +435,15 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     else if(devicerequest)
     {
       resp.subtype = ((player_device_req_t*)payload)->subtype;
-      resp.code = ((player_device_req_t*)payload)->code;
-      resp.index = ((player_device_req_t*)payload)->index;
+      resp.id.code = ((player_device_req_t*)payload)->id.code;
+      resp.id.index = ((player_device_req_t*)payload)->id.index;
+      resp.id.robot = ((player_device_req_t*)payload)->id.robot;
 
       player_device_id_t id;
-      id.port = port; 
-      id.code = ntohs(resp.code);
-      id.index = ntohs(resp.index);
+      //id.port = port; 
+      id.robot = ntohs(resp.id.robot);
+      id.code = ntohs(resp.id.code);
+      id.index = ntohs(resp.id.index);
       resp.access = FindPermission(id);
 
       bzero(resp.driver_name, sizeof(resp.driver_name));
@@ -545,7 +550,8 @@ void CClientData::MotorStop()
   CDevice* devicep;
   player_device_id_t id;
 
-  id.port = port;
+  // TODO: fix this for single-port action
+  id.robot = port;
   id.code = PLAYER_POSITION_CODE;
   id.index = 0;
 
@@ -573,13 +579,13 @@ void CClientData::HandleListRequest(player_device_devlist_t *req,
        entry = deviceTable->GetNextEntry(entry))
   {
     assert(rep->device_count < ARRAYSIZE(rep->devices));
-    if (entry->id.port == port)
-    {
+    //if (entry->id.port == port)
+    //{
       rep->devices[rep->device_count].code = htons(entry->id.code);
       rep->devices[rep->device_count].index = htons(entry->id.index);
-      rep->devices[rep->device_count].port = htons(entry->id.port);
+      rep->devices[rep->device_count].robot = htons(entry->id.robot);
       rep->device_count++;
-    }
+    //}
   }
 
   // Do some byte swapping.
@@ -599,7 +605,7 @@ void CClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
 
   id.code = ntohs(req->id.code);
   id.index = ntohs(req->id.index);
-  id.port = ntohs(req->id.port);
+  id.robot = ntohs(req->id.robot);
 
   driver_name = deviceTable->GetDriver(id);
   if (driver_name)
@@ -610,7 +616,7 @@ void CClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
   rep->subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
   req->id.code = req->id.code;
   req->id.index = req->id.index;
-  req->id.port = req->id.port;
+  req->id.robot = req->id.robot;
   return;
 }
 
@@ -624,16 +630,19 @@ void CClientData::UpdateRequested(player_device_req_t req)
   for(thisub=requested,prevsub=NULL;thisub;
       prevsub=thisub,thisub=thisub->next)
   {
-    if((thisub->id.code == req.code) && (thisub->id.index == req.index))
+    if((thisub->id.code == req.id.code) && 
+       (thisub->id.index == req.id.index) &&
+       (thisub->id.robot == req.id.robot))
       break;
   }
 
   if(!thisub)
   {
     thisub = new CDeviceSubscription;
-    thisub->id.code = req.code;
-    thisub->id.index = req.index;
-    thisub->id.port = port;
+    thisub->id.code = req.id.code;
+    thisub->id.index = req.id.index;
+    //thisub->id.port = port;
+    thisub->id.robot = req.id.robot;
     thisub->devicep = deviceTable->GetDevice(thisub->id);
 
     thisub->last_sec = 0; // init the freshness timer
@@ -693,7 +702,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
         break;
       case PLAYER_CLOSE_MODE:
       case PLAYER_ERROR_MODE:
-        printf("Device \"%x:%x\" already closed\n", req.code,req.index);
+        printf("Device \"%x:%x\" already closed\n", req.id.code,req.id.index);
         break;
       default:
         printf("Unknown access permission \"%c\"\n", req.access);
@@ -735,7 +744,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
     printf("The current access is \"%x:%x:%c\". ",
                     thisub->id.code, thisub->id.index, thisub->access);
     printf("Unknown unused request \"%x:%x:%c\".\n",
-                    req.code, req.index, req.access);
+                    req.id.code, req.id.index, req.access);
   }
 }
 
@@ -745,7 +754,9 @@ CClientData::FindPermission(player_device_id_t id)
   unsigned char tmpaccess;
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
-    if((thisub->id.code == id.code) && (thisub->id.index == id.index))
+    if((thisub->id.code == id.code) && 
+       (thisub->id.index == id.index) &&
+       (thisub->id.robot == id.robot))
     {
       tmpaccess = thisub->access;
       return(tmpaccess);
@@ -814,6 +825,7 @@ int CClientData::BuildMsg()
         {
           numdata--;
 
+          hdr.robot = htons(thisub->id.robot);
           hdr.device = htons(thisub->id.code);
           hdr.device_index = htons(thisub->id.index);
           hdr.reserved = 0;
@@ -881,6 +893,7 @@ int CClientData::BuildMsg()
   // now add a zero-length SYNCH packet to the end of the buffer
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
+  hdr.robot = 0;
   hdr.device = htons(PLAYER_PLAYER_CODE);
   hdr.device_index = htons(0);
   hdr.reserved = 0;
@@ -1030,6 +1043,7 @@ int CClientData::Read()
       {
         // byte-swap as necessary
         hdrbuffer.type = ntohs(hdrbuffer.type);
+        hdrbuffer.robot = ntohs(hdrbuffer.robot);
         hdrbuffer.device = ntohs(hdrbuffer.device);
         hdrbuffer.device_index = ntohs(hdrbuffer.device_index);
         hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);

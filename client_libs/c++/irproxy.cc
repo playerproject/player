@@ -71,7 +71,7 @@ IRProxy::SetIRState(unsigned char state)
   req.subtype = PLAYER_IR_POWER_REQ;
   req.state = state;
 
-  return client->Request(PLAYER_IR_CODE, index, 
+  return client->Request(m_device_id,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -92,7 +92,7 @@ IRProxy::GetIRPose()
 
   req.subtype = PLAYER_IR_POSE_REQ;
   
-  if ((client->Request(PLAYER_IR_CODE, index, (const char *)&req,
+  if ((client->Request(m_device_id, (const char *)&req,
 		       sizeof(req), &hdr, (char *)&ir_pose,
 		       sizeof(ir_pose)) < 0) ||
       hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
@@ -200,7 +200,8 @@ IRProxy::CalcStdDev(int w, unsigned  short range)
 void
 IRProxy::Print()
 {
-  printf("#REB IR(%d:%d) - %c\n", device, index, access);
+  printf("#REB IR(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+         m_device_id.index, access);
   for (int i = 0;i < PLAYER_IR_MAX_SAMPLES; i++) {
     printf("IR%d:\tR=%d\tV=%d\tSTD=%g\n", i, ranges[i], voltages[i], 
 	   stddev[i]);

@@ -46,7 +46,7 @@ int PtzProxy::SetCam(short pan, short tilt, short zoom)
   cmd.tilt = htons(tilt);
   cmd.zoom = htons(zoom);
 
-  return(client->Write(PLAYER_PTZ_CODE,index,
+  return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
 }
 
@@ -68,7 +68,8 @@ void PtzProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void PtzProxy::Print()
 {
-  printf("#Ptz(%d:%d) - %c\n", device, index, access);
+  printf("#Ptz(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+         m_device_id.index, access);
   puts("#pan\ttilt\tzoom");
   printf("%d\t%d\t%u\n", pan,tilt,zoom);
 }

@@ -140,6 +140,7 @@ int PlayerClient::Connect(const struct in_addr* addr, int port)
     memcpy(&this->hostaddr, addr, sizeof(struct in_addr));
     this->port = port;
     this->hostname[0] = 0; // nullify the string
+    conn.port = 6667;
 
     return(0);
   }
@@ -209,7 +210,11 @@ int PlayerClient::Read()
         this->timestamp.tv_usec = hdr.timestamp_usec;
       }
 
-      if(!(thisproxy = GetProxy(hdr.device,hdr.device_index)))
+      player_device_id_t id;
+      id.robot=hdr.robot;
+      id.code=hdr.device;
+      id.index=hdr.device_index;
+      if(!(thisproxy = GetProxy(id)))
       {
         if(player_debug_level(-1) >= 3)
           fprintf(stderr,"WARNING: read unexpected data for device %d:%d\n",
@@ -257,20 +262,19 @@ int PlayerClient::Read()
 //    0 if everything went OK
 //   -1 if something went wrong (you should probably close the connection!)
 //
-int PlayerClient::Write(unsigned short device, unsigned short index,
+int PlayerClient::Write(player_device_id_t device_id,
           const char* command, size_t commandlen)
 {
   if(!Connected())
     return(-1);
 
   if(!GetReserved())
-    return(player_write(&conn,device,index,command,commandlen));
+    return(player_write(&conn,device_id,command,commandlen));
   else
-    return(_player_write(&conn,device,index,command,commandlen,GetReserved()));
+    return(_player_write(&conn,device_id,command,commandlen,GetReserved()));
 }
 
-int PlayerClient::Request(unsigned short device,
-                          unsigned short index,
+int PlayerClient::Request(player_device_id_t device_id,
                           const char* payload,
                           size_t payloadlen,
                           player_msghdr_t* replyhdr,
@@ -278,23 +282,25 @@ int PlayerClient::Request(unsigned short device,
 {
   if(!Connected())
     return(-1);
-  return(player_request(&conn, device, index, payload, payloadlen,
+  return(player_request(&conn, device_id, payload, payloadlen,
                         replyhdr, reply, replylen));
 }
     
 // use this one if you don't want the reply. it will return -1 if 
 // the request failed outright or if the response type is not ACK
-int PlayerClient::Request(unsigned short device,
-                          unsigned short index,
+int PlayerClient::Request(player_device_id_t device_id,
                           const char* payload,
                           size_t payloadlen)
 { 
   int retval;
   player_msghdr_t hdr;
-  retval = Request(device,index,payload,payloadlen,&hdr,NULL,0);
+  retval = Request(device_id,payload,payloadlen,&hdr,NULL,0);
 
-  if(retval < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK || 
-     hdr.device != device || hdr.device_index != index)
+  if((retval < 0) || 
+     (hdr.type != PLAYER_MSGTYPE_RESP_ACK) || 
+     (hdr.robot != device_id.robot) ||
+     (hdr.device != device_id.code) || 
+     (hdr.device_index != device_id.index))
     return(-1);
   else
     return(retval);
@@ -309,8 +315,7 @@ int PlayerClient::Request(unsigned short device,
 // Returns:
 //   0 if everything went OK
 //   -1 if something went wrong (you should probably close the connection!)
-int PlayerClient::RequestDeviceAccess(unsigned short device,
-                                      unsigned short index,
+int PlayerClient::RequestDeviceAccess(player_device_id_t device_id,
                                       unsigned char req_access,
                                       unsigned char* grant_access,
                                       char* driver_name,
@@ -321,7 +326,7 @@ int PlayerClient::RequestDeviceAccess(unsigned short device,
   if(!Connected())
     return(-1);
   
-  retval = player_request_device_access(&conn, device, index, 
+  retval = player_request_device_access(&conn, device_id,
                                         req_access, grant_access, 
                                         driver_name, driver_name_len);
 
@@ -340,13 +345,17 @@ int PlayerClient::SetFrequency(unsigned short freq)
 {
   player_device_datafreq_req_t this_req;
   char payload[sizeof(this_req)];
+  player_device_id_t id;
 
   this_req.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
   this_req.frequency = htons(freq);
 
   memcpy(payload,&this_req,sizeof(this_req));
 
-  return(Request(PLAYER_PLAYER_CODE, 0, payload, sizeof(payload),NULL,0,0));
+  id.robot=0;
+  id.code=PLAYER_PLAYER_CODE;
+  id.index=0;
+  return(Request(id, payload, sizeof(payload),NULL,0,0));
 }
 
 // change data delivery mode
@@ -355,23 +364,31 @@ int PlayerClient::SetDataMode(unsigned char mode)
 {
   player_device_datamode_req_t this_req;
   char payload[sizeof(this_req)];
+  player_device_id_t id;
 
   this_req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
   this_req.mode = mode;
 
   memcpy(payload,&this_req,sizeof(this_req));
 
-  return(Request(PLAYER_PLAYER_CODE, 0, payload, sizeof(payload),NULL,0,0));
+  id.robot=0;
+  id.code=PLAYER_PLAYER_CODE;
+  id.index=0;
+  return(Request(id, payload, sizeof(payload),NULL,0,0));
 }
 
 // request a round of data (only valid when in request/reply mode)
 int PlayerClient::RequestData()
 {
   player_device_data_req_t this_req;
+  player_device_id_t id;
 
   this_req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
 
-  return(Request(PLAYER_PLAYER_CODE, 0, (char*)&this_req, sizeof(this_req)));
+  id.robot=0;
+  id.code=PLAYER_PLAYER_CODE;
+  id.index=0;
+  return(Request(id,(char*)&this_req, sizeof(this_req)));
 }
 
 // authenticate
@@ -379,13 +396,17 @@ int PlayerClient::Authenticate(char* key)
 {
   player_device_auth_req_t this_req;
   char payload[sizeof(this_req)];
+  player_device_id_t id;
 
   this_req.subtype = htons(PLAYER_PLAYER_AUTH_REQ);
   strncpy((char*)this_req.auth_key,key,sizeof(this_req.auth_key));
 
   memcpy(payload,&this_req,sizeof(this_req));
 
-  return(Request(PLAYER_PLAYER_CODE, 0, payload, sizeof(payload),NULL,0,0));
+  id.robot=0;
+  id.code=PLAYER_PLAYER_CODE;
+  id.index=0;
+  return(Request(id, payload, sizeof(payload),NULL,0,0));
 }
 
 // proxy list management methods
@@ -459,11 +480,22 @@ void PlayerClient::RemoveProxy(ClientProxy* proxy)
 //
 ClientProxy* PlayerClient::GetProxy(unsigned short device, unsigned short index)
 {
+  player_device_id_t id;
+
+  id.robot = 0;
+  id.code = device;
+  id.index = index;
+  return(GetProxy(id));
+}
+
+ClientProxy* PlayerClient::GetProxy(player_device_id_t id)
+{
   for(ClientProxyNode* thisnode=proxies;thisnode;thisnode=thisnode->next)
   {
     if(thisnode->proxy && 
-       thisnode->proxy->device == device &&
-       thisnode->proxy->index == index)
+       (thisnode->proxy->m_device_id.robot == id.robot) &&
+       (thisnode->proxy->m_device_id.code == id.code) &&
+       (thisnode->proxy->m_device_id.index == id.index))
       return(thisnode->proxy);
   }
 

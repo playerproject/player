@@ -52,7 +52,7 @@ int IDARTurretProxy::SendMessages( player_idarturret_config_t* conf )
 
   // send a request, don't wait for reply
   // returns -1 on error
-  return(client->Request(PLAYER_IDARTURRET_CODE,index,
+  return(client->Request(m_device_id,
 			 (const char*)(conf),sizeof(*conf)));
 }
 
@@ -64,7 +64,8 @@ void IDARTurretProxy::Print()
   
   player_idarturret_reply_t reply;
 
-  printf("#IDAR(%d:%d) - %c ", device, index, access);
+  printf("#IDAR(%d:%d:%d) - %c ", m_device_id.robot, m_device_id.code,
+         m_device_id.index, access);
 
   switch( GetMessages( &reply ) )
     {
@@ -117,7 +118,7 @@ int IDARTurretProxy::GetMessages( player_idarturret_reply_t* reply )
   // cfg.tx field is not used for receive messages
   
   // sends request, waits for reply, returns -1 on failure
-  return(client->Request(PLAYER_IDARTURRET_CODE,index,
+  return(client->Request(m_device_id,
 			 (const char*)&cfg,sizeof(cfg),
 			 &hdr, (char*)reply, sizeof(*reply) ) );
 }
@@ -135,7 +136,7 @@ int IDARTurretProxy::SendGetMessages( player_idarturret_config_t* conf,
 
   
   // sends request, waits for reply, returns -1 on failure
-  return(client->Request(PLAYER_IDARTURRET_CODE,index,
+  return(client->Request(m_device_id,
 			 (const char*)conf,sizeof(player_idarturret_config_t),
 			 &hdr, (char*)reply, sizeof(player_idarturret_reply_t) ) );
 }
