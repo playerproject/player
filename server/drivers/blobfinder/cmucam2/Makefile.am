@@ -6,4 +6,4 @@ AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
 EXTRA_LIBRARIES = libcmucam2.a 
 
-libcmucam2_a_SOURCES = cmucam2.cc camera.h camera.cc
+libcmucam2_a_SOURCES = cmucam2.cc camera.c
