@@ -37,9 +37,6 @@ etc.
 
 Note that only grayscale images are currently supported.
 
-@todo Change this driver to use OpenCV instead of GDAL, and add
-support for color images.
-
 @par Interfaces
 - This driver supports the @ref player_interface_camera interface.
 
@@ -67,6 +64,11 @@ driver
   pattern "image_%04d.pnm"
 )
 @endverbatim
+
+
+@todo Change this driver to use OpenCV instead of GDAL, and add
+support for color images.
+
 */
 /** @} */
 

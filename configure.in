@@ -11,8 +11,8 @@ AC_PREREQ(2.53)
 dnl figure out build system (uname-style info)
 AC_CANONICAL_SYSTEM
 
-dnl Initialize automake, requiring version 1.6 or better
-AM_INIT_AUTOMAKE(1.6)
+dnl Initialize automake, requiring version 1.7 or better
+AM_INIT_AUTOMAKE(1.7)
 
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
