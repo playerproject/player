@@ -59,8 +59,11 @@ public:
   stg_client_t* CreateStageClient( char* host, int port, char* world );
 
   int DestroyStageClient( stg_client_t* cli );
+  void CheckForData( void );
+  void WaitForData( stg_id_t model, stg_prop_id_t datatype );
+  void StageSubscribe( stg_prop_id_t data );
 
-  virtual int Setup();
+  virtual int Setup() = 0; // pure virtual - subclasses must provide this
   virtual int Shutdown();
   virtual void Main();
 };

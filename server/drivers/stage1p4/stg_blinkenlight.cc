@@ -38,7 +38,9 @@ public:
 
   // overrride PutCommand
   virtual void PutCommand(void* client, unsigned char* src, size_t len);
-    
+
+  virtual int Setup(){};
+
   protected:
 };
 
