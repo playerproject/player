@@ -86,6 +86,13 @@ extern PlayerTime* GlobalTime;
 CLaserDevice::CLaserDevice(int argc, char** argv) :
     CDevice(sizeof(player_laser_data_t),0,10,10)
 {
+  // Laser geometry; should read from config file or command line.
+  this->pose[0] = 0.10;
+  this->pose[1] = 0;
+  this->pose[2] = 0;
+  this->size[0] = 0.15;
+  this->size[1] = 0.15;
+  
   strncpy(this->device_name,DEFAULT_LASER_PORT,sizeof(this->device_name));
   for(int i=0;i<argc;i++)
   {
@@ -256,24 +263,25 @@ int CLaserDevice::UpdateConfig()
 {
   int len;
   void *client;
+  char buffer[PLAYER_MAX_REQREP_SIZE];
   player_laser_config_t config;
-
-  while ((len = GetConfig(&client, &config, sizeof(config))) > 0)
+  player_laser_geom_t geom;
+  
+  while ((len = GetConfig(&client, &buffer, sizeof(buffer))) > 0)
   {
-    switch (config.subtype)
+    switch (buffer[0])
     {
       case PLAYER_LASER_SET_CONFIG:
       {
-        if (len != sizeof(config))
+        if (len != sizeof(player_laser_config_t))
         {
-          // This is an invalid configuration
-          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 
-                        sizeof(config));
+          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
           if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
-    
+
+        memcpy(&config, buffer, sizeof(config));
         this->intensity = config.intensity;
         this->scan_res = ntohs(config.resolution);
         this->min_angle = (short) ntohs(config.min_angle);
@@ -332,11 +340,9 @@ int CLaserDevice::UpdateConfig()
 
       case PLAYER_LASER_GET_CONFIG:
       {
-        if (len != sizeof(config.subtype))
+        if (len != 1)
         {
-          // This is an invalid configuration
-          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 
-                        sizeof(config.subtype));
+          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
           if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
@@ -348,6 +354,27 @@ int CLaserDevice::UpdateConfig()
         config.max_angle = htons((short) this->max_angle);
         
         if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+
+      case PLAYER_LASER_GET_GEOM:
+      {
+        if (len != 1)
+        {
+          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          continue;
+        }
+
+        geom.pose[0] = htons((short) (this->pose[0] * 1000));
+        geom.pose[1] = htons((short) (this->pose[1] * 1000));
+        geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
+        geom.size[0] = htons((short) (this->size[0] * 1000));
+        geom.size[1] = htons((short) (this->size[1] * 1000));
+        
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }

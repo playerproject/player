@@ -41,12 +41,3 @@ size_t CSonarDevice::GetData(unsigned char *dest, size_t maxsize,
   return( sizeof(player_sonar_data_t) );
 }
 
-
-
-
-
-
-
-
-
-

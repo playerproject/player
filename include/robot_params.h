@@ -81,6 +81,7 @@ typedef struct
 typedef struct
 {
   int SonarNum; // Number of sonar on the robot
+  double pose[16][3]; // Pose of each sonar relative to robot (m, m, degrees).
 } RobotParams_Sonar_t;
 
 typedef struct

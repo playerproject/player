@@ -58,6 +58,7 @@ int main(int argc, char **argv)
   laser_t *laser[2];
   lbd_t *lbd[2];
   ptz_t *ptz;
+  sonar_t *sonar;
   vision_t *vision;
 
   printf("PlayerViewer %s\n", PLAYER_VERSION);
@@ -119,6 +120,7 @@ int main(int argc, char **argv)
   lbd[0] = lbd_create(mainwnd, opt, client, 0);
   lbd[1] = lbd_create(mainwnd, opt, client, 1);
   ptz = ptz_create(mainwnd, imagewnd, opt, client, 0);
+  sonar = sonar_create(mainwnd, opt, client, 0);
   vision = vision_create(mainwnd, imagewnd, opt, client, 0);
   
   // Print out a list of unused options.
@@ -145,6 +147,7 @@ int main(int argc, char **argv)
     lbd_update(lbd[0]);
     lbd_update(lbd[1]);
     ptz_update(ptz);
+    sonar_update(sonar);
     vision_update(vision);
   }
   
@@ -153,6 +156,7 @@ int main(int argc, char **argv)
 
   // Destroy devices
   vision_destroy(vision);
+  sonar_destroy(sonar);
   ptz_destroy(ptz);
   lbd_destroy(lbd[1]);
   lbd_destroy(lbd[0]);

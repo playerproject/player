@@ -38,10 +38,13 @@ int test_vision(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("vision: [%d] ", device->blob_count);
+      printf("vision: [%d, %d] [%d] ", device->width, device->height, device->blob_count);
       for (i = 0; i < MIN(3, device->blob_count); i++)
-        printf("[%d %d %d %d] ", device->blobs[i].channel, device->blobs[i].x,
-               device->blobs[i].y, device->blobs[i].area);
+        printf("[%d : (%d %d) (%d %d %d %d) : %d] ", device->blobs[i].channel,
+               device->blobs[i].x, device->blobs[i].y,
+               device->blobs[i].left, device->blobs[i].top,
+               device->blobs[i].right, device->blobs[i].bottom,
+               device->blobs[i].area);
       printf("\n");
     }
     else

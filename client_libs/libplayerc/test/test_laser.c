@@ -52,6 +52,15 @@ int test_laser(playerc_client_t *client, int index)
     FAIL();
   else
     PASS();
+  
+  TEST("getting geometry");
+  if (playerc_laser_get_geom(device) == 0)
+    PASS();
+  else
+    FAIL();
+
+  printf("laser geom: [%6.3f %6.3f %6.3f] [%6.3f %6.3f]\n",
+         device->pose[0], device->pose[1], device->pose[2], device->size[0], device->size[1]);
 
   for (t = 0; t < 10; t++)
   {

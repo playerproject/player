@@ -156,3 +156,33 @@ int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double
   return 0;
 }
 
+
+// Get the laser geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int playerc_laser_get_geom(playerc_laser_t *device)
+{
+  int len;
+  player_laser_geom_t config;
+
+  config.subtype = PLAYER_LASER_GET_GEOM;
+
+  len = playerc_client_request(device->info.client, &device->info,
+                               &config, sizeof(config.subtype), &config, sizeof(config));
+  if (len < 0)
+    return -1;
+  if (len != sizeof(config))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
+    return -1;
+  }
+
+  device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
+  device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
+  device->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
+  device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
+  device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
+
+  return 0;
+}
+
+

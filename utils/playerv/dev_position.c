@@ -46,7 +46,7 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   char label[64];
   char section[64];
   position_t *position;
-  int subscribe, enable;
+  int subscribe;
   double sizex, sizey, orgx, orgy;
   
   position = malloc(sizeof(position_t));
@@ -56,20 +56,6 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   
   snprintf(section, sizeof(section), "position:%d", index);
   
-  // Set initial device state
-  subscribe = opt_get_int(opt, section, "", 0);
-  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
-  if (subscribe)
-  {
-    if (playerc_position_subscribe(position->proxy, PLAYER_ALL_MODE) != 0)
-      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-  }
-
-  enable = opt_get_int(opt, section, "enable", 0);
-  if (position->proxy->info.subscribed)
-    if (playerc_position_enable(position->proxy, enable) != 0)
-      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
-
   // Get the robot geometry
   sizex = 0.45;
   sizey = 0.40;
@@ -77,7 +63,19 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   orgx = 0.08;
   orgy = 0.0;
   opt_get_double2(opt, "robot", "origin", &orgx, &orgy);
+  
+  // Construct the menu
+  snprintf(label, sizeof(label), "position %d", index);
+  position->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
+  position->subscribe_item = rtk_menuitem_create(position->menu, "Subscribe", 1);
+  position->enable_item = rtk_menuitem_create(position->menu, "Enable", 0);
+  position->disable_item = rtk_menuitem_create(position->menu, "Disable", 0);
 
+  // Set the initial menu state
+  subscribe = opt_get_int(opt, section, "", 0);
+  subscribe = opt_get_int(opt, section, "subscribe", subscribe);
+  rtk_menuitem_check(position->subscribe_item, subscribe);
+  
   // Create a figure representing the robot
   position->robot_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
   rtk_fig_show(position->robot_fig, 0);
@@ -85,7 +83,7 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   rtk_fig_rectangle(position->robot_fig, -orgx, -orgy, 0, sizex, sizey, 0);
 
   // Create a figure representing the robot's control speed.
-  position->control_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 0);
+  position->control_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 10);
   rtk_fig_show(position->control_fig, 0);
   rtk_fig_color_rgb32(position->control_fig, COLOR_POSITION_CONTROL);
   rtk_fig_line(position->control_fig, -0.20, 0, +0.20, 0);
@@ -93,17 +91,7 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   rtk_fig_ellipse(position->control_fig, 0, 0, 0, 0.20, 0.20, 0);
   rtk_fig_movemask(position->control_fig, RTK_MOVE_TRANS);
   position->path_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 0);
-  
-  // Construct the menu
-  snprintf(label, sizeof(label), "Position %d", index);
-  position->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
-  position->subscribe_item = rtk_menuitem_create(position->menu, "Subscribe", 1);
-  position->enable_item = rtk_menuitem_create(position->menu, "Enable", 0);
-  position->disable_item = rtk_menuitem_create(position->menu, "Disable", 0);
 
-  // Set the initial menu state
-  rtk_menuitem_check(position->subscribe_item, position->proxy->info.subscribed);
-  
   return position;
 }
 
@@ -274,80 +262,3 @@ void position_update_servo(position_t *position)
     rtk_fig_line(position->path_fig, -d, 0, rx, ry);
   }
 }
-
-/*
-// Servo robot to goal pose
-void position_update_servo(position_t *position)
-{
-  double ox, oy, oa;
-  double rx, ry, ra;
-  double gx, gy, ga;
-
-  double kr, ka;
-  double vr, va;
-  double min_vr, max_vr;
-  double min_va, max_va;
-
-  kr = 0.2;
-  ka = 0.1;
-  min_vr = -0.10; max_vr = 0.20;
-  min_va = -M_PI/4; max_va = +M_PI/4;
-
-  ox = position->proxy->px;
-  oy = position->proxy->py;
-  oa = position->proxy->pa;
-
-  if (rtk_fig_mouse_selected(position->control_fig))
-  {
-    // Get goal pose in robot cs
-    rtk_fig_get_origin(position->control_fig, &rx, &ry, &ra);
-
-    // Compute goal pose in odometric cs
-    gx = ox + rx * cos(oa) - ry * sin(oa);
-    gy = oy + rx * sin(oa) + ry * cos(oa);
-    ga = oa + ra;
-
-    position->goal_x = gx;
-    position->goal_y = gy;
-    position->goal_a = ga;
-  }
-  else
-  { 
-    gx = position->goal_x;
-    gy = position->goal_y;
-    ga = position->goal_a;
-  
-    // Compute goal pose in robot cs
-    rx = +(gx - ox) * cos(oa) + (gy - oy) * sin(oa);
-    ry = -(gx - ox) * sin(oa) + (gy - oy) * cos(oa);
-    ra = ga - oa;
-
-    // Reset the goal figure
-    rtk_fig_origin(position->control_fig, rx, ry, ra);
-  }
-
-  // Servo to the goal pose
-  vr = kr * rx;
-  va = ka * atan2(ry, rx);
-
-  // Bound the speed
-  if (vr > max_vr)
-    vr = max_vr;
-  if (vr < min_vr)
-    vr = min_vr;
-  if (va > max_va)
-    va = max_va;
-  if (va < min_va)
-    va = min_va;
-
-  printf("%f %f\n", vr, va);
-
-  // Set the new speed
-  playerc_position_setspeed(position->proxy, vr, 0, va);
-}
-*/
-
-
-
-
-

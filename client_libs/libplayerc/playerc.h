@@ -334,6 +334,12 @@ typedef struct
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
+  // Laser geometry in robot cs: pose gives the position and
+  // orientation, size gives the extent.  These values are filled in by
+  // playerc_laser_get_geom().
+  double pose[3];
+  double size[2];
+  
   // Number of points in the scan.
   int scan_count;
 
@@ -375,6 +381,10 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle,
 // intensity : Intensity flag; set to 1 to enable reflection intensity data.
 int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle,
                               double *max_angle, int *resolution, int *intensity);
+
+// Get the sonar geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int playerc_laser_get_geom(playerc_laser_t *device);
 
 
 /***************************************************************************
@@ -525,6 +535,10 @@ typedef struct
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
+  // Pose of each sonar relative to robot (m, m, radians).  This
+  // structure is filled by calling playerc_sonar_get_geom().
+  double pose[PLAYERC_SONAR_MAX_SCAN][3];
+  
   // Number of points in the scan.
   int scan_count;
 
@@ -545,6 +559,10 @@ int playerc_sonar_subscribe(playerc_sonar_t *device, int access);
 
 // Un-subscribe from the sonar device
 int playerc_sonar_unsubscribe(playerc_sonar_t *device);
+
+// Get the sonar geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int playerc_sonar_get_geom(playerc_sonar_t *device);
 
 
 /***************************************************************************
@@ -568,7 +586,7 @@ typedef struct
   int area;
 
   // Bounding box for blob (image coordinates).
-  int left, right, top, bottom;
+  int left, top, right, bottom;
   
 } playerc_vision_blob_t;
 
@@ -579,6 +597,9 @@ typedef struct
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
+  // Image dimensions
+  int width, height;
+  
   // A list of detected blobs
   int blob_count;
   playerc_vision_blob_t blobs[PLAYERC_VISION_MAX_BLOBS];

@@ -66,6 +66,7 @@ class CVisionDevice:public CDevice
     int header_len; // length of incoming packet header (varies by version)
     int header_elt_len; // length of each header element (varies by version)
     int blob_size;  // size of each incoming blob (varies by version)
+    int width, height;  // the image dimensions.
 
   public:
     int sock;               // socket to ACTS

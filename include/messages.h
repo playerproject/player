@@ -253,18 +253,36 @@ typedef struct
 /* the sonar data packet */
 typedef struct
 {
-  uint16_t ranges[16]; /* start at the front left sonar and number clockwise */
+  /* start at the front left sonar and number clockwise */
+  uint16_t ranges[PLAYER_NUM_SONAR_SAMPLES];
+  
 } __attribute__ ((packed)) player_sonar_data_t;
 
+
+/* Packet for configuring the sonar. */
 typedef struct
 {
   uint8_t cmd;
   uint8_t arg;
 } __attribute__ ((packed)) player_sonar_config_t;
 
+
+/* Packet for getting the sonar geometry. */
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_SONAR_GET_GEOM. */
+  uint8_t subtype;
+
+  /* Pose of each sonar, in robot cs (mm, mm, degrees). */
+  int16_t pose[PLAYER_NUM_SONAR_SAMPLES][3];
+  
+} __attribute__ ((packed)) player_sonar_geom_t;
+
+
 /* the various configuration commands 
  * NOTE: these must not be the same as any other P2OS device! */
 #define PLAYER_SONAR_POWER_REQ      ((uint8_t)4)
+#define PLAYER_SONAR_GET_GEOM       ((uint8_t)5)
 
 /*************************************************************************/
 
@@ -337,6 +355,7 @@ typedef struct
 /* Laser request subtypes. */
 #define PLAYER_LASER_SET_CONFIG 0x01
 #define PLAYER_LASER_GET_CONFIG 0x02
+#define PLAYER_LASER_GET_GEOM   0x03
 
 
 /* Laser configuration packet. */
@@ -360,6 +379,21 @@ typedef struct
   uint8_t  intensity;
   
 } __attribute__ ((packed)) player_laser_config_t;
+
+
+/* Laser geometry packet. */
+typedef struct
+{
+  /* The packet subtype.  Must be PLAYER_LASER_GET_GEOM. */
+  uint8_t subtype;
+
+  /* Laser pose, in robot cs (mm, mm, radians). */
+  int16_t pose[3];
+
+  /* Laser dimensions (mm, mm). */
+  int16_t size[2];
+  
+} __attribute__ ((packed)) player_laser_geom_t;
 
 
 /*************************************************************************/
@@ -428,7 +462,7 @@ typedef struct
 } __attribute__ ((packed)) player_vision_header_elt_t;
 
 #define VISION_HEADER_SIZE \
-  (sizeof(player_vision_header_elt_t)*VISION_NUM_CHANNELS)
+  (2*sizeof(uint16_t) + sizeof(player_vision_header_elt_t)*VISION_NUM_CHANNELS)
 
 typedef struct
 {
@@ -451,6 +485,10 @@ typedef struct
 
 typedef struct
 {
+  /* The image dimensions. */
+  uint16_t width, height;
+
+  /* The blobs (indexed by channel). */
   player_vision_header_elt_t header[VISION_NUM_CHANNELS];
   player_vision_blob_elt_t 
           blobs[VISION_MAX_BLOBS_PER_CHANNEL*VISION_NUM_CHANNELS];
