@@ -31,11 +31,6 @@ class CRWIBumperDevice: public CRWIDevice {
 public:
 	CRWIBumperDevice (int argc, char *argv[]);
 
-	static CDevice *Init (int argc, char *argv[])
-	{
-		return((CDevice *)(new CRWIBumperDevice(argc, argv)));
-	}
-	
 	virtual int Setup ();
 	virtual int Shutdown ();
 	

@@ -47,11 +47,6 @@ public:
 		  last_known_turnrate(0)
 		{}
 	
-	static CDevice * Init (int argc, char *argv[])
-	{
-		return ((CDevice *)(new CRWIPositionDevice(argc, argv)));
-	}
-	
 	virtual int Setup ();
 	virtual int Shutdown ();
 	

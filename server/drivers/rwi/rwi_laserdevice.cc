@@ -29,6 +29,10 @@
   #include <strings.h>
 #endif
 
+CDevice* RWILaser_Init(int argc, char *argv[])
+{
+  return((CDevice *)(new CRWILaserDevice(argc, argv)));
+}
 
 int
 CRWILaserDevice::Setup()

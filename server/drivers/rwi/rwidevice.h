@@ -32,6 +32,10 @@
 #ifndef _RWIDEVICE_H
 #define _RWIDEVICE_H
 
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <pthread.h>
 
 #include <device.h>

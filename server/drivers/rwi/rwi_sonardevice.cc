@@ -29,7 +29,11 @@
   #include <strings.h>
 #endif
 
-
+CDevice* RWISonar_Init(int argc, char *argv[])
+{
+  return((CDevice *)(new CRWISonarDevice(argc, argv)));
+}
+	
 CRWISonarDevice::CRWISonarDevice(int argc, char **argv)
     : CRWIDevice(argc, argv,
                  sizeof(player_sonar_data_t),

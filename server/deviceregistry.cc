@@ -57,14 +57,14 @@ CDevice* LaserBarcode_Init(int argc, char** argv);
 #endif
 
 #ifdef INCLUDE_RWI
-#include "drivers/rwi/rwi_positiondevice.h"
-#include "drivers/rwi/rwi_sonardevice.h"
-#include "drivers/rwi/rwi_laserdevice.h"
-#include "drivers/rwi/rwi_bumperdevice.h"
-#include "drivers/rwi/rwi_powerdevice.h"
+CDevice* RWIBumper_Init(int argc, char *argv[]);
+CDevice* RWILaser_Init(int argc, char *argv[]);
+CDevice* RWIPosition_Init(int argc, char *argv[]);
+CDevice* RWIPower_Init(int argc, char *argv[]);
+CDevice* RWISonar_Init(int argc, char *argv[]);
 // Not working yet
 /*
-#include "drivers/rwi/rwi_joystickdevice.h"
+CDevice* RWIJoystick_Init(int argc, char *argv[]);
 */
 #endif
 
@@ -165,18 +165,18 @@ register_devices()
 #endif
 #ifdef INCLUDE_RWI
   availableDeviceTable->AddDevice(PLAYER_RWI_POSITION_CODE, PLAYER_ALL_MODE,
-                                  PLAYER_RWI_POSITION_STRING, CRWIPositionDevice::Init);
+                                  PLAYER_RWI_POSITION_STRING, RWIPosition_Init);
   availableDeviceTable->AddDevice(PLAYER_RWI_SONAR_CODE, PLAYER_READ_MODE,
-                                  PLAYER_RWI_SONAR_STRING, CRWISonarDevice::Init);
+                                  PLAYER_RWI_SONAR_STRING, RWISonar_Init);
   availableDeviceTable->AddDevice(PLAYER_RWI_LASER_CODE, PLAYER_READ_MODE,
-                                  PLAYER_RWI_LASER_STRING, CRWILaserDevice::Init);
+                                  PLAYER_RWI_LASER_STRING, RWILaser_Init);
   availableDeviceTable->AddDevice(PLAYER_RWI_BUMPER_CODE, PLAYER_READ_MODE,
-                                  PLAYER_RWI_BUMPER_STRING, CRWIBumperDevice::Init);
+                                  PLAYER_RWI_BUMPER_STRING, RWIBumper_Init);
   availableDeviceTable->AddDevice(PLAYER_RWI_POWER_CODE, PLAYER_READ_MODE,
-		                  PLAYER_RWI_POWER_STRING, CRWIPowerDevice::Init);
+		                  PLAYER_RWI_POWER_STRING, RWIPower_Init);
   /* 
   availableDeviceTable->AddDevice(PLAYER_RWI_JOYSTICK_CODE, PLAYER_READ_MODE,
-		                  PLAYER_RWI_JOYSTICK_STRING, CRWIJoystickDevice::Init);
+		                  PLAYER_RWI_JOYSTICK_STRING, RWIJoystick_Init);
    */
 #endif
 

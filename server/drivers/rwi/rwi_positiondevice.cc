@@ -36,6 +36,11 @@
 #endif
 #include <math.h>
 
+CDevice* RWIPosition_Init(int argc, char *argv[])
+{
+  return ((CDevice *)(new CRWIPositionDevice(argc, argv)));
+}
+	
 
 int
 CRWIPositionDevice::Setup()

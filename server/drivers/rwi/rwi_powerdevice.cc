@@ -29,6 +29,11 @@
   #include <strings.h>
 #endif
 
+CDevice* RWIPower_Init(int argc, char *argv[])
+{
+  return((CDevice *)(new CRWIPowerDevice(argc, argv)));
+}
+
 int
 CRWIPowerDevice::Setup()
 {
