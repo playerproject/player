@@ -21,8 +21,12 @@ noinst_PROGRAMS = rsn \
 	          forage \
 	          multilogger \
                   stress \
-                  pherobot
+                  pherobot \
+		  audioread \
+		  audiowrite
 
+audioread_SOURCES = audioread.cc
+audiowrite_SOURCES = audiowrite.cc
 rsn_SOURCES = rsn.cc
 randomwalk_SOURCES =  randomwalk.cc
 visualservo_SOURCES = visualservo.cc
