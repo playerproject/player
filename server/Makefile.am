@@ -19,13 +19,10 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
 player_DEPENDENCIES = drivers/p2os/libp2os.a drivers/stage/libstage.a \
                       drivers/libsicklms200.a drivers/libfestival.a \
                       drivers/libacts.a drivers/libsonyevid30.a \
-                      drivers/libudpbroadcast.a \
-											drivers/liblaserbarcode.a
-											drivers/liblasercspace.a \
-											drivers/liblaserfeature.a \
-											drivers/liblaserreflector.a \
-                      drivers/liblaservisualbarcode.a \
-                      @RWI_LIBPATH@ \
+                      drivers/libudpbroadcast.a drivers/liblaserbarcode.a \
+                      drivers/liblasercspace.a drivers/liblaserfeature.a \
+                      drivers/liblaserreflector.a \
+                      drivers/liblaservisualbarcode.a @RWI_LIBPATH@ \
                       @FIXEDTONES_LIBPATH@ @ISENSE_LIBPATH@ @LIBOBJS@
 
 player_LDADD   = -lpthread -lm -ldl drivers/p2os/libp2os.a drivers/stage/libstage.a drivers/libsicklms200.a drivers/libfestival.a drivers/libacts.a drivers/libsonyevid30.a drivers/libudpbroadcast.a drivers/liblaserbarcode.a drivers/liblasercspace.a drivers/liblaserfeature.a drivers/liblaserreflector.a drivers/liblaservisualbarcode.a @RWI_LIBPATH@ @FIXEDTONES_LIBPATH@ @FIXEDTONES_EXTRA_LIB@ @ISENSE_LIBPATH@ @ISENSE_EXTRA_LIB@ @LIBOBJS@
