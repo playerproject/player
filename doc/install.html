@@ -169,6 +169,19 @@ in your home directory.
 Everything should now work seamlessly, and your locally installed
 packages will be used in preference to any system-wide defaults.
 
+@section install_stage Installing Stage 1.3.x (optional)
+
+If you plan to work with the <a
+href="http://playerstage.sourceforge.net/stage/stage.html">Stage</a>
+simulation package, you need to install Stage @b after installing
+Player.  Follow the installation instructions in the Stage <a
+href="http://playerstage.sourceforge.net/doc/Stage-manual-1.3.3-html/node13.html">manual</a>.
+
+In a nutshell, after installing Player, './configure; make; make install'
+should get Stage installed (provide the same @p --prefix argument to
+Stage's configure as you did for Player).  Note that in order to build
+the Stage GUI (it can run without a GUI, but it's not much fun), you @e
+must first install RTK.
 
 @section install_problems Problem-solving
 
