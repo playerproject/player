@@ -306,7 +306,6 @@ AC_OUTPUT(Makefile
           examples/Makefile
           examples/c++/Makefile
           examples/libplayerc/Makefile
-	examples/1search/Makefile 
           rtk2/Makefile
           utils/Makefile
           utils/playerv/Makefile
