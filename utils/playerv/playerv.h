@@ -257,6 +257,9 @@ typedef struct
   rtk_fig_t *robot_fig;
   rtk_fig_t *control_fig;
   rtk_fig_t *path_fig;
+
+  // Goal point for position mode
+  double goal_px, goal_py, goal_pa;
   
 } position_t;
 
