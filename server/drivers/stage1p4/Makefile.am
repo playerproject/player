@@ -11,7 +11,7 @@ libstage1p4_a_SOURCES = \
 	stg_position.cc \
 	stg_laser.cc \
 	stg_simulation.cc \
-	stg_fiducial_neighbors.cc
+	stg_fiducial.cc
 
 
 # This file should be added to CVS before it's referenced here.  Otherwise,

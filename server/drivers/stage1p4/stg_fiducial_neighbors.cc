@@ -94,6 +94,16 @@ size_t StgFiducialNeighbors::GetData(void* client, unsigned char* dest, size_t l
   // publish this data
   CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
   
+  //TEST
+  /*    const char* str = "hello world";
+    stg_los_msg_t msg;
+    memset( &msg, 0, sizeof(msg) );
+    msg.id = 2; // sonarbot?
+    memcpy( &msg.bytes, str, strlen(str));
+    msg.len = strlen(str);
+    stg_model_send_los_msg( this->stage_client, this->stage_id, &msg );
+  */
+
   // now inherit the standard data-getting behavior 
   return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
 }
@@ -134,11 +144,87 @@ int StgFiducialNeighbors::PutConfig(player_device_id_t* device, void* client,
       }
       break;
       
-    default:
-      PLAYER_WARN1( "stage1p4 doesn't support config id %d", buf[0] );
-      break;
-    }
 
+      
+      
+    case PLAYER_FIDUCIAL_SEND_MSG:
+      {
+	assert( len == sizeof( player_fiducial_msg_t) );
+	player_fiducial_msg_t* p_msg = (player_fiducial_msg_t*)data;
+	
+	stg_los_msg_t s_msg;
+	memset( &s_msg, 0, sizeof(s_msg) );
+	
+	s_msg.id = (int32_t)ntohl(p_msg->target_id);
+	s_msg.power = (uint16_t)ntohs(p_msg->power);
+	s_msg.consume = p_msg->consume;
+	
+	s_msg.len = (size_t)p_msg->len;
+
+	printf( "sending message len %d\n", s_msg.len );
+
+	if( s_msg.len > STG_LOS_MSG_MAX_LEN ) s_msg.len = STG_LOS_MSG_MAX_LEN;
+	memcpy( &s_msg.bytes, p_msg->bytes, s_msg.len );
+	
+	// keep the original message to compare it to the reply
+	//stg_los_msg_t compare;
+	//memcpy( &compare, &s_msg, sizeof(stg_los_msg_t) );
+	
+	stg_model_send_los_msg( this->stage_client, this->stage_id, 
+				    &s_msg );
+	
+	// if the reply was identical to the sent message, it worked OK
+	//if( memcmp( &compare, &s_msg, sizeof(stg_los_msg_t) ) == 0 )
+	  PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+	  //else
+	  //PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0 );
+      }
+      break;
+
+    case PLAYER_FIDUCIAL_EXCHANGE_MSG:
+      {
+	assert( len == sizeof( player_fiducial_msg_t) );
+	player_fiducial_msg_t* p_msg = (player_fiducial_msg_t*)data;
+	
+	stg_los_msg_t s_msg;
+	
+	s_msg.id = ntohl(p_msg->target_id);
+	s_msg.power = ntohs(p_msg->power);
+	s_msg.consume = (int)p_msg->consume;
+	
+	size_t sz = (size_t)p_msg->len;
+	if( sz > STG_LOS_MSG_MAX_LEN ) sz =  STG_LOS_MSG_MAX_LEN;
+	memcpy( &s_msg.bytes, p_msg->bytes, sz );
+	
+	stg_model_exchange_los_msg( this->stage_client, this->stage_id, 
+					&s_msg );
+	
+	// re-format the reply into Player-speak
+
+	player_fiducial_msg_t p_reply;
+	p_reply.target_id = htonl( s_msg.id );
+	p_reply.power = htons( s_msg.power );
+	p_reply.consume = (uint8_t)s_msg.consume;
+	sz = (size_t)s_msg.len;
+
+	if( sz > PLAYER_FIDUCIAL_MAX_MSG_LEN ) 
+	  sz =  PLAYER_FIDUCIAL_MAX_MSG_LEN;
+	
+	p_reply.len = (uint8_t)s_msg.len;
+	memcpy( &p_reply.bytes, &s_msg.bytes, sz );
+	
+	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
+		  &p_reply, sizeof(p_reply) );
+      }
+    default:
+      {
+	PLAYER_WARN1( "stage1p4 doesn't support config id %d", buf[0] );
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+    }
+  
   return(0);
 }
 
