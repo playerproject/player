@@ -56,10 +56,6 @@
 #include <netinet/in.h>  /* for htons(3) */
 #include "laserbeacondevice.hh"
 
- // *** TESTING -- remove this later
-//#define ENABLE_TRACE 0
-//#include "rtk-types.hh"
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -98,14 +94,16 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
     // Get the laser data
     //
     player_laser_data_t laser_data;
-    m_laser->GetLock()->GetData(m_laser, (BYTE*) &laser_data, sizeof(laser_data),&data_timestamp);
+    m_laser->GetLock()->GetData(m_laser,
+                                (uint8_t*) &laser_data, sizeof(laser_data),
+                                &data_timestamp);
     
     // Analyse the laser data
     //
-    BeaconData beacon_data;
+    player_laserbeacon_data_t beacon_data;
     FindBeacons(&laser_data, &beacon_data);
     
-    // Do some byte-swapping
+    // Do some uint8_t-swapping
     //
     for (int i = 0; i < beacon_data.count; i++)
     {
@@ -172,11 +170,11 @@ int CLaserBeaconDevice::Setup()
 {
     // Hack to get around mutex on GetData
     //
-    BeaconData beacon_data;
+    player_laserbeacon_data_t beacon_data;
     beacon_data.count = 0;
-    GetLock()->PutData(this, (BYTE*) &beacon_data, sizeof(beacon_data));
+    GetLock()->PutData(this, (uint8_t*) &beacon_data, sizeof(beacon_data));
     
-    MSG("laser beacon device: setup");
+    PLAYER_MSG0("laser beacon device: setup");
     return 0;
 }
 
@@ -186,7 +184,7 @@ int CLaserBeaconDevice::Setup()
 //
 int CLaserBeaconDevice::Shutdown()
 {
-    MSG("laser beacon device: shutdown");
+    PLAYER_MSG0("laser beacon device: shutdown");
     return 0;
 }
 
@@ -195,7 +193,7 @@ int CLaserBeaconDevice::Shutdown()
 // Analyze the laser data and return beacon data
 //
 void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
-                               BeaconData *beacon_data)
+                                     player_laserbeacon_data_t *beacon_data)
 {
     //TRACE0("searching");
     
@@ -374,6 +372,5 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
 
     return id;
 }
-
 
 

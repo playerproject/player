@@ -69,6 +69,12 @@
 #ifdef INCLUDE_AUDIO
 #include <audiodevice.h>
 #endif
+#ifdef INCLUDE_LASERBEACON
+#include <laserbeacondevice.hh>
+#endif
+#ifdef INCLUDE_BROADCAST
+#include <broadcastdevice.hh>
+#endif
 
 #include <clientdata.h>
 #include <devicetable.h>
@@ -289,6 +295,8 @@ int main( int argc, char *argv[] )
   CDevice* miscDevice = NULL;
   CDevice* ptzDevice = NULL;
   CDevice* audioDevice = NULL;
+  CDevice* laserbeaconDevice = NULL;
+  CDevice* broadcastDevice = NULL;
 
   /* use these to temporarily store command-line args */
   int playerport = PLAYER_PORTNUM;
@@ -466,6 +474,7 @@ int main( int argc, char *argv[] )
     puts( "ok.\n" );
     fflush( stdout );
 #endif
+    
     positionDevice = new CStageDevice( arenaIO + POSITION_DATA_START,
                                    POSITION_DATA_BUFFER_SIZE,
                                    POSITION_COMMAND_BUFFER_SIZE,
@@ -490,6 +499,19 @@ int main( int argc, char *argv[] )
                                  PTZ_DATA_BUFFER_SIZE,
                                  PTZ_COMMAND_BUFFER_SIZE,
                                  PTZ_CONFIG_BUFFER_SIZE);
+#ifdef INCLUDE_LASERBEACON
+    laserbeaconDevice = new CStageDevice(arenaIO + LASERBEACON_DATA_START,
+                                         LASERBEACON_DATA_BUFFER_SIZE,
+                                         LASERBEACON_COMMAND_BUFFER_SIZE,
+                                         LASERBEACON_CONFIG_BUFFER_SIZE);
+#endif
+
+#ifdef INCLUDE_BROADCAST
+    broadcastDevice = new CStageDevice(arenaIO + BROADCAST_DATA_START,
+                                       BROADCAST_DATA_BUFFER_SIZE,
+                                       BROADCAST_COMMAND_BUFFER_SIZE,
+                                       BROADCAST_CONFIG_BUFFER_SIZE); 
+#endif    
 
     
     // unsupported devices - CNoDevice::Setup() fails
@@ -532,6 +554,12 @@ int main( int argc, char *argv[] )
 #ifdef INCLUDE_AUDIO
     audioDevice =     new CAudioDevice();
 #endif
+#ifdef INCLUDE_LASERBEACON
+    laserbeaconDevice = new CLaserBeaconDevice(laserDevice);
+#endif
+#ifndef INCLUDE_BROADCAST
+    broadcastDevice = new CBroadcastDevice;
+#endif
   }
 
   // add the devices to the global table
@@ -558,6 +586,12 @@ int main( int argc, char *argv[] )
 #endif
 #ifdef INCLUDE_AUDIO
   deviceTable->AddDevice(PLAYER_AUDIO_CODE, 0, PLAYER_ALL_MODE, audioDevice);
+#endif
+#ifdef INCLUDE_LASERBEACON
+  deviceTable->AddDevice(PLAYER_LASERBEACON_CODE, 0, PLAYER_READ_MODE, laserbeaconDevice);
+#endif
+#ifdef INCLUDE_BROADCAST
+  deviceTable->AddDevice(PLAYER_BROADCAST_CODE, 0, PLAYER_ALL_MODE, broadcastDevice);
 #endif
 
   /* set up to handle SIGPIPE (happens when the client dies) */

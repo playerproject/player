@@ -204,10 +204,10 @@ int CLaserDevice::Setup()
 
     // Open the laser and set it to the correct speed
     //
-    PLAYER_MSG("changing laser mode at 9600");
+    PLAYER_MSG0("changing laser mode at 9600");
     if (SetLaserMode() == 0)
     {
-        PLAYER_MSG("laser operating at 9600; changing to 38400");
+        PLAYER_MSG0("laser operating at 9600; changing to 38400");
         if (SetLaserSpeed(38400))
             return 1;
         if (ChangeTermSpeed(38400))
@@ -215,7 +215,7 @@ int CLaserDevice::Setup()
     }
     else
     {
-        PLAYER_MSG("could not change laser mode at 9600; trying 38400");
+        PLAYER_MSG0("could not change laser mode at 9600; trying 38400");
         if (ChangeTermSpeed(38400))
             return 1;
         if (SetLaserMode())
@@ -229,7 +229,7 @@ int CLaserDevice::Setup()
 
     CloseTerm();
 
-    PLAYER_MSG("laser ready");
+    PLAYER_MSG0("laser ready");
     puts("Done.");
 
     // Start the device thread
@@ -248,7 +248,7 @@ int CLaserDevice::Shutdown()
   /* shutdown laser device */
   close(laser_fd);
   pthread_cancel( thread );
-  PLAYER_MSG("Laser has been shutdown");
+  PLAYER_MSG0("Laser has been shutdown");
   puts("Laser has been shutdown");
 
   return(0);
@@ -283,7 +283,7 @@ void* CLaserDevice::DummyMain(void *laserdevice)
 //
 int CLaserDevice::Main() 
 {
-    PLAYER_MSG("laser thread is running");
+    PLAYER_MSG0("laser thread is running");
     
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
     sigblock(SIGINT);
@@ -392,7 +392,7 @@ int CLaserDevice::ChangeTermSpeed(int speed)
     
     if (speed == 9600)
     {
-        PLAYER_MSG("terminal speed to 9600");
+        PLAYER_MSG0("terminal speed to 9600");
         if( tcgetattr( laser_fd, &term ) < 0 )
             RETURN_ERROR(1, "unable to get device attributes");
         
@@ -405,7 +405,7 @@ int CLaserDevice::ChangeTermSpeed(int speed)
     }
     else if (speed == 38400)
     {
-        PLAYER_MSG("terminal speed to 38400");
+        PLAYER_MSG0("terminal speed to 38400");
         if( tcgetattr( laser_fd, &term ) < 0 )
             RETURN_ERROR(1, "unable to get device attributes");
         

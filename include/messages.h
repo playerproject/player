@@ -54,6 +54,8 @@
 #define PLAYER_PTZ_CODE     MAKEUINT16('s','z')  // "sz" Sony PTZ
 #define PLAYER_PLAYER_CODE  MAKEUINT16('r','s')  // "rs" robot server
 #define PLAYER_AUDIO_CODE  MAKEUINT16('f','a')  // "fa" freq analyzer (audio)
+#define PLAYER_LASERBEACON_CODE  MAKEUINT16('l','b')  // "lb" laser beacon detector
+#define PLAYER_BROADCAST_CODE MAKEUINT16('b', 'r') // "br" broadcast message device
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -233,6 +235,7 @@ typedef struct
 
 /*************************************************************************/
 
+
 /*************************************************************************/
 /*
  * PTZ Device
@@ -261,6 +264,9 @@ typedef struct
 #define PTZ_COMMAND_BUFFER_SIZE sizeof(player_ptz_cmd_t)
 #define PTZ_DATA_BUFFER_SIZE sizeof(player_ptz_data_t)
 #define PTZ_CONFIG_BUFFER_SIZE 0
+
+/*************************************************************************/
+
 
 /*************************************************************************/
 /*
@@ -309,4 +315,68 @@ typedef struct
 
 /*************************************************************************/
 
+
+
+/*************************************************************************/
+/*
+ * Laser beacon device
+ */
+
+/*
+ * the laser beacon data packet (one beacon)
+ */
+typedef struct
+{
+    uint8_t id;
+    uint16_t range;
+    int16_t bearing;
+    int16_t orient;
+} __attribute__ ((packed)) player_laserbeacon_item_t;
+
+/*
+ * the laser beacon data packet (all beacons)
+ */
+typedef struct 
+{
+    uint16_t count;
+    struct player_laserbeacon_item_t beacon[32]; 
+} __attribute__ ((packed)) player_laserbeacon_data_t;
+
+
+#define LASERBEACON_DATA_BUFFER_SIZE ((int) sizeof(player_laser_data_t))
+#define LASERBEACON_COMMAND_BUFFER_SIZE 0
+#define LASERBEACON_CONFIG_BUFFER_SIZE 0
+
+/*************************************************************************/
+
+
+/*************************************************************************/
+/*
+ * Broadcast device
+ */
+
+// Data poacket
+//
+typedef struct
+{
+    uint16_t len;
+    uint8_t  buffer[4096];
+} __attribute ((packed)) player_broadcast_data_t;
+
+
+// Command packet
+//
+typedef struct
+{
+    uint16_t len;
+    uint8_t  buffer[4096];
+} __attribute ((packed)) player_broadcast_cmd_t;
+
+#define BROADCAST_DATA_BUFFER_SIZE ((int) sizeof(player_broadcast_data_t))
+#define BROADCAST_COMMAND_BUFFER_SIZE ((int) sizeof(player_broadcast_cmd_t))
+#define BROADCAST_CONFIG_BUFFER_SIZE 0
+
+/*************************************************************************/
+
 #endif
+

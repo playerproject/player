@@ -86,6 +86,17 @@ PlayerClient::PlayerClient()
   devicedatatable->UpdateAccess(PLAYER_VISION_CODE, 0, 'e');
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_VISION_CODE,0);
   vision = (vision_data*)(thisentry->data);
+
+  // the zeroth laserbeacon device
+  devicedatatable->UpdateAccess(PLAYER_LASERBEACON_CODE, 0, 'e');
+  thisentry = devicedatatable->GetDeviceEntry(PLAYER_LASERBEACON_CODE,0);
+  laserbeacon_data = (player_laserbeacon_data_t*)(thisentry->data);
+
+  // the zeroth broadcast device
+  devicedatatable->UpdateAccess(PLAYER_BROADCAST_CODE, 0, 'e');
+  thisentry = devicedatatable->GetDeviceEntry(PLAYER_BROADCAST_CODE,0);
+  broadcast_data = (player_broadcast_data_t*)(thisentry->data);
+  broadcast_cmd = (player_broadcast_cmd_t*)(thisentry->command);
 }
 
 PlayerClient::~PlayerClient()
@@ -189,6 +200,26 @@ void PlayerClient::ByteSwapData(void* data, player_msghdr_t hdr)
     case PLAYER_MISC_CODE:
       // nothing to swap here
       break;
+    case PLAYER_LASERBEACON_CODE:
+    {
+        player_laserbeacon_data_t* temp;
+        temp = (player_laserbeacon_data_t*) data;
+        temp->count = ntohs(temp->count);
+        for (int i = 0; i < temp->count; i++)
+        {
+            temp->beacon[i].range = ntohs(temp->beacon[i].range);
+            temp->beacon[i].bearing = ntohs(temp->beacon[i].bearing);
+            temp->beacon[i].orient = ntohs(temp->beacon[i].orient);
+        }
+        break;
+    }
+    case PLAYER_BROADCAST_CODE:
+    {
+        player_broadcast_data_t* temp;
+        temp = (player_broadcast_data_t*) data;
+        temp->len = ntohs(temp->len);
+        break;
+    }
     default:
       //don't know it.  oh well.
       break;
@@ -213,6 +244,13 @@ void PlayerClient::ByteSwapCommands(void* cmd, uint16_t device)
       tempptz->tilt = htons(tempptz->tilt);
       tempptz->zoom = htons(tempptz->zoom);
       break;
+    case PLAYER_BROADCAST_CODE:
+    {
+        player_broadcast_cmd_t* temp;
+        temp = (player_broadcast_cmd_t*) cmd;
+        temp->len = htons(temp->len);
+        break;   
+    }
     default:
       // no byte-swapping to be done.  oh well.
       break;
