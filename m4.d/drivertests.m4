@@ -277,9 +277,15 @@ if test "x$enable_amcl" = "xyes"; then
 
   PKG_CHECK_MODULES(GSL,gsl,
                     enable_amcl=yes,
+                    enable_amcl=no)
+  if test "x$enable_amcl" = "xno"; then
+    AC_CHECK_HEADER(gsl/gsl_version.h,
+                    enable_amcl=yes
+                    GSL_CFLAGS=
+                    GSL_LIBS="-lgsl -lgslcblas",
                     enable_amcl=no
                     disable_reason="couldn't find the GSL")
-
+  fi
 fi
 if test "x$enable_amcl" = "xyes"; then
   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
