@@ -221,7 +221,10 @@ void UPCBarcode::Main()
 
     // Process any new camera data.
     if (this->UpdateCamera())
+    {
       this->ProcessImage();
+      this->WriteData();
+    }
 
     // Process any pending requests.
     this->HandleRequests();
