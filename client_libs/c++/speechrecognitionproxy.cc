@@ -77,7 +77,6 @@ void SpeechRecognitionProxy::FillData (player_msghdr_t hdr, const char *buffer)
               sizeof(player_speech_recognition_data_t),hdr.size);
   }
 
-
   this->wordCount = 0;
 
   printf ("Text[%s] Length[%d]\n",data->text, strlen(data->text));
@@ -106,10 +105,9 @@ void SpeechRecognitionProxy::FillData (player_msghdr_t hdr, const char *buffer)
 void SpeechRecognitionProxy::Clear()
 {
   this->wordCount = 0;
-  printf("\nCLEARING\n");
 
   for (int i=0; i<20; i++)
   {
-    this->words[i][0] = '\0';
+    bzero(this->words[i],30);
   }
 }
