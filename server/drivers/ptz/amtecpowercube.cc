@@ -20,10 +20,69 @@
 
 /*
  * $Id$
- *
- * Driver for controlling the Amtec PowerCube Wrist, a powerful pan-tilt
- * unit that can, for example, carry a SICK laser.
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_amtecpowercube amtecpowercube
+
+The amtecpowercube driver controls the Amtec PowerCube Wrist,
+a powerful pan-tilt unit that can, for example, carry a SICK laser
+(@ref player_driver_sicklms200).
+
+The amtecpowercube driver supports both position and velocity control,
+via the PLAYER_PTZ_CONTROL_MODE_REQ request.  For constant swiveling,
+the PowerCube works better under velocity control.
+
+Note that this driver is relatively new and not thoroughly tested.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_ptz
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+- PLAYER_PTZ_CONTROL_MODE_REQ
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS0"
+  - Serial port where the unit is attached.
+- home (integer)
+  - Default: 0
+  - Whether to home (i.e., reset to the zero position) the unit before
+    commanding it
+- speed (angle)
+  - Default: 40 deg/sec
+  - Maximum pan/tilt speed 
+
+@par Example
+
+@verbatim
+driver
+(
+  name "amtecpowercube"
+  port "/dev/ttyS0"
+  home 1
+)
+@endverbatim
+
+@par Authors
+
+Brian Gerkey
+
+*/
+
+/** @} */
 
 #if HAVE_CONFIG_H
   #include <config.h>
@@ -51,7 +110,7 @@
 #define AMTEC_SLEEP_TIME_USEC 20000
 
 /* angular velocity used when in position control mode */
-#define AMTEC_DEFAULT_SPEED_DEG_PER_SEC 40
+#define AMTEC_DEFAULT_SPEED_DEG_PER_SEC DTOR(40)
 
 // start, end, and escape chars
 #define AMTEC_STX       0x02
@@ -181,7 +240,8 @@ AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section) :
 
   this->serial_port = cf->ReadString(section, "port", AMTEC_DEFAULT_PORT);
   this->return_to_home = cf->ReadInt(section, "home", 0);
-  this->speed = cf->ReadInt(section, "speed", AMTEC_DEFAULT_SPEED_DEG_PER_SEC);
+  this->speed = (int)rint(RTOD(cf->ReadAngle(section, "speed", 
+                                             AMTEC_DEFAULT_SPEED_DEG_PER_SEC)));
 }
 
 int 

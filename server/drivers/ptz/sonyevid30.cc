@@ -33,12 +33,14 @@
 The sonyevid30 driver provides control of a Sony EVI-D30 pan-tilt-zoom
 camera unit.
 
-The sonyevid30 operates over a direct serial link, not
+The sonyevid30 driver operates over a direct serial link, not
 through the P2OS microcontroller's AUX port, as is the normal
 configuration for ActivMedia robots.  You may have to make or buy
 a cable to connect your camera to a normal serial port.  Look <a
 href="http://playerstage.sourceforge.net/faq.html#evid30_wiring">here</a>
 for more information and wiring instructions.
+
+The sonyevid30 driver only support position control.
 
 @par Compile-time dependencies
 
