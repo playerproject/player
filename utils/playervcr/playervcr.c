@@ -84,8 +84,6 @@ can rewind, start, and stop; when writing data, you can start and stop.
 #define USAGE "USAGE: playervcr [-h <host>] [-p <port>] [-i <index>]"
 #define MAX_HOSTNAME_LEN 256
 
-char quit;
-
 typedef struct
 {
   char hostname[MAX_HOSTNAME_LEN];
@@ -101,6 +99,7 @@ typedef struct
   GtkButton* playbutton;
   GtkButton* stopbutton;
   GtkButton* quitbutton;
+  GtkButton* setfilenamebutton;
 
   playerc_client_t* client;
   playerc_log_t* log;
@@ -114,10 +113,41 @@ void fini_player(gui_data_t* gui_data);
 void button_callback(GtkWidget *widget, gpointer data);
 void update_status_label(gui_data_t* gui_data);
 
+// Function to read from player; will be called when GTK is idle
+gboolean
+player_read_func(gpointer* arg)
+{
+  int peek_result;
+  gui_data_t* gui_data = (gui_data_t*)arg;
+
+  if((peek_result = playerc_client_peek(gui_data->client,10)) < 0)
+  {
+    fprintf(stderr, "Error: Failed to peek at Player socket\n");
+    exit(-1);
+  }
+  if(peek_result && (playerc_client_read(gui_data->client) < 0))
+  {
+    fprintf(stderr, "Error: Failed to read from Player\n");
+    exit(-1);
+  }
+  return(TRUE);
+}
+
+/*
+ * handle quit events, by setting a flag that will make the main loop exit
+ */
+static gboolean 
+_quit_callback(GtkWidget *widget,
+               GdkEvent *event,
+               gpointer data)
+{
+  gtk_main_quit();
+  return(TRUE);
+}
+
 int
 main(int argc, char** argv)
 {
-  int peek_result;
   gui_data_t gui_data;
 
   if(parse_args(&gui_data, argc, argv) < 0)
@@ -126,7 +156,6 @@ main(int argc, char** argv)
     exit(-1);
   }
 
-
   if(init_player(&gui_data) < 0)
     exit(-1);
 
@@ -134,23 +163,10 @@ main(int argc, char** argv)
 
   gtk_widget_show_all((GtkWidget*)(gui_data.main_window));
 
-  while(!quit)
-  {
-    // non-blocking GTK event servicing
-    while(gtk_events_pending())
-      gtk_main_iteration_do(0);
+  // setup read function to be called when idle
+  g_idle_add((GSourceFunc)player_read_func,(gpointer*)&gui_data);
 
-    if((peek_result = playerc_client_peek(gui_data.client,10)) < 0)
-    {
-      fprintf(stderr, "Error: Failed to peek at Player socket\n");
-      exit(-1);
-    }
-    if(peek_result && (playerc_client_read(gui_data.client) < 0))
-    {
-      fprintf(stderr, "Error: Failed to read from Player\n");
-      exit(-1);
-    }
-  }
+  gtk_main();
 
   fini_player(&gui_data);
 
@@ -206,6 +222,12 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
 
   g_assert((gui_data->main_window = 
             (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL)));
+
+  g_signal_connect(G_OBJECT(gui_data->main_window),"delete-event",
+                   G_CALLBACK(_quit_callback),NULL);
+  g_signal_connect(G_OBJECT(gui_data->main_window),"destroy-event",
+                   G_CALLBACK(_quit_callback),NULL);
+
   sprintf(titlebuf,"playervcr -- %s:%d", 
           gui_data->hostname, gui_data->port);
   gtk_window_set_title(gui_data->main_window, titlebuf);
@@ -223,6 +245,7 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   /* create the buttons */
   if(gui_data->log->type == PLAYER_LOG_TYPE_READ)
   {
+    gui_data->setfilenamebutton = NULL;
     g_assert((gui_data->rewindbutton = 
               (GtkButton*)gtk_button_new_with_label("gtk-go-back")));
     g_assert((gui_data->playbutton = 
@@ -233,6 +256,8 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
     gui_data->rewindbutton = NULL;
     g_assert((gui_data->playbutton = 
               (GtkButton*)gtk_button_new_with_label("gtk-save")));
+    g_assert((gui_data->setfilenamebutton = 
+              (GtkButton*)gtk_button_new_with_label("gtk-open")));
   }
   g_assert((gui_data->stopbutton = 
             (GtkButton*)gtk_button_new_with_label("gtk-stop")));
@@ -241,6 +266,8 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
 
   if(gui_data->log->type == PLAYER_LOG_TYPE_READ)
     gtk_button_set_use_stock(gui_data->rewindbutton,TRUE);
+  else
+    gtk_button_set_use_stock(gui_data->setfilenamebutton,TRUE);
   gtk_button_set_use_stock(gui_data->playbutton,TRUE);
   gtk_button_set_use_stock(gui_data->stopbutton,TRUE);
   gtk_button_set_use_stock(gui_data->quitbutton,TRUE);
@@ -248,6 +275,9 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   /* hook them up to callbacks */
   if(gui_data->log->type == PLAYER_LOG_TYPE_READ)
     gtk_signal_connect(GTK_OBJECT(gui_data->rewindbutton), "clicked",
+                       (GtkSignalFunc)(button_callback),(void*)gui_data);
+  else
+    gtk_signal_connect(GTK_OBJECT(gui_data->setfilenamebutton), "clicked",
                        (GtkSignalFunc)(button_callback),(void*)gui_data);
   gtk_signal_connect(GTK_OBJECT(gui_data->playbutton), "clicked",
                      (GtkSignalFunc)(button_callback),(void*)gui_data);
@@ -259,6 +289,9 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   /* pack them */
   if(gui_data->log->type == PLAYER_LOG_TYPE_READ)
     gtk_box_pack_start(gui_data->hbox, (GtkWidget*)gui_data->rewindbutton, 
+                       FALSE, FALSE, 0);
+  else
+    gtk_box_pack_start(gui_data->hbox, (GtkWidget*)gui_data->setfilenamebutton, 
                        FALSE, FALSE, 0);
   gtk_box_pack_start(gui_data->hbox, (GtkWidget*)gui_data->playbutton, 
                      FALSE, FALSE, 0);
@@ -313,6 +346,9 @@ void
 button_callback(GtkWidget *widget, gpointer data)
 {
   gui_data_t* gui_data;
+  GtkDialog* dialog;
+  GtkEntry* entry;
+  GtkLabel* label;
 
   gui_data = (gui_data_t*)data;
 
@@ -323,7 +359,7 @@ button_callback(GtkWidget *widget, gpointer data)
       if(playerc_log_set_read_state(gui_data->log,1) < 0)
       {
         fprintf(stderr, "Error: Failed to start playback\n");
-        quit = 1;
+        gtk_main_quit();
       }
     }
     else
@@ -331,7 +367,7 @@ button_callback(GtkWidget *widget, gpointer data)
       if(playerc_log_set_write_state(gui_data->log,1) < 0)
       {
         fprintf(stderr, "Error: Failed to start logging\n");
-        quit = 1;
+        gtk_main_quit();
       }
     }
   }
@@ -342,7 +378,7 @@ button_callback(GtkWidget *widget, gpointer data)
       if(playerc_log_set_read_rewind(gui_data->log) < 0)
       {
         fprintf(stderr, "Error: Failed to rewind playback\n");
-        quit = 1;
+        gtk_main_quit();
       }
     }
     else
@@ -357,7 +393,7 @@ button_callback(GtkWidget *widget, gpointer data)
       if(playerc_log_set_write_state(gui_data->log,0) < 0)
       {
         fprintf(stderr, "Error: Failed to stop logging\n");
-        quit = 1;
+        gtk_main_quit();
       }
     }
     else
@@ -365,12 +401,54 @@ button_callback(GtkWidget *widget, gpointer data)
       if(playerc_log_set_read_state(gui_data->log,0) < 0)
       {
         fprintf(stderr, "Error: Failed to stop playback\n");
-        quit = 1;
+        gtk_main_quit();
       }
     }
   }
   else if((GtkButton*)widget == gui_data->quitbutton)
-    quit=1;
+    gtk_main_quit();
+  else if((GtkButton*)widget == gui_data->setfilenamebutton)
+  {
+    // Can only change filename when logging is off
+    if(!gui_data->log->state)
+    {
+      g_assert((dialog = 
+                (GtkDialog*)gtk_dialog_new_with_buttons("My dialog", 
+                                                        gui_data->main_window, 
+                                                        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, 
+                                                        GTK_STOCK_OK, 
+                                                        GTK_RESPONSE_ACCEPT, 
+                                                        GTK_STOCK_CANCEL, 
+                                                        GTK_RESPONSE_REJECT, 
+                                                        NULL)));
+
+      g_assert((label = (GtkLabel*)gtk_label_new("New filename:")));
+      g_assert((entry = (GtkEntry*)gtk_entry_new()));
+      gtk_entry_set_max_length(entry,255);
+      gtk_container_add(GTK_CONTAINER (dialog->vbox), (GtkWidget*)label);
+      gtk_container_add(GTK_CONTAINER (dialog->vbox), (GtkWidget*)entry);
+      gtk_widget_show((GtkWidget*)entry);
+      gtk_widget_show((GtkWidget*)label);
+      gint result = gtk_dialog_run(dialog);
+      switch (result)
+      {
+        case GTK_RESPONSE_ACCEPT:
+          printf("Changing log file name to %s....", gtk_entry_get_text(entry));
+          fflush(stdout);
+          if(playerc_log_set_filename(gui_data->log, 
+                                      gtk_entry_get_text(entry)) < 0)
+            puts("Failed.");
+          else
+            puts("Done.");
+          break;
+        default:
+          break;
+      }
+      gtk_widget_destroy((GtkWidget*)dialog);
+    }
+    else
+      puts("Can't change log filename while logging is enabled\n");
+  }
   else
     puts("MOO!");
 
@@ -384,7 +462,7 @@ update_status_label(gui_data_t* gui_data)
   if(playerc_log_get_state(gui_data->log) < 0)
   {
     fprintf(stderr, "Error: Failed to get log type/state\n");
-    quit = 1;
+    gtk_main_quit();
     return;
   }
 

@@ -165,6 +165,13 @@ class WriteLog: public Driver
   // Device thread
   private: virtual void Main(void);
 
+  // Open this->filename, save the resulting FILE* to this->file, and
+  // write in the logfile header.
+  private: int OpenFile();
+
+  // Flush and close this->file
+  private: void CloseFile();
+
   // Write data to file
   private: void Write(WriteLogDevice *device, void *data, size_t size, struct timeval time);
 
@@ -207,10 +214,10 @@ class WriteLog: public Driver
   // Write wifi data to file
   private: void WriteWiFi(player_wifi_data_t *data);
 
-  // File to read data from
+  // File to write data to
   private: char default_basename[1024];
   private: char default_filename[1024];
-  private: const char *filename;
+  private: char filename[1024];
   private: FILE *file;
 
   // Subscribed device list
@@ -274,7 +281,8 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
            this->default_basename);
 
   // Let user override default filename
-  this->filename = cf->ReadString(section, "filename", this->default_filename);
+  strcpy(this->filename, 
+         cf->ReadString(section, "filename", this->default_filename));
 
   // Default enabled?
   if(cf->ReadInt(section, "autorecord", 1) > 0)
@@ -380,17 +388,11 @@ int WriteLog::Setup()
     }
   }
 
-  // Open the file
-  this->file = fopen(this->filename, "w+");
-  if (this->file == NULL)
+  if(this->OpenFile() < 0)
   {
     PLAYER_ERROR2("unable to open [%s]: %s\n", this->filename, strerror(errno));
-    return -1;
+    return(-1);
   }
-
-  // Write the file header
-  fprintf(this->file, "## Player version %s \n", VERSION);
-  fprintf(this->file, "## File version %s \n", "0.2.0");
 
   // Enable/disable logging, according to default set in config file
   this->enable = this->enable_default;
@@ -413,9 +415,7 @@ int WriteLog::Shutdown()
   this->StopThread();
 
   // Close the file
-  if (this->file)
-    fclose(this->file);
-  this->file = NULL;
+  this->CloseFile();
 
   // Unsubscribe to the underlying devices
   for (i = 0; i < this->device_count; i++)
@@ -430,6 +430,34 @@ int WriteLog::Shutdown()
   return 0;
 }
 
+int
+WriteLog::OpenFile()
+{
+  // Open the file
+  this->file = fopen(this->filename, "w+");
+  if(this->file == NULL)
+  {
+    PLAYER_ERROR2("unable to open [%s]: %s\n", this->filename, strerror(errno));
+    return(-1);
+  }
+
+  // Write the file header
+  fprintf(this->file, "## Player version %s \n", VERSION);
+  fprintf(this->file, "## File version %s \n", "0.2.0");
+
+  return(0);
+}
+
+void
+WriteLog::CloseFile()
+{
+  if(this->file)
+  {
+    fflush(this->file);
+    fclose(this->file);
+    this->file = NULL;
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
@@ -439,6 +467,7 @@ int WriteLog::PutConfig(player_device_id_t id, void *client,
 {
   player_log_set_write_state_t sreq;
   player_log_get_state_t greq;
+  player_log_set_filename_t freq;
   uint8_t subtype;
 
   if(len < sizeof(sreq.subtype))
@@ -492,6 +521,47 @@ int WriteLog::PutConfig(player_device_id_t id, void *client,
 
       if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
                         &greq, sizeof(greq),NULL) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    case PLAYER_LOG_SET_FILENAME:
+      if(len < (sizeof(freq.subtype)+1))
+      {
+        PLAYER_WARN("request to change filename too short");
+        if(this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      if(len > sizeof(freq))
+      {
+        PLAYER_WARN("request to change filename too long");
+        if(this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      // can't switch filenames while logging
+      if(this->enable)
+      {
+        PLAYER_WARN("tried to switch filenames while logging");
+        if(this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      freq = *((player_log_set_filename_t*)src);
+      PLAYER_MSG1(1,"Closing logfile %s", this->filename);
+      this->CloseFile();
+      strncpy(this->filename,
+              (const char*)freq.filename,
+              len-sizeof(freq.subtype));
+      this->filename[sizeof(this->filename)-1] = '\0';
+      PLAYER_MSG1(1,"Opening logfile %s", this->filename);
+      if(this->OpenFile() < 0)
+      {
+        PLAYER_WARN1("Failed to open logfile %s", this->filename);
+        if(this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     default:
