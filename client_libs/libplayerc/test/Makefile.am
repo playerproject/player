@@ -14,11 +14,11 @@ test_SOURCES = test.c \
                test_blobfinder.c \
 							 test_comms.c \
                test_fiducial.c \
-               test_frf.c \
+               test_laser.c \
                test_gps.c \
                test_position.c \
                test_ptz.c \
-               test_srf.c \
+               test_sonar.c \
                test_truth.c
 
 clean-local:
