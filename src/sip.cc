@@ -55,7 +55,8 @@ void CSIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
            M_PI));
   data->position.compass = htons(compass);
   data->position.stalls = (unsigned char)(lwstall || rwstall);
-  
+
+  data->sonar.range_count = htons(PlayerRobotParams[param_idx].SonarNum);
   for(int i=0;i<(int)sizeof(sonars);i++)
     data->sonar.ranges[i] = htons((unsigned short)sonars[i]);
 

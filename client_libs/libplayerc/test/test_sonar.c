@@ -33,8 +33,8 @@ int test_sonar(playerc_client_t *client, int index)
     FAIL();
 
   printf("sonar geom: ");
-  for (i = 0; i < PLAYERC_SONAR_MAX_SCAN; i++)
-    printf("[%6.3f %6.3f %6.3f] ", device->pose[i][0], device->pose[i][1], device->pose[i][2]);
+  for (i = 0; i < device->pose_count; i++)
+    printf("[%6.3f %6.3f %6.3f] ", device->poses[i][0], device->poses[i][1], device->poses[i][2]);
   printf("\n");
 
   for (t = 0; t < 10; t++)
