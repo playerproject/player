@@ -7,7 +7,7 @@ dist-hook:
 
 docdir = $(prefix)/doc
 install-data-hook:
-	mkdir -p $(top_srcdir)/doc
+	mkdir -p $(DESTDIR)$(prefix)/doc
 	cp $(top_srcdir)/doc/*.ps $(DESTDIR)$(prefix)/doc
 
 uninstall-local:
