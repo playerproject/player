@@ -34,12 +34,16 @@ static void _resize_window(GtkWidget *widget,
 int display_map(playerc_map_t* map_device);
 void init_gui(int argc, char** argv, playerc_map_t* mapdev);
 void fini_gui();
-playerc_mclient_t* connect_to_player(playerc_client_t** clients,
-                                     playerc_map_t** maps,
-                                     int num_bots,
-                                     char** hostnames,
-                                     int* ports,
-                                     int data_freq);
+playerc_mclient_t* init_player(playerc_client_t** clients,
+                               playerc_map_t** maps,
+                               int num_bots,
+                               char** hostnames,
+                               int* ports,
+                               int data_freq);
+void fini_player(playerc_mclient_t* mclient,
+                 playerc_client_t** clients,
+                 playerc_map_t** maps,
+                 int num_bots);
 /* Parse command line arguments, of the form host:port */
 int parse_args(int argc, char** argv, int* num_bots, 
                char** hostnames, int* ports);
@@ -60,8 +64,8 @@ main(int argc, char** argv)
     exit(-1);
   }
 
-  assert(mclient = connect_to_player(clients, maps, num_bots, 
-                                     hostnames, ports, DATA_FREQ));
+  assert(mclient = init_player(clients, maps, num_bots, 
+                               hostnames, ports, DATA_FREQ));
 
   // we've read the map, so fill in the aspect ratio
   aspect = maps[0]->width / (double)(maps[0]->height);
@@ -82,6 +86,8 @@ main(int argc, char** argv)
       return(-1);
     }
   }
+
+  fini_player(mclient,clients,maps,num_bots);
 
   return(0);
 }
@@ -133,12 +139,12 @@ parse_args(int argc, char** argv,
  * each client into a new multiclient (which is returned)
  */
 playerc_mclient_t*
-connect_to_player(playerc_client_t** clients,
-                  playerc_map_t** maps,
-                  int num_bots,
-                  char** hostnames,
-                  int* ports,
-                  int data_freq)
+init_player(playerc_client_t** clients,
+            playerc_map_t** maps,
+            int num_bots,
+            char** hostnames,
+            int* ports,
+            int data_freq)
 {
   int i;
   playerc_mclient_t* mclient;
@@ -166,6 +172,8 @@ connect_to_player(playerc_client_t** clients,
       fprintf(stderr, "Failed to subscribe to map\n");
       return(NULL);
     }
+    // hostnames were strdup'd in parse_args()
+    free(hostnames[i]);
   }
 
   /* Get the map from the first robot */
@@ -198,6 +206,22 @@ connect_to_player(playerc_client_t** clients,
 #endif
 
   return(mclient);
+}
+
+void
+fini_player(playerc_mclient_t* mclient,
+            playerc_client_t** clients,
+            playerc_map_t** maps,
+            int num_bots)
+{
+  int i;
+
+  for(i=0;i<num_bots;i++)
+  {
+    playerc_map_destroy(maps[i]);
+    playerc_client_destroy(clients[i]);
+  }
+  playerc_mclient_destroy(mclient);
 }
 
 void
