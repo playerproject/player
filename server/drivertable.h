@@ -55,6 +55,9 @@ class DriverTable
   public:
     DriverTable();
     ~DriverTable();
+
+    // how many drivers we have
+    int Size() { return(numdrivers); }
     
     // add a new driver to the table
     int AddDriver(char* name, char access, 
@@ -62,6 +65,9 @@ class DriverTable
 
     // matches on the driver name
     DriverEntry* GetDriverEntry(char* name);
+   
+    // get the ith driver name; returns NULL if there is no such driver
+    char* GetDriverName(int idx);
 };
 
 #endif
