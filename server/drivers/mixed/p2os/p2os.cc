@@ -1246,6 +1246,36 @@ P2OS::HandleConfig(void)
                          PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom), NULL);
         }
         break;
+
+      case PLAYER_POSITION_VELOCITY_MODE_REQ:
+        /* velocity control mode:
+         *   0 = direct wheel velocity control (default)
+         *   1 = separate translational and rotational control
+         */
+        if(config_size != sizeof(player_position_velocitymode_config_t))
+        {
+          puts("Arg to velocity control mode change request is wrong "
+               "size; ignoring");
+          if(PutReply(this->position_id, client, 
+                      PLAYER_MSGTYPE_RESP_NACK, NULL))
+            PLAYER_ERROR("failed to PutReply");
+          break;
+        }
+
+        player_position_velocitymode_config_t velmode_config;
+        velmode_config = 
+                *((player_position_velocitymode_config_t*)config);
+
+        if(velmode_config.value)
+          direct_wheel_vel_control = false;
+        else
+          direct_wheel_vel_control = true;
+
+        if(PutReply(this->position_id, client, 
+                    PLAYER_MSGTYPE_RESP_ACK, NULL))
+          PLAYER_ERROR("failed to PutReply");
+        break;
+
       default:
         PLAYER_WARN("Position got unknown config request");
         this->PutReply(this->position_id, client, 
