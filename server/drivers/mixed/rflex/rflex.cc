@@ -196,13 +196,6 @@ void RFLEX::Unlock()
 }
 
 int RFLEX::Setup(){
-  //sets up connection, and sets defaults
-  //configures sonar, motor acceleration, etc.
-  if(initialize_robot()<0){
-    fprintf(stderr,"ERROR, no connection to RFLEX established\n");
-    exit(1);
-  }
-  reset_odometry();
   /* now spawn reading thread */
   StartThread();
   return(0);
@@ -374,8 +367,16 @@ RFLEX::Main()
 	printf("Waiting for rflex_done=1 in config file...\n");
 	while (rflex_configs.run == false) pthread_testcancel();
 	printf("Rflex Thread Started\n");
-	
 
+  //sets up connection, and sets defaults
+  //configures sonar, motor acceleration, etc.
+  if(initialize_robot()<0){
+    fprintf(stderr,"ERROR, no connection to RFLEX established\n");
+    exit(1);
+  }
+  reset_odometry();
+
+	
 	player_rflex_cmd_t command;
 	unsigned char config[RFLEX_CONFIG_BUFFER_SIZE];
 	
@@ -413,6 +414,7 @@ RFLEX::Main()
 	last_position_subscrcount = 0;
 	last_bumper_subscrcount = 0;
 	last_ir_subscrcount = 0;
+
 
 	GlobalTime->GetTime(&timeBegan_tv);
 	while(1)
