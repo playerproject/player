@@ -70,41 +70,56 @@ void pf_draw_hist(pf_t *pf, rtk_fig_t *fig)
 // Draw the statistics
 void pf_draw_stats(pf_t *pf, rtk_fig_t *fig)
 {
-  //int i;
+  int i;
+  pf_cluster_t *cluster;
+  pf_sample_set_t *set;
   pf_vector_t mean;
   pf_matrix_t cov;
   pf_matrix_t r, d;
-  double o, d1, d2;
+  double weight, o, d1, d2;
 
-  // Compute the distributions statistics
-  pf_calc_stats(pf, &mean, &cov);
-
-  // Compute unitary representation S = R D R^T
-  pf_matrix_unitary(&r, &d, cov);
-
-  /*
-  printf("cov = \n");
-  pf_matrix_fprintf(cov, stdout, "%f");
-  printf("r = \n");
-  pf_matrix_fprintf(r, stdout, "%f");
-  printf("d = \n");
-  pf_matrix_fprintf(d, stdout, "%f");
-  */
+  set = pf->sets + pf->current_set;
   
-  // Compute the orientation of the error ellipse (first eigenvector)
-  o = atan2(r.m[1][0], r.m[0][0]);
-  d1 = 6 * sqrt(d.m[0][0]);
-  d2 = 6 * sqrt(d.m[1][1]);
+  for (i = 0; i < set->cluster_count; i++)
+  {
+    cluster = set->clusters + i;
 
-  // Draw the error ellipse
-  rtk_fig_ellipse(fig, mean.v[0], mean.v[1], o, d1, d2, 0);
-  rtk_fig_line_ex(fig, mean.v[0], mean.v[1], o, d1);
-  rtk_fig_line_ex(fig, mean.v[0], mean.v[1], o + M_PI / 2, d2);
+    weight = cluster->weight;
+    mean = cluster->mean;
+    cov = cluster->cov;
 
-  // Draw a direction indicator
-  rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2], 0.50, 0.10);
-  rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2] + 3 * sqrt(cov.m[2][2]), 0.50, 0.10);
-  rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2] - 3 * sqrt(cov.m[2][2]), 0.50, 0.10);
+    // Compute unitary representation S = R D R^T
+    pf_matrix_unitary(&r, &d, cov);
+
+    /* Debugging
+    printf("mean = \n");
+    pf_vector_fprintf(mean, stdout, "%e");
+    printf("cov = \n");
+    pf_matrix_fprintf(cov, stdout, "%e");
+    printf("r = \n");
+    pf_matrix_fprintf(r, stdout, "%e");
+    printf("d = \n");
+    pf_matrix_fprintf(d, stdout, "%e");
+    */
+    
+    // Compute the orientation of the error ellipse (first eigenvector)
+    o = atan2(r.m[1][0], r.m[0][0]);
+    d1 = 6 * sqrt(d.m[0][0]);
+    d2 = 6 * sqrt(d.m[1][1]);
+
+    if (d1 > 1e-3 && d2 > 1e-3)
+    {
+      // Draw the error ellipse
+      rtk_fig_ellipse(fig, mean.v[0], mean.v[1], o, d1, d2, 0);
+      rtk_fig_line_ex(fig, mean.v[0], mean.v[1], o, d1);
+      rtk_fig_line_ex(fig, mean.v[0], mean.v[1], o + M_PI / 2, d2);
+    }
+
+    // Draw a direction indicator
+    rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2], 0.50, 0.10);
+    rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2] + 3 * sqrt(cov.m[2][2]), 0.50, 0.10);
+    rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2] - 3 * sqrt(cov.m[2][2]), 0.50, 0.10);
+  }
   
   return;
 }
