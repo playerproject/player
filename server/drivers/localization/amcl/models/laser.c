@@ -15,13 +15,15 @@
 
 
 // Create an sensor model
-laser_t *laser_alloc(map_t *map)
+laser_t *laser_alloc(map_t *map, pf_vector_t laser_pose)
 {
   laser_t *sensor;
 
   sensor = calloc(1, sizeof(laser_t));
 
   sensor->map = map;
+  sensor->laser_pose = laser_pose;
+  
   sensor->range_count = 0;
   sensor->ranges = calloc(LASER_MAX_RANGES, sizeof(laser_range_t));
   
@@ -63,35 +65,41 @@ void laser_add_range(laser_t *sensor, double range, double bearing)
 // Determine the probability for the given pose
 double laser_sensor_model(laser_t *sensor, pf_vector_t pose)
 {
-  int i, step;
+  int i;
   double p;
   double model_range;
   double z, zz, u, cov;
   laser_range_t *obs;
 
-  cov = 0.20 * 0.20;
-  step = 50;
+  cov = 0.05 * 0.05;
 
+  // Take account of the laser pose relative to the robot
+  pose = pf_vector_coord_add(sensor->laser_pose, pose);
+  
   u = 0;
-  for (i = 0; i < sensor->range_count; i += step)
+  for (i = 0; i < sensor->range_count; i++)
   {
     obs = sensor->ranges + i;
+    
+    model_range = map_calc_range(sensor->map,
+                                 pose.v[0], pose.v[1], pose.v[2] + obs->bearing, 8.0);
 
-    // TODO
-    //model_range = map_calc_range(sensor->map,
-    //                              pose.v[0], pose.v[1], pose.v[2] + obs->bearing);
+    //printf("%d %f %f %f\n", i, obs->bearing * 180 / M_PI, obs->range, model_range);
 
-    //printf("%d %f %f\n", i, obs->range, model_range);
     z = (obs->range - model_range);
     zz = z * z;
     u += zz;
   }
 
-  // TODO: proper model
-  p = 0.20 + 0.80 * (1 / (2 * M_PI * cov) * exp(-u / (2 * cov)));
+  //printf("\n\n");
+
+  // TODO: proper (and faster) model
+  //p = 0.20 + 0.80 * (1 / (2 * M_PI * cov) * exp(-u / (2 * cov)));
+
+  p = (1 / (2 * M_PI * cov) * exp(-u / (2 * cov)));
 
   //printf("%e\n", p);
-  assert(p > 0);
+  assert(p >= 0);
 
   return p;
 }

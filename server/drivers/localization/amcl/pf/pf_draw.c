@@ -75,10 +75,11 @@ void pf_draw_tree_node(pf_t *pf, rtk_fig_t *fig, pf_kdtree_t *tree, pf_kdtree_no
   
   return;
 }
+*/
 
 
 // Draw the statistics
-void pf_draw_statistics(pf_t *pf, rtk_fig_t *fig)
+void pf_draw_stats(pf_t *pf, rtk_fig_t *fig)
 {
   int i;
   pf_vector_t mean;
@@ -87,24 +88,32 @@ void pf_draw_statistics(pf_t *pf, rtk_fig_t *fig)
   double o, d1, d2;
 
   // Compute the distributions statistics
-  pf_statistics(pf, &mean, &cov);
+  pf_calc_stats(pf, &mean, &cov);
 
-  // Take the linear components only
-  for (i = 0; i < 3; i++)
-  {
-    cov.m[i][2] = 0;
-    cov.m[2][i] = 0;
-  }
-  pf_matrix_svd(&r, &d, cov);
+  // Compute unitary representation S = R D R^T
+  pf_matrix_unitary(&r, &d, cov);
+
+  printf("cov = \n");
+  pf_matrix_fprintf(cov, stdout, "%f");
+  printf("r = \n");
+  pf_matrix_fprintf(r, stdout, "%f");
+  printf("d = \n");
+  pf_matrix_fprintf(d, stdout, "%f");
   
-  // Compute the orientation of the error ellipse
-  o = atan2(-r.m[0][1], r.m[0][0]);
+  // Compute the orientation of the error ellipse (first eigenvector)
+  o = atan2(r.m[1][0], r.m[0][0]);
   d1 = 6 * sqrt(d.m[0][0]);
   d2 = 6 * sqrt(d.m[1][1]);
-  
+
   // Draw the error ellipse
   rtk_fig_ellipse(fig, mean.v[0], mean.v[1], o, d1, d2, 0);
+  rtk_fig_line_ex(fig, mean.v[0], mean.v[1], o, d1);
+  rtk_fig_line_ex(fig, mean.v[0], mean.v[1], o + M_PI / 2, d2);
+
+  // Draw a direction indicator
+  rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2], 0.50, 0.10);
+  rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2] + 3 * sqrt(cov.m[2][2]), 0.50, 0.10);
+  rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2] - 3 * sqrt(cov.m[2][2]), 0.50, 0.10);
   
   return;
 }
-*/

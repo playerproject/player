@@ -69,15 +69,16 @@ map_cell_t *map_get_cell(map_t *map, double ox, double oy, double oa);
 // Load a map file (occupancy grid)
 int map_load_occ(map_t *map, const char *filename);
 
-// Update the distance values
-void map_update_dist(map_t *map, double max_occ_dist);
-
+// Update the cspace distances
+void map_update_cspace(map_t *map, double max_occ_dist);
 
 
 /**************************************************************************
  * Range functions
  **************************************************************************/
 
+// Extract a single range reading from the map
+double map_calc_range(map_t *map, double ox, double oy, double oa, double max_range);
 
 
 /**************************************************************************

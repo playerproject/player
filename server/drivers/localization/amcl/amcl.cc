@@ -61,6 +61,16 @@
 #include "rtk.h"
 #endif
 
+#include <sys/time.h>
+
+// TESTING
+uint64_t gettime()
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return ((uint64_t) tv.tv_sec) * 1000 + (uint64_t) (tv.tv_usec / 1000);
+}
+
 
 // Incremental navigation driver
 class AdaptiveMCL : public CDevice
@@ -85,13 +95,13 @@ class AdaptiveMCL : public CDevice
 
   // Get the current pose
   private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-                                  uint32_t* tsec, uint32_t* tusec);
+                                  uint32_t* time_sec, uint32_t* time_usec);
 
   // Main function for device thread.
   private: virtual void Main();
 
-  // Check for new odometry data
-  private: int GetOdom();
+  // Get the current odometric pose
+  private: void GetOdom(pf_vector_t *pose, uint32_t *time_sec, uint32_t *time_usec);
 
   // Check for new laser data
   private: int GetLaser();
@@ -117,10 +127,6 @@ class AdaptiveMCL : public CDevice
   // Odometry device info
   private: CDevice *odom;
   private: int odom_index;
-  private: int odom_time_sec, odom_time_usec;
-
-  // Current odometric pose
-  private: pf_vector_t odom_pose;
 
   // Laser device info
   private: CDevice *laser;
@@ -131,7 +137,7 @@ class AdaptiveMCL : public CDevice
   private: pf_vector_t laser_pose;
 
   // Laser range and bearing values
-  private: int laser_count;
+  private: int laser_range_count;
   private: double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2];
 
   // Effective robot radius (used for c-space tests)
@@ -147,12 +153,14 @@ class AdaptiveMCL : public CDevice
 
   // Laser sensor model
   private: laser_t *laser_model;
+  private: int laser_max_ranges;
 
   // Particle filter
   private: pf_t *pf;
 
-  // Odometric pose at last filter update
-  private: pf_vector_t pf_odom_pose;
+  // Current and previous odometric pose estimates used by filter
+  private: pf_vector_t curr_odom_pose;
+  private: pf_vector_t last_odom_pose;
 
   // Current particle filter pose estimate
   private: pf_vector_t pf_pose_mean;
@@ -200,9 +208,6 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   
   this->odom = NULL;
   this->odom_index = cf->ReadInt(section, "position_index", 0);
-  this->odom_time_sec = -1;
-  this->odom_time_usec = -1;
-  this->odom_pose = pf_vector_zero();
 
   this->laser = NULL;
   this->laser_index = cf->ReadInt(section, "laser_index", 0);
@@ -230,10 +235,10 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Laser model settings
   this->laser_model = NULL;
+  this->laser_max_ranges = 3;
 
   // Particle filter settings
   this->pf = NULL;
-  this->pf_odom_pose = pf_vector_zero();
 
   // Initial pose estimate
   this->pf_pose_mean = pf_vector_zero();
@@ -242,8 +247,8 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->pf_pose_mean.v[2] = cf->ReadTupleAngle(section, "init_pose", 2, 0);
 
   // Initial pose covariance
-  u[0] = cf->ReadTupleLength(section, "init_pose_var", 0, 1e2);
-  u[1] = cf->ReadTupleLength(section, "init_pose_var", 1, 1e2);
+  u[0] = cf->ReadTupleLength(section, "init_pose_var", 0, 3);
+  u[1] = cf->ReadTupleLength(section, "init_pose_var", 1, 3);
   u[2] = cf->ReadTupleAngle(section, "init_pose_var", 2, 1e2);
   this->pf_pose_cov = pf_matrix_zero();
   this->pf_pose_cov.m[0][0] = u[0] * u[0];
@@ -292,17 +297,21 @@ int AdaptiveMCL::Setup()
     return -1;
 
   // Compute the c-space
-  map_update_dist(this->map, 2 * this->robot_radius);
+  map_update_cspace(this->map, 2 * this->robot_radius);
 
   // Create the odometry model
   this->odom_model = odometry_alloc(this->map, this->robot_radius);
 
   // Create the laser model
-  this->laser_model = laser_alloc(this->map);
+  this->laser_model = laser_alloc(this->map, this->laser_pose);
 
   // Create the particle filter
   assert(this->pf == NULL);
-  this->pf = pf_alloc(100, 200000);
+  this->pf = pf_alloc(100, 100000);
+
+  // Set initial filter values
+  this->GetOdom(&this->last_odom_pose, NULL, NULL);
+  this->GetOdom(&this->curr_odom_pose, NULL, NULL);
   
   // Start the driver thread.
   this->StartThread();
@@ -425,29 +434,50 @@ int AdaptiveMCL::ShutdownLaser()
 ////////////////////////////////////////////////////////////////////////////////
 // Get the current pose
 size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
-                            uint32_t* tsec, uint32_t* tusec)
+                            uint32_t* time_sec, uint32_t* time_usec)
 {
   int i, j, k;
   int datalen;
   player_localize_data_t data;
-  pf_vector_t pose_mean;
+  pf_vector_t pose;
   pf_matrix_t pose_cov;
+  pf_vector_t odom_pose;
   
   this->Lock();
 
   // Get the current estimate
-  pose_mean = this->pf_pose_mean;
+  pose = this->pf_pose_mean;
   pose_cov = this->pf_pose_cov;
-  
-  // Translate the hypotheses
+
+  // Get the current odometric pose
+  this->GetOdom(&odom_pose, time_sec, time_usec);
+
+  // Translate/rotate the hypotheses to take account of latency in filter
+  pose = pf_vector_coord_add(pf_vector_coord_sub(odom_pose, this->last_odom_pose), pose);
+
+  // Translate/rotate the covariance matrix
   // TODO
 
+  this->Unlock();
+
+  // Check for bad values
+  if (!pf_vector_finite(pose))
+  {
+    pf_vector_fprintf(pose, stderr, "%e");
+    assert(0);
+  }
+  if (!pf_matrix_finite(pose_cov))
+  {
+    pf_matrix_fprintf(pose_cov, stderr, "%e");
+    assert(0);
+  }
+  
   // Encode the one-and-only hypothesis
   data.hypoth_count = 1;
 
-  data.hypoths[0].mean[0] = (int32_t) (pose_mean.v[0] * 1000);
-  data.hypoths[0].mean[1] = (int32_t) (pose_mean.v[0] * 1000);
-  data.hypoths[0].mean[2] = (int32_t) (pose_mean.v[2] * 180 * 3600 / M_PI);
+  data.hypoths[0].mean[0] = (int32_t) (pose.v[0] * 1000);
+  data.hypoths[0].mean[1] = (int32_t) (pose.v[1] * 1000);
+  data.hypoths[0].mean[2] = (int32_t) (pose.v[2] * 180 * 3600 / M_PI);
   
   data.hypoths[0].cov[0][0] = (int32_t) (pose_cov.m[0][0] * 1000 * 1000);
   data.hypoths[0].cov[0][1] = (int32_t) (pose_cov.m[0][1] * 1000 * 1000);
@@ -462,8 +492,6 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   data.hypoths[0].cov[2][2] = (int32_t) (pose_cov.m[2][2] * 180 * 3600 / M_PI * 180 * 3600 / M_PI);
 
   data.hypoths[0].alpha = 0;
-
-  this->Unlock();
   
   // Compute the length of the data packet
   datalen = sizeof(data) - sizeof(data.hypoths) + data.hypoth_count * sizeof(data.hypoths[0]);
@@ -484,10 +512,6 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   // Copy data to server
   assert(len >= datalen);
   memcpy(dest, &data, datalen);
-
-  // Set data timestamp
-  *tsec = this->odom_time_sec;
-  *tusec = this->odom_time_usec;
   
   return datalen;
 }
@@ -547,15 +571,14 @@ void AdaptiveMCL::Main()
     // Process any pending requests.
     this->HandleRequests();
     
-    // Get current odometry values
-    this->GetOdom();
+    // Get the current odometric pose
+    this->GetOdom(&this->curr_odom_pose, NULL, NULL);
 
     // Get current laser values; if we have a new set, update the
     // filter
     if (this->GetLaser())
       this->UpdateFilter();
   }
-
   
 #ifdef INCLUDE_RTKGUI
   rtk_app_main_term(this->app);
@@ -568,34 +591,25 @@ void AdaptiveMCL::Main()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Check for new odometry data
-int AdaptiveMCL::GetOdom()
+// Get the current odometry reading
+void AdaptiveMCL::GetOdom(pf_vector_t *pose, uint32_t *time_sec, uint32_t *time_usec)
 {
-  int i;
   size_t size;
   player_position_data_t data;
-  uint32_t time_sec, time_usec;
-  double time;
-  
-  // Get the odom device data.
-  size = this->odom->GetData(this,(unsigned char*) &data, sizeof(data), &time_sec, &time_usec);
 
-  // Dont do anything if this is old data.
-  if (time_sec == this->odom_time_sec && time_usec == this->odom_time_usec)
-    return 0;
-  this->odom_time_sec = time_sec;
-  this->odom_time_usec = time_usec;
+  // Get the odom device data.
+  size = this->odom->GetData(this, (unsigned char*) &data, sizeof(data), time_sec, time_usec);
 
   // Byte swap
   data.xpos = ntohl(data.xpos);
   data.ypos = ntohl(data.ypos);
   data.yaw = ntohl(data.yaw);
 
-  this->odom_pose.v[0] = (double) ((int32_t) data.xpos) / 1000.0;
-  this->odom_pose.v[1] = (double) ((int32_t) data.ypos) / 1000.0;
-  this->odom_pose.v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
-  
-  return 1;
+  pose->v[0] = (double) ((int32_t) data.xpos) / 1000.0;
+  pose->v[1] = (double) ((int32_t) data.ypos) / 1000.0;
+  pose->v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
+
+  return;
 }
 
 
@@ -620,11 +634,11 @@ int AdaptiveMCL::GetLaser()
 
   b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
   db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
-  this->laser_count = ntohs(data.range_count);
-  assert(this->laser_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
+  this->laser_range_count = ntohs(data.range_count);
+  assert(this->laser_range_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
 
   // Read and byteswap the range data
-  for (i = 0; i < this->laser_count; i++)
+  for (i = 0; i < this->laser_range_count; i++)
   {
     r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
     this->laser_ranges[i][0] = r;
@@ -649,7 +663,9 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
 #ifdef INCLUDE_RTKGUI
   // Draw the samples
   rtk_fig_clear(this->pf_fig);
+  rtk_fig_color(this->pf_fig, 1, 0, 0);
   pf_draw_samples(this->pf, this->pf_fig, 1000);
+  pf_draw_stats(this->pf, this->pf_fig);
 #endif
   
   this->Lock();
@@ -670,23 +686,24 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
 // Update the filter with new sensor data
 void AdaptiveMCL::UpdateFilter()
 {
+  int i;
   pf_vector_t diff;
-
-  // Wait until we have valid data
-  if (this->odom_time_sec < 0)
-    return;
-  if (this->laser_time_sec < 0)
-    return;
   
   // Compute change in pose since last update
-  diff = pf_vector_coord_sub(this->odom_pose, this->pf_odom_pose);
+  diff = pf_vector_coord_sub(this->curr_odom_pose, this->last_odom_pose);
 
   // Make sure we have moved a reasonable distance
   if (fabs(diff.v[0]) < 0.20 && fabs(diff.v[1]) < 0.20 && fabs(diff.v[2]) < M_PI / 6)
     return;
 
-  // Set odometry sensor readings
-  odometry_set_pose(this->odom_model, this->pf_odom_pose, this->odom_pose);  
+  // TESTING
+  printf("update: samples %d\n", this->pf->sets[this->pf->current_set].sample_count);
+  
+  // TESTING
+  uint64_t time = gettime();
+  
+  // Update the odometry sensor model with the latest odometry measurements
+  odometry_set_pose(this->odom_model, this->last_odom_pose, this->curr_odom_pose);  
   odometry_set_stall(this->odom_model, 0);
 
   // Apply the odometry action model
@@ -695,13 +712,31 @@ void AdaptiveMCL::UpdateFilter()
   // Apply the odometry sensor model
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) odometry_sensor_model, this->odom_model);
 
+  // TESTING
+  printf("update: odom     %d\n", (uint32_t) (gettime() - time));
+  
+  // Update the laser sensor model with the latest laser measurements
+  laser_clear_ranges(this->laser_model);
+  for (i = 0; i < this->laser_range_count; i += this->laser_range_count / this->laser_max_ranges)
+    laser_add_range(this->laser_model, this->laser_ranges[i][0], this->laser_ranges[i][1]);
+
+  // Apply the laser sensor model
+  pf_update_sensor(this->pf, (pf_sensor_model_fn_t) laser_sensor_model, this->laser_model);  
+
+  printf("update: laser    %d\n", (uint32_t) (gettime() - time));
+  
   // Resample
   pf_update_resample(this->pf);
 
+  // TESTING
+  printf("update: resample %d\n", (uint32_t) (gettime() - time));
+    
 #ifdef INCLUDE_RTKGUI
   // Draw the samples
   rtk_fig_clear(this->pf_fig);
+  rtk_fig_color(this->pf_fig, 1, 0, 0);
   pf_draw_samples(this->pf, this->pf_fig, 1000);
+  pf_draw_stats(this->pf, this->pf_fig);
 #endif
 
   this->Lock();
@@ -712,7 +747,7 @@ void AdaptiveMCL::UpdateFilter()
   PLAYER_TRACE("pf: %f %f %f",
                this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
   
-  this->pf_odom_pose = this->odom_pose;
+  this->last_odom_pose = this->curr_odom_pose;
 
   this->Unlock();
   
@@ -824,12 +859,12 @@ void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
+
+  PLAYER_TRACE("%d %d %f %d\n", this->map->size_x, this->map->size_y, this->map->scale, ntohl(info.scale));
   
   info.scale = htonl((int32_t) (1000.0 / this->map->scale + 0.5));
-  info.width = htonl((int32_t) (this->map->size_x + 0.5));
-  info.height = htonl((int32_t) (this->map->size_y + 0.5));
-
-  PLAYER_TRACE("%f %d\n", this->map->scale, ntohl(info.scale));
+  info.width = htonl((int32_t) (this->map->size_x));
+  info.height = htonl((int32_t) (this->map->size_y));
 
   // Send map info to the client
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &info, sizeof(info)) != 0)

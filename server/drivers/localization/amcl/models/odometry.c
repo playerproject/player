@@ -166,15 +166,11 @@ void odometry_set_pose(odometry_t *sensor, pf_vector_t old_pose, pf_vector_t new
   // HACK - FIX
   ux = 0.1 * x.v[0];
   uy = 0.1 * x.v[1];
-  ua = 0.1 * x.v[2] + 0.1 * x.v[0];
+  ua = fabs(0.1 * x.v[2]) + fabs(0.1 * x.v[0]);
+
+  cx = pf_matrix_zero();
   cx.m[0][0] = ux * ux;
-  cx.m[0][1] = 0.0;
-  cx.m[0][2] = 0.0;
-  cx.m[1][0] = 0.0;
   cx.m[1][1] = uy * uy;
-  cx.m[1][2] = 0.0;
-  cx.m[2][0] = 0.0;
-  cx.m[2][1] = 0.0;
   cx.m[2][2] = ua * ua;
 
   //printf("x = %f %f %f\n", x.v[0], x.v[1], x.v[2]);

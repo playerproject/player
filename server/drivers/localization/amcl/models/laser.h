@@ -30,6 +30,9 @@ typedef struct
 {
   // Pointer to the map
   map_t *map;
+
+  // Laser pose relative to robot
+  pf_vector_t laser_pose;
   
   // Laser (range, bearing) values
   int range_count;
@@ -39,7 +42,7 @@ typedef struct
 
 
 // Create an sensor model
-laser_t *laser_alloc(map_t *map);
+laser_t *laser_alloc(map_t *map, pf_vector_t laser_pose);
 
 // Free an sensor model
 void laser_free(laser_t *sensor);

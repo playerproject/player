@@ -64,8 +64,8 @@ map_cell_t *map_get_cell(map_t *map, double ox, double oy, double oa)
 }
 
 
-// Update the distance values
-void map_update_dist(map_t *map, double max_occ_dist)
+// Update the cspace distance values
+void map_update_cspace(map_t *map, double max_occ_dist)
 {
   int i, j;
   int ni, nj;
@@ -76,8 +76,6 @@ void map_update_dist(map_t *map, double max_occ_dist)
   map->max_occ_dist = max_occ_dist;
   s = (int) ceil(map->max_occ_dist / map->scale);
 
-  printf("%d\n", s);
-  
   // Reset the distance values
   for (j = 0; j < map->size_y; j++)
   {
@@ -108,7 +106,7 @@ void map_update_dist(map_t *map, double max_occ_dist)
             continue;
 
           ncell = map->cells + MAP_INDEX(map, i + ni, j + nj);
-          d = sqrt(ni * ni + nj * nj);
+          d = map->scale * sqrt(ni * ni + nj * nj);
 
           if (d < ncell->occ_dist)
             ncell->occ_dist = d;
