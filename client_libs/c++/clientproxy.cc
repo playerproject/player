@@ -48,13 +48,15 @@ ClientProxy::ClientProxy(PlayerClient* pc,
 
   // start out with no access
   unsigned char grant_access = 'e';
+   
+  // add it to our client's list to manage
+  if(client)
+    client->AddProxy(this);
 
   if(client && req_access!='c')
   {
     client->RequestDeviceAccess(req_device, req_index, 
                                 req_access, &grant_access);
-    // add it to our client's list to manage
-    client->AddProxy(this);
 
     if((req_access != grant_access) && (player_debug_level(-1) >= 1))
       printf("WARNING: tried to get '%c' access to device %d:%d but got "
@@ -82,7 +84,7 @@ ClientProxy::~ClientProxy()
   }
 }
 
-// methods for changin access mode
+// methods for changing access mode
 int ClientProxy::ChangeAccess(unsigned char req_access, 
                               unsigned char* grant_access=NULL)
 {

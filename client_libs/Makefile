@@ -7,6 +7,7 @@ include ../Makefile.common
 all:
 	cd c && make all
 	cd c++ && make all
+	cd oldc++ && make all
 	cd tcl && make all
 
 #cd java && make -i all
@@ -14,12 +15,14 @@ all:
 install:
 	cd c && make install
 	cd c++ && make install
+	cd oldc++ && make install
 	cd tcl && make install
 
 #cd java && make -i install
 
 uninstall:
 	cd c && make uninstall
+	cd oldc++ && make uninstall
 	cd c++ && make uninstall
 	cd tcl && make uninstall
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_LIB)
@@ -28,6 +31,7 @@ uninstall:
 
 clean:
 	cd c && make clean
+	cd oldc++ && make clean
 	cd c++ && make clean
 	cd tcl && make clean
 

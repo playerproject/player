@@ -4,6 +4,9 @@
 
 include Makefile.common
 
+MANUAL_LOCATION = player-manual
+PWD = $(shell pwd)
+
 all: server client_libs examples
 
 server: 
@@ -44,12 +47,15 @@ uninstall:
 	#cd tex && make install
 
 distro: clean
-	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` $(PLAYER_VERSION)
+	$(MKDIR) doc
+	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
+#cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` $(PLAYER_VERSION)
 
 
 clean_server: 
 	cd src && make clean
 
 clean: clean_server
+	$(RM) -rf doc
 	cd client_libs && make clean
 	cd examples && make clean

@@ -37,6 +37,7 @@
 // just make a client, and connect, if instructed
 PlayerClient::PlayerClient(char* hostname = NULL, int port=PLAYER_PORTNUM)
 {
+  destroyed = false;
   // so we know we're not connected
   conn.sock = -1;
   bzero(conn.banner,sizeof(conn.banner));
@@ -57,6 +58,7 @@ PlayerClient::PlayerClient(char* hostname = NULL, int port=PLAYER_PORTNUM)
 // destructor
 PlayerClient::~PlayerClient()
 {
+  destroyed=true;
   Disconnect();
 }
 
@@ -68,9 +70,13 @@ int PlayerClient::Connect(char* hostname, int port)
 
 int PlayerClient::Disconnect()
 {
-  for(ClientProxyNode* thisnode=proxies;thisnode;thisnode=thisnode->next)
+  if(!destroyed)
   {
-    thisnode->proxy->access = 'c';
+    for(ClientProxyNode* thisnode=proxies;thisnode;thisnode=thisnode->next)
+    {
+      if(thisnode->proxy)
+        thisnode->proxy->access = 'c';
+    }
   }
 
   if(Connected())

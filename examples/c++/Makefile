@@ -14,9 +14,13 @@ BINARIES = randomwalk \
 	   goto \
 	   ptz \
 	   laserobstacleavoid \
-           example_from_manual
+           example_from_manual\
+	   say
 
 all: $(BINARIES)
+
+say: say.cc
+	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ say.cc $(LIBS)
 
 example_from_manual: example_from_manual.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ example_from_manual.cc $(LIBS)
