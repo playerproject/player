@@ -43,8 +43,6 @@
 //      config buffer
 
 
-
-
 // player/stage info buffer
 // data_len is set by stage and indicates the number of bytes available.
 // command_len is set by player.
@@ -62,9 +60,7 @@ typedef struct
 
 #define INFO_BUFFER_SIZE    sizeof(player_stage_info_t)
 
-// Memory map for position device
-// *** HACK -- name collision with the offset into the PSOS buffer
-//
+
 #define POSITION_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
                               + POSITION_DATA_BUFFER_SIZE \
                               + POSITION_COMMAND_BUFFER_SIZE \
@@ -88,7 +84,17 @@ typedef struct
 #define PTZ_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE + \
                               PTZ_DATA_BUFFER_SIZE + \
                               PTZ_COMMAND_BUFFER_SIZE + \
-                              PTZ_CONFIG_BUFFER_SIZE 
+                              PTZ_CONFIG_BUFFER_SIZE
+
+#define LASERBEACON_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE \
+                              + LASERBEACON_DATA_BUFFER_SIZE \
+                              + LASERBEACON_COMMAND_BUFFER_SIZE \
+                              + LASERBEACON_CONFIG_BUFFER_SIZE
+
+#define BROADCAST_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE + \
+                              BROADCAST_DATA_BUFFER_SIZE + \
+                              BROADCAST_COMMAND_BUFFER_SIZE + \
+                              BROADCAST_CONFIG_BUFFER_SIZE 
 
 // Player/arena interface shared memory locations
 
@@ -105,17 +111,15 @@ typedef struct
 #define SUB_BUFFER_SIZE 7
 
 #define ARENA_SUB_START 0
-//*** remove #define P2OS_DATA_START ARENA_SUB_START + SUB_BUFFER_SIZE
-//*** remove #define P2OS_COMMAND_START P2OS_DATA_START + P2OS_DATA_BUFFER_SIZE
 #define POSITION_DATA_START ARENA_SUB_START + SUB_BUFFER_SIZE
-//*** #define SONAR_DATA_START SPOSITION_COMMAND_START + SPOSITION_TOTAL_BUFFER_SIZE
 #define SONAR_DATA_START POSITION_DATA_START + POSITION_TOTAL_BUFFER_SIZE
 #define LASER_DATA_START SONAR_DATA_START + SONAR_TOTAL_BUFFER_SIZE
 #define PTZ_DATA_START LASER_DATA_START + LASER_TOTAL_BUFFER_SIZE
 #define ACTS_DATA_START PTZ_DATA_START + PTZ_TOTAL_BUFFER_SIZE
+#define LASERBEACON_DATA_START ACTS_DATA_START + ACTS_TOTAL_BUFFER_SIZE
+#define BROADCAST_DATA_START LASERBEACON_DATA_START + LASERBEACON_TOTAL_BUFFER_SIZE
 
-// ACTS is the last thing in the shared memory
-#define TOTAL_SHARED_MEMORY_BUFFER_SIZE ACTS_DATA_START + ACTS_TOTAL_BUFFER_SIZE
+#define TOTAL_SHARED_MEMORY_BUFFER_SIZE BROADCAST_DATA_START + BROADCAST_TOTAL_BUFFER_SIZE
 
 #endif
 

@@ -53,30 +53,8 @@
 
 #include "lock.h"
 #include "device.h"
+#include "messages.h"
 
-
-// *** HACK BEGIN -- remove this in new version
-//
-/* make sure we get the various types like 'uint8_t' */
-#ifdef PLAYER_SOLARIS
-  #include <sys/types.h>   // solaris puts them here
-#else
-  #include <stdint.h>      // linux puts them here
-#endif
-
-#define PLAYER_NUM_LASER_SAMPLES 361
-
-/*
- * the laser data packet
- */
-typedef struct
-{
-  /* laser samples start at 0 on the right and increase counterclockwise
-     (like the unit circle) */
-  uint16_t ranges[PLAYER_NUM_LASER_SAMPLES];
-} __attribute__ ((packed)) player_laser_data_t;
-
-// *** HACK END
 
 // The laser beacon device class
 //
@@ -104,7 +82,7 @@ class CLaserBeaconDevice : public CDevice
     // Analyze the laser data and return beacon data
     //
     private: void FindBeacons(const player_laser_data_t *laser_data,
-                              BeaconData *beacon_data);
+                              player_laserbeacon_data_t *beacon_data);
 
     // Analyze the candidate beacon and return its id (0 == none)
     //
