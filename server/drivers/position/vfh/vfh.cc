@@ -33,6 +33,11 @@ class VFH_Class : public CDevice
 
   private:
     bool Goal_Behind;
+    
+    // Set up the truth device (optional).
+    int SetupTruth();
+    int ShutdownTruth();
+    int GetTruth();
 
     // Set up the odometry device.
     int SetupOdom();
@@ -59,6 +64,11 @@ class VFH_Class : public CDevice
 
     // Check for new commands from server
     void GetCommand();
+    
+    // Truth device info
+    CDevice *truth;
+    int truth_index;
+    double truth_time;
 
     // Odometry device info
     CDevice *odom;
@@ -171,6 +181,10 @@ void VFH_Register(DriverTable* table)
 // Set up the device (called by server thread).
 int VFH_Class::Setup() {
   player_position_cmd_t cmd;
+  
+  // Initialise the underlying truth device.
+  if(this->SetupTruth() != 0)
+    return -1;
 
   // Initialise the underlying position device.
   if (this->SetupOdom() != 0)
@@ -197,7 +211,52 @@ int VFH_Class::Shutdown() {
 
   // Stop the odom device.
   this->ShutdownOdom();
+  
+  // Stop the truth device.
+  this->ShutdownTruth();
 
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Set up the underlying truth device (optional).
+int VFH_Class::SetupTruth() 
+{
+  struct timeval ts;
+  player_device_id_t id;
+  
+  // if the user didn't specify a truth device, don't do anything
+  if(this->truth_index < 0)
+    return(0);
+
+// EDIT?
+//  id.robot = this->device_id.robot;
+  id.port = this->device_id.port;
+  id.code = PLAYER_TRUTH_CODE;
+  id.index = this->truth_index;
+
+
+  if(!(this->truth = deviceTable->GetDevice(id)))
+  {
+    PLAYER_ERROR("unable to locate suitable truth device");
+    return -1;
+  }
+
+  if(this->truth->Subscribe(this) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to truth device");
+    return -1;
+  }
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Shutdown the underlying truth device.
+int VFH_Class::ShutdownTruth() {
+
+  if(this->truth)
+    this->truth->Unsubscribe(this);
   return 0;
 }
 
@@ -364,6 +423,39 @@ int VFH_Class::GetOdom() {
   this->odom_vel[0] = (double) ((int32_t) data.xspeed) / 1000.0;
   this->odom_vel[1] = (double) ((int32_t) data.yspeed) / 1000.0;
   this->odom_vel[2] = (double) ((int32_t) data.yawspeed) * M_PI / 180;
+
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Check for new truth data (optional)
+int VFH_Class::GetTruth() 
+{
+  int i;
+  size_t size;
+  player_truth_data_t data;
+  uint32_t timesec, timeusec;
+  double time;
+
+  // Get the truth device data.
+  size = this->truth->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  if (size == 0)
+    return 0;
+  time = (double) timesec + ((double) timeusec) * 1e-6;
+
+  // Dont do anything if this is old data.
+  if (time - this->truth_time < 0.001)
+    return 0;
+  this->truth_time = time;
+
+  // Byte swap
+  data.px = ntohl(data.px);
+  data.py = ntohl(data.py);
+  data.pa = (ntohl(data.pa) + 360) % 360;
+
+  this->odom_pose[0] = (double) ((int32_t) data.px);
+  this->odom_pose[1] = (double) ((int32_t) data.py);
+  this->odom_pose[2] = (double) ((int32_t) data.pa);
 
   return 1;
 }
@@ -540,17 +632,21 @@ int VFH_Class::HandleRequests()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void VFH_Class::Main() {
+void VFH_Class::Main() 
+{
   struct timespec sleeptime;
   float dist;
   struct timeval stime, time;
   int gt, ct;
+  bool newodom,newtruth;
 
   sleeptime.tv_sec = 0;
   sleeptime.tv_nsec = 1000000L;
 
   //this->odom->Wait();
   this->GetOdom();
+  if(this->truth)
+    this->GetTruth();
 
   while (true)
   {
@@ -564,10 +660,21 @@ void VFH_Class::Main() {
     // Block pending new odometric data
     //this->odom->Wait();
     //printf("got odom\n");
-    
-    // Get new odometric data
-    if (this->GetOdom() == 0)
-      continue;
+
+    if(this->truth)
+    {
+      // first get odometry, which fills in odom_pose, among other things
+      this->GetOdom();
+      // now get truth, which will overwrite odom_pose
+      if(this->GetTruth() == 0)
+        continue;
+    }
+    else
+    {
+      // Get new odometric data
+      if (this->GetOdom() == 0)
+        continue;
+    }
 
     // Write odometric data (so we emulate the underlying odometric device)
     this->PutPose();
@@ -698,6 +805,9 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
 		  safety_dist, max_speed, max_turnrate, free_space_cutoff,
 		  obs_cutoff, weight_desired_dir, weight_current_dir);
 
+  this->truth = NULL;
+  this->truth_index = cf->ReadInt(section, "truth_index", -1);
+  this->truth_time = 0.0;
   
   this->odom = NULL;
   this->odom_index = cf->ReadInt(section, "position_index", 0);
