@@ -2,6 +2,13 @@ SUBDIRS = . test
 
 AM_CPPFLAGS = -I$(top_srcdir)/server -I$(srcdir)/../c
 
+CC = @CC_CLIENTS@
+CXX = @CXX_CLIENTS@
+AR = @AR_CLIENTS@
+RANLIB = @RANLIB_CLIENTS@
+CXXFLAGS = @CXXFLAGS_CLIENTS@
+CFLAGS = @CFLAGS_CLIENTS@
+
 lib_LIBRARIES = libplayerclient.a
 
 libplayerclient_a_LIBADD = ../c/playercclient.o 
