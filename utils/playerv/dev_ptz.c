@@ -169,7 +169,7 @@ void ptz_draw(ptz_t *ptz)
   rtk_fig_line(ptz->data_fig, 0, 0, ox, oy);
 
   // Draw in the zoom bar (2 m in length)
-  d = sqrt(fd * fd + 1.0 * 1.0);
+  d = sqrt(fd * fd + 0.5 * 0.5);
   ax = d * cos(ptz->proxy->pan + fx / 2);
   ay = d * sin(ptz->proxy->pan + fx / 2);
   bx = d * cos(ptz->proxy->pan - fx / 2);
@@ -188,7 +188,7 @@ void ptz_move(ptz_t *ptz)
 
   pan = atan2(oy, ox);
   tilt = 0;
-  zoom = 2 * atan2(1.0, sqrt(ox * ox + oy * oy));
+  zoom = 2 * atan2(0.5, sqrt(ox * ox + oy * oy));
   
   if (playerc_ptz_set(ptz->proxy, pan, tilt, zoom) != 0)
     PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
