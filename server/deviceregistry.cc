@@ -50,10 +50,13 @@ void GarminNMEA_Register(DriverTable* table);
 void AmtecPowerCube_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_CLODBUSTER
+void ClodBuster_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_TROGDOR
 void Trogdor_Register(DriverTable* table);
 #endif
-
 #ifdef INCLUDE_WAVEFRONT
 void Wavefront_Register(DriverTable* table);
 #endif
@@ -373,6 +376,10 @@ register_devices()
 
 #ifdef INCLUDE_AMTECPOWERCUBE
   AmtecPowerCube_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_CLODBUSTER
+  ClodBuster_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_TROGDOR
