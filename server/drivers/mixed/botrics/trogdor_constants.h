@@ -41,10 +41,10 @@
 #define TROGDOR_AXLE_LENGTH    0.317
 #define TROGDOR_WHEEL_DIAM     0.10795  /* 4.25 inches */
 #define TROGDOR_WHEEL_CIRCUM   (TROGDOR_WHEEL_DIAM * M_PI)
-#define TROGDOR_TICKS_PER_REV  5800.0
+#define TROGDOR_TICKS_PER_REV  11600
 #define TROGDOR_M_PER_TICK     (TROGDOR_WHEEL_CIRCUM / TROGDOR_TICKS_PER_REV)
-/* the internal PID loop runs every 1.55ms (we think) */
-#define TROGDOR_PID_FREQUENCY  (1/1.55e-3)
+/* the new internal PID loop runs every 1.9375ms (we think) */
+#define TROGDOR_PID_FREQUENCY  (1/1.9375e-3)
 #define TROGDOR_MAGIC_TIMING_CONSTANT 1.0
 #define TROGDOR_MPS_PER_TICK  (TROGDOR_M_PER_TICK * TROGDOR_PID_FREQUENCY / \
                                 TROGDOR_MAGIC_TIMING_CONSTANT)
@@ -53,7 +53,8 @@
 #define TROGDOR_MAX_TICS 2147483648U
 
 /* for safety */
-#define TROGDOR_MAX_WHEELSPEED   1.0
+//#define TROGDOR_MAX_WHEELSPEED   1.0
+#define TROGDOR_MAX_WHEELSPEED   5.0
 
 /* to account for our bad low-level PID motor controller */
 #define TROGDOR_MIN_WHEELSPEED_TICKS 5
