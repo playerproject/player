@@ -14,7 +14,7 @@
 # sent back to the client when it connects), and is used below to construct
 # the directory name for installation.
 
-PLAYER_VERSION = 1.0-gamma
+PLAYER_VERSION = 1.0
 
 #######################################
 # Compiler selection
