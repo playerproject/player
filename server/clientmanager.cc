@@ -523,7 +523,7 @@ ClientManagerTCP::Write()
   for(int i=0;i<num_clients;i++)
   {
     // if this is a dummy, skip it.
-    if(!(clients[i]->socket))
+    if(clients[i]->socket < 0)
       continue;
 
     // if we're waiting for an authorization on this client, then skip it
