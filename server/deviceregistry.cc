@@ -325,7 +325,7 @@ void StgPosition_Register(DriverTable *table);
 void StgSonar_Register(DriverTable *table);
 void StgEnergy_Register(DriverTable *table);
 void StgBlobfinder_Register(DriverTable *table);
-//void StgFiducial_Register(DriverTable *table);
+void StgFiducial_Register(DriverTable *table);
 //void StgBlinkenlight_Register(DriverTable *table);
 #endif
 
@@ -739,7 +739,7 @@ register_devices()
   StgSonar_Register(driverTable);
   StgEnergy_Register(driverTable);
   StgBlobfinder_Register(driverTable);
-  //StgFiducial_Register(driverTable);
+  StgFiducial_Register(driverTable);
   //StgBlinkenlight_Register(driverTable);
 #endif
 }
