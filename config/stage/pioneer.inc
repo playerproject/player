@@ -8,7 +8,7 @@ define pioneer2dx model
 (
   size [0.44 0.33]
 
-  nose 1
+  gui.nose 1
 	
   color "red"
 

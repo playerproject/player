@@ -2,73 +2,39 @@
 # Desc: 1 robot with player, laser, sonar and gps
 # CVS: $Id$
 
-# the resolution of Stage's raytrace model in meters
-#
-
-include "pioneer.inc"
-	
-# TODO - create a walls macro with these defaults
-# and add an option to place something from its bottom-left corner
-basic(	
-  size [15.5 11.4]
-  origin [7.75 5.7 0]
-  bitmap "autolab.png"
-  gui.boundary 1
-  gui.grid 1
-  gui.movemask 0
-  gui.nose 0
-  color "black"
-)
-
-resolution 0.02  # meters per pixel
+# the size of a pixel in Stage's underlying raytrace model in meters
+resolution 0.02 
 
 interval_sim 100  # milliseconds per update step
 interval_real 100 # real-time milliseconds per update step
 
-# extend the pioneer2dx definition from pioneer.inc
-#
-define testrobot pioneer2dx
-(
-  # add a laser scanner	
-  # laser view vector - format: [ minrange maxrange fov ]
-  laser.view [ 0.0 8.0 180.0 ]
-  laser.pose [ 0 0 0 ]
-  laser.size [ 0.15 0.15 ]
-  laser.samples 180
-	
-  # fiducialfinder view vector - format [ minrange maxrange fov ]
-  fiducial.view [ 0.0 5.0 90.0 ]  
-  fiducial.id_limit 4.0
+include "pioneer.inc"  # defines Pioneer-like robots
+include "map.inc" # defines 'map' object used for floorplans
 
-  # blobfinder configuration 
-  # blob view vector - format [minrange maxrange fov]	
-  blob.view [ 0 7.0 60 ]	
-  blob.count 6
-  blob.screen [ 80 60 ]
-  blob.channels [ "red" "green" "blue" "cyan" "yellow" "magenta" ]	
-
-  #energy configuration
-  energy.capacity 3000.0
-  energy.range 1.0
-  energy.return 0 # we don't give charge
+map(	
+  size [15.5 11.4]
+  origin [7.75 5.7 0]
+  bitmap "autolab.png"
 )
 
-define laserbot basic( laser() color "magenta" )
+model( 	
+  name "sub" 
+  size [2 1]
+  pose [2.0 6.0 0.0] 
+  color "red"  
+  bitmap "bitmaps/submarine_small.png"
+  gui.nose 0
+  
+ velocity [0 0 10]
 
-laserbot( pose [1 1 0] )
-laserbot( pose [2 1 1] )
+)
 
-basic( name "nested" size [1 1] pose [4 4 0] basic( size [0.5 0.5] basic( size [0.2 0.2] basic( size [0.1 0.1] ))))
 
-basic( 
-  size [1 1]
-  name "basic0" 
-  pose [8.222 8.066 -20.084] 
-  size [0.8 0.8]	
-  color "green"
- 
-  laser(
-    name "laser0"
+# extend the pioneer2dx definition from pioneer.inc
+#
+define laserpioneer pioneer2dx
+(
+  laser( 
     # laser-specific properties
     range_min 0.0
     range_max 8.0
@@ -77,13 +43,8 @@ basic(
   )
 )
 
-laser( pose [4 4 0] name "laser_cool" )
+laserpioneer( pose [1 4 45] name "yoo" )
 
-basic( 
-  name "basic1" 
-  pose [8.518 8.883 -71.250] 
-  size [0.5 0.5] 
-  color "red" 
- 
-  laser( name "laser1" )
-)
+
+#basic( name "nested" origin [0.2 0 0 ] size [1 1] pose [4 4 0] basic( size [0.5 0.5] basic( size [0.2 0.2] basic( size [0.1 0.1] ))))
+	
