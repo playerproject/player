@@ -2,11 +2,6 @@ SUBDIRS = drivers
 
 AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage
 
-CXX = @CXX_SERVER@
-AR = @AR_SERVER@
-RANLIB = @RANLIB_SERVER@
-CXXFLAGS = @CXXFLAGS_SERVER@
-
 player_DEPENDENCIES =   @STAGE_LIBPATH@ \
 			@P2OS_LIBPATH@ \
 		       	@SICK_LIBPATH@ \
