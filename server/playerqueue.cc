@@ -46,8 +46,13 @@
 PlayerQueue::PlayerQueue(int tmpqueuelen)
 {
   len = tmpqueuelen;
-  queue = new playerqueue_elt_t[len];
-  assert(queue);
+  if(len)
+  {
+    queue = new playerqueue_elt_t[len];
+    assert(queue);
+  }
+  else
+    queue = NULL;
   bzero(queue, sizeof(playerqueue_elt_t)*len);
 }
 
