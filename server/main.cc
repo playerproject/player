@@ -611,17 +611,17 @@ CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num
     for(int i=0;i<*num_ufds;i++)
     {
 #ifdef VERBOSE
-      printf( " %d", ports[i] ); fflush( stdout );
+      printf( " %d", (*ports)[i] ); fflush( stdout );
 #endif      
       // setup the socket to listen on
-      if((ufds[i]->fd = create_and_bind_socket(&listener,1, *ports[i], 
+      if(((*ufds)[i].fd = create_and_bind_socket(&listener,1, (*ports)[i], 
                                                SOCK_STREAM,200)) == -1)
       {
         fputs("create_and_bind_socket() failed; quitting", stderr);
         exit(-1);
       }
 
-      ufds[i]->events = POLLIN;
+      (*ufds)[i].events = POLLIN;
     }
   }
   else
@@ -637,7 +637,7 @@ CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num
     fflush(stdout);
     while((curr_port < 65536) && (curr_ufd < *num_ufds))
     {
-      if((ufds[curr_ufd]->fd = 
+      if(((*ufds)[curr_ufd].fd = 
           create_and_bind_socket(&listener,1,curr_port,
                                  SOCK_STREAM,200)) == -1)
       {
@@ -651,18 +651,18 @@ CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num
       {
         printf("%d ", curr_port);
         fflush(stdout);
-        ufds[curr_ufd]->events = POLLIN;
+        (*ufds)[curr_ufd].events = POLLIN;
         // now, go through the device table and change all references to
         // this port.
         for(entry = deviceTable->GetFirstEntry();
             entry;
             entry = deviceTable->GetNextEntry(entry))
         {
-          if(entry->id.port == *ports[curr_ufd])
+          if(entry->id.port == (*ports)[curr_ufd])
             entry->id.port = curr_port;
         }
         // also have to fix the port list
-        *ports[curr_ufd] = curr_port;
+        (*ports)[curr_ufd] = curr_port;
         curr_ufd++;
       }
       curr_port++;
