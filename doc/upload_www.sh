@@ -29,4 +29,4 @@ tar cvzf $NAME.tgz $NAME
 scp $NAME.tgz $SFUSER@shell.sourceforge.net:/home/groups/p/pl/playerstage/htdocs/doc/$DEST
 
 # Untar the file and re-jig the permissions
-ssh $_SFUSER@shell.sourceforge.net 'cd /home/groups/p/pl/playerstage/htdocs/doc/'$DEST'; tar xvzf '$NAME'.tgz; find . -type d | xargs chmod -R 2775; find . -type f | xargs chmod -R 664'
+ssh $_SFUSER@shell.sourceforge.net 'cd /home/groups/p/pl/playerstage/htdocs/doc/'$DEST'; tar xvzf '$NAME'.tgz; find . -type d | xargs chmod -fR 2775; find . -type f | xargs chmod -fR 664'
