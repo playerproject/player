@@ -100,6 +100,10 @@ void plan_update_waypoints(plan_t *plan, double px, double py);
 // Get the ith waypoint; returns zero if there are no more waypoints
 int plan_get_waypoint(plan_t *plan, int i, double *px, double *py);
 
+// Convert given waypoint cell to global x,y
+void plan_convert_waypoint(plan_t* plan, plan_cell_t *waypoint, 
+                           double *px, double *py);
+
 // Draw the grid
 void plan_draw_grid(plan_t *plan, struct _rtk_fig_t *fig);
 

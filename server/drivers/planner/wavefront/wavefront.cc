@@ -280,9 +280,9 @@ class Wavefront : public Driver
     bool new_goal;
     // current odom pose
     double position_x, position_y, position_a;
-    // current odom velocities, NOT byteswapped or unit converted, because 
-    // we're just passing them through and don't need to use them
-    //int32_t position_xspeed_be, position_yspeed_be, position_aspeed_be;
+    // current list of waypoints
+    plan_cell_t *waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
+    int waypoint_count;
     // last timestamp from localize
     unsigned int localize_timesec, localize_timeusec;
     // last timestamp from position
@@ -401,6 +401,7 @@ Wavefront::Setup()
   this->position_x = this->position_y = this->position_a = 0.0;
   this->localize_x = this->localize_y = this->localize_a = 0.0;
   this->waypoint_x = this->waypoint_y = this->waypoint_a = 0.0;
+  this->curr_waypoint = -1;
 
   this->newData = false;
 
@@ -417,6 +418,9 @@ Wavefront::Setup()
   memset(this->ly_window,0,sizeof(this->ly_window));
   this->l_window_size = 0;
   this->l_window_ptr = 0;
+
+  memset(this->waypoints,0,sizeof(this->waypoints));
+  this->waypoint_count = 0;
 
   if(SetupPosition() < 0)
     return(-1);
@@ -509,7 +513,8 @@ Wavefront::GetLocalizeData()
          //localize_x,localize_y,RTOD(localize_a));
 
   // is the filter window full yet?
-  if(this->l_window_size >= LOCALIZE_WINDOW_SIZE)
+  //if(this->l_window_size >= LOCALIZE_WINDOW_SIZE)
+  if(0)
   {
     // compute window averages
     lx_sum = ly_sum = 0.0;
@@ -593,12 +598,12 @@ Wavefront::PutPlannerData()
   
   memset(&data,0,sizeof(data));
 
-  if(this->plan->waypoint_count > 0)
+  if(this->waypoint_count > 0)
     data.valid = 1;
   else
     data.valid = 0;
 
-  if((this->plan->waypoint_count > 0) && (this->curr_waypoint < 0))
+  if((this->waypoint_count > 0) && (this->curr_waypoint < 0))
     data.done = 1;
   else
     data.done = 0;
@@ -618,7 +623,7 @@ Wavefront::PutPlannerData()
   data.wa = htonl((int)rint(RTOD(this->waypoint_a)));
 
   data.curr_waypoint = (short)htons(this->curr_waypoint);
-  data.waypoint_count = htons(this->plan->waypoint_count);
+  data.waypoint_count = htons(this->waypoint_count);
 
   // We should probably send new data even if we haven't moved.
   if(this->newData)
@@ -627,7 +632,9 @@ Wavefront::PutPlannerData()
     GlobalTime->GetTime(&time);
 
     PutData((unsigned char*)&data,sizeof(data),&time);
-  } else {
+  } 
+  else 
+  {
     /* use the localizer's timestamp */
     struct timeval ts;
     ts.tv_sec = this->localize_timesec;
@@ -748,12 +755,10 @@ void Wavefront::Main()
     timediff = (curr.tv_sec + curr.tv_usec/1e6) -
             (last_replan.tv_sec + last_replan.tv_usec/1e6);
 
+    // Did we get a new goal, or is it time to replan?
     if(this->new_goal || 
-       (this->replan_cycle && 
-        (timediff > this->replan_cycle) && 
-        !this->atgoal))
+       (this->replan_cycle && (timediff > this->replan_cycle) && !this->atgoal))
     {
-
       this->newData = true;
 
       // compute costs to the new goal
@@ -762,26 +767,36 @@ void Wavefront::Main()
       // compute a path to the goal from the current position
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
 
-      if(!this->plan->waypoint_count)
+      if(this->plan->waypoint_count == 0)
       {
-        PLAYER_WARN("no path!");
-        this->curr_waypoint = -1;
-        this->new_goal=false;
+        PLAYER_WARN("No path!");
+        // Only fail here if this is our first try at making a plan;
+        // if we're replanning and don't find a path then we'll just stick
+        // with the old plan.
+        if(this->curr_waypoint < 0)
+        {
+          //this->curr_waypoint = -1;
+          this->new_goal=false;
+          this->waypoint_count = 0;
+        }
       }
-      else if(!plan_get_waypoint(this->plan,0,
-            &this->waypoint_x,
-            &this->waypoint_y))
+      else if(this->plan->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
       {
-        PLAYER_WARN("no waypoints!");
-        this->curr_waypoint = -1;
-        this->new_goal=false;
+        PLAYER_WARN("Plan exceeds maximum number of waypoints!");
+        this->waypoint_count = PLAYER_PLANNER_MAX_WAYPOINTS;
       }
       else
-        this->curr_waypoint = 0;
+        this->waypoint_count = this->plan->waypoint_count;
 
+      if(this->plan->waypoint_count > 0)
+      {
+        memcpy(this->waypoints, this->plan->waypoints,
+               sizeof(plan_cell_t*) * this->waypoint_count);
+
+        this->curr_waypoint = 0;
+      }
       last_replan = curr;
     }
-
 
     bool going_for_target = (this->curr_waypoint == this->plan->waypoint_count);
     dist = sqrt(((this->localize_x - this->target_x) *
@@ -833,9 +848,7 @@ void Wavefront::Main()
 
 
         this->newData = true;
-        // get next waypoint
-        if(!plan_get_waypoint(this->plan,this->curr_waypoint,
-              &this->waypoint_x,&this->waypoint_y))
+        if(this->curr_waypoint == this->waypoint_count)
         {
           // no more waypoints, so wait for target achievement
 
@@ -843,6 +856,11 @@ void Wavefront::Main()
           usleep(CYCLE_TIME_US);
           continue;
         }
+        // get next waypoint
+        plan_convert_waypoint(this->plan,
+                              this->waypoints[this->curr_waypoint],
+                              &this->waypoint_x,
+                              &this->waypoint_y);
         this->curr_waypoint++;
 
         this->waypoint_a = this->target_a;
@@ -1136,22 +1154,17 @@ Wavefront::PutConfig(player_device_id_t id, void *client,
       case PLAYER_PLANNER_GET_WAYPOINTS_REQ:
         // return the list of waypoints
         reply.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
-        if(plan->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
+        if(this->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
         {
           PLAYER_WARN("too many waypoints; truncating list");
           //reply.count = htons((unsigned short)PLAYER_PLANNER_MAX_WAYPOINTS);
           reply.count = htons((unsigned short)0);
         }
         else
-          reply.count = htons((unsigned short)plan->waypoint_count);
+          reply.count = htons((unsigned short)this->waypoint_count);
         for(int i=0;i<(int)ntohs(reply.count);i++)
         {
-          if(!plan_get_waypoint(plan, i, &wx, &wy))
-          {
-            PLAYER_WARN("fewer waypoints than expected!");
-            reply.count = htons((unsigned short)(i));
-            break;
-          }
+          plan_convert_waypoint(plan,this->waypoints[i], &wx, &wy);
           reply.waypoints[i].x = htonl((int)rint(wx * 1e3));
           reply.waypoints[i].y = htonl((int)rint(wy * 1e3));
         }
