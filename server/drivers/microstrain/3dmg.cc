@@ -206,7 +206,7 @@ void MicroStrain3DMG::Main()
     
     m =  q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
         
-    printf("%+6.3f %+6.3f %+6.3f %+6.3f, %+6.3f\n", q[0], q[1], q[2], q[3], m);
+    //printf("%+6.3f %+6.3f %+6.3f %+6.3f, %+6.3f\n", q[0], q[1], q[2], q[3], m);
 
     e[0] = 0.0;
     e[1] = 0.0;
@@ -218,13 +218,13 @@ void MicroStrain3DMG::Main()
     //e[0] = atan(2 * (q[3] * q[0] + q[1] * q[2]) /
     //            (q[3] * q[3] - q[0] * q[0] - q[1] * q[1] + q[2] * q[2]));
 
-    printf("%5.3f %+6.1f %+6.1f %+6.1f\n",
-           ntime, e[0] * 180 / M_PI, e[1] * 180 / M_PI, e[2] * 180 / M_PI);
+    //printf("%5.3f %+6.1f %+6.1f %+6.1f\n",
+    //       ntime, e[0] * 180 / M_PI, e[1] * 180 / M_PI, e[2] * 180 / M_PI);
 
     // Construct data packet
     data.xpos = 0;
     data.ypos = 0;
-    data.yaw = htons((int16_t) (-e[2] * 180 / M_PI));
+    data.yaw = htonl((int32_t) (-e[2] * 180 / M_PI));
     data.xspeed = 0;
     data.yspeed = 0;
     data.yawspeed = 0;
