@@ -46,9 +46,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -68,8 +69,30 @@
 //
 CBroadcastDevice::CBroadcastDevice(int argc, char** argv)
 {
+    this->addr = PLAYER_BROADCAST_IP;
+    this->port = PLAYER_BROADCAST_PORT;
     this->read_socket = 0;
     this->write_socket = 0;
+
+    for (int i = 0; i < argc; i++)
+    {
+        if (strcmp(argv[i], "addr") == 0 && i + 1 < argc)
+        {
+            this->addr = strdup(argv[i + 1]);
+            i++;
+        }
+        else if (strcmp(argv[i], "port") == 0 && i + 1 < argc)
+        {
+            this->port = atoi(argv[i + 1]);
+            i++;
+        }   
+        else
+        {
+            PLAYER_ERROR("broadcast device: invalid command line; ignoring");
+            break;
+        }
+    }
+    PLAYER_TRACE2("broadcasting on %s:%d", this->addr, this->port);
 }
 
 
@@ -89,8 +112,8 @@ int CBroadcastDevice::Setup()
     }
     memset(&this->write_addr, 0, sizeof(this->write_addr));
     this->write_addr.sin_family = AF_INET;
-    this->write_addr.sin_addr.s_addr = inet_addr(PLAYER_BROADCAST_IP);
-    this->write_addr.sin_port = htons(PLAYER_BROADCAST_PORT);
+    this->write_addr.sin_addr.s_addr = inet_addr(this->addr);
+    this->write_addr.sin_port = htons(this->port);
 
     // Set write socket options to allow broadcasting
     u_int broadcast = 1;
@@ -171,7 +194,7 @@ size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize)
 
     // Read all the currently queued packets
     // and concatenate them into a broadcast data packet.
-    while (true)
+    while (this->data.len < sizeof(this->data.buffer))
     {
         int max_bytes = sizeof(this->data.buffer) - this->data.len;
         int bytes = RecvPacket(this->data.buffer + this->data.len, max_bytes);
@@ -180,7 +203,7 @@ size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize)
             PLAYER_TRACE0("read no bytes");
             break;
         }
-        if (bytes >= max_bytes)
+        else if (bytes >= max_bytes)
         {
             PLAYER_TRACE0("broadcast packet overrun; packets have been discarded\n");
             break;
@@ -188,17 +211,17 @@ size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize)
         PLAYER_TRACE1("read msg len = %d", bytes);
         this->data.len += bytes;
     }
+
+    PLAYER_TRACE1("data.len = %d", this->data.len);
     
     // Do some byte swapping
     this->data.len = htons(this->data.len);
-
-    PLAYER_TRACE1("data.buffer [%s]", this->data.buffer);
     
     // Copy data
     memcpy(data, &this->data, maxsize); 
 
     // Return actual length of data
-    return this->data.len + sizeof(this->data.len);
+    return ntohs(this->data.len) + sizeof(this->data.len);
 }
 
 
