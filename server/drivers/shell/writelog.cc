@@ -422,7 +422,9 @@ void WriteLog::WriteLaser(player_laser_data_t *data)
           DEG_RAD(HUINT16(data->resolution) * 0.01), HUINT16(data->range_count));
 
   for (i = 0; i < ntohs(data->range_count); i++)
-    fprintf(this->file, "%.3f %2d ", MM_M(HUINT16(data->ranges[i])), data->intensity[i]);
+    fprintf(this->file, "%.3f %2d ",
+            MM_M(HUINT16(data->ranges[i]) * HUINT16(data->range_res)),
+            data->intensity[i]);
 
   return;
 }
