@@ -22,7 +22,7 @@ light: $(BASE_NAME).tex
 
 html:
 	rm -rf html_docs
-	latex2html -split 0 -nonavigation -html_version 3.2,table,math -show_section_numbers -mkdir -dir html_docs $(BASE_NAME).tex
+	latex2html -split 4 -toc_depth 3 -html_version 3.2,table,math -show_section_numbers -mkdir -dir html_docs $(BASE_NAME).tex
 
 
 ps: $(BASE_NAME).ps
