@@ -1239,97 +1239,125 @@ typedef struct player_speech_cmd
  ** end section
  *************************************************************************/
 
-/*************************************************************************/
-/*
- * GPS interface
- */
+/*************************************************************************
+ ** begin section gps
+ *************************************************************************/
 
-/*
- * GPS data packet:
- *   xpos, ypos: current global position (in mm).
- *   heading: current global heading (in degrees).
- */
-typedef struct
+/** [Synopsis]
+The {\tt gps} interface provides access to an absolute position system, such
+as GPS. */
+
+/** [Data] */
+/**
+The {\tt gps} interface gives current global position and heading information; 
+the format is: */
+typedef struct player_gps_data
 {
-  int32_t xpos,ypos;
-  int32_t heading;
+  /** $(X,Y,\theta)$ in (mm,mm,degrees) */
+  int32_t xpos,ypos,heading;
 } __attribute__ ((packed)) player_gps_data_t;
-/*************************************************************************/
 
-/*************************************************************************/
-/*
- * Bumper interface
- */
+/** [Commands]  This interface accepts no commands. */
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
+/*************************************************************************
+ ** begin section bumper
+ *************************************************************************/
+
+/** [Constants] */
+/** Maximum number of bumper samples */
 #define PLAYER_BUMPER_MAX_SAMPLES 32
+/** The request subtypes */
+#define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)1)
 
-/*  defines the geometry of a single bumper */
-typedef struct 
+/** [Data] */
+/**
+The {\tt gps} interface gives current global position and heading information; 
+the format is: */
+typedef struct player_bumper_data
 {
-  /* the local pose of a single bumper in mm */
-  int16_t x_offset, y_offset, th_offset;   
-  /* length of the sensor in mm  */
-  uint16_t length; 
-  /* radius of curvature in mm - zero for straight lines */
-  uint16_t radius; 
-} __attribute__ ((packed)) player_bumper_define_t;
-
-typedef struct
-{
-  /* the number of valid bumper readings */
+  /** the number of valid bumper readings */
   uint8_t bumper_count;
 
-  /* array of bumper values */
+  /** array of bumper values */
   uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
 } __attribute__ ((packed)) player_bumper_data_t;
 
+/** [Commands] This interface accepts no commands. */
 
-/* Packet for getting the sensor geometries of a bumper device. */
-typedef struct
+/** [Configuration: Query geometry] */
+/** To query the geometry of a bumper array, give the following request,
+    filling in only the subtype.  The server will repond with the other fields
+    filled in. */
+typedef struct player_bumper_define
 {
-  /* Packet subtype.  Must be PLAYER_BUMPER_GET_GEOM_REQ. */
+  /** Packet subtype.  Must be PLAYER_BUMPER_GET_GEOM_REQ. */
   uint8_t subtype;
 
-  /* The number of valid bumper definitions. */
+  /** The number of valid bumper definitions. */
   uint16_t bumper_count;
 
-  /* geometry of each bumper */
+  /** geometry of each bumper */
   player_bumper_define_t bumper_def[PLAYER_BUMPER_MAX_SAMPLES];
 } __attribute__ ((packed)) player_bumper_geom_t;
 
-
-#define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)1)
-/*************************************************************************/
-
-/*************************************************************************/
-/*
- * Truth device, used for getting and setting data about entities in Stage.
- */
-
-/* Data packet with current state of truth object. */
-typedef struct
+/**  the geometry of a single bumper */
+typedef struct player_bumper_define
 {
-  /* Object pose in world cs (mm, mm, degrees). */
+  /** the local pose of a single bumper in mm */
+  int16_t x_offset, y_offset, th_offset;   
+  /** length of the sensor in mm  */
+  uint16_t length; 
+  /** radius of curvature in mm - zero for straight lines */
+  uint16_t radius; 
+} __attribute__ ((packed)) player_bumper_define_t;
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section truth
+ *************************************************************************/
+/** [Synopsis]
+The {\tt truth} interface provides access to the absolute state of entities. 
+*/
+
+/** [Constants] */
+/** Request packet subtypes. */
+#define PLAYER_TRUTH_GET_POSE 0x00
+#define PLAYER_TRUTH_SET_POSE 0x01
+
+/** [Data] */
+/** The {\tt truth} interface returns data concerning the current state of
+an entity; the format is: */
+typedef struct player_truth_data
+{
+  /** Object pose in world cs (mm, mm, degrees). */
   int32_t px, py, pa; 
 
 } __attribute__ ((packed)) player_truth_data_t;
 
-/* Request packet subtypes. */
-#define PLAYER_TRUTH_GET_POSE 0x00
-#define PLAYER_TRUTH_SET_POSE 0x01
+/** [Commands] This interface accepts no commands. */
 
-/* Config packet for setting state of truth object. */
-typedef struct
+/** [Configuration: Get/set pose] */
+/** To get the pose of an object, use the following request, filling in only
+ the subtype with PLAYER_TRUTH_GET_POSE.  The server will respond with the other fields filled in.  To set the pose, set the subtype to PLAYER_TRUTH_SET_POS
+ and fill in the rest of the fields with the new pose. */
+typedef struct player_truth_pose
 {
-  /* Packet subtype.  Use PLAYER_TRUTH_GET_POSE to get the pose.  Use
-  * PLAYER_TRUTH_SET_POSE to set the pose. */
+  /** Packet subtype.  Must be either PLAYER_TRUTH_GET_POSE or
+    PLAYER_TRUTH_SET_POSE */
   uint8_t subtype;
   
-  /* Object pose in world cs (mm, mm, degrees). */
+  /** Object pose in world cs (mm, mm, degrees). */
   int32_t px, py, pa; 
 
 } __attribute__ ((packed)) player_truth_pose_t;
-/*************************************************************************/
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 /*************************************************************************/
 /*
@@ -1438,37 +1466,64 @@ typedef struct
 } __attribute__ ((packed)) player_mote_config_t;
 /*************************************************************************/
 
-/*************************************************************************/
-/*
- * DIO interface
- */
+/*************************************************************************
+ ** begin section dio
+ *************************************************************************/
+
+/** [Synopsis]
+The {\tt dio} interface provides access to a digital I/O device. */
+
+
+/** [Data] */
+/** The {\tt dio} interface returns data regarding the current state of the
+digital inputs; the format is: */
+typedef struct player_dio_data
+{
+  /** number of samples */
+  uint8_t count; 
+  /** bitfield of samples */
+  uint32_t digin;
+} __attribute__ ((packed)) player_dio_data_t;
+
+
+/** [Commands] This interface accepts no commands. */
 
 // TODO: add command
 
-/* DIO data packet */
-typedef struct
-{
-  uint8_t count; // number of samples
-  uint32_t digin; // bitfield
-} __attribute__ ((packed)) player_dio_data_t;
-/*************************************************************************/
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
-/*************************************************************************/
-/*
- * AIO interface
- */
+/*************************************************************************
+ ** begin section aio
+ *************************************************************************/
 
+/** [Synopsis]
+The {\tt aio} interface provides access to an analog I/O device. */
+
+/** [Constants] */
+/** The maximum number of analog I/O samples */
 #define PLAYER_AIO_MAX_SAMPLES 8
 
-// TODO: add command
-
-/* AIO data packet */
-typedef struct
+/** [Data] */
+/**
+The {\tt aio} interface returns data regarding the current state of the
+analog inputs; the format is: */
+typedef struct player_aio_data
 {
+  /** number of valid samples */
   uint8_t count;
+  /** the samples */
   int32_t anin[PLAYER_AIO_MAX_SAMPLES];
 } __attribute__ ((packed)) player_aio_data_t;
-/*************************************************************************/
+
+/** [Commands] This interface accepts no commands. */
+
+// TODO: add command
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 /*************************************************************************/
 /*
@@ -1563,35 +1618,75 @@ typedef struct
 } __attribute__ ((packed)) player_rwi_config_t;
 /*************************************************************************/
 
-/*************************************************************************/
-/*
- * WiFi interface
- */
-typedef struct
+/*************************************************************************
+ ** begin section wifi
+ *************************************************************************/
+/** [Synopsis]
+The {\tt wifi} interface provides access to the state of a wireless network
+interface. */
+
+/** [Data] */
+/**
+The {\tt wifi} interface returns data regarding the state of a wireless
+network interface; the format is: */
+typedef struct player_wifi_data
 {
-  uint16_t  link;
-  uint16_t  level;
-  uint16_t  noise;
+  /** signal and noise information */
+  uint16_t  link, level, noise;
 } __attribute__ ((packed)) player_wifi_data_t;
-/*************************************************************************/
+
+/** [Commands] This interface accepts no commands. */
 
 /*************************************************************************
-*
-*  IR interface
-*/
-#define PLAYER_IR_MAX_SAMPLES 8
+ ** end section
+ *************************************************************************/
 
-// data from the IR device
-typedef struct 
+/*************************************************************************
+ ** begin section ir
+ *************************************************************************/
+
+/** [Synopsis]
+The {\tt ir} interface provides access to an array of infrared (IR) range
+sensors. */
+
+/** [Constants] */
+/** Maximum number of samples */
+#define PLAYER_IR_MAX_SAMPLES 8
+/** config requests */
+#define PLAYER_IR_POSE_REQ   ((uint8_t)1)
+#define PLAYER_IR_POWER_REQ  ((uint8_t)2)
+
+/** [Data] */
+/**
+The {\tt ir} interface returns range readings from the IR array; the format 
+is: */
+typedef struct player_ir_data
 {
+  /** number of samples */
   uint16_t range_count;
+  /** voltages (units?) */
   uint16_t voltages[PLAYER_IR_MAX_SAMPLES];
+  /** ranges (mm?) */
   uint16_t ranges[PLAYER_IR_MAX_SAMPLES];
 } __attribute__ ((packed)) player_ir_data_t;
 
-// used by a config command
-typedef struct 
+/** [Commands] This interface accepts no commands. */
+
+/** [Configuration: Query pose] */
+/** To query the pose of the IRs, use the following request, filling in only
+    the subtype.  The server will respond with the other fields filled in. */
+typedef struct player_ir_pose
 {
+  /** subtype; must be PLAYER_IR_POSE_REQ */
+  uint8_t subtype; 
+  /** poses? */
+  player_ir_pose_t poses[PLAYER_IR_MAX_SAMPLES];
+} __attribute__ ((packed)) player_ir_pose_req_t;
+
+/** what is this for? */
+typedef struct player_ir_pose
+{
+  /** ?? */
   short poses[PLAYER_IR_MAX_SAMPLES][3];
 } __attribute__ ((packed)) player_ir_pose_t;
 
@@ -1599,22 +1694,20 @@ typedef struct
 //#define PLAYER_REB_IR_M_PARAM 1
 //#define PLAYER_REB_IR_B_PARAM 1
 
-// these are codes for different config requests
-#define PLAYER_IR_POSE_REQ   ((uint8_t)1)
-#define PLAYER_IR_POWER_REQ  ((uint8_t)2)
-
-typedef struct 
+/** [Configuration: IR power] */
+/** To turn IR power on and off, use this request.  The server will reply with
+ a zero-length acknowledgement? */
+typedef struct player_ir_power_req
 {
-  uint8_t subtype; // must be PLAYER_IR_POSE_REQ
-  player_ir_pose_t poses[PLAYER_IR_MAX_SAMPLES];
-} __attribute__ ((packed)) player_ir_pose_req_t;
-
-typedef struct 
-{
-  uint8_t subtype; // must be PLAYER_IR_POWER_REQ
-  uint8_t state; // 0 for power off, 1 for power on
+  /** must be PLAYER_IR_POWER_REQ */
+  uint8_t subtype; 
+  /** 0 for power off, 1 for power on */
+  uint8_t state; 
 } __attribute__ ((packed)) player_ir_power_req_t;
-/**************************************************************************/
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 
 #endif /* PLAYER_H */
