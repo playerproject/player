@@ -320,8 +320,9 @@ AC_OUTPUT(Makefile
 	  server/drivers/stage/Makefile 
           server/drivers/stage1p4/Makefile 
           server/drivers/gazebo/Makefile 
+          server/drivers/planner/Makefile 
+          server/drivers/planner/wavefront/Makefile 
           server/drivers/position/isense/Makefile 
-          server/drivers/position/wavefront/Makefile 
           server/drivers/position/microstrain/Makefile 
           server/drivers/position/inav/Makefile 
           server/drivers/position/vfh/Makefile 

@@ -22,7 +22,6 @@ main(int argc, char** argv)
 {
   int i;
   int count;
-  double epsilon=1e-3;
 
   pose_t robot_pose;
 
@@ -42,7 +41,7 @@ main(int argc, char** argv)
   assert(gui_data.mclient = init_player(gui_data.clients, 
                                         gui_data.maps, 
                                         gui_data.localizes, 
-                                        gui_data.positions, 
+                                        gui_data.planners, 
                                         gui_data.num_robots, 
                                         gui_data.hostnames, 
                                         gui_data.ports, 
@@ -87,6 +86,15 @@ main(int argc, char** argv)
         robot_pose.px = gui_data.localizes[i]->hypoths[0].mean[0];
         robot_pose.py = gui_data.localizes[i]->hypoths[0].mean[1];
         robot_pose.pa = gui_data.localizes[i]->hypoths[0].mean[2];
+
+        // if it's off the map, put it in the middle
+        if((fabs(robot_pose.px) >=
+            (gui_data.mapdev->width * gui_data.mapdev->resolution / 2.0)) ||
+           (fabs(robot_pose.py) >=
+            (gui_data.mapdev->height * gui_data.mapdev->resolution / 2.0)))
+        {
+          robot_pose.px = robot_pose.py = 0.0;
+        }
         move_robot(gui_data.robot_items[i],robot_pose);
         gui_data.localizes[i]->info.fresh = 0;
       }
@@ -94,13 +102,16 @@ main(int argc, char** argv)
       // every once in a while, get the latest path from each robot
       if(!(count % (DATA_FREQ * 10 * gui_data.num_robots)))
       {
-        if(playerc_position_get_waypoints(gui_data.positions[i]) < 0)
+        if(gui_data.planners[i])
         {
-          fprintf(stderr, "error while getting waypoints for robot %d\n", i);
-          quit=1;
-          break;
+          if(playerc_planner_get_waypoints(gui_data.planners[i]) < 0)
+          {
+            fprintf(stderr, "error while getting waypoints for robot %d\n", i);
+            quit=1;
+            break;
+          }
+          draw_waypoints(&gui_data,i);
         }
-        draw_waypoints(&gui_data,i);
       }
     }
     count++;

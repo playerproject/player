@@ -25,6 +25,7 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_truth.c \
                        dev_wifi.c \
                        dev_map.c \
+                       dev_planner.c \
                        error.c \
                        error.h
 

@@ -381,6 +381,7 @@ player_interface_t interfaces[] = {
   {PLAYER_ENERGY_CODE, PLAYER_ENERGY_STRING, "stg_energy"},
   {PLAYER_MAP_CODE, PLAYER_MAP_STRING, "mapfile"},
   {PLAYER_HUD_CODE, PLAYER_HUD_STRING, "gz_hud"},
+  {PLAYER_PLANNER_CODE, PLAYER_PLANNER_STRING, "wavefront"},
   {0,NULL,NULL}
 };
 

@@ -93,6 +93,7 @@
 #define PLAYER_ENERGY_CODE         ((uint16_t)41)  // energy consumption & charging
 #define PLAYER_MAP_CODE            ((uint16_t)42)  // get a map
 #define PLAYER_HUD_CODE            ((uint16_t)43)  // get a HUD interface
+#define PLAYER_PLANNER_CODE        ((uint16_t)44)  // 2D motion planner
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
@@ -135,6 +136,7 @@
 #define PLAYER_ENERGY_STRING        "energy"
 #define PLAYER_MAP_STRING           "map"
 #define PLAYER_HUD_STRING           "hud"
+#define PLAYER_PLANNER_STRING       "planner"
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
@@ -565,7 +567,6 @@ The various configuration request types. */
 #define PLAYER_POSITION_POSITION_PID_REQ      ((uint8_t)7)
 #define PLAYER_POSITION_SPEED_PROF_REQ        ((uint8_t)8)
 #define PLAYER_POSITION_SET_ODOM_REQ          ((uint8_t)9)
-#define PLAYER_POSITION_GET_WAYPOINTS_REQ     ((uint8_t)10)
 
 /**
 These are possible Segway RMP config commands; see the status command in 
@@ -584,7 +585,6 @@ the RMP manual */
 #define PLAYER_POSITION_RMP_RST_INT_YAW         0x04
 #define PLAYER_POSITION_RMP_RST_INT_FOREAFT     0x08
 
-#define PLAYER_POSITION_MAX_WAYPOINTS 128
 
 /** [Data] */
 /**
@@ -767,27 +767,6 @@ typedef struct player_rmp_config
       See the "Status" command in the Segway manual. */
   uint16_t value;
 } __attribute__ ((packed)) player_rmp_config_t;
-
-typedef struct player_position_waypoint
-{
-  int32_t x,y;
-} __attribute__ ((packed)) player_position_waypoint_t;
-
-typedef struct player_position_waypoints_req
-{
-  /** subtype: must be of PLAYER_POSITION_GET_WAYPOINTS_REQ */
-  uint8_t subtype;
-
-  /** Did the planner find a valid path to the goal? */
-  uint8_t path_valid;
-
-  /** The current goal (mm,mm,deg) */
-  int32_t goal[3];
-  
-  /** Number of waypoints to follow */
-  uint16_t count;
-  player_position_waypoint_t waypoints[PLAYER_POSITION_MAX_WAYPOINTS];
-} __attribute__ ((packed)) player_position_waypoints_req_t;
 
 /*************************************************************************
  ** end section
@@ -2947,24 +2926,61 @@ typedef struct player_energy_data
 /** [Synopsis] The {\tt planner} interface provides control of a 2-D
                motion planner */
 
+#define PLAYER_PLANNER_GET_WAYPOINTS_REQ     ((uint8_t)10)
+
+#define PLAYER_PLANNER_MAX_WAYPOINTS 128
+
+/** [Data] The {\tt planner} interface reports the current execution state 
+    of the planner. The format is: */
 typedef struct player_planner_data
 {
   /** Did the planner find a valid path? */
   uint8_t valid;
 
-  /** The goal location (mm,mm,deg) */
+  /** Have we arrived at the goal? */
+  uint8_t done;
+
+  /** Current location (mm,mm,deg) */
+  int32_t px,py,pa;
+
+  /** Goal location (mm,mm,deg) */
   int32_t gx,gy,ga;
 
-  /** The current waypoint location (mm,mm,deg) */
+  /** Current waypoint location (mm,mm,deg) */
   int32_t wx,wy,wa;
 
-  /** The current waypoint index (handy if you already have the list
-      of waypoints) */
-  uint16_t curr_waypoint;
+  /** Current waypoint index (handy if you already have the list
+      of waypoints). May be negative if there's no plan, or if 
+      the plan is done */
+  int16_t curr_waypoint;
 
-  /** The number of waypoints in the plan */
+  /** Number of waypoints in the plan */
   uint16_t waypoint_count;
 } __attribute__ ((packed)) player_planner_data_t;
+
+/** [Command] The {\tt planner} interface accepts a new goal.
+    The format is: */
+typedef struct player_planner_cmd
+{
+  /** Goal location (mm,mm,deg) */
+  int32_t gx,gy,ga;
+} __attribute__ ((packed)) player_planner_cmd_t;
+
+typedef struct player_planner_waypoint
+{
+  int32_t x,y,a;
+} __attribute__ ((packed)) player_planner_waypoint_t;
+
+typedef struct player_planner_waypoints_req
+{
+  /** subtype: must be of PLAYER_PLANNER_GET_WAYPOINTS_REQ */
+  uint8_t subtype;
+
+  /** Number of waypoints to follow */
+  uint16_t count;
+  player_planner_waypoint_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
+} __attribute__ ((packed)) player_planner_waypoints_req_t;
+
 
 /*************************************************************************
  ** end section

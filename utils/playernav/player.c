@@ -9,7 +9,7 @@ playerc_mclient_t*
 init_player(playerc_client_t** clients,
             playerc_map_t** maps,
             playerc_localize_t** localizes,
-            playerc_position_t** positions,
+            playerc_planner_t** planners,
             int num_bots,
             char** hostnames,
             int* ports,
@@ -54,11 +54,13 @@ init_player(playerc_client_t** clients,
       fprintf(stderr, "Failed to subscribe to localize\n");
       return(NULL);
     }
-    assert(positions[i] = playerc_position_create(clients[i], 0));
-    if(playerc_position_subscribe(positions[i],PLAYER_ALL_MODE) < 0)
+    assert(planners[i] = playerc_planner_create(clients[i], 0));
+    if(playerc_planner_subscribe(planners[i],PLAYER_ALL_MODE) < 0)
     {
-      fprintf(stderr, "Failed to subscribe to position\n");
-      return(NULL);
+      fprintf(stderr, "Warning: Failed to subscribe to planner; you won't be able to set goals\n");
+      playerc_planner_destroy(planners[i]);
+      planners[i] = NULL;
+      //return(NULL);
     }
   }
 
@@ -83,7 +85,7 @@ init_player(playerc_client_t** clients,
     {
       if(!truths[i]->info.fresh || 
          !lasers[i]->info.fresh || 
-         !positions[i]->info.fresh)
+         !planners[i]->info.fresh)
         break;
     }
     if(i==num_bots)
