@@ -1190,31 +1190,29 @@ int64_t SickLMS200::GetTime()
 
 /* demo of how to make a shared object for Player to load at runtime */
 #if 0
-#include <devicetable.h>
-extern CDeviceTable* availableDeviceTable;
-extern int global_playerport;
+#include <drivertable.h>
+extern DriverTable* driverTable;
 
 /* need the extern to avoid C++ name-mangling  */
 extern "C" {
-void _init(void)
-{
-  puts("Laser device initializing");
-  availableDeviceTable->AddDevice(PLAYER_LASER_CODE, PLAYER_READ_MODE,
-                                  PLAYER_LASER_STRING,SickLMS200::Init);
-  puts("Laser device done");
-}
+  void _init(void)
+  {
+    puts("Laser device initializing");
+    SickLMS200_Register(driverTable);
+    puts("Laser device done");
+  }
 
-void _fini(void)
-{
-  puts("Laser device closing");
+  void _fini(void)
+  {
+    puts("Laser device closing");
 
-  /* probably don't need any code here; the destructor for the device
-   * will be called when Player shuts down.  this function is only useful
-   * if you want to dlclose() the shared object before Player exits
-   */
+    /* probably don't need any code here; the destructor for the device
+     * will be called when Player shuts down.  this function is only useful
+     * if you want to dlclose() the shared object before Player exits
+     */
 
-  puts("Laser device closed");
-}
+    puts("Laser device closed");
+  }
 }
 #endif
 

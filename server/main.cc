@@ -31,7 +31,7 @@
   #include <config.h>
 #endif
 
-#if HAVE_LIB_DL
+#if HAVE_LIBDL
   #include <dlfcn.h>
 #endif
 
@@ -935,7 +935,7 @@ int main( int argc, char *argv[] )
     }
     else if(!strcmp(argv[i], "-d"))
     {
-#if HAVE_LIB_DL
+#if HAVE_LIBDL
       if(++i<argc) 
       { 
         void* handle;
