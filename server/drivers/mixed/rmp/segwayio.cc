@@ -150,6 +150,7 @@ SegwayIO::Shutdown()
     canio->Shutdown();
 
     canioShutdown = true;
+    canioInit = false;
   }
 
   return 0;
@@ -260,6 +261,15 @@ SegwayIO::ReadWriteLoop()
       pkt.PutSlot(1, (uint16_t)rot_command);
       pthread_mutex_unlock(&rot_command_mutex);
 
+      if (pkt.GetSlot(2) != 0) {
+	printf("SEGWAYIO: STATUS: pkt: %s\n", pkt.toString());
+      }
+      if (pkt.GetSlot(0) != 0 ||
+	  pkt.GetSlot(1) != 0) {
+	printf("SEGWAYIO: VELOCITY pkt: %s\n",
+	       pkt.toString());
+      }
+
       // write it out!
       canio->WritePacket(pkt);
     }
@@ -286,31 +296,33 @@ SegwayIO::GetData(player_position_data_t *data)
   assert(rmp_data.IsReady());
 
   // xpos is fore/aft integrated position?
-  //  data->xpos = htonl( (int32_t) rint((double)rmp_data.foreaft / 
-  //				     ((double)RMP_COUNT_PER_M/1000.0)) );
-  data->xpos = htonl(rmp_data.foreaft);
+  // change from counts to mm
+  data->xpos = htonl( (int32_t) rint((double)rmp_data.foreaft / 
+  				     ((double)RMP_COUNT_PER_M/1000.0)) );
+
   
   // ypos is going to be pitch for now...
-  //  data->ypos = htonl( (int32_t) rint((double)rmp_data.pitch / 
-  //				     (double)RMP_COUNT_PER_DEG) );
-  data->ypos = htonl(rmp_data.pitch);
+  // change from counts to milli-degrees
+  data->ypos = htonl( (int32_t) rint(((double)rmp_data.pitch / 
+				       (double)RMP_COUNT_PER_DEG) * 1000.0));
   
   // yaw is integrated yaw
-  //  data->yaw = htonl( rmp_data.yaw / 360 );
-  data->yaw = htonl(rmp_data.yaw);
+  // not sure about this one..
+  // from counts/rev to degrees.  one rev is 360 degree?
+  data->yaw = htonl((int32_t) rint( ((double)rmp_data.yaw /
+				      (double)RMP_COUNT_PER_REV) * 360.0));
 
   // don't know the conversion yet...
-  //  data->xspeed = htonl( (int32_t) rmp_data.left_dot / 
-  //  RMP_COUNT_PER_M_PER_S );
-  data->xspeed = htonl(rmp_data.left_dot);
-
-  //  data->yspeed = htonl( (int32_t) rmp_data.right_dot / 
-  //			RMP_COUNT_PER_M_PER_S );
-  data->yspeed = htonl(rmp_data.right_dot);
-
-  //  data->yawspeed = htonl( (int32_t) rint(rmp_data.yaw_dot / 
-  //				 (double)RMP_COUNT_PER_DEG_PER_S) );
-  data->yawspeed = htonl(rmp_data.yaw_dot);
+  // change from counts/m/s into mm/s
+  data->xspeed = htonl( (int32_t) rint( ((double)rmp_data.left_dot / 
+					 (double)RMP_COUNT_PER_M_PER_S)*1000.0 ));
+  
+  data->yspeed = htonl( (int32_t) rint( ((double)rmp_data.right_dot / 
+					 (double)RMP_COUNT_PER_M_PER_S)*1000.0) );
+  
+  // from counts/deg/sec into mill-deg/sec
+  data->yawspeed = htonl( (int32_t) rint(((double)rmp_data.yaw_dot / 
+					 (double)RMP_COUNT_PER_DEG_PER_S))*1000.0 );
 
 }
   
@@ -341,6 +353,7 @@ int
 SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
 {
   can_packet_t pkt;
+  static int16_t last_trans=0, last_rot = 0;
 
   // we only care about cmd.xspeed and cmd.yawspeed
   // translational velocity is given to RMP in counts 
@@ -352,7 +365,9 @@ SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
 
   // this check should be done at a higher level???
 
-  int16_t trans = (int16_t) rint((double)cmd.xspeed * RMP_COUNT_PER_MM_PER_S);
+  //  int16_t trans = (int16_t) rint((double)cmd.xspeed * RMP_COUNT_PER_MM_PER_S);
+  // for now dont do any conversion...
+  int16_t trans = cmd.xspeed;
 
   if (trans > RMP_MAX_TRANS_VEL_COUNT) {
     trans = RMP_MAX_TRANS_VEL_COUNT;
@@ -369,7 +384,8 @@ SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
   // rotational RMP command \in [-1024, 1024]
   // this is ripped from rmi_demo... to go from deg/s^2 to counts
   // deg/s^2 -> count = 1/0.013805056
-  int16_t rot = (int16_t) rint((double)cmd.yawspeed * RMP_COUNT_PER_DEG_PER_SS);
+  //  int16_t rot = (int16_t) rint((double)cmd.yawspeed * RMP_COUNT_PER_DEG_PER_SS);
+  int16_t rot = cmd.yawspeed;
 
   if (rot > RMP_MAX_ROT_VEL_COUNT) {
     rot = RMP_MAX_ROT_VEL_COUNT;
@@ -380,17 +396,27 @@ SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
   pthread_mutex_lock(&rot_command_mutex);
   rot_command = rot;
   pthread_mutex_unlock(&rot_command_mutex);
-
-  //  printf("SEGWAYIO: trans: %d rot: %d\n", trans_command, rot_command);
+  
+  /*
+  if (rot || trans) {
+    printf("SEGWAYIO: trans: %d rot: %d\n", trans_command, rot_command);
+  }
+  */
 
   // now we have to add an empty packet onto the command queue, so that
   // our read/write loop will send this new velocity
   pkt.id = RMP_CAN_ID_COMMAND;
   pkt.PutSlot(2, (uint16_t)RMP_CAN_CMD_NONE);
 
-  pthread_mutex_lock(&command_queue_mutex);
-  command_queue.push(pkt);
-  pthread_mutex_unlock(&command_queue_mutex);
+  if (rot_command != last_rot ||
+      trans_command != last_trans) {
+    pthread_mutex_lock(&command_queue_mutex);
+    command_queue.push(pkt);
+    pthread_mutex_unlock(&command_queue_mutex);
+
+    last_rot = rot_command;
+    last_trans = trans_command;
+  }
 
   return 0;
 }
@@ -409,6 +435,11 @@ SegwayIO::StatusCommand(const uint16_t &cmd, const uint16_t &val)
   pkt.id = RMP_CAN_ID_COMMAND;
   pkt.PutSlot(2, cmd);
   pkt.PutSlot(3, val);
+
+  if (cmd) {
+    printf("SEGWAYIO: STATUS: cmd: %02x val: %02x pkt: %s\n", 
+	   cmd, val, pkt.toString());
+  }
 
   pthread_mutex_lock(&command_queue_mutex);
   command_queue.push(pkt);
