@@ -231,10 +231,9 @@ PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
 
-	
-PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[yes],
-                  [],[],[],[STAGE1P4],[stage >= 1.4])
-PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STAGE1P4_LIBS"
+PLAYER_ADD_DRIVER([stageclient],[drivers/stageclient],[yes],
+                  [],[],[],[STAGECLIENT],[stage >= 1.5])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STAGECLIENT_LIBS"
 
 PLAYER_ADD_DRIVER([laserbar],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])

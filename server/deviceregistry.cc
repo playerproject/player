@@ -342,7 +342,7 @@ void ServiceAdvMDNS_Register(DriverTable* table);
 #define DEFAULT_SERVICE_ADV_DRIVER "service_adv--NO_DEFAULT_DRIVER_AVAILABLE"
 #endif
 
-#ifdef INCLUDE_STAGE1P4
+#ifdef INCLUDE_STAGECLIENT
 void StgSimulation_Register(DriverTable *table);
 void StgLaser_Register(DriverTable *table);
 void StgPosition_Register(DriverTable *table);
@@ -775,7 +775,7 @@ register_devices()
   //NomadSpeech_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_STAGE1P4
+#ifdef INCLUDE_STAGECLIENT
   StgSimulation_Register(driverTable);
   StgLaser_Register(driverTable);
   StgPosition_Register(driverTable);

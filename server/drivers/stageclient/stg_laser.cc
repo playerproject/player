@@ -27,7 +27,7 @@
 #include "playercommon.h"
 #include "drivertable.h"
 #include "player.h"
-#include "stage1p4.h"
+#include "stageclient.h"
 #include "stage.h"
 
 // DRIVER FOR LASER INTERFACE ////////////////////////////////////////////////////////
