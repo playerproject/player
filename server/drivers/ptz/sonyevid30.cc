@@ -215,8 +215,6 @@ SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
   ptz_fd = -1;
   command_pending1 = false;
   command_pending2 = false;
-  player_ptz_data_t data;
-  player_ptz_cmd_t cmd;
 
   movement_mode = 0;
 
@@ -227,12 +225,6 @@ SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
   this->maxfov = (int) RTOD(cf->ReadTupleAngle(section, "fov", 1, 30));
 
   movement_mode = (int) cf->ReadInt(section, "movement", 0);
-
-  data.pan = data.tilt = data.zoom = 0;
-  cmd.pan = cmd.tilt = cmd.zoom = 0;
-
-  //PutData((void*)&data,sizeof(data),NULL);
-  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
   strncpy(ptz_serial_port,
           cf->ReadString(section, "port", DEFAULT_PTZ_PORT),
@@ -245,10 +237,6 @@ SonyEVID30::Setup()
   struct termios term;
   short pan,tilt;
   int flags;
-
-  player_ptz_cmd_t cmd;
-  cmd.pan = cmd.tilt = 0;
-  cmd.zoom = this->maxfov;
 
   printf("PTZ connection initializing (%s)...", ptz_serial_port);
   fflush(stdout);
@@ -321,7 +309,15 @@ SonyEVID30::Setup()
   ptz_fd_blocking = true;
   puts("Done.");
 
-  // zero the command buffer
+  // zero the command and data buffers
+  player_ptz_data_t data;
+  player_ptz_cmd_t cmd;
+
+  data.pan = data.tilt = data.zoom = 0;
+  cmd.pan = cmd.tilt = 0;
+  cmd.zoom = this->maxfov;
+
+  PutData((void*)&data,sizeof(data),NULL);
   PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
   // start the thread to talk with the camera

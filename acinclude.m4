@@ -197,6 +197,8 @@ PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([cannonvcc4],[drivers/ptz],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([flockofbirds],[drivers/position/ascension],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([obot],[drivers/mixed/botrics],[yes],[],[],[])
