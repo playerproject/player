@@ -123,7 +123,7 @@ static PyObject *ptz_str(PyObject *self)
 
   snprintf(str, sizeof(str),
            "ptz %02d %013.3f"
-           " %+07.3f %+07.3f %+04d",
+           " %+07.3f %+07.3f %+07.3f",
            ptzob->ptz->info.index,
            ptzob->ptz->info.datatime,
            ptzob->ptz->pan,

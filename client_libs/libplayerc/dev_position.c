@@ -80,12 +80,12 @@ void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *heade
 {
   device->px = (long) ntohl(data->xpos) / 1000.0;
   device->py = (long) ntohl(data->ypos) / 1000.0;
-  device->pa = (short) ntohs(data->yaw) * M_PI / 180.0;
+  device->pa = (long) ntohl(data->yaw) * M_PI / 180.0;
   device->pa = atan2(sin(device->pa), cos(device->pa));
   
-  device->vx = (short) ntohs(data->xspeed) / 1000.0;
-  device->vy = (short) ntohs(data->yspeed) / 1000.0;
-  device->va = (short) ntohs(data->yawspeed) * M_PI / 180.0;
+  device->vx = (long) ntohl(data->xspeed) / 1000.0;
+  device->vy = (long) ntohl(data->yspeed) / 1000.0;
+  device->va = (long) ntohl(data->yawspeed) * M_PI / 180.0;
   
   device->stall = data->stall;
 }

@@ -159,17 +159,24 @@ static PyObject *laser_subscribe(PyObject *self, PyObject *args)
 {
   char access;
   laser_object_t *laserob;
-  PyObject *result;
+  int result;
     
   if (!PyArg_ParseTuple(args, "c", &access))
     return NULL;
   laserob = (laser_object_t*) self;
 
   thread_release();
-  result = PyInt_FromLong(playerc_laser_subscribe(laserob->laser, access));
+  result = playerc_laser_subscribe(laserob->laser, access);
   thread_acquire();
 
-  return result;
+  if (result < 0)
+  {
+    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    return NULL;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 
@@ -177,17 +184,24 @@ static PyObject *laser_subscribe(PyObject *self, PyObject *args)
 static PyObject *laser_unsubscribe(PyObject *self, PyObject *args)
 {
   laser_object_t *laserob;
-  PyObject *result;
+  int result;
     
   if (!PyArg_ParseTuple(args, ""))
     return NULL;
   laserob = (laser_object_t*) self;
 
   thread_release();
-  result = PyInt_FromLong(playerc_laser_unsubscribe(laserob->laser));
+  result = playerc_laser_unsubscribe(laserob->laser);
   thread_acquire();
 
-  return result;
+  if (result < 0)
+  {
+    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    return NULL;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 
@@ -229,7 +243,15 @@ static PyObject *laser_set_config(PyObject *self, PyObject *args)
                                     min_angle, max_angle,
                                     resolution, intensity);
   thread_acquire();
-  return PyInt_FromLong(result);
+
+  if (result < 0)
+  {
+    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    return NULL;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 

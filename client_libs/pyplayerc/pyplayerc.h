@@ -21,12 +21,20 @@ extern void thread_acquire();
 /* Release lock and set python state to NULL. */
 extern void thread_release();
 
+// Error handling
+extern PyObject *errorob;
 
-/* Python wrapper for client type */
+// Python wrapper for client type.
 typedef struct
 {
   PyObject_HEAD
+
+  // The libplayerc client pointer.
   playerc_client_t *client;
+
+  // The available device list.
+  PyObject *idlist;
+  
 } client_object_t;
 
 
