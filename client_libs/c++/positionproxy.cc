@@ -290,6 +290,8 @@ PositionProxy::GoTo(int x, int y, int t)
   cmd.xpos = (int32_t)htonl(x);
   cmd.ypos = (int32_t)htonl(y);
   cmd.yaw  = (int32_t)htonl(t);
+  cmd.state = 1;
+  cmd.type = 1;
 
   return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
