@@ -106,11 +106,6 @@ class StageDevice : public CDevice
   private: virtual void Lock();
   private: virtual void Unlock();
 
-  // these are also overrides of CDevice; for Stage, they just
-  // call Lock() and Unlock()
-  private: virtual void SetupLock() { Lock(); }
-  private: virtual void SetupUnlock() { Unlock(); }
-
   // Pointer to shared info buffers
   //
   public: player_stage_info_t *m_info;

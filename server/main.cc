@@ -365,7 +365,6 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         case PLAYER_MOTE_CODE:
         case PLAYER_POWER_CODE:
         case PLAYER_BUMPER_CODE:
-	case PLAYER_LOCALIZATION_CODE:
         {
           // Create a StageDevice with this IO base address and filedes
           dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
@@ -378,6 +377,32 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
         }
         break;
+
+	case PLAYER_LOCALIZATION_CODE:
+          int section = configFile.AddEntity(globalparent,
+                                             PLAYER_LOCALIZATION_STRING);
+          // you could insert config file options manually here.
+
+          // find the localization device in the available device table
+          DriverEntry* entry;
+          if(!(entry = 
+               driverTable->GetDriverEntry(PLAYER_LOCALIZATION_STRING)))
+            PLAYER_WARN("Player support for localization device "
+                        "unavailable.");
+          else
+          {
+            // add it to the instantiated device table
+            deviceTable->AddDevice(deviceIO->player_id, 
+                                   PLAYER_LOCALIZATION_STRING,
+                                   PLAYER_READ_MODE, 
+                                   (*(entry->initfunc))(PLAYER_LOCALIZATION_STRING,
+                                                        &configFile, section));
+
+            // add this port to our listening list
+            StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+          }
+
+          break;
 	  
         case PLAYER_COMMS_CODE:   
           // Create broadcast device as per normal
@@ -391,7 +416,8 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 
             // the following code is required to load settings into the
             // ConfigFile object.  should be cleaned up.
-            int section = configFile.AddEntity(globalparent,"broadcast");
+            int section = configFile.AddEntity(globalparent,
+                                               PLAYER_COMMS_STRING);
             int value = configFile.AddProperty(section, "addr", 0);
             configFile.AddPropertyValue(value, 0, 0);
             configFile.AddToken(0, "", 0);
@@ -406,7 +432,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             else
             {
               // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id, "broadcast",
+              deviceTable->AddDevice(deviceIO->player_id, PLAYER_COMMS_STRING,
                                      PLAYER_ALL_MODE, 
                                      (*(entry->initfunc))(PLAYER_COMMS_STRING,
                                                    &configFile, section));
