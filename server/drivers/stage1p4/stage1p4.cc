@@ -50,11 +50,14 @@
 #include "stg_time.h"
 
 // init static vars
-const char* Stage1p4::worldfile_name = STG_DEFAULT_WORLDFILE;
+char Stage1p4::worldfile_name[MAXPATHLEN] = STG_DEFAULT_WORLDFILE;
 stg_client_t* Stage1p4::stage_client = NULL;
 ConfigFile* Stage1p4::config = NULL;
 CWorldFile Stage1p4::wf;
 char* Stage1p4::world_name;
+pthread_mutex_t Stage1p4::model_mutex;
+pthread_mutex_t Stage1p4::reply_mutex;
+bool Stage1p4::init = true;
 
 // declare Player's emergency stop function (defined in main.cc)
 void Interrupt( int dummy );
@@ -70,6 +73,15 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
   this->config = cf;
     
   const char *enttype = config->GetEntityType(section);
+
+  
+  if( this->init )
+    {
+      PLAYER_TRACE0( "Initializing Stage1p4 driver" );
+      assert( pthread_mutex_init(&model_mutex,NULL) == 0 );
+      assert( pthread_mutex_init(&reply_mutex,NULL) == 0 );
+      this->init = false;
+    }
  
   //printf( "processing entity type %s\n", enttype );
   
@@ -101,15 +113,21 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
 
 int Stage1p4::Setup()
 { 
-  puts( "SUBSCRIBING" );
-  stg_model_subscribe( this->model, this->subscribe_prop, 0.1 );  
+  if( this->model && this->subscribe_prop )
+    {
+      puts( "SUBSCRIBING" );
+      stg_model_subscribe( this->model, this->subscribe_prop, 0.1 );  
+    }
   return 0;
 };
 
 int Stage1p4::Shutdown()
 { 
-  puts( "UNSUBSCRIBING" );
-  stg_model_unsubscribe( this->model, this->subscribe_prop );  
+  if( this->model && this->subscribe_prop )
+    {
+      puts( "UNSUBSCRIBING" );
+      stg_model_unsubscribe( this->model, this->subscribe_prop );  
+    }
   return 0;
 };
 
@@ -123,6 +141,29 @@ Stage1p4::~Stage1p4()
    this->stage_client = NULL;
  }
 }
+
+
+void Stage1p4::Update()
+{
+  assert( Stage1p4::stage_client );
+  
+  stg_msg_t* msg = NULL;      
+ 
+  //putchar( 'u' );
+
+  // handle any packets coming in from Stage
+  while( (msg = stg_client_read( Stage1p4::stage_client )) )
+    {
+      //puts( "!" );
+      
+      stg_client_handle_message( Stage1p4::stage_client, msg );
+      free( msg );
+    }	
+  
+  //  unblock any devices that were waiting for this one.
+  this->DataAvailable();
+}    
+
 
 // END CLASS
   

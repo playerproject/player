@@ -42,12 +42,8 @@ public:
 
   virtual int PutConfig(player_device_id_t* device, void* client, 
 			void* data, size_t len);
-
-private:
-  // laser parameters
-  int min_angle, max_angle, angle_res, range_res, intensity;
-  
 };
+
 
 StgLaser::StgLaser(char* interface, ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, sizeof(player_laser_data_t), 0, 1, 1 )
@@ -79,33 +75,43 @@ void StgLaser_Register(DriverTable* table)
 size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  stg_property_t* prop = stg_model_get_prop( model, this->subscribe_prop);
+  stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
+  
+  player_laser_data_t pdata;
+  memset( &pdata, 0, sizeof(pdata) );
   
   if( prop ) 
     {      
-      stg_laser_sample_t* samples = (stg_laser_sample_t*)prop->data;
-      int sample_count = prop->len / sizeof(stg_laser_sample_t);
+      stg_laser_config_t* cfg = (stg_laser_config_t*)prop->data;
+      stg_laser_sample_t* samples = (stg_laser_sample_t*)(prop->data + sizeof(stg_laser_config_t));
       
-      player_laser_data_t pdata;
-      memset( &pdata, 0, sizeof(pdata) );
+      int sample_count = cfg->samples;
       
-      pdata.min_angle = htons( (int16_t)this->min_angle );
-      pdata.max_angle = htons( (int16_t)this->max_angle );
-      pdata.resolution = htons( (uint16_t)this->angle_res );
-      pdata.range_res = htons( (uint16_t)this->range_res);
-      pdata.range_count = htons( (uint16_t)sample_count );
+      assert( prop->len == sizeof(stg_laser_config_t) + cfg->samples * sizeof(stg_laser_sample_t) );
       
-      for( int i=0; i<sample_count; i++ )
+      
+      double min_angle = -RTOD(cfg->fov/2.0);
+      double max_angle = +RTOD(cfg->fov/2.0);
+      double angular_resolution = RTOD(cfg->fov / cfg->samples);
+      double range_multiplier = 1; // TODO - support multipliers
+
+      pdata.min_angle = htons( (int16_t)(min_angle * 100 )); // degrees / 100
+      pdata.max_angle = htons( (int16_t)(max_angle * 100 )); // degrees / 100
+      pdata.resolution = htons( (uint16_t)(angular_resolution * 100)); // degrees / 100
+      pdata.range_res = htons( (uint16_t)range_multiplier);
+      pdata.range_count = htons( (uint16_t)cfg->samples );
+      
+      for( int i=0; i<cfg->samples; i++ )
 	{
-	  //printf( "range %d %.2f\n", i, sdata->samples[i].range );
-	  pdata.ranges[i] = htons( (uint16_t)(samples[i].range * 1000.0 ) );
-	  //printf( "(%d %d) ", i, pdata.ranges[i] );
+	  //printf( "range %d %d\n", i, samples[i].range);
+
+	  pdata.ranges[i] = htons( (uint16_t)(samples[i].range) );
 	  pdata.intensity[i] = 0;
 	}
-      
-      // publish this data
-      CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
     }
+ 
+  // publish this data
+  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
 
   // now inherit the standard data-getting behavior 
   return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
@@ -119,9 +125,6 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 {
   assert( data );
 
-  // rather than push the request onto the request queue, we'll handle
-  // it right away
-
   // switch on the config type (first byte)
   uint8_t* buf = (uint8_t*)data;
   switch( buf[0] )
@@ -132,12 +135,37 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	
         if( len == sizeof(player_laser_config_t) )
 	  {
-	    this->intensity = plc->intensity;
-	    this->min_angle = (short) ntohs(plc->min_angle);
-	    this->max_angle = (short) ntohs(plc->max_angle);
-	    this->range_res = ntohs(plc->range_res);
-	    this->angle_res = ntohs(plc->resolution);
-   
+	    stg_laser_config_t slc_request;
+	    memset( &slc_request, 0, sizeof(slc_request) );
+	    int min_a = (int16_t)ntohs(plc->min_angle);
+	    int max_a = (int16_t)ntohs(plc->max_angle);
+	    int ang_res = (int16_t)ntohs(plc->resolution);
+	    int intensity = plc->intensity;
+	    
+	    PRINT_DEBUG4( "requested laser config:\n %d %d %d %d",
+			  min_a, max_a, ang_res, intensity );
+	    
+	    min_a /= 100;
+	    max_a /= 100;
+	    ang_res /= 100;
+
+	    slc_request.fov = DTOR(max_a - min_a);
+	    // todo - slc_request.intensity = plc->intensity;
+
+	    slc_request.samples = slc_request.fov / DTOR(ang_res);
+	    
+	    stg_laser_config_t slc_reply;
+	    
+	    int err;
+	    if( (err = stg_model_prop_set_ack( this->model, STG_PROP_LASERCONFIG,
+					       &slc_request, sizeof(slc_request)) ) )
+	      PLAYER_ERROR1( "error %d setting laser config", err );
+	    else
+	      PLAYER_TRACE0( "set laser config OK" );
+
+	    //printf( "config reply\n" );
+	    //stg_print_laser_config( &slc_reply );
+
 	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, plc, len) != 0)
 	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_SET_CONFIG");
 	  }
@@ -155,14 +183,33 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
       {   
 	if( len == 1 )
 	  {
+	    stg_laser_config_t slc;
+	    if( stg_model_prop_get( this->model, STG_PROP_LASERCONFIG, &slc,sizeof(slc))
+		!= 0 )
+	      PLAYER_TRACE0( "error requesting STG_PROP_LASERCONFIG" );
+	    
+	    //stg_print_laser_config( &slc );
+	    
+	    // integer angles in degrees/100
+	    int16_t  min_angle = -RTOD(slc.fov/2.0) * 100;
+	    int16_t  max_angle = +RTOD(slc.fov/2.0) * 100;
+	    //uint16_t angular_resolution = RTOD(slc.fov / slc.samples) * 100;
+	    uint16_t angular_resolution = RTOD(slc.fov / (slc.samples-1)) * 100;
+	    uint16_t range_multiplier = 1; // TODO - support multipliers
+
+	    int intensity = 1; // todo
+
+	    //printf( "laser config:\n %d %d %d %d\n",
+	    //	    min_angle, max_angle, angular_resolution, intensity );
+	    
 	    player_laser_config_t plc;
 	    memset(&plc,0,sizeof(plc));
-	    plc.min_angle = htons( (int16_t)this->min_angle );
-	    plc.max_angle = htons( (int16_t)this->max_angle );
-	    plc.resolution = htons( (uint16_t)this->angle_res );
-	    plc.range_res = htons( (uint16_t)this->range_res);
-	    plc.intensity = (uint8_t)this->intensity;
-	    
+	    plc.min_angle = htons(min_angle); 
+	    plc.max_angle = htons(max_angle); 
+	    plc.resolution = htons(angular_resolution);
+	    plc.range_res = htons(range_multiplier);
+	    plc.intensity = intensity;
+
 	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &plc, 
 			sizeof(plc)) != 0)
 	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_CONFIG");      
@@ -177,24 +224,22 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
       break;
 
     case PLAYER_LASER_GET_GEOM:
-      {
-	//puts( "waiting for laser geom from Stage" );
-	stg_pose_t pose;
-	pose.x = 0;
-	pose.y = 0;
-	pose.a = 0;
-	stg_size_t size;
-	size.x = 0.1;
-	size.y = 0.1;
-		
+      {	
+	PLAYER_TRACE0( "requesting laser geom" );
+	stg_geom_t geom;
+	if( stg_model_prop_get( this->model, STG_PROP_LASERGEOM, &geom,sizeof(geom)))
+	  PLAYER_ERROR( "error requesting STG_PROP_LASERGEOM" );
+	else
+	  PLAYER_TRACE0( "got laser geom OK" );
+      
 	// fill in the geometry data formatted player-like
 	player_laser_geom_t pgeom;
-	pgeom.pose[0] = htons((uint16_t)(1000.0 * pose.x));
-	pgeom.pose[1] = htons((uint16_t)(1000.0 * pose.y));
-	pgeom.pose[2] = htons((uint16_t)RTOD( pose.a));
+	pgeom.pose[0] = htons((uint16_t)(1000.0 * geom.pose.x));
+	pgeom.pose[1] = htons((uint16_t)(1000.0 * geom.pose.y));
+	pgeom.pose[2] = htons((uint16_t)RTOD( geom.pose.a));
 	
-	pgeom.size[0] = htons((uint16_t)(1000.0 * size.x)); 
-	pgeom.size[1] = htons((uint16_t)(1000.0 * size.y)); 
+	pgeom.size[0] = htons((uint16_t)(1000.0 * geom.size.x)); 
+	pgeom.size[1] = htons((uint16_t)(1000.0 * geom.size.y)); 
 	
 	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		      &pgeom, sizeof(pgeom) ) != 0 )

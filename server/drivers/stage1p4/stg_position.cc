@@ -44,10 +44,9 @@ public:
 			  void* data, size_t len);
 protected:
   
-  player_position_data_t position_data;
-
-  stg_pose_t geom_pose;
-  stg_size_t geom_size;
+  //player_position_data_t position_data;
+  //stg_pose_t geom_pose;
+  //stg_size_t geom_size;
 };
 
 
@@ -86,7 +85,7 @@ void StgPosition_Register(DriverTable* table)
 size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 			    uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  stg_property_t* prop = stg_model_get_prop( model, this->subscribe_prop);
+  stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
   
   if( prop && prop->len == sizeof(stg_pose_t) ) 
     {      
@@ -94,7 +93,8 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 
       PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose->x, pose->y, pose->a );
 
-      memset( &this->position_data, 0, sizeof(position_data) );
+      player_position_data_t position_data;
+      memset( &position_data, 0, sizeof(position_data) );
       // pack the data into player format
       position_data.xpos = ntohl((int32_t)(1000.0 * pose->x));
       position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
@@ -122,8 +122,8 @@ void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
       
       printf( "sending vel\n" );
       
-      stg_model_property_set( this->model, STG_PROP_VELOCITY, 
-			      &vel, sizeof(vel) ) ;
+      stg_model_prop_set( this->model, STG_PROP_VELOCITY, 
+			  &vel, sizeof(vel) ) ;
     }
   else
     PLAYER_ERROR2( "wrong size position command packet (%d/%d bytes)",
@@ -147,21 +147,22 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
     {  
     case PLAYER_POSITION_GET_GEOM_REQ:
       {
-	this->geom_pose.x = 0.0;
-	this->geom_pose.y = 0.0;
-	this->geom_pose.a = 0.0;
-
-	this->geom_size.x = 0.6;
-	this->geom_size.y = 0.4;
-
+	stg_pose_t pose;
+	if( stg_model_prop_get( this->model, STG_PROP_ORIGIN, &pose,sizeof(pose)))
+	  PLAYER_ERROR( "error requesting STG_PROP_ORIGIN" );
+	
+ 	stg_size_t size;
+	if( stg_model_prop_get( this->model, STG_PROP_SIZE, &size,sizeof(size)))
+	  PLAYER_ERROR( "error requesting STG_PROP_SIZE" );
+	
 	// fill in the geometry data formatted player-like
 	player_position_geom_t pgeom;
-	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * geom_pose.x));
-	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * geom_pose.y));
-	pgeom.pose[2] = ntohs((uint16_t)RTOD(geom_pose.a));
+	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * pose.x));
+	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * pose.y));
+	pgeom.pose[2] = ntohs((uint16_t)RTOD(pose.a));
 	
-	pgeom.size[0] = ntohs((uint16_t)(1000.0 * geom_size.x)); 
-	pgeom.size[1] = ntohs((uint16_t)(1000.0 * geom_size.y)); 
+	pgeom.size[0] = ntohs((uint16_t)(1000.0 * size.x)); 
+	pgeom.size[1] = ntohs((uint16_t)(1000.0 * size.y)); 
 	
 	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		  &pgeom, sizeof(pgeom) );
