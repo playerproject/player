@@ -213,8 +213,29 @@ void rflex_set_velocity( int fd, long tvel, long rvel,
 {
   unsigned char data[MAX_COMMAND_LENGTH];
 
+  long utvel;long urvel;
+
+  utvel=labs(tvel);
+  urvel=labs(rvel);
+
+  // ** workaround for stupid hardware bug, cause unknown, but this works
+  // ** with minimal detriment to control
+  // ** avoids all values with 1b in highest or 3'rd highest order byte
+
+  // ** if 2'nd order byte is 1b, round to nearest 1c, or 1a
+  if((urvel&0xff00)==0x1b00){
+    // ** if lowest order byte is>127 round up, otherwise round down 
+    urvel=urvel&0xffff0000|(urvel&0xff>127?0x1c00:0x1aff);
+  }
+
+  // ** if highest order byte is 1b, round to 1c, otherwise round to 1a
+  if((urvel&0xff000000)==0x1b000000){
+    // ** if 3'rd order byte is>127 round to 1c, otherwise round to 1a
+    urvel=urvel&0x00ffffff|(urvel&0xff0000>127?0x1c000000:0x1aff0000);
+  }
+
   convertUInt8( (long) 0,                 &(data[0]) );       /* forward motion */
-  convertUInt32( (long) labs(tvel),        &(data[1]) );       /* abs trans velocity */
+  convertUInt32( (long) labs(utvel),        &(data[1]) );       /* abs trans velocity*/
   convertUInt32( (long) acceleration,    &(data[5]) );       /* trans acc */
   convertUInt32( (long) STD_TRANS_TORQUE, &(data[9]) );       /* trans torque */
   convertUInt8( (long) sgn(tvel),         &(data[13]) );      /* trans direction */
@@ -222,7 +243,7 @@ void rflex_set_velocity( int fd, long tvel, long rvel,
   cmdSend( fd, MOT_PORT, 0, MOT_AXIS_SET_DIR, 14, data );
 
   convertUInt8( (long) 1,                 &(data[0]) );       /* rotational motion */
-  convertUInt32( (long) labs(rvel),        &(data[1]) );       /* abs rot velocity  */
+  convertUInt32( (long) labs(urvel),        &(data[1]) );       /* abs rot velocity  */
   /* 0.275 rad/sec * 10000 */ 
   convertUInt32( (long) STD_ROT_ACC,      &(data[5]) );       /* rot acc */
   convertUInt32( (long) STD_ROT_TORQUE,   &(data[9]) );       /* rot torque */
