@@ -121,6 +121,8 @@ PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[yes],
 
 PLAYER_ADD_DRIVER([garminnmea],[drivers/gps],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([bumpersafe],[drivers/position/bumpersafe],[no],[],[],[])
+
 PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],[],[],

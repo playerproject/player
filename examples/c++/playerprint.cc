@@ -113,6 +113,8 @@ int main(int argc, char **argv)
     assert(cp = (ClientProxy*)new IRProxy(&pclient,idx,'r'));
   else if(!strcmp(dev,PLAYER_ENERGY_STRING))
     assert(cp = (ClientProxy*)new EnergyProxy(&pclient,idx,'r'));
+  else if(!strcmp(dev,PLAYER_BUMPER_STRING))
+    assert(cp = (ClientProxy*)new BumperProxy(&pclient,idx,'r'));
   else
   {
     printf("Unknown interface \"%s\"\n", dev);

@@ -42,6 +42,10 @@ extern DriverTable* driverTable;
 extern PlayerTime* GlobalTime;
 
 /* prototype device-specific init funcs */
+#ifdef INCLUDE_BUMPERSAFE
+void BumperSafe_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_GARMINNMEA
 void GarminNMEA_Register(DriverTable* table);
 #endif
@@ -457,6 +461,10 @@ lookup_device_name(unsigned int startpos, int code) {
 void
 register_devices()
 {
+#ifdef INCLUDE_BUMPERSAFE
+  BumperSafe_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_GARMINNMEA
   GarminNMEA_Register(driverTable);
 #endif
