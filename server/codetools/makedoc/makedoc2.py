@@ -120,7 +120,7 @@ def parse_comment_c(section, index, block):
         if text[-2:] == '*/':
             text = text[:-2]
 
-        block.desc += string.strip(text) + ' '
+        block.desc += string.strip(text) + '\n'
         index += 1
         
         if stripped[-2:] == '*/':
@@ -263,15 +263,24 @@ def make_defines(file, section, blocks, index):
     file.write('\\begin{footnotesize}')
     file.write('\\begin{tabularx}{\\columnwidth}{XX}\n')
     file.write('\\hline\n')
-    file.write('Value & Meaning \\\\\n')
+    file.write('Name/Value & Meaning \\\\\n')
     file.write('\\hline\n')
 
     while index < len(blocks):
         block = blocks[index]
     
         if block.type == 'define':
+
             for line in block.code:
-                file.write('\\verb+%s+ ' % line)
+                tokens = string.split(line)
+                if len(tokens) == 3 and tokens[0] == '#define':
+                    name = tokens[1]
+                    value = ''
+                    for token in tokens[2:]:
+                        value += token
+                    file.write('\\verb+%s %s+ ' % (name, value))
+                else:
+                    file.write('\\verb+%s+ ' % line)
             file.write('& %s \\\\ \n' % block.desc)
             index += 1
         else:
@@ -297,7 +306,7 @@ def make_struct(file, section, blocks, index):
     file.write('\\begin{footnotesize}')
     file.write('\\begin{tabularx}{\\columnwidth}{XX}\n')
     file.write('\\hline\n')
-    file.write('Value & Meaning \\\\\n')
+    file.write('Type/Field & Meaning \\\\\n')
     file.write('\\hline\n')
 
     while index < len(blocks):

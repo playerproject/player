@@ -20,7 +20,7 @@
  *
  */
 
-/*
+/* 
  * Desc: This is just a wrapper for the messages.h include, because I figure
  *       we should have an include file with a meaningful name.
  * CVS:  $Id$
@@ -786,8 +786,7 @@ typedef struct player_laser_data
 {
   /** Start and end angles for the laser scan (in units of 0.01
       degrees).  */
-  int16_t min_angle;
-  int16_t max_angle;
+  int16_t min_angle, max_angle;
 
   /** Angular resolution (in units of 0.01 degrees).  */
   uint16_t resolution;
@@ -860,8 +859,7 @@ typedef struct player_laser_config
 
   /** Start and end angles for the laser scan (in units of 0.01
       degrees).  Valid range is -9000 to +9000.  */
-  int16_t min_angle;
-  int16_t max_angle;
+  int16_t min_angle, max_angle;
 
   /** Scan resolution (in units of 0.01 degrees).  Valid resolutions
       are 25, 50, 100.  */
