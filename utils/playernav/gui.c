@@ -965,10 +965,10 @@ dump_screenshot(gui_data_t* gui_data)
                                            0,0,0,0,
                                            width,height)));
 
-    sprintf(fname,"playernav-img-%04d.jpg",idx);
+    sprintf(fname,"playernav-img-%04d.png",idx);
     printf("writing screenshot to %s\n", fname);
 
-    if(!(gdk_pixbuf_save(screenshot, fname, "jpeg", NULL, NULL)))
+    if(!(gdk_pixbuf_save(screenshot, fname, "png", NULL, NULL)))
       puts("FAILED");
 
     idx++;
