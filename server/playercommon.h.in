@@ -193,9 +193,6 @@
 #define PLAYER_ERROR3(m, a, b, c) \
     fprintf(stderr, "player error : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__, a, b, c)
 
-#define PLAYER_ERROR3(m, a, b, c) \
-    printf("player error : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__, a, b, c)
-
 // Warning macros
 #define PLAYER_WARN(m) \
     fprintf(stderr, "\nplayer warning : %s:%s():\n    "m"\n", __FILE__, __FUNCTION__)
