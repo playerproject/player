@@ -247,10 +247,12 @@ ClientManager::UpdateDevices()
   {
     if(dev->driver->subscriptions)
     {
-      //printf("calling Update on %d:%d:%d\n",
-             //dev->id.port,
-             //dev->id.code,
-             //dev->id.index);
+      /*
+      printf("calling Update on %d:%d:%d\n",
+             dev->id.port,
+             dev->id.code,
+             dev->id.index);
+             */
       dev->driver->Update();
     }
   }
@@ -495,6 +497,7 @@ ClientManagerTCP::Read()
         // read(2) must have errored. client is probably gone
         MarkClientForDeletion(i);
       }
+      //puts("done reading");
     }
     else if(ufds[i].revents)
     {
