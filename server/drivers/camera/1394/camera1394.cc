@@ -48,67 +48,6 @@
 // Time for timestamps
 extern PlayerTime *GlobalTime;
 
-//! Template class to calculate a moving average
-/*! \param T Type of the measurement data (typically double or float)
-\param span Number of samples used of computing the mean
-*/
-/*template <class T, unsigned int span = 10>
-class CMovingAvg
-{
-
-public:
-  //! Default constructor
-  CMovingAvg() : m_v(span)
-  {
-    Reset();
-  }
-
-  //! Add a data item to the moving average
-  void Add(T sample)
-  {
-    int idx = m_n % span;
-    if ( m_n < span )
-    {
-      m_v[idx] = sample;
-      m_Sum += sample;
-    }
-    else
-    {
-      m_Sum -= m_v[idx];
-      m_Sum += sample;
-      m_v[idx] = sample;
-    }
-    m_n++;
-  }
-
-  //! Get the average
-  double Avg() {
-  double res = 0;
-  if ( m_n != 0 )
-    {
-      res = m_n < span ? m_Sum / (double) m_n : m_Sum / (double) span;
-    }
-    return res;
-  }
-
-  //! Reset the moving average clearing the history
-  void Reset() {
-    m_Sum = 0.0;
-    m_n = 0;
-  }
-
-protected:
-  //! The current sum
-  double m_Sum;
-
-  //! Number of measurement data
-  unsigned int m_n;
-
-  //! Vetor holding #span data items
-  std::vector<T> m_v;
-
-};*/
-
 
 // Driver for detecting laser retro-reflectors.
 class Camera1394 : public Driver
@@ -129,13 +68,11 @@ class Camera1394 : public Driver
   // Save a frame to memory
   private: int GrabFrame();
 
+  // Convert frame to appropriate output format
+  private: int ConvertFrame();
+
   // Save a frame to disk
   private: int SaveFrame( const char *filename );
-
-  /*public: virtual size_t GetData( void *client, unsigned char *dest,
-              size_t maxsize, uint32_t *timesatamp_sec,
-              uint32_t *timestamp_usec);
-              */
 
   // Update the device data (the data going back to the client).
   private: void WriteData();
@@ -152,9 +89,12 @@ class Camera1394 : public Driver
   // Camera features
   private: dc1394_feature_set features;
 
+  // Capture method: RAW or VIDEO (DMA)
+  private: enum {methodRaw, methodVideo};
+  private: int method;
+
   // Framerate.An  enum defined in libdc1394/dc1394_control.h
   private: unsigned int frameRate;
-  //private: CMovingAvg<float,10> fps_received;
 
   // Format & Mode. An enum defined in libdc1394/dc1394_control.h
   private: unsigned int format;
@@ -166,15 +106,12 @@ class Camera1394 : public Driver
   // Write frames to disk?
   private: int save;
 
-  // Should we send a test pattern
-  private: int test;  
-  private: uint8_t *testImage;
-
   // Frame capture buffer and size
   private: unsigned char *frame;
+  private: size_t frameSize;
 
   // Capture timestamp
-  private: uint32_t tsec, tusec;
+  private: struct timeval frameTime;
   
   // Data to send to server
   private: player_camera_data_t data;
@@ -225,6 +162,8 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   else
     this->frameRate = FRAMERATE_60;
 
+  // TODO: frame size
+  
   // Image size. This determines the capture resolution. There are a limited
   // number of options available. At 640x480, a camera can capture at
   // _RGB or _MONO or _MONO16.  
@@ -234,7 +173,10 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   if (0==strcmp(str,"mode_160x120_yuv444"))
     this->mode = MODE_160x120_YUV444;
   else if (0==strcmp(str,"mode_320x240_yuv422"))
+  {
     this->mode = MODE_320x240_YUV422;
+    this->frameSize = 320 * 240 * 2;
+  }
   else if (0==strcmp(str,"mode_640x480_yuv411"))
     this->mode = MODE_640x480_YUV411;
   else if (0==strcmp(str,"mode_640x480_yuv422"))
@@ -242,30 +184,24 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   else if (0==strcmp(str,"mode_640x480_rgb"))
     this->mode = MODE_640x480_RGB;
   else if (0==strcmp(str,"mode_640x480_mono"))
+  {
     this->mode = MODE_640x480_MONO;
+    this->frameSize = 640 * 480;
+  }
   else if (0==strcmp(str,"mode_640x480_mono16"))
     this->mode = MODE_640x480_MONO16;
-  else {
-    this->mode = MODE_160x120_YUV444;
-    PLAYER_ERROR("Camera1394 : unknown video mode");
-    }
+  else
+  {
+    PLAYER_ERROR1("unknown video mode [%s]", str);
+    this->SetError(-1);
+    return;
+  }
+
+  // Create a frame buffer
+  this->frame = new unsigned char[this->frameSize];  
      
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
-
-  // display a test pattern?
-  this->test = cf->ReadInt(section, "test", 0);
-  if (this->test) {
-      // this is kind of hacky and should be fixed
-      this->width = cf->ReadInt(section, "width", 160);
-      this->height = cf->ReadInt(section, "height", 120);
-      if (test) {
-      this->testImage =  new uint8_t[this->width*this->height];
-      for (unsigned int y=0;y<this->height;++y)
-        for (unsigned int x=0;x<this->width;++x)
-          testImage[x + y*width] = static_cast<uint8_t>(rint(sin(4*M_PI*x/320.0)*sin(4*M_PI*y/240.0)*128));
-      }
-  }
 
   return;
 }
@@ -283,49 +219,61 @@ int Camera1394::Setup()
 
   if (this->handle == NULL)
   {
-    PLAYER_ERROR("Camera1394 : Unable to acquire a raw1394 handle");
+    PLAYER_ERROR("Unable to acquire a raw1394 handle");
     return -1;
   }
 
   this->camera.node = this->node;
   this->camera.port = this->port;
 
-
   // Collects the available features for the camera described by node and
   // stores them in features.
   if (DC1394_SUCCESS != dc1394_get_camera_feature_set(this->handle, this->camera.node, 
-        &this->features))
+                                                      &this->features))
   {
-    PLAYER_ERROR("Camera1394 : Unable to get feature set");
+    PLAYER_ERROR("Unable to get feature set");
     return -1;
   }
-
 
   // Get the ISO channel and speed of the video
   if (DC1394_SUCCESS != dc1394_get_iso_channel_and_speed(this->handle, this->camera.node, 
-        &channel, &speed))
+                                                         &channel, &speed))
   {
-    PLAYER_ERROR("Camera1394 : Unable to get iso channel and speed");
+    PLAYER_ERROR("Unable to get iso channel and speed");
     return -1;
   }
-
+  
   // Set camera to use DMA, improves performance.
   // The '1' parameters is the dropFrames parameter.
-  if(DC1394_SUCCESS != dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
-        this->format, this->mode, SPEED_400, this->frameRate, 
-        NUM_DMA_BUFFERS, 1, 1, this->device, &this->camera))
+  if (dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
+                               this->format, this->mode, SPEED_400, this->frameRate, 
+                               NUM_DMA_BUFFERS, 1, this->device, &this->camera) == DC1394_SUCCESS)
   {
-    PLAYER_ERROR("Camera1394 : Unable to setup camera.");
-    return -1;
+    this->method = methodVideo;
+  }
+  else
+  {
+    PLAYER_WARN("DMA capture failed; falling back on RAW method");
+
+    // Set camera to use RAW method (fallback)
+    if (dc1394_setup_capture(this->handle, this->camera.node, channel,
+                             this->format, this->mode, SPEED_400, this->frameRate,
+                             &this->camera) == DC1394_SUCCESS)
+    {
+      this->method = methodRaw;
+    }
+    else
+    {
+      PLAYER_ERROR("unable to open camera in VIDE0 or RAW modes");
+      return -1;
+    }
   }
 
   if (DC1394_SUCCESS != dc1394_start_iso_transmission(this->handle, this->camera.node))
   {
-    PLAYER_ERROR("Camera1394 : Unable to start camera iso transmission.");
+    PLAYER_ERROR("Unable to start camera iso transmission.");
     return -1;
   }
-
-  this->frame = new unsigned char[this->camera.dma_frame_size];
 
   // Start the driver thread.
   this->StartThread();
@@ -342,8 +290,15 @@ int Camera1394::Shutdown()
   StopThread();
 
   // Free resources
-  dc1394_dma_unlisten( this->handle, &this->camera );
-  dc1394_dma_release_camera( this->handle, &this->camera );
+  if (this->method == methodRaw)
+  {
+    dc1394_release_camera(this->handle, &this->camera);
+  }
+  else if (this->method == methodVideo)
+  {
+    dc1394_dma_unlisten( this->handle, &this->camera );
+    dc1394_dma_release_camera( this->handle, &this->camera );
+  }
 
   dc1394_destroy_handle(this->handle);
 
@@ -358,7 +313,6 @@ int Camera1394::Shutdown()
 // Main function for device thread
 void Camera1394::Main() 
 {
-  struct timeval time;
   char filename[255];
   int frameno;
 
@@ -376,22 +330,20 @@ void Camera1394::Main()
     // Process any pending requests.
     //HandleRequests();
 
+    // Get the time
+    GlobalTime->GetTime(&this->frameTime);
+
     // Grab the next frame (blocking)
     this->GrabFrame();
 
-    // Get the time
-    GlobalTime->GetTime(&time);
-    this->tsec = time.tv_sec;
-    this->tusec = time.tv_usec;
-
-//    fps_received.Add(this->tsec * 1000000 - this->tusec);
-
+    // Convert frame to appropriate output format
+    this->ConvertFrame();
        
     // Write data to server
     this->WriteData();
 
     // this should go or be replaced
-    // Save frames
+    // Save frames; must be done after writedata (which will byteswap)
     if (this->save)
     {
       //printf("click %d\n", frameno);
@@ -427,19 +379,90 @@ int Camera1394::HandleRequests()
 // Store an image frame into the 'frame' buffer
 int Camera1394::GrabFrame()
 {
-  if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
+  if (this->method == methodRaw)
   {
-    PLAYER_ERROR("Unable to capture frame");
-    return -1;
+    if (dc1394_single_capture(this->handle, &this->camera) != DC1394_SUCCESS)
+    {
+      PLAYER_ERROR("Unable to capture frame");
+      return -1;
+    }
+    memcpy( this->frame, (unsigned char *) this->camera.capture_buffer, 
+            this->frameSize );
   }
-
-  memcpy( this->frame, (unsigned char *)this->camera.capture_buffer, 
-          this->camera.dma_frame_size);
-
-  dc1394_dma_done_with_buffer(&this->camera);
+  else if (this->method == methodVideo)
+  {
+    if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
+    {
+      PLAYER_ERROR("Unable to capture frame");
+      return -1;
+    }
+    memcpy( this->frame, (unsigned char *)this->camera.capture_buffer, 
+            this->frameSize);
+    dc1394_dma_done_with_buffer(&this->camera);
+  }
 
   return 0;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Convert frame to appropriate output format
+int Camera1394::ConvertFrame()
+{
+  int i;
+  unsigned char *src, *dst;
+  
+  switch (this->mode)
+  {
+    case MODE_320x240_YUV422:
+    {
+      this->data.depth = 8;
+      this->data.format = PLAYER_CAMERA_FORMAT_GREY8;
+      this->data.image_size = this->frameSize / 2;
+      assert(this->data.image_size <= sizeof(this->data.image));
+
+      i = this->frameSize;
+      src = this->frame;
+      dst = this->data.image;
+
+      for (; i > 0; i -= 4, src += 4, dst += 2)
+      {
+        dst[0] = src[1];
+        dst[1] = src[3];
+      }
+      break;
+    }
+
+    default:
+      assert(false);
+  }
+  
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Update the device data (the data going back to the client).
+void Camera1394::WriteData()
+{
+  size_t size;
+
+  // Work out the data size; do this BEFORE byteswapping
+  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_size;
+
+  // Image data and size is filled in ConvertFrame(),
+  // so now we just do the byte-swapping
+  this->data.width = htons(this->camera.frame_width);
+  this->data.height = htons(this->camera.frame_height);
+  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+  this->data.image_size = htonl(this->data.image_size);
+
+  // Copy data to server
+  PutData((void*) &this->data, size, &this->frameTime);
+
+  return;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Save a frame to disk
@@ -453,65 +476,22 @@ int Camera1394::SaveFrame(const char *filename)
     return -1;
   }
 
-
-  fprintf(fp,"P6\n%u %u\n255\n",this->camera.frame_width, this->camera.frame_height);
-
-  fwrite ((unsigned char*)this->frame, 1, this->camera.dma_frame_size, fp);
+  switch (this->data.format)
+  {
+    case PLAYER_CAMERA_FORMAT_GREY8:
+      fprintf(fp,"P5\n%u %u\n255\n", ntohs(this->data.width), ntohs(this->data.height));
+      fwrite((unsigned char*)this->data.image, 1, ntohl(this->data.image_size), fp);
+      break;
+    case PLAYER_CAMERA_FORMAT_RGB888:
+      fprintf(fp,"P6\n%u %u\n255\n", ntohs(this->data.width), ntohs(this->data.height));
+      fwrite((unsigned char*)this->data.image, 1, ntohl(this->data.image_size), fp);
+      break;
+    default:
+      break;
+  }
 
   fclose(fp);
 
   return 0;
-}
-
-/*size_t Camera1394::GetData( void *client, unsigned char *dest,
-              size_t maxsize, uint32_t *timesatamp_sec,
-              uint32_t *timestamp_usec)
-{
-  printf("Len[%d] [%d]\n",maxsize,sizeof(player_camera_data_t));
-  return 0;
-}
-*/
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Update the device data (the data going back to the client).
-void Camera1394::WriteData()
-{
-  size_t size;
-  //printf("%d %06d\n", this->tsec, this->tusec);
-
-  if (test) { // send out a test pattern
-    this->data.width  = htons(this->width);
-    this->data.height = htons(this->height);
-    this->data.depth = 8;
-    this->data.image_size = htonl(this->width * this->height);
-
-    memcpy(this->data.image, this->testImage, this->width*this->height);
-    size = sizeof(this->data) - sizeof(this->data.image) + 
-      this->width * this->height;
-
-  } else {  
-
-    // Set the image properties
-    this->data.width = htons(this->camera.frame_width);
-    this->data.height = htons(this->camera.frame_height);
-    this->data.depth = 8;
-
-    this->data.image_size = htonl(this->camera.dma_frame_size);
-
-    // Set the image pixels
-    assert((size_t) this->camera.dma_frame_size <= sizeof(this->data.image));
-    memcpy(this->data.image, this->frame, this->camera.dma_frame_size);
-
-    // Copy data to server.
-    size = sizeof(this->data) - sizeof(this->data.image) + this->camera.dma_frame_size;
-  }
-
-  struct timeval timestamp;
-  timestamp.tv_sec = this->tsec;
-  timestamp.tv_usec = this->tusec;
-  PutData((void*) &this->data, size, &timestamp);
-
-  return;
 }
 
