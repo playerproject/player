@@ -16,10 +16,10 @@
 
 
 /* Acquire lock and set python state for current thread. */
-extern void thread_acquire();
+extern void thread_acquire(void);
 
 /* Release lock and set python state to NULL. */
-extern void thread_release();
+extern void thread_release(void);
 
 // Error handling
 extern PyObject *errorob;

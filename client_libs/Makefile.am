@@ -1,1 +1,1 @@
-SUBDIRS = c c++ libplayerc tcl
+SUBDIRS = c c++ libplayerc pyplayerc tcl

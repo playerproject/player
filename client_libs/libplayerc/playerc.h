@@ -147,7 +147,7 @@ extern int playerc_lookup_code(const char *name);
  **************************************************************************/
 
 // Create a multi-client object
-playerc_mclient_t *playerc_mclient_create();
+playerc_mclient_t *playerc_mclient_create(void);
 
 // Destroy a multi-client object
 void playerc_mclient_destroy(playerc_mclient_t *mclient);
