@@ -49,6 +49,11 @@ if test -f $RTK_DIR/include/rtk.h; then
   with_rtk=yes
 else
   with_rtk=no
+  AC_MSG_WARN([***************************************************])
+  AC_MSG_WARN([Couldn't find RTK, so I won't build RTK-based GUIs])
+  AC_MSG_WARN([Maybe you should download and install RTK?])
+  AC_MSG_WARN([If you have RTK installed, try --with-rtk=path])
+  AC_MSG_WARN([***************************************************])
 fi
 AM_CONDITIONAL(WITH_RTK, test x$with_rtk = xyes)
 
@@ -322,10 +327,4 @@ AC_OUTPUT(Makefile
           utils/tkviewer/Makefile
           utils/playerjoy/Makefile
           config/Makefile)
-
-          #rtk2/Makefile
-          #rtk2/test/Makefile
-
-
-
 
