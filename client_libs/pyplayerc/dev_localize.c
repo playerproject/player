@@ -62,8 +62,12 @@ typedef struct
   PyObject_HEAD
   playerc_client_t *client;
   playerc_localize_t *obj;
-  PyObject *hypoths;
+  PyObject *pyhypoths;
 } localize_object_t;
+
+
+/* Callback for post-processing incoming data */
+static void localize_onread(localize_object_t *self);
 
 
 PyTypeObject localize_type;
@@ -83,8 +87,12 @@ PyObject *localize_new(localize_object_t *self, PyObject *args)
   self->client = pyclient->client;
   self->obj = playerc_localize_create(pyclient->client, index);
   self->obj->info.user_data = self;
-  self->hypoths = PyList_New(0);
-    
+  self->pyhypoths = PyList_New(0);
+
+  /* Add callback for post-processing incoming data */
+  playerc_client_addcallback(pyclient->client, (playerc_device_t*) self->obj,
+                             (playerc_callback_fn_t) localize_onread, (void*) self);
+
   return (PyObject*) self;
 }
 
@@ -107,10 +115,18 @@ static PyObject *localize_getattr(localize_object_t *self, char *attrname)
   {
     result = PyFloat_FromDouble(self->obj->info.datatime);
   }
+  else if (strcmp(attrname, "pending_count") == 0)
+  {
+    result = PyInt_FromLong(self->obj->pending_count);
+  }
+  if (strcmp(attrname, "pending_time") == 0)
+  {
+    result = PyFloat_FromDouble(self->obj->pending_time);
+  }
   else if (strcmp(attrname, "hypoths") == 0)
   {
-    Py_INCREF(self->hypoths);
-    return self->hypoths;
+    Py_INCREF(self->pyhypoths);
+    return self->pyhypoths;
   }
   else
     result = Py_FindMethod(localize_methods, (PyObject*) self, attrname);
@@ -127,10 +143,10 @@ static PyObject *localize_str(localize_object_t *self)
   playerc_localize_hypoth_t *h;
 
   snprintf(str, sizeof(str),
-           "localize %02d %013.3f ",
-           self->obj->info.index,
-           self->obj->info.datatime);
-
+           "localize %02d %013.3f %03d %013.3f ",
+           self->obj->info.index, self->obj->info.datatime,
+           self->obj->pending_count, self->obj->pending_time);
+  
   for (i = 0; i < self->obj->hypoth_count; i++)
   {
     h = self->obj->hypoths + i;
@@ -195,6 +211,36 @@ static PyObject *localize_unsubscribe(localize_object_t *self, PyObject *args)
 }
 
 
+/* Callback for post-processing incoming data */
+static void localize_onread(localize_object_t *self)
+{
+  int i;
+  playerc_localize_hypoth_t *h;
+  PyObject *pyh;
+
+  thread_acquire();
+
+  Py_DECREF(self->pyhypoths);
+
+  self->pyhypoths = PyList_New(0);
+
+  for (i = 0; i < self->obj->hypoth_count; i++)
+  {
+    h = self->obj->hypoths + i;
+    pyh = Py_BuildValue("(d(ddd)((ddd)(ddd)(ddd)))",
+                        h->weight, h->mean[0], h->mean[1], h->mean[2],
+                        h->cov[0][0], h->cov[0][1], h->cov[0][2],
+                        h->cov[1][0], h->cov[1][1], h->cov[1][2],
+                        h->cov[2][0], h->cov[2][1], h->cov[2][2]);
+    PyList_Append(self->pyhypoths, pyh);
+  }
+  
+  thread_release();
+
+  return;
+}
+
+
 /* Assemble python localize type
  */
 PyTypeObject localize_type = 
@@ -204,9 +250,9 @@ PyTypeObject localize_type =
   "localize",
   sizeof(localize_object_t),
   0,
-  localize_del, /*tp_dealloc*/
+  (void*) localize_del, /*tp_dealloc*/
   0,          /*tp_print*/
-  localize_getattr, /*tp_getattr*/
+  (void*) localize_getattr, /*tp_getattr*/
   0,          /*tp_setattr*/
   0,          /*tp_compare*/
   0,          /*tp_repr*/
@@ -215,14 +261,14 @@ PyTypeObject localize_type =
   0,          /*tp_as_mapping*/
   0,          /*tp_hash*/
   0,          /*tp_call*/
-  localize_str, /*tp_string*/
+  (void*) localize_str, /*tp_string*/
 };
 
 
 static PyMethodDef localize_methods[] =
 {
-  {"subscribe", localize_subscribe, METH_VARARGS},
-  {"unsubscribe", localize_unsubscribe, METH_VARARGS},  
+  {"subscribe", (void*) localize_subscribe, METH_VARARGS},
+  {"unsubscribe", (void*) localize_unsubscribe, METH_VARARGS},  
   {NULL, NULL}
 };
 
