@@ -128,6 +128,18 @@ static PyObject *localize_getattr(localize_object_t *self, char *attrname)
     Py_INCREF(self->pyhypoths);
     return self->pyhypoths;
   }
+  else if (strcmp(attrname, "fresh") == 0)
+  {
+    result = Py_BuildValue("i", self->obj->info.fresh);
+    // HACKETY-HACK-HACK: i'm too lazy to implement a setattr function to
+    // allow the user to set the fresh flag to 0, so we'll just do it here,
+    // on the assumption that the user will immediately read the data (if
+    // it's currently fresh) and thereafter consider it stale
+    //
+    // Furthermore, for this mechanism to work in general analagous attribute 
+    // support should be added to other device proxies.
+    self->obj->info.fresh = 0;
+  }
   else
     result = Py_FindMethod(localize_methods, (PyObject*) self, attrname);
 

@@ -458,6 +458,7 @@ int playerc_client_adddevice(playerc_client_t *client, playerc_device_t *device)
     PLAYERC_ERR("too many devices");
     return -1;
   }
+  device->fresh = 0;
   client->device[client->device_count++] = device;
   return 0; 
 }
@@ -846,6 +847,9 @@ void *playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
 
       // Call the registerd handler for this device 
       (*device->putdata) (device, (char*) header, data, len);
+
+      // mark as fresh
+      device->fresh = 1;
 
       // Call any additional registered callbacks 
       for (j = 0; j < device->callback_count; j++)
