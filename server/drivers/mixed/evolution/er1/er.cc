@@ -122,7 +122,7 @@ CDevice* ER_Init(char* interface, ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POSITION_STRING))
   {
-    PLAYER_ERROR1("driver \"er\" does not support interface "
+    PLAYER_ERROR1("driver \"er1_position\" does not support interface "
                   "\"%s\"\n", interface);
     return(NULL);
   }
@@ -134,7 +134,7 @@ CDevice* ER_Init(char* interface, ConfigFile* cf, int section)
 void 
 ER_Register(DriverTable* table)
 {
-  table->AddDriver("er", PLAYER_ALL_MODE, ER_Init);
+  table->AddDriver("er1_position", PLAYER_ALL_MODE, ER_Init);
 }
 
 ER::ER(char* interface, ConfigFile* cf, int section) :
