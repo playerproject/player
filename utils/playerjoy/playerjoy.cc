@@ -236,7 +236,7 @@ keyboard_handler(void* arg)
 
   // get the console in raw mode
   tcgetattr(kfd, &cooked);
-  memcpy(&raw, &cooked, sizeof(struct termio));
+  memcpy(&raw, &cooked, sizeof(struct termios));
   raw.c_lflag &=~ (ICANON | ECHO);
   raw.c_cc[VEOL] = 1;
   raw.c_cc[VEOF] = 2;
