@@ -49,7 +49,7 @@ uninstall:
 distro: clean
 	$(MKDIR) doc
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
-#cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` $(PLAYER_VERSION)
+	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` $(PLAYER_VERSION)
 
 
 clean_server: 
