@@ -906,7 +906,8 @@ Wavefront::PutConfig(player_device_id_t id, void *client,
         if(plan->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
         {
           PLAYER_WARN("too many waypoints; truncating list");
-          reply.count = htons((unsigned short)PLAYER_PLANNER_MAX_WAYPOINTS);
+          //reply.count = htons((unsigned short)PLAYER_PLANNER_MAX_WAYPOINTS);
+          reply.count = htons((unsigned short)0);
         }
         else
           reply.count = htons((unsigned short)plan->waypoint_count);
