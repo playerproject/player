@@ -131,7 +131,9 @@ int player_request_device_access(player_connection_t* conn,
                                  uint16_t device,
                                  uint16_t device_index,
                                  uint8_t req_access,
-                                 uint8_t* grant_access );
+                                 uint8_t* grant_access,
+                                 char* driver_name,
+                                 int driver_name_len);
 
 /*
  * read from the indicated connection.  put the data in buffer, up to
