@@ -66,6 +66,7 @@
 #define PLAYER_BPS_STRING            "bps"
 #define PLAYER_DESCARTES_STRING       "descartes"
 #define PLAYER_IDAR_STRING           "idar"
+#define PLAYER_MOTE_CODE             "mote"
 
 /* the currently assigned device codes */
 #define PLAYER_PLAYER_CODE         ((uint16_t)1)
@@ -86,6 +87,7 @@
 #define PLAYER_BPS_CODE           ((uint16_t)16) // broken?
 #define PLAYER_IDAR_CODE          ((uint16_t)17)
 #define PLAYER_DESCARTES_CODE      ((uint16_t)18)
+#define PLAYER_MOTE_CODE          ((uint16_t)19)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -769,6 +771,32 @@ typedef struct
 #define AUDIO_DATA_BUFFER_SIZE 20
 #define AUDIO_COMMAND_BUFFER_SIZE 3*sizeof(short)
 /**************************************************************************/
+
+
+
+/*************************************************************************
+*
+*  Mote radio device
+* 
+*/
+
+#define MAX_MOTE_DATA_SIZE 64
+
+typedef struct
+{
+  /* just a TOS AM packet maybe ?? */
+  uint8_t src;
+  uint8_t dest;
+  uint8_t len;
+  uint8_t buf[MAX_MOTE_DATA_SIZE];
+  float   rssi;
+} __attribute__ ((packed)) player_mote_data_t;
+
+typedef struct
+{
+  /* only "sense" the radio has is signal strength */
+  uint8_t strength;
+} __attribute__ ((packed)) player_mote_config_t;
 
 
 #endif
