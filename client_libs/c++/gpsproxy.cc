@@ -43,8 +43,11 @@ void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_gps_data_t),hdr.size);
   }
 
+  // pos in integer mm
   xpos = ntohl(((player_gps_data_t*)buffer)->xpos);
   ypos = ntohl(((player_gps_data_t*)buffer)->ypos);
+  // heading in integer degrees
+  heading = ntohl(((player_gps_data_t*)buffer)->heading);
 }
 
 // interface that all proxies SHOULD provide
@@ -52,6 +55,6 @@ void GpsProxy::Print()
 {
   printf("#GPS(%d:%d) - %c\n", device, index, access);
   puts("#(X,Y)");
-  printf("(%d,%d)\n", xpos,ypos);
+  printf("%d\t%d\t%d\n", xpos,ypos,heading);
 }
 
