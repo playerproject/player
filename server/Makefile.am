@@ -4,9 +4,10 @@ AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage
 
 bin_PROGRAMS = player
 
-lib_LIBRARIES = libplayerqueue.a
+lib_LIBRARIES = libplayerqueue.a libserialize.a
 
 libplayerqueue_a_SOURCES = playerqueue.cc
+libserialize_a_SOURCES = serialize.c serialize.h
 
 player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
                  deviceregistry.cc clientmanager.cc wallclocktime.cc main.cc \
@@ -14,7 +15,7 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
                  player.h playerqueue.h device.h deviceregistry.h \
                  devicetable.h clientdata.h clientmanager.h socket_util.h \
                  wallclocktime.h playertime.h configfile.h drivertable.cc \
-                 drivertable.h
+                 drivertable.h serialize.c serialize.h
 
 player_DEPENDENCIES = drivers/p2os/libp2os.a drivers/stage/libstage.a \
                       drivers/libsicklms200.a drivers/libfestival.a \
@@ -29,5 +30,6 @@ player_LDADD   = -lpthread -lm -ldl drivers/p2os/libp2os.a drivers/stage/libstag
 
 include_HEADERS = playercommon.h \
                   player.h \
-                  playerqueue.h
+                  playerqueue.h \
+		  serialize.h
 
