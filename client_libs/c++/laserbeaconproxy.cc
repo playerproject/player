@@ -33,19 +33,31 @@
   #include <strings.h>
 #endif
 
-// configure the beacon device
-int LaserbeaconProxy::Configure(unsigned char bit_count,
-                                unsigned short bit_size,
-                                unsigned short zero_thresh,
-                                unsigned short one_thresh)
+// Set the bit properties
+int LaserbeaconProxy::SetBits(unsigned char bit_count, unsigned short bit_size)
 {
   if(!client)
     return(-1);
 
-  player_laserbeacon_config_t config;
+  player_laserbeacon_setbits_t config;
 
+  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETBITS;
   config.bit_count = bit_count;
   config.bit_size = htons(bit_size);
+
+  return(client->Request(PLAYER_LASERBEACON_CODE,index,(const char*)&config,
+                         sizeof(config)));
+}
+
+// Set the bit thresholds
+int LaserbeaconProxy::SetThresh(unsigned short zero_thresh, unsigned short one_thresh)
+{
+  if(!client)
+    return(-1);
+
+  player_laserbeacon_setthresh_t config;
+
+  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETTHRESH;
   config.zero_thresh = htons(zero_thresh);
   config.one_thresh = htons(one_thresh);
 

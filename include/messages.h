@@ -488,16 +488,35 @@ typedef struct
     player_laserbeacon_item_t beacon[PLAYER_MAX_LASERBEACONS]; 
 } __attribute__ ((packed)) player_laserbeacon_data_t;
 
-/*
- * the laser beacon config packet
+/* Request packet subtypes
+ */
+#define PLAYER_LASERBEACON_SUBTYPE_SETBITS 1
+#define PLAYER_LASERBEACON_SUBTYPE_SETTHRESH 2
+
+/* Laser beacon request packet: set the number and size of bits in the beacon
+ * subtype : must be PLAYER_LASERBEACON_SUBTYPE_SETBITS
+ * bit_count : the number of bits in the beacon, including start and end markers
+ * bit_size : the width of each bit, in mm
  */
 typedef struct
 {
+    uint8_t subtype;
     uint8_t bit_count;
     uint16_t bit_size;
+} __attribute__ ((packed)) player_laserbeacon_setbits_t;
+
+/* Laser beacon request packet: set the bit acceptance thresholds
+ * subtype : must be PLAYER_LASERBEACON_SUBTYPE_SETTHRESH
+ * zero_thresh : minimum threshold for declaring a bit is zero (0-100)
+ * one_thresh : minimum threshold for declaring a bit is one (0-100)
+ */
+typedef struct
+{
+    uint8_t subtype;
     uint16_t zero_thresh;
     uint16_t one_thresh;
-} __attribute__ ((packed)) player_laserbeacon_config_t;
+} __attribute__ ((packed)) player_laserbeacon_setthresh_t;
+
 
  
 /*************************************************************************/
@@ -578,13 +597,19 @@ typedef struct
  * Broadcast device
  */
 
+
 // Broadcast command packet
-//
+// Each packet may contain multiple messages.
+// Messages are concatenated in the buffer, with each message having the
+// following format.
+//   message length -- two byte unsigned int
+//   message body -- arbitrary length data
+// The list is terminated by a message with zero length.
 typedef struct
 {
     uint16_t len;
-    uint8_t  msg[4096];
-} __attribute ((packed)) player_broadcast_cmd_t;
+    uint8_t  buffer[4096];
+} __attribute__ ((packed)) player_broadcast_cmd_t;
 
 
 // Data packet
@@ -594,11 +619,12 @@ typedef struct
 //   message length -- two byte unsigned int
 //   message body -- arbitrary length data
 // The list is terminated by a message with zero length.
-//
 typedef struct
 {
+    uint16_t len;
     uint8_t  buffer[4096];
-} __attribute ((packed)) player_broadcast_data_t;
+} __attribute__ ((packed)) player_broadcast_data_t;
+
 
 /*************************************************************************/
 /*

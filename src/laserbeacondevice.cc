@@ -263,21 +263,33 @@ size_t CLaserBeaconDevice::GetConfig(unsigned char *dest, size_t maxsize)
 //
 void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize) 
 {
-    if (maxsize != sizeof(player_laserbeacon_config_t))
-        PLAYER_ERROR("config packet size is incorrect");
-    
-    player_laserbeacon_config_t *beacon_config = (player_laserbeacon_config_t*) src;
+    if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETBITS)
+    {    
+        if (maxsize != sizeof(player_laserbeacon_setbits_t))
+            PLAYER_ERROR("config packet size is incorrect");
 
-    // Number of bits and size of each bit
-    //
-    this->max_bits = beacon_config->bit_count;
-    this->max_bits = max(this->max_bits, 3);
-    this->max_bits = min(this->max_bits, 8);
-    this->bit_width = ntohs(beacon_config->bit_size) / 1000.0;
-    this->zero_thresh = ntohs(beacon_config->zero_thresh) / 100.0;
-    this->one_thresh = ntohs(beacon_config->one_thresh) / 100.0;
+        player_laserbeacon_setbits_t *config =
+            (player_laserbeacon_setbits_t*) src;
 
-    PLAYER_TRACE2("bits %d, width %f", this->max_bits, this->bit_width);
+        this->max_bits = config->bit_count;
+        this->max_bits = max(this->max_bits, 3);
+        this->max_bits = min(this->max_bits, 8);
+        this->bit_width = ntohs(config->bit_size) / 1000.0;
+
+        PLAYER_TRACE2("bits %d, width %f", this->max_bits, this->bit_width);
+    }
+
+    if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETTHRESH)
+    {    
+        if (maxsize != sizeof(player_laserbeacon_setthresh_t))
+            PLAYER_ERROR("config packet size is incorrect");
+
+        player_laserbeacon_setthresh_t *config =
+            (player_laserbeacon_setthresh_t*) src;
+
+        this->zero_thresh = ntohs(config->zero_thresh) / 100.0;
+        this->one_thresh = ntohs(config->one_thresh) / 100.0;
+    }
 }
 
 
@@ -307,6 +319,9 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
     for (int i = 0; i < ARRAYSIZE(this->filter); i++)
         this->filter[i] *= (1 - filter_gain);
 
+    ax = ay = 0;
+    bx = by = 0;
+    
     // Find the beacons in this scan
     //
     for (int i = 0; i < laser_data->range_count; i++)
