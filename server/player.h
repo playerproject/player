@@ -725,7 +725,7 @@ typedef struct player_position_speed_prof_req
   int16_t acc;
 } __attribute__ ((packed)) player_position_speed_prof_req_t;
 
-/** [Configuration: Segway RMP-specific configuration */
+/** [Configuration: Segway RMP-specific configuration] */
 /** */
 typedef struct player_rmp_config 
 {
@@ -749,7 +749,8 @@ typedef struct player_rmp_config
  mobile robot base. */
 
 /** [Constants] */
-/** Yet to be defined */
+/** Supported config requests */
+#define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
 
 /** [Data] */
 /**
@@ -771,7 +772,7 @@ typedef struct player_position3d_data
 
 /** [Commands] */
 /**
-The {\tt position} interface accepts new positions and/or velocities
+The {\tt position3d} interface accepts new positions and/or velocities
 for the robot's motors (drivers may support position control, speed control,
 or both); the format is */
 typedef struct player_position3d_cmd
@@ -786,8 +787,23 @@ typedef struct player_position3d_cmd
   int32_t rollspeed, pitchspeed, yawspeed;
 } __attribute__ ((packed)) player_position3d_cmd_t;
 
-/** [Configuration] */
-/** Yet to be defined. */
+/** [Configuration: Motor power] */
+/**
+On some robots, the motor power can be turned on and off from software.
+To do so, send a request with the format given below, and with the
+appropriate {\tt state} (zero for motors off and non-zero for motors on).
+The server will reply with a zero-length acknowledgement.
+
+Be VERY careful with this command!  You are very likely to start the robot 
+running across the room at high speed with the battery charger still attached.
+*/
+typedef struct player_position3d_power_config
+{ 
+  /** subtype; must be PLAYER_POSITION_MOTOR_POWER_REQ */
+  uint8_t request;
+  /** 0 for off, 1 for on */
+  uint8_t value; 
+} __attribute__ ((packed)) player_position3d_power_config_t;
 
 /*************************************************************************
  ** end section
