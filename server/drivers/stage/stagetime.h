@@ -24,7 +24,7 @@
  * $Id$
  *
  * this is the StageTime class, which gets current simulated time from
- * shared memory
+ * the socket conn to Stage
  *
  */
 #ifndef _STAGETIME_H
@@ -32,29 +32,19 @@
 
 #include <sys/time.h>
 #include "playertime.h"
-#include "stage.h"
 
 class StageTime : public PlayerTime
 {
   private:
-    // the location in shared memory of the time feed
-    struct timeval* simtimep;
-
-    // Simulator lock bookkeeping data and init method
-    //
-    int lock_fd;
-    int lock_byte;
-    void InstallLock( int fd, int index )
-              {lock_fd = fd; lock_byte = index;}
-    void Lock();
-    void Unlock();
+    // the most recent time from Stage
+    struct timeval simtime;
 
   public:
-    StageTime( stage_clock_t* clock, int fd );
+    StageTime() {};
     ~StageTime() { } // empty destructor
 
     int GetTime(struct timeval* time);
-
+    int SetTime(struct timeval* time);
 };
 
 #endif

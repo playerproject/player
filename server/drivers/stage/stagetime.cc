@@ -24,7 +24,7 @@
  * $Id$
  *
  * this is the StageTime class, which gets current simulated time from
- * shared memory
+ * the socket conn to stage
  *
  */
 
@@ -32,46 +32,14 @@
 #include <stdio.h>
 #include <sys/file.h>
 
-// constuctor
-StageTime::StageTime( stage_clock_t* clock, int fd ) 
-{ 
-  simtimep = &clock->time; 
-  
-  // use the first byte of the clock file to synchronize access
-  InstallLock( fd, 0 );
-}
-
-void StageTime::Lock( void )
-{
-  // POSIX RECORD LOCKING METHOD
-  struct flock cmd;
-
-  cmd.l_type = F_WRLCK; // request write lock
-  cmd.l_whence = SEEK_SET; // count bytes from start of file
-  cmd.l_start = this->lock_byte; // lock my unique byte
-  cmd.l_len = 1; // lock 1 byte
-
-  fcntl( this->lock_fd, F_SETLKW, &cmd );
-}
-
-void StageTime::Unlock( void )
-{
-  // POSIX RECORD LOCKING METHOD
-  struct flock cmd;
-
-  cmd.l_type = F_UNLCK; // request  unlock
-  cmd.l_whence = SEEK_SET; // count bytes from start of file
-  cmd.l_start = this->lock_byte; // unlock my unique byte
-  cmd.l_len = 1; // unlock 1 byte
-
-  fcntl( this->lock_fd, F_SETLKW, &cmd );
-}
-
 int StageTime::GetTime(struct timeval* time)
 { 
-  Lock();
-  *time = *simtimep;
-  Unlock();
+  *time = simtime;
   return(0);
 }
 
+int StageTime::SetTime(struct timeval* time)
+{ 
+  simtime = *time;
+  return(0);
+}

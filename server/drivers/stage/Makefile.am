@@ -1,12 +1,7 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @STAGE_IO_INCLUDE@
 
-noinst_LIBRARIES = @STAGE_LIB@ libpsdevice.a
+noinst_LIBRARIES = @STAGE_LIB@
 
 EXTRA_LIBRARIES = libstage.a
 
-libstage_a_SOURCES = stagedevice.cc stagedevice.h stage.h stagetime.cc \
-                     stagetime.h
-
-libpsdevice_a_SOURCES = psdevice.h psdevice.cc
-
-include_HEADERS = stage.h
+libstage_a_SOURCES = stagedevice.cc stagetime.cc stagetime.h
