@@ -288,8 +288,6 @@ int playerc_client_get_devlist(playerc_client_t *client)
   }
   client->id_count = config.device_count;
 
-  printf("devlist returned %d devices\n", client->id_count);
-
   return 0;
 }
 

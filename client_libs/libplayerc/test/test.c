@@ -48,6 +48,21 @@ int main(int argc, const char *argv[])
   }
   PASS();
 
+  // Get the available device list from the server.
+  TEST("querying interface list");
+  if (playerc_client_get_devlist(client) < 0)
+  {
+    FAIL();
+    return -1;
+  }
+  PASS();
+  printf("interfaces:\n", host, port);
+  for (i = 0; i < client->id_count; i++)
+  {
+    printf("  %s:%d \n", playerc_lookup_name(client->ids[i].code), client->ids[i].index);
+  }
+
+
   // Run the tests
   for (i = 1; i < argc; i++)
   {

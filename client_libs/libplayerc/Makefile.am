@@ -8,6 +8,7 @@ libplayerc_a_SOURCES = playerc.h \
 											 mclient.c \
 											 client.c \
                        device.c \
+											 utils.c \
                        dev_blobfinder.c \
                        dev_comms.c \
                        dev_fiducial.c \
