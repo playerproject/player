@@ -112,6 +112,9 @@
 #define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
 //#define PLAYER_MAX_MESSAGE_SIZE 1048575 /*1MB*/
 
+/* maxium size of the devices incoming and outgoing configuration queues */
+#define PLAYER_MAX_CONFIG_QUEUE_LENGTH 4
+ 
 /* the default player port */
 #define PLAYER_PORTNUM 6665
 

@@ -99,6 +99,7 @@ bool CArenaLock::InstallSemaphore( sem_t* sem )
   m_lock = sem;
 
   printf( "Player: device lock at %p\n", m_lock );
+  return(true);
 }
 
 

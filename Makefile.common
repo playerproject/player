@@ -16,6 +16,7 @@
 
 PLAYER_VERSION = 1.2
 
+
 #######################################
 # Compiler selection
 #
@@ -83,6 +84,7 @@ PLAYER_PLATFORM = -DPLAYER_LINUX
 
 ####################################### 
 
+
 #######################################
 # Device support
 #
@@ -93,7 +95,7 @@ PLAYER_PLATFORM = -DPLAYER_LINUX
 INCLUDE_STAGE = -DINCLUDE_STAGE
 
 # comment out to get rid of self-test routines
-INCLUDE_SELFTEST = -DINCLUDE_SELFTEST
+#INCLUDE_SELFTEST = -DINCLUDE_SELFTEST
 
 # comment each one to remove support for that device
 INCLUDE_LASER = -DINCLUDE_LASER
@@ -113,6 +115,14 @@ INCLUDE_SPEECH = -DINCLUDE_SPEECH
 #INCLUDE_AUDIO = -DINCLUDE_AUDIO
 
 #######################################
+
+#######################################
+# Debug / Optimized
+#
+# normally, use the following line for best performance:
+CFLAGS = -O2 -Wall $(PLAYER_PLATFORM) $(INCLUDE_SELFTEST)
+# for debug, use the following instead:
+#CFLAGS = -g3 -Wall $(PLAYER_PLATFORM) $(INCLUDE_SELFTEST)
 
 
 ############## You shouldn't need to change below here ############## 
