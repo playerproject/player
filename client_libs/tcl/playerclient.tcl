@@ -91,7 +91,7 @@ set PLAYER_NUM_SONAR_SAMPLES  16
 set PLAYER_SONAR_POWER_REQ     4
 
 # the laser device
-set PLAYER_NUM_LASER_SAMPLES  361
+set PLAYER_NUM_LASER_SAMPLES  401
 set PLAYER_MAX_LASER_VALUE 8000
 
 #########################################################################
@@ -412,12 +412,20 @@ proc parseData {device device_index data size} {
       error "failed to get position data"
     }
   } elseif {![string compare $device $PLAYER_LASER_CODE]} {
-    if {[expr $size / 2] != $PLAYER_NUM_LASER_SAMPLES} {
+    if {[binary scan $data SSSS min_angle max_angle resolution \
+                                 range_count] != 4} {
+        error "failed to parse laser header"
+    }
+
+    set range_count [expr ($range_count + 0x10000) % 0x10000]
+    puts "range_count $range_count"
+
+    if {[expr ($size-8) / 2] != $PLAYER_NUM_LASER_SAMPLES} {
       puts "Warning: expected $PLAYER_NUM_LASER_SAMPLES laser readings, but received [expr $size/2] readings"
     }
     set j 0
-    while {$j < [expr $size / 2]} {
-      if {[binary scan $data "x[expr 2 * $j]S" laser($j)] != 1} {
+    while {$j < [expr $range_count]} {
+      if {[binary scan $data "x8x[expr 2 * $j]S" laser($j)] != 1} {
         error "failed to get laser scan $j"
       }
       set laser($j) [expr ($laser($j) + 0x10000) % 0x10000]

@@ -126,22 +126,4 @@ class CStageDevice : public CDevice
     private: size_t m_config_len;
 };
 
-/* took this class out.  doesn't look like we need it anymore  --BPG */
-
-/*
-class CStageSonarDevice : public CStageDevice
-{
-public: 
-  CStageSonarDevice(void *buffer, size_t data_len, 
-		    size_t command_len, size_t config_len);
-  
-  
-  // override the CStageDevice GetData to stuff this data
-  // into the P2OS buffer
-  //
-  virtual int GetData( unsigned char * );
-};
-*/
-
-
 #endif

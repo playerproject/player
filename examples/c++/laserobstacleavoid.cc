@@ -75,12 +75,15 @@ int main(int argc, char **argv)
   if(turnOnMotors && robot.ChangeMotorState(1))
     exit(1);
 
+  //robot.SetLaserConfig(50,-9000,9000,false);
+
   /* go into read-think-act loop */
   for(;;)
   {
     /* this blocks until new data comes; 10Hz by default */
     if(robot.Read())
       exit(1);
+
 
     /* print current sensor data to console */
     //robot.Print();
@@ -92,21 +95,25 @@ int main(int argc, char **argv)
     minL=MAXINT; 
     minR=MAXINT;
     for (int j=0; j<180; j++) {
-      if (minR>robot.laser->ranges[j]) minR=robot.laser->ranges[j];
+      //printf("laser(%d):%d\n", j,robot.laser->ranges[j] & 0x1FFF);
+      if (minR>(robot.laser->ranges[j] & 0x1FFF))
+        minR=(robot.laser->ranges[j] & 0x1FFF);
     }
     for (int j=181; j<361; j++) {
-      if (minL>robot.laser->ranges[j]) minL=robot.laser->ranges[j];
+      if (minL>(robot.laser->ranges[j] & 0x1FFF))
+        minL=(robot.laser->ranges[j] & 0x1FFF);
     }
+    //printf("minR:%d\tminL:%d\n", minR,minL);
     int l=(100*minR)/500-100;
     int r=(100*minL)/500-100;
     if (l>150) 
       l=150; 
     if (r>150) 
       r=150;
-    *robot.newspeed = r+l;
-    *robot.newturnrate = r-l;
-    //printf("speed: %d\t turn: %d\n", robot.newspeed, robot.newturnrate);
-
+    *(robot.newspeed) = r+l;
+    *(robot.newturnrate) = r-l;
+    //printf("speed: %d\tturn:%d\n", *(robot.newspeed), *(robot.newturnrate));
+                  
     /* write commands to robot */
     robot.Write();
   }
