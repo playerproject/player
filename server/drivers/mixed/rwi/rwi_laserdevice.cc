@@ -44,10 +44,15 @@ int
 CRWILaserDevice::Setup()
 {
 	#ifdef USE_MOBILITY
+
+        char fullpath[RWI_MOBILITY_PATH_MAX];
+        sprintf(fullpath, "%s/Laser/Segment", name);
+
 	// Cannot use RWIConnect since laser exists independently of the robot
 	try {
 		laser_state = MobilityGeometry::SegmentState::_narrow(
-		    helper->find_object("laser/Laser/Segment"));
+ 		    helper->find_object(fullpath));
+//		    helper->find_object("laser/Laser/Segment"));
 	} catch(...) {
 	    fprintf(stderr, "Cannot get laser interface\n");
 	    return -1;
@@ -97,76 +102,81 @@ CRWILaserDevice::Main()
 #endif // USE_MOBILITY
   
   if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0)
-    {
-      perror("rwi_laser call to pthread_setcanceltype failed");
-    }
+  {
+    perror("rwi_laser call to pthread_setcanceltype failed");
+  }
   
   while (true) 
+  {
+      
+    // First, check for a configuration request
+    if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) 
     {
-      
-      // First, check for a configuration request
-      if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) 
-	{
-	  switch (cfg.request) 
+      switch (cfg.request) 
 	    {
-	    case PLAYER_LASER_GET_GEOM:
-	      geom.subtype=PLAYER_LASER_GET_GEOM;
-	      geom.pose[0]=0;
-	      geom.pose[1]=0;
-	      geom.pose[2]=0;
-	      geom.size[0]=ntohs(150);
-	      geom.size[1]=ntohs(180);
+        case PLAYER_LASER_GET_GEOM:
+          geom.subtype=PLAYER_LASER_GET_GEOM;
+          geom.pose[0]=0;
+          geom.pose[1]=0;
+          geom.pose[2]=0;
+          geom.size[0]=ntohs(150);
+          geom.size[1]=ntohs(180);
 
-	      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
-			   NULL, &geom, sizeof(geom))) 
-		{
-		  PLAYER_ERROR("Failed to PutReply in "
-			       "rwi_laserdevice.\n");
-		}
-	      break;
-	    default:
-	      printf("rwi_laser device received unknown %s",
-		     "configuration request\n");
-	      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-			   NULL, NULL, 0)) 
-		{
-		  PLAYER_ERROR("Failed to PutReply in "
-			       "rwi_laserdevice.\n");
-		}
-	      break;
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+                       NULL, &geom, sizeof(geom))) 
+          {
+            PLAYER_ERROR("Failed to PutReply in "
+                         "rwi_laserdevice.\n");
+          }
+          break;
+        default:
+          printf("rwi_laser device received unknown %s",
+                 "configuration request\n");
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+                       NULL, NULL, 0)) 
+          {
+            PLAYER_ERROR("Failed to PutReply in "
+                         "rwi_laserdevice.\n");
+          }
+          break;
 	    }
-	}
+    }
       
-      // Laser takes no commands to process
+    // Laser takes no commands to process
       
-      // Finally, collect new data
-      if (enabled) 
-	{
+    // Finally, collect new data
+    if (enabled) 
+    {
 #ifdef USE_MOBILITY
-	  laser_data = laser_state->get_sample(0);
-	  
-	  data.min_angle=htons(-8950);
-	  data.max_angle=htons(8950);
-	  data.resolution=htons(100);
+      laser_data = laser_state->get_sample(0);
+      //printf("Data recieved is %d\n", laser_data->end.length());  
 
-	  data.range_count = htons((uint16_t) laser_data->end.length());
+      data.min_angle=htons(-8950);
+      data.max_angle=htons(8950);
+      data.range_res = htons(1);
+      data.resolution=htons(100);
+
+      data.range_count = htons((uint16_t) laser_data->end.length());
 	  
-	  for (unsigned int i = 0; (i < laser_data->end.length())
-		 && (i < PLAYER_LASER_MAX_SAMPLES); i++) 
+      for (unsigned int i = 0; (i < laser_data->end.length())
+             && (i < PLAYER_LASER_MAX_SAMPLES); i++) 
 	    {
+	      //printf("%.3f %.3f : ", laser_data->end[i].x, laser_data->end[i].y);
 	      data.ranges[i] = htons((uint16_t) (1000.0 *
-			 sqrt(laser_data->end[i].x * laser_data->end[i].x +
-			      laser_data->end[i].y * laser_data->end[i].y)));
+                                           sqrt(laser_data->end[i].x * laser_data->end[i].x +
+                                                laser_data->end[i].y * laser_data->end[i].y)));
+        data.intensity[i] = 0;
 	    }
+      //printf("\n");
 #else
-	  data.range_count = 0;
+      data.range_count = 0;
 #endif			// USE_MOBILITY
 	  
-	  PutData((unsigned char *) &data, sizeof(data), 0, 0);
-	}
-      
-      pthread_testcancel();
+      PutData((unsigned char *) &data, sizeof(data), 0, 0);
     }
+      
+    pthread_testcancel();
+  }
   
   // should not reach this point
   pthread_exit(NULL);

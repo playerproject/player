@@ -44,7 +44,7 @@ CRWIDevice::CRWIDevice(char* interface, ConfigFile* cf, int section,
 	
 	pthread_mutex_lock(&rwi_counter_mutex);
 	
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	int argc=1;
 	char *argv[2]={"program",NULL};
 	if (rwi_device_count == 0) {
@@ -56,22 +56,24 @@ CRWIDevice::CRWIDevice(char* interface, ConfigFile* cf, int section,
 			        " server running?  (You should probably disconnect.)\n");
 		}
 	}
-	#endif				// USE_MOBILITY
+#endif				// USE_MOBILITY
 
 	rwi_device_count++;
 	pthread_mutex_unlock(&rwi_counter_mutex);
 	
-	#ifdef USE_MOBILITY
+#ifdef USE_MOBILITY
 	
 	// parse config file options to find name
-        strncpy(name, 
-                cf->ReadString(section, "name", RWI_ROBOT_NAME_DEFAULT), 
-                RWI_ROBOT_NAME_MAX);
-        // just in case:
-        name[sizeof(name)-1] = '\0';
-        if(!strcmp(name,RWI_ROBOT_NAME_DEFAULT))
-          name_provided = true;
-	#endif				// USE_MOBILITY
+  strncpy(name, 
+          cf->ReadString(section, "name", RWI_ROBOT_NAME_DEFAULT), 
+          RWI_ROBOT_NAME_MAX);
+  // just in case:
+  name[sizeof(name)-1] = '\0';
+
+  // AH: Changed the sense of this; I think this was backwards
+  if(strcmp(name,RWI_ROBOT_NAME_DEFAULT))
+    name_provided = true;
+#endif				// USE_MOBILITY
 }
 
 CRWIDevice::~CRWIDevice()
