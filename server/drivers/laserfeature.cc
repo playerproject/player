@@ -106,13 +106,18 @@ class LaserFeature : public CDevice
   private: uint32_t laser_timesec, laser_timeusec;
 
   // Line filter settings.
-  private: double line_noise;
-  private: double range_noise;
-  private: double line_thresh;
+  private: double model_range_noise;
+  private: double model_angle_noise;
+  private: double sensor_range_noise;
+
+  // Threshold for segmentation
+  private: double segment_range;
 
   // Thresholds for merging.
-  private: double angle_thresh;
-  private: double length_thresh;
+  private: double merge_angle;
+
+  // Thresholds for discarding.
+  private: double discard_length;
 
   // Segment mask.
   private: int mask[PLAYER_LASER_MAX_SAMPLES];
@@ -176,13 +181,18 @@ LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
   this->laser_timeusec = 0;
 
   // Line filter settings.
-  this->line_noise = cf->ReadLength(section, "line_noise", 0.02);
-  this->range_noise = cf->ReadLength(section, "range_noise", 0.05);
-  this->line_thresh = cf->ReadLength(section, "line_thresh", 0.05);
+  this->model_range_noise = cf->ReadLength(section, "model_range_noise", 0.02);
+  this->model_angle_noise = cf->ReadAngle(section, "model_angle_noise", 10 * M_PI / 180);
+  this->sensor_range_noise = cf->ReadLength(section, "sensor_range_noise", 0.05);
+
+  // Segmentation settings
+  this->segment_range = cf->ReadLength(section, "segment_range", 0.05);
 
   // Segment merging settings.
-  this->angle_thresh = cf->ReadAngle(section, "angle_thresh", 10 * M_PI / 180);
-  this->length_thresh = cf->ReadLength(section, "length_thresh", 1.00);
+  this->merge_angle = cf->ReadAngle(section, "merge_angle", 10 * M_PI / 180);
+
+  // Post-processing
+  this->discard_length = cf->ReadLength(section, "discard_length", 1.00);
 
   // Initialise segment list.
   this->segment_count = 0;
@@ -198,6 +208,7 @@ LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserFeature::Setup()
 {
+  /*
   player_device_id_t id;
 
   // Subscribe to the laser.
@@ -215,6 +226,7 @@ int LaserFeature::Setup()
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
   }
+  */
 
   // Get the laser geometry.
   // TODO: no support for this at the moment.
@@ -223,12 +235,12 @@ int LaserFeature::Setup()
   //this->pose[2] = 0;
 
   // TESTING
-  //this->laser_file = fopen("laser02.log", "r");
-  //assert(this->laser_file);
+  this->laser_file = fopen("laser02.log", "r");
+  assert(this->laser_file);
   
-  //while (this->ReadLaser() == 0)
-  //  this->SegmentLaser();
-  
+  while (this->ReadLaser() == 0)
+    this->SegmentLaser();
+
   return 0;
 }
 
@@ -241,7 +253,7 @@ int LaserFeature::Shutdown()
   this->laser_device->Unsubscribe(this);
 
   // TESTING
-  //fclose(this->laser_file);
+  fclose(this->laser_file);
   
   return 0;
 }
@@ -371,13 +383,13 @@ void LaserFeature::SegmentLaser()
   res = (double) (this->laser_data.resolution) / 100.0 * M_PI / 180;
 
   // System noise.
-  Q[0][0] = this->line_noise * this->line_noise;
+  Q[0][0] = this->model_range_noise * this->model_range_noise;
   Q[0][1] = 0;
   Q[1][0] = 0;
-  Q[1][1] = this->line_noise * this->line_noise;
+  Q[1][1] = this->model_angle_noise * this->model_angle_noise;
 
   // Sensor noise.
-  R = this->range_noise * this->range_noise;
+  R = this->sensor_range_noise * this->sensor_range_noise;
 
   // Initial estimate and covariance.
   x[0] = 1.0;
@@ -399,7 +411,7 @@ void LaserFeature::SegmentLaser()
     
     err = this->UpdateFilter(x, P, Q, R, r, res);
 
-    if (err < this->line_thresh)
+    if (err < this->segment_range)
     {
       if (mask == 0)
         this->segments[this->segment_count++].first = i;        
@@ -409,10 +421,33 @@ void LaserFeature::SegmentLaser()
     else
       mask = 0;
       
-    fprintf(stderr, "%f %f ", r, b);
-    fprintf(stderr, "%f %f %f\n", x[0], x[1], err);
+    //fprintf(stderr, "%f %f ", r, b);
+    //fprintf(stderr, "%f %f %f ", x[0], x[1], err);
+
+    /*
+    double psi = M_PI / 2 + b + x[1];
+    
+    double px = x[0] * cos(b);
+    double py = x[0] * sin(b);
+    
+    double qx = px + 0.2 * cos(psi);
+    double qy = py + 0.2 * sin(psi);
+
+    fprintf(stderr, "%f %f\n%f %f\n\n", px, py, qx, qy);
+    */
+
+    /*
+    // TESTING
+    double psi, px, py;
+    px = r * cos(b);
+    py = r * sin(b);
+    psi = M_PI / 2 + b + x[1];
+    px += 0.5 * cos(psi);
+    py += 0.5 * sin(psi);
+    fprintf(stderr, "%f %f\n", sqrt(px * px + py * py), atan2(py, px));
+    */
   }
-  fprintf(stderr, "\n\n");
+  //fprintf(stderr, "\n\n");
   
   // Apply filter clockwise.
   mask = 0;
@@ -423,7 +458,7 @@ void LaserFeature::SegmentLaser()
         
     err = this->UpdateFilter(x, P, Q, R, r, -res);
 
-    if (err < this->line_thresh)
+    if (err < this->segment_range)
     {
       if (mask == 0)
         this->segments[this->segment_count++].last = i;        
@@ -437,26 +472,6 @@ void LaserFeature::SegmentLaser()
     //fprintf(stderr, "%f %f %f\n", x[0], x[1], err);
   }
   //fprintf(stderr, "\n\n");
-
-  /*
-    // Extract the segments.
-    this->segment_count = 0;
-    for (i = 0; i < this->laser_data.range_count; i++)
-    {
-    r = (double) (this->laser_data.ranges[i]) / 1000;
-    b = (double) (this->laser_data.min_angle) / 100.0 * M_PI / 180 + i * res;
-
-    if (mask[i] == 1)
-    {
-    if (i == 0 || (i > 0 && mask[i - 1] == 0))
-    this->segments[this->segment_count++].first = i;
-    this->segments[this->segment_count - 1].last = i;
-
-    //fprintf(stderr, "%f %f %d\n", r, b, mask[i]);
-    }   
-    }
-    //fprintf(stderr, "\n\n");
-  */
 
   return;
 }
@@ -607,7 +622,7 @@ void LaserFeature::MergeSegments()
       {
         // See if the segments have the same orientation...
         da = NORMALIZE(sb->pose[2] - sa->pose[2]);
-        if (fabs(da) < this->angle_thresh)
+        if (fabs(da) < this->merge_angle)
         {
           sa->first = min(sa->first, sb->first);
           sa->last = max(sa->last, sb->last);
@@ -636,7 +651,7 @@ void LaserFeature::UpdateData()
   {
     segment = this->segments + i;
 
-    if (segment->count >= 4 && segment->length >= this->length_thresh)
+    if (segment->count >= 4 && segment->length >= this->discard_length)
     {
       px = segment->pose[0];
       py = segment->pose[1];
