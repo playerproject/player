@@ -74,6 +74,18 @@
  * uint64_t : unsigned 8 bytes (unsigned long)
  */
 
+/*
+ * the following macros can be used to get the first char, short, or int
+ * out of an unstructured buffer (such as a void* that contains a struct
+ * of unknown type).
+ */
+#define GETFIRSTUINT8(x)  (*((uint8_t*)x))
+#define GETFIRSTINT8(x)   (*((int8_t*)x))
+#define GETFIRSTUINT16(x) (*((uint16_t*)x))
+#define GETFIRSTINT16(x)  (*((int16_t*)x))
+#define GETFIRSTUINT32(x) (*((uint32_t*)x))
+#define GETFIRSTINT32(x)  (*((int32_t*)x))
+
 /* 
  * there's no system-standard method for byte-swapping 64-bit quantities
  * (at least none that i could find), so here's a little macro
@@ -102,7 +114,7 @@
 #endif
 
 
-#define MAX_FILENAME_SIZE 256 // space for a relatively long pathname
+#define MAX_FILENAME_SIZE PATH_MAX
 
 ////////////////////////////////////////////////////////////////////////////////
 // Maths stuff

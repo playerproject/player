@@ -158,9 +158,11 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   printf("type:%u device:%u index:%u\n", 
          hdr.type,hdr.device,hdr.device_index);
   printf("Request(%d):",payload_size);
+  /*
   for(unsigned int i=0;i<payload_size;i++)
     printf("%c",payload[i]);
   printf("\t");
+  */
   for(unsigned int i=0;i<payload_size;i++)
     printf("%x ",payload[i]);
   puts("");
@@ -168,7 +170,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   {
     player_position_cmd_t* cmd = (player_position_cmd_t*)payload;
     printf("speeds: %d %d\n", 
-           (short)ntohs(cmd->speed), (short)ntohs(cmd->turnrate));
+           (short)ntohs(cmd->xspeed), (short)ntohs(cmd->yawspeed));
   }
 #endif
 
