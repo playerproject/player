@@ -4,7 +4,9 @@ AM_CPPFLAGS = -I$(top_srcdir)/server
 
 lib_LIBRARIES = libplayerc.a
 
-libplayerc_a_SOURCES = client.c \
+libplayerc_a_SOURCES = playerc.h \
+											 mclient.c \
+											 client.c \
                        device.c \
                        dev_blobfinder.c \
                        dev_comms.c \
@@ -16,9 +18,7 @@ libplayerc_a_SOURCES = client.c \
                        dev_ptz.c \
                        dev_truth.c \
                        error.c \
-                       error.h \
-                       mclient.c \
-                       playerc.h
+                       error.h
 
 include_HEADERS = playerc.h
 

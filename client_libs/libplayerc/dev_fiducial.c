@@ -82,15 +82,17 @@ void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *heade
                          player_fiducial_data_t *data, size_t len)
 {
   int i;
+  player_fiducial_item_t *fiducial;
 
-  device->item_count = ntohs(data->count);
+  device->fiducial_count = ntohs(data->count);
 
-  for (i = 0; i < device->item_count; i++)
+  for (i = 0; i < device->fiducial_count; i++)
   {
-    device->items[i].id = data->beacon[i].id;
-    device->items[i].range = ntohs(data->beacon[i].range) / 1000.0;
-    device->items[i].bearing = ((int) (int16_t) ntohs(data->beacon[i].bearing)) * M_PI / 180;
-    device->items[i].orient = ((int) (int16_t) ntohs(data->beacon[i].orient)) * M_PI / 180;
+    fiducial = data->fiducials + i;
+    device->fiducials[i].id = fiducial->id;
+    device->fiducials[i].range = ntohs(fiducial->range) / 1000.0;
+    device->fiducials[i].bearing = ((int) (int16_t) ntohs(fiducial->bearing)) * M_PI / 180;
+    device->fiducials[i].orient = ((int) (int16_t) ntohs(fiducial->orient)) * M_PI / 180;
   }
 }
 

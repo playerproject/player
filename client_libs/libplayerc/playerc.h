@@ -38,9 +38,9 @@
  * Array sizes
  **************************************************************************/
 
-#define PLAYERC_SRF_MAX_SAMPLES       PLAYER_MAX_SRF_SAMPLES
+#define PLAYERC_SRF_MAX_SAMPLES       PLAYER_SRF_MAX_SAMPLES
 #define PLAYERC_FIDUCIAL_MAX_SAMPLES  PLAYER_FIDUCIAL_MAX_SAMPLES
-#define PLAYERC_FRF_MAX_SAMPLES       PLAYER_MAX_FRF_SAMPLES
+#define PLAYERC_FRF_MAX_SAMPLES       PLAYER_FRF_MAX_SAMPLES
 #define PLAYERC_BLOBFINDER_MAX_BLOBS      64
 
 
@@ -418,8 +418,8 @@ typedef struct
   double pose[3];
   
   // List of detected beacons.
-  int item_count;
-  playerc_fiducial_item_t items[PLAYERC_FIDUCIAL_MAX_SAMPLES];
+  int fiducial_count;
+  playerc_fiducial_item_t fiducials[PLAYERC_FIDUCIAL_MAX_SAMPLES];
     
 } playerc_fiducial_t;
 

@@ -83,13 +83,13 @@ void player_print_ptz(player_ptz_data_t data)
 void player_print_laser(player_srf_data_t data)
 {
   int i;
-  for(i=0;i<PLAYER_MAX_SRF_SAMPLES;i++)
+  for(i=0;i<PLAYER_SRF_MAX_SAMPLES;i++)
     printf("laser(%d) = %d\n", i, data.ranges[i]);
 }
 void player_print_sonar(player_frf_data_t data)
 {
   int i;
-  for(i=0;i<PLAYER_MAX_FRF_SAMPLES;i++)
+  for(i=0;i<PLAYER_FRF_MAX_SAMPLES;i++)
     printf("sonar(%d): %d\n", i, data.ranges[i]);
 }
 void player_print_position(player_position_data_t data)

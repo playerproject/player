@@ -69,7 +69,6 @@
 // The laser beacon device class
 class LaserBarcode : public CDevice
 {
-
   // Constructor
   public: LaserBarcode(char* interface, ConfigFile* cf, int section);
 
@@ -120,8 +119,7 @@ class LaserBarcode : public CDevice
   private: double filter[256];
 
   // The current data
-  //
-  player_fiducial_data_t beacon_data;
+  player_fiducial_data_t data;
 };
   
 // Initialization function
@@ -260,10 +258,10 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
   if (this->laser->data_timestamp_sec == this->data_timestamp_sec &&
       this->laser->data_timestamp_usec == this->data_timestamp_usec)
   {
-    ASSERT(maxsize >= sizeof(this->beacon_data));
-    memcpy(dest, &this->beacon_data, sizeof(this->beacon_data));
+    ASSERT(maxsize >= sizeof(this->data));
+    memcpy(dest, &this->data, sizeof(this->data));
     Unlock();
-    return(sizeof(this->beacon_data));
+    return(sizeof(this->data));
   }
 
   // Get the laser data
@@ -279,21 +277,21 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
     laser_data.ranges[i] = ntohs(laser_data.ranges[i]);
 
   // Analyse the laser data
-  FindBeacons(&laser_data, &this->beacon_data);
+  FindBeacons(&laser_data, &this->data);
 
   // Do some byte-swapping
-  for (int i = 0; i < this->beacon_data.count; i++)
+  for (int i = 0; i < this->data.count; i++)
   {
-    this->beacon_data.beacon[i].range = htons(this->beacon_data.beacon[i].range);
-    this->beacon_data.beacon[i].bearing = htons(this->beacon_data.beacon[i].bearing);
-    this->beacon_data.beacon[i].orient = htons(this->beacon_data.beacon[i].orient);
+    this->data.fiducials[i].range = htons(this->data.fiducials[i].range);
+    this->data.fiducials[i].bearing = htons(this->data.fiducials[i].bearing);
+    this->data.fiducials[i].orient = htons(this->data.fiducials[i].orient);
   }
-  PLAYER_TRACE1("setting beacon count: %u",this->beacon_data.count);
-  this->beacon_data.count = htons(this->beacon_data.count);
+  PLAYER_TRACE1("setting beacon count: %u",this->data.count);
+  this->data.count = htons(this->data.count);
 
   // Copy results
-  ASSERT(maxsize >= sizeof(this->beacon_data));
-  memcpy(dest, &this->beacon_data, sizeof(this->beacon_data));
+  ASSERT(maxsize >= sizeof(this->data));
+  memcpy(dest, &this->data, sizeof(this->data));
 
   // Copy the laser timestamp
   *timestamp_sec = this->data_timestamp_sec = this->laser->data_timestamp_sec;
@@ -301,7 +299,7 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
 
   Unlock();
 
-  return (sizeof(this->beacon_data));
+  return (sizeof(this->data));
 }
 
 
@@ -381,9 +379,9 @@ int LaserBarcode::PutConfig(player_device_id_t* device, void *client,
 // Analyze the laser data and return beacon data
 //
 void LaserBarcode::FindBeacons(const player_srf_data_t *laser_data,
-                                     player_fiducial_data_t *beacon_data)
+                                     player_fiducial_data_t *data)
 {
-  beacon_data->count = 0;
+  data->count = 0;
 
   int ai = -1;
   int bi = -1;
@@ -477,7 +475,7 @@ void LaserBarcode::FindBeacons(const player_srf_data_t *laser_data,
         
     // Check for array overflow
     //
-    if (beacon_data->count < ARRAYSIZE(beacon_data->beacon))
+    if (data->count < ARRAYSIZE(data->fiducials))
     {
       double ox = (bx + ax) / 2;
       double oy = (by + ay) / 2;
@@ -487,16 +485,16 @@ void LaserBarcode::FindBeacons(const player_srf_data_t *laser_data,
       // Create an entry for this beacon
       // Note that we return the surface normal for the beacon orientation.
       //
-      beacon_data->beacon[beacon_data->count].id = id;
-      beacon_data->beacon[beacon_data->count].range = (int) (range * 1000);
-      beacon_data->beacon[beacon_data->count].bearing = (int) (bearing * 180 / M_PI);
+      data->fiducials[data->count].id = id;
+      data->fiducials[data->count].range = (int) (range * 1000);
+      data->fiducials[data->count].bearing = (int) (bearing * 180 / M_PI);
       // normalizing orient to [-pi, pi] and adding 90 deg like it was
       // done before 
       orient += M_PI*0.5;
       orient = NORMALIZE(orient);
-      beacon_data->beacon[beacon_data->count].orient = (int) (orient * 180 / M_PI );
-      //beacon_data->beacon[beacon_data->count].orient = (int) (orient * 180 / M_PI + 90);
-      beacon_data->count++;
+      data->fiducials[data->count].orient = (int) (orient * 180 / M_PI );
+      //data->fiducials[data->count].orient = (int) (orient * 180 / M_PI + 90);
+      data->count++;
     }
   }
 }
@@ -667,30 +665,30 @@ int LaserBarcode::SelfTest(const char *filename)
     for (int i = 0; i < laser_data.range_count; i++)
       laser_data.ranges[i] = atoi(strtok(NULL, " "));
 
-    player_fiducial_data_t beacon_data;
-    FindBeacons(&laser_data, &beacon_data);
+    player_fiducial_data_t data;
+    FindBeacons(&laser_data, &data);
 
-    for (int i = 0; i < beacon_data.count; i++)
+    for (int i = 0; i < data.count; i++)
     {
-      if (beacon_data.beacon[i].id == id)
+      if (data.fiducials[i].id == id)
         hist[0] += 1;
-      else if (beacon_data.beacon[i].id == 0)
+      else if (data.fiducials[i].id == 0)
         hist[1] += 1;
       else
         hist[2] += 1;
 
-      if (beacon_data.beacon[i].id == id)            
-        printf("beacon %d %d %d %d 0 0 0 0 0 0\n", (int) beacon_data.beacon[i].id,
-               beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
-               beacon_data.beacon[i].orient);
-      else if (beacon_data.beacon[i].id == 0)
-        printf("beacon %d 0 0 0 %d %d %d 0 0 0\n", (int) beacon_data.beacon[i].id,
-               beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
-               beacon_data.beacon[i].orient);
+      if (data.fiducials[i].id == id)            
+        printf("beacon %d %d %d %d 0 0 0 0 0 0\n", (int) data.fiducials[i].id,
+               data.fiducials[i].range, data.fiducials[i].bearing,
+               data.fiducials[i].orient);
+      else if (data.fiducials[i].id == 0)
+        printf("beacon %d 0 0 0 %d %d %d 0 0 0\n", (int) data.fiducials[i].id,
+               data.fiducials[i].range, data.fiducials[i].bearing,
+               data.fiducials[i].orient);
       else
-        printf("beacon %d 0 0 0 0 0 0 0 %d %d %d\n", (int) beacon_data.beacon[i].id,
-               beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
-               beacon_data.beacon[i].orient);
+        printf("beacon %d 0 0 0 0 0 0 0 %d %d %d\n", (int) data.fiducials[i].id,
+               data.fiducials[i].range, data.fiducials[i].bearing,
+               data.fiducials[i].orient);
     }
   }
 

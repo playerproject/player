@@ -759,7 +759,7 @@ P2OS::Main()
               player_frf_geom_t geom;
               geom.subtype = PLAYER_FRF_GET_GEOM_REQ;
               geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
-              for (int i = 0; i < PLAYER_MAX_FRF_SAMPLES; i++)
+              for (int i = 0; i < PLAYER_FRF_MAX_SAMPLES; i++)
               {
                 sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
                 geom.poses[i][0] = htons((short) (pose.x));

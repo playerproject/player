@@ -104,7 +104,7 @@ void SRFProxy::FillData(player_msghdr_t hdr, const char* buffer)
   bzero(intensities,sizeof(intensities));
   min_left = 10000;
   min_right = 10000;
-  for(unsigned short i=0;i<range_count && i<PLAYER_MAX_SRF_SAMPLES;i++)
+  for(unsigned short i=0;i<range_count && i<PLAYER_SRF_MAX_SAMPLES;i++)
   {
     // only want the lower 13 bits for range info
     ranges[i] = ntohs(((player_srf_data_t*)buffer)->ranges[i]) & 0x1FFF;
@@ -147,7 +147,7 @@ void SRFProxy::Print()
   puts("#min\tmax\tres\tcount");
   printf("%d\t%d\t%u\t%u\n", min_angle,max_angle,resolution,range_count);
   puts("#range\tintensity");
-  for(unsigned short i=0;i<range_count && i<PLAYER_MAX_SRF_SAMPLES;i++)
+  for(unsigned short i=0;i<range_count && i<PLAYER_SRF_MAX_SAMPLES;i++)
     printf("%u %u ", ranges[i],intensities[i]);
   puts("");
 }

@@ -155,7 +155,7 @@ void fiducial_draw(fiducial_t *fiducial)
   double ox, oy, oa;
   double wx, wy;
   char text[64];
-  playerc_fiducial_item_t *item;
+  playerc_fiducial_item_t *fdata;
 
   rtk_fig_show(fiducial->fig, 1);      
   rtk_fig_clear(fiducial->fig);
@@ -163,21 +163,21 @@ void fiducial_draw(fiducial_t *fiducial)
 
   rtk_fig_rectangle(fiducial->fig, 0, 0, 0, 0.15, 0.15, 0);
   
-  for (i = 0; i < fiducial->proxy->item_count; i++)
+  for (i = 0; i < fiducial->proxy->fiducial_count; i++)
   {
-    item = fiducial->proxy->items + i;
+    fdata = fiducial->proxy->fiducials + i;
 
-    ox = item->range * cos(item->bearing);
-    oy = item->range * sin(item->bearing);
-    oa = item->orient;
+    ox = fdata->range * cos(fdata->bearing);
+    oy = fdata->range * sin(fdata->bearing);
+    oa = fdata->orient;
 
-    // TODO: use the configuration info to determine item size
+    // TODO: use the configuration info to determine fiducial size
     wx = 0.05;
     wy = 0.40;
     
     rtk_fig_rectangle(fiducial->fig, ox, oy, oa, wx, wy, 0);
     rtk_fig_arrow(fiducial->fig, ox, oy, oa, wy, 0.10);
-    snprintf(text, sizeof(text), "  %d", item->id);
+    snprintf(text, sizeof(text), "  %d", fdata->id);
     rtk_fig_text(fiducial->fig, ox, oy, oa, text);
   }
 }

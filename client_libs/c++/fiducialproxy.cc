@@ -96,10 +96,10 @@ void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
   for(unsigned short i = 0; i < count && i < PLAYER_FIDUCIAL_MAX_SAMPLES; i++)
   {
     
-    beacons[i].id = data->beacon[i].id;
-    beacons[i].range = ntohs(data->beacon[i].range);
-    beacons[i].bearing = (short)ntohs(data->beacon[i].bearing);
-    beacons[i].orient = (short) ntohs(data->beacon[i].orient);
+    beacons[i].id = data->fiducials[i].id;
+    beacons[i].range = ntohs(data->fiducials[i].range);
+    beacons[i].bearing = (short)ntohs(data->fiducials[i].bearing);
+    beacons[i].orient = (short) ntohs(data->fiducials[i].orient);
   }
 }
 
