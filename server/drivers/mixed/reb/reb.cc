@@ -63,6 +63,7 @@
 
 #include <reb.h>
 
+#include <error.h>
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 

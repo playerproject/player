@@ -96,6 +96,7 @@ driver
 #include <libraw1394/raw1394.h>
 #include <libdc1394/dc1394_control.h>
 
+#include "error.h"
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"

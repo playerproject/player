@@ -35,6 +35,7 @@
 #include <playercclient.h>
 #include <deviceregistry.h>  // for lookup_interface()
 #include <driver.h>
+#include <error.h>
 #include <drivertable.h>
 #include <devicetable.h>
 #include <player.h>

@@ -389,7 +389,7 @@ Client::Client(char* host, int port )
   {
     if(player->Read() < 0 )
     {
-      PLAYER_ERROR("Read failed. Quitting.");
+      fprintf(stderr, "Read failed. Quitting.");
       exit( -1 );
     }
   }
@@ -398,12 +398,12 @@ Client::Client(char* host, int port )
   if(!threed)
   {
     if(pp->SetMotorState(1))
-      PLAYER_WARN("Failed to turn on motor power");
+      fprintf(stderr, "Failed to turn on motor power");
   }
   else
   {
     if(pp3->SetMotorState(1))
-      PLAYER_WARN("Failed to turn on motor power");
+      fprintf(stderr, "Failed to turn on motor power");
   }
   
   gettimeofday(&lastcommand,NULL);
@@ -561,13 +561,13 @@ int main(int argc, char** argv)
     if(jfd < 1)
     {
       perror("Failed to open joystick");
-      PLAYER_WARN("Falling back on keyboard control");
+      fprintf(stderr, "Falling back on keyboard control");
       use_keyboard = true;
     }
     else
       pthread_create(&dummy, NULL, &joystick_handler, (void*)&cont); 
 #else
-    PLAYER_WARN("Joystick support not included; falling back on keyboard control");
+    fprintf(stderr, "Joystick support not included; falling back on keyboard control");
     use_keyboard = true;
 #endif
   }
@@ -577,7 +577,7 @@ int main(int argc, char** argv)
 #if KEYBOARD_SUPPORT
     pthread_create(&dummy, NULL, &keyboard_handler, (void*)&cont); 
 #else
-    PLAYER_ERROR("Keyboard support not include; bailing.");
+    fprintf(stderr, "Keyboard support not include; bailing.");
     exit(-1);
 #endif
   }

@@ -49,6 +49,7 @@
 
 #include <playerclient.h>
 #include <netinet/in.h>
+#include <stdio.h>
 #include <math.h>
 
 /* fills in all the data....

@@ -45,8 +45,9 @@
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h>  /* for pthread stuff */
 
-#include <drivertable.h>
-#include <player.h>
+#include "error.h"
+#include "drivertable.h"
+#include "player.h"
 
 #include "cmvision.h"
 #include "capture.h"

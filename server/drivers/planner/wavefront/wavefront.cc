@@ -35,6 +35,7 @@
 #include <playertime.h>
 
 #include "player.h"
+#include "error.h"
 #include "driver.h"
 #include "drivertable.h"
 #include "devicetable.h"

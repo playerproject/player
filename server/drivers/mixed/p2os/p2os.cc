@@ -126,6 +126,7 @@ driver
 
 #include <p2os.h>
 #include <packet.h>
+#include <error.h>
 
 #include <playertime.h>
 extern PlayerTime* GlobalTime;

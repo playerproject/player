@@ -44,6 +44,7 @@
 #include <signal.h>
 
 #include <driver.h>
+#include <error.h>
 #include <configfile.h>
 #include <playertime.h>
 #include <drivertable.h>

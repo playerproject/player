@@ -44,6 +44,7 @@
 #define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 0
 
+#include "error.h"
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"

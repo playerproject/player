@@ -51,6 +51,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h> // for memset
+#include <stdio.h>
 
 #ifndef MIN
   #define MIN(a,b) (a < b) ? a : b

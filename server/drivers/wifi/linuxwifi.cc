@@ -47,6 +47,7 @@
 
 #include <configfile.h>
 #include <driver.h>
+#include <error.h>
 #include <drivertable.h>
 #include <player.h>
 #include <playertime.h>

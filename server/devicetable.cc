@@ -26,6 +26,7 @@
  *   class to keep track of available devices.  
  */
 #include <string.h> // for strncpy(3)
+#include "error.h"
 #include "devicetable.h"
 #include "deviceregistry.h"
 

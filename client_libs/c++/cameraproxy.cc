@@ -51,6 +51,7 @@
 #include <string.h>
 #include <math.h>
 #include <limits.h>
+#include <stdio.h>
 
 CameraProxy::CameraProxy( PlayerClient *pc, unsigned short index,
     unsigned char access)

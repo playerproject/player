@@ -11,6 +11,7 @@
 
 #include "player.h"
 #include "driver.h"
+#include "error.h"
 #include "devicetable.h"
 #include "drivertable.h"
 #include "vfh_algorithm.h"

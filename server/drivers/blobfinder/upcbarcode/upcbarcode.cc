@@ -45,6 +45,7 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 
+#include "error.h"
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"

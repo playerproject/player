@@ -50,6 +50,7 @@
 #include "playercclient.h"
 #include <netdb.h>
 #include <unistd.h>
+#include <stdio.h>
 #include <string.h> /* for memset() */
 #include <sys/types.h>
 #include <sys/socket.h>

@@ -32,6 +32,7 @@
 #define PLAYER_ENABLE_MSG 1
 
 #include "player.h"
+#include "error.h"
 #include "gazebo.h"
 #include "gz_client.h"
 

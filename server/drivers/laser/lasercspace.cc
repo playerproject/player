@@ -41,6 +41,7 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
+#include "error.h"
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"

@@ -62,6 +62,7 @@
 //#include <sys/poll.h>
 #include <replace.h>
 
+#include <error.h>
 #include <driver.h>
 #include <drivertable.h>
 #include <player.h>

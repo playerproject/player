@@ -52,6 +52,7 @@
 
 #include <drivertable.h>
 #include <driver.h>
+#include <error.h>
 #include <player.h>
 
 /* don't change this unless you change the Festival init scripts as well*/

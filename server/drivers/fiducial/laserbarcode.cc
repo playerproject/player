@@ -47,6 +47,7 @@
 #include <netinet/in.h>  /* for htons(3) */
 #include <unistd.h>
 
+#include "error.h"
 #include "drivertable.h"
 #include "devicetable.h"
 #include "driver.h"
@@ -169,7 +170,7 @@ int LaserBarcode::Setup()
   // Start our own thread
   this->StartThread();
   
-  PLAYER_MSG2("laserbarcode device: bitcount [%d] bitwidth [%fm]",
+  PLAYER_MSG2(2, "laserbarcode device: bitcount [%d] bitwidth [%fm]",
               this->bit_count, this->bit_width);
   return 0;
 }
@@ -185,7 +186,7 @@ int LaserBarcode::Shutdown()
   // Unsubscribe from the laser device
   this->laser_driver->Unsubscribe(this->laser_id);
 
-  PLAYER_MSG0("laserbarcode device: shutdown");
+  PLAYER_MSG0(2, "laserbarcode device: shutdown");
   return 0;
 }
 

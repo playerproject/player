@@ -60,7 +60,7 @@
 #include <clientmanager.h>
 #include <devicetable.h>
 #include <drivertable.h>
-
+#include <error.h>
 
 // I can't find a way to do @prefix@ substitution in server/prefix.h that
 // works in more than one version of autotools.  Fix this later.
@@ -163,6 +163,7 @@ where [options] is one or more of the following:
 
 - -h             : Print usage message.
 - -p &lt;rate&gt;: set server update rate, in Hz.
+- -d &lt;level&gt;       : debug message level (0 = none, 1 = default, 9 = all).
 - -t {tcp | udp} : transport protocol to use.  Default: tcp.
 - -p &lt;port&gt;      : port where Player will listen. Default: 6665.
 - -s &lt;path&gt;      : use memory-mapped IO with Stage through the devices in this directory.
@@ -184,6 +185,7 @@ void Usage()
   fprintf(stderr, "Where [options] can be:\n");
   fprintf(stderr, "  -h             : print this message.\n");
   fprintf(stderr, "  -u <rate>      : set server update rate to <rate> in Hz\n");
+  fprintf(stderr, "  -d <level>      : debug message level (0 = none, 1 = default, 9 = all).\n");
   fprintf(stderr, "  -t {tcp | udp} : transport protocol to use.  Default: tcp\n");
   fprintf(stderr, "  -p <port>      : port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
@@ -299,7 +301,7 @@ cvErrorCallback(int status, const char* func_name,
 {
   char msg[1024];
   snprintf(msg, sizeof(msg), "opencv %s:%d : %s", file_name, line, err_msg);
-  PLAYER_ERROR_NULL(msg);
+  PLAYER_ERROR1("%s", msg);
   return 0;
 }
 #endif
@@ -1110,6 +1112,7 @@ int main( int argc, char *argv[] )
   char *readlog_filename = NULL;
   double readlog_speed = 1.0;
   double update_rate = DEFAULT_SERVER_UPDATE_RATE;
+  int msg_level = 1;
   
   int *ports = NULL;
   struct pollfd *ufds = NULL;
@@ -1158,6 +1161,20 @@ int main( int argc, char *argv[] )
       if(++i<argc)
       {
         update_rate = atof(argv[i]);
+      }
+      else
+      {
+        Usage();
+        exit(-1);
+      }
+    }
+
+    // Message level
+    else if(!strcmp(argv[i],"-d"))
+    {
+      if(++i<argc)
+      {
+        msg_level = atoi(argv[i]);
       }
       else
       {
@@ -1321,6 +1338,8 @@ int main( int argc, char *argv[] )
 
   puts( "" ); // newline, flush
 
+  // Initialize error handling
+  ErrorInit(msg_level);
 
   if (use_stage)
   {

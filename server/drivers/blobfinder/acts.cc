@@ -42,9 +42,10 @@
 #include <pthread.h>  /* for pthread stuff */
 #include <socket_util.h>
 
-#include <drivertable.h>
-#include <driver.h>
-#include <player.h>
+#include "drivertable.h"
+#include "driver.h"
+#include "error.h"
+#include "player.h"
 
 #define ACTS_NUM_CHANNELS 32
 #define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  

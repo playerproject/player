@@ -35,6 +35,7 @@
 #include <drivertable.h>
 #include <driver.h>
 #include <devicetable.h>
+#include <error.h>
 
 // compute linear index for given map coords
 #define MAP_IDX(mf, i, j) ((mf->size_x) * (j) + (i))

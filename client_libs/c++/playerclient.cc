@@ -50,6 +50,7 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <stdio.h>
 #include <netdb.h> // for gethostbyname(3)
 
 // just make a client, and connect, if instructed
@@ -632,7 +633,7 @@ int PlayerClient::GetDeviceList()
 
   if (hdr.size != sizeof(config))
   {
-    PLAYER_ERROR2("Device list reply has incorrect length (%d!=%d)", hdr.size, sizeof(config)); 
+    fprintf(stderr, "Device list reply has incorrect length (%d!=%d)", hdr.size, sizeof(config)); 
     return -1;
   }
 
@@ -664,7 +665,7 @@ int PlayerClient::GetDeviceList()
 
     if (hdr.size != sizeof(rep))
     {
-      PLAYER_ERROR2("reply to driverinfo request has incorrect length (%d != %d)",
+      fprintf(stderr, "reply to driverinfo request has incorrect length (%d != %d)",
           hdr.size, sizeof(rep));
       return -1;
     }

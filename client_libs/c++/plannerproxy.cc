@@ -51,6 +51,7 @@
 #include <string.h>
 #include <math.h>
 #include <limits.h>
+#include <stdio.h>
 
 // Constructor
 PlannerProxy::PlannerProxy( PlayerClient *pc, unsigned short index,
@@ -103,13 +104,13 @@ int PlannerProxy::GetWaypoints()
                         sizeof(config.subtype), &hdr, (char *)&config, 
                         sizeof(config)) < 0)
   {
-    PLAYER_ERROR("failed to get waypoints");
+    fprintf(stderr, "failed to get waypoints");
     return -1;
   }
 
   if (hdr.size == 0)
   {
-    PLAYER_ERROR("got unexpected zero-length reply");
+    fprintf(stderr, "got unexpected zero-length reply");
     return -1;
   }
 

@@ -27,13 +27,13 @@ libplayerqueue_a_SOURCES = playerqueue.cc
 
 player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h \
                  device.cc device.h drivertable.cc drivertable.h \
-		 devicetable.cc devicetable.h deviceregistry.cc \
-		 deviceregistry.h clientmanager.cc wallclocktime.cc main.cc \
+								 devicetable.cc devicetable.h deviceregistry.cc \
+								 deviceregistry.h clientmanager.cc wallclocktime.cc main.cc \
                  playerqueue.cc configfile.cc playercommon.h \
                  player.h playerqueue.h  \
                  clientdata.h clientmanager.h socket_util.h \
                  wallclocktime.h playertime.h configfile.h \
-		 timer.cc timer.h
+								 timer.cc timer.h error.cc error.h
 
 
 # Install these to $prefix/include so clients can use them

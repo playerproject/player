@@ -116,6 +116,7 @@ driver
 #include <zlib.h>
   
 #include "player.h"
+#include "error.h"
 #include "driver.h"
 #include "drivertable.h"
 #include "deviceregistry.h"
@@ -438,7 +439,7 @@ void ReadLog::Main()
         // reset the flag
         this->rewind_requested = false;
 
-        PLAYER_MSG0("logfile rewound");
+        PLAYER_MSG0(2, "logfile rewound");
         continue;
       }
     }

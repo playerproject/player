@@ -41,6 +41,7 @@
 
 #include "playertime.h"
 #include "driver.h"
+#include "error.h"
 #include "devicetable.h"
 #include "clientmanager.h"
 

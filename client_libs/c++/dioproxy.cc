@@ -45,6 +45,7 @@
 #include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <stdio.h>
 
 void
 DIOProxy::FillData(player_msghdr_t hdr, const char *buffer)

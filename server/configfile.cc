@@ -37,6 +37,7 @@
 
 #include "player.h"
 #include "replace.h"
+#include "error.h"
 #include "configfile.h"
 #include "deviceregistry.h"
 

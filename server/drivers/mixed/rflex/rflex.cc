@@ -61,6 +61,7 @@
 #include "rflex-io.h"
 
 #include <driver.h>
+#include <error.h>
 #include <drivertable.h>
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
