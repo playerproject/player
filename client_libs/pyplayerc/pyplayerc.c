@@ -299,6 +299,24 @@ static PyObject *client_getattr(PyObject *self, char *attrname)
 }
 
 
+
+/* Get string representation (type function) */
+static PyObject *client_str(PyObject *self)
+{
+  char str[128];
+  pyclient_t *pyclient;
+  pyclient = (pyclient_t*) self;
+
+  snprintf(str, sizeof(str),
+           "sync %02d %013.3f",
+           0,
+           pyclient->client->datatime);
+  
+  return PyString_FromString(str);
+}
+
+
+
 /* Connect to server
  */
 static PyObject *client_connect(PyObject *self, PyObject *args)
@@ -455,6 +473,8 @@ static PyTypeObject client_type =
   0,          /*tp_as_sequence*/
   0,          /*tp_as_mapping*/
   0,          /*tp_hash */
+  0,          /*tp_call*/
+  client_str, /*tp_string*/
 };
 
 

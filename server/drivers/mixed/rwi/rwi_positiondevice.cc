@@ -203,11 +203,12 @@ CRWIPositionDevice::Main()
     // Finally, collect new data
 #ifdef USE_MOBILITY
     odo_data = odo_state->get_sample(0);
-      
-    // get ready to rotate our coordinate system (remembering that RWI
-    // puts y before x)
-    tmp_y = odo_data->position[0] + odo_correct_y;
-    tmp_x = odo_data->position[1] + odo_correct_x;
+
+    // get ready to rotate our coordinate system (assumes 
+    // position[0] returns x... if your RWI setup puts 
+    // Y before X, this needs to be reversed)
+    tmp_x = odo_data->position[0] + odo_correct_x;
+    tmp_y = odo_data->position[1] + odo_correct_y;
     cos_theta = cos(-odo_correct_theta);
     sin_theta = sin(-odo_correct_theta);
       
@@ -303,9 +304,10 @@ CRWIPositionDevice::ResetOdometry()
     MobilityActuator::ActuatorData_var odo_data;
     odo_data = odo_state->get_sample(0);
 
-    // yes, this looks backwards, but RWI puts Y before X
-    odo_correct_y = -odo_data->position[0];
-    odo_correct_x = -odo_data->position[1];
+    // Assumes position[0] returns x (if your RWI setup 
+    // puts Y before X, this needs to be reversed) 
+    odo_correct_x = -odo_data->position[0];
+    odo_correct_y = -odo_data->position[1];
     odo_correct_theta = -odo_data->position[2];
 #endif				// USE_MOBILITY
 }

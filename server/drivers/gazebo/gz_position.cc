@@ -174,7 +174,11 @@ size_t GzPosition::GetData(void* client, unsigned char* dest, size_t len,
   data.xpos = htonl((int) (this->iface->data->odom_pose[0] * 1000));
   data.ypos = htonl((int) (this->iface->data->odom_pose[1] * 1000));
   data.yaw = htonl((int) (this->iface->data->odom_pose[2] * 180 / M_PI));
-  
+
+  data.xspeed = htonl((int) (this->iface->data->odom_vel[0] * 1000));
+  data.yspeed = htonl((int) (this->iface->data->odom_vel[1] * 1000));
+  data.yawspeed = htonl((int) (this->iface->data->odom_vel[2] * 180 / M_PI));
+
   assert(len >= sizeof(data));
   memcpy(dest, &data, sizeof(data));
 
