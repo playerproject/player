@@ -87,7 +87,7 @@ typedef enum
 #define DEFAULT_FESTIVAL_LIBDIR "/usr/local/festival/lib"
 /* queue size */
 #define SPEECH_MAX_STRING_LEN 256
-#define SPEECH_MAX_QUEUE_LEN 1
+#define SPEECH_MAX_QUEUE_LEN 4
 /********************************************************************/
 
 /********************************************************************

@@ -32,7 +32,6 @@
 
 #include <sys/time.h>
 #include "playertime.h"
-#include "arenalock.h"
 #include "stage.h"
 
 class StageTime : public PlayerTime
@@ -41,8 +40,14 @@ class StageTime : public PlayerTime
     // the location in shared memory of the time feed
     struct timeval* simtimep;
 
-    // we'll use this to lock shared memory to read the time feed
-    CArenaLock stagelock;
+    // Simulator lock bookkeeping data and init method
+    //
+    int lock_fd;
+    int lock_byte;
+    bool InstallLock( int fd, int index )
+              {lock_fd = fd; lock_byte = index;}
+    void Lock();
+    void Unlock();
 
   public:
     StageTime( stage_clock_t* clock, int fd );

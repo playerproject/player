@@ -62,7 +62,8 @@ void *RunAudioThread(void *audiodevice);
 // void insertPeak(int f,int a);
 // int playSound(int duration);
 
-CAudioDevice::CAudioDevice(int argc, char** argv) 
+CAudioDevice::CAudioDevice(int argc, char** argv) :
+  CDevice(AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
 {
 
 }
@@ -133,10 +134,10 @@ CAudioDevice::Setup()
   p=rfftw_create_plan(N, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
   r = configureDSP();
   
-  data = new unsigned char[AUDIO_DATA_BUFFER_SIZE];
-  command = new unsigned char[AUDIO_COMMAND_BUFFER_SIZE];
-  memset( data, 0, AUDIO_DATA_BUFFER_SIZE);
-  memset( command, 0, AUDIO_COMMAND_BUFFER_SIZE);
+  //data = new unsigned char[AUDIO_DATA_BUFFER_SIZE];
+  //command = new unsigned char[AUDIO_COMMAND_BUFFER_SIZE];
+  //memset( data, 0, AUDIO_DATA_BUFFER_SIZE);
+  //memset( command, 0, AUDIO_COMMAND_BUFFER_SIZE);
 
   printf("Audio: Ran setup() \n");
 
@@ -175,13 +176,13 @@ void *RunAudioThread(void *audiodevice)
   memset( command, 0, AUDIO_COMMAND_BUFFER_SIZE);
   memset( zero, 255, AUDIO_COMMAND_BUFFER_SIZE);
   memset(data,0,AUDIO_DATA_BUFFER_SIZE);
-  ad->GetLock()->PutData( ad, data, sizeof(data) );
+  ad->PutData(data, sizeof(data));
 
-  while(1) {
-
+  while(1) 
+  {
     pthread_testcancel();
-    ad->GetLock()->GetCommand(ad, command, sizeof(command));
-    ad->GetLock()->PutCommand(ad, zero, sizeof(zero));
+    ad->GetCommand(command, sizeof(command));
+    ad->PutCommand(zero, sizeof(zero));
     
     if( command[0]!=255 ) {
       cnt = 0;
@@ -191,13 +192,14 @@ void *RunAudioThread(void *audiodevice)
       cnt += sizeof(short);
       playDur = (short)ntohs((unsigned short)(*(short*)(&command[cnt])));
       
-      if (playFrq>0 && playFrq<RATE/2) {
+      if (playFrq>0 && playFrq<RATE/2) 
+      {
 	if ( state != PLAYING ) {
 	  // clear data buffer while playing sound 
 	  for ( i=0; i < nHighestPeaks*sizeof(short)*2; i++) {
 	    data[i]=0;
 	  }	
-	  ad->GetLock()->PutData( ad, data, sizeof(data) );
+	  ad->PutData(data, sizeof(data));
 	  
 	  ad->openDSPforWrite();
 	  pthread_testcancel();
@@ -214,7 +216,8 @@ void *RunAudioThread(void *audiodevice)
     
     // printf("%i  (%i) \n",state,(playDuration-current));
 
-    if ( current < playDuration ) {
+    if ( current < playDuration ) 
+    {
       /* still playing an old sound */
       remaining = playDuration - current;
       omega=(double)playFrq*(double)2*M_PI/(double)RATE;
@@ -236,7 +239,7 @@ void *RunAudioThread(void *audiodevice)
       usleep(20000);
     } else {    
       if (state != LISTENING ) {
-	ad->openDSPforRead();
+        ad->openDSPforRead();
 	state = LISTENING;
       }
       
@@ -249,7 +252,7 @@ void *RunAudioThread(void *audiodevice)
 	cnt += sizeof(short);
       }
       
-      ad->GetLock()->PutData( ad, data, sizeof(data) );
+      ad->PutData(data, sizeof(data));
       usleep(100000);
     }
   }
@@ -351,35 +354,3 @@ CAudioDevice::PrintPacket(char* str, unsigned char* cmd, int len)
   puts("");
 }
 
-size_t CAudioDevice::GetData( unsigned char *dest, size_t maxsize ) 
-{
-  memcpy( dest, data, AUDIO_DATA_BUFFER_SIZE );
-  return(AUDIO_DATA_BUFFER_SIZE);
-}
-
-void CAudioDevice::PutData( unsigned char *src, size_t maxsize )
-{
-  memcpy( data, src, AUDIO_DATA_BUFFER_SIZE );
-}
-
-void CAudioDevice::GetCommand( unsigned char *dest, size_t maxsize )
-{
-  memcpy( dest, command, AUDIO_COMMAND_BUFFER_SIZE);
-}
-
-void CAudioDevice::PutCommand( unsigned char *src, size_t size)
-{
-  if(size != AUDIO_COMMAND_BUFFER_SIZE)
-    puts("CAudioDevice::PutCommand(): command wrong size. ignoring.");
-  else
-    memcpy(command,src,AUDIO_COMMAND_BUFFER_SIZE);
-}
-
-size_t CAudioDevice::GetConfig( unsigned char *dest, size_t maxsize)
-{
-  return(0);
-}
-
-void CAudioDevice::PutConfig( unsigned char *src, size_t size)
-{
-}

@@ -30,36 +30,48 @@
 
 #include "stagetime.h"
 #include <stdio.h>
+#include <sys/file.h>
 
 // constuctor
 StageTime::StageTime( stage_clock_t* clock, int fd ) 
 { 
   simtimep = &clock->time; 
-//  #ifdef POSIX_SEM 
-//    stagelock.InstallLock( &clock->lock );
-//  #else
-//    stagelock.InstallLock( fd );
-//  #endif
-
+  
   // use the first byte of the clock file to synchronize access
-  stagelock.InstallLock( fd, 0 );
+  InstallLock( fd, 0 );
 }
 
+void StageTime::Lock( void )
+{
+  // POSIX RECORD LOCKING METHOD
+  struct flock cmd;
+
+  cmd.l_type = F_WRLCK; // request write lock
+  cmd.l_whence = SEEK_SET; // count bytes from start of file
+  cmd.l_start = this->lock_byte; // lock my unique byte
+  cmd.l_len = 1; // lock 1 byte
+
+  fcntl( this->lock_fd, F_SETLKW, &cmd );
+}
+
+void StageTime::Unlock( void )
+{
+  // POSIX RECORD LOCKING METHOD
+  struct flock cmd;
+
+  cmd.l_type = F_UNLCK; // request  unlock
+  cmd.l_whence = SEEK_SET; // count bytes from start of file
+  cmd.l_start = this->lock_byte; // unlock my unique byte
+  cmd.l_len = 1; // unlock 1 byte
+
+  fcntl( this->lock_fd, F_SETLKW, &cmd );
+}
 
 int StageTime::GetTime(struct timeval* time)
 { 
-  if( !stagelock.Lock() )
-  {
-    perror("StageTime::GetTime(): semop() failed on Lock().");
-    return(-1);
-  }
-
+  Lock();
   *time = *simtimep;
-
-  if( !stagelock.Unlock() )
-  {
-    perror("StageTime::GetTime(): semop() failed on Unlock().");
-    return(-1);
-  }
+  Unlock();
   return(0);
 }
+

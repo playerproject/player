@@ -602,7 +602,7 @@ void *RunPtzThread(void *ptzdevice)
   while(1) 
   {
     pthread_testcancel();
-    zd->GetLock()->GetCommand(zd, (unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    zd->GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
     pthread_testcancel();
 
     if(pandemand != (short)ntohs((unsigned short)(command.pan)))
@@ -661,7 +661,7 @@ void *RunPtzThread(void *ptzdevice)
 
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    zd->GetLock()->PutData( zd, (unsigned char*)&data, sizeof(player_ptz_data_t));
+    zd->PutData((unsigned char*)&data, sizeof(player_ptz_data_t));
 
     newpantilt = false;
     newzoom = false;
@@ -669,42 +669,4 @@ void *RunPtzThread(void *ptzdevice)
     usleep(PTZ_SLEEP_TIME_USEC);
   }
 }
-
-/*
-size_t CPtzDevice::GetData( unsigned char *dest, size_t maxsize ) 
-{
-  *((player_ptz_data_t*)dest) = *data;
-  return(sizeof(player_ptz_data_t));
-}
-
-void CPtzDevice::PutData( unsigned char *src, size_t maxsize )
-{
-  *data = *((player_ptz_data_t*)src);
-}
-
-void CPtzDevice::GetCommand( unsigned char *dest, size_t maxsize )
-{
-  *((player_ptz_cmd_t*)dest) = *command;
-}
-
-void CPtzDevice::PutCommand( unsigned char *src, size_t size)
-{
-  if(size != sizeof(player_ptz_cmd_t))
-    puts("CPtzDevice::PutCommand(): command wrong size. ignoring.");
-  else
-    *command = *((player_ptz_cmd_t*)src);
-}
-*/
-size_t CPtzDevice::GetConfig( unsigned char *dest, size_t maxsize)
-{
-  return(0);
-}
-
-void CPtzDevice::PutConfig( unsigned char *src, size_t size)
-{
-}
-
-
-
-
 

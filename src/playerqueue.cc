@@ -79,6 +79,12 @@ PlayerQueue::Push(CClientData* client, unsigned char* data, int size)
   return(-1);
 }
 
+// another form of Push, this one doesn't set the client pointer
+int PlayerQueue::Push(unsigned char* data, int size)
+{
+  return(Push(NULL,data,size));
+}
+
 // pop an element off the queue. returns the size of the element,
 // or -1 if the queue is empty
 int 
@@ -88,8 +94,9 @@ PlayerQueue::Pop(CClientData** client, unsigned char* data, int size)
 
   if(queue[0].valid)
   {
-    // first, get the data out
-    *client = queue[0].client;
+    // first, get the data out (check to see if there's a valid clientp first)
+    if(client)
+      *client = queue[0].client;
     if(size < queue[0].size)
     {
       fprintf(stderr, "PlayerQueue::Pop(): WARNING: truncating %d byte "
@@ -120,5 +127,26 @@ PlayerQueue::Pop(CClientData** client, unsigned char* data, int size)
   }
   else
     return(-1);
+}
+    
+// another form of Pop, this one doesn't set the client pointer
+int PlayerQueue::Pop(unsigned char* data, int size)
+{
+  return(Pop(NULL,data,size));
+}
+    
+// clear the queue; returns 0 on success; -1 on failure
+int PlayerQueue::Flush()
+{
+  unsigned char dummybuf[PLAYER_MAX_REQREP_SIZE];
+  int dummysize = PLAYER_MAX_REQREP_SIZE;
+
+  while(Pop(dummybuf, dummysize) >= 0);
+  return(0);
+}
+// is the queue empty?
+bool PlayerQueue::Empty()
+{
+  return(!(queue[0].valid));
 }
 

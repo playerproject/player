@@ -32,7 +32,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include <lock.h>
 #include <device.h>
 
 #include <playercommon.h>
@@ -64,8 +63,6 @@ class CPtzDevice:public CDevice
   bool command_pending2;  // that way, we can cancel them if necessary
   bool ptz_fd_blocking;
   
-  CLock lock;
-
   // internal methods
   int Send(unsigned char* str, int len, unsigned char* reply);
   int Receive(unsigned char* reply);
@@ -75,7 +72,7 @@ class CPtzDevice:public CDevice
 
  public:
   player_ptz_cmd_t* command;
-  player_ptz_data_t* data; 
+  player_ptz_data_t* data;
 
   int ptz_fd; // ptz device file descriptor
   /* device used to communicate with the ptz */
@@ -91,17 +88,6 @@ class CPtzDevice:public CDevice
   virtual int GetAbsZoom(short* zoom);
   virtual int GetAbsPanTilt(short* pan, short* tilt);
   virtual void PrintPacket(char* str, unsigned char* cmd, int len);
-
-  virtual CLock* GetLock( void ){ return &lock; };
-
-  //virtual size_t GetData( unsigned char *, size_t maxsize );
-  //virtual void PutData( unsigned char *, size_t maxsize );
-
-  //virtual void GetCommand( unsigned char *, size_t maxsize );
-  //virtual void PutCommand( unsigned char *, size_t maxsize);
-
-  virtual size_t GetConfig( unsigned char *, size_t maxsize);
-  virtual void PutConfig( unsigned char *, size_t maxsize);
 };
 
 #endif

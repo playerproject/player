@@ -64,7 +64,8 @@
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
 //
-CBroadcastDevice::CBroadcastDevice(int argc, char** argv)
+CBroadcastDevice::CBroadcastDevice(int argc, char** argv) :
+  CDevice(0,0,0,0)
 {
   this->addr = DEFAULT_BROADCAST_IP;
   this->port = DEFAULT_BROADCAST_PORT;
@@ -157,7 +158,7 @@ int CBroadcastDevice::Setup()
   }
 
   // Dummy call to get around #(*%&@ mutex
-  GetLock()->PutData(this, NULL, 0);
+  //GetLock()->PutData(this, NULL, 0);
 
   PLAYER_TRACE0("done\n");
     
@@ -223,20 +224,6 @@ size_t CBroadcastDevice::GetData(unsigned char *data, size_t maxsize)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Not used
-void CBroadcastDevice::PutData(unsigned char *data, size_t maxsize)
-{
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-// Not used
-void CBroadcastDevice::GetCommand(unsigned char *, size_t maxsize)
-{
-}
-
-
-///////////////////////////////////////////////////////////////////////////
 // Send data
 void CBroadcastDevice::PutCommand(unsigned char *cmd, size_t maxsize)
 {
@@ -255,21 +242,6 @@ void CBroadcastDevice::PutCommand(unsigned char *cmd, size_t maxsize)
   SendPacket(this->cmd.buffer, this->cmd.len);
 
   PLAYER_TRACE2("cmd.buffer [%s] %d bytes", this->cmd.buffer, this->cmd.len);
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-// Not used
-size_t CBroadcastDevice::GetConfig(unsigned char *, size_t maxsize)
-{
-    return 0;
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-// Not used
-void CBroadcastDevice::PutConfig(unsigned char *, size_t maxsize)
-{
 }
 
 

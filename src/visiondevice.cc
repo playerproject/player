@@ -178,7 +178,7 @@ int CVisionDevice::version_enum_to_string(acts_version_t versionnum,
 
 CVisionDevice::~CVisionDevice()
 {
-  GetLock()->Shutdown(this);
+  Shutdown();
   if(sock != -1)
     QuitACTS(this);
 }
@@ -355,39 +355,17 @@ CVisionDevice::KillACTS()
     perror("CVisionDevice::KillACTS(): some error while killing ACTS");
 }
 
-/*
-void 
-CVisionDevice::PutData(unsigned char* src, size_t size)
-{
-  *data = *((player_internal_vision_data_t*)src);
-}
-*/
-
 size_t
 CVisionDevice::GetData(unsigned char* dest, size_t maxsize)
 {
+  int size;
+  Lock();
   /* size is stored at first two bytes */
   *((player_vision_data_t*)dest) = 
           ((player_internal_vision_data_t*)device_data)->data;
-  return(((player_internal_vision_data_t*)device_data)->size);
-}
-
-void 
-CVisionDevice::GetCommand(unsigned char* dest, size_t maxsize)
-{
-}
-void 
-CVisionDevice::PutCommand(unsigned char* src, size_t maxsize)
-{
-}
-size_t
-CVisionDevice::GetConfig(unsigned char* dest, size_t maxsize)
-{
-  return(0);
-}
-void 
-CVisionDevice::PutConfig(unsigned char* src, size_t maxsize)
-{
+  size=((player_internal_vision_data_t*)device_data)->size;
+  Unlock();
+  return(size);
 }
 
 void* 
@@ -623,8 +601,7 @@ RunVisionThread(void* visiondevice)
     pthread_testcancel();
 
     /* got the data. now fill it in */
-    vd->GetLock()->PutData(vd,(unsigned char*)&local_data,
-                           sizeof(local_data));
+    vd->PutData((unsigned char*)&local_data, sizeof(local_data));
   }
 
   pthread_cleanup_pop(1);

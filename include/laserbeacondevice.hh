@@ -51,7 +51,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "lock.h"
 #include "device.h"
 #include "messages.h"
 
@@ -66,14 +65,9 @@ class CLaserBeaconDevice : public CDevice
   //
   public: virtual int Setup();
   public: virtual int Shutdown();
-  public: virtual CLock* GetLock() {return &lock;};
 
   // Client interface
   public: virtual size_t GetData(unsigned char *, size_t maxsize);
-  public: virtual void PutData(unsigned char *, size_t maxsize);
-  public: virtual void GetCommand(unsigned char *, size_t maxsize);
-  public: virtual void PutCommand(unsigned char *, size_t maxsize);
-  public: virtual size_t GetConfig(unsigned char *, size_t maxsize);
   public: virtual void PutConfig(unsigned char *, size_t maxsize);
 
   // Analyze the laser data and return beacon data
@@ -91,9 +85,6 @@ class CLaserBeaconDevice : public CDevice
   // Filename for self-test
   private: char *test_filename;
 #endif
-
-  // Lock object for synchronization
-  private: CLock lock;
 
   // Pointer to laser to get data from
   private: uint16_t index;

@@ -31,7 +31,6 @@
 #define _DEVICE_H
 
 #include <pthread.h>
-#include <lock.h>
 
 #include <stddef.h> /* for size_t */
 #include <playercommon.h>
@@ -45,6 +44,18 @@ class CLock;
 
 class CDevice 
 {
+  private:
+    // this mutex is used to lock data, command, and req/rep buffers/queues
+    // TODO: could implement different mutexes for each data structure, but
+    // is it worth it?
+    //
+    // NOTE: StageDevice won't use this; it declares its own inter-process
+    // locking mechanism (and overrides locking methods)
+    pthread_mutex_t accessMutex;
+
+    // number of current subscriptions
+    int subscriptions;
+
   public:
     // buffers for data and command
     static unsigned char* device_data;
@@ -59,7 +70,7 @@ class CDevice
 
     virtual ~CDevice() {};
 
-    CDevice() {/*puts("Warning: called default CDevice() constructor");*/};
+    CDevice() {};
 
     // this is the main constructor, used by most non-Stage devices.
     // storage will be allocated by this constructor
@@ -73,13 +84,24 @@ class CDevice
             unsigned char* reqqueue, int reqqueuelen, 
             unsigned char* repqueue, int repqueuelen);
 
+    // these are used to control subscriptions to the device
+    virtual int Subscribe();
+    virtual int Unsubscribe();
+
+    // these two MUST be implemented by the device itself
     virtual int Setup() = 0;
     virtual int Shutdown() = 0;
-    virtual size_t GetData( unsigned char *, size_t );
-    virtual void PutData(unsigned char *, size_t );
-    // TODO: swap in size_t return version
-    //virtual size_t GetCommand( unsigned char *, size_t );
-    virtual void GetCommand( unsigned char *, size_t );
+
+    // these MAY be overridden by the device itself, but then the device
+    // is reponsible for Lock()ing and Unlock()ing appropriately
+    virtual size_t GetData(unsigned char* dest, size_t len,
+                        uint32_t* timestamp_sec = NULL, 
+                        uint32_t* timestamp_usec = NULL);
+    virtual void PutData(unsigned char* src, size_t len,
+                         uint32_t timestamp_sec = 0, 
+                         uint32_t timestamp_usec = 0);
+    
+    virtual size_t GetCommand( unsigned char *, size_t );
     virtual void PutCommand( unsigned char * , size_t );
     
     virtual size_t GetConfig( unsigned char *, size_t);
@@ -88,14 +110,6 @@ class CDevice
     virtual size_t GetReply( unsigned char *, size_t);
     virtual void PutReply(unsigned char * , size_t);
 
-    virtual CLock* GetLock( void ) = 0;
-
-    virtual size_t ConsumeData( unsigned char * data, size_t sz ) 
-    {
-      puts( "PLAYER WARNING: ConsumeData() not implemented"
-            " for this device. Calling GetData() instead" );
-      return GetData( data, sz );
-    }
 
     // to record the time at which the device gathered the data
     uint32_t data_timestamp_sec;
@@ -107,6 +121,13 @@ class CDevice
     // as opposed to the Position device.  solution: keep another
     // per-device subscription counter here.
     int subscrcount;
+    
+  protected:
+    // these methods are used to lock and unlock the various buffers and
+    // queues; they are implemented with mutexes in CDevice and overridden
+    // in CStageDevice
+    virtual void Lock();
+    virtual void Unlock();
 };
 
 #endif

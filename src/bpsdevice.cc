@@ -142,8 +142,8 @@ int CBpsDevice::Setup()
     assert(this->laserbeacon != NULL);
 
     // Subscribe to devices
-    this->position->GetLock()->Subscribe(this->position);
-    this->laserbeacon->GetLock()->Subscribe(this->laserbeacon);
+    this->position->Subscribe();
+    this->laserbeacon->Subscribe();
     
     // Initialise configuration settings
     this->gain = 0.01;
@@ -176,7 +176,7 @@ int CBpsDevice::Setup()
 #endif  
 
     // Hack to get around mutex on GetData
-    GetLock()->PutData(this, NULL, 0);
+    //GetLock()->PutData(this, NULL, 0);
     
     // Start our own thread
     pthread_create(&this->thread, NULL, DummyMain, this );
@@ -198,8 +198,8 @@ int CBpsDevice::Shutdown()
     
     // Unsubscribe from the laser device
     //
-    this->position->GetLock()->Unsubscribe(this->position);    
-    this->laserbeacon->GetLock()->Unsubscribe(this->laserbeacon);
+    this->position->Unsubscribe();
+    this->laserbeacon->Unsubscribe();
 
 #ifdef INCLUDE_SELFTEST
     if (this->dumpfile)
@@ -259,9 +259,8 @@ void CBpsDevice::Main()
                 
         // Get the beacon data
         player_laserbeacon_data_t lbdata;
-        this->laserbeacon->GetLock()->GetData(this->laserbeacon,
-                                              (uint8_t*) &lbdata,
-                                              sizeof(lbdata), &sec, &usec);
+        this->laserbeacon->GetData((uint8_t*) &lbdata, sizeof(lbdata), 
+                                   &sec, &usec);
 
         // If beacon data is new, process it...
         if (!(sec == this->beacon_sec && usec == this->beacon_usec))
@@ -293,8 +292,8 @@ void CBpsDevice::Main()
         
         // Get the odometry data
         player_position_data_t posdata;
-        this->position->GetLock()->GetData(this->position, (uint8_t*) &posdata,
-                                           sizeof(posdata), &sec, &usec);
+        this->position->GetData((uint8_t*) &posdata, sizeof(posdata), 
+                                &sec, &usec);
         
         // If odometry data is new, process it...
         if (!(sec == this->position_sec && usec == this->position_usec))
@@ -313,7 +312,7 @@ void CBpsDevice::Main()
             ProcessOdometry(ox, oy, oa);
             
             // Update our data
-            GetLock()->PutData(this, NULL, 0);
+            PutData(NULL, 0);
         }
     }
 }
@@ -342,6 +341,8 @@ void CBpsDevice::PutData(unsigned char *src, size_t maxsize)
     double gy = frame->gy + rx * sin(frame->ga) + ry * cos(frame->ga);
     double ga = frame->ga + ra;
 
+    Lock();
+    
     // Construct data packet
     ((player_bps_data_t*)this->device_data)->px = 
             htonl((int) (gx * 1000));
@@ -351,29 +352,8 @@ void CBpsDevice::PutData(unsigned char *src, size_t maxsize)
             htonl((int) (ga * 180 / M_PI));
     // TODO htonl((int) (this->err * 1e6));
     ((player_bps_data_t*)this->device_data)->err = 0; 
-}
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Get data from buffer (called by client thread)
-//
-/*
-size_t CBpsDevice::GetData(unsigned char *dest, size_t maxsize) 
-{
-    assert(maxsize >= sizeof(this->data));
-    memcpy(dest, &this->data, sizeof(this->data));
-    return sizeof(this->data);
-}
-*/
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Get configuration from buffer (called by device thread)
-//
-size_t CBpsDevice::GetConfig(unsigned char *dest, size_t maxsize) 
-{
-    return 0;
+    Unlock();
 }
 
 

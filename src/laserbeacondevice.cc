@@ -67,7 +67,8 @@ extern int global_playerport; // used to get at devices
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 //
-CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv)
+CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv) :
+  CDevice(0,0,0,0)
 {
   this->index = 0;
   this->default_bitcount = 8;
@@ -122,7 +123,7 @@ int CLaserBeaconDevice::Setup()
   ASSERT(this->laser != NULL);
     
   // Subscribe to the laser device
-  this->laser->GetLock()->Subscribe(this->laser);
+  this->laser->Subscribe();
 
   // Maximum variance in the flatness of the beacon
   this->max_depth = 0.05;
@@ -142,7 +143,7 @@ int CLaserBeaconDevice::Setup()
     
   // Hack to get around mutex on GetData
   this->beacon_data.count = 0;
-  GetLock()->PutData(this, (uint8_t*) &this->beacon_data, sizeof(this->beacon_data));
+  PutData((uint8_t*) &this->beacon_data, sizeof(this->beacon_data));
 
   PLAYER_MSG2("laser beacon device: bitcount [%d] bitwidth [%fm]",
               this->max_bits, this->bit_width);
@@ -156,104 +157,74 @@ int CLaserBeaconDevice::Setup()
 int CLaserBeaconDevice::Shutdown()
 {
   // Unsubscribe from the laser device
-  this->laser->GetLock()->Unsubscribe(this->laser);
+  this->laser->Unsubscribe();
 
   PLAYER_MSG0("laser beacon device: shutdown");
   return 0;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by client thread)
 //
 size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize) 
 {
-    // If the laser doesnt have new data,
-    // just return a copy of our old data.
-    //
-    if (this->laser->data_timestamp_sec == this->data_timestamp_sec &&
-        this->laser->data_timestamp_usec == this->data_timestamp_usec)
-    {
-        ASSERT(maxsize >= sizeof(this->beacon_data));
-        memcpy(dest, &this->beacon_data, sizeof(this->beacon_data));
-        return sizeof(this->beacon_data);
-    }
-    
-    // Get the laser data
-    //
-    player_laser_data_t laser_data;
-    this->laser->GetLock()->GetData(this->laser,
-                                (uint8_t*) &laser_data, sizeof(laser_data),
-                                NULL, NULL);
+  Lock();
 
-    // Do some byte swapping
-    //
-    laser_data.resolution = ntohs(laser_data.resolution);
-    laser_data.min_angle = ntohs(laser_data.min_angle);
-    laser_data.max_angle = ntohs(laser_data.max_angle);
-    laser_data.range_count = ntohs(laser_data.range_count);
-    for (int i = 0; i < laser_data.range_count; i++)
-        laser_data.ranges[i] = ntohs(laser_data.ranges[i]);
-
-    // Analyse the laser data
-    //
-    FindBeacons(&laser_data, &this->beacon_data);
-    
-    // Do some byte-swapping
-    //
-    for (int i = 0; i < this->beacon_data.count; i++)
-    {
-        this->beacon_data.beacon[i].range = htons(this->beacon_data.beacon[i].range);
-        this->beacon_data.beacon[i].bearing = htons(this->beacon_data.beacon[i].bearing);
-        this->beacon_data.beacon[i].orient = htons(this->beacon_data.beacon[i].orient);
-    }
-    PLAYER_TRACE1("setting beacon count: %u",this->beacon_data.count);
-    this->beacon_data.count = htons(this->beacon_data.count);
-    
-    // Copy results
-    //
+  // If the laser doesnt have new data,
+  // just return a copy of our old data.
+  //
+  if (this->laser->data_timestamp_sec == this->data_timestamp_sec &&
+      this->laser->data_timestamp_usec == this->data_timestamp_usec)
+  {
     ASSERT(maxsize >= sizeof(this->beacon_data));
     memcpy(dest, &this->beacon_data, sizeof(this->beacon_data));
+    Unlock();
+    return(sizeof(this->beacon_data));
+  }
 
-    // Copy the laser timestamp
-    //
-    this->data_timestamp_sec = this->laser->data_timestamp_sec;
-    this->data_timestamp_usec  = this->laser->data_timestamp_usec;
-    
-    return sizeof(this->beacon_data);
-}
+  // Get the laser data
+  //
+  player_laser_data_t laser_data;
+  this->laser->GetData((uint8_t*) &laser_data, sizeof(laser_data),
+                       NULL, NULL);
 
+  // Do some byte swapping
+  //
+  laser_data.resolution = ntohs(laser_data.resolution);
+  laser_data.min_angle = ntohs(laser_data.min_angle);
+  laser_data.max_angle = ntohs(laser_data.max_angle);
+  laser_data.range_count = ntohs(laser_data.range_count);
+  for (int i = 0; i < laser_data.range_count; i++)
+    laser_data.ranges[i] = ntohs(laser_data.ranges[i]);
 
-////////////////////////////////////////////////////////////////////////////////
-// Put data in buffer (called by device thread)
-//
-void CLaserBeaconDevice::PutData(unsigned char *src, size_t maxsize)
-{
-}
+  // Analyse the laser data
+  //
+  FindBeacons(&laser_data, &this->beacon_data);
 
+  // Do some byte-swapping
+  //
+  for (int i = 0; i < this->beacon_data.count; i++)
+  {
+    this->beacon_data.beacon[i].range = htons(this->beacon_data.beacon[i].range);
+    this->beacon_data.beacon[i].bearing = htons(this->beacon_data.beacon[i].bearing);
+    this->beacon_data.beacon[i].orient = htons(this->beacon_data.beacon[i].orient);
+  }
+  PLAYER_TRACE1("setting beacon count: %u",this->beacon_data.count);
+  this->beacon_data.count = htons(this->beacon_data.count);
 
-////////////////////////////////////////////////////////////////////////////////
-// Get command from buffer (called by device thread)
-//
-void CLaserBeaconDevice::GetCommand(unsigned char *dest, size_t maxsize) 
-{
-}
+  // Copy results
+  //
+  ASSERT(maxsize >= sizeof(this->beacon_data));
+  memcpy(dest, &this->beacon_data, sizeof(this->beacon_data));
 
+  // Copy the laser timestamp
+  //
+  this->data_timestamp_sec = this->laser->data_timestamp_sec;
+  this->data_timestamp_usec  = this->laser->data_timestamp_usec;
 
-////////////////////////////////////////////////////////////////////////////////
-// Put command in buffer (called by client thread)
-//
-void CLaserBeaconDevice::PutCommand(unsigned char *src, size_t maxsize) 
-{
-}
+  Unlock();
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Get configuration from buffer (called by device thread)
-//
-size_t CLaserBeaconDevice::GetConfig(unsigned char *dest, size_t maxsize) 
-{
-    return 0;
+  return(sizeof(this->beacon_data));
 }
 
 
@@ -262,33 +233,37 @@ size_t CLaserBeaconDevice::GetConfig(unsigned char *dest, size_t maxsize)
 //
 void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize) 
 {
-    if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETBITS)
-    {    
-        if (maxsize != sizeof(player_laserbeacon_setbits_t))
-            PLAYER_ERROR("config packet size is incorrect");
+  Lock();
 
-        player_laserbeacon_setbits_t *config =
+  if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETBITS)
+  {    
+    if (maxsize != sizeof(player_laserbeacon_setbits_t))
+      PLAYER_ERROR("config packet size is incorrect");
+
+    player_laserbeacon_setbits_t *config =
             (player_laserbeacon_setbits_t*) src;
 
-        this->max_bits = config->bit_count;
-        this->max_bits = max(this->max_bits, 3);
-        this->max_bits = min(this->max_bits, 8);
-        this->bit_width = ntohs(config->bit_size) / 1000.0;
+    this->max_bits = config->bit_count;
+    this->max_bits = max(this->max_bits, 3);
+    this->max_bits = min(this->max_bits, 8);
+    this->bit_width = ntohs(config->bit_size) / 1000.0;
 
-        PLAYER_TRACE2("bits %d, width %f", this->max_bits, this->bit_width);
-    }
+    PLAYER_TRACE2("bits %d, width %f", this->max_bits, this->bit_width);
+  }
 
-    if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETTHRESH)
-    {    
-        if (maxsize != sizeof(player_laserbeacon_setthresh_t))
-            PLAYER_ERROR("config packet size is incorrect");
+  if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETTHRESH)
+  {    
+    if (maxsize != sizeof(player_laserbeacon_setthresh_t))
+      PLAYER_ERROR("config packet size is incorrect");
 
-        player_laserbeacon_setthresh_t *config =
+    player_laserbeacon_setthresh_t *config =
             (player_laserbeacon_setthresh_t*) src;
 
-        this->zero_thresh = ntohs(config->zero_thresh) / 100.0;
-        this->one_thresh = ntohs(config->one_thresh) / 100.0;
-    }
+    this->zero_thresh = ntohs(config->zero_thresh) / 100.0;
+    this->one_thresh = ntohs(config->one_thresh) / 100.0;
+  }
+
+  Unlock();
 }
 
 
