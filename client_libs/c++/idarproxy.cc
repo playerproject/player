@@ -33,14 +33,6 @@
 
 #define DEBUG
 
-IDARProxy::IDARProxy(PlayerClient* pc, unsigned short index, 
-		     unsigned char access ) :
-  ClientProxy(pc,PLAYER_IDAR_CODE,index,access) 
-{
-
-}
-
-
 int IDARProxy::SendMessage( idartx_t* tx )
 {
   assert( client );

@@ -366,14 +366,20 @@ int ClientManager::Accept()
       if(make_dotted_ip_address(clientIp, 64, 
                                 (uint32_t)(cliaddr.sin_addr.s_addr)))
       {
+	// rtv - removed port printout now we do all our business on one port
         // couldn't get the ip
-        printf("** Player [port %d] client accepted on socket %d **\n",
-               accept_ports[i],  clientData->socket);
+        //printf("** Player [port %d] client accepted on socket %d **\n",
+        //       accept_ports[i],  clientData->socket);
+        printf("** Player: client accepted on socket %d **\n", 
+	       clientData->socket);
       }
       else
-        printf("** Player [port %d] client accepted from %s "
+        //printf("** Player [port %d] client accepted from %s "
+	//     "on socket %d **\n", 
+	//     accept_ports[i], clientIp, clientData->socket);
+        printf("** Player: client accepted from %s "
                "on socket %d **\n", 
-               accept_ports[i], clientIp, clientData->socket);
+               clientIp, clientData->socket);
 
       /* add it to the manager's list */
       AddClient(clientData);

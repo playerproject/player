@@ -16,16 +16,7 @@ NEXT RELEASE:
 
 - add power, bumper, AIO DIO client support
 
-(stage) Add cmdline flag to start with clock stopped.
-
-(stage) add a means to start/stop clock from a remote client
-	(perhaps toggled in response to SIGUSR1?). Could add start/stop
-	scripts to distro. 
-
-(stage) user docs - check cmdline options are correct & complete
-
-(stage) misc device -> power, bumper, etc devices
-
+- rationalize position interface
 
 NOW:
 ----
@@ -242,3 +233,12 @@ DONE:
 
 + document MAXNUMTHREADS (8) and implications
 
+(stage) Add cmdline flag to start with clock stopped.
+
+(stage) add a means to start/stop clock from a remote client
+	(perhaps toggled in response to SIGUSR1?). Could add start/stop
+	scripts to distro. 
+
+(stage) user docs - check cmdline options are correct & complete
+
+(stage) misc device -> power, bumper, etc devices
