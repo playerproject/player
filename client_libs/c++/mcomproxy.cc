@@ -77,8 +77,12 @@ int MComProxy::Read(int type, char * channelQ){
             (char*)&reply, sizeof(reply));
     if(r < 0)
         return r;
-    if(hdr.type != PLAYER_MSGTYPE_RESP_ACK)
+    if(hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
+        memset(&data, 0, sizeof(data));
+        type = 0;
+        memset(channel, 0, sizeof(channel));
         return -1;
+    }
     data=reply.data;
     type=htons(reply.type);
     strcpy(channel,reply.channel);
@@ -100,8 +104,12 @@ int MComProxy::Pop(int type, char* channelQ){
               (char*)&reply, sizeof(reply));
   if(r < 0)
     return r; 
-  if(hdr.type != PLAYER_MSGTYPE_RESP_ACK)
+  if(hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
+    memset(&data, 0, sizeof(data));
+    type = 0;
+    memset(channel, 0, sizeof(channel));
     return(-1);
+  }
   data=reply.data;
   type=htons(reply.type);
   strcpy(channel,reply.channel);
