@@ -345,7 +345,7 @@ void Iwspy::UpdateIwSpy()
     dup2(dummy_fd, 2);
 
     // Run iwspy
-    if (execl("/sbin/iwspy", "iwspy", "eth0", NULL) != 0)
+    if (execlp("iwspy", "iwspy", "eth0", NULL) != 0)
     {
       PLAYER_ERROR1("error on exec: [%s]", strerror(errno));
       exit(errno);
