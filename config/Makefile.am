@@ -2,28 +2,38 @@ SUBDIRS =
 
 configdir = $(prefix)/share/player/config
 
-config_DATA = usc_pioneer.cfg \
-							umass_reb.cfg \
-							umass_ATRVJr.cfg \
-							umass_ATRVMini.cfg \
-							PHE-05cm.pnm.gz \
-							vfh.cfg \
-							gazebo.cfg \
-							segwayrmp.cfg\
-							gazebo_blobfinder.cfg\
-							colors.txt \
-							wavefront.cfg \
-							shapeTracker.cfg
+config_DATA = amigobot.cfg \
+b21r_rflex_lms200.cfg \
+dummy.cfg \
+gazebo.cfg \
+mapfile.cfg \
+nomad.cfg \
+obot.cfg \
+pioneer.cfg \
+readlog.cfg \
+segwayrmp.cfg \
+testhowl.cfg \
+umass_ATRVJr.cfg \
+umass_ATRVMini.cfg \
+umass_reb.cfg \
+vfh.cfg \
+wavefront.cfg \
+writelog.cfg
 
-EXTRA_DIST = usc_pioneer.cfg \
-						 umass_reb.cfg \
-						 umass_ATRVJr.cfg \
-						 umass_ATRVMini.cfg \
-						 PHE-05cm.pnm.gz \
-						 vfh.cfg \
-						 gazebo.cfg \
-						 segwayrmp.cfg\
-						 gazebo_blobfinder.cfg\
-						 colors.txt \
-						 wavefront.cfg \
-						 shapeTracker.cfg
+EXTRA_DIST = amigobot.cfg \
+b21r_rflex_lms200.cfg \
+dummy.cfg \
+gazebo.cfg \
+mapfile.cfg \
+nomad.cfg \
+obot.cfg \
+pioneer.cfg \
+readlog.cfg \
+segwayrmp.cfg \
+testhowl.cfg \
+umass_ATRVJr.cfg \
+umass_ATRVMini.cfg \
+umass_reb.cfg \
+vfh.cfg \
+wavefront.cfg \
+writelog.cfg
