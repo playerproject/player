@@ -390,17 +390,24 @@ int player_request(player_connection_t* conn,
     puts("Unknown protocol");
     return(-1);
   }
+  
+  int retry = 0;
 
   memset(&hdr,0,sizeof(hdr));
   /* eat data until a response comes back (it may not be for the request we
    * just sent, but let a higher level deal with that problem) */
-  while((hdr.type != PLAYER_MSGTYPE_RESP_ACK) &&
+  while( (hdr.type != PLAYER_MSGTYPE_RESP_ACK) &&
          (hdr.type != PLAYER_MSGTYPE_RESP_NACK) &&
-         (hdr.type != PLAYER_MSGTYPE_RESP_ERR))
+         (hdr.type != PLAYER_MSGTYPE_RESP_ERR) &&
+         (retry < 10))
   {
     if(player_read(conn, &hdr, buffer, PLAYER_MAX_MESSAGE_SIZE) == -1)
       return(-1);
+    ++retry;
   }
+  
+  if (retry >= 10)
+    hdr.type = PLAYER_MSGTYPE_RESP_ERR;
 
   /* did they want the reply? */
   if(replyhdr)
