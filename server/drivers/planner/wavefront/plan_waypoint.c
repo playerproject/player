@@ -89,6 +89,14 @@ int plan_get_waypoint(plan_t *plan, int i, double *px, double *py)
   return 1;
 }
 
+// Convert given waypoint cell to global x,y
+void plan_convert_waypoint(plan_t* plan, 
+                           plan_cell_t *waypoint, double *px, double *py)
+{
+  *px = PLAN_WXGX(plan, waypoint->ci);
+  *py = PLAN_WYGY(plan, waypoint->cj);
+}
+
 
 // Test to see if once cell is reachable from another.
 // This could be improved.
