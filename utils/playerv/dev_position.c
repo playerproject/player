@@ -257,7 +257,7 @@ void position_update_servo(position_t *position)
     va = min_va;
 
   // Set the new speed
-  playerc_position_setspeed(position->proxy, vr, 0, va);
+  playerc_position_set_speed(position->proxy, vr, 0, va);
 
   // Draw in the path
   d = 0.30;

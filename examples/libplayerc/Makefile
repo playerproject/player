@@ -17,7 +17,7 @@ EXE = simple
 OBS = simple.o
 
 INCLUDES = -I../../include 
-CFLAGS = -g3 -Wall $(INCLUDES)
+CFLAGS = -g3 -Wall -ansi $(INCLUDES)
 LFLAGS = -lm -L../../lib -lplayerc
 
 ###########################################################################

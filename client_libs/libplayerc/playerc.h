@@ -88,28 +88,26 @@ typedef struct _playerc_client_t
 } playerc_client_t;
 
 
-// Player device proxy info
-// Basically a base class for devices.
+// Player device proxy info; basically a base class for devices.
 typedef struct _playerc_device_t
 {
+  // Pointer to the client proxy.
   playerc_client_t *client;
 
-  // Device code, etc
-  int code;
-  int index;
-  int access;
+  // Device code, index, etc.
+  int code, index, access;
 
   // The subscribe flag is non-zero if the device has been
   // successfully subscribed.
   int subscribed;
 
-  // Data timestamp
+  // Data timestamp, i.e., the time at which the data was generated (s).
   double datatime;
 
-  // Standard callbacks for this device
+  // Standard callbacks for this device (private).
   playerc_putdata_fn_t putdata;
 
-  // Extra callbacks for this device
+  // Extra callbacks for this device (private).
   int callback_count;
   playerc_callback_fn_t callback[4];
   void *callback_data[4];
@@ -151,12 +149,13 @@ int playerc_mclient_addclient(playerc_mclient_t *mclient, playerc_client_t *clie
 
 
 /***************************************************************************
- * Single-client functions
+ * proxy : client : Single-client functions
  **************************************************************************/
 
 // Create a single-client object.
 // Set mclient to NULL if this is a stand-alone client.
-playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *host, int port);
+playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
+                                        const char *host, int port);
 
 // Destroy a single-client object.
 void playerc_client_destroy(playerc_client_t *client);
@@ -189,12 +188,12 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *device,
 // is an error.
 void *playerc_client_read(playerc_client_t *client);
 
-// Write data to the server.
+// Write data to the server (private).
 int playerc_client_write(playerc_client_t *client, playerc_device_t *device, void *cmd, int len);
 
 
 /***************************************************************************
- * Base device
+ * proxy : base : Base device interface
  **************************************************************************/
 
 // Initialise the device 
@@ -210,7 +209,7 @@ int playerc_device_unsubscribe(playerc_device_t *device);
 
 
 /***************************************************************************
- * BPS (beacon positioning system) device
+ * proxy : bps (beacon positioning system) device
  **************************************************************************/
 
 // BPS device data
@@ -261,7 +260,7 @@ int  playerc_bps_get_beacon(playerc_bps_t *device, int id,
 
 
 /***************************************************************************
- * Broadcast device
+ * proxy : broadcast device
  **************************************************************************/
 
 // Broadcast device data
@@ -293,7 +292,7 @@ int playerc_broadcast_recv(playerc_broadcast_t *device, void *msg, int len);
 
 
 /***************************************************************************
- * GPS (global positioning system) device
+ * proxy : gps (global positioning system) device
  **************************************************************************/
 
 // GPS device data
@@ -469,8 +468,13 @@ int playerc_position_unsubscribe(playerc_position_t *device);
 // Enable/disable the motors
 int playerc_position_enable(playerc_position_t *device, int enable);
 
-// Set the robot speed
-int  playerc_position_setspeed(playerc_position_t *device, double vx, double vy, double va);
+// Set the robot speed.
+// vx : forward speed (m/s).
+// vy : sideways speed (m/s); this field is used by omni-drive robots only.
+// va : rotational speed (radians/s).
+// All speeds are defined in the robot coordinate system.
+int  playerc_position_set_speed(playerc_position_t *device,
+                                double vx, double vy, double va);
 
 
 /***************************************************************************
@@ -544,7 +548,7 @@ int playerc_sonar_unsubscribe(playerc_sonar_t *device);
 
 
 /***************************************************************************
- * Vision device
+ * proxy : vision device
  **************************************************************************/
 
 // Description of a single blob.
@@ -595,6 +599,9 @@ int playerc_vision_subscribe(playerc_vision_t *device, int access);
 int playerc_vision_unsubscribe(playerc_vision_t *device);
 
 
+/***************************************************************************
+ * proxy : end (this is just here so the auto-documentation works.
+ **************************************************************************/
 
 #endif
 
