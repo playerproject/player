@@ -47,7 +47,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_MSG 1
 
 #include "player.h"
 #include "device.h"
@@ -69,7 +70,7 @@
 typedef struct
 {
   // Data time-stamp (odometric)
-  uint32_t time_sec, time_usec;
+  uint32_t odom_time_sec, odom_time_usec;
     
   // Odometric pose
   pf_vector_t odom_pose;
@@ -252,6 +253,7 @@ class AdaptiveMCL : public CDevice
 
   // Last odometric pose estimates used by filter
   private: pf_vector_t pf_odom_pose;
+  private: uint32_t pf_odom_time_sec, pf_odom_time_usec;
 
   // Initial pose estimate
   private: pf_vector_t pf_init_pose_mean;
@@ -408,16 +410,14 @@ int AdaptiveMCL::Setup(void)
   // Create the map
   assert(this->map == NULL);
   this->map = map_alloc(this->map_scale);
-
-  PLAYER_MSG1("loading map file [%s]", this->map_file);
   
   // Load the map
+  PLAYER_MSG1("loading map file [%s]", this->map_file);
   if (map_load_occ(this->map, this->map_file, this->map_negate) != 0)
     return -1;
 
-  PLAYER_MSG0("computing cspace");
-
   // Compute the c-space
+  PLAYER_MSG0("computing cspace");
   map_update_cspace(this->map, 2 * this->robot_radius);
   
   // Create the odometry model
@@ -445,6 +445,8 @@ int AdaptiveMCL::Setup(void)
   this->GetOdomData(&sdata);
   this->odom_pose = sdata.odom_pose;
   this->pf_odom_pose = sdata.odom_pose;
+  this->pf_odom_time_sec = sdata.odom_time_sec;
+  this->pf_odom_time_usec = sdata.odom_time_usec;
 
   // Initial hypothesis list
   this->hyp_count = 0;
@@ -456,6 +458,7 @@ int AdaptiveMCL::Setup(void)
 #endif
 
   // Start the driver thread.
+  PLAYER_MSG0("running");
   this->StartThread();
   
   return 0;
@@ -607,7 +610,7 @@ void AdaptiveMCL::GetOdomData(amcl_sensor_data_t *data)
 
   // Get the odom device data.
   size = this->odom->GetData(this, (uint8_t*) &ndata, sizeof(ndata),
-                             &data->time_sec, &data->time_usec);
+                             &data->odom_time_sec, &data->odom_time_usec);
 
   // Byte swap
   ndata.xpos = ntohl(ndata.xpos);
@@ -865,6 +868,11 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   // Compute the change in odometric pose
   odom_diff = pf_vector_coord_sub(odom_pose, this->pf_odom_pose);
 
+  // Record the number of pending observations
+  data.pending_count = this->q_len;
+  data.pending_time_sec = this->pf_odom_time_sec;
+  data.pending_time_usec = this->pf_odom_time_usec;
+  
   // Encode the hypotheses
   data.hypoth_count = this->hyp_count;
   for (i = 0; i < this->hyp_count; i++)
@@ -919,6 +927,11 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   datalen = sizeof(data) - sizeof(data.hypoths) + data.hypoth_count * sizeof(data.hypoths[0]);
 
   // Byte-swap
+  data.pending_count = htons(data.pending_count);
+  data.pending_time_sec = htonl(data.pending_time_sec);
+  data.pending_time_usec = htonl(data.pending_time_usec);
+
+  // Byte-swap
   for (i = 0; i < data.hypoth_count; i++)
   {
     for (j = 0; j < 3; j++)
@@ -937,9 +950,9 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
 
   // Set the timestamp
   if (time_sec)
-    *time_sec = sdata.time_sec;
+    *time_sec = sdata.odom_time_sec;
   if (time_usec)
-    *time_usec = sdata.time_usec;
+    *time_usec = sdata.odom_time_usec;
 
   return datalen;
 }
@@ -1125,6 +1138,8 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   this->Lock();
 
   this->pf_odom_pose = data->odom_pose;
+  this->pf_odom_time_sec = data->odom_time_sec;
+  this->pf_odom_time_usec = data->odom_time_usec;
 
   // Get the hypotheses
   this->hyp_count = 0;
