@@ -55,7 +55,7 @@ class IDARTurretProxy : public ClientProxy
   int GetMessages( player_idarturret_reply_t* reply );  
 
   // send and get in one operation for efficiency
-  int SendGetMessages( player_idarturret_config_t* cfg,
+  int SendGetMessages( player_idarturret_config_t* conf,
 		       player_idarturret_reply_t* reply );
 
   // pretty print a message
