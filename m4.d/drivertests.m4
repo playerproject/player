@@ -175,19 +175,22 @@ if test "x$enable_cmvision" = "xyes"; then
     AC_MSG_RESULT([***************************************************])
   fi
 
-  AC_CHECK_HEADER(linux/videodev2.h, have_videodev2=yes, have_videodev2=no)
-  if test "x$have_videodev2" = "xyes"; then
-    AC_MSG_RESULT([***************************************************])
-    AC_MSG_RESULT([Found the Video4Linux2 headers. V4L2 camera support])
-    AC_MSG_RESULT([will be included in the CMVision driver])
-    AC_MSG_RESULT([***************************************************])
-    AC_DEFINE(HAVE_V4L2, 1, [do we have the V4L2 libs?])
-  else
-    AC_MSG_RESULT([***************************************************])
-    AC_MSG_RESULT([Couldn't find the Video4Linux2 headers. V4L2 camera])
-    AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
-    AC_MSG_RESULT([***************************************************])
-  fi
+dnl ----------------------------------------------------------------------
+dnl Video4Linux2 support is currently disabled
+dnl   AC_CHECK_HEADER(linux/videodev2.h, have_videodev2=yes, have_videodev2=no)
+dnl   if test "x$have_videodev2" = "xyes"; then
+dnl     AC_MSG_RESULT([***************************************************])
+dnl     AC_MSG_RESULT([Found the Video4Linux2 headers. V4L2 camera support])
+dnl     AC_MSG_RESULT([will be included in the CMVision driver])
+dnl     AC_MSG_RESULT([***************************************************])
+dnl     AC_DEFINE(HAVE_V4L2, 1, [do we have the V4L2 libs?])
+dnl   else
+dnl     AC_MSG_RESULT([***************************************************])
+dnl     AC_MSG_RESULT([Couldn't find the Video4Linux2 headers. V4L2 camera])
+dnl     AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
+dnl     AC_MSG_RESULT([***************************************************])
+dnl   fi
+dnl ----------------------------------------------------------------------
 
 dnl REMOVE
 dnl  if test "x$enable_gazebo" = "xyes"; then

@@ -49,9 +49,11 @@
 #if HAVE_1394
   #include "capture1394.h"
 #endif
+/* V4L2 is currently disabled
 #if HAVE_V4L2
   #include "captureV4L2.h"
 #endif
+*/
 #if HAVE_V4L
   #include "capturev4l.h"
 #endif
@@ -196,13 +198,17 @@ CMVisionBF::Setup()
   }
   else if(!strcmp(capturetype, "V4L2"))
   {
+    /* V4L2 is currently disabled
 #if HAVE_V4L2
     cap = new captureV4L2;
 #else
+*/
     PLAYER_ERROR("Sorry, support for capture from a V4L2 camera was not "
                  "included at compile-time");
     return(-1);
+    /*
 #endif
+*/
   }
  else if(!strcmp(capturetype, "camera"))
   {
