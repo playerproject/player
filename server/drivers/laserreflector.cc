@@ -69,7 +69,6 @@ class LaserReflector : public CDevice
   // Handle geometry requests.
   private: void HandleGetGeom(void *client, void *request, int len);
 
-
   // Analyze the laser data and pick out reflectors.
   private: void Find();
 
@@ -127,8 +126,7 @@ void LaserReflector_Register(DriverTable* table)
 LaserReflector::LaserReflector(char* interface, ConfigFile* cf, int section)
     : CDevice(0, 0, 0, 1)
 {
-  // If laser_index is not overridden by an argument here, then we'll
-  // use the device's own index, which we can get in Setup() below.
+  // The default laser device to use
   this->laser_index = cf->ReadInt(section, "laser_index", 0);
 
   // Default reflector properties.
@@ -145,11 +143,7 @@ int LaserReflector::Setup()
   player_device_id_t id;
   id.port = this->device_id.port;
   id.code = PLAYER_LASER_CODE;
-  
-  if (this->laser_index >= 0)
-    id.index = this->laser_index;
-  else
-    id.index = this->device_id.index;
+  id.index = this->laser_index;
   
   if (!(this->laser_device = deviceTable->GetDevice(id)))
   {
@@ -190,38 +184,34 @@ size_t LaserReflector::GetData(void* client,unsigned char *dest, size_t maxsize,
   
   // Get the laser data.
   laser_size = this->laser_device->GetData(this, (uint8_t*) &this->ldata, sizeof(this->ldata),
-                                    &laser_time_sec, &laser_time_usec);
+                                           &laser_time_sec, &laser_time_usec);
   assert(laser_size <= sizeof(this->ldata));
   
   // If the laser doesnt have new data, just return a copy of our old
   // data.
-  if (laser_time_sec == this->data_timestamp_sec &&
-      laser_time_usec == this->data_timestamp_usec)
+  if (laser_time_sec != this->data_timestamp_sec ||
+      laser_time_usec != this->data_timestamp_usec)
   {
-    assert(maxsize >= sizeof(this->fdata));
-    memcpy(dest, &this->fdata, sizeof(this->fdata));
-    return (sizeof(this->fdata));
+    // Do some byte swapping
+    this->ldata.resolution = ntohs(this->ldata.resolution);
+    this->ldata.min_angle = ntohs(this->ldata.min_angle);
+    this->ldata.max_angle = ntohs(this->ldata.max_angle);
+    this->ldata.range_count = ntohs(this->ldata.range_count);
+    for (i = 0; i < this->ldata.range_count; i++)
+      this->ldata.ranges[i] = ntohs(this->ldata.ranges[i]);
+
+    // Analyse the laser data
+    this->Find();
+
+    // Do some byte-swapping on the fiducial data.
+    for (i = 0; i < this->fdata.count; i++)
+    {
+      this->fdata.fiducials[i].pose[0] = htons(this->fdata.fiducials[i].pose[0]);
+      this->fdata.fiducials[i].pose[1] = htons(this->fdata.fiducials[i].pose[1]);
+      this->fdata.fiducials[i].pose[2] = htons(this->fdata.fiducials[i].pose[2]);
+    }
+    this->fdata.count = htons(this->fdata.count);
   }
-
-  // Do some byte swapping
-  this->ldata.resolution = ntohs(this->ldata.resolution);
-  this->ldata.min_angle = ntohs(this->ldata.min_angle);
-  this->ldata.max_angle = ntohs(this->ldata.max_angle);
-  this->ldata.range_count = ntohs(this->ldata.range_count);
-  for (i = 0; i < this->ldata.range_count; i++)
-    this->ldata.ranges[i] = ntohs(this->ldata.ranges[i]);
-
-  // Analyse the laser data
-  this->Find();
-
-  // Do some byte-swapping on the fiducial data.
-  for (i = 0; i < this->fdata.count; i++)
-  {
-    this->fdata.fiducials[i].pose[0] = htons(this->fdata.fiducials[i].pose[0]);
-    this->fdata.fiducials[i].pose[1] = htons(this->fdata.fiducials[i].pose[1]);
-    this->fdata.fiducials[i].pose[2] = htons(this->fdata.fiducials[i].pose[2]);
-  }
-  this->fdata.count = htons(this->fdata.count);
 
   // Copy results
   assert(maxsize >= sizeof(this->fdata));
