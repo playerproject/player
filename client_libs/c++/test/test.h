@@ -21,6 +21,7 @@
 
 int test_gps(PlayerClient* client, int index);
 int test_position(PlayerClient* client, int index);
+int test_position_control(PlayerClient* client, int index);
 int test_sonar(PlayerClient* client, int index);
 int test_power(PlayerClient* client, int index);
 int test_dio(PlayerClient* client, int index);
@@ -37,7 +38,6 @@ int test_idarturret(PlayerClient* client, int index);
 int test_bumper(PlayerClient* client, int index);
 int test_wifi(PlayerClient* client, int index);
 
-//int test_misc(PlayerClient* client, int index);
 //int test_bps(PlayerClient* client, int index);
 
 #endif // TEST_H

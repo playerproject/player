@@ -36,7 +36,6 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               #bpsproxy.h
 
 include_HEADERS = playerclient.h
-                  
 
 dist-hook:
 	mkdir -p $(top_distdir)/doc

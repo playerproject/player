@@ -337,8 +337,8 @@ void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 void PositionProxy::Print()
 {
   printf("#Position(%d:%d) - %c\n", device, index, access);
-  puts("#xpos\typos\ttheta\tspeed\tturn\tstall");
+  puts("#xpos\typos\ttheta\tspeed\tsidespeed\tturn\tstall");
   printf("%d\t%d\t%u\t%d\t%d\t%d\n", 
-         xpos,ypos,theta,speed,turnrate,stall);
+         xpos,ypos,theta,speed,sidespeed,turnrate,stall);
 }
 

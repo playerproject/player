@@ -83,6 +83,3 @@ void CommsProxy::Print()
   printf("# len %d msg [%s]\n", this->msg_len, this->msg);
   return;
 }
-
-
-
