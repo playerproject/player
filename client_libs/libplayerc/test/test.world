@@ -4,17 +4,35 @@
 # Date: 4 Jun 2002
 # CVS: $Id$
 
+
 resolution 0.03
 
 bitmap
 (
-  file "cave.pnm"
+  file "cave.pnm.gz"
   resolution 0.03
 )
 
 position
 (
-  name "myrobot" port 6665 pose [4.990 2.090 90.000]
+  port 0
+  name "robot 0"  
+  pose [4.990 2.090 90.000]
+
+  broadcast ()
+  gps () truth ()
+  sonar ()
+  laser (lbd()) 
+  ptz (vision())
+)
+
+
+position
+(
+  port 1
+  name "robot 1"  
+  pose [5.990 2.090 90.000]
+
   broadcast ()
   gps () truth ()
   sonar ()

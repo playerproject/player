@@ -34,9 +34,6 @@ extern int test_laser(playerc_client_t *client, int index);
 // Basic localization test
 extern int test_localize(playerc_client_t *client, int index);
 
-// Basic test for the LBD (laser beacon detector) device.
-// REMOVE? int test_lbd(playerc_client_t *client, int index);
-
 // Basic test for position device.
 extern int test_position(playerc_client_t *client, int index);
 

@@ -123,8 +123,8 @@ int playerc_position_enable(playerc_position_t *device, int enable)
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
-                                (char*) &config, sizeof(config),
-                                (char*) &config, sizeof(config));    
+                                &config, sizeof(config),
+                                &config, sizeof(config));    
 }
 
 

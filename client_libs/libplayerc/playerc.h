@@ -135,10 +135,10 @@ typedef struct _playerc_client_t
   // A circular queue used to buffer incoming data packets.
   int qfirst, qlen, qsize;
   playerc_client_item_t qitems[128];
-  
+
   // Data time stamp on the last SYNC packet
   double datatime;
-
+    
 } playerc_client_t;
 
 
@@ -182,8 +182,8 @@ typedef struct _playerc_device_t
 // Errors get written here
 extern char playerc_errorstr[];
 
-// Get the error stringg
-extern const char *playerc_error_str();
+// Use this function to read the error string
+extern const char *playerc_error_str(void);
 
 
 /***************************************************************************
@@ -207,19 +207,16 @@ playerc_mclient_t *playerc_mclient_create(void);
 // Destroy a multi-client object
 void playerc_mclient_destroy(playerc_mclient_t *mclient);
 
-// Connect to all the servers at once
-int playerc_mclient_connect(playerc_mclient_t *mclient);
-
-// Disconnect from all the servers at once
-int playerc_mclient_disconnect(playerc_mclient_t *mclient);
-
-// Read incoming data.
-// The timeout is in ms.  Set timeout to a negative value to wait
-// indefinitely.
-int  playerc_mclient_read(playerc_mclient_t *mclient, int timeout);
-
 // Add a client to the multi-client (private).
 int playerc_mclient_addclient(playerc_mclient_t *mclient, playerc_client_t *client);
+
+// Test to see if there is pending data.
+// Returns -1 on error, 0 or 1 otherwise.
+int playerc_mclient_peek(playerc_mclient_t *mclient, int timeout);
+
+// Read incoming data.  The timeout is in ms.  Set timeout to a
+// negative value to wait indefinitely.
+int playerc_mclient_read(playerc_mclient_t *mclient, int timeout);
 
 
 /***************************************************************************
@@ -235,8 +232,8 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
 void playerc_client_destroy(playerc_client_t *client);
 
 // Connect/disconnect to the server.
-int  playerc_client_connect(playerc_client_t *client);
-int  playerc_client_disconnect(playerc_client_t *client);
+int playerc_client_connect(playerc_client_t *client);
+int playerc_client_disconnect(playerc_client_t *client);
 
 // Change the server's data delivery mode
 int playerc_client_datamode(playerc_client_t *client, int mode);
@@ -260,12 +257,25 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
                              int access, char *drivername, size_t len);
 int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
-
 // Issue a request to the server and await a reply (blocking).
 // Returns -1 on error and -2 on NACK.
 int playerc_client_request(playerc_client_t *client, playerc_device_t *device,
                            void *req_data, int req_len, void *rep_data, int rep_len);
 
+/* Enable these if Brian changes to server to accept multiple requests.
+// Issue request only; use in conjunction with
+// playerc_client_request_recv() to issue multiple requests and get
+// multiple replies.
+int playerc_client_request_send(playerc_client_t *client, playerc_device_t *deviceinfo,
+                                void *req_data, int req_len);
+
+// Wait for a reply; use in conjunction with
+// playerc_client_request_send() to issue multiple requests and get
+// multiple replies.
+int playerc_client_request_recv(playerc_client_t *client, playerc_device_t *deviceinfo,
+                                void *rep_data, int rep_len);
+*/
+                                
 // Test to see if there is pending data.
 // Returns -1 on error, 0 or 1 otherwise.
 int playerc_client_peek(playerc_client_t *client, int timeout);

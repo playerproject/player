@@ -19,6 +19,14 @@ int test_comms(playerc_client_t *client, int index)
 
   printf("device [comms] index [%d]\n", index);
 
+  TEST("changing data mode to PUSH_ALL");
+  if (playerc_client_datamode(client, PLAYER_DATAMODE_PUSH_ALL) != 0)
+  {
+    FAIL();
+    return -1;
+  }
+  PASS();
+
   comms = playerc_comms_create(client, index);
 
   TEST("subscribing (read/write)");
@@ -67,6 +75,14 @@ int test_comms(playerc_client_t *client, int index)
   
   playerc_comms_destroy(comms);
   
+  TEST("changing data mode to PUSH_NEW");
+  if (playerc_client_datamode(client, PLAYER_DATAMODE_PUSH_NEW) != 0)
+  {
+    FAIL();
+    return -1;
+  }
+  PASS();
+
   return 0;
 }
 
