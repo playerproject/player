@@ -629,7 +629,7 @@ int main( int argc, char *argv[] )
       }
       already_sane = true;
     }
-    else if((i+1)<argc)
+    else if((i+1)<argc && argv[i+1][0] != '-')
     {
       if(parse_device_string(argv[i],argv[i+1]) < 0)
       {

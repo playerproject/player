@@ -32,7 +32,7 @@
 
 #include <string.h>
 
-#define PACKET_LEN
+#define PACKET_LEN 256
 
 class CPacket 
 {
