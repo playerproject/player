@@ -63,13 +63,13 @@ class CDeviceTable
     int numdevices;
     pthread_mutex_t mutex;
 
-    // find a device entry, based on id, and return the pointer (or NULL
-    // on failure)
-    CDeviceEntry* GetDeviceEntry(player_device_id_t id);
-
   public:
     CDeviceTable();
     ~CDeviceTable();
+    
+    // find a device entry, based on id, and return the pointer (or NULL
+    // on failure)
+    CDeviceEntry* GetDeviceEntry(player_device_id_t id);
     
     // this one is used to fill the instantiated device table
     //
