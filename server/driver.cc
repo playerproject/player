@@ -603,7 +603,10 @@ Driver::DataAvailable(void)
   pthread_mutex_unlock(&condMutex);
   
   // also wake up the server thread
-  clientmanager->DataAvailable();
+  if(!clientmanager)
+    PLAYER_WARN("tried to call DataAvailable() on NULL clientmanager!");
+  else
+    clientmanager->DataAvailable();
 }
 
 // a static version that can be used as a callback - rtv
