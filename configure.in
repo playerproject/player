@@ -35,7 +35,7 @@ AC_CHECK_LIB(z, gzopen)
 dnl where's RTK?
 AC_ARG_WITH(rtk, [  --with-rtk=dir          Location of RTK],
 RTK_DIR=$with_rtk,
-RTK_DIR="${HOME}/librtk-2.1")
+RTK_DIR="${prefix}")
 AC_SUBST(RTK_DIR)
 
 dnl RTK2 uses libjpeg to export images.
@@ -68,6 +68,16 @@ AM_CONDITIONAL(INCLUDE_RTKGUI, test x$with_rtkgui = xyes)
 AC_SUBST(RTKGUI_EXTRA_LIB)
 AC_SUBST(RTKGUI_EXTRA_LDFLAGS)
 
+dnl where's the X11-style color database?
+AC_CHECK_FILE([/usr/X11R6/lib/X11/rgb.txt],
+  CDB="\"/usr/X11R6/lib/X11/rgb.txt\"",
+  AC_CHECK_FILE([/usr/openwin/lib/X11/rgb.txt],
+    CDB="\"/usr/openwin/lib/X11/rgb.txt\"",
+    CDB="\"/usr/X11R6/lib/X11/rgb.txt\""))
+AC_ARG_WITH(color, [   --with-color=file      Location of X11-style color file],
+CDB="\"$with_color\"",)
+AC_DEFINE_UNQUOTED(COLOR_DATABASE,$CDB,[the X11-style color database])
+
 dnl FreeBSD always invokes Tcl with a version, so i'll pick a reasonable one
 case $host in
 *-*-freebsd*) AC_CHECK_PROG([TCLPKGFILE], [tclsh8.0], [pkgIndex.tcl], [])
@@ -76,9 +86,6 @@ case $host in
        TCLSH=tclsh;;
 esac
 AC_SUBST(TCLSH)
-
-dnl Change default installation prefix from /usr/local to user's home
-AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
 
 dnl client tests are compiled by default
 AC_ARG_WITH(tests, [  --without-tests         Don't build client tests],,
@@ -151,9 +158,12 @@ AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(c_r, pthread_create, 
 [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 
+dnl automake 1.5
+dnl AC_SUBST(AC_LIBOBJ)
+dnl automake 1.3 
 AC_SUBST(LIBOBJS)
 
-dnl Create the following Makefiles (from the Makefile.ams)
+dnl Create the following Makefiles (from the Makefile.am in each of these dirs)
 AC_OUTPUT(Makefile 
           replace/Makefile 
           server/Makefile 

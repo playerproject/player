@@ -1236,6 +1236,55 @@ class TruthProxy : public ClientProxy
  ** end section
  *****************************************************************************/
 
+/*****************************************************************************
+ ** begin section StageProxy
+ *****************************************************************************/
+
+/** The {\tt StageProxy} gets and sets the {\em true} pose of a stage
+    device [worldfile tag: stage()]. This may be different from the
+    pose returned by a device such as GPS or Position. If you want to
+    log what happened in an experiment, this is the device to
+    use. 
+
+    Setting the position of a stage device moves its parent, so you
+    can put a stage device on robot and teleport it around the place. 
+ */
+class StageProxy : public ClientProxy
+{
+  
+  public:
+
+  /** Records the number of models in the Stage world. */
+  int model_count;
+
+  /** Records the windowed average interval in wall-clock milliseconds
+      between simulation updates. */
+  int interval_ms;
+
+  /** Constructor.
+      Leave the access field empty to start unconnected.
+  */
+  StageProxy(PlayerClient* pc, unsigned short index, 
+             unsigned char access = 'c',unsigned short robot=0) :
+    ClientProxy(pc,PLAYER_STAGE_CODE,index,access,robot=0) {};
+
+    
+  // interface that all proxies must provide
+  void FillData(player_msghdr_t hdr, const char* buffer);
+
+  /// Print out some metadata about the Stage world
+  void Print();
+
+  /// Request creation of a new model. returns 0 on success.
+  int CreateModel( char* type, char* name, char* parent,
+		    double x, double y, double a );
+};
+
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
 
 /*****************************************************************************
  ** begin section BlobfinderProxy

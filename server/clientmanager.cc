@@ -438,7 +438,10 @@ int ClientManager::Write()
   {
     // if we're waiting for an authorization on this client, then skip it
     if(clients[i]->auth_pending)
-      continue;
+      {
+	//PLAYER_WARN1( "pending authorization on %d", i );
+	continue;
+      }
 
     // look for pending replies intended for this client.  we only need to 
     // look in the devices to which this client is subscribed, thus we
@@ -515,7 +518,11 @@ int ClientManager::Write()
     // is it time to write?
     if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
        (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
-    {
+      {
+      //printf( "time since write: %.6f\n", 
+      //      (curr.tv_sec+(curr.tv_usec/1000000.0))-clients[i]->last_write );
+      //printf( "write frequency: %.6f\n", 1.0/clients[i]->frequency );
+
       /*
       if(((curr.tv_sec+(curr.tv_usec/1000000.0))-
           clients[i]->last_write) + 0.005 >= 
@@ -537,16 +544,16 @@ int ClientManager::Write()
     else if(((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
              (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW))&&
             (clients[i]->datarequested))
-    {
-      clients[i]->datarequested = false;
-      if(clients[i]->Write() == -1)
       {
-        // write must have errored. dump it
-        MarkClientForDeletion(i);
+	clients[i]->datarequested = false;
+	if(clients[i]->Write() == -1)
+	  {
+	    // write must have errored. dump it
+	    MarkClientForDeletion(i);
+	  }
       }
-    }
   }
-
+  
   // remove any clients that we marked
   RemoveBlanks();
 

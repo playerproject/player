@@ -67,7 +67,7 @@
 
 #if INCLUDE_STAGE
 #include <stagetime.h>
-CDevice* Stage_Init(char* interface, ConfigFile* cf, int section);
+CDevice* StageDeviceInit();
 #endif
 
 // true if we're connecting to Stage instead of a real robot
@@ -110,7 +110,7 @@ void
 Usage()
 {
   puts("");
-  fprintf(stderr, "USAGE: player [-p <port>] [-s <path>] [-dl <shlib>] "
+  fprintf(stderr, "USAGE: player [-p <port>] [-s] [-dl <shlib>] "
           "[-k <key>] [<configfile>]\n");
   fprintf(stderr, "  -p <port>     : TCP port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
@@ -150,10 +150,7 @@ Interrupt( int dummy )
     delete deviceTable;
   }
 
-  if(use_stage)
-    puts("** Player quitting **" );
-  else
-    printf("** Player [port %d] quitting **\n", global_playerport );
+  printf("** Player [port %d] quitting **\n", global_playerport );
   
   exit(0);
 }
@@ -221,7 +218,7 @@ parse_config_file(char* fname)
   char interface[PLAYER_MAX_DEVICE_STRING_LEN];
   char* colon;
   int index;
-  int robot_id;
+  int robot_id=0;
   char robot_id_string[PLAYER_MAX_DEVICE_STRING_LEN];
   char* driver;
   int code = 0;
@@ -254,8 +251,8 @@ parse_config_file(char* fname)
       robot_id = atoi(robot_id_string);
       memmove(interface,colon+1,strlen(colon));
     }
-    else
-      robot_id = 0;
+    //else
+    //robot_id = 0;
 
     // look for a colon and trailing index
     if((colon = strchr(interface,':')) && strlen(colon) >= 2)
@@ -276,12 +273,13 @@ parse_config_file(char* fname)
       driver = tmpint.default_driver;
       code = tmpint.code;
     }
-    if(!use_stage && !driver)
+    
+    if(!driver)
     {
       PLAYER_ERROR1("Couldn't find interface \"%s\"", interface);
       exit(-1);
     }
-
+    
     // did the user specify a different driver?
     driver = (char*)configFile.ReadString(i, "driver", driver);
 
@@ -293,57 +291,37 @@ parse_config_file(char* fname)
     id.robot = robot_id;
     id.index = index;
 
-    if(use_stage)
-    {
-#if INCLUDE_STAGE
-      if(!(tmpdevice = Stage_Init(interface,&configFile,i)))
-      {
-        PLAYER_ERROR1("Initialization failed for stage driver as interface \"%s\"\n",
-                      interface);
-        exit(-1);
-      }
-      
-      // add this device into the table.  subtract one from the parent id,
-      // because the entities are indexed from 1 (the "root" entity is 0)
-      // and the devicetable is indexed from 0.
-      deviceTable->AddDevice(id, "stage", 'a', tmpdevice,
-                             configFile.entities[i].parent-1);
-#endif
-    }
-    else
-    {
-      /* look for the indicated driver in the available device table */
-      if(!(entry = driverTable->GetDriverEntry(driver)))
+    /* look for the indicated driver in the available device table */
+    if(!(entry = driverTable->GetDriverEntry(driver)))
       {
         PLAYER_ERROR1("Couldn't find driver \"%s\"", driver);
         return(false);
       }
-
-      if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
+    
+    if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
       {
         PLAYER_ERROR2("Initialization failed for driver \"%s\" as interface \"%s\"\n",
                       driver, interface);
         exit(-1);
       }
-      // add this device into the table.  subtract one from the parent id,
-      // because the entities are indexed from 1 (the "root" entity is 0)
-      // and the devicetable is indexed from 0.
-      deviceTable->AddDevice(id, driver, entry->access, tmpdevice,
-                             configFile.entities[i].parent-1);
-
-      // should this device be "always on"?
-      if(configFile.ReadInt(i, "alwayson", 0))
+    // add this device into the table.  subtract one from the parent id,
+    // because the entities are indexed from 1 (the "root" entity is 0)
+    // and the devicetable is indexed from 0.
+    deviceTable->AddDevice(id, driver, entry->access, tmpdevice,
+			   configFile.entities[i].parent-1);
+    
+    // should this device be "always on"?
+    if(configFile.ReadInt(i, "alwayson", 0))
       {
         if(tmpdevice->Subscribe(NULL))
-        {
-          PLAYER_ERROR2("Initial subscription failed to driver \"%s\" as interface \"%s\"\n",
-                        driver,interface);
+	  {
+	    PLAYER_ERROR2("Initial subscription failed to driver \"%s\" as interface \"%s\"\n",
+			  driver,interface);
           exit(-1);
-        }
+	  }
       }
-    }
   }
-
+  
   configFile.WarnUnused();
 
   puts("Done.");
@@ -351,8 +329,15 @@ parse_config_file(char* fname)
   return(true);
 }
 
+int CDevice::argc = 0;
+char** CDevice::argv = NULL;
+
 int main( int argc, char *argv[] )
 {
+  // store the command line in static members where all devices can see it
+  CDevice::argc = argc;
+  CDevice::argv = argv;
+
   struct sockaddr_in listener;
   char auth_key[PLAYER_KEYLEN] = "";
 
@@ -388,28 +373,44 @@ int main( int argc, char *argv[] )
     else if(!strcmp(argv[i],"-v") || !strcmp(argv[i],"--version"))
     {
       puts("");
+
+      printf( "Copyright (C) 1999-2003 \n"
+	      "  Brian Gerkey    <gerkey@usc.edu>\n"
+	      "  Andrew Howard   <ahoward@usc.edu>\n"
+	      "  Richard Vaughan <vaughan@hrl.com>\n"
+	      "  and contributors.\n\n"
+	      
+	      "Part of the Player/Stage Project "
+	      "[http://playerstage.sourceforge.net]\n"
+	      
+	      // GNU disclaimer
+	      "This is free software; see the source for copying conditions.  "
+	      "There is NO\nwarranty; not even for MERCHANTABILITY or "
+	      "FITNESS FOR A PARTICULAR PURPOSE.\n\n" );
       exit(0);
     }
     else if(!strcmp(argv[i],"-s"))
     {
 #if INCLUDE_STAGE
+      printf( "[stage mode]" );
       use_stage = true;
-      // TODO: get hostname:port here
-      /*
-      if(++i<argc) 
-      {
-        strncpy(stage_io_directory, argv[i], sizeof(stage_io_directory));
-        use_stage = true;
-        printf("[Stage %s]", stage_io_directory );
-      }
-      else 
-      {
-        Usage();
-        exit(-1);
-      }
-      */
+      
+      player_device_id_t id;
+      id.code = PLAYER_STAGE_CODE;
+      id.robot = 0;
+      id.index = 0;
+    
+      CDevice* stagedevice = StageDeviceInit();
+      // add this device into the table. 
+      deviceTable->AddDevice( id, "stage", 'a', stagedevice, 1);
+      
+      if(stagedevice->Subscribe(NULL))
+	{
+	  PLAYER_ERROR("Initial subscription failed to StageDevice\n"),
+          exit(-1);
+	} 
 #else
-      PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
+      printf( "Sorry, the Stage simulator was not included at compile-time.\n" );
       exit(-1);
 #endif
     }
@@ -471,11 +472,10 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
-    else if(i == (argc-1))
+    else if(i == (argc-1) && !use_stage )
     {
-      // assume that this is a config file
       if(!parse_config_file(argv[i]))
-        exit(-1);
+	exit(-1);
     }
     else
     {
@@ -488,44 +488,40 @@ int main( int argc, char *argv[] )
   
   // check for empty device table
   if(!(deviceTable->Size()))
-  {
-    if( use_stage )
-      PLAYER_WARN("No devices instantiated; no valid Player devices in worldfile?");
-    else
-      PLAYER_WARN("No devices instantiated; perhaps you should supply " 
-		  "a configuration file?");
-  }
+    {
+      if( use_stage )
+	PLAYER_ERROR("No Stage device instantied");
+      else
+	PLAYER_WARN("No devices instantiated; perhaps you should supply " 
+		    "a configuration file?");
+    }
 
-  //if(!use_stage)
-  //{
-    num_ufds = 1;
-    if(!(ufds = new struct pollfd[num_ufds]) || !(ports = new int[num_ufds]))
+  num_ufds = 1;
+  if(!(ufds = new struct pollfd[num_ufds]) || !(ports = new int[num_ufds]))
     {
       perror("new failed for pollfds or ports");
       exit(-1);
     }
-
-    // setup the socket to listen on
-    if((ufds[0].fd = create_and_bind_socket(&listener,1,
-                                            global_playerport,
-                                            SOCK_STREAM,200)) == -1)
+  
+  // setup the socket to listen on
+  if((ufds[0].fd = create_and_bind_socket(&listener,1,
+					  global_playerport,
+					  SOCK_STREAM,200)) == -1)
     {
       fputs("create_and_bind_socket() failed; quitting", stderr);
       exit(-1);
     }
-
-    ufds[0].events = POLLIN;
-    ports[0] = global_playerport;
-  //}
-
+  
+  ufds[0].events = POLLIN;
+  ports[0] = global_playerport;
+    
   // create the client manager object.
   clientmanager = new ClientManager(ufds,ports,num_ufds,auth_key);
 
-  // main loop: sleep the shortest amount possible, periodically updating
-  // the clientmanager.
+  // main loop: update the clientmanager 
+  // (which calls poll(2) so this isn't a busy-loop)
   for(;;) 
   {
-    //usleep(0);
     if(clientmanager->Update())
     {
       fputs("ClientManager::Update() errored; bailing.\n", stderr);

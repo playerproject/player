@@ -25,12 +25,12 @@
  *
  *   class to keep track of available devices.  
  */
+
+#define PLAYER_ENABLE_TRACE 1
+
 #include <devicetable.h>
 
 #include <string.h> // for strncpy(3)
-
-// true if we're connecting to Stage instead of a real robot
-extern bool use_stage;
 
 // initialize the table
 CDeviceTable::CDeviceTable()
@@ -64,7 +64,10 @@ CDeviceTable::~CDeviceTable()
 int 
 CDeviceTable::AddDevice(player_device_id_t id, char* name,
                         unsigned char access, CDevice* devicep, int parent)
-{
+{ 
+  PLAYER_TRACE5( "adding device (%d:%d:%d) name %s parent %d", 
+		 id.robot, id.code, id.index, name, parent );
+  
   CDeviceEntry* thisentry;
   CDeviceEntry* preventry;
   
@@ -77,13 +80,17 @@ CDeviceTable::AddDevice(player_device_id_t id, char* name,
     if((thisentry->id.robot == id.robot) && 
        (thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index))
-    {
-      if(thisentry->devicep)
-        delete thisentry->devicep;
-      break;
-    }
+      {
+	if(thisentry->devicep)
+	  {
+	    PLAYER_WARN3( "device (%d:%d:%d) already exists and is being deleted", 
+			id.robot, id.code, id.index );
+	    delete thisentry->devicep;
+	  }
+	break;
+      }
   }
-
+  
   if(!thisentry)
   {
     thisentry = new CDeviceEntry;
@@ -163,6 +170,7 @@ CDeviceEntry*
 CDeviceTable::GetDeviceEntry(player_device_id_t id)
 {
   CDeviceEntry* thisentry;
+
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {

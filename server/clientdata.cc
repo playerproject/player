@@ -923,6 +923,8 @@ int CClientData::Subscribe(player_device_id_t id)
   if((devicep = deviceTable->GetDevice(id)))
   {
     subscribe_result = devicep->Subscribe(this);
+    printf("Subscribe():  \"%d:%d:%d\" - result %d\n", 
+                    id.robot,id.code,id.index, subscribe_result );
     return(subscribe_result);
   }
   else

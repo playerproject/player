@@ -26,6 +26,7 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               sonarproxy.cc \
                               speechproxy.cc \
                               truthproxy.cc \
+                              stageproxy.cc \
                               blobfinderproxy.cc \
                               wifiproxy.cc \
 			      irproxy.cc \

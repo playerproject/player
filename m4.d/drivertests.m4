@@ -4,7 +4,7 @@ define(PLAYER_DRIVERTESTS, [
 
 dnl the following drivers will install by default
 AC_ARG_WITH(passthrough,
-[  --without-passthrough          Don't compile the passthrough drivers],,
+[  --without-passthrough   Don't compile the passthrough drivers],,
 with_passthrough=yes)
 if test "x$with_passthrough" = "xyes"; then
   AC_DEFINE(INCLUDE_PASSTHROUGH, 1, [[include the passthrough driver]])
@@ -74,28 +74,15 @@ AC_SUBST(SONY_LIB)
 AC_SUBST(SONY_LIBPATH)
 
 AC_ARG_WITH(stage,
-[  --with-stage         Location of Stage (installation or source)],
-STAGE_DIR=$with_stage,
-STAGE_DIR="${HOME}/stage-PLAYER_VERSION")
-if test ! $STAGE_DIR = "no"; then
-  if test ! -f $STAGE_DIR/include/sio.h; then
-    if test ! -f $STAGE_DIR/src/sio/sio.h; then
-      AC_MSG_ERROR([Could not find Stage's <sio.h>, which is required to build Stage support in Player.])
-    fi
-  fi
-  AC_DEFINE(INCLUDE_STAGE, 1, [[include the STAGE driver]])
+[  --without-stage         Don't compile the Stage simulator driver],,
+with_stage=yes)
+if test "x$with_stage" = "xyes"; then
+  AC_DEFINE(INCLUDE_STAGE, 1, [[include the Stage simulator]])
   STAGE_LIB="libstage.a"
   STAGE_LIBPATH="drivers/stage/libstage.a"
-  STAGE_IO_INCLUDE="-I$STAGE_DIR/include -I$STAGE_DIR/src/sio -I$STAGE_DIR/src"
-  STAGE_IO_LIBDIR="-L$STAGE_DIR/lib -L$STAGE_DIR/src/sio"
-  STAGE_IO_LIB="-lsio"
 fi
-AC_SUBST(STAGE_DIR)
 AC_SUBST(STAGE_LIB)
 AC_SUBST(STAGE_LIBPATH)
-AC_SUBST(STAGE_IO_INCLUDE)
-AC_SUBST(STAGE_IO_LIBDIR)
-AC_SUBST(STAGE_IO_LIB)
 
 AC_ARG_WITH(udpbcast,
 [  --without-udpbcast      Don't compile the udpbroadcast driver],,

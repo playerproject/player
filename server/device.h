@@ -96,6 +96,11 @@ class CDevice
 
     virtual ~CDevice() {};
 
+    // the command line that invoked player is made available to
+    // all devices for run-time configuration
+    static int argc;
+    static char** argv;
+
     // this is the main constructor, used by most non-Stage devices.
     // storage will be allocated by this constructor
     CDevice(size_t datasize, size_t commandsize, 

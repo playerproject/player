@@ -364,7 +364,7 @@ CDevice::DummyMain(void *devicep)
 void
 CDevice::Main() 
 {
-  fputs("ERROR: You have called Run(), but didn't provide your own Main()!", 
+  fputs("ERROR: You have called StartThread(), but didn't provide your own Main()!", 
         stderr);
 }
 

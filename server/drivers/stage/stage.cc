@@ -72,292 +72,6 @@ extern rtk_app_t *app; // the RTK/GTK application
 
 #endif
 
-class StageDevice : public CDevice
-{
-public: 
-  // the usual device interface methods
-
-  // constructor
-  StageDevice(int parent, char* interface,
-	      size_t datasize, size_t commandsize, 
-	      int reqqueuelen, int repqueuelen);
-
-  // destructor  // Main function for device thread
-  virtual void Main();
-
-  ~StageDevice();
-    
-  // Initialise the device
-  virtual int Setup();
-  
-  // Terminate the device
-  virtual int Shutdown();
-  
-  // Read data from the device
-  virtual size_t GetData(void* client,unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec,
-			 uint32_t* timestamp_usec);
-  
-  // Write a command to the device
-  virtual void PutCommand(void* client, unsigned char * , size_t maxsize); 
-
-private:
-  void HandleConfigRequests( void );
-
-protected:
-  // all stage devices share a single Stage
-  static Stage* stage;
-
-};
-
-
-Stage* StageDevice::stage = NULL;
-
-
-StageDevice::StageDevice( char* interface,
-	: CDevice(sizeof(player_laser_data_t),0,10,10)
-{
-  // hello world
-  printf("\n** Stage v%s ** ", VERSION );
-  fflush( stdout );
-  puts( "" ); // end the startup output line
-  
-  // catch clock start/stop commands
-  signal(SIGUSR1, CatchSigUsr1 );
- 
-  
-  // parse arguments
-  for( int a=1; a<argc; a++ )
-    {
-      // a version request prints a version string and quits
-      if( 
-	 (strcmp( argv[a], "--version" ) == 0 ) ||
-	 (strcmp( argv[a], "-v" ) == 0) 
-	 )
-	{
-	  PrintVersion();
-	  exit( 0 );
-	} 
-    }
-
-  // create the root object
-  CEntity::root = new CRootEntity( library_items );
-  
-#ifdef INCLUDE_RTK2
-  // bring up the GUI
-  RtkGuiInit( argc, argv );
-  RtkGuiLoad();
-  CEntity::root->RtkStartup(canvas );
-#endif
-  
-
-  // replace Player's wall clock with our clock
-  if( GlobalTime ) delete GlobalTime;
-  assert(GlobalTime = (PlayerTime*)(new StageTime()));
-  initdone = true;
-  
-  // this runs our Main() method in it's own thread
-  StartThread();
-
-  printf( "STAGEDEVICE: stage model created" );
-}
-
-
-// destructor
-StageDevice::~StageDevice( void )
-{
- // Stop the device thread
-  StopThread();
-}
-
-
-// initialization function
-CDevice* 
-StageDeviceInit()
-{
-  return((CDevice*)(new StageDevice() ));
-}
-
-
-void StageDevice::HandleConfigRequests( void )
-{
-  int len;
-  void *client;
-  char buffer[PLAYER_MAX_REQREP_SIZE];
-  
-  while ((len = GetConfig(&client, &buffer, sizeof(buffer))) > 0)
-    {
-      PLAYER_MESG( "got a config request" );
-    }
-}
-  
-	 
-// our thread method    
-void StageDevice::Main( void )
-{
- PRINT_WARN( "main loop" );
-
-  for(;;) 
-  {
-
-    // grab a lock on the stage fd
-    pthread_mutex_lock(&mutex);
-    
-    HandleConfigRequests();
-
-    // update the simulation model
-    
-    if( CEntity::root && !paused  ) 
-      {
-	printf( "." ); fflush( stdout );
-	//CEntity::root->Update();
-	CEntity::simtime += update_interval; 
-      }
-    
-    // process GUI events
-    RtkGuiUpdate();
-    
-    // release the stage fd
-    pthread_mutex_unlock(&mutex);
-    
-    // if( real_time_mode )
-    WaitForWallClock();
-    
-  }
-}
-
-//////////////////////////////////////////////////////////////xx/////////////
-// Initialise the device
-//
-int StageDevice::Setup()
-{
-  PRINT_WARN( "setup" );
-
-
-  return(0);
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-// Terminate the device
-//
-int StageDevice::Shutdown()
-{
-  //PRINT_WARN1( "SHUTDOWN model %d",  stage_model.id );
-
-  return 0;
-};
-
-//////////////////////////////////////////////////////////////////////////
-// Read data from the device
-//
-size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
-                        uint32_t* timestamp_sec, 
-                        uint32_t* timestamp_usec)
-{
-
-  PLAYER_WARN( "get data" );
-
-  /*
-#ifdef DEBUG
-  printf( "P: getting (%d,%d,%d) info at %p, data at %p, buffer len %d, %d bytes available, size parameter %d\n", 
-          m_info->player_id.port, 
-          m_info->player_id.code, 
-          m_info->player_id.index, 
-          m_info, device_data,
-          m_info->data_len,
-          m_info->data_avail,
-          size );
-  fflush( stdout );
-#endif
-
-  // See if there is any data
-  //
-  size_t data_avail = m_info->data_avail;
-
-  // Check for overflows 1
-  //
-  if (data_avail > PLAYER_MAX_MESSAGE_SIZE )
-  {
-    printf( "Available data (%d bytes) is larger than Player's"
-            " maximum message size (%d bytes)\n", 
-            data_avail, PLAYER_MAX_MESSAGE_SIZE );
-  }
-
-  // Check for overflows 2
-  //
-  if (data_avail > device_datasize )
-  {
-    printf("warning: available data (%d bytes) > buffer size (%d bytes); ignoring data\n", data_avail, device_datasize );
-    Unlock();
-    return 0;
-    //data_avail = m_data_len;
-  }
-    
-  // Check for overflows 3
-  //
-  if( data_avail > size)
-  {
-    printf("warning data available (%d bytes) > space in Player packet (%d bytes); ignoring data\n", data_avail, size );
-    Unlock();
-    return 0;
-  }
-    
-  // Copy the data
-  memcpy(data, device_data, data_avail);
-
-  // store the timestamp in the device, because other devices may
-  // wish to read it
-  data_timestamp_sec = m_info->data_timestamp_sec;
-  data_timestamp_usec = m_info->data_timestamp_usec;
-
-  // also return the timestamp to the caller
-  if(timestamp_sec)
-    *timestamp_sec = data_timestamp_sec;
-  if(timestamp_usec)
-    *timestamp_usec = data_timestamp_usec;
-    
-  return data_avail;
-  */
-  return(0);
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-// Write a command to the device
-//
-void StageDevice::PutCommand(void* client,unsigned char *command, size_t len)
-{
-  /*
-#ifdef DEBUG
-  printf( "P: StageDevice::PutCommand (%d,%d,%d) info at %p,"
-	  " command at %p\n", 
-          m_info->player_id.port, 
-          m_info->player_id.code, 
-          m_info->player_id.index, 
-          m_info, command);
-  fflush( stdout );
-#endif
-
-  // Check for overflows
-  if (len > device_commandsize)
-    PLAYER_ERROR("invalid command length; ignoring command");
-    
-  // Copy the command
-  memcpy(device_command, command, len);
-
-  // Set flag to indicate command has been set
-  m_info->command_avail = len;
-
-  // set timestamp for this command
-  struct timeval tv;
-  GlobalTime->GetTime(&tv);
-
-  m_info->command_timestamp_sec = tv.tv_sec;
-  m_info->command_timestamp_usec = tv.tv_usec;
-  */
-}
-
 /*
 #include "models/bumperdevice.hh"
 #include "models/broadcastdevice.hh"
@@ -422,12 +136,241 @@ double update_interval = 0.01; // seconds
 int quit = 0;
 int paused = 0;
 
+class StageDevice : public CDevice
+{
+public: 
+  // the usual device interface methods
+  
+  // constructor
+  StageDevice();
+  
+  // destructor  // Main function for device thread
+  virtual void Main();
+  
+  ~StageDevice();
+  
+  // Initialise the device
+  virtual int Setup();
+  
+  // Terminate the device
+  virtual int Shutdown();
+
+  int HandleConfigRequests();
+  
+  int WaitForWallClock();
+  void PrintVersion( void );
+  void PrintUsage( void );
+  double GetRealTime();
+  
+  int GuiInit( int argc, char** argv );
+  int GuiEntityShutdown( CEntity* ent );
+  int GuiEntityStartup( CEntity* ent );
+  int GuiEntityPropertyChange( CEntity* ent, stage_prop_id_t prop );
+  int GuiUpdate( void );
+  
+  // mutex to manage access to model data
+  pthread_mutex_t mutex; 
+  // manipulate the mutex
+  int ModelLock();
+  int ModelUnlock();
+
+  StageTime stagetime;
+};
+
+
 // catch SIGUSR1 to toggle pause
 void CatchSigUsr1( int signo )
 {
   paused = !paused; 
   paused ? PRINT_MSG("CLOCK STARTED" ) : PRINT_MSG( "CLOCK STOPPED" );
 }
+
+
+StageDevice::StageDevice()
+	: CDevice(sizeof(player_stage_data_t),
+		  0, // no commands 
+		  50, 50) // plenty of room on the queues
+{
+  // hello world
+  printf("\n** Stage v%s ** ", VERSION );
+  fflush( stdout );
+  puts( "" ); // end the startup output line
+  
+  // catch clock start/stop commands
+  signal(SIGUSR1, CatchSigUsr1 );
+ 
+  
+  // parse arguments
+  for( int a=1; a<argc; a++ )
+    {
+      // a version request prints a version string and quits
+      if( 
+	 (strcmp( argv[a], "--version" ) == 0 ) ||
+	 (strcmp( argv[a], "-v" ) == 0) 
+	 )
+	{
+	  PrintVersion();
+	  exit( 0 );
+	} 
+    }
+
+  // create the root object
+  CEntity::root = new CRootEntity( library_items );
+  
+#ifdef INCLUDE_RTK2
+  // bring up the GUI
+  RtkGuiInit( argc, argv );
+  RtkGuiLoad();
+  CEntity::root->RtkStartup(canvas );
+#endif
+  
+
+  // replace Player's wall clock with our clock
+  if( GlobalTime ) delete GlobalTime;
+  assert(GlobalTime = (PlayerTime*)&stagetime );
+  
+  // this runs our Main() method in it's own thread
+  StartThread();
+
+  printf( "STAGEDEVICE: stage model created" );
+}
+
+
+// destructor
+StageDevice::~StageDevice( void )
+{
+ // Stop the device thread
+  StopThread();
+}
+
+
+// initialization function
+CDevice* 
+StageDeviceInit()
+{
+  return((CDevice*)(new StageDevice()));
+}
+
+// our thread method    
+void StageDevice::Main( void )
+{
+ PRINT_WARN( "main loop" );
+
+  for(;;) 
+  {
+    // test if we are supposed to cancel
+    pthread_testcancel();
+    
+    // Update the configuration.
+    if( HandleConfigRequests() == -1 )
+      {
+	PLAYER_WARN( "Stage failed to handle a config request" );
+      }
+    
+    // grab a lock on the stage fd
+    pthread_mutex_lock(&mutex);
+    
+    // update the simulation model
+    if( CEntity::root && !paused  ) 
+      {
+	printf( "." ); fflush( stdout );
+	//CEntity::root->Update();
+	CEntity::simtime += update_interval; 
+	
+	struct timeval tv;
+	tv.tv_sec = (long int)floor(CEntity::simtime);
+	tv.tv_usec = (long int)((CEntity::simtime - (double)tv.tv_sec) * MILLION);
+	stagetime.SetTime( &tv );
+      }
+    
+    // Make data available
+    player_stage_data_t data;
+    data.interval_ms = htonl((int)(update_interval * 1000.0));
+    data.model_count = htonl(CEntity::root->NumModels());
+    //printf( "putting data" );
+    PutData((uint8_t*) &data, sizeof(data), 0,0 );
+
+    // process GUI events
+    RtkGuiUpdate();
+    
+    // release the stage fd
+    pthread_mutex_unlock(&mutex);
+  
+    // if( real_time_mode )
+    WaitForWallClock();
+    
+  }
+}
+
+//////////////////////////////////////////////////////////////xx/////////////
+// Initialise the device
+//
+int StageDevice::Setup()
+{
+  PRINT_WARN( "setup" );
+
+
+  return(0);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Terminate the device
+//
+int StageDevice::Shutdown()
+{
+  //PRINT_WARN1( "SHUTDOWN model %d",  stage_model.id );
+
+  return 0;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Process configuration requests.  Returns 1 if the configuration has changed.
+int StageDevice::HandleConfigRequests()
+{
+  int len;
+  void *client;
+  char buffer[PLAYER_MAX_REQREP_SIZE];
+  bool ok = true;
+  
+  while ((len = GetConfig(&client, &buffer, sizeof(buffer))) > 0)
+    {
+      switch (buffer[0])
+	{
+	case PLAYER_STAGE_CREATE_MODEL:
+	  if (len != sizeof(player_stage_model_t))
+	    {
+	      PLAYER_ERROR2("config request len is invalid (%d != %d)", 
+			    len,  sizeof(player_stage_model_t));
+	      
+	      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+		PLAYER_ERROR("PutReply() failed");
+	    }
+	  else
+	    {
+	      player_stage_model_t* model = (player_stage_model_t*)buffer;
+	      
+	      printf( "received create model request for:\n"
+		      "type %s name %s  parent %s at (%.2f %.2f %.2f)\n",
+		      model->type, model->name, model->parent, 
+		      model->px, model->py, model->pa );
+	      
+	      this->ModelLock();
+	      assert( CEntity::root->CreateEntity( model ) == 0 );
+	      this->ModelUnlock();
+
+	      if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
+			   model, sizeof(player_stage_model_t)) != 0 )
+		PLAYER_ERROR("PutReply() failed responding to "
+			     "PLAYER_STAGE_CREATE_MODEL");
+	    }
+	  break;
+	}
+    }  
+  return 0; // ok.
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 // Print the version and credits
@@ -528,13 +471,13 @@ void PackTimespec( struct timespec *ts, double seconds )
   ts->tv_nsec = (long)(fmod(seconds, 1.0 ) * BILLION );
 }
 
-int StageDevice::Lock()
+int StageDevice::ModelLock()
 {
   // acquire the lock on the socket
   return pthread_mutex_lock(&this->mutex);
 }
 
-int StageDevice::Unlock()
+int StageDevice::ModelUnlock()
 {
   // release the lock on the socket
   return pthread_mutex_unlock(&this->mutex);

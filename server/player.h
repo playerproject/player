@@ -76,7 +76,8 @@
 #define PLAYER_IR_CODE             ((uint16_t)22)  // IR array
 #define PLAYER_WIFI_CODE	   ((uint16_t)23)  // wifi card status
 #define PLAYER_WAVEFORM_CODE	   ((uint16_t)24)  // fetch raw waveforms
-#define PLAYER_LOCALIZE_CODE   ((uint16_t)25)  // localize
+#define PLAYER_LOCALIZE_CODE       ((uint16_t)25)  // localize
+#define PLAYER_STAGE_CODE          ((uint16_t)26)  // stage simulation
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -105,7 +106,8 @@
 #define PLAYER_IR_STRING             "ir"
 #define PLAYER_WIFI_STRING           "wifi"
 #define PLAYER_WAVEFORM_STRING       "waveform"
-#define PLAYER_LOCALIZE_STRING   "localize"
+#define PLAYER_LOCALIZE_STRING       "localize"
+#define PLAYER_STAGE_STRING           "stage"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -1394,6 +1396,60 @@ typedef struct player_truth_pose
   int32_t px, py, pa; 
 
 } __attribute__ ((packed)) player_truth_pose_t;
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section stage
+ *************************************************************************/
+/** [Synopsis]
+The {\tt stage} interface provides access to the absolute state of entities. 
+*/
+
+/** [Constants] */
+/** Request packet subtypes. */
+#define PLAYER_STAGE_CREATE_MODEL 0x00
+
+/** [Data] */
+/** The {\tt stage} interface returns data concerning the current state of
+an entity; the format is: */
+typedef struct player_stage_data
+{
+  /** Number of models created */
+  int32_t model_count;
+  /** windowed average of wall-clock interval between updates (milliseconds)*/
+  int32_t interval_ms;
+} __attribute__ ((packed)) player_stage_data_t;
+
+/** [Commands] This interface accepts no commands. */
+
+/** [Configuration: Get/set pose] */
+/** To get the pose of an object, use the following request, filling in only
+ the subtype with PLAYER_STAGE_GET_POSE.  The server will respond with the other fields filled in.  To set the pose, set the subtype to PLAYER_STAGE_SET_POS
+ and fill in the rest of the fields with the new pose. */
+typedef struct player_stage_model
+{
+  /** Packet subtype.  Must be either PLAYER_STAGE_GET_POSE or
+    PLAYER_STAGE_SET_POSE */
+  uint8_t subtype;
+
+  /** the type of model to create - must match a Stage library entry */
+  char type[PLAYER_MAX_DEVICE_STRING_LEN];
+
+  /** the name of this model instance - used to identify this device */
+  char name[PLAYER_MAX_DEVICE_STRING_LEN];
+
+  /** the name of the parent to which this model will be attached */
+  char parent[PLAYER_MAX_DEVICE_STRING_LEN];
+
+  /** Object pose in world cs (mm, mm, degrees). */
+  double px, py, pa; 
+
+} __attribute__ ((packed)) player_stage_model_t;
+
+
+
 /*************************************************************************
  ** end section
  *************************************************************************/
