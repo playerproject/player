@@ -314,7 +314,11 @@ AC_CHECK_FUNCS(sigblock)
 AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
-AC_CHECK_LIB(ltdl, lt_dlopenext, have_libltdl=yes, have_libltdl=no)
+AC_CHECK_LIB(ltdl, lt_dlopenext, 
+             have_libltdl=yes
+             AC_DEFINE(HAVE_LIBLTDL, 1, [Define to 1 if you have the ltdl library (-lltdl). ])
+             LIBS="$LIBS -lltdl",
+             have_libltdl=no)
 AC_CHECK_LIB(c_r, pthread_create, 
              [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 
