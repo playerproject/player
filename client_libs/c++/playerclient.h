@@ -970,6 +970,89 @@ class MoteProxy : public ClientProxy
 
 
 /*****************************************************************************
+ ** begin section LocalizeProxy
+ *****************************************************************************/
+
+class localize_hypoth
+{
+  public:
+    // Pose estimate (mm, mm, degrees)
+    double mean[3];
+    // Covariance (mm^2, degrees^2)
+    double cov[3][3];
+    // Weight associated with this hypothesis
+    double weight;
+};
+
+/** The {\tt LocalizeProxy} class is used to control a {\tt localize} device,
+    which can provide multiple pose hypotheses for a robot.
+ */
+class LocalizeProxy : public ClientProxy
+{
+
+  public:
+    /// Map dimensions (cells)
+    unsigned int map_size_x, map_size_y;
+
+    /// Map scale (m/cell)
+    double map_scale;
+
+    /// Map data (empty = -1, unknown = 0, occupied = +1)
+    int8_t *map_cells;
+
+    /// Number of possible poses
+    int hypoth_count;
+
+    /** Array of possible poses.  Each pose contains the following
+        information:
+        \begin{itemize}
+        \item {\tt double mean[3]} (pose estimate, in m, m, degrees)
+        \item {\tt double cov[3][3]} (covariance, in m$^{2}$ and degrees$^{2}$)
+        \item {\tt double weight} (weight associated with this estimate)
+        \end{itemize}
+     */
+    localize_hypoth hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
+
+
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+     */
+    LocalizeProxy(PlayerClient* pc, unsigned short index, 
+                  unsigned char access = 'c') :
+            ClientProxy(pc,PLAYER_LOCALIZE_CODE,index,access)
+    { map_cells=NULL; bzero(&hypoths,sizeof(hypoths)); }
+
+    ~LocalizeProxy();
+
+    // these methods are the user's interface to this device
+    
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+
+    /** Set the current pose hypothesis (m, m, degrees).  Returns 0 on 
+        success, -1 on error.
+     */
+    int SetPose(double pose[3], double cov[3][3]);
+
+    /** Get the number of particles (for particle filter-based localization
+        systems).  Returns the number of particles, or -1 on error.
+     */
+    int GetNumParticles();
+
+    /** Get the map from the server.  It's stored in map_size_x, map_size_y,
+        map_scale, and map_cells.  Returns 0 on success, -1 on error.
+     */
+    int GetMap();
+    
+    /// Print out current hypotheses.
+    void Print();
+};
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+/*****************************************************************************
  ** begin section PositionProxy
  *****************************************************************************/
 
@@ -1365,11 +1448,12 @@ class BlobfinderProxy : public ClientProxy
     /** Array containing arrays of the latest blob data.
         Each blob contains the following information:
         \begin{itemize}
-        \item {\tt unsigned int color} (in packed RGB);
+        \item {\tt unsigned int color} (in packed RGB)
         \item {\tt unsigned int area} (blob area, in square pixels)
-        \item {\tt unsigned short x, y} (blob center, in pixels);
+        \item {\tt unsigned short x, y} (blob center, in pixels)
         \item {\tt unsigned short left, right, top, bottom} (blob bounding box,
         in pixels)
+        \item {\tt unsigned short range} (range to blob center, in mm)
         \end{itemize}
         For example, to access the area of the $0^{th}$ blob on channel 2, you
         would refer to: {\tt blobs[2][0].area}.

@@ -44,6 +44,7 @@ int test_wifi(PlayerClient* client, int index);
 int test_mcom(PlayerClient* client, int index);
 int test_fiducial(PlayerClient* client, int index);
 int test_lookup(PlayerClient* client, int index);
+int test_localize(PlayerClient* client, int index);
 
 //int test_bps(PlayerClient* client, int index);
 
