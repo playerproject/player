@@ -1,4 +1,4 @@
-SUBDIRS = p2os rwi stage isense reb
+SUBDIRS = p2os rwi stage reb isense microstrain
 
 noinst_LIBRARIES = @ACTS_LIB@ @FESTIVAL_LIB@ \
 		@LASER_LIB@ \

@@ -245,6 +245,18 @@ AC_SUBST(ISENSE_LIB)
 AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
 
+dnl optionally compile MicroStrain IMU drivers
+AC_ARG_WITH(microstrain,
+[  --without-microstrain         Don't compile the MicroStrain IMU drivers],,
+with_microstrain=yes)
+if test "x$with_microstrain" = "xyes"; then
+  AC_DEFINE(INCLUDE_MICROSTRAIN, 1, [[include the MICROSTRAIN driver]])
+  MICROSTRAIN_LIB="libmicrostrain.a"
+  MICROSTRAIN_LIBPATH="drivers/microstrain/libmicrostrain.a"
+fi
+AC_SUBST(MICROSTRAIN_LIB)
+AC_SUBST(MICROSTRAIN_LIBPATH)
+
 dnl Optionally build the python client.
 PYTHON_VERSION=2.2
 AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)
@@ -270,9 +282,10 @@ AC_OUTPUT(Makefile
           server/drivers/Makefile 
           server/drivers/p2os/Makefile 
           server/drivers/rwi/Makefile 
-          server/drivers/isense/Makefile 
           server/drivers/stage/Makefile 
           server/drivers/reb/Makefile 
+          server/drivers/isense/Makefile 
+          server/drivers/microstrain/Makefile 
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile

@@ -105,6 +105,10 @@ void RWISonar_Register(DriverTable* table);
 void InertiaCube2_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_MICROSTRAIN
+void MicroStrain3DMG_Register(DriverTable* table);
+#endif
+
 
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
@@ -206,11 +210,7 @@ register_devices()
   RWIBumper_Register(driverTable);
   RWIPower_Register(driverTable);
 #endif
-
-#ifdef INCLUDE_ISENSE
-  InertiaCube2_Register(driverTable);
-#endif
-
+  
 #ifdef INCLUDE_WIFI
   LinuxWiFi_Register(driverTable);
 #endif
@@ -219,6 +219,14 @@ register_devices()
   REBPosition_Register(driverTable);
   REBIR_Register(driverTable);
   REBPower_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_ISENSE
+  InertiaCube2_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_MICROSTRAIN
+  MicroStrain3DMG_Register(driverTable);
 #endif
 }
 
