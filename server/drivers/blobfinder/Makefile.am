@@ -1,4 +1,4 @@
-SUBDIRS = cmvision upcbarcode shapetracker
+SUBDIRS = cmvision upcbarcode shapetracker cmucam2
 
 noinst_LIBRARIES = @ACTS_LIB@ 
 
