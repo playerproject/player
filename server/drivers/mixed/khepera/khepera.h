@@ -147,6 +147,9 @@ public:
   
   //unsigned char ReadStatus(int, int *, int *);
 
+	// MessageHandler
+	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data);	
+
 private:
   player_device_id_t ir_id;
   player_device_id_t position_id;
@@ -190,6 +193,8 @@ private:
   char khepera_serial_port[MAX_FILENAME_SIZE]; 
 
   struct pollfd write_pfd, read_pfd;
+
+  
 };
 
 

@@ -127,7 +127,7 @@ Driver::AddInterface(player_device_id_t id, unsigned char access)
 
 
 // New-style PutData; [id] specifies the interface to be written
-void 
+/*void 
 Driver::PutData(player_device_id_t id,
                 unsigned char* src, size_t len,
                 struct timeval* timestamp)
@@ -140,7 +140,7 @@ Driver::PutData(player_device_id_t id,
 	else
 	clientmanager->PutMsg(PLAYER_MSGTYPE_DATA, id.code, id.index,0,
 		0, len, src, NULL);
-	Unlock();
+	Unlock();*/
 /*  Device *device;
   struct timeval ts;
   
@@ -171,7 +171,7 @@ Driver::PutData(player_device_id_t id,
   
   // signal that new data is available
   DataAvailable();*/
-}
+//}
 
 
 // New-style GetData; [id] specifies the interface to be read
@@ -462,6 +462,48 @@ Driver::PutMsg(player_device_id_t id, ClientData* client,
     return 0;
 }
 
+int Driver::PutMsg(player_msghdr * hdr, ClientData* client, 
+                 unsigned short type, 
+                 void* src, size_t len,
+                 struct timeval* timestamp)
+{
+	player_device_id id;
+	id.code = hdr->device;
+	id.index = hdr->device_index;
+	id.port = client->port;
+  Device *device;
+  struct timeval ts;
+  int retval = 0;
+
+  // Fill in the time structure if not supplies
+  if(timestamp)
+    ts = *timestamp;
+  else
+    GlobalTime->GetTime(&ts);
+
+  // Find the matching device in the device table
+  device = deviceTable->GetDevice(id);
+  if (device == NULL)
+  {
+    // Ignore, on the assumption that this id refers to an interface
+    // supported by the driver but not requested by the user.  This allows
+    // the driver to always PutReply() to all its supported interfaces,
+    // without checking whether the user wants to use them.
+    return(0);
+  }
+
+  Lock();
+	clientmanager->PutMsg(type, id.code, id.index,ts.tv_sec,
+		ts.tv_usec, len, (unsigned char *)src, client);
+  Unlock();
+
+  if(retval < 0)
+    return retval;
+  else
+    return 0;
+}
+
+
 // New-style: Read configuration reply from device
 /*int 
 Driver::GetMsg(player_device_id_t id, void* client, 
@@ -604,6 +646,33 @@ void
 Driver::MainQuit() 
 {
 }
+
+/// Call this to automatically process messages using registered handler
+/// Processes messages until no messages remaining in the queue or
+/// a message with no handler is reached
+void Driver::ProcessMessages()
+{
+	// If we have subscriptions, then see if we have and pending messages
+	// and process them
+	MessageQueueElement * el;
+	while ((el=InQueue.Pop()))
+	{
+		player_msghdr * hdr = reinterpret_cast<player_msghdr *> (el->msg.GetData());
+		uint8_t * data = reinterpret_cast<uint8_t *> (&el->msg.GetData()[sizeof(player_msghdr)]);
+
+		if (el->msg.GetSize() - sizeof(player_msghdr) != hdr->size)
+			PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",el->msg.GetSize() - sizeof(player_msghdr),hdr->size);
+
+		int ret = ProcessMessage(el->msg.Client, hdr, data);
+		if (ret < 0)
+			PutMsg(hdr, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, NULL, 0, NULL);
+		else if (ret > 0)
+			PutMsg(hdr, el->msg.Client, PLAYER_MSGTYPE_RESP_ACK, NULL, 0, NULL);
+	}
+}
+
+
+
 
 // A helper method for internal use; e.g., when one device wants to make a
 // request of another device

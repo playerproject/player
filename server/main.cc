@@ -322,7 +322,7 @@ void PrintHeader(player_msghdr_t hdr)
   printf("index: %u\n", hdr.device_index);
   printf("time: %u:%u\n", hdr.time_sec,hdr.time_usec);
   printf("times: %u:%u\n", hdr.timestamp_sec,hdr.timestamp_usec);
-  printf("reserved: %u\n", hdr.reserved);
+  printf("sequence: %u\n", hdr.sequence);
   printf("size:%u\n", hdr.size);
 }
 

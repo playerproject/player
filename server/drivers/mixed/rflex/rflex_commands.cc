@@ -402,11 +402,11 @@ static void parseDioReport( unsigned char *buffer )
 				{
 					if ((first_home_bearing - status.bearing) > 0.785* rflex_configs.odo_angle_conversion)
 					{
-						first_home_bearing=first_home_bearing-rflex_configs.odo_angle_conversion*2*M_PI;
+						first_home_bearing=static_cast<int> (first_home_bearing-rflex_configs.odo_angle_conversion*2*M_PI);
 					}
 					else if ((first_home_bearing - status.bearing) < 0.785* rflex_configs.odo_angle_conversion)
 					{
-						first_home_bearing=first_home_bearing+rflex_configs.odo_angle_conversion*2*M_PI;
+						first_home_bearing=static_cast<int> (first_home_bearing+rflex_configs.odo_angle_conversion*2*M_PI);
 					}
 					if (abs(first_home_bearing - status.bearing) > 0.01 * rflex_configs.odo_angle_conversion)
 					{

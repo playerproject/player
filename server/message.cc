@@ -120,6 +120,10 @@ MessageQueue::MessageQueue()
 {
 	Replace = false;
 	pTail = &Head;
+	lock = new pthread_mutex_t;
+	assert(lock);
+	pthread_mutex_init(lock,NULL);
+	
 }
 
 MessageQueue::~MessageQueue()
@@ -131,16 +135,24 @@ MessageQueue::~MessageQueue()
 MessageQueueElement * MessageQueue::AddMessage(Message & msg)
 {
 	assert(pTail);
-	return pTail = new MessageQueueElement(*pTail,msg);
+	Lock();
+	pTail = new MessageQueueElement(*pTail,msg);
+	Unlock();
+	return pTail;
 
 }
 
 MessageQueueElement * MessageQueue::Pop()
 {
+	Lock();
 	if (pTail == &Head)
+	{	
+		Unlock();
 		return NULL;
+	}
 	MessageQueueElement * ret = pTail;
 	pTail->prev->next = NULL;
 	pTail = pTail->prev;
+	Unlock();
 	return ret;
 }

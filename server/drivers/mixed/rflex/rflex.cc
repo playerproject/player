@@ -343,7 +343,7 @@ RFLEX_Init(ConfigFile *cf, int section)
   return (Driver *) new RFLEX( cf, section);
 }
 
-/* register the Khepera IR driver in the drivertable
+/* register the rflex driver in the drivertable
  *
  * returns: 
  */
@@ -351,6 +351,177 @@ void
 RFLEX_Register(DriverTable *table) 
 {
   table->AddDriver("rflex", RFLEX_Init);
+}
+
+///////////////////////////////
+// Message handler functions
+/////////////////////////////// 
+
+int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data)
+{
+	//printf("Got Message: %d %d %d %d \n", hdr->type, hdr->device, hdr->device_index, data ? data[0] : 0);
+
+	// Sonar bank 1 power request
+	MSG(sonar_id, PLAYER_MSGTYPE_REQ, sizeof(player_sonar_power_config_t), PLAYER_SONAR_POWER_REQ)
+	{
+		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
+			rflex_sonars_off(rflex_fd);
+		else
+			rflex_sonars_on(rflex_fd);
+	}
+	MSG_END;
+
+	// Sonar bank 2 power request
+	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, sizeof(player_sonar_power_config_t), PLAYER_SONAR_POWER_REQ)
+	{
+		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
+			rflex_sonars_off(rflex_fd);
+		else
+			rflex_sonars_on(rflex_fd);
+	}
+	MSG_END;
+
+	// Sonar bank 1 geom request
+	MSG(sonar_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_SONAR_GET_GEOM_REQ)
+	{
+		player_sonar_geom_t geom;
+		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+		geom.pose_count = htons((short) rflex_configs.sonar_1st_bank_end);
+		for (int i = 0; i < rflex_configs.sonar_1st_bank_end; i++)
+		{
+			geom.poses[i][0] = htons((short) rflex_configs.mmrad_sonar_poses[i].x);
+			geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i].y);
+			geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i].t));
+		}
+		if(PutMsg(this->sonar_id, client, PLAYER_MSGTYPE_GEOM, 
+        	  &geom, sizeof(geom), NULL))
+			PLAYER_ERROR("failed to PutReply");
+	}
+	MSG_END;
+
+	// Sonar bank 2 geom request
+	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, 1, PLAYER_SONAR_GET_GEOM_REQ)
+	{
+		player_sonar_geom_t geom;
+		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+		geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+		for (int i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
+		{
+			geom.poses[i][0] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].x);
+			geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].y);
+			geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].t));
+		}
+		if(PutMsg(this->sonar_id_2, client, PLAYER_MSGTYPE_GEOM, 
+    	    	  &geom, sizeof(geom), NULL))
+			PLAYER_ERROR("failed to PutReply");
+	}
+	MSG_END;
+
+	MSG(bumper_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_BUMPER_GET_GEOM_REQ)
+	{
+		player_bumper_geom_t geom;
+		geom.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
+		geom.bumper_count = htons((short) rflex_configs.bumper_count);
+		for (int i = 0; i < rflex_configs.bumper_count; i++)
+		{ 
+			geom.bumper_def[i].x_offset = htons((short) rflex_configs.bumper_def[i].x_offset); //mm
+			geom.bumper_def[i].y_offset = htons((short) rflex_configs.bumper_def[i].y_offset); //mm
+			geom.bumper_def[i].th_offset = htons((short) rflex_configs.bumper_def[i].th_offset); //deg
+			geom.bumper_def[i].length = htons((short) rflex_configs.bumper_def[i].length); //mm
+			geom.bumper_def[i].radius = htons((short) rflex_configs.bumper_def[i].radius); //mm
+		}
+
+		// Send
+		if(PutMsg(this->bumper_id, client, PLAYER_MSGTYPE_GEOM, 
+            		&geom, sizeof(geom), NULL))
+			PLAYER_ERROR("failed to PutReply");
+	}
+	MSG_END;
+
+	MSG(ir_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_IR_POSE_REQ)
+	{
+		// Assemble geometry structure for sending
+		//printf("sending geometry to client, posecount = %d\n", rflex_configs.ir_poses.pose_count);
+		player_ir_pose_req geom;
+		geom.subtype = PLAYER_IR_POSE_REQ;
+		geom.poses.pose_count = htons((short) rflex_configs.ir_poses.pose_count);
+		for (int i = 0; i < rflex_configs.ir_poses.pose_count; i++){
+			geom.poses.poses[i][0] = htons((short) rflex_configs.ir_poses.poses[i][0]); //mm
+			geom.poses.poses[i][1] = htons((short) rflex_configs.ir_poses.poses[i][1]); //mm
+			geom.poses.poses[i][2] = htons((short) rflex_configs.ir_poses.poses[i][2]); //deg
+		}
+
+		// Send
+		if(PutMsg(this->ir_id, client, PLAYER_MSGTYPE_GEOM, 
+        		  &geom, sizeof(geom), NULL))
+			PLAYER_ERROR("failed to PutReply");
+	}
+	MSG_END;
+
+	MSG(ir_id, PLAYER_MSGTYPE_REQ, 2, PLAYER_IR_POWER_REQ)
+	{
+		if (data[1] == 0)
+			rflex_ir_off(rflex_fd);
+		else
+			rflex_ir_on(rflex_fd);	
+	}
+	MSG_END;
+
+	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_set_odom_req_t), PLAYER_POSITION_SET_ODOM_REQ)
+	{
+		player_position_set_odom_req_t * set_odom_req = ((player_position_set_odom_req_t*)data);;
+		set_odometry((long) ntohl(set_odom_req->x),(long) ntohl(set_odom_req->y),(short) ntohs(set_odom_req->theta));	
+	}
+	MSG_END;
+
+	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_power_config_t), PLAYER_POSITION_MOTOR_POWER_REQ)
+	{
+		if(((player_position_power_config_t*)data)->value==0)
+			rflex_brake_on(rflex_fd);
+		else
+			rflex_brake_off(rflex_fd);
+	}
+	MSG_END;
+
+	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_velocitymode_config_t), PLAYER_POSITION_VELOCITY_MODE_REQ)
+	{
+		// Does nothing, needs to be implemented
+	}
+	MSG_END;
+
+	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_resetodom_config_t), PLAYER_POSITION_RESET_ODOM_REQ)
+	{
+		reset_odometry();
+	}
+	MSG_END;
+
+	MSG(position_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_POSITION_GET_GEOM_REQ)
+	{
+		// TODO : get values from somewhere.
+		player_position_geom_t geom;
+		geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+		//mm
+		geom.pose[0] = htons((short) (0));
+		geom.pose[1] = htons((short) (0));
+		//radians
+		geom.pose[2] = htons((short) (0));
+		//mm
+		geom.size[0] = htons((short) (rflex_configs.mm_length));
+		geom.size[1] = htons((short) (rflex_configs.mm_width));
+
+		if(PutMsg(this->position_id, client, 
+        		 PLAYER_MSGTYPE_GEOM, &geom, sizeof(geom), NULL))
+			PLAYER_ERROR("failed to PutReply");
+	}
+	MSG_END;
+
+	MSG(position_id, PLAYER_MSGTYPE_CMD, sizeof(player_position_cmd_t), 0xFF)
+	{
+		command = *reinterpret_cast<player_position_cmd_t *> (data);
+	}
+	MSG_END;
+
+	return -1;
 }
 
 RFLEX::RFLEX(ConfigFile* cf, int section)
@@ -375,9 +546,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   if(cf->ReadDeviceId(&(this->position_id), section, "provides", 
                       PLAYER_POSITION_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
-                          sizeof(player_position_data_t),
-                          sizeof(player_position_cmd_t), 1, 1) != 0)
+    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -386,10 +555,9 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
 
   // Do we create a sonar interface?
   if(cf->ReadDeviceId(&(this->sonar_id), section, "provides", 
-                      PLAYER_SONAR_CODE, -1, "sonar") == 0)
+                      PLAYER_SONAR_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->sonar_id, PLAYER_READ_MODE,
-                          sizeof(player_sonar_data_t), 0, 1, 1) != 0)
+    if(this->AddInterface(this->sonar_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -398,10 +566,9 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
 
   // Do we create a second sonar interface?
   if(cf->ReadDeviceId(&(this->sonar_id_2), section, "provides", 
-                      PLAYER_SONAR_CODE, -1, "sonar2") == 0)
+                      PLAYER_SONAR_CODE, -1, "bank2") == 0)
   {
-    if(this->AddInterface(this->sonar_id_2, PLAYER_READ_MODE,
-                          sizeof(player_sonar_data_t), 0, 1, 1, 1) != 0)
+    if(this->AddInterface(this->sonar_id_2, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -413,8 +580,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   if(cf->ReadDeviceId(&(this->ir_id), section, "provides", 
                       PLAYER_IR_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->ir_id, PLAYER_READ_MODE,
-                          sizeof(player_ir_data_t), 0, 1, 1) != 0)
+    if(this->AddInterface(this->ir_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -425,8 +591,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   if(cf->ReadDeviceId(&(this->bumper_id), section, "provides", 
                       PLAYER_BUMPER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->bumper_id, PLAYER_READ_MODE,
-                          sizeof(player_bumper_data_t), 0, 1, 1) != 0)
+    if(this->AddInterface(this->bumper_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -437,8 +602,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   if(cf->ReadDeviceId(&(this->power_id), section, "provides", 
                       PLAYER_POWER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->power_id, PLAYER_READ_MODE,
-                          sizeof(player_power_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->power_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -449,8 +613,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   if(cf->ReadDeviceId(&(this->aio_id), section, "provides", 
                       PLAYER_AIO_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->aio_id, PLAYER_READ_MODE,
-                          sizeof(player_aio_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->aio_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -461,8 +624,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   if(cf->ReadDeviceId(&(this->dio_id), section, "provides", 
                       PLAYER_DIO_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->dio_id, PLAYER_READ_MODE,
-                          sizeof(player_dio_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->dio_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -625,6 +787,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   rflex_configs.power_offset = cf->ReadInt(section, "rflex_power_offset",DEFAULT_RFLEX_POWER_OFFSET);
 
   rflex_fd = -1;
+  
 }
 
 int RFLEX::Setup(){
@@ -721,13 +884,12 @@ RFLEX::Main()
   reset_odometry();
 
 
-  player_position_cmd_t command;
-  unsigned char config[RFLEX_CONFIG_BUFFER_SIZE];
+  //unsigned char config[RFLEX_CONFIG_BUFFER_SIZE];
 
   static double mmPsec_speedDemand=0.0, radPsec_turnRateDemand=0.0;
   bool newmotorspeed, newmotorturn;
 
-  int config_size;
+ // int config_size;
   int i;
   int last_sonar_subscrcount = 0;
   int last_position_subscrcount = 0;
@@ -765,10 +927,10 @@ RFLEX::Main()
       rflex_stop_robot(rflex_fd,(int) (MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration)));
 
       //clear the buffers
-      player_position_cmd_t position_cmd;
-      memset(&position_cmd,0,sizeof(player_position_cmd_t));
-      PutCommand(this->position_id,(unsigned char*)(&position_cmd), 
-                 sizeof(position_cmd), NULL);
+//      player_position_cmd_t position_cmd;
+//      memset(&position_cmd,0,sizeof(player_position_cmd_t));
+//      PutCommand(this->position_id,(unsigned char*)(&position_cmd), 
+//                 sizeof(position_cmd), NULL);
     }
     //last user logged out
     else if(last_position_subscrcount && !(this->position_subscriptions))
@@ -780,382 +942,11 @@ RFLEX::Main()
     }
     last_position_subscrcount = this->position_subscriptions;
     
-    void* client;
-
-    // check if there is a new sonar config
-    if((config_size = GetConfig(this->sonar_id, &client, 
-                                (void*)config, sizeof(config), NULL)))
-    {
-      switch(config[0])
-      {
-        case PLAYER_SONAR_POWER_REQ:
-          /*
-           * 1 = enable sonars
-           * 0 = disable sonar
-           */
-          if(config_size != sizeof(player_sonar_power_config_t))
-          {
-            puts("Arg to sonar state change request wrong size; ignoring");
-            if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          player_sonar_power_config_t sonar_config;
-          sonar_config = *((player_sonar_power_config_t*)config);
-
-          if(sonar_config.value==0)
-            rflex_sonars_off(rflex_fd);
-          else
-            rflex_sonars_on(rflex_fd);
-
-          if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        case PLAYER_SONAR_GET_GEOM_REQ:
-          /* Return the sonar geometry. */
-
-          if(config_size != 1)
-          {
-            puts("Arg get sonar geom is wrong size; ignoring");
-            if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          player_sonar_geom_t geom;
-          geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-          geom.pose_count = htons((short) rflex_configs.sonar_1st_bank_end);
-          for (i = 0; i < rflex_configs.sonar_1st_bank_end; i++)
-          {
-            geom.poses[i][0] = htons((short) rflex_configs.mmrad_sonar_poses[i].x);
-            geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i].y);
-            geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i].t));
-          }
-
-          if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_ACK, 
-                      &geom, sizeof(geom), NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        default:
-          puts("Sonar got unknown config request");
-          if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-      }
-    }
-
-    // check if there is a new sonar 2 config
-    if((config_size = GetConfig(this->sonar_id_2, &client, 
-                                (void*)config, sizeof(config), NULL)))
-    {
-      switch(config[0])
-      {
-        case PLAYER_SONAR_POWER_REQ:
-          /*
-           * 1 = enable sonars
-           * 0 = disable sonar
-           */
-          if(config_size != sizeof(player_sonar_power_config_t))
-          {
-            puts("Arg to sonar state change request wrong size; ignoring");
-            if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          player_sonar_power_config_t sonar_config;
-          sonar_config = *((player_sonar_power_config_t*)config);
-
-          if(sonar_config.value==0)
-            rflex_sonars_off(rflex_fd);
-          else
-            rflex_sonars_on(rflex_fd);
-
-          if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        case PLAYER_SONAR_GET_GEOM_REQ:
-          /* Return the sonar geometry. */
-
-          if(config_size != 1)
-          {
-            puts("Arg get sonar geom is wrong size; ignoring");
-            if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          player_sonar_geom_t geom;
-          geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-          geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
-          for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
-          {
-            geom.poses[i][0] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].x);
-            geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].y);
-            geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].t));
-          }
-
-          if(PutReply(this->sonar_id_2, client, PLAYER_MSGTYPE_RESP_ACK, 
-                      &geom, sizeof(geom), NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        default:
-          puts("Sonar got unknown config request");
-          if(PutReply(this->sonar_id_2, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-      }
-    }
-
-
-    // check if there is a new bumper config
-    if((config_size = GetConfig(this->bumper_id, &client, 
-                                (void*)config, sizeof(config), NULL)))
-    {
-      switch(config[0])
-      {
-        case PLAYER_BUMPER_GET_GEOM_REQ:
-          /* Return the bumper geometry. */
-          if(config_size != 1)
-          {
-            puts("Arg get bumper geom is wrong size; ignoring");
-            if(PutReply(this->bumper_id, client, 
-                        PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          // Assemble geometry structure for sending
-          player_bumper_geom_t geom;
-          geom.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
-          geom.bumper_count = htons((short) rflex_configs.bumper_count);
-          for (i = 0; i < rflex_configs.bumper_count; i++)
-          {
-            geom.bumper_def[i].x_offset = htons((short) rflex_configs.bumper_def[i].x_offset); //mm
-            geom.bumper_def[i].y_offset = htons((short) rflex_configs.bumper_def[i].y_offset); //mm
-            geom.bumper_def[i].th_offset = htons((short) rflex_configs.bumper_def[i].th_offset); //deg
-            geom.bumper_def[i].length = htons((short) rflex_configs.bumper_def[i].length); //mm
-            geom.bumper_def[i].radius = htons((short) rflex_configs.bumper_def[i].radius); //mm
-          }
-
-          // Send
-          if(PutReply(this->bumper_id, client, PLAYER_MSGTYPE_RESP_ACK, 
-                      &geom, sizeof(geom), NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-          // Arent any request other than geometry
-        default:
-          puts("Bumper got unknown config request");
-          if(PutReply(this->bumper_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-      }
-    }
-
-    // check if there is a new ir config
-    if((config_size = GetConfig(this->ir_id, &client, 
-                                (void*)config, sizeof(config), NULL)))
-    {
-      switch(config[0])
-      {
-        case PLAYER_IR_POSE_REQ:
-          /* Return the ir geometry. */
-          if(config_size != 1)
-          {
-            puts("Arg get bumper geom is wrong size; ignoring");
-            if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          // Assemble geometry structure for sending
-          //printf("sending geometry to client, posecount = %d\n", rflex_configs.ir_poses.pose_count);
-          player_ir_pose_req geom;
-          geom.subtype = PLAYER_IR_POSE_REQ;
-          geom.poses.pose_count = htons((short) rflex_configs.ir_poses.pose_count);
-          for (i = 0; i < rflex_configs.ir_poses.pose_count; i++){
-            geom.poses.poses[i][0] = htons((short) rflex_configs.ir_poses.poses[i][0]); //mm
-            geom.poses.poses[i][1] = htons((short) rflex_configs.ir_poses.poses[i][1]); //mm
-            geom.poses.poses[i][2] = htons((short) rflex_configs.ir_poses.poses[i][2]); //deg
-          }
-
-          // Send
-          if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_ACK, 
-                      &geom, sizeof(geom), NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-        case PLAYER_IR_POWER_REQ:
-          /* Return the ir geometry. */
-          if(config_size != 1)
-          {
-            puts("Arg get ir geom is wrong size; ignoring");
-            if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          if (config[1] == 0)
-            rflex_ir_off(rflex_fd);
-          else
-            rflex_ir_on(rflex_fd);
-
-          // Send
-          if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-          // Arent any request other than geometry and power
-        default:
-          puts("Ir got unknown config request");
-          if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-      }
-    }
-
-    // check if there is a new position config
-    if((config_size = GetConfig(this->position_id, &client, 
-                                (void*)config, sizeof(config), NULL)))
-    {
-      switch(config[0])
-      {
-        case PLAYER_POSITION_SET_ODOM_REQ:
-          if(config_size != sizeof(player_position_set_odom_req_t))
-          {
-            puts("Arg to odometry set requests wrong size; ignoring");
-            if(PutReply(this->position_id, client, 
-                        PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          player_position_set_odom_req_t set_odom_req;
-          set_odom_req = *((player_position_set_odom_req_t*)config);
-          //in mm
-          set_odometry((long) ntohl(set_odom_req.x),(long) ntohl(set_odom_req.y),(short) ntohs(set_odom_req.theta));
-
-          if(PutReply(this->position_id, client, 
-                      PLAYER_MSGTYPE_RESP_ACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        case PLAYER_POSITION_MOTOR_POWER_REQ:
-          /* motor state change request 
-           *   1 = enable motors
-           *   0 = disable motors (default)
-           */
-          if(config_size != sizeof(player_position_power_config_t))
-          {
-            puts("Arg to motor state change request wrong size; ignoring");
-            if(PutReply(this->position_id, client, 
-                        PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          player_position_power_config_t power_config;
-          power_config = *((player_position_power_config_t*)config);
-
-          if(power_config.value==0)
-            rflex_brake_on(rflex_fd);
-          else
-            rflex_brake_off(rflex_fd);
-
-          if(PutReply(this->position_id, client, 
-                      PLAYER_MSGTYPE_RESP_ACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        case PLAYER_POSITION_VELOCITY_MODE_REQ:
-          /* velocity control mode:
-           *   0 = direct wheel velocity control (default)
-           *   1 = separate translational and rotational control
-           */
-          fprintf(stderr,"WARNING!!: only velocity mode supported\n");
-          if(config_size != sizeof(player_position_velocitymode_config_t))
-          {
-            puts("Arg to velocity control mode change request is wrong size; ignoring");
-            if(PutReply(this->position_id, client, 
-                        PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          player_position_velocitymode_config_t velmode_config;
-          velmode_config = *((player_position_velocitymode_config_t*)config);
-
-          if(PutReply(this->position_id, client, 
-                      PLAYER_MSGTYPE_RESP_ACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        case PLAYER_POSITION_RESET_ODOM_REQ:
-          /* reset position to 0,0,0: no args */
-          if(config_size != sizeof(player_position_resetodom_config_t))
-          {
-            puts("Arg to reset position request is wrong size; ignoring");
-            if(PutReply(this->position_id, client, 
-                        PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-          reset_odometry();
-
-          if(PutReply(this->position_id, client, 
-                      PLAYER_MSGTYPE_RESP_ACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        case PLAYER_POSITION_GET_GEOM_REQ:
-          /* Return the robot geometry. */
-          if(config_size != 1)
-          {
-            puts("Arg get robot geom is wrong size; ignoring");
-            if(PutReply(this->position_id, client, 
-                        PLAYER_MSGTYPE_RESP_NACK, NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          // TODO : get values from somewhere.
-          player_position_geom_t geom;
-          geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-          //mm
-          geom.pose[0] = htons((short) (0));
-          geom.pose[1] = htons((short) (0));
-          //radians
-          geom.pose[2] = htons((short) (0));
-          //mm
-          geom.size[0] = htons((short) (rflex_configs.mm_length));
-          geom.size[1] = htons((short) (rflex_configs.mm_width));
-
-          if(PutReply(this->position_id, client, 
-                      PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom), NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-        default:
-          puts("Position got unknown config request");
-          if(PutReply(this->position_id, client, 
-                      PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-      }
-    }
-
+	ProcessMessages();
 
     if(this->position_subscriptions || rflex_configs.use_joystick || rflex_configs.home_on_start)
     {
-      /* read the clients' commands from the common buffer */
-      GetCommand(this->position_id,(unsigned char*)&command, 
-                 sizeof(command), NULL);
 				 
-
       newmotorspeed = false;
       newmotorturn = false;
 
@@ -1193,8 +984,8 @@ RFLEX::Main()
       {
         rflex_set_velocity(rflex_fd,(long) MM2ARB_ODO_CONV(mmPsec_speedDemand),(long) RAD2ARB_ODO_CONV(radPsec_turnRateDemand),(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
         command.type = 255;
-        PutCommand(this->position_id,(unsigned char *)&command, 
-                   sizeof(command), NULL);
+//        PutCommand(this->position_id,(unsigned char *)&command, 
+//                   sizeof(command), NULL);
       }
     }
     else
@@ -1207,12 +998,12 @@ RFLEX::Main()
     update_everything(&rflex_data);
     pthread_testcancel();
 
-    PutData(this->position_id,
-            (void*)&rflex_data.position,
+    PutMsg(this->position_id,NULL,PLAYER_MSGTYPE_DATA,
+            (unsigned char*)&rflex_data.position,
             sizeof(player_position_data_t),
             NULL);
-    PutData(this->sonar_id,
-            (void*)&rflex_data.sonar,
+    PutMsg(this->sonar_id,NULL,PLAYER_MSGTYPE_DATA,
+            (unsigned char*)&rflex_data.sonar,
             sizeof(player_sonar_data_t),
             NULL);
 	// Here we check if the robot has changed Yaw...
@@ -1233,33 +1024,33 @@ RFLEX::Main()
           geom.poses[i][2] = htons((short) RAD2DEG_CONV(NewGeom[2]));
         }
 		PutMsg(this->sonar_id_2, NULL, PLAYER_MSGTYPE_GEOM,
-			(void*)&geom, sizeof(player_sonar_geom_t),
+			(unsigned char*)&geom, sizeof(player_sonar_geom_t),
 			NULL);
 	}
 	LastYaw = rflex_data.position.yaw;
 			
-    PutData(this->sonar_id_2,
-            (void*)&rflex_data.sonar2,
+    PutMsg(this->sonar_id_2,NULL,PLAYER_MSGTYPE_DATA,
+            (unsigned char*)&rflex_data.sonar2,
             sizeof(player_sonar_data_t),
             NULL);
-    PutData(this->ir_id,
-            (void*)&rflex_data.ir,
+    PutMsg(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,
+            (unsigned char*)&rflex_data.ir,
             sizeof(player_ir_data_t),
             NULL);
-    PutData(this->bumper_id,
-            (void*)&rflex_data.bumper,
+    PutMsg(this->bumper_id,NULL,PLAYER_MSGTYPE_DATA,
+            (unsigned char*)&rflex_data.bumper,
             sizeof(player_bumper_data_t),
             NULL);
-    PutData(this->power_id,
-            (void*)&rflex_data.power,
+    PutMsg(this->power_id,NULL,PLAYER_MSGTYPE_DATA,
+            (unsigned char*)&rflex_data.power,
             sizeof(player_power_data_t),
             NULL);
-    PutData(this->aio_id,
-            (void*)&rflex_data.aio,
+    PutMsg(this->aio_id,NULL,PLAYER_MSGTYPE_DATA,
+            (unsigned char*)&rflex_data.aio,
             sizeof(player_aio_data_t),
             NULL);
-    PutData(this->dio_id,
-            (void*)&rflex_data.dio,
+    PutMsg(this->dio_id,NULL,PLAYER_MSGTYPE_DATA,
+            (unsigned char*)&rflex_data.dio,
             sizeof(player_dio_data_t),
             NULL);
 

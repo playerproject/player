@@ -706,7 +706,7 @@ ClientManagerUDP::Read()
       // if the client ID (the first 2 bytes of reserved) is 0, then this 
       // must be a new client
       if((ntohs(hdr.stx) == PLAYER_STXX) &&
-         (ntohs(hdr.reserved >> 16) == 0) &&
+         (ntohs(hdr.sequence >> 16) == 0) &&
          (ntohs(hdr.type) == PLAYER_MSGTYPE_REQ) &&
          (ntohs(hdr.device) == PLAYER_PLAYER_CODE) &&
          (ntohs(hdr.device_index) == 0) &&
@@ -743,7 +743,7 @@ ClientManagerUDP::Read()
         hdr.type = htons(PLAYER_MSGTYPE_RESP_ACK);
         hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
         hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
-        hdr.reserved = htons(clientData->client_id) << 16;
+        hdr.sequence = htons(clientData->client_id) << 16;
 
         clientData->FillWriteBuffer((unsigned char*)&hdr,0,sizeof(hdr));
         if(clientData->Write(sizeof(hdr)) < 0)
@@ -764,7 +764,7 @@ ClientManagerUDP::Read()
       // is there an object for this client yet?
       for(int j=0; j<num_clients && clients[j]; j++)
       {
-        if(clients[j]->client_id == ntohs(hdr.reserved >> 16))
+        if(clients[j]->client_id == ntohs(hdr.sequence >> 16))
         {
           clientData=clients[j];
           break;

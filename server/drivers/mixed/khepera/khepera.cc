@@ -162,6 +162,96 @@ Khepera_Register(DriverTable *table)
   table->AddDriver("khepera", Khepera_Init);
 }
 
+int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data)
+{
+	// ir pose request
+	MSG(ir_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_IR_POSE_REQ)
+	{
+		player_ir_pose_req_t irpose;
+		irpose.subtype = PLAYER_IR_POSE_REQ;
+		irpose.poses = geometry->ir;
+
+		if(PutMsg(this->ir_id, client, PLAYER_MSGTYPE_GEOM, 
+            		&irpose, sizeof(irpose),NULL)) 
+		{
+    		PLAYER_ERROR("Khepera: failed to put reply");
+		}
+	}
+	MSG_END;
+
+	MSG(position_id, PLAYER_MSGTYPE_CMD, sizeof(player_position_cmd_t), 0xFF)
+	{
+		player_position_cmd_t * poscmd = reinterpret_cast<player_position_cmd_t *> (data);
+
+		if (this->velocity_mode) 
+		{
+			// then we are in velocity mode
+
+			// need to calculate the left and right velocities
+			int transvel = static_cast<int> (static_cast<int> (ntohl(poscmd->xspeed)) * geometry->encoder_res);
+			int rotvel = static_cast<int> (static_cast<int> (ntohl(poscmd->yawspeed)) * geometry->encoder_res * M_PI * ntokhs(geometry->position.size[0])/360.0);
+			int leftvel = transvel - rotvel;
+			int rightvel = transvel + rotvel;
+
+			// now we set the speed
+			if (this->motors_enabled) 
+				SetSpeed(leftvel,rightvel);
+			else 
+				SetSpeed(0,0);
+		} 
+		else
+			PLAYER_WARN("Khepera driver does not support position mode yet");
+	}
+	MSG_END;
+
+	MSG(position_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_POSITION_GET_GEOM_REQ)
+	{
+		if(PutMsg(position_id, client, PLAYER_MSGTYPE_GEOM, 
+			&geometry->position, sizeof(geometry->position),NULL)) 
+		{
+			PLAYER_ERROR("Khepera: failed to put reply");
+		}
+	}
+	MSG_END;
+
+	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_power_config_t), PLAYER_POSITION_MOTOR_POWER_REQ)
+	{
+		this->motors_enabled = ((player_position_power_config_t *)data)->value;
+	}
+	MSG_END;
+	
+	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_velocitymode_config_t), PLAYER_POSITION_VELOCITY_MODE_REQ)
+	{
+		/// Need to implement
+	}
+	MSG_END;
+	
+	MSG(position_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_POSITION_RESET_ODOM_REQ)
+	{
+		ResetOdometry();
+	}
+	MSG_END;
+	
+	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_set_odom_req_t), PLAYER_POSITION_SET_ODOM_REQ)
+	{
+		// note really implemented yet
+		player_position_set_odom_req_t *req = (player_position_set_odom_req_t *) data;
+#ifdef DEBUG_CONFIG
+		int x,y;
+		short theta;
+		x = ntohl(req->x);
+		y = ntohl(req->y);
+		theta = ntohs(req->theta);
+
+		printf("Khepera: SET_ODOM_REQ x=%d y=%d theta=%d\n", x, y, theta);
+#endif
+		ResetOdometry();
+	}
+	MSG_END;
+
+	return -1;
+}
+
 Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
 {
   // zero ids, so that we'll know later which interfaces were requested
@@ -290,6 +380,8 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   last_x_f=0;
   last_y_f=0;
   last_theta = 0.0;
+  
+  
 }
 
 short Khepera::khtons(short in)
@@ -414,7 +506,7 @@ Khepera::Main()
       // to do regression
       player_ir_data_t ir_data;
       memset(&ir_data,0,sizeof(player_ir_data_t));
-      PutData(this->ir_id,(unsigned char*)&ir_data,
+      PutMsg(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,(unsigned char*)&ir_data,
               sizeof(player_ir_data_t),NULL);
     }
     last_ir_subscrcount = this->ir_subscriptions;
@@ -438,256 +530,8 @@ Khepera::Main()
     }
     last_position_subscrcount = this->position_subscriptions;
 
-    if(this->position_subscriptions) 
-    {
-		// If we have subscriptions, then see if we have and pending messages
-		// and process them
-		MessageQueueElement * el;
-		while ((el=InQueue.Pop()))
-		{
-			player_msghdr * hdr = reinterpret_cast<player_msghdr *> (el->msg.GetData());
-			switch(hdr->type)
-			{
-				case PLAYER_MSGTYPE_CMD: 			
-					if (hdr->device == position_id.code)
-					{
-						player_position_cmd_t * poscmd = reinterpret_cast<player_position_cmd_t *> (&el->msg.GetData()[sizeof(player_msghdr)]);
 
-						if (this->velocity_mode) 
-						{
-							// then we are in velocity mode
-
-							// need to calculate the left and right velocities
-							int transvel = static_cast<int> (static_cast<int> (ntohl(poscmd->xspeed)) * geometry->encoder_res);
-							int rotvel = static_cast<int> (static_cast<int> (ntohl(poscmd->yawspeed)) * geometry->encoder_res * M_PI * ntokhs(geometry->position.size[0])/360.0);
-							int leftvel = transvel - rotvel;
-							int rightvel = transvel + rotvel;
-
-							// now we set the speed
-							if (this->motors_enabled) 
-						  		SetSpeed(leftvel,rightvel);
-							else 
-						  		SetSpeed(0,0);
-						} 
-					
-					
-					}
-					else
-						PLAYER_WARN1("Khepera driver did not expect message for device",0);
-					
-					break;
-				case PLAYER_MSGTYPE_REQ:
-				{
-					unsigned char * reqdata = &el->msg.GetData()[sizeof(player_msghdr)];
-					unsigned int reqsize = el->msg.GetSize() - sizeof(player_msghdr);
-					if (hdr->device == ir_id.code)
-					{
-					    // figure out which command
-						switch(reqdata[0]) 
-						{
-    						case PLAYER_IR_POSE_REQ: 
-    						{
-        						// request the pose of the IR sensors in robot-centric coords
-        						if (reqsize != 1) 
-        						{
-        							fprintf(stderr, "Khepera: argument to IR pose req wrong size (%d) should be (%d)\n", reqsize,sizeof(player_ir_pose_req_t));
-        						  	if(PutMsg(this->ir_id, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-        						  	{
-            							PLAYER_ERROR("Khepera: failed to put reply");
-            							break;
-        						  	}
-        						}
-
-        						player_ir_pose_req_t irpose;
-        						irpose.subtype = PLAYER_IR_POSE_REQ;
-        						irpose.poses = geometry->ir;
-
-        						if(PutMsg(this->ir_id, el->msg.Client, PLAYER_MSGTYPE_RESP_ACK, 
-                    						&irpose, sizeof(irpose),NULL)) 
-        						{
-        							PLAYER_ERROR("Khepera: failed to put reply");
-        							break;
-        						}
-    						}
-    						break;
-							
-    						default:
-    							fprintf(stderr, "Khepera: IR got unknown config\n");
-    							if(PutMsg(this->ir_id, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-    						  	{
-        							PLAYER_ERROR("Khepera: failed to put reply");
-    						  	}
-    						  	break;
-						}
-					} // END Khepera_IR IOCTLS //////////////
-					else if (hdr->device == ir_id.code)
-					{
-						// POSITION IOCTLS ////////////////
-						switch (reqdata[0]) 
-						{
-							case PLAYER_POSITION_GET_GEOM_REQ: 
-							{
-								// get geometry of robot
-								if (reqsize != 1) 
-								{
-									fprintf(stderr, "Khepera: get geom req is wrong size (%d)\n", reqsize);
-									if(PutMsg(this->position_id, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-									{
-										PLAYER_ERROR("Khepera: failed to put reply");
-									}
-									break;
-								}
-
-#ifdef DEBUG_CONFIG
-								printf("Khepera: POSITION_GET_GEOM_REQ\n");
-#endif
-
-								if(PutMsg(this->position_id, el->msg.Client, PLAYER_MSGTYPE_RESP_ACK, 
-									&geometry->position, sizeof(geometry->position),NULL)) 
-								{
-									PLAYER_ERROR("Khepera: failed to put reply");
-								}
-							}
-							break;
-
-							case PLAYER_POSITION_MOTOR_POWER_REQ: 
-							{
-								// change motor state
-								// 1 for on 
-								// 0 for off
-
-								if (reqsize != sizeof(player_position_power_config_t)) 
-								{
-									fprintf(stderr, "Khepera: pos motor power req got wrong size (%d)\n", reqsize);
-									if(PutMsg(this->position_id, el->msg.Client, 
-											PLAYER_MSGTYPE_RESP_NACK, NULL))
-									{
-										PLAYER_ERROR("Khepera: failed to put reply");
-									}
-									break;
-								}
-
-								player_position_power_config_t *mpowreq = (player_position_power_config_t *)reqdata;
-
-#ifdef DEBUG_CONFIG
-								printf("Khepera: MOTOR_POWER_REQ %d\n", mpowreq->value);
-#endif
-
-								if (mpowreq->value) 
-								{
-									this->motors_enabled = true;
-								} 
-								else 
-								{
-									this->motors_enabled = false;
-								}
-
-								if(PutMsg(this->position_id, el->msg.Client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-								{
-									PLAYER_ERROR("Khepera: failed to put reply");
-								}
-
-								printf("Khepera: put MOTOR POWER REQ\n");
-							}
-							break;
-
-							case PLAYER_POSITION_VELOCITY_MODE_REQ: 
-								// select method of velocity control
-								// 0 for direct velocity control (trans and rot applied directly)
-								// 1 for builtin velocity based heading PD controller
-								if (reqsize != sizeof(player_position_velocitymode_config_t)) 
-								{
-									fprintf(stderr, "Khepera: pos vel control req got wrong size (%d)\n", reqsize);
-									if(PutMsg(this->position_id, el->msg.Client, 
-            								  PLAYER_MSGTYPE_RESP_NACK, NULL))
-									{
-    									PLAYER_ERROR("Khepera: failed to put reply");
-									}
-									break;
-								}
-
-								if(PutMsg(this->position_id, el->msg.Client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-								{
-									PLAYER_ERROR("Khepera: failed to put reply");
-								}
-								break;
-
-							case PLAYER_POSITION_RESET_ODOM_REQ: 
-								// reset the odometry
-								if (reqsize != 1) 
-								{
-									fprintf(stderr, "Khepera: pos reset odom req got wrong size (%d)\n", reqsize);
-    								if(PutMsg(this->position_id, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-    								{
-    									PLAYER_ERROR("Khepera: failed to put reply");
-    								}
-    								break;
-								}
-
-#ifdef DEBUG_CONFIG
-								printf("Khepera: RESET_ODOM_REQ\n");
-#endif
-
-								ResetOdometry();
-
-								if(PutMsg(this->position_id, el->msg.Client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-								{
-									PLAYER_ERROR("Khepera: failed to put reply");
-								}
-								break;
-
-							case PLAYER_POSITION_SET_ODOM_REQ: 
-							{
-								// set the odometry to a given position
-								if (reqsize != sizeof(player_position_set_odom_req_t)) 
-								{
-									fprintf(stderr, "Khepera: pos set odom req got wrong size (%d)\n", reqsize);
-									if(PutMsg(this->position_id, el->msg.Client, 
-            								  PLAYER_MSGTYPE_RESP_NACK, NULL))
-									{
-    									PLAYER_ERROR("Khepera: failed to put reply");
-									}
-									break;
-								}
-
-								player_position_set_odom_req_t *req = (player_position_set_odom_req_t *) reqdata;
-#ifdef DEBUG_CONFIG
-								int x,y;
-								short theta;
-								x = ntohl(req->x);
-								y = ntohl(req->y);
-								theta = ntohs(req->theta);
-
-								printf("Khepera: SET_ODOM_REQ x=%d y=%d theta=%d\n", x, y, theta);
-#endif
-								ResetOdometry();
-
-								if(PutMsg(this->position_id, el->msg.Client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-								{
-									PLAYER_ERROR("Khepera: failed to put reply");
-								}
-							}
-							break;
-
-							default:
-								fprintf(stderr, "Khepera: Position got unknown config\n");
-								if(PutMsg(this->position_id, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-								{
-									PLAYER_ERROR("Khepera: failed to put reply");
-								}
-								break;
-						}
-					}
-					break;
-				}
-				default:
-					PLAYER_WARN1("Khepera driver did not expect message of type: %d", hdr->type);
-			}
-
-			delete el;
-		}
-
-    }
+	ProcessMessages();
     pthread_testcancel();
 
     // now lets get new data...
@@ -714,7 +558,7 @@ Khepera::UpdateData()
   UpdatePosData(&position_data);
 
   // put position data
-  PutData(this->position_id, 
+  PutMsg(this->position_id, NULL, PLAYER_MSGTYPE_DATA,
           (unsigned char *) &position_data,
           sizeof(player_position_data_t),
           NULL);
@@ -722,7 +566,7 @@ Khepera::UpdateData()
   UpdateIRData(&ir_data);
 
   // put ir data
-  PutData(this->ir_id, 
+  PutMsg(this->ir_id, NULL, PLAYER_MSGTYPE_DATA, 
           (unsigned char *)&ir_data,
           sizeof(player_ir_data_t),
           NULL);
@@ -834,7 +678,7 @@ Khepera::ResetOdometry()
 
   player_position_data_t data;
   memset(&data,0,sizeof(player_position_data_t));
-  this->PutData(this->position_id, (unsigned char *) &data, 
+  this->PutMsg(this->position_id, NULL,PLAYER_MSGTYPE_DATA, (unsigned char *) &data, 
                 sizeof(player_position_data_t), NULL);
 
   x=y=yaw=0;

@@ -106,6 +106,7 @@ class RFLEX : public Driver
     player_device_id_t power_id;
     player_device_id_t aio_id;
     player_device_id_t dio_id;
+	player_position_cmd_t command;
 
     int position_subscriptions;
     int sonar_subscriptions;
@@ -146,6 +147,10 @@ class RFLEX : public Driver
     virtual int Shutdown();
 
     static int joy_control;
+	
+	// MessageHandler
+	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data);	
+	
 };
 
 

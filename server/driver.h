@@ -43,6 +43,22 @@ extern bool experimental;
 // Forward declarations
 class CLock;
 class ConfigFile;
+class Driver;
+class ClientData;
+
+// Macros to provide helpers for message handling, see rflex.cc for usage
+// MSG(player_device_id DeviceID, MessageType, Expected data size, 
+//            request subtype (0xFF for none))
+// Make sure each MSG is matched with a MSG_END
+#define MSG(DeviceID, Type, Size, SubType) \
+	if(hdr->type == Type && hdr->device == DeviceID.code \
+			&& hdr->device_index == DeviceID.index \
+			&& hdr->size == Size \
+			&& (Size == 0 || SubType == 0xFF || SubType == data[0]))\
+	{ \
+		if ( hdr->size != Size ) {PLAYER_WARN2("Recieved message with incorrect size: %d expected, %d recieved\n",Size,hdr->size); return -1;} 
+	
+#define MSG_END return(1); }
 
 
 /// @brief Base class for all drivers.
@@ -70,7 +86,6 @@ class Driver
     pthread_cond_t cond;
     pthread_mutex_t condMutex;
     
-
   public:
     /// Default device id (single-interface drivers)
     player_device_id_t device_id;
@@ -95,7 +110,6 @@ class Driver
 
 	/// Queue for all incoming messages for this driver
 	MessageQueue InQueue; // queue for all incoming requests
-
 
   public:
 
@@ -201,6 +215,17 @@ class Driver
     /// driver thread exits.
     virtual void MainQuit(void);
 
+
+	/// Call this to automatically process messages using registered handler
+	/// Processes messages until no messages remaining in the queue or
+	/// a message with no handler is reached
+	void ProcessMessages();
+	
+	/// This function is called once for each message in the incoming queue
+	/// Reimplement it to provide message handling
+	/// Return -1 for NACK, 1 for ACK or 0 if the response has already been handled
+	virtual int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data) {return -1;};
+
   private:
 
     // Dummy main (just calls real main).  This is used to simplify
@@ -259,14 +284,14 @@ class Driver
     /// @param src Pointer to data source buffer.
     /// @param len Length of the data (bytes).
     /// @param timestamp Data timestamp; if NULL, the current server time will be used.
-    virtual void PutData(player_device_id_t id, unsigned char* src, size_t len,
-                        struct timeval* timestamp);
+//    virtual void PutData(player_device_id_t id, unsigned char* src, size_t len,
+//                        struct timeval* timestamp);
 
     /// @brief Write data to the driver (short form).
     ///
     /// Convenient short form of PutData() for single-interface drivers.
-    void PutData(unsigned char* src, size_t len, struct timeval* timestamp)
-      { PutData(this->device_id,src,len,timestamp); }
+//    void PutData(unsigned char* src, size_t len, struct timeval* timestamp)
+//      { PutData(this->device_id,src,len,timestamp); }
 
     /// @brief Read data from the driver.
     ///
@@ -415,6 +440,12 @@ class Driver
 
     /// Write generic msg to driver.
     virtual int PutMsg(player_device_id_t id, ClientData* client, 
+                         unsigned short type, 
+                         void* src, size_t len = 0,
+                         struct timeval* timestamp = NULL);
+
+    /// Write generic msg to driver, respond using the header given
+    virtual int PutMsg(player_msghdr * hdr, ClientData* client, 
                          unsigned short type, 
                          void* src, size_t len = 0,
                          struct timeval* timestamp = NULL);

@@ -77,8 +77,6 @@ class ClientData
     unsigned char *readbuffer;
     unsigned char *writebuffer;  // individual data messages are written here
     
-    // added this so Player can manage multiple robots in Stage mode
-    int port;
 
     // state machine for the read loop of this client
     player_read_state_t readstate;
@@ -164,6 +162,10 @@ class ClientData
     // includes writing fewer than len bytes) and -1 on error (e.g., if the 
     // other end of the socket was closed).
     virtual int Write(size_t len) = 0;
+
+    // added this so Player can manage multiple robots in Stage mode
+    int port;
+
 };
 
 class ClientDataTCP : public ClientData

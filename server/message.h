@@ -65,6 +65,7 @@ class Message
 		unsigned int GetSize() {return Size;};
 		
 		ClientData * Client;
+		
 	private:
 		unsigned char * Data;
 		unsigned int * RefCount;
@@ -99,8 +100,13 @@ class MessageQueue
 		MessageQueueElement * AddMessage(Message & msg);
 		MessageQueueElement * Pop();
 	private:
+		void Lock() {pthread_mutex_lock(lock);};
+		void Unlock() {pthread_mutex_unlock(lock);};
+
 		MessageQueueElement Head;
 		MessageQueueElement * pTail;
+
+		pthread_mutex_t * lock;
 };
 
 #endif

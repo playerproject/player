@@ -51,6 +51,9 @@
 #define PLAYER_MSGTYPE_RESP_ERR  ((uint16_t)7)
 #define PLAYER_MSGTYPE_GEOM      ((uint16_t)8)
 #define PLAYER_MSGTYPE_CONFIG    ((uint16_t)9)
+// use bitwise or of MSGTYPE_USER with your private message code for custom messages
+#define PLAYER_MSGTYPE_USER      ((uint16_t)128)
+
 
 /* strings to match the currently assigned devices (used for pretty-printing 
  * and command-line parsing) */
@@ -193,8 +196,8 @@ typedef struct player_msghdr
   uint32_t timestamp_sec;  
   /** Time when the current data/response was generated */
   uint32_t timestamp_usec; 
-  /** For extension */
-  uint32_t reserved;  
+  /** For keeping track of associated messages */
+  uint32_t sequence;  
   /** Size in bytes of the payload to follow */
   uint32_t size;  
 } __PACKED__ player_msghdr_t;

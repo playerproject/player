@@ -35,9 +35,11 @@
 #include <sys/time.h>
 #include <stdlib.h>
 
+#include <assert.h>
 #include <error.h>
 #include <device.h>
 #include <devicetable.h>
+
 #include <deviceregistry.h>
 #include <clientdata.h>
 #include <clientmanager.h>
@@ -46,7 +48,7 @@
 #include "message.h"
 extern PlayerTime* GlobalTime;
 
-extern DeviceTable* deviceTable;
+//extern DeviceTable* deviceTable;
 extern ClientData* clients[];
 extern ClientManager* clientmanager;
 extern char playerversion[];
@@ -357,7 +359,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         else
         {
 			// it's for another device.  hand it off.
-			printf("Perm: %d %d %d %d\n",hdr.type,PLAYER_MSGTYPE_CMD,CheckOpenPermissions(id),CheckWritePermissions(id));
+			//printf("Perm: %d %d %d %d\n",hdr.type,PLAYER_MSGTYPE_CMD,CheckOpenPermissions(id),CheckWritePermissions(id));
 
           	// make sure we've opened this one, in any mode
           	if((CheckOpenPermissions(id) && !(hdr.type == PLAYER_MSGTYPE_CMD)) || CheckWritePermissions(id))
@@ -369,7 +371,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 	      			// create the 'message' class and pass onto driver
 	      			Message New(hdr,payload,hdr.size, this);
               		driver->InQueue.AddMessage(New);
-                	requesttype = PLAYER_MSGTYPE_RESP_ACK;
+                	requesttype = 0;
             	}
             	else
             	{
@@ -394,7 +396,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 		reply_hdr.type = htons(requesttype);
 		reply_hdr.device = htons(hdr.device);
 		reply_hdr.device_index = htons(hdr.device_index);
-		reply_hdr.reserved = (uint32_t)0;
+		reply_hdr.sequence = (uint32_t)0;
 
 		/* if it was a player device list request... */
 		if(devlistrequest)
@@ -788,7 +790,7 @@ ClientData::BuildMsg(bool include_sync)
         // Prepare the header
         hdr.device = htons(thisub->id.code);
         hdr.device_index = htons(thisub->id.index);
-        hdr.reserved = 0;
+        hdr.sequence = 0;
 
         // Get the data
         size = driver->GetData(thisub->id,
@@ -843,7 +845,7 @@ ClientData::BuildMsg(bool include_sync)
     hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
     hdr.device = htons(PLAYER_PLAYER_CODE);
     hdr.device_index = htons(0);
-    hdr.reserved = 0;
+    hdr.sequence = 0;
     hdr.size = 0;
 
     if(GlobalTime->GetTime(&curr) == -1)
@@ -1013,7 +1015,7 @@ ClientDataTCP::Read()
         hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
         hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
         hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
-        hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
+        hdrbuffer.sequence = ntohl(hdrbuffer.sequence);
         hdrbuffer.size = ntohl(hdrbuffer.size);
 	
         // make sure it's not too big
@@ -1162,7 +1164,7 @@ ClientDataUDP::Read()
   hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
   hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
   hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
-  hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
+  hdrbuffer.sequence = ntohl(hdrbuffer.sequence);
   hdrbuffer.size = ntohl(hdrbuffer.size);
 
   memmove(readbuffer,readbuffer+sizeof(player_msghdr_t),
