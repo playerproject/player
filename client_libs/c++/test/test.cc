@@ -144,10 +144,6 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "laserbeacon") == 0 || strcmp(device, "all") == 0)
       test_lbd(&client, index);
     
-    // Comms device
-    if(strcmp(device, "comms") == 0 || strcmp(device, "all") == 0)
-      test_broadcast(&client, index);
-    
     // Bumper
     if(strcmp(device, "bumper") == 0 || strcmp(device, "all") == 0)
       test_bumper(&client, index);
