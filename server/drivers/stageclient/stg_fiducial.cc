@@ -78,35 +78,30 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
   
   stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
 
-  if( prop )
+  player_fiducial_data_t pdata;
+  memset( &pdata, 0, sizeof(pdata) );
+  
+  if( prop && prop->len > 0 )
     {
-      stg_fiducial_t *fids = (stg_fiducial_t*)prop->data;
+      stg_fiducial_t *fids = (stg_fiducial_t*)prop->data;    
+      size_t fcount = prop->len / sizeof(stg_fiducial_t);      
+      assert( fcount > 0 );
       
-      size_t fcount = prop->len / sizeof(stg_fiducial_t);
+      pdata.count = htons((uint16_t)fcount);
       
-      if( fcount > 0 )
+      for( int i=0; i<(int)fcount; i++ )
 	{
-	  player_fiducial_data_t pdata;
-	  memset( &pdata, 0, sizeof(pdata) );
-	  
-	  pdata.count = htons((uint16_t)fcount);
-	  
-	  for( int i=0; i<(int)fcount; i++ )
-	    {
-	      pdata.fiducials[i].id = htons((int16_t)fids[i].id);
-	      pdata.fiducials[i].pose[0] = htons((int16_t)(fids[i].range*1000.0));
-	      pdata.fiducials[i].pose[1] = htons((int16_t)RTOD(fids[i].bearing));
-	      pdata.fiducials[i].pose[2] = htons((int16_t)RTOD(fids[i].geom.a));	      
-	      // player can't handle per-fiducial size.
-	      // we leave uncertainty (upose) at zero
-	    }
-	  
-	  // publish this data
-	  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+	  pdata.fiducials[i].id = htons((int16_t)fids[i].id);
+	  pdata.fiducials[i].pose[0] = htons((int16_t)(fids[i].range*1000.0));
+	  pdata.fiducials[i].pose[1] = htons((int16_t)RTOD(fids[i].bearing));
+	  pdata.fiducials[i].pose[2] = htons((int16_t)RTOD(fids[i].geom.a));	      
+	  // player can't handle per-fiducial size.
+	  // we leave uncertainty (upose) at zero
 	}
     }
-  else
-    CDevice::PutData( NULL, 0, 0,0 ); // time gets filled in
+  
+  // publish this data
+  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
   
   // now inherit the standard data-getting behavior 
   return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
