@@ -226,8 +226,8 @@ AC_ARG_WITH(localization,
 [  --with-localization     Compile the localization driver],,with_localization=no)
 if test "x$with_localization" = "xyes"; then
   AC_DEFINE(INCLUDE_LOCALIZATION, 1, [[include the LOCALIZATION driver]])
-  LOCALIZATION_LIB="liblocalization.a"
-  LOCALIZATION_LIBPATH="drivers/localization/liblocalization.a"
+  LOCALIZATION_LIB="libmcl.a"
+  LOCALIZATION_LIBPATH="drivers/localization/mcl/libmcl.a"
 fi
 AC_SUBST(LOCALIZATION_LIB)
 AC_SUBST(LOCALIZATION_LIBPATH)
