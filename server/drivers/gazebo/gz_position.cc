@@ -39,8 +39,6 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
-
-
 #include "player.h"
 #include "device.h"
 #include "drivertable.h"
@@ -62,9 +60,8 @@ class GzPosition : public CDevice
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Data
-  public: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-                                 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+  // Check for new data
+  public: virtual void Update();
 
   // Commands
   public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
@@ -89,7 +86,7 @@ class GzPosition : public CDevice
   private: gz_position_t *iface;
 
   // Timestamp on last data update
-  private: uint32_t tsec, tusec;
+  private: double datatime;
 };
 
 
@@ -135,7 +132,7 @@ GzPosition::GzPosition(char* interface, ConfigFile* cf, int section)
   // Create an interface
   this->iface = gz_position_alloc();
 
-  this->tsec = this->tusec = 0;
+  this->datatime = -1;
 
   return;
 }
@@ -173,44 +170,35 @@ int GzPosition::Shutdown()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Data
-size_t GzPosition::GetData(void* client, unsigned char* dest, size_t len,
-                           uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+// Check for new data
+void GzPosition::Update()
 {
   player_position_data_t data;
   uint32_t tsec, tusec;
 
   gz_position_lock(this->iface, 1);
+
+  if (this->iface->data->time > this->datatime)
+  {
+    this->datatime = this->iface->data->time;
+    
+    tsec = (int) (this->iface->data->time);
+    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
-  data.xpos = htonl((int) (this->iface->data->odom_pose[0] * 1000));
-  data.ypos = htonl((int) (this->iface->data->odom_pose[1] * 1000));
-  data.yaw = htonl((int) (this->iface->data->odom_pose[2] * 180 / M_PI));
+    data.xpos = htonl((int) (this->iface->data->odom_pose[0] * 1000));
+    data.ypos = htonl((int) (this->iface->data->odom_pose[1] * 1000));
+    data.yaw = htonl((int) (this->iface->data->odom_pose[2] * 180 / M_PI));
 
-  data.xspeed = htonl((int) (this->iface->data->odom_vel[0] * 1000));
-  data.yspeed = htonl((int) (this->iface->data->odom_vel[1] * 1000));
-  data.yawspeed = htonl((int) (this->iface->data->odom_vel[2] * 180 / M_PI));
+    data.xspeed = htonl((int) (this->iface->data->odom_vel[0] * 1000));
+    data.yspeed = htonl((int) (this->iface->data->odom_vel[1] * 1000));
+    data.yawspeed = htonl((int) (this->iface->data->odom_vel[2] * 180 / M_PI));
 
-  assert(len >= sizeof(data));
-  memcpy(dest, &data, sizeof(data));
-
-  tsec = (int) (this->iface->data->time);
-  tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    this->PutData(&data, sizeof(data), tsec, tusec);    
+  }
 
   gz_position_unlock(this->iface);
 
-  // signal that new data is available
-  if (tsec != this->tsec || tusec != this->tusec)
-    DataAvailable();
-
-  this->tsec = tsec;
-  this->tusec = tusec;
-
-  if (timestamp_sec)
-    *timestamp_sec = tsec;
-  if (timestamp_usec)
-    *timestamp_usec = tusec;
-    
-  return sizeof(data);
+  return;
 }
 
 

@@ -468,7 +468,7 @@ int VFH_Class::GetLaser() {
   player_laser_data_t data;
   uint32_t timesec, timeusec;
   double time;
-  double r, b, db;
+  double r, b, db, range_res;
 
   // Get the laser device data.
   size = this->laser->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
@@ -490,6 +490,7 @@ int VFH_Class::GetLaser() {
 
   b = ((int16_t) ntohs(data.min_angle)) / 100.0;
   db = ((int16_t) ntohs(data.resolution)) / 100.0;
+  range_res = ((int16_t) ntohs(data.range_res));
 
   this->laser_count = ntohs(data.range_count);
   assert(this->laser_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
@@ -499,8 +500,8 @@ int VFH_Class::GetLaser() {
     this->laser_ranges[i][0] = -1;
   }
 
-// what are units of min_angle and resolution
-//printf("LASER %d %d\n", (int)b, (int)db);
+  // what are units of min_angle and resolution
+  //printf("LASER %d %d\n", (int)b, (int)db);
 
   b += 90;
   for (i = 0; i < this->laser_count; i++)
@@ -509,7 +510,7 @@ int VFH_Class::GetLaser() {
 //    r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
 //if ((i % 20) == 0) {
 //printf("b: %f\n", b);
-    r = ((int16_t) ntohs(data.ranges[i]));
+    r = ((int16_t) ntohs(data.ranges[i])) * range_res;
     this->laser_ranges[(int)rint(b * 2)][0] = r;
     this->laser_ranges[(int)rint(b * 2)][1] = b;
 //}
@@ -643,34 +644,37 @@ void VFH_Class::Main()
   sleeptime.tv_sec = 0;
   sleeptime.tv_nsec = 1000000L;
 
-  //this->odom->Wait();
+  // Wait till we get new odometry data; this may block indefinitely
+  // on older versions of Stage and Gazebo.
+  this->odom->Wait();
+
   this->GetOdom();
   if(this->truth)
     this->GetTruth();
 
   while (true)
   {
+    // Wait till we get new odometry data; this may block indefinitely
+    // on older versions of Stage and Gazebo.
+    this->odom->Wait();
+
     // Sleep for 1ms (will actually take longer than this).
-    nanosleep(&sleeptime, NULL);
-//    puts("foo");
+    //nanosleep(&sleeptime, NULL);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
-    
-    // Block pending new odometric data
-    //this->odom->Wait();
-    //printf("got odom\n");
 
     if(this->truth)
     {
       // first get odometry, which fills in odom_pose, among other things
       this->GetOdom();
+      
       // now get truth, which will overwrite odom_pose
       if(this->GetTruth() == 0)
         continue;
     }
     else
-    {
+    {        
       // Get new odometric data
       if (this->GetOdom() == 0)
         continue;
@@ -695,7 +699,7 @@ void VFH_Class::Main()
     {
       Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]), (goal_x - this->odom_pose[0]))
         * 180 / M_PI - this->odom_pose[2];
-
+      
       while (Desired_Angle > 360.0)
       {
         Desired_Angle -= 360.0;
@@ -704,6 +708,8 @@ void VFH_Class::Main()
       {
         Desired_Angle += 360.0;
       }
+
+      //printf("dist %.3f angle %.3f\n", dist, Desired_Angle);
 
       // Get new laser data.
       this->GetLaser();

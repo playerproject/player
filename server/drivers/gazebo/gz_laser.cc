@@ -60,9 +60,8 @@ class GzLaser : public CDevice
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Data
-  public: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-                                 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+  // Check for new data
+  public: virtual void Update();
 
   // Commands
   public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
@@ -80,7 +79,7 @@ class GzLaser : public CDevice
   private: gz_laser_t *iface;
 
   // Timestamp on last data update
-  private: uint32_t tsec, tusec;
+  private: double datatime;
 };
 
 
@@ -126,7 +125,7 @@ GzLaser::GzLaser(char* interface, ConfigFile* cf, int section)
   // Create an interface
   this->iface = gz_laser_alloc();
   
-  this->tsec = this->tusec = 0;
+  this->datatime = -1;
 
   return;
 }
@@ -165,9 +164,8 @@ int GzLaser::Shutdown()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Data
-size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
-                        uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+// Check for new data
+void GzLaser::Update()
 {
   int i;
   player_laser_data_t data;
@@ -176,46 +174,40 @@ size_t GzLaser::GetData(void* client, unsigned char* dest, size_t len,
   
   gz_laser_lock(this->iface, 1);
 
-  // Pick the rage resolution to use (1, 10, 100)
-  if (this->iface->data->max_range < 8.192)
-    range_res = 1.0;
-  else if (this->iface->data->max_range < 81.92)
-    range_res = 10.0;
-  else
-    range_res = 100.0;
-  
-  data.min_angle = htons((int) (this->iface->data->min_angle * 100 * 180 / M_PI));
-  data.max_angle = htons((int) (this->iface->data->max_angle * 100 * 180 / M_PI));
-  data.resolution = htons((int) (this->iface->data->res_angle * 100 * 180 / M_PI));
-  data.range_res = htons((int) range_res);
-  data.range_count = htons((int) (this->iface->data->range_count));
-  
-  for (i = 0; i < this->iface->data->range_count; i++)
+  if (this->iface->data->time > this->datatime)
   {
-    data.ranges[i] = htons((int) (this->iface->data->ranges[i] * 1000 / range_res));
-    data.intensity[i] = (uint8_t) (int) this->iface->data->intensity[i];
+    this->datatime = this->iface->data->time;
+    tsec = (int) (this->iface->data->time);
+    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+
+    // Pick the rage resolution to use (1, 10, 100)
+    if (this->iface->data->max_range <= 8.192)
+      range_res = 1.0;
+    else if (this->iface->data->max_range < 81.92)
+      range_res = 10.0;
+    else
+      range_res = 100.0;
+
+    //printf("range res = %f %f\n", range_res, this->iface->data->max_range);
+  
+    data.min_angle = htons((int) (this->iface->data->min_angle * 100 * 180 / M_PI));
+    data.max_angle = htons((int) (this->iface->data->max_angle * 100 * 180 / M_PI));
+    data.resolution = htons((int) (this->iface->data->res_angle * 100 * 180 / M_PI));
+    data.range_res = htons((int) range_res);
+    data.range_count = htons((int) (this->iface->data->range_count));
+  
+    for (i = 0; i < this->iface->data->range_count; i++)
+    {
+      data.ranges[i] = htons((int) (this->iface->data->ranges[i] * 1000 / range_res));
+      data.intensity[i] = (uint8_t) (int) this->iface->data->intensity[i];
+    }
+
+    this->PutData(&data, sizeof(data), tsec, tusec);
   }
-
-  assert(len >= sizeof(data));
-  memcpy(dest, &data, sizeof(data));
-
-  tsec = (int) (this->iface->data->time);
-  tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
   gz_laser_unlock(this->iface);
 
-  // signal that new data is available
-  if (tsec != this->tsec || tusec != this->tusec)
-    DataAvailable();
-  this->tsec = tsec;
-  this->tusec = tusec;
-
-  if (timestamp_sec)
-    *timestamp_sec = tsec;
-  if (timestamp_usec)
-    *timestamp_usec = tusec;
-
-  return sizeof(data);
+  return;
 }
 
 
