@@ -11,8 +11,6 @@ noinst_PROGRAMS = randomwalk \
                   example_from_manual \
 	          say \
 	          grip \
-	          forage \
-	          multilogger \
                   stress \
                   pherobot \
 		  audioread \
@@ -21,6 +19,9 @@ noinst_PROGRAMS = randomwalk \
                   audiodspread \
 		  lookupport \
 	          vfh
+
+#multilogger
+#forage
 
 waveformread_SOURCES = waveformread.cc
 audioread_SOURCES = audioread.cc
@@ -35,8 +36,8 @@ laserobstacleavoid_SOURCES = laserobstacleavoid.cc
 example_from_manual_SOURCES = example_from_manual.cc
 say_SOURCES = say.cc
 grip_SOURCES = grip.cc
-forage_SOURCES = forage.cc
-multilogger_SOURCES = multilogger.cc
+#forage_SOURCES = forage.cc
+#multilogger_SOURCES = multilogger.cc
 stress_SOURCES = stress.cc
 pherobot_SOURCES = pherobot.cc
 lookupport_SOURCES = lookupport.cc

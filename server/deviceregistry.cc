@@ -47,7 +47,7 @@ void GarminNMEA_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_SEGWAYRMP
-void SegwayRMP_Register(DriverTable* table);
+void SegwayRMPPosition_Register(DriverTable* table);
 //void RMPPower_Register(DriverTable *table);
 #endif
 
@@ -248,6 +248,10 @@ register_devices()
 {
 #ifdef INCLUDE_GARMINNMEA
   GarminNMEA_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SEGWAYRMP
+  SegwayRMPPosition_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKLMS200
