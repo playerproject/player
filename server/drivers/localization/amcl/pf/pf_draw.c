@@ -6,13 +6,16 @@
  * CVS: $Id$
  *************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef INCLUDE_RTKGUI
+
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "rtk.h"
 
@@ -123,3 +126,5 @@ void pf_draw_stats(pf_t *pf, rtk_fig_t *fig)
   
   return;
 }
+
+#endif
