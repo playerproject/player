@@ -65,6 +65,8 @@ int main(int argc, char **argv)
   PlayerClient robot(host,port);
   PositionProxy pp(&robot,0,'w');
   LaserProxy lp(&robot,0,'r');
+
+  printf("%s\n",robot.conn.banner);
   
   /* maybe turn on the motors */
   if(turnOnMotors && pp.SetMotorState(1))
