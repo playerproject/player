@@ -640,6 +640,7 @@ int main( int argc, char *argv[] )
     /* got conn */
     if(num_threads.Value() < MAXNUMTHREADS)
     {
+      printf("** New client accepted on socket %d **\n", clientData->socket);
       if(pthread_create(&clientData->writeThread, NULL, client_writer, clientData))
       {
         perror("pthread_create(3) failed");

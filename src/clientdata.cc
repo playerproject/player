@@ -38,9 +38,6 @@
 #include <counter.h>
 #include <packet.h>
 
-// this is the biggest single incoming message that the server
-// will take.
-
 extern CDeviceTable* deviceTable;
 extern CCounter num_threads;
 extern CClientData* clients[];
@@ -293,6 +290,7 @@ CClientData::~CClientData()
   if (writeThread) num_threads-=1;
 
   if (socket) close(socket);
+  printf("** Killing client on socket %d **\n", socket);
 
   if (readThread && writeThread) 
   {
@@ -329,7 +327,6 @@ CClientData::~CClientData()
 
 void CClientData::RemoveRequests() 
 {
-  //int i;
   CDeviceSubscription* thissub = requested;
   CDeviceSubscription* tmpsub;
 
@@ -486,7 +483,7 @@ CClientData::FindPermission(unsigned short code, unsigned short index)
     if((thisub->code == code) && (thisub->index == index))
       return(thisub->access);
   }
-  return( 'e' );
+  return('e');
 }
 
 bool CClientData::CheckPermissions(unsigned short code, unsigned short index)
