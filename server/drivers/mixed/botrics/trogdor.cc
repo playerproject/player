@@ -227,6 +227,8 @@ Trogdor::Setup()
     return(-1);
   }
 
+  UpdateOdom(ltics,rtics);
+
   /* ok, we got data, so now set NONBLOCK, and continue */
   if((flags = fcntl(this->fd, F_GETFL)) < 0)
   {
@@ -684,6 +686,8 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
   index += 4;
   *lvel = BytesToInt32(buf+index);
 
+  //printf("ltics: %d rtics: %d\n", *ltics, *rtics);
+
   //puts("got good odom packet");
 
   return(0);
@@ -717,52 +721,77 @@ Trogdor::UpdateOdom(int ltics, int rtics)
 {
   int ltics_delta, rtics_delta;
   double l_delta, r_delta, a_delta, d_delta;
+  int max_tics;
+  static struct timeval lasttime;
+  struct timeval currtime;
+  double timediff;
 
   if(!this->odom_initialized)
   {
-    last_ltics = ltics;
-    last_rtics = rtics;
+    this->last_ltics = ltics;
+    this->last_rtics = rtics;
+    gettimeofday(&lasttime,NULL);
     this->odom_initialized = true;
     return;
   }
-
-  ltics_delta = ComputeTickDiff(last_ltics,ltics);
-  rtics_delta = ComputeTickDiff(last_rtics,rtics);
-
-  l_delta = ltics_delta * TROGDOR_M_PER_TICK;
-  r_delta = rtics_delta * TROGDOR_M_PER_TICK;
-
-  a_delta = (r_delta - l_delta) / TROGDOR_AXLE_LENGTH;
-  d_delta = (l_delta + r_delta) / 2.0;
-
-  //printf("ltics: %d\n", ltics);
-  //printf("rtics: %d\n", rtics);
-
-  // account for transient errors in tick values by ignoring changes that
-  // suggest that we've move farther than physically possible (seems that we 
-  // sometimes get zeros)
-  if(d_delta > 100*(TROGDOR_MAX_WHEELSPEED * (TROGDOR_DELAY_US/1e6)))
-  {
-    PLAYER_WARN("Invalid odometry change (too big); ignoring");
-    return;
-  }
   
-  // MAJOR HACK! The check above is too strict, for some reason.  Since the
-  // problem comes from one or the other encoder returning 0 ticks (always
+  // MAJOR HACK! 
+  // The problem comes from one or the other encoder returning 0 ticks (always
   // the left, I think), we'll just throw out those readings.  Shouldn't have
   // too much impact.
   if(!ltics || !rtics)
   {
-    PLAYER_WARN("Invalid odometry change (zeros); ignoring");
+    PLAYER_WARN("Invalid odometry reading (zeros); ignoring");
     return;
   }
+
+  //ltics_delta = ComputeTickDiff(last_ltics,ltics);
+  //rtics_delta = ComputeTickDiff(last_rtics,rtics);
+  ltics_delta = ltics - this->last_ltics;
+  rtics_delta = rtics - this->last_rtics;
+
+  // mysterious rollover code borrowed from CARMEN
+/*
+  if(ltics_delta > SHRT_MAX/2)
+    ltics_delta += SHRT_MIN;
+  if(ltics_delta < -SHRT_MIN/2)
+    ltics_delta -= SHRT_MIN;
+  if(rtics_delta > SHRT_MAX/2)
+    rtics_delta += SHRT_MIN;
+  if(rtics_delta < -SHRT_MIN/2)
+    rtics_delta -= SHRT_MIN;
+*/
+
+  gettimeofday(&currtime,NULL);
+  timediff = (currtime.tv_sec + currtime.tv_usec/1e6)-
+             (lasttime.tv_sec + lasttime.tv_usec/1e6);
+  max_tics = (int)rint(TROGDOR_MAX_WHEELSPEED / TROGDOR_M_PER_TICK / timediff);
+  lasttime = currtime;
+
+  //printf("ltics: %d\trtics: %d\n", ltics,rtics);
+  //printf("ldelt: %d\trdelt: %d\n", ltics_delta, rtics_delta);
+  //printf("maxtics: %d\n", max_tics);
+
+  if(abs(ltics_delta) > max_tics || abs(rtics_delta) > max_tics)
+  {
+    PLAYER_WARN("Invalid odometry change (too big); ignoring");
+    return;
+  }
+
+  l_delta = ltics_delta * TROGDOR_M_PER_TICK;
+  r_delta = rtics_delta * TROGDOR_M_PER_TICK;
+
+
+  a_delta = (r_delta - l_delta) / TROGDOR_AXLE_LENGTH;
+  d_delta = (l_delta + r_delta) / 2.0;
+
 
   this->px += d_delta * cos(this->pa);
   this->py += d_delta * sin(this->pa);
   this->pa += a_delta;
   this->pa = NORMALIZE(this->pa);
   
-  printf("trogdor: pose: %f,%f,%f\n", this->px,this->py,RTOD(this->pa));
+  //printf("trogdor: pose: %f,%f,%f\n", this->px,this->py,RTOD(this->pa));
 
   this->last_ltics = ltics;
   this->last_rtics = rtics;
