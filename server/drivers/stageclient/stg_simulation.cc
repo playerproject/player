@@ -130,7 +130,14 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
   printf( "    Connecting to Stage at %s:%d... ", 
 	  stage_host, stage_port ); 
   fflush(stdout); 
-  stg_client_connect( Stage1p4::stage_client, (char*)stage_host, stage_port );
+
+  if( stg_client_connect( Stage1p4::stage_client, 
+			  (char*)stage_host, stage_port ) )
+    {
+      PLAYER_ERROR( "Failed to connect to a Stage server. Exiting." );
+      exit( -1 );
+    }
+
   puts( " done." );
   
   //now we push the cache up into the server
