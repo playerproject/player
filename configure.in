@@ -123,7 +123,7 @@ if test "PKG_CONFIG" = "no"; then
   dnl if pkg-config is not available, define its autoconf macro to invoke
   dnl the given 'action-if-not-found' (4th arg), to act as if we looked and 
   dnl couldn't find the package
-  AC_DEFUN([PKG_CHECK_MODULES],$4)
+  define([PKG_CHECK_MODULES],$4)
 fi
 
 dnl Set up RTK2 for the various GUIs 
