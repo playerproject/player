@@ -6,10 +6,28 @@
  * 
  * $Id$
  */
+
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
+#if HAVE_TERMIO_H
+  #include <termio.h>
+  #define KEYBOARD_SUPPORT 1
+#else
+  #define KEYBOARD_SUPPORT 0
+#endif
+
+#if HAVE_LINUX_JOYSTICK_H
+  #include <linux/joystick.h>
+  #define JOYSTICK_SUPPORT 1
+#else
+  #define JOYSTICK_SUPPORT 0
+#endif
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <termio.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -23,14 +41,15 @@
 #include <list>
 
 #define USAGE \
-  "USAGE: joystick [options] <host:port> [<host:port>] ... \n" \
+  "USAGE: playerjoy [options] <host:port> [<host:port>] ... \n" \
   "       -v   : verbose mode; print Player device state on stdout\n" \
   "       -3d  : connect to position3d interface (instead of position)\n" \
   "       -c   : continuously send commands\n" \
   "       -n   : dont send commands or enable motors (debugging)\n" \
   "       -k   : use keyboard control\n" \
+  "       -p   : print out speeds on the console\n" \
   "       -udp : use UDP instead of TCP\n" \
-  "       -speed     : maximum linear speed (mm/sec)\n" \
+  "       -speed     : maximum linear speed (m/sec)\n" \
   "       -turnspeed : maximum angular speed (deg/sec)\n" \
   "       <host:port> : connect to a Player on this host and port\n"
 
@@ -50,6 +69,9 @@
 #define KEYCODE_C 0x63
 #define KEYCODE_U 0x75
 #define KEYCODE_O 0x6F
+#define KEYCODE_M 0x6d
+#define KEYCODE_COMMA 0x2c
+#define KEYCODE_PERIOD 0x2e
 
 #define COMMAND_TIMEOUT_SEC 0.2
 
@@ -66,6 +88,9 @@ bool always_command = false;
 
 // are we in debug mode (dont send commands)?
 bool debug_mode = false;
+
+// do we print out speeds?
+bool print_speeds = false;
 
 // use the keyboard instead of the joystick?
 bool use_keyboard = false;
@@ -89,12 +114,6 @@ private:
 
   struct timeval lastcommand;
 
-  /*
-  PtzProxy *ptzp;
-
-  int pan, tilt;
-  */
-
 public:
   Client(char* host, int port ); // constructor
   
@@ -104,21 +123,6 @@ public:
 
 // type for a list of pointers to Client objects
 typedef std::list<Client*> ClientList;
-
-/////////////////////////////////////////////////////////////////////
-// this is the event structure from the linux joystick driver v2.0.0
-//
-
-struct js_event {
-  uint32_t time;     /* event timestamp in milliseconds */
-  int16_t value;    /* value */
-  uint8_t type;      /* event type */
-  uint8_t number;    /* axis/button number */
-};
-
-#define JS_EVENT_BUTTON         0x01    /* button pressed/released */
-#define JS_EVENT_AXIS           0x02    /* joystick moved */
-#define JS_EVENT_INIT           0x80    /* initial state of device */
 
 #define XAXIS 0
 #define YAXIS 1
@@ -145,24 +149,25 @@ double max_turn = DTOR(60); // rad/second
 
 // normalizing macros
 #define AXIS_MAX            32767.0
-#define PERCENT(X)          (X * 100.0 / AXIS_MAX)
+#define PERCENT(X)          ((X) * 100.0 / AXIS_MAX)
 #define PERCENT_POSITIVE(X) (((PERCENT(X)) + 100.0) / 2.0)
-#define KNORMALIZE(X)       (((X * 1024.0 / AXIS_MAX)+1024.0) / 2.0)
-#define NORMALIZE_SPEED(X)  ( X * max_speed / AXIS_MAX )
-#define NORMALIZE_TURN(X)  ( X * max_turn / AXIS_MAX )
+#define KNORMALIZE(X)       ((((X) * 1024.0 / AXIS_MAX)+1024.0) / 2.0)
+#define NORMALIZE_SPEED(X)  ( (X) * max_speed / AXIS_MAX )
+#define NORMALIZE_TURN(X)  ( (X) * max_turn / AXIS_MAX )
 
 struct controller
 {
-  double speed, turnrate; //pan, tilt, zoom;
+  double speed, turnrate;
   bool dirty; // use this flag to determine when we need to send commands
 };
 
 // open a joystick device and read from it, scaling the values and
 // putting them into the controller struct
-void joystick_handler(struct controller* cont)
+void*
+joystick_handler(void* arg)
 {
   // cast to a recognized type
-  //struct controller* cont = (struct controller*)arg;
+  struct controller* cont = (struct controller*)arg;
 
   struct js_event event;
   
@@ -199,30 +204,12 @@ void joystick_handler(struct controller* cont)
 
     switch( event.type )
     {
-      /*
-      case JS_EVENT_BUTTON:
-        if(event.number == 2 && buttons_state)
-          cont->pan += PAN_SPEED;
-        else if(event.number == 3 && buttons_state)
-          cont->pan -= PAN_SPEED;
-        else if(event.number == 2 || event.number == 3)
-          cont->pan = 0;
-        break;
-        */
-        
       case JS_EVENT_AXIS:
       {
-        //puts( "AXIS" );
-
         switch( event.number )
-	      {
+        {
           // SIDE-TO-SIDE
           case XAXIS:
-            //if( event.value > 0 ) 
-            //puts( "turn right" );
-            //else
-            //puts( "turn left" );
-
             // set the robot turn rate
             cont->turnrate = NORMALIZE_TURN(-event.value);
             cont->dirty = true;
@@ -230,92 +217,33 @@ void joystick_handler(struct controller* cont)
 
             // FORWARD-AND-BACK
           case YAXIS:
-            //if( event.value > 0 ) 
-            //puts( "forwards" );
-            //else
-            //puts( "backwards" );
-
             // set the robot velocity
             cont->speed = NORMALIZE_SPEED(-event.value);
             cont->dirty = true;
-
             break;
-		
-            /*
-            // TWISTING
-          case XAXIS2:
-          case YAXIS2:
-            //if( event.value > 0 ) 
-            //puts( "zoom out" );
-            //else
-            //puts( "zoom in" );
-            cont->zoom = KNORMALIZE(-event.value);
-            cont->dirty = true;
-
-            break;
-            */
-
-            /*
-              // HAT UP DOWN
-              case TILT:
-              if( event.value > 0 ) 
-              puts( "tilt down" );
-              else if( event.value < 0 ) 
-              puts( "tilt up" );
-              else
-              puts( "stop tilt" );
-		
-              if( event.value > 0 )
-              cont->tilt = -TILT_SPEED;
-              else if( event.value < 0 )
-              cont->tilt = TILT_SPEED;
-              else
-              cont->tilt = 0;
-	
-              //cont->dirty = true;
-	
-              break;
-		
-              // HAT LEFT RIGHT
-              case PAN:
-              if( event.value > 0 ) 
-              puts( "pan right" );
-              else if( event.value < 0 ) 
-              puts( "pan left" );
-              else
-              puts( "stop pan" );
-	
-              if( event.value > 0 )
-              cont->pan = -PAN_SPEED;
-              else if( event.value < 0 )
-              cont->pan = PAN_SPEED;
-              else
-              cont->pan = 0;
-		
-              //cont->dirty = true;
-	
-              break;
-            */
-	      }
+        }
       }	  
       break;
     }
-      
-
   }
+  return(NULL);
 }
 
 // read commands from the keyboard 
-void keyboard_handler(struct controller* cont )
+void*
+keyboard_handler(void* arg)
 {
   int kfd = 0;
   char c;
-  double max_tv = 0.5;
-  double max_rv = DTOR(10.0);
+  double max_tv = max_speed;
+  double max_rv = max_turn;
   struct termio cooked, raw;
 
-	int speed,turn;
-	speed = turn = 0;
+  int speed=0;
+  int turn=0;
+
+  // cast to a recognized type
+  struct controller* cont = (struct controller*)arg;
 
   // get the console in raw mode
   ioctl(kfd, TCGETA, &cooked);
@@ -328,21 +256,19 @@ void keyboard_handler(struct controller* cont )
   puts("Reading from keyboard");
   puts("---------------------------");
   puts("Moving around:");
-  puts("i : forward");
-  puts("j : left");
-  puts("l : right");
-  puts("k : backward");
-  puts("u : stop turn");
-  puts("o : stop movement (but still turn)");
-  puts("q/z : increase/decrease speed by 10%");
-  puts("w/x : increase/decrease only pos speed by 10%");
-  puts("e/c : increase/decrease only turn speed by 10%");
+  puts("   u    i    o");
+  puts("   j    k    l");
+  puts("   m    ,    .");
+  puts("");
+  puts("q/z : increase/decrease max speeds by 10%");
+  puts("w/x : increase/decrease only linear speed by 10%");
+  puts("e/c : increase/decrease only angular speed by 10%");
   puts("anything else : stop");
   puts("---------------------------");
 
   for(;;)
   {
-    // get the next event from the joystick
+    // get the next event from the keyboard
     if(read(kfd, &c, 1) < 0)
     {
       perror("read():");
@@ -352,68 +278,94 @@ void keyboard_handler(struct controller* cont )
     switch(c)
     {
       case KEYCODE_I:
-		speed = 1;
+        speed = 1;
+        turn = 0;
         cont->dirty = true;
         break;
       case KEYCODE_K:
-		speed = -1;
+        speed = 0;
+        turn = 0;
         cont->dirty = true;
         break;
       case KEYCODE_O:
-		speed = 0;
+        speed = 1;
+        turn = -1;
         cont->dirty = true;
         break;
       case KEYCODE_J:
-	  	turn = 1;
+        speed = 0;
+        turn = 1;
         cont->dirty = true;
         break;
       case KEYCODE_L:
-	  	turn = -1;
+        speed = 0;
+        turn = -1;
         cont->dirty = true;
         break;
       case KEYCODE_U:
-	  	turn = 0;
+        turn = 1;
+        speed = 1;
+        cont->dirty = true;
+        break;
+      case KEYCODE_COMMA:
+        turn = 0;
+        speed = -1;
+        cont->dirty = true;
+        break;
+      case KEYCODE_PERIOD:
+        turn = 1;
+        speed = -1;
+        cont->dirty = true;
+        break;
+      case KEYCODE_M:
+        turn = -1;
+        speed = -1;
         cont->dirty = true;
         break;
       case KEYCODE_Q:
-        cont->dirty = true;
         max_tv += max_tv / 10.0;
         max_rv += max_rv / 10.0;
+        if(always_command)
+          cont->dirty = true;
         break;
       case KEYCODE_Z:
-        cont->dirty = true;
         max_tv -= max_tv / 10.0;
         max_rv -= max_rv / 10.0;
+        if(always_command)
+          cont->dirty = true;
         break;
       case KEYCODE_W:
-        cont->dirty = true;
         max_tv += max_tv / 10.0;
+        if(always_command)
+          cont->dirty = true;
         break;
       case KEYCODE_X:
-        cont->dirty = true;
         max_tv -= max_tv / 10.0;
+        if(always_command)
+          cont->dirty = true;
         break;
       case KEYCODE_E:
-        cont->dirty = true;
         max_rv += max_rv / 10.0;
+        if(always_command)
+          cont->dirty = true;
         break;
       case KEYCODE_C:
-        cont->dirty = true;
         max_rv -= max_rv / 10.0;
+        if(always_command)
+          cont->dirty = true;
         break;
       default:
-	  	speed = 0;
-		turn = 0;
+        speed = 0;
+        turn = 0;
         cont->dirty = true;
-		
     }
-	if (cont->dirty == true)
-	{
-        cont->speed = speed * max_tv;
-        cont->turnrate = turn * max_rv;		
-	}
-
+    if (cont->dirty == true)
+    {
+      cont->speed = speed * max_tv;
+      cont->turnrate = turn * max_rv;		
+    }
   }
+  return(NULL);
 }
       
 Client::Client(char* host, int port )
@@ -465,10 +417,6 @@ Client::Client(char* host, int port )
       puts("WARNING: failed to turn on motor power");
   }
   
-  // store a local copy of the initial p&t
-  //pan = ptzp->pan;
-  //tilt = ptzp->tilt;
-
   gettimeofday(&lastcommand,NULL);
 
   puts( "Success" );
@@ -500,17 +448,17 @@ void Client::Update( struct controller* cont )
     stopped = false;
     if(!debug_mode)
     {
-
-      printf("%f %f\n", cont->speed, cont->turnrate);
+      if(print_speeds)
+        printf("%5.3f %5.3f\n", cont->speed, RTOD(cont->turnrate));
       
       // send the speed commands
       if(!threed)
-        pp->SetSpeed( cont->speed, cont->turnrate);
+        pp->SetSpeed(cont->speed, cont->turnrate);
       else
-        pp3->SetSpeed( cont->speed, cont->turnrate);
+        pp3->SetSpeed(cont->speed, cont->turnrate);
     }
     else
-      printf("%d %d\n", cont->speed, cont->turnrate);
+      printf("%5.3f %5.3f\n", cont->speed, RTOD(cont->turnrate));
     lastcommand = curr;
   }
   else if(((curr.tv_sec + (curr.tv_usec / 1e6)) -
@@ -541,91 +489,106 @@ int main(int argc, char** argv)
 
   // parse command line args to construct clients
   for( int i=1; i<argc; i++ )
+  {
+    // if we find a colon in the arg, it's a player address
+    if( char* colon = index( argv[i], ':'  ) )
     {
-      // if we find a colon in the arg, it's a player address
-      if( char* colon = index( argv[i], ':'  ) )
-	{
-	  // replace the colon with a terminator
-	  *colon = 0; 	  
-	  // now argv[i] is a hostname string
-	  // and colon=1 is a port number string	  
-	  clients.push_front( new Client( argv[i], atoi( colon+1 ) ));
-	}
-      // otherwise look for the verbose flag
-      else if( strcmp( argv[i], "-i" ) == 0 )
-      {
-        if(i++ < argc)
-          idx = atoi(argv[i]);
-        else
-        {
-          puts(USAGE);
-          exit(-1);
-        }
-      }
-      else if( strcmp( argv[i], "-v" ) == 0 )
-        g_verbose = true;
-      else if( strcmp( argv[i], "-3d" ) == 0 )
-        threed = true;
-      else if( strcmp( argv[i], "-c" ) == 0 )
-        always_command = true;
-      else if( strcmp( argv[i], "-n" ) == 0 )
-        debug_mode = true;
-      else if( strcmp( argv[i], "-k" ) == 0 )
-        use_keyboard = true;
-      else if( strcmp( argv[i], "-speed" ) == 0 )
-      {
-        if(i++ < argc)
-          max_speed = atof(argv[i]);
-        else
-        {
-          puts(USAGE);
-          exit(-1);
-        }
-      }
-      else if( strcmp( argv[i], "-turnspeed" ) == 0 )
-      {
-        if(i++ < argc)
-          max_turn = atof(argv[i]);
-        else
-        {
-          puts(USAGE);
-          exit(-1);
-        }
-      }
-      else if( strcmp( argv[i], "-udp" ) == 0 )
-        protocol = PLAYER_TRANSPORT_UDP;
-      else
-        puts( USAGE ); // malformed arg - print usage hints
+      // replace the colon with a terminator
+      *colon = 0; 	  
+      // now argv[i] is a hostname string
+      // and colon=1 is a port number string	  
+      clients.push_front( new Client( argv[i], atoi( colon+1 ) ));
     }
+    // otherwise look for the verbose flag
+    else if( strcmp( argv[i], "-i" ) == 0 )
+    {
+      if(i++ < argc)
+        idx = atoi(argv[i]);
+      else
+      {
+        puts(USAGE);
+        exit(-1);
+      }
+    }
+    else if( strcmp( argv[i], "-v" ) == 0 )
+      g_verbose = true;
+    else if( strcmp( argv[i], "-3d" ) == 0 )
+      threed = true;
+    else if( strcmp( argv[i], "-c" ) == 0 )
+      always_command = true;
+    else if( strcmp( argv[i], "-n" ) == 0 )
+      debug_mode = true;
+    else if( strcmp( argv[i], "-p" ) == 0 )
+      print_speeds = true;
+    else if( strcmp( argv[i], "-k" ) == 0 )
+      use_keyboard = true;
+    else if( strcmp( argv[i], "-speed" ) == 0 )
+    {
+      if(i++ < argc)
+        max_speed = atof(argv[i]);
+      else
+      {
+        puts(USAGE);
+        exit(-1);
+      }
+    }
+    else if( strcmp( argv[i], "-turnspeed" ) == 0 )
+    {
+      if(i++ < argc)
+        max_turn = DTOR(atof(argv[i]));
+      else
+      {
+        puts(USAGE);
+        exit(-1);
+      }
+    }
+    else if( strcmp( argv[i], "-udp" ) == 0 )
+      protocol = PLAYER_TRANSPORT_UDP;
+    else
+    {
+      puts(USAGE); // malformed arg - print usage hints
+      exit(-1);
+    }
+  }
 
   // if no Players were requested, we assume localhost:6665
   if( clients.begin() == clients.end() )
     clients.push_front( new Client( DEFAULT_HOST, DEFAULT_PORT ));
-  
-    // this structure is maintained by the joystick reader
+
+  // this structure is maintained by the joystick reader
   struct controller cont;
   memset( &cont, 0, sizeof(cont) );
+  
+  pthread_t dummy;
 
   if(!use_keyboard)
   {
+#if JOYSTICK_SUPPORT
     jfd = open ("/dev/js0", O_RDONLY);
 
-    if( jfd < 1 )
+    if(jfd < 1)
     {
-      perror( "Failed to open joystick" );
+      perror("Failed to open joystick");
+      puts("Falling back on keyboard control");
       use_keyboard = true;
     }
+    else
+      pthread_create(&dummy, NULL, &joystick_handler, (void*)&cont); 
+#else
+    puts("Joystick support not included; falling back on keyboard control");
+#endif
   }
 
-  // kick off the thread to generate new values in cont
-  pthread_t dummy;
   if(use_keyboard)
-    pthread_create( &dummy, NULL,
-                    (void *(*) (void *)) keyboard_handler, &cont); 
-  else
-    pthread_create( &dummy, NULL,
-                    (void *(*) (void *)) joystick_handler, &cont); 
-  
+  {
+#if KEYBOARD_SUPPORT
+    pthread_create(&dummy, NULL, &keyboard_handler, (void*)&cont); 
+#else
+    puts("Keyboard support not include; bailing.");
+    exit(-1);
+#endif
+  }
+
   while( true )
   {
     // read from all the clients
@@ -640,9 +603,8 @@ int main(int argc, char** argv)
          it++ )
       (*it)->Update( &cont );
 
-
     cont.dirty = false; // we've handled the changes
   }
   return(0);
 }
-    
+
