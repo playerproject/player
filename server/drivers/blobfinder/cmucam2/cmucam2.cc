@@ -43,7 +43,7 @@
 #include <socket_util.h>
 #include <drivertable.h>
 #include <player.h>
-#include <camera.h>
+#include "camera.c"
 
 class Cmucam2:public CDevice 
 {
