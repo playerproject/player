@@ -207,7 +207,8 @@ dnl Where is Stage-1.4?
 AC_ARG_WITH(stage, [  --with-stage=dir       Location of Stage],
                    STAGE_DIR=$with_stage, STAGE_DIR=$prefix)
 
-AC_CHECK_LIB(pnm, pnm_init)
+dnl Who needs pnm, and why?
+dnl AC_CHECK_LIB(pnm, pnm_init)
 
 STAGE_HEADER=$STAGE_DIR/stage.h
 STAGE_EXTRA_CPPFLAGS="-I$STAGE_DIR"
