@@ -62,6 +62,8 @@ PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],)
 
 PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],)
 
+PLAYER_ADD_DRIVER([gazebo],[drivers/gazebo],[no],)
+
 PLAYER_ADD_DRIVER([udpbroadcast],[drivers/comms],[yes],)
 
 PLAYER_ADD_DRIVER([lasercspace],[drivers/laser],[yes],)

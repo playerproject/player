@@ -144,6 +144,12 @@ void AdaptiveMCL_Register(DriverTable* table);
 void LifoMCom_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_GAZEBO
+void GzPosition_Register(DriverTable *table);
+void GzLaser_Register(DriverTable *table);
+#endif
+
+
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
  *
@@ -300,5 +306,11 @@ register_devices()
 #ifdef INCLUDE_LIFOMCOM
   LifoMCom_Register(driverTable);
 #endif
+
+#ifdef INCLUDE_GAZEBO
+  GzPosition_Register(driverTable);
+  GzLaser_Register(driverTable);
+#endif
+
 }
 
