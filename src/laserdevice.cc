@@ -334,8 +334,11 @@ int CLaserDevice::Main()
     PLAYER_MSG0("laser thread is running");
     
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
+#ifdef PLAYER_LINUX
     sigblock(SIGINT);
     sigblock(SIGALRM);
+#endif
         
     // Ask the laser to send data
     //
@@ -419,7 +422,9 @@ int CLaserDevice::OpenTerm()
     if( tcgetattr( m_laser_fd, &term ) < 0 )
         RETURN_ERROR(1, "Unable to get serial port attributes");
   
+#ifdef PLAYER_LINUX
     cfmakeraw( &term );
+#endif
     cfsetispeed( &term, B9600 );
     cfsetospeed( &term, B9600 );
   
@@ -460,7 +465,9 @@ int CLaserDevice::ChangeTermSpeed(int speed)
         if( tcgetattr( m_laser_fd, &term ) < 0 )
             RETURN_ERROR(1, "unable to get device attributes");
         
+#ifdef PLAYER_LINUX
         cfmakeraw( &term );
+#endif
         cfsetispeed( &term, B9600 );
         cfsetospeed( &term, B9600 );
         
@@ -473,7 +480,9 @@ int CLaserDevice::ChangeTermSpeed(int speed)
         if( tcgetattr( m_laser_fd, &term ) < 0 )
             RETURN_ERROR(1, "unable to get device attributes");
         
+#ifdef PLAYER_LINUX
         cfmakeraw( &term );
+#endif
         cfsetispeed( &term, B38400 );
         cfsetospeed( &term, B38400 );
         

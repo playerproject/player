@@ -159,7 +159,9 @@ int CP2OSDevice::Setup()
     return(1);
   }
   
+#ifdef PLAYER_LINUX
   cfmakeraw( &term );
+#endif
   cfsetispeed( &term, B9600 );
   cfsetospeed( &term, B9600 );
   
@@ -401,8 +403,10 @@ void *RunPsosThread( void *p2osdevice )
   int config_size;
 
 
+#ifdef PLAYER_LINUX
   sigblock(SIGINT);
   sigblock(SIGALRM);
+#endif
 
   gettimeofday(&pd->timeBegan_tv, NULL);
 

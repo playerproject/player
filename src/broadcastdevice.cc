@@ -97,7 +97,7 @@ int CBroadcastDevice::Setup()
     //
     u_int broadcast = 1;
     if (setsockopt(m_write_socket, SOL_SOCKET, SO_BROADCAST,
-                   &broadcast, sizeof(broadcast)) < 0)
+                   (const char*)&broadcast, sizeof(broadcast)) < 0)
     {
         perror(__PRETTY_FUNCTION__);
         return 1;
@@ -116,7 +116,7 @@ int CBroadcastDevice::Setup()
     //
     u_int share = 1;
     if (setsockopt(m_read_socket, SOL_SOCKET, SO_REUSEADDR,
-                   &share, sizeof(share)) < 0)
+                   (const char*)&share, sizeof(share)) < 0)
     {
         perror(__PRETTY_FUNCTION__);
         return 1;
@@ -289,7 +289,7 @@ void CBroadcastDevice::PutConfig(unsigned char *, size_t maxsize)
 //
 void CBroadcastDevice::SendPacket(unsigned char *packet, size_t size)
 {    
-    if (sendto(m_write_socket, packet, size,
+    if (sendto(m_write_socket, (const char*)packet, size,
                  0, (sockaddr*) &m_write_addr, sizeof(m_write_addr)) < 0)
     {
         perror(__PRETTY_FUNCTION__);
@@ -306,8 +306,8 @@ void CBroadcastDevice::SendPacket(unsigned char *packet, size_t size)
 size_t CBroadcastDevice::RecvPacket(unsigned char *packet, size_t size)
 {
     size_t addr_len = sizeof(m_read_addr);    
-    size_t packet_len = recvfrom(m_read_socket, packet, size,
-                                 0, (sockaddr*) &m_read_addr, &addr_len);
+    size_t packet_len = recvfrom(m_read_socket, (char*)packet, size,
+                                 0, (sockaddr*) &m_read_addr, (int*)&addr_len);
     if ((int) packet_len < 0)
     {
         if (errno == EAGAIN)

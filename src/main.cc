@@ -45,6 +45,10 @@
 
 #include <pubsub_util.h> /* for create_and_bind_socket() */
 
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>
+#endif
+
 #ifdef INCLUDE_LASER
 #include <laserdevice.h>
 #endif
@@ -168,8 +172,10 @@ void *client_reader(void* arg)
   pthread_detach(pthread_self());
 
   pthread_setcanceltype( PTHREAD_CANCEL_ASYNCHRONOUS, NULL );
+#ifdef PLAYER_LINUX
   sigblock(SIGINT);
   sigblock(SIGALRM);
+#endif
 
   buffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
 
@@ -242,8 +248,10 @@ void *client_writer(void* arg)
   int size;
   unsigned long realsleep;
   
+#ifdef PLAYER_LINUX
   sigblock(SIGINT);
   sigblock(SIGALRM);
+#endif
   pthread_detach(pthread_self());
   pthread_setcanceltype( PTHREAD_CANCEL_ASYNCHRONOUS, NULL );
   
@@ -300,8 +308,12 @@ int main( int argc, char *argv[] )
 {
   unsigned int j;
   struct sockaddr_in listener;
-  struct sockaddr_in sender;
+  //struct sockaddr_in sender;
+#ifdef PLAYER_LINUX
   socklen_t sender_len;
+#else
+  int sender_len;
+#endif
   CClientData *clientData;
   int player_sock = 0;
 
@@ -648,7 +660,8 @@ int main( int argc, char *argv[] )
     clientData = new CClientData;
 
     /* block here */
-    if((clientData->socket = accept(player_sock,(struct sockaddr *) &sender,&sender_len)) == -1)
+    //if((clientData->socket = accept(player_sock,(struct sockaddr *)&sender,&sender_len)) == -1)
+    if((clientData->socket = accept(player_sock,(struct sockaddr *)NULL,&sender_len)) == -1)
     {
       perror("accept(2) failed: ");
       exit(-1);

@@ -10,26 +10,26 @@ RMDIR = rmdir
 
 INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples/c
 
-CFLAGS = -g -O2 -Wall 
+CFLAGS = -g -O2 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I../../client_libs/c -I../../include -I$(INSTALL_PREFIX)/include -I/usr/local/player/include
 LIBDIRS = -L../../client_libs/c -L$(INSTALL_PREFIX)/lib -L/usr/local/player/lib
-LIBS = $(LIBDIRS) -lplayercclient
+LIBS = $(LIBDIRS) -lplayercclient $(PLATFORM_LIBS)
 
 BINARIES = randomwalk laserobstacleavoid ptz 
 
 all: $(BINARIES)
 
 test: test.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ test.c $(LIBS)
 
 randomwalk: randomwalk.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ randomwalk.c $(LIBS)
 
 laserobstacleavoid: laserobstacleavoid.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ laserobstacleavoid.c $(LIBS)
 
 ptz: ptz.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ ptz.c $(LIBS)
 
 install: $(BINARIES)
 	$(MKDIR) -p $(INSTALL_EXAMPLES)

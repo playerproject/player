@@ -37,6 +37,10 @@
 #include <signal.h>  /* for sigblock */
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>
+#endif
+
 #include <ptzdevice.h>
 
 void *RunPtzThread(void *ptzdevice);
@@ -97,7 +101,9 @@ CPtzDevice::Setup()
     return(-1);
   }
   
+#ifdef PLAYER_LINUX
   cfmakeraw(&term);
+#endif
   cfsetispeed(&term, B9600);
   cfsetospeed(&term, B9600);
   
@@ -572,8 +578,10 @@ void *RunPtzThread(void *ptzdevice)
   CPtzDevice *zd = (CPtzDevice *) ptzdevice;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+#ifdef PLAYER_LINUX
   sigblock(SIGINT);
   sigblock(SIGALRM);
+#endif
 
   while(1) 
   {

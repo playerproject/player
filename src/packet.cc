@@ -35,6 +35,10 @@
 #include <stdlib.h> /* for exit() */
 
 #include <sys/time.h>
+
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>
+#endif
 extern bool debug;
 
 void CPacket::Print() {
