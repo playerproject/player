@@ -1,0 +1,85 @@
+
+# Desc: 1 robot with player, laser, sonar and gps
+# CVS: $Id$
+
+# the resolution of Stage's raytrace model in meters
+#
+
+include "pioneer.inc"
+
+
+#size [120 45]
+#bitmap "bitmaps/hospital.png"
+
+size [20 20]
+bitmap "bitmaps/autolab.png"
+
+resolution 0.02  # meters per pixel
+interval_sim 0.1  # seconds per update step
+interval_real 0.1 # real-time seconds per update step
+
+# load a bitmapped environment from a file
+#bitmap "bitmaps/cave.png" 
+#size [10 10]
+
+
+  # GUI settings
+  #
+  #gui
+  #(
+   # size [ 502.000 506.000 ]
+    #origin [5.018 4.950 0]
+    #scale 0.021 # the size of each bitmap pixel in meters
+  #)
+
+
+  # create a robot, setting its start position and Player port, 
+  # and equipping it with a laser range scanner
+  #
+  model
+  (
+    name "budgie"	
+    size [0.5 0.25] 
+    pose [8.048 2.829 0]
+    #velocity [0 0 -20]
+
+    bitmap "bitmaps/submarine.png"
+    color "blue"
+  )
+
+#pioneer2dx( name "r0" pose [4.868 6.382 7080.741] velocity [ 0.0 0.0 15 ] )
+pioneer2dx( name "r0" pose [4.868 6.382 7080.741]  )
+pioneer2dx( name "r1" pose [1.497 5.232 -20.084] )
+pioneer2dx( name "r2" pose [2.586 8.947 -71.250] )
+pioneer2dx( name "r3" pose [1.449 3.189 -20.084] )
+pioneer2dx( name "r4" pose [1.749 3.189 -20.084] )
+pioneer2dx( name "r5" pose [1.949 3.189 -20.084] )
+pioneer2dx( name "r6" pose [2.449 3.189 -20.084] )
+pioneer2dx( name "r7" pose [2.749 3.189 -20.084] )
+#pioneer2dx( name "r8" pose [2.949 3.189 -20.084] )
+#pioneer2dx( name "r9" pose [3.249 3.189 -20.84] )
+
+#model( name "foo" pose [1.000 1.000 0.000] )
+
+
+define chatterbox model
+(
+  scount 8
+  spose[0] [  0.075  0.0   0 ]
+  spose[1] [  0.075  0.075  45 ]
+  spose[2] [  0.0    0.075  90 ]
+  spose[3] [ -0.075  0.075 135 ]
+  spose[4] [ -0.075  0.0 180 ]
+  spose[5] [ -0.075 -0.075 225 ]
+  spose[6] [  0.0   -0.075 270 ]
+  spose[7] [  0.075 -0.075 315 ]
+
+  size [0.15 0.15]
+  nose 1
+  color "red"
+)
+
+chatterbox( name "ch1" pose [2 2 0] )
+chatterbox( name "ch2" pose [2 2.2 0] )
+chatterbox( name "ch3" pose [2 2.3 0] )
+chatterbox( name "ch4" pose [2 2.4 0] )
