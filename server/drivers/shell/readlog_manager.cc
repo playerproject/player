@@ -207,7 +207,7 @@ void *ReadLogManager::DummyMain(void *_this)
 void ReadLogManager::Main()
 {
   int i, len, linenum;
-  char line[4096];
+  char line[8192];
   int token_count;
   char *tokens[4096];
 
@@ -384,7 +384,7 @@ int ReadLogManager::ParseLaser(CDevice *device, int linenum,
     data.range_count += 1;
   }
 
-  data.resolution = 100; // HACK (int) ((data.max_angle - data.min_angle) / data.range_count);
+  data.resolution = (int) ((data.max_angle - data.min_angle) / data.range_count);
 
   //printf("%d %d %d %d\n", data.resolution, data.min_angle, data.max_angle, data.range_count);
   
