@@ -141,6 +141,8 @@ Usage()
           "Default: %d\n", PLAYER_PORTNUM);
   fprintf(stderr, "  -s <path>      : use memory-mapped IO with Stage "
           "through the devices in\n                   this directory\n");
+  fprintf(stderr, "  -g <path>      : connect to Gazebo instance at <path> \n");
+  fprintf(stderr, "  -r <logfile>   : read data from <logfile> (readlog driver)\n");
   fprintf(stderr, "  -d <shlib>     : load the the indicated shared library\n");
   fprintf(stderr, "  -k <key>       : require client authentication with the "
           "given key\n");
