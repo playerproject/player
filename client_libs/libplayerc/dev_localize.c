@@ -181,14 +181,14 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
 // structure.
 int playerc_localize_get_map_info(playerc_localize_t *device)
 {
-  int i, j;
-  int ni, nj;
-  int sx, sy;
-  int si, sj;
+  //int i, j;
+  //int ni, nj;
+  //int sx, sy;
+  //int si, sj;
   int len;
   size_t reqlen;
   player_localize_map_info_t info;
-  player_localize_map_data_t data;
+  //player_localize_map_data_t data;
   
   // Get the map header
   info.subtype = PLAYER_LOCALIZE_GET_MAP_INFO_REQ;
@@ -229,7 +229,7 @@ int playerc_localize_get_map_tile(playerc_localize_t *device)
   int si, sj;
   int len;
   size_t reqlen;
-  player_localize_map_info_t info;
+  //player_localize_map_info_t info;
   player_localize_map_data_t data;
 
   // Already loaded

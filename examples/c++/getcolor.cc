@@ -28,11 +28,11 @@ int main(int argc, char** argv)
     exit(1);
   }
      
-  int maxspeed = 200;
-  unsigned int minarea = 2;
-  int newturnrate=0, newspeed=0;
-  int imagewidth = 80;
-  int misscnt = 0;
+  //int maxspeed = 200;
+  //unsigned int minarea = 2;
+  //int newturnrate=0, newspeed=0;
+  //int imagewidth = 80;
+  //int misscnt = 0;
 
   printf("Please hold target directly in front of camera until AmigoBot begins to move...\n");
 

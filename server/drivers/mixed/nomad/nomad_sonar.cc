@@ -194,8 +194,8 @@ void NomadSonar::Update()
 	    for (int i = 0; i < NOMAD_SONAR_COUNT; i++)
 	      {
 		double angle = interval * i;
-		geom.poses[i][0] = htons((int16_t)radius*cos(angle));
-		geom.poses[i][1] = htons((int16_t)radius*sin(angle));
+		geom.poses[i][0] = htons((int16_t)rint(radius*cos(angle)));
+		geom.poses[i][1] = htons((int16_t)rint(radius*sin(angle)));
 		geom.poses[i][2] = htons((int16_t)RTOD(angle));
 	      }
 	    

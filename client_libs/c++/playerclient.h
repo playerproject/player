@@ -1027,7 +1027,7 @@ class LaserProxy : public ClientProxy
     int RangeCount() { return scan_count; }
 
     /// An alternate way to access the range data.
-    double Ranges (const unsigned int index)
+    double Ranges (int index)
     {
       if (index < scan_count)
         return scan[index][0];
@@ -1467,7 +1467,7 @@ class SonarProxy : public ClientProxy
 
     /** Number of valid sonar poses
      */
-    unsigned int pose_count;
+    int pose_count;
 
     /** Sonar poses (m,m,radians)
      */

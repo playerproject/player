@@ -328,7 +328,7 @@ int MicroStrain3DMG::Pop(player_position3d_data_t *data,
 // Main function for device thread
 void MicroStrain3DMG::Main() 
 {
-  int i;
+  //int i;
   double ntime;
   double e[3];
   struct timeval time;
