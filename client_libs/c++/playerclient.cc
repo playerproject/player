@@ -115,18 +115,18 @@ int PlayerClient::Connect(const char* hostname, int port)
   struct hostent *entp = gethostbyname( hostname );
   
   // check for valid address
-  if( entp && 
-      entp->h_addr_list[0] && 
-      (entp->h_length > 0)  && // looks good - try a connect
-      Connect( &this->hostaddr, port) == 0 )
+  if(entp && entp->h_addr_list[0] && (entp->h_length > 0))
+  {
+    this->hostaddr = *((in_addr*)entp->h_addr_list[0]);
+
+    if(Connect(&this->hostaddr, port) == 0)
     {
       // connect good - store the hostname and returm sucess
-      strncpy( this->hostname, hostname, 255 );     
+      strncpy(this->hostname, hostname, 255);     
       return(0);
     }
-  else
-    return(1); // fail - forget this hostname
-  
+  }
+  return(1); // fail - forget this hostname
 }
 
 int PlayerClient::Connect(const struct in_addr* addr, int port)
@@ -139,15 +139,15 @@ int PlayerClient::Connect(const struct in_addr* addr, int port)
   Disconnect(); // make sure we're cleaned up first
 
   // attempt a connect
-  if( player_connect_ip(&conn, addr, port) == 0 )
-    {
-      // connect good - store the address and port
-      memcpy( &this->hostaddr, addr, sizeof(struct in_addr) );
-      this->port = port;
-      this->hostname[0] = 0; // nullify the string
-      
-      return(0);
-    }
+  if(player_connect_ip(&conn, addr, port) == 0)
+  {
+    // connect good - store the address and port
+    memcpy(&this->hostaddr, addr, sizeof(struct in_addr));
+    this->port = port;
+    this->hostname[0] = 0; // nullify the string
+
+    return(0);
+  }
   else
     return(1);
 }
@@ -192,10 +192,12 @@ int PlayerClient::Read()
         fputs("WARNING: player_read() errored\n", stderr);
       return(-1);
     }
+    gettimeofday(&curr,NULL);
     // is this the SYNCH packet?
     if(hdr.type == PLAYER_MSGTYPE_SYNCH)
     {
-      //puts("GOT SYNCH PACKET");
+      //printf("%ld:%ld GOT SYNCH PACKET\n",
+           //curr.tv_sec,curr.tv_usec);
       break;
     }
     else if(hdr.type == PLAYER_MSGTYPE_DATA)
@@ -203,7 +205,6 @@ int PlayerClient::Read()
       // mark this client as having fresh data
       fresh = true;
 
-      gettimeofday(&curr,NULL);
 
       // update timestamp
       if ((int) hdr.timestamp_usec > this->timestamp.tv_usec ||
@@ -213,9 +214,6 @@ int PlayerClient::Read()
         this->timestamp.tv_usec = hdr.timestamp_usec;
       }
 
-      //printf( "PlayerClient::Read() %d reads: (X,%d,%d)\n",
-      //    numreads, hdr.device, hdr.device_index );
-
       if(!(thisproxy = GetProxy(hdr.device,hdr.device_index)))
       {
         if(player_debug_level(-1) >= 3)
@@ -224,6 +222,8 @@ int PlayerClient::Read()
         continue;
       }
 
+      //printf("%ld:%ld:got new data for %d:%d\n",
+             //curr.tv_sec, curr.tv_usec, hdr.device, hdr.device_index);
       // put the data in the object
       if(hdr.size)
         thisproxy->FillData(hdr,buffer);
@@ -308,33 +308,28 @@ int PlayerClient::RequestDeviceAccess(unsigned short device,
 // change continuous data rate (freq is in Hz)
 int PlayerClient::SetFrequency(unsigned short freq)
 {
-  player_device_ioctl_t this_ioctl;
   player_device_datafreq_req_t this_req;
-  char payload[sizeof(this_ioctl)+sizeof(this_req)];
+  char payload[sizeof(this_req)];
 
-  this_ioctl.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
+  this_req.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
   this_req.frequency = htons(freq);
 
-  memcpy(payload,&this_ioctl,sizeof(this_ioctl));
-  memcpy(payload+sizeof(this_ioctl),&this_req,sizeof(this_req));
+  memcpy(payload,&this_req,sizeof(this_req));
 
   return(Request(PLAYER_PLAYER_CODE, 0, payload, sizeof(payload),NULL,0,0));
 }
 
 // change data delivery mode
-//   1 = request/reply
-//   0 = continuous (default)
+// valid modes are given in include/messages.h
 int PlayerClient::SetDataMode(unsigned char mode)
 {
-  player_device_ioctl_t this_ioctl;
   player_device_datamode_req_t this_req;
-  char payload[sizeof(this_ioctl)+sizeof(this_req)];
+  char payload[sizeof(this_req)];
 
-  this_ioctl.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
+  this_req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
   this_req.mode = mode;
 
-  memcpy(payload,&this_ioctl,sizeof(this_ioctl));
-  memcpy(payload+sizeof(this_ioctl),&this_req,sizeof(this_req));
+  memcpy(payload,&this_req,sizeof(this_req));
 
   return(Request(PLAYER_PLAYER_CODE, 0, payload, sizeof(payload),NULL,0,0));
 }
@@ -342,25 +337,23 @@ int PlayerClient::SetDataMode(unsigned char mode)
 // request a round of data (only valid when in request/reply mode)
 int PlayerClient::RequestData()
 {
-  player_device_ioctl_t this_ioctl;
+  player_device_data_req_t this_req;
 
-  this_ioctl.subtype = htons(PLAYER_PLAYER_DATA_REQ);
+  this_req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
 
-  return(Request(PLAYER_PLAYER_CODE, 0, (char*)&this_ioctl, sizeof(this_ioctl)));
+  return(Request(PLAYER_PLAYER_CODE, 0, (char*)&this_req, sizeof(this_req)));
 }
 
 // authenticate
 int PlayerClient::Authenticate(char* key)
 {
-  player_device_ioctl_t this_ioctl;
   player_device_auth_req_t this_req;
-  char payload[sizeof(this_ioctl)+sizeof(this_req)];
+  char payload[sizeof(this_req)];
 
-  this_ioctl.subtype = htons(PLAYER_PLAYER_AUTH_REQ);
+  this_req.subtype = htons(PLAYER_PLAYER_AUTH_REQ);
   strncpy(this_req.auth_key,key,sizeof(this_req.auth_key));
 
-  memcpy(payload,&this_ioctl,sizeof(this_ioctl));
-  memcpy(payload+sizeof(this_ioctl),&this_req,sizeof(this_req));
+  memcpy(payload,&this_req,sizeof(this_req));
 
   return(Request(PLAYER_PLAYER_CODE, 0, payload, sizeof(payload),NULL,0,0));
 }

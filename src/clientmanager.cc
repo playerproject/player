@@ -92,6 +92,12 @@ ClientManager::~ClientManager()
   pthread_cancel(readthread);
   pthread_cancel(writethread);
   
+  // this usleep is *VERY* important.  it allows the readthread and
+  // writethread time to finish what they're doing and honor the cancellation
+  // requests given above and exit.  without this usleep, the server will 
+  // segfault periodically.
+  usleep(100000);
+
   // tear down dynamic structures here
   if(clients)
   {
@@ -433,7 +439,8 @@ ClientWriterThread(void* arg)
       }
 
       // is it time to write?
-      if(cr->clients[i]->mode == CONTINUOUS || cr->clients[i]->mode == UPDATE)
+      if((cr->clients[i]->mode == PLAYER_DATAMODE_CONTINUOUS) || 
+         (cr->clients[i]->mode == PLAYER_DATAMODE_UPDATE))
       {
         /*
         printf("comparing %f >= %f\n",
@@ -464,8 +471,9 @@ ClientWriterThread(void* arg)
             cr->clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
         }
       }
-      else if(cr->clients[i]->mode == REQUESTREPLY && 
-              cr->clients[i]->datarequested)
+      else if(((cr->clients[i]->mode == PLAYER_DATAMODE_REQUESTREPLY) ||
+               (cr->clients[i]->mode == PLAYER_DATAMODE_REQUESTREPLY_UPDATE))&&
+              (cr->clients[i]->datarequested))
       {
         cr->clients[i]->datarequested = false;
         if(cr->clients[i]->Write() == -1)

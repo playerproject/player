@@ -33,13 +33,6 @@
 #include <pthread.h>
 #include <messages.h>
 
-typedef enum
-{
-  CONTINUOUS,
-  REQUESTREPLY,
-  UPDATE //RTV - new fresh data only mode
-} server_mode_t;
-
 // keep a linked list of these
 class CDeviceSubscription
 {
@@ -113,7 +106,7 @@ class CClientData
 
     // these are locked by access:
     bool auth_pending;
-    server_mode_t mode;
+    unsigned char mode;
     unsigned short frequency;  // Hz
     bool datarequested;
 

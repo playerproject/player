@@ -79,14 +79,14 @@ int player_connect(player_connection_t* conn, const char* host, int port)
    * 'host' * arg is already an IP addr
    */
   if((entp = gethostbyname(host)) == NULL)
-    {
-      if(player_debug_level(-1) >= 2)
-	fprintf(stderr, "player_connect() \"%s\" is an unknown host\n", host);
-      return(-1);
-    }
+  {
+    if(player_debug_level(-1) >= 2)
+      fprintf(stderr, "player_connect() \"%s\" is an unknown host\n", host);
+    return(-1);
+  }
 
   /* bounds check before copying in the address */
-  assert( sizeof(server.sin_addr) >= entp->h_length );
+  assert(sizeof(server.sin_addr) >= entp->h_length);
   memcpy(&server.sin_addr, entp->h_addr_list[0], entp->h_length);
 
   /* fill in server structure */
@@ -121,13 +121,12 @@ int player_connect_ip(player_connection_t* conn,
   server.sin_port = htons(port);
 
   /* bounds check before copying in the address */
-  assert( sizeof(server.sin_addr) <= sizeof(addr->s_addr) );
+  assert(sizeof(server.sin_addr) <= sizeof(addr->s_addr));
   memcpy(&server.sin_addr, &addr->s_addr, sizeof(addr->s_addr) );
   
   /* make the connection */
   return player_connect_sockaddr( conn, &server );
 }
-
 
 /*
  * connects to server listening at the address specified in sockaddr.
@@ -143,10 +142,10 @@ int player_connect_sockaddr(player_connection_t* conn,
   int sock;
   char banner[PLAYER_IDENT_STRLEN];
   int thisnumread,numread;
-  
+
   /* pointers must be good */
-  assert( conn );
-  assert( server );
+  assert(conn);
+  assert(server);
 
   /* make our socket (and leave it blocking) */
   if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
@@ -293,30 +292,24 @@ int player_request_device_access(player_connection_t* conn,
                                  uint8_t req_access,
                                  uint8_t* grant_access )
 {
-  player_device_ioctl_t this_ioctl;
   player_device_req_t this_req;
-  unsigned char 
-      payload[sizeof(player_device_ioctl_t)+sizeof(player_device_req_t)];
+  unsigned char payload[sizeof(player_device_req_t)];
   player_msghdr_t replyhdr;
   unsigned char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
 
-  this_ioctl.subtype = htons(PLAYER_PLAYER_DEV_REQ);
+  this_req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
   this_req.code = htons(device);
   this_req.index = htons(device_index);
   this_req.access = req_access;
 
-  memcpy(payload,&this_ioctl,sizeof(player_device_ioctl_t));
-  memcpy(payload+sizeof(player_device_ioctl_t),
-                  &this_req,sizeof(player_device_req_t));
+  memcpy(payload,&this_req,sizeof(player_device_req_t));
 
   if(player_request(conn, PLAYER_PLAYER_CODE, 0, 
                     payload, sizeof(payload),
                     &replyhdr, replybuffer, sizeof(replybuffer)) == -1)
     return(-1);
 
-  memcpy(&this_ioctl, replybuffer, sizeof(player_device_ioctl_t));
-  memcpy(&this_req, replybuffer+sizeof(player_device_ioctl_t), 
-                  sizeof(player_device_req_t));
+  memcpy(&this_req, replybuffer, sizeof(player_device_req_t));
 
   if(grant_access)
     *grant_access = this_req.access;

@@ -168,14 +168,16 @@ int CPacket::Build( unsigned char *data, unsigned char datasize ) {
   return(0);
 }
 
-int CPacket::Send( int fd) {
+int CPacket::Send( int fd) 
+{
   int cnt=0;
   
   //printf("Send(): ");
   //PrintHex();
   while(cnt!=size)
   {
-    if ( (cnt += write( fd, packet, size )) < 0 ) {
+    if((cnt += write( fd, packet, size )) < 0) 
+    {
       perror("Send");
       return(1);
     }

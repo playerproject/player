@@ -63,8 +63,11 @@
 #define FESTIVAL_RETURN_LEN 39
 
 
-/* time to let Festival to get going before trying to connect */
-#define FESTIVAL_STARTUP_USEC 3000000
+/* the following setting mean that we first try to connect after 1 seconds,
+ * then try every 100ms for 6 more seconds before giving up */
+#define FESTIVAL_STARTUP_USEC 1000000 /* wait before first connection attempt */
+#define FESTIVAL_STARTUP_INTERVAL_USEC 100000 /* wait between connection attempts */
+#define FESTIVAL_STARTUP_CONN_LIMIT 60 /* number of attempts to make */
 
 /* delay inside loop */
 #define FESTIVAL_DELAY_USEC 20000
@@ -129,6 +132,8 @@ CSpeechDevice::Setup()
   char festival_server_flag[] = "--server";
   char festival_libdir_flag[] = "--libdir";
   //char festival_libdir_value[] = DEFAULT_FESTIVAL_LIBDIR;
+
+  int j;
 
   char* festival_args[8];
 
@@ -205,28 +210,37 @@ CSpeechDevice::Setup()
 
     server.sin_port = htons(portnum);
 
-    /* make our socket */
-    if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
-    {
-      perror("CSpeechDevice::Setup(): socket(2) failed");
-      KillFestival();
-      return(1);
-    }
 
 
-    /* wait a bit, then connect to the server */
+    /* ok, we'll make this a bit smarter.  first, we wait a baseline amount
+     * of time, then try to connect periodically for some predefined number
+     * of times
+     */
     usleep(FESTIVAL_STARTUP_USEC);
 
-    /* 
-     * hook it up
-     */
-    if(connect(sock, (struct sockaddr*)&server, sizeof(server)) == -1)
+    for(j = 0;j<FESTIVAL_STARTUP_CONN_LIMIT;j++)
+    {
+      // make a new socket, because connect() screws with the old one somehow
+      if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+      {
+        perror("CSpeechDevice::Setup(): socket(2) failed");
+        KillFestival();
+        return(1);
+      }
+
+      /* 
+      * hook it up
+       */
+      if(connect(sock, (struct sockaddr*)&server, sizeof(server)) == 0)
+        break;
+      usleep(FESTIVAL_STARTUP_INTERVAL_USEC);
+    }
+    if(j == FESTIVAL_STARTUP_CONN_LIMIT)
     {
       perror("CSpeechDevice::Setup(): connect(2) failed");
       KillFestival();
       return(1);
     }
-
     puts("Done.");
 
     /* make it nonblocking */
@@ -261,13 +275,12 @@ CSpeechDevice::Shutdown()
   if(sock == -1)
     return(0);
 
-  if(pthread_cancel(thread))
-  {
-    fputs("CSpeechDevice::Shutdown(): WARNING: pthread_cancel() on speech "
-          "reading thread failed; killing Festival by hand\n",stderr);
-    QuitFestival(this);
-  }
+  pthread_cancel(thread);
+  // give it time
+  usleep(100000);
+  KillFestival();
 
+  sock = -1;
   puts("Festival speech server has been shutdown");
   return(0);
 }
@@ -277,8 +290,6 @@ CSpeechDevice::KillFestival()
 {
   if(kill(pid,SIGHUP) == -1)
     perror("CSpeechDevice::KillFestival(): some error while killing Festival");
-  else
-    fputs("CSpeechDevice::KillFestival(): killed Festival\n",stderr);
   sock = -1;
 }
 

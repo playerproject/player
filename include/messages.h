@@ -136,26 +136,34 @@ typedef struct
  */
 
 /* the format of a general iotcl to Player */
+/*
 typedef struct
 {
   uint16_t subtype;
 } __attribute__ ((packed)) player_device_ioctl_t;
+*/
 
 
 /* the format of a "device request" ioctl to Player */
 typedef struct
 {
+  uint16_t subtype;
   uint16_t code;
   uint16_t index;
   uint8_t access;
   //uint8_t consume;
 } __attribute__ ((packed)) player_device_req_t;
+  
+/* the valid datamode codes */
+#define PLAYER_DATAMODE_CONTINUOUS 0  // all data at fixed frequency
+#define PLAYER_DATAMODE_REQUESTREPLY 1  // only new new data at fixed freq
+#define PLAYER_DATAMODE_UPDATE 2 // all data on demand
+#define PLAYER_DATAMODE_REQUESTREPLY_UPDATE 3 // only new data on demand
 
 /* the format of a "datamode change" ioctl to Player */
 typedef struct
 {
-  // 0 = continuous (default)
-  // 1 = request/reply
+  uint16_t subtype;
   uint8_t mode;
 } __attribute__ ((packed)) player_device_datamode_req_t;
 
@@ -163,14 +171,22 @@ typedef struct
 typedef struct
 {
   // frequency in Hz
+  uint16_t subtype;
   uint16_t frequency;
 } __attribute__ ((packed)) player_device_datafreq_req_t;
 
 /* the format of an authentication request */
 typedef struct
 {
+  uint16_t subtype;
   char auth_key[PLAYER_KEYLEN];
 } __attribute__ ((packed)) player_device_auth_req_t;
+
+/* the format of a request for data (no args) */
+typedef struct
+{
+  uint16_t subtype;
+} __attribute__ ((packed)) player_device_data_req_t;
 
 #define PLAYER_PLAYER_DEV_REQ     ((uint16_t)1)
 #define PLAYER_PLAYER_DATA_REQ     ((uint16_t)2)
