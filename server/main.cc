@@ -706,6 +706,14 @@ parse_config_file(char* fname)
     else
       index = 0;
 
+    // look for the new robot block syntax
+    if(!strcmp(interface,"robot"))
+    {
+      // need to recurse into this section
+      puts("skipping robot block");
+      continue;
+    }
+
     driver = NULL;
     // find the default driver for this interface
     player_interface_t tmpint;
