@@ -20,16 +20,37 @@ gui
 )
 
 # load a bitmapped environment from a file
-#wall
-#(
-  #bitmap "test.pnm" 
- # bitmap "/home/vaughan/PS/HEAD/stage/worlds/cave.pnm" 
-  #color "blue"
-#)
+define background wall
+(
+  # this object should have a bounding box added
+  border 1
+
+  # this object should not have a direction-indicating nose
+  nose "false"
+ 
+  # disable handling of this object with the mouse 
+  mouseable "false"
+
+  # a negative number will make this object the maximum
+  # possible size in that axis. Here we fill the world
+  size [-1 -1]
+
+  # TODO - add origin munging to match the size-munging above
+  origin [5 5 0]
+
+)
+
+background 
+(
+  bitmap "test.pnm" 
+  color "purple"
+) 
+
+
 
 sonarbot
 (
-  size [0.5 0.5]
+  size [0.4 0.4]
 
    name "sonarbot"
 
@@ -44,6 +65,7 @@ sonarbot
    ranger[7] [0.1 -0.1  315.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
 
    pose [ 3 3 0 ]
+
 )
 
 define indicatorlight foo
