@@ -88,7 +88,7 @@
 #define PLAYER_SIMULATION_CODE     ((uint16_t)31)  // simulators
 #define PLAYER_SERVICE_ADV_CODE    ((uint16_t)32)  // LAN service advertisement
 #define PLAYER_BLINKENLIGHT_CODE   ((uint16_t)33)  // blinking lights 
-#define PLAYER_CAMERA_CODE         ((uint16_t)31)  // camera device (gazebo)
+#define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo)
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
