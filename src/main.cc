@@ -349,10 +349,6 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 
       // get the player type and index from the header
       // NOT from the filename
-      printf("stage dev: %d:%d:%d\n", 
-             deviceIO->player_id.code,
-             deviceIO->player_id.index,
-             deviceIO->player_id.port);
       switch(deviceIO->player_id.code)
       {
         // create a generic simulated stage IO device for these types:
