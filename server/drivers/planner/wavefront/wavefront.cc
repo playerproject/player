@@ -609,8 +609,10 @@ void Wavefront::Main()
             (this->localize_x - this->waypoint_x)) +
           ((this->localize_y - this->waypoint_y) *
            (this->localize_y - this->waypoint_y)));
+      // HACK: I'm increasing the tolerance for waypoints.  This should be
+      // exposed to the user in the config file.
       if(this->new_goal ||
-          ((dist < this->dist_eps) &&
+          ((dist < 2.0*this->dist_eps) &&
            (!rotate_waypoint ||
             (fabs(NORMALIZE(this->localize_a - this->waypoint_a))
              < this->ang_eps))))
