@@ -53,7 +53,7 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   // now transform current position by rotation if there is one
   // and add to offset
     if (angle_offset != 0) {
-	double rot = angle_offset / 57.3;    // convert rotation to radians
+	double rot = DTOR(angle_offset);    // convert rotation to radians
 	//puts("angle correction");
 	data->position.xpos += (int32_t) (xpos * cos(rot) - ypos * sin(rot));
 	data->position.ypos += (int32_t) (xpos * sin(rot) + ypos * cos(rot));
