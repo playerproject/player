@@ -82,11 +82,17 @@ void Festival_Register(DriverTable* table);
 #ifdef INCLUDE_LASERBAR
 void LaserBar_Register(DriverTable* table);
 #endif
+
 #ifdef INCLUDE_LASERBARCODE
 void LaserBarcode_Register(DriverTable* table);
 #endif
+
 #ifdef INCLUDE_LASERVISUALBARCODE
 void LaserVisualBarcode_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_LASERVISUALBW
+void LaserVisualBW_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_LASERCSPACE
@@ -286,6 +292,7 @@ player_interface_t interfaces[] = {
   {PLAYER_SERVICE_ADV_CODE, PLAYER_SERVICE_ADV_STRING, "service_adv_lsd"},
   {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING, "stg_simulation"},
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_BLINKENLIGHT_STRING, "stg_blinkenlight"},
+  {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING, ""},
   {0,NULL,NULL}
 };
 
@@ -396,11 +403,17 @@ register_devices()
 #ifdef INCLUDE_LASERBAR
   LaserBar_Register(driverTable);
 #endif
+
 #ifdef INCLUDE_LASERBARCODE
   LaserBarcode_Register(driverTable);
 #endif
+
 #ifdef INCLUDE_LASERVISUALBARCODE
   LaserVisualBarcode_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LASERVISUALBW
+  LaserVisualBW_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_LASERCSPACE

@@ -141,7 +141,7 @@ GzCamera::~GzCamera()
 int GzCamera::Setup()
 { 
   // Open the interface
-  if (gz_camera_open(this->iface, this->client, this->gz_id,sizeof(gz_camera_data_t)) != 0)
+  if (gz_camera_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
   
   return 0;
@@ -164,10 +164,19 @@ size_t GzCamera::GetData(void* client, unsigned char* dest, size_t len,
                         uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   player_camera_data_t data;
-
-  data.image =(unsigned char*) ((this->iface->data->image));
   
   assert(len >= sizeof(data));
+
+  // Get the image properties
+  data.width = htons(this->iface->data->width);
+  data.height = htons(this->iface->data->height);
+  data.depth = this->iface->data->height;
+  data.image_size = htonl(this->iface->data->image_size);
+
+  // Get the image pixels
+  assert((size_t) this->iface->data->image_size < sizeof(data.image));
+  memcpy(data.image, this->iface->data->image, this->iface->data->image_size);
+
   memcpy(dest, &data, sizeof(data));
 
   if (timestamp_sec)
@@ -180,7 +189,6 @@ size_t GzCamera::GetData(void* client, unsigned char* dest, size_t len,
 
 
 #endif
-
 #endif
 
 

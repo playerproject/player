@@ -1275,14 +1275,27 @@ typedef struct player_ptz_controlmode_config
  ** begin section camera
  *************************************************************************/
 
+// Allow for 640x640 32-bit images 
+#define PLAYER_CAMERA_IMAGE_SIZE (640 * 480 * 4)
+
 /** [Synopsis]
-The {\tt camera} interface is used to see what the camera sees. */
+EXPERIMENTAL.  The {\tt camera} interface is used to see what the camera sees. */
 
 /** [Data] */
 /** The {\tt camera} interface returns the image seen by the camera; the format is: */
 typedef struct player_camera_data
 {
-  unsigned char *image;
+  /** Image dimensions (pixels). */
+  uint16_t width, height;
+
+  /** Image depth (8, 16, 24). */
+  uint8_t depth;
+
+  /** Size of image data (bytes) */
+  uint32_t image_size;
+  
+  /** Image data (packed format). */
+  uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
 
 } __attribute__ ((packed)) player_camera_data_t;
 
