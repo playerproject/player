@@ -172,7 +172,7 @@ bool AMCLLaser::GetData()
   // Read and byteswap the range data
   for (i = 0; i < this->range_count; i++)
   {
-    r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
+    r = ((uint16_t) ntohs(data.ranges[i])) / 1000.0;
     this->ranges[i][0] = r;
     this->ranges[i][1] = b;
     b += db;
