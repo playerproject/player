@@ -135,7 +135,6 @@ typedef struct
 /* Position device data buffer */
 typedef struct 
 {
-  uint32_t time;
   int32_t x,y;
   uint16_t theta;
   int16_t speed, turnrate;
@@ -289,23 +288,21 @@ typedef struct
 #define ACTS_TOTAL_MAX_SIZE \
   ACTS_MAX_BLOB_DATA_SIZE+ACTS_HEADER_SIZE
 
-/*
- * data is variable length, so just define the header here.
- */
 typedef struct
 {
   uint8_t header[ACTS_HEADER_SIZE];
   uint8_t blobs[ACTS_MAX_BLOB_DATA_SIZE];
 } __attribute__ ((packed)) player_vision_data_t;
 
+// Player needs 2 bytes to store the packet length
 typedef struct
 {
   uint16_t size;
   player_vision_data_t data;
 } __attribute__ ((packed)) player_internal_vision_data_t;
 
-// Players needs 2 bytes to store the packet length
-#define ACTS_DATA_BUFFER_SIZE 2 + ACTS_TOTAL_MAX_SIZE
+// Player needs 2 bytes to store the packet length
+#define ACTS_DATA_BUFFER_SIZE sizeof(player_internal_vision_data_t)
 #define ACTS_COMMAND_BUFFER_SIZE 0
 #define ACTS_CONFIG_BUFFER_SIZE 0
 
