@@ -214,8 +214,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             case PLAYER_PLAYER_DEVLIST_REQ:
               devlistrequest = true;
               HandleListRequest((player_device_devlist_t*) payload,
-                                (player_device_devlist_t*) replybuffer +
-                                sizeof(player_msghdr_t));
+                                (player_device_devlist_t*) (replybuffer + sizeof(player_msghdr_t)));
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
               
@@ -526,23 +525,29 @@ void CClientData::HandleListRequest(player_device_devlist_t *req,
                                     player_device_devlist_t *rep)
 {
   CDeviceEntry *entry;
-  
+
   rep->subtype = PLAYER_PLAYER_DEVLIST_REQ;
   rep->device_count = 0;
 
+  // Get all the device entries that have the right port number.
+  // TODO: test this with Stage.
   for (entry = deviceTable->GetFirstEntry(); entry != NULL;
        entry = deviceTable->GetNextEntry(entry))
   {
-    rep->devices[rep->device_count].code = htons(entry->id.code);
-    rep->devices[rep->device_count].index = htons(entry->id.index);
-    rep->devices[rep->device_count].port = htons(entry->id.port);
-    rep->device_count++;
+    assert(rep->device_count < ARRAYSIZE(rep->devices));
+    if (entry->id.port == port)
+    {
+      rep->devices[rep->device_count].code = htons(entry->id.code);
+      rep->devices[rep->device_count].index = htons(entry->id.index);
+      rep->devices[rep->device_count].port = htons(entry->id.port);
+      rep->device_count++;
+    }
   }
 
   // Do some byte swapping.
   rep->subtype = htons(rep->subtype);
   rep->device_count = htons(rep->device_count);
-  
+
   return;
 }
 
