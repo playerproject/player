@@ -158,7 +158,7 @@ LaserProxy::SetLaserState(const unsigned char state)
 // interface that all proxies SHOULD provide
 void LaserProxy::Print()
 {
-  printf("#LASER(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+  printf("#LASER(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#min\tmax\tres\tcount");
   printf("%d\t%d\t%u\t%u\n", min_angle,max_angle,resolution,range_count);

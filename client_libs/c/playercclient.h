@@ -40,8 +40,6 @@ typedef struct
 {
   /* the socket we will talk on */
   int sock;
-  /* port to which we'll connect */
-  int port;
   /* the banner given back by the server after connection */
   char banner[PLAYER_IDENT_STRLEN];
 } player_connection_t;
@@ -115,7 +113,7 @@ int player_disconnect(player_connection_t* conn);
  *     -1 if something went wrong (you should probably close the connection!)
  */
 int player_request(player_connection_t* conn, 
-                   player_device_id_t device_id,
+                   uint16_t device, uint16_t device_index, 
                    const char* payload, size_t payloadlen, 
                    player_msghdr_t* replyhdr, char* reply, size_t replylen);
 
@@ -130,7 +128,8 @@ int player_request(player_connection_t* conn,
  *     -1 if something went wrong (you should probably close the connection!)
  */
 int player_request_device_access(player_connection_t* conn,
-                                 player_device_id_t device_id,
+                                 uint16_t device,
+                                 uint16_t device_index,
                                  uint8_t req_access,
                                  uint8_t* grant_access,
                                  char* driver_name,
@@ -176,10 +175,10 @@ int player_read_payload(player_connection_t* conn, char* payload, size_t payload
  *   -1 if something went wrong (you should probably close the connection!)
  */
 int player_write(player_connection_t* conn, 
-                 player_device_id_t device_id,
+                 uint16_t device, uint16_t device_index,
                  const char* command, size_t commandlen);
 int _player_write(player_connection_t* conn, 
-                 player_device_id_t device_id,
+                 uint16_t device, uint16_t device_index,
                  const char* command, size_t commandlen,int reserved);
 
 

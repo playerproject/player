@@ -39,8 +39,8 @@
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
 CommsProxy::CommsProxy(PlayerClient* pc, unsigned short index, 
-                       unsigned char access, unsigned short robot)
-    : ClientProxy(pc, PLAYER_COMMS_CODE, index, access,robot)
+                       unsigned char access)
+    : ClientProxy(pc, PLAYER_COMMS_CODE, index, access)
 {
   this->listlen = 10;
   this->msg = (uint8_t**)calloc(this->listlen,sizeof(uint8_t*));
@@ -54,7 +54,7 @@ CommsProxy::CommsProxy(PlayerClient* pc, unsigned short index,
 // Destructor
 CommsProxy::~CommsProxy()
 {
-  for(int i=0;i<this->msg_num;i++)
+  for(size_t i=0;i<this->msg_num;i++)
     free(this->msg[i]);
   free(this->msg);
   free(this->msg_len);
@@ -111,11 +111,11 @@ void CommsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // Delete a message (and shift the rest down)
 int CommsProxy::Delete(int index)
 {
-  if((index < 0) || (index >= this->msg_num))
+  if((index < 0) || (index >= (int)this->msg_num))
     return(-1);
 
   free(this->msg[index]);
-  for(int i=index;i<this->msg_num-1;i++)
+  for(size_t i=index;i<this->msg_num-1;i++)
   {
     this->msg[i] = this->msg[i+1];
     this->msg_len[i] = this->msg_len[i+1];
@@ -132,13 +132,13 @@ int CommsProxy::Delete(int index)
 // Debugging function (does nothing)
 void CommsProxy::Print()
 {
-  printf("# Comms(%d:%d:%d) - %c : %d messages\n", m_device_id.robot,
+  printf("# Comms(%d:%d) - %c : %d messages\n",
          m_device_id.code, m_device_id.index, access,
          this->msg_num);
-  for(int i=0;i<this->msg_num;i++)
+  for(size_t i=0;i<this->msg_num;i++)
   {
     printf("# len %d msg [%s]\n", this->msg_len[i], this->msg[i]);
-    printf("# timestamp: %d:%d\n", 
+    printf("# timestamp: %ld:%ld\n", 
            this->msg_ts[i].tv_sec, this->msg_ts[i].tv_usec);
   }
   return;

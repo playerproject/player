@@ -62,8 +62,9 @@ CDeviceTable::~CDeviceTable()
     
 // this is the 'base' AddDevice method, which sets all the fields
 int 
-CDeviceTable::AddDevice(player_device_id_t id, char* name,
-                        unsigned char access, CDevice* devicep)
+CDeviceTable::AddDevice(player_device_id_t id, char* drivername,
+                        char* robotname, unsigned char access, 
+                        CDevice* devicep)
 {
   CDeviceEntry* thisentry;
   CDeviceEntry* preventry;
@@ -74,7 +75,7 @@ CDeviceTable::AddDevice(player_device_id_t id, char* name,
   for(thisentry = head,preventry=NULL; thisentry; 
       preventry=thisentry, thisentry=thisentry->next)
   {
-    if((thisentry->id.robot == id.robot) && 
+    if((thisentry->id.port == id.port) && 
        (thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index))
     {
@@ -95,7 +96,9 @@ CDeviceTable::AddDevice(player_device_id_t id, char* name,
   }
 
   thisentry->id = id;
-  strncpy(thisentry->name, name, sizeof(thisentry->name));
+  strncpy(thisentry->drivername, drivername, sizeof(thisentry->drivername));
+  if(robotname)
+    strncpy(thisentry->robotname, robotname, sizeof(thisentry->robotname));
   thisentry->access = access;
   thisentry->devicep = devicep;
   if(devicep)
@@ -106,7 +109,7 @@ CDeviceTable::AddDevice(player_device_id_t id, char* name,
 	  thisentry->id.port, 
 	  thisentry->id.code, 
 	  thisentry->id.index, 
-	  thisentry->name );
+	  thisentry->drivername );
   */
 
   return(0);
@@ -151,7 +154,7 @@ CDeviceTable::GetDriver(player_device_id_t id)
   //printf( "Looking up ID %u.%u.%u\n", id.port, id.code, id.index );
 
   if((thisentry = GetDeviceEntry(id)))
-    driver = thisentry->name;
+    driver = thisentry->drivername;
 
   return(driver);
 }    
@@ -172,7 +175,7 @@ CDeviceTable::GetDeviceEntry(player_device_id_t id)
     // port.
     if((thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index) &&
-       (!use_stage || (thisentry->id.robot == id.robot)))
+       (!use_stage || (thisentry->id.port == id.port)))
       break;
   }
 

@@ -44,7 +44,7 @@ PowerProxy::FillData(player_msghdr_t hdr, const char *buffer)
 void
 PowerProxy::Print()
 {
-  printf("#Power(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code, 
+  printf("#Power(%d:%d) - %c\n", m_device_id.code, 
          m_device_id.index, access);
   printf("%u\n", charge);
 }

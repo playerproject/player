@@ -61,7 +61,7 @@ void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void FiducialProxy::Print()
 {
-  printf("#Fiducial(%d:%d:%d) - %c\n", m_device_id.robot,
+  printf("#Fiducial(%d:%d) - %c\n",
          m_device_id.code, m_device_id.index, access);
   puts("#count");
   printf("%d\n", count);
@@ -79,16 +79,17 @@ int FiducialProxy::PrintFOV()
   int res = this->GetFOV();  
   if( res < 0 ) return res;
 
-  printf("#Fiducial(%d:%d:%d) - %c\n", m_device_id.robot,
+  printf("#Fiducial(%d:%d) - %c\n",
          m_device_id.code, m_device_id.index, access);
   printf( "#FOV\tmin_range\tmax_range\tview_angle\n"
 	  "\t%.2f\t\t%.2f\t\t%.2f\n", 
 	  this->min_range, this->max_range, this->view_angle );
+  return(res);
 }
 
 int FiducialProxy::PrintGeometry()
 {
-  printf("#Fiducial(%d:%d:%d) - %c\n", m_device_id.robot,
+  printf("#Fiducial(%d:%d) - %c\n",
          m_device_id.code, m_device_id.index, access);
 
   int res = this->GetConfigure();  

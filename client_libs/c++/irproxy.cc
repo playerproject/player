@@ -200,7 +200,7 @@ IRProxy::CalcStdDev(int w, unsigned  short range)
 void
 IRProxy::Print()
 {
-  printf("#REB IR(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+  printf("#REB IR(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   for (int i = 0;i < PLAYER_IR_MAX_SAMPLES; i++) {
     printf("IR%d:\tR=%d\tV=%d\tSTD=%g\n", i, ranges[i], voltages[i], 

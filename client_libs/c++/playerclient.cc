@@ -210,14 +210,13 @@ int PlayerClient::Read()
       }
 
       player_device_id_t id;
-      id.robot=hdr.robot;
       id.code=hdr.device;
       id.index=hdr.device_index;
       if(!(thisproxy = GetProxy(id)))
       {
         if(player_debug_level(-1) >= 3)
-          fprintf(stderr,"WARNING: read unexpected data for device %d:%d:%d\n",
-                  hdr.robot,hdr.device,hdr.device_index);
+          fprintf(stderr,"WARNING: read unexpected data for device %d:%d\n",
+                  hdr.device,hdr.device_index);
         continue;
       }
 
@@ -230,6 +229,10 @@ int PlayerClient::Read()
         thisproxy->StoreData(hdr,buffer);
         // also let the device-specific proxy parse it
         thisproxy->FillData(hdr,buffer);
+        // let the user know that data has arrived.  set it every time, in
+        // case the user wants to use it to determine freshness, in
+        // addition to initial validity.
+        thisproxy->valid = true;
       }
 
       // fill in the timestamps
@@ -268,9 +271,10 @@ int PlayerClient::Write(player_device_id_t device_id,
     return(-1);
 
   if(!GetReserved())
-    return(player_write(&conn,device_id,command,commandlen));
+    return(player_write(&conn,device_id.code,device_id.index,
+                        command,commandlen));
   else
-    return(_player_write(&conn,device_id,command,commandlen,GetReserved()));
+    return(_player_write(&conn,device_id.code,device_id.index,command,commandlen,GetReserved()));
 }
 
 int PlayerClient::Request(player_device_id_t device_id,
@@ -281,7 +285,7 @@ int PlayerClient::Request(player_device_id_t device_id,
 {
   if(!Connected())
     return(-1);
-  return(player_request(&conn, device_id, payload, payloadlen,
+  return(player_request(&conn, device_id.code,device_id.index, payload, payloadlen,
                         replyhdr, reply, replylen));
 }
     
@@ -297,7 +301,6 @@ int PlayerClient::Request(player_device_id_t device_id,
 
   if((retval < 0) || 
      (hdr.type != PLAYER_MSGTYPE_RESP_ACK) || 
-     (hdr.robot != device_id.robot) ||
      (hdr.device != device_id.code) || 
      (hdr.device_index != device_id.index))
     return(-1);
@@ -325,7 +328,7 @@ int PlayerClient::RequestDeviceAccess(player_device_id_t device_id,
   if(!Connected())
     return(-1);
   
-  retval = player_request_device_access(&conn, device_id,
+  retval = player_request_device_access(&conn, device_id.code,device_id.index,
                                         req_access, grant_access, 
                                         driver_name, driver_name_len);
 
@@ -351,7 +354,6 @@ int PlayerClient::SetFrequency(unsigned short freq)
 
   memcpy(payload,&this_req,sizeof(this_req));
 
-  id.robot=0;
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
   return(Request(id, payload, sizeof(payload),NULL,0,0));
@@ -370,7 +372,6 @@ int PlayerClient::SetDataMode(unsigned char mode)
 
   memcpy(payload,&this_req,sizeof(this_req));
 
-  id.robot=0;
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
   return(Request(id, payload, sizeof(payload),NULL,0,0));
@@ -384,7 +385,6 @@ int PlayerClient::RequestData()
 
   this_req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
 
-  id.robot=0;
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
   return(Request(id,(char*)&this_req, sizeof(this_req)));
@@ -402,10 +402,32 @@ int PlayerClient::Authenticate(char* key)
 
   memcpy(payload,&this_req,sizeof(this_req));
 
-  id.robot=0;
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
   return(Request(id, payload, sizeof(payload),NULL,0,0));
+}
+
+// use nameservice to get corresponding port for a robot name (only with
+// Stage)
+int
+PlayerClient::LookupPort(char* name)
+{
+  player_device_id_t id;
+  player_device_nameservice_req_t req, rep;
+  player_msghdr_t hdr;
+  bzero(&req,sizeof(req));
+  bzero(&rep,sizeof(rep));
+
+  req.subtype = htons(PLAYER_PLAYER_NAMESERVICE_REQ);
+  strncpy((char*)req.name,name,sizeof(req.name));
+
+  id.code=PLAYER_PLAYER_CODE;
+  id.index=0;
+
+  if(Request(id,(char*)&req,sizeof(req),&hdr,(char*)&rep,sizeof(rep)) < 0)
+    return(-1);
+  else
+    return(ntohs(rep.port));
 }
 
 // proxy list management methods
@@ -481,7 +503,6 @@ ClientProxy* PlayerClient::GetProxy(unsigned short device, unsigned short index)
 {
   player_device_id_t id;
 
-  id.robot = 0;
   id.code = device;
   id.index = index;
   return(GetProxy(id));
@@ -492,7 +513,6 @@ ClientProxy* PlayerClient::GetProxy(player_device_id_t id)
   for(ClientProxyNode* thisnode=proxies;thisnode;thisnode=thisnode->next)
   {
     if(thisnode->proxy && 
-       (thisnode->proxy->m_device_id.robot == id.robot) &&
        (thisnode->proxy->m_device_id.code == id.code) &&
        (thisnode->proxy->m_device_id.index == id.index))
       return(thisnode->proxy);

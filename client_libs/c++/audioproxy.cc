@@ -68,7 +68,7 @@ AudioProxy::PlayTone(unsigned short freq,
 void
 AudioProxy::Print()
 {
-  printf("#Audio(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code, 
+  printf("#Audio(%d:%d) - %c\n", m_device_id.code, 
          m_device_id.index, access);
   printf("(%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u)\n", 
          frequency0,amplitude0,

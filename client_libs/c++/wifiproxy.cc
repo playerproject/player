@@ -104,7 +104,7 @@ WiFiProxy::Print()
     sprintf(mode, "OTHER (%d)", op_mode);
   }
 
-  printf("#WiFi(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code, 
+  printf("#WiFi(%d:%d) - %c\n", m_device_id.code, 
          m_device_id.index, access);
 
   printf("\tMode: %s\t%s\n", mode, access_point);

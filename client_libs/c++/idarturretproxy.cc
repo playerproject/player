@@ -56,7 +56,7 @@ void IDARTurretProxy::Print()
   
   player_idarturret_reply_t reply;
 
-  printf("#IDAR(%d:%d:%d) - %c ", m_device_id.robot, m_device_id.code,
+  printf("#IDAR(%d:%d) - %c ", m_device_id.code,
          m_device_id.index, access);
 
   switch( GetMessages( &reply ) )

@@ -88,7 +88,7 @@ int player_connect(player_connection_t* conn, const char* host, int port)
   /* fill in server structure */
   server.sin_family = PF_INET;
   server.sin_port = htons(port);
-
+  
   /* make the connection */
   return player_connect_sockaddr( conn, &server );
 }
@@ -183,7 +183,6 @@ int player_connect_sockaddr(player_connection_t* conn,
   /* fill in the caller's structure */
   (*conn).sock = sock;
   memcpy((*conn).banner,banner,PLAYER_IDENT_STRLEN);
-  (*conn).port = ntohs(server->sin_port);
 
   return(0);
 }
@@ -218,7 +217,7 @@ int player_disconnect(player_connection_t* conn)
  *     -1 if something went wrong (you should probably close the connection!)
  */
 int player_request(player_connection_t* conn, 
-                   player_device_id_t device_id,
+                   uint16_t device, uint16_t device_index, 
                    const char* payload, size_t payloadlen, 
                    player_msghdr_t* replyhdr, char* reply, size_t replylen)
 {
@@ -236,9 +235,8 @@ int player_request(player_connection_t* conn,
   }
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_REQ);
-  hdr.robot = htons(device_id.robot);
-  hdr.device = htons(device_id.code);
-  hdr.device_index = htons(device_id.index);
+  hdr.device = htons(device);
+  hdr.device_index = htons(device_index);
   hdr.time_sec = 0;
   hdr.time_usec = 0;
   hdr.timestamp_sec = 0;
@@ -269,6 +267,7 @@ int player_request(player_connection_t* conn,
   {
     if(player_read(conn, &hdr, buffer, sizeof(buffer)) == -1)
       return(-1);
+
   }
 
   /* did they want the reply? */
@@ -284,7 +283,8 @@ int player_request(player_connection_t* conn,
  * issue a single device request
  */
 int player_request_device_access(player_connection_t* conn,
-                                 player_device_id_t device_id,
+                                 uint16_t device,
+                                 uint16_t device_index,
                                  uint8_t req_access,
                                  uint8_t* grant_access,
                                  char* driver_name,
@@ -295,20 +295,15 @@ int player_request_device_access(player_connection_t* conn,
   unsigned char payload[sizeof(player_device_req_t)];
   player_msghdr_t replyhdr;
   unsigned char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
-  player_device_id_t tmpid;
 
   this_req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  this_req.id.robot = htons(device_id.robot);
-  this_req.id.code = htons(device_id.code);
-  this_req.id.index = htons(device_id.index);
+  this_req.code = htons(device);
+  this_req.index = htons(device_index);
   this_req.access = req_access;
 
   memcpy(payload,&this_req,sizeof(player_device_req_t));
 
-  tmpid.robot = 0;
-  tmpid.code = PLAYER_PLAYER_CODE;
-  tmpid.index = 0;
-  if(player_request(conn, tmpid,
+  if(player_request(conn, PLAYER_PLAYER_CODE, 0, 
                     payload, sizeof(payload),
                     &replyhdr, replybuffer, sizeof(replybuffer)) == -1)
     return(-1);
@@ -364,14 +359,12 @@ int player_read_header(player_connection_t* conn, player_msghdr_t* hdr )
 
   /* byte-swap as necessary */
   hdr->type = ntohs(hdr->type);
-  hdr->robot = ntohs(hdr->robot);
   hdr->device = ntohs(hdr->device);
   hdr->device_index = ntohs(hdr->device_index);
   hdr->time_sec = ntohl(hdr->time_sec);
   hdr->time_usec = ntohl(hdr->time_usec);
   hdr->timestamp_sec = ntohl(hdr->timestamp_sec);
   hdr->timestamp_usec = ntohl(hdr->timestamp_usec);
-  hdr->reserved = ntohs(hdr->reserved);
   hdr->size = ntohl(hdr->size);
   /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
   /*timesec = (time_t)(hdr->time / 1000);*/
@@ -456,7 +449,6 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 
   /* byte-swap as necessary */
   hdr->type = ntohs(hdr->type);
-  hdr->robot = ntohs(hdr->robot);
   hdr->device = ntohs(hdr->device);
   hdr->device_index = ntohs(hdr->device_index);
   hdr->time_sec = ntohl(hdr->time_sec);
@@ -464,7 +456,6 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   hdr->timestamp_sec = ntohl(hdr->timestamp_sec);
   hdr->timestamp_usec = ntohl(hdr->timestamp_usec);
   hdr->size = ntohl(hdr->size);
-  hdr->reserved = ntohl(hdr->reserved);
   /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
   /*timesec = (time_t)(hdr->time / 1000);*/
   /*printf("time: %s\n", ctime(&timesec));*/
@@ -513,14 +504,14 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
  *   -1 if something went wrong (you should probably close the connection!)
  */
 int player_write(player_connection_t* conn, 
-                 player_device_id_t device_id,
+                 uint16_t device, uint16_t device_index,
                  const char* command, size_t commandlen)
 {
-  return(_player_write(conn,device_id,command,commandlen,0));
+  return(_player_write(conn,device,device_index,command,commandlen,0));
 }
 
 int _player_write(player_connection_t* conn, 
-                 player_device_id_t device_id,
+                 uint16_t device, uint16_t device_index,
                  const char* command, size_t commandlen, int reserved)
 {
   char buffer[PLAYER_MAX_MESSAGE_SIZE];
@@ -538,9 +529,8 @@ int _player_write(player_connection_t* conn,
 
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_CMD);
-  hdr.robot = htons(device_id.robot);
-  hdr.device = htons(device_id.code);
-  hdr.device_index = htons(device_id.index);
+  hdr.device = htons(device);
+  hdr.device_index = htons(device_index);
   hdr.time_sec = 0;
   hdr.time_usec = 0;
   hdr.timestamp_sec = 0;

@@ -259,7 +259,7 @@ int LaserVisualBarcode::Setup()
   // Subscribe to the laser.
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
-  id.robot = this->device_id.robot;
+  id.port = this->device_id.port;
   this->laser = deviceTable->GetDevice(id);
   if (!this->laser)
   {
@@ -275,7 +275,7 @@ int LaserVisualBarcode::Setup()
   // Subscribe to the PTZ.
   id.code = PLAYER_PTZ_CODE;
   id.index = this->ptz_index;
-  id.robot = this->device_id.robot;
+  id.port = this->device_id.port;
   this->ptz = deviceTable->GetDevice(id);
   if (!this->ptz)
   {
@@ -291,7 +291,7 @@ int LaserVisualBarcode::Setup()
   // Subscribe to the blobfinder.
   id.code = PLAYER_BLOBFINDER_CODE;
   id.index = this->blobfinder_index;
-  id.robot = this->device_id.robot;
+  id.port = this->device_id.port;
   this->blobfinder = deviceTable->GetDevice(id);
   if (!this->blobfinder)
   {

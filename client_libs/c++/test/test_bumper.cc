@@ -12,7 +12,7 @@ int
 test_bumper(PlayerClient* client, int index)
 {
   unsigned char access;
-  BumperProxy sp(client,index,'c',robot);
+  BumperProxy sp(client,index,'c');
 
   printf("device [bumper] index [%d]\n", index);
 

@@ -97,7 +97,7 @@ void SonarProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void SonarProxy::Print()
 {
-  printf("#Sonar(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+  printf("#Sonar(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   for(size_t i=0;i<range_count;i++)
     printf("%u ", ranges[i]);

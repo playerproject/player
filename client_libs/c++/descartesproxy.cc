@@ -79,7 +79,7 @@ void DescartesProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void DescartesProxy::Print()
 {
-  printf("#Descartes(%d:%d:%d) - %c\n", m_device_id.robot,
+  printf("#Descartes(%d:%d) - %c\n",
          m_device_id.code, m_device_id.index, access);
   puts("#xpos\typos\ttheta\tbumpers");
   printf("%d\t%d\t%u\t%u-%u\n", 

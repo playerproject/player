@@ -32,19 +32,12 @@
 ClientProxy::ClientProxy(PlayerClient* pc, 
             unsigned short req_device,
             unsigned short req_index,
-            unsigned char req_access,
-            unsigned short req_robot)
+            unsigned char req_access)
 {
-  // TODO: make sure that this default of 0 makes sense.
-  m_device_id.robot = req_robot;
+  m_device_id.port = pc->port;
   m_device_id.code = req_device;
   m_device_id.index = req_index;
 
-/*
-ClientProxy::ClientProxy(PlayerClient* pc, 
-            player_device_id_t device_id,
-            unsigned char req_access)
-*/
   client = pc;
 
   timestamp.tv_sec = 0;
@@ -71,8 +64,8 @@ ClientProxy::ClientProxy(PlayerClient* pc,
                                 driver_name, sizeof(driver_name));
 
     if((req_access != grant_access) && (player_debug_level(-1) >= 1))
-      printf("WARNING: tried to get '%c' access to device %d:%d:%d but got "
-             "'%c' access.\n", req_access, m_device_id.robot, 
+      printf("WARNING: tried to get '%c' access to device %d:%d but got "
+             "'%c' access.\n", req_access,
              m_device_id.code, m_device_id.code, grant_access);
   }
   else
@@ -118,8 +111,8 @@ int ClientProxy::ChangeAccess(unsigned char req_access,
     }
 
     if((req_access != our_grant_access) && (player_debug_level(-1) >= 1))
-      printf("WARNING: tried to get '%c' access to device %d:%d:%d but got "
- 	     "'%c' access.\n", req_access, m_device_id.robot, m_device_id.code,
+      printf("WARNING: tried to get '%c' access to device %d:%d but got "
+ 	     "'%c' access.\n", req_access, m_device_id.code,
              m_device_id.index, our_grant_access);
   }
   else
