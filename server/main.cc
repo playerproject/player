@@ -55,6 +55,7 @@
 #include <clientmanager.h>
 #include <devicetable.h>
 #include <drivertable.h>
+#include <prefix.h>
 
 // the base class and two derived classes for timefeeds:
 #include <playertime.h>
@@ -135,6 +136,10 @@ bool autoassign_ports = false;
 int global_playerport = PLAYER_PORTNUM; // used to gen. useful output & debug
 
 extern player_interface_t interfaces[];
+
+// Try to load a given plugin, using a particular search algorithm.
+// Returns true on success and false on failure.
+bool LoadPlugin(const char* pluginname, const char* cfgfile);
 
 /* Usage statement */
 void
@@ -768,6 +773,104 @@ void PrintDeviceTable()
   return;
 }
 
+// Try to load a given plugin, using a particular search algorithm.
+// Returns true on success and false on failure.
+bool
+LoadPlugin(const char* pluginname, const char* cfgfile)
+{
+  void* handle;
+  char fullpath[PATH_MAX];
+  char* playerpath;
+  char* tmp;
+  unsigned int i,j;
+
+  // see if we got an absolute path
+  if(pluginname[0] == '/' || pluginname[0] == '~')
+  {
+    strcpy(fullpath,pluginname);
+    printf("trying to load %s...", fullpath);
+    fflush(stdout);
+    if((handle = dlopen(fullpath, RTLD_NOW)))
+    {
+      puts("success");
+      return(true);
+    }
+    else
+    {
+      puts("failed");
+      return(false);
+    }
+  }
+
+  // we got a relative path, so search for the module
+
+  // did the user set PLAYERPATH?
+  if((playerpath = getenv("PLAYERPATH")))
+  {
+    // yep, now parse it, as a colon-separated list of directories
+    i=0;
+    while(i<strlen(playerpath))
+    {
+      j=i;
+      while(j<strlen(playerpath))
+      {
+        if(playerpath[j] == ':')
+        {
+          break;
+        }
+        j++;
+      }
+      strncpy(fullpath,playerpath+i,j-i);
+      strcat(fullpath,"/");
+      strcat(fullpath,pluginname);
+      printf("trying to load %s...", fullpath);
+      fflush(stdout);
+      if((handle = dlopen(fullpath, RTLD_NOW)))
+      {
+        puts("success");
+        return(true);
+      }
+      puts("failed");
+
+      i=j+1;
+    }
+  }
+
+  // try to load it from the directory where the config file is
+    
+  // Note that dirname() modifies the contents, so
+  // we need to make a copy of the filename.
+  tmp = strdup(cfgfile);
+  getcwd(fullpath, PATH_MAX);
+  strcat(fullpath,"/");
+  strcat(fullpath,dirname(tmp));
+  strcat(fullpath,"/");
+  strcat(fullpath,pluginname);
+  printf("trying to load %s...", fullpath);
+  fflush(stdout);
+  if((handle = dlopen(fullpath, RTLD_NOW)))
+  {
+    puts("success");
+    return(true);
+  }
+  puts("failed");
+
+  // try to load it from prefix/lib/player/plugins
+  strcpy(fullpath,PLAYER_INSTALL_PREFIX);
+  strcat(fullpath,"/lib/player/plugins/");
+  strcat(fullpath,pluginname);
+  printf("trying to load %s...", fullpath);
+  fflush(stdout);
+  if((handle = dlopen(fullpath, RTLD_NOW)))
+  {
+    puts("success");
+    return(true);
+  }
+  puts("failed");
+
+  return(false);
+}
+
 
 bool
 ParseConfigFile(char* fname, int** ports, int* num_ports, 
@@ -780,6 +883,8 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
   char* colon2;
   int index;
   char* driver;
+  const char *pluginname;  
+  //void* handle;
   int code = 0;
   int port = global_playerport;
   char robotname[PLAYER_MAX_DEVICE_STRING_LEN];
@@ -898,6 +1003,25 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
 
       // did the user specify a different driver?
       driver = (char*)configFile.ReadString(i, "driver", driver);
+
+      // Load any required plugins
+      pluginname = configFile.ReadString(i, "plugin", NULL);
+      if (pluginname != NULL)
+      {
+        if(!LoadPlugin(pluginname,configFile.filename))
+        {
+          PLAYER_ERROR1("failed to load plugin: [%s]", dlerror());
+          return (false);
+        }
+        /*
+        fprintf(stdout, "loading plugin [%s]\n", pluginname);
+        if(!(handle = dlopen(pluginname, RTLD_NOW)))
+        {
+          PLAYER_ERROR1("failed: [%s]", dlerror());
+          return (false);
+        }
+         */
+      }
 
       printf("  loading driver \"%s\" as device \"%d:%s:%d\"\n", 
              driver, port, interface, index);
@@ -1020,7 +1144,9 @@ int main( int argc, char *argv[] )
   struct pollfd *ufds = NULL;
   int num_ufds = 0;
   int protocol = PLAYER_TRANSPORT_TCP;
+#if INCLUDE_STAGE
   char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
+#endif
 
   global_argc = argc;
   global_argv = argv;

@@ -27,7 +27,7 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc deviceentry.cc devi
                  player.h playerqueue.h deviceentry.h device.h deviceregistry.h \
                  devicetable.h clientdata.h clientmanager.h socket_util.h \
                  wallclocktime.h playertime.h configfile.h drivertable.cc \
-                 drivertable.h
+                 drivertable.h prefix.h
 
 
 include_HEADERS = playercommon.h \
@@ -40,8 +40,8 @@ include_HEADERS = playercommon.h \
 # by configure.  In later versions of Automake, you can use a
 # nodist_player_SOURCES, but that doesn't work with the version we're using.
 #
-EXTRA_DIST = playercommon.h.in
+EXTRA_DIST = playercommon.h.in prefix.h.in
 
 dist-hook:
-	rm -f $(distdir)/playercommon.h
+	rm -f $(distdir)/playercommon.h $(distdir)/prefix.h
 
