@@ -21,6 +21,54 @@
  *
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_mixer mixer
+
+TODO
+
+@par Compile-time dependencies
+
+- &lt;sys/soundcard.h&gt;
+
+@par Provides
+
+- @ref player_interface_audiomixer
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+TODO
+
+@par Configuration file options
+
+- device (string)
+  - Default: "/dev/mixer"
+  - Mixer device to use.
+
+@par Example
+
+@verbatim
+driver
+(
+  name "mixer"
+  provides ["audiomixer:0"]
+  device "/dev/mixer""
+)
+@endverbatim
+
+@par Authors
+
+- Nate Koenig
+
+*/
+
+/** @} */
+
+
 #include <sys/soundcard.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>

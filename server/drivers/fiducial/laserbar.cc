@@ -32,6 +32,72 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_laserbar laserbar
+
+The laser bar detector searches for retro-reflective targets in the
+laser range finder data.  Targets can be either planar or cylindrical,
+as shown below. For planar targets, the range, bearing and orientation
+will be determined; for cylindrical targets, only the range and bearing
+will be determined.  The target size and shape can be set in the
+configuration file.
+
+The range at which targets can be detected is dependant on the target
+size, the angular resolution of the laser and the quality of the
+retro-reflective material used on the target.
+
+See also the @ref player_driver_laserbarcode and 
+@ref player_driver_laservisualbarcode drivers.
+
+@image html laservisualbeacon.jpg "A sample laser bar (ignore the colored bands)"
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- This driver provides detected target information through a @ref
+  player_interface_fiducial device.
+
+@par Requires
+
+- This driver finds targets in scans from a @ref player_interface_laser
+  device.
+
+@par Configuration requests
+
+- PLAYER_FIDUCIAL_GET_GEOM
+
+@par Configuration file options
+
+- width (length)
+  - Default: 0.08 m
+  - Target width.
+
+- tol (length)
+  - Default: 0.5 m
+  - Tolerance.
+
+@par Example
+
+@verbatim
+driver
+(
+  name "laserbar"
+  requires ["laser:0"]
+  provides ["fiducial:0"]
+  width 0.2
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+*/
+/** @} */
+
 #include "player.h"
 
 #include <errno.h>
@@ -89,7 +155,6 @@ class LaserBar : public Driver
                     double ur, double ub, double uo);
   
   // Pointer to laser to get data from.
-  private: int laser_index;
   private: player_device_id_t laser_id;
   private: Driver *laser_driver;
 
@@ -126,8 +191,13 @@ LaserBar::LaserBar( ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
              0, 0, 0, 1)
 {
-  // The default laser device to use
-  this->laser_index = cf->ReadInt(section, "laser_index", 0);
+  // Must have an input laser
+  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
+                       PLAYER_LASER_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
 
   // Default reflector properties.
   this->reflector_width = cf->ReadLength(section, "width", 0.08);
@@ -139,12 +209,6 @@ LaserBar::LaserBar( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserBar::Setup()
 {
-  // Get the pointer to the laser.  If index was not overridden by an
-  // argument in the constructor, then we use this driver's index.
-  this->laser_id.port = this->device_id.port;
-  this->laser_id.code = PLAYER_LASER_CODE;
-  this->laser_id.index = this->laser_index;
-  
   if (!(this->laser_driver = deviceTable->GetDriver(this->laser_id)))
   {
     PLAYER_ERROR("unable to locate suitable laser device");

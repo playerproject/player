@@ -449,7 +449,7 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see 
 # the \image command).
 
-IMAGE_PATH             = ../drivers/blobfinder ../../utils/playerv ../../utils/playervcr ../../utils/playernav
+IMAGE_PATH             = ../drivers/blobfinder ../../utils/playerv ../../utils/playervcr ../../utils/playernav ../drivers/blobfinder/upcbarcode ../drivers/fiducial
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should 
 # invoke to filter for each input file. Doxygen will invoke the filter program 

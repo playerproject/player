@@ -28,6 +28,115 @@
  *   from ACTS, which this device spawns and then talks to.
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_acts acts
+
+ACTS is a fast color segmentation system written by Paul Rybski and sold
+by <a href=http://www.activrobots.com>ActivMedia</a>.  After training,
+ACTS finds colored blobs in a single camera image.  Player's acts driver
+starts and controls ACTS, which must already be installed and trained.
+
+The acts driver supports ACTS versions 1.0, 1.2, and 2.0.
+
+PXC200 framegrabbers, when accessed through the bttv module, may cause
+the machine to hang.  A workaround is to first read a frame from a
+framegrabber channel on which there is no video signal, and then start
+reading from the right channel.  (This problem is unrelated to Player's
+acts driver).
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_blobfinder
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+In the list below, a default value of (none) indicates that the associated
+option will not be passed to ACTS.  As a result, ACTS's own internal
+default for that parameter will be used.  Consult the ACTS manual to
+determine what those defaults are.
+
+- path (string)
+  - Default: ""
+  - Path to the ACTS executable (leave empty to search the user's PATH
+    for acts).
+- configfile (string)
+  - Default: "/usr/local/acts/actsconfig"
+  - Path to the ACTS configuration file to be used.
+- version (string)
+  - Default: "2.0"
+  - The version of ACTS in use (should be "1.0", "1.2", or "2.0")
+- width (integer)
+  - Default: 160
+  - Width of the camera image (in pixels)
+- height (integer)
+  - Default: 120
+  - Height of the camera image (in pixels)
+- pixels (integer)
+  - Default: (none)
+  - Minimum area required to call a blob a blob (in pixels)
+- port (integer)
+  - Default: 5001
+  - TCP port by which Player should connect to ACTS.
+- fps (integer)
+  - Default: (none)
+  - Frame per second of the camera.
+- drivertype (string)
+  - Default: (none)
+  - Type of framegrabber driver in use (e.g., "bttv", "bt848", "matrox").
+- invert (integer)
+  - Default: (none)
+  - Is the camera inverted?
+- devicepath (string)
+  - Default: (none)
+  - Path to the device file for the framegrabber (e.g., "/dev/fg0")
+- channel (integer)
+  - Default: (none)
+  - Which channel to select on the framegrabber.
+- norm (string)
+  - Default: (none)
+  - Something to do with normalization
+- pxc200 (integer)
+  - Default: (none)
+  - Is the framegrabber a PXC200?
+- brightness (float)
+  - Default: (none)
+  - Brightness level
+- contrast (float)
+   - Default: (none)
+   - Contrast level
+
+@par Example
+
+@verbatim
+driver
+(
+  name "acts"
+  provides ["blobfinder:0"]
+  configfile "/tmp/myactsconfig"
+)
+@endverbatim
+
+@par Authors
+
+Brian Gerkey
+
+*/
+
+/** @} */
+
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/

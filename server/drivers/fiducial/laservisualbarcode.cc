@@ -36,6 +36,94 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_laservisualbarcode laservisualbarcode
+
+The laser visual barcode detector uses both searches for fiducials that
+are both retro-reflective and color-coded.  Fiducials can be either planar
+or cylindical, as shown below.  For planar targets, the range, bearing,
+orientation and identity will be determined; for cylindrical targets,
+the orientation will be undefined.  The target size and shape can be
+set in the configuration file.
+
+The laser visual barcode detector searches the laser range data to
+find retro-reflective targets, points the camera at each of these
+targets in turn, then uses color information to determine the presence
+and identity of fiducials.  Thus, this detector makes use of three
+underlying devices: a laser range finder, a pan-tilt-zoom camera and a
+color blob detector.  Note that the laser is used to determine the
+geometry of the fidicual (range, bearing and orientation), while the
+camera is used to determine its identity.
+
+The range at which fiducials can be both detected and identified
+depends on a number of factors, including the size of the fiducial and
+the angular resolution of the laser.  Generally speaking, however,
+this detector has better range than the @ref player_driver_laserbarcode
+detector, but produces fewer observations.
+
+See also the @ref player_driver_laserbar and @ref
+player_driver_laserbarcode drivers.
+
+@image html laservisualbeacon.jpg "A sample laser visual barcode."
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- This driver provides detected target information through a @ref
+  player_interface_fiducial device.
+
+@par Requires
+
+- @ref player_interface_laser
+- @ref player_interface_ptz
+- @ref player_interface_blobfinder
+
+@par Configuration requests
+
+- PLAYER_FIDUCIAL_GET_GEOM
+
+@par Configuration file options
+
+- max_ptz_attention (float)
+  - Default: 2.0
+  - ??
+- retire_time (float)
+  - Default: 1.0
+  - ??
+- max_dist (float) (should be a length?)
+  - Default: 0.2
+  - ??
+- bit_count (integer)
+  - Default: 3
+  - Number of bits in visual barcode
+- bit_width (length)
+  - Default: 0.08 m
+  - Width of each bit in visual barcode
+- bit_height (length)
+  - Default: 0.02 m
+  - Height of each bit in visual barcode
+
+@par Example
+
+@verbatim
+driver
+(
+  name "laservisualbarcode"
+  requires ["laser:0" "ptz:0" "blobfinder:0"]
+  provides ["fiducial:0"]
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+*/
+/** @} */
+
 #include "player.h"
 
 #include <errno.h>
@@ -158,19 +246,16 @@ class LaserVisualBarcode : public Driver
   private: double max_dist;
 
   // Laser stuff.
-  private: int laser_index;
   private: Driver *laser;
   private: player_device_id_t laser_id;
   private: double laser_time;
 
   // PTZ stuff
-  private: int ptz_index;
   private: Driver *ptz;
   private: player_device_id_t ptz_id;
   private: double ptz_time;
 
   // Blobfinder stuff.
-  private: int blobfinder_index;
   private: Driver *blobfinder;
   private: player_device_id_t blobfinder_id;
   private: double blobfinder_time;
@@ -215,15 +300,33 @@ LaserVisualBarcode::LaserVisualBarcode( ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
              sizeof(player_fiducial_data_t), 0, 10, 10)
 {
-  this->laser_index = cf->ReadInt(section, "laser", 0);
+  // Must have an input laser
+  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
+                       PLAYER_LASER_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->laser = NULL;
   this->laser_time = 0;
 
-  this->ptz_index = cf->ReadInt(section, "ptz", 0);
+  // Must have a ptz
+  if (cf->ReadDeviceId(&this->ptz_id, section, "requires",
+                       PLAYER_PTZ_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->ptz = NULL;
   this->ptz_time = 0;
 
-  this->blobfinder_index = cf->ReadInt(section, "blobfinder", 0);
+  // Must have a blobfinder
+  if (cf->ReadDeviceId(&this->blobfinder_id, section, "requires",
+                       PLAYER_BLOBFINDER_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->blobfinder = NULL;
   this->blobfinder_time = 0;
 
@@ -255,9 +358,6 @@ int LaserVisualBarcode::Setup()
 {
   
   // Subscribe to the laser.
-  this->laser_id.code = PLAYER_LASER_CODE;
-  this->laser_id.index = this->laser_index;
-  this->laser_id.port = this->device_id.port;
   this->laser = deviceTable->GetDriver(this->laser_id);
   if (!this->laser)
   {
@@ -271,9 +371,6 @@ int LaserVisualBarcode::Setup()
   }
 
   // Subscribe to the PTZ.
-  this->ptz_id.code = PLAYER_PTZ_CODE;
-  this->ptz_id.index = this->ptz_index;
-  this->ptz_id.port = this->device_id.port;
   this->ptz = deviceTable->GetDriver(this->ptz_id);
   if (!this->ptz)
   {
@@ -287,9 +384,6 @@ int LaserVisualBarcode::Setup()
   }
 
   // Subscribe to the blobfinder.
-  this->blobfinder_id.code = PLAYER_BLOBFINDER_CODE;
-  this->blobfinder_id.index = this->blobfinder_index;
-  this->blobfinder_id.port = this->device_id.port;
   this->blobfinder = deviceTable->GetDriver(this->blobfinder_id);
   if (!this->blobfinder)
   {

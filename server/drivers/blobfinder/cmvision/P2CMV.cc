@@ -31,6 +31,63 @@
  * on the underlying camera device.
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_cmvision cmvision
+
+CMVision (Color Machine Vision) is a fast
+color-segmentation (aka blob-finding) software library.
+CMVision was written by Jim Bruce at CMU and is Freely <a
+href=http://www-2.cs.cmu.edu/~jbruce/cmvision/>available</a> under
+the GNU GPL.  But you don't have to download CMVision yourself, because
+Player's cmvision driver includes the CMVision code.  The cmvision driver
+provides a stream of camera images to the CMVision code and assembles
+the resulting blob information into Player's data format.
+
+Consult the CMVision documentation for details on writing a CMVision
+configuration file.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_blobfinder
+
+@par Requires
+
+- @ref player_interface_camera : camera device to get image data from
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- colorfile (string)
+  - Default: ""
+  - CMVision configuration file
+
+@par Example
+
+@verbatim
+driver
+(
+  name "cmvision"
+  provides ["blobfinder:0"]
+  requires ["camera:0"]
+)
+@endverbatim
+
+@par Authors
+
+Andy Martignoni III, Brian Gerkey, Brendan Burns, Ben Grocholsky
+
+*/
+
+/** @} */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
@@ -70,7 +127,7 @@ class CMVisionBF:public Driver
 
     int width, height;  // the image dimensions
     const char* colorfile;
-    int camera_index;
+    player_device_id_t camera_id;
 
     CMVision *vision;
     capture *cap;
@@ -106,9 +163,14 @@ CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
   vision=NULL;
   cap=NULL;
  
-  // first, get the necessary args
   colorfile = cf->ReadString(section, "colorfile", "");
-  camera_index = cf->ReadInt(section, "camera_index", 0);
+  // Must have an input camera
+  if (cf->ReadDeviceId(&this->camera_id, section, "requires",
+                       PLAYER_CAMERA_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
 }
     
 int
@@ -118,7 +180,7 @@ CMVisionBF::Setup()
   fflush(stdout);
   vision = new CMVision;
 
-  assert(cap = new captureCamera(this->camera_index));
+  assert(cap = new captureCamera(this->camera_id.index));
 
   // get image size from camera_data struct
   width = ((captureCamera*)cap)->Width();
