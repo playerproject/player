@@ -234,6 +234,10 @@ void GzPower_Register(DriverTable *table);
 void GzPtz_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_GAZEBO_TRUTH
+void GzTruth_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_SERVICE_ADV_LSD
 void ServiceAdvLSD_Register(DriverTable* table);
 #endif
@@ -541,6 +545,10 @@ register_devices()
   
 #ifdef INCLUDE_GAZEBO_PTZ
   GzPtz_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_GAZEBO_TRUTH
+  GzTruth_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_LSD

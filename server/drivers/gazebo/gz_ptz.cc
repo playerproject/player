@@ -199,7 +199,7 @@ void GzPtz::PutCommand(void* client, unsigned char* src, size_t len)
   //  printf("pan=%d, tilt=%d,zoom=%d",cmd->pan,cmd->tilt,cmd->zoom);
   this->iface->data->cmd_pan = ((int) ntohs(cmd->pan)) * M_PI/180;
   this->iface->data->cmd_tilt = ((int) ntohs(cmd->tilt)) * M_PI/180;
-  this->iface->data->cmd_zoom = ((int) ntohs(cmd->zoom)) * M_PI / 180;
+  this->iface->data->cmd_zoom = (int) ntohs(cmd->zoom);
   
   return;
 }
