@@ -116,8 +116,8 @@ struct js_event {
 // define the speed limits for the robot
 
 // at full joystick depression you'll go this fast
-#define MAX_SPEED    2500 // mm/second
-#define MAX_TURN    80 // degrees/second
+#define MAX_SPEED    500 // mm/second
+#define MAX_TURN    60 // degrees/second
 
 // this is the speed that the camera will pan when you press the
 // hatswitches in degrees/sec
@@ -294,8 +294,8 @@ void keyboard_handler(struct controller* cont )
 {
   int kfd = 0;
   char c;
-  double max_tv = 150.0;
-  double max_rv = 50.0;
+  double max_tv = 500.0;
+  double max_rv = 10.0;
   struct termio cooked, raw;
 
   // get the console in raw mode
@@ -448,7 +448,10 @@ void Client::Update( struct controller* cont )
   {
     // send the speed commands
     if(!threed)
+    {
       pp->SetSpeed( cont->speed, cont->turnrate);
+      printf("%d %d\n", cont->speed, cont->turnrate);
+    }
     else
       pp3->SetSpeed( cont->speed, cont->turnrate);
     lastcommand = curr;
