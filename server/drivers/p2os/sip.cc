@@ -72,9 +72,9 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
     data->bumper.bumpers[j++] = (unsigned char)((frontbumpers >> i) & 0x01);
   for(int i=4;i>=0;i--)
     data->bumper.bumpers[j++] = (unsigned char)((rearbumpers >> i) & 0x01);
-  data->power.charge = (unsigned char)battery;
+  data->power.charge = htons((unsigned short)battery);
   data->dio.count = (unsigned char)8;
-  data->dio.digin = (unsigned int)digin;
+  data->dio.digin = htonl((unsigned int)digin);
   //TODO: should do this smarter, based on which analog input is selected
   data->aio.count = (unsigned char)1;
   data->aio.anin[0] = (unsigned char)analog;
