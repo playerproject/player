@@ -18,6 +18,7 @@
   #define canMSG_STD              0x0002
 #endif
 
+
 class CanPacket
 {
   public:

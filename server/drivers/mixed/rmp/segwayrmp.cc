@@ -100,6 +100,7 @@ class rmp_frame_t
 
 };
 
+
 /* Takes a CAN packet from the RMP and parses it into a
  * rmp_frame_t struct.  sets the ready bitfield 
  * depending on which CAN packet we have.  when
@@ -156,7 +157,7 @@ rmp_frame_t::AddPacket(const CanPacket &pkt)
     ready |= (1 << (pkt.id & 0xF));
 }
 
-extern CDevice* SegwayRMP::instance;
+CDevice* SegwayRMP::instance = NULL;
 
 // instance method.  use it instead of the constructor, to ensure that we only
 // get one instance per CAN interface.
@@ -195,7 +196,8 @@ SegwayRMP::ProcessConfigFile(ConfigFile* cf, int section)
 
 SegwayRMP::~SegwayRMP()
 {
-  this->instance = NULL;
+  //  this->instance = NULL;
+  delete SegwayRMP::instance;
 }
 
 int
@@ -384,6 +386,8 @@ SegwayRMP::Main()
 }
   
 // helper to handle config requests
+// returns 1 to indicate we wrote to the CAN bus
+// returns 0 to indicate we did NOT write to CAN bus
 int
 SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
 {
@@ -435,8 +439,14 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
-          PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+
+	if (Write(pkt) < 0) {
+	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+	    PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+	} else {
+	  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+	    PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+	}
       }
 
       odom_x = odom_y = odom_yaw = 0.0;
@@ -561,8 +571,13 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
-          PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+	if (Write(pkt) < 0) {
+	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+	    PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+	} else {
+	  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+	    PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+	}
       }
       // return 1 to indicate that we wrote to the CAN bus this time
       return(1);
@@ -602,9 +617,6 @@ SegwayRMP::Read()
   int channel;
   int ret;
   rmp_frame_t data_frame[2];
-  int delta_lin_raw, delta_ang_raw;
-  double delta_lin, delta_ang;
-  double tmp;
   
   //static struct timeval last;
   //struct timeval curr;
@@ -634,123 +646,7 @@ SegwayRMP::Read()
         // from channel 1.
         if(channel == 1)
         {
-          //gettimeofday(&curr,NULL);
-          //printf("diff: %lf\n",
-                 //(curr.tv_sec + (curr.tv_usec / 1e6)) -
-                 //(last.tv_sec + (last.tv_usec / 1e6)));
-          //last = curr;
-
-          // Get the new linear and angular encoder values and compute
-          // odometry.  Note that we do the same thing here, regardless of 
-          // whether we're presenting 2D or 3D position info.
-          delta_lin_raw = Diff(this->last_raw_foreaft,
-                               data_frame[channel].foreaft,
-                               this->firstread);
-          this->last_raw_foreaft = data_frame[channel].foreaft;
-
-          delta_ang_raw = Diff(this->last_raw_yaw,
-                               data_frame[channel].yaw,
-                               this->firstread);
-          this->last_raw_yaw = data_frame[channel].yaw;
-
-          delta_lin = (double)delta_lin_raw / (double)RMP_COUNT_PER_M;
-          delta_ang = DTOR((double)delta_ang_raw / 
-                           (double)RMP_COUNT_PER_REV * 360.0);
-                  
-          // First-order odometry integration
-          this->odom_x += delta_lin * cos(this->odom_yaw);
-          this->odom_y += delta_lin * sin(this->odom_yaw);
-          this->odom_yaw += delta_ang;
-
-          // Normalize yaw in [0, 360]
-          this->odom_yaw = atan2(sin(this->odom_yaw), cos(this->odom_yaw));
-          if (this->odom_yaw < 0)
-            this->odom_yaw += 2 * M_PI;
-
-          // first, do 2D info.
-          data.position_data.xpos = htonl((int32_t)(this->odom_x * 1000.0));
-          data.position_data.ypos = htonl((int32_t)(this->odom_y * 1000.0));
-          data.position_data.yaw = htonl((int32_t)RTOD(this->odom_yaw));
-
-          // combine left and right wheel velocity to get foreward velocity
-          // change from counts/s into mm/s
-          data.position_data.xspeed = 
-                  htonl((uint32_t)rint(((double)data_frame[channel].left_dot +
-                                        (double)data_frame[channel].right_dot) /
-                                       (double)RMP_COUNT_PER_M_PER_S 
-                                       * 1000.0 / 2.0));
-
-          // no side speeds for this bot
-          data.position_data.yspeed = 0;
-
-          // from counts/sec into deg/sec.  also, take the additive
-          // inverse, since the RMP reports clockwise angular velocity as
-          // positive.
-          data.position_data.yawspeed =
-                  htonl((int32_t)(-rint((double)data_frame[channel].yaw_dot / 
-                                        (double)RMP_COUNT_PER_DEG_PER_S)));
-
-          data.position_data.stall = 0;
-        
-          // now, do 3D info.
-          data.position3d_data.xpos = htonl((int32_t)(this->odom_x * 1000.0));
-          data.position3d_data.ypos = htonl((int32_t)(this->odom_y * 1000.0));
-          // this robot doesn't fly
-          data.position3d_data.zpos = 0;
-            
-          // normalize angles to [0,360]
-          tmp = NORMALIZE(DTOR((double)data_frame[channel].roll /
-                               (double)RMP_COUNT_PER_DEG));
-          if(tmp < 0)
-            tmp += 2*M_PI;
-          data.position3d_data.roll = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
-
-          // normalize angles to [0,360]
-          tmp = NORMALIZE(DTOR((double)data_frame[channel].pitch /
-                               (double)RMP_COUNT_PER_DEG));
-          if(tmp < 0)
-            tmp += 2*M_PI;
-          data.position3d_data.pitch = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
-
-          data.position3d_data.yaw = 
-                  htonl(((int32_t)(RTOD(this->odom_yaw) * 3600.0)));
-            
-          // combine left and right wheel velocity to get foreward velocity
-          // change from counts/s into mm/s
-          data.position3d_data.xspeed = 
-                  htonl((uint32_t)rint(((double)data_frame[channel].left_dot +
-                                        (double)data_frame[channel].right_dot) /
-                                       (double)RMP_COUNT_PER_M_PER_S 
-                                       * 1000.0 / 2.0));
-          // no side or vertical speeds for this bot
-          data.position3d_data.yspeed = 0;
-          data.position3d_data.zspeed = 0;
-            
-          data.position3d_data.rollspeed = 
-                  htonl((int32_t)rint((double)data_frame[channel].roll_dot /
-                                      (double)RMP_COUNT_PER_DEG_PER_S
-                                      * 3600.0));
-          data.position3d_data.pitchspeed = 
-                  htonl((int32_t)rint((double)data_frame[channel].pitch_dot /
-                                      (double)RMP_COUNT_PER_DEG_PER_S
-                                      * 3600.0));
-          // from counts/sec into arc-seconds/sec.  also, take the additive
-          // inverse, since the RMP reports clockwise angular velocity as
-          // positive.
-          data.position3d_data.yawspeed = 
-                  htonl((int32_t)(-rint((double)data_frame[channel].yaw_dot / 
-                                        (double)RMP_COUNT_PER_DEG_PER_S
-                                        * 3600.0)));
-
-          data.position3d_data.stall = 0;
-          
-          // fill in power data.  the RMP returns a percentage of full,
-	  // and the specs for the HT say that it's a 72 volt system.  assuming
-	  // that the RMP is the same, we'll convert to decivolts for Player.
-	  data.power_data.charge = 
-	    ntohs((uint16_t)rint(data_frame[channel].battery * 7.2));
-
-          firstread = false;
+	  UpdateData(&data_frame[channel]);
         }
 
         data_frame[channel].ready = 0;
@@ -767,6 +663,127 @@ SegwayRMP::Read()
 
   return(0);
 }
+
+void
+SegwayRMP::UpdateData(rmp_frame_t * data_frame)
+{
+  int delta_lin_raw, delta_ang_raw;
+  double delta_lin, delta_ang;
+  double tmp;
+
+  // Get the new linear and angular encoder values and compute
+  // odometry.  Note that we do the same thing here, regardless of 
+  // whether we're presenting 2D or 3D position info.
+  delta_lin_raw = Diff(this->last_raw_foreaft,
+		       data_frame->foreaft,
+		       this->firstread);
+  this->last_raw_foreaft = data_frame->foreaft;
+  
+  delta_ang_raw = Diff(this->last_raw_yaw,
+		       data_frame->yaw,
+		       this->firstread);
+  this->last_raw_yaw = data_frame->yaw;
+  
+  delta_lin = (double)delta_lin_raw / (double)RMP_COUNT_PER_M;
+  delta_ang = DTOR((double)delta_ang_raw / 
+		   (double)RMP_COUNT_PER_REV * 360.0);
+  
+  // First-order odometry integration
+  this->odom_x += delta_lin * cos(this->odom_yaw);
+  this->odom_y += delta_lin * sin(this->odom_yaw);
+  this->odom_yaw += delta_ang;
+  
+  // Normalize yaw in [0, 360]
+  this->odom_yaw = atan2(sin(this->odom_yaw), cos(this->odom_yaw));
+  if (this->odom_yaw < 0)
+    this->odom_yaw += 2 * M_PI;
+  
+  // first, do 2D info.
+  data.position_data.xpos = htonl((int32_t)(this->odom_x * 1000.0));
+  data.position_data.ypos = htonl((int32_t)(this->odom_y * 1000.0));
+  data.position_data.yaw = htonl((int32_t)RTOD(this->odom_yaw));
+  
+  // combine left and right wheel velocity to get foreward velocity
+  // change from counts/s into mm/s
+  data.position_data.xspeed = 
+    htonl((uint32_t)rint(((double)data_frame->left_dot +
+			  (double)data_frame->right_dot) /
+			 (double)RMP_COUNT_PER_M_PER_S 
+			 * 1000.0 / 2.0));
+  
+  // no side speeds for this bot
+  data.position_data.yspeed = 0;
+  
+  // from counts/sec into deg/sec.  also, take the additive
+  // inverse, since the RMP reports clockwise angular velocity as
+  // positive.
+  data.position_data.yawspeed =
+    htonl((int32_t)(-rint((double)data_frame->yaw_dot / 
+			  (double)RMP_COUNT_PER_DEG_PER_S)));
+  
+  data.position_data.stall = 0;
+  
+  // now, do 3D info.
+  data.position3d_data.xpos = htonl((int32_t)(this->odom_x * 1000.0));
+  data.position3d_data.ypos = htonl((int32_t)(this->odom_y * 1000.0));
+  // this robot doesn't fly
+  data.position3d_data.zpos = 0;
+  
+  // normalize angles to [0,360]
+  tmp = NORMALIZE(DTOR((double)data_frame->roll /
+		       (double)RMP_COUNT_PER_DEG));
+  if(tmp < 0)
+    tmp += 2*M_PI;
+  data.position3d_data.roll = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
+  
+  // normalize angles to [0,360]
+  tmp = NORMALIZE(DTOR((double)data_frame->pitch /
+		       (double)RMP_COUNT_PER_DEG));
+  if(tmp < 0)
+    tmp += 2*M_PI;
+  data.position3d_data.pitch = htonl((int32_t)rint(RTOD(tmp) * 3600.0));
+  
+  data.position3d_data.yaw = 
+    htonl(((int32_t)(RTOD(this->odom_yaw) * 3600.0)));
+  
+  // combine left and right wheel velocity to get foreward velocity
+  // change from counts/s into mm/s
+  data.position3d_data.xspeed = 
+    htonl((uint32_t)rint(((double)data_frame->left_dot +
+			  (double)data_frame->right_dot) /
+			 (double)RMP_COUNT_PER_M_PER_S 
+			 * 1000.0 / 2.0));
+  // no side or vertical speeds for this bot
+  data.position3d_data.yspeed = 0;
+  data.position3d_data.zspeed = 0;
+  
+  data.position3d_data.rollspeed = 
+    htonl((int32_t)rint((double)data_frame->roll_dot /
+			(double)RMP_COUNT_PER_DEG_PER_S
+			* 3600.0));
+  data.position3d_data.pitchspeed = 
+    htonl((int32_t)rint((double)data_frame->pitch_dot /
+			(double)RMP_COUNT_PER_DEG_PER_S
+			* 3600.0));
+  // from counts/sec into arc-seconds/sec.  also, take the additive
+  // inverse, since the RMP reports clockwise angular velocity as
+  // positive.
+  data.position3d_data.yawspeed = 
+    htonl((int32_t)(-rint((double)data_frame->yaw_dot / 
+			  (double)RMP_COUNT_PER_DEG_PER_S
+			  * 3600.0)));
+  
+  data.position3d_data.stall = 0;
+  
+  // fill in power data.  the RMP returns a percentage of full,
+  // and the specs for the HT say that it's a 72 volt system.  assuming
+  // that the RMP is the same, we'll convert to decivolts for Player.
+  data.power_data.charge = 
+    ntohs((uint16_t)rint(data_frame->battery * 7.2));
+  
+  firstread = false;  
+}  
+
 
 int
 SegwayRMP::Write(CanPacket& pkt)
