@@ -36,7 +36,7 @@ class Block:
 def print_error(msg, filename, line):
     """Print a parser errors."""
 
-    sys.stderr.write('error (%d) in file %s:%d\n' % (msg, filename, line))
+    sys.stderr.write('error (%s) in file %s:%d\n' % (msg, filename, line))
     return
 
 
@@ -264,8 +264,10 @@ def make_text(file, section, block):
 def make_defines(file, section, blocks, index):
 
     file.write('\\begin{center}')
-    file.write('\\begin{small}')
+    file.write('\\begin{footnotesize}')
     file.write('\\begin{tabularx}{\\columnwidth}{XX}\n')
+    file.write('\\hline\n')
+    file.write('Value & Meaning \\\\\n')
     file.write('\\hline\n')
 
     while index < len(blocks):
@@ -281,7 +283,7 @@ def make_defines(file, section, blocks, index):
 
     file.write('\\hline\n')
     file.write('\\end{tabularx}\n')
-    file.write('\\end{small}')
+    file.write('\\end{footnotesize}')
     file.write('\\end{center}')
     return index
 
@@ -290,13 +292,16 @@ def make_struct(file, section, blocks, index):
     """Generate a class entry."""
 
     block = blocks[index]
-    file.write('\\verb+%s+\n\n' % block.name);
-    file.write('%s\n\n' % block.desc)
+
+    file.write('\n\n\\vspace{1em}\\noindent \\verb+%s+ : %s' % (block.name + '_t', block.desc));
+    
     index += 1
 
-    file.write('\\begin{center}')
-    file.write('\\begin{small}')
+    file.write('\\begin{center}')    
+    file.write('\\begin{footnotesize}')
     file.write('\\begin{tabularx}{\\columnwidth}{XX}\n')
+    file.write('\\hline\n')
+    file.write('Value & Meaning \\\\\n')
     file.write('\\hline\n')
 
     while index < len(blocks):
@@ -312,7 +317,7 @@ def make_struct(file, section, blocks, index):
 
     file.write('\\hline\n')
     file.write('\\end{tabularx}\n')
-    file.write('\\end{small}')
+    file.write('\\end{footnotesize}')
     file.write('\\end{center}')
     return index
 
