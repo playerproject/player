@@ -176,14 +176,6 @@ int VFH_Class::Setup() {
   if (this->SetupLaser() != 0)
     return -1;
 
-  // Initialize the command buffer
-/*
-  cmd.xpos = htonl((int32_t) (this->inc_pose.v[0] * 1000));
-  cmd.ypos = htonl((int32_t) (this->inc_pose.v[1] * 1000));
-  cmd.yaw = htonl((int32_t) (this->inc_pose.v[2] * 180 / M_PI));
-  CDevice::PutCommand(NULL, (unsigned char*) &cmd, sizeof(cmd));
-*/
-
   // Start the driver thread.
   this->StartThread();
 
@@ -258,6 +250,12 @@ int VFH_Class::SetupOdom() {
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the underlying odom device.
 int VFH_Class::ShutdownOdom() {
+
+  // Stop the robot before unsubscribing
+  this->speed = 0;
+  this->turnrate = 0;
+  this->PutCommand();
+  
   this->odom->Unsubscribe(this);
   return 0;
 }
@@ -345,10 +343,6 @@ int VFH_Class::GetOdom() {
   data.xspeed = ntohl(data.xspeed);
   data.yspeed = ntohl(data.yspeed);
   data.yawspeed = ntohl(data.yawspeed);
-
-//  this->odom_pose.v[0] = (double) ((int32_t) data.xpos) / 1000.0;
-//  this->odom_pose.v[1] = (double) ((int32_t) data.ypos) / 1000.0;
-//  this->odom_pose.v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
 
   this->odom_pose[0] = (double) ((int32_t) data.xpos);
   this->odom_pose[1] = (double) ((int32_t) data.ypos);
@@ -539,12 +533,6 @@ void VFH_Class::Main() {
 
   this->GetOdom();
 
-  /*REMOVE
-  reset_odom_x = this->odom_pose[0];
-  reset_odom_y = this->odom_pose[1];
-  reset_odom_t = this->odom_pose[2];
-  */
-
   while (true) {
 //    gettimeofday(&stime, 0);
     // Sleep for 1ms (will actually take longer than this).
@@ -571,8 +559,8 @@ void VFH_Class::Main() {
                 powf((goal_y - this->odom_pose[1]),2));
     
     if (dist > 500) {
-      Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]),
-                            (goal_x - this->odom_pose[0])) * 180 / M_PI - this->odom_pose[2];
+      Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]), (goal_x - this->odom_pose[0]))
+        * 180 / M_PI - this->odom_pose[2];
 
       while (Desired_Angle > 360.0) {
         Desired_Angle -= 360.0;
@@ -610,11 +598,6 @@ void VFH_Class::GetCommand() {
     goal_x = ntohl(cmd.xpos);
     goal_y = ntohl(cmd.ypos);
     goal_t = ntohl(cmd.yaw);
-
-//    reset_odom_x = this->odom_pose[0];
-//    reset_odom_y = this->odom_pose[1];
-//    reset_odom_t = this->odom_pose[2];
-
     //printf("Received command to go to: (%d, %d)\n", goal_x, goal_y);
   }
 }
@@ -658,8 +641,8 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
   sector_angle = cf->ReadInt(section, "sector_angle", 5);
   robot_radius = cf->ReadLength(section, "robot_radius", 0.25) * 1000.0;
   safety_dist = cf->ReadLength(section, "safety_dist", 0.1) * 1000.0;
-  max_speed = cf->ReadInt(section, "max_speed", 200);
-  max_turnrate = cf->ReadInt(section, "max_turnrate", 40);
+  max_speed = (int) (1000 * cf->ReadLength(section, "max_speed", 0.2));
+  max_turnrate = (int) (180 / M_PI * cf->ReadAngle(section, "max_turnrate", 40 * M_PI / 180));
   free_space_cutoff = cf->ReadLength(section, "free_space_cutoff", 2000000.0);
   obs_cutoff = cf->ReadLength(section, "obs_cutoff", free_space_cutoff);
   weight_desired_dir = cf->ReadLength(section, "weight_desired_dir", 5.0);
@@ -928,6 +911,7 @@ int VFH_Class::Update_VFH() {
   int print = 0;
 
   if (Desired_Angle > 180) {
+//  if (Desired_Angle > 90 && Desired_Angle < 270) {
     speed = 1;
     Set_Motion();
     return(1);
@@ -1349,17 +1333,22 @@ int VFH_Class::Set_Motion() {
 
   // This happens if all directions blocked, so just spin in place
   if (speed <= 0) {
+    //printf("stop\n");
     turnrate = 40;
     speed = 0;
-  } else if (speed == 1) { // goal behind robot, turn toward it
+  }
+  // goal behind robot, turn toward it
+  else if (speed == 1) { 
+    //printf("turn %f\n", Desired_Angle);
     speed = 0;
     if (Desired_Angle > 270) {
       turnrate = -40;
     } else {
       turnrate = 40;
     }
-  } else {
-//  printf("Picked %f\n", Picked_Angle);
+  }
+  else {
+    //printf("Picked %f\n", Picked_Angle);
     if ((Picked_Angle > 270) && (Picked_Angle < 360)) {
       turnrate = -1 * MAX_TURNRATE;
     } else if ((Picked_Angle < 270) && (Picked_Angle > 180)) {
@@ -1400,19 +1389,6 @@ void VFH_Class::PutPose()
   data.xspeed = (int32_t)rint(this->odom_vel[0]);
   data.yspeed = (int32_t)rint(this->odom_vel[1]);
   data.yawspeed = (int32_t)rint(this->odom_vel[2]);
-
-
-/*
-  // Pose esimate
-  data.xpos = (int32_t) (this->inc_pose.v[0] * 1000);
-  data.ypos = (int32_t) (this->inc_pose.v[1] * 1000);
-  data.yaw = (int32_t) (this->inc_pose.v[2] * 180 / M_PI);
-  
-  // Velocity estimate (use odometry device's pose esimate)
-  data.xspeed = (int32_t) (this->inc_vel.v[0] * 1000);
-  data.yspeed = (int32_t) (this->inc_vel.v[1] * 1000);
-  data.yawspeed = (int32_t) (this->inc_vel.v[2] * 180 / M_PI);
-*/
   
   // Byte swap
   data.xpos = htonl(data.xpos);
