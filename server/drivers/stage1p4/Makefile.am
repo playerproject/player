@@ -8,9 +8,12 @@ EXTRA_LIBRARIES = libstage1p4.a
 
 libstage1p4_a_SOURCES = \
 	stage1p4.cc \
-	stage1p4.h \
 	stg_position.cc \
 	stg_laser.cc \
 	stg_simulation.cc
+
+# This file should be added to CVS before it's referenced here.  Otherwise,
+# the 'make dist' fails.
+#	stage1p4.h 
 
 #include_HEADERS = 
