@@ -25,9 +25,11 @@
  *
  *   class to keep track of available drivers.  
  */
-#include <drivertable.h>
 
 #include <string.h> // for strncpy(3)
+#include <stdlib.h> // for qsort(3)
+
+#include <drivertable.h>
 
 // initialize the table
 DriverTable::DriverTable()
@@ -119,5 +121,32 @@ DriverTable::GetDriverName(int idx)
     i++;
   }
   return(retval);
+}
+
+int
+driver_strcmp(const void* a, const void* b)
+{
+  const char* stra = *(const char**)a;
+  const char* strb = *(const char**)b;
+
+  return(strcmp(stra,strb));
+}
+
+// sort drivers, based on name
+char**
+DriverTable::SortDrivers()
+{
+  int i;
+  char** sortedlist;
+
+  assert(sortedlist = (char**)malloc(numdrivers*sizeof(char*)));
+
+  i=0;
+  for(DriverEntry* entry = head; entry; entry = entry->next)
+    sortedlist[i++] = entry->name;
+
+  qsort((void*)sortedlist, (size_t)numdrivers, sizeof(char*),driver_strcmp);
+
+  return(sortedlist);
 }
 
