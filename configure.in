@@ -271,9 +271,9 @@ AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
 
 dnl Optionally build the python client.
-AC_CHECK_PROG(with_python, python, yes, no)
+PYTHON_VERSION=2.2
+AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)
 AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
-AC_SUBST(PYTHON_VERSION)
 
 dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h sys/types.h strings.h)
