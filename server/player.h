@@ -675,8 +675,6 @@ typedef struct
 
 /* Request packet subtypes */
 #define PLAYER_FIDUCIAL_GET_GEOM   0x01
-#define PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG 0x02
-#define PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG 0x03
 
 /* Fiducial geometry packet. */
 typedef struct
@@ -695,29 +693,6 @@ typedef struct
   uint16_t fiducial_size[2];
   
 } __attribute__ ((packed)) player_fiducial_geom_t;
-
-/* REMOVE? */
-/* Fiducial configuration packet. */
-typedef struct
-{
-  /* Packet subtype.  Set to PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG to set the
-   *  device configuration.  Set to PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG to
-   *  get the device configuration. */
-  uint8_t subtype;
-
-  /* The number of bits in the beacon, including start and end
-   * markers. */
-  uint8_t bit_count;
-
-  /* The width of each bit, in mm. */
-  uint16_t bit_size;
-
-  /* Bit detection thresholds.  <zero_thresh> is the minimum threshold
-   * for declaring a bit is zero (0-100).  <one_thresh> is the minimum
-   * threshold for declaring a bit is one (0-100). */
-  uint16_t zero_thresh;
-  uint16_t one_thresh;
-} __attribute__ ((packed)) player_fiducial_laserbarcode_config_t;
 
 /*************************************************************************/
 

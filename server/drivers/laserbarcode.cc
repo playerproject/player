@@ -70,6 +70,9 @@ class LaserBarcode : public CDevice
   public: virtual int PutConfig(player_device_id_t* device, void *client, 
                                 void *data, size_t len);
 
+  // Handle geometry requests.
+  private: void HandleGetGeom(void *client, void *request, int len);
+
   // Analyze the laser data and return beacon data
   private: void FindBeacons(const player_laser_data_t *laser_data,
                             player_fiducial_data_t *beacon_data);
@@ -80,15 +83,10 @@ class LaserBarcode : public CDevice
 
   // Pointer to laser to get data from
   private: int laser_index;
-  private: CDevice *laser;
-
-  // Defaults
-  private: int default_bitcount;
-  private: double default_bitwidth;
+  private: CDevice *laser_device;
   
   // Magic numbers
-  // See setup for definitions
-  private: int max_bits;
+  private: int bit_count;
   private: double bit_width;
   private: double max_depth;
   private: double accept_thresh, zero_thresh, one_thresh;
@@ -112,26 +110,31 @@ CDevice* LaserBarcode_Init(char* interface, ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void 
-LaserBarcode_Register(DriverTable* table)
+void LaserBarcode_Register(DriverTable* table)
 {
   table->AddDriver("laserbarcode", PLAYER_READ_MODE, LaserBarcode_Init);
 }
 
-extern int global_playerport; // used to get at devices
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserBarcode::LaserBarcode(char* interface, ConfigFile* cf, int section) :
-  CDevice(0,0,0,1)
+LaserBarcode::LaserBarcode(char* interface, ConfigFile* cf, int section)
+    : CDevice(0,0,0,1)
 {
-  // if laser_index is not overridden by an argument here, then we'll use the
-  // device's own index, which we can get in Setup() below.
-  this->laser_index = cf->ReadInt(section, "laser", -1);
+  // The default laser device to use
+  this->laser_index = cf->ReadInt(section, "laser", 0);
 
   // Get beacon settings.
-  this->default_bitcount = cf->ReadInt(section, "bitcount", 8);
-  this->default_bitwidth = cf->ReadLength(section, "bitwidth", 0.05);
+  this->bit_count = cf->ReadInt(section, "bit_count", 8);
+  this->bit_width = cf->ReadLength(section, "bit_width", 0.05);
+  
+  // Maximum variance in the flatness of the beacon
+  this->max_depth = 0.05;
+
+  // Default thresholds
+  this->accept_thresh = 1.0;
+  this->zero_thresh = 0.60;
+  this->one_thresh = 0.60;
 
   return;
 }
@@ -145,35 +148,23 @@ int LaserBarcode::Setup()
   player_device_id_t id;
   id.port = device_id.port;
   id.code = PLAYER_LASER_CODE;
-  id.index = (this->laser_index >= 0 ? this->laser_index : this->device_id.index);
-  this->laser = deviceTable->GetDevice(id);
-  if(!this->laser)
+  id.index = this->laser_index;
+  this->laser_device = deviceTable->GetDevice(id);
+  if(!this->laser_device)
   {
     PLAYER_ERROR("unable to find laser device");
     return(-1);
   }
     
   // Subscribe to the laser device, but fail if it fails
-  if(this->laser->Subscribe(this) != 0)
+  if(this->laser_device->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
   }
-
-  // Maximum variance in the flatness of the beacon
-  this->max_depth = 0.05;
-
-  // Number of bits and size of each bit
-  this->max_bits = this->default_bitcount;
-  this->bit_width = this->default_bitwidth;
-
-  // Default thresholds
-  this->accept_thresh = 1.0;
-  this->zero_thresh = 0.60;
-  this->one_thresh = 0.60;
     
-  PLAYER_MSG2("laser beacon device: bitcount [%d] bitwidth [%fm]",
-              this->max_bits, this->bit_width);
+  PLAYER_MSG2("laserbarcode device: bitcount [%d] bitwidth [%fm]",
+              this->bit_count, this->bit_width);
   return 0;
 }
 
@@ -184,9 +175,9 @@ int LaserBarcode::Setup()
 int LaserBarcode::Shutdown()
 {
   // Unsubscribe from the laser device
-  this->laser->Unsubscribe(this);
+  this->laser_device->Unsubscribe(this);
 
-  PLAYER_MSG0("laser beacon device: shutdown");
+  PLAYER_MSG0("laserbarcode device: shutdown");
   return 0;
 }
 
@@ -194,57 +185,52 @@ int LaserBarcode::Shutdown()
 // Get data from buffer (called by client thread)
 //
 size_t LaserBarcode::GetData(void* client, unsigned char *dest, size_t maxsize,
-                             uint32_t* timestamp_sec,
-                             uint32_t* timestamp_usec)
+                             uint32_t* time_sec, uint32_t* time_usec)
 {
-  Lock();
-
-  // If the laser doesnt have new data,
-  // just return a copy of our old data.
-  if (this->laser->data_timestamp_sec == this->data_timestamp_sec &&
-      this->laser->data_timestamp_usec == this->data_timestamp_usec)
-  {
-    ASSERT(maxsize >= sizeof(this->data));
-    memcpy(dest, &this->data, sizeof(this->data));
-    Unlock();
-    return(sizeof(this->data));
-  }
-
-  // Get the laser data
+  size_t laser_size;
   player_laser_data_t laser_data;
-  this->laser->GetData(this,(unsigned char*) &laser_data, sizeof(laser_data), NULL, NULL);
-
-  // Do some byte swapping
-  laser_data.resolution = ntohs(laser_data.resolution);
-  laser_data.min_angle = ntohs(laser_data.min_angle);
-  laser_data.max_angle = ntohs(laser_data.max_angle);
-  laser_data.range_count = ntohs(laser_data.range_count);
-  for (int i = 0; i < laser_data.range_count; i++)
-    laser_data.ranges[i] = ntohs(laser_data.ranges[i]);
-
-  // Analyse the laser data
-  FindBeacons(&laser_data, &this->data);
-
-  // Do some byte-swapping
-  for (int i = 0; i < this->data.count; i++)
+  uint32_t laser_time_sec, laser_time_usec;
+  
+  // Get the laser data.
+  laser_size = this->laser_device->GetData(this, (uint8_t*) &laser_data, sizeof(laser_data),
+                                           &laser_time_sec, &laser_time_usec);
+  assert(laser_size <= sizeof(laser_data));
+  
+  // If the laser doesnt have new data, just return a copy of our old
+  // data.
+  if (laser_time_sec != this->data_timestamp_sec ||
+      laser_time_usec != this->data_timestamp_usec)
   {
-    this->data.fiducials[i].id = htons(this->data.fiducials[i].id);
-    this->data.fiducials[i].pose[0] = htons(this->data.fiducials[i].pose[0]);
-    this->data.fiducials[i].pose[1] = htons(this->data.fiducials[i].pose[1]);
-    this->data.fiducials[i].pose[2] = htons(this->data.fiducials[i].pose[2]);
+    // Do some byte swapping
+    laser_data.resolution = ntohs(laser_data.resolution);
+    laser_data.min_angle = ntohs(laser_data.min_angle);
+    laser_data.max_angle = ntohs(laser_data.max_angle);
+    laser_data.range_count = ntohs(laser_data.range_count);
+    for (int i = 0; i < laser_data.range_count; i++)
+      laser_data.ranges[i] = ntohs(laser_data.ranges[i]);
+
+    // Analyse the laser data
+    FindBeacons(&laser_data, &this->data);
+
+    // Do some byte-swapping
+    for (int i = 0; i < this->data.count; i++)
+    {
+      this->data.fiducials[i].id = htons(this->data.fiducials[i].id);
+      this->data.fiducials[i].pose[0] = htons(this->data.fiducials[i].pose[0]);
+      this->data.fiducials[i].pose[1] = htons(this->data.fiducials[i].pose[1]);
+      this->data.fiducials[i].pose[2] = htons(this->data.fiducials[i].pose[2]);
+    }
+    PLAYER_TRACE1("setting beacon count: %u",this->data.count);
+    this->data.count = htons(this->data.count);
   }
-  PLAYER_TRACE1("setting beacon count: %u",this->data.count);
-  this->data.count = htons(this->data.count);
 
   // Copy results
   ASSERT(maxsize >= sizeof(this->data));
   memcpy(dest, &this->data, sizeof(this->data));
 
   // Copy the laser timestamp
-  *timestamp_sec = this->data_timestamp_sec = this->laser->data_timestamp_sec;
-  *timestamp_usec = this->data_timestamp_usec  = this->laser->data_timestamp_usec;
-
-  Unlock();
+  *time_sec = laser_time_sec;
+  *time_usec = laser_time_usec;
 
   return (sizeof(this->data));
 }
@@ -255,61 +241,22 @@ size_t LaserBarcode::GetData(void* client, unsigned char *dest, size_t maxsize,
 int LaserBarcode::PutConfig(player_device_id_t* device, void *client, 
                                   void *data, size_t len) 
 {
-  player_fiducial_laserbarcode_config_t config;
+  int subtype;
 
-  memcpy(&config, data, min(sizeof(config),len));
-
-  switch (config.subtype)
+  if (len < 1)
   {
-    case PLAYER_FIDUCIAL_LASERBARCODE_SET_CONFIG:
+    PLAYER_ERROR("empty requestion; ignoring");
+    return 0;
+  }
+  
+  subtype = ((uint8_t*) data)[0];
+  switch (subtype)
+  {
+    case PLAYER_FIDUCIAL_GET_GEOM:
     {
-      // Check the message length
-      if (len != sizeof(config))
-      {
-        PLAYER_ERROR2("config request len is invalid (%d != %d)", 
-                      len, sizeof(config));
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        return 0;
-      }
-      Lock();
-      this->max_bits = config.bit_count;
-      this->max_bits = max(this->max_bits, 3);
-      this->max_bits = min(this->max_bits, 8);
-      this->bit_width = ntohs(config.bit_size) / 1000.0;
-      this->zero_thresh = ntohs(config.zero_thresh) / 100.0;
-      this->one_thresh = ntohs(config.one_thresh) / 100.0;
-      Unlock();
-      
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
-        PLAYER_ERROR("PutReply() failed");
+      HandleGetGeom(client, data, len);
       break;
     }
-
-    case PLAYER_FIDUCIAL_LASERBARCODE_GET_CONFIG:
-    {
-      // Check the message length
-      if (len != sizeof(config.subtype))
-      {
-        PLAYER_ERROR2("config request len is invalid (%d != %d)", 
-                      len, sizeof(config.subtype));
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        return 0;
-      }
-      Lock();
-      config.bit_count = this->max_bits;
-      config.bit_size = htons((short) (this->bit_width * 1000));
-      config.one_thresh = htons((short) (this->one_thresh * 100));
-      config.zero_thresh = htons((short) (this->zero_thresh * 100));
-      Unlock();
-      
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
-                   sizeof(config)) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    }
-
     default:
     {
       if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
@@ -319,6 +266,41 @@ int LaserBarcode::PutConfig(player_device_id_t* device, void *client,
   }
     
   return(0);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Handle geometry requests.
+void LaserBarcode::HandleGetGeom(void *client, void *request, int len)
+{
+  unsigned short reptype;
+  struct timeval ts;
+  int replen;
+  player_laser_geom_t lgeom;
+  player_fiducial_geom_t fgeom;
+    
+  // Get the geometry from the laser
+  replen = this->laser_device->Request(&this->laser_device->device_id, this, request, len,
+                                       &reptype, &ts, &lgeom, sizeof(lgeom));
+  if (replen <= 0 || replen != sizeof(lgeom))
+  {
+    PLAYER_ERROR("unable to get geometry from laser device");
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+  }
+
+  fgeom.pose[0] = lgeom.pose[0];
+  fgeom.pose[1] = lgeom.pose[1];
+  fgeom.pose[2] = lgeom.pose[2];
+  fgeom.size[0] = lgeom.size[0];
+  fgeom.size[1] = lgeom.size[1];
+  fgeom.fiducial_size[0] = ntohs((int) (0.05 * 1000));
+  fgeom.fiducial_size[1] = ntohs((int) (this->bit_count * this->bit_width * 1000));
+    
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ts, &fgeom, sizeof(fgeom)) != 0)
+    PLAYER_ERROR("PutReply() failed");
+
+  return;
 }
 
 
@@ -337,8 +319,8 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
 
   // Expected width of beacon
   //
-  double min_width = (this->max_bits - 1) * this->bit_width;
-  double max_width = (this->max_bits + 1) * this->bit_width;
+  double min_width = (this->bit_count - 1) * this->bit_width;
+  double max_width = (this->bit_count + 1) * this->bit_width;
 
   ax = ay = 0;
   bx = by = 0;
@@ -459,7 +441,7 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
 
     // Update our probability distribution
     // Use Bayes law
-    for (int bit = 0; bit < this->max_bits; bit++)
+    for (int bit = 0; bit < this->bit_count; bit++)
     {
       // Use a rectangular distribution
       double a = (bit + 0.0) * this->bit_width;
@@ -498,7 +480,7 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
 
   // Now assign the id
   int id = 0;
-  for (int bit = 0; bit < this->max_bits; bit++)
+  for (int bit = 0; bit < this->bit_count; bit++)
   {
     double pn = prob[bit][0] + prob[bit][1];
     double p0 = prob[bit][0] / pn;
