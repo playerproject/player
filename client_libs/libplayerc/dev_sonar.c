@@ -18,7 +18,7 @@
  *
  */
 /***************************************************************************
- * Desc: Sonar device proxy
+ * Desc: Fixed range finder (FRF) proxy
  * Author: Andrew Howard
  * Date: 13 May 2002
  * CVS: $Id$
@@ -34,48 +34,48 @@
 
 
 // Local declarations
-void playerc_sonar_putdata(playerc_sonar_t *device, player_msghdr_t *header,
-                           player_sonar_data_t *data, size_t len);
+void playerc_frf_putdata(playerc_frf_t *device, player_msghdr_t *header,
+                           player_frf_data_t *data, size_t len);
 
-// Create a new sonar proxy
-playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index)
+// Create a new frf proxy
+playerc_frf_t *playerc_frf_create(playerc_client_t *client, int index)
 {
-  playerc_sonar_t *device;
+  playerc_frf_t *device;
 
-  device = malloc(sizeof(playerc_sonar_t));
-  memset(device, 0, sizeof(playerc_sonar_t));
-  playerc_device_init(&device->info, client, PLAYER_SONAR_CODE, index,
-                      (playerc_putdata_fn_t) playerc_sonar_putdata);
+  device = malloc(sizeof(playerc_frf_t));
+  memset(device, 0, sizeof(playerc_frf_t));
+  playerc_device_init(&device->info, client, PLAYER_FRF_CODE, index,
+                      (playerc_putdata_fn_t) playerc_frf_putdata);
     
   return device;
 }
 
 
-// Destroy a sonar proxy
-void playerc_sonar_destroy(playerc_sonar_t *device)
+// Destroy a frf proxy
+void playerc_frf_destroy(playerc_frf_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
 }
 
 
-// Subscribe to the sonar device
-int playerc_sonar_subscribe(playerc_sonar_t *device, int access)
+// Subscribe to the frf device
+int playerc_frf_subscribe(playerc_frf_t *device, int access)
 {
   return playerc_device_subscribe(&device->info, access);
 }
 
 
-// Un-subscribe from the sonar device
-int playerc_sonar_unsubscribe(playerc_sonar_t *device)
+// Un-subscribe from the frf device
+int playerc_frf_unsubscribe(playerc_frf_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
 }
 
 
 // Process incoming data
-void playerc_sonar_putdata(playerc_sonar_t *device, player_msghdr_t *header,
-                           player_sonar_data_t *data, size_t len)
+void playerc_frf_putdata(playerc_frf_t *device, player_msghdr_t *header,
+                           player_frf_data_t *data, size_t len)
 {
   int i;
 
@@ -87,14 +87,14 @@ void playerc_sonar_putdata(playerc_sonar_t *device, player_msghdr_t *header,
 }
 
 
-// Get the sonar geometry.  The writes the result into the proxy
+// Get the frf geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int playerc_sonar_get_geom(playerc_sonar_t *device)
+int playerc_frf_get_geom(playerc_frf_t *device)
 {
   int i, len;
-  player_sonar_geom_t config;
+  player_frf_geom_t config;
 
-  config.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+  config.subtype = PLAYER_FRF_GET_GEOM_REQ;
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));

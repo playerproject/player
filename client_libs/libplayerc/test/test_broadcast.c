@@ -14,14 +14,14 @@ int test_broadcast(playerc_client_t *client, int index)
 {
   int i, j, len;
   char msg[128];
-  playerc_broadcast_t *broadcast;
+  playerc_comms_t *comms;
 
-  printf("device [broadcast] index [%d]\n", index);
+  printf("device [comms] index [%d]\n", index);
 
-  broadcast = playerc_broadcast_create(client, index);
+  comms = playerc_comms_create(client, index);
 
   TEST("subscribing (read/write)");
-  if (playerc_broadcast_subscribe(broadcast, PLAYER_ALL_MODE) != 0)
+  if (playerc_comms_subscribe(comms, PLAYER_ALL_MODE) != 0)
   {
     FAIL();
     return -1;
@@ -33,9 +33,9 @@ int test_broadcast(playerc_client_t *client, int index)
   {
     for (j = 0; j < 5; j++)
     {
-      TEST1("sending broadcast message [%d]", i);
+      TEST1("sending comms message [%d]", i);
       snprintf(msg, sizeof(msg), "this is message [%d:%d]", i, j);
-      if (playerc_broadcast_send(broadcast, msg, strlen(msg) + 1) != 0)
+      if (playerc_comms_send(comms, msg, strlen(msg) + 1) != 0)
         FAIL();
       else
         PASS();
@@ -43,8 +43,8 @@ int test_broadcast(playerc_client_t *client, int index)
 
     for (j = 0; j < 10; j++)
     {
-      TEST("receiving broadcast message");
-      len = playerc_broadcast_recv(broadcast, msg, sizeof(msg));
+      TEST("receiving comms message");
+      len = playerc_comms_recv(comms, msg, sizeof(msg));
       if (len == 0)
       {
         PASS();
@@ -59,14 +59,14 @@ int test_broadcast(playerc_client_t *client, int index)
   }
   
   TEST("unsubscribing");
-  if (playerc_broadcast_unsubscribe(broadcast) != 0)
+  if (playerc_comms_unsubscribe(comms) != 0)
   {
     FAIL();
     return -1;
   }
   PASS();
   
-  playerc_broadcast_destroy(broadcast);
+  playerc_comms_destroy(comms);
   
   return 0;
 }

@@ -9,9 +9,8 @@ LDADD = -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm
 
 noinst_PROGRAMS = $(BUILDTEST)
 
-test_SOURCES = test_bps.c \
-               test_broadcast.c \
-               test.c \
+test_SOURCES = test.c \
+							 test_broadcast.c \
                test_gps.c \
                test.h \
                test_laser.c \

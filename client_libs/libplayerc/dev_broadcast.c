@@ -33,45 +33,45 @@
 #include "error.h"
 
 
-// Create a new broadcast proxy
-playerc_broadcast_t *playerc_broadcast_create(playerc_client_t *client, int index)
+// Create a new comms proxy
+playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index)
 {
-  playerc_broadcast_t *device;
+  playerc_comms_t *device;
 
-  device = malloc(sizeof(playerc_broadcast_t));
-  memset(device, 0, sizeof(playerc_broadcast_t));
-  playerc_device_init(&device->info, client, PLAYER_BROADCAST_CODE, index, NULL);
+  device = malloc(sizeof(playerc_comms_t));
+  memset(device, 0, sizeof(playerc_comms_t));
+  playerc_device_init(&device->info, client, PLAYER_COMMS_CODE, index, NULL);
     
   return device;
 }
 
 
-// Destroy a broadcast proxy
-void playerc_broadcast_destroy(playerc_broadcast_t *device)
+// Destroy a comms proxy
+void playerc_comms_destroy(playerc_comms_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
 }
 
 
-// Subscribe to the broadcast device
-int playerc_broadcast_subscribe(playerc_broadcast_t *device, int access)
+// Subscribe to the comms device
+int playerc_comms_subscribe(playerc_comms_t *device, int access)
 {
   return playerc_device_subscribe(&device->info, access);
 }
 
 
-// Un-subscribe from the broadcast device
-int playerc_broadcast_unsubscribe(playerc_broadcast_t *device)
+// Un-subscribe from the comms device
+int playerc_comms_unsubscribe(playerc_comms_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
 }
 
 
-// Send a broadcast message.
-int playerc_broadcast_send(playerc_broadcast_t *device, void *msg, int len)
+// Send a comms message.
+int playerc_comms_send(playerc_comms_t *device, void *msg, int len)
 {
-  player_broadcast_msg_t req, rep;
+  player_comms_msg_t req, rep;
   int reqlen, replen;
 
   if (len > sizeof(req.data))
@@ -80,7 +80,7 @@ int playerc_broadcast_send(playerc_broadcast_t *device, void *msg, int len)
     return -1;
   }
   
-  req.subtype = PLAYER_BROADCAST_SUBTYPE_SEND;
+  req.subtype = PLAYER_COMMS_SUBTYPE_SEND;
   memcpy(&req.data, msg, len);
   reqlen = sizeof(req) - sizeof(req.data) + len;
 
@@ -95,13 +95,13 @@ int playerc_broadcast_send(playerc_broadcast_t *device, void *msg, int len)
 }
 
 
-// Read the next broadcast message.
-int playerc_broadcast_recv(playerc_broadcast_t *device, void *msg, int len)
+// Read the next comms message.
+int playerc_comms_recv(playerc_comms_t *device, void *msg, int len)
 {
-  player_broadcast_msg_t req, rep;
+  player_comms_msg_t req, rep;
   int reqlen, replen;
 
-  req.subtype = PLAYER_BROADCAST_SUBTYPE_RECV;
+  req.subtype = PLAYER_COMMS_SUBTYPE_RECV;
   reqlen = sizeof(req.subtype);
 
   replen =  playerc_client_request(device->info.client, &device->info,

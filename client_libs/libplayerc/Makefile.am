@@ -5,7 +5,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/server
 lib_LIBRARIES = libplayerc.a
 
 libplayerc_a_SOURCES = client.c \
-                       dev_bps.c \
                        dev_broadcast.c \
                        dev_gps.c \
                        device.c \
