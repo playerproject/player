@@ -54,8 +54,8 @@
 #include <rwi_powerproxy.h> /* support for the RWI power device */
 
 //#include <occupancyproxy.h>  /* support for guess which device */
-//#include <idarproxy.h>  /* support for the IDAR device */
-//#include <descartesproxy.h>  /* support for the IDAR device */
+#include <idarproxy.h>  /* support for the IDAR device */
+#include <descartesproxy.h>  /* support for the IDAR device */
 
 // keep a linked list of proxies that we've got open
 class ClientProxyNode

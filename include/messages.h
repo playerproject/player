@@ -42,7 +42,7 @@
 /* need to put this stuff somewhere else? maybe run-time config? */
 #define PLAYER_NUM_SONAR_SAMPLES  24
 #define PLAYER_NUM_LASER_SAMPLES  401
-#define PLAYER_NUM_IDAR_SAMPLES   8
+//#define PLAYER_NUM_IDAR_SAMPLES   8
 #define PLAYER_NUM_BUMPER_SAMPLES 32
 
 /* the message start signifier */
@@ -751,19 +751,19 @@ typedef struct
  * IDAR device - HRL's infrared data and ranging turret
  */
 
-#define IDARBUFLEN 16
-#define RAYS_PER_SENSOR 5
+#define IDARBUFLEN 16   // idar message max in bytes
+#define RAYS_PER_SENSOR 5 // resolution
 
-#define IDAR_INSTRUCTION_TRANSMIT 0
-#define IDAR_INSTRUCTION_RECEIVE 1
-#define IDAR_INSTRUCTION_RECEIVE_NOFLUSH 2
+#define IDAR_TRANSMIT 0
+#define IDAR_RECEIVE 1
+#define IDAR_RECEIVE_NOFLUSH 2
 
 typedef struct
 {
   unsigned char mesg[IDARBUFLEN];
-  uint8_t len; //0-255
+  uint8_t len; //0-IDARBUFLEN
   uint8_t intensity; //0-255
-  uint8_t directions; // each set bit means send in that direction
+  //uint8_t directions; // each set bit means send in that direction
 } __attribute__ ((packed)) idartx_t;
 
 // WARNING - if( PLAYER_NUM_IDAR_SAMPLES > 8 ) you need to increase
@@ -778,20 +778,6 @@ typedef struct
   uint32_t timestamp_usec;
   uint16_t ranges[ RAYS_PER_SENSOR ]; // useful for debugging & visualization
 } __attribute__ ((packed)) idarrx_t; 
-
-// IDAR data packet - contains messages received and messages sent
-// since last read
-typedef struct
-{
-  idarrx_t rx[PLAYER_NUM_IDAR_SAMPLES];
-  //idartx_t tx[PLAYER_NUM_IDAR_SAMPLES];
-} __attribute__ ((packed)) player_idar_data_t;
-
-// IDAR command packet - contains a message (possibly null) for each
-//typedef  struct
-//{
-//idartx_t tx[PLAYER_NUM_IDAR_SAMPLES];
-//} __attribute__ ((packed)) player_idar_cmd_t;
 
 // IDRAR config packet - 
 // has room for a message in case this is a transmit command
