@@ -54,7 +54,7 @@
 #define PLAYER_MAX_DEVICE_STRING_LEN 64
 
 /* the currently assigned interface codes */
-#define PLAYER_NULL_CODE           ((uint16_t)0)   // /dev/null analogue
+#define PLAYER_NULL_CODE           ((uint16_t)256) // /dev/null analogue
 #define PLAYER_PLAYER_CODE         ((uint16_t)1)   // the server itself
 #define PLAYER_POWER_CODE          ((uint16_t)2)   // power subsystem
 #define PLAYER_GRIPPER_CODE        ((uint16_t)3)   // gripper

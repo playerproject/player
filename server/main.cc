@@ -77,7 +77,7 @@
 #endif
 
 // Log file stuff
-#if INCLUDE_READLOG
+#if INCLUDE_LOGFILE
 #include "readlog_manager.h"
 #include "readlog_time.h"
 #endif
@@ -995,7 +995,7 @@ int main( int argc, char *argv[] )
   }
   else if (readlog_filename != NULL)
   {
-#ifdef INCLUDE_READLOG
+#ifdef INCLUDE_LOGFILE
     // Initialize the readlog reader
     if (ReadLogManager_Init(readlog_filename, readlog_speed) != 0)
       exit(-1);
@@ -1095,7 +1095,7 @@ int main( int argc, char *argv[] )
   else
     printf("** Player [port %d] quitting **\n", global_playerport );
 
-#if INCLUDE_READLOG
+#if INCLUDE_LOGFILE
   // Finalize ReadLog manager
   if (readlog_filename != NULL)
     ReadLogManager_Fini();

@@ -99,7 +99,7 @@ void playerc_wifi_putdata(playerc_wifi_t *device, player_msghdr_t *header,
 {
   int i;
   
-  device->link_count = (int16_t) ntohs(data->link_count);
+  device->link_count = (uint16_t) ntohs(data->link_count);
 
   for (i = 0; i < device->link_count; i++)
   {

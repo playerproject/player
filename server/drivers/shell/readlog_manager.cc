@@ -254,6 +254,15 @@ void ReadLogManager::Main()
       }
     }
 
+    // Discard comments
+    if (token_count >= 1)
+    {
+      if (strcmp(tokens[0], "#") == 0)
+        continue;
+      if (strcmp(tokens[0], "##") == 0)
+        continue;
+    }
+
     // Parse out the header info
     if (this->ParseHeader(linenum, token_count, tokens, &header_id, &stime, &dtime) != 0)
       continue;
@@ -273,7 +282,7 @@ void ReadLogManager::Main()
         device_id = this->device_ids[i];
         
         if (device_id.code == header_id.code && device_id.index == header_id.index)
-          this->ParseData(device, linenum, token_count, tokens, dtime);
+          this->ParseData(device, linenum, token_count, tokens, dtime / 1000000L, dtime % 1000000L);
       }
     }
   }
@@ -288,6 +297,20 @@ void ReadLogManager::Main()
 
   return;
 }
+
+
+////////////////////////////////////////////////////////////////////////////
+// Signed int conversion macros
+#define NINT16(x) (htons((int16_t)(x)))
+#define NUINT16(x) (htons((uint16_t)(x)))
+#define NINT32(x) (htonl((int32_t)(x)))
+#define NUINT32(x) (htonl((uint32_t)(x)))
+
+
+////////////////////////////////////////////////////////////////////////////
+// Unit conversion macros
+#define M_MM(x) ((x) * 1000.0)
+#define RAD_DEG(x) ((x) * 180.0 / M_PI)
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -333,14 +356,14 @@ int ReadLogManager::ParseHeader(int linenum, int token_count, char **tokens,
 ////////////////////////////////////////////////////////////////////////////
 // Parse data
 int ReadLogManager::ParseData(CDevice *device, int linenum,
-                             int token_count, char **tokens, uint64_t dtime)
+                              int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
   if (device->device_id.code == PLAYER_LASER_CODE)
-    return this->ParseLaser(device, linenum, token_count, tokens, dtime);
+    return this->ParseLaser(device, linenum, token_count, tokens, tsec, tusec);
   else if (device->device_id.code == PLAYER_POSITION_CODE)
-    return this->ParsePosition(device, linenum, token_count, tokens, dtime);
+    return this->ParsePosition(device, linenum, token_count, tokens, tsec, tusec);
   else if (device->device_id.code == PLAYER_WIFI_CODE)
-    return this->ParseWifi(device, linenum, token_count, tokens, dtime);
+    return this->ParseWifi(device, linenum, token_count, tokens, tsec, tusec);
 
   PLAYER_WARN("unknown device code");
   return -1;
@@ -350,14 +373,10 @@ int ReadLogManager::ParseData(CDevice *device, int linenum,
 ////////////////////////////////////////////////////////////////////////////
 // Parse laser data
 int ReadLogManager::ParseLaser(CDevice *device, int linenum,
-                              int token_count, char **tokens, uint64_t dtime)
+                               int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
+  int i, count;
   player_laser_data_t data;
-  uint32_t dtime_sec, dtime_usec;
-    
-  int i;
-  double sr, sb;
-  int si;
 
   if (token_count < 12)
   {
@@ -365,35 +384,26 @@ int ReadLogManager::ParseLaser(CDevice *device, int linenum,
     return -1;
   }
 
-  data.range_count = 0;
-  for (i = 6; i < token_count; i += 3)
+  data.min_angle = NINT16(RAD_DEG(atof(tokens[6])) * 100);
+  data.max_angle = NINT16(RAD_DEG(atof(tokens[7])) * 100);
+  data.resolution = NUINT16(RAD_DEG(atof(tokens[8])) * 100);
+  data.range_count = NUINT16(atoi(tokens[9]));
+    
+  count = 0;
+  for (i = 10; i < token_count; i += 2)
   {
-    sr = atof(tokens[i + 0]);
-    sb = atof(tokens[i + 1]);
-    si = atoi(tokens[i + 2]);
-
-    if (data.range_count == 0)
-      data.min_angle = (int) (sb * 180 / M_PI * 100);
-    data.max_angle = (int) (sb * 180 / M_PI * 100);
-
-    data.ranges[data.range_count] = htons((int) (sr * 1000));
-    data.intensity[data.range_count] = si;
-    data.range_count += 1;
+    data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));
+    data.intensity[count] = atoi(tokens[i + 1]);
+    count += 1;
   }
 
-  data.resolution = (int) ((data.max_angle - data.min_angle) / data.range_count);
+  if (count != ntohs(data.range_count))
+  {
+    PLAYER_ERROR2("range count mismatch at %s:%d", this->filename, linenum);
+    return -1;
+  }
 
-  //printf("%d %d %d %d\n", data.resolution, data.min_angle, data.max_angle, data.range_count);
-  
-  data.resolution = htons(data.resolution);
-  data.min_angle = htons(data.min_angle);
-  data.max_angle = htons(data.max_angle);
-  data.range_count = htons(data.range_count);
-
-  dtime_sec = dtime / 1000000;
-  dtime_usec = dtime % 1000000;
-
-  device->PutData(&data, sizeof(data), dtime_sec, dtime_usec);
+  device->PutData(&data, sizeof(data), tsec, tusec);
 
   return 0;
 }
@@ -402,13 +412,9 @@ int ReadLogManager::ParseLaser(CDevice *device, int linenum,
 ////////////////////////////////////////////////////////////////////////////
 // Parse position data
 int ReadLogManager::ParsePosition(CDevice *device, int linenum,
-                                 int token_count, char **tokens, uint64_t dtime)
+                                  int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
   player_position_data_t data;
-  uint32_t dtime_sec, dtime_usec;
-  
-  double px, py, pa;
-  double vx, vy, va;
 
   if (token_count < 12)
   {
@@ -416,28 +422,15 @@ int ReadLogManager::ParsePosition(CDevice *device, int linenum,
     return -1;
   }
   
-  px = atof(tokens[6]);
-  py = atof(tokens[7]);
-  pa = atof(tokens[8]);
+  data.xpos = NINT32(M_MM(atof(tokens[6])));
+  data.ypos = NINT32(M_MM(atof(tokens[7])));
+  data.yaw = NINT32(RAD_DEG(atof(tokens[8])));
+  data.xspeed = NINT32(M_MM(atof(tokens[9])));
+  data.yspeed = NINT32(M_MM(atof(tokens[10])));
+  data.yawspeed = NINT32(RAD_DEG(atof(tokens[11])));
+  data.stall = atoi(tokens[12]);
 
-  vx = atof(tokens[9]);
-  vy = atof(tokens[10]);
-  va = atof(tokens[11]);
-
-  data.xpos = htonl((int) (px * 1000));
-  data.ypos = htonl((int) (py * 1000));
-  data.yaw = htonl((int) (pa * 180 / M_PI));
-
-  data.xspeed = htonl((int) (vx * 1000));
-  data.yspeed = htonl((int) (vy * 1000));
-  data.yawspeed = htonl((int) (va * 180 / M_PI));
-  
-  data.stall = 0;
-
-  dtime_sec = dtime / 1000000;
-  dtime_usec = dtime % 1000000;
-
-  device->PutData(&data, sizeof(data), dtime_sec, dtime_usec);
+  device->PutData(&data, sizeof(data), tsec, tusec);
 
   return 0;
 }
@@ -446,11 +439,10 @@ int ReadLogManager::ParsePosition(CDevice *device, int linenum,
 ////////////////////////////////////////////////////////////////////////////
 // Parse wifi data
 int ReadLogManager::ParseWifi(CDevice *device, int linenum,
-                              int token_count, char **tokens, uint64_t dtime)
+                              int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
   player_wifi_data_t data;
   player_wifi_link_t *link;
-  uint32_t dtime_sec, dtime_usec;
   int i;
 
   if (token_count < 6)
@@ -477,10 +469,7 @@ int ReadLogManager::ParseWifi(CDevice *device, int linenum,
   }
   data.link_count = htons(data.link_count);
 
-  dtime_sec = dtime / 1000000;
-  dtime_usec = dtime % 1000000;
-
-  device->PutData(&data, sizeof(data), dtime_sec, dtime_usec);
+  device->PutData(&data, sizeof(data), tsec, tusec);
 
   return 0;
 }
