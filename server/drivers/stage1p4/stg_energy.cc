@@ -44,7 +44,7 @@ StgEnergy::StgEnergy(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgEnergy with interface %s", interface );
   
-  this->subscribe_prop = STG_PROP_ENERGY;
+  this->subscribe_prop = STG_PROP_ENERGYDATA;
 }
 
 CDevice* StgEnergy_Init(char* interface, ConfigFile* cf, int section)
@@ -75,7 +75,7 @@ size_t StgEnergy::GetData(void* client, unsigned char* dest, size_t len,
   
   if( prop )
     {
-      stg_energy_t *senergy = (stg_energy_t*)prop->data;
+      stg_energy_data_t *senergy = (stg_energy_data_t*)prop->data;
       
       if( senergy )
 	{
@@ -83,8 +83,8 @@ size_t StgEnergy::GetData(void* client, unsigned char* dest, size_t len,
 	  player_energy_data_t penergy;
 	  memset( &penergy, 0, sizeof(penergy) );
 	  
-	  penergy.joules = htonl((uint32_t)senergy->joules);
-	  penergy.djoules = htonl((uint32_t)senergy->djoules);
+	  penergy.mjoules = htonl((uint32_t)(senergy->joules*1000.0));
+	  penergy.mwatts = htonl((int32_t)(senergy->watts*1000.0));
 	  penergy.charging = senergy->charging;
 	  
 	  CDevice::PutData( &penergy, sizeof(penergy), 0,0 ); // time gets filled in
