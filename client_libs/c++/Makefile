@@ -77,6 +77,8 @@ $(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	$(LN) -s $(PWD)/rwi_bumperproxy.h ../../include
 	$(RM) -f ../../include/rwi_powerproxy.h
 	$(LN) -s $(PWD)/rwi_powerproxy.h ../../include
+	$(RM) -f ../../include/positionproxy.h
+	$(LN) -s $(PWD)/positionproxy.h ../../include
 
 $(C_CLIENT_DIR)/$(C_CLIENT_OBJ):
 	cd $(C_CLIENT_DIR) && make $(C_CLIENT_OBJ)
@@ -121,6 +123,7 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 rwi_laserproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 rwi_bumperproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 rwi_powerproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 positionproxy.h $(INSTALL_INCLUDE)
 #	$(INSTALL) -m 644 idarproxy.h $(INSTALL_INCLUDE)
 #	$(INSTALL) -m 644 descartesproxy.h $(INSTALL_INCLUDE)
 
@@ -149,6 +152,7 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/rwi_laserproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/rwi_bumperproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/rwi_powerproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/positionproxy.h
 #	$(RM) -f $(INSTALL_INCLUDE)/descartesproxy.h
 #	$(RM) -f $(INSTALL_INCLUDE)/idarproxy.h
 
@@ -181,6 +185,7 @@ clean:
 	$(RM) -f ../../include/rwi_laserproxy.h
 	$(RM) -f ../../include/rwi_bumperproxy.h
 	$(RM) -f ../../include/rwi_powerproxy.h
+	$(RM) -f ../../include/positionproxy.h
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
 
 

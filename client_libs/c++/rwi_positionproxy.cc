@@ -34,7 +34,7 @@
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
 int
-RWIPositionProxy::SetSpeed(const int16_t speed, const int16_t turn_rate) const
+RWIPositionProxy::SetSpeed(const int16_t speed, const int16_t turn_rate)
 {
 	if(!client)
 		return(-1);
@@ -54,7 +54,7 @@ RWIPositionProxy::SetSpeed(const int16_t speed, const int16_t turn_rate) const
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
 int
-RWIPositionProxy::SetMotorState(const unsigned char state) const
+RWIPositionProxy::SetMotorState(const unsigned char state)
 {
 	if(!client)
 		return(-1);
@@ -69,13 +69,21 @@ RWIPositionProxy::SetMotorState(const unsigned char state) const
            (const char *) &cfg, sizeof(cfg)));
 }
 
+// not supported by RWI robots
+int
+RWIPositionProxy::SelectVelocityControl(unsigned char mode)
+{
+	fprintf(stderr, "SelectVelocityControl not supported by RWI robots.\n");
+	return -1;
+}
+
 // reset odometry to (0,0,0)
 //
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
 int
-RWIPositionProxy::ResetOdometry() const
+RWIPositionProxy::ResetOdometry()
 {
 	if(!client)
 		return(-1);

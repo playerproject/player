@@ -101,7 +101,8 @@ int main(int argc, char** argv)
   PlayerClient robot(host,port);
 
   // get device access
-  PositionProxy pp(&robot,0,'a');
+  P2PositionProxy p2pp(&robot,0,'a');
+  PositionProxy &pp = p2pp;
   SonarProxy sp(&robot,0,'r');
   VisionProxy vp(&robot,0,'r');
   GripperProxy gp(&robot,0,'a');
@@ -130,7 +131,7 @@ int main(int argc, char** argv)
            sp[4] < minfrontdistance ||
            sp[5] < minfrontdistance);
 
-    if(obs || avoidcount || pp.stalls)
+    if(obs || avoidcount || pp.Stalls())
     {
       // OBSTACLE AVOIDANCE
       newspeed = 0; //-150;
@@ -168,7 +169,7 @@ int main(int argc, char** argv)
       else
       {
         // go to home
-        double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.compass-90)));
+        double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.Compass()-90)));
         if(fabs(bearing)>170.0)
           bearing=170.0;
 
@@ -185,8 +186,7 @@ int main(int argc, char** argv)
       double dx = home_x-gpsp.xpos;
       double dy = home_y-gpsp.ypos;
       double dist = sqrt(dx*dx+dy*dy);
-      double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.compass-90)+M_PI));
-
+      double bearing = RTOD(NORMALIZE(atan2(dy,dx)-DTOR(pp.Compass()-90)+M_PI));
       if(last_bearing < MAXDOUBLE && fabs(last_bearing-bearing) > 180)
         bearing=last_bearing;
       else

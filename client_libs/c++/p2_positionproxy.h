@@ -29,13 +29,13 @@
 #ifndef P2_POSITIONPROXY_H
 #define P2_POSITIONPROXY_H
 
-#include <clientproxy.h>
+#include <positionproxy.h>
 #include <playerclient.h>
 
 /** The {\tt PositionProxy} class is used to control the {\tt position} device.
     The latest position data is contained in the attributes {\tt xpos, ypos}, etc.
  */
-class P2PositionProxy : public ClientProxy
+class P2PositionProxy : public PositionProxy
 {
 
   public:
@@ -50,7 +50,17 @@ class P2PositionProxy : public ClientProxy
 
     /// Stall flag: 1 if the robot is stalled and 0 otherwise.
     unsigned char stalls;
-   
+
+    /** Accessors
+     */
+    virtual int32_t  Xpos () const { return xpos; }
+    virtual int32_t  Ypos () const { return ypos; }
+    virtual uint16_t Theta () const { return theta; }
+    virtual int16_t  Speed () const { return speed; }
+    virtual int16_t  TurnRate () const { return turnrate; }
+    virtual unsigned short Compass () const { return compass; }
+    virtual unsigned char Stalls () const { return stalls; }
+
     /** Constructor.
         Leave the access field empty to start unconnected.
         You can change the access later using
@@ -58,7 +68,7 @@ class P2PositionProxy : public ClientProxy
     */
     P2PositionProxy(PlayerClient* pc, unsigned short index,
                     unsigned char access ='c') :
-        ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
+        PositionProxy(pc,PLAYER_POSITION_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 
@@ -67,7 +77,7 @@ class P2PositionProxy : public ClientProxy
         respectively.\\
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    int SetSpeed(short speed, short turnrate);
+    virtual int SetSpeed(short speed, short turnrate);
 
     /** Enable/disable the motors.
         Set {\tt state} to 0 to disable (default) or 1 to enable.
@@ -76,20 +86,20 @@ class P2PositionProxy : public ClientProxy
         
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    int SetMotorState(unsigned char state);
+    virtual int SetMotorState(unsigned char state);
     
     /** Select velocity control mode for the Pioneer 2.
         Set {\tt mode} to 0 for direct wheel velocity control (default),
         or 1 for separate translational and rotational control.
-        
+
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    int SelectVelocityControl(unsigned char mode);
-   
+    virtual int SelectVelocityControl(unsigned char mode);
+
     /** Reset odometry to (0,0,0).
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    int ResetOdometry();
+    virtual int ResetOdometry();
 
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);

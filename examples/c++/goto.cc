@@ -60,12 +60,12 @@ GotoThread(void* arg)
     //printf("target: (%f,%f)\n", target.x, target.y);
     
     pthread_mutex_lock(&dataAccessMutex);
-    dist = sqrt((target.x - pp->xpos)*
-                (target.x - pp->xpos) + 
-                (target.y - pp->ypos)*
-                (target.y - pp->ypos));
+    dist = sqrt((target.x - pp->Xpos())*
+                (target.x - pp->Xpos()) +
+                (target.y - pp->Ypos())*
+                (target.y - pp->Ypos()));
     angle = 
-       atan2(target.y - pp->ypos,target.x-pp->xpos);
+       atan2(target.y - pp->Ypos(),target.x-pp->Xpos());
     pthread_mutex_unlock(&dataAccessMutex);
 
     //printf("dist:%f\tangle:%f\n", dist,degrees(angle));
@@ -248,7 +248,7 @@ int main(int argc, char **argv)
   robot = new PlayerClient(host,port);
 
   /* Request sensor data */
-  pp = new PositionProxy(robot,0,'a');
+  pp = new P2PositionProxy(robot,0,'a');
   sp = new SonarProxy(robot,0,'r');
     
   if(turnOnMotors && pp->SetMotorState(1))

@@ -7,7 +7,8 @@ int main(int argc, char *argv[]) {
   //SonarProxy* sp = new SonarProxy(robot,0,'r');
   SonarProxy sp(&robot,0,'r');
   //PositionProxy* pp = new PositionProxy(robot,0,'w');
-  PositionProxy pp(&robot,0,'w');
+  P2PositionProxy p2pp(&robot,0,'w');
+  PositionProxy &pp = p2pp;
 
   int newturnrate,newspeed;
 

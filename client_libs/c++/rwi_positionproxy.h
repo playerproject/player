@@ -24,13 +24,13 @@
 #ifndef _RWI_POSITIONPROXY_H
 #define _RWI_POSITIONPROXY_H
 
-#include <clientproxy.h>
+#include <positionproxy.h>
 #include <playerclient.h>
 
 /** The {\tt RWIPositionProxy} class is used to control the {\tt rwi_position} device.
     The latest position data is contained in the attributes {\tt xpos, ypos}, etc.
  */
-class RWIPositionProxy : public ClientProxy {
+class RWIPositionProxy : public PositionProxy {
 
 public:
     /** Constructor.
@@ -40,7 +40,7 @@ public:
     */
     RWIPositionProxy (PlayerClient* pc, unsigned short index,
                       unsigned char access ='c')
-        : ClientProxy(pc,PLAYER_RWI_POSITION_CODE,index,access) {}
+        : PositionProxy(pc,PLAYER_RWI_POSITION_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 
@@ -49,7 +49,7 @@ public:
         respectively.\\
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    int SetSpeed (const int16_t speed, const int16_t turnrate) const;
+    virtual int SetSpeed (const int16_t speed, const int16_t turnrate);
 
     /** Enable/disable the motors.
         Set {\tt state} to 0 to disable (default) or 1 to enable.
@@ -58,12 +58,20 @@ public:
         
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    int SetMotorState (const unsigned char state) const;
-    
+    virtual int SetMotorState (const unsigned char state);
+
+    /** Select velocity control mode for the Pioneer 2.
+        Set {\tt mode} to 0 for direct wheel velocity control (default),
+        or 1 for separate translational and rotational control.
+
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
+    virtual int SelectVelocityControl(unsigned char mode);
+
     /** Reset odometry to (0,0,0).
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    int ResetOdometry () const;
+    virtual int ResetOdometry ();
 
     // interface that all proxies must provide
     void FillData (player_msghdr_t hdr, const char* buffer);
@@ -73,13 +81,13 @@ public:
 
     /** Accessors
      */
-    int32_t  Xpos () const { return xpos; }
-    int32_t  Ypos () const { return ypos; }
-    uint16_t Theta () const { return theta; }
-    int16_t  Speed () const { return speed; }
-    int16_t  TurnRate () const { return turn_rate; }
-    unsigned short Compass () const { return compass; }
-    unsigned char Stalls () const { return stalls; }
+    virtual int32_t  Xpos () const { return xpos; }
+    virtual int32_t  Ypos () const { return ypos; }
+    virtual uint16_t Theta () const { return theta; }
+    virtual int16_t  Speed () const { return speed; }
+    virtual int16_t  TurnRate () const { return turn_rate; }
+    virtual unsigned short Compass () const { return compass; }
+    virtual unsigned char Stalls () const { return stalls; }
 
 private:
     /// Robot pose (according to odometry) in mm, mm, degrees.
