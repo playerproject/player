@@ -286,7 +286,11 @@ void
 Wavefront::GetLocalizeData()
 {
   player_localize_data_t data;
+#ifdef __CYGWIN__
+  uint32_t timesec, timeusec;
+#else
   unsigned int timesec, timeusec;
+#endif
   //double timediff;
   double lx,ly,la;
   double dist;
@@ -366,7 +370,11 @@ void
 Wavefront::GetPositionData()
 {
   player_position_data_t data;
+#ifdef __CYGWIN__
+  uint32_t timesec, timeusec;
+#else
   unsigned int timesec, timeusec;
+#endif
 
   if(!this->position->GetData(this,(unsigned char*)&data,sizeof(data),
                               &timesec, &timeusec))

@@ -2,7 +2,7 @@ if WITH_RTK
 PLAYERV = playerv
 endif
 
-AM_CPPFLAGS = -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/server @RTK_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/server @RTK_CFLAGS@ @GTK_CFLAGS@
 
 bin_PROGRAMS = $(PLAYERV)
 
@@ -25,4 +25,4 @@ playerv_SOURCES = playerv.c \
                   opt.c \
                   opt.h
 
-playerv_LDADD = -L$(top_builddir)/client_libs/libplayerc -lrtk -lplayerc @RTK_LIBS@
+playerv_LDADD = -L$(top_builddir)/client_libs/libplayerc -lrtk -lplayerc @RTK_LIBS@ @GTK_LIBS@
