@@ -119,7 +119,10 @@ class GarminNMEA:public CDevice
   private:
 
     // string name of serial port to use
-    const char* gps_serial_port; 
+    const char* gps_serial_port;
+
+    // GPS baud rate
+    int gps_baud;
 
     // file descriptor for the gps unit
     int gps_fd;  
@@ -212,6 +215,7 @@ GarminNMEA::GarminNMEA(char* interface, ConfigFile* cf, int section) :
   gps_fd = -1;
 
   gps_serial_port = cf->ReadString(section, "port", DEFAULT_GPS_PORT);
+  gps_baud = cf->ReadInt(section, "baud", 4800);
 
   read_count = 0;
   
@@ -303,8 +307,27 @@ GarminNMEA::SetupSerial()
 #if HAVE_CFMAKERAW
   cfmakeraw(&term);
 #endif
-  cfsetispeed(&term, B4800);
-  cfsetospeed(&term, B4800);
+
+  if (gps_baud == 9600)
+  {
+    cfsetispeed(&term, B9600);
+    cfsetospeed(&term, B9600);
+  }
+  else if (gps_baud == 19200)
+  {
+    cfsetispeed(&term, B19200);
+    cfsetospeed(&term, B19200);
+  }
+  else if (gps_baud == 38400)
+  {
+    cfsetispeed(&term, B38400);
+    cfsetospeed(&term, B38400);
+  }
+  else
+  {
+    cfsetispeed(&term, B4800);
+    cfsetospeed(&term, B4800);
+  }
   
   if(tcsetattr(gps_fd, TCSAFLUSH, &term) < 0 )
   {
@@ -540,6 +563,7 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
 
   nmea_buf_len = strlen(ptr);
   memmove(nmea_buf,ptr,strlen(ptr)+1);
+
   //printf("found start char:[%s]:[%d]\n", nmea_buf,nmea_buf_len);
   //fflush(stdout);
   
@@ -557,8 +581,9 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
     if(FillBuffer())
       return(-1);
   }
-  ////printf("found end char:[%s]\n", nmea_buf);
-  ////fflush(stdout);
+  
+  //printf("found end char:[%s]\n", nmea_buf);
+  //fflush(stdout);
   
   sentlen = nmea_buf_len - strlen(ptr) + 1;
   if(sentlen > len - 1)
@@ -569,21 +594,28 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
   
   //printf("reading checksum\n");
   //fflush(stdout);
-
+  
   // copy in all but the leading $ and trailing carriage return and line feed
-  strncpy(buf,nmea_buf+1,sentlen-3);
-  buf[sentlen-3] = '\0';
+  if (sentlen > 3)
+  {
+    strncpy(buf,nmea_buf+1,sentlen-3);
+    buf[sentlen-3] = '\0';
+  }
+  else
+  {
+    PLAYER_WARN("NMEA sentence is too short; ignoring");
+    buf[0] = '\0';
+  }
 
   //printf("got: [%s]\n", buf);
   //fflush(stdout);
 
   // verify the checksum, if present.  two hex digits are the XOR of all the 
   // characters between the $ and *.
-  if((ptr2 = strchr((const char*)buf,NMEA_CHKSUM_CHAR)) && 
-     (strlen(ptr2) == 3))
+  if((ptr2 = strchr((const char*)buf,NMEA_CHKSUM_CHAR)) && (strlen(ptr2) == 3))
   {
-    //printf("ptr2 %s\n", ptr2);
-    //fflush(stdout);
+    ////printf("ptr2 %s\n", ptr2);
+    ////fflush(stdout);
 
     strncpy(tmp,ptr2+1,2);
     tmp[2]='\0';
@@ -640,7 +672,7 @@ GarminNMEA::FillBuffer()
   {
     if((numread = read(gps_fd,nmea_buf+nmea_buf_len,
                        sizeof(nmea_buf)-nmea_buf_len-1)) < 0)
-    {
+    {      
       if(!gps_fd_blocking && (errno == EAGAIN))
       {
         if(readcnt >= GPS_STARTUP_CYCLES)
@@ -660,6 +692,13 @@ GarminNMEA::FillBuffer()
   }
   nmea_buf_len += numread;
   nmea_buf[nmea_buf_len] = '\0';
+
+  /*
+  for (int i = 0; i < nmea_buf_len; i++)
+    printf("%02X ", (int) (unsigned char) nmea_buf[i]);
+  printf("\n");
+  */
+  
   return(0);
 }
 
@@ -738,6 +777,8 @@ GarminNMEA::ParseSentence(const char* buf)
   
   if(!buf)
     return(0);
+  if (strlen(buf) < 5)
+    return 0;
 
   // copy in the sentence header, for checking
   strncpy(tmp,buf,5);
@@ -860,7 +901,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   // fields 13 and 14 are for DGPS. ignore them.
 
 
-  //printf("%f %f %d\n", lat, lon, (int) data.quality);
+  ////printf("%f %f %d\n", lat, lon, (int) data.quality);
 
   // Update the filtered lat/lon, and see if the new values are any
   // good
@@ -905,7 +946,8 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   time_t utc;
   
   //printf("got RMC (%s)\n", buf);
-
+  //fflush(stdout);
+  
   memset(&tms, 0, sizeof(tms));
       
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
@@ -1002,7 +1044,8 @@ int GarminNMEA::ParsePGRME(const char *buf)
   double err;
   
   //printf("got PGRME (%s)\n", buf);
-
+  //fflush(stdout);
+  
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
 
