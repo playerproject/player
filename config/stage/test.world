@@ -7,7 +7,8 @@
 
 include "pioneer.inc"
 
-size [18 24.4]
+
+size [15.5 11.4]
 bitmap "autolab.png"
 
 resolution 0.02  # meters per pixel
@@ -43,7 +44,7 @@ define testrobot pioneer2dx
   energy.return 0 # we don't give charge
 )
 
-testrobot( name "r0" pose [9.348 6.902 7020.905] )
-testrobot( name "r1" pose [7.063 8.118 -20.084] color "green")
-testrobot( name "r2" pose [7.771 9.012 -71.250] color "blue" )
+testrobot( name "r0" pose [3.022 5.962 7201.322] )
+testrobot( name "r1" pose [8.222 8.066 -20.084] color "green")
+testrobot( name "r2" pose [8.518 8.883 -71.250] color "blue" )
 
