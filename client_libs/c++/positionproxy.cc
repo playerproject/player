@@ -438,7 +438,7 @@ void PositionProxy::Print()
   printf("#Position(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#xpos\typos\ttheta\tspeed\tsidespeed\tturn\tstall");
-  printf("%d\t%d\t%u\t%d\t%d\t%d\t%u\n", 
+  printf("%5d\t%5d\t%5u\t%5d\t%9d\t%5d\t%5u\n", 
          xpos,ypos,theta,speed,sidespeed,turnrate,stall);
 }
 

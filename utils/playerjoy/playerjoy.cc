@@ -82,8 +82,8 @@ struct js_event {
 // define the speed limits for the robot
 
 // at full joystick depression you'll go this fast
-#define MAX_SPEED    1000 // mm/second
-#define MAX_TURN    50 // degrees/second
+#define MAX_SPEED    2000 // mm/second
+#define MAX_TURN    60 // degrees/second
 
 // this is the speed that the camera will pan when you press the
 // hatswitches in degrees/sec
@@ -323,11 +323,7 @@ void Client::Update( struct controller* cont )
 	    pp->speed, pp->turnrate, 
 	    ptzp->pan, cont->pan, ptzp->tilt, cont->tilt, ptzp->zoom );      
             */
-    printf( "Player: %s:%d %.2f "
-	    "- speed: %d turn:%d\n",
-	    player->hostname, player->port,
-	    player->timestamp.tv_sec+player->timestamp.tv_usec/1000000.0,
-	    pp->speed, pp->turnrate);
+    pp->Print();
   
   if( cont->dirty ) // if the joystick sent a command
     {
