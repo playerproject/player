@@ -1,0 +1,3 @@
+# Build only the p2os driver, making a small executable.  Useful if, for
+# example, you want to control an AmigoBot with an iPAQ.
+./configure --disable-tests --without-python --disable-lifomcom --disable-passthrough --disable-sicklms200 --disable-acts --disable-cmvision --disable-festival --disable-sonyevid30 --disable-stage --disable-udpbroadcast --disable-lasercspace --disable-linuxwifi --disable-fixedtones --disable-acoustics --disable-mixer --disable-rwi --disable-isense --without-rtk --disable-rflex --disable-garminnmea --disable-laserbar --disable-laserbarcode --disable-amcl --disable-laservisualbarcode --disable-readlog --disable-waveaudio --disable-gazebo --disable-vfh --disable-reb --disable-microstrain --disable-iwspy --disable-aodv --disable-segwayrmp
