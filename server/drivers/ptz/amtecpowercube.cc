@@ -100,10 +100,11 @@ Brian Gerkey
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include <driver.h>
-#include <error.h>
-#include <drivertable.h>
-#include <player.h>
+#include "driver.h"
+#include "error.h"
+#include "drivertable.h"
+#include "player.h"
+#include "replace.h"
 
 #define AMTEC_DEFAULT_PORT "/dev/ttyS0"
 
@@ -397,9 +398,7 @@ AmtecPowerCube::Setup()
     return(-1);
   }
   
-#if HAVE_CFMAKERAW
   cfmakeraw(&term);
-#endif
   cfsetispeed(&term, B38400);
   cfsetospeed(&term, B38400);
   

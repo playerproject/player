@@ -113,15 +113,12 @@ Brian Gerkey, Andrew Howard
 #include <arpa/inet.h> // inet_addr
 #include <errno.h>
 
-// don't include sys/poll.h, because it's not available everywhere.  include
-// replace.h instead, which knows what to do
-//#include <sys/poll.h>
-#include <replace.h>
 
-#include <error.h>
-#include <driver.h>
-#include <drivertable.h>
-#include <player.h>
+#include "error.h"
+#include "driver.h"
+#include "drivertable.h"
+#include "player.h"
+#include "replace.h"
 
 #define DEFAULT_GPS_PORT "/dev/ttyS0"
 #define DEFAULT_DGPS_GROUP "225.0.0.43"
@@ -359,9 +356,7 @@ GarminNMEA::SetupSerial()
     return(-1);
   }
   
-#if HAVE_CFMAKERAW
   cfmakeraw(&term);
-#endif
 
   if (gps_baud == 9600)
   {

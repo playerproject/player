@@ -91,11 +91,11 @@ Brian Gerkey
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include <error.h>
-#include <driver.h>
-#include <drivertable.h>
-#include <player.h>
-
+#include "error.h"
+#include "driver.h"
+#include "drivertable.h"
+#include "player.h"
+#include "replace.h"
 #include "obot_constants.h"
 
 static void StopRobot(void* obotdev);
@@ -233,9 +233,7 @@ Obot::Setup()
     return(-1);
   }
   
-#if HAVE_CFMAKERAW
   cfmakeraw(&term);
-#endif
   cfsetispeed(&term, B57600);
   cfsetospeed(&term, B57600);
   

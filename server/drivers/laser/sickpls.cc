@@ -156,10 +156,11 @@ extern PlayerTime* GlobalTime;
 #define PLAYER_ENABLE_TRACE 0
 
 #include "playercommon.h"
+#include "playercommon.h"
 #include "drivertable.h"
 #include "driver.h"
 #include "error.h"
-#include "player.h"
+#include "replace.h"
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
 #define DEFAULT_LASER_PORT_RATE 9600
@@ -658,9 +659,7 @@ int SickPLS::OpenTerm()
   if( tcgetattr( this->laser_fd, &term ) < 0 )
     RETURN_ERROR(1, "Unable to get serial port attributes");
   
-#if HAVE_CFMAKERAW
   cfmakeraw( &term );
-#endif
 
   // Set to even parity
   term.c_iflag |= INPCK; 
@@ -736,9 +735,7 @@ int SickPLS::ChangeTermSpeed(int speed)
     if( tcgetattr( this->laser_fd, &term ) < 0 )
       RETURN_ERROR(1, "unable to get device attributes");
         
-#if HAVE_CFMAKERAW
     cfmakeraw( &term );
-#endif
 
     term.c_iflag |= INPCK; 
     term.c_iflag &= ~IXOFF;
@@ -757,9 +754,7 @@ int SickPLS::ChangeTermSpeed(int speed)
     if( tcgetattr( this->laser_fd, &term ) < 0 )
       RETURN_ERROR(1, "unable to get device attributes");
         
-#if HAVE_CFMAKERAW
     cfmakeraw( &term );
-#endif
     term.c_iflag |= INPCK; 
     term.c_iflag &= ~IXOFF;
     term.c_cflag |= PARENB;
@@ -800,9 +795,7 @@ int SickPLS::ChangeTermSpeed(int speed)
     if( tcgetattr( this->laser_fd, &term ) < 0 )
       RETURN_ERROR(1, "unable to get device attributes");    
 
-#if HAVE_CFMAKERAW
     cfmakeraw( &term );
-#endif
     
     term.c_iflag |= INPCK; 
     term.c_iflag &= ~IXOFF;

@@ -310,8 +310,8 @@ if test "x$enable_bigmess" == "xyes"; then
 fi
 
 dnl Checks for library functions.
-AC_REPLACE_FUNCS(scandir poll dirname alphasort)
-AC_CHECK_FUNCS(cfmakeraw sigblock)
+AC_REPLACE_FUNCS(scandir poll dirname alphasort cfmakeraw)
+AC_CHECK_FUNCS(sigblock)
 AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)

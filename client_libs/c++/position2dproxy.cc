@@ -58,7 +58,7 @@
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
 
-int32_t 
+int 
 Position2DProxy::SetSpeed(double xspeed, double yspeed, double yawspeed)
 {
   if(!client)
@@ -81,7 +81,7 @@ Position2DProxy::SetSpeed(double xspeed, double yspeed, double yawspeed)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position2DProxy::DoDesiredHeading(double yaw, double xspeed, double yawspeed)
 {
   if (!client) {
@@ -110,7 +110,7 @@ Position2DProxy::DoDesiredHeading(double yaw, double xspeed, double yawspeed)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position2DProxy::DoStraightLine(double m)
 {
   if (!client) {
@@ -144,7 +144,7 @@ Position2DProxy::DoStraightLine(double m)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position2DProxy::DoRotation(double yawspeed)
 {
   if (!client) {
@@ -178,7 +178,7 @@ Position2DProxy::DoRotation(double yawspeed)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t Position2DProxy::SetMotorState(unsigned char state)
+int Position2DProxy::SetMotorState(unsigned char state)
 {
   if(!client)
     return(-1);
@@ -200,7 +200,7 @@ int32_t Position2DProxy::SetMotorState(unsigned char state)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t Position2DProxy::SelectVelocityControl(unsigned char mode)
+int Position2DProxy::SelectVelocityControl(unsigned char mode)
 {
   if(!client)
     return(-1);
@@ -221,7 +221,7 @@ int32_t Position2DProxy::SelectVelocityControl(unsigned char mode)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t Position2DProxy::ResetOdometry()
+int Position2DProxy::ResetOdometry()
 {
   if(!client)
     return(-1);
@@ -241,7 +241,7 @@ int32_t Position2DProxy::ResetOdometry()
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t Position2DProxy::SetOdometry( double x, double y, double yaw)
+int Position2DProxy::SetOdometry( double x, double y, double yaw)
 {
   if(!client)
     return(-1);
@@ -265,7 +265,7 @@ int32_t Position2DProxy::SetOdometry( double x, double y, double yaw)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position2DProxy::SelectPositionMode(unsigned char mode)
 {
   if (!client) {
@@ -288,7 +288,7 @@ Position2DProxy::SelectPositionMode(unsigned char mode)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position2DProxy::GoTo(double x, double y, double yaw)
 {
   if (!client) {
@@ -313,7 +313,7 @@ Position2DProxy::GoTo(double x, double y, double yaw)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position2DProxy::SetSpeedPID(double kp, double ki, double kd)
 {
   if (!client) {
@@ -337,7 +337,7 @@ Position2DProxy::SetSpeedPID(double kp, double ki, double kd)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position2DProxy::SetPositionPID(double kp, double ki, double kd)
 {
   if (!client) {
@@ -363,7 +363,7 @@ Position2DProxy::SetPositionPID(double kp, double ki, double kd)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position2DProxy::SetPositionSpeedProfile(double spd, double acc)
 {
   if (!client) {

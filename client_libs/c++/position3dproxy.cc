@@ -57,7 +57,7 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t Position3DProxy::SetSpeed(double xspeed, double yspeed, double zspeed,
+int Position3DProxy::SetSpeed(double xspeed, double yspeed, double zspeed,
                   double rollspeed, double pitchspeed,
                   double yawspeed)
 {
@@ -85,7 +85,7 @@ int32_t Position3DProxy::SetSpeed(double xspeed, double yspeed, double zspeed,
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position3DProxy::GoTo(double x, double y, double z,
             double roll, double pitch, double yaw)
 {
@@ -154,7 +154,7 @@ void Position3DProxy::Print()
          xspeed,yspeed,zspeed,rollspeed,pitchspeed,yawspeed);
 }
 
-int32_t Position3DProxy::SetMotorState(unsigned char state)
+int Position3DProxy::SetMotorState(unsigned char state)
 {
   if(!client)
     return(-1);
@@ -175,7 +175,7 @@ int32_t Position3DProxy::SetMotorState(unsigned char state)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t Position3DProxy::SelectVelocityControl(unsigned char mode)
+int Position3DProxy::SelectVelocityControl(unsigned char mode)
 {
   if(!client)
     return(-1);
@@ -196,7 +196,7 @@ int32_t Position3DProxy::SelectVelocityControl(unsigned char mode)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t Position3DProxy::ResetOdometry()
+int Position3DProxy::ResetOdometry()
 {
   if(!client)
     return(-1);
@@ -217,7 +217,7 @@ int32_t Position3DProxy::ResetOdometry()
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t Position3DProxy::SetOdometry( double x, double y, double z,
+int Position3DProxy::SetOdometry( double x, double y, double z,
                                       double roll, double pitch, double yaw )
 {
   if(!client)
@@ -244,7 +244,7 @@ int32_t Position3DProxy::SetOdometry( double x, double y, double z,
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position3DProxy::SetSpeedPID(double kp, double ki, double kd)
 {
   if (!client) {
@@ -268,7 +268,7 @@ Position3DProxy::SetSpeedPID(double kp, double ki, double kd)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position3DProxy::SetPositionPID(double kp, double ki, double kd)
 {
   if (!client) {
@@ -291,7 +291,7 @@ Position3DProxy::SetPositionPID(double kp, double ki, double kd)
 /* set the speed profile values used during position mode
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position3DProxy::SetPositionSpeedProfile(double spd, double acc)
 {
   if (!client) {
@@ -316,7 +316,7 @@ Position3DProxy::SetPositionSpeedProfile(double spd, double acc)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 Position3DProxy::SelectPositionMode(unsigned char mode)
 {
   if (!client) {

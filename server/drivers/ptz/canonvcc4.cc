@@ -102,12 +102,10 @@ Elena Lazkano', Aitzol Astigarraga
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include <replace.h> /* for poll(2) */
-
-#include <driver.h>
-#include <drivertable.h>
-#include <player.h>
-
+#include "replace.h" /* for poll(2) and cfmakeraw(3) */
+#include "driver.h"
+#include "drivertable.h"
+#include "player.h"
 
 
 #define CAM_ERROR_NONE 0x30

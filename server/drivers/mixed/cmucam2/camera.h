@@ -14,6 +14,14 @@ extern "C"
 #include <stdlib.h>
 #include <unistd.h>
 
+/* These should NOT be redefined. */
+//typedef unsigned int     uint32_t;
+//typedef unsigned short   uint16_t;
+//typedef unsigned char    uint8_t;
+
+/* Instead #include playerconfig.h, which gets them in a portable way */
+#include "playerconfig.h"
+
 
 /**************************************************************************
 			    *** CONSTANST ***
@@ -35,9 +43,6 @@ extern "C"
 #define MAX_RGB          240		// camera's max rgb value
 #define T_PACKET_LENGTH  50             // max length of T packet that camera returns
 
-typedef unsigned int     uint32_t;
-typedef unsigned short   uint16_t;
-typedef unsigned char    uint8_t;
 
 /**************************************************************************
 			                      *** T PACKET ***

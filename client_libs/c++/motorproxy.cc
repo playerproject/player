@@ -57,7 +57,7 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t MotorProxy::SetSpeed(double speed)
+int MotorProxy::SetSpeed(double speed)
 {
   if(!client)
     return(-1);
@@ -77,7 +77,7 @@ int32_t MotorProxy::SetSpeed(double speed)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t MotorProxy::SetMotorState(unsigned char state)
+int MotorProxy::SetMotorState(unsigned char state)
 {
   if(!client)
     return(-1);
@@ -98,7 +98,7 @@ int32_t MotorProxy::SetMotorState(unsigned char state)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t MotorProxy::SelectVelocityControl(unsigned char mode)
+int MotorProxy::SelectVelocityControl(unsigned char mode)
 {
   if(!client)
     return(-1);
@@ -118,7 +118,7 @@ int32_t MotorProxy::SelectVelocityControl(unsigned char mode)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t MotorProxy::ResetOdometry()
+int MotorProxy::ResetOdometry()
 {
   if(!client)
     return(-1);
@@ -137,7 +137,7 @@ int32_t MotorProxy::ResetOdometry()
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int32_t MotorProxy::SetOdometry( double theta)
+int MotorProxy::SetOdometry( double theta)
 {
   if(!client)
     return(-1);
@@ -158,7 +158,7 @@ int32_t MotorProxy::SetOdometry( double theta)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 MotorProxy::SelectPositionMode(unsigned char mode)
 {
   if (!client) {
@@ -180,7 +180,7 @@ MotorProxy::SelectPositionMode(unsigned char mode)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 MotorProxy::GoTo(double angle)
 {
   if (!client) {
@@ -202,7 +202,7 @@ MotorProxy::GoTo(double angle)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 MotorProxy::SetSpeedPID(double kp, double ki, double kd)
 {
   if (!client) {
@@ -226,7 +226,7 @@ MotorProxy::SetSpeedPID(double kp, double ki, double kd)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 MotorProxy::SetPositionPID(double kp, double ki, double kd)
 {
   if (!client) {
@@ -252,7 +252,7 @@ MotorProxy::SetPositionPID(double kp, double ki, double kd)
  *
  * returns: 0 if ok, -1 else
  */
-int32_t
+int
 MotorProxy::SetPositionSpeedProfile(double spd, double acc)
 {
   if (!client) {

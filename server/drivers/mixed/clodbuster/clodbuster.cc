@@ -89,18 +89,18 @@ Ben Grocholsky
 #include <netinet/in.h> // socket things...
 #include <termios.h> // serial port things
 
-#include <clodbuster.h>
-#include <packet.h> // What's this for?
-
-#include <playertime.h>
+#include "clodbuster.h"
+#include "packet.h" // What's this for?
+#include "playertime.h"
 extern PlayerTime* GlobalTime;
 
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
-#include <driver.h>
-#include <drivertable.h>
-#include <devicetable.h>
+#include "driver.h"
+#include "drivertable.h"
+#include "devicetable.h"
 #include "error.h"
+#include "replace.h"
 
 // initialization function
 Driver* ClodBuster_Init( ConfigFile* cf, int section)
@@ -183,20 +183,7 @@ int ClodBuster::Setup()
       return(1);
     }
   
-#if HAVE_CFMAKERAW
   cfmakeraw( &term );
-  printf("Used MakeRaw\n");
-#else
-  /* Set the terminal input stream into raw mode, and disable all special
-     characters. Also set input to one byte at a time, blocking */
-  term.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-  term.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-  term.c_cflag &= ~(CSIZE | PARENB);
-  term.c_cflag |= (CS8   | CLOCAL | CREAD);
-  //      if(RTSCTS_flag) 
-  //        term.c_cflag |= CRTSCTS;  
-  term.c_oflag &= ~(OPOST);
-#endif
   term.c_cc[VTIME] = 10; /* wait 1 second on port A */
   term.c_cc[VMIN] = 0;  
 

@@ -94,8 +94,9 @@ Andrew Howard
 #include "driver.h"
 #include "error.h"
 #include "player.h"
+#include "replace.h"
 
-#include <playertime.h>
+#include "playertime.h"
 extern PlayerTime *GlobalTime;
 
 
@@ -325,9 +326,7 @@ int MicroStrain3DMG::OpenPort()
     return -1;
   }
 
-#if HAVE_CFMAKERAW
   cfmakeraw( &term );
-#endif
   cfsetispeed(&term, B38400);
   cfsetospeed(&term, B38400);
 
