@@ -4,7 +4,8 @@
 \def\VERSION {1.2}
 \def\DEFAULTPORT {6665}
 \def\HOMEPAGE {{\tt http://playerstage.sourceforge.net}}
-\def\libplayerc {{\tt libplayerc} }
+\def\libplayerc {{\tt libplayerc}}
+\def\player {Player}
 
 \begin{document}
 \setcounter{page}{0}
@@ -40,20 +41,60 @@ Los Angeles, California, USA\\
 
 \chapter{Introduction}
 
+\libplayerc is a client library for the \player networked device server.
+It is written in ANSI-C to maximize portability.
+
+Users should read the {\em Player User Manual} included in the standard
+Player distribution.  
+
+The latest version  manual can also be found on the
+
 \section{Licence}
 
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+\section{Getting \libplayerc}
+
+\libplayerc is included with the standard Player distribution, starting with
+version 1.2.  The Player homepage is:\\
+\indent \HOMEPAGE\\
+Check there for the latest versions of the server and this
+document.
+
 \section{Bugs}
+
+This software is provided WITHOUT WARRANTY.  Nevertheless, if you find
+something that doesn't work, or there is some feature you would like
+to see, you can submit a bug report/feature request through the
+Player/Stage homepage:\\ \indent \HOMEPAGE\\ Include a detailed
+description of you problem and/or feature request, and information
+such as the Player version and operating system.  Make sure you also
+select the ``\libplayerc'' category when reporting bugs.
+
 
 \section{Acknowledgements}
 
 \chapter{General Usage}
 
-Like the C++ client, \libplayerc is based on a ``proxy'' model in
-which the client maintains a local proxy for each of the remote
-devices on the server.  Thus, for example, one can create proxies for
-the {\tt position} and {\tt laser} devices.  There is also a special
-{\tt client} proxy, used to interact with the server itself.  Programs
-using \libplayerc will generally have the following structure.
+\libplayerc is based on a device ``proxy'' model, in which the client
+maintains a local proxy for each of the devices on the remote server.
+Thus, for example, one can create proxies for the {\tt position} and
+{\tt laser} devices.  There is also a special {\tt client} proxy, used
+to interact with the server itself.  
+
+Programs using \libplayerc will have the following general structure.
 
 \begin{quote}
 \scriptsize
