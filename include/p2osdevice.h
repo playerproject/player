@@ -154,7 +154,7 @@ class CP2OSDevice:public CDevice
 {
 private:
   static pthread_t thread;
-  static CLock lock;
+  static CLock* lock;
   static pthread_mutex_t serial_mutex;
   static CSIP* sippacket;
 
@@ -184,7 +184,7 @@ private:
   CP2OSDevice(char*);
   ~CP2OSDevice();
 
-  virtual CLock* GetLock( void ){ return &lock; };
+  virtual CLock* GetLock( void ){ return lock; };
 
   virtual int Setup();
   virtual int Shutdown();
@@ -194,7 +194,7 @@ private:
   virtual void PutCommand( unsigned char *, size_t maxsize);
   virtual size_t GetConfig( unsigned char *, size_t maxsize);
   virtual void PutConfig( unsigned char *, size_t maxsize);
-  int SendReceive(CPacket* pkt, bool already_have_lock);
+  int SendReceive(CPacket* pkt); //, bool already_have_lock);
   void ResetRawPositions();
 };
 

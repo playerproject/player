@@ -91,7 +91,7 @@ int main(int argc, char** argv)
       exit(1);
 
     /* print current sensor data to console */
-    //robot.Print();
+    robot.Print();
 
     if(robot.sonar[2] < minfrontdistance ||
        robot.sonar[3] < minfrontdistance ||

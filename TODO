@@ -5,7 +5,6 @@ TOMORROW:
 - make "safe_printf()" or something like that for device drivers to use.  
      maybe just expose a global mutex.
 
-
 - 'finish' C client.  test (sim and robot).
      - add vision example (follow orange thing)
      - add a couple of config commands (like motor power)
@@ -42,6 +41,11 @@ NOW:
 
 LATER:
 ------
+- make GenericLock class with virtual Lock() and Unlock() methods,
+    then make StageLock and PlayerLock inherit from it.  also
+    add member of type GenericLock* to CDevice class; new it
+    with the right type (Stage or Player) at constructiont time.
+
 - more general conditional definition of byte-swapping routines.
 
 - compass: check newer P2OS versions for compass 
