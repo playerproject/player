@@ -121,8 +121,8 @@ class FeatureSet
 
   // Vertices
   public: int vertexCount;
+  public: int vertexString[256];
 };
-
 
 
 // Info on potential shapes.
@@ -134,7 +134,6 @@ class Shape
   // Shape bounding coords
   public: int ax, ay, bx, by;
 };
-
 
 
 // Driver for detecting laser retro-reflectors.
@@ -167,6 +166,9 @@ class SimpleShape : public Driver
 
   // Extract a feature set for the given contour
   private: void ExtractFeatureSet(CvContour *contour, FeatureSet *feature);
+
+  // Compute similarity measure on features
+  private: int MatchFeatureSet(FeatureSet *a, FeatureSet *b);
 
   // Write the outgoing blobfinder data
   private: void WriteBlobfinderData();
@@ -468,6 +470,14 @@ int SimpleShape::LoadModel()
   // recognise it later.
   this->ExtractFeatureSet((CvContour*) this->modelContour, &this->modelFeatureSet);
 
+  /* REMOVE
+  // TESTING
+  CvHuMoments hu;
+  cvGetHuMoments(&this->modelFeatureSet.moments, &hu);
+  printf("model hu %f %f %f %f %f %f %f\n",
+         hu.hu1, hu.hu2, hu.hu3, hu.hu4, hu.hu5, hu.hu6, hu.hu7);
+  */
+
   // Free the image
   cvReleaseImage(&work);
   cvReleaseImage(&img);
@@ -539,8 +549,7 @@ void SimpleShape::ProcessImage()
 // Having pre-processed the image, find some shapes
 void SimpleShape::FindShapes()
 {
-  int i;
-  double sim[10];
+  int sim;
   double area;
   FeatureSet featureSet;
   CvMemStorage *storage;
@@ -591,33 +600,9 @@ void SimpleShape::FindShapes()
     // Compute the contour features
     this->ExtractFeatureSet((CvContour*) contour, &featureSet);
 
-    // Compute similarity based on Hu moments (smaller is better)
-    sim[0] = cvMatchShapes(contour, this->modelContour, CV_CONTOURS_MATCH_I2);
-
-    // Compute similarity based on compactness (smaller is better)
-    sim[1] = fabs(featureSet.compact - this->modelFeatureSet.compact);
-
-    // Compute similarity based on elliptical variance (smaller is better)
-    sim[2] = fabs(featureSet.variance - this->modelFeatureSet.variance);
-
-    sim[3] = abs(featureSet.vertexCount - this->modelFeatureSet.vertexCount);
-
-    printf("features %f %f %.4f %.4f %.4f %.4f %d %d\n",
-           sim[0], sim[0],
-           featureSet.compact, this->modelFeatureSet.compact,
-           featureSet.variance, this->modelFeatureSet.variance,
-           featureSet.vertexCount, this->modelFeatureSet.vertexCount);
-
-    /*
-    // Check if the contour matches the model
-    for (i = 0; i < 3; i++)
-      if (sim[i] > this->matchThresh[i])
-        break;
-    if (i < 3)
-      continue;
-    */
-
-    if (sim[3] > 0.5)
+    // Match against the model
+    sim = this->MatchFeatureSet(&featureSet, &this->modelFeatureSet);
+    if (sim > 0)
       continue;
 
     // Draw contour on the main image; useful for debugging
@@ -625,10 +610,8 @@ void SimpleShape::FindShapes()
     {
       cvDrawContours(this->outSubImages + 3, contour, CV_RGB(128, 128, 128),
                      CV_RGB(128, 128, 128), 0, 1, 8);
-      /*
-        cvRectangle(this->outSubImages + 3, cvPoint(rect.x, rect.y),
-        cvPoint(rect.x + rect.width, rect.y + rect.height), CV_RGB(255, 255, 255), 1);
-      */
+      cvRectangle(this->outSubImages + 3, cvPoint(rect.x, rect.y),
+                  cvPoint(rect.x + rect.width, rect.y + rect.height), CV_RGB(255, 255, 255), 1);
     }
 
     // Check for overrun
@@ -698,7 +681,79 @@ void SimpleShape::ExtractFeatureSet(CvContour *contour, FeatureSet *feature)
                       cvContourPerimeter(contour) * 0.02, 0);
   feature->vertexCount = poly->total;
 
+  CvPoint *a, *b, *c;
+  double ax, ay, bx, by, cx, cy;
+  double d, n, m;
+  
+  // Construct a string describing the polygon (used for syntactic
+  // matching)
+  for (i = 0; i < poly->total; i++)
+  {
+    a = CV_GET_SEQ_ELEM(CvPoint, poly, i);
+    b = CV_GET_SEQ_ELEM(CvPoint, poly, (i + 1) % poly->total);
+    c = CV_GET_SEQ_ELEM(CvPoint, poly, (i + 2) % poly->total);
+
+    // Compute normalized segment vectors
+    ax = b->x - a->x;
+    ay = b->y - a->y;
+    d = sqrt(ax * ax + ay * ay);
+    ax /= d;
+    ay /= d;
+
+    bx = -ay;
+    by = +ax;
+    
+    cx = c->x - b->x;
+    cy = c->y - b->y;
+    d = sqrt(cx * cx + cy * cy);
+    cx /= d;
+    cy /= d;
+
+    // Compute projections
+    n = cx * ax + cy * ay;
+    m = cx * bx + cy * by;
+
+    // Add a symbol; right now this is just -1, +1, corresponding to
+    // an inside or outside corner
+    assert((size_t) i < sizeof(feature->vertexString) / sizeof(feature->vertexString[0]));
+    feature->vertexString[i] = (m < 0 ? -1 : +1);
+  }
+
   return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Compute similarity measure on features
+int SimpleShape::MatchFeatureSet(FeatureSet *a, FeatureSet *b)
+{
+  int i, j;
+  int sim, minSim;
+  int na, nb;
+  
+  if (a->vertexCount != b->vertexCount)
+    return INT_MAX;
+
+  minSim = INT_MAX;
+  
+  // Look for the lowest dissimalarity by trying all possible
+  // string shifts
+  for (i = 0; i < a->vertexCount; i++)
+  {
+    sim = 0;
+    
+    for (j = 0; j < a->vertexCount; j++)
+    {
+      na = a->vertexString[j];
+      nb = b->vertexString[(j + i) % a->vertexCount];
+      sim += (na != nb);
+    }
+
+    if (sim < minSim)
+      minSim = sim;
+  }
+
+  return minSim;
 }
 
 
