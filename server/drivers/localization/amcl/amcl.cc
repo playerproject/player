@@ -1170,6 +1170,7 @@ void AdaptiveMCL::Main(void)
       this->UpdateFilter(&data);
     }
 
+#ifdef INCLUDE_RTKGUI
     // TESTING
     if (this->enable_gui)
     {
@@ -1179,6 +1180,7 @@ void AdaptiveMCL::Main(void)
         DrawSonarData(&data);
       }
     }
+#endif
   }
 
   return;
