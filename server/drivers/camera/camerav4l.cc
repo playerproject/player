@@ -178,7 +178,12 @@ int CameraV4L::Setup()
   fg_set_source_norm(this->fg, this->norm);
   fg_set_capture_window(this->fg, 0, 0, this->width, this->height);
 
-  if (this->depth == 16)
+  if (this->depth == 8)
+  {
+    fg_set_format(this->fg, VIDEO_PALETTE_GREY);
+    this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_GREY );
+  }
+  else if (this->depth == 16)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB565 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB565 );
@@ -310,6 +315,7 @@ void CameraV4L::HandleGetGeom(void *client, void *request, int len)
 // Update the device data (the data going back to the client).
 void CameraV4L::WriteData()
 {
+  size_t size;
   //printf("%d %06d\n", this->tsec, this->tusec);
   
   // Set the image properties
@@ -323,7 +329,8 @@ void CameraV4L::WriteData()
   memcpy(this->data.image, this->frame->data, this->frame->size);
   
   // Copy data to server.
-  PutData((void*) &this->data, sizeof(this->data), this->tsec, this->tusec);
+  size = sizeof(this->data) - sizeof(this->data.image) + this->frame->size;
+  PutData((void*) &this->data, size, this->tsec, this->tusec);
 
   return;
 }

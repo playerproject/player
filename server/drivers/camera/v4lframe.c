@@ -74,6 +74,11 @@ int frame_get_size( FRAME* fr )
 
     switch ( fr->format )
     {
+        case VIDEO_PALETTE_GREY:
+            // 1 bytes per pixel
+            size = pixels * 1;
+            break;
+
         case VIDEO_PALETTE_RGB24:
             // 3 bytes per pixel
             size = pixels * 3;
@@ -114,6 +119,7 @@ int frame_save( FRAME* fr, const char* filename )
 {
     int i = 0;
     int val = 0;
+    unsigned char grey;
     FRAME_RGB rgb;
     FILE* fp = fopen( filename, "w" );
 
@@ -130,6 +136,21 @@ int frame_save( FRAME* fr, const char* filename )
 
     switch ( fr->format )
     {
+        case VIDEO_PALETTE_GREY:
+
+            // Max val
+            fprintf( fp, "255\n" );
+
+            // Write image data
+            for ( i = 0; i < ( fr->width * fr->height ); i++ )
+            {
+                // 1 bytes per pixel
+                grey = ((unsigned char*)(fr->data))[i];
+
+                fprintf( fp, "%c%c%c", grey, grey, grey);
+            }
+            break;
+
         case VIDEO_PALETTE_RGB24:
 
             // Max val
