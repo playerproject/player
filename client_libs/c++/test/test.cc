@@ -82,8 +82,12 @@ int main(int argc, const char *argv[])
       test_dio(&client, index);
 
     // Position device
+    if (strcmp(device, "motor") == 0 || strcmp(device, "all") == 0)
+      test_motor(&client, index);
     if (strcmp(device, "position") == 0 || strcmp(device, "all") == 0)
       test_position(&client, index);
+    if (strcmp(device, "position2d") == 0 || strcmp(device, "all") == 0)
+      test_position2d(&client, index);
     if (strcmp(device, "position3d") == 0 || strcmp(device, "all") == 0)
       test_position3d(&client, index);
     // Position device - position control mode

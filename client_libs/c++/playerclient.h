@@ -1182,6 +1182,121 @@ class LocalizeProxy : public ClientProxy
  ** end section
  *****************************************************************************/
 
+ /*****************************************************************************
+ ** begin section MotorProxy
+ *****************************************************************************/
+
+/** The {\tt MotorProxy} class is used to control a {\tt motor} device.
+    The latest motor data is contained in the attributes {\tt theta,
+    thetaspeed}, etc.
+ */
+class MotorProxy : public ClientProxy
+{
+  private:
+  /// Motor angle (according to odometry) in radians.
+  double theta;
+
+  /// Angular speeds in radians/sec.
+  double thetaspeed;;
+
+  /// Stall flag: 1 if the robot is stalled and 0 otherwise.
+  unsigned char stall;
+
+  public:
+  /** Constructor.
+      Leave the access field empty to start unconnected. */
+  MotorProxy(PlayerClient* pc, unsigned short index,
+	     unsigned char access ='c') :
+    ClientProxy(pc,PLAYER_MOTOR_CODE,index,access) {}
+
+  // these methods are the user's interface to this device
+
+  /** Send a motor command for velocity control mode.
+      Specify the angular speeds in rad/s.
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int SetSpeed(double speed);
+
+  /** Send a motor command for position control mode.  Specify the
+      desired angle of the motor in radians. Returns: 0 if
+      everything's ok, -1 otherwise.
+  */
+  int GoTo(double angle);
+
+
+  /** Enable/disable the motors.
+      Set {\tt state} to 0 to disable or 1 to enable.
+      Be VERY careful with this method!  Your robot is likely to run across the
+      room with the charger still attached.
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int SetMotorState(unsigned char state);
+
+  /** Select velocity control mode.
+      The motor state is typically device independent.  This is where you
+      can potentially choose between different types of control methods
+      (PD, PID, etc)
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int SelectVelocityControl(unsigned char mode);
+
+  /** Reset odometry to (0,0,0).
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int ResetOdometry();
+
+  /** Sets the odometry to the pose {\tt (theta)}.
+      Note that {\tt theta} is in radians.
+      Returns: 0 if OK, -1 else
+  */
+  int SetOdometry(double angle);
+
+  /** Select position mode on the motor driver.
+      Set {\tt mode} for 0 for velocity mode, 1 for position mode.
+      Returns: 0 if OK, -1 else
+  */
+
+  int SelectPositionMode(unsigned char mode);
+
+  /** Set the PID parameters of the motor for use in velocity control mode
+      Returns: 0 if OK, -1 else
+  */
+
+  int SetSpeedPID(double kp, double ki, double kd);
+
+  /** Set the PID parameters of the motor for use in position control mode
+      Returns: 0 if OK, -1 else
+  */
+
+  int SetPositionPID(double kp, double ki, double kd);
+
+  /** Set the ramp profile of the motor when in position control mode
+      spd is in rad/s and acc is in rad/s/s
+      Returns: 0 if OK, -1 else
+  */
+
+  int SetPositionSpeedProfile(double spd, double acc);
+
+  /// Accessor method
+  double  Theta () const { return theta; }
+
+  /// Accessor method
+  double  ThetaSpeed () const { return thetaspeed; }
+
+  /// Accessor method
+  unsigned char Stall () const { return stall; }
+
+  // interface that all proxies must provide
+  void FillData(player_msghdr_t hdr, const char* buffer);
+
+  /// Print current motor device state.
+  void Print();
+};
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+ 
 /*****************************************************************************
  ** begin section PositionProxy
  *****************************************************************************/
@@ -1326,18 +1441,175 @@ class PositionProxy : public ClientProxy
  *****************************************************************************/
 
 /*****************************************************************************
+ ** begin section Position2DProxy
+ *****************************************************************************/
+
+/** The {\tt Position2DProxy} class is used to control a {\tt position} device.
+    The latest position data is contained in the attributes {\tt xpos, ypos},
+    etc.
+ */
+class Position2DProxy : public ClientProxy
+{
+
+  private:
+  /// Robot pose (according to odometry) in m, m, radians.
+  double xpos,ypos,yaw;
+
+  /// Robot speeds in m/sec, m/sec, radians/sec.
+  double xspeed, yspeed, yawspeed;
+
+  /// Stall flag: 1 if the robot is stalled and 0 otherwise.
+  unsigned char stall;
+
+  public:
+  /** Constructor.
+      Leave the access field empty to start unconnected. */
+  Position2DProxy(PlayerClient* pc, unsigned short index,
+                unsigned char access ='c') :
+    ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
+
+  // these methods are the user's interface to this device
+
+  /** Send a motor command for velocity control mode.
+      Specify the forward, sideways, and angular speeds in m/sec, m/sec,
+      and radians/sec, respectively.  Returns: 0 if everything's ok,
+      -1 otherwise.
+  */
+  int SetSpeed(double xspeed, double yspeed, double yawspeed);
+
+  /** Same as the previous SetSpeed(), but doesn't take the yspeed speed
+      (so use this one for non-holonomic robots). */
+  int SetSpeed(double speed, double turnrate)
+      { return(SetSpeed(speed,0.0,turnrate));}
+
+  /** Send a motor command for position control mode.  Specify the
+      desired pose of the robot in m, m, radians. Returns: 0 if
+      everything's ok, -1 otherwise.
+  */
+  int GoTo(double x, double y, double yaw);
+
+
+  /** Enable/disable the motors.
+      Set {\tt state} to 0 to disable or 1 to enable.
+      Be VERY careful with this method!  Your robot is likely to run across the
+      room with the charger still attached.
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int SetMotorState(unsigned char state);
+
+  /** Select velocity control mode.
+
+      For the the p2os_position driver, set {\tt mode} to 0 for direct wheel
+      velocity control (default), or 1 for separate translational and
+      rotational control.\\
+      For the reb_position driver: 0 is direct velocity control, 1 is for
+      velocity-based heading PD controller (uses DoDesiredHeading()).\\
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int SelectVelocityControl(unsigned char mode);
+
+  /** Reset odometry to (0,0,0).
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int ResetOdometry();
+
+  // the following ioctls are currently only supported by reb_position
+  //
+
+  /** Select position mode on the reb_position driver.
+      Set {\tt mode} for 0 for velocity mode, 1 for position mode.
+      Returns: 0 if OK, -1 else
+  */
+  int SelectPositionMode(unsigned char mode);
+
+  /** Sets the odometry to the pose {\tt (x, y, yaw)}.
+      Note that {\tt x} and {\tt y} are in m and {\tt yaw} is in radians.
+      Returns: 0 if OK, -1 else
+  */
+  int SetOdometry(double x, double y, double yaw);
+
+  /// Only supported by the reb_position driver.
+  int SetSpeedPID(double kp, double ki, double kd);
+
+  /// Only supported by the reb_position driver.
+  int SetPositionPID(double kp, double ki, double kd);
+
+  /// Only supported by the reb_position driver.
+  /// spd rad/s, acc rad/s/s
+  int SetPositionSpeedProfile(double spd, double acc);
+
+  /// Only supported by the reb_position driver.
+  int DoStraightLine(double m);
+
+  /// Only supported by the reb_position driver.
+  int DoRotation(double yawspeed);
+
+  /// Only supported by the reb_position driver.
+  int DoDesiredHeading(double yaw, double xspeed, double yawspeed);
+
+  /// Only supported by the segwayrmp driver
+  int SetStatus(uint8_t cmd, uint16_t value);
+
+  /// Only supported by the segwayrmp driver
+  int PlatformShutdown();
+
+  /// Accessor method
+  double  Xpos () const { return xpos; }
+
+  /// Accessor method
+  double  Ypos () const { return ypos; }
+
+  /// Accessor method
+  double Yaw () const { return yaw; }
+
+  // Speed, SideSpeed, and TurnRate are left for backwards compatibility, but
+  // could probably be dropped.
+
+  /// Accessor method
+  double  Speed () const { return xspeed; }
+  /// Accessor method
+  double  SideSpeed () const { return yspeed; }
+  /// Accessor method
+  double  TurnRate () const { return yawspeed; }
+
+
+  /// Accessor method
+  double  XSpeed () const { return xspeed; }
+
+  /// Accessor method
+  double  YSpeed () const { return yspeed; }
+
+  /// Accessor method
+  double  YawSpeed () const { return yawspeed; }
+
+
+  /// Accessor method
+  unsigned char Stall () const { return stall; }
+
+  // interface that all proxies must provide
+  void FillData(player_msghdr_t hdr, const char* buffer);
+
+  /// Print current position device state.
+  void Print();
+};
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+/*****************************************************************************
  ** begin section Position3DProxy
  *****************************************************************************/
 
-/** The {\tt Position3DProxy} class is used to control a {\tt position3d} 
-    device.  The latest position data is contained in the attributes 
+/** The {\tt Position3DProxy} class is used to control a {\tt position3d}
+    device.  The latest position data is contained in the attributes
     {\tt xpos, ypos}, etc.
  */
 class Position3DProxy : public ClientProxy
 {
+  private:
 
-  public:
-  /// Robot pose (according to odometry) in m, radians.
+  /// Robot pose (according to odometry) in m, rad.
   double xpos,ypos,zpos;
   double roll,pitch,yaw;
 
@@ -1347,7 +1619,9 @@ class Position3DProxy : public ClientProxy
 
   /// Stall flag: 1 if the robot is stalled and 0 otherwise.
   unsigned char stall;
-   
+
+  public:
+
   /** Constructor.
       Leave the access field empty to start unconnected. */
   Position3DProxy(PlayerClient* pc, unsigned short index,
@@ -1357,44 +1631,107 @@ class Position3DProxy : public ClientProxy
   // these methods are the user's interface to this device
 
   /** Send a motor command for a planar robot.
-      Specify the forward, sideways, and angular speeds in mm/s, mm/s,
-      and degrees/sec, respectively.  Returns: 0 if everything's ok, 
+      Specify the forward, sideways, and angular speeds in m/s, m/s, m/s,
+      rad/s, rad/s, and rad/s, respectively.
+      Returns: 0 if everything's ok,
       -1 otherwise.
   */
-  int SetSpeed(double xspeed, double yspeed, double yawspeed);
-  int SetSpeed(double xspeed, double yspeed, double zspeed, double yawspeed);
-  /** Same as the previous SetSpeed(), but doesn't take the sideways speed 
+  int SetSpeed(double xspeed, double yspeed, double zspeed,
+	       double rollspeed, double pitchspeed, double yawspeed);
+
+  /** Send a motor command for a planar robot.
+      Specify the forward, sideways, and angular speeds in m/s, m/s,
+      and rad/s, respectively.  Returns: 0 if everything's ok,
+      -1 otherwise.
+  */
+  int Position3DProxy::SetSpeed(double xspeed,double yspeed,
+				double zspeed,double yawspeed)
+  { return(SetSpeed(xspeed,yspeed,zspeed,0,0,yawspeed)); }
+
+  int SetSpeed(double xspeed, double yspeed, double yawspeed)
+    {  return SetSpeed(xspeed, yspeed, 0, 0, 0, yawspeed); }
+
+  /** Same as the previous SetSpeed(), but doesn't take the sideways speed
       (so use this one for non-holonomic robots). */
   int SetSpeed(double xspeed, double yawspeed)
-      { return(SetSpeed(xspeed,0.0,yawspeed));}
+      { return(SetSpeed(xspeed,0,0,0,0,yawspeed));}
 
-  /** Enable/disable the motors */
+
+  /** Send a motor command for position control mode.  Specify the
+      desired pose of the robot in m, m, m, rad, rad, rad.
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int GoTo(double x, double y, double z,
+	   double roll, double pitch, double yaw);
+
+  /** Enable/disable the motors.
+      Set {\tt state} to 0 to disable or 1 to enable.
+      Be VERY careful with this method!  Your robot is likely to run across the
+      room with the charger still attached.
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
   int SetMotorState(unsigned char state);
+
+  /** Select velocity control mode.
+
+      This is driver dependent.
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int SelectVelocityControl(unsigned char mode);
+
+  /** Reset odometry to (0,0,0).
+      Returns: 0 if everything's ok, -1 otherwise.
+  */
+  int ResetOdometry();
+
+  /** Sets the odometry to the pose {\tt (x, y, z, roll, pitch, yaw)}.
+      Note that {\tt x}, {\tt y}, and {\tt z} are in m and {\tt roll},
+      {\tt pitch }, and {\tt theta} are in radians.
+      Returns: 0 if OK, -1 else
+  */
+  int SetOdometry(double x, double y, double z,
+		  double roll, double pitch, double yaw);
+
+  /** Select position mode
+      Set {\tt mode} for 0 for velocity mode, 1 for position mode.
+      Returns: 0 if OK, -1 else
+  */
+  int SelectPositionMode(unsigned char mode);
+
+  /// Only supported by the reb_position driver.
+  int SetSpeedPID(double kp, double ki, double kd);
+
+  /// Only supported by the reb_position driver.
+  int SetPositionPID(double kp, double ki, double kd);
+
+  /// Sets the ramp profile for position based control
+  /// spd rad/s, acc rad/s/s
+  int SetPositionSpeedProfile(double spd, double acc);
 
   // interface that all proxies must provide
   void FillData(player_msghdr_t hdr, const char* buffer);
-    
+
   /// Print current position device state.
   void Print();
 
   /// Accessor method
   double  Xpos() const { return xpos; }
-  
+
   /// Accessor method
   double  Ypos() const { return ypos; }
-  
+
   /// Accessor method
   double  Zpos() const { return zpos; }
-  
+
   /// Accessor method
   double  Roll() const { return roll; }
-  
+
   /// Accessor method
   double  Pitch() const { return pitch; }
-  
+
   /// Accessor method
   double  Yaw() const { return yaw; }
-  
+
   /// Accessor method
   double  XSpeed() const { return xspeed; }
 
@@ -2142,10 +2479,13 @@ public:
       {}
 
     /// The number of valid digital inputs.
-    char count;
+    uint8_t count;
 
     /// A bitfield of the current digital inputs.
-    unsigned int digin;
+    uint32_t digin;
+
+    /// Set the output
+    int SetOutput(uint8_t output_count, uint32_t digout);
     
     // interface that all proxies must provide
     void FillData (player_msghdr_t hdr, const char* buffer);

@@ -108,7 +108,7 @@ test_position3d(PlayerClient* client, int index)
   TEST("moving forward");
   for(int i=1;i<2;i++)
     { 
-      if(pp.SetSpeed(2.0,0.0,0.0,0.0) < 0)
+      if(pp.SetSpeed(2.0,0.0,0.0,0.0,0.0,0.0) < 0)
 	{
 	  FAIL();
 	  //return(-1);
@@ -125,7 +125,7 @@ test_position3d(PlayerClient* client, int index)
  for(int i=1;i<2;i++)
     { 
 
-      if(pp.SetSpeed(-2.0,0.0,0.0,0.0) < 0)
+      if(pp.SetSpeed(-2.0,0.0,0.0,0.0,0.0,0.0) < 0)
 	{
 	  FAIL();
 	  //return(-1);

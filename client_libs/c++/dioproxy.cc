@@ -58,8 +58,11 @@ DIOProxy::FillData(player_msghdr_t hdr, const char *buffer)
               sizeof(player_dio_data_t),hdr.size);
   }
 
-  count = ((player_dio_data_t *)buffer)->count;
-  digin = ntohl(((player_dio_data_t *)buffer)->digin);
+  const player_dio_data_t* lclBuffer =
+    reinterpret_cast<const player_dio_data_t*>(buffer);
+
+  count = lclBuffer->count;
+  digin = ntohl(lclBuffer->digin);
 }
 
 // interface that all proxies SHOULD provide
@@ -76,4 +79,26 @@ DIOProxy::Print()
 		printf(" ");
   }
   printf("\n");
+}
+
+// Outputs a bitfield to the DIO
+// Returns:
+//   0 if everything's ok
+//   -1 otherwise (that's bad)
+
+int
+DIOProxy::SetOutput(uint8_t output_count, uint32_t digout)
+{
+
+  if(!client)
+    return(-1);
+
+  player_dio_cmd_t cmd;
+  memset( &cmd, 0, sizeof(cmd) );
+
+  cmd.count  = output_count;
+  cmd.digout = htonl(digout);
+
+  return(client->Write(m_device_id,
+                       reinterpret_cast<char*>(&cmd),sizeof(cmd)));
 }

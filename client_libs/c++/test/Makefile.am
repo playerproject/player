@@ -17,8 +17,10 @@ test_SOURCES = test_broadcast.cc \
                test.h \
                test_laser.cc \
                test_lbd.cc \
+               test_motor.cc \
                test_position.cc \
-	       test_position3d.cc \
+               test_position2d.cc \
+               test_position3d.cc \
                test_position_control.cc \
                test_ptz.cc \
                test_sonar.cc \
@@ -36,8 +38,8 @@ test_SOURCES = test_broadcast.cc \
                test_localize.cc \
                test_audiomixer.cc \
                test_blinkenlight.cc \
-							 test_camera.cc
-              #test_idar.cc \
+               test_camera.cc
+               #test_idar.cc \
                #test_idarturret.cc
                #test_misc.cc
                #test_bps.cc
