@@ -84,6 +84,8 @@ typedef struct rflex_config_t{
   // bumper configs
   unsigned short bumper_count;
   int bumper_address;
+  /// bumper bit style
+  int bumper_style;
   player_bumper_define_t * bumper_def;
 
   // power configs

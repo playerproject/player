@@ -392,22 +392,51 @@ static void parseDioReport( unsigned char *buffer )
    			address = buffer[10];
    			data = convertBytes2UInt16(&(buffer[11]));
 
-			// on the b21r the bump packets are address 0x40 -> 0x4D, there are some other dio packets
-   			// but dont know what they do so we throw them away
 
-			// check if the dio packet came from a bumper packet
-			if ((address < rflex_configs.bumper_address) || (address >= (rflex_configs.bumper_address+status.num_bumpers)))
+			if(BUMPER_ADDR == rflex_configs.bumper_style)
 			{
-    			// not bumper
-				fprintf(stderr,"(dio) address = 0x%02x ",address);
-    			break;
+			   // on the b21r the bump packets are address 0x40 -> 0x4D, there are some other dio packets
+			   // but dont know what they do so we throw them away
+			   
+			   // check if the dio packet came from a bumper packet
+			   if ((address < rflex_configs.bumper_address) || (address >= (rflex_configs.bumper_address+status.num_bumpers)))
+			   {
+			      // not bumper
+			      fprintf(stderr,"(dio) address = 0x%02x ",address);
+			      break;
+			   }
+			   else
+			   {
+			      // is bumper
+			      fprintf(stderr,"(bump) address = 0x%02x ",address);
+			      // assign low data byte to the bumpers (16 bit DIO data, low 4 bits give which corners or the panel are 'bumped')
+			      status.bumpers[address - rflex_configs.bumper_address] = data & 0x0F;
+			   }
 			}
 			else
 			{
-				// is bumper
-				fprintf(stderr,"(bump) address = 0x%02x ",address);
-				// assign low data byte to the bumpers (16 bit DIO data, low 4 bits give which corners or the panel are 'bumped')
-	 			status.bumpers[address - rflex_configs.bumper_address] = data & 0x0F;
+			   // on the magellan pro the bump packets are address 0x40 and 0x41. Each bits of these address
+			   // match one bumper
+			   
+			   // Check if the dio paquet came from a bumper packet
+			   if ((address < rflex_configs.bumper_address) || (address >= (rflex_configs.bumper_address+(status.num_bumpers/8))))
+			   {
+			      // not bumper
+			      fprintf(stderr,"(dio) address = 0x%02x ",address);
+			      break;
+			   }
+			   else
+			   {
+			      // is bumper
+			      fprintf(stderr,"(bump) address = 0x%02x ",address);
+
+			      // Loop for each bit
+			      for (int i=0; i<8; i++)
+			      {
+				 // assign each bit of the data to a bumper. 
+				 status.bumpers[((address - rflex_configs.bumper_address) * 8 )+ i] = data & (0x01 << i);
+			      }
+			   }
 			}
     		break;
    		default:
