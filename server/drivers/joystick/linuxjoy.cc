@@ -169,7 +169,7 @@ void LinuxJoystick::Main()
   while (true)
   {
     // Sleep (you might, for example, block on a read() instead)
-    usleep(100000);
+    // REMOVE usleep(100000);
 
     // test if we are supposed to cancel
     pthread_testcancel();
