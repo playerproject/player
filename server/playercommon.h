@@ -42,7 +42,8 @@
   #include <stdint.h>
 #endif
 
-#include <limits.h>  // for PATH_MAX
+//#include <limits.h>  // for PATH_MAX
+#include <sys/param.h>  // for PATH_MAX
 
 //cygwin doesn't appear to have them 
 //typedef unsigned int size_t; 
