@@ -390,7 +390,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
               
             // find the broadcast device in the available device table
             DriverEntry* entry;
-            if(!(entry = driverTable->GetDriverEntry("mcom")))
+            if(!(entry = driverTable->GetDriverEntry("lifomcom")))
             {
               puts("WARNING: Player support for mcom device unavailable.");
             }
