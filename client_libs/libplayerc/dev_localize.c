@@ -19,7 +19,7 @@
  */
 /***************************************************************************
  * Desc: localize device proxy
- * Author: Boyoon Jung
+ * Author: Boyoon Jung, Andrew Howard
  * Date: 20 Jun 2002
  * CVS: $Id$
  **************************************************************************/
@@ -39,13 +39,13 @@ void playerc_localize_putdata(playerc_localize_t *device, player_msghdr_t *heade
                            player_localize_data_t *data, size_t len);
 
 // Create a new localize proxy
-playerc_localize_t *playerc_localize_create(playerc_client_t *client, int robot, int index)
+playerc_localize_t *playerc_localize_create(playerc_client_t *client, int index)
 {
   playerc_localize_t *device;
 
   device = malloc(sizeof(playerc_localize_t));
   memset(device, 0, sizeof(playerc_localize_t));
-  playerc_device_init(&device->info, client, robot, PLAYER_LOCALIZE_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_LOCALIZE_CODE, index,
                       (playerc_putdata_fn_t) playerc_localize_putdata);
     
   return device;

@@ -346,7 +346,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
       
       close( tfd ); // can close fd once mapped
       
-      StageDevice *dev = 0; // declare outside switch statement
+      //StageDevice *dev = 0; // declare outside switch statement
 
       // prime the configFile parser
       int globalparent = configFile.AddEntity(-1,"");
@@ -372,19 +372,6 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         case PLAYER_MOTE_CODE:
         case PLAYER_POWER_CODE:
         case PLAYER_BUMPER_CODE:
-	    case PLAYER_LOCALIZATION_CODE:
-        {
-          // Create a StageDevice with this IO base address and filedes
-          dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
-	  
-	      deviceTable->AddDevice(deviceIO->player_id, 
-                                 (char*)(deviceIO->drivername),
-                                 PLAYER_ALL_MODE, dev);
-	  
-          // add this port to our listening list
-          StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
-        }
-        break;
 
         case PLAYER_MCOM_CODE:
           // Create mcom device as per normal

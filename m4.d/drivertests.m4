@@ -109,28 +109,31 @@ fi
 AC_SUBST(LASERFIDUCIAL_LIBS)
 AC_SUBST(LASERFIDUCIAL_LIBSPATH)
 
+PLAYER_ADD_DRIVER([mcl],[drivers/localization/mcl],[no],)
+
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
-dnl AC_ARG_ENABLE(amcl,
-dnl [  --enable-amcl           Compile the amcl driver],,enable_amcl=no)
-dnl if test "x$enable_amcl" = "xyes"; then
-dnl   AC_CHECK_HEADER(gsl/gsl_version.h,,
-dnl     AC_MSG_ERROR([The GNU Scientific Library (gsl) is required to build the
-dnl                   amcl driver; pass --disable-amcl to configure.]))
-dnl   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
-dnl   AMCL_LIB="libamcl.a"
-dnl   AMCL_LIBPATH="drivers/localization/amcl/libamcl.a"
-dnl   AMCL_PF_LIB="libpf.a"
-dnl   AMCL_MAP_LIB="libmap.a"
-dnl   AMCL_MODELS_LIB="libmodels.a"
-dnl   AMCL_EXTRA_LIB="-lgsl -lgslcblas"
-dnl fi
-dnl AC_SUBST(AMCL_LIB)
-dnl AC_SUBST(AMCL_LIBPATH)
-dnl AC_SUBST(AMCL_PF_LIB)
-dnl AC_SUBST(AMCL_MAP_LIB)
-dnl AC_SUBST(AMCL_MODELS_LIB)
-dnl AC_SUBST(AMCL_EXTRA_LIB)
+AC_ARG_ENABLE(amcl,
+[  --enable-amcl           Compile the amcl driver],,enable_amcl=no)
+if test "x$enable_amcl" = "xyes"; then
+  AC_CHECK_HEADER(gsl/gsl_version.h,,
+    AC_MSG_ERROR([The GNU Scientific Library (gsl) is required to build the
+                  amcl driver; pass --disable-amcl to configure.]))
+  AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
+  AMCL_LIB="libamcl.a"
+  AMCL_LIBPATH="drivers/localization/amcl/libamcl.a"
+  AMCL_PF_LIB="libpf.a"
+  AMCL_MAP_LIB="libmap.a"
+  AMCL_MODELS_LIB="libmodels.a"
+  AMCL_EXTRA_LIB="-lgsl -lgslcblas"
+fi
+AC_SUBST(AMCL_LIB)
+AC_SUBST(AMCL_LIBPATH)
+AC_SUBST(AMCL_PF_LIB)
+AC_SUBST(AMCL_MAP_LIB)
+AC_SUBST(AMCL_MODELS_LIB)
+AC_SUBST(AMCL_EXTRA_LIB)
+
 
 dnl Manually append LIB, LIBPATH, and EXTRA_LIB vars for those drivers that
 dnl the PLAYER_ADD_DRIVER macro wasn't called.

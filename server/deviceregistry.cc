@@ -132,8 +132,12 @@ void MicroStrain3DMG_Register(DriverTable* table);
 void Waveaudio_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_LOCALIZATION
+#ifdef INCLUDE_MCL
 void RegularMCL_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_AMCL
+void AdaptiveMCL_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_LIFOMCOM
@@ -163,7 +167,7 @@ player_interface_t interfaces[] = {
   {PLAYER_WIFI_CODE, PLAYER_WIFI_STRING, "linuxwifi"},
   {PLAYER_IR_CODE, PLAYER_IR_STRING, "reb_ir"},
   {PLAYER_WAVEFORM_CODE, PLAYER_WAVEFORM_STRING, "wave_audio"},
-  {PLAYER_LOCALIZATION_CODE, PLAYER_LOCALIZATION_STRING, "regular_mcl"},
+  {PLAYER_LOCALIZE_CODE, PLAYER_LOCALIZE_STRING, "adaptive_mcl"},
   {PLAYER_MCOM_CODE, PLAYER_MCOM_STRING, "lifomcom"},
   {0,NULL,NULL}
 };
@@ -285,8 +289,12 @@ register_devices()
   Waveaudio_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_LOCALIZATION
+#ifdef INCLUDE_MCL
   RegularMCL_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_AMCL
+  AdaptiveMCL_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_LIFOMCOM

@@ -19,7 +19,7 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_ptz.c \
                        dev_truth.c \
                        dev_wifi.c \
-		       dev_localization.c \
+								       dev_localize.c \
                        error.c \
                        error.h
 
