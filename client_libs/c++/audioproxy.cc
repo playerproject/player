@@ -60,7 +60,7 @@ AudioProxy::PlayTone(unsigned short freq,
   cmd.amplitude = htons(amp);
   cmd.duration = htons(dur);
 
-  return(client->Write(PLAYER_AUDIO_CODE,index,
+  return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
 }
 
@@ -68,7 +68,8 @@ AudioProxy::PlayTone(unsigned short freq,
 void
 AudioProxy::Print()
 {
-  printf("#Audio(%d:%d) - %c\n", device, index, access);
+  printf("#Audio(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code, 
+         m_device_id.index, access);
   printf("(%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u)\n", 
          frequency0,amplitude0,
          frequency1,amplitude1,

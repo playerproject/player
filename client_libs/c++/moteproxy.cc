@@ -31,7 +31,7 @@ int MoteProxy::TransmitRaw(char *msg, uint16_t len)
   tx_data.len = len;
   memcpy(tx_data.buf, msg, len);
   
-  return(client->Write(PLAYER_MOTE_CODE,index,(const char*)&tx_data,
+  return(client->Write(m_device_id,(const char*)&tx_data,
                          sizeof(player_mote_data_t)));
 }
 
@@ -43,7 +43,7 @@ int MoteProxy::SetStrength(uint8_t str)
   
   m_config.strength = str;
   
-  return(client->Request(PLAYER_MOTE_CODE,index,(const char*)&m_config,
+  return(client->Request(m_device_id,(const char*)&m_config,
 			 sizeof(player_mote_config_t)));
 }
 

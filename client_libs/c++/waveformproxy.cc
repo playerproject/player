@@ -86,7 +86,8 @@ void WaveformProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void WaveformProxy::Print()
 {
-  printf("#Waveform(%d:%d) - %c\n", device, index, access);
+  printf("#Waveform(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code, 
+         m_device_id.index, access);
 
   printf("Bitrate: %d bps Depth: %d bits Last samples: %d\n", 
 	 this->bitrate, this->depth, this->last_samples );

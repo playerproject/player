@@ -51,7 +51,7 @@ int LaserProxy::Configure(short tmp_min_angle, short tmp_max_angle,
   resolution = tmp_resolution;
   intensity = tmp_intensity;
 
-  return(client->Request(PLAYER_LASER_CODE,index,(const char*)&config,
+  return(client->Request(m_device_id,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -69,7 +69,7 @@ int LaserProxy::GetConfigure()
 
   config.subtype = PLAYER_LASER_GET_CONFIG;
 
-  if(client->Request(PLAYER_LASER_CODE,index,
+  if(client->Request(m_device_id,
                      (const char*)&config, sizeof(config.subtype),
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
@@ -151,14 +151,15 @@ LaserProxy::SetLaserState(const unsigned char state)
     cfg.subtype = PLAYER_LASER_POWER_CONFIG;
     cfg.value = state;
 
-    return (client->Request(PLAYER_LASER_CODE, index,
+    return (client->Request(m_device_id,
 			(const char *) &cfg, sizeof(cfg)));
 }
 
 // interface that all proxies SHOULD provide
 void LaserProxy::Print()
 {
-  printf("#LASER(%d:%d) - %c\n", device, index, access);
+  printf("#LASER(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+         m_device_id.index, access);
   puts("#min\tmax\tres\tcount");
   printf("%d\t%d\t%u\t%u\n", min_angle,max_angle,resolution,range_count);
   puts("#range\tintensity");

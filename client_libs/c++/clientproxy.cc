@@ -34,8 +34,20 @@ ClientProxy::ClientProxy(PlayerClient* pc,
             unsigned short req_index,
             unsigned char req_access)
 {
-  device = req_device;
-  index = req_index;
+  player_device_id_t id;
+  // TODO: make sure that this default of 0 makes sense.
+  id.robot = 0;
+  id.code = req_device;
+  id.index = req_index;
+
+  ClientProxy(pc,id,req_access);
+}
+
+ClientProxy::ClientProxy(PlayerClient* pc, 
+            player_device_id_t device_id,
+            unsigned char req_access)
+{
+  m_device_id = device_id;
   client = pc;
 
   timestamp.tv_sec = 0;
@@ -57,13 +69,14 @@ ClientProxy::ClientProxy(PlayerClient* pc,
 
   if(client && req_access!='c')
   {
-    client->RequestDeviceAccess(req_device, req_index, 
+    client->RequestDeviceAccess(m_device_id,
                                 req_access, &grant_access,
                                 driver_name, sizeof(driver_name));
 
     if((req_access != grant_access) && (player_debug_level(-1) >= 1))
-      printf("WARNING: tried to get '%c' access to device %d:%d but got "
- 	     "'%c' access.\n", req_access, device, index, grant_access);
+      printf("WARNING: tried to get '%c' access to device %d:%d:%d but got "
+             "'%c' access.\n", req_access, m_device_id.robot, 
+             m_device_id.code, m_device_id.code, grant_access);
   }
   else
   {
@@ -81,7 +94,7 @@ ClientProxy::~ClientProxy()
   if(client)
   {
     if((access != 'c') && (access != 'e'))
-      client->RequestDeviceAccess(device,index,'c',NULL);
+      client->RequestDeviceAccess(m_device_id,'c',NULL);
     // remove it to our client's list to manage
     client->RemoveProxy(this);
   }
@@ -96,7 +109,7 @@ int ClientProxy::ChangeAccess(unsigned char req_access,
 
   if(client)
   {
-    if(client->RequestDeviceAccess(device, index, req_access, 
+    if(client->RequestDeviceAccess(m_device_id, req_access, 
                                    &our_grant_access,
                                    driver_name, sizeof(driver_name)))
     {
@@ -106,8 +119,9 @@ int ClientProxy::ChangeAccess(unsigned char req_access,
     }
 
     if((req_access != our_grant_access) && (player_debug_level(-1) >= 1))
-      printf("WARNING: tried to get '%c' access to device %d:%d but got "
- 	     "'%c' access.\n", req_access, device, index, our_grant_access);
+      printf("WARNING: tried to get '%c' access to device %d:%d:%d but got "
+ 	     "'%c' access.\n", req_access, m_device_id.robot, m_device_id.code,
+             m_device_id.index, our_grant_access);
   }
   else
     return(-1);

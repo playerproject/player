@@ -89,11 +89,11 @@ PassThrough_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   host = cf->ReadString(section, "host", "localhost");
-  id.port = cf->ReadInt(section, "port", global_playerport);
+  id.robot = cf->ReadInt(section, "port", global_playerport);
   id.code = interf.code;
   id.index = cf->ReadInt(section, "index", 0);
 
-  if(!strcmp(host,"localhost") && (id.port == global_playerport))
+  if(!strcmp(host,"localhost") && (id.robot == global_playerport))
   {
     PLAYER_ERROR("passthrough connected to itself; you should specify\n the hostname and/or port of the remote server in the configuration file");
     return(NULL);
@@ -114,7 +114,7 @@ PassThrough::PassThrough(player_device_id_t id, const char* hostname,
   CDevice(PLAYER_MAX_PAYLOAD_SIZE,PLAYER_MAX_PAYLOAD_SIZE,1,1)
 {
   this->remote_hostname = hostname;
-  this->remote_port = id.port;
+  this->remote_port = id.robot;
   this->remote_code = id.code;
   this->remote_index = id.index;
   this->remote_access = (unsigned char)cf->ReadString(section, "access", "a")[0];

@@ -141,7 +141,7 @@ int LaserBar::Setup()
   // Get the pointer to the laser.  If index was not overridden by an
   // argument in the constructor, then we use this driver's index.
   player_device_id_t id;
-  id.port = this->device_id.port;
+  id.robot = this->device_id.robot;
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
   

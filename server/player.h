@@ -138,13 +138,14 @@ typedef struct
 {
   uint16_t stx;     /* always equal to "xX" (0x5878) */
   uint16_t type;    /* message type */
+  uint16_t robot;  /* robot id */
   uint16_t device;  /* what kind of device */
   uint16_t device_index; /* which device of that kind */
   uint32_t time_sec;  /* server's current time (seconds since epoch) */
   uint32_t time_usec; /* server's current time (microseconds since epoch) */
   uint32_t timestamp_sec;  /* time when the current data/response was generated */
   uint32_t timestamp_usec; /* time when the current data/response was generated */
-  uint32_t reserved;  /* for extension */
+  uint16_t reserved;  /* for extension */
   uint32_t size;  /* size in bytes of the payload to follow */
 } __attribute__ ((packed)) player_msghdr_t;
 
@@ -198,13 +199,12 @@ typedef struct
     these identifiers, and some messages contain them. */
 typedef struct player_device_id
 {
-  /** The interface provided by the device*/
+  /** The robot id */
+  uint16_t robot;
+  /** The interface provided by the device */
   uint16_t code;
   /** The index of the device */
   uint16_t index;
-  /** The TCP port of the device (only useful with Stage)*/
-  uint16_t port;
-
 } __attribute__ ((packed)) player_device_id_t;
 
 
@@ -257,10 +257,8 @@ typedef struct player_device_req
 {
   /** Subtype; must be PLAYER_PLAYER_DEV_REQ */
   uint16_t subtype;
-  /** The interface for the device */
-  uint16_t code;
-  /** The index for the device */
-  uint16_t index;
+  /** The device id */
+  player_device_id_t id;
   /** The requested access */
   uint8_t access;
 
@@ -271,10 +269,8 @@ typedef struct player_device_resp
 {
   /** Subtype; will be PLAYER_PLAYER_DEV_REQ */
   uint16_t subtype;
-  /** The interface for the device */
-  uint16_t code;
-  /** The index for the device */
-  uint16_t index;
+  /** The device id */
+  player_device_id_t id;
   /** The granted access */
   uint8_t access;
   /** The name of the underlying driver */

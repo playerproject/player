@@ -27,9 +27,6 @@
  * client reader/writer threads.
  */
 
-//#define VERBOSE
-//#define DEBUG
-
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
@@ -75,6 +72,9 @@
 player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
+
+#define VERBOSE
+#define DEBUG
 
 // true if we're connecting to Stage instead of a real robot
 bool use_stage = false;
@@ -262,6 +262,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 
   struct dirent **namelist;
   int n = -1;
+  int m;
   
   int tfd = 0;
   
@@ -286,7 +287,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   } 
  
   // open all the files in the IO directory
-  n = scandir( directory, &namelist, MatchDeviceName, 0);
+  n = scandir( directory, &namelist, MatchDeviceName, alphasort);
   if (n < 0)
     perror("scandir");
   else if(!n)
@@ -294,22 +295,29 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   else
   {
     // for every file in the directory, create a new device
-    while(n--)
+    m=0;
+    while(m<n)
     {
       // don't try to load the clock here - we'll do it below
-      if( strcmp( STAGE_CLOCK_NAME, namelist[n]->d_name ) == 0 )
+      if( strcmp( STAGE_CLOCK_NAME, namelist[m]->d_name ) == 0 )
+      {
+        m++;
         continue;
+      }
       
       // don't try to open the lock here - we already did it above
-      if( strcmp( STAGE_LOCK_NAME, namelist[n]->d_name ) == 0 )
+      if( strcmp( STAGE_LOCK_NAME, namelist[m]->d_name ) == 0 )
+      {
+        m++;
         continue;
+      }
 
 #ifdef DEBUG      
-      printf("Opening %s ", namelist[n]->d_name);
+      printf("Opening %s ", namelist[m]->d_name);
       fflush( stdout );
 #endif
       
-      sprintf( devicefile, "%s/%s", directory, namelist[n]->d_name ); 
+      sprintf( devicefile, "%s/%s", directory, namelist[m]->d_name ); 
       
       if( (tfd = open(devicefile, O_RDWR )) < 0 )
       {
@@ -378,7 +386,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
                                  PLAYER_ALL_MODE, dev);
 	  
           // add this port to our listening list
-          StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+          StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
         }
         break;
 
@@ -405,7 +413,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
                                    devicep);
 
             // add this port to our listening list
-            StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+            StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
 
             // setup the Stage buffers
             devicep->SetupStageBuffers(deviceIO, lockfd, 
@@ -449,7 +457,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
                                                    &configFile, section));
  
               // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.robot);
             }
           }
           break;
@@ -501,12 +509,13 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         default:
           printf( "Unknown device type %d for object ID (%d,%d,%d)\n",
                   deviceIO->player_id.code, 
-                  deviceIO->player_id.port, 
+                  deviceIO->player_id.robot, 
                   deviceIO->player_id.code, 
                   deviceIO->player_id.index ); 
           break;
       }
-      free(namelist[n]);
+      free(namelist[m]);
+      m++;
     }
     free(namelist);
   }
@@ -643,7 +652,7 @@ parse_config_file(char* fname)
     {
       player_device_id_t id;
       id.code = code;
-      id.port = global_playerport;
+      id.robot = global_playerport;
       id.index = index;
 
       if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
@@ -815,7 +824,7 @@ int main( int argc, char *argv[] )
     // deduced from the stageIO filenames
     stage_clock_t * sclock = CreateStageDevices( stage_io_directory, 
 						 &ports, &num_ufds );
-    
+    num_ufds=1;
     assert( sclock ); 
     //printf( "created %d ports (1: %d 2: %d...)\n",
     //    num_ufds, ports[0], ports[1] );
@@ -824,7 +833,7 @@ int main( int argc, char *argv[] )
     assert( ufds = new struct pollfd[num_ufds] );
     
 #ifdef VERBOSE
-    printf( "[Port" );
+    printf( "[Port ");
 #endif
 
     // bind a socket on each port

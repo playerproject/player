@@ -146,7 +146,7 @@ int LaserBarcode::Setup()
 {
   // get the pointer to the laser
   player_device_id_t id;
-  id.port = device_id.port;
+  id.robot = device_id.robot;
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
   this->laser_device = deviceTable->GetDevice(id);

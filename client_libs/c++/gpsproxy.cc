@@ -50,7 +50,8 @@ void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void GpsProxy::Print()
 {
-  printf("#GPS(%d:%d) - %c\n", device, index, access);
+  printf("#GPS(%d:%d:%d) - %c\n", m_device_id.robot,
+         m_device_id.code, m_device_id.index, access);
   puts("#(Xmm,Ymm,THdeg)");
   printf("%d\t%d\t%d\n", xpos,ypos,heading);
 }

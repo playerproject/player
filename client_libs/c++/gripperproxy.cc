@@ -45,8 +45,7 @@ int GripperProxy::SetGrip(unsigned char cmd, unsigned char arg)
   command.cmd = cmd;
   command.arg = arg;
 
-  return(client->Write(PLAYER_GRIPPER_CODE,index,
-                       (const char*)&command,sizeof(command)));
+  return(client->Write(m_device_id, (const char*)&command,sizeof(command)));
 }
 
 void GripperProxy::FillData(player_msghdr_t hdr, const char* buffer)
@@ -78,7 +77,8 @@ void GripperProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void GripperProxy::Print()
 {
-  printf("#Gripper(%d:%d) - %c\n", device, index, access);
+  printf("#Gripper(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+         m_device_id.index, access);
   puts("#paddles\tinner beams\touter beams");
   printf("%s\t\t%s\t\t%s\n",
          (paddles_open) ? "open" : "closed",

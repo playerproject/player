@@ -104,7 +104,8 @@ WiFiProxy::Print()
     sprintf(mode, "OTHER (%d)", op_mode);
   }
 
-  printf("#WiFi(%d:%d) - %c\n", device, index, access);
+  printf("#WiFi(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code, 
+         m_device_id.index, access);
 
   printf("\tMode: %s\t%s\n", mode, access_point);
   printf("\tBitrate: %d\tThroughput: %d\n", bitrate, throughput);
@@ -231,7 +232,7 @@ WiFiProxy::GetMAC(char *mac, int len)
 
   req.subtype = PLAYER_WIFI_MAC_REQ;
 
-  if (client->Request(PLAYER_WIFI_CODE, index, (const char *)&req, sizeof(req),
+  if (client->Request(m_device_id, (const char *)&req, sizeof(req),
 		      &hdr, buf, sizeof(buf)) < 0) {
     *mac = '\0';
   } else {

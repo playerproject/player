@@ -47,7 +47,7 @@ int PositionProxy::SetSpeed(int speed, int sidespeed, int turnrate)
   cmd.yspeed = (int)htonl(sidespeed);
   cmd.yawspeed = (int)htonl(turnrate);
 
-  return(client->Write(PLAYER_POSITION_CODE,index,
+  return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
 }
 
@@ -73,7 +73,7 @@ PositionProxy::DoDesiredHeading(int theta, int xspeed, int yawspeed)
   cmd.xspeed = htonl(xspeed);
   cmd.yawspeed = htonl(yawspeed);
 
-  return client->Write(PLAYER_POSITION_CODE, index, 
+  return client->Write(m_device_id,
 		       (const char *)&cmd, sizeof(cmd));
 }
   
@@ -100,7 +100,7 @@ PositionProxy::DoStraightLine(int trans)
   cmd.yawspeed = 0;
   cmd.yaw = 0;
 
-  client->Write(PLAYER_POSITION_CODE, index, 
+  client->Write(m_device_id,
 		(const char *)&cmd, sizeof(cmd));
 
   // now we send the real pos command
@@ -108,7 +108,7 @@ PositionProxy::DoStraightLine(int trans)
   short t = (short) trans;
   cmd.xspeed = htons(t);
 
-  return client->Write(PLAYER_POSITION_CODE, index, 
+  return client->Write(m_device_id,
 			 (const char *)&cmd, sizeof(cmd));
 }
 
@@ -135,13 +135,13 @@ PositionProxy::DoRotation(int rot)
   cmd.yawspeed = 0;
   cmd.yaw = 0;
 
-  client->Write(PLAYER_POSITION_CODE, index,
+  client->Write(m_device_id,
 		(const char *)&cmd, sizeof(cmd));
 
   short r = (short) rot;
   cmd.yawspeed = htons(r);
 
-  return client->Write(PLAYER_POSITION_CODE, index, 
+  return client->Write(m_device_id,
 			 (const char *)&cmd, sizeof(cmd));
 }
 
@@ -162,7 +162,7 @@ int PositionProxy::SetMotorState(unsigned char state)
   config.value = state;
 
 
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
+  return(client->Request(m_device_id,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -184,7 +184,7 @@ int PositionProxy::SelectVelocityControl(unsigned char mode)
   config.request = PLAYER_POSITION_VELOCITY_MODE_REQ;
   config.value = mode;
 
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
+  return(client->Request(m_device_id,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -203,7 +203,7 @@ int PositionProxy::ResetOdometry()
 
   config.request = PLAYER_POSITION_RESET_ODOM_REQ;
 
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
+  return(client->Request(m_device_id,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -225,7 +225,7 @@ int PositionProxy::SetOdometry( int x, int y, unsigned short theta   )
   config.y = htonl((int32_t)y);
   config.theta= htons((uint16_t)theta);
   
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
+  return(client->Request(m_device_id,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -248,7 +248,7 @@ PositionProxy::SelectPositionMode(unsigned char mode)
   req.subtype = PLAYER_POSITION_POSITION_MODE_REQ;
   req.state = mode;
 
-  return client->Request(PLAYER_POSITION_CODE, index, 
+  return client->Request(m_device_id,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -271,7 +271,7 @@ PositionProxy::GoTo(int x, int y, int t)
   cmd.ypos = (int32_t)htonl(y);
   cmd.yaw  = (int32_t)htonl(t);
 
-  return(client->Write(PLAYER_POSITION_CODE,index,
+  return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
 }
 
@@ -294,7 +294,7 @@ PositionProxy::SetSpeedPID(int kp, int ki, int kd)
   req.ki = htonl((unsigned int)ki);
   req.kd = htonl((unsigned int)kd);
 
-  return client->Request(PLAYER_POSITION_CODE, index, 
+  return client->Request(m_device_id,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -317,7 +317,7 @@ PositionProxy::SetPositionPID(short kp, short ki, short kd)
   req.ki = htonl(ki);
   req.kd = htonl(kd);
 
-  return client->Request(PLAYER_POSITION_CODE, index, 
+  return client->Request(m_device_id,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -341,7 +341,7 @@ PositionProxy::SetPositionSpeedProfile(short spd, short acc)
   req.speed = htons(spd);
   req.acc = htons(acc);
 
-  return client->Request(PLAYER_POSITION_CODE, index, 
+  return client->Request(m_device_id,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -368,7 +368,8 @@ void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void PositionProxy::Print()
 {
-  printf("#Position(%d:%d) - %c\n", device, index, access);
+  printf("#Position(%d:%d:%d) - %c\n", m_device_id.robot, m_device_id.code,
+         m_device_id.index, access);
   puts("#xpos\typos\ttheta\tspeed\tsidespeed\tturn\tstall");
   printf("%d\t%d\t%u\t%d\t%d\t%d\n", 
          xpos,ypos,theta,speed,sidespeed,turnrate,stall);

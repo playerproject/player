@@ -60,7 +60,8 @@ void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
 // interface that all proxies SHOULD provide
 void FiducialProxy::Print()
 {
-  printf("#Fiducial(%d:%d) - %c\n", device, index, access);
+  printf("#Fiducial(%d:%d:%d) - %c\n", m_device_id.robot,
+         m_device_id.code, m_device_id.index, access);
   puts("#count");
   printf("%d\n", count);
   puts("#id\trange\tbear\torient\tr_err\tb_err\to_err");

@@ -86,8 +86,10 @@ class ClientProxy
     player_msghdr_t last_header;
 
     unsigned char access;   // 'r', 'w', or 'a' (others?)
-    unsigned short device; // the name by which we identify this kind of device
-    unsigned short index;  // which device we mean
+    //unsigned short robot;  // to which robot this proxy pertains
+    //unsigned short device; // the name by which we identify this kind of device
+    //unsigned short index;  // which device we mean
+    player_device_id_t m_device_id;
 
     /** The name of the driver used to implement this device in the server.
      */
@@ -119,6 +121,10 @@ class ClientProxy
     ClientProxy(PlayerClient* pc, 
 		unsigned short req_device,
 		unsigned short req_index,
+		unsigned char req_access = 'c' );
+
+    ClientProxy(PlayerClient* pc, 
+		player_device_id_t device_id,
 		unsigned char req_access = 'c' );
 
     // destructor will try to close access to the device
@@ -189,8 +195,9 @@ class PlayerClient
     //
     // returns NULL if we can't find it.
     //
-    ClientProxy* PlayerClient::GetProxy(unsigned short device, 
+    ClientProxy* GetProxy(unsigned short device, 
                                         unsigned short index);
+    ClientProxy* GetProxy(player_device_id_t id);
 
   public:
     //  Struct containing information about the  connection to Player
@@ -273,14 +280,13 @@ class PlayerClient
     /** Write a command to the server.  This method is {\bf not} intended for
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 on success, -1 otherwise. */
-    int Write(unsigned short device, unsigned short index,
+    int Write(player_device_id_t device_id,
               const char* command, size_t commandlen);
 
     /** Send a request to the server.  This method is {\bf not} intended for
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 on success, -1 otherwise. */
-    int Request(unsigned short device,
-                unsigned short index,
+    int Request(player_device_id_t device_id,
                 const char* payload,
                 size_t payloadlen,
                 player_msghdr_t* replyhdr,
@@ -291,8 +297,7 @@ class PlayerClient
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 if an ACK is received, -1 
         otherwise. */
-    int Request(unsigned short device,
-                unsigned short index,
+    int Request(player_device_id_t device_id,
                 const char* payload,
                 size_t payloadlen);
     
@@ -303,8 +308,7 @@ class PlayerClient
       {\tt grant_access}, if non-NULL, will be filled with the granted access.
       Returns 0 if everything went OK or -1 if something went wrong.
     */
-    int RequestDeviceAccess(unsigned short device,
-                            unsigned short index,
+    int RequestDeviceAccess(player_device_id_t device_id,
                             unsigned char req_access,
                             unsigned char* grant_access,
                             char* driver_name = NULL,

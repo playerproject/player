@@ -74,7 +74,7 @@ CDeviceTable::AddDevice(player_device_id_t id, char* name,
   for(thisentry = head,preventry=NULL; thisentry; 
       preventry=thisentry, thisentry=thisentry->next)
   {
-    if((thisentry->id.port == id.port) && 
+    if((thisentry->id.robot == id.robot) && 
        (thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index))
     {
@@ -172,7 +172,7 @@ CDeviceTable::GetDeviceEntry(player_device_id_t id)
     // port.
     if((thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index) &&
-       (!use_stage || (thisentry->id.port == id.port)))
+       (!use_stage || (thisentry->id.robot == id.robot)))
       break;
   }
 
