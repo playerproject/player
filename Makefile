@@ -51,6 +51,11 @@ distro: clean
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` $(PLAYER_VERSION)
 
+distro-bleeding: clean
+	$(MKDIR) doc
+	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
+	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` Bleeding
+
 
 clean_server: 
 	cd src && make clean
