@@ -72,7 +72,7 @@ RMPPower::Setup()
   int ret;
 
   segway = SegwayIO::Instance();
-
+ 
   if ((ret = segway->Init()) < 0) {
     PLAYER_ERROR1("RMPPOWER: error on segwayIO init (%d)\n",ret);
     return -1;
@@ -86,7 +86,7 @@ RMPPower::Shutdown()
 {
   int ret;
 
-  if ((ret = segway->Shutdown()) < 0) {
+   if ((ret = segway->Shutdown()) < 0) {
     PLAYER_ERROR1("RMPPOWER: error on canio shutdown (%d)\n",ret);
     return -1;
   }

@@ -92,6 +92,7 @@ SegwayRMP::Setup()
 {
   // setup the CAN stuff
   int ret;
+
   if ((ret = segway->Init()) < 0) {
     PLAYER_ERROR1("SEGWAY: error on segway init (%d)\n", ret);
     return -1;
@@ -105,13 +106,14 @@ int
 SegwayRMP::Shutdown()
 {
   int ret;
+
   if ((ret = segway->Shutdown()) < 0) {
     PLAYER_ERROR1("SEGWAY: error on canio shutdown (%d)\n", ret);
     return -1;
   }
-
+  
   StopThread();
-
+  
   return(0);
 }
 
@@ -126,7 +128,11 @@ SegwayRMP::Main()
   player_rmp_config_t *rmp;
   void *client;
 
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
   while (1) {
+    pthread_testcancel();
     
     // check for config requests
     if (GetConfig(&client, (void *)buffer, sizeof(buffer))) {
