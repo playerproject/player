@@ -17,7 +17,7 @@ int test_laser(playerc_client_t *client, int index)
   playerc_laser_t *device;
 
   double min, max;
-  int resolution, intensity;
+  int resolution, range_res, intensity;
 
   printf("device [laser] index [%d]\n", index);
 
@@ -33,14 +33,15 @@ int test_laser(playerc_client_t *client, int index)
   min = -M_PI/2;
   max = +M_PI/2;
   resolution = 100;
+  range_res = 1;
   intensity = 1;
-  if (playerc_laser_set_config(device, min, max, resolution, intensity) == 0)
+  if (playerc_laser_set_config(device, min, max, resolution, range_res, intensity) == 0)
     PASS();
   else
     FAIL();
 
   TEST("get configuration");
-  if (playerc_laser_get_config(device, &min, &max, &resolution, &intensity) == 0)
+  if (playerc_laser_get_config(device, &min, &max, &resolution, &range_res, &intensity) == 0)
     PASS();
   else
     FAIL();
