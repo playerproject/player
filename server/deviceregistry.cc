@@ -132,8 +132,12 @@ void INav_Register(DriverTable *table);
 void Waveaudio_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_LOCALIZATION
+#ifdef INCLUDE_MCL
 void RegularMCL_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_AMCL
+void AdaptiveMCL_Register(DriverTable* table);
 #endif
 
 
@@ -281,8 +285,12 @@ register_devices()
   Waveaudio_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_LOCALIZATION
+#ifdef INCLUDE_MCL
   RegularMCL_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_AMCL
+  AdaptiveMCL_Register(driverTable);
 #endif
 }
 

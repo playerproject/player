@@ -68,9 +68,9 @@ class INav : public CDevice
   // Setup/shutdown routines.
   public: virtual int Setup();
   public: virtual int Shutdown();
-
-  // TESTING
-  virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  
+  // Set the driver command
+  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
   
   // Set up the odometry device.
   private: int SetupOdom();
@@ -95,21 +95,12 @@ class INav : public CDevice
   // Check for new laser data
   private: int GetLaser();
 
-  // Get log data (for testing)
-  private: int GetLog();
-
   // Write the pose data (the data going back to the client).
   private: void PutPose();
 
   // Update the incremental pose in response to new laser data.
   private: void UpdatePoseLaser();
 
-  // Get the time in ms
-  private: int64_t GetTime();
-
-  // Log file (for testing)
-  private: FILE *logfile;
-  
   // Odometry device info
   private: CDevice *odom;
   private: int odom_index;
@@ -117,6 +108,9 @@ class INav : public CDevice
 
   // Pose of robot in odometric cs
   private: inav_vector_t odom_pose;
+
+  // Velocity of robot in robot cs
+  private: inav_vector_t odom_vel;
   
   // Laser device info
   private: CDevice *laser;
@@ -196,12 +190,10 @@ INav::INav(char* interface, ConfigFile* cf, int section)
   
   this->map = imap_alloc((int) (size / this->map_scale),
                          (int) (size / this->map_scale), this->map_scale, 0.25, 0.25);
+
   this->map_pose.v[0] = 0.0;
   this->map_pose.v[1] = 0.0;
   this->map_pose.v[2] = 0.0;
-
-  // Open the log file 
-  this->logfile = fopen(cf->ReadString(section, "logfile", ""), "r");
 
   return;
 }
@@ -211,7 +203,6 @@ INav::INav(char* interface, ConfigFile* cf, int section)
 // Destructor
 INav::~INav()
 {
-  fclose(this->logfile);
   imap_free(this->map);
   return;
 }
@@ -221,16 +212,13 @@ INav::~INav()
 // Set up the device (called by server thread).
 int INav::Setup()
 {
-  if (!this->logfile)
-  {
-    // Initialise the underlying position device.
-    if (this->SetupOdom() != 0)
-      return -1;
-
-    // Initialise the laser.
-    if (this->SetupLaser() != 0)
-      return -1;
-  }
+  // Initialise the underlying position device.
+  if (this->SetupOdom() != 0)
+    return -1;
+  
+  // Initialise the laser.
+  if (this->SetupLaser() != 0)
+    return -1;
   
   // Start the driver thread.
   this->StartThread();
@@ -246,23 +234,22 @@ int INav::Shutdown()
   // Stop the driver thread.
   this->StopThread();
 
-  if (!this->logfile)
-  {
-    // Stop the laser
-    this->ShutdownLaser();
+  // Stop the laser
+  this->ShutdownLaser();
 
-    // Stop the odom device.
-    this->ShutdownOdom();
-  }
+  // Stop the odom device.
+  this->ShutdownOdom();
 
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// TESTING
+// Set the driver command
 void INav::PutCommand(void* client, unsigned char* src, size_t len)
 {
+  // TODO: implement local goto controller
+  // Pass command to odometry device
   this->odom->PutCommand(client, src, len);
   return;
 }
@@ -290,6 +277,10 @@ int INav::SetupOdom()
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
   }
+
+  // TODO
+  // Get the odometry geometry
+
   return 0;
 }
 
@@ -324,6 +315,10 @@ int INav::SetupLaser()
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
   }
+
+  // TODO
+  // Get the laser geometry
+  
   return 0;
 }
 
@@ -351,30 +346,23 @@ void INav::Main()
     // Sleep for 1ms (will actually take longer than this).
     sleeptime.tv_sec = 0;
     sleeptime.tv_nsec = 1000000L;
-    //nanosleep(&sleeptime, NULL);
+    nanosleep(&sleeptime, NULL);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
 
-    if (this->logfile)
-    {
-      GetLog();
-    }
-    else
-    {
-      // Process any pending requests.
-      HandleRequests();
+    // Process any pending requests.
+    HandleRequests();
 
-      // Check for new odometric data
-      GetOdom();
+    // Check for new odometric data
+    GetOdom();
     
-      // Check for new laser data.  If there is new data, update the
-      // incremental pose estimate.
-      if (GetLaser())
-      {
-        UpdatePoseLaser();
-        PutPose();
-      }
+    // Check for new laser data.  If there is new data, update the
+    // incremental pose estimate.
+    if (GetLaser())
+    {
+      UpdatePoseLaser();
+      PutPose();
     }
   }
   return;
@@ -529,85 +517,21 @@ int INav::GetLaser()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Get log data (for testing)
-int INav::GetLog()
-{
-  char line[4096];
-  char *type, *tmp;
-  double r, b;
-  int i, index;
-  double dtime;
-
-  if (fgets(line, sizeof(line), this->logfile) == NULL)
-    return 0;
-
-  //printf("%s\n", line);
-
-  strtok(line, " ");
-  strtok(NULL, " ");
-  strtok(NULL, " ");
-  type = strtok(NULL, " ");
-
-  if (strcmp(type, "position") == 0)
-  {
-    index = atoi(strtok(NULL, " "));
-    if (index == 0)
-    {
-      dtime = atof(strtok(NULL, " "));
-      this->odom_pose.v[0] = atof(strtok(NULL, " "));
-      this->odom_pose.v[1] = atof(strtok(NULL, " "));
-      this->odom_pose.v[2] = atof(strtok(NULL, " "));
-      this->odom_time = dtime;
-    }
-  }
-
-  else if (strcmp(type, "laser") == 0)
-  {
-    index = atoi(strtok(NULL, " "));
-    dtime = atof(strtok(NULL, " "));
-    for (i = 0; i < 401; i++)
-    {
-      tmp = strtok(NULL, " ");
-      if (tmp == NULL)
-        break;
-      r = atof(tmp);
-
-      tmp = strtok(NULL, " ");
-      if (tmp == NULL)
-        break;
-      b = atof(tmp);
-      
-      strtok(NULL, " ");
-
-      this->laser_ranges[i][0] = r;
-      this->laser_ranges[i][1] = b;
-    }
-    this->laser_count = i;
-    this->laser_time = dtime;
-
-    UpdatePoseLaser();
-  }
-
-  return 1;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
 void INav::PutPose()
 {
   uint32_t timesec, timeusec;
   player_position_data_t data;
 
+  // Pose esimate
   data.xpos = (int32_t) (this->inc_pose.v[0] * 1000);
   data.ypos = (int32_t) (this->inc_pose.v[1] * 1000);
   data.yaw = (int32_t) (this->inc_pose.v[2] * 180 / M_PI);
 
-  // TODO
-  data.xspeed = 0;
-  data.yspeed = 0;
-  data.yawspeed = 0;
+  // Velocity estimate (use odometry device's pose esimate)
+  data.xspeed = (int32_t) (this->odom_vel.v[0] * 1000);
+  data.yspeed = (int32_t) (this->odom_vel.v[1] * 1000);
+  data.yawspeed = (int32_t) (this->odom_vel.v[2] * 180 / M_PI);
 
   // Byte swap
   data.xpos = htonl(data.xpos);
@@ -634,20 +558,6 @@ void INav::UpdatePoseLaser()
 {
   int di, dj;
   inav_vector_t d, pose;
-  int64_t time;
-
-  time = GetTime();
-  //printf("before %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
-
-  /*
-  printf("%13.3f localhost 6665 position 0 %13.3f %+6.2f %+6.2f %+6.2f 0 0 0\n",
-         ((double) time) / 1000.0, this->odom_time,
-         this->odom_pose.v[0], this->odom_pose.v[1], this->odom_pose.v[2]);
-
-  printf("%13.3f localhost 6665 position 2 %13.3f %+6.2f %+6.2f %+6.2f 0 0 0\n",
-         ((double) time) / 1000.0, this->laser_time,
-         this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
-  */
 
   // Compute new incremental pose
   d = inav_vector_cs_sub(this->odom_pose, this->inc_odom_pose);
@@ -669,39 +579,19 @@ void INav::UpdatePoseLaser()
   pose = this->inc_pose;
   imap_fit_ranges(this->map, pose.v, this->laser_pose.v,
                   this->laser_count, this->laser_ranges);
-  
-  //d = inav_vector_cs_sub(pose, this->inc_pose);
-  //printf("diff %f %f %f\n", d.v[0], d.v[1], d.v[2]);
-  printf("diff %f\n", d.v[2] * 180 / M_PI);
-  
   this->inc_pose = pose;
-    
-  //printf("after %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
     
   // Update the map with the current range readings
   imap_add_ranges(this->map, this->inc_pose.v, this->laser_pose.v,
                   this->laser_count, this->laser_ranges);
 
-  //printf("time 1 %d\n", (int32_t) (GetTime() - time));
-  
+  /*
   // TESTING
   static int count;
   char filename[64];
   snprintf(filename, sizeof(filename), "imap_%04d.pgm", count++);
   imap_save_occ(this->map, filename);
+  */
 
-  //printf("time 2 %d\n", (int32_t) (GetTime() - time));
-  
   return;
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Get the time in ms
-int64_t INav::GetTime()
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
-}
-
