@@ -106,6 +106,7 @@ CDeviceTable::AddDevice(player_device_id_t id, unsigned char access,
   if(devicep)
     devicep->device_id = id;
   pthread_mutex_unlock(&mutex);
+
   return(0);
 }
 
@@ -141,7 +142,7 @@ CDeviceTable::AddDevice(unsigned short code, char access, char* name,
 // on failure)
 CDevice* 
 CDeviceTable::GetDevice(player_device_id_t id)
-{
+{ 
   CDeviceEntry* thisentry;
   CDevice* devicep = NULL;
   pthread_mutex_lock(&mutex);
@@ -160,6 +161,7 @@ CDeviceTable::GetDevice(player_device_id_t id)
       break;
     }
   }
+
   pthread_mutex_unlock(&mutex);
   return(devicep);
 }

@@ -76,6 +76,7 @@
 #define PLAYER_BPS_STRING            "bps"
 #define PLAYER_DESCARTES_STRING      "descartes"
 #define PLAYER_IDAR_STRING           "idar"
+#define PLAYER_IDARTURRET_STRING     "idarturret"
 #define PLAYER_MOTE_STRING           "mote"
 #define PLAYER_RWI_POSITION_STRING   "rwi_position"
 #define PLAYER_RWI_SONAR_STRING      "rwi_sonar"
@@ -110,6 +111,7 @@
 #define PLAYER_RWI_BUMPER_CODE     ((uint16_t)23)
 #define PLAYER_RWI_JOYSTICK_CODE   ((uint16_t)24)
 #define PLAYER_RWI_POWER_CODE      ((uint16_t)25)
+#define PLAYER_IDARTURRET_CODE     ((uint16_t)26)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -764,11 +766,8 @@ typedef struct
   unsigned char mesg[IDARBUFLEN];
   uint8_t len; //0-IDARBUFLEN
   uint8_t intensity; //0-255
-  //uint8_t directions; // each set bit means send in that direction
 } __attribute__ ((packed)) idartx_t;
 
-// WARNING - if( PLAYER_NUM_IDAR_SAMPLES > 8 ) you need to increase
-// the number of bits in the directions member...
 typedef struct
 {
   unsigned char mesg[IDARBUFLEN];
@@ -789,6 +788,27 @@ typedef  struct
   uint8_t instruction;
   idartx_t tx;
 } __attribute__ ((packed)) player_idar_config_t;
+
+/*************************************************************************/
+/*
+ * IDARTurret device - a collection of IDARs with a combined interface
+ */
+
+#define PLAYER_IDARTURRET_IDAR_COUNT 8
+
+// define structures to get and receive messages from a collection of
+// IDARs in one go.
+
+typedef struct
+{
+  idarrx_t rx[ PLAYER_IDARTURRET_IDAR_COUNT ];
+} __attribute__ ((packed)) player_idarturret_reply_t;
+
+typedef  struct
+{
+  uint8_t instruction;
+  idartx_t tx[ PLAYER_IDARTURRET_IDAR_COUNT ];
+} __attribute__ ((packed)) player_idarturret_config_t;
 
 
 /*************************************************************************/

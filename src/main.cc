@@ -349,6 +349,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         case PLAYER_GPS_CODE:
         case PLAYER_GRIPPER_CODE:
         case PLAYER_IDAR_CODE:
+        case PLAYER_IDARTURRET_CODE:
         case PLAYER_DESCARTES_CODE:
         case PLAYER_MOTE_CODE:
         {
