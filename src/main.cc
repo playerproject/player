@@ -70,6 +70,9 @@
 #ifdef INCLUDE_PTZ
 #include <ptzdevice.h>
 #endif
+#ifdef INCLUDE_AUDIO
+#include <audiodevice.h>
+#endif
 
 #include <clientdata.h>
 #include <devicetable.h>
@@ -284,6 +287,7 @@ int main( int argc, char *argv[] )
   CDevice* gripperDevice = NULL;
   CDevice* miscDevice = NULL;
   CDevice* ptzDevice = NULL;
+  CDevice* audioDevice = NULL;
 
   /* use these to temporarily store command-line args */
   int playerport = PORTNUM;
@@ -494,6 +498,9 @@ int main( int argc, char *argv[] )
 #ifdef INCLUDE_MISC
     miscDevice =    (CMiscDevice*)new CNoDevice();  
 #endif
+#ifdef INCLUDE_AUDIO
+    audioDevice =  (CAudioDevice*)new CNoDevice();
+#endif
 #endif
 
   }
@@ -521,6 +528,9 @@ int main( int argc, char *argv[] )
 #ifdef INCLUDE_PTZ
     ptzDevice =     new CPtzDevice(ptzserialport);
 #endif
+#ifdef INCLUDE_AUDIO
+    audioDevice =     new CAudioDevice();
+#endif
   }
 
   // add the devices to the global table
@@ -544,6 +554,9 @@ int main( int argc, char *argv[] )
 #endif
 #ifdef INCLUDE_PTZ
   deviceTable->AddDevice('z', 0, 'a', ptzDevice);
+#endif
+#ifdef INCLUDE_AUDIO
+  deviceTable->AddDevice('a', 0, 'a', audioDevice);
 #endif
 
   /* set up to handle SIGPIPE (happens when the client dies) */
