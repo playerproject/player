@@ -10,6 +10,7 @@ LIBDIRS = -L../../client_libs/c++ -L$(INSTALL_PREFIX)/lib -L/usr/local/player/li
 LIBS = $(LIBDIRS) -lplayerclient $(PLATFORM_LIBS)
 
 BINARIES = randomwalk \
+	   visualservo \
            sonarobstacleavoid \
 	   goto \
 	   ptz \

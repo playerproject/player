@@ -574,8 +574,8 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
           //
           if(size == 0)
           {
-              puts("BuldMsg(): got zero length data; ignoring");
-              continue;
+              puts("BuldMsg(): got zero length data; continuing");
+              //continue;
           }
           
           hdr.size = htonl(size);
