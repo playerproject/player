@@ -138,6 +138,7 @@ int
 CMVisionBF::Setup()
 {
   printf("CMVision server initializing...");
+  fflush(stdout);
   vision = new CMVision;
 
   if(!strcmp(capturetype, "1394"))
@@ -183,7 +184,7 @@ CMVisionBF::Setup()
   }
   else
   {
-    PLAYER_ERROR("No color file => No blobs");
+    PLAYER_ERROR("No color file given.  Use the \"colorfile\" option in the configuration file.");
     return(-1);
   }
 
@@ -194,6 +195,8 @@ CMVisionBF::Setup()
   // zero the data buffer
   PutData((unsigned char*)&dummy,
           sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
+
+  puts("done.");	
 
   /* now spawn reading thread */
   StartThread();
