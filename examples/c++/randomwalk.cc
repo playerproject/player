@@ -26,7 +26,7 @@ char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
 char auth_key[PLAYER_KEYLEN];
 
-double minfrontdistance = 0.350;
+double minfrontdistance = 0.750;
 double speed = 0.200;
 double avoidspeed = 0; // -150;
 double turnrate = DTOR(40);

@@ -131,6 +131,9 @@ class AdaptiveMCL : public Driver
   // Handle the set pose request
   private: void HandleSetPose(void *client, void *request, int len);
 
+  // Handle the get particles request
+  private: void HandleGetParticles(void *client, void *request, int len);
+
 #ifdef INCLUDE_RTKGUI
   // Set up the GUI
   private: int SetupGUI(void);

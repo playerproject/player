@@ -1178,6 +1178,9 @@ int AdaptiveMCL::HandleRequests(void)
       case PLAYER_LOCALIZE_SET_POSE_REQ:
         HandleSetPose(client, request, len);
         break;
+      case PLAYER_LOCALIZE_GET_PARTICLES_REQ:
+        HandleGetParticles(client, request, len);
+        break;
       default:
         if (PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
@@ -1234,6 +1237,79 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   return;
 }
 
+// Handle the get particles request
+void 
+AdaptiveMCL::HandleGetParticles(void *client, void *request, int len)
+{
+  int reqlen;
+  pf_vector_t mean;
+  double var;
+  player_localize_get_particles_t* req;
+  player_localize_get_particles_t* resp;
+  pf_sample_set_t *set;
+  pf_sample_t *sample;
+  int i;
+  size_t size;
+  
+  reqlen = sizeof(resp->subtype);
+  // check if the config request is valid
+  if (len != reqlen)
+  {
+    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
+    if (PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+      PLAYER_ERROR("PutReply() failed");
+    return;
+  }
+
+  req = (player_localize_get_particles_t*)request;
+
+  // have to get this off the heap, in order to not overflow the stack
+  assert(resp = (player_localize_get_particles_t*)calloc(1,sizeof(player_localize_get_particles_t)));
+
+  size = 0;
+  resp->subtype = PLAYER_LOCALIZE_GET_PARTICLES_REQ;
+  size += 1;
+  pf_get_cep_stats(this->pf, &mean, &var);
+
+  resp->mean[0] = htonl((int32_t)rint(mean.v[0] * 1e3));
+  resp->mean[1] = htonl((int32_t)rint(mean.v[1] * 1e3));
+  resp->mean[2] = htonl((int32_t)rint(RTOD(mean.v[2]) * 3600.0));
+  size += 4 * 3;
+  resp->variance = htonll((uint64_t)rint(var * 1e3 * 1e3));
+  size += 8;
+
+  set = this->pf->sets + this->pf->current_set;
+
+  resp->num_particles = htonl(set->sample_count);
+  size += 4;
+
+  // TODO: pick representative particles
+  for(i=0;i<set->sample_count;i++)
+  {
+    if(i >= PLAYER_LOCALIZE_PARTICLES_MAX)
+    {
+      //PLAYER_WARN("too many particles");
+      resp->num_particles = htonl(i);
+      break;
+    }
+
+    sample = set->samples + i;
+
+    resp->particles[i].pose[0] = htonl((int32_t)rint(sample->pose.v[0] * 1e3));
+    resp->particles[i].pose[1] = htonl((int32_t)rint(sample->pose.v[1] * 1e3));
+    resp->particles[i].pose[2] = 
+            htonl((int32_t)rint(RTOD(sample->pose.v[2]) * 3600.0));
+    resp->particles[i].alpha = htonl((uint32_t)rint(sample->weight * 1e6));
+
+    size += 4 * 4;
+  }
+
+  if(PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_ACK,
+              resp, size, NULL) != 0)
+    PLAYER_ERROR("PutReply() failed");
+
+  free(resp);
+}
 
 #ifdef INCLUDE_RTKGUI
 

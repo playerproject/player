@@ -11,6 +11,7 @@ extern int robot_moving_p;
 extern int robot_moving_idx;
 
 #define ROBOT_ALPHA 128
+#define PARTICLE_LENGTH 0.25
 static guint32 robot_colors[] = { GNOME_CANVAS_COLOR_A(255,0,0,ROBOT_ALPHA),
                                   GNOME_CANVAS_COLOR_A(0,255,0,ROBOT_ALPHA),
                                   GNOME_CANVAS_COLOR_A(0,0,255,ROBOT_ALPHA),
@@ -24,6 +25,7 @@ static gboolean setting_theta=FALSE;
 static gboolean setting_goal=FALSE;
 
 extern int dumpp;
+extern int showparticlesp;
 int show_robot_names;
 
 /*
@@ -66,6 +68,55 @@ _show_names(GtkWidget *widget,
   {
     for(i=0;i<gui_data->num_robots;i++)
       gnome_canvas_item_hide(gui_data->robot_labels[i]);
+  }
+
+  return(TRUE);
+}
+
+static gboolean 
+_show_particles(GtkWidget *widget,
+                GdkEvent *event,
+                gpointer data)
+{
+  int i;
+  gui_data_t* gui_data = (gui_data_t*)widget; 
+  gboolean onmap;
+  pose_t robot_pose;
+
+  showparticlesp = !showparticlesp;
+
+  if(showparticlesp)
+  {
+    for(i=0;i<gui_data->num_robots;i++)
+    {
+      if(gui_data->localizes[i]->hypoth_count <= 0)
+        continue;
+
+      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean[0];
+      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean[1];
+      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean[2];
+
+      onmap = ((fabs(robot_pose.px) <
+                (gui_data->mapdev->width * 
+                 gui_data->mapdev->resolution / 2.0)) ||
+               (fabs(robot_pose.py) <
+                (gui_data->mapdev->height * 
+                 gui_data->mapdev->resolution / 2.0)));
+
+      if(onmap)
+      {
+        playerc_localize_get_particles(gui_data->localizes[i]);
+        draw_particles(gui_data,i);
+      }
+    }
+  }
+  else
+  {
+    for(i=0;i<gui_data->num_robots;i++)
+    {
+      if(gui_data->robot_particles[i])
+        gnome_canvas_item_hide(gui_data->robot_particles[i]);
+    }
   }
 
   return(TRUE);
@@ -119,42 +170,6 @@ _zoom_callback(GtkAdjustment* adjustment,
 
   gnome_canvas_set_pixels_per_unit(gui_data->map_canvas, newzoom);
 }
-
-#if 0
-/*
- * Handle window resize events.
- */
-static void 
-_resize_window_callback(GtkWidget *widget,
-               GtkAllocation* allocation,
-               gpointer data)
-{
-  gui_data_t* gui_data = (gui_data_t*)data;
-
-  gui_data->zoom_adjustment->lower = 
-          allocation->width / 
-          (gui_data->mapdev->width * gui_data->mapdev->resolution);
-  gui_data->zoom_adjustment->upper = 10.0 * gui_data->zoom_adjustment->lower;
-  gui_data->zoom_adjustment->step_increment = 
-          (gui_data->zoom_adjustment->upper - 
-           gui_data->zoom_adjustment->lower) / 1e3;
-  gui_data->zoom_adjustment->page_increment = 
-          (gui_data->zoom_adjustment->upper -
-           gui_data->zoom_adjustment->lower) / 1e2;
-  gui_data->zoom_adjustment->page_size = 
-          gui_data->zoom_adjustment->page_increment;
-
-  if(gtk_adjustment_get_value(gui_data->zoom_adjustment) < 
-     gui_data->zoom_adjustment->lower)
-    gtk_adjustment_set_value(gui_data->zoom_adjustment,
-                                 gui_data->zoom_adjustment->lower);
-  else if(gtk_adjustment_get_value(gui_data->zoom_adjustment) > 
-          gui_data->zoom_adjustment->upper)
-    gtk_adjustment_set_value(gui_data->zoom_adjustment,
-                             gui_data->zoom_adjustment->upper);
-  gtk_adjustment_value_changed(gui_data->zoom_adjustment);
-}
-#endif
 
 static gboolean
 _robot_button_callback(GnomeCanvasItem *item,
@@ -410,6 +425,7 @@ make_menu(gui_data_t* gui_data)
   GtkMenu* view_menu;
   GtkMenuItem* view_item;
   GtkCheckMenuItem* show_names_item;
+  GtkCheckMenuItem* show_particles_item;
   
   GtkMenu* stop_menu;
   GtkMenuItem* stop_item;
@@ -430,6 +446,7 @@ make_menu(gui_data_t* gui_data)
   quit_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Quit");
   dump_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Capture stills");
   show_names_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Show robot names");
+  show_particles_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Show particles");
   stop_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Stop all robots");
   go_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Go all robots");
 
@@ -452,6 +469,9 @@ make_menu(gui_data_t* gui_data)
   gtk_widget_add_accelerator((GtkWidget*)show_names_item, "activate", 
                              accel_group, GDK_n, GDK_CONTROL_MASK, 
                              GTK_ACCEL_VISIBLE);
+  gtk_widget_add_accelerator((GtkWidget*)show_particles_item, "activate", 
+                             accel_group, GDK_p, GDK_CONTROL_MASK, 
+                             GTK_ACCEL_VISIBLE);
   gtk_widget_add_accelerator((GtkWidget*)dump_item, "activate", 
                              accel_group, GDK_d, GDK_CONTROL_MASK, 
                              GTK_ACCEL_VISIBLE);
@@ -460,6 +480,7 @@ make_menu(gui_data_t* gui_data)
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)dump_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)quit_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)show_names_item);
+  gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)show_particles_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)stop_all_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)go_all_item);
 
@@ -474,6 +495,9 @@ make_menu(gui_data_t* gui_data)
   g_signal_connect_swapped(G_OBJECT (show_names_item), "activate",
                            G_CALLBACK(_show_names),
                            (gpointer) gui_data);
+  g_signal_connect_swapped(G_OBJECT (show_particles_item), "activate",
+                           G_CALLBACK(_show_particles),
+                           (gpointer) gui_data);
   g_signal_connect_swapped(G_OBJECT (stop_all_item), "activate",
                            G_CALLBACK(_stop_all_robots),
                            (gpointer) gui_data);
@@ -485,6 +509,7 @@ make_menu(gui_data_t* gui_data)
   gtk_widget_show((GtkWidget*)dump_item);
   gtk_widget_show((GtkWidget*)quit_item);
   gtk_widget_show((GtkWidget*)show_names_item);
+  gtk_widget_show((GtkWidget*)show_particles_item);
   gtk_widget_show((GtkWidget*)stop_all_item);
   gtk_widget_show((GtkWidget*)go_all_item);
 
@@ -844,6 +869,81 @@ move_item(GnomeCanvasItem* item, pose_t pose, int raise)
   gnome_canvas_item_affine_absolute(item, t);
   if(raise)
     gnome_canvas_item_raise_to_top(item);
+}
+
+void
+draw_particles(gui_data_t* gui_data, int idx)
+{
+  int i;
+  double stddev;
+  pose_t ellipse_pose;
+  GnomeCanvasItem* line;
+  GnomeCanvasItem* ellipse;
+  GnomeCanvasPoints* linepoints;
+
+  if(gui_data->robot_particles[idx])
+  {
+    gtk_object_destroy(GTK_OBJECT(gui_data->robot_particles[idx]));
+    gui_data->robot_particles[idx] = NULL;
+  }
+
+  if(gui_data->localizes[idx]->num_particles)
+  {
+    g_assert((gui_data->robot_particles[idx] = 
+              gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
+                                    gnome_canvas_group_get_type(),
+                                    "x", 0.0, "y", 0.0,
+                                    NULL)));
+    g_assert((linepoints = gnome_canvas_points_new(2)));
+    for(i=0;i<gui_data->localizes[idx]->num_particles;i++)
+    {
+      linepoints->coords[0] = 
+              gui_data->localizes[idx]->particles[i].pose[0];
+      linepoints->coords[1] = 
+              -gui_data->localizes[idx]->particles[i].pose[1];
+      linepoints->coords[2] = 
+              (gui_data->localizes[idx]->particles[i].pose[0] + 
+               PARTICLE_LENGTH * 
+               cos(gui_data->localizes[idx]->particles[i].pose[2]));
+      linepoints->coords[3] = 
+              -(gui_data->localizes[idx]->particles[i].pose[1] +
+                PARTICLE_LENGTH * 
+                sin(gui_data->localizes[idx]->particles[i].pose[2]));
+
+      g_assert((line = 
+                gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_particles[idx],
+                                      gnome_canvas_line_get_type(),
+                                      "points", linepoints,
+                                      "width_pixels", 1,
+                                      // TODO: figure out how to use
+                                      //       arrowheads
+                                      //"last-arrowhead", TRUE,
+                                      //"arrow-shape-a", particle_length/3.0,
+                                      //"arrow-shape-b", particle_length/3.0,
+                                      //"arrow-shape-c", particle_length/3.0,
+                                      "fill-color-rgba",
+                                      robot_colors[idx % num_robot_colors],
+                                      NULL)));
+    }
+
+    // Draw the 3-sigma ellipse 
+    stddev = sqrt(gui_data->localizes[idx]->variance);
+    g_assert((ellipse = 
+              gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_particles[idx],
+                                    gnome_canvas_ellipse_get_type(),
+                                    "x1", -3*stddev,
+                                    "y1", -3*stddev,
+                                    "x2", 3*stddev,
+                                    "y2", 3*stddev,
+                                    "fill-color-rgba",
+                                    robot_colors[idx % num_robot_colors],
+                                    NULL)));
+
+    ellipse_pose.px = gui_data->localizes[idx]->mean[0];
+    ellipse_pose.py = gui_data->localizes[idx]->mean[1];
+    ellipse_pose.pa = gui_data->localizes[idx]->mean[2];
+    move_item(ellipse,ellipse_pose,0);
+  }
 }
 
 void
