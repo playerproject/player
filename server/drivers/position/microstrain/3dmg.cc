@@ -54,7 +54,7 @@ extern PlayerTime* GlobalTime;
 class MicroStrain3DMG : public CDevice
 {
   // Constructor
-  public: MicroStrain3DMG(char* interface, ConfigFile* cf, int section);
+  public: MicroStrain3DMG(int code, ConfigFile* cf, int section);
 
   // Initialise device
   public: virtual int Setup();
@@ -85,10 +85,16 @@ class MicroStrain3DMG : public CDevice
   // Read the stabilized orientation quaternion
   private: int GetStabQ(double *time, double q[4]);
 
+  // Read the stabilized Euler angles
+  private: int GetStabEuler(double *time, double e[3]);
+  
   // Send a packet and wait for a reply from the IMU.
   // Returns the number of bytes read.
   private: int Transact(void *cmd, int cmd_len, void *rep, int rep_len);
     
+  // Interface to use
+  private: int code;
+
   // Name of port used to communicate with the laser;
   // e.g. /dev/ttyS1
   private: const char *port_name;
@@ -101,20 +107,21 @@ class MicroStrain3DMG : public CDevice
 // Factory creation function
 CDevice* MicroStrain3DMG_Init(char* interface, ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
-  {
-    PLAYER_ERROR1("driver \"MicroStrain3DMG\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return ((CDevice*) (new MicroStrain3DMG(interface, cf, section)));
+  if (strcmp(interface, PLAYER_POSITION_STRING) == 0)
+    return ((CDevice*) (new MicroStrain3DMG(PLAYER_POSITION_CODE, cf, section)));
+  else if (strcmp(interface, PLAYER_POSITION3D_STRING) == 0)
+    return ((CDevice*) (new MicroStrain3DMG(PLAYER_POSITION3D_CODE, cf, section)));
+
+  PLAYER_ERROR1("driver \"MicroStrain3DMG\" does not support interface \"%s\"\n",
+                interface);
+  return NULL;
 }
 
 // Driver registration function
 void MicroStrain3DMG_Register(DriverTable* table)
 {
   table->AddDriver("microstrain3dmg", PLAYER_READ_MODE, MicroStrain3DMG_Init);
+  return;
 }
 
 
@@ -127,6 +134,7 @@ void MicroStrain3DMG_Register(DriverTable* table)
 #define CMD_STABV     0x02
 #define CMD_STABM     0x0B
 #define CMD_STABQ     0x05
+#define CMD_STABEULER 0x0E
 
 #define TICK_TIME     6.5536e-3
 #define G             9.81
@@ -134,9 +142,12 @@ void MicroStrain3DMG_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-MicroStrain3DMG::MicroStrain3DMG(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position_data_t), 0, 0, 0)
+MicroStrain3DMG::MicroStrain3DMG(int code, ConfigFile* cf, int section)
+    : CDevice(sizeof(player_position3d_data_t), 0, 0, 0)
 {
+  // Interface to use
+  this->code = code;
+  
   // Default serial port
   this->port_name = cf->ReadString(section, "port", "/dev/ttyS1");
 
@@ -187,10 +198,9 @@ void MicroStrain3DMG::Main()
   double q[4];
   double m;
   double e[3];
-
   struct timeval time;
-  player_position_data_t data;
-  
+
+      
   for (i = 0; i < 3; i++)
   {
     vr[i] = 0.0;
@@ -202,8 +212,17 @@ void MicroStrain3DMG::Main()
     // Test if we are supposed to cancel
     pthread_testcancel();
 
-    GetStabQ(&ntime, q);
+    // Get the time; this is probably a better estimate of when the
+    // phenomena occured that getting the time after requesting data.
+    GlobalTime->GetTime(&time);
+
+    // Get the Euler angles from the sensor
+    GetStabEuler(&ntime, e);
     
+    // Get sensor data
+    //GetStabQ(&ntime, q);
+
+    /*
     m =  q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
         
     //printf("%+6.3f %+6.3f %+6.3f %+6.3f, %+6.3f\n", q[0], q[1], q[2], q[3], m);
@@ -220,45 +239,52 @@ void MicroStrain3DMG::Main()
 
     //printf("%5.3f %+6.1f %+6.1f %+6.1f\n",
     //       ntime, e[0] * 180 / M_PI, e[1] * 180 / M_PI, e[2] * 180 / M_PI);
-
-    // Construct data packet
-    data.xpos = 0;
-    data.ypos = 0;
-    data.yaw = htonl((int32_t) (-e[2] * 180 / M_PI));
-    data.xspeed = 0;
-    data.yspeed = 0;
-    data.yawspeed = 0;
-    data.stall = 0;
-
-    // HACK get the time 
-    GlobalTime->GetTime(&time);
-
-    // Make data available
-    PutData(&data, sizeof(data), time.tv_sec, time.tv_usec);
-
-    /*
-    // TESTING
-    GetStabV(&ntime, al, vr);
-
-    //printf("%+f %+f %+f\n", al[0], al[1], al[2]);
-
-    if (time > 0)
-    {
-      // Integrate
-      dt = ntime - time;
-
-      pl[0] += vl[0] * dt + 0.5 * al[0] * dt * dt;
-      pl[1] += vl[1] * dt + 0.5 * al[1] * dt * dt;
-
-      vl[0] += al[0] * dt;
-      vl[1] += al[1] * dt;
-      
-      pr[2] += vr[2] * dt;
-    }
-
-    printf("%5.3f %+6.3f %+6.3f %+6.3f\n",
-           dt, pl[0], pl[1], pr[2] * 180 / M_PI);
     */
+
+    if (this->code == PLAYER_POSITION_CODE)
+    {
+      player_position_data_t data;
+
+      // Construct data packet
+      data.xpos = 0;
+      data.ypos = 0;
+      data.yaw = htonl((int32_t) (-e[2] * 180 / M_PI));
+      data.xspeed = 0;
+      data.yspeed = 0;
+      data.yawspeed = 0;
+      data.stall = 0;
+
+      // Make data available
+      PutData(&data, sizeof(data), time.tv_sec, time.tv_usec);
+    }
+    else if (this->code == PLAYER_POSITION3D_CODE)
+    {
+      player_position3d_data_t data;
+
+      // Construct data packet
+      data.xpos = 0;
+      data.ypos = 0;
+      data.zpos = 0;
+
+      data.xspeed = 0;
+      data.yspeed = 0;
+      data.zspeed = 0;
+
+      data.roll = htonl((int32_t) (-e[0] * 180 / M_PI * 3600));
+      data.pitch = htonl((int32_t) (-e[1] * 180 / M_PI * 3600));
+      data.yaw = htonl((int32_t) (-e[2] * 180 / M_PI * 3600));
+
+      data.pitchspeed = 0;
+      data.rollspeed = 0;
+      data.yawspeed = 0;
+      
+      data.stall = 0;
+
+      // Make data available
+      PutData(&data, sizeof(data), time.tv_sec, time.tv_usec);
+    }
+    else
+      assert(false);
   }
   return;
 }
@@ -376,6 +402,7 @@ int MicroStrain3DMG::GetStabV(double *time, double v[3], double w[3])
 
 ////////////////////////////////////////////////////////////////////////////////
 // Read the stabilized orientation matrix
+// World coordinate system has X = north, Y = east, Z = down.
 int MicroStrain3DMG::GetStabM(int M[3][3])
 {
   int i, j, k;
@@ -406,6 +433,7 @@ int MicroStrain3DMG::GetStabM(int M[3][3])
 
 ////////////////////////////////////////////////////////////////////////////////
 // Read the stabilized orientation quaternion
+// World coordinate system has X = north, Y = east, Z = down.
 int MicroStrain3DMG::GetStabQ(double *time, double q[4])
 {
   int i, k;
@@ -422,6 +450,36 @@ int MicroStrain3DMG::GetStabQ(double *time, double q[4])
   for (i = 0; i < 4; i++)
   {
     q[i] = (double) ((int16_t) MAKEUINT16(rep[k + 1], rep[k])) / 8192;
+    k += 2;
+  }
+
+  // TODO: handle rollover
+  ticks = (uint16_t) MAKEUINT16(rep[10], rep[9]);
+  *time = ticks * TICK_TIME;  
+  
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Read the stabilized Euler angles (pitch, roll, yaw) (radians)
+// World coordinate system has X = north, Y = east, Z = down.
+int MicroStrain3DMG::GetStabEuler(double *time, double e[3])
+{
+  int i, k;
+  int ticks;
+  uint8_t cmd[1];
+  uint8_t rep[11];
+  
+  cmd[0] = CMD_STABEULER;
+  if (Transact(cmd, sizeof(cmd), rep, sizeof(rep)) < 0)
+    return -1;
+
+  // Read the angles
+  k = 1;
+  for (i = 0; i < 3; i++)
+  {
+    e[i] = (double) ((int16_t) MAKEUINT16(rep[k + 1], rep[k])) * 2 * M_PI / 65536.0;
     k += 2;
   }
 
