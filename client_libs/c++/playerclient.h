@@ -883,12 +883,19 @@ class PositionProxy : public ClientProxy
 
   // these methods are the user's interface to this device
 
-  /** Send a motor command.
+  /** Send a motor command for velocity control mode.
       Specify the forward, sideways, and angular speeds in mm/s, mm/s,
       and degrees/sec, respectively.  Returns: 0 if everything's ok, 
       -1 otherwise.
   */
   int SetSpeed(int speed, int sidespeed, int turnrate);
+
+  /** Send a motor command for position control mode.  Specify the
+      desired pose of the robot in mm, mm, degrees. Returns: 0 if
+      everything's ok, -1 otherwise.  
+  */
+  int GoTo(int x, int y, int t);
+
 
   /** Same as the previous SetSpeed(), but doesn't take the sideways speed 
       (so use this one for non-holonomic robots). */
