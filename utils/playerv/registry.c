@@ -24,12 +24,7 @@
  * CVS: $Id$
  *************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
 #include "playerv.h"
-
 
 // Create the appropriate GUI proxy for a given set of device info.
 void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_client_t *client)

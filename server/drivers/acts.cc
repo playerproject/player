@@ -28,7 +28,9 @@
  *   from ACTS, which this device spawns and then talks to.
  */
 
-#include <player.h>
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 
 #if HAVE_STRINGS_H
   #include <strings.h>
@@ -49,6 +51,7 @@
 #include <socket_util.h>
 
 #include <drivertable.h>
+#include <player.h>
 
 #define ACTS_NUM_CHANNELS 32
 #define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  

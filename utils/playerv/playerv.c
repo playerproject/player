@@ -23,9 +23,8 @@
  * Date: 28 Mar 2002
  * CVS: $Id$
  *************************************************************************/
-
 #if HAVE_CONFIG_H
-#  include <config.h>
+  #include <config.h>
 #endif
 
 #include <signal.h>

@@ -27,6 +27,9 @@
  *  we implement some generic methods that most devices will not need
  *  to override
  */
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 
 #include <device.h>
 #include <string.h>

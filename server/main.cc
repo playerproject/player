@@ -34,16 +34,12 @@
   #include <config.h>
 #endif
 
-#if HAVE_SYS_TYPES_H
-  #include <sys/types.h>  /* for accept(2) */
-#endif
-
 #include <dirent.h>
-
 #if HAVE_LIB_DL
-#include <dlfcn.h>
+  #include <dlfcn.h>
 #endif
 
+#include <sys/types.h>  /* for accept(2) */
 #include <stdio.h>
 #include <errno.h>
 #include <string.h> // for bzero()
@@ -67,12 +63,12 @@
 #include <playertime.h>
 #include <wallclocktime.h>
 
-#include <sys/mman.h> // for mmap
-#include <fcntl.h>
+//#include <fcntl.h>
 
 #include "replace.h"
 
 #if INCLUDE_STAGE
+#include <sys/mman.h> // for mmap
 #include <stagetime.h>
 #include <stagedevice.h>
 player_stage_info_t *arenaIO; //address for memory mapped IO to Stage

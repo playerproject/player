@@ -26,14 +26,17 @@
  * threads.  it can be used either intra-process with real devices or
  * inter-process (through shared memory) with simulated Stage devices.
  */
-
-#include <playerqueue.h>
-#include <stdlib.h> // for exit(3)
-#include <string.h> // for bzero(3)
-
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 #if HAVE_STRINGS_H
   #include <strings.h>
 #endif
+
+#include <stdlib.h> // for exit(3)
+#include <string.h> // for bzero(3)
+
+#include <playerqueue.h>
 
 //#include <playertime.h>
 //extern PlayerTime* GlobalTime;

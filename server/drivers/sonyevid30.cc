@@ -26,7 +26,9 @@
  * the Sony EVI-D30 PTZ camera
  */
 
-#include <player.h>
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 
 #if HAVE_STRINGS_H
   #include <strings.h>
@@ -44,6 +46,7 @@
 
 #include <device.h>
 #include <drivertable.h>
+#include <player.h>
 
 #define PTZ_SLEEP_TIME_USEC 100000
 
