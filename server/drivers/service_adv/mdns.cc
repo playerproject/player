@@ -190,7 +190,7 @@ void SrvAdv_MDNS::Prepare() {
 
     // add a tag to the TXT record for each device in the device table
     for(CDeviceEntry* dev = deviceTable->GetFirstEntry(); dev != 0; dev = deviceTable->GetNextEntry(dev)) {
-        char* devname = lookup_device_name(0, dev->id.code);
+        char* devname = lookup_interface_name(0, dev->id.code);
         if(devname) {
             char deviceTag[512];
             snprintf(deviceTag, sizeof(deviceTag), "device=%s#%d(%s)", devname, dev->id.index, dev->drivername);

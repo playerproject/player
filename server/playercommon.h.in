@@ -61,7 +61,6 @@
 //typedef short int16_t;
 //typedef char int8_t;
 
-
 /* debug malloc(3) */
 /* this should *not* be defined by default, because, as the man page says,
  * it causes "a special (less  efficient) implementation" of malloc() to be

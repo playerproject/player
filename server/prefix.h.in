@@ -1,0 +1,7 @@
+// DO NOT MODIFY THIS FILE! modify prefix.h.in instead
+
+// define the installation prefix here, so that we can access it from
+// places like main.cc
+#define PLAYER_INSTALL_PREFIX "@prefix@"
+
+
