@@ -278,6 +278,8 @@ PassThrough::Main()
         CloseConnection();
         pthread_exit(NULL);
       }
+      // so we don't re-send old commands
+      device_used_commandsize = 0;
     }
 
     // get new data from the remote server
