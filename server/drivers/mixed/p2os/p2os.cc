@@ -911,7 +911,9 @@ P2OS::Main()
 
               P2OSPacket cam_packet;
               unsigned char cam_command[50];
-              int np = 3;
+              int np;
+
+              np=3;
               
               CMUcamStopTracking();	// Stop the current tracking.
 
@@ -958,6 +960,12 @@ P2OS::Main()
               CMUcamTrack(); 	// Restart tracking
  
               if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+
+            default:
+              PLAYER_WARN("unknown config request to blobfinder interface");
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
                 PLAYER_ERROR("failed to PutReply");
               break;
           }
