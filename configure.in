@@ -80,6 +80,24 @@ AM_CONDITIONAL(INCLUDE_RTKGUI, test x$enable_rtkgui = xyes)
 AC_SUBST(RTKGUI_EXTRA_LIB)
 AC_SUBST(RTKGUI_EXTRA_LDFLAGS)
 
+dnl where's Mobility?
+AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],
+MOBILITY_DIR=$with_mobility,
+MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
+AC_SUBST(MOBILITY_DIR)
+
+dnl if test -f $MOBILITY_DIR/include/mobilityutil.h; then
+dnl   with_mobility=yes
+dnl else
+dnl   with_mobility=no
+dnl   with_rwi=no
+dnl   AC_MSG_WARN([***************************************************])
+dnl   AC_MSG_WARN([Couldn't find Mobility, so I won't build RWI driver])
+dnl   AC_MSG_WARN([If you have Mobility, try --with-mobility=path])
+dnl   AC_MSG_WARN([***************************************************])
+dnl fi
+dnl AM_CONDITIONAL(WITH_MOBILITY, test x$with_mobility = xyes)
+
 dnl FreeBSD always invokes Tcl with a version, so i'll pick a reasonable one
 case $host in
 *-*-freebsd*) AC_CHECK_PROG([TCLPKGFILE], [tclsh8.0], [pkgIndex.tcl], [])
@@ -162,6 +180,16 @@ AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(c_r, pthread_create, 
 [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
+dnl AC_CHECK_LIB(raw1394, raw1394_get_nodecount)
+dnl AC_CHECK_LIB(dc1394_control, dc1394_create_handle)
+
+dnl if test "x$with_mobility" = "xyes"; then
+dnl   LDFLAGS="-L@MOBILITY_DIR@/lib -L@MOBILITY_DIR@/tools/lib $LDFLAGS"
+dnl   AC_SUBST(MOBILITY_DIR)
+dnl   AC_CHECK_LIB(mby,DontKnowAFunction,,[LIBS="-lmby -lidlmby $LIBS"])
+dnl   AC_CHECK_LIB(omniORB2,DontKnowAFunction,,[LIBS="-lomniDynamic2 -lomniORB2 -ltcpwrapGK -lomnithread $LIBS"])
+dnl fi
+
 
 AC_SUBST(LIBOBJS)
 
@@ -179,6 +207,7 @@ AC_OUTPUT(Makefile
           server/drivers/waveform/Makefile 
           server/drivers/comms/Makefile 
           server/drivers/blobfinder/Makefile 
+          server/drivers/blobfinder/cmvision/Makefile 
           server/drivers/wifi/Makefile 
           server/drivers/speech/Makefile 
           server/drivers/mixed/p2os/Makefile 

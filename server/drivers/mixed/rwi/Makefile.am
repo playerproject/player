@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I@MOBILITY_DIR@/include -I$(top_srcdir)/server -DUSE_MOBILITY
 
 noinst_LIBRARIES = @RWI_LIB@
 

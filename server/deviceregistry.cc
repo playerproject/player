@@ -50,6 +50,10 @@ void SickLMS200_Register(DriverTable* table);
 void Acts_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_CMVISION
+void CMVision_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_FESTIVAL
 void Festival_Register(DriverTable* table);
 #endif 
@@ -197,6 +201,10 @@ register_devices()
 
 #ifdef INCLUDE_ACTS
   Acts_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_CMVISION
+  CMVision_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FESTIVAL

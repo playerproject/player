@@ -148,7 +148,7 @@ CRWIBumperDevice::Main()
             bzero(data.bumpers, sizeof(data.bumpers));
 
             for (unsigned int i = 0; (i < bumper_data->point.length())
-                 && (i < PLAYER_MAX_BUMPER_SAMPLES); i++) {
+                 && (i < PLAYER_BUMPER_MAX_SAMPLES); i++) {
               if (bumper_data->point[i].flags == 1)
                 data.bumpers[i] = 1;
               else

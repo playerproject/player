@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <math.h>
 #ifdef HAVE_STRINGS_H
   #include <strings.h>
 #endif
@@ -100,88 +101,116 @@ CRWISonarDevice::Shutdown()
 void
 CRWISonarDevice::Main()
 {
-	// start enabled
-	bool enabled = true;
+  // start enabled
+  bool enabled = true;
+  
+  // Working buffer space
+  player_rwi_config_t cfg;
+  player_sonar_data_t data;
+  player_sonar_geom_t geom;
+  
+  double th;
+  int i;
 
-	// Working buffer space
-	player_rwi_config_t cfg;
-	player_sonar_data_t data;
-	
-	void *client;
-	
+  void *client;
+  
 #ifdef USE_MOBILITY
-	MobilityGeometry::SegmentData_var sonar_data;
+  MobilityGeometry::SegmentData_var sonar_data;
 #endif // USE_MOBILITY
-		
-    if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0) {
-		perror("rwi_sonar call to pthread_setcanceltype failed");
+  
+  if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0) 
+    {
+      perror("rwi_sonar call to pthread_setcanceltype failed");
     }
 
-	while (true) {
-	
-		// First, check for a configuration request
-		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
-		    switch (cfg.request) {
-			    case PLAYER_P2OS_SONAR_POWER_REQ:
-		    		// RWI does not turn off sonar power; all we can do is
-		    		// stop updating the data
-		    		if (cfg.value == 0)
-		    			enabled = false;
-		    		else
-		    			enabled = true;
-		    			
-		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_sonardevice.\n");
-		    		}
-					break;
-				case PLAYER_SONAR_GET_GEOM_REQ:
-					// FIXME: not yet implemented
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_sonardevice.\n");
-		    		}
-					break;
-				default:
-					printf("rwi_sonar device received unknown %s",
-					       "configuration request\n");
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_sonardevice.\n");
-		    		}
-					break;
-	    	}
+  while (true) 
+    {
+      
+      // First, check for a configuration request
+      if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) 
+	{
+	  switch (cfg.request)
+	    {
+	    case PLAYER_SONAR_POWER_REQ:
+	      // RWI does not turn off sonar power; all we can do is
+	      // stop updating the data
+	      if (cfg.value == 0)
+		enabled = false;
+	      else
+		enabled = true;
+	      
+	      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+			   NULL, NULL, 0))
+		{
+		  PLAYER_ERROR("Failed to PutReply in "
+			       "rwi_sonardevice.\n");
 		}
-
-		// Sonar takes no commands to process
-	
-		// Finally, collect new data
-		if (enabled) {
-#ifdef USE_MOBILITY
-			sonar_data = sonar_state->get_sample(0);
-		
-			data.range_count = htons((uint16_t) sonar_data->org.length());
-			for (unsigned int i = 0; (i < sonar_data->org.length())
-			                         && (i < PLAYER_NUM_SONAR_SAMPLES); i++) {
-			    data.ranges[i] = htons((uint16_t) (1000.0 *
-					sqrt(((sonar_data->org[i].x - sonar_data->end[i].x) *
-					      (sonar_data->org[i].x - sonar_data->end[i].x)) +
-					     ((sonar_data->org[i].y - sonar_data->end[i].y) *
-					      (sonar_data->org[i].y - sonar_data->end[i].y)))));
-			}
-#else
-			data.range_count = 0;
-#endif			// USE_MOBILITY
-		
-			PutData((unsigned char *) &data, sizeof(data), 0, 0);
+	      break;
+	    case PLAYER_SONAR_GET_GEOM_REQ:
+	      geom.subtype=PLAYER_SONAR_GET_GEOM_REQ;
+	      geom.pose_count=htons(24);
+	      for (i=0,th=7.5/180.0*M_PI;i<ntohs(geom.pose_count);i++,th+=M_PI/12.0)
+		{
+		  geom.poses[i][0]=htons(int16_t(cos(th)*250));
+		  geom.poses[i][1]=htons(int16_t(sin(th)*250));
+		  geom.poses[i][2]=htons(int16_t(th/M_PI*180.0)%360);
+		  //printf("%d %d %d\n",(int16_t)ntohs(geom.poses[i][0]),(int16_t)ntohs(geom.poses[i][1]),(int16_t)ntohs(geom.poses[i][2]));
 		}
-	
-	    pthread_testcancel();
+	      for (;i<PLAYER_SONAR_MAX_SAMPLES;i++)
+		{
+		  geom.poses[i][0]=0;
+		  geom.poses[i][1]=0;
+		  geom.poses[i][2]=0;
+		}
+	      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+			   NULL, &geom, sizeof(geom))) 
+		{
+		  PLAYER_ERROR("Failed to PutReply in "
+			       "rwi_sonardevice.\n");
+		}
+	      break;
+	    default:
+	      printf("rwi_sonar device received unknown %s",
+		     "configuration request\n");
+	      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+			   NULL, NULL, 0)) 
+		{
+		  PLAYER_ERROR("Failed to PutReply in "
+			       "rwi_sonardevice.\n");
+		}
+	      break;
+	    }
 	}
-	
-	// should not reach this point
-	pthread_exit(NULL);
+      
+      // Sonar takes no commands to process
+      
+      // Finally, collect new data
+      if (enabled) 
+	{
+#ifdef USE_MOBILITY
+	  sonar_data = sonar_state->get_sample(0);
+	  
+	  data.range_count = htons((uint16_t) sonar_data->org.length());
+	  for (unsigned int i = 0; (i < sonar_data->org.length())
+		 && (i < PLAYER_SONAR_MAX_SAMPLES); i++) {
+	    data.ranges[i] = htons((uint16_t) (1000.0 *
+			       sqrt(((sonar_data->org[i].x - sonar_data->end[i].x) *
+				     (sonar_data->org[i].x - sonar_data->end[i].x)) +
+				    ((sonar_data->org[i].y - sonar_data->end[i].y) *
+				     (sonar_data->org[i].y - sonar_data->end[i].y)))));
+	  }
+#else
+	  data.range_count = 0;
+#endif    // USE_MOBILITY
+	  
+	  PutData((unsigned char *) &data, sizeof(data), 0, 0);
+	}
+      
+      pthread_testcancel();
+    }
+  
+  // should not reach this point
+  pthread_exit(NULL);
 }
+
+

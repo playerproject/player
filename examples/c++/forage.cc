@@ -156,6 +156,9 @@ int main(int argc, char** argv)
     }
     else if(gp.inner_break_beam)
     {
+      gp.SetGrip(GRIPopen,0);
+
+#if 0
       //HOMING
       double dx = home_x-gpsp.xpos;
       double dy = home_y-gpsp.ypos;
@@ -186,6 +189,7 @@ int main(int argc, char** argv)
         newspeed = 200 - (int)(70000.0/dist);
         newturnrate = (int)(bearing/3.0);
       }
+#endif
     }
     else if(reverse_homing)
     {
@@ -228,7 +232,7 @@ int main(int argc, char** argv)
       //gp.Print();
       // COLLECT
       if(vp.blobs[channel][0].area > closearea)
-        newspeed = 50;
+        newspeed = 100;
       else
         newspeed = 200;
 
