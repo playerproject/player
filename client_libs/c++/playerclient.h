@@ -1567,16 +1567,15 @@ public:
     /** Constructor.
         Leave the access field empty to start unconnected.
     */
-    WaveformProxy (PlayerClient* pc, unsigned short index,
-                   unsigned char access = 'c')
-            : ClientProxy(pc,PLAYER_WAVEFORM_CODE,index,access) 
-      {
-	this->ConfigureDSP();
-      }
-
-    ~WaveformProxy()
-      {}
-    
+  WaveformProxy (PlayerClient* pc, unsigned short index,
+		 unsigned char access = 'c')
+    : ClientProxy(pc,PLAYER_WAVEFORM_CODE,index,access) 
+    {
+      this->ConfigureDSP(); // use latest settings	
+    }
+  
+  ~WaveformProxy();
+  
     /// sample rate in bits per second
     unsigned int bitrate;
 
@@ -1598,9 +1597,15 @@ public:
     /// Print out the current status
     void Print ();
 
+    // set up the DSP to the current bitrate and depth
     int ConfigureDSP() ;
+
+    // open the sound device 
     void OpenDSPforWrite();
-    void PlaybackBuffer();
+
+    // Play the waveform through the DSP
+    void Play();
+
 };
 /*****************************************************************************
  ** end section

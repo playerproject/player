@@ -61,6 +61,7 @@ int main(int argc, char **argv)
       exit(1);
 
     wap.Print();
+    wap.Play();
   }
 
   return(0);

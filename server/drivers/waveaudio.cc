@@ -33,7 +33,7 @@
 #include <sys/ioctl.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <linux/soundcard.h>
+#include <sys/soundcard.h>
 #include <stdio.h>
 #include <math.h>
 #include <sys/time.h> 
@@ -44,35 +44,36 @@
 #include <device.h>
 #include <drivertable.h>
 
-#define AUDIO_SLEEP_TIME_USEC 100000
+// If set, we generate tones instead of sampling from the device. This
+// allows testing of this driver and a client on the same machine, as
+// only one process can open the DSP at a time.
+//#define TEST_TONE
 
-//#define N 1024
-#define N 784
-#define LENGTH 1 /* how many tenth of seconds of samplig max */
-#define RATE 16000 /* the sampling rate */
-#define CHANNELS 1 /* 1 = mono 2 = stereo */
-#define SIZE 8 /* bits, 8 or 16 */
+const double DURATION = 0.1; /* seconds of sampling */
+const int RATE = 16000; /* samples per second */
+const int CHANNELS = 1; /* 1 = mono 2 = stereo */
+const int DEPTH = 8; /* bits, 8 or 16 */
+
+const int SAMPLES = (int)(DURATION*RATE*CHANNELS);
+const int BYTES = SAMPLES*(DEPTH/8);
+
+#define DEVICE "/dev/dsp"
+
 
 class Waveaudio:public CDevice 
 {
- private:
+private:
   
-  // Esbens own additions
-  int audio_fd; // audio device file descriptor
   int configureDSP();
   void openDSPforRead();
-
+  
   int fd;       /* sound device file descriptor */
-  unsigned char sample[N*CHANNELS*SIZE/8];
-
-  unsigned char buf[(LENGTH*RATE*SIZE*CHANNELS/8)/10];
-
- public:
-
+  
+public:
+  
   Waveaudio(char* interface, ConfigFile* cf, int section);
-
+  
   virtual void Main();
-
   virtual int Setup();
   virtual int Shutdown();
 };
@@ -107,6 +108,10 @@ Waveaudio::Waveaudio(char* interface, ConfigFile* cf, int section) :
 int 
 Waveaudio::configureDSP() 
 {
+#ifdef TEST_TONE
+  return 0;
+#else
+
   int arg;      /* argument for ioctl calls */
   int status;   /* return status of system calls */
   int r=0;
@@ -114,14 +119,14 @@ Waveaudio::configureDSP()
   openDSPforRead();
 
   /* set sampling parameters */
-  arg = SIZE;      /* sample size */
+  arg = DEPTH;      /* sample size */
   status = ioctl(fd, SOUND_PCM_WRITE_BITS, &arg);
   if (status == -1) {
     perror("SOUND_PCM_WRITE_BITS ioctl failed"); 
     r=-1;
   }
-  if (arg != SIZE) {
-    printf("SOUND_PCM_WRITE_BITS: asked for %d, got %d\n", SIZE, arg);
+  if (arg != DEPTH) {
+    printf("SOUND_PCM_WRITE_BITS: asked for %d, got %d\n", DEPTH, arg);
     //perror("unable to set sample size");
     //r=-1;
   }
@@ -159,19 +164,24 @@ Waveaudio::configureDSP()
     perror("SOUND_PCM_READ_RATE ioctl failed");return 0;
     r=-1;
   }
+
   return r;
+
+#endif
 }
 
 void 
 Waveaudio::openDSPforRead() 
 {
+#ifndef TEST_TONE
   if (fd>0) close(fd);
   
-  fd = open("/dev/dsp", O_RDONLY);
+  fd = open(DEVICE, O_RDONLY);
   if (fd < 0) {
-    perror("open of /dev/dsp failed");
+    perror("failed to open sound device");
     exit(1);
   } 
+#endif
 }
 
 int 
@@ -181,17 +191,11 @@ Waveaudio::Setup()
 
   r = configureDSP();
   
-  printf("Waveaudio: Ran setup() \n");
-
   // Start dsp-read/write thread
   StartThread();
 
   return r;
 }
-
-const int UNKNOWN=0;
-const int LISTENING=1;
-const int PLAYING=2;
 
 /* main thread */
 void 
@@ -199,53 +203,61 @@ Waveaudio::Main()
 {
     player_waveform_data_t data;
     
-    unsigned int cnt, i;
-    int state = UNKNOWN;
-    short playFrq=0, playAmp=0, playDur;
-    unsigned int playDuration=0;
-    unsigned int current=0;
-    unsigned int remaining;
-    double omega = 0.0;
-    double phase = 0.0;
-    
     // clear the export buffer
     memset(&data,0,sizeof(data));
     PutData(&data, sizeof(data),0,0);
     
     openDSPforRead();
     
-    
-    unsigned int rate = 1600;
-    unsigned short depth = SIZE;
-    unsigned int samples = N*CHANNELS*SIZE/8;
+    unsigned int rate = RATE;
+    unsigned short depth = DEPTH;
+    unsigned int bytes = BYTES;
     
     data.rate = htonl(rate);
     data.depth = htons((unsigned short)depth);
-    data.samples = htonl(samples);
+    data.samples = htonl(bytes);
+    
+    int freq = 0, minfreq = 1000, maxfreq = 5000;
     
     while(1) 
       {
 	pthread_testcancel();
 	
 	//puts( "READING" );
-	
-	if(read(fd, &(data.data), samples) < samples ) 
+
+#ifndef TEST_TONE
+	// SAMPLE DATA FROM THE DSP
+	if(read(fd, &(data.data), bytes) < (size_t)bytes ) 
 	  {
 	    PLAYER_WARN("not enough data read");
 	  } 
+#else
+	// generate a series of test tones
+	double omega= freq * 2.0 * M_PI / RATE;
+	double amp = 32;
+	double phase = 0;
 	
-	//printf( "rate: %d depth: %d samples: %d\n", 
-	//ntohl(data.rate),
-	//ntohs(data.depth),
-	//ntohl(data.samples) );
+	freq = (int)(freq*1.1); // raise note between bursts
+	
+	if( freq < minfreq || freq > maxfreq ) freq = minfreq;
 
-	//for( int s=0; s<samples; s++ )
-	//printf( "%u ", data.data[s] );
-
-	//puts("");
-
+	usleep( 100000 );
+	
+	for(unsigned int i=0; i < bytes; i++) 
+	  {
+	    phase+=omega;
+	    if (phase>M_PI*2) phase-=M_PI*2;
+	    data.data[i]=(unsigned char)(127+(int)(amp * sin(phase)));
+	  }	
+#endif
+	/*
+	  printf( "rate: %d depth: %d samples: %d\n", 
+	  ntohl(data.rate),
+	  ntohs(data.depth),
+	  ntohl(data.samples) );
+	*/
+	
 	PutData(&data, sizeof(data),0,0);
-	usleep(100000);
       }
 }
 
