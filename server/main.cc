@@ -938,6 +938,12 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   }
 #endif
 
+  if (handle == NULL)
+  {
+    PLAYER_ERROR1("error loading plugin: %s", dlerror());
+    return false;
+  }
+  
   // Now invoke the initialization function
   if(handle)
   {
@@ -952,6 +958,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((*initfunc)(driverTable) != 0)
     {
       puts("failed");
+      PLAYER_ERROR1("error loading plugin: %s", dlerror());
       return(false);
     }
     puts("success");
@@ -962,7 +969,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
 
 #else
   PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins");
-  exit(-1);
+  return false;
 #endif
 }
 

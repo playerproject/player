@@ -1148,14 +1148,19 @@ typedef struct player_position2d_speed_prof_req
  ** end section
  *************************************************************************/
 
-/*************************************************************************
- ** begin section position3d
- *************************************************************************/
 
-/** [Synopsis] The {\tt position3d} interface is used to control a 3-D
- mobile robot base. */
+/***************************************************************************/
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup position3d position3d
 
-/** [Constants] */
+The position3d interface is used to control mobile robot bases in 3D
+(i.e., pitch and roll are important).
+
+@{
+*/
+
+/** @{ */
 /** Supported config requests */
 #define PLAYER_POSITION3D_GET_GEOM_REQ          ((uint8_t)1)
 #define PLAYER_POSITION3D_MOTOR_POWER_REQ       ((uint8_t)2)
@@ -1166,11 +1171,12 @@ typedef struct player_position2d_speed_prof_req
 #define PLAYER_POSITION3D_POSITION_PID_REQ      ((uint8_t)7)
 #define PLAYER_POSITION3D_SPEED_PROF_REQ        ((uint8_t)8)
 #define PLAYER_POSITION3D_SET_ODOM_REQ          ((uint8_t)9)
+/** @} */
 
-/** [Data] */
-/**
-The {\tt position3d} interface returns data regarding the odometric pose and
-velocity of the robot, as well as motor stall information; the format is: */
+/** Data packet
+This interface returns data regarding the odometric pose and velocity
+of the robot, as well as motor stall information.
+*/
 typedef struct player_position3d_data
 {
   /** X, Y, and Z position, in mm */
@@ -1185,11 +1191,11 @@ typedef struct player_position3d_data
   uint8_t stall;
 } __PACKED__ player_position3d_data_t;
 
-/** [Commands] */
-/**
-The {\tt position3d} interface accepts new positions and/or velocities
-for the robot's motors (drivers may support position control, speed control,
-or both); the format is */
+
+/** Command packet
+It accepts new positions and/or velocities for the robot's motors
+(drivers may support position control, speed control, or both).
+*/
 typedef struct player_position3d_cmd
 {
   /** X, Y, and Z position, in mm */
@@ -1207,11 +1213,11 @@ typedef struct player_position3d_cmd
 } __PACKED__ player_position3d_cmd_t;
 
 
-/** [Configuration: Query geometry] */
-
-/** To request robot geometry, set the subtype to PLAYER_POSITION_GET_GEOM_REQ
-    and leave the other fields empty.  The server will reply with the
-    pose and size fields filled in. */
+/** Query geometry
+To request robot geometry, set the subtype to
+PLAYER_POSITION_GET_GEOM_REQ and leave the other fields empty.  The
+server will reply with the pose and size fields filled in.
+*/
 typedef struct player_position3d_geom
 {
   /** Packet subtype.  Must be PLAYER_POSITION_GET_GEOM_REQ. */
@@ -1225,8 +1231,8 @@ typedef struct player_position3d_geom
 
 } __PACKED__ player_position3d_geom_t;
 
-/** [Configuration: Motor power] */
-/**
+
+/** Motor power
 On some robots, the motor power can be turned on and off from software.
 To do so, send a request with the format given below, and with the
 appropriate {\tt state} (zero for motors off and non-zero for motors on).
@@ -1243,8 +1249,8 @@ typedef struct player_position3d_power_config
   uint8_t value;
 } __PACKED__ player_position3d_power_config_t;
 
-/** [Configuration: Change position control] */
-/** */
+
+/** Change position control */
 typedef struct player_position3d_position_mode_req
 {
   /** subtype;  must be PLAYER_POSITION_POSITION_MODE_REQ */
@@ -1253,13 +1259,14 @@ typedef struct player_position3d_position_mode_req
   uint8_t state;
 } __PACKED__ player_position3d_position_mode_req_t;
 
-/** [Configuration: Change velocity control] */
-/**
+
+/** Change velocity control
 Some robots offer different velocity control modes.
 It can be changed by sending a request with the format given below,
 including the appropriate mode.  No matter which mode is used, the external
 client interface to the {\tt position3d} device remains the same.   The server
-will reply with a zero-length acknowledgement*/
+will reply with a zero-length acknowledgement
+*/
 typedef struct player_position3d_velocitymode_config
 {
   /** subtype; must be PLAYER_POSITION3D_VELOCITY_MODE_REQ */
@@ -1268,8 +1275,10 @@ typedef struct player_position3d_velocitymode_config
   uint8_t value;
 } __PACKED__ player_position3d_velocitymode_config_t;
 
-/** [Configuration: Set odometry] */
-/** To set the robot's odometry to a particular state, use this request: */
+
+/** Set odometry
+To set the robot's odometry to a particular state, use this request.
+*/
 typedef struct player_position3d_set_odom_req
 {
   /** subtype; must be PLAYER_POSITION3D_SET_ODOM_REQ */
@@ -1280,18 +1289,20 @@ typedef struct player_position3d_set_odom_req
   int32_t roll, pitch, yaw;
 }__PACKED__ player_position3d_set_odom_req_t;
 
-/** [Configuration: Reset odometry] */
-/** To reset the robot's odometry to $(x,y,\theta) = (0,0,0)$, use the
- following request.  The server will reply with a zero-length
- acknowledgement. */
+
+/** Reset odometry
+To reset the robot's odometry to $(x,y,\theta) = (0,0,0)$, use the
+following request.  The server will reply with a zero-length
+acknowledgement.
+*/
 typedef struct player_position3d_resetodom_config
 {
   /** subtype; must be PLAYER_POSITION3D_RESET_ODOM_REQ */
   uint8_t request;
 } __PACKED__ player_position3d_resetodom_config_t;
 
-/** [Configuration: Set velocity PID parameters] */
-/** */
+
+/** Set velocity PID parameters */
 typedef struct player_position3d_speed_pid_req
 {
   /** subtype; must be PLAYER_POSITION3D_SPEED_PID_REQ */
@@ -1300,8 +1311,8 @@ typedef struct player_position3d_speed_pid_req
   int32_t kp, ki, kd;
 } __PACKED__ player_position3d_speed_pid_req_t;
 
-/** [Configuration: Set position PID parameters] */
-/** */
+
+/** Set position PID parameters */
 typedef struct player_position3d_position_pid_req
 {
   /** subtype; must be PLAYER_POSITION3D_POSITION_PID_REQ */
@@ -1310,8 +1321,7 @@ typedef struct player_position3d_position_pid_req
   int32_t kp, ki, kd;
 } __PACKED__ player_position3d_position_pid_req_t;
 
-/** [Configuration: Set odometry] */
-/** */
+/** Set odometry */
 typedef struct player_position3d_speed_prof_req
 {
   /** subtype; must be PLAYER_POSITION3D_SPEED_PROF_REQ */
@@ -1322,9 +1332,9 @@ typedef struct player_position3d_speed_prof_req
   int32_t acc;
 } __PACKED__ player_position3d_speed_prof_req_t;
 
-/*************************************************************************
- ** end section
- *************************************************************************/
+/** @} */
+/** @} */
+
 
 /*************************************************************************
  ** begin section sonar
@@ -1392,10 +1402,7 @@ typedef struct player_sonar_power_config
  *************************************************************************/
 
 
-/*************************************************************************
- ** begin section laser
- *************************************************************************/
-
+/*************************************************************************/
 /** @addtogroup interfaces */
 /** @{ */
 /** @defgroup laser laser
@@ -1526,9 +1533,6 @@ typedef struct player_laser_power_config
 /** @} */
 /** @} */
 
-/*************************************************************************
- ** end section
- *************************************************************************/
 
 /*************************************************************************
  ** begin section blobfinder
