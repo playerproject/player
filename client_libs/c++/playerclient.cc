@@ -24,6 +24,7 @@
  *   c++ player client utils
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <netdb.h> /* for gethostbyname(3) */
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
@@ -205,7 +206,7 @@ int CRobot::Request( const char* request, int size )
   unsigned short reply_size = 0;
   char isdevicerequest = 0;
   char xhost_str[64];
-
+  
   reply = new unsigned char[MAX_REPLY_SIZE];
    
   /* if it is a configuration command (starts with 'x') then it's
@@ -233,6 +234,7 @@ int CRobot::Request( const char* request, int size )
       }
     }
 
+    assert(4 + size < MAX_REQUEST_SIZE);
     packaged_request[0] = 'd';
     packaged_request[1] = 'r';
     *(unsigned short*)(packaged_request+2) = htons(size);
@@ -254,18 +256,33 @@ int CRobot::Request( const char* request, int size )
       //puts("reading header");
       if(ExactRead(reply, 1+sizeof(unsigned short)))
         return(1);
-
       reply_size =  ntohs(*(unsigned short *)&reply[1]);
 
-      if (reply[0]=='r') break;
-
-      /* throw away this information */
-      //puts("reading trash");
-      if(ExactRead( reply, reply_size))
-        return(1);
+      // If the reply is of the right sort,
+      // break out so we can read it
+      //
+      if (reply[0]=='r')
+          break;
+      
+      // Otherwise, discard the information
+      // *** HACK -- create an object big enought to contain all data
+      // Ths packet may be bigger than reply buffer
+      //
+      printf("got unexpected packet type, discarding %d bytes\n", reply_size);
+      assert(reply_size < 0x10000);
+      unsigned char *trash = new unsigned char[reply_size];
+      if(ExactRead( trash, reply_size))
+      {
+          delete trash;  
+          return(1);
+      }
+      delete trash;
     }
 
+    // Read the reply string
+    //
     //puts("reading reply");
+    assert(reply_size < MAX_REPLY_SIZE);
     if(ExactRead(reply, reply_size))
       return(1);
 
@@ -436,7 +453,14 @@ int CRobot::ExactRead( unsigned char buf[], unsigned short size )
     //
     int numread = 0;
     while (numread < size)
+    {
         numread += read(sock, buf + numread, size - numread);
+        if (errno != 0 && errno != EINTR)
+        {
+            puts("WARNING: error on read\n");
+            return 1;
+        }
+    }
     return 0; 
 
   /*
@@ -615,6 +639,7 @@ void CRobot::FillVisionData(unsigned char* buf, int size)
       /* check to see if we need more room */
       if(buf[2*i+1]-1 > vision->NumBlobs[i])
       {
+        assert(vision != NULL);
         delete vision->Blobs[i];
         vision->Blobs[i] = new CBlob[buf[2*i+1]-1];
       }

@@ -427,7 +427,8 @@ int main( int argc, char *argv[] )
     //laserDevice = new CArenaLaserDevice(laserserialport);
     //sonarDevice =    new CArenaSonarDevice(p2osport);
     //positionDevice = new CArenaPositionDevice(p2osport);
-    //visionDevice =  new CArenaVisionDevice( visionport,visionconfigfile,useoldacts);   
+    //visionDevice =  new CArenaVisionDevice( visionport,visionconfigfile,useoldacts);
+    //ptzDevice =    new CArenaPtzDevice(ptzserialport);
         
     // use the stage type devicesc
     positionDevice = new CStageDevice( arenaIO + P2OS_DATA_START,
@@ -450,7 +451,11 @@ int main( int argc, char *argv[] )
                                     ACTS_COMMAND_BUFFER_SIZE,
                                     ACTS_CONFIG_BUFFER_SIZE);
 
-    ptzDevice =    new CArenaPtzDevice(ptzserialport);
+    ptzDevice = new CStageDevice(arenaIO + PTZ_DATA_START,
+                                 PTZ_DATA_BUFFER_SIZE,
+                                 PTZ_COMMAND_BUFFER_SIZE,
+                                 PTZ_CONFIG_BUFFER_SIZE);
+
     
     // unsupported devices - CNoDevice::Setup() fails
 #ifdef INCLUDE_GRIPPER

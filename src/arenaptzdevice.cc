@@ -21,11 +21,13 @@ CArenaPtzDevice::~CArenaPtzDevice()
 
 int CArenaPtzDevice::Setup()
 {
+    /** no longer current -- ahoward
   // move the data pointers to shared mem
   command      = (unsigned char*)arenaIO + PTZ_COMMAND_START;
   data         = (unsigned char*)arenaIO + PTZ_DATA_START;
  
   *(unsigned char*)(arenaIO + SUB_PTZ) = 1;
+  */
   return 0; 
 };
 
