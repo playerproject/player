@@ -289,7 +289,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 {
   /*time_t timesec;*/
   int mincnt; 
-  int readcnt,thisreadcnt;
+  int readcnt=0,thisreadcnt;
   char dummy[PLAYER_MAX_MESSAGE_SIZE];
 
   if(conn->sock < 0)

@@ -28,6 +28,11 @@
 #include "playercclient.h"
 #include <stdio.h>
 
+/*
+ * this function needs to be updated to read the new vision packet format
+ *    - BPG
+ */
+/*
 void player_print_vision(player_vision_data_t data)
 {
   int i,j,k;
@@ -40,15 +45,15 @@ void player_print_vision(player_vision_data_t data)
   {
     if(!(buf[2*i+1]-1))
     {
-      /* no blobs on this channel */
-      /*printf("no blobs on channel %d\n", i);*/
+      // no blobs on this channel 
+      //printf("no blobs on channel %d\n", i);
     }
     else
     {
       printf("%d blob(s) on channel %d\n", buf[2*i+1]-1, i);
       for(j=0;j<buf[2*i+1]-1;j++)
       {
-        /* first compute the area */
+        // first compute the area 
         area=0;
         for(k=0;k<4;k++)
         {
@@ -68,6 +73,7 @@ void player_print_vision(player_vision_data_t data)
     }
   }
 }
+*/
 
 void player_print_misc(player_misc_data_t data)
 {

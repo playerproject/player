@@ -365,10 +365,10 @@ typedef struct
  */
 
 /*
- * vision data packet (it's just an ACTS packet):
- *   64 - 3264 bytes of ACTS data, which is:
- *     64 bytes of header (2 bytes per channel)
- *     sequence of 10-byte blob data (maximum 10 per channel), which is:
+ * vision data packet (it's just an ACTS v1.2 packet):
+ *   128 - 5248 bytes of ACTS data, which is:
+ *     128 bytes of header (4 bytes per channel)
+ *     sequence of 16-byte blob data (maximum 10 per channel), which is:
  *        check the ACTS manual...
  * NOTE: 
  *   in the CVisionDevice 'data' buffer, there is also an extra leading
@@ -376,20 +376,37 @@ typedef struct
  *   sent over the network.
  */
 
-/* ACTS size stuff */
+/* ACTS size stuff; this stuff is only used between ACTS and Player */
 #define ACTS_NUM_CHANNELS 32
-#define ACTS_HEADER_SIZE 2*ACTS_NUM_CHANNELS  
-#define ACTS_BLOB_SIZE 10
+#define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  
+#define ACTS_HEADER_SIZE_1_2 4*ACTS_NUM_CHANNELS  
+#define ACTS_BLOB_SIZE_1_0 10
+#define ACTS_BLOB_SIZE_1_2 16
 #define ACTS_MAX_BLOBS_PER_CHANNEL 10
-#define ACTS_MAX_BLOB_DATA_SIZE \
-  ACTS_NUM_CHANNELS*ACTS_BLOB_SIZE*ACTS_MAX_BLOBS_PER_CHANNEL
-#define ACTS_TOTAL_MAX_SIZE \
-  ACTS_MAX_BLOB_DATA_SIZE+ACTS_HEADER_SIZE
+
+/* Vision device info; this defines Player's external interface */
+#define VISION_NUM_CHANNELS ACTS_NUM_CHANNELS
+#define VISION_MAX_BLOBS_PER_CHANNEL ACTS_MAX_BLOBS_PER_CHANNEL
 
 typedef struct
 {
-  uint8_t header[ACTS_HEADER_SIZE];
-  uint8_t blobs[ACTS_MAX_BLOB_DATA_SIZE];
+  uint16_t index, num;
+} __attribute__ ((packed)) player_vision_header_elt_t;
+#define VISION_HEADER_SIZE \
+  (sizeof(player_vision_header_elt_t)*VISION_NUM_CHANNELS)
+
+typedef struct
+{
+  uint32_t area;
+  uint16_t x, y;
+  uint16_t left, right, top, bottom;
+} __attribute__ ((packed)) player_vision_blob_elt_t;
+#define VISION_BLOB_SIZE sizeof(player_vision_blob_elt_t)
+
+typedef struct
+{
+  player_vision_header_elt_t header[VISION_NUM_CHANNELS];
+  player_vision_blob_elt_t blobs[VISION_NUM_CHANNELS];
 } __attribute__ ((packed)) player_vision_data_t;
 
 // Player needs 2 bytes to store the packet length

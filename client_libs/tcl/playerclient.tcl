@@ -98,9 +98,9 @@ set PLAYER_POSITION_VELOCITY_CONTROL_REQ  2
 set PLAYER_POSITION_RESET_ODOM_REQ        3
 
 # the vision device
-set ACTS_NUM_CHANNELS 32
-set ACTS_HEADER_SIZE [expr 2*$ACTS_NUM_CHANNELS]
-set ACTS_BLOB_SIZE 10
+set VISION_NUM_CHANNELS 32
+set VISION_HEADER_SIZE [expr 4*$VISION_NUM_CHANNELS]
+set VISION_BLOB_SIZE 16
 
 # the sonar device
 set PLAYER_NUM_SONAR_SAMPLES  16
@@ -466,7 +466,7 @@ proc player_read {obj} {
 
 # get the data out and put it in arr vars
 proc player_parse_data {obj device device_index data size} {
-  global ACTS_BLOB_SIZE ACTS_NUM_CHANNELS ACTS_HEADER_SIZE 
+  global VISION_BLOB_SIZE VISION_NUM_CHANNELS VISION_HEADER_SIZE 
   global PLAYER_MISC_CODE PLAYER_GRIPPER_CODE
   global PLAYER_POSITION_CODE PLAYER_SONAR_CODE PLAYER_LASER_CODE
   global PLAYER_VISION_CODE PLAYER_PTZ_CODE PLAYER_AUDIO_CODE
@@ -535,14 +535,15 @@ proc player_parse_data {obj device device_index data size} {
     }
   } elseif {$device == $PLAYER_POSITION_CODE} {
     # position data packet
-    if {[binary scan $data IISSSSc \
+    if {[binary scan $data IISSSSSc \
                  arr($name,$device_index,xpos) \
                  arr($name,$device_index,ypos) \
                  arr($name,$device_index,heading) \
                  arr($name,$device_index,speed) \
+                 arr($name,$device_index,sidespeed) \
                  arr($name,$device_index,turnrate) \
                  arr($name,$device_index,compass) \
-                 arr($name,$device_index,stall)] != 7} {
+                 arr($name,$device_index,stall)] != 8} {
       puts "Warning: failed to get position data"
       return
     }
@@ -560,6 +561,7 @@ proc player_parse_data {obj device device_index data size} {
       set arr($name,ypos) $arr($name,$device_index,ypos)
       set arr($name,heading) $arr($name,$device_index,heading)
       set arr($name,speed) $arr($name,$device_index,speed)
+      set arr($name,sidespeed) $arr($name,$device_index,sidespeed)
       set arr($name,turnrate) $arr($name,$device_index,turnrate)
       set arr($name,compass) $arr($name,$device_index,compass)
       set arr($name,stall) $arr($name,$device_index,stall)
@@ -626,48 +628,43 @@ proc player_parse_data {obj device device_index data size} {
       incr j
     }
   } elseif {$device == $PLAYER_VISION_CODE} {
-    set bufptr $ACTS_HEADER_SIZE
+
+    set bufptr $VISION_HEADER_SIZE
     set l 0
-    while {$l < $ACTS_NUM_CHANNELS} {
-      if {[binary scan $data "x[expr 2*$l+1]c" numblobs] != 1} {
+    while {$l < $VISION_NUM_CHANNELS} {
+      if {[binary scan $data "x[expr 4*$l+2]S" numblobs] != 1} {
         puts "Warning: failed to get number of blobs for channel $l"
         return
       }
-      set arr($name,$device_index,$l,numblobs) [expr $numblobs - 1]
+      #puts "looking for $numblobs blobs on channel $l"
+      
+      set arr($name,$device_index,$l,numblobs) $numblobs
       if {!$device_index} {
         set arr($name,$l,numblobs) $arr($name,$device_index,$l,numblobs)
       }
       set j 0
       while {$j < $arr($name,$device_index,$l,numblobs)} {
-        if {[binary scan $data "x[expr $bufptr]cccccccccc" \
-                  areabits(0) areabits(1) areabits(2) areabits(3)\
-                  x y left right top bottom] != 10} {
+        if {[binary scan $data "x${bufptr}ISSSSSS" \
+                  area x y left right top bottom] != 7} {
           puts "Warning: failed to get blob info for ${j}th blob on ${l}th channel"
           return
         }
         # make everything unsigned
-        set x [expr $x & 0xFF]
-        set y [expr $y & 0xFF]
-        set left [expr $left & 0xFF]
-        set right [expr $right & 0xFF]
-        set top [expr $top & 0xFF]
-        set bottom [expr $bottom & 0xFF]
+        #set area [expr $area & 0xFFFFFFFF]
+        set x [expr $x & 0xFFFF]
+        set y [expr $y & 0xFFFF]
+        set left [expr $left & 0xFFFF]
+        set right [expr $right & 0xFFFF]
+        set top [expr $top & 0xFFFF]
+        set bottom [expr $bottom & 0xFFFF]
 
-        # first compute the area
-        set area 0
-        set k 0
-        while {$k < 4} {
-          set area [expr $area << 6]
-          set area [expr $area | ($areabits($k) - 1)]
-          incr k
-        }
         set arr($name,$device_index,$l,$j,area) $area
-        set arr($name,$device_index,$l,$j,x) [expr $x - 1]
-        set arr($name,$device_index,$l,$j,y) [expr $y - 1]
-        set arr($name,$device_index,$l,$j,left) [expr $left - 1]
-        set arr($name,$device_index,$l,$j,right) [expr $right - 1]
-        set arr($name,$device_index,$l,$j,top) [expr $top - 1]
-        set arr($name,$device_index,$l,$j,bottom) [expr $bottom - 1]
+        set arr($name,$device_index,$l,$j,x) $x
+        set arr($name,$device_index,$l,$j,y) $y
+        set arr($name,$device_index,$l,$j,left) $left
+        set arr($name,$device_index,$l,$j,right) $right
+        set arr($name,$device_index,$l,$j,top) $top
+        set arr($name,$device_index,$l,$j,bottom) $bottom
 
         if {!$device_index} {
           set arr($name,$l,$j,area) $arr($name,$device_index,$l,$j,area)
@@ -679,7 +676,7 @@ proc player_parse_data {obj device device_index data size} {
           set arr($name,$l,$j,bottom) $arr($name,$device_index,$l,$j,bottom)
         }
 
-        incr bufptr $ACTS_BLOB_SIZE
+        incr bufptr $VISION_BLOB_SIZE
         incr j
       }
       incr l
@@ -815,11 +812,13 @@ proc player_write {obj device index str} {
 }
 
 
+# NOTE: this one sets the 2nd position command field to zero
 proc player_set_speed {obj fv tv {index 0}} {
   set fvb [binary format S [expr round($fv)]]
+  set svb [binary format S 0]
   set tvb [binary format S [expr round($tv)]]
 
-  player_write $obj position $index "${fvb}${tvb}"
+  player_write $obj position $index "${fvb}${svb}${tvb}"
 }
 
 proc player_set_camera {obj p t z {index 0}} {

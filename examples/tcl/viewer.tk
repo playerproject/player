@@ -477,6 +477,9 @@ proc createRobotPanel {} {
   button .robot_panel.lbd_eightbit -text "8-bit beacon" \
     -command "config_lbd 8"
 
+  button .robot_panel.exit_button -text "Exit" -command {exit 0}
+ 
+
   grid configure .robot_panel.canvas -column 0 -row 0 -columnspan 4
   grid configure .robot_panel.sonar_check -column 0 -row 1
   grid configure .robot_panel.laser_check -column 1 -row 1
@@ -487,6 +490,8 @@ proc createRobotPanel {} {
   grid configure .robot_panel.laser_narrow -column 1 -row 2
   grid configure .robot_panel.lbd_fivebit -column 2 -row 2
   grid configure .robot_panel.lbd_eightbit -column 3 -row 2
+
+  grid configure .robot_panel.exit_button -column 0 -row 3 -columnspan 4
 }
 
 proc gridAll {} {
@@ -588,6 +593,7 @@ proc displayData {} {
     while {$j < [llength $ACTS_CHANNELS]} {
       set i 0
       while {$i < $robot(vision,$j,numblobs)} {
+        #puts "$j:$i: (x,y) : ($robot(vision,$j,$i,x),$robot(vision,$j,$i,y))"
         set vision_obslist [concat $vision_obslist \
           [.vision_panel.canvas create line \
                  $robot(vision,$j,$i,left)  $robot(vision,$j,$i,top)\

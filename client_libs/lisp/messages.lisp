@@ -52,8 +52,10 @@
   (list *PLAYER-PLAYER-DATA-REQ* uint16))
 (setq *PLAYER-PLAYER-DATA-REQ-SIZE* 2)
 
+; note: ignoring omni-drive speed command for now
 (defun player-make-position-command (tv rv)
   (list (cond ((>= tv 0) tv) (T (+ *SHORTMAX* tv))) uint16
+        0 uint16
         (cond ((>= rv 0) rv) (T (+ *SHORTMAX* rv))) uint16))
 (setq *PLAYER-POSITION-COMMAND-SIZE* 4)
 
