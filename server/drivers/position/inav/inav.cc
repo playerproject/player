@@ -101,9 +101,6 @@ class INav : public CDevice
   // Write the pose data (the data going back to the client).
   private: void PutPose();
 
-  // Update the incremental pose in response to new odometry data.
-  private: void UpdatePoseOdom();
-
   // Update the incremental pose in response to new laser data.
   private: void UpdatePoseLaser();
 
@@ -224,15 +221,16 @@ INav::~INav()
 // Set up the device (called by server thread).
 int INav::Setup()
 {
-  /*
-  // Initialise the underlying position device.
-  if (this->SetupOdom() != 0)
-    return -1;
+  if (!this->logfile)
+  {
+    // Initialise the underlying position device.
+    if (this->SetupOdom() != 0)
+      return -1;
 
-  // Initialise the laser.
-  if (this->SetupLaser() != 0)
-    return -1;
-  */
+    // Initialise the laser.
+    if (this->SetupLaser() != 0)
+      return -1;
+  }
   
   // Start the driver thread.
   this->StartThread();
@@ -248,13 +246,14 @@ int INav::Shutdown()
   // Stop the driver thread.
   this->StopThread();
 
-  /*
-  // Stop the laser
-  this->ShutdownLaser();
+  if (!this->logfile)
+  {
+    // Stop the laser
+    this->ShutdownLaser();
 
-  // Stop the odom device.
-  this->ShutdownOdom();
-  */
+    // Stop the odom device.
+    this->ShutdownOdom();
+  }
 
   return 0;
 }
@@ -357,28 +356,26 @@ void INav::Main()
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
 
-    GetLog();
-        
-    /*
-    // Process any pending requests.
-    HandleRequests();
-
-    // Check for new odometry data.  If there is new data, update the
-    // incremental pose estimate.
-    if (GetOdom())
+    if (this->logfile)
     {
-      UpdatePoseOdom();
-      //PutPose();
+      GetLog();
     }
-
-    // Check for new laser data.  If there is new data, update the
-    // incremental pose estimate.
-    if (GetLaser())
+    else
     {
-      UpdatePoseLaser();
-      PutPose();
+      // Process any pending requests.
+      HandleRequests();
+
+      // Check for new odometric data
+      GetOdom();
+    
+      // Check for new laser data.  If there is new data, update the
+      // incremental pose estimate.
+      if (GetLaser())
+      {
+        UpdatePoseLaser();
+        PutPose();
+      }
     }
-    */
   }
   return;
 }
@@ -485,9 +482,9 @@ int INav::GetOdom()
   data.ypos = ntohl(data.ypos);
   data.yaw = ntohl(data.yaw);
 
-  this->odom_pose.v[0] = (double) data.xpos / 1000.0;
-  this->odom_pose.v[1] = (double) data.ypos / 1000.0;
-  this->odom_pose.v[2] = (double) data.yaw * M_PI / 180;
+  this->odom_pose.v[0] = (double) ((int32_t) data.xpos) / 1000.0;
+  this->odom_pose.v[1] = (double) ((int32_t) data.ypos) / 1000.0;
+  this->odom_pose.v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
   
   return 1;
 }
@@ -513,8 +510,8 @@ int INav::GetLaser()
     return 0;
   this->laser_time = time;
 
-  b = ntohs(data.min_angle) / 100.0 * M_PI / 180.0;
-  db = ntohs(data.resolution) / 100.0 * M_PI / 180.0;
+  b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
+  db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
   this->laser_count = ntohs(data.range_count);
   assert(this->laser_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
 
@@ -541,9 +538,6 @@ int INav::GetLog()
   int i, index;
   double dtime;
 
-  if (this->logfile == NULL)
-    return 0;
-
   if (fgets(line, sizeof(line), this->logfile) == NULL)
     return 0;
 
@@ -564,8 +558,6 @@ int INav::GetLog()
       this->odom_pose.v[1] = atof(strtok(NULL, " "));
       this->odom_pose.v[2] = atof(strtok(NULL, " "));
       this->odom_time = dtime;
-
-      UpdatePoseOdom();
     }
   }
 
@@ -637,42 +629,10 @@ void INav::PutPose()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Update the incremental pose in response to new odometry data.
-void INav::UpdatePoseOdom()
-{
-  inav_vector_t d;
-  int di, dj;
-
-  //printf("inc before %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
-  //printf("odom: %f %f %f\n", this->odom_pose.v[0], this->odom_pose.v[2], this->odom_pose.v[2]);
-    
-  // Compute new incremental pose
-  d = inav_vector_cs_sub(this->odom_pose, this->inc_odom_pose);
-  this->inc_pose = inav_vector_cs_add(d, this->inc_pose);
-  this->inc_odom_pose = this->odom_pose;
-
-  //printf("diff: %f %f %f\n", d.v[0], d.v[1], d.v[2]);
-  //printf("inc after %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
-
-  // Translate the map if we stray from the center
-  d = inav_vector_cs_sub(this->inc_pose, this->map_pose);
-  di = (int) (d.v[0] / this->map_scale);
-  dj = (int) (d.v[1] / this->map_scale);
-  if (abs(di) > 0 || abs(dj) > 0)
-  {
-    imap_translate(this->map, di, dj);
-    this->map_pose.v[0] += di * this->map_scale;
-    this->map_pose.v[1] += dj * this->map_scale;
-  }
-
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Update the incremental pose in response to new laser data.
 void INav::UpdatePoseLaser()
 {
+  int di, dj;
   inav_vector_t d, pose;
   int64_t time;
 
@@ -689,13 +649,30 @@ void INav::UpdatePoseLaser()
          this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
   */
 
+  // Compute new incremental pose
+  d = inav_vector_cs_sub(this->odom_pose, this->inc_odom_pose);
+  this->inc_pose = inav_vector_cs_add(d, this->inc_pose);
+  this->inc_odom_pose = this->odom_pose;
+
+  // Translate the map if we stray from the center
+  d = inav_vector_cs_sub(this->inc_pose, this->map_pose);
+  di = (int) (d.v[0] / this->map_scale);
+  dj = (int) (d.v[1] / this->map_scale);
+  if (abs(di) > 0 || abs(dj) > 0)
+  {
+    imap_translate(this->map, di, dj);
+    this->map_pose.v[0] += di * this->map_scale;
+    this->map_pose.v[1] += dj * this->map_scale;
+  }
+
   // Compute the best fit between the laser scan and the map.
   pose = this->inc_pose;
   imap_fit_ranges(this->map, pose.v, this->laser_pose.v,
                   this->laser_count, this->laser_ranges);
   
-  d = inav_vector_cs_sub(pose, this->inc_pose);
-  printf("diff %f %f %f\n", d.v[0], d.v[1], d.v[2]);
+  //d = inav_vector_cs_sub(pose, this->inc_pose);
+  //printf("diff %f %f %f\n", d.v[0], d.v[1], d.v[2]);
+  printf("diff %f\n", d.v[2] * 180 / M_PI);
   
   this->inc_pose = pose;
     
