@@ -36,24 +36,27 @@
 #define PLAYER_NUM_LASER_SAMPLES 361
 
 /* the player message types */
-#define PLAYER_MSGTYPE_DATA ((uint16_t)1)
-#define PLAYER_MSGTYPE_CMD ((uint16_t)2)
-#define PLAYER_MSGTYPE_REQ ((uint16_t)3)
-#define PLAYER_MSGTYPE_RESP ((uint16_t)4)
+#define PLAYER_MSGTYPE_DATA 0x7264 // "rd" robot data
+#define PLAYER_MSGTYPE_CMD  0x7263 // "rc" robot cmd
+#define PLAYER_MSGTYPE_REQ  0x7271 // "rq" robot req
+#define PLAYER_MSGTYPE_RESP 0x7272 // "rr" robot resp
 
 /* the currently assigned device codes */
-#define PLAYER_MISC_CODE    0x006d  // 'm'
-#define PLAYER_GRIPPER_CODE 0x0067  // 'g'
-#define PLAYER_POSITION_CODE 0x0070  // 'p'
-#define PLAYER_SONAR_CODE   0x0073  // 's'
-#define PLAYER_LASER_CODE   0x006c  // 'l'
-#define PLAYER_VISION_CODE  0x0076  // 'v'
-#define PLAYER_PTZ_CODE     0x007a  // 'z'
+#define PLAYER_MISC_CODE    0x706d  // "pm" pioneer misc
+#define PLAYER_GRIPPER_CODE 0x7067  // "pg" pioneer gripper
+#define PLAYER_POSITION_CODE 0x7070  // "pp" pioneer position
+#define PLAYER_SONAR_CODE   0x7073  // "ps" pioneer sonar
+#define PLAYER_LASER_CODE   0x736c  // "sl" SICK laser
+#define PLAYER_VISION_CODE  0x6176  // "av" ACTS vision
+#define PLAYER_PTZ_CODE     0x737a  // "sz" Sony PTZ
+#define PLAYER_PLAYER_CODE  0x7273  // "rs" robot server
+
+#define PLAYER_STX 0x7858 // "xX" 
 
 /* generic message header */
 typedef struct
 {
-  uint16_t stx;     /* always equal to '0x0102' (SOH STX) */
+  uint16_t stx;     /* always equal to "xX" (0x7858) */
   uint16_t type;    /* message type */
   uint16_t device;  /* what kind of device */
   uint16_t device_index; /* which device of that kind */
@@ -68,6 +71,13 @@ typedef struct
  * The "Player" device
  */
 
+/* the format of a general iotcl to Player */
+typedef struct
+{
+  uint16_t subtype;
+} __attribute__ ((packed)) player_device_ioctl_t;
+
+
 /* the format of a "device request" ioctl to Player */
 typedef struct
 {
@@ -75,6 +85,10 @@ typedef struct
   uint16_t index;
   uint16_t access;
 } __attribute__ ((packed)) player_device_req_t;
+
+
+#define PLAYER_PLAYER_DEV_REQ  0x6472 // "dr" device request
+#define PLAYER_PLAYER_DATA_REQ 0x6470 // "dp" data packet (request)
 
 /*************************************************************************/
 
