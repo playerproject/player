@@ -177,17 +177,20 @@ int main(int argc, char **argv)
     // devices are subscribed.
     proxy = playerc_client_read(client);
 
-    // Update the main window
+    // Update everything on the sync packet.
     if (proxy == client)
+    {
+      // Update the main window
       if (mainwnd_update(mainwnd) != 0)
         break;
 
-    // Update whichever device changed.
-    for (i = 0; i < device_count; i++)
-    {
-      device = devices + i;
-      if (device->proxy)
-        (*(device->fnupdate)) (device->proxy);
+      // Update all the subscribed devices
+      for (i = 0; i < device_count; i++)
+      {
+        device = devices + i;
+        if (device->proxy)
+          (*(device->fnupdate)) (device->proxy);
+      }
     }
   }
   
