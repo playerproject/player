@@ -40,6 +40,9 @@ int test_ptz(playerc_client_t *client, int index);
 // Basic test for sonar device.
 int test_sonar(playerc_client_t *client, int index);
 
+// Basic test for truth device.
+int test_truth(playerc_client_t *client, int index);
+
 // Basic vision test.
 int test_vision(playerc_client_t *client, int index);
 
