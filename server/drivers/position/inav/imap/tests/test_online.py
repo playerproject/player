@@ -15,8 +15,9 @@ import string
 import sys
 
 import rtk
-import imap
+import playerc
 
+import imap
 import geom
 
 
@@ -42,7 +43,6 @@ class MapTest:
         self.map = imap.imap(16.0, 16.0, self.map_scale, 0.25, 0.25)
 
         # Poses
-        self.odom_pose = None
         self.map_pose = None
         self.est_pose = None
 
@@ -58,40 +58,13 @@ class MapTest:
     def update_map(self, datatime, odom_pose, laser_ranges):
         """Update the map with pose/range scan."""
 
-        # Add in some noise to the odometry
-        #odom_pose = (odom_pose[0] + random.normalvariate(0, +self.noise[0]), 
-        #             odom_pose[1] + random.normalvariate(0, +self.noise[1]),
-        #             odom_pose[2] + random.normalvariate(0, +self.noise[2]))
-
         # If this is the first update, initialize the estimates
-        if self.odom_pose == None:
-            self.odom_pose = odom_pose
-            self.map_pose = (0, 0, 0)
-            self.est_pose = (0, 0, 0)
-            return
-
-        # Update the estimated pose
-        diff = geom.gtol(odom_pose, self.odom_pose)
-        self.est_pose = geom.ltog(diff, self.est_pose)
-        self.odom_pose = odom_pose
-
-        # The laser pose
-        pose = geom.ltog(self.laser_pose, self.est_pose)
-
-        # Add in some noise to the initial pose
-        pose = (pose[0] + random.normalvariate(0, self.noise[0]), 
-                pose[1] + random.normalvariate(0, self.noise[1]),
-                pose[2] + random.normalvariate(0, self.noise[2]))
-
-        # Fit the range scan to the current map,
-        # and compute the new pose estimate induced by the laser fit.
-        if self.fit:
-            (pose, err) = self.map.fit_ranges(pose, laser_ranges)
-            if err >= 0:
-                self.est_pose = geom.ltog(geom.gtol((0, 0, 0), self.laser_pose), pose)
+        if self.map_pose == None:
+            self.map_pose = odom_pose
+        self.est_pose = odom_pose
 
         # Update the map
-        self.map.add_ranges(pose, laser_ranges)            
+        self.map.add_ranges(self.est_pose, self.laser_pose, laser_ranges)            
 
         # Translate the map if we have moved away from the center
         diff = geom.gtol(self.est_pose, self.map_pose)
@@ -131,7 +104,7 @@ class MapTest:
         return
 
 
-def main(logfile, fit, scale, noise, export):
+def main(hostname, fit, scale, noise, export):
     """Process the given log file."""
 
     app = rtk.app()
@@ -140,12 +113,18 @@ def main(logfile, fit, scale, noise, export):
     canvas.scale(0.05, 0.05)
     app.main_init()
 
+    export_count = 0
+    
     map = MapTest(fit, scale, noise, canvas)
 
-    file = open(logfile, 'r')
+    # Player proxies
+    client = playerc.client(None, hostname, 6665)
+    position = playerc.position(client, 2)  # HACK
+    laser = playerc.laser(client, 0)
 
-    skip_count = 0
-    export_count = 0
+    client.connect()
+    position.subscribe('a')
+    laser.subscribe('r')
 
     app.main_init()
 
@@ -155,38 +134,21 @@ def main(logfile, fit, scale, noise, export):
 
             app.main_loop()
 
-            line = file.readline()
-            if not line:
-                continue
+            proxy = client.read()
 
-            tokens = string.split(line)
-            if len(tokens) < 5:
-                continue
+            if proxy == position:
+                position_time = position.datatime
+                position_pose = (position.px, position.py, position.pa)
 
-            type = tokens[3]
-            index = int(tokens[4])
+            elif proxy == laser:
 
-            if type == 'position' and index == 0:  # HACK
-                datatime = float(tokens[5])
-                #print datatime
-                odom_pose = (float(tokens[6]),
-                             float(tokens[7]),
-                             float(tokens[8]))
+                laser_time = laser.datatime
+                laser_ranges = laser.scan
 
-            elif type == 'laser':
-
-                skip_count += 1
-                if skip_count % 4 != 0:
-                    continue
+                print position_time - laser_time
                 
-                laser_ranges = []
-                for i in range(6, len(tokens), 3):
-                    r = float(tokens[i + 0])
-                    b = float(tokens[i + 1])
-                    laser_ranges.append((r, b))
-
                 # Update the map
-                map.update_map(datatime, odom_pose, laser_ranges)
+                map.update_map(laser_time, position_pose, laser_ranges)
 
                 # Re-draw the canvas
                 canvas.render()
@@ -200,6 +162,11 @@ def main(logfile, fit, scale, noise, export):
         pass
 
     app.main_term()
+    
+    laser.unsubscribe()
+    position.unsubscribe()
+    client.disconnect()
+
     return
 
 
@@ -210,9 +177,9 @@ if __name__ == '__main__':
     (opts, args) = getopt.getopt(sys.argv[1:], 'pef:n:')
 
     prof = 0
-    logfile = None
-    fit = 1
-    scale = 0.10
+    hostname = None
+    fit = 0
+    scale = 0.05
     noise = (0, 0, 0)
     export = 0
 
@@ -234,11 +201,11 @@ if __name__ == '__main__':
             #noise = (float(opt[1]), float(opt[1]), float(opt[1]))
             noise = (0, 0, float(opt[1]))
 
-    logfile = args[0]
+    hostname = args[0]
 
     if not prof:
-        main(logfile, fit, scale, noise, export)
+        main(hostname, fit, scale, noise, export)
     else:
-        profile.run('main(logfile, fit, scale, noise, export)', '.profile')
+        profile.run('main(host, fit, scale, noise, export)', '.profile')
         p = pstats.Stats('.profile')
         p.sort_stats('time').print_stats()

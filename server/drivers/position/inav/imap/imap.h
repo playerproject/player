@@ -113,11 +113,11 @@ imap_cell_t *imap_get_cell(imap_t *imap, double ox, double oy, double oa);
  **************************************************************************/
 
 // Compute the best fit pose between a range scan and the map
-double imap_fit_ranges(imap_t *imap, double *ox, double *oy, double *oa,
+double imap_fit_ranges(imap_t *imap, double robot_pose[3], double laser_pose[3],
                        int range_count, double ranges[][2]);
 
 // Add a range scan to the map
-int imap_add_ranges(imap_t *imap, double ox, double oy, double oa,
+int imap_add_ranges(imap_t *imap, double robot_pose[3], double laser_pose[3],
                     int range_count, double ranges[][2]);
 
 // Return the distance to the nearest occupied cell.

@@ -28,11 +28,12 @@ inline void imap_update_cell_dist(imap_t *imap, int ci, int cj);
 
 
 // Add a range scan to the imap
-int imap_add_ranges(imap_t *imap, double ox, double oy, double oa,
+int imap_add_ranges(imap_t *imap, double robot_pose[3], double laser_pose[3],
                     int range_count, double ranges[][2])
 {
   int n;
   int modified;
+  double ox, oy, oa;
   double pr, pb;
 
   modified = 0;
@@ -40,6 +41,11 @@ int imap_add_ranges(imap_t *imap, double ox, double oy, double oa,
   {
     pr = ranges[n][0];
     pb = ranges[n][1];
+
+    ox = robot_pose[0] + laser_pose[0] * cos(robot_pose[2]) - laser_pose[1] * sin(robot_pose[2]);
+    oy = robot_pose[1] + laser_pose[0] * sin(robot_pose[2]) + laser_pose[1] * cos(robot_pose[2]);
+    oa = robot_pose[2] + laser_pose[2];
+    
     modified |= imap_add_range(imap, ox, oy, oa + pb, pr);
   }
   return modified;

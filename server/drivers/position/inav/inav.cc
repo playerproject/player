@@ -104,6 +104,9 @@ class INav : public CDevice
   // Update the incremental pose in response to new laser data.
   private: void UpdatePoseLaser();
 
+  // Get the time in ms
+  private: int64_t GetTime();
+
   // Odometry device info
   private: CDevice *odom;
   private: int odom_index;
@@ -348,7 +351,7 @@ void INav::Main()
     if (GetOdom())
     {
       UpdatePoseOdom();
-      PutPose();
+      //PutPose();
     }
 
     // Check for new laser data.  If there is new data, update the
@@ -544,13 +547,13 @@ void INav::PutPose()
   data.yspeed = htonl(data.yspeed);
   data.yawspeed = htonl(data.yawspeed);
 
-  // Compute time.  Use the position device's time.
-  timesec = (uint32_t) this->odom_time;
-  timeusec = (uint32_t) (fmod(this->odom_time, 1.0) * 1e6);
+  // Compute time.  Use the laser device's time.
+  timesec = (uint32_t) this->laser_time;
+  timeusec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
 
   // Copy data to server.
   PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
-
+  
   return;
 }
 
@@ -561,21 +564,27 @@ void INav::UpdatePoseOdom()
 {
   inav_vector_t d;
   int di, dj;
-  
+
+  //printf("inc before %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
+  //printf("odom: %f %f %f\n", this->odom_pose.v[0], this->odom_pose.v[2], this->odom_pose.v[2]);
+    
   // Compute new incremental pose
   d = inav_vector_cs_sub(this->odom_pose, this->inc_odom_pose);
   this->inc_pose = inav_vector_cs_add(d, this->inc_pose);
   this->inc_odom_pose = this->odom_pose;
-  
+
+  //printf("diff: %f %f %f\n", d.v[0], d.v[1], d.v[2]);
+  //printf("inc after %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
+
   // Translate the map if we stray from the center
   d = inav_vector_cs_sub(this->inc_pose, this->map_pose);
   di = (int) (d.v[0] / this->map_scale);
   dj = (int) (d.v[1] / this->map_scale);
   if (abs(di) > 0 || abs(dj) > 0)
   {
-    imap_translate(this->map, di, dj);
-    this->map_pose.v[0] += di * this->map_scale;
-    this->map_pose.v[1] += dj * this->map_scale;
+    //imap_translate(this->map, di, dj);
+    //this->map_pose.v[0] += di * this->map_scale;
+    //this->map_pose.v[1] += dj * this->map_scale;
   }
 
   return;
@@ -586,38 +595,58 @@ void INav::UpdatePoseOdom()
 // Update the incremental pose in response to new laser data.
 void INav::UpdatePoseLaser()
 {
-  inav_vector_t pose, zero;
+  inav_vector_t d, pose;
+  int64_t time;
 
-  zero.v[0] = 0;
-  zero.v[1] = 0;
-  zero.v[2] = 0;
+  time = GetTime();
+  //printf("before %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
 
-  printf("before %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
-    
-  // Compute the pose of the laser in the global cs
-  pose = inav_vector_cs_add(this->laser_pose, this->inc_pose);
-  
-  //printf("before %f %f %f\n", pose.v[0], pose.v[1], pose.v[2]);  
-  
+  /*
+  printf("%13.3f localhost 6665 position 0 %13.3f %+6.2f %+6.2f %+6.2f 0 0 0\n",
+         ((double) time) / 1000.0, this->odom_time,
+         this->odom_pose.v[0], this->odom_pose.v[1], this->odom_pose.v[2]);
+
+  printf("%13.3f localhost 6665 position 2 %13.3f %+6.2f %+6.2f %+6.2f 0 0 0\n",
+         ((double) time) / 1000.0, this->laser_time,
+         this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
+  */
+
   // Compute the best fit between the laser scan and the map.
-  imap_fit_ranges(this->map, pose.v + 0, pose.v + 1, pose.v + 2,
+  pose = this->inc_pose;
+  imap_fit_ranges(this->map, pose.v, this->laser_pose.v,
                   this->laser_count, this->laser_ranges);
+  
+  d = inav_vector_cs_sub(pose, this->inc_pose);
+  printf("diff %f %f %f\n", d.v[0], d.v[1], d.v[2]);
+  
+  this->inc_pose = pose;
     
-  // Compute the pose of the robot from the best-fit laser pose
-  this->inc_pose = inav_vector_cs_add(inav_vector_cs_sub(zero, this->laser_pose), pose);
-
-  printf("after %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
+  //printf("after %f %f %f\n", this->inc_pose.v[0], this->inc_pose.v[1], this->inc_pose.v[2]);
     
   // Update the map with the current range readings
-  imap_add_ranges(this->map, pose.v[0], pose.v[1], pose.v[2],
+  imap_add_ranges(this->map, this->inc_pose.v, this->laser_pose.v,
                   this->laser_count, this->laser_ranges);
 
+  //printf("time 1 %d\n", (int32_t) (GetTime() - time));
+  
   // TESTING
   static int count;
   char filename[64];
   snprintf(filename, sizeof(filename), "imap_%04d.pgm", count++);
   imap_save_occ(this->map, filename);
+
+  //printf("time 2 %d\n", (int32_t) (GetTime() - time));
   
   return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Get the time in ms
+int64_t INav::GetTime()
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
 }
 

@@ -112,7 +112,8 @@ static PyObject *pyimap_fit_ranges(PyObject *self, PyObject *args)
 {
   pyimap_t *pyimap;
   int i;
-  double ox, oy, oa;
+  double robot_pose[3];
+  double laser_pose[3];
   PyObject *pyscan;
   int range_count;
   double ranges[401][2];
@@ -120,7 +121,9 @@ static PyObject *pyimap_fit_ranges(PyObject *self, PyObject *args)
   
   pyimap = (pyimap_t*) self;
 
-  if (!PyArg_ParseTuple(args, "(ddd)O", &ox, &oy, &oa, &pyscan))
+  if (!PyArg_ParseTuple(args, "(ddd)(ddd)O",
+                        robot_pose + 0, robot_pose + 1, robot_pose + 2,
+                        laser_pose + 0, laser_pose + 1, laser_pose + 2, &pyscan))
     return NULL;
 
   range_count = PyList_Size(pyscan);
@@ -131,9 +134,9 @@ static PyObject *pyimap_fit_ranges(PyObject *self, PyObject *args)
     ranges[i][1] = PyFloat_AsDouble(PyTuple_GetItem(PyList_GetItem(pyscan, i), 1));
   }
 
-  err = imap_fit_ranges(pyimap->imap, &ox, &oy, &oa, range_count, ranges);
+  err = imap_fit_ranges(pyimap->imap, robot_pose, laser_pose, range_count, ranges);
 
-  return Py_BuildValue("(ddd)d", ox, oy, oa, err);
+  return Py_BuildValue("(ddd)d", robot_pose[0], robot_pose[1], robot_pose[2], err);
 }
 
 
@@ -142,14 +145,17 @@ static PyObject *pyimap_add_ranges(PyObject *self, PyObject *args)
 {
   pyimap_t *pyimap;
   int i;
-  double ox, oy, oa;
+  double robot_pose[3];
+  double laser_pose[3];
   int range_count;
   double ranges[401][2];
   PyObject *pyscan;
   
   pyimap = (pyimap_t*) self;
 
-  if (!PyArg_ParseTuple(args, "(ddd)O", &ox, &oy, &oa, &pyscan))
+  if (!PyArg_ParseTuple(args, "(ddd)(ddd)O",
+                        robot_pose + 0, robot_pose + 1, robot_pose + 2,
+                        laser_pose + 0, laser_pose + 1, laser_pose + 2, &pyscan))
     return NULL;
 
   range_count = PyList_Size(pyscan);
@@ -159,7 +165,7 @@ static PyObject *pyimap_add_ranges(PyObject *self, PyObject *args)
     ranges[i][1] = PyFloat_AsDouble(PyTuple_GetItem(PyList_GetItem(pyscan, i), 1));
   }
 
-  imap_add_ranges(pyimap->imap, ox, oy, oa, range_count, ranges);
+  imap_add_ranges(pyimap->imap, robot_pose, laser_pose, range_count, ranges);
 
   Py_INCREF(Py_None);
   return Py_None;
@@ -185,7 +191,7 @@ static PyObject *pyimap_draw(PyObject *self, PyObject *args)
     return NULL;
   fig = (rtk_fig_t*) PyCObject_AsVoidPtr(pyfig);
 
-  imap_draw(pyimap->imap, fig);
+  imap_draw_occ(pyimap->imap, fig);
 
   Py_INCREF(Py_None);
   return Py_None;
