@@ -58,9 +58,9 @@ parse_args(int argc, char** argv)
 
 int main(int argc, char **argv)
 {
-  unsigned short min_front_dist = 500;
-  unsigned short really_min_front_dist = 300;
-  char avoid;
+  //unsigned short min_front_dist = 500;
+  //unsigned short really_min_front_dist = 300;
+  //char avoid;
 
   parse_args(argc,argv);
 
