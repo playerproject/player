@@ -230,9 +230,7 @@ int CP2OSDevice::Setup()
     return(1);
   }
   
-#ifdef PLAYER_LINUX
   cfmakeraw( &term );
-#endif
   cfsetispeed( &term, B9600 );
   cfsetospeed( &term, B9600 );
   

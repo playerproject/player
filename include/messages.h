@@ -31,11 +31,8 @@
 
 #include <playercommon.h>
 #include <defaults.h>
-#ifdef PLAYER_LINUX
-  #include <stdint.h>
-#else
-  #include <sys/types.h>
-#endif
+#include <stdint.h>
+//#include <sys/types.h>
 
 /*********************************************************/
 
