@@ -41,14 +41,9 @@ class CDeviceSubscription
 {
 
   public:
-    unsigned short code;
-    unsigned short index;
+    player_device_id_t id;
     unsigned char access;
     CDevice* devicep;
-
-    // RTV allow clients to consume data from devices.
-    // if this is set, ConsumeData() is called instead of GetData()
-    //unsigned char consume;
 
     // record the last time we got fresh data
     uint32_t last_sec, last_usec; 
@@ -98,12 +93,12 @@ class CClientData
     void RemoveBlanks();  
     void RemoveRequests();
     void UpdateRequested(player_device_req_t req);
-    bool CheckWritePermissions(unsigned short code, unsigned short index);
-    bool CheckOpenPermissions(unsigned short code, unsigned short index);
-    unsigned char FindPermission( unsigned short code, unsigned short index);
-    void Unsubscribe( unsigned short code, unsigned short index );
-    int Subscribe( unsigned short code, unsigned short index );
-    int BuildMsg( unsigned char *data, size_t maxsize );
+    bool CheckWritePermissions(player_device_id_t id);
+    bool CheckOpenPermissions(player_device_id_t id);
+    unsigned char FindPermission(player_device_id_t id);
+    void Unsubscribe(player_device_id_t id);
+    int Subscribe(player_device_id_t id);
+    int BuildMsg(unsigned char *data, size_t maxsize);
 
  public:
     // use this lock things like mode,frequency, requested, and datarequested.

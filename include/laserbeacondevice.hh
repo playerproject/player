@@ -76,7 +76,8 @@ class CLaserBeaconDevice : public CDevice
   public: virtual size_t GetData(unsigned char *, size_t maxsize,
                                  uint32_t* timestamp_sec,
                                  uint32_t* timestamp_usec);
-  public: virtual int PutConfig(void *client, void *data, size_t len);
+  public: virtual int PutConfig(player_device_id_t* device, void *client, 
+                                void *data, size_t len);
 
   // Analyze the laser data and return beacon data
   private: void FindBeacons(const player_laser_data_t *laser_data,

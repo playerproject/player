@@ -165,7 +165,8 @@ int CBroadcastDevice::Shutdown()
 
 ///////////////////////////////////////////////////////////////////////////
 // Handle requests.  We dont queue them up, but handle them immediately.
-int CBroadcastDevice::PutConfig(void *client, void *data, size_t len)
+int CBroadcastDevice::PutConfig(player_device_id_t* id, void *client, 
+                                void *data, size_t len)
 {
   player_broadcast_msg_t *request;
   player_broadcast_msg_t reply;
@@ -179,7 +180,7 @@ int CBroadcastDevice::PutConfig(void *client, void *data, size_t len)
     {
       // Write the message to the broadcast socket, and give client an ACK.
       SendPacket(request->data, len);
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
@@ -199,7 +200,7 @@ int CBroadcastDevice::PutConfig(void *client, void *data, size_t len)
       }
       else
       {
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
           PLAYER_ERROR("PutReply() failed");
       }
       break;

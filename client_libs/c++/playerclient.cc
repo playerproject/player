@@ -293,7 +293,8 @@ int PlayerClient::Request(unsigned short device,
   player_msghdr_t hdr;
   retval = Request(device,index,payload,payloadlen,&hdr,NULL,0);
 
-  if(retval < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK)
+  if(retval < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK || 
+     hdr.device != device || hdr.device_index != index)
     return(-1);
   else
     return(retval);

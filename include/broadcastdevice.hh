@@ -56,7 +56,8 @@ class CBroadcastDevice : public CDevice
   public: virtual int Shutdown();
 
   // Handle requests.  We dont queue them up, but handle them immediately.
-  public: virtual int PutConfig(void *client, void *data, size_t len);
+  public: virtual int PutConfig(player_device_id_t* device, void *client, 
+                                void *data, size_t len);
 
   // Main function for device thread
   private: virtual void Main();

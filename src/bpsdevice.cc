@@ -130,15 +130,23 @@ CBpsDevice::CBpsDevice(int argc, char** argv) :
 int CBpsDevice::Setup()
 {
   // Get pointers to other devices
-  this->position = deviceTable->GetDevice(global_playerport,PLAYER_POSITION_CODE, this->index);
-  this->laserbeacon = deviceTable->GetDevice(global_playerport,PLAYER_LASERBEACON_CODE, this->index);
-  assert(this->position != NULL);
-  assert(this->laserbeacon != NULL);
+  player_device_id_t id;
+  id.port = device_id.port;
+  id.index = this->index;
+
+  id.code = PLAYER_POSITION_CODE;
+  this->position = deviceTable->GetDevice(id);
+  id.code = PLAYER_LASERBEACON_CODE;
+  this->laserbeacon = deviceTable->GetDevice(id);
 
   // Subscribe to devices, but fail if they do
-  if((this->position->Subscribe(this) != 0) ||
+  if((this->position == NULL) || (this->laserbeacon == NULL) ||
+     (this->position->Subscribe(this) != 0) || 
      (this->laserbeacon->Subscribe(this) != 0))
+  {
+    puts("CBpsDevice::Setup(): failed to connect to supporting devices");
     return(-1);
+  }
     
   // Initialise configuration settings
   this->gain = 0.01;
@@ -323,14 +331,15 @@ int CBpsDevice::UpdateConfig()
         {
           // This is an invalid configuration
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
         
         // TODO: there is no configration info at the moment.
         
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, config, sizeof(*config)) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, config, 
+                    sizeof(*config)) != 0)
           PLAYER_ERROR("PutReply() failed");
         
         break;
@@ -344,14 +353,15 @@ int CBpsDevice::UpdateConfig()
         {
           // This is an invalid configuration
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config->subtype));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
         
         // TODO: there is no configration info at the moment.
         
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, config, sizeof(*config)) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, config, 
+                    sizeof(*config)) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -363,7 +373,7 @@ int CBpsDevice::UpdateConfig()
         if (len != sizeof(*beacon))
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(*beacon));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -371,7 +381,7 @@ int CBpsDevice::UpdateConfig()
         int id = beacon->id;
         if (id < 0 || id >= ARRAYSIZE(this->beacons))
         {
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
         }
         
@@ -383,7 +393,7 @@ int CBpsDevice::UpdateConfig()
         this->beacons[id].ua = (int) ntohl(beacon->ua) * M_PI / 180.0;
         this->beacons[id].isset = true;
 
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -396,7 +406,7 @@ int CBpsDevice::UpdateConfig()
         {
           PLAYER_ERROR2("config request len is invalid (%d < %d)", len,
                         (sizeof(beacon->subtype) + sizeof(beacon->id)));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -404,14 +414,14 @@ int CBpsDevice::UpdateConfig()
         int id = beacon->id;
         if (id < 0 || id >= ARRAYSIZE(this->beacons))
         {
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
         }
 
         // Reply with NACK if the beacon is not being used.
         if (!this->beacons[id].isset)
         {
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -423,13 +433,14 @@ int CBpsDevice::UpdateConfig()
         beacon->uy = htonl((int32_t) (this->beacons[id].uy * 1000));
         beacon->ua = htonl((int32_t) (this->beacons[id].ua * 180 / M_PI));        
         
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, beacon, sizeof(*beacon)) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, beacon, 
+                     sizeof(*beacon)) != 0)
           PLAYER_ERROR("PutReply() failed");
       }
 
       default:
       {
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }

@@ -62,9 +62,8 @@ CDeviceTable::~CDeviceTable()
     
 // this is the 'base' AddDevice method, which sets all the fields
 int 
-CDeviceTable::AddDevice(int port, unsigned short code, unsigned short index, 
-                        unsigned char access, char* name, 
-                        CDevice* (*initfunc)(int,char**),
+CDeviceTable::AddDevice(player_device_id_t id, unsigned char access, 
+                        char* name, CDevice* (*initfunc)(int,char**),
                         CDevice* devicep)
 {
   CDeviceEntry* thisentry;
@@ -75,9 +74,9 @@ CDeviceTable::AddDevice(int port, unsigned short code, unsigned short index,
   for(thisentry = head,preventry=NULL; thisentry; 
       preventry=thisentry, thisentry=thisentry->next)
   {
-    if((thisentry->port == port) && 
-       (thisentry->code == code) && 
-       (thisentry->index == index))
+    if((thisentry->id.port == id.port) && 
+       (thisentry->id.code == id.code) && 
+       (thisentry->id.index == id.index))
     {
       if(thisentry->devicep)
         delete thisentry->devicep;
@@ -95,9 +94,7 @@ CDeviceTable::AddDevice(int port, unsigned short code, unsigned short index,
     numdevices++;
   }
 
-  thisentry->port = port;
-  thisentry->code = code;
-  thisentry->index = index;
+  thisentry->id = id;
   thisentry->access = access;
   if(name)
   {
@@ -106,15 +103,43 @@ CDeviceTable::AddDevice(int port, unsigned short code, unsigned short index,
   }
   thisentry->initfunc = initfunc;
   thisentry->devicep = devicep;
+  if(devicep)
+    devicep->device_id = id;
   pthread_mutex_unlock(&mutex);
   return(0);
 }
 
+// this one is used to fill the instantiated device table
+//
+// code is the id for the device (e.g, 's' for sonar)
+// access is the access for the device (e.g., 'r' for sonar)
+// devicep is the controlling object (e.g., sonarDevice for sonar)
+//  
+int 
+CDeviceTable::AddDevice(player_device_id_t id, unsigned char access, 
+                        CDevice* devicep)
+{
+  return(AddDevice(id,access,NULL,NULL,devicep));
+}
+    
+// this one sets some different fields; it's used to fill the available
+// device table, instead of the instantiated device table
+int 
+CDeviceTable::AddDevice(unsigned short code, char access, char* name,
+                        CDevice* (*initfunc)(int,char**))
+{
+  player_device_id_t id;
+  id.code = code;
+  id.index = 0;
+  id.port = 0;
+  return(AddDevice(id,access,name,initfunc,NULL));
+}
+
+
 // returns the controlling object for the given code (or NULL
 // on failure)
 CDevice* 
-CDeviceTable::GetDevice(int port, unsigned short code, 
-                        unsigned short index)
+CDeviceTable::GetDevice(player_device_id_t id)
 {
   CDeviceEntry* thisentry;
   CDevice* devicep = NULL;
@@ -126,9 +151,9 @@ CDeviceTable::GetDevice(int port, unsigned short code,
     // get around the fact that, given arbitrary ordering of command-line
     // arguments, devices can get added to the devicetable with an incorrect
     // port.
-    if((thisentry->code == code) && 
-       (thisentry->index == index) &&
-       (!use_stage || (thisentry->port == port)))
+    if((thisentry->id.code == id.code) && 
+       (thisentry->id.index == id.index) &&
+       (!use_stage || (thisentry->id.port == id.port)))
     {
       devicep = thisentry->devicep;
       break;
@@ -159,8 +184,8 @@ CDeviceTable::GetDeviceEntry(char* name)
 
 // returns the code for access ('r', 'w', or 'a') for the given 
 // device, or 'e' on failure
-unsigned char CDeviceTable::GetDeviceAccess(int port, unsigned short code, 
-                                            unsigned short index)
+unsigned char 
+CDeviceTable::GetDeviceAccess(player_device_id_t id)
 {
   CDeviceEntry* thisentry;
   char access = 'e';
@@ -168,9 +193,9 @@ unsigned char CDeviceTable::GetDeviceAccess(int port, unsigned short code,
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
-    if((thisentry->port == port) && 
-       (thisentry->code == code) && 
-       (thisentry->index == index))
+    if((thisentry->id.port == id.port) && 
+       (thisentry->id.code == id.code) && 
+       (thisentry->id.index == id.index))
     {
       access = thisentry->access;
       break;

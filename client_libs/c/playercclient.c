@@ -263,12 +263,11 @@ int player_request(player_connection_t* conn,
   }
 
   bzero(&hdr,sizeof(hdr));
-  /* eat data until the response comes back */
-  while(((hdr.type != PLAYER_MSGTYPE_RESP_ACK) &&
+  /* eat data until a response comes back (it may not be for the request we
+   * just sent, but let a higher level deal with that problem) */
+  while((hdr.type != PLAYER_MSGTYPE_RESP_ACK) &&
          (hdr.type != PLAYER_MSGTYPE_RESP_NACK) &&
-         (hdr.type != PLAYER_MSGTYPE_RESP_ERR)) || 
-        (hdr.device != device) ||
-        (hdr.device_index != device_index))
+         (hdr.type != PLAYER_MSGTYPE_RESP_ERR))
   {
     if(player_read(conn, &hdr, buffer, sizeof(buffer)) == -1)
       return(-1);

@@ -186,6 +186,11 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   }
   else
   {
+    player_device_id_t id;
+    id.port = port;
+    id.code = hdr.device;
+    id.index = hdr.device_index;
+
     switch(hdr.type)
     {
       case PLAYER_MSGTYPE_REQ:
@@ -324,15 +329,14 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           //
 
           // make sure we've opened this one, in any mode
-          if(CheckOpenPermissions(hdr.device,hdr.device_index))
+          if(CheckOpenPermissions(id))
           {
             // pass the config request on the proper device
             // make sure we've got a non-NULL pointer
-            if((devicep = 
-                deviceTable->GetDevice(port,hdr.device,hdr.device_index)))
+            if((devicep = deviceTable->GetDevice(id)))
             {
               // try to push it on the request queue
-              if(devicep->PutConfig(this,payload,payload_size))
+              if(devicep->PutConfig(&id,this,payload,payload_size))
               {
                 // queue was full
                 requesttype = PLAYER_MSGTYPE_RESP_ERR;
@@ -343,44 +347,41 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             else
             {
               printf("HandleRequests(): got REQ for unkown device: %x:%x\n",
-                     hdr.device,hdr.device_index);
+                     id.code,id.index);
               requesttype = PLAYER_MSGTYPE_RESP_ERR;
             }
           }
           else
           {
             printf("No permissions to configure %x:%x\n",
-                   hdr.device,hdr.device_index);
+                   id.code,id.index);
             requesttype = PLAYER_MSGTYPE_RESP_ERR;
           }
         }
         break;
       case PLAYER_MSGTYPE_CMD:
         /* command message */
-        if(CheckWritePermissions(hdr.device,hdr.device_index))
+        if(CheckWritePermissions(id))
         {
           // check if we can write to this device
-          if((deviceTable->GetDeviceAccess(port,hdr.device,hdr.device_index) ==
-              PLAYER_WRITE_MODE) ||
-             (deviceTable->GetDeviceAccess(port,hdr.device,hdr.device_index) ==
-              PLAYER_ALL_MODE))
+          if((deviceTable->GetDeviceAccess(id) == PLAYER_WRITE_MODE) ||
+             (deviceTable->GetDeviceAccess(id) == PLAYER_ALL_MODE))
 
           {
             // make sure we've got a non-NULL pointer
-            if((devicep = 
-                deviceTable->GetDevice(port,hdr.device,hdr.device_index)))
+            if((devicep = deviceTable->GetDevice(id)))
               devicep->PutCommand(payload,payload_size);
             else
               printf("HandleRequests(): found NULL pointer for device %x:%x\n",
-                     hdr.device,hdr.device_index);
+                     id.code,id.index);
           }
           else
             printf("You can't send commands to %x:%x\n",
-                   hdr.device,hdr.device_index);
+                   id.code,id.index);
         }
         else 
           printf("No permissions to command %x:%x\n",
-                 hdr.device,hdr.device_index);
+                 id.code,id.index);
         break;
       default:
         printf("HandleRequests(): Unknown message type %x\n", hdr.type);
@@ -388,7 +389,6 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     }
   }
 
-  // TODO: rework this reply generation
   /* if it's a request, then we must generate a reply */
   if(requesttype)
   {
@@ -405,7 +405,12 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     if(devicerequest)
     {
       req = *((player_device_req_t*)payload);
-      req.access = FindPermission(ntohs(req.code),ntohs(req.index));
+
+      player_device_id_t id;
+      id.code = ntohs(req.code);
+      id.index = ntohs(req.index);
+
+      req.access = FindPermission(id);
       memcpy(replybuffer+sizeof(player_msghdr_t),&req,
              sizeof(player_device_req_t));
       replysize = payload_size;
@@ -478,17 +483,17 @@ void CClientData::RemoveRequests()
 
   while(thissub)
   {
-    if(thissub->code == PLAYER_POSITION_CODE)
+    if(thissub->id.code == PLAYER_POSITION_CODE)
       MotorStop();
     switch(thissub->access) 
     {
       case PLAYER_ALL_MODE:
-        Unsubscribe(thissub->code, thissub->index);
-        Unsubscribe(thissub->code, thissub->index);
+        Unsubscribe(thissub->id);
+        Unsubscribe(thissub->id);
         break;
       case PLAYER_READ_MODE:
       case PLAYER_WRITE_MODE:
-        Unsubscribe(thissub->code, thissub->index);
+        Unsubscribe(thissub->id);
         break;
       default:
         break;
@@ -504,10 +509,15 @@ void CClientData::MotorStop()
 {
   player_position_cmd_t command;
   CDevice* devicep;
+  player_device_id_t id;
+
+  id.port = port;
+  id.code = PLAYER_POSITION_CODE;
+  id.index = 0;
 
   command.speed = command.sidespeed = command.turnrate = 0;
 
-  if((devicep = deviceTable->GetDevice(port,PLAYER_POSITION_CODE,0)))
+  if((devicep = deviceTable->GetDevice(id)))
   {
     devicep->PutCommand((unsigned char*)&command, sizeof(command));
   }
@@ -524,19 +534,17 @@ void CClientData::UpdateRequested(player_device_req_t req)
   for(thisub=requested,prevsub=NULL;thisub;
       prevsub=thisub,thisub=thisub->next)
   {
-    if((thisub->code == req.code) && (thisub->index == req.index))
+    if((thisub->id.code == req.code) && (thisub->id.index == req.index))
       break;
   }
 
   if(!thisub)
   {
     thisub = new CDeviceSubscription;
-    thisub->code = req.code;
-    thisub->index = req.index;
-    thisub->devicep = deviceTable->GetDevice(port,req.code,req.index);
-
-    // RTV - set the data consume flag (experimental!)
-    //thisub->consume = req.consume;
+    thisub->id.code = req.code;
+    thisub->id.index = req.index;
+    thisub->id.port = port;
+    thisub->devicep = deviceTable->GetDevice(thisub->id);
 
     thisub->last_sec = 0; // init the freshness timer
     thisub->last_usec = 0;
@@ -556,7 +564,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
      (req.access==PLAYER_ALL_MODE))
   {
     // subscribe once more
-    if(Subscribe(req.code,req.index) == 0)
+    if(Subscribe(thisub->id) == 0)
       thisub->access = PLAYER_ALL_MODE;
     else 
       thisub->access='e';
@@ -567,7 +575,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
            req.access==PLAYER_WRITE_MODE)) 
   {
     // unsubscribe once
-    Unsubscribe(req.code,req.index);
+    Unsubscribe(thisub->id);
     thisub->access=req.access;
   }
   // go from either PLAYER_READ_MODE to PLAYER_WRITE_MODE or PLAYER_WRITE_MODE to PLAYER_READ_MODE
@@ -587,10 +595,10 @@ void CClientData::UpdateRequested(player_device_req_t req)
     switch(thisub->access)
     {
       case PLAYER_ALL_MODE:
-        Unsubscribe(req.code,req.index);   // we want to unsubscribe two times
+        Unsubscribe(thisub->id);   // we want to unsubscribe two times
       case PLAYER_WRITE_MODE:
       case PLAYER_READ_MODE:
-        Unsubscribe(req.code,req.index);
+        Unsubscribe(thisub->id);
         thisub->access = PLAYER_CLOSE_MODE;
         break;
       case PLAYER_CLOSE_MODE:
@@ -609,20 +617,20 @@ void CClientData::UpdateRequested(player_device_req_t req)
     switch(req.access) 
     {
       case PLAYER_ALL_MODE:
-        if((Subscribe(req.code,req.index)==0) && 
-           (Subscribe(req.code,req.index) == 0))
+        if((Subscribe(thisub->id)==0) && 
+           (Subscribe(thisub->id) == 0))
           thisub->access=PLAYER_ALL_MODE;
         else
           thisub->access=PLAYER_ERROR_MODE;
         break;
       case PLAYER_WRITE_MODE:
-        if(Subscribe(req.code,req.index)==0)
+        if(Subscribe(thisub->id)==0)
           thisub->access=PLAYER_WRITE_MODE;
         else 
           thisub->access=PLAYER_ERROR_MODE;
         break;
       case PLAYER_READ_MODE:
-        if(Subscribe(req.code,req.index) == 0)
+        if(Subscribe(thisub->id) == 0)
           thisub->access=PLAYER_READ_MODE;
         else
           thisub->access=PLAYER_ERROR_MODE;
@@ -635,7 +643,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
   else 
   {
     printf("The current access is \"%x:%x:%c\". ",
-                    thisub->code, thisub->index, thisub->access);
+                    thisub->id.code, thisub->id.index, thisub->access);
     printf("Unknown unused request \"%x:%x:%c\".\n",
                     req.code, req.index, req.access);
   }
@@ -643,13 +651,13 @@ void CClientData::UpdateRequested(player_device_req_t req)
 }
 
 unsigned char 
-CClientData::FindPermission(unsigned short code, unsigned short index)
+CClientData::FindPermission(player_device_id_t id)
 {
   unsigned char tmpaccess;
   //pthread_mutex_lock(&access);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
-    if((thisub->code == code) && (thisub->index == index))
+    if((thisub->id.code == id.code) && (thisub->id.index == id.index))
     {
       tmpaccess = thisub->access;
       pthread_mutex_unlock(&access);
@@ -660,14 +668,13 @@ CClientData::FindPermission(unsigned short code, unsigned short index)
   return(PLAYER_ERROR_MODE);
 }
 
-bool CClientData::CheckOpenPermissions(unsigned short code, 
-                                       unsigned short index)
+bool CClientData::CheckOpenPermissions(player_device_id_t id)
 {
   bool permission = false;
   unsigned char letter;
 
   pthread_mutex_lock(&access);
-  letter = FindPermission(code,index);
+  letter = FindPermission(id);
   pthread_mutex_unlock(&access);
 
   if((letter==PLAYER_ALL_MODE) || 
@@ -678,14 +685,13 @@ bool CClientData::CheckOpenPermissions(unsigned short code,
   return(permission);
 }
 
-bool CClientData::CheckWritePermissions(unsigned short code, 
-                                        unsigned short index)
+bool CClientData::CheckWritePermissions(player_device_id_t id)
 {
   bool permission = false;
   unsigned char letter;
 
   pthread_mutex_lock(&access);
-  letter = FindPermission(code,index);
+  letter = FindPermission(id);
   pthread_mutex_unlock(&access);
 
   if((letter==PLAYER_ALL_MODE) || (PLAYER_WRITE_MODE==letter)) 
@@ -709,15 +715,14 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
     if(thisub->access==PLAYER_ALL_MODE || thisub->access==PLAYER_READ_MODE) 
     {
       // REMOVE needsynch = true;
-      char access = 
-              deviceTable->GetDeviceAccess(port,thisub->code,thisub->index);
+      char access = deviceTable->GetDeviceAccess(thisub->id);
 
       if((access == PLAYER_ALL_MODE) || (access == PLAYER_READ_MODE)) 
       {
-        if((devicep = deviceTable->GetDevice(port,thisub->code,thisub->index)))
+        if((devicep = deviceTable->GetDevice(thisub->id)))
         {
-          hdr.device = htons(thisub->code);
-          hdr.device_index = htons(thisub->index);
+          hdr.device = htons(thisub->id.code);
+          hdr.device_index = htons(thisub->id.index);
           hdr.reserved = 0;
 
           size = devicep->GetData(data+totalsize+sizeof(hdr),
@@ -761,13 +766,13 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
         else
         {
           printf("BuildMsg(): found NULL pointer for device \"%x:%x\"\n",
-                          thisub->code, thisub->index);
+                          thisub->id.code, thisub->id.index);
         }
       }
       else
       {
         printf("BuildMsg(): Unknown device \"%x:%x\"\n",
-                        thisub->code,thisub->index);
+                        thisub->id.code,thisub->id.index);
       }
     }
   }
@@ -795,12 +800,12 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
 }
 
 
-int CClientData::Subscribe( unsigned short code, unsigned short index )
+int CClientData::Subscribe(player_device_id_t id)
 {
   CDevice* devicep;
   int subscribe_result;
 
-  if((devicep = deviceTable->GetDevice(port,code,index)))
+  if((devicep = deviceTable->GetDevice(id)))
   {
     subscribe_result = devicep->Subscribe(this);
     return(subscribe_result);
@@ -808,24 +813,24 @@ int CClientData::Subscribe( unsigned short code, unsigned short index )
   else
   {
     printf("Subscribe(): Unknown device \"%x:%x\" - subscribe cancelled\n", 
-                    code,index);
+                    id.code,id.index);
     return(1);
   }
 }
 
 
-void CClientData::Unsubscribe( unsigned short code, unsigned short index )
+void CClientData::Unsubscribe(player_device_id_t id)
 {
   CDevice* devicep;
 
-  if((devicep = deviceTable->GetDevice(port,code,index)))
+  if((devicep = deviceTable->GetDevice(id)))
   {
     devicep->Unsubscribe(this);
   }
   else
   {
     printf("Unsubscribe(): Unknown device \"%x:%x\" - unsubscribe cancelled\n", 
-                    code,index);
+                    id.code,id.index);
   }
 }
 
@@ -835,7 +840,7 @@ CClientData::PrintRequested(char* str)
   printf("%s:requested: ",str);
   pthread_mutex_lock(&access);
   for(CDeviceSubscription* thissub=requested;thissub;thissub=thissub->next)
-    printf("%x:%x:%d ", thissub->code,thissub->index,thissub->access);
+    printf("%x:%x:%d ", thissub->id.code,thissub->id.index,thissub->access);
   pthread_mutex_unlock(&access);
   puts("");
 }

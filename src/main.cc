@@ -349,7 +349,11 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 
       // get the player type and index from the header
       // NOT from the filename
-      switch( deviceIO->player_id.type )
+      printf("stage dev: %d:%d:%d\n", 
+             deviceIO->player_id.code,
+             deviceIO->player_id.index,
+             deviceIO->player_id.port);
+      switch(deviceIO->player_id.code)
       {
         // create a generic simulated stage IO device for these types:
         case PLAYER_PLAYER_CODE: 
@@ -371,10 +375,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // Create a StageDevice with this IO base address and filedes
           dev = new CStageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	    
-          deviceTable->AddDevice( deviceIO->player_id.port,
-                                  deviceIO->player_id.type, 
-                                  deviceIO->player_id.index, 
-                                  PLAYER_ALL_MODE, dev );
+          deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, dev);
 	    
           // add this port to our listening list
           StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
@@ -383,7 +384,10 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 	  
         case PLAYER_BROADCAST_CODE:   
           // Create broadcast device as per normal
-          if(deviceIO->local)
+          //
+          // FIXME: apparently deviceIO->local is *not* currently being set
+          // by Stage...
+          if(deviceIO->local || !deviceIO->local)
           {
             int argc = 0;
             char *argv[2];
@@ -402,10 +406,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             else
             {
               // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id.port,
-                                     deviceIO->player_id.type,
-                                     deviceIO->player_id.index, 
-                                     PLAYER_ALL_MODE, 
+              deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
                                      (*(entry->initfunc))(argc,argv));
  
 
@@ -417,7 +418,10 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 
         case PLAYER_BPS_CODE:   
           // Create broadcast device as per normal
-          if(deviceIO->local)
+          
+          // FIXME: apparently deviceIO->local is *not* currently being set
+          // by Stage...
+          if(deviceIO->local || !deviceIO->local)
           {
             int argc = 0;
             char *argv[2];
@@ -439,10 +443,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             else
             {
               // add it to the instantiated device table
-              deviceTable->AddDevice(deviceIO->player_id.port,
-                                     deviceIO->player_id.type,
-                                     deviceIO->player_id.index, 
-                                     PLAYER_ALL_MODE, 
+              deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
                                      (*(entry->initfunc))(argc,argv));
  
 
@@ -455,7 +456,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // devices not implemented
         case PLAYER_AUDIO_CODE:   
           printf("Device type %d not yet implemented in Stage\n", 
-                 deviceIO->player_id.type);
+                 deviceIO->player_id.code);
           break;
 	  
         case 0:
@@ -468,9 +469,9 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // unknown device 
         default:
           printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   
-                  deviceIO->player_id.type, 
+                  deviceIO->player_id.code, 
                   deviceIO->player_id.port, 
-                  deviceIO->player_id.type, 
+                  deviceIO->player_id.code, 
                   deviceIO->player_id.index ); 
           break;
       }

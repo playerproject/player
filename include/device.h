@@ -58,7 +58,7 @@ class CDevice
     pthread_mutex_t setupMutex;
     
     pthread_t devicethread;
-    
+
   protected:
     
     // buffers for data and command
@@ -78,6 +78,10 @@ class CDevice
     PlayerQueue* device_repqueue;
 
   public:
+    // who we are (currently set by CDeviceTable::AddDevice(); not a great
+    // place)
+    player_device_id_t device_id;
+    
     // to record the time at which the device gathered the data
     // these are public because one device (e.g., P2OS) might need to set the
     // timestamp of another (e.g., sonar)
@@ -129,12 +133,27 @@ class CDevice
     virtual void PutCommand( unsigned char * , size_t );
     
     virtual size_t GetConfig(void** client, void *data, size_t len);
-    virtual int PutConfig(void* client, void* data, size_t len);
+    /* a "long form" GetConfig, this one returns the target device ID */
+    virtual size_t GetConfig(player_device_id_t* device, void** client, 
+                             void *data, size_t len);
+    virtual int PutConfig(player_device_id_t* device, void* client, 
+                          void* data, size_t len);
 
-    virtual int GetReply(void* client, unsigned short* type,
-                         struct timeval* ts, void* data, size_t len);
-    virtual int PutReply(void* client, unsigned short type,
-                         struct timeval* ts, void* data, size_t len);
+    virtual int GetReply(player_device_id_t* device, void* client, 
+                         unsigned short* type, struct timeval* ts, 
+                         void* data, size_t len);
+    virtual int PutReply(player_device_id_t* device, void* client, 
+                         unsigned short type, struct timeval* ts, 
+                         void* data, size_t len);
+    /* a short form, for common use; assumes zero-length reply and that the
+     * originating device can be inferred from the client's subscription 
+     * list 
+     */
+    virtual int PutReply(void* client, unsigned short type);
+    /* another short form; this one allows actual replies */
+    virtual int PutReply(void* client, unsigned short type, struct timeval* ts, 
+                         void* data, size_t len);
+
 
     /* start a thread that will invoke Main() */
     virtual void StartThread();

@@ -59,8 +59,8 @@ class TruthProxy; //forward declaration
 typedef struct
 {
   // identify this entity to Player
-  player_id_t id;
-  player_id_t parent;
+  player_device_id_t id;
+  player_device_id_t parent;
 
   double x, y, th, w, h;
 
@@ -124,7 +124,7 @@ class TruthProxy : public ClientProxy
     truth_t* GetNextDevice( void );
 
     // return a pointer to a device with id matching the parameter
-    truth_t* GetDeviceByID( player_id_t* id );
+    truth_t* GetDeviceByID( player_device_id_t* id );
 
     // return a pointer to a device with fresh data
     truth_t* GetNextFreshDevice( void );
