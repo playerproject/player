@@ -59,9 +59,7 @@ class CDevice
     
     pthread_t devicethread;
     
-  public:
-    // number of current subscriptions
-    int subscriptions;
+  protected:
     
     // buffers for data and command
     unsigned char* device_data;
@@ -75,13 +73,20 @@ class CDevice
     size_t device_used_datasize;
     size_t device_used_commandsize;
     
-    // to record the time at which the device gathered the data
-    uint32_t data_timestamp_sec;
-    uint32_t data_timestamp_usec;
-
     // queues for incoming requests and outgoing replies
     PlayerQueue* device_reqqueue;
     PlayerQueue* device_repqueue;
+
+  public:
+    // to record the time at which the device gathered the data
+    // these are public because one device (e.g., P2OS) might need to set the
+    // timestamp of another (e.g., sonar)
+    uint32_t data_timestamp_sec;
+    uint32_t data_timestamp_usec;
+    
+    // likewise, we sometimes need to access subscriptions from outside
+    // number of current subscriptions
+    int subscriptions;
 
     virtual ~CDevice() {};
 

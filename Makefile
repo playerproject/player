@@ -21,10 +21,15 @@ client_libs:
 examples:
 	cd examples && make -i all
 
+.PHONY: utils
+utils:
+	cd utils && make -i all
+
 dep:
 	cd src && make dep
 	cd client_libs && make dep
 	cd examples && make dep
+	cd utils && make dep
 
 install: install_server install_client_libs install_examples install_doc
 
@@ -35,7 +40,10 @@ install_client_libs:
 	cd client_libs && make install
 
 install_examples:
-	cd examples && make install
+	cd examples && make -i install
+
+install_utils:
+	cd utils && make -i install
 
 install_doc:
 	$(MKDIR) -p $(INSTALL_DOC)
@@ -45,6 +53,7 @@ uninstall:
 	cd src && make uninstall
 	cd client_libs && make uninstall
 	cd examples && make -i uninstall
+	cd utils && make -i uninstall
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_BIN) 
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_INCLUDE)
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
@@ -55,6 +64,9 @@ uninstall:
 distro: clean
 	$(MKDIR) -p doc
 	cd client_libs/c++/doc && make manual
+	cd client_libs/tcl/doc && make manual
+	cd client_libs/oldc++/doc && make manual
+	cd client_libs/lisp/doc && make manual
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` $(PLAYER_VERSION)
 
@@ -71,11 +83,13 @@ clean_server:
 clean: clean_server clean_dep
 	cd client_libs && make clean
 	cd examples && make clean
+	cd utils && make clean
 
 clean_dep:
 	cd src && make clean_dep
 	cd client_libs && make clean_dep
 	cd examples && make clean_dep
+	cd utils && make clean_dep
 
 
 

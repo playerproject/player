@@ -20,12 +20,6 @@ INCLUDES = -I../include
 LIBDIRS = -L.
 LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm -ldl
 
-INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
-                   $(INCLUDE_POSITION) $(INCLUDE_GRIPPER) $(INCLUDE_MISC) \
-                   $(INCLUDE_MISC) $(INCLUDE_PTZ) \
-                   $(INCLUDE_AUDIO) $(INCLUDE_LASERBEACON) $(INCLUDE_BPS) \
-                   $(INCLUDE_BROADCAST) $(INCLUDE_SPEECH)
-
 #
 # definitely build the device-independent objects
 #
@@ -99,7 +93,8 @@ clean_dep:
 	$(MAKEDEP) -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND"
 	$(RM) -f Makefile.bak
 clean:
-	rm -f *.so *.o *~ $(SERVERNAME) $(DEVICELIBNAME) core
+	rm -f *.so *.o *~ $(SERVERNAME) $(DEVICELIBNAME) libplayerqueue.a \
+	                  ../lib/libplayerqueue.a core
 
 $(DEVICELIBNAME): $(OBS)
 	$(AR) cr $@ $(OBS)
