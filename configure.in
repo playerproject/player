@@ -237,16 +237,19 @@ AC_CONFIG_SUBDIRS($configrtk3)
 AM_CONDITIONAL(WITH_RTK3, test "x$enable_rtk3" = "xyes")
 
 dnl Build the playermap utility; requires RTK3 components to work
-dnl AC_ARG_ENABLE(playermap,
-dnl [  --enable-playermap          Build PlayerMap],, enable_playermap=no)
-dnl if test "x$enable_rtk3" != "xyes"; then
-dnl   enable_playermap=no
-dnl fi
-dnl AM_CONDITIONAL(WITH_PLAYERMAP, test x$enable_playermap = xyes)
-
+AC_ARG_ENABLE(playermap,
+[  --enable-playermap          Build PlayerMap],, enable_playermap=yes)
+if test "x$enable_rtk3" = "xno"; then
+  enable_playermap=no
+fi
+AM_CONDITIONAL(WITH_PLAYERMAP, test "x$enable_playermap = xyes")
 
 dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h)
+
+dnl Playerjoy needs termio.h
+AC_CHECK_HEADER(termio.h, have_termio=yes, have_termio=no)
+AM_CONDITIONAL(WITH_PLAYERJOY, test x$have_termio = xyes)
 
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t 
