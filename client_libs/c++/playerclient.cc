@@ -105,7 +105,7 @@ PlayerClient::PlayerClient()
                              LASERBEACON_DATA_BUFFER_SIZE,
                              LASERBEACON_COMMAND_BUFFER_SIZE);
   thisentry = devicedatatable->GetDeviceEntry(PLAYER_LASERBEACON_CODE,0);
-  laserbeacon_data = (player_laserbeacon_data_t*)(thisentry->data);
+  laserbeacon = (player_laserbeacon_data_t*)(thisentry->data);
 
   // the zeroth broadcast device
   devicedatatable->AddDevice(PLAYER_BROADCAST_CODE, 0, 'c',

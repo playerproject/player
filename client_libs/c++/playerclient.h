@@ -107,7 +107,7 @@ class PlayerClient
      player_ptz_data_t* ptz;
      player_misc_data_t* misc;
      vision_data* vision;
-     player_laserbeacon_data_t* laserbeacon_data;
+     player_laserbeacon_data_t* laserbeacon;
 
      // processed data
      unsigned short minfrontsonar;
