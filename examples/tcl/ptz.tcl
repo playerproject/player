@@ -20,6 +20,7 @@
 
 
 #
+# $Id$
 #
 # ptz.tcl
 #
@@ -31,17 +32,21 @@
 # to get the 'sleep' command
 package require Tclx
 
+set PLAYER_VERSION 1.0a
+
 #
 # get the robot client utilities
-if {[file exists ../../client_libs/tcl/playerclient.tcl]} {
-  source ../../client_libs/tcl/playerclient.tcl
+if {[file exists ../../fclient_libs/newtcl/playerclient.tcl]} {
+  source ../../client_libs/newtcl/playerclient.tcl
 } else { 
-  source /usr/local/player/lib/playerclient.tcl
+  source /usr/local/player-${PLAYER_VERSION}/lib/playerclient.tcl
 }
 
 set USAGE "USAGE: ptz.tcl \[-h <host>\] \[-p <port>\]"
 
 set host "localhost"
+set port $PLAYER_DEFAULT_PORT
+
 set i 0
 while {$i < $argc} {
   if {![string compare [lindex $argv $i] "-h"]} {
@@ -65,21 +70,22 @@ while {$i < $argc} {
   incr i
 }
 
-connectToRobot $host
-requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE
-
+player_connect -reqrep robot $host $port
+if {[string compare [player_req_dev robot ptz a] a]} {
+  error "couldn't get ptz access"
+}
 
 set dir 1
 while {1} {
-  readData
-  puts "pan:$pan  tilt:$tilt  zoom:$zoom"
-  if {$pan > 80 || $pan < -80} {
+  player_read robot
+  puts "pan:$robot(ptz,pan)  tilt:$robot(ptz,tilt)  zoom:$robot(ptz,zoom)"
+  if {$robot(ptz,pan) > 80 || $robot(ptz,pan) < -80} {
     set dir -$dir
-    writeCameraCommand [expr $pan + ($dir * 10)] 0 0
+    player_set_camera robot [expr $robot(ptz,pan) + ($dir * 10)] 0 0
     sleep 1
-    readData
+    player_read robot
   }
-  writeCameraCommand [expr $pan + ($dir * 5)] 0 0
+  player_set_camera robot [expr $robot(ptz,pan) + ($dir * 5)] 0 0
 }
 
 
