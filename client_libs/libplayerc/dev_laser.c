@@ -53,10 +53,6 @@
 #include "error.h"
 
 
-// Local declarations
-void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
-                           player_laser_data_t *data, size_t len);
-
 // Create a new laser proxy
 playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index)
 {

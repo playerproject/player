@@ -39,7 +39,7 @@ int test_joystick(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("joystick: [%.3f] [%.3] [%X]\n",
+      printf("joystick: [%.3f] [%.3f] [%X]\n",
              device->px, device->py, device->buttons);
     }
     else

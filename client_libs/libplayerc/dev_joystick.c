@@ -52,10 +52,6 @@
 #include "playerc.h"
 #include "error.h"
 
-// Local declarations
-void playerc_joystick_putdata(playerc_joystick_t *device, player_msghdr_t *header,
-                              player_joystick_data_t *data, size_t len);
-
 
 // Create a new joystick proxy
 playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index)

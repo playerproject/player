@@ -788,7 +788,8 @@ typedef struct
   double px, py;
 
   /** Button states (bitmask) */
-  double buttons;
+  uint16_t buttons;
+  
 } playerc_joystick_t;
 
 
@@ -803,6 +804,10 @@ int playerc_joystick_subscribe(playerc_joystick_t *device, int access);
 
 /** Un-subscribe from the joystick device */
 int playerc_joystick_unsubscribe(playerc_joystick_t *device);
+
+/** @internal Parse data from incoming packet */
+void playerc_joystick_putdata(playerc_joystick_t *device, player_msghdr_t *header,
+                              player_joystick_data_t *data, size_t len);
 
 
 /** @} */
@@ -867,6 +872,10 @@ int playerc_laser_subscribe(playerc_laser_t *device, int access);
 
 /** Un-subscribe from the laser device. */
 int playerc_laser_unsubscribe(playerc_laser_t *device);
+
+/** @internal Parse data from incoming packet */
+void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
+                           player_laser_data_t *data, size_t len);
 
 /** Configure the laser.
     min_angle, max_angle : Start and end angles for the scan.
@@ -1410,6 +1419,10 @@ int playerc_position3d_subscribe(playerc_position3d_t *device, int access);
 
 /** Un-subscribe from the position3d device */
 int playerc_position3d_unsubscribe(playerc_position3d_t *device);
+
+/** @internal Parse data from incoming packet */
+void playerc_position3d_putdata(playerc_position3d_t *device, player_msghdr_t *header,
+                                player_position3d_data_t *data, size_t len);
 
 /** Enable/disable the motors */
 int playerc_position3d_enable(playerc_position3d_t *device, int enable);

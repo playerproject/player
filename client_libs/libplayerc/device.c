@@ -62,14 +62,18 @@ void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
   device->callback_count = 0;
   device->putdata = putdata;
 
-  playerc_client_adddevice(device->client, device);
+  if (device->client)
+    playerc_client_adddevice(device->client, device);
+  return;
 }
 
 
 // Finalize the device
 void playerc_device_term(playerc_device_t *device)
 {
-  playerc_client_deldevice(device->client, device);
+  if (device->client)
+    playerc_client_deldevice(device->client, device);
+  return;
 }
 
 

@@ -52,10 +52,6 @@
 #include "playerc.h"
 #include "error.h"
 
-// Local declarations
-void playerc_position3d_putdata(playerc_position3d_t *device, player_msghdr_t *header,
-                              player_position3d_data_t *data, size_t len);
-
 
 // Create a new position3d proxy
 playerc_position3d_t *playerc_position3d_create(playerc_client_t *client, int index)
