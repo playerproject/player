@@ -39,6 +39,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <math.h>
@@ -51,22 +52,28 @@
 #include "devicetable.h"
 #include "drivertable.h"
 
+#include "imap/imap.h"
+#include "inav_vector.h"
 
-// Driver for detecting laser retro-reflectors.
+
+// Incremental navigation driver
 class INav : public CDevice
 {
   // Constructor
   public: INav(char* interface, ConfigFile* cf, int section);
 
+  // Destructor
+  public: virtual ~INav();
+
   // Setup/shutdown routines.
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Set up the underlying position device.
-  private: int SetupPosition();
-  private: int ShutdownPosition();
+  // Set up the odometry device.
+  private: int SetupOdom();
+  private: int ShutdownOdom();
 
-  // Set up the underlying laser device.
+  // Set up the laser device.
   private: int SetupLaser();
   private: int ShutdownLaser();
 
@@ -79,31 +86,51 @@ class INav : public CDevice
   // Handle geometry requests.
   private: void HandleGetGeom(void *client, void *req, int reqlen);
 
-  // Get the current odometric pose
-  private: void ReadOdoPose(double pose[3]);
+  // Check for new odometry data
+  private: int GetOdom();
 
-  // Get the current laser scan
-  private: void ReadLaserRanges();
+  // Check for new laser data
+  private: int GetLaser();
 
-  // Geometry of underlying position device.
-  private: player_position_geom_t geom;
+  // Write the pose data (the data going back to the client).
+  private: void PutPose();
 
-  // Position device info (the one we are subscribed to).
-  private: int position_index;
-  private: CDevice *position;
+  // Update the incremental pose in response to new odometry data.
+  private: void UpdatePoseOdom();
 
-  // Laser device info
-  private: int laser_index;
-  private: CDevice *laser;
+  // Update the incremental pose in response to new laser data.
+  private: void UpdatePoseLaser();
 
-  // Laser pose in robot cs
-  private: double laser_pose[3];
+  // Odometry device info
+  private: CDevice *odom;
+  private: int odom_index;
+  private: double odom_time;
 
-  // Current odometric pose estimate
-  private: double odo_pose[3];
+  // Pose of robot in odometric cs
+  private: inav_vector_t odom_pose;
   
+  // Laser device info
+  private: CDevice *laser;
+  private: int laser_index;
+  private: double laser_time;
+
+  // Pose of laser in robot cs
+  private: inav_vector_t laser_pose;
+
+  // Laser range and bearing values
+  private: int laser_count;
+  private: double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2];
+
   // Current incremental pose estimate
-  private: double inc_pose[3];
+  private: inav_vector_t inc_pose;
+
+  // Odometric pose used in last update
+  private: inav_vector_t inc_odom_pose;
+
+  // Incremental occupancy map
+  private: imap_t *map;
+  private: double map_scale;
+  private: inav_vector_t map_pose;
 };
 
 
@@ -132,12 +159,45 @@ void INav_Register(DriverTable* table)
 INav::INav(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
-  this->position_index = cf->ReadInt(section, "position_index", 0);
-  this->position = NULL;
+  double size;
+  
+  this->odom = NULL;
+  this->odom_index = cf->ReadInt(section, "position_index", 0);
+  this->odom_time = 0.0;
 
-  this->laser_index = cf->ReadInt(section, "laser_index", 0);
   this->laser = NULL;
+  this->laser_index = cf->ReadInt(section, "laser_index", 0);
+  this->laser_time = 0.0;
+  this->laser_pose.v[0] = cf->ReadTupleLength(section, "laser_pose", 0, 0);
+  this->laser_pose.v[1] = cf->ReadTupleLength(section, "laser_pose", 1, 0);
+  this->laser_pose.v[2] = cf->ReadTupleAngle(section, "laser_pose", 2, 0);
+  
+  this->inc_pose.v[0] = 0.0;
+  this->inc_pose.v[1] = 0.0;
+  this->inc_pose.v[2] = 0.0;
 
+  this->inc_odom_pose.v[0] = 0.0;
+  this->inc_odom_pose.v[1] = 0.0;
+  this->inc_odom_pose.v[2] = 0.0;
+
+  size = cf->ReadLength(section, "map_size", 16.0);
+  this->map_scale = cf->ReadLength(section, "map_scale", 0.10);
+  
+  this->map = imap_alloc((int) (size / this->map_scale),
+                         (int) (size / this->map_scale), this->map_scale, 0.25, 0.25);
+  this->map_pose.v[0] = 0.0;
+  this->map_pose.v[1] = 0.0;
+  this->map_pose.v[2] = 0.0;
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Destructor
+INav::~INav()
+{
+  imap_free(this->map);
   return;
 }
 
@@ -147,7 +207,7 @@ INav::INav(char* interface, ConfigFile* cf, int section)
 int INav::Setup()
 {
   // Initialise the underlying position device.
-  if (this->SetupPosition() != 0)
+  if (this->SetupOdom() != 0)
     return -1;
 
   // Initialise the laser.
@@ -171,31 +231,31 @@ int INav::Shutdown()
   // Stop the laser
   this->ShutdownLaser();
 
-  // Stop the position device.
-  this->ShutdownPosition();
+  // Stop the odom device.
+  this->ShutdownOdom();
 
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Set up the underlying position device.
-int INav::SetupPosition()
+// Set up the underlying odom device.
+int INav::SetupOdom()
 {
   player_device_id_t id;
 
   id.code = PLAYER_POSITION_CODE;
-  id.index = this->position_index;
+  id.index = this->odom_index;
   id.port = this->device_id.port;
 
-  this->position = deviceTable->GetDevice(id);
-  if (!this->position)
+  this->odom = deviceTable->GetDevice(id);
+  if (!this->odom)
   {
     PLAYER_ERROR("unable to locate suitable position device");
     return -1;
   }
   
-  if (this->position->Subscribe(this) != 0)
+  if (this->odom->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
@@ -205,10 +265,10 @@ int INav::SetupPosition()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Shutdown the underlying position device.
-int INav::ShutdownPosition()
+// Shutdown the underlying odom device.
+int INav::ShutdownOdom()
 {
-  this->position->Unsubscribe(this);
+  this->odom->Unsubscribe(this);
   return 0;
 }
 
@@ -253,13 +313,14 @@ void INav::Main()
 {
   struct timespec sleeptime;
 
-  // Sleep for 1ms (will actually take longer than this).
-  sleeptime.tv_sec = 0;
-  sleeptime.tv_nsec = 1000000L;
+  // Clear the map
+  imap_reset(this->map);
   
   while (true)
   {
-    // Go to sleep for a while (this is a polling loop).
+    // Sleep for 1ms (will actually take longer than this).
+    sleeptime.tv_sec = 0;
+    sleeptime.tv_nsec = 1000000L;
     nanosleep(&sleeptime, NULL);
 
     // Test if we are supposed to cancel this thread.
@@ -267,6 +328,22 @@ void INav::Main()
 
     // Process any pending requests.
     HandleRequests();
+
+    // Check for new odometry data.  If there is new data, update the
+    // incremental pose estimate.
+    if (GetOdom())
+    {
+      UpdatePoseOdom();
+      PutPose();
+    }
+
+    // Check for new laser data.  If there is new data, update the
+    // incremental pose estimate.
+    if (GetLaser())
+    {
+      UpdatePoseLaser();
+      PutPose();
+    }
   }
   return;
 }
@@ -284,11 +361,9 @@ int INav::HandleRequests()
   {
     switch (request[0])
     {
-      /* TODO
       case PLAYER_POSITION_GET_GEOM_REQ:
         HandleGetGeom(client, request, len);
         break;
-      */
 
       default:
         if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
@@ -304,10 +379,9 @@ int INav::HandleRequests()
 // Handle geometry requests.
 void INav::HandleGetGeom(void *client, void *request, int len)
 {
-  /* TODO
   player_device_id_t id;
-  uint8_t req;
   player_position_geom_t geom;
+  uint8_t req;
   struct timeval ts;
   uint16_t reptype;
 
@@ -320,7 +394,7 @@ void INav::HandleGetGeom(void *client, void *request, int len)
   }
 
   id.code = PLAYER_POSITION_CODE;
-  id.index = this->position_index;
+  id.index = this->odom_index;
   id.port = this->device_id.port;
   
   // Get underlying device geometry.
@@ -341,16 +415,14 @@ void INav::HandleGetGeom(void *client, void *request, int len)
 
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
     PLAYER_ERROR("PutReply() failed");
-  */
   
   return;
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
-// Update the position device (returns non-zero if changed).
-int INav::UpdatePosition()
+// Check for new odometry data
+int INav::GetOdom()
 {
   int i;
   size_t size;
@@ -358,39 +430,75 @@ int INav::UpdatePosition()
   uint32_t timesec, timeusec;
   double time;
   
-  // Get the position device data.
-  size = this->position->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  // Get the odom device data.
+  size = this->odom->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
   time = (double) timesec + ((double) timeusec) * 1e-6;
 
   // Dont do anything if this is old data.
-  if (time - this->position_time < 0.001)
+  if (time - this->odom_time < 0.001)
     return 0;
-  this->position_time = time;
+  this->odom_time = time;
 
   // Byte swap
   data.xpos = ntohl(data.xpos);
   data.ypos = ntohl(data.ypos);
   data.yaw = ntohl(data.yaw);
 
-  this->position_new_pose[0] = (double) data.xpos / 1000.0;
-  this->position_new_pose[1] = (double) data.ypos / 1000.0;
-  this->position_new_pose[2] = (double) data.yaw * M_PI / 180;
+  this->odom_pose.v[0] = (double) data.xpos / 1000.0;
+  this->odom_pose.v[1] = (double) data.ypos / 1000.0;
+  this->odom_pose.v[2] = (double) data.yaw * M_PI / 180;
   
   return 1;
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Check for new laser data
+int INav::GetLaser()
+{
+  int i;
+  size_t size;
+  player_laser_data_t data;
+  uint32_t timesec, timeusec;
+  double time;
+  double r, b, db;
+  
+  // Get the laser device data.
+  size = this->laser->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  time = (double) timesec + ((double) timeusec) * 1e-6;
+
+  // Dont do anything if this is old data.
+  if (time - this->laser_time < 0.001)
+    return 0;
+  this->laser_time = time;
+
+  // Read and byteswap the range data
+  b = ntohs(data.min_angle) / 100.0 * M_PI / 180.0;
+  db = ntohs(data.resolution) / 100.0 * M_PI / 180.0;
+  this->laser_count = ntohs(data.range_count);
+  assert(this->laser_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
+  for (i = 0; i < this->laser_count; i++)
+  {
+    r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
+    this->laser_ranges[i][0] = r;
+    this->laser_ranges[i][1] = b;
+    b += db;
+  }
+  
+  return 1;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
-void INav::UpdateData()
+void INav::PutPose()
 {
   uint32_t timesec, timeusec;
   player_position_data_t data;
 
-  data.xpos = (int32_t) (this->pose[0] * 1000);
-  data.ypos = (int32_t) (this->pose[1] * 1000);
-  data.yaw = (int32_t) (this->pose[2] * 180 / M_PI);
+  data.xpos = (int32_t) (this->inc_pose.v[0] * 1000);
+  data.ypos = (int32_t) (this->inc_pose.v[1] * 1000);
+  data.yaw = (int32_t) (this->inc_pose.v[2] * 180 / M_PI);
 
   // Byte swap
   data.xpos = htonl(data.xpos);
@@ -398,11 +506,63 @@ void INav::UpdateData()
   data.yaw = htonl(data.yaw);
 
   // Compute time.  Use the position device's time.
-  timesec = (uint32_t) this->position_time;
-  timeusec = (uint32_t) (fmod(this->position_time, 1.0) * 1e6);
+  timesec = (uint32_t) this->odom_time;
+  timeusec = (uint32_t) (fmod(this->odom_time, 1.0) * 1e6);
 
   // Copy data to server.
   PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
 
   return;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Update the incremental pose in response to new odometry data.
+void INav::UpdatePoseOdom()
+{
+  inav_vector_t d;
+  int di, dj;
+  
+  // Compute new incremental pose
+  d = inav_vector_cs_sub(this->odom_pose, this->inc_odom_pose);
+  this->inc_pose = inav_vector_cs_add(d, this->inc_pose);
+  this->inc_odom_pose = this->odom_pose;
+  
+  // Translate the map if we stray from the center
+  d = inav_vector_cs_sub(this->inc_pose, this->map_pose);
+  di = (int) (d.v[0] / this->map_scale);
+  dj = (int) (d.v[1] / this->map_scale);
+  if (abs(di) > 0 || abs(dj) > 0)
+  {
+    imap_translate(this->map, di, dj);
+    this->map_pose.v[0] += di * this->map_scale;
+    this->map_pose.v[1] += dj * this->map_scale;
+  }
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Update the incremental pose in response to new laser data.
+void INav::UpdatePoseLaser()
+{
+  inav_vector_t pose, zero;
+
+  // Compute the pose of the laser in the global cs
+  pose = inav_vector_cs_add(this->laser_pose, this->inc_pose);
+  
+  // Compute the best fit between the laser scan and the map.
+  imap_fit_ranges(this->map, pose.v + 0, pose.v + 1, pose.v + 2,
+                  this->laser_count, this->laser_ranges);
+
+  // Compute the pose of the robot from the best-fit laser pose
+  this->inc_pose = inav_vector_cs_add(inav_vector_cs_sub(zero, this->laser_pose), pose);
+
+  // Update the map with the current range readings
+  imap_add_ranges(this->map, pose.v[0], pose.v[1], pose.v[2],
+                  this->laser_count, this->laser_ranges);
+  
+  return;
+}
+
