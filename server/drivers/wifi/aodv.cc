@@ -52,8 +52,9 @@ class Aodv : public Driver
   public: virtual int Shutdown();
 
   // Get the current readings
-  public: virtual size_t GetData(void*,unsigned char *, size_t maxsize,
-                                 uint32_t *timestamp_sec, uint32_t *timestamp_usec);
+  public: virtual size_t GetData(player_device_id_t id,
+                                 void* dest, size_t len,
+                                 struct timeval* timestamp);
 
   // File handle for the /proc file system entry
   protected: FILE *file;
@@ -116,8 +117,9 @@ int Aodv::Shutdown()
 
 
 // Get new data
-size_t Aodv::GetData(void* client,unsigned char *dest, size_t maxsize, 
-                     uint32_t *timestamp_sec, uint32_t *timestamp_usec)
+size_t Aodv::GetData(player_device_id_t id,
+                     void* dest, size_t maxsize,
+                     struct timeval* timestamp)
 {
   int n, link_count;
   player_wifi_link_t *link;
@@ -165,8 +167,7 @@ size_t Aodv::GetData(void* client,unsigned char *dest, size_t maxsize,
 
   // Set the data timestamp
   GlobalTime->GetTime(&curr);
-  *timestamp_sec = curr.tv_sec;
-  *timestamp_usec = curr.tv_usec;
+  *timestamp = curr;
 
   return (sizeof(data));
 }

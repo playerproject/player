@@ -143,7 +143,7 @@ int BumperSafe::SetupPosition()
     return -1;
   }
 
-  if (this->position->Subscribe(this) != 0)
+  if (this->position->Subscribe(this->position_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
@@ -162,7 +162,7 @@ int BumperSafe::ShutdownPosition()
   this->turnrate = 0;
   this->PutCommand();
   
-  this->position->Unsubscribe(this);
+  this->position->Unsubscribe(this->position_id);
   return 0;
 }
 
@@ -183,7 +183,7 @@ int BumperSafe::SetupBumper() {
     PLAYER_ERROR("unable to locate suitable laser device");
     return -1;
   }
-  if (this->bumper->Subscribe(this) != 0)
+  if (this->bumper->Subscribe(this->bumper_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
@@ -205,7 +205,7 @@ int BumperSafe::SetupBumper() {
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the bumper
 int BumperSafe::ShutdownBumper() {
-  this->bumper->Unsubscribe(this);
+  this->bumper->Unsubscribe(this->bumper_id);
   return 0;
 }
 

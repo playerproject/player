@@ -263,7 +263,7 @@ int LaserVisualBarcode::Setup()
     PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
   }
-  if (this->laser->Subscribe(this) != 0)
+  if (this->laser->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
@@ -279,7 +279,7 @@ int LaserVisualBarcode::Setup()
     PLAYER_ERROR("unable to locate suitable PTZ device");
     return(-1);
   }
-  if (this->ptz->Subscribe(this) != 0)
+  if (this->ptz->Subscribe(this->ptz_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to PTZ device");
     return(-1);
@@ -295,7 +295,7 @@ int LaserVisualBarcode::Setup()
     PLAYER_ERROR("unable to locate suitable blobfinder device");
     return(-1);
   }
-  if (this->blobfinder->Subscribe(this) != 0)
+  if (this->blobfinder->Subscribe(this->blobfinder_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to blobfinder device");
     return(-1);
@@ -319,9 +319,9 @@ int LaserVisualBarcode::Shutdown()
   StopThread();
   
   // Unsubscribe from devices.
-  this->blobfinder->Unsubscribe(this);
-  this->ptz->Unsubscribe(this);
-  this->laser->Unsubscribe(this);
+  this->blobfinder->Unsubscribe(this->blobfinder_id);
+  this->ptz->Unsubscribe(this->ptz_id);
+  this->laser->Unsubscribe(this->laser_id);
 
   return 0;
 }

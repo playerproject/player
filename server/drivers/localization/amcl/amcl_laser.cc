@@ -115,7 +115,7 @@ int AMCLLaser::Setup(void)
     PLAYER_ERROR("unable to locate suitable laser device");
     return -1;
   }
-  if (this->driver->Subscribe(this) != 0)
+  if (this->driver->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
@@ -141,6 +141,7 @@ int AMCLLaser::Setup(void)
   return 0;
 }
 
+// TODO: should Unsubscribe from the map on error returns in the function
 int
 AMCLLaser::SetupMap(void)
 {
@@ -157,7 +158,7 @@ AMCLLaser::SetupMap(void)
     PLAYER_ERROR("unable to locate suitable map device");
     return -1;
   }
-  if(mapdriver->Subscribe(this) != 0)
+  if(mapdriver->Subscribe(map_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to map device");
     return -1;
@@ -260,7 +261,7 @@ AMCLLaser::SetupMap(void)
   }
 
   // we're done with the map device now
-  if(mapdriver->Unsubscribe(this) != 0)
+  if(mapdriver->Unsubscribe(map_id) != 0)
     PLAYER_WARN("unable to unsubscribe from map device");
 
   return(0);
@@ -271,7 +272,7 @@ AMCLLaser::SetupMap(void)
 // Shut down the laser
 int AMCLLaser::Shutdown(void)
 {  
-  this->driver->Unsubscribe(this);
+  this->driver->Unsubscribe(this->laser_id);
   this->driver = NULL;
   map_free(this->map);
 

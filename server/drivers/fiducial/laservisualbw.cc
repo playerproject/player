@@ -260,7 +260,7 @@ int LaserVisualBW::Setup()
     PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
   }
-  if (this->laser->Subscribe(this) != 0)
+  if (this->laser->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
@@ -276,7 +276,7 @@ int LaserVisualBW::Setup()
     PLAYER_ERROR("unable to locate suitable PTZ device");
     return(-1);
   }
-  if (this->ptz->Subscribe(this) != 0)
+  if (this->ptz->Subscribe(this->ptz_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to PTZ device");
     return(-1);
@@ -292,7 +292,7 @@ int LaserVisualBW::Setup()
     PLAYER_ERROR("unable to locate suitable camera device");
     return(-1);
   }
-  if (this->camera->Subscribe(this) != 0)
+  if (this->camera->Subscribe(this->camera_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to camera device");
     return(-1);
@@ -313,9 +313,9 @@ int LaserVisualBW::Shutdown()
   StopThread();
   
   // Unsubscribe from devices.
-  this->camera->Unsubscribe(this);
-  this->ptz->Unsubscribe(this);
-  this->laser->Unsubscribe(this);
+  this->camera->Unsubscribe(this->camera_id);
+  this->ptz->Unsubscribe(this->ptz_id);
+  this->laser->Unsubscribe(this->laser_id);
 
   return 0;
 }

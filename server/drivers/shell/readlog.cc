@@ -61,8 +61,9 @@ class ReadLog: public Driver
   public: virtual int Shutdown();
 
   // Process configuration requests
-  public: virtual int PutConfig(player_device_id_t* device, void* client, 
-                                void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Our manager
   private: ReadLogManager *manager;
@@ -186,15 +187,16 @@ int ReadLog::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-int ReadLog::PutConfig(player_device_id_t* device, void* client,
-                       void* data, size_t len)
+int ReadLog::PutConfig(player_device_id_t id, void *client, 
+                       void* src, size_t len,
+                       struct timeval* timestamp)
 {
   player_log_set_read_rewind_t rreq;
   player_log_set_read_state_t sreq;
   player_log_get_state_t greq;
   uint8_t subtype;
 
-  if(device->code != PLAYER_LOG_CODE)
+  if(id.code != PLAYER_LOG_CODE)
   {
     if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
@@ -209,7 +211,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
       PLAYER_ERROR("PutReply() failed");
   }
 
-  subtype = ((player_log_set_read_state_t*)data)->subtype;
+  subtype = ((player_log_set_read_state_t*)src)->subtype;
   switch(subtype)
   {
     case PLAYER_LOG_SET_READ_STATE_REQ:
@@ -220,7 +222,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
           PLAYER_ERROR("PutReply() failed");
         break;
       }
-      sreq = *((player_log_set_read_state_t*)data);
+      sreq = *((player_log_set_read_state_t*)src);
       if(sreq.state)
       {
         puts("ReadLog: start playback");
@@ -243,7 +245,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
           PLAYER_ERROR("PutReply() failed");
         break;
       }
-      greq = *((player_log_get_state_t*)data);
+      greq = *((player_log_get_state_t*)src);
       greq.type = PLAYER_LOG_TYPE_READ;
       if(this->manager->enable)
         greq.state = 1;

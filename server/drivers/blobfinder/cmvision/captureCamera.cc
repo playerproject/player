@@ -33,7 +33,7 @@ captureCamera::captureCamera(int camera_index) : capture()
     camera_open = false;
     return;
   }
-  if (this->camera->Subscribe(this) != 0)
+  if (this->camera->Subscribe(this->camera_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to camera device");
     camera_open = false;
@@ -65,8 +65,9 @@ captureCamera::captureCamera(int camera_index) : capture()
 
 captureCamera::~captureCamera()
 {
-     free(YUV);
-     current=NULL;
+  this->camera->Subscribe(this->camera_id);
+  free(YUV);
+  current=NULL;
 } 
 
 bool captureCamera::initialize(int nwidth,int nheight)

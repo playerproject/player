@@ -61,10 +61,11 @@ class MapFile : public Driver
   public:
     MapFile(ConfigFile* cf, int section, const char* file, double res, int neg);
     ~MapFile();
-    virtual int Setup();
-    virtual int Shutdown();
-    virtual int PutConfig(player_device_id_t* device, void* client,
-                          void* data, size_t len);
+    int Setup();
+    int Shutdown();
+    int PutConfig(player_device_id_t id, void *client, 
+                  void* src, size_t len,
+                  struct timeval* timestamp);
 };
 
 Driver*
@@ -193,8 +194,9 @@ MapFile::Shutdown()
 
 // Process configuration requests
 int 
-MapFile::PutConfig(player_device_id_t* device, void* client,
-                   void* data, size_t len)
+MapFile::PutConfig(player_device_id_t id, void *client, 
+                   void* src, size_t len,
+                   struct timeval* timestamp)
 {
   // Discard bogus empty packets
   if(len < 1)
@@ -202,18 +204,17 @@ MapFile::PutConfig(player_device_id_t* device, void* client,
     PLAYER_WARN("got zero length configuration request; ignoring");
     if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
-    Unlock();
     return(0);
   }
 
   // Process some of the requests immediately
-  switch(((char*) data)[0])
+  switch(((unsigned char*) src)[0])
   {
     case PLAYER_MAP_GET_INFO_REQ:
-      HandleGetMapInfo(client, data, len);
+      HandleGetMapInfo(client, src, len);
       break;
     case PLAYER_MAP_GET_DATA_REQ:
-      HandleGetMapData(client, data, len);
+      HandleGetMapData(client, src, len);
       break;
     default:
       PLAYER_ERROR("got unknown config request; ignoring");

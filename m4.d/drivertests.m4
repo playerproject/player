@@ -124,7 +124,7 @@ PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[yes],
 
 PLAYER_ADD_DRIVER([garminnmea],[drivers/gps],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([bumpersafe],[drivers/position/bumpersafe],[no],[],[],[])
+PLAYER_ADD_DRIVER([bumpersafe],[drivers/position/bumpersafe],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],[],[],[])
 
@@ -133,7 +133,7 @@ PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],[],[],
 
 PLAYER_ADD_DRIVER([logfile],[drivers/shell],[yes],[zlib.h],[],[-lz])
 
-PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[no],[],[],[])
+PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[no],[asm/ioctls.h],[],[])
 
@@ -182,13 +182,14 @@ PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([udpbroadcast],[drivers/comms],[yes],[],[],[])
+dnl TODO: remove udpbroadcast
+PLAYER_ADD_DRIVER([udpbroadcast],[drivers/comms],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([lasercspace],[drivers/laser],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],[linux/wireless.h],[],[])
 
-PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[yes],[rfftw.h],[],
+PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[no],[rfftw.h],[],
                   ["-lrfftw -lfftw"])
 
 PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[no],

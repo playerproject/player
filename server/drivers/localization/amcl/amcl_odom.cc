@@ -98,7 +98,7 @@ int AMCLOdom::Setup(void)
     PLAYER_ERROR("unable to locate suitable position driver");
     return -1;
   }
-  if (this->driver->Subscribe(this) != 0)
+  if (this->driver->Subscribe(this->odom_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
@@ -113,7 +113,7 @@ int AMCLOdom::Setup(void)
 int AMCLOdom::Shutdown(void)
 {
   // Unsubscribe from device
-  this->driver->Unsubscribe(this);
+  this->driver->Unsubscribe(this->odom_id);
   this->driver = NULL;
   
   return 0;

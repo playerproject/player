@@ -510,8 +510,6 @@ ClientManagerTCP::Write()
       unsigned short type;
       int replysize;
       struct timeval ts;
-      player_device_id_t id;
-      memset(&id,0,sizeof(id));
 
       // if this client has built up leftover outgoing data as a result of a
       // previous reply not getting sent, don't add any more replies.
@@ -522,9 +520,9 @@ ClientManagerTCP::Write()
       if(thisub->driver)
       {
         // does this device have a reply ready for this client?
-        if((replysize = thisub->driver->GetReply(thisub->id, &id, clients[i], &type, &ts,
+        if((replysize = thisub->driver->GetReply(thisub->id, clients[i], &type,
                   clients[i]->replybuffer+sizeof(player_msghdr_t), 
-                  PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))) >= 0)
+                  PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t),&ts)) >= 0)
         {
           // build up and send the reply
           player_msghdr_t reply_hdr;
@@ -532,19 +530,10 @@ ClientManagerTCP::Write()
           reply_hdr.stx = htons(PLAYER_STXX);
           reply_hdr.type = htons(type);
 
-          // if the device code is 0 (which is invalid), then the device
-          // didn't specify it, so assume that the identifying info in the
-          // subscription entry is correct
-          if(!id.code)
-          {
-            reply_hdr.device = htons(thisub->id.code);
-            reply_hdr.device_index = htons(thisub->id.index);
-          }
-          else
-          {
-            reply_hdr.device = htons(id.code);
-            reply_hdr.device_index = htons(id.index);
-          }
+          // TODO: check that this routing info is correct
+          reply_hdr.device = htons(thisub->id.code);
+          reply_hdr.device_index = htons(thisub->id.index);
+          
           reply_hdr.reserved = (uint32_t)0;
           reply_hdr.size = htonl(replysize);
 
@@ -798,16 +787,14 @@ ClientManagerUDP::Write()
       unsigned short type;
       int replysize;
       struct timeval ts;
-      player_device_id_t id;
-      memset(&id,0,sizeof(id));
 
       // is this a valid device
       if(thisub->driver)
       {
         // does this device have a reply ready for this client?
-        if((replysize = thisub->driver->GetReply(thisub->id, &id, clients[i], &type, &ts,
+        if((replysize = thisub->driver->GetReply(thisub->id, clients[i], &type, 
                   clients[i]->replybuffer+sizeof(player_msghdr_t), 
-                  PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))) >= 0)
+                  PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t),&ts)) >= 0)
         {
           // build up and send the reply
           player_msghdr_t reply_hdr;
@@ -815,19 +802,10 @@ ClientManagerUDP::Write()
           reply_hdr.stx = htons(PLAYER_STXX);
           reply_hdr.type = htons(type);
 
-          // if the device code is 0 (which is invalid), then the device
-          // didn't specify it, so assume that the identifying info in the
-          // subscription entry is correct
-          if(!id.code)
-          {
-            reply_hdr.device = htons(thisub->id.code);
-            reply_hdr.device_index = htons(thisub->id.index);
-          }
-          else
-          {
-            reply_hdr.device = htons(id.code);
-            reply_hdr.device_index = htons(id.index);
-          }
+          // TODO: check that this routing info is correct
+          reply_hdr.device = htons(thisub->id.code);
+          reply_hdr.device_index = htons(thisub->id.index);
+          
           reply_hdr.reserved = (uint32_t)0;
           reply_hdr.size = htonl(replysize);
 

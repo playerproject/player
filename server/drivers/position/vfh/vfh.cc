@@ -217,7 +217,7 @@ int VFH_Class::SetupTruth()
     return -1;
   }
 
-  if(this->truth->Subscribe(this) != 0)
+  if(this->truth->Subscribe(this->truth_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to truth device");
     return -1;
@@ -232,7 +232,7 @@ int VFH_Class::ShutdownTruth()
 {
 
   if(this->truth)
-    this->truth->Unsubscribe(this);
+    this->truth->Unsubscribe(this->truth_id);
   return 0;
 }
 
@@ -259,7 +259,7 @@ int VFH_Class::SetupOdom()
     return -1;
   }
 
-  if (this->odom->Subscribe(this) != 0)
+  if (this->odom->Subscribe(this->odom_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
@@ -303,7 +303,7 @@ int VFH_Class::ShutdownOdom()
   this->turnrate = 0;
   this->PutCommand( speed, turnrate );
   
-  this->odom->Unsubscribe(this);
+  this->odom->Unsubscribe(this->odom_id);
   return 0;
 }
 
@@ -329,7 +329,7 @@ int VFH_Class::SetupLaser() {
     PLAYER_ERROR("unable to locate suitable laser device");
     return -1;
   }
-  if (this->laser->Subscribe(this) != 0)
+  if (this->laser->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
@@ -358,7 +358,7 @@ int VFH_Class::SetupLaser() {
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
 int VFH_Class::ShutdownLaser() {
-  this->laser->Unsubscribe(this);
+  this->laser->Unsubscribe(this->laser_id);
   return 0;
 }
 

@@ -293,7 +293,6 @@ SegwayRMP::Main()
   size_t buffer_len;
   player_position_cmd_t position_cmd;
   player_position3d_cmd_t position3d_cmd;
-  player_device_id_t dummy;
   void *client;
   CanPacket pkt;
   int32_t xspeed,yawspeed;
@@ -315,12 +314,14 @@ SegwayRMP::Main()
     // TODO: report better timestamps, possibly using time info from the RMP
 
     // Send data to clients
-    PutData(this->position_id, &this->position_data, sizeof(this->position_data), 0, 0);
-    PutData(this->position3d_id, &this->position3d_data, sizeof(this->position3d_data), 0, 0);
-    PutData(this->power_id, &this->power_data, sizeof(this->power_data), 0, 0);
+    PutData(this->position_id, &this->position_data, 
+            sizeof(this->position_data), NULL);
+    PutData(this->position3d_id, &this->position3d_data, 
+            sizeof(this->position3d_data), NULL);
+    PutData(this->power_id, &this->power_data, sizeof(this->power_data), NULL);
     
     // check for config requests from the position interface
-    if((buffer_len = GetConfig(this->position_id, &dummy, &client, buffer, sizeof(buffer))) > 0)
+    if((buffer_len = GetConfig(this->position_id, &client, buffer, sizeof(buffer),NULL)) > 0)
     {
       // if we write to the CAN bus as a result of the config, don't write
       // a velocity command (may need to make this smarter if we get slow
@@ -330,7 +331,7 @@ SegwayRMP::Main()
     }
 
     // check for config requests from the position3d interface
-    if((buffer_len = GetConfig(this->position3d_id, &dummy, &client, buffer, sizeof(buffer))) > 0)
+    if((buffer_len = GetConfig(this->position3d_id, &client, buffer, sizeof(buffer),NULL)) > 0)
     {
       // if we write to the CAN bus as a result of the config, don't write
       // a velocity command (may need to make this smarter if we get slow
@@ -344,7 +345,8 @@ SegwayRMP::Main()
     yawspeed = this->last_yawspeed;
 
     // Check for commands from the position interface
-    if(GetCommand(this->position_id, (unsigned char *) &position_cmd, sizeof(position_cmd)))
+    if(GetCommand(this->position_id, (void*) &position_cmd, 
+                  sizeof(position_cmd),NULL))
     {
       // zero the command buffer, so that we can timeout if a client doesn't
       // send commands for a while
@@ -358,7 +360,8 @@ SegwayRMP::Main()
     }
 
     // Check for commands from the position3d interface
-    else if(GetCommand(this->position3d_id, (unsigned char *) &position3d_cmd, sizeof(position3d_cmd)))
+    else if(GetCommand(this->position3d_id, (void*) &position3d_cmd, 
+                       sizeof(position3d_cmd),NULL))
     {
       // zero the command buffer, so that we can timeout if a client doesn't
       // send commands for a while
@@ -427,7 +430,7 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 
       printf("SEGWAYRMP: motors state: %d\n", this->motor_allow_enable);
 
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
         PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
       break;
 
@@ -440,8 +443,7 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
       geom.size[0] = htons((short)(508));
       geom.size[1] = htons((short)(610));
 
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-                  sizeof(geom)))
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL))
         PLAYER_ERROR("Segway: failed to PutReply");
       break;
 
@@ -452,17 +454,17 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
                         (uint16_t)RMP_CAN_RST_ALL);
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
 
         if (Write(pkt) < 0) {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
             PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
         } else {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
             PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
         }
       }
@@ -484,12 +486,12 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -504,12 +506,12 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -524,12 +526,12 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -544,12 +546,12 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -564,12 +566,12 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -584,16 +586,16 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
         if (Write(pkt) < 0) {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
             PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
         } else {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
             PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
         }
       }
@@ -605,12 +607,12 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 
       if(Write(pkt) < 0)
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       else
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
           PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
       }
       // return 1 to indicate that we wrote to the CAN bus this time
@@ -619,7 +621,7 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
     default:
       printf("segwayrmp received unknown config request %d\n", 
              buffer[0]);
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
         PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
       break;
   }
@@ -648,14 +650,14 @@ SegwayRMP::HandlePosition3DConfig(void* client, unsigned char* buffer, size_t le
 
       printf("SEGWAYRMP: motors state: %d\n", this->motor_allow_enable);
 
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
         PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
       break;
 
     default:
       printf("segwayrmp received unknown config request %d\n", 
              buffer[0]);
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
         PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
       break;
   }

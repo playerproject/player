@@ -686,7 +686,7 @@ Wavefront::SetupPosition()
     PLAYER_ERROR("unable to locate suitable position device");
     return(-1);
   }
-  if(this->position->Subscribe(this) != 0)
+  if(this->position->Subscribe(this->position_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return(-1);
@@ -726,7 +726,7 @@ Wavefront::SetupLocalize()
     PLAYER_ERROR("unable to locate suitable localize device");
     return(-1);
   }
-  if(this->localize->Subscribe(this) != 0)
+  if(this->localize->Subscribe(this->localize_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to localize device");
     return(-1);
@@ -736,6 +736,7 @@ Wavefront::SetupLocalize()
 }
 
 // setup the underlying map device (i.e., get the map)
+// TODO: should Unsubscribe from the map on error returns in the function
 int
 Wavefront::SetupMap()
 {
@@ -753,7 +754,7 @@ Wavefront::SetupMap()
     PLAYER_ERROR("unable to locate suitable map device");
     return -1;
   }
-  if(mapdevice->Subscribe(this) != 0)
+  if(mapdevice->Subscribe(map_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to map device");
     return -1;
@@ -863,7 +864,7 @@ Wavefront::SetupMap()
   }
 
   // we're done with the map device now
-  if(mapdevice->Unsubscribe(this) != 0)
+  if(mapdevice->Unsubscribe(map_id) != 0)
     PLAYER_WARN("unable to unsubscribe from map device");
 
   printf("Wavefront: Generating C-space...");
@@ -878,13 +879,13 @@ Wavefront::SetupMap()
 int 
 Wavefront::ShutdownPosition()
 {
-  return(this->position->Unsubscribe(this));
+  return(this->position->Unsubscribe(this->position_id));
 }
 
 int 
 Wavefront::ShutdownLocalize()
 {
-  return(this->localize->Unsubscribe(this));
+  return(this->localize->Unsubscribe(this->localize_id));
 }
 
 int 

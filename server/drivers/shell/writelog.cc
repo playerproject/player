@@ -74,8 +74,9 @@ class WriteLog: public Driver
   public: virtual int Shutdown();
 
   // Process configuration requests
-  public: virtual int PutConfig(player_device_id_t* device, void* client, 
-                                void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Device thread
   private: virtual void Main(void);
@@ -239,7 +240,7 @@ int WriteLog::Setup()
       PLAYER_ERROR("unable to locate device for logging");
       return -1;
     }
-    if (device->device->Subscribe(this) != 0)
+    if (device->device->Subscribe(device->id) != 0)
     {
       PLAYER_ERROR("unable to subscribe to device for logging");
       return -1;
@@ -289,7 +290,7 @@ int WriteLog::Shutdown()
     device = this->devices + i;
 
     // Unsbscribe from the underlying device
-    device->device->Unsubscribe(this);
+    device->device->Unsubscribe(device->id);
     device->device = NULL;
   }
   
@@ -299,8 +300,9 @@ int WriteLog::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-int WriteLog::PutConfig(player_device_id_t* device, void* client,
-                       void* data, size_t len)
+int WriteLog::PutConfig(player_device_id_t id, void *client, 
+                        void* src, size_t len,
+                        struct timeval* timestamp)
 {
   player_log_set_write_state_t sreq;
   player_log_get_state_t greq;
@@ -314,7 +316,7 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
       PLAYER_ERROR("PutReply() failed");
   }
 
-  subtype = ((player_log_set_write_state_t*)data)->subtype;
+  subtype = ((player_log_set_write_state_t*)src)->subtype;
   switch(subtype)
   {
     case PLAYER_LOG_SET_WRITE_STATE_REQ:
@@ -325,7 +327,7 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
           PLAYER_ERROR("PutReply() failed");
         break;
       }
-      sreq = *((player_log_set_write_state_t*)data);
+      sreq = *((player_log_set_write_state_t*)src);
       if(sreq.state)
       {
         puts("WriteLog: start logging");
@@ -348,7 +350,7 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
           PLAYER_ERROR("PutReply() failed");
         break;
       }
-      greq = *((player_log_get_state_t*)data);
+      greq = *((player_log_get_state_t*)src);
       greq.type = PLAYER_LOG_TYPE_WRITE;
       if(this->enable)
         greq.state = 1;

@@ -65,15 +65,15 @@ public:
 
   ~LinuxWiFi();
 
-  virtual size_t GetData(void*,unsigned char *, size_t maxsize,
-			 uint32_t *timestamp_sec,
-			 uint32_t *timestamp_usec);
+  size_t GetData(player_device_id_t id,
+                 void* dest, size_t len,
+                 struct timeval* timestamp);
+  int PutConfig(player_device_id_t id, void *client, 
+                void* src, size_t len,
+                struct timeval* timestamp);
 
-  virtual int PutConfig(player_device_id_t *device, void *client,
-			   void *data, size_t len);
-
-  virtual int Setup();
-  virtual int Shutdown();
+  int Setup();
+  int Shutdown();
 
 protected:
   char * PrintEther(char *buf, unsigned char *addr);
@@ -240,8 +240,9 @@ LinuxWiFi::Shutdown()
  * returns: 
  */
 size_t
-LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize, 
-                   uint32_t *timestamp_sec, uint32_t *timestamp_usec)
+LinuxWiFi::GetData(player_device_id_t id,
+                   void* dest, size_t maxsize,
+                   struct timeval* timestamp)
 {
   int eth, status;
   int link, level, noise;
@@ -262,8 +263,7 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
     // just copy old data
     assert(sizeof(data) < maxsize);
     memcpy(dest, &data, sizeof(data));
-    *timestamp_sec = curr.tv_sec;
-    *timestamp_usec = curr.tv_usec;
+    *timestamp = curr;
     
     return sizeof(data);
   }
@@ -394,17 +394,17 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
   memcpy(dest, &data, sizeof(data));
 
   GlobalTime->GetTime(&curr);
-  *timestamp_sec = curr.tv_sec;
-  *timestamp_usec = curr.tv_usec;
+  *timestamp = curr;
     
   return (sizeof(data));
 }
 
 int
-LinuxWiFi::PutConfig(player_device_id_t *device, void *client,
-		     void *data, size_t len)
+LinuxWiFi::PutConfig(player_device_id_t id, void *client, 
+                     void* src, size_t len,
+                     struct timeval* timestamp)
 {
-  char * config = (char *)data;
+  char * config = (char *)src;
   uint8_t which = config[0];
   char buf[32];
 

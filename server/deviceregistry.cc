@@ -167,17 +167,7 @@ void ReadLog_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_P2OS
-void P2OSGripper_Register(DriverTable* table);
-void P2OSPower_Register(DriverTable* table);
-void P2OSaio_Register(DriverTable* table);
-void P2OSdio_Register(DriverTable* table);
-void P2OSBumper_Register(DriverTable* table);
-void P2OSPosition_Register(DriverTable* table);
-void P2OSSonar_Register(DriverTable* table);
-void P2OSSound_Register(DriverTable* table);
-void P2OSCMUcam_Register(DriverTable* table);
-void P2OSCompass_Register(DriverTable* table);
-void P2OSGyro_Register(DriverTable* table);
+void P2OS_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_RFLEX
@@ -622,17 +612,7 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_P2OS
-  P2OSGripper_Register(driverTable);
-  P2OSPower_Register(driverTable);
-  P2OSaio_Register(driverTable);
-  P2OSdio_Register(driverTable);
-  P2OSBumper_Register(driverTable);
-  P2OSPosition_Register(driverTable);
-  P2OSSonar_Register(driverTable);
-  P2OSSound_Register(driverTable);
-  P2OSCMUcam_Register(driverTable);
-  P2OSCompass_Register(driverTable);
-  P2OSGyro_Register(driverTable);
+  P2OS_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FIXEDTONES

@@ -52,14 +52,15 @@
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
-// so we can access the deviceTable and extract pointers to the sonar
-// and position objects
-#include <devicetable.h>
-
 Driver*
 P2OS_Init(ConfigFile* cf, int section)
 {
   return (Driver*)(new P2OS(cf,section));
+}
+
+void P2OS_Register(DriverTable* table)
+{
+  table->AddDriver("p2os", P2OS_Init);
 }
 
 P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
@@ -79,7 +80,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   }
 
   // Create a sonar interface
-  if(cf->ReadDeviceId(section, 0, PLAYER_SONAR_CODE, &this->sonar_id) != 0)
+  if(cf->ReadDeviceId(section, 1, PLAYER_SONAR_CODE, &this->sonar_id) != 0)
   {
     this->SetError(-1);
     return;
@@ -651,11 +652,14 @@ P2OS::Main()
 #endif
     
     // handle pending config requests
+    puts("HandleConfig");
     this->HandleConfig();
+    puts("done");
 
     // process latest commands
+    puts("GetCommand");
     this->GetCommand();
-        
+    puts("done");
   }
   pthread_exit(NULL);
 }

@@ -161,7 +161,7 @@ int LaserCSpace::Setup()
     PLAYER_ERROR("attempt to subscribe to self");
     return(-1);
   }
-  if (this->laser_driver->Subscribe(this) != 0)
+  if (this->laser_driver->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
@@ -176,7 +176,7 @@ int LaserCSpace::Setup()
 int LaserCSpace::Shutdown()
 {
   // Unsubscribe from devices.
-  this->laser_driver->Unsubscribe(this);
+  this->laser_driver->Unsubscribe(this->laser_id);
   
   return 0;
 }

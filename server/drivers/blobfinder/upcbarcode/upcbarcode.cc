@@ -174,7 +174,7 @@ int UPCBarcode::Setup()
     PLAYER_ERROR("unable to locate suitable camera device");
     return(-1);
   }
-  if (this->camera->Subscribe(this) != 0)
+  if (this->camera->Subscribe(this->camera_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to camera device");
     return(-1);
@@ -195,7 +195,7 @@ int UPCBarcode::Shutdown()
   StopThread();
   
   // Unsubscribe from devices.
-  this->camera->Unsubscribe(this);
+  this->camera->Unsubscribe(this->camera_id);
 
   return 0;
 }

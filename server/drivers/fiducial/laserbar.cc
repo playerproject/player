@@ -151,7 +151,7 @@ int LaserBar::Setup()
   }
     
   // Subscribe to the laser device, but fail if it fails
-  if (this->laser_driver->Subscribe(this) != 0)
+  if (this->laser_driver->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
@@ -166,7 +166,7 @@ int LaserBar::Setup()
 int LaserBar::Shutdown()
 {
   // Unsubscribe from the laser device
-  this->laser_driver->Unsubscribe(this);
+  this->laser_driver->Unsubscribe(this->laser_id);
 
   return 0;
 }

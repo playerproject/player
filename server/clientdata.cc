@@ -155,6 +155,9 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   size_t replysize;
   struct timeval curr;
 
+  if(GlobalTime->GetTime(&curr) == -1)
+    PLAYER_ERROR("GetTime() failed!!!!");
+
   // clean the buffer every time for all-day freshness
   memset((char*)replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
 
@@ -359,7 +362,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             if((driver = deviceTable->GetDriver(id)))
             {
               // try to push it on the request queue
-              if(driver->PutConfig(id,NULL,this,payload,payload_size))
+              if(driver->PutConfig(id,this,payload,payload_size,&curr))
               {
                 // queue was full
                 requesttype = PLAYER_MSGTYPE_RESP_ERR;
@@ -395,7 +398,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             // make sure we've got a non-NULL pointer
             if((driver = deviceTable->GetDriver(id)))
             {
-              driver->PutCommand(id,this,payload,payload_size);
+              driver->PutCommand(id,payload,payload_size,&curr);
             }
             else
               PLAYER_WARN2("found NULL pointer for device %x:%x",
@@ -554,6 +557,9 @@ void ClientData::MotorStop()
   player_position_cmd_t command;
   Driver* driver;
   player_device_id_t id;
+  struct timeval curr;
+
+  GlobalTime->GetTime(&curr);
 
   // TODO: fix this for single-port action
   id.port = port;
@@ -564,7 +570,7 @@ void ClientData::MotorStop()
 
   if((driver = deviceTable->GetDriver(id)))
   {
-    driver->PutCommand(id, this, (unsigned char*)&command, sizeof(command));
+    driver->PutCommand(id, (void*)&command, sizeof(command), &curr);
   }
 }
 
@@ -649,7 +655,93 @@ void ClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
   return;
 }
 
+// TODO: check permissions as registered by the underlying driver
+unsigned char 
+ClientData::UpdateRequested(player_device_req_t req)
+{
+  CDeviceSubscription* thissub;
+  CDeviceSubscription* prevsub;
 
+  // find place to put the update
+  for(thissub=requested,prevsub=NULL;thissub;
+      prevsub=thissub,thissub=thissub->next)
+  {
+    if((thissub->id.code == req.code) && (thissub->id.index == req.index))
+      break;
+  }
+
+  if(!thissub)
+  {
+    thissub = new CDeviceSubscription;
+    thissub->id.code = req.code;
+    thissub->id.index = req.index;
+    thissub->id.port = port;
+    thissub->driver = deviceTable->GetDriver(thissub->id);
+
+    thissub->last_sec = 0; // init the freshness timer
+    thissub->last_usec = 0;
+
+    thissub->access = PLAYER_ERROR_MODE;
+
+    if(prevsub)
+      prevsub->next = thissub;
+    else
+      requested = thissub;
+    numsubs++;
+  }
+
+  if(req.access != thissub->access)
+  {
+    switch(req.access)
+    {
+      case PLAYER_CLOSE_MODE:
+        // client wants to close
+        if((thissub->access != PLAYER_READ_MODE) ||
+           (thissub->access != PLAYER_WRITE_MODE) ||
+           (thissub->access != PLAYER_ALL_MODE))
+        {
+          // it was open, so Unsubscribe
+          this->Unsubscribe(thissub->id);
+        }
+        // regardless, now mark it as closed
+        thissub->access = PLAYER_CLOSE_MODE;
+        break;
+      case PLAYER_READ_MODE:
+      case PLAYER_WRITE_MODE:
+      case PLAYER_ALL_MODE:
+        // client wants to open it in some fashion
+        if((thissub->access == PLAYER_CLOSE_MODE) ||
+           (thissub->access == PLAYER_ERROR_MODE))
+        {
+          // it wasn't already open, so Subscribe
+          if(this->Subscribe(thissub->id) == 0)
+          {
+            // Subscribe succeeded, so grant requested access
+            thissub->access = req.access;
+          }
+          else
+          {
+            // Subscribe failes, so mark it as ERROR
+            thissub->access = PLAYER_ERROR_MODE;
+          }
+        }
+        else
+        {
+          // it was already open, so merely grant the new access
+          thissub->access = req.access;
+        }
+        break;
+      default:
+        PLAYER_WARN1("received subscription request for unknown mode %c",
+                     req.access);
+        break;
+    }
+  }
+
+  return(thissub->access);
+}
+
+#if 0
 unsigned char ClientData::UpdateRequested(player_device_req_t req)
 {
   CDeviceSubscription* thisub;
@@ -777,6 +869,7 @@ unsigned char ClientData::UpdateRequested(player_device_req_t req)
 
   return(thisub->access);
 }
+#endif
 
 unsigned char 
 ClientData::FindPermission(player_device_id_t id)
@@ -831,11 +924,13 @@ ClientData::BuildMsg()
   Driver* driver;
   player_msghdr_t hdr;
   struct timeval curr;
+  struct timeval datatime;
   
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_DATA);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
+    // does the client want data from this device?
     if(thisub->access==PLAYER_ALL_MODE || thisub->access==PLAYER_READ_MODE) 
     {
       char access = deviceTable->GetDeviceAccess(thisub->id);
@@ -856,14 +951,13 @@ ClientData::BuildMsg()
         hdr.reserved = 0;
 
         // Get the data
-        size = driver->GetData(thisub->id, this,
+        size = driver->GetData(thisub->id,
                                writebuffer+sizeof(hdr),
                                PLAYER_MAX_MESSAGE_SIZE-sizeof(hdr),
-                               &(hdr.timestamp_sec), 
-                               &(hdr.timestamp_usec));
+                               &datatime);
 
-        hdr.timestamp_sec = htonl(hdr.timestamp_sec);
-        hdr.timestamp_usec = htonl(hdr.timestamp_usec);
+        hdr.timestamp_sec = htonl(datatime.tv_sec);
+        hdr.timestamp_usec = htonl(datatime.tv_usec);
 
         // if we're in an UPDATE mode, we only want this data if it is new
         if((mode == PLAYER_DATAMODE_PUSH_NEW) || 
@@ -899,11 +993,6 @@ ClientData::BuildMsg()
         totalsize += sizeof(hdr) + size;
       }
     }
-    else
-    {
-      PLAYER_WARN2("Unknown device \"%s:%d\"",
-                   ::lookup_interface_name(0, thisub->id.code),thisub->id.index);
-    }
   }
 
   // now add a zero-length SYNCH packet to the end of the buffer
@@ -935,7 +1024,7 @@ int ClientData::Subscribe(player_device_id_t id)
 
   if((driver = deviceTable->GetDriver(id)))
   {
-    subscribe_result = driver->Subscribe(this);
+    subscribe_result = driver->Subscribe(id);
     return(subscribe_result);
   }
   else
@@ -953,7 +1042,7 @@ void ClientData::Unsubscribe(player_device_id_t id)
 
   if((driver = deviceTable->GetDriver(id)))
   {
-    driver->Unsubscribe(this);
+    driver->Unsubscribe(id);
   }
   else
   {

@@ -70,10 +70,11 @@ class MapCspace : public Driver
   public:
     MapCspace(ConfigFile* cf, int section, int index, robot_shape_t shape, double radius);
     ~MapCspace();
-    virtual int Setup();
-    virtual int Shutdown();
-    virtual int PutConfig(player_device_id_t* device, void* client,
-                          void* data, size_t len);
+    int Setup();
+    int Shutdown();
+    int PutConfig(player_device_id_t id, void *client, 
+                  void* src, size_t len,
+                  struct timeval* timestamp);
 };
 
 Driver*
@@ -149,6 +150,7 @@ MapCspace::Setup()
 }
 
 // get the map from the underlying map device
+// TODO: should Unsubscribe from the map on error returns in the function
 int
 MapCspace::GetMap()
 {
@@ -170,7 +172,7 @@ MapCspace::GetMap()
     PLAYER_ERROR("tried to subscribe to self; specify a *different* map index");
     return(-1);
   }
-  if(mapdevice->Subscribe(this) != 0)
+  if(mapdevice->Subscribe(map_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to map device");
     return(-1);
@@ -264,7 +266,7 @@ MapCspace::GetMap()
   }
 
   // we're done with the map device now
-  if(mapdevice->Unsubscribe(this) != 0)
+  if(mapdevice->Unsubscribe(map_id) != 0)
     PLAYER_WARN("unable to unsubscribe from map device");
 
   // Read data
@@ -351,8 +353,9 @@ MapCspace::Shutdown()
 
 // Process configuration requests
 int 
-MapCspace::PutConfig(player_device_id_t* device, void* client,
-                   void* data, size_t len)
+MapCspace::PutConfig(player_device_id_t id, void *client, 
+                   void* src, size_t len,
+                   struct timeval* timestamp)
 {
   // Discard bogus empty packets
   if(len < 1)
@@ -360,18 +363,17 @@ MapCspace::PutConfig(player_device_id_t* device, void* client,
     PLAYER_WARN("got zero length configuration request; ignoring");
     if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
-    Unlock();
     return(0);
   }
 
   // Process some of the requests immediately
-  switch(((char*) data)[0])
+  switch(((unsigned char*) src)[0])
   {
     case PLAYER_MAP_GET_INFO_REQ:
-      HandleGetMapInfo(client, data, len);
+      HandleGetMapInfo(client, src, len);
       break;
     case PLAYER_MAP_GET_DATA_REQ:
-      HandleGetMapData(client, data, len);
+      HandleGetMapData(client, src, len);
       break;
     default:
       PLAYER_ERROR("got unknown config request; ignoring");
