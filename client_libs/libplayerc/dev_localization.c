@@ -93,7 +93,7 @@ void playerc_localize_putdata(playerc_localize_t *device, player_msghdr_t *heade
       data->hypoths[i].mean[j] = ntohl(data->hypoths[i].mean[j]);
     for (j = 0; j < 3; j++)
       for (k = 0; k < 3; k++)
-        data->hypoths[i].cov[j][k] = ntohl(data->hypoths[i].cov[j][k]);
+        data->hypoths[i].cov[j][k] = ntohll(data->hypoths[i].cov[j][k]);
     data->hypoths[i].alpha = ntohl(data->hypoths[i].alpha);
   }
 
@@ -121,21 +121,34 @@ void playerc_localize_putdata(playerc_localize_t *device, player_msghdr_t *heade
 }
 
 
-// Reset the localize device
-int playerc_localize_reset(playerc_localize_t *device)
+// Set the robot pose (mean and covariance)
+int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3][3])
 {
   int len;
-  player_localize_reset_t reset;
+  player_localize_set_pose_t req;
 
-  reset.subtype = PLAYER_LOCALIZE_RESET_REQ;
+  req.subtype = PLAYER_LOCALIZE_SET_POSE_REQ;
+
+  req.mean[0] = htonl((int) (pose[0] * 1e3));
+  req.mean[1] = htonl((int) (pose[1] * 1e3));
+  req.mean[2] = htonl((int) (pose[2] * 180 / M_PI * 3600));
+  
+  req.cov[0][0] = htonll((int64_t) (cov[0][0] * 1e6));
+  req.cov[0][1] = htonll((int64_t) (cov[0][1] * 1e6));
+  req.cov[0][2] = 0;
+
+  req.cov[1][0] = htonll((int64_t) (cov[1][0] * 1e6));
+  req.cov[1][1] = htonll((int64_t) (cov[1][1] * 1e6));
+  req.cov[1][2] = 0;
+
+  req.cov[2][0] = 0;
+  req.cov[2][1] = 0;
+  req.cov[2][2] = htonll((int64_t) (cov[2][2] * 180 / M_PI * 3600 * 180 / M_PI * 3600));
 
   len = playerc_client_request(device->info.client, &device->info,
-                               &reset, sizeof(reset), &reset, sizeof(reset));
-
+                               &req, sizeof(req), NULL, 0);
   if (len < 0)
     return -1;
-
-  // TODO: check for NACK
 
   return 0;
 }
@@ -262,89 +275,5 @@ int playerc_localize_set_config(playerc_localize_t *device,
   if (len < 0)
     return -1;
 
-  // TODO: check for NACK
-
   return 0;
 }
-
-
-/* REMOVE
-   
-// Retrieve the information of the internal grid map
-int playerc_localize_get_map_header(playerc_localize_t *device,
-                                        uint8_t scale, player_localize_map_header_t* header)
-{
-  int len;
-  player_localize_map_header_t map_header;
-
-  map_header.subtype = PLAYER_LOCALIZE_GET_MAP_HDR_REQ;
-  map_header.scale = scale;
-    
-  len = playerc_client_request(device->info.client, &device->info,
-                               &map_header, sizeof(map_header.subtype)+sizeof(map_header.scale),
-                               &map_header, sizeof(map_header));
-  if (len < 0)
-    return -1;
-  if (len != sizeof(map_header))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len,
-                 sizeof(map_header.subtype)+sizeof(map_header.scale));
-    return -1;
-  }
-
-  header->subtype = map_header.subtype;
-  header->scale = map_header.scale;
-  header->width = (uint32_t) ntohl(map_header.width);
-  header->height = (uint32_t) ntohl(map_header.height);
-  header->ppkm = (uint32_t) ntohl(map_header.ppkm);
-
-  return 0;
-}
-
-
-// Retrieve the scaled grid map
-int playerc_localize_get_map(playerc_localize_t *device, int8_t scale,
-                                 player_localize_map_header_t* header, char *data)
-{
-  int len, r, count;
-  player_localize_map_data_t row_data;
-
-  // retrieve the map header
-  len = playerc_localize_get_map_header(device, scale, header);
-  if (len < 0)
-    return -1;
-
-  // error check
-  if (header->width >= PLAYER_MAX_REQREP_SIZE-4)
-    return -1;
-
-  // retrieve a scaled map
-  count = sizeof(row_data.data) / header->width;
-  for (r=0; r<header->height; r+=count)
-  {
-    // retrieve a single row data
-    row_data.subtype = PLAYER_LOCALIZE_GET_MAP_DATA_REQ;
-    row_data.scale = scale;
-    row_data.row = htons(r);
-    len = playerc_client_request(device->info.client, &device->info,
-                                 &row_data, sizeof(row_data.subtype) + sizeof(row_data.scale) +
-                                 sizeof(row_data.row), &row_data, sizeof(row_data));
-    if (len < 0)
-	    return -1;
-    if (len != sizeof(row_data))
-    {
-	    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(row_data));
-	    return -1;
-    }
-
-    // fill out the data buffer
-    if (r + count >= header->height)
-	    len = header->width * (header->height - r);
-    else
-	    len = header->width * count;
-    memcpy(data+(r*header->width), row_data.data, len);
-  }
-
-  return 0;
-}
-*/

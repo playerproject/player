@@ -33,6 +33,9 @@
 // Compute eigen values and eigen vectors of a 2x2 covariance matrix
 static void eigen(double cm[][2], double values[], double vectors[][2]);
 
+// Reset the pose
+void localize_reset_pose(localize_t *localize);
+
 // Draw the map
 void localize_draw_map(localize_t *localize);
 
@@ -60,11 +63,11 @@ localize_t *localize_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   localize->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   localize->subscribe_item = rtk_menuitem_create(localize->menu, "Subscribe", 1);
   localize->reset_item = rtk_menuitem_create(localize->menu, "Reset", 0);
-  //REMOVE? localize->showmap_item = rtk_menuitem_create(localize->menu, "Show Map", 1);
+  localize->showmap_item = rtk_menuitem_create(localize->menu, "Show Map", 1);
 
   // Set the initial menu state
   rtk_menuitem_check(localize->subscribe_item, subscribe);
-  //REMOVE? rtk_menuitem_check(localize->showmap_item, 0);
+  rtk_menuitem_check(localize->showmap_item, 1);
 
   // Construct figures
   localize->map_fig = rtk_fig_create(mainwnd->canvas, NULL, 90);
@@ -135,14 +138,15 @@ void localize_update(localize_t *localize)
 
   // See if the reset button has been pressed
   if (rtk_menuitem_isactivated(localize->reset_item))
-  {
-    if (playerc_localize_reset(localize->proxy) != 0)
-	    PRINT_ERR1("get_map failed : %s", playerc_error_str());    
-  }
+    localize_reset_pose(localize);
 
   // update the screen
   if (localize->proxy->info.subscribed)
   {
+    // Show the figures
+    rtk_fig_show(localize->map_fig, rtk_menuitem_ischecked(localize->showmap_item));
+    rtk_fig_show(localize->hypoth_fig, 1);        
+
     // Draw in the localize hypothesis if it has been changed.
     if (localize->proxy->info.datatime != localize->datatime)
 	    localize_draw_hypoth(localize);
@@ -158,6 +162,34 @@ void localize_update(localize_t *localize)
 }
 
 
+// Reset the pose
+void localize_reset_pose(localize_t *localize)
+{
+  double pose[3];
+  double cov[3][3];
+
+  pose[0] = 0.0;
+  pose[1] = 0.0;
+  pose[2] = 0.0;
+
+  cov[0][0] = 1e3 * 1e3;
+  cov[0][1] = 0.0;
+  cov[0][2] = 0.0;
+
+  cov[1][0] = 0.0;
+  cov[1][1] = 1e3 * 1e3;
+  cov[1][2] = 0.0;
+
+  cov[2][0] = 0.0;
+  cov[2][1] = 0.0;
+  cov[2][2] = 1e3 * 1e3;  
+
+  if (playerc_localize_set_pose(localize->proxy, pose, cov) != 0)
+    PRINT_ERR1("set pose failed : %s", playerc_error_str());
+  return;
+} 
+
+  
 // Draw the map
 void localize_draw_map(localize_t *localize)
 {
@@ -243,7 +275,6 @@ void localize_draw_hypoth(localize_t *localize)
 
   mag = localize->map_mag;
 
-  rtk_fig_show(localize->hypoth_fig, 1);    
   rtk_fig_clear(localize->hypoth_fig);
   rtk_fig_color_rgb32(localize->hypoth_fig, COLOR_LOCALIZE);
 
@@ -259,7 +290,7 @@ void localize_draw_hypoth(localize_t *localize)
         
     ox = hypoth->mean[0] / mag;
     oy = hypoth->mean[1] / mag;
-    oa = atan2(-evec[0][1], evec[0][0]);
+    oa = atan2(evec[0][1], evec[0][0]);
     
     sx = 6 * sqrt(eval[0]) / mag;
     sy = 6 * sqrt(eval[1]) / mag;
@@ -275,104 +306,11 @@ void localize_draw_hypoth(localize_t *localize)
 }
 
 
-
-/* FIX
-// macros to drraw objects in image coordinates in which origin is on the center
-#define CX(x) ((double)(x) * localize->scale)
-#define CY(y) ((double)(y) * localize->scale)
-
-// macros to drraw objects in image coordinates in which origin is on the top-left corner
-#define IX(x) (((double)(x)-localize->map_header.width/2) * localize->scale)
-#define IY(y) ((localize->map_header.height/2-(double)(y)) * localize->scale)
-
-// macros to draw objects in map coordinates in which origin is on the bottom-left corner
-#define MX(x) ((((x)/1000000.0*localize->map_header.ppkm)-localize->map_header.width/2) * localize->scale)
-#define MY(y) ((((y)/1000000.0*localize->map_header.ppkm)-localize->map_header.height/2) * localize->scale)
-
-// macros to convert a distance in map coordinates into one in image coordinates
-#define MS(d) ((d)/1000000.0 * localize->map_header.ppkm * localize->scale)
-
-// macros to convert radians into degrees and vice versa
-#define R2D(a) (((a)*M_PI/180))
-#define D2R(a) (((int)((a)*180/M_PI)))
-*/
-
-/* FIX
-// Draw the localize hypothesis
-void localize_draw(localize_t *localize)
-{
-     
-  static double cov[2][2], eval[2], evec[2][2];
-  int i, w, h;
-  int sizex, sizey;
-  double scalex, scaley;
-  double ox, oy, oa, sx, sy;
-
-  rtk_fig_show(localize->map_fig, 1);
-  rtk_fig_clear(localize->map_fig);
-
-  // Set the initial pose of the image if it hasnt already been set.
-  if (localize->image_init == 0)
-  {
-    rtk_canvas_get_size(localize->map_fig->canvas, &sizex, &sizey);
-    rtk_canvas_get_scale(localize->map_fig->canvas, &scalex, &scaley);
-    rtk_fig_origin(localize->map_fig, -sizex * scalex / 4, -sizey * scaley / 4, 0);
-    localize->image_init = 1;
-  }
-
-  // Draw an opaque rectangle on which to render the image.
-  rtk_fig_color_rgb32(localize->map_fig, 0xFFFFFF);
-  rtk_fig_rectangle(localize->map_fig, CX(0), CY(0), 0,
-                    CX(localize->map_header.width), CY(localize->map_header.height), 1);
-  rtk_fig_color_rgb32(localize->map_fig, 0x000000);
-  rtk_fig_rectangle(localize->map_fig, CX(0), CY(0), 0,
-                    CX(localize->map_header.width), CY(localize->map_header.height), 0);
-
-  // Draw the map
-  if (rtk_menuitem_ischecked(localize->showmap_item) && localize->map_data!=NULL)
-  {
-    for (h=0; h<localize->map_header.height; h++)
-	    for (w=0; w<localize->map_header.width; w++)
-	    {
-        uint8_t gray=localize->map_data[h*localize->map_header.width + w];
-        uint32_t color = (gray << 16) | (gray << 8) | gray;
-        rtk_fig_color_rgb32(localize->map_fig, color);
-        rtk_fig_rectangle(localize->map_fig, IX(w), IY(h), 0,
-                          localize->scale, localize->scale, TRUE);
-	    }
-  }
-
-  // Draw the hypothesis.
-  for (i=0; i<localize->proxy->num_hypothesis; i++)
-  {
-    ox = MX(localize->proxy->hypothesis[i].mean[0]);
-    oy = MY(localize->proxy->hypothesis[i].mean[1]);
-
-    cov[0][0] = localize->proxy->hypothesis[i].cov[0][0];
-    cov[0][1] = localize->proxy->hypothesis[i].cov[0][1];
-    cov[1][1] = localize->proxy->hypothesis[i].cov[1][1];
-    eigen(cov, eval, evec);
-
-    oa = atan(evec[1][0] / evec[0][0]);
-    sx = MS(3*sqrt(fabs(eval[0])));
-    sy = MS(3*sqrt(fabs(eval[1])));
-
-    rtk_fig_color_rgb32(localize->map_fig, COLOR_LOCALIZE);
-    rtk_fig_line_ex(localize->map_fig, ox, oy, oa, MS(1000));
-    rtk_fig_line_ex(localize->map_fig, ox, oy, oa+M_PI_2, MS(1000));
-    rtk_fig_ellipse(localize->map_fig, ox, oy, oa, sx, sy, FALSE);
-  }
-
-  return;
-}
-*/
-
-
 // Compute eigen values and eigenvectors of a 2x2 covariance matrix
 static void eigen(double cm[][2], double values[], double vectors[][2])
 {
     double s = (double) sqrt(cm[0][0]*cm[0][0] - 2*cm[0][0]*cm[1][1] +
-			     cm[1][1]*cm[1][1] + 4*cm[0][1]*cm[0][1]);
+                             cm[1][1]*cm[1][1] + 4*cm[0][1]*cm[0][1]);
     values[0] = 0.5 * (cm[0][0] + cm[1][1] + s);
     values[1] = 0.5 * (cm[0][0] + cm[1][1] - s);
     vectors[0][0] = -0.5 * (-cm[0][0] + cm[1][1] - s);

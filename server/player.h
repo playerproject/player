@@ -1822,7 +1822,7 @@ using probablistic localize algorithms. */
 /** the maximum number of pose hypothesis */
 #define PLAYER_LOCALIZE_MAX_HYPOTHS            10
 /** the various configuration subtypes */
-#define PLAYER_LOCALIZE_RESET_REQ              ((uint8_t)1)
+#define PLAYER_LOCALIZE_SET_POSE_REQ           ((uint8_t)1)
 #define PLAYER_LOCALIZE_GET_CONFIG_REQ         ((uint8_t)2)
 #define PLAYER_LOCALIZE_SET_CONFIG_REQ         ((uint8_t)3)
 #define PLAYER_LOCALIZE_GET_MAP_INFO_REQ       ((uint8_t)4)
@@ -1835,8 +1835,8 @@ typedef struct player_localize_hypoth
 {
   /** the central pose (mean) of a hypothesis (mm, mm, arc-seconds) */
   int32_t mean[3];
-  /** the covariance matrix of a hypothesis */
-  int32_t cov[3][3];
+  /** the covariance matrix of a hypothesis (mm$^2$, arc-seconds$^2$) */
+  int64_t cov[3][3];
   /** coefficient for linear combination : int(alpha * billion) */
   uint32_t alpha;
 } __attribute__ ((packed)) player_localize_hypoth_t;
@@ -1852,16 +1852,24 @@ typedef struct player_localize_data
   player_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
 } __attribute__ ((packed)) player_localize_data_t;
 
+
 /** [Commands] This interface accepts no commands. */
 
-/** [Configuration: Reset particles] */
+
+/** [Configuration: Set the robot pose estimate] */
 /**
-Reset localize algorithm; there is no parameter necessary. */
-typedef struct player_localize_reset
+Set the robot pose estimate.  The server will reply with a zero length
+repsonse packet. */
+typedef struct player_localize_set_pose
 {
-  /** subtype; Must be PLAYER_LOCALIZE_RESET_REQ. */
+  /** subtype; Must be PLAYER_LOCALIZE_SET_POSE_REQ. */
   uint8_t subtype;
-} __attribute__ ((packed)) player_localize_reset_t;
+  /** the central pose (mean) of a hypothesis (mm, mm, arc-seconds) */
+  int32_t mean[3];
+  /** the covariance matrix of a hypothesis (mm$^2$, arc-seconds$^2$). */
+  int64_t cov[3][3];
+} __attribute__ ((packed)) player_localize_set_pose_t;
+
 
 /** [Configuration: Get/set configuration] */
 /**
@@ -1879,6 +1887,7 @@ typedef struct player_localize_config
   /** configuration for particle-based localize algorithms */
   uint32_t num_particles;
 } __attribute__ ((packed)) player_localize_config_t;
+
 
 /** [Configuration: Get map information] */
 /**
