@@ -122,6 +122,7 @@ The @p amcl driver requires the following interfaces, some of them named:
 - @ref player_interface_laser : source of laser scans
 - "laser" @ref player_interface_map : a map in which to localize the
    robot, by fusing odometry and laser data.
+- @ref player_interface_fiducial : source of fiducial scans
 - In principle supported, but currently disabled are: 
     - "imu" @ref player_interface_position
     - @ref player_interface_sonar 
@@ -359,6 +360,7 @@ extern PlayerTime* GlobalTime;
 // Sensors
 #include "amcl_odom.h"
 #include "amcl_laser.h"
+#include "amcl_fiducial.h"
 //#include "amcl_gps.h"
 //#include "amcl_imu.h"
 
@@ -426,6 +428,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
 
   player_device_id_t odom_id;
   player_device_id_t laser_id;
+  player_device_id_t fiducial_id;
   
   // Create odometry sensor
   if(cf->ReadDeviceId(&odom_id, section, "requires",
@@ -444,6 +447,15 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
                       PLAYER_LASER_CODE, -1, NULL) == 0)
   {
     sensor = new AMCLLaser(laser_id);
+    sensor->is_action = 0;
+    this->sensors[this->sensor_count++] = sensor;
+  }
+
+  // Create fiducial sensor
+  if(cf->ReadDeviceId(&fiducial_id, section, "requires",
+                      PLAYER_FIDUCIAL_CODE, -1, NULL) == 0)
+  {
+    sensor = new AMCLFiducial(fiducial_id);
     sensor->is_action = 0;
     this->sensors[this->sensor_count++] = sensor;
   }
