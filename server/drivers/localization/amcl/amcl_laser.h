@@ -71,7 +71,11 @@ class AMCLLaser : public AMCLSensor
   // Determine the probability for the given pose
   private: static double SensorModel(AMCLLaserData *data, pf_vector_t pose);
 
+  // retrieve the map
+  private: int SetupMap(void);
+
   // Device info
+  private: int map_index;
   private: int laser_index;
   private: CDevice *device;
 

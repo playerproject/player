@@ -1137,10 +1137,10 @@ class LocalizeProxy : public ClientProxy
      */
     int GetNumParticles();
 
-    /** Get the map from the server.  It's stored in map_size_x, map_size_y,
-        map_scale, and map_cells.  Returns 0 on success, -1 on error.
-     */
+    // deprecated: get map from map interface instead
+#if 0
     int GetMap();
+#endif
     
     /// Print out current hypotheses.
     void Print();

@@ -91,6 +91,7 @@
 #define PLAYER_NOMAD_CODE          ((uint16_t)34)  // Nomad robot
 #define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo)
 #define PLAYER_ENERGY_CODE         ((uint16_t)41)  // energy consumption & charging
+#define PLAYER_MAP_CODE            ((uint16_t)42)  // get a map
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
@@ -131,6 +132,7 @@
 #define PLAYER_BLINKENLIGHT_STRING  "blinkenlight"
 #define PLAYER_NOMAD_STRING         "nomad"
 #define PLAYER_ENERGY_STRING        "energy"
+#define PLAYER_MAP_STRING           "map"
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
@@ -2547,8 +2549,6 @@ typedef struct player_ir_power_req
 #define PLAYER_LOCALIZE_SET_POSE_REQ           ((uint8_t)1)
 #define PLAYER_LOCALIZE_GET_CONFIG_REQ         ((uint8_t)2)
 #define PLAYER_LOCALIZE_SET_CONFIG_REQ         ((uint8_t)3)
-#define PLAYER_LOCALIZE_GET_MAP_INFO_REQ       ((uint8_t)4)
-#define PLAYER_LOCALIZE_GET_MAP_DATA_REQ       ((uint8_t)5)
 
 /** [Data] */
 /** Since the robot pose may be ambiguous (i.e., the robot may at any
@@ -2613,29 +2613,53 @@ typedef struct player_localize_config
   uint32_t num_particles;
 } __attribute__ ((packed)) player_localize_config_t;
 
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section map
+ *************************************************************************/
+ 
+/** [Synopsis] The {\tt map} interface provides acces to an occupancy grid 
+    map.  The map is delivered in tiles, via configuration requests. */
+
+/** [Constants] */
+/** The max number of cells we can send in one tile */
+#define PLAYER_MAP_MAX_CELLS_PER_TILE (PLAYER_MAX_REQREP_SIZE - 17)
+/** Configuration subtypes */
+#define PLAYER_MAP_GET_INFO_REQ       ((uint8_t)1)
+#define PLAYER_MAP_GET_DATA_REQ       ((uint8_t)2)
+
+/** [Data] This interface has no data.  Get the map in pieces using
+ configuration requests */
+
+/** [Command] This interface accepts no commands. 
+ */
+
 /** [Configuration: Get map information] */
 /** Retrieve the size and scale information of a current map. This
 request is used to get the size information before you request the
-actual map data. Set the subtype to PLAYER_LOCALIZE_GET_MAP_INFO_REQ;
+actual map data. Set the subtype to PLAYER_MAP_GET_INFO_REQ;
 the server will reply with the size information filled in. */
-typedef struct player_localize_map_info
+typedef struct player_map_info
 {
-  /** Request subtype; must be PLAYER_LOCALIZE_GET_MAP_INFO_REQ */
+  /** Request subtype; must be PLAYER_MAP_GET_INFO_REQ */
   uint8_t subtype; 
   /** The scale of the map (pixels per kilometer). */
   uint32_t scale; 
   /** The size of the map (pixels). */
   uint32_t width, height;
-} __attribute__ ((packed)) player_localize_map_info_t;
+} __attribute__ ((packed)) player_map_info_t;
 
 /** [Configuration: Get map data] */
 /** Retrieve the map data. Beacause of the limited size of a
 request-replay messages, the map data is tranfered in tiles.  In the
 request packet, set the column and row index of a specific tile; the
 server will reply with the requested map data filled in. */
-typedef struct player_localize_map_data
+typedef struct player_map_data
 {
-  /** Request subtype; must be PLAYER_LOCALIZE_MAP_DATA_REQ. */
+  /** Request subtype; must be PLAYER_MAP_GET_DATA_REQ. */
   uint8_t subtype; 
   /** The tile origin (pixels). */
   uint32_t col, row;
@@ -2643,12 +2667,12 @@ typedef struct player_localize_map_data
   uint32_t width, height;
   /** Cell occupancy value (empty = -1, unknown = 0, occupied = +1). */
   int8_t data[PLAYER_MAX_REQREP_SIZE - 17];
-} __attribute__ ((packed)) player_localize_map_data_t;
+} __attribute__ ((packed)) player_map_data_t;
+
 
 /*************************************************************************
  ** end section
  *************************************************************************/
- 
 
 
 /*************************************************************************

@@ -32,11 +32,14 @@ int test_localize(playerc_client_t *client, int index)
     return(-1);
   }
 
+  // deprecated: get map from map interface now
+#if 0
   TEST("get map");
   if (playerc_localize_get_map(device) == 0)
     PASS();
   else
     FAIL();
+#endif
 
   /* FIX
   TEST("set configuration");

@@ -135,11 +135,13 @@ void localize_update(localize_t *self)
       printf("done\n");
       */
 
+            // deprecated: get the map from the map interface now
+#if 0
 	    if (playerc_localize_get_map_info(self->proxy) != 0)
         PRINT_ERR1("get_map_info failed : %s", playerc_error_str());
-
       // Draw the map
       localize_draw_map(self);
+#endif
     }
   }
   else
@@ -163,9 +165,12 @@ void localize_update(localize_t *self)
     rtk_fig_show(self->map_fig, rtk_menuitem_ischecked(self->showmap_item));
     rtk_fig_show(self->hypoth_fig, 1);
 
+    // deprecated: get the map from the map interface now
+#if 0
     // Draw the map if we got more map data
     if (playerc_localize_get_map_tile(self->proxy) == 0)
       localize_draw_map(self);
+#endif
     
     // Draw the map if the frame has changed
     if (rtk_menuitem_isactivated(self->frame_item))

@@ -859,17 +859,12 @@ int playerc_localize_unsubscribe(playerc_localize_t *device);
 /** Set the the robot pose (mean and covariance). */
 int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3][3]);
 
-/** Retrieve the occupancy map info.  The info is written into the proxy
-    structure. */
+// deprecated: get the map from the map interface now
+#if 0
 int playerc_localize_get_map_info(playerc_localize_t *device);
-
-/** Retrieve a tile from occupancy map.  The map is written into the proxy
-    structure. */
 int playerc_localize_get_map_tile(playerc_localize_t *device);
-
-/** Retrieve the entire occupancy map.  The map is written into the proxy
-   structure. */
 int playerc_localize_get_map(playerc_localize_t *device);
+#endif
 
 /** Get the current configuration. */
 int playerc_localize_get_config(playerc_localize_t *device, player_localize_config_t *config);

@@ -19,6 +19,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
 #include <math.h>
@@ -43,6 +44,8 @@
 // catch up (seconds)
 #define LOCALIZE_MAX_LAG 2.0
 
+extern int global_playerport;
+
 class Wavefront : public CDevice
 {
   private: 
@@ -59,8 +62,8 @@ class Wavefront : public CDevice
     double dist_penalty;
     double dist_eps;
     double ang_eps;
-    const char* map_fname;
-    const char* cspace_fname;
+    int map_index;
+    //const char* cspace_fname;
 
     // for filtering localize poses
     double lx_window[LOCALIZE_WINDOW_SIZE];
@@ -100,6 +103,7 @@ class Wavefront : public CDevice
     // methods for internal use
     int SetupLocalize();
     int SetupPosition();
+    int SetupMap();
     int ShutdownPosition();
     int ShutdownLocalize();
 
@@ -152,9 +156,8 @@ Wavefront::Wavefront(char* interface, ConfigFile* cf, int section)
 {
   this->position_index = cf->ReadInt(section,"position_index",-1);
   this->localize_index = cf->ReadInt(section,"localize_index",-1);
-  this->map_fname = cf->ReadString(section,"map_filename",NULL);
-  this->map_res = cf->ReadFloat(section,"map_scale",-1.0);
-  this->cspace_fname = cf->ReadString(section,"cspace_filename",NULL);
+  this->map_index = cf->ReadInt(section,"map_index",-1);
+  //this->cspace_fname = cf->ReadString(section,"cspace_filename",NULL);
   this->robot_radius = cf->ReadLength(section,"robot_radius",0.15);
   this->safety_dist = cf->ReadLength(section,"safety_dist", this->robot_radius);
   this->max_radius = cf->ReadLength(section,"max_radius",1.0);
@@ -210,14 +213,9 @@ int Wavefront::Setup()
     PLAYER_ERROR("must specify localize index");
     return(-1);
   }
-  if(this->map_res < 0)
+  if(this->map_index < 0)
   {
-    PLAYER_ERROR("must specify map resolution");
-    return(-1);
-  }
-  if(!(this->map_fname))
-  {
-    PLAYER_ERROR("must specify map");
+    PLAYER_ERROR("must specify map index");
     return(-1);
   }
 
@@ -225,45 +223,8 @@ int Wavefront::Setup()
     return(-1);
   if(SetupLocalize() < 0)
     return(-1);
-
-  if(!(this->plan = plan_alloc(this->robot_radius,
-                               this->robot_radius+this->safety_dist,
-                               this->max_radius,
-                               this->dist_penalty)))
-  {
-    PLAYER_ERROR("failed to allocate plan");
+  if(SetupMap() < 0)
     return(-1);
-  }
-
-  printf("Wavefront: Loading map from file \"%s\"...", this->map_fname);
-  fflush(NULL);
-  if(plan_load_occ(this->plan,this->map_fname,this->map_res) < 0)
-  {
-    PLAYER_ERROR("failed to load map");
-    plan_free(this->plan);
-    return(-1);
-  }
-  puts("done.");
-
-  if(this->cspace_fname)
-  {
-    printf("Wavefront: Loading C-space from file \"%s\"...", this->cspace_fname);
-    fflush(NULL);
-    if(plan_read_cspace(this->plan,this->cspace_fname) < 0)
-    {
-      PLAYER_ERROR("failed to load C-space");
-      plan_free(this->plan);
-      return(-1);
-    }
-    puts("done.");
-  }
-  else
-  {
-    printf("Wavefront: Generating C-space...");
-    fflush(NULL);
-    plan_update_cspace(this->plan);
-    puts("done.");
-  }
 
   // Start the driver thread.
   this->StartThread();
@@ -695,6 +656,145 @@ Wavefront::SetupLocalize()
 
   return 0;
 }
+
+// setup the underlying map device (i.e., get the map)
+int
+Wavefront::SetupMap()
+{
+  player_device_id_t map_id;
+  CDevice* mapdevice;
+  plan_cell_t* cell;
+
+  // Subscribe to the map device
+  map_id.port = global_playerport;
+  map_id.code = PLAYER_MAP_CODE;
+  map_id.index = this->map_index;
+
+  if(!(mapdevice = deviceTable->GetDevice(map_id)))
+  {
+    PLAYER_ERROR("unable to locate suitable map device");
+    return -1;
+  }
+  if(mapdevice->Subscribe(this) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to map device");
+    return -1;
+  }
+
+  if(!(this->plan = plan_alloc(this->robot_radius,
+                               this->robot_radius+this->safety_dist,
+                               this->max_radius,
+                               this->dist_penalty)))
+  {
+    PLAYER_ERROR("failed to allocate plan");
+    return(-1);
+  }
+
+  printf("Wavefront: Loading map from map:%d...\n", this->map_index);
+  fflush(NULL);
+
+  // Fill in the map structure (I'm doing it here instead of in libmap, 
+  // because libmap is written in C, so it'd be a pain to invoke the internal 
+  // device API from there)
+
+  // first, get the map info
+  int replen;
+  unsigned short reptype;
+  player_map_info_t info;
+  struct timeval ts;
+  info.subtype = PLAYER_MAP_GET_INFO_REQ;
+  if((replen = mapdevice->Request(&map_id, this, &info, 
+                                  sizeof(info.subtype), &reptype, 
+                                  &ts, &info, sizeof(info))) == 0)
+  {
+    PLAYER_ERROR("failed to get map info");
+    return(-1);
+  }
+  
+  // copy in the map info
+  this->plan->scale = 1/(ntohl(info.scale) / 1e3);
+  this->plan->size_x = ntohl(info.width);
+  this->plan->size_y = ntohl(info.height);
+
+  // allocate space for map cells
+  assert(this->plan->cells = (plan_cell_t*)malloc(sizeof(plan_cell_t) *
+                                                  this->plan->size_x *
+                                                  this->plan->size_y));
+
+  // Reset the grid
+  plan_reset(this->plan);
+
+  // now, get the map data
+  player_map_data_t data_req;
+  int reqlen;
+  int i,j;
+  int oi,oj;
+  int sx,sy;
+  int si,sj;
+
+  data_req.subtype = PLAYER_MAP_GET_DATA_REQ;
+  
+  // Tile size
+  sy = sx = (int)sqrt(sizeof(data_req.data));
+  assert(sx * sy < (int)sizeof(data_req.data));
+  oi=oj=0;
+  while((oi < this->plan->size_x) && (oj < this->plan->size_y))
+  {
+    si = MIN(sx, this->plan->size_x - oi);
+    sj = MIN(sy, this->plan->size_y - oj);
+
+    data_req.col = htonl(oi);
+    data_req.row = htonl(oj);
+    data_req.width = htonl(si);
+    data_req.height = htonl(sj);
+
+    reqlen = sizeof(data_req) - sizeof(data_req.data);
+
+    if((replen = mapdevice->Request(&map_id, this, &data_req, reqlen,
+                                    &reptype, &ts, &data_req, 
+                                    sizeof(data_req))) == 0)
+    {
+      PLAYER_ERROR("failed to get map info");
+      return(-1);
+    }
+    else if(replen != (reqlen + si * sj))
+    {
+      PLAYER_ERROR2("got less map data than expected (%d != %d)",
+                    replen, reqlen + si*sj);
+      return(-1);
+    }
+
+    // copy the map data
+    for(j=0;j<sj;j++)
+    {
+      for(i=0;i<si;i++)
+      {
+        cell = this->plan->cells + PLAN_INDEX(this->plan,oi+i,oj+j);
+        cell->occ_dist = this->plan->max_radius;
+        if((cell->occ_state = data_req.data[j*si + i]) >= 0)
+          cell->occ_dist = 0;
+      }
+    }
+
+    oi += si;
+    if(oi >= this->plan->size_x)
+    {
+      oi = 0;
+      oj += sj;
+    }
+  }
+
+  // we're done with the map device now
+  if(mapdevice->Unsubscribe(this) != 0)
+    PLAYER_WARN("unable to unsubscribe from map device");
+
+  printf("Wavefront: Generating C-space...");
+  fflush(NULL);
+  plan_update_cspace(this->plan);
+  puts("done.");
+}
+
+
 
 int 
 Wavefront::ShutdownPosition()

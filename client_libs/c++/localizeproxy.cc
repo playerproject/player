@@ -139,6 +139,8 @@ LocalizeProxy::GetNumParticles()
   return(ntohl(rep.num_particles));
 }
 
+// deprecated: get map from map interface instead
+#if 0
 int
 LocalizeProxy::GetMap()
 {
@@ -198,6 +200,7 @@ LocalizeProxy::GetMap()
   
   return 0;
 }
+#endif
 
 // interface that all proxies SHOULD provide
 void LocalizeProxy::Print()

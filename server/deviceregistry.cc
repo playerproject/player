@@ -46,6 +46,10 @@ extern PlayerTime* GlobalTime;
 void GarminNMEA_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_MAPFILE
+void MapFile_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_AMTECPOWERCUBE
 void AmtecPowerCube_Register(DriverTable* table);
 #endif
@@ -375,6 +379,7 @@ player_interface_t interfaces[] = {
   {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "shapetracker"},
   {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING, "nomad"},
   {PLAYER_ENERGY_CODE, PLAYER_ENERGY_STRING, "stg_energy"},
+  {PLAYER_MAP_CODE, PLAYER_MAP_STRING, "mapfile"},
   {0,NULL,NULL}
 };
 
@@ -447,6 +452,10 @@ register_devices()
 {
 #ifdef INCLUDE_GARMINNMEA
   GarminNMEA_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_MAPFILE
+  MapFile_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_AMTECPOWERCUBE
