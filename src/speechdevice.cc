@@ -75,11 +75,11 @@
 void* RunSpeechThread(void* speechdevice);
 void QuitFestival(void* speechdevice);
 
-CSpeechDevice::CSpeechDevice(int argc, char** argv)
+CSpeechDevice::CSpeechDevice(int argc, char** argv) :
+  CDevice(0,sizeof(player_speech_cmd_t),1,1)
 {
   sock = -1;
-  data = new player_speech_data_t;
-  command = new player_speech_cmd_t;
+  //command = new player_speech_cmd_t;
   command_size = 0;
   bzero(queue,SPEECH_MAX_QUEUE_LEN*SPEECH_MAX_STRING_LEN);
   queue_len = 0;
@@ -294,28 +294,15 @@ CSpeechDevice::KillFestival()
 }
 
 void 
-CSpeechDevice::PutData(unsigned char* src, size_t size)
-{
-}
-
-// just give a dummy byte
-size_t
-CSpeechDevice::GetData(unsigned char* dest, size_t maxsize)
-{
-  *((player_speech_data_t*)dest) = *data;
-  return(sizeof(player_speech_data_t));
-}
-
-void 
 CSpeechDevice::GetCommand(unsigned char* dest, size_t maxsize)
 {
-  *((player_speech_cmd_t*)dest) = *command;
+  *((player_speech_cmd_t*)dest) = *((player_speech_cmd_t*)device_command);
   command_size = 0;
 }
 void 
 CSpeechDevice::PutCommand(unsigned char* src, size_t maxsize)
 {
-  *command = *((player_speech_cmd_t*)src);
+  *((player_speech_cmd_t*)device_command) = *((player_speech_cmd_t*)src);
   // NULLify extra bytes at end
   if(maxsize > sizeof(player_speech_cmd_t))
   {
@@ -323,22 +310,14 @@ CSpeechDevice::PutCommand(unsigned char* src, size_t maxsize)
           stderr);
   }
   else
-    bzero((command->string)+maxsize,sizeof(player_speech_cmd_t)-maxsize);
+    bzero((((player_speech_cmd_t*)device_command)->string)+maxsize,
+          sizeof(player_speech_cmd_t)-maxsize);
   
   // make ABSOLUTELY sure we've got one NULL
-  (command->string)[sizeof(player_speech_cmd_t)-1] = '\0';
+  (((player_speech_cmd_t*)device_command)->string)[sizeof(player_speech_cmd_t)-1] = '\0';
   
   // now strlen() should return the right length
-  command_size = strlen((const char*)(command->string));
-}
-size_t
-CSpeechDevice::GetConfig(unsigned char* dest, size_t maxsize)
-{
-  return(0);
-}
-void 
-CSpeechDevice::PutConfig(unsigned char* src, size_t maxsize)
-{
+  command_size = strlen((const char*)(((player_speech_cmd_t*)device_command)->string));
 }
 
 void* 

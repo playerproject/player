@@ -239,16 +239,3 @@ void CStageDevice::PutConfig(unsigned char *config, size_t len)
   m_info->config_timestamp_usec = tv.tv_usec;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -93,7 +93,8 @@ struct CBpsObs
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 //
-CBpsDevice::CBpsDevice(int argc, char** argv)
+CBpsDevice::CBpsDevice(int argc, char** argv) :
+  CDevice(sizeof(player_bps_data_t),0,1,1)
 {
   this->index = 0;
   for(int i=0;i<argc;i++)
@@ -342,40 +343,29 @@ void CBpsDevice::PutData(unsigned char *src, size_t maxsize)
     double ga = frame->ga + ra;
 
     // Construct data packet
-    this->data.px = htonl((int) (gx * 1000));
-    this->data.py = htonl((int) (gy * 1000));
-    this->data.pa = htonl((int) (ga * 180 / M_PI));
-    this->data.err = 0; // TODO htonl((int) (this->err * 1e6));
-
+    ((player_bps_data_t*)this->device_data)->px = 
+            htonl((int) (gx * 1000));
+    ((player_bps_data_t*)this->device_data)->py = 
+            htonl((int) (gy * 1000));
+    ((player_bps_data_t*)this->device_data)->pa = 
+            htonl((int) (ga * 180 / M_PI));
+    // TODO htonl((int) (this->err * 1e6));
+    ((player_bps_data_t*)this->device_data)->err = 0; 
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by client thread)
 //
+/*
 size_t CBpsDevice::GetData(unsigned char *dest, size_t maxsize) 
 {
     assert(maxsize >= sizeof(this->data));
     memcpy(dest, &this->data, sizeof(this->data));
     return sizeof(this->data);
 }
+*/
 
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Get command from buffer (called by device thread)
-//
-void CBpsDevice::GetCommand(unsigned char *dest, size_t maxsize) 
-{
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Put command in buffer (called by client thread)
-//
-void CBpsDevice::PutCommand(unsigned char *src, size_t maxsize) 
-{
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////

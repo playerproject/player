@@ -73,10 +73,6 @@ class CLaserDevice : public CDevice
 
     // Client interface
     //
-    size_t GetData( unsigned char *, size_t maxsize);
-    void PutData( unsigned char *, size_t maxsize);
-    void GetCommand( unsigned char *, size_t maxsize);
-    void PutCommand( unsigned char *, size_t maxsize);
     size_t GetConfig( unsigned char *, size_t maxsize);
     void PutConfig( unsigned char *, size_t maxsize);
     
@@ -180,7 +176,7 @@ class CLaserDevice : public CDevice
     // Most recent scan data
     // PutData sets the data, GetData reads it
     //
-    player_laser_data_t m_data;
+    //player_laser_data_t m_data;
     
     // Scan width and resolution
     //

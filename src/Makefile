@@ -27,8 +27,8 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
 #
 # definitely build the device-independent objects
 #
-OBS = clientdata.o lock.o pubsub_util.o devicetable.o \
-      clientmanager.o wallclocktime.o main.o
+OBS = clientdata.o lock.o pubsub_util.o devicetable.o device.o \
+      clientmanager.o wallclocktime.o main.o playerqueue.o
 
 #
 # only build the device-specific objects that we need (duplicate objects

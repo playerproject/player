@@ -31,13 +31,14 @@
 
 CGripperDevice::~CGripperDevice()
 {
-  command->gripper.cmd = GRIPstore;
-  command->gripper.arg = 0x00;
+  ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
+  ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
 }
 
 size_t CGripperDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
-  *((player_gripper_data_t*)dest) = data->gripper;
+  *((player_gripper_data_t*)dest) = 
+          ((player_p2os_data_t*)device_data)->gripper;
   return( sizeof( player_gripper_data_t) );
 }
 
@@ -46,6 +47,7 @@ void CGripperDevice::PutCommand(unsigned char *src, size_t size)
   if(size != sizeof( player_gripper_cmd_t ) )
     puts("CGripperDevice::PutCommand(): command wrong size. ignoring.");
   else
-    command->gripper = *((player_gripper_cmd_t*)src);
+    ((player_p2os_cmd_t*)device_command)->gripper = 
+            *((player_gripper_cmd_t*)src);
 }
 

@@ -74,7 +74,7 @@ class CVisionDevice:public CDevice
     int blob_size;  // size of each incoming blob (varies by version)
 
     // where the most recent data sits, ACTS-encoded
-    player_internal_vision_data_t* data;
+    //player_internal_vision_data_t* data;
     
 
     // constructor 
@@ -92,7 +92,7 @@ class CVisionDevice:public CDevice
     int Shutdown();
 
     size_t GetData(unsigned char *, size_t maxsize);
-    void PutData(unsigned char *, size_t maxsize);
+    //void PutData(unsigned char *, size_t maxsize);
 
     void GetCommand(unsigned char *, size_t maxsize);
     void PutCommand(unsigned char *, size_t maxsize);

@@ -132,8 +132,8 @@ private:
   static bool arena_initialized_data_buffer;
   static bool arena_initialized_command_buffer;
 
-  static player_p2os_data_t* data;
-  static player_p2os_cmd_t* command;
+  //static player_p2os_data_t* data;
+  //static player_p2os_cmd_t* command;
 
   static int last_client_id;
 
@@ -155,10 +155,10 @@ private:
 
   virtual int Setup();
   virtual int Shutdown();
-  virtual size_t GetData( unsigned char *, size_t maxsize);
+  //virtual size_t GetData( unsigned char *, size_t maxsize);
   virtual void PutData( unsigned char *, size_t maxsize);
-  virtual void GetCommand( unsigned char *, size_t maxsize);
-  virtual void PutCommand( unsigned char *, size_t maxsize);
+  //virtual void GetCommand( unsigned char *, size_t maxsize);
+  //virtual void PutCommand( unsigned char *, size_t maxsize);
   virtual size_t GetConfig( unsigned char *, size_t maxsize);
   virtual void PutConfig( unsigned char *, size_t maxsize);
   int SendReceive(CPacket* pkt); //, bool already_have_lock);

@@ -63,10 +63,11 @@ void QuitACTS(void* visiondevice);
 
 
 CVisionDevice::CVisionDevice(int argc, char** argv)
+  : CDevice(sizeof(player_internal_vision_data_t),0,1,1)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   sock = -1;
-  data = new player_internal_vision_data_t;
+  //data = new player_internal_vision_data_t;
 
   strncpy(configfilepath,DEFAULT_ACTS_CONFIGFILE,sizeof(configfilepath));
   strncpy(binarypath,DEFAULT_ACTS_PATH,sizeof(binarypath));
@@ -354,20 +355,21 @@ CVisionDevice::KillACTS()
     perror("CVisionDevice::KillACTS(): some error while killing ACTS");
 }
 
-/* could use this later to send the QUIT packet to ACTS...*/
-
+/*
 void 
 CVisionDevice::PutData(unsigned char* src, size_t size)
 {
   *data = *((player_internal_vision_data_t*)src);
 }
+*/
 
 size_t
 CVisionDevice::GetData(unsigned char* dest, size_t maxsize)
 {
   /* size is stored at first two bytes */
-  *((player_vision_data_t*)dest) = data->data;
-  return(data->size);
+  *((player_vision_data_t*)dest) = 
+          ((player_internal_vision_data_t*)device_data)->data;
+  return(((player_internal_vision_data_t*)device_data)->size);
 }
 
 void 

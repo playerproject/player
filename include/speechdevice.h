@@ -62,8 +62,6 @@ class CSpeechDevice:public CDevice
     int queue_len;
     bool read_pending;
     int sock;               // socket to Festival
-    player_speech_data_t* data;
-    player_speech_cmd_t* command;
     int command_size; // zeroed by thread (commands are consumed)
 
     // constructor 
@@ -78,14 +76,8 @@ class CSpeechDevice:public CDevice
     int Setup();
     int Shutdown();
 
-    size_t GetData(unsigned char *, size_t maxsize);
-    void PutData(unsigned char *, size_t maxsize);
-
     void GetCommand(unsigned char *, size_t maxsize);
     void PutCommand(unsigned char *, size_t maxsize);
-
-    size_t GetConfig(unsigned char *, size_t maxsize);
-    void PutConfig(unsigned char *, size_t maxsize);
 };
 
 #endif
