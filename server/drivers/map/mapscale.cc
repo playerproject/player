@@ -350,6 +350,10 @@ MapScale::Scale()
   }
 
   g_object_unref((GObject*)pixbuf);
+  // TODO: create a GdkPixbufDestroyNotify function, and pass it to
+  // gdk_pixbuf_new_from_data() above, so that this buffer is free()d
+  // automatically.
+  free(map_pixels);
   g_object_unref((GObject*)new_pixbuf);
   free(this->mapdata);
 
