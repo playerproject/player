@@ -61,8 +61,14 @@ captureCamera::captureCamera(int camera_index) : capture()
     return;
   }
 
-  // get an image to find it's configuration
-  //this->camera->Wait();
+  // get an image to find it's configuration 
+  char dname[64];
+  // find the camera driver
+  sprintf(dname,"%s",deviceTable->GetDriverName(camera_id));
+  // gz_camera will lock up if you do this. Others Need it.
+  if (strcmp(dname,"gz_camera"))
+       this->camera->Wait();
+
   size_t size;
   struct timeval timestamp;
   this->camera->Update();
@@ -74,8 +80,7 @@ captureCamera::captureCamera(int camera_index) : capture()
   this->width = ntohs(data.width);
   this->height = ntohs(data.height); 
   this->depth = data.bpp;
-
-    
+   
   this->image_size = ntohl(data.image_size); 
   /*  cout << "captureCamera::initialize()"<<endl;
       cout << "width " << width<<endl;
@@ -83,12 +88,13 @@ captureCamera::captureCamera(int camera_index) : capture()
       cout << "depth " <<depth  <<endl;
       cout << "image_size " <<image_size <<endl;*/
   YUV=(unsigned char *)malloc(width*height*2);
+ 
   camera_open = true;
 }
 
 captureCamera::~captureCamera()
 {
-  this->camera->Subscribe(this->camera_id);
+  this->camera->Unsubscribe(this->camera_id);
   free(YUV);
   current=NULL;
 } 
@@ -107,10 +113,10 @@ unsigned char *captureCamera::captureFrame()
      double t;
      int w,h;
 
-     //this->camera->Update(); //?
      this->camera->Wait();
      size = this->camera->GetData(this->camera_id, (unsigned char*) &data,
 				  sizeof(data), &timestamp);
+
      t = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
      // Dont do anything if this is old data.
      if (0)//(fabs(t - this->camera_time) < 0.001)
