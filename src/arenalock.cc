@@ -160,14 +160,14 @@ int CArenaLock::Subscribe( CDevice *obj )
   int res = 0 ;
 
   if( subscriptions == 0  )
-    {
-      res = obj->Setup();
-      if (res == 0)
-          subscriptions++;
-    }
+  {
+    res = obj->Setup();
+    if (res == 0)
+      subscriptions++;
+  }
   else
     subscriptions++;
-  
+
   return res;
 }
 

@@ -201,6 +201,8 @@ void *client_reader(void* arg)
     }
 
     // byte-swap as necessary
+    hdr.type = ntohs(hdr.type);
+    hdr.device = ntohs(hdr.device);
     hdr.device_index = ntohs(hdr.device_index);
     hdr.time = ntohl(hdr.time);
     hdr.timestamp = ntohl(hdr.timestamp);

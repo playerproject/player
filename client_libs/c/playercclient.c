@@ -148,8 +148,8 @@ int player_request(player_connection_t* conn,
     return(-1);
   }
   hdr.stx = PLAYER_STX;
-  hdr.type = PLAYER_MSGTYPE_REQ;
-  hdr.device = device;
+  hdr.type = htons(PLAYER_MSGTYPE_REQ);
+  hdr.device = htons(device);
   hdr.device_index = htons(device_index);
   hdr.time = 0;
   hdr.timestamp = 0;
@@ -168,9 +168,9 @@ int player_request(player_connection_t* conn,
 
   bzero(replyhdr,sizeof(player_msghdr_t));
   /* eat data until the response comes back */
-  while((replyhdr->type != PLAYER_MSGTYPE_RESP) || 
-        (replyhdr->device != device) ||
-        (replyhdr->device_index != device_index))
+  while((ntohs(replyhdr->type) != PLAYER_MSGTYPE_RESP) || 
+        (ntohs(replyhdr->device) != device) ||
+        (ntohs(replyhdr->device_index) != device_index))
   {
     if(player_read(conn, replyhdr, reply, replylen) == -1)
       return(-1);
@@ -194,9 +194,9 @@ int player_request_device_access(player_connection_t* conn,
   player_msghdr_t replyhdr;
   unsigned char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
 
-  this_ioctl.subtype = PLAYER_PLAYER_DEV_REQ;
-  this_req.code = device;
-  this_req.index = device_index;
+  this_ioctl.subtype = htons(PLAYER_PLAYER_DEV_REQ);
+  this_req.code = htons(device);
+  this_req.index = htons(device_index);
   this_req.access = access;
 
   memcpy(payload,&this_ioctl,sizeof(player_device_ioctl_t));
@@ -262,6 +262,8 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   }
 
   /* byte-swap as necessary */
+  hdr->type = ntohs(hdr->type);
+  hdr->device = ntohs(hdr->device);
   hdr->device_index = ntohs(hdr->device_index);
   hdr->time = ntohll(hdr->time);
   hdr->timestamp = ntohll(hdr->timestamp);
@@ -562,8 +564,8 @@ int player_write(player_connection_t* conn,
   }
 
   hdr.stx = PLAYER_STX;
-  hdr.type = PLAYER_MSGTYPE_CMD;
-  hdr.device = device;
+  hdr.type = htons(PLAYER_MSGTYPE_CMD);
+  hdr.device = htons(device);
   hdr.device_index = htons(device_index);
   hdr.time = 0;
   hdr.timestamp = 0;

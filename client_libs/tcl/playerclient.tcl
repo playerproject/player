@@ -54,24 +54,30 @@ set ACTS_BLOB_SIZE 10
 
 set PLAYER_IDENT_STRLEN 32
 set PLAYER_HEADER_LEN 32
-set PLAYER_MSGTYPE_DATA "rd" 
-set PLAYER_MSGTYPE_CMD  "rc" 
-set PLAYER_MSGTYPE_REQ  "rq" 
-set PLAYER_MSGTYPE_RESP "rr" 
 
-set PLAYER_MISC_CODE    "pm" 
-set PLAYER_GRIPPER_CODE "pg" 
-set PLAYER_POSITION_CODE "pp" 
-set PLAYER_SONAR_CODE   "ps" 
-set PLAYER_LASER_CODE   "sl" 
-set PLAYER_VISION_CODE  "av" 
-set PLAYER_PTZ_CODE     "sz" 
-set PLAYER_PLAYER_CODE  "rs" 
+set PLAYER_MSGTYPE_DATA 1
+set PLAYER_MSGTYPE_CMD  2
+set PLAYER_MSGTYPE_REQ  3
+set PLAYER_MSGTYPE_RESP 4
+
+set PLAYER_PLAYER_CODE         1
+set PLAYER_MISC_CODE           2
+set PLAYER_GRIPPER_CODE        3
+set PLAYER_POSITION_CODE       4
+set PLAYER_SONAR_CODE          5
+set PLAYER_LASER_CODE          6
+set PLAYER_VISION_CODE         7
+set PLAYER_PTZ_CODE            8
+set PLAYER_AUDIO_CODE          9
+set PLAYER_LASERBEACON_CODE   10
+set PLAYER_BROADCAST_CODE     11
 
 set PLAYER_STX "xX" 
 
-set PLAYER_PLAYER_DEV_REQ  "dr" 
-set PLAYER_PLAYER_DATA_REQ "dp" 
+set PLAYER_PLAYER_DEV_REQ      1
+set PLAYER_PLAYER_DATA_REQ     2
+set PLAYER_PLAYER_DATAMODE_REQ 3
+set PLAYER_PLAYER_DATAFREQ_REQ 4
 
 set zero16 [binary format S 0]
 set zero32 [binary format I 0]
@@ -117,7 +123,7 @@ proc requestFromRobot {req} {
   #
   while {1} {
      set header [read $sock $PLAYER_HEADER_LEN]
-     if {[binary scan $header a2a2a2SIIIIII \
+     if {[binary scan $header a2SSSIIIIII \
                   stx type device device_index time0 time1\
                   timestamp0 timestamp1 reserved size] != 10} {
       error "scanning header"
