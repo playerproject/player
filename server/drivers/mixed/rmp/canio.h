@@ -1,49 +1,61 @@
 #ifndef _CANIO_H_
 #define _CANIO_H_
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+#if HAVE_STDINT_H
+  #include <stdint.h>
+#endif
+
+#include <sys/types.h>
+#include <string.h>
+#include <stdio.h>
+
 #include <canlib.h>
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <stdint.h>
-
-struct can_packet_t
+class CanPacket
 {
-  long			id;
-  uint8_t		msg[8];
-  uint32_t		dlc;
-  uint32_t		flags;
+  public:
+    long id;
+    uint8_t msg[8];
+    uint32_t dlc;
+    uint32_t flags;
 
-  can_packet_t() : dlc(8), flags(0) {
-    for (int i =0; i < 8; i++) {
-      msg[i] = 0;
+    CanPacket()
+    {
+      memset(msg,0,sizeof(msg));
+
+      flags = canMSG_STD;
+      dlc = 8;
     }
 
-    flags = canMSG_STD;
-  }
+    uint16_t GetSlot(int s)  const 
+    {
+      return (uint16_t) ((msg[s*2] << 8) | (msg[s*2+1]));
+    }
 
-  uint16_t GetSlot(int s)  const {
-    return (uint16_t) ((msg[s*2] << 8) | (msg[s*2+1]));
-  }
+    void PutSlot(const int slot, const uint16_t val) 
+    {
+      msg[slot*2] = (val >> 8) & 0xFF;
+      msg[slot*2+1] = val & 0xFF;
+    }
 
-  void PutSlot(const int slot, const uint16_t val) {
-    msg[slot*2] = (val >> 8) & 0xFF;
-    msg[slot*2+1] = val & 0xFF;
-  }
+    void PutByte(const int byte, const uint16_t val) 
+    {
+      msg[byte] = val & 0xFF;
+    }
 
-  void PutByte(const int byte, const uint16_t val) {
-    msg[byte] = val & 0xFF;
-  }
+    char* toString() 
+    {
+      static char buf[256];
+      sprintf(buf, "id:%04lX %02X %02X %02X %02X %02X %02X %02X %02X",
+              id, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], 
+              msg[6], msg[7]);
 
-  char * toString() {
-    static char buf[256];
-    sprintf(buf, "id:%04lX %02X %02X %02X %02X %02X %02X %02X %02X",
-	    id, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], 
-	    msg[6], msg[7]);
-
-    return buf;
-  }
-} __attribute__((packed));
+      return buf;
+    }
+};
 
 #define DUALCAN_NR_CHANNELS 2  
 
@@ -63,25 +75,18 @@ struct can_packet_t
    canio.[cc,h] in player, and the CAN hardware specific files
    can be local.
 */
+
 class DualCANIO
 {
-public:
-  DualCANIO();
-  virtual ~DualCANIO();
-
-  int Init(long channel_freq);
-  int ReadPacket(can_packet_t *pkt, int channel);
-  int WritePacket(can_packet_t &pkt);
-  int Shutdown();
-
-protected:
-
-  canHandle channels[2];
+  protected:
+    canHandle channels[2];
+    
+  public:
+    DualCANIO();
+    virtual int Init(long channel_freq);
+    virtual int ReadPacket(CanPacket *pkt, int channel);
+    virtual int WritePacket(CanPacket &pkt);
+    virtual int Shutdown();
 };
-
-
-
-
-
 
 #endif
