@@ -398,7 +398,7 @@ bool SimpleShape::UpdateCamera()
   // Do some byte swapping
   this->cameraData.width = ntohs(this->cameraData.width);
   this->cameraData.height = ntohs(this->cameraData.height);
-  this->cameraData.depth = this->cameraData.depth;
+  this->cameraData.bpp = this->cameraData.bpp;
   this->cameraData.format = this->cameraData.format;
   this->cameraData.compression = this->cameraData.compression;
   this->cameraData.image_size = ntohl(this->cameraData.image_size);
@@ -509,7 +509,7 @@ void SimpleShape::ProcessImage()
   // Create a main image and copy in the pixels
   switch (this->cameraData.format)
   {
-    case PLAYER_CAMERA_FORMAT_GREY8:
+    case PLAYER_CAMERA_FORMAT_MONO8:
     {
       // Copy pixels to input image (grayscale)
       assert(this->inpImage->imageSize >= (int) this->cameraData.image_size);
@@ -809,8 +809,8 @@ void SimpleShape::WriteCameraData()
   // Do some byte swapping
   this->outCameraData.width = htons(this->outImage->width);
   this->outCameraData.height = htons(this->outImage->height);
-  this->outCameraData.depth = 8;
-  this->outCameraData.format = PLAYER_CAMERA_FORMAT_GREY8;
+  this->outCameraData.bpp = 8;
+  this->outCameraData.format = PLAYER_CAMERA_FORMAT_MONO8;
   this->outCameraData.compression = PLAYER_CAMERA_COMPRESS_RAW;
   this->outCameraData.image_size = htonl(this->outImage->imageSize);
 

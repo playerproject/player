@@ -157,7 +157,7 @@ Dummy::Dummy(ConfigFile* cf, int section)
 
       data->width = htons(w);
       data->height = htons(h);
-      data->depth = 24;
+      data->bpp = 24;
       data->format = PLAYER_CAMERA_FORMAT_RGB888;
       data->compression = PLAYER_CAMERA_COMPRESS_RAW;
       data->image_size = htonl(w * h * 3);

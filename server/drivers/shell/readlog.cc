@@ -689,7 +689,7 @@ int ReadLog::ParseCamera(player_device_id_t id, int linenum,
     
   data->width = NUINT16(atoi(tokens[6]));
   data->height = NUINT16(atoi(tokens[7]));
-  data->depth = atoi(tokens[8]);
+  data->bpp = atoi(tokens[8]);
   data->format = atoi(tokens[9]);
   data->compression = atoi(tokens[10]);
   data->image_size = NUINT32(atoi(tokens[11]));

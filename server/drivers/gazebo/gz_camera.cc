@@ -87,9 +87,6 @@ class GzCamera : public Driver
 
   // Timestamp on last data update
   private: double datatime;
-
-  private: const char *imageFormat;
-  private: double imageQuality;
 };
 
 
@@ -128,9 +125,6 @@ GzCamera::GzCamera(ConfigFile* cf, int section)
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
   this->frameno = 0;
-
-  this->imageFormat = cf->ReadString(section, "image_format", "ppm");
-  this->imageQuality = cf->ReadFloat(section, "image_quality", 0.8);
 
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -195,7 +189,7 @@ void GzCamera::Update()
     // Set the image properties
     this->data.width = htons(this->iface->data->width);
     this->data.height = htons(this->iface->data->height);
-    this->data.depth = this->iface->data->depth;
+    this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
     this->data.image_size = htonl(this->iface->data->image_size);
@@ -232,33 +226,27 @@ void GzCamera::Update()
 // Save an image frame
 void GzCamera::SaveFrame(const char *filename)
 {
-  int i, j, width, height;
-  unsigned char *pix;
+  int i, width, height;
   FILE *file;
 
   file = fopen(filename, "w+");
+  if (!file)
+    return;
 
   width = ntohs(this->data.width);
   height = ntohs(this->data.height);
 
-  // Write ppm header
-  fprintf(file, "P6\n%d %d\n%d\n", width, height, 255);
-
-
-  pix = this->data.image;
-
-  // Write pixels here
-  for (j = width - 1; j >= 0; j--)
+  if (this->data.format == PLAYER_CAMERA_FORMAT_RGB888)
   {
-    for (i = 0; i < width; i++)
-    {
-      fputc(pix[0], file);
-      fputc(pix[1], file);
-      fputc(pix[2], file);
-      pix += 3;
-    }
+    // Write ppm  
+    fprintf(file, "P6\n%d %d\n%d\n", width, height, 255);
+    for (i = 0; i < height; i++)
+      fwrite(this->data.image + i * width * 3, 1, width * 3, file);
   }
-
+  else
+  {
+    PLAYER_WARN("unsupported format for saving");
+  }
 
   fclose(file);
 

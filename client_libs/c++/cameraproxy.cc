@@ -84,7 +84,7 @@ void CameraProxy::FillData( player_msghdr_t hdr, const char *buffer)
 
   // to keep this short, we need to change the depth datatype, otherwise use the second line
   // this->depth = ntohs( ((player_camera_data_t*)buffer)->depth);
-  this->depth = ((player_camera_data_t*)buffer)->depth;
+  this->depth = ((player_camera_data_t*)buffer)->bpp;
 
   this->imageSize = ntohl( ((player_camera_data_t*)buffer)->image_size);
   memcpy(this->image, ((player_camera_data_t*)buffer)->image, this->imageSize);

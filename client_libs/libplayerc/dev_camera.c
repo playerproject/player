@@ -103,7 +103,7 @@ void playerc_camera_putdata(playerc_camera_t *device, player_msghdr_t *header,
 
   device->width = ntohs(data->width);
   device->height = ntohs(data->height);
-  device->depth = data->depth;
+  device->bpp = data->bpp;
   device->format = data->format;
   device->compression = data->compression;
   device->image_size = ntohl(data->image_size);
@@ -125,7 +125,7 @@ void playerc_camera_decompress(playerc_camera_t *device)
     return;
   
   // Create a temp buffer
-  dst_size = device->width * device->height * device->depth / 8;
+  dst_size = device->width * device->height * device->bpp / 8;
   dst = malloc(dst_size);
 
   // Decompress into temp buffer

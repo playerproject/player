@@ -31,8 +31,8 @@
 /** @{ */
 /** @defgroup player_driver_gz_laser gz_laser
 
-The gz_laser driver is used to access Gazebo models that support
-the laser interface (such as the SickLMS200 model).
+The gz_laser driver is used to access Gazebo models that support the
+libgazebo laser interface (such as the SickLMS200 model).
 
 @par Interfaces
 - @ref player_interface_laser
@@ -51,8 +51,8 @@ None
 @verbatim
 driver
 (
-  driver gz_laser
-  devices ["laser:0"]
+  name gz_laser
+  provides ["laser:0"]
   gz_id "laser1"
 )
 @endverbatim

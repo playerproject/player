@@ -211,7 +211,7 @@ void CameraCompress::Main()
 
       this->data.width = htons(this->camera_data.width);
       this->data.height = htons(this->camera_data.height);
-      this->data.depth = this->camera_data.depth;
+      this->data.bpp = this->camera_data.bpp;
       this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
       this->data.image_size = htonl(this->data.image_size);
       
@@ -233,7 +233,7 @@ int CameraCompress::UpdateCamera()
   // Do some byte swapping
   this->camera_data.width = ntohs(this->camera_data.width);
   this->camera_data.height = ntohs(this->camera_data.height); 
-  this->camera_data.depth = this->camera_data.depth;
+  this->camera_data.bpp = this->camera_data.bpp;
   this->camera_data.image_size = ntohl(this->camera_data.image_size);
 
   if (this->camera_data.compression != PLAYER_CAMERA_COMPRESS_RAW)

@@ -1785,7 +1785,9 @@ typedef struct player_ptz_controlmode_config
 
 The camera interface is used to see what the camera sees.  It is
 intended primarily for server-side (i.e., driver-to-driver) data
-transfers, rather than server-to-client transfers.
+transfers, rather than server-to-client transfers.  Image data can be
+in may formats (see below), but is always packed (i.e., pixel rows are
+byte-aligned).
 
 @par Commands
 
@@ -1803,10 +1805,14 @@ This interface has no configuration requests.
 #define PLAYER_CAMERA_IMAGE_HEIGHT 480
 #define PLAYER_CAMERA_IMAGE_SIZE (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
 
-/** Image data formats. */
-#define PLAYER_CAMERA_FORMAT_GREY8  1
-#define PLAYER_CAMERA_FORMAT_RGB565 2
-#define PLAYER_CAMERA_FORMAT_RGB888 3
+/** Image format : 8-bit monochrome. */
+#define PLAYER_CAMERA_FORMAT_MONO8  1
+/** Image format : 16-bit monochrome (network byte order). */
+#define PLAYER_CAMERA_FORMAT_MONO16 2
+/** Image format : 16-bit color (5 bits R, 6 bits G, 5 bits B). */
+#define PLAYER_CAMERA_FORMAT_RGB565 4
+/** Image format : 24-bit color (8 bits R, 8 bits G, 8 bits B). */
+#define PLAYER_CAMERA_FORMAT_RGB888 5
 
 /** Compression methods. */
 #define PLAYER_CAMERA_COMPRESS_RAW 0
@@ -1818,8 +1824,8 @@ typedef struct player_camera_data
   /** Image dimensions (pixels). */
   uint16_t width, height;
 
-  /** Image depth (bits-per-pixel) (8, 16, 24, 32). */
-  uint8_t depth;
+  /** Image bits-per-pixel (8, 16, 24, 32). */
+  uint8_t bpp;
 
   /** Image format (must be compatable with depth). */
   uint8_t format;
@@ -1828,7 +1834,7 @@ typedef struct player_camera_data
       compression. */
   uint8_t compression;
 
-  /** Size of image data after compression (bytes) */
+  /** Size of image data as stored in image buffer (bytes) */
   uint32_t image_size;
 
   /** Compressed image data. */
