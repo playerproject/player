@@ -90,12 +90,12 @@ int main(int argc, char **argv)
     minR=MAXINT;
     for (int j=0; j<180; j++) {
       //printf("laser(%d):%d\n", j,robot.laser.ranges[j] & 0x1FFF);
-      if (minR>lp.ranges[j])
-        minR=lp.ranges[j];
+      if (minR>lp[j])
+        minR=lp[j];
     }
     for (int j=181; j<361; j++) {
-      if (minL>lp.ranges[j])
-        minL=lp.ranges[j];
+      if (minL>lp[j])
+        minL=lp[j];
     }
     //printf("minR:%d\tminL:%d\n", minR,minL);
     int l=(100*minR)/500-100;

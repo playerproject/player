@@ -42,7 +42,6 @@ class Blob
     unsigned char right;
     unsigned char top;
     unsigned char bottom;
-    Blob* next;
 };
 
 class VisionProxy : public ClientProxy
