@@ -41,6 +41,12 @@
 #define KEYCODE_L 0x6c
 #define KEYCODE_Q 0x71
 #define KEYCODE_Z 0x7a
+#define KEYCODE_W 0x77
+#define KEYCODE_X 0x78
+#define KEYCODE_E 0x65
+#define KEYCODE_C 0x63
+#define KEYCODE_U 0x75
+#define KEYCODE_O 0x6F
 
 #define COMMAND_TIMEOUT_SEC 0.2
 
@@ -63,6 +69,8 @@ int jfd;
 
 // allow either TCP or UDP
 int protocol = PLAYER_TRANSPORT_TCP;
+
+// initial max speeds
 
 // define a class to do interaction with Player
 class Client
@@ -300,6 +308,9 @@ void keyboard_handler(struct controller* cont )
   double max_rv = 10.0;
   struct termio cooked, raw;
 
+	int speed,turn;
+	speed = turn = 0;
+
   // get the console in raw mode
   ioctl(kfd, TCGETA, &cooked);
   memcpy(&raw, &cooked, sizeof(struct termio));
@@ -315,8 +326,11 @@ void keyboard_handler(struct controller* cont )
   puts("j : left");
   puts("l : right");
   puts("k : backward");
-  puts("q : increase speed by 10%");
-  puts("a : decrease speed by 10%");
+  puts("u : stop turn");
+  puts("o : stop movement (but still turn)");
+  puts("q/z : increase/decrease speed by 10%");
+  puts("w/x : increase/decrease only pos speed by 10%");
+  puts("e/c : increase/decrease only turn speed by 10%");
   puts("anything else : stop");
   puts("---------------------------");
 
@@ -332,39 +346,77 @@ void keyboard_handler(struct controller* cont )
     switch(c)
     {
       case KEYCODE_I:
-        cont->speed = (int)max_tv;
+		speed = 1;
         cont->dirty = true;
         break;
       case KEYCODE_K:
-        cont->speed = -(int)max_tv;
+		speed = -1;
+        cont->dirty = true;
+        break;
+      case KEYCODE_O:
+		speed = 0;
         cont->dirty = true;
         break;
       case KEYCODE_J:
-        cont->turnrate = (int)max_rv;
+	  	turn = 1;
         cont->dirty = true;
         break;
       case KEYCODE_L:
-        cont->turnrate = -(int)max_rv;
+	  	turn = -1;
+        cont->dirty = true;
+        break;
+      case KEYCODE_U:
+	  	turn = 0;
         cont->dirty = true;
         break;
       case KEYCODE_Q:
+        cont->dirty = true;
         max_tv += max_tv / 10.0;
         max_rv += max_rv / 10.0;
         break;
       case KEYCODE_Z:
+        cont->dirty = true;
         max_tv -= max_tv / 10.0;
         max_rv -= max_rv / 10.0;
-        if(max_tv < 0)
-          max_tv = 0;
-        if(max_rv < 0)
-          max_rv = 0;
+		// if we get to 0 then increasing by 10% is meaningless
+		// so lets not go below 1
+        if(max_tv < 1)
+          max_tv = 1;
+        if(max_rv < 1)
+          max_rv = 1;
+        break;
+      case KEYCODE_W:
+        cont->dirty = true;
+        max_tv += max_tv / 10.0;
+        break;
+      case KEYCODE_X:
+        cont->dirty = true;
+        max_tv -= max_tv / 10.0;
+        if(max_tv < 1)
+          max_tv = 1;
+        break;
+      case KEYCODE_E:
+        cont->dirty = true;
+        max_rv += max_rv / 10.0;
+        break;
+      case KEYCODE_C:
+        cont->dirty = true;
+        max_rv -= max_rv / 10.0;
+        if(max_rv < 1)
+          max_rv = 1;
         break;
       default:
-        cont->turnrate = 0;
-        cont->speed = 0;
+	  	speed = 0;
+		turn = 0;
         cont->dirty = true;
-        break;
+		
     }
+	if (cont->dirty == true)
+	{
+        cont->speed = speed * (int)max_tv;
+        cont->turnrate = turn * (int)max_rv;		
+	}
+
   }
 }
       
