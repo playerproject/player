@@ -47,7 +47,7 @@ laserbeacon_t *laserbeacon_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client
   memset(laserbeacon, 0, sizeof(laserbeacon_t));
 
   // Create a proxy
-  laserbeacon->proxy = playerc_laserbeacon_create(client, index);
+  laserbeacon->proxy = playerc_lbd_create(client, index);
   laserbeacon->datatime = 0;
 
   snprintf(section, sizeof(section), "laserbeacon:%d", index);
@@ -57,7 +57,7 @@ laserbeacon_t *laserbeacon_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client
   subscribe = opt_get_int(opt, section, "subscribe", subscribe);
   if (subscribe)
   {
-    if (playerc_laserbeacon_subscribe(laserbeacon->proxy, PLAYER_READ_MODE) != 0)
+    if (playerc_lbd_subscribe(laserbeacon->proxy, PLAYER_READ_MODE) != 0)
       PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
 
@@ -82,8 +82,8 @@ laserbeacon_t *laserbeacon_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client
 void laserbeacon_destroy(laserbeacon_t *laserbeacon)
 {
   if (laserbeacon->proxy->info.subscribed)
-    playerc_laserbeacon_unsubscribe(laserbeacon->proxy);
-  playerc_laserbeacon_destroy(laserbeacon->proxy);
+    playerc_lbd_unsubscribe(laserbeacon->proxy);
+  playerc_lbd_destroy(laserbeacon->proxy);
 
   rtk_fig_destroy(laserbeacon->beacon_fig);
   rtk_menuitem_destroy(laserbeacon->bits8_item);
@@ -101,13 +101,13 @@ void laserbeacon_update(laserbeacon_t *laserbeacon)
   if (rtk_menuitem_ischecked(laserbeacon->subscribe_item))
   {
     if (!laserbeacon->proxy->info.subscribed)
-      if (playerc_laserbeacon_subscribe(laserbeacon->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_lbd_subscribe(laserbeacon->proxy, PLAYER_READ_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
   else
   {
     if (laserbeacon->proxy->info.subscribed)
-      if (playerc_laserbeacon_unsubscribe(laserbeacon->proxy) != 0)
+      if (playerc_lbd_unsubscribe(laserbeacon->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
   rtk_menuitem_check(laserbeacon->subscribe_item, laserbeacon->proxy->info.subscribed);
@@ -116,13 +116,13 @@ void laserbeacon_update(laserbeacon_t *laserbeacon)
   if (rtk_menuitem_isactivated(laserbeacon->bits5_item))
   {    
     if (laserbeacon->proxy->info.subscribed)
-      if (playerc_laserbeacon_set_config(laserbeacon->proxy, 5, 0.050) != 0)
+      if (playerc_lbd_set_config(laserbeacon->proxy, 5, 0.050) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
   if (rtk_menuitem_isactivated(laserbeacon->bits8_item))
   {
     if (laserbeacon->proxy->info.subscribed)
-      if (playerc_laserbeacon_set_config(laserbeacon->proxy, 8, 0.050) != 0)
+      if (playerc_lbd_set_config(laserbeacon->proxy, 8, 0.050) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
   }
 
@@ -150,7 +150,7 @@ void laserbeacon_draw(laserbeacon_t *laserbeacon)
   double ox, oy, oa;
   double wx, wy;
   char text[64];
-  playerc_laserbeacon_beacon_t *beacon;
+  playerc_lbd_beacon_t *beacon;
 
   rtk_fig_show(laserbeacon->beacon_fig, 1);      
   rtk_fig_clear(laserbeacon->beacon_fig);

@@ -14,8 +14,9 @@ include ../../Makefile.common
 ###########################################################################
 
 EXE = playerv
-OBS = playerv.o mainwnd.o opt.o \
-			dev_position.o dev_laser.o dev_laserbeacon.o
+OBS = playerv.o mainwnd.o imagewnd.o opt.o \
+			dev_laser.o dev_laserbeacon.o dev_position.o \
+			dev_ptz.o dev_vision.o 
 
 INCLUDES = -I../../client_libs/libplayerc -I../../include
 CFLAGS = -g3 -Wall $(INCLUDES) -DPLAYER_VERSION=\"$(PLAYER_VERSION)\"

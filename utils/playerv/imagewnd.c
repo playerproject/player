@@ -29,51 +29,31 @@
 #include "playerv.h"
 
 
-// Create the main window
-mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
+// Create the image window
+imagewnd_t *imagewnd_create(rtk_app_t *app, const char *host, int port)
 {
   char title[128];
-  mainwnd_t *wnd;
+  imagewnd_t *wnd;
 
-  wnd = malloc(sizeof(mainwnd_t));
+  wnd = malloc(sizeof(imagewnd_t));
   wnd->canvas = rtk_canvas_create(app);
 
   // Set up the canvas
-  rtk_canvas_movemask(wnd->canvas, RTK_MOVE_PAN | RTK_MOVE_ZOOM);
-  rtk_canvas_size(wnd->canvas, 300, 300);
-  rtk_canvas_scale(wnd->canvas, 0.02, 0.02);
-  rtk_canvas_origin(wnd->canvas, 0, 0);
+  rtk_canvas_size(wnd->canvas, 256, 256);
+  rtk_canvas_scale(wnd->canvas, 1, -1);
+  rtk_canvas_origin(wnd->canvas, 128, 128);
 
-  snprintf(title, sizeof(title), "PlayerViewer %s:%d (main)", host, port);
+  snprintf(title, sizeof(title), "PlayerViewer %s:%d (image)", host, port);
   rtk_canvas_title(wnd->canvas, title);
 
-  // Create file menu
-  wnd->file_menu = rtk_menu_create(wnd->canvas, "File");
-  wnd->exit_item = rtk_menuitem_create(wnd->file_menu, "Exit", 0);
-
-  // Create device menu
-  wnd->device_menu = rtk_menu_create(wnd->canvas, "Devices");
-
-  // Create a figure to attach everything else to
-  wnd->robot_fig = rtk_fig_create(wnd->canvas, NULL, 0);
-  //rtk_fig_origin(wnd->robot_fig, 0, 0, M_PI / 2);
-  
   return wnd;
 }
 
 
-// Destroy the main window
-void mainwnd_destroy(mainwnd_t *wnd)
+// Destroy the image window
+void imagewnd_destroy(imagewnd_t *wnd)
 {
-  // Destroy device menu
-  rtk_menu_destroy(wnd->device_menu);
-
-  // Destroy file menu
-  rtk_menuitem_destroy(wnd->exit_item);
-  rtk_menu_destroy(wnd->file_menu);
-
   // Destroy canvas
-  rtk_fig_destroy(wnd->robot_fig);
   rtk_canvas_destroy(wnd->canvas);
   
   free(wnd);
@@ -82,13 +62,8 @@ void mainwnd_destroy(mainwnd_t *wnd)
 
 // Update the window.
 // Returns 1 if the program should quit.
-int mainwnd_update(mainwnd_t *wnd)
+int imagewnd_update(imagewnd_t *wnd)
 {
-  // See if we should quit
-  if (rtk_canvas_isclosed(wnd->canvas))
-    return 1;
-  if (rtk_menuitem_isactivated(wnd->exit_item))
-    return 1;
   return 0;
 }
 
