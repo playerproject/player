@@ -221,13 +221,6 @@ void Usage()
   fprintf(stderr,"\nPlayer comes with ABSOLUTELY NO WARRANTY.  This is free software, and you are\nwelcome to redistribute it under certain conditions; see COPYING for details.\n\n");
 }
 
-/* just so we know when we've segfaulted, even when running under stage */
-void 
-printout_segv( int dummy ) 
-{
-  puts("Player got a SIGSEGV! (that ain't good...)");
-  exit(-1);
-}
 /* just so we know when we've bus errored, even when running under stage */
 void 
 printout_bus( int dummy ) 
@@ -255,11 +248,6 @@ Interrupt( int dummy )
 void 
 SetupSignalHandlers()
 {
-  if(signal(SIGSEGV, printout_segv) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGSEGV");
-    exit(1);
-  }
   if(signal(SIGBUS, printout_bus) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGBUS");
