@@ -59,59 +59,63 @@
 // The laser beacon device class
 class CLaserBeaconDevice : public CDevice
 {
-    // Constructor
-    public: CLaserBeaconDevice(int argc, char** argv);
+  // Constructor
+  public: CLaserBeaconDevice(int argc, char** argv);
 
-    // Setup/shutdown routines
-    //
-    public: virtual int Setup();
-    public: virtual int Shutdown();
-    public: virtual CLock* GetLock() {return &lock;};
+  // Setup/shutdown routines
+  //
+  public: virtual int Setup();
+  public: virtual int Shutdown();
+  public: virtual CLock* GetLock() {return &lock;};
 
-    // Client interface
-    public: virtual size_t GetData(unsigned char *, size_t maxsize);
-    public: virtual void PutData(unsigned char *, size_t maxsize);
-    public: virtual void GetCommand(unsigned char *, size_t maxsize);
-    public: virtual void PutCommand(unsigned char *, size_t maxsize);
-    public: virtual size_t GetConfig(unsigned char *, size_t maxsize);
-    public: virtual void PutConfig(unsigned char *, size_t maxsize);
+  // Client interface
+  public: virtual size_t GetData(unsigned char *, size_t maxsize);
+  public: virtual void PutData(unsigned char *, size_t maxsize);
+  public: virtual void GetCommand(unsigned char *, size_t maxsize);
+  public: virtual void PutCommand(unsigned char *, size_t maxsize);
+  public: virtual size_t GetConfig(unsigned char *, size_t maxsize);
+  public: virtual void PutConfig(unsigned char *, size_t maxsize);
 
-    // Analyze the laser data and return beacon data
-    private: void FindBeacons(const player_laser_data_t *laser_data,
-                              player_laserbeacon_data_t *beacon_data);
+  // Analyze the laser data and return beacon data
+  private: void FindBeacons(const player_laser_data_t *laser_data,
+                            player_laserbeacon_data_t *beacon_data);
 
-    // Analyze the candidate beacon and return its id (0 == none)
-    private: int IdentBeacon(int a, int b, double ox, double oy, double oth,
-                             const player_laser_data_t *laser_data);
+  // Analyze the candidate beacon and return its id (0 == none)
+  private: int IdentBeacon(int a, int b, double ox, double oy, double oth,
+                           const player_laser_data_t *laser_data);
 
 #ifdef INCLUDE_SELFTEST
-    // Beacon detector self-test
-    private: int SelfTest(const char *filename);
+  // Beacon detector self-test
+  private: int SelfTest(const char *filename);
 
-    // Filename for self-test
-    private: char *test_filename;
+  // Filename for self-test
+  private: char *test_filename;
 #endif
 
-    // Lock object for synchronization
-    private: CLock lock;
+  // Lock object for synchronization
+  private: CLock lock;
 
-    // Pointer to laser to get data from
-    private: uint16_t index;
-    private: CDevice *laser;
+  // Pointer to laser to get data from
+  private: uint16_t index;
+  private: CDevice *laser;
 
-    // Magic numbers
-    // See setup for definitions
-    private: int max_bits;
-    private: double bit_width;
-    private: double max_depth;
-    private: double accept_thresh, zero_thresh, one_thresh;
+  // Defaults
+  private: int default_bitcount;
+  private: double default_bitsize;
+  
+  // Magic numbers
+  // See setup for definitions
+  private: int max_bits;
+  private: double bit_width;
+  private: double max_depth;
+  private: double accept_thresh, zero_thresh, one_thresh;
 
-    // Filter array (beacons must appear in multiple frames to be accepted)
-    private: double filter[256];
+  // Filter array (beacons must appear in multiple frames to be accepted)
+  private: double filter[256];
 
-    // The current data
-    //
-    player_laserbeacon_data_t beacon_data;
+  // The current data
+  //
+  player_laserbeacon_data_t beacon_data;
 };
 
 

@@ -185,7 +185,7 @@ typedef char int8_t;
                                           __FILE__, __FUNCTION__)   
 #define PLAYER_MSG1(m, a)          printf("msg   : %s %s\n        "m"\n", \
                                           __FILE__, __FUNCTION__, a)
-#define PLAYER_MSG2(m, a, b)       printf("msg   : %s %s\m        "m"\n", \
+#define PLAYER_MSG2(m, a, b)       printf("msg   : %s %s\n        "m"\n", \
                                           __FILE__, __FUNCTION__, a, b)
 #define PLAYER_MSG3(m, a, b, c)    printf("msg   : %s %s\n        "m"\n", \
                                           __FILE__, __FUNCTION__, a, b, c) 

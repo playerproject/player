@@ -530,7 +530,7 @@ parse_device_string(char* str1, char* str2)
         break;
     }
   }
-
+  
   /* get the device name */
   if(!strncmp(PLAYER_MISC_STRING,str1+1,strlen(PLAYER_MISC_STRING)))
   {

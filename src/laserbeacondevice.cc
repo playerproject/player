@@ -51,6 +51,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_MSG 1
 
 #include <errno.h>
 #include <string.h>
@@ -69,17 +70,21 @@ extern int global_playerport; // used to get at devices
 CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv)
 {
   this->index = 0;
-
-  for(int i=0;i<argc;i++)
+  this->default_bitcount = 8;
+  this->default_bitsize = 0.05;
+  
+  for(int i=0; i < argc - 1; i += 2)
   {
-    if(!strcmp(argv[i],"index"))
-    {
-      if(++i<argc)
-        this->index = atoi(argv[i]);
-      else
-        fprintf(stderr, "CLaserBeaconDevice: missing index; "
-                "using default: %d\n", index);
-    }
+    char *arg = argv[i];
+    char *val = argv[i + 1];
+    
+    if (strcmp(arg, "index") == 0)
+      this->index = atoi(val);
+    else if (strcmp(argv[i], "bitcount") == 0)
+      this->default_bitcount = atoi(val);
+    else if (strcmp(argv[i], "bitsize") == 0)
+      this->default_bitsize = atof(val);
+    
 #if INCLUDE_SELFTEST
     else if (!strcmp(argv[i], "test"))
     {
@@ -112,41 +117,36 @@ CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv)
 //
 int CLaserBeaconDevice::Setup()
 {
-    // get the pointer to the laser
-    this->laser = deviceTable->GetDevice(global_playerport,PLAYER_LASER_CODE,index);
-    ASSERT(this->laser != NULL);
+  // get the pointer to the laser
+  this->laser = deviceTable->GetDevice(global_playerport,PLAYER_LASER_CODE,index);
+  ASSERT(this->laser != NULL);
     
-    // Subscribe to the laser device
-    //
-    this->laser->GetLock()->Subscribe(this->laser);
+  // Subscribe to the laser device
+  this->laser->GetLock()->Subscribe(this->laser);
 
-    // Maximum variance in the flatness of the beacon
-    //
-    this->max_depth = 0.05;
+  // Maximum variance in the flatness of the beacon
+  this->max_depth = 0.05;
 
-    // Number of bits and size of each bit
-    //
-    this->max_bits = 8;
-    this->bit_width = 0.05;
+  // Number of bits and size of each bit
+  this->max_bits = this->default_bitcount;
+  this->bit_width = this->default_bitsize;;
 
-    // Default thresholds
-    //
-    this->accept_thresh = 1.0;
-    this->zero_thresh = 0.60;
-    this->one_thresh = 0.60;
+  // Default thresholds
+  this->accept_thresh = 1.0;
+  this->zero_thresh = 0.60;
+  this->one_thresh = 0.60;
 
-    // Zero the filters
-    //
-    for (int i = 0; i < ARRAYSIZE(this->filter); i++)
-        this->filter[i] = 0;
+  // Zero the filters
+  for (int i = 0; i < ARRAYSIZE(this->filter); i++)
+    this->filter[i] = 0;
     
-    // Hack to get around mutex on GetData
-    //
-    this->beacon_data.count = 0;
-    GetLock()->PutData(this, (uint8_t*) &this->beacon_data, sizeof(this->beacon_data));
+  // Hack to get around mutex on GetData
+  this->beacon_data.count = 0;
+  GetLock()->PutData(this, (uint8_t*) &this->beacon_data, sizeof(this->beacon_data));
 
-    PLAYER_MSG0("laser beacon device: setup");
-    return 0;
+  PLAYER_MSG2("laser beacon device: bitcount [%d] bitwidth [%fm]",
+              this->max_bits, this->bit_width);
+  return 0;
 }
 
 
@@ -155,12 +155,11 @@ int CLaserBeaconDevice::Setup()
 //
 int CLaserBeaconDevice::Shutdown()
 {
-    // Unsubscribe from the laser device
-    //
-    this->laser->GetLock()->Unsubscribe(this->laser);
+  // Unsubscribe from the laser device
+  this->laser->GetLock()->Unsubscribe(this->laser);
 
-    PLAYER_MSG0("laser beacon device: shutdown");
-    return 0;
+  PLAYER_MSG0("laser beacon device: shutdown");
+  return 0;
 }
 
 
