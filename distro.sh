@@ -5,6 +5,8 @@
 # ./distro.sh player 1.1 
 # creates the distribution file Player-1.1.tgz 
 
+#foo
+
 # first argument is the software directory
 DIRECTORY=$1
 
