@@ -5,7 +5,7 @@ BUILDTEST =
 endif
 
 AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_srcdir)/server
-test_LDADD = -L$(top_builddir)/client_libs/libplayerc -lplayerc -L$(top_builddir)/client_libs/libplayerpacket -lplayerpacket -ljpeg -lm
+test_LDADD = -L$(top_builddir)/client_libs/libplayerc -lplayerc -L$(top_builddir)/client_libs/libplayerpacket -lplayerpacket -lm
 EXTRA_DIST = test.world test.cfg cave.pnm
 
 noinst_PROGRAMS = $(BUILDTEST)
