@@ -26,6 +26,7 @@ $(NAME).dvi: $(NAME).tex \
 						device.t.tex \
 						bps.t.tex bps.f.tex \
 						broadcast.t.tex broadcast.f.tex \
+						gps.t.tex gps.f.tex \
 						laser.t.tex laser.f.tex \
 						lbd.t.tex lbd.f.tex \
 						position.t.tex position.f.tex \

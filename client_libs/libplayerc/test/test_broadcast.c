@@ -37,18 +37,23 @@ int test_broadcast(playerc_client_t *client, int index)
       snprintf(msg, sizeof(msg), "this is message [%d:%d]", i, j);
       if (playerc_broadcast_send(broadcast, msg, strlen(msg) + 1) != 0)
         FAIL();
-      PASS();
+      else
+        PASS();
     }
 
     for (j = 0; j < 10; j++)
     {
       TEST("receiving broadcast message");
       len = playerc_broadcast_recv(broadcast, msg, sizeof(msg));
-      if (len < 0)
-        FAIL();
-      PASS();
       if (len == 0)
+      {
+        PASS();
         break;
+      }
+      else if (len < 0)
+        FAIL();
+      else
+        PASS();
       printf("recv : %s\n", msg);
     }
   }

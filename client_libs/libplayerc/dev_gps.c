@@ -77,5 +77,10 @@ int playerc_gps_unsubscribe(playerc_gps_t *device)
 void playerc_gps_putdata(playerc_gps_t *device, player_msghdr_t *header,
                          player_gps_data_t *data, size_t len)
 {
+  assert(sizeof(*data) <= len);
+  
+  device->px = (int32_t) ntohl(data->xpos) / 1000.0;
+  device->py = (int32_t) ntohl(data->ypos) / 1000.0;
+  device->pa = (int32_t) ntohl(data->heading) * M_PI / 180;
 }
 

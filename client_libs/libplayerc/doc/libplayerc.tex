@@ -307,7 +307,10 @@ This chapter contains information on the various proxies offered by
 all of the devices offered by Player, and should be read in
 conjunction with the Player User Manual.
 
-Device proxies are listed in alphabetical order.
+\section{Units}
+
+Unless otherwise specified, proxies use SI units (meters, radians,
+seconds) for all measurements.
 
 \section{Device Summary}
 
@@ -372,6 +375,21 @@ The broadcast proxy supports the following functions:
 \end{quote}
 The {\tt create} function returns a pointer to a {\tt playerc\_broadcast\_t}
 structure; this structure is opaque and should not be manipulated directly.
+
+
+\newpage
+\section{The {\tt gps} proxy}
+
+\noindent The {\tt gps} proxy provides an interface to a GPS-receiver;
+currently, GPS devices are implemented in the Stage simulator only.
+\begin{quote}
+\lstinputlisting{gps.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_gps\_t}
+structure, which has the following elements.
+\begin{quote}
+\lstinputlisting{gps.t.tex}
+\end{quote}
 
 
 \newpage
@@ -466,9 +484,8 @@ structure, which has the following elements.
 \newpage
 \section{The {\tt truth} proxy}
 
-The {\tt truth} proxy can be used to get and set the pose of
-objects in the Stage simulator.  The
-proxy supports the following functions:
+The {\tt truth} proxy can be used to get and set the pose of objects
+in the Stage simulator.  The proxy supports the following functions:
 \begin{quote}
 \lstinputlisting{truth.f.tex}
 \end{quote}

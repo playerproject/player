@@ -304,7 +304,6 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
 }
 
 
-
 // Register a callback.  Will be called when after data has been read
 // by the indicated device.
 int playerc_client_addcallback(playerc_client_t *client, playerc_device_t *device,
@@ -345,7 +344,7 @@ int playerc_client_delcallback(playerc_client_t *client, playerc_device_t *devic
 }
 
 
-// Issue request and await reply (blocking)
+// Issue request and await reply (blocking).
 int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinfo,
                            void *req_data, int req_len, void *rep_data, int rep_len)
 {
@@ -397,8 +396,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
       assert(rep_header.device == req_header.device);
       assert(rep_header.device_index == req_header.device_index);
       assert(rep_header.size <= rep_len);
-      PLAYERC_ERR("got NACK from request");
-      return -1;
+      break;
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
     {
