@@ -35,7 +35,7 @@
 using std::cerr;
 using std::endl;
 
-#define DEBUG 1
+//#define DEBUG 1
 
 #ifdef DEBUG
 static bool m_isnan(const double m[][3]);
