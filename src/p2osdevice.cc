@@ -85,12 +85,13 @@ extern CSIP*           CP2OSDevice::sippacket;
 extern int             CP2OSDevice::param_idx;
 extern pthread_mutex_t CP2OSDevice::p2os_accessMutex;
 extern int             CP2OSDevice::p2os_subscriptions;
+extern player_p2os_data_t*  CP2OSDevice::data;
+extern player_p2os_cmd_t*  CP2OSDevice::command;
 
 
 void *RunPsosThread( void *p2osdevice );
 
-CP2OSDevice::CP2OSDevice(int argc, char** argv) :
-  CDevice(sizeof(player_p2os_data_t),sizeof(player_p2os_cmd_t),1,1)
+CP2OSDevice::CP2OSDevice(int argc, char** argv)
 {
   static bool robotparamsdone = false;
 
@@ -100,17 +101,23 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv) :
     initialize_robot_params();
     robotparamsdone = true;
   }
-  /*
+  
   if(!data)
     data = new player_p2os_data_t;
   if(!command)
     command = new player_p2os_cmd_t;
-   */
+
+  // TODO: allocate space for queues here
   if(!config)
   {
     config = new unsigned char[P2OS_CONFIG_BUFFER_SIZE];
     config_size = 0;
   }
+
+  SetupBuffers((unsigned char*)data, sizeof(player_p2os_data_t),
+               (unsigned char*)command, sizeof(player_p2os_cmd_t),
+               NULL, 0,
+               NULL, 0);
 
   ((player_p2os_cmd_t*)device_command)->position.speed = 0;
   ((player_p2os_cmd_t*)device_command)->position.turnrate = 0;
@@ -567,7 +574,8 @@ void CP2OSDevice::PutData( unsigned char* src, size_t maxsize,
   data_timestamp_sec = timestamp_sec;
   data_timestamp_usec = timestamp_usec;
   
-  // need to fill in the timestamps on all P2OS devices
+  // need to fill in the timestamps on all P2OS devices, both so that they
+  // can read it, but also because other devices may want to read it
   CDevice* sonarp = deviceTable->GetDevice(global_playerport,
                                            PLAYER_SONAR_CODE,0);
   if(sonarp)

@@ -144,6 +144,7 @@ int PlayerQueue::Flush()
   while(Pop(dummybuf, dummysize) >= 0);
   return(0);
 }
+
 // is the queue empty?
 bool PlayerQueue::Empty()
 {

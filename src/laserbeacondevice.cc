@@ -166,7 +166,9 @@ int CLaserBeaconDevice::Shutdown()
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by client thread)
 //
-size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize) 
+size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize,
+                                   uint32_t* timestamp_sec,
+                                   uint32_t* timestamp_usec)
 {
   Lock();
 
@@ -219,8 +221,8 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
 
   // Copy the laser timestamp
   //
-  this->data_timestamp_sec = this->laser->data_timestamp_sec;
-  this->data_timestamp_usec  = this->laser->data_timestamp_usec;
+  *timestamp_sec = this->data_timestamp_sec = this->laser->data_timestamp_sec;
+  *timestamp_usec = this->data_timestamp_usec  = this->laser->data_timestamp_usec;
 
   Unlock();
 
@@ -236,7 +238,7 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
   Lock();
 
   if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETBITS)
-  {    
+  {
     if (maxsize != sizeof(player_laserbeacon_setbits_t))
       PLAYER_ERROR("config packet size is incorrect");
 
@@ -252,7 +254,7 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
   }
 
   if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETTHRESH)
-  {    
+  {
     if (maxsize != sizeof(player_laserbeacon_setthresh_t))
       PLAYER_ERROR("config packet size is incorrect");
 

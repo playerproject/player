@@ -27,11 +27,13 @@
 #define PLAYER_ENABLE_TRACE 0
 
 
-#include <sys/time.h> // for gettimeofday()
 #include <string.h> // for memcpy()
 #include <stagedevice.h>
 #include <stage.h>
 #include <sys/file.h> //for flock
+
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
 
 //#define DEBUG
 //#define VERBOSE
@@ -181,9 +183,12 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size,
 
   m_info->data_avail = 0;// consume this data for testing purposes
 
-  // Copy the timestamp
+  // store the timestamp in the device, because other devices may
+  // wish to read it
   data_timestamp_sec = m_info->data_timestamp_sec;
   data_timestamp_usec = m_info->data_timestamp_usec;
+
+  // also return the timestamp to the caller
   if(timestamp_sec)
     *timestamp_sec = data_timestamp_sec;
   if(timestamp_usec)
@@ -224,7 +229,7 @@ void CStageDevice::PutCommand(unsigned char *command, size_t len)
 
   // set timestamp for this command
   struct timeval tv;
-  gettimeofday( &tv, 0 );
+  GlobalTime->GetTime(&tv);
 
   m_info->command_timestamp_sec = tv.tv_sec;
   m_info->command_timestamp_usec = tv.tv_usec;
@@ -253,7 +258,7 @@ void CStageDevice::PutConfig(unsigned char *config, size_t len)
 
   // set timestamp for this config
   struct timeval tv;
-  gettimeofday( &tv, 0 );
+  GlobalTime->GetTime(&tv);
 
   m_info->config_timestamp_sec = tv.tv_sec;
   m_info->config_timestamp_usec = tv.tv_usec;

@@ -63,7 +63,7 @@ void QuitACTS(void* visiondevice);
 
 
 CVisionDevice::CVisionDevice(int argc, char** argv)
-  : CDevice(sizeof(player_internal_vision_data_t),0,1,1)
+  : CDevice(sizeof(player_internal_vision_data_t),0,0,0)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   sock = -1;
