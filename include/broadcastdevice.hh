@@ -31,7 +31,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-class CBroadcastDevice /* : public CDevice */
+#include "lock.h"
+#include "device.h"
+
+class CBroadcastDevice : public CDevice
 {
     // Constructor
     //
@@ -41,13 +44,13 @@ class CBroadcastDevice /* : public CDevice */
     //
     public: virtual int Setup();
     public: virtual int Shutdown();
-    //public: virtual CLock* GetLock() {return &lock;};
+    public: virtual CLock* GetLock() {return &m_lock;};
 
     // Client interface
     //
     public: virtual size_t GetData(unsigned char *, size_t maxsize);
     public: virtual void PutData(unsigned char *, size_t maxsize);
-    public: virtual size_t GetCommand(unsigned char *, size_t maxsize);
+    public: virtual void GetCommand(unsigned char *, size_t maxsize);
     public: virtual void PutCommand(unsigned char *, size_t maxsize);
     public: virtual size_t GetConfig(unsigned char *, size_t maxsize);
     public: virtual void PutConfig(unsigned char *, size_t maxsize);
@@ -59,6 +62,10 @@ class CBroadcastDevice /* : public CDevice */
     // Receive a packet
     //
     public: size_t RecvPacket(unsigned char *packet, size_t size);
+
+    // Lock object
+    //
+    private: CLock m_lock;
 
     // Write socket info
     //

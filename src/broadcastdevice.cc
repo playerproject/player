@@ -46,6 +46,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+#define PLAYER_ENABLE_TRACE 1
 
 #include <stdio.h>
 #include <string.h>
@@ -54,6 +55,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <fcntl.h>
 #include "broadcastdevice.hh"
 
 #define PLAYER_BROADCAST_IP "10.255.255.255"
@@ -75,6 +77,8 @@ CBroadcastDevice::CBroadcastDevice()
 //
 int CBroadcastDevice::Setup()
 {
+    printf("Broadcast device initialising...");
+    
     // Set up the write socket
     //
     m_write_socket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -88,7 +92,7 @@ int CBroadcastDevice::Setup()
     m_write_addr.sin_addr.s_addr = inet_addr(PLAYER_BROADCAST_IP);
     m_write_addr.sin_port = htons(PLAYER_BROADCAST_PORT);
 
-    // Set socket options to allow broadcasting
+    // Set write socket options to allow broadcasting
     //
     u_int broadcast = 1;
     if (setsockopt(m_write_socket, SOL_SOCKET, SO_BROADCAST,
@@ -128,6 +132,20 @@ int CBroadcastDevice::Setup()
         perror(__PRETTY_FUNCTION__);
         return 1;
     }
+
+    // Set socket to non-blocking
+    //
+    if (fcntl(m_read_socket, F_SETFL, O_NONBLOCK) < 0)
+    {
+        perror(__PRETTY_FUNCTION__);
+        return 1;
+    }
+
+    // Dummy call to get around #(*%&@ mutex
+    //
+    GetLock()->PutData(this, NULL, 0);
+
+    printf("done\n");
     
     return 0;
 }
@@ -138,10 +156,14 @@ int CBroadcastDevice::Setup()
 //
 int CBroadcastDevice::Shutdown()
 {
+    printf("Broadcast device shuting down...");
+    
     // Close sockets
     //
     close(m_write_socket);
     close(m_read_socket);
+
+    printf("done\n");
     
     return 0;
 }
@@ -166,9 +188,8 @@ void CBroadcastDevice::PutData(unsigned char *data, size_t maxsize)
 ///////////////////////////////////////////////////////////////////////////
 // Not used
 //
-size_t CBroadcastDevice::GetCommand(unsigned char *, size_t maxsize)
+void CBroadcastDevice::GetCommand(unsigned char *, size_t maxsize)
 {
-    return 0;
 }
 
 
@@ -177,7 +198,7 @@ size_t CBroadcastDevice::GetCommand(unsigned char *, size_t maxsize)
 //
 void CBroadcastDevice::PutCommand(unsigned char *data, size_t maxsize)
 {
-    SendPacket(data, maxsize);
+    //SendPacket(data, maxsize);
 }
 
 
@@ -217,6 +238,8 @@ void CBroadcastDevice::SendPacket(unsigned char *packet, size_t size)
 //
 size_t CBroadcastDevice::RecvPacket(unsigned char *packet, size_t size)
 {
+    PLAYER_TRACE0("reading packet");
+    
     size_t addr_len = sizeof(m_read_addr);    
     size_t packet_len = recvfrom(m_read_socket, packet, size,
                                  0, (sockaddr*) &m_read_addr, &addr_len);
@@ -225,6 +248,9 @@ size_t CBroadcastDevice::RecvPacket(unsigned char *packet, size_t size)
         perror(__PRETTY_FUNCTION__);
         return 0;
     }
+
+    PLAYER_TRACE0("reading packet -- done");
+    
     return packet_len;
 }
 
