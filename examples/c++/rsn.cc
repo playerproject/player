@@ -5,6 +5,7 @@
 #include <playerclient.h>
 #include <string.h> /* for strcpy() */
 #include <unistd.h>
+#include <time.h>
 
 #include <list>
 
