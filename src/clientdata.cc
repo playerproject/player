@@ -178,6 +178,12 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   for(unsigned int i=0;i<payload_size;i++)
     printf("%x ",payload[i]);
   puts("");
+  if(hdr.device == PLAYER_POSITION_CODE)
+  {
+    player_position_cmd_t* cmd = (player_position_cmd_t*)payload;
+    printf("speeds: %d %d\n", 
+           (short)ntohs(cmd->speed), (short)ntohs(cmd->turnrate));
+  }
 #endif
 
   
@@ -847,7 +853,8 @@ int CClientData::Read()
       }
       break;
     case PLAYER_AWAITING_REST_OF_HEADER:
-      //puts("PLAYER_AWAITING_REST_OF_HEADER");
+      //printf("PLAYER_AWAITING_REST_OF_HEADER: %d/%d\n",
+             //readcnt,sizeof(player_msghdr_t));
       /* get the rest of the header */
       if((thisreadcnt = read(socket, (char*)(&hdrbuffer)+readcnt, 
                              sizeof(player_msghdr_t)-readcnt)) <= 0)

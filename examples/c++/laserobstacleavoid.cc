@@ -68,6 +68,10 @@ int main(int argc, char **argv)
   LaserProxy lp(&robot,0,'r');
 
   printf("%s\n",robot.conn.banner);
+
+  if(lp.access != 'r')
+    exit(-1);
+    
   
   /* maybe turn on the motors */
   //if(turnOnMotors && pp.SetMotorState(1))
