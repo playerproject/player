@@ -1,5 +1,5 @@
 
-if INCLUDE_PYLIBPLAYERC
+if INCLUDE_LIBPLAYERC_PY
 noinst_DATA = pythonbuild
 PYTHONINSTALL = pythoninstall
 endif
@@ -12,7 +12,7 @@ BUILT_SOURCES = playerc_wrap.c
 
 # use this target to update the bindings
 playerc_wrap.c: playerc.i
-	swig -I../.. -I$(top_srcdir)/server -python playerc.i
+	swig -I../.. -I$(top_srcdir)/server -python -dascii playerc.i
 
 # use distutils to build
 pythonbuild: playerc_wrap.c
