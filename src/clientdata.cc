@@ -85,6 +85,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
   if(0)
   {
+    printf("type:%u device:%u index:%u\n", 
+       hdr.type,hdr.device,hdr.device_index);
     printf("Request(%d):",payload_size);
     for(unsigned int i=0;i<payload_size;i++)
       printf("%c",payload[i]);
