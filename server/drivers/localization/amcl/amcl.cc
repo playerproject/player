@@ -1174,7 +1174,7 @@ int AdaptiveMCL::HandleRequests(void)
         HandleSetPose(client, request, len);
         break;
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+        if (PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -1199,7 +1199,7 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   if (len != reqlen)
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+    if (PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -1209,7 +1209,7 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   pose.v[0] = ((int32_t) ntohl(req.mean[0])) / 1000.0;
   pose.v[1] = ((int32_t) ntohl(req.mean[1])) / 1000.0;
   pose.v[2] = ((int32_t) ntohl(req.mean[2])) / 3600.0 * M_PI / 180;
-    
+
   cov = pf_matrix_zero();
   cov.m[0][0] = ((int64_t) ntohll(req.cov[0][0])) / 1e6;
   cov.m[0][1] = ((int64_t) ntohll(req.cov[0][1])) / 1e6;
@@ -1223,7 +1223,7 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   this->pf_init = false;
 
   // Give them an ack
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
+  if (PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
