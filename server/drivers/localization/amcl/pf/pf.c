@@ -10,6 +10,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "playercommon.h"
+
 #include "pf.h"
 #include "pf_pdf.h"
 #include "pf_kdtree.h"
@@ -81,7 +83,7 @@ void pf_free(pf_t *pf)
   for (i = 0; i < 2; i++)
   {
     free(pf->sets[i].clusters);
-    free(pf->sets[i].kdtree);
+    pf_kdtree_free(pf->sets[i].kdtree);
     free(pf->sets[i].samples);
   }
   free(pf);
@@ -162,14 +164,25 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
     total += sample->weight;
   }
   
-  //printf("sensor total %e\n", total);
-  assert(total > 0);
-    
-  // Normalize weights
-  for (i = 0; i < set->sample_count; i++)
+  if (total > 0.0)
   {
-    sample = set->samples + i;
-    sample->weight /= total;
+    // Normalize weights
+    for (i = 0; i < set->sample_count; i++)
+    {
+      sample = set->samples + i;
+      sample->weight /= total;
+    }
+  }
+  else
+  {
+    PLAYER_WARN("pdf has zero probability");
+
+    // Handle zero total
+    for (i = 0; i < set->sample_count; i++)
+    {
+      sample = set->samples + i;
+      sample->weight = 1.0 / set->sample_count;
+    }
   }
   
   return;
@@ -359,9 +372,9 @@ void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set)
     cluster->cov.m[2][2] = -2 * log(sqrt(cluster->m[2] * cluster->m[2] +
                                          cluster->m[3] * cluster->m[3]));
 
-    printf("cluster %d %d %f (%f %f %f)\n", i, cluster->count, cluster->weight,
-           cluster->mean.v[0], cluster->mean.v[1], cluster->mean.v[2]);
-    pf_matrix_fprintf(cluster->cov, stdout, "%e");
+    //printf("cluster %d %d %f (%f %f %f)\n", i, cluster->count, cluster->weight,
+    //       cluster->mean.v[0], cluster->mean.v[1], cluster->mean.v[2]);
+    //pf_matrix_fprintf(cluster->cov, stdout, "%e");
   }
 
   return;
@@ -389,64 +402,3 @@ int pf_get_cluster_stats(pf_t *pf, int clabel, double *weight,
 }
 
 
-
-/* REMOVE
-// Compute the distributions statistics (mean and covariance).
-// Assumes sample weights are normalized.
-void pf_calc_stats(pf_t *pf, pf_vector_t *mean, pf_matrix_t *cov)
-{
-  int i, j, k;
-  pf_sample_set_t *set;
-  pf_sample_t *sample;
-  double n;
-  double m[4];
-  double c[2][2];
-
-  set = pf->sets + pf->current_set;
-
-  n = 0.0;
-  
-  // Initialise mean to zero
-  for (j = 0; j < 4; j++)
-    m[j] = 0.0;
-
-  // Initialize covariance
-  for (j = 0; j < 2; j++)
-    for (k = 0; k < 2; k++)
-      c[j][k] = 0.0;
-  
-  for (i = 0; i < set->sample_count; i++)
-  {
-    sample = set->samples + i;
-
-    // Compute mean
-    n += sample->weight;
-    m[0] += sample->weight * sample->pose.v[0];
-    m[1] += sample->weight * sample->pose.v[1];
-    m[2] += sample->weight * cos(sample->pose.v[2]);
-    m[3] += sample->weight * sin(sample->pose.v[2]);
-
-    // Compute covariance in linear components
-    for (j = 0; j < 2; j++)
-      for (k = 0; k < 2; k++)
-        c[j][k] += sample->weight * sample->pose.v[j] * sample->pose.v[k];
-  }
-
-  mean->v[0] = m[0] / n;
-  mean->v[1] = m[1] / n;
-  mean->v[2] = atan2(m[3], m[2]);
-
-  *cov = pf_matrix_zero();
-
-  // Covariance in linear compontents
-  for (j = 0; j < 2; j++)
-    for (k = 0; k < 2; k++)
-      cov->m[j][k] = c[j][k] / n - mean->v[j] * mean->v[k];
-
-  // Covariance in angular components; I think this is the correct
-  // formula for circular statistics.
-  cov->m[2][2] = -2 * log(sqrt(m[2] * m[2] + m[3] * m[3]));
-  
-  return;
-}
-*/
