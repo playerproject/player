@@ -195,8 +195,9 @@ void LifoMCom_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_GAZEBO
-void GzPosition_Register(DriverTable *table);
+void GzFiducial_Register(DriverTable *table);
 void GzLaser_Register(DriverTable *table);
+void GzPosition_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
@@ -469,8 +470,9 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_GAZEBO
-  GzPosition_Register(driverTable);
+  GzFiducial_Register(driverTable);
   GzLaser_Register(driverTable);
+  GzPosition_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
