@@ -52,6 +52,14 @@
 struct _playerc_client_t;
 struct _playerc_device_t;
 
+// Items in incoming data queue.
+typedef struct
+{
+  player_msghdr_t header;
+  int len;
+  void *data;
+} playerc_client_item_t;
+
 
 // Typedefs for proxy callback functions
 typedef void (*playerc_putdata_fn_t) (void *device, char *header, char *data, size_t len);
@@ -89,6 +97,10 @@ typedef struct _playerc_client_t
   // List of subscribed devices
   int device_count;
   struct _playerc_device_t *device[32];
+
+  // A circular queue used to buffer incoming data packets.
+  int qfirst, qlen, qsize;
+  playerc_client_item_t qitems[128];
     
 } playerc_client_t;
 
