@@ -23,11 +23,12 @@
 #include <list>
 
 #define USAGE \
-  "USAGE: joystick [-v] [-3d] [-c] <host:port> [<host:port>] ... \n" \
-  "       -v  : verbose mode; print Player device state on stdout\n" \
-  "       -3d : connect to position3d interface (instead of position)\n" \
-  "       -c  : continuously send commands\n" \
-  "       -k  : use keyboard control\n" \
+  "USAGE: joystick [options] <host:port> [<host:port>] ... \n" \
+  "       -v   : verbose mode; print Player device state on stdout\n" \
+  "       -3d  : connect to position3d interface (instead of position)\n" \
+  "       -c   : continuously send commands\n" \
+  "       -k   : use keyboard control\n" \
+  "       -udp : use UDP instead of TCP\n" \
   "       <host:port> : connect to a Player on this host and port\n"
 
 
@@ -57,6 +58,9 @@ bool use_keyboard = false;
 
 // joystick fd
 int jfd;
+
+// allow either TCP or UDP
+int protocol = PLAYER_TRANSPORT_TCP;
 
 // define a class to do interaction with Player
 class Client
@@ -369,7 +373,7 @@ Client::Client(char* host, int port )
     fflush( stdout );
   
   /* Connect to the Player server */
-  assert( player = new PlayerClient(host,port) );  
+  assert( player = new PlayerClient(host,port,protocol) );  
   if(!threed)
   {
     assert( pp = new PositionProxy(player,0,'a') );
@@ -487,6 +491,8 @@ int main(int argc, char** argv)
 	always_command = true;
       else if( strcmp( argv[i], "-k" ) == 0 )
 	use_keyboard = true;
+      else if( strcmp( argv[i], "-udp" ) == 0 )
+	protocol = PLAYER_TRANSPORT_UDP;
       else
 	puts( USAGE ); // malformed arg - print usage hints
     }
