@@ -129,8 +129,8 @@ void laser_update(laser_t *laser)
   rtk_menuitem_check(laser->subscribe_item, laser->proxy->info.subscribed);
 
   // Update the configuration stuff
-  if (laser->proxy->info.subscribed)
-    laser_update_config(laser);
+  //if (laser->proxy->info.subscribed)
+  //laser_update_config(laser);
   
   if (laser->proxy->info.subscribed)
   {

@@ -372,7 +372,7 @@ class ConfigFile
   private: CProperty *properties;
 
   // Name of the file we loaded
-  private: char *filename;
+  public: char *filename;
 
   // Conversion units
   private: double unit_length;

@@ -13,12 +13,14 @@
 #define USAGE \
   "USAGE: playerprint [-h <host>] [-p <port>] <device>\n" \
   "       -h <host>: connect to Player on this host\n" \
-  "       -p <port>: connect to Player on this TCP port\n" 
+  "       -p <port>: connect to Player on this TCP port\n" \
+  "       -t : print the proxy's timestamp before the data\n" 
 
 char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
 int idx = 0;
 char* dev = NULL;
+bool print_timestamp = false;
 
 /* easy little command line argument parser */
 void
@@ -56,14 +58,18 @@ parse_args(int argc, char** argv)
         exit(1);
       }
     }
+    else if(!strcmp(argv[i],"-t"))
+      {
+	print_timestamp = true;
+      }
     else
-    {
-      puts(USAGE);
-      exit(1);
-    }
+      {
+	puts(USAGE);
+	exit(1);
+      }
     i++;
   }
-
+  
   dev = argv[argc-1];
   if((colon = strchr(argv[argc-1],':')))
   {
@@ -126,7 +132,15 @@ int main(int argc, char **argv)
            (last.tv_sec + last.tv_usec/1e6));
     last=pclient.timestamp;
     */
-
+    
+    if( print_timestamp )
+      {
+	double timestamp = 
+	  (double)cp->timestamp.tv_sec + ((double)cp->timestamp.tv_usec)/1e6;
+	
+	printf( "#timestamp: %.3f\n", timestamp );
+      }
+    
     cp->Print();
   }
 }

@@ -292,9 +292,9 @@ void ServiceAdvLSD_Register(DriverTable* table);
 void StgSimulation_Register(DriverTable *table);
 void StgLaser_Register(DriverTable *table);
 void StgPosition_Register(DriverTable *table);
-void StgFiducial_Register(DriverTable *table);
-void StgSonar_Register(DriverTable *table);
-void StgBlinkenlight_Register(DriverTable *table);
+//void StgFiducial_Register(DriverTable *table);
+//void StgSonar_Register(DriverTable *table);
+//void StgBlinkenlight_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_NOMAD
@@ -674,8 +674,8 @@ register_devices()
   StgSimulation_Register(driverTable);
   StgLaser_Register(driverTable);
   StgPosition_Register(driverTable);
-  StgFiducial_Register(driverTable);
-  StgSonar_Register(driverTable);
-  StgBlinkenlight_Register(driverTable);
+  //StgFiducial_Register(driverTable);
+  //StgSonar_Register(driverTable);
+  //StgBlinkenlight_Register(driverTable);
 #endif
 }

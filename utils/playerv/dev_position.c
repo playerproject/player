@@ -129,10 +129,14 @@ void position_update(position_t *self)
       if (playerc_position_subscribe(self->proxy, PLAYER_ALL_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
+      puts( "getting position geom" );
+
       // Get the robot geometry
       if (playerc_position_get_geom(self->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
       
+      puts( "done" );
+
       rtk_fig_color_rgb32(self->robot_fig, COLOR_POSITION_ROBOT);
       rtk_fig_rectangle(self->robot_fig, self->proxy->pose[0],
                         self->proxy->pose[1], self->proxy->pose[2],
