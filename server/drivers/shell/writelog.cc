@@ -31,14 +31,21 @@
 /** @defgroup player_driver_writelog writelog
 
 The writelog driver will write data from another device to a log file.
-Data is logged to the current directory, to a file named
-"writelog_YYYY_MM_DD_HH_MM.log", where YYYY is the year, MM is the
-month, etc.
-
 The @ref player_driver_readlog driver can be used to replay the data
-(to client programs, the replayed data will appear to come from the real
-sensors).
+(to client programs, the replayed data will appear to come from the
+real sensors).
 
+For help in controlling logging, try @ref player_util_playervcr.
+Note that you must declare a @ref player_interface_log device to allow
+logging control.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_log : can be used to turn logging on/off
 
 @par Requires
 
@@ -58,24 +65,25 @@ The writelog driver can will log data from the following interfaces:
 - @ref player_interface_truth
 - @ref player_interface_wifi
 
+@par Configuration requests
 
-@par Provides
+- PLAYER_LOG_SET_WRITE_STATE
+- PLAYER_LOG_GET_STATE
 
-- @ref player_interface_log : turn logging on/off.  The following
-  requests are supported:
-  - PLAYER_LOG_SET_WRITE_STATE
-  - PLAYER_LOG_GET_STATE
-
-  
 @par Configuration file options
 
-- enable 0
+- filename (string)
+  - Default: "writelog_YYYY_MM_DD_HH_MM.log", where YYYY is the year,
+    MM is the month, etc.
+  - Name of logfile.
+- enable (integer)
+  - Default: 0
   - Default log state; set to 1 for continous logging.
-
-- camera_save_images 0
-  - Save camera data to image files as well as to the log file.  The image files
-  are named "writelog_YYYY_MM_DD_HH_MM_camera_II_NNNNNNN.pnm", where II is the device
-  index and NNNNNNN is the frame number.
+- camera_save_images (integer)
+  - Default: 0
+  - Save camera data to image files as well as to the log file.  The image
+    files are named "writelog_YYYY_MM_DD_HH_MM_camera_II_NNNNNNN.pnm",
+    where II is the device index and NNNNNNN is the frame number.
       
 @par Example 
 

@@ -35,65 +35,114 @@
 /** @{ */
 /** @defgroup player_driver_p2os p2os
 
-Many robots made by ActivMedia, such as the Pioneer series and the AmigoBot,
-are controlled by a microcontroller that runs a special embedded operating
-system called P2OS (on older robots it is called PSOS).  The host computer
-talks to the P2OS microcontroller over a standard RS232 serial line.  Player
-includes a driver that offer access to the various P2OS-mediated devices,
-logically splitting up the devices' functionality.
+Many robots made by ActivMedia, such as the Pioneer series and the
+AmigoBot, are controlled by a microcontroller that runs a special embedded
+operating system called P2OS (aka AROS, PSOS).  The host computer
+talks to the P2OS microcontroller over a standard RS232 serial line.
+This driver offer access to the various P2OS-mediated devices, logically
+splitting up the devices' functionality.
 
+@par Compile-time dependencies
+
+- none
 
 @par Provides
 
-The p2os driver provides the following device interfaces.
+The p2os driver provides the following device interfaces, some of
+them named:
 
-- @ref player_interface_position "odometry"
+- "odometry" @ref player_interface_position
   - This interface returns odometry data, and accepts velocity commands.
 
-- @ref player_interface_position "compass"
+- "compass" @ref player_interface_position
   - This interface returns compass data (if equipped).
 
-- @ref player_interface_position "gyro"
+- "gyro" @ref player_interface_position
   - This interface returns gyroscope data (if equipped).
 
 - @ref player_interface_power
   - Returns the current battery voltage (12 V when fully charged).
 
-TODO: more
-  
-  
+- @ref player_interface_sonar
+  - Returns data from sonar arrays (if equipped)
+
+- @ref player_interface_aio
+  - Returns data from analog I/O ports (if equipped)
+
+- @ref player_interface_dio
+  - Returns data from digital I/O ports (if equipped)
+
+- @ref player_interface_gripper
+  - Controls gripper (if equipped)
+
+- @ref player_interface_bumper
+  - Returns data from bumper array (if equipped)
+
+- @ref player_interface_blobfinder
+  - Controls a CMUCam2 connected to the AUX port on the P2OS board
+    (if equipped).
+
+- @ref player_interface_sound
+  - Controls the sound system of the AmigoBot, which can play back
+    recorded wav files.
+
 @par Supported configuration requests
 
-TODO
+- "odometry" @ref player_interface_position:
+  - PLAYER_POSITION_SET_ODOM_REQ
+  - PLAYER_POSITION_MOTOR_POWER_REQ
+  - PLAYER_POSITION_RESET_ODOM_REQ
+  - PLAYER_POSITION_GET_GEOM_REQ
+  - PLAYER_POSITION_VELOCITY_MODE_REQ
+- @ref player_interface_sonar:
+  - PLAYER_SONAR_POWER_REQ
+  - PLAYER_SONAR_GET_GEOM_REQ
+- @ref player_interface_blobfinder
+  - PLAYER_BLOBFINDER_SET_COLOR_REQ
+  - PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ
 
 @par Configuration file options
 
-- port "/dev/ttyS0"
+- port (string)
+  - Default: "/dev/ttyS0"
   - Serial port used to communicate with the robot.
-
-- max_xspeed 500
-  - Maximum translational velocity, in mm/sec.
-
-- max_yawspeed 100
-  - Maximum rotational velocity, in deg/sec.
-
-- max_xaccel 0
-  - Maximum translational acceleration, in mm/sec/sec; nonnegative.  
+- radio (integer)
+  - Default: 0
+  - Nonzero if a radio modem is being used; zero for a direct serial link.
+- joystick (integer)
+  - Default: 0
+  - Use direct joystick control
+- direct_wheel_vel_control (integer)
+  - Default: 1
+  - Send direct wheel velocity commands to P2OS (as opposed to sending
+    translational and rotational velocities and letting P2OS smoothly
+    achieve them).
+- max_xspeed (length)
+  - Default: 0.5 m/s
+  - Maximum translational velocity
+- max_yawspeed (angle)
+  - Default: 100 deg/s
+  - Maximum rotational velocity
+- max_xaccel (length)
+  - Default: 0
+  - Maximum translational acceleration, in length/sec/sec; nonnegative.
     Zero means use the robot's default value.
-
-- max_xdecel 0
-  - Maximum translational deceleration, in mm/sec/sec; nonpositive.  
+- max_xdecel (length)
+  - Default: 0
+  - Maximum translational deceleration, in length/sec/sec; nonpositive.  
     Zero means use the robot's default value.
-
-- max_yawaccel 0
-  - Maximum rotational acceleration, in deg/sec/sec; nonnegative.  
+- max_yawaccel (angle)
+  - Default: 0
+  - Maximum rotational acceleration, in angle/sec/sec; nonnegative.  
     Zero means use the robot's default value.
-
-- max_yawdecel 0
-  - Maximum rotational deceleration, in deg/sec/sec; nonpositive.  
+- max_yawdecel (angle)
+  - Default: 0
+  - Maximum rotational deceleration, in angle/sec/sec; nonpositive.  
     Zero means use the robot's default value.
+- use_vel_band (integer)
+  - Default: 0
+  - Use velocity bands
 
-TODO
   
 @par Example 
 
@@ -101,9 +150,13 @@ TODO
 driver
 (
   name "p2os"
-  provides ["odometry::position:0" "compass::position:1" "power:0"]
+  provides ["odometry::position:0" "compass::position:1" "sonar:0" "power:0"]
 )
 @endverbatim
+
+@par Authors
+
+Brian Gerkey, Kasper Stoy, James McKenna
 */
 /** @} */
 
@@ -300,18 +353,28 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   
   // Read config file options
   this->psos_serial_port = cf->ReadString(section,"port",DEFAULT_P2OS_PORT);
-  this->radio_modemp = cf->ReadInt(section, "radio", radio_modemp);
-  this->joystickp = cf->ReadInt(section, "joystick", joystickp);
+  this->radio_modemp = cf->ReadInt(section, "radio", 0);
+  this->joystickp = cf->ReadInt(section, "joystick", 0);
   this->direct_wheel_vel_control = 
           cf->ReadInt(section, "direct_wheel_vel_control", 1);
-  this->motor_max_speed = cf->ReadInt(section, "max_xspeed", 
-                                      MOTOR_DEF_MAX_SPEED);
-  this->motor_max_turnspeed = cf->ReadInt(section, "max_yawspeed", 
-                                          MOTOR_DEF_MAX_TURNSPEED);
-  this->motor_max_trans_accel = (short)cf->ReadInt(section, "max_xaccel", 0);
-  this->motor_max_trans_decel = (short)cf->ReadInt(section, "max_xdecel", 0);
-  this->motor_max_rot_accel = (short)cf->ReadInt(section, "max_yawaccel", 0);
-  this->motor_max_rot_decel = (short)cf->ReadInt(section, "max_yawdecel", 0);
+  this->motor_max_speed = (int)rint(1e3 * cf->ReadLength(section,
+                                                         "max_xspeed",
+                                                         MOTOR_DEF_MAX_SPEED));
+  this->motor_max_turnspeed = (int)rint(RTOD(cf->ReadAngle(section, 
+                                                         "max_yawspeed", 
+                                                         MOTOR_DEF_MAX_TURNSPEED)));
+  this->motor_max_trans_accel = (short)rint(1e3 * 
+                                            cf->ReadLength(section, 
+                                                           "max_xaccel", 0));
+  this->motor_max_trans_decel = (short)rint(1e3 *
+                                            cf->ReadLength(section, 
+                                                           "max_xdecel", 0));
+  this->motor_max_rot_accel = (short)rint(RTOD(cf->ReadAngle(section, 
+                                                             "max_yawaccel", 
+                                                             0)));
+  this->motor_max_rot_decel = (short)rint(RTOD(cf->ReadAngle(section, 
+                                                             "max_yawdecel", 
+                                                             0)));
 
   this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
 

@@ -42,8 +42,8 @@
 #include <robot_params.h>
    
 // Default max speeds
-#define MOTOR_DEF_MAX_SPEED 500
-#define MOTOR_DEF_MAX_TURNSPEED 100
+#define MOTOR_DEF_MAX_SPEED 0.5
+#define MOTOR_DEF_MAX_TURNSPEED DTOR(100)
 
 /* 
  * Apparently, newer kernel require a large value (200000) here.  It only 

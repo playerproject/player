@@ -34,6 +34,10 @@ Mobility Platform), which is an experimental robotic version of the
 Segway HT (Human Transport), a kind of two-wheeled, self-balancing
 electric scooter.
 
+@par Compile-time dependencies
+
+- libcanlib (from Kvaser)
+
 @par Notes
 
 - Because of its power, weight, height, and dynamics, the Segway RMP is
@@ -52,16 +56,14 @@ continuously send your desired velocities.
 
 - Most of the configuration requests have not been tested.
 
-- Currently, the only supported type of CAN I/O is "kvaser",
-which uses Kvaser, Inc.'s CANLIB interface library.  This library provides
-access to CAN cards made by Kvaser, such as the LAPcan II.  However, the CAN 
+- Currently, the only supported type of CAN I/O is "kvaser", which uses
+Kvaser, Inc.'s CANLIB interface library.  This library provides access
+to CAN cards made by Kvaser, such as the LAPcan II.  However, the CAN
 I/O subsystem within this driver is modular, so that it should be pretty
 straightforward to add support for other CAN cards.
 
 
 @par Provides
-
-The RMP driver provides the following device interfaces.
 
 - @ref player_interface_position
   - This interface returns odometry data, and accepts velocity commands.
@@ -74,7 +76,7 @@ The RMP driver provides the following device interfaces.
 - @ref player_interface_power
   - Returns the current battery voltage (72 V when fully charged).
 
-@par Supported configuration requests
+@par Configuration requests
 
 - position interface
   - PLAYER_POSITION_POWER_REQ
@@ -82,16 +84,23 @@ The RMP driver provides the following device interfaces.
 - position3d interface
   - PLAYER_POSITION_POWER_REQ
 
+@par Requires
+
+- none
+
 @par Configuration file options
 
-- canio "kvaser"
+- canio (string)
+  - Default: "kvaser"
   - Type of CANbus driver.
 
-- max_xspeed 0.5
-  - Maximum linear speed (m/sec)
+- max_xspeed (length / sec)
+  - Default: 0.5 m/s
+  - Maximum linear speed
 
-- max_yawspeed 40
-  - Maximum angular speed (deg/sec)
+- max_yawspeed (angle / sec)
+  - Default: 40 deg/sec
+  - Maximum angular speed
       
 @par Example 
 
