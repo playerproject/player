@@ -75,10 +75,11 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
     }
   else
     {
-      printf( "Initializing Stage model with interface \"%s\"\n", enttype );
-
       char* model_name = 
 	(char*)config->ReadString(section, "model", NULL );
+      
+      printf( "    connecting Stage model \"%s\" with interface \"%s\" \n", 
+	      model_name, enttype );
       
       if( model_name == NULL )
 	PLAYER_ERROR1( "device \"%s\" uses the Stage1p4 driver but has "
@@ -93,8 +94,11 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
 	stg_world_model_name_lookup( Stage1p4::world, model_name );
       
       if( this->model  == NULL )
-	PLAYER_ERROR1( "device %s can't find a Stage model with the same name",
-		       model_name );
+	{
+	  PLAYER_ERROR1( "Failed to find a Stage model named \"%s\"",
+			 model_name );
+	  exit( -1 );
+	}
     }  
 }
 
