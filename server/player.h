@@ -802,7 +802,7 @@ typedef struct player_laser_data
 
   /** Range readings (mm). Note that some drivers can produce negative
       values.  */
-  int16_t ranges[PLAYER_LASER_MAX_SAMPLES];
+  uint16_t ranges[PLAYER_LASER_MAX_SAMPLES];
 
   /** Intensity readings. */
   uint8_t intensity[PLAYER_LASER_MAX_SAMPLES];
