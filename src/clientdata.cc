@@ -141,6 +141,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   bool devicerequest=false;
   CDevice* devicep;
   player_device_req_t req;
+  player_device_req_t savereq;
   player_device_datamode_req_t datamode;
   player_device_datafreq_req_t datafreq;
   player_msghdr_t reply_hdr;
@@ -224,10 +225,9 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                 requesttype = PLAYER_MSGTYPE_RESP_NACK;
                 break;
               }
-              req = *((player_device_req_t*)payload);
-              req.code = ntohs(req.code);
-              req.index = ntohs(req.index);
-              UpdateRequested(req);
+              savereq = *((player_device_req_t*)payload);
+              savereq.code = ntohs(savereq.code);
+              savereq.index = ntohs(savereq.index);
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
               break;
             case PLAYER_PLAYER_DATAMODE_REQ:
@@ -393,6 +393,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   if(requesttype)
   {
     pthread_mutex_lock(&access);
+    UpdateRequested(savereq);
 
     reply_hdr.stx = htons(PLAYER_STXX);
     reply_hdr.type = htons(requesttype);
@@ -528,7 +529,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
   CDeviceSubscription* thisub;
   CDeviceSubscription* prevsub;
 
-  pthread_mutex_lock(&access);
+  //pthread_mutex_lock(&access);
 
   // find place to place the update
   for(thisub=requested,prevsub=NULL;thisub;
@@ -647,7 +648,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
     printf("Unknown unused request \"%x:%x:%c\".\n",
                     req.code, req.index, req.access);
   }
-  pthread_mutex_unlock(&access);
+  //pthread_mutex_unlock(&access);
 }
 
 unsigned char 
