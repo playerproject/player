@@ -32,8 +32,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-StgTime::StgTime()
+StgTime::StgTime( Stage1p4* stage )
 {
+  this->stage = stage; 
   return;
 }
 
@@ -52,11 +53,13 @@ int StgTime::GetTime(struct timeval* time)
 {
   //puts( "get time" );
   
+  stage->CheckForData();
+
   double seconds = 0.0;
-  double *seconds_ptr = (double*)Stage1p4::prop_buffer[STG_WORLD_TIME]->data;
 
-  if( seconds_ptr ) seconds = *seconds_ptr;
-
+  if( Stage1p4::prop_buffer[STG_WORLD_TIME] )    
+    seconds = *(double*)Stage1p4::prop_buffer[STG_WORLD_TIME]->data;
+  
   time->tv_sec =  floor(seconds);
   time->tv_usec =  floor(fmod(seconds, 1.0) * 1e6);
   

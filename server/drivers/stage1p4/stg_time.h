@@ -20,7 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////
 //
 // Desc: Stage (simulator) time
-// Author: Richard Vaughan, based on Andrew Howard's gz_time.h
+// Author: Richard Vaughan
 // Date: 7 May 2003
 // CVS: $Id$
 //
@@ -31,17 +31,21 @@
 
 #include "playertime.h"
 
+class Stage1p4;
+
 // Incremental navigation driver
 class StgTime : public PlayerTime
 {
   // Constructor
-  public: StgTime();
+  public: StgTime( Stage1p4* stage );
 
   // Destructor
   public: virtual ~StgTime();
 
   // Get the simulator time
   public: int GetTime(struct timeval* time);
+
+ private: Stage1p4* stage;
 };
 
 #endif

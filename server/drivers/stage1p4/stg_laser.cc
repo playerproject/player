@@ -37,6 +37,7 @@ public:
 
   virtual int PutConfig(player_device_id_t* device, void* client, 
 			void* data, size_t len);
+  virtual int Setup();
 };
 
 StgLaser::StgLaser(char* interface, ConfigFile* cf, int section ) 
@@ -63,6 +64,14 @@ void StgLaser_Register(DriverTable* table)
   table->AddDriver("stg_laser", PLAYER_ALL_MODE, StgLaser_Init);
 }
 
+int StgLaser::Setup()
+{  
+  puts( "STG_LASERSONAR setup" );
+  this->StageSubscribe( STG_MOD_LASER_DATA );
+  puts( "STG_LASER setup done" );
+
+  return 0;
+}
 // override GetData to get data from Stage on demand, rather than the
 // standard model of the source filling a buffer periodically
 size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
@@ -71,18 +80,13 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
   PLAYER_MSG2(" STG_LASER GETDATA section %d -> model %d",
 	      this->section, this->stage_id );
   
-  // request laser data from Stage
-  
-  //stg_transducer_t* trans;
-  //int count;
-  //stg_model_get_transducers( this->stage_client, this->stage_id, 
-  //		     &trans, &count );
-  
-  stg_laser_data_t* sdata = NULL;
-  size_t slen = 0;
-  assert( stg_get_property( this->stage_client, this->stage_id, 
-			    STG_MOD_LASER_DATA,
-			    (void**)&sdata, &slen ) == 0 );
+  this->WaitForData( this->stage_id, STG_MOD_LASER_DATA );
+
+  // copy data from Stage    
+  stg_property_t* prop = Stage1p4::prop_buffer[STG_MOD_LASER_DATA];
+
+  stg_laser_data_t* sdata = (stg_laser_data_t*)prop->data;
+  size_t slen = prop->len;
   
   assert( sdata );
   assert( slen == sizeof(stg_laser_data_t) );
@@ -95,15 +99,16 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
   pdata.max_angle = htons( (int16_t)(RTOD(sdata->angle_max) * 100) );
   pdata.resolution = htons( (uint16_t)(RTOD(ang_resolution) * 100) );
   pdata.range_count = htons( (uint16_t)sdata->sample_count );
-  
+  pdata.range_res = htons( (uint16_t)1 );
+
   for( int i=0; i< sdata->sample_count; i++ )
     {
+      //printf( "range %d %.2f\n", i, sdata->samples[i].range );
       pdata.ranges[i] = htons( (uint16_t)(sdata->samples[i].range * 1000.0 ) );
+      //printf( "(%d %d) ", i, pdata.ranges[i] );
       pdata.intensity[i] = 0;
     }
   
-  free( sdata );
-
   // publish this data
   CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
   
@@ -127,13 +132,22 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
     {  
     case PLAYER_LASER_GET_GEOM:
       {
+	puts( "waiting for laser geom from Stage" );
+
 	// get one laser packet, as it contains all the info we need
-	stg_laser_data_t* sdata = NULL;
-	size_t slen = 0;
-	assert( stg_get_property( this->stage_client, this->stage_id, 
-				  STG_MOD_LASER_DATA,
-				  (void**)&sdata, &slen ) == 0 );
+	this->WaitForData( this->stage_id, STG_MOD_LASER_DATA );
+
+	puts( "getting laser geom from Stage" );
+
+	printf( "i see %d bytes of laser data\n", 
+		Stage1p4::prop_buffer[STG_MOD_LASER_DATA]->len );
+
+	// copy data from Stage    
+	stg_property_t* prop = Stage1p4::prop_buffer[STG_MOD_LASER_DATA];
 	
+	stg_laser_data_t* sdata = (stg_laser_data_t*)prop->data;
+	size_t slen = prop->len;
+
 	assert( sdata );
 	assert( slen == sizeof(stg_laser_data_t) );
 		
@@ -146,8 +160,6 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sdata->size.x)); 
 	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sdata->size.y)); 
 	
-	free( sdata );
-
 	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		  &pgeom, sizeof(pgeom) );
       }

@@ -43,6 +43,7 @@ public:
     virtual int PutConfig(player_device_id_t* device, void* client, 
 			  void* data, size_t len);
   protected:
+  virtual int Setup(){ this->StageSubscribe( STG_MOD_POSE ); return 0;};
   
   player_position_data_t position_data;
 };
@@ -79,8 +80,6 @@ void StgPosition_Register(DriverTable* table)
   table->AddDriver("stg_position", PLAYER_ALL_MODE, StgPosition_Init);
 }
 
-// override GetData to get data from Stage on demand, rather than the
-// standard model of the source filling a buffer periodically
 size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 			    uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
@@ -88,33 +87,28 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 	      this->section, this->stage_id );
 
   // request position data from Stage
-
-  stg_pose_t* pose;
-  size_t plen;
-  assert( stg_get_property( this->stage_client, this->stage_id, 
-			    STG_MOD_POSE,
-			    (void**)&pose, &plen ) == 0 );
+  this->WaitForData( this->stage_id, STG_MOD_POSE );
   
+  // copy data from Stage    
+  stg_property_t* prop = Stage1p4::prop_buffer[STG_MOD_POSE];
+  
+  stg_pose_t* pose = (stg_pose_t*)prop->data;
+  size_t plen = prop->len;
   assert( plen == sizeof(stg_pose_t) );
   
-  
-  PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose.x, pose.y, pose.a );
+  PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose->x, pose->y, pose->a );
 
   memset( &position_data, 0, sizeof(position_data) );
   // pack the data into player format
   position_data.xpos = ntohl((int32_t)(1000.0 * pose->x));
   position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
   position_data.yaw = ntohl((int32_t)(RTOD(pose->a)));
-  
-  free(pose);
 
   // publish this data
   CDevice::PutData( &position_data, sizeof(position_data), 0,0 ); // time gets filled in
 
   // now inherit the standard data-getting behavior 
   return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
-  
-  //return 0;
 }
 
 void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)

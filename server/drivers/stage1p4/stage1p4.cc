@@ -102,7 +102,7 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
     {
       // steal the global clock
       if( GlobalTime ) delete GlobalTime;
-      assert( (GlobalTime = new StgTime() ));
+      assert( (GlobalTime = new StgTime(this) ));
       
       memset( prop_buffer, 0, STG_MESSAGE_COUNT * sizeof(stg_property_t*) );
       memset( subs, 0, STG_MESSAGE_COUNT * sizeof(char) );
@@ -182,7 +182,7 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
       stg_property_free(reply);
       */
 
-      this->StartThread();
+      //this->StartThread();
     } 
 }
 
@@ -193,11 +193,8 @@ Stage1p4::~Stage1p4()
     stg_client_free( this->stage_client );
 }
 
-int Stage1p4::Setup()
-{  
-  // Look up my name to get a Stage model id from the array created by
-  // the constructor.
-
+void Stage1p4::StageSubscribe( stg_prop_id_t data )
+{ 
   // load my name from the config file
   const char* name = config->ReadString( section, "model", "<no name>" );
   PLAYER_MSG1( "stage1p4 starting device name \"%s\"", name );
@@ -215,7 +212,7 @@ int Stage1p4::Setup()
   if( stage_id == -1 )
     {
       PLAYER_ERROR1( "stage1p4: device name \"%s\" doesn't match a Stage model", name );
-      return -1; // fail
+      exit(-1);
     }
 #ifdef DEBUG
   else
@@ -223,30 +220,76 @@ int Stage1p4::Setup()
 		   name, this->stage_id );    
 #endif
 
-  return 0; //ok
+ // subscribe to sonar data
+  stg_property_t* prop =  stg_property_create();
+  prop->id = this->stage_id;
+  prop->timestamp = 1.0;
+  prop->property = data;
+  prop->action = STG_SUBSCRIBE;
+  stg_property_write( Stage1p4::stage_client, prop );
+  stg_property_free( prop );
+  
+  // wait until a subscription reply comes back
+  int timeout = 500;
+  while( subs[data] == 0 )
+    {
+      this->CheckForData();
+      
+      if( --timeout == 0 )
+	break;
+      usleep(100);
+    }
+  
+  if( subs[data] == 0 )
+    {
+      PLAYER_ERROR( "stage1p4: sonar subscription failed (timeout)" );
+      exit(-1);
+    }
 }
 
 int Stage1p4::Shutdown()
 {
-  this->StopThread();
+  //this->StopThread();
 
   return 0; //ok
 }
 
 
-void Stage1p4::Main( void )
+void Stage1p4::WaitForData( stg_id_t model, stg_prop_id_t datatype )
 {
-  while(1)
+  // wait until a reply shows up in the buffer
+  while( prop_buffer[datatype] == 0 )
     {
-      // test if we are supposed to cancel
-      pthread_testcancel();
+      //printf( "waiting for a property for %s\n", 
+      //      stg_property_string(datatype) );
+      
+      this->CheckForData();
+      usleep(100);
+    }
+  
+  while( prop_buffer[datatype]->len < 1 )
+    {
+      // printf( "waiting for some data bytes for %s\n", 
+      //      stg_property_string(datatype) );
+     
+      this->CheckForData();
+      usleep(100);
+    }
+}
 
-      printf( "reading subscribed property on fd %d\n", Stage1p4::stage_client->pollfd.fd );
+void Stage1p4::CheckForData( void )
+{
+  // see if any data is pending
+  poll( &Stage1p4::stage_client->pollfd, 1, 0 );
+  
+  if( Stage1p4::stage_client->pollfd.revents & POLLIN )
+    {
+      //puts( "POLLIN" );
       stg_property_t* prop = stg_property_read( Stage1p4::stage_client );
-
+      
       //printf( "received property [%d:%s]\n",
       //      prop->id, stg_property_string(prop->property) );
-
+      
       // handle subscription results
       if( prop->action == STG_SUBSCRIBE )
 	{
@@ -255,6 +298,9 @@ void Stage1p4::Main( void )
 	}
       else
 	{
+	  //printf( "storing [%d:%s] %d bytes of data\n",
+	  //  prop->id, stg_property_string(prop->property), prop->len );
+	  
 	  // stash this property in the array
 	  prop_buffer[prop->property] = (stg_property_t*)
 	    realloc( prop_buffer[prop->property], sizeof(stg_property_t) + prop->len );
@@ -262,6 +308,16 @@ void Stage1p4::Main( void )
 	  
 	  stg_property_free(prop);
 	}
+    }
+}
+
+void Stage1p4::Main( void )
+{
+  while(1)
+    {
+      // test if we are supposed to cancel
+      pthread_testcancel();
+
     }
 }
 

@@ -29,6 +29,8 @@ class StgSimulation:public Stage1p4
 {
 public:
   StgSimulation(char* interface, ConfigFile* cf, int section);
+
+  virtual int Setup(){};
 };
 
 StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section ) 
