@@ -162,7 +162,7 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
    * Bind it to the port indicated
    * INADDR_ANY indicates that any network interface (IP address)
    * for the local host may be used (presumably the OS will choose the 
-   * right * one).
+   * right one).
    *
    * Specifying sin_port = 0 would allow the system to choose the port.
    */

@@ -35,6 +35,15 @@
 #endif
 
 #include <dirent.h>
+
+#if !HAVE_SCANDIR
+extern "C" {
+  int scandir(const char *dir, struct dirent ***namelist,
+              int (*select)(const struct dirent *),
+              int (*compar)(const struct dirent **, const struct dirent **));
+}
+#endif
+
 #include <dlfcn.h>
 #include <stdio.h>
 #include <errno.h>
@@ -267,9 +276,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   } 
  
   // open all the files in the IO directory
-#if HAVE_SCANDIR
   n = scandir( directory, &namelist, MatchDeviceName, 0);
-#endif
   if (n < 0)
     perror("scandir");
   else
