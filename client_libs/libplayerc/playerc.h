@@ -241,8 +241,10 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
 /** Destroy a single-client object. */
 void playerc_client_destroy(playerc_client_t *client);
 
-/** Connect/disconnect to the server. */
+/** Connect to the server. */
 int playerc_client_connect(playerc_client_t *client);
+
+/** Disconnect from the server. */
 int playerc_client_disconnect(playerc_client_t *client);
 
 /** Change the server's data delivery mode. */
