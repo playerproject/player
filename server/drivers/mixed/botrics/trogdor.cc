@@ -52,6 +52,20 @@
 
 #include "trogdor_constants.h"
 
+
+#define        METRES_PER_INCH        (0.0254)
+#define        INCH_PER_METRE         (39.370)
+
+#define        CEREBELLUM_LOOP_FREQUENCY  (300.0)
+
+#define        MACH5_WHEEL_CIRCUMFERENCE  (4.25 * METRES_PER_INCH * 3.1415926535)
+#define        MACH5_TICKS_REV       (5800.0)
+#define        WHEELBASE        (.317)
+#define        METRES_PER_CEREBELLUM (1.0/(MACH5_TICKS_REV / MACH5_WHEEL_CIRCUMFERENCE))
+#define        METRES_PER_CEREBELLUM_VELOCITY (1.0/(METRES_PER_CEREBELLUM * CEREBELLUM_LOOP_FREQUENCY))
+
+#define        ROT_VEL_FACT_RAD (WHEELBASE*METRES_PER_CEREBELLUM_VELOCITY/2)
+
 static void StopRobot(void* trogdordev);
 
 class Trogdor : public CDevice 
@@ -275,12 +289,13 @@ void
 Trogdor::Main()
 {
   player_position_cmd_t command;
-  //player_position_data_t data;
+  player_position_data_t data;
   int lvel, rvel;
   int ltics, rtics;
   double rotational_term, command_lvel, command_rvel;
   void* client;
-  char buf[256];
+  char config[256];
+  int config_size;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -292,10 +307,13 @@ Trogdor::Main()
     pthread_testcancel();
     
     GetCommand((unsigned char*)&command, sizeof(player_position_cmd_t));
+    command.yawspeed = ntohl(command.yawspeed);
+    command.xspeed = ntohl(command.xspeed);
 
-    if(fabs(RTOD((double)command.yawspeed)) > TROGDOR_MAX_YAWSPEED)
+    if(fabs(DTOR((double)command.yawspeed)) > TROGDOR_MAX_YAWSPEED)
     {
       PLAYER_WARN("yawspeed thresholded");
+      printf("got %d\n", command.yawspeed);
       if(command.yawspeed > 0)
         command.yawspeed = (int32_t)rint(RTOD(TROGDOR_MAX_YAWSPEED));
       else
@@ -304,6 +322,7 @@ Trogdor::Main()
     if(fabs(command.xspeed / 1e3) > TROGDOR_MAX_XSPEED)
     {
       PLAYER_WARN("xspeed thresholded");
+      printf("got %d\n", command.xspeed);
       if(command.xspeed > 0)
         command.xspeed = (int32_t)rint(TROGDOR_MAX_XSPEED*1e3);
       else
@@ -321,8 +340,8 @@ Trogdor::Main()
 
     // TODO: sanity check on per-wheel speeds
 
-    if(SetVelocity((int)rint(command_lvel / (300.0 * TROGDOR_M_PER_TICK)),
-                   (int)rint(command_rvel / (300.0 * TROGDOR_M_PER_TICK))) < 0)
+    if(SetVelocity((int)rint(command_lvel / (150.0 * TROGDOR_M_PER_TICK)),
+                   (int)rint(command_rvel / (150.0 * TROGDOR_M_PER_TICK))) < 0)
     {
       PLAYER_ERROR("failed to set velocity");
       pthread_exit(NULL);
@@ -337,10 +356,42 @@ Trogdor::Main()
     UpdateOdom(ltics,rtics);
 
     // TODO: PutData()
+    data.xpos = data.ypos = data.yaw = 0;
+    data.xspeed = data.yspeed = data.yawspeed = 0;
+    PutData((unsigned char*)&data,sizeof(data),0,0);
 
     // we don't handle any configs yet
-    if(GetConfig(&client,(void*)buf,sizeof(buf)) > 0)
-      PutReply(client, PLAYER_MSGTYPE_RESP_NACK);
+    if((config_size = GetConfig(&client,(void*)config,sizeof(config))) > 0)
+    {
+      switch(config[0])
+      {
+        case PLAYER_POSITION_GET_GEOM_REQ:
+          /* Return the robot geometry. */
+          if(config_size != 1)
+          {
+            puts("Arg get robot geom is wrong size; ignoring");
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+              PLAYER_ERROR("failed to PutReply");
+            break;
+          }
+
+          // TODO : get values from somewhere.
+          player_position_geom_t geom;
+          geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+          geom.pose[0] = htons((short) (0));
+          geom.pose[1] = htons((short) (0));
+          geom.pose[2] = htons((short) (0));
+          geom.size[0] = htons((short) (450));
+          geom.size[1] = htons((short) (450));
+
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
+                      sizeof(geom)))
+            PLAYER_ERROR("failed to PutReply");
+          break;
+        default:
+          PutReply(client, PLAYER_MSGTYPE_RESP_NACK);
+      }
+    }
     
     usleep(TROGDOR_DELAY_US);
   }
@@ -412,6 +463,8 @@ Trogdor::WriteBuf(unsigned char* s, size_t len)
     return(-1);
   }
 
+  // TODO: re-init robot on NACK, to deal with underlying cerebellum reset 
+  // problem
   switch(ack[0])
   {
     case TROGDOR_ACK:
