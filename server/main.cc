@@ -92,6 +92,9 @@
 // true if the main loop should terminate
 bool quit = false;
 
+// true if sigint should be ignored
+bool mask_sigint = false; // TESTING
+
 // true if we're connecting to Stage instead of a real robot
 bool use_stage = false;
 
@@ -201,7 +204,8 @@ Interrupt( int dummy )
    }
   
   // Tell the main loop to quit
-  quit = 1;
+  if (mask_sigint == 0)
+    quit = 1;
 }
 
 /* setup some signal handlers */
