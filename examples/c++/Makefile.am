@@ -18,7 +18,7 @@ noinst_PROGRAMS = randomwalk \
                   waveformread \
                   audiodspread \
 		  lookupport \
-	          vfh
+	          vfh foo
 
 #multilogger
 #forage
@@ -43,3 +43,4 @@ pherobot_SOURCES = pherobot.cc
 lookupport_SOURCES = lookupport.cc
 audiodspread_SOURCES = audiodspread.cc
 vfh_SOURCES = vfh.cc
+foo_SOURCES = foo.cc
