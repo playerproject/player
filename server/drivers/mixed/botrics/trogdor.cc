@@ -727,6 +727,9 @@ Trogdor::UpdateOdom(int ltics, int rtics)
     return;
   }
 
+  //printf("ltics: %d\n",ltics);
+  //printf("rtics: %d\n",rtics);
+
   ltics_delta = ComputeTickDiff(last_ltics,ltics);
   rtics_delta = ComputeTickDiff(last_rtics,rtics);
 
@@ -802,6 +805,7 @@ Trogdor::SendCommand(unsigned char cmd, int val1, int val2)
 int
 Trogdor::SetVelocity(int lvel, int rvel)
 {
+  printf("sending %d:%d\n", lvel,rvel);
   if(SendCommand(TROGDOR_SET_VELOCITIES,lvel,rvel) < 0)
   {
     PLAYER_ERROR("failed to set velocities");
