@@ -317,9 +317,11 @@ void Driver::ProcessMessages()
     else if(ret < 0)
     {
       PLAYER_WARN5("Unhandled message for driver device=%d:%d type=%d subtype=%d len=%d\n",hdr->device, hdr->device_index, hdr->type, hdr->subtype, hdr->size);
-      // Put an empty NACK to the client
-      PutMsg(id, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, 
-             hdr->subtype, NULL, 0, NULL);
+
+      // If it was a request, reply with an empty NACK
+      if(hdr->type == PLAYER_MSGTYPE_REQ)
+        PutMsg(id, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, 
+               hdr->subtype, NULL, 0, NULL);
     }
     pthread_testcancel();
   }
