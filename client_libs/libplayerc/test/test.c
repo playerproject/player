@@ -150,6 +150,11 @@ int main(int argc, const char *argv[])
         test_wifi(client, client->ids[i].index);
         break;
 
+      // Localization device
+      case PLAYER_LOCALIZE_CODE:
+        test_localize(client, client->ids[i].index);
+        break;
+        
       default:
         printf("no test for interface [%s]\n",
                playerc_lookup_name(client->ids[i].code));

@@ -32,14 +32,6 @@
 #include "playerv.h"
 
 
-// TODO: this should go in RTK
-// Color space conversions
-#define RTK_RGB16(r, g, b) (((b) >> 3) | (((g) & 0xFC) << 3) | (((r) & 0xF8) << 8))
-
-
-// Compute eigen values and eigen vectors of a 2x2 covariance matrix
-static void eigen(double cm[][2], double values[], double vectors[][2]);
-
 // Reset the pose
 void localize_reset_pose(localize_t *localize);
 
@@ -48,6 +40,9 @@ void localize_draw_map(localize_t *localize);
 
 // Draw the hypotheses
 void localize_draw_hypoth(localize_t *localize);
+
+// Compute eigen values and eigen vectors of a 2x2 covariance matrix
+static void eigen(double cm[][2], double values[], double vectors[][2]);
 
 
 // Create a localize device
@@ -126,8 +121,10 @@ void localize_update(localize_t *localize)
         PRINT_ERR1("subscribe failed : %s", playerc_error_str());
 
       // Load the map
+      printf("Loading map (this may take some time)...");
 	    if (playerc_localize_get_map(localize->proxy) != 0)
         PRINT_ERR1("get_map_header failed : %s", playerc_error_str());
+      printf("...done\n");
 
       // Draw the map
       localize_draw_map(localize);
@@ -234,7 +231,7 @@ void localize_draw_map(localize_t *localize)
 
   for (j = 0; j < ssize_y; j++)
     for (i = 0; i < ssize_x; i++)
-      image[i + j * ssize_x] = RTK_RGB16(255, 255, 255);
+      image[i + j * ssize_x] = 255;
   
   for (j = 0; j < size_y; j++)
   {
@@ -243,13 +240,13 @@ void localize_draw_map(localize_t *localize)
       switch (localize->proxy->map_cells[i + j * size_x])
       {
         case -1:
-          col = RTK_RGB16(255, 255, 255);
+          col = 255;
           break;
         case 0:
-          col = RTK_RGB16(192, 192, 192);
+          col = 192;
           break;
         case +1:
-          col = RTK_RGB16(0, 0, 0);
+          col = 0;
           break;
       }
       if (col < image[i / mag + j / mag * ssize_x])
@@ -261,9 +258,17 @@ void localize_draw_map(localize_t *localize)
   rtk_fig_show(localize->map_fig, 1);
   rtk_fig_clear(localize->map_fig);
 
-#pragma warn "fix me"
-  //rtk_fig_image(localize->map_fig, 0, 0, 0, scale, ssize_x, ssize_y, 16, image, NULL);
-  
+  for (j = 0; j < ssize_y; j++)
+  {
+    for (i = 0; i < ssize_x; i++)
+    {
+      col = image[i + j * ssize_x];
+      rtk_fig_color(localize->map_fig, col, col, col);
+      rtk_fig_rectangle(localize->map_fig,
+                        (i - ssize_x / 2) * scale, (j - ssize_y / 2) * scale, 0, scale, scale, 1);
+    }
+  }
+      
   rtk_fig_color(localize->map_fig, 0, 0, 0);
   rtk_fig_rectangle(localize->map_fig, 0, 0, 0, ssize_x * scale, ssize_y * scale, 0);
 

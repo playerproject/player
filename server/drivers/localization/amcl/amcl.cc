@@ -163,6 +163,7 @@ class AdaptiveMCL : public CDevice
   // Occupancy map
   private: const char *map_file;
   private: double map_scale;
+  private: int map_negate;
   private: map_t *map;
 
   // Odometry sensor model
@@ -182,7 +183,8 @@ class AdaptiveMCL : public CDevice
   
   // Particle filter
   private: pf_t *pf;
-  private: int min_samples, max_samples;
+  private: int pf_min_samples, pf_max_samples;
+  private: double pf_err, pf_z;
 
   // Last odometric pose estimates used by filter
   private: pf_vector_t pf_odom_pose;
@@ -241,6 +243,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   // Get the map settings
   this->map_scale = cf->ReadLength(section, "map_scale", 0.05);
   this->map_file = cf->ReadFilename(section, "map_file", NULL);
+  this->map_negate = cf->ReadInt(section, "map_negate", 0);
   this->map = NULL;
   
   // Odometry model settings
@@ -253,9 +256,13 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Particle filter settings
   this->pf = NULL;
-  this->min_samples = cf->ReadInt(section, "min_samples", 100);
-  this->max_samples = cf->ReadInt(section, "max_samples", 200000);
+  this->pf_min_samples = cf->ReadInt(section, "pf_min_samples", 100);
+  this->pf_max_samples = cf->ReadInt(section, "pf_max_samples", 200000);
 
+  // Adaptive filter parameters
+  this->pf_err = cf->ReadFloat(section, "pf_err", 0.01);
+  this->pf_z = cf->ReadFloat(section, "pf_z", 3);
+  
   // Initial pose estimate
   this->pf_pose_mean = pf_vector_zero();
   this->pf_pose_mean.v[0] = cf->ReadTupleLength(section, "init_pose", 0, 0);
@@ -316,7 +323,7 @@ int AdaptiveMCL::Setup(void)
   this->map = map_alloc(this->map_scale);
 
   // Load the map
-  if (map_load_occ(this->map, this->map_file) != 0)
+  if (map_load_occ(this->map, this->map_file, this->map_negate) != 0)
     return -1;
 
   // Compute the c-space
@@ -331,7 +338,9 @@ int AdaptiveMCL::Setup(void)
 
   // Create the particle filter
   assert(this->pf == NULL);
-  this->pf = pf_alloc(this->min_samples, this->max_samples);
+  this->pf = pf_alloc(this->pf_min_samples, this->pf_max_samples);
+  this->pf->pop_err = this->pf_err;
+  this->pf->pop_z = this->pf_z;
 
   // Set the initial odometric poses
   this->GetOdomData(&sdata);

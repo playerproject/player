@@ -57,6 +57,9 @@ typedef struct _pf_t
 {
   // This min and max number of samples
   int min_samples, max_samples;
+
+  // Population size parameters
+  double pop_err, pop_z;
   
   // The sample sets.  We keep two sets an use [current_set]
   // to identify the active set.

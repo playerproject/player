@@ -33,6 +33,14 @@ pf_t *pf_alloc(int min_samples, int max_samples)
   pf->min_samples = min_samples;
   pf->max_samples = max_samples;
 
+  // Control parameters for the population size calculation.  [err] is
+  // the max error between the true distribution and the estimated
+  // distribution.  [z] is the upper standard normal quantile for (1 -
+  // p), where p is the probability that the error on the estimated
+  // distrubition will be less than [err].
+  pf->pop_err = 0.01;
+  pf->pop_z = 3;
+  
   pf->current_set = 0;
   for (j = 0; j < 2; j++)
   {
@@ -245,23 +253,15 @@ int pf_resample_limit(pf_t *pf, int k)
   double a, b, c, x;
   int n;
 
-  // Control parameters for the population size calculation.  [err] is
-  // the max error between the true distribution and the estimated
-  // distribution.  [z] is the upper standard normal quantile for (1 -
-  // p), where p is the probability that the error on the estimated
-  // distrubition will be less than [err].
-  err = 0.01;
-  z = 3;
-
   if (k <= 1)
     return pf->min_samples;
 
   a = 1;
   b = 2 / (9 * ((double) k - 1));
-  c = sqrt(2 / (9 * ((double) k - 1))) * z;
+  c = sqrt(2 / (9 * ((double) k - 1))) * pf->pop_z;
   x = a - b + c;
 
-  n = (int) ceil((k - 1) / (2 * err) * x * x * x);
+  n = (int) ceil((k - 1) / (2 * pf->pop_err) * x * x * x);
 
   return n;
 }
