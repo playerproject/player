@@ -109,10 +109,6 @@ if test "x$CANLIB_DIR" = "xNONE" -o "x$CANLIB_DIR" = "xno"; then
   SEGWAYRMP_HEADER=canlib.h
   SEGWAYRMP_EXTRA_CPPFLAGS=
   SEGWAYRMP_EXTRA_LDFLAGS=-lcanlib
-dnl elif test "x$CANLIB_DIR" = "xyes"; then
-dnl   SEGWAYRMP_HEADER=$prefix/include/canlib.h
-dnl   SEGWAYRMP_EXTRA_CPPFLAGS="-I$prefix/include"
-dnl   SEGWAYRMP_EXTRA_LDFLAGS="-L$prefix/lib -lcanlib"
 else
   SEGWAYRMP_HEADER=$CANLIB_DIR/include/canlib.h
   SEGWAYRMP_EXTRA_CPPFLAGS="-I$CANLIB_DIR/include"
@@ -134,8 +130,7 @@ PLAYER_ADD_DRIVER([logfile],[drivers/shell],[yes],[zlib.h],[],[-lz])
 
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 
-dnl  disabled - doesn't compile on OSx - uses non-portable <asm/*> includes - rtv
-PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[no],[],[],[])
+PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[yes],[asm/ioctls.h],[],[])
 
 PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],[],[],[])
 
@@ -149,7 +144,6 @@ if  test "x$enable_sickpls" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
                                                                      
-
 AC_ARG_ENABLE(highspeedsick, [  --disable-highspeedsick   Don't build support for 500Kbps comms with SICK],,enable_highspeedsick=yes)
 if test "x$enable_highspeedsick" = "xno"; then
   AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[[disable 500Kbps comms with SICK]])
@@ -169,8 +163,6 @@ PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[no],[],[],[])
 
-dnl  disabled because it uses CBAUD which is pre-POSIX and doesn't
-dnl  exist on OSX - rtv 2004.05.12
 PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([flockofbirds],[drivers/position/ascension],[no],[],[],[])
@@ -248,21 +240,6 @@ dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
 PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
 
-dnl Service Discovery
-dnl Don't need to do the language setting here, since C++ checking was done
-dnl earlier, seeing as Player is written in C++.
-dnl
-dnl XXX
-dnl
-dnl These don't check for C++, they enable the C++ compiler. If these checks
-dnl aren't here, the test will *always* fail, since autoconf will try to 
-dnl use the C compiler instead of the C++ compiler.
-dnl
-dnl If you want to, you can move AC_LANG(C++) to the beginning of the configure
-dnl script...
-dnl
-dnl -reed
-dnl
 AC_LANG_SAVE
 AC_LANG_CPLUSPLUS
 PLAYER_ADD_DRIVER([service_adv_lsd], [drivers/service_adv], [yes],
