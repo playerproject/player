@@ -236,39 +236,33 @@ int CLaserDevice::Setup()
     if (OpenTerm())
         return 1;
 
-    // Start out at 9600 with non-blocking io
+    // Start out at 38400 with non-blocking io
     //
-    if (ChangeTermSpeed(9600))
+    if (ChangeTermSpeed(38400))
         return 1;
 
-    // Open the laser and set it to the correct speed
-    // When the laser is turned on, the first request seems to be ignored,
-    // so we need to try the 9600 setting twice.
-    //
-    PLAYER_MSG0("changing laser mode at 9600");
-    if (SetLaserMode() == 0)
+    PLAYER_MSG0("connecting at 38400");
+    if (SetLaserMode() != 0)
     {
-        PLAYER_MSG0("laser operating at 9600; changing to 38400");
-        if (SetLaserSpeed(38400))
-            return 1;
-        if (ChangeTermSpeed(38400))
-            return 1;
-    }
-    else if (SetLaserMode() == 0)
-    {
-        PLAYER_MSG0("laser operating at 9600; changing to 38400");
-        if (SetLaserSpeed(38400))
-            return 1;
-        if (ChangeTermSpeed(38400))
-            return 1;
-    }
-    else
-    {
-        PLAYER_MSG0("could not change laser mode at 9600; trying 38400");
-        if (ChangeTermSpeed(38400))
-            return 1;
         if (SetLaserMode() != 0)
-            return 1;
+        {
+            PLAYER_MSG0("connect at 38400 failed, trying 9600");
+            if (ChangeTermSpeed(9600))
+                return 1;
+            if (SetLaserMode() != 0)
+            {
+                if (SetLaserMode() != 0)
+                {
+                    PLAYER_ERROR("connection failed");
+                    return 1;
+                }
+            }
+            PLAYER_MSG0("laser operating at 9600; changing to 38400");
+            if (SetLaserSpeed(38400))
+                return 1;
+            if (ChangeTermSpeed(38400))
+                return 1;
+        }
     }
 
     // Display the laser type
@@ -432,6 +426,10 @@ int CLaserDevice::OpenTerm()
     if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
         RETURN_ERROR(1, "Unable to set serial port attributes");
 
+    // Make sure queue is empty
+    //
+    tcflush(m_laser_fd, TCIOFLUSH);
+    
     return 0;
 }
 
@@ -515,7 +513,7 @@ int CLaserDevice::SetLaserMode()
     // This could take a while...
     //
     PLAYER_TRACE0("waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 2000);
+    len = ReadFromLaser(packet, sizeof(packet), true, 1000);
     if (len < 0)
         RETURN_ERROR(1, "error reading from laser")
     else if (len < 1)
@@ -862,9 +860,18 @@ ssize_t CLaserDevice::WriteToLaser(uint8_t *data, ssize_t len)
     buffer[4 + len + 0] = LOBYTE(crc);
     buffer[4 + len + 1] = HIBYTE(crc);
 
+    // Make sure both input and output queues are empty
+    //
+    tcflush(m_laser_fd, TCIOFLUSH);
+    
     // Write the data to the port
     //
     ssize_t bytes = ::write( m_laser_fd, buffer, 4 + len + 2);
+
+    // Make sure the queue is drained
+    // Synchronous IO doesnt always work
+    //
+    ::tcdrain(m_laser_fd);
     
     // Return the actual number of bytes sent, including header and footer
     //
