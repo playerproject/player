@@ -329,15 +329,15 @@ proc toggle_sonar {} {
     ChangeSonarState 0
   }
 }
-proc toggle_laser {} {
-  global display_laser
-  global PLAYER_LASER_CODE PLAYER_READ_MODE PLAYER_CLOSE_MODE
-  if {$display_laser} {
-    requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE
-  } else {
-    requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_CLOSE_MODE
-  }
-}
+#proc toggle_laser {} {
+  #global display_laser
+  #global PLAYER_LASER_CODE PLAYER_READ_MODE PLAYER_CLOSE_MODE
+  #if {$display_laser} {
+    #requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE
+  #} else {
+    #requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_CLOSE_MODE
+  #}
+#}
 #########################################################################
 
 proc createRobotPanel {} {
@@ -405,13 +405,15 @@ proc createRobotPanel {} {
 
   checkbutton .robot_panel.sonar_check -command toggle_sonar\
     -variable display_sonar -text "Display Sonars"
+  #checkbutton .robot_panel.laser_check -command toggle_laser\
+    #-variable display_laser -text "Display Laser"
   checkbutton .robot_panel.laser_check -command toggle_laser\
-    -variable display_laser -text "Display Laser"
+    -text "Display Laser"
   checkbutton .robot_panel.bumper_check \
     -variable display_bumpers -text "Display Bumpers"
 
   set display_sonar 0
-  set display_laser 0
+  set display_laser 1
   set display_bumpers 0
 
   grid configure .robot_panel.canvas -column 0 -row 0 -columnspan 5
@@ -678,11 +680,13 @@ proc displayData {} {
 proc startRobot {} {
   global host PLAYER_PLAYER_DEV_REQ PLAYER_PLAYER_CODE
   global PLAYER_POSITION_CODE PLAYER_PTZ_CODE PLAYER_MISC_CODE
-  global PLAYER_ALL_MODE PLAYER_SPEECH_CODE PLAYER_WRITE_MODE
+  global PLAYER_ALL_MODE PLAYER_SPEECH_CODE PLAYER_WRITE_MODE \
+         PLAYER_LASER_CODE PLAYER_READ_MODE
 
   connectToRobot $host
   ChangeSonarState 0
   # try to connect to ptz, position, and misc (but ignore errors)
+  requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE
   catch {requestDeviceAccess $PLAYER_POSITION_CODE 0 $PLAYER_ALL_MODE}
   catch {requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE}
   catch {requestDeviceAccess $PLAYER_MISC_CODE 0 $PLAYER_ALL_MODE}

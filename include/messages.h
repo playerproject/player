@@ -181,7 +181,7 @@ typedef struct
 } __attribute__ ((packed)) player_sonar_data_t;
 
 #define SONAR_DATA_BUFFER_SIZE sizeof(player_sonar_data_t)
-#define SONAR_CONFIG_BUFFER_SIZE 0
+#define SONAR_CONFIG_BUFFER_SIZE 32
 #define SONAR_COMMAND_BUFFER_SIZE 0
 
 /* the various configuration commands 
