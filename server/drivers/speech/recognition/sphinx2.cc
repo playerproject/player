@@ -350,6 +350,10 @@ void Sphinx2::Main()
     /* Decode utterance until end (marked by a "long" silence, >1sec) */
     for (;;) 
     {
+      if ((this->continuousModule->read_ts - timestamp) > 
+          DEFAULT_SAMPLES_PER_SEC)
+        break;
+
       // Read non-silence audio data, if any, from continuous listening module
       if ((sampleCount = cont_ad_read (this->continuousModule, audioBuff, 4096)) < 0)
       {
@@ -365,7 +369,7 @@ void Sphinx2::Main()
           break;
       } else {
         /* New speech data received; note current timestamp */
-        timestamp = this->continuousModule->read_ts;
+        //timestamp = this->continuousModule->read_ts;
       }
 
       // Decode whatever data was read above.  NOTE: Non-blocking mode!!
