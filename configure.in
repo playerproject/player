@@ -111,19 +111,25 @@ fi
 dnl Optionally build the python client if the header is available
 PYTHON_VERSION=2.2
 AC_ARG_WITH(python,
-[  --without-python        Don't compile the python client libraries],,
-[AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)])
+[  --without-python        Don't compile the python client libraries],
+PYTHON_INTERP=$with_python,
+[AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,PYTHON_INTERP=python,
+PYTHON_INTERP=no)])
 dnl See whether the += operator is defined in this version of Python
-if test x$with_python = xyes; then
+if test x$PYTHON_INTERP = xyes; then
+  PYTHON_INTERP=python
+fi
+if test x$PYTHON_INTERP != xno; then
   AC_MSG_CHECKING([Python version])
-  if `python -c "i=0;i+=1;"`; then
+  if `$PYTHON_INTERP -c "i=0;i+=1;"`; then
     AC_MSG_RESULT([>= 2, good.  Will build Python bindings.])
   else
-    AC_MSG_RESULT([< 2, too old.  Won't build Python bindings.])
+    AC_MSG_RESULT([< 2, too old (or doesn't work).  Won't build Python bindings.])
     with_python=no
   fi
 fi 2>/dev/null
-AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
+AM_CONDITIONAL(WITH_PYTHON, test x$PYTHON_INTERP != xno)
+AC_SUBST(PYTHON_INTERP)
 
 
 dnl ************************************************************************
