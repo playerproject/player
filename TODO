@@ -6,7 +6,7 @@ NEXT RELEASE:
 
 - test multiple data packets per frame
 
-- separate interface and driver docs
++ separate interface and driver docs
 
 - add docs for new drivers
 
