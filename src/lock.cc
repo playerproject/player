@@ -157,11 +157,16 @@ int CLock::Subscribe( CDevice *obj )
   if ( subscriptions == 0 ) 
   {
     setupResult = obj->Setup();
-    if (setupResult == 0 ) subscriptions++;
+    if (setupResult == 0 ) 
+    {
+      subscriptions++;
+      (obj->subscrcount)++;
+    }
   }
   else 
   {
     subscriptions++;
+    (obj->subscrcount)++;
     setupResult = 0;
   }
   
@@ -182,11 +187,16 @@ int CLock::Unsubscribe( CDevice *obj )
   else if ( subscriptions == 1) 
   {
     shutdownResult = Shutdown( obj );
-    if (shutdownResult == 0 ) subscriptions--;
+    if (shutdownResult == 0 ) 
+    { 
+      subscriptions--;
+      (obj->subscrcount)--;
+    }
     /* do we want to unsubscribe even though the shutdown went bad? */
   }
   else {
     subscriptions--;
+    (obj->subscrcount)--;
     shutdownResult = 0;
   }
   
