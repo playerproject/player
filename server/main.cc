@@ -1254,6 +1254,7 @@ int main( int argc, char *argv[] )
   delete deviceTable;
   // tear down the driver table, for completeness
   delete driverTable;
+  delete GlobalTime;
   
   return(0);
 }
