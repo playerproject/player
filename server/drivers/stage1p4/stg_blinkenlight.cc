@@ -87,7 +87,7 @@ size_t StgBlinkenlight::GetData(void* client, unsigned char* dest, size_t len,
   stg_blinkenlight_t* bl;
   size_t blen;
   assert( stg_get_property( this->stage_client, this->stage_id, 
-			    STG_PROP_BLINKENLIGHT,
+			    STG_MOD_BLINKENLIGHT,
 			    (void**)&bl, &blen ) == 0 );
   
   assert( blen == sizeof(stg_blinkenlight_t) );
@@ -121,7 +121,7 @@ void  StgBlinkenlight::PutCommand(void* client, unsigned char* src, size_t len)
   sb.period_ms = (uint16_t)ntohs(pcmd->period_ms);
   
   assert( stg_set_property( this->stage_client, this->stage_id,
-			    STG_PROP_BLINKENLIGHT, 
+			    STG_MOD_BLINKENLIGHT, 
 			    (void*)&sb, sizeof(sb) ) 
 	  == 0 );
 }

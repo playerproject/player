@@ -92,7 +92,7 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
   stg_pose_t* pose;
   size_t plen;
   assert( stg_get_property( this->stage_client, this->stage_id, 
-			    STG_PROP_POSE,
+			    STG_MOD_POSE,
 			    (void**)&pose, &plen ) == 0 );
   
   assert( plen == sizeof(stg_pose_t) );
@@ -130,7 +130,7 @@ void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
   vel.a = DTOR((double)((int32_t)ntohl(pcmd->yawspeed)));
   
   assert( stg_set_property( this->stage_client, this->stage_id,
-			    STG_PROP_VELOCITY, (void**)&vel, sizeof(vel) ) 
+			    STG_MOD_VELOCITY, (void**)&vel, sizeof(vel) ) 
 	  == 0 );
   
   // we ignore position for now.
@@ -157,7 +157,7 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
 	stg_pose_t* org = NULL;
 	size_t len = 0;
 	assert( stg_get_property( this->stage_client, this->stage_id, 
-				  STG_PROP_ORIGIN,
+				  STG_MOD_ORIGIN,
 				  (void**)&org, &len ) == 0 );
 	
 	assert( len == sizeof(stg_pose_t) );
@@ -165,7 +165,7 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
 	stg_size_t* sz = NULL;
 	len = 0;
 	assert( stg_get_property( this->stage_client, this->stage_id, 
-				  STG_PROP_SIZE,
+				  STG_MOD_SIZE,
 				  (void**)&sz, &len ) == 0 );
 	
 	assert( sz );

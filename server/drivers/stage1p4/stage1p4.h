@@ -43,8 +43,12 @@ public:
   static stg_name_id_t* created_models;
   static int created_models_count;
   static CWorldFile wf;
-  static stg_client_t *subclient;
   static stg_id_t world_id;
+  static double time;
+  static int stage_port;
+  static char* stage_host;
+
+  static stg_property_t* prop_buffer[];
 
   Stage1p4(char* interface, ConfigFile* cf, int section, 
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen);
