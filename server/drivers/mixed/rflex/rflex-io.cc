@@ -3,7 +3,7 @@
 #include <string.h>
 #include <signal.h>
 #include <math.h>
-#include <values.h>
+#include <float.h>
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
@@ -126,12 +126,20 @@ cBaudrate( int baudrate )
   case 115200:
     return(B115200);
     break;
+  case 230400:
+    return(B230400);
+    break;
+
+#ifdef B460800  // POSIX doesn't have this one
+#warning including B460800
   case 500000:
     /* to use 500k you have to change the entry of B460800 in you kernel:
        /usr/src/linux/drivers/usb/serial/ftdi_sio.h:
        ftdi_8U232AM_48MHz_b460800 = 0x0006    */
     return(B460800);
     break;
+#endif
+
   default:
     return(B9600);
     break;
