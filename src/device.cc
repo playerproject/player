@@ -104,42 +104,75 @@ void CDevice::SetupBuffers(unsigned char* data, size_t datasize,
   device_repqueue = new PlayerQueue(repqueue, repqueuelen);
 }
 
-int CDevice::GetReply(void* client, unsigned short* type,
-                      struct timeval* ts, void* data, size_t len)
+int CDevice::GetReply(player_device_id_t* device, void* client, 
+                      unsigned short* type, struct timeval* ts, 
+                      void* data, size_t len)
 {
   int size;
 
   Lock();
-  size = device_repqueue->Match((void*)client, type, ts, data, len);
+  size = device_repqueue->Match(device, (void*)client, type, ts, data, len);
   Unlock();
 
   return(size);
 }
 
-int CDevice::PutReply(void* client, unsigned short type,
-                      struct timeval* ts, void* data, size_t len)
+int CDevice::PutReply(player_device_id_t* device, void* client, 
+                      unsigned short type, struct timeval* ts, 
+                      void* data, size_t len)
 {
   struct timeval curr;
+  player_device_id_t id;
 
   if(ts)
     curr = *ts;
   else
     GlobalTime->GetTime(&curr);
 
+  if(!device)
+  {
+    // stick a dummy device code on it; when the server calls GetReply,
+    // it will know what to do
+    id.code = id.index = id.port = 0;
+  }
+  else
+    id = *device;
+
+
   Lock();
-  device_repqueue->Push(client, type, &curr, data, len);
+  device_repqueue->Push(&id, client, type, &curr, data, len);
   Unlock();
 
   return(0);
 }
 
-size_t CDevice::GetConfig(void** client, void *data,size_t len)
+/* a short form, for common use; assumes zero-length reply and that the
+ * originating device can be inferred from the client's subscription 
+ * list 
+ */
+int 
+CDevice::PutReply(void* client, unsigned short type)
+{
+  return(PutReply(NULL, client, type, NULL, NULL, 0));
+}
+
+/* another short form; this one allows actual replies */
+int 
+CDevice::PutReply(void* client, unsigned short type, struct timeval* ts, 
+                  void* data, size_t len)
+{
+  return(PutReply(NULL, client, type, ts, data, len));
+}
+
+size_t 
+CDevice::GetConfig(player_device_id_t* device, void** client, 
+                   void *data, size_t len)
 {
   int size;
 
   Lock();
 
-  if((size = device_reqqueue->Pop(client, data, len)) < 0)
+  if((size = device_reqqueue->Pop(device, client, data, len)) < 0)
   {
     Unlock();
     return(0);
@@ -149,11 +182,19 @@ size_t CDevice::GetConfig(void** client, void *data,size_t len)
   return(size);
 }
 
-int CDevice::PutConfig(void* client, void* data, size_t len)
+size_t 
+CDevice::GetConfig(void** client, void *data, size_t len)
+{
+  return(GetConfig(NULL, client, data, len));
+}
+
+int CDevice::PutConfig(player_device_id_t* device, void* client, 
+                       void* data, size_t len)
 {
   Lock();
 
-  if(device_reqqueue->Push(client, PLAYER_MSGTYPE_REQ, NULL, data, len) < 0)
+  if(device_reqqueue->Push(device, client, PLAYER_MSGTYPE_REQ, NULL, 
+                           data, len) < 0)
   {
     // queue was full
     Unlock();

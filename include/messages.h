@@ -138,19 +138,20 @@ typedef struct
   uint32_t size;  /* size in bytes of the payload to follow */
 } __attribute__ ((packed)) player_msghdr_t;
 
+/* a device identifier; devices are differentiated internally in Player by 
+ * these ids
+ */
+typedef struct
+{
+  uint16_t code;
+  uint16_t index;
+  uint16_t port;
+} __attribute__ ((packed)) player_device_id_t;
+
 /*************************************************************************/
 /*
  * The "Player" device
  */
-
-/* the format of a general iotcl to Player */
-/*
-typedef struct
-{
-  uint16_t subtype;
-} __attribute__ ((packed)) player_device_ioctl_t;
-*/
-
 
 /* the format of a "device request" ioctl to Player */
 typedef struct
@@ -824,18 +825,20 @@ typedef struct
  */
 
 // identify an entity to Player
+/*
 typedef struct
 {
   uint16_t port;
   uint16_t index;
   uint16_t type;
 } player_id_t;  
+*/
 
 // packet for truth device
 typedef struct
 {
-  player_id_t id;
-  player_id_t parent;
+  player_device_id_t id;
+  player_device_id_t parent;
   
   uint32_t x, y; // mm, mm
   uint16_t th, w, h; // degrees, mm, mm

@@ -276,7 +276,7 @@ int CLaserDevice::UpdateConfig()
         if (len != sizeof(player_laser_config_t))
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -305,7 +305,8 @@ int CLaserDevice::UpdateConfig()
           if (this->scan_max_segment > 400)
             this->scan_max_segment = 400;
 
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
+                      sizeof(config)) != 0)
             PLAYER_ERROR("PutReply() failed");
           return 1;
         }
@@ -325,14 +326,15 @@ int CLaserDevice::UpdateConfig()
           if (this->scan_max_segment > 360)
             this->scan_max_segment = 360;
 
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
+                      sizeof(config)) != 0)
             PLAYER_ERROR("PutReply() failed");
           return 1;
         }
         else
         {
           // This is an invalid configuration
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
         }
         break;
@@ -343,7 +345,7 @@ int CLaserDevice::UpdateConfig()
         if (len != 1)
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -353,7 +355,8 @@ int CLaserDevice::UpdateConfig()
         config.min_angle = htons((short) this->min_angle);
         config.max_angle = htons((short) this->max_angle);
         
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
+                    sizeof(config)) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -363,7 +366,7 @@ int CLaserDevice::UpdateConfig()
         if (len != 1)
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -374,14 +377,15 @@ int CLaserDevice::UpdateConfig()
         geom.size[0] = htons((short) (this->size[0] * 1000));
         geom.size[1] = htons((short) (this->size[1] * 1000));
         
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
+                    sizeof(geom)) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
 
       default:
       {
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }

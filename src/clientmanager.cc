@@ -374,12 +374,13 @@ int ClientManager::Write()
       unsigned short type;
       int replysize;
       struct timeval ts;
+      player_device_id_t id;
 
       // is this a valid device
       if(thisub->devicep)
       {
-        // does this device have a reply ready?
-        if((replysize = thisub->devicep->GetReply(clients[i], &type, &ts,
+        // does this device have a reply ready for this client?
+        if((replysize = thisub->devicep->GetReply(&id, clients[i], &type, &ts,
                   clients[i]->replybuffer+sizeof(player_msghdr_t), 
                   PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))) >= 0)
         {
@@ -388,8 +389,20 @@ int ClientManager::Write()
 
           reply_hdr.stx = htons(PLAYER_STXX);
           reply_hdr.type = htons(type);
-          reply_hdr.device = htons(thisub->code);
-          reply_hdr.device_index = htons(thisub->index);
+
+          // if the device code is 0 (which is invalid), then the device
+          // didn't specify it, so assume that the identifying info in the
+          // subscription entry is correct
+          if(!id.code)
+          {
+            reply_hdr.device = htons(thisub->id.code);
+            reply_hdr.device_index = htons(thisub->id.index);
+          }
+          else
+          {
+            reply_hdr.device = htons(id.code);
+            reply_hdr.device_index = htons(id.index);
+          }
           reply_hdr.reserved = (uint32_t)0;
           reply_hdr.size = htonl(replysize);
 

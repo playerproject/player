@@ -570,32 +570,36 @@ void CP2OSDevice::PutData( unsigned char* src, size_t maxsize,
   
   // need to fill in the timestamps on all P2OS devices, both so that they
   // can read it, but also because other devices may want to read it
-  CDevice* sonarp = deviceTable->GetDevice(global_playerport,
-                                           PLAYER_SONAR_CODE,0);
+  player_device_id_t id;
+  id.port = global_playerport;
+  id.index = 0;
+
+  id.code = PLAYER_SONAR_CODE;
+  CDevice* sonarp = deviceTable->GetDevice(id);
   if(sonarp)
   {
     sonarp->data_timestamp_sec = this->data_timestamp_sec;
     sonarp->data_timestamp_usec = this->data_timestamp_usec;
   }
 
-  CDevice* miscp = deviceTable->GetDevice(global_playerport,
-                                           PLAYER_MISC_CODE,0);
+  id.code = PLAYER_MISC_CODE;
+  CDevice* miscp = deviceTable->GetDevice(id);
   if(miscp)
   {
     miscp->data_timestamp_sec = this->data_timestamp_sec;
     miscp->data_timestamp_usec = this->data_timestamp_usec;
   }
 
-  CDevice* positionp = deviceTable->GetDevice(global_playerport,
-                                              PLAYER_POSITION_CODE,0);
+  id.code = PLAYER_POSITION_CODE;
+  CDevice* positionp = deviceTable->GetDevice(id);
   if(positionp)
   {
     positionp->data_timestamp_sec = this->data_timestamp_sec;
     positionp->data_timestamp_usec = this->data_timestamp_usec;
   }
 
-  CDevice* gripperp = deviceTable->GetDevice(global_playerport,
-                                             PLAYER_GRIPPER_CODE,0);
+  id.code = PLAYER_GRIPPER_CODE;
+  CDevice* gripperp = deviceTable->GetDevice(id);
   if(gripperp)
   {
     gripperp->data_timestamp_sec = this->data_timestamp_sec;
@@ -630,8 +634,14 @@ CP2OSDevice::Main()
   //unsigned char configreq[4];
   //CPacket configpacket;
 
-  CDevice* sonarp = deviceTable->GetDevice(global_playerport,PLAYER_SONAR_CODE,0);
-  CDevice* positionp = deviceTable->GetDevice(global_playerport,PLAYER_POSITION_CODE,0);
+  player_device_id_t id;
+  id.port = global_playerport;
+  id.index = 0;
+
+  id.code = PLAYER_SONAR_CODE;
+  CDevice* sonarp = deviceTable->GetDevice(id);
+  id.code = PLAYER_POSITION_CODE;
+  CDevice* positionp = deviceTable->GetDevice(id);
 
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;
@@ -724,150 +734,177 @@ CP2OSDevice::Main()
 
     
     void* client;
+    player_device_id_t id;
     // first, check if there is a new config command
-    if((config_size = GetConfig(&client, (void*) config, sizeof(config))))
+    if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
     {
-      switch(config[0])
+      switch(id.code)
       {
-        case PLAYER_SONAR_POWER_REQ:
-          /*
-           * 1 = enable sonars
-           * 0 = disable sonar
-           */
-          if(config_size-1 != 1)
+        case PLAYER_SONAR_CODE:
+          switch(config[0])
           {
-            puts("Arg to sonar state change request is wrong size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-          motorcommand[0] = SONAR;
-          motorcommand[1] = 0x3B;
-          motorcommand[2] = config[1];
-          motorcommand[3] = 0;
-          motorpacket.Build(motorcommand, 4);
-          SendReceive(&motorpacket);
+            case PLAYER_SONAR_POWER_REQ:
+              /*
+              * 1 = enable sonars
+              * 0 = disable sonar
+               */
+              if(config_size-1 != 1)
+              {
+                puts("Arg to sonar state change request wrong size; ignoring");
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                            NULL, NULL, 0))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+              motorcommand[0] = SONAR;
+              motorcommand[1] = 0x3B;
+              motorcommand[2] = config[1];
+              motorcommand[3] = 0;
+              motorpacket.Build(motorcommand, 4);
+              SendReceive(&motorpacket);
 
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-            PLAYER_ERROR("failed to PutReply");
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+
+            case PLAYER_SONAR_GET_GEOM_REQ:
+              /* Return the sonar geometry. */
+              if(config_size != 1)
+              {
+                puts("Arg get sonar geom is wrong size; ignoring");
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                            NULL, NULL, 0))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+
+              player_sonar_geom_t geom;
+              geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+              for (int i = 0; i < PLAYER_NUM_SONAR_SAMPLES; i++)
+              {
+                double *pose = PlayerRobotParams[param_idx].Sonar.pose[i];
+                geom.pose[i][0] = htons((short) (pose[0]));
+                geom.pose[i][1] = htons((short) (pose[1]));
+                geom.pose[i][2] = htons((short) (pose[2]));
+              }
+
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
+                          sizeof(geom)))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+            default:
+              puts("Sonar got unknown config request");
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
+                          NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+          }
           break;
-
-        case PLAYER_SONAR_GET_GEOM_REQ:
-        {
-          /* Return the sonar geometry. */
-          if(config_size != 1)
+        case PLAYER_POSITION_CODE:
+          switch(config[0])
           {
-            puts("Arg get sonar geom is wrong size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
+            case PLAYER_POSITION_MOTOR_POWER_REQ:
+              /* motor state change request 
+               *   1 = enable motors
+               *   0 = disable motors (default)
+               */
+              if(config_size-1 != 1)
+              {
+                puts("Arg to motor state change request wrong size; ignoring");
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                            NULL, NULL, 0))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+              motorcommand[0] = ENABLE;
+              motorcommand[1] = 0x3B;
+              motorcommand[2] = config[1];
+              motorcommand[3] = 0;
+              motorpacket.Build(motorcommand, 4);
+              SendReceive(&motorpacket);
 
-          player_sonar_geom_t geom;
-          geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-          for (int i = 0; i < PLAYER_NUM_SONAR_SAMPLES; i++)
-          {
-            double *pose = PlayerRobotParams[param_idx].Sonar.pose[i];
-            geom.pose[i][0] = htons((short) (pose[0]));
-            geom.pose[i][1] = htons((short) (pose[1]));
-            geom.pose[i][2] = htons((short) (pose[2]));
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+
+            case PLAYER_POSITION_VELOCITY_CONTROL_REQ:
+              /* velocity control mode:
+               *   0 = direct wheel velocity control (default)
+               *   1 = separate translational and rotational control
+               */
+              if(config_size-1 != sizeof(char))
+              {
+                puts("Arg to velocity control mode change request is wrong "
+                     "size; ignoring");
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                            NULL, NULL, 0))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+              if(config[1])
+                direct_wheel_vel_control = false;
+              else
+                direct_wheel_vel_control = true;
+
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+
+            case PLAYER_POSITION_RESET_ODOM_REQ:
+              /* reset position to 0,0,0: no args */
+              if(config_size-1 != 0)
+              {
+                puts("Arg to reset position request is wrong size; ignoring");
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                            NULL, NULL, 0))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+              ResetRawPositions();
+
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+
+            case PLAYER_POSITION_GET_GEOM_REQ:
+              {
+                /* Return the robot geometry. */
+                if(config_size != 1)
+                {
+                  puts("Arg get robot geom is wrong size; ignoring");
+                  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                              NULL, NULL, 0))
+                    PLAYER_ERROR("failed to PutReply");
+                  break;
+                }
+
+                // TODO : get values from somewhere.
+                player_position_geom_t geom;
+                geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+                geom.pose[0] = htons((short) (-100));
+                geom.pose[1] = htons((short) (0));
+                geom.pose[2] = htons((short) (0));
+                geom.size[0] = htons((short) (2 * 250));
+                geom.size[1] = htons((short) (2 * 225));
+
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
+                            sizeof(geom)))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+            default:
+              puts("Position got unknown config request");
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
+                          NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
           }
-          
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)))
-            PLAYER_ERROR("failed to PutReply");
           break;
-        }
-          
-        case PLAYER_POSITION_MOTOR_POWER_REQ:
-          /* motor state change request 
-           *   1 = enable motors
-           *   0 = disable motors (default)
-           */
-          if(config_size-1 != 1)
-          {
-            puts("Arg to motor state change request is wrong size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-          motorcommand[0] = ENABLE;
-          motorcommand[1] = 0x3B;
-          motorcommand[2] = config[1];
-          motorcommand[3] = 0;
-          motorpacket.Build(motorcommand, 4);
-          SendReceive(&motorpacket);
-
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        case PLAYER_POSITION_VELOCITY_CONTROL_REQ:
-          /* velocity control mode:
-           *   0 = direct wheel velocity control (default)
-           *   1 = separate translational and rotational control
-           */
-          if(config_size-1 != sizeof(char))
-          {
-            puts("Arg to velocity control mode change request is wrong "
-                 "size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-          if(config[1])
-            direct_wheel_vel_control = false;
-          else
-            direct_wheel_vel_control = true;
-
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        case PLAYER_POSITION_RESET_ODOM_REQ:
-          /* reset position to 0,0,0: no args */
-          if(config_size-1 != 0)
-          {
-            puts("Arg to reset position request is wrong size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-          ResetRawPositions();
-
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-
-        case PLAYER_POSITION_GET_GEOM_REQ:
-        {
-          /* Return the robot geometry. */
-          if(config_size != 1)
-          {
-            puts("Arg get robot geom is wrong size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          // TODO : get values from somewhere.
-          player_position_geom_t geom;
-          geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-          geom.pose[0] = htons((short) (-100));
-          geom.pose[1] = htons((short) (0));
-          geom.pose[2] = htons((short) (0));
-          geom.size[0] = htons((short) (2 * 250));
-          geom.size[1] = htons((short) (2 * 225));
-          
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-        }
-          
         default:
           printf("RunPsosThread: got unknown config request \"%c\"\n",
                  config[0]);
 
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+          if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
             PLAYER_ERROR("failed to PutReply");
           break;
       }

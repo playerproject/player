@@ -244,9 +244,12 @@ parse_device_string(char* str1, char* str2)
   }
   else
   {
+    player_device_id_t id;
+    id = entry->id;
+    id.port = global_playerport;
+
     tmpdevice = (*(entry->initfunc))(argc,argv);
-    deviceTable->AddDevice(global_playerport,entry->code,index,
-                           entry->access, tmpdevice);
+    deviceTable->AddDevice(id, entry->access, tmpdevice);
   }
   return(0);
 }

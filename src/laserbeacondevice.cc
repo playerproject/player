@@ -117,7 +117,11 @@ CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv) :
 int CLaserBeaconDevice::Setup()
 {
   // get the pointer to the laser
-  this->laser = deviceTable->GetDevice(global_playerport,PLAYER_LASER_CODE,index);
+  player_device_id_t id;
+  id.port = global_playerport;
+  id.code = PLAYER_LASER_CODE;
+  id.index = index;
+  this->laser = deviceTable->GetDevice(id);
   ASSERT(this->laser != NULL);
     
   // Subscribe to the laser device, but fail if it fails
@@ -219,7 +223,8 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by client thread)
-int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len) 
+int CLaserBeaconDevice::PutConfig(player_device_id_t* device, void *client, 
+                                  void *data, size_t len) 
 {
   player_laserbeacon_config_t config;
 
@@ -234,7 +239,7 @@ int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len)
       {
         PLAYER_ERROR2("config request len is invalid (%d != %d)", 
                       len, sizeof(config));
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
           PLAYER_ERROR("PutReply() failed");
         return 0;
       }
@@ -247,7 +252,7 @@ int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len)
       this->one_thresh = ntohs(config.one_thresh) / 100.0;
       Unlock();
       
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
@@ -259,7 +264,7 @@ int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len)
       {
         PLAYER_ERROR2("config request len is invalid (%d != %d)", 
                       len, sizeof(config.subtype));
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
           PLAYER_ERROR("PutReply() failed");
         return 0;
       }
@@ -270,14 +275,15 @@ int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len)
       config.zero_thresh = htons((short) (this->zero_thresh * 100));
       Unlock();
       
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
+                   sizeof(config)) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
 
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }

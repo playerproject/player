@@ -56,7 +56,8 @@ PlayerQueue::PlayerQueue(void* tmpqueue, int tmpqueuelen)
 // push a new element on the queue.  returns the index of the new
 // element in the queue, or -1 if the queue is full
 int 
-PlayerQueue::Push(void* client, unsigned short type, struct timeval* ts,
+PlayerQueue::Push(player_device_id_t* device, void* client, 
+                  unsigned short type, struct timeval* ts, 
                   void* data, int size)
 {
   // search for an empty spot, from front to back
@@ -73,6 +74,9 @@ PlayerQueue::Push(void* client, unsigned short type, struct timeval* ts,
       }
       else
         queue[i].size = size;
+
+      if(device)
+        queue[i].device = *device;
 
       memcpy(queue[i].data,data,queue[i].size);
       queue[i].type = type;
@@ -96,13 +100,14 @@ PlayerQueue::Push(void* client, unsigned short type, struct timeval* ts,
 int 
 PlayerQueue::Push(void* data, int size)
 {
-  return(Push(NULL,0,NULL,data,size));
+  return(Push(NULL,NULL,0,NULL,data,size));
 }
 
 // pop an element off the queue. returns the size of the element,
 // or -1 if the queue is empty
 int 
-PlayerQueue::Pop(void** client, void* data, int size)
+PlayerQueue::Pop(player_device_id_t* device, void** client, 
+                 void* data, int size)
 {
   int tmpsize;
 
@@ -119,6 +124,9 @@ PlayerQueue::Pop(void** client, void* data, int size)
     }
     else
       tmpsize = queue[0].size;
+
+    if(device)
+      *device = queue[0].device;
 
     memcpy(data, queue[0].data, tmpsize);
 
@@ -147,7 +155,7 @@ PlayerQueue::Pop(void** client, void* data, int size)
 int 
 PlayerQueue::Pop(void* data, int size)
 {
-  return(Pop(NULL,data,size));
+  return(Pop(NULL,NULL,data,size));
 }
     
 // clear the queue; returns 0 on success; -1 on failure
@@ -173,8 +181,9 @@ PlayerQueue::Empty()
 // the first such element and returns its size, or -1 if no such element
 // is found
 int 
-PlayerQueue::Match(void* client, unsigned short* type,
-                   struct timeval* ts, void* data, int size)
+PlayerQueue::Match(player_device_id_t* device, void* client, 
+                   unsigned short* type, struct timeval* ts, 
+                   void* data, int size)
 {
   int tmpsize;
 
@@ -197,6 +206,8 @@ PlayerQueue::Match(void* client, unsigned short* type,
       else
         tmpsize = queue[i].size;
 
+      if(device)
+        *device = queue[i].device;
       memcpy(data, queue[i].data, tmpsize);
       *type = queue[i].type;
       *ts = queue[i].timestamp;
