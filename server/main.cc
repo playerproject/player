@@ -71,6 +71,7 @@
 #include <sys/mman.h> // for mmap
 #include <stagetime.h>
 #include <stagedevice.h>
+#include <psdevice.h>
 player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
@@ -339,10 +340,13 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
       
       close( tfd ); // can close fd once mapped
       
-      StageDevice *dev = 0; // declare outside switch statement
+      // declare outside switch statement
+      StageDevice *dev = 0; 
+      PSDevice* devicep = 0;
 
       // prime the configFile parser
       int globalparent = configFile.AddEntity(-1,"");
+      
 
       // get the player type and index from the header
       // NOT from the filename
@@ -379,6 +383,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         break;
 
 	case PLAYER_LOCALIZATION_CODE:
+        {
           int section = configFile.AddEntity(globalparent,
                                              PLAYER_LOCALIZATION_STRING);
           // you could insert config file options manually here.
@@ -391,18 +396,24 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
                         "unavailable.");
           else
           {
+            devicep = (PSDevice*)(*(entry->initfunc))(PLAYER_LOCALIZATION_STRING, 
+                                         &configFile, section);
             // add it to the instantiated device table
             deviceTable->AddDevice(deviceIO->player_id, 
                                    PLAYER_LOCALIZATION_STRING,
                                    PLAYER_READ_MODE, 
-                                   (*(entry->initfunc))(PLAYER_LOCALIZATION_STRING,
-                                                        &configFile, section));
+                                   devicep);
 
             // add this port to our listening list
             StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+
+            // setup the Stage buffers
+            devicep->SetupStageBuffers(deviceIO, lockfd, 
+                                       deviceIO->lockbyte);
           }
 
-          break;
+        }
+        break;
 	  
         case PLAYER_COMMS_CODE:   
           // Create broadcast device as per normal
