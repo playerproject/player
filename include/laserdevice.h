@@ -106,6 +106,10 @@ class CLaserDevice : public CDevice
     //
     int ChangeTermSpeed(int speed);
 
+    // Get the laser type
+    //
+    int GetLaserType(char *buffer, size_t bufflen);
+
     // Put the laser into configuration mode
     //
     int SetLaserMode();
@@ -119,17 +123,20 @@ class CLaserDevice : public CDevice
     // Set the laser configuration
     // Returns 0 on success
     //
-    int SetLaserConfig();
+    int SetLaserConfig(bool intensity);
 
+    // Change the resolution of the laser
+    // 
+    int SetLaserRes(int angle, int res);
+    
     // Request data from the laser
     // Returns 0 on success
     //
-    int RequestLaserData();
+    int RequestLaserData(int min_segment, int max_segment);
 
-    // Read laser range data
-    // Runs in the device thread.
+    // Read range data from laser
     //
-    int ProcessLaserData();
+    int ReadLaserData(uint16_t *data, size_t datalen);
 
     // Write a packet to the laser
     //
@@ -158,7 +165,8 @@ class CLaserDevice : public CDevice
 
     // Most recent scan data
     //
-    uint8_t* data;
+    //*** REMOVE uint8_t* data;
+    player_laser_data_t m_data;
 
     // Config data
     // PutConfig sets the data and the size, and GetConfig reads and zeros it
@@ -166,14 +174,18 @@ class CLaserDevice : public CDevice
     ssize_t config_size;
     uint8_t* config;
 
-    // Turn intensity data on/off
+    // Scan width and resolution
     //
-    bool intensity;
+    int m_scan_width, m_scan_res;
     
     // Scan range  (for restricted scan)
     //
-    int min_segment, max_segment;
+    int m_scan_min_segment, m_scan_max_segment;
 
+    // Turn intensity data on/off
+    //
+    bool m_intensity;
+    
  public:
     
     // device used to communicate with the laserk

@@ -80,13 +80,22 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
     m_laser->GetLock()->GetData(m_laser,
                                 (uint8_t*) &laser_data, sizeof(laser_data),
                                 NULL, NULL);
-    
+
+    // Do some byte swapping
+    //
+    laser_data.resolution = ntohs(laser_data.resolution);
+    laser_data.min_angle = ntohs(laser_data.min_angle);
+    laser_data.max_angle = ntohs(laser_data.max_angle);
+    laser_data.range_count = ntohs(laser_data.range_count);
+    for (int i = 0; i < laser_data.range_count; i++)
+        laser_data.ranges[i] = ntohs(laser_data.ranges[i]);
+
     // Analyse the laser data
     //
     player_laserbeacon_data_t beacon_data;
     FindBeacons(&laser_data, &beacon_data);
     
-    // Do some uint8_t-swapping
+    // Do some byte-swapping
     //
     for (int i = 0; i < beacon_data.count; i++)
     {
@@ -227,12 +236,13 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
 
     // Extract all the markers (reflectors)
     //
-    for (int i = 0; i < PLAYER_NUM_LASER_SAMPLES; i++)
+    for (int i = 0; i < laser_data->range_count; i++)
     {
-        int intensity = (int) (ntohs(laser_data->ranges[i]) >> 13);
-        double range = (double) (ntohs(laser_data->ranges[i]) & 0x1FFF) / 1000;
-        double bearing = ((double) i / 2  - 90) * M_PI / 180;
-
+        int intensity = (int) (laser_data->ranges[i] >> 13);
+        double range = (double) (laser_data->ranges[i] & 0x1FFF) / 1000;
+        double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
+            / 100.0 * M_PI / 180;
+         
         if (intensity > 0)
         {
             marker[marker_count][0] = i;
@@ -319,10 +329,11 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
     //
     for (int i = a; i <= b; i++)
     {
-        int intensity = (int) (ntohs(laser_data->ranges[i]) >> 13);
-        double range = (double) (ntohs(laser_data->ranges[i]) & 0x1FFF) / 1000;
-        double bearing = ((double) i / 2  - 90) * M_PI / 180;
-
+        int intensity = (int) (laser_data->ranges[i] >> 13);
+        double range = (double) (laser_data->ranges[i] & 0x1FFF) / 1000;
+        double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
+            / 100.0 * M_PI / 180;
+        
         double tx = range * cos(bearing) - ox;
         double ty = range * sin(bearing) - oy;
 
