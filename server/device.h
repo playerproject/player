@@ -165,6 +165,13 @@ class CDevice
     //
     virtual void Main();
 
+    // A helper method for internal use; e.g., when one device wants to make a
+    // request of another device
+    virtual int Request(player_device_id_t* device, void* requester, 
+                        void* request, size_t reqlen,
+                        unsigned short* reptype, struct timeval* ts,
+                        void* reply, size_t replen);
+
   protected:
     // Dummy main (just calls real main).  This is used to simplify thread
     // creation.
