@@ -81,7 +81,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
   bzero(reply,sizeof(reply));
 
-  if(1)
+  if(0)
   {
     printf("Request(%d):",payload_size);
     for(unsigned int i=0;i<payload_size;i++)
@@ -128,11 +128,11 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                 j<payload_size-(sizeof(player_device_req_t)-1);
                 j+=sizeof(player_device_req_t))
             {
-              puts("memcpying request");
+              //puts("memcpying request");
               memcpy(&req,payload+j,sizeof(player_device_req_t));
               UpdateRequested(req);
             }
-            puts("done with requests");
+            //puts("done with requests");
             if(j != payload_size)
               puts("HandleRequests(): garbage following player DR ioctl");
             break;
