@@ -42,9 +42,10 @@ int test_wifi(playerc_client_t *client, int index)
 
       for (i = 0; i < device->link_count; i++)
       {
-        printf("wifi: [%.3f] [%s] [%4d] [%4d] [%4d]\n",
+        printf("wifi: [%.3f] [%s] [%s] [%s] [%4d] [%4d] [%4d]\n",
                device->info.datatime,
-               device->links[i].ip,
+               device->links[i].mac,
+               device->links[i].essid, device->links[i].ip,
                device->links[i].qual, device->links[i].level, device->links[i].noise);
       }
     }
