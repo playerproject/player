@@ -42,16 +42,16 @@
 #include <math.h>
 #include <sys/time.h> 
 #include <unistd.h>
-
+#include <float.h> // for DBL_MAX
 #include <pthread.h>
 
 extern int global_argc;
 extern char** global_argv;
 
-// took me ages to figure this linkage out. grrr. 
-extern "C" {
-#include <pam.h> // image-reading library
-}
+#include "image.hh" // TODO - replace Neil's old image code 
+//extern "C" {
+//#include <pam.h> // TODO - use a portable image-reading library
+//}
 
 #include "stage1p4.h"
 
@@ -75,8 +75,7 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
   // load my name from the config file
   const char* name = cf->ReadString( section, "name", "<no name>" );
   
-  PLAYER_MSG1( "stage1p4 creating device name \"%s\"",
-	       name );
+  PLAYER_MSG1( "stage1p4 creating device name \"%s\"", name );
   
   if(  Stage1p4::stage_client == NULL )
     {
@@ -88,10 +87,7 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
       
       char* stage_host = 
 	(char*)cf->ReadString(section, "host", DEFAULT_STG_HOST);
-      
-      //Stage1p4::name_id_table = 
-      //g_hash_table_new( g_str_hash, g_str_equal );
-      
+            
       Stage1p4::stage_client = 
 	this->CreateStageClient(stage_host, stage_port, world_file);	
     }
@@ -123,8 +119,8 @@ Stage1p4::~Stage1p4()
 
 stg_client_t* Stage1p4::CreateStageClient( char* host, int port, char* world )
 {
-  // initialize the bitmap library
-  pnm_init( &global_argc, global_argv );
+  // TODO - initialize the bitmap library
+  //pnm_init( &global_argc, global_argv );
 
   PLAYER_MSG2( "Creating client to Stage server on %s:%d", host, port );
 
@@ -179,16 +175,13 @@ stg_client_t* Stage1p4::CreateStageClient( char* host, int port, char* world )
 		STG_TOKEN_MAX);
 	strncpy(child.token, wf.GetEntityType(section), 
 		STG_TOKEN_MAX );
-	strncpy(child.color, wf.ReadString(section,"color","red"), 
+	strncpy(child.color, wf.ReadString(section,"color",""), 
 		STG_TOKEN_MAX);
 	child.parent_id = parent; // make a new entity on the root 
-
+	
 	// decode the token into a type number
-	if( strcmp( "position", child.token ) == 0 )
-	  child.type = STG_MODEL_POSITION;
-	else
-	  child.type = STG_MODEL_GENERIC;
-
+	//child.type = stg_model_type_from_string( child.token );
+		
 	// warn the user if no name was specified
 	if( strcmp( child.name, "" ) == 0 )
 	  PLAYER_MSG2( "stage1p4: model %s (line %d) has no name specified. Player will not be able to access this device", child.token, line );
@@ -232,30 +225,191 @@ stg_client_t* Stage1p4::CreateStageClient( char* host, int port, char* world )
 	stg_model_set_pose( cli, banana, &pose );
 
 	const char* bitmapfile = wf.ReadString(section,"bitmap", "" );
-	if( strcmp( bitmapfile, "" ) != 0 )
-	  {
-	    PLAYER_MSG1("Loading bitmap file \"%s\"", bitmapfile );
 
-	    FILE *bitmap = fopen(bitmapfile, "r" );
-	    if( bitmap == NULL )
+	stg_rotrect_array_t* rects = CreateRectsFromBitMapFile( bitmapfile );
+	if( rects ) stg_model_set_rects( cli, banana, rects );
+	
+	// Load the transducers
+	int transducer_count = wf.ReadInt(section, "transducer_count", 0);
+	if (transducer_count > 0)
+	  {
+	    stg_transducer_t* trans = new stg_transducer_t[transducer_count];
+	    memset( trans, 0, sizeof(stg_transducer_t) * transducer_count );
+	    
+	    int i;
+	    for (i = 0; i < transducer_count; i++)
 	      {
-		PLAYER_WARN1("failed to open bitmap file \"%s\"", bitmapfile);
-		perror( "fopen error" );
+		char key[64];
+		snprintf(key, sizeof(key), "transducer[%d]", i);
+		trans[i].pose.x = wf.ReadTupleLength(section,key,0,0);
+		trans[i].pose.y = wf.ReadTupleLength(section,key,1,0);
+		trans[i].pose.a = wf.ReadTupleAngle(section, key,2,0);
+		trans[i].size.x = wf.ReadTupleLength(section,key,3,0);
+		trans[i].size.y = wf.ReadTupleLength(section,key,4,0);
 	      }
 	    
-	    struct pam inpam;
-	    pnm_readpaminit(bitmap, &inpam, sizeof(inpam)); 
+	    stg_model_set_transducers( cli, banana, trans, transducer_count );
+	  }
 	
-	    printf( "read image %dx%dx%d",
-		    inpam.width, 
-		    inpam.height, 
-		    inpam.depth );
-	    // convert the bitmap to rects and poke them into the model
+	// check to see if this model wants to show up in the neighbor sensor
+	int neighbor_return = wf.ReadInt( section, "neighbor", false );
+	stg_model_set_neighbor_return( cli, banana, &neighbor_return );
+	
+	const char* laserstring = wf.ReadString( section, "laser_return", "" );
+	
+	stg_laser_return_t lret;
+	if( strcmp( laserstring, "visible" ) == 0 )
+	  {
+	    lret = LaserVisible;
+	    stg_model_set_laser_return( cli, banana, &lret );
+	  }
+	else if( strcmp( laserstring, "invisible" ) == 0 )
+	  {
+	    lret = LaserTransparent;
+	    stg_model_set_laser_return( cli, banana, &lret );
+	  }
+	else if( strcmp( laserstring, "bright" ) == 0 )
+	  {
+	    lret = LaserBright;
+	    stg_model_set_laser_return( cli, banana, &lret );
 	  }
 
+	// TODO - all the other sensor return values here
+
+	stg_bounds_t bounds;	
+	const char* key = "neighbor_range_bounds";
+	bounds.min = wf.ReadTupleLength(section,key,0,-1);
+	bounds.max = wf.ReadTupleLength(section,key,1,-1);
+	
+	// if we found a value, poke it into Stage
+	if( bounds.min != -1 )
+	  stg_model_set_neighbor_bounds(cli,banana,&bounds);
       } 
   }
   return cli;
+}
+
+// compresses the bitmap data into an array of rectangles, allocating
+// storag as it goes. caller must free the rects (use stg_rect_array_free()) 
+// this code belongs in a Stage library - needs rewriting in C,
+// without the dependency on Neil's Nimage code 
+stg_rotrect_array_t* 
+Stage1p4::CreateRectsFromBitMapFile( const char* bitmapfile )
+{
+  if( strcmp( bitmapfile, "" ) == 0 )
+    return NULL;
+  
+  Nimage* img = new Nimage();
+  
+  PLAYER_MSG1("Loading bitmap file \"%s\"", bitmapfile );
+  
+  int len = strlen(bitmapfile);
+  if( strcmp( &(bitmapfile[ len - 7 ]), ".pnm.gz" ) == 0 )
+    {
+      if (!img->load_pnm_gz(bitmapfile))
+	return NULL;
+    }
+  else 
+    {
+      if (!img->load_pnm(bitmapfile))
+	return NULL;
+    }
+  
+/*
+    FILE *bitmap = fopen(bitmapfile, "r" );
+    if( bitmap == NULL )
+    {
+    PLAYER_WARN1("failed to open bitmap file \"%s\"", bitmapfile);
+    perror( "fopen error" );
+    }
+    
+    struct pam inpam;
+    pnm_readpaminit(bitmap, &inpam, sizeof(inpam)); 
+    
+    printf( "read image %dx%dx%d",
+    inpam.width, 
+    inpam.height, 
+    inpam.depth );
+  */
+  
+  // convert the bitmap to rects and poke them into the model
+  double sx = 1.0;
+  double sy = 1.0;
+  
+  double size_x = 1.0;
+  double size_y = 1.0;
+
+  double crop_ax = -DBL_MAX;
+  double crop_ay = -DBL_MAX;
+  double crop_bx = +DBL_MAX;
+  double crop_by = +DBL_MAX;
+ 
+  // RTV - this box-drawing algorithm compresses hospital.world from
+  // 104,000+ pixels to 5,757 rectangles. it's not perfect but pretty
+  // darn good with bitmaps featuring lots of horizontal and vertical
+  // lines - such as most worlds. Also combined matrix & gui
+  // rendering loops.  hospital.pnm.gz now loads more than twice as
+  // fast and redraws waaaaaay faster. yay!
+  
+  stg_rotrect_array_t* rect_array = stg_rotrect_array_create();
+  
+  for (int y = 0; y < img->height; y++)
+    {
+      for (int x = 0; x < img->width; x++)
+	{
+	  //m_world->Ticker();
+	  
+	  if (img->get_pixel(x, y) == 0)
+	    continue;
+	  
+	  // a rectangle starts from this point
+	  int startx = x;
+	  int starty = img->height - y;
+	  int height = img->height; // assume full height for starters
+	  
+	  // grow the width - scan along the line until we hit an empty pixel
+	  for( ;  img->get_pixel( x, y ) > 0; x++ )
+	    {
+	      // handle horizontal cropping
+	      double ppx = x * sx; 
+	      if (ppx < crop_ax || ppx > crop_bx)
+		continue;
+	      
+	      // look down to see how large a rectangle below we can make
+	      int yy  = y;
+	      while( (img->get_pixel( x, yy ) > 0 ) 
+		     && (yy < img->height) )
+		{ 
+		  // handle vertical cropping
+		  double ppy = (img->height - yy) * sy;
+		  if (ppy < crop_ay || ppy > crop_by)
+		    continue;
+		  
+		  yy++; 
+		} 	      
+	      // now yy is the depth of a line of non-zero pixels
+	      // downward we store the smallest depth - that'll be the
+	      // height of the rectangle
+	      if( yy-y < height ) height = yy-y; // shrink the height to fit
+	    } 
+	  
+	  int width = x - startx;
+	  
+	  // delete the pixels we have used in this rect
+	  img->fast_fill_rect( startx, y, width, height, 0 );
+	  
+	  stg_rotrect_t rect;
+	  rect.x = startx;
+	  rect.y = starty;
+	  rect.a = 0.0;
+	  rect.w = width;
+	  rect.h = -height;
+	  stg_rotrect_array_append( rect_array, &rect ); // add it to the array  
+	}
+    }
+  delete img;
+  
+  return rect_array;
 }
 
 

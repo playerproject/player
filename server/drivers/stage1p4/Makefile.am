@@ -10,7 +10,10 @@ libstage1p4_a_SOURCES = \
 	stage1p4.cc \
 	stg_position.cc \
 	stg_laser.cc \
-	stg_simulation.cc
+	stg_simulation.cc \
+	stg_fiducial_neighbors.cc \
+	image.cc image.hh
+
 
 # This file should be added to CVS before it's referenced here.  Otherwise,
 # the 'make dist' fails.
