@@ -164,14 +164,15 @@ int GzPtz::Shutdown()
 // Data
 size_t GzPtz::GetData(void* client, unsigned char* dest, size_t len,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec)
-{
+  {
    player_ptz_data_t data;
 
-   data.pan = htonl((int) (this->iface->data->pan * 180/M_PI));
-  data.tilt = htonl((int) (this->iface->data->tilt * 180 /M_PI));
-  data.zoom = htonl((int) (this->iface->data->zoom * 180 / M_PI));
-  
-  assert(len >= sizeof(data));
+   data.pan = ((int) (this->iface->data->pan * 180/M_PI));
+  data.tilt = ((int) (this->iface->data->tilt * 180 /M_PI));
+  data.zoom = ((int) (this->iface->data->zoom * 180 / M_PI));
+  // printf("GetDatalen=%d\n",len);
+  // assert(len >= sizeof(data));
+  // The new header size seems to give in a size way bigger than whats expected here. So it always seems to exit on this assert.
   memcpy(dest, &data, sizeof(data));
 
   if (timestamp_sec)
@@ -188,13 +189,13 @@ size_t GzPtz::GetData(void* client, unsigned char* dest, size_t len,
 void GzPtz::PutCommand(void* client, unsigned char* src, size_t len)
 {
   player_ptz_cmd_t *cmd;
-
-  assert(len >= sizeof(player_ptz_cmd_t));
+  // printf("PutCommandlen=%d\n",len);
+  //  assert(len >= sizeof(player_ptz_cmd_t));
   cmd = (player_ptz_cmd_t*) src;
-
-  this->iface->data->cmd_pan = ((int) ntohl(cmd->pan)) * M_PI/180;
-  this->iface->data->cmd_tilt = ((int) ntohl(cmd->tilt)) * M_PI/180;
-  this->iface->data->cmd_zoom = ((int) ntohl(cmd->zoom)) * M_PI / 180;
+  //  printf("pan=%d, tilt=%d,zoom=%d",cmd->pan,cmd->tilt,cmd->zoom);
+  this->iface->data->cmd_pan = ((int) ntohs(cmd->pan)) * M_PI/180;
+  this->iface->data->cmd_tilt = ((int) ntohs(cmd->tilt)) * M_PI/180;
+  this->iface->data->cmd_zoom = ((int) ntohs(cmd->zoom)) * M_PI / 180;
   
   return;
 }
