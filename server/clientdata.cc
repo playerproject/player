@@ -422,8 +422,9 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       resp.access = FindPermission(id);
 
       bzero(resp.driver_name, sizeof(resp.driver_name));
-      strncpy((char*)resp.driver_name, deviceTable->GetDriver(id), 
-              sizeof(resp.driver_name));
+      char* drivername;
+      if((drivername = deviceTable->GetDriver(id)))
+        strncpy((char*)resp.driver_name, drivername, sizeof(resp.driver_name));
 
       memcpy(replybuffer+sizeof(player_msghdr_t),&resp,
              sizeof(player_device_resp_t));
