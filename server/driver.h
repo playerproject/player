@@ -139,7 +139,9 @@ class Driver
     /// @param datasize Maximum size of the data packet.
     /// @param command Pointer to pre-allocated command storage.
     /// @param commandsize Maximum size of the command packet.
+    /// @param reqqueue Pointer to pre-allocated request queue storage.
     /// @param reqqueuelen Length of the request queue.
+    /// @param repqueue Pointer to pre-allocated reply queue storage.
     /// @param repqueuelen Length of the reply queue.
     /// @returns Returns 0 on success
     int AddInterface(player_device_id_t id, unsigned char access,

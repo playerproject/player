@@ -66,7 +66,6 @@
 #define PLAYER_PTZ_CODE            ((uint16_t)8)   // pan-tilt-zoom unit
 #define PLAYER_AUDIO_CODE          ((uint16_t)9)   // audio I/O
 #define PLAYER_FIDUCIAL_CODE       ((uint16_t)10)  // fiducial detector
-#define PLAYER_COMMS_CODE          ((uint16_t)11)  // inter-Player radio I/O
 #define PLAYER_SPEECH_CODE         ((uint16_t)12)  // speech I/O
 #define PLAYER_GPS_CODE            ((uint16_t)13)  // GPS unit
 #define PLAYER_BUMPER_CODE         ((uint16_t)14)  // bumper array
@@ -112,7 +111,6 @@
 #define PLAYER_PTZ_STRING            "ptz"
 #define PLAYER_AUDIO_STRING          "audio"
 #define PLAYER_FIDUCIAL_STRING       "fiducial"
-#define PLAYER_COMMS_STRING          "comms"
 #define PLAYER_SPEECH_STRING         "speech"
 #define PLAYER_GPS_STRING            "gps"
 #define PLAYER_BUMPER_STRING         "bumper"

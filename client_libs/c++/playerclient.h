@@ -49,6 +49,7 @@
 /** @addtogroup clientlibs Client Libraries */
 /** @{ */
 /** @defgroup player_clientlib_cplusplus C++ client library
+@{
 
 The C++ client (@p client_libs/c++) is generally the most comprehensive
 library, since it is used to test new features as they are implemented
@@ -100,36 +101,35 @@ struct pollfd;
 #include <string.h>
 #include <math.h>
 
-// Convert radians to degrees
-//
 #ifndef RTOD
+/** Convert radians to degrees */
 #define RTOD(r) ((r) * 180 / M_PI)
 #endif
 
-// Convert degrees to radians
-//
 #ifndef DTOR
+/** Convert degrees to radians */
 #define DTOR(d) ((d) * M_PI / 180)
 #endif
 
-// Normalize angle to domain -pi, pi
-//
 #ifndef NORMALIZE
+/** Normalize angle to domain -pi, pi */
 #define NORMALIZE(z) atan2(sin(z), cos(z))
 #endif
 
 // forward declaration for friending
 class PlayerClient;
 
-/*****************************************************************************
- ** begin section ClientProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_core Core functionality */
+/** @{ */
 
-/**
+/** @defgroup player_clientlib_clientproxy Client proxy base class
+
 Base class for all proxy devices. Access to a device is provided by a
-device-specific proxy class.  These classes all inherit from the {\tt
-ClientProxy} class which defines an interface for device proxies.  As such,
+device-specific proxy class.  These classes all inherit from the @p
+ClientProxy class which defines an interface for device proxies.  As such,
 a few methods are common to all devices and we explain them here.
+
+@{
 */
 class ClientProxy
 {
@@ -144,15 +144,12 @@ class ClientProxy
      */
     bool valid;
 
-    // the last message header and body will be copied here by StoreData(), so
-    // that it's available for later use.
+    /** the last message header and body will be copied here by
+        StoreData(), so that it's available for later use. */
     unsigned char last_data[PLAYER_MAX_MESSAGE_SIZE];
     player_msghdr_t last_header;
 
     unsigned char access;   // 'r', 'w', or 'a' (others?)
-    //unsigned short robot;  // to which robot this proxy pertains
-    //unsigned short device; // the name by which we identify this kind of device
-    //unsigned short index;  // which device we mean
     player_device_id_t m_device_id;
 
     /** The name of the driver used to implement this device in the server.
@@ -172,15 +169,15 @@ class ClientProxy
     struct timeval receivedtime;
 
     /** This constructor will try to get access to the device,
-        unless {\tt req_device} is 0 or {\tt req_access} is 'c'.
-        The pointer {\tt pc} must refer to an already connected 
-        {\tt PlayerClient} proxy.  The {\tt index} indicates which one of the
+        unless @p req_device is 0 or @p req_access is 'c'.
+        The pointer @p pc must refer to an already connected 
+        @p PlayerClient proxy.  The @p index indicates which one of the
         devices to use (usually 0).  Note that a request executed by this
         the constructor can fail, but the constructor cannot indicate the
         failure.  Thus, if you request a particular access mode, you should 
         verify that the current access is identical to your requested access 
-        using {\tt GetAccess()}.  In any case, you can use 
-        {\tt ChangeAccess()} later to change your access mode for the device.
+        using @p GetAccess().  In any case, you can use 
+        @p ChangeAccess() later to change your access mode for the device.
     */
     ClientProxy(PlayerClient* pc, 
 		unsigned short req_device,
@@ -194,7 +191,7 @@ class ClientProxy
      */
     unsigned char GetAccess() { return(access); };  
 
-    /** Request different access for the device.  If {\tt grant_access} is
+    /** Request different access for the device.  If @p grant_access is
         non-NULL, then it is filled in with the granted access.  Returns 0
         on success, -1 otherwise. */
     int ChangeAccess(unsigned char req_access, 
@@ -232,7 +229,8 @@ class ClientProxy
 #endif
 };
 
-// keep a linked list of proxies that we've got open
+
+/** Keep a linked list of proxies that we've got open */
 class ClientProxyNode
 {
   public:
@@ -240,20 +238,16 @@ class ClientProxyNode
     ClientProxyNode* next;
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @} */
 
+/** @defgroup player_clientlib_playerclient Client object
 
-/*****************************************************************************
- ** begin section PlayerClient
- *****************************************************************************/
-
-/** One {\tt PlayerClient} object is used to control each connection to
-    a Player server.  Contained within this object are methods for changing the
-    connection parameters and obtaining access to devices, which we explain 
-    next.
- */
+One @p PlayerClient object is used to control each connection to
+a Player server.  Contained within this object are methods for changing the
+connection parameters and obtaining access to devices, which we explain 
+next.
+@{
+*/
 class PlayerClient
 {
   private:
@@ -317,8 +311,8 @@ class PlayerClient
     // constructors
     
     /** Make a client and connect it as indicated.
-        If {\tt hostname} is omitted (or NULL) then the client will {\em not}
-        be connected.  In that cast, call {\tt Connect()} yourself later.
+        If @p hostname is omitted (or NULL) then the client will @e not
+        be connected.  In that cast, call @p Connect() yourself later.
      */
     PlayerClient(const char* hostname=NULL,
                  const int port=PLAYER_PORTNUM,
@@ -334,12 +328,12 @@ class PlayerClient
     // destructor
     ~PlayerClient();
 
-    /** Connect to the indicated host and port.\\
+    /** Connect to the indicated host and port.
         Returns 0 on success; -1 on error.
      */
     int Connect(const char* hostname="localhost", int port=PLAYER_PORTNUM);
 
-    /** Connect to the indicated host and port, using a binary IP.\\
+    /** Connect to the indicated host and port, using a binary IP.
         Returns 0 on success; -1 on error.
      */
     int Connect(const struct in_addr* addr, int port);
@@ -351,7 +345,7 @@ class PlayerClient
     int ConnectRNS(const char* robotname, const char* hostname="localhost",
                    int port=PLAYER_PORTNUM);
 
-    /** Disconnect from server.\\
+    /** Disconnect from server.
         Returns 0 on success; -1 on error.
       */
     int Disconnect();
@@ -367,18 +361,18 @@ class PlayerClient
     The data that is received for each device device will be processed by the
     appropriate device proxy and stored there for access by your program.
     If no errors occurred 0 is returned.  Otherwise, -1 is returned and
-    diagnostic information is printed to {\tt stderr} (you should probably
+    diagnostic information is printed to @p stderr (you should probably
     close the connection!).
     */
     int Read();
     
-    /** Write a command to the server.  This method is {\bf not} intended for
+    /** Write a command to the server.  This method is @b not intended for
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 on success, -1 otherwise. */
     int Write(player_device_id_t device_id,
               const char* command, size_t commandlen);
 
-    /** Send a request to the server.  This method is {\bf not} intended for
+    /** Send a request to the server.  This method is @b not intended for
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 on success, -1 otherwise. */
     int Request(player_device_id_t device_id,
@@ -388,7 +382,7 @@ class PlayerClient
                 char* reply, size_t replylen);
 
     /** Another form of Request(), this one can be used if the caller is not
-        interested in the reply.  This method is {\bf not} intended for
+        interested in the reply.  This method is @b not intended for
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 if an ACK is received, -1 
         otherwise. */
@@ -399,8 +393,8 @@ class PlayerClient
     /**
       Request access to a device; meant mostly for use by client-side device 
       proxy constructors.
-      {\tt req_access} is requested access.
-      {\tt grant_access}, if non-NULL, will be filled with the granted access.
+      @p req_access is requested access.
+      @p grant_access, if non-NULL, will be filled with the granted access.
       Returns 0 if everything went OK or -1 if something went wrong.
     */
     int RequestDeviceAccess(player_device_id_t device_id,
@@ -413,25 +407,24 @@ class PlayerClient
 
     /**
       You can change the rate at which your client receives data from the 
-      server with this method.  The value of {\tt freq} is interpreted as Hz; 
+      server with this method.  The value of @p freq is interpreted as Hz; 
       this will be the new rate at which your client receives data (when in 
       continuous mode).  On error, -1 is returned; otherwise 0.
      */
     int SetFrequency(unsigned short freq);
 
     /** You can toggle the mode in which the server sends data to your 
-        client with this method.  The {\tt mode} should be one of:
-        \begin{itemize}
-        \item {\tt PLAYER_DATAMODE_PUSH_ALL} (all data at fixed frequency)
-        \item {\tt PLAYER_DATAMODE_PULL_ALL} (all data on demand)
-        \item {\tt PLAYER_DATAMODE_PUSH_NEW} (only new new data at fixed freq)
-        \item {\tt PLAYER_DATAMODE_PULL_NEW} (only new data on demand)
-        \end{itemize}
+        client with this method.  The @p mode should be one of
+          -  @p PLAYER_DATAMODE_PUSH_ALL (all data at fixed frequency)
+          -  @p PLAYER_DATAMODE_PULL_ALL (all data on demand)
+          -  @p PLAYER_DATAMODE_PUSH_NEW (only new new data at fixed freq)
+          -  @p PLAYER_DATAMODE_PULL_NEW (only new data on demand)
+          -  @p PLAYER_DATAMODE_PUSH_ASYNC (new data, as fast as it is produced)
         On error, -1 is returned; otherwise 0.
       */
     int SetDataMode(unsigned char mode);
 
-    /** When in a {\tt PULL} data delivery mode, you can request a single 
+    /** When in a @p PULL data delivery mode, you can request a single 
         round of data using this method.  On error -1 is returned; otherwise 0.
       */
     int RequestData();
@@ -457,24 +450,20 @@ class PlayerClient
     int GetDeviceList(); 
 };
 
-
-/*****************************************************************************
- ** end section
- *****************************************************************************/
-
-/*****************************************************************************
- ** begin section PlayerMultiClient
- *****************************************************************************/
+/** @} */
 
 // forward declaration to avoid including <sys/poll.h>, which may not be
 // available when people are building clients against this lib
 struct pollfd;
 
-/**
-  The PlayerMultiClient makes it easy to control multiple Player connections 
-  within one thread.   You can connect to any number of Player servers and
-  read from all of them with a single {\tt Read()}.
-  */
+/** @defgroup player_clientlib_cplusplus_playermulticlient Multiclient object
+
+The PlayerMultiClient makes it easy to control multiple Player connections
+within one thread.   You can connect to any number of Player servers
+and read from all of them with a single Read().
+
+@{
+*/
 class PlayerMultiClient
 {
   private:
@@ -518,8 +507,8 @@ class PlayerMultiClient
     void RemoveClient(PlayerClient* client);
 
     /** Read on one of the client connections.  This method will return after 
-        reading from the server with first available data.  It will {\bf
-        not} read data from all servers.  You can use the {\tt fresh} flag
+        reading from the server with first available data.  It will @b
+        not read data from all servers.  You can use the @p fresh flag
         in each client object to determine who got new data.  You should
         then set that flag to false.  Returns 0 if everything went OK,
         -1 if something went wrong. */
@@ -530,17 +519,17 @@ class PlayerMultiClient
     int ReadLatest( int max_reads );
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @} */
 
-/*****************************************************************************
- ** begin section AIOProxy
- *****************************************************************************/
+/** @} (core) */
 
-/** The {\tt AIOProxy} class is used to read from a {\tt aio} (analog I/O)
-    device.
- */
+/** @defgroup player_clientlib_cplusplus_proxies Proxies */
+/** @{ */
+
+/** @defgroup player_clientlib_cplusplus_aioproxy AIOProxy
+
+The @p AIOProxy class is used to read from a @ref player_interface_aio
+(analog I/O) device.  */
 class AIOProxy : public ClientProxy
 {
 
@@ -568,113 +557,12 @@ public:
     /// Print out the current digital input state.
     void Print ();
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
-
-/*****************************************************************************
- ** begin section CommsProxy
- *****************************************************************************/
-
-/** The {\tt CommsProxy} class controls a {\tt comms} device.
-Data may be written one message at a time using the {\tt Write} method.  
-
-Incoming data are stored in a set of parallel lists:
-\begin{itemize}
-\item {\tt uint8_t** msg} : list of pointers to message data
-\item {\tt size_t* msg_len} : list of message lengths
-\item {\tt struct timeval* msg_ts} : list of message timestamps
-\end{itemize}
-The current number of valid messages is stored in {\tt msg_num}, and so each 
-list should be considered to be of length {\tt msg_num}.
-
-To delete a message from the lists, use {\tt Delete()}.
-*/
-class CommsProxy : public ClientProxy
-{
-  /** Proxy constructor.  Leave the access field empty to start
-      unconnected.  */
-  public: CommsProxy(PlayerClient* pc, unsigned short index, 
-                     unsigned char access ='c');
-
-  public: ~CommsProxy();
-
-  /** Write a message to the outgoing queue.
-      Returns the number of bytes written, or -1 on error.
-  */
-  public: int Write(void *msg, int len);
-
-  // interface that all proxies must provide
-  protected: void FillData(player_msghdr_t hdr, const char* buffer);
-  
-  /// Delete the given message.  Returns 0 on success and -1 on error.
-  public: int Delete(int index);
-    
-  /// Print out current message.
-  public: void Print();
-
-  /// List of received messages.
-  public: uint8_t** msg;
-  
-  /// List of lengths of the received messages.
-  public: size_t* msg_len;
-  
-  /// List of timestamps of the received messages.
-  public: struct timeval* msg_ts;
-
-  /// Number of received messages 
-  public: size_t msg_num;
-
-  // Current allocated length of msg and msg_len
-  private: size_t listlen;
-};
 
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_gpsproxy GpsProxy
 
-
-class DescartesProxy : public ClientProxy
-{
-
-  public:
-    // the latest position data
-    int xpos,ypos,theta;
-    unsigned char bumpers[2];
-   
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
-    DescartesProxy(PlayerClient* pc, unsigned short index, 
-                  unsigned char access ='c') :
-            ClientProxy(pc,PLAYER_DESCARTES_CODE,index,access) {}
-
-    // these methods are the user's interface to this device
-
-    // send a movement command
-    //
-    // Returns:
-    //   0 if everything's ok
-    //   -1 otherwise (that's bad)
-    int Move(short speed, short heading, short distance );
-
-    // interface that all proxies must provide
-    void FillData(player_msghdr_t hdr, const char* buffer);
-    
-    // interface that all proxies SHOULD provide
-    void Print();
-
-    // fill in the arguments with the current position
-    void GetPos( double* x, double* y, double* th );
-};
-
-
-/*****************************************************************************
- ** begin section GpsProxy
- *****************************************************************************/
-
-/** The {\tt GpsProxy} class is used to control a {\tt gps} device.
-    The latest pose data is stored in three class attributes.  */
+The @p GpsProxy class is used to control a @ref player_interface_gps
+device.  The latest pose data is stored in three class attributes.  */
 class GpsProxy : public ClientProxy
 {
   public:
@@ -716,14 +604,14 @@ class GpsProxy : public ClientProxy
 };
 
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
+/** @defgroup player_clientlib_cplusplus_gripperproxy GripperProxy
 
-/*****************************************************************************
- ** begin section GripperProxy
- *****************************************************************************/
+The @p GripperProxy class is used to control a @ref
+player_interface_gripper device.  The latest gripper data held in a
+handful of class attributes.  A single method provides user control.
+@{
+*/
 
 /* gripper stuff */
 #define GRIPopen   1
@@ -738,10 +626,6 @@ class GpsProxy : public ClientProxy
 #define GRIPpress  16
 #define LIFTcarry  17
 
-/** The {\tt GripperProxy} class is used to control a {\tt gripper} device.
-    The latest gripper data held in a handful of class attributes.
-    A single method provides user control.
-*/
 class GripperProxy : public ClientProxy
 {
 
@@ -778,17 +662,12 @@ class GripperProxy : public ClientProxy
     void Print();
 };
 
+/** @} */
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_soundproxy SoundProxy
 
-/*****************************************************************************
- ** begin section SoundProxy
- *****************************************************************************/
-
-/** The {\tt SoundProxy} class is used to control a {\tt sound} device,
-    which allows you to play pre-recorded sound files on a robot.
+The @p SoundProxy class is used to control a @ref player_interface_sound
+device, which allows you to play pre-recorded sound files on a robot.
 */
 class SoundProxy : public ClientProxy
 {
@@ -815,13 +694,13 @@ class SoundProxy : public ClientProxy
     void Print() {};
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_fiducialproxy FiducialProxy
 
-/*****************************************************************************
- ** begin section FiducialProxy
- *****************************************************************************/
+The @p FiducialProxy class is used to control @ref
+player_interface_fiducial devices.  The latest set of detected beacons
+is stored in the @p beacons array.
+@{
+*/
 
 class FiducialItem
 {
@@ -831,9 +710,6 @@ class FiducialItem
     double upose[3];
 };
 
-/** The {\tt FiducialProxy} class is used to control {\tt fiducial}
-    devices.  The latest set of detected beacons is stored in the {\tt
-    beacons} array.  */
 
 class FiducialProxy : public ClientProxy
 {
@@ -869,19 +745,7 @@ class FiducialProxy : public ClientProxy
    */
   double view_angle;
 
-  /** The latest laser beacon data.  Each beacon has the following
-      information: 
-      \begin{itemize} 
-      \item int id  (-1 for unidentified)
-      \item double pose[3] (pose of the beacon)
-      \item double upose[3] (uncertainty in the pose of the beacon)
-      \end{itemize} 
-      Where each pose array is composed of:
-      \begin{itemize} 
-      \item [0] = x position (m)
-      \item [1] = y position (m)
-      \item [2] = orientation (radians)
-      \end{itemize}  */
+  /** The latest laser beacon data. */
   FiducialItem beacons[PLAYER_FIDUCIAL_MAX_SAMPLES];
      
   /** Constructor.  Leave the access field empty to start
@@ -954,19 +818,15 @@ class FiducialProxy : public ClientProxy
 
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @} */
 
 
-/*****************************************************************************
- ** begin section LaserProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_laserproxy LaserProxy
 
-/** The {\tt LaserProxy} class is used to control a {\tt laser}
-device.  The latest scan data is held in two arrays: {\tt ranges} and
-{\tt intensity}.  The laser scan range, resolution and so on can be
-configured using the {\tt Configure()} method.  */
+The @p LaserProxy class is used to control a @ref player_interface_laser
+device.  The latest scan data is held in two arrays: @p ranges and @p
+intensity.  The laser scan range, resolution and so on can be configured
+using the Configure() method.  */
 class LaserProxy : public ClientProxy
 {
 
@@ -1010,23 +870,23 @@ class LaserProxy : public ClientProxy
     // these methods are the user's interface to this device
 
     /** Enable/disable the laser.
-      Set {\tt state} to 1 to enable, 0 to disable.
+      Set @p state to 1 to enable, 0 to disable.
       Note that when laser is disabled the client will still receive laser
       data, but the ranges will always be the last value read from the
       laser before it was disabled.
-      Returns 0 on success, -1 if there is a problem.\\
-      {\bf Note}: The {\tt sicklms200} driver currently does not implement
-      this feature.
+      Returns 0 on success, -1 if there is a problem.
+      @b Note: The @ref player_driver_sicklms200 driver currently does
+      not implement this feature.
      */
     int SetLaserState(const unsigned char state);
 
-    /** Configure the laser scan pattern.  Angles {\tt min\_angle} and
-        {\tt max\_angle} are measured in radians.
-        {\tt scan_res} is measured in units of $0.01^{\circ}$;
-        valid values are: 25 ($0.25^{\circ}$), 50 ($0.5^{\circ}$) and
-        $100 (1^{\circ}$).  {\tt range_res} is measured in mm; valid values
-        are: 1, 10, 100.  Set {\tt intensity} to {\tt true} to
-        enable intensity measurements, or {\tt false} to disable.
+    /** Configure the laser scan pattern.  Angles @p min_angle and
+        @p max_angle are measured in radians.
+        @p scan_res is measured in units of @f$0.01^{\circ}@f$;
+        valid values are: 25 (@f$0.25^{\circ}@f$), 50 (@f$0.5^{\circ}@f$) and
+        @f$100 (1^{\circ}@f$).  @p range_res is measured in mm; valid values
+        are: 1, 10, 100.  Set @p intensity to @p true to
+        enable intensity measurements, or @p false to disable.
         Returns the 0 on success, or -1 of there is a problem.  
      */
     int Configure(double min_angle, 
@@ -1055,10 +915,10 @@ class LaserProxy : public ClientProxy
     double MinRight () { return min_right; }
 
     /** Range access operator.  This operator provides an alternate
-        way of access the range data.  For example, given an {\tt
-        LaserProxy} named {\tt lp}, the following expressions are
-        equivalent: \verb+lp.ranges[0]+, \verb+lp.Ranges(0)+, 
-        and \verb+lp[0]+.  */
+        way of access the range data.  For example, given an @p
+        LaserProxy named @p lp, the following expressions are
+        equivalent: @p lp.ranges[0], @p lp.Ranges(0), 
+        and @p lp[0].  */
     double operator [] (unsigned int index)
     {
       return Ranges(index);
@@ -1074,17 +934,15 @@ class LaserProxy : public ClientProxy
     void PrintConfig();
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-#define MAX_RX_BUF_SIZE 1024
+/** @defgroup player_clientlib_cplusplus_localizeproxy LocalizeProxy
 
-
-/*****************************************************************************
- ** begin section LocalizeProxy
- *****************************************************************************/
-
+The @p LocalizeProxy class is used to control a @ref
+player_interface_localize device, which can provide multiple pose
+hypotheses for a robot.
+@{
+*/
+ 
 class localize_hypoth
 {
   public:
@@ -1096,9 +954,6 @@ class localize_hypoth
     double weight;
 };
 
-/** The {\tt LocalizeProxy} class is used to control a {\tt localize} device,
-    which can provide multiple pose hypotheses for a robot.
- */
 class LocalizeProxy : public ClientProxy
 {
 
@@ -1118,14 +973,7 @@ class LocalizeProxy : public ClientProxy
     /// Number of possible poses
     int hypoth_count;
 
-    /** Array of possible poses.  Each pose contains the following
-        information:
-        \begin{itemize}
-        \item {\tt double mean[3]} (pose estimate, in m, m, radians)
-        \item {\tt double cov[3][3]} (covariance, in m$^{2}$ and radians$^{2}$)
-        \item {\tt double weight} (weight associated with this estimate)
-        \end{itemize}
-     */
+    /** Array of possible poses. */
     localize_hypoth hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
 
 
@@ -1163,18 +1011,13 @@ class LocalizeProxy : public ClientProxy
     void Print();
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @} */
 
- /*****************************************************************************
- ** begin section MotorProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_motorproxy MotorProxy
 
-/** The {\tt MotorProxy} class is used to control a {\tt motor} device.
-    The latest motor data is contained in the attributes {\tt theta,
-    thetaspeed}, etc.
- */
+The @p MotorProxy class is used to control a @ref player_interface_motor
+device.  The latest motor data is contained in the attributes @p theta,
+@p thetaspeed, etc. */
 class MotorProxy : public ClientProxy
 {
   private:
@@ -1210,7 +1053,7 @@ class MotorProxy : public ClientProxy
 
 
   /** Enable/disable the motors.
-      Set {\tt state} to 0 to disable or 1 to enable.
+      Set @p state to 0 to disable or 1 to enable.
       Be VERY careful with this method!  Your robot is likely to run across the
       room with the charger still attached.
       Returns: 0 if everything's ok, -1 otherwise.
@@ -1230,14 +1073,14 @@ class MotorProxy : public ClientProxy
   */
   int ResetOdometry();
 
-  /** Sets the odometry to the pose {\tt (theta)}.
-      Note that {\tt theta} is in radians.
+  /** Sets the odometry to the pose @p (theta).
+      Note that @p theta is in radians.
       Returns: 0 if OK, -1 else
   */
   int SetOdometry(double angle);
 
   /** Select position mode on the motor driver.
-      Set {\tt mode} for 0 for velocity mode, 1 for position mode.
+      Set @p mode for 0 for velocity mode, 1 for position mode.
       Returns: 0 if OK, -1 else
   */
 
@@ -1278,18 +1121,11 @@ class MotorProxy : public ClientProxy
   void Print();
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
- 
-/*****************************************************************************
- ** begin section PositionProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_positionproxy PositionProxy
 
-/** The {\tt PositionProxy} class is used to control a {\tt position} device.
-    The latest position data is contained in the attributes {\tt xpos, ypos}, 
-    etc.
- */
+The @p PositionProxy class is used to control a @ref
+player_interface_position device.  The latest position data is contained
+in the attributes xpos, ypos, etc.  */
 class PositionProxy : public ClientProxy
 {
 
@@ -1331,7 +1167,7 @@ class PositionProxy : public ClientProxy
 
 
   /** Enable/disable the motors.
-      Set {\tt state} to 0 to disable or 1 to enable.
+      Set @p state to 0 to disable or 1 to enable.
       Be VERY careful with this method!  Your robot is likely to run across the
       room with the charger still attached.
       Returns: 0 if everything's ok, -1 otherwise.
@@ -1340,11 +1176,13 @@ class PositionProxy : public ClientProxy
     
   /** Select velocity control mode.
   
-      For the the p2os_position driver, set {\tt mode} to 0 for direct wheel 
+      For the the p2os_position driver, set @p mode to 0 for direct wheel 
       velocity control (default), or 1 for separate translational and 
-      rotational control.\\
+      rotational control.
+
       For the reb_position driver: 0 is direct velocity control, 1 is for 
-      velocity-based heading PD controller (uses DoDesiredHeading()).\\
+      velocity-based heading PD controller (uses DoDesiredHeading()).
+
       Returns: 0 if everything's ok, -1 otherwise.
   */
   int SelectVelocityControl(unsigned char mode);
@@ -1358,13 +1196,13 @@ class PositionProxy : public ClientProxy
   //
 
   /** Select position mode on the reb_position driver.
-      Set {\tt mode} for 0 for velocity mode, 1 for position mode.
+      Set @p mode for 0 for velocity mode, 1 for position mode.
       Returns: 0 if OK, -1 else
   */
   int SelectPositionMode(unsigned char mode);
 
-  /** Sets the odometry to the pose {\tt (x, y, theta)}.
-      Note that {\tt x} and {\tt y} are in m and {\tt theta} is in radians.
+  /** Sets the odometry to the pose @p (x, y, theta).
+      Note that @p x and @p y are in m and @p theta is in radians.
       Returns: 0 if OK, -1 else
   */
   int SetOdometry(double x, double y, double t);
@@ -1421,21 +1259,14 @@ class PositionProxy : public ClientProxy
   void Print();
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section Position2DProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_position2dproxy Position2DProxy
 
-/** The {\tt Position2DProxy} class is used to control a {\tt position} device.
-    The latest position data is contained in the attributes {\tt xpos, ypos},
-    etc.
- */
+The @p Position2DProxy class is used to control a @ref
+player_interface_position2d device.  The latest position data is contained
+in the attributes xpos, ypos, etc.  */
 class Position2DProxy : public ClientProxy
 {
-
   private:
   /// Robot pose (according to odometry) in m, m, radians.
   double xpos,ypos,yaw;
@@ -1475,7 +1306,7 @@ class Position2DProxy : public ClientProxy
 
 
   /** Enable/disable the motors.
-      Set {\tt state} to 0 to disable or 1 to enable.
+      Set @p state to 0 to disable or 1 to enable.
       Be VERY careful with this method!  Your robot is likely to run across the
       room with the charger still attached.
       Returns: 0 if everything's ok, -1 otherwise.
@@ -1484,11 +1315,13 @@ class Position2DProxy : public ClientProxy
 
   /** Select velocity control mode.
 
-      For the the p2os_position driver, set {\tt mode} to 0 for direct wheel
+      For the the p2os_position driver, set @p mode to 0 for direct wheel
       velocity control (default), or 1 for separate translational and
-      rotational control.\\
+      rotational control.
+
       For the reb_position driver: 0 is direct velocity control, 1 is for
-      velocity-based heading PD controller (uses DoDesiredHeading()).\\
+      velocity-based heading PD controller (uses DoDesiredHeading()).
+
       Returns: 0 if everything's ok, -1 otherwise.
   */
   int SelectVelocityControl(unsigned char mode);
@@ -1502,13 +1335,13 @@ class Position2DProxy : public ClientProxy
   //
 
   /** Select position mode on the reb_position driver.
-      Set {\tt mode} for 0 for velocity mode, 1 for position mode.
+      Set @p mode for 0 for velocity mode, 1 for position mode.
       Returns: 0 if OK, -1 else
   */
   int SelectPositionMode(unsigned char mode);
 
-  /** Sets the odometry to the pose {\tt (x, y, yaw)}.
-      Note that {\tt x} and {\tt y} are in m and {\tt yaw} is in radians.
+  /** Sets the odometry to the pose @p (x, y, yaw).
+      Note that @p x and @p y are in m and @p yaw is in radians.
       Returns: 0 if OK, -1 else
   */
   int SetOdometry(double x, double y, double yaw);
@@ -1578,18 +1411,12 @@ class Position2DProxy : public ClientProxy
   void Print();
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_position3dproxy Position3DProxy
 
-/*****************************************************************************
- ** begin section Position3DProxy
- *****************************************************************************/
-
-/** The {\tt Position3DProxy} class is used to control a {\tt position3d}
-    device.  The latest position data is contained in the attributes
-    {\tt xpos, ypos}, etc.
- */
+The @p Position3DProxy class is used to control
+a player_interface_position3d device.  The latest position data is
+contained in the attributes xpos, ypos, etc.
+*/
 class Position3DProxy : public ClientProxy
 {
   private:
@@ -1650,7 +1477,7 @@ class Position3DProxy : public ClientProxy
 	   double roll, double pitch, double yaw);
 
   /** Enable/disable the motors.
-      Set {\tt state} to 0 to disable or 1 to enable.
+      Set @p state to 0 to disable or 1 to enable.
       Be VERY careful with this method!  Your robot is likely to run across the
       room with the charger still attached.
       Returns: 0 if everything's ok, -1 otherwise.
@@ -1669,16 +1496,17 @@ class Position3DProxy : public ClientProxy
   */
   int ResetOdometry();
 
-  /** Sets the odometry to the pose {\tt (x, y, z, roll, pitch, yaw)}.
-      Note that {\tt x}, {\tt y}, and {\tt z} are in m and {\tt roll},
-      {\tt pitch }, and {\tt theta} are in radians.
+  /** Sets the odometry to the pose @p (x, y, z, roll, pitch, yaw).
+      Note that @p x, @p y, and @p z are in m and @p roll,
+      @p pitch, and @p yaw are in radians.
+
       Returns: 0 if OK, -1 else
   */
   int SetOdometry(double x, double y, double z,
 		  double roll, double pitch, double yaw);
 
   /** Select position mode
-      Set {\tt mode} for 0 for velocity mode, 1 for position mode.
+      Set @p mode for 0 for velocity mode, 1 for position mode.
       Returns: 0 if OK, -1 else
   */
   int SelectPositionMode(unsigned char mode);
@@ -1739,18 +1567,12 @@ class Position3DProxy : public ClientProxy
   unsigned char Stall () const { return stall; }
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_ptzproxy PtzProxy
 
-/*****************************************************************************
- ** begin section PtzProxy
- *****************************************************************************/
-
-/** The {\tt PtzProxy} class is used to control a {\tt ptz} device.
-    The state of the camera can be read from the {\tt pan, tilt, zoom}
-    attributes and changed using the {\tt SetCam()} method.
- */
+The @p PtzProxy class is used to control a @ref player_interface_ptz
+device.  The state of the camera can be read from the pan, tilt, zoom
+attributes and changed using the SetCam() method.
+*/
 class PtzProxy : public ClientProxy
 {
   public:
@@ -1770,7 +1592,7 @@ class PtzProxy : public ClientProxy
     // these methods are the user's interface to this device
 
     /** Change the camera state.
-        Specify the new {\tt pan}, {\tt tilt}, and {\tt zoom} values 
+        Specify the new @p pan, @p tilt, and @p zoom values 
         (all degrees).
         Returns: 0 if everything's ok, -1 otherwise.
     */
@@ -1794,18 +1616,13 @@ class PtzProxy : public ClientProxy
     void Print();
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section SonarProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_sonarproxy SonarProxy
 
-/** The {\tt SonarProxy} class is used to control a {\tt sonar} device.
-    The most recent sonar range measuremts can be read from the {\tt range}
-    attribute, or using the the {\tt []} operator.
- */
+The @p SonarProxy class is used to control a @ref player_interface_sonar
+device.  The most recent sonar range measuremts can be read from the
+range attribute, or using the the [] operator.
+*/
 class SonarProxy : public ClientProxy
 {
 
@@ -1841,10 +1658,11 @@ class SonarProxy : public ClientProxy
     // these methods are the user's interface to this device
     
     /** Enable/disable the sonars.
-        Set {\tt state} to 1 to enable, 0 to disable.
+        Set @p state to 1 to enable, 0 to disable.
         Note that when sonars are disabled the client will still receive sonar
         data, but the ranges will always be the last value read from the sonars
-        before they were disabled.\\
+        before they were disabled.
+
         Returns 0 on success, -1 if there is a problem.
      */
     int SetSonarState(unsigned char state);
@@ -1854,8 +1672,8 @@ class SonarProxy : public ClientProxy
 
     /** Range access operator.
         This operator provides an alternate way of access the range data.
-        For example, given a {\tt SonarProxy} named {\tt sp}, the following
-        expressions are equivalent: \verb+sp.ranges[0]+ and \verb+sp[0]+.
+        For example, given a @p SonarProxy named @p sp, the following
+        expressions are equivalent: @p sp.ranges[0] and @p sp[0].
      */
     double operator [](unsigned int index) 
     { 
@@ -1872,16 +1690,10 @@ class SonarProxy : public ClientProxy
     void Print();
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_speechproxy SpeechProxy
 
-/*****************************************************************************
- ** begin section SpeechProxy
- *****************************************************************************/
-
-/** The {\tt SpeechProxy} class is used to control a
-    {\tt speech} device.  Use the {\tt say} method to send things to say.
+The @p SpeechProxy class is used to control a @ref player_interface_speech
+device.  Use the say method to send things to say.
 */
 class SpeechProxy : public ClientProxy
 {
@@ -1903,23 +1715,17 @@ class SpeechProxy : public ClientProxy
     */
     int Say(char* str);
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section TruthProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_truthproxy TruthProxy
 
-/** The {\tt TruthProxy} gets and sets the {\em true} pose of a truth
-    device [worldfile tag: truth()]. This may be different from the
-    pose returned by a device such as GPS or Position. If you want to
-    log what happened in an experiment, this is the device to
-    use. 
+The @p TruthProxy gets and sets the @e true pose of a @ref
+player_interface_truth device [worldfile tag: truth()]. This may be
+different from the pose returned by a device such as GPS or Position. If
+you want to log what happened in an experiment, this is the device to use.
 
-    Setting the position of a truth device moves its parent, so you
-    can put a truth device on robot and teleport it around the place. 
- */
+Setting the position of a truth device moves its parent, so you
+can put a truth device on robot and teleport it around the place. 
+*/
 class TruthProxy : public ClientProxy
 {
   
@@ -1928,8 +1734,8 @@ class TruthProxy : public ClientProxy
   /** These vars store the current device pose (x,y,a) as
       (m,m,radians). The values are updated at regular intervals as
       data arrives. You can read these values directly but setting
-      them does NOT change the device's pose!. Use {\tt
-      TruthProxy::SetPose()} for that.  */
+      them does NOT change the device's pose!. Use
+      TruthProxy::SetPose() for that.  */
   double x, y, a; 
 
   /** Constructor.
@@ -1947,7 +1753,7 @@ class TruthProxy : public ClientProxy
 
   /** Query Player about the current pose - requests the pose from the
       server, then fills in values for the arguments
-      (m,m,radians). Usually you'll just read the {\tt x,y,a}
+      (m,m,radians). Usually you'll just read the @p x,y,a
       attributes but this function allows you to get pose direct from
       the server if you need too. Returns 0 on success, -1 if there is
       a problem.  
@@ -1975,16 +1781,14 @@ class TruthProxy : public ClientProxy
 
 };
 
+/** @defgroup player_clientlib_cplusplus_blobfinderproxy BlobfinderProxy
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
-
-
-/*****************************************************************************
- ** begin section BlobfinderProxy
- *****************************************************************************/
-
+The @p BlobfinderProxy class is used to control a  @ref
+player_interface_blobfinder device.  It contains no methods.  The latest
+color blob data is stored in @p blobs, a dynamically allocated 2-D array,
+indexed by color channel.
+@{
+*/
 class Blob
 {
   public:
@@ -2000,12 +1804,6 @@ class Blob
     double range;
 };
 
-
-/** The {\tt BlobfinderProxy} class is used to control a {\tt blobfinder} 
-    device.  It contains no methods.  The latest color blob data is stored in
-    {\tt blobs}, a dynamically allocated 2-D array, indexed by color
-    channel.
-*/
 class BlobfinderProxy : public ClientProxy
 {
 
@@ -2014,20 +1812,9 @@ class BlobfinderProxy : public ClientProxy
     /// Dimensions of the camera image, in pixels
     unsigned short width, height;
 
-    /** Array containing arrays of the latest blob data.
-        Each blob contains the following information:
-        \begin{itemize}
-        \item {\tt unsigned int color} (in packed RGB)
-        \item {\tt unsigned int area} (blob area, in square pixels)
-        \item {\tt unsigned short x, y} (blob center, in pixels)
-        \item {\tt unsigned short left, right, top, bottom} (blob bounding box,
-        in pixels)
-        \item {\tt double range} (range to blob center, in m)
-        \end{itemize}
-        For example, to access the area of the $0^{th}$ blob on channel 2, you
-        would refer to: {\tt blobs[2][0].area}.
-     */
+    /** number of blobs */
     int blob_count;
+    /** Array containing arrays of the latest blob data. */
     Blob blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
    
     /** Constructor.
@@ -2054,14 +1841,17 @@ class BlobfinderProxy : public ClientProxy
     int SetColorMode(int m);
     int SetBrightness(int b);
     int SetAutoGain(int g);
-;
+
 };
 
+/** @} */
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_irproxy IRProxy
 
+The @p IRProxy class is used to control an @ref player_interface_ir
+device.
+@{
+*/
 
 // these define default coefficients for our 
 // range and standard deviation estimates
@@ -2077,13 +1867,6 @@ class BlobfinderProxy : public ClientProxy
 //this is the effective range of the sensor in mm
 #define IRPROXY_MAX_RANGE 700
 
-/*****************************************************************************
- ** begin section IRProxy
- *****************************************************************************/
-
-/** The {\tt IRProxy} class is used to control an {\tt ir} device.   Right
-    now, it is particular to the {\tt reb_ir} driver.
- */
 class IRProxy : public ClientProxy
 {
 public:
@@ -2103,16 +1886,10 @@ public:
   /// Standard deviation regression params
   double sparams[PLAYER_IR_MAX_SAMPLES][2]; 
 
-  /** Poses of the IRs.  Contains:
-      \begin{itemize}
-      \item short poses[PLAYER_IR_MAX_SAMPLES][3];
-      \end{itemize}
-      Where each pose element contains: (x,y,theta) in (mm,mm,degrees). */
+  /** Poses of the IRs. */
   player_ir_pose_t ir_pose;
 
-    /** Constructor.
-        Leave the access field empty to start unconnected.
-    */
+  /** Constructor.  Leave the access field empty to start unconnected.  */
   IRProxy(PlayerClient *pc, unsigned short index,
           unsigned char access = 'c');
 
@@ -2133,8 +1910,8 @@ public:
 
     /** Range access operator.
         This operator provides an alternate way of access the range data.
-        For example, given a {\tt IRProxy} named {\tt ip}, the following
-        expressions are equivalent: \verb+ip.ranges[0]+ and \verb+ip[0]+.
+        For example, given a @p IRProxy named @p ip, the following
+        expressions are equivalent: @p ip.ranges[0] and @p ip[0].
      */
   unsigned short operator [](unsigned int index) 
   {
@@ -2151,16 +1928,12 @@ public:
   /// Print out current IR data.
   void Print();
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section WiFiProxy
- *****************************************************************************/
+/** @} */
 
-/** The {\tt WiFiProxy} class controls a {\tt wifi} device.
- */
+/** @defgroup player_clientlib_cplusplus_wifiproxy WiFiProxy
+
+The @p WiFiProxy class controls a @ref player_interface_wifi device.  */
 class WiFiProxy: public ClientProxy
 {
 public:
@@ -2212,16 +1985,10 @@ protected:
   char access_point[32];
 
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section PowerProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_powerproxy PowerProxy
 
-/** The {\tt PowerProxy} class controls a {\tt power} device.
- */
+The @p PowerProxy class controls a @ref player_interface_power device. */
 class PowerProxy : public ClientProxy 
 {
 
@@ -2246,16 +2013,12 @@ class PowerProxy : public ClientProxy
     // Remaining power in volts
     double charge;
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section AudioProxy
- *****************************************************************************/
 
-/** The {\tt AudioProxy} class controls an {\tt audio} device.
- */
+/** @defgroup player_clientlib_cplusplus_audioproxy AudioProxy
+
+The @p AudioProxy class controls an @ref player_interface_audio device.
+*/
 class AudioProxy : public ClientProxy 
 {
 
@@ -2287,16 +2050,11 @@ class AudioProxy : public ClientProxy
     /// Print the current data.
     void Print ();
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section AudioDSPProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_audiodspproxy AudioDSPProxy
 
-/** The {\tt AudioDSPProxy} class controls an {\tt acoustics} device.
- */
+The @p AudioDSPProxy class controls an @ref player_interface_audiodsp device.
+*/
 class AudioDSPProxy : public ClientProxy 
 {
 
@@ -2337,16 +2095,11 @@ class AudioDSPProxy : public ClientProxy
     /// Print the current data.
     void Print ();
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section AudioMixerProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_audiomixerproxy AudioMixerProxy
 
-/** The {\tt AudioMixerProxy} class controls an {\tt mixer} device.
- */
+The @p AudioMixerProxy class controls an @ref player_interface_audiomixer device.
+*/
 class AudioMixerProxy : public ClientProxy 
 {
 
@@ -2379,17 +2132,12 @@ class AudioMixerProxy : public ClientProxy
     // Print the current data.
     void Print ();
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
+/** @defgroup player_clientlib_cplusplus_bumperproxy BumperProxy
 
-/*****************************************************************************
- ** begin section BumperProxy
- *****************************************************************************/
-
-/** The {\tt BumperProxy} class is used to read from a {\tt bumper} device.
- */
+The @p BumperProxy class is used to read from a @ref
+player_interface_bumper device.
+*/
 class BumperProxy : public ClientProxy 
 {
 
@@ -2435,17 +2183,12 @@ private:
     uint8_t bumper_count;
     uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section DIOProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_dioproxy DIOProxy
 
-/** The {\tt DIOProxy} class is used to read from a {\tt dio} (digital I/O)
-    device.
- */
+The @p DIOProxy class is used to read from a @ref player_interface_dio
+(digital I/O) device.
+*/
 class DIOProxy : public ClientProxy 
 {
 
@@ -2476,16 +2219,11 @@ public:
     /// Print out the current digital input state.
     void Print ();
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+ 
+/** @defgroup player_clientlib_cplusplus_waveformproxy WaveformProxy
 
-/*****************************************************************************
- ** begin section WaveformProxy
- *****************************************************************************/
-
-/** The {\tt WaveformProxy} class is used to read raw digital
- waveforms from a device.  */
+The @p WaveformProxy class is used to read raw digital waveforms from
+a @ref player_interface_waveform device.  */
 class WaveformProxy : public ClientProxy 
 {
 
@@ -2533,26 +2271,15 @@ public:
     void Play();
 
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
-/*****************************************************************************
- ** begin section MComProxy
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_mcomproxy MComProxy
 
-/*  MComProxy class by Matt Brewer <mbrewer@andrew.cmu.edu> at 
- *  UMass Amherst 2002 (updated for player 1.3 by reed)
- */                      
-
-// this is from the player server (server/drivers/mcom/ in the source tree)
-//#include "player_mcom_types.h"
-
-/** The {\tt MComProxy} class is used to exchange data with other clients
-    connected with the same server, through a set of named "channels". 
-    For some useful (but optional) type and constant definitions that you
-    can use in your clients, see <playermcomtypes.h>.
- */
+The @p MComProxy class is used to exchange data with other clients
+connected with the same server, through a set of named "channels" in
+a @ref player_interface_mcom device.  For some useful (but optional)
+type and constant definitions that you can use in your clients, see
+playermcomtypes.h.
+*/
 class MComProxy : public ClientProxy 
 {
 
@@ -2610,17 +2337,11 @@ public:
     void Print();
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_blinkenlightproxy BlinkenlightProxy
 
-
-/*****************************************************************************
- ** begin section BlinkenlightProxy
- *****************************************************************************/
-
-/** The {\tt BlinkenlightProxy} class is used to enable and disable a
- flashing indicator light, and to set it's period. */
+The @p BlinkenlightProxy class is used to enable and disable
+a flashing indicator light, and to set its period, via a @ref
+player_interface_blinkenlight device */
 class BlinkenlightProxy : public ClientProxy 
 {
 
@@ -2662,16 +2383,10 @@ public:
     int SetLight( bool enable, int period_ms );
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_cameraproxy CameraProxy
 
-/*****************************************************************************
- ** begin section CameraProxy
- *****************************************************************************/
-
-/** The {\tt CameraProxy} class can be used to get images from a camera. */
-
+The @p CameraProxy class can be used to get images from a @ref
+player_interface_camera device. */
 class CameraProxy : public ClientProxy 
 {
 
@@ -2707,18 +2422,11 @@ private:
    int frameNo;
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_hudproxy HUDProxy
 
-
-/*****************************************************************************
- ** begin section HUDProxy
- *****************************************************************************/
-
-/** The {\tt HUDProxy} class can be used to draw shapes onto a simulator
- * screen. All values for the Draw routines should be pixel values.*/
-
+The @p HUDProxy class can be used to draw shapes onto a simulator screen,
+via a @ref player_interface_hud device. All values for the Draw routines
+should be pixel values.*/
 class HUDProxy : public ClientProxy 
 {
 
@@ -2759,20 +2467,10 @@ private:
    int filled;
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_plannerproxy PlannerProxy
 
-
-/*****************************************************************************
- ** begin section PlannerProxy
- *****************************************************************************/
-
-/** [Synopsis] The {\tt PlannerProxy} proxy provides an interface to a
- * 2D motion planner. */
-
-/** [Data] */
-
+The @p PlannerProxy proxy provides an interface to a 2D motion @ref
+player_interface_planner. */
 class PlannerProxy : public ClientProxy
 {
 
@@ -2821,16 +2519,11 @@ class PlannerProxy : public ClientProxy
 
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @defgroup player_clientlib_cplusplus_energyproxy EnergyProxy
 
-/*****************************************************************************
- ** begin section EnergyProxy
- *****************************************************************************/
-
-/** The {\tt EnergyProxy} class is used to read from an {\tt energy} device.
- */
+The @p EnergyProxy class is used to read from an @ref
+player_interface_energy device.
+*/
 class EnergyProxy : public ClientProxy 
 {
 
@@ -2864,18 +2557,11 @@ public:
     double watts;
     bool charging;
 };
-/*****************************************************************************
- ** end section
- *****************************************************************************/
 
+/** @defgroup player_clientlib_cplusplus_mapproxy MapProxy
 
-/*****************************************************************************
- ** begin section MapProxy
- *****************************************************************************/
-
-/** [Synopsis] The {\tt map} proxy provides an interface to a map.
- */
-
+The @p map proxy provides access to a @ref player_interface_map device.
+*/
 class MapProxy : public ClientProxy
 {
   // Constructor
@@ -2908,9 +2594,9 @@ class MapProxy : public ClientProxy
   public: char *cells;
 };
 
-/*****************************************************************************
- ** end section
- *****************************************************************************/
+/** @} */
+/** @} */
+/** @} */
 
 
 #endif
