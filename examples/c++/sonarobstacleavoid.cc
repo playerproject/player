@@ -65,7 +65,8 @@ int main(int argc, char **argv)
 
   PlayerClient robot(host,port);
 
-  PositionProxy pp(&robot,0,'w');
+  PositionProxy pp(&robot,0,'a');
+  LaserProxy lp(&robot,0,'r');
   SonarProxy sp(&robot,0,'r');
 
   /* maybe turn on the motors */

@@ -49,6 +49,9 @@
   #include <strings.h>  /* for bzero */
 #endif
 
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
+
 extern CDeviceTable* deviceTable;
 extern CClientData* clients[];
 extern pthread_mutex_t clients_mutex;
@@ -411,7 +414,9 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       memcpy(replybuffer+sizeof(player_msghdr_t),payload,payload_size);
     }
 
-    gettimeofday(&curr,NULL);
+    //gettimeofday(&curr,NULL);
+    if(GlobalTime->GetTime(&curr) == -1)
+      fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
     reply_hdr.time_sec = htonl(curr.tv_sec);
     reply_hdr.time_usec = htonl(curr.tv_usec);
 
@@ -710,7 +715,9 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
 
           hdr.size = htonl(size);
 
-          gettimeofday(&curr,NULL);
+          //gettimeofday(&curr,NULL);
+          if(GlobalTime->GetTime(&curr) == -1)
+            fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
           hdr.time_sec = htonl(curr.tv_sec);
           hdr.time_usec = htonl(curr.tv_usec);
 

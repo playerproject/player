@@ -30,7 +30,7 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
 # definitely build the device-independent objects
 #
 OBS = clientdata.o lock.o pubsub_util.o devicetable.o \
-      clientmanager.o
+      clientmanager.o wallclocktime.o
 
 #
 # only build the device-specific objects that we need (duplicate objects
@@ -61,7 +61,7 @@ ifdef INCLUDE_PTZ
   OBS += ptzdevice.o 
 endif
 ifdef INCLUDE_STAGE
-  OBS += arenalock.o stagedevice.o 
+  OBS += arenalock.o stagedevice.o stagetime.o
 endif
 ifdef INCLUDE_AUDIO
   OBS += audiodevice.o

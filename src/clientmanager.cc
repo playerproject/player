@@ -34,6 +34,9 @@
 #include <sys/time.h>  // for gettimeofday(2)
 #include <unistd.h>  // for usleep(2)
 
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
+
 //#include <sched.h>  // for sched_setscheduler(2)
 //#include <time.h>  // for nanosleep(2)
 
@@ -405,7 +408,9 @@ ClientWriterThread(void* arg)
     // to be REALLY fancy, you could do nanosleep(), but it's a bit dangerous
     //nanosleep(&ts,NULL);
 
-    gettimeofday(&curr,NULL);
+    //gettimeofday(&curr,NULL);
+    if(GlobalTime->GetTime(&curr) == -1)
+      fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
     //printf("%f %f\n", curr.tv_sec + curr.tv_usec / 1000000.0,(curr.tv_sec + curr.tv_usec / 1000000.0) - lasttime);
     //lasttime = curr.tv_sec + curr.tv_usec / 1000000.0;
 

@@ -35,6 +35,9 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 
+#include <playertime.h>
+extern PlayerTime* GlobalTime;
+
 
 CLock::CLock() 
 {
@@ -102,7 +105,9 @@ void CLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize,
   if (timestamp_sec == 0)
   {
     struct timeval curr;
-    gettimeofday(&curr,NULL);
+    //gettimeofday(&curr,NULL);
+    if(GlobalTime->GetTime(&curr) == -1)
+      fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
     timestamp_sec = curr.tv_sec;
     timestamp_usec = curr.tv_usec;
   }
