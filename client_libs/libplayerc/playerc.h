@@ -620,14 +620,6 @@ typedef struct
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
 
-  /* REMOVE?
-  // Robot geometry in robot cs: pose gives the power and
-  // orientation, size gives the extent.  These values are filled in by
-  // playerc_power_get_geom().
-  double pose[3];
-  double size[2];
-  */
-
   // Battery charge (volts)
   double charge;
   
@@ -646,9 +638,6 @@ int playerc_power_subscribe(playerc_power_t *device, int access);
 // Un-subscribe from the power device
 int playerc_power_unsubscribe(playerc_power_t *device);
 
-// Get the power geometry.  The writes the result into the proxy
-// rather than returning it to the caller.
-// REMOVE? int playerc_power_get_geom(playerc_power_t *device);
 
 /***************************************************************************
  * proxy : ptz (pan-tilt-zoom camera) device
