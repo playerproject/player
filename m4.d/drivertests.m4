@@ -177,6 +177,8 @@ PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[no],[],[],[])
 PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],[gsl/gsl_version.h],[],
                   ["-lgsl -lgslcblas"])
 
+PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[no],)
+
 dnl Where is Gazebo?
 AC_ARG_WITH(gazebo, [  --with-gazebo=dir     Location of Gazebo],
             GAZEBO_DIR=$with_gazebo,GAZEBO_DIR=$prefix)

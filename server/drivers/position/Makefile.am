@@ -1,4 +1,4 @@
-SUBDIRS = isense microstrain inav
+SUBDIRS = isense microstrain inav vfh
 
 noinst_LIBRARIES = @SEGWAYRMP_LIB@
 
