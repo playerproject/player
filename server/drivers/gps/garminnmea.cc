@@ -48,7 +48,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/poll.h>
 #include <sys/stat.h>
 #include <termios.h>
 #include <stdlib.h>
@@ -57,6 +56,11 @@
 #include <netinet/in.h>  // for htons(3)
 #include <arpa/inet.h> // inet_addr
 #include <errno.h>
+
+// don't include sys/poll.h, because it's not available everywhere.  include
+// replace.h instead, which knows what to do
+//#include <sys/poll.h>
+#include <replace.h>
 
 #include <device.h>
 #include <drivertable.h>
