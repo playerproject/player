@@ -47,15 +47,16 @@
 
 #define AUDIO_SLEEP_TIME_USEC 100000
 
-#define LENGTH 1    /* how many tenth of seconds of samplig max */
-#define RATE 8000   /* the sampling rate */
-#define SIZE 8      /* sample size: 8 or 16 bits */
-#define CHANNELS 1  /* 1 = mono 2 = stereo */
-#define N 1024 /* The resolution in frequency space desired */
-#define nIterations 10000
-#define heardHistoryN 5
+//#define N 1024
+#define N 784
 #define nHighestPeaks 5
+#define heardHistoryN 5
+#define LENGTH 1 /* how many tenth of seconds of samplig max */
+#define RATE 16000 /* the sampling rate */
+#define CHANNELS 2 /* 1 = mono 2 = stereo */
+#define SIZE 16 /* bits, 8 or 16 */
 #define MIN_FREQUENCY 800
+#define nIterations 10000
 
 class FixedTones:public CDevice 
 {
@@ -75,6 +76,20 @@ class FixedTones:public CDevice
   void listenForTones();
   int playSound(int duration);
   virtual void PrintPacket(char* str, unsigned char* cmd, int len);
+
+  rfftw_plan p;
+  int fd;       /* sound device file descriptor */
+  unsigned char sample[N*CHANNELS*SIZE/8];
+  fftw_real in[N];
+  fftw_real out[N];
+  int frequency[N/2];
+  int amplitude[N/2];
+  int heard, heardFrequency;
+  int heardHistory[heardHistoryN+1];
+  int peakFrq[nHighestPeaks];
+  int peakAmp[nHighestPeaks];
+
+  unsigned char buf[(LENGTH*RATE*SIZE*CHANNELS/8)/10];
 
  public:
 
@@ -105,24 +120,9 @@ FixedTones_Register(DriverTable* table)
   table->AddDriver("fixedtones", PLAYER_ALL_MODE, FixedTones_Init);
 }
 
-rfftw_plan p;
-int fd;       /* sound device file descriptor */
-unsigned char sample[N];
-fftw_real in[N];
-fftw_real out[N];
-int frequency[N/2];
-int amplitude[N/2];
-int heard, heardFrequency;
-int heardHistory[heardHistoryN+1];
-int peakFrq[nHighestPeaks];
-int peakAmp[nHighestPeaks];
-
-unsigned char buf[(LENGTH*RATE*SIZE*CHANNELS/8)/10];
-
 FixedTones::FixedTones(char* interface, ConfigFile* cf, int section) :
   CDevice(AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
 {
-
 }
 
 int 
@@ -142,8 +142,9 @@ FixedTones::configureDSP()
     r=-1;
   }
   if (arg != SIZE) {
-    perror("unable to set sample size");
-    r=-1;
+    printf("SOUND_PCM_WRITE_BITS: asked for %d, got %d\n", SIZE, arg);
+    //perror("unable to set sample size");
+    //r=-1;
   }
   arg = CHANNELS;  /* mono or stereo */
   status = ioctl(fd, SOUND_PCM_WRITE_CHANNELS, &arg);
@@ -159,6 +160,24 @@ FixedTones::configureDSP()
   status = ioctl(fd, SOUND_PCM_WRITE_RATE, &arg);
   if (status == -1) {
     perror("SOUND_PCM_WRITE_WRITE ioctl failed");return 0;
+    r=-1;
+  }
+
+  /* set sampling parameters */
+  arg = CHANNELS;  /* mono or stereo */
+  status = ioctl(fd, SOUND_PCM_READ_CHANNELS, &arg);
+  if (status == -1) {
+    perror("SOUND_PCM_READ_CHANNELS ioctl failed");
+    r=-1;
+  }
+  if (arg != CHANNELS) {
+    perror("unable to set number of channels");
+    r=-1;
+  }
+  arg = RATE;      /* sampling rate */
+  status = ioctl(fd, SOUND_PCM_READ_RATE, &arg);
+  if (status == -1) {
+    perror("SOUND_PCM_READ_RATE ioctl failed");return 0;
     r=-1;
   }
   return r;
@@ -235,7 +254,8 @@ FixedTones::Main()
     GetCommand(command, sizeof(command));
     PutCommand(this,zero, sizeof(zero));
     
-    if( command[0]!=255 ) {
+    if(command[0]!=255) 
+    {
       cnt = 0;
       playFrq = (short)ntohs((unsigned short)(*(short*)(&command[cnt])));
       cnt += sizeof(short);
@@ -245,9 +265,11 @@ FixedTones::Main()
       
       if (playFrq>0 && playFrq<RATE/2) 
       {
-	if ( state != PLAYING ) {
+	if(state != PLAYING) 
+        {
 	  // clear data buffer while playing sound 
-	  for ( i=0; i < nHighestPeaks*sizeof(short)*2; i++) {
+	  for(i=0; i < nHighestPeaks*sizeof(short)*2; i++) 
+          {
 	    data[i]=0;
 	  }	
 	  PutData(data, sizeof(data),0,0);
@@ -258,28 +280,32 @@ FixedTones::Main()
 	}
 	
 	playDuration = (int)((playDur)*(RATE/10)*sizeof(char));
-	// printf("pd: %hd\n", playDuration);
 	current = 0;
-      } else {
+      }
+      else 
+      {
 	current=playDuration;
       }
     }
     
-    // printf("%i  (%i) \n",state,(playDuration-current));
-
-    if ( current < playDuration ) 
+    if(current < playDuration) 
     {
       /* still playing an old sound */
       remaining = playDuration - current;
       omega=(double)playFrq*(double)2*M_PI/(double)RATE;
-      if ( remaining > sizeof( buf ) ) {
-	for ( i=0 ; i < sizeof(buf) ; i++,current++) {
+      if(remaining > sizeof(buf)) 
+      {
+	for(i=0; i < sizeof(buf); i++,current++) 
+        {
 	  phase+=omega;
 	  if (phase>M_PI*2) phase-=M_PI*2;
 	  buf[i]=(char)(127+(int)(playAmp*sin(phase)));
 	}
-      } else {
-	for ( i=0 ; i < remaining ; i++,current++) {
+      } 
+      else 
+      {
+	for(i=0; i < remaining; i++,current++) 
+        {
 	  phase+=omega;
 	  if (phase>M_PI*2) phase-=M_PI*2;
 	  buf[i]=(char)(127+(int)(playAmp*sin(phase)));
@@ -288,15 +314,19 @@ FixedTones::Main()
       write(fd, buf, i);
       pthread_testcancel();
       usleep(20000);
-    } else {    
-      if (state != LISTENING ) {
+    }
+    else 
+    {    
+      if(state != LISTENING)
+      {
         openDSPforRead();
 	state = LISTENING;
       }
       
       listenForTones();
       cnt=0;
-      for (i=0; i<nHighestPeaks; i++) {
+      for (i=0; i<nHighestPeaks; i++) 
+      {
 	*(short*)(&data[cnt]) = htons((unsigned short)((peakFrq[i]*RATE)/N));
 	cnt += sizeof(short);
 	*(short*)(&data[cnt]) = htons((unsigned short)peakAmp[i]);
@@ -309,17 +339,23 @@ FixedTones::Main()
   }
 }
 
-void FixedTones::listenForTones() {
-  int i,k;
+void FixedTones::listenForTones() 
+{
+  int i,j,k;
   float peak;
+  int tmpval;
 
-  if (read(fd, sample, N*sizeof(char))<N) {
-    printf("Sound: Not enough data read!\n");
-  } else {
-    // printf("Sound: Enough data read!\n");
-  }
-  for (i=0; i<N; i++) {
-    in[i]=(float)sample[i];
+  if(read(fd, sample, N*CHANNELS*SIZE/8) < N*CHANNELS*SIZE/8) 
+  {
+    PLAYER_WARN("not enough data read");
+  } 
+  
+  for(i=0; i<N; i++)
+  {
+    tmpval=0;
+    for(j=0; j<SIZE/8; j++)
+      tmpval |= sample[(i*SIZE*CHANNELS/8)+j] << (j*8);
+    in[i] = (fftw_real)tmpval;
   }
   
   rfftw_one(p, in, out);
@@ -329,28 +365,31 @@ void FixedTones::listenForTones() {
     frequency[N/2] = (int)((out[N/2]*out[N/2])/1000) ;  /* Nyquist freq. */
   
   amplitude[0]=frequency[0]+frequency[1]/2;
-  for (k = 1; k < (N-1)/2; ++k)  /* (k < N/2 rounded up) */ {
+  for (k = 1; k < (N-1)/2; ++k)  /* (k < N/2 rounded up) */ 
     amplitude[k] = (frequency[k-1]+frequency[k+1])/2+frequency[k];
-    // printf(" %i ",amplitude[k]);
-  }
   amplitude[(N-1)/2]=frequency[(N-3)/2]/2+frequency[(N-1)/2];
   
-  for (i=0; i<nHighestPeaks; i++) {
+  for (i=0; i<nHighestPeaks; i++) 
+  {
     peakFrq[i]=0;
     peakAmp[i]=0;
   }
 
   peak=0;
-  for (i=MIN_FREQUENCY*N/RATE; i<(N-1)/2; i++) {
-    if ( amplitude[i]>>6 > peakAmp[nHighestPeaks-1]) {
-      if ((amplitude[i] >= amplitude[i-1]) && (amplitude[i]>amplitude[i+1])) {
+  for (i=MIN_FREQUENCY*N/RATE; i<(N-1)/2; i++) 
+  {
+    if(amplitude[i]>>6 > peakAmp[nHighestPeaks-1]) 
+    {
+      if((amplitude[i] >= amplitude[i-1]) && (amplitude[i]>amplitude[i+1])) 
+      {
 	insertPeak(i,amplitude[i] >> 7);
       }
     }
   }
 }
 
-int FixedTones::playSound(int duration) {
+int FixedTones::playSound(int duration) 
+{
   int status;   /* return status of system calls */
 
   status = write(fd, buf, duration); /* play it back */
@@ -364,7 +403,8 @@ int FixedTones::playSound(int duration) {
 }
 
 
-void FixedTones::insertPeak(int f,int a) {
+void FixedTones::insertPeak(int f,int a) 
+{
   int i=nHighestPeaks-1;
   int j;
   while (peakAmp[i-1]<a && i>0) {

@@ -69,7 +69,7 @@ void
 AudioProxy::Print()
 {
   printf("#Audio(%d:%d) - %c\n", device, index, access);
-  printf("(%u,%u) (%u,%u) (%u,%u) (%u,%u) (%u,%u)\n", 
+  printf("(%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u)\n", 
          frequency0,amplitude0,
          frequency1,amplitude1,
          frequency2,amplitude2,

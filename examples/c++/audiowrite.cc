@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     if(robot.Read())
       exit(1);
 
-    ap.PlayTone(3000,40,5);
+    ap.PlayTone(1000,50,3);
   }
 
   return(0);
