@@ -50,7 +50,6 @@
 
 #include "player.h"
 #include "device.h"
-#include "psdevice.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
@@ -62,29 +61,6 @@
 #ifdef INCLUDE_RTKGUI
 #include "rtk.h"
 #endif
-
-// More awful hack
-extern bool use_stage;
-
-// This is a god-awful hack; this structure must be duplicated in both
-// Player and Stage.
-// Shared Player/Stage configuration info
-typedef struct
-{
-  char map_file[PATH_MAX];
-  double map_scale;
-  
-} amcl_stage_data_t;
-
-
-// TESTING
-// Time function used for profiling
-uint64_t gettime(void)
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return ((uint64_t) tv.tv_sec) * 1000 + (uint64_t) (tv.tv_usec / 1000);
-}
 
 
 // Combined sensor data
@@ -104,7 +80,7 @@ typedef struct
 
 
 // Incremental navigation driver
-class AdaptiveMCL : public PSDevice
+class AdaptiveMCL : public CDevice
 {
   // Constructor
   public: AdaptiveMCL(char* interface, ConfigFile* cf, int section);
@@ -115,11 +91,6 @@ class AdaptiveMCL : public PSDevice
   // Setup/shutdown routines.
   public: virtual int Setup(void);
   public: virtual int Shutdown(void);
-
-#ifdef INCLUDE_STAGE
-  // Get the config settings specified in Stage.
-  private: int LoadStageConfig(void);
-#endif
 
 #ifdef INCLUDE_RTKGUI
   // Set up the GUI
@@ -253,7 +224,7 @@ void AdaptiveMCL_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
-    : PSDevice(sizeof(player_localize_data_t), 0, 100, 100)
+    : CDevice(sizeof(player_localize_data_t), 0, 100, 100)
 {
   double size;
   double u[3];
@@ -323,13 +294,7 @@ int AdaptiveMCL::Setup(void)
 {
   amcl_sensor_data_t sdata;
     
-  PLAYER_TRACE("setup");
-
-#ifdef INCLUDE_STAGE
-  if (use_stage)
-    if (this->LoadStageConfig() != 0)
-      return -1;
-#endif
+  PLAYER_TRACE0("setup");
   
   // Initialise the underlying position device.
   if (this->SetupOdom() != 0)
@@ -419,37 +384,9 @@ int AdaptiveMCL::Shutdown(void)
   // Stop the odom device.
   this->ShutdownOdom();
 
-  PLAYER_TRACE("shutdown");
+  PLAYER_TRACE0("shutdown");
   return 0;
 }
-
-
-#ifdef INCLUDE_STAGE
-
-// Get the config settings specified in Stage.  This function will
-// disappear in future versions.
-int AdaptiveMCL::LoadStageConfig(void)
-{
-  amcl_stage_data_t data;
-  size_t data_len;
-    
-  data_len = this->GetStageData(this, &data, sizeof(data), NULL, NULL);
-  if (data_len != sizeof(data))
-  {
-    PLAYER_ERROR("no configuration data");
-    return -1;
-  }
-
-  // This will leak mem (but this function will go away, so who cares)
-  this->map_file = strdup(data.map_file);
-  this->map_scale = data.map_scale;
-
-  PLAYER_TRACE2("map file [%s] map scale [%f]", this->map_file, this->map_scale);
-  
-  return 0;
-}
-
-#endif
 
 
 #ifdef INCLUDE_RTKGUI
@@ -503,7 +440,6 @@ int AdaptiveMCL::SetupOdom(void)
 {
   player_device_id_t id;
     
-  id.robot = this->device_id.robot;
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
 
@@ -567,7 +503,6 @@ int AdaptiveMCL::SetupLaser(void)
   player_laser_geom_t geom;
   struct timeval tv;
   
-  id.robot = this->device_id.robot;
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
 
