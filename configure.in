@@ -151,9 +151,6 @@ AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(c_r, pthread_create, 
 [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 
-dnl I don't think that this is necessary
-dnl AC_SUBST(LIBOBJS)
-
 dnl Because we're using libtool to build some client libs, we need to define
 dnl LTLIBOBJS to have everything that LIBOBJS has, but with extensions of .lo,
 dnl instead of .o.  Here is some voodoo from the Autotools book that does it.

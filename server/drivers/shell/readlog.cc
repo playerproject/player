@@ -33,6 +33,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>

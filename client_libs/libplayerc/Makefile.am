@@ -19,7 +19,6 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_position.c \
                        dev_power.c \
                        dev_ptz.c \
-											 dev_power.c \
                        dev_truth.c \
                        dev_wifi.c \
                        error.c \
