@@ -12,7 +12,7 @@ int
 test_sonar(PlayerClient* client, int index)
 {
   unsigned char access;
-  SonarProxy sp(client,index);
+  SonarProxy sp(client,index,'c');
 
   printf("device [sonar] index [%d]\n", index);
 

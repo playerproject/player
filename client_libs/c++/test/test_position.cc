@@ -12,7 +12,7 @@ int
 test_position(PlayerClient* client, int index)
 {
   unsigned char access;
-  PositionProxy pp(client,index);
+  PositionProxy pp(client,index,'c');
 
   printf("device [position] index [%d]\n", index);
 
@@ -22,6 +22,7 @@ test_position(PlayerClient* client, int index)
   {
     FAIL();
     printf("DRIVER: %s\n", pp.driver_name);
+    printf("access:%d\n", access);
     return -1;
   }
   PASS();

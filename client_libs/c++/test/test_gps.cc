@@ -11,7 +11,7 @@ int
 test_gps(PlayerClient* client, int index)
 {
   unsigned char access;
-  GpsProxy gp(client,index);
+  GpsProxy gp(client,index,'c');
 
   printf("device [gps] index [%d]\n", index);
 

@@ -12,9 +12,8 @@ int
 test_broadcast(PlayerClient* client, int index)
 {
   unsigned char access;
-  CommsProxy bp(client,index);
+  CommsProxy bp(client,index,'c');
   char msg[32];
-  //char rep[32];
 
   strcpy(msg,"hello");
 

@@ -11,7 +11,7 @@ int
 test_truth(PlayerClient* client, int index)
 {
   unsigned char access;
-  TruthProxy tp(client,index);
+  TruthProxy tp(client,index,'c');
 
   printf("device [truth] index [%d]\n", index);
 
@@ -81,6 +81,44 @@ test_truth(PlayerClient* client, int index)
   
   TEST("returning to start position");
   if(tp.SetPose(cx,cy,cth) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  PASS();
+
+
+  int16_t id = 0;
+  int16_t newid = 42;
+
+  TEST("getting the original fiducial ID");
+  if(tp.GetFiducialID( &id ) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  printf( "original fiducial id: %d  ", id );
+  PASS();
+  
+  TEST("setting the fiducial ID to 42");
+  if(tp.SetFiducialID( newid ) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  PASS();
+
+  TEST("getting the new fiducial ID");
+  if(tp.GetFiducialID( &id ) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+  printf( "new fiducial id: %d  ", id );
+  PASS();
+  
+  TEST("resetting fiducial ID to original value");
+  if(tp.SetFiducialID( id ) < 0)
     {
       FAIL();
       return(-1);

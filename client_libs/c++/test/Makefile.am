@@ -5,11 +5,9 @@ BUILDTEST =
 endif
 
 AM_CPPFLAGS = -I$(srcdir)/.. -I$(srcdir)/../../c -I$(top_srcdir)/server
-LDADD = -L$(top_builddir)/client_libs/c++ -lplayerclient
+test_LDADD = $(top_builddir)/client_libs/c++/libplayerclient.a
 
 noinst_PROGRAMS = $(BUILDTEST)
-
-test_DEPENDENCIES = ../libplayerclient.a
 
 test_SOURCES = test_broadcast.cc \
                test.cc \
@@ -25,14 +23,16 @@ test_SOURCES = test_broadcast.cc \
                test_speech.cc \
                test_truth.cc \
                test_vision.cc \
-	       test_power.cc \
-	       test_dio.cc \
+      	       test_power.cc \
+       	       test_dio.cc \
                test_bumper.cc \
-               test_wifi.cc  \
+               test_wifi.cc \
                test_mcom.cc \
-	       test_localize.cc
-	       #test_fiducialfinder.cc
-               #test_idar.cc \
+               test_fiducialfinder.cc \
+               test_audiodsp.cc \
+      	       test_localize.cc \
+      	       test_audiomixer.cc
+              #test_idar.cc \
                #test_idarturret.cc
                #test_misc.cc
                #test_bps.cc

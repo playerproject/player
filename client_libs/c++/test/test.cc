@@ -99,8 +99,8 @@ int main(int argc, const char *argv[])
       test_laser(&client, index);
     
     // Fiducial finder device
-    //if(strcmp(device, "fiducial") == 0 || strcmp(device, "all") == 0)
-      //test_fiducial(&client, index);
+    if(strcmp(device, "fiducial") == 0 || strcmp(device, "all") == 0)
+      test_fiducial(&client, index);
 
     // PTZ device
     if(strcmp(device, "ptz") == 0 || strcmp(device, "all") == 0)
@@ -148,6 +148,13 @@ int main(int argc, const char *argv[])
 
     if(strcmp(device, "localize") == 0 || strcmp(device, "all") == 0)
       test_localize(&client, index);
+
+    if(strcmp(device, "audiodsp") == 0 || strcmp(device, "all") == 0)
+      test_audiodsp(&client, index);
+
+    if(strcmp(device, "audiomixer") == 0 || strcmp(device, "all") == 0)
+      test_audiomixer(&client, index);
+
 
     // BPS device
     /*
