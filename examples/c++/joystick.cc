@@ -18,14 +18,38 @@
 #include <time.h>
 #include <pthread.h>
 
+#include <list>
+
 #define USAGE \
-  "USAGE: joystick [-h <host>] [-p <port>] n" \
-  "       -h <host> : connect to Player on this host\n" \
-  "       -p <port> : connect to Player on this TCP port\n" 
+  "USAGE: joystick [-v] <host:port> [<host:port>] ... \n" \
+  "       -v : verbose mode; print Player device state on stdout\n" \
+  "       <host:port> : connect to a Player on this host and port\n"
 
 
-char host[256] = "localhost";
-int port = PLAYER_PORTNUM;
+#define DEFAULT_HOST "localhost"
+#define DEFAULT_PORT PLAYER_PORTNUM
+
+// flag to control the level of output - the -v arg sets this
+int g_verbose = false;
+
+// define a class to do interaction with Player
+class Client
+{
+private:
+  // these are the proxies we create to access the devices
+  PlayerClient *player;
+  PositionProxy *pp;
+  PtzProxy *ptzp;
+
+public:
+  Client(char* host, int port ); // constructor
+  
+  void Read( void ); // get data from Player
+  void Update( struct controller* cont ); // send commands to Player
+};
+
+// type for a list of pointers to Client objects
+typedef list<Client*> ClientList;
 
 /////////////////////////////////////////////////////////////////////
 // this is the event structure from the linux joystick driver v2.0.0
@@ -77,40 +101,6 @@ struct controller
   bool dirty; // use this flag to determine when we need to send commands
 };
 
-
-/* parse command-line args */
-void
-parse_args(int argc, char** argv)
-{
-  int i;
-
-  i=1;
-  while(i<argc)
-  {
-    if(!strcmp(argv[i],"-h"))
-    {
-      if(++i<argc)
-        strcpy(host,argv[i]);
-      else
-      {
-        puts(USAGE);
-        exit(1);
-      }
-    }
-    else if(!strcmp(argv[i],"-p"))
-    {
-      if(++i<argc)
-        port = atoi(argv[i]);
-      else
-      {
-        puts(USAGE);
-        exit(1);
-      }
-    }
-  }
-}
-
-
 // open a joystick device and read from it, scaling the values and
 // putting them into the controller struct
 void joystick_handler( struct controller* cont )
@@ -135,6 +125,8 @@ void joystick_handler( struct controller* cont )
     {
       // get the next event from the joystick
       read (jfd, &event, sizeof(struct js_event));
+
+      //puts( "JS" );
       
       if ((event.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON) {
 	if (event.value)
@@ -172,7 +164,7 @@ void joystick_handler( struct controller* cont )
 		//puts( "turn left" );
 
 		// set the robot turn rate
-		cont->turnrate = NORMALIZE_TURN(-event.value);
+		cont->turnrate = (int)NORMALIZE_TURN(-event.value);
 		cont->dirty = true;
 
 		break;
@@ -185,7 +177,7 @@ void joystick_handler( struct controller* cont )
 		//puts( "backwards" );
 
 		// set the robot velocity
-		cont->speed = NORMALIZE_SPEED(-event.value);
+		cont->speed = (int)NORMALIZE_SPEED(-event.value);
 		cont->dirty = true;
 
 		break;
@@ -204,7 +196,7 @@ void joystick_handler( struct controller* cont )
 		//puts( "zoom out" );
 		//else
 		//puts( "zoom in" );
-		cont->zoom = (int) KNORMALIZE(-event.value);
+		cont->zoom = (int)KNORMALIZE(-event.value);
 		cont->dirty = true;
 
 		break;
@@ -248,27 +240,102 @@ void joystick_handler( struct controller* cont )
 
     }
 }
-
-int main(int argc, char** argv)
+      
+Client::Client(char* host, int port )
 {
-  /* first, parse command line args */
-  parse_args(argc,argv);
-
+  //if( g_verbose )
+    printf( "Connecting to Player at %s:%d - ", host, port );
+    fflush( stdout );
+  
   /* Connect to the Player server */
-  PlayerClient robot(host,port);
-
-  PositionProxy pp(&robot,0,'a');
-  PtzProxy ptzp(&robot,0,'a' );
-
-  if(pp.GetAccess() == 'e') {
+  assert( player = new PlayerClient(host,port) );  
+  assert( pp = new PositionProxy(player,0,'a') );
+  assert( ptzp = new PtzProxy(player,0,'a' ) );
+  
+  //printf( "p: %p\n", player );
+  
+  if(pp->GetAccess() == 'e') {
     puts("Error getting position device access!");
     exit(1);
   }
-
+  
   // try a few reads
   for( int i=0; i<4; i++ )
-    robot.Read();
+    if( player->Read() < 0 )
+      {
+	puts( " - Failed. Quitting." );
+	exit( -1 );
+      }
+  
+  if( g_verbose )
+    {
+      pp->Print();
+      ptzp->Print();
+    }
 
+  puts( "Success" );
+}
+
+void Client::Read( void )
+{
+  player->Read();
+}
+
+void Client::Update( struct controller* cont )
+{
+  if( g_verbose )
+    printf( "Player: %s:%d %.2f "
+	    "- speed: %d turn: %d pan: %d tilt: %d zoom: %d \n",
+	    player->hostname, player->port,
+	    player->timestamp.tv_sec+player->timestamp.tv_usec/1000000.0,
+	    pp->speed, pp->turnrate, 
+	    ptzp->pan, ptzp->tilt, ptzp->zoom );      
+  
+  if( cont->dirty ) // if the joystick sent a command
+    {
+      // send the speed commands
+      if( pp ) pp->SetSpeed( cont->speed, cont->turnrate);
+      // send the zoom command to the camera
+      if( ptzp ) ptzp->SetCam( ptzp->pan, ptzp->tilt, cont->zoom ); 
+    }
+  
+  // if we're panning we update the camera position
+  if( cont->pan != 0 || cont->tilt != 0 )
+    if( ptzp ) ptzp->SetCam( ptzp->pan + cont->pan, 
+			     ptzp->tilt + cont->tilt, 
+			     cont->zoom );
+}
+
+
+int main(int argc, char** argv)
+{
+
+  ClientList clients;
+
+  // parse command line args to construct clients
+  for( int i=1; i<argc; i++ )
+    {
+      // if we find a colon in the arg, it's a player address
+      if( char* colon = index( argv[i], ':'  ) )
+	{
+	  // replace the colon with a terminator
+	  *colon = 0; 	  
+	  // now argv[i] is a hostname string
+	  // and colon=1 is a port number string	  
+	  clients.push_front( new Client( argv[i], atoi( colon+1 ) ));
+	}
+      // otherwise look for the verbose flag
+      else if( strcmp( argv[i], "-v" ) == 0 )
+	g_verbose = true;
+      else
+	puts( USAGE ); // malformed arg - print usage hints
+    }
+
+  // if no Players were requested, we assume localhost:6665
+  if( clients.begin() == clients.end() )
+    clients.push_front( new Client( DEFAULT_HOST, DEFAULT_PORT ));
+  
+    // this structure is maintained by the joystick reader
   struct controller cont;
   memset( &cont, 0, sizeof(cont) );
   
@@ -277,38 +344,25 @@ int main(int argc, char** argv)
   pthread_create( &dummy, NULL,
                  (void *(*) (void *)) joystick_handler, &cont); 
   
+  puts( "Reading joystick" );
+
   while( true )
     {
-      robot.Read();
-
-      printf( " time: %.2f - speed: %d turn: %d pan: %d(%d)"
-	      " tilt: %d(%d) zoom: %d         \r", 
-	      robot.timestamp.tv_sec + robot.timestamp.tv_usec / 1000000.0,
-	      cont.speed, cont.turnrate, 
-	      ptzp.pan, cont.pan, 
-	      ptzp.tilt, cont.tilt, 
-	      cont.zoom );
+      // read from all the clients
+      for( ClientList::iterator it = clients.begin();
+	   it != clients.end();
+	   it++ )
+	(*it)->Read();
       
-      fflush( stdout );
-            
-      if( cont.dirty ) // if the joystick sent a command
-	{
-	  cont.dirty = false;
-	  
-	  // send the speed commands
-	  pp.SetSpeed( cont.speed, cont.turnrate);
-	  
-	  // send the zoom command to the camera
-	  ptzp.SetCam( ptzp.pan, ptzp.tilt, cont.zoom );
-	}
+      // update all the clients
+      for( ClientList::iterator it = clients.begin();
+	   it != clients.end();
+	   it++ )
+	(*it)->Update( &cont );
+     
 
-      // if we're panning we update the camera's pan command
-      if( cont.pan != 0 || cont.tilt != 0 )
-	ptzp.SetCam( ptzp.pan + cont.pan, ptzp.tilt + cont.tilt, cont.zoom );
-      
-
+      cont.dirty = false; // we've handled the changes
     }
-  
   return(0);
 }
     
