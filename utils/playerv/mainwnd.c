@@ -38,6 +38,9 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
   wnd = malloc(sizeof(mainwnd_t));
   wnd->canvas = rtk_canvas_create(app);
 
+  wnd->host = host;
+  wnd->port = port;
+
   // Set up the canvas
   rtk_canvas_movemask(wnd->canvas, RTK_MOVE_PAN | RTK_MOVE_ZOOM);
   rtk_canvas_size(wnd->canvas, 300, 300);
@@ -49,8 +52,11 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
 
   // Create file menu
   wnd->file_menu = rtk_menu_create(wnd->canvas, "File");
+  wnd->stills_item = rtk_menuitem_create(wnd->file_menu, "Export stills", 1);
   wnd->exit_item = rtk_menuitem_create(wnd->file_menu, "Exit", 0);
 
+  wnd->stills_count = 0;
+  
   // Create view menu
   wnd->view_menu = rtk_menu_create(wnd->canvas, "View");
   wnd->view_item_rotate = rtk_menuitem_create(wnd->view_menu, "Rotate", 1);
@@ -109,11 +115,22 @@ void mainwnd_destroy(mainwnd_t *wnd)
 // Returns 1 if the program should quit.
 int mainwnd_update(mainwnd_t *wnd)
 {
+  char filename[256];
+  
   // See if we should quit
   if (rtk_canvas_isclosed(wnd->canvas))
     return 1;
   if (rtk_menuitem_isactivated(wnd->exit_item))
     return 1;
+
+  // Export stills.
+  if (rtk_menuitem_ischecked(wnd->stills_item))
+  {
+    snprintf(filename, sizeof(filename), "playerv-%s-%d-%04d.ppm",
+             wnd->host, wnd->port, wnd->stills_count++);
+    rtk_canvas_export_image(wnd->canvas, filename);
+    printf("exporting %s\n", filename);
+  }
 
   // Rotate the display
   if (rtk_menuitem_isactivated(wnd->view_item_rotate))

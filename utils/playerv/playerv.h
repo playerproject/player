@@ -60,15 +60,19 @@
 // Main window displaying sensor stuff
 typedef struct
 {
+  const char *host;
+  int port;
+  
   // The rtk canvas
   rtk_canvas_t *canvas;
-
+  
   // The base figure for the robot
   rtk_fig_t *grid_fig;
   rtk_fig_t *robot_fig;
   
   // Menu containing file options
   rtk_menu_t *file_menu;
+  rtk_menuitem_t *stills_item;
   rtk_menuitem_t *exit_item;
 
   // Menu containing view settings
@@ -79,6 +83,9 @@ typedef struct
   
   // Menu containing the device list
   rtk_menu_t *device_menu;
+
+  // Export info.
+  int stills_count;
   
 } mainwnd_t;
 

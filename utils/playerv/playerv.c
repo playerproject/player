@@ -71,6 +71,7 @@ int main(int argc, char **argv)
   int device_count;
   device_t devices[PLAYER_MAX_DEVICES];
   device_t *device;
+  void *proxy;
 
   printf("PlayerViewer %s\n", VERSION);
 
@@ -174,13 +175,14 @@ int main(int argc, char **argv)
   {
     // Wait for some data.  We rely on getting the sync messages if no
     // devices are subscribed.
-    playerc_client_read(client);
+    proxy = playerc_client_read(client);
 
     // Update the main window
-    if (mainwnd_update(mainwnd) != 0)
-      break;
+    if (proxy == client)
+      if (mainwnd_update(mainwnd) != 0)
+        break;
 
-    // Update devices
+    // Update whichever device changed.
     for (i = 0; i < device_count; i++)
     {
       device = devices + i;
