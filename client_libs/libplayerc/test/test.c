@@ -76,6 +76,10 @@ int main(int argc, const char *argv[])
     if (strcmp(device, "broadcast") == 0 || strcmp(device, "all") == 0)
       test_broadcast(client, index);
 
+    // Vision device
+    if (strcmp(device, "vision") == 0 || strcmp(device, "all") == 0)
+      test_vision(client, index);
+    
     free(arg);
   }
     

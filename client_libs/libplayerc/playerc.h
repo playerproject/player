@@ -276,16 +276,16 @@ int playerc_laser_subscribe(playerc_laser_t *device, int access);
 int playerc_laser_unsubscribe(playerc_laser_t *device);
 
 // Configure the laser.
-// <min_angle>, <max_angle> : Start and end angles for the scan.
-// <resolution> : Resolution in 0.01 degree increments.  Valid values are 25, 50, 100.
-// <intensity> : Intensity flag; set to 1 to enable reflection intensity data.
+// min_angle, max_angle : Start and end angles for the scan.
+// resolution : Resolution in 0.01 degree increments.  Valid values are 25, 50, 100.
+// intensity : Intensity flag; set to 1 to enable reflection intensity data.
 int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double max_angle,
                               int resolution, int intensity);
 
 // Get the laser configuration
-// <min_angle>, <max_angle> : Start and end angles for the scan.
-// <resolution> : Resolution in 0.01 degree increments.
-// <intensity> : Intensity flag; set to 1 to enable reflection intensity data.
+// min_angle, max_angle : Start and end angles for the scan.
+// resolution : Resolution in 0.01 degree increments.
+// intensity : Intensity flag; set to 1 to enable reflection intensity data.
 int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double *max_angle,
                               int *resolution, int *intensity);
 
@@ -331,11 +331,15 @@ int playerc_laserbeacon_subscribe(playerc_laserbeacon_t *device, int access);
 // Un-subscribe from the laserbeacon device
 int playerc_laserbeacon_unsubscribe(playerc_laserbeacon_t *device);
 
-// Set the device configuration
+// Set the device configuration.
+// bit_count : the number of bits in the barcode.
+// bit_width : the width of each bit in the barcode.
 int playerc_laserbeacon_set_config(playerc_laserbeacon_t *device,
                                    int bit_count, double bit_width);
 
-// Get the device configuration
+// Get the device configuration.
+// bit_count : the number of bits in the barcode.
+// bit_width : the width of each bit in the barcode.
 int playerc_laserbeacon_get_config(playerc_laserbeacon_t *device,
                                    int *bit_count, double *bit_width);
 
@@ -372,28 +376,31 @@ int playerc_broadcast_send(playerc_broadcast_t *device, void *msg, int len);
 int playerc_broadcast_recv(playerc_broadcast_t *device, void *msg, int len);
 
 
-
-
 /***************************************************************************
- * GPS device
+ * Vision device
  **************************************************************************/
 
-/* GPS device data */
+// Vision device data
 typedef struct
 {
-  /* Device info; must be at the start of all device structures. */
+  // Device info; must be at the start of all device structures.
   playerc_device_t info;
     
-  /* GPS pose (m, m, radians) */
-  double px, py, pa;
-    
-} playerc_gps_t;
+} playerc_vision_t;
 
 
-/* GPS methods */
-playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index, int access);
-void playerc_gps_destroy(playerc_gps_t *device);
-int playerc_gps_teleport(playerc_gps_t *device, double px, double py, double pa);
+// Create a vision proxy
+playerc_vision_t *playerc_vision_create(playerc_client_t *client, int index);
+
+// Destroy a vision proxy
+void playerc_vision_destroy(playerc_vision_t *device);
+
+// Subscribe to the vision device
+int playerc_vision_subscribe(playerc_vision_t *device, int access);
+
+// Un-subscribe from the vision device
+int playerc_vision_unsubscribe(playerc_vision_t *device);
+
 
 
 /***************************************************************************
@@ -422,6 +429,29 @@ int  playerc_bps_setgain(playerc_bps_t *device, double gain);
 int  playerc_bps_setlaser(playerc_bps_t *device, double px, double py, double pa);
 int  playerc_bps_setbeacon(playerc_bps_t *device, int id, double px, double py, double pa,
                            double ux, double uy, double ua);
+
+
+/***************************************************************************
+ * GPS device
+ **************************************************************************/
+
+/* GPS device data */
+typedef struct
+{
+  /* Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+    
+  /* GPS pose (m, m, radians) */
+  double px, py, pa;
+    
+} playerc_gps_t;
+
+
+/* GPS methods */
+playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index, int access);
+void playerc_gps_destroy(playerc_gps_t *device);
+int playerc_gps_teleport(playerc_gps_t *device, double px, double py, double pa);
+
 
 
 #endif
