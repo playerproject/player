@@ -74,8 +74,10 @@ char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
 
 // Gazebo stuff
+#if INCLUDE_GAZEBO
 #include "gz_client.h"
 #include "gz_time.h"
+#endif
 
 //#define VERBOSE
 //#define DEBUG
@@ -925,7 +927,7 @@ int main( int argc, char *argv[] )
 
   puts( "" ); // newline, flush
 
-#ifdef INCLUDE_STAGE
+#ifndef INCLUDE_STAGE
   if (use_stage)
   {
     PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
@@ -933,14 +935,15 @@ int main( int argc, char *argv[] )
   }
 #endif
 
-  // Initialize gazebo client
-  if (gz_serverid)
+#ifndef INCLUDE_GAZEBO
+  if (gz_serverid != NULL)
   {
-    if (GzClient::Init(gz_serverid) != 0)
-      exit(-1);
+    PLAYER_ERROR("Sorry, support for Gazebo not included at compile-time.");
+    exit(-1);
   }
+#endif
+
   
-  // Create an appropriate clock for the server
   if (use_stage)
   {
 #if INCLUDE_STAGE
@@ -951,9 +954,15 @@ int main( int argc, char *argv[] )
   }
   else if (gz_serverid != NULL)
   {
+#ifdef INCLUDE_GAZEBO
+    // Initialize gazebo client
+    if (GzClient::Init(gz_serverid) != 0)
+      exit(-1);
+
     // Use the clock from Gazebo
     GlobalTime = new GzTime();
     assert(GlobalTime);
+#endif
   }
   else
   {
@@ -973,7 +982,7 @@ int main( int argc, char *argv[] )
     CreateStageDevices( stage_io_directory, &ports, &ufds, &num_ufds);
 #endif
   }
-  else
+  else if (configfile != NULL)
   {
     // Parse the config file and instantiate drivers
     if (!parse_config_file(configfile))
@@ -1027,8 +1036,12 @@ int main( int argc, char *argv[] )
   
   // Finalize gazebo client
   // AH: I know we never get here, but we should, dammit!
-  if (gz_serverid)
+  if (gz_serverid != NULL)
+  {
+#if INCLUDE_GAZEBO
     GzClient::Fini();
+#endif
+  }
   
   /* don't get here */
   return(0);
