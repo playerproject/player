@@ -31,6 +31,14 @@ AC_ARG_WITH(tests, [  --with-tests          Build tests],,
 with_tests=no)
 AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
 
+dnl use the old compiler
+AC_ARG_WITH(glibc21, [  --with-glibc21          Use the GLIBC21 compilers],,
+with_glibc21=no)
+if test "x$with_glibc21" = "xyes"; then
+  CXX=i386-glibc21-linux-g++
+  CC=i386-glibc21-linux-gcc
+fi
+
 dnl check for the fftw library (by way of one of its headers) and compile
 dnl the fixed tones driver if its found
 AC_CHECK_HEADER(rfftw.h, 
