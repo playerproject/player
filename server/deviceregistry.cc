@@ -293,9 +293,7 @@ register_devices()
   LaserCSpace_Register(driverTable);
 #endif
   
-  printf("ARE WE REGISTERING RFLEX DEVICES?\n");
 #ifdef INCLUDE_RFLEX
-  printf("REGISTERING RFLEX DEVICES\n");
   RFLEXPower_Register(driverTable);
   RFLEXaio_Register(driverTable);
   RFLEXdio_Register(driverTable);
