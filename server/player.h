@@ -88,8 +88,10 @@
 #define PLAYER_SIMULATION_CODE     ((uint16_t)31)  // simulators
 #define PLAYER_SERVICE_ADV_CODE    ((uint16_t)32)  // LAN service advertisement
 #define PLAYER_BLINKENLIGHT_CODE   ((uint16_t)33)  // blinking lights 
-#define PLAYER_NOMAD_CODE          ((uint16_t)34)   // Nomad robot
+#define PLAYER_NOMAD_CODE          ((uint16_t)34)  // Nomad robot
 #define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo)
+#define PLAYER_ENERGY_CODE         ((uint16_t)41)  // energy consumption & charging
+
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -128,6 +130,7 @@
 #define PLAYER_SIMULATION_STRING    "simulation"
 #define PLAYER_BLINKENLIGHT_STRING  "blinkenlight"
 #define PLAYER_NOMAD_STRING         "nomad"
+#define PLAYER_ENERGY_STRING        "energy"
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
@@ -2792,5 +2795,44 @@ typedef struct player_sound_cmd
 /*************************************************************************
  ** end section
  *************************************************************************/
+
+/*************************************************************************
+ ** begin section energy
+ *************************************************************************/
+/** [Synopsis] The {\tt energy} interface provides data about energy
+    storage, consumption and charging
+ */
+
+/** [Data] The {\tt energy} interface reports he amount of energy
+stored, current rate of energy consumption or aquisition, and whether
+or not the device is connected to a charger.
+
+The format is: */
+typedef struct player_energy_data
+{
+  /** energy stored, in Joules. */
+  int32_t joules;
+  
+  /** estimated current energy consumption or aquisition, in
+      Joules/sec. */
+  int32_t djoules; 
+  
+  /** charging flag: if TRUE, device is charging, else FALSE. */
+  uint8_t charging;
+
+} __attribute__ ((packed)) player_energy_data_t;
+  
+/** [Commands]
+   This interface accepts no commands.
+*/
+
+/** [Configs]
+    This interface accepts no configs
+*/
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
 
 #endif /* PLAYER_H */
