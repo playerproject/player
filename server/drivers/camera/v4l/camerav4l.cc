@@ -39,7 +39,7 @@ below for notes on specific camera/frame grabber combinations.
 
 @par Supported configuration requests
 
-None
+- None
 
 
 @par Configuration file options
@@ -58,9 +58,17 @@ None
   - Desired image size.   This may not be honoured if the driver does
     not support the requested size).
 
-- depth 24
-  - Color depth (8, 16, 24, 32).   
-
+- mode "RGB24"
+  - Desired capture mode.  Can be one of:
+    - GREY (8-bit monochrome)
+    - RGB565 (16-bit RGB)
+    - RGB24 (24-bit RGB)
+    - RGB32 (32-bit RGB; will produce 24-bit color images)
+    - YUV420P (planar YUV data; will produce 8-bit monochrome images)
+  - Note that not all capture modes are supported by Player's internal image
+  format; in these modes, images will be translated to the closest matching
+  internal format (e.g., RGB32 -> RGB888).
+    
 - save 0
   - Debugging option: set this to write each frame as an image file on disk.
 
@@ -74,10 +82,9 @@ example).
 driver
 (
   name "camerav4l"
-  devices ["camera:0"]
+  provides ["camera:0"]
 )
 @endverbatim
-
 
 
 @par Logitech QuickCam Pro 4000
@@ -87,11 +94,11 @@ For the Logitech QuickCam Pro 4000, use:
 driver
 (
   name "camerav4l"
-  devices ["camera:0"]
+  provides ["camera:0"]
   port "/dev/video0"
   source 0
   size [160 120]
-  palette "YUV420P"
+  mode "YUV420P"
 )
 @endverbatim
 
@@ -239,11 +246,8 @@ CameraV4L::CameraV4L( ConfigFile* cf, int section)
   this->width = cf->ReadTupleInt(section, "size", 0, this->width);
   this->height = cf->ReadTupleInt(section, "size", 1, this->height);
 
-  // Pixel depth
-  this->depth = cf->ReadInt(section, "depth", 24);
-
   // Palette type
-  this->palette = cf->ReadString(section, "palette", "RGB24");
+  this->palette = cf->ReadString(section, "mode", "RGB24");
 
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
