@@ -134,7 +134,7 @@ driver_strcmp(const void* a, const void* b)
 
 // sort drivers, based on name
 char**
-DriverTable::SortDrivers()
+DriverTable::SortDrivers(void)
 {
   int i;
   char** sortedlist;

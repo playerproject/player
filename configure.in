@@ -142,7 +142,7 @@ AM_CONDITIONAL(INCLUDE_RTKGUI, test x$enable_rtkgui = xyes)
 AC_SUBST(RTKGUI_EXTRA_LDADD)
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h)
+AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h)
 
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t 
@@ -174,6 +174,7 @@ AC_TRY_COMPILE(
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(scandir poll dirname alphasort)
 AC_CHECK_FUNCS(cfmakeraw sigblock)
+AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(dl, dlopen)

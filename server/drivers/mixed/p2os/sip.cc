@@ -106,9 +106,9 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   ** (0,0) being TOP-LEFT (from the camera's perspective).  Also,
   ** since CMUcam doesn't have range information, but does have a
   ** confidence value, I'm passing it back as range. */
-  bzero(data->blobfinder.header,
+  memset(data->blobfinder.header,0,
          sizeof(player_blobfinder_header_elt_t)*PLAYER_BLOBFINDER_MAX_CHANNELS);
-  bzero(data->blobfinder.blobs,
+  memset(data->blobfinder.blobs,0,
           sizeof(player_blobfinder_blob_elt_t)*PLAYER_BLOBFINDER_MAX_BLOBS);
   data->blobfinder.width = htons(CMUCAM_IMAGE_WIDTH);
   data->blobfinder.height = htons(CMUCAM_IMAGE_HEIGHT);
