@@ -83,7 +83,7 @@ PyObject *wifi_new(PyObject *self, PyObject *args)
   pywifi->client = pyclient->client;
   pywifi->wifi = playerc_wifi_create(pyclient->client, index);
   pywifi->wifi->info.user_data = pywifi;
-  pywifi->pylinks = PyTuple_New(0);
+  pywifi->pylinks = PyDict_New();
 
   // Add callback for post-processing incoming data */
   playerc_client_addcallback(pyclient->client, (playerc_device_t*) pywifi->wifi,
@@ -166,9 +166,20 @@ static PyObject *wifi_str(PyObject *self)
 /* Callback for post-processing incoming data */
 static void wifi_onread(pywifi_t *pywifi)
 {
+  int i;
+  playerc_wifi_link_t *link;
+  
   thread_acquire();
     
-  // Do nothing for now
+  Py_DECREF(pywifi->pylinks);
+  pywifi->pylinks = PyDict_New();
+
+  for (i = 0; i < pywifi->wifi->link_count; i++)
+  {
+    link = pywifi->wifi->links + i;
+    PyDict_SetItemString(pywifi->pylinks, link->ip,
+                         Py_BuildValue("(iii)", link->qual, link->level, link->noise));
+  }
   
   thread_release();
 
