@@ -90,11 +90,12 @@
 #define PLAYER_BLINKENLIGHT_CODE   ((uint16_t)33)  // blinking lights 
 #define PLAYER_NOMAD_CODE          ((uint16_t)34)  // Nomad robot
 #define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo)
-#define PLAYER_ENERGY_CODE         ((uint16_t)41)  // energy consumption & charging
+#define PLAYER_CMUCAM2_CODE        ((uint16_t)41)  // cmucam2 device 
 #define PLAYER_MAP_CODE            ((uint16_t)42)  // get a map
 #define PLAYER_HUD_CODE            ((uint16_t)43)  // get a HUD interface
 #define PLAYER_PLANNER_CODE        ((uint16_t)44)  // 2D motion planner
 #define PLAYER_LOG_CODE            ((uint16_t)45)  // log read/write control
+#define PLAYER_ENERGY_CODE         ((uint16_t)46)  // energy consumption & charging
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
@@ -124,21 +125,22 @@
 #define PLAYER_IR_STRING             "ir"
 #define PLAYER_WIFI_STRING           "wifi"
 #define PLAYER_WAVEFORM_STRING       "waveform"
-#define PLAYER_LOCALIZE_STRING   "localize"
+#define PLAYER_LOCALIZE_STRING       "localize"
 #define PLAYER_MCOM_STRING           "mcom"
-#define PLAYER_SOUND_STRING	    "sound"
-#define PLAYER_AUDIODSP_STRING      "audiodsp"
-#define PLAYER_AUDIOMIXER_STRING    "audiomixer"
-#define PLAYER_POSITION3D_STRING    "position3d"
-#define PLAYER_SERVICE_ADV_STRING   "service_adv"
-#define PLAYER_SIMULATION_STRING    "simulation"
-#define PLAYER_BLINKENLIGHT_STRING  "blinkenlight"
-#define PLAYER_NOMAD_STRING         "nomad"
-#define PLAYER_ENERGY_STRING        "energy"
-#define PLAYER_MAP_STRING           "map"
-#define PLAYER_HUD_STRING           "hud"
-#define PLAYER_PLANNER_STRING       "planner"
-#define PLAYER_LOG_STRING           "log"
+#define PLAYER_SOUND_STRING	     "sound"
+#define PLAYER_AUDIODSP_STRING       "audiodsp"
+#define PLAYER_AUDIOMIXER_STRING     "audiomixer"
+#define PLAYER_POSITION3D_STRING     "position3d"
+#define PLAYER_SERVICE_ADV_STRING    "service_adv"
+#define PLAYER_SIMULATION_STRING     "simulation"
+#define PLAYER_BLINKENLIGHT_STRING   "blinkenlight"
+#define PLAYER_NOMAD_STRING          "nomad"
+#define PLAYER_CMUCAM2_STRING        "cmucam2"
+#define PLAYER_ENERGY_STRING         "energy"
+#define PLAYER_MAP_STRING            "map"
+#define PLAYER_HUD_STRING            "hud"
+#define PLAYER_PLANNER_STRING        "planner"
+#define PLAYER_LOG_STRING            "log"
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
@@ -1061,7 +1063,6 @@ typedef struct player_laser_power_config
  ** end section
  *************************************************************************/
 
-
 /*************************************************************************
  ** begin section blobfinder
  *************************************************************************/
@@ -1222,6 +1223,7 @@ The {\tt ptz} interface is used to control a pan-tilt-zoom unit. */
 /** Configuration request codes */
 #define PLAYER_PTZ_GENERIC_CONFIG_REQ	((uint8_t)1)
 #define PLAYER_PTZ_CONTROL_MODE_REQ ((uint8_t)2)
+#define PLAYER_PTZ_AUTOSERVO ((uint8_t)3)
 
 /** Maximum command length for use with PLAYER_PTZ_GENERIC_CONFIG_REQ, 
     based on the Sony EVID30 camera right now. */
@@ -1293,6 +1295,40 @@ typedef struct player_ptz_controlmode_config
       PLAYER_PTZ_POSITION_CONTROL. */
   uint8_t mode;
 } __attribute__ ((packed)) player_ptz_velocitymode_config_t;
+
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section cmucam2
+ *************************************************************************/
+/** [Synopsis]
+    The cmucam2 interface provides information that cmucam2 can collect.
+*/
+
+/** [Constants]
+ */
+#define CMUCAM_CONFIG_SIZE sizeof(player_cmucam2_autoservo_config_t)
+
+typedef struct
+{
+  uint8_t subtype; // must be PLAYER_CMUCAM2_CFG_AUTOSERVO
+  uint8_t enable;
+}player_cmucam2_autoservo_config_t;
+
+typedef struct player_cmucam2_data
+{
+  player_ptz_data_t ptz_data;  
+  player_blobfinder_data_t blob;
+  //player_blobfinder_blob_elt_t blob;
+} __attribute__ ((packed)) player_cmucam2_data_t;
+
+typedef struct player_cmucam2_cmd
+{
+  player_ptz_cmd_t ptz_data;    
+} __attribute__ ((packed)) player_cmucam2_cmd_t;
 
 
 /*************************************************************************
