@@ -22,11 +22,11 @@
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_cannonVCC4 cannonVCC4
+/** @defgroup player_driver_canonvcc4 canonvcc4
 
-The cannonVCC4 driver controls a Cannon VC-C4 PTZ camera.
+The canonvcc4 driver controls a Canon VC-C4 PTZ camera.
 
-The cannonVCC4 driver operates over a direct serial link, not
+The canonvcc4 driver operates over a direct serial link, not
 through the P2OS microcontroller's AUX port, as is the normal
 configuration for ActivMedia robots.  You may have to make or buy
 a cable to connect your camera to a normal serial port.  Look <a
@@ -41,7 +41,7 @@ VC-C4 ranges:
 - Tilt in degrees: -30...88
 - Zoom units: 0..2000
 
-The cannonVCC4 driver only support position control.
+The canonvcc4 driver only support position control.
 
 @par Compile-time dependencies
 
@@ -70,7 +70,7 @@ The cannonVCC4 driver only support position control.
 @verbatim
 driver 
 (
-  name "cannonVCC4" 
+  name "canonvcc4" 
   provides ["ptz:0"]
   port "/dev/ttyS1"
 )
@@ -138,7 +138,7 @@ static unsigned int error_code;
 
 struct timeval substract_time(struct timeval *, struct timeval *);
 
-class cannonVCC4:public Driver 
+class canonvcc4:public Driver 
 {
  private:
   bool ptz_fd_blocking;
@@ -173,7 +173,7 @@ class cannonVCC4:public Driver
   // Min and max values for camera field of view (degrees).
   // These are used to compute appropriate zoom values.
 
-  cannonVCC4(ConfigFile* cf, int section);
+  canonvcc4(ConfigFile* cf, int section);
 
   virtual int Setup();
   virtual int Shutdown();
@@ -181,23 +181,23 @@ class cannonVCC4:public Driver
 
 /************************************************************************/
 Driver* 
-cannonVCC4_Init(ConfigFile* cf, int section)
+canonvcc4_Init(ConfigFile* cf, int section)
 {
-  return((Driver*)(new cannonVCC4(cf, section)));
+  return((Driver*)(new canonvcc4(cf, section)));
 }
 
 /************************************************************************/
 
 // a driver registration function
 void 
-cannonVCC4_Register(DriverTable* table)
+canonvcc4_Register(DriverTable* table)
 {
-  table->AddDriver("cannonVCC4", cannonVCC4_Init);
+  table->AddDriver("canonvcc4", canonvcc4_Init);
 }
 
 /************************************************************************/
 
-cannonVCC4::cannonVCC4(ConfigFile* cf, int section) :
+canonvcc4::canonvcc4(ConfigFile* cf, int section) :
   Driver(cf,section,PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
           sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),0,0)
 {
@@ -210,7 +210,7 @@ cannonVCC4::cannonVCC4(ConfigFile* cf, int section) :
 
 /************************************************************************/
 int 
-cannonVCC4::Setup()
+canonvcc4::Setup()
 {
   int pan,tilt;
   int flags;
@@ -224,13 +224,13 @@ cannonVCC4::Setup()
       open("/dev/ttyS1",
 	   O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
-    perror("cannonVCC4::Setup():open():");
+    perror("canonvcc4::Setup():open():");
     return(-1);
   }  
   
   if(tcflush(ptz_fd, TCIFLUSH ) < 0 )
   {
-    perror("cannonVCC4::Setup():tcflush():");
+    perror("canonvcc4::Setup():tcflush():");
     close(ptz_fd);
     ptz_fd = -1;
     return(-1);
@@ -303,7 +303,7 @@ cannonVCC4::Setup()
   /* ok, we got data, so now set NONBLOCK, and continue */
   if ((flags = fcntl(ptz_fd, F_GETFL)) < 0)
     {
-      perror("cannonVCC4::Setup():fcntl()");
+      perror("canonvcc4::Setup():fcntl()");
       close(ptz_fd);
       ptz_fd = -1;
       return(1);
@@ -311,7 +311,7 @@ cannonVCC4::Setup()
 
   if (fcntl(ptz_fd, F_SETFL, flags ^ O_NONBLOCK) < 0)
     {
-      perror("cannonVCC4::Setup():fcntl()");
+      perror("canonvcc4::Setup():fcntl()");
       close(ptz_fd);
       ptz_fd = -1;
       return(1);
@@ -337,13 +337,13 @@ cannonVCC4::Setup()
 }
 /************************************************************************/
 int 
-cannonVCC4::configurePort()
+canonvcc4::configurePort()
 {
   struct termios tio;
 
   if(tcgetattr(ptz_fd, &tio) < 0 )
     {
-      perror("cannonVCC4::configurePort():tcgetattr():");
+      perror("canonvcc4::configurePort():tcgetattr():");
       close(ptz_fd);
       return(-1);
     }
@@ -369,9 +369,9 @@ cannonVCC4::configurePort()
 
 /************************************************************************/
 int 
-cannonVCC4::Shutdown()
+canonvcc4::Shutdown()
 {
-  puts("cannonVCC4::Shutdown");
+  puts("canonvcc4::Shutdown");
   
   if(ptz_fd == -1)
     return(0);
@@ -383,7 +383,7 @@ cannonVCC4::Shutdown()
   SendAbsZoom(0);
   setPower(0);
   if(close(ptz_fd))
-    perror("cannonVCC4::Shutdown():close():");
+    perror("canonvcc4::Shutdown():close():");
   ptz_fd = -1;
   puts("PTZ camera has been shutdown");
   return(0);
@@ -391,7 +391,7 @@ cannonVCC4::Shutdown()
 
 /************************************************************************/
 int
-cannonVCC4::SendCommand(unsigned char *str, int len)
+canonvcc4::SendCommand(unsigned char *str, int len)
 {
   int err = 0;
 
@@ -407,21 +407,21 @@ cannonVCC4::SendCommand(unsigned char *str, int len)
 
   if (err < 0)
   {
-    perror("cannonVCC4::Send():write():");
+    perror("canonvcc4::Send():write():");
     return(-1);
   }
   return(0);
 }
 /************************************************************************/
 int
-cannonVCC4::SendRequest(unsigned char* str, int len)
+canonvcc4::SendRequest(unsigned char* str, int len)
 {
   int err = 0;
 
   if(len > MAX_PTZ_REQUEST_LENGTH)
   {
     fprintf(stderr, 
-	    "cannonVCC4::SendRequest(): message is too large (%d bytes)\n",
+	    "canonvcc4::SendRequest(): message is too large (%d bytes)\n",
 	    len);
     return(-1);
   }
@@ -429,7 +429,7 @@ cannonVCC4::SendRequest(unsigned char* str, int len)
 
   if(err < 0)
     {
-      perror("cannonVCC4::Send():write():");
+      perror("canonvcc4::Send():write():");
       return(-1);
     }
   return 0;
@@ -438,7 +438,7 @@ cannonVCC4::SendRequest(unsigned char* str, int len)
 
 /************************************************************************/
 void
-cannonVCC4::PrintPacket(char* str, unsigned char* cmd, int len)
+canonvcc4::PrintPacket(char* str, unsigned char* cmd, int len)
 {
   for(int i=0;i<len;i++)
     printf(" %.2x", cmd[i]);
@@ -448,7 +448,7 @@ cannonVCC4::PrintPacket(char* str, unsigned char* cmd, int len)
 /************************************************************************/
 
 int
-cannonVCC4::SendAbsPanTilt(int pan, int tilt)
+canonvcc4::SendAbsPanTilt(int pan, int tilt)
 {
   unsigned char command[MAX_PTZ_COMMAND_LENGTH];
   int convpan, convtilt;
@@ -504,7 +504,7 @@ cannonVCC4::SendAbsPanTilt(int pan, int tilt)
 }
 /************************************************************************/
 int 
-cannonVCC4::setDefaultTiltRange()
+canonvcc4::setDefaultTiltRange()
 {
   unsigned char command[MAX_PTZ_COMMAND_LENGTH];
   unsigned char buf[8];
@@ -542,7 +542,7 @@ cannonVCC4::setDefaultTiltRange()
 
 /************************************************************************/
 int
-cannonVCC4::GetAbsPanTilt(int* pan, int* tilt)
+canonvcc4::GetAbsPanTilt(int* pan, int* tilt)
 {
   unsigned char command[MAX_PTZ_COMMAND_LENGTH];
   unsigned char reply[MAX_PTZ_REQUEST_LENGTH];
@@ -603,7 +603,7 @@ cannonVCC4::GetAbsPanTilt(int* pan, int* tilt)
 
 /************************************************************************/
 int
-cannonVCC4::GetAbsZoom(int* zoom)
+canonvcc4::GetAbsZoom(int* zoom)
 {
   unsigned char command[MAX_PTZ_COMMAND_LENGTH];
   unsigned char reply[MAX_PTZ_REQUEST_LENGTH];
@@ -651,7 +651,7 @@ cannonVCC4::GetAbsZoom(int* zoom)
 
 /************************************************************************/
 int
-cannonVCC4::SendAbsZoom(int zoom)
+canonvcc4::SendAbsZoom(int zoom)
 {
   unsigned char command[MAX_PTZ_COMMAND_LENGTH];
   unsigned char buf[5];
@@ -692,7 +692,7 @@ cannonVCC4::SendAbsZoom(int zoom)
 
 /************************************************************************/
  int
- cannonVCC4::read_ptz(unsigned char *reply, int size)
+ canonvcc4::read_ptz(unsigned char *reply, int size)
 {
   struct pollfd poll_fd;
   int len = 0;
@@ -712,7 +712,7 @@ cannonVCC4::SendAbsZoom(int zoom)
 
 /************************************************************************/
 int
-cannonVCC4::ReceiveCommandAnswer()
+canonvcc4::ReceiveCommandAnswer()
 {
   int num;
   unsigned char reply[COMMAND_RESPONSE_BYTES];
@@ -748,7 +748,7 @@ cannonVCC4::ReceiveCommandAnswer()
 	  // there are no more bytes, so check the last byte for the footer
 	  if (reply[len - 1] !=  (unsigned char)0xEF)
 	    {
-	      fputs("cannonVCC4::receiveRequest: Discarding bad packet.",
+	      fputs("canonvcc4::receiveRequest: Discarding bad packet.",
 		    stderr);
 	      return -1;
 	    }
@@ -766,14 +766,14 @@ cannonVCC4::ReceiveCommandAnswer()
   // Check the response
   if (len != 6)
     {
-      fputs("cannonVCC4::receiveCommand:Incorrect number of bytes in response packet.", stderr);
+      fputs("canonvcc4::receiveCommand:Incorrect number of bytes in response packet.", stderr);
       return -1;
     }
 
   // check the header and footer
   if (reply[0] != (unsigned char)0xFE || reply[5] != (unsigned char)0xEF)
     {
-      fputs("cannonVCC4::receiveCommand: Bad header or footer character in response packet.", stderr);
+      fputs("canonvcc4::receiveCommand: Bad header or footer character in response packet.", stderr);
       return -1;
     }
   // so far so good.  Set myError to the error byte
@@ -788,7 +788,7 @@ cannonVCC4::ReceiveCommandAnswer()
 
 /************************************************************************/
 int
-cannonVCC4::ReceiveRequestAnswer(unsigned char *data)
+canonvcc4::ReceiveRequestAnswer(unsigned char *data)
 {
   int num;
   unsigned char reply[MAX_PTZ_REQUEST_LENGTH];
@@ -823,7 +823,7 @@ cannonVCC4::ReceiveRequestAnswer(unsigned char *data)
 	  // there are no more bytes, so check the last byte for the footer
 	  if (reply[len - 1] !=  (unsigned char)0xEF)
 	    {
-	      fputs("cannonVCC4::receiveRequest: Discarding bad packet.",
+	      fputs("canonvcc4::receiveRequest: Discarding bad packet.",
 		    stderr);
 	      return -1;
 	    }
@@ -840,14 +840,14 @@ cannonVCC4::ReceiveRequestAnswer(unsigned char *data)
   // Check the response length: pt: 14; zoom: 10
   if (len != 6 && len != 8 && len != 14)
     {
-      fputs("ArVCC4::packetHandler: Incorrect number of bytes in response packet.", stderr);
+      fputs("Arvcc4::packetHandler: Incorrect number of bytes in response packet.", stderr);
       return -1;
     }
   
   if (reply[0] !=  (unsigned char)0xFE || 
       reply[len - 1] != (unsigned char)0xEF)
     {
-      fputs("cannonVCC4::receiveRequestArVCC4: Bad header or footer character in response packet.", stderr);
+      fputs("canonvcc4::receiveRequestArvcc4: Bad header or footer character in response packet.", stderr);
       return -1;
     }
 
@@ -864,7 +864,7 @@ cannonVCC4::ReceiveRequestAnswer(unsigned char *data)
 
 /************************************************************************/
 int
-cannonVCC4::setControlMode()
+canonvcc4::setControlMode()
 {
   unsigned char command[MAX_PTZ_COMMAND_LENGTH];
 
@@ -883,7 +883,7 @@ cannonVCC4::setControlMode()
 }
 /************************************************************************/
 int
-cannonVCC4::setPower(int on)
+canonvcc4::setPower(int on)
 {
   unsigned char command[MAX_PTZ_COMMAND_LENGTH];
 
@@ -908,7 +908,7 @@ cannonVCC4::setPower(int on)
 
 // this function will be run in a separate thread
 void 
-cannonVCC4::Main()
+canonvcc4::Main()
 {
   player_ptz_data_t data;
   player_ptz_cmd_t command;
@@ -951,7 +951,7 @@ cannonVCC4::Main()
 // 		  pandemand, tiltdemand, err, error_code);
 	  if ((error_code != CAM_ERROR_NONE) && (error_code != CAM_ERROR_BUSY))
 	    {
-	      fputs("cannonVCC4:Main():SendAbsPanTilt() errored. bailing.\n", 
+	      fputs("canonvcc4:Main():SendAbsPanTilt() errored. bailing.\n", 
 		    stderr);
 	      pthread_exit(NULL);
 	    }
@@ -961,7 +961,7 @@ cannonVCC4::Main()
 	  err = SendAbsZoom(zoomdemand);
 	  if ((error_code != CAM_ERROR_NONE) && (error_code != CAM_ERROR_BUSY))
 	    {
-	      fputs("cannonVCC4:Main():SendAbsZoom() errored. bailing.\n", 
+	      fputs("canonvcc4:Main():SendAbsZoom() errored. bailing.\n", 
 		    stderr);
 	      pthread_exit(NULL);
 	    }
@@ -970,14 +970,14 @@ cannonVCC4::Main()
       /* get current state */
       if(GetAbsPanTilt(&pan,&tilt) < 0)
 	{
-	  fputs("cannonVCC4:Main():GetAbsPanTilt() errored. bailing.\n", 
+	  fputs("canonvcc4:Main():GetAbsPanTilt() errored. bailing.\n", 
 		stderr);
 	  pthread_exit(NULL);
 	}
       /* get current state */
       if(GetAbsZoom(&zoom) < 0)
 	{
-	  fputs("cannonVCC4:Main():GetAbsZoom() errored. bailing.\n", stderr);
+	  fputs("canonvcc4:Main():GetAbsZoom() errored. bailing.\n", stderr);
 	  pthread_exit(NULL);
 	}
       

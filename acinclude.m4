@@ -184,7 +184,7 @@ PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cannonvcc4],[drivers/ptz],[yes],[],[],[])
+PLAYER_ADD_DRIVER([canonvcc4],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([flockofbirds],[drivers/position/ascension],[no],[],[],[])
 
@@ -291,7 +291,7 @@ AC_LANG_RESTORE
 
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
 PLAYER_ADD_DRIVER([service_adv_mdns],[drivers/service_adv],[yes],
-                  [],[],[],[HOWL],[howl = 0.9.5])
+                  [],[],[],[HOWL],[howl = 0.9.6])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so

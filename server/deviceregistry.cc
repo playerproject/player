@@ -150,7 +150,7 @@ void PTU46_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_CANNONVCC4
-void cannonVCC4_Register(DriverTable* table);
+void canonvcc4_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_FLOCKOFBIRDS
@@ -604,7 +604,7 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_CANNONVCC4
-  cannonVCC4_Register(driverTable);
+  canonvcc4_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FLOCKOFBIRDS
