@@ -23,13 +23,18 @@ void plan_update_waypoints(plan_t *plan, double px, double py)
   double dist;
   int ni, nj;
   plan_cell_t *cell, *ncell;
-  
-  ni = PLAN_GXWX(plan, px);
-  nj = PLAN_GYWY(plan, py);
-  cell = plan->cells + PLAN_INDEX(plan, ni, nj);
 
   plan->waypoint_count = 0;
-  
+
+  ni = PLAN_GXWX(plan, px);
+  nj = PLAN_GYWY(plan, py);
+
+  // Can't plan a path if we're off the map
+  if(!PLAN_VALID(plan,ni,nj))
+    return;
+
+  cell = plan->cells + PLAN_INDEX(plan, ni, nj);
+
   while (cell != NULL)
   {
     //printf("%d %d\n", cell->ci, cell->cj);

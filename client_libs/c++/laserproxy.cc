@@ -188,7 +188,7 @@ void LaserProxy::Print()
 
   puts("#range\tbearing\tintensity");
   for(int i=0;i<scan_count && i<PLAYER_LASER_MAX_SAMPLES;i++)
-    printf("%.3f\t%.3f\t%u", scan[i][0],RTOD(scan[i][1]),intensities[i]);
+    printf("%.3f\t%.3f\t%u ", scan[i][0],RTOD(scan[i][1]),intensities[i]);
   puts("");
 }
 

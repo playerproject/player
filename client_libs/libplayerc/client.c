@@ -281,12 +281,12 @@ void *playerc_client_read(playerc_client_t *client)
       return NULL;
   }
 
+  // cache server's latest time (assume it monotonically increases)
+  client->datatime = header.time_sec + header.time_usec / 1e6;
+
   // Catch and ignore sync messages
   if (header.type == PLAYER_MSGTYPE_SYNCH)
-  {
-    client->datatime = header.timestamp_sec + header.timestamp_usec * 1e-6;
     return client->id;
-  }
   
   // Check the return type 
   if (header.type != PLAYER_MSGTYPE_DATA)
@@ -645,6 +645,8 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
   header->device = ntohs(header->device);
   header->device_index = ntohs(header->device_index);
   header->size = ntohl(header->size);
+  header->time_sec = ntohl(header->time_sec);
+  header->time_usec = ntohl(header->time_usec);
   header->timestamp_sec = ntohl(header->timestamp_sec);
   header->timestamp_usec = ntohl(header->timestamp_usec);
 
