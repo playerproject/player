@@ -282,7 +282,7 @@ void ReadLogManager::Main()
 
     if (header_id.code == PLAYER_PLAYER_CODE)
     {
-      usleep((int) (100000 / this->speed));
+      usleep((int) (100000 / this->speed) - 20000);
       continue;
     }
     else
