@@ -119,7 +119,7 @@ CDeviceTable* deviceTable = new CDeviceTable();
 // this number divided by two (two threads per client) is
 // the maximum number of clients that the server will support
 // i don't know what a good number would be
-#define MAXNUMTHREADS 16
+#define MAXNUMTHREADS 201
 #define MAXNUMCLIENTS MAXNUMTHREADS/2
 
 // keep track of the pointers to our various clients.
