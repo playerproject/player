@@ -349,10 +349,18 @@ typedef struct
     player_laserbeacon_item_t beacon[32]; 
 } __attribute__ ((packed)) player_laserbeacon_data_t;
 
-
-#define LASERBEACON_DATA_BUFFER_SIZE ((int) sizeof(player_laser_data_t))
+/*
+ * the laser beacon config packet
+ */
+typedef struct
+{
+    uint8_t bit_count;
+    uint16_t bit_size;
+} __attribute__ ((packed)) player_laserbeacon_config_t;
+ 
+#define LASERBEACON_DATA_BUFFER_SIZE ((int) sizeof(player_laserbeacon_data_t))
 #define LASERBEACON_COMMAND_BUFFER_SIZE 0
-#define LASERBEACON_CONFIG_BUFFER_SIZE 0
+#define LASERBEACON_CONFIG_BUFFER_SIZE ((int) sizeof(player_laserbeacon_config_t))
 
 /*************************************************************************/
 

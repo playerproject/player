@@ -51,6 +51,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+#define PLAYER_ENABLE_TRACE 1
+
 #include <string.h>
 #include <math.h>
 #include <netinet/in.h>  /* for htons(3) */
@@ -65,11 +67,6 @@ CLaserBeaconDevice::CLaserBeaconDevice(CDevice *laser)
     m_laser = laser;
     ASSERT(m_laser != NULL);
 
-    // Expected width of beacon
-    //
-    m_min_width = 0.40 - 0.05;  
-    m_max_width = 0.40 + 0.05;
-
     // Maximum variance in the flatness of the beacon
     //
     m_max_depth = 0.05;
@@ -78,6 +75,11 @@ CLaserBeaconDevice::CLaserBeaconDevice(CDevice *laser)
     //
     m_max_bits = 8;
     m_bit_width = 0.05;
+
+    // Expected width of beacon
+    //
+    m_min_width = m_max_bits * m_bit_width - m_bit_width;  
+    m_max_width = m_max_bits * m_bit_width + m_bit_width;
     
     // Histogram thresholds
     //
@@ -160,6 +162,22 @@ size_t CLaserBeaconDevice::GetConfig(unsigned char *dest, size_t maxsize)
 //
 void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize) 
 {
+    if (maxsize != sizeof(player_laserbeacon_config_t))
+        PLAYER_ERROR("config packet size is incorrect");
+    
+    player_laserbeacon_config_t *beacon_config = (player_laserbeacon_config_t*) src;
+
+    // Number of bits and size of each bit
+    //
+    m_max_bits = beacon_config->bit_count;
+    m_bit_width = ntohs(beacon_config->bit_size) / 1000.0;
+
+    // Expected width of beacon
+    //
+    m_min_width = m_max_bits * m_bit_width - m_bit_width;  
+    m_max_width = m_max_bits * m_bit_width + m_bit_width;
+
+    PLAYER_TRACE2("bits %d, width %f", m_max_bits, m_bit_width);
 }
 
 
