@@ -189,7 +189,7 @@ if test "x$GAZEBO_DIR" = "xNONE" -o "x$GAZEBO_DIR" = "xno"; then
 else
   GAZEBO_HEADER=$GAZEBO_DIR/include/gazebo.h
   GAZEBO_EXTRA_CPPFLAGS="-I$GAZEBO_DIR/include"
-  GAZEBO_EXTRA_LDFLAGS="-L$GAZEBO_DIR/lib -lgazebo",
+  GAZEBO_EXTRA_LDFLAGS="-L$GAZEBO_DIR/lib -lgazebo"
 fi
 
 dnl Add the Gazebo driver

@@ -223,6 +223,12 @@ else
   AC_MSG_RESULT([    LDFLAGS: $RTK_LDADD])
   AC_MSG_RESULT([])
 fi
+if test "x$enable_gazebo" = "xyes"; then
+  AC_MSG_RESULT([Player will build Gazebo-based components using:])
+  AC_MSG_RESULT([    CPPFLAGS: $GAZEBO_EXTRA_CPPFLAGS])
+  AC_MSG_RESULT([    LDFLAGS: $GAZEBO_EXTRA_LDFLAGS])
+  AC_MSG_RESULT([])
+fi
 AC_MSG_RESULT([The following device drivers will be included:])
 for player_lib in $PLAYER_DRIVERS; do
   if test -n $player_lib; then
