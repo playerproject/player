@@ -71,7 +71,10 @@ cameras.
     - "320x240_yuv"
     - "640x480_rgb"
     - "640x480_mono"
-  - Currently, all of these modes will produce 8-bit monochrome images.
+    - "800x600_mono"
+    - "1024x768_mono"
+  - Currently, all non-RGB modes will produce 8-bit monochrome images unless 
+  a color decoding option is provided (see bayer).
   
 - force_raw (integer)
   - Default: 0
@@ -82,7 +85,51 @@ cameras.
   - Default: 0
   - Debugging option: set this to write each frame as an image file on disk.
 
-  
+- bayer (string)
+  - Default: None.
+  - Bayer color decoding options for cameras such as the Point Grey Dragonfly and Bummblebee. 
+  Option activates color decoding and specifies the Bayer color pattern. Valid modes are:
+    - "BGGR"
+    - "GRBG"
+    - "RGGB"
+    - "GBRG"
+
+- method (string)    
+  - Default: None (or "DownSample" if bayer option is specified)
+  - Determines the algorithm used for Bayer coloro decoding. Valid modes are:
+    - "DownSample"
+    - "Nearest"
+    - "Edge"
+
+- brightness (string or unsigned int)
+  - Default: None
+  - Sets the camera brightness setting. Valid modes are:
+    - "auto"
+    - any suitable unsigned integer
+
+- exposure (string or unsigned int)
+  - Default: None
+  - Sets the camera exposure setting. Valid modes are:
+    - "auto"
+    - any suitable unsigned integer
+
+- shutter (string or unsigned int)
+  - Default: None
+  - Sets the camera shutter setting. Valid modes are:
+    - "auto"
+    - any suitable unsigned integer
+
+- gain (string or unsigned int)
+  - Default: None
+  - Sets the camera gain setting. Valid modes are:
+    - "auto"
+    - any suitable unsigned integer
+
+- whitebalance (string)
+  - Default: None
+  - Sets the manual camera white balance setting. Only valid option:
+    - a string containing two suitable blue and red value unsigned integers 
+
 @par Example 
 
 @verbatim
@@ -119,6 +166,9 @@ Nate Koenig, Andrew Howard
 #include "drivertable.h"
 #include "playertime.h"
 #include "player.h"
+
+// for color and format conversion
+#include "drivers/blobfinder/cmvision/conversions.h"
 
 #define NUM_DMA_BUFFERS 8
 
@@ -190,6 +240,18 @@ class Camera1394 : public Driver
   
   // Data to send to server
   private: player_camera_data_t data;
+
+  // Bayer Colour Conversion
+  private: bool DoBayerConversion;
+  private: int BayerPattern;
+  private: int BayerMethod;
+  private: unsigned char *bayerConvertedFrame;
+
+  // Camera settings
+  private: bool setBrightness, setExposure, setWhiteBalance, setShutter, setGain;
+  private: bool autoBrightness, autoExposure, autoShutter, autoGain;
+  private: unsigned int brightness, exposure, redBalance, blueBalance, shutter, gain;
+
 };
 
 
@@ -276,6 +338,17 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
     this->mode = MODE_640x480_MONO;
     this->frameSize = 640 * 480 * 1;
   }
+  else if (0==strcmp(str,"800x600_mono"))
+  {
+    this->mode = MODE_800x600_MONO;
+    this->frameSize = 800 * 600 * 1;
+  }
+  else if (0==strcmp(str,"1024x768_mono"))
+  {
+    this->mode = MODE_1024x768_MONO;
+    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
+    this->frameSize = 1024 * 768 * 1;
+  }
   /*
   else if (0==strcmp(str,"640x480_mono16"))
   {
@@ -289,13 +362,143 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }
-  
+
+  // Many cameras such as the Pt Grey Dragonfly and Bumblebee devices
+  // don't do onchip colour conversion. Various Bayer colour encoding 
+  // patterns and decoding methods exist. They are now presented to the 
+  // user as config file options.
+  // check Bayer colour decoding option
+  str =  cf->ReadString(section, "bayer", "NONE");
+  this->DoBayerConversion = false;
+  if (strcmp(str,"NONE"))
+       {
+	    if (!strcmp(str,"BGGR"))
+		 {
+		      this->DoBayerConversion = true;
+		      this->BayerPattern = BAYER_PATTERN_BGGR;
+		 }
+	    else if (!strcmp(str,"GRBG"))
+		 {
+		      this->DoBayerConversion = true;
+		      this->BayerPattern = BAYER_PATTERN_GRBG;
+		 }
+	    else if (!strcmp(str,"RGGB"))
+		 {
+		      this->DoBayerConversion = true;
+		      this->BayerPattern = BAYER_PATTERN_RGGB;
+		 }
+	    else if (!strcmp(str,"GBRG"))
+		 {
+		      this->DoBayerConversion = true;
+		      this->BayerPattern = BAYER_PATTERN_GBRG;
+		 }
+	    else
+		 {
+		      PLAYER_ERROR1("unknown bayer pattern [%s]", str);
+		      this->SetError(-1);
+		      return;
+		 }
+       }
+  // Set default Bayer decoding method
+  if (this->DoBayerConversion)
+       this->BayerMethod = BAYER_DECODING_DOWNSAMPLE;
+  else
+       this->BayerMethod = NO_BAYER_DECODING;
+  // Check for user selected method
+  str =  cf->ReadString(section, "method", "NONE");
+  if (strcmp(str,"NONE"))
+       {
+	    if (!this->DoBayerConversion)
+		 {
+		      PLAYER_ERROR1("bayer method [%s] specified without enabling bayer conversion", str);
+		      this->SetError(-1);
+		      return;
+		 }
+	    if (!strcmp(str,"DownSample"))
+		 {
+		      this->BayerMethod = BAYER_DECODING_DOWNSAMPLE;
+		 }
+	    else if (!strcmp(str,"Nearest"))
+		 {
+		      this->BayerMethod = BAYER_DECODING_NEAREST;
+		 }
+	    else if (!strcmp(str,"Edge"))
+		 {
+		      this->BayerMethod = BAYER_DECODING_EDGE_SENSE;
+		 }
+	    else
+		 {
+		      PLAYER_ERROR1("unknown bayer method [%s]", str);
+		      this->SetError(-1);
+		      return;
+		 }
+       }
+
+  // Allow the user to set useful camera setting options
+  // brightness, exposure, redBalance, blueBalance, shutter and gain
+  // Parse camera settings - default is to leave them alone. 
+  str =  cf->ReadString(section, "brightness", "NONE");
+  if (strcmp(str,"NONE"))
+       if (!strcmp(str,"auto"))
+	    {
+		 this->setBrightness=true;
+		 this->autoBrightness=true;
+	    }
+       else
+	    {
+		 this->setBrightness=true;
+		 this->autoBrightness=false;
+		 this->brightness = atoi(str);		 
+	    }
+  str =  cf->ReadString(section, "exposure", "NONE");
+  if (strcmp(str,"NONE"))
+       if (!strcmp(str,"auto"))
+	    {
+		 this->setExposure=true;
+		 this->autoExposure=true;
+	    }
+       else
+	    {
+		 this->setExposure=true;
+		 this->autoExposure=false;
+		 this->exposure = atoi(str);		 
+	    }
+  str =  cf->ReadString(section, "shutter", "NONE");
+  if (strcmp(str,"NONE"))
+       if (!strcmp(str,"auto"))
+	    {
+		 this->setShutter=true;
+		 this->autoShutter=true;
+	    }
+       else
+	    {
+		 this->setShutter=true;
+		 this->autoShutter=false;
+		 this->shutter = atoi(str);		 
+	    }
+  str =  cf->ReadString(section, "gain", "NONE");
+  if (strcmp(str,"NONE"))
+       if (!strcmp(str,"auto"))
+	    {
+		 this->setGain=true;
+		 this->autoGain=true;
+	    }
+       else
+	    {
+		 this->setGain=true;
+		 this->autoGain=false;
+		 this->gain = atoi(str);		 
+	    }
+  str =  cf->ReadString(section, "whitebalance", "NONE");
+  if (strcmp(str,"NONE"))
+       if(sscanf(str,"%u %u",&this->blueBalance,&this->redBalance)==2)
+	    this->setWhiteBalance=true;
+       else
+	    PLAYER_ERROR1("didn't understand white balance values [%s]", str);
+
   // Force into raw mode
   this->forceRaw = cf->ReadInt(section, "force_raw", 0);
-
-  // Create a frame buffer
-  this->frame = new unsigned char[this->frameSize];  
-     
+ 
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
 
@@ -309,6 +512,11 @@ int Camera1394::Setup()
 {
   unsigned int channel, speed;
 
+  // Create a frame buffer
+  this->frame = new unsigned char[this->frameSize];  
+  if (DoBayerConversion)
+       this->bayerConvertedFrame = new unsigned char[this->frameSize*3]; 
+ 
   // Create a handle for the given port (port will be zero on most
   // machines)
   this->handle = dc1394_create_handle(this->port);
@@ -320,6 +528,72 @@ int Camera1394::Setup()
 
   this->camera.node = this->node;
   this->camera.port = this->port;
+
+
+  // apply user config file provided camera settings
+  if (this->setBrightness)
+       {
+	    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_BRIGHTNESS,this->autoBrightness))
+		 {
+		      PLAYER_ERROR("Unable to set Brightness mode");
+		      return -1;
+		 }
+	    if (!this->autoBrightness)
+		 if (DC1394_SUCCESS != dc1394_set_brightness(this->handle, this->camera.node,this->brightness))
+		 {
+		      PLAYER_ERROR("Unable to set Brightness value");
+		      return -1;
+		 }
+       }
+  if (this->setExposure)
+       {
+	    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_EXPOSURE,this->autoExposure))
+		 {
+		      PLAYER_ERROR("Unable to set Exposure mode");
+		      return -1;
+		 }
+	    if (!this->autoExposure)
+		 if (DC1394_SUCCESS != dc1394_set_exposure(this->handle, this->camera.node,this->exposure))
+		 {
+		      PLAYER_ERROR("Unable to set Exposure value");
+		      return -1;
+		 }
+       }
+  if (this->setShutter)
+       {
+	    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_SHUTTER,this->autoShutter))
+		 {
+		      PLAYER_ERROR("Unable to set Shutter mode");
+		      return -1;
+		 }
+	    if (!this->autoShutter)
+		 if (DC1394_SUCCESS != dc1394_set_shutter(this->handle, this->camera.node,this->shutter))
+		 {
+		      PLAYER_ERROR("Unable to set Shutter value");
+		      return -1;
+		 }
+       }
+  if (this->setGain)
+       {
+	    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_GAIN,this->autoGain))
+		 {
+		      PLAYER_ERROR("Unable to set Gain mode");
+		      return -1;
+		 }
+	    if (!this->autoShutter)
+		 if (DC1394_SUCCESS != dc1394_set_gain(this->handle, this->camera.node,this->gain))
+		 {
+		      PLAYER_ERROR("Unable to Gain value");
+		      return -1;
+		 }
+       }
+  if (this->setWhiteBalance)
+	    if (DC1394_SUCCESS != dc1394_set_white_balance(this->handle, this->camera.node,this->blueBalance,this->redBalance))
+		 {
+		      PLAYER_ERROR("Unable to set White Balance");
+		      return -1;
+		 }
+
 
   // Collects the available features for the camera described by node and
   // stores them in features.
@@ -420,6 +694,8 @@ int Camera1394::Shutdown()
 
   if (this->frame)
     delete [] this->frame;
+  if (this->bayerConvertedFrame)
+    delete [] this->bayerConvertedFrame;
 
   return 0;
 }
@@ -433,9 +709,10 @@ void Camera1394::Main()
   int frameno;
 
   frameno = 0;
-
+  //struct timeval now,old;
   while (true)
   {
+    
     // Go to sleep for a while (this is a polling loop).
     // We shouldn't need to sleep if GrabFrame is blocking.
     // usleep(50000);
@@ -451,7 +728,7 @@ void Camera1394::Main()
 
     // Grab the next frame (blocking)
     this->GrabFrame();
-
+    
     // Convert frame to appropriate output format
     this->ConvertFrame();
        
@@ -466,7 +743,14 @@ void Camera1394::Main()
       snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
       this->SaveFrame(filename);
     }
-  }
+    /*
+      gettimeofday(&now,NULL);
+      printf("dt = %lf\n",now.tv_sec-old.tv_sec+(now.tv_usec-old.tv_usec)*1.0e-6);
+      old=now;
+    */
+ }
+  printf("Camera1394::main() exited\n");
+  
 }
 
 
@@ -550,13 +834,53 @@ int Camera1394::ConvertFrame()
     }
 
     case MODE_640x480_MONO:
+    case MODE_800x600_MONO:
+    case MODE_1024x768_MONO:
     {
-      this->data.bpp = 8;
-      this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
-      this->data.image_size = this->frameSize;
-      assert(this->data.image_size <= sizeof(this->data.image));
-      memcpy(this->data.image, this->frame, this->data.image_size);
-      break;
+	 if (!DoBayerConversion)
+	      {
+		   this->data.bpp = 8;
+		   this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+		   this->data.image_size = this->frameSize;
+		   assert(this->data.image_size <= sizeof(this->data.image));
+		   memcpy(this->data.image, this->frame, this->data.image_size);
+	      }
+	 else
+	      {
+		   this->data.bpp = 24;
+		   this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+		   switch (this->BayerMethod)
+			{
+			case BAYER_DECODING_DOWNSAMPLE:
+			     // quarter of the image but 3 bytes per pixel
+			     this->data.image_size = this->frameSize/4*3; 
+			     assert(this->data.image_size <= sizeof(this->data.image));
+			     BayerDownsample(this->frame,this->bayerConvertedFrame, 
+					     this->camera.frame_width/2, this->camera.frame_height/2,
+					     (bayer_pattern_t)this->BayerPattern);
+			     break;
+			case BAYER_DECODING_NEAREST:
+			     this->data.image_size = this->frameSize*3;
+			     assert(this->data.image_size <= sizeof(this->data.image));
+			     BayerNearestNeighbor(this->frame,this->bayerConvertedFrame, 
+						  this->camera.frame_width, this->camera.frame_height,
+						  (bayer_pattern_t)this->BayerPattern);
+			     break;
+			case BAYER_DECODING_EDGE_SENSE:
+			     this->data.image_size = this->frameSize*3;
+			     assert(this->data.image_size <= sizeof(this->data.image));
+			     BayerEdgeSense(this->frame,this->bayerConvertedFrame, 
+					    this->camera.frame_width, this->camera.frame_height,
+					    (bayer_pattern_t)this->BayerPattern);
+			     break;
+			default:
+			     PLAYER_ERROR("camera1394: Unknown Bayer Method");
+			     exit(-1);
+			}
+		   memcpy(this->data.image, this->bayerConvertedFrame, this->data.image_size);
+
+	      }
+	 break;
     }
 
     case MODE_640x480_RGB:
@@ -575,7 +899,7 @@ int Camera1394::ConvertFrame()
   
   return 0;
 }
-
+ 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
@@ -588,8 +912,16 @@ void Camera1394::WriteData()
 
   // Image data and size is filled in ConvertFrame(),
   // so now we just do the byte-swapping
-  this->data.width = htons(this->camera.frame_width);
-  this->data.height = htons(this->camera.frame_height);
+  if (this->BayerMethod!=BAYER_DECODING_DOWNSAMPLE)
+       {    
+	    this->data.width = htons(this->camera.frame_width);
+	    this->data.height = htons(this->camera.frame_height);
+       }
+  else
+       {    //image is half the size of grabbed frame
+	    this->data.width = htons(this->camera.frame_width/2);
+	    this->data.height = htons(this->camera.frame_height/2);	    
+       }
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
   this->data.image_size = htonl(this->data.image_size);
 
