@@ -4,8 +4,8 @@ tcllib_DATA = playerclient.tcl pkgIndex.tcl
 EXTRA_DIST = playerclient.tcl pkgIndex.tcl
 
 
-pkgIndex.tcl:
-	echo "pkg_mkIndex ." | tclsh
+pkgIndex.tcl: playerclient.tcl
+	echo "pkg_mkIndex . playerclient.tcl" | tclsh
 
 dist-hook:
 	mkdir -p $(top_distdir)/doc
