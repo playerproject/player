@@ -1,13 +1,16 @@
 
 %module playerc
-%include cpointer.i
-
-/* Create some functions for working with "double *" */
-%pointer_class(double, doublep);
 
 %{
 #include "playerc.h"
 %}
+
+%include "typemaps.i"
+
+// Special rules for functions that return multiple results via pointers
+
+// For playerc_simulation_get_pose2d()
+%apply double *OUTPUT { double *x, double *y, double *a };
 
 // Provide array (write) access
 %typemap(in) double [ANY] (double temp[$1_dim0])
