@@ -214,14 +214,17 @@ dnl                  [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
 dnl PLAYER_ADD_DRIVER doesn't support checking for installed packages a la
 dnl pkg-config, so do it manually
 AC_ARG_ENABLE(stage1p4,
-[  --disable-stage1p4           Don't compile the stage1p4 driver],,
+[  --disable-stage1p4           Don't compile the stage1p4 driver],
+disable_reason="disabled by user",
 enable_stage1p4=yes)
 if test "x$enable_stage1p4" = "xyes"; then
   dnl pkg-config is REQUIRED to find the Stage-1.4 C++ library.
   dnl If we find stage, we also need libpnm for loading bitmaps
   if test "$PKG_CONFIG" != "no" ; then
     PKG_CHECK_MODULES(STAGE1P4, stagecpp >= 1.4, 
-	  enable_stage1p4=yes, enable_stage1p4=no)
+	  enable_stage1p4=yes, 
+          enable_stage1p4=no
+          disable_reason="couldn't find Stage C++ library (stagecpp)")
   else
     enable_stage1p4=no
     disable_reason="pkg-config unavailable; maybe you should install it"
@@ -299,9 +302,12 @@ AC_LANG_RESTORE
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
 AC_ARG_ENABLE(amcl,
-[  --disable-amcl           Don't compile the amcl driver],,enable_amcl=yes)
+[  --disable-amcl           Don't compile the amcl driver],
+  disable_reason="disabled by user",enable_amcl=yes)
 if test "x$enable_amcl" = "xyes"; then
-  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,enable_amcl=no)
+  AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,
+                  enable_amcl=no
+                  disable_reason="couldn't find gsl/gsl_version.h")
 fi
 if test "x$enable_amcl" = "xyes"; then
   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
@@ -314,7 +320,7 @@ if test "x$enable_amcl" = "xyes"; then
   PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lgsl -lgslcblas"
   PLAYER_DRIVERS="$PLAYER_DRIVERS amcl"
 else
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:amcl"
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:amcl -- $disable_reason"
 fi
 AC_SUBST(AMCL_LIB)
 AC_SUBST(AMCL_PF_LIB)
