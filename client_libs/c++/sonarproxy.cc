@@ -29,6 +29,7 @@
 #include <sonarproxy.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <math.h>
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
 #endif
