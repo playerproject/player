@@ -163,7 +163,7 @@ PTU46::PTU46(char * port, int rate)
 	// set up new settings
 	struct termios newtio;
 	bzero(&newtio, sizeof(newtio));
-	newtio.c_cflag = (rate & CBAUD) | CS8 | CLOCAL | CREAD;
+	newtio.c_cflag = /*(rate & CBAUD) |*/ CS8 | CLOCAL | CREAD;
 	newtio.c_iflag = IGNPAR;
 	newtio.c_oflag = 0;
 	newtio.c_lflag = ICANON;
@@ -171,8 +171,20 @@ PTU46::PTU46(char * port, int rate)
 	// activate new settings
 	tcflush(fd, TCIFLUSH);
 	tcsetattr(fd, TCSANOW, &newtio);
-	
+	if (cfsetispeed(&newtio, rate) < 0 || 	cfsetospeed(&newtio, rate) < 0)
+	{
+		fprintf(stderr,"Failed to set serial baud rate: %d\n", rate);
+		tcsetattr(fd, TCSANOW, &oldtio);	
+		close(fd);
+		fd = -1;				
+		return;
+	}
+
 	// now set up the pan tilt camera
+	Write(" "); // terse feedback
+	usleep(100000);
+	tcflush(fd, TCIFLUSH);
+
 	Write("ft "); // terse feedback
 	Write("ed "); // disable echo
 	Write("ci "); // position mode
