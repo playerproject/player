@@ -79,10 +79,10 @@ AC_SUBST(ISENSE_LIB)
 AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
 
-dnl Optionally build the python client
-AC_ARG_WITH(pyplayerc, [  --with-pyplayerc        Build Python client],,
-with_pyplayerc=no)
-AM_CONDITIONAL(WITH_PYPLAYERC, test x$with_pyplayerc = xyes)
+dnl Optionally build the python client.
+AC_CHECK_HEADERS(python2.2/Python.h,
+  WITH_PYTHON="1",,)
+AC_SUBST(WITH_PYTHON)
 
 dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h sys/types.h strings.h)
