@@ -314,7 +314,7 @@ int ClientManager::Accept()
   int num_connects;
   CClientData *clientData;
   // BAD HACK - this is an indirect check for solaris
-#if HAVE_STDINT_H
+#if HAVE_STDINT_H && HAVE_POLL
   socklen_t sender_len;
 #else
   int sender_len;

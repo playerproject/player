@@ -23,6 +23,12 @@
 /*
  * $Id$
  */
+#if HAVE_SYS_TYPES_H
+  #include <sys/types.h>  /* for types */
+#endif
+#if HAVE_STDINT_H
+  #include <stdint.h>  /* for types */
+#endif
 
 // available interfaces are stored in an array of these, defined in
 // deviceregistry.cc
