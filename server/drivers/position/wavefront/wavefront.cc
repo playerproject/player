@@ -454,7 +454,6 @@ void Wavefront::Main()
   {
     pthread_testcancel();
 
-    this->Localize->Wait();
     GetLocalizeData();
     GetPositionData();
     GetCommand();
@@ -514,16 +513,19 @@ void Wavefront::Main()
     if(dist < this->dist_eps && angle < this->ang_eps)
     {
       // we're at the final target, so stop
+      puts("at target");
       StopPosition();
       curr_waypoint = -1;
     }
     else if(curr_waypoint < 0)
     {
       // no more waypoints, so stop
+      puts("no waypoints");
       StopPosition();
     }
     else
     {
+      printf("pursuing waypoint %d\n", curr_waypoint);
       // are we there yet?
       dist = sqrt(((this->localize_x - this->waypoint_x) * 
                    (this->localize_x - this->waypoint_x)) +
