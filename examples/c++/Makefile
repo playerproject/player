@@ -2,13 +2,7 @@
 # $Id$
 #
 
-CPP = g++
-RM = rm
-INSTALL = install
-MKDIR = mkdir
-RMDIR = rmdir
-
-INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples/c++
+include ../../Makefile.common
 
 CFLAGS = -g -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I../../client_libs/c++ -I../../client_libs/c -I../../include -I$(INSTALL_PREFIX)/include -I/usr/local/player/include
@@ -46,35 +40,35 @@ test: test.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ test.cc $(LIBS)
 
 install: $(BINARIES)
-	$(MKDIR) -p $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 Makefile $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 example_from_manual.cc $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 randomwalk.cc $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 sonarobstacleavoid.cc $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 laserobstacleavoid.cc $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 goto.cc $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 ptz.cc $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 755 example_from_manual $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 755 randomwalk $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 755 sonarobstacleavoid $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 755 laserobstacleavoid $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 755 goto $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 755 ptz $(INSTALL_EXAMPLES)
+	$(MKDIR) -p $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 644 Makefile $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 644 example_from_manual.cc $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 644 randomwalk.cc $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 644 sonarobstacleavoid.cc $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 644 laserobstacleavoid.cc $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 644 goto.cc $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 644 ptz.cc $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 example_from_manual $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 randomwalk $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 sonarobstacleavoid $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 laserobstacleavoid $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 goto $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 ptz $(INSTALL_EXAMPLES)/c++
 
 uninstall: 
-	$(RM) -f $(INSTALL_EXAMPLES)/Makefile 
-	$(RM) -f $(INSTALL_EXAMPLES)/example_from_manual.cc 
-	$(RM) -f $(INSTALL_EXAMPLES)/randomwalk.cc 
-	$(RM) -f $(INSTALL_EXAMPLES)/sonarobstacleavoid.cc 
-	$(RM) -f $(INSTALL_EXAMPLES)/laserobstacleavoid.cc 
-	$(RM) -f $(INSTALL_EXAMPLES)/goto.cc 
-	$(RM) -f $(INSTALL_EXAMPLES)/ptz.cc 
-	$(RM) -f $(INSTALL_EXAMPLES)/example_from_manual 
-	$(RM) -f $(INSTALL_EXAMPLES)/randomwalk 
-	$(RM) -f $(INSTALL_EXAMPLES)/sonarobstacleavoid 
-	$(RM) -f $(INSTALL_EXAMPLES)/laserobstacleavoid
-	$(RM) -f $(INSTALL_EXAMPLES)/goto 
-	$(RM) -f $(INSTALL_EXAMPLES)/ptz 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/Makefile 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/example_from_manual.cc 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/randomwalk.cc 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/sonarobstacleavoid.cc 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/laserobstacleavoid.cc 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/goto.cc 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/ptz.cc 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/example_from_manual 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/randomwalk 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/sonarobstacleavoid 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/laserobstacleavoid
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/goto 
+	$(RM) -f $(INSTALL_EXAMPLES)/c++/ptz 
 
 clean:
 	$(RM) -f *.o $(BINARIES) test

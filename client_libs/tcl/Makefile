@@ -1,9 +1,8 @@
-INSTALL = install
-MKDIR = mkdir
-RM = rm
-RMDIR = rmdir
+#
+# $Id$
+#
 
-INSTALL_LIB = $(INSTALL_PREFIX)/lib
+include ../../Makefile.common
 
 all: 
 

@@ -2,13 +2,7 @@
 # $Id$
 #
 
-CC = gcc
-RM = rm
-INSTALL = install
-MKDIR = mkdir
-RMDIR = rmdir
-
-INSTALL_EXAMPLES = $(INSTALL_PREFIX)/examples/c
+include ../../Makefile.common
 
 CFLAGS = -g -O2 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I../../client_libs/c -I../../include -I$(INSTALL_PREFIX)/include -I/usr/local/player/include
@@ -32,23 +26,23 @@ ptz: ptz.c
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ ptz.c $(LIBS)
 
 install: $(BINARIES)
-	$(MKDIR) -p $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 Makefile $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 randomwalk.c $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 laserobstacleavoid.c $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 644 ptz.c $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 755 ptz $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 755 randomwalk $(INSTALL_EXAMPLES)
-	$(INSTALL) -m 755 laserobstacleavoid $(INSTALL_EXAMPLES)
+	$(MKDIR) -p $(INSTALL_EXAMPLES)/c
+	$(INSTALL) -m 644 Makefile $(INSTALL_EXAMPLES)/c
+	$(INSTALL) -m 644 randomwalk.c $(INSTALL_EXAMPLES)/c
+	$(INSTALL) -m 644 laserobstacleavoid.c $(INSTALL_EXAMPLES)/c
+	$(INSTALL) -m 644 ptz.c $(INSTALL_EXAMPLES)/c
+	$(INSTALL) -m 755 ptz $(INSTALL_EXAMPLES)/c
+	$(INSTALL) -m 755 randomwalk $(INSTALL_EXAMPLES)/c
+	$(INSTALL) -m 755 laserobstacleavoid $(INSTALL_EXAMPLES)/c
 
 uninstall:
-	$(RM) -f $(INSTALL_EXAMPLES)/Makefile
-	$(RM) -f $(INSTALL_EXAMPLES)/randomwalk.c
-	$(RM) -f $(INSTALL_EXAMPLES)/laserobstacleavoid.c
-	$(RM) -f $(INSTALL_EXAMPLES)/ptz.c
-	$(RM) -f $(INSTALL_EXAMPLES)/randomwalk
-	$(RM) -f $(INSTALL_EXAMPLES)/laserobstacleavoid
-	$(RM) -f $(INSTALL_EXAMPLES)/ptz
+	$(RM) -f $(INSTALL_EXAMPLES)/c/Makefile
+	$(RM) -f $(INSTALL_EXAMPLES)/c/randomwalk.c
+	$(RM) -f $(INSTALL_EXAMPLES)/c/laserobstacleavoid.c
+	$(RM) -f $(INSTALL_EXAMPLES)/c/ptz.c
+	$(RM) -f $(INSTALL_EXAMPLES)/c/randomwalk
+	$(RM) -f $(INSTALL_EXAMPLES)/c/laserobstacleavoid
+	$(RM) -f $(INSTALL_EXAMPLES)/c/ptz
 
 clean:
 	$(RM) -f *.o $(BINARIES)

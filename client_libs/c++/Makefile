@@ -2,18 +2,9 @@
 # $Id$
 #
 
-CPP= g++
-RM = rm
-INSTALL = install
-MKDIR = mkdir
-RMDIR = rmdir
-LN = ln
-AR = ar
+include ../../Makefile.common
 
 LIBNAME = libplayerclient.a
-
-INSTALL_LIB = $(INSTALL_PREFIX)/lib
-INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
 CFLAGS = -g -O2 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../c -I../../include

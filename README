@@ -8,10 +8,10 @@ is at:
 Contents
 -------------
 COPYING              GNU Public License
-Makefile             the Makefile
+Makefile.common      common Makefile; make your configuration changes here
+Makefile             the top-level Makefile
 README               this file
 TODO                 we've got big plans...
-VERSION              which Player you've got
 client_libs/c        source for C client-side utilities
 client_libs/c++      source for C++ client-side utilities
 client_libs/tcl      source for Tcl/Tk client-side utilities
@@ -22,26 +22,12 @@ doc                  users manual
 include              header files for Player
 src                  source for Player
 
-Configuration
+Configuration 
 ------------------
-- Platform selection: Player currently builds on Linux/x86 and Solaris/Sparc.
-  In the top-level Makefile, choose your platform by commenting/uncommenting
-  the appropriate lines
-
-- Device support: you can control whether or not various device support is 
-  compiled into your Player server.  look in src/Makefile for variables with 
-  names like 'INCLUDE_LASER'.  comment out the ones you don't want and 
-  uncomment the ones you do.  you can also leave out support for Stage in 
-  this way.  having said that, you should know that the Player binary is quite
-  small (92KB, stripped), and you don't save much space by leaving out support
-  for a device.
-
-- Install location: by default, Player will install into: 
-    /usr/local/player<version>
-  where <version> is something like '1.1'.  This allows you to have multiple
-  versions of Player installed simultaneously.  You can control the exact
-  install directory by changing the value of 'INSTALL_PREFIX' in the
-  top-level Makefile.
+- read Makefile.common! there are several compile-time configurations that 
+  you can change, such as your platform and compiler, the devices to include, 
+  and the directory to which the installation go.  they are all explained (and
+  can be changed) in Makefile.common.
 
 Build 
 ------------------
@@ -59,13 +45,16 @@ Build
 Install 
 --------------------
 - to install everything (server binary, client libraries and headers,
-    and examples) in /usr/local/player (you need to be root, of course):
+    and examples) in the selected install directory (default is
+    /usr/local/player<version>):
 
       # make install
 
-  the executable server itself will install as /usr/local/player/bin/player.
+  the executable server itself will install (by default) as 
+  /usr/local/player<version>/bin/player.
 
-- if you want to install somewhere else, change INSTALL_PREFIX in Makefile
+- if you want to install somewhere else, change INSTALL_BASE in 
+  Makefile.common
 
 Uninstall
 --------------------

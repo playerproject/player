@@ -2,20 +2,9 @@
 # $Id$
 #
 
-CC = gcc
-RM = rm
-INSTALL = install
-MKDIR = mkdir
-RMDIR = rmdir
-LN = ln
-AR = ar
-
-MAKEDEP = makedepend
+include ../../Makefile.common
 
 LIBNAME = libplayercclient.a
-
-INSTALL_LIB = $(INSTALL_PREFIX)/lib
-INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
 
 CFLAGS = -g -O2 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../../include
