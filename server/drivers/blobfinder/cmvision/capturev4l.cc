@@ -37,7 +37,35 @@
 #include <unistd.h>
 
 
-void yuv420p_to_yuyv(unsigned char *image, unsigned char *temp, int x, int y);
+void yuv420p_to_yuyv(unsigned char *image, unsigned char *temp, int x, int y)
+{
+  const int numpix = x * y;
+  int i, j;
+  int y00, y01, y10, y11, u, v;
+  unsigned char *pY = image;
+  unsigned char *pU = pY + numpix;
+  unsigned char *pV = pU + numpix / 4;
+  unsigned char *image2 = temp;
+
+  for (j = 0; j <= y - 2; j += 2) {
+    for (i = 0; i <= x - 2; i += 2) {
+      image2[1]=*pY;//y00;
+      image2[0]=*pU;//u;
+      image2[3]=*(pY+1);
+      image2[2]=*pV;
+
+      image2[x*2+1]=*(pY+x);
+      image2[x*2]=(*pU++);
+      image2[x*2+3]=*(pY+x+1);
+      image2[x*2+2]=(*pV++);
+
+      pY += 2;
+      image2 += 4;
+    }
+    pY += x;
+    image2 += x*2;
+  }
+}
 
 //==== Capture Class Implementation =======================================//
 
