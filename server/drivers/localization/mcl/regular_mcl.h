@@ -147,6 +147,9 @@ class RegularMCL : public PSDevice
 	// specified in a stage world file
 	void LoadStageConfiguration(void);
 
+	// send the current data set to Stage for visualization
+	void SendStageData(void);
+
 	// send a command 'stop update' to Stage
 	inline void StopStageUpdate(void);
 
