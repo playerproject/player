@@ -348,8 +348,6 @@ CVisionDevice::Main()
   int num_blobs;
   int i;
 
-  //CVisionDevice* vd = (CVisionDevice*)visiondevice;
-
   // we'll transform the data into this structured buffer
   player_vision_data_t local_data;
 

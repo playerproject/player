@@ -52,7 +52,6 @@ extern PlayerTime* GlobalTime;
 
 extern CDeviceTable* deviceTable;
 extern CClientData* clients[];
-//extern pthread_mutex_t clients_mutex;
 extern ClientManager* clientmanager;
 extern char playerversion[];
 

@@ -29,7 +29,6 @@
 #ifndef _PTZDEVICE_H
 #define _PTZDEVICE_H
 
-#include <pthread.h>
 #include <unistd.h>
 
 #include <device.h>
@@ -58,7 +57,6 @@
 class CPtzDevice:public CDevice 
 {
  private:
-  //pthread_t thread; // the thread that continuously reads from the laser 
   bool command_pending1;  // keep track of how many commands are pending;
   bool command_pending2;  // that way, we can cancel them if necessary
   bool ptz_fd_blocking;

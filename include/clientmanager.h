@@ -29,7 +29,6 @@
 #ifndef _CLIENTMANAGER_H
 #define _CLIENTMANAGER_H
 
-#include <pthread.h>
 #include <sys/poll.h>   // for poll(2) and associated structs
 #include "clientdata.h"   
 
