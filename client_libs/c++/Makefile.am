@@ -31,14 +31,13 @@ libplayerclient_la_SOURCES =   commsproxy.cc \
                               truthproxy.cc \
                               blobfinderproxy.cc \
                               wifiproxy.cc \
-			      irproxy.cc \
-			      powerproxy.cc \
+                              irproxy.cc \
+                              powerproxy.cc \
                               bumperproxy.cc \
-			      dioproxy.cc \
+                              dioproxy.cc \
                               audioproxy.cc \
                               waveformproxy.cc \
-			      mcomproxy.cc
-
+                              mcomproxy.cc 
                               #bpsproxy.cc
                               #bpsproxy.h
 

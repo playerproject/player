@@ -1,6 +1,6 @@
 /* 
  *  libplayerc : a Player client library
- *  Copyright (C) Andrew Howard 2002
+ *  Copyright (C) Andrew Howard 2002-2003
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -16,6 +16,25 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
+ */
+/*
+ *  Player - One Hell of a Robot Server
+ *  Copyright (C) Andrew Howard 2003
+ *                      
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 /***************************************************************************
  * Desc: Single-client functions
@@ -81,7 +100,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->qsize = sizeof(client->qitems, client->qitems[0]);
 
   client->datatime = 0;
-
+  
   return client;
 }
 
@@ -200,10 +219,9 @@ void *playerc_client_read(playerc_client_t *client)
   int len;
   char data[8192];
 
-
-
   // See if there is any queued data.
   len = sizeof(data);
+
   if (playerc_client_pop(client, &header, data, &len) < 0)
   {
     // If there is no queued data, read a packet (blocking).
@@ -239,7 +257,7 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
 
   //if (!(device->access == PLAYER_WRITE_MODE || device->access == PLAYER_ALL_MODE))
   //  PLAYERC_WARN("writing to device without write permission");
-
+    
   header.stx = PLAYER_STXX;
   header.type = PLAYER_MSGTYPE_CMD;
   header.device = device->code;
@@ -655,7 +673,7 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
     PLAYERC_ERR2("got incomplete header, %d of %d bytes", bytes, sizeof(player_msghdr_t) - 2);
     return -1;
   }
-
+  
   // Do the network byte re-ordering 
   header->stx = ntohs(header->stx);
   header->type = ntohs(header->type);

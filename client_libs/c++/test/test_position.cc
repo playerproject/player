@@ -77,7 +77,7 @@ test_position(PlayerClient* client, int index)
   if( pp.xpos != ox || pp.ypos != oy || pp.theta != oa )
     {
       FAIL();
-      return(-1);
+      //return(-1);
     }
   else
     PASS();

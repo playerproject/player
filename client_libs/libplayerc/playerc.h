@@ -1,6 +1,6 @@
 /* 
  *  libplayerc : a Player client library
- *  Copyright (C) Andrew Howard 2002
+ *  Copyright (C) Andrew Howard 2002-2003
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -16,6 +16,25 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
+ */
+/*
+ *  Player - One Hell of a Robot Server
+ *  Copyright (C) Andrew Howard 2003
+ *                      
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 /***************************************************************************
  * Desc: Player client
@@ -212,6 +231,9 @@ void playerc_client_destroy(playerc_client_t *client);
 // Connect/disconnect to the server.
 int playerc_client_connect(playerc_client_t *client);
 int playerc_client_disconnect(playerc_client_t *client);
+
+// Change the server's data delivery mode
+int playerc_client_datamode(playerc_client_t *client, int mode);
 
 // Change the server's data delivery mode
 int playerc_client_datamode(playerc_client_t *client, int mode);
@@ -627,7 +649,7 @@ int playerc_position_enable(playerc_position_t *device, int enable);
 // rather than returning it to the caller.
 int playerc_position_get_geom(playerc_position_t *device);
 
-// Set the target speed
+// Set the target speed.
 // vx : forward speed (m/s).
 // vy : sideways speed (m/s); this field is used by omni-drive robots only.
 // va : rotational speed (radians/s).
@@ -829,8 +851,9 @@ int playerc_wifi_subscribe(playerc_wifi_t *device, int access);
 int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 
 
+
 /***************************************************************************
- * proxy : localize device
+ * proxy : localize interface
  **************************************************************************/
 
 // Hypothesis data
@@ -894,7 +917,6 @@ int playerc_localize_get_config(playerc_localize_t *device, player_localize_conf
 
 // Modify the current configuration.
 int playerc_localize_set_config(playerc_localize_t *device, player_localize_config_t config);
-
 
 /***************************************************************************
  * proxy : end (this is just here so the auto-documentation works.

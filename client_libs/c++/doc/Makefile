@@ -30,6 +30,6 @@ interfaces: $(MANFILES)
 
 # Clean up everything
 clean:
-	$(RM) -rf generated *.h.tex $(MANNAME).aux $(MANNAME).log \
+	$(RM) -rf *Client.tex *Proxy.tex $(MANNAME).aux $(MANNAME).log \
 	          $(MANNAME).dvi $(MANNAME).ps
 
