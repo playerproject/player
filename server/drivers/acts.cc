@@ -151,10 +151,10 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
   sock = -1;
 
   strncpy(configfilepath, 
-          cf->ReadString(section, "configfile", DEFAULT_ACTS_CONFIGFILE),
+          cf->ReadFilename(section, "configfile", DEFAULT_ACTS_CONFIGFILE),
           sizeof(configfilepath));
   strncpy(binarypath,
-          cf->ReadString(section, "path", DEFAULT_ACTS_PATH),
+          cf->ReadFilename(section, "path", DEFAULT_ACTS_PATH),
           sizeof(binarypath));
   strncpy(tmpstr,
           cf->ReadString(section, "version", ACTS_VERSION_1_0_STRING),

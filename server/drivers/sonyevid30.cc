@@ -130,8 +130,8 @@ SonyEVID30::SonyEVID30(char* interface, ConfigFile* cf, int section) :
   player_ptz_cmd_t cmd;
 
   // TODO: check field of view values.
-  this->minfov = (int) cf->ReadTupleAngle(section, "fov", 0, 6);
-  this->maxfov = (int) cf->ReadTupleAngle(section, "fov", 1, 60);
+  this->minfov = (int) cf->ReadTupleAngle(section, "fov", 0, 3);
+  this->maxfov = (int) cf->ReadTupleAngle(section, "fov", 1, 30);
   
   data.pan = data.tilt = data.zoom = 0;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
@@ -609,11 +609,11 @@ SonyEVID30::SendAbsZoom(short zoom)
 
   if(zoom<0) {
     zoom=0;
-    puts("Camera zoom thresholded");
+    //puts("Camera zoom thresholded");
   }
   else if(zoom>1023){
     zoom=1023;
-    puts("Camera zoom thresholded");
+    //puts("Camera zoom thresholded");
   }
 
   command[0] = 0x01;  // absolute position command
