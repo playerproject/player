@@ -817,6 +817,9 @@ bool CClientData::CheckWritePermissions(player_device_id_t id)
   return(permission);
 }
 
+// Loop through all devices currently open for this client, get data from
+// them, and assemble the results into totalwritebuffer.  Returns the
+// total size of the data that was written into that buffer.
 size_t
 CClientData::BuildMsg()
 {
@@ -1141,6 +1144,12 @@ CClientData::WriteIdentString()
   return(0);
 }
 
+// Try to write() len bytes from totalwritebuffer, which should have been
+// filled with FillWriteBuffer().  If fewer than len bytes are written, 
+// the remaining bytes are moved up to the front of totalwritebuffer and 
+// their length is recorded in leftover_size.  Returns 0 on success (which
+// includes writing fewer than len bytes) and -1 on error (e.g., if the 
+// other end of the socket was closed).
 int
 CClientData::Write(size_t len)
 {
@@ -1177,6 +1186,8 @@ CClientData::Write(size_t len)
 }
 
 
+// Copy len bytes of src to totalwritebuffer+offset.  Will realloc()
+// totalwritebuffer to make room, if necessary.
 void 
 CClientData::FillWriteBuffer(unsigned char* src, size_t offset, size_t len)
 {
