@@ -2020,6 +2020,7 @@ class TruthProxy : public ClientProxy
 class Blob
 {
   public:
+    unsigned int id;
     unsigned int color;
     unsigned int area;
     unsigned short x;
@@ -2045,10 +2046,6 @@ class BlobfinderProxy : public ClientProxy
     /// Dimensions of the camera image, in pixels
     unsigned short width, height;
 
-    /** Array containing the number of blobs detected on each channel 
-     */ 
-    char num_blobs[PLAYER_BLOBFINDER_MAX_CHANNELS];
-
     /** Array containing arrays of the latest blob data.
         Each blob contains the following information:
         \begin{itemize}
@@ -2062,7 +2059,8 @@ class BlobfinderProxy : public ClientProxy
         For example, to access the area of the $0^{th}$ blob on channel 2, you
         would refer to: {\tt blobs[2][0].area}.
      */
-    Blob* blobs[PLAYER_BLOBFINDER_MAX_CHANNELS];
+    int blob_count;
+    Blob blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
    
     /** Constructor.
         Leave the access field empty to start unconnected.

@@ -63,9 +63,9 @@ void SIP::Fill(player_p2os_data_t* data)
   data->position.yaw = htonl(data->position.yaw);
   data->position.xspeed = htonl((int32_t) (((this->lvel) + (this->rvel) ) / 2));
   data->position.yawspeed = htonl((int32_t)
-     (180*((double)(this->rvel - this->lvel) /
-           (2.0/PlayerRobotParams[param_idx].DiffConvFactor)) / 
-           M_PI));
+                                  (180*((double)(this->rvel - this->lvel) /
+                                        (2.0/PlayerRobotParams[param_idx].DiffConvFactor)) / 
+                                   M_PI));
   data->position.stall = (unsigned char)(this->lwstall || this->rwstall);
 
   // compass
@@ -87,10 +87,10 @@ void SIP::Fill(player_p2os_data_t* data)
   int j = 0;
   for(int i=4;i>=0;i--)
     data->bumper.bumpers[j++] = 
-            (unsigned char)((this->frontbumpers >> i) & 0x01);
+      (unsigned char)((this->frontbumpers >> i) & 0x01);
   for(int i=4;i>=0;i--)
     data->bumper.bumpers[j++] = 
-            (unsigned char)((this->rearbumpers >> i) & 0x01);
+      (unsigned char)((this->rearbumpers >> i) & 0x01);
   data->power.charge = htons((unsigned short)this->battery);
   data->dio.count = (unsigned char)8;
   data->dio.digin = htonl((unsigned int)this->digin);
@@ -105,25 +105,26 @@ void SIP::Fill(player_p2os_data_t* data)
   ** (0,0) being TOP-LEFT (from the camera's perspective).  Also,
   ** since CMUcam doesn't have range information, but does have a
   ** confidence value, I'm passing it back as range. */
-  memset(data->blobfinder.header,0,
-         sizeof(player_blobfinder_header_elt_t)*PLAYER_BLOBFINDER_MAX_CHANNELS);
   memset(data->blobfinder.blobs,0,
-          sizeof(player_blobfinder_blob_elt_t)*PLAYER_BLOBFINDER_MAX_BLOBS);
+         sizeof(player_blobfinder_blob_t)*PLAYER_BLOBFINDER_MAX_BLOBS);
   data->blobfinder.width = htons(CMUCAM_IMAGE_WIDTH);
   data->blobfinder.height = htons(CMUCAM_IMAGE_HEIGHT);
+
   if (blobarea > 1)	// With filtering, definition of track is 2 pixels
-     data->blobfinder.header[0].num = htons(1);	// One channel, one blob
+  {
+    data->blobfinder.blob_count = htons(1);
+    data->blobfinder.blobs[0].color = htonl(this->blobcolor);
+    data->blobfinder.blobs[0].x = htons(this->blobmx);
+    data->blobfinder.blobs[0].y = htons(this->blobmy);
+    data->blobfinder.blobs[0].left = htons(this->blobx1);
+    data->blobfinder.blobs[0].right = htons(this->blobx2);
+    data->blobfinder.blobs[0].top = htons(this->bloby1);
+    data->blobfinder.blobs[0].bottom = htons(this->bloby2);
+    data->blobfinder.blobs[0].area = htonl(this->blobarea);
+    data->blobfinder.blobs[0].range = htons(this->blobconf);
+  }
   else
-     data->blobfinder.header[0].num = htons(0);
-  data->blobfinder.blobs[0].color = htonl(this->blobcolor);
-  data->blobfinder.blobs[0].x = htons(this->blobmx);
-  data->blobfinder.blobs[0].y = htons(this->blobmy);
-  data->blobfinder.blobs[0].left = htons(this->blobx1);
-  data->blobfinder.blobs[0].right = htons(this->blobx2);
-  data->blobfinder.blobs[0].top = htons(this->bloby1);
-  data->blobfinder.blobs[0].bottom = htons(this->bloby2);
-  data->blobfinder.blobs[0].area = htonl(this->blobarea);
-  data->blobfinder.blobs[0].range = htons(this->blobconf);
+    data->blobfinder.blob_count = htons(0);
 }
 
 int SIP::PositionChange( unsigned short from, unsigned short to ) 

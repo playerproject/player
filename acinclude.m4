@@ -174,17 +174,15 @@ if test "x$disable_playerclient_thread" = "xno"; then
 fi
 
 
-PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
+PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[yes],[],[],[])
-PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
+dnl AH: this should be converted to use the multi-interface API
+PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[no],[],[],[])
+
+PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[],
                   [OPENCV],[opencv])
-
-dnl Deprecated
-dnl PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[yes],
-dnl                  [],[],[],[OPENCV],[opencv])
 
 PLAYER_ADD_DRIVER([simpleshape],[drivers/blobfinder],[yes],
                     [],[],[],[OPENCV],[opencv])

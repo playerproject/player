@@ -97,37 +97,34 @@ int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device)
 void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *header,
                            player_blobfinder_data_t *data, size_t len)
 {
-  int i, ch;
-  int offset, count;
-  player_blobfinder_blob_elt_t *src;
+  int i;
+  player_blobfinder_blob_t *src;
   playerc_blobfinder_blob_t *dest;
 
   device->width = ntohs(data->width);
-  device->height = ntohs(data->height);
-  
+  device->height = ntohs(data->height);  
   device->blob_count = 0;
-  for (ch = 0; ch < PLAYER_BLOBFINDER_MAX_CHANNELS; ch++)
+  
+  for (i = 0; i < ntohs(data->blob_count); i++)
   {
-    offset = ntohs(data->header[ch].index);
-    count = ntohs(data->header[ch].num);
+    src = data->blobs + i;
+    if (device->blob_count >= PLAYERC_BLOBFINDER_MAX_BLOBS)
+      break;
 
-    for (i = 0; i < count; i++)
-    {
-      src = data->blobs + i + offset;
-      if (device->blob_count >= PLAYERC_BLOBFINDER_MAX_BLOBS)
-        break;
-      dest = device->blobs + device->blob_count++;
+    dest = device->blobs + device->blob_count++;
 
-      dest->channel = ch;
-      dest->color = ntohl(src->color);
-      dest->x = ntohs(src->x);
-      dest->y = ntohs(src->y);
-      dest->area = ntohl(src->area);
-      dest->left = ntohs(src->left);
-      dest->right = ntohs(src->right);
-      dest->top = ntohs(src->top);
-      dest->bottom = ntohs(src->bottom);
-    }
+    dest->id = src->id;
+    dest->color = ntohl(src->color);
+    dest->x = ntohs(src->x);
+    dest->y = ntohs(src->y);
+    dest->left = ntohs(src->left);
+    dest->right = ntohs(src->right);
+    dest->top = ntohs(src->top);
+    dest->bottom = ntohs(src->bottom);
+    dest->area = ntohl(src->area);
+    dest->range = ((uint16_t) ntohs(src->range)) / 1000.0;
   }
+
+  return;
 }
 

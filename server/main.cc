@@ -90,7 +90,6 @@
 
 // Log file stuff
 #if INCLUDE_LOGFILE
-#include "readlog_manager.h"
 #include "readlog_time.h"
 #endif
 
@@ -168,6 +167,7 @@ where [options] is one or more of the following:
 - -s &lt;path&gt;      : use memory-mapped IO with Stage through the devices in this directory.
 - -g &lt;id&gt;        : connect to Gazebo server with id &lt;id&gt;.
 - -r &lt;logfile&gt;   : read data from &lt;logfile&gt; (readlog driver).
+- -f &lt;speed&gt;     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).
 - -k &lt;key&gt;       : require client authentication with the given key.
 
 Note that only one of -s, -g and -r can be specified at any given time.
@@ -190,6 +190,7 @@ void Usage()
           "through the devices in\n                   this directory\n");
   fprintf(stderr, "  -g <path>      : connect to Gazebo instance at <path> \n");
   fprintf(stderr, "  -r <logfile>   : read data from <logfile> (readlog driver)\n");
+  fprintf(stderr, "  -f <speed>     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).");
   fprintf(stderr, "  -k <key>       : require client authentication with the "
           "given key\n");
   fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
@@ -782,7 +783,6 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   char* playerpath;
   char* tmp;
   char* cfgdir;
-  const char* error;
   unsigned int i,j;
 
   // see if we got an absolute path
@@ -1351,10 +1351,11 @@ int main( int argc, char *argv[] )
   else if (readlog_filename != NULL)
   {
 #ifdef INCLUDE_LOGFILE
-    // Initialize the readlog reader
-    if (ReadLogManager_Init(readlog_filename, readlog_speed) != 0)
-      exit(-1);
 
+    // Initialize the readlog reader
+    ::ReadLog_filename = readlog_filename;
+    ::ReadLog_speed = readlog_speed;
+ 
     // Use the clock from the log file
     GlobalTime = new ReadLogTime();
     assert(GlobalTime);
@@ -1479,17 +1480,6 @@ int main( int argc, char *argv[] )
   {
       dev->driver->Prepare();
   }
-
-#ifdef INCLUDE_LOGFILE
-  // Everything is set up, so now is the time to start the readlog
-  // manager, if we have one
-  if (readlog_filename != NULL)
-  {
-    // Start the readlog reader
-    if (ReadLogManager_Startup() != 0)
-      exit(-1);
-  }
-#endif
   
   // compute seconds and nanoseconds from the given server update rate
   struct timespec ts;
@@ -1519,14 +1509,6 @@ int main( int argc, char *argv[] )
   else
     printf("** Player [port %d] quitting **\n", global_playerport );
 
-#if INCLUDE_LOGFILE
-  // Finalize ReadLog manager
-  if (readlog_filename != NULL)
-  {
-    ReadLogManager_Shutdown();
-    ReadLogManager_Fini();
-  }
-#endif
 
 #if INCLUDE_GAZEBO
   // Finalize gazebo client

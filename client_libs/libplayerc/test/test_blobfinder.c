@@ -42,7 +42,7 @@ int test_blobfinder(playerc_client_t *client, int index)
       PASS();
       printf("blobfinder: [%d, %d] [%d] ", device->width, device->height, device->blob_count);
       for (i = 0; i < min(3, device->blob_count); i++)
-        printf("[%d : (%d %d) (%d %d %d %d) : %d] ", device->blobs[i].channel,
+        printf("[%d : (%d %d) (%d %d %d %d) : %d] ", device->blobs[i].id,
                device->blobs[i].x, device->blobs[i].y,
                device->blobs[i].left, device->blobs[i].top,
                device->blobs[i].right, device->blobs[i].bottom,
