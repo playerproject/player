@@ -291,7 +291,7 @@ int Iwspy::InitIwSpy()
     args[argc++] = NULL;
     
     // Run iwspy
-    if (execv("/sbin/iwspy", args) != 0)
+    if (execvp("iwspy", args) != 0)
     {
       PLAYER_ERROR1("error on exec: [%s]", strerror(errno));
       exit(errno);
