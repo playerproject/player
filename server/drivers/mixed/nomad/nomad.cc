@@ -245,10 +245,10 @@ Nomad::Main()
       
       player_nomad_data_t data;
       memset(&data,0,sizeof(data));
-
+      
       data.x = inchesToMM( State[ STATE_CONF_X ] );
       data.y = inchesToMM( State[ STATE_CONF_Y ] );
-      data.a = inchesToMM( State[ STATE_CONF_STEER ] );
+      data.a = State[ STATE_CONF_STEER ] / 10;
       data.vel_trans = inchesToMM( State[ STATE_VEL_TRANS ] );
       data.vel_steer = State[ STATE_VEL_STEER ] / 10;
       data.vel_turret = State[ STATE_VEL_TURRET ] / 10;
