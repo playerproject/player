@@ -42,12 +42,13 @@ PlayerQueue::PlayerQueue(int tmpqueuelen)
   if(len)
   {
     queue = new playerqueue_elt_t[len];
+    allocp = true;
     assert(queue);
   }
   else
     queue = NULL;
+
   memset(queue, 0, sizeof(playerqueue_elt_t)*len);
-  allocp = true;
 }
 
 // constructor for Stage; creates a PlayerQueue with a chunk of memory
@@ -74,6 +75,12 @@ PlayerQueue::Push(player_device_id_t* device, void* client,
                   unsigned short type, struct timeval* ts, 
                   void* data, int size)
 {
+  if (!queue) {
+    fprintf(stderr, "PlayerQueue::Push(): trying to push from "
+	    "non-allocated queue\n");
+    return -1;
+  }
+
   // search for an empty spot, from front to back
   for(int i=0;i<len;i++)
   {
@@ -130,6 +137,12 @@ PlayerQueue::Pop(player_device_id_t* device, void** client,
                  void* data, int size)
 {
   int tmpsize;
+
+  if (!queue) {
+    fprintf(stderr, "PlayerQueue::Pop(): trying to pop from "
+	    "non-allocated queue\n");
+    return -1;
+  }
 
   if(queue[0].valid)
   {
@@ -206,6 +219,12 @@ PlayerQueue::Match(player_device_id_t* device, void* client,
                    void* data, int size)
 {
   int tmpsize;
+
+  if (!queue) {
+    fprintf(stderr, "PlayerQueue::Match(): trying to match from "
+	    "non-allocated queue\n");
+    return -1;
+  }
 
   // look for the one we want
   for(int i=0;i<len;i++)
