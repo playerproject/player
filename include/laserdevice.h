@@ -69,7 +69,7 @@ class CLaserDevice : public CDevice
     int Shutdown();
     void Run();
       
-    CLock* GetLock( void ) {return &lock;};
+    CLock* GetLock( void ) {return &m_lock;};
 
     // Client interface
     //
@@ -152,28 +152,36 @@ class CLaserDevice : public CDevice
 
     // Get the time (in ms)
     //
-    int GetTime();
+    int64_t GetTime();
     
   protected:
-    bool data_swapped;     // whether or not the data buffer has been byteswapped
-    pthread_t thread;           // the thread that continuously reads from the laser 
-    CLock lock;
+    // Side effects class
+    //
+    CLock m_lock;
 
+    // Laser driver thread
+    //
+    pthread_t m_thread;
+
+    // Name of device used to communicate with the laser
+    //
+    char m_laser_name[MAX_FILENAME_SIZE];
+    
     // laser device file descriptor
     //
-    int laser_fd;           
-
-    // Most recent scan data
-    //
-    //*** REMOVE uint8_t* data;
-    player_laser_data_t m_data;
+    int m_laser_fd;           
 
     // Config data
     // PutConfig sets the data and the size, and GetConfig reads and zeros it
     //
-    ssize_t config_size;
-    uint8_t* config;
+    ssize_t m_config_size;
+    player_laser_config_t m_config;
 
+    // Most recent scan data
+    // PutData sets the data, GetData reads it
+    //
+    player_laser_data_t m_data;
+    
     // Scan width and resolution
     //
     int m_scan_width, m_scan_res;
@@ -185,11 +193,6 @@ class CLaserDevice : public CDevice
     // Turn intensity data on/off
     //
     bool m_intensity;
-    
- public:
-    
-    // device used to communicate with the laserk
-    char LASER_SERIAL_PORT[MAX_FILENAME_SIZE];
 };
 
 

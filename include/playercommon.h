@@ -148,22 +148,46 @@
 #include <stdio.h>
 
 /* too noisy! */
-#define PLAYER_ERROR(m)  printf("player err : %s %s : %s\n", __FILE__, __FUNCTION__, m)
+#define PLAYER_ERROR(m)  printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__)
+#define PLAYER_ERROR1(m, a)  printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__, a)
 //#define PLAYER_ERROR(m) 
+
+
+#if PLAYER_ENABLE_MSG
+
+#define PLAYER_MSG0(m)             printf("msg   : %s %s\n        "m"\n", \
+                                          __FILE__, __FUNCTION__)   
+#define PLAYER_MSG1(m, a)          printf("msg   : %s %s\n        "m"\n", \
+                                          __FILE__, __FUNCTION__, a)
+#define PLAYER_MSG2(m, a, b)       printf("msg   : %s %s\m        "m"\n", \
+                                          __FILE__, __FUNCTION__, a, b)
+#define PLAYER_MSG3(m, a, b, c)    printf("msg   : %s %s\n        "m"\n", \
+                                          __FILE__, __FUNCTION__, a, b, c) 
+#define PLAYER_MSG4(m, a, b, c, d) printf("msg   : %s %s\n        "m"\n", \
+                                          __FILE__, __FUNCTION__, a, b, c, d)
+#else
+
+#define PLAYER_MSG0(m)
+#define PLAYER_MSG1(m, a)
+#define PLAYER_MSG2(m, a, b)
+#define PLAYER_MSG3(m, a, b, c)
+#define PLAYER_MSG4(m, a, b, c, d)
+
+#endif
 
 #if PLAYER_ENABLE_TRACE
 
-#define PLAYER_TRACE0(m)    printf("Debug : %s %s : "m"\n", __FILE__, __FUNCTION__)
-#define PLAYER_TRACE1(m, a) printf("Debug : %s %s : "m"\n", __FILE__, __FUNCTION__, a)
-#define PLAYER_TRACE2(m, a, b) printf("Debug : %s %s : "m"\n", __FILE__, __FUNCTION__, a, b)
-#define PLAYER_TRACE3(m, a, b, c) printf("Debug : %s %s : "m"\n", __FILE__, __FUNCTION__, a, b, c)
-#define PLAYER_TRACE4(m, a, b, c, d) printf("Debug : %s %s: "m"\n", __FILE__, __FUNCTION__, a, b, c, d)
+#define PLAYER_TRACE0(m)             printf("debug : %s %s\n        "m"\n", \
+                                            __FILE__, __FUNCTION__) 
+#define PLAYER_TRACE1(m, a)          printf("debug : %s %s\n        "m"\n", \
+                                            __FILE__, __FUNCTION__, a)
+#define PLAYER_TRACE2(m, a, b)       printf("debug : %s %s\n        "m"\n", \
+                                            __FILE__, __FUNCTION__, a, b)
+#define PLAYER_TRACE3(m, a, b, c)    printf("debug : %s %s\n        "m"\n", \
+                                            __FILE__, __FUNCTION__, a, b, c)
+#define PLAYER_TRACE4(m, a, b, c, d) printf("debug : %s %s\n        "m"\n", \
+                                            __FILE__, __FUNCTION__, a, b, c, d)
 
-#define PLAYER_MSG0(m)      printf("Msg   : %s %s : "m"\n", __FILE__, __FUNCTION__)
-#define PLAYER_MSG1(m, a)   printf("Msg   : %s %s : "m"\n", __FILE__, __FUNCTION__, a)
-#define PLAYER_MSG2(m, a, b) printf("Msg   : %s %s : "m"\n", __FILE__, __FUNCTION__, a, b)
-#define PLAYER_MSG3(m, a, b, c) printf("Msg   : %s %s : "m"\n", __FILE__, __FUNCTION__, a, b, c)
-#define PLAYER_MSG4(m, a, b, c, d) printf("Msg   : %s %s : "m"\n", __FILE__, __FUNCTION__, a, b, c, d)
 #else
 
 #define PLAYER_TRACE0(m)
@@ -172,13 +196,8 @@
 #define PLAYER_TRACE3(m, a, b, c)
 #define PLAYER_TRACE4(m, a, b, c, d)
 
-#define PLAYER_MSG0(m) 
-#define PLAYER_MSG1(m, a) 
-#define PLAYER_MSG2(m, a, b) 
-#define PLAYER_MSG3(m, a, b, c) 
-#define PLAYER_MSG4(m, a, b, c, d) 
-
 #endif
+
 
 
 #endif
