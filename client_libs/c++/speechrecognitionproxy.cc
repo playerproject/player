@@ -109,6 +109,6 @@ void SpeechRecognitionProxy::Clear()
 
   for (int i=0; i<20; i++)
   {
-    this->words[i] = "\0";
+    this->words[i][0] = '\0';
   }
 }
