@@ -730,7 +730,23 @@ parse_config_file(char* fname)
       // should this device be "always on"?
       if(configFile.ReadInt(i, "alwayson", 0))
       {
-        if(tmpdevice->Subscribe(NULL))
+        // In order to allow safe shutdown, we need to create a dummy
+        // clientdata object and add it to the clientmanager.  It will then
+        // form a root for this subscription tree and allow it to be torn
+        // down.
+        ClientData* clientdata;
+        player_device_req_t req;
+
+        assert((clientdata = (ClientData*)new ClientDataTCP("",0)));
+        
+        // to indicate that this one is a dummy
+        clientdata->socket = 0;
+
+        clientmanager->AddClient(clientdata);
+        req.code = code;
+        req.index = index;
+        req.access = PLAYER_READ_MODE;
+        if(clientdata->UpdateRequested(req) != PLAYER_READ_MODE)
         {
           PLAYER_ERROR2("Initial subscription failed to driver \"%s\" as interface \"%s\"\n",
                         driver,interface);
@@ -1010,12 +1026,8 @@ int main( int argc, char *argv[] )
     CreateStageDevices( stage_io_directory, &ports, &ufds, &num_ufds, protocol);
 #endif
   }
-  else if (configfile != NULL)
+  else
   {
-    // Parse the config file and instantiate drivers
-    if (!parse_config_file(configfile))
-      exit(-1);
-
     num_ufds = 1;
     assert((ufds = new struct pollfd[num_ufds]) && 
            (ports = new int[num_ufds]));
@@ -1033,18 +1045,7 @@ int main( int argc, char *argv[] )
     ufds[0].events = POLLIN;
     ports[0] = global_playerport;
   }
-
-  // check for empty device table
-  if(!(deviceTable->Size()))
-  {
-    if( use_stage )
-      PLAYER_ERROR("No devices instantiated; no valid Player devices in worldfile?");
-    else
-      PLAYER_ERROR("No devices instantiated; perhaps you should supply " 
-                  "a configuration file?");
-    exit(-1);
-  }
-
+  
   // create the client manager object.
   if(protocol == PLAYER_TRANSPORT_TCP)
     clientmanager = (ClientManager*)(new ClientManagerTCP(ufds, ports, 
@@ -1058,11 +1059,30 @@ int main( int argc, char *argv[] )
     exit(-1);
   }
 
+
+  if(configfile != NULL)
+  {
+    // Parse the config file and instantiate drivers
+    if (!parse_config_file(configfile))
+      exit(-1);
+  }
+
+  // check for empty device table
+  if(!(deviceTable->Size()))
+  {
+    if( use_stage )
+      PLAYER_ERROR("No devices instantiated; no valid Player devices in worldfile?");
+    else
+      PLAYER_ERROR("No devices instantiated; perhaps you should supply " 
+                  "a configuration file?");
+    exit(-1);
+  }
+
   // main loop: sleep the shortest amount possible, periodically updating
   // the clientmanager.
   while (!quit)
   {
-    //usleep(0);
+    usleep(0);
     if(clientmanager->Update())
     {
       fputs("ClientManager::Update() errored; bailing.\n", stderr);

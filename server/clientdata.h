@@ -104,7 +104,6 @@ class ClientData
     void HandleNameserviceRequest(player_device_nameservice_req_t *req,
                                   player_device_nameservice_req_t *rep);
 
-    void UpdateRequested(player_device_req_t req);
     bool CheckWritePermissions(player_device_id_t id);
     bool CheckOpenPermissions(player_device_id_t id);
     unsigned char FindPermission(player_device_id_t id);
@@ -112,6 +111,8 @@ class ClientData
     int Subscribe(player_device_id_t id);
 
  public:
+    unsigned char UpdateRequested(player_device_req_t req);
+
     size_t leftover_size; // bytes of totalwritebuffer that remain to be sent
     CDeviceSubscription* requested;
     int numsubs;
