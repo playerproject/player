@@ -1028,14 +1028,51 @@ typedef struct player_ptz_cmd
  ** end section
  *************************************************************************/
 
-/**************************************************************************
- * The Audio interface
- */
-//TODO: fill out the data and command formats
-
+/*************************************************************************
+ ** begin section audio
+ *************************************************************************/
 #define AUDIO_DATA_BUFFER_SIZE 20
 #define AUDIO_COMMAND_BUFFER_SIZE 3*sizeof(short)
-/*************************************************************************/
+
+/** [Synopsis]
+The {\tt audio} interface is used to control sound hardware, if equipped. */
+
+/** [Data] */
+/**
+The {\tt audio} interface reads the audio stream from {\tt /dev/audio} (which
+is assumed to be associated with a sound card connected to a microphone)
+and performs some analysis on it.  Five frequency/amplitude pairs are then
+returned as data; the format is: */
+typedef struct player_audio_data
+{
+  /** Hz, db ? */
+  uint16_t frequency0, amplitude0;
+  /** Hz, db ? */
+  uint16_t frequency1, amplitude1;
+  /** Hz, db ? */
+  uint16_t frequency2, amplitude2;
+  /** Hz, db ? */
+  uint16_t frequency3, amplitude3;
+  /** Hz, db ? */
+  uint16_t frequency4, amplitude4;
+} __attribute__ ((packed)) player_audio_data_t;
+
+/** [Command] */
+/** The {\tt audio} interface accepts commands to produce fixed-frequency
+tones through {\tt /dev/dsp} (which is assumed to be associated with
+a sound card to which a speaker is attached); the format is:*/
+typedef struct player_audio_cmd
+{
+  /** Frequency to play (Hz?) */
+  uint16_t frequency;
+  /** Amplitude to play (dB?) */
+  uint16_t amplitude;
+  /** Duration to play (sec?) */
+  uint16_t duration;
+} __attribute__ ((packed)) player_audio_cmd_t;
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 /*************************************************************************
  ** begin section fiducial
@@ -1175,23 +1212,34 @@ typedef struct
  ** end section
  *************************************************************************/
 
-/*************************************************************************/
-/*
- * Speech interface
- */
+/*************************************************************************
+ ** begin section speech
+ *************************************************************************/
 
-/* queue size */
+/** [Synopsis]
+The {\tt speech} interface provides access to a speech synthesis system. */
+
+/** [Constants] */
+/** incoming command queue parameters */
 #define PLAYER_SPEECH_MAX_STRING_LEN 256
 #define PLAYER_SPEECH_MAX_QUEUE_LEN 4
 
-/*
- * Speech command packet: ASCII string to say
- */
-typedef struct
+/** [Data] The {\tt speech} interface returns no data. */
+
+/** [Command] */
+/**
+The {\tt speech} interface accepts a command that is a string to be given
+to the speech synthesizer.  The command packet is simply 256 bytes that
+are interpreted as ASCII, and so the maximum length of each string is 256
+characters.*/
+typedef struct player_speech_cmd
 {
+  /** The string to say */
   uint8_t string[PLAYER_SPEECH_MAX_STRING_LEN];
 } __attribute__ ((packed)) player_speech_cmd_t;
-/*************************************************************************/
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 /*************************************************************************/
 /*
