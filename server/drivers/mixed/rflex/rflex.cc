@@ -107,13 +107,13 @@ The rflex driver provides the following device interfaces, some of them named:
   - Set rotational acceleration, in radians.
 - rflex_joystick (integer)
   - Default: 0
-  - Do we use a joystick?
+  - Enables joystick control via the rflex controller
 - rflex_joy_pos_ratio (float)
   - Default: 0
-  - ???
+  - Joystick to movement conversion ratio
 - rflex_joy_ang_ratio (float)
   - Default: 0
-  - ???
+  - Joystick to movement conversion ratio
 - range_distance_conversion (float)
   - Default: 1
   - Sonar range conversion factor. See Note 7.
@@ -137,19 +137,19 @@ The rflex driver provides the following device interfaces, some of them named:
   - See Note 4
 - sonar_echo_delay (integer)
   - Default: 3000
-  - ???
+  - Sonar configuration parameters
 - sonar_ping_delay (integer)
   - Default: 0
-  - ???
+  - Sonar configuration parameters
 - sonar_set_delay (integer)
   - Default: 0
-  - ???
+  - Sonar configuration parameters
 - mmrad_sonar_poses (tuple float)
   - Default: [ 0 0 0 ... ]
   - Sonar positions and directions.  See Note 6.
 - sonar_2nd_bank_start (integer)
   - Default: 0
-  - ???
+  - Address of the second sonar bank (lower bank on the b21r)
 - pose_count (integer)
   - Default: 8
   - Total Number of IR sensors
@@ -185,7 +185,7 @@ The rflex driver provides the following device interfaces, some of them named:
   - The base address of first bumper in the DIO address range
 - rflex_bumper_style (string)
   - Default: "addr"
-  - ???
+  - Bumpers can be defined either by addresses or a bit mask
 - rflex_power_offset (integer)
   - Default: 0
   - The calibration constant for the power calculation in decivolts
