@@ -40,6 +40,8 @@
  * Default colors
  ***************************************************************************/
 
+#define COLOR_GRID_MAJOR         0xC0C0C0
+#define COLOR_GRID_MINOR         0xE0E0E0
 #define COLOR_LASER_SCAN         0x0000C0
 #define COLOR_LBD_BEACON         0x0000C0
 #define COLOR_POSITION_ROBOT     0xC00000
@@ -60,12 +62,18 @@ typedef struct
   rtk_canvas_t *canvas;
 
   // The base figure for the robot
+  rtk_fig_t *grid_fig;
   rtk_fig_t *robot_fig;
   
   // Menu containing file options
   rtk_menu_t *file_menu;
   rtk_menuitem_t *exit_item;
 
+  // Menu containing grid settings
+  rtk_menu_t *grid_menu;
+  rtk_menuitem_t *grid_item_1m;
+  rtk_menuitem_t *grid_item_2f;
+  
   // Menu containing the device list
   rtk_menu_t *device_menu;
   
@@ -81,34 +89,6 @@ void mainwnd_destroy(mainwnd_t *wnd);
 // Update the window
 // Returns 1 if the program should quit.
 int mainwnd_update(mainwnd_t *wnd);
-
-
-// Window to show image stuff.
-typedef struct
-{
-  // The rtk canvas
-  rtk_canvas_t *canvas;
-
-} imagewnd_t;
-
-
-// Create the image window
-imagewnd_t *imagewnd_create(rtk_app_t *app, const char *host, int port);
-
-// Destroy the image window
-void imagewnd_destroy(imagewnd_t *wnd);
-
-
-// Window containing tabular data.
-typedef struct
-{
-  // The RTK table widget
-  rtk_table_t *table;   
-
-} tablewnd_t;
-
-// Create the table window
-tablewnd_t *tablewnd_init(rtk_app_t *app);
 
 
 /***************************************************************************
@@ -241,7 +221,7 @@ typedef struct
 
 
 // Create a ptz device
-ptz_t *ptz_create(mainwnd_t *mainwnd, imagewnd_t *imagewnd, opt_t *opt,
+ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
                   playerc_client_t *client, int index);
 
 // Destroy a ptz device
@@ -297,9 +277,14 @@ typedef struct
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *stats_item;
 
   // Figure for drawing the vision scan
   rtk_fig_t *image_fig;
+  int image_init;
+
+  // Image scale (m/pixel)
+  double scale;
   
   // Timestamp on most recent data
   double datatime;
@@ -308,7 +293,7 @@ typedef struct
 
 
 // Create a vision device
-vision_t *vision_create(mainwnd_t *mainwnd, imagewnd_t *imagewnd, opt_t *opt,
+vision_t *vision_create(mainwnd_t *mainwnd, opt_t *opt,
                         playerc_client_t *client, int index);
 
 // Destroy a vision device

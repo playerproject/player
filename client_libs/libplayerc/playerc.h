@@ -587,6 +587,9 @@ typedef struct
 {
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
+
+  // The object pose (world cs)
+  double px, py, pa;
     
 } playerc_truth_t;
 

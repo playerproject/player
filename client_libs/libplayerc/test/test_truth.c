@@ -15,14 +15,15 @@ int test_truth(playerc_client_t *client, int index)
   int t;
   double i_px, i_py, i_pa;
   double f_px, f_py, f_pa;
+  void *rdevice;
   playerc_truth_t *device;
 
   printf("device [truth] index [%d]\n", index);
 
   device = playerc_truth_create(client, index);
 
-  TEST("subscribing (read/write)");
-  if (playerc_truth_subscribe(device, PLAYER_ALL_MODE) != 0)
+  TEST("subscribing (read)");
+  if (playerc_truth_subscribe(device, PLAYER_READ_MODE) != 0)
   {
     FAIL();
     return -1;
@@ -31,7 +32,7 @@ int test_truth(playerc_client_t *client, int index)
 
   for (t = 0; t < 3; t++)
   {
-    TEST("getting pose");
+    TEST("getting pose (req/rep)");
     if (playerc_truth_get_pose(device, &f_px, &f_py, &f_pa) != 0)
     {
       FAIL();
@@ -50,7 +51,7 @@ int test_truth(playerc_client_t *client, int index)
   }
   PASS();
 
-  TEST("getting pose");
+  TEST("getting pose (req/rep)");
   if (playerc_truth_get_pose(device, &f_px, &f_py, &f_pa) != 0)
   {
     FAIL();
@@ -66,6 +67,24 @@ int test_truth(playerc_client_t *client, int index)
     return -1;
   }
   PASS();
+
+  for (t = 0; t < 3; t++)
+  {
+    TEST1("reading data (attempt %d)", t);
+
+    do
+      rdevice = playerc_client_read(client);
+    while (rdevice == client);
+
+    if (rdevice == device)
+    {
+      PASS();
+      printf("truth: [%6.3f] [%6.3f] [%6.3f]\n",
+             device->px, device->py, device->pa);
+    }
+    else
+      FAIL();
+  }
 
   TEST("unsubscribing");
   if (playerc_truth_unsubscribe(device) != 0)

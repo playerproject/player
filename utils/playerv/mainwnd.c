@@ -51,13 +51,29 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
   wnd->file_menu = rtk_menu_create(wnd->canvas, "File");
   wnd->exit_item = rtk_menuitem_create(wnd->file_menu, "Exit", 0);
 
+  // Create grid menu
+  wnd->grid_menu = rtk_menu_create(wnd->canvas, "Grid");
+  wnd->grid_item_1m = rtk_menuitem_create(wnd->grid_menu, "1 m", 1);
+  wnd->grid_item_2f = rtk_menuitem_create(wnd->grid_menu, "2 foot", 1);
+
   // Create device menu
   wnd->device_menu = rtk_menu_create(wnd->canvas, "Devices");
 
+  // Create figure to draw the grid on
+  wnd->grid_fig = rtk_fig_create(wnd->canvas, NULL, -99);
+    
   // Create a figure to attach everything else to
   wnd->robot_fig = rtk_fig_create(wnd->canvas, NULL, 0);
-  //rtk_fig_origin(wnd->robot_fig, 0, 0, M_PI / 2);
-  
+
+  // Set the initial grid state (this is a bit of a hack, since
+  // it duplicated the code in update()).
+  rtk_menuitem_check(wnd->grid_item_1m, 1);
+  rtk_menuitem_check(wnd->grid_item_2f, 0);
+  rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
+  rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 0.2);
+  rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
+  rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 1);
+      
   return wnd;
 }
 
@@ -65,6 +81,11 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
 // Destroy the main window
 void mainwnd_destroy(mainwnd_t *wnd)
 {
+  // Destroy the grid menu
+  rtk_menuitem_destroy(wnd->grid_item_1m);
+  rtk_menuitem_destroy(wnd->grid_item_2f);
+  rtk_menu_destroy(wnd->grid_menu);
+  
   // Destroy device menu
   rtk_menu_destroy(wnd->device_menu);
 
@@ -74,6 +95,7 @@ void mainwnd_destroy(mainwnd_t *wnd)
 
   // Destroy canvas
   rtk_fig_destroy(wnd->robot_fig);
+  rtk_fig_destroy(wnd->grid_fig);
   rtk_canvas_destroy(wnd->canvas);
   
   free(wnd);
@@ -89,6 +111,35 @@ int mainwnd_update(mainwnd_t *wnd)
     return 1;
   if (rtk_menuitem_isactivated(wnd->exit_item))
     return 1;
+
+  // Draw in the grid, perhaps
+  if (rtk_menuitem_isactivated(wnd->grid_item_1m))
+  {
+    rtk_fig_clear(wnd->grid_fig);
+    if (rtk_menuitem_ischecked(wnd->grid_item_1m))
+    {
+      rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 0.2);
+      rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 1);
+      rtk_menuitem_check(wnd->grid_item_2f, 0);
+    }
+  }
+
+  // Draw in the grid, perhaps
+  if (rtk_menuitem_isactivated(wnd->grid_item_2f))
+  {
+    rtk_fig_clear(wnd->grid_fig);
+    if (rtk_menuitem_ischecked(wnd->grid_item_2f))
+    {
+      rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 4 * 0.0254);
+      rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 2 * 12 * 0.0254);
+      rtk_menuitem_check(wnd->grid_item_1m, 0);
+    }
+  }
+
   return 0;
 }
 

@@ -46,7 +46,6 @@ int main(int argc, char **argv)
   playerc_client_t *client;
   rtk_app_t *app;  
   mainwnd_t *mainwnd;
-  imagewnd_t *imagewnd;
 
   opt_t *opt;
   const char *host;
@@ -101,27 +100,15 @@ int main(int argc, char **argv)
   if (!mainwnd)
     return -1;
 
-  // Create a window for the raw image
-  imagewnd = imagewnd_create(app, host, port);
-  if (!imagewnd)
-    return -1;
-
-  // Create the property table
-  /*
-  tablewnd = tablewnd_init(app);
-  if (!tablewnd)
-    return -1;
-  */  
-
   // Create (but dont subscribe) devices
   position = position_create(mainwnd, opt, client, 0);
   laser[0] = laser_create(mainwnd, opt, client, 0);
   laser[1] = laser_create(mainwnd, opt, client, 1);
   lbd[0] = lbd_create(mainwnd, opt, client, 0);
   lbd[1] = lbd_create(mainwnd, opt, client, 1);
-  ptz = ptz_create(mainwnd, imagewnd, opt, client, 0);
+  ptz = ptz_create(mainwnd, opt, client, 0);
   sonar = sonar_create(mainwnd, opt, client, 0);
-  vision = vision_create(mainwnd, imagewnd, opt, client, 0);
+  vision = vision_create(mainwnd, opt, client, 0);
   
   // Print out a list of unused options.
   opt_warn_unused(opt);
@@ -165,7 +152,6 @@ int main(int argc, char **argv)
   position_destroy(position);
 
   // Destroy the windows
-  imagewnd_destroy(imagewnd);
   mainwnd_destroy(mainwnd);
 
   // Destroy the gui

@@ -826,15 +826,13 @@ typedef struct
  * Truth device, used for getting and setting data about entities in Stage.
  */
 
-// REMOVE
-///* Data packet with current state of truth object. */
-//typedef struct
-//{
-//  /* Object pose in world cs (mm, mm, degrees). */
-//  int32_t px, py, pa; 
-//
-//} __attribute__ ((packed)) player_truth_data_t;
-//*/
+/* Data packet with current state of truth object. */
+typedef struct
+{
+  /* Object pose in world cs (mm, mm, degrees). */
+  int32_t px, py, pa; 
+
+} __attribute__ ((packed)) player_truth_data_t;
 
 /* Request packet subtypes. */
 #define PLAYER_TRUTH_GET_POSE 0
