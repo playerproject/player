@@ -720,9 +720,9 @@ CP2OSDevice::Main()
     }
 
     
-    CClientData* client;
+    void* client;
     // first, check if there is a new config command
-    if((config_size = GetConfig(&client, config, sizeof(config))))
+    if((config_size = GetConfig(&client, (void*) config, sizeof(config))))
     {
       switch(config[0])
       {
@@ -731,13 +731,13 @@ CP2OSDevice::Main()
            * 1 = enable sonars
            * 0 = disable sonar
            */
-	  if(config_size-1 != 1)
+          if(config_size-1 != 1)
           {
-	    puts("Arg to sonar state change request is wrong size; ignoring");
+            puts("Arg to sonar state change request is wrong size; ignoring");
             if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
               PLAYER_ERROR("failed to PutReply");
-	    break;
-	  }
+            break;
+          }
           motorcommand[0] = SONAR;
           motorcommand[1] = 0x3B;
           motorcommand[2] = config[1];
@@ -753,13 +753,13 @@ CP2OSDevice::Main()
            *   1 = enable motors
            *   0 = disable motors (default)
            */
-	  if(config_size-1 != 1)
+          if(config_size-1 != 1)
           {
-	    puts("Arg to motor state change request is wrong size; ignoring");
+            puts("Arg to motor state change request is wrong size; ignoring");
             if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
               PLAYER_ERROR("failed to PutReply");
-	    break;
-	  }
+            break;
+          }
           motorcommand[0] = ENABLE;
           motorcommand[1] = 0x3B;
           motorcommand[2] = config[1];
@@ -775,14 +775,14 @@ CP2OSDevice::Main()
            *   0 = direct wheel velocity control (default)
            *   1 = separate translational and rotational control
            */
-	  if(config_size-1 != sizeof(char))
+          if(config_size-1 != sizeof(char))
           {
-	    puts("Arg to velocity control mode change request is wrong "
-                            "size; ignoring");
+            puts("Arg to velocity control mode change request is wrong "
+                 "size; ignoring");
             if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
               PLAYER_ERROR("failed to PutReply");
-	    break;
-	  }
+            break;
+          }
           if(config[1])
             direct_wheel_vel_control = false;
           else
@@ -793,13 +793,13 @@ CP2OSDevice::Main()
           break;
         case PLAYER_POSITION_RESET_ODOM_REQ:
           /* reset position to 0,0,0: no args */
-	  if(config_size-1 != 0)
+          if(config_size-1 != 0)
           {
-	    puts("Arg to reset position request is wrong size; ignoring");
+            puts("Arg to reset position request is wrong size; ignoring");
             if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
               PLAYER_ERROR("failed to PutReply");
-	    break;
-	  }
+            break;
+          }
           ResetRawPositions();
 
           if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
@@ -807,7 +807,7 @@ CP2OSDevice::Main()
           break;
         default:
           printf("RunPsosThread: got unknown config request \"%c\"\n",
-                          config[0]);
+                 config[0]);
 
           if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
             PLAYER_ERROR("failed to PutReply");
@@ -820,12 +820,12 @@ CP2OSDevice::Main()
 
     newmotorspeed = false;
     if( speedDemand != (short) ntohs(command.position.speed));
-      newmotorspeed = true;
+    newmotorspeed = true;
     speedDemand = (short) ntohs(command.position.speed);
 
     newmotorturn = false;
     if(turnRateDemand != (short) ntohs(command.position.turnrate));
-      newmotorturn = true;
+    newmotorturn = true;
     turnRateDemand = (short) ntohs(command.position.turnrate);
 
     newgrippercommand = false;
@@ -842,9 +842,9 @@ CP2OSDevice::Main()
     {
       // do direct wheel velocity control here
       //printf("speedDemand: %d\t turnRateDemand: %d\n",
-                      //speedDemand, turnRateDemand);
+      //speedDemand, turnRateDemand);
       rotational_term = (M_PI/180.0) * turnRateDemand /
-              PlayerRobotParams[param_idx].ConvFactors.DiffConvFactor;
+        PlayerRobotParams[param_idx].ConvFactors.DiffConvFactor;
       leftvel = (speedDemand - rotational_term);
       rightvel = (speedDemand + rotational_term);
       if(fabs(leftvel) > MOTOR_MAX_SPEED)
@@ -882,9 +882,9 @@ CP2OSDevice::Main()
       motorcommand[0] = VEL2;
       motorcommand[1] = 0x3B;
       motorcommand[2] = (char)(rightvel /
-              PlayerRobotParams[param_idx].ConvFactors.Vel2Divisor);
+                               PlayerRobotParams[param_idx].ConvFactors.Vel2Divisor);
       motorcommand[3] = (char)(leftvel /
-              PlayerRobotParams[param_idx].ConvFactors.Vel2Divisor);
+                               PlayerRobotParams[param_idx].ConvFactors.Vel2Divisor);
     }
     else
     {
@@ -925,7 +925,7 @@ CP2OSDevice::Main()
         {
           puts("Turn rate demand threshholded!");
           *(unsigned short*)&motorcommand[2] = 
-                  (unsigned short)MOTOR_MAX_TURNRATE;
+            (unsigned short)MOTOR_MAX_TURNRATE;
         }
       }
     }

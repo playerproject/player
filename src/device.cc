@@ -94,8 +94,8 @@ void CDevice::SetupBuffers(unsigned char* data, size_t datasize,
   device_repqueue = new PlayerQueue(repqueue, repqueuelen);
 }
 
-int CDevice::GetReply(CClientData* client, unsigned short* type,
-                      struct timeval* ts, unsigned char* data, size_t len)
+int CDevice::GetReply(void* client, unsigned short* type,
+                      struct timeval* ts, void* data, size_t len)
 {
   int size;
 
@@ -106,8 +106,8 @@ int CDevice::GetReply(CClientData* client, unsigned short* type,
   return(size);
 }
 
-int CDevice::PutReply(CClientData* client, unsigned short type,
-                      struct timeval* ts, unsigned char* data, size_t len)
+int CDevice::PutReply(void* client, unsigned short type,
+                      struct timeval* ts, void* data, size_t len)
 {
   struct timeval curr;
 
@@ -117,19 +117,19 @@ int CDevice::PutReply(CClientData* client, unsigned short type,
     GlobalTime->GetTime(&curr);
 
   Lock();
-  device_repqueue->Push((void*)client, type, &curr, data, len);
+  device_repqueue->Push(client, type, &curr, data, len);
   Unlock();
 
   return(0);
 }
 
-size_t CDevice::GetConfig(CClientData** client, unsigned char * data,size_t len)
+size_t CDevice::GetConfig(void** client, void *data,size_t len)
 {
   int size;
 
   Lock();
 
-  if((size = device_reqqueue->Pop((void**)client, data, len)) < 0)
+  if((size = device_reqqueue->Pop(client, data, len)) < 0)
   {
     Unlock();
     return(0);
@@ -139,11 +139,11 @@ size_t CDevice::GetConfig(CClientData** client, unsigned char * data,size_t len)
   return(size);
 }
 
-int CDevice::PutConfig(CClientData* client, unsigned char* data, size_t len)
+int CDevice::PutConfig(void* client, void* data, size_t len)
 {
   Lock();
 
-  if(device_reqqueue->Push((void*)client, PLAYER_MSGTYPE_REQ, NULL, data, len) < 0)
+  if(device_reqqueue->Push(client, PLAYER_MSGTYPE_REQ, NULL, data, len) < 0)
   {
     // queue was full
     Unlock();
@@ -304,7 +304,13 @@ CDevice::StopThread()
 void* 
 CDevice::DummyMain(void *devicep)
 {
+  // Defer thread cancellation; the thread will run until
+  // pthread_testcancel() is called.
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
+  // Run the overloaded Main() in the subclassed device.
   ((CDevice*)devicep)->Main();
+  
   return NULL;
 }
 

@@ -43,7 +43,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 #include "broadcastdevice.hh"
 
 #include <playertime.h>
@@ -165,7 +165,7 @@ int CBroadcastDevice::Shutdown()
 
 ///////////////////////////////////////////////////////////////////////////
 // Handle requests.  We dont queue them up, but handle them immediately.
-int CBroadcastDevice::PutConfig(CClientData* client, unsigned char* data, size_t len)
+int CBroadcastDevice::PutConfig(void *client, void *data, size_t len)
 {
   player_broadcast_msg_t *request;
   player_broadcast_msg_t reply;
@@ -191,9 +191,6 @@ int CBroadcastDevice::PutConfig(CClientData* client, unsigned char* data, size_t
       replen = PopQueue(client, reply.data, sizeof(reply));
       Unlock();
 
-      // TESTING
-      printf("popped %d [%s]\n", replen, reply.data);
-      
       if (replen > 0)
       {
         if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
@@ -222,23 +219,15 @@ CBroadcastDevice::Main()
   
   PLAYER_TRACE0("thread running");
 
-  // Defer thread cancellation; the thread will run until
-  // pthread_testcancel() is called.
-  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-
   while (true)
   {
     // Get incoming messages; this is a blocking call.
     len = RecvPacket(&msg, sizeof(msg));
-    //PLAYER_TRACE1("got message, len [%d]", len);
 
     // Test for thread termination; this will make the function exit
     // immediately.
     pthread_testcancel();
 
-    // TESTING
-    printf("pushing %d [%s]\n", len, msg.data);
-    
     // Push incoming messages on the queue.
     Lock();
     PushQueue(&msg, len);

@@ -66,7 +66,6 @@ extern int global_playerport; // used to get at devices
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-//
 CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv) :
   CDevice(0,0,0,1)
 {
@@ -115,7 +114,6 @@ CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv) :
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
-//
 int CLaserBeaconDevice::Setup()
 {
   // get the pointer to the laser
@@ -141,10 +139,6 @@ int CLaserBeaconDevice::Setup()
   for (int i = 0; i < ARRAYSIZE(this->filter); i++)
     this->filter[i] = 0;
     
-  // Hack to get around mutex on GetData
-  //this->beacon_data.count = 0;
-  //PutData((uint8_t*) &this->beacon_data, sizeof(this->beacon_data));
-
   PLAYER_MSG2("laser beacon device: bitcount [%d] bitwidth [%fm]",
               this->max_bits, this->bit_width);
   return 0;
@@ -174,7 +168,6 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize,
 
   // If the laser doesnt have new data,
   // just return a copy of our old data.
-  //
   if (this->laser->data_timestamp_sec == this->data_timestamp_sec &&
       this->laser->data_timestamp_usec == this->data_timestamp_usec)
   {
@@ -185,13 +178,10 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize,
   }
 
   // Get the laser data
-  //
   player_laser_data_t laser_data;
-  this->laser->GetData((uint8_t*) &laser_data, sizeof(laser_data),
-                       NULL, NULL);
+  this->laser->GetData((unsigned char*) &laser_data, sizeof(laser_data), NULL, NULL);
 
   // Do some byte swapping
-  //
   laser_data.resolution = ntohs(laser_data.resolution);
   laser_data.min_angle = ntohs(laser_data.min_angle);
   laser_data.max_angle = ntohs(laser_data.max_angle);
@@ -200,11 +190,9 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize,
     laser_data.ranges[i] = ntohs(laser_data.ranges[i]);
 
   // Analyse the laser data
-  //
   FindBeacons(&laser_data, &this->beacon_data);
 
   // Do some byte-swapping
-  //
   for (int i = 0; i < this->beacon_data.count; i++)
   {
     this->beacon_data.beacon[i].range = htons(this->beacon_data.beacon[i].range);
@@ -215,31 +203,70 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize,
   this->beacon_data.count = htons(this->beacon_data.count);
 
   // Copy results
-  //
   ASSERT(maxsize >= sizeof(this->beacon_data));
   memcpy(dest, &this->beacon_data, sizeof(this->beacon_data));
 
   // Copy the laser timestamp
-  //
   *timestamp_sec = this->data_timestamp_sec = this->laser->data_timestamp_sec;
   *timestamp_usec = this->data_timestamp_usec  = this->laser->data_timestamp_usec;
 
   Unlock();
 
-  return(sizeof(this->beacon_data));
+  return (sizeof(this->beacon_data));
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by client thread)
-//
-int 
-CLaserBeaconDevice::PutConfig(CClientData* client, 
-                                   unsigned char *src, 
-                                   size_t maxsize) 
+int CLaserBeaconDevice::PutConfig(void *client, void *data, size_t len) 
 {
-  Lock();
+  player_laserbeacon_config_t config;
 
+  // Check the message length
+  if (len != sizeof(config))
+  {
+    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+      PLAYER_ERROR("PutReply() failed");
+    return 0;
+  }
+
+  memcpy(&config, data, sizeof(config));
+
+  switch (config.subtype)
+  {
+    case PLAYER_LASERBEACON_SUBTYPE_SETCONFIG:
+    {
+      Lock();
+      this->max_bits = config.bit_count;
+      this->max_bits = max(this->max_bits, 3);
+      this->max_bits = min(this->max_bits, 8);
+      this->bit_width = ntohs(config.bit_size) / 1000.0;
+      this->zero_thresh = ntohs(config.zero_thresh) / 100.0;
+      this->one_thresh = ntohs(config.one_thresh) / 100.0;
+      Unlock();
+      
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    }
+
+    case PLAYER_LASERBEACON_SUBTYPE_GETCONFIG:
+    {
+      Lock();
+      config.bit_count = this->max_bits;
+      config.bit_size = htons((short) (this->bit_width * 1000));
+      config.one_thresh = htons((short) (this->one_thresh * 100));
+      config.zero_thresh = htons((short) (this->zero_thresh * 100));
+      Unlock();
+      
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    }
+  }
+  
+  /* FIX
   if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETBITS)
   {
     if (maxsize != sizeof(player_laserbeacon_setbits_t))
@@ -275,11 +302,8 @@ CLaserBeaconDevice::PutConfig(CClientData* client,
     this->one_thresh = ntohs(config->one_thresh) / 100.0;
   }
 
-  /* everything's cool; give the client an ACK */
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  Unlock();
+  */
+    
   return(0);
 }
 
@@ -290,122 +314,122 @@ CLaserBeaconDevice::PutConfig(CClientData* client,
 void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
                                      player_laserbeacon_data_t *beacon_data)
 {
-    beacon_data->count = 0;
+  beacon_data->count = 0;
 
-    int ai = -1;
-    int bi = -1;
-    double ax, ay;
-    double bx, by;
+  int ai = -1;
+  int bi = -1;
+  double ax, ay;
+  double bx, by;
 
-    // Expected width of beacon
-    //
-    double min_width = (this->max_bits - 1) * this->bit_width;
-    double max_width = (this->max_bits + 1) * this->bit_width;
+  // Expected width of beacon
+  //
+  double min_width = (this->max_bits - 1) * this->bit_width;
+  double max_width = (this->max_bits + 1) * this->bit_width;
     
-    // Update the filters
-    // We filter ids across multiple frames.
-    //
-    double filter_gain = 0.50;
-    //double filter_thresh = 0.80;
-    for (int i = 0; i < ARRAYSIZE(this->filter); i++)
-        this->filter[i] *= (1 - filter_gain);
+  // Update the filters
+  // We filter ids across multiple frames.
+  //
+  double filter_gain = 0.50;
+  //double filter_thresh = 0.80;
+  for (int i = 0; i < ARRAYSIZE(this->filter); i++)
+    this->filter[i] *= (1 - filter_gain);
 
-    ax = ay = 0;
-    bx = by = 0;
+  ax = ay = 0;
+  bx = by = 0;
     
-    // Find the beacons in this scan
-    //
-    for (int i = 0; i < laser_data->range_count; i++)
+  // Find the beacons in this scan
+  //
+  for (int i = 0; i < laser_data->range_count; i++)
+  {
+    int intensity = (int) (laser_data->ranges[i] >> 13);
+    double range = (double) (laser_data->ranges[i] & 0x1FFF) / 1000;
+    double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
+      / 100.0 * M_PI / 180;
+
+    double px = range * cos(bearing);
+    double py = range * sin(bearing);
+        
+    if (intensity > 0)
     {
-        int intensity = (int) (laser_data->ranges[i] >> 13);
-        double range = (double) (laser_data->ranges[i] & 0x1FFF) / 1000;
-        double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
-            / 100.0 * M_PI / 180;
-
-        double px = range * cos(bearing);
-        double py = range * sin(bearing);
-        
-        if (intensity > 0)
-        {
-            if (ai < 0)
-            {
-                ai = i;
-                ax = px;
-                ay = py;
-            }
-            bi = i;
-            bx = px;
-            by = py;
-        }
-        if (ai < 0)
-            continue;
-
-        double width = sqrt((px - ax) * (px - ax) + (py - ay) * (py - ay));
-        if (width < max_width)
-            continue;
-
-        width = sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
-        if (width < min_width)
-            continue;
-        if (width > max_width)
-        {
-            ai = -1;
-            continue;
-        }
-
-        // Assign an id to the beacon
-        //
-        double orient = atan2(by - ay, bx - ax);
-        int id = IdentBeacon(ai, bi, ax, ay, orient, laser_data);
-
-        // Reset counters so we can find new beacons
-        //
-        ai = -1;
-        bi = -1;
-
-        // Ignore invalid ids
-        //
-        if (id < 0)
-            continue;
-        
-        // Do some additional filtering on the id
-        // We make sure the id is present in multiple laser scans,
-        // thereby eliminating most false matches.
-        //
-        /* *** TESTING
-        if (id > 0)
-        {
-            assert(id >= 0 && id < ARRAYSIZE(this->filter));
-            this->filter[id] += filter_gain;
-            if (this->filter[id] < filter_thresh)
-                id = 0;
-        }
-        */
-        
-        // Check for array overflow
-        //
-        if (beacon_data->count < ARRAYSIZE(beacon_data->beacon))
-        {
-            double ox = (bx + ax) / 2;
-            double oy = (by + ay) / 2;
-            double range = sqrt(ox * ox + oy * oy);
-            double bearing = atan2(oy, ox);
-
-            // Create an entry for this beacon
-            // Note that we return the surface normal for the beacon orientation.
-            //
-            beacon_data->beacon[beacon_data->count].id = id;
-            beacon_data->beacon[beacon_data->count].range = (int) (range * 1000);
-            beacon_data->beacon[beacon_data->count].bearing = (int) (bearing * 180 / M_PI);
-            // normalizing orient to [-pi, pi] and adding 90 deg like it was
-            // done before 
-            orient += M_PI*0.5;
-            orient = NORMALIZE(orient);
-            beacon_data->beacon[beacon_data->count].orient = (int) (orient * 180 / M_PI );
-            //beacon_data->beacon[beacon_data->count].orient = (int) (orient * 180 / M_PI + 90);
-            beacon_data->count++;
-        }
+      if (ai < 0)
+      {
+        ai = i;
+        ax = px;
+        ay = py;
+      }
+      bi = i;
+      bx = px;
+      by = py;
     }
+    if (ai < 0)
+      continue;
+
+    double width = sqrt((px - ax) * (px - ax) + (py - ay) * (py - ay));
+    if (width < max_width)
+      continue;
+
+    width = sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
+    if (width < min_width)
+      continue;
+    if (width > max_width)
+    {
+      ai = -1;
+      continue;
+    }
+
+    // Assign an id to the beacon
+    //
+    double orient = atan2(by - ay, bx - ax);
+    int id = IdentBeacon(ai, bi, ax, ay, orient, laser_data);
+
+    // Reset counters so we can find new beacons
+    //
+    ai = -1;
+    bi = -1;
+
+    // Ignore invalid ids
+    //
+    if (id < 0)
+      continue;
+        
+    // Do some additional filtering on the id
+    // We make sure the id is present in multiple laser scans,
+    // thereby eliminating most false matches.
+    //
+    /* *** TESTING
+       if (id > 0)
+       {
+       assert(id >= 0 && id < ARRAYSIZE(this->filter));
+       this->filter[id] += filter_gain;
+       if (this->filter[id] < filter_thresh)
+       id = 0;
+       }
+    */
+        
+    // Check for array overflow
+    //
+    if (beacon_data->count < ARRAYSIZE(beacon_data->beacon))
+    {
+      double ox = (bx + ax) / 2;
+      double oy = (by + ay) / 2;
+      double range = sqrt(ox * ox + oy * oy);
+      double bearing = atan2(oy, ox);
+
+      // Create an entry for this beacon
+      // Note that we return the surface normal for the beacon orientation.
+      //
+      beacon_data->beacon[beacon_data->count].id = id;
+      beacon_data->beacon[beacon_data->count].range = (int) (range * 1000);
+      beacon_data->beacon[beacon_data->count].bearing = (int) (bearing * 180 / M_PI);
+      // normalizing orient to [-pi, pi] and adding 90 deg like it was
+      // done before 
+      orient += M_PI*0.5;
+      orient = NORMALIZE(orient);
+      beacon_data->beacon[beacon_data->count].orient = (int) (orient * 180 / M_PI );
+      //beacon_data->beacon[beacon_data->count].orient = (int) (orient * 180 / M_PI + 90);
+      beacon_data->count++;
+    }
+  }
 }
 
 
@@ -418,116 +442,116 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
 int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double oth,
                                     const player_laser_data_t *laser_data)
 {
-    // Compute pose of laser relative to beacon
-    double lx = -ox * cos(-oth) + oy * sin(-oth);
-    double ly = -ox * sin(-oth) - oy * cos(-oth);
-    double la = -oth;
+  // Compute pose of laser relative to beacon
+  double lx = -ox * cos(-oth) + oy * sin(-oth);
+  double ly = -ox * sin(-oth) - oy * cos(-oth);
+  double la = -oth;
 
-    // Initialise our probability distribution
-    // We determine the probability that each bit is set using Bayes law.
+  // Initialise our probability distribution
+  // We determine the probability that each bit is set using Bayes law.
+  //
+  double prob[8][2];
+  for (int bit = 0; bit < ARRAYSIZE(prob); bit++)
+    prob[bit][0] = prob[bit][1] = 0;
+
+  // Scan through the readings that make up the candidate
+  //
+  for (int i = a; i <= b; i++)
+  {
+    int intensity = (int) (laser_data->ranges[i] >> 13);
+    double range = (double) (laser_data->ranges[i] & 0x1FFF) / 1000;
+    double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
+      / 100.0 * M_PI / 180;
+    double res = (double) laser_data->resolution / 100.0 * M_PI / 180;
+
+    // Compute point relative to beacon
+    double py = ly + range * sin(la + bearing);
+
+    // Discard candidate points are not close to x-axis
+    // (ie candidate is not flat).
     //
-    double prob[8][2];
-    for (int bit = 0; bit < ARRAYSIZE(prob); bit++)
-        prob[bit][0] = prob[bit][1] = 0;
+    if (fabs(py) > this->max_depth)
+      return -1;
 
-    // Scan through the readings that make up the candidate
-    //
-    for (int i = a; i <= b; i++)
-    {
-        int intensity = (int) (laser_data->ranges[i] >> 13);
-        double range = (double) (laser_data->ranges[i] & 0x1FFF) / 1000;
-        double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
-            / 100.0 * M_PI / 180;
-        double res = (double) laser_data->resolution / 100.0 * M_PI / 180;
-
-        // Compute point relative to beacon
-        double py = ly + range * sin(la + bearing);
-
-        // Discard candidate points are not close to x-axis
-        // (ie candidate is not flat).
-        //
-        if (fabs(py) > this->max_depth)
-            return -1;
-
-        // Compute intercept with beacon
-        //double cx = lx + ly * tan(la + bearing + M_PI/2);
-        double ax = lx + ly * tan(la + bearing - res/2 + M_PI/2);
-        double bx = lx + ly * tan(la + bearing + res/2 + M_PI/2);
+    // Compute intercept with beacon
+    //double cx = lx + ly * tan(la + bearing + M_PI/2);
+    double ax = lx + ly * tan(la + bearing - res/2 + M_PI/2);
+    double bx = lx + ly * tan(la + bearing + res/2 + M_PI/2);
 
 #ifdef INCLUDE_SELFTEST
-        //if (intensity > 0)
-        //    printf("%f %f %f %f\n", cx, py, ax, bx);
+    //if (intensity > 0)
+    //    printf("%f %f %f %f\n", cx, py, ax, bx);
 #endif
 
-        // Update our probability distribution
-        // Use Bayes law
-        for (int bit = 0; bit < this->max_bits; bit++)
-        {
-            // Use a rectangular distribution
-            double a = (bit + 0.0) * this->bit_width;
-            double b = (bit + 1.0) * this->bit_width;
-
-            double p = 0;
-            if (ax < a && bx > b)
-                p = 1;
-            else if (ax > a && bx < b)
-                p = 1;
-            else if (ax > b || bx < a)
-                p = 0;
-            else if (ax < a && bx < b)
-                p = 1 - (a - ax) / (bx - ax);
-            else if (ax > a && bx > b)
-                p = 1 - (bx - b) / (bx - ax);
-            else
-                assert(0);
-
-            //printf("prob : %f %f %f %f %f\n", ax, bx, a, b, p);
-            
-            if (intensity == 0)
-            {
-                assert(bit >= 0 && bit < ARRAYSIZE(prob));            
-                prob[bit][0] += p;
-                prob[bit][1] += 0;
-            }
-            else
-            {
-                assert(bit >= 0 && bit < ARRAYSIZE(prob));            
-                prob[bit][0] += 0;
-                prob[bit][1] += p;
-            }
-        }
-    }
-
-#ifdef INCLUDE_SELFTEST
-    //printf("\n\n");
-#endif
-
-    // Now assign the id
-    //
-    int id = 0;
+    // Update our probability distribution
+    // Use Bayes law
     for (int bit = 0; bit < this->max_bits; bit++)
     {
-        double pn = prob[bit][0] + prob[bit][1];
-        double p0 = prob[bit][0] / pn;
-        double p1 = prob[bit][1] / pn;
-       
-        if (pn < this->accept_thresh)
-            id = -1;
-        else if (p0 > this->zero_thresh)
-            id |= (0 << bit);
-        else if (p1 > this->one_thresh)
-            id |= (1 << bit);
-        else
-            id = -1;
+      // Use a rectangular distribution
+      double a = (bit + 0.0) * this->bit_width;
+      double b = (bit + 1.0) * this->bit_width;
 
-        //printf("%d %f %f : %f %f %f\n", bit, prob[bit][0], prob[bit][1], p0, p1, pn);
+      double p = 0;
+      if (ax < a && bx > b)
+        p = 1;
+      else if (ax > a && bx < b)
+        p = 1;
+      else if (ax > b || bx < a)
+        p = 0;
+      else if (ax < a && bx < b)
+        p = 1 - (a - ax) / (bx - ax);
+      else if (ax > a && bx > b)
+        p = 1 - (bx - b) / (bx - ax);
+      else
+        assert(0);
+
+      //printf("prob : %f %f %f %f %f\n", ax, bx, a, b, p);
+            
+      if (intensity == 0)
+      {
+        assert(bit >= 0 && bit < ARRAYSIZE(prob));            
+        prob[bit][0] += p;
+        prob[bit][1] += 0;
+      }
+      else
+      {
+        assert(bit >= 0 && bit < ARRAYSIZE(prob));            
+        prob[bit][0] += 0;
+        prob[bit][1] += p;
+      }
     }
-    //printf("\n");
+  }
 
-    if (id < 0)
-        id = 0;
+#ifdef INCLUDE_SELFTEST
+  //printf("\n\n");
+#endif
+
+  // Now assign the id
+  //
+  int id = 0;
+  for (int bit = 0; bit < this->max_bits; bit++)
+  {
+    double pn = prob[bit][0] + prob[bit][1];
+    double p0 = prob[bit][0] / pn;
+    double p1 = prob[bit][1] / pn;
+       
+    if (pn < this->accept_thresh)
+      id = -1;
+    else if (p0 > this->zero_thresh)
+      id |= (0 << bit);
+    else if (p1 > this->one_thresh)
+      id |= (1 << bit);
+    else
+      id = -1;
+
+    //printf("%d %f %f : %f %f %f\n", bit, prob[bit][0], prob[bit][1], p0, p1, pn);
+  }
+  //printf("\n");
+
+  if (id < 0)
+    id = 0;
     
-    return id;
+  return id;
 }
 
 

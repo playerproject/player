@@ -46,7 +46,7 @@ PlayerQueue::PlayerQueue(int tmpqueuelen)
 
 // constructor for Stage; creates a PlayerQueue with a chunk of memory
 // already set aside
-PlayerQueue::PlayerQueue(unsigned char* tmpqueue, int tmpqueuelen)
+PlayerQueue::PlayerQueue(void* tmpqueue, int tmpqueuelen)
 {
   queue = (playerqueue_elt_t*)tmpqueue;
   len = tmpqueuelen;
@@ -57,7 +57,7 @@ PlayerQueue::PlayerQueue(unsigned char* tmpqueue, int tmpqueuelen)
 // element in the queue, or -1 if the queue is full
 int 
 PlayerQueue::Push(void* client, unsigned short type, struct timeval* ts,
-                  unsigned char* data, int size)
+                  void* data, int size)
 {
   // search for an empty spot, from front to back
   for(int i=0;i<len;i++)
@@ -94,7 +94,7 @@ PlayerQueue::Push(void* client, unsigned short type, struct timeval* ts,
 
 // another form of Push, this one doesn't set the client pointer
 int 
-PlayerQueue::Push(unsigned char* data, int size)
+PlayerQueue::Push(void* data, int size)
 {
   return(Push(NULL,0,NULL,data,size));
 }
@@ -102,7 +102,7 @@ PlayerQueue::Push(unsigned char* data, int size)
 // pop an element off the queue. returns the size of the element,
 // or -1 if the queue is empty
 int 
-PlayerQueue::Pop(void** client, unsigned char* data, int size)
+PlayerQueue::Pop(void** client, void* data, int size)
 {
   int tmpsize;
 
@@ -145,7 +145,7 @@ PlayerQueue::Pop(void** client, unsigned char* data, int size)
     
 // another form of Pop, this one doesn't set the client pointer
 int 
-PlayerQueue::Pop(unsigned char* data, int size)
+PlayerQueue::Pop(void* data, int size)
 {
   return(Pop(NULL,data,size));
 }
@@ -174,7 +174,7 @@ PlayerQueue::Empty()
 // is found
 int 
 PlayerQueue::Match(void* client, unsigned short* type,
-                   struct timeval* ts, unsigned char* data, int size)
+                   struct timeval* ts, void* data, int size)
 {
   int tmpsize;
 

@@ -362,9 +362,9 @@ void CBpsDevice::PutData(unsigned char *src, size_t maxsize,
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by client thread)
 //
-int 
-CBpsDevice::PutConfig(CClientData* client, unsigned char *src, size_t maxsize) 
+int CBpsDevice::PutConfig(void *client, void *data, size_t len) 
 {
+  /* FIX
   if (maxsize == sizeof(player_bps_setgain_t))
   {
     player_bps_setgain_t *setgain = (player_bps_setgain_t*) src;
@@ -447,7 +447,8 @@ CBpsDevice::PutConfig(CClientData* client, unsigned char *src, size_t maxsize)
   // everything's cool; send the client an ACK
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
     PLAYER_ERROR("PutReply() failed");
-
+  */
+  
   return(0);
 }
 

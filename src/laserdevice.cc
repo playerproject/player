@@ -78,128 +78,53 @@ extern PlayerTime* GlobalTime;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Error macros
-//
 #define RETURN_ERROR(erc, m) {PLAYER_ERROR(m); return erc;}
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-//
 CLaserDevice::CLaserDevice(int argc, char** argv) :
-  CDevice(sizeof(player_laser_data_t),0,1,1)
+    CDevice(sizeof(player_laser_data_t),0,10,10)
 {
-  strncpy(m_laser_name,DEFAULT_LASER_PORT,sizeof(m_laser_name));
+  strncpy(this->device_name,DEFAULT_LASER_PORT,sizeof(this->device_name));
   for(int i=0;i<argc;i++)
   {
     if(!strcmp(argv[i],"port"))
     {
       if(++i<argc)
       {
-        strncpy(m_laser_name, argv[i],sizeof(m_laser_name));
-        m_laser_name[sizeof(m_laser_name)-1] = '\0';
+        strncpy(this->device_name, argv[i],sizeof(this->device_name));
+        this->device_name[sizeof(this->device_name)-1] = '\0';
       }
       else
-        fprintf(stderr, "CLaserDevice: missing port; using default: \"%s\"\n",
-                m_laser_name);
+        PLAYER_ERROR1("missing port; using default: \"%s\"", this->device_name);
     }
     else
-      fprintf(stderr, "CLaserDevice: ignoring unknown parameter \"%s\"\n",
-              argv[i]);
+      PLAYER_ERROR1("ignoring unknown parameter \"%s\"\n", argv[i]);
   }
-
-  //m_config_size = 0;
-  //memset(&m_config, 0, sizeof(m_config));
-  //memset(&m_data, 0, sizeof(m_data));
-}
-    
-////////////////////////////////////////////////////////////////////////////////
-// Check for new config request, and fill in private fields appropriately
-// returns Pointer to the client expecting the reply if there was a 
-// request, NULL otherwise
-CClientData* CLaserDevice::ParseConfig()
-{
-  player_laser_config_t config;
-  CClientData* client = NULL;
-
-  // was there a request?
-  if(GetConfig(&client, (unsigned char*)&config, sizeof(config)))
-  {
-    m_intensity = config.intensity;
-    m_scan_res = ntohs(config.resolution);
-    int min_angle = (short) ntohs(config.min_angle);
-    int max_angle = (short) ntohs(config.max_angle);
-
-    PLAYER_TRACE2("%d %d", min_angle, max_angle);
-
-    // For high res, drop the scan range down to 100 degrees.
-    // The angles must be interpreted differently too.
-    //
-    if (m_scan_res == 25)
-    {
-      m_scan_width = 100;
-      m_scan_min_segment = (min_angle + 5000) / m_scan_res;
-      m_scan_max_segment = (max_angle + 5000) / m_scan_res;
-
-      if (m_scan_min_segment < 0)
-        m_scan_min_segment = 0;
-      if (m_scan_min_segment > 400)
-        m_scan_min_segment = 400;
-
-      if (m_scan_max_segment < 0)
-        m_scan_max_segment = 0;
-      if (m_scan_max_segment > 400)
-        m_scan_max_segment = 400;
-    }
-    else if (m_scan_res == 50 || m_scan_res == 100)
-    {
-      m_scan_width = 180;
-      m_scan_min_segment = (min_angle + 9000) / m_scan_res;
-      m_scan_max_segment = (max_angle + 9000) / m_scan_res;
-
-      if (m_scan_min_segment < 0)
-        m_scan_min_segment = 0;
-      if (m_scan_min_segment > 360)
-        m_scan_min_segment = 360;
-
-      if (m_scan_max_segment < 0)
-        m_scan_max_segment = 0;
-      if (m_scan_max_segment > 360)
-        m_scan_max_segment = 360;
-    }
-    else
-      PLAYER_ERROR("invalid laser configuration");
-
-    PLAYER_MSG3("new scan range [%d %d], intensity [%d]",
-                (int) m_scan_min_segment, 
-                (int) m_scan_max_segment, 
-                (int) m_intensity);
-  }
-
-  return(client);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
-//
 int CLaserDevice::Setup()
 {   
   // Set default configuration
-  //
-  m_scan_width = 180;
-  m_scan_res = 50;
-  m_scan_min_segment = 0;
-  m_scan_max_segment = 360;
-  m_intensity = true;
+  this->scan_width = 180;
+  this->scan_res = 50;
+  this->min_angle = -9000;
+  this->max_angle = +9000;
+  this->scan_min_segment = 0;
+  this->scan_max_segment = 360;
+  this->intensity = true;
 
-  printf("Laser initialising (%s)\n", m_laser_name);
+  printf("Laser initialising (%s)\n", this->device_name);
     
   // Open the terminal
   if (OpenTerm())
     return 1;
 
   // Start out at 38400 with non-blocking io
-  //
   if (ChangeTermSpeed(38400))
     return 1;
 
@@ -228,23 +153,20 @@ int CLaserDevice::Setup()
   }
 
   // Display the laser type
-  //
   char type[64];
   if (GetLaserType(type, sizeof(type)))
     return 1;
   PLAYER_MSG1("SICK laser type [%s]", (char*) type);
 
   // Configure the laser
-  //
-  if (SetLaserRes(m_scan_width, m_scan_res))
+  if (SetLaserRes(this->scan_width, this->scan_res))
     return 1;
-  if (SetLaserConfig(m_intensity))
+  if (SetLaserConfig(this->intensity))
     return 1;
 
   puts("laser ready");
 
   // Start the device thread
-  //
   StartThread();
 
   return 0;
@@ -253,10 +175,9 @@ int CLaserDevice::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-//
 int CLaserDevice::Shutdown()
 {
-  /* shutdown laser device */
+  // shutdown laser device
   StopThread();
 
   CloseTerm();
@@ -268,18 +189,12 @@ int CLaserDevice::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-//
 void CLaserDevice::Main() 
 {
-  PLAYER_MSG0("laser thread is running");
-    
-  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-
   // Ask the laser to send data
-  //
   for (int retry = 0; retry < MAX_RETRIES; retry++)
   {
-    if (RequestLaserData(m_scan_min_segment, m_scan_max_segment) == 0)
+    if (RequestLaserData(this->scan_min_segment, this->scan_max_segment) == 0)
       break;
     else if (retry >= MAX_RETRIES)
     {
@@ -291,83 +206,157 @@ void CLaserDevice::Main()
   while (true)
   {
     // test if we are supposed to cancel
-    //
     pthread_testcancel();
 
-    // Look for configuration requests
-    //
-    CClientData* client;
-    if((client = ParseConfig()))
+    // Update the configuration.
+    if (UpdateConfig())
     {
-      // Change any config settings
-      //
-      if (SetLaserMode())
-      {
+      if (SetLaserMode() != 0)
         PLAYER_ERROR("request for config mode failed");
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-          PLAYER_ERROR("failed to PutReply");
-      }
       else
       {
-        SetLaserRes(m_scan_width, m_scan_res);
-        SetLaserConfig(m_intensity);
+        if (SetLaserRes(this->scan_width, this->scan_res) != 0)
+          PLAYER_ERROR("failed setting resolution");
+        if (SetLaserConfig(this->intensity) != 0)
+          PLAYER_ERROR("failed setting intensity");          
       }
 
       // Issue a new request for data
-      //
-      if (RequestLaserData(m_scan_min_segment, m_scan_max_segment))
-      {
+      if (RequestLaserData(this->scan_min_segment, this->scan_max_segment))
         PLAYER_ERROR("request for laser data failed");
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-          PLAYER_ERROR("failed to PutReply");
-      }
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-        PLAYER_ERROR("failed to PutReply");
     }
 
     // Get the time at which we started reading
     // This will be a pretty good estimate of when the phenomena occured
-    //
     struct timeval time;
     GlobalTime->GetTime(&time);
         
     // Process incoming data
-    //
     player_laser_data_t data;
     if (ReadLaserData(data.ranges, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
     {
       // Prepare packet and byte swap
-      //
-      data.min_angle = htons(m_scan_min_segment * m_scan_res - m_scan_width * 50);
-      data.max_angle = htons(m_scan_max_segment * m_scan_res - m_scan_width * 50);
-      data.resolution = htons(m_scan_res);
-      data.range_count = htons(m_scan_max_segment - m_scan_min_segment + 1);
-      for (int i = 0; i < m_scan_max_segment - m_scan_min_segment + 1; i++)
+      data.min_angle = htons(this->scan_min_segment * this->scan_res - this->scan_width * 50);
+      data.max_angle = htons(this->scan_max_segment * this->scan_res - this->scan_width * 50);
+      data.resolution = htons(this->scan_res);
+      data.range_count = htons(this->scan_max_segment - this->scan_min_segment + 1);
+      for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
         data.ranges[i] = htons(data.ranges[i]);
 
       // Make data available
-      //
-      PutData((uint8_t*) &data, sizeof(data),
-              time.tv_sec, time.tv_usec);
+      PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
     }
   }
-
-  PLAYER_TRACE0("exiting laser thread");
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Process configuration requests.  Returns 1 if the configuration has changed.
+int CLaserDevice::UpdateConfig()
+{
+  int len;
+  void *client;
+  player_laser_config_t config;
+
+  while ((len = GetConfig(&client, &config, sizeof(config))) > 0)
+  {
+    if (len != sizeof(config))
+    {
+      // This is an invalid configuration
+      PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      continue;
+    }
+    
+    switch (config.subtype)
+    {
+      // Process set config requests.
+      case PLAYER_LASER_SET_CONFIG:
+      {
+        this->intensity = config.intensity;
+        this->scan_res = ntohs(config.resolution);
+        this->min_angle = (short) ntohs(config.min_angle);
+        this->max_angle = (short) ntohs(config.max_angle);
+
+        if (this->scan_res == 25)
+        {
+          // For high res, drop the scan range down to 100 degrees.
+          // The angles must be interpreted differently too.
+          this->scan_width = 100;
+          this->scan_min_segment = (this->min_angle + 5000) / this->scan_res;
+          this->scan_max_segment = (this->max_angle + 5000) / this->scan_res;
+
+          if (this->scan_min_segment < 0)
+            this->scan_min_segment = 0;
+          if (this->scan_min_segment > 400)
+            this->scan_min_segment = 400;
+
+          if (this->scan_max_segment < 0)
+            this->scan_max_segment = 0;
+          if (this->scan_max_segment > 400)
+            this->scan_max_segment = 400;
+
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          return 1;
+        }
+        else if (this->scan_res == 50 || this->scan_res == 100)
+        {
+          this->scan_width = 180;
+          this->scan_min_segment = (this->min_angle + 9000) / this->scan_res;
+          this->scan_max_segment = (this->max_angle + 9000) / this->scan_res;
+
+          if (this->scan_min_segment < 0)
+            this->scan_min_segment = 0;
+          if (this->scan_min_segment > 360)
+            this->scan_min_segment = 360;
+
+          if (this->scan_max_segment < 0)
+            this->scan_max_segment = 0;
+          if (this->scan_max_segment > 360)
+            this->scan_max_segment = 360;
+
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+            PLAYER_ERROR("PutReply() failed");
+          return 1;
+        }
+        else
+        {
+          // This is an invalid configuration
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+            PLAYER_ERROR("PutReply() failed");
+        }
+        break;
+      }
+
+      // Process get config requests
+      case PLAYER_LASER_GET_CONFIG:
+      {
+        config.intensity = this->intensity;
+        config.resolution = htons(this->scan_res);
+        config.min_angle = htons((short) this->min_angle);
+        config.max_angle = htons((short) this->max_angle);
+        
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+    }
+  }
+  return 0;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Open the terminal
 // Returns 0 on success
-//
 int CLaserDevice::OpenTerm()
 {
-  m_laser_fd = ::open(m_laser_name, O_RDWR | O_SYNC , S_IRUSR | S_IWUSR );
-  if (m_laser_fd < 0)
+  this->laser_fd = ::open(this->device_name, O_RDWR | O_SYNC , S_IRUSR | S_IWUSR );
+  if (this->laser_fd < 0)
   {
-    PLAYER_ERROR1("unable to open serial port [%s]", (char*) m_laser_name);
-    perror("");
+    PLAYER_ERROR1("unable to open serial port [%s]", (char*) this->device_name);
     return 1;
   }
 
@@ -375,7 +364,7 @@ int CLaserDevice::OpenTerm()
   // later we can ramp the speed up to the SICK's 38K
   //
   struct termios term;
-  if( tcgetattr( m_laser_fd, &term ) < 0 )
+  if( tcgetattr( this->laser_fd, &term ) < 0 )
     RETURN_ERROR(1, "Unable to get serial port attributes");
   
 #ifdef PLAYER_LINUX
@@ -384,12 +373,12 @@ int CLaserDevice::OpenTerm()
   cfsetispeed( &term, B9600 );
   cfsetospeed( &term, B9600 );
   
-  if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
+  if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
     RETURN_ERROR(1, "Unable to set serial port attributes");
 
   // Make sure queue is empty
   //
-  tcflush(m_laser_fd, TCIOFLUSH);
+  tcflush(this->laser_fd, TCIOFLUSH);
     
   return 0;
 }
@@ -401,7 +390,7 @@ int CLaserDevice::OpenTerm()
 //
 int CLaserDevice::CloseTerm()
 {
-  ::close(m_laser_fd);
+  ::close(this->laser_fd);
   return 0;
 }
 
@@ -418,7 +407,7 @@ int CLaserDevice::ChangeTermSpeed(int speed)
   if (speed == 9600)
   {
     PLAYER_MSG0("terminal speed to 9600");
-    if( tcgetattr( m_laser_fd, &term ) < 0 )
+    if( tcgetattr( this->laser_fd, &term ) < 0 )
       RETURN_ERROR(1, "unable to get device attributes");
         
 #ifdef PLAYER_LINUX
@@ -427,13 +416,13 @@ int CLaserDevice::ChangeTermSpeed(int speed)
     cfsetispeed( &term, B9600 );
     cfsetospeed( &term, B9600 );
         
-    if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
+    if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
       RETURN_ERROR(1, "unable to set device attributes");
   }
   else if (speed == 38400)
   {
     PLAYER_MSG0("terminal speed to 38400");
-    if( tcgetattr( m_laser_fd, &term ) < 0 )
+    if( tcgetattr( this->laser_fd, &term ) < 0 )
       RETURN_ERROR(1, "unable to get device attributes");
         
 #ifdef PLAYER_LINUX
@@ -442,7 +431,7 @@ int CLaserDevice::ChangeTermSpeed(int speed)
     cfsetispeed( &term, B38400 );
     cfsetospeed( &term, B38400 );
         
-    if( tcsetattr( m_laser_fd, TCSAFLUSH, &term ) < 0 )
+    if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
       RETURN_ERROR(1, "unable to set device attributes");
   }
     
@@ -690,7 +679,7 @@ int CLaserDevice::RequestLaserData(int min_segment, int max_segment)
 {
   ssize_t len = 0;
   uint8_t packet[20];
-    
+  
   packet[len++] = 0x20; /* mode change command */
     
   if (min_segment == 0 && max_segment == 360)
@@ -827,16 +816,16 @@ ssize_t CLaserDevice::WriteToLaser(uint8_t *data, ssize_t len)
 
   // Make sure both input and output queues are empty
   //
-  tcflush(m_laser_fd, TCIOFLUSH);
+  tcflush(this->laser_fd, TCIOFLUSH);
     
   // Write the data to the port
   //
-  ssize_t bytes = ::write( m_laser_fd, buffer, 4 + len + 2);
+  ssize_t bytes = ::write( this->laser_fd, buffer, 4 + len + 2);
 
   // Make sure the queue is drained
   // Synchronous IO doesnt always work
   //
-  ::tcdrain(m_laser_fd);
+  ::tcdrain(this->laser_fd);
     
   // Return the actual number of bytes sent, including header and footer
   //
@@ -858,13 +847,13 @@ ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int
   if (timeout < 0)
   {
     PLAYER_TRACE0("using blocking io");
-    int flags = ::fcntl(m_laser_fd, F_GETFL);
+    int flags = ::fcntl(this->laser_fd, F_GETFL);
     if (flags < 0)
     {
       PLAYER_ERROR("unable to get device flags");
       return 0;
     }
-    if (::fcntl(m_laser_fd, F_SETFL, flags & (~O_NONBLOCK)) < 0)
+    if (::fcntl(this->laser_fd, F_SETFL, flags & (~O_NONBLOCK)) < 0)
     {
       PLAYER_ERROR("unable to set device flags");
       return 0;
@@ -876,13 +865,13 @@ ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int
   else
   {
     PLAYER_TRACE0("using non-blocking io");
-    int flags = ::fcntl(m_laser_fd, F_GETFL);
+    int flags = ::fcntl(this->laser_fd, F_GETFL);
     if (flags < 0)
     {
       PLAYER_ERROR("unable to get device flags");
       return 0;
     }
-    if (::fcntl(m_laser_fd, F_SETFL, flags | O_NONBLOCK) < 0)
+    if (::fcntl(this->laser_fd, F_SETFL, flags | O_NONBLOCK) < 0)
     {
       PLAYER_ERROR("unable to set device flags");
       return 0;
@@ -905,7 +894,7 @@ ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int
   {
     if (timeout >= 0)
       usleep(1000);
-    bytes = ::read(m_laser_fd, header + sizeof(header) - 1, 1);
+    bytes = ::read(this->laser_fd, header + sizeof(header) - 1, 1);
     if (header[0] == STX && header[1] == 0x80)
     {
       if (!ack)
@@ -942,7 +931,7 @@ ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int
   {
     if (timeout >= 0)
       usleep(1000);
-    bytes += ::read(m_laser_fd, data + bytes, len - bytes);
+    bytes += ::read(this->laser_fd, data + bytes, len - bytes);
     if (timeout >= 0 && GetTime() >= stop_time)
     {
       PLAYER_TRACE2("%Ld %Ld", GetTime(), stop_time);
@@ -957,7 +946,7 @@ ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int
   {
     if (timeout >= 0)
       usleep(1000);
-    bytes += ::read(m_laser_fd, footer + bytes, 3 - bytes);
+    bytes += ::read(this->laser_fd, footer + bytes, 3 - bytes);
     if (timeout >= 0 && GetTime() >= stop_time)
     {
       PLAYER_TRACE2("%Ld %Ld", GetTime(), stop_time);

@@ -700,7 +700,7 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
   CDevice* devicep;
   player_msghdr_t hdr;
   struct timeval curr;
-  bool needsynch = false;
+  bool needsynch = true; // Should always send a synch (ahoward)
   
   hdr.stx = htons(PLAYER_STXX);
   hdr.type = htons(PLAYER_MSGTYPE_DATA);
@@ -708,7 +708,7 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
   {
     if(thisub->access==PLAYER_ALL_MODE || thisub->access==PLAYER_READ_MODE) 
     {
-      needsynch = true;
+      // REMOVE needsynch = true;
       char access = 
               deviceTable->GetDeviceAccess(port,thisub->code,thisub->index);
 
