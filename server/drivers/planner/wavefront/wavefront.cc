@@ -850,6 +850,8 @@ Wavefront::SetupPosition()
   struct timeval ts;
   unsigned short reptype;
 
+  player_position_power_config_t motorconfig;
+
   // Subscribe to the position device.
   if(!(this->position = deviceTable->GetDriver(this->position_id)))
   {
@@ -859,6 +861,17 @@ Wavefront::SetupPosition()
   if(this->position->Subscribe(this->position_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
+    return(-1);
+  }
+  // Enable the motors
+  motorconfig.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+  motorconfig.value = 1;
+  this->position->Request(this->position_id, this, 
+                          &motorconfig, sizeof(motorconfig), NULL,
+                          &reptype, NULL, 0, NULL);
+  if(reptype != PLAYER_MSGTYPE_RESP_ACK)
+  {
+    PLAYER_WARN("failed to enable motors");
     return(-1);
   }
 

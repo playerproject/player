@@ -23,7 +23,7 @@ dnl
 dnl Also create playerconfig.h, replacing a couple of C defines with the right
 dnl values.  This will be included by player.h
 dnl
-AC_CONFIG_HEADERS([config.h server/playerconfig.h])
+AC_CONFIG_HEADERS(config.h server/playerconfig.h)
 
 dnl I can't find a way to do @prefix@ substitution in server/prefix.h that
 dnl works in more than one version of autotools.  Fix this later.

@@ -13,7 +13,7 @@
  * header will be usable by anyone */
 #define HAVE_STDINT_H 1
 #define HAVE_STRINGS_H 1
-/* #undef WORDS_BIGENDIAN */
+/* #undef WORDS_BIGENDIAN  */
 #define PLAYER_BIG_MESSAGES 1
 /*****************************************************************************/
 
