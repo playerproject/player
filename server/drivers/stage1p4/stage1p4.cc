@@ -62,6 +62,7 @@ extern PlayerTime* GlobalTime;
 // init static vars
 char* Stage1p4::world_file = DEFAULT_STG_WORLDFILE;
 stg_client_t* Stage1p4::stage_client = NULL;
+stg_client_t* Stage1p4::stage_config_client = NULL;
 stg_name_id_t* Stage1p4::created_models = NULL;
 int Stage1p4::created_models_count = 0;
 ConfigFile* Stage1p4::config = NULL;
@@ -71,6 +72,8 @@ double Stage1p4::time = 0.0;
 stg_property_t *Stage1p4::prop_buffer[STG_MESSAGE_COUNT];
 int Stage1p4::stage_port = 6601;
 char* Stage1p4::stage_host = "localhost";
+
+char Stage1p4::subs[STG_MESSAGE_COUNT];
 
 // signal cacher - when Player gets a SIG_USR2 we save the worldfile
 void catch_sigusr2( int signum )
@@ -101,7 +104,8 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
       if( GlobalTime ) delete GlobalTime;
       assert( (GlobalTime = new StgTime() ));
       
-      memset( prop_buffer, 0, sizeof(prop_buffer) );
+      memset( prop_buffer, 0, STG_MESSAGE_COUNT * sizeof(stg_property_t*) );
+      memset( subs, 0, STG_MESSAGE_COUNT * sizeof(char) );
 
       Stage1p4::stage_port = 
 	config->ReadInt(section, "port", STG_DEFAULT_SERVER_PORT);
@@ -118,7 +122,13 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
       Stage1p4::stage_client = 
 	stg_client_create( stage_host, stage_port, STG_TOS_SUBSCRIPTION );
       assert(Stage1p4::stage_client);
+
+      // make another client for configuration requests
+      Stage1p4::stage_config_client = 
+	stg_client_create( stage_host, stage_port, STG_TOS_SUBSCRIPTION );
+      assert(Stage1p4::stage_config_client);
       
+
       // load a worldfile and create a passel of Stage models
       Stage1p4::world_file = 
 	(char*)config->ReadString(section, "worldfile", DEFAULT_STG_WORLDFILE);
@@ -143,7 +153,7 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
 						 STG_SUBSCRIBE,
 						 NULL, 0 );
       
-      if( !(reply && (reply->action == STG_ACK) ))
+      if( !(reply && (reply->action == STG_SUBSCRIBE) && *reply->data == (char)1 ))
 	{
 	  PLAYER_ERROR( "stage1p4: time subscription failed" );
 	  exit(-1);
@@ -234,24 +244,24 @@ void Stage1p4::Main( void )
       printf( "reading subscribed property on fd %d\n", Stage1p4::stage_client->pollfd.fd );
       stg_property_t* prop = stg_property_read( Stage1p4::stage_client );
 
-      printf( "received property [%d:%s]\n",
-	      prop->id, stg_property_string(prop->property) );
+      //printf( "received property [%d:%s]\n",
+      //      prop->id, stg_property_string(prop->property) );
 
-      if( prop->property == STG_WORLD_TIME )
+      // handle subscription results
+      if( prop->action == STG_SUBSCRIBE )
 	{
-	  assert( prop->id == Stage1p4::world_id );
-	  assert( prop->len == sizeof(double) );
-	  
-	  memcpy( &Stage1p4::time, prop->data, sizeof(double) );
-	  printf( "world time: %.4f\n", Stage1p4::time ); 
+	  printf( "subscription reply!\n" );
+	  subs[prop->property] = *prop->data;
 	}
-
-      // stash this property in the array
-      prop_buffer[prop->property] = (stg_property_t*)
-	realloc( prop_buffer[prop->property], sizeof(stg_property_t) + prop->len );
-      memcpy( prop_buffer[prop->property], prop, sizeof(stg_property_t) + prop->len );
-
-      stg_property_free(prop);
+      else
+	{
+	  // stash this property in the array
+	  prop_buffer[prop->property] = (stg_property_t*)
+	    realloc( prop_buffer[prop->property], sizeof(stg_property_t) + prop->len );
+	  memcpy( prop_buffer[prop->property], prop, sizeof(stg_property_t) + prop->len );
+	  
+	  stg_property_free(prop);
+	}
     }
 }
 
