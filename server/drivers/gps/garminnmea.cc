@@ -27,6 +27,11 @@
  * work with other Garmin units, and (likely with some modification) other
  * NMEA-compliant GPS units.
  *
+ * The driver may also attempt to read DGPS RTCM corrections from a
+ * multi-cast network address, and forward these corrections to the
+ * GPS unit.  The dgps_server utility (found in player/utils/dgps_server)
+ * may be used to gather and broadcast the DGPS RTCM corrections.
+ *
  * NMEA and proprietary Garmin codes can be found at
  * http://home.mira.net/~gnb/gps/nmea.html
  *
@@ -84,8 +89,8 @@
 #define NMEA_PGRMZ "PGRMZ"
 #define NMEA_PSLIB "PSLIB"
 
-// spec says 82; we'll add 1 for a terminating \0
-#define NMEA_MAX_SENTENCE_LEN 82
+// spec says 82, but that done mean squat. Make it big
+#define NMEA_MAX_SENTENCE_LEN 83
 
 #define NMEA_START_CHAR '$'
 #define NMEA_END_CHAR '\n'
@@ -119,6 +124,9 @@ class GarminNMEA:public CDevice
     // file descriptor for the gps unit
     int gps_fd;  
 
+    // Enable DGPS corrections?
+    int dgps_enable;
+  
     // Port number for DGPS RTCM corrections
     const char *dgps_group;
     int dgps_port;
@@ -211,8 +219,9 @@ GarminNMEA::GarminNMEA(char* interface, ConfigFile* cf, int section) :
   filter_thresh = 1.0;
   filter_lat = 0;
   filter_lon = 0;
-  
-  dgps_group = cf->ReadString(section, "dgsp_group", DEFAULT_DGPS_GROUP);
+
+  dgps_enable = cf->ReadInt(section, "dgps_enable", 1);
+  dgps_group = cf->ReadString(section, "dgps_group", DEFAULT_DGPS_GROUP);
   dgps_port = cf->ReadInt(section, "dgps_port", DEFAULT_DGPS_PORT);
 
   return;
@@ -305,6 +314,9 @@ GarminNMEA::SetupSerial()
     return(-1);
   }
 
+  printf("filling buffer\n");
+  fflush(stdout);
+  
   memset(nmea_buf,0,sizeof(nmea_buf));
   nmea_buf_len=0;
   /* try to read some data, just to make sure we actually have a gps unit */
@@ -322,6 +334,9 @@ GarminNMEA::SetupSerial()
     gps_fd = -1;
     return(-1);
   }
+
+  printf("done filling buffer\n");
+  fflush(stdout);
 
   /* ok, we got data, so now set NONBLOCK, and continue */
   if((flags = fcntl(gps_fd, F_GETFL)) < 0)
@@ -363,7 +378,10 @@ GarminNMEA::SetupSocket()
 {
   sockaddr_in addr;
   struct ip_mreq mreq;
-      
+
+  if (!this->dgps_enable)
+    return 0;
+  
   // Set up the read socket
   this->dgps_fd = socket(PF_INET, SOCK_DGRAM, 0);
   if (this->dgps_fd == -1)
@@ -411,6 +429,9 @@ GarminNMEA::SetupSocket()
 void
 GarminNMEA::ShutdownSocket()
 {
+  if (!this->dgps_enable)
+    return;
+
   close(this->dgps_fd);
 
   return;
@@ -426,12 +447,22 @@ GarminNMEA::Main()
 {
   int len;
   char buf[NMEA_MAX_SENTENCE_LEN];
+  char rtcm_buf[1024];
   struct pollfd fds[2];
+  int fd_count;
 
-  fds[0].fd = this->gps_fd;
-  fds[0].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
-  fds[1].fd = this->dgps_fd;
-  fds[1].events = POLLIN | POLLPRI | POLLERR | POLLHUP;  
+  fd_count = 0;
+  
+  fds[fd_count].fd = this->gps_fd;
+  fds[fd_count].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
+  fd_count++;
+
+  if (this->dgps_enable)
+  {
+    fds[fd_count].fd = this->dgps_fd;
+    fds[fd_count].events = POLLIN | POLLPRI | POLLERR | POLLHUP;
+    fd_count++;
+  }
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -439,7 +470,7 @@ GarminNMEA::Main()
   {
     pthread_testcancel();
 
-    if (poll(fds, 2, 100) < 0)
+    if (poll(fds, fd_count, 100) < 0)
     {
       PLAYER_ERROR1("poll returned [%s]", strerror(errno));
       continue;
@@ -457,17 +488,21 @@ GarminNMEA::Main()
     }
 
     // Read incoming DGPS corrections from the socket
-    if (fds[1].revents)
+    if (this->dgps_enable)
     {
-      len = ReadSocket(buf, sizeof(buf));
-      if (len < 0)
-        pthread_exit(NULL);
+      if (fds[1].revents)
+      {
+        len = ReadSocket(rtcm_buf, sizeof(rtcm_buf));
+        if (len < 0)
+          pthread_exit(NULL);
 
-      printf("got udp packet of length %d\n", len);
-            
-      // Write the DGPS sentence to the GPS unit
-      if (WriteSentence(buf, len) != 0)
-        pthread_exit(NULL);
+        printf("got udp packet of length %d\n", len);
+        fflush(stdout);
+      
+        // Write the DGPS sentence to the GPS unit
+        if (WriteSentence(rtcm_buf, len) != 0)
+          pthread_exit(NULL);
+      }
     }
   }
 
@@ -492,6 +527,9 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
   int chksum;
   int oursum; 
 
+  //printf("reading sentence\n");
+  //fflush(stdout);
+  
   while(!(ptr = strchr((const char*)nmea_buf, NMEA_START_CHAR)))
   {
     nmea_buf_len=0;
@@ -502,8 +540,9 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
 
   nmea_buf_len = strlen(ptr);
   memmove(nmea_buf,ptr,strlen(ptr)+1);
-  //printf("found start char:%s:%d\n", nmea_buf,nmea_buf_len);
-
+  //printf("found start char:[%s]:[%d]\n", nmea_buf,nmea_buf_len);
+  //fflush(stdout);
+  
   while(!(ptr = strchr((const char*)nmea_buf, NMEA_END_CHAR)))
   {
     if(nmea_buf_len >= sizeof(nmea_buf) - 1)
@@ -518,30 +557,44 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
     if(FillBuffer())
       return(-1);
   }
-  //printf("found end char:%s:\n", nmea_buf);
-
+  ////printf("found end char:[%s]\n", nmea_buf);
+  ////fflush(stdout);
+  
   sentlen = nmea_buf_len - strlen(ptr) + 1;
   if(sentlen > len - 1)
   {
     PLAYER_WARN1("NMEA sentence too long (%d bytes); truncating", sentlen);
     sentlen = len - 1;
   }
+  
+  //printf("reading checksum\n");
+  //fflush(stdout);
 
   // copy in all but the leading $ and trailing carriage return and line feed
   strncpy(buf,nmea_buf+1,sentlen-3);
   buf[sentlen-3] = '\0';
+
+  //printf("got: [%s]\n", buf);
+  //fflush(stdout);
 
   // verify the checksum, if present.  two hex digits are the XOR of all the 
   // characters between the $ and *.
   if((ptr2 = strchr((const char*)buf,NMEA_CHKSUM_CHAR)) && 
      (strlen(ptr2) == 3))
   {
+    //printf("ptr2 %s\n", ptr2);
+    //fflush(stdout);
+
     strncpy(tmp,ptr2+1,2);
     tmp[2]='\0';
     chksum = strtol(tmp,NULL,16);
+    
     oursum=0;
     for(int i=0;i<(int)(strlen(buf)-strlen(ptr2));i++)
       oursum ^= buf[i];
+
+    // HACK
+    //chksum = oursum;
 
     if(oursum != chksum)
     {
@@ -564,6 +617,10 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
   memmove(nmea_buf,ptr+1,strlen(ptr));
   nmea_buf_len -= sentlen;
   nmea_buf[nmea_buf_len]='\0';
+
+  //printf("done reading sentence\n");
+  //fflush(stdout);
+
   return(0);
 }
 
@@ -687,7 +744,8 @@ GarminNMEA::ParseSentence(const char* buf)
   tmp[5]='\0';
 
   //printf("sentence [%s]\n", tmp);
-  
+  //fflush(stdout);
+      
   // the GGA msg has the position data that we want
   if(!strcmp(tmp,NMEA_GPGGA))
     ParseGPGGA(ptr);
@@ -717,6 +775,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   double utm_e, utm_n;
   
   //printf("got GGA (%s)\n", buf);
+  //fflush(stdout);
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
@@ -768,7 +827,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
     return(-1);
   // 6th field is fix quality
   data.quality = atoi(field);
-
+  
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
   // 7th field is number of sats in view
@@ -801,6 +860,8 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   // fields 13 and 14 are for DGPS. ignore them.
 
 
+  //printf("%f %f %d\n", lat, lon, (int) data.quality);
+
   // Update the filtered lat/lon, and see if the new values are any
   // good
   filter_lat = filter_a * lat + (1 - filter_a) * filter_lat;
@@ -814,26 +875,19 @@ int GarminNMEA::ParseGPGGA(const char *buf)
     filter_good = false;
 
   if (!filter_good)
+  {
     PLAYER_WARN4("rejected: %f %f (should be %f %f)\n", lat, lon, filter_lat, filter_lon);
+    return -1;
+  }
   
   // Compute the UTM coordindates
-  if (filter_good)
-  {
-    UTM(lat, lon, &utm_e, &utm_n);
-
-    //printf("utm: %.3f %.3f\n", utm_e, utm_n);
+  UTM(lat, lon, &utm_e, &utm_n);
+  //printf("utm: %.3f %.3f\n", utm_e, utm_n);
   
-    data.utm_e = htonl((int32_t) rint(utm_e * 100));
-    data.utm_n = htonl((int32_t) rint(utm_n * 100));
-  }
+  data.utm_e = htonl((int32_t) rint(utm_e * 100));
+  data.utm_n = htonl((int32_t) rint(utm_n * 100));
 
-  // Need to parse to sentences before write data
-  read_count += 1;
-  if (filter_good && filter_good >= 2)
-  {
-    PutData(&data,sizeof(player_gps_data_t),0,0);
-    read_count = 0;
-  }
+  PutData(&data,sizeof(player_gps_data_t),0,0);
 
   return 0;
 }
@@ -923,14 +977,16 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   data.time_sec = htonl((uint32_t) utc);
   data.time_usec = htonl((uint32_t) 0);
 
-    // Need to parse to sentences before write data
+  /* Dont write here
+  // Need to parse to sentences before write data
   read_count += 1;
   if (filter_good && filter_good >= 2)
   {
     PutData(&data,sizeof(player_gps_data_t),0,0);
     read_count = 0;
   }
-
+  */
+  
   return 0;
 }
 
@@ -980,8 +1036,10 @@ int GarminNMEA::ParsePGRME(const char *buf)
     PLAYER_WARN1("invalid unit code [%s]", field);
     return -1;
   }
-  
+
+  /* Dont write here
   PutData(&data,sizeof(player_gps_data_t),0,0);
+  */
 
   return 0;
 }
