@@ -70,13 +70,17 @@ int main(int argc, char **argv)
 { 
   int robotport;
   parse_args(argc,argv);
+  PlayerClient robot;
 
-  /* Connect to Player server */
-  PlayerClient robot(host,port);
+  if(robot.ConnectRNS(robotname,host,port) < 0)
+    exit(-1);
 
-  robotport = robot.LookupPort(robotname);
+  for(;;)
+    robot.Read();
 
-  printf("Robot \"%s\" is on port %d\n", robotname, robotport);
+  //PlayerClient robot(host,port);
+  //robotport = robot.LookupPort(robotname);
+  //printf("Robot \"%s\" is on port %d\n", robotname, robotport);
 
   return(0);
 }
