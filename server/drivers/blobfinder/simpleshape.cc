@@ -71,10 +71,6 @@ form of a binary image (such as the one shown below).
 - canny_thresh [40 20]
   - Thresholds for the Canny edge detector.
 
-- match_thresh [1.0 1.0 1.0]
-  - Threshold for shape matching.  Smaller values will produce fewer
- false positive.
-
 
 @par Example 
 
