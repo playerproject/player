@@ -1395,6 +1395,8 @@ The {\tt truth} interface provides access to the absolute state of entities.
 /** Request packet subtypes. */
 #define PLAYER_TRUTH_GET_POSE 0x00
 #define PLAYER_TRUTH_SET_POSE 0x01
+#define PLAYER_TRUTH_GET_FIDUCIAL_ID 0x02
+#define PLAYER_TRUTH_SET_FIDUCIAL_ID 0x03
 
 /** [Data] */
 /** The {\tt truth} interface returns data concerning the current state of
@@ -1422,6 +1424,22 @@ typedef struct player_truth_pose
   int32_t px, py, pa; 
 
 } __attribute__ ((packed)) player_truth_pose_t;
+
+/** [Configuration: Get/set fiducial ID number] */
+/** To get the fiducial ID of an object, use the following request,
+ filling in only the subtype with PLAYER_TRUTH_GET_FIDUCIAL_ID. The
+ server will respond with the ID field filled in.  To set the fiducial
+ ID, set the subtype to PLAYER_TRUTH_SET_FIDUCIAL_ID and fill in the ID field with the desired value */
+typedef struct player_truth_fiducial_id
+{
+  /** Packet subtype.  Must be either PLAYER_TRUTH_GET_FIDUCIAL_ID or
+    PLAYER_TRUTH_SET_FIDUCIAL_ID */
+  uint8_t subtype;
+  
+  /** the fiducial ID */
+  int16_t id;
+
+} __attribute__ ((packed)) player_truth_fiducial_id_t;
 /*************************************************************************
  ** end section
  *************************************************************************/
