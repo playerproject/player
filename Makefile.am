@@ -30,3 +30,6 @@ install-data-hook:
 #uninstall-local:
 #	rm -f $(DESTDIR)$(docdir)/*
 
+clean-local:
+	rm -f config.cache
+
