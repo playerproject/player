@@ -152,22 +152,18 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
     {  
     case PLAYER_POSITION_GET_GEOM_REQ:
       {
-	stg_pose_t pose;
-	if( stg_model_prop_get( this->model, STG_PROP_ORIGIN, &pose,sizeof(pose)))
-	  PLAYER_ERROR( "error requesting STG_PROP_ORIGIN" );
-	
- 	stg_size_t size;
-	if( stg_model_prop_get( this->model, STG_PROP_SIZE, &size,sizeof(size)))
-	  PLAYER_ERROR( "error requesting STG_PROP_SIZE" );
+	stg_geom_t geom;
+	if( stg_model_prop_get( this->model, STG_PROP_GEOM, &geom,sizeof(geom)))
+	  PLAYER_ERROR( "error requesting STG_PROP_GEOM" );
 	
 	// fill in the geometry data formatted player-like
 	player_position_geom_t pgeom;
-	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * pose.x));
-	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * pose.y));
-	pgeom.pose[2] = ntohs((uint16_t)RTOD(pose.a));
+	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * geom.pose.x));
+	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * geom.pose.y));
+	pgeom.pose[2] = ntohs((uint16_t)RTOD(geom.pose.a));
 	
-	pgeom.size[0] = ntohs((uint16_t)(1000.0 * size.x)); 
-	pgeom.size[1] = ntohs((uint16_t)(1000.0 * size.y)); 
+	pgeom.size[0] = ntohs((uint16_t)(1000.0 * geom.size.x)); 
+	pgeom.size[1] = ntohs((uint16_t)(1000.0 * geom.size.y)); 
 	
 	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		  &pgeom, sizeof(pgeom) );
