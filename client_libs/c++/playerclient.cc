@@ -376,7 +376,7 @@ int PlayerClient::Authenticate(char* key)
   char payload[sizeof(this_req)];
 
   this_req.subtype = htons(PLAYER_PLAYER_AUTH_REQ);
-  strncpy(this_req.auth_key,key,sizeof(this_req.auth_key));
+  strncpy((char*)this_req.auth_key,key,sizeof(this_req.auth_key));
 
   memcpy(payload,&this_req,sizeof(this_req));
 
