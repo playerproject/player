@@ -63,6 +63,7 @@ foreach name [lsort [array names vars]] {
 
   if {![string compare $name Class] || 
       ![string compare $name LaserPort] ||
+      ![string compare $name LaserIgnore] ||
       ![string compare $name Subclass]} {
     puts "  char* ${name};"
   } elseif {![string compare $value true] ||

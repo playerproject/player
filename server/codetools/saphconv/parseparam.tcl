@@ -101,13 +101,18 @@ foreach fname $argv {
       puts -nonewline "  "
       if {![string compare $name Class] || 
           ![string compare $name Subclass] ||
-          ![string compare $name LaserPort]} {
+          ![string compare $name LaserPort] ||
+          ![string compare $name LaserIgnore]} {
         puts -nonewline "\""
+      }
+      if {![string compare $value ";"]} {
+        set value ""
       }
       puts -nonewline "$value"
       if {![string compare $name Class] || 
           ![string compare $name Subclass] ||
-          ![string compare $name LaserPort]} {
+          ![string compare $name LaserPort] ||
+          ![string compare $name LaserIgnore]} {
         puts -nonewline "\""
       }
       puts ","
