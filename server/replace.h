@@ -80,7 +80,7 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
 int scandir(const char *dir, struct dirent ***namelist,
             int (*select)(const struct dirent *),
             int (*compar)(const struct dirent **, const struct dirent **));
-#endif !HAVE_SCANDIR
+#endif //!HAVE_SCANDIR
 
 #if !HAVE_DIRNAME
   char * dirname (char *path);
