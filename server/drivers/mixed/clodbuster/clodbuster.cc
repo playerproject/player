@@ -198,7 +198,8 @@ int ClodBuster::Setup()
   player_position_cmd_t zero_cmd;
   memset(&zero_cmd,0,sizeof(player_position_cmd_t));
   memset(&this->position_data,0,sizeof(player_position_data_t));
-  this->PutCommand((void*)&zero_cmd,sizeof(player_position_cmd_t),NULL);
+  this->PutCommand(this->device_id,(void*)&zero_cmd,
+                   sizeof(player_position_cmd_t),NULL);
   this->PutData((void*)&this->position_data,
                 sizeof(player_position_data_t),NULL);
   

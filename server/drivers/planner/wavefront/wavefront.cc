@@ -221,11 +221,6 @@ Wavefront::Setup()
     PLAYER_ERROR("must specify position index");
     return(-1);
   }
-  if(this->position_index == this->device_id.index)
-  {
-    PLAYER_ERROR("must specify *different* position index");
-    return(-1);
-  }
   if(this->localize_index < 0)
   {
     PLAYER_ERROR("must specify localize index");

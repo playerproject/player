@@ -368,6 +368,24 @@ static PyObject *client_disconnect(PyObject *self, PyObject *args)
   return PyInt_FromLong(result);
 }
 
+/* Change data delivery mode */
+static PyObject *client_setdatamode(PyObject *self, PyObject *args)
+{
+  int result;
+  int mode;
+  pyclient_t *pyclient;
+  pyclient = (pyclient_t*) self;
+
+  if (!PyArg_ParseTuple(args, "i", &mode))
+    return NULL;
+
+  thread_release();
+  result = playerc_client_datamode(pyclient->client, mode);
+  thread_acquire();
+
+  return PyInt_FromLong(result);
+}
+
 
 // See if there are any pending messages.
 static PyObject *client_peek(PyObject *self, PyObject *args)
@@ -521,6 +539,7 @@ static PyMethodDef client_methods[] =
   {"read", client_read, METH_VARARGS},
   {"get_devlist", client_get_devlist, METH_VARARGS},
   {"set_datafreq", client_setdatafreq, METH_VARARGS},
+  {"set_datamode", client_setdatamode, METH_VARARGS},
   {NULL, NULL}
 };
 
