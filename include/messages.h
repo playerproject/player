@@ -102,8 +102,8 @@
 
 /* the largest possible message that the server will currently send
  * or receive */
-//#define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
-#define PLAYER_MAX_MESSAGE_SIZE 1048575 /*1MB*/
+#define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
+//#define PLAYER_MAX_MESSAGE_SIZE 1048575 /*1MB*/
 
 /* the default player port */
 #define PLAYER_PORTNUM 6665
