@@ -302,7 +302,7 @@ static PyObject *position3d_set_speed(PyObject *self, PyObject *args)
     return NULL;
   pyposition3d = (position3d_object_t*) self;
 
-  return PyInt_FromLong(playerc_position3d_set_speed(pyposition3d->position3d, vx, vy, va));
+  return PyInt_FromLong(playerc_position3d_set_speed(pyposition3d->position3d, vx, vy, va, 1));
 }
 
 
