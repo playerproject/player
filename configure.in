@@ -188,6 +188,16 @@ fi
 AC_SUBST(LINUXWIFI_LIB)
 AC_SUBST(LINUXWIFI_LIBPATH)
 
+AC_ARG_WITH(aodv, 
+[  --without-aodv     Don't compile the aodv driver],,
+with_aodv=no)
+if test "x$with_aodv" = "xyes"; then
+  AC_DEFINE(INCLUDE_AODV, 1, [[include the AODV driver]])
+  AODV_LIB="libaodv.a"
+  AODV_LIBPATH="drivers/libaodv.a"
+fi
+AC_SUBST(AODV_LIB)
+AC_SUBST(AODV_LIBPATH)
 
 dnl check for the fftw library (by way of one of its headers) and compile
 dnl the fixed tones driver if its found

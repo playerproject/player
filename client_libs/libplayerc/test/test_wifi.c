@@ -12,7 +12,7 @@
 // Basic test for wifi device.
 int test_wifi(playerc_client_t *client, int index)
 {
-  int t;
+  int i, t;
   double i_px, i_py, i_pa;
   double f_px, f_py, f_pa;
   void *rdevice;
@@ -41,8 +41,12 @@ int test_wifi(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("wifi: [%4d] [%4d] [%4d]\n",
-             device->link, device->level, device->noise);
+
+      for (i = 0; i < device->link_count; i++)
+      {
+        printf("wifi: [%s] [%4d] [%4d] [%4d]\n", device->links[i].ip,
+               device->links[i].link, device->links[i].level, device->links[i].noise);
+      }
     }
     else
       FAIL();

@@ -83,6 +83,10 @@ void P2OSSonar_Register(DriverTable* table);
 void LinuxWiFi_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_AODV
+void Aodv_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_REB
 void REBPosition_Register(DriverTable *table);
 void REBIR_Register(DriverTable *table);
@@ -218,6 +222,10 @@ register_devices()
   
 #ifdef INCLUDE_WIFI
   LinuxWiFi_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_AODV
+  Aodv_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_REB
