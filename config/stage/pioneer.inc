@@ -45,7 +45,8 @@ define pioneer2dx position
 
   # laser parameter vector
   # format: [ minrange maxrange fov samples ]
-  laser [ 0.0 8.0 180 361 ]
+  laser [ 0.0 8.0 180 180 ]
+  #laser [ 0.0 8.0 180 1 ]
 	
   # laser geometry vector	
   # format: [ posex posey posea sizex sizey ]
