@@ -99,6 +99,12 @@ class WriteLog: public CDevice
   // Write GPS data to file
   private: void WriteGps(player_gps_data_t *data);
 
+  // Write truth data to file
+  private: void WriteTruth(player_truth_data_t *data);
+
+  // Write fiducial data to file
+  private: void WriteFiducial(player_fiducial_data_t *data);
+
   // File to read data from
   private: const char *filename;
   private: FILE *file;
@@ -403,6 +409,12 @@ void WriteLog::Write(void *data, size_t size,
     case PLAYER_GPS_CODE:
       this->WriteGps((player_gps_data_t*) data);
       break;
+    case PLAYER_TRUTH_CODE:
+      this->WriteTruth((player_truth_data_t*) data);
+      break;
+    case PLAYER_FIDUCIAL_CODE:
+      this->WriteFiducial((player_fiducial_data_t*) data);
+      break;
   }
 
   fprintf(this->file, "\n");
@@ -535,4 +547,35 @@ void WriteLog::WriteGps(player_gps_data_t *data)
   
   return;
 }
+
+////////////////////////////////////////////////////////////////////////////
+// Write truth data to file
+void WriteLog::WriteTruth(player_truth_data_t *data)
+{
+  fprintf(this->file, "%+07.3f %+07.3f %+04.3f",
+          MM_M(HINT32(data->px)),
+          MM_M(HINT32(data->py)),
+          DEG_RAD(HINT32(data->pa)));
+  
+  return;
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Write fiducial data to file
+void WriteLog::WriteFiducial(player_fiducial_data_t *data)
+{
+  // format: <count> [<id> <range> <bearing> <orientation>] ...
+  fprintf(this->file, "%d", HUINT16(data->count));
+  for(int i=0;i<HUINT16(data->count);i++)
+  {
+    fprintf(this->file, " %d %+07.3f %+07.3f %+04.3f",
+            HINT16(data->fiducials[i].id),
+            MM_M(HINT16(data->fiducials[i].pose[0])),
+            DEG_RAD(HINT16(data->fiducials[i].pose[1])),
+            DEG_RAD(HINT16(data->fiducials[i].pose[2])));
+  }
+  
+  return;
+}
+
 
