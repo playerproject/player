@@ -1104,7 +1104,7 @@ int main( int argc, char *argv[] )
 {
   char auth_key[PLAYER_KEYLEN] = "";
   char *configfile = NULL;
-  char *gz_serverid = NULL;
+  int gz_serverid = -1;
   char *gz_prefixid = NULL;
   char *readlog_filename = NULL;
   double readlog_speed = 1.0;
@@ -1189,12 +1189,11 @@ int main( int argc, char *argv[] )
     {
       if(++i<argc)
       {
-        gz_serverid = argv[i];
+        gz_serverid = atoi(argv[i]);
       }
       else
       {
-        Usage();
-        exit(-1);
+        gz_serverid = 0;
       }
     }
     else if(!strcmp(argv[i], "--gazebo-prefix"))
@@ -1332,7 +1331,7 @@ int main( int argc, char *argv[] )
     exit(-1);
 #endif
   }
-  else if (gz_serverid != NULL)
+  else if (gz_serverid >= 0)
   {
 #ifdef INCLUDE_GAZEBO
     // Initialize gazebo client
@@ -1512,7 +1511,7 @@ int main( int argc, char *argv[] )
 
 #if INCLUDE_GAZEBO
   // Finalize gazebo client
-  if (gz_serverid != NULL)
+  if (gz_serverid >= 0)
     GzClient::Fini();
 #endif
   

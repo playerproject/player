@@ -45,11 +45,11 @@ const char *GzClient::prefix_id = "";
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize 
-int GzClient::Init(const char *serverid, const char *prefixid)
+int GzClient::Init(int serverid, const char *prefixid)
 {
   GzClient::client = gz_client_alloc();
 
-  if (gz_client_connect(GzClient::client, serverid) != 0)
+  if (gz_client_connect_wait(GzClient::client, serverid, GZ_CLIENT_ID_PLAYER) != 0)
     return -1;
 
   GzClient::sim = gz_sim_alloc();
