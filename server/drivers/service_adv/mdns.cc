@@ -80,6 +80,9 @@ class SrvAdv_MDNS : public CDevice {
     // you could stop the device here if you want but only the destructor
     // currently calls this
     void stop();
+
+    // Main function for device thread
+    virtual void Main();
 };
 
 
@@ -101,6 +104,7 @@ void ServiceAdvMDNS_Register(DriverTable* table)
 
 SrvAdv_MDNS::~SrvAdv_MDNS() {
     stop();
+    sw_discovery_fina(howl_client);
 }
 
 // Constructor
@@ -109,6 +113,7 @@ SrvAdv_MDNS::SrvAdv_MDNS(char* interface, ConfigFile* configFile, int configSect
     CDevice(0,0,0,0)
 {
     //alwayson = true;      // since there is no client interface
+    // this breaks player so I commented it out
 
     // read name and description from config file. 
     assert(configFile);
@@ -169,8 +174,11 @@ void SrvAdv_MDNS::Prepare() {
     }
 
     // determine a suitible default name if it was unset in the config file:
-    if(name == "")
-        name = "robot" + (device_id.port + 1) - PLAYER_PORTNUM;
+    if(name == "") {
+        char portstr[12];
+        snprintf(portstr, 12, "%d", (device_id.port + 1) - PLAYER_PORTNUM);
+        name = std::string("robot") + portstr;
+    }
 
     // add a description to the TXT record if given in the config file
     if(description != "") {
@@ -210,15 +218,21 @@ void SrvAdv_MDNS::Prepare() {
         
 
     sw_text_record_fina(txt);
-    sw_discovery_run(howl_client);
+    StartThread();
 
 }
 
+void SrvAdv_MDNS::Main() {
+    printf("service_adv_mdns: running howl...\n");
+    sw_discovery_run(howl_client); // (does not return)
+}
 
 // stop the service directory
 void SrvAdv_MDNS::stop()
 {
     sw_discovery_stop_publish(howl_client, id);
+    sw_discovery_stop_run(howl_client);
+    StopThread();
 }
 
 
