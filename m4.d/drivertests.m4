@@ -259,6 +259,8 @@ PLAYER_ADD_DRIVER([iwspy],[drivers/wifi],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([khepera],[drivers/mixed/khepera],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],[gsl/gsl_version.h],[],
