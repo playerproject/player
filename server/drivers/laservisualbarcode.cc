@@ -72,6 +72,40 @@ class LaserVisualBarcode : public CDevice
   // Returns non-zero if the laser data has been updated.
   private: int UpdateLaser();
 
+  // Info on potential fiducials.
+  private: struct fiducial_t
+  {
+    // Id (-1) if undetermined.
+    int id;
+
+    // Pose of fiducial.
+    double pose[3];
+
+    // Uncertainty in pose.
+    double upose[3];
+
+    // Time at which fiducial was last seen by the laser.
+    double laser_time;
+
+    // Time at which ptz selected this fiducial,
+    // and the time at which the ptz locked on to this fiducial.
+    double ptz_select_time;
+    double ptz_lockon_time;
+
+    // Time at which the fiducial was identified.
+    double id_time;
+  };
+
+  // Info on valid blobs.
+  private: struct blob_t
+  {
+    // Blob channel.
+    int ch;
+  
+    // Blob position in image.
+    int x, y;
+  };
+
   // Analyze the laser data to find fidicuials (reflectors).
   private: void FindLaserFiducials(double time, player_laser_data_t *data);
     
@@ -82,6 +116,9 @@ class LaserVisualBarcode : public CDevice
   // Match a new laser fiducial against the ones we are already
   // tracking.  The pose is relative to the laser.
   private: void MatchLaserFiducial(double time, double pose[3]);
+
+  // Retire fiducials we havent seen for a while.
+  private: void RetireLaserFiducials(double time, player_laser_data_t *data);
 
   // Update the PTZ to point at one of the laser reflectors.
   private: int UpdatePtz();
@@ -99,7 +136,8 @@ class LaserVisualBarcode : public CDevice
   private: void FindBlobs(double time, player_blobfinder_data_t *data);
 
   // Search the list of valid blobs to locate the visual fiducials.
-  private: void FindVisualFiducials();
+  private: int FindVisualFiducials(double time, player_blobfinder_data_t *data,
+                                   int depth, blob_t *prevblob);
     
   // Update the device data (the data going back to the client).
   private: void UpdateData();
@@ -108,7 +146,11 @@ class LaserVisualBarcode : public CDevice
   private: double pose[3];
   
   // Fiducial properties.
-  private: double width, height;
+  private: int barcount;
+  private: double barwidth, barheight;
+
+  // Max time to spend looking at a fiducial.
+  private: double max_ptz_attention;
 
   // Laser stuff.
   private: int laser_index;
@@ -125,49 +167,16 @@ class LaserVisualBarcode : public CDevice
   private: CDevice *blobfinder;
   private: double blobfinder_time;
 
-  // Info on potential fiducials.
-  private: struct fiducial_t
-  {
-    // Id (-1) if undetermined.
-    int id;
-
-    // Pose of fiducial.
-    double pose[3];
-
-    // Uncertainty in pose.
-    double upose[3];
-
-    // Time at which fiducial was last seen by the laser.
-    double laser_time;
-
-    // Time at which fiducial was last seen by the ptz.
-    double ptz_time;
-
-    // Time at which ficuial was last seen by the blobfinder.
-    double blobfind_time;
-  };
-
   // List of currently tracked fiducials.
   private: int fiducial_count;
   private: fiducial_t fiducials[256];
 
-  // The current selected fiducial for the ptz, and the time at which
-  // we started paying attention to it.
+  // The current selected fiducial for the ptz, the time at which we
+  // selected it, and the time at which we first locked on to it.
   private: fiducial_t *ptz_fiducial;
-  private: double ptz_fiducial_time;
 
   // Dimensions of the zoomed image for the target fiducial (m).
   private: double zoomwidth, zoomheight;
-
-  // Info on valid blobs.
-  private: struct blob_t
-  {
-    // Blob channel.
-    int ch;
-
-    // Blob position in image.
-    int x, y;
-  };
 
   // List of current valid blobs.
   private: int blob_count;
@@ -210,21 +219,24 @@ LaserVisualBarcode::LaserVisualBarcode(char* interface, ConfigFile* cf, int sect
 
   // If laser_index is not overridden by an argument here, then we'll
   // use the device's own index, which we can get in Setup() below.
-  this->laser_index = cf->ReadInt(section, "laser_index", -1);
+  this->laser_index = cf->ReadInt(section, "laser", -1);
   this->laser = NULL;
   this->laser_time = 0;
 
-  this->ptz_index = cf->ReadInt(section, "ptz_index", -1);
+  this->ptz_index = cf->ReadInt(section, "ptz", -1);
   this->ptz = NULL;
   this->ptz_time = 0;
 
-  this->blobfinder_index = cf->ReadInt(section, "blobfinder_index", -1);
+  this->blobfinder_index = cf->ReadInt(section, "blobfinder", -1);
   this->blobfinder = NULL;
   this->blobfinder_time = 0;
 
+  this->max_ptz_attention = cf->ReadFloat(section, "max_ptz_attention", 2.0);
+  
   // Default fiducial properties.
-  this->width = cf->ReadLength(section, "width", 0.08);
-  this->height = cf->ReadLength(section, "height", 0.02);
+  this->barcount = cf->ReadInt(section, "barcount", 3);
+  this->barwidth = cf->ReadLength(section, "barwidth", 0.08);
+  this->barheight = cf->ReadLength(section, "barheight", 0.02);
 
   // Reset fiducial list.
   this->fiducial_count = 0;
@@ -245,7 +257,7 @@ int LaserVisualBarcode::Setup()
   
   // Subscribe to the laser.
   id.code = PLAYER_LASER_CODE;
-  id.index = (this->laser_index > 0 ? this->laser_index : this->device_id.index);
+  id.index = (this->laser_index >= 0 ? this->laser_index : this->device_id.index);
   id.port = this->device_id.port;
   this->laser = deviceTable->GetDevice(id);
   if (!this->laser)
@@ -267,7 +279,7 @@ int LaserVisualBarcode::Setup()
   
   // Subscribe to the PTZ.
   id.code = PLAYER_PTZ_CODE;
-  id.index = (this->ptz_index > 0 ? this->ptz_index : this->device_id.index);
+  id.index = (this->ptz_index >= 0 ? this->ptz_index : this->device_id.index);
   id.port = this->device_id.port;
   this->ptz = deviceTable->GetDevice(id);
   if (!this->ptz)
@@ -283,7 +295,7 @@ int LaserVisualBarcode::Setup()
 
   // Subscribe to the blobfinder.
   id.code = PLAYER_BLOBFINDER_CODE;
-  id.index = (this->blobfinder_index > 0 ? this->blobfinder_index : this->device_id.index);
+  id.index = (this->blobfinder_index >= 0 ? this->blobfinder_index : this->device_id.index);
   id.port = this->device_id.port;
   this->blobfinder = deviceTable->GetDevice(id);
   if (!this->blobfinder)
@@ -432,6 +444,9 @@ int LaserVisualBarcode::UpdateLaser()
   // Find possible fiducials in this scan.
   this->FindLaserFiducials(time, &data);
 
+  // Retire fiducials we havent seen for a while.
+  this->RetireLaserFiducials(time, &data);
+
   return 1;
 }
 
@@ -486,8 +501,8 @@ void LaserVisualBarcode::FindLaserFiducials(double time, player_laser_data_t *da
       // Test moments to see if they are valid.
       valid = 1;
       valid &= (mn >= 1.0);
-      dr = this->width / 2;
-      db = atan2(this->width / 2, mr);
+      dr = this->barwidth / 2;
+      db = atan2(this->barwidth / 2, mr);
       valid &= (mrr < (dr * dr));
       valid &= (mbb < (db * db));
       
@@ -536,7 +551,7 @@ void LaserVisualBarcode::FitLaserFiducial(player_laser_data_t *data,
     mb += b;
   }
 
-  mr += this->width / 2;
+  mr += this->barwidth / 2;
   mb /= mn;
 
   pose[0] = mr * cos(mb);
@@ -590,8 +605,9 @@ void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3])
       minfiducial->pose[1] = pose[1];
       minfiducial->pose[2] = pose[2];
       minfiducial->laser_time = time;
-      minfiducial->ptz_time = 0.0;
-      minfiducial->blobfind_time = 0.0;
+      minfiducial->ptz_select_time = -1;
+      minfiducial->ptz_lockon_time = -1;
+      minfiducial->id_time = -1;
     }
   }
 
@@ -603,20 +619,32 @@ void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3])
     minfiducial->pose[2] = pose[2];
     minfiducial->laser_time = time;
   }
+  
+  return;
+}
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Retire fiducials we havent seen for a while.
+void LaserVisualBarcode::RetireLaserFiducials(double time, player_laser_data_t *data)
+{
+  int i;
+  fiducial_t *fiducial;
+  
   // Remove any old fiducials.
   for (i = 0; i < this->fiducial_count; i++)
   {
     fiducial = this->fiducials + i;
 
-    if (time - this->laser_time > 2.0) // TODO
+    if (time - fiducial->laser_time > 1.0) // TODO
     {
-      memmove(fiducial, fiducial + sizeof(fiducial_t),
-              (this->fiducial_count - i - 1) * sizeof(fiducial_t));
+      if (this->ptz_fiducial == fiducial)
+        this->ptz_fiducial = NULL;
+      memmove(fiducial, fiducial + 1, (this->fiducial_count - i - 1) * sizeof(fiducial_t));
       this->fiducial_count--;
+      i--;
     }
   }
-  
   return;
 }
 
@@ -663,36 +691,34 @@ void LaserVisualBarcode::SelectPtzTarget(double time, player_ptz_data_t *data)
   double t, maxt;
   fiducial_t *fiducial;
 
-  // Consider the currently selected target.
-  // Give the blobfinder time to identify it.
+  // Consider the currently selected target for a while to
+  // give the blobfinder time to identify it.
   if (this->ptz_fiducial != NULL)
   {
-    if (this->ptz_fiducial->id < 0)
-      if (time - this->ptz_fiducial_time < 4.0)
-        return;
+    if (time - this->ptz_fiducial->ptz_select_time < this->max_ptz_attention)
+      return;
   }
 
-  // Blobfinder has made the identification, or we have given up.
-  if (this->ptz_fiducial != NULL)
-    this->ptz_fiducial->blobfind_time = time;
-      
   // Find one we havent looked at for while.
-  maxt = 0.0;
   this->ptz_fiducial = NULL;
+  maxt = -1;
   
   for (i = 0; i < this->fiducial_count; i++)
   {
     fiducial = this->fiducials + i;
 
-    if (fiducial->id >= 0)
-      continue;
-    t = time - fiducial->blobfind_time;
+    t = time - fiducial->ptz_select_time;
     if (t > maxt)
     {
       maxt = t;
       this->ptz_fiducial = fiducial;
-      this->ptz_fiducial_time = time;
     }
+  }
+
+  if (this->ptz_fiducial)
+  {
+    this->ptz_fiducial->ptz_select_time = time;
+    this->ptz_fiducial->ptz_lockon_time = -1;
   }
   
   return;
@@ -703,22 +729,24 @@ void LaserVisualBarcode::SelectPtzTarget(double time, player_ptz_data_t *data)
 // Servo the PTZ to a target fiducial.
 void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
 {
-  double dx, dy, r, b, tilt, zoom;
+  double dx, dy, r, pan, tilt, zoom;
   fiducial_t *fiducial;
   player_ptz_cmd_t cmd;
-  double maxtime, maxtilt;
-
-  // Max time to spend looking at one fiducial.
-  maxtime = 4.0;
+  double maxtilt;
+  double deadpan, deadzoom;
 
   // Max tilt value.
   maxtilt = 5 * M_PI / 180;
+
+  // Deadband values.
+  deadpan = 2;
+  deadzoom = 2;
   
   fiducial = this->ptz_fiducial;
   if (fiducial == NULL)
   {
     r = 0;
-    b = 0;
+    pan = 0;
     tilt = 0;
     zoom = M_PI;
   }
@@ -729,20 +757,32 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
     dx = fiducial->pose[0];
     dy = fiducial->pose[1];
     r = sqrt(dx * dx + dy * dy);
-    b = atan2(dy, dx);
-    tilt = maxtilt * sin((time - this->ptz_fiducial_time) / maxtime * 2 * M_PI);
-    zoom = 8 * atan2(this->width / 2, r);
+    pan = atan2(dy, dx);
+    zoom = 8 * atan2(this->barwidth / 2, r);
+
+    // See if we have locked on yet.
+    if (fiducial->ptz_lockon_time < 0)
+      if (fabs(pan * 180 / M_PI - data->pan) < deadpan &&
+          fabs(zoom * 180 / M_PI - data->zoom) < deadzoom)
+        fiducial->ptz_lockon_time = time;
+
+    // If we havent locked on yet...
+    if (fiducial->ptz_lockon_time < 0)
+      tilt = 0;
+    else
+      tilt = maxtilt * sin((time - fiducial->ptz_lockon_time) /
+                           this->max_ptz_attention * 2 * M_PI);
   }
+  
+  // Compose the command packet to send to the PTZ device.
+  cmd.pan = htons(((int16_t) (pan * 180 / M_PI)));
+  cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
+  cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
+  this->ptz->PutCommand((unsigned char*) &cmd, sizeof(cmd));
 
   // Compute the dimensions of the image at the range of the target fiducial.
   this->zoomwidth = 2 * r * tan(data->zoom * M_PI / 180 / 2);
   this->zoomheight = 3.0 / 4.0 * this->zoomwidth;
-
-  // Compose the command packet to send to the PTZ device.
-  cmd.pan = htons(((int16_t) (b * 180 / M_PI)));
-  cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
-  cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
-  this->ptz->PutCommand((unsigned char*) &cmd, sizeof(cmd));
 
   return;
 }
@@ -752,7 +792,7 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
 // Process any new blobfinder data.
 int LaserVisualBarcode::UpdateBlobfinder()
 {
-  int i, ch;
+  int i, ch, id;
   player_blobfinder_data_t data;
   player_blobfinder_header_elt_t *channel;
   player_blobfinder_blob_elt_t *blob;
@@ -794,7 +834,18 @@ int LaserVisualBarcode::UpdateBlobfinder()
   // Extract valid blobs.
   this->FindBlobs(time, &data);
 
-  printf("found blobs %d\n", this->blob_count);
+  // Search for fiducials.
+  id = this->FindVisualFiducials(time, &data, 0, NULL);
+
+  // Assign id to fiducial we are currently looking at.
+  if (id >= 0 && this->ptz_fiducial)
+  {
+    if (this->ptz_fiducial->ptz_lockon_time >= 0)
+    {
+      this->ptz_fiducial->id = id;
+      this->ptz_fiducial->id_time = time;
+    }
+  }
   
   return 1;
 }
@@ -818,8 +869,8 @@ void LaserVisualBarcode::FindBlobs(double time, player_blobfinder_data_t *data)
   tol = 0.5;
 
   // Compute expect width and height at the current range and zoom.
-  width = (int) (this->width / this->zoomwidth * data->width);
-  height = (int) (this->height / this->zoomheight * data->height);
+  width = (int) (this->barwidth / this->zoomwidth * data->width);
+  height = (int) (this->barheight / this->zoomheight * data->height);
       
   // Set limits
   minx = (int) ((1 - tol) * data->width / 2);
@@ -833,9 +884,11 @@ void LaserVisualBarcode::FindBlobs(double time, player_blobfinder_data_t *data)
   minarea = 50;
   maxarea = maxwidth * maxheight;
 
+  /*
   printf("zoom %.3f %.3f\n", this->zoomwidth, this->zoomheight);
   printf("image %d %d\n", data->width, data->height);
   printf("w, h %d %d\n", width, height);
+  */
   
   this->blob_count = 0;
   for (ch = 0; ch < PLAYER_BLOBFINDER_MAX_CHANNELS; ch++)
@@ -858,8 +911,10 @@ void LaserVisualBarcode::FindBlobs(double time, player_blobfinder_data_t *data)
       if ((int) blob->area < minarea || (int) blob->area > maxarea)
         continue;
 
+      /*
       printf("%d %d : %d %d : %d\n", blob->x, blob->y,
              blob->right - blob->left, blob->bottom - blob->top, blob->area);
+      */
 
       // Add to valid blob list.
       if (this->blob_count < ARRAYSIZE(this->blobs))
@@ -877,27 +932,55 @@ void LaserVisualBarcode::FindBlobs(double time, player_blobfinder_data_t *data)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Search the list of valid blobs to locate the visual fiducials.
-void LaserVisualBarcode::FindVisualFiducials()
+// Do a recursive depth-first search of the blob list for fiducals.
+int LaserVisualBarcode::FindVisualFiducials(double time, player_blobfinder_data_t *data,
+                                            int depth, blob_t *prevblob)
 {
-  /*
+  int i, id;
+  blob_t *blob;
+  double dx, dy;
+  double tol;
+  double width, height;
+
+  // Allowable tolerance (fractional error).
+  tol = 0.5;
+
+  // Compute expected width and height at the current range and zoom.
+  width = (int) (this->barwidth / this->zoomwidth * data->width);
+  height = (int) (this->barheight / this->zoomheight * data->height);
+
   for (i = 0; i < this->blob_count; i++)
   {
-    for (j = 0; j < this->blob_count; j++)
-    {
-      if (j == i)
-        continue;
-      for (k = 0; k < this->blob_count; k++)
-      {
-        if (k == i)
-          continue;
-        if (k == j)
-          continue;
+    blob = this->blobs + i;
 
-      }
+    if (depth > 0)
+    {
+      dx = blob->x - prevblob->x;
+      dy = blob->y - prevblob->y;
+
+      if (fabs(dx) > (1 - tol) * width)
+        continue;
+      if (dy < (1 - tol) * height)
+        continue;
+      if (dy > (1 + tol) * height)
+        continue;
+    }
+
+    if (depth == this->barcount - 1)
+    {
+      id = blob->ch;
+      return id;
+    }
+    
+    id = this->FindVisualFiducials(time, data, depth + 1, blob);
+    if (id >= 0)
+    {
+      id = 10 * id + blob->ch;
+      return id;
     }
   }
-  */  
+
+  return -1;
 }
 
 
@@ -910,23 +993,30 @@ void LaserVisualBarcode::UpdateData()
   uint32_t timesec, timeusec;
   fiducial_t *fiducial;
   player_fiducial_data_t data;
-  
-  data.count = htons(this->fiducial_count);
+
+  data.count = 0;
   for (i = 0; i < this->fiducial_count; i++)
   {
     fiducial = this->fiducials + i;
 
+    // Only report fiducials that where seen in the most recent laser
+    // scan.
+    if (fiducial->laser_time != this->laser_time)
+      continue;
+    
     r = sqrt(fiducial->pose[0] * fiducial->pose[0] +
              fiducial->pose[1] * fiducial->pose[1]);
     b = atan2(fiducial->pose[1], fiducial->pose[0]);
     o = fiducial->pose[2];
-    
-    data.fiducials[i].id = htons(((int16_t) fiducial->id));
-    data.fiducials[i].pose[0] = htons(((int16_t) (1000 * r)));
-    data.fiducials[i].pose[1] = htons(((int16_t) (180 * b / M_PI)));
-    data.fiducials[i].pose[2] = htons(((int16_t) (180 * o / M_PI))); 
-  }
 
+    data.fiducials[data.count].id = htons(((int16_t) fiducial->id));
+    data.fiducials[data.count].pose[0] = htons(((int16_t) (1000 * r)));
+    data.fiducials[data.count].pose[1] = htons(((int16_t) (180 * b / M_PI)));
+    data.fiducials[data.count].pose[2] = htons(((int16_t) (180 * o / M_PI)));
+    data.count++;
+  }
+  data.count = htons(data.count);
+  
   // Compute the data timestamp (from laser).
   timesec = (uint32_t) this->laser_time;
   timeusec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
@@ -934,3 +1024,5 @@ void LaserVisualBarcode::UpdateData()
   // Copy data to server.
   PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
 }
+
+
