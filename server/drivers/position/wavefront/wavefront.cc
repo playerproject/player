@@ -599,18 +599,18 @@ void Wavefront::Main()
         }
         else
           rotate_waypoint=false;
-
-        //printf("waypoint: %f, %f\n", this->waypoint_x,this->waypoint_y);
-        // transform to odometric frame
-        LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, 
-                           this->waypoint_x, 
-                           this->waypoint_y, 
-                           this->waypoint_a);
-        //printf("*****w_odom: %f, %f, %f\n", wx_odom, wy_odom, RTOD(wa_odom));
-        // hand down next waypoint
-        PutPositionCommand(wx_odom, wy_odom, wa_odom);
-        this->stopped = false;
+      
       }
+      //printf("waypoint: %f, %f\n", this->waypoint_x,this->waypoint_y);
+      // transform to odometric frame
+      LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, 
+                         this->waypoint_x, 
+                         this->waypoint_y, 
+                         this->waypoint_a);
+      //printf("*****w_odom: %f, %f, %f\n", wx_odom, wy_odom, RTOD(wa_odom));
+      // hand down next waypoint
+      PutPositionCommand(wx_odom, wy_odom, wa_odom);
+      this->stopped = false;
     }
 
     usleep(CYCLE_TIME_US);
