@@ -474,10 +474,12 @@ proc player_parse_data {obj device device_index data size} {
 
   if {$device == $PLAYER_MISC_CODE} {
     # misc data packet
-    if {[binary scan $data ccc \
+    if {[binary scan $data ccccc \
             arr($name,$device_index,frontbumpers) \
             arr($name,$device_index,rearbumpers) \
-            arr($name,$device_index,battery)] != 3} {
+            arr($name,$device_index,battery) \
+            arr($name,$device_index,analog) \
+            arr($name,$device_index,digin)] != 5} {
       puts "Warning: failed to get bumpers and battery"
       return
     }
@@ -488,12 +490,18 @@ proc player_parse_data {obj device device_index data size} {
       [expr $arr($name,$device_index,rearbumpers) & 0xFF]
     set arr($name,$device_index,battery) \
       [expr ($arr($name,$device_index,battery) & 0xFF) / 10.0]
+    set arr($name,$device_index,analog) \
+      [expr $arr($name,$device_index,analog) & 0xFF]
+    set arr($name,$device_index,digin) \
+      [expr $arr($name,$device_index,digin) & 0xFF]
 
     # copy into non-indexed spot for convenience
     if {!$device_index} {
       set arr($name,frontbumpers) $arr($name,$device_index,frontbumpers)
       set arr($name,rearbumpers) $arr($name,$device_index,rearbumpers)
       set arr($name,battery) $arr($name,$device_index,battery)
+      set arr($name,analog) $arr($name,$device_index,analog)
+      set arr($name,digin) $arr($name,$device_index,digin)
     }
   } elseif {$device == $PLAYER_GRIPPER_CODE} {
     # ptz data packet

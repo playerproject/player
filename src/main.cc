@@ -192,9 +192,9 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
        info = (player_stage_info_t*)((char*)info + (size_t)(info->len) ))
     {      
 #ifdef DEBUG
-      printf( "Processing mmap at base: %p info: %p (len: %d total: %d)" 
-	      "next: %p end: %p\r", 
-	      arenaIO, info, info->len, ioSize, 
+      printf( "[%d] Processing mmap at base: %p info: %p (len: %d total: %d)" 
+	      "next: %p end: %p\n", 
+	      playerport,arenaIO, info, info->len, ioSize, 
 	      (char*)info + info->len , end );
       fflush( stdout );
 #endif	  
