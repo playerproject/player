@@ -38,7 +38,7 @@ CPositionDevice::~CPositionDevice()
           (short)htons((unsigned short)0);
 }
 
-int CPositionDevice::GetData( unsigned char *dest ) 
+size_t CPositionDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
   /*
    * in this order:
@@ -51,7 +51,7 @@ int CPositionDevice::GetData( unsigned char *dest )
 }
 
 
-void CPositionDevice::PutCommand( unsigned char *src, int size ) 
+void CPositionDevice::PutCommand( unsigned char *src, size_t size ) 
 {
   if(size != POSITION_COMMAND_BUFFER_SIZE)
     puts("CPositionDevice::PutCommand(): command wrong size. ignoring.");

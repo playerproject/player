@@ -31,6 +31,10 @@
 #include <pthread.h>
 #include <device.h>
 
+// For size_t
+//
+#include <stddef.h>
+
 // getting around circular inclusion
 class CDevice;
 
@@ -56,14 +60,14 @@ public:
   virtual int Subscribe(CDevice *);
   virtual int Unsubscribe(CDevice *);
 
-  virtual int GetData(CDevice *, unsigned char * );
-  virtual void PutData(CDevice *, unsigned char * );
+  virtual size_t GetData(CDevice *, unsigned char *, size_t);
+  virtual void PutData(CDevice *, unsigned char *, size_t);
 
-  virtual void GetCommand(CDevice *, unsigned char * );
-  virtual void PutCommand(CDevice *, unsigned char *, int );
+  virtual void GetCommand(CDevice *, unsigned char *, size_t );
+  virtual void PutCommand(CDevice *, unsigned char *, size_t);
 
-  virtual int GetConfig(CDevice *, unsigned char * );
-  virtual void PutConfig(CDevice *, unsigned char *, int );
+  virtual size_t GetConfig(CDevice *, unsigned char *, size_t );
+  virtual void PutConfig(CDevice *, unsigned char *, size_t);
 };
 
 #endif

@@ -52,8 +52,8 @@ class CArenaVisionDevice:public CVisionDevice
     virtual int Shutdown();
     
     // override these to do nothing.
-    virtual void GetCommand(unsigned char *){ /*empty*/ };
-    virtual void PutCommand(unsigned char *, int){ /*empty*/ };
+    virtual void GetCommand(unsigned char *, size_t maxsize){ /*empty*/ };
+    virtual void PutCommand(unsigned char *, size_t maxsize){ /*empty*/ };
 };
 
 #endif

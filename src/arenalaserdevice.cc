@@ -39,7 +39,7 @@ int CArenaLaserDevice::Shutdown()
   return 0; 
 };
 
-int CArenaLaserDevice::GetData( unsigned char *dest )
+size_t CArenaLaserDevice::GetData( unsigned char *dest, size_t maxsize )
 {
   memcpy( dest, arenaIO + LASER_DATA_START, LASER_DATA_BUFFER_SIZE );
 

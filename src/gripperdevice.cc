@@ -33,7 +33,7 @@ CGripperDevice::~CGripperDevice()
   command[GRIPPER_COMMAND_OFFSET] = GRIPstore;
   command[GRIPPER_COMMAND_OFFSET+1] = 0x00;
 }
-int CGripperDevice::GetData( unsigned char *dest ) {
+size_t CGripperDevice::GetData( unsigned char *dest, size_t maxsize ) {
   /*
    * in this order:
    *   ints: time X Y
@@ -47,7 +47,7 @@ int CGripperDevice::GetData( unsigned char *dest ) {
   return(GRIPPER_DATA_BUFFER_SIZE);
 }
 
-void CGripperDevice::PutCommand(unsigned char *src, int size) 
+void CGripperDevice::PutCommand(unsigned char *src, size_t size) 
 {
   if(size != GRIPPER_COMMAND_BUFFER_SIZE)
     puts("CGripperDevice::PutCommand(): command wrong size. ignoring.");

@@ -26,12 +26,12 @@ class CArenaLock : public CLock{
   virtual int Setup( CDevice *obj ); 
   virtual int Shutdown( CDevice *obj ); 
 
-  virtual int GetData( CDevice *obj , unsigned char *dest );
-  virtual void PutData( CDevice *obj,  unsigned char *dest );
-  virtual void GetCommand( CDevice *obj , unsigned char *dest ); 
-  virtual void PutCommand(CDevice *obj ,unsigned char *dest,int); 
-  virtual int GetConfig( CDevice *obj , unsigned char *dest ); 
-  virtual void PutConfig(CDevice *obj ,unsigned char *dest,int); 
+  virtual size_t GetData( CDevice *obj , unsigned char *dest, size_t maxsize );
+  virtual void PutData( CDevice *obj,  unsigned char *dest, size_t maxsize );
+  virtual void GetCommand( CDevice *obj , unsigned char *dest, size_t maxsize); 
+  virtual void PutCommand(CDevice *obj ,unsigned char *dest, size_t maxsize); 
+  virtual size_t GetConfig( CDevice *obj , unsigned char *dest, size_t maxsize); 
+  virtual void PutConfig(CDevice *obj ,unsigned char *dest, size_t maxsize); 
   virtual int Subscribe( CDevice *obj );
   virtual int Unsubscribe( CDevice *obj ); 
 };

@@ -40,12 +40,12 @@ class CNoDevice:public CDevice {
   
   int Setup();
   int Shutdown();
-  int GetData( unsigned char * );
-  void PutData( unsigned char * );
-  void GetCommand( unsigned char * );
-  void PutCommand( unsigned char *,int );
-  int GetConfig( unsigned char * );
-  void PutConfig( unsigned char *,int );
+  size_t GetData( unsigned char *, size_t maxsize );
+  void PutData( unsigned char *, size_t maxsize );
+  void GetCommand( unsigned char *, size_t maxsize );
+  void PutCommand( unsigned char *, size_t maxsize);
+  size_t GetConfig( unsigned char *, size_t maxsize);
+  void PutConfig( unsigned char *, size_t maxsize);
 };
 
 #endif

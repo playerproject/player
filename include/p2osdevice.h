@@ -139,12 +139,12 @@ private:
 
   virtual int Setup();
   virtual int Shutdown();
-  virtual int GetData( unsigned char * );
-  virtual void PutData( unsigned char * );
-  virtual void GetCommand( unsigned char * );
-  virtual void PutCommand( unsigned char *,int );
-  virtual int GetConfig( unsigned char * );
-  virtual void PutConfig( unsigned char *,int );
+  virtual size_t GetData( unsigned char *, size_t maxsize);
+  virtual void PutData( unsigned char *, size_t maxsize);
+  virtual void GetCommand( unsigned char *, size_t maxsize);
+  virtual void PutCommand( unsigned char *, size_t maxsize);
+  virtual size_t GetConfig( unsigned char *, size_t maxsize);
+  virtual void PutConfig( unsigned char *, size_t maxsize);
   int SendReceive(CPacket* pkt, bool already_have_lock);
   void ResetRawPositions();
 };

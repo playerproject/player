@@ -288,13 +288,13 @@ CVisionDevice::KillACTS()
 /* could use this later to send the QUIT packet to ACTS...*/
 
 void 
-CVisionDevice::PutData(unsigned char* src)
+CVisionDevice::PutData(unsigned char* src, size_t size)
 {
   memcpy(data,src,*((unsigned short*)src)+sizeof(short));
 }
 
-int 
-CVisionDevice::GetData(unsigned char* dest)
+size_t
+CVisionDevice::GetData(unsigned char* dest, size_t maxsize)
 {
   /* size is stored at first two bytes */
   memcpy(dest,data+sizeof(short),*((unsigned short*)data));
@@ -302,20 +302,20 @@ CVisionDevice::GetData(unsigned char* dest)
 }
 
 void 
-CVisionDevice::GetCommand(unsigned char* dest)
+CVisionDevice::GetCommand(unsigned char* dest, size_t maxsize)
 {
 }
 void 
-CVisionDevice::PutCommand(unsigned char* src, int size)
+CVisionDevice::PutCommand(unsigned char* src, size_t maxsize)
 {
 }
-int 
-CVisionDevice::GetConfig(unsigned char* dest)
+size_t
+CVisionDevice::GetConfig(unsigned char* dest, size_t maxsize)
 {
   return(0);
 }
 void 
-CVisionDevice::PutConfig(unsigned char* src, int size)
+CVisionDevice::PutConfig(unsigned char* src, size_t maxsize)
 {
 }
 
@@ -428,7 +428,7 @@ RunVisionThread(void* visiondevice)
     pthread_testcancel();
 
     /* got the data. now fill it in */
-    vd->GetLock()->PutData(vd, local_data);
+    vd->GetLock()->PutData(vd, local_data, sizeof(local_data));
     }
   }
 

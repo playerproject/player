@@ -353,7 +353,7 @@ int CRobot::Write()
  */
 int CRobot::Read()
 {
-  static unsigned char buf[ACTS_TOTAL_MAX_SIZE];
+  static unsigned char buf[4096];
   unsigned char prefix[3];
   unsigned short size;
   
@@ -364,6 +364,14 @@ int CRobot::Read()
       return(1);
 
     size = ntohs( *(unsigned short *) &prefix[1] );
+
+    // Make sure buffer is big enough
+    //
+    if (size > sizeof(buf))
+    {
+        puts("WARNING: client buffer is too small to contain packet");
+        return 1;
+    }
 
     /* now read the other data */
     if(ExactRead( buf, size))
@@ -420,8 +428,20 @@ int CRobot::Read()
 
 int CRobot::ExactRead( unsigned char buf[], unsigned short size ) 
 {
+    // Read the exact number of bytes we need
+    // ahoward -- ACTS packets may exceed the TCP packet length,
+    // so multiple reads may be requred.
+    //
+    // *** WARNING - should probably check for errors on read
+    //
+    int numread = 0;
+    while (numread < size)
+        numread += read(sock, buf + numread, size - numread);
+    return 0; 
+
+  /*
   int numread;
-  
+    
   if( (numread = read(sock, buf, size)) != size ) 
   {
     if (errno != 0 ) 
@@ -432,6 +452,7 @@ int CRobot::ExactRead( unsigned char buf[], unsigned short size )
     return(1);
   }
   return(0);
+  */
 }
 
 void CRobot::FillPtzData(unsigned char* buf, int size)

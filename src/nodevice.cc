@@ -27,29 +27,29 @@ int CNoDevice::Shutdown()
   return -1; 
 }
 
-int CNoDevice::GetData( unsigned char* p ) 
+size_t CNoDevice::GetData( unsigned char* p, size_t maxsize ) 
 { 
   return(0);
 }
   
-void CNoDevice::PutData( unsigned char* p ) 
+void CNoDevice::PutData( unsigned char* p, size_t maxsize ) 
 { 
 }
 
-void CNoDevice::GetCommand( unsigned char* p ) 
+void CNoDevice::GetCommand( unsigned char* p, size_t maxsize) 
 { 
 }
 
-void CNoDevice::PutCommand( unsigned char* p, int size ) 
+void CNoDevice::PutCommand( unsigned char* p, size_t maxsize) 
 { 
 }
 
-int CNoDevice::GetConfig( unsigned char* p ) 
+size_t CNoDevice::GetConfig( unsigned char* p, size_t maxsize) 
 { 
   return(0);
 }
 
-void CNoDevice::PutConfig( unsigned char* p, int size ) 
+void CNoDevice::PutConfig( unsigned char* p, size_t maxsize) 
 { 
 }
 

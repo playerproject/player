@@ -42,7 +42,7 @@ class CArenaLaserDevice:public CLaserDevice {
   ~CArenaLaserDevice( void );
   
   virtual CLock* GetLock( void ){ return &alock; };
-  virtual int GetData( unsigned char *dest );
+  virtual size_t GetData( unsigned char *dest, size_t maxsize);
   virtual int Setup();
   virtual int Shutdown();
 };

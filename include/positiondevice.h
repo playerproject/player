@@ -34,8 +34,8 @@ class CPositionDevice: public CP2OSDevice {
  public:
     ~CPositionDevice();
     CPositionDevice::CPositionDevice(char* port):CP2OSDevice(port){}
-    virtual int GetData( unsigned char * );
-    void PutCommand( unsigned char *,int);
+    virtual size_t GetData( unsigned char *, size_t maxsize);
+    void PutCommand( unsigned char *, size_t maxsize);
 };
 
 #endif

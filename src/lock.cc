@@ -73,22 +73,22 @@ int CLock::Shutdown( CDevice *obj )
   return( obj->Shutdown() );
 }
 
-int CLock::GetData( CDevice *obj , unsigned char *dest ) 
+size_t CLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize ) 
 {
   int size;
 
   pthread_mutex_lock( &setupDataMutex );
   pthread_mutex_lock( &dataAccessMutex );
-  size = obj->GetData(dest);
+  size = obj->GetData(dest, maxsize);
   pthread_mutex_unlock( &dataAccessMutex );
   pthread_mutex_unlock( &setupDataMutex );
   return(size);
 }
 
-void CLock::PutData( CDevice *obj,  unsigned char *dest ) 
+void CLock::PutData( CDevice *obj,  unsigned char *dest, size_t maxsize) 
 {
   pthread_mutex_lock( &dataAccessMutex );
-  obj->PutData(dest);
+  obj->PutData(dest, maxsize);
   pthread_mutex_unlock( &dataAccessMutex );
   if (firstdata) 
   {
@@ -97,29 +97,30 @@ void CLock::PutData( CDevice *obj,  unsigned char *dest )
   }
 }
 
-void CLock::GetCommand( CDevice *obj , unsigned char *dest ) 
+void CLock::GetCommand( CDevice *obj , unsigned char *dest, size_t maxsize ) 
 {
   pthread_mutex_lock( &commandAccessMutex );
-  obj->GetCommand(dest);
+  obj->GetCommand(dest, maxsize);
   pthread_mutex_unlock( &commandAccessMutex );
 }
 
-void CLock::PutCommand(CDevice *obj ,unsigned char *dest, int size) 
+void CLock::PutCommand(CDevice *obj ,unsigned char *dest, size_t size) 
 {
   pthread_mutex_lock( &commandAccessMutex );
   obj->PutCommand(dest,size);
   pthread_mutex_unlock( &commandAccessMutex );
 }
-int CLock::GetConfig( CDevice *obj , unsigned char *dest ) 
+
+size_t CLock::GetConfig( CDevice *obj , unsigned char *dest, size_t maxsize ) 
 {
   int size;
   pthread_mutex_lock( &configAccessMutex );
-  size = obj->GetConfig(dest);
+  size = obj->GetConfig(dest, maxsize);
   pthread_mutex_unlock( &configAccessMutex );
   return(size);
 }
 
-void CLock::PutConfig(CDevice *obj ,unsigned char *dest, int size) 
+void CLock::PutConfig(CDevice *obj ,unsigned char *dest, size_t size) 
 {
   pthread_mutex_lock( &configAccessMutex );
   obj->PutConfig(dest,size);

@@ -45,7 +45,7 @@ int CArenaPositionDevice::Shutdown()
   return 0;
 }
 
-int CArenaPositionDevice::GetData( unsigned char *dest )
+size_t CArenaPositionDevice::GetData( unsigned char *dest, size_t maxsize)
 {
   // a little wierdness here, to do with the different packaging of P2OS data
   // between the arena and non-arena devices
