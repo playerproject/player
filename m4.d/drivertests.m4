@@ -266,7 +266,7 @@ PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],[gsl/gsl_version.h],[],
 
 PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
-PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[yes],[],[],[])
+PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
 
