@@ -81,7 +81,7 @@ PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[yes],
                   ["-lrfftw -lfftw"],[rfftw.h])
 
 PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],
-["-L$MOBILITY_DIR/lib -L$MOBILITY_DIR/tools/lib -lmby -lidlmby -lomniDynamic2 -lomniORB2 -ltcpwrapGK -lomnithread"], [$MOBILITY_DIR/include/mobilityutil.h])
+["-L$MOBILITY_DIR/lib -L$MOBILITY_DIR/tools/lib -lmby -lidlmby -lomniDynamic2 -lomniORB2 -ltcpwrapGK -lomnithread"], [$MOBILITY_DIR/include/mbylistbase.h])
 
 PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],
                   ["-lisense"],[isense/isense.h])

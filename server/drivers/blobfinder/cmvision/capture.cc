@@ -89,7 +89,7 @@ bool capture::initialize(int nwidth,int nheight)
                            MODE_320x240_YUV422,
 			   //MODE_640x480_RGB,
                            SPEED_400,
-                           FRAMERATE_3_75,
+                           FRAMERATE_15,
                            &camera)!=DC1394_SUCCESS) 
   {
     fprintf( stderr,"unable to setup camera-\n"
