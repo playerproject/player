@@ -383,7 +383,7 @@ Wavefront::GetPositionData()
 
   this->position_x = ((int)ntohl(data.xpos))/1e3;
   this->position_y = ((int)ntohl(data.ypos))/1e3;
-  this->position_a = DTOR(ntohl(data.yaw));
+  this->position_a = DTOR((int)(ntohl(data.yaw)));
   
   // current odom velocities are NOT byteswapped or unit converted, because 
   // we're just passing them through and don't need to use them
@@ -490,7 +490,7 @@ void
 Wavefront::SetWaypoint(double wx, double wy, double wa)
 {
   double wx_odom, wy_odom, wa_odom;
- 
+
   // transform to odometric frame
   LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, wx, wy, wa);
   // hand down waypoint
