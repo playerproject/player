@@ -29,7 +29,7 @@
 
 class CRWISonarDevice: public CRWIDevice {
 public:
-	CRWISonarDevice (char* interface, ConfigFile* cf, int section);
+	CRWISonarDevice ( ConfigFile* cf, int section);
 
 	virtual int Setup ();
 	virtual int Shutdown ();

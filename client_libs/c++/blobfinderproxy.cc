@@ -89,7 +89,6 @@ void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
   blob_count = ntohs(((player_blobfinder_data_t*)buffer)->blob_count);
  
   // fill the special blobfinder buffer.
-  int tmp_numblobs,tmp_index;
   for(int i=0;i<blob_count;i++)
   {
     blobs[i].color = 

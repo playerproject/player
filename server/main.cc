@@ -162,7 +162,7 @@ $ player [options] <configfile>
 where [options] is one or more of the following:
 
 - -h             : Print usage message.
-- -p &lt;rate&gt;: set server update rate, in Hz.
+- -u &lt;rate&gt;: set server update rate, in Hz.
 - -d &lt;level&gt;       : debug message level (0 = none, 1 = default, 9 = all).
 - -t {tcp | udp} : transport protocol to use.  Default: tcp.
 - -p &lt;port&gt;      : port where Player will listen. Default: 6665.

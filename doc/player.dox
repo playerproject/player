@@ -133,7 +133,7 @@ MULTILINE_CPP_IS_BRIEF = NO
 # If set to NO, the detailed description appears after the member 
 # documentation.
 
-DETAILS_AT_TOP         = NO
+DETAILS_AT_TOP         = YES
 
 # If the INHERIT_DOCS tag is set to YES (the default) then an undocumented 
 # member inherits the documentation from any documented member that it 
@@ -391,7 +391,8 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = mainpage.html install.html utils.html clients.html ../server/main.cc ../server/player.h ../server/driver.h ../server/configfile.h ../server/drivers/ ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../utils/playermap/playermap.dox ../client_libs/libplayerc/doc/mainpage.html ../client_libs/libplayerc/doc/libplayerc_py.html ../client_libs/libplayerc/playerc.h
+INPUT                  = mainpage.html classes.html utils.html clients.html ../server/main.cc ../server/player.h ../server/driver.h ../server/configfile.h ../server/drivers/ ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../utils/playermap/playermap.dox ../client_libs/libplayerc/doc/mainpage.html ../client_libs/libplayerc/doc/libplayerc_py.html ../client_libs/libplayerc/playerc.h ../client_libs/c/playercclient.h 
+#../client_libs/c++/playerclient.h
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -400,7 +401,7 @@ INPUT                  = mainpage.html install.html utils.html clients.html ../s
 # *.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx *.hpp 
 # *.h++ *.idl *.odl *.cs *.php *.php3 *.inc
 
-FILE_PATTERNS          = *.cc
+FILE_PATTERNS          = *.cc *.h
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
 # should be searched for input files as well. Possible values are YES and NO. 
@@ -429,7 +430,7 @@ EXCLUDE_PATTERNS       =
 # directories that contain example code fragments that are included (see 
 # the \include command).
 
-EXAMPLE_PATH           = ../client_libs/libplayerc/doc
+EXAMPLE_PATH           = ../client_libs/libplayerc/doc ../examples/c++
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the 
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

@@ -1,7 +1,8 @@
 #include <playerclient.h>
 #include <stdlib.h> /* for exit() */
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) 
+{
   PlayerClient robot("localhost");
   SonarProxy sp(&robot,0,'r');
   PositionProxy pp(&robot,0,'w');

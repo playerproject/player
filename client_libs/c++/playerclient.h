@@ -46,6 +46,41 @@
  * the C++ client
  */
 
+/** @addtogroup clientlibs Client Libraries */
+/** @{ */
+/** @defgroup player_clientlib_cplusplus C++ client library
+
+The C++ client (@p client_libs/c++) is generally the most comprehensive
+library, since it is used to test new features as they are implemented
+in the server.  It is also the most widely used client library and thus
+the best debugged.  Having said that, this client is not perfect, but
+should be straightforward to use by anyone familiar with C++.
+
+The C++ library is built on a "service proxy" model in which the client
+maintains local objects that are proxies for remote services.  There are
+two kinds of proxies: the special server proxy @p PlayerClient and the
+various device-specific proxies.  Each kind of proxy is implemented as a
+separate class.  The user first creates a @p PlayerClient proxy and uses
+it to establish a connection to a Player server.  Next, the proxies of the
+appropriate device-specific types are created and initialized using the
+existing @p PlayerClient proxy.  To make this process concrete, consider
+the following simple example (for clarity, we omit some error-checking):
+
+@include example_from_manual.cc
+
+This program performs simple (and bad) sonar-based obstacle avoidance with
+a mobile robot .
+First, a @p PlayerClient
+proxy is created, using the default constructor to connect to the
+server listening at @p localhost:6665.  Next, a @p SonarProxy is
+created to control the sonars and a @p PositionProxy to control the
+robot's motors.  The constructors for these objects use the existing @p
+PlayerClient proxy to establish @b read (@p 'r') access and @b write (@p
+'w') access to the 0th @p sonar and @p position devices, respectively.
+Finally, we enter a simple loop that reads the current sonar state and
+writes appropriate commands to the motors.
+*/
+
 #ifndef PLAYERCLIENT_H
 #define PLAYERCLIENT_H
 
@@ -783,74 +818,6 @@ class SoundProxy : public ClientProxy
 /*****************************************************************************
  ** end section
  *****************************************************************************/
-
-
-class IDARProxy : public ClientProxy
-{
-  public:
-  
-  // the client calls this method to make a new proxy
-  //   leave access empty to start unconnected
-  IDARProxy(PlayerClient* pc, unsigned short index, 
-	    unsigned char access = 'c') :
-   ClientProxy(pc,PLAYER_IDAR_CODE,index,access) {}
- 
-  // interface that all proxies must provide
-  // reads the receive buffers from player
-  //void FillData(player_msghdr_t hdr, const char* buffer);
-  
-  // interface that all proxies SHOULD provide
-  void Print();
-  
-  // tx parameter is optional; defaults to 0
-  int SendMessage( idartx_t* tx );
-  
-  // get message and transmission details 
-  int GetMessage( idarrx_t* rx );  
-
-  // get message and transmission details without flushing the buffer
-  int GetMessageNoFlush( idarrx_t* rx );  
-
-  // send and get a message
-  int SendGetMessage( idartx_t* tx, idarrx_t* rx );  
-
-  // pretty print a message
-  void PrintMessage(idarrx_t* rx); 
-};
-
-class IDARTurretProxy : public ClientProxy
-{
-  public:
-  
-  // the client calls this method to make a new proxy
-  //   leave access empty to start unconnected
-  IDARTurretProxy(PlayerClient* pc, unsigned short index, 
-	    unsigned char access = 'c') :
-  ClientProxy(pc,PLAYER_IDARTURRET_CODE,index,access) {}
-  
-  // interface that all proxies must provide
-  // reads the receive buffers from player
-  //void FillData(player_msghdr_t hdr, const char* buffer);
-  
-  // interface that all proxies SHOULD provide
-  void Print();
-  
-  // tx parameter is optional; defaults to 0
-  int SendMessages( player_idarturret_config_t* conf );
-  
-  // get message and transmission details 
-  int GetMessages( player_idarturret_reply_t* reply );  
-
-  // send and get in one operation for efficiency
-  int SendGetMessages( player_idarturret_config_t* conf,
-		       player_idarturret_reply_t* reply );
-
-  // pretty print a message
-  void PrintMessages( player_idarturret_reply_t* reply ); 
-
-  void PrintMessage( idarrx_t* msg );
-};
-
 
 /*****************************************************************************
  ** begin section FiducialProxy

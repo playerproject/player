@@ -32,6 +32,16 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_amcl amcl
+
+@todo
+Document amcl
+*/
+
+/** @} */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

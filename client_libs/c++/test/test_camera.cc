@@ -11,10 +11,6 @@
 
 int test_camera(PlayerClient *client, int index)
 {
-  unsigned int depth;
-  unsigned int width, height;
-  unsigned int imageSize;
-
   unsigned char image[PLAYER_CAMERA_IMAGE_SIZE];
 
   unsigned char access;

@@ -101,7 +101,7 @@ class Driver
     /// @param interface Player interface code; e.g., PLAYER_POSITION_CODE
     /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
     /// @param datasize Maximum size of the data packet.
-    /// @param cmdsize Maximum size of the command packet.
+    /// @param commandsize Maximum size of the command packet.
     /// @param reqqueuelen Length of the request queue.
     /// @param repqueuelen Length of the reply queue.
     Driver(ConfigFile *cf, int section, int interface, uint8_t access,
@@ -123,7 +123,7 @@ class Driver
     /// @param id Player device id.
     /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
     /// @param datasize Maximum size of the data packet.
-    /// @param cmdsize Maximum size of the command packet.
+    /// @param commandsize Maximum size of the command packet.
     /// @param reqqueuelen Length of the request queue.
     /// @param repqueuelen Length of the reply queue.
     /// @returns Returns 0 on success
@@ -137,8 +137,8 @@ class Driver
     /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
     /// @param data Pointer to pre-allocated data storage.
     /// @param datasize Maximum size of the data packet.
-    /// @param cmd Pointer to pre-allocated command storage.
-    /// @param cmdsize Maximum size of the command packet.
+    /// @param command Pointer to pre-allocated command storage.
+    /// @param commandsize Maximum size of the command packet.
     /// @param reqqueuelen Length of the request queue.
     /// @param repqueuelen Length of the reply queue.
     /// @returns Returns 0 on success

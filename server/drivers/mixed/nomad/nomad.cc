@@ -131,6 +131,7 @@ Richard Vaughan, Pawel Zebrowski
 
 #include "error.h"
 #include <playertime.h>
+#include "nomad.h"
 extern PlayerTime* GlobalTime;
 
 #define NOMAD_QLEN 5
@@ -335,7 +336,7 @@ Nomad::Main()
       double sonar_scale = NOMAD_SONAR_RANGE_MAX_MM / 255.0;
 
       //printf( "Nomad sonar: " );
-      for( int i=0; i<NOMAD_SONAR_COUNT; i++ )
+      for( int i=0; i<PLAYER_NOMAD_SONAR_COUNT; i++ )
 	{
 	  //printf( " %d", State[ STATE_SONAR_0 + i ] );
 	  data.sonar[i] 

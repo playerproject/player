@@ -61,7 +61,7 @@ AIOProxy::Print()
 	printf("WARNING: AIOProxy received a negative count value.\n");
    	count=0;
   }
-  for (size_t i=0;i<count;i++)
+  for (char i=0;i<count;i++)
   {
 	  printf("AIO%i - %i\n",i, anin[i]);
   }

@@ -35,6 +35,7 @@
 #include "amcl.h"
 
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Load sonar settings
 int AdaptiveMCL::LoadSonar(ConfigFile* cf, int section)
@@ -46,7 +47,6 @@ int AdaptiveMCL::LoadSonar(ConfigFile* cf, int section)
 
   return 0;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the sonar
@@ -178,6 +178,7 @@ bool AdaptiveMCL::UpdateSonarModel(amcl_sensor_data_t *data)
 
   return true;
 }
+#endif
 
 #ifdef INCLUDE_RTKGUI
 

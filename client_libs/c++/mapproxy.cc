@@ -133,7 +133,7 @@ int MapProxy::GetMap()
     {
       fprintf(stderr, "failed to get map data");
       return -1;
-    } else if (hdr.size != (reqlen + si * sj)) {
+    } else if ((int)hdr.size != (reqlen + si * sj)) {
       fprintf(stderr, "go less map data than expected (%d != %d)",
           hdr.size, reqlen + si*sj);
       return -1;

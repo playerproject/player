@@ -88,6 +88,7 @@ Richard Vaughan, Pawel Zebrowski
 #include <drivertable.h>
 #include <devicetable.h>
 #include "error.h"
+#include "nomad.h"
 
 class NomadPosition:public Driver 
 {
