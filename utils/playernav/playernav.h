@@ -84,6 +84,8 @@ playerc_mclient_t* init_player(playerc_client_t** clients,
 void fini_player(playerc_mclient_t* mclient,
                  playerc_client_t** clients,
                  playerc_map_t** maps,
+                 playerc_localize_t** localizes,
+                 playerc_planner_t** planners,
                  int num_bots);
 
 /* Parse command line arguments, of the form host:port */
