@@ -145,8 +145,7 @@ LinuxWiFi::Shutdown()
  */
 size_t
 LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize, 
-              uint32_t *timestamp_sec,
-	      uint32_t *timestamp_usec)
+                   uint32_t *timestamp_sec, uint32_t *timestamp_usec)
 {
   player_wifi_data_t data;
   int eth, status;
@@ -154,14 +153,18 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
   unsigned short wlink, wlevel, wnoise;
 
   struct timeval curr;
+
+  // Dummy rewind; this is a hack to force the kernel/stdlib to
+  // re-read the file.
+  rewind(this->info_fp);
   
   // get the wifi info
   if (fsetpos(this->info_fp, &this->start_pos)) {
     fprintf(stderr, "LinuxWiFi: fsetpos returned error\n");
   }
-  
+
   fscanf(this->info_fp, "  eth%d: %d %lf %lf %lf", &eth, &status,
-	 &link, &level, &noise);
+         &link, &level, &noise);
 
   //printf("LinuxWiFi: %lf %lf %lf\n", link,level,noise);
   
