@@ -112,13 +112,13 @@ void bumper_update(bumper_t *bumper)
         PRINT_ERR1("get_geom failed : %s", playerc_error_str());    
 
       for (i = 0; i < bumper->proxy->pose_count; i++){
-	  //fprintf(stderr, "bumper poses %02d: %f %f %f\n",i,bumper->proxy->poses[i][0],bumper->proxy->poses[i][1],bumper->proxy->poses[i][2]);
+	  //fprintf(stderr, "bumper poses %02d: %f %f %f %f %f\n",i,bumper->proxy->poses[i][0],bumper->proxy->poses[i][1],bumper->proxy->poses[i][2],bumper->proxy->poses[i][3],bumper->proxy->poses[i][4]);
         rtk_fig_origin(bumper->scan_fig[i],
-                       bumper->proxy->poses[i][0]/1000, // convert mm to m
-                       bumper->proxy->poses[i][1]/1000,
+                       bumper->proxy->poses[i][0]/1e3, // convert mm to m
+                       bumper->proxy->poses[i][1]/1e3,
                        bumper->proxy->poses[i][2]*M_PI/180.0); // convert deg to rad
 					   
-					   }
+      }
     }
   }
   else
@@ -148,8 +148,7 @@ void bumper_update(bumper_t *bumper)
 void bumper_draw(bumper_t *bumper)
 {
   int i;
-	double radius, half_angle;
-
+  double radius, half_angle;
 
   for (i = 0; i< bumper->proxy->bumper_count; i++)
   {
@@ -157,18 +156,29 @@ void bumper_draw(bumper_t *bumper)
     rtk_fig_clear(bumper->scan_fig[i]);
 
     // Draw in the bumper, diff colour if its active
-	if (bumper->proxy->bumpers[i] == 0)
-	    rtk_fig_color_rgb32(bumper->scan_fig[i], COLOR_BUMPER);
-	else
-	    rtk_fig_color_rgb32(bumper->scan_fig[i], COLOR_BUMPER_ACTIVE);
+    if (bumper->proxy->bumpers[i] == 0)
+      rtk_fig_color_rgb32(bumper->scan_fig[i], COLOR_BUMPER);
+    else
+      rtk_fig_color_rgb32(bumper->scan_fig[i], COLOR_BUMPER_ACTIVE);
 
-	// calc teh geometry of the bumper in trk terms
-	radius = bumper->proxy->poses[i][4]/1000.0;	
-	half_angle = (bumper->proxy->poses[i][3]/1000)/radius/2 - 0.04;
+    // thicker line for the bumper
+    rtk_fig_linewidth(bumper->scan_fig[i],4);
 
-	// thicker line for the bumper
-	rtk_fig_linewidth(bumper->scan_fig[i],4);
-	rtk_fig_ellipse_arc(bumper->scan_fig[i],-radius,0,0,radius*2,radius*2,-half_angle,half_angle);	
+    // calc the geometry of the bumper in rtk terms
+    radius = bumper->proxy->poses[i][4]/1e3;
+
+    // check for straight line
+    if(radius == 0)
+    {
+      rtk_fig_line(bumper->scan_fig[i],
+                   0.0,-bumper->proxy->poses[i][3]/1e3/2.0,
+                   0.0,bumper->proxy->poses[i][3]/1e3/2.0);
+    }
+    else
+    {
+      half_angle = (bumper->proxy->poses[i][3]/1e3)/radius/2.0 - 0.04;
+      rtk_fig_ellipse_arc(bumper->scan_fig[i],-radius,0,0,radius*2,radius*2,-half_angle,half_angle);	
+    }
   }
 }
 
