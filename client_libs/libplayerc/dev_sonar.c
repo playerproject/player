@@ -94,7 +94,7 @@ int playerc_sonar_get_geom(playerc_sonar_t *device)
   int i, len;
   player_sonar_geom_t config;
 
-  config.subtype = PLAYER_SONAR_GET_GEOM;
+  config.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));

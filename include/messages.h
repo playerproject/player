@@ -226,21 +226,34 @@ typedef struct
 } __attribute__ ((packed)) player_position_data_t;
 
 
-// RTV - don't much like this config model - it should be a single
-// structured packet that contains all the state at once - but the c++ proxy
-// is set up to do it this way. i guess the real P2OS device does it this way
-
 /* the various configuration commands 
  * NOTE: these must not be the same as any other P2OS device! */
 #define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)1)
-#define PLAYER_POSITION_VELOCITY_CONTROL_REQ ((uint8_t)2)
+#define PLAYER_POSITION_VELOCITY_CONTROL_REQ  ((uint8_t)2)
 #define PLAYER_POSITION_RESET_ODOM_REQ        ((uint8_t)3)
+#define PLAYER_POSITION_GET_GEOM_REQ          ((uint8_t)4)
 
 typedef struct
 {
   uint8_t request; // one of the above request types
   uint8_t value;  // value for the request (usually 0 or 1)
 } __attribute__ ((packed)) player_position_config_t;
+
+
+/* Packet for getting the sonar geometry. */
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_SONAR_GET_GEOM. */
+  uint8_t subtype;
+
+  /* Pose of the robot base, in the robot cs (mm, mm, degrees). */
+  uint16_t pose[3];
+
+  /* Dimensions of the base (mm, mm, degrees). */
+  uint16_t size[2];
+  
+} __attribute__ ((packed)) player_position_geom_t;
+
  
 /*************************************************************************/
 
@@ -281,8 +294,9 @@ typedef struct
 
 /* the various configuration commands 
  * NOTE: these must not be the same as any other P2OS device! */
-#define PLAYER_SONAR_POWER_REQ      ((uint8_t)4)
-#define PLAYER_SONAR_GET_GEOM       ((uint8_t)5)
+#define PLAYER_SONAR_POWER_REQ      ((uint8_t)11)
+#define PLAYER_SONAR_GET_GEOM_REQ   ((uint8_t)12)
+
 
 /*************************************************************************/
 
