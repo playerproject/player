@@ -66,7 +66,7 @@
 #define PLAYER_BPS_STRING            "bps"
 #define PLAYER_DESCARTES_STRING       "descartes"
 #define PLAYER_IDAR_STRING           "idar"
-#define PLAYER_MOTE_CODE             "mote"
+#define PLAYER_MOTE_STRING             "mote"
 
 /* the currently assigned device codes */
 #define PLAYER_PLAYER_CODE         ((uint16_t)1)
