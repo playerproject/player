@@ -19,7 +19,7 @@
  */
 /***************************************************************************
  * Desc: localize device proxy
- * Author: Boyoon Jung
+ * Author: Boyoon Jung, Andrew Howard
  * Date: 20 Jun 2002
  * CVS: $Id$
  **************************************************************************/
@@ -183,9 +183,6 @@ int playerc_localize_get_map(playerc_localize_t *device)
   device->map_size_x = ntohl(info.width);
   device->map_size_y = ntohl(info.height);
   device->map_scale = 1000.0 / ((double) (int32_t) ntohl(info.scale));
-
-  // TESTING
-  printf("map info %d %d %f\n", device->map_size_x, device->map_size_y, device->map_scale);
 
   if (device->map_cells)
     free(device->map_cells);

@@ -91,7 +91,7 @@ int main(int argc, const char *argv[])
   }
 
   // Print interface list.
-  printf("selected interfaces:\n", host, port);
+  printf("selected interfaces [%s:%d]:\n", host, port);
   for (i = 0; i < client->id_count; i++)
     printf("  %s:%d \n", playerc_lookup_name(client->ids[i].code), client->ids[i].index);
 
@@ -125,7 +125,7 @@ int main(int argc, const char *argv[])
         test_laser(client, client->ids[i].index);
         break;
 
-      // Localize device
+      // Localization device
       case PLAYER_LOCALIZE_CODE:
         test_localize(client, client->ids[i].index);
         break;
@@ -159,7 +159,7 @@ int main(int argc, const char *argv[])
       case PLAYER_WIFI_CODE:
         test_wifi(client, client->ids[i].index);
         break;
-
+        
       default:
         printf("no test for interface [%s]\n",
                playerc_lookup_name(client->ids[i].code));

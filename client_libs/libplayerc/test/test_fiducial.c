@@ -16,7 +16,7 @@
 int test_fiducial(playerc_client_t *client, int index)
 {
   int t, i;
-  int bit_count; double bit_width;
+  //int bit_count; double bit_width;
   void *rdevice;
   playerc_fiducial_t *device;
 

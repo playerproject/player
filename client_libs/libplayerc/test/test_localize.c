@@ -16,8 +16,8 @@ int test_localize(playerc_client_t *client, int index)
   void *rdevice;
   playerc_localize_t *device;
 
-  double min, max;
-  int resolution, intensity;
+  //double min, max;
+  //int resolution, intensity;
 
   printf("device [localize] index [%d]\n", index);
 
@@ -29,7 +29,7 @@ int test_localize(playerc_client_t *client, int index)
   else
   {
     FAIL();
-    return;
+    return(-1);
   }
 
   TEST("get map");
