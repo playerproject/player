@@ -314,7 +314,7 @@ AC_CHECK_FUNCS(sigblock)
 AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
-AC_CHECK_LIB(ltdl, lt_dlopenext)
+AC_CHECK_LIB(ltdl, lt_dlopenext, have_libltdl=yes, have_libltdl=no)
 AC_CHECK_LIB(c_r, pthread_create, 
              [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 
@@ -428,6 +428,15 @@ AC_MSG_RESULT([Player will be built on a $build system to run])
 AC_MSG_RESULT([on a $host system, with the following tools:])
 AC_MSG_RESULT([    C   compiler: $CC $CFLAGS])
 AC_MSG_RESULT([    C++ compiler: $CXX $CXXFLAGS])
+
+AC_MSG_RESULT([])
+if test "x$have_libltdl" = "xyes"; then
+  AC_MSG_RESULT([Support for plugin drivers will be included.])
+else
+  AC_MSG_RESULT([Support for plugin drivers will NOT be included.])
+  AC_MSG_RESULT([You should install libltdl, which is part of GNU libtool.])
+fi
+
 AC_MSG_RESULT([])
 if test "x$with_rtk" = "xno"; then
   AC_MSG_RESULT([Player will NOT build RTK-based components.])
@@ -507,6 +516,7 @@ for player_lib in $PLAYER_NODRIVERS; do
 done
 dnl Change the IFS back to what it was.
 IFS=$old_IFS
+
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Player will be installed in:])
 AC_MSG_RESULT([    $prefix/])
