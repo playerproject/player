@@ -305,11 +305,13 @@ void keyboard_handler(struct controller* cont )
   puts("Reading from keyboard");
   puts("---------------------------");
   puts("Moving around:");
-  puts("         i   forward      ");
-  puts(" left  j   l  right       ");
-  puts("         k  backward      ");
+  puts("i : forward");
+  puts("j : left");
+  puts("l : right");
+  puts("k : backward");
   puts("q : increase speed by 10%");
   puts("a : decrease speed by 10%");
+  puts("anything else : stop");
   puts("---------------------------");
 
   for(;;)
@@ -401,12 +403,12 @@ Client::Client(char* host, int port )
   if(!threed)
   {
     if(pp->SetMotorState(1))
-      exit(-1);
+      puts("WARNING: failed to turn on motor power");
   }
   else
   {
     if(pp3->SetMotorState(1))
-      exit(-1);
+      puts("WARNING: failed to turn on motor power");
   }
   
   // store a local copy of the initial p&t
