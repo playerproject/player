@@ -29,7 +29,6 @@ class captureCamera : public capture
 *************************/
    private: 
      int camera_index;
-     int camera_port;
      CDevice *camera;
      bool camera_open;
      int width,height,depth,image_size;
@@ -40,7 +39,7 @@ class captureCamera : public capture
      double camera_time;
   
  public: 
-     captureCamera(char *interface, ConfigFile *cf, int section);
+     captureCamera(int camera_index);
      virtual ~captureCamera(); 
 
      virtual bool initialize(int nwidth,int nheight);

@@ -10,65 +10,60 @@
 #include "conversions.h"
 #include "captureCamera.h"
 
-// what to test for? will work with driver that supports the camera interface
-#ifdef  PLAYER_CAMERA_CODE
-
 #include <unistd.h> // for debugging file writes
 #include <fcntl.h>  // for debugging file writes 
-//#include <iostream>
-//using namespace std;
 
-captureCamera::captureCamera(char *interface, ConfigFile *cf, int section)
-     :capture()
+extern int global_playerport;
+
+captureCamera::captureCamera(int camera_index) : capture()
 {
-     this->camera_index = cf->ReadInt(section, "index", 0);
-     this->camera_port = cf->ReadInt(section, "port", 6665);
-     this->camera = NULL;
-     this->camera_time = 0;
-     //     cout << "captureCamera::captureCamera() index "<<this->camera_index<<" port "<<  this->camera_port<<endl;
+  this->camera_index = camera_index;
+  this->camera = NULL;
+  this->camera_time = 0;
+  //     cout << "captureCamera::captureCamera() index "<<this->camera_index<<" port "<<  this->camera_port<<endl;
 
-     // Subscribe to the camera.
-     id.code = PLAYER_CAMERA_CODE;
-     id.index = this->camera_index;
-     id.port = this->camera_port;
-     this->camera = deviceTable->GetDevice(id);
-     if (!this->camera)
-	  {
-	       PLAYER_ERROR("unable to locate suitable camera device");
-	       camera_open = false;
-	       return;
-	  }
-     if (this->camera->Subscribe(this) != 0)
-	  {
-	       PLAYER_ERROR("unable to subscribe to camera device");
-	       camera_open = false;
-	       return;
-	  }
+  // Subscribe to the camera.
+  id.code = PLAYER_CAMERA_CODE;
+  id.index = this->camera_index;
+  id.port = global_playerport;
+  this->camera = deviceTable->GetDevice(id);
+  if (!this->camera)
+  {
+    PLAYER_ERROR("unable to locate suitable camera device");
+    camera_open = false;
+    return;
+  }
+  if (this->camera->Subscribe(this) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to camera device");
+    camera_open = false;
+    return;
+  }
 
-     // get an image to find it's configuration
-     //this->camera->Wait();
-     size_t size;
-     uint32_t timesec, timeusec;
-     double time;
-     this->camera->Update();
-     // Get the camera data.
-     size = this->camera->GetData(this, (unsigned char*) &data,
-				  sizeof(data), &timesec, &timeusec);
-     time = (double) timesec + ((double) timeusec) * 1e-6;
-     
-     // Do some byte swapping
-     this->width = ntohs(data.width);
-     this->height = ntohs(data.height); 
-     this->depth = data.depth;
-     this->image_size = ntohl(data.image_size); 
-     /*  cout << "captureCamera::initialize()"<<endl;
-	 cout << "width " << width<<endl;
-	 cout << "height " <<height  <<endl;
-	 cout << "depth " <<depth  <<endl;
-	 cout << "image_size " <<image_size <<endl;*/
-     YUV=(unsigned char *)malloc(width*height*2);
-     camera_open = true;
-} 
+  // get an image to find it's configuration
+  //this->camera->Wait();
+  size_t size;
+  uint32_t timesec, timeusec;
+  double time;
+  this->camera->Update();
+  // Get the camera data.
+  size = this->camera->GetData(this, (unsigned char*) &data,
+			       sizeof(data), &timesec, &timeusec);
+  time = (double) timesec + ((double) timeusec) * 1e-6;
+
+  // Do some byte swapping
+  this->width = ntohs(data.width);
+  this->height = ntohs(data.height); 
+  this->depth = data.depth;
+  this->image_size = ntohl(data.image_size); 
+  /*  cout << "captureCamera::initialize()"<<endl;
+      cout << "width " << width<<endl;
+      cout << "height " <<height  <<endl;
+      cout << "depth " <<depth  <<endl;
+      cout << "image_size " <<image_size <<endl;*/
+  YUV=(unsigned char *)malloc(width*height*2);
+  camera_open = true;
+}
 
 captureCamera::~captureCamera()
 {
@@ -132,4 +127,3 @@ unsigned char * captureCamera::convertImageRgb2Yuv422(unsigned char *RGB,int Num
      return YUV;
 }
 
-#endif 

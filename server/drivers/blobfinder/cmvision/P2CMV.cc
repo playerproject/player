@@ -46,20 +46,7 @@
 #include "cmvision.h"
 #include "capture.h"
 
-#if HAVE_1394
-  #include "capture1394.h"
-#endif
-/* V4L2 is currently disabled
-#if HAVE_V4L2
-  #include "captureV4L2.h"
-#endif
-*/
-#if HAVE_V4L
-  #include "capturev4l.h"
-#endif
-#ifdef PLAYER_CAMERA_CODE
 #include "captureCamera.h"
-#endif
 
 #define CMV_NUM_CHANNELS CMV_MAX_COLORS
 #define CMV_HEADER_SIZE 4*CMV_NUM_CHANNELS  
@@ -72,38 +59,24 @@
 
 class CMVisionBF:public CDevice 
 {
-private:
-  int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
-  
-  int width, height;  // the image dimensions
-  const char* colorfile;
-  const char* capturetype;
+  private:
+    int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
 
-  
-  int header_len; // length of incoming packet header
-  int header_elt_len; // length of each header element
-  int blob_size;  // size of each incoming blob
-  
-  CMVision *vision;
+    int width, height;  // the image dimensions
+    const char* colorfile;
+    int camera_index;
 
-  capture *cap;
-  // for getting Gazebo gz_camera to intialize if needed.
-  // dirty hack ! :-(
+    int header_len; // length of incoming packet header
+    int header_elt_len; // length of each header element
+    int blob_size;  // size of each incoming blob
 
-#ifdef PLAYER_CAMERA_CODE //INCLUDE_GAZEBO 
- char * gz_interface;
-  ConfigFile * gz_cf;
-  int gz_section;
-#endif
+    CMVision *vision;
 
-     // ben -- adding bayer conversion
-     bool DoBayerConversion;
-     int BayerPattern;
+    capture *cap;
 
   public:
 
     // constructor 
-    //
     CMVisionBF(char* interface, ConfigFile* cf, int section);
 
     virtual void Main();
@@ -138,45 +111,13 @@ CMVisionBF::CMVisionBF(char* interface, ConfigFile* cf, int section)
   vision=NULL;
   cap=NULL;
  
-#ifdef PLAYER_CAMERA_CODE //INCLUDE_GAZEBO
-  gz_interface=interface;
-  gz_cf=cf;
-  gz_section=section;
-#endif
-  
   // first, get the necessary args
-  width = cf->ReadInt(section, "width", DEFAULT_CMV_WIDTH);
-  height = cf->ReadInt(section, "height", DEFAULT_CMV_HEIGHT);
   colorfile = cf->ReadString(section, "colorfile", "");
-  capturetype = cf->ReadString(section, "capture", "1394");
-  // just here to supress a configfile warning. 
-  // it's used by captureCamera
-  int idx = cf->ReadInt(section, "index", 0);
+  camera_index = cf->ReadInt(section, "camera_index", 0);
   
-#if HAVE_1394
-  // this might belong in capture1394.cc
-  // read config option to perform bayer color conversion
-  DoBayerConversion = false;
-  if (!strcmp(cf->ReadString(section, "do_bayer_conversion", ""),"BGGR")){
-       DoBayerConversion = true;
-       BayerPattern = BAYER_PATTERN_BGGR;
-  } else if (!strcmp(cf->ReadString(section, "do_bayer_conversion", ""),"GRBG")){
-       DoBayerConversion = true;
-       BayerPattern = BAYER_PATTERN_GRBG;
-  } else if (!strcmp(cf->ReadString(section, "do_bayer_conversion", ""),"RGGB")){
-       DoBayerConversion = true;
-       BayerPattern = BAYER_PATTERN_RGGB;
-  } else if (!strcmp(cf->ReadString(section, "do_bayer_conversion", ""),"GBRG")){
-       DoBayerConversion = true;
-       BayerPattern = BAYER_PATTERN_GBRG;
-  } else  
-       DoBayerConversion = false;
-#endif
-
   header_len = CMV_HEADER_SIZE;
   blob_size = CMV_BLOB_SIZE;
   header_elt_len = header_len / PLAYER_BLOBFINDER_MAX_CHANNELS;
-    
 }
     
 int
@@ -186,68 +127,20 @@ CMVisionBF::Setup()
   fflush(stdout);
   vision = new CMVision;
 
-  if(!strcmp(capturetype, "1394"))
-  {
-#if HAVE_1394
-    cap = new capture1394(DoBayerConversion,BayerPattern);
-#else
-    PLAYER_ERROR("Sorry, support for capture from a 1394 camera was not "
-                 "included at compile-time");
-    return(-1);
-#endif
-  }
-  else if(!strcmp(capturetype, "V4L2"))
-  {
-    /* V4L2 is currently disabled
-#if HAVE_V4L2
-    cap = new captureV4L2;
-#else
-*/
-    PLAYER_ERROR("Sorry, support for capture from a V4L2 camera was not "
-                 "included at compile-time");
-    return(-1);
-    /*
-#endif
-*/
-  }
- else if(!strcmp(capturetype, "camera"))
-  {
-#ifdef PLAYER_CAMERA_CODE
-       // does this interface always exist? 
-       cap = new captureCamera(gz_interface,gz_cf,gz_section);
-       // get image size from camera_data struct
-       width = ((captureCamera*)cap)->Width();
-       height = ((captureCamera*)cap)->Height();
-#else
-    PLAYER_ERROR("Sorry, support for the camera interface was not "
-                 "included at compile-time");
-    return(-1);
-#endif
-  }
-  else if(!strcmp(capturetype, "V4L"))
-  {
-#if HAVE_V4L
-    cap = new capturev4l;
-#else
-    PLAYER_ERROR("Sorry, support for capture from a V4L camera was not "
-                 "included at compile-time");
-    return(-1);
-#endif
-  }
-  else
-  {
-    PLAYER_ERROR1("Unknown video capture type: \"%s\"", capturetype);
-    return(-1);
-  }
+  assert(cap = new captureCamera(this->camera_index));
+
+  // get image size from camera_data struct
+  width = ((captureCamera*)cap)->Width();
+  height = ((captureCamera*)cap)->Height();
   
   if(!cap->initialize(width,height) ||
      !vision->initialize(width,height))
-    {
-      PLAYER_ERROR("Vision init failed.");
-      return -1;
-    }
+  {
+    PLAYER_ERROR("Vision init failed.");
+    return -1;
+  }
 
-  if (colorfile[0])
+  if(colorfile[0])
   {
     if (!vision->loadOptions((char*)colorfile))
     {
@@ -311,20 +204,15 @@ CMVisionBF::Main()
     {
       // clean our buffers
       memset(&local_data,0,sizeof(local_data));
-      
-#ifdef PLAYER_CAMERA_CODE
-      if(!strcmp(capturetype, "camera"))
-	   {
-		int nwidth = ((captureCamera*)cap)->Width();
-		int nheight = ((captureCamera*)cap)->Height();
-		if ((width!=nwidth)!=(height!=nheight))
-		     {
-			  width = nwidth;
-			  height = nheight;
-			  vision->initialize(width,height);
-		     }
-	   }
-#endif
+
+      int nwidth = ((captureCamera*)cap)->Width();
+      int nheight = ((captureCamera*)cap)->Height();
+      if ((width!=nwidth)!=(height!=nheight))
+      {
+        width = nwidth;
+        height = nheight;
+        vision->initialize(width,height);
+      }
       
       // put in some stuff that doesnt change (almost...)
       local_data.width = htons(this->width);
@@ -335,35 +223,35 @@ CMVisionBF::Main()
 
       //get the current frame and process it
       if (!vision->processFrame((image_pixel*)cap->captureFrame()))
-	{
-	  fprintf(stderr,"Frame error.\n");
-	  continue; //no frame processed
-	}
+      {
+        fprintf(stderr,"Frame error.\n");
+        continue; //no frame processed
+      }
       
       // put image time in blob struct
       //local_data.time_sec = htonl((uint32_t)(cap->getFrameTime()/1e9));
       //local_data.time_usec = htonl((cap->getFrameTime()/1000)%1000000);
 
       for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
-	{
-	  //determine the index of the first entry for this channel
-	  if (i==0)
-	    local_data.header[i].index = 0;
-	  else
-	    local_data.header[i].index = ntohs(local_data.header[i-1].index) +
-	      ntohs(local_data.header[i-1].num);
-	  local_data.header[i].index = 
-	    htons(local_data.header[i].index);
-	  
-	  //number of entries in this channel
-	  local_data.header[i].num = vision->numRegions(i);
-	  if (local_data.header[i].num>CMV_MAX_BLOBS_PER_CHANNEL)
-	    local_data.header[i].num=CMV_MAX_BLOBS_PER_CHANNEL;
+      {
+        //determine the index of the first entry for this channel
+        if (i==0)
+          local_data.header[i].index = 0;
+        else
+          local_data.header[i].index = ntohs(local_data.header[i-1].index) +
+                  ntohs(local_data.header[i-1].num);
+        local_data.header[i].index = 
+                htons(local_data.header[i].index);
 
-	  local_data.header[i].num = 
-	    htons(local_data.header[i].num);
-	}
-      
+        //number of entries in this channel
+        local_data.header[i].num = vision->numRegions(i);
+        if (local_data.header[i].num>CMV_MAX_BLOBS_PER_CHANNEL)
+          local_data.header[i].num=CMV_MAX_BLOBS_PER_CHANNEL;
+
+        local_data.header[i].num = 
+                htons(local_data.header[i].num);
+      }
+
       /* sum up the data we expect */
       num_blobs=0;
       for(i=0;i<PLAYER_BLOBFINDER_MAX_CHANNELS;i++)
