@@ -15,10 +15,10 @@ DEVICELIBNAME = libplayerdevice.a
 
 INCLUDES = -I../include
 
-#CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
+#CFLAGS = -O3 -Wall $(PLAYER_PLATFORM)
 CFLAGS = -g3 -Wall $(PLAYER_PLATFORM) $(INCLUDE_SELFTEST)
 LIBDIRS = -L.
-LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm
+LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm -ldl
 
 INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
                    $(INCLUDE_POSITION) $(INCLUDE_GRIPPER) $(INCLUDE_MISC) \
@@ -80,7 +80,12 @@ ifdef INCLUDE_SPEECH
   OBS += speechdevice.o
 endif
 
-all: $(SERVERNAME)
+#SHARED_OBJS = laser.so
+
+all: $(SERVERNAME) $(SHARED_OBJS)
+
+%.so: %.o 
+	$(CPP) -shared -nostartfiles -o $@ $<
 
 dep:
 	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.cc 2>/dev/null
@@ -90,13 +95,13 @@ clean_dep:
 	$(MAKEDEP) -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND"
 	$(RM) -f Makefile.bak
 clean:
-	rm -f *.o *~ $(SERVERNAME) $(DEVICELIBNAME) core
+	rm -f *.so *.o *~ $(SERVERNAME) $(DEVICELIBNAME) core
 
 $(DEVICELIBNAME): $(OBS)
 	$(AR) cr $@ $(OBS)
 
 $(SERVERNAME): $(DEVICELIBNAME) 
-	$(CPP) -o $@ $< $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
+	$(CPP) -rdynamic -o $@ $< $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
 
 main.o: main.cc
 	$(CPP) $(CFLAGS) -DPLAYER_VERSION=\"$(PLAYER_VERSION)\" $(INCLUDES) $(INCLUDED_DEVICES) -o $@ -c main.cc 

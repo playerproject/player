@@ -30,6 +30,8 @@
 //#define VERBOSE
 //#define DEBUG
 
+#include <dlfcn.h>
+
 #include <stdio.h>
 #include <errno.h>
 #include <string.h> // for bzero()
@@ -575,6 +577,7 @@ int main( int argc, char *argv[] )
 
   printf("** Player v%s ** ", PLAYER_VERSION);
   fflush(stdout);
+  printf("%d %d %d %d %d\n", 'r', 'w', 'a', 'c', 'e');
 
   // parse args
   for( int i = 1; i < argc; i++ ) 
@@ -611,6 +614,26 @@ int main( int argc, char *argv[] )
     {
       puts("Gerkey extensions enabled (good luck)....");
       player_gerkey = true;
+    }
+    else if(!strcmp(new_argv[i], "-dl"))
+    {
+      if(++i<argc) 
+      { 
+        void* handle;
+        fprintf(stderr,"Opening shared object %s...", new_argv[i]);
+        if(!(handle = dlopen(new_argv[i], RTLD_NOW)))
+        {
+          fprintf(stderr,"\n  %s\n",dlerror());
+          Interrupt(0);
+        }
+        else
+          puts("Success!");
+      }
+      else 
+      {
+	Usage();
+	exit(-1);
+      }
     }
     else if(!strcmp(new_argv[i], "-port"))
       {
@@ -712,6 +735,7 @@ int main( int argc, char *argv[] )
   */
 
   puts( "" ); // newline, flush
+
 
   /* set up to handle SIGPIPE (happens when the client dies) */
   if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
