@@ -90,6 +90,7 @@ pf_vector_t pf_vector_coord_add(pf_vector_t a, pf_vector_t b)
   c.v[0] = b.v[0] + a.v[0] * cos(b.v[2]) - a.v[1] * sin(b.v[2]);
   c.v[1] = b.v[1] + a.v[0] * sin(b.v[2]) + a.v[1] * cos(b.v[2]);
   c.v[2] = b.v[2] + a.v[2];
+  c.v[2] = atan2(sin(c.v[2]), cos(c.v[2]));
   
   return c;
 }
@@ -103,6 +104,7 @@ pf_vector_t pf_vector_coord_sub(pf_vector_t a, pf_vector_t b)
   c.v[0] = +(a.v[0] - b.v[0]) * cos(b.v[2]) + (a.v[1] - b.v[1]) * sin(b.v[2]);
   c.v[1] = -(a.v[0] - b.v[0]) * sin(b.v[2]) + (a.v[1] - b.v[1]) * cos(b.v[2]);
   c.v[2] = a.v[2] - b.v[2];
+  c.v[2] = atan2(sin(c.v[2]), cos(c.v[2]));
   
   return c;
 }

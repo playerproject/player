@@ -107,7 +107,7 @@ double gps_sensor_model(gps_model_t *self, pf_vector_t pose)
   
   dx = (self->utm_e - self->utm_base_e) - pose.v[0];
   dy = (self->utm_n - self->utm_base_n) - pose.v[1];
-  sigma = self->err_horz / 3;
+  sigma = self->err_horz;
   
   z = (dx * dx + dy * dy) / (2 * sigma * sigma);
   p = exp(-z);

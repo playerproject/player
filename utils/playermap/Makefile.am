@@ -25,3 +25,7 @@ install-data-hook: $(PYTHONINSTALL)
 # use distutils to install
 pythoninstall:
 	@PYTHON_INTERP@ setup.py install --prefix=$(prefix)
+
+# seems that distutils doesn't support 'uninstall'; oh well
+uninstall-local:
+	echo 'Uninstall not implemented (sorry)'

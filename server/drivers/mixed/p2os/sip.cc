@@ -217,7 +217,7 @@ void SIP::Parse( unsigned char *buffer )
     change = (int) rint(PositionChange( rawxpos, newxpos ) * 
 			PlayerRobotParams[param_idx].DistConvFactor);
     if (abs(change)>100)
-      puts("Change is not valid");
+      PLAYER_WARN1("invalid odometry change [%d]; odometry values are tainted", change);
     else
       xpos += change;
   }
@@ -233,7 +233,7 @@ void SIP::Parse( unsigned char *buffer )
     change = (int) rint(PositionChange( rawypos, newypos ) *
 			PlayerRobotParams[param_idx].DistConvFactor);
     if (abs(change)>100)
-      puts("Change is not valid");
+      PLAYER_WARN1("invalid odometry change [%d]; odometry values are tainted", change);
     else
       ypos += change;
   }

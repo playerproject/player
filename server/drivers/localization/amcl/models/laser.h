@@ -53,7 +53,7 @@ typedef struct
 
 
 // Create an sensor model
-laser_t *laser_alloc(map_t *map, pf_vector_t laser_pose);
+laser_t *laser_alloc(map_t *map);
 
 // Free an sensor model
 void laser_free(laser_t *sensor);

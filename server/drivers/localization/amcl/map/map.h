@@ -65,7 +65,7 @@ typedef struct
  **************************************************************************/
 
 // Create a new (empty) map
-map_t *map_alloc(double scale);
+map_t *map_alloc(void);
 
 // Destroy a map
 void map_free(map_t *map);
@@ -74,7 +74,7 @@ void map_free(map_t *map);
 map_cell_t *map_get_cell(map_t *map, double ox, double oy, double oa);
 
 // Load an occupancy map
-int map_load_occ(map_t *map, const char *filename, int negate);
+int map_load_occ(map_t *map, const char *filename, double scale, int negate);
 
 // Load a wifi signal strength map
 int map_load_wifi(map_t *map, const char *filename, int index);
