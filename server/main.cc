@@ -116,7 +116,7 @@ void
 Usage()
 {
   puts("");
-  fprintf(stderr, "USAGE: player [-p <port>] [-s <path>] [-dl <shlib>] "
+  fprintf(stderr, "USAGE: player [-p <port>] [-s <path>] [-d <shlib>] "
           "[-k <key>] [<configfile>]\n");
   fprintf(stderr, "  -p <port>     : TCP port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
