@@ -92,12 +92,10 @@ if test "x$with_glibc21" = "xyes"; then
 fi
 
 dnl Optionally build the python client if the header is available
-PYTHON_VERSION=2.2
 AC_ARG_WITH(python,
 [  --without-python        Don't compile the python client libraries],
 PYTHON_INTERP=$with_python,
-[AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,PYTHON_INTERP=python,
-PYTHON_INTERP=no)])
+[AC_CHECK_PROG([PYTHON_INTERP],[python],python,no)])
 dnl See whether the += operator is defined in this version of Python
 if test x$PYTHON_INTERP = xyes; then
   PYTHON_INTERP=python
@@ -393,9 +391,9 @@ fi
 
 if test "x$PYTHON_INTERP" != "xno"; then
    AC_MSG_RESULT([To use the Python bindings, modify your PYTHONPATH variable to include])
-   AC_MSG_RESULT([    $prefix/lib/python$PYTHON_VERSION/site-packages])
+   AC_MSG_RESULT([    $prefix/lib/python/\$PYTHON_VERSION/site-packages])
    AC_MSG_RESULT([For example:])
-   AC_MSG_RESULT([    export PYTHONPATH=\$PYTHONPATH:$prefix/lib/python$PYTHON_VERSION/site-packages])
+   AC_MSG_RESULT([    export PYTHONPATH=\$PYTHONPATH:$prefix/lib/python/\$PYTHON_VERSION/site-packages])
 fi
 AC_MSG_RESULT([])
 
