@@ -76,6 +76,7 @@
 #define GRIPPERVAL 36
 #define TTY2 42		// Added in AmigOS 1.2
 #define GETAUX 43	// Added in AmigOS 1.2
+#define BUMP_STALL 44
 #define JOYDRIVE 47
 #define GYRO 58         // Added in AROS 1.8
 #define TTY3 66		// Added in AmigOS 1.3
@@ -198,6 +199,7 @@ class P2OS : public Driver
 
     int radio_modemp; // are we using a radio modem?
     int joystickp; // are we using a joystick?
+    int bumpstall; // should we change the bumper-stall behavior?
 
   public:
 

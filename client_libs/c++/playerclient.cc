@@ -231,7 +231,12 @@ int PlayerClient::Disconnect()
     return(0);
 }
 
-int PlayerClient::Read()
+int PlayerClient::Peek(int timeout)
+{
+  return(player_peek(&(this->conn),timeout));
+}
+
+int PlayerClient::Read(bool await_sync, ClientProxy** dev)
 {
   player_msghdr_t hdr;
   
@@ -313,10 +318,10 @@ int PlayerClient::Read()
 #endif
         // also let the device-specific proxy parse it
         thisproxy->FillData(hdr,buffer);
-        // let the user know that data has arrived.  set it every time, in
-        // case the user wants to use it to determine freshness, in
-        // addition to initial validity.
+
+        // Let the user know that data has arrived.
         thisproxy->valid = true;
+        thisproxy->fresh = true;
       }
 
       // fill in the timestamps
@@ -329,6 +334,9 @@ int PlayerClient::Read()
       thisproxy->receivedtime.tv_usec = curr.tv_usec;
       thisproxy->Unlock();
 
+      // tell the caller which device got new data
+      if(dev)
+        *dev = thisproxy;
     }
     else
     {
@@ -339,6 +347,8 @@ int PlayerClient::Read()
                 "type: %d\n", hdr.type);
       }
     }
+    if(!await_sync)
+      break;
   }
 
   delete[] buffer;
