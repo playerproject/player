@@ -147,7 +147,7 @@ int playerc_position_set_speed(playerc_position_t *device, double vx, double vy,
   cmd.yspeed = htonl((int) (vy * 1000.0));
   cmd.yawspeed = htonl((int) (va * 180.0 / M_PI));
 
-  return playerc_client_write(device->info.client, &device->info, (char*) &cmd, sizeof(cmd));
+  return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }
 
 
@@ -161,6 +161,6 @@ int playerc_position_set_pose(playerc_position_t *device, double gx, double gy, 
   cmd.ypos = htonl((int) (gy * 1000.0));
   cmd.yaw = htonl((int) (ga * 180.0 / M_PI));
 
-  return playerc_client_write(device->info.client, &device->info, (char*) &cmd, sizeof(cmd));
+  return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }
 

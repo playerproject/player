@@ -45,7 +45,7 @@ PSDevice::SetupStageBuffers(player_stage_info_t* info,
 {
 #ifdef DEBUG
   printf( "P: Creating Stage device (%d,%d,%d) locking %d:%d\n", 
-          info->player_id.port, 
+          info->player_id.robot, 
           info->player_id.code, 
           info->player_id.index,
 	  lockfd, lockbyte ); 
@@ -63,7 +63,7 @@ PSDevice::SetupStageBuffers(player_stage_info_t* info,
   InstallLock(lockfd, lockbyte);
 
 #ifdef DEBUG
-  PLAYER_TRACE4("creating device at addr: %p %p %p", 
+  PLAYER_TRACE3("creating device at addr: %p %p %p", 
                 m_info, stage_device_data, stage_device_command);
   fflush( stdout );
 #endif
@@ -105,7 +105,7 @@ PSDevice::PutStageCommand(void* client, void* command, size_t len)
 #ifdef DEBUG
   printf( "P: StageDevice::PutCommand (%d,%d,%d) info at %p,"
 	  " command at %p\n", 
-          m_info->player_id.port, 
+          m_info->player_id.robot, 
           m_info->player_id.code, 
           m_info->player_id.index, 
           m_info, command);
@@ -139,7 +139,7 @@ PSDevice::GetStageData(void* client, void* data, size_t size,
   StageLock();
 #ifdef DEBUG
   printf( "P: getting (%d,%d,%d) info at %p, data at %p, buffer len %d, %d bytes available, size parameter %d\n", 
-          m_info->player_id.port, 
+          m_info->player_id.robot, 
           m_info->player_id.code, 
           m_info->player_id.index, 
           m_info, stage_device_data,

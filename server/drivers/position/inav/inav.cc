@@ -729,7 +729,7 @@ void INav::PutCommand()
   cmd.yspeed = htonl(cmd.yspeed);
   cmd.yawspeed = htonl(cmd.yawspeed);
 
-  this->odom->PutCommand(this, &cmd, sizeof(cmd));
+  this->odom->PutCommand(this, (unsigned char*) &cmd, sizeof(cmd));
   
   return;
 }
