@@ -95,9 +95,9 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
     if (m_laser->data_timestamp_sec == this->data_timestamp_sec &&
         m_laser->data_timestamp_usec == this->data_timestamp_usec)
     {
-        ASSERT(maxsize >= sizeof(beacon_data));
-        memcpy(dest, &beacon_data, sizeof(beacon_data));
-        return sizeof(player_laserbeacon_data_t);
+        ASSERT(maxsize >= sizeof(m_beacon_data));
+        memcpy(dest, &m_beacon_data, sizeof(m_beacon_data));
+        return sizeof(m_beacon_data);
     }
     
     // Get the laser data
@@ -118,31 +118,30 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
 
     // Analyse the laser data
     //
-    player_laserbeacon_data_t beacon_data;
-    FindBeacons(&laser_data, &beacon_data);
+    FindBeacons(&laser_data, &m_beacon_data);
     
     // Do some byte-swapping
     //
-    for (int i = 0; i < beacon_data.count; i++)
+    for (int i = 0; i < m_beacon_data.count; i++)
     {
-        beacon_data.beacon[i].range = htons(beacon_data.beacon[i].range);
-        beacon_data.beacon[i].bearing = htons(beacon_data.beacon[i].bearing);
-        beacon_data.beacon[i].orient = htons(beacon_data.beacon[i].orient);
+        m_beacon_data.beacon[i].range = htons(m_beacon_data.beacon[i].range);
+        m_beacon_data.beacon[i].bearing = htons(m_beacon_data.beacon[i].bearing);
+        m_beacon_data.beacon[i].orient = htons(m_beacon_data.beacon[i].orient);
     }
-    PLAYER_TRACE1("setting beacon count: %u",beacon_data.count);
-    beacon_data.count = htons(beacon_data.count);
+    PLAYER_TRACE1("setting beacon count: %u",m_beacon_data.count);
+    m_beacon_data.count = htons(m_beacon_data.count);
     
     // Copy results
     //
-    ASSERT(maxsize >= sizeof(beacon_data));
-    memcpy(dest, &beacon_data, sizeof(beacon_data));
+    ASSERT(maxsize >= sizeof(m_beacon_data));
+    memcpy(dest, &m_beacon_data, sizeof(m_beacon_data));
 
     // Copy the laser timestamp
     //
     this->data_timestamp_sec = m_laser->data_timestamp_sec;
     this->data_timestamp_usec  = m_laser->data_timestamp_usec;
     
-    return sizeof(beacon_data);
+    return sizeof(m_beacon_data);
 }
 
 
@@ -236,9 +235,8 @@ int CLaserBeaconDevice::Setup()
     
     // Hack to get around mutex on GetData
     //
-    player_laserbeacon_data_t beacon_data;
-    beacon_data.count = 0;
-    GetLock()->PutData(this, (uint8_t*) &beacon_data, sizeof(beacon_data));
+    m_beacon_data.count = 0;
+    GetLock()->PutData(this, (uint8_t*) &m_beacon_data, sizeof(m_beacon_data));
     
     PLAYER_MSG0("laser beacon device: setup");
     return 0;
