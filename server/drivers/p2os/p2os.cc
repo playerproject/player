@@ -526,9 +526,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   
   // need to fill in the timestamps on all P2OS devices, both so that they
   // can read it, but also because other devices may want to read it
-  player_device_id_t id;
-  id.port = global_playerport;
-  id.index = 0;
+  player_device_id_t id = device_id;
 
   id.code = PLAYER_SONAR_CODE;
   CDevice* sonarp = deviceTable->GetDevice(id);

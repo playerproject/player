@@ -74,7 +74,7 @@ typedef struct {
   long PulsesPerMMMSF;
   double MMPerPulsesMS;
   long MMPerPulsesMSF;
-  ir_pose_t ir_pose[PLAYER_REB_NUM_IR_SENSORS];
+  ir_pose_t ir_pose[PLAYER_IR_MAX_SAMPLES];
 } UBotRobotParams_t;
   
 extern UBotRobotParams_t PlayerUBotRobotParams[];

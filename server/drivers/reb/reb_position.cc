@@ -60,8 +60,7 @@ void REBPosition_Register(DriverTable *table);
 CDevice *
 REBPosition_Init(char *interface, ConfigFile *cf, int section)
 {
-  if (!strcmp(interface, PLAYER_POSITION_STRING) 
-      || !strcmp(interface, PLAYER_REB_POSITION_STRING)) {
+  if (!strcmp(interface, PLAYER_POSITION_STRING)) {
     return ( (CDevice *) new REBPosition(interface, cf, section));
   } else {
     PLAYER_ERROR1("driver \"reb_position\" does not support interface \"%s\"\n",

@@ -73,13 +73,8 @@
 #define PLAYER_MOTE_CODE           ((uint16_t)19)  // the USC Mote
 #define PLAYER_DIO_CODE            ((uint16_t)20)  // digital I/O
 #define PLAYER_AIO_CODE            ((uint16_t)21)  // analog I/O
-
-#define PLAYER_WIFI_CODE	   ((uint16_t)30)	// wifi card
-
-#define PLAYER_REB_POSITION_CODE   ((uint16_t)50)	// reb specific position interface
-#define PLAYER_REB_IR_CODE	   ((uint16_t)51)	// reb controlled IRs
-#define PLAYER_REB_POWER_CODE	   ((uint16_t)52)
-
+#define PLAYER_IR_CODE             ((uint16_t)22)  // IR array
+#define PLAYER_WIFI_CODE	   ((uint16_t)23)  // wifi card status
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -105,12 +100,10 @@
 #define PLAYER_MOTE_STRING           "mote"
 #define PLAYER_DIO_STRING            "dio"
 #define PLAYER_AIO_STRING            "aio"
+#define PLAYER_IR_STRING             "ir"
+#define PLAYER_WIFI_STRING           "wifi"
+// no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
-
-#define PLAYER_WIFI_STRING		"wifi"
-#define PLAYER_REB_POSITION_STRING	"reb_position"
-#define PLAYER_REB_IR_STRING		"reb_ir"
-#define PLAYER_REB_POWER_STRING		"reb_power"
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -320,8 +313,14 @@ typedef struct
 /* the various configuration subtypes */
 #define PLAYER_POSITION_GET_GEOM_REQ          ((uint8_t)1)
 #define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
-#define PLAYER_POSITION_VELOCITY_MODE_REQ  ((uint8_t)3)
+#define PLAYER_POSITION_VELOCITY_MODE_REQ     ((uint8_t)3)
 #define PLAYER_POSITION_RESET_ODOM_REQ        ((uint8_t)4)
+
+#define PLAYER_POSITION_POSITION_MODE_REQ     ((uint8_t)5)
+#define PLAYER_POSITION_SPEED_PID_REQ         ((uint8_t)6)
+#define PLAYER_POSITION_POSITION_PID_REQ      ((uint8_t)7)
+#define PLAYER_POSITION_SPEED_PROF_REQ        ((uint8_t)8)
+#define PLAYER_POSITION_SET_ODOM_REQ          ((uint8_t)9)
 
 /* Packet for getting the position geometry. */
 typedef struct
@@ -353,6 +352,44 @@ typedef struct
 {
   uint8_t request; // must be PLAYER_POSITION_RESET_ODOM_REQ
 } __attribute__ ((packed)) player_position_resetodom_config_t;
+
+typedef struct 
+{
+  uint8_t subtype; // must be PLAYER_POSITION_POSITION_MODE_REQ
+  uint8_t state; // 0 for velocity mode, 1 for position mode
+} __attribute__ ((packed)) player_position_position_mode_req_t;
+
+
+typedef struct
+{
+  uint8_t subtype; // must be PLAYER_SET_ODOM_REQ
+  int32_t x;
+  int32_t y;
+  uint16_t theta;
+}__attribute__ ((packed)) player_position_set_odom_req_t;
+
+typedef struct 
+{
+  uint8_t subtype; // must be PLAYER_POSITION_SPEED_PID_REQ
+  int32_t kp;
+  int32_t ki;
+  int32_t kd;
+} __attribute__ ((packed)) player_position_speed_pid_req_t;
+
+typedef struct 
+{
+  uint8_t subtype; // must be PLAYER_POSITION_POSITION_PID_REQ
+  int32_t kp;
+  int32_t ki;
+  int32_t kd;
+} __attribute__ ((packed)) player_position_position_pid_req_t;
+
+typedef struct 
+{
+  uint8_t subtype; // must be PLAYER_POSITION_SPEED_PROF_REQ
+  int16_t speed; //max speed
+  int16_t acc; //max acceleration
+} __attribute__ ((packed)) player_position_speed_prof_req_t;
 /*************************************************************************/
 
 
@@ -434,6 +471,7 @@ typedef struct
 #define PLAYER_LASER_GET_GEOM   0x01
 #define PLAYER_LASER_SET_CONFIG 0x02
 #define PLAYER_LASER_GET_CONFIG 0x03
+#define PLAYER_LASER_POWER_CONFIG 0x04
 
 /* laser geometry packet. */
 typedef struct
@@ -470,6 +508,12 @@ typedef struct
   /* Enable reflection intensity data. */
   uint8_t  intensity;
 } __attribute__ ((packed)) player_laser_config_t;
+
+typedef struct
+{
+  uint8_t subtype; // must be PLAYER_LASER_POWER_CONFIG
+  uint8_t value;  // 0 or 1
+} __attribute__ ((packed)) player_laser_power_config_t;
 /*************************************************************************/
 
 /*************************************************************************/
@@ -722,9 +766,7 @@ typedef struct
   uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
 } __attribute__ ((packed)) player_bumper_data_t;
 
-// TODO: what do these do?
-#define PLAYER_BUMPER_POWER_REQ             ((uint8_t)13)
-#define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)14)
+#define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)1)
 /*************************************************************************/
 
 /*************************************************************************/
@@ -1084,125 +1126,53 @@ typedef struct
 
 /*************************************************************************
 *
-*  REB Position Device -- controls position via K-Team 
-*  Robotics Extension Board (REB)
-* 
-*  These structs also used for RWI robots 
-*
+*  IR interface
 */
-/*
-// this holds data returned by the position device
-typedef struct {
-  int32_t x,y;
-  uint16_t theta;
-  int16_t translational;
-  int16_t rotational;
-  int16_t heading;  
-  uint8_t on_target;
-  //  short currents[PLAYER_REB_NUM_MOTORS];
-} __attribute__ ((packed)) player_reb_position_data_t;
+#define PLAYER_IR_MAX_SAMPLES 8
 
-// holds position command data
-typedef struct {
-  int16_t translational, rotational;
-  int16_t heading;
-} __attribute__ ((packed)) player_reb_position_cmd_t;
-*/
-
-
-// these are for the reb_position interface
-#define PLAYER_REB_POSITION_POSITION_MODE_REQ 82
-#define PLAYER_REB_POSITION_SPEED_PID_REQ 85
-#define PLAYER_REB_POSITION_POSITION_PID_REQ 86
-#define PLAYER_REB_POSITION_SPEED_PROF_REQ 87
-#define PLAYER_REB_POSITION_SET_ODOM_REQ 89
-
-// the following are used by some config requests
-// they are for IR and pos devices, but put them here
-// now for completeness and to follow the player standard,
-// each ioctl gets its own struct
-
-typedef struct {
-  uint8_t subtype; // must be PLAYER_REB_POSITION_POSITION_MODE_REQ
-  uint8_t state; // 0 for velocity mode, 1 for position mode
-} __attribute__ ((packed)) player_reb_pos_mode_req_t;
-
-
-typedef struct{
-  uint8_t subtype; // must be PLAYER_REB_SET_ODOM_REQ
-  int32_t x;
-  int32_t y;
-  uint16_t theta;
-}__attribute__ ((packed)) player_reb_set_odom_req_t;
-
-typedef struct {
-  uint8_t subtype; // must be PLAYER_REB_POSITION_SPEED_PID_REQ
-  int32_t kp;
-  int32_t ki;
-  int32_t kd;
-} __attribute__ ((packed)) player_reb_speed_pid_req_t;
-
-typedef struct {
-  uint8_t subtype; // must be PLAYER_REB_POSITION_POSITION_PID_REQ
-  int32_t kp;
-  int32_t ki;
-  int32_t kd;
-} __attribute__ ((packed)) player_reb_pos_pid_req_t;
-
-typedef struct {
-  uint8_t subtype; // must be PLAYER_REB_POSITION_SPEED_PROF_REQ
-  int16_t speed; //max speed
-  int16_t acc; //max acceleration
-} __attribute__ ((packed)) player_reb_speed_prof_req_t;
-
-
-
-/*************************************************************************
-*
-*  REB IR device... reads IRs via REB main device
-*  
-* 
-*/
-#define PLAYER_REB_NUM_IR_SENSORS 8
-
-// data from the REB IR device
-typedef struct {
-  uint16_t voltages[PLAYER_REB_NUM_IR_SENSORS];
-  uint16_t ranges[PLAYER_REB_NUM_IR_SENSORS];
-} __attribute__ ((packed)) player_reb_ir_data_t;
+// data from the IR device
+typedef struct 
+{
+  uint16_t range_count;
+  uint16_t voltages[PLAYER_IR_MAX_SAMPLES];
+  uint16_t ranges[PLAYER_IR_MAX_SAMPLES];
+} __attribute__ ((packed)) player_ir_data_t;
 
 // used by a config command
-typedef struct {
-  short poses[PLAYER_REB_NUM_IR_SENSORS][3];
-} __attribute__ ((packed)) player_reb_ir_pose_t;
+typedef struct 
+{
+  short poses[PLAYER_IR_MAX_SAMPLES][3];
+} __attribute__ ((packed)) player_ir_pose_t;
 
+// this struct is unused? BPG
+/*
 // hold config requests
-typedef struct {
+typedef struct 
+{
   uint8_t type;
-  float values[PLAYER_REB_NUM_IR_SENSORS][2];
+  float values[PLAYER_IR_MAX_SAMPLES][2];
 } __attribute__ ((packed)) player_reb_ir_params_req_t;
-
+*/
 
 // some defines
 //#define PLAYER_REB_IR_M_PARAM 1
 //#define PLAYER_REB_IR_B_PARAM 1
 
 // these are codes for different config requests
-#define PLAYER_REB_IR_POWER_REQ 21
-#define PLAYER_REB_IR_POSE_REQ 22
+#define PLAYER_IR_POSE_REQ   ((uint8_t)1)
+#define PLAYER_IR_POWER_REQ  ((uint8_t)2)
 
-typedef struct {
-  uint8_t subtype; // must be PLAYER_REB_IR_POWER_REQ
+typedef struct 
+{
+  uint8_t subtype; // must be PLAYER_IR_POSE_REQ
+  player_ir_pose_t poses[PLAYER_IR_MAX_SAMPLES];
+} __attribute__ ((packed)) player_ir_pose_req_t;
+
+typedef struct 
+{
+  uint8_t subtype; // must be PLAYER_IR_POWER_REQ
   uint8_t state; // 0 for power off, 1 for power on
-} __attribute__ ((packed)) player_reb_ir_power_req_t;
-
-typedef struct {
-  uint8_t subtype; // must be PLAYER_REB_IR_POSE_REQ
-  player_reb_ir_pose_t poses[PLAYER_REB_NUM_IR_SENSORS];
-} __attribute__ ((packed)) player_reb_ir_pose_req_t;
-
-
-
+} __attribute__ ((packed)) player_ir_power_req_t;
 /**************************************************************************/
 
 
