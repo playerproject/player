@@ -54,7 +54,7 @@
 #include <playercommon.h>
 
 #include <device.h>
-#include <stage.h>
+#include <stage1p3.h>
 
 // this is the root of the stage device filesystem name
 // actual directories have the username and instance appended

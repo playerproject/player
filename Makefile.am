@@ -1,9 +1,9 @@
 
-#if WITH_RTK3
-#SUBDIRS = replace rtk3 client_libs server utils config examples
-#else
+if WITH_RTK3
+SUBDIRS = replace rtk3 client_libs server utils config examples
+else
 SUBDIRS = replace client_libs server utils config examples
-#endif
+endif
 
 EXTRA_DIST = config.simulation config.p2os
 
