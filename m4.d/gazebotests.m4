@@ -28,7 +28,7 @@ fi
 dnl Test to see if a particular Gazebo driver is available
 AC_DEFUN([GAZEBO_TEST_DRIVER], [
 
-AC_CHECK_LIB(gazebo, gz_$1_alloc, 
+AC_CHECK_LIB(gazebo, gz_$2_alloc, 
   include_gazebo_$1=yes, 
   include_gazebo_$1=no,
   [$GAZEBO_LIBS]
@@ -46,17 +46,18 @@ fi
 dnl This macro does all the Gazebo tests
 AC_DEFUN([GAZEBO_TESTS],[
 
-GAZEBO_TEST_DRIVER([camera])
-GAZEBO_TEST_DRIVER([factory])
-GAZEBO_TEST_DRIVER([fiducial])
-GAZEBO_TEST_DRIVER([gps])
-GAZEBO_TEST_DRIVER([laser])
-GAZEBO_TEST_DRIVER([position])
-GAZEBO_TEST_DRIVER([power])
-GAZEBO_TEST_DRIVER([ptz])
-GAZEBO_TEST_DRIVER([truth])
-GAZEBO_TEST_DRIVER([gripper])
-GAZEBO_TEST_DRIVER([sonars])
+GAZEBO_TEST_DRIVER([camera], [camera])
+GAZEBO_TEST_DRIVER([factory, [factory])
+GAZEBO_TEST_DRIVER([fiducial], [fiducial])
+GAZEBO_TEST_DRIVER([gps], [gps])
+GAZEBO_TEST_DRIVER([laser], [laser])
+GAZEBO_TEST_DRIVER([position], [position])
+GAZEBO_TEST_DRIVER([position3d], [position])
+GAZEBO_TEST_DRIVER([power], [power])
+GAZEBO_TEST_DRIVER([ptz], [ptz])
+GAZEBO_TEST_DRIVER([truth], [truth])
+GAZEBO_TEST_DRIVER([gripper], [gripper])
+GAZEBO_TEST_DRIVER([sonars], [sonars])
 
 
 dnl The call to AC_CHECK_LIB above *should* append the gazebo linker flags

@@ -270,9 +270,11 @@ void GzLaser_Register(DriverTable *table);
 #ifdef INCLUDE_GAZEBO_POSITION
 void GzPosition_Register(DriverTable *table);
 #endif
+
 #ifdef INCLUDE_GAZEBO_POSITION3D
 void GzPosition3d_Register(DriverTable *table);
 #endif
+
 #ifdef INCLUDE_GAZEBO_POWER
 void GzPower_Register(DriverTable *table);
 #endif
