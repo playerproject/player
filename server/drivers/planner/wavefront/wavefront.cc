@@ -99,6 +99,8 @@ class Wavefront : public Driver
     int curr_waypoint;
     // current waypoint (m,m,rad)
     double waypoint_x, waypoint_y, waypoint_a;
+    // current waypoint, in odometric coords (m,m,rad)
+    double waypoint_odom_x, waypoint_odom_y, waypoint_odom_a;
     // are we pursuing a new goal?
     bool new_goal;
     // current odom pose
@@ -582,12 +584,14 @@ void Wavefront::Main()
       }
     }
 
+    
+    bool going_for_target = (this->curr_waypoint == this->plan->waypoint_count);
     dist = sqrt(((this->localize_x - this->target_x) *
           (this->localize_x - this->target_x)) +
         ((this->localize_y - this->target_y) *
          (this->localize_y - this->target_y)));
-    angle = fabs(NORMALIZE(this->localize_a - this->target_a));
-    if(dist < this->dist_eps && angle < this->ang_eps)
+    angle = fabs(NORMALIZE(this->waypoint_odom_a - this->position_a));
+    if(going_for_target && dist < this->dist_eps && angle < this->ang_eps)
     {
       // we're at the final target, so stop
       StopPosition();
@@ -603,18 +607,15 @@ void Wavefront::Main()
     }
     else
     {
-
       // are we there yet?  ignore angle, cause this is just a waypoint
       dist = sqrt(((this->localize_x - this->waypoint_x) * 
             (this->localize_x - this->waypoint_x)) +
           ((this->localize_y - this->waypoint_y) *
            (this->localize_y - this->waypoint_y)));
-      // HACK: I'm increasing the tolerance for waypoints.  This should be
-      // exposed to the user in the config file.
       if(this->new_goal ||
-          ((dist < 2.0*this->dist_eps) &&
+          ((dist < this->dist_eps) &&
            (!rotate_waypoint ||
-            (fabs(NORMALIZE(this->localize_a - this->waypoint_a))
+            (fabs(NORMALIZE(this->waypoint_odom_a - this->position_a))
              < this->ang_eps))))
       {
         this->new_goal = false;
@@ -655,13 +656,27 @@ void Wavefront::Main()
           rotate_waypoint=false;
 
         SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
+        LocalizeToPosition(&this->waypoint_odom_x,
+                           &this->waypoint_odom_y,
+                           &this->waypoint_odom_a,
+                           this->waypoint_x,
+                           this->waypoint_y,
+                           this->waypoint_a);
       }
       //printf("waiting for achievement of %f,%f,%f\n",
              //this->waypoint_x, this->waypoint_y, RTOD(this->waypoint_a));
       //printf("current pose %f,%f,%f\n",
              //this->localize_x, this->localize_y, RTOD(this->localize_a));
       if(!rotate_waypoint)
+      {
         SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
+        LocalizeToPosition(&this->waypoint_odom_x,
+                           &this->waypoint_odom_y,
+                           &this->waypoint_odom_a,
+                           this->waypoint_x,
+                           this->waypoint_y,
+                           this->waypoint_a);
+      }
     }
 
 

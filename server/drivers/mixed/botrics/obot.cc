@@ -733,11 +733,13 @@ Obot::UpdateOdom(int ltics, int rtics)
   // The problem comes from one or the other encoder returning 0 ticks (always
   // the left, I think), we'll just throw out those readings.  Shouldn't have
   // too much impact.
+#if 0
   if(!ltics || !rtics)
   {
     PLAYER_WARN("Invalid odometry reading (zeros); ignoring");
     return;
   }
+#endif
 
   //ltics_delta = ComputeTickDiff(last_ltics,ltics);
   //rtics_delta = ComputeTickDiff(last_rtics,rtics);
