@@ -131,7 +131,7 @@ typedef void (*fnupdate_t) (void*);
 typedef struct
 {
   // Device identifier.
-  int robot, code, index;
+  int code, index;
 
   // Driver name
   char *drivername;
