@@ -235,14 +235,14 @@ class CRobot {
    *
    * returns 0 on success, non-zero otherwise
    */
-  int Connect(char* desthost, int port);
+  int Connect(const char* desthost, int port);
 
   /* 
    * Connect to the server running on host 'desthost' at default port
    *
    * returns 0 on success, non-zero otherwise
    */
-  int Connect(char* desthost);
+  int Connect(const char* desthost);
 
   /* 
    * Connect to the server running on host 'this.host' at port 'this.port'
@@ -257,7 +257,7 @@ class CRobot {
    *
    * Returns 0 on success, non-zero otherwise
    */
-  int Request( char* request);
+  int Request( const char* request);
 
   /*
    * Request device access.
@@ -266,7 +266,7 @@ class CRobot {
    *
    * Returns 0 on success, non-zero otherwise
    */
-  int Request( char* request, int size ); 
+  int Request( const char* request, int size ); 
 
   /*
    * Write commands to all devices currently opened for writing.

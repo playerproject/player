@@ -121,7 +121,7 @@ int CRobot::Connect()
  *
  * returns 0 on success, non-zero otherwise
  */
-int CRobot::Connect(char* desthost)
+int CRobot::Connect(const char* desthost)
 {
   if(port == -1)
     return(Connect(desthost,PORTNUM));
@@ -134,7 +134,7 @@ int CRobot::Connect(char* desthost)
  *
  * returns 0 on success, non-zero otherwise
  */
-int CRobot::Connect(char* desthost, int port) 
+int CRobot::Connect(const char* desthost, int port) 
 {
   static struct sockaddr_in server;
   char host[32] = "127.0.0.1";
@@ -183,7 +183,7 @@ int CRobot::Connect(char* desthost, int port)
  *
  * Returns 0 on success, non-zero otherwise
  */
-int CRobot::Request( char* request)
+int CRobot::Request( const char* request)
 {
   return(Request(request,strlen(request)));
 }
@@ -195,7 +195,7 @@ int CRobot::Request( char* request)
  *
  * Returns 0 on success, non-zero otherwise
  */
-int CRobot::Request( char* request, int size ) 
+int CRobot::Request( const char* request, int size ) 
 {
   /* Manage memory */
   int response;
