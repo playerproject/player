@@ -48,7 +48,11 @@
 
 /* data for the p2-dx robot from p2 operation manual */
 //#define P2OS_CYCLETIME_USEC 100000
-#define P2OS_CYCLETIME_USEC 50000
+//#define P2OS_CYCLETIME_USEC 50000
+/* Apparently, newer kernel require a larger value (200000) here.  It only 
+ * makes the initialization phase take a bit longer, and doesn't have any 
+ * impact on the speed at which packets are received from P2OS */
+#define P2OS_CYCLETIME_USEC 200000
 
 /* p2os constants */
 

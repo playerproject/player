@@ -205,7 +205,7 @@ int P2OS::Setup()
   // first because most robots use it, and because otherwise the radio modem
   // connection code might not work (i think that the radio modems operate at
   // 9600).
-  int bauds[] = {B9600, B38400, B19200};
+  int bauds[] = {B9600, B38400, B19200, B115200, B57600};
   int numbauds = sizeof(bauds);
   int currbaud = 0;
 
@@ -285,21 +285,24 @@ int P2OS::Setup()
     write(psos_fd, "WMS2\r", 5);
 
     usleep(50000);
-    char modem_buf[40];
-    read(psos_fd, modem_buf, 5);          // get "WMS2"
+    char modem_buf[50];
+    int buf_len = read(psos_fd, modem_buf, 5);          // get "WMS2"
+    modem_buf[buf_len]='\0';
     printf("wireless modem response = %s\n", modem_buf);
 
     usleep(10000);
     // get "\n\rConnecting..." --> \n\r is my guess
-    read(psos_fd, modem_buf, 14); 
+    buf_len = read(psos_fd, modem_buf, 14); 
+    modem_buf[buf_len]='\0';
     printf("wireless modem response = %s\n", modem_buf);
 
     // wait until get "Connected to address 2"
     int modem_connect_try = 10;
-    while (modem_buf[12] != 't') 
+    while(strstr(modem_buf, "ected to addres") == NULL)
     {
       usleep(300000);
-      read(psos_fd, modem_buf, 40);
+      buf_len = read(psos_fd, modem_buf, 40);
+      modem_buf[buf_len]='\0';
       printf("wireless modem response = %s\n", modem_buf);
       // if "Partner busy!"
       if(modem_buf[2] == 'P') 
@@ -315,8 +318,8 @@ int P2OS::Setup()
       }
       if(modem_connect_try-- == 0) 
       {
-        printf("Failed to connect radio modem\n");
-        return(1);
+        puts("Failed to connect radio modem, Trying direct connection...");
+        break;
       }
     }
   }
