@@ -16,6 +16,7 @@ int test_ptz(playerc_client_t *client, int index)
   int t;
   void *rdevice;
   playerc_ptz_t *device;
+  double period;
 
   printf("device [ptz] index [%d]\n", index);
 
@@ -27,7 +28,9 @@ int test_ptz(playerc_client_t *client, int index)
   else
     FAIL();
 
-  for (t = 0; t < 10; t++)
+  period = 10 / M_PI * 2;
+  
+  for (t = 0; t < 20; t++)
   {    
     TEST1("reading data (attempt %d)", t);
     
@@ -50,15 +53,23 @@ int test_ptz(playerc_client_t *client, int index)
     }
 
     TEST1("writing data (attempt %d)", t);
-
-    if (playerc_ptz_set(device, t * M_PI / 20, t * M_PI / 40, t * 100) != 0)
+    if (playerc_ptz_set(device,
+                        sin(t / period) * M_PI / 2,
+                        sin(t / period) * M_PI / 3,
+                        (1 - t / 20.0) * M_PI) != 0)
     {
       FAIL();
       break;
     }
     PASS();
   }
-  
+
+  TEST1("writing data (attempt %d)", t);
+  if (playerc_ptz_set(device, 0, 0, M_PI) != 0)
+    FAIL();
+  else
+    PASS();
+
   TEST("unsubscribing");
   if (playerc_ptz_unsubscribe(device) == 0)
     PASS();

@@ -189,14 +189,24 @@ void GzFiducial::Update()
     for (i = 0; i < this->iface->data->fid_count; i++)
     {
       fid = this->iface->data->fids + i;
-
       if (i >= PLAYER_FIDUCIAL_MAX_SAMPLES)
         break;
 
-      data.fiducials[i].id = htons((int) fid->id);
-      data.fiducials[i].pos[0] = htonl((int) (fid->pose[0] * 1000.0));
-      data.fiducials[i].pos[1] = htonl((int) (fid->pose[1] * 1000.0));
-      data.fiducials[i].rot[2] = htonl((int) (fid->pose[2] * 1000.0));
+      data.fiducials[i].id = htons((int16_t) fid->id);
+
+      /** @todo Gazebo 0.4
+      data.fiducials[i].pos[0] = htonl((int32_t) (fid->pose[0] * 1000.0));
+      data.fiducials[i].pos[1] = htonl((int32_t) (fid->pose[1] * 1000.0));
+      data.fiducials[i].rot[2] = htonl((int32_t) (fid->pose[2] * 1000.0));
+      */
+
+      data.fiducials[i].pos[0] = htonl((int32_t) (fid->pos[0] * 1000.0));
+      data.fiducials[i].pos[1] = htonl((int32_t) (fid->pos[1] * 1000.0));
+      data.fiducials[i].pos[2] = htonl((int32_t) (fid->pos[2] * 1000.0));
+      
+      data.fiducials[i].rot[0] = htonl((int32_t) (fid->rot[0] * 1000.0));
+      data.fiducials[i].rot[1] = htonl((int32_t) (fid->rot[1] * 1000.0));
+      data.fiducials[i].rot[2] = htonl((int32_t) (fid->rot[2] * 1000.0));
     }
     data.count = htons(i);
 

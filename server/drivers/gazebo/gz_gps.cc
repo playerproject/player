@@ -189,6 +189,14 @@ void GzGps::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
+
+    data.time_sec = htonl((int32_t) (this->iface->data->utc_time));
+    data.time_usec = htonl((int32_t) (fmod(this->iface->data->utc_time, 1) * 1e6));
+
+    /// @todo Gazebo 0.4
+    data.time_sec = htonl((int32_t) (0));
+    data.time_usec = htonl((int32_t) (0));
+      
     data.latitude = htonl((int32_t) (1e7 * this->iface->data->latitude));
     data.longitude = htonl((int32_t) (1e7 * this->iface->data->longitude));
     data.altitude = htonl((int32_t) (1000 * this->iface->data->altitude));
@@ -196,7 +204,13 @@ void GzGps::Update()
     data.utm_n = htonl((int32_t) (100 * this->iface->data->utm_n));
     data.num_sats = this->iface->data->satellites;
     data.quality = this->iface->data->quality;
+
     data.hdop = htons((uint32_t) (int32_t) (10 * this->iface->data->hdop));
+    data.vdop = htons((uint32_t) (int32_t) (10 * this->iface->data->vdop));
+
+    /// @todo Gazebo 0.4
+    data.vdop = htons((uint32_t) (int32_t) (0));
+    
     data.err_horz = htonl((uint32_t) (int32_t) (1000 * this->iface->data->err_horz));
     data.err_vert = htonl((uint32_t) (int32_t) (1000 * this->iface->data->err_vert));
     

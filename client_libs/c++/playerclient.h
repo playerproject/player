@@ -575,6 +575,9 @@ class GpsProxy : public ClientProxy
     /// Horizontal dilution of position (HDOP)
     double hdop;
 
+    /// Vertical dilution of position (HDOP)
+    double vdop;
+
     /// UTM easting and northing (meters).
     double utm_easting;
     double utm_northing;
@@ -1717,12 +1720,12 @@ class TruthProxy : public ClientProxy
   
   public:
 
-  /** These vars store the current device pose (x,y,a) as
-      (m,m,radians). The values are updated at regular intervals as
-      data arrives. You can read these values directly but setting
-      them does NOT change the device's pose!. Use
-      TruthProxy::SetPose() for that.  */
-  double x, y, a; 
+  /** These vars store the current device position (x,y,z) in m and
+      orientation (roll, pitch, yaw) in radians. The values are
+      updated at regular intervals as data arrives. You can read these
+      values directly but setting them does NOT change the device's
+      pose!. Use TruthProxy::SetPose() for that.  */
+  double px, py, pz, rx, ry, rz; 
 
   /** Constructor.
       Leave the access field empty to start unconnected.  */
@@ -1738,22 +1741,24 @@ class TruthProxy : public ClientProxy
   void Print();
 
   /** Query Player about the current pose - requests the pose from the
-      server, then fills in values for the arguments
-      (m,m,radians). Usually you'll just read the @p x,y,a
-      attributes but this function allows you to get pose direct from
-      the server if you need too. Returns 0 on success, -1 if there is
-      a problem.  
+      server, then fills in values for the arguments. Usually you'll
+      just read the class attributes but this function allows you
+      to get pose direct from the server if you need too. Returns 0 on
+      success, -1 if there is a problem.
   */
-  int GetPose( double *px, double *py, double *pa );
+  int GetPose( double *px, double *py, double *pz,
+               double *rx, double *ry, double *rz );
 
-  /** Request a change in pose (m,m,radians). Returns 0 on success, -1
+  /** Request a change in pose. Returns 0 on success, -1
       if there is a problem.  
   */
-  int SetPose( double px, double py, double pa );
+  int SetPose( double px, double py, double pz,
+               double rx, double ry, double rz);
 
   /** ???
    */
-  int SetPoseOnRoot( double px, double py, double pa );
+  int SetPoseOnRoot(  double px, double py, double pz,
+                      double rx, double ry, double rz);
 
   /** Request the value returned by a fiducialfinder (and possibly a
       foofinser, depending on its mode), when detecting this

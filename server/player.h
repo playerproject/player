@@ -2286,6 +2286,8 @@ typedef struct player_gps_data
   uint8_t num_sats;
   /** Horizontal dilution of position (HDOP), times 10 */
   uint16_t hdop;
+  /** Vertical dilution of position (VDOP), times 10 */
+  uint16_t vdop;
   /** Horizonal error (mm) */
   uint32_t err_horz;
   /** Vertical error (mm) */
@@ -2372,8 +2374,10 @@ The @p truth interface returns data concerning the current state of an
 entity. */
 typedef struct player_truth_data
 {
-  /** Object pose in world cs (mm, mm, degrees). */
-  int32_t px, py, pa; 
+  /** Object position in the world (x, y, z) in mm. */
+  int32_t pos[3];
+  /** Object orientation in the world (r, p, y) in millirad. */
+  int32_t rot[3];
 } __PACKED__ player_truth_data_t;
 
 /** @brief Configuration request: Get/set pose
@@ -2391,8 +2395,10 @@ typedef struct player_truth_pose
     option places the object on the background and sets its
     pose. Great for repositioning pucks that have been picked up.*/
   uint8_t subtype;
-  /** Object pose in world cs (mm, mm, degrees). */
-  int32_t px, py, pa; 
+  /** Object position (x, y, z) in mm. */
+  int32_t pos[3];
+  /** Object orientation (r, p, y) in millirad. */
+  int32_t rot[3];
 } __PACKED__ player_truth_pose_t;
 
 /** @brief Configuration request: Get/set fiducial ID number.

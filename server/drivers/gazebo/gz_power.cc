@@ -65,10 +65,9 @@ class GzPower : public Driver
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Data
-  public: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-                                 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-
+  // Check for new data
+  public: virtual void Update();
+  
   // Commands
   public: virtual void PutCommand(player_device_id_t id,
                                   void* src, size_t len,
@@ -89,7 +88,7 @@ class GzPower : public Driver
   private: gz_power_t *iface;
 
   // Timestamp on last data update
-  private: uint32_t tsec, tusec;
+  private: double datatime;
 };
 
 
@@ -131,7 +130,7 @@ GzPower::GzPower(ConfigFile* cf, int section)
   // Create an interface
   this->iface = gz_power_alloc();
 
-  this->tsec = this->tusec = 0;
+  this->datatime = -1;
     
   return;
 }
@@ -176,38 +175,29 @@ int GzPower::Shutdown()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Data
-size_t GzPower::GetData(void* client, unsigned char* dest, size_t len,
-                           uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+// Check for new data
+void GzPower::Update()
 {
   player_power_data_t data;
-  uint32_t tsec, tusec;
-  
+  struct timeval ts;
+
   gz_power_lock(this->iface, 1);
 
-  // TODO : get power data here
-  data.charge = 120;
-  
-  assert(len >= sizeof(data));
-  memcpy(dest, &data, sizeof(data));
+  if (this->iface->data->time > this->datatime)
+  {
+    this->datatime = this->iface->data->time;
 
-  tsec = (int) (this->iface->data->time);
-  tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+
+    data.charge = htons((int16_t) (this->iface->data->levels[0] * 10));
+    
+    this->PutData(&data, sizeof(data), &ts);
+  }
 
   gz_power_unlock(this->iface);
 
-  // signal that new data is available
-  if (tsec != this->tsec || tusec != this->tusec)
-    DataAvailable();
-  this->tsec = tsec;
-  this->tusec = tusec;
-
-  if (timestamp_sec)
-    *timestamp_sec = tsec;
-  if (timestamp_usec)
-    *timestamp_usec = tusec;
-
-  return sizeof(data);
+  return;
 }
 
 

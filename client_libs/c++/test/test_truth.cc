@@ -43,28 +43,30 @@ test_truth(PlayerClient* client, int index)
       tp.Print();
       
       // store the current pose for comparison and replacing the device
-      rx = tp.x;
-      ry = tp.y;
-      rth = tp.a;
+      rx = tp.px;
+      ry = tp.py;
+      rth = tp.rz;
     }
   
 
   TEST("reading config");
 
-  double cx=0, cy=0, cth=0;
-  if(tp.GetPose( &cx, &cy, &cth) < 0)
+  double cpx=0, cpy=0, cpz=0;
+  double crx=0, cry=0, crz=0;
+  
+  if(tp.GetPose( &cpx, &cpy, &cpz, &crx, &cry, &crz ) < 0)
   {
     FAIL();
     return(-1);
 
     printf( "config reply says device is at (%.3f,%.2f,%.2f)\n",
-	    cx, cy, cth );
+            cpx, cpy, crz );
 
   }
   PASS();
 
   TEST("comparing data pose and config pose");
-  if( cx != rx || cy != ry || cth!= rth )
+  if( cpx != rx || cpy != ry || crz!= rth )
     FAIL();
   else
     PASS();
@@ -72,7 +74,7 @@ test_truth(PlayerClient* client, int index)
 
   TEST("teleporting around");
   for( double os = 0; os < M_PI; os += M_PI/16.0 )
-    if(tp.SetPose(os,os,2.0*os) < 0)
+    if(tp.SetPose(os,os,0,0,0,2.0*os) < 0)
       {
 	FAIL();
 	return(-1);
@@ -80,7 +82,7 @@ test_truth(PlayerClient* client, int index)
   PASS();
   
   TEST("returning to start position");
-  if(tp.SetPose(cx,cy,cth) < 0)
+  if(tp.SetPose(cpx,cpy,cpz,crx,cry,crz) < 0)
     {
       FAIL();
       return(-1);

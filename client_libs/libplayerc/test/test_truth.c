@@ -15,8 +15,10 @@
 int test_truth(playerc_client_t *client, int index)
 {
   int t;
-  double i_px, i_py, i_pa;
-  double f_px, f_py, f_pa;
+
+  double pos_i[3], rot_i[3];
+  double pos_f[3], rot_f[3];
+  
   void *rdevice;
   playerc_truth_t *device;
 
@@ -35,18 +37,23 @@ int test_truth(playerc_client_t *client, int index)
   for (t = 0; t < 3; t++)
   {
     TEST("getting pose (req/rep)");
-    if (playerc_truth_get_pose(device, &f_px, &f_py, &f_pa) != 0)
+    if (playerc_truth_get_pose(device,
+                               pos_f + 0, pos_f + 1, pos_f + 2,
+                               rot_f + 1, rot_f + 1, rot_f + 2) != 0)
     {
       FAIL();
       return -1;
     }
     PASS();
-    printf("truth: [%6.3f] [%6.3f] [%6.3f]\n", f_px, f_py, f_pa);
+    printf("truth: [%6.3f %6.3f %6.3f]\n", pos_f[0], pos_f[1], rot_f[2]);
   }
   
   TEST("setting pose");
-  i_px = 2; i_py = 3; i_pa = M_PI/2;
-  if (playerc_truth_set_pose(device, i_px, i_py, i_pa) != 0)
+  pos_i[0] = 2; pos_i[1] = 3; pos_i[2] = 0;
+  rot_i[0] = 0; rot_i[1] = 0; rot_i[2] = M_PI/2;
+  if (playerc_truth_set_pose(device,
+                             pos_i[0], pos_i[1], pos_i[2],
+                             rot_i[0], rot_i[1], rot_i[2]) != 0)
   {
     FAIL();
     return -1;
@@ -54,21 +61,23 @@ int test_truth(playerc_client_t *client, int index)
   PASS();
 
   TEST("getting pose (req/rep)");
-  if (playerc_truth_get_pose(device, &f_px, &f_py, &f_pa) != 0)
+  if (playerc_truth_get_pose(device,
+                             pos_f + 0, pos_f + 1, pos_f + 2,
+                             rot_f + 1, rot_f + 1, rot_f + 2) != 0)
   {
     FAIL();
     return -1;
   }
   PASS();
-  printf("truth: [%6.3f] [%6.3f] [%6.3f]\n", f_px, f_py, f_pa);
+  printf("truth: [%6.3f %6.3f %6.3f]\n", pos_f[0], pos_f[1], rot_f[2]);
 
   TEST("checking values for consitency");
-  if (fabs(f_px - i_px) > 0.001 || fabs(f_py - i_py) > 0.001 || fabs(f_pa - i_pa) > 0.001)
-  {
+  if (fabs(pos_f[0] - pos_i[0]) > 0.001 ||
+      fabs(pos_f[1] - pos_i[1]) > 0.001 ||
+      fabs(rot_f[2] - rot_i[2]) > 0.001)
     FAIL();
-    return -1;
-  }
-  PASS();
+  else
+    PASS();
 
   for (t = 0; t < 3; t++)
   {
@@ -81,8 +90,8 @@ int test_truth(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("truth: [%6.3f] [%6.3f] [%6.3f]\n",
-             device->px, device->py, device->pa);
+      printf("truth: [%6.3f %6.3f %6.3f]\n",
+             device->pos[0], device->pos[1], device->rot[2]);
     }
     else
       FAIL();
@@ -90,11 +99,9 @@ int test_truth(playerc_client_t *client, int index)
 
   TEST("unsubscribing");
   if (playerc_truth_unsubscribe(device) != 0)
-  {
     FAIL();
-    return -1;
-  }
-  PASS();
+  else
+    PASS();
   
   playerc_truth_destroy(device);
   

@@ -72,6 +72,7 @@ void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
   quality = buf->quality;
 
   hdop = (int) (unsigned int) ntohs(buf->hdop) * 10.0;
+  vdop = (int) (unsigned int) ntohs(buf->vdop) * 10.0;
 
   utm_easting = (int32_t) ntohl(buf->utm_e) / 100.0;
   utm_northing = (int32_t) ntohl(buf->utm_n) / 100.0;

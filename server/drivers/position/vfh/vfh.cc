@@ -525,13 +525,16 @@ int VFH_Class::GetTruth()
   this->truth_time = time;
 
   // Byte swap
-  data.px = ntohl(data.px);
-  data.py = ntohl(data.py);
-  data.pa = (ntohl(data.pa) + 360) % 360;
+  data.pos[0] = ntohl(data.pos[0]);
+  data.pos[1] = ntohl(data.pos[1]);
+  data.rot[2] = ntohl(data.rot[2]);
 
-  this->odom_pose[0] = (double) ((int32_t) data.px);
-  this->odom_pose[1] = (double) ((int32_t) data.py);
-  this->odom_pose[2] = (double) ((int32_t) data.pa);
+  // TODO: the units for orientation are probably wrong; the truth
+  // device uses milliradians
+  
+  this->odom_pose[0] = (double) ((int32_t) data.pos[0]);
+  this->odom_pose[1] = (double) ((int32_t) data.pos[1]);
+  this->odom_pose[2] = (double) ((int32_t) data.rot[2]);
 
   return 1;
 }

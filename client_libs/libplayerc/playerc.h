@@ -685,6 +685,9 @@ typedef struct
   /** Horizontal dilution of precision. */
   double hdop;
 
+  /** Vertical dilution of precision. */
+  double vdop;
+
   /** Horizontal and vertical error (meters). */
   double err_horz, err_vert;
 
@@ -1606,9 +1609,12 @@ typedef struct
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  /** The object pose (world cs). */
-  double px, py, pa;
-    
+  /** The object position in the world cs (x, y, z). */
+  double pos[3];
+
+  /** The object orientation in the world cs (roll, pitch, yaw). */
+  double rot[3];
+
 } playerc_truth_t;
 
 
@@ -1624,13 +1630,21 @@ int playerc_truth_subscribe(playerc_truth_t *device, int access);
 /** Un-subscribe from the truth device. */
 int playerc_truth_unsubscribe(playerc_truth_t *device);
 
-/** Get the object pose.
-    px, py, pa : the pose (global coordinates). */
-int playerc_truth_get_pose(playerc_truth_t *device, double *px, double *py, double *pa);
+/** @brief Get the object pose.
+    @param px, py, pz Object position in world cs.
+    @param rx, ry, rz Object orientation in world cs (roll, pitch, yaw).
+*/
+int playerc_truth_get_pose(playerc_truth_t *device,
+                           double *px, double *py, double *pz,
+                           double *rx, double *ry, double *rz);
 
-/** Set the object pose.  px, py, pa : the new pose (global
-    coordinates). */
-int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double pa);
+/** @brief Set the object pose.
+    @param px, py, pz Object position in world cs.
+    @param rx, ry, rz Object orientation in world cs (roll, pitch, yaw).
+*/
+int playerc_truth_set_pose(playerc_truth_t *device,
+                           double px, double py, double pz,
+                           double rx, double ry, double rz);
 
 
 /** @} */

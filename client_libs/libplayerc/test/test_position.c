@@ -64,22 +64,31 @@ int test_position(playerc_client_t *client, int index)
     }
 
     TEST1("writing data (attempt %d)", t);
-    if (playerc_position_set_cmd_vel(device, 0.10, 0.0, 0.0, 1) != 0)
+    if (playerc_position_set_cmd_vel(device, 0.10, 0.0, 0.2, 1) != 0)
     {
       FAIL();
       break;
     }
     PASS();
-
   }
+
+  TEST1("writing data (attempt %d)", t);
+  if (playerc_position_set_cmd_vel(device, 0.0, 0.0, 0.0, 1) != 0)
+    FAIL();
+  else
+    PASS();
+
+  TEST("disabling motors");
+  if (playerc_position_enable(device, 0) == 0)
+    PASS();
+  else
+    FAIL();
   
   TEST("unsubscribing");
   if (playerc_position_unsubscribe(device) != 0)
-  {
     FAIL();
-    return -1;
-  }
-  PASS();
+  else
+    PASS();
   
   playerc_position_destroy(device);
   
