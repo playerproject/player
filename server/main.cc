@@ -210,7 +210,7 @@ void Usage()
     fprintf(stderr, "%s ", sortedlist[i]);
   }
   free(sortedlist);
-  fprintf(stderr,"\n\nStage support was ");
+  fprintf(stderr,"\n\nStage 1.3.x support was ");
 #if ! INCLUDE_STAGE
   fprintf(stderr,"NOT ");
 #endif

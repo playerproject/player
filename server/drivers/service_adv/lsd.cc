@@ -141,7 +141,7 @@ Driver* SrvAdv_LSD_Init( ConfigFile* cf, int section) {
 // a driver registration function
 void ServiceAdvLSD_Register(DriverTable* table)
 {
-  printf("player: service_adv_lsd register function called.\n");
+  //printf("player: service_adv_lsd register function called.\n");
   table->AddDriver("service_adv_lsd",  SrvAdv_LSD_Init);
 }
 
