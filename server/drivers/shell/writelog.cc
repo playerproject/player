@@ -549,8 +549,11 @@ void WriteLog::WriteJoystick(player_joystick_data_t *data)
 void WriteLog::WriteLaser(player_laser_data_t *data)
 {
   int i;
+
+  // Note that, in this format, we need a lot of precision in the
+  // resolution field.
   
-  fprintf(this->file, "%+07.4f %+07.4f %+07.4f %04d ",
+  fprintf(this->file, "%+07.4f %+07.4f %+.8f %04d ",
           DEG_RAD(HINT16(data->min_angle) * 0.01), DEG_RAD(HINT16(data->max_angle) * 0.01),
           DEG_RAD(HUINT16(data->resolution) * 0.01), HUINT16(data->range_count));
 
