@@ -184,6 +184,14 @@ class PlayerClient
      int SetLaserConfig(int min_segment, int max_segment, bool intensity);
 
      /*
+      * Set the laser beacon configuration
+      * <bit_count> specifies the number of bits in the beacon (including end markers)
+      * <bit_size> specifies the size of each bit (in mm)
+      *
+      */
+     int SetLaserBeaconConfig(int bit_count, int bit_size);
+      
+     /*
       * Enable/disable the motors
       *   if 'state' is non-zero, then enable motors
       *   else disable motors

@@ -97,30 +97,34 @@ int main(int argc, char **argv)
     avoid = 0;
     *robot.newspeed = 200;
 
-    if((robot.sonar[2] < really_min_front_dist) ||
-       (robot.sonar[3] < really_min_front_dist) ||
-       (robot.sonar[4] < really_min_front_dist) ||
-       (robot.sonar[5] < really_min_front_dist))
+    if (avoid == 0)
     {
-      avoid = 1;
-      *robot.newspeed = -100;
-    }
-    else if((robot.sonar[2] < min_front_dist) ||
-            (robot.sonar[3] < min_front_dist) ||
-            (robot.sonar[4] < min_front_dist) ||
-            (robot.sonar[5] < min_front_dist))
-    {
-      *robot.newspeed = 0;
-      avoid = 1;
+        if((robot.sonar[2] < really_min_front_dist) ||
+           (robot.sonar[3] < really_min_front_dist) ||
+           (robot.sonar[4] < really_min_front_dist) ||
+           (robot.sonar[5] < really_min_front_dist))
+        {
+            avoid = 50;
+            *robot.newspeed = -100;
+        }
+        else if((robot.sonar[2] < min_front_dist) ||
+                (robot.sonar[3] < min_front_dist) ||
+                (robot.sonar[4] < min_front_dist) ||
+                (robot.sonar[5] < min_front_dist))
+        {
+            *robot.newspeed = 0;
+            avoid = 50;
+        }
     }
 
-    if(avoid)
-    {
-      if((robot.sonar[0] + robot.sonar[1]) < 
-         (robot.sonar[6] + robot.sonar[7]))
-        *robot.newturnrate = 30;
-      else
+    if(avoid > 0)
+    {  
+        //if((robot.sonar[0] + robot.sonar[1]) < 
+        // (robot.sonar[6] + robot.sonar[7]))
+        //*robot.newturnrate = 30;
+        //else
         *robot.newturnrate = -30;
+      avoid--;
     }
     else
       *robot.newturnrate = 0;

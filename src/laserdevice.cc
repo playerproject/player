@@ -59,7 +59,7 @@
 #include <time.h>
 #include <sys/time.h>
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 
 #include <playercommon.h>
 #include <laserdevice.h>

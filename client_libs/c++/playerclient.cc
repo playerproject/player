@@ -621,6 +621,27 @@ int PlayerClient::SetLaserConfig(int min_segment, int max_segment,
 }
 
 /*
+ * Set the laser beacon configuration
+ * <bit_count> specifies the number of bits in the beacon (including end markers)
+ * <bit_size> specifies the size of each bit (in mm)
+ *
+ */
+int PlayerClient::SetLaserBeaconConfig(int bit_count, int bit_size)
+{
+  player_msghdr_t replyhdr;
+  char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
+
+  player_laserbeacon_config_t payload;
+
+  payload.bit_count = (uint8_t) bit_count;
+  payload.bit_size = htons(bit_size);
+
+  return(player_request(&conn, PLAYER_LASERBEACON_CODE, 0,
+                          (char*) &payload, sizeof(payload),
+                          &replyhdr, replybuffer, sizeof(replybuffer)));
+}
+
+/*
  * Enable/disable the motors
  *   if 'state' is non-zero, then enable motors
  *   else disable motors
