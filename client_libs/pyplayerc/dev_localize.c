@@ -210,6 +210,39 @@ static PyObject *localize_unsubscribe(localize_object_t *self, PyObject *args)
   return Py_None;
 }
 
+/* set pose */
+static PyObject *localize_set_pose(localize_object_t *self, PyObject *args)
+{
+  int result;
+  double pose[3];
+  double var[3];
+  double cov[3][3];
+    
+  puts("calling PyArg_ParseTuple");
+  if (!PyArg_ParseTuple(args, "(ddd)(ddd)",
+      pose,pose+1,pose+2,var,var+1,var+2))
+    return NULL;
+  puts("done");
+  self = (localize_object_t*) self;
+  memset(cov,0,3*3*sizeof(double));
+  cov[0][0] = var[0]*var[0];
+  cov[1][1] = var[1]*var[0];
+  cov[2][2] = var[2]*var[2];
+
+  thread_release();
+  result = playerc_localize_set_pose(self->obj, pose, cov);
+  thread_acquire();
+
+  if (result < 0)
+  {
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
+    return NULL;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
 
 /* Callback for post-processing incoming data */
 static void localize_onread(localize_object_t *self)
@@ -269,6 +302,7 @@ static PyMethodDef localize_methods[] =
 {
   {"subscribe", (void*) localize_subscribe, METH_VARARGS},
   {"unsubscribe", (void*) localize_unsubscribe, METH_VARARGS},  
+  {"set_pose", (void*) localize_set_pose, METH_VARARGS},  
   {NULL, NULL}
 };
 
