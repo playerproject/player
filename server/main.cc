@@ -289,19 +289,20 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   n = scandir( directory, &namelist, MatchDeviceName, 0);
   if (n < 0)
     perror("scandir");
+  else if(!n)
+    PLAYER_WARN1("found no stage device files in directory \"%s\"", directory);
   else
   {
     // for every file in the directory, create a new device
     while(n--)
     {
-
       // don't try to load the clock here - we'll do it below
       if( strcmp( STAGE_CLOCK_NAME, namelist[n]->d_name ) == 0 )
-        break;
+        continue;
       
       // don't try to open the lock here - we already did it above
       if( strcmp( STAGE_LOCK_NAME, namelist[n]->d_name ) == 0 )
-        break;
+        continue;
 
 #ifdef DEBUG      
       printf("Opening %s ", namelist[n]->d_name);
