@@ -96,8 +96,7 @@ set PLAYER_IDARTURRET_CODE     16
 set PLAYER_IDAR_CODE           17
 # Descartes should be subsumed by position
 set PLAYER_DESCARTES_CODE      18
-# Mote should be subsumed by comms?
-set PLAYER_MOTE_CODE           19
+
 set PLAYER_DIO_CODE            20
 set PLAYER_AIO_CODE            21
 set PLAYER_IR_CODE             22
@@ -121,7 +120,6 @@ set PLAYER_TRUTH_STRING          "truth"
 set PLAYER_IDARTURRET_STRING     "idarturret"
 set PLAYER_IDAR_STRING           "idar"
 set PLAYER_DESCARTES_STRING      "descartes"
-set PLAYER_MOTE_STRING           "mote"
 set PLAYER_DIO_STRING            "dio"
 set PLAYER_AIO_STRING            "aio"
 set PLAYER_IR_STRING             "ir"
