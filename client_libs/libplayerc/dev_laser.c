@@ -120,6 +120,7 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
   for (i = 0; i < data->range_count; i++)
   {
     r = ((uint16_t) ntohs(data->ranges[i])) / 1000.0;
+    assert(r >= 0);
     device->scan[i][0] = r;
     device->scan[i][1] = b;
     device->point[i][0] = r * cos(b);
@@ -127,6 +128,7 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
     device->intensity[i] = data->intensity[i];
     b += db;
   }
+
   device->scan_res = db;
   device->scan_count = data->range_count;
 }
