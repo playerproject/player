@@ -424,10 +424,10 @@ void CClientData::UpdateRequested(player_device_req_t req)
   /* UPDATE */
   
   // go from either 'r' or 'w' to 'a'
-  if((thisub->access=='w' && (req.access=='r' || req.access=='a')) ||
-     (thisub->access=='r' && (req.access=='w' || req.access=='a')))
+  if(((thisub->access=='w') || (thisub->access=='r')) && (req.access=='a'))
   {
-    if(Subscribe(req.code,req.access) == 0)
+    // subscribe once more
+    if(Subscribe(req.code,req.index) == 0)
       thisub->access = 'a';
     else 
       thisub->access='e';
@@ -435,9 +435,18 @@ void CClientData::UpdateRequested(player_device_req_t req)
   // go from 'a' to either 'r' or 'w'
   else if(thisub->access=='a' && (req.access=='r' || req.access=='w')) 
   {
-    Unsubscribe(req.code,req.access);
+    // unsubscribe once
+    Unsubscribe(req.code,req.index);
     thisub->access=req.access;
   }
+  // go from either 'r' to 'w' or 'w' to 'r'
+  else if(((thisub->access=='r') && (req.access=='w')) ||
+          ((thisub->access=='w') && (req.access=='r')))
+  {
+    // no subscription change necessary
+    thisub->access=req.access;
+  }
+
   /* CLOSE */
   else if(req.access=='c') 
   {

@@ -213,18 +213,21 @@ void *client_reader(void* arg)
       hdr.stx |= c;
 
       //printf("got:%x:\n",ntohs(hdr.stx));
-      readcnt = 2;
+      readcnt = sizeof(hdr.stx);
     }
     //puts("got STX");
 
+    int thisreadcnt;
     /* get the rest of the header */
-    if((readcnt += read(cd->socket,
-                        &(hdr.type),
-                        sizeof(player_msghdr_t)-sizeof(hdr.stx))) != 
-                    sizeof(player_msghdr_t))
+    while(readcnt < sizeof(player_msghdr_t))
     {
-      //perror("client_reader(): read() while reading header");
-      delete cd;
+      if((thisreadcnt = read(cd->socket, &(hdr.type), 
+                          sizeof(player_msghdr_t)-readcnt)) <= 0)
+      {
+        //perror("client_reader(): read() while reading header");
+        delete cd;
+      }
+      readcnt += thisreadcnt;
     }
 
     // byte-swap as necessary

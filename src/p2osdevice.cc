@@ -46,6 +46,11 @@
 #include <p2osdevice.h>
 #include <packet.h>
 
+// so we can access the deviceTable and extract pointers to the sonar
+// and position objects
+#include <devicetable.h>
+extern CDeviceTable* deviceTable;
+
 /* here we calculate our conversion factors.
  *  0x370 is max value for the PTZ pan command, and in the real
  *    world, it has +- 25.0 range.
@@ -80,6 +85,7 @@ extern CSIP*           CP2OSDevice::sippacket;
 extern bool           CP2OSDevice::arena_initialized_data_buffer;
 extern bool           CP2OSDevice::arena_initialized_command_buffer;
 
+
 void *RunPsosThread( void *p2osdevice );
 
 CP2OSDevice::CP2OSDevice(char *port) 
@@ -113,6 +119,9 @@ CP2OSDevice::CP2OSDevice(char *port)
   psos_fd = -1;
   strcpy( psos_serial_port, port );
 
+  // zero the per-device subscription counter.
+  subscrcount = 0;
+
   //pthread_mutex_init(&serial_mutex,NULL);
 }
 
@@ -124,6 +133,9 @@ CP2OSDevice::~CP2OSDevice()
 
 int CP2OSDevice::Setup()
 {
+  unsigned char sonarcommand[4];
+  CPacket sonarpacket; 
+
   struct termios term;
   unsigned char command;
   CPacket packet, receivedpacket;
@@ -292,6 +304,14 @@ int CP2OSDevice::Setup()
     sippacket = new CSIP();
   SendReceive((CPacket*)NULL);//,false);
 
+  // turn off the sonars at first
+  sonarcommand[0] = SONAR;
+  sonarcommand[1] = 0x3B;
+  sonarcommand[2] = 0;
+  sonarcommand[3] = 0;
+  sonarpacket.Build(sonarcommand, 4);
+  SendReceive(&sonarpacket);
+
 
   /* now spawn reading thread */
   if(pthread_attr_init(&attr) ||
@@ -402,6 +422,14 @@ void *RunPsosThread( void *p2osdevice )
 
   int config_size;
 
+  int last_sonar_subscrcount;
+  int last_position_subscrcount;
+
+  CDevice* sonarp = deviceTable->GetDevice(PLAYER_SONAR_CODE,0);
+  CDevice* positionp = deviceTable->GetDevice(PLAYER_POSITION_CODE,0);
+
+  last_sonar_subscrcount = 0;
+  last_position_subscrcount = 0;
 
 #ifdef PLAYER_LINUX
   sigblock(SIGINT);
@@ -412,6 +440,81 @@ void *RunPsosThread( void *p2osdevice )
 
   for(;;)
   {
+    // we want to turn on the sonars if someone just subscribed, and turn
+    // them off if the last subscriber just unsubscribed.
+    if(sonarp)
+    {
+      if(!last_sonar_subscrcount && sonarp->subscrcount)
+      {
+        motorcommand[0] = SONAR;
+        motorcommand[1] = 0x3B;
+        motorcommand[2] = 1;
+        motorcommand[3] = 0;
+        motorpacket.Build(motorcommand, 4);
+        //puts("turning Sonars ON");
+        pd->SendReceive(&motorpacket);
+      }
+      else if(last_sonar_subscrcount && !(sonarp->subscrcount))
+      {
+        motorcommand[0] = SONAR;
+        motorcommand[1] = 0x3B;
+        motorcommand[2] = 0;
+        motorcommand[3] = 0;
+        motorpacket.Build(motorcommand, 4);
+        //puts("turning Sonars OFF");
+        pd->SendReceive(&motorpacket);
+      }
+      
+      last_sonar_subscrcount = sonarp->subscrcount;
+    }
+    
+    // we want to reset the odometry and enable the motors if the first 
+    // client just subscribed to the position device, and we want to stop 
+    // and disable the motors if the last client unsubscribed.
+    if(positionp)
+    {
+      if(!last_position_subscrcount && positionp->subscrcount)
+      {
+        // disable motor power
+        motorcommand[0] = ENABLE;
+        motorcommand[1] = 0x3B;
+        motorcommand[2] = 0;
+        motorcommand[3] = 0;
+        motorpacket.Build(motorcommand, 4);
+        pd->SendReceive(&motorpacket);//,false);
+
+        // reset odometry
+        pd->ResetRawPositions();
+      }
+      else if(last_position_subscrcount && !(positionp->subscrcount))
+      {
+        // command motors to stop
+        motorcommand[0] = VEL2;
+        motorcommand[1] = 0x3B;
+        motorcommand[2] = 0;
+        motorcommand[3] = 0;
+
+        // overwrite existing motor commands to be zero
+        player_position_cmd_t position_cmd;
+        position_cmd.speed = 0;
+        position_cmd.turnrate = 0;
+        positionp->GetLock()->PutCommand(positionp,
+                                         (unsigned char*)(&position_cmd), 
+                                         sizeof(position_cmd));
+      
+        // disable motor power
+        motorcommand[0] = ENABLE;
+        motorcommand[1] = 0x3B;
+        motorcommand[2] = 0;
+        motorcommand[3] = 0;
+        motorpacket.Build(motorcommand, 4);
+        pd->SendReceive(&motorpacket);//,false);
+      }
+
+      last_position_subscrcount = positionp->subscrcount;
+    }
+
+    
     // first, check if there is a new config command
     if((config_size = pd->GetLock()->GetConfig(pd,config, sizeof(config))))
     {
@@ -483,7 +586,7 @@ void *RunPsosThread( void *p2osdevice )
       }
 
       // set size to zero, so we'll know not to read it next time unless
-      // PutConfig() was called
+      // PutConfig() was called again
       pd->config_size = 0;
     }
 
@@ -598,6 +701,10 @@ void *RunPsosThread( void *p2osdevice )
     //printf("motorpacket[0]: %d\n", motorcommand[0]);
     motorpacket.Build( motorcommand, 4);
     pd->SendReceive(&motorpacket);//,false);
+
+    /*
+     * gripper control is disabled for now...
+     */
 
     /*
     if(newgrippercommand)
