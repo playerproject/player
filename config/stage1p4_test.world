@@ -63,9 +63,9 @@ define blackant ant
   nose "false"
 )
 
-blackant( pose [ -0.12 0.1 2.0 ] velocity [ 0 0 1.0 ] )
-blackant( pose [ 0.12 0.08 1.0 ] velocity [ 0 0 1.0 ] )
-blackant( pose [ 0    0    2.7 ] velocity [ 0 0 1.0 ] )
+#blackant( pose [ -0.12 0.1 2.0 ] velocity [ 0 0 1.0 ] )
+#blackant( pose [ 0.12 0.08 1.0 ] velocity [ 0 0 1.0 ] )
+#blackant( pose [ 0    0    2.7 ] velocity [ 0 0 1.0 ] )
 
 #robotproblem
 #(
@@ -114,12 +114,12 @@ define swarmbot sb
 
   neighbor 1
 
-  indicatorlight( color "red"    pose [0.030 0.000 0.000] light_interval 200) 
-  indicatorlight( color "green"  pose [0.000 0.030 0.000] light_interval 400) 
-  indicatorlight( color "blue"   pose [-0.030 0.000 0.000] light_interval 600) 
-  indicatorlight( color "yellow" pose [0.000 -0.030 0.000] light_interval 800) 
+  indicatorlight( color "red"    pose [0.030 0.000 0.000] light [0 200] ) 
+  indicatorlight( color "green"  pose [0.000 0.030 0.000] light [0 400]) 
+  indicatorlight( color "blue"   pose [-0.030 0.000 0.000] light [0 600]) 
+  indicatorlight( color "yellow" pose [0.000 -0.030 0.000] light [0 800]) 
 
-  velocity [ 0 0 1 ]
+  #velocity [ 0 0 1 ]
 )
 	
 swarmbot( pose [4.413 3.882 74.934] color "red" )
