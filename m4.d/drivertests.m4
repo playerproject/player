@@ -122,9 +122,7 @@ if test "x$have_raw1394" = "xyes" -a "x$have_dc1394" = "xyes"; then
   AC_MSG_RESULT([support will be included in the CMVision driver])
   AC_MSG_RESULT([***************************************************])
   AC_DEFINE(HAVE_1394, 1, [do we have the low-level 1394 libs?])
-  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lraw1394
--ldc1394_control
-"
+  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lraw1394 -ldc1394_control"
 else
   AC_MSG_RESULT([***************************************************])
   AC_MSG_RESULT([Couldn't find the 1394 (firewire) headers. 1394])
