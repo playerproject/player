@@ -86,8 +86,13 @@ PlayerQueue::Push(player_device_id_t* device, void* client,
       memcpy(queue[i].data,data,queue[i].size);
       queue[i].type = type;
 
-      if(ts)
-        queue[i].timestamp = *ts;
+      if(ts) {
+	//        queue[i].timestamp = *ts;
+	// LPR. on the ARM, the previous line seemed to munge the high-order byte
+	// of the type member. why?
+	queue[i].timestamp.tv_sec = ts->tv_sec;
+	queue[i].timestamp.tv_usec = ts->tv_usec;
+      }
       else
       {
         queue[i].timestamp.tv_sec = 0;

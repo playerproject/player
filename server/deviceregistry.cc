@@ -43,16 +43,35 @@ extern DriverTable* driverTable;
 extern PlayerTime* GlobalTime;
 
 /* prototype device-specific init funcs */
+#ifdef INCLUDE_SICK
 void SickLMS200_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_ACTS
 void Acts_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_FESTIVAL
 void Festival_Register(DriverTable* table);
+#endif 
+
+#ifdef INCLUDE_LASER
 void LaserBarcode_Register(DriverTable* table);
 void LaserCSpace_Register(DriverTable* table);
 void LaserFeature_Register(DriverTable* table);
 void LaserReflector_Register(DriverTable* table);
 void LaserVisualBarcode_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_SONY
 void SonyEVID30_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_UDPBCAST
 void UDPBroadcast_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_P2OS
 void P2OSGripper_Register(DriverTable* table);
 void P2OSPower_Register(DriverTable* table);
 void P2OSaio_Register(DriverTable* table);
@@ -60,6 +79,17 @@ void P2OSdio_Register(DriverTable* table);
 void P2OSBumper_Register(DriverTable* table);
 void P2OSPosition_Register(DriverTable* table);
 void P2OSSonar_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_WIFI
+void WiFi_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_REB
+void REBPosition_Register(DriverTable *table);
+void REBIR_Register(DriverTable *table);
+void REBPower_Register(DriverTable *table);
+#endif
 
 #ifdef INCLUDE_FIXEDTONES
 void FixedTones_Register(DriverTable* table);
@@ -97,6 +127,10 @@ player_interface_t interfaces[] = {
   {PLAYER_DIO_CODE, PLAYER_DIO_STRING, "p2os_dio"},
   {PLAYER_POSITION_CODE, PLAYER_POSITION_STRING, "p2os_position"},
   {PLAYER_SONAR_CODE, PLAYER_SONAR_STRING, "p2os_sonar"},
+  {PLAYER_WIFI_CODE, PLAYER_WIFI_STRING, "wifi"},
+  {PLAYER_REB_POSITION_CODE, PLAYER_REB_POSITION_STRING, "reb_position"},
+  {PLAYER_REB_IR_CODE, PLAYER_REB_IR_STRING, "reb_ir"},
+  {PLAYER_REB_POWER_CODE, PLAYER_REB_POWER_STRING, "reb_power"},
   {0,NULL,NULL}
 };
 
@@ -127,16 +161,35 @@ lookup_interface(char* name, player_interface_t* interface)
 void
 register_devices()
 {
+#ifdef INCLUDE_SICK
   SickLMS200_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_ACTS
   Acts_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_FESTIVAL
   Festival_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LASER
   LaserBarcode_Register(driverTable);
-  LaserCSpace_Register(driverTable);
-  LaserFeature_Register(driverTable);
+  //  LaserCSpace_Register(driverTable);
+  //  LaserFeature_Register(driverTable);
   LaserReflector_Register(driverTable);
   LaserVisualBarcode_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SONY
   SonyEVID30_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_UDPBCAST
   UDPBroadcast_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_P2OS
   P2OSGripper_Register(driverTable);
   P2OSPower_Register(driverTable);
   P2OSaio_Register(driverTable);
@@ -144,6 +197,7 @@ register_devices()
   P2OSBumper_Register(driverTable);
   P2OSPosition_Register(driverTable);
   P2OSSonar_Register(driverTable);
+#endif
 
 #ifdef INCLUDE_FIXEDTONES
   FixedTones_Register(driverTable);
@@ -160,5 +214,15 @@ register_devices()
 #ifdef INCLUDE_ISENSE
   InertiaCube2_Register(driverTable);
 #endif
+
+#ifdef INCLUDE_WIFI
+  WiFi_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_REB
+  REBPosition_Register(driverTable);
+  REBIR_Register(driverTable);
+  REBPower_Register(driverTable);
+#endif 
 }
 

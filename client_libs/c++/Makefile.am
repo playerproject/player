@@ -25,7 +25,11 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               sonarproxy.cc \
                               speechproxy.cc \
                               truthproxy.cc \
-                              blobfinderproxy.cc
+                              blobfinderproxy.cc \
+				reb_positionproxy.cc \
+				reb_irproxy.cc \
+				reb_powerproxy.cc \
+				wifiproxy.cc
                               #rwi_bumperproxy.cc \
                               #rwi_bumperproxy.h \
                               #rwi_laserproxy.cc \

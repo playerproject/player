@@ -74,6 +74,12 @@
 #define PLAYER_DIO_CODE            ((uint16_t)20)  // digital I/O
 #define PLAYER_AIO_CODE            ((uint16_t)21)  // analog I/O
 
+#define PLAYER_WIFI_CODE	   ((uint16_t)30)	// wifi card
+
+#define PLAYER_REB_POSITION_CODE   ((uint16_t)50)	// reb specific position interface
+#define PLAYER_REB_IR_CODE	   ((uint16_t)51)	// reb controlled IRs
+#define PLAYER_REB_POWER_CODE	   ((uint16_t)52)
+
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -100,6 +106,11 @@
 #define PLAYER_DIO_STRING            "dio"
 #define PLAYER_AIO_STRING            "aio"
 //#define PLAYER_BPS_STRING            "bps"
+
+#define PLAYER_WIFI_STRING		"wifi"
+#define PLAYER_REB_POSITION_STRING	"reb_position"
+#define PLAYER_REB_IR_STRING		"reb_ir"
+#define PLAYER_REB_POWER_STRING		"reb_power"
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -254,6 +265,7 @@ typedef struct
 #define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
 /*************************************************************************/
 
+
 /*************************************************************************/
 /*
  * Gripper Device
@@ -333,7 +345,7 @@ typedef struct
 
 typedef struct
 {
-  uint8_t request; // must be PLAYER_POSITION_VELOCITY_CONTROL_REQ
+  uint8_t request; // must be PLAYER_POSITION_VELOCITY_MODE_REQ
   uint8_t value;  // 0=direct wheel vel control, 1=separate trans and rot
 } __attribute__ ((packed)) player_position_velocitymode_config_t;
 
@@ -976,5 +988,222 @@ typedef struct
   uint8_t   value;
 } __attribute__ ((packed)) player_rwi_config_t;
 /*************************************************************************/
+
+/*************************************************************************/
+/*
+ * The p2os_sonar driver
+ */
+
+/* the various configuration commands 
+ * NOTE: these must not be the same as any other P2OS device! */
+#define PLAYER_P2OS_SONAR_POWER_REQ      ((uint8_t)2)
+
+/* Packet for configuring the Pioneer sonar. */
+typedef struct
+{
+  /* Packet subtype.  Must be PLAYER_P2OS_SONAR_POWER_REQ. */
+  uint8_t subtype;
+
+  /* Turn sonars on or off. */
+  uint8_t arg;
+} __attribute__ ((packed)) player_p2os_sonar_config_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * The p2os_position driver
+ */
+#define PLAYER_P2OS_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
+#define PLAYER_P2OS_POSITION_VELOCITY_CONTROL_REQ  ((uint8_t)3)
+#define PLAYER_P2OS_POSITION_RESET_ODOM_REQ        ((uint8_t)4)
+
+// 
+typedef struct
+{
+  uint8_t request; // one of the above request types
+  uint8_t value;  // value for the request (usually 0 or 1)
+} __attribute__ ((packed)) player_p2os_position_config_t;
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * The acts driver
+ */
+
+#define ACTS_NUM_CHANNELS 32
+#define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  
+#define ACTS_HEADER_SIZE_1_2 4*ACTS_NUM_CHANNELS  
+#define ACTS_BLOB_SIZE_1_0 10
+#define ACTS_BLOB_SIZE_1_2 16
+#define ACTS_MAX_BLOBS_PER_CHANNEL 10
+/*************************************************************************/
+
+/*************************************************************************/
+/*
+ * The laserbarcode driver
+ */
+
+#define PLAYER_LASERBARCODE_SET_CONFIG 0x02
+#define PLAYER_LASERBARCODE_GET_CONFIG 0x03
+
+/* laserbarcode configuration packet. */
+typedef struct
+{
+  /* Packet subtype.  Set to PLAYER_LASERBARCODE_SET_CONFIG to set the
+   *  device configuration.  Set to PLAYER_LASERBARCODE_GET_CONFIG to
+   *  get the device configuration. */
+  uint8_t subtype;
+
+  /* The number of bits in the beacon, including start and end
+   * markers. */
+  uint8_t bit_count;
+
+  /* The width of each bit, in mm. */
+  uint16_t bit_size;
+
+  /* Bit detection thresholds.  <zero_thresh> is the minimum threshold
+   * for declaring a bit is zero (0-100).  <one_thresh> is the minimum
+   * threshold for declaring a bit is one (0-100). */
+  uint16_t zero_thresh;
+  uint16_t one_thresh;
+} __attribute__ ((packed)) player_laserbarcode_config_t;
+/*************************************************************************/
+
+
+/*************************************************************************/
+/*
+ * WiFi interface
+ */
+typedef struct
+{
+  uint16_t  link;
+  uint16_t  level;
+  uint16_t  noise;
+} __attribute__ ((packed)) player_wifi_data_t;
+/*************************************************************************/
+
+/*************************************************************************
+*
+*  REB Position Device -- controls position via K-Team 
+*  Robotics Extension Board (REB)
+* 
+*  These structs also used for RWI robots 
+*
+*/
+/*
+// this holds data returned by the position device
+typedef struct {
+  int32_t x,y;
+  uint16_t theta;
+  int16_t translational;
+  int16_t rotational;
+  int16_t heading;  
+  uint8_t on_target;
+  //  short currents[PLAYER_REB_NUM_MOTORS];
+} __attribute__ ((packed)) player_reb_position_data_t;
+
+// holds position command data
+typedef struct {
+  int16_t translational, rotational;
+  int16_t heading;
+} __attribute__ ((packed)) player_reb_position_cmd_t;
+*/
+
+
+// these are for the reb_position interface
+#define PLAYER_REB_POSITION_POSITION_MODE_REQ 82
+#define PLAYER_REB_POSITION_SPEED_PID_REQ 85
+#define PLAYER_REB_POSITION_POSITION_PID_REQ 86
+#define PLAYER_REB_POSITION_SPEED_PROF_REQ 87
+#define PLAYER_REB_POSITION_SET_ODOM_REQ 89
+
+// the following are used by some config requests
+// they are for IR and pos devices, but put them here
+// now for completeness and to follow the player standard,
+// each ioctl gets its own struct
+
+typedef struct {
+  uint8_t subtype; // must be PLAYER_REB_POSITION_POSITION_MODE_REQ
+  uint8_t state; // 0 for velocity mode, 1 for position mode
+} __attribute__ ((packed)) player_reb_pos_mode_req_t;
+
+
+typedef struct{
+  uint8_t subtype; // must be PLAYER_REB_SET_ODOM_REQ
+  int32_t x;
+  int32_t y;
+  uint16_t theta;
+}__attribute__ ((packed)) player_reb_set_odom_req_t;
+
+typedef struct {
+  uint8_t subtype; // must be PLAYER_REB_POSITION_SPEED_PID_REQ
+  int32_t kp;
+  int32_t ki;
+  int32_t kd;
+} __attribute__ ((packed)) player_reb_speed_pid_req_t;
+
+typedef struct {
+  uint8_t subtype; // must be PLAYER_REB_POSITION_POSITION_PID_REQ
+  int32_t kp;
+  int32_t ki;
+  int32_t kd;
+} __attribute__ ((packed)) player_reb_pos_pid_req_t;
+
+typedef struct {
+  uint8_t subtype; // must be PLAYER_REB_POSITION_SPEED_PROF_REQ
+  int16_t speed; //max speed
+  int16_t acc; //max acceleration
+} __attribute__ ((packed)) player_reb_speed_prof_req_t;
+
+
+
+/*************************************************************************
+*
+*  REB IR device... reads IRs via REB main device
+*  
+* 
+*/
+#define PLAYER_REB_NUM_IR_SENSORS 8
+
+// data from the REB IR device
+typedef struct {
+  uint16_t voltages[PLAYER_REB_NUM_IR_SENSORS];
+  uint16_t ranges[PLAYER_REB_NUM_IR_SENSORS];
+} __attribute__ ((packed)) player_reb_ir_data_t;
+
+// used by a config command
+typedef struct {
+  short poses[PLAYER_REB_NUM_IR_SENSORS][3];
+} __attribute__ ((packed)) player_reb_ir_pose_t;
+
+// hold config requests
+typedef struct {
+  uint8_t type;
+  float values[PLAYER_REB_NUM_IR_SENSORS][2];
+} __attribute__ ((packed)) player_reb_ir_params_req_t;
+
+
+// some defines
+//#define PLAYER_REB_IR_M_PARAM 1
+//#define PLAYER_REB_IR_B_PARAM 1
+
+// these are codes for different config requests
+#define PLAYER_REB_IR_POWER_REQ 21
+#define PLAYER_REB_IR_POSE_REQ 22
+
+typedef struct {
+  uint8_t subtype; // must be PLAYER_REB_IR_POWER_REQ
+  uint8_t state; // 0 for power off, 1 for power on
+} __attribute__ ((packed)) player_reb_ir_power_req_t;
+
+typedef struct {
+  uint8_t subtype; // must be PLAYER_REB_IR_POSE_REQ
+  player_reb_ir_pose_t poses[PLAYER_REB_NUM_IR_SENSORS];
+} __attribute__ ((packed)) player_reb_ir_pose_req_t;
+
+
+
+/**************************************************************************/
+
 
 #endif /* PLAYER_H */

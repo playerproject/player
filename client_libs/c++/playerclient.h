@@ -1109,4 +1109,152 @@ class BlobfinderProxy : public ClientProxy
     void Print();
 };
 
+#define REB_PPROXY_MOTOR_OFF 0
+#define REB_PPROXY_MOTOR_ON 1
+
+#define REB_PPROXY_POSITION_MODE 0
+#define REB_PPROXY_VELOCITY_MODE 1
+#define REB_PPROXY_TORQUE_MODE 2
+
+#define REB_PPROXY_PD_CONTROL 1
+#define REB_PPROXY_DIRECT_CONTROL 0
+
+
+/** The {\tt REBPositionProxy} class is used to control the {\REB_position} device.
+ */
+class REBPositionProxy : public ClientProxy
+{
+public:
+  long x;
+  long y;
+  unsigned short theta;
+
+  short translational;
+  short rotational;
+  short desired_heading;
+  unsigned char on_target;
+
+  REBPositionProxy(PlayerClient *pc, unsigned short index,
+		   unsigned char access = 'c') :
+    ClientProxy(pc, PLAYER_REB_POSITION_CODE, index, access) {}
+
+  
+  // these methods are for configuring the position device
+  int SetMotorState(unsigned char);
+
+  int SelectVelocityControl(unsigned char);
+
+  int SelectPositionMode(unsigned char);
+
+  int ResetOdometry();
+
+  int SetOdometry(long x,long y,int t);
+
+  int SetSpeedPID(int kp, int ki, int kd);
+  
+  int SetPositionPID(short kp, short ki, short kd);
+  
+  int SetPositionSpeedProfile(short spd, short acc);
+  
+  // these are command methods
+  int SetSpeed(short trans, short rot, short heading=0);
+  
+  int DoStraightLine(int mm);
+  
+  int DoRotation(int deg);
+  
+  // required by ClientProxy
+  void FillData(player_msghdr_t hdr, const char *buffer);
+  
+  void Print();
+};
+
+#define REB_IRPROXY_IR_OFF 0
+#define REB_IRPROXY_IR_ON 1
+
+// look in ircalib for irattrib.m to see how we got these values
+#define IRPROXY_DEFAULT_DIST_M_VALUE -0.661685227
+#define IRPROXY_DEFAULT_DIST_B_VALUE  10.477102515
+
+#define IRPROXY_DEFAULT_VAR_M_VALUE 3.826011121876
+#define IRPROXY_DEFAULT_VAR_B_VALUE -11.251715194794
+
+#define IRPROXY_DEFAULT_STD_M_VALUE  1.913005560938
+#define IRPROXY_DEFAULT_STD_B_VALUE -7.728130591833
+
+#define IRPROXY_M_PARAM 0
+#define IRPROXY_B_PARAM 1
+
+//this is the effective range of the sensor in mm
+#define REB_IRPROXY_MAX_RANGE 700
+
+class REBIRProxy : public ClientProxy
+{
+public:
+
+  unsigned short voltages[PLAYER_REB_NUM_IR_SENSORS];
+  unsigned short ranges[PLAYER_REB_NUM_IR_SENSORS];
+  double stddev[PLAYER_REB_NUM_IR_SENSORS];
+
+  double params[PLAYER_REB_NUM_IR_SENSORS][2]; // distance regression params
+  double sparams[PLAYER_REB_NUM_IR_SENSORS][2]; //std dev regression params
+
+  player_reb_ir_pose_t ir_pose;
+
+  REBIRProxy(PlayerClient *pc, unsigned short index,
+	     unsigned char access = 'c');
+
+  // these are config methods
+  int SetIRState(unsigned char);
+
+  int GetIRPose();
+
+  void SetRangeParams(int which, double m, double );
+
+  void SetStdDevParams(int which, double m, double b);
+
+  double CalcStdDev(int w, unsigned short range);
+
+  unsigned short operator [](unsigned int index) {
+    if (index < PLAYER_REB_NUM_IR_SENSORS) {
+      return ranges[index];
+    } 
+
+    return 0;
+  }
+
+  // required methods
+  void FillData(player_msghdr_t hdr, const char *buffer);
+
+  void Print();
+};
+
+class REBPowerProxy: public ClientProxy
+{
+public:
+  unsigned short battery;
+
+  REBPowerProxy(PlayerClient *pc, unsigned short index, 
+	       unsigned char access = 'c') : 
+    ClientProxy(pc, PLAYER_REB_POWER_CODE, index, access) {}
+
+  void FillData(player_msghdr_t hdr, const char *buffer);
+
+  void Print();
+};
+
+
+class WiFiProxy: public ClientProxy
+{
+public:
+  unsigned short link, level, noise;
+
+  WiFiProxy(PlayerClient *pc, unsigned short index, 
+	       unsigned char access = 'c') : 
+    ClientProxy(pc, PLAYER_WIFI_CODE, index, access) {}
+
+  void FillData(player_msghdr_t hdr, const char *buffer);
+
+  void Print();
+};
 #endif

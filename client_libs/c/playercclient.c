@@ -267,6 +267,7 @@ int player_request(player_connection_t* conn,
   {
     if(player_read(conn, &hdr, buffer, sizeof(buffer)) == -1)
       return(-1);
+
   }
 
   /* did they want the reply? */

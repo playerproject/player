@@ -45,7 +45,7 @@
   #include <strings.h>
 #endif
 
-#include <iostream> //some debug output it easier using stream IO
+//#include <iostream> //some debug output it easier using stream IO
 
 #include <playertime.h>
 extern PlayerTime* GlobalTime;

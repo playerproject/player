@@ -1,3 +1,10 @@
+
+CXX = @CXX_SERVER@
+AR = @AR_SERVER@
+RANLIB = @RANLIB_SERVER@
+CXXFLAGS = @CXXFLAGS_SERVER@
+
+
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
 noinst_LIBRARIES = $(RWI_LIB)

@@ -1,6 +1,14 @@
+CXX = @CXX_SERVER@
+AR = @AR_SERVER@
+RANLIB = @RANLIB_SERVER@
+CXXFLAGS = @CXXFLAGS_SERVER@
+
+
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
-noinst_LIBRARIES = libp2os.a
+noinst_LIBRARIES = @P2OS_LIB@ 
+
+EXTRA_LIBRARIES = libp2os.a
 
 libp2os_a_SOURCES = p2os.cc p2os_gripper.cc p2os.h p2os_bumper.cc \
                     p2os_power.cc p2os_aio.cc p2os_dio.cc p2os_position.cc \
