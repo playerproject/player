@@ -13,8 +13,10 @@
 #include <string.h>
 #include <sys/types.h>
 
-// Use ImageMagick for loading the images
-#include <magick/api.h>
+#include <playercommon.h>
+
+// Use gdk-pixbuf for loading the images
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include "plan.h"
 
@@ -92,53 +94,56 @@ int plan_load_occ(plan_t *plan, const char *filename, double scale)
   int i, j;
   int occ;
   plan_cell_t *cell;
-  ExceptionInfo exception;
-  ImageInfo *info;
-  Image *image;
-  const PixelPacket *p;
+  GdkPixbuf* pixbuf;
+  guchar* pixels;
+  guchar* p;
+  int rowstride, n_channels, bps;
+  GError* error = NULL;
 
-  // Initialize ImageMagick
-  InitializeMagick(NULL);
-  GetExceptionInfo(&exception);
-  info = CloneImageInfo(NULL);
+  // Initialize glib
+  g_type_init();
 
   // Read the image
-  strcpy(info->filename, filename);
-  image = ReadImage(info, &exception);
-  if (exception.severity != UndefinedException)
-    CatchException(&exception);
-  if (image == NULL)
-    return -1;
+  if(!(pixbuf = gdk_pixbuf_new_from_file(filename, &error)))
+  {
+    PLAYER_ERROR1("failed to open image file %s", filename);
+    return(-1);
+  }
 
   plan->scale = scale;
-  plan->size_x = image->columns;
-  plan->size_y = image->rows;
+  plan->size_x = gdk_pixbuf_get_width(pixbuf);
+  plan->size_y = gdk_pixbuf_get_height(pixbuf);
+
+  rowstride = gdk_pixbuf_get_rowstride(pixbuf);
+  bps = gdk_pixbuf_get_bits_per_sample(pixbuf)/8;
+  n_channels = gdk_pixbuf_get_n_channels(pixbuf);
+  if(gdk_pixbuf_get_has_alpha(pixbuf))
+    n_channels++;
 
   // Allocate space
   if (plan->cells)
     free(plan->cells);
   plan->cells = calloc(plan->size_x * plan->size_y, sizeof(plan_cell_t));
-  plan->image = calloc(plan->size_x * plan->size_y, sizeof(uint16_t));
+  //plan->image = calloc(plan->size_x * plan->size_y, sizeof(uint16_t));
 
   // Reset the grid
   plan_reset(plan);
     
   // Read data
-  for (j = 0; j < image->rows; j++)
+  pixels = gdk_pixbuf_get_pixels(pixbuf);
+  for(j = 0; j < plan->size_y; j++)
   {
-    p = AcquireImagePixels(image, 0, image->rows - j - 1, image->columns, 1, &exception);
-    if (p == NULL)
-      return -1;
-    
-    for (i = 0; i < image->columns; i++)
+    for (i = 0; i < plan->size_x; i++)
     {
-      if (!PLAN_VALID(plan, i, j))
+      if (!PLAN_VALID(plan, i, plan->size_y-j))
         continue;
+
+      p = pixels + j*rowstride + i*n_channels*bps;
       
-      cell = plan->cells + PLAN_INDEX(plan, i, j);
+      cell = plan->cells + PLAN_INDEX(plan, i, plan->size_y - j);
 
       // HACK
-      occ = (100 - 100 * ((long) p->green) / MaxRGB);
+      occ = 100 - 100 * (*(p+bps) / 255);
       if (occ > 90)
       {
         cell->occ_state = +1;
@@ -151,14 +156,10 @@ int plan_load_occ(plan_t *plan, const char *filename, double scale)
         cell->occ_state = 0;
         cell->occ_dist = 0;
       }
-
-      p++;
     }
   }
   
-  DestroyImage(image);
-  DestroyImageInfo(info);
-  DestroyMagick();
+  gdk_pixbuf_unref(pixbuf);
   
   return 0;
 }

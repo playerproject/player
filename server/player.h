@@ -561,6 +561,7 @@ The various configuration request types. */
 #define PLAYER_POSITION_POSITION_PID_REQ      ((uint8_t)7)
 #define PLAYER_POSITION_SPEED_PROF_REQ        ((uint8_t)8)
 #define PLAYER_POSITION_SET_ODOM_REQ          ((uint8_t)9)
+#define PLAYER_POSITION_GET_WAYPOINTS_REQ     ((uint8_t)10)
 
 /**
 These are possible Segway RMP config commands; see the status command in 
@@ -578,6 +579,8 @@ the RMP manual */
 #define PLAYER_POSITION_RMP_RST_INT_LEFT        0x02
 #define PLAYER_POSITION_RMP_RST_INT_YAW         0x04
 #define PLAYER_POSITION_RMP_RST_INT_FOREAFT     0x08
+
+#define PLAYER_POSITION_MAX_WAYPOINTS 128
 
 /** [Data] */
 /**
@@ -760,6 +763,20 @@ typedef struct player_rmp_config
       See the "Status" command in the Segway manual. */
   uint16_t value;
 } __attribute__ ((packed)) player_rmp_config_t;
+
+typedef struct player_position_waypoint
+{
+  int32_t x,y;
+} __attribute__ ((packed)) player_position_waypoint_t;
+
+typedef struct player_position_waypoints_req
+{
+  /** subtype: must be of PLAYER_POSITION_GET_WAYPOINTS_REQ */
+  uint8_t subtype;
+
+  uint16_t count;
+  player_position_waypoint_t waypoints[PLAYER_POSITION_MAX_WAYPOINTS];
+} __attribute__ ((packed)) player_position_waypoints_req_t;
 
 /*************************************************************************
  ** end section

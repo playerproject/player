@@ -191,3 +191,37 @@ int playerc_position_set_cmd_pose(playerc_position_t *device, double gx, double 
   return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }
 
+// Get the list of waypoints.  The writes the result into the proxy
+// rather than returning it to the caller.
+int playerc_position_get_waypoints(playerc_position_t *device)
+{
+  int i;
+  int len;
+  player_position_waypoints_req_t config;
+
+  memset(&config, 0, sizeof(config));
+  config.subtype = PLAYER_POSITION_GET_WAYPOINTS_REQ;
+
+  len = playerc_client_request(device->info.client, &device->info,
+                               &config, sizeof(config.subtype), &config, 
+                               sizeof(config));
+  if (len < 0)
+    return -1;
+  if (len == 0)
+  {
+    PLAYERC_ERR("got unexpected zero-length reply");
+    return -1;
+  }
+
+  device->waypoint_count = (int)ntohs(config.count);
+  printf("got %d waypoints:\n", device->waypoint_count);
+  for(i=0;i<device->waypoint_count;i++)
+  {
+    device->waypoints[i][0] = ((int)ntohl(config.waypoints[i].x)) / 1e3;
+    device->waypoints[i][1] = ((int)ntohl(config.waypoints[i].y)) / 1e3;
+    printf("  %d: (%.3f, %.3f)\n", 
+           i, device->waypoints[i][0], device->waypoints[i][1]);
+  }
+
+  return 0;
+}

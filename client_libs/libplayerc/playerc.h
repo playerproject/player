@@ -916,6 +916,8 @@ typedef struct _playerc_position_t
   /** Stall flag [0, 1]. */
   int stall;
 
+  int waypoint_count;
+  double waypoints[PLAYER_POSITION_MAX_WAYPOINTS][2];
 } playerc_position_t;
 
 /** [Methods] */
