@@ -98,6 +98,7 @@ class CameraV4L : public Driver
   
   // Data to send to server
   private: player_camera_data_t data;
+
 };
 
 
@@ -312,19 +313,21 @@ void CameraV4L::WriteData()
 {
   size_t size;
   //printf("%d %06d\n", this->tsec, this->tusec);
-  
+
   // Set the image properties
   this->data.width = htons(this->width);
   this->data.height = htons(this->height);
   this->data.depth = this->depth;
-  this->data.image_size = htonl(this->frame->size);
 
   // Set the image pixels
   assert((size_t) this->frame->size <= sizeof(this->data.image));
+
+  this->data.image_size = htonl(this->frame->size);
   memcpy(this->data.image, this->frame->data, this->frame->size);
-  
+
   // Copy data to server.
   size = sizeof(this->data) - sizeof(this->data.image) + this->frame->size;
+
   struct timeval timestamp;
   timestamp.tv_sec = this->tsec;
   timestamp.tv_usec = this->tusec;

@@ -53,6 +53,8 @@ captureCamera::captureCamera(int camera_index) : capture()
   this->width = ntohs(data.width);
   this->height = ntohs(data.height); 
   this->depth = data.depth;
+
+    
   this->image_size = ntohl(data.image_size); 
   /*  cout << "captureCamera::initialize()"<<endl;
       cout << "width " << width<<endl;
