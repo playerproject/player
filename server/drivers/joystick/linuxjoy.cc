@@ -102,6 +102,8 @@ class LinuxJoystick : public CDevice
   // Joystick device
   private: const char *dev;
   private: int fd;
+  private: int16_t xpos, ypos;
+  private: uint16_t buttons;
 
   // Joystick
   private: player_device_id_t joy_id;
@@ -128,7 +130,7 @@ CDevice* LinuxJoystick_Init(ConfigFile* cf, int section)
 // driver can support and how to create a driver instance.
 void LinuxJoystick_Register(DriverTable* table)
 {
-  table->AddDriverEx("iwscan", LinuxJoystick_Init);
+  table->AddDriverEx("linuxjoystick", LinuxJoystick_Init);
 }
 
 
@@ -144,7 +146,7 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }  
-  if (this->AddInterfaceEx(this->joy_id, "iwscan", PLAYER_READ_MODE,
+  if (this->AddInterfaceEx(this->joy_id, "linuxjoystick", PLAYER_READ_MODE,
                            sizeof(player_joystick_data_t), 0, 10, 10) != 0)
   {
     this->SetError(-1);    
@@ -205,14 +207,14 @@ void LinuxJoystick::Main()
     // Check for and handle configuration requests
     this->CheckConfig();
 
-    // Run iwscan and process output
+    // Run and process output
     this->ReadJoy();
     
     // Write outgoing data
     this->RefreshData();
     
     // Sleep (you might, for example, block on a read() instead)
-    usleep(100000);
+    //usleep(100000);
   }
   return;
 }
@@ -224,21 +226,21 @@ void LinuxJoystick::ReadJoy()
 {
   struct js_event event;
   
-  puts("Reading from joystick");
+  //puts("Reading from joystick");
 
   // get the next event from the joystick
   read(this->fd, &event, sizeof(struct js_event));
 
-  printf( "value % d type %u  number %u state %X \n", 
-          event.value, event.type, event.number, this->joy_data.buttons );
+  //printf( "value % d type %u  number %u state %X \n", 
+  //        event.value, event.type, event.number, this->joy_data.buttons );
 
   // Update buttons
   if ((event.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON)
   {
     if (event.value)
-      this->joy_data.buttons |= (1 << event.number);
+      this->buttons |= (1 << event.number);
     else
-      this->joy_data.buttons &= ~(1 << event.number);
+      this->buttons &= ~(1 << event.number);
   }
             
   // ignore the startup events
@@ -252,10 +254,10 @@ void LinuxJoystick::ReadJoy()
       switch( event.number )
       {
         case XAXIS:
-          this->joy_data.xpos = event.value;
+          this->xpos = event.value;
           break;
         case YAXIS:
-          this->joy_data.ypos = event.value;
+          this->ypos = event.value;
           break;
       }
     }	  
@@ -270,12 +272,14 @@ void LinuxJoystick::ReadJoy()
 // Send new data to server
 void LinuxJoystick::RefreshData()
 {
+  //printf("%d %d\n", this->xpos, this->ypos);
+  
   // Do byte reordering
-  this->joy_data.xpos = htons(this->joy_data.xpos);
-  this->joy_data.ypos = htons(this->joy_data.ypos);
+  this->joy_data.xpos = htons(this->xpos);
+  this->joy_data.ypos = htons(this->ypos);
   this->joy_data.xscale = htons(AXIS_MAX);
   this->joy_data.yscale = htons(AXIS_MAX);
-  this->joy_data.buttons = htons(this->joy_data.buttons);
+  this->joy_data.buttons = htons(this->buttons);
   this->PutDataEx(this->joy_id, &this->joy_data, sizeof(this->joy_data), 0, 0);
 
   return;
