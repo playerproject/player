@@ -220,6 +220,7 @@ AC_OUTPUT(Makefile
           server/drivers/localization/amcl/pf/Makefile
           server/drivers/localization/amcl/map/Makefile
           server/drivers/localization/amcl/models/Makefile
+          server/drivers/service_adv/Makefile
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile
