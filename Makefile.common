@@ -112,6 +112,13 @@ INCLUDE_LASERBEACON = -DINCLUDE_LASERBEACON
 INCLUDE_BPS = -DINCLUDE_BPS
 INCLUDE_BROADCAST = -DINCLUDE_BROADCAST
 INCLUDE_SPEECH = -DINCLUDE_SPEECH
+#USE_MOBILITY = -DUSE_MOBILITY
+INCLUDE_RWI_POSITION = -DINCLUDE_RWI_POSITION
+INCLUDE_RWI_SONAR = -DINCLUDE_RWI_SONAR
+INCLUDE_RWI_LASER = -DINCLUDE_RWI_LASER
+INCLUDE_RWI_BUMPER = -DINCLUDE_RWI_BUMPER
+INCLUDE_RWI_JOYSTICK = -DINCLUDE_RWI_JOYSTICK
+INCLUDE_RWI_POWER = -DINCLUDE_RWI_POWER
 
 # for audio device support, uncomment the following line; note
 # that you need the Fast Fourier Transform libraries
@@ -120,7 +127,10 @@ INCLUDE_SPEECH = -DINCLUDE_SPEECH
 INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
                    $(INCLUDE_POSITION) $(INCLUDE_GRIPPER) $(INCLUDE_MISC) \
                    $(INCLUDE_PTZ) $(INCLUDE_LASERBEACON) $(INCLUDE_BPS) \
-                   $(INCLUDE_BROADCAST) $(INCLUDE_SPEECH)
+                   $(INCLUDE_BROADCAST) $(INCLUDE_SPEECH) \
+                   $(INCLUDE_RWI_POSITION) \
+                   $(INCLUDE_RWI_SONAR) $(INCLUDE_RWI_LASER) \
+                   $(INCLUDE_RWI_BUMPER) $(INCLUDE_RWI_POWER)
 
 #######################################
 
@@ -130,9 +140,9 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
 # always start with the following line:
 CFLAGS = -Wall $(PLAYER_PLATFORM) $(INCLUDE_SELFTEST)
 # normally, add the following line for best performance:
-CFLAGS += -O2
+#CFLAGS += -O2
 # for debug, use the following instead:
-#CFLAGS += -g3
+CFLAGS += -g3
 
 
 ############## You shouldn't need to change below here ############## 

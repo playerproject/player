@@ -40,9 +40,12 @@
 /*********************************************************/
 
 /* need to put this stuff somewhere else? maybe run-time config? */
-#define PLAYER_NUM_SONAR_SAMPLES 16
+#define PLAYER_NUM_SONAR_SAMPLES 24
 #define PLAYER_NUM_LASER_SAMPLES 401
-#define PLAYER_NUM_IDAR_SAMPLES  8 
+#define PLAYER_NUM_IDAR_SAMPLES  8
+
+#define PLAYER_NUM_RWI_BUMPERS_UPPER  24
+#define PLAYER_NUM_RWI_BUMPERS_LOWER  32
 
 /* the message start signifier */
 #define PLAYER_STXX ((uint16_t) 0x5878)
@@ -77,6 +80,12 @@
 #define PLAYER_DESCARTES_STRING      "descartes"
 #define PLAYER_IDAR_STRING           "idar"
 #define PLAYER_MOTE_STRING           "mote"
+#define PLAYER_RWI_POSITION_STRING   "rwi_position"
+#define PLAYER_RWI_SONAR_STRING      "rwi_sonar"
+#define PLAYER_RWI_LASER_STRING      "rwi_laser"
+#define PLAYER_RWI_BUMPER_STRING     "rwi_bumpers"
+#define PLAYER_RWI_JOYSTICK_STRING   "rwi_joystick"
+#define PLAYER_RWI_POWER_STRING      "rwi_power"
 
 /* the currently assigned device codes */
 #define PLAYER_PLAYER_CODE         ((uint16_t)1)
@@ -98,6 +107,12 @@
 #define PLAYER_IDAR_CODE           ((uint16_t)17)
 #define PLAYER_DESCARTES_CODE      ((uint16_t)18)
 #define PLAYER_MOTE_CODE           ((uint16_t)19)
+#define PLAYER_RWI_POSITION_CODE   ((uint16_t)20)
+#define PLAYER_RWI_SONAR_CODE      ((uint16_t)21)
+#define PLAYER_RWI_LASER_CODE      ((uint16_t)22)
+#define PLAYER_RWI_BUMPER_CODE     ((uint16_t)23)
+#define PLAYER_RWI_JOYSTICK_CODE   ((uint16_t)24)
+#define PLAYER_RWI_POWER_CODE      ((uint16_t)25)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -892,7 +907,74 @@ typedef struct
 {
   uint8_t strength;
 } __attribute__ ((packed)) player_mote_config_t;
+/*************************************************************************/
 
+/*************************************************************************/
+/*
+ * Bumper Device
+ */
+
+typedef struct
+{
+  /* the number of valid bits (starting from the right) */
+  uint8_t  bumper_count;
+
+  /* bitfield */
+  uint32_t bumpfield;
+} __attribute__ ((packed)) player_bumper_data_t;
+
+/*************************************************************************/
+
+
+/*************************************************************************/
+/*
+ * Joystick Device
+ */
+
+typedef struct
+{
+  uint8_t  xpos, ypos;
+  uint8_t  button0, button1;
+} __attribute__ ((packed)) player_joystick_data_t;
+/*************************************************************************/
+
+
+/*************************************************************************/
+/*
+ * Power Device
+ */
+
+typedef struct
+{
+  uint16_t  charge;
+} __attribute__ ((packed)) player_power_data_t;
+
+/*************************************************************************/
+/*************************************************************************/
+/*
+ * RWI Devices
+ *
+ * All RWI devices use the same struct for sending config commands.
+ */
+
+typedef struct
+{
+  uint8_t   request;
+  uint8_t   value;
+} __attribute__ ((packed)) player_rwi_config_t;
+
+/*
+ * Many of these do not actually affect RWI robots as currently
+ * implemented thru mobility, but they are provided for completeness,
+ * and in view of a future generic interface.
+ */
+#define PLAYER_RWI_POSITION_MOTOR_POWER_REQ ((uint8_t)1)
+#define PLAYER_RWI_POSITION_RESET_ODO_REQ   ((uint8_t)2)
+#define PLAYER_RWI_SONAR_POWER_REQ          ((uint8_t)3)
+#define PLAYER_RWI_LASER_POWER_REQ          ((uint8_t)4)
+#define PLAYER_RWI_BUMPER_POWER_REQ         ((uint8_t)5)
+#define PLAYER_RWI_MAIN_POWER_REQ           ((uint8_t)6)
+/*************************************************************************/
 
 #endif
 

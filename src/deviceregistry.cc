@@ -61,6 +61,27 @@
 #ifdef INCLUDE_BPS
 #include <bpsdevice.h>
 #endif
+#ifdef INCLUDE_RWI_POSITION
+#include <rwi_positiondevice.h>
+#endif
+#ifdef INCLUDE_RWI_SONAR
+#include <rwi_sonardevice.h>
+#endif
+#ifdef INCLUDE_RWI_LASER
+#include <rwi_laserdevice.h>
+#endif
+#ifdef INCLUDE_RWI_BUMPER
+#include <rwi_bumperdevice.h>
+#endif
+// Not working yet
+/*
+#ifdef INLCUDE_RWI_JOYSTICK
+#include <rwi_joystickdevice.h>
+#endif
+*/
+#ifdef INCLUDE_RWI_POWER
+#include <rwi_powerdevice.h>
+#endif
 
 
 #include <string.h> /* for strlen(3),strchr(3) */
@@ -163,6 +184,32 @@ register_devices()
   availableDeviceTable->AddDevice(PLAYER_BPS_CODE, PLAYER_READ_MODE,
                                   PLAYER_BPS_STRING, CBpsDevice::Init);
 #endif
+#ifdef INCLUDE_RWI_POSITION
+  availableDeviceTable->AddDevice(PLAYER_RWI_POSITION_CODE, PLAYER_ALL_MODE,
+                                  PLAYER_RWI_POSITION_STRING, CRWIPositionDevice::Init);
+#endif
+#ifdef INCLUDE_RWI_SONAR
+  availableDeviceTable->AddDevice(PLAYER_RWI_SONAR_CODE, PLAYER_READ_MODE,
+                                  PLAYER_RWI_SONAR_STRING, CRWISonarDevice::Init);
+#endif
+#ifdef INCLUDE_RWI_LASER
+  availableDeviceTable->AddDevice(PLAYER_RWI_LASER_CODE, PLAYER_READ_MODE,
+                                  PLAYER_RWI_LASER_STRING, CRWILaserDevice::Init);
+#endif
+#ifdef INCLUDE_RWI_BUMPER
+  availableDeviceTable->AddDevice(PLAYER_RWI_BUMPER_CODE, PLAYER_READ_MODE,
+                                  PLAYER_RWI_BUMPER_STRING, CRWIBumperDevice::Init);
+#endif
+#ifdef INCLUDE_RWI_JOYSTICK
+  availableDeviceTable->AddDevice(PLAYER_RWI_JOYSTICK_CODE, PLAYER_READ_MODE,
+		                  PLAYER_RWI_JOYSTICK_STRING, CRWIJoystickDevice::Init);
+#endif
+#ifdef INCLUDE_RWI_POWER
+  availableDeviceTable->AddDevice(PLAYER_RWI_POWER_CODE, PLAYER_READ_MODE,
+		                  PLAYER_RWI_POWER_STRING, CRWIPowerDevice::Init);
+#endif
+
+    
 }
 
 /*
