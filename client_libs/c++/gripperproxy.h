@@ -51,7 +51,13 @@ class GripperProxy : public ClientProxy
   public:
     // the latest gripper data
     unsigned char state,beams;
-   
+
+    // more meaningful representations of said data:
+    bool outer_break_beam,inner_break_beam,
+         paddles_open,paddles_closed,paddles_moving,
+         gripper_error,lift_up,lift_down,lift_moving,
+         lift_error;
+
     // the client calls this method to make a new proxy
     //   leave access empty to start unconnected
     GripperProxy(PlayerClient* pc, unsigned short index, 

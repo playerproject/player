@@ -7,7 +7,7 @@ include ../../Makefile.common
 CFLAGS = -g -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I../../client_libs/c++ -I../../client_libs/c -I../../include -I$(INSTALL_PREFIX)/include -I/usr/local/player/include
 LIBDIRS = -L../../client_libs/c++ -L$(INSTALL_PREFIX)/lib -L/usr/local/player/lib
-LIBS = $(LIBDIRS) -lplayerclient $(PLATFORM_LIBS)
+LIBS = $(LIBDIRS) -lplayerclient $(PLATFORM_LIBS) -lm
 
 BINARIES = randomwalk \
 	   visualservo \
@@ -17,7 +17,8 @@ BINARIES = randomwalk \
 	   laserobstacleavoid \
            example_from_manual\
 	   say \
-	   grip
+	   grip \
+	   forage
 
 all: $(BINARIES)
 

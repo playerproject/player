@@ -1,22 +1,22 @@
 /*
- * visualservo.cc - sonar obstacle avoidance with visual servo
+ * forage.cc - sonar obstacle avoidance with visual servo and gripping
  */
 
 #include <stdio.h>
 #include <string.h> /* for strcpy() */
 #include <stdlib.h>  /* for atoi(3),rand(3) */
 #include <playerclient.h>
+#include <math.h>
+#include <values.h>
 
 #define USAGE \
-  "USAGE: visualservo [-h <host>] [-p <port>] [-c <channel>] [-m]\n" \
+  "USAGE: forage [-h <host>] [-p <port>] [-c <channel>] [-m]\n" \
   "       -h <host>: connect to Player on this host\n" \
   "       -p <port>: connect to Player on this TCP port\n" \
-  "       -c <channel>: servo to this color <channel>\n" \
-  "       -l       : use laser instead of sonar\n" \
-  "       -m       : turn on motors (be CAREFUL!)"
+  "       -c <channel>: servo to this color <channel>"
+ 
+#define NORMALIZE(z) atan2(sin(z), cos(z))
                
-
-bool turnOnMotors = false;
 char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
 int channel = 0;
@@ -60,10 +60,6 @@ parse_args(int argc, char** argv)
         exit(1);
       }
     }
-    else if(!strcmp(argv[i],"-m"))
-    {
-      turnOnMotors = true;
-    }
     else
     {
       puts(USAGE);
@@ -75,12 +71,27 @@ parse_args(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
+  // RANDOMWALK
   int randint;
   int randcount = 0;
+
+  // COLLISION AVOID
   int avoidcount = 0;
   bool obs = false;
   unsigned short minfrontdistance = 450;
+
+  // VISUAL SERVO / COLLECT
   unsigned int minarea = 50;
+  unsigned int closearea = 6000;
+
+  // HOMING
+  int home_x = 0;
+  int home_y = 0;
+  double home_size = 500; // mm
+
+  // REVERSE HOMING
+  int reverse_homing = 0;
+  double last_bearing = 0;
 
   /* first, parse command line args */
   parse_args(argc,argv);
@@ -89,17 +100,12 @@ int main(int argc, char** argv)
   PlayerClient robot(host,port);
   SonarProxy sp(&robot,0,'r');
   VisionProxy vp(&robot,0,'r');
-  GripperProxy gp(&robot,0,'w');
+  GripperProxy gp(&robot,0,'a');
 
   /* request read access on the sonars and all access to the wheels */
   PositionProxy pp(&robot,0,'a');
 
-  /* maybe turn on the motors */
-  if(turnOnMotors && pp.SetMotorState(1))
-    exit(1);
 
-  int count = 0;
-  bool gripopen = true;
   int newturnrate,newspeed;
   //int lastdir = 1;
   /* go into read-think-act loop */
@@ -108,16 +114,11 @@ int main(int argc, char** argv)
     /* this blocks until new data comes; 10Hz by default */
     if(robot.Read())
       exit(1);
+    pp.Print();
 
-    if(!((++count) % 10))
-    {
-      if(gripopen)
-        gp.SetGrip(GRIPclose,0);
-      else
-        gp.SetGrip(GRIPopen,0);
-      gripopen=!gripopen;
-      count = 0;
-    }
+    /* open the gripper */
+    if(!gp.inner_break_beam)
+      gp.SetGrip(GRIPopen,0);
 
     /* See if there is an obstacle in front */
     obs = (sp[2] < minfrontdistance ||
@@ -127,6 +128,7 @@ int main(int argc, char** argv)
 
     if(obs || avoidcount || pp.stalls)
     {
+      // OBSTACLE AVOIDANCE
       newspeed = 0; //-150;
 
       /* once we start avoiding, continue avoiding for 2 seconds */
@@ -143,9 +145,62 @@ int main(int argc, char** argv)
       }
       avoidcount--;
     }
-    else if(vp.num_blobs[channel])
+    else if(gp.inner_break_beam)
     {
-      vp.Print();
+      //HOMING
+      double dx = home_x-pp.xpos;
+      double dy = home_y-pp.ypos;
+
+      double dist = sqrt(dx*dx+dy*dy);
+
+      if(dist < home_size)
+      {
+        // drop the puck
+        newspeed = 0;
+        gp.SetGrip(GRIPopen,0);
+        reverse_homing = 100;
+        last_bearing = MAXDOUBLE;
+      }
+      else
+      {
+        // go to home
+        double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.theta)));
+        if(fabs(bearing)>170.0)
+          bearing=170.0;
+
+        puts("HOMING");
+        printf("dx: %f\tdy: %f\n", dx,dy);
+        printf("dist:%f bearing:%f\n", dist, bearing);
+        newspeed = 200 - (int)(70000.0/dist);
+        newturnrate = (int)(bearing/3.0);
+      }
+    }
+    else if(reverse_homing)
+    {
+      // REVERSE HOMING
+      double dx = home_x-pp.xpos;
+      double dy = home_y-pp.ypos;
+      double dist = sqrt(dx*dx+dy*dy);
+      double bearing = RTOD(NORMALIZE(atan2(dy, dx)-DTOR(pp.theta)+M_PI));
+
+      if(last_bearing < MAXDOUBLE && fabs(last_bearing-bearing) > 180)
+        bearing=last_bearing;
+      else
+        last_bearing=bearing;
+
+      newspeed = 200 - (int)(70000.0/dist);
+      newturnrate = (int)(-bearing/3.0);
+
+      reverse_homing--;
+
+      puts("REVERSE HOMING");
+      printf("dx: %f\tdy: %f\n", dx,dy);
+      printf("dist:%f bearing:%f\n", dist, bearing);
+    }
+    else if(vp.num_blobs[channel]>0)
+    {
+      // VISUAL SERVO
+      //vp.Print();
       if(vp.blobs[channel][0].area < minarea)
         continue;
 
@@ -156,12 +211,28 @@ int main(int argc, char** argv)
       }
       else
         newturnrate = 0;
-      
-      newspeed = 0;
-      //newspeed = 200;
+
+      //gp.Print();
+      // COLLECT
+      if(vp.blobs[channel][0].area > closearea)
+      {
+        if(gp.paddles_open)
+        {
+          newspeed = 0;
+          gp.SetGrip(GRIPclose,0);
+        }
+        else
+        {
+          newspeed = 100;
+          gp.SetGrip(GRIPopen,0);
+        }
+      }
+      else
+        newspeed = 200;
     }
     else
     {
+      // RANDOM WALK
       avoidcount = 0;
       newspeed = 200;
 
