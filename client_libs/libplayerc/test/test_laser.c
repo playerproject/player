@@ -72,7 +72,7 @@ int test_laser(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("laser: [%d] ", device->scan_count);
+      printf("laser: [%14.3f] [%d] ", device->info.datatime, device->scan_count);
       for (i = 0; i < 3; i++)
         printf("[%6.3f, %6.3f] ", device->scan[i][0], device->scan[i][1]);
       printf("\n");
