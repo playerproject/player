@@ -207,7 +207,7 @@ void ServiceAdvLSD_Register(DriverTable* table);
 void StgSimulation_Register(DriverTable *table);
 void StgLaser_Register(DriverTable *table);
 void StgPosition_Register(DriverTable *table);
-void StgFiducialNeighbors_Register(DriverTable *table);
+void StgFiducial_Register(DriverTable *table);
 #endif
 
 /* this array lists the interfaces that Player knows how to load, along with
@@ -478,6 +478,6 @@ register_devices()
   StgSimulation_Register(driverTable);
   StgLaser_Register(driverTable);
   StgPosition_Register(driverTable);
-  StgFiducialNeighbors_Register(driverTable);
+  StgFiducial_Register(driverTable);
 #endif
 }
