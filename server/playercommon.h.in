@@ -141,7 +141,7 @@
 // Macro for checking array bounds
 //
 #define ASSERT_INDEX(index, array) \
-    ASSERT((size_t) (index) >= 0 && (size_t) (index) < sizeof(array) / sizeof(array[0]));
+    assert((size_t) (index) >= 0 && (size_t) (index) < sizeof(array) / sizeof(array[0]));
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,7 +156,6 @@
 
 #include <assert.h>
 
-#define ASSERT(m) assert(m)
 #define VERIFY(m) assert(m)
 
 #include <stdio.h>
