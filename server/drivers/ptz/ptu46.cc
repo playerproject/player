@@ -167,10 +167,6 @@ PTU46::PTU46(char * port, int rate)
 	newtio.c_iflag = IGNPAR;
 	newtio.c_oflag = 0;
 	newtio.c_lflag = ICANON;
-	
-	// activate new settings
-	tcflush(fd, TCIFLUSH);
-	tcsetattr(fd, TCSANOW, &newtio);
 	if (cfsetispeed(&newtio, rate) < 0 || 	cfsetospeed(&newtio, rate) < 0)
 	{
 		fprintf(stderr,"Failed to set serial baud rate: %d\n", rate);
@@ -179,6 +175,9 @@ PTU46::PTU46(char * port, int rate)
 		fd = -1;				
 		return;
 	}
+	// activate new settings
+	tcflush(fd, TCIFLUSH);
+	tcsetattr(fd, TCSANOW, &newtio);
 
 	// now set up the pan tilt camera
 	Write(" "); // terse feedback
