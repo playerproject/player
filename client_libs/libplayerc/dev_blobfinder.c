@@ -95,7 +95,7 @@ int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device)
 
 // Process incoming data
 void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *header,
-                           player_blobfinder_data_t *data, size_t len)
+                                player_blobfinder_data_t *data, size_t len)
 {
   int i;
   player_blobfinder_blob_t *src;
