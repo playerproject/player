@@ -31,6 +31,8 @@ class VFH_Class : public CDevice {
 
 
   private:
+    bool Goal_Behind;
+
     // Set up the odometry device.
     int SetupOdom();
     int ShutdownOdom();
@@ -335,6 +337,10 @@ int VFH_Class::GetOdom() {
   if (time - this->odom_time < 0.001)
     return 0;
   this->odom_time = time;
+  /*
+  this->odom->Wait();
+  this->odom->GetData(this,(unsigned char*) &data, sizeof(data), NULL, NULL);
+  */
 
   /*
   this->odom->Wait();
@@ -537,6 +543,7 @@ void VFH_Class::Main() {
   struct timespec sleeptime;
   float dist;
   struct timeval stime, time;
+  int gt, ct;
 
   sleeptime.tv_sec = 0;
   sleeptime.tv_nsec = 1000000L;
@@ -548,6 +555,7 @@ void VFH_Class::Main() {
   {
     // Sleep for 1ms (will actually take longer than this).
     nanosleep(&sleeptime, NULL);
+//    puts("foo");
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
@@ -596,8 +604,27 @@ void VFH_Class::Main() {
     else
     {
       // At goal, stop
-      speed = 0;
-      turnrate = 0;
+//      goal_t = 90;
+
+      gt = goal_t % 360;
+      if (gt > 180)
+        gt -= 360;
+
+      ct = (int)rint(this->odom_pose[2]) % 360;
+      if (ct > 180)
+        ct -= 360;
+
+      if (((gt - ct) > 10) && ((gt - ct) <= 180)) {
+        speed = 0;
+        turnrate = MAX_TURNRATE;
+      } else if (((gt - ct) < -10) &&
+		((gt - ct) >= -180)) {
+        speed = 0;
+        turnrate = -1 * MAX_TURNRATE;
+      } else {
+        speed = 0;
+        turnrate = 0;
+      }
       this->PutCommand();
     }
     // gettimeofday(&time, 0);
@@ -615,7 +642,7 @@ void VFH_Class::GetCommand() {
     goal_x = ntohl(cmd.xpos);
     goal_y = ntohl(cmd.ypos);
     goal_t = ntohl(cmd.yaw);
-    //printf("Received command to go to: (%d, %d)\n", goal_x, goal_y);
+//    printf("Received command to go to: (%d, %d, %d)\n", goal_x, goal_y, goal_t);
   }
 }
 
@@ -768,6 +795,8 @@ int VFH_Class::Init(double cell_width, int window_diameter, int sector_angle, do
   bool plus_dir_bw, neg_dir_bw, dir_around_sector;
   float neg_sector_to_neg_dir, neg_sector_to_plus_dir;
   float plus_sector_to_neg_dir, plus_sector_to_plus_dir;
+
+  Goal_Behind = 0;
 
   CELL_WIDTH = cell_width;
   WINDOW_DIAMETER = window_diameter;
@@ -927,12 +956,15 @@ int VFH_Class::Init(double cell_width, int window_diameter, int sector_angle, do
 int VFH_Class::Update_VFH() {
   int print = 0;
 
-  if (Desired_Angle > 180) {
+/*
+  if ((Goal_Behind == 1) || (Desired_Angle > 180)) {
 //  if (Desired_Angle > 90 && Desired_Angle < 270) {
     speed = 1;
+    Goal_Behind = 1;
     Set_Motion();
     return(1);
   }
+  */
 
   Build_Primary_Polar_Histogram();
   if (print) {
@@ -1354,16 +1386,20 @@ int VFH_Class::Set_Motion() {
     turnrate = MAX_TURNRATE;
     speed = 0;
   }
+/*
   // goal behind robot, turn toward it
   else if (speed == 1) { 
     //printf("turn %f\n", Desired_Angle);
     speed = 0;
-    if (Desired_Angle > 270) {
-      turnrate = -MAX_TURNRATE;
+    if ((Desired_Angle > 270) && (Desired_Angle < 60)) {
+      turnrate = -40;
+    } else if ((Desired_Angle > 120) && (Desired_Angle < 270)) {
+      turnrate = 40;
     } else {
       turnrate = MAX_TURNRATE;
     }
   }
+*/
   else {
     //printf("Picked %f\n", Picked_Angle);
     if ((Picked_Angle > 270) && (Picked_Angle < 360)) {
