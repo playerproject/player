@@ -347,6 +347,8 @@ void Sphinx2::Main()
     timestamp = this->continuousModule->read_ts;
     GlobalTime->GetTime(&time);
 
+    data.text[0] = '\0';
+
     /* Decode utterance until end (marked by a "long" silence, >1sec) */
     for (;;) 
     {
