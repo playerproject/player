@@ -30,12 +30,10 @@
  * stored data as if it was coming from a real device.
  */
 
-#ifndef READLOG_MANAGER_H
-#define READLOG_MANAGER_H
+#ifndef WRITELOG_MANAGER_H
+#define WRITELOG_MANAGER_H
 
 #include <stdio.h>
-#include <zlib.h>
-
 #include "device.h"
 
 
@@ -73,13 +71,25 @@ class WriteLogManager
   // Unsubscribe
   public: int Unsubscribe(player_device_id_t id, CDevice *device);
 
+  // Dummy main
+  private: static void *DummyMain(void *_this);
+
+  // Main loop
+  private: void Main();
+  
   // Write data to file
   public: void Write(void *data, size_t size,
                      const player_device_id_t *id, uint32_t sec, uint32_t usec);
 
+  // Write position data to file
+  private: void WritePosition(player_position_data_t *data, size_t size);
+
+  // Write laser data to file
+  private: void WriteLaser(player_laser_data_t *data, size_t size);
+
   // File to read data from
   private: char *filename;
-  private: gzFile file;
+  private: FILE *file;
 };
 
 

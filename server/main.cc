@@ -822,7 +822,7 @@ int main( int argc, char *argv[] )
     }
 
     // ReadLog support
-    else if(!strcmp(argv[i], "-r"))
+    else if(!strcmp(argv[i], "-r") || !strcmp(argv[i], "--readlog"))
     {
       if(++i<argc)
       {
@@ -836,7 +836,7 @@ int main( int argc, char *argv[] )
     }
 
     // ReadLog support
-    else if(!strcmp(argv[i], "-rs"))
+    else if(!strcmp(argv[i], "-f") || !strcmp(argv[i], "--readlogspeed"))
     {
       if(++i<argc)
       {
@@ -949,37 +949,16 @@ int main( int argc, char *argv[] )
 
   puts( "" ); // newline, flush
 
-#ifndef INCLUDE_STAGE
-  if (use_stage)
-  {
-    PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
-    exit(-1);
-  }
-#endif
 
-#ifndef INCLUDE_GAZEBO
-  if (gz_serverid != NULL)
-  {
-    PLAYER_ERROR("Sorry, support for Gazebo not included at compile-time.");
-    exit(-1);
-  }
-#endif
-
-#ifndef INCLUDE_READLOG
-  if (readlog_filename != NULL)
-  {
-    PLAYER_ERROR("Sorry, support for log files not included at compile-time.");
-    exit(-1);
-  }
-#endif
-
-  
   if (use_stage)
   {
 #if INCLUDE_STAGE
     // Use the clock from State
     GlobalTime = new StageTime(stage_io_directory);
     assert(GlobalTime);
+#else
+    PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
+    exit(-1);
 #endif
   }
   else if (gz_serverid != NULL)
@@ -992,6 +971,10 @@ int main( int argc, char *argv[] )
     // Use the clock from Gazebo
     GlobalTime = new GzTime();
     assert(GlobalTime);
+#else
+    
+    PLAYER_ERROR("Sorry, support for Gazebo not included at compile-time.");
+    exit(-1);
 #endif
   }
   else if (readlog_filename != NULL)
@@ -1001,9 +984,12 @@ int main( int argc, char *argv[] )
     if (ReadLogManager_Init(readlog_filename, readlog_speed) != 0)
       exit(-1);
 
-    // Use the clock from Gazebo
+    // Use the clock from the log file
     GlobalTime = new ReadLogTime();
     assert(GlobalTime);
+#else
+    PLAYER_ERROR("Sorry, support for log files not included at compile-time.");
+    exit(-1);
 #endif
   }
   else
@@ -1089,21 +1075,17 @@ int main( int argc, char *argv[] )
   else
     printf("** Player [port %d] quitting **\n", global_playerport );
 
+#if INCLUDE_READLOG
   // Finalize ReadLog manager
   if (readlog_filename != NULL)
-  {
-#if INCLUDE_READLOG
     ReadLogManager_Fini();
 #endif
-  }
-  
+
+#if INCLUDE_GAZEBO
   // Finalize gazebo client
   if (gz_serverid != NULL)
-  {
-#if INCLUDE_GAZEBO
     GzClient::Fini();
 #endif
-  }
   
   // tear down the client table, which shuts down all open devices
   delete clientmanager;
@@ -1111,7 +1093,6 @@ int main( int argc, char *argv[] )
   delete deviceTable;
   // tear down the driver table, for completeness
   delete driverTable;
-  
   
   return(0);
 }

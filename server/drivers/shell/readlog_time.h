@@ -31,6 +31,8 @@
 
 #include "playertime.h"
 
+class ReadLogManager;
+
 // Incremental navigation driver
 class ReadLogTime : public PlayerTime
 {

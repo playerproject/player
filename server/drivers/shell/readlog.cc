@@ -97,7 +97,7 @@ CDevice* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
 // Device factory registration
 void ReadLog_Register(DriverTable* table)
 {
-  table->AddDriver("readlogfile", PLAYER_READ_MODE, ReadReadLog_Init);
+  table->AddDriver("readlog", PLAYER_READ_MODE, ReadReadLog_Init);
   return;
 }
 

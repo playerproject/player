@@ -94,6 +94,7 @@ void PassThrough_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_READLOG
+void WriteLog_Register(DriverTable* table);
 void ReadLog_Register(DriverTable* table);
 #endif
 
@@ -198,7 +199,8 @@ void GzLaser_Register(DriverTable *table);
  *
  * NOTE: the last element *must* be NULL
  */
-player_interface_t interfaces[] = { 
+player_interface_t interfaces[] = {
+  {PLAYER_NULL_CODE, PLAYER_NULL_STRING, "writelog"},
   {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sicklms200"},
   {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "acts"},
   {PLAYER_SPEECH_CODE, PLAYER_SPEECH_STRING, "festival"},
@@ -235,7 +237,7 @@ player_interface_t interfaces[] = {
 int
 lookup_interface(char* name, player_interface_t* interface)
 {
-  for(int i=0; interfaces[i].code; i++)
+  for(int i=0; interfaces[i].name; i++)
   {
     if(!strcmp(name, interfaces[i].name))
     {
@@ -254,7 +256,7 @@ lookup_interface(char* name, player_interface_t* interface)
 int
 lookup_interface_code(int code, player_interface_t* interface)
 {
-  for(int i=0; interfaces[i].code; i++)
+  for(int i=0; interfaces[i].name; i++)
   {
     if(code == interfaces[i].code)
     {
@@ -336,6 +338,7 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_READLOG
+  WriteLog_Register(driverTable);  
   ReadLog_Register(driverTable);
 #endif
 
@@ -362,7 +365,6 @@ register_devices()
 #ifdef INCLUDE_MIXER
   Mixer_Register(driverTable);
 #endif
-
 
 #ifdef INCLUDE_RWI
   RWIPosition_Register(driverTable);
