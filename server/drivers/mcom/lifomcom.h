@@ -85,23 +85,26 @@ private:
         void Clear(int type,char channel[MCOM_CHANNEL_LEN]);
     };
 
-protected:
-
     LinkList Data;
-
-private:
-
-    virtual void PrintPacket(char* str, unsigned char* cmd, int len) {
-        // what is this method for? who calls it?
-        assert(0);
-    }
 
 public:
 
+    // Constructor
     LifoMCom(char* interface, ConfigFile* cf, int section);
-    virtual void Main();
-    virtual int Setup();
-    virtual int Shutdown();
+
+    // Called when we recieve a config request; overrides CDevice::PutConfig
+    virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+
+    // These do nothing but are abstract in CDevice, so here they are
+    virtual int Setup() {
+        printf("startup...\n");
+        return 0;
+    }
+
+    virtual int Shutdown() {
+        printf("shutdown ...\n");
+        return 0;
+    }
 };
 
 
