@@ -131,8 +131,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Misc useful stuff
 
-//#define TRACE printf
-#define TRACE(s) 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
@@ -149,30 +147,30 @@
 
 /* too noisy! */
 //#define ERROR(m)  printf("Error : %s : %s\n", __PRETTY_FUNCTION__, m)
-#define ERROR(m) 
+#define PLAYER_ERROR(m) 
 //#define MSG(m)       printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__)
-#define MSG(m) 
+#define PLAYER_MSG(m) 
 //#define MSG1(m, a)   printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a)
-#define MSG1(m, a) 
+#define PLAYER_MSG1(m, a) 
 //#define MSG2(m, a, b) printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a, b)
-#define MSG2(m, a, b) 
+#define PLAYER_MSG2(m, a, b) 
 //#define MSG3(m, a, b, c) printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c)
-#define MSG3(m, a, b, c) 
+#define PLAYER_MSG3(m, a, b, c) 
 //#define MSG4(m, a, b, c, d) printf("Msg   : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c, d)
-#define MSG4(m, a, b, c, d) 
+#define PLAYER_MSG4(m, a, b, c, d) 
 
-#if ENABLE_TRACE
-    #define TRACE0(m)    printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__)
-    #define TRACE1(m, a) printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__, a)
-    #define TRACE2(m, a, b) printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__, a, b)
-    #define TRACE3(m, a, b, c) printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c)
-    #define TRACE4(m, a, b, c, d) printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c, d)
+#if PLAYER_ENABLE_TRACE
+    #define PLAYER_TRACE0(m)    printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__)
+    #define PLAYER_TRACE1(m, a) printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__, a)
+    #define PLAYER_TRACE2(m, a, b) printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__, a, b)
+    #define PLAYER_TRACE3(m, a, b, c) printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c)
+    #define PLAYER_TRACE4(m, a, b, c, d) printf("Debug : %s : "m"\n", __PRETTY_FUNCTION__, a, b, c, d)
 #else
-    #define TRACE0(m)
-    #define TRACE1(m, a)
-    #define TRACE2(m, a, b)
-    #define TRACE3(m, a, b, c)
-    #define TRACE4(m, a, b, c, d)
+    #define PLAYER_TRACE0(m)
+    #define PLAYER_TRACE1(m, a)
+    #define PLAYER_TRACE2(m, a, b)
+    #define PLAYER_TRACE3(m, a, b, c)
+    #define PLAYER_TRACE4(m, a, b, c, d)
 #endif
 
 

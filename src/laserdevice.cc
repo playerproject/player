@@ -3,7 +3,7 @@
  *  Copyright (C) 2000  
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
  *                      
- *
+ * 
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -76,7 +76,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Error macros
 //
-#define RETURN_ERROR(erc, m) {ERROR(m); return erc;}
+#define RETURN_ERROR(erc, m) {PLAYER_ERROR(m); return erc;}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -149,7 +149,7 @@ size_t CLaserDevice::GetConfig(unsigned char *dest, size_t maxsize)
         return 0;
     if (config_size != 5)
     {
-        MSG1("config_size = %d", (int) config_size);
+        PLAYER_MSG1("config_size = %d", (int) config_size);
         config_size = 0;
         RETURN_ERROR(0, "config data has incorrect length");
     }
@@ -157,7 +157,7 @@ size_t CLaserDevice::GetConfig(unsigned char *dest, size_t maxsize)
     min_segment = ntohs(MAKEUINT16(config[0], config[1]));
     max_segment = ntohs(MAKEUINT16(config[2], config[3]));
     intensity = (bool) config[4];
-    MSG3("new scan range [%d %d], intensity [%d]",
+    PLAYER_MSG3("new scan range [%d %d], intensity [%d]",
          (int) min_segment, (int) max_segment, (int) intensity);
     
     config_size = 0;
@@ -172,7 +172,7 @@ void CLaserDevice::PutConfig( unsigned char *src, size_t maxsize)
 {
     if (maxsize > LASER_CONFIG_BUFFER_SIZE)
     {
-        ERROR("config request too big; ignoring");
+        PLAYER_ERROR("config request too big; ignoring");
         return;
     }
 
@@ -204,10 +204,10 @@ int CLaserDevice::Setup()
 
     // Open the laser and set it to the correct speed
     //
-    MSG("changing laser mode at 9600");
+    PLAYER_MSG("changing laser mode at 9600");
     if (SetLaserMode() == 0)
     {
-        MSG("laser operating at 9600; changing to 38400");
+        PLAYER_MSG("laser operating at 9600; changing to 38400");
         if (SetLaserSpeed(38400))
             return 1;
         if (ChangeTermSpeed(38400))
@@ -215,7 +215,7 @@ int CLaserDevice::Setup()
     }
     else
     {
-        MSG("could not change laser mode at 9600; trying 38400");
+        PLAYER_MSG("could not change laser mode at 9600; trying 38400");
         if (ChangeTermSpeed(38400))
             return 1;
         if (SetLaserMode())
@@ -229,7 +229,7 @@ int CLaserDevice::Setup()
 
     CloseTerm();
 
-    MSG("laser ready");
+    PLAYER_MSG("laser ready");
     puts("Done.");
 
     // Start the device thread
@@ -248,7 +248,7 @@ int CLaserDevice::Shutdown()
   /* shutdown laser device */
   close(laser_fd);
   pthread_cancel( thread );
-  MSG("Laser has been shutdown");
+  PLAYER_MSG("Laser has been shutdown");
   puts("Laser has been shutdown");
 
   return(0);
@@ -283,7 +283,7 @@ void* CLaserDevice::DummyMain(void *laserdevice)
 //
 int CLaserDevice::Main() 
 {
-    MSG("laser thread is running");
+    PLAYER_MSG("laser thread is running");
     
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
     sigblock(SIGINT);
@@ -336,7 +336,7 @@ int CLaserDevice::Main()
 
     CloseTerm();
 
-    TRACE("exiting laser thread");
+    PLAYER_TRACE0("exiting laser thread");
     return 0;
 }
 
@@ -392,7 +392,7 @@ int CLaserDevice::ChangeTermSpeed(int speed)
     
     if (speed == 9600)
     {
-        MSG("terminal speed to 9600");
+        PLAYER_MSG("terminal speed to 9600");
         if( tcgetattr( laser_fd, &term ) < 0 )
             RETURN_ERROR(1, "unable to get device attributes");
         
@@ -405,7 +405,7 @@ int CLaserDevice::ChangeTermSpeed(int speed)
     }
     else if (speed == 38400)
     {
-        MSG("terminal speed to 38400");
+        PLAYER_MSG("terminal speed to 38400");
         if( tcgetattr( laser_fd, &term ) < 0 )
             RETURN_ERROR(1, "unable to get device attributes");
         
@@ -441,14 +441,14 @@ int CLaserDevice::SetLaserMode()
     packet[9] = 0x53; // S
     len = 10;
   
-    TRACE("sending configuration mode request to laser");
+    PLAYER_TRACE0("sending configuration mode request to laser");
     if (WriteToLaser(packet, len) < 0)
         return 1;
 
     // Wait for laser to return ack
     // This could take a while...
     //
-    TRACE("waiting for acknowledge");
+    PLAYER_TRACE0("waiting for acknowledge");
     usleep(500000);
 
     len = ReadFromLaser(packet, sizeof(packet), true, 200);
@@ -461,7 +461,7 @@ int CLaserDevice::SetLaserMode()
     else if (packet[0] != ACK)
         RETURN_ERROR(1, "unexpected packet type");
 
-    TRACE("configuration mode request ok");
+    PLAYER_TRACE0("configuration mode request ok");
 
     return 0;
 }
@@ -481,14 +481,14 @@ int CLaserDevice::SetLaserSpeed(int speed)
     packet[1] = (speed == 9600 ? 0x42 : 0x40);
     len = 2;
 
-    TRACE("sending baud rate request to laser");
+    PLAYER_TRACE0("sending baud rate request to laser");
     if (WriteToLaser(packet, len) < 0)
         return 1;
             
     // Wait for laser to return ack
     // This could take a while...
     //
-    TRACE("waiting for acknowledge");
+    PLAYER_TRACE0("waiting for acknowledge");
     usleep(500000);
 
     len = ReadFromLaser(packet, sizeof(packet), true, 200);
@@ -501,7 +501,7 @@ int CLaserDevice::SetLaserSpeed(int speed)
     else if (packet[0] != ACK)
         RETURN_ERROR(1, "unexpected packet type");
 
-    TRACE("baud rate request ok");
+    PLAYER_TRACE0("baud rate request ok");
             
     return 0;
 }
@@ -519,14 +519,14 @@ int CLaserDevice::SetLaserConfig()
     packet[0] = 0x74;
     len = 1;
 
-    TRACE("sending get configuration request to laser");
+    PLAYER_TRACE0("sending get configuration request to laser");
     if (WriteToLaser(packet, len) < 0)
         return 1;
 
     // Wait for laser to return data
     // This could take a while...
     //
-    TRACE("waiting for reply");
+    PLAYER_TRACE0("waiting for reply");
     usleep(200000);
 
     len = ReadFromLaser(packet, sizeof(packet), false, 200);
@@ -539,7 +539,7 @@ int CLaserDevice::SetLaserConfig()
     else if (packet[0] != 0xF4)
         RETURN_ERROR(1, "unexpected packet type");
 
-    TRACE("get configuration request ok");
+    PLAYER_TRACE0("get configuration request ok");
 
     // *** TESTING ***
     //
@@ -554,13 +554,13 @@ int CLaserDevice::SetLaserConfig()
     packet[0] = 0x77;
     packet[6] = (intensity ? 0x01 : 0x00); // Return intensity in top 3 data bits
 
-    TRACE("sending set configuration request to laser");
+    PLAYER_TRACE0("sending set configuration request to laser");
     if (WriteToLaser(packet, len) < 0)
         return 1;
 
     // Wait for the change to "take"
     //
-    TRACE("waiting for acknowledge");
+    PLAYER_TRACE0("waiting for acknowledge");
     usleep(200000L);
 
     len = ReadFromLaser(packet, sizeof(packet), false, 200);
@@ -581,7 +581,7 @@ int CLaserDevice::SetLaserConfig()
     printf("\n");
     */
 
-    TRACE("set configuration request ok");
+    PLAYER_TRACE0("set configuration request ok");
 
     return 0;
 }
@@ -617,14 +617,14 @@ int CLaserDevice::RequestLaserData()
         packet[len++] = (last >> 8);
     }
 
-    TRACE("sending scan data request to laser");
+    PLAYER_TRACE0("sending scan data request to laser");
     if (WriteToLaser(packet, len) < 0)
         return 1;
 
     // Wait for laser to return ack
     // This should be fairly prompt
     //
-    TRACE("waiting for acknowledge");
+    PLAYER_TRACE0("waiting for acknowledge");
     usleep(100000);
     
     len = ReadFromLaser(packet, sizeof(packet), true, 200);
@@ -637,7 +637,7 @@ int CLaserDevice::RequestLaserData()
     else if (packet[0] != ACK)
         RETURN_ERROR(1, "unexpected packet type");
 
-    TRACE("scan data request ok");
+    PLAYER_TRACE0("scan data request ok");
    
     return 0;
 }
@@ -770,17 +770,17 @@ ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int
     //
     if (timeout < 0)
     {
-        //TRACE("using blocking io");
+        //PLAYER_TRACE0("using blocking io");
         timeout = 1000;
         int flags = ::fcntl(laser_fd, F_GETFL);
         if (flags < 0)
         {
-            ERROR("unable to get device flags");
+            PLAYER_ERROR("unable to get device flags");
             return 0;
         }
         if (::fcntl(laser_fd, F_SETFL, flags & (~O_NONBLOCK)) < 0)
         {
-            ERROR("unable to set device flags");
+            PLAYER_ERROR("unable to set device flags");
             return 0;
         }
     }
@@ -789,16 +789,16 @@ ssize_t CLaserDevice::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int
     //
     else
     {
-        TRACE("using non-blocking io");
+        PLAYER_TRACE0("using non-blocking io");
         int flags = ::fcntl(laser_fd, F_GETFL);
         if (flags < 0)
         {
-            ERROR("unable to get device flags");
+            PLAYER_ERROR("unable to get device flags");
             return 0;
         }
         if (::fcntl(laser_fd, F_SETFL, flags | O_NONBLOCK) < 0)
         {
-            ERROR("unable to set device flags");
+            PLAYER_ERROR("unable to set device flags");
             return 0;
         }
     }

@@ -24,7 +24,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#define ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 0
 
 #include <string.h> // for memcpy()
 #include <stagedevice.h>
@@ -49,7 +49,7 @@ CStageDevice::CStageDevice(void *buffer, size_t data_len, size_t command_len, si
     m_config_buffer = (uint8_t*) m_command_buffer + command_len;
     m_config_len = config_len;
 
-    TRACE4("creating device at addr: %p %p %p %p", m_info, m_data_buffer,
+    PLAYER_TRACE4("creating device at addr: %p %p %p %p", m_info, m_data_buffer,
         m_command_buffer, m_config_buffer);
 }
 
