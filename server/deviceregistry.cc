@@ -87,6 +87,10 @@ void LinuxWiFi_Register(DriverTable *table);
 void Aodv_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_IWSPY
+void Iwspy_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_REB
 void REBPosition_Register(DriverTable *table);
 void REBIR_Register(DriverTable *table);
@@ -226,6 +230,10 @@ register_devices()
 
 #ifdef INCLUDE_AODV
   Aodv_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_IWSPY
+  Iwspy_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_REB

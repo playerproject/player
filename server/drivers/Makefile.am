@@ -3,12 +3,13 @@ SUBDIRS = p2os rwi stage reb isense microstrain
 noinst_LIBRARIES = @ACTS_LIB@ @FESTIVAL_LIB@ \
 		@LASER_LIB@ \
 		@SICK_LIB@ @SONY_LIB@ @UDPBCAST_LIB@ \
-		@FIXEDTONES_LIB@ @LINUXWIFI_LIB@ @AODV_LIB@ @WAVEAUDIO_LIB@
+		@FIXEDTONES_LIB@ @LINUXWIFI_LIB@ @AODV_LIB@ @IWSPY_LIB@ @WAVEAUDIO_LIB@
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
 
-EXTRA_LIBRARIES = libfixedtones.a liblinuxwifi.a libaodv.a libacts.a libsicklms200.a \
+EXTRA_LIBRARIES = libfixedtones.a liblinuxwifi.a libaodv.a libiwspy.a \
+	libacts.a libsicklms200.a \
 	libfestival.a libsonyevid30.a libudpbroadcast.a \
 	liblasercspace.a liblaserbar.a liblaserbarcode.a \
   liblaservisualbarcode.a libwaveaudio.a
@@ -25,6 +26,7 @@ liblaservisualbarcode_a_SOURCES = laservisualbarcode.cc
 libfixedtones_a_SOURCES = fixedtones.cc
 liblinuxwifi_a_SOURCES = linuxwifi.cc
 libaodv_a_SOURCES = aodv.cc
+libiwspy_a_SOURCES = iwspy.cc
 libwaveaudio_a_SOURCES = waveaudio.cc
 
 
