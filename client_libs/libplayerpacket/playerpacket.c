@@ -20,10 +20,21 @@
  *
  */
 
+#include <assert.h>
+#include <math.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 
 #include "playerpacket.h"
+
+// Convert radians to degrees
+#define RTOD(r) ((r) * 180 / M_PI)
+
+// Convert degrees to radians
+#define DTOR(d) ((d) * M_PI / 180)
+
+// Normalize angle to domain -pi, pi
+#define NORMALIZE(z) atan2(sin(z), cos(z))
 
 // convert meters to Player mm in NBO in various sizes
 #define MM_32(A)  (htonl((int32_t)(A * 1000.0)))

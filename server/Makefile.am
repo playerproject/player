@@ -36,8 +36,8 @@ player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h \
 								 timer.cc timer.h error.cc error.h
 
 
-# Install these to $prefix/include so clients can use them
-include_HEADERS = playercommon.h player.h playerqueue.h 
+# Install these to $prefix/include so clients and plugins can use them
+include_HEADERS = player.h playerconfig.h playercommon.h playerqueue.h 
 
 # Install these to $prefix/include/player/ so plugin drivers can use them
 pkginclude_HEADERS = driver.h drivertable.h devicetable.h device.h configfile.h playertime.h
@@ -48,7 +48,7 @@ pkginclude_HEADERS = driver.h drivertable.h devicetable.h device.h configfile.h 
 # by configure.  In later versions of Automake, you can use a
 # nodist_player_SOURCES, but that doesn't work with the version we're using.
 #
-EXTRA_DIST = playercommon.h.in #prefix.h.in
+EXTRA_DIST = playerconfig.h.in #prefix.h.in
 
 dist-hook:
 	rm -f $(distdir)/playercommon.h #$(distdir)/prefix.h

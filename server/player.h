@@ -19,17 +19,18 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-
 /* 
- * Desc: This is just a wrapper for the messages.h include, because I figure
- *       we should have an include file with a meaningful name.
+ * Desc: Player communication packet structures and codes
  * CVS:  $Id$
  */
 
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include <playercommon.h>
+
+/* Include values from the configure script */
+#include "playerconfig.h"
+
 
 /*********************************************************/
 

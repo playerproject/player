@@ -43,6 +43,7 @@
  * CVS: $Id$
  **************************************************************************/
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -163,7 +164,7 @@ int playerc_planner_get_waypoints(playerc_planner_t *device)
   {
     device->waypoints[i][0] = ((int)ntohl(config.waypoints[i].x)) / 1e3;
     device->waypoints[i][1] = ((int)ntohl(config.waypoints[i].y)) / 1e3;
-    device->waypoints[i][2] = DTOR((int)ntohl(config.waypoints[i].a));
+    device->waypoints[i][2] = ((int)ntohl(config.waypoints[i].a)) * M_PI / 180;
   }
   return 0;
 }

@@ -20,11 +20,11 @@ AC_PROG_MAKE_SET
 dnl Generate a configuration header called <config.h> and put all the C
 dnl preprocessor defines in there.
 dnl
-dnl Also create playercommon.h, replacing a couple of C defines with the right
-dnl values.  That way, playercommon.h will be installed in a good working
-dnl state.
-dnl AC_CONFIG_HEADERS([config.h server/playercommon.h])
-AM_CONFIG_HEADER([config.h server/playercommon.h])
+dnl Also create playerconfig.h, replacing a couple of C defines with the right
+dnl values.  This will be included by player.h
+dnl
+dnl AC_CONFIG_HEADERS([config.h server/playerconfig.h])
+AM_CONFIG_HEADER([config.h server/playerconfig.h])
 
 dnl I can't find a way to do @prefix@ substitution in server/prefix.h that
 dnl works in more than one version of autotools.  Fix this later.

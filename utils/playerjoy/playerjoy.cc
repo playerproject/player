@@ -70,6 +70,7 @@ Details of keyboard control are printed out on the console.
   #define JOYSTICK_SUPPORT 0
 #endif
 
+#include <assert.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -47,6 +47,7 @@
  */
 
 #include <playerclient.h>
+#include <assert.h>
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <string.h>

@@ -78,7 +78,7 @@ void SIP::Fill(player_p2os_data_t* data)
   data->gyro.yawspeed = htonl(this->gyro_rate);
 
   data->sonar.range_count = htons(PlayerRobotParams[param_idx].SonarNum);
-  for(int i=0;i<min(PlayerRobotParams[param_idx].SonarNum,ARRAYSIZE(sonars));i++)
+  for(int i=0;i<MIN(PlayerRobotParams[param_idx].SonarNum,ARRAYSIZE(sonars));i++)
     data->sonar.ranges[i] = htons((unsigned short)this->sonars[i]);
 
   data->gripper.state = (unsigned char)(this->timer >> 8);

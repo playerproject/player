@@ -43,6 +43,7 @@
  * CVS: $Id$
  **************************************************************************/
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -214,13 +215,13 @@ int playerc_position3d_set_pose(playerc_position3d_t *device,
 int playerc_position3d_set_speed(playerc_position3d_t *device,
                                  double vx, double vy, double vz, int state)
 {
-  playerc_position3d_set_velocity(device,vx,vy,vz,0,0,0, state);
+  return playerc_position3d_set_velocity(device,vx,vy,vz,0,0,0, state);
 }
 
 /** For compatibility with old position3d interface */
 int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
                                     double gx, double gy, double gz)
 {
-  playerc_position3d_set_pose(device,gx,gy,gz,0,0,0);
+  return playerc_position3d_set_pose(device,gx,gy,gz,0,0,0);
 }
 

@@ -63,6 +63,7 @@
 #include <sys/time.h>
 struct pollfd;
 #include <string.h>
+#include <math.h>
 
 // Convert radians to degrees
 //

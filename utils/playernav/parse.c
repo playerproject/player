@@ -1,3 +1,5 @@
+
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include "playernav.h"

@@ -12,6 +12,13 @@
   "       -p <port>: connect to Player on this TCP port\n" \
   "       -m       : turn on motors (be CAREFUL!)"
 
+#ifndef MIN
+  #define MIN(a,b) ((a < b) ? (a) : (b))
+#endif
+#ifndef MAX
+  #define MAX(a,b) ((a > b) ? (a) : (b))
+#endif
+
 bool turnOnMotors = false;
 char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
@@ -128,8 +135,8 @@ int main(int argc, char **argv)
     newspeed = (r+l)/1e3;
 
     newturnrate = (r-l);
-    newturnrate = min(newturnrate,40);
-    newturnrate = max(newturnrate,-40);
+    newturnrate = MIN(newturnrate,40);
+    newturnrate = MAX(newturnrate,-40);
     newturnrate = DTOR(newturnrate);
 
     printf( "speed %f  turn %f\n", newspeed, newturnrate );
