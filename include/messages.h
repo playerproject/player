@@ -155,10 +155,10 @@ typedef struct
 } __attribute__ ((packed)) player_device_req_t;
   
 /* the valid datamode codes */
-#define PLAYER_DATAMODE_CONTINUOUS 0  // all data at fixed frequency
-#define PLAYER_DATAMODE_REQUESTREPLY 1  // only new new data at fixed freq
-#define PLAYER_DATAMODE_UPDATE 2 // all data on demand
-#define PLAYER_DATAMODE_REQUESTREPLY_UPDATE 3 // only new data on demand
+#define PLAYER_DATAMODE_PUSH_ALL 0 // all data at fixed frequency
+#define PLAYER_DATAMODE_PULL_ALL 1 // all data on demand
+#define PLAYER_DATAMODE_PUSH_NEW 2 // only new new data at fixed freq
+#define PLAYER_DATAMODE_PULL_NEW 3 // only new data on demand
 
 /* the format of a "datamode change" ioctl to Player */
 typedef struct

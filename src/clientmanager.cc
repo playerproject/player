@@ -439,8 +439,8 @@ ClientWriterThread(void* arg)
       }
 
       // is it time to write?
-      if((cr->clients[i]->mode == PLAYER_DATAMODE_CONTINUOUS) || 
-         (cr->clients[i]->mode == PLAYER_DATAMODE_UPDATE))
+      if((cr->clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+         (cr->clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
       {
         /*
         printf("comparing %f >= %f\n",
@@ -471,8 +471,8 @@ ClientWriterThread(void* arg)
             cr->clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
         }
       }
-      else if(((cr->clients[i]->mode == PLAYER_DATAMODE_REQUESTREPLY) ||
-               (cr->clients[i]->mode == PLAYER_DATAMODE_REQUESTREPLY_UPDATE))&&
+      else if(((cr->clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
+               (cr->clients[i]->mode == PLAYER_DATAMODE_PULL_NEW))&&
               (cr->clients[i]->datarequested))
       {
         cr->clients[i]->datarequested = false;

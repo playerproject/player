@@ -79,6 +79,7 @@ extern bool           CP2OSDevice::direct_wheel_vel_control;
 extern int            CP2OSDevice::psos_fd; 
 extern int            CP2OSDevice::last_client_id; 
 extern char           CP2OSDevice::psos_serial_port[];
+extern bool           CP2OSDevice::radio_modemp;
 extern char           CP2OSDevice::num_loops_since_rvel;
 //extern pthread_mutex_t CP2OSDevice::serial_mutex;
 extern CSIP*           CP2OSDevice::sippacket;
@@ -121,8 +122,12 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
   command->gripper.cmd = GRIPstore;
   command->gripper.arg = 0x00;
 
+  // install defaults
   strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
   psos_fd = -1;
+  radio_modemp = false;
+
+  // parse command-line args
   for(int i=0;i<argc;i++)
   {
     if(!strcmp(argv[i],"port"))
@@ -135,6 +140,20 @@ CP2OSDevice::CP2OSDevice(int argc, char** argv)
       else
         fprintf(stderr, "CP2OSDevice: missing port; using default: \"%s\"\n",
                 psos_serial_port);
+    }
+    else if(!strcmp(argv[i],"radio"))
+    {
+      if(++i<argc)
+      {
+        // any non-zero value will do for true
+        if(atoi(argv[i]))
+          radio_modemp = true;
+        else
+          radio_modemp = false;
+      }
+      else
+        fprintf(stderr, "CP2OSDevice: missing value for radio; using default: "
+                "\"%d\"\n", (int)radio_modemp);
     }
     else
       fprintf(stderr, "CP2OSDevice: ignoring unknown parameter \"%s\"\n",
@@ -227,10 +246,45 @@ int CP2OSDevice::Setup()
     return(1);
   }
 
-  // apparently this initializes the radio modem, in the case that a modem
-  // is being used in place of a serial cable
-  //write(psos_fd, "WMS2\r", 5);
-  
+  // radio modem initialization code, courtesy of Kim Jinsuck 
+  //   <jinsuckk@cs.tamu.edu>
+  if(radio_modemp)
+  {
+    puts("Initializing radio modem...");
+    write(psos_fd, "WMS2\r", 5);
+
+    usleep(50000);
+    char modem_buf[40];
+    read(psos_fd, modem_buf, 5);          // get "WMS2"
+    printf("wireless modem response = %s\n", modem_buf);
+
+    usleep(10000);
+    // get "\n\rConnecting..." --> \n\r is my guess
+    read(psos_fd, modem_buf, 14); 
+    printf("wireless modem response = %s\n", modem_buf);
+
+    // wait until get "Connected to address 2"
+    while (modem_buf[12] != 't') 
+    {
+      usleep(300000);
+      read(psos_fd, modem_buf, 40);
+      printf("wireless modem response = %s\n", modem_buf);
+      // if "Partner busy!"
+      if(modem_buf[2] == 'P') 
+      {
+        printf("Please reset partner modem and try again\n");
+        return(1);
+      }
+      // if "\n\rPartner not found!"
+      if(modem_buf[0] == 'P') 
+      {
+        printf("Please check partner modem and try again\n");
+        return(1);
+      }
+    }
+  }
+
+  int num_sync_attempts = 5;
   while(psos_state != READY)
   {
     //printf("psos_state: %d\n", psos_state);
@@ -267,12 +321,21 @@ int CP2OSDevice::Setup()
 
     if(receivedpacket.Receive( psos_fd ))
     {
-      printf("Couldn't synchronize with P2OS most likely because the robot\n"
-                      "is not connected or is connected not to %s\n", 
-                      psos_serial_port);
-      close(psos_fd);
-      psos_fd = -1;
-      return(1);
+      if((psos_state == NO_SYNC) && (num_sync_attempts >= 0))
+      {
+        num_sync_attempts--;
+        usleep(P2OS_CYCLETIME_USEC);
+        continue;
+      }
+      else
+      {
+        printf("Couldn't synchronize with P2OS.\n"  
+               "  Most likely because the robot is not connected to %s\n", 
+               psos_serial_port);
+        close(psos_fd);
+        psos_fd = -1;
+        return(1);
+      }
     }
     //receivedpacket.PrintHex();
     switch(receivedpacket.packet[3])
@@ -324,13 +387,13 @@ int CP2OSDevice::Setup()
   packet.Send( psos_fd );
   usleep(P2OS_CYCLETIME_USEC);
 
-  printf("Done.  Connected to %s, a %s %s\n", name, type, subtype);
+  printf("Done.\n   Connected to %s, a %s %s\n", name, type, subtype);
 
   // now, based on robot type, find the right set of parameters
   for(i=0;i<PLAYER_NUM_ROBOT_TYPES;i++)
   {
-    if(!strcmp(PlayerRobotParams[i].General.Class,type) && 
-       !strcmp(PlayerRobotParams[i].General.Subclass,subtype))
+    if(!strcasecmp(PlayerRobotParams[i].General.Class,type) && 
+       !strcasecmp(PlayerRobotParams[i].General.Subclass,subtype))
     {
       param_idx = i;
       break;
@@ -418,6 +481,41 @@ size_t CP2OSDevice::GetData( unsigned char* dest, size_t maxsize)
 void CP2OSDevice::PutData( unsigned char* src, size_t maxsize)
 {
   *data = *((player_p2os_data_t*)src);
+  
+  // need to fill in the timestamps on all P2OS devices
+  // NOTE: all these fields are already byte-swapped; that happened
+  //       in the all-side-effects-all-the-time CLock class
+  CDevice* sonarp = deviceTable->GetDevice(global_playerport,
+                                           PLAYER_SONAR_CODE,0);
+  if(sonarp)
+  {
+    sonarp->data_timestamp_sec = this->data_timestamp_sec;
+    sonarp->data_timestamp_usec = this->data_timestamp_usec;
+  }
+
+  CDevice* miscp = deviceTable->GetDevice(global_playerport,
+                                           PLAYER_MISC_CODE,0);
+  if(miscp)
+  {
+    miscp->data_timestamp_sec = this->data_timestamp_sec;
+    miscp->data_timestamp_usec = this->data_timestamp_usec;
+  }
+
+  CDevice* positionp = deviceTable->GetDevice(global_playerport,
+                                              PLAYER_POSITION_CODE,0);
+  if(positionp)
+  {
+    positionp->data_timestamp_sec = this->data_timestamp_sec;
+    positionp->data_timestamp_usec = this->data_timestamp_usec;
+  }
+
+  CDevice* gripperp = deviceTable->GetDevice(global_playerport,
+                                             PLAYER_GRIPPER_CODE,0);
+  if(gripperp)
+  {
+    gripperp->data_timestamp_sec = this->data_timestamp_sec;
+    gripperp->data_timestamp_usec = this->data_timestamp_usec;
+  }
 }
 
 void CP2OSDevice::GetCommand( unsigned char* dest, size_t maxsize)
@@ -830,17 +928,29 @@ CP2OSDevice::SendReceive(CPacket* pkt) //, bool already_have_lock)
     pthread_testcancel();
 
     if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
-                    (packet.packet[3] == 0x32 || packet.packet[3] == 0x33)) 
+       (packet.packet[3] == 0x30 || packet.packet[3] == 0x31) ||
+       (packet.packet[3] == 0x32 || packet.packet[3] == 0x33) ||
+       (packet.packet[3] == 0x34))
     {
-      /* It is a sip packet */
+      /* It is a server packet, so process it */
       sippacket->Parse( &packet.packet[3] );
       sippacket->Fill(&data, timeBegan_tv );
 
       GetLock()->PutData(this,(unsigned char*)&data, sizeof(data));
     }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
+            (packet.packet[3] == 0x50 || packet.packet[3] == 0x80) ||
+            (packet.packet[3] == 0xB0 || packet.packet[3] == 0xC0) ||
+            (packet.packet[3] == 0xD0 || packet.packet[3] == 0xE0))
+    {
+      /* It is a vision packet from the old Cognachrome system*/
+
+      /* we don't understand these yet, so ignore */
+    }
     else 
     {
-      puts("got non-SIP packet");
+      puts("got unknown packet:");
+      packet.PrintHex();
     }
 
     //pthread_mutex_unlock(&serial_mutex);

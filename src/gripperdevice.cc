@@ -28,7 +28,6 @@
 
 #include <gripperdevice.h>
 #include <stdio.h>
-#include <string.h> /* for memcpy() */
 
 CGripperDevice::~CGripperDevice()
 {

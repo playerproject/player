@@ -27,14 +27,11 @@
  */
 #include <sonardevice.h>
 #include <stdio.h>
-#include <string.h>  /* for memcpy() */
 #include <netinet/in.h>
 
 size_t CSonarDevice::GetData( unsigned char *dest, size_t maxsize)
 {
-  //memcpy( dest, &data[SONAR_DATA_OFFSET], SONAR_DATA_BUFFER_SIZE );
   *((player_sonar_data_t*)dest) = data->sonar;
-  
   return( sizeof(player_sonar_data_t) );
 }
 

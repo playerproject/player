@@ -29,23 +29,16 @@
 
 #include <netinet/in.h> /* for htons() */
 #include <stdio.h> /* for htons() */
-#include <string.h> /* for memcpy() */
 #include <positiondevice.h>
 
 CPositionDevice::~CPositionDevice()
 {
-  //*(short*)&command[POSITION_COMMAND_OFFSET] = 
-          //(short)htons((unsigned short)0);
-  //*(short*)&command[POSITION_COMMAND_OFFSET+sizeof(short)] = 
-          //(short)htons((unsigned short)0);
-
   command->position.speed = 0;
   command->position.turnrate = 0;
 }
 
 size_t CPositionDevice::GetData( unsigned char *dest, size_t maxsize ) 
 {
-  //memcpy( dest, &data[POSITION_DATA_OFFSET], POSITION_DATA_BUFFER_SIZE);
   *((player_position_data_t*)dest) = data->position;
   return( sizeof( player_position_data_t) );
 }
@@ -59,7 +52,5 @@ void CPositionDevice::PutCommand( unsigned char *src, size_t size )
   }
   else
     command->position = *((player_position_cmd_t*)src);
-    
-  //memcpy( command+POSITION_COMMAND_OFFSET, src, POSITION_COMMAND_BUFFER_SIZE);
 }
 

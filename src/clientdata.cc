@@ -65,7 +65,7 @@ CClientData::CClientData(char* key, int myport)
   requested = NULL;
   numsubs = 0;
   socket = 0;
-  mode = PLAYER_DATAMODE_CONTINUOUS;
+  mode = PLAYER_DATAMODE_PUSH_NEW;
   frequency = 10;
 
   port = myport;
@@ -238,26 +238,26 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               pthread_mutex_lock(&access);
               switch(datamode.mode)
               {
-                case PLAYER_DATAMODE_REQUESTREPLY_UPDATE:
+                case PLAYER_DATAMODE_PULL_NEW:
                   /* change to update request/reply */
                   datarequested=false;
-                  mode = PLAYER_DATAMODE_REQUESTREPLY_UPDATE;
+                  mode = PLAYER_DATAMODE_PULL_NEW;
                   break;
-                case PLAYER_DATAMODE_REQUESTREPLY:
+                case PLAYER_DATAMODE_PULL_ALL:
                   /* change to request/reply */
                   //puts("changing to REQUESTREPLY");
                   datarequested=false;
-                  mode = PLAYER_DATAMODE_REQUESTREPLY;
+                  mode = PLAYER_DATAMODE_PULL_ALL;
                   break;
-                case PLAYER_DATAMODE_CONTINUOUS:
+                case PLAYER_DATAMODE_PUSH_ALL:
                   /* change to continuous mode */
                   //puts("changing to CONTINUOUS");
-                  mode = PLAYER_DATAMODE_CONTINUOUS;
+                  mode = PLAYER_DATAMODE_PUSH_ALL;
                   break;
-                case PLAYER_DATAMODE_UPDATE:
+                case PLAYER_DATAMODE_PUSH_NEW:
                   /* change to update mode (doesn't re-send old data)*/
                   //puts("changing to UPDATE");
-                  mode = PLAYER_DATAMODE_UPDATE;
+                  mode = PLAYER_DATAMODE_PUSH_NEW;
                   break;
                 default:
                   printf("Player warning: unknown I/O mode requested (%d)."
@@ -275,8 +275,8 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                        "arg for player_data_req: %d\n",payload_size);
                 break;
               }
-              if((mode != PLAYER_DATAMODE_REQUESTREPLY) &&
-                 (mode != PLAYER_DATAMODE_REQUESTREPLY_UPDATE))
+              if((mode != PLAYER_DATAMODE_PULL_ALL) &&
+                 (mode != PLAYER_DATAMODE_PULL_NEW))
                 puts("WARNING: got request for data when not in "
                      "request/reply mode");
               else
@@ -673,15 +673,17 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
                                               &(hdr.timestamp_usec));
 
           // if we're in an UPDATE mode, we only want this data if it is new
-          if((mode == PLAYER_DATAMODE_UPDATE) || 
-             (mode == PLAYER_DATAMODE_REQUESTREPLY_UPDATE))
+          if((mode == PLAYER_DATAMODE_PUSH_NEW) || 
+             (mode == PLAYER_DATAMODE_PULL_NEW))
           {
             // if the data has the same timestamp as last time then
             // we don't want it, so skip it 
             // (Byte order doesn't matter for the equality check)
-            if( hdr.timestamp_sec == thisub->last_sec && 
-                hdr.timestamp_usec == thisub->last_usec )  
+            if(hdr.timestamp_sec == thisub->last_sec && 
+               hdr.timestamp_usec == thisub->last_usec)  
+            {
               continue;
+            }
 
             // record the time we got data for this device
             // keep 'em in network byte order - it doesn't matter

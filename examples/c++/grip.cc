@@ -72,9 +72,15 @@ int main(int argc, char **argv)
     if(!(++count % 10))
     {
       if(gripopen)
+      {
+        puts("OPEN");
         gp.SetGrip(GRIPopen,0);
+      }
       else
+      {
+        puts("CLOSE");
         gp.SetGrip(GRIPclose,0);
+      }
 
       gripopen=!gripopen;
       count=0;

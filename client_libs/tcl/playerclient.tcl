@@ -45,6 +45,18 @@ set PLAYER_MSGTYPE_REQ  3
 set PLAYER_MSGTYPE_RESP 4
 set PLAYER_MSGTYPE_SYNCH 5
 
+##############################
+# the valid datamode codes 
+##############################
+# all data at fixed frequency
+set PLAYER_DATAMODE_PUSH_ALL 0 
+# all data on demand
+set PLAYER_DATAMODE_PULL_ALL 1 
+# only new new data at fixed freq
+set PLAYER_DATAMODE_PUSH_NEW 2 
+# only new data on demand
+set PLAYER_DATAMODE_PULL_NEW 3 
+
 # device codes
 set PLAYER_PLAYER_CODE         1
 set PLAYER_MISC_CODE           2
@@ -228,7 +240,7 @@ proc player_name_to_code {name} {
 #
 # returns an object identifier for this client
 proc player_connect {args} {
-  global PLAYER_IDENT_STRLEN \
+  global PLAYER_IDENT_STRLEN PLAYER_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL_NEW\
          PLAYER_PLAYER_DATAMODE_REQ PLAYER_DEFAULT_HOST \
          PLAYER_DEFAULT_PORT player_base_varname player_base_varnum
 
@@ -283,7 +295,7 @@ proc player_connect {args} {
   # make it request/reply
   if {$reqrep} {
     player_req $varname player 0 \
-             "[binary format Sc $PLAYER_PLAYER_DATAMODE_REQ 1]"
+      "[binary format Sc $PLAYER_PLAYER_DATAMODE_REQ $PLAYER_DATAMODE_PULL_NEW]"
   }
 
   return $varname
