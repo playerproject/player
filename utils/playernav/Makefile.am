@@ -8,6 +8,6 @@ bin_PROGRAMS = $(PLAYERNAV)
 
 all: playernav
 
-playernav_SOURCES =  playernav.c
+playernav_SOURCES =  playernav.c gui.c playernav.h player.c parse.c
 
 playernav_LDADD = -L$(top_builddir)/client_libs/libplayerc -lplayerc @GNOMECANVAS_LIBS@
