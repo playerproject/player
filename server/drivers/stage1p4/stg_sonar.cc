@@ -80,8 +80,13 @@ size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
   
   // request sonar data from Stage  
   stg_ranger_t *rangers;
-  int rcount;
-  stg_model_get_rangers( this->stage_client, this->stage_id, &rangers, &rcount);
+  size_t rcount;
+  
+  assert( stg_get_property( this->stage_client, this->stage_id, 
+			    STG_PROP_RANGERS,
+			    (void**)&rangers, &rcount ) == 0 );
+  
+  rcount /= sizeof(stg_ranger_t);
   
   // limit the number of samples to Player's maximum
   if( rcount > PLAYER_SONAR_MAX_SAMPLES )
@@ -94,7 +99,7 @@ size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
     {
       sonar.range_count = htons((uint16_t)rcount);
       
-      for( int i=0; i<rcount; i++ )
+      for( int i=0; i<(int)rcount; i++ )
 	sonar.ranges[i] = htons((uint16_t)(1000.0*rangers[i].range));
     }
   
@@ -122,9 +127,13 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
       {
 	// request ranger data from Stage  
 	stg_ranger_t *rangers;
-	int rcount;
-	stg_model_get_rangers( this->stage_client, this->stage_id, &rangers, &rcount);
-		
+	size_t rcount;
+	assert( stg_get_property( this->stage_client, this->stage_id, 
+				  STG_PROP_RANGERS,
+				  (void**)&rangers, &rcount ) == 0 );
+	
+	rcount /= sizeof(stg_ranger_t);
+	
 	// convert the ranger data into Player-format sonar poses
 	
 	player_sonar_geom_t pgeom;
@@ -138,7 +147,7 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
 
 	pgeom.pose_count = htons((uint16_t)rcount);
 
-	for( int i=0; i<rcount; i++ )
+	for( int i=0; i<(int)rcount; i++ )
 	  {
 	    // fill in the geometry data formatted player-like
 	    pgeom.poses[i][0] = 
