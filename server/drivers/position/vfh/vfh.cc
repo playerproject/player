@@ -771,6 +771,9 @@ void VFH_Class::Main()
   bool turninginplace;
   int rotatedir;
 
+  // bookkeeping to implement smarter escape policy
+  int escapedir;
+
   sleeptime.tv_sec = 0;
   sleeptime.tv_nsec = 1000000L;
 
@@ -783,6 +786,7 @@ void VFH_Class::Main()
     this->GetTruth();
 
   turninginplace = false;
+  escapedir = 1;
   while (true)
   {
     // Wait till we get new odometry data; this may block indefinitely
@@ -836,7 +840,12 @@ void VFH_Class::Main()
       timediff = (curr.tv_sec + curr.tv_usec/1e6) -
               (startescape.tv_sec + startescape.tv_usec/1e6);
       if(timediff > this->escape_time)
+      {
+        // if we're still stalled, try escaping the other direction
+        if(this->odom_stall)
+          escapedir *= -1;
         escaping = false;
+      }
     }
 
     // CASE 1: The robot has stalled, so escape if the user specified
@@ -844,16 +853,16 @@ void VFH_Class::Main()
     if(escaping || 
        (this->escape_speed && this->escape_time && this->odom_stall))
     {
-      /// @todo Make the post-stall esape strategy smarter (e.g., sometimes
-      //        go forward, and maybe turn).
-      this->speed = (int)rint(this->escape_speed * 1e3);
-      this->turnrate = 0;
-      PutCommand( this->speed, this->turnrate );
-      if(this->odom_stall)
+      if(!escaping)
       {
         GlobalTime->GetTime(&startescape);
         escaping = true;
       }
+
+      this->speed = (int)rint(this->escape_speed * escapedir * 1e3);
+      this->turnrate = 0;
+      PutCommand(this->speed, this->turnrate);
+
       turninginplace = false;
     }
     // CASE 2: The robot is at the goal, within user-specified tolerances, so
