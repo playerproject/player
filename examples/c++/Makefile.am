@@ -16,8 +16,10 @@ noinst_PROGRAMS = rsn \
                   stress \
                   pherobot \
 		  audioread \
-		  audiowrite
+		  audiowrite \
+                  waveformread
 
+waveformread_SOURCES = waveformread.cc
 audioread_SOURCES = audioread.cc
 audiowrite_SOURCES = audiowrite.cc
 rsn_SOURCES = rsn.cc

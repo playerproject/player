@@ -1554,4 +1554,56 @@ public:
  ** end section
  *****************************************************************************/
 
+/*****************************************************************************
+ ** begin section WaveformProxy
+ *****************************************************************************/
+
+/** The {\tt WaveformProxy} class is used to read raw digital
+ waveforms from a device.  */
+class WaveformProxy : public ClientProxy 
+{
+
+public:
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+    */
+    WaveformProxy (PlayerClient* pc, unsigned short index,
+                   unsigned char access = 'c')
+            : ClientProxy(pc,PLAYER_WAVEFORM_CODE,index,access) 
+      {
+	this->ConfigureDSP();
+      }
+
+    ~WaveformProxy()
+      {}
+    
+    /// sample rate in bits per second
+    unsigned int bitrate;
+
+    /// sample depth in bits
+    unsigned short depth;
+
+    //// the number of samples in the most recent packet
+    unsigned int last_samples;
+
+    /// the data is buffered here for playback
+    unsigned char buffer[PLAYER_WAVEFORM_DATA_MAX];
+  
+    /// dsp file descriptor
+    int fd; 
+  
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    /// Print out the current status
+    void Print ();
+
+    int ConfigureDSP() ;
+    void OpenDSPforWrite();
+    void PlaybackBuffer();
+};
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
 #endif

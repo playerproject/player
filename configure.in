@@ -247,7 +247,7 @@ AC_SUBST(ISENSE_EXTRA_LIB)
 
 dnl optionally compile MicroStrain IMU drivers - disabled by default
 AC_ARG_WITH(microstrain,
-[  --with-microstrain         Don't compile the MicroStrain IMU drivers],,
+[  --with-microstrain         Compile in the MicroStrain IMU drivers],,
 with_microstrain=no)
 if test "x$with_microstrain" = "xyes"; then
   AC_DEFINE(INCLUDE_MICROSTRAIN, 1, [[include the MICROSTRAIN driver]])
@@ -256,6 +256,19 @@ if test "x$with_microstrain" = "xyes"; then
 fi
 AC_SUBST(MICROSTRAIN_LIB)
 AC_SUBST(MICROSTRAIN_LIBPATH)
+
+dnl optionally compile the audio waveform driver - disabled by default
+AC_ARG_WITH(waveaudio,
+[  --with-waveaudio        Compile in the wave audio driver],,
+with_waveaudio=no)
+if test "x$with_waveaudio" = "xyes"; then
+  AC_DEFINE(INCLUDE_WAVEAUDIO, 1, [[include the WAVEAUDIO driver]])
+  WAVEAUDIO_LIB="libwaveaudio.a"
+  WAVEAUDIO_LIBPATH="drivers/libwaveaudio.a"
+fi
+AC_SUBST(WAVEAUDIO_LIB)
+AC_SUBST(WAVEAUDIO_LIBPATH)
+
 
 dnl Optionally build the python client.
 PYTHON_VERSION=2.2

@@ -75,6 +75,7 @@
 #define PLAYER_AIO_CODE            ((uint16_t)21)  // analog I/O
 #define PLAYER_IR_CODE             ((uint16_t)22)  // IR array
 #define PLAYER_WIFI_CODE	   ((uint16_t)23)  // wifi card status
+#define PLAYER_WAVEFORM_CODE	   ((uint16_t)24)  // fetch raw waveforms
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -102,6 +103,7 @@
 #define PLAYER_AIO_STRING            "aio"
 #define PLAYER_IR_STRING             "ir"
 #define PLAYER_WIFI_STRING           "wifi"
+#define PLAYER_WAVEFORM_STRING       "waveform"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -1070,6 +1072,35 @@ typedef struct player_audio_cmd
   /** Duration to play (sec?) */
   uint16_t duration;
 } __attribute__ ((packed)) player_audio_cmd_t;
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section waveform
+ *************************************************************************/
+
+#define PLAYER_WAVEFORM_DATA_MAX 4096 /*4K - half the packet max*/
+
+/** [Synopsis] The {\tt waveform} interface is used to receive
+    arbitrary digital samples, say from a digital audio device. */
+
+/** [Data] */
+/**
+   The {\tt waveform} interface reads a digitized waveform from the
+   target device.*/
+typedef struct player_waveform_data
+{
+  /** Bit rate - bits per second **/
+  uint32_t rate;
+  /** Depth - bits per sample **/
+  uint16_t depth;
+  /** Samples - the number of bytes of raw data **/
+  uint32_t samples;
+  /** data - an array of raw data **/
+  uint8_t data[ PLAYER_WAVEFORM_DATA_MAX ];
+} __attribute__ ((packed)) player_waveform_data_t;
+
 /*************************************************************************
  ** end section
  *************************************************************************/
