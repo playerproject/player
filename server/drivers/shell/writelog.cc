@@ -611,8 +611,10 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
   fprintf(this->file, "%04d ", HUINT16(data->link_count));
 
   for (i = 0; i < ntohs(data->link_count); i++)
-    fprintf(this->file, "%s %d %d %d ",
-            data->links[i].ip,
+    fprintf(this->file, "%s %s %s %d %d %d %d %d %d ",
+            data->links[i].mac, data->links[i].ip, data->links[i].essid,
+            data->links[i].mode, HUINT16(data->links[i].freq),
+            data->links[i].encrypt,
             HINT16(data->links[i].qual),
             HINT16(data->links[i].level),
             HINT16(data->links[i].noise));

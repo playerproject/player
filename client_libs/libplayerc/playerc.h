@@ -1629,9 +1629,24 @@ ad-hoc network. */
 /** Individual link info. */
 typedef struct _playerc_wifi_link_t
 {
-  /** Destination IP address. */
+  /** Mac accress. */
+  char mac[32];
+
+  /** IP address. */
   char ip[32];
- 
+
+  /** ESSID id */
+  char essid[32];
+
+  /** Mode (master, ad-hoc, etc). */
+  int mode;
+
+  /** Encrypted? */
+  int encrypt;
+
+  /** Frequency (MHz). */
+  double freq;
+
   /** Link properties. */
   int qual, level, noise;
  

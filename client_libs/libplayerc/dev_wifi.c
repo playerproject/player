@@ -103,7 +103,12 @@ void playerc_wifi_putdata(playerc_wifi_t *device, player_msghdr_t *header,
 
   for (i = 0; i < device->link_count; i++)
   {
+    strncpy(device->links[i].mac, data->links[i].mac, sizeof(device->links[i].mac));
     strncpy(device->links[i].ip, data->links[i].ip, sizeof(device->links[i].ip));
+    strncpy(device->links[i].essid, data->links[i].essid, sizeof(device->links[i].essid));
+    device->links[i].mode = data->links[i].mode;
+    device->links[i].encrypt = data->links[i].encrypt;
+    device->links[i].freq = (double) (int16_t) ntohs(data->links[i].freq);
     device->links[i].qual = (int16_t) ntohs(data->links[i].qual);
     device->links[i].level = (int16_t) ntohs(data->links[i].level);
     device->links[i].noise = (int16_t) ntohs(data->links[i].noise);

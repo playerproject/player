@@ -3009,8 +3009,23 @@ typedef struct player_wifi_iwspy_addr_req
     format of the data for each host is: */
 typedef struct player_wifi_link
 {
-  /** IP address of destination. */
+  /** MAC address. */
+  char mac[32];
+  
+  /** IP address. */
   char ip[32];
+
+  /** ESSID. */
+  char essid[32];
+
+  /** Mode (master, adhoc, etc). */
+  uint8_t mode;
+
+  /** Frequency (MHz). */
+  uint16_t freq;
+
+  /** Encryted?. */
+  uint8_t encrypt;
 
   /** Link quality, level and noise information */
   // these could be uint8_t instead, <linux/wireless.h> will only
