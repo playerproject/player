@@ -934,6 +934,7 @@ bool ParseDeviceEx(ConfigFile *cf, int section)
   DriverEntry *entry;
   Driver *driver;
   Device *device;
+  int count;
 
   entry = NULL;
   driver = NULL;
@@ -981,12 +982,24 @@ bool ParseDeviceEx(ConfigFile *cf, int section)
     return (false);
   }
 
-  // Fill out the driver name in the device table
+  // Fill out the driver name in the device table and count the number
+  // of devices for this driver
+  count = 0;
   for (device = deviceTable->GetFirstDevice(); device != NULL;
        device = deviceTable->GetNextDevice(device))
   {
     if (device->driver == driver)
+    {
       strncpy(device->drivername, drivername, sizeof(device->drivername));
+      count++;
+    }
+  }
+
+  // We must have at least one interface per driver
+  if (count == 0)
+  {
+    PLAYER_ERROR1("Driver has no (usable) interfaces \"%s\"", drivername);
+    return false;
   }
   
   // Should this device be "always on"?  

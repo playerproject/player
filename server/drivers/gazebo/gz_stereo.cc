@@ -189,7 +189,6 @@ void GzStereo_Register(DriverTable* table)
 GzStereo::GzStereo(ConfigFile* cf, int section)
     : Driver(cf, section)
 {
-
   // Get left camera interface
   memset(&this->leftId, 0, sizeof(this->leftId));
   if (cf->ReadDeviceId(&this->leftId, section, "provides",
@@ -219,7 +218,7 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
   // Get disparity camera interface
   memset(&this->leftDisparityId, 0, sizeof(this->leftDisparityId));
   if (cf->ReadDeviceId(&this->leftDisparityId, section, "provides",
-                       PLAYER_CAMERA_CODE, -1, "leftdisparity") == 0)
+                       PLAYER_CAMERA_CODE, -1, "left_disparity") == 0)
   {
     if (this->AddInterface(this->leftDisparityId, PLAYER_READ_MODE,
                            sizeof(player_camera_data_t), 0, 1, 1) != 0)
@@ -232,7 +231,7 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
   // Get disparity camera interface
   memset(&this->rightDisparityId, 0, sizeof(this->rightDisparityId));
   if (cf->ReadDeviceId(&this->rightDisparityId, section, "provides",
-                       PLAYER_CAMERA_CODE, -1, "rightdisparity") == 0)
+                       PLAYER_CAMERA_CODE, -1, "right_disparity") == 0)
   {
     if (this->AddInterface(this->rightDisparityId, PLAYER_READ_MODE,
                            sizeof(player_camera_data_t), 0, 1, 1) != 0)
@@ -242,6 +241,15 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
     }
   }
 
+  // Must have at least one interface
+  if (this->leftId.code == 0 && this->rightId.code == 0 &&
+      this->leftDisparityId.code == 0 && this->rightDisparityId.code == 0)
+  {
+    PLAYER_ERROR("no usable interfaces");
+    this->SetError(-1);
+    return;
+  }
+  
   // Get the id of the device in Gazebo.
   // TODO: fix potential buffer overflow
   this->gz_id = (char*) calloc(1024, sizeof(char));
@@ -463,9 +471,9 @@ void GzStereo::SaveFrame(const char *filename, player_camera_data_t *data)
   if (data->format == PLAYER_CAMERA_FORMAT_MONO16)
   {
     // Write pgm
-    fprintf(file, "P5\n%d %d\n%d\n", width, height, 16);
+    fprintf(file, "P5\n%d %d\n%d\n", width, height, 0xFFFF);
     for (i = 0; i < height; i++)
-      fwrite(data->image + i * width, 16, width, file);
+      fwrite(data->image + i * width * 2, 1, width * 2, file);
   }
   else if (data->format == PLAYER_CAMERA_FORMAT_RGB888)
   {
