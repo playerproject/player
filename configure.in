@@ -201,8 +201,9 @@ AC_SUBST(RTK3_LIBS)
 configrtk3=
 if test "x$enable_rtk3" = "xyes"; then
   configrtk3="rtk3"
+  AC_CONFIG_SUBDIRS(rtk3)
 fi
-AC_CONFIG_SUBDIRS($configrtk3)
+dnl AC_CONFIG_SUBDIRS($configrtk3)
 AM_CONDITIONAL(WITH_RTK3, test "x$enable_rtk3" = "xyes")
 
 dnl Build the playermap utility; requires RTK3 components to work

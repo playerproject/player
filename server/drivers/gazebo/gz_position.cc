@@ -185,13 +185,13 @@ void GzPosition::Update()
     tsec = (int) (this->iface->data->time);
     tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
-    data.xpos = htonl((int) (this->iface->data->odom_pose[0] * 1000));
-    data.ypos = htonl((int) (this->iface->data->odom_pose[1] * 1000));
-    data.yaw = htonl((int) (this->iface->data->odom_pose[2] * 180 / M_PI));
+    data.xpos = htonl((int) (this->iface->data->pos[0] * 1000));
+    data.ypos = htonl((int) (this->iface->data->pos[1] * 1000));
+    data.yaw = htonl((int) (this->iface->data->rot[2] * 180 / M_PI));
 
-    data.xspeed = htonl((int) (this->iface->data->odom_vel[0] * 1000));
-    data.yspeed = htonl((int) (this->iface->data->odom_vel[1] * 1000));
-    data.yawspeed = htonl((int) (this->iface->data->odom_vel[2] * 180 / M_PI));
+    data.xspeed = htonl((int) (this->iface->data->vel_pos[0] * 1000));
+    data.yspeed = htonl((int) (this->iface->data->vel_pos[1] * 1000));
+    data.yawspeed = htonl((int) (this->iface->data->vel_rot[2] * 180 / M_PI));
 
     data.stall = (uint8_t) this->iface->data->stall;
 
@@ -214,9 +214,9 @@ void GzPosition::PutCommand(void* client, unsigned char* src, size_t len)
   cmd = (player_position_cmd_t*) src;
 
   gz_position_lock(this->iface, 1);
-  this->iface->data->cmd_vel[0] = ((int) ntohl(cmd->xspeed)) / 1000.0;
-  this->iface->data->cmd_vel[1] = ((int) ntohl(cmd->yspeed)) / 1000.0;
-  this->iface->data->cmd_vel[2] = ((int) ntohl(cmd->yawspeed)) * M_PI / 180;
+  this->iface->data->cmd_vel_pos[0] = ((int) ntohl(cmd->xspeed)) / 1000.0;
+  this->iface->data->cmd_vel_pos[1] = ((int) ntohl(cmd->yspeed)) / 1000.0;
+  this->iface->data->cmd_vel_rot[2] = ((int) ntohl(cmd->yawspeed)) * M_PI / 180;
   gz_position_unlock(this->iface);
     
   return;
