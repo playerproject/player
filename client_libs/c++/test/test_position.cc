@@ -50,10 +50,10 @@ test_position(PlayerClient* client, int index)
   }
 
   const double ox = 0.1, oy = -0.2;
-  const int oa = 180;
+  const double oa = 6.21569;
   
   TEST("Setting odometry" );
-  if( pp.SetOdometry(ox, oy, DTOR((double)oa)) < 0 )
+  if( pp.SetOdometry(ox, oy, oa) < 0 )
     {
       FAIL();
       //return(-1);
@@ -63,7 +63,7 @@ test_position(PlayerClient* client, int index)
       printf("\n - initial \t[%.3f %.3f %.3f]\n"
 	     " - requested \t[%.3f %.3f %.3f]\n", 
 	     pp.xpos, pp.ypos, RTOD(pp.theta), 
-	     ox, oy, (double)oa);
+	     ox, oy, RTOD(oa));
       
       
       for( int s=0; s<10; s++ )
@@ -78,7 +78,7 @@ test_position(PlayerClient* client, int index)
       
       if((pp.xpos != ox) || 
          (pp.ypos != oy) || 
-         ((int)rint(RTOD(pp.theta)) != oa))
+         (pp.theta != oa))
 	{
 	  FAIL();
 	  //return(-1);

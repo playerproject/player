@@ -59,7 +59,7 @@ void SIP::Fill(player_p2os_data_t* data)
     //puts("angle correction");
     data->position.xpos += (int32_t) (xpos * cos(rot) - ypos * sin(rot));
     data->position.ypos += (int32_t) (xpos * sin(rot) + ypos * cos(rot));
-    data->position.yaw = (data->position.yaw + angle) % 360;
+    data->position.yaw = (angle_offset + angle) % 360;
   }
   else 
   {
