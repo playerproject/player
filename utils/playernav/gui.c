@@ -279,21 +279,21 @@ make_menu(gui_data_t* gui_data)
 {
   GtkMenuBar* menu_bar;
   GtkMenu* file_menu;
-  GtkMenuItem* open_item;
-  GtkMenuItem* save_item;
+  //GtkMenuItem* open_item;
+  //GtkMenuItem* save_item;
   GtkMenuItem* quit_item;
   GtkMenuItem* file_item;
 
   file_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
 
   /* Create the menu items */
-  open_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Open");
-  save_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Save");
+  //open_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Open");
+  //save_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Save");
   quit_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Quit");
 
   /* Add them to the menu */
-  gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)open_item);
-  gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)save_item);
+  //gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)open_item);
+  //gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)save_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)quit_item);
 
   /* Attach the callback functions to the
@@ -314,8 +314,8 @@ make_menu(gui_data_t* gui_data)
                             (gpointer) "file.quit");
 
   /* We do need to show menu items */
-  gtk_widget_show((GtkWidget*)open_item);
-  gtk_widget_show((GtkWidget*)save_item);
+  //gtk_widget_show((GtkWidget*)open_item);
+  //gtk_widget_show((GtkWidget*)save_item);
   gtk_widget_show((GtkWidget*)quit_item);
 
   menu_bar = (GtkMenuBar*)gtk_menu_bar_new ();
@@ -336,6 +336,7 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
 {
   //double t[6];
   double initial_zoom, max_zoom;
+  GtkAdjustment* adjust;
 
   g_type_init();
   gtk_init(&argc, &argv);
@@ -359,6 +360,18 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
             (GtkScrolledWindow*)gtk_scrolled_window_new(NULL, NULL)));
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(gui_data->map_window),
                                  GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+
+  // Initialize horizontal scroll bars
+  adjust = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gui_data->map_window));
+  adjust->step_increment = 10;
+  gtk_adjustment_changed(adjust);
+  gtk_adjustment_set_value(adjust, adjust->value - GTK_WIDGET(gui_data->map_window)->allocation.width / 2);
+
+  // Initialize vertical scroll bars
+  adjust = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gui_data->map_window));
+  adjust->step_increment = 10;
+  gtk_adjustment_changed(adjust);
+  gtk_adjustment_set_value(adjust, adjust->value - GTK_WIDGET(gui_data->map_window)->allocation.height / 2);
 
   gtk_widget_push_visual(gdk_rgb_get_visual());
   gtk_widget_push_colormap(gdk_rgb_get_cmap());

@@ -817,6 +817,7 @@ Wavefront::PutConfig(player_device_id_t* device, void* client,
   double wx,wy;
   size_t replylen;
   
+  // TODO: figure out why locking here causes a deadlock.
   //Lock();
   memset(&reply,0,sizeof(player_position_waypoints_req_t));
   if(len > 0)
