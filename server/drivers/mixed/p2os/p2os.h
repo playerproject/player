@@ -166,6 +166,7 @@ class P2OS:public CDevice
   public:
 
     P2OS(char* interface, ConfigFile* cf, int section);
+    virtual ~P2OS();
 
     /* the main thread */
     virtual void Main();
