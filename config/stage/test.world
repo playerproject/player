@@ -7,111 +7,43 @@
 
 include "pioneer.inc"
 
-#bitmap "bitmaps/hospital.png"
-
+size [18 18]
 bitmap "bitmaps/autolab.png"
-resolution 0.02  # meters per pixel
 
-gui.boundary 1
+resolution 0.02  # meters per pixel
 
 interval_sim 100  # milliseconds per update step
 interval_real 100 # real-time milliseconds per update step
 
-# load a bitmapped environment from a file
-#bitmap "bitmaps/cave.png" 
-#size [10 10]
-
-
-  # GUI settings
-  # 
-  #gui
-  #(
-   # size [ 502.000 506.000 ]
-    #origin [5.018 4.950 0]
-    #scale 0.021 # the size of each bitmap pixel in meters
-  #)
-
-
-  # create a robot, setting its start position and Player port, 
-  # and equipping it with a laser range scanner
-  #
-  #model
-  #(
-  #  name "budgie"	
-  #  size [0.5 0.25] 
-  #  pose [11.651 0.708 0.000]
-  #  #velocity [0 0 -20]
-
-#    bitmap "bitmaps/submarine.png"
-#    color "blue"
- # )
-
-pioneer2dx( name "r0" pose [9.846 6.641 7102.763] color "blue" )
-pioneer2dx( name "r1" pose [1.328 11.223 -20.084] color "green")
-pioneer2dx( name "r2" pose [1.419 11.927 -71.250] color "magenta" )
-#pioneer2dx( name "r3" pose [1.467 7.321 -20.084] )
-#pioneer2dx( name "r4" pose [1.309 8.327 -20.084] )
-#pioneer2dx( name "r5" pose [1.313 9.257 -20.084] )
-#pioneer2dx( name "r6" pose [1.301 10.269 -20.084] )
-#pioneer2dx( name "r7" pose [3.682 13.808 -20.084] )
-#pioneer2dx( name "r8" pose [7.383 7.265 -20.084] )
-#pioneer2dx( name "r9" pose [7.910 6.202 -20.840] )
-#pioneer2dx( name "r10" pose [6.549 9.302 -20.840] )
-#pioneer2dx( name "r11" pose [6.518 8.139 -20.840] )
-#pioneer2dx( name "r12" pose [5.873 6.300 -20.840] )
-#pioneer2dx( name "r13" pose [5.763 3.173 -20.840] )
-#pioneer2dx( name "r14" pose [3.768 1.555 -20.840] )
-#pioneer2dx( name "r15" pose [2.432 2.246 -20.840] )
-#pioneer2dx( name "r16" pose [4.679 2.262 -20.840] )
-#pioneer2dx( name "r17" pose [3.815 3.409 -20.840] )
-#pioneer2dx( name "r18" pose [7.350 3.990 -20.840] )
-#pioneer2dx( name "r19" pose [7.900 8.406 -20.840] )
-
-define chatterbox model
+# extend the pioneer2dx definition from pioneer.inc
+#
+define testrobot pioneer2dx
 (
-  scount 8
-  spose[0] [  0.050  0.0   0 ]
-  spose[1] [  0.035  0.035  45 ]
-  spose[2] [  0.0    0.050  90 ]
-  spose[3] [ -0.035  0.035 135 ]
-  spose[4] [ -0.050  0.0 180 ]
-  spose[5] [ -0.035 -0.035 225 ]
-  spose[6] [  0.0   -0.050 270 ]
-  spose[7] [  0.035 -0.035 315 ]
+  # add a laser scanner	
+  # laser view vector - format: [ minrange maxrange fov ]
+  laser.view [ 0.0 8.0 180.0 ]
+  laser.pose [ 0 0 0 ]
+  laser.size [ 0.15 0.15 ]
+  laser.samples 180
+	
+  # fiducialfinder view vector - format [ minrange maxrange fov ]
+  fiducial.view [ 0.0 5.0 90.0 ]  
+  fiducial.id_limit 4.0
 
-  sbounds[0] [ 0 0.5 ]
-  sbounds[1] [ 0 0.5 ]
-  sbounds[2] [ 0 0.5 ]
-  sbounds[3] [ 0 0.5 ]
-  sbounds[4] [ 0 0.5 ]
-  sbounds[5] [ 0 0.5 ]
-  sbounds[6] [ 0 0.5 ]
-  sbounds[7] [ 0 0.5 ]
+  # blobfinder configuration 
+  # blob view vector - format [minrange maxrange fov]	
+  blob.view [ 0 7.0 60 ]	
+  blob.count 6
+  blob.screen [ 80 60 ]
+  blob.channels [ "red" "green" "blue" "cyan" "yellow" "magenta" ]	
 
-  size [0.10 0.10]
-  nose 1
+  #energy configuration
+  energy.capacity 3000.0
+  energy.range 1.0
+  energy.return 0 # we don't give charge
 )
 
-define bluechatterbox chatterbox
-(
-  color "blue"
+testrobot( name "r0" pose [9.348 6.902 7020.905] )
+testrobot( name "r1" pose [7.063 8.118 -20.084] color "green")
+testrobot( name "r2" pose [7.771 9.012 -71.250] color "blue" )
 
-)
-
-define redchatterbox chatterbox
-(
-  color "red"
-)
-
-
-#bluechatterbox( name "bch0" pose [12.369 18.511 0.000] )
-#bluechatterbox( name "bch1" pose [12.493 18.836 -171.141] )
-#bluechatterbox( name "bch2" pose [11.940 19.197 -159.523] )
-#bluechatterbox( name "bch3" pose [12.000 18.647 -28.297] )
-#bluechatterbox( name "bch4" pose [12.387 19.271 -108.654] )
-
-#redchatterbox( name "rch0" pose [10.677 18.647 0.000] )
-#redchatterbox( name "rch1" pose [11.139 18.374 0.000] )
-#redchatterbox( name "rch2" pose [10.912 19.386 -53.892] )
-#redchatterbox( name "rch3" pose [11.180 18.959 -28.297] )
-#redchatterbox( name "rch4" pose [10.674 19.037 -54.883] )
