@@ -43,8 +43,9 @@
 #define TROGDOR_WHEEL_CIRCUM   (TROGDOR_WHEEL_DIAM * M_PI)
 #define TROGDOR_TICKS_PER_REV  5800.0
 #define TROGDOR_M_PER_TICK     (TROGDOR_WHEEL_CIRCUM / TROGDOR_TICKS_PER_REV)
-/* there's some funky timing loop constant for converting to/from speeds */
-#define TROGDOR_MPS_PER_TICK   (TROGDOR_M_PER_TICK * 300.0)
+/* the internal PID loop runs every 1.55ms (we think) */
+#define TROGDOR_PID_FREQUENCY  (1/1.55e-3)
+#define TROGDOR_MPS_PER_TICK   (TROGDOR_M_PER_TICK * TROGDOR_PID_FREQUENCY)
 
 /* assuming that the counts can use the full space of a signed 32-bit int */
 #define TROGDOR_MAX_TICS 2147483648U
