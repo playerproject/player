@@ -1,64 +1,25 @@
 #!/usr/bin/env python
 
+# Desc: Test Python bindings
+# Author: Andrew Howard
+# Date: 15 Sep 2004
+# CVS: $Id$
+
+import getopt
+import string
 import sys
+import threading
 
 from playerc import *
+
+from test_position import *
+from test_laser import *
 from test_wifi import *
 
 
 
-def test_position():
-
-    c = playerc_client_create(None, 'localhost', 6665)
-    if playerc_client_connect(c) != 0:
-        raise playerc_error_str()
-
-    pos = playerc_position_create(c, 0)
-
-    if playerc_position_subscribe(pos, PLAYERC_READ_MODE) != 0:
-        raise playerc_error_str()    
-
-    while 1:
-
-        proxy = playerc_client_read(c)
-
-        print pos.pose
-        print pos.px, pos.py, pos.pa
-    
-    return
-
-
-
-
-def test_laser(client, index):
-    """Basic test of the laser interface."""
-
-    laser = playerc_laser(client, index)
-
-    if laser.subscribe(PLAYERC_READ_MODE) != 0:
-        raise playerc_error_str()    
-
-    for i in range(10):
-
-        while 1:
-            id = client.read()
-            if id == laser.info.id:
-                break
-
-        print "laser: [%14.3f] [%d] " % (laser.info.datatime, laser.scan_count),
-        for i in range(3):
-            print "[%6.3f, %6.3f] " % (laser.scan[i][0], laser.scan[i][1]),
-        print
-    
-    return
-
-
-
-if __name__ == '__main__':
-
-    server = ('localhost', 6665)
-    test = 'laser'
-    index = 0
+def main(server, test, context):
+    """Open a connection and run a test."""
 
     # Connect to server
     c = playerc_client(None, 'localhost', 6665)
@@ -70,9 +31,74 @@ if __name__ == '__main__':
         raise playerc_error_str()
 
     # Print the device list
+    print '\033[m'
+    print '----------------------------------------------------------------------'
     for devinfo in c.devinfos:
         print '%d:%s:%d %20s' % \
               (devinfo.port, playerc_lookup_name(devinfo.code),
                devinfo.index, devinfo.drivername)
+    print '----------------------------------------------------------------------'
 
-    eval('test_%s(c, index)' % test)
+
+    eval('test_%s(c, %d, context)' % (test[0], test[1]))
+    return
+
+
+
+class TestThread(threading.Thread):
+    """Dummy class for testing multiple threads."""
+
+    def __init__(self, target, args):
+
+        threading.Thread.__init__(self, None, target, None, args)
+        return
+
+
+
+
+
+if __name__ == '__main__':
+
+    threaded = False
+    server = ['localhost', 6665]
+    tests = []
+
+    (opts, args) = getopt.getopt(sys.argv[1:], "h:p:t")
+
+    for opt in opts:
+        if opt[0] == '-h':
+            server[0] = opt[1]
+        elif opt[0] == '-p':
+            server[1] = int(opt[1])
+        elif opt[0] == '-t':
+            threaded = True
+
+    for arg in args:
+        tokens = string.split(arg, ':')
+        test = (tokens[0], int(tokens[1]))
+        tests.append(test)
+
+
+    if not threaded:
+
+        # Run tests sequentially
+        for (i, test) in enumerate(tests):
+            context = 'T%d' % i
+            main(server, test, context)
+
+    else:
+
+        # Run tests in parallel
+        tids = []
+        for (i, test) in enumerate(tests):
+            context = '\033[%dmT%d' % (31 + i % 2, i)
+            tid = TestThread(main, (server, test, context))
+            tid.start()
+            tids.append(tid)
+
+        # Wait for threads to complete
+        for tid in tids:
+            tid.join()
+
+    print '\033[m'
+            

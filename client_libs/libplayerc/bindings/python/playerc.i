@@ -40,19 +40,19 @@
 }
 
 // Arrays of playerc_device_info_t
-%typemap(out) playerc_device_info [ANY]
+%typemap(out) playerc_device_info_t [ANY]
 {
-  int i;
+ int i;
   $result = PyTuple_New(arg1->devinfo_count);
   for (i = 0; i < arg1->devinfo_count; i++) 
   {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_device_info, 0);
+    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_device_info_t, 0);
     PyTuple_SetItem($result,i,o);
   }
 }
 
 // Arrays of playerc_blobfinder_blob_t
-%typemap(out) playerc_blobfinder_blob [ANY]
+%typemap(out) playerc_blobfinder_blob_t [ANY]
 {
   int i;
   $result = PyTuple_New(arg1->devinfo_count);
@@ -64,11 +64,11 @@
 }
 
 // Arrays of playerc_fiducial_item_t
-%typemap(out) playerc_fiducial_item [ANY]
+%typemap(out) playerc_fiducial_item_t [ANY]
 {
   int i;
-  $result = PyTuple_New(arg1->devinfo_count);
-  for (i = 0; i < arg1->devinfo_count; i++) 
+  $result = PyTuple_New(arg1->item_count);
+  for (i = 0; i < arg1->item_count; i++) 
   {
     PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_fiducial_item, 0);
     PyTuple_SetItem($result,i,o);
@@ -76,11 +76,11 @@
 }
 
 // Arrays of playerc_localize_hypoth_t
-%typemap(out) playerc_localize_hypoth [ANY]
+%typemap(out) playerc_localize_hypoth_t [ANY]
 {
   int i;
-  $result = PyTuple_New(arg1->devinfo_count);
-  for (i = 0; i < arg1->devinfo_count; i++) 
+  $result = PyTuple_New(arg1->hypoth_count);
+  for (i = 0; i < arg1->hypoth_count; i++) 
   {
     PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_localize_hypoth, 0);
     PyTuple_SetItem($result,i,o);
@@ -88,11 +88,11 @@
 }
 
 // Arrays of playerc_wifi_link_t
-%typemap(out) playerc_wifi_link [ANY]
+%typemap(out) playerc_wifi_link_t [ANY]
 {
   int i;
-  $result = PyTuple_New(arg1->devinfo_count);
-  for (i = 0; i < arg1->devinfo_count; i++) 
+  $result = PyTuple_New(arg1->link_count);
+  for (i = 0; i < arg1->link_count; i++) 
   {
     PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_wifi_link, 0);
     PyTuple_SetItem($result,i,o);
@@ -100,8 +100,13 @@
 }
 
 
-
-
+// Provide thread-support on some functions
+%exception read
+{
+  Py_BEGIN_ALLOW_THREADS
+  $action
+  Py_END_ALLOW_THREADS
+}
 
 
 // Include Player header so we can pick up some constants
@@ -112,6 +117,7 @@
 // Use this for regular c-bindings;
 // e.g. playerc_client_connect(client, ...)
 //%include "../../playerc.h"
+
 
 // Use this for object-oriented bindings;
 // e.g., client.connect(...)

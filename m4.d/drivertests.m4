@@ -128,6 +128,8 @@ PLAYER_ADD_DRIVER([bumpersafe],[drivers/position/bumpersafe],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([dummy],[drivers/shell],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],[],[],
                   ["../client_libs/c/playercclient.o"])
 

@@ -195,7 +195,7 @@ def parse_file(instream, rules):
                     continue
                 sig = sig[:mm.start()] + rep.dst + sig[mm.end():]
                 
-            print rval, name, sig
+            #print rval, name, sig
 
             outstream += rule.head
             outstream += '%s %s %s' % (rval, name, sig)

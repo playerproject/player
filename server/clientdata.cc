@@ -1135,9 +1135,11 @@ ClientDataTCP::Write(size_t len)
   static bool warned=false;
   int byteswritten;
 
+  //assert(socket > 0);
+
   if(len>0)
   {
-    if((byteswritten = write(socket, totalwritebuffer, len)) < 0) 
+    if((byteswritten = ::write(socket, totalwritebuffer, len)) < 0) 
     {
       if(errno != EAGAIN)
       {
@@ -1147,6 +1149,7 @@ ClientDataTCP::Write(size_t len)
       else
         byteswritten=0;
     }
+
     if((size_t)byteswritten < len)
     {
       // didn't get all the data out; move the remaining data to the front of
@@ -1168,6 +1171,7 @@ ClientDataTCP::Write(size_t len)
       warned = false;
     }
   }
+
   return(0);
 }
 

@@ -1794,7 +1794,7 @@ ConfigFile::ReadDeviceId(player_device_id_t* id, player_device_id_t* ids,
 
   for(k=0,j=0;j<num_ids;j++)
   {
-    if(ids[j].code == code)
+    if(ids[j].code == code || code == -1)
     {
       if(k==i)
       {
