@@ -44,7 +44,7 @@
 #include <math.h>
 #include <sys/time.h> 
 #include <unistd.h>
-
+#include <signal.h>
 #include <pthread.h>
 
 extern int global_argc;
@@ -63,6 +63,13 @@ stg_client_t* Stage1p4::stage_client = NULL;
 stg_name_id_t* Stage1p4::created_models = NULL;
 int Stage1p4::created_models_count = 0;
 ConfigFile* Stage1p4::config = NULL;
+CWorldFile Stage1p4::wf;
+
+// signal cacher - when Player gets a SIG_USR2 we save the worldfile
+void catch_sigusr2( int signum )
+{
+  Stage1p4::wf.DownloadAndSave( Stage1p4::stage_client );
+}
 
 // constructor
 //
@@ -100,13 +107,18 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
 	(char*)config->ReadString(section, "worldfile", DEFAULT_STG_WORLDFILE);
       
       PLAYER_MSG1( "Uploading world from \"%s\"", world_file );      
-      CWorldFile wf;
+      //CWorldFile wf;
       wf.Load( Stage1p4::world_file );
       // this function from libstagecpp does a lot of work turning the
       // worldfile into a series of model creation and configuration
       // requests. It creates an array of <name,stageid> pairs.
       wf.Upload( Stage1p4::stage_client, 
 		 &Stage1p4::created_models, &Stage1p4::created_models_count );
+
+      // catch USR2 signal. getting this signal makes us SAVE the
+      // world state.
+      if( signal( SIGUSR2, catch_sigusr2 ) == SIG_ERR )
+	PLAYER_ERROR( "stage1p4 failed to install SAVE signal handler." );
     } 
 }
 

@@ -42,6 +42,7 @@ public:
   static stg_client_t* stage_client;
   static stg_name_id_t* created_models;
   static int created_models_count;
+  static CWorldFile wf;
 
   Stage1p4(char* interface, ConfigFile* cf, int section, 
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen);
