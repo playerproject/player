@@ -30,14 +30,24 @@
 #ifndef _ARENALOCK_H
 #define _ARENALOCK_H
 
+#ifdef POSIX_SEM
 #include <semaphore.h>
+#else
+#include <sys/file.h> // BSD file locking
+#endif
+
+
 #include "lock.h"
 
 class CArenaLock : public CLock
 {
  private:
 
+#ifdef POSIX_SEM
   sem_t* m_lock; // this points into a device's shared memory
+#else
+  int lock_fd; // a file descriptor to lock using flock(2)
+#endif
 
  public:
 
@@ -47,7 +57,11 @@ class CArenaLock : public CLock
   CArenaLock( void );
   ~CArenaLock( void );
 
-  bool InstallSemaphore( sem_t* sem);
+#ifdef POSIX_SEM
+  bool InstallLock( sem_t* sem);
+#else
+  bool InstallLock( int ); // BSD file locking
+#endif
 
   virtual int Setup( CDevice *obj ); 
   virtual int Shutdown( CDevice *obj ); 

@@ -45,7 +45,7 @@ class StageTime : public PlayerTime
     CArenaLock stagelock;
 
   public:
-    StageTime( stage_clock_t* clock );
+    StageTime( stage_clock_t* clock, int fd );
     ~StageTime() { } // empty destructor
 
     int GetTime(struct timeval* time);

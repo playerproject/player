@@ -32,10 +32,14 @@
 #include <stdio.h>
 
 // constuctor
-StageTime::StageTime( stage_clock_t* clock ) 
+StageTime::StageTime( stage_clock_t* clock, int fd ) 
 { 
-  simtimep = &clock->time;  
-  stagelock.InstallSemaphore( &clock->lock );
+  simtimep = &clock->time; 
+#ifdef POSIX_SEM 
+  stagelock.InstallLock( &clock->lock );
+#else
+  stagelock.InstallLock( fd );
+#endif
 }
 
 
