@@ -1,4 +1,11 @@
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <sys/types.h>
 #include <netinet/in.h>
+
 #include "rflex-info.h"
 #include "rflex_commands.h"
 #include "rflex-io.h"
