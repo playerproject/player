@@ -39,7 +39,7 @@ class GpsProxy : public ClientProxy
     // the latest GPS data
     //
     // global position
-    int xpos,ypos;
+  int xpos,ypos,heading;
    
     // the client calls this method to make a new proxy
     //   leave access empty to start unconnected
