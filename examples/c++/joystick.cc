@@ -113,10 +113,10 @@ void joystick_handler( struct controller* cont )
   int jfd = open ("/dev/js0", O_RDONLY);
   
   if( jfd < 1 )
-    {
-      perror( "failed to open joystick" );
-      exit( 0 );
-    }
+  {
+    perror( "failed to open joystick" );
+    exit( 0 );
+  }
 
   struct js_event event;
   
@@ -124,132 +124,133 @@ void joystick_handler( struct controller* cont )
 
   // loop around a joystick read
   for(;;)
-    {
-      // get the next event from the joystick
-      read (jfd, &event, sizeof(struct js_event));
+  {
+    // get the next event from the joystick
+    read (jfd, &event, sizeof(struct js_event));
 
-      //puts( "JS" );
+    //puts( "JS" );
       
-      if ((event.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON) {
-	if (event.value)
-	  buttons_state |= (1 << event.number);
-	else
-	  buttons_state &= ~(1 << event.number);
-      }
-      
-      /*
-      printf( "value % d type %u  number %u state %d \n", 
-            event.value, event.type, event.number, buttons_state );
-            */
-      
-      // ignore the startup events
-      if( event.type & JS_EVENT_INIT )
-	{
-	  //puts( "init" );
-	  continue;
-	}
-
-      switch( event.type )
-      {
-        case JS_EVENT_BUTTON:
-          if(event.number == 2 && buttons_state)
-            cont->pan += PAN_SPEED;
-          else if(event.number == 3 && buttons_state)
-            cont->pan -= PAN_SPEED;
-          else if(event.number == 2 || event.number == 3)
-            cont->pan = 0;
-      
-        case JS_EVENT_AXIS:
-	  {
-	    //puts( "AXIS" );
-
-	    switch( event.number )
-	      {
-		// SIDE-TO-SIDE
-	      case XAXIS:
-		//if( event.value > 0 ) 
-		//puts( "turn right" );
-		//else
-		//puts( "turn left" );
-
-		// set the robot turn rate
-                cont->turnrate = (int)NORMALIZE_TURN(-event.value);
-                cont->dirty = true;
-		break;
-
-		// FORWARD-AND-BACK
-	      case YAXIS:
-		//if( event.value > 0 ) 
-		//puts( "forwards" );
-		//else
-		//puts( "backwards" );
-
-		// set the robot velocity
-                cont->speed = (int)NORMALIZE_SPEED(-event.value);
-                cont->dirty = true;
-
-		break;
-		
-		// TWISTING
-	      case XAXIS2:
-	      case YAXIS2:
-		//if( event.value > 0 ) 
-		//puts( "zoom out" );
-		//else
-		//puts( "zoom in" );
-		cont->zoom = (int)KNORMALIZE(-event.value);
-		cont->dirty = true;
-
-		break;
-
-                /*
-		// HAT UP DOWN
-	      case TILT:
-		if( event.value > 0 ) 
-                  puts( "tilt down" );
-                else if( event.value < 0 ) 
-                  puts( "tilt up" );
-		else
-                  puts( "stop tilt" );
-		
-		if( event.value > 0 )
-		  cont->tilt = -TILT_SPEED;
-                else if( event.value < 0 )
-		  cont->tilt = TILT_SPEED;
-		else
-		  cont->tilt = 0;
-	
-		//cont->dirty = true;
-	
-		break;
-		
-		// HAT LEFT RIGHT
-	      case PAN:
-		if( event.value > 0 ) 
-                  puts( "pan right" );
-                else if( event.value < 0 ) 
-                  puts( "pan left" );
-                else
-                  puts( "stop pan" );
-	
-		if( event.value > 0 )
-		  cont->pan = -PAN_SPEED;
-                else if( event.value < 0 )
-		  cont->pan = PAN_SPEED;
-		else
-		  cont->pan = 0;
-		
-		//cont->dirty = true;
-	
-		break;
-                */
-	      }
-	  }	  
-	  break;
-	}
-      
-
+    if ((event.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON) {
+      if (event.value)
+        buttons_state |= (1 << event.number);
+      else
+        buttons_state &= ~(1 << event.number);
     }
+      
+    /*
+      printf( "value % d type %u  number %u state %d \n", 
+      event.value, event.type, event.number, buttons_state );
+    */
+      
+    // ignore the startup events
+    if( event.type & JS_EVENT_INIT )
+    {
+      //puts( "init" );
+      continue;
+    }
+
+    switch( event.type )
+    {
+      case JS_EVENT_BUTTON:
+        if(event.number == 2 && buttons_state)
+          cont->pan += PAN_SPEED;
+        else if(event.number == 3 && buttons_state)
+          cont->pan -= PAN_SPEED;
+        else if(event.number == 2 || event.number == 3)
+          cont->pan = 0;
+        break;
+        
+      case JS_EVENT_AXIS:
+      {
+        //puts( "AXIS" );
+
+        switch( event.number )
+	      {
+          // SIDE-TO-SIDE
+          case XAXIS:
+            //if( event.value > 0 ) 
+            //puts( "turn right" );
+            //else
+            //puts( "turn left" );
+
+            // set the robot turn rate
+            cont->turnrate = (int)NORMALIZE_TURN(-event.value);
+            cont->dirty = true;
+            break;
+
+            // FORWARD-AND-BACK
+          case YAXIS:
+            //if( event.value > 0 ) 
+            //puts( "forwards" );
+            //else
+            //puts( "backwards" );
+
+            // set the robot velocity
+            cont->speed = (int)NORMALIZE_SPEED(-event.value);
+            cont->dirty = true;
+
+            break;
+		
+            // TWISTING
+          case XAXIS2:
+          case YAXIS2:
+            //if( event.value > 0 ) 
+            //puts( "zoom out" );
+            //else
+            //puts( "zoom in" );
+            cont->zoom = (int)KNORMALIZE(-event.value);
+            cont->dirty = true;
+
+            break;
+
+            /*
+              // HAT UP DOWN
+              case TILT:
+              if( event.value > 0 ) 
+              puts( "tilt down" );
+              else if( event.value < 0 ) 
+              puts( "tilt up" );
+              else
+              puts( "stop tilt" );
+		
+              if( event.value > 0 )
+              cont->tilt = -TILT_SPEED;
+              else if( event.value < 0 )
+              cont->tilt = TILT_SPEED;
+              else
+              cont->tilt = 0;
+	
+              //cont->dirty = true;
+	
+              break;
+		
+              // HAT LEFT RIGHT
+              case PAN:
+              if( event.value > 0 ) 
+              puts( "pan right" );
+              else if( event.value < 0 ) 
+              puts( "pan left" );
+              else
+              puts( "stop pan" );
+	
+              if( event.value > 0 )
+              cont->pan = -PAN_SPEED;
+              else if( event.value < 0 )
+              cont->pan = PAN_SPEED;
+              else
+              cont->pan = 0;
+		
+              //cont->dirty = true;
+	
+              break;
+            */
+	      }
+      }	  
+      break;
+    }
+      
+
+  }
 }
       
 Client::Client(char* host, int port )
