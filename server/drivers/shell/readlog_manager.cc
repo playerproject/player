@@ -24,10 +24,7 @@
  * Date: 17 May 2003
  * CVS: $Id$
  *
- * The logfile driver will read or write data from a log file.  In
- * write mode, the driver can be used to record data from any other
- * Player driver.  In read mode, the driver can be use to replay
- * stored data as if it was coming from a real device.
+ * The ReadLogManager synchronizes reads from a data log.
  */
 
 #include <assert.h>
