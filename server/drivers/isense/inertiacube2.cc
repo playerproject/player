@@ -31,8 +31,8 @@
 //  subscribe to has good position information but poor orientation
 //  information.
 //
-// Requires: position device
-// Available as: position device
+// Requires: position
+// Provides: position
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -98,6 +98,9 @@ class InertiaCube2 : public CDevice
 
   // Geometry of underlying position device.
   private: player_position_geom_t geom;
+
+  // Compass setting (0 = off, 1 = partial, 2 = full).
+  private: int compass;
   
   // Serial port.
   private: const char *port;
@@ -150,6 +153,8 @@ InertiaCube2::InertiaCube2(char* interface, ConfigFile* cf, int section)
   this->position = NULL;
   this->position_time = 0;
 
+  this->compass = cf->ReadInt(section, "compass", 2);
+                              
   return;
 }
 
@@ -267,12 +272,12 @@ int InertiaCube2::SetupImu()
     return -1;
   }
 
+  // Set compass value (0 = off, 1 = partial, 2 = full).
+  sinfo.Compass = this->compass;
+
   printf("compass %d enhancement %d sensitivity %d prediction %d format %d\n",
          sinfo.Compass, sinfo.Enhancement, sinfo.Sensitivity,
          sinfo.Prediction, sinfo.AngleFormat);
-
-  // Turn off the compass.
-  sinfo.Compass = 0;
 
   // Change the configuration.
   if (!ISD_SetStationConfig(this->imu, &sinfo, 1, verbose))
@@ -393,17 +398,15 @@ void InertiaCube2::Main()
       // Generate a new pose estimate.
       UpdatePose();
 
-      /*
       // TESTING
       printf("%.3f %.3f %.0f  :  ",
              this->position_new_pose[0],
              this->position_new_pose[1],
              this->position_new_pose[2] * 180 / M_PI);
-      printf("%.3f %.3f %.0f\n",
+      printf("%.3f %.3f %.0f            \r",
              this->pose[0],
              this->pose[1],
              this->pose[2] * 180 / M_PI);
-      */
       
       // Expose the new estimate to the server.
       UpdateData();
@@ -504,10 +507,12 @@ void InertiaCube2::UpdateImu()
   // Pick out the yaw value.
   this->imu_new_orient = -data.Station[0].Orientation[0] * M_PI / 180;
 
+  /*
   printf("orientation %f %f %f\r",
          data.Station[0].Orientation[0],
          data.Station[0].Orientation[1],
          data.Station[0].Orientation[2]);
+  */
 
   return;
 }
