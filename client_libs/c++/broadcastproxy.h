@@ -23,42 +23,44 @@
 /*
  * $Id$
  *
- * client-side laser beacon device 
+ * client-side broadcast device 
  */
 
-#ifndef LASERBEACONPROXY_H
-#define LASERBEACONPROXY_H
+#ifndef BROADCASTPROXY_H
+#define BROADCASTPROXY_H
 
 #include <clientproxy.h>
 #include <playerclient.h>
 
-class LaserbeaconProxy : public ClientProxy
+class BroadcastProxy : public ClientProxy
 {
 
-  public:
-    // the latest laser beacon data
-    unsigned short count;
-    player_laserbeacon_item_t beacons[PLAYER_MAX_LASERBEACONS];
-   
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
-    LaserbeaconProxy(PlayerClient* pc, unsigned short index,
-                     unsigned char access='c'):
-            ClientProxy(pc,PLAYER_LASERBEACON_CODE,index,access) {}
+    // Constructor
+    public: BroadcastProxy(PlayerClient* pc, unsigned short index,
+                           unsigned char access ='c');
 
-    // these methods are the user's interface to this device
+    // Read a message from the incoming queue
+    // Returns -1 if there are no available messages
+    public: int Read(uint8_t *msg, uint16_t *len);
 
-    // Set the bit properties
-    int SetBits(unsigned char bit_count, unsigned short bit_size);
+    // Write a message to the outgoing queue
+    // Returns -1 if the queue is full
+    public: int Write(uint8_t *msg, uint16_t len);
 
-    // Set the bit thresholds
-    int SetThresh(unsigned short zero_thresh, unsigned short one_thresh);
-    
+    // Flush the outgoing message queue
+    public: int Flush();
+
     // interface that all proxies must provide
-    void FillData(player_msghdr_t hdr, const char* buffer);
+    protected: void FillData(player_msghdr_t hdr, const char* buffer);
     
     // interface that all proxies SHOULD provide
-    void Print();
+    protected: void Print();
+    
+    // Queue of incoming messages
+    private: player_broadcast_data_t data;
+
+    // Queue of outgoing messages
+    private: player_broadcast_cmd_t cmd;
 };
 
 #endif

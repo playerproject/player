@@ -691,16 +691,27 @@ int PlayerClient::SetLaserBeaconConfig(int bit_count, int bit_size,
   player_msghdr_t replyhdr;
   char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
 
-  player_laserbeacon_config_t payload;
-
-  payload.bit_count = (uint8_t) bit_count;
-  payload.bit_size = htons(bit_size);
-  payload.zero_thresh = htons(zero_thresh);
-  payload.one_thresh = htons(one_thresh);
-
-  return(player_request(&conn, PLAYER_LASERBEACON_CODE, 0,
+  {
+    player_laserbeacon_setbits_t payload;
+    payload.subtype = PLAYER_LASERBEACON_SUBTYPE_SETBITS;
+    payload.bit_count = (uint8_t) bit_count;
+    payload.bit_size = htons(bit_size);
+    
+    return(player_request(&conn, PLAYER_LASERBEACON_CODE, 0,
                           (char*) &payload, sizeof(payload),
                           &replyhdr, replybuffer, sizeof(replybuffer)));
+  }
+
+  {
+    player_laserbeacon_setthresh_t payload;
+    payload.subtype = PLAYER_LASERBEACON_SUBTYPE_SETTHRESH;
+    payload.zero_thresh = htons(zero_thresh);
+    payload.one_thresh = htons(one_thresh);
+
+    return(player_request(&conn, PLAYER_LASERBEACON_CODE, 0,
+                          (char*) &payload, sizeof(payload),
+                          &replyhdr, replybuffer, sizeof(replybuffer)));
+  }
 }
 
 /*
