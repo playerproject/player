@@ -133,7 +133,7 @@ struct js_event {
 
 // at full joystick depression you'll go this fast
 double max_speed = 0.500; // m/second
-double max_turn = DTOR(60); // degrees/second
+double max_turn = DTOR(60); // rad/second
 
 // this is the speed that the camera will pan when you press the
 // hatswitches in degrees/sec
@@ -224,7 +224,7 @@ void joystick_handler(struct controller* cont)
             //puts( "turn left" );
 
             // set the robot turn rate
-            cont->turnrate = NORMALIZE_TURN(-event.value);
+            cont->turnrate = (int)NORMALIZE_TURN(-event.value);
             cont->dirty = true;
             break;
 
@@ -236,7 +236,7 @@ void joystick_handler(struct controller* cont)
             //puts( "backwards" );
 
             // set the robot velocity
-            cont->speed = NORMALIZE_SPEED(-event.value);
+            cont->speed = (int)NORMALIZE_SPEED(-event.value);
             cont->dirty = true;
 
             break;
@@ -310,7 +310,7 @@ void keyboard_handler(struct controller* cont )
 {
   int kfd = 0;
   char c;
-  double max_tv = 0.500;
+  double max_tv = 0.5;
   double max_rv = DTOR(10.0);
   struct termio cooked, raw;
 
@@ -352,27 +352,27 @@ void keyboard_handler(struct controller* cont )
     switch(c)
     {
       case KEYCODE_I:
-        speed = 1;
+		speed = 1;
         cont->dirty = true;
         break;
       case KEYCODE_K:
-        speed = -1;
+		speed = -1;
         cont->dirty = true;
         break;
       case KEYCODE_O:
-        speed = 0;
+		speed = 0;
         cont->dirty = true;
         break;
       case KEYCODE_J:
-        turn = 1;
+	  	turn = 1;
         cont->dirty = true;
         break;
       case KEYCODE_L:
-        turn = -1;
+	  	turn = -1;
         cont->dirty = true;
         break;
       case KEYCODE_U:
-        turn = 0;
+	  	turn = 0;
         cont->dirty = true;
         break;
       case KEYCODE_Q:
@@ -384,12 +384,6 @@ void keyboard_handler(struct controller* cont )
         cont->dirty = true;
         max_tv -= max_tv / 10.0;
         max_rv -= max_rv / 10.0;
-		// if we get to 0 then increasing by 10% is meaningless
-		// so lets not go below 1
-        if(max_tv < 1)
-          max_tv = 1;
-        if(max_rv < 1)
-          max_rv = 1;
         break;
       case KEYCODE_W:
         cont->dirty = true;
@@ -398,8 +392,6 @@ void keyboard_handler(struct controller* cont )
       case KEYCODE_X:
         cont->dirty = true;
         max_tv -= max_tv / 10.0;
-        if(max_tv < 1)
-          max_tv = 1;
         break;
       case KEYCODE_E:
         cont->dirty = true;
@@ -408,20 +400,19 @@ void keyboard_handler(struct controller* cont )
       case KEYCODE_C:
         cont->dirty = true;
         max_rv -= max_rv / 10.0;
-        if(max_rv < 1)
-          max_rv = 1;
         break;
       default:
-        speed = 0;
-        turn = 0;
+	  	speed = 0;
+		turn = 0;
         cont->dirty = true;
+		
+    }
+	if (cont->dirty == true)
+	{
+        cont->speed = speed * max_tv;
+        cont->turnrate = turn * max_rv;		
+	}
 
-    }
-    if (cont->dirty == true)
-    {
-      cont->speed = speed * max_tv;
-      cont->turnrate = turn * max_rv;		
-    }
   }
 }
       
@@ -581,7 +572,7 @@ int main(int argc, char** argv)
       else if( strcmp( argv[i], "-speed" ) == 0 )
       {
         if(i++ < argc)
-          max_speed = atof(argv[i]);
+          max_speed = atoi(argv[i]);
         else
         {
           puts(USAGE);
@@ -591,7 +582,7 @@ int main(int argc, char** argv)
       else if( strcmp( argv[i], "-turnspeed" ) == 0 )
       {
         if(i++ < argc)
-          max_turn = DTOR(atof(argv[i]));
+          max_turn = atoi(argv[i]);
         else
         {
           puts(USAGE);
@@ -601,10 +592,7 @@ int main(int argc, char** argv)
       else if( strcmp( argv[i], "-udp" ) == 0 )
         protocol = PLAYER_TRANSPORT_UDP;
       else
-      {
-        puts(USAGE); // malformed arg - print usage hints
-        exit(-1);
-      }
+        puts( USAGE ); // malformed arg - print usage hints
     }
 
   // if no Players were requested, we assume localhost:6665
