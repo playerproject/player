@@ -778,7 +778,15 @@ void Wavefront::Main()
 
       if(this->plan->waypoint_count == 0)
       {
-        PLAYER_WARN("No path!");
+        fprintf(stderr, "Wavefront (port %d):\n  "
+                "No path from (%.3lf,%.3lf,%.3lf) to (%.3lf,%.3lf,%.3lf)\n",
+                this->device_id.port,
+                this->localize_x,
+                this->localize_y,
+                RTOD(this->localize_a),
+                this->target_x,
+                this->target_y,
+                RTOD(this->target_a));
         // Only fail here if this is our first try at making a plan;
         // if we're replanning and don't find a path then we'll just stick
         // with the old plan.
@@ -802,8 +810,7 @@ void Wavefront::Main()
         memcpy(this->waypoints, this->plan->waypoints,
                sizeof(plan_cell_t*) * this->waypoint_count);
 
-        // skip the first waypoint, because it's the robot's current pose
-        this->curr_waypoint = 1;
+        this->curr_waypoint = 0;
         this->new_goal = true;
       }
       last_replan_time = curr;
@@ -861,7 +868,7 @@ void Wavefront::Main()
       if(this->new_goal ||
          (rotate_waypoint &&
           (fabs(NORMALIZE(this->waypoint_odom_a - this->position_a))
-           < M_PI/6.0)) ||
+           < M_PI/4.0)) ||
          (!rotate_waypoint && (dist < this->dist_eps)))
       {
         this->new_goal = false;

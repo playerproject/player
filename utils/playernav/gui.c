@@ -850,7 +850,7 @@ draw_waypoints(gui_data_t* gui_data, int idx)
   int i;
   GnomeCanvasPoints* points;
   GnomeCanvasPoints* linepoints;
-  GnomeCanvasItem* waypoint;
+  GnomeCanvasItem* waypoint = NULL;
   GnomeCanvasItem* line;
   pose_t pose;
 
@@ -910,10 +910,13 @@ draw_waypoints(gui_data_t* gui_data, int idx)
         }
       }
 
-      pose.px =  gui_data->planners[idx]->waypoints[i][0];
-      pose.py =  gui_data->planners[idx]->waypoints[i][1];
-      pose.pa = 0.0;
-      move_item(waypoint, pose,0);
+      if(waypoint)
+      {
+        pose.px =  gui_data->planners[idx]->waypoints[i][0];
+        pose.py =  gui_data->planners[idx]->waypoints[i][1];
+        pose.pa = 0.0;
+        move_item(waypoint, pose,0);
+      }
 
       if(i>0)
       {
