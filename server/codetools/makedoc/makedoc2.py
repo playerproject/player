@@ -143,6 +143,8 @@ def parse_code(section, index, block):
         if stripped[:3] == '///':
             index -= 1
             break
+        if stripped[:1] == '}':
+            break
 
         code = stripped
         if code[-1:] == '{':
@@ -156,8 +158,8 @@ def parse_code(section, index, block):
             #    block.code += '\\\\\n'
             #block.code += code
 
-        if stripped[-1:] == '{':
-            break
+        #if stripped[-1:] == '}':
+        #    break
 
         index += 1
 
