@@ -64,3 +64,32 @@ const char *playerc_lookup_name(int code)
 }
 
 
+// Get the device code for a give name.
+int playerc_lookup_code(const char *name)
+{
+  if (strcmp(name, PLAYER_AIO_STRING) == 0)
+    return PLAYER_AIO_CODE;
+  if (strcmp(name, PLAYER_BLOBFINDER_STRING) == 0)
+    return PLAYER_BLOBFINDER_CODE;
+  if (strcmp(name, PLAYER_BUMPER_STRING) == 0)
+    return PLAYER_BUMPER_CODE;
+  if (strcmp(name, PLAYER_COMMS_STRING) == 0)
+    return PLAYER_COMMS_CODE;
+  if (strcmp(name, PLAYER_DIO_STRING) == 0)
+    return PLAYER_DIO_CODE;
+  if (strcmp(name, PLAYER_FIDUCIAL_STRING) == 0)
+    return PLAYER_FIDUCIAL_CODE;
+  if (strcmp(name, PLAYER_FRF_STRING) == 0)
+    return PLAYER_FRF_CODE;
+  if (strcmp(name, PLAYER_GRIPPER_STRING) == 0)
+    return PLAYER_GRIPPER_CODE;
+  if (strcmp(name, PLAYER_POSITION_STRING) == 0)
+    return PLAYER_POSITION_CODE;
+  if (strcmp(name, PLAYER_POWER_STRING) == 0)
+    return PLAYER_POWER_CODE;
+  if (strcmp(name, PLAYER_PTZ_STRING) == 0)
+    return PLAYER_PTZ_CODE;
+  if (strcmp(name, PLAYER_SRF_STRING) == 0)
+    return PLAYER_SRF_CODE;
+  return -1;
+}

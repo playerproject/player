@@ -1,5 +1,5 @@
 /***************************************************************************
- * Desc: Tests for the broadcast device
+ * Desc: Tests for the comms device
  * Author: Andrew Howard
  * Date: 23 May 2002
  # CVS: $Id$
@@ -9,8 +9,8 @@
 #include "playerc.h"
 
 
-// Basic broadcast device test
-int test_broadcast(playerc_client_t *client, int index)
+// Basic comms device test
+int test_comms(playerc_client_t *client, int index)
 {
   int i, j, len;
   char msg[128];
