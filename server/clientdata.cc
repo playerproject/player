@@ -492,7 +492,7 @@ ClientData::~ClientData()
 {
   RemoveRequests();
 
-  if(socket) 
+  if(socket >= 0) 
   {
     close(socket);
     printf("** Player [port %d] killing client on socket %d **\n", 
