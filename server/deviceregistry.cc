@@ -76,7 +76,7 @@ void RWISonar_Register(DriverTable* table);
  * NOTE: the last element *must* be NULL
  */
 player_interface_t interfaces[] = { 
-  {PLAYER_SRF_CODE, PLAYER_SRF_STRING, "sicklms200"},
+  {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sicklms200"},
   {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "acts"},
   {PLAYER_SPEECH_CODE, PLAYER_SPEECH_STRING, "festival"},
   {PLAYER_AUDIO_CODE, PLAYER_AUDIO_STRING, "fixedtones"},
@@ -89,7 +89,7 @@ player_interface_t interfaces[] = {
   {PLAYER_AIO_CODE, PLAYER_AIO_STRING, "p2os_aio"},
   {PLAYER_DIO_CODE, PLAYER_DIO_STRING, "p2os_dio"},
   {PLAYER_POSITION_CODE, PLAYER_POSITION_STRING, "p2os_position"},
-  {PLAYER_FRF_CODE, PLAYER_FRF_STRING, "p2os_sonar"},
+  {PLAYER_SONAR_CODE, PLAYER_SONAR_STRING, "p2os_sonar"},
   {0,NULL,NULL}
 };
 

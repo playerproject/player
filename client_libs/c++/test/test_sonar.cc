@@ -12,7 +12,7 @@ int
 test_sonar(PlayerClient* client, int index)
 {
   unsigned char access;
-  FRFProxy sp(client,index);
+  SonarProxy sp(client,index);
 
   printf("device [sonar] index [%d]\n", index);
 
@@ -30,19 +30,19 @@ test_sonar(PlayerClient* client, int index)
     client->Read();
 
   TEST("getting sonar geometry");
-  if(sp.GetFRFGeom() < 0)
+  if(sp.GetSonarGeom() < 0)
   {
     FAIL();
     return(-1);
   }
   sleep(1);
   PASS();
-  for(int i=0;i<PLAYER_FRF_MAX_SAMPLES;i++)
+  for(int i=0;i<PLAYER_SONAR_MAX_SAMPLES;i++)
   {
     printf("Sonar[%d]: (%d,%d,%d)\n", i, 
-           sp.frf_pose.poses[i][0],
-           sp.frf_pose.poses[i][1],
-           sp.frf_pose.poses[i][2]);
+           sp.sonar_pose.poses[i][0],
+           sp.sonar_pose.poses[i][1],
+           sp.sonar_pose.poses[i][2]);
   }
 
   for(int t = 0; t < 3; t++)
@@ -61,7 +61,7 @@ test_sonar(PlayerClient* client, int index)
   }
 
   TEST("disabling sonars");
-  if(sp.SetFRFState(0) < 0)
+  if(sp.SetSonarState(0) < 0)
   {
     FAIL();
     return(-1);
@@ -70,7 +70,7 @@ test_sonar(PlayerClient* client, int index)
   PASS();
 
   TEST("enabling sonars");
-  if(sp.SetFRFState(1) < 0)
+  if(sp.SetSonarState(1) < 0)
   {
     FAIL();
     return(-1);

@@ -43,14 +43,14 @@
 
 #define COLOR_GRID_MAJOR         0xC0C0C0
 #define COLOR_GRID_MINOR         0xE0E0E0
-#define COLOR_SRF_SCAN           0x0000C0
+#define COLOR_LASER_SCAN         0x0000C0
 #define COLOR_FIDUCIAL           0x0000C0
 #define COLOR_POSITION_ROBOT     0xC00000
 #define COLOR_POSITION_CONTROL   0xFF0000
 #define COLOR_PTZ_DATA           0x00C000
 #define COLOR_PTZ_CMD            0x00C000
-#define COLOR_FRF                0xC0C080
-#define COLOR_FRF_SCAN           0xC0C080
+#define COLOR_SONAR              0xC0C080
+#define COLOR_SONAR_SCAN         0xC0C080
 
 
 /***************************************************************************
@@ -127,10 +127,10 @@ void create_proxy(device_t *device, opt_t *opt,
 
 
 /***************************************************************************
- * Scanning range-finder (SRF)
+ * Laser (scanning range-finder)
  ***************************************************************************/
 
-// SRF device info
+// Laser device info
 typedef struct
 {
   // Menu stuff
@@ -142,27 +142,27 @@ typedef struct
   rtk_fig_t *scan_fig;
   
   // Laser device proxy
-  playerc_srf_t *proxy;
+  playerc_laser_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
   
-} srf_t;
+} laser_t;
 
 
-// Create a srf device
-srf_t *srf_create(mainwnd_t *mainwnd, opt_t *opt,
+// Create a laser device
+laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt,
                   playerc_client_t *client, int index, int subscribe);
 
-// Destroy a srf device
-void srf_destroy(srf_t *srf);
+// Destroy a laser device
+void laser_destroy(laser_t *laser);
 
-// Update a srf device
-void srf_update(srf_t *srf);
+// Update a laser device
+void laser_update(laser_t *laser);
 
 
 /***************************************************************************
- * Fiducla detector
+ * Fiducial detector
  ***************************************************************************/
 
 // Fiducial detector info
@@ -271,37 +271,37 @@ void ptz_update(ptz_t *ptz);
 
 
 /***************************************************************************
- * Fixed range-finder (FRF) device
+ * Sonar (Fixed range-finder) device
  ***************************************************************************/
 
-// FRF device info
+// SONAR device info
 typedef struct
 {
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
 
-  // Figures for drawing the frf scan
-  rtk_fig_t *scan_fig[PLAYERC_FRF_MAX_SAMPLES];
+  // Figures for drawing the sonar scan
+  rtk_fig_t *scan_fig[PLAYERC_SONAR_MAX_SAMPLES];
   
-  // Frf device proxy
-  playerc_frf_t *proxy;
+  // Sonar device proxy
+  playerc_sonar_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
   
-} frf_t;
+} sonar_t;
 
 
-// Create a frf device
-frf_t *frf_create(mainwnd_t *mainwnd, opt_t *opt,
+// Create a sonar device
+sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt,
                   playerc_client_t *client, int index, int subscribe);
 
-// Destroy a frf device
-void frf_destroy(frf_t *frf);
+// Destroy a sonar device
+void sonar_destroy(sonar_t *sonar);
 
-// Update a frf device
-void frf_update(frf_t *frf);
+// Update a sonar device
+void sonar_update(sonar_t *sonar);
 
 
 /***************************************************************************

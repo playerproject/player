@@ -51,21 +51,21 @@ int player_read_synch(player_connection_t* conn)
  *   0 if OK
  *  -1 if something wrong (like got unexpected device code)
  */
-int player_read_laser(player_connection_t* conn, player_srf_data_t* data)
+int player_read_laser(player_connection_t* conn, player_laser_data_t* data)
 {
   player_msghdr_t hdr;
   int i;
 
-  if(player_read(conn, &hdr, (char*)data, sizeof(player_srf_data_t)) == -1)
+  if(player_read(conn, &hdr, (char*)data, sizeof(player_laser_data_t)) == -1)
     return(-1);
 
-  if(hdr.device != PLAYER_SRF_CODE)
+  if(hdr.device != PLAYER_LASER_CODE)
   {
     fprintf(stderr, "player_read_laser(): received wrong device code\n");
     return(-1);
   }
 
-  for(i=0;i<PLAYER_SRF_MAX_SAMPLES;i++)
+  for(i=0;i<PLAYER_LASER_MAX_SAMPLES;i++)
     data->ranges[i] = ntohs(data->ranges[i]);
 
   return(0);
@@ -78,22 +78,22 @@ int player_read_laser(player_connection_t* conn, player_srf_data_t* data)
  *   0 if OK
  *  -1 if something wrong (like got unexpected device code)
  */
-int player_read_sonar(player_connection_t* conn, player_frf_data_t* data)
+int player_read_sonar(player_connection_t* conn, player_sonar_data_t* data)
 {
   player_msghdr_t hdr;
   int i;
 
-  if(player_read(conn, &hdr, (char*)data, sizeof(player_frf_data_t)) == -1)
+  if(player_read(conn, &hdr, (char*)data, sizeof(player_sonar_data_t)) == -1)
     return(-1);
 
-  if(hdr.device != PLAYER_FRF_CODE)
+  if(hdr.device != PLAYER_SONAR_CODE)
   {
     fprintf(stderr, "player_read_sonar(): received wrong device code:%d\n",
             hdr.device);
     return(-1);
   }
 
-  for(i=0;i<PLAYER_FRF_MAX_SAMPLES;i++)
+  for(i=0;i<PLAYER_SONAR_MAX_SAMPLES;i++)
     data->ranges[i] = ntohs(data->ranges[i]);
 
   return(0);

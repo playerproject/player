@@ -110,9 +110,9 @@ int main(int argc, const char *argv[])
         test_gps(client, client->ids[i].index);
         break;
 
-      // SRF device
-      case PLAYER_SRF_CODE:
-        test_srf(client, client->ids[i].index);
+      // Laser device
+      case PLAYER_LASER_CODE:
+        test_laser(client, client->ids[i].index);
         break;
 
       // Fiducial detector
@@ -130,9 +130,9 @@ int main(int argc, const char *argv[])
         test_ptz(client, client->ids[i].index);
         break;
 
-      // FRF device
-      case PLAYER_FRF_CODE:
-        test_frf(client, client->ids[i].index);
+      // Sonar device
+      case PLAYER_SONAR_CODE:
+        test_sonar(client, client->ids[i].index);
         break;
 
       // Truth device

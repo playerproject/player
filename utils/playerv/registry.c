@@ -46,10 +46,10 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fndestroy = (fndestroy_t) fiducial_destroy;
       device->fnupdate = (fnupdate_t) fiducial_update;
       break;
-    case PLAYER_FRF_CODE:
-      device->proxy = frf_create(mainwnd, opt, client, device->index, device->subscribe);
-      device->fndestroy = (fndestroy_t) frf_destroy;
-      device->fnupdate = (fnupdate_t) frf_update;
+    case PLAYER_LASER_CODE:
+      device->proxy =  laser_create(mainwnd, opt, client, device->index, device->subscribe);
+      device->fndestroy = (fndestroy_t) laser_destroy;
+      device->fnupdate = (fnupdate_t) laser_update;
       break;
     case PLAYER_POSITION_CODE:
       device->proxy = position_create(mainwnd, opt, client, device->index, device->subscribe);
@@ -61,10 +61,10 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fndestroy = (fndestroy_t) ptz_destroy;
       device->fnupdate = (fnupdate_t) ptz_update;
       break;
-    case PLAYER_SRF_CODE:
-      device->proxy = srf_create(mainwnd, opt, client, device->index, device->subscribe);
-      device->fndestroy = (fndestroy_t) srf_destroy;
-      device->fnupdate = (fnupdate_t) srf_update;
+    case PLAYER_SONAR_CODE:
+      device->proxy = sonar_create(mainwnd, opt, client, device->index, device->subscribe);
+      device->fndestroy = (fndestroy_t) sonar_destroy;
+      device->fnupdate = (fnupdate_t) sonar_update;
       break;
     default:
       device->proxy = NULL;

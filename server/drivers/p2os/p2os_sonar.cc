@@ -41,7 +41,7 @@ class P2OSSonar: public P2OS
 
 CDevice* P2OSSonar_Init(char* interface, ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_FRF_STRING))
+  if(strcmp(interface, PLAYER_SONAR_STRING))
   {
     PLAYER_ERROR1("driver \"p2os_sonar\" does not support interface \"%s\"\n",
                   interface);
@@ -62,11 +62,11 @@ size_t P2OSSonar::GetData(unsigned char *dest, size_t maxsize,
                              uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   Lock();
-  *((player_frf_data_t*)dest) = ((player_p2os_data_t*)device_data)->sonar;
+  *((player_sonar_data_t*)dest) = ((player_p2os_data_t*)device_data)->sonar;
   *timestamp_sec = data_timestamp_sec;
   *timestamp_usec = data_timestamp_usec;
   Unlock();
 
-  return( sizeof(player_frf_data_t) );
+  return( sizeof(player_sonar_data_t) );
 }
 

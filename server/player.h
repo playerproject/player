@@ -55,8 +55,8 @@
 #define PLAYER_POWER_CODE          ((uint16_t)2)   // power subsystem
 #define PLAYER_GRIPPER_CODE        ((uint16_t)3)   // gripper
 #define PLAYER_POSITION_CODE       ((uint16_t)4)   // device that moves about
-#define PLAYER_FRF_CODE            ((uint16_t)5)   // fixed range-finder
-#define PLAYER_SRF_CODE            ((uint16_t)6)   // scanning range-finder
+#define PLAYER_SONAR_CODE          ((uint16_t)5)   // fixed range-finder
+#define PLAYER_LASER_CODE          ((uint16_t)6)   // scanning range-finder
 #define PLAYER_BLOBFINDER_CODE     ((uint16_t)7)   // visual blobfinder
 #define PLAYER_PTZ_CODE            ((uint16_t)8)   // pan-tilt-zoom unit
 #define PLAYER_AUDIO_CODE          ((uint16_t)9)   // audio I/O
@@ -83,8 +83,8 @@
 #define PLAYER_POWER_STRING          "power"
 #define PLAYER_GRIPPER_STRING        "gripper"
 #define PLAYER_POSITION_STRING       "position"
-#define PLAYER_FRF_STRING            "frf"
-#define PLAYER_SRF_STRING            "srf"
+#define PLAYER_SONAR_STRING          "sonar"
+#define PLAYER_LASER_STRING          "laser"
 #define PLAYER_BLOBFINDER_STRING     "blobfinder"
 #define PLAYER_PTZ_STRING            "ptz"
 #define PLAYER_AUDIO_STRING          "audio"
@@ -303,54 +303,56 @@ typedef struct
 
   /* Dimensions of the base (mm, mm). */
   uint16_t size[2];
+  
 } __attribute__ ((packed)) player_position_geom_t;
 /*************************************************************************/
 
 
 /*************************************************************************/
 /*
- * Fixed range-finder (FRF) interface
+ * Fixed range-finder (sonar) interface
  */
-#define PLAYER_FRF_MAX_SAMPLES 32
+#define PLAYER_SONAR_MAX_SAMPLES 32
 
-/* the frf data packet */
+/* the sonar data packet */
 typedef struct
 {
   /* The number of valid range readings. */
   uint16_t range_count;
   
   /* for the Pioneer, start at the front left sonar and number clockwise */
-  uint16_t ranges[PLAYER_FRF_MAX_SAMPLES];
-} __attribute__ ((packed)) player_frf_data_t;
+  uint16_t ranges[PLAYER_SONAR_MAX_SAMPLES];
+  
+} __attribute__ ((packed)) player_sonar_data_t;
 
-#define PLAYER_FRF_GET_GEOM_REQ   ((uint8_t)1)
+#define PLAYER_SONAR_GET_GEOM_REQ   ((uint8_t)1)
 
-/* Packet for getting the FRF geometry. */
+/* Packet for getting the sonar geometry. */
 typedef struct
 {
-  /* Packet subtype.  Must be PLAYER_FRF_GET_GEOM_REQ. */
+  /* Packet subtype.  Must be PLAYER_SONAR_GET_GEOM_REQ. */
   uint8_t subtype;
 
   /* The number of valid poses. */
   uint16_t pose_count;
 
   /* Pose of each sonar, in robot cs (mm, mm, degrees). */
-  int16_t poses[PLAYER_FRF_MAX_SAMPLES][3];
+  int16_t poses[PLAYER_SONAR_MAX_SAMPLES][3];
   
-} __attribute__ ((packed)) player_frf_geom_t;
+} __attribute__ ((packed)) player_sonar_geom_t;
 /*************************************************************************/
 
 /*************************************************************************/
 /*
- * Scanning range-finder (SRF) interface
+ * Scanning range-finder (laser) interface
  */
 
-#define PLAYER_SRF_MAX_SAMPLES  401
+#define PLAYER_LASER_MAX_SAMPLES  401
 
-/* The srf data packet. */
+/* The laser data packet. */
 typedef struct
 {
-  /* Start and end angles for the srf scan (in units of 0.01 degrees). */
+  /* Start and end angles for the laser scan (in units of 0.01 degrees). */
   int16_t min_angle;
   int16_t max_angle;
 
@@ -361,39 +363,43 @@ typedef struct
    * readings.  Reflectivity data is stored in the top three bits of
    * each range reading.  */
   uint16_t range_count;
-  uint16_t ranges[PLAYER_SRF_MAX_SAMPLES];
-} __attribute__ ((packed)) player_srf_data_t;
+  uint16_t ranges[PLAYER_LASER_MAX_SAMPLES];
+
+  /* Intensity readings. */
+  uint8_t intensity[PLAYER_LASER_MAX_SAMPLES];
+     
+} __attribute__ ((packed)) player_laser_data_t;
 
 
 /* Laser request subtypes. */
-#define PLAYER_SRF_GET_GEOM   0x01
-#define PLAYER_SRF_SET_CONFIG 0x02
-#define PLAYER_SRF_GET_CONFIG 0x03
+#define PLAYER_LASER_GET_GEOM   0x01
+#define PLAYER_LASER_SET_CONFIG 0x02
+#define PLAYER_LASER_GET_CONFIG 0x03
 
-/* SRF geometry packet. */
+/* laser geometry packet. */
 typedef struct
 {
-  /* The packet subtype.  Must be PLAYER_SRF_GET_GEOM. */
+  /* The packet subtype.  Must be PLAYER_LASER_GET_GEOM. */
   uint8_t subtype;
 
-  /* SRF pose, in robot cs (mm, mm, radians). */
+  /* laser pose, in robot cs (mm, mm, radians). */
   int16_t pose[3];
 
-  /* SRF dimensions (mm, mm). */
+  /* laser dimensions (mm, mm). */
   int16_t size[2];
   
-} __attribute__ ((packed)) player_srf_geom_t;
+} __attribute__ ((packed)) player_laser_geom_t;
 
 
-/* SRF configuration packet. */
+/* laser configuration packet. */
 typedef struct
 {
-  /* The packet subtype.  Set this to PLAYER_SRF_SET_CONFIG to set
-   * the laser configuration; or set to PLAYER_SRF_GET_CONFIG to get
+  /* The packet subtype.  Set this to PLAYER_LASER_SET_CONFIG to set
+   * the laser configuration; or set to PLAYER_LASER_GET_CONFIG to get
    * the laser configuration.  */
   uint8_t subtype;
 
-  /* Start and end angles for the srf scan (in units of 0.01
+  /* Start and end angles for the laser scan (in units of 0.01
    * degrees).  Valid range is -9000 to +9000.  */
   int16_t min_angle;
   int16_t max_angle;
@@ -404,7 +410,7 @@ typedef struct
 
   /* Enable reflection intensity data. */
   uint8_t  intensity;
-} __attribute__ ((packed)) player_srf_config_t;
+} __attribute__ ((packed)) player_laser_config_t;
 /*************************************************************************/
 
 /*************************************************************************/
@@ -504,15 +510,16 @@ typedef struct
 /* The fiducial data packet (one fiducial). */
 typedef struct
 {
-  /* The fiducial id.  Fiducials that cannot be identified get id 0. */
-  uint8_t id;
+  /* The fiducial id.  Fiducials that cannot be identified get id -1. */
+  int16_t id;
 
-  /* Fiducial range (in mm) relative to the detector. */
-  uint16_t range;
+  /* Fiducial pose relative to the detector (range, bearing, orient)
+   * in units (mm, degrees, degrees). */
+  int16_t pose[3];
 
-  /* Fiducial bearing and orientation (in degrees) relative to detector. */
-  int16_t bearing;
-  int16_t orient;
+  /* Uncertainty in the measured pose (range, bearing, orient) in
+   * units of (mm, degrees, degrees). */
+  int16_t upose[3];
   
 } __attribute__ ((packed)) player_fiducial_item_t;
 
@@ -536,8 +543,13 @@ typedef struct
   /* Packet subtype.  Must be PLAYER_FIDUCIAL_GET_GEOM. */
   uint8_t subtype;
 
-  /* Pose of the detector, in the robot cs (mm, mm, degrees). */
+  /* Pose of the detector in the robot cs (x, y, orient) in units if
+   * (mm, mm, degrees). */
   uint16_t pose[3];
+
+  /* Dimensions of the fiducials in units of (mm, mm). */
+  uint16_t size[2];
+  
 } __attribute__ ((packed)) player_fiducial_geom_t;
 /*************************************************************************/
 

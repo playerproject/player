@@ -169,7 +169,7 @@ class SickLMS200 : public CDevice
 // a factory creation function
 CDevice* SickLMS200_Init(char* interface, ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_SRF_STRING))
+  if(strcmp(interface, PLAYER_LASER_STRING))
   {
     PLAYER_ERROR1("driver \"sicklms200\" does not support interface \"%s\"\n",
                   interface);
@@ -204,7 +204,7 @@ SickLMS200_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_srf_data_t),0,10,10)
+  : CDevice(sizeof(player_laser_data_t),0,10,10)
 {
   // Laser geometry; should read from config file or command line.
   this->pose[0] = 0.10;
@@ -346,7 +346,7 @@ void SickLMS200::Main()
     GlobalTime->GetTime(&time);
         
     // Process incoming data
-    player_srf_data_t data;
+    player_laser_data_t data;
     if (ReadLaserData(data.ranges, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
     {
       // Prepare packet and byte swap
@@ -355,7 +355,10 @@ void SickLMS200::Main()
       data.resolution = htons(this->scan_res);
       data.range_count = htons(this->scan_max_segment - this->scan_min_segment + 1);
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
-        data.ranges[i] = htons(data.ranges[i]);
+      {
+        data.ranges[i] = htons((data.ranges[i] & 0x1FFF));
+        data.intensity[i] = (data.ranges[i] >> 13);
+      }
 
       // Make data available
       PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
@@ -371,16 +374,16 @@ int SickLMS200::UpdateConfig()
   int len;
   void *client;
   char buffer[PLAYER_MAX_REQREP_SIZE];
-  player_srf_config_t config;
-  player_srf_geom_t geom;
+  player_laser_config_t config;
+  player_laser_geom_t geom;
   
   while ((len = GetConfig(&client, &buffer, sizeof(buffer))) > 0)
   {
     switch (buffer[0])
     {
-      case PLAYER_SRF_SET_CONFIG:
+      case PLAYER_LASER_SET_CONFIG:
       {
-        if (len != sizeof(player_srf_config_t))
+        if (len != sizeof(player_laser_config_t))
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
           if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
@@ -447,7 +450,7 @@ int SickLMS200::UpdateConfig()
         break;
       }
 
-      case PLAYER_SRF_GET_CONFIG:
+      case PLAYER_LASER_GET_CONFIG:
       {
         if (len != 1)
         {
@@ -468,7 +471,7 @@ int SickLMS200::UpdateConfig()
         break;
       }
 
-      case PLAYER_SRF_GET_GEOM:
+      case PLAYER_LASER_GET_GEOM:
       {
         if (len != 1)
         {

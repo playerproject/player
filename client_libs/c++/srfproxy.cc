@@ -23,7 +23,7 @@
 /*
  * $Id$
  *
- * client-side srf device 
+ * client-side laser device 
  */
 
 #include <playerclient.h>
@@ -35,15 +35,15 @@
   #include <strings.h>
 #endif
 
-int SRFProxy::Configure(short tmp_min_angle, short tmp_max_angle, 
+int LaserProxy::Configure(short tmp_min_angle, short tmp_max_angle, 
                       unsigned short tmp_resolution, bool tmp_intensity)
 {
   if(!client)
     return(-1);
 
-  player_srf_config_t config;
+  player_laser_config_t config;
 
-  config.subtype = PLAYER_SRF_SET_CONFIG;
+  config.subtype = PLAYER_LASER_SET_CONFIG;
   config.min_angle = htons(tmp_min_angle);
   config.max_angle = htons(tmp_max_angle);
   config.resolution = htons(tmp_resolution);
@@ -55,25 +55,25 @@ int SRFProxy::Configure(short tmp_min_angle, short tmp_max_angle,
   resolution = tmp_resolution;
   intensity = tmp_intensity;
 
-  return(client->Request(PLAYER_SRF_CODE,index,(const char*)&config,
+  return(client->Request(PLAYER_LASER_CODE,index,(const char*)&config,
                          sizeof(config)));
 }
 
-/** Get the current srf configuration; it is read into the
+/** Get the current laser configuration; it is read into the
   relevant class attributes.\\
   Returns the 0 on success, or -1 of there is a problem.
  */
-int SRFProxy::GetConfigure()
+int LaserProxy::GetConfigure()
 {
   if(!client)
     return(-1);
 
-  player_srf_config_t config;
+  player_laser_config_t config;
   player_msghdr_t hdr;
 
-  config.subtype = PLAYER_SRF_GET_CONFIG;
+  config.subtype = PLAYER_LASER_GET_CONFIG;
 
-  if(client->Request(PLAYER_SRF_CODE,index,
+  if(client->Request(PLAYER_LASER_CODE,index,
                      (const char*)&config, sizeof(config.subtype),
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
@@ -85,32 +85,32 @@ int SRFProxy::GetConfigure()
   return(0);
 }
 
-void SRFProxy::FillData(player_msghdr_t hdr, const char* buffer)
+void LaserProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
-  if(hdr.size != sizeof(player_srf_data_t))
+  if(hdr.size != sizeof(player_laser_data_t))
   {
     if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of srf data, but "
+      fprintf(stderr,"WARNING: expected %d bytes of laser data, but "
               "received %d. Unexpected results may ensue.\n",
-              sizeof(player_srf_data_t),hdr.size);
+              sizeof(player_laser_data_t),hdr.size);
   }
 
-  min_angle = (short)ntohs(((player_srf_data_t*)buffer)->min_angle);
-  max_angle = (short)ntohs(((player_srf_data_t*)buffer)->max_angle);
-  resolution = ntohs(((player_srf_data_t*)buffer)->resolution);
-  range_count = ntohs(((player_srf_data_t*)buffer)->range_count);
+  min_angle = (short)ntohs(((player_laser_data_t*)buffer)->min_angle);
+  max_angle = (short)ntohs(((player_laser_data_t*)buffer)->max_angle);
+  resolution = ntohs(((player_laser_data_t*)buffer)->resolution);
+  range_count = ntohs(((player_laser_data_t*)buffer)->range_count);
 
   bzero(ranges,sizeof(ranges));
   bzero(intensities,sizeof(intensities));
   min_left = 10000;
   min_right = 10000;
-  for(unsigned short i=0;i<range_count && i<PLAYER_SRF_MAX_SAMPLES;i++)
+  for(unsigned short i=0;i<range_count && i<PLAYER_LASER_MAX_SAMPLES;i++)
   {
     // only want the lower 13 bits for range info
-    ranges[i] = ntohs(((player_srf_data_t*)buffer)->ranges[i]) & 0x1FFF;
+    ranges[i] = ntohs(((player_laser_data_t*)buffer)->ranges[i]) & 0x1FFF;
     // only want the higher 3 bits for intensity info
     intensities[i] = 
-      (unsigned char)((ntohs(((player_srf_data_t*)buffer)->ranges[i])) >> 13);
+      (unsigned char)((ntohs(((player_laser_data_t*)buffer)->ranges[i])) >> 13);
     if(i>(range_count/2) && ranges[i] < min_left)
       min_left = ranges[i];
     else if(i<(range_count/2) && ranges[i] < min_right)
@@ -118,9 +118,9 @@ void SRFProxy::FillData(player_msghdr_t hdr, const char* buffer)
   }
 }
 
-// returns coords in mm of srf hit relative to sensor position
+// returns coords in mm of laser hit relative to sensor position
 // x axis is forwards
-int SRFProxy::CartesianCoordinate( int i, int *x, int *y )
+int LaserProxy::CartesianCoordinate( int i, int *x, int *y )
 {
   // bounds check
   if( i < 0 || i > range_count ) return false;
@@ -141,13 +141,13 @@ int SRFProxy::CartesianCoordinate( int i, int *x, int *y )
 }
 
 // interface that all proxies SHOULD provide
-void SRFProxy::Print()
+void LaserProxy::Print()
 {
-  printf("#SRF(%d:%d) - %c\n", device, index, access);
+  printf("#LASER(%d:%d) - %c\n", device, index, access);
   puts("#min\tmax\tres\tcount");
   printf("%d\t%d\t%u\t%u\n", min_angle,max_angle,resolution,range_count);
   puts("#range\tintensity");
-  for(unsigned short i=0;i<range_count && i<PLAYER_SRF_MAX_SAMPLES;i++)
+  for(unsigned short i=0;i<range_count && i<PLAYER_LASER_MAX_SAMPLES;i++)
     printf("%u %u ", ranges[i],intensities[i]);
   puts("");
 }

@@ -13,7 +13,7 @@ int
 test_laser(PlayerClient* client, int index)
 {
   unsigned char access;
-  SRFProxy lp(client,index);
+  LaserProxy lp(client,index);
   int min, max;
   int resolution, intensity;
 

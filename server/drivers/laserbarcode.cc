@@ -85,12 +85,12 @@ class LaserBarcode : public CDevice
                                 void *data, size_t len);
 
   // Analyze the laser data and return beacon data
-  private: void FindBeacons(const player_srf_data_t *laser_data,
+  private: void FindBeacons(const player_laser_data_t *laser_data,
                             player_fiducial_data_t *beacon_data);
 
   // Analyze the candidate beacon and return its id (0 == none)
   private: int IdentBeacon(int a, int b, double ox, double oy, double oth,
-                           const player_srf_data_t *laser_data);
+                           const player_laser_data_t *laser_data);
 
 #ifdef INCLUDE_SELFTEST
   // Beacon detector self-test
@@ -188,7 +188,7 @@ int LaserBarcode::Setup()
   // get the pointer to the laser
   player_device_id_t id;
   id.port = device_id.port;
-  id.code = PLAYER_SRF_CODE;
+  id.code = PLAYER_LASER_CODE;
   // if index was not overridden by an argument in the constructor, then we
   // use the device's own index
   if(this->index >= 0)
@@ -264,7 +264,7 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
   }
 
   // Get the laser data
-  player_srf_data_t laser_data;
+  player_laser_data_t laser_data;
   this->laser->GetData((unsigned char*) &laser_data, sizeof(laser_data), NULL, NULL);
 
   // Do some byte swapping
@@ -281,9 +281,9 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
   // Do some byte-swapping
   for (int i = 0; i < this->data.count; i++)
   {
-    this->data.fiducials[i].range = htons(this->data.fiducials[i].range);
-    this->data.fiducials[i].bearing = htons(this->data.fiducials[i].bearing);
-    this->data.fiducials[i].orient = htons(this->data.fiducials[i].orient);
+    this->data.fiducials[i].pose[0] = htons(this->data.fiducials[i].pose[0]);
+    this->data.fiducials[i].pose[1] = htons(this->data.fiducials[i].pose[1]);
+    this->data.fiducials[i].pose[2] = htons(this->data.fiducials[i].pose[2]);
   }
   PLAYER_TRACE1("setting beacon count: %u",this->data.count);
   this->data.count = htons(this->data.count);
@@ -377,7 +377,7 @@ int LaserBarcode::PutConfig(player_device_id_t* device, void *client,
 ////////////////////////////////////////////////////////////////////////////////
 // Analyze the laser data and return beacon data
 //
-void LaserBarcode::FindBeacons(const player_srf_data_t *laser_data,
+void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
                                      player_fiducial_data_t *data)
 {
   data->count = 0;
@@ -485,14 +485,9 @@ void LaserBarcode::FindBeacons(const player_srf_data_t *laser_data,
       // Note that we return the surface normal for the beacon orientation.
       //
       data->fiducials[data->count].id = id;
-      data->fiducials[data->count].range = (int) (range * 1000);
-      data->fiducials[data->count].bearing = (int) (bearing * 180 / M_PI);
-      // normalizing orient to [-pi, pi] and adding 90 deg like it was
-      // done before 
-      orient += M_PI*0.5;
-      orient = NORMALIZE(orient);
-      data->fiducials[data->count].orient = (int) (orient * 180 / M_PI );
-      //data->fiducials[data->count].orient = (int) (orient * 180 / M_PI + 90);
+      data->fiducials[data->count].pose[0] = (int) (range * 1000);
+      data->fiducials[data->count].pose[1] = (int) (bearing * 180 / M_PI);
+      data->fiducials[data->count].pose[2] = (int) (NORMALIZE(orient + M_PI/2) * 180 / M_PI);
       data->count++;
     }
   }
@@ -506,7 +501,7 @@ void LaserBarcode::FindBeacons(const player_srf_data_t *laser_data,
 // Will return beacon id otherwise
 //
 int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
-                                    const player_srf_data_t *laser_data)
+                                    const player_laser_data_t *laser_data)
 {
   // Compute pose of laser relative to beacon
   double lx = -ox * cos(-oth) + oy * sin(-oth);
@@ -654,7 +649,7 @@ int LaserBarcode::SelfTest(const char *filename)
     if (strcmp(type, "laser") != 0)
       continue;
 
-    player_srf_data_t laser_data;
+    player_laser_data_t laser_data;
     strtok(NULL, " ");
     strtok(NULL, " ");
     laser_data.resolution = atoi(strtok(NULL, " "));

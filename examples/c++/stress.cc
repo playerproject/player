@@ -18,7 +18,7 @@ int main(int argc, char **argv)
   int num;
   PlayerClient** clients;
   PositionProxy** pproxies;
-  FRFProxy** sproxies;
+  SonarProxy** sproxies;
 
   int baseport = PLAYER_PORTNUM;
   if(argc < 2)
@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 
   clients = new PlayerClient*[num];
   pproxies = new PositionProxy*[num];
-  sproxies = new FRFProxy*[num];
+  sproxies = new SonarProxy*[num];
 
   /* create a multiclient to control them all */
   PlayerMultiClient multi;
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   {
     clients[i] = new PlayerClient(host,baseport+i);
     pproxies[i] = new PositionProxy(clients[i],0,'r');
-    sproxies[i] = new FRFProxy(clients[i],0,'r');
+    sproxies[i] = new SonarProxy(clients[i],0,'r');
     multi.AddClient(clients[i]);
     //usleep(10000);
   }
