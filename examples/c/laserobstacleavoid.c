@@ -90,7 +90,7 @@ parse_args(int argc, char** argv)
 int main(int argc, char **argv)
 {
   player_connection_t conn;
-  player_laser_data_t laser;
+  player_srf_data_t laser;
   player_position_cmd_t poscmd;
   int minR, minL;
   int j,l,r;
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
     exit(1);
 
   /* request read access on the laser and write access to the wheels */
-  if(player_request_device_access(&conn, PLAYER_LASER_CODE, 0, 'r',NULL) == -1)
+  if(player_request_device_access(&conn, PLAYER_SRF_CODE, 0, 'r',NULL) == -1)
     exit(1);
   if(player_request_device_access(&conn, PLAYER_POSITION_CODE, 0, 'w',NULL) == -1)
     exit(1);
@@ -140,9 +140,8 @@ int main(int argc, char **argv)
       l=150; 
     if (r>150) 
       r=150;
-    poscmd.speed = r+l;
-    poscmd.turnrate = r-l;
-    /*printf("speed: %d\t turn: %d\n", poscmd.speed, poscmd.turnrate);*/
+    poscmd.xspeed = r+l;
+    poscmd.yawspeed = r-l;
 
     /* write commands to robot */
     if(player_write_position(&conn, poscmd) == -1)

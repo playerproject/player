@@ -200,7 +200,7 @@ int player_write_ptz(player_connection_t* conn, player_ptz_cmd_t cmd);
  *   0 if OK
  *  -1 if something wrong (like got unexpected device code)
  */
-int player_read_laser(player_connection_t* conn, player_laser_data_t* data);
+int player_read_laser(player_connection_t* conn, player_srf_data_t* data);
 
 /* consumes the synch packet */
 int player_read_synch(player_connection_t* conn);
@@ -212,7 +212,7 @@ int player_read_synch(player_connection_t* conn);
  *   0 if OK
  *  -1 if something wrong (like got unexpected device code)
  */
-int player_read_sonar(player_connection_t* conn, player_sonar_data_t* data);
+int player_read_sonar(player_connection_t* conn, player_frf_data_t* data);
 
 /*
  * read position data into designated buffer.
@@ -223,15 +223,6 @@ int player_read_sonar(player_connection_t* conn, player_sonar_data_t* data);
  */
 int player_read_position(player_connection_t* conn,
                 player_position_data_t* data);
-
-/*
- * read misc data into designated buffer.
- *
- * Returns:
- *   0 if OK
- *  -1 if something wrong (like got unexpected device code)
- */
-int player_read_misc(player_connection_t* conn, player_misc_data_t* data);
 
 /*
  * read ptz data into designated buffer.
@@ -249,18 +240,19 @@ int player_read_ptz(player_connection_t* conn, player_ptz_data_t* data);
  *   0 if OK
  *  -1 if something wrong (like got unexpected device code)
  */
-int player_read_vision(player_connection_t* conn, player_vision_data_t* data);
+int player_read_vision(player_connection_t* conn, player_blobfinder_data_t* data);
 
 /*
  * to help with debug output
  */
-void player_print_vision(player_vision_data_t data);
-void player_print_misc(player_misc_data_t data);
+void player_print_vision(player_blobfinder_data_t data);
 void player_print_ptz(player_ptz_data_t data);
-void player_print_laser(player_laser_data_t data);
-void player_print_sonar(player_sonar_data_t data);
+void player_print_laser(player_srf_data_t data);
+void player_print_sonar(player_frf_data_t data);
 void player_print_position(player_position_data_t data);
 
+int player_set_datamode(player_connection_t* conn, char mode);
+int player_change_motor_state(player_connection_t* conn, char mode);
 
 
 #ifdef __cplusplus

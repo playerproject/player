@@ -75,41 +75,29 @@ void player_print_vision(player_vision_data_t data)
 }
 */
 
-void player_print_misc(player_misc_data_t data)
-{
-  int i;
-  printf("FrontBumpers: ");
-  for(i=0;i<5;i++)
-    printf("%d ",(data.frontbumpers) >> i & 0x1);
-  printf("\nRearBumpers: ");
-  for(i=0;i<5;i++)
-    printf("%d ",(data.rearbumpers) >> i & 0x1);
-  printf("\nVoltage: %f\n", data.voltage/10.0);
-}
-
 void player_print_ptz(player_ptz_data_t data)
 {
   printf("pan:%d\ttilt:%d\tzoom:%d\n", data.pan,data.tilt,data.zoom);
 }
 
-void player_print_laser(player_laser_data_t data)
+void player_print_laser(player_srf_data_t data)
 {
   int i;
-  for(i=0;i<PLAYER_NUM_LASER_SAMPLES;i++)
+  for(i=0;i<PLAYER_MAX_SRF_SAMPLES;i++)
     printf("laser(%d) = %d\n", i, data.ranges[i]);
 }
-void player_print_sonar(player_sonar_data_t data)
+void player_print_sonar(player_frf_data_t data)
 {
   int i;
-  for(i=0;i<PLAYER_NUM_SONAR_SAMPLES;i++)
+  for(i=0;i<PLAYER_MAX_FRF_SAMPLES;i++)
     printf("sonar(%d): %d\n", i, data.ranges[i]);
 }
 void player_print_position(player_position_data_t data)
 {
-  printf("pos: (%d,%d,%d)\n", data.xpos,data.ypos,data.theta);
-  printf("speed: %d  turnrate: %d\n", data.speed, data.turnrate);
-  printf("compass: %d\n", data.compass);
-  printf("stalls: %d\n", data.stalls);
+  printf("pos: (%d,%d,%d)\n", data.xpos,data.ypos,data.yaw);
+  printf("speed: %d  turnrate: %d\n", data.xspeed, data.yawspeed);
+  //printf("compass: %d\n", data.compass);
+  printf("stalls: %d\n", data.stall);
 }
 
 
