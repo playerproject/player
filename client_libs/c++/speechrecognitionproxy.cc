@@ -80,7 +80,7 @@ void SpeechRecognitionProxy::FillData (player_msghdr_t hdr, const char *buffer)
 
   this->wordCount = 0;
 
-  //printf ("Text[%s] Length[%d]\n",data->text, strlen(data->text));
+  printf ("Text[%s] Length[%d]\n",data->text, strlen(data->text));
 
   // Split the text string into words
   for (i=0; i<strlen(data->text); i++)
@@ -106,6 +106,7 @@ void SpeechRecognitionProxy::FillData (player_msghdr_t hdr, const char *buffer)
 void SpeechRecognitionProxy::Clear()
 {
   this->wordCount = 0;
+  printf("\nCLEARING\n");
 
   for (int i=0; i<20; i++)
   {
