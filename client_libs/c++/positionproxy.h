@@ -63,12 +63,17 @@ class PositionProxy : public ClientProxy
     // these methods are the user's interface to this device
 
     /** Send a motor command.
-        Specify the linear and angular speed in mm/s and degrees/sec,
-        respectively.\\
+        Specify the forward, sideways, and angular speed in mm/s, mm/s,
+        and degrees/sec, respectively.\\
         Returns: 0 if everything's ok, -1 otherwise.
     */
     int SetSpeed(short speed, short sidespeed, short turnrate);
 
+    /** Send a motor command.
+        Specify the forward and angular speed in mm/s,
+        and degrees/sec, respectively.\\
+        Returns: 0 if everything's ok, -1 otherwise.
+    */
     int SetSpeed(short speed, short turnrate)
        { return(SetSpeed(speed,0,turnrate));}
 

@@ -393,7 +393,6 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   if(requesttype)
   {
     pthread_mutex_lock(&access);
-    UpdateRequested(savereq);
 
     reply_hdr.stx = htons(PLAYER_STXX);
     reply_hdr.type = htons(requesttype);
@@ -405,6 +404,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
      * reflect what permissions were granted for the indicated devices */
     if(devicerequest)
     {
+      UpdateRequested(savereq);
       req = *((player_device_req_t*)payload);
 
       player_device_id_t id;
