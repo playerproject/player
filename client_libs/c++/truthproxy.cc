@@ -81,8 +81,8 @@ void TruthProxy::Print()
 {
   printf("#GROUND TRUTH POSE (%d:%d) - %c\n", 
          m_device_id.code, m_device_id.index, access);
-  puts("#(Xm,Ym,THradians)");
-  printf("%.3f\t%.3f\t%.3f\n", px,py,pz);
+  puts("#(X,Y,Z,roll,pitch,yaw) (m,m,m,rad,rad,rad)");
+  printf("%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n", px,py,pz,rx,ry,rz);
 }
 
 // Get the object pose - sends a request and waits for a reply
