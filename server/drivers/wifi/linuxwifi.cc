@@ -284,8 +284,10 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
   req->u.data.pointer = (caddr_t) stats;
   req->u.data.length = 0;
   req->u.data.flags = 1;  // clear updated flag
+#ifdef SIOCGIWSTATS
   if (ioctl(sfd, SIOCGIWSTATS, req) < 0) {
     printf("LINUXWIFI: couldn't ioctl stats!\n");
+#endif
     // failed to get stats, try from /proc/net/wireless
     // Dummy rewind; this is a hack to force the kernel/stdlib to
     // re-read the file.
@@ -304,6 +306,7 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
     wnoise = (uint16_t) noise;
 
     qual_type = PLAYER_WIFI_QUAL_UNKNOWN;
+#ifdef SIOCGIWSTATS
   } else {
     struct iw_quality *qual = &stats->qual;
     if (has_range) {
@@ -328,6 +331,7 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
     wnoise = qual->noise;
     wmaxnoise = range->max_qual.noise;
   }
+#endif
 
   // get operation mode
   mode = PLAYER_WIFI_MODE_UNKNOWN;
