@@ -57,3 +57,10 @@ const char *playerc_error_str()
 {
   return playerc_errorstr;
 }
+
+
+// Use this function to set the error string
+char *playerc_error_set_str()
+{
+  return playerc_errorstr;
+}

@@ -101,11 +101,11 @@ void laser_update(laser_t *laser)
     if (!laser->proxy->info.subscribed)
     {
       if (playerc_laser_subscribe(laser->proxy, PLAYER_READ_MODE) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
       // Get the laser geometry
       if (playerc_laser_get_geom(laser->proxy) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
       rtk_fig_origin(laser->scan_fig,
                      laser->proxy->pose[0],
@@ -117,7 +117,7 @@ void laser_update(laser_t *laser)
   {
     if (laser->proxy->info.subscribed)
       if (playerc_laser_unsubscribe(laser->proxy) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   rtk_menuitem_check(laser->subscribe_item, laser->proxy->info.subscribed);
 
@@ -166,7 +166,7 @@ void laser_update_config(laser_t *laser)
   // Set the laser configuration.
   if (update)
     if (playerc_laser_set_config(laser->proxy, min, max, res, intensity) != 0)
-      PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+      PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
   res = (int) (laser->proxy->scan_res * 180 / M_PI * 100);
   rtk_menuitem_check(laser->res025_item, (res == 25));

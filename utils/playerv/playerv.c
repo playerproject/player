@@ -107,7 +107,7 @@ int main(int argc, char **argv)
   client = playerc_client_create(NULL, host, port);
   if (playerc_client_connect(client) != 0)
   {
-    PRINT_ERR1("%s", playerc_errorstr);
+    PRINT_ERR1("%s", playerc_error_str());
     print_usage();
     return -1;
   }
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
   // Get the available devices.
   if (playerc_client_get_devlist(client) != 0)
   {
-    PRINT_ERR1("%s", playerc_errorstr);
+    PRINT_ERR1("%s", playerc_error_str());
     return -1;
   }
 
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
     count = playerc_client_peek(client, 50);
     if (count < 0)
     {
-      PRINT_ERR1("%s", playerc_errorstr);
+      PRINT_ERR1("%s", playerc_error_str());
       break;
     }
     if (count > 0)
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
       proxy = playerc_client_read(client);
       //if (proxy == NULL)
       //{
-      //  PRINT_ERR1("%s", playerc_errorstr);
+      //  PRINT_ERR1("%s", playerc_error_str());
       //  break;
       //}
 
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
   // Disconnect from server
   if (playerc_client_disconnect(client) != 0)
   {
-    PRINT_ERR1("%s", playerc_errorstr);
+    PRINT_ERR1("%s", playerc_error_str());
     return -1;
   }
   playerc_client_destroy(client);

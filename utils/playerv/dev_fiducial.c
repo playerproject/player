@@ -93,18 +93,18 @@ void fiducial_update(fiducial_t *fiducial)
     if (!fiducial->proxy->info.subscribed)
     {
       if (playerc_fiducial_subscribe(fiducial->proxy, PLAYER_READ_MODE) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
       // Get the geometry
       if (playerc_fiducial_get_geom(fiducial->proxy) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
     }
   }
   else
   {
     if (fiducial->proxy->info.subscribed)
       if (playerc_fiducial_unsubscribe(fiducial->proxy) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   rtk_menuitem_check(fiducial->subscribe_item, fiducial->proxy->info.subscribed);
 
