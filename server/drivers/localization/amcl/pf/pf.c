@@ -249,7 +249,7 @@ void pf_update_resample(pf_t *pf)
 // with samples in them.  This is taken directly from Fox et al.
 int pf_resample_limit(pf_t *pf, int k)
 {
-  double z, err;
+  //double z, err;
   double a, b, c, x;
   int n;
 
@@ -274,7 +274,7 @@ void pf_calc_stats(pf_t *pf, pf_vector_t *mean, pf_matrix_t *cov)
   int i, j, k;
   pf_sample_set_t *set;
   pf_sample_t *sample;
-  double r;
+  //double r;
   double n;
   double m[4];
   double c[2][2];

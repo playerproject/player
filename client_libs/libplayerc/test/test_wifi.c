@@ -13,8 +13,8 @@
 int test_wifi(playerc_client_t *client, int index)
 {
   int i, t;
-  double i_px, i_py, i_pa;
-  double f_px, f_py, f_pa;
+  //double i_px, i_py, i_pa;
+  //double f_px, f_py, f_pa;
   void *rdevice;
   playerc_wifi_t *device;
 

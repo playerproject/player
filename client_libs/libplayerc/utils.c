@@ -24,6 +24,8 @@
  * CVS: $Id$
  **************************************************************************/
 
+#include <string.h>
+
 #include "playerc.h"
 #include "error.h"
 

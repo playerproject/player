@@ -94,7 +94,7 @@ int odometry_init_cspace(odometry_t *self)
 void odometry_init_init(odometry_t *self, pf_vector_t pose, pf_matrix_t pose_cov)
 {
   int i;
-  pf_pdf_gaussian_t *gpdf;
+  //pf_pdf_gaussian_t *gpdf;
   double *weights;
   pf_vector_t *ccell;
   

@@ -324,7 +324,7 @@ void Client::Update( struct controller* cont )
 	    ptzp->pan, cont->pan, ptzp->tilt, cont->tilt, ptzp->zoom );      
             */
     printf( "Player: %s:%d %.2f "
-	    "- speed: %d turn:\n",
+	    "- speed: %d turn:%d\n",
 	    player->hostname, player->port,
 	    player->timestamp.tv_sec+player->timestamp.tv_usec/1000000.0,
 	    pp->speed, pp->turnrate);

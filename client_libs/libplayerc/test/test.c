@@ -91,7 +91,7 @@ int main(int argc, const char *argv[])
   }
 
   // Print interface list.
-  printf("selected interfaces:\n", host, port);
+  printf("selected interfaces [%s:%d]:\n", host, port);
   for (i = 0; i < client->id_count; i++)
     printf("  %s:%d \n", playerc_lookup_name(client->ids[i].code), client->ids[i].index);
 

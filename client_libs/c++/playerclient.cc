@@ -221,7 +221,13 @@ int PlayerClient::Read()
              //curr.tv_sec, curr.tv_usec, hdr.device, hdr.device_index);
       // put the data in the object
       if(hdr.size)
+      {
         thisproxy->FillData(hdr,buffer);
+        // let the user know that data has arrived.  set it every time, in
+        // case the user wants to use it to determine freshness, in
+        // addition to initial validity.
+        thisproxy->valid = true;
+      }
 
       // fill in the timestamps
       thisproxy->timestamp.tv_sec = hdr.timestamp_sec;

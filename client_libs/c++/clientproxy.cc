@@ -44,6 +44,7 @@ ClientProxy::ClientProxy(PlayerClient* pc,
   senttime.tv_usec = 0;
   receivedtime.tv_sec = 0;
   receivedtime.tv_usec = 0;
+  valid = false;
 
   // start out with no access
   unsigned char grant_access = 'e';

@@ -279,7 +279,7 @@ void AdaptiveMCL_Register(DriverTable* table)
 AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_localize_data_t), 0, 100, 100)
 {
-  double size;
+  //double size;
   double u[3];
   
   this->odom = NULL;
@@ -666,7 +666,7 @@ void AdaptiveMCL::GetSonarData(amcl_sensor_data_t *data)
   int i;
   size_t size;
   player_sonar_data_t ndata;
-  double r, b, db;
+  double r; //b, db;
 
   // If there is no sonar device...
   if (this->sonar_index < 0)

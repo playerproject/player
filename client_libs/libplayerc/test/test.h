@@ -52,5 +52,19 @@ extern int test_truth(playerc_client_t *client, int index);
 // Basic vision test.
 extern int test_vision(playerc_client_t *client, int index);
 
+// Basic blobfinder test
+extern int test_blobfinder(playerc_client_t *client, int index);
+
+// Basic comms device test
+extern int test_comms(playerc_client_t *client, int index);
+
+// Basic test for the laser beacon device.
+extern int test_fiducial(playerc_client_t *client, int index);
+
+// Basic test for power device.
+extern int test_power(playerc_client_t *client, int index);
+
+// Basic test for wifi device.
+extern int test_wifi(playerc_client_t *client, int index);
 
 #endif // TEST_H

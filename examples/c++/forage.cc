@@ -88,7 +88,7 @@ int main(int argc, char** argv)
   // HOMING
   int home_x = 7000;
   int home_y = 7000;
-  double home_size = 500; // mm
+  //double home_size = 500; // mm
 
   // REVERSE HOMING
   int reverse_homing = 0;

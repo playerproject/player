@@ -1,4 +1,6 @@
 
+#include <sys/types.h>
+#include <netinet/in.h>
 #include <player.h>
 
 // convert meters to Player mm in NBO in various sizes

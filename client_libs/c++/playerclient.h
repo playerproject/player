@@ -83,6 +83,10 @@ class ClientProxy
       */
     PlayerClient* client;
 
+    /** Have we yet received any data from this device?
+     */
+    bool valid;
+
     // if this generic proxy is not subclassed, the most recent 
     // data and header get copied in here. that way we can use this
     // base class on it's own as a generic proxy
