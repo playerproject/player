@@ -1,9 +1,13 @@
 
-%module playerc
+%module libplayerc
 %{
 #include "playerc.h"
 %}
- 
+
+
+// Include Player header so we can pick up some constants
+#define __PACKED__
+%import "player.h"
 
 // Provide array access
 %typemap(out) double [ANY] {
