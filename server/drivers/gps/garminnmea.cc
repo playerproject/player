@@ -61,8 +61,8 @@
 // these are the standard NMEA sentences that come 
 // out of the geko 201
 #define NMEA_GPRMB "GPRMB"
-#define NMEA_GPRMB "GPRMC"
-#define NMEA_GPGGA "GPGGA"
+#define NMEA_GPRMC "GPRMC"
+#define NMEA_GPGGA "GGA"
 #define NMEA_GPGSA "GPGSA"
 #define NMEA_GPGSV "GPGSV"
 #define NMEA_GPGLL "GPGLL"
@@ -79,7 +79,7 @@
 #define NMEA_MAX_SENTENCE_LEN 83
 
 #define NMEA_START_CHAR '$'
-#define NMEA_END_CHAR '*'
+#define NMEA_END_CHAR '\n'
 #define NMEA_CHKSUM_LEN 2
 
 class GarminNMEA:public CDevice 
@@ -89,7 +89,7 @@ class GarminNMEA:public CDevice
     const char* gps_serial_port; // string name of serial port to use
 
     char nmea_buf[NMEA_MAX_SENTENCE_LEN];
-    int nmea_buf_len;
+    size_t nmea_buf_len;
 
     bool gps_fd_blocking;
 
@@ -185,6 +185,8 @@ GarminNMEA::Setup()
     return(-1);
   }
 
+  memset(nmea_buf,0,sizeof(nmea_buf));
+  nmea_buf_len=0;
   /* try to read some data, just to make sure we actually have a gps unit */
   if(FillBuffer())
   {
@@ -240,6 +242,8 @@ GarminNMEA::Main()
 {
   char buf[NMEA_MAX_SENTENCE_LEN];
 
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
+
   for(;;)
   {
     pthread_testcancel();
@@ -264,37 +268,43 @@ int
 GarminNMEA::ReadSentence(char* buf, size_t len)
 {
   char* ptr;
-  int sentlen;
+  size_t sentlen;
 
   while(!(ptr = strchr((const char*)nmea_buf, NMEA_START_CHAR)))
   {
     nmea_buf_len=0;
+    memset(nmea_buf,0,sizeof(nmea_buf));
     if(FillBuffer())
       return(-1);
   }
 
-  memmove(nmea_buf,ptr,strlen(ptr));
-  nmea_buf_len -= (ptr - nmea_buf);
+  memmove(nmea_buf,ptr,strlen(ptr)+1);
+  nmea_buf_len = strlen(ptr);
 
   while(!(ptr = strchr((const char*)nmea_buf, NMEA_END_CHAR)))
   {
+    if(nmea_buf_len >= sizeof(nmea_buf) - 1)
+    {
+      // couldn't get an end char and the buffer is full.
+      buf = NULL;
+      return(0);
+    }
     if(FillBuffer())
       return(-1);
   }
 
-  while(strlen(ptr) < 3)
+  sentlen = strlen(nmea_buf) - strlen(ptr) + 1;
+  if(sentlen > len - 1)
   {
-    if(FillBuffer())
-      return(-1);
+    PLAYER_WARN1("NMEA sentence too long (%d bytes); truncating", sentlen);
+    sentlen = len - 1;
   }
-
-  sentlen = ptr - nmea_buf;
 
   strncpy(buf,nmea_buf,sentlen);
   buf[sentlen] = '\0';
 
-  memmove(nmea_buf,ptr+3,nmea_buf_len-sentlen);
-  nmea_buf_len -= sentlen + 3;
+  memmove(nmea_buf,ptr,nmea_buf_len-sentlen);
+  nmea_buf_len -= sentlen;
   nmea_buf[nmea_buf_len]='\0';
   return(0);
 }
@@ -345,19 +355,18 @@ int
 GarminNMEA::ParseSentence(const char* buf)
 {
   player_gps_data_t data;
-  char tmp[8];
   const char* ptr = buf;
   int degrees;
   double minutes;
   double arcseconds;
   char field[32];
+  char tmp[8];
 
-  // get the header id out
-  strncpy(tmp,buf+1,5);
-  tmp[5]='\0';
+  if(!buf)
+    return(0);
 
   // the GGA msg has the position data that we want
-  if(!strcmp(tmp, NMEA_GPGGA))
+  if((ptr = strstr(ptr, NMEA_GPGGA)))
   {
     printf("got GGA (%s)\n", buf);
 
