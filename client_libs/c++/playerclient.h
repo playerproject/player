@@ -1036,6 +1036,9 @@ class LocalizeProxy : public ClientProxy
     /// Map data (empty = -1, unknown = 0, occupied = +1)
     int8_t *map_cells;
 
+    /// Number of pending (unprocessed) sensor readings
+    int pending_count;
+    
     /// Number of possible poses
     int hypoth_count;
 
