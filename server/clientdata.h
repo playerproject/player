@@ -73,7 +73,7 @@ class CClientData
     unsigned char *writebuffer;  // individual data messages are written here
     unsigned char *totalwritebuffer; // data messages are then added here, for
                                      // one efficient write(2)
-    int totalwritebuffersize;
+    size_t totalwritebuffersize;
     player_msghdr_t hdrbuffer;
     
     // added this so Player can manage multiple robots in Stage mode

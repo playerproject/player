@@ -225,8 +225,8 @@ Acts::Setup()
   int j;
 
   char acts_bin_name[] = "acts";
-  char acts_configfile_flag[] = "-t";
-  char acts_port_flag[] = "-s";
+  //char acts_configfile_flag[] = "-t";
+  //char acts_port_flag[] = "-s";
 
   char acts_port_num[MAX_FILENAME_SIZE];
   char* acts_args[32];
@@ -276,7 +276,7 @@ Acts::Setup()
   acts_args[i++] = "0";
   acts_args[i++] = "-x";
   acts_args[i] = (char*)NULL;
-  assert(i <= sizeof(acts_args) / sizeof(acts_args[0]));
+  assert((unsigned int)i <= sizeof(acts_args) / sizeof(acts_args[0]));
   
   if(!(pid = fork()))
   {
