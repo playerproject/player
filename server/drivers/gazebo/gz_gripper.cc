@@ -44,7 +44,7 @@
 #include <netinet/in.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -54,10 +54,10 @@
 
 
 // Gazebo Gripper driver
-class GzGripper : public CDevice
+class GzGripper : public Driver
 {
   // Constructor
-  public: GzGripper(char* interface, ConfigFile* cf, int section);
+  public: GzGripper(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzGripper();
@@ -70,10 +70,10 @@ class GzGripper : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client,
+  public: virtual int PutConfig(player_device_id_t id, player_device_id_t* device, void* client,
                                 void* req, size_t reqlen);
 
   // Gazebo id
@@ -91,34 +91,30 @@ class GzGripper : public CDevice
 
 
 // Initialization function
-CDevice* GzGripper_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzGripper_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_GRIPPER_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_gripper\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzGripper(interface, cf, section)));
+  return ((Driver*) (new GzGripper(cf, section)));
 }
 
 
 // a driver registration function
 void GzGripper_Register(DriverTable* table)
 {
-  table->AddDriver("gz_gripper", PLAYER_ALL_MODE, GzGripper_Init);
+  table->AddDriver("gz_gripper", GzGripper_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzGripper::GzGripper(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_gripper_data_t), sizeof(player_gripper_cmd_t), 10, 10)
+GzGripper::GzGripper(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_GRIPPER_CODE, PLAYER_ALL_MODE,
+             sizeof(player_gripper_data_t), sizeof(player_gripper_cmd_t), 10, 10)
 {
     // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -217,7 +213,7 @@ void GzGripper::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzGripper::PutCommand(void* client, unsigned char* src, size_t len)
+void GzGripper::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
 {
   player_gripper_cmd_t *cmd;
     
@@ -236,7 +232,7 @@ void GzGripper::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzGripper::PutConfig(player_device_id_t* device, void* client, void* req, size_t req_len)
+int GzGripper::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* req, size_t req_len)
 {
   switch (((char*) req)[0])
   {

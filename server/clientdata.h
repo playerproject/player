@@ -35,8 +35,8 @@
 
 #include <player.h>
 
-// get around circular inclusion;
-class CDevice;
+// Forward declarations
+class Driver;
 
 // keep a linked list of these
 class CDeviceSubscription
@@ -44,7 +44,7 @@ class CDeviceSubscription
   public:
     player_device_id_t id;
     unsigned char access;
-    CDevice* devicep;
+    Driver* driver;
 
     // record the last time we got fresh data
     uint32_t last_sec, last_usec; 
@@ -53,7 +53,7 @@ class CDeviceSubscription
 
     CDeviceSubscription() 
     { 
-      devicep = NULL; 
+      driver = NULL; 
       next = NULL; 
       access = PLAYER_ERROR_MODE; 
       last_sec = last_usec = 0;

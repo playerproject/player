@@ -44,7 +44,7 @@
 #include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -52,10 +52,10 @@
 
 
 // Incremental navigation driver
-class GzHUD : public CDevice
+class GzHUD : public Driver
 {
   // Constructor
-  public: GzHUD(char* interface, ConfigFile* cf, int section);
+  public: GzHUD(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzHUD();
@@ -68,10 +68,10 @@ class GzHUD : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* data, size_t len);
 
   // Gazebo device id
   private: char *gz_id;
@@ -88,35 +88,30 @@ class GzHUD : public CDevice
 
 
 // Initialization function
-CDevice* GzHUD_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzHUD_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_HUD_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_hud\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-
-  return ((CDevice*) (new GzHUD(interface, cf, section)));
+  return ((Driver*) (new GzHUD(cf, section)));
 }
 
 
 // a driver registration function
 void GzHUD_Register(DriverTable* table)
 {
-  table->AddDriver("gz_hud", PLAYER_ALL_MODE, GzHUD_Init);
+  table->AddDriver("gz_hud", GzHUD_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzHUD::GzHUD(char* interface, ConfigFile* cf, int section)
-    : CDevice(0, 0, 10, 10)
+GzHUD::GzHUD(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_HUD_CODE, PLAYER_ALL_MODE,
+             0, 0, 10, 10)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -180,7 +175,7 @@ void GzHUD::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzHUD::PutCommand(void* client, unsigned char* src, size_t len)
+void GzHUD::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
 {  
   return;
 }
@@ -188,7 +183,7 @@ void GzHUD::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzHUD::PutConfig(player_device_id_t* device, void* client, void* data, size_t len)
+int GzHUD::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* data, size_t len)
 {
   player_hud_config_t *cfg = (player_hud_config_t*)(data);
   gz_hud_draw_t *hud;

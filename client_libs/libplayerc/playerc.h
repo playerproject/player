@@ -90,14 +90,14 @@ extern "C" {
   
 
 /***************************************************************************/
-/** \defgroup core Core functionality
+/** @defgroup core Core functionality
 @{
 */
 /***************************************************************************/
 
 
 /***************************************************************************/
-/** \defgroup utility Utility and error-handling functions
+/** @defgroup utility Utility and error-handling functions
 @{
 */
 /***************************************************************************/

@@ -234,17 +234,17 @@ void ClientManager::AddClient(ClientData* client)
 void 
 ClientManager::UpdateDevices()
 {
-  for(CDeviceEntry* dev = deviceTable->GetFirstEntry();
+  for(Device* dev = deviceTable->GetFirstDevice();
       dev;
-      dev = deviceTable->GetNextEntry(dev))
+      dev = deviceTable->GetNextDevice(dev))
   {
-    if(dev->devicep->subscriptions)
+    if(dev->driver->subscriptions)
     {
       //printf("calling Update on %d:%d:%d\n",
              //dev->id.port,
              //dev->id.code,
              //dev->id.index);
-      dev->devicep->Update();
+      dev->driver->Update();
     }
   }
 }
@@ -519,10 +519,10 @@ ClientManagerTCP::Write()
         break;
 
       // is this a valid device
-      if(thisub->devicep)
+      if(thisub->driver)
       {
         // does this device have a reply ready for this client?
-        if((replysize = thisub->devicep->GetReplyEx(thisub->id, &id, clients[i], &type, &ts,
+        if((replysize = thisub->driver->GetReply(thisub->id, &id, clients[i], &type, &ts,
                   clients[i]->replybuffer+sizeof(player_msghdr_t), 
                   PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))) >= 0)
         {
@@ -802,10 +802,10 @@ ClientManagerUDP::Write()
       memset(&id,0,sizeof(id));
 
       // is this a valid device
-      if(thisub->devicep)
+      if(thisub->driver)
       {
         // does this device have a reply ready for this client?
-        if((replysize = thisub->devicep->GetReplyEx(thisub->id, &id, clients[i], &type, &ts,
+        if((replysize = thisub->driver->GetReply(thisub->id, &id, clients[i], &type, &ts,
                   clients[i]->replybuffer+sizeof(player_msghdr_t), 
                   PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))) >= 0)
         {

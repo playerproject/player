@@ -47,7 +47,7 @@
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
-extern CDeviceTable* deviceTable;
+extern DeviceTable* deviceTable;
 extern ClientData* clients[];
 extern ClientManager* clientmanager;
 extern char playerversion[];
@@ -145,7 +145,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   bool driverinforequest=false;
   bool nameservicerequest=false;
   bool devicerequest=false;
-  CDevice* devicep;
+  Driver* driver;
   player_device_req_t req;
   player_device_resp_t resp;
   player_device_datamode_req_t datamode;
@@ -355,10 +355,10 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           {
             // pass the config request on the proper device
             // make sure we've got a non-NULL pointer
-            if((devicep = deviceTable->GetDevice(id)))
+            if((driver = deviceTable->GetDriver(id)))
             {
               // try to push it on the request queue
-              if(devicep->PutConfigEx(id,this,payload,payload_size))
+              if(driver->PutConfig(id,NULL,this,payload,payload_size))
               {
                 // queue was full
                 requesttype = PLAYER_MSGTYPE_RESP_ERR;
@@ -392,9 +392,9 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
           {
             // make sure we've got a non-NULL pointer
-            if((devicep = deviceTable->GetDevice(id)))
+            if((driver = deviceTable->GetDriver(id)))
             {
-              devicep->PutCommandEx(id,this,payload,payload_size);
+              driver->PutCommand(id,this,payload,payload_size);
             }
             else
               PLAYER_WARN2("found NULL pointer for device %x:%x",
@@ -454,7 +454,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
       memset(resp.driver_name, 0, sizeof(resp.driver_name));
       char* drivername;
-      if((drivername = deviceTable->GetDriver(id)))
+      if((drivername = deviceTable->GetDriverName(id)))
         strncpy((char*)resp.driver_name, drivername, sizeof(resp.driver_name));
 
       memcpy(replybuffer+sizeof(player_msghdr_t),&resp,
@@ -524,8 +524,8 @@ void ClientData::RemoveRequests()
         (thissub->access != PLAYER_ERROR_MODE)) && 
        (thissub->id.code == PLAYER_POSITION_CODE) &&
        (((thissub->access == PLAYER_ALL_MODE) &&
-         (thissub->devicep->subscriptions == 2)) ||
-        (thissub->devicep->subscriptions == 1)))
+         (thissub->driver->subscriptions == 2)) ||
+        (thissub->driver->subscriptions == 1)))
       MotorStop();
     
     switch(thissub->access) 
@@ -551,7 +551,7 @@ void ClientData::RemoveRequests()
 void ClientData::MotorStop() 
 {
   player_position_cmd_t command;
-  CDevice* devicep;
+  Driver* driver;
   player_device_id_t id;
 
   // TODO: fix this for single-port action
@@ -561,9 +561,9 @@ void ClientData::MotorStop()
 
   command.xspeed = command.yspeed = command.yawspeed = 0;
 
-  if((devicep = deviceTable->GetDevice(id)))
+  if((driver = deviceTable->GetDriver(id)))
   {
-    devicep->PutCommandEx(id, this, (unsigned char*)&command, sizeof(command));
+    driver->PutCommand(id, this, (unsigned char*)&command, sizeof(command));
   }
 }
 
@@ -572,22 +572,22 @@ void ClientData::MotorStop()
 void ClientData::HandleListRequest(player_device_devlist_t *req,
                                     player_device_devlist_t *rep)
 {
-  CDeviceEntry *entry;
+  Device *device;
 
   rep->subtype = PLAYER_PLAYER_DEVLIST_REQ;
   rep->device_count = 0;
 
   // Get all the device entries that have the right port number.
   // TODO: test this with Stage.
-  for (entry = deviceTable->GetFirstEntry(); entry != NULL;
-       entry = deviceTable->GetNextEntry(entry))
+  for (device = deviceTable->GetFirstDevice(); device != NULL;
+       device = deviceTable->GetNextDevice(device))
   {
     assert(rep->device_count < ARRAYSIZE(rep->devices));
-    if (entry->id.port == port)
+    if (device->id.port == port)
     {
-      rep->devices[rep->device_count].code = htons(entry->id.code);
-      rep->devices[rep->device_count].index = htons(entry->id.index);
-      rep->devices[rep->device_count].port = htons(entry->id.port);
+      rep->devices[rep->device_count].code = htons(device->id.code);
+      rep->devices[rep->device_count].index = htons(device->id.index);
+      rep->devices[rep->device_count].port = htons(device->id.port);
       rep->device_count++;
     }
   }
@@ -611,7 +611,7 @@ void ClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
   id.index = ntohs(req->id.index);
   id.port = ntohs(req->id.port);
 
-  driver_name = deviceTable->GetDriver(id);
+  driver_name = deviceTable->GetDriverName(id);
   if (driver_name)
     strcpy(rep->driver_name, driver_name);
   else
@@ -627,20 +627,20 @@ void ClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
 void ClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
                                            player_device_nameservice_req_t *rep)
 {
-  CDeviceEntry *entry;
+  Device *device;
 
   rep->subtype = PLAYER_PLAYER_NAMESERVICE_REQ;
   strncpy((char*)rep->name,(char*)req->name,sizeof(rep->name));
   rep->name[sizeof(rep->name)-1]='\0';
   rep->port=0;
 
-  for(entry = deviceTable->GetFirstEntry();
-      entry;
-      entry = deviceTable->GetNextEntry(entry))
+  for(device = deviceTable->GetFirstDevice();
+      device;
+      device = deviceTable->GetNextDevice(device))
   {
-    if(!strcmp((char*)req->name,(char*)entry->robotname))
+    if(!strcmp((char*)req->name,(char*)device->robotname))
     {
-      rep->port = htons(entry->id.port);
+      rep->port = htons(device->id.port);
       break;
     }
   }
@@ -668,7 +668,7 @@ unsigned char ClientData::UpdateRequested(player_device_req_t req)
     thisub->id.code = req.code;
     thisub->id.index = req.index;
     thisub->id.port = port;
-    thisub->devicep = deviceTable->GetDevice(thisub->id);
+    thisub->driver = deviceTable->GetDriver(thisub->id);
 
     thisub->last_sec = 0; // init the freshness timer
     thisub->last_usec = 0;
@@ -827,7 +827,7 @@ size_t
 ClientData::BuildMsg()
 {
   size_t size, totalsize=0;
-  CDevice* devicep;
+  Driver* driver;
   player_msghdr_t hdr;
   struct timeval curr;
   size_t numdata;
@@ -843,7 +843,7 @@ ClientData::BuildMsg()
       if((access == PLAYER_ALL_MODE) || (access == PLAYER_READ_MODE)) 
       {
         // make sure we've got a good pointer
-        if(!(devicep = deviceTable->GetDevice(thisub->id)))
+        if(!(driver = deviceTable->GetDriver(thisub->id)))
         {
           PLAYER_WARN2("found NULL pointer for device \"%x:%x\"",
                        thisub->id.code, thisub->id.index);
@@ -851,7 +851,7 @@ ClientData::BuildMsg()
         }
 
         // how many packets are available for this client?
-        numdata = devicep->GetNumDataEx(thisub->id, this);
+        numdata = driver->GetNumData(thisub->id, this);
         while(numdata > 0)
         {
           numdata--;
@@ -860,7 +860,7 @@ ClientData::BuildMsg()
           hdr.device_index = htons(thisub->id.index);
           hdr.reserved = 0;
 
-          size = devicep->GetDataEx(thisub->id, this,
+          size = driver->GetData(thisub->id, this,
                                     writebuffer+sizeof(hdr),
                                     PLAYER_MAX_MESSAGE_SIZE-sizeof(hdr),
                                     &(hdr.timestamp_sec), 
@@ -935,12 +935,12 @@ ClientData::BuildMsg()
 
 int ClientData::Subscribe(player_device_id_t id)
 {
-  CDevice* devicep;
+  Driver* driver;
   int subscribe_result;
 
-  if((devicep = deviceTable->GetDevice(id)))
+  if((driver = deviceTable->GetDriver(id)))
   {
-    subscribe_result = devicep->Subscribe(this);
+    subscribe_result = driver->Subscribe(this);
     return(subscribe_result);
   }
   else
@@ -954,11 +954,11 @@ int ClientData::Subscribe(player_device_id_t id)
 
 void ClientData::Unsubscribe(player_device_id_t id)
 {
-  CDevice* devicep;
+  Driver* driver;
 
-  if((devicep = deviceTable->GetDevice(id)))
+  if((driver = deviceTable->GetDriver(id)))
   {
-    devicep->Unsubscribe(this);
+    driver->Unsubscribe(this);
   }
   else
   {

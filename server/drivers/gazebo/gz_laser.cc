@@ -40,7 +40,7 @@
 #include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -48,10 +48,10 @@
 
 
 // Incremental navigation driver
-class GzLaser : public CDevice
+class GzLaser : public Driver
 {
   // Constructor
-  public: GzLaser(char* interface, ConfigFile* cf, int section);
+  public: GzLaser(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzLaser();
@@ -64,10 +64,12 @@ class GzLaser : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id, 
+                                    void *client, unsigned char *src, size_t len);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, player_device_id_t *dummy,
+                                  void *client, void *data, size_t len);
 
   // Gazebo device id
   private: char *gz_id;
@@ -84,34 +86,30 @@ class GzLaser : public CDevice
 
 
 // Initialization function
-CDevice* GzLaser_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzLaser_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_LASER_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_laser\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzLaser(interface, cf, section)));
+  return ((Driver*) (new GzLaser(cf, section)));
 }
 
 
 // a driver registration function
 void GzLaser_Register(DriverTable* table)
 {
-  table->AddDriver("gz_laser", PLAYER_ALL_MODE, GzLaser_Init);
+  table->AddDriver("gz_laser", GzLaser_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzLaser::GzLaser(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_laser_data_t), 0, 10, 10)
+GzLaser::GzLaser(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_ALL_MODE,
+             sizeof(player_laser_data_t), 0, 10, 10)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -215,7 +213,8 @@ void GzLaser::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzLaser::PutCommand(void* client, unsigned char* src, size_t len)
+void GzLaser::PutCommand(player_device_id_t id, 
+                           void* client, unsigned char* src, size_t len)
 {  
   return;
 }
@@ -223,7 +222,8 @@ void GzLaser::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzLaser::PutConfig(player_device_id_t* device, void* client, void* data, size_t len)
+int GzLaser::PutConfig(player_device_id_t id, player_device_id_t *dummy,
+                         void *client, void *data, size_t len)
 {
   uint8_t subtype;
 

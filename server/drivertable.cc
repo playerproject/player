@@ -52,49 +52,15 @@ DriverTable::~DriverTable()
     thisentry = tmpentry;
   }
 }
-    
-// add a new driver to the table
-int 
-DriverTable::AddDriver(char* name, char access, DriverInitFn initfunc)
-//                       CDevice* (*initfunc)(char*,ConfigFile*,int))
-{
-  DriverEntry* thisentry;
-  DriverEntry* preventry;
-  // don't check for preexisting driver, just overwrite the old driver.  
-  // shouldn't really come up.
-  for(thisentry = head,preventry=NULL; thisentry; 
-      preventry=thisentry, thisentry=thisentry->next)
-  {
-    if(!strncmp(thisentry->name, name, sizeof(thisentry->name)))
-      break;
-  }
-
-  if(!thisentry)
-  {
-    thisentry = new DriverEntry;
-    if(preventry)
-      preventry->next = thisentry;
-    else
-      head = thisentry;
-    numdrivers++;
-  }
-
-  strncpy(thisentry->name, name, sizeof(thisentry->name));
-  thisentry->name[sizeof(thisentry->name)-1] = '\0';
-  thisentry->access = access;
-  thisentry->initfunc = initfunc;
-  thisentry->initfuncEx = NULL;
-
-  return(0);
-}
 
 
 // add a new driver to the table (new-style)
 int
-DriverTable::AddDriverEx(char* name, DriverInitFnEx initfuncEx)
+DriverTable::AddDriver(char* name, DriverInitFn initfunc)
 {
   DriverEntry* thisentry;
   DriverEntry* preventry;
+
   // don't check for preexisting driver, just overwrite the old driver.  
   // shouldn't really come up.
   for(thisentry = head,preventry=NULL; thisentry; 
@@ -116,9 +82,7 @@ DriverTable::AddDriverEx(char* name, DriverInitFnEx initfuncEx)
 
   strncpy(thisentry->name, name, sizeof(thisentry->name));
   thisentry->name[sizeof(thisentry->name)-1] = '\0';
-  thisentry->access = PLAYER_ERROR_MODE;
-  thisentry->initfunc = NULL;
-  thisentry->initfuncEx = initfuncEx;
+  thisentry->initfunc = initfunc;
 
   return(0);
 }

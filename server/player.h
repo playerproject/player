@@ -1235,7 +1235,7 @@ typedef struct player_position3d_geom
 /** Motor power
 On some robots, the motor power can be turned on and off from software.
 To do so, send a request with the format given below, and with the
-appropriate {\tt state} (zero for motors off and non-zero for motors on).
+appropriate @p state (zero for motors off and non-zero for motors on).
 The server will reply with a zero-length acknowledgement.
 
 Be VERY careful with this command!  You are very likely to start the robot
@@ -1264,7 +1264,7 @@ typedef struct player_position3d_position_mode_req
 Some robots offer different velocity control modes.
 It can be changed by sending a request with the format given below,
 including the appropriate mode.  No matter which mode is used, the external
-client interface to the {\tt position3d} device remains the same.   The server
+client interface to the @p position3d device remains the same.   The server
 will reply with a zero-length acknowledgement
 */
 typedef struct player_position3d_velocitymode_config
@@ -1290,8 +1290,8 @@ typedef struct player_position3d_set_odom_req
 }__PACKED__ player_position3d_set_odom_req_t;
 
 
-/** Reset odometry
-To reset the robot's odometry to $(x,y,\theta) = (0,0,0)$, use the
+/** Reset odometry.
+To reset the robot's odometry to @f$(x,y,\theta) = (0,0,0)@f$, use the
 following request.  The server will reply with a zero-length
 acknowledgement.
 */

@@ -40,7 +40,7 @@
 #include <netinet/in.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -48,10 +48,10 @@
 
 
 // Incremental navigation driver
-class GzPosition3d : public CDevice
+class GzPosition3d : public Driver
 {
   // Constructor
-  public: GzPosition3d(char* interface, ConfigFile* cf, int section);
+  public: GzPosition3d(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzPosition3d();
@@ -64,10 +64,10 @@ class GzPosition3d : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client,
+  public: virtual int PutConfig(player_device_id_t id, player_device_id_t* device, void* client,
                                 void* req, size_t reqlen);
 
   // Handle geometry requests
@@ -91,34 +91,30 @@ class GzPosition3d : public CDevice
 
 
 // Initialization function
-CDevice* GzPosition3d_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzPosition3d_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_POSITION3D_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_position3d\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzPosition3d(interface, cf, section)));
+  return ((Driver*) (new GzPosition3d(cf, section)));
 }
 
 
 // a driver registration function
 void GzPosition3d_Register(DriverTable* table)
 {
-  table->AddDriver("gz_position3d", PLAYER_ALL_MODE, GzPosition3d_Init);
+  table->AddDriver("gz_position3d", GzPosition3d_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzPosition3d::GzPosition3d(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position3d_data_t), sizeof(player_position3d_cmd_t), 10, 10)
+GzPosition3d::GzPosition3d(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_POSITION3D_CODE, PLAYER_ALL_MODE,
+             sizeof(player_position3d_data_t), sizeof(player_position3d_cmd_t), 10, 10)
 {
     // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -214,7 +210,7 @@ void GzPosition3d::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzPosition3d::PutCommand(void* client, unsigned char* src, size_t len)
+void GzPosition3d::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
 {
   player_position3d_cmd_t *cmd;
     
@@ -236,7 +232,7 @@ void GzPosition3d::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzPosition3d::PutConfig(player_device_id_t* device, void* client, void* req, size_t req_len)
+int GzPosition3d::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* req, size_t req_len)
 {
   switch (((char*) req)[0])
   {

@@ -33,60 +33,58 @@
 #include <configfile.h>
 #include <string.h>
 
+#include "driver.h"
 #include "device.h"
-#include "deviceentry.h"
 
 
-class CDeviceTable
+class DeviceTable
 {
   private:
     // we'll keep the device info here.
-    CDeviceEntry* head;
+    Device* head;
     int numdevices;
     pthread_mutex_t mutex;
 
   public:
-    CDeviceTable();
-    ~CDeviceTable();
+    DeviceTable();
+    ~DeviceTable();
         
     // this one is used to fill the instantiated device table
     //
     // id is the id for the device (e.g, 's' for sonar)
-    // name is the string driver name (e.g., "p2os_sonar")
     // access is the access for the device (e.g., 'r' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
-    int AddDevice(player_device_id_t id, const char* drivername, 
-                  const char* robotname, unsigned char access, 
-                  CDevice* devicep);
-
-    // find a device entry, based on id, and return the pointer (or NULL
-    // on failure)
-    CDeviceEntry* GetDeviceEntry(player_device_id_t id);
-
+    int AddDevice(player_device_id_t id, unsigned char access, Driver* driver);
+    
     // returns the controlling object for the given id 
     // (returns NULL on failure)
-    CDevice* GetDevice(player_device_id_t id);
-    
+    Driver* GetDriver(player_device_id_t id);
+
     // returns the string name of the driver in use for the given id 
     // (returns NULL on failure)
-    char* GetDriver(player_device_id_t id);
+    char* GetDriverName(player_device_id_t id);
+
+    // find a device, based on id, and return the pointer (or NULL on
+    // failure)
+    Device* GetDevice(player_device_id_t id);
 
     // returns the code for access ('r', 'w', or 'a') for the given 
     // device, or 'e' on failure
     unsigned char GetDeviceAccess(player_device_id_t id);
 
     // Get the first device entry.
-    CDeviceEntry *GetFirstEntry() {return head;}
+    Device *GetFirstDevice() {return head;}
 
     // Get the next device entry.
-    CDeviceEntry *GetNextEntry(CDeviceEntry *entry) {return entry->next;}
+    Device *GetNextDevice(Device *entry) {return entry->next;}
 
+    // Return the number of devices
     int Size() {return(numdevices);}
 };
 
 
 // Pointer to the global device table.
-extern CDeviceTable* deviceTable;
+extern DeviceTable* deviceTable;
 
 #endif

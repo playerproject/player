@@ -1730,12 +1730,17 @@ int ConfigFile::ReadDeviceId(int section, int index,
   const char *str;
   char s[128];
   int port, ind;
+  CEntity *entity;
 
+  // Look for interfaces tag
   str = this->ReadTupleString(section, "interfaces", index, NULL);
   if (str == NULL)
   {
-    PLAYER_ERROR1("section [%d]: missing interface field", section);
-    return -1;
+    // Look for interface:index block
+    entity = this->entities + section;
+    assert(entity);
+    str = entity->type;
+    PLAYER_WARN1("section [%d]: missing interface field (deprecated syntax)", section);
   } 
   
   // Look for port:interface:index

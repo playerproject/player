@@ -21,13 +21,14 @@ lib_LIBRARIES = libplayerqueue.a
 
 libplayerqueue_a_SOURCES = playerqueue.cc
 
-player_SOURCES = clientdata.cc socket_util.cc devicetable.cc deviceentry.cc device.cc \
-                 deviceregistry.cc clientmanager.cc wallclocktime.cc main.cc \
+player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.hh device.cc device.hh \
+								 drivertable.cc drivertable.hh devicetable.cc devicetable.hh \
+                 deviceregistry.cc deviceregistry.h \
+								 clientmanager.cc wallclocktime.cc main.cc \
                  playerqueue.cc configfile.cc playercommon.h \
-                 player.h playerqueue.h deviceentry.h device.h deviceregistry.h \
-                 devicetable.h clientdata.h clientmanager.h socket_util.h \
-                 wallclocktime.h playertime.h configfile.h drivertable.cc \
-                 drivertable.h # prefix.h
+                 player.h playerqueue.h  \
+                 clientdata.h clientmanager.h socket_util.h \
+                 wallclocktime.h playertime.h configfile.h
 
 
 include_HEADERS = playercommon.h \

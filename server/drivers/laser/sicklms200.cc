@@ -137,6 +137,7 @@ extern PlayerTime* GlobalTime;
 
 #include "playercommon.h"
 #include "drivertable.h"
+#include "driver.h"
 #include "player.h"
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
@@ -144,12 +145,12 @@ extern PlayerTime* GlobalTime;
 
 
 // The laser device class.
-class SickLMS200 : public CDevice
+class SickLMS200 : public Driver
 {
   public:
     
     // Constructor
-    SickLMS200(char* interface, ConfigFile* cf, int section);
+    SickLMS200(ConfigFile* cf, int section);
 
     int Setup();
     int Shutdown();
@@ -263,22 +264,15 @@ class SickLMS200 : public CDevice
 };
 
 // a factory creation function
-CDevice* SickLMS200_Init(char* interface, ConfigFile* cf, int section)
+Driver* SickLMS200_Init(ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_LASER_STRING))
-  {
-    PLAYER_ERROR1("driver \"sicklms200\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new SickLMS200(interface, cf, section)));
+  return((Driver*)(new SickLMS200(cf, section)));
 }
 
 // a driver registration function
 void SickLMS200_Register(DriverTable* table)
 {
-  table->AddDriver("sicklms200", PLAYER_READ_MODE, SickLMS200_Init);
+  table->AddDriver("sicklms200", SickLMS200_Init);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -297,8 +291,9 @@ void SickLMS200_Register(DriverTable* table)
  
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_laser_data_t),0,10,10)
+SickLMS200::SickLMS200(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_READ_MODE,
+             sizeof(player_laser_data_t),0,10,10)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);

@@ -36,12 +36,11 @@ AC_DEFUN([PLAYER_ADD_DRIVER], [
 AC_DEFUN([name_caps],translit($1,[a-z],[A-Z]))
 
 dnl TESTING
-dnl AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)
-ifelse($3,[yes],
-  [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],,
-                 enable_$1=yes)],
-  [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,
-                 enable_$1=no)])
+AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)
+
+dnl ifelse($3,[yes],
+dnl   [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],,enable_$1=yes)],
+dnl   [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)])
 
 failed_header_check=no
 failed_package_check=no

@@ -44,7 +44,7 @@
 #include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -52,10 +52,10 @@
 
 
 // Incremental navigation driver
-class GzWifi : public CDevice
+class GzWifi : public Driver
 {
   // Constructor
-  public: GzWifi(char* interface, ConfigFile* cf, int section);
+  public: GzWifi(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzWifi();
@@ -68,7 +68,7 @@ class GzWifi : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
 
 
   // Gazebo device id
@@ -86,7 +86,7 @@ class GzWifi : public CDevice
 
 
 // Initialization function
-CDevice* GzWifi_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzWifi_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
@@ -98,7 +98,7 @@ CDevice* GzWifi_Init(char* interface, ConfigFile* cf, int section)
     PLAYER_ERROR1("driver \"gz_wifi\" does not support interface \"%s\"\n", interface);
     return (NULL);
   }
-  return ((CDevice*) (new GzWifi(interface, cf, section)));
+  return ((Driver*) (new GzWifi(cf, section)));
 }
 
 
@@ -112,8 +112,8 @@ void GzWifi_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzWifi::GzWifi(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_wifi_data_t), 0, 10, 10)
+GzWifi::GzWifi(ConfigFile* cf, int section)
+    : Driver(cf, section,sizeof(player_wifi_data_t), 0, 10, 10)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -203,7 +203,7 @@ void GzWifi::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzWifi::PutCommand(void* client, unsigned char* src, size_t len)
+void GzWifi::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
 {  
   return;
 }

@@ -47,7 +47,7 @@
 #include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -55,10 +55,10 @@
 
 
 // Incremental navigation driver
-class GzCamera : public CDevice
+class GzCamera : public Driver
 {
   // Constructor
-  public: GzCamera(char* interface, ConfigFile* cf, int section);
+  public: GzCamera(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzCamera();
@@ -95,34 +95,30 @@ class GzCamera : public CDevice
 
 
 // Initialization function
-CDevice* GzCamera_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzCamera_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_CAMERA_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_camera\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzCamera(interface, cf, section)));
+  return ((Driver*) (new GzCamera(cf, section)));
 }
 
 
 // a driver registration function
 void GzCamera_Register(DriverTable* table)
 {
-  table->AddDriver("gz_camera", PLAYER_ALL_MODE, GzCamera_Init);
+  table->AddDriver("gz_camera", GzCamera_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzCamera::GzCamera(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_camera_data_t), 0, 10, 10)
+GzCamera::GzCamera(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_CAMERA_CODE, PLAYER_READ_MODE,
+             sizeof(player_camera_data_t), 0, 10, 10)
 {
   // Get the id of the device in Gazebo.
   // TODO: fix potential buffer overflow
