@@ -35,9 +35,14 @@ The @ref player_driver_readlog driver can be used to replay the data
 (to client programs, the replayed data will appear to come from the
 real sensors).
 
-For help in controlling logging, try @ref player_util_playervcr.
+For help in remote-controlling logging, try @ref player_util_playervcr.
 Note that you must declare a @ref player_interface_log device to allow
 logging control.
+
+Note that unless you plan to remote-control this driver via the @ref
+player_inteface_log interface (e.g., using @ref player_util_playervcr),
+you should specify the @p alwayson option in the configuration file so
+that logging start when Player starts.
 
 @par Compile-time dependencies
 
@@ -76,7 +81,7 @@ The writelog driver can will log data from the following interfaces:
   - Default: "writelog_YYYY_MM_DD_HH_MM.log", where YYYY is the year,
     MM is the month, etc.
   - Name of logfile.
-- enable (integer)
+- autorecord (integer)
   - Default: 0
   - Default log state; set to 1 for continous logging.
 - camera_save_images (integer)
@@ -93,8 +98,8 @@ driver
   name "writelog"
   requires ["laser:0" "position:0"]
   provides ["log:0"]
-  alwayson 1
-  enable 1
+  alwayson 1  # 
+  autorecord 1
 )
 @endverbatim
 */
@@ -265,7 +270,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   this->filename = cf->ReadString(section, "filename", this->default_filename);
 
   // Default enabled?
-  if(cf->ReadInt(section, "enable", 1) > 0)
+  if(cf->ReadInt(section, "autorecord", 1) > 0)
     this->enable_default = true;
   else
     this->enable_default = false;

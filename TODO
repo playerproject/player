@@ -2,13 +2,9 @@ $Id$
 
 1.6 RELEASE:
 ------------
-- update .cfg files
 - document .cfg syntax
 - test on Solaris
-- document plugin building procedure (mention libtool)
 - check compatibility with librtk 2.3.0
-- double-check log rewind/playback control
-
 
 NEXT RELEASE:
 -------------
