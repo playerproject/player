@@ -221,7 +221,12 @@ int PlayerClient::Read()
              //curr.tv_sec, curr.tv_usec, hdr.device, hdr.device_index);
       // put the data in the object
       if(hdr.size)
+      {
+        // store an opaque copy
+        thisproxy->StoreData(hdr,buffer);
+        // also let the device-specific proxy parse it
         thisproxy->FillData(hdr,buffer);
+      }
 
       // fill in the timestamps
       thisproxy->timestamp.tv_sec = hdr.timestamp_sec;

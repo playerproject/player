@@ -146,6 +146,7 @@ AC_OUTPUT(Makefile
           replace/Makefile 
           server/Makefile 
           server/drivers/Makefile 
+          server/drivers/shell/Makefile 
           server/drivers/mixed/Makefile 
           server/drivers/position/Makefile 
           server/drivers/audio/Makefile 

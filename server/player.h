@@ -148,6 +148,8 @@ typedef struct
   uint32_t size;  /* size in bytes of the payload to follow */
 } __attribute__ ((packed)) player_msghdr_t;
 
+#define PLAYER_MAX_PAYLOAD_SIZE (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
+
 /*************************************************************************
  ** begin section Player
  *************************************************************************/

@@ -45,6 +45,9 @@ ClientProxy::ClientProxy(PlayerClient* pc,
   receivedtime.tv_sec = 0;
   receivedtime.tv_usec = 0;
 
+  bzero(&last_data,sizeof(last_data));
+  bzero(&last_header,sizeof(last_header));
+
   // start out with no access
   unsigned char grant_access = 'e';
    
@@ -122,15 +125,22 @@ void ClientProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
   // we can use this base class as a generic device
   // to just pull data out of player
-
-  // copy in the data in a generic sort of way - don't attempt to parse it.
-  memcpy( last_data, buffer, hdr.size );
-
-  // store the header, too.
-  memcpy( &last_header, &hdr, sizeof( hdr ) );
+  // (the data is actually copied in by StoreData(), which is called before
+  // this method).
 
   //if(player_debug_level(-1) >= 1)
   //fputs("WARNING: virtual FillData() was called.\n",stderr);
+}
+
+// This method is used internally to keep a copy of the last message from
+// the device
+void ClientProxy::StoreData(player_msghdr_t hdr, const char* buffer)
+{
+  // copy in the data in a generic sort of way - don't attempt to parse it.
+  memcpy(last_data, buffer, hdr.size);
+
+  // store the header, too.
+  memcpy(&last_header, &hdr, sizeof(hdr));
 }
 
 // interface that all proxies SHOULD provide
