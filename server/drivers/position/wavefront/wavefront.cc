@@ -515,7 +515,6 @@ void Wavefront::Main()
   double dist, angle;
   //double lag;
   static bool rotate_waypoint=false;
-  static bool goal_hack=false;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -539,17 +538,25 @@ void Wavefront::Main()
 
     if(this->new_goal)
     {
-      goal_hack = false;
       // compute costs to the new goal
       plan_update_plan(this->plan, this->target_x, this->target_y);
       
       // compute a path to the goal from the current position
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
 
-      if(!plan_get_waypoint(this->plan,0,&this->waypoint_x,&this->waypoint_y))
+      if(this->plan->waypoint_count == 1)
+      {
+        PLAYER_WARN("no path!");
+        curr_waypoint = -1;
+        this->new_goal=false;
+      }
+      else if(!plan_get_waypoint(this->plan,0,
+                                 &this->waypoint_x,
+                                 &this->waypoint_y))
       {
         PLAYER_WARN("no waypoints!");
         curr_waypoint = -1;
+        this->new_goal=false;
       }
       else
       {
@@ -599,29 +606,9 @@ void Wavefront::Main()
         {
           // no more waypoints, so wait for target achievement
 
-          // HACK: if the planner fails to find a path, we get just one
-          // waypoint, which is the start. In this case, we'll add another
-          // waypoint, which is the goal, and just hope that we get
-          // there...
-          dist = sqrt(((this->target_x - this->waypoint_x) * 
-                       (this->target_x - this->waypoint_x)) +
-                      ((this->target_y - this->waypoint_y) *
-                       (this->target_y - this->waypoint_y)));
-          if(!goal_hack && (dist > 1.0))
-          {
-            printf("Goal hack: setting %f,%f,%f\n",
-                   this->target_x,this->target_y,this->target_a);
-            this->waypoint_x = this->target_x;
-            this->waypoint_y = this->target_y;
-            this->waypoint_a = this->target_a;
-            goal_hack=true;
-          }
-          else
-          {
-            //puts("waiting for goal achievement");
-            usleep(CYCLE_TIME_US);
-            continue;
-          }
+          //puts("waiting for goal achievement");
+          usleep(CYCLE_TIME_US);
+          continue;
         }
         curr_waypoint++;
 
@@ -632,7 +619,7 @@ void Wavefront::Main()
                     (this->waypoint_y - this->localize_y));
         angle = atan2(this->waypoint_y - this->localize_y, 
                       this->waypoint_x - this->localize_x);
-        if(!goal_hack && (dist > this->dist_eps) &&
+        if((dist > this->dist_eps) &&
            fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0)
         {
           puts("adding rotational waypoint");
