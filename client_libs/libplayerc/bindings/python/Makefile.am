@@ -1,19 +1,25 @@
-# only build if Python was found by configure
-if WITH_PYTHON
+
+if INCLUDE_PYLIBPLAYERC
 noinst_DATA = pythonbuild
 PYTHONINSTALL = pythoninstall
 endif
 
+# files that go in distribution
+EXTRA_DIST = playerc.i libplayerc.py setup.py
+
+# files that must be built first
+BUILT_SOURCES = playerc_wrap.c
+
+# use this target to update the bindings
+playerc_wrap.c: playerc.i
+	swig -I../.. -I$(top_srcdir)/server -python playerc.i
+
 # use distutils to build
-pythonbuild:
-	swig -I../.. -python playerc.i
+pythonbuild: playerc_wrap.c
 	python $(srcdir)/setup.py build
 
-# files that go in distribution
-EXTRA_DIST = playerc.i setup.py
-
 clean-local:
-	rm -f playerc_wrap.c playerc.py playerc.pyc
+	rm -f playerc_wrap.c libplayerc.py *.pyc
 	rm -rf build
 
 install-data-hook: $(PYTHONINSTALL)

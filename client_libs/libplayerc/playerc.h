@@ -64,6 +64,17 @@ extern "C" {
 
 
 /***************************************************************************
+ * Useful constants (re-defined here so SWIG can pick them up easily
+ **************************************************************************/
+
+#define PLAYERC_READ_MODE PLAYER_READ_MODE
+#define PLAYERC_WRITE_MODE PLAYER_WRITE_MODE
+#define PLAYERC_ALL_MODE PLAYER_ALL_MODE
+#define PLAYERC_CLOSE_MODE PLAYER_CLOSE_MODE
+#define PLAYERC_ERROR_MODE PLAYER_ERROR_MODE
+  
+
+/***************************************************************************
  * Array sizes
  **************************************************************************/
 
