@@ -46,3 +46,11 @@ void register_devices();
  * and zero is returned.  otherwise, -1 is returned.
  */
 int lookup_interface(char* name, player_interface_t* interface);
+
+/* 
+ * looks through the array of available interfaces for one which the given
+ * code.  if found, interface is filled out (the caller must provide storage)
+ * and zero is returned.  otherwise, -1 is returned.
+ */
+int
+lookup_interface_code(int code, player_interface_t* interface);
