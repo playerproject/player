@@ -34,14 +34,14 @@ SICKLMS200 scanning laser range finder:
 @verbatim
 driver
 (
-  driver "p2os_position"
-  devices ["position:0"]
+  name "p2os_position"
+  provides ["position:0"]
 )
 
 driver
 (
-  driver "sicklms200"
-  devices ["laser:0"]
+  name "sicklms200"
+  provides ["laser:0"]
   port "/dev/ttyS1"
 )
 @endverbatim
