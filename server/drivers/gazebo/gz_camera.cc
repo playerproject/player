@@ -67,9 +67,8 @@ class GzCamera : public CDevice
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Data
-  public: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-                                 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
+  // Check for new data
+  public: virtual void Update();
 
   // Gazebo device id
   private: char *gz_id;
@@ -78,7 +77,13 @@ class GzCamera : public CDevice
   private: gz_client_t *client;
   
   // Gazebo Interface
-  public: gz_camera_t *iface;
+  private: gz_camera_t *iface;
+
+  // Most recent data
+  private: player_camera_data_t data;
+
+  // Timestamp on last data update
+  private: double datatime;
 };
 
 
@@ -123,7 +128,9 @@ GzCamera::GzCamera(char* interface, ConfigFile* cf, int section)
   
   // Create an interface
   this->iface = gz_camera_alloc();
-  
+
+  this->datatime = -1;
+    
   return;
 }
 
@@ -161,66 +168,40 @@ int GzCamera::Shutdown()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Data
-size_t GzCamera::GetData(void* client, unsigned char* dest, size_t len,
-                        uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+// Check for new data
+void GzCamera::Update()
 {
-  player_camera_data_t data;
+  size_t size;
+  uint32_t tsec, tusec;
   
-  assert(len >= sizeof(data));
+  gz_camera_lock(this->iface, 1);
 
-  // Get the image properties
-  data.width = htons(this->iface->data->width);
-  data.height = htons(this->iface->data->height);
-  data.depth = this->iface->data->depth;
-  data.image_size = htonl(this->iface->data->image_size);
+  if (this->iface->data->time > this->datatime)
+  {
+    this->datatime = this->iface->data->time;
+    tsec = (int) (this->iface->data->time);
+    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
-  // Get the image pixels
-  assert((size_t) this->iface->data->image_size < sizeof(data.image));
-  memcpy(data.image, this->iface->data->image, this->iface->data->image_size);
+    // Set the image properties
+    this->data.width = htons(this->iface->data->width);
+    this->data.height = htons(this->iface->data->height);
+    this->data.depth = this->iface->data->depth;
+    this->data.image_size = htonl(this->iface->data->image_size);
 
-  memcpy(dest, &data, sizeof(data));
+    // Set the image pixels
+    assert((size_t) this->iface->data->image_size < sizeof(this->data.image));
+    memcpy(this->data.image, this->iface->data->image, this->iface->data->image_size);
 
-  if (timestamp_sec)
-    *timestamp_sec = (int) (this->iface->data->time);
-  if (timestamp_usec)
-    *timestamp_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
-   
-  return sizeof(data);
+    // Send data to server
+    size = sizeof(this->data) - sizeof(this->data.image) + this->iface->data->image_size;
+    this->PutData(&this->data, size, tsec, tusec);
+  }
+
+  gz_camera_unlock(this->iface);
+
+  return;
 }
 
 
 #endif
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
