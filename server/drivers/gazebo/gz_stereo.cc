@@ -401,7 +401,7 @@ void GzStereo::Update()
           dst_pix[i] = htons((uint16_t) (int16_t) (src_pix[i] * 16));
       }
     
-      size = sizeof(*dst) - sizeof(dst->image) + src->left_disparity_size;
+      size = sizeof(*dst) - sizeof(dst->image) + ntohl(dst->image_size);
       this->PutData(this->leftDisparityId, dst, size, &ts);
 
       // Save frames
@@ -433,7 +433,7 @@ void GzStereo::Update()
           dst_pix[i] = htons((uint16_t) (int16_t) (src_pix[i] * 16));
       }
     
-      size = sizeof(*dst) - sizeof(dst->image) + src->right_disparity_size;
+      size = sizeof(*dst) - sizeof(dst->image) + ntohl(dst->image_size);
       this->PutData(this->rightDisparityId, dst, size, &ts);
 
       // Save frames
@@ -458,7 +458,8 @@ void GzStereo::Update()
 // Save an image frame
 void GzStereo::SaveFrame(const char *filename, player_camera_data_t *data)
 {
-  int i, width, height;
+  int i, j, width, height;
+  uint8_t c;
   FILE *file;
 
   file = fopen(filename, "w+");
@@ -471,9 +472,15 @@ void GzStereo::SaveFrame(const char *filename, player_camera_data_t *data)
   if (data->format == PLAYER_CAMERA_FORMAT_MONO16)
   {
     // Write pgm
-    fprintf(file, "P5\n%d %d\n%d\n", width, height, 0xFFFF);
+    fprintf(file, "P5\n%d %d\n%d\n", width, height, 255);
     for (i = 0; i < height; i++)
-      fwrite(data->image + i * width * 2, 1, width * 2, file);
+    {
+      for (j = 0; j < width; j++)
+      {
+        c = (uint8_t) (ntohs(((uint16_t*) data->image)[i * width + j]) / ntohs(data->fdiv));
+        fwrite(&c, 1, 1, file);
+      }
+    }
   }
   else if (data->format == PLAYER_CAMERA_FORMAT_RGB888)
   {
