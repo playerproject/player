@@ -48,9 +48,6 @@
 
 #include <playerclient.h>
 #include <string.h>  // for memcpy
-//#include <sys/poll.h>
-#include "replace.h"
-
 #include "replace.h"  // for poll
 
 // constructor

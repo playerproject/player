@@ -29,9 +29,6 @@
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -81,11 +78,11 @@ ClientData::ClientData(char* key, int myport)
   // new[] or malloc() throughout this file.
   assert(totalwritebuffer = (unsigned char*)malloc(totalwritebuffersize));
 
-  bzero((char*)readbuffer, PLAYER_MAX_MESSAGE_SIZE);
-  bzero((char*)writebuffer, PLAYER_MAX_MESSAGE_SIZE);
-  bzero((char*)replybuffer, PLAYER_MAX_MESSAGE_SIZE);
-  bzero((char*)totalwritebuffer, totalwritebuffersize);
-  bzero((char*)&hdrbuffer, sizeof(player_msghdr_t));
+  memset((char*)readbuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
+  memset((char*)writebuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
+  memset((char*)replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
+  memset((char*)totalwritebuffer, 0, totalwritebuffersize);
+  memset((char*)&hdrbuffer, 0, sizeof(player_msghdr_t));
 
   readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
   readcnt = 0;
@@ -126,7 +123,7 @@ bool ClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
     return(false);
   }
 
-  bzero((char*)&tmpreq,sizeof(player_device_auth_req_t));
+  memset((char*)&tmpreq,0,sizeof(player_device_auth_req_t));
   tmpreq = *((player_device_auth_req_t*)payload);
 
   // is it the right kind of ioctl?
@@ -159,7 +156,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   struct timeval curr;
 
   // clean the buffer every time for all-day freshness
-  bzero((char*)replybuffer, PLAYER_MAX_MESSAGE_SIZE);
+  memset((char*)replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
 
   // debug output; leave it here
 #if 0
@@ -459,7 +456,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       id.index = ntohs(resp.index);
       resp.access = FindPermission(id);
 
-      bzero(resp.driver_name, sizeof(resp.driver_name));
+      memset(resp.driver_name, 0, sizeof(resp.driver_name));
       char* drivername;
       if((drivername = deviceTable->GetDriver(id)))
         strncpy((char*)resp.driver_name, drivername, sizeof(resp.driver_name));

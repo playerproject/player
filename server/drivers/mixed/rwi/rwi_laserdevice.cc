@@ -82,74 +82,93 @@ CRWILaserDevice::Shutdown()
 void
 CRWILaserDevice::Main()
 {
-	// start enabled
-	bool enabled = true;
-	
-	// Working buffer space
-	player_rwi_config_t cfg;
-	player_laser_data_t data;
-	
-	void *client;
-	
+  // start enabled
+  bool enabled = true;
+  
+  // Working buffer space
+  player_rwi_config_t cfg;
+  player_laser_data_t data;
+  player_laser_geom_t geom;
+  
+  void *client;
+  
 #ifdef USE_MOBILITY
-	MobilityGeometry::SegmentData_var laser_data;
+  MobilityGeometry::SegmentData_var laser_data;
 #endif // USE_MOBILITY
-		
-    if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0) {
-		perror("rwi_laser call to pthread_setcanceltype failed");
+  
+  if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0)
+    {
+      perror("rwi_laser call to pthread_setcanceltype failed");
     }
+  
+  while (true) 
+    {
+      
+      // First, check for a configuration request
+      if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) 
+	{
+	  switch (cfg.request) 
+	    {
+	    case PLAYER_LASER_GET_GEOM:
+	      geom.subtype=PLAYER_LASER_GET_GEOM;
+	      geom.pose[0]=0;
+	      geom.pose[1]=0;
+	      geom.pose[2]=0;
+	      geom.size[0]=ntohs(150);
+	      geom.size[1]=ntohs(180);
 
-	while (true) {
-	
-		// First, check for a configuration request
-		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
-		    switch (cfg.request) {
-				case PLAYER_LASER_GET_GEOM:
-					// FIXME: not yet implemented
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_laserdevice.\n");
-		    		}
-					break;
-				default:
-					printf("rwi_laser device received unknown %s",
-					       "configuration request\n");
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_laserdevice.\n");
-		    		}
-					break;
-	    	}
+	      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+			   NULL, &geom, sizeof(geom))) 
+		{
+		  PLAYER_ERROR("Failed to PutReply in "
+			       "rwi_laserdevice.\n");
 		}
-
-		// Laser takes no commands to process
-	
-		// Finally, collect new data
-		if (enabled) {
-#ifdef USE_MOBILITY
-			laser_data = laser_state->get_sample(0);
-		
-			data.range_count = htons((uint16_t) laser_data->end.length());
-		
-			for (unsigned int i = 0; (i < laser_data->end.length())
-			                         && (i < PLAYER_NUM_LASER_SAMPLES); i++) {
-			    data.ranges[i] = htons((uint16_t) (1000.0 *
-			    	sqrt(laser_data->end[i].x * laser_data->end[i].x +
-			    	     laser_data->end[i].y * laser_data->end[i].y)));
-			}
-#else
-			data.range_count = 0;
-#endif			// USE_MOBILITY
-
-	    	PutData((unsigned char *) &data, sizeof(data), 0, 0);
+	      break;
+	    default:
+	      printf("rwi_laser device received unknown %s",
+		     "configuration request\n");
+	      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+			   NULL, NULL, 0)) 
+		{
+		  PLAYER_ERROR("Failed to PutReply in "
+			       "rwi_laserdevice.\n");
+		}
+	      break;
 	    }
-	
-	    pthread_testcancel();
 	}
-	
-	// should not reach this point
-	pthread_exit(NULL);
+      
+      // Laser takes no commands to process
+      
+      // Finally, collect new data
+      if (enabled) 
+	{
+#ifdef USE_MOBILITY
+	  laser_data = laser_state->get_sample(0);
+	  
+	  data.min_angle=htons(-8950);
+	  data.max_angle=htons(8950);
+	  data.resolution=htons(100);
+
+	  data.range_count = htons((uint16_t) laser_data->end.length());
+	  
+	  for (unsigned int i = 0; (i < laser_data->end.length())
+		 && (i < PLAYER_LASER_MAX_SAMPLES); i++) 
+	    {
+	      data.ranges[i] = htons((uint16_t) (1000.0 *
+			 sqrt(laser_data->end[i].x * laser_data->end[i].x +
+			      laser_data->end[i].y * laser_data->end[i].y)));
+	    }
+#else
+	  data.range_count = 0;
+#endif			// USE_MOBILITY
+	  
+	  PutData((unsigned char *) &data, sizeof(data), 0, 0);
+	}
+      
+      pthread_testcancel();
+    }
+  
+  // should not reach this point
+  pthread_exit(NULL);
 }
 

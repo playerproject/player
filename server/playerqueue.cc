@@ -26,15 +26,8 @@
  * threads.  it can be used either intra-process with real devices or
  * inter-process (through shared memory) with simulated Stage devices.
  */
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
-
 #include <stdlib.h> // for exit(3)
-#include <string.h> // for bzero(3)
+#include <string.h> // for memset(3)
 
 #include <playerqueue.h>
 
@@ -53,7 +46,7 @@ PlayerQueue::PlayerQueue(int tmpqueuelen)
   }
   else
     queue = NULL;
-  bzero(queue, sizeof(playerqueue_elt_t)*len);
+  memset(queue, 0, sizeof(playerqueue_elt_t)*len);
   allocp = true;
 }
 
@@ -63,7 +56,7 @@ PlayerQueue::PlayerQueue(void* tmpqueue, int tmpqueuelen)
 {
   queue = (playerqueue_elt_t*)tmpqueue;
   len = tmpqueuelen;
-  bzero(queue, sizeof(playerqueue_elt_t)*len);
+  memset(queue, 0, sizeof(playerqueue_elt_t)*len);
   allocp = false;
 }
 
@@ -99,7 +92,7 @@ PlayerQueue::Push(player_device_id_t* device, void* client,
       if(device)
         queue[i].device = *device;
 
-      bzero(queue[i].data, PLAYER_MAX_REQREP_SIZE);
+      memset(queue[i].data, 0, PLAYER_MAX_REQREP_SIZE);
       memcpy(queue[i].data,data,queue[i].size);
       queue[i].type = type;
 

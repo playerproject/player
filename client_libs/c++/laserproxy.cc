@@ -116,8 +116,8 @@ void LaserProxy::FillData(player_msghdr_t hdr, const char* buffer)
   resolution = ntohs(((player_laser_data_t*)buffer)->resolution);
   range_count = ntohs(((player_laser_data_t*)buffer)->range_count);
 
-  bzero(ranges,sizeof(ranges));
-  bzero(intensities,sizeof(intensities));
+  memset(ranges,0,sizeof(ranges));
+  memset(intensities,0,sizeof(intensities));
   min_left = 10000;
   min_right = 10000;
   for(unsigned short i=0;i<range_count && i<PLAYER_LASER_MAX_SAMPLES;i++)

@@ -40,12 +40,6 @@ dnl by default, don't build any shared libs
 dnl AC_DISABLE_SHARED
 dnl AM_PROG_LIBTOOL
 
-dnl where's Mobility?
-AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],
-MOBILITY_DIR=$with_mobility,
-MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
-AC_SUBST(MOBILITY_DIR)
-
 dnl FreeBSD always invokes Tcl with a version, so i'll pick a reasonable one
 case $host in
 *-*-freebsd*) AC_CHECK_PROG([TCLPKGFILE], [tclsh8.0], [pkgIndex.tcl], [])
@@ -251,7 +245,7 @@ dnl driver list will be parsed correctly.
 old_IFS=$IFS
 IFS=:
 for player_lib in $PLAYER_NODRIVERS; do
-  if test -n $player_lib; then
+  if test ! $player_lib = "" ; then
     AC_MSG_RESULT([[- $player_lib]])
   fi
 done

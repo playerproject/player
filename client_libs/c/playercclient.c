@@ -50,7 +50,7 @@
 #include "playercclient.h"
 #include <netdb.h>
 #include <unistd.h>
-#include <string.h> /* for bzero() */
+#include <string.h> /* for memset() */
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
@@ -375,7 +375,7 @@ int player_request(player_connection_t* conn,
     return(-1);
   }
 
-  bzero(&hdr,sizeof(hdr));
+  memset(&hdr,0,sizeof(hdr));
   /* eat data until a response comes back (it may not be for the request we
    * just sent, but let a higher level deal with that problem) */
   while((hdr.type != PLAYER_MSGTYPE_RESP_ACK) &&

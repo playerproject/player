@@ -145,7 +145,7 @@ CRWIBumperDevice::Main()
             //bumper_data = bumper_state->get_sample(0);
 
             data.bumper_count = bumper_data->point.length();
-            bzero(data.bumpers, sizeof(data.bumpers));
+            memset(data.bumpers, 0, sizeof(data.bumpers));
 
             for (unsigned int i = 0; (i < bumper_data->point.length())
                  && (i < PLAYER_BUMPER_MAX_SAMPLES); i++) {
@@ -156,7 +156,7 @@ CRWIBumperDevice::Main()
             }
 #else
             data.bumper_count = 0;
-            bzero(data.bumpers, sizeof(data.bumpers));
+            memset(data.bumpers, 0, sizeof(data.bumpers));
 #endif			// USE_MOBILITY
 
             PutData((unsigned char *) &data, sizeof(data), 0, 0);

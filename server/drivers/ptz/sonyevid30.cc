@@ -30,10 +30,6 @@
   #include <config.h>
 #endif
 
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
-
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -313,8 +309,8 @@ SonyEVID30::Receive(unsigned char* reply)
   if(!ptz_fd_blocking)
     usleep(PTZ_SLEEP_TIME_USEC);
 
-  bzero(temp_reply,MAX_PTZ_PACKET_LENGTH);
-  bzero(reply,MAX_PTZ_PACKET_LENGTH);
+  memset(temp_reply,0,MAX_PTZ_PACKET_LENGTH);
+  memset(reply,0,MAX_PTZ_PACKET_LENGTH);
   if(numread > 0)
   {
     //printf("copying %d old bytes\n", numread);

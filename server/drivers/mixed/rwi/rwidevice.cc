@@ -45,6 +45,8 @@ CRWIDevice::CRWIDevice(char* interface, ConfigFile* cf, int section,
 	pthread_mutex_lock(&rwi_counter_mutex);
 	
 	#ifdef USE_MOBILITY
+	int argc=1;
+	char *argv[2]={"program",NULL};
 	if (rwi_device_count == 0) {
 		PLAYER_TRACE0("Initializing helper pointer\n");
 		helper = new mbyClientHelper(argc, argv);

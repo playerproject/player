@@ -73,9 +73,9 @@ int main(int argc, char** argv)
   int* avoidcounts = new int[numclients];
   int* modes = new int[numclients];
 
-  bzero(randcounts,sizeof(int)*numclients);
-  bzero(avoidcounts,sizeof(int)*numclients);
-  bzero(modes,sizeof(int)*numclients);
+  memset(randcounts,0,sizeof(int)*numclients);
+  memset(avoidcounts,0,sizeof(int)*numclients);
+  memset(modes,0,sizeof(int)*numclients);
 
   for(int i=0;i<numclients;i++)
   {

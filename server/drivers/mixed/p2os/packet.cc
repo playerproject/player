@@ -27,13 +27,6 @@
  *
  */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
-
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -102,11 +95,11 @@ int P2OSPacket::Receive( int fd )
   //int skipped=0;
   int cnt;
 
-  bzero(packet,sizeof(packet));
+  memset(packet,0,sizeof(packet));
 
   do 
   {
-    bzero(prefix,sizeof(prefix));
+    memset(prefix,0,sizeof(prefix));
     //memset( prefix, 0, 3);
 
     while(1) 

@@ -140,7 +140,7 @@
 
  */
 
-#include <config.h>
+//#include <config.h>
 #include <stdio.h>              /* used for NULL, also fprintf(stderr,...) */
 #include <stdlib.h>             /* used for malloc's */
 #include <math.h>

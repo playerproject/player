@@ -33,9 +33,6 @@
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
 
 #include <fcntl.h>
 #include <signal.h>
@@ -1209,7 +1206,7 @@ P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
   P2OSPacket packet;
   //static SIP sippacket;
   player_p2os_data_t data;
-  bzero(&data,sizeof(data));
+  memset(&data,0,sizeof(data));
 
   if((psos_fd >= 0) && sippacket)
   {
