@@ -60,7 +60,9 @@ void LaserBarcode_Register(DriverTable* table);
 void LaserVisualBarcode_Register(DriverTable* table);
 #endif
 
-//void LaserCSpace_Register(DriverTable* table);
+#ifdef INCLUDE_LASERCSPACE
+void LaserCSpace_Register(DriverTable* table);
+#endif
 
 #ifdef INCLUDE_SONY
 void SonyEVID30_Register(DriverTable* table);
@@ -199,7 +201,9 @@ register_devices()
   LaserVisualBarcode_Register(driverTable);
 #endif
 
-// LaserCSpace_Register(driverTable);
+#ifdef INCLUDE_LASERCSPACE
+  LaserCSpace_Register(driverTable);
+#endif
 
 #ifdef INCLUDE_SONY
   SonyEVID30_Register(driverTable);
