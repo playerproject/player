@@ -114,6 +114,7 @@ install: $(SERVERNAME)
 	$(MKDIR) -p $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 ../include/playercommon.h $(INSTALL_INCLUDE)/playercommon.h
 	$(INSTALL) -m 644 ../include/messages.h $(INSTALL_INCLUDE)/messages.h
+	$(INSTALL) -m 644 ../include/defaults.h $(INSTALL_INCLUDE)/defaults.h
 	$(INSTALL) -m 644 ../include/stage.h $(INSTALL_INCLUDE)/stage.h
 
 uninstall:
