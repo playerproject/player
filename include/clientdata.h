@@ -55,7 +55,16 @@ class CDeviceSubscription
 
     CDeviceSubscription() { next = NULL; access = 'e'; }
 };
-    
+
+typedef enum
+{
+  PLAYER_AWAITING_FIRST_BYTE_STX,
+  PLAYER_AWAITING_SECOND_BYTE_STX,
+  PLAYER_AWAITING_REST_OF_HEADER,
+  PLAYER_AWAITING_REST_OF_BODY,
+  PLAYER_READ_ERROR,
+} player_read_state_t;
+
 
 class CClientData 
 {
@@ -68,6 +77,11 @@ class CClientData
     unsigned char *readbuffer;
     unsigned char *writebuffer;
     unsigned char *replybuffer;
+    player_msghdr_t hdrbuffer;
+
+    // state machine for the read loop of this client
+    player_read_state_t readstate;
+    unsigned int readcnt;
 
     void MotorStop();
     void PrintRequested(char*);

@@ -679,13 +679,13 @@ int main( int argc, char *argv[] )
     exit(1);
   }
 
-  if(signal(SIGINT, &Interrupt ) == SIG_ERR)
+  if(signal(SIGINT, Interrupt ) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGINT");
     exit(1);
   }
 
-  if(signal(SIGHUP, &Interrupt ) == SIG_ERR)
+  if(signal(SIGHUP, Interrupt ) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGHUP");
     exit(1);

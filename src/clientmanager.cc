@@ -294,6 +294,7 @@ int ClientManager::Read()
   // let's try this poll(2) thing (with a 100ms timeout, because we need to 
   // notice new clients added to our watch list)
 
+  //puts("polling");
   if((num_to_read = poll(ufds,num_clients,100)) == -1)
   {
     if(errno != EINTR)
@@ -306,11 +307,11 @@ int ClientManager::Read()
 
 
   pthread_mutex_lock(&rthread_client_mutex);
-  //if(num_to_read)
+  //if(num_to_read > 0)
     //printf("%d to read\n", num_to_read);
   //printf("EVENTS: %d\n", num_to_read);
   // call the corresponding Read() for each one that's ready
-  for(int i=0;i<num_clients && num_to_read;i++)
+  for(int i=0;i<num_clients && num_to_read>0;i++)
   {
     // is this one ready to read?
     if(ufds[i].revents & POLLIN)

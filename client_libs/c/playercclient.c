@@ -164,7 +164,6 @@ int player_request(player_connection_t* conn,
   unsigned char buffer[PLAYER_MAX_MESSAGE_SIZE];
   player_msghdr_t hdr;
 
-
   if(payloadlen > (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)))
   {
     if(player_debug_level(-1) >= 2)
@@ -320,7 +319,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
   /*timesec = (time_t)(hdr->time / 1000);*/
   /*printf("time: %s\n", ctime(&timesec));*/
-  /*puts("got HDR");*/
+  //puts("got HDR");
 
   /* get the payload */
   if(hdr->size > payloadlen)

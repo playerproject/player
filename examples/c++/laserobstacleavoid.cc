@@ -80,7 +80,6 @@ int main(int argc, char **argv)
     /* this blocks until new data comes; 10Hz by default */
     if(robot.Read())
       exit(1);
-    continue;
 
     /* print current sensor data to console */
     //lp.Print();
@@ -112,7 +111,6 @@ int main(int argc, char **argv)
     newturnrate = r-l;
     newturnrate = max(newturnrate,40);
     newturnrate = min(newturnrate,-40);
-    //printf("speed: %d\tturn:%d\n", *(robot.newspeed), *(robot.newturnrate));
                   
     /* write commands to robot */
     pp.SetSpeed(newspeed,newturnrate);
