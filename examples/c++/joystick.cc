@@ -202,16 +202,15 @@ void joystick_handler( struct controller* cont )
 
 		break;
 
+                /*
 		// HAT UP DOWN
 	      case TILT:
-                /*
 		if( event.value > 0 ) 
                   puts( "tilt down" );
                 else if( event.value < 0 ) 
                   puts( "tilt up" );
 		else
                   puts( "stop tilt" );
-                  */
 		
 		if( event.value > 0 )
 		  cont->tilt = -TILT_SPEED;
@@ -226,14 +225,12 @@ void joystick_handler( struct controller* cont )
 		
 		// HAT LEFT RIGHT
 	      case PAN:
-                /*
 		if( event.value > 0 ) 
                   puts( "pan right" );
                 else if( event.value < 0 ) 
                   puts( "pan left" );
                 else
                   puts( "stop pan" );
-                  */
 	
 		if( event.value > 0 )
 		  cont->pan = -PAN_SPEED;
@@ -245,6 +242,7 @@ void joystick_handler( struct controller* cont )
 		//cont->dirty = true;
 	
 		break;
+                */
 	      }
 	  }	  
 	  break;
