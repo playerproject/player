@@ -1930,7 +1930,7 @@ typedef struct player_localize_map_data
  *************************************************************************/
 
 /*************************************************************************
- ** begin section MCom
+ ** begin section mcom
  *************************************************************************/
 
 /*  MCom device by Matthew Brewer <mbrewer@andrew.cmu.edu> (updated for 1.3 by 
@@ -1939,44 +1939,70 @@ typedef struct player_localize_map_data
  *  Amherst.
  */
 
-#define MCOM_DATA_LEN           128     // size of the data field in messages
+/** [Synopsis] The {\tt mcom} interface is designed for exchanging information 
+ between clients.  A client sends a message of a given "type" and
+ "channel". This device stores adds the message to that channel's stack.
+ A second client can then request data of a given "type" and "channel".
+ Push, Pop, Read, and Clear operations are defined, but their semantics can 
+ vary, based on the stack discipline of the underlying driver.  For example, 
+ the {\tt lifo\_mcom} driver enforces a last-in-first-out stack. */
+
+/** [Constants] */
+/** size of the data field in messages */
+#define MCOM_DATA_LEN           128     
 #define MCOM_COMMAND_BUFFER_SIZE    (sizeof(player_mcom_config_t))
 #define MCOM_DATA_BUFFER_SIZE   0       // we don't actually need any "data", 
                                         // just "configuration" commands aro used.
-#define MCOM_N_BUFS             10      // number of buffers to keep per channel
-#define MCOM_CHANNEL_LEN        8       // size of channel name
+/** number of buffers to keep per channel */
+#define MCOM_N_BUFS             10      
+/** size of channel name */
+#define MCOM_CHANNEL_LEN        8       
 
-// command ids
+/** request ids */
 #define PLAYER_MCOM_PUSH_REQ    0
 #define PLAYER_MCOM_POP_REQ     1
 #define PLAYER_MCOM_READ_REQ    2
 #define PLAYER_MCOM_CLEAR_REQ   3
 
-// XXX this might be GCC-specific
-#define _PACKED_ __attribute__ ((packed))
+/** [Data] The {\tt mcom} interface returns no data. */
 
-//a piece of data as used by the com device
-typedef struct {
-    char full;  // a flag
+/** [Command] The {\tt mcom} interface accepts no commands. */
+
+/** [Configuration] */
+
+/** A piece of data. */
+typedef struct player_mcom_data
+{
+    /** a flag */
+    char full;  
+    /** the data */
     char data[MCOM_DATA_LEN];
-} _PACKED_ player_mcom_data_t;
+} __attribute__ ((packed)) player_mcom_data_t;
 
 
-//config messages to client registry
-typedef struct {
+/** Config requests sent to server. */
+typedef struct player_mcom_config
+{
+    /** Which request.  Should be one of the defined request ids. */
     uint16_t command;
+    /** The "type" of the data. */
     uint16_t type;
+    /** The name of the channel. */
     char channel[MCOM_CHANNEL_LEN];
+    /** The data. */
     player_mcom_data_t data;
-} _PACKED_ player_mcom_config_t;
+} __attribute__ ((packed)) player_mcom_config_t;
 
-//listing returned by reply
-typedef struct {
-    uint16_t subtype; // should be PLAYER_COM_DATA_REPLY
+/** Config replies from server. */
+typedef struct player_mcom_return
+{
+    /** The "type" of the data */
     uint16_t type;
+    /** The name of the channel. */
     char channel[MCOM_CHANNEL_LEN];
+    /** The data. */
     player_mcom_data_t data;
-} _PACKED_ player_mcom_return_t;
+} __attribute__ ((packed)) player_mcom_return_t;
 
 /*************************************************************************
  ** end section
