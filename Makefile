@@ -2,6 +2,8 @@
 # $Id$
 #
 
+# DO NOT make configuration changes here!.  Make them in Makefile.common.
+
 include Makefile.common
 
 MANUAL_LOCATION = player-manual

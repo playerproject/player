@@ -146,7 +146,8 @@ CSpeechDevice::Setup()
   read_pending = false;
 
 
-  printf("Festival speech synthesis server connection initializing...");
+  printf("Festival speech synthesis server connection initializing (%s,%d)...",
+         festival_libdir_value,portnum);
   fflush(stdout);
 
   int i=0;

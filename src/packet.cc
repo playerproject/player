@@ -97,8 +97,7 @@ int CPacket::Receive( int fd )
   //int skipped=0;
   int cnt;
 
-  bzero(packet,256);
-  //memset( packet, 0, 256 );
+  bzero(packet,sizeof(packet));
 
   do 
   {

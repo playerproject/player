@@ -32,10 +32,12 @@
 
 #include <string.h>
 
+#define PACKET_LEN
+
 class CPacket 
 {
  public:
-  unsigned char packet[256];
+  unsigned char packet[PACKET_LEN];
   unsigned char size;
 
   int CalcChkSum();
