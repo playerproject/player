@@ -29,340 +29,448 @@
  * module of trogdor; thanks to the author of that module.
  */
 
-/** @addtogroup drivers Drivers */
-/** @{ */
-/** @defgroup player_driver_er1 er1
 
-The er1 driver provides position control of the Evolution Robotics'
-ER1 and ERSDK robots.
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 
-This driver is new and not thoroughly tested.  The odometry cannot be
-trusted to give accurate readings.
-
-You will need a kernel driver to allow the serial port to be seen.
-This driver, and news about the player driver can be found <a
-href="http://www-robotics.usc.edu/~dfseifer/project-erplayer.php">here</a>.
-
-@todo Implement IR and power interfaces.
-
-NOT DOING: I don't have a gripper, if someone has code for a gripper,
-by all means contribute it.  It would be welcome to the mix.
-
-@par Compile-time dependencies
-
-- &lt;asm/ioctls.h&gt;
-
-@par Provides
-
-- @ref player_interface_position
-
-@par Requires
-
-- none
-
-@par Supported configuration requests
-
-- PLAYER_POSITION_GET_GEOM_REQ
-- PLAYER_POSITION_MOTOR_POWER_REQ
-
-@par Configuration file options
-
-- port (string)
-  - Default: "/dev/usb/ttyUSB0"
-  - Serial port used to communicate with the robot.
-- axle (length)
-  - Default: 0.38 m
-  - The distance between the motorized wheels
-- motor_dir (integer)
-  - Default: 1
-  - Direction of the motors; should be 1 or -1.  If the left motor is
-    plugged in to the motor 1 port on the RCM, put -1 here instead
-- debug (integer)
-  - Default: 0
-  - Should the driver print out debug messages?
-  
-@par Example 
-
-@verbatim
-driver
-(
-  name "er1"
-  provides ["position:0"]
-)
-@endverbatim
-
-@par Authors
-
-David Feil-Seifer
-*/
-/** @} */
-
-
-#define PI 3.1415927
-
+#include "er.h"
 #include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <termios.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
+#include <string.h>
 #include <sys/ioctl.h>
-#include <asm/ioctls.h> /* not portable - fails in OS X  - rtv*/
-
-#include "driver.h"
-#include "drivertable.h"
-#include "devicetable.h"
-#include "player.h"
-#include "error.h"
-#include "replace.h"
-#include "er_constants.h"
+#include <player.h>
 
 static void StopRobot(void* erdev);
 
-class ER : public Driver
-{
-  private:
-    // this function will be run in a separate thread
-    virtual void Main();
-    
-    // bookkeeping
-    bool fd_blocking;
-	bool stopped;
-	bool debug;
-    double px, py, pa;  // integrated odometric pose (m,m,rad)
-    int last_ltics, last_rtics;
-    bool odom_initialized;
-	bool need_to_set_speed;
-	
-	double axle_length;
-	int motor_0_dir;
-	int motor_1_dir;
-
-
-    // methods for internal use
-    int WriteBuf(unsigned char* s, size_t len);
-    int ReadBuf(unsigned char* s, size_t len);
-    int SendCommand(unsigned char * cmd, int cmd_len, unsigned char * ret_val, int ret_len);
-
-	int InitOdom( );
-    int GetOdom(int *ltics, int *rtics, int *lvel, int *rvel);
-    void UpdateOdom(int ltics, int rtics);
-    int GetBatteryVoltage(int* voltage);
-	int GetRangeSensor( int s, float * val );
-	void MotorSpeed(  );
-	void SpeedCommand( unsigned char * cmd, double speed, int dir );
-    float BytesToFloat(unsigned char *ptr);
-    void Int32ToBytes(unsigned char* buf, int i);
-    int ValidateChecksum(unsigned char *ptr, size_t len);
-    unsigned char ComputeChecksum(unsigned char *ptr, size_t len);
-	void InstToChars( int x, unsigned char * y, int l );
-    int ComputeTickDiff(int from, int to);
-    int ChangeMotorState(int state);
-    int InitRobot();
-    int BytesToInt32(unsigned char *ptr);
-	unsigned char * GetRangeCode( int s );
-	void Motor0ToMotor1( unsigned char * x );
-
-	int *tc_num;
-  public:
-    int fd; // device file descriptor
-    const char* serial_port; // name of dev file
-
-    // public, so that it can be called from pthread cleanup function
-    int SetVelocity(double lvel, double rvel);
-	void Stop( int StopMode );
-
-    ER(ConfigFile* cf, int section);
-
-    virtual int Setup();
-    virtual int Shutdown();
-};
-
 
 // initialization function
-Driver* ER_Init(ConfigFile* cf, int section)
+Driver* ER_Init( ConfigFile* cf, int section)
 {
-  return((Driver*)(new ER(cf, section)));
+	return((Driver*)(new ER(cf, section)));
 }
+
 
 // a driver registration function
 void 
 ER_Register(DriverTable* table)
 {
-  table->AddDriver("er1", ER_Init);
+  table->AddDriver("er", ER_Init);
 }
 
-ER::ER(ConfigFile* cf, int section) 
-        : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
-                 sizeof(player_position_data_t),
-                 sizeof(player_position_cmd_t),1,1)
+ER::ER(ConfigFile* cf, int section) :
+  Driver(cf,section)
 {
-  fd = -1;
-  tc_num = new int[3];
-  tc_num[0] = 2;
-  tc_num[1] = 0;
-  tc_num[2] = 185;
-  this->serial_port = cf->ReadString(section, "port", ER_DEFAULT_PORT);
-	need_to_set_speed = true;
+
+
+  // zero ids, so that we'll know later which interfaces were requested
+  memset(&this->position_id, 0, sizeof(player_device_id_t));
+  this->position_subscriptions = 0;
+  
+  printf( "discovering drivers\n" );
+  
+  // Do we create a robot position interface?
+  if(cf->ReadDeviceId(&(this->position_id), section, "provides", 
+                      PLAYER_POSITION_CODE,-1,NULL) == 0)
+  {
+    printf("found position\n" );
+    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
+                          sizeof(player_position_data_t),
+                          sizeof(player_position_cmd_t), 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      return;
+    }
+  }
+
+  //::initialize_robot_params();
+  
+  _fd = -1;
+  _tc_num = new int[3];
+  _tc_num[0] = 2;
+  _tc_num[1] = 0;
+  _tc_num[2] = 185;
+  this->_serial_port = cf->ReadString(section, "port", ER_DEFAULT_PORT);
+	_need_to_set_speed = true;
 	
   //read in axle radius
-	axle_length = cf->ReadLength( section, "axle", ER_DEFAULT_AXLE_LENGTH );
+	_axle_length = cf->ReadFloat( section, "axle", ER_DEFAULT_AXLE_LENGTH );
 
   //read in left motor and right motor direction
-  	int dir = cf->ReadInt(section,"motor_dir", 1);
-	motor_0_dir = dir * ER_DEFAULT_MOTOR_0_DIR;
-	motor_1_dir = dir * ER_DEFAULT_MOTOR_1_DIR;
+  int dir = cf->ReadInt(section,"motor_dir", 1);
+	_motor_0_dir = dir * ER_DEFAULT_MOTOR_0_DIR;
+	_motor_1_dir = dir * ER_DEFAULT_MOTOR_1_DIR;
 
-	debug = 1== cf->ReadInt( section, "debug", 0 );
+	_debug = 1== cf->ReadInt( section, "debug", 0 );
 
 }
+/////////////////////
+// bus fcns 
+/////////////////////
+
+int
+ER::ReadBuf(unsigned char* s, size_t len)
+{
+
+	int thisnumread;
+	size_t numread = 0;
+
+  while(numread < len)
+  {
+//  	printf( "len=%d numread=%d\n", len, numread );
+    if((thisnumread = read(this->_fd,s+numread,len-numread)) < 0)
+    {
+      printf("read() failed: %s\n", strerror(errno));
+      return(-1);
+    }
+    if(thisnumread == 0)
+      printf("short read\n");
+    numread += thisnumread;
+  }
+  
+//  printf("read:\n");
+//  for(size_t i=0;i<numread;i++) printf("0x%02x\n", s[i]);
+  
+  return(0);
+}
+
+int
+ER::WriteBuf(unsigned char* s, size_t len)
+{
+
+  size_t numwritten;
+  int thisnumwritten;
+  numwritten=0;
+  while(numwritten < len)
+  {
+    if((thisnumwritten = write(this->_fd,s+numwritten,len-numwritten)) < 0)
+    {
+      if(!this->_fd_blocking && errno == EAGAIN)
+      {
+        usleep(ER_DELAY_US);
+        continue;
+      }
+      printf("write() failed: %s\n", strerror(errno));
+      return(-1);
+    }
+    numwritten += thisnumwritten;
+  }
+ 
+	ioctl( this->_fd, TIOCMSET, _tc_num );
+	if( _tc_num[0] == 2 ) { _tc_num[0] = 0; }
+	else { _tc_num[0] = 2; }
+
+
+  return 0;
+}
+
+int
+ER::send_command( unsigned char address, unsigned char c, int ret_num, unsigned char * ret )
+{
+  
+  unsigned char cmd[4];
+  
+  cmd[0] = address;
+  cmd[2] = 0x00;
+  cmd[3] = c;
+  
+  //compute checksum
+  int chk = 0x100;
+  chk -= cmd[0];
+  chk -= cmd[2];
+  chk -= cmd[3];
+  
+  cmd[1] = (unsigned char) chk;
+  
+  int result = WriteBuf( cmd, 4 );
+  
+  if( result < 0 )
+  {
+    printf( "failed to send command\n" );
+  }
+  
+  if( ret > 0 )
+  {
+    usleep( ER_DELAY_US );
+  
+    if( ReadBuf( ret, ret_num ) < 0 )
+    {
+      printf( "failed to read response\n" );
+    }
+  }
+
+
+//	PLAYER_WARN1( "cmd: 0x%4x", *((int *) cmd) );
+
+  return result;
+}
+
+
+
+int
+ER::send_command_2_arg( unsigned char address, unsigned char c, int arg, int ret_num, unsigned char * ret )
+{
+  
+  unsigned char cmd[6];
+  
+  cmd[0] = address;
+  cmd[2] = 0x00;
+  cmd[3] = c;
+  
+  int a = htons( arg );
+  
+  cmd[5] = (a >> 8) & 0xFF;
+  cmd[4] = (a >> 0) & 0xFF;
+  
+  //compute checksum
+  int chk = 0x100;
+  chk -= cmd[0];
+  chk -= cmd[2];
+  chk -= cmd[3];
+  chk -= cmd[4];
+  chk -= cmd[5];
+  
+  cmd[1] = (unsigned char) chk;
+  
+  int result = WriteBuf( cmd, 6 );
+  
+  if( result < 0 )
+  {
+    printf( "failed to send command\n" );
+  }
+  
+  
+  if( ret > 0 )
+  {
+    usleep( ER_DELAY_US );
+    if( ReadBuf( ret, ret_num ) < 0 )
+    {
+      printf( "failed to read response\n" );
+    }
+  }
+//	PLAYER_WARN1( "cmd: 0x%4x", *((int *) cmd) );
+//	PLAYER_WARN1( "cmd: 0x%4x", *((int *) &(cmd[4])) );
+  return result;
+}
+
+int
+ER::send_command_4_arg( unsigned char address, unsigned char c, int arg, int ret_num, unsigned char * ret )
+{
+  
+  unsigned char cmd[8];
+  
+  cmd[0] = address;
+  cmd[2] = 0x00;
+  cmd[3] = c;
+  
+  int a = htonl( arg );
+  cmd[7] = (a >> 24) & 0xFF;
+  cmd[6] = (a >> 16) & 0xFF;
+  cmd[5] = (a >> 8 ) & 0xFF;
+  cmd[4] = (a >> 0 ) & 0xFF;
+  
+  //compute checksum
+  int chk = 0x100;
+  chk -= cmd[0];
+  chk -= cmd[2];
+  chk -= cmd[3];
+  chk -= cmd[4];
+  chk -= cmd[5];
+  chk -= cmd[6];
+  chk -= cmd[7];
+  
+  cmd[1] = (unsigned char) chk;
+  
+  int result = WriteBuf( cmd, 8 );
+  
+  if( result < 0 )
+  {
+    printf( "failed to send command\n" );
+  }
+  
+  if( ret > 0 )
+  {
+    usleep( ER_DELAY_US );
+    if( ReadBuf( ret, ret_num ) < 0 )
+    {
+      printf( "failed to read response\n" );
+    }
+  }
+//	PLAYER_WARN1( "cmd: 0x%4x", *((int *) cmd) );
+//	PLAYER_WARN1( "cmd: 0x%4x", *((int *) &(cmd[4])) );
+  
+  return result;
+}
+
+//////////////////////////////
+// robot initializations
+//////////////////////////////
 
 int
 ER::InitRobot()
 {
 
-	// initialize the robot
-	unsigned char initstr[4];
-	unsigned char buf[6];
+  // initialize the robot
+  unsigned char buf[6];
+  usleep(ER_DELAY_US);
+  if(send_command( MOTOR_0, GETVERSION, 6, buf ) < 0)
+  {
+    printf("failed to initialize robot\n");
+    return -1;
+  }
 
-	InstToChars( ER_MOTOR_0_INIT, initstr, 4 );
+  /* TODO check return value to match 0x00A934100013 */
+  if(send_command( MOTOR_1, GETVERSION, 6, buf ) < 0)
+  {
+    printf("failed to initialize robot\n");
+    return -1;
+  }
+  /* TODO check return value to match 0x00A934100013 */
 
-	usleep(ER_DELAY_US);
-	if(WriteBuf(initstr,sizeof(initstr)) < 0)
-	{
-		PLAYER_WARN("failed to initialize robot");
-		return -1;
-	}
-	usleep(ER_DELAY_US);
-	if(ReadBuf(buf,6) < 0)
-	{
-		PLAYER_ERROR("failed to read status");
-		return(-1);
-	}
-	/* TODO check return value to match 0x00A934100013 */
-	Motor0ToMotor1( initstr );
-	if(WriteBuf(initstr,sizeof(initstr)) < 0)
-	{
-		PLAYER_WARN("failed to initialize robot");
-		return -1;
-	}
-	usleep(ER_DELAY_US);
-	if(ReadBuf(buf,6) < 0)
-	{
-		PLAYER_ERROR("failed to read status");
-		return(-1);
-	}
-	/* TODO check return value to match 0x00A934100013 */
+  _tc_num[2] = 25;
+  _stopped = true;
+  return(0);
+}
 
-	tc_num[2] = 25;
-	stopped = true;
-	return(0);
+int
+ER::InitOdom()
+{
+
+  unsigned char ret[8];
+  
+  //try leaving the getVersion out
+  send_command( MOTOR_0, RESET, 2, ret );
+  send_command_2_arg( MOTOR_0, SETMOTORCMD, 0, 2, ret );
+  send_command_2_arg( MOTOR_0, SETLIMITSWITCHMODE, 0, 2, ret );
+  send_command_2_arg( MOTOR_0, SETPROFILEMODE, 0x0001, 2, ret );
+  send_command_4_arg( MOTOR_0, SETVEL, 0, 2, ret );  
+  send_command_4_arg( MOTOR_0, SETACCEL, 0, 2, ret );  
+  send_command_4_arg( MOTOR_0, SETDECEL, 0, 2, ret );  
+  
+  //same for motor 1
+  send_command( MOTOR_1, RESET, 2, ret );
+  send_command_2_arg( MOTOR_1, SETMOTORCMD, 0, 2, ret );
+  send_command_2_arg( MOTOR_1, SETLIMITSWITCHMODE, 0, 2, ret );
+  send_command_2_arg( MOTOR_1, SETPROFILEMODE, 0x0001, 2, ret );
+  send_command_4_arg( MOTOR_1, SETVEL, 0, 2, ret );  
+  send_command_4_arg( MOTOR_1, SETACCEL, 0, 2, ret );  
+  send_command_4_arg( MOTOR_1, SETDECEL, 0, 2, ret );  
+
+
+  //update values
+  send_command( MOTOR_0, UPDATE, 2, ret );
+  send_command( MOTOR_1, UPDATE, 2, ret );
+
+	_last_ltics = 0;
+	_last_rtics = 0;
+	
+	return 0;
 }
 
 int 
 ER::Setup()
 {
+  struct termios term;
+  int flags;
+  //int ltics,rtics,lvel,rvel;
+  player_position_cmd_t cmd;
+  player_position_data_t data;
 
-	struct termios term;
-	int flags;
-//	int ltics,rtics,lvel,rvel;
-	player_position_cmd_t cmd;
-	player_position_data_t data;
+  cmd.xpos = cmd.ypos = cmd.yaw = 0;
+  cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
+  data.xpos = data.ypos = data.yaw = 0;
+  data.xspeed = data.yspeed = data.yawspeed = 0;
 
-	cmd.xpos = cmd.ypos = cmd.yaw = 0;
-	cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
-	data.xpos = data.ypos = data.yaw = 0;
-	data.xspeed = data.yspeed = data.yawspeed = 0;
+  this->_px = this->_py = this->_pa = 0.0;
+  this->_odom_initialized = false;
 
-	this->px = this->py = this->pa = 0.0;
-	this->odom_initialized = false;
+  printf("Evolution Robotics evolution_rcm connection initializing (%s)...\n", _serial_port);
+  fflush(stdout);
 
-	printf("Evolution Robotics evolution_rcm connection initializing (%s)...", serial_port);
-	fflush(stdout);
-
-	// open it.  non-blocking at first, in case there's no robot
-	if((this->fd = open(serial_port, O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
-	{
-		PLAYER_ERROR1("open() failed: %s", strerror(errno));
-		return(-1);
-	}  
+  // open it.  non-blocking at first, in case there's no robot
+  if((this->_fd = open(_serial_port, O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+  {
+    printf("open() failed: %s\n", strerror(errno));
+    return(-1);
+  }  
  
-	if(tcgetattr(this->fd, &term) < 0 )
-	{
-    	PLAYER_ERROR1("tcgetattr() failed: %s", strerror(errno));
-		close(this->fd);
-		this->fd = -1;
-		return(-1);
-	}
+  if(tcgetattr(this->_fd, &term) < 0 )
+  {
+    printf("tcgetattr() failed: %s\n", strerror(errno));
+    close(this->_fd);
+    this->_fd = -1;
+    return(-1);
+  }
 
-	cfmakeraw( &term );
-	cfsetispeed(&term, B230400);
-	cfsetospeed(&term, B230400);
+  cfmakeraw( &term );
+  cfsetispeed(&term, B230400);
+  cfsetospeed(&term, B230400);
+  if(tcsetattr(this->_fd, TCSADRAIN, &term) < 0 )
+  {
+    printf("tcsetattr() failed: %s\n", strerror(errno));
+    close(this->_fd);
+    this->_fd = -1;
+    return(-1);
+  }
 
-	if(tcsetattr(this->fd, TCSADRAIN, &term) < 0 )
-	{
-		PLAYER_ERROR1("tcsetattr() failed: %s", strerror(errno));
-		close(this->fd);
-		this->fd = -1;
-		return(-1);
-	}
-
-	fd_blocking = false;
-	if(InitRobot() < 0)
-	{
-		PLAYER_ERROR("failed to initialize robot");
-		close(this->fd);
-		this->fd = -1;
-		return(-1);
-	}
+  _fd_blocking = false;
+  if(InitRobot() < 0)
+  {
+    printf("failed to initialize robot\n");
+    close(this->_fd);
+    this->_fd = -1;
+    return(-1);
+  }
 
 	/* ok, we got data, so now set NONBLOCK, and continue */
-	if((flags = fcntl(this->fd, F_GETFL)) < 0)
+	if((flags = fcntl(this->_fd, F_GETFL)) < 0)
 	{
-		PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
-		close(this->fd);
-		this->fd = -1;
+		printf("fcntl() failed: %s\n", strerror(errno));
+		close(this->_fd);
+		this->_fd = -1;
 		return(-1);
 	}
 
-	if(fcntl(this->fd, F_SETFL, flags ^ O_NONBLOCK) < 0)
+	if(fcntl(this->_fd, F_SETFL, flags ^ O_NONBLOCK) < 0)
 	{
-		PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
-		close(this->fd);
-		this->fd = -1;
+		printf("fcntl() failed: %s\n", strerror(errno));
+		close(this->_fd);
+		this->_fd = -1;
 		return(-1);
 	}
-	fd_blocking = true;
-	puts("Done.");
+	_fd_blocking = true;
 
 	/*  This might be a good time to reset the odometry values */
 	if( InitOdom() < 0 ) {
-		PLAYER_ERROR("InitOdom failed" );
-		close(this->fd);
-		this->fd = -1;
+		printf("InitOdom failed\n" );
+		close(this->_fd);
+		this->_fd = -1;
 		return -1;
 	}
 
 	// zero the command buffer
-	PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
-	PutData((unsigned char*)&data,sizeof(data),NULL);
+	player_position_cmd_t zero;
+	memset(&zero,0,sizeof(player_position_cmd_t));
+	this->PutCommand(this->position_id,(void*)&zero,
+	                 sizeof(player_position_cmd_t),NULL);
 
 	// start the thread to talk with the robot
-	StartThread();
+	this->StartThread();
 
 	return(0);
 }
+
 
 int
 ER::Shutdown()
 {
 
-  if(this->fd == -1)
+  if(this->_fd == -1)
     return(0);
 
   StopThread();
@@ -371,35 +479,198 @@ ER::Shutdown()
   // is called as a result of the above StopThread()
   
   if(SetVelocity(0,0) < 0)
-    PLAYER_ERROR("failed to stop robot while shutting down");
+    printf("failed to stop robot while shutting down\n");
   
 
   usleep(ER_DELAY_US);
 
-  if(close(this->fd))
-    PLAYER_ERROR1("close() failed:%s",strerror(errno));
-  this->fd = -1;
-  puts("ER has been shutdown");
+  if(close(this->_fd))
+    printf("close() failed:%s\n",strerror(errno));
+  this->_fd = -1;
+  if( _debug )
+    printf("ER has been shutdown\n\n");
   
   return(0);
 }
+void
+ER::Stop( int StopMode ) {
+	
+	unsigned char ret[8];
+	
+	printf( "Stop\n" );
+	/* Start with motor 0*/
+	_stopped = true;
+  if( StopMode == FULL_STOP )
+  {
+    /* motor 0 */
+    send_command_2_arg( MOTOR_0, RESETEVENTSTATUS, 0x0000, 2, ret );
+    send_command_2_arg( MOTOR_0, SETMOTORCMD, 0x0000, 2, ret );
+    send_command_2_arg( MOTOR_0, SETPROFILEMODE, 0x0001, 2, ret );
+    send_command_2_arg( MOTOR_0, SETSTOPMODE, 0x0001, 2, ret );
+    send_command_4_arg( MOTOR_0, SETVEL, 0, 2, ret );
+    send_command_4_arg( MOTOR_0, SETACCEL, 0, 2, ret );
+    send_command_4_arg( MOTOR_0, SETDECEL, 0, 2, ret );
+    send_command( MOTOR_0, UPDATE, 2, ret );
+    send_command( MOTOR_0, RESET, 2, ret );
+
+    /* motor 1 */
+    send_command_2_arg( MOTOR_1, RESETEVENTSTATUS, 0x0000, 2, ret );
+    send_command_2_arg( MOTOR_1, SETMOTORCMD, 0x0000, 2, ret );
+    send_command_2_arg( MOTOR_1, SETPROFILEMODE, 0x0001, 2, ret );
+    send_command_2_arg( MOTOR_1, SETSTOPMODE, 0x0001, 2, ret );
+    send_command_4_arg( MOTOR_1, SETVEL, 0, 2, ret );
+    send_command_4_arg( MOTOR_1, SETACCEL, 0, 2, ret );
+    send_command_4_arg( MOTOR_1, SETDECEL, 0, 2, ret );
+    send_command( MOTOR_1, UPDATE, 2, ret );
+    send_command( MOTOR_1, RESET, 2, ret );
+  }
+  else
+  {
+    /* motor 0 */
+    send_command_2_arg( MOTOR_0, RESETEVENTSTATUS, 0x0700, 2, ret );
+    send_command_4_arg( MOTOR_0, SETVEL, 0, 2, ret );
+    send_command( MOTOR_0, UPDATE, 2, ret );
+    send_command( MOTOR_0, RESET, 2, ret );
+
+    /* motor 1 */
+    send_command_2_arg( MOTOR_1, RESETEVENTSTATUS, 0x0700, 2, ret );
+    send_command_4_arg( MOTOR_1, SETVEL, 0, 2, ret );
+    send_command( MOTOR_1, UPDATE, 2, ret );
+    send_command( MOTOR_1, RESET, 2, ret );
+  
+  }
+	
+}
+
+////////////////////
+// periodic fcns
+////////////////////
+
+
+int
+ER::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
+{
+
+	unsigned char ret[6];
+
+	/* motor 0 */
+  send_command( MOTOR_0, GETCMDPOS, 6, ret );
+	*ltics = _motor_0_dir * BytesToInt32(&(ret[2]));
+
+	/* motor 1 */
+  send_command( MOTOR_1, GETCMDPOS, 6, ret );
+	*rtics = _motor_1_dir * BytesToInt32(&(ret[2]));
+
+	/* hmmm, what to do here ??? */
+	/*
+	index += 4;
+	*rvel = BytesToInt32(buf+index);
+	index += 4;
+	*lvel = BytesToInt32(buf+index);
+	*/
+
+  if( _debug )
+  {
+    printf("ltics: %d rtics: %d\n", *ltics, *rtics);
+  } 
+
+	return(0);
+}
+
+int
+ER::GetBatteryVoltage(int* voltage)
+{
+	
+	unsigned char ret[4];
+	
+  send_command_2_arg( MOTOR_1, READANALOG, 0x0001, 6, ret );
+
+  if( _debug )
+   	printf( "voltage?: %f\n", (float) BytesToFloat(&(ret[2])) );
+  
+  //yeah and do something with this voltage???
+  
+	return(0);
+}
+
+int
+ER::GetRangeSensor(int s, float * val )
+{
+	
+	unsigned char ret[6];
+
+  send_command_2_arg( s / 8, READANALOG, s % 8, 6, ret );
+
+	/* this is definately wrong, need to fix this */
+	float range = (float) BytesToFloat( &(ret[2]) );
+
+  if( _debug )
+  	printf( "sensor value?: %d\n", s );
+
+	val = &range;
+
+	return 0;
+}
+
+
+int
+ER::SetVelocity(double lvel, double rvel)
+{
+
+	unsigned char ret[8];
+  if( _debug )
+	printf( "lvel: %f rvel: %f\n", lvel, rvel );
+
+  send_command( MOTOR_0, GETEVENTSTATUS, 4, ret );
+  
+  if( _stopped )
+  {
+    send_command_2_arg( MOTOR_0, RESETEVENTSTATUS, 0x0300, 2, ret );
+    send_command_2_arg( MOTOR_0, SETMOTORCMD, 0x6590, 2, ret );
+    send_command_2_arg( MOTOR_0, SETPROFILEMODE, 0x0001, 2, ret );
+  }
+  else
+  {
+    send_command_2_arg( MOTOR_0, RESETEVENTSTATUS, 0x0700, 2, ret );
+  
+  }
+  
+  SpeedCommand( MOTOR_0, lvel, _motor_0_dir );
+  
+  send_command_4_arg( MOTOR_0, SETACCEL, 0x0000007E, 2, ret );
+
+
+  send_command( MOTOR_1, GETEVENTSTATUS, 4, ret );
+  if( _stopped )
+  {
+    send_command_2_arg( MOTOR_1, RESETEVENTSTATUS, 0x0300, 2, ret );
+    send_command_2_arg( MOTOR_1, SETMOTORCMD, 0x6590, 2, ret );
+    send_command_2_arg( MOTOR_1, SETPROFILEMODE, 0x0001, 2, ret );
+  }
+  else
+  {
+    send_command_2_arg( MOTOR_1, RESETEVENTSTATUS, 0x0700, 2, ret );
+  }
+  
+  SpeedCommand( MOTOR_1, rvel, _motor_1_dir );
+  send_command_4_arg( MOTOR_1, SETACCEL, 0x0000007E, 2, ret );
+
+
+  send_command( MOTOR_0, UPDATE, 2, ret );
+  send_command( MOTOR_1, UPDATE, 2, ret );
+
+	_stopped = false;
+  return 0;
+}
+
 
 void 
 ER::Main()
 {
 
-	player_position_cmd_t command;
 	player_position_data_t data;
-	double last_final_lvel, last_final_rvel;
 	int rtics, ltics, lvel, rvel;
-	last_final_rvel = last_final_lvel = 0;
-	char config[256];
-	int config_size;
-	void* client;
 	double lvel_mps, rvel_mps;
-	double command_rvel, command_lvel;
-	double final_lvel = 0, final_rvel = 0;
-	double rotational_term;
 	pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
 	// push a pthread cleanup function that stops the robot
@@ -409,64 +680,16 @@ ER::Main()
 	{
 		pthread_testcancel();
     
+    	// handle pending config requests
+	    this->HandleConfig();
+
+		//PLAYER_WARN("Done with handle config" );
+
 		/* position command */
 
-		GetCommand((void*)&command, sizeof(player_position_cmd_t),
-                           NULL);
-		command.yawspeed = ntohl(command.yawspeed) / 1;
-		command.xspeed = ntohl(command.xspeed) / 1;
-		
-		// convert (tv,rv) to (lv,rv) and send to robot
-		rotational_term = (command.yawspeed * PI / 180.0) * (axle_length*1000.0) / 2.0;
-		command_rvel = (command.xspeed) + rotational_term;
-		command_lvel = (command.xspeed) - rotational_term;
-    
-		// sanity check on per-wheel speeds
-		if(fabs(command_lvel) > ER_MAX_WHEELSPEED) {
-			if(command_lvel > 0) {
-				command_lvel = ER_MAX_WHEELSPEED;
-				command_rvel *= ER_MAX_WHEELSPEED/command_lvel;
-			}
-			else {
-				command_lvel = - ER_MAX_WHEELSPEED;
-				command_rvel *= -ER_MAX_WHEELSPEED/command_lvel;
-			}
-		}
-		if(fabs(command_rvel) > ER_MAX_WHEELSPEED) {
-			if(command_rvel > 0) {
-				command_rvel = ER_MAX_WHEELSPEED;
-				command_lvel *= ER_MAX_WHEELSPEED/command_rvel;
-			}
-			else {
-				command_rvel = - ER_MAX_WHEELSPEED;
-				command_lvel *= -ER_MAX_WHEELSPEED/command_rvel;
-			}
-		}
+		this->GetCommand();
 
-		final_lvel = command_lvel;
-		final_rvel = command_rvel;
-
-		// TODO: do this min threshold smarter, to preserve desired travel 
-		// direction
-
-
-		if((final_lvel != last_final_lvel) ||
-			(final_rvel != last_final_rvel)) {
-
-			if( final_lvel * last_final_lvel < 0 || final_rvel * last_final_rvel < 0 ) {
-//				printf( "Changing motor direction, soft stop\n" );
-				SetVelocity(0,0);
-			}
-
-			if(SetVelocity(final_lvel/10.0,final_rvel/10.0) < 0) {
-				PLAYER_ERROR("failed to set velocity");
-				pthread_exit(NULL);
-			}
-			last_final_lvel = final_lvel;
-			last_final_rvel = final_rvel;
-			MotorSpeed();
-		}
-
+		//PLAYER_WARN("Done with get Command config" );
 		/* get battery voltage */
 
 /*
@@ -506,12 +729,12 @@ ER::Main()
 
 
 		double tmp_angle;
-		data.xpos = htonl((int32_t)rint(this->px * 1e3));
-		data.ypos = htonl((int32_t)rint(this->py * 1e3));
-		if(this->pa < 0)
-			tmp_angle = this->pa + 2*M_PI;
+		data.xpos = htonl((int32_t)rint(this->_px * 1e3));
+		data.ypos = htonl((int32_t)rint(this->_py * 1e3));
+		if(this->_pa < 0)
+			tmp_angle = this->_pa + 2*M_PI;
 		else
-			tmp_angle = this->pa;
+			tmp_angle = this->_pa;
 
 		data.yaw = htonl((int32_t)floor(RTOD(tmp_angle)));
 
@@ -520,67 +743,11 @@ ER::Main()
 		rvel_mps = rvel * ER_MPS_PER_TICK;
 		data.xspeed = htonl((int32_t)rint(1e3 * (lvel_mps + rvel_mps) / 2.0));
 		data.yawspeed = htonl((int32_t)rint(RTOD((rvel_mps-lvel_mps) / 
-                                             axle_length)));
+                                             _axle_length)));
 
-		PutData((void*)&data,sizeof(data),NULL);
+//		PutData((unsigned char*)&data,sizeof(data),0,0);
 
-		player_position_power_config_t* powercfg;
 
-		if((config_size = GetConfig(&client,(void*)config,
-                                            sizeof(config),NULL)) > 0)
-		{
-			switch(config[0])
-			{
-				case PLAYER_POSITION_GET_GEOM_REQ:
-				/* Return the robot geometry. */
-					if(config_size != 1)
-					{
-						PLAYER_WARN("Get robot geom config is wrong size; ignoring");
-						if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
-							PLAYER_ERROR("failed to PutReply");
-						break;
-					}
-
-					//TODO : get values from somewhere.
-					player_position_geom_t geom;
-					geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-					geom.pose[0] = htons((short) (0));
-					geom.pose[1] = htons((short) (0));
-					geom.pose[2] = htons((short) (0));
-					geom.size[0] = htons((short) (450));
-					geom.size[1] = htons((short) (450));
-
-					if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL))
-					PLAYER_ERROR("failed to PutReply");
-					break;
-				case PLAYER_POSITION_MOTOR_POWER_REQ:
-					// NOTE: this doesn't seem to actually work
-					if(config_size != sizeof(player_position_power_config_t))
-					{
-						PLAYER_WARN("Motor state change request wrong size; ignoring");
-						if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
-							PLAYER_ERROR("failed to PutReply");
-						break;
-					}
-					powercfg = (player_position_power_config_t*)config;
-					printf("got motor power req: %d\n", powercfg->value);
-					if(ChangeMotorState(powercfg->value) < 0)
-					{
-						if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
-							PLAYER_ERROR("failed to PutReply");
-					}
-					else
-					{
-						if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
-							PLAYER_ERROR("failed to PutReply");
-					}
-					break;
-
-				default:
-					PLAYER_WARN1("received unknown config type %d\n", config[0]);
-					PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL);
-			} /* switch */
-		} /* if */
 
 	    usleep(ER_DELAY_US);
 
@@ -589,59 +756,191 @@ ER::Main()
   
 }
 
-int
-ER::ReadBuf(unsigned char* s, size_t len)
+void
+ER::HandleConfig(void)
 {
+  void* client;
+  unsigned char config[PLAYER_MAX_REQREP_SIZE];
+  int config_size;
+  player_position_power_config_t* powercfg;
 
-	int thisnumread;
-	size_t numread = 0;
-
-  while(numread < len)
+  if((config_size = GetConfig(this->position_id, &client, 
+     (void*)config, sizeof(config),NULL)) > 0)
   {
-//  	printf( "len=%d numread=%d\n", len, numread );
-    if((thisnumread = read(this->fd,s+numread,len-numread)) < 0)
+    switch(config[0])
     {
-      PLAYER_ERROR1("read() failed: %s", strerror(errno));
-      return(-1);
-    }
-    if(thisnumread == 0)
-      PLAYER_WARN("short read");
-    numread += thisnumread;
-  }
-  
-//  printf("read:\n");
-//  for(size_t i=0;i<numread;i++) printf("0x%02x\n", s[i]);
-  
-  return(0);
+      case PLAYER_POSITION_GET_GEOM_REQ:
+      /* Return the robot geometry. */
+      if(config_size != 1)
+      {
+        printf("Get robot geom config is wrong size; ignoring\n");
+        if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+        printf("failed to PutReply\n");
+					}
+					else
+					{
+					  printf( "sending geom config\n" );
+					  //TODO : get values from somewhere.
+					  player_position_geom_t geom;
+					  geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+					  geom.pose[0] = htons((short) (-100));
+					  geom.pose[1] = htons((short) (0));
+					  geom.pose[2] = htons((short) (0));
+					  geom.size[0] = htons((short) (250));
+					  geom.size[1] = htons((short) (425));
+
+					  PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom), NULL);
+					}
+					break;
+						
+				case PLAYER_POSITION_MOTOR_POWER_REQ:
+					// NOTE: this doesn't seem to actually work
+					if(config_size != sizeof(player_position_power_config_t))
+					{
+						printf("Motor state change request wrong size; ignoring\n");
+						if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+							printf("failed to PutReply\n");
+						break;
+					}
+					powercfg = (player_position_power_config_t*)config;
+					printf("got motor power req: %d\n", powercfg->value);
+					if(ChangeMotorState(powercfg->value) < 0)
+					{
+						if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+							printf("failed to PutReply\n");
+					}
+					else
+					{
+						if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+							printf("failed to PutReply\n");
+					}
+					break;
+
+					default:
+					printf("received unknown config request\n");
+					PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL);
+			} /* switch */
+		} /* if */
 }
 
-int
-ER::WriteBuf(unsigned char* s, size_t len)
+void
+ER::GetCommand(void)
+{
+  // get and send the latest motor command
+  player_position_cmd_t position_cmd;
+  if(Driver::GetCommand(this->position_id,(void*)&position_cmd,
+                        sizeof(player_position_cmd_t),NULL) > 0)
+  {
+    this->HandlePositionCommand(position_cmd);
+  }
+}
+
+void
+ER::HandlePositionCommand(player_position_cmd_t position_cmd)
 {
 
-  size_t numwritten;
-  int thisnumwritten;
-  numwritten=0;
-  while(numwritten < len)
-  {
-    if((thisnumwritten = write(this->fd,s+numwritten,len-numwritten)) < 0)
-    {
-      if(!this->fd_blocking && errno == EAGAIN)
-      {
-        usleep(ER_DELAY_US);
-        continue;
-      }
-      PLAYER_ERROR1("write() failed: %s", strerror(errno));
-      return(-1);
-    }
-    numwritten += thisnumwritten;
-  }
- 
-	ioctl( this->fd, TIOCMSET, tc_num );
-	if( tc_num[0] == 2 ) { tc_num[0] = 0; }
-	else { tc_num[0] = 2; }
+	double rotational_term;
+	double command_rvel, command_lvel;
+	double final_lvel = 0, final_rvel = 0;
+	double last_final_lvel = 0, last_final_rvel = 0;
 
-  return 0;
+
+	position_cmd.yawspeed = ntohl(position_cmd.yawspeed) / 1;
+	position_cmd.xspeed = ntohl(position_cmd.xspeed) / 1;
+		
+	// convert (tv,rv) to (lv,rv) and send to robot
+	rotational_term = (position_cmd.yawspeed * M_PI / 180.0) * (_axle_length*1000.0) / 2.0;
+	command_rvel = (position_cmd.xspeed) + rotational_term;
+	command_lvel = (position_cmd.xspeed) - rotational_term;
+    
+//	printf( "position_cmd.xspeed: %d position_cmd.yawspeed: %d\n", position_cmd.xspeed, position_cmd.yawspeed );
+	
+	// sanity check on per-wheel speeds
+	if(fabs(command_lvel) > ER_MAX_WHEELSPEED) {
+		if(command_lvel > 0) {
+			command_lvel = ER_MAX_WHEELSPEED;
+			command_rvel *= ER_MAX_WHEELSPEED/command_lvel;
+		}
+		else {
+			command_lvel = - ER_MAX_WHEELSPEED;
+			command_rvel *= -ER_MAX_WHEELSPEED/command_lvel;
+		}
+	}
+	if(fabs(command_rvel) > ER_MAX_WHEELSPEED) {
+		if(command_rvel > 0) {
+			command_rvel = ER_MAX_WHEELSPEED;
+			command_lvel *= ER_MAX_WHEELSPEED/command_rvel;
+		}
+		else {
+			command_rvel = - ER_MAX_WHEELSPEED;
+			command_lvel *= -ER_MAX_WHEELSPEED/command_rvel;
+		}
+	}
+
+	final_lvel = command_lvel;
+	final_rvel = command_rvel;
+
+  if( _debug )
+    printf( "final_lvel: %f, final_rvel: %f\n", final_lvel, final_rvel );
+
+
+	
+
+	// TODO: do this min threshold smarter, to preserve desired travel 
+	// direction
+
+	if((final_lvel != last_final_lvel) ||
+		(final_rvel != last_final_rvel)) {
+		if( final_lvel * last_final_lvel < 0 || final_rvel * last_final_rvel < 0 ) {
+//				PLAYER_WARN( "Changing motor direction, soft stop\n" );
+			SetVelocity(0,0);
+		}
+		if(SetVelocity(final_lvel/10.0,final_rvel/10.0) < 0) {
+			printf("failed to set velocity\n");
+			pthread_exit(NULL);
+		}
+		if( (int) position_cmd.xspeed == 0 && (int) position_cmd.yawspeed == 0 )
+		{
+			printf( "STOP\n" );
+			Stop( FULL_STOP+1 );			
+		}
+
+		last_final_lvel = final_lvel;
+		last_final_rvel = final_rvel;
+		MotorSpeed();
+	}
+}
+////////////////////
+// util fcns
+////////////////////
+
+void
+ER::MotorSpeed()
+{
+	unsigned char ret[8];
+
+  send_command( MOTOR_0, GETEVENTSTATUS, 4, ret );
+  send_command_2_arg( MOTOR_0, RESETEVENTSTATUS, 0x0700, 2, ret );
+  send_command_4_arg( MOTOR_0, SETACCEL, 0x0000007A, 2, ret );
+  send_command( MOTOR_1, GETEVENTSTATUS, 4, ret );
+  send_command_2_arg( MOTOR_1, RESETEVENTSTATUS, 0x0700, 2, ret );
+  send_command_4_arg( MOTOR_1, SETACCEL, 0x0000007A, 2, ret );
+
+  send_command( MOTOR_0, UPDATE, 2, ret );
+  send_command( MOTOR_1, UPDATE, 2, ret );
+}
+
+void
+ER::SpeedCommand( unsigned char address, double speed, int dir ) {
+	
+  unsigned char ret[2];
+  
+	int whole = dir * (int) (speed * 16819.8);
+
+  send_command_4_arg( address, SETVEL, whole, 2, ret );
+
+//	printf( "speed: %f checksum: 0x%02x value: 0x%08x\n", speed, cmd[1], whole );
+	
 }
 
 int 
@@ -660,6 +959,8 @@ ER::BytesToInt32(unsigned char *ptr)
   data |= (((int)char2) << 16) & 0x00FF0000;
   data |= (((int)char3) << 24) & 0xFF000000;
 
+  //this could just be ntohl
+
   return data;
 }
 
@@ -672,190 +973,6 @@ ER::BytesToFloat(unsigned char *ptr)
 	sscanf( (const char *) ptr, "%f", &data );
 
   return data;
-}
-
-int
-ER::GetBatteryVoltage(int* voltage)
-{
-	
-	unsigned char buf[6];
-	unsigned char ret[4];
-	
-	InstToChars( ER_GET_VOLTAGE_LOW, buf, 4 );
-	InstToChars( ER_GET_VOLTAGE_HIGH, &(buf[4]), 2 );
-
-//	puts("sending for voltage");
-	SendCommand( buf, 6, ret, 4 );
-  
-// 	printf( "voltage?: %f\n", (float) BytesToFloat(buf) );
-  
-	return(0);
-}
-
-int
-ER::GetRangeSensor(int s, float * val )
-{
-	
-	unsigned char * buf = GetRangeCode( s );
-	unsigned char ret[4];
-
-//	printf("sending for range value for sensor: %d\n", s );
-	if( SendCommand( buf, 6, ret, 4 ) < 0 ) {
-		PLAYER_ERROR( "ERROR on send command" );
-		return -1;
-	}
-	
-	/* this is definately wrong, need to fix this */
-	float range = (float) BytesToFloat( buf );
-//	printf( "sensor value?: %d\n", s );
-	val = &range;
-
-	return 0;
-}
-
-void
-ER::Int32ToBytes(unsigned char* buf, int i)
-{
-  buf[3] = (i >> 0)  & 0xFF;
-  buf[2] = (i >> 8)  & 0xFF;
-  buf[1] = (i >> 16) & 0xFF;
-  buf[0] = (i >> 24) & 0xFF;
-}
-
-int
-ER::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
-{
-
-	unsigned char buf[4];
-	unsigned char ret[6];
-
-	/* motor 0 */
-	InstToChars( ER_ODOM_PROBE, buf, 4 );
-	SendCommand( buf, 4, ret, 6 );
-	*ltics = motor_0_dir * BytesToInt32(&(ret[2]));
-
-	int diff = BytesToInt32( &(ret[2]) );
-
-
-//	printf( "0x%08x\n", diff);
-
-	/* motor 1 */
-	InstToChars( ER_ODOM_PROBE, buf, 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 4, ret, 6 );
-	*rtics = motor_1_dir * BytesToInt32(&(ret[2]));
-
-	diff = BytesToInt32( &(ret[2]) );
-
-//	printf( "0x%08x\n", diff);
-	/* hmmm, what to do here ??? */
-	/*
-	index += 4;
-	*rvel = BytesToInt32(buf+index);
-	index += 4;
-	*lvel = BytesToInt32(buf+index);
-	*/
-	
-//	printf("ltics: %d rtics: %d\n", *ltics, *rtics);
-
-//	puts("got good odom packet");
-
-	return(0);
-}
-
-int
-ER::InitOdom()
-{
-	/*function to send all the motor commands to reset the wheel ticks */
-	
-	unsigned char buf[8];
-	unsigned char ret[8];
-	/* Start with motor 0*/
-	InstToChars( ER_MOTOR_0_INIT, buf, 4 );
-	SendCommand( buf, 4, ret, 6 );
-	/* TODO check that ret value matches 0x00A934100013 */
-	
-	InstToChars( ER_ODOM_RESET_1, buf, 4 );
-	SendCommand( buf, 4, ret, 2 );
-	/* TODO check that this value matches 0x01FF */
-	
-	InstToChars( ER_ODOM_RESET_2_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_2_2, &(buf[4]), 2 );
-	SendCommand( buf, 6, ret, 2 );
-	
-	InstToChars( ER_ODOM_RESET_3_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_3_2, &(buf[4]), 2 );
-	SendCommand( buf, 6, ret, 2 );
-	
-	InstToChars( ER_ODOM_RESET_4_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_4_2, &(buf[4]), 2 );
-	SendCommand( buf, 6, ret, 2 );
-	
-	InstToChars( ER_ODOM_RESET_5_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_5_2, &(buf[4]), 4 );
-	SendCommand( buf, 8, ret, 2 );
-
-	InstToChars( ER_ODOM_RESET_6_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_6_2, &(buf[4]), 4 );
-	SendCommand( buf, 8, ret, 2 );
-
-	InstToChars( ER_ODOM_RESET_7_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_7_2, &(buf[4]), 4 );
-	SendCommand( buf, 8, ret, 2 );
-
-	InstToChars( ER_MOTOR_EXECUTE_1, buf, 4 );
-	SendCommand( buf, 4, ret, 2 );
-
-
-	/* Translate for motor 1 */
-	InstToChars( ER_MOTOR_0_INIT, buf, 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 4, ret, 6 );
-	/* TODO check that this value matches 0x00A934100013 */
-	
-	InstToChars( ER_ODOM_RESET_1, buf, 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 4, ret, 2 );
-	/* TODO check that this value matches 0x01FF */
-	
-	InstToChars( ER_ODOM_RESET_2_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_2_2, &(buf[4]), 2 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 6, ret, 2 );
-	
-	InstToChars( ER_ODOM_RESET_3_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_3_2, &(buf[4]), 2 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 6, ret, 2 );
-	
-	InstToChars( ER_ODOM_RESET_4_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_4_2, &(buf[4]), 2 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 6, ret, 2 );
-	
-	InstToChars( ER_ODOM_RESET_5_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_5_2, &(buf[4]), 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 8, ret, 2 );
-
-	InstToChars( ER_ODOM_RESET_6_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_6_2, &(buf[4]), 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 8, ret, 2 );
-
-	InstToChars( ER_ODOM_RESET_7_1, buf, 4 );
-	InstToChars( ER_ODOM_RESET_7_2, &(buf[4]), 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 8, ret, 2 );
-
-	InstToChars( ER_MOTOR_EXECUTE_1, buf, 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 4, ret, 2 );	
-	
-	last_ltics = 0;
-	last_rtics = 0;
-	
-	return 0;
 }
 
 int 
@@ -879,7 +996,6 @@ ER::ComputeTickDiff(int from, int to)
     return(diff1);
   else
     return(diff2);
-	
 
 	return 0;
 }
@@ -895,21 +1011,20 @@ ER::UpdateOdom(int ltics, int rtics)
 	struct timeval currtime;
 	double timediff;
 
-	if(!this->odom_initialized)
+	if(!this->_odom_initialized)
 	{
-		this->last_ltics = ltics;
-		this->last_rtics = rtics;
+		this->_last_ltics = ltics;
+		this->_last_rtics = rtics;
 		gettimeofday(&lasttime,NULL);
-		this->odom_initialized = true;
+		this->_odom_initialized = true;
 		return;
 	}
   
-
 //	ltics_delta = ComputeTickDiff(last_ltics,ltics);
 //	rtics_delta = ComputeTickDiff(last_rtics,rtics);
 
-	ltics_delta = ltics - this->last_ltics;
-	rtics_delta = rtics - this->last_rtics;
+	ltics_delta = ltics - this->_last_ltics;
+	rtics_delta = rtics - this->_last_rtics;
 
   // mysterious rollover code borrowed from CARMEN
 /* 
@@ -929,7 +1044,7 @@ ER::UpdateOdom(int ltics, int rtics)
   max_tics = (int)rint(ER_MAX_WHEELSPEED / ER_M_PER_TICK / timediff);
   lasttime = currtime;
 	
-	if( debug ) {
+	if( _debug ) {
 	  printf("ltics: %d\trtics: %d\n", ltics,rtics);
 	  printf("ldelt: %d\trdelt: %d\n", ltics_delta, rtics_delta);
 	}
@@ -937,7 +1052,7 @@ ER::UpdateOdom(int ltics, int rtics)
 
   if(abs(ltics_delta) > max_tics || abs(rtics_delta) > max_tics)
   {
-    PLAYER_WARN("Invalid odometry change (too big); ignoring");
+    printf("Invalid odometry change (too big); ignoring\n");
     return;
   }
 
@@ -945,380 +1060,21 @@ ER::UpdateOdom(int ltics, int rtics)
   r_delta = rtics_delta * ER_M_PER_TICK;
 
 
-  a_delta = (r_delta - l_delta) / ( axle_length );
+  a_delta = (r_delta - l_delta) / ( _axle_length );
   d_delta = (l_delta + r_delta) / 2.0;
 
-  this->px += d_delta * cos(this->pa + (a_delta / 2));
-  this->py += d_delta * sin(this->pa + (a_delta / 2));
-  this->pa += a_delta;
-  this->pa = NORMALIZE(this->pa);
+  this->_px += d_delta * cos(this->_pa + (a_delta / 2));
+  this->_py += d_delta * sin(this->_pa + (a_delta / 2));
+  this->_pa += a_delta;
+  this->_pa = NORMALIZE(this->_pa);
   
-	if( debug ) {
-		printf("er: pose: %f,%f,%f\n", this->px,this->py,this->pa * 180.0 / PI);
+	if( _debug ) {
+		printf("er: pose: %f,%f,%f\n", this->_px,this->_py,this->_pa * 180.0 / M_PI);
 	}
-  this->last_ltics = ltics;
-  this->last_rtics = rtics;
+  this->_last_ltics = ltics;
+  this->_last_rtics = rtics;
 }
 
-void
-ER::Stop( int StopMode ) {
-	
-	unsigned char buf[8];
-	unsigned char ret[8];
-	
-	/* Start with motor 0*/
-	if( StopMode == FULL_STOP ) {
-
-		InstToChars( ER_STOP_1_1, buf, 4 );
-		InstToChars( ER_STOP_1_2, &(buf[4]), 2 );
-		SendCommand( buf, 6, ret, 2 );
-	}
-	else {
-		
-		InstToChars( ER_SET_ACCL_2_1, buf, 4 );
-		InstToChars( ER_SET_ACCL_2_2, &(buf[4]), 2 );
-		SendCommand( buf, 6, ret, 2 );
-		
-	}
-	if( StopMode == FULL_STOP ) {
-
-		InstToChars( ER_STOP_2_1, buf, 4 );
-		InstToChars( ER_STOP_2_2, &(buf[4]), 2 );
-		SendCommand( buf, 6, ret, 2 );
-	
-		InstToChars( ER_STOP_3_1, buf, 4 );
-		InstToChars( ER_STOP_3_2, &(buf[4]), 2 );
-		SendCommand( buf, 6, ret, 2 );
-
-		InstToChars( ER_STOP_4_1, buf, 4 );
-		InstToChars( ER_STOP_4_2, &(buf[4]), 2 );
-		SendCommand( buf, 6, ret, 2 );
-
-	}
-
-	InstToChars( ER_STOP_5_1, buf, 4 );
-	InstToChars( ER_STOP_5_2, &(buf[4]), 4 );
-	SendCommand( buf, 8, ret, 2 );
-
-	if( StopMode == FULL_STOP ) {
-
-		InstToChars( ER_STOP_6_1, buf, 4 );
-		InstToChars( ER_STOP_6_2, &(buf[4]), 4 );
-		SendCommand( buf, 8, ret, 2 );
-
-		InstToChars( ER_STOP_7_1, buf, 4 );
-		InstToChars( ER_STOP_7_2, &(buf[4]), 4 );
-		SendCommand( buf, 8, ret, 2 );
-
-	}
-
-	InstToChars( ER_MOTOR_EXECUTE_1, buf, 4 );
-	SendCommand( buf, 4, ret, 2 );
-
-	InstToChars( ER_STOP_8_1, buf, 4 );
-	SendCommand( buf, 4, ret, 2 );
-
-	/* now motor 1*/
-	if( StopMode == FULL_STOP ) {
-
-		InstToChars( ER_STOP_1_1, buf, 4 );
-		InstToChars( ER_STOP_1_2, &(buf[4]), 2 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 6, ret, 2 );
-
-	}
-	else {
-		
-		InstToChars( ER_SET_ACCL_2_1, buf, 4 );
-		InstToChars( ER_SET_ACCL_2_2, &(buf[4]), 2 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 6, ret, 2 );
-	
-	}
-
-	if( StopMode == FULL_STOP ) {
-
-		InstToChars( ER_STOP_2_1, buf, 4 );
-		InstToChars( ER_STOP_2_2, &(buf[4]), 2 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 6, ret, 2 );
-
-		InstToChars( ER_STOP_3_1, buf, 4 );
-		InstToChars( ER_STOP_3_2, &(buf[4]), 2 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 6, ret, 2 );
-
-		InstToChars( ER_STOP_4_1, buf, 4 );
-		InstToChars( ER_STOP_4_2, &(buf[4]), 2 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 6, ret, 2 );
-
-	}
-
-	InstToChars( ER_STOP_5_1, buf, 4 );
-	InstToChars( ER_STOP_5_2, &(buf[4]), 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 8, ret, 2 );
-
-	if( StopMode == FULL_STOP ) {
-
-		InstToChars( ER_STOP_6_1, buf, 4 );
-		InstToChars( ER_STOP_6_2, &(buf[4]), 4 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 8, ret, 2 );
-
-		InstToChars( ER_STOP_7_1, buf, 4 );
-		InstToChars( ER_STOP_7_2, &(buf[4]), 4 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 8, ret, 2 );
-
-	}
-
-	InstToChars( ER_MOTOR_EXECUTE_1, buf, 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 4, ret, 2 );
-
-	InstToChars( ER_STOP_8_1, buf, 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 4, ret, 2 );
-	
-}
-
-void
-ER::MotorSpeed() {
-	
-	unsigned char buf[8];
-	unsigned char ret[8];
-	
-	/* Start with motor 0*/
-	InstToChars( ER_SET_ACCL_1, buf, 4 );
-	SendCommand( buf, 4, ret, 4 );
-
-	InstToChars( ER_SET_ACCL_2_1, buf, 4 );
-	InstToChars( ER_SET_ACCL_2_2, &(buf[4]), 2 );
-	SendCommand( buf, 6, ret, 2 );
-
-	InstToChars( ER_SET_ACCL_3_1, buf, 4 );
-	InstToChars( ER_SET_ACCL_3_2, &(buf[4]), 4 );
-	SendCommand( buf, 8, ret, 2 );
-
-	/* now motor 1*/
-	InstToChars( ER_SET_ACCL_1, buf, 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 4, ret, 4 );
-
-	InstToChars( ER_SET_ACCL_2_1, buf, 4 );
-	InstToChars( ER_SET_ACCL_2_2, &(buf[4]), 2 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 6, ret, 2 );
-
-	InstToChars( ER_SET_ACCL_3_1, buf, 4 );
-	InstToChars( ER_SET_ACCL_3_2, &(buf[4]), 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 8, ret, 2 );
-
-	/* send execute command */
-	InstToChars( ER_MOTOR_EXECUTE_1, buf, 4 );
-	SendCommand( buf, 4, ret, 2 );
-
-	InstToChars( ER_MOTOR_EXECUTE_1, buf, 4 );
-	Motor0ToMotor1( buf );
-	SendCommand( buf, 4, ret, 2 );
-	
-}
-
-
-// Validate XOR checksum
-int
-ER::ValidateChecksum(unsigned char *ptr, size_t len)
-{
-	return 0;
-}
-
-// Compute XOR checksum
-unsigned char
-ER::ComputeChecksum(unsigned char *ptr, size_t len)
-{
-  	return (unsigned char) 0;
-}
-
-int
-ER::SendCommand(unsigned char * cmd, int cmd_len, unsigned char * ret_val, int ret_len )
-{
-	if(WriteBuf(cmd,cmd_len) < 0)
-	{
-		PLAYER_ERROR("failed to send command");
-		return(-1);
-	}
-	if( ret_len > 0 ) {
-		if(ReadBuf(ret_val,ret_len) < 0)
-		{
-			PLAYER_ERROR("failed to read");
-			return(-1);
-		}
-	}
-	
-	return(0);
-}
-
-int
-ER::SetVelocity(double lvel, double rvel)
-{
-
-	unsigned char buf[8];
-	unsigned char ret[8];
-
-//	printf( "lvel: %f rvel: %f\n", lvel, rvel );
-
-		InstToChars( ER_SET_SPEED_1, buf, 4 );
-		SendCommand( buf, 4, ret, 4 );
-
-		if( stopped ) {
-			InstToChars( ER_SET_SPEED_2_1, buf, 4 );
-			InstToChars( ER_SET_SPEED_2_2, &(buf[4]), 2 );
-			SendCommand( buf, 6, ret, 2 );
-
-			InstToChars( ER_SET_SPEED_3_1, buf, 4 );
-			InstToChars( ER_SET_SPEED_3_2, &(buf[4]), 2 );
-			SendCommand( buf, 6, ret, 2 );
-	
-			InstToChars( ER_SET_SPEED_4_1, buf, 4 );
-			InstToChars( ER_SET_SPEED_4_2, &(buf[4]), 2 );
-			SendCommand( buf, 6, ret, 2 );
-		}
-		else {
-
-			InstToChars( ER_SET_ACCL_2_1, buf, 4 );
-			InstToChars( ER_SET_ACCL_2_2, &(buf[4]), 2 );
-			SendCommand( buf, 6, ret, 2 );
-
-		}
-		
-		/* compute command 5 */
-		SpeedCommand( buf, lvel, motor_0_dir );
-		/* send command 5 */
-		SendCommand( buf, 8, ret, 2 );
-		
-		InstToChars( ER_SET_SPEED_6_1, buf, 4 );
-		InstToChars( ER_SET_SPEED_6_2, &(buf[4]), 4 );
-		SendCommand( buf, 8, ret, 2 );
-
-
-		/* motor 1 */
-	
-		InstToChars( ER_SET_SPEED_1, buf, 4 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 4, ret, 4 );
-	
-		if( stopped ) {
-			InstToChars( ER_SET_SPEED_2_1, buf, 4 );
-			InstToChars( ER_SET_SPEED_2_2, &(buf[4]), 2 );
-			Motor0ToMotor1( buf );
-			SendCommand( buf, 6, ret, 2 );
-			stopped = false;
-
-			InstToChars( ER_SET_SPEED_3_1, buf, 4 );
-			InstToChars( ER_SET_SPEED_3_2, &(buf[4]), 2 );
-			Motor0ToMotor1( buf );
-			SendCommand( buf, 6, ret, 2 );
-	
-			InstToChars( ER_SET_SPEED_4_1, buf, 4 );
-			InstToChars( ER_SET_SPEED_4_2, &(buf[4]), 2 );
-			Motor0ToMotor1( buf );
-			SendCommand( buf, 6, ret, 2 );
-		
-
-		}
-		else {
-			InstToChars( ER_SET_ACCL_2_1, buf, 4 );
-			InstToChars( ER_SET_ACCL_2_2, &(buf[4]), 2 );
-			Motor0ToMotor1( buf );
-			SendCommand( buf, 6, ret, 2 );
-		}
-	
-		/* compute command 5 */
-		SpeedCommand( buf, rvel, motor_1_dir );
-		/* send command 5 */
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 8, ret, 2 );
-	
-		InstToChars( ER_SET_SPEED_6_1, buf, 4 );
-		InstToChars( ER_SET_SPEED_6_2, &(buf[4]), 4 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 8, ret, 2 );
-		
-	
-		InstToChars( ER_MOTOR_EXECUTE_1, buf, 4 );
-		SendCommand( buf, 4, ret, 2 );
-
-		InstToChars( ER_MOTOR_EXECUTE_1, buf, 4 );
-		Motor0ToMotor1( buf );
-		SendCommand( buf, 4, ret, 2 );
-
-	return(0);
-}
-
-void
-ER::SpeedCommand(unsigned char * cmd, double speed, int dir ) {
-	cmd[0] = 0x00;
-	cmd[2] = 0x00;
-	cmd[3] = 0x11;
-	
-	int whole = dir * (int) (speed * 16819.8);
-	unsigned int frac = 0x100;
-	
-	Int32ToBytes( &(cmd[4]), whole );
-
-	/* sets the checksum value */
-	frac -= cmd[3];
-	frac -= cmd[4];
-	frac -= cmd[5];
-	frac -= cmd[6];
-	frac -= cmd[7];
-	cmd[1] = (unsigned char) frac;
-//	printf( "speed: %f checksum: 0x%02x value: 0x%08x\n", speed, cmd[1], whole );
-	
-}
-
-static void
-StopRobot(void* erdev)
-{
-  ER* er = (ER*)erdev;
-
-//  if(er->Stop( FULL_STOP ) < 0)
-//    PLAYER_ERROR("failed to stop robot on thread exit");
-
-	er->Stop(FULL_STOP );
-}
-
-unsigned char *
-ER::GetRangeCode( int s ) {
-	unsigned char * x;
-	x = new unsigned char[6];
-	int a = s / 8;
-	int b = s % 8;
-	x[0] = a;
-	x[1] = 17 - b - a;
-	x[2] = 0x00;
-	x[3] = 0xEF;
-	x[4] = 0x00;
-	x[5] = b;
-	return x;
-}
-
-void
-ER::InstToChars( int x, unsigned char * y, int l ) {
-	unsigned char * z = (unsigned char *) &x;
-	for( int i = 0; i < l; i++ ) {
-		y[i] = z[l-i-1];
-	}
-}
-
-void
-ER::Motor0ToMotor1( unsigned char * x ) {
-	x[0]++;
-	x[1]--;
-}
 
 int 
 ER::ChangeMotorState(int state)
@@ -1332,4 +1088,15 @@ ER::ChangeMotorState(int state)
   return(WriteBuf(buf,sizeof(buf)));
 */
 	return 0;
+}
+
+static void
+StopRobot(void* erdev)
+{
+  ER* er = (ER*)erdev;
+
+//  if(er->Stop( FULL_STOP ) < 0)
+//    PLAYER_ERROR("failed to stop robot on thread exit");
+
+	er->Stop(FULL_STOP );
 }
