@@ -62,9 +62,9 @@ int map_load_occ(map_t *map, const char *filename)
     {
       ch = fgetc(file);
 
-      if (ch < depth / 3)
+      if (ch < depth / 4)
         occ = +1;
-      else if (ch > 2 * depth / 3)
+      else if (ch > 3 * depth / 4)
         occ = -1;
       else
         occ = 0;
