@@ -54,7 +54,7 @@ struct js_event {
 // define the speed limits for the robot
 
 // at full joystick depression you'll go this fast
-#define MAX_SPEED    300 // mm/second
+#define MAX_SPEED    400 // mm/second
 #define MAX_TURN    45 // degrees/second
 
 // this is the speed that the camera will pan when you press the
@@ -74,6 +74,7 @@ struct js_event {
 struct controller
 {
   int speed, turnrate, pan, tilt, zoom;
+  bool dirty; // use this flag to determine when we need to send commands
 };
 
 
@@ -172,6 +173,7 @@ void joystick_handler( struct controller* cont )
 
 		// set the robot turn rate
 		cont->turnrate = NORMALIZE_TURN(-event.value);
+		cont->dirty = true;
 
 		break;
 
@@ -184,6 +186,7 @@ void joystick_handler( struct controller* cont )
 
 		// set the robot velocity
 		cont->speed = NORMALIZE_SPEED(-event.value);
+		cont->dirty = true;
 
 		break;
 		
@@ -202,6 +205,8 @@ void joystick_handler( struct controller* cont )
 		//else
 		//puts( "zoom in" );
 		cont->zoom = (int) KNORMALIZE(-event.value);
+		cont->dirty = true;
+
 		break;
 
 		// HAT UP DOWN
@@ -216,6 +221,8 @@ void joystick_handler( struct controller* cont )
 		else
 		  cont->pan = 0;
 	
+		//cont->dirty = true;
+	
 		break;
 		
 		// HAT LEFT RIGHT
@@ -229,7 +236,9 @@ void joystick_handler( struct controller* cont )
 		  cont->pan = +PAN_SPEED;
 		else
 		  cont->pan = 0;
-
+		
+		//cont->dirty = true;
+	
 		break;
 	      }
 	  }	  
@@ -260,17 +269,9 @@ int main(int argc, char** argv)
   for( int i=0; i<4; i++ )
     robot.Read();
 
-  // get the initial values
-  // now we can get the starting camera values 
-  int pan = ptzp.pan;
-  int tilt = ptzp.tilt;
-
   struct controller cont;
   memset( &cont, 0, sizeof(cont) );
   
-  cont.speed = pp.speed;
-  cont.turnrate = pp.turnrate;
- 
   // kick off the joystick thread to generate new values in cont
   pthread_t dummy;
   pthread_create( &dummy, NULL,
@@ -279,33 +280,33 @@ int main(int argc, char** argv)
   while( true )
     {
       robot.Read();
-      
-      printf( " speed: %d turn: %d pan: %d(%d)"
-	      " tilt: %d(%d) zoom: %d              \r", 
+
+      printf( " time: %.2f - speed: %d turn: %d pan: %d(%d)"
+	      " tilt: %d(%d) zoom: %d         \r", 
+	      robot.timestamp.tv_sec + robot.timestamp.tv_usec / 1000000.0,
 	      cont.speed, cont.turnrate, 
-	      pan, cont.pan, 
-	      tilt, cont.tilt, 
+	      ptzp.pan, cont.pan, 
+	      ptzp.tilt, cont.tilt, 
 	      cont.zoom );
       
       fflush( stdout );
-      
-      /* write commands to robot */
-      pp.SetSpeed( cont.speed, cont.turnrate);
-      
-      // joystick hat switch enables panning/tilting rather than
-      // giving an actual value, so we have a little controller to
-      // increment and decrement the pan and tilt.
-      pan += cont.pan;
+            
+      if( cont.dirty ) // if the joystick sent a command
+	{
+	  cont.dirty = false;
+	  
+	  // send the speed commands
+	  pp.SetSpeed( cont.speed, cont.turnrate);
+	  
+	  // send the zoom command to the camera
+	  ptzp.SetCam( ptzp.pan, ptzp.tilt, cont.zoom );
+	}
 
-      if( pan > 100 ) pan = 100;
-      if( pan < -100 ) pan = -100;
+      // if we're panning we update the camera's pan command
+      if( cont.pan != 0 || cont.tilt != 0 )
+	ptzp.SetCam( ptzp.pan + cont.pan, ptzp.tilt + cont.tilt, cont.zoom );
       
-      tilt += cont.tilt;
 
-      if( tilt > 25 ) tilt = 25;
-      if( tilt < -25 ) tilt = -25;
-
-      ptzp.SetCam( pan, tilt, cont.zoom );
     }
   
   return(0);
