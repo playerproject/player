@@ -42,7 +42,7 @@ CDevice* RFLEXaio_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new RFLEXaio(interface, cf, section)));
+    return((RFLEX::AIODev = (CDevice*)new RFLEXaio(interface, cf, section)));
 }
 
 // a driver registration function

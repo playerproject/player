@@ -48,7 +48,8 @@ CDevice* RFLEXPower_Init(char* interface, ConfigFile* cf, int section)
   else{
     RFLEXPower * tmp= new RFLEXPower(interface, cf, section);
 	tmp->GetOptions(cf,section,&rflex_configs);
-    return static_cast<CDevice *> (tmp);
+	
+    return RFLEX::PowerDev = static_cast<CDevice *> (tmp);
   }
 }
 

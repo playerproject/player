@@ -159,6 +159,15 @@ class RFLEX:public CDevice
 
 	static int joy_control;
 
+	static CDevice * PositionDev;
+	static CDevice * SonarDev;
+	static CDevice * IrDev;
+	static CDevice * BumperDev;
+	static CDevice * PowerDev;
+	static CDevice * AIODev;
+	static CDevice * DIODev;
+
+
 };
 
 

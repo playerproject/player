@@ -49,6 +49,7 @@ CDevice* RFLEXIr_Init(char* interface, ConfigFile* cf, int section)
   else{
     RFLEXIr* tmp=new RFLEXIr(interface, cf, section);
     tmp->GetOptions(cf,section,&rflex_configs);
+	RFLEX::IrDev = (CDevice*)tmp;
     return (CDevice*)tmp;
   }
 }

@@ -52,6 +52,7 @@ CDevice* RFLEXbumper_Init(char* interface, ConfigFile* cf, int section)
   else{
   	RFLEXbumper * tmp =new RFLEXbumper(interface, cf, section);
 	tmp->GetOptions(cf,section,&rflex_configs);
+	RFLEX::BumperDev = static_cast<CDevice *> (tmp);
     return static_cast<CDevice *> (tmp);
   }
 }

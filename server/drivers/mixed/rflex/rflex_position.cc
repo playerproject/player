@@ -57,6 +57,7 @@ CDevice* RFLEXPosition_Init(char* interface, ConfigFile* cf, int section)
   else{
     RFLEXPosition* tmp=new RFLEXPosition(interface, cf, section);
     tmp->GetOptions(cf,section,&rflex_configs);
+	RFLEX::PositionDev =(CDevice*) tmp;
     return (CDevice*) tmp;
   }
 }
