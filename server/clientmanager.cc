@@ -568,10 +568,21 @@ ClientManagerTCP::Write()
     if(clients[i]->leftover_size)
       continue;
 
+    // rtv - had to fix a dumb rounding error here. This code is
+    // producing intervals like 0.09999-recurring seconds instead of
+    // 0.1 second, so updates were being skipped. I added a
+    // microsecond (*) when testing the elapsed interval. The bug was
+    // probably not a problem when using the real-time clock, but
+    // shows up when working with a simulator where time comes in
+    // discrete chunks. This was a beast to figure out since printf
+    // was rounding up the numbers to print them out!
+    
+    double curr_seconds = curr.tv_sec+(curr.tv_usec/1000000.0);
+    
     // is it time to write?
     if((((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
          (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
-        (((curr.tv_sec+(curr.tv_usec/1000000.0))- clients[i]->last_write) >= 
+        (((curr_seconds + 0.000001) - clients[i]->last_write) >=  // * 
          (1.0/clients[i]->frequency))) ||
        (((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
          (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW)) &&
@@ -584,7 +595,7 @@ ClientManagerTCP::Write()
       {
         if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
            (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
-          clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
+          clients[i]->last_write = curr_seconds;
         else
           clients[i]->datarequested = false;
       }
