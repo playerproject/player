@@ -39,7 +39,7 @@ test_laser(PlayerClient* client, int index)
   max = +90*100;
   resolution = 100;
   intensity = 1;
-  if(lp.Configure(min, max, resolution, intensity) >= 0)
+  if(lp.Configure(min, max, resolution, 1, intensity) >= 0)
     PASS();
   else
   {
