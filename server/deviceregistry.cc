@@ -56,10 +56,9 @@ void Festival_Register(DriverTable* table);
 #endif 
 
 #ifdef INCLUDE_LASER
-void LaserBarcode_Register(DriverTable* table);
 void LaserCSpace_Register(DriverTable* table);
-void LaserFeature_Register(DriverTable* table);
-void LaserReflector_Register(DriverTable* table);
+void LaserBar_Register(DriverTable* table);
+void LaserBarcode_Register(DriverTable* table);
 void LaserVisualBarcode_Register(DriverTable* table);
 #endif
 
@@ -173,10 +172,9 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_LASER
-  LaserBarcode_Register(driverTable);
   LaserCSpace_Register(driverTable);
-  //  LaserFeature_Register(driverTable);
-  LaserReflector_Register(driverTable);
+  LaserBar_Register(driverTable);
+  LaserBarcode_Register(driverTable);
   LaserVisualBarcode_Register(driverTable);
 #endif
 

@@ -50,10 +50,10 @@
 
 
 // Driver for detecting laser retro-reflectors.
-class LaserReflector : public CDevice
+class LaserBar : public CDevice
 {
   // Constructor
-  public: LaserReflector(char* interface, ConfigFile* cf, int section);
+  public: LaserBar(char* interface, ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -102,28 +102,28 @@ class LaserReflector : public CDevice
 
 
 // Initialization function
-CDevice* LaserReflector_Init(char* interface, ConfigFile* cf, int section)
+CDevice* LaserBar_Init(char* interface, ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
   {
-    PLAYER_ERROR1("driver \"laserreflector\" does not support interface \"%s\"\n",
+    PLAYER_ERROR1("driver \"laserbar\" does not support interface \"%s\"\n",
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new LaserReflector(interface, cf, section)));
+  return ((CDevice*) (new LaserBar(interface, cf, section)));
 }
 
 
 // a driver registration function
-void LaserReflector_Register(DriverTable* table)
+void LaserBar_Register(DriverTable* table)
 {
-  table->AddDriver("laserreflector", PLAYER_READ_MODE, LaserReflector_Init);
+  table->AddDriver("laserbar", PLAYER_READ_MODE, LaserBar_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserReflector::LaserReflector(char* interface, ConfigFile* cf, int section)
+LaserBar::LaserBar(char* interface, ConfigFile* cf, int section)
     : CDevice(0, 0, 0, 1)
 {
   // The default laser device to use
@@ -136,7 +136,7 @@ LaserReflector::LaserReflector(char* interface, ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int LaserReflector::Setup()
+int LaserBar::Setup()
 {
   // Get the pointer to the laser.  If index was not overridden by an
   // argument in the constructor, then we use this driver's index.
@@ -164,7 +164,7 @@ int LaserReflector::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int LaserReflector::Shutdown()
+int LaserBar::Shutdown()
 {
   // Unsubscribe from the laser device
   this->laser_device->Unsubscribe(this);
@@ -175,7 +175,7 @@ int LaserReflector::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by server thread).
-size_t LaserReflector::GetData(void* client,unsigned char *dest, size_t maxsize,
+size_t LaserBar::GetData(void* client,unsigned char *dest, size_t maxsize,
                                uint32_t* time_sec, uint32_t* time_usec)
 {
   int i;
@@ -227,7 +227,7 @@ size_t LaserReflector::GetData(void* client,unsigned char *dest, size_t maxsize,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by server thread)
-int LaserReflector::PutConfig(player_device_id_t* device, void *client, void *data, size_t len) 
+int LaserBar::PutConfig(player_device_id_t* device, void *client, void *data, size_t len) 
 {
   int subtype;
 
@@ -259,7 +259,7 @@ int LaserReflector::PutConfig(player_device_id_t* device, void *client, void *da
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle geometry requests.
-void LaserReflector::HandleGetGeom(void *client, void *request, int len)
+void LaserBar::HandleGetGeom(void *client, void *request, int len)
 {
   unsigned short reptype;
   struct timeval ts;
@@ -294,7 +294,7 @@ void LaserReflector::HandleGetGeom(void *client, void *request, int len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analyze the laser data to find reflectors.
-void LaserReflector::Find()
+void LaserBar::Find()
 {
   int i;
   int h;
@@ -362,7 +362,7 @@ void LaserReflector::Find()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Test a patch to see if it has valid moments.
-bool LaserReflector::TestMoments(double mn, double mr, double mb, double mrr, double mbb)
+bool LaserBar::TestMoments(double mn, double mr, double mb, double mrr, double mbb)
 {
   double dr, db;
   
@@ -387,7 +387,7 @@ bool LaserReflector::TestMoments(double mn, double mr, double mb, double mrr, do
 // Find the line of best fit for the given segment of the laser scan.
 // Fills in the pose and pose uncertainty of the reflector (range,
 // bearing, orientation).  This one works for cylindrical fiducials.
-void LaserReflector::FitCircle(int first, int last,
+void LaserBar::FitCircle(int first, int last,
                                double *pr, double *pb, double *po,
                                double *ur, double *ub, double *uo)
 {
@@ -428,7 +428,7 @@ void LaserReflector::FitCircle(int first, int last,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Add a item into the fiducial list.
-void LaserReflector::Add(double pr, double pb, double po,
+void LaserBar::Add(double pr, double pb, double po,
                          double ur, double ub, double uo)
 
 {

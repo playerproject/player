@@ -188,8 +188,8 @@ AC_SUBST(UDPBCAST_LIB)
 AC_SUBST(UDPBCAST_LIBPATH)
 
 
-LASER_LIB="liblaserreflector.a liblaserbarcode.a liblaservisualbarcode.a liblasercspace.a"
-LASER_LIBPATH="drivers/liblaserreflector.a drivers/liblaserbarcode.a drivers/liblaservisualbarcode.a drivers/liblasercspace.a"
+LASER_LIB="liblasercspace.a liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a"
+LASER_LIBPATH="drivers/liblasercspace.a drivers/liblaserbar.a drivers/liblaserbarcode.a drivers/liblaservisualbarcode.a"
 AC_ARG_WITH(laser,
 [  --with-laser                Use the LASER],
 [case "${withval}" in 
