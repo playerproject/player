@@ -71,7 +71,6 @@
 /* delay inside loop */
 #define FESTIVAL_DELAY_USEC 20000
 
-void* RunSpeechThread(void* speechdevice);
 void QuitFestival(void* speechdevice);
 
 CSpeechDevice::CSpeechDevice(int argc, char** argv) :
@@ -252,12 +251,7 @@ CSpeechDevice::Setup()
     }
 
     /* now spawn reading thread */
-    if(pthread_create(&thread, NULL, &RunSpeechThread, this))
-    {
-      fputs("CSpeechDevice::Setup(): pthread creation messed up\n",stderr);
-      KillFestival();
-      return(1);
-    }
+    StartThread();
 
     return(0);
   }
@@ -269,15 +263,11 @@ CSpeechDevice::Setup()
 int
 CSpeechDevice::Shutdown()
 {
-  void* dummy;
   /* if Setup() was never called, don't do anything */
   if(sock == -1)
     return(0);
 
-  pthread_cancel(thread);
-  if(pthread_join(thread,&dummy))
-    perror("CSpeechDevice::Shutdown:pthread_join()");
-  //KillFestival();
+  StopThread();
 
   sock = -1;
   puts("Festival speech server has been shutdown");
@@ -331,8 +321,8 @@ CSpeechDevice::PutCommand(unsigned char* src, size_t maxsize)
   Unlock();
 }
 
-void* 
-RunSpeechThread(void* speechdevice)
+void
+CSpeechDevice::Main()
 {
   player_speech_cmd_t cmd;
   char prefix[] = FESTIVAL_SAY_STRING_PREFIX;
@@ -341,8 +331,6 @@ RunSpeechThread(void* speechdevice)
   char buf[256];
   int numread;
   int numthisread;
-
-  CSpeechDevice* sd = (CSpeechDevice*)speechdevice;
 
   /* make sure we aren't canceled at a bad time */
   if(pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL))
@@ -353,7 +341,7 @@ RunSpeechThread(void* speechdevice)
   }
 
   /* make sure we kill Festival on exiting */
-  pthread_cleanup_push(QuitFestival,sd);
+  pthread_cleanup_push(QuitFestival,this);
 
   /* loop and read */
   for(;;)
@@ -362,19 +350,19 @@ RunSpeechThread(void* speechdevice)
     pthread_testcancel();
 
     /* did we get a new command? */
-    if(sd->GetCommand((unsigned char*)&cmd,sizeof(cmd)))
+    if(GetCommand((unsigned char*)&cmd,sizeof(cmd)))
     {
       /* if there's space, put it in the queue */
-      if(sd->queue->Push((unsigned char*)&cmd,sizeof(cmd)) < 0)
+      if(queue->Push((unsigned char*)&cmd,sizeof(cmd)) < 0)
         fprintf(stderr, "CSpeechDevice: not enough room in queue; discarding "
                 "string:\n   \"%s\"\n", (const char*)(cmd.string));
     }
 
     /* do we have a string to send and is there not one pending? */
-    if(!(sd->queue->Empty()) && !(sd->read_pending))
+    if(!(queue->Empty()) && !(read_pending))
     {
       /* send prefix to Festival */
-      if(write(sd->sock,(const void*)prefix,strlen(prefix)) == -1)
+      if(write(sock,(const void*)prefix,strlen(prefix)) == -1)
       {
         perror("RunSpeechThread: write() failed sending prefix; exiting.");
         break;
@@ -382,29 +370,29 @@ RunSpeechThread(void* speechdevice)
 
       unsigned char tmpstr[sizeof(player_speech_cmd_t)];
       int tmpstrlen;
-      tmpstrlen = sd->queue->Pop(tmpstr,sizeof(tmpstr));
+      tmpstrlen = queue->Pop(tmpstr,sizeof(tmpstr));
       /* send the first string from the queue to Festival */
-      if(write(sd->sock,tmpstr,tmpstrlen) == -1)
+      if(write(sock,tmpstr,tmpstrlen) == -1)
       {
         perror("RunSpeechThread: write() failed sending string; exiting.");
         break;
       }
 
       /* send suffix to Festival */
-      if(write(sd->sock,(const void*)suffix,strlen(suffix)) == -1)
+      if(write(sock,(const void*)suffix,strlen(suffix)) == -1)
       {
         perror("RunSpeechThread: write() failed sending suffix; exiting.");
         break;
       }
-      sd->read_pending = true;
+      read_pending = true;
     }
 
     /* do we have a read pending? */
-    if(sd->read_pending)
+    if(read_pending)
     {
       /* read the resultant string back */
       /* try to get one byte first */
-      if((numread = read(sd->sock,buf,1)) == -1)
+      if((numread = read(sock,buf,1)) == -1)
       {
         /* was there no data? */
         if(errno == EAGAIN)
@@ -421,7 +409,7 @@ RunSpeechThread(void* speechdevice)
       {
         /* i should really try to intrepret this some day... */
         if((numthisread = 
-            read(sd->sock,buf+numread,strlen(FESTIVAL_CODE_OK)-numread)) == -1)
+            read(sock,buf+numread,strlen(FESTIVAL_CODE_OK)-numread)) == -1)
         {
           /* was there no data? */
           if(errno == EAGAIN)
@@ -451,7 +439,7 @@ RunSpeechThread(void* speechdevice)
         numread = 0;
         while(numread < FESTIVAL_RETURN_LEN)
         {
-          if((numthisread = read(sd->sock,buf+numread,
+          if((numthisread = read(sock,buf+numread,
                               FESTIVAL_RETURN_LEN-numread)) == -1)
           {
             if(errno == EAGAIN)
@@ -476,7 +464,7 @@ RunSpeechThread(void* speechdevice)
         fprintf(stderr, "RunSpeechThread: got strange code back: %s\n", buf);
       }
 
-      sd->read_pending = false;
+      read_pending = false;
     }
     
     // so we don't run too fast
@@ -485,9 +473,6 @@ RunSpeechThread(void* speechdevice)
 
   pthread_cleanup_pop(1);
   pthread_exit(NULL);
-
-  // shut up compiler
-  return((void*)NULL);
 }
 
 void 

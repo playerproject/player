@@ -126,6 +126,8 @@ set PLAYER_SONAR_POWER_REQ     4
 # the laser device
 set PLAYER_NUM_LASER_SAMPLES  401
 set PLAYER_MAX_LASER_VALUE 8000
+set PLAYER_LASER_SET_CONFIG 1
+set PLAYER_LASER_GET_CONFIG 2
 
 set PLAYER_BPS_SUBTYPE_SETGAIN 1
 set PLAYER_BPS_SUBTYPE_SETLASER 2
@@ -630,6 +632,8 @@ proc player_parse_data {obj device device_index data size} {
            arr($name,$device_index,resolution) \
            arr($name,$device_index,range_count)] != 4} {
         puts "Warning: failed to parse laser header"
+        #puts "$arr($name,$device_index,min_angle) $arr($name,$device_index,max_angle) $arr($name,$device_index,resolution) $arr($name,$device_index,range_count)"
+        puts "[binary scan $data SSSS arr($name,$device_index,min_angle) arr($name,$device_index,max_angle) arr($name,$device_index,resolution) arr($name,$device_index,range_count)]"
         return
     }
 
@@ -895,8 +899,10 @@ proc player_change_sonar_state {obj state {index 0}} {
 
 proc player_config_laser {obj min_angle max_angle resolution \
                           intensity {index 0}} {
+  global PLAYER_LASER_SET_CONFIG
+
   player_req $obj laser $index \
-       "[binary format SSSc $min_angle $max_angle $resolution $intensity]"
+       "[binary format cSSSc $PLAYER_LASER_SET_CONFIG $min_angle $max_angle $resolution $intensity]"
   return
 }
 

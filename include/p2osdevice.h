@@ -126,16 +126,14 @@ class CP2OSDevice:public CDevice
     static player_p2os_data_t* data;
     static player_p2os_cmd_t* command;
 
-  protected:
-    void Lock();
-    void Unlock();
+    static unsigned char* reqqueue;
+    static unsigned char* repqueue;
 
-    void SetupLock();
-    void SetupUnlock();
+    int SendReceive(CPacket* pkt);
+    void ResetRawPositions();
 
-  public:
     static int param_idx;  // index in the RobotParams table for this robot
-    static bool direct_wheel_vel_control;  // false -> separate trans and rot vel
+    static bool direct_wheel_vel_control; // false -> separate trans and rot vel
     static char num_loops_since_rvel;  
     static int psos_fd;               // p2os device file descriptor
     
@@ -143,26 +141,31 @@ class CP2OSDevice:public CDevice
     static char psos_serial_port[MAX_FILENAME_SIZE]; 
     static bool radio_modemp; // are we using a radio modem?
 
-    //static bool arena_initialized_data_buffer;
-    //static bool arena_initialized_command_buffer;
-
-    //static player_p2os_data_t* data;
-    //static player_p2os_cmd_t* command;
-
     static int last_client_id;
-
-    /*
-     * in this order:
-     *   char: command (e.g., 'm' for motors enable)
-     *   arg: command-specific arg
-     */
-    static unsigned char* config;
-    // set to size by PutConfig and zeroed by GetConfig
-    static int config_size;
 
     static struct timeval timeBegan_tv;
 
+    // did we initialize the common data segments yet?
+    static bool initdone;
+
+  protected:
+    void Lock();
+    void Unlock();
+
+    void SetupLock();
+    void SetupUnlock();
+
+    /* start a thread that will invoke Main() */
+    virtual void StartThread();
+    /* cancel (and wait for termination) of the thread */
+    virtual void StopThread();
+
+  public:
+
     CP2OSDevice(int argc, char** argv);
+
+    /* the main thread */
+    virtual void Main();
 
     // we override these, because we will maintain our own subscription count
     virtual int Subscribe(void *client);
@@ -173,11 +176,6 @@ class CP2OSDevice:public CDevice
 
     virtual void PutData(unsigned char *, size_t maxsize,
                          uint32_t timestamp_sec, uint32_t timestamp_usec);
-    virtual size_t GetConfig( unsigned char *, size_t maxsize);
-    virtual int PutConfig( unsigned char *, size_t maxsize);
-
-    int SendReceive(CPacket* pkt); //, bool already_have_lock);
-    void ResetRawPositions();
 };
 
 

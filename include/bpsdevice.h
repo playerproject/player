@@ -64,6 +64,13 @@ struct CBpsObs;
 // The bps device class
 class CBpsDevice : public CDevice
 {
+    // Init function
+  public:
+    static CDevice* Init(int argc, char** argv)
+    {
+      return((CDevice*)(new CBpsDevice(argc,argv)));
+    }
+
     // Constructor
     public: CBpsDevice(int argc, char** argv);
 
@@ -72,13 +79,14 @@ class CBpsDevice : public CDevice
     public: virtual int Shutdown();
 
     // Device thread
-    public: void Main();
+    public: virtual void Main();
     
     // Client interface
     public: virtual void PutData(unsigned char *, size_t maxsize,
                                  uint32_t timestamp_sec, 
                                  uint32_t timestamp_usec);
-    public: virtual int PutConfig(unsigned char *, size_t maxsize);
+    public: virtual int PutConfig(CClientData*, unsigned char *, 
+                                  size_t maxsize);
 
     // Estimateion functions
     private: void ProcessOdometry(double ox, double oy, double oa);
@@ -102,9 +110,6 @@ class CBpsDevice : public CDevice
     // BPG
     private: double err;
 
-    // Our thread
-    private: pthread_t thread;
-    
     // Our index
     private: uint16_t index;
     

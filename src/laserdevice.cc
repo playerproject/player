@@ -245,7 +245,7 @@ int CLaserDevice::Setup()
 
   // Start the device thread
   //
-  Run();
+  StartThread();
 
   return 0;
 }
@@ -256,11 +256,9 @@ int CLaserDevice::Setup()
 //
 int CLaserDevice::Shutdown()
 {
-  void* dummy;
   /* shutdown laser device */
-  pthread_cancel(m_thread);
-  if(pthread_join(m_thread,&dummy))
-    perror("CLaserDevice::Shutdown:pthread_join()");
+  StopThread();
+
   CloseTerm();
   puts("Laser has been shutdown");
 
@@ -269,28 +267,9 @@ int CLaserDevice::Shutdown()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Start the device thread
-//
-void CLaserDevice::Run() 
-{
-  pthread_create( &m_thread, NULL, &DummyMain, this );
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Dummy main (just calls real main)
-//
-void* CLaserDevice::DummyMain(void *laserdevice)
-{
-  ((CLaserDevice*) laserdevice)->Main();
-  return NULL;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 //
-int CLaserDevice::Main() 
+void CLaserDevice::Main() 
 {
   PLAYER_MSG0("laser thread is running");
     
@@ -303,13 +282,14 @@ int CLaserDevice::Main()
     if (RequestLaserData(m_scan_min_segment, m_scan_max_segment) == 0)
       break;
     else if (retry >= MAX_RETRIES)
-      RETURN_ERROR(1, "laser not responding; exiting laser thread");
+    {
+      PLAYER_ERROR("laser not responding; exiting laser thread");
+      return;
+    }
   }
 
   while (true)
   {
-    //usleep(1000);
-
     // test if we are supposed to cancel
     //
     pthread_testcancel();
@@ -373,7 +353,6 @@ int CLaserDevice::Main()
   }
 
   PLAYER_TRACE0("exiting laser thread");
-  return 0;
 }
 
 

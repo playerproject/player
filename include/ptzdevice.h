@@ -58,7 +58,7 @@
 class CPtzDevice:public CDevice 
 {
  private:
-  pthread_t thread; // the thread that continuously reads from the laser 
+  //pthread_t thread; // the thread that continuously reads from the laser 
   bool command_pending1;  // keep track of how many commands are pending;
   bool command_pending2;  // that way, we can cancel them if necessary
   bool ptz_fd_blocking;
@@ -70,6 +70,15 @@ class CPtzDevice:public CDevice
   int CancelCommand(char socket);
   int SendRequest(unsigned char* str, int len, unsigned char* reply);
 
+  // this function will be run in a separate thread
+  virtual void Main();
+
+  virtual int SendAbsPanTilt(short pan, short tilt);
+  virtual int SendAbsZoom(short zoom);
+  virtual int GetAbsZoom(short* zoom);
+  virtual int GetAbsPanTilt(short* pan, short* tilt);
+  virtual void PrintPacket(char* str, unsigned char* cmd, int len);
+
  public:
   player_ptz_cmd_t* command;
   player_ptz_data_t* data;
@@ -78,15 +87,16 @@ class CPtzDevice:public CDevice
   /* device used to communicate with the ptz */
   char ptz_serial_port[MAX_FILENAME_SIZE]; 
 
+  // initialization function
+  static CDevice* Init(int argc, char** argv)
+  {
+    return((CDevice*)(new CPtzDevice(argc,argv)));
+  }
+
   CPtzDevice(int argc, char** argv);
 
   virtual int Setup();
   virtual int Shutdown();
-  virtual int SendAbsPanTilt(short pan, short tilt);
-  virtual int SendAbsZoom(short zoom);
-  virtual int GetAbsZoom(short* zoom);
-  virtual int GetAbsPanTilt(short* pan, short* tilt);
-  virtual void PrintPacket(char* str, unsigned char* cmd, int len);
 };
 
 #endif

@@ -68,7 +68,7 @@ extern int global_playerport; // used to get at devices
 // Constructor
 //
 CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv) :
-  CDevice(0,0,0,0)
+  CDevice(0,0,0,1)
 {
   this->index = 0;
   this->default_bitcount = 8;
@@ -233,17 +233,28 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize,
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by client thread)
 //
-void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize) 
+int 
+CLaserBeaconDevice::PutConfig(CClientData* client, 
+                                   unsigned char *src, 
+                                   size_t maxsize) 
 {
   Lock();
 
   if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETBITS)
   {
     if (maxsize != sizeof(player_laserbeacon_setbits_t))
+    {
       PLAYER_ERROR("config packet size is incorrect");
 
-    player_laserbeacon_setbits_t *config =
-            (player_laserbeacon_setbits_t*) src;
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      
+      // return OK; otherwise the server would send a ERROR response,
+      // and we've already sent a NACK response
+      return(0);
+    }
+
+    player_laserbeacon_setbits_t *config = (player_laserbeacon_setbits_t*) src;
 
     this->max_bits = config->bit_count;
     this->max_bits = max(this->max_bits, 3);
@@ -252,8 +263,7 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
 
     PLAYER_TRACE2("bits %d, width %f", this->max_bits, this->bit_width);
   }
-
-  if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETTHRESH)
+  else if (src[0] == PLAYER_LASERBEACON_SUBTYPE_SETTHRESH)
   {
     if (maxsize != sizeof(player_laserbeacon_setthresh_t))
       PLAYER_ERROR("config packet size is incorrect");
@@ -265,7 +275,12 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
     this->one_thresh = ntohs(config->one_thresh) / 100.0;
   }
 
+  /* everything's cool; give the client an ACK */
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+    PLAYER_ERROR("PutReply() failed");
+
   Unlock();
+  return(0);
 }
 
 

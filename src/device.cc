@@ -283,3 +283,35 @@ int CDevice::Unsubscribe(void *client)
   return( shutdownResult );
 }
 
+/* start a thread that will invoke Main() */
+void 
+CDevice::StartThread()
+{
+  pthread_create(&devicethread, NULL, &DummyMain, this);
+}
+
+/* cancel (and wait for termination) of the thread */
+void 
+CDevice::StopThread()
+{
+  void* dummy;
+  pthread_cancel(devicethread);
+  if(pthread_join(devicethread,&dummy))
+    perror("CDevice::StopThread:pthread_join()");
+}
+
+/* Dummy main (just calls real main) */
+void* 
+CDevice::DummyMain(void *devicep)
+{
+  ((CDevice*)devicep)->Main();
+  return NULL;
+}
+
+void
+CDevice::Main() 
+{
+  fputs("ERROR: You have called Run(), but didn't provide your own Main()!", 
+        stderr);
+}
+

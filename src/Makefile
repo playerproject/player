@@ -22,23 +22,20 @@ LIBS = $(LIBDIRS) -lplayerdevice -lpthread -lm -ldl
 
 INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
                    $(INCLUDE_POSITION) $(INCLUDE_GRIPPER) $(INCLUDE_MISC) \
-                   $(INCLUDE_MISC) $(INCLUDE_PTZ) $(INCLUDE_STAGE) \
+                   $(INCLUDE_MISC) $(INCLUDE_PTZ) \
                    $(INCLUDE_AUDIO) $(INCLUDE_LASERBEACON) $(INCLUDE_BPS) \
                    $(INCLUDE_BROADCAST) $(INCLUDE_SPEECH)
 
 #
 # definitely build the device-independent objects
 #
-OBS = clientdata.o pubsub_util.o devicetable.o device.o \
+OBS = clientdata.o pubsub_util.o devicetable.o device.o deviceregistry.o\
       clientmanager.o wallclocktime.o main.o playerqueue.o
 
 #
 # only build the device-specific objects that we need (duplicate objects
 # won't cause problems)
 #
-#ifdef INCLUDE_STAGE
-#  OBS += truthdevice.o
-#endif
 ifdef INCLUDE_LASER
   OBS += laserdevice.o 
 endif
@@ -111,7 +108,10 @@ $(SERVERNAME): $(DEVICELIBNAME)
 	$(CPP) -rdynamic -o $@ $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
 
 main.o: main.cc
-	$(CPP) $(CFLAGS) -DPLAYER_VERSION=\"$(PLAYER_VERSION)\" $(INCLUDES) $(INCLUDED_DEVICES) -o $@ -c main.cc 
+	$(CPP) $(CFLAGS) -DPLAYER_VERSION=\"$(PLAYER_VERSION)\" $(INCLUDES) $(INCLUDE_STAGE) -c $<
+
+deviceregistry.o: deviceregistry.cc
+	$(CPP) $(CFLAGS) $(INCLUDES) $(INCLUDED_DEVICES) -c $<
 
 %.o: %.cc 
 	$(CPP) $(CFLAGS) $(INCLUDES) -c $<

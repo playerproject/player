@@ -61,7 +61,6 @@ extern PlayerTime* GlobalTime;
 
 extern CDeviceTable* deviceTable;
 extern int global_playerport; // used to get at devices
-static void *DummyMain(void *data);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,13 +90,11 @@ struct CBpsObs
     double ux, uy, ua;
 };
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 //
 CBpsDevice::CBpsDevice(int argc, char** argv) :
-  CDevice(sizeof(player_bps_data_t),0,1,1)
+  CDevice(sizeof(player_bps_data_t),0,0,1)
 {
   this->index = 0;
   for(int i=0;i<argc;i++)
@@ -182,7 +179,7 @@ int CBpsDevice::Setup()
     //GetLock()->PutData(this, NULL, 0);
     
     // Start our own thread
-    pthread_create(&this->thread, NULL, DummyMain, this );
+    StartThread();
     
     PLAYER_TRACE0("setup");
     return 0;
@@ -196,8 +193,7 @@ int CBpsDevice::Shutdown()
 {
     // Stop the thread
     //
-    pthread_cancel(this->thread);
-    pthread_join(this->thread, NULL);
+    StopThread();
     
     // Unsubscribe from the laser device
     //
@@ -217,15 +213,6 @@ int CBpsDevice::Shutdown()
     
     PLAYER_TRACE0("shutdown");
     return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Dummy thread entry point
-static void *DummyMain(void *data)
-{
-    ((CBpsDevice*) data)->Main();
-    return NULL;
 }
 
 
@@ -375,59 +362,93 @@ void CBpsDevice::PutData(unsigned char *src, size_t maxsize,
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by client thread)
 //
-int CBpsDevice::PutConfig( unsigned char *src, size_t maxsize) 
+int 
+CBpsDevice::PutConfig(CClientData* client, unsigned char *src, size_t maxsize) 
 {
-    if (maxsize == sizeof(player_bps_setgain_t))
+  if (maxsize == sizeof(player_bps_setgain_t))
+  {
+    player_bps_setgain_t *setgain = (player_bps_setgain_t*) src;
+    if (setgain->subtype != PLAYER_BPS_SUBTYPE_SETGAIN)
     {
-        player_bps_setgain_t *setgain = (player_bps_setgain_t*) src;
-        if (setgain->subtype != PLAYER_BPS_SUBTYPE_SETGAIN)
-        {
-            PLAYER_ERROR("config packet has incorrect subtype");
-            return(-1);
-        }
-        this->gain = ntohl(setgain->gain) / 1e6;
+      PLAYER_ERROR("config packet has incorrect subtype");
+
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        PLAYER_ERROR("PutReply() failed");
+
+      // return OK; otherwise the server would send a ERROR response,
+      // and we've already sent a NACK response
+      return(0);
     }
-    else if (maxsize == sizeof(player_bps_setlaser_t))
+    this->gain = ntohl(setgain->gain) / 1e6;
+  }
+  else if (maxsize == sizeof(player_bps_setlaser_t))
+  {
+    player_bps_setlaser_t *setlaser = (player_bps_setlaser_t*) src;
+    if (setlaser->subtype != PLAYER_BPS_SUBTYPE_SETLASER)
     {
-        player_bps_setlaser_t *setlaser = (player_bps_setlaser_t*) src;
-        if (setlaser->subtype != PLAYER_BPS_SUBTYPE_SETLASER)
-        {
-            PLAYER_ERROR("config packet has incorrect subtype");
-            return(-1);
-        }
+      PLAYER_ERROR("config packet has incorrect subtype");
 
-        this->laser_px = (int) ntohl(setlaser->px) / 1000.0;
-        this->laser_py = (int) ntohl(setlaser->py) / 1000.0;
-        this->laser_pa = (int) ntohl(setlaser->pa) * M_PI / 180.0;
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        PLAYER_ERROR("PutReply() failed");
 
-        PLAYER_TRACE3("set laser to %f %f %f",
-                      this->laser_px, this->laser_py, this->laser_pa);
+      // return OK; otherwise the server would send a ERROR response,
+      // and we've already sent a NACK response
+      return(0);
     }
-    else if (maxsize == sizeof(player_bps_setbeacon_t))
+
+    this->laser_px = (int) ntohl(setlaser->px) / 1000.0;
+    this->laser_py = (int) ntohl(setlaser->py) / 1000.0;
+    this->laser_pa = (int) ntohl(setlaser->pa) * M_PI / 180.0;
+
+    PLAYER_TRACE3("set laser to %f %f %f",
+                  this->laser_px, this->laser_py, this->laser_pa);
+  }
+  else if (maxsize == sizeof(player_bps_setbeacon_t))
+  {
+    player_bps_setbeacon_t *setbeacon = (player_bps_setbeacon_t*) src;
+    if (setbeacon->subtype != PLAYER_BPS_SUBTYPE_SETBEACON)
     {
-        player_bps_setbeacon_t *setbeacon = (player_bps_setbeacon_t*) src;
-        if (setbeacon->subtype != PLAYER_BPS_SUBTYPE_SETBEACON)
-        {
-            PLAYER_ERROR("config packet has incorrect subtype");
-            return(-1);
-        }
+      PLAYER_ERROR("config packet has incorrect subtype");
 
-        int id = setbeacon->id;
-        this->beacon[id].px = (int) ntohl(setbeacon->px) / 1000.0;
-        this->beacon[id].py = (int) ntohl(setbeacon->py) / 1000.0;
-        this->beacon[id].pa = (int) ntohl(setbeacon->pa) * M_PI / 180.0;
-        this->beacon[id].ux = (int) ntohl(setbeacon->ux) / 1000.0;
-        this->beacon[id].uy = (int) ntohl(setbeacon->uy) / 1000.0;
-        this->beacon[id].ua = (int) ntohl(setbeacon->ua) * M_PI / 180.0;
-        this->beacon[id].isset = true;
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+        PLAYER_ERROR("PutReply() failed");
 
-        PLAYER_TRACE4("set beacon %d to %f %f %f", id,
-                      this->beacon[id].px, this->beacon[id].py, this->beacon[id].pa);
+      // return OK; otherwise the server would send a ERROR response,
+      // and we've already sent a NACK response
+      return(0);
     }
-    else
-        PLAYER_ERROR("config packet size is incorrect");
 
+    int id = setbeacon->id;
+    this->beacon[id].px = (int) ntohl(setbeacon->px) / 1000.0;
+    this->beacon[id].py = (int) ntohl(setbeacon->py) / 1000.0;
+    this->beacon[id].pa = (int) ntohl(setbeacon->pa) * M_PI / 180.0;
+    this->beacon[id].ux = (int) ntohl(setbeacon->ux) / 1000.0;
+    this->beacon[id].uy = (int) ntohl(setbeacon->uy) / 1000.0;
+    this->beacon[id].ua = (int) ntohl(setbeacon->ua) * M_PI / 180.0;
+    this->beacon[id].isset = true;
+
+    PLAYER_TRACE4("set beacon %d to %f %f %f", id,
+                  this->beacon[id].px, 
+                  this->beacon[id].py, 
+                  this->beacon[id].pa);
+  }
+  else
+  {
+    PLAYER_ERROR("config packet size is incorrect");
+
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+      PLAYER_ERROR("PutReply() failed");
+
+    // return OK; otherwise the server would send a ERROR response,
+    // and we've already sent a NACK response
     return(0);
+  }
+
+  // everything's cool; send the client an ACK
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+    PLAYER_ERROR("PutReply() failed");
+
+  return(0);
 }
 
 

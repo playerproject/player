@@ -62,11 +62,15 @@ class CLaserDevice : public CDevice
 {
   public:
     
+    static CDevice* Init(int argc, char** argv)
+    {
+      return((CDevice*)(new CLaserDevice(argc,argv)));
+    }
+
     CLaserDevice(int argc, char** argv);
-      
+
     int Setup();
     int Shutdown();
-    void Run();
 
   private:
 
@@ -75,13 +79,9 @@ class CLaserDevice : public CDevice
     // request, NULL otherwise
     CClientData* ParseConfig();
 
-    // Dummy main (just calls real main)
-    //
-    static void* DummyMain(void *laserdevice);
-
     // Main function for device thread
     //
-    int Main();
+    virtual void Main();
     
     // Open the terminal
     // Returns 0 on success
@@ -148,10 +148,6 @@ class CLaserDevice : public CDevice
     int64_t GetTime();
     
   protected:
-    // Laser driver thread
-    //
-    pthread_t m_thread;
-
     // Name of device used to communicate with the laser
     //
     char m_laser_name[MAX_FILENAME_SIZE];

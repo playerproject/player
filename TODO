@@ -5,13 +5,7 @@ TOMORROW:
 - Generalize gripper control to allow for any gripper, and modify command
     and data specifications to be more natural
 
-- Add context-sensitive support for thread creation
-
-- Create another device-table (or augment the current one), so as to remove
-    as many device-specific #ifdef's from main.cc as possible.
-       - no, use the existing DeviceTable.  just add some more stuff to it,
-         like permissible access modes, string representation, etc., and maybe
-         initialize the device pointer to NULL?
+- test all configurable devices (esp. P2OS) with new request/reply method
 
 NOW:
 ----
@@ -51,6 +45,14 @@ LATENT:
 
 DONE:
 ------
++ Add context-sensitive support for thread creation
+
++ Create another device-table (or augment the current one), so as to remove
+    as many device-specific #ifdef's from main.cc as possible.
+       + no, use the existing DeviceTable.  just add some more stuff to it,
+         like permissible access modes, string representation, etc., and maybe
+         initialize the device pointer to NULL?
+
 + remove non-portable pthread behavior.  should be confined to:
       + pthread_kill_other_threads_np(). GONE
       + unlocking mutex owned by other thread.  GONE

@@ -22,24 +22,20 @@
 
 /*
  * $Id$
- *
- *   the P2 sonar device.  takes no commands.  return sonar readings.
  */
-#ifndef _SONARDEVICE_H
-#define _SONARDEVICE_H
 
-#include <p2osdevice.h>
 
-class CSonarDevice: public CP2OSDevice 
-{
- public:
-   static CDevice* Init(int argc, char** argv)
-   {
-     return((CDevice*)(new CSonarDevice(argc,argv)));
-   }
-   CSonarDevice(int argc, char** argv):CP2OSDevice(argc, argv){}
-   size_t GetData( unsigned char *, size_t maxsize,
-                   uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-};
+/* this function registers available devices */
+void register_devices();
 
-#endif
+/*
+ * parses strings that look like "-laser:2"
+ *   <str1> is the device string; <str2> is the argument string for the device
+ *
+ * if the string can be parsed, then the appropriate device will be created, 
+ *    and 0 will be returned.
+ * otherwise, -1 is retured
+ */
+int parse_device_string(char* str1, char* str2);
+
+

@@ -43,7 +43,7 @@
 
 #include <ptzdevice.h>
 
-void *RunPtzThread(void *ptzdevice);
+//void *RunPtzThread(void *ptzdevice);
 
 CPtzDevice::CPtzDevice(int argc, char** argv) :
   CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),0,0)
@@ -171,7 +171,7 @@ CPtzDevice::Setup()
   PutCommand((unsigned char*)&cmd,sizeof(cmd));
 
   // start the thread to talk with the camera
-  pthread_create( &thread, NULL, &RunPtzThread, this );
+  StartThread();
 
   return(0);
 }
@@ -180,14 +180,11 @@ int
 CPtzDevice::Shutdown()
 {
   puts("CPtzDevice::Shutdown");
-  void* dummy;
 
   if(ptz_fd == -1)
     return(0);
 
-  pthread_cancel( thread );
-  if(pthread_join(thread,&dummy))
-    perror("CPtzDevice::Shutdown():pthread_join()");
+  StopThread();
 
   // put the camera back to center
   usleep(PTZ_SLEEP_TIME_USEC);
@@ -586,7 +583,9 @@ CPtzDevice::PrintPacket(char* str, unsigned char* cmd, int len)
   puts("");
 }
 
-void *RunPtzThread(void *ptzdevice) 
+// this function will be run in a separate thread
+void 
+CPtzDevice::Main()
 {
   player_ptz_data_t data;
   player_ptz_cmd_t command;
@@ -594,15 +593,12 @@ void *RunPtzThread(void *ptzdevice)
   short pandemand=0, tiltdemand=0, zoomdemand=0;
   bool newpantilt=true, newzoom=true;
 
-
-  CPtzDevice *zd = (CPtzDevice *) ptzdevice;
-
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
   while(1) 
   {
     pthread_testcancel();
-    zd->GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
     pthread_testcancel();
 
     if(pandemand != (short)ntohs((unsigned short)(command.pan)))
@@ -623,33 +619,31 @@ void *RunPtzThread(void *ptzdevice)
 
     if(newpantilt)
     {
-      //puts("SendAbsPanTilt()");
-      if(zd->SendAbsPanTilt(-pandemand,tiltdemand))
+      if(SendAbsPanTilt(-pandemand,tiltdemand))
       {
-        fputs("RunPtzThread:SendAbsPanTilt() errored. bailing.\n", stderr);
+        fputs("CPtzDevice:Main():SendAbsPanTilt() errored. bailing.\n", stderr);
         pthread_exit(NULL);
       }
     }
     if(newzoom)
     {
-      //puts("SendZoom()");
-      if(zd->SendAbsZoom(zoomdemand))
+      if(SendAbsZoom(zoomdemand))
       {
-        fputs("RunPtzThread:SendAbsZoom() errored. bailing.\n", stderr);
+        fputs("CPtzDevice:Main():SendAbsZoom() errored. bailing.\n", stderr);
         pthread_exit(NULL);
       }
     }
 
     /* get current state */
-    if(zd->GetAbsPanTilt(&pan,&tilt))
+    if(GetAbsPanTilt(&pan,&tilt))
     {
-      fputs("RunPtzThread:GetAbsPanTilt() errored. bailing.\n", stderr);
+      fputs("CPtzDevice:Main():GetAbsPanTilt() errored. bailing.\n", stderr);
       pthread_exit(NULL);
     }
     /* get current state */
-    if(zd->GetAbsZoom(&zoom))
+    if(GetAbsZoom(&zoom))
     {
-      fputs("RunPtzThread:GetAbsZoom() errored. bailing.\n", stderr);
+      fputs("CPtzDevice:Main():GetAbsZoom() errored. bailing.\n", stderr);
       pthread_exit(NULL);
     }
 
@@ -661,7 +655,7 @@ void *RunPtzThread(void *ptzdevice)
 
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    zd->PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
+    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
 
     newpantilt = false;
     newzoom = false;

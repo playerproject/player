@@ -44,7 +44,6 @@
 class CVisionDevice:public CDevice 
 {
   private:
-    pthread_t thread;   // the thread that continuously reads from ACTS
     int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
     int pid;      // ACTS's pid so we can kill it later
 
@@ -60,9 +59,6 @@ class CVisionDevice:public CDevice
     int version_enum_to_string(acts_version_t versionnum, char* versionstr, 
                                int len);
 
-
-  public:
-    int sock;               // socket to ACTS
     int portnum;  // port number where we'll connect to ACTS
     char configfilepath[MAX_FILENAME_SIZE];  // path to configfile
     char binarypath[MAX_FILENAME_SIZE];  // path to executable
@@ -71,11 +67,20 @@ class CVisionDevice:public CDevice
     int header_elt_len; // length of each header element (varies by version)
     int blob_size;  // size of each incoming blob (varies by version)
 
+  public:
+    int sock;               // socket to ACTS
+
+    static CDevice* Init(int argc, char** argv)
+    {
+      return((CDevice*)(new CVisionDevice(argc,argv)));
+    }
     // constructor 
     //
     //    takes argc,argv from command-line args
     //
     CVisionDevice(int argc, char** argv);
+
+    virtual void Main();
 
     void KillACTS();
 
