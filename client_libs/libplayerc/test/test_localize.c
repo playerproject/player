@@ -10,7 +10,7 @@
 
 
 // Basic localize test
-int test_localize(playerc_client_t *client, int robot, int index)
+int test_localize(playerc_client_t *client, int index)
 {
   int t, i;
   void *rdevice;
@@ -21,7 +21,7 @@ int test_localize(playerc_client_t *client, int robot, int index)
 
   printf("device [localize] index [%d]\n", index);
 
-  device = playerc_localize_create(client, robot, index);
+  device = playerc_localize_create(client, index);
 
   TEST("subscribing (read)");
   if (playerc_localize_subscribe(device, PLAYER_READ_MODE) == 0)

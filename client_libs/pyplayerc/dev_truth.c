@@ -37,14 +37,14 @@ PyObject *truth_new(PyObject *self, PyObject *args)
 {
   pyclient_t *pyclient;
   truth_object_t *pytruth;
-  int robot, index;
+  int index;
 
-  if (!PyArg_ParseTuple(args, "Oii", &pyclient, &robot, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   pytruth = PyObject_New(truth_object_t, &truth_type);
   pytruth->client = pyclient->client;
-  pytruth->truth = playerc_truth_create(pyclient->client, robot, index);
+  pytruth->truth = playerc_truth_create(pyclient->client, index);
     
   return (PyObject*) pytruth;
 }

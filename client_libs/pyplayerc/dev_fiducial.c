@@ -33,14 +33,14 @@ PyObject *fiducial_new(PyObject *self, PyObject *args)
 {
   pyclient_t *pyclient;
   fiducial_object_t *fiducialob;
-  int robot, index;
+  int index;
 
-  if (!PyArg_ParseTuple(args, "Oii", &pyclient, &robot, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   fiducialob = PyObject_New(fiducial_object_t, &fiducial_type);
   fiducialob->client = pyclient->client;
-  fiducialob->fiducial = playerc_fiducial_create(pyclient->client, robot, index);
+  fiducialob->fiducial = playerc_fiducial_create(pyclient->client, index);
   fiducialob->fiducial->info.user_data = fiducialob;
   fiducialob->fiducials = PyList_New(0);
     

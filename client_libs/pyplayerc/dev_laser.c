@@ -38,14 +38,14 @@ PyObject *laser_new(PyObject *self, PyObject *args)
 {
   pyclient_t *pyclient;
   laser_object_t *laserob;
-  int robot, index;
+  int index;
 
-  if (!PyArg_ParseTuple(args, "Oii", &pyclient, &robot, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   laserob = PyObject_New(laser_object_t, &laser_type);
   laserob->client = pyclient->client;
-  laserob->laser = playerc_laser_create(pyclient->client, robot, index);
+  laserob->laser = playerc_laser_create(pyclient->client, index);
   laserob->laser->info.user_data = laserob;
   laserob->ignore = 0;
   laserob->scan =  PyList_New(0);

@@ -34,7 +34,7 @@ void mainwnd_update_export(mainwnd_t *wnd);
 
 
 // Create the main window
-mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port, int robot)
+mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
 {
   char title[128];
   mainwnd_t *wnd;
@@ -44,7 +44,6 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port, int robot)
 
   wnd->host = host;
   wnd->port = port;
-  wnd->robot = robot;
 
   // Set up the canvas
   rtk_canvas_movemask(wnd->canvas, RTK_MOVE_PAN | RTK_MOVE_ZOOM);
@@ -52,7 +51,7 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port, int robot)
   rtk_canvas_scale(wnd->canvas, 0.02, 0.02);
   rtk_canvas_origin(wnd->canvas, 0, 0);
 
-  snprintf(title, sizeof(title), "PlayerViewer %s:%d:%d", host, port, robot);
+  snprintf(title, sizeof(title), "PlayerViewer %s:%d", host, port);
   rtk_canvas_title(wnd->canvas, title);
 
   // Create file menu

@@ -10,7 +10,7 @@
 
 
 // Basic test for position device.
-int test_position(playerc_client_t *client, int robot, int index)
+int test_position(playerc_client_t *client, int index)
 {
   int t;
   void *rdevice;
@@ -18,7 +18,7 @@ int test_position(playerc_client_t *client, int robot, int index)
 
   printf("device [position] index [%d]\n", index);
 
-  device = playerc_position_create(client, robot, index);
+  device = playerc_position_create(client, index);
 
   TEST("subscribing (read/write)");
   if (playerc_position_subscribe(device, PLAYER_ALL_MODE) < 0)

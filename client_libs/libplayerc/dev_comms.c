@@ -40,13 +40,13 @@ void playerc_comms_putdata(playerc_comms_t *device, player_msghdr_t *header,
 
 
 // Create a new comms proxy
-playerc_comms_t *playerc_comms_create(playerc_client_t *client, int robot, int index)
+playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index)
 {
   playerc_comms_t *device;
 
   device = malloc(sizeof(playerc_comms_t));
   memset(device, 0, sizeof(playerc_comms_t));
-  playerc_device_init(&device->info, client, robot, PLAYER_COMMS_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_COMMS_CODE, index,
                       (playerc_putdata_fn_t) playerc_comms_putdata);
 
   device->msg_len = 0;

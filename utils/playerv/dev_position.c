@@ -46,7 +46,7 @@ void position_servo_vel(position_t *self);
 
 // Create a position device
 position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                            int robot, int index, const char *drivername, int subscribe)
+                            int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
@@ -54,7 +54,7 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   
   self = malloc(sizeof(position_t));
 
-  self->proxy = playerc_position_create(client, robot, index);
+  self->proxy = playerc_position_create(client, index);
   self->drivername = strdup(drivername);
   self->datatime = 0;
   

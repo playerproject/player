@@ -39,14 +39,14 @@ PyObject *gps_new(PyObject *self, PyObject *args)
 {
   pyclient_t *pyclient;
   gps_object_t *pygps;
-  int robot, index;
+  int index;
 
-  if (!PyArg_ParseTuple(args, "Oii", &pyclient, &robot, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   pygps = PyObject_New(gps_object_t, &gps_type);
   pygps->client = pyclient->client;
-  pygps->gps = playerc_gps_create(pyclient->client, robot, index);
+  pygps->gps = playerc_gps_create(pyclient->client, index);
   pygps->gps->info.user_data = pygps;
   pygps->px = PyFloat_FromDouble(0);
   pygps->py = PyFloat_FromDouble(0);

@@ -39,13 +39,13 @@ void playerc_gps_putdata(playerc_gps_t *device, player_msghdr_t *header,
                          player_gps_data_t *data, size_t len);
 
 // Create a new gps proxy
-playerc_gps_t *playerc_gps_create(playerc_client_t *client, int robot, int index)
+playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index)
 {
   playerc_gps_t *device;
 
   device = malloc(sizeof(playerc_gps_t));
   memset(device, 0, sizeof(playerc_gps_t));
-  playerc_device_init(&device->info, client, robot, PLAYER_GPS_CODE, index,
+  playerc_device_init(&device->info, client, PLAYER_GPS_CODE, index,
                       (playerc_putdata_fn_t) playerc_gps_putdata);
     
   return device;

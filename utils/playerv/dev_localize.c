@@ -45,14 +45,14 @@ void localize_draw_hypoth(localize_t *localize);
 
 // Create a localize device
 localize_t *localize_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                                    int robot, int index, const char *drivername, int subscribe)
+                            int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
   localize_t *localize;
   
   localize = malloc(sizeof(localize_t));
-  localize->proxy = playerc_localize_create(client, robot, index);
+  localize->proxy = playerc_localize_create(client, index);
   localize->drivername = strdup(drivername);
   localize->datatime = 0;
 
