@@ -380,7 +380,7 @@ ClientManager::Wait(void)
   pthread_mutex_lock(&this->condMutex);
   pthread_cond_wait(&this->cond,&this->condMutex);
   pthread_mutex_unlock(&this->condMutex);
-  pthread_cleanup_pop(1);
+  pthread_cleanup_pop(0);
 }
 
 // Signal that new data is available (calls pthread_cond_broadcast()
