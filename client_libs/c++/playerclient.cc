@@ -629,21 +629,17 @@ int PlayerClient::ChangeVelocityControl(velocity_mode_t mode)
 int PlayerClient::SetLaserConfig(int min_segment, int max_segment, 
                 bool intensity)
 {
-  // space for two indices, and a byte for intensity
-  char payload[2*sizeof(uint16_t)+sizeof(uint8_t)];
-
-  uint16_t min_segment_swap = htons(min_segment);
-  uint16_t max_segment_swap = htons(max_segment);
-
   player_msghdr_t replyhdr;
   char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
 
-  memcpy(payload, &min_segment_swap, sizeof(uint16_t));
-  memcpy(payload+sizeof(uint16_t), &max_segment_swap, sizeof(uint16_t));
-  memcpy(payload+2*sizeof(uint16_t), &intensity, sizeof(uint8_t));
+  player_laser_config_t payload;
+
+  payload.min_segment = htons(min_segment);
+  payload.max_segment = htons(max_segment);
+  payload.intensity = intensity;
 
   return(player_request(&conn, PLAYER_LASER_CODE, 0,
-                          payload, sizeof(payload),
+                          (char*) &payload, sizeof(payload),
                           &replyhdr, replybuffer, sizeof(replybuffer)));
 }
 

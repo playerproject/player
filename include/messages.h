@@ -238,9 +238,23 @@ typedef struct
   uint16_t ranges[PLAYER_NUM_LASER_SAMPLES];
 } __attribute__ ((packed)) player_laser_data_t;
 
+/*
+ * the laser configuration packet
+ */
+typedef struct
+{
+    /* laser takes a maximum of 361 samples; to take a partial scan,
+       set the min and max segment values. */
+    uint16_t min_segment;
+    uint16_t max_segment;
+    /* Laser can return intensity values in the top 3 bits of the range
+       readings; set intensity = 1 to enable this feature. */
+    uint8_t  intensity;
+} __attribute__ ((packed)) player_laser_config_t;
+
 #define LASER_DATA_BUFFER_SIZE ((int)sizeof(player_laser_data_t))
 #define LASER_COMMAND_BUFFER_SIZE 0
-#define LASER_CONFIG_BUFFER_SIZE 32
+#define LASER_CONFIG_BUFFER_SIZE ((int)sizeof(player_laser_config_t))
 
 /*************************************************************************/
 

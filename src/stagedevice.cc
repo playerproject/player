@@ -100,8 +100,12 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
     // Copy the data
     //
     memcpy(data, m_data_buffer, data_len);
-    data_timestamp_sec = (m_info->data_timestamp) / 1000000;
-    data_timestamp_usec = (m_info->data_timestamp) % 1000000;
+
+    // Copy the timestamp
+    //
+    data_timestamp_sec = m_info->data_timestamp_sec;
+    data_timestamp_usec = m_info->data_timestamp_usec;
+    
     return data_len;
 }
 

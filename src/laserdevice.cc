@@ -149,16 +149,16 @@ size_t CLaserDevice::GetConfig(unsigned char *dest, size_t maxsize)
 {
     if (config_size == 0)
         return 0;
-    if (config_size != 5)
+    if (config_size != sizeof(player_laser_config_t))
     {
         PLAYER_MSG1("config_size = %d", (int) config_size);
         config_size = 0;
         RETURN_ERROR(0, "config data has incorrect length");
     }
 
-    min_segment = ntohs(MAKEUINT16(config[0], config[1]));
-    max_segment = ntohs(MAKEUINT16(config[2], config[3]));
-    intensity = (bool) config[4];
+    min_segment = ((player_laser_config_t*) config)->min_segment;
+    max_segment = ((player_laser_config_t*) config)->max_segment;
+    intensity = ((player_laser_config_t*) config)->intensity;
     PLAYER_MSG3("new scan range [%d %d], intensity [%d]",
          (int) min_segment, (int) max_segment, (int) intensity);
     
