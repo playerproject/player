@@ -279,6 +279,11 @@ void StgSonar_Register(DriverTable *table);
 void StgBlinkenlight_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_NOMAD
+void Nomad_Register(DriverTable *driverTable);
+#endif
+
+
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
  *
@@ -614,6 +619,10 @@ register_devices()
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
   ServiceAdvLSD_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_NOMAD
+  Nomad_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_STAGE1P4
