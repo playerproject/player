@@ -2759,9 +2759,9 @@ typedef struct player_mcom_return
 #define NOMAD_SERIAL_PORT "/dev/ttyS0"
 #define NOMAD_SERIAL_BAUD  9600
 
-/** [Data]
-The {\tt nomad} interface provides a pose estimate and sonar range readings.
-The format is: */
+/** [Data] The {\tt nomad} interface provides a pose estimate, sonar
+and infrared range readings, and bumper contact readings.  The format
+is: */
 typedef struct player_nomad_data
 {
   /** X and Y position, in mm */
@@ -2896,25 +2896,38 @@ or not the device is connected to a charger.
 The format is: */
 typedef struct player_energy_data
 {
-  /** energy stored, in Joules. */
-  int32_t joules;
+  /** energy stored, in milliJoules. */
+  int32_t mjoules;
   
-  /** estimated current energy consumption or aquisition, in
-      Joules/sec. */
-  int32_t djoules; 
+  /** estimated current energy consumption (negative values) or
+      aquisition (positive values), in milliWatts (milliJoules/sec). */
+  int32_t mwatts; 
   
-  /** charging flag: if TRUE, device is charging, else FALSE. */
+  /** charging flag: if TRUE, device is currently charging, else
+      FALSE.*/
   uint8_t charging;
-
-} __attribute__ ((packed)) player_energy_data_t;
   
+} __attribute__ ((packed)) player_energy_data_t;
+
 /** [Commands]
-   This interface accepts no commands.
+    This interface accepts no commands.
 */
 
-/** [Configs]
-    This interface accepts no configs
-*/
+
+/** [Configs] */
+
+typedef struct player_energy_command
+{
+  /** boolean controlling recharging. If FALSE, recharging is
+      disabled. Defaults to TRUE */
+  uint8_t enable_input;
+  
+  /** boolean controlling whether others can recharge from this
+      device. If FALSE, charging others is disabled. */  
+  uint8_t enable_output; 
+  
+} __attribute__ ((packed)) player_energy_chargepolicy_config_t;
+
 
 /*************************************************************************
  ** end section

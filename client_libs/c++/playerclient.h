@@ -2463,5 +2463,48 @@ class PlannerProxy : public ClientProxy
  ** end section
  *****************************************************************************/
 
+/*****************************************************************************
+ ** begin section EnergyProxy
+ *****************************************************************************/
+
+/** The {\tt EnergyProxy} class is used to read from an {\tt energy} device.
+ */
+class EnergyProxy : public ClientProxy 
+{
+
+public:
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+    */
+    EnergyProxy (PlayerClient* pc, unsigned short index,
+                   unsigned char access = 'c')
+            : ClientProxy(pc,PLAYER_ENERGY_CODE,index,access) 
+      {}
+
+    ~EnergyProxy()
+      {}
+
+    // these methods are the user's interface to this device
+
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    /// Print out the current bumper state.
+    void Print ();
+
+    /** These members give the current amount of energy stored
+	(Joules) and the amount of energy current being consumed
+	(Watts). The charging flag is TRUE if we are currently
+	charging, else FALSE.
+     */
+
+    double joules;
+    double watts;
+    bool charging;
+};
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
 
 #endif

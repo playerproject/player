@@ -60,7 +60,12 @@ define pioneer2dx position
   blobfinder [ 6 80 60 7.0 0 0 60.0 ]  
   blobchannels [ "red" "green" "blue" "cyan" "yellow" "magenta" ]	
 
+  energy_capacity 3000.0
+  energy_probe_range 1.0
+  energy_charge_rate 0.0 # we don't give charge
 
+  # mass in KG
+  mass 15.0 
 
   line_count 8
   line[0] [0.23 0.05 0.15 0.15]

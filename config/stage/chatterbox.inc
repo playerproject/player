@@ -19,9 +19,15 @@ define chatterbox model
   sbounds[6] [ 0 0.5 ]
   sbounds[7] [ 0 0.5 ]
 
+  # mass in KG
+  mass 0.5 
+
   size [0.10 0.10]
   nose 1
-	
+
+  energy_capacity 500.0
+  energy_probe_range 0.6
+
   # fiducialfinder configuration
   # format [ minrange maxrange maxrange_ids fov ]
   fiducial [ 0.0 2.0 2.0 360.0 ]  
