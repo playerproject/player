@@ -119,7 +119,7 @@ static PyObject *localize_getattr(localize_object_t *self, char *attrname)
   {
     result = PyInt_FromLong(self->obj->pending_count);
   }
-  if (strcmp(attrname, "pending_time") == 0)
+  else if (strcmp(attrname, "pending_time") == 0)
   {
     result = PyFloat_FromDouble(self->obj->pending_time);
   }
