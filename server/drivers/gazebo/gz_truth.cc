@@ -212,6 +212,44 @@ int GzTruth::PutConfig(player_device_id_t* device, void* client, void* data, siz
   subtype = ((uint8_t*) data)[0];
   switch (subtype)
   {
+    case PLAYER_TRUTH_GET_POSE:
+    {
+      player_truth_pose_t rep;
+
+      gz_truth_lock(this->iface, 1);
+            
+      rep.px = htonl((int32_t) (1000 * this->iface->data->pos[0]));
+      rep.py = htonl((int32_t) (1000 * this->iface->data->pos[1]));
+      rep.pa = htonl((int32_t) (180 * this->iface->data->rot[2] / M_PI));
+
+      gz_truth_unlock(this->iface);
+
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, (void*) &rep, sizeof(rep)) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    }
+    case PLAYER_TRUTH_SET_POSE:
+    {
+      player_truth_pose_t *req = (player_truth_pose_t*) data;
+      
+      gz_truth_lock(this->iface, 1);
+
+      this->iface->data->cmd_pos[0] = ntohl(req->px) / 1000.0;
+      this->iface->data->cmd_pos[1] = ntohl(req->py) / 1000.0;
+      this->iface->data->cmd_pos[2] = this->iface->data->pos[2];
+
+      this->iface->data->cmd_rot[0] = this->iface->data->rot[0];
+      this->iface->data->cmd_rot[1] = this->iface->data->rot[1];
+      this->iface->data->cmd_rot[2] = ntohl(req->pa) / 180.0 * M_PI;
+
+      this->iface->data->cmd_new = 1;
+
+      gz_truth_unlock(this->iface);
+
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    }
     default:
     {
       if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
