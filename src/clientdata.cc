@@ -111,6 +111,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         // what sort of ioctl is it?
         memcpy(&player_ioctl,payload,sizeof(player_device_ioctl_t));
         real_payloadsize = payload_size - sizeof(player_device_ioctl_t);
+        player_ioctl.subtype = ntohs(player_ioctl.subtype);
         switch(player_ioctl.subtype)
         {
           case PLAYER_PLAYER_DEV_REQ:
@@ -127,6 +128,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             {
               //puts("memcpying request");
               memcpy(&req,payload+j,sizeof(player_device_req_t));
+              req.code = ntohs(req.code);
+              req.index = ntohs(req.index);
               UpdateRequested(req);
             }
             //puts("done with requests");
@@ -249,7 +252,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           i+=sizeof(player_device_req_t),j+=sizeof(player_device_req_t))
       {
         memcpy(&req,payload+j,sizeof(player_device_req_t));
-        req.access = FindPermission(req.code,req.index);
+        req.access = FindPermission(ntohs(req.code),ntohs(req.index));
         memcpy(reply+i,&req,sizeof(player_device_req_t));
       }
     }
@@ -402,7 +405,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
   // go from either 'r' or 'w' to 'a'
   if((thisub->access=='w' && (req.access=='r' || req.access=='a')) ||
      (thisub->access=='r' && (req.access=='w' || req.access=='a')))
-  { 
+  {
     if(Subscribe(req.code,req.access) == 0)
       thisub->access = 'a';
     else 
@@ -455,7 +458,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
           thisub->access='e';
         break;
       case 'r':
-        if(Subscribe(req.code,req.index)==0)
+        if(Subscribe(req.code,req.index) == 0)
           thisub->access='r';
         else
           thisub->access='e';
@@ -515,7 +518,7 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
   pthread_mutex_lock( &access );
 
   hdr.stx = PLAYER_STX;
-  hdr.type = PLAYER_MSGTYPE_DATA;
+  hdr.type = htons(PLAYER_MSGTYPE_DATA);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
     if(thisub->access=='a' || thisub->access=='r') 
@@ -525,8 +528,8 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
       {
         if((devicep = deviceTable->GetDevice(thisub->code,thisub->index)))
         {
-          hdr.device = thisub->code;
-          hdr.device_index = thisub->index;
+          hdr.device = htons(thisub->code);
+          hdr.device_index = htons(thisub->index);
           hdr.reserved = 0;
           
           //puts("CClientData::BuildMsg() calling GetData");

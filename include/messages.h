@@ -39,23 +39,23 @@
 #define PLAYER_STX MAKEUINT16('x','X')
 
 /* the player message types */
-#define PLAYER_MSGTYPE_DATA MAKEUINT16('r','d') // "rd" robot data
-#define PLAYER_MSGTYPE_CMD  MAKEUINT16('r','c') // "rc" robot cmd
-#define PLAYER_MSGTYPE_REQ  MAKEUINT16('r','q') // "rq" robot req
-#define PLAYER_MSGTYPE_RESP MAKEUINT16('r','r') // "rr" robot resp
+#define PLAYER_MSGTYPE_DATA  ((uint16_t)1)
+#define PLAYER_MSGTYPE_CMD   ((uint16_t)2)
+#define PLAYER_MSGTYPE_REQ   ((uint16_t)3)
+#define PLAYER_MSGTYPE_RESP  ((uint16_t)4)
 
 /* the currently assigned device codes */
-#define PLAYER_MISC_CODE    MAKEUINT16('p','m')  // "pm" pioneer misc
-#define PLAYER_GRIPPER_CODE MAKEUINT16('p','g')  // "pg" pioneer gripper
-#define PLAYER_POSITION_CODE MAKEUINT16('p','p')  // "pp" pioneer position
-#define PLAYER_SONAR_CODE   MAKEUINT16('p','s')  // "ps" pioneer sonar
-#define PLAYER_LASER_CODE   MAKEUINT16('s','l')  // "sl" SICK laser
-#define PLAYER_VISION_CODE  MAKEUINT16('a','v')  // "av" ACTS vision
-#define PLAYER_PTZ_CODE     MAKEUINT16('s','z')  // "sz" Sony PTZ
-#define PLAYER_PLAYER_CODE  MAKEUINT16('r','s')  // "rs" robot server
-#define PLAYER_AUDIO_CODE  MAKEUINT16('f','a')  // "fa" freq analyzer (audio)
-#define PLAYER_LASERBEACON_CODE  MAKEUINT16('l','b')  // "lb" laser beacon detector
-#define PLAYER_BROADCAST_CODE MAKEUINT16('b', 'r') // "br" broadcast message device
+#define PLAYER_PLAYER_CODE         ((uint16_t)1)
+#define PLAYER_MISC_CODE           ((uint16_t)2)
+#define PLAYER_GRIPPER_CODE        ((uint16_t)3)
+#define PLAYER_POSITION_CODE       ((uint16_t)4)
+#define PLAYER_SONAR_CODE          ((uint16_t)5)
+#define PLAYER_LASER_CODE          ((uint16_t)6)
+#define PLAYER_VISION_CODE         ((uint16_t)7)
+#define PLAYER_PTZ_CODE            ((uint16_t)8)
+#define PLAYER_AUDIO_CODE          ((uint16_t)9)
+#define PLAYER_LASERBEACON_CODE   ((uint16_t)10)
+#define PLAYER_BROADCAST_CODE     ((uint16_t)11)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -117,10 +117,10 @@ typedef struct
   uint8_t mode;
 } __attribute__ ((packed)) player_device_datamode_req_t;
 
-#define PLAYER_PLAYER_DEV_REQ  MAKEUINT16('d','r') // "dr" device request
-#define PLAYER_PLAYER_DATA_REQ MAKEUINT16('d','p') // "dp" data packet (request)
-#define PLAYER_PLAYER_DATAMODE_REQ MAKEUINT16('d','m') // "dm" data mode change
-#define PLAYER_PLAYER_DATAFREQ_REQ MAKEUINT16('d','f') // "df" data freq change
+#define PLAYER_PLAYER_DEV_REQ      ((uint16_t)1)
+#define PLAYER_PLAYER_DATA_REQ     ((uint16_t)2)
+#define PLAYER_PLAYER_DATAMODE_REQ ((uint16_t)3)
+#define PLAYER_PLAYER_DATAFREQ_REQ ((uint16_t)4)
 
 /*************************************************************************/
 
