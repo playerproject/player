@@ -113,6 +113,16 @@ PYTHON_VERSION=2.2
 AC_ARG_WITH(python,
 [  --without-python        Don't compile the python client libraries],,
 [AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)])
+dnl See whether the += operator is defined in this version of Python
+if test x$with_python = xyes; then
+  AC_MSG_CHECKING([Python version])
+  if `python -c "i=0;i+=1;"`; then
+    AC_MSG_RESULT([>= 2, good.  Will build Python bindings.])
+  else
+    AC_MSG_RESULT([< 2, too old.  Won't build Python bindings.])
+    with_python=no
+  fi
+fi 2>/dev/null
 AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
 
 
