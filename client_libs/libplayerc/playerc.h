@@ -180,7 +180,7 @@ typedef struct _playerc_device_t
  **************************************************************************/
 
 // Errors get written here
-extern char playerc_errorstr[1024];
+extern char playerc_errorstr[];
 
 // Get the error stringg
 extern const char *playerc_error_str();
@@ -810,7 +810,7 @@ typedef struct
   char ip[32];
  
   // Link properties
-  int link, level, noise;
+  int qual, level, noise;
  
 } playerc_wifi_link_t;
 
@@ -875,6 +875,12 @@ typedef struct
 
   // Map data (empty = -1, unknown = 0, occupied = +1)
   int8_t *map_cells;
+
+  // The number of pending (unprocessed) sensor readings
+  int pending_count;
+
+  // The timestamp on the last reading processed
+  double pending_time;
 
   // List of possible poses
   int hypoth_count;

@@ -72,50 +72,50 @@ PyTypeObject position_type;
 staticforward PyMethodDef position_methods[];
 
 /* Local declarations */
-static void position_onread(position_object_t *positionob);
+static void position_onread(position_object_t *pyposition);
 
 
 /* Initialise (type function) */
 PyObject *position_new(PyObject *self, PyObject *args)
 {
-  client_object_t *clientob;
-  position_object_t *positionob;
+  pyclient_t *pyclient;
+  position_object_t *pyposition;
   int index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &clientob, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
-  positionob = PyObject_New(position_object_t, &position_type);
-  positionob->client = clientob->client;
-  positionob->position = playerc_position_create(clientob->client, index);
-  positionob->position->info.user_data = positionob;
-  positionob->px = PyFloat_FromDouble(0);
-  positionob->py = PyFloat_FromDouble(0);
-  positionob->pa = PyFloat_FromDouble(0);
+  pyposition = PyObject_New(position_object_t, &position_type);
+  pyposition->client = pyclient->client;
+  pyposition->position = playerc_position_create(pyclient->client, index);
+  pyposition->position->info.user_data = pyposition;
+  pyposition->px = PyFloat_FromDouble(0);
+  pyposition->py = PyFloat_FromDouble(0);
+  pyposition->pa = PyFloat_FromDouble(0);
 
   /* Add callback for post-processing incoming data */
-  playerc_client_addcallback(clientob->client, (playerc_device_t*) positionob->position,
+  playerc_client_addcallback(pyclient->client, (playerc_device_t*) pyposition->position,
                              (playerc_callback_fn_t) position_onread,
-                             (void*) positionob);
+                             (void*) pyposition);
     
-  return (PyObject*) positionob;
+  return (PyObject*) pyposition;
 }
 
 
 /* Finailize (type function) */
 static void position_del(PyObject *self)
 {
-  position_object_t *positionob;
-  positionob = (position_object_t*) self;
+  position_object_t *pyposition;
+  pyposition = (position_object_t*) self;
 
-  playerc_client_delcallback(positionob->client, (playerc_device_t*) positionob->position,
+  playerc_client_delcallback(pyposition->client, (playerc_device_t*) pyposition->position,
                              (playerc_callback_fn_t) position_onread,
-                             (void*) positionob);    
+                             (void*) pyposition);    
 
-  Py_DECREF(positionob->px);
-  Py_DECREF(positionob->py);
-  Py_DECREF(positionob->pa);
-  playerc_position_destroy(positionob->position);
+  Py_DECREF(pyposition->px);
+  Py_DECREF(pyposition->py);
+  Py_DECREF(pyposition->pa);
+  playerc_position_destroy(pyposition->position);
   PyObject_Del(self);
 }
 
@@ -124,48 +124,48 @@ static void position_del(PyObject *self)
 static PyObject *position_getattr(PyObject *self, char *attrname)
 {
   PyObject *result;
-  position_object_t *positionob;
+  position_object_t *pyposition;
 
-  positionob = (position_object_t*) self;
+  pyposition = (position_object_t*) self;
 
   result = NULL;
   if (strcmp(attrname, "datatime") == 0)
   {
-    result = PyFloat_FromDouble(positionob->position->info.datatime);
+    result = PyFloat_FromDouble(pyposition->position->info.datatime);
   }
   else if (strcmp(attrname, "px") == 0)
   {
-    Py_INCREF(positionob->px);
-    result = positionob->px;
+    Py_INCREF(pyposition->px);
+    result = pyposition->px;
   }
   else if (strcmp(attrname, "py") == 0)
   {
-    Py_INCREF(positionob->py);
-    result = positionob->py;
+    Py_INCREF(pyposition->py);
+    result = pyposition->py;
   }
   else if (strcmp(attrname, "pa") == 0)
   {
-    Py_INCREF(positionob->pa);
-    result = positionob->pa;
+    Py_INCREF(pyposition->pa);
+    result = pyposition->pa;
   }
   else if (strcmp(attrname, "vx") == 0)
   {
-    Py_INCREF(positionob->vx);
-    result = positionob->vx;
+    Py_INCREF(pyposition->vx);
+    result = pyposition->vx;
   }
   else if (strcmp(attrname, "vy") == 0)
   {
-    Py_INCREF(positionob->vy);
-    result = positionob->vy;
+    Py_INCREF(pyposition->vy);
+    result = pyposition->vy;
   }
   else if (strcmp(attrname, "va") == 0)
   {
-    Py_INCREF(positionob->va);
-    result = positionob->va;
+    Py_INCREF(pyposition->va);
+    result = pyposition->va;
   }
   else if (strcmp(attrname, "stall") == 0)
   {
-    result = PyInt_FromLong(positionob->position->stall);
+    result = PyInt_FromLong(pyposition->position->stall);
   }
   else
     result = Py_FindMethod(position_methods, self, attrname);
@@ -178,39 +178,39 @@ static PyObject *position_getattr(PyObject *self, char *attrname)
 static PyObject *position_str(PyObject *self)
 {
   char str[128];
-  position_object_t *positionob;
-  positionob = (position_object_t*) self;
+  position_object_t *pyposition;
+  pyposition = (position_object_t*) self;
 
   snprintf(str, sizeof(str),
            "position %02d %013.3f"
            " %+07.3f %+07.3f %+04.3f"
            " %+04.3f %+04.3f %+04.3f",
-           positionob->position->info.index,
-           positionob->position->info.datatime,
-           positionob->position->px,
-           positionob->position->py,
-           positionob->position->pa,
-           positionob->position->vx,
-           positionob->position->vy,
-           positionob->position->va);
+           pyposition->position->info.index,
+           pyposition->position->info.datatime,
+           pyposition->position->px,
+           pyposition->position->py,
+           pyposition->position->pa,
+           pyposition->position->vx,
+           pyposition->position->vy,
+           pyposition->position->va);
   return PyString_FromString(str);
 }
 
 
 /* Callback for post-processing incoming data */
-static void position_onread(position_object_t *positionob)
+static void position_onread(position_object_t *pyposition)
 {
   thread_acquire();
     
-  Py_DECREF(positionob->px);
-  Py_DECREF(positionob->py);
-  Py_DECREF(positionob->pa);
-  positionob->px = PyFloat_FromDouble(positionob->position->px);
-  positionob->py = PyFloat_FromDouble(positionob->position->py);
-  positionob->pa = PyFloat_FromDouble(positionob->position->pa);    
-  positionob->vx = PyFloat_FromDouble(positionob->position->vx);
-  positionob->vy = PyFloat_FromDouble(positionob->position->vy);
-  positionob->va = PyFloat_FromDouble(positionob->position->va);    
+  Py_DECREF(pyposition->px);
+  Py_DECREF(pyposition->py);
+  Py_DECREF(pyposition->pa);
+  pyposition->px = PyFloat_FromDouble(pyposition->position->px);
+  pyposition->py = PyFloat_FromDouble(pyposition->position->py);
+  pyposition->pa = PyFloat_FromDouble(pyposition->position->pa);    
+  pyposition->vx = PyFloat_FromDouble(pyposition->position->vx);
+  pyposition->vy = PyFloat_FromDouble(pyposition->position->vy);
+  pyposition->va = PyFloat_FromDouble(pyposition->position->va);    
     
   thread_release();
 }
@@ -220,20 +220,20 @@ static void position_onread(position_object_t *positionob)
 static PyObject *position_subscribe(PyObject *self, PyObject *args)
 {
   char access;
-  position_object_t *positionob;
+  position_object_t *pyposition;
   int result;
     
   if (!PyArg_ParseTuple(args, "c", &access))
     return NULL;
-  positionob = (position_object_t*) self;
+  pyposition = (position_object_t*) self;
 
   thread_release();
-  result = playerc_position_subscribe(positionob->position, access);
+  result = playerc_position_subscribe(pyposition->position, access);
   thread_acquire();
 
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 
@@ -245,20 +245,20 @@ static PyObject *position_subscribe(PyObject *self, PyObject *args)
 /* Unsubscribe from the device. */
 static PyObject *position_unsubscribe(PyObject *self, PyObject *args)
 {
-  position_object_t *positionob;
+  position_object_t *pyposition;
   int result;
     
   if (!PyArg_ParseTuple(args, ""))
     return NULL;
-  positionob = (position_object_t*) self;
+  pyposition = (position_object_t*) self;
 
   thread_release();
-  result = playerc_position_unsubscribe(positionob->position);
+  result = playerc_position_unsubscribe(pyposition->position);
   thread_acquire();
 
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 
@@ -274,34 +274,50 @@ static PyObject *position_unsubscribe(PyObject *self, PyObject *args)
 static PyObject *position_enable(PyObject *self, PyObject *args)
 {
   int enable;
-  position_object_t *positionob;
+  position_object_t *pyposition;
   PyObject *result;
     
   if (!PyArg_ParseTuple(args, "i", &enable))
     return NULL;
-  positionob = (position_object_t*) self;
+  pyposition = (position_object_t*) self;
 
   thread_release();
-  result = PyInt_FromLong(playerc_position_enable(positionob->position, enable));
+  result = PyInt_FromLong(playerc_position_enable(pyposition->position, enable));
   thread_acquire();
   
   return result;
 }
 
 
-/* Set the robot speed
+/* Set the target speed
    (vx, vy, va)
 */
 static PyObject *position_set_speed(PyObject *self, PyObject *args)
 {
   double vx, vy, va;
-  position_object_t *positionob;
+  position_object_t *pyposition;
     
   if (!PyArg_ParseTuple(args, "ddd", &vx, &vy, &va))
     return NULL;
-  positionob = (position_object_t*) self;
+  pyposition = (position_object_t*) self;
 
-  return PyInt_FromLong(playerc_position_set_speed(positionob->position, vx, vy, va));
+  return PyInt_FromLong(playerc_position_set_speed(pyposition->position, vx, vy, va));
+}
+
+
+/* Set the target pose (for drivers with position control)
+   (vx, vy, va)
+*/
+static PyObject *position_set_cmd_pose(PyObject *self, PyObject *args)
+{
+  double px, py, pa;
+  position_object_t *pyposition;
+
+  pyposition = (position_object_t*) self;
+  if (!PyArg_ParseTuple(args, "ddd", &px, &py, &pa))
+    return NULL;
+
+  return PyInt_FromLong(playerc_position_set_cmd_pose(pyposition->position, px, py, pa));
 }
 
 
@@ -335,6 +351,7 @@ static PyMethodDef position_methods[] =
   {"unsubscribe", position_unsubscribe, METH_VARARGS},  
   {"enable", position_enable, METH_VARARGS},
   {"set_speed", position_set_speed, METH_VARARGS},
+  {"set_cmd_pose", position_set_cmd_pose, METH_VARARGS},
   {NULL, NULL}
 };
 

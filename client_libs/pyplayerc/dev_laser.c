@@ -76,22 +76,22 @@ staticforward PyMethodDef laser_methods[];
 
 PyObject *laser_new(PyObject *self, PyObject *args)
 {
-  client_object_t *clientob;
+  pyclient_t *pyclient;
   laser_object_t *laserob;
   int index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &clientob, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   laserob = PyObject_New(laser_object_t, &laser_type);
-  laserob->client = clientob->client;
-  laserob->laser = playerc_laser_create(clientob->client, index);
+  laserob->client = pyclient->client;
+  laserob->laser = playerc_laser_create(pyclient->client, index);
   laserob->laser->info.user_data = laserob;
   laserob->ignore = 0;
   laserob->scan =  PyList_New(0);
 
   /* Add callback for post-processing incoming data */
-  playerc_client_addcallback(clientob->client, (playerc_device_t*) laserob->laser,
+  playerc_client_addcallback(pyclient->client, (playerc_device_t*) laserob->laser,
                              (playerc_callback_fn_t) laser_onread,
                              (void*) laserob);
     
@@ -211,7 +211,7 @@ static PyObject *laser_subscribe(PyObject *self, PyObject *args)
 
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 
@@ -236,7 +236,7 @@ static PyObject *laser_unsubscribe(PyObject *self, PyObject *args)
 
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 
@@ -286,7 +286,7 @@ static PyObject *laser_set_config(PyObject *self, PyObject *args)
 
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 

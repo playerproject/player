@@ -12,7 +12,6 @@ def test_wifi(client, index):
     device = playerc.wifi(client, index)
     device.subscribe('r')
 
-    
     for i in range(3):
 
         while client.read() != device:

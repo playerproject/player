@@ -75,8 +75,7 @@ typedef struct
   // The available device list.
   PyObject *idlist;
   
-} client_object_t;
-
+} pyclient_t;
 
 
 #endif

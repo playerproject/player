@@ -1865,6 +1865,7 @@ typedef struct
 } __attribute__ ((packed)) player_rwi_config_t;
 /*************************************************************************/
 
+
 /*************************************************************************
  ** begin section wifi
  *************************************************************************/
@@ -1876,6 +1877,36 @@ interface. */
 /** The maximum number of remote hosts to report on */
 #define PLAYER_WIFI_MAX_LINKS 16
 
+/** link quality is in dBm */
+#define PLAYER_WIFI_QUAL_DBM		1
+/** link quality is relative */
+#define PLAYER_WIFI_QUAL_REL		2
+/** link quality is unknown */
+#define PLAYER_WIFI_QUAL_UNKNOWN	3
+
+/** unknown operating mode */
+#define PLAYER_WIFI_MODE_UNKNOWN	0
+/** driver decides the mode */
+#define PLAYER_WIFI_MODE_AUTO		1
+/** ad hoc mode */
+#define PLAYER_WIFI_MODE_ADHOC		2
+/** infrastructure mode (multi cell network, roaming) */
+#define PLAYER_WIFI_MODE_INFRA		3
+/** access point, master mode */
+#define PLAYER_WIFI_MODE_MASTER		4
+/** repeater mode */
+#define PLAYER_WIFI_MODE_REPEAT		5
+/** secondary/backup repeater */
+#define PLAYER_WIFI_MODE_SECOND		6
+
+/** config requests */
+#define PLAYER_WIFI_MAC_REQ		((uint8_t)1)
+
+typedef struct player_wifi_mac_req 
+{
+  uint8_t		subtype;
+} __attribute__ ((packed)) player_wifi_mac_req_t;
+
 /** [Data] */
 /** The {\tt wifi} interface returns data regarding the signal characteristics 
     of remote hosts as perceived through a wireless network interface; the 
@@ -1884,9 +1915,14 @@ typedef struct player_wifi_link
 {
   /** IP address of destination. */
   char ip[32];
-  
+
+  /** Indicates type of link quality info we have */
+  uint8_t qual_type;
   /** Link quality, level and noise information */
-  uint16_t link, level, noise;
+  // these could be uint8_t instead, <linux/wireless.h> will only
+  // return that much.  maybe some other architecture needs larger??
+  uint16_t qual, level, noise;
+  uint16_t maxqual, maxlevel, maxnoise;
 } __attribute__ ((packed)) player_wifi_link_t;
 
 
@@ -1896,7 +1932,26 @@ typedef struct player_wifi_data
   /** A list of links */
   int link_count;
   player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
+
+  /** mysterious throughput calculated by driver */
+  uint32_t throughput;
+
+  /** current bitrate of device */
+  int32_t bitrate;
+
+  /** operating mode of device */
+  uint8_t mode;
+
+  /** MAC address of current access point/cell */
+  char ap[32];
 } __attribute__ ((packed)) player_wifi_data_t;
+
+
+/** [Commands] This interface accepts no commands. */
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 /** [Commands] This interface accepts no commands. */
 
@@ -2016,6 +2071,10 @@ typedef struct player_localize_hypoth
     an array of hypotheses, defined as follows: */
 typedef struct player_localize_data
 {
+  /** The number of pending (unprocessed observations) */
+  uint16_t pending_count;
+  /** The time stamp of the last observation processed. */
+  uint32_t pending_time_sec, pending_time_usec;
   /** the number of pose hypothesis */
   uint32_t hypoth_count;
   /** the array of the hypothesis */

@@ -72,7 +72,7 @@ staticforward PyMethodDef wifi_methods[];
 
 PyObject *wifi_new(PyObject *self, PyObject *args)
 {
-  client_object_t *pyclient;
+  pyclient_t *pyclient;
   pywifi_t *pywifi;
   int index;
 
@@ -154,7 +154,7 @@ static PyObject *wifi_str(PyObject *self)
   {
     link = pywifi->wifi->links + i;
     snprintf(s, sizeof(s), "%s %d %d %d ",
-             link->ip, link->link, link->level, link->noise);
+             link->ip, link->qual, link->level, link->noise);
     assert(strlen(str) + strlen(s) < sizeof(str));
     strcat(str, s);
   }
@@ -193,7 +193,7 @@ static PyObject *wifi_subscribe(PyObject *self, PyObject *args)
 
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 
@@ -218,7 +218,7 @@ static PyObject *wifi_unsubscribe(PyObject *self, PyObject *args)
 
   if (result < 0)
   {
-    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    PyErr_Format(errorob, "libplayerc: %s", playerc_error_str());
     return NULL;
   }
 
