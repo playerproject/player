@@ -160,9 +160,8 @@ Brian Gerkey, Kasper Stoy, James McKenna
 */
 /** @} */
 
-
-#if HAVE_CONFIG_H
-  #include <config.h>
+#ifdef HAVE_CONFIG_H
+  #include "config.h"
 #endif
 
 #include <fcntl.h>

@@ -80,11 +80,6 @@ PLAYER_PTZ_CONTROL_MODE_REQ request.
  * set up of a player driver
  */
 
-
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 // serial includes
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -123,10 +118,6 @@ PLAYER_PTZ_CONTROL_MODE_REQ request.
 
 #define DEFAULT_PTZ_PORT "/dev/ttyR1"
 #define PTZ_SLEEP_TIME_USEC 100000
-
-
-
-
 
 //
 // Pan-Tilt Control Class

@@ -105,6 +105,10 @@ driver
 */
 /** @} */
 
+#ifdef HAVE_CONFIG_H
+  #include "config.h"
+#endif
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -113,10 +117,6 @@ driver
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "player.h"
 #include "error.h"

@@ -20,10 +20,6 @@
  *
  */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 // Desc: Capture method for using CMVision with the player camera interface 
 // Author: Ben Grocholsky
 // Date: 24 Feb 2004

@@ -26,10 +26,6 @@
  *  various methods for managing data pertaining to clients, like
  *  reader and writer threads, permission lists, etc.
  */
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

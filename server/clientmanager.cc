@@ -26,10 +26,6 @@
  *  class to hold info about the client reader and writer threads
  */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 #include <errno.h>
 #include <string.h>  // for memcpy(3)
 #include <stdlib.h>  // for exit(3)
@@ -49,7 +45,7 @@
 #include "replace.h"  /* for poll(2) */
 
 // the externed vars are declared in main.cc
-#include <playertime.h>
+#include "playertime.h"
 extern PlayerTime* GlobalTime;
 extern char playerversion[];
 extern bool use_stage;

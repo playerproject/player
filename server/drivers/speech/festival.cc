@@ -84,10 +84,6 @@ Brian Gerkey
 */
 /** @} */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execlp(3),fork(2)*/

@@ -100,11 +100,9 @@ Nate Koenig, Andrew Howard
 */
 /** @} */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
+#ifdef HAVE_CONFIG_H
+  #include "config.h"
 #endif
-
-#include "player.h"
 
 #include <errno.h>
 #include <string.h>
@@ -120,7 +118,7 @@ Nate Koenig, Andrew Howard
 #include "devicetable.h"
 #include "drivertable.h"
 #include "playertime.h"
-
+#include "player.h"
 
 #define NUM_DMA_BUFFERS 8
 
