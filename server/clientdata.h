@@ -73,7 +73,7 @@ class CClientData
     unsigned char *writebuffer;  // individual data messages are written here
     unsigned char *totalwritebuffer; // data messages are then added here, for
                                      // one efficient write(2)
-    size_t totalwritebuffersize;
+    size_t totalwritebuffersize; // size of currently allocated buffer
     player_msghdr_t hdrbuffer;
     
     // added this so Player can manage multiple robots in Stage mode
@@ -110,9 +110,9 @@ class CClientData
     unsigned char FindPermission(player_device_id_t id);
     void Unsubscribe(player_device_id_t id);
     int Subscribe(player_device_id_t id);
-    int BuildMsg();
 
  public:
+    size_t leftover_size; // bytes of totalwritebuffer that remain to be sent
     CDeviceSubscription* requested;
     int numsubs;
     unsigned char *replybuffer;
@@ -130,11 +130,13 @@ class CClientData
     CClientData(char* key, int port);
     ~CClientData();
 
+    size_t BuildMsg();
+    void FillWriteBuffer(unsigned char* src, size_t offset, size_t len);
     int HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                         size_t payload_size);
 
     int Read();
-    int Write();
+    int Write(size_t len);
     int WriteIdentString();
 };
 

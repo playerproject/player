@@ -73,6 +73,7 @@ CClientData::CClientData(char* key, int myport)
   assert(replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
   assert(writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
 
+  leftover_size=0;
   totalwritebuffersize = PLAYER_MAX_MESSAGE_SIZE;
   // totalwritebuffer is being malloc()ed, instead of new[]ed, so that it can 
   // be realloc()ed later on (for some reason, C++ does not provide a builtin 
@@ -144,7 +145,6 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                                 size_t payload_size) 
 {
   unsigned short requesttype = 0;
-  bool unlock_pending=false;
   bool devlistrequest=false;
   bool driverinforequest=false;
   bool nameservicerequest=false;
@@ -319,7 +319,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               }
               else
               {
-                unlock_pending=true;
+                datarequested = true;
                 requesttype = PLAYER_MSGTYPE_RESP_ACK;
               }
               break;
@@ -487,21 +487,11 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     reply_hdr.timestamp_usec = reply_hdr.time_usec;
     memcpy(replybuffer,&reply_hdr,sizeof(player_msghdr_t));
 
-    if(write(socket, replybuffer, replysize+sizeof(player_msghdr_t)) < 0) 
-    {
-      if(errno != EAGAIN)
-      {
-        perror("HandleRequests: write()");
-        return(-1);
-      }
-    }
+    FillWriteBuffer(replybuffer,0,replysize+sizeof(player_msghdr_t));
+    if(Write(replysize+sizeof(player_msghdr_t)) < 0)
+      return(-1);
   }
 
-  // FIXME: should this still be here?
-  if(unlock_pending)
-  {
-    datarequested = true;
-  }
   
   return(0);
 }
@@ -827,9 +817,10 @@ bool CClientData::CheckWritePermissions(player_device_id_t id)
   return(permission);
 }
 
-int CClientData::BuildMsg()
+size_t
+CClientData::BuildMsg()
 {
-  unsigned short size, totalsize=0;
+  size_t size, totalsize=0;
   CDevice* devicep;
   player_msghdr_t hdr;
   struct timeval curr;
@@ -900,18 +891,8 @@ int CClientData::BuildMsg()
 
           memcpy(writebuffer,&hdr,sizeof(hdr));
 
-          while((totalsize + sizeof(hdr) + size) > totalwritebuffersize)
-          {
-            // need more memory
-            totalwritebuffersize *= 2;
-            assert(totalwritebuffer = 
-                   (unsigned char*)realloc(totalwritebuffer, 
-                                           totalwritebuffersize));
-          }
+          FillWriteBuffer(writebuffer,totalsize,sizeof(hdr)+size);
 
-          memcpy(totalwritebuffer + totalsize,
-                 writebuffer,
-                 sizeof(hdr) + size);
           totalsize += sizeof(hdr) + size;
         }
       }
@@ -937,15 +918,8 @@ int CClientData::BuildMsg()
   hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
 
 
-  while((totalsize + sizeof(hdr)) > totalwritebuffersize)
-  {
-    // need more memory
-    totalwritebuffersize *= 2;
-    assert(totalwritebuffer = 
-           (unsigned char*)realloc(totalwritebuffer, totalwritebuffersize));
-  }
+  FillWriteBuffer((unsigned char*)&hdr,totalsize,sizeof(hdr));
 
-  memcpy(totalwritebuffer + totalsize, &hdr, sizeof(hdr));
   totalsize += sizeof(hdr);
 
   return(totalsize);
@@ -1155,11 +1129,12 @@ CClientData::WriteIdentString()
   bzero(((char*)data)+strlen((char*)data),
         PLAYER_IDENT_STRLEN-strlen((char*)data));
 
-  if(write(socket, data, PLAYER_IDENT_STRLEN) < 0 ) 
+  FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);
+  if(Write(PLAYER_IDENT_STRLEN) < 0)
   {
     if(errno != EAGAIN)
     {
-      perror("ClientManager::Write():write()");
+      perror("ClientManager::WriteIdentString():write()");
       return(-1);
     }
   }
@@ -1167,17 +1142,55 @@ CClientData::WriteIdentString()
 }
 
 int
-CClientData::Write()
+CClientData::Write(size_t len)
 {
-  unsigned int size;
+  int byteswritten;
 
-  size = BuildMsg();
-
-  if(size>0 && write(socket, totalwritebuffer, size) < 0 ) 
+  if(len>0)
   {
-    if(errno != EAGAIN)
-      return(-1);
+    if((byteswritten = write(socket, totalwritebuffer, len)) < 0) 
+    {
+      if(errno != EAGAIN)
+      {
+        // some error, like maybe a closed socket
+        return(-1);
+      }
+      else
+        byteswritten=0;
+    }
+    if((size_t)byteswritten < len)
+    {
+      // didn't get all the data out; move the remaining data to the front of
+      // the buffer and record how much is left.
+      leftover_size = len - byteswritten;
+      memmove(totalwritebuffer, 
+              totalwritebuffer+byteswritten, 
+              leftover_size);
+
+      fprintf(stderr, "WARNING: %d bytes leftover on write() to client\n", 
+              leftover_size);
+    }
+    else
+      leftover_size=0;
   }
   return(0);
+}
+
+
+void 
+CClientData::FillWriteBuffer(unsigned char* src, size_t offset, size_t len)
+{
+  size_t totalsize = offset + len;
+
+  while(totalsize > totalwritebuffersize)
+  {
+    // need more memory
+    totalwritebuffersize *= 2;
+    assert(totalwritebuffer = 
+           (unsigned char*)realloc(totalwritebuffer, 
+                                   totalwritebuffersize));
+  }
+
+  memcpy(totalwritebuffer + offset, src, len);
 }
 
