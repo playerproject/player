@@ -172,7 +172,7 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
   wlevel = (unsigned short) level;
   wnoise = (unsigned short) noise;
 
-  data.link_count = htons(1);
+  data.link_count = htonl(1);
     
   data.links[0].link = htons(wlink);
   data.links[0].level = htons(wlevel);
