@@ -30,7 +30,7 @@ INCLUDED_DEVICES = $(INCLUDE_LASER) $(INCLUDE_SONAR) $(INCLUDE_VISION) \
 # definitely build the device-independent objects
 #
 OBS = clientdata.o lock.o pubsub_util.o devicetable.o \
-      clientmanager.o wallclocktime.o
+      clientmanager.o wallclocktime.o main.o
 
 #
 # only build the device-specific objects that we need (duplicate objects
@@ -95,8 +95,11 @@ clean:
 $(DEVICELIBNAME): $(OBS)
 	$(AR) cr $@ $(OBS)
 
-$(SERVERNAME): main.cc $(DEVICELIBNAME) 
-	$(CPP) $(CFLAGS) -DPLAYER_VERSION=\"$(PLAYER_VERSION)\" $(INCLUDES) $(INCLUDED_DEVICES) -o $@ main.cc $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
+$(SERVERNAME): $(DEVICELIBNAME) 
+	$(CPP) -o $@ $< $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
+
+main.o: main.cc
+	$(CPP) $(CFLAGS) -DPLAYER_VERSION=\"$(PLAYER_VERSION)\" $(INCLUDES) $(INCLUDED_DEVICES) -o $@ -c main.cc 
 
 %.o: %.cc 
 	$(CPP) $(CFLAGS) $(INCLUDES) -c $<

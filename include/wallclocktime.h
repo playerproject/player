@@ -36,7 +36,7 @@
 class WallclockTime : public PlayerTime
 {
   public:
-    virtual int GetTime(struct timeval* time);
+    int GetTime(struct timeval* time);
     ~WallclockTime() {}
 };
 
