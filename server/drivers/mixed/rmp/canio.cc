@@ -22,9 +22,8 @@ DualCANIO::Init(long channel_freq)
 {
   int ret;
 
-  printf("DUALCANIO: INit\n");
   // Open up both CAN channels
-  /*
+  
   for (int i =0; i < 2; i++) {
     if ((channels[i] = canOpenChannel(i, canWANT_EXCLUSIVE | canWANT_EXTENDED)) < 0) {
       return channels[i];
@@ -41,7 +40,7 @@ DualCANIO::Init(long channel_freq)
       return ret;
     }
   }
-  */
+  
   return 0;
 }
   
@@ -72,9 +71,6 @@ DualCANIO::WritePacket(can_packet_t &pkt)
 {
   int ret;
 
-  printf("DUALCANIO: writePacket: %s\n", pkt.toString());
-  return 0;
-
   for (int i=0; i < 2; i++) {
 
     if ((ret = canWrite(channels[i], pkt.id, pkt.msg, pkt.dlc, 
@@ -98,8 +94,6 @@ DualCANIO::ReadPacket(can_packet_t *pkt, int channel)
 {
   int ret=0;
   long unsigned time;
-
-  return 0;
 
   if ((ret = canRead(channels[channel], &(pkt->id), &(pkt->msg), 
 		     &(pkt->dlc), &(pkt->flags), &time)) < 0) {
