@@ -1,3 +1,2807 @@
+2004-05-31 16:27  inspectorg
+
+	* bootstrap, configure.in, client_libs/libplayerc/client.c,
+	  m4.d/drivertests.m4, m4.d/gazebotest.m4, m4.d/gazebotests.m4:
+	  Gazebo tweaks
+
+2004-05-31 16:22  gerkey
+
+	* configure.in, client_libs/c++/playerclient.h,
+	  client_libs/c++/doc/cppclient.tex,
+	  client_libs/libplayerc/dev_localize.c,
+	  client_libs/libplayerc/test/test_camera.c,
+	  client_libs/libplayerc/test/test_truth.c,
+	  examples/c++/audiowrite.cc, examples/c++/getcolor.cc,
+	  server/drivers/localization/amcl/pf/pf_kdtree.c,
+	  server/drivers/mixed/Makefile.am,
+	  server/drivers/mixed/nomad/nomad_position.cc,
+	  server/drivers/mixed/nomad/nomad_sonar.cc,
+	  server/drivers/mixed/rflex/rflex_position.cc,
+	  server/drivers/position/ascension/flockofbirds.cc,
+	  server/drivers/position/microstrain/3dmg.cc,
+	  server/drivers/position/vfh/vfh.cc,
+	  server/drivers/position/wavefront/wavefront.cc,
+	  utils/playerv/dev_laser.c, utils/playerv/dev_sonar.c,
+	  utils/playerv/mainwnd.c, utils/playerv/opt.c,
+	  utils/playerv/playerv.c: lots of little fixed; mostly removing
+	  unused variables
+
+2004-05-31 15:48  gerkey
+
+	* config.p2os, config.simulation: [no log message]
+
+2004-05-31 15:39  gerkey
+
+	* server/player.h: changed theta to int32_t in position set odom
+	  request
+
+2004-05-31 15:39  gerkey
+
+	* Makefile.am, configure.in, utils/Makefile.am: disabled rtk3 and
+	  playermap
+
+2004-05-31 15:37  gerkey
+
+	* client_libs/c++/blobfinderproxy.cc,
+	  client_libs/c++/fiducialproxy.cc, client_libs/c++/laserproxy.cc,
+	  client_libs/c++/localizeproxy.cc, client_libs/c++/playerclient.h,
+	  client_libs/c++/position3dproxy.cc,
+	  client_libs/c++/positionproxy.cc, client_libs/c++/powerproxy.cc,
+	  client_libs/c++/ptzproxy.cc, client_libs/c++/sonarproxy.cc,
+	  client_libs/c++/test/test_laser.cc,
+	  client_libs/c++/test/test_position.cc,
+	  client_libs/c++/test/test_position3d.cc,
+	  client_libs/c++/test/test_position_control.cc,
+	  client_libs/c++/test/test_ptz.cc,
+	  client_libs/c++/test/test_sonar.cc, examples/c++/Makefile.am,
+	  examples/c++/example_from_manual.cc,
+	  examples/c++/laserobstacleavoid.cc, examples/c++/ptz.cc,
+	  examples/c++/randomwalk.cc, examples/c++/sonarobstacleavoid.cc,
+	  examples/c++/vfh.cc, examples/c++/visualservo.cc: changed C++
+	  client to use MKS units
+
+2004-05-31 13:22  gerkey
+
+	* m4.d/drivertests.m4,
+	  server/drivers/blobfinder/cmvision/Makefile.am,
+	  server/drivers/blobfinder/cmvision/P2CMV.cc: disabled broken V4L2
+	  support in cmvision
+
+2004-05-31 12:20  inspectorg
+
+	* server/player.h: Documentation mods
+
+2004-05-31 11:17  gerkey
+
+	* client_libs/c++/truthproxy.cc: fixed signed/unsigned bug in
+	  TruthProxy (SF.net bug #897815)
+
+2004-05-31 11:14  inspectorg
+
+	* player-manual/: player.tex, drivers/gazebo.tex,
+	  drivers/gz_camera.tex, drivers/gz_gripper.tex,
+	  drivers/gz_position.tex, drivers/gz_position3d.tex,
+	  drivers/gz_power.tex, drivers/gz_ptz.tex, drivers/gz_sonar.tex,
+	  drivers/gz_truth.tex: Gazebo updates
+
+2004-05-30 10:26  gerkey
+
+	* client_libs/c++/truthproxy.cc: applied Cameron Morland's patch to
+	  guarantee positive angles in setting and getting poses
+
+2004-05-28 00:59  inspectorg
+
+	* client_libs/libplayerc/dev_ptz.c: Byte/sign swapping
+
+2004-05-28 00:55  inspectorg
+
+	* m4.d/gazebotests.m4: [no log message]
+
+2004-05-28 00:29  inspectorg
+
+	* client_libs/libplayerc/test/test_gazebo.cfg, m4.d/gazebotests.m4,
+	  server/deviceregistry.cc: Added gz_position3d driver
+
+2004-05-26 16:36  thjc
+
+	* server/drivers/position/ascension/flockofbirds.cc: Changes to
+	  flockofbirds to correctly get the position range
+
+2004-05-26 14:49  thjc
+
+	* server/drivers/ptz/ptu46.cc: fixed serial speed setting code
+
+2004-05-26 12:13  gerkey
+
+	* server/drivers/mixed/clodbuster/clodbuster.cc: fixed misplaced
+	  variable declaration
+
+2004-05-26 12:12  gerkey
+
+	* server/clientdata.cc: fixed segfault when client tries to
+	  subscribe to non-existant device
+
+2004-05-26 11:05  gerkey
+
+	* client_libs/c++/position3dproxy.cc: applied Toby's patch to fix
+	  casting of roll,pitch,yaw values in position3d proxy
+
+2004-05-25 21:56  thjc
+
+	* player-manual/drivers/: flockofbirds.tex, khepera.tex: added
+	  manual pages for flock of birds and khepera drivers
+
+2004-05-25 21:54  thjc
+
+	* player-manual/player.tex: added manual pages for khepera and
+	  flockofbirds
+
+2004-05-25 17:48  thjc
+
+	* config/b21r_rflex_lms200.cfg: adjusted odometry calibration
+
+2004-05-24 23:21  inspectorg
+
+	* configure.in, m4.d/drivertests.m4, m4.d/gazebotests.m4,
+	  server/drivers/gazebo/gz_laser.cc,
+	  server/drivers/gazebo/gz_position.cc,
+	  server/drivers/gazebo/gz_position3d.cc: Updated gazebo interface
+	  support
+
+2004-05-24 22:39  inspectorg
+
+	* client_libs/libplayerc/dev_ir.c: Byte swap patch
+
+2004-05-24 18:32  rtv
+
+	* configure.in, config/stage/test.cfg, server/deviceregistry.cc,
+	  server/drivers/stage1p4/Makefile.am,
+	  server/drivers/stage1p4/stg_simulation.cc,
+	  server/drivers/stage1p4/stg_sonar.cc: stage1p4 driver now
+	  includes sonar
+
+2004-05-24 13:12  gerkey
+
+	* server/drivers/: mixed/khepera/.cvsignore,
+	  position/ascension/.cvsignore: [no log message]
+
+2004-05-24 12:48  gerkey
+
+	* configure.in, m4.d/drivertests.m4, server/deviceregistry.cc,
+	  server/drivers/position/Makefile.am: applied Toby's patch to
+	  enable ascension flockofbirds driver
+
+2004-05-24 12:39  gerkey
+
+	* configure.in, m4.d/drivertests.m4, server/deviceregistry.cc,
+	  server/drivers/mixed/Makefile.am: applied Toby's patch to enable
+	  Khepera drivers
+
+2004-05-24 12:30  gerkey
+
+	* client_libs/c++/irproxy.cc: applied Toby's prettyprint patch
+
+2004-05-24 11:59  gerkey
+
+	* client_libs/c++/: aioproxy.cc, dioproxy.cc, playerclient.h:
+	  applied Brads patches to aio and dio proxies
+
+2004-05-24 01:45  thjc
+
+	* server/drivers/position/ascension/: Makefile.am, flockofbirds.cc:
+	  basic support for the ascension flock of bidrs 6dof position
+	  tracker
+
+2004-05-24 01:37  thjc
+
+	* server/drivers/mixed/khepera/khepera.cc: Fixed velocity setting
+	  code so khepera turns in correct direction
+
+2004-05-24 01:30  thjc
+
+	* server/drivers/mixed/Makefile.am: Removed Khepera subdir until it
+	  is added to configure etc
+
+2004-05-22 21:14  thjc
+
+	* examples/c++/playerprint.cc: Added Position3D proxy
+
+2004-05-22 18:21  thjc
+
+	* server/drivers/mixed/Makefile.am: added Khepera driver
+
+2004-05-22 18:20  thjc
+
+	* server/drivers/mixed/khepera/: Makefile.am, khepera.cc,
+	  khepera.h, khepera_ir.cc, khepera_position.cc, khepera_serial.cc,
+	  khepera_serial.h: Added basic khepera driver with support for IR
+	  and position (velocity mode)
+
+2004-05-22 18:15  thjc
+
+	* server/drivers/mixed/rflex/rflex.cc: Fixed host-network byte
+	  ordering error in ir range count
+
+2004-05-22 17:11  thjc
+
+	* examples/c++/playerprint.cc: added ir proxy
+
+2004-05-20 15:44  gerkey
+
+	* server/drivers/shell/writelog.cc: added support for truth and
+	  fiducial to writelog
+
+2004-05-20 15:31  rtv
+
+	* config/stage/test.cfg: getting the stage configs right
+
+2004-05-20 15:27  rtv
+
+	* config/: swarmbot.sh, swarmbot_client.sh, stage/pioneer.inc,
+	  stage/stage.cfg, stage/test.cfg, stage/test.world,
+	  stage/bitmaps/autolab.png, stage/bitmaps/cave.png,
+	  stage/bitmaps/hospital.png, stage/bitmaps/submarine.png: adding
+	  some stage configs
+
+2004-05-20 15:19  rtv
+
+	* config/: ant.pnm, ant2.pnm, bug.pnm, submarine.pnm, test.pnm:
+	  removing pnm files
+
+2004-05-20 15:11  rtv
+
+	* bootstrap_osx, client_libs/c++/laserproxy.cc,
+	  client_libs/c++/playerclient.h,
+	  client_libs/c++/test/test_laser.cc, config/stage1p4_test.cfg,
+	  config/stage1p4_test.world, examples/c++/laserobstacleavoid.cc,
+	  examples/c++/playerprint.cc, server/Makefile.am,
+	  server/configfile.h, server/deviceregistry.cc,
+	  utils/playerv/dev_laser.c, utils/playerv/dev_position.c:
+	  stage-related teaks
+
+2004-05-20 15:08  rtv
+
+	* server/drivers/stage1p4/: stage1p4.cc, stage1p4.h, stg_laser.cc,
+	  stg_position.cc, stg_simulation.cc, stg_time.cc, worldfile.cc,
+	  worldfile.h: more stage work
+
+2004-05-20 15:07  rtv
+
+	* m4.d/drivertests.m4: stage1p4 driver tests
+
+2004-05-19 19:51  rtv
+
+	* m4.d/drivertests.m4, server/drivers/blobfinder/cmucam2/camera.cc,
+	  server/drivers/blobfinder/cmucam2/camera.h,
+	  server/drivers/blobfinder/cmucam2/cmucam2.cc: disabled cmucam2 by
+	  default
+
+2004-05-19 12:40  gerkey
+
+	* client_libs/c++/playerclient.h: Cameron's patch to zero
+	  range_count in the SonarProxy
+
+2004-05-18 16:30  rtv
+
+	* server/drivers/blobfinder/cmucam2/: Makefile.am, cmucam2.cc:
+	  functional cmucam2 driver
+
+2004-05-16 17:02  gerkey
+
+	* rtk3/.cvsignore, server/drivers/blobfinder/cmucam2/.cvsignore:
+	  more ignorance
+
+2004-05-16 17:00  gerkey
+
+	* server/main.cc: removed usleep in main loop
+
+2004-05-16 16:58  gerkey
+
+	* config/trogdor.cfg: [no log message]
+
+2004-05-14 19:18  rtv
+
+	* config/nomad.cfg, server/deviceregistry.cc,
+	  server/drivers/mixed/nomad/Makefile.am,
+	  server/drivers/mixed/nomad/nomad.cc,
+	  server/drivers/mixed/nomad/nomad_position.cc,
+	  server/drivers/mixed/nomad/nomad_sonar.cc: nomad position and
+	  sonar now work with the Nomad simulator. Not tested with the real
+	  robot, and I haven't figured out the semantics of the velocity
+	  control terms
+
+2004-05-14 11:26  inspectorg
+
+	* configure.in, client_libs/libplayerc/Makefile.am,
+	  client_libs/libplayerc/client.c,
+	  client_libs/libplayerc/dev_camera.c,
+	  client_libs/libplayerc/playerc.h, client_libs/libplayerc/utils.c,
+	  client_libs/libplayerc/test/Makefile.am,
+	  client_libs/libplayerc/test/test.c,
+	  client_libs/libplayerc/test/test_camera.c,
+	  client_libs/libplayerc/test/test_gazebo_camera.cfg,
+	  server/player.h, utils/playermap/gui.py, utils/playermap/main.py,
+	  utils/playermap/map.py, utils/playermap/playermap.glade,
+	  utils/playermap/robot_mapper.py: Added big message and camera
+	  interface support
+
+2004-05-14 10:57  inspectorg
+
+	* m4.d/drivertests.m4: Changed nomad build to disabled
+
+2004-05-13 23:14  rtv
+
+	* config/nomad.cfg, m4.d/drivertests.m4, server/deviceregistry.cc,
+	  server/player.h, server/drivers/mixed/nomad/Makefile.am,
+	  server/drivers/mixed/nomad/Nclient.c,
+	  server/drivers/mixed/nomad/Nclient.h,
+	  server/drivers/mixed/nomad/direct.c,
+	  server/drivers/mixed/nomad/nomad.cc,
+	  server/drivers/mixed/nomad/nomad_position.cc: more work on the
+	  nomad position device
+
+2004-05-13 19:03  rtv
+
+	* server/drivers/mixed/nomad/: nomad_position.cc, nomad_sonar.cc:
+	  added files to the nomad driver
+
+2004-05-13 19:02  rtv
+
+	* m4.d/drivertests.m4, server/player.h,
+	  server/drivers/mixed/nomad/Makefile.am,
+	  server/drivers/mixed/nomad/Nclient.c,
+	  server/drivers/mixed/nomad/nomad.cc,
+	  server/drivers/mixed/rwi/rwidevice.cc: working on the nomad
+	  driver
+
+2004-05-12 22:43  rtv
+
+	* m4.d/drivertests.m4: re-enabled default build of ptu46
+
+2004-05-12 20:26  rtv
+
+	* m4.d/drivertests.m4, server/drivers/mixed/nomad/Makefile.am,
+	  server/drivers/mixed/nomad/Nclient.c,
+	  server/drivers/mixed/nomad/Nclient.h,
+	  server/drivers/mixed/nomad/mother.cc,
+	  server/drivers/mixed/nomad/mother.h,
+	  server/drivers/mixed/nomad/nomad.cc: nomad driver supports
+	  position interface only, using the nomad simulator Nserver
+
+2004-05-12 18:55  thjc
+
+	* server/drivers/ptz/ptu46.cc: fixed osx incompatability
+
+2004-05-12 15:51  rtv
+
+	* configure.in, m4.d/drivertests.m4,
+	  server/drivers/mixed/evolution/er1/er.cc,
+	  server/drivers/ptz/ptu46.cc, utils/playermap/cmodules/scan.c,
+	  utils/playermap/cmodules/scan_group.c: removed ptu46 and er1 from
+	  default drivers and added a GSL dependency to playermap
+
+2004-05-10 18:20  rtv
+
+	* configure.in, m4.d/drivertests.m4, server/deviceregistry.cc:
+	  inserted cmucam2 driver into player
+
+2004-05-10 18:04  rtv
+
+	* server/drivers/blobfinder/: Makefile.am, cmucam2/Makefile.am,
+	  cmucam2/cmucam2.cc: added skeleton for cmucam driver (independent
+	  of the P2OS version)
+
+2004-05-05 16:03  gerkey
+
+	* server/drivers/audiodsp/acoustics.cc: applied patch from Michael
+	  Bailey to fix byte-swapping error and buffer overflow
+
+2004-05-03 16:10  gerkey
+
+	* server/drivers/mixed/p2os/: p2os.cc, p2os.h: Applied patch from
+	  Fabio Oleari <fabio.oleari@studenti.unipr.it>:
+
+	    - Increase P2OS_CYCLETIME_USEC to 200000, because smaller
+	  values don't
+	      work on newer kernels, for some reason
+
+	    - If radio modem initialization fails, keep going, on the
+	  assumption that
+	      the modem was already initialized and is now transparent.
+
+2004-04-30 11:19  gerkey
+
+	* player-manual/player.tex: small fix
+
+2004-04-27 23:11  rtv
+
+	* server/drivers/stage1p4/: Makefile.am, stg_laser.cc,
+	  stg_position.cc, stg_simulation.cc, stg_time.cc: laser and
+	  position partially working
+
+2004-04-27 11:13  gerkey
+
+	* client_libs/c++/positionproxy.cc: updated PositionProxy::GoTo for
+	  new fields in position command packet
+
+2004-04-26 15:07  dfseifer
+
+	* server/drivers/mixed/evolution/er1/er.cc: er1_position changes
+
+2004-04-26 15:05  dfseifer
+
+	* player-manual/: player.tex, drivers/er1.tex: er1_position doc
+
+2004-04-26 00:05  rtv
+
+	* server/drivers/stage1p4/: Makefile.am, stage1p4.cc, stage1p4.h,
+	  stg_laser.cc, stg_simulation.cc, stg_time.cc, stg_time.h: working
+	  on new stage interface
+
+2004-04-21 21:21  gerkey
+
+	* client_libs/pyplayerc/dev_position.c, config/trogdor.cfg,
+	  server/deviceregistry.cc, server/drivers/laser/sicklms200.cc,
+	  server/drivers/mixed/p2os/Makefile.am,
+	  server/drivers/mixed/p2os/p2os.cc,
+	  server/drivers/mixed/p2os/p2os.h,
+	  server/drivers/mixed/p2os/p2os_gyro.cc,
+	  server/drivers/mixed/p2os/sip.cc,
+	  server/drivers/mixed/p2os/sip.h: Added preliminary support for
+	  Pioneer 3 gyro
+
+2004-04-16 10:08  gerkey
+
+	* configure.in, config/trogdor.cfg, m4.d/drivertests.m4,
+	  server/deviceregistry.cc, server/drivers/mixed/Makefile.am,
+	  server/drivers/mixed/evolution/.cvsignore,
+	  server/drivers/mixed/evolution/Makefile.am,
+	  server/drivers/mixed/evolution/er1/.cvsignore,
+	  server/drivers/mixed/evolution/er1/Makefile.am,
+	  server/drivers/mixed/evolution/er1/er.cc,
+	  server/drivers/mixed/evolution/er1/er_constants.h,
+	  server/drivers/mixed/nomad/.cvsignore: added David's ER1 driver
+
+2004-04-14 16:39  gerkey
+
+	* server/drivers/gazebo/gz_sonars.cc: fixed typo in macro name
+
+2004-04-11 21:54  thjc
+
+	* config/b21r_rflex_lms200.cfg,
+	  server/drivers/mixed/rflex/rflex-info.h,
+	  server/drivers/mixed/rflex/rflex.cc,
+	  server/drivers/mixed/rflex/rflex.h,
+	  server/drivers/mixed/rflex/rflex_commands.cc,
+	  server/drivers/mixed/rflex/rflex_configs.h,
+	  server/drivers/mixed/rflex/rflex_position.cc: Added direct rflex
+	  jostick control to the b21r position driver
+
+2004-04-11 20:04  thjc
+
+	* config/b21r_rflex_lms200.cfg, player-manual/drivers/rflex.tex,
+	  server/configfile.cc, server/drivers/mixed/rflex/rflex.cc,
+	  server/drivers/mixed/rflex/rflex_bumper.cc,
+	  server/drivers/mixed/rflex/rflex_commands.cc,
+	  server/drivers/mixed/rflex/rflex_configs.h,
+	  server/drivers/mixed/rflex/rflex_ir.cc,
+	  server/drivers/mixed/rflex/rflex_position.cc,
+	  server/drivers/mixed/rflex/rflex_power.cc,
+	  server/drivers/mixed/rflex/rflex_sonar.cc: implemented workaround
+	  to fix issue with rflex config file parsing and initialisation
+
+2004-04-10 16:10  pranav2710
+
+	* server/drivers/gazebo/gz_wifi.cc: wifi interface counter part
+
+2004-04-10 12:50  inspectorg
+
+	* utils/playerjoy/playerjoy.cc: Added some speed options
+
+2004-04-06 15:31  inspectorg
+
+	* server/drivers/: gazebo/gz_gripper.cc, gazebo/gz_sonars.cc,
+	  shell/writelog.cc: Added wait() to writelog driver
+
+2004-04-05 21:17  thjc
+
+	* server/drivers/ptz/ptu46.cc: fixed initilisation code for ptu
+	  unit to reset once if any errors
+
+2004-04-05 20:50  thjc
+
+	* config/b21r_rflex_lms200.cfg,
+	  server/drivers/mixed/rflex/rflex_commands.cc: fixed bug in bumper
+	  base address config
+
+2004-04-05 18:12  thjc
+
+	* server/drivers/mixed/rflex/rflex_ir.cc: ir support added to
+	  rflex, ir interface modified to remove additional array in poses,
+	  ir support added to libplayerc and playerv
+
+2004-04-05 17:34  thjc
+
+	* client_libs/c++/irproxy.cc, client_libs/libplayerc/Makefile.am,
+	  client_libs/libplayerc/dev_ir.c,
+	  client_libs/libplayerc/playerc.h, client_libs/libplayerc/utils.c,
+	  config/b21r_rflex_lms200.cfg, server/deviceregistry.cc,
+	  server/player.h, server/drivers/mixed/rflex/Makefile.am,
+	  server/drivers/mixed/rflex/rflex-protocol.txt,
+	  server/drivers/mixed/rflex/rflex.cc,
+	  server/drivers/mixed/rflex/rflex.h,
+	  server/drivers/mixed/rflex/rflex_commands.cc,
+	  server/drivers/mixed/rflex/rflex_commands.h,
+	  server/drivers/mixed/rflex/rflex_configs.h,
+	  server/drivers/ptz/ptu46.cc, utils/playerv/Makefile.am,
+	  utils/playerv/dev_ir.c, utils/playerv/playerv.h,
+	  utils/playerv/registry.c: ir support added to rflex, ir interface
+	  modified to remove additional array in poses, ir support added to
+	  libplayerc and playerv
+
+2004-04-04 23:50  inspectorg
+
+	* rtk3/: Makefile.am, configure.in, librtk3.pc.in: [no log message]
+
+2004-04-01 15:37  natepak
+
+	* examples/c++/.cvsignore, examples/c++/Makefile.am,
+	  examples/c++/manualGrip.cc, examples/c++/ptz.cc,
+	  m4.d/gazebotests.m4, server/deviceregistry.cc,
+	  server/drivers/gazebo/Makefile.am,
+	  server/drivers/gazebo/gz_gripper.cc,
+	  server/drivers/gazebo/gz_sonars.cc: Added gazebo gripper and
+	  sonars, submitted by Carle Cote
+
+2004-03-25 17:06  gerkey
+
+	* server/drivers/mixed/botrics/trogdor.cc: [no log message]
+
+2004-03-25 17:05  gerkey
+
+	* config/trogdor.cfg, server/drivers/mixed/botrics/trogdor.cc,
+	  server/drivers/mixed/botrics/trogdor_constants.h: trogdor fixes
+	  for new control loop
+
+2004-03-24 15:07  thjc
+
+	* utils/playerjoy/playerjoy.cc: modified keyboard control to give
+	  more options for speed control
+
+2004-03-23 20:02  thjc
+
+	* config/b21r_rflex_lms200.cfg, player-manual/drivers/rflex.tex:
+	  light format chages to make documentation fit within page
+
+2004-03-23 15:01  thjc
+
+	* player-manual/: player.tex, drivers/ptu46.tex, drivers/rflex.tex:
+	  added ptu46 manual page and updated rflex driver to reflect
+	  modifications for b21r
+
+2004-03-23 11:33  rtv
+
+	* config/nomad.cfg: added a nomad config file
+
+2004-03-23 11:05  rtv
+
+	* server/drivers/mixed/nomad/: Nclient.h, direct.c: added copyright
+	  info to nomadics source
+
+2004-03-23 11:03  rtv
+
+	* server/deviceregistry.cc: fixed nomad driver inclusion
+
+2004-03-23 11:02  rtv
+
+	* server/drivers/mixed/nomad/: Makefile.am, Nclient.h, direct.c,
+	  nomad.cc: added nomadics GPL code
+
+2004-03-22 15:35  rtv
+
+	* configure.in, m4.d/drivertests.m4,
+	  server/drivers/mixed/Makefile.am: added nomad driver
+
+2004-03-22 15:34  rtv
+
+	* server/drivers/mixed/nomad/: Makefile.am, nomad.cc: initial
+	  checkin of Nomad driver. NOT YET FUNCTIONAL
+
+2004-03-10 00:02  thjc
+
+	* client_libs/c/helpers.c, client_libs/libplayerc/dev_ptz.c,
+	  client_libs/libplayerc/playerc.h, config/b21r_rflex_lms200.cfg,
+	  m4.d/drivertests.m4, server/deviceregistry.cc,
+	  server/serialize.c, server/drivers/Makefile.am,
+	  server/drivers/localization/mcl/sensor_model.nb,
+	  server/drivers/ptz/Makefile.am, server/drivers/ptz/ptu46.cc,
+	  utils/playerv/dev_ptz.c: Added a new ptz driver for the Directed
+	  Perception PTU46 pan tilt unit modified serialize code to account
+	  for the panspeed and tilt speed items in the ptz interface (must
+	  have been added at some point and files not completely in synch)
+
+2004-03-09 10:46  gerkey
+
+	* client_libs/pyplayerc/pyplayerc.c: fixed variable declaration bug
+
+2004-03-09 10:02  gerkey
+
+	* configure.in: fixed subtle python config bug
+
+2004-03-09 08:52  gerkey
+
+	* client_libs/c++/position3dproxy.cc: changed to integer division
+	  to quiet the compiler
+
+2004-03-08 09:41  gerkey
+
+	* Makefile.am: remove config.cache on make clean
+
+2004-03-07 18:36  thjc
+
+	* server/drivers/mixed/rflex/: rflex.cc, rflex.h, rflex_bumper.cc,
+	  rflex_commands.cc, rflex_configs.h, rflex_power.cc: added config
+	  options for power offest (rflex_power driver) and bump panel
+	  address (rflex_bump driver)
+
+2004-03-07 18:34  thjc
+
+	* config/b21r_rflex_lms200.cfg: added config file for the b21r from
+	  rwi
+
+2004-03-05 09:27  pranav2710
+
+	* m4.d/gazebotests.m4: added a gz_position3d test
+
+2004-03-04 14:26  thjc
+
+	* server/drivers/mixed/rflex/: rflex_commands.cc, rflex_commands.h:
+	  added delay when sending commands as it was flooding robot and
+	  commands were being missed (such as sonar off)
+
+2004-03-03 23:46  inspectorg
+
+	* rtk3/pyrtk/pyrtk_fig.c: Added polypoint
+
+2004-03-03 06:40  pranav2710
+
+	* server/: deviceregistry.cc, player.h: added gz_position3d
+
+2004-03-03 05:35  pranav2710
+
+	* client_libs/c++/: playerclient.h, position3dproxy.cc: added
+	  SetSpeed for 3d
+
+2004-03-02 19:56  pranav2710
+
+	* client_libs/c++/test/test_position3d.cc: test_position3d
+
+2004-03-02 19:55  pranav2710
+
+	* client_libs/c++/test/: Makefile.am, test.cc, test.h: added
+	  test_position3d
+
+2004-03-02 19:54  pranav2710
+
+	* server/drivers/gazebo/Makefile.am: added gz_position3d
+
+2004-03-02 19:53  thjc
+
+	* server/drivers/mixed/rflex/: rflex.cc, rflex_commands.cc,
+	  rflex_commands.h: fix for rflex sonar code (minor error with
+	  addition of bumper code
+
+2004-03-02 19:51  thjc
+
+	* server/player.h: Increased Max Sonar count to 64
+
+2004-03-02 19:48  pranav2710
+
+	* server/drivers/gazebo/gz_position3d.cc: the player counterpart
+	  for gz_position3d
+
+2004-02-26 15:39  gerkey
+
+	* examples/c++/audiowrite.cc: changed audiowrite example to use
+	  audiodsp
+
+2004-02-26 15:35  gerkey
+
+	* server/drivers/audiodsp/acoustics.cc: fixed various buffer
+	  overruns in acoustics drivers
+
+2004-02-26 10:52  gerkey
+
+	* examples/c++/playerprint.cc, server/device.cc, server/main.cc:
+	  [no log message]
+
+2004-02-26 09:45  gerkey
+
+	* configure.in, m4.d/drivertests.m4, m4.d/gazebotests.m4,
+	  m4.d/rtktests.m4, rtk3/configure.in,
+	  server/drivers/blobfinder/cmvision/P2CMV.cc,
+	  server/drivers/blobfinder/cmvision/capturev4l.cc,
+	  server/drivers/gazebo/Makefile.am,
+	  server/drivers/localization/amcl/Makefile.am,
+	  server/drivers/localization/amcl/map/Makefile.am,
+	  server/drivers/localization/amcl/pf/Makefile.am: Cleaned up
+	  pkg-config usage.  Removed many duplicate variables, as well as
+	  all support for finding RTK "the hard way."  Also fixed a couple
+	  of build errors/warnings in the cmvision driver.
+
+2004-02-26 08:40  gerkey
+
+	* client_libs/libplayerc/Makefile.am,
+	  client_libs/libplayerc/playerc.h, server/deviceregistry.cc,
+	  server/drivers/mixed/rflex/Makefile.am,
+	  server/drivers/mixed/rflex/rflex.cc,
+	  server/drivers/mixed/rflex/rflex.h,
+	  server/drivers/mixed/rflex/rflex_commands.cc,
+	  server/drivers/mixed/rflex/rflex_configs.h,
+	  utils/playerv/Makefile.am, utils/playerv/playerv.h,
+	  utils/playerv/registry.c, client_libs/libplayerc/dev_bumper.c,
+	  server/drivers/mixed/rflex/rflex_bumper.cc,
+	  utils/playerv/dev_bumper.c: Applied Toby's patch to add bumper
+	  support to rflex driver, libplayerc, and playerv
+
+2004-02-25 09:28  section314
+
+	* config/gazebo_blobfinder.cfg: new format
+
+2004-02-25 09:21  section314
+
+	* server/drivers/blobfinder/cmvision/P2CMV.cc: change to supress a
+	  configfile warning
+
+2004-02-24 23:17  section314
+
+	* server/drivers/blobfinder/cmvision/: gz_cam_init.h, gz_camera.cc,
+	  gz_camera.h, captureGazebo.cc, captureGazebo.h: removed
+	  captureGazebo and added captureCamera
+
+2004-02-24 22:52  section314
+
+	* server/drivers/blobfinder/cmvision/: P2CMV.cc, Makefile.am:
+	  removed captureGazebo and added captureCamera
+
+2004-02-24 22:50  section314
+
+	* server/drivers/blobfinder/cmvision/: captureCamera.cc,
+	  captureCamera.h: capture method for player camera interface
+
+2004-02-19 11:37  inspectorg
+
+	* server/drivers/blobfinder/shapetracker/shapetracker.cc: Fixed
+	  misspelling
+
+2004-02-18 23:11  inspectorg
+
+	* configure.in, m4.d/drivertests.m4, server/deviceregistry.cc,
+	  server/drivers/blobfinder/Makefile.am,
+	  server/drivers/blobfinder/shapetracker/.cvsignore,
+	  server/drivers/blobfinder/shapetracker/Makefile.am,
+	  server/drivers/blobfinder/shapetracker/shapetracker.cc: Added
+	  shapetracking device template
+
+2004-02-18 23:09  inspectorg
+
+	* server/drivers/blobfinder/upcbarcode/upcbarcode.cc: [no log
+	  message]
+
+2004-02-17 23:49  inspectorg
+
+	* server/drivers/blobfinder/upcbarcode/upcbarcode.cc: Mostly
+	  working UPC detector
+
+2004-02-17 23:42  inspectorg
+
+	* m4.d/gazebotests.m4, server/player.h,
+	  server/drivers/blobfinder/upcbarcode/upcbarcode.cc,
+	  server/drivers/gazebo/gz_camera.cc: Mostly working UPC detector
+
+2004-02-15 17:16  inspectorg
+
+	* configure.in, m4.d/drivertests.m4, m4.d/gazebotests.m4: Added
+	  pkg-config for gazebo
+
+2004-02-15 17:15  inspectorg
+
+	* server/: drivers/blobfinder/Makefile.am,
+	  drivers/blobfinder/upcbarcode/.cvsignore,
+	  drivers/blobfinder/upcbarcode/Makefile.am,
+	  drivers/blobfinder/upcbarcode/upcbarcode.cc, deviceregistry.cc:
+	  Added upcbarcode driver
+
+2004-02-12 15:46  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: [no log message]
+
+2004-02-11 12:22  gerkey
+
+	* server/: codetools/saphconv/parseparam.tcl,
+	  drivers/mixed/p2os/robot_params.cc,
+	  drivers/mixed/p2os/robot_params.h: Updated Saphira parser to
+	  replace "+" with "plus" in robot names (to avoid generating
+	  invalid C symbol names).
+
+	  Ran this modified parser on the latest ActivMedia .p files (from
+	  Nov 2003) to generate new parameter files for the p2os driver.
+
+2004-02-09 09:03  jazzfunk
+
+	* server/drivers/laser/sicklms200.cc: fixed some checkin bugs from
+	  the last version
+
+2004-02-07 22:52  gerkey
+
+	* server/drivers/: camera/.cvsignore, mixed/clodbuster/.cvsignore:
+	  [no log message]
+
+2004-02-07 22:47  gerkey
+
+	* server/main.cc: [no log message]
+
+2004-02-07 14:27  jazzfunk
+
+	* server/drivers/laser/sicklms200.cc: update for driver to work at
+	  500K.  waits at least 55 us between sending chars, as the SICK
+	  would like.  this fix pointed out by John Nagle.
+
+2004-02-06 22:37  inspectorg
+
+	* configure.in: Fixed playermap autoconf bug
+
+2004-02-06 21:02  inspectorg
+
+	* server/drivers/shell/writelog.cc: Fixed range resolution bug
+
+2004-02-06 21:02  inspectorg
+
+	* utils/playermap/: map.py, robot_mapper.py, team_mapper.py: [no
+	  log message]
+
+2004-02-06 18:08  gerkey
+
+	* examples/libplayerc/Makefile.am: [no log message]
+
+2004-02-06 18:07  gerkey
+
+	* configure.in: fixed pkg-config usage
+
+2004-02-06 16:28  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: fixed wavefront
+	  for new position cmd format
+
+2004-02-06 08:57  gerkey
+
+	* server/drivers/blobfinder/cmvision/: capturev4l.cc, capturev4l.h:
+	  fixed bug in v4l cmvision
+
+2004-01-30 15:43  inspectorg
+
+	* client_libs/libplayerc/dev_truth.c, rtk3/librtk/rtk3.h,
+	  rtk3/librtk/rtk_canvas.c, rtk3/pyrtk/pyrtk_canvas.c,
+	  utils/barcodes/barcodes.py, utils/barcodes/upc-4-4-0-large.fig,
+	  utils/playerv/dev_position.c: Mods from AP Hill
+
+2004-01-30 11:21  section314
+
+	* server/drivers/mixed/clodbuster/: packet.cc, packet.h: fixed tags
+
+2004-01-30 11:16  section314
+
+	* server/deviceregistry.cc, m4.d/drivertests.m4: added upenn
+	  clodbuster
+
+2004-01-30 11:13  section314
+
+	* server/drivers/mixed/Makefile.am, configure.in: added upenn
+	  clodbuster
+
+2004-01-30 11:10  section314
+
+	* server/drivers/mixed/clodbuster/: Makefile.am, clodbuster.cc,
+	  clodbuster.h, packet.cc, packet.h: first go at a upenn clodbuster
+	  player driver
+
+2004-01-21 08:30  inspectorg
+
+	* client_libs/pyplayerc/dev_laser.c,
+	  server/drivers/gazebo/gz_truth.cc: [no log message]
+
+2004-01-12 20:23  inspectorg
+
+	* server/drivers/gazebo/gz_position.cc: Added stall flag
+
+2004-01-12 18:03  inspectorg
+
+	* examples/libplayerc/simple.c: Fixed example
+
+2004-01-12 08:31  inspectorg
+
+	* server/drivers/gazebo/gz_camera.cc: New model driver layout
+
+2004-01-12 08:27  inspectorg
+
+	* utils/barcodes/: README, barcodes.py, upc-4-4-0.fig: Barcode
+	  printing utility
+
+2004-01-12 00:57  inspectorg
+
+	* client_libs/libplayerc/dev_position.c,
+	  client_libs/libplayerc/playerc.h,
+	  client_libs/pyplayerc/dev_laser.c,
+	  client_libs/pyplayerc/dev_position.c,
+	  examples/libplayerc/simple.c: Support for new position API
+
+2004-01-12 00:56  inspectorg
+
+	* server/player.h: Added extra flags to position command packet
+
+2004-01-12 00:56  inspectorg
+
+	* server/drivers/position/vfh/vfh.cc: Added velocity contol, stall
+	  flag and motor state
+
+2004-01-11 17:19  inspectorg
+
+	* server/drivers/: camera/camerav4l.cc, fiducial/laservisualbw.cc:
+	  Improvements for long-range identification
+
+2004-01-11 12:12  inspectorg
+
+	* server/drivers/: camera/camerav4l.cc, camera/v4lframe.c,
+	  fiducial/laservisualbw.cc: Speed improvements
+
+2004-01-11 01:17  inspectorg
+
+	* server/: player.h, drivers/camera/camerav4l.cc,
+	  drivers/fiducial/laservisualbw.cc: Very cool new fiducial finder
+
+2004-01-10 20:48  inspectorg
+
+	* configure.in, m4.d/drivertests.m4, server/deviceregistry.cc,
+	  server/drivers/Makefile.am, server/drivers/camera/Makefile.am,
+	  server/drivers/camera/camerav4l.cc,
+	  server/drivers/camera/v4lcapture.c,
+	  server/drivers/camera/v4lcapture.h,
+	  server/drivers/camera/v4lframe.c,
+	  server/drivers/camera/v4lframe.h: Added V4L-based image capture
+	  driver
+
+2004-01-10 17:09  inspectorg
+
+	* server/drivers/: fiducial/laservisualbw.cc, gazebo/gz_camera.cc:
+	  Revamp of camera stuff; code for new fiducial detector
+
+2004-01-10 00:57  inspectorg
+
+	* server/drivers/: fiducial/laservisualbw.cc, gazebo/gz_camera.cc,
+	  gazebo/gz_ptz.cc: New fiducial device
+
+2004-01-09 23:46  inspectorg
+
+	* server/drivers/fiducial/laservisualbw.cc: Adding camera support;
+	  incomplete
+
+2004-01-09 23:36  inspectorg
+
+	* m4.d/drivertests.m4, rtk3/librtk/rtk_fig.c,
+	  server/deviceregistry.cc, server/player.h,
+	  server/drivers/blobfinder/cmvision/gz_camera.cc,
+	  server/drivers/fiducial/Makefile.am,
+	  server/drivers/gazebo/gz_camera.cc,
+	  server/drivers/gazebo/gz_ptz.cc: Adding camera support;
+	  incomplete
+
+2004-01-08 17:03  inspectorg
+
+	* client_libs/pyplayerc/dev_wifi.c: Added wifi support
+
+2004-01-06 15:37  inspectorg
+
+	* server/drivers/wifi/iwspy.cc: Some fixes
+
+2004-01-06 15:08  inspectorg
+
+	* server/drivers/wifi/iwspy.cc: Fixed path on iwspy
+
+2004-01-06 14:54  inspectorg
+
+	* server/drivers/wifi/iwspy.cc: Fixed path on iwspy
+
+2004-01-06 09:32  inspectorg
+
+	* server/drivers/position/vfh/vfh.cc: Removed some print statements
+
+2004-01-05 17:36  inspectorg
+
+	* configure.in, rtk3/configure.in: Changed Python test to make it
+	  non-version specific
+
+2004-01-05 11:47  inspectorg
+
+	* server/drivers/shell/readlog_manager.cc: Speed tweak
+
+2004-01-05 08:45  inspectorg
+
+	* rtk3/: librtk/rtk3.h, librtk/rtk_fig.c, pyrtk/pyrtk_fig.c: Added
+	  function to show/hide figure
+
+2003-12-28 15:49  inspectorg
+
+	* rtk3/: configure.in, pyrtk/pyrtk_fig.c: Added intensity arg to
+	  scan()
+
+2003-12-28 15:33  inspectorg
+
+	* client_libs/pyplayerc/: dev_laser.c, dev_truth.c: [no log
+	  message]
+
+2003-12-27 18:43  inspectorg
+
+	* server/drivers/gazebo/gz_laser.cc: Fixed range resolution
+	  selection
+
+2003-12-27 11:11  inspectorg
+
+	* server/drivers/position/vfh/vfh.cc: Fixed angle normalization
+
+2003-12-26 18:22  inspectorg
+
+	* client_libs/libplayerc/utils.c,
+	  client_libs/libplayerc/test/test_truth.c,
+	  server/drivers/gazebo/gz_truth.cc: Fixed truth support
+
+2003-12-08 21:33  inspectorg
+
+	* rtk3/librtk/rtk_fig.c: Added line width to scan primitive
+
+2003-12-07 17:04  inspectorg
+
+	* bootstrap_osx: Added special boostrap for OS X (problems finding
+	  pkg_config autconf macros)
+
+2003-12-06 19:23  gerkey
+
+	* configure.in, server/drivers/gps/Makefile.am,
+	  server/drivers/gps/garminnmea.cc, utils/playermap/Makefile.am:
+	  final (hopefully) os x build fixes
+
+2003-12-06 19:04  gerkey
+
+	* configure.in: [no log message]
+
+2003-12-06 18:57  gerkey
+
+	* configure.in, server/drivers/position/vfh/vfh.cc: hack for lack
+	  of pkg-config and Solaris-specific fix
+
+2003-12-06 18:31  gerkey
+
+	* configure.in, utils/playerjoy/Makefile.am,
+	  utils/playermap/Makefile.am: added checks before building
+	  playerjoy and playermap
+
+2003-12-06 15:46  gerkey
+
+	* server/clientdata.cc: [no log message]
+
+2003-12-06 15:05  gerkey
+
+	* server/clientdata.cc: re-enabled console warning on full socket
+
+2003-12-06 14:00  gerkey
+
+	* m4.d/drivertests.m4: added check for gazebo in building gazebo
+	  camera suppport into cmvision
+
+2003-12-06 13:29  gerkey
+
+	* client_libs/c++/doc/.cvsignore: more ignorance
+
+2003-12-06 13:25  gerkey
+
+	* configure.in: fix to rtk check
+
+2003-12-06 13:14  gerkey
+
+	* client_libs/c++/Makefile.am, client_libs/libplayerc/Makefile.am,
+	  client_libs/tcl/Makefile.am, config/Makefile.am,
+	  config/wavefront.cfg, player-manual/player.tex,
+	  server/drivers/mixed/botrics/Makefile.am,
+	  utils/playermap/cmodules/Makefile.am: tweaks prior to 1.4rc2
+	  release
+
+2003-12-06 11:11  inspectorg
+
+	* m4.d/gazebotests.m4, server/deviceregistry.cc,
+	  server/drivers/gazebo/Makefile.am,
+	  server/drivers/gazebo/gz_ptz.cc,
+	  server/drivers/gazebo/gz_truth.cc: Added gazebo truth driver
+
+2003-12-06 10:21  inspectorg
+
+	* client_libs/pyplayerc/: Makefile.am, dev_sonar.c, setup.py: Added
+	  sonar interface
+
+2003-12-05 18:11  inspectorg
+
+	* m4.d/gazebotests.m4, server/deviceregistry.cc,
+	  server/drivers/gazebo/Makefile.am,
+	  server/drivers/gazebo/gz_gps.cc: Added gazebo gps driver
+
+2003-12-05 17:48  inspectorg
+
+	* configure.in, m4.d/drivertests.m4, m4.d/gazebotests.m4,
+	  m4.d/rtktests.m4, server/clientdata.cc, server/deviceregistry.cc,
+	  server/drivers/blobfinder/cmvision/P2CMV.cc,
+	  server/drivers/blobfinder/cmvision/captureGazebo.cc,
+	  server/drivers/blobfinder/cmvision/gz_camera.cc,
+	  server/drivers/gazebo/Makefile.am,
+	  server/drivers/gazebo/gz_camera.cc,
+	  server/drivers/gazebo/gz_client.cc,
+	  server/drivers/gazebo/gz_factory.cc,
+	  server/drivers/gazebo/gz_laser.cc,
+	  server/drivers/gazebo/gz_power.cc,
+	  server/drivers/gazebo/gz_ptz.cc: Builds against old/new rtk,
+	  old/new gazebo
+
+2003-12-05 10:41  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: small tweak
+
+2003-12-04 22:39  inspectorg
+
+	* server/main.cc: Added mask for sigint
+
+2003-12-04 21:37  gerkey
+
+	* examples/c++/.cvsignore: [no log message]
+
+2003-12-04 21:31  gerkey
+
+	* player-manual/: player.bib, player.tex,
+	  drivers/amtecpowercube.tex, drivers/trogdor.tex: docs for new
+	  drivers
+
+2003-12-04 19:10  gerkey
+
+	* configure.in, player-manual/player.tex,
+	  player-manual/drivers/cmvision.tex,
+	  player-manual/drivers/sicklms200.tex,
+	  player-manual/drivers/vfh.tex,
+	  player-manual/drivers/wavefront.tex,
+	  player-manual/interfaces/.cvsignore,
+	  server/drivers/position/wavefront/wavefront.cc,
+	  server/drivers/stage/Makefile.am: moved to 1.4rc2 and updated
+	  some docs
+
+2003-12-03 20:29  natepak
+
+	* server/drivers/position/vfh/vfh.cc: Got rid of useless printf
+
+2003-12-03 20:05  natepak
+
+	* server/drivers/position/vfh/vfh.cc: Fixed byte swapping problems
+	  and odom->Wait commands that prevented VH from working
+
+2003-12-03 10:48  inspectorg
+
+	* client_libs/pyplayerc/dev_localize.c: Fixed else clause
+
+2003-12-03 10:23  inspectorg
+
+	* server/drivers/gps/garminnmea.cc: Added baud rate options
+
+2003-12-03 10:19  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: fixed goal hack
+	  bug
+
+2003-12-02 17:52  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: [no log message]
+
+2003-12-02 17:35  gerkey
+
+	* server/: clientdata.cc, drivers/position/wavefront/wavefront.cc:
+	  [no log message]
+
+2003-12-02 16:10  inspectorg
+
+	* server/drivers/localization/amcl/amcl.cc: Fixed no gui build bug
+
+2003-12-02 10:28  inspectorg
+
+	* server/main.cc: Added mask for SIGINT
+
+2003-11-30 14:23  gerkey
+
+	* server/: clientdata.cc, drivers/position/vfh/vfh.cc,
+	  drivers/position/wavefront/wavefront.cc: Position devices are now
+	  only stopped on client disconnection if it's the last client to
+	  be using that device.
+
+	  VFH now initializes its own target, so that it doesn't start
+	  moving when it's opened.
+
+	  Wavefront and VFH now properly pass through velocity info from
+	  the underlying position device.
+
+2003-11-21 19:37  gerkey
+
+	* server/drivers/position/vfh/vfh.cc: added min_turnrate option to
+	  vfh
+
+2003-11-21 19:21  gerkey
+
+	* server/drivers/position/: vfh/vfh.cc, wavefront/wavefront.cc:
+	  small touches
+
+2003-11-21 16:53  gerkey
+
+	* config/trogdor.cfg: [no log message]
+
+2003-11-21 16:25  gerkey
+
+	* utils/playerjoy/playerjoy.cc: added some flags
+
+2003-11-21 16:22  gerkey
+
+	* client_libs/: libplayerc/client.c, libplayerc/playerc.h,
+	  pyplayerc/dev_localize.c, pyplayerc/pyplayerc.c: enhanced
+	  libplayerc and pyplayerc
+
+2003-11-21 13:40  gerkey
+
+	* server/drivers/localization/amcl/amcl.cc: added hypoth sorting
+	  back to amcl
+
+2003-11-21 11:47  inspectorg
+
+	* utils/playermap/cmodules/: pyscan_match.c, scan_solid.c: [no log
+	  message]
+
+2003-11-21 10:05  inspectorg
+
+	* utils/playermap/cmodules/: pyscan_group.c, scan_group.c: [no log
+	  message]
+
+2003-11-21 08:49  inspectorg
+
+	* utils/playermap/: geo_mapper.py, cmodules/gpc.c, cmodules/gpc.h:
+	  This is a bit screwed up right now
+
+2003-11-20 16:20  inspectorg
+
+	* server/drivers/mixed/rwi/: rwi_laserdevice.cc, rwidevice.cc: [no
+	  log message]
+
+2003-11-20 16:05  inspectorg
+
+	* player-manual/drivers/sicklms200.tex,
+	  server/drivers/gazebo/Makefile.am,
+	  server/drivers/gazebo/gz_factory.cc,
+	  server/drivers/gazebo/gz_power.cc, utils/playermap/Makefile.am,
+	  utils/playermap/geom.py, utils/playermap/logfile.py,
+	  utils/playermap/main.py, utils/playermap/map.py,
+	  utils/playermap/robot_mapper.py, utils/playermap/setup.py,
+	  utils/playermap/team_mapper.py, utils/playermap/cmodules/grid.c,
+	  utils/playermap/cmodules/grid.h,
+	  utils/playermap/cmodules/grid_store.c,
+	  utils/playermap/cmodules/pygrid.c,
+	  utils/playermap/cmodules/pyrelax.c,
+	  utils/playermap/cmodules/pyscan.c,
+	  utils/playermap/cmodules/pyscan.h,
+	  utils/playermap/cmodules/relax.c,
+	  utils/playermap/cmodules/relax.h,
+	  utils/playermap/cmodules/scan.c, utils/playermap/cmodules/scan.h,
+	  utils/playermap/cmodules/scan_contour.c,
+	  utils/playermap/cmodules/scan_match.c,
+	  utils/playermap/cmodules/vector.c,
+	  utils/playermap/cmodules/vector.h: [no log message]
+
+2003-11-20 16:05  inspectorg
+
+	* server/drivers/localization/amcl/: amcl.cc, amcl_laser.cc,
+	  amcl_laser.h, amcl_odom.cc, amcl_sensor.cc, amcl_sensor.h:
+	  Re-wrote initialization
+
+2003-11-20 16:04  inspectorg
+
+	* server/drivers/mixed/rwi/rwi_positiondevice.cc: Buggy coordinate
+	  transform removed
+
+2003-11-20 16:04  inspectorg
+
+	* server/drivers/laser/sicklms200.cc: Added optional delay
+
+2003-11-19 14:25  gerkey
+
+	* server/drivers/mixed/botrics/: trogdor.cc, trogdor_constants.h:
+	  [no log message]
+
+2003-11-19 13:16  gerkey
+
+	* server/drivers/mixed/botrics/: trogdor.cc, trogdor_constants.h:
+	  [no log message]
+
+2003-11-19 12:43  gerkey
+
+	* config/trogdor.cfg: [no log message]
+
+2003-11-19 12:36  gerkey
+
+	* server/drivers/position/: vfh/vfh.cc, wavefront/wavefront.cc: [no
+	  log message]
+
+2003-11-19 11:13  gerkey
+
+	* server/drivers/: localization/amcl/amcl.cc, position/vfh/vfh.cc,
+	  position/wavefront/wavefront.cc, shell/passthrough.cc: improved
+	  VFH angle-finding
+
+	  wavefront planner now more or less works
+
+	  stopped passthrough from re-sending old commands
+
+2003-11-18 11:46  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: added
+	  extrapolation, but it doesn't work right yet
+
+2003-11-18 11:46  gerkey
+
+	* server/drivers/localization/amcl/amcl.cc: added sorting to amcl
+
+2003-11-17 20:26  section314
+
+	* config/Makefile.am: no message
+
+2003-11-17 20:20  section314
+
+	* config/colors.txt: no message
+
+2003-11-17 20:20  section314
+
+	* config/gazebo_blobfinder.cfg: gazebo der example world
+	  usingz_camera and gz_ptzz
+
+2003-11-17 16:54  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc,
+	  config/trogdor.cfg: [no log message]
+
+2003-11-17 16:30  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: [no log message]
+
+2003-11-17 16:09  gerkey
+
+	* config.trogdor: [no log message]
+
+2003-11-17 16:04  gerkey
+
+	* config/trogdor.cfg,
+	  server/drivers/position/wavefront/wavefront.cc: [no log message]
+
+2003-11-17 15:40  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: [no log message]
+
+2003-11-17 14:39  gerkey
+
+	* server/drivers/: mixed/botrics/trogdor.cc,
+	  position/wavefront/wavefront.cc: [no log message]
+
+2003-11-17 12:25  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: [no log message]
+
+2003-11-17 12:12  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: planner mods
+
+2003-11-17 10:38  gerkey
+
+	* config.trogdor, m4.d/drivertests.m4: foo
+
+2003-11-17 10:24  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: added filtering
+	  and timestamp-monitoring to wavefront
+
+2003-11-15 16:41  gerkey
+
+	* server/drivers/position/wavefront/wavefront.cc: fixed coord txs;
+	  still need low-pass filtering and timestamp-watching
+
+2003-11-15 16:40  gerkey
+
+	* config.trogdor: [no log message]
+
+2003-11-15 15:24  gerkey
+
+	* config.trogdor, m4.d/drivertests.m4,
+	  server/drivers/mixed/botrics/trogdor.cc: trogdor on-board changes
+
+2003-11-14 18:58  gerkey
+
+	* examples/c++/.cvsignore: foo
+
+2003-11-14 18:57  gerkey
+
+	* config.trogdor, configure.in, client_libs/libplayerc/client.c,
+	  m4.d/drivertests.m4, server/deviceregistry.cc,
+	  server/drivers/position/Makefile.am,
+	  server/drivers/position/isense/inertiacube2.cc,
+	  server/drivers/position/vfh/vfh.cc,
+	  server/drivers/position/wavefront/.cvsignore,
+	  server/drivers/position/wavefront/Makefile.am,
+	  server/drivers/position/wavefront/plan.c,
+	  server/drivers/position/wavefront/plan.h,
+	  server/drivers/position/wavefront/plan_plan.c,
+	  server/drivers/position/wavefront/plan_waypoint.c,
+	  server/drivers/position/wavefront/wavefront.cc,
+	  server/drivers/shell/passthrough.cc: added andrew's wavefront
+	  planner (but it doesn't work yet)
+
+2003-11-14 10:47  gerkey
+
+	* config.trogdor: [no log message]
+
+2003-11-14 10:00  gerkey
+
+	* client_libs/pyplayerc/dev_localize.c: took out debug statement
+
+2003-11-13 18:08  gerkey
+
+	* client_libs/pyplayerc/dev_localize.c: added support for setting
+	  localize pose
+
+2003-11-13 16:08  gerkey
+
+	* config.trogdor, utils/playerjoy/playerjoy.cc: added trogdor
+	  config
+
+2003-11-13 15:45  gerkey
+
+	* config/trogdor.cfg, server/drivers/mixed/botrics/trogdor.cc,
+	  server/drivers/mixed/botrics/trogdor_constants.h: more trogdor
+	  changes
+
+2003-11-13 14:28  gerkey
+
+	* server/drivers/mixed/botrics/: trogdor.cc, trogdor_constants.h:
+	  trogdor changes
+
+2003-11-12 22:13  gerkey
+
+	* examples/c++/: Makefile.am, playerprint.cc, randomwalk.cc,
+	  truth.cc: added playerprint util
+
+2003-11-11 16:53  inspectorg
+
+	* configure.in, rtk3/pyrtk/setup.py,
+	  server/drivers/blobfinder/cmvision/Makefile.am,
+	  server/drivers/localization/amcl/amcl.cc,
+	  server/drivers/localization/amcl/amcl.h,
+	  server/drivers/localization/amcl/amcl_odom.cc,
+	  server/drivers/localization/amcl/amcl_odom.h,
+	  server/drivers/stage/Makefile.am,
+	  server/drivers/stage1p4/Makefile.am, utils/Makefile.am,
+	  utils/playermap/.cvsignore: [no log message]
+
+2003-11-11 16:08  gerkey
+
+	* server/drivers/mixed/botrics/: trogdor.cc, trogdor_constants.h:
+	  trogdor fixes
+
+2003-11-11 14:08  inspectorg
+
+	* server/drivers/localization/amcl/: amcl.cc, amcl.h,
+	  amcl_laser.cc, amcl_laser.h, amcl_odom.cc: Added position
+	  interface
+
+2003-11-11 11:21  gerkey
+
+	* server/drivers/mixed/botrics/trogdor_constants.h: foo
+
+2003-11-10 23:20  inspectorg
+
+	* server/drivers/: localization/amcl/Makefile.am,
+	  localization/amcl/amcl.cc, localization/amcl/amcl.h,
+	  localization/amcl/amcl_laser.cc, localization/amcl/amcl_laser.h,
+	  localization/amcl/amcl_odom.cc, localization/amcl/amcl_odom.h,
+	  localization/amcl/amcl_sensor.cc,
+	  localization/amcl/amcl_sensor.h, localization/amcl/pf/pf.c,
+	  localization/amcl/pf/pf.h, shell/readlog_manager.cc: Fixed indoor
+	  localization; broke outdoor localization
+
+2003-11-10 17:26  gerkey
+
+	* config/trogdor.cfg, server/drivers/mixed/botrics/.cvsignore,
+	  server/drivers/mixed/botrics/trogdor.cc,
+	  server/drivers/mixed/botrics/trogdor_constants.h: more trogdor
+	  changes
+
+2003-11-10 16:05  inspectorg
+
+	* server/drivers/blobfinder/cmvision/gz_camera.cc: Added missing
+	  config.h
+
+2003-11-10 13:19  gerkey
+
+	* server/drivers/mixed/botrics/: trogdor.cc, trogdor_constants.h:
+	  more odom fixes
+
+2003-11-10 11:19  gerkey
+
+	* server/drivers/mixed/botrics/trogdor.cc: timing changes
+
+2003-11-10 11:18  gerkey
+
+	* server/drivers/mixed/botrics/: trogdor.cc, trogdor_constants.h:
+	  now considering odom
+
+2003-11-09 23:01  inspectorg
+
+	* server/drivers/: gazebo/gz_laser.cc, gazebo/gz_position.cc,
+	  position/vfh/vfh.cc: Changed some of the gazebo drivers to use
+	  Update() semantics
+
+2003-11-09 17:53  inspectorg
+
+	* server/: deviceregistry.cc, drivers/gazebo/Makefile.am,
+	  drivers/gazebo/gz_power.cc: Added empty power interface
+
+2003-11-09 17:19  gerkey
+
+	* config/trogdor.cfg, server/drivers/mixed/botrics/trogdor.cc,
+	  server/drivers/mixed/botrics/trogdor_constants.h: [no log
+	  message]
+
+2003-11-09 16:03  gerkey
+
+	* server/drivers/mixed/botrics/trogdor_constants.h,
+	  config/trogdor.cfg: [no log message]
+
+2003-11-09 15:53  gerkey
+
+	* server/drivers/mixed/botrics/trogdor.cc: some progress
+
+2003-11-09 12:30  gerkey
+
+	* bootstrap, m4.d/drivertests.m4,
+	  server/drivers/mixed/botrics/trogdor.cc: fixed more
+	  cmvision/gazebo stuff, undid Andrew's OS X aclocal/bootstrap
+	  hack, and augmented trogdor driver
+
+2003-11-09 12:04  inspectorg
+
+	* bootstrap, server/drivers/blobfinder/cmvision/capturev4l.cc,
+	  utils/Makefile.am: OS X tweaks
+
+2003-11-08 12:02  section314
+
+	* m4.d/drivertests.m4: Fixed Gazebo enable logic. Before it only
+	  checked for --with-gazebo not --en/disable-gazebo.
+	  -DINCLUDE_GAZEBO is added to GAZEBO_EXTRA_CPPFLAGS when gazebo is
+	  enabled.
+
+2003-11-08 10:31  pranav2710
+
+	* m4.d/drivertests.m4: added -DINCLUDE_GAZEBO to gazebo flags
+
+2003-11-07 23:34  gerkey
+
+	* server/drivers/mixed/botrics/trogdor.cc: foo
+
+2003-11-07 23:19  gerkey
+
+	* configure.in, m4.d/drivertests.m4, server/deviceregistry.cc,
+	  server/drivers/mixed/Makefile.am,
+	  server/drivers/mixed/botrics/Makefile.am,
+	  server/drivers/mixed/botrics/trogdor.cc: added first draft of
+	  botrics trogdor driver
+
+2003-11-05 18:04  gerkey
+
+	* m4.d/drivertests.m4, server/drivers/laser/sicklms200.cc: added
+	  laser invert option and disable-highspeedsick option
+
+2003-11-05 15:14  gerkey
+
+	* m4.d/drivertests.m4, server/Makefile.am,
+	  server/drivers/blobfinder/cmvision/captureGazebo.cc,
+	  server/drivers/blobfinder/cmvision/gz_camera.cc: changes to build
+	  without libz and gazebo
+
+2003-11-03 08:53  gerkey
+
+	* m4.d/drivertests.m4,
+	  server/drivers/blobfinder/cmvision/capturev4l.cc: enabled support
+	  for v4l in cmvision
+
+2003-11-02 17:35  gerkey
+
+	* m4.d/drivertests.m4,
+	  server/drivers/blobfinder/cmvision/Makefile.am,
+	  server/drivers/blobfinder/cmvision/P2CMV.cc,
+	  server/drivers/blobfinder/cmvision/capture.h,
+	  server/drivers/blobfinder/cmvision/capturev4l.cc,
+	  server/drivers/blobfinder/cmvision/capturev4l.h,
+	  server/drivers/blobfinder/cmvision/conversions.c: merged
+	  Brendan's patch for V4L support in cmvision driver
+
+2003-10-30 15:56  pranav2710
+
+	* server/drivers/gazebo/gz_ptz.cc: minor fixes..
+
+2003-10-30 14:47  pranav2710
+
+	* server/drivers/gazebo/gz_ptz.cc: fixed compatibility with new
+	  player structs.
+
+2003-10-29 16:15  section314
+
+	* server/player.h: set camera code to 40
+
+2003-10-29 15:52  section314
+
+	* server/deviceregistry.cc: registered GzPtz and GzCamera
+
+2003-10-29 01:20  section314
+
+	* server/drivers/blobfinder/cmvision/gz_camera.cc: no message
+
+2003-10-29 01:02  section314
+
+	* server/player.h: added camera data section
+
+2003-10-29 01:00  section314
+
+	* server/drivers/blobfinder/cmvision/P2CMV.cc: added option to
+	  perform bayer color conversion
+
+2003-10-29 00:59  section314
+
+	* server/drivers/blobfinder/cmvision/: gz_cam_init.h, gz_camera.cc,
+	  gz_camera.h: reads camera feed from gazebo
+
+2003-10-29 00:58  section314
+
+	* server/drivers/blobfinder/cmvision/Makefile.am: added
+	  captureGazebo and conversion functions
+
+2003-10-29 00:57  section314
+
+	* server/drivers/blobfinder/cmvision/: conversions.c,
+	  conversions.h: image conversion functions from coriander
+
+2003-10-29 00:56  section314
+
+	* server/drivers/blobfinder/cmvision/: captureGazebo.cc,
+	  captureGazebo.h: added capture method for gazebo cameras
+
+2003-10-29 00:55  section314
+
+	* server/drivers/blobfinder/cmvision/: capture1394.cc,
+	  capture1394.h: added variable size and bayer conversion
+
+2003-10-29 00:53  section314
+
+	* server/drivers/gazebo/: gz_camera.cc, Makefile.am, gz_ptz.cc:
+	  added gz_camera and gz_ptz
+
+2003-10-22 00:06  rtv
+
+	* config/stage1p4_test.cfg, config/stage1p4_test.world,
+	  server/drivers/stage/Makefile.am,
+	  server/drivers/stage1p4/stage1p4.cc,
+	  server/drivers/stage1p4/stage1p4.h,
+	  server/drivers/stage1p4/stg_blinkenlight.cc,
+	  server/drivers/stage1p4/stg_fiducial.cc,
+	  server/drivers/stage1p4/stg_laser.cc,
+	  server/drivers/stage1p4/stg_position.cc,
+	  server/drivers/stage1p4/stg_simulation.cc,
+	  server/drivers/stage1p4/stg_sonar.cc,
+	  server/drivers/stage1p4/stg_time.cc,
+	  server/drivers/stage1p4/stg_time.h: much revamping of stage1p4
+	  client
+
+2003-10-21 08:15  gerkey
+
+	* client_libs/: libplayerc/dev_truth.c, pyplayerc/dev_truth.c:
+	  fixes for truth in libplayerc and pyplayerc
+
+2003-10-17 11:32  gerkey
+
+	* Makefile.am, server/drivers/stage/stagedevice.h: small fixes
+
+2003-10-16 15:06  rtv
+
+	* server/drivers/stage/: stage.h, stage1p3.h, stagedevice.cc,
+	  stagetime.h: moved stage.h to stage1p3.h to avoid name collision
+
+2003-10-15 19:12  rtv
+
+	* config/stage1p4_test.cfg, config/stage1p4_test.world,
+	  server/drivers/stage1p4/stage1p4.cc,
+	  server/drivers/stage1p4/stage1p4.h,
+	  server/drivers/stage1p4/stg_blinkenlight.cc,
+	  server/drivers/stage1p4/stg_fiducial.cc,
+	  server/drivers/stage1p4/stg_laser.cc,
+	  server/drivers/stage1p4/stg_position.cc,
+	  server/drivers/stage1p4/stg_simulation.cc,
+	  server/drivers/stage1p4/stg_sonar.cc,
+	  server/drivers/stage1p4/stg_time.cc,
+	  server/drivers/stage1p4/stg_time.h: more work on the Stage1p4
+	  driver
+
+2003-10-13 17:56  rtv
+
+	* server/drivers/stage1p4/: stage1p4.cc, stage1p4.h,
+	  stg_blinkenlight.cc, stg_fiducial.cc, stg_laser.cc,
+	  stg_position.cc, stg_simulation.cc, stg_sonar.cc, stg_time.cc,
+	  stg_time.h: stage1p4 now mostly working
+
+2003-10-13 14:34  inspectorg
+
+	* server/drivers/localization/amcl/amcl.cc: [no log message]
+
+2003-10-13 14:34  inspectorg
+
+	* server/drivers/mixed/rflex/rflex_commands.cc: OS X compatability
+	  mods
+
+2003-10-13 14:33  inspectorg
+
+	* server/drivers/gazebo/gz_client.cc: Interface mods
+
+2003-10-13 10:14  gerkey
+
+	* server/: clientmanager.cc, clientmanager.h: added Update call to
+	  CDevice
+
+2003-10-13 09:53  rtv
+
+	* server/drivers/stage1p4/: stage1p4.cc, stage1p4.h, stg_sonar.cc,
+	  stg_time.cc: working on thread sync
+
+2003-10-13 01:38  rtv
+
+	* server/drivers/stage1p4/: stage1p4.cc, stage1p4.h,
+	  stg_blinkenlight.cc, stg_fiducial.cc, stg_laser.cc,
+	  stg_position.cc, stg_sonar.cc, stg_time.cc: changed to
+	  subscription-based server. clock working
+
+2003-10-12 12:30  rtv
+
+	* server/drivers/stage1p4/: Makefile.am, stage1p4.cc, stage1p4.h:
+	  added subscription server
+
+2003-10-11 15:39  gerkey
+
+	* server/drivers/position/vfh/vfh.cc: added truth support
+
+2003-10-10 13:05  gerkey
+
+	* utils/playerjoy/playerjoy.cc: applied Nathan Farrington's patch
+	  to support UDP in playerjoy
+
+2003-10-07 14:23  gerkey
+
+	* utils/playermap/gui.py: switched to antialias canvas
+
+2003-10-07 13:39  gerkey
+
+	* server/main.cc, server/drivers/position/vfh/vfh.cc,
+	  server/drivers/shell/writelog.cc, utils/playermap/gui.py: various
+	  small fixes, including alwayson
+
+2003-10-07 12:41  gerkey
+
+	* utils/playermap/Makefile.am: tweaked sed cmdline for paths with
+	  dots
+
+2003-10-06 23:28  gerkey
+
+	* server/drivers/localization/amcl/: amcl_laser.cc, amcl_odom.cc:
+	  small fixes
+
+2003-10-06 21:13  gerkey
+
+	* server/drivers/stage/stagedevice.cc: more debug
+
+2003-10-06 20:11  gerkey
+
+	* server/device.h: added comments
+
+2003-10-06 20:10  gerkey
+
+	* config/stage1p4_test.cfg: changed robot to model
+
+2003-10-06 12:21  gerkey
+
+	* player-manual/player.tex: fixed alphabetical ordering
+
+2003-09-27 20:59  inspectorg
+
+	* server/drivers/gazebo/: gz_client.cc, gz_laser.cc: [no log
+	  message]
+
+2003-09-20 15:21  rtv
+
+	* config/stage1p4_swarmbot.world, config/test.pnm,
+	  examples/c++/swarmbot.cc, server/drivers/stage1p4/stage1p4.cc,
+	  server/drivers/stage1p4/stg_simulation.cc,
+	  server/drivers/stage1p4/stg_time.cc: stage1p4 tweaks and swarmbot
+	  demo
+
+2003-09-19 18:55  gerkey
+
+	* m4.d/drivertests.m4: change config test so that canlib is no
+	  longer searched out under
+
+2003-09-19 09:14  inspectorg
+
+	* rtk3/: librtk/rtk3.h, librtk/rtk_canvas.c, librtk/rtk_fig.c,
+	  pyrtk/pyrtk_fig.c: Added line thickness
+
+2003-09-17 18:18  rtv
+
+	* config/stage1p4_swarmbot.world, config/swarmbot.sh,
+	  config/swarmbot_client.sh, examples/c++/Makefile.am,
+	  examples/c++/swarmbot.cc, examples/c++/swarmbot_target.cc,
+	  server/Makefile.am, server/main.cc,
+	  server/drivers/stage1p4/Makefile.am,
+	  server/drivers/stage1p4/stage1p4.cc,
+	  server/drivers/stage1p4/stg_time.cc,
+	  server/drivers/stage1p4/stg_time.h: working on swarmbot demo and
+	  propogating Stage-1.4 time to Player
+
+2003-09-12 17:04  rtv
+
+	* client_libs/c++/clientproxy.cc, client_libs/c++/playerclient.cc,
+	  config/stage1p4_swarmbot.cfg, config/stage1p4_swarmbot.world,
+	  config/stage1p4_test.cfg, config/stage1p4_test.world,
+	  examples/c++/swarmbot.cc, server/device.cc,
+	  server/devicetable.cc, server/drivers/stage1p4/stage1p4.cc: fixed
+	  port check in device lookup
+
+2003-09-11 23:37  inspectorg
+
+	* server/: deviceregistry.cc, drivers/gazebo/Makefile.am,
+	  drivers/gazebo/gz_fiducial.cc: Added fiducial interface to gazebo
+
+2003-09-11 20:56  inspectorg
+
+	* rtk3/librtk/rtk_fig_event.c,
+	  server/drivers/gazebo/gz_position.cc: [no log message]
+
+2003-09-10 18:45  cvjones
+
+	* server/drivers/position/vfh/vfh.cc: ""
+
+2003-09-10 18:37  cvjones
+
+	* examples/c++/vfh.cc, config/vfh.cfg: ""
+
+2003-09-10 10:12  inspectorg
+
+	* rtk3/librtk/rtk_fig.c, server/drivers/gazebo/gz_position.cc:
+	  Added motor power command
+
+2003-09-09 16:46  gerkey
+
+	* examples/c++/lookupport.cc, server/main.cc,
+	  server/drivers/stage1p4/stage1p4.cc: added support for robot()
+	  blocks in Player config files
+
+2003-09-09 10:11  inspectorg
+
+	* server/drivers/position/vfh/vfh.cc: Changed turning to adhere to
+	  turn-rate
+
+2003-09-09 10:09  gerkey
+
+	* server/main.cc: added hook for handling robot block
+
+2003-09-06 16:56  jazzfunk
+
+	* client_libs/c++/playerclient.h: fixed small laserproxy bug.
+	  still returned in 16 bits with []
+
+2003-09-06 10:22  inspectorg
+
+	* server/drivers/fiducial/: laserbar.cc, laserbarcode.cc: Fixed for
+	  range_res change
+
+2003-09-05 11:02  inspectorg
+
+	* playerconf, rtk3/librtk/rtk3.h, rtk3/librtk/rtk_canvas.c,
+	  rtk3/pyrtk/pyrtk_canvas.c, rtk3/pyrtk/pyrtk_fig.c,
+	  server/drivers/gazebo/gz_laser.cc: Tweaks
+
+2003-09-05 11:01  inspectorg
+
+	* client_libs/pyplayerc/: dev_fiducial.c, dev_laser.c: Fixed minor
+	  memory leak
+
+2003-09-05 11:01  inspectorg
+
+	* client_libs/: c++/test/test_laser.cc, libplayerc/dev_laser.c,
+	  libplayerc/test/test_laser.c: [no log message]
+
+2003-09-05 10:48  inspectorg
+
+	* server/drivers/: fiducial/laserbar.cc, gazebo/gz_laser.cc,
+	  gazebo/gz_position.cc, position/vfh/vfh.cc: Tweaks
+
+2003-09-04 22:02  jazzfunk
+
+	* client_libs/c++/laserproxy.cc, client_libs/c++/playerclient.h,
+	  client_libs/libplayerc/dev_laser.c,
+	  client_libs/libplayerc/playerc.h,
+	  client_libs/pyplayerc/dev_laser.c, server/player.h,
+	  server/drivers/laser/Makefile.am,
+	  server/drivers/laser/sicklms200.cc, utils/playerjoy/playerjoy.cc,
+	  utils/playerv/dev_laser.c, utils/playerv/playerv.h: the laser now
+	  returns a range_res value with each data set.  each range value
+	  should be multiplied by it to get millimeters.
+
+	  laserproxy was updated to handle > 16-bit ranges
+
+	  libplayerc and playerv should also handle the new range_res,
+	  although playerv is not correctly drawing after a range_res
+	  change...
+
+2003-09-03 17:41  gerkey
+
+	* playerconf, m4.d/drivertests.m4: fix to playerconf, and added
+	  message about gsl to amcl
+
+2003-09-03 10:55  inspectorg
+
+	* server/: main.cc, drivers/gazebo/gz_client.cc,
+	  drivers/gazebo/gz_client.h, drivers/gazebo/gz_laser.cc,
+	  drivers/gazebo/gz_position.cc: Added a gazebo prefix option
+
+2003-09-03 09:25  inspectorg
+
+	* client_libs/pyplayerc/pyplayerc.c,
+	  server/drivers/gazebo/gz_position.cc,
+	  server/drivers/mixed/rwi/rwi_positiondevice.cc,
+	  server/drivers/position/vfh/vfh.cc: Applied Mike Bailey's RWI
+	  patch
+
+2003-09-03 08:59  inspectorg
+
+	* server/drivers/localization/amcl/amcl_laser.cc: Fixed signed
+	  conversion on laser range
+
+2003-09-02 19:03  rtv
+
+	* client_libs/c++/fiducialproxy.cc, config/stage1p4_swarmbot.cfg,
+	  config/stage1p4_swarmbot.world, config/stage1p4_test.world,
+	  examples/c++/swarmbot.cc,
+	  server/drivers/stage1p4/stg_fiducial.cc: working on swarmbot
+	  example
+
+2003-09-02 13:38  rtv
+
+	* Makefile.am, utils/playerv/dev_sonar.c: added blinkenlight
+	  interface
+
+2003-09-02 13:31  rtv
+
+	* examples/c++/swarmbot.cc: needs fixing up
+
+2003-09-02 13:30  rtv
+
+	* config/: stage1p4_test.cfg, stage1p4_test.world: changed
+	  worldfile format for lights and added blinkenlight interface to
+	  player
+
+2003-09-02 13:29  rtv
+
+	* server/: deviceregistry.cc, player.h,
+	  drivers/stage1p4/Makefile.am,
+	  drivers/stage1p4/stg_blinkenlight.cc,
+	  drivers/stage1p4/stg_fiducial.cc: added blinkenlight interface
+	  and driver for stage1p4
+
+2003-09-02 13:28  rtv
+
+	* client_libs/c++/: Makefile.am, blinkenlightproxy.cc,
+	  playerclient.h, waveformproxy.cc, test/Makefile.am, test/test.cc,
+	  test/test.h, test/test_blinkenlight.cc,
+	  test/test_fiducialfinder.cc: added C++ proxy for
+	  blinkenlightinterface
+
+2003-09-01 22:35  inspectorg
+
+	* utils/playermap/: gui.py, main.py, robot_mapper.py,
+	  team_mapper.py, cmodules/grid.c, cmodules/grid.h,
+	  cmodules/pygrid.c: Added grid display
+
+2003-09-01 22:19  rtv
+
+	* server/player.h: working on fiducial messaging
+
+2003-09-01 22:18  rtv
+
+	* client_libs/c++/: fiducialproxy.cc, playerclient.h: working on
+	  messaging. recv is broken, send is working
+
+2003-08-31 16:58  gerkey
+
+	* playerconf: small fix
+
+2003-08-31 16:47  gerkey
+
+	* configure.in, playerconf, m4.d/drivertests.m4: added playerconf,
+	  and adjusted autoconf setup accordingly
+
+2003-08-31 13:47  gerkey
+
+	* examples/c++/.cvsignore: added swarmbot
+
+2003-08-31 10:10  inspectorg
+
+	* rtk3/: librtk/rtk3.h, librtk/rtk_canvas.c, librtk/rtk_fig.c,
+	  pyrtk/pyrtk_canvas.c, pyrtk/pyrtk_fig.c: Added image rendering
+	  support
+
+2003-08-30 16:42  inspectorg
+
+	* utils/playermap/: main.py, robot_mapper.py: Tweaked scan match
+	  criteria
+
+2003-08-30 14:02  rtv
+
+	* server/drivers/stage1p4/: stg_fiducial.cc, stg_laser.cc,
+	  stg_position.cc, stg_sonar.cc: replaced a plethora of
+	  device-specific libstage calls with generic get/set calls
+
+2003-08-28 19:41  rtv
+
+	* examples/c++/swarmbot.cc: experimenting with swarmbot behavior
+
+2003-08-28 18:18  rtv
+
+	* examples/c++/pherobot.cc: removed pherobot demo - it has not
+	  worked for ages
+
+2003-08-28 18:18  rtv
+
+	* examples/c++/: Makefile.am, swarmbot.cc: added new demo device -
+	  swarmbot uses position and fiducial devices to do simple flocking
+
+2003-08-28 13:38  rtv
+
+	* config/: stage1p4_test.cfg, stage1p4_test.world: more experiments
+	  with Stage demo
+
+2003-08-28 11:05  gerkey
+
+	* m4.d/drivertests.m4: manually fixed up stage1p4 driver
+	  configuration
+
+2003-08-28 10:46  gerkey
+
+	* config/gazebo.cfg: foo
+
+2003-08-28 10:45  gerkey
+
+	* config/gazebo.cfg, m4.d/drivertests.m4: added change to C to make
+	  check for pnm_init() work
+
+2003-08-28 09:10  rtv
+
+	* config/: stage1p4_test.world, submarine.pnm: another fun bitmap
+	  for the stage1p4 driver
+
+2003-08-27 20:39  rtv
+
+	* config/: stage1p4_test.cfg, stage1p4_test.world: better stage
+	  model names
+
+2003-08-26 19:09  rtv
+
+	* config/: ant.pnm, ant2.pnm, stage1p4_test.world: added save
+	  functionality and automatic model naming, plus a couple of little
+	  insect bitmaps for demo kicks
+
+2003-08-26 19:07  rtv
+
+	* server/drivers/stage1p4/stage1p4.cc: added save functionality and
+	  automatic model naming
+
+2003-08-26 12:39  gerkey
+
+	* client_libs/c++/Makefile.am, client_libs/libplayerc/Makefile.am,
+	  client_libs/pyplayerc/Makefile.am, client_libs/tcl/Makefile.am,
+	  m4.d/drivertests.m4, rtk3/pyrtk/Makefile.am, utils/Makefile.am,
+	  utils/playermap/Makefile.am: fixes to get distcheck working
+
+2003-08-26 12:21  rtv
+
+	* server/drivers/stage1p4/: stage1p4.cc, stage1p4.h: what did I do?
+
+2003-08-26 11:37  gerkey
+
+	* bootstrap, configure.in, rtk3/configure.in,
+	  rtk3/librtk/Makefile.am: changes for proper conditional
+	  compilation of RTK3
+
+2003-08-26 11:04  rtv
+
+	* client_libs/c++/test/test_fiducialfinder.cc: nicer output in
+	  test_fiducial's messaging
+
+2003-08-26 10:56  gerkey
+
+	* configure.in: fixed conditional rtk3 configuration
+
+2003-08-25 21:59  rtv
+
+	* config/: bug.pnm, stage1p4_test.cfg, stage1p4_test.world,
+	  test.pnm: border complete. added test bitmaps temporarily
+
+2003-08-25 19:26  rtv
+
+	* config/stage1p4_test.world: bitmap stuff added
+
+2003-08-25 16:19  gerkey
+
+	* configure.in: tweaked pkg-config setup for finding librtk2
+
+2003-08-25 14:24  rtv
+
+	* server/: deviceregistry.cc, drivers/stage1p4/stg_sonar.cc: more
+	  stage1p4 support
+
+2003-08-25 14:24  rtv
+
+	* client_libs/c++/: fiducialproxy.cc, test/test_fiducialfinder.cc,
+	  test/test_position.cc: made C++ tests a  little more forgiving
+
+2003-08-25 14:22  rtv
+
+	* config/: stage1p4_test.cfg, stage1p4_test.world: added sonar demo
+
+2003-08-25 14:09  rtv
+
+	* server/drivers/stage1p4/: Makefile.am, stg_fiducial.cc: sonar
+	  mostly working. gui improvments
+
+2003-08-24 17:58  rtv
+
+	* config/stage1p4_test.world: working on rangers
+
+2003-08-23 10:50  rtv
+
+	* config/: stage1p4_test.world, test.world: more sophisticated
+	  stage files
+
+2003-08-23 10:46  rtv
+
+	* server/deviceregistry.cc: replaced stg_fiducial_neighbors with
+	  stg_fiducial driver
+
+2003-08-23 10:43  rtv
+
+	* server/player.h, client_libs/c++/fiducialproxy.cc,
+	  client_libs/c++/playerclient.h,
+	  client_libs/c++/test/test_fiducialfinder.cc: added messaging to
+	  fiducial interface
+
+2003-08-23 10:40  rtv
+
+	* server/drivers/stage1p4/stage1p4.h: added header
+
+2003-08-23 10:15  inspectorg
+
+	* rtk3/: .cvsignore, librtk/.cvsignore, pyrtk/.cvsignore: [no log
+	  message]
+
+2003-08-23 10:12  inspectorg
+
+	* utils/playermap/: .cvsignore, main.py, mapper.py,
+	  cmodules/.cvsignore: [no log message]
+
+2003-08-23 10:10  inspectorg
+
+	* server/drivers/localization/amcl/: amcl_gps.h, amcl_imu.h,
+	  amcl_laser.h, amcl_odom.h, amcl_sensor.h, amcl_sensor.cc: Added
+	  header files
+
+2003-08-23 10:09  inspectorg
+
+	* server/drivers/mixed/rwi/rwi_positiondevice.cc: Whitespace
+	  changges
+
+2003-08-22 21:03  inspectorg
+
+	* utils/playermap/Makefile.am,
+	  utils/playermap/cmodules/Makefile.am,
+	  client_libs/pyplayerc/Makefile.am, rtk3/librtk/rtk_fig_event.c,
+	  server/drivers/localization/amcl/Makefile.am,
+	  server/drivers/localization/amcl/amcl.cc,
+	  server/drivers/localization/amcl/amcl.h,
+	  server/drivers/localization/amcl/amcl_gps.cc,
+	  server/drivers/localization/amcl/amcl_imu.cc,
+	  server/drivers/localization/amcl/amcl_laser.cc,
+	  server/drivers/localization/amcl/amcl_odom.cc,
+	  server/drivers/localization/amcl/map/map.c,
+	  server/drivers/localization/amcl/map/map.h,
+	  server/drivers/localization/amcl/map/map_store.c,
+	  server/drivers/localization/amcl/models/gps.c,
+	  server/drivers/localization/amcl/models/laser.c,
+	  server/drivers/localization/amcl/models/laser.h,
+	  server/drivers/localization/amcl/models/odometry.c,
+	  server/drivers/localization/amcl/models/odometry.h,
+	  server/drivers/localization/amcl/pf/pf_vector.c,
+	  server/drivers/mixed/p2os/sip.cc,
+	  server/drivers/shell/readlog_manager.cc,
+	  server/drivers/shell/readlog_manager.h: [no log message]
+
+2003-08-22 21:00  inspectorg
+
+	* utils/playermap/: logfile.py, main.py, map.py, playermap.in,
+	  team_mapper.py: Fixed some profiling stuff
+
+2003-08-22 18:22  rtv
+
+	* server/drivers/stage1p4/stg_fiducial_neighbors.cc: deprecated by
+	  stg_fiducial
+
+2003-08-22 18:21  rtv
+
+	* server/drivers/stage1p4/: Makefile.am, stg_fiducial.cc,
+	  stg_fiducial_neighbors.cc, stg_laser.cc, stg_position.cc: basic
+	  fiducial messaging works
+
+2003-08-22 18:15  inspectorg
+
+	* utils/playermap/playermap.glade: [no log message]
+
+2003-08-22 16:42  inspectorg
+
+	* utils/playermap/: Makefile.am, cmodules/Makefile.am: Fixed some
+	  distro bugs
+
+2003-08-22 15:55  inspectorg
+
+	* utils/playermap/playermap.in: [no log message]
+
+2003-08-22 15:42  inspectorg
+
+	* Makefile.am, bootstrap, configure.in,
+	  client_libs/pyplayerc/Makefile.am, rtk3/configure.in,
+	  utils/Makefile.am: Added PlayerMap stuff
+
+2003-08-22 15:42  inspectorg
+
+	* utils/playermap/: Makefile.am, __init__.py, geom.py, gui.py,
+	  logfile.py, main.py, map.py, mapper.py, robot_mapper.py,
+	  setup.py, team_mapper.py, cmodules/Makefile.am,
+	  cmodules/__init__.py, cmodules/geom.c, cmodules/geom.h,
+	  cmodules/grid.c, cmodules/grid.h, cmodules/grid_range.c,
+	  cmodules/grid_store.c, cmodules/pygrid.c, cmodules/pyrelax.c,
+	  cmodules/pyscan.c, cmodules/pyscan.h, cmodules/relax.c,
+	  cmodules/relax.h, cmodules/scan.c, cmodules/scan.h,
+	  cmodules/scan_contour.c, cmodules/scan_match.c,
+	  cmodules/vector.c, cmodules/vector.h: Added playermap stuff
+
+2003-08-22 15:33  rtv
+
+	* m4.d/drivertests.m4: slightly nicer looking stage1p4 config
+
+2003-08-22 15:19  rtv
+
+	* m4.d/drivertests.m4: hopefully better than the last fix
+
+2003-08-22 15:02  rtv
+
+	* m4.d/drivertests.m4: fixed behavior when Stage is not found by
+	  pkg-config
+
+2003-08-22 14:36  inspectorg
+
+	* rtk3/pyrtk/Makefile.am: Changed default install path
+
+2003-08-20 19:16  rtv
+
+	* configure.in, config/stage1p4_test.cfg,
+	  config/stage1p4_test.world, config/test.world,
+	  m4.d/drivertests.m4, server/Makefile.am,
+	  server/deviceregistry.cc, server/drivers/stage/Makefile.am,
+	  server/drivers/stage1p4/Makefile.am,
+	  server/drivers/stage1p4/stage1p4.cc,
+	  server/drivers/stage1p4/stg_fiducial_neighbors.cc,
+	  server/drivers/stage1p4/stg_laser.cc,
+	  server/drivers/stage1p4/stg_position.cc,
+	  server/drivers/stage1p4/stg_simulation.cc,
+	  utils/playerv/Makefile.am: added pkg-config check for librtk2
+
+2003-08-20 13:57  gerkey
+
+	* utils/playerjoy/playerjoy.cc: fix to allow execution when
+	  SetMotorState() fails (as it may for simulated robots)
+
+2003-08-20 09:12  jazzfunk
+
+	* server/drivers/mixed/rmp/: canio.h, canio_kvaser.cc,
+	  segwayrmp.cc, segwayrmp.h: fixed the high load problem with the
+	  segway driver.  changed the CAN bus read to a blocking call.
+	  seems to work well.  also changed the CAN card to only accept
+	  messages with IDs relevant to us (0x400, ..., 0x404).
+
+	  Cleaned up the Read() call by adding a function that formats the
+	  rmp data into player data.
+
+2003-08-19 11:50  gerkey
+
+	* client_libs/c++/playerclient.h, client_libs/c++/ptzproxy.cc,
+	  server/player.h, server/drivers/ptz/amtecpowercube.cc: Added
+	  'panspeed' and 'tiltspeed' fields to ptz data and command
+	  packets.  Also added config request to switch between position
+	  and velocity control.
+
+	  The amtecpowercube driver is the only one that currently supports
+	  velocity control.
+
+	  Added client-side support for these extra fields and config
+	  request in C++.
+
+2003-08-19 10:28  gerkey
+
+	* examples/c++/Makefile.am: foo
+
+2003-08-19 10:27  gerkey
+
+	* examples/c++/Makefile.am, server/drivers/laser/sicklms200.cc:
+	  typo fix in sicklms200
+
+2003-08-19 10:26  gerkey
+
+	* server/drivers/laser/sicklms200.cc, server/drivers/wifi/iwspy.cc,
+	  utils/playerjoy/playerjoy.cc: fixes for solaris build
+
+2003-08-18 20:51  gerkey
+
+	* m4.d/drivertests.m4: changed compile defaults
+
+2003-08-18 17:41  gerkey
+
+	* examples/c++/Makefile.am: foo
+
+2003-08-18 17:41  gerkey
+
+	* examples/c++/Makefile.am, server/main.cc,
+	  server/drivers/ptz/amtecpowercube.cc: more improvements to Amtec
+	  driver
+
+2003-08-18 12:36  rtv
+
+	* server/drivers/stage1p4/: Makefile.am, stage1p4.cc,
+	  stg_fiducial.cc, stg_fiducial_neighbors.cc, stg_laser.cc: added
+	  fiducial interface
+
+2003-08-18 11:14  gerkey
+
+	* server/deviceregistry.cc: added amtec
+
+2003-08-17 12:12  inspectorg
+
+	* server/drivers/mixed/p2os/p2os.cc: [no log message]
+
+2003-08-17 11:57  inspectorg
+
+	* server/Makefile.am: [no log message]
+
+2003-08-17 11:53  inspectorg
+
+	* server/drivers/shell/: readlog_manager.cc, writelog.cc: Added
+	  some more devices
+
+2003-08-17 11:53  inspectorg
+
+	* server/drivers/position/microstrain/3dmg.cc: Removed queuing;
+	  needs re-thinking
+
+2003-08-17 11:51  inspectorg
+
+	* server/drivers/localization/amcl/: amcl.cc, amcl.h, amcl_gps.cc,
+	  amcl_imu.cc, amcl_laser.cc, amcl_odom.cc, amcl_sonar.cc,
+	  amcl_wifi.cc, models/gps.c, models/gps.h, models/imu.c,
+	  models/imu.h, models/odometry.c: Many, many tweaks; work in
+	  progress
+
+2003-08-17 11:51  inspectorg
+
+	* m4.d/drivertests.m4: Commented PNM test
+
+2003-08-17 11:49  inspectorg
+
+	* server/player.h: Changed roll, pitch, yaw to signed
+
+2003-08-17 11:30  inspectorg
+
+	* player-manual/: player.tex, drivers/garminnmea.tex: Updated DGPS
+	  options
+
+2003-08-17 11:07  inspectorg
+
+	* server/drivers/gps/garminnmea.cc: Added DGPS support
+
+2003-08-17 10:59  inspectorg
+
+	* utils/dgps_server/dgps_novatel.py: Fixed gps fix code
+
+2003-08-17 10:58  inspectorg
+
+	* utils/playerv/dev_position.c: Alternate settings for P2AT
+
+2003-08-17 10:49  inspectorg
+
+	* server/drivers/mixed/p2os/: p2os.cc, p2os.h, p2os_position.cc:
+	  Added configurable max speeds and control band clipping
+
+2003-08-14 17:00  gerkey
+
+	* server/drivers/ptz/amtecpowercube.cc: more progress
+
+2003-08-14 14:16  etopiei
+
+	* server/drivers/mixed/rflex/: rflex_position.cc, rflex_sonar.cc:
+	  changing configuration file format to make better use of player's
+	  file parsing
+
+2003-08-14 14:15  etopiei
+
+	* config/: umass_ATRVJr.cfg, umass_ATRVMini.cfg: changing
+	  configuration file format to make better use of player's file
+	  parser
+
+2003-08-14 13:35  jazzfunk
+
+	* client_libs/c++/mcomproxy.cc, client_libs/c++/playerclient.h,
+	  client_libs/c++/ptzproxy.cc, server/player.h,
+	  server/drivers/mcom/lifomcom.cc, server/drivers/mcom/lifomcom.h,
+	  server/drivers/ptz/sonyevid30.cc: Added a "generic command"
+	  function to the PTZ proxy.  The idea is this is an easy way to
+	  send camera config commands to the sony EVI D30/100 without
+	  making a bunch of abstract, general camera configs.  We can worry
+	  about that when we have multiple PTZs...  The generic here refers
+	  to the nature of the command being sent , but it's a bit
+	  misleading since this is very sony-specific.	maybe i'll fix th
+	  at later.  There's also some code in there about a second
+	  movement mode, which i s an attempt to make more smooth
+	  movements, but it's not quite working.  It's of f by default.
+
+	  Changed the MCom driver to add a "capacity" to the buffers of a
+	  given type/channel.  The capacity must be < MCOM_N_BUFS
+	  (currently 10).  By setting it to 1, we can guarantee to always
+	  get the newest data.	Older messages are just written over.  Also
+	  changed the command member in player_mcom_config_t to uint8_t
+	  instead of uint16_t.
+
+2003-08-14 12:21  gerkey
+
+	* server/drivers/ptz/amtecpowercube.cc: got the amtec to home, but
+	  not accept commands yet
+
+2003-08-14 10:24  gerkey
+
+	* server/drivers/: service_adv/.cvsignore, stage1p4/.cvsignore:
+	  more ignorance
+
+2003-08-13 22:46  gerkey
+
+	* server/drivers/ptz/amtecpowercube.cc: foo
+
+2003-08-13 22:36  gerkey
+
+	* utils/playerjoy/playerjoy.cc: added keyboard support
+
+2003-08-13 16:32  gerkey
+
+	* server/drivers/ptz/amtecpowercube.cc: merged in basic comm
+	  functions from CARMEN
+
+2003-08-13 16:13  gerkey
+
+	* m4.d/drivertests.m4, server/drivers/ptz/Makefile.am,
+	  server/drivers/ptz/amtecpowercube.cc,
+	  server/drivers/service_adv/lsd.cc: started Amtec PowerCube driver
+
+2003-08-12 15:33  reed
+
+	* m4.d/drivertests.m4: changed AC_LANG(C++) which only works in
+	  autoconf 2.5x to AC_LANG_CPLUSPLUS for 2.13...
+
+2003-08-12 14:34  reed
+
+	* m4.d/drivertests.m4: Re-enabling AC_LANG(C++) for service_adv.
+	  This is *required* to correctly detect a C++ header file like
+	  libservicediscovery!
+
+2003-08-12 12:16  jazzfunk
+
+	* m4.d/drivertests.m4, server/drivers/laser/sicklms200.cc: adds
+	  support for reading from the SICK at 500 kbps using a FTDI
+	  USB/RS422 converter; specifically the FT232AM chip.  This is
+	  important because the ioctl used to change the serial port into
+	  500 kbps uses a "divisor" number that depends on the base_baud
+	  rate, which may be determined on the fly, but is currently hard
+	  wired in....
+
+	  this also adds a check for <linux/serial.h> and will not compile
+	  the rate change code unless it is found.
+
+	  The rate is specified in the config file using "rate X" where X
+	  is 500000 (or 38400, etc)
+
+2003-08-10 23:16  inspectorg
+
+	* server/drivers/shell/: readlog.cc, readlog_manager.cc,
+	  readlog_manager.h: Added gps and position3d support
+
+2003-08-10 23:14  inspectorg
+
+	* server/drivers/localization/amcl/: amcl.cc, amcl.h, amcl_gps.cc,
+	  amcl_imu.cc, amcl_laser.cc, amcl_odom.cc, amcl_sonar.cc,
+	  amcl_wifi.cc, models/imu.c, models/imu.h: [no log message]
+
+2003-08-10 22:54  inspectorg
+
+	* server/playercommon.h.in, server/drivers/gps/garminnmea.cc,
+	  utils/dgps_server/dgps_server.py,
+	  utils/dgps_server/dgps_novatel.py: DGPS updates
+
+2003-08-10 14:19  gerkey
+
+	* client_libs/libplayerc/Makefile.am,
+	  server/drivers/stage1p4/Makefile.am, client_libs/c++/Makefile.am:
+	  small fixes for make dist
+
+2003-08-10 07:08  inspectorg
+
+	* client_libs/libplayerc/test/test_position3d.c,
+	  server/drivers/gps/garminnmea.cc: [no log message]
+
+2003-08-09 15:07  inspectorg
+
+	* server/drivers/localization/amcl/: amcl.h, amcl.cc: [no log
+	  message]
+
+2003-08-09 14:35  inspectorg
+
+	* server/drivers/localization/amcl/: Makefile.am, amcl.cc,
+	  amcl_gps.cc, amcl_imu.cc, amcl_laser.cc, amcl_odom.cc,
+	  amcl_sonar.cc, amcl_wifi.cc, models/Makefile.am, models/gps.c,
+	  models/gps.h, models/imu.c, models/imu.h, pf/pf_pdf.h:
+	  Re-factored amcl driver and added gps, imu models
+
+2003-08-09 10:26  gerkey
+
+	* m4.d/drivertests.m4: took out LANG macros
+
+2003-08-08 18:35  rtv
+
+	* config/: stage1p4_test.cfg, stage1p4_test.world: added example
+	  stage1p4 player config and stage worldfiles
+
+2003-08-08 13:53  inspectorg
+
+	* player-manual/drivers/writelog.tex: Added alwayson to writelog
+	  example
+
+2003-08-07 22:58  inspectorg
+
+	* server/drivers/position/microstrain/3dmg.cc: Added multi-data
+	  support
+
+2003-08-07 15:11  inspectorg
+
+	* client_libs/libplayerc/test/test_position.c,
+	  client_libs/libplayerc/test/test_position3d.c,
+	  client_libs/pyplayerc/dev_position3d.c,
+	  server/drivers/position/microstrain/3dmg.cc: Added position3d
+	  interface to imu
+
+2003-08-07 09:43  jazzfunk
+
+	* server/drivers/mixed/rmp/segwayrmp.cc: seems to correctly reset
+	  the odometry now.  had to reset its internal odom_* variables and
+	  firstread.
+
+2003-08-07 09:23  jazzfunk
+
+	* server/drivers/mixed/rmp/segwayrmp.cc: minor cleaning up, also
+	  have to take a look at how odometry is affected by the RESET
+	  ODOMETRY ioctl
+
+2003-08-06 22:49  inspectorg
+
+	* utils/dgps_server/dgps_server.py: Added some options
+
+2003-08-06 22:39  inspectorg
+
+	* utils/dgps_server/dgps_server.py: DGPS tweaks
+
+2003-08-06 21:46  inspectorg
+
+	* utils/dgps_server/dgps_server.py: [no log message]
+
+2003-08-06 18:01  inspectorg
+
+	* utils/dgps_server/dgps_server.py: [no log message]
+
+2003-08-06 18:00  inspectorg
+
+	* client_libs/: c++/gpsproxy.cc, libplayerc/dev_gps.c,
+	  libplayerc/playerc.h, libplayerc/test/test_gps.c,
+	  pyplayerc/dev_gps.c: Extended GPS info
+
+2003-08-06 18:00  inspectorg
+
+	* server/: player.h, drivers/gps/garminnmea.cc: Added UTM
+	  coordinates and DGPS multicast client
+
+2003-08-05 16:46  reed
+
+	* configure.in: Forgot to add service_adv to the configure script!
+	  Sorry!
+
+2003-08-05 16:16  reed
+
+	* m4.d/drivertests.m4: Changed C++ language selection autoconf
+	  macros (for service_adv_lsd) to old 2.13 usage.
+
+2003-08-04 09:28  reed
+
+	* player-manual/: player.tex, drivers/rflex.tex,
+	  drivers/service_adv.tex: * Some fixes to service_adv
+	  documentation * added lots to rflex manual
+
+2003-08-04 07:56  reed
+
+	* Makefile.am, client_libs/c++/playermcomtypes.h,
+	  m4.d/drivertests.m4, player-manual/player.tex,
+	  player-manual/drivers/service_adv.tex, server/configfile.h,
+	  server/device.cc, server/device.h, server/deviceregistry.cc,
+	  server/deviceregistry.h, server/main.cc, server/player.h,
+	  server/drivers/Makefile.am,
+	  server/drivers/service_adv/Makefile.am,
+	  server/drivers/service_adv/lsd.cc: Adding service_adv device.
+	  Also made some small changes to mcom data types.
+
+2003-08-03 23:30  inspectorg
+
+	* server/drivers/gazebo/: gz_laser.cc, gz_position.cc: Added
+	  locking
+
+2003-08-01 19:01  rtv
+
+	* config/test.world, m4.d/drivertests.m4, server/Makefile.am,
+	  server/main.cc, server/player.h,
+	  server/drivers/stage1p4/Makefile.am,
+	  server/drivers/stage1p4/stage1p4.cc,
+	  server/drivers/stage1p4/stg_laser.cc,
+	  server/drivers/stage1p4/stg_position.cc,
+	  server/drivers/stage1p4/stg_simulation.cc: stage1p4 driver now
+	  controls position model
+
+2003-07-31 20:53  rtv
+
+	* config/stage.cfg, config/test.world, m4.d/drivertests.m4,
+	  server/drivers/stage1p4/stage1p4.cc: more stage1p4 driver
+	  functionality - the position device now gets data through to
+	  clients
+
+2003-07-31 16:26  inspectorg
+
+	* player-manual/: player.tex, drivers/gz_laser.tex,
+	  drivers/gz_position.tex, drivers/sicklms200.tex: Added gazebo
+	  driver docs
+
+2003-07-31 12:18  etopiei
+
+	* Makefile.am:
+	  just moved the two commented lines so that automake doesnt fail
+
+	  -
+
+2003-07-30 18:23  rtv
+
+	* config/stage.cfg, config/test.world,
+	  server/drivers/stage1p4/stage1p4.cc: stage1p4 driver now reads
+	  worldfiles and creates objetc trees correctly
+
+2003-07-30 05:34  etopiei
+
+	* server/drivers/mixed/rflex/rflex.cc: fix for a small encoder bug
+	  (occasionally returned negative values
+
+2003-07-29 22:50  rtv
+
+	* config/test.world, m4.d/drivertests.m4,
+	  server/drivers/stage1p4/stage1p4.cc: stage1p4 driver now reads
+	  worldfilesand creates models
+
+2003-07-29 17:46  rtv
+
+	* configure.in, m4.d/drivertests.m4, server/deviceregistry.cc,
+	  server/main.cc, server/player.h, server/drivers/Makefile.am,
+	  server/drivers/stage1p4/Makefile.am,
+	  server/drivers/stage1p4/stage1p4.cc, config/stage.cfg: adding
+	  support for stage-1.4
+
+2003-07-28 09:18  inspectorg
+
+	* rtk3/: librtk/rtk3.h, librtk/rtk_canvas.c, pyrtk/pyrtk_canvas.c:
+	  Added canvas saving
+
+2003-07-27 18:10  inspectorg
+
+	* rtk3/: librtk/rtk3.h, librtk/rtk_canvas.c, librtk/rtk_fig.c,
+	  librtk/rtk_fig_event.c, pyrtk/pyrtk_fig.c: Added basic text item
+
+2003-07-23 09:18  inspectorg
+
+	* rtk3/librtk/rtk_fig.c: [no log message]
+
+2003-07-22 21:49  inspectorg
+
+	* rtk3/configure.in: [no log message]
+
+2003-07-22 08:05  etopiei
+
+	* server/drivers/mixed/rflex/HOWTO_USE:
+	  rather self explanatory - helpfile for the rflex driver
+
+	  -
+
+2003-07-21 07:52  etopiei
+
+	* server/drivers/mixed/rflex/rflex_commands.cc: workaround for
+	  strange rflex hardware bug - can't go speeds that have the byte
+	  1b in high order byte of any two byte set
+
+2003-07-21 07:42  etopiei
+
+	* config/: umass_ATRVJr.cfg, umass_ATRVMini.cfg: sonar
+	  configurations repaired - turns out ranges returned from rflex
+	  are in arbitrary units and must be rescaled
+
+2003-07-18 11:31  jazzfunk
+
+	* m4.d/drivertests.m4: changed it to look for canlib.h instead of
+	  gazebo.h if --with-canlib was used
+
+2003-07-17 07:30  reed
+
+	* server/drivers/mcom/lifomcom.cc: Oops, I left some debugging
+	  printfs in there.
+
+2003-07-16 17:14  inspectorg
+
+	* client_libs/c++/doc/Makefile, client_libs/c++/doc/cppclient.tex,
+	  client_libs/libplayerc/doc/Makefile,
+	  client_libs/libplayerc/doc/libplayerc.tex,
+	  player-manual/Makefile: Added distro support to doc makefiles
+
+2003-07-16 16:35  gerkey
+
+	* ChangeLog: updated changelog
+
 2003-07-16 16:18  inspectorg
 
 	* player-manual/drivers/: amcl.tex, readlog.tex, writelog.tex:
@@ -332,9 +3136,39 @@
 
 	* server/main.cc: added additional shutdown stuff
 
+2003-07-07 09:59  inspectorg
+
+	* rtk3/librtk/rtk_fig.c: Work-around for polygon bug in gnomecanvas
+
 2003-07-03 14:53  cvjones
 
 	* config/vfh.cfg: ""
+
+2003-07-01 22:17  inspectorg
+
+	* rtk3/librtk/: rtk3.h, rtk_fig_event.c: Added more control over
+	  events
+
+2003-06-30 09:29  inspectorg
+
+	* rtk3/: librtk/rtk3.h, librtk/rtk_fig_event.c, pyrtk/pyrtk.c,
+	  pyrtk/pyrtk_fig.c: [no log message]
+
+2003-06-28 09:21  inspectorg
+
+	* rtk3/ChangeLog: [no log message]
+
+2003-06-26 17:32  inspectorg
+
+	* rtk3/: AUTHORS, NEWS, README, configure.in, librtk/Makefile.am,
+	  librtk/rtk.h, librtk/rtk3.h, librtk/rtk_canvas.c,
+	  librtk/rtk_fig.c, librtk/rtk_fig_event.c, pyrtk/Makefile.am,
+	  pyrtk/pyrtk.c, pyrtk/pyrtk_canvas.c, pyrtk/pyrtk_fig.c: Changes
+	  for distro
+
+2003-06-26 17:01  inspectorg
+
+	* rtk3/librtk/: rtk.h, rtk_fig.c: Added raise/lower to figures
 
 2003-06-25 14:38  inspectorg
 
@@ -508,6 +3342,11 @@
 2003-06-16 15:34  inspectorg
 
 	* server/drivers/position/vfh/vfh.cc: Changed units on max velocity
+
+2003-06-15 13:47  inspectorg
+
+	* rtk3/librtk/: rtk.h, rtk_canvas.c, rtk_fig.c: Add a second group
+	  to allow for both strokes and sub-figures
 
 2003-06-14 16:36  inspectorg
 
@@ -727,6 +3566,16 @@
 	  client_libs/tcl/playerclient.tcl, examples/c++/rsn.cc,
 	  player-manual/interfaces/mote.tex, server/player.h: - removed
 	  motedevice,  gts
+
+2003-06-03 08:47  inspectorg
+
+	* rtk3/: librtk/rtk_fig_event.c, pyrtk/setup.py: Fixed mouse
+	  handling
+
+2003-06-02 21:11  inspectorg
+
+	* rtk3/: configure.in, librtk/Makefile.am, librtk/rtk_fig.c,
+	  pyrtk/pyrtk.c, pyrtk/setup.py: [no log message]
 
 2003-06-02 08:33  inspectorg
 
@@ -2253,8 +5102,8 @@
 
 2003-04-21 21:51  inspectorg
 
-	* server/drivers/: gazebo/.cvsignore, isense/.cvsignore,
-	  microstrain/.cvsignore: Added some cvsignore files
+	* server/drivers/: gazebo/.cvsignore, isense/.cvsignore: Added some
+	  cvsignore files
 
 2003-04-21 21:47  inspectorg
 
@@ -2498,6 +5347,10 @@
 	  server/drivers/mixed/reb/reb.cc,
 	  server/drivers/waveform/waveaudio.cc: small fixes
 
+2003-04-16 17:34  inspectorg
+
+	* rtk3/librtk/: rtk.h, rtk_fig_event.c: [no log message]
+
 2003-04-16 13:43  gerkey
 
 	* server/drivers/blobfinder/cmvision/.cvsignore: added cvsignore
@@ -2535,6 +5388,11 @@
 	  also changed the type of laser range data from int16_t to
 	  uint16_t, so as to get allow greater ranges.
 
+2003-04-14 10:20  inspectorg
+
+	* rtk3/: librtk/rtk.h, librtk/rtk_canvas.c, librtk/rtk_fig.c,
+	  pyrtk/pyrtk_canvas.c, pyrtk/pyrtk_fig.c: Added some free's
+
 2003-04-08 17:43  rtv
 
 	* server/drivers/stage/stagedevice.cc: world file loading for stage
@@ -2559,6 +5417,11 @@
 	  server/drivers/gazebo/gz_position.cc: Added preliminary drivers
 	  for Gazebo position and laser interfaces
 
+2003-04-03 08:46  inspectorg
+
+	* rtk3/: librtk/Makefile.am, librtk/rtk.h, librtk/rtk_fig.c,
+	  librtk/rtk_fig_event.c, pyrtk/pyrtk_fig.c: Tweaked compiler flags
+
 2003-04-01 15:48  rtv
 
 	* client_libs/c++/Makefile.am, client_libs/c++/fiducialproxy.cc,
@@ -2568,6 +5431,31 @@
 	  client_libs/libplayerpacket/playerpacket.h, server/player.h,
 	  server/drivers/Makefile.am: added config features to fiducial
 	  interface
+
+2003-04-01 15:14  inspectorg
+
+	* rtk3/pyrtk/pyrtk_fig.c: Tweaked event handling
+
+2003-04-01 15:10  inspectorg
+
+	* rtk3/: librtk/Makefile.am, librtk/rtk.h, librtk/rtk_canvas.c,
+	  librtk/rtk_fig.c, librtk/rtk_fig_event.c, pyrtk/pyrtk.h,
+	  pyrtk/pyrtk_fig.c: Added some event handling
+
+2003-03-31 10:20  inspectorg
+
+	* rtk3/pyrtk/setup.py: [no log message]
+
+2003-03-31 10:16  inspectorg
+
+	* rtk3/: Makefile.am, bootstrap, configure.in: [no log message]
+
+2003-03-30 23:04  inspectorg
+
+	* rtk3/: librtk/Makefile.am, librtk/rtk.h, librtk/rtk_canvas.c,
+	  librtk/rtk_fig.c, pyrtk/Makefile.am, pyrtk/pyrtk.c,
+	  pyrtk/pyrtk.h, pyrtk/pyrtk_canvas.c, pyrtk/pyrtk_fig.c: [no log
+	  message]
 
 2003-03-18 15:29  inspectorg
 
@@ -3648,9 +6536,8 @@
 
 2002-11-29 09:11  gerkey
 
-	* server/drivers/: isense/.cvsignore, isense/Makefile.am,
-	  isense/inertiacube2.cc, microstrain/3dmg.cc,
-	  microstrain/Makefile.am: moved to new layout
+	* server/drivers/isense/: .cvsignore, Makefile.am, inertiacube2.cc:
+	  moved to new layout
 
 2002-11-29 09:10  gerkey
 
@@ -3845,10 +6732,6 @@
 	* client_libs/pyplayerc/: Makefile.am, pyplayerc.c, setup.py,
 	  test/test.py, test/test_wifi.py: Added wifi test
 
-2002-11-20 18:52  inspectorg
-
-	* server/drivers/microstrain/3dmg.cc: [no log message]
-
 2002-11-20 16:30  rtv
 
 	* configure.in: tweaked comments
@@ -3861,10 +6744,6 @@
 
 	* configure.in, server/drivers/udpbroadcast.cc: added checking for
 	  socklen_t type to help compile on BSD systems (including OSX)
-
-2002-11-20 15:54  inspectorg
-
-	* server/drivers/microstrain/3dmg.cc: Driver tweaks
 
 2002-11-20 14:25  inspectorg
 
@@ -3899,9 +6778,7 @@
 2002-11-19 13:45  inspectorg
 
 	* configure.in, server/Makefile.am, server/deviceregistry.cc,
-	  server/drivers/Makefile.am, server/drivers/microstrain/3dmg.cc,
-	  server/drivers/microstrain/Makefile.am: Added skeleton for
-	  MicroStrain driver
+	  server/drivers/Makefile.am: Added skeleton for MicroStrain driver
 
 2002-11-18 21:27  jazzfunk
 
