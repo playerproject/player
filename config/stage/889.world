@@ -6,7 +6,7 @@
 #
 
 include "pioneer.inc"
-
+include "chatterbox.inc"
 
 size [120 45]
 bitmap "bitmaps/hospital.png"
@@ -34,60 +34,24 @@ model
 pioneer2dx( name "r0" pose [2.899 10.896 7105.296] color "blue" )
 pioneer2dx( name "r1" pose [1.946 7.494 71.951] color "green")
 pioneer2dx( name "r2" pose [2.611 6.565 88.701] color "magenta" )
-pioneer2dx( name "r3" pose [34.542 9.001 -77.823] )
-pioneer2dx( name "r4" pose [33.770 7.584 113.128] )
-pioneer2dx( name "r5" pose [3.365 5.638 -263.133] )
-pioneer2dx( name "r6" pose [35.345 7.847 -175.415] )
-pioneer2dx( name "r7" pose [27.281 5.354 6.995] )
-pioneer2dx( name "r8" pose [27.116 7.643 30.366] )
-pioneer2dx( name "r9" pose [27.246 8.818 -336.023] )
-#pioneer2dx( name "r10" pose [6.549 9.302 -20.840] )
-#pioneer2dx( name "r11" pose [6.518 8.139 -20.840] )
-#pioneer2dx( name "r12" pose [5.873 6.300 -20.840] )
-#pioneer2dx( name "r13" pose [5.763 3.173 -20.840] )
-#pioneer2dx( name "r14" pose [3.768 1.555 -20.840] )
-#pioneer2dx( name "r15" pose [2.432 2.246 -20.840] )
-#pioneer2dx( name "r16" pose [4.679 2.262 -20.840] )
-#pioneer2dx( name "r17" pose [3.815 3.409 -20.840] )
-#pioneer2dx( name "r18" pose [7.350 3.990 -20.840] )
-#pioneer2dx( name "r19" pose [7.900 8.406 -20.840] )
+pioneer2dx( name "r3" pose [34.542 9.001 -77.823] color "cyan" )
+pioneer2dx( name "r4" pose [33.770 7.584 113.128] color "yellow" )
+pioneer2dx( name "r5" pose [3.365 5.638 -263.133] color "blue" )
+pioneer2dx( name "r6" pose [35.345 7.847 -175.415] color "green" )
+pioneer2dx( name "r7" pose [27.281 5.354 6.995]  color "cyan" )
+pioneer2dx( name "r8" pose [27.116 7.643 30.366] color "red" )
+pioneer2dx( name "r9" pose [27.246 8.818 -336.023] color "red" )
 
-define chatterbox model
-(
-  scount 8
-  spose[0] [  0.050  0.0   0 ]
-  spose[1] [  0.035  0.035  45 ]
-  spose[2] [  0.0    0.050  90 ]
-  spose[3] [ -0.035  0.035 135 ]
-  spose[4] [ -0.050  0.0 180 ]
-  spose[5] [ -0.035 -0.035 225 ]
-  spose[6] [  0.0   -0.050 270 ]
-  spose[7] [  0.035 -0.035 315 ]
-
-  sbounds[0] [ 0 0.5 ]
-  sbounds[1] [ 0 0.5 ]
-  sbounds[2] [ 0 0.5 ]
-  sbounds[3] [ 0 0.5 ]
-  sbounds[4] [ 0 0.5 ]
-  sbounds[5] [ 0 0.5 ]
-  sbounds[6] [ 0 0.5 ]
-  sbounds[7] [ 0 0.5 ]
-
-  size [0.10 0.10]
-  nose 1
-)
 
 define bluechatterbox chatterbox
 (
   color "blue"
-
 )
 
 define redchatterbox chatterbox
 (
   color "red"
 )
-
 
 bluechatterbox( name "bch0" pose [11.973 5.272 0.000] )
 bluechatterbox( name "bch1" pose [13.998 4.682 -171.141] )
