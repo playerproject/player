@@ -56,6 +56,7 @@ CameraProxy::CameraProxy( PlayerClient *pc, unsigned short index,
     unsigned char access)
   : ClientProxy(pc, PLAYER_CAMERA_CODE, index, access)
 {
+  printf("MAX_SIZE? %d\n",PLAYER_MAX_MESSAGE_SIZE);
 }
 
 CameraProxy::~CameraProxy()
@@ -64,7 +65,11 @@ CameraProxy::~CameraProxy()
 
 void CameraProxy::FillData( player_msghdr_t hdr, const char *buffer)
 {
-  if (hdr.size != sizeof(player_camera_data_t))
+  int32_t size;
+  size = sizeof(player_camera_data_t) -
+         sizeof(uint8_t[PLAYER_CAMERA_IMAGE_SIZE]) +
+         ntohl(((player_camera_data_t*)buffer)->image_size);
+  if (hdr.size != size) //sizeof(player_camera_data_t))
   {
     if (player_debug_level(-1) >= 1)
       fprintf(stderr,"WARNING: expected %d bytes of camera data, but "
@@ -75,9 +80,24 @@ void CameraProxy::FillData( player_msghdr_t hdr, const char *buffer)
   this->width = ntohs( ((player_camera_data_t*)buffer)->width);
   this->height = ntohs( ((player_camera_data_t*)buffer)->height);
 
-  this->depth = ntohs( ((player_camera_data_t*)buffer)->depth);
-  this->imageSize = ntohs( ((player_camera_data_t*)buffer)->image_size);
+  // to keep this short, we need to change the depth datatype, otherwise use the second line
+  // this->depth = ntohs( ((player_camera_data_t*)buffer)->depth);
+  this->depth = ((player_camera_data_t*)buffer)->depth;
 
+  this->imageSize = ntohl( ((player_camera_data_t*)buffer)->image_size);
   memcpy(this->image, ((player_camera_data_t*)buffer)->image, this->imageSize);
+  
 }
+
+// interface that all proxies SHOULD provide
+void
+CameraProxy::Print()
+{
+  printf("#Camera(%d:%d) - %c\n", m_device_id.code,
+           m_device_id.index, access);
+
+  printf("Height(%d px), Width(%d px), Depth(%d bit), ImageSize(%d bytes)\n",
+         this->width,this->height,this->depth,this->imageSize);
+}
+
 

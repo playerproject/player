@@ -102,3 +102,4 @@ DIOProxy::SetOutput(uint8_t output_count, uint32_t digout)
   return(client->Write(m_device_id,
                        reinterpret_cast<char*>(&cmd),sizeof(cmd)));
 }
+

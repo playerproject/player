@@ -2713,6 +2713,9 @@ public:
 
    // interface that all proxies must provide
    void FillData(player_msghdr_t hdr, const char* buffer);
+
+   // prints out basic statistics of the camera
+   void Print();
 };
 
 /*****************************************************************************
@@ -2899,8 +2902,9 @@ class MapProxy : public ClientProxy
   /** Return the index of the (x,y) item in the cell array */
   public: int GetCellIndex( int x, int y );
 
-  /** Return the (x,y) cell */
-  public: char GetCell( int x, int y);
+  /** Get the (x,y) cell; returns 0 on success, -1 on failure (i.e., indexes
+      out of bounds) */
+  public: int GetCell( char* cell, int x, int y );
 
   // interface that all proxies must provide
   public: void FillData (player_msghdr_t hde, const char *buffer);
