@@ -3,6 +3,8 @@
    Sourceforge. I understand that it was released under the GPL by the
    copyright holders. Anyone with more information about the licensing
    of this code, please contact Richard Vaughan (vaughan@sfu.ca).
+
+   $Header$
 */
 
 /*
