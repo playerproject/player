@@ -432,9 +432,19 @@ typedef struct
 
 typedef struct
 {
+  /* A descriptive color for the blob (useful for gui's).
+   * The color is stored as packed 32-bit RGB, i.e., 0x00RRGGBB. */
+  uint32_t color;
+
+  /* The blob area (pixels). */
   uint32_t area;
+
+  /* The blob centroid (image coords). */
   uint16_t x, y;
+
+  /* Bounding box for the blob (image coords). */
   uint16_t left, right, top, bottom;
+  
 } __attribute__ ((packed)) player_vision_blob_elt_t;
 
 #define VISION_BLOB_SIZE sizeof(player_vision_blob_elt_t)

@@ -460,6 +460,11 @@ CVisionDevice::Main()
       for(i=0;i<num_blobs;i++)
       {
         int tmpptr = blob_size*i;
+
+        // TODO: put a descriptive color in here (I'm not sure where
+        // to get it from).
+        local_data.blobs[i].color = htonl(0xFF0000);
+        
         // get the 4-byte area first
         local_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
@@ -495,7 +500,11 @@ CVisionDevice::Main()
       for(i=0;i<num_blobs;i++)
       {
         int tmpptr = blob_size*i;
-        
+
+        // TODO: put a descriptive color in here (I'm not sure where
+        // to get it from).
+        local_data.blobs[i].color = htonl(0xFF0000);
+
         // get the 4-byte area first
         local_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
