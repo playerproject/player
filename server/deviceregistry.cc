@@ -300,7 +300,7 @@ void StgBlinkenlight_Register(DriverTable *table);
 #ifdef INCLUDE_NOMAD
 void Nomad_Register(DriverTable *driverTable);
 void NomadPosition_Register(DriverTable *driverTable);
-//void NomadSonar_Register(DriverTable *driverTable);
+void NomadSonar_Register(DriverTable *driverTable);
 //void NomadBumper_Register(DriverTable *driverTable);
 //void NomadSpeech_Register(DriverTable *driverTable);
 #endif
@@ -665,7 +665,7 @@ register_devices()
 #ifdef INCLUDE_NOMAD
   Nomad_Register(driverTable);
   NomadPosition_Register(driverTable);
-  //NomadSonar_Register(driverTable);
+  NomadSonar_Register(driverTable);
   //NomadBumper_Register(driverTable);
   //NomadSpeech_Register(driverTable);
 #endif

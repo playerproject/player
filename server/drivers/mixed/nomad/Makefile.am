@@ -16,4 +16,5 @@ libnomad_a_SOURCES = \
   Nclient.h \
   ${NOMADICS_INTERFACE} \
   nomad.cc \
-  nomad_position.cc
+  nomad_position.cc \
+  nomad_sonar.cc

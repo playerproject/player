@@ -217,15 +217,12 @@ void NomadPosition::Update()
       // Nomad-specific command
       player_nomad_cmd_t cmd;
       memset( &cmd, 0, sizeof(cmd) );
-      cmd.vel_trans = ntohl(command.xspeed);
-      cmd.vel_steer = ntohl(command.yawspeed);
-      cmd.vel_turret = ntohl(command.yspeed);
-      
-      printf( "nomad command: trans:%d steer:%d turret:%d\n", 
-	      cmd.vel_trans, cmd.vel_steer, cmd.vel_turret ); 
+      cmd.vel_trans = (command.xspeed);
+      cmd.vel_steer = (command.yawspeed);
+      cmd.vel_turret = (command.yspeed);
       
       // command the Nomad device
-      // TODO: is this the right syntax?
+      // CHECK: is this the right syntax?
       this->nomad->PutCommand( this, (unsigned char*)&cmd, sizeof(cmd) ); 
     }
 }
