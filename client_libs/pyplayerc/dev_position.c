@@ -38,23 +38,23 @@ static void position_onread(position_object_t *positionob);
 /* Initialise (type function) */
 PyObject *position_new(PyObject *self, PyObject *args)
 {
-  client_object_t *clientob;
+  pyclient_t *pyclient;
   position_object_t *positionob;
   int index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &clientob, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   positionob = PyObject_New(position_object_t, &position_type);
-  positionob->client = clientob->client;
-  positionob->position = playerc_position_create(clientob->client, index);
+  positionob->client = pyclient->client;
+  positionob->position = playerc_position_create(pyclient->client, index);
   positionob->position->info.user_data = positionob;
   positionob->px = PyFloat_FromDouble(0);
   positionob->py = PyFloat_FromDouble(0);
   positionob->pa = PyFloat_FromDouble(0);
 
   /* Add callback for post-processing incoming data */
-  playerc_client_addcallback(clientob->client, (playerc_device_t*) positionob->position,
+  playerc_client_addcallback(pyclient->client, (playerc_device_t*) positionob->position,
                              (playerc_callback_fn_t) position_onread,
                              (void*) positionob);
     
