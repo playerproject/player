@@ -819,7 +819,7 @@ int LaserVisualBW::UpdateCamera()
   if (fabs(time - this->camera_time) < 0.001)
     return 0;
   this->camera_time = time;
-
+  
   // Do some byte swapping
   this->camera_data.width = ntohs(this->camera_data.width);
   this->camera_data.height = ntohs(this->camera_data.height); 
@@ -858,8 +858,15 @@ int LaserVisualBW::ExtractSymbols(int x, int symbol_max_count, int symbols[])
   int state, start, symbol_count;
   double kernel[] = {+1, +2, 0, -2, -1};
 
+  // GREY
+  if (this->camera_data.depth == 8)
+  {
+    off = x * this->camera_data.depth / 8;
+    inc = this->camera_data.width * this->camera_data.depth / 8;
+  }
+
   // RGB24, use G channel
-  if (this->camera_data.depth == 24)
+  else if (this->camera_data.depth == 24)
   {
     off = x * this->camera_data.depth / 8 + 1;
     inc = this->camera_data.width * this->camera_data.depth / 8;
