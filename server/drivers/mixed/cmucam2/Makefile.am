@@ -1,4 +1,3 @@
-SUBDIRS =
 
 noinst_LIBRARIES = @CMUCAM2_LIB@ 
 
