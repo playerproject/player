@@ -113,6 +113,8 @@ driver
 #include <unistd.h>
 #include <math.h>
 
+#define PLAYER_ENABLE_MSG 0
+
 #include "player.h"
 #include "driver.h"
 #include "drivertable.h"
@@ -305,6 +307,8 @@ SegwayRMP::Main()
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
+  PLAYER_MSG0("starting main loop");
+  
   for(;;)
   {
     pthread_testcancel();
@@ -315,6 +319,8 @@ SegwayRMP::Main()
       PLAYER_ERROR("Read() errored; bailing");
       pthread_exit(NULL);
     }
+
+    PLAYER_MSG0("got data from rmp");
 
     // TODO: report better timestamps, possibly using time info from the RMP
 

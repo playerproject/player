@@ -29,7 +29,7 @@ CANIOKvaser::Init(long channel_freq)
   for (int i =0; i < DUALCAN_NR_CHANNELS; i++) 
   {
     if((channels[i] = 
-	canOpenChannel(i, canWANT_EXCLUSIVE | canWANT_EXTENDED)) < 0) {
+        canOpenChannel(i, canWANT_EXCLUSIVE | canWANT_EXTENDED)) < 0) {
       return channels[i];
     }
     
