@@ -69,12 +69,12 @@ void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
   for(unsigned short i = 0; i < count && i < PLAYER_FIDUCIAL_MAX_SAMPLES; i++)
   {
     beacons[i].id = ntohs(data->fiducials[i].id);
-    beacons[i].pose[0] = ((int16_t)ntohs(data->fiducials[i].pos[0])) / 1e3;
-    beacons[i].pose[1] = ((int16_t)ntohs(data->fiducials[i].pos[1])) / 1e3;
-    beacons[i].pose[2] = ((int16_t)ntohs(data->fiducials[i].rot[2])) / 1e3;
-    beacons[i].upose[0] = ((int16_t)ntohs(data->fiducials[i].upos[0])) / 1e3;
-    beacons[i].upose[1] = ((int16_t)ntohs(data->fiducials[i].upos[1])) / 1e3;
-    beacons[i].upose[2] = ((int16_t)ntohs(data->fiducials[i].urot[2])) / 1e3;
+    beacons[i].pose[0] = ((int32_t)ntohl(data->fiducials[i].pos[0])) / 1e3;
+    beacons[i].pose[1] = ((int32_t)ntohl(data->fiducials[i].pos[1])) / 1e3;
+    beacons[i].pose[2] = ((int32_t)ntohl(data->fiducials[i].rot[2])) / 1e3;
+    beacons[i].upose[0] = ((int32_t)ntohl(data->fiducials[i].upos[0])) / 1e3;
+    beacons[i].upose[1] = ((int32_t)ntohl(data->fiducials[i].upos[1])) / 1e3;
+    beacons[i].upose[2] = ((int32_t)ntohl(data->fiducials[i].urot[2])) / 1e3;
   }
 }
 
@@ -85,7 +85,7 @@ void FiducialProxy::Print()
          m_device_id.code, m_device_id.index, access);
   puts("#count");
   printf("%d\n", count);
-  puts("#id\trange\tbear\torient\tr_err\tb_err\to_err");
+  puts("#id\txpos\typos\torient\tx_err\ty_err\to_err");
   for(unsigned short i=0;i<count && i<PLAYER_FIDUCIAL_MAX_SAMPLES;i++)
     printf("%d\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n", 
 	   beacons[i].id, 
@@ -147,14 +147,14 @@ int FiducialProxy::GetConfigure()
   
   this->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1e3;
   this->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1e3;
-  this->pose[2] = DTOR((double)(int16_t) ntohs(config.pose[2]));
+  this->pose[2] = RTOD(((int16_t) ntohs(config.pose[2])));
   this->size[0] = ((int16_t) ntohs(config.size[0])) / 1e3;
   this->size[1] = ((int16_t) ntohs(config.size[1])) / 1e3;
   
   this->fiducial_size[0] = 
-    ((int16_t) ntohs(config.fiducial_size[0])) / 1000.0;
+    ((uint16_t) ntohl(config.fiducial_size[0])) / 1000.0;
   this->fiducial_size[1] = 
-    ((int16_t) ntohs(config.fiducial_size[1])) / 1000.0;
+    ((uint16_t) ntohl(config.fiducial_size[1])) / 1000.0;
   
   return 0; // OK
 }
