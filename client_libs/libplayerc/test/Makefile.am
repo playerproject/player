@@ -19,7 +19,8 @@ test_SOURCES = test.c \
                test_position.c \
                test_ptz.c \
                test_sonar.c \
-               test_truth.c
+               test_truth.c \
+               test_wifi.c
 
 clean-local:
 	rm -f test
