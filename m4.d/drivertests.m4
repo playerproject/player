@@ -130,7 +130,7 @@ PLAYER_ADD_DRIVER([cmucam2],[drivers/blobfinder/cmucam2],[no],[],[],[])
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
-PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[yes],[],[],[])
+dnl PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[no],[],[],[])
 
 
 if test "x$enable_cmvision" = "xyes"; then

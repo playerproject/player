@@ -295,7 +295,6 @@ AC_OUTPUT(Makefile
           server/drivers/blobfinder/cmvision/Makefile
           server/drivers/blobfinder/cmucam2/Makefile
           server/drivers/blobfinder/upcbarcode/Makefile
-          server/drivers/blobfinder/shapetracker/Makefile
           server/drivers/wifi/Makefile 
           server/drivers/speech/Makefile 
           server/drivers/mixed/p2os/Makefile 
@@ -343,6 +342,7 @@ AC_OUTPUT(Makefile
           utils/playerjoy/Makefile
           config/Makefile)
 
+#server/drivers/blobfinder/shapetracker/Makefile
 
 # -----------------------------------------------------------------------
 # RTK3 and playermap are currently disabled.
