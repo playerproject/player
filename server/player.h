@@ -79,6 +79,8 @@
 #define PLAYER_LOCALIZE_CODE   ((uint16_t)25)  // localization
 #define PLAYER_MCOM_CODE           ((uint16_t)26)  // multicoms
 #define PLAYER_SOUND_CODE	   ((uint16_t)27) // sound file playback
+#define PLAYER_AUDIODSP_CODE          ((uint16_t)28)   // audio dsp I/O
+#define PLAYER_AUDIOMIXER_CODE          ((uint16_t)29)   // audio I/O
 
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
@@ -111,6 +113,8 @@
 #define PLAYER_LOCALIZE_STRING   "localize"
 #define PLAYER_MCOM_STRING           "mcom"
 #define PLAYER_SOUND_STRING	    "sound"
+#define PLAYER_AUDIODSP_STRING      "audiodsp"
+#define PLAYER_AUDIOMIXER_STRING    "audiomixer"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -1083,6 +1087,153 @@ typedef struct player_audio_cmd
   /** Duration to play (sec?) */
   uint16_t duration;
 } __attribute__ ((packed)) player_audio_cmd_t;
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section audiodsp
+ *************************************************************************/
+#define PLAYER_AUDIODSP_SET_CONFIG 0x01
+#define PLAYER_AUDIODSP_GET_CONFIG 0x02
+#define PLAYER_AUDIODSP_PLAY_TONE  0x03
+#define PLAYER_AUDIODSP_PLAY_CHIRP 0x04
+#define PLAYER_AUDIODSP_REPLAY     0x05
+
+/** [Synopsis]
+The {\tt audiodsp} interface is used to control sound hardware, if equipped. */
+
+/** [Data] */
+/**
+The {\tt dsp} interface reads the audio stream from {\tt /dev/dsp} (which
+is assumed to be associated with a sound card connected to a microphone)
+and performs some analysis on it.  Five frequency/amplitude pairs are then
+returned as data; the format is: */
+typedef struct player_audiodsp_data
+{
+  /** Hz */
+  uint16_t freq[5];
+  /** Db ? */
+  uint16_t amp[5];
+
+} __attribute__ ((packed)) player_audiodsp_data_t;
+
+/** [Command] */
+/** The {\tt audiodsp} interface accepts commands to produce fixed-frequency
+tones or binary phase shift keyed(BPSK) chirps through {\tt /dev/dsp} 
+(which is assumed to be associated with a sound card to which a speaker is 
+attached); the format is:*/
+typedef struct player_audiodsp_cmd
+{
+
+  /** The packet subtype. Set to PLAYER_AUDIODSP_PLAY_TONE to play a single
+   frequency; bitString and bitStringLen do not need to be set. Set to
+   PLAYER_AUDIODSP_PLAY_CHIRP to play a BPSKeyed chirp; bitString should 
+   contain the binary string to encode, and bitStringLen set to the length of 
+   the bitString. Set to PLAYER_AUDIODSP_REPLAY to replay the last sound. **/
+  uint8_t subtype;
+
+  /** Frequency to play (Hz) */
+  uint16_t frequency;
+
+  /** Amplitude to play (dB?) */
+  uint16_t amplitude;
+
+  /** Duration to play (msec) */
+  uint32_t duration;
+
+  /** BitString to encode in sine wave */
+  unsigned char bitString[PLAYER_MAX_DEVICE_STRING_LEN];
+
+  /** Length of the bit string */
+  uint16_t bitStringLen;
+
+} __attribute__ ((packed)) player_audiodsp_cmd_t;
+
+/** [Configuration: get/set audio properties]
+
+  The audiodsp configuration can be queried using the 
+  PLAYER_AUDIODSP_GET_CONFIG request and modified using the 
+  PLAYER_AUDIODSP_SET_CONFIG request.
+
+  The sample format is defined in sys/soundcard.h, and defines the byte
+  size and endian format for each sample.
+
+  The sample rate defines the Hertz at which to sample.
+
+  Mono or stereo sampling is defined in the channels parameter where
+  1==mono and 2==stereo.
+  */
+
+/** Request/reply packet for getting and setting the audio configuration. */
+typedef struct player_audiodsp_config
+{
+  /** The packet subtype. Set this to PLAYER_AUDIODSP_SET_CONFIG to set
+      the audiodsp configuration; or set to PLAYER_AUDIODSP_GET_CONFIG to get
+      the audiodsp configuration. */
+  uint8_t subtype;
+
+  /** Format with which to sample */
+  int16_t sampleFormat;
+
+  /** Sample rate in Hertz */
+  uint16_t sampleRate;
+
+  /** Number of channels to use. 1=mono, 2=stereo */
+  uint8_t channels;
+
+} __attribute__ ((packed)) player_audiodsp_config_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section audiomixer
+ *************************************************************************/
+#define PLAYER_AUDIOMIXER_SET_MASTER 0x01
+#define PLAYER_AUDIOMIXER_SET_PCM    0x02
+#define PLAYER_AUDIOMIXER_SET_LINE   0x03
+#define PLAYER_AUDIOMIXER_SET_MIC    0x04
+#define PLAYER_AUDIOMIXER_SET_IGAIN  0x05
+#define PLAYER_AUDIOMIXER_SET_OGAIN  0x06
+
+/** [Synopsis]
+The {\tt audiomixer} interface is used to control sound levels. */
+
+/** [Configuration: get levels] */
+/**
+The {\tt audiomixe} interface provides accepts a configuration request which
+returns the current state of the mixer levels.
+*/
+typedef struct player_audiomixer_config
+{
+  uint8_t subtype;
+  uint16_t masterLeft, masterRight;
+  uint16_t pcmLeft, pcmRight;
+  uint16_t lineLeft, lineRight;
+  uint16_t micLeft, micRight;
+  uint16_t iGain, oGain;
+
+} __attribute__ ((packed)) player_audiomixer_config_t;
+
+/** [Command] */
+/** The {\tt audiomixer} interface accepts commands to set the left and
+right volume levels of various channels. The channel may be 
+PLAYER_AUDIOMIXER_MASTER for the master volume, PLAYER_AUDIOMIXER_PCM for the
+PCM volume, PLAYER_AUDIOMIXER_LINE for the line in volume, 
+PLAYER_AUDIOMIXER_MIC for the microphone volume, PLAYER_AUDIOMIXER_IGAIN for 
+the input gain, and PLAYER_AUDIOMIXER_OGAIN for the output gain.
+*/
+
+typedef struct player_audiomixer_cmd
+{
+  uint8_t subtype;
+
+  uint16_t left;
+  uint16_t right;
+
+} __attribute__ ((packed)) player_audiomixer_cmd_t;
 /*************************************************************************
  ** end section
  *************************************************************************/
