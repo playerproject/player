@@ -533,6 +533,8 @@ void CRobot::FillSonarData(unsigned char* buf, int size)
   if ( size != SONAR_DATA_BUFFER_SIZE)
   {
     puts("Size of sonar data changed - ignoring");
+
+    printf( "size is %d, expecting %d\n", size, SONAR_DATA_BUFFER_SIZE );
     return;
   }
 

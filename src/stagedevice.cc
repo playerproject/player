@@ -142,3 +142,4 @@ void CStageDevice::PutConfig(unsigned char *config, int len)
     //
     m_info_buffer[INFO_CONFIG_FLAG] = 1;
 }
+

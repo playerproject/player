@@ -112,7 +112,7 @@ caddr_t arenaIO; // the address for memory mapped IO to arena
 
 CCounter num_threads;
 
-//*** old -- remove CLaserDevice* laserDevice =  NULL;
+// devices
 CDevice *laserDevice = NULL;
 CDevice* sonarDevice = NULL;
 CDevice* visionDevice = NULL;
@@ -429,8 +429,18 @@ int main( int argc, char *argv[] )
                                    LASER_DATA_BUFFER_SIZE,
                                    LASER_COMMAND_BUFFER_SIZE,
                                    LASER_CONFIG_BUFFER_SIZE); 
-    sonarDevice =    new CArenaSonarDevice(p2osport);
-    positionDevice = new CArenaPositionDevice(p2osport);
+
+    positionDevice = new CStageDevice( arenaIO + P2OS_DATA_START,
+                                   P2OS_DATA_BUFFER_SIZE,
+                                   P2OS_COMMAND_BUFFER_SIZE,
+                                   P2OS_CONFIG_BUFFER_SIZE); 
+
+    sonarDevice =    new CStageDevice( arenaIO + SSONAR_DATA_START,
+                                   SSONAR_DATA_BUFFER_SIZE,
+                                   SSONAR_COMMAND_BUFFER_SIZE,
+                                   SSONAR_CONFIG_BUFFER_SIZE); 
+
+
     visionDevice =  new 
                    CArenaVisionDevice( visionport,visionconfigfile,useoldacts);
     ptzDevice =    new CArenaPtzDevice(ptzserialport);

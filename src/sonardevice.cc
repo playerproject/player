@@ -38,8 +38,9 @@ int CSonarDevice::GetData( unsigned char *dest ) {
    *
    *   shorts: 16 sonars
    */
-  memcpy( dest, &data[SONAR_DATA_OFFSET], SONAR_DATA_BUFFER_SIZE );
 
+  memcpy( dest, &data[SONAR_DATA_OFFSET], SONAR_DATA_BUFFER_SIZE );
+  
   return(SONAR_DATA_BUFFER_SIZE);
 }
 

@@ -166,13 +166,14 @@
 
 #define P2OS_COMMAND_BUFFER_SIZE POSITION_COMMAND_BUFFER_SIZE + \
                                  GRIPPER_COMMAND_BUFFER_SIZE
+// max size for a P2OS config request (should be big enough
+// for a raw P2OS packet)
+#define P2OS_CONFIG_BUFFER_SIZE 256
+
 
 #define POSITION_COMMAND_OFFSET 0
 #define GRIPPER_COMMAND_OFFSET POSITION_COMMAND_OFFSET + POSITION_COMMAND_BUFFER_SIZE
 
-// max size for a P2OS config request (should be big enough
-// for a raw P2OS packet)
-#define P2OS_CONFIG_BUFFER_SIZE 256
 
 /*
  * the PTZ device.  accepts commands for the PTZ camera,
@@ -182,6 +183,23 @@
  */
 #define PTZ_COMMAND_BUFFER_SIZE 3*sizeof(short)
 #define PTZ_DATA_BUFFER_SIZE 3*sizeof(short)
+#define PTZ_CONFIG_BUFFER_SIZE 0
+
+
+// RTV
+/*
+ * SSonar (Separate Sonar) stuff for stage compatibility 
+ * and consistency with other devices
+ * this is slotted in the shared buffer after the P2OS sonar device
+ */
+
+#define SSONAR_CONFIG_BUFFER_SIZE 0
+#define SSONAR_COMMAND_BUFFER_SIZE 0
+#define SSONAR_DATA_BUFFER_SIZE  16*sizeof( unsigned short )
+#define SSONAR_TOTAL_BUFFER_SIZE INFO_BUFFER_SIZE + \
+                                 SSONAR_DATA_BUFFER_SIZE + \
+                                 SSONAR_COMMAND_BUFFER_SIZE + \
+                                 SSONAR_CONFIG_BUFFER_SIZE 
 
 // RTV -----------------------------------------------------------------------
 // Player/arena interface shared memory locations
@@ -205,7 +223,8 @@
 #define P2OS_DATA_START ARENA_SUB_START + SUB_BUFFER_SIZE
 #define P2OS_COMMAND_START P2OS_DATA_START + P2OS_DATA_BUFFER_SIZE
 #define SONAR_DATA_START P2OS_COMMAND_START + P2OS_COMMAND_BUFFER_SIZE
-#define LASER_DATA_START SONAR_DATA_START + SONAR_DATA_BUFFER_SIZE
+#define SSONAR_DATA_START SONAR_DATA_START + SONAR_DATA_BUFFER_SIZE
+#define LASER_DATA_START SSONAR_DATA_START + SSONAR_TOTAL_BUFFER_SIZE
 #define PTZ_COMMAND_START LASER_DATA_START + LASER_TOTAL_BUFFER_SIZE
 #define PTZ_DATA_START PTZ_COMMAND_START + PTZ_COMMAND_BUFFER_SIZE
 #define ACTS_DATA_START PTZ_DATA_START + PTZ_DATA_BUFFER_SIZE
