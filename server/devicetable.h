@@ -31,20 +31,18 @@
 
 #include <device.h>
 #include <pthread.h>
+#include <configfile.h>
 
 // one element in a linked list
 class CDeviceEntry
 {
   public:
-    int port;            // the player tcp port to which this device is tied
     player_device_id_t id;  // id for this device
     unsigned char access;   // allowed access mode: 'r', 'w', or 'a'
-    char name[PLAYER_MAX_DEVICE_STRING_LEN]; // the string name for this device
-    CDevice* (*initfunc)(int,char**);
     CDevice* devicep;  // the device itself
     CDeviceEntry* next;  // next in list
 
-    CDeviceEntry() { name[0]='\0'; devicep = NULL; next = NULL; }
+    CDeviceEntry() { devicep = NULL; next = NULL; }
     ~CDeviceEntry() { if(devicep) delete devicep; }
 };
 
@@ -60,32 +58,18 @@ class CDeviceTable
     CDeviceTable();
     ~CDeviceTable();
     
-    // this is the 'base' AddDevice method, which sets all the fields
-    int AddDevice(player_device_id_t id, unsigned char access, 
-                  char* name, CDevice* (*initfunc)(int,char**),
-                  CDevice* devicep);
-
     // this one is used to fill the instantiated device table
     //
-    // code is the id for the device (e.g, 's' for sonar)
+    // id is the id for the device (e.g, 's' for sonar)
     // access is the access for the device (e.g., 'r' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
     int AddDevice(player_device_id_t id, unsigned char access, 
                   CDevice* devicep);
 
-    // this one sets some different fields; it's used to fill the available
-    // device table, instead of the instantiated device table
-    int AddDevice(unsigned short code, char access, char* name,
-                  CDevice* (*initfunc)(int,char**));
-
-
     // returns the controlling object for the given id 
     // (returns NULL on failure)
     CDevice* GetDevice(player_device_id_t id);
-
-    // another one; this one matches on the string name
-    CDeviceEntry* GetDeviceEntry(char* name);
 
     // returns the code for access ('r', 'w', or 'a') for the given 
     // device, or 'e' on failure

@@ -20,125 +20,37 @@ AM_INIT_AUTOMAKE(player,PLAYER_VERSION)
 dnl Change default installation prefix from /usr/local to user's home
 AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
 
-dnl Define the options of type --with-foo that configure should accept,
-dnl along with defaults.  These options are mostly used to include/exclude 
-dnl device drivers.
-AC_ARG_WITH(festival, [  --without-festival          Do not include Festival driver],,
-with_festival=yes)
-if test "x$with_festival" = "xyes"; then
-  FESTIVAL_LIB="drivers/libfestival.a"
-  AC_DEFINE(INCLUDE_FESTIVAL,1,[include the Festival driver])
-fi
-AC_SUBST(FESTIVAL_LIB)
-AM_CONDITIONAL(WITH_FESTIVAL, test x$with_festival = xyes)
-
-AC_ARG_WITH(sicklms200, [  --without-sicklms200          Do not include SICK LMS 200 driver],,
-with_sicklms200=yes)
-if test "x$with_sicklms200" = "xyes"; then
-  SICKLMS200_LIB="drivers/libsicklms200.a"
-  AC_DEFINE(INCLUDE_SICKLMS200,1,[include the SICK LMS 200 driver])
-fi
-AC_SUBST(SICKLMS200_LIB)
-AM_CONDITIONAL(WITH_SICKLMS200, test x$with_sicklms200 = xyes)
-
-AC_ARG_WITH(acts, [  --without-acts          Do not include ACTS driver],,
-with_acts=yes)
-if test "x$with_acts" = "xyes"; then
-  ACTS_LIB="drivers/libacts.a"
-  AC_DEFINE(INCLUDE_ACTS,1,[include the ACTS driver])
-fi
-AC_SUBST(ACTS_LIB)
-AM_CONDITIONAL(WITH_ACTS, test x$with_acts = xyes)
-
-AC_ARG_WITH(sonyevid30, [  --without-sonyevid30          Do not include Sony EVID 30 driver],,
-with_sonyevid30=yes)
-if test "x$with_sonyevid30" = "xyes"; then
-  SONYEVID30_LIB="drivers/libsonyevid30.a"
-  AC_DEFINE(INCLUDE_SONYEVID30,1,[include the Sony EVID 30 driver])
-fi
-AC_SUBST(SONYEVID30_LIB)
-AM_CONDITIONAL(WITH_SONYEVID30, test x$with_sonyevid30 = xyes)
-
-AC_ARG_WITH(p2os, [  --without-p2os          Do not include P2OS driver],,
-with_p2os=yes)
-if test "x$with_p2os" = "xyes"; then
-  P2OS_LIB="drivers/p2os/libp2os.a"
-  AC_DEFINE(INCLUDE_P2OS,1,[include the P2OS driver])
-fi
-AC_SUBST(P2OS_LIB)
-AM_CONDITIONAL(WITH_P2OS, test x$with_p2os = xyes)
-
-AC_ARG_WITH(udpbroadcast, [  --without-udpbroadcast          Do not include UDP broadcast driver],,
-with_udpbroadcast=yes)
-if test "x$with_udpbroadcast" = "xyes"; then
-  UDPBROADCAST_LIB="drivers/libudpbroadcast.a"
-  AC_DEFINE(INCLUDE_UDPBROADCAST,1,[include the UDP broadcast driver])
-fi
-AC_SUBST(UDPBROADCAST_LIB)
-AM_CONDITIONAL(WITH_UDPBROADCAST, test x$with_udpbroadcast = xyes)
-
-AC_ARG_WITH(laserbarcode, [  --without-laserbarcode          Do not include laser barcode driver],,
-with_laserbarcode=yes)
-if test "x$with_laserbarcode" = "xyes"; then
-  LASERBARCODE_LIB="drivers/liblaserbarcode.a"
-  AC_DEFINE(INCLUDE_LASERBARCODE,1,[include the laser barcode driver])
-fi
-AC_SUBST(LASERBARCODE_LIB)
-AM_CONDITIONAL(WITH_LASERBARCODE, test x$with_laserbarcode = xyes)
-
-AC_ARG_WITH(stage, [  --without-stage          Do not include stage driver],,
-with_stage=yes)
-if test "x$with_stage" = "xyes"; then
-  STAGE_LIB="drivers/stage/libstage.a"
-  AC_DEFINE(INCLUDE_STAGE,1,[include the stage driver])
-fi
-AC_SUBST(STAGE_LIB)
-AM_CONDITIONAL(WITH_STAGE, test x$with_stage = xyes)
-
-AC_ARG_WITH(rwi, [  --with-rwi          Include RWI driver],,
-with_rwi=no)
-if test "x$with_rwi" = "xyes"; then
-  RWI_LIB="drivers/rwi/librwi.a"
-  AC_DEFINE(INCLUDE_RWI,1,[include the RWI driver])
-  AC_DEFINE(USE_MOBILITY,1,[use the RWI Mobility interface])
-fi
-AC_SUBST(RWI_LIB)
-AM_CONDITIONAL(WITH_RWI, test x$with_rwi = xyes)
-
-AC_ARG_WITH(tests, [  --with-tests          Build tests],,
-with_tests=no)
-AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
-
-AC_ARG_WITH(fixedtones, [  --with-fixedtones          Include fixed tones driver],,
-with_fixedtones=no)
-if test "x$with_fixedtones" = "xyes"; then
-  FIXEDTONES_LIB="drivers/libfixedtones.a"
-  FIXEDTONES_EXTRA_LIB="-lrfftw -lfftw"
-  AC_DEFINE(INCLUDE_FIXEDTONES,1,[include the fixed tones driver])
-fi
-AC_SUBST(FIXEDTONES_LIB)
-AC_SUBST(FIXEDTONES_EXTRA_LIB)
-AM_CONDITIONAL(WITH_FIXEDTONES, test x$with_fixedtones = xyes)
-
-#AC_CHECK_LIB(rfftw,rfftw_one,FIXEDTONES_LIB="drivers/libfixedtones.a",,
-#-lrfftw)
-#AC_SUBST(FIXEDTONES_LIB)
-
-dnl below here are the old ones that haven't been changed
-#AC_ARG_WITH(bps, [  --without-bps          Do not include bps driver],,
-#with_bps=yes)
-#if test "x$with_bps" = "xyes"; then
-  #BPS_OBJ="bpsdevice.o"
-  #AC_DEFINE(INCLUDE_BPS,1,[include the bps driver])
-#fi
-#AC_SUBST(BPS_OBJ)
-
-
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
+
+dnl client tests are not compiled unless the user asks for them
+AC_ARG_WITH(tests, [  --with-tests          Build tests],,
+with_tests=no)
+AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
+
+dnl check for the fftw library (by way of one of its headers) and compile
+dnl the fixed tones driver if its found
+AC_CHECK_HEADER(rfftw.h, 
+  AC_DEFINE(INCLUDE_FIXEDTONES,1,[include the fixed tones driver])
+  FIXEDTONES_LIB="libfixedtones.a"
+  FIXEDTONES_LIBPATH="drivers/libfixedtones.a"
+  FIXEDTONES_EXTRA_LIB="-lrfftw -lfftw",,)
+AC_SUBST(FIXEDTONES_LIB)
+AC_SUBST(FIXEDTONES_LIBPATH)
+AC_SUBST(FIXEDTONES_EXTRA_LIB)
+
+dnl check for Mobility (by way of one of its headers) and compile
+dnl the RWI driver if it's found
+AC_CHECK_HEADER(mobilitycomponents_i.h,
+  AC_DEFINE(INCLUDE_RWI,1,[include the RWI driver])
+  AC_DEFINE(USE_MOBILITY,1,[use the RWI Mobility interface])
+  RWI_LIB="librwi.a"
+  RWI_LIBPATH="drivers/rwi/librwi.a",,)
+AC_SUBST(RWI_LIB)
+AC_SUBST(RWI_LIBPATH)
 
 dnl Checks for header files.
 #AC_HEADER_DIRENT

@@ -60,9 +60,10 @@
 #include <netinet/in.h>  /* for htons(3) */
 #include <unistd.h>
 
+#include "drivertable.h"
 #include "devicetable.h"
 #include "device.h"
-#include "messages.h"
+#include "player.h"
 
 
 // The laser beacon device class
@@ -70,7 +71,7 @@ class LaserBarcode : public CDevice
 {
 
   // Constructor
-  public: LaserBarcode(int argc, char** argv);
+  public: LaserBarcode(char* interface, ConfigFile* cf, int section);
 
   // Setup/shutdown routines
   //
@@ -124,9 +125,23 @@ class LaserBarcode : public CDevice
 };
   
 // Initialization function
-CDevice* LaserBarcode_Init(int argc, char** argv)
+CDevice* LaserBarcode_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice*)(new LaserBarcode(argc,argv)));
+  if(strcmp(interface, PLAYER_LASERBEACON_STRING))
+  {
+    PLAYER_ERROR1("driver \"laserbarcode\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new LaserBarcode(interface, cf, section)));
+}
+
+// a driver registration function
+void 
+LaserBarcode_Register(DriverTable* table)
+{
+  table->AddDriver("laserbarcode", PLAYER_READ_MODE, LaserBarcode_Init);
 }
 
 extern CDeviceTable* deviceTable;
@@ -134,27 +149,17 @@ extern int global_playerport; // used to get at devices
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserBarcode::LaserBarcode(int argc, char** argv) :
+LaserBarcode::LaserBarcode(char* interface, ConfigFile* cf, int section) :
   CDevice(0,0,0,1)
 {
   // if index is not overridden by an argument here, then we'll use the
   // device's own index, which we can get in Setup() below.
-  this->index = -1;
-  this->default_bitcount = 8;
-  this->default_bitsize = 0.05;
+  this->index = cf->ReadInt(section, "index", -1);
+  this->default_bitcount = cf->ReadInt(section, "bitcount", 8);
+  this->default_bitsize = cf->ReadFloat(section, "bitsize", 0.05);
   
-  for(int i=0; i < argc - 1; i += 2)
-  {
-    char *arg = argv[i];
-    char *val = argv[i + 1];
-    
-    if (strcmp(arg, "index") == 0)
-      this->index = atoi(val);
-    else if (strcmp(argv[i], "bitcount") == 0)
-      this->default_bitcount = atoi(val);
-    else if (strcmp(argv[i], "bitsize") == 0)
-      this->default_bitsize = atof(val);
-    
+  // FIXME: need to redo this self-test thing somehow
+  /*
 #if INCLUDE_SELFTEST
     else if (!strcmp(argv[i], "test"))
     {
@@ -175,10 +180,7 @@ LaserBarcode::LaserBarcode(int argc, char** argv) :
       }
     }
 #endif
-    else
-      fprintf(stderr, "LaserBarcode: ignoring unknown parameter \"%s\"\n",
-              argv[i]);
-  }
+   */
 }
 
 

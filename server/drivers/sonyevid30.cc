@@ -37,8 +37,8 @@
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
 #include <device.h>
-#include <playercommon.h>
-#include <messages.h>
+#include <drivertable.h>
+#include <player.h>
 
 #define PTZ_SLEEP_TIME_USEC 100000
 
@@ -88,21 +88,33 @@ class SonyEVID30:public CDevice
   /* device used to communicate with the ptz */
   char ptz_serial_port[MAX_FILENAME_SIZE]; 
 
-  SonyEVID30(int argc, char** argv);
+  SonyEVID30(char* interface, ConfigFile* cf, int section);
 
   virtual int Setup();
   virtual int Shutdown();
 };
   
 // initialization function
-CDevice* SonyEVID30_Init(int argc, char** argv)
+CDevice* SonyEVID30_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice*)(new SonyEVID30(argc,argv)));
+  if(strcmp(interface, PLAYER_PTZ_STRING))
+  {
+    PLAYER_ERROR1("driver \"sonyevid30\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new SonyEVID30(interface, cf, section)));
 }
 
+// a driver registration function
+void 
+SonyEVID30_Register(DriverTable* table)
+{
+  table->AddDriver("sonyevid30", PLAYER_ALL_MODE, SonyEVID30_Init);
+}
 
-
-SonyEVID30::SonyEVID30(int argc, char** argv) :
+SonyEVID30::SonyEVID30(char* interface, ConfigFile* cf, int section) :
   CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),0,0)
 {
   ptz_fd = -1;
@@ -117,24 +129,9 @@ SonyEVID30::SonyEVID30(int argc, char** argv) :
   PutData((unsigned char*)&data,sizeof(data),0,0);
   PutCommand((unsigned char*)&cmd,sizeof(cmd));
 
-  strncpy(ptz_serial_port,DEFAULT_PTZ_PORT,sizeof(ptz_serial_port));
-  for(int i=0;i<argc;i++)
-  {
-    if(!strcmp(argv[i],"port"))
-    {
-      if(++i<argc)
-      {
-        strncpy(ptz_serial_port, argv[i],sizeof(ptz_serial_port));
-        ptz_serial_port[sizeof(ptz_serial_port)-1] = '\0';
-      }
-      else
-        fprintf(stderr, "SonyEVID30: missing port; using default: \"%s\"\n",
-                ptz_serial_port);
-    }
-    else
-      fprintf(stderr, "SonyEVID30: ignoring unknown parameter \"%s\"\n",
-              argv[i]);
-  }
+  strncpy(ptz_serial_port,
+          cf->ReadString(section, "port", DEFAULT_PTZ_PORT),
+          sizeof(ptz_serial_port));
 }
 
 int 

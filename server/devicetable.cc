@@ -63,7 +63,6 @@ CDeviceTable::~CDeviceTable()
 // this is the 'base' AddDevice method, which sets all the fields
 int 
 CDeviceTable::AddDevice(player_device_id_t id, unsigned char access, 
-                        char* name, CDevice* (*initfunc)(int,char**),
                         CDevice* devicep)
 {
   CDeviceEntry* thisentry;
@@ -96,12 +95,6 @@ CDeviceTable::AddDevice(player_device_id_t id, unsigned char access,
 
   thisentry->id = id;
   thisentry->access = access;
-  if(name)
-  {
-    strncpy(thisentry->name,name,sizeof(thisentry->name));
-    thisentry->name[sizeof(thisentry->name)-1] = '\0';
-  }
-  thisentry->initfunc = initfunc;
   thisentry->devicep = devicep;
   if(devicep)
     devicep->device_id = id;
@@ -109,34 +102,6 @@ CDeviceTable::AddDevice(player_device_id_t id, unsigned char access,
 
   return(0);
 }
-
-// this one is used to fill the instantiated device table
-//
-// code is the id for the device (e.g, 's' for sonar)
-// access is the access for the device (e.g., 'r' for sonar)
-// devicep is the controlling object (e.g., sonarDevice for sonar)
-//  
-int 
-CDeviceTable::AddDevice(player_device_id_t id, unsigned char access, 
-                        CDevice* devicep)
-{
-  //printf("AddDevice(%d:%d:%d)\n", id.code, id.index, id.port);
-  return(AddDevice(id,access,NULL,NULL,devicep));
-}
-    
-// this one sets some different fields; it's used to fill the available
-// device table, instead of the instantiated device table
-int 
-CDeviceTable::AddDevice(unsigned short code, char access, char* name,
-                        CDevice* (*initfunc)(int,char**))
-{
-  player_device_id_t id;
-  id.code = code;
-  id.index = 0;
-  id.port = 0;
-  return(AddDevice(id,access,name,initfunc,NULL));
-}
-
 
 // returns the controlling object for the given code (or NULL
 // on failure)
@@ -166,25 +131,6 @@ CDeviceTable::GetDevice(player_device_id_t id)
   return(devicep);
 }
     
-// another one; this one matches on the string name
-CDeviceEntry* 
-CDeviceTable::GetDeviceEntry(char* name)
-{
-  CDeviceEntry* thisentry;
-  CDeviceEntry* retval = NULL;
-  pthread_mutex_lock(&mutex);
-  for(thisentry=head;thisentry;thisentry=thisentry->next)
-  {
-    if(!strcmp(thisentry->name,name))
-    {
-      retval = thisentry;
-      break;
-    }
-  }
-  pthread_mutex_unlock(&mutex);
-  return(retval);
-}
-
 // returns the code for access ('r', 'w', or 'a') for the given 
 // device, or 'e' on failure
 unsigned char 

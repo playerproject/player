@@ -30,7 +30,7 @@
 #define _STAGE_H
 
 /* get types and device-specific packet formats */
-#include <messages.h>
+#include <player.h>
 /* for playerqueue functionality (used in configuration req/rep) */
 #include <playerqueue.h>
 #include <sys/time.h> // for struct timeval

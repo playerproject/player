@@ -46,8 +46,13 @@
 #include <pthread.h>  /* for pthread stuff */
 #include <socket_util.h>
 
-#include <device.h>
-#include <messages.h>
+#include <drivertable.h>
+#include <player.h>
+
+/* don't change this unless you change the Festival init scripts as well*/
+#define DEFAULT_FESTIVAL_PORTNUM 1314
+/* change this if Festival is installed somewhere else*/
+#define DEFAULT_FESTIVAL_LIBDIR "/usr/local/festival/lib"
 
 class Festival:public CDevice 
 {
@@ -68,7 +73,7 @@ class Festival:public CDevice
     void KillFestival();
     
     // constructor 
-    Festival(int argc, char** argv);
+    Festival(char* interface, ConfigFile* cf, int section);
 
     ~Festival();
     virtual void Main();
@@ -82,9 +87,23 @@ class Festival:public CDevice
 
 
 // a factory creation function
-CDevice* Festival_Init(int argc, char** argv)
+CDevice* Festival_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice*)(new Festival(argc,argv)));
+  if(strcmp(interface, PLAYER_SPEECH_STRING))
+  {
+    PLAYER_ERROR1("driver \"festival\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new Festival(interface, cf, section)));
+}
+
+// a driver registration function
+void 
+Festival_Register(DriverTable* table)
+{
+  table->AddDriver("festival", PLAYER_WRITE_MODE, Festival_Init);
 }
 
 #define FESTIVAL_SAY_STRING_PREFIX "(SayText \""
@@ -108,50 +127,18 @@ CDevice* Festival_Init(int argc, char** argv)
 
 void QuitFestival(void* speechdevice);
 
-Festival::Festival(int argc, char** argv) :
+Festival::Festival(char* interface, ConfigFile* cf, int section) :
   CDevice(0,sizeof(player_speech_cmd_t),0,0)
 {
-  int queuelen = SPEECH_MAX_QUEUE_LEN;
+  int queuelen;
   sock = -1;
   read_pending = false;
 
-
-  portnum = DEFAULT_FESTIVAL_PORTNUM;
-  strncpy(festival_libdir_value,DEFAULT_FESTIVAL_LIBDIR,
+  portnum = cf->ReadInt(section, "port", DEFAULT_FESTIVAL_PORTNUM);
+  strncpy(festival_libdir_value,
+          cf->ReadString(section, "libdir", DEFAULT_FESTIVAL_LIBDIR),
           sizeof(festival_libdir_value));
-  for(int i=0;i<argc;i++)
-  {
-    if(!strcmp(argv[i],"port"))
-    {
-      if(++i<argc)
-        portnum = atoi(argv[i]);
-      else
-        fprintf(stderr, "Festival: missing port; using default: %d\n",
-                portnum);
-    }
-    else if(!strcmp(argv[i],"libdir"))
-    {
-      if(++i<argc)
-      {
-        strncpy(festival_libdir_value,argv[i],sizeof(festival_libdir_value));
-        festival_libdir_value[sizeof(festival_libdir_value)-1] = '\0';
-      }
-      else
-        fprintf(stderr, "Festival: missing configfile; "
-                "using default: \"%s\"\n", festival_libdir_value);
-    }
-    else if(!strcmp(argv[i],"queuelen"))
-    {
-      if(++i<argc)
-        queuelen = atoi(argv[i]);
-      else
-        fprintf(stderr, "Festival: missing queuelen; "
-                "using default: %d\n", queuelen);
-    }
-    else
-      fprintf(stderr, "Festival: ignoring unknown parameter \"%s\"\n",
-              argv[i]);
-  }
+  queuelen = cf->ReadInt(section, "queuelen", SPEECH_MAX_QUEUE_LEN);
 
   queue = new PlayerQueue(queuelen);
   assert(queue);

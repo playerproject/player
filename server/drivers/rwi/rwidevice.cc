@@ -25,7 +25,6 @@
 #include <playertime.h>
 #include <devicetable.h>
 #include <playerqueue.h>
-#include <messages.h>
 #include <string.h>
 
 extern pthread_mutex_t  CRWIDevice::rwi_counter_mutex;

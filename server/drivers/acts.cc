@@ -42,13 +42,31 @@
 #include <pthread.h>  /* for pthread stuff */
 #include <socket_util.h>
 
-#include <device.h>
-#include <messages.h>
+#include <drivertable.h>
+#include <player.h>
 
 // note: acts_version_t is declared in defaults.h
 
 #define ACTS_VERSION_1_0_STRING "1.0"
 #define ACTS_VERSION_1_2_STRING "1.2"
+
+/* a variable of this type tells the vision device how to interact with ACTS */
+typedef enum
+{
+  ACTS_VERSION_UNKNOWN = 0,
+  ACTS_VERSION_1_0 = 1,
+  ACTS_VERSION_1_2 = 2
+} acts_version_t;
+#define DEFAULT_ACTS_PORT 5001
+/* default is to use older ACTS (until we change our robots) */
+#define DEFAULT_ACTS_VERSION ACTS_VERSION_1_0
+#define DEFAULT_ACTS_CONFIGFILE "/usr/local/acts/actsconfig"
+/* default is to give no path for the binary; in this case, use execvp() 
+ * and user's PATH */
+#define DEFAULT_ACTS_PATH ""
+#define DEFAULT_ACTS_WIDTH 160
+#define DEFAULT_ACTS_HEIGHT 120
+/********************************************************************/
 
 class Acts:public CDevice 
 {
@@ -82,9 +100,7 @@ class Acts:public CDevice
 
     // constructor 
     //
-    //    takes argc,argv from command-line args
-    //
-    Acts(int argc, char** argv);
+    Acts(char* interface, ConfigFile* cf, int section);
 
     virtual void Main();
 
@@ -95,9 +111,23 @@ class Acts:public CDevice
 };
 
 // a factory creation function
-CDevice* Acts_Init(int argc, char** argv)
+CDevice* Acts_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice*)(new Acts(argc,argv)));
+  if(strcmp(interface, PLAYER_VISION_STRING))
+  {
+    PLAYER_ERROR1("driver \"acts\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new Acts(interface, cf, section)));
+}
+
+// a driver registration function
+void 
+Acts_Register(DriverTable* table)
+{
+  table->AddDriver("acts", PLAYER_READ_MODE, Acts_Init);
 }
 
 #define ACTS_REQUEST_QUIT '1'
@@ -113,72 +143,31 @@ CDevice* Acts_Init(int argc, char** argv)
 void QuitACTS(void* visiondevice);
 
 
-Acts::Acts(int argc, char** argv)
+Acts::Acts(char* interface, ConfigFile* cf, int section)
   : CDevice(sizeof(player_vision_data_t),0,0,0)
 {
   char tmpstr[MAX_FILENAME_SIZE];
+
   sock = -1;
 
-  strncpy(configfilepath,DEFAULT_ACTS_CONFIGFILE,sizeof(configfilepath));
-  strncpy(binarypath,DEFAULT_ACTS_PATH,sizeof(binarypath));
-  acts_version = DEFAULT_ACTS_VERSION;
-  portnum=DEFAULT_ACTS_PORT;
-
-  this->width = 160;
-  this->height = 120;
-
-  for(int i=0;i<argc;i++)
+  strncpy(configfilepath, 
+          cf->ReadString(section, "configfile", DEFAULT_ACTS_CONFIGFILE),
+          sizeof(configfilepath));
+  strncpy(binarypath,
+          cf->ReadString(section, "path", DEFAULT_ACTS_PATH),
+          sizeof(binarypath));
+  strncpy(tmpstr,
+          cf->ReadString(section, "version", ACTS_VERSION_1_0_STRING),
+          sizeof(tmpstr));
+  if((acts_version = version_string_to_enum(tmpstr)) == ACTS_VERSION_UNKNOWN)
   {
-    if(!strcmp(argv[i],"port"))
-    {
-      if(++i<argc)
-        portnum = atoi(argv[i]);
-      else
-        fprintf(stderr, "Acts: missing port; using default: %d\n",
-                portnum);
-    }
-    else if(!strcmp(argv[i],"configfile"))
-    {
-      if(++i<argc)
-      {
-        strncpy(configfilepath,argv[i],sizeof(configfilepath));
-        configfilepath[sizeof(configfilepath)-1] = '\0';
-      }
-      else
-        fprintf(stderr, "Acts: missing configfile; "
-                "using default: \"%s\"\n", configfilepath);
-    }
-    else if(!strcmp(argv[i],"path"))
-    {
-      if(++i<argc)
-      {
-        strncpy(binarypath,argv[i],sizeof(binarypath));
-        binarypath[sizeof(binarypath)-1] = '\0';
-      }
-      else
-        fputs("Acts: missing path to executable; "
-                "will look for 'acts' in your PATH.\n",stderr);
-    }
-    else if(!strcmp(argv[i],"version"))
-    {
-      version_enum_to_string(acts_version,tmpstr,sizeof(tmpstr));
-
-      if(++i<argc)
-      {
-        if(version_string_to_enum(argv[i]) == ACTS_VERSION_UNKNOWN)
-          fprintf(stderr, "Acts: unknown ACTS version given; "
-                          "using default: \"%s\"\n", tmpstr);
-        else
-          acts_version = version_string_to_enum(argv[i]);
-      }
-      else
-        fprintf(stderr, "Acts: missing version string; "
-                "using default: \"%s\"\n", tmpstr);
-    }
-    else
-      fprintf(stderr, "Acts: ignoring unknown parameter \"%s\"\n",
-              argv[i]);
+    PLAYER_WARN2("unknown version \"%s\"; using default \"%s\"",
+                 tmpstr, ACTS_VERSION_1_0_STRING);
+    acts_version = version_string_to_enum(ACTS_VERSION_1_0_STRING);
   }
+  portnum=cf->ReadInt(section, "port", DEFAULT_ACTS_PORT);
+  width = cf->ReadInt(section, "width", DEFAULT_ACTS_WIDTH);
+  height = cf->ReadInt(section, "height", DEFAULT_ACTS_HEIGHT);
 
   // set up some version-specific parameters
   switch(acts_version)

@@ -39,8 +39,7 @@
 #include <pthread.h>
 
 #include <device.h>
-#include <playercommon.h>
-#include <messages.h>
+#include <player.h>
 #include <netinet/in.h>  // for htonl()
 
 #ifdef USE_MOBILITY

@@ -50,12 +50,13 @@
 extern PlayerTime* GlobalTime;
 
 #include "device.h"
-#include "messages.h"
+#include "drivertable.h"
+#include "player.h"
 
 class UDPBroadcast : public CDevice
 {
   // Constructor
-  public: UDPBroadcast(int argc, char** argv);
+  public: UDPBroadcast(char* interface, ConfigFile* cf, int section);
 
   // Override the subscribe/unsubscribe calls, since we need to
   // maintain our own subscription list.
@@ -123,7 +124,7 @@ class UDPBroadcast : public CDevice
   private: queue_t **qlist;
   
   // Address and port to broadcast on
-  private: char *addr;
+  private: char addr[MAX_FILENAME_SIZE];
   private: int port;
 
   // Write socket info
@@ -136,43 +137,41 @@ class UDPBroadcast : public CDevice
 };
  
 // Init function
-CDevice* UDPBroadcast_Init(int argc, char** argv)
+CDevice* UDPBroadcast_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice*)(new UDPBroadcast(argc,argv)));
+  if(strcmp(interface, PLAYER_BROADCAST_STRING))
+  {
+    PLAYER_ERROR1("driver \"udpbroadcast\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new UDPBroadcast(interface, cf, section)));
 }
   
-
+// a driver registration function
+void 
+UDPBroadcast_Register(DriverTable* table)
+{
+  table->AddDriver("udpbroadcast", PLAYER_ALL_MODE, UDPBroadcast_Init);
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
-UDPBroadcast::UDPBroadcast(int argc, char** argv) :
+UDPBroadcast::UDPBroadcast(char* interface, ConfigFile* cf, int section) :
   CDevice(0,0,0,100)
 {
   this->max_queue_size = 100;
-  this->addr = DEFAULT_BROADCAST_IP;
-  this->port = DEFAULT_BROADCAST_PORT;
   this->read_socket = 0;
   this->write_socket = 0;
 
-  for (int i = 0; i < argc; i++)
-  {
-    if (strcmp(argv[i], "addr") == 0 && i + 1 < argc)
-    {
-      this->addr = strdup(argv[i + 1]);
-      i++;
-    }
-    else if (strcmp(argv[i], "port") == 0 && i + 1 < argc)
-    {
-      this->port = atoi(argv[i + 1]);
-      i++;
-    }   
-    else
-    {
-      PLAYER_ERROR("broadcast device: invalid command line; ignoring");
-      break;
-    }
-  }
+  strncpy(this->addr,
+          cf->ReadString(section, "addr", DEFAULT_BROADCAST_IP),
+          sizeof(this->addr));
+  this->port = cf->ReadInt(section, "port", DEFAULT_BROADCAST_PORT);
+
   PLAYER_TRACE2("broadcasting on %s:%d", this->addr, this->port);
+  printf("broadcasting on %s:%d", this->addr, this->port);
 }
 
 
