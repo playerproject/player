@@ -81,10 +81,6 @@ class LaserCSpace : public CDevice
   // Handle geometry requests.
   private: void HandleGetGeom(void *client, void *req, int reqlen);
 
-  // Device pose relative to robot.
-  private: double pose[3];
-  private: double size[2];
-  
   // Laser stuff.
   private: int laser_index;
   private: CDevice *laser_device;
@@ -131,11 +127,7 @@ void LaserCSpace_Register(DriverTable* table)
 LaserCSpace::LaserCSpace(char* interface, ConfigFile* cf, int section)
     : CDevice(0, 0, 0, 1)
 {
-  // Device pose relative to robot.
-  this->pose[0] = 0;
-  this->pose[1] = 0;
-  this->pose[2] = 0;
-
+  // Info for the underlying laser device.
   this->laser_index = cf->ReadInt(section, "laser", 0);
   this->laser_device = NULL;
   this->laser_timesec = 0;
@@ -181,14 +173,6 @@ int LaserCSpace::Setup()
     return(-1);
   }
 
-  // Get the laser geometry.
-  // TODO: no support for this at the moment.
-  this->pose[0] = 0.10;
-  this->pose[1] = 0;
-  this->pose[2] = 0;
-  this->size[0] = 0.15;
-  this->size[1] = 0.15;
-
   return 0;
 }
 
@@ -205,7 +189,7 @@ int LaserCSpace::Shutdown()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Get data from buffer (called by client thread)
+// Get data from buffer (called by server thread)
 size_t LaserCSpace::GetData(void* client, unsigned char *dest, size_t maxsize,
                             uint32_t* timesec, uint32_t* timeusec)
 {
@@ -253,8 +237,10 @@ int LaserCSpace::UpdateLaser()
   this->data.max_angle = this->laser_data.max_angle;
   this->data.range_count = this->laser_data.range_count;
 
+  // Do some precomputations to save time
   this->Precompute();
-  
+
+  // Generate the range estimate for each bearing.
   for (i = 0; i < this->laser_data.range_count; i++)
   {
     r = this->FreeRange(i);
@@ -351,8 +337,6 @@ double LaserCSpace::FreeRange(int n)
     h = nr - sqrt(this->radius * this->radius - d * d);
     if (h < max_r)
       max_r = h;
-
-    //printf("%d %d %f %f %f %f\n", n, i, s, d, r, max_r);
   }
 
   // Clip negative ranges.
@@ -364,7 +348,7 @@ double LaserCSpace::FreeRange(int n)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Put configuration in buffer (called by client thread)
+// Put configuration in buffer (called in server thread)
 int LaserCSpace::PutConfig(player_device_id_t* device, void *client, void *data, size_t len) 
 {
   uint8_t subtype;
@@ -389,23 +373,22 @@ int LaserCSpace::PutConfig(player_device_id_t* device, void *client, void *data,
 // Handle geometry requests.
 void LaserCSpace::HandleGetGeom(void *client, void *request, int len)
 {
-  player_laser_geom_t geom;
-
-  if (len != 1)
+  unsigned short reptype;
+  struct timeval ts;
+  player_laser_geom_t rep;
+  int replen;
+    
+  // Get the geometry from the laser
+  replen = this->laser_device->Request(&this->laser_device->device_id, this, request, len,
+                                       &reptype, &ts, &rep, sizeof(rep));
+  if (replen <= 0 || replen != sizeof(rep))
   {
-    PLAYER_ERROR2("geometry request len is invalid (%d != %d)", len, 1);
+    PLAYER_ERROR("unable to get geometry from laser device");
     if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
       PLAYER_ERROR("PutReply() failed");
-    return;
   }
-
-  geom.pose[0] = htons((short) (this->pose[0] * 1000));
-  geom.pose[1] = htons((short) (this->pose[1] * 1000));
-  geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
-  geom.size[0] = htons((short) (this->size[0] * 1000));
-  geom.size[1] = htons((short) (this->size[1] * 1000));
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
+    
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ts, &rep, sizeof(rep)) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
