@@ -13,7 +13,7 @@
 # in the server binary (it's printed out on console when Player runs, and
 # sent back to the client when it connects), and is used below to construct
 # the directory name for installation.
-PLAYER_VERSION = 1.1.1gamma
+PLAYER_VERSION = 1.1.1beta
 
 #######################################
 # Compiler selection
