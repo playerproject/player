@@ -14,9 +14,10 @@ playerv_SOURCES = playerv.c \
                   dev_fiducial.c \
                   dev_laser.c \
                   dev_position.c \
+                  dev_power.c \
                   dev_ptz.c \
                   dev_sonar.c \
-		  dev_localization.c \
+								  dev_localization.c \
                   error.h \
                   opt.c \
                   opt.h
