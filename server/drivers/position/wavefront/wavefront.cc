@@ -25,13 +25,10 @@
 #include <netinet/in.h>
 
 #include "player.h"
-#include "playertime.h"
 #include "device.h"
 #include "drivertable.h"
 #include "devicetable.h"
 #include "plan.h"
-
-extern PlayerTime* GlobalTime;
 
 // TODO: monitor localize timestamps, and slow or stop robot accordingly
 
@@ -72,7 +69,7 @@ class Wavefront : public CDevice
     int l_window_ptr;
 
     // for monitoring localize timestamps
-    double l_lag;
+    double l_time, p_time;
 
     // the plan object
     plan_t* plan;
@@ -91,6 +88,10 @@ class Wavefront : public CDevice
     double position_x, position_y, position_a;
     // current localize pose
     double localize_x, localize_y, localize_a;
+    // current extrapolated localize pose
+    double extrap_lx, extrap_ly, extrap_la;
+    // current velocity (inferred from localize pose estimates)
+    double loc_tv, loc_rv;
 
     // methods for internal use
     int SetupLocalize();
@@ -172,6 +173,8 @@ int Wavefront::Setup()
   this->target_x = this->target_y = this->target_a = 0.0;
   this->position_x = this->position_y = this->position_a = 0.0;
   this->localize_x = this->localize_y = this->localize_a = 0.0;
+  this->extrap_lx = this->extrap_ly = this->extrap_la = 0.0;
+  this->loc_tv = this->loc_rv = 0.0;
   this->new_goal = false;
   memset(this->lx_window,0,sizeof(this->lx_window));
   memset(this->ly_window,0,sizeof(this->ly_window));
@@ -301,6 +304,7 @@ Wavefront::GetLocalizeData()
   unsigned int timesec, timeusec;
   static unsigned int last_timesec = 0;
   static unsigned int last_timeusec = 0;
+  double timediff;
   double lx,ly,la;
   double dist;
   double lx_sum, ly_sum;
@@ -312,19 +316,12 @@ Wavefront::GetLocalizeData()
     return;
 
   // is this new data?
-  /*
   if((last_timesec == timesec) && (last_timeusec == timeusec))
     return;
 
-  last_timesec = timesec;
-  last_timeusec = timeusec;
+  this->loc_tv = this->loc_rv = 0.0;
 
-  if(GlobalTime->GetTime(&curr) < 0)
-    PLAYER_ERROR("GetTime() failed!");
-
-  this->l_lag = (curr.tv_sec + curr.tv_usec / 1e6) - 
-          (timesec + timeusec / 1e6);
-          */
+  this->l_time = timesec + timeusec / 1e6;
 
   // just take the first hypothesis, on the assumption that it's the
   // highest weight.
@@ -358,12 +355,28 @@ Wavefront::GetLocalizeData()
   // should we use this pose?
   if(dist < LOCALIZE_WINDOW_EPSILON)
   {
+    // if this isn't the first time, then compute velocities for
+    // extrapolation
+    if(last_timesec || last_timeusec)
+    {
+      timediff = (timesec + timeusec/1e6) - (last_timesec + last_timeusec/1e6);
+      dist = sqrt((lx-this->localize_x)*(lx-this->localize_x) +
+                  (ly-this->localize_y)*(ly-this->localize_y));
+      this->loc_tv = dist / timediff;
+      this->loc_rv = (la-this->localize_a)/timediff;
+    }
+
     this->localize_x = lx;
     this->localize_y = ly;
     this->localize_a = la;
   }
   else
     PLAYER_WARN3("discarding pose %f,%f,%f", lx,ly,la);
+
+
+  last_timesec = timesec;
+  last_timeusec = timeusec;
+
 
   // regardless, add it to the running window sum
   this->lx_window[this->l_window_ptr] = lx;
@@ -378,10 +391,21 @@ Wavefront::GetPositionData()
 {
   player_position_data_t data;
   unsigned int timesec, timeusec;
+  static unsigned int last_timesec = 0;
+  static unsigned int last_timeusec = 0;
 
   if(!this->position->GetData(this,(unsigned char*)&data,sizeof(data),
                               &timesec, &timeusec))
     return;
+
+  // is this new data?
+  if((last_timesec == timesec) && (last_timeusec == timeusec))
+    return;
+
+  last_timesec = timesec;
+  last_timeusec = timeusec;
+
+  this->p_time = timesec + timeusec / 1e6;
   
   this->position_x = ((int)ntohl(data.xpos))/1e3;
   this->position_y = ((int)ntohl(data.ypos))/1e3;
@@ -411,9 +435,9 @@ Wavefront::LocalizeToPosition(double* px, double* py, double* pa,
   double offset_x, offset_y, offset_a;
   double lx_rot, ly_rot;
 
-  offset_a = NORMALIZE(this->position_a - this->localize_a);
-  lx_rot = this->localize_x * cos(offset_a) - this->localize_y * sin(offset_a);
-  ly_rot = this->localize_x * sin(offset_a) + this->localize_y * cos(offset_a);
+  offset_a = NORMALIZE(this->position_a - this->extrap_la);
+  lx_rot = this->extrap_lx * cos(offset_a) - this->extrap_ly * sin(offset_a);
+  ly_rot = this->extrap_lx * sin(offset_a) + this->extrap_ly * cos(offset_a);
 
   offset_x = this->position_x - lx_rot;
   offset_y = this->position_y - ly_rot;
@@ -430,6 +454,7 @@ Wavefront::StopPosition()
 {
   puts("stopping robot");
   PutPositionCommand(this->position_x,this->position_y,this->position_a);
+  this->loc_tv = this->loc_rv = 0.0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -439,6 +464,7 @@ void Wavefront::Main()
   int curr_waypoint;
   double dist, angle;
   double wx_odom, wy_odom, wa_odom;
+  double lag;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -459,16 +485,26 @@ void Wavefront::Main()
     GetCommand();
 
     // if localize gets too far behind, stop the robot to let it catch up
-/*
-    if(this->l_lag > LOCALIZE_MAX_LAG)
+    lag = this->p_time - this->l_time;
+    /*
+    if(lag > LOCALIZE_MAX_LAG)
     {
-      PLAYER_WARN("stopping robot to let localize catch up");
-      printf("lag: %f\n", this->l_lag);
+      PLAYER_WARN1("stopping robot to let localize catch up; lag: %f",lag);
       StopPosition();
       usleep(CYCLE_TIME_US);
       continue;
     }
-*/
+    */
+
+    // extrapolate, very simply, pose based on last velocity
+    dist = this->loc_tv * lag;
+    this->extrap_lx = this->localize_x + dist * cos(this->localize_a);
+    this->extrap_ly = this->localize_y + dist * sin(this->localize_a);
+    this->extrap_la = this->localize_a + this->loc_rv * lag;
+    printf("loc   : %f,%f,%f\n", this->localize_x, this->localize_y, 
+           this->localize_a);
+    printf("extrap: %f,%f,%f\n", this->extrap_lx, this->extrap_ly,
+           this->extrap_la);
 
     if(this->new_goal)
     {
@@ -476,7 +512,8 @@ void Wavefront::Main()
       plan_update_plan(this->plan, this->target_x, this->target_y);
       
       // compute a path to the goal from the current position
-      plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
+      //plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
+      plan_update_waypoints(this->plan, this->extrap_lx, this->extrap_ly);
 
       curr_waypoint = 0;
       if(!plan_get_waypoint(this->plan,curr_waypoint++,
@@ -503,13 +540,13 @@ void Wavefront::Main()
       this->new_goal = false;
     }
       
-    dist = sqrt(((this->localize_x - this->target_x) *
-                 (this->localize_x - this->target_x)) +
-                ((this->localize_y - this->target_y) *
-                 (this->localize_y - this->target_y)));
-    angle = fabs(this->localize_a - this->target_a);
-    printf("angle: %f\teps:%f\n", angle, this->ang_eps);
-    printf("dist: %f\teps:%f\n", dist, this->dist_eps);
+    dist = sqrt(((this->extrap_lx - this->target_x) *
+                 (this->extrap_lx - this->target_x)) +
+                ((this->extrap_ly - this->target_y) *
+                 (this->extrap_ly - this->target_y)));
+    angle = fabs(this->extrap_la - this->target_a);
+    //printf("angle: %f\teps:%f\n", angle, this->ang_eps);
+    //printf("dist: %f\teps:%f\n", dist, this->dist_eps);
     if(dist < this->dist_eps && angle < this->ang_eps)
     {
       // we're at the final target, so stop
@@ -525,12 +562,12 @@ void Wavefront::Main()
     }
     else
     {
-      printf("pursuing waypoint %d\n", curr_waypoint);
-      // are we there yet?
-      dist = sqrt(((this->localize_x - this->waypoint_x) * 
-                   (this->localize_x - this->waypoint_x)) +
-                  ((this->localize_y - this->waypoint_y) *
-                   (this->localize_y - this->waypoint_y)));
+      //printf("pursuing waypoint %d\n", curr_waypoint);
+      // are we there yet?  ignore angle, cause this is just a waypoint
+      dist = sqrt(((this->extrap_lx - this->waypoint_x) * 
+                   (this->extrap_lx - this->waypoint_x)) +
+                  ((this->extrap_ly - this->waypoint_y) *
+                   (this->extrap_ly - this->waypoint_y)));
       if(dist < this->dist_eps)
       {
         // get next waypoint
