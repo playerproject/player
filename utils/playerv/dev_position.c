@@ -236,8 +236,8 @@ void position_servo_pos(position_t *self)
   gy = self->proxy->py + rx * sin(self->proxy->pa) + ry * cos(self->proxy->pa);
   ga = self->proxy->pa + ra;
 
-  // Set the new speed
-  playerc_position_set_pose(self->proxy, gx, gy, ga);
+  // Set the new goal pose
+  playerc_position_set_cmd_pose(self->proxy, gx, gy, ga);
 
   // Dont draw the path
   rtk_fig_clear(self->path_fig);

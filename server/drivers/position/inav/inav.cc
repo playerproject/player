@@ -171,6 +171,9 @@ class INav : public CDevice
   private: double map_scale;
   private: inav_vector_t map_pose;
 
+  // Fitting
+  private: int fit_enable;
+
   // Local controller
   private: icon_t *con;
   private: inav_vector_t goal_pose;
@@ -184,7 +187,7 @@ class INav : public CDevice
   private: rtk_fig_t *robot_fig;
   private: rtk_fig_t *path_fig;
 #endif
-
+ 
 };
 
 
@@ -245,6 +248,9 @@ INav::INav(char* interface, ConfigFile* cf, int section)
                          this->map_scale, 0.30, 0.20);
 
   this->map_pose = inav_vector_zero();
+
+  // Enable/disable fitting
+  this->fit_enable = cf->ReadInt(section, "fit_enable", 1);
 
   // Create the controller
   this->con = icon_alloc(this->map, 0.30);
@@ -563,13 +569,15 @@ void INav::UpdatePose()
     this->map_pose.v[1] += dj * this->map_scale;
   }
 
-  // TODO: dont use all laser values
-  
-  // Compute the best fit between the laser scan and the map.
-  pose = this->inc_pose;
-  imap_fit_ranges(this->map, pose.v, this->laser_geom_pose.v,
-                  this->laser_count, this->laser_ranges);
-  this->inc_pose = pose;
+  if (this->fit_enable)
+  {
+    // TODO: dont use all laser values
+    // Compute the best fit between the laser scan and the map.
+    pose = this->inc_pose;
+    imap_fit_ranges(this->map, pose.v, this->laser_geom_pose.v,
+                    this->laser_count, this->laser_ranges);
+    this->inc_pose = pose;
+  }
     
   // Update the map with the current range readings
   imap_add_ranges(this->map, this->inc_pose.v, this->laser_geom_pose.v,
@@ -578,14 +586,6 @@ void INav::UpdatePose()
   // TODO: filter this
   // Estimate the robot velocity
   this->inc_vel = this->odom_vel;
-
-  /*
-  // TESTING
-  static int count;
-  char filename[64];
-  snprintf(filename, sizeof(filename), "imap_%04d.pgm", count++);
-  imap_save_occ(this->map, filename);
-  */
 
   return;
 }
