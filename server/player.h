@@ -302,10 +302,10 @@ typedef struct
 } __attribute__ ((packed)) player_gripper_data_t;
 /*************************************************************************/
 
-/*************************************************************************/
-/*
- * Position interface
- */
+
+/*************************************************************************
+ * begin section position
+ *************************************************************************/
 
 /* Position device command buffer */
 typedef struct
@@ -414,7 +414,10 @@ typedef struct
   int16_t speed; //max speed
   int16_t acc; //max acceleration
 } __attribute__ ((packed)) player_position_speed_prof_req_t;
-/*************************************************************************/
+
+/*************************************************************************
+ * end section
+ *************************************************************************/
 
 
 /*************************************************************************/
@@ -463,82 +466,129 @@ typedef struct
 } __attribute__ ((packed)) player_sonar_power_config_t;
 /*************************************************************************/
 
-/*************************************************************************/
-/*
- * Scanning range-finder (laser) interface
+
+/*************************************************************************
+ ** begin section laser
+ *************************************************************************/
+
+/** [Synopsis]
+
+    The laser interface provides access to a single-origin scanning range
+    sensor, such as a SICK laser range-finder.
+*/
+
+/** [Constants]
  */
 
+/** The maximum number of laser range values */
 #define PLAYER_LASER_MAX_SAMPLES  401
 
-/* The laser data packet. */
-typedef struct
-{
-  /* Start and end angles for the laser scan (in units of 0.01 degrees). */
-  int16_t min_angle;
-  int16_t max_angle;
-
-  /* Angular resolution (in units of 0.01 degrees).  */
-  uint16_t resolution;
-
-  /* Range readings.  <range_count> specifies the number of valid
-   * readings.  Note that some drivers can produce negative range values. */
-  uint16_t range_count;
-  int16_t ranges[PLAYER_LASER_MAX_SAMPLES];
-
-  /* Intensity readings. */
-  uint8_t intensity[PLAYER_LASER_MAX_SAMPLES];
-     
-} __attribute__ ((packed)) player_laser_data_t;
-
-
-/* Laser request subtypes. */
+/** Laser request subtypes. */
 #define PLAYER_LASER_GET_GEOM   0x01
 #define PLAYER_LASER_SET_CONFIG 0x02
 #define PLAYER_LASER_GET_CONFIG 0x03
 #define PLAYER_LASER_POWER_CONFIG 0x04
 
-/* laser geometry packet. */
-typedef struct
+/** [Data]
+    Devices supporting the {\tt laser} interface can be configured to
+    scan at different angles and resolutions.  As such, the data
+    returned by the {\tt laser} interface can take different forms.
+    To make interpretation of the data simple, the {\tt laser} data
+    packet contains some extra fields before the actual range data.
+    These fields tell the client the starting and ending angles of the
+    scan, the angular resolution of the scan, and the number of range
+    readings included.  Scans proceed counterclockwise about the
+    laser, and $0^{\circ}$ is forward.  The laser can return a maximum
+    of 401 readings; this limits the valid combinations of scan width
+    and angular resolution.
+*/
+
+/** The laser data packet.  */
+typedef struct player_laser_data
 {
-  /* The packet subtype.  Must be PLAYER_LASER_GET_GEOM. */
+  /** Start and end angles for the laser scan (in units of 0.01
+      degrees).  */
+  int16_t min_angle;
+  int16_t max_angle;
+
+  /** Angular resolution (in units of 0.01 degrees).  */
+  uint16_t resolution;
+
+  /** Number of range/intensity readings.  */
+  uint16_t range_count;
+
+  /** Range readings (mm). Note that some drivers can produce negative
+      values.  */
+  int16_t ranges[PLAYER_LASER_MAX_SAMPLES];
+
+  /** Intensity readings. */
+  uint8_t intensity[PLAYER_LASER_MAX_SAMPLES];
+     
+} __attribute__ ((packed)) player_laser_data_t;
+
+
+/** [Commands]
+    This device accepts no commands.
+*/
+
+/** [Configuration]
+    The laser interface accepts the following configuration requests.
+*/
+
+/** Get the laser geometry. */
+typedef struct player_laser_geom
+{
+  /** The packet subtype.  Must be PLAYER_LASER_GET_GEOM. */
   uint8_t subtype;
 
-  /* laser pose, in robot cs (mm, mm, radians). */
+  /** Laser pose, in robot cs (mm, mm, degrees). */
   int16_t pose[3];
 
-  /* laser dimensions (mm, mm). */
+  /** Laser dimensions (mm, mm). */
   int16_t size[2];
   
 } __attribute__ ((packed)) player_laser_geom_t;
 
 
-/* laser configuration packet. */
-typedef struct
+/** Set or get the laser configuration. */
+typedef struct player_laser_config
 {
-  /* The packet subtype.  Set this to PLAYER_LASER_SET_CONFIG to set
-   * the laser configuration; or set to PLAYER_LASER_GET_CONFIG to get
-   * the laser configuration.  */
+  /** The packet subtype.  Set this to PLAYER_LASER_SET_CONFIG to set
+      the laser configuration; or set to PLAYER_LASER_GET_CONFIG to get
+      the laser configuration.  */
   uint8_t subtype;
 
-  /* Start and end angles for the laser scan (in units of 0.01
-   * degrees).  Valid range is -9000 to +9000.  */
+  /** Start and end angles for the laser scan (in units of 0.01
+      degrees).  Valid range is -9000 to +9000.  */
   int16_t min_angle;
   int16_t max_angle;
 
-  /* Scan resolution (in units of 0.01 degrees).  Valid resolutions
-   * are 25, 50, 100.  */
+  /** Scan resolution (in units of 0.01 degrees).  Valid resolutions
+      are 25, 50, 100.  */
   uint16_t resolution;
 
-  /* Enable reflection intensity data. */
+  /** Enable reflection intensity data. */
   uint8_t  intensity;
+  
 } __attribute__ ((packed)) player_laser_config_t;
 
-typedef struct
+
+/** Turn the laser power on or off. */
+typedef struct player_laser_power_config
 {
-  uint8_t subtype; // must be PLAYER_LASER_POWER_CONFIG
-  uint8_t value;  // 0 or 1
+  /** Must be PLAYER_LASER_POWER_CONFIG. */
+  uint8_t subtype;
+
+  /** 0 to turn laser off, 1 to turn laser on */
+  uint8_t value;
+  
 } __attribute__ ((packed)) player_laser_power_config_t;
-/*************************************************************************/
+
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
 
 /*************************************************************************/
 /*
