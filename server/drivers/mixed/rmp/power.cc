@@ -84,6 +84,13 @@ RMPPower::Setup()
 int
 RMPPower::Shutdown()
 {
+  int ret;
+
+  if ((ret = segway->Shutdown()) < 0) {
+    PLAYER_ERROR1("RMPPOWER: error on canio shutdown (%d)\n",ret);
+    return -1;
+  }
+
   return 0;
 }
 
