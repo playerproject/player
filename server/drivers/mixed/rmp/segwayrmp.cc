@@ -245,8 +245,7 @@ SegwayRMP::SegwayRMP(char* interface, ConfigFile* cf, int section)
 
 SegwayRMP::~SegwayRMP()
 {
-  if(canio)
-    delete canio;
+  Shutdown();
 }
 
 int
@@ -280,6 +279,12 @@ SegwayRMP::Setup()
 int
 SegwayRMP::Shutdown()
 {
+  printf("segwayrmp: Shutting down CAN bus...");
+  fflush(stdout);
+  
+  // TODO: segfaulting in here somewhere on client disconnect, but only 
+  // sometimes.
+  
   // send zero velocities, for some semblance of safety
   CanPacket pkt;
 
@@ -293,6 +298,7 @@ SegwayRMP::Shutdown()
   motor_enabled = false;
   last_xspeed = last_yawspeed = 0;
   
+  puts("done.");
   return(0);
 }
 
@@ -597,9 +603,10 @@ SegwayRMP::Read()
       // available to player...
       if(data_frame[channel].IsReady()) 
       {
-        // only bother doing the data conversions for one channel, picking
-        // 0 arbitrarily
-        if(channel == 0)
+        // Only bother doing the data conversions for one channel.
+        // It appears that the data on channel 0 is garbarge, so we'll read
+        // from channel 1.
+        if(channel == 1)
         {
           // xpos is fore/aft integrated position?
           // change from counts to mm
@@ -611,29 +618,35 @@ SegwayRMP::Read()
           // change from counts to milli-degrees
           position_data.ypos = 
                   htonl((uint32_t)rint(((double)data_frame[channel].pitch / 
-                                        (double)RMP_COUNT_PER_DEG) * 1000.0));
+                                        (double)RMP_COUNT_PER_DEG) 
+                                       * 1000.0));
 
           // yaw is integrated yaw
           // not sure about this one..
-          // from counts/rev to degrees.  one rev is 360 degree?
+          // from counts to degrees.
+          // TODO: handle rollover of yaw counter.
           position_data.yaw = 
-                  htonl((uint32_t) rint(((double)data_frame[channel].yaw /
-                                         (double)RMP_COUNT_PER_REV) * 360.0));
+                  htonl(((uint32_t) rint(((double)data_frame[channel].yaw /
+                                         (double)RMP_COUNT_PER_REV) * 360.0))
+                        % 360);
 
-          // don't know the conversion yet...
-          // change from counts/m/s into mm/s
+          // combine left and right wheel velocity to get foreward velocity
+          // change from counts/s into mm/s
           position_data.xspeed = 
-                  htonl((uint32_t)rint(((double)data_frame[channel].left_dot / 
-                                        (double)RMP_COUNT_PER_M_PER_S)*1000.0 ));
+                  htonl((uint32_t)rint(((double)data_frame[channel].left_dot +
+                                        (double)data_frame[channel].right_dot) /
+                                       (double)RMP_COUNT_PER_M_PER_S 
+                                       * 1000.0 / 2.0));
 
-          position_data.yspeed = 
-                  htonl((uint32_t)rint(((double)data_frame[channel].right_dot / 
-                                        (double)RMP_COUNT_PER_M_PER_S)*1000.0));
+          // no side speeds for this bot
+          position_data.yspeed = 0;
 
-          // from counts/deg/sec into mill-deg/sec
+          // from counts/sec into deg/sec.  also, take the additive
+          // inverse, since the RMP reports clockwise angular velocity as
+          // positive.
           position_data.yawspeed = 
-                  htonl((uint32_t)(rint(((double)data_frame[channel].yaw_dot / 
-                                         (double)RMP_COUNT_PER_DEG_PER_S))*1000.0) );
+                  htonl((uint32_t)(-rint((double)data_frame[channel].yaw_dot / 
+                                         (double)RMP_COUNT_PER_DEG_PER_S)));
 
           position_data.stall = 0;
 
