@@ -323,7 +323,6 @@ Stage interprets black pixels as free and white pixels as obstacles).
 
 
 @todo
-
 - Get the laser's pose from the laser, using the GET_GEOM request.
 - Implement / update other sensor models
 
