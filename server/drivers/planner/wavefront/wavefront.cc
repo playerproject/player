@@ -311,7 +311,7 @@ class Wavefront : public Driver
     void GetCommand();
     void GetLocalizeData();
     void GetPositionData();
-    void PutPositionCommand(double x, double y, double a);
+    void PutPositionCommand(double x, double y, double a, unsigned char type);
     void PutPlannerData();
     void StopPosition();
     void LocalizeToPosition(double* px, double* py, double* pa,
@@ -643,16 +643,27 @@ Wavefront::PutPlannerData()
 }
 
 void
-Wavefront::PutPositionCommand(double x, double y, double a)
+Wavefront::PutPositionCommand(double x, double y, double a, unsigned char type)
 {
   player_position_cmd_t cmd;
 
   memset(&cmd,0,sizeof(cmd));
 
-  cmd.xpos = htonl((int)rint(x*1e3));
-  cmd.ypos = htonl((int)rint(y*1e3));
-  cmd.yaw = htonl((int)rint(RTOD(a)));
-  cmd.type=1;
+  if(type)
+  {
+    // position control
+    cmd.xpos = htonl((int)rint(x*1e3));
+    cmd.ypos = htonl((int)rint(y*1e3));
+    cmd.yaw = htonl((int)rint(RTOD(a)));
+  }
+  else
+  {
+    // velocity control (used to stop the robot
+    cmd.xspeed = htonl((int)rint(x*1e3));
+    cmd.yspeed = htonl((int)rint(y*1e3));
+    cmd.yawspeed = htonl((int)rint(RTOD(a)));
+  }
+  cmd.type=type;
   cmd.state=1;
 
   this->position->PutCommand(this->position_id,
@@ -686,7 +697,8 @@ Wavefront::StopPosition()
   if(!this->stopped)
   {
     //puts("stopping robot");
-    PutPositionCommand(this->position_x,this->position_y,this->position_a);
+    //PutPositionCommand(this->position_x,this->position_y,this->position_a);
+    PutPositionCommand(0,0,0,0);
     this->stopped = true;
   }
 }
@@ -700,7 +712,7 @@ Wavefront::SetWaypoint(double wx, double wy, double wa)
   LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, wx, wy, wa);
 
   // hand down waypoint
-  PutPositionCommand(wx_odom, wy_odom, wa_odom);
+  PutPositionCommand(wx_odom, wy_odom, wa_odom,1);
 
   // cache this waypoint, odometric coords
   this->waypoint_odom_x = wx_odom;
@@ -871,8 +883,6 @@ void Wavefront::Main()
            < M_PI/4.0)) ||
          (!rotate_waypoint && (dist < this->dist_eps)))
       {
-        this->new_goal = false;
-
         this->newData = true;
         if(this->curr_waypoint == this->waypoint_count)
         {
@@ -896,8 +906,9 @@ void Wavefront::Main()
             (this->waypoint_y - this->localize_y));
         angle = atan2(this->waypoint_y - this->localize_y, 
             this->waypoint_x - this->localize_x);
-        if((dist > this->dist_eps) &&
-            fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0)
+        if(this->new_goal ||
+	   ((dist > this->dist_eps) &&
+            fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0))
         {
           this->waypoint_x = this->localize_x;
           this->waypoint_y = this->localize_y;
@@ -908,6 +919,7 @@ void Wavefront::Main()
         else
           rotate_waypoint=false;
 
+        this->new_goal = false;
       }
       
       SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
