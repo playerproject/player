@@ -1,7 +1,7 @@
 SUBDIRS = pf map models
 
 if INCLUDE_RTKGUI
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @GSL_CFLAGS@ @RTK_CFLAGS@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @GSL_CFLAGS@ -I$(top_srcdir)/rtk2 @GTK_CFLAGS@
 else
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @GSL_CFLAGS@
 endif

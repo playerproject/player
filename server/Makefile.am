@@ -2,6 +2,12 @@ SUBDIRS = drivers
 
 AM_CPPFLAGS = -Wall @GAZEBO_EXTRA_CPPFLAGS@ -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace
 
+if INCLUDE_RTKGUI
+RTKGUI_LIBS=-L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@
+else
+RTKGUI_LIBS=
+endif
+
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = player.pc
@@ -13,7 +19,7 @@ player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 # separate lines with backslashes.  It makes the link line look like shit and 
 # hard to parse.  - BPG
 #
-player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ $(top_builddir)/client_libs/libplayerpacket/libplayerpacket.a @PLAYER_DRIVER_EXTRA_LIBS@ @RTK_LIBS@ $(top_builddir)/replace/libreplace.a 
+player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ $(top_builddir)/client_libs/libplayerpacket/libplayerpacket.a @PLAYER_DRIVER_EXTRA_LIBS@ $(RTKGUI_LIBS) $(top_builddir)/replace/libreplace.a 
 
 player_LDFLAGS = -Wl -export-dynamic
 
