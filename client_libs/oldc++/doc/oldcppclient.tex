@@ -1,5 +1,6 @@
 \documentclass[11pt]{article}
 \usepackage{fullpage}
+\usepackage{graphics}
 
 \def\VERSION {1.2}
 \def\DEFAULTPORT {6665}
@@ -11,13 +12,20 @@
 
 \titlepage
 
-\begin{flushright}
-\begin{tabular}{r}
-{\bf USC Robotics Laboratory}\\
-University of Southern California\\
-Los Angeles, California, USA\\
+\begin{tabular}{lcr}
+  \begin{tabular}{c}
+	Player/Stage project\\
+        \includegraphics{notext_ps_logo}
+   \end{tabular}
+  &
+  \hspace{5cm}
+  &
+  \begin{tabular}{r}
+    {\bf USC Robotics Laboratory}\\
+    University of Southern California\\
+    Los Angeles, California, USA\\
+  \end{tabular}
 \end{tabular}
-\end{flushright}
 
 \vspace{5cm}
 \centerline{\huge{{\em Old} C++ Client}}
