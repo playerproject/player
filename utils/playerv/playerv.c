@@ -78,6 +78,7 @@ playerv can visualize data from the following kinds of devices:
 - @ref player_interface_ir
 - @ref player_interface_laser
 - @ref player_interface_localize
+- @ref player_interface_map
 - @ref player_interface_position
 - @ref player_interface_power
 - @ref player_interface_ptz
