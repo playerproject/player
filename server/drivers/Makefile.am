@@ -4,7 +4,6 @@ audiodsp \
 audiomixer \
 blobfinder \
 camera \
-comms \
 fiducial \
 gazebo \
 gps \

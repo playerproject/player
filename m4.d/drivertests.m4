@@ -37,11 +37,10 @@ AC_DEFUN([name_caps],translit($1,[a-z],[A-Z]))
 
 dnl TESTING
 dnl AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)
+
 ifelse($3,[yes],
-  [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],,
-                 enable_$1=yes)],
-  [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,
-                 enable_$1=no)])
+  [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],,enable_$1=yes)],
+  [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],,enable_$1=no)])
 
 failed_header_check=no
 failed_package_check=no
@@ -125,7 +124,7 @@ PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[yes],
 
 PLAYER_ADD_DRIVER([garminnmea],[drivers/gps],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([bumpersafe],[drivers/position/bumpersafe],[no],[],[],[])
+PLAYER_ADD_DRIVER([bumpersafe],[drivers/position/bumpersafe],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],[],[],[])
 
@@ -136,7 +135,7 @@ PLAYER_ADD_DRIVER([logfile],[drivers/shell],[yes],[zlib.h],[],[-lz])
 
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([er],[drivers/mixed/evolution/er1],[yes],[asm/ioctls.h],[],[])
+PLAYER_ADD_DRIVER([er1],[drivers/mixed/evolution/er1],[no],[asm/ioctls.h],[],[])
 
 PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],[],[],[])
 
@@ -145,7 +144,7 @@ if  test "x$enable_sicklms200" = "xyes"; then
 	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
-PLAYER_ADD_DRIVER([sickpls],[drivers/laser],[no],[],[],[])
+PLAYER_ADD_DRIVER([sickpls],[drivers/laser],[yes],[],[],[])
 if  test "x$enable_sickpls" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
@@ -167,13 +166,15 @@ PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[yes],[],[],[])
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
-PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[no],[opencv/cv.h],[],["-lopencv"])
+PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[no],
+                  [],[],[],[OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[no],[],[],[])
+PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
 
@@ -183,13 +184,11 @@ PLAYER_ADD_DRIVER([trogdor],[drivers/mixed/botrics],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([udpbroadcast],[drivers/comms],[yes],[],[],[])
-
 PLAYER_ADD_DRIVER([lasercspace],[drivers/laser],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],[linux/wireless.h],[],[])
 
-PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[yes],[rfftw.h],[],
+PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[no],[rfftw.h],[],
                   ["-lrfftw -lfftw"])
 
 PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[yes],
@@ -203,7 +202,7 @@ AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],
 MOBILITY_DIR=$with_mobility,
 MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
 
-PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],
+PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[no],
                   [$MOBILITY_DIR/include/mbylistbase.h],
                   ["-I$MOBILITY_DIR/include -I$MOBILITY_DIR/tools/include -DUSE_MOBILITY -D__x86__ -D__linux__ -D__OSVERSION__=2"],
                   ["-L$MOBILITY_DIR/lib -L$MOBILITY_DIR/tools/lib -lmby -lidlmby -lomniDynamic2 -lomniORB2 -ltcpwrapGK -lomnithread"])
@@ -232,9 +231,6 @@ PLAYER_ADD_DRIVER([khepera],[drivers/mixed/khepera],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],[gsl/gsl_version.h],[],
-                  ["-lgsl -lgslcblas"])
-
 PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
 PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[no],[],[],[])
@@ -250,7 +246,7 @@ PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbw],[drivers/fiducial],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([linuxjoystick],[drivers/joystick],[no],)
+PLAYER_ADD_DRIVER([linuxjoystick],[drivers/joystick],[yes],)
 
 dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
@@ -269,7 +265,7 @@ AC_LANG_RESTORE
 
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
 PLAYER_ADD_DRIVER([service_adv_mdns],[drivers/service_adv],[yes],
-                  [],[],[],[HOWL],[howl >= 0.9.5])
+                  [],[],[],[HOWL],[howl = 0.9.5])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so

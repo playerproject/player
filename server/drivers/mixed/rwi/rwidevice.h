@@ -38,7 +38,7 @@
 
 #include <pthread.h>
 
-#include <device.h>
+#include <driver.h>
 #include <configfile.h>
 #include <player.h>
 #include <netinet/in.h>  // for htonl()
@@ -51,7 +51,7 @@
 #include <mobilityactuator_i.h>
 #endif // USE_MOBILITY
 
-class CRWIDevice : public CDevice  {
+class CRWIDevice : public Driver  {
 
 public:
 	CRWIDevice (char* interface, ConfigFile* cf, int section,

@@ -87,7 +87,7 @@ int AMCLImu::Setup(void)
   id.code = PLAYER_POSITION3D_CODE;
   id.index = this->imu_index;
 
-  this->device = deviceTable->GetDevice(id);
+  this->device = deviceTable->GetDriver(id);
   if (!this->device)
   {
     PLAYER_ERROR("unable to locate suitable imu device");

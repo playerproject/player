@@ -40,7 +40,7 @@
 #include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -48,10 +48,10 @@
 
 
 // Incremental navigation driver
-class GzFiducial : public CDevice
+class GzFiducial : public Driver
 {
   // Constructor
-  public: GzFiducial(char* interface, ConfigFile* cf, int section);
+  public: GzFiducial(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzFiducial();
@@ -65,10 +65,14 @@ class GzFiducial : public CDevice
                                  uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo device id
   private: char *gz_id;
@@ -85,34 +89,30 @@ class GzFiducial : public CDevice
 
 
 // Initialization function
-CDevice* GzFiducial_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzFiducial_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_fiducial\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzFiducial(interface, cf, section)));
+  return ((Driver*) (new GzFiducial(cf, section)));
 }
 
 
 // a driver registration function
 void GzFiducial_Register(DriverTable* table)
 {
-  table->AddDriver("gz_fiducial", PLAYER_ALL_MODE, GzFiducial_Init);
+  table->AddDriver("gz_fiducial", GzFiducial_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzFiducial::GzFiducial(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_fiducial_data_t), 0, 10, 10)
+GzFiducial::GzFiducial(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_ALL_MODE,
+             sizeof(player_fiducial_data_t), 0, 10, 10)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -184,9 +184,9 @@ size_t GzFiducial::GetData(void* client, unsigned char* dest, size_t len,
       break;
 
     data.fiducials[i].id = htons((int) fid->id);
-    data.fiducials[i].pose[0] = htons((int) (fid->pose[0] * 1000.0));
-    data.fiducials[i].pose[1] = htons((int) (fid->pose[1] * 180 / M_PI));
-    data.fiducials[i].pose[2] = htons((int) (fid->pose[2] * 180 / M_PI));
+    data.fiducials[i].pos[0] = htonl((int) (fid->pose[0] * 1000.0));
+    data.fiducials[i].pos[1] = htonl((int) (fid->pose[1] * 1000.0));
+    data.fiducials[i].rot[2] = htonl((int) (fid->pose[2] * 1000.0));
   }
   data.count = htons(i);
   
@@ -215,7 +215,9 @@ size_t GzFiducial::GetData(void* client, unsigned char* dest, size_t len,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzFiducial::PutCommand(void* client, unsigned char* src, size_t len)
+void GzFiducial::PutCommand(player_device_id_t id,
+                            void* src, size_t len,
+                            struct timeval* timestamp)
 {  
   return;
 }
@@ -223,11 +225,13 @@ void GzFiducial::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzFiducial::PutConfig(player_device_id_t* device, void* client, void* data, size_t len)
+int GzFiducial::PutConfig(player_device_id_t id, void *client, 
+                          void* src, size_t len,
+                          struct timeval* timestamp)
 {
   uint8_t subtype;
 
-  subtype = ((uint8_t*) data)[0];
+  subtype = ((uint8_t*) src)[0];
   switch (subtype)
   {
     case PLAYER_FIDUCIAL_GET_GEOM:
@@ -244,14 +248,14 @@ int GzFiducial::PutConfig(player_device_id_t* device, void* client, void* data, 
       rep.fiducial_size[0] = htons((int) (0.05 * 1000));
       rep.fiducial_size[1] = htons((int) (0.50 * 1000));
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &rep, sizeof(rep)) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &rep, sizeof(rep),NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
 
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }

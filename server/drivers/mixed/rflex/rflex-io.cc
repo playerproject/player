@@ -167,7 +167,7 @@ bytesWaiting( int sd )
 }    
 
 void 
-DEVICE_set_params( Device dev )
+DEVICE_set_params( RFLEX_Device dev )
 {
   struct termios  ctio;
 
@@ -197,7 +197,7 @@ DEVICE_set_params( Device dev )
 }
 
 void 
-DEVICE_set_baudrate( Device dev, int brate )
+DEVICE_set_baudrate( RFLEX_Device dev, int brate )
 {
   struct termios  ctio;
 
@@ -211,7 +211,7 @@ DEVICE_set_baudrate( Device dev, int brate )
 }
 
 int
-DEVICE_connect_port( Device *dev )
+DEVICE_connect_port( RFLEX_Device *dev )
 {
   if ( ( dev->fd =
 	 open( (dev->ttyport), (O_RDWR | O_NOCTTY),0) ) < 0 ) {

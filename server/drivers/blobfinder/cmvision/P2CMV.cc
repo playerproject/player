@@ -26,6 +26,11 @@
  * Uses CMVision to retrieve the blob data
  */
 
+/*
+ * TODO: remove the whole capture interface, and just call GetData directly
+ * on the underlying camera device.
+ */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
@@ -57,7 +62,7 @@
 #define DEFAULT_CMV_HEIGHT CMV_DEFAULT_HEIGHT
 /********************************************************************/
 
-class CMVisionBF:public CDevice 
+class CMVisionBF:public Driver 
 {
   private:
     int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
@@ -77,7 +82,7 @@ class CMVisionBF:public CDevice
   public:
 
     // constructor 
-    CMVisionBF(char* interface, ConfigFile* cf, int section);
+    CMVisionBF( ConfigFile* cf, int section);
 
     virtual void Main();
 
@@ -86,27 +91,21 @@ class CMVisionBF:public CDevice
 };
 
 // a factory creation function
-CDevice* CMVision_Init(char* interface, ConfigFile* cf, int section)
+Driver* CMVision_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
-  {
-    PLAYER_ERROR1("driver \"cmvision\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new CMVisionBF(interface, cf, section)));
+  return((Driver*)(new CMVisionBF( cf, section)));
 }
 
 // a driver registration function
 void 
 CMVision_Register(DriverTable* table)
 {
-  table->AddDriver("cmvision", PLAYER_READ_MODE, CMVision_Init);
+  table->AddDriver("cmvision", CMVision_Init);
 }
 
-CMVisionBF::CMVisionBF(char* interface, ConfigFile* cf, int section)
-  :CDevice(sizeof(player_blobfinder_data_t),0,0,0)
+CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
+  :Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE,
+          sizeof(player_blobfinder_data_t),0,0,0)
 {
   vision=NULL;
   cap=NULL;
@@ -160,7 +159,7 @@ CMVisionBF::Setup()
   memset(&dummy,0,sizeof(dummy));
   // zero the data buffer
   PutData((unsigned char*)&dummy,
-          sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
+          sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),NULL);
 
   puts("done.");	
 
@@ -330,7 +329,7 @@ CMVisionBF::Main()
       /* got the data. now fill it in */
       PutData((unsigned char*)&local_data, 
 	      (PLAYER_BLOBFINDER_HEADER_SIZE + 
-	       num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),0,0);
+	       num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),NULL);
     }
 
   pthread_exit(NULL);

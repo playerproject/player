@@ -30,16 +30,25 @@ def test_position():
 
 
 
-def test_laser(client):
+def test_laser(client, index):
+    """Basic test of the laser interface."""
 
-    laser = playerc_laser_create(c, 0)
+    laser = playerc_laser(client, index)
 
-    if playerc_laser_subscribe(laser, PLAYERC_READ_MODE) != 0:
+    if laser.subscribe(PLAYERC_READ_MODE) != 0:
         raise playerc_error_str()    
 
-    while 1:
-        proxy = playerc_client_read(c)
-        print laser.scan
+    for i in range(10):
+
+        while 1:
+            id = client.read()
+            if id == laser.info.id:
+                break
+
+        print "laser: [%14.3f] [%d] " % (laser.info.datatime, laser.scan_count),
+        for i in range(3):
+            print "[%6.3f, %6.3f] " % (laser.scan[i][0], laser.scan[i][1]),
+        print
     
     return
 
@@ -48,6 +57,8 @@ def test_laser(client):
 if __name__ == '__main__':
 
     server = ('localhost', 6665)
+    test = 'laser'
+    index = 0
 
     # Connect to server
     c = playerc_client(None, 'localhost', 6665)
@@ -64,9 +75,4 @@ if __name__ == '__main__':
               (devinfo.port, playerc_lookup_name(devinfo.code),
                devinfo.index, devinfo.drivername)
 
-    # TESTING
-    sys.exit(0)
-
-    devices = [('wifi', 0)]
-    for device in devices:
-        eval('test_%s(c, device[1])' % device[0])
+    eval('test_%s(c, index)' % test)

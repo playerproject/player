@@ -44,11 +44,9 @@
 #define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->size_x) && (j >= 0) && (j < mf->size_y))
 #define NEW_MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->new_size_x) && (j >= 0) && (j < mf->new_size_y))
 
-extern CDeviceTable* deviceTable;
-
 extern int global_playerport;
 
-class MapScale : public CDevice
+class MapScale : public Driver
 {
   private:
     double resolution;
@@ -71,26 +69,20 @@ class MapScale : public CDevice
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapScale(int index, double new_resolution);
+    MapScale(ConfigFile* cf, int section, int index, double new_resolution);
     ~MapScale();
-    virtual int Setup();
-    virtual int Shutdown();
-    virtual int PutConfig(player_device_id_t* device, void* client,
-                          void* data, size_t len);
+    int Setup();
+    int Shutdown();
+    int PutConfig(player_device_id_t id, void *client, 
+                  void* src, size_t len,
+                  struct timeval* timestamp);
 };
 
-CDevice*
-MapScale_Init(char* interface, ConfigFile* cf, int section)
+Driver*
+MapScale_Init(ConfigFile* cf, int section)
 {
   int index;
   double resolution;
-
-  if(strcmp(interface, PLAYER_MAP_STRING))
-  {
-    PLAYER_ERROR1("driver \"mapscale\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
 
   if((index = cf->ReadInt(section,"map_index",-1)) < 0)
   {
@@ -103,20 +95,21 @@ MapScale_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
 
-  return((CDevice*)(new MapScale(index, resolution)));
+  return((Driver*)(new MapScale(cf, section, index, resolution)));
 }
 
 // a driver registration function
 void 
 MapScale_Register(DriverTable* table)
 {
-  table->AddDriver("mapscale", PLAYER_READ_MODE, MapScale_Init);
+  table->AddDriver("mapscale", MapScale_Init);
 }
 
 
 // this one has no data or commands, just configs
-MapScale::MapScale(int index, double res) :
-  CDevice(0,0,100,100)
+MapScale::MapScale(ConfigFile* cf, int section, int index, double res) :
+  Driver(cf, section, PLAYER_MAP_CODE, PLAYER_READ_MODE,
+         0,0,100,100)
 {
   this->mapdata = this->new_mapdata = NULL;
   this->size_x = this->size_y = 0;
@@ -141,18 +134,19 @@ MapScale::Setup()
 }
 
 // get the map from the underlying map device
+// TODO: should Unsubscribe from the map on error returns in the function
 int
 MapScale::GetMap()
 {
   player_device_id_t map_id;
-  CDevice* mapdevice;
+  Driver* mapdevice;
 
   // Subscribe to the map device
   map_id.port = global_playerport;
   map_id.code = PLAYER_MAP_CODE;
   map_id.index = this->map_index;
 
-  if(!(mapdevice = deviceTable->GetDevice(map_id)))
+  if(!(mapdevice = deviceTable->GetDriver(map_id)))
   {
     PLAYER_ERROR("unable to locate suitable map device");
     return(-1);
@@ -162,7 +156,7 @@ MapScale::GetMap()
     PLAYER_ERROR("tried to subscribe to self; specify a *different* map index");
     return(-1);
   }
-  if(mapdevice->Subscribe(this) != 0)
+  if(mapdevice->Subscribe(map_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to map device");
     return(-1);
@@ -179,9 +173,9 @@ MapScale::GetMap()
   player_map_info_t info;
   struct timeval ts;
   info.subtype = PLAYER_MAP_GET_INFO_REQ;
-  if((replen = mapdevice->Request(&map_id, this, &info, 
-                                  sizeof(info.subtype), &reptype, 
-                                  &ts, &info, sizeof(info))) == 0)
+  if((replen = mapdevice->Request(map_id, this, 
+                                  &info, sizeof(info.subtype), NULL,
+                                  &reptype, &info, sizeof(info),&ts)) == 0)
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
@@ -223,9 +217,10 @@ MapScale::GetMap()
 
     reqlen = sizeof(data_req) - sizeof(data_req.data);
 
-    if((replen = mapdevice->Request(&map_id, this, &data_req, reqlen,
-                                    &reptype, &ts, &data_req, 
-                                    sizeof(data_req))) == 0)
+    if((replen = mapdevice->Request(map_id, this, 
+                                    &data_req, reqlen, NULL,
+                                    &reptype, &data_req, 
+                                    sizeof(data_req), &ts)) == 0)
     {
       PLAYER_ERROR("failed to get map info");
       return(-1);
@@ -255,7 +250,7 @@ MapScale::GetMap()
   }
 
   // we're done with the map device now
-  if(mapdevice->Unsubscribe(this) != 0)
+  if(mapdevice->Unsubscribe(map_id) != 0)
     PLAYER_WARN("unable to unsubscribe from map device");
 
   // Read data
@@ -370,31 +365,31 @@ MapScale::Shutdown()
 
 // Process configuration requests
 int 
-MapScale::PutConfig(player_device_id_t* device, void* client,
-                   void* data, size_t len)
+MapScale::PutConfig(player_device_id_t id, void *client, 
+                   void* src, size_t len,
+                   struct timeval* timestamp)
 {
   // Discard bogus empty packets
   if(len < 1)
   {
     PLAYER_WARN("got zero length configuration request; ignoring");
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
-    Unlock();
     return(0);
   }
 
   // Process some of the requests immediately
-  switch(((char*) data)[0])
+  switch(((unsigned char*) src)[0])
   {
     case PLAYER_MAP_GET_INFO_REQ:
-      HandleGetMapInfo(client, data, len);
+      HandleGetMapInfo(client, src, len);
       break;
     case PLAYER_MAP_GET_DATA_REQ:
-      HandleGetMapData(client, data, len);
+      HandleGetMapData(client, src, len);
       break;
     default:
       PLAYER_ERROR("got unknown config request; ignoring");
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }
@@ -416,7 +411,7 @@ MapScale::HandleGetMapInfo(void *client, void *request, int len)
   if(len != reqlen)
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -424,7 +419,7 @@ MapScale::HandleGetMapInfo(void *client, void *request, int len)
   if(this->new_mapdata == NULL)
   {
     PLAYER_ERROR("NULL map data");
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -436,7 +431,7 @@ MapScale::HandleGetMapInfo(void *client, void *request, int len)
   info.height = htonl((uint32_t) (this->new_size_y));
 
   // Send map info to the client
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &info, sizeof(info)) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &info, sizeof(info),NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -458,7 +453,7 @@ MapScale::HandleGetMapData(void *client, void *request, int len)
   if(len != reqlen)
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -505,9 +500,9 @@ MapScale::HandleGetMapData(void *client, void *request, int len)
   }
     
   // Send map info to the client
-  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &data, 
+  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &data, 
               sizeof(data) - sizeof(data.data) + 
-              ntohl(data.width) * ntohl(data.height)) != 0)
+              ntohl(data.width) * ntohl(data.height),NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
   return;
 }

@@ -40,11 +40,11 @@
 #include <unistd.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
-#include <replace/replace.h>
+#include <replace.h>
 
 #define PTZ_SLEEP_TIME_USEC 100000
 
@@ -71,7 +71,7 @@
 #define VISCA_COMMAND_CODE	0x01
 #define VISCA_INQUIRY_CODE	0x09
 
-class SonyEVID30:public CDevice 
+class SonyEVID30:public Driver 
 {
  protected:
   bool command_pending1;  // keep track of how many commands are pending;
@@ -113,23 +113,16 @@ protected:
 
 public:
 
-  SonyEVID30(char* interface, ConfigFile* cf, int section);
+  SonyEVID30( ConfigFile* cf, int section);
 
   virtual int Setup();
   virtual int Shutdown();
 };
   
 // initialization function
-CDevice* SonyEVID30_Init(char* interface, ConfigFile* cf, int section)
+Driver* SonyEVID30_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_PTZ_STRING))
-  {
-    PLAYER_ERROR1("driver \"sonyevid30\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new SonyEVID30(interface, cf, section)));
+  return((Driver*)(new SonyEVID30( cf, section)));
 }
 
 /* how to make this work for multiple cameras...
@@ -159,11 +152,12 @@ CDevice* SonyEVID30_Init(char* interface, ConfigFile* cf, int section)
 void 
 SonyEVID30_Register(DriverTable* table)
 {
-  table->AddDriver("sonyevid30", PLAYER_ALL_MODE, SonyEVID30_Init);
+  table->AddDriver("sonyevid30",  SonyEVID30_Init);
 }
 
-SonyEVID30::SonyEVID30(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
+  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
+         sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
   ptz_fd = -1;
   command_pending1 = false;
@@ -184,8 +178,8 @@ SonyEVID30::SonyEVID30(char* interface, ConfigFile* cf, int section) :
   data.pan = data.tilt = data.zoom = 0;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
-  PutData((unsigned char*)&data,sizeof(data),0,0);
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutData((void*)&data,sizeof(data),NULL);
+  PutCommand((void*)&cmd,sizeof(cmd),NULL);
 
   strncpy(ptz_serial_port,
           cf->ReadString(section, "port", DEFAULT_PTZ_PORT),
@@ -275,7 +269,7 @@ SonyEVID30::Setup()
   puts("Done.");
 
   // zero the command buffer
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutCommand((void*)&cmd,sizeof(cmd),NULL);
 
   // start the thread to talk with the camera
   StartThread();
@@ -745,11 +739,11 @@ SonyEVID30::HandleConfig(void *client, unsigned char *buffer, size_t len)
     // check whether command or inquiry...
     if (cfg->config[0] == VISCA_COMMAND_CODE) {
       if (SendCommand(cfg->config, length) < 0) {
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK)) {
+	if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
 	  PLAYER_ERROR("SONYEVI: Failed to PutReply\n");
 	}
       } else {
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK)) {
+	if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL)) {
 	  PLAYER_ERROR("SONYEVI: Failed to PutReply\n");
 	}
       }
@@ -758,8 +752,8 @@ SonyEVID30::HandleConfig(void *client, unsigned char *buffer, size_t len)
       length = SendRequest(cfg->config, length, cfg->config);
       cfg->length = htons(length);
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
-		   cfg, sizeof(player_ptz_generic_config_t))) {
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+		   cfg, sizeof(player_ptz_generic_config_t), NULL)) {
 	PLAYER_ERROR("SONYEVI: Failed to PutReply\n");
       }
     }
@@ -796,7 +790,7 @@ SonyEVID30::Main()
   
   while(1) {
     pthread_testcancel();
-    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    GetCommand((void*)&command, sizeof(player_ptz_cmd_t),NULL);
     pthread_testcancel();
     
     if(pandemand != (short)ntohs((unsigned short)(command.pan)))
@@ -882,14 +876,16 @@ SonyEVID30::Main()
     
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
+    PutData((void*)&data, sizeof(player_ptz_data_t),NULL);
     
     newpantilt = false;
     newzoom = false;
     
 
     // check for config requests 
-    if ((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer))) > 0) {
+    if((buffer_len = 
+        GetConfig(&client,(void*)buffer,sizeof(buffer),NULL)) > 0) 
+    {
       
       if (HandleConfig(client, (uint8_t *)buffer, buffer_len) < 0) {
 	fprintf(stderr, "SONYEVI: error handling config request\n");

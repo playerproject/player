@@ -170,7 +170,7 @@ int playerc_position3d_get_geom(playerc_position3d_t *device)
 // Set the robot speed
 int playerc_position3d_set_velocity(playerc_position3d_t *device, 
                      double vx, double vy, double vz,
-                     double vr, double vp, double vt)
+                     double vr, double vp, double vt, int state)
 {
   player_position3d_cmd_t cmd;
 
@@ -182,6 +182,8 @@ int playerc_position3d_set_velocity(playerc_position3d_t *device,
   cmd.rollspeed = htonl((int) (vr * 1000.0));
   cmd.pitchspeed = htonl((int) (vp * 1000.0));
   cmd.yawspeed = htonl((int) (vt * 1000.0));
+
+  cmd.state = state;
 
   return playerc_client_write(device->info.client,
                      &device->info, &cmd, sizeof(cmd));
@@ -210,9 +212,9 @@ int playerc_position3d_set_pose(playerc_position3d_t *device,
 
 /** For compatibility with old position3d interface */
 int playerc_position3d_set_speed(playerc_position3d_t *device,
-                                 double vx, double vy, double vz)
+                                 double vx, double vy, double vz, int state)
 {
-  playerc_position3d_set_velocity(device,vx,vy,vz,0,0,0);
+  playerc_position3d_set_velocity(device,vx,vy,vz,0,0,0, state);
 }
 
 /** For compatibility with old position3d interface */

@@ -30,7 +30,7 @@
 class StgPosition:public Stage1p4
 {
 public:
-  StgPosition(char* interface, ConfigFile* cf, int section );
+  StgPosition( ConfigFile* cf, int section );
   
   // override GetData
   virtual size_t GetData(void* client, unsigned char* dest, size_t len,
@@ -52,7 +52,7 @@ protected:
 
 // METHODS ///////////////////////////////////////////////////////////////
 
-StgPosition::StgPosition(char* interface, ConfigFile* cf, int section ) 
+StgPosition::StgPosition( ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, 
 	      sizeof(player_position_data_t), sizeof(player_position_cmd_t), 1, 1 )
 {
@@ -61,23 +61,23 @@ StgPosition::StgPosition(char* interface, ConfigFile* cf, int section )
   PLAYER_TRACE1( "constructing StgPosition with interface %s", interface );
 }
 
-CDevice* StgPosition_Init(char* interface, ConfigFile* cf, int section)
+Driver* StgPosition_Init( ConfigFile* cf, int section)
 {
   PLAYER_MSG0( "STG_POSITION INIT" );
     
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp( PLAYER_POSITION_STRING))
     {
       PLAYER_ERROR1("driver \"stg_position\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((CDevice*)(new StgPosition(interface, cf, section)));
+    return((Driver*)(new StgPosition( cf, section)));
 }
 	      
 void StgPosition_Register(DriverTable* table)
 {
-  table->AddDriver("stg_position", PLAYER_ALL_MODE, StgPosition_Init);
+  table->AddDriver("stg_position",  StgPosition_Init);
 }
 
 size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
@@ -107,11 +107,11 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
       //printf( "getdata called at %lu ms\n", stage_client->stagetime );
       
       // publish this data
-      CDevice::PutData( &position_data, sizeof(position_data), 0,0 ); 
+      Driver::PutData( &position_data, sizeof(position_data), 0,0 ); 
     }
   
-      // now inherit the standard data-getting behavior 
-  return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  // now inherit the standard data-getting behavior 
+  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
 }
   
 void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)

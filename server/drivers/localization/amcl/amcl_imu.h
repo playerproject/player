@@ -59,7 +59,7 @@ class AMCLImu : public AMCLSensor
   
   // Device info
   private: int imu_index;
-  private: CDevice *device;
+  private: Driver *device;
 
   // Imuetry sensor/action model
   private: imu_model_t *model;

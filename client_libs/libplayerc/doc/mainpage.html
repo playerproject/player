@@ -1,17 +1,18 @@
 
 
-/** \mainpage libplayerc client library reference
+/** @mainpage libplayerc client library reference
 
 libplayerc is a client library for the Player robot device server.  It
 is written in C to maximize portability, and in the expectation that
 users will write bindings for other languages (such as Python and
-Java) against this library; Python bindings for libplayerc are already
-available.
+Java) against this library; @ref libplayerc_py "Python bindings" are
+already available.
 
-Users reading this manual should also read the Player Server Manual.
+Users reading this manual should also read the <a href="../player/">
+Player Server Manual</a>.
 
 
-\section usage General usage
+@section libplayerc_usage General usage
 
 libplayerc is based on a device <i>proxy</i> model, in which the client
 maintains a local proxy for each of the devices on the remote server.
@@ -21,7 +22,7 @@ used to control the Player server itself.
 
 Programs using libplayerc will generally have the following structure:
 
-\include simpleclient.c
+@include simpleclient.c
 
 This example can be built using the commands:
 <PRE>
@@ -135,7 +136,7 @@ invalid and should be not be re-used.
 </ul>
 
 
-\section ref Proxy reference
+@section libplayerc_ref Proxy reference
 
 Detailed information for each proxy can be found in the <a
 href="modules.html">Reference</a> section.

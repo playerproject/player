@@ -134,7 +134,7 @@ PlayerQueue::Push(void* data, int size)
 // or -1 if the queue is empty
 int 
 PlayerQueue::Pop(player_device_id_t* device, void** client, 
-                 void* data, int size)
+                 struct timeval* timestamp, void* data, int size)
 {
   int tmpsize;
 
@@ -149,6 +149,8 @@ PlayerQueue::Pop(player_device_id_t* device, void** client,
     // first, get the data out (check to see if there's a valid clientp first)
     if(client)
       *client = queue[0].client;
+    if(timestamp)
+      *timestamp = queue[0].timestamp;
     if(size < queue[0].size)
     {
       fprintf(stderr, "PlayerQueue::Pop(): WARNING: truncating %d byte "
@@ -188,7 +190,7 @@ PlayerQueue::Pop(player_device_id_t* device, void** client,
 int 
 PlayerQueue::Pop(void* data, int size)
 {
-  return(Pop(NULL,NULL,data,size));
+  return(Pop(NULL,NULL,NULL,data,size));
 }
     
 // clear the queue; returns 0 on success; -1 on failure
@@ -252,8 +254,11 @@ PlayerQueue::Match(player_device_id_t* device, void* client,
       memcpy(data, queue[i].data, tmpsize);
       *type = queue[i].type;
       //*ts = queue[i].timestamp;
-      ts->tv_sec = queue[i].timestamp.tv_sec;
-      ts->tv_usec = queue[i].timestamp.tv_usec;
+      if (ts)
+      {
+        ts->tv_sec = queue[i].timestamp.tv_sec;
+        ts->tv_usec = queue[i].timestamp.tv_usec;
+      }
 
       queue[i].valid = 0;
     

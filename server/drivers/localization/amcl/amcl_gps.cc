@@ -83,7 +83,7 @@ int AMCLGps::Setup(void)
   id.code = PLAYER_GPS_CODE;
   id.index = this->gps_index;
 
-  this->device = deviceTable->GetDevice(id);
+  this->device = deviceTable->GetDriver(id);
   if (!this->device)
   {
     PLAYER_ERROR("unable to locate suitable gps device");

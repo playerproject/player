@@ -44,7 +44,7 @@
 #include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -52,10 +52,10 @@
 
 
 // Incremental navigation driver
-class GzGps : public CDevice
+class GzGps : public Driver
 {
   // Constructor
-  public: GzGps(char* interface, ConfigFile* cf, int section);
+  public: GzGps(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzGps();
@@ -68,10 +68,14 @@ class GzGps : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo device id
   private: char *gz_id;
@@ -88,34 +92,30 @@ class GzGps : public CDevice
 
 
 // Initialization function
-CDevice* GzGps_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzGps_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_GPS_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_gps\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzGps(interface, cf, section)));
+  return ((Driver*) (new GzGps(cf, section)));
 }
 
 
 // a driver registration function
 void GzGps_Register(DriverTable* table)
 {
-  table->AddDriver("gz_gps", PLAYER_ALL_MODE, GzGps_Init);
+  table->AddDriver("gz_gps", GzGps_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzGps::GzGps(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_gps_data_t), 0, 10, 10)
+GzGps::GzGps(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_GPS_CODE, PLAYER_ALL_MODE,
+             sizeof(player_gps_data_t), 0, 10, 10)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -172,15 +172,15 @@ int GzGps::Shutdown()
 void GzGps::Update()
 {
   player_gps_data_t data;
-  uint32_t tsec, tusec;
+  struct timeval ts;
   
   gz_gps_lock(this->iface, 1);
 
   if (this->iface->data->time > this->datatime)
   {
     this->datatime = this->iface->data->time;
-    tsec = (int) (this->iface->data->time);
-    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
     data.latitude = htonl((int32_t) (216000 * this->iface->data->latitude));
     data.longitude = htonl((int32_t) (216000 * this->iface->data->longitude));
@@ -193,7 +193,7 @@ void GzGps::Update()
     data.err_horz = htonl((uint32_t) (int32_t) (1000 * this->iface->data->err_horz));
     data.err_vert = htonl((uint32_t) (int32_t) (1000 * this->iface->data->err_vert));
     
-    this->PutData(&data, sizeof(data), tsec, tusec);
+    this->PutData(&data, sizeof(data), &ts);
   }
 
   gz_gps_unlock(this->iface);
@@ -204,7 +204,9 @@ void GzGps::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzGps::PutCommand(void* client, unsigned char* src, size_t len)
+void GzGps::PutCommand(player_device_id_t id,
+                       void* src, size_t len,
+                       struct timeval* timestamp)
 {  
   return;
 }
@@ -212,16 +214,18 @@ void GzGps::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzGps::PutConfig(player_device_id_t* device, void* client, void* data, size_t len)
+int GzGps::PutConfig(player_device_id_t id, void *client, 
+                     void* src, size_t len,
+                     struct timeval* timestamp)
 {
   uint8_t subtype;
 
-  subtype = ((uint8_t*) data)[0];
+  subtype = ((uint8_t*) src)[0];
   switch (subtype)
   {
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }

@@ -83,8 +83,7 @@ void Wavefront_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_SEGWAYRMP
-void SegwayRMPPosition_Register(DriverTable* table);
-void SegwayRMPPower_Register(DriverTable* table);
+void SegwayRMP_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_SICKLMS200
@@ -168,27 +167,11 @@ void ReadLog_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_P2OS
-void P2OSGripper_Register(DriverTable* table);
-void P2OSPower_Register(DriverTable* table);
-void P2OSaio_Register(DriverTable* table);
-void P2OSdio_Register(DriverTable* table);
-void P2OSBumper_Register(DriverTable* table);
-void P2OSPosition_Register(DriverTable* table);
-void P2OSSonar_Register(DriverTable* table);
-void P2OSSound_Register(DriverTable* table);
-void P2OSCMUcam_Register(DriverTable* table);
-void P2OSCompass_Register(DriverTable* table);
-void P2OSGyro_Register(DriverTable* table);
+void P2OS_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_RFLEX
-void RFLEXPower_Register(DriverTable* table);
-void RFLEXaio_Register(DriverTable* table);
-void RFLEXdio_Register(DriverTable* table);
-void RFLEXPosition_Register(DriverTable* table);
-void RFLEXSonar_Register(DriverTable* table);
-void RFLEXbumper_Register(DriverTable* table);
-void RFLEXIr_Register(DriverTable* table);
+void RFLEX_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_LINUXWIFI
@@ -208,14 +191,11 @@ void LinuxJoystick_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_REB
-void REBPosition_Register(DriverTable *table);
-void REBIR_Register(DriverTable *table);
-void REBPower_Register(DriverTable *table);
+void REB_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_KHEPERA
-void KheperaPosition_Register(DriverTable *table);
-void KheperaIR_Register(DriverTable *table);
+void Khepera_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_FIXEDTONES
@@ -530,16 +510,15 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_SEGWAYRMP
-  SegwayRMPPosition_Register(driverTable);
-  SegwayRMPPower_Register(driverTable);
+  SegwayRMP_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
+#endif
+  
 #ifdef INCLUDE_SICKPLS
   SickPLS_Register(driverTable);
-#endif
-
 #endif
 
 #ifdef INCLUDE_ACTS
@@ -589,13 +568,7 @@ register_devices()
 #endif
   
 #ifdef INCLUDE_RFLEX
-  RFLEXPower_Register(driverTable);
-  RFLEXaio_Register(driverTable);
-  RFLEXdio_Register(driverTable);
-  RFLEXPosition_Register(driverTable);
-  RFLEXSonar_Register(driverTable);
-  RFLEXbumper_Register(driverTable);
-  RFLEXIr_Register(driverTable); 
+  RFLEX_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SONYEVID30
@@ -624,17 +597,7 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_P2OS
-  P2OSGripper_Register(driverTable);
-  P2OSPower_Register(driverTable);
-  P2OSaio_Register(driverTable);
-  P2OSdio_Register(driverTable);
-  P2OSBumper_Register(driverTable);
-  P2OSPosition_Register(driverTable);
-  P2OSSonar_Register(driverTable);
-  P2OSSound_Register(driverTable);
-  P2OSCMUcam_Register(driverTable);
-  P2OSCompass_Register(driverTable);
-  P2OSGyro_Register(driverTable);
+  P2OS_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FIXEDTONES
@@ -674,14 +637,11 @@ register_devices()
 #endif
 
 #ifdef INCLUDE_REB
-  REBPosition_Register(driverTable);
-  REBIR_Register(driverTable);
-  REBPower_Register(driverTable);
+  REB_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_KHEPERA
-  KheperaPosition_Register(driverTable);
-  KheperaIR_Register(driverTable);
+  Khepera_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ISENSE

@@ -31,7 +31,7 @@
 #include <string.h>
 #include <netinet/in.h>
 
-#include <device.h>
+#include <driver.h>
 #include <configfile.h>
 #include <playertime.h>
 #include <drivertable.h>
@@ -41,9 +41,9 @@ extern PlayerTime *GlobalTime;
 
 #define AODV_INFO_FILE "/proc/aodv/route_table"
 
-class Aodv : public CDevice
+class Aodv : public Driver
 {
-  public: Aodv(char *interface, ConfigFile *cf, int section);
+  public: Aodv( ConfigFile *cf, int section);
 
   // Initialize driver
   public: virtual int Setup();
@@ -52,8 +52,9 @@ class Aodv : public CDevice
   public: virtual int Shutdown();
 
   // Get the current readings
-  public: virtual size_t GetData(void*,unsigned char *, size_t maxsize,
-                                 uint32_t *timestamp_sec, uint32_t *timestamp_usec);
+  public: virtual size_t GetData(player_device_id_t id,
+                                 void* dest, size_t len,
+                                 struct timeval* timestamp);
 
   // File handle for the /proc file system entry
   protected: FILE *file;
@@ -61,32 +62,23 @@ class Aodv : public CDevice
 
 
 // Instantiate driver for given interface
-CDevice * Aodv_Init(char *interface, ConfigFile *cf, int section)
+Driver * Aodv_Init( ConfigFile *cf, int section)
 { 
-  if(strcmp(interface, PLAYER_WIFI_STRING))
-  {
-    PLAYER_ERROR1("driver \"linuxwifi\" does not support interface \"%s\"\n",
-                  interface);
-    return NULL;
-  }
-  else
-  {
-    return ((CDevice*)(new Aodv(interface, cf, section)));
-  }
+  return ((Driver*)(new Aodv(cf, section)));
 }
 
 
 // Register driver type
 void Aodv_Register(DriverTable *table)
 {
-  table->AddDriver("aodv", PLAYER_READ_MODE, Aodv_Init);
+  table->AddDriver("aodv", Aodv_Init);
   return;
 }
 
 
 // Constructor
-Aodv::Aodv(char *interface, ConfigFile *cf, int section)
-    : CDevice(0, 0, 0, 1)
+Aodv::Aodv( ConfigFile *cf, int section)
+    : Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE, 0, 0, 0, 0)
 {
   return;
 }
@@ -116,8 +108,9 @@ int Aodv::Shutdown()
 
 
 // Get new data
-size_t Aodv::GetData(void* client,unsigned char *dest, size_t maxsize, 
-                     uint32_t *timestamp_sec, uint32_t *timestamp_usec)
+size_t Aodv::GetData(player_device_id_t id,
+                     void* dest, size_t maxsize,
+                     struct timeval* timestamp)
 {
   int n, link_count;
   player_wifi_link_t *link;
@@ -152,7 +145,7 @@ size_t Aodv::GetData(void* client,unsigned char *dest, size_t maxsize,
 
     link = data.links + link_count++;
     strncpy(link->ip, ip, sizeof(link->ip));
-    link->qual_type = PLAYER_WIFI_QUAL_UNKNOWN;
+    //link->qual_type = PLAYER_WIFI_QUAL_UNKNOWN;
     link->qual = htons(qual);
     link->level = htons(level);
     link->noise = htons(noise);
@@ -165,8 +158,7 @@ size_t Aodv::GetData(void* client,unsigned char *dest, size_t maxsize,
 
   // Set the data timestamp
   GlobalTime->GetTime(&curr);
-  *timestamp_sec = curr.tv_sec;
-  *timestamp_usec = curr.tv_usec;
+  *timestamp = curr;
 
   return (sizeof(data));
 }

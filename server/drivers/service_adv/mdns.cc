@@ -52,7 +52,7 @@
 
 #define MDNS_SERVICE_TYPE "_player._tcp."
 
-class SrvAdv_MDNS : public CDevice {
+class SrvAdv_MDNS : public Driver {
   private:
     // MDNS objects
     sw_discovery howl_client;
@@ -61,7 +61,7 @@ class SrvAdv_MDNS : public CDevice {
     std::string name, description;
 
   public:
-    SrvAdv_MDNS(char* interface, ConfigFile* cf, int section);
+    SrvAdv_MDNS( ConfigFile* cf, int section);
     virtual ~SrvAdv_MDNS();
 
     // Create service directory, find values, and add this service to it.
@@ -87,18 +87,14 @@ class SrvAdv_MDNS : public CDevice {
 
 
 
-CDevice* SrvAdv_MDNS_Init(char* interface, ConfigFile* cf, int section) {
-    if(strcmp(interface, PLAYER_SERVICE_ADV_STRING)) {
-        PLAYER_ERROR1("driver \"service_adv_mdns\" does not support interface \"%s\"\n", interface);
-        return(0);
-    }
-    return new SrvAdv_MDNS(interface, cf, section);
+Driver* SrvAdv_MDNS_Init( ConfigFile* cf, int section) {
+    return (Driver*)(new SrvAdv_MDNS( cf, section));
 }
 
 // a driver registration function
 void ServiceAdvMDNS_Register(DriverTable* table)
 {
-  table->AddDriver("service_adv_mdns", PLAYER_ALL_MODE, SrvAdv_MDNS_Init);
+  table->AddDriver("service_adv_mdns",  SrvAdv_MDNS_Init);
 }
 
 
@@ -108,16 +104,15 @@ SrvAdv_MDNS::~SrvAdv_MDNS() {
 }
 
 // Constructor
-SrvAdv_MDNS::SrvAdv_MDNS(char* interface, ConfigFile* configFile, int configSection)
-    : 
-    CDevice(0,0,0,0)
+SrvAdv_MDNS::SrvAdv_MDNS( ConfigFile* configFile, int configSection)
+    : Driver(configFile, configSection, 
+             PLAYER_SERVICE_ADV_CODE, PLAYER_READ_MODE, 0,0,0,0)
 {
     //alwayson = true;      // since there is no client interface
     // this breaks player so I commented it out
 
     // read name and description from config file. 
     assert(configFile);
-    assert(interface);
     name = configFile->ReadString(configSection, "name", "");
     description = configFile->ReadString(configSection, "description", "");
 
@@ -189,7 +184,7 @@ void SrvAdv_MDNS::Prepare() {
         
 
     // add a tag to the TXT record for each device in the device table
-    for(CDeviceEntry* dev = deviceTable->GetFirstEntry(); dev != 0; dev = deviceTable->GetNextEntry(dev)) {
+    for(Device* dev = deviceTable->GetFirstDevice(); dev != 0; dev = deviceTable->GetNextDevice(dev)) {
         char* devname = lookup_interface_name(0, dev->id.code);
         if(devname) {
             char deviceTag[512];

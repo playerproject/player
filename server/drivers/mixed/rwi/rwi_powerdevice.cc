@@ -29,9 +29,9 @@
   #include <strings.h>
 #endif
 
-CDevice* RWIPower_Init(char* interface, ConfigFile* cf, int section)
+Driver* RWIPower_Init( ConfigFile* cf, int section)
 {
-  return((CDevice *)(new CRWIPowerDevice(interface, cf, section)));
+  return((Driver *)(new CRWIPowerDevice( cf, section)));
 }
 
 void 

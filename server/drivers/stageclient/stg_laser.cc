@@ -37,7 +37,7 @@
 class StgLaser:public Stage1p4
 {
 public:
-  StgLaser(char* interface, ConfigFile* cf, int section );
+  StgLaser( ConfigFile* cf, int section );
 
   virtual int Setup();
   virtual int Shutdown(); 
@@ -50,28 +50,28 @@ public:
 };
 
 
-StgLaser::StgLaser(char* interface, ConfigFile* cf, int section ) 
+StgLaser::StgLaser( ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, sizeof(player_laser_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgLaser with interface %s", interface );
 }
 
-CDevice* StgLaser_Init(char* interface, ConfigFile* cf, int section)
+Driver* StgLaser_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_LASER_STRING))
+  if(strcmp( PLAYER_LASER_STRING))
     {
       PLAYER_ERROR1("driver \"stg_laser\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((CDevice*)(new StgLaser(interface, cf, section)));
+    return((Driver*)(new StgLaser( cf, section)));
 }
 
 
 void StgLaser_Register(DriverTable* table)
 {
-  table->AddDriver("stg_laser", PLAYER_ALL_MODE, StgLaser_Init);
+  table->AddDriver("stg_laser",  StgLaser_Init);
 }
 
 
@@ -142,12 +142,12 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 	    }
 	  
 	  // publish this data
-	  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+	  Driver::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
 	}
     }
  
   // now inherit the standard data-getting behavior 
-  return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
   
   //return 0;
 }

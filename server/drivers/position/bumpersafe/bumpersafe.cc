@@ -8,15 +8,15 @@
 #include <math.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
-class BumperSafe : public CDevice 
+class BumperSafe : public Driver 
 {
   public:
     // Constructor
-    BumperSafe(char* interface, ConfigFile* cf, int section);
+    BumperSafe( ConfigFile* cf, int section);
 
     // Destructor
     virtual ~BumperSafe();
@@ -58,35 +58,33 @@ class BumperSafe : public CDevice
     player_bumper_data_t SafeState;
 
     // Position device info
-    CDevice *position;
+    Driver *position;
+    player_device_id_t position_id;
     int position_index;
-	int speed,turnrate;
-	player_position_cmd_t cmd;
-	player_position_data_t data;
-	double position_time;
-    
+    int speed,turnrate;
+    player_position_cmd_t cmd;
+    player_position_data_t data;
+    double position_time;
+
     // Bumper device info
-    CDevice *bumper;
+    Driver *bumper;
+    player_device_id_t bumper_id;
     int bumper_index;
-	double bumper_time;
-	player_bumper_geom_t bumper_geom;
+    double bumper_time;
+    player_bumper_geom_t bumper_geom;
 		
 };
 
 // Initialization function
-CDevice* BumperSafe_Init(char* interface, ConfigFile* cf, int section) 
+Driver* BumperSafe_Init( ConfigFile* cf, int section) 
 {
-  if (strcmp(interface, PLAYER_POSITION_STRING) != 0) { 
-    PLAYER_ERROR1("driver \"bumper_safe\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new BumperSafe(interface, cf, section)));
+  return ((Driver*) (new BumperSafe( cf, section)));
 } 
 
 // a driver registration function
 void BumperSafe_Register(DriverTable* table)
 { 
-  table->AddDriver("bumper_safe", PLAYER_ALL_MODE, BumperSafe_Init);
+  table->AddDriver("bumper_safe",  BumperSafe_Init);
   return;
 } 
 
@@ -98,7 +96,7 @@ int BumperSafe::Setup()
 
   cmd.xpos = cmd.ypos = cmd.yaw = 0;
   cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
-  CDevice::PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  Driver::PutCommand((void*)&cmd,sizeof(cmd),NULL);
 
   // Initialise the underlying device s.
   if (this->SetupPosition() != 0)
@@ -132,22 +130,20 @@ int BumperSafe::Shutdown() {
 // Set up the underlying position device.
 int BumperSafe::SetupPosition() 
 {
-  player_device_id_t id;
-
 // EDIT?
 //  id.robot = this->device_id.robot;
-  id.port = this->device_id.port;
-  id.code = PLAYER_POSITION_CODE;
-  id.index = this->position_index;
+  this->position_id.port = this->device_id.port;
+  this->position_id.code = PLAYER_POSITION_CODE;
+  this->position_id.index = this->position_index;
 
-  this->position = deviceTable->GetDevice(id);
+  this->position = deviceTable->GetDriver(this->position_id);
   if (!this->position)
   {
     PLAYER_ERROR("unable to locate suitable position device");
     return -1;
   }
 
-  if (this->position->Subscribe(this) != 0)
+  if (this->position->Subscribe(this->position_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
@@ -166,7 +162,7 @@ int BumperSafe::ShutdownPosition()
   this->turnrate = 0;
   this->PutCommand();
   
-  this->position->Unsubscribe(this);
+  this->position->Unsubscribe(this->position_id);
   return 0;
 }
 
@@ -174,21 +170,20 @@ int BumperSafe::ShutdownPosition()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the bumper
 int BumperSafe::SetupBumper() {
-  player_device_id_t id;
 
 // EDIT ?
 //  id.robot = this->device_id.robot;
-  id.port = this->device_id.port;
-  id.code = PLAYER_BUMPER_CODE;
-  id.index = this->bumper_index;
+  this->bumper_id.port = this->device_id.port;
+  this->bumper_id.code = PLAYER_BUMPER_CODE;
+  this->bumper_id.index = this->bumper_index;
 
-  this->bumper = deviceTable->GetDevice(id);
+  this->bumper = deviceTable->GetDriver(this->bumper_id);
   if (!this->bumper)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return -1;
   }
-  if (this->bumper->Subscribe(this) != 0)
+  if (this->bumper->Subscribe(this->bumper_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
@@ -210,7 +205,7 @@ int BumperSafe::SetupBumper() {
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the bumper
 int BumperSafe::ShutdownBumper() {
-  this->bumper->Unsubscribe(this);
+  this->bumper->Unsubscribe(this->bumper_id);
   return 0;
 }
 
@@ -220,14 +215,15 @@ int BumperSafe::GetBumper() {
   //int i;
   size_t size;
   player_bumper_data_t data;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
 
   // Get the bumper device data.
-  size = this->bumper->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->bumper->GetData(this->bumper_id, 
+                               (void*) &data, sizeof(data), &timestamp);
   if (size == 0)
     return 0;
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
 
   // Dont do anything if this is old data.
   if (time - this->bumper_time < 0.001)
@@ -246,14 +242,16 @@ int BumperSafe::GetPosition()
 {
   //int i;
   size_t size;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
 
   // Get the bumper device data.
-  size = this->position->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->position->GetData(this->position_id,
+                                 (void*) &data, sizeof(data), 
+                                 &timestamp);
   if (size == 0)
     return 0;
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
 
   // Dont do anything if this is old data.
   if (time - this->position_time < 0.001)
@@ -277,7 +275,7 @@ void BumperSafe::PutCommand()
     temp_cmd.yawspeed = 0;
   }
 
-  this->position->PutCommand(this, (unsigned char*) &temp_cmd, sizeof(temp_cmd));
+  this->position->PutCommand((void*) &temp_cmd, sizeof(temp_cmd),NULL);
 
   return;
 }
@@ -294,7 +292,7 @@ int BumperSafe::HandleRequests()
 	struct timeval ts;
 	size_t resp_length = PLAYER_MAX_REQREP_SIZE;
 
-	while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+	while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   	{
     	if (request[0] == PLAYER_POSITION_MOTOR_POWER_REQ && Blocked)
 		{
@@ -311,10 +309,12 @@ int BumperSafe::HandleRequests()
 		}
 		else
 		{
-			// all other requests pass request onto position device
-			this->position->Request(&this->position->device_id, this, request, len, &reptype, &ts, response, resp_length);
-    		if (PutReply(client, reptype, &ts, response, resp_length) != 0)
-    			PLAYER_ERROR("PutReply() failed");
+                  // all other requests pass request onto position device
+                  this->position->Request(this->position_id, 
+                                          this, request, len, NULL,
+                                          &reptype, response, resp_length, &ts);
+                  if(PutReply(client, reptype, response, resp_length, &ts) != 0)
+                    PLAYER_ERROR("PutReply() failed");
 		}
   	}
   	return 0;
@@ -381,7 +381,7 @@ void BumperSafe::Main()
 // Check for new commands from the server
 void BumperSafe::GetCommand() 
 {
-  if(CDevice::GetCommand(&cmd, sizeof(cmd)) != 0) 
+  if(Driver::GetCommand(&cmd, sizeof(cmd),NULL) != 0) 
   {
   	PutCommand();
   }
@@ -390,8 +390,10 @@ void BumperSafe::GetCommand()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-BumperSafe::BumperSafe(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
+BumperSafe::BumperSafe( ConfigFile* cf, int section)
+        : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
+                 sizeof(player_position_data_t),
+                 sizeof(player_position_cmd_t),10,10)
 {
 	Blocked = false;
 
@@ -416,14 +418,14 @@ BumperSafe::~BumperSafe() {
 // Update the device data (the data going back to the client).
 void BumperSafe::PutPose()
 {
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
 
   // Compute timestamp
-  timesec = (uint32_t) this->position_time;
-  timeusec = (uint32_t) (fmod(this->position_time, 1.0) * 1e6);
+  timestamp.tv_sec = (uint32_t) this->position_time;
+  timestamp.tv_usec = (uint32_t) (fmod(this->position_time, 1.0) * 1e6);
 
   // Copy data to server.
-  PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
+  PutData((void*) &data, sizeof(data), &timestamp);
 
   return;
 }

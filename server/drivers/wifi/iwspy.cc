@@ -43,7 +43,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include <device.h>
+#include <driver.h>
 #include <configfile.h>
 #include <playertime.h>
 #include <drivertable.h>
@@ -51,9 +51,9 @@
 
 extern PlayerTime *GlobalTime;
 
-class Iwspy : public CDevice
+class Iwspy : public Driver
 {
-  public: Iwspy(char *interface, ConfigFile *cf, int section);
+  public: Iwspy( ConfigFile *cf, int section);
 
   // Initialize driver
   public: virtual int Setup();
@@ -113,18 +113,9 @@ class Iwspy : public CDevice
 
 ////////////////////////////////////////////////////////////////////////////////
 // Instantiate driver for given interface
-CDevice * Iwspy_Init(char *interface, ConfigFile *cf, int section)
+Driver * Iwspy_Init( ConfigFile *cf, int section)
 { 
-  if(strcmp(interface, PLAYER_WIFI_STRING))
-  {
-    PLAYER_ERROR1("driver \"iwspy\" does not support interface \"%s\"\n",
-                  interface);
-    return NULL;
-  }
-  else
-  {
-    return ((CDevice*)(new Iwspy(interface, cf, section)));
-  }
+  return ((Driver*)(new Iwspy( cf, section)));
 }
 
 
@@ -132,15 +123,16 @@ CDevice * Iwspy_Init(char *interface, ConfigFile *cf, int section)
 // Register driver type
 void Iwspy_Register(DriverTable *table)
 {
-  table->AddDriver("iwspy", PLAYER_READ_MODE, Iwspy_Init);
+  table->AddDriver("iwspy", Iwspy_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-Iwspy::Iwspy(char *interface, ConfigFile *cf, int section)
-    : CDevice(sizeof(player_wifi_data_t), 0, 0, 0)
+Iwspy::Iwspy( ConfigFile *cf, int section)
+    : Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE,
+             sizeof(player_wifi_data_t), 0, 0, 0)
 {
   int i;
   char key[64];
@@ -264,7 +256,7 @@ void Iwspy::Main()
     data.link_count = htons(data.link_count);
 
     // Send data
-    PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
+    PutData((uint8_t*) &data, sizeof(data), &time);
   }
   return;
 }

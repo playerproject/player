@@ -1719,58 +1719,113 @@ uint32_t ConfigFile::LookupColor(const char *name)
   return 0xFF0000;
 }
 
-
-///////////////////////////////////////////////////////////////////////////
-// Read a device id from a tuple; there are no defaults for tuples;
-// they must be supplied
-int ConfigFile::ReadDeviceId(int section, int index,
-                             int expected_code, player_device_id_t *id)
+// Parse the "devices" option in the given section.  Returns the number
+// of device ids if a valid "devices" section is found, and -1 otherwise.
+// 0 is returned, then ids will point to a malloc()ed list of the parsed
+// ids (which the caller should free()), in the order they were given.
+int
+ConfigFile::ParseDeviceIds(int section, player_device_id_t** ids)
 {
-  player_interface_t interface;
+  int property_idx;
+  CProperty* property;
   const char *str;
-  char s[128];
   int port, ind;
+  char s[128];
+  player_interface_t interface;
 
-  str = this->ReadTupleString(section, "interfaces", index, NULL);
-  if (str == NULL)
+  if((property_idx = GetProperty(section,"devices")) < 0)
   {
-    PLAYER_ERROR1("section [%d]: missing interface field", section);
+    PLAYER_ERROR1("section [%d]: missing devices entry", section);
     return -1;
-  } 
-  
-  // Look for port:interface:index
-  if (sscanf(str, "%d:%127[^:]:%d", &port, s, &ind) < 3)
+  }
+
+  property = this->properties + property_idx;
+
+  assert(*ids = (player_device_id_t*)malloc(property->value_count * 
+                                            sizeof(player_device_id_t)));
+
+  for(int i=0; i<property->value_count; i++)
   {
-    port = global_playerport;
-    
-    // Look for interface:index
-    if (sscanf(str, "%127[^:]:%d", s, &ind) < 2)
+    assert(str = GetPropertyValue(property_idx,i));
+    // Look for port:interface:index
+    if(sscanf(str, "%d:%127[^:]:%d", &port, s, &ind) < 3)
     {
-      PLAYER_ERROR1("section [%d]: syntax error in interface field", section);
+      port = global_playerport;
+
+      // Look for interface:index
+      if(sscanf(str, "%127[^:]:%d", s, &ind) < 2)
+      {
+        PLAYER_ERROR1("section [%d]: syntax error in interface field", section);
+        free(*ids);
+        return -1;
+      }
+    }
+
+    // Find the interface
+    if(::lookup_interface(s, &interface) != 0)
+    {
+      PLAYER_ERROR2("section [%d]: unknown interface: [%s]", section, s);
+      free(*ids);
       return -1;
     }
+
+    (*ids)[i].code = interface.code;
+    (*ids)[i].index = ind;
+    (*ids)[i].port = port;
   }
 
-  // Find the interface
-  if (::lookup_interface(s, &interface) != 0)
+  return(property->value_count);
+}
+
+// Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
+// num_ids, if there exists an i'th id with the given code, fills in id
+// appropriately, and returns 0.
+//
+// "Consumes" the selected id in the list, by setting the port to 0.  Thus,
+// after calling ReadDeviceId() for each supported interface, you can call
+// UnusedIds() to determine whether the user gave any extra interfaces.
+//
+// Returns -1 if no such id can be found.
+int
+ConfigFile::ReadDeviceId(player_device_id_t* id, player_device_id_t* ids,
+                         int num_ids, int code, int i)
+{
+  int j,k;
+
+  for(k=0,j=0;j<num_ids;j++)
   {
-    PLAYER_ERROR2("section [%d]: unknown interface: [%s]", section, s);
-    return -1;
+    if(ids[j].code == code)
+    {
+      if(k==i)
+      {
+        *id = ids[j];
+        // consume this id
+        ids[j].port = 0;
+        return(0);
+      }
+      else
+        k++;
+    }
   }
+  return(-1);
+}
 
-  // Make sure the code is correct
-  if (expected_code != -1 && interface.code != expected_code)
+// Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
+// num_ids, tells whether there remain any "unused" ids.  An id is unused
+// if its port is nonzero.
+int
+ConfigFile::UnusedIds(int section, player_device_id_t* ids, int num_ids)
+{
+  int unused = 0;
+
+  for(int i=0;i<num_ids;i++)
   {
-    PLAYER_ERROR3("config file section [%d]: mismatched interface: [%s] should be [%s]",
-                  section,
-                  ::lookup_interface_name(0, interface.code),
-                  ::lookup_interface_name(0, expected_code));
-    return -1;
+    if(ids[i].port)
+    {
+      PLAYER_ERROR3("section [%d]: unused device ID %s:%d",
+                    section,::lookup_interface_name(0,ids[i].code),ids[i].index);
+      unused = 1;
+    }
   }
-
-  id->port = port;
-  id->code = interface.code;
-  id->index = ind;
- 
-  return 0;
+  return(unused);
 }

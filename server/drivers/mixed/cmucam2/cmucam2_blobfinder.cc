@@ -48,16 +48,15 @@
 
 // so we can access the deviceTable and extract pointers to the sonar
 // and sonar objects
-#include <drivertable.h>
+#include <driver.h>
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+#include <drivertable.h>
 
-
-class Cmucam2blobfinder:public CDevice 
+class Cmucam2blobfinder:public Driver 
 {
   public:
 
-  Cmucam2blobfinder(char* interface, ConfigFile* cf, int section);
+  Cmucam2blobfinder( ConfigFile* cf, int section);
   virtual ~Cmucam2blobfinder();
   
   /* the main thread */
@@ -68,35 +67,29 @@ class Cmucam2blobfinder:public CDevice
   virtual void Update();
   
 protected:
-  CDevice* cmucam2;
+  Driver* cmucam2;
   player_device_id_t cmucam2_id;
   
 };
 
 // a factory creation function
-CDevice* Cmucam2blobfinder_Init(char* interface, ConfigFile* cf, int section)
+Driver* Cmucam2blobfinder_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
-    {
-      PLAYER_ERROR1("driver \"cmucam2_blobfinder\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else
-    return((CDevice*)(new Cmucam2blobfinder(interface, cf, section)));
+  return((Driver*)(new Cmucam2blobfinder( cf, section)));
 }
 
 // a driver registration function
 void Cmucam2blobfinder_Register(DriverTable* table)
 {
-  table->AddDriver( "cmucam2_blobfinder", PLAYER_ALL_MODE, Cmucam2blobfinder_Init);
+  table->AddDriver( "cmucam2_blobfinder",  Cmucam2blobfinder_Init);
 }
 
 
 
 
-Cmucam2blobfinder::Cmucam2blobfinder(char* interface, ConfigFile* cf, int section)
-  : CDevice( sizeof(player_blobfinder_data_t), 0, 1, 1 )
+Cmucam2blobfinder::Cmucam2blobfinder( ConfigFile* cf, int section)
+  : Driver(cf, section,  PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE,
+	   sizeof(player_blobfinder_data_t), 0, 1, 1 )
 {
   this->cmucam2_id.code = PLAYER_CMUCAM2_CODE;
   this->cmucam2_id.port = cf->ReadInt(section, "cmucam2_port", 0 );
@@ -124,7 +117,7 @@ int Cmucam2blobfinder::Setup()
 	  this->cmucam2_id.index ); fflush(stdout);
 
   // get the pointer to the Cmucam2
-  this->cmucam2 = deviceTable->GetDevice(cmucam2_id);
+  this->cmucam2 = deviceTable->GetDriver(cmucam2_id);
 
   if(!this->cmucam2)
   {
@@ -135,7 +128,7 @@ int Cmucam2blobfinder::Setup()
   else printf( " OK.\n" );
  
   // Subscribe to the cmucam2 device, but fail if it fails
-  if(this->cmucam2->Subscribe(this) != 0)
+  if(this->cmucam2->Subscribe(this->cmucam2_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to cmucam2 device");
     return(-1);
@@ -153,7 +146,7 @@ int Cmucam2blobfinder::Shutdown()
   StopThread(); 
 
   // Unsubscribe from the laser device
-  this->cmucam2->Unsubscribe(this);
+  this->cmucam2->Unsubscribe(this->cmucam2_id);
 
   puts("Cmucam2blobfinder has been shutdown");
   return(0);
@@ -164,18 +157,16 @@ void Cmucam2blobfinder::Update()
   unsigned char config[128];
   
   void* client;
-  player_device_id_t id;
   size_t config_size = 0;
   
   // first, check if there is a new config command
-  if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
+  if((config_size = GetConfig(&client, (void*)config, sizeof(config),NULL)))
   {
       switch(config[0])
 	{
 	default:
 	  puts("Cmucam2_blobfinder got unknown config request");
-	  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-		      NULL, NULL, 0))
+	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 	    PLAYER_ERROR("failed to PutReply");
 	  break;
 	}
@@ -188,6 +179,7 @@ void Cmucam2blobfinder::Update()
 void 
 Cmucam2blobfinder::Main()
 {  
+  struct timeval ts;
   player_cmucam2_data_t cmucam2_data; // we get one of these
   player_blobfinder_data_t player_data; // and extract the blob data, copying it into here
   //player_blobfinder_blob_elt_t blob;
@@ -203,15 +195,16 @@ Cmucam2blobfinder::Main()
       this->cmucam2->Wait();
       
       // Get the Cmucam2 data.
-      size_t len = this->cmucam2->
-	GetData(this, (uint8_t*)&cmucam2_data, sizeof(cmucam2_data), NULL, NULL );
+      size_t len = this->cmucam2->GetData(this->cmucam2_id, 
+					  (void*)&cmucam2_data, 
+					  sizeof(cmucam2_data), &ts);
       
       assert( len == sizeof(cmucam2_data) );
       
       // extract the blob data from the Cmucam2 packet
       memcpy( &player_data, &cmucam2_data.blob, sizeof(cmucam2_data.blob));         
       //memcpy( &player_data.blobs[0], &blob, sizeof(blob) );
-      PutData((uint8_t*)&player_data, sizeof(player_data), 0,0 );
+      PutData((uint8_t*)&player_data, sizeof(player_data), &ts);
     }
   pthread_exit(NULL);
 }

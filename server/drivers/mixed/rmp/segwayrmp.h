@@ -24,52 +24,17 @@
 #include "device.h"
 #include "configfile.h"
 
-// Both of these can be changed via the configuration file; please do NOT
-// change them here!
-#define RMP_DEFAULT_MAX_XSPEED 500   // mm/sec
-#define RMP_DEFAULT_MAX_YAWSPEED 40  // deg/sec
 
-// Number of RMP read cycles, without new speed commands from clients,
-// after which we'll stop the robot (for safety).  The read loop
-// seems to run at about 50Hz, or 20ms per cycle.
-#define RMP_TIMEOUT_CYCLES 20 // about 400ms
-
-// Format for data provided by the underlying segway rmp driver.  It's not
-// for direct external consumption.  Rather, the SegwayRMPPosition and
-// SegwayRMPPower drivers (and maybe others) will get the bits that they want
-// and send them on to clients.  Essentially, this is the union of all data
-// that the RMP can provide.  The underlying driver will byteswap everything
-// before it goes in, so that the other drivers don't have to.
-typedef struct
-{
-  player_position_data_t position_data;
-  player_position3d_data_t position3d_data;
-  player_power_data_t power_data;
-} __attribute__ ((packed)) player_segwayrmp_data_t;
-
-// Format for commands accepted by the underlying segway rmp driver. 
-// The SegwayRMPPosition will put them in.  Essentially, this is the union of 
-// all commands that the RMP can accept.  The SegwayRMPPosition driver can
-// just forward the commands without byteswapping; the underlying driver will
-// do that.
-typedef struct
-{
-  // flag to tell the underlying driver which of the two commands to use.
-  // should be either PLAYER_POSITION_CODE or PLAYER_POSITION3D_CODE.
-  uint16_t code; 
-  player_position_cmd_t position_cmd;
-  player_position3d_cmd_t position3d_cmd;
-} __attribute__ ((packed)) player_segwayrmp_cmd_t;
-
+// Forward declarations
 class rmp_frame_t;
 
+
 // Driver for robotic Segway
-class SegwayRMP : public CDevice
+class SegwayRMP : public Driver
 {
   public: 
-    // instantiation method.  use this instead of the constructor
-    static CDevice* Instance(ConfigFile* cf, int section);
-
+    // Constructors etc
+    SegwayRMP(ConfigFile* cf, int section);
     ~SegwayRMP();
 
     // Setup/shutdown routines.
@@ -77,16 +42,18 @@ class SegwayRMP : public CDevice
     virtual int Shutdown();
 
   protected:
-    player_segwayrmp_data_t data;
 
-    // Constructor is protected to force use of Instance
-    SegwayRMP();
+    // Supported interfaces
+    player_device_id_t position_id;
+    player_position_data_t position_data;
+
+    player_device_id_t position3d_id;
+    player_position3d_data_t position3d_data;
+  
+    player_device_id_t power_id;
+    player_power_data_t power_data;
 
   private:
-
-    void ProcessConfigFile(ConfigFile* cf, int section);
-
-    static CDevice* instance;
 
     const char* portname;
     const char* caniotype;
@@ -101,6 +68,11 @@ class SegwayRMP : public CDevice
 
     int16_t last_xspeed, last_yawspeed;
 
+    // Flag set if motors can be enabled (i.e., enable them to be
+    // enabled).  Set by a config request.
+    bool motor_allow_enable;
+
+    // Flag set if motors are currently enabled
     bool motor_enabled;
 
     // For handling rollover
@@ -110,7 +82,10 @@ class SegwayRMP : public CDevice
     double odom_x, odom_y, odom_yaw;
 
     // helper to handle config requests
-    int HandleConfig(void* client, unsigned char* buffer, size_t len);
+    int HandlePositionConfig(void* client, unsigned char* buffer, size_t len);
+
+    // helper to handle config requests
+    int HandlePosition3DConfig(void* client, unsigned char* buffer, size_t len);
 
     // helper to read a cycle of data from the RMP
     int Read();

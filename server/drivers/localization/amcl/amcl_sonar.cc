@@ -66,7 +66,7 @@ int AdaptiveMCL::SetupSonar(void)
   id.code = PLAYER_SONAR_CODE;
   id.index = this->sonar_index;
 
-  this->sonar = deviceTable->GetDevice(id);
+  this->sonar = deviceTable->GetDriver(id);
   if (!this->sonar)
   {
     PLAYER_ERROR("unable to locate suitable sonar device");

@@ -55,6 +55,7 @@
 void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
                          int code, int index, playerc_putdata_fn_t putdata)
 {
+  device->id = device;
   device->client = client;
   device->code = code;
   device->index = index;

@@ -97,6 +97,6 @@ typedef struct {
   int                        stopbits;
   int                        hwf;
   int                        swf;
-} Device;
+} RFLEX_Device;
 
 #endif

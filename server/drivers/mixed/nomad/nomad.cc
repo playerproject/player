@@ -55,11 +55,8 @@ extern PlayerTime* GlobalTime;
 // CHECK: is this the right number?
 #define NOMAD_SONAR_RANGE_MAX_MM 5000
 
-// so we can access the deviceTable and extract pointers to the sonar
-// and position objects
+#include <driver.h>
 #include <drivertable.h>
-#include <devicetable.h>
-extern CDeviceTable* deviceTable;
 
 // this is the old 'official' Nomad interface code from Nomadics
 // released GPL when Nomadics went foom.
@@ -81,11 +78,11 @@ int mmToInches(int mm)
 }
 
 
-class Nomad:public CDevice 
+class Nomad:public Driver 
 {
   public:
 
-  Nomad(char* interface, ConfigFile* cf, int section);
+  Nomad( ConfigFile* cf, int section);
   virtual ~Nomad();
   
   /* the main thread */
@@ -101,30 +98,22 @@ protected:
 
 
 // a factory creation function
-CDevice* Nomad_Init(char* interface, ConfigFile* cf, int section)
+Driver* Nomad_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_NOMAD_STRING))
-    {
-      PLAYER_ERROR1("driver \"nomad\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else
-    return((CDevice*)(new Nomad(interface, cf, section)));
+  return((Driver*)(new Nomad( cf, section)));
 }
 
 // a driver registration function
 void Nomad_Register(DriverTable* table)
 {
-  table->AddDriver(PLAYER_NOMAD_STRING, PLAYER_ALL_MODE, Nomad_Init);
+  table->AddDriver("nomad",  Nomad_Init);
 }
 
-
-
-
-Nomad::Nomad(char* interface, ConfigFile* cf, int section)
-  : CDevice( sizeof(player_nomad_data_t), 
-	     sizeof(player_nomad_cmd_t), NOMAD_QLEN, NOMAD_QLEN )
+Nomad::Nomad( ConfigFile* cf, int section)
+  : Driver(cf, section,  PLAYER_NOMAD_CODE, PLAYER_ALL_MODE,
+           sizeof(player_nomad_data_t), 
+           sizeof(player_nomad_cmd_t), 
+           NOMAD_QLEN, NOMAD_QLEN )
 {
   this->serial_device = (char*)cf->ReadString( section, "serial_device", NOMAD_SERIAL_PORT );
   this->serial_speed = cf->ReadInt( section, "serial_speed", NOMAD_SERIAL_BAUD );
@@ -207,16 +196,15 @@ Nomad::Main()
       // handle configs --------------------------------------------------------
       
       void* client;
-      player_device_id_t id;
       size_t config_size = 0;
       
-      if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
+      if((config_size = GetConfig(&client, (void*)config, 
+                                  sizeof(config),NULL)))
 	switch( config[0] )
 	  {
 	  default:
 	    puts("Nomad got unknown config request");
-	    if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-			NULL, NULL, 0))
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 	      PLAYER_ERROR("failed to PutReply");
 	    break;
 	  }
@@ -225,7 +213,7 @@ Nomad::Main()
       
       /* read the latest Player client commands */
       player_nomad_cmd_t command;
-      GetCommand((unsigned char*)&command, sizeof(command));
+      GetCommand((unsigned char*)&command, sizeof(command),NULL);
       
       /* write the command to the robot */      
       int v = ntohl(command.vel_trans);
@@ -272,7 +260,7 @@ Nomad::Main()
 	}
 	  //puts("");
 
-      PutData((uint8_t*)&data, sizeof(data), 0,0 );
+      PutData((uint8_t*)&data, sizeof(data),NULL);
       
       //usleep(1);
 

@@ -46,7 +46,7 @@
 #include <sys/types.h>
 #include <netinet/if_ether.h>
 #include <configfile.h>
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 #include <playertime.h>
@@ -56,24 +56,24 @@ extern PlayerTime *GlobalTime;
 #define WIFI_INFO_FILE "/proc/net/wireless"
 
 #define WIFI_UPDATE_INTERVAL 1000 // in milliseconds
-class LinuxWiFi : public CDevice
+class LinuxWiFi : public Driver
 {
 public:
-  LinuxWiFi(char *interface, ConfigFile *cf, int section);
+  LinuxWiFi( ConfigFile *cf, int section);
 
   //  virtual void Main();
 
   ~LinuxWiFi();
 
-  virtual size_t GetData(void*,unsigned char *, size_t maxsize,
-			 uint32_t *timestamp_sec,
-			 uint32_t *timestamp_usec);
+  size_t GetData(player_device_id_t id,
+                 void* dest, size_t len,
+                 struct timeval* timestamp);
+  int PutConfig(player_device_id_t id, void *client, 
+                void* src, size_t len,
+                struct timeval* timestamp);
 
-  virtual int PutConfig(player_device_id_t *device, void *client,
-			   void *data, size_t len);
-
-  virtual int Setup();
-  virtual int Shutdown();
+  int Setup();
+  int Shutdown();
 
 protected:
   char * PrintEther(char *buf, unsigned char *addr);
@@ -97,23 +97,17 @@ protected:
   player_wifi_data_t data;
 };
 
-CDevice * LinuxWiFi_Init(char *interface, ConfigFile *cf, int section);
+Driver * LinuxWiFi_Init( ConfigFile *cf, int section);
 void LinuxWiFi_Register(DriverTable *table);
 
 /* check for supported interfaces.
  *
  * returns: pointer to new LinuxWiFi driver if supported, NULL else
  */
-CDevice *
-LinuxWiFi_Init(char *interface, ConfigFile *cf, int section)
+Driver *
+LinuxWiFi_Init( ConfigFile *cf, int section)
 { 
-  if(strcmp(interface, PLAYER_WIFI_STRING)) {
-    PLAYER_ERROR1("driver \"linuxwifi\" does not support interface \"%s\"\n",
-		  interface);
-    return NULL;
-  } else {
-    return ((CDevice*)(new LinuxWiFi(interface, cf, section)));
-  }
+  return ((Driver*)(new LinuxWiFi( cf, section)));
 }
 
 /* register with drivertable
@@ -123,11 +117,11 @@ LinuxWiFi_Init(char *interface, ConfigFile *cf, int section)
 void
 LinuxWiFi_Register(DriverTable *table)
 {
-  table->AddDriver("linuxwifi", PLAYER_READ_MODE, LinuxWiFi_Init);
+  table->AddDriver("linuxwifi", LinuxWiFi_Init);
 }
 
-LinuxWiFi::LinuxWiFi(char *interface, ConfigFile *cf, int section) :
-  CDevice(0,0,0,1) 
+LinuxWiFi::LinuxWiFi( ConfigFile *cf, int section) :
+  Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE, 0,0,0,1) 
 {
   info_fp = NULL;
   
@@ -246,8 +240,9 @@ LinuxWiFi::Shutdown()
  * returns: 
  */
 size_t
-LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize, 
-                   uint32_t *timestamp_sec, uint32_t *timestamp_usec)
+LinuxWiFi::GetData(player_device_id_t id,
+                   void* dest, size_t maxsize,
+                   struct timeval* timestamp)
 {
   int eth, status;
   int link, level, noise;
@@ -268,8 +263,7 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
     // just copy old data
     assert(sizeof(data) < maxsize);
     memcpy(dest, &data, sizeof(data));
-    *timestamp_sec = curr.tv_sec;
-    *timestamp_usec = curr.tv_usec;
+    *timestamp = curr;
     
     return sizeof(data);
   }
@@ -400,17 +394,17 @@ LinuxWiFi::GetData(void* client,unsigned char *dest, size_t maxsize,
   memcpy(dest, &data, sizeof(data));
 
   GlobalTime->GetTime(&curr);
-  *timestamp_sec = curr.tv_sec;
-  *timestamp_usec = curr.tv_usec;
+  *timestamp = curr;
     
   return (sizeof(data));
 }
 
 int
-LinuxWiFi::PutConfig(player_device_id_t *device, void *client,
-		     void *data, size_t len)
+LinuxWiFi::PutConfig(player_device_id_t id, void *client, 
+                     void* src, size_t len,
+                     struct timeval* timestamp)
 {
-  char * config = (char *)data;
+  char * config = (char *)src;
   uint8_t which = config[0];
   char buf[32];
 
@@ -422,8 +416,7 @@ LinuxWiFi::PutConfig(player_device_id_t *device, void *client,
     printf("LINUXWIFI: got other REQ\n");
   }
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-	       buf, sizeof(buf))) {
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, buf, sizeof(buf), NULL)) {
     PLAYER_ERROR("LinuxWiFi: failed to put reply");
     return -1;
   }

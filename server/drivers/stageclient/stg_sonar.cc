@@ -33,7 +33,7 @@
 class StgSonar:public Stage1p4
 {
 public:
-  StgSonar(char* interface, ConfigFile* cf, int section );
+  StgSonar( ConfigFile* cf, int section );
 
   virtual size_t GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
@@ -47,7 +47,7 @@ private:
   int power_on;
 };
 
-StgSonar::StgSonar(char* interface, ConfigFile* cf, int section ) 
+StgSonar::StgSonar( ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, sizeof(player_sonar_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgSonar with interface %s", interface );
@@ -55,22 +55,22 @@ StgSonar::StgSonar(char* interface, ConfigFile* cf, int section )
   power_on = 1; // enabled by default
 }
 
-CDevice* StgSonar_Init(char* interface, ConfigFile* cf, int section)
+Driver* StgSonar_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_SONAR_STRING))
+  if(strcmp( PLAYER_SONAR_STRING))
     {
       PLAYER_ERROR1("driver \"stg_sonar\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((CDevice*)(new StgSonar(interface, cf, section)));
+    return((Driver*)(new StgSonar( cf, section)));
 }
 
 
 void StgSonar_Register(DriverTable* table)
 {
-  table->AddDriver("stg_sonar", PLAYER_ALL_MODE, StgSonar_Init);
+  table->AddDriver("stg_sonar",  StgSonar_Init);
 }
 
 // override GetData to get data from Stage on demand, rather than the
@@ -104,11 +104,11 @@ size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
 	    sonar.ranges[i] = htons((uint16_t)(1000.0*rangers[i].range));
 	}
       
-      CDevice::PutData( &sonar, sizeof(sonar), 0,0 ); // time gets filled in
+      Driver::PutData( &sonar, sizeof(sonar), 0,0 ); // time gets filled in
     }
   
   // now inherit the standard data-getting behavior 
-  return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
 }
 
 

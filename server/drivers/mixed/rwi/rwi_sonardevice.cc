@@ -30,9 +30,9 @@
   #include <strings.h>
 #endif
 
-CDevice* RWISonar_Init(char* interface, ConfigFile* cf, int section)
+Driver* RWISonar_Init( ConfigFile* cf, int section)
 {
-  return((CDevice *)(new CRWISonarDevice(interface, cf, section)));
+  return((Driver *)(new CRWISonarDevice( cf, section)));
 }
 
 void 
@@ -41,8 +41,8 @@ RWISonar_Register(DriverTable* table)
   table->AddDriver("rwi_sonar", PLAYER_READ_MODE, RWISonar_Init);
 }
 	
-CRWISonarDevice::CRWISonarDevice(char* interface, ConfigFile* cf, int section)
-    : CRWIDevice(interface, cf, section,
+CRWISonarDevice::CRWISonarDevice( ConfigFile* cf, int section)
+    : CRWIDevice( cf, section,
                  sizeof(player_sonar_data_t),
                  0 /* no commands for sonar */,
 		         1,1)

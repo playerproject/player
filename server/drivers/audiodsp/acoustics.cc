@@ -35,23 +35,22 @@
 
 #include "playercommon.h"
 #include "drivertable.h"
+#include "driver.h"
 #include "player.h"
 
 #define DEFAULT_DEVICE "/dev/dsp"
 #define MIN_FREQUENCY 800
 
-class Acoustics : public CDevice
+class Acoustics : public Driver
 {
   public:
     // Constructor
-    Acoustics(char* interface, ConfigFile* cf, int section);
+    Acoustics( ConfigFile* cf, int section);
     // Destructor
     ~Acoustics();
 
     int Setup();
     int Shutdown();
-
-    size_t GetCommand(void* dest, size_t maxsize);
 
   private:
     // Open or close the device
@@ -111,8 +110,9 @@ class Acoustics : public CDevice
     double* fft; // reused storage for samples, to be passed into the GSL
 };
 
-Acoustics::Acoustics(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_audiodsp_data_t),sizeof(player_audiodsp_cmd_t),1,1),
+Acoustics::Acoustics( ConfigFile* cf, int section)
+  : Driver(cf, section, PLAYER_AUDIODSP_CODE, PLAYER_ALL_MODE,
+           sizeof(player_audiodsp_data_t),sizeof(player_audiodsp_cmd_t),1,1),
   audioFD(-1),deviceName(NULL),openFlag(-1),channels(1),sampleFormat(16),
   sampleRate(8000),audioBuffSize(4096),audioBuffer(NULL),bytesPerSample(1),
   peakFreq(NULL),peakAmp(NULL),N(1024),nHighestPeaks(5)
@@ -130,21 +130,14 @@ Acoustics::~Acoustics()
   }
 }
 
-CDevice* Acoustics_Init(char* interface, ConfigFile* cf, int section)
+Driver* Acoustics_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_AUDIODSP_STRING))
-  {
-    PLAYER_ERROR1("driver \"acoustics\" does not support interface \"%s\"\n", 
-                  interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new Acoustics(interface, cf, section)));
+  return((Driver*)(new Acoustics(cf, section)));
 }
 
 void Acoustics_Register(DriverTable* table)
 {
-  table->AddDriver("acoustics", PLAYER_ALL_MODE, Acoustics_Init );
+  table->AddDriver("acoustics", Acoustics_Init );
 }
 
 int Acoustics::Setup()
@@ -171,19 +164,6 @@ int Acoustics::Shutdown()
 
   puts("Acoustics has been shutdown");
   return 0;
-}
-
-size_t Acoustics::GetCommand(void* dest, size_t maxsize)
-{
-  int retval = device_used_commandsize;
-
-  if(device_used_commandsize)
-  {
-    memcpy(dest,device_command,device_used_commandsize);
-    device_used_commandsize = 0;
-  }
-  //memset(dest,0,maxsize);
-  return(retval);
 }
 
 int Acoustics::OpenDevice( int flag )
@@ -237,7 +217,8 @@ void Acoustics::Main()
     pthread_testcancel();
 
     // Set/Get the configuration
-    while((len = GetConfig(&client, &configBuffer, sizeof(configBuffer))) > 0)
+    while((len = GetConfig(&client, &configBuffer, 
+                           sizeof(configBuffer),NULL)) > 0)
     {
 
       switch(configBuffer[0])
@@ -251,7 +232,7 @@ void Acoustics::Main()
           break;
 
         default:
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           break;
       }
@@ -260,7 +241,8 @@ void Acoustics::Main()
 
     // Get the next command
     memset(&cmdBuffer,0,sizeof(cmdBuffer));
-    len = this->GetCommand(&cmdBuffer,sizeof(cmdBuffer));
+    len = this->GetCommand(&cmdBuffer,sizeof(cmdBuffer),NULL);
+    this->ClearCommand();
 
     // Process the command
     switch(cmdBuffer[0])
@@ -324,7 +306,7 @@ void Acoustics::Main()
             }
 
             // Return the data to the user
-            PutData((uint8_t*)&this->data, sizeof(this->data),0,0);
+            PutData((uint8_t*)&this->data, sizeof(this->data),NULL);
           }
 
           break;
@@ -345,7 +327,7 @@ int Acoustics::SetConfiguration(int len, void* client, unsigned char buffer[])
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 
         sizeof(config));
-    if( PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if( PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return 1;
   }
@@ -365,14 +347,14 @@ int Acoustics::SetConfiguration(int len, void* client, unsigned char buffer[])
     // Create the audio buffer
     this->SetBufferSize(0);
 
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
-          sizeof(config)) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                &config, sizeof(config),NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
 
     return -1;
 
   } else {
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
@@ -387,7 +369,7 @@ int Acoustics::GetConfiguration(int len, void* client, unsigned char buffer[])
   if( len != 1 )
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)",len,1);
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return 1;
   }
@@ -396,8 +378,8 @@ int Acoustics::GetConfiguration(int len, void* client, unsigned char buffer[])
   config.sampleRate = htons(this->sampleRate);
   config.channels = this->channels;
 
-  if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config,
-        sizeof(config)) != 0)
+  if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+               &config, sizeof(config), NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return 0;

@@ -1,2 +1,2 @@
-SUBDIRS = isense microstrain inav vfh ascension bumpersafe
+SUBDIRS = isense microstrain vfh ascension bumpersafe
 

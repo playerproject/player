@@ -42,7 +42,7 @@
 #endif
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 #include "deviceregistry.h"
@@ -53,13 +53,13 @@
 class WriteLogDevice
 {
   public: player_device_id_t id;
-  public: CDevice *device;
-  public: uint32_t tsec, tusec;
+  public: Driver *device;
+  public: struct timeval time;
 };
 
 
 // The logfile driver
-class WriteLog: public CDevice 
+class WriteLog: public Driver 
 {
   // Constructor
   public: WriteLog(ConfigFile* cf, int section);
@@ -74,8 +74,9 @@ class WriteLog: public CDevice
   public: virtual int Shutdown();
 
   // Process configuration requests
-  public: virtual int PutConfig(player_device_id_t* device, void* client, 
-                                void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Device thread
   private: virtual void Main(void);
@@ -112,6 +113,7 @@ class WriteLog: public CDevice
   private: void WriteFiducial(player_fiducial_data_t *data);
 
   // File to read data from
+  private: char default_filename[1024];
   private: const char *filename;
   private: FILE *file;
 
@@ -136,16 +138,9 @@ extern int global_playerport;
 
 ////////////////////////////////////////////////////////////////////////////
 // Create a driver for reading log files
-CDevice* ReadWriteLog_Init(char* name, ConfigFile* cf, int section)
+Driver* WriteLog_Init(ConfigFile* cf, int section)
 {
-  //if (lookup_interface(name, &interface) != 0)
-  if(strcmp(name,PLAYER_LOG_STRING))
-  {
-    PLAYER_ERROR1("driver \"writelog\" does not support interface \"%s\"\n",
-                  name);
-    return NULL;
-  }
-  return ((CDevice*) (new WriteLog(cf, section)));
+  return ((Driver*) (new WriteLog(cf, section)));
 }
 
 
@@ -153,7 +148,7 @@ CDevice* ReadWriteLog_Init(char* name, ConfigFile* cf, int section)
 // Device factory registration
 void WriteLog_Register(DriverTable* table)
 {
-  table->AddDriver("writelog", PLAYER_READ_MODE, ReadWriteLog_Init);
+  table->AddDriver("writelog", WriteLog_Init);
   return;
 }
 
@@ -161,16 +156,30 @@ void WriteLog_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
 WriteLog::WriteLog(ConfigFile* cf, int section)
-    : CDevice(PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
+    : Driver(cf, section, PLAYER_LOG_CODE, PLAYER_ALL_MODE,
+             PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
 {
   int i, index;
   const char *desc;
   char name[64];
   player_interface_t iface;
   WriteLogDevice *device;
+  time_t t;
+  struct tm *ts;
   
   this->file = NULL;
-  this->filename = cf->ReadString(section, "filename", "writelog.log");
+
+  // Construct default filename from date and time.  Note that we use
+  // the system time, *not* the Player time.  I think that this is the
+  // correct semantics for working with simulators.
+  time(&t);
+  ts = localtime(&t);
+  strftime(this->default_filename, sizeof(this->default_filename),
+           "writelog_%Y_%m_%d_%H_%M.log", ts);
+
+  // Let user override default filename
+  this->filename = cf->ReadString(section, "filename", this->default_filename);
+  
   if(cf->ReadInt(section, "enable", 1) > 0)
     this->enable_default = true;
   else
@@ -180,7 +189,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
 
   for (i = 0; true; i++)
   {
-    desc = cf->ReadTupleString(section, "devices", i, NULL);
+    desc = cf->ReadTupleString(section, "log_devices", i, NULL);
     if (!desc)
       break;
       
@@ -208,8 +217,8 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
     device->id.code = iface.code;
     device->id.index = index;
     device->device = NULL;
-    device->tsec = 0;
-    device->tusec = 0;
+    device->time.tv_sec = 0;
+    device->time.tv_usec = 0;
   }
 
   // See which device we should wait on
@@ -239,13 +248,16 @@ int WriteLog::Setup()
   {
     device = this->devices + i;
 
-    device->device = deviceTable->GetDevice(device->id);
+    device->device = deviceTable->GetDriver(device->id);
     if (!device->device)
     {
-      PLAYER_ERROR("unable to locate device for logging");
+      PLAYER_ERROR3("unable to locate device \"%d:%s:%d\" for logging",
+                    device->id.port,
+                    ::lookup_interface_name(0, device->id.code),
+                    device->id.index);
       return -1;
     }
-    if (device->device->Subscribe(this) != 0)
+    if (device->device->Subscribe(device->id) != 0)
     {
       PLAYER_ERROR("unable to subscribe to device for logging");
       return -1;
@@ -262,7 +274,7 @@ int WriteLog::Setup()
 
   // Write the file header
   fprintf(this->file, "## Player version %s \n", VERSION);
-  fprintf(this->file, "## File version %s \n", "0.0.0");
+  fprintf(this->file, "## File version %s \n", "0.1.0");
 
   // Enable/disable logging, according to default set in config file
   this->enable = this->enable_default;
@@ -295,7 +307,7 @@ int WriteLog::Shutdown()
     device = this->devices + i;
 
     // Unsbscribe from the underlying device
-    device->device->Unsubscribe(this);
+    device->device->Unsubscribe(device->id);
     device->device = NULL;
   }
   
@@ -305,8 +317,9 @@ int WriteLog::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-int WriteLog::PutConfig(player_device_id_t* device, void* client,
-                       void* data, size_t len)
+int WriteLog::PutConfig(player_device_id_t id, void *client, 
+                        void* src, size_t len,
+                        struct timeval* timestamp)
 {
   player_log_set_write_state_t sreq;
   player_log_get_state_t greq;
@@ -316,22 +329,22 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
   {
     PLAYER_WARN2("request was too small (%d < %d)",
                   len, sizeof(sreq.subtype));
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
-  subtype = ((player_log_set_write_state_t*)data)->subtype;
+  subtype = ((player_log_set_write_state_t*)src)->subtype;
   switch(subtype)
   {
     case PLAYER_LOG_SET_WRITE_STATE_REQ:
       if(len != sizeof(sreq))
       {
         PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
-      sreq = *((player_log_set_write_state_t*)data);
+      sreq = *((player_log_set_write_state_t*)src);
       if(sreq.state)
       {
         puts("WriteLog: start logging");
@@ -342,7 +355,7 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
         puts("WriteLog: stop logging");
         this->enable = false;
       }
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     case PLAYER_LOG_GET_STATE_REQ:
@@ -350,24 +363,24 @@ int WriteLog::PutConfig(player_device_id_t* device, void* client,
       {
         PLAYER_WARN2("request wrong size (%d != %d)", 
                      len, sizeof(greq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
-      greq = *((player_log_get_state_t*)data);
+      greq = *((player_log_get_state_t*)src);
       greq.type = PLAYER_LOG_TYPE_WRITE;
       if(this->enable)
         greq.state = 1;
       else
         greq.state = 0;
 
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
-                        &greq, sizeof(greq)) != 0)
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+                        &greq, sizeof(greq),NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     default:
       PLAYER_WARN1("got request of unknown subtype %u", subtype);
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }
@@ -382,7 +395,7 @@ void WriteLog::Main(void)
 {
   int i;
   size_t size, maxsize;
-  uint32_t tsec, tusec;
+  struct timeval ts;
   void *data;
   WriteLogDevice *device;
   
@@ -392,11 +405,10 @@ void WriteLog::Main(void)
   while (1)
   {
     pthread_testcancel();
-
+    
     if (this->wait_index >= 0)
     {
       // Wait on some device
-      // TODO: should be able to wait on any device
       device = this->devices + this->wait_index;
       device->device->Wait();
     }
@@ -416,17 +428,17 @@ void WriteLog::Main(void)
       device = this->devices + i;
       
       // Read data from underlying device
-      size = device->device->GetDataEx(device->id, this, (unsigned char*) data, maxsize, &tsec, &tusec);
+      size = device->device->GetData(device->id, (void*) data, maxsize, &ts);
       assert(size < maxsize);
 
       // Check for new data
-      if (device->tsec == tsec && device->tusec == tusec)
+      if((device->time.tv_sec == ts.tv_sec) && 
+         (device->time.tv_usec == ts.tv_usec))
         continue;
-      device->tsec = tsec;
-      device->tusec = tusec;
+      device->time = ts;
   
       // Write data to file
-      this->Write(data, size, &device->id, tsec, tusec);
+      this->Write(data, size, &device->id, ts.tv_sec,ts.tv_usec);
     }
 
     // Write the sync packet
@@ -704,15 +716,26 @@ void WriteLog::WriteTruth(player_truth_data_t *data)
 // Write fiducial data to file
 void WriteLog::WriteFiducial(player_fiducial_data_t *data)
 {
-  // format: <count> [<id> <range> <bearing> <orientation>] ...
+  // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw> <ux> <uy> <uz> etc] ...
   fprintf(this->file, "%d", HUINT16(data->count));
   for(int i=0;i<HUINT16(data->count);i++)
   {
-    fprintf(this->file, " %d %+07.3f %+07.3f %+04.3f",
+    fprintf(this->file, " %d"
+            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f"
+            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
             HINT16(data->fiducials[i].id),
-            MM_M(HINT16(data->fiducials[i].pose[0])),
-            DEG_RAD(HINT16(data->fiducials[i].pose[1])),
-            DEG_RAD(HINT16(data->fiducials[i].pose[2])));
+            MM_M(HINT32(data->fiducials[i].pos[0])),
+            MM_M(HINT32(data->fiducials[i].pos[1])),
+            MM_M(HINT32(data->fiducials[i].pos[2])),
+            MM_M(HINT32(data->fiducials[i].rot[0])),
+            MM_M(HINT32(data->fiducials[i].rot[1])),
+            MM_M(HINT32(data->fiducials[i].rot[2])),
+            MM_M(HINT32(data->fiducials[i].upos[0])),
+            MM_M(HINT32(data->fiducials[i].upos[1])),
+            MM_M(HINT32(data->fiducials[i].upos[2])),
+            MM_M(HINT32(data->fiducials[i].urot[0])),
+            MM_M(HINT32(data->fiducials[i].urot[1])),
+            MM_M(HINT32(data->fiducials[i].urot[2])));
   }
   
   return;

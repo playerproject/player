@@ -54,6 +54,7 @@
 #include <playercommon.h>
 
 #include <device.h>
+#include <driver.h>
 #include <stage1p3.h>
 
 // this is the root of the stage device filesystem name
@@ -61,7 +62,7 @@
 // e.g. /tmp/stageIO.vaughan.0
 #define IOFILENAME "/tmp/stageIO"
 
-class StageDevice : public CDevice
+class StageDevice : public Driver
 {
   // constructor - info points to a single buffer containing the data,
   // command and configuration buffers.  lock fd is an open
@@ -83,13 +84,15 @@ class StageDevice : public CDevice
     
   // Read data from the device
   //
-  public: virtual size_t GetData(void* client,unsigned char* dest, size_t len,
-                                 uint32_t* timestamp_sec,
-                                 uint32_t* timestamp_usec);
+  public: virtual size_t GetData(player_device_id_t id,
+                                 void* dest, size_t len,
+                                 struct timeval* timestamp);
 
   // Write a command to the device
   //
-  public: virtual void PutCommand(void* client, unsigned char * , size_t maxsize);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Write configuration to the device
   //
@@ -102,9 +105,14 @@ class StageDevice : public CDevice
   private: void InstallLock( int fd, int index )
            {lock_fd = fd; lock_byte = index;}
 
-  // these two methods are overrides of the CDevice definitions.
+  // these two methods are overrides of the Driver definitions.
   private: virtual void Lock();
   private: virtual void Unlock();
+
+  // Pointer to my Device, which has pointers to data and command
+  // buffers
+  private: Device* device;
+
 
   // Pointer to shared info buffers
   //

@@ -38,7 +38,7 @@
 #include <unistd.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 #include "deviceregistry.h"
 
@@ -46,10 +46,10 @@
 
 
 // The logfile driver
-class ReadLog: public CDevice 
+class ReadLog: public Driver 
 {
   // Constructor
-  public: ReadLog(int code, ConfigFile* cf, int section);
+  public: ReadLog(ConfigFile* cf, int section);
 
   // Destructor
   public: ~ReadLog();
@@ -61,11 +61,15 @@ class ReadLog: public CDevice
   public: virtual int Shutdown();
 
   // Process configuration requests
-  public: virtual int PutConfig(player_device_id_t* device, void* client, 
-                                void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Our manager
   private: ReadLogManager *manager;
+
+  // Our local device id
+  private: player_device_id_t local_id;
   
   // The part of the log file to read
   private: player_device_id_t read_id;
@@ -75,21 +79,15 @@ class ReadLog: public CDevice
 
 ////////////////////////////////////////////////////////////////////////////
 // Create a driver for reading log files
-CDevice* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
+Driver* ReadReadLog_Init(ConfigFile* cf, int section)
 {
-  player_interface_t interface;
-
-  if (lookup_interface(name, &interface) != 0)
-  {
-    PLAYER_ERROR1("interface \"%s\" is not supported", name);
-    return NULL;
-  }
   if (ReadLogManager_Get() == NULL)
   {
     PLAYER_ERROR("no log file specified; did you forget to use -r <filename>?");
     return NULL;
   }
-  return ((CDevice*) (new ReadLog(interface.code, cf, section)));
+
+  return ((Driver*) (new ReadLog(cf, section)));
 }
 
 
@@ -97,25 +95,28 @@ CDevice* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
 // Device factory registration
 void ReadLog_Register(DriverTable* table)
 {
-  table->AddDriver("readlog", PLAYER_READ_MODE, ReadReadLog_Init);
+  table->AddDriver("readlog", ReadReadLog_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
-ReadLog::ReadLog(int code, ConfigFile* cf, int section)
-    : CDevice(PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
+ReadLog::ReadLog(ConfigFile* cf, int section)
+    : Driver(cf, section, -1, PLAYER_ALL_MODE,
+             PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
 {
+  this->local_id = this->device_id;
+
   // Get our manager
   this->manager = ReadLogManager_Get();
   assert(this->manager != NULL);
   
   // Get the part of the log file we wish to read
-  this->read_id.code = code;
+  this->read_id.code = this->local_id.code;
   this->read_id.index = cf->ReadInt(section, "index", 0);
 
-  if(code == PLAYER_LOG_CODE)
+  if(this->local_id.code == PLAYER_LOG_CODE)
   {
     if(cf->ReadInt(section, "enable", 1) > 0)
       this->manager->enable = true;
@@ -147,14 +148,14 @@ int ReadLog::Setup()
   // Subscribe to the underlying reader, unless we're the 'log' device,
   // which doesn't produce any data, but rather allows the client to
   // start/stop data playback.
-  if(this->device_id.code != PLAYER_LOG_CODE)
+  if(this->local_id.code != PLAYER_LOG_CODE)
   {
     if(this->manager->Subscribe(this->read_id, this) != 0)
       return -1;
   }
 
   // Clear the data buffer
-  this->PutData(NULL, 0, 0, 0);
+  this->PutData(NULL, 0, NULL);
     
   return 0;
 }
@@ -173,17 +174,18 @@ int ReadLog::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-int ReadLog::PutConfig(player_device_id_t* device, void* client,
-                       void* data, size_t len)
+int ReadLog::PutConfig(player_device_id_t id, void *client, 
+                       void* src, size_t len,
+                       struct timeval* timestamp)
 {
   player_log_set_read_rewind_t rreq;
   player_log_set_read_state_t sreq;
   player_log_get_state_t greq;
   uint8_t subtype;
 
-  if(device->code != PLAYER_LOG_CODE)
+  if(id.code != PLAYER_LOG_CODE)
   {
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return(0);
   }
@@ -192,22 +194,22 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
   {
     PLAYER_WARN2("request was too small (%d < %d)",
                   len, sizeof(sreq.subtype));
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
-  subtype = ((player_log_set_read_state_t*)data)->subtype;
+  subtype = ((player_log_set_read_state_t*)src)->subtype;
   switch(subtype)
   {
     case PLAYER_LOG_SET_READ_STATE_REQ:
       if(len != sizeof(sreq))
       {
         PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
-      sreq = *((player_log_set_read_state_t*)data);
+      sreq = *((player_log_set_read_state_t*)src);
       if(sreq.state)
       {
         puts("ReadLog: start playback");
@@ -218,7 +220,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
         puts("ReadLog: stop playback");
         this->manager->enable = false;
       }
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     case PLAYER_LOG_GET_STATE_REQ:
@@ -226,19 +228,19 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
       {
         PLAYER_WARN2("request wrong size (%d != %d)", 
                      len, sizeof(greq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
-      greq = *((player_log_get_state_t*)data);
+      greq = *((player_log_get_state_t*)src);
       greq.type = PLAYER_LOG_TYPE_READ;
       if(this->manager->enable)
         greq.state = 1;
       else
         greq.state = 0;
 
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
-                        &greq, sizeof(greq)) != 0)
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+                        &greq, sizeof(greq),NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     case PLAYER_LOG_SET_READ_REWIND_REQ:
@@ -246,7 +248,7 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
       {
         PLAYER_WARN2("request wrong size (%d != %d)", 
                      len, sizeof(rreq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -254,13 +256,13 @@ int ReadLog::PutConfig(player_device_id_t* device, void* client,
       // set the appropriate flag in the manager
       this->manager->rewind_requested = true;
 
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
 
     default:
       PLAYER_WARN1("got request of unknown subtype %u", subtype);
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }

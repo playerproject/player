@@ -69,7 +69,6 @@ extern PlayerTime* GlobalTime;
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
 extern int global_playerport; // used to get at devices
 
 // we need to debug different things at different times
@@ -86,113 +85,124 @@ extern int global_playerport; // used to get at devices
 #define DEG2RAD_FIX(x) ((x) * 174)
 #define RAD2DEG_FIX(x) ((x) * 572958)
 
-/* these are necessary to make the static fields visible to the linker */
-extern pthread_t		REB::thread;
-extern struct timeval		REB::timeBegan_tv;
-extern int			REB::reb_fd; 
-extern char			REB::reb_serial_port[];
-extern bool			REB::initdone;
-extern int			REB::param_index;
-extern pthread_mutex_t		REB::reb_accessMutex;
-extern pthread_mutex_t		REB::reb_setupMutex;
-extern int			REB::reb_subscriptions;
-extern int			REB::ir_subscriptions;
-extern int			REB::pos_subscriptions;
-extern int			REB::power_subscriptions;
-extern player_reb_data_t*	REB::data;
-extern player_reb_cmd_t*	REB::command;
-extern unsigned char*		REB::reqqueue;
-extern unsigned char*		REB::repqueue;
-extern struct timeval		REB::last_position;
-extern bool			REB::refresh_last_position;
-extern int			REB::last_lpos;
-extern int			REB::last_rpos;
-extern int			REB::last_x_f;
-extern int			REB::last_y_f;
-extern double			REB::last_theta;
-extern bool			REB::motors_enabled;
-extern bool			REB::velocity_mode;
-extern bool			REB::direct_velocity_control;
-extern short			REB::desired_heading;
-extern int			REB::locks;
-extern int			REB::slocks;
-extern struct pollfd		REB::write_pfd;
-extern struct pollfd		REB::read_pfd;
-
-REB::REB(char *interface, ConfigFile *cf, int section)
+/* initialize the driver.
+ *
+ * returns: pointer to new REBIR object
+ */
+Driver*
+REB_Init(ConfigFile *cf, int section)
 {
-  int reqqueuelen = 1;
-  int repqueuelen = 1;
+  return (Driver *) new REB( cf, section);
+}
 
-  if(!initdone)
+/* register the Khepera IR driver in the drivertable
+ *
+ * returns: 
+ */
+void
+REB_Register(DriverTable *table) 
+{
+  table->AddDriver("reb", REB_Init);
+}
+
+REB::REB(ConfigFile *cf, int section)
+        : Driver(cf,section)
+{
+  player_device_id_t* ids;
+  int num_ids;
+
+  // zero ids, so that we'll know later which interfaces were requested
+  memset(&this->position_id, 0, sizeof(player_device_id_t));
+  memset(&this->ir_id, 0, sizeof(player_device_id_t));
+  memset(&this->power_id, 0, sizeof(player_device_id_t));
+
+  this->position_subscriptions = 0;
+  this->ir_subscriptions = 0;
+
+  // Parse devices section
+  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
   {
-    locks = slocks =0;
-    // build the table of robot parameters.
-    initialize_reb_params();
+    this->SetError(-1);    
+    return;
+  }
+
+  // Do we create a robot position interface?
+  if(cf->ReadDeviceId(&(this->position_id), ids, 
+                      num_ids, PLAYER_POSITION_CODE,0) == 0)
+  {
+    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
+                          sizeof(player_position_data_t),
+                          sizeof(player_position_cmd_t), 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create an ir interface?
+  if(cf->ReadDeviceId(&(this->ir_id), ids, 
+                      num_ids, PLAYER_IR_CODE,0) == 0)
+  {
+    if(this->AddInterface(this->ir_id, PLAYER_READ_MODE,
+                          sizeof(player_ir_data_t), 0, 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create an ir interface?
+  if(cf->ReadDeviceId(&(this->power_id), ids, 
+                      num_ids, PLAYER_POWER_CODE,0) == 0)
+  {
+    if(this->AddInterface(this->power_id, PLAYER_READ_MODE,
+                          sizeof(player_power_data_t), 0, 0, 0) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // check for unused ids
+  if(cf->UnusedIds(section,ids,num_ids))
+  {
+    this->SetError(-1);
+    free(ids);
+    return;
+  }
+
+  // we're done with the list of ids now.
+  free(ids);
+
+  // build the table of robot parameters.
+  initialize_reb_params();
+
+  // Read config file options
   
-    // also, install default parameter values.
-    strncpy(reb_serial_port,REB_DEFAULT_SERIAL_PORT,sizeof(reb_serial_port));
-    reb_fd = -1;
-    param_index = 0;
+  // also, install default parameter values.
+  strncpy(reb_serial_port,REB_DEFAULT_SERIAL_PORT,sizeof(reb_serial_port));
+  reb_fd = -1;
+  param_index = 0;
 
-    data = new player_reb_data_t;
-    command = new player_reb_cmd_t;
-
-    reqqueue = (unsigned char*)(new playerqueue_elt_t[reqqueuelen]);
-    repqueue = (unsigned char*)(new playerqueue_elt_t[repqueuelen]);
-
-    SetupBuffers((unsigned char*)data, sizeof(player_reb_data_t), 
-                 (unsigned char*)command, sizeof(player_reb_cmd_t),
-                 reqqueue, reqqueuelen,
-                 repqueue, repqueuelen);
-
-    ((player_reb_cmd_t*)device_command)->position.xspeed = 0;
-    ((player_reb_cmd_t*)device_command)->position.yawspeed = 0;
-
-    reb_subscriptions = 0;
-    ir_subscriptions = 0;
-    pos_subscriptions = 0;
-    power_subscriptions = 0;
-
-    //set up the poll parameters... used for the comms
-    // over the serial port to the Kam
-    write_pfd.events = POLLOUT;
-    read_pfd.events = POLLIN;
-
-    pthread_mutex_init(&reb_accessMutex,NULL);
-    pthread_mutex_init(&reb_setupMutex,NULL);
-
-    
-    initdone = true; 
-  }
-  else
-  {
-    // every sub-device gets its own queue object (but they all point to the
-    // same chunk of memory)
-    
-    // every sub-device needs to get its various pointers set up
-    SetupBuffers((unsigned char*)data, sizeof(player_reb_data_t),
-                 (unsigned char*)command, sizeof(player_reb_cmd_t),
-                 reqqueue, reqqueuelen,
-                 repqueue, repqueuelen);
-  }
-
+  //set up the poll parameters... used for the comms
+  // over the serial port to the Kam
+  write_pfd.events = POLLOUT;
+  read_pfd.events = POLLIN;
 
   // now we have to look up our parameters.  this should be given as an argument
   strncpy(reb_serial_port, cf->ReadString(section, "port", reb_serial_port),
 	  sizeof(reb_serial_port));
 
-  // check if it's the reb_position being loaded.  then params are important
-  char driver[32] = "foo";
-  if (!strcmp("reb_position", cf->ReadString(section, "driver", driver))) {
-    char subclass[32] = "slow";
-    strncpy(subclass, cf->ReadString(section, "subclass", subclass),
-	    strlen(subclass));
-    if (!strcmp(subclass, "fast")) {
-      param_index = 1;
-    } else {
-      param_index = 0;
-    }
+  char subclass[32] = "slow";
+  strncpy(subclass, cf->ReadString(section, "subclass", subclass),
+          strlen(subclass));
+  if (!strcmp(subclass, "fast")) {
+    param_index = 1;
+  } else {
+    param_index = 0;
   }
 
   // zero position counters
@@ -201,39 +211,6 @@ REB::REB(char *interface, ConfigFile *cf, int section)
   last_x_f=0;
   last_y_f=0;
   last_theta = 0.0;
-
-  // zero the subscription counter.
-  subscriptions = 0;
-}
-
-void 
-REB::Lock()
-{
-  // keep track of our locks cuz we seem to lose one
-  // somewhere somehow
-  locks++;
-  pthread_mutex_lock(&reb_accessMutex);
-}
-
-void 
-REB::Unlock()
-{
-  locks--;
-  pthread_mutex_unlock(&reb_accessMutex);
-}
-
-void 
-REB::SetupLock()
-{
-  slocks++;
-  pthread_mutex_lock(&reb_setupMutex);
-}
-
-void 
-REB::SetupUnlock()
-{
-  slocks--;
-  pthread_mutex_unlock(&reb_setupMutex);
 }
 
 /* called the first time a client connects
@@ -284,6 +261,11 @@ REB::Setup()
 
   desired_heading = 0;
 
+  player_position_cmd_t cmd;
+  memset(&cmd,0,sizeof(player_position_cmd_t));
+  PutData(this->position_id,(void*)&cmd,
+          sizeof(player_position_cmd_t),NULL);
+
   /* now spawn reading thread */
   StartThread();
   return(0);
@@ -301,281 +283,174 @@ REB::Shutdown()
   SetSpeed(REB_MOTOR_RIGHT, 0);
 
   SetIRState(REB_IR_STOP);
-  // zero these out or we may have problems
-  // next time we connect
-  player_reb_cmd_t cmd;
 
-  cmd.position.xspeed = 0;
-  cmd.position.yawspeed = 0;
-  cmd.position.yaw = 0;
-
-  if (locks > 0) {
-    printf("REB: %d LOCKS STILL EXIST\n", locks);
-    while (locks) {
-      Unlock();
-    }
-  }
-  
   close(reb_fd);
   reb_fd = -1;
   return(0);
 }
 
 int 
-REB::Subscribe(void *client)
+REB::Subscribe(player_device_id_t id)
 {
   int setupResult;
 
-  SetupLock();
-
-  if(reb_subscriptions == 0) 
+  // do the subscription
+  if((setupResult = Driver::Subscribe(id)) == 0)
   {
-    setupResult = Setup();
-    if (setupResult == 0 ) 
+    // also increment the appropriate subscription counter
+    switch(id.code)
     {
-      reb_subscriptions++;  // increment the static reb-wide subscr counter
-      subscriptions++;       // increment the per-device subscr counter
+      case PLAYER_POSITION_CODE:
+        this->position_subscriptions++;
+        break;
+      case PLAYER_IR_CODE:
+        this->ir_subscriptions++;
+        break;
     }
   }
-  else 
-  {
-    reb_subscriptions++;  // increment the static reb-wide subscr counter
-    subscriptions++;       // increment the per-device subscr counter
-    setupResult = 0;
-  }
-  
-  SetupUnlock();
-  return( setupResult );
+
+  return(setupResult);
 }
 
 int 
-REB::Unsubscribe(void *client)
+REB::Unsubscribe(player_device_id_t id)
 {
   int shutdownResult;
 
-  SetupLock();
-  
-  if(reb_subscriptions == 0) 
+  // do the unsubscription
+  if((shutdownResult = Driver::Unsubscribe(id)) == 0)
   {
-    shutdownResult = -1;
-  }
-  else if(reb_subscriptions == 1) 
-  {
-    shutdownResult = Shutdown();
-    if (shutdownResult == 0 ) 
-    { 
-      reb_subscriptions--;  // decrement the static reb-wide subscr counter
-      subscriptions--;       // decrement the per-device subscr counter
+    // also decrement the appropriate subscription counter
+    switch(id.code)
+    {
+      case PLAYER_POSITION_CODE:
+        assert(--this->position_subscriptions >= 0);
+        break;
+      case PLAYER_IR_CODE:
+        assert(--this->ir_subscriptions >= 0);
+        break;
     }
-    /* do we want to unsubscribe even though the shutdown went bad? */
   }
-  else 
-  {
-    reb_subscriptions--;  // decrement the static reb-wide subscr counter
-    subscriptions--;       // decrement the per-device subscr counter
-    shutdownResult = 0;
-  }
-  
-  SetupUnlock();
 
-  return( shutdownResult );
+  return(shutdownResult);
 }
 
-
-void 
-REB::PutData( unsigned char* src, size_t maxsize,
-	      uint32_t timestamp_sec, uint32_t timestamp_usec)
-{
-  Lock();
-
-  *((player_reb_data_t*)device_data) = *((player_reb_data_t*)src);
-
-
-  if(timestamp_sec == 0)
-  {
-    struct timeval curr;
-    GlobalTime->GetTime(&curr);
-    timestamp_sec = curr.tv_sec;
-    timestamp_usec = curr.tv_usec;
-  }
-
-  data_timestamp_sec = timestamp_sec;
-  data_timestamp_usec = timestamp_usec;
-  
-  // need to fill in the timestamps on all REB devices, both so that they
-  // can read it, but also because other devices may want to read it
-  player_device_id_t id = device_id;
-
-  id.code = PLAYER_IR_CODE;
-  CDevice* ir = deviceTable->GetDevice(id);
-  if(ir)
-  {
-    ir->data_timestamp_sec = this->data_timestamp_sec;
-    ir->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  id.code = PLAYER_POWER_CODE;
-  CDevice* power = deviceTable->GetDevice(id);
-  if(power)
-  {
-    power->data_timestamp_sec = this->data_timestamp_sec;
-    power->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  id.code = PLAYER_POSITION_CODE;
-  CDevice* position = deviceTable->GetDevice(id);
-  if(position)
-  {
-    position->data_timestamp_sec = this->data_timestamp_sec;
-    position->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  Unlock();
-}
 
 void 
 REB::Main()
 {
-  player_reb_cmd_t cmd;
+  player_position_cmd_t cmd;
+  int last_ir_subscrcount=0;
+  int last_position_subscrcount=0;
 
   short last_trans_command=0, last_rot_command=0;
   int leftvel=0, rightvel=0;
   int leftpos=0, rightpos=0;
-
-  //  static struct timeval pmot={0,0};
-  //  struct timeval ds, de, da={0,0};
-  // first get pointers to all the devices we control
-  player_device_id_t id = device_id;
-
-  id.code = PLAYER_IR_CODE;
-  CDevice *ir = deviceTable->GetDevice(id);
-
-  id.code = PLAYER_POSITION_CODE;
-  CDevice *pos = deviceTable->GetDevice(id);
-
-  id.code = PLAYER_POWER_CODE;
-  CDevice *power = deviceTable->GetDevice(id);
-
-  this->pos_subscriptions = 0;
-  this->ir_subscriptions = 0;
-  this->power_subscriptions = 0;
-
-  GlobalTime->GetTime(&timeBegan_tv);
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
   while (1) {
     // we want to turn on the IR if someone just subscribed, and turn
     // them off if the last subscriber just unsubscribed.
-    if(ir) {
-      if(!this->ir_subscriptions && ir->subscriptions) {
-	// then someone just subbed to IR
-	SetIRState(REB_IR_START);
+    if(!last_ir_subscrcount && this->ir_subscriptions)
+    {
+      // then someone just subbed to IR
+      SetIRState(REB_IR_START);
 
-	// zero out ranges in IR data so proxy knows
-	// to do regression
-	for (int i =0 ; i < PLAYER_IR_MAX_SAMPLES; i++) {
-	  data->ir.ranges[i] = 0;
-	}
-
-      } else if(this->ir_subscriptions && !(ir->subscriptions)) {
-	// then last person stopped sub from IR..
-	SetIRState(REB_IR_STOP);
-	
-      }
-      
-      this->ir_subscriptions = ir->subscriptions;
+      // zero out ranges in IR data so proxy knows
+      // to do regression
+      player_ir_data_t ir_data;
+      memset(&ir_data,0,sizeof(player_ir_data_t));
+      PutData(this->ir_id,(unsigned char*)&ir_data,
+              sizeof(player_ir_data_t),NULL);
+    } 
+    else if(last_ir_subscrcount && !this->ir_subscriptions)
+    {
+      // then last person stopped sub from IR..
+      SetIRState(REB_IR_STOP);
     }
+    last_ir_subscrcount = this->ir_subscriptions;
     
     // we want to reset the odometry and enable the motors if the first 
     // client just subscribed to the position device, and we want to stop 
     // and disable the motors if the last client unsubscribed.
-    if(pos) {
-      if(!this->pos_subscriptions && pos->subscriptions) {
-	printf("REB: first pos sub. turn off and reset\n");
-	// then first sub for pos, so turn off motors and reset odom
-	SetSpeed(REB_MOTOR_LEFT, 0);
-	SetSpeed(REB_MOTOR_RIGHT, 0);
-	
-	SetOdometry(0,0,0);
+    if(!last_position_subscrcount && this->position_subscriptions)
+    {
+      printf("REB: first pos sub. turn off and reset\n");
+      // then first sub for pos, so turn off motors and reset odom
+      SetSpeed(REB_MOTOR_LEFT, 0);
+      SetSpeed(REB_MOTOR_RIGHT, 0);
 
-	// set up speed and pos PID
-	ConfigSpeedPID(0, 1000, 0, 10);
-	ConfigSpeedPID(2, 1000, 0, 10);
-	ConfigPosPID(0, 100, 0, 10);
-	ConfigPosPID(2, 100, 0, 10);
+      SetOdometry(0,0,0);
 
-	// have to convert spd from mm/s to pulse/10ms
-	int spd = (int) rint(100.0 * 
-			 PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
-	
-	// have to convert acc from mm/s^2 to pulses/256/(10ms^2)
-	int acc = (int) rint(100.0 * 
-			 PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
-	
-	if (acc > REB_MAX_ACC) {
-	  acc = REB_MAX_ACC;
-	} else if (acc == 0) {
-	  acc = REB_MIN_ACC;
-	}
-	ConfigSpeedProfile(0, spd, acc);
-	ConfigSpeedProfile(2, spd, acc);
+      // set up speed and pos PID
+      ConfigSpeedPID(0, 1000, 0, 10);
+      ConfigSpeedPID(2, 1000, 0, 10);
+      ConfigPosPID(0, 100, 0, 10);
+      ConfigPosPID(2, 100, 0, 10);
 
-      } else if (this->pos_subscriptions && !(pos->subscriptions)) {
-	// last sub just unsubbed
-	printf("REB: last pos sub gone\n");
-	SetSpeed(REB_MOTOR_LEFT, 0);
-	SetSpeed(REB_MOTOR_RIGHT, 0);
-	
-        // overwrite existing motor commands to be zero
-        player_position_cmd_t position_cmd;
-        position_cmd.xspeed = 0;
-        position_cmd.yawspeed = 0;
-	position_cmd.yaw = 0;
-        // TODO: who should really be the client here?
-        pos->PutCommand(this,(unsigned char*)(&position_cmd), 
-			sizeof(position_cmd));
+      // have to convert spd from mm/s to pulse/10ms
+      int spd = (int) rint(100.0 * 
+                           PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+
+      // have to convert acc from mm/s^2 to pulses/256/(10ms^2)
+      int acc = (int) rint(100.0 * 
+                           PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+
+      if (acc > REB_MAX_ACC) {
+        acc = REB_MAX_ACC;
+      } else if (acc == 0) {
+        acc = REB_MIN_ACC;
       }
-      
-      this->pos_subscriptions = pos->subscriptions;
+      ConfigSpeedProfile(0, spd, acc);
+      ConfigSpeedProfile(2, spd, acc);
+
     } 
+    else if(last_position_subscrcount && !this->position_subscriptions)
+    {
+      // last sub just unsubbed
+      printf("REB: last pos sub gone\n");
+      SetSpeed(REB_MOTOR_LEFT, 0);
+      SetSpeed(REB_MOTOR_RIGHT, 0);
 
-    if (power) {
-      if (!this->power_subscriptions && power->subscriptions) {
-	printf("REB: POWER SUBSCRIPTION\n");
-	this->power_subscriptions = power->subscriptions;
-      }
+      // overwrite existing motor commands to be zero
+      player_position_cmd_t position_cmd;
+      memset(&position_cmd,0,sizeof(position_cmd));
+      PutCommand(this->position_id,
+                 (unsigned char*)(&position_cmd), sizeof(position_cmd),NULL);
     }
+    last_position_subscrcount = this->position_subscriptions;
 
     // get configuration commands (ioctls)
     ReadConfig();
 
-    /* read the clients' commands from the common buffer */
-    GetCommand((unsigned char*)&cmd, sizeof(cmd));
+    if(this->position_subscriptions) 
+    {
+      /* read the clients' commands from the common buffer */
+      GetCommand(this->position_id, (unsigned char*)&cmd, sizeof(cmd), NULL);
 
-    bool newtrans = false, newrot = false, newheading=false;
-    bool newposcommand=false;
-    short trans_command, rot_command, heading_command;
+      bool newtrans = false, newrot = false, newheading=false;
+      bool newposcommand=false;
+      short trans_command, rot_command, heading_command;
+
+      if ((trans_command = (short)ntohl(cmd.xspeed)) != 
+          last_trans_command) {
+        newtrans = true;
+        last_trans_command = trans_command;
+      }
+
+      if ((rot_command = (short) ntohl(cmd.yawspeed)) != 
+          last_rot_command) {
+        newrot = true;
+        last_rot_command = rot_command;
+      }
+
+      if ((heading_command = (short) ntohl(cmd.yaw)) != 
+          this->desired_heading) {
+        newheading = true;
+        this->desired_heading = heading_command;
+      }
     
-    if ((trans_command = (short)ntohl(cmd.position.xspeed)) != 
-	last_trans_command) {
-      newtrans = true;
-      last_trans_command = trans_command;
-    }
-    
-    if ((rot_command = (short) ntohl(cmd.position.yawspeed)) != 
-	last_rot_command) {
-      newrot = true;
-      last_rot_command = rot_command;
-    }
-    
-    if ((heading_command = (short) ntohl(cmd.position.yaw)) != 
-	this->desired_heading) {
-      newheading = true;
-      this->desired_heading = heading_command;
-    }
-    
-    if (this->pos_subscriptions) {
       if (this->velocity_mode) {
 	// then we are in velocity mode
 	
@@ -583,8 +458,7 @@ REB::Main()
 	  // then we are doing my velocity based heading PD controller
 	  
 	  // calculate difference between desired and current
-	  int current_theta =  ntohl(this->data->position.yaw);
-	  int diff = this->desired_heading - current_theta;
+	  int diff = this->desired_heading - this->current_heading;
 	  
 	  // this will make diff the shortest angle between command and current
 	  if (diff > 180) {
@@ -625,7 +499,7 @@ REB::Main()
 
 #ifdef DEBUG_POS
 	  printf("REB: PD: diff=%d err=%d des=%d curr=%d trans=%d rot=%d\n", 
-		 diff, err_ratio, this->desired_heading, current_theta, 
+		 diff, err_ratio, this->desired_heading, this->current_heading, 
 		 trans_command, rot_command);
 #endif
 	  
@@ -785,24 +659,6 @@ REB::Main()
   pthread_exit(NULL);
 }
 
-/* start a thread that will invoke Main() */
-void 
-REB::StartThread()
-{
-  pthread_create(&thread, NULL, &DummyMain, this);
-}
-
-/* cancel (and wait for termination) of the thread */
-void 
-REB::StopThread()
-{
-  void* dummy;
-  pthread_cancel(thread);
-  if(pthread_join(thread,&dummy))
-    perror("REB::StopThread:pthread_join()");
-}
-
-
 /* this will read a new config command and interpret it
  *
  * returns: 
@@ -812,400 +668,412 @@ REB::ReadConfig()
 {
   int config_size;
   unsigned char config_buffer[REB_CONFIG_BUFFER_SIZE];
-  player_device_id_t id;
   void *client;
 
-  if ((config_size = GetConfig(&id, &client, 
-			       (void *)config_buffer, sizeof(config_buffer)))) {
-    
-    // figure out which device it's for
-    switch(id.code) {
-      
-      // REB_IR IOCTLS /////////////////
-    case PLAYER_IR_CODE:
+  // check for IR config requests
+  if((config_size = GetConfig(this->ir_id, &client, 
+                              (void*)config_buffer, 
+                              sizeof(config_buffer),NULL))) 
+  {
+    // REB_IR IOCTLS /////////////////
       
 #ifdef DEBUG_CONFIG
-      printf("REB: IR CONFIG\n");
+    printf("REB: IR CONFIG\n");
 #endif
 
-      // figure out which command
-      switch(config_buffer[0]) {
-      case PLAYER_IR_POWER_REQ: {
-	// request to change IR state
-	// 1 means turn on
-	// 0 is off
-	if (config_size != sizeof(player_ir_power_req_t)) {
-	  fprintf(stderr, "REB: argument to IR power req wrong size (%d)\n", config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to reply");
-	    break;
-	  }
-	}
+    // figure out which command
+    switch(config_buffer[0]) 
+    {
+      case PLAYER_IR_POWER_REQ: 
+        {
+          // request to change IR state
+          // 1 means turn on
+          // 0 is off
+          if (config_size != sizeof(player_ir_power_req_t)) 
+          {
+            fprintf(stderr, "REB: argument to IR power req wrong size (%d)\n", config_size);
+            if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to reply");
+            break;
+          }
 
-	player_ir_power_req_t *powreq = (player_ir_power_req_t *)config_buffer;	
+          player_ir_power_req_t *powreq = (player_ir_power_req_t *)config_buffer;	
 #ifdef DEBUG_CONFIG
-	printf("REB: IR_POWER_REQ: %d\n", powreq->state);
+          printf("REB: IR_POWER_REQ: %d\n", powreq->state);
 #endif
 
-	if (powreq->state) {
-	  SetIRState(REB_IR_START);
-	} else {
-	  SetIRState(REB_IR_STOP);
-	}
-	
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to reply");
-	}
-      }
-      break;
+          if (powreq->state) {
+            SetIRState(REB_IR_START);
+          } else {
+            SetIRState(REB_IR_STOP);
+          }
+
+          if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("REB: failed to reply");
+        }
+        break;
       
-      case PLAYER_IR_POSE_REQ: {
-	// request the pose of the IR sensors in robot-centric coords
-	if (config_size != sizeof(player_ir_pose_req_t)) {
-	  fprintf(stderr, "REB: argument to IR pose req wrong size (%d)\n", config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to put reply");
-	    break;
-	  }
-	}
-	
+      case PLAYER_IR_POSE_REQ: 
+        {
+          // request the pose of the IR sensors in robot-centric coords
+          if(config_size != sizeof(player_ir_pose_req_t)) 
+          {
+            fprintf(stderr, "REB: argument to IR pose req wrong size (%d)\n", config_size);
+            if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
+
 #ifdef DEBUG_CONFIG
-	printf("REB: IR_POSE_REQ\n");
+          printf("REB: IR_POSE_REQ\n");
 #endif
 
-	player_ir_pose_t irpose;
-	uint16_t numir = PlayerUBotRobotParams[param_index].NumberIRSensors;
-	irpose.pose_count = htons(numir);
-	for (int i =0; i < numir; i++) {
-	  int16_t *irp = PlayerUBotRobotParams[param_index].ir_pose[i];
-	  for (int j =0; j < 3; j++) {
-	    irpose.poses[i][j] = htons(irp[j]);
-	  }
-	}
-	
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &irpose,
-		     sizeof(irpose))) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	  break;
-	}
-      }
-      break;
+          player_ir_pose_t irpose;
+          uint16_t numir = PlayerUBotRobotParams[param_index].NumberIRSensors;
+          irpose.pose_count = htons(numir);
+          for (int i =0; i < numir; i++) {
+            int16_t *irp = PlayerUBotRobotParams[param_index].ir_pose[i];
+            for (int j =0; j < 3; j++) {
+              irpose.poses[i][j] = htons(irp[j]);
+            }
+          }
+
+          if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_ACK, 
+                      &irpose, sizeof(irpose), NULL)) 
+            PLAYER_ERROR("REB: failed to put reply");
+        }
+        break;
 
       default:
-	fprintf(stderr, "REB: IR got unknown config\n");
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-	break;
-      }
-      break;
-      
-      // END REB_IR IOCTLS //////////////
+        fprintf(stderr, "REB: IR got unknown config\n");
+        if(PutReply(this->ir_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+          PLAYER_ERROR("REB: failed to put reply");
+        break;
+    }
+    // END REB_IR IOCTLS //////////////
+  }
 
+  // check for position config requests
+  if((config_size = GetConfig(this->position_id, &client, 
+                              (void*)config_buffer, 
+                              sizeof(config_buffer),NULL))) 
+
+  {
       // POSITION IOCTLS ////////////////
-    case PLAYER_POSITION_CODE:
 #ifdef DEBUG_CONFIG
-      printf("REB: POSITION CONFIG\n");
+    printf("REB: POSITION CONFIG\n");
 #endif
-      switch (config_buffer[0]) {
-      case PLAYER_POSITION_GET_GEOM_REQ: {
-	// get geometry of robot
-	if (config_size != sizeof(player_position_geom_t)) {
-	  fprintf(stderr, "REB: get geom req is wrong size (%d)\n", config_size);
-	  PLAYER_ERROR("REB: failed to put reply");
-	  break;
-	}
-
-#ifdef DEBUG_CONFIG
-	printf("REB: POSITION_GET_GEOM_REQ\n");
-#endif
-
-	player_position_geom_t geom;
-	geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-	geom.pose[0] = htons(0);
-	geom.pose[1] = htons(0);
-	geom.pose[2] = htons(0);
-	geom.size[0] = geom.size[1] = 
-	  htons( (short) (2 * PlayerUBotRobotParams[this->param_index].RobotRadius));
-	
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom,
-		     sizeof(geom))) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-      }
-      break;
-
-      case PLAYER_POSITION_MOTOR_POWER_REQ: {
-	// change motor state
-	// 1 for on 
-	// 0 for off
-
-	if (config_size != sizeof(player_position_power_config_t)) {
-	  fprintf(stderr, "REB: pos motor power req got wrong size (%d)\n", config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to put reply");
-	    break;
-	  }
-	}
-
-	player_position_power_config_t *mpowreq = (player_position_power_config_t *)config_buffer;
- 
-#ifdef DEBUG_CONFIG
-	printf("REB: MOTOR_POWER_REQ %d\n", mpowreq->value);
-#endif
-	
-	if (mpowreq->value) {
-	  this->motors_enabled = true;
-	} else {
-	  this->motors_enabled = false;
-	}
-	
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-
-	printf("REB: put MOTOR POWER REQ\n");
-      }
-      break;
-
-      case PLAYER_POSITION_VELOCITY_MODE_REQ: {
-	// select method of velocity control
-	// 0 for direct velocity control (trans and rot applied directly)
-	// 1 for builtin velocity based heading PD controller
-	if (config_size != sizeof(player_position_velocitymode_config_t)) {
-	  fprintf(stderr, "REB: pos vel control req got wrong size (%d)\n", config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to put reply");
-	    break;
-	  }
-	}
-
-	player_position_velocitymode_config_t *velcont = 
-	  (player_position_velocitymode_config_t *) config_buffer;
+    switch (config_buffer[0]) 
+    {
+      case PLAYER_POSITION_GET_GEOM_REQ: 
+        {
+          // get geometry of robot
+          if (config_size != sizeof(player_position_geom_t)) 
+          {
+            fprintf(stderr, "REB: get geom req is wrong size (%d)\n", config_size);
+            if(PutReply(this->position_id, client, 
+                        PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
 
 #ifdef DEBUG_CONFIG
-	printf("REB: VELOCITY_MODE_REQ %d\n", velcont->value);
+          printf("REB: POSITION_GET_GEOM_REQ\n");
 #endif
-	
-	if (!velcont->value) {
-	  this->direct_velocity_control = true;
-	} else {
-	  this->direct_velocity_control = false;
-	}
 
-	// also set up not to use position mode!
-	this->velocity_mode = true;
-	
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-      }
-      break;
+          player_position_geom_t geom;
+          geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+          geom.pose[0] = htons(0);
+          geom.pose[1] = htons(0);
+          geom.pose[2] = htons(0);
+          geom.size[0] = geom.size[1] = 
+                  htons( (short) (2 * PlayerUBotRobotParams[this->param_index].RobotRadius));
 
-      case PLAYER_POSITION_RESET_ODOM_REQ: {
-	// reset the odometry
-	if (config_size != sizeof(player_position_resetodom_config_t)) {
-	  fprintf(stderr, "REB: pos reset odom req got wrong size (%d)\n", config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to put reply");
-	    break;
-	  }
-	}
+          if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_ACK, 
+                      &geom, sizeof(geom), NULL)) 
+            PLAYER_ERROR("REB: failed to put reply");
+        }
+        break;
+
+      case PLAYER_POSITION_MOTOR_POWER_REQ: 
+        {
+          // change motor state
+          // 1 for on 
+          // 0 for off
+
+          if (config_size != sizeof(player_position_power_config_t)) 
+          {
+            fprintf(stderr, "REB: pos motor power req got wrong size (%d)\n", config_size);
+            if(PutReply(this->position_id, client, 
+                        PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
+
+          player_position_power_config_t *mpowreq = (player_position_power_config_t *)config_buffer;
 
 #ifdef DEBUG_CONFIG
-	printf("REB: RESET_ODOM_REQ\n");
+          printf("REB: MOTOR_POWER_REQ %d\n", mpowreq->value);
 #endif
-	
-	SetOdometry(0,0,0);
-	
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-      }
-      break;
-      // END POSITION IOCTLS ////////////
 
-      // REB POSITION IOCTLS ////////////
-      case PLAYER_POSITION_POSITION_MODE_REQ: {
-	// select velocity or position mode
-	// 0 for velocity mode
-	// 1 for position mode
-	if (config_size != sizeof(player_position_position_mode_req_t)) {
-	  fprintf(stderr, "REB: pos vel mode req got wrong size (%d)\n", config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to put reply");
-	    break;
-	  }
-	}
+          if (mpowreq->value) {
+            this->motors_enabled = true;
+          } else {
+            this->motors_enabled = false;
+          }
 
-	player_position_position_mode_req_t *posmode = 
-                (player_position_position_mode_req_t *)config_buffer;
+          if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("REB: failed to put reply");
+
+          printf("REB: put MOTOR POWER REQ\n");
+        }
+        break;
+
+      case PLAYER_POSITION_VELOCITY_MODE_REQ: 
+        {
+          // select method of velocity control
+          // 0 for direct velocity control (trans and rot applied directly)
+          // 1 for builtin velocity based heading PD controller
+          if (config_size != sizeof(player_position_velocitymode_config_t)) 
+          {
+            fprintf(stderr, "REB: pos vel control req got wrong size (%d)\n", config_size);
+            if(PutReply(this->position_id, client, 
+                        PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
+
+          player_position_velocitymode_config_t *velcont = 
+                  (player_position_velocitymode_config_t *) config_buffer;
+
 #ifdef DEBUG_CONFIG
-	printf("REB: POSITION_MODE_REQ %d\n", posmode->state);
+          printf("REB: VELOCITY_MODE_REQ %d\n", velcont->value);
 #endif
-	
-	if (posmode->state) {
-	  this->velocity_mode = false;
-	} else {
-	  this->velocity_mode = true;
-	}
-	
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-      }
-      break;
+
+          if (!velcont->value) {
+            this->direct_velocity_control = true;
+          } else {
+            this->direct_velocity_control = false;
+          }
+
+          // also set up not to use position mode!
+          this->velocity_mode = true;
+
+          if(PutReply(this->position_id, client, 
+                      PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("REB: failed to put reply");
+        }
+        break;
+
+      case PLAYER_POSITION_RESET_ODOM_REQ: 
+        {
+          // reset the odometry
+          if (config_size != sizeof(player_position_resetodom_config_t)) 
+          {
+            fprintf(stderr, "REB: pos reset odom req got wrong size (%d)\n", config_size);
+            if(PutReply(this->position_id, client, 
+                        PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
+
+#ifdef DEBUG_CONFIG
+          printf("REB: RESET_ODOM_REQ\n");
+#endif
+
+          SetOdometry(0,0,0);
+
+          if(PutReply(this->position_id, client, 
+                      PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("REB: failed to put reply");
+        }
+        break;
       
-      case PLAYER_POSITION_SET_ODOM_REQ: {
-	// set the odometry to a given position
-	if (config_size != sizeof(player_position_set_odom_req_t)) {
-	  fprintf(stderr, "REB: pos set odom req got wrong size (%d)\n",
-		  config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to put reply");
-	    break;
-	  }
-	}
+      case PLAYER_POSITION_POSITION_MODE_REQ: 
+        {
+          // select velocity or position mode
+          // 0 for velocity mode
+          // 1 for position mode
+          if (config_size != sizeof(player_position_position_mode_req_t)) 
+          {
+            fprintf(stderr, "REB: pos vel mode req got wrong size (%d)\n", config_size);
+            if(PutReply(this->position_id, client, 
+                        PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
 
-	player_position_set_odom_req_t *req = 
-                (player_position_set_odom_req_t *)config_buffer;
+          player_position_position_mode_req_t *posmode = 
+                  (player_position_position_mode_req_t *)config_buffer;
+#ifdef DEBUG_CONFIG
+          printf("REB: POSITION_MODE_REQ %d\n", posmode->state);
+#endif
+
+          if (posmode->state) {
+            this->velocity_mode = false;
+          } else {
+            this->velocity_mode = true;
+          }
+
+          if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("REB: failed to put reply");
+        }
+        break;
+
+      case PLAYER_POSITION_SET_ODOM_REQ: 
+        {
+          // set the odometry to a given position
+          if (config_size != sizeof(player_position_set_odom_req_t)) 
+          {
+            fprintf(stderr, "REB: pos set odom req got wrong size (%d)\n",
+                    config_size);
+            if(PutReply(this->position_id, client, 
+                        PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
+
+          player_position_set_odom_req_t *req = 
+                  (player_position_set_odom_req_t *)config_buffer;
 
 #ifdef DEBUG_CONFIG
-	int x,y;
-	short theta;
-	x = ntohl(req->x);
-	y = ntohl(req->y);
-	theta = ntohs(req->theta);
+          int x,y;
+          short theta;
+          x = ntohl(req->x);
+          y = ntohl(req->y);
+          theta = ntohs(req->theta);
 
-	printf("REB: SET_ODOM_REQ x=%d y=%d theta=%d\n", x, y, theta);
+          printf("REB: SET_ODOM_REQ x=%d y=%d theta=%d\n", x, y, theta);
 #endif
-	SetOdometry(req->x, req->y, req->theta);
+          SetOdometry(req->x, req->y, req->theta);
 
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-      }
-      break;
+          if(PutReply(this->position_id, client, 
+                      PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("REB: failed to put reply");
+        }
+        break;
 
-      case PLAYER_POSITION_SPEED_PID_REQ: {
-	// set up the velocity PID on the REB
-	// kp, ki, kd are used
-	if (config_size != sizeof(player_position_speed_pid_req_t)) {
-	  fprintf(stderr, "REB: pos speed PID req got wrong size (%d)\n", config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to put reply");
-	    break;
-	  }
-	}
+      case PLAYER_POSITION_SPEED_PID_REQ: 
+        {
+          // set up the velocity PID on the REB
+          // kp, ki, kd are used
+          if (config_size != sizeof(player_position_speed_pid_req_t)) 
+          {
+            fprintf(stderr, "REB: pos speed PID req got wrong size (%d)\n", config_size);
+            if(PutReply(this->position_id, client, 
+                        PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
 
-	player_position_speed_pid_req_t *pid = 
-                (player_position_speed_pid_req_t *)config_buffer;
-	int kp = ntohl(pid->kp);
-	int ki = ntohl(pid->ki);
-	int kd = ntohl(pid->kd);
+          player_position_speed_pid_req_t *pid = 
+                  (player_position_speed_pid_req_t *)config_buffer;
+          int kp = ntohl(pid->kp);
+          int ki = ntohl(pid->ki);
+          int kd = ntohl(pid->kd);
 
 #ifdef DEBUG_CONFIG
-	printf("REB: SPEED_PID_REQ kp=%d ki=%d kd=%d\n", kp, ki, kd);
+          printf("REB: SPEED_PID_REQ kp=%d ki=%d kd=%d\n", kp, ki, kd);
 #endif
-	
-	ConfigSpeedPID(REB_MOTOR_LEFT, kp, ki, kd);
-	ConfigSpeedPID(REB_MOTOR_RIGHT, kp, ki, kd);
-	
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-      }
-      break;
+
+          ConfigSpeedPID(REB_MOTOR_LEFT, kp, ki, kd);
+          ConfigSpeedPID(REB_MOTOR_RIGHT, kp, ki, kd);
+
+          if(PutReply(this->position_id, client, 
+                      PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("REB: failed to put reply");
+        }
+        break;
       
-      case PLAYER_POSITION_POSITION_PID_REQ: {
-	// set up the position PID on the REB
-	// kp, ki, kd are used
-	if (config_size != sizeof(player_position_position_pid_req_t)) {
-	  fprintf(stderr, "REB: pos pos PID req got wrong size (%d)\n", config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to put reply");
-	    break;
-	  }
-	}
-	
-	player_position_position_pid_req_t *pid = 
-                (player_position_position_pid_req_t *)config_buffer;
-	int kp = ntohl(pid->kp);
-	int ki = ntohl(pid->ki);
-	int kd = ntohl(pid->kd);
+      case PLAYER_POSITION_POSITION_PID_REQ: 
+        {
+          // set up the position PID on the REB
+          // kp, ki, kd are used
+          if(config_size != sizeof(player_position_position_pid_req_t)) 
+          {
+            fprintf(stderr, "REB: pos pos PID req got wrong size (%d)\n", config_size);
+            if(PutReply(this->position_id, client, 
+                        PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
+
+          player_position_position_pid_req_t *pid = 
+                  (player_position_position_pid_req_t *)config_buffer;
+          int kp = ntohl(pid->kp);
+          int ki = ntohl(pid->ki);
+          int kd = ntohl(pid->kd);
 
 #ifdef DEBUG_CONFIG
-	printf("REB: POS_PID_REQ kp=%d ki=%d kd=%d\n", kp, ki, kd);
+          printf("REB: POS_PID_REQ kp=%d ki=%d kd=%d\n", kp, ki, kd);
 #endif
-	
-	ConfigPosPID(REB_MOTOR_LEFT, kp, ki, kd);
-	ConfigPosPID(REB_MOTOR_RIGHT, kp, ki, kd);
-	
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-      }
-      break;
-      
-      case PLAYER_POSITION_SPEED_PROF_REQ: {
-	// set the speed profile for position mode 
-	// speed is max speed
-	// acc is max acceleration
-	if (config_size != sizeof(player_position_speed_prof_req_t)) {
-	  fprintf(stderr, "REB: pos speed prof req got wrong size (%d)\n", config_size);
-	  if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
-	    PLAYER_ERROR("REB: failed to put reply");
-	    break;
-	  }
-	}
 
-	player_position_speed_prof_req_t *prof = 
-                (player_position_speed_prof_req_t *)config_buffer;	
-	int spd = ntohs(prof->speed);
-	int acc = ntohs(prof->acc);
+          ConfigPosPID(REB_MOTOR_LEFT, kp, ki, kd);
+          ConfigPosPID(REB_MOTOR_RIGHT, kp, ki, kd);
+
+          if(PutReply(this->position_id, client, 
+                      PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("REB: failed to put reply");
+        }
+        break;
+
+      case PLAYER_POSITION_SPEED_PROF_REQ: 
+        {
+          // set the speed profile for position mode 
+          // speed is max speed
+          // acc is max acceleration
+          if (config_size != sizeof(player_position_speed_prof_req_t)) 
+          {
+            fprintf(stderr, "REB: pos speed prof req got wrong size (%d)\n", config_size);
+            if(PutReply(this->position_id, client, 
+                        PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("REB: failed to put reply");
+            break;
+          }
+
+          player_position_speed_prof_req_t *prof = 
+                  (player_position_speed_prof_req_t *)config_buffer;	
+          int spd = ntohs(prof->speed);
+          int acc = ntohs(prof->acc);
 
 #ifdef DEBUG_CONFIG	
-	printf("REB: SPEED_PROF_REQ: spd=%d acc=%d  spdu=%g accu=%g\n", spd, acc,
-	       spd*PlayerUBotRobotParams[this->param_index].PulsesPerMMMS,
-	       acc*PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+          printf("REB: SPEED_PROF_REQ: spd=%d acc=%d  spdu=%g accu=%g\n", spd, acc,
+                 spd*PlayerUBotRobotParams[this->param_index].PulsesPerMMMS,
+                 acc*PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
 #endif
-	// have to convert spd from mm/s to pulse/10ms
-	spd = (int) rint((double)spd * 
-			 PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
-	
-	// have to convert acc from mm/s^2 to pulses/256/(10ms^2)
-	acc = (int) rint((double)acc * 
-			 PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
-	// now have to turn into pulse/256
-	//	acc *= 256;
-	
-	if (acc > REB_MAX_ACC) {
-	  acc = REB_MAX_ACC;
-	} else if (acc == 0) {
-	  acc = REB_MIN_ACC;
-	}
-	
+          // have to convert spd from mm/s to pulse/10ms
+          spd = (int) rint((double)spd * 
+                           PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+
+          // have to convert acc from mm/s^2 to pulses/256/(10ms^2)
+          acc = (int) rint((double)acc * 
+                           PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+          // now have to turn into pulse/256
+          //	acc *= 256;
+
+          if (acc > REB_MAX_ACC) {
+            acc = REB_MAX_ACC;
+          } else if (acc == 0) {
+            acc = REB_MIN_ACC;
+          }
+
 #ifdef DEBUG_CONFIG
-	printf("REB: SPEED_PROF_REQ: SPD=%d  ACC=%d\n", spd, acc);
-	ConfigSpeedProfile(REB_MOTOR_LEFT, spd, acc);
-	ConfigSpeedProfile(REB_MOTOR_RIGHT, spd, acc);
+          printf("REB: SPEED_PROF_REQ: SPD=%d  ACC=%d\n", spd, acc);
+          ConfigSpeedProfile(REB_MOTOR_LEFT, spd, acc);
+          ConfigSpeedProfile(REB_MOTOR_RIGHT, spd, acc);
 #endif
-	if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0)) {
-	  PLAYER_ERROR("REB: failed to put reply");
-	}
-      }
-      break;
+          if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("REB: failed to put reply");
+        }
+        break;
       
       default:
 	fprintf(stderr, "REB: got unknown position config command\n");
-	break;
-      }
-      break;
-      // END REB_POSITION IOCTLS ////////////
-      
-    default:
-      printf("REB: unknown config code %d\n", id.code);
+        if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+          PLAYER_ERROR("REB: failed to put reply");
+        break;
     }
+    // END REB_POSITION IOCTLS ////////////
   }
 }
 
@@ -1218,25 +1086,27 @@ REB::ReadConfig()
 void
 REB::UpdateData()
 {
-  player_reb_data_t d;
+  player_position_data_t position_data;
+  player_ir_data_t ir_data;
+  player_power_data_t power_data;
 
-  Lock();
-  memcpy(&d, this->data, sizeof(player_reb_data_t));
-  Unlock();
+  UpdateIRData(&ir_data);
+  PutData(this->ir_id,
+          (void*)&ir_data,
+          sizeof(player_ir_data_t),
+          NULL);
 
-  Lock();
-  UpdateIRData(&d);
-  Unlock();
+  UpdatePowerData(&power_data);
+  PutData(this->power_id,
+          (void*)&power_data,
+          sizeof(player_power_data_t),
+          NULL);
 
-  Lock();
-  UpdatePowerData(&d);
-  Unlock();
-
-  Lock();
-  UpdatePosData(&d);
-  Unlock();
-  
-  PutData((unsigned char *)&d, sizeof(d), 0 ,0);
+  UpdatePosData(&position_data);
+  PutData(this->position_id,
+          (void*)&position_data,
+          sizeof(player_position_data_t),
+          NULL);
 }
 
 /* this will update the IR part of the client data
@@ -1248,7 +1118,7 @@ REB::UpdateData()
  * returns:
  */
 void
-REB::UpdateIRData(player_reb_data_t * d)
+REB::UpdateIRData(player_ir_data_t * d)
 {
   // then we can take a reading
   uint16_t volts[PLAYER_IR_MAX_SAMPLES];
@@ -1259,7 +1129,7 @@ REB::UpdateIRData(player_reb_data_t * d)
     // these are in units of 4 mV
     // now turn into mV units
     volts[i] *= 4;
-    d->ir.voltages[i] = htons(volts[i]);
+    d->voltages[i] = htons(volts[i]);
   }
   
 }
@@ -1269,14 +1139,14 @@ REB::UpdateIRData(player_reb_data_t * d)
  * returns:
  */
 void
-REB::UpdatePowerData(player_reb_data_t *d)
+REB::UpdatePowerData(player_power_data_t *d)
 {
   // read voltage 
   uint16_t volt = (uint16_t)ReadAD(REB_BATTERY_CHANNEL);
   
   // this is in units of 20mV.. change to mV
   volt *= 20;
-  d->power.charge = htons(volt);
+  d->charge = htons(volt);
 }
   
 /* this will update the position data.  this entails odometry, etc
@@ -1285,7 +1155,7 @@ REB::UpdatePowerData(player_reb_data_t *d)
  * returns:
  */ 
 void
-REB::UpdatePosData(player_reb_data_t *d)
+REB::UpdatePosData(player_position_data_t *d)
 {
   // change to fixed point FIX
   double x=0, y=0, theta;
@@ -1448,7 +1318,7 @@ REB::UpdatePosData(player_reb_data_t *d)
 
   }
 
-  int rtheta = (int) rint(RAD2DEG(theta));
+  this->current_heading = (int) rint(RAD2DEG(theta));
   
   // get int rounded angular velocity
   int rtd = (int) rint(RAD2DEG(theta_dot));
@@ -1460,27 +1330,27 @@ REB::UpdatePosData(player_reb_data_t *d)
   rv/= REB_FIXED_FACTOR;
 
   // normalize theta
-  rtheta %= 360;
+  this->current_heading %= 360;
 
   // now make theta positive
-  if (rtheta < 0) {
-    rtheta += 360;
+  if (this->current_heading < 0) {
+    this->current_heading += 360;
   }
 
 #ifdef DEBUG_POS
   printf("REB: l%s=%d r%s=%d x=%d y=%d theta=%d trans=%d rot=%d target=%02x\n",
 	 this->velocity_mode ? "vel" : "pos", lreading,
 	 this->velocity_mode ? "vel" : "pos", rreading, 
-	 x_f, y_f, rtheta,  rv, rtd, target_status);
+	 x_f, y_f, this->current_heading,  rv, rtd, target_status);
 #endif
 
   // now write data
-  d->position.xpos = htonl(x_f);
-  d->position.ypos = htonl(y_f);
-  d->position.yaw = htonl( rtheta);
-  d->position.xspeed = htonl(rv);
-  d->position.yawspeed = htonl( rtd);
-  d->position.stall = target_status;
+  d->xpos = htonl(x_f);
+  d->ypos = htonl(y_f);
+  d->yaw = htonl(this->current_heading);
+  d->xspeed = htonl(rv);
+  d->yawspeed = htonl( rtd);
+  d->stall = target_status;
 
   // later we read the torques FIX
 
@@ -1508,10 +1378,10 @@ REB::SetOdometry(int x, int y, short theta)
 
   last_theta = (double) DEG2RAD(ntohs(theta));
 
-  // we assume these are already in network byte order!!!!
-  this->data->position.xpos = x;
-  this->data->position.ypos = y;
-  this->data->position.yaw = theta;
+  player_position_data_t position_data;
+  memset(&position_data,0,sizeof(player_position_data_t));
+  PutData(this->position_id,
+          (void*)&position_data, sizeof(player_position_data_t), NULL);
 }
 
 /* this will write len bytes from buf out to the serial port reb_fd 

@@ -44,7 +44,7 @@
 #include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -52,10 +52,10 @@
 
 
 // Incremental navigation driver
-class GzPower : public CDevice
+class GzPower : public Driver
 {
   // Constructor
-  public: GzPower(char* interface, ConfigFile* cf, int section);
+  public: GzPower(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzPower();
@@ -69,10 +69,14 @@ class GzPower : public CDevice
                                  uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo device id
   private: char *gz_id;
@@ -89,34 +93,30 @@ class GzPower : public CDevice
 
 
 // Initialization function
-CDevice* GzPower_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzPower_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_POWER_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_power\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzPower(interface, cf, section)));
+  return ((Driver*) (new GzPower(cf, section)));
 }
 
 
 // a driver registration function
 void GzPower_Register(DriverTable* table)
 {
-  table->AddDriver("gz_power", PLAYER_ALL_MODE, GzPower_Init);
+  table->AddDriver("gz_power", GzPower_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzPower::GzPower(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_power_data_t), 0, 10, 10)
+GzPower::GzPower(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_POWER_CODE, PLAYER_ALL_MODE,
+             sizeof(player_power_data_t), 0, 10, 10)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -206,7 +206,9 @@ size_t GzPower::GetData(void* client, unsigned char* dest, size_t len,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzPower::PutCommand(void* client, unsigned char* src, size_t len)
+void GzPower::PutCommand(player_device_id_t id,
+                         void* src, size_t len,
+                         struct timeval* timestamp)
 {  
   return;
 }
@@ -214,16 +216,18 @@ void GzPower::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzPower::PutConfig(player_device_id_t* device, void* client, void* data, size_t len)
+int GzPower::PutConfig(player_device_id_t id, void *client, 
+                       void* src, size_t len,
+                       struct timeval* timestamp)
 {
   uint8_t subtype;
 
-  subtype = ((uint8_t*) data)[0];
+  subtype = ((uint8_t*) src)[0];
   switch (subtype)
   {
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }

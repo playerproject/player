@@ -252,13 +252,13 @@ void FiducialDataPack(  player_fiducial_data_t *data,
     {
       data->fiducials[i].id = htons((int16_t)ids[i]);
       
-      data->fiducials[i].pose[0] = MM_16( poses[i][0] );
-      data->fiducials[i].pose[1] = Deg_16( poses[i][1] );
-      data->fiducials[i].pose[2] = Deg_16( poses[i][2] );
+      data->fiducials[i].pos[0] = MM_32( poses[i][0] );
+      data->fiducials[i].pos[1] = MM_32( poses[i][1] );
+      data->fiducials[i].rot[2] = MM_32( poses[i][2] );
       
-      data->fiducials[i].upose[0] = MM_16( pose_errors[i][0] );
-      data->fiducials[i].upose[1] = Deg_16( pose_errors[i][1] );
-      data->fiducials[i].upose[2] = Deg_16( pose_errors[i][2] );
+      data->fiducials[i].upos[0] = MM_32( pose_errors[i][0] );
+      data->fiducials[i].upos[1] = MM_32( pose_errors[i][1] );
+      data->fiducials[i].urot[2] = MM_32( pose_errors[i][2] );
     }
 }
 
@@ -276,23 +276,23 @@ void FiducialDataUnpack( player_fiducial_data_t *data,
   if(count) *count = (int)ntohs(data->count);
   
   for( i = 0; i < *count; i++)
+  {
+    if(ids) ids[i] = (int16_t)ntohs(data->fiducials[i].id);
+      
+    if(poses)
     {
-      if(ids) ids[i] = (int16_t)ntohs(data->fiducials[i].id);
-      
-      if(poses)
-	{
-	  poses[i][0] = M_16( data->fiducials[i].pose[0] );
-	  poses[i][1] = Rad_16( data->fiducials[i].pose[1] );
-	  poses[i][2] = Rad_16( data->fiducials[i].pose[2] );
-	}
-      
-      if(pose_errors)
-	{
-	  pose_errors[i][0] = M_16( data->fiducials[i].upose[0] );
-	  pose_errors[i][1] = Rad_16( data->fiducials[i].upose[1] );
-	  pose_errors[i][2] = Rad_16( data->fiducials[i].upose[2] );
-	}
+      poses[i][0] = M_32( data->fiducials[i].pos[0] );
+      poses[i][1] = M_32( data->fiducials[i].pos[1] );
+      poses[i][2] = M_32( data->fiducials[i].rot[2] );
     }
+      
+    if(pose_errors)
+    {
+      pose_errors[i][0] = M_32( data->fiducials[i].upos[0] );
+      pose_errors[i][1] = M_32( data->fiducials[i].upos[1] );
+      pose_errors[i][2] = M_32( data->fiducials[i].urot[2] );
+    }
+  }
 }
 
 

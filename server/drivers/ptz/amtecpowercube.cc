@@ -41,7 +41,7 @@
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
@@ -92,7 +92,7 @@
 #define AMTEC_STATE_HOME_OK   0x02
 #define AMTEC_STATE_HALTED    0x04
 
-class AmtecPowerCube:public CDevice 
+class AmtecPowerCube:public Driver 
 {
   private:
     // this function will be run in a separate thread
@@ -145,34 +145,28 @@ class AmtecPowerCube:public CDevice
     /* device used to communicate with the ptz */
     const char* serial_port;
 
-    AmtecPowerCube(char* interface, ConfigFile* cf, int section);
+    AmtecPowerCube( ConfigFile* cf, int section);
 
     virtual int Setup();
     virtual int Shutdown();
 };
 
 // initialization function
-CDevice* AmtecPowerCube_Init(char* interface, ConfigFile* cf, int section)
+Driver* AmtecPowerCube_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_PTZ_STRING))
-  {
-    PLAYER_ERROR1("driver \"amtecpowercube\" does not support interface "
-                  "\"%s\"\n", interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new AmtecPowerCube(interface, cf, section)));
+  return((Driver*)(new AmtecPowerCube( cf, section)));
 }
 
 // a driver registration function
 void 
 AmtecPowerCube_Register(DriverTable* table)
 {
-  table->AddDriver("amtecpowercube", PLAYER_ALL_MODE, AmtecPowerCube_Init);
+  table->AddDriver("amtecpowercube",  AmtecPowerCube_Init);
 }
 
-AmtecPowerCube::AmtecPowerCube(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section) :
+  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
+         sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
   fd = -1;
   player_ptz_data_t data;
@@ -181,8 +175,8 @@ AmtecPowerCube::AmtecPowerCube(char* interface, ConfigFile* cf, int section) :
   data.pan = data.tilt = data.zoom = 0;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
-  PutData((unsigned char*)&data,sizeof(data),0,0);
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutData((unsigned char*)&data,sizeof(data),NULL);
+  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
 
   this->serial_port = cf->ReadString(section, "port", AMTEC_DEFAULT_PORT);
   this->return_to_home = cf->ReadInt(section, "home", 0);
@@ -387,7 +381,7 @@ AmtecPowerCube::Setup()
   puts("Done.");
 
   // zero the command buffer
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
 
   // reset and home the unit.
   if(Reset() < 0)
@@ -972,7 +966,7 @@ AmtecPowerCube::Main()
   {
     pthread_testcancel();
 
-    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t),NULL);
     if(this->controlmode == PLAYER_PTZ_POSITION_CONTROL)
     {
       // reverse pan angle, to increase ccw
@@ -1056,7 +1050,7 @@ AmtecPowerCube::Main()
     data.panspeed = htons(currpanspeed);
     data.tiltspeed = htons(currtiltspeed);
 
-    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
+    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
 
     // get the module state (for debugging and warning)
     unsigned int state;
@@ -1075,7 +1069,8 @@ AmtecPowerCube::Main()
     }
     
     // check for config requests 
-    if((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer))) > 0) 
+    if((buffer_len = 
+        GetConfig(&client, (void *)buffer, sizeof(buffer),NULL)) > 0) 
       HandleConfig(client, (uint8_t *)buffer, buffer_len);
 
     usleep(AMTEC_SLEEP_TIME_USEC);
@@ -1095,7 +1090,7 @@ AmtecPowerCube::HandleConfig(void *client, unsigned char *buf, size_t len)
       if(len != sizeof(player_ptz_controlmode_config))
       {
         PLAYER_WARN("control mode request is wrong size; ignoring");
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
 	  PLAYER_ERROR("Failed to PutReply\n");
       }
       else
@@ -1104,7 +1099,7 @@ AmtecPowerCube::HandleConfig(void *client, unsigned char *buf, size_t len)
            (cfg->mode != PLAYER_PTZ_POSITION_CONTROL))
         {
           PLAYER_WARN1("unknown control mode requested: %d", cfg->mode);
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
             PLAYER_ERROR("Failed to PutReply\n");
         }
         else
@@ -1113,15 +1108,15 @@ AmtecPowerCube::HandleConfig(void *client, unsigned char *buf, size_t len)
           // consequences.
           controlmode = cfg->mode;
           memset(&cmd,0,sizeof(cmd));
-          PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+          PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+          if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
             PLAYER_ERROR("Failed to PutReply\n");
         }
       }
       break;
     default:
       PLAYER_WARN1("unknown config request: %d", buf[0]);
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
         PLAYER_ERROR("Failed to PutReply\n");
       break;
   }

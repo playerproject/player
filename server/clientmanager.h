@@ -29,9 +29,10 @@
 #ifndef _CLIENTMANAGER_H
 #define _CLIENTMANAGER_H
 
-#include "clientdata.h"   
-#include "replace.h"  /* for poll(2) */
+// Forward declarations
+struct pollfd;
 
+#include "clientdata.h"   
 
 class ClientManager
 {

@@ -34,7 +34,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <packet.h>
 #include <player.h>
@@ -83,17 +83,6 @@
 #define CLODBUSTER_CONFIG_BUFFER_SIZE 256
 
 #define DEFAULT_CLODBUSTER_PORT "/dev/ttyUSB0" // This has to be USB - serial port.
-
-typedef struct
-{
-  player_position_data_t position;
-  
-} __attribute__ ((packed)) player_clodbuster_data_t;
-
-typedef struct
-{
-  player_position_cmd_t position;
-} __attribute__ ((packed)) player_clodbuster_cmd_t;
 
 typedef struct
 { 
@@ -145,45 +134,28 @@ class PIDGains
      float K3(){return(k3);};
 };
 
-class ClodBuster:public CDevice 
+class ClodBuster:public Driver 
 {
   private:
-    static pthread_t thread;
-  
-    // since we have several child classes that must use the same lock, we 
-    // declare our own static mutex here and override Lock() and Unlock() to 
-    // use this mutex instead of the one declared in CDevice.
-    static pthread_mutex_t clodbuster_accessMutex;
-
-    // and this one protects calls to Setup and Shutdown
-    static pthread_mutex_t clodbuster_setupMutex;
-
-    // likewise, we need one clodbuster-wide subscription count to manage calls to
-    // Setup() and Shutdown()
-    static int clodbuster_subscriptions;
-
-    static unsigned char* reqqueue;
-    static unsigned char* repqueue;
-
+    player_position_data_t position_data;
     void ResetRawPositions();
     clodbuster_encoder_data_t ReadEncoders();
 
-     static int clodbuster_fd;               // clodbuster device file descriptor
+    int clodbuster_fd;               // clodbuster device file descriptor
     
     // device used to communicate with GRASP IO Board
-    static char clodbuster_serial_port[MAX_FILENAME_SIZE]; 
+    char clodbuster_serial_port[MAX_FILENAME_SIZE]; 
    
-    static struct timeval timeBegan_tv;
     int kp,ki,kd;
 
     // did we initialize the common data segments yet?
-    static bool initdone;
+    bool initdone;
     clodbuster_encoder_data_t encoder_offset;
     clodbuster_encoder_data_t encoder_measurement;
     clodbuster_encoder_data_t old_encoder_measurement;
     float EncV, EncOmega, EncVleft, EncVright;
 
-    static bool direct_command_control;
+    bool direct_command_control;
     unsigned char max_limits[SERVO_CHANNELS],center_limits[SERVO_CHANNELS],min_limits[SERVO_CHANNELS];
     void GetGraspBoardParams();
 
@@ -202,45 +174,25 @@ class ClodBuster:public CDevice
     void DifferenceEncoders();
 
  protected:
-    static player_clodbuster_data_t* data;
-    static player_clodbuster_cmd_t* command;
 
     // Max motor speeds
-    static int motor_max_speed;
-    static int motor_max_turnspeed;
+    int motor_max_speed;
+    int motor_max_turnspeed;
     
     // Bound the command velocities
-    static bool use_vel_band; 
+    bool use_vel_band; 
         
-    void Lock();
-    void Unlock();
-
-    /* start a thread that will invoke Main() */
-    virtual void StartThread();
-    /* cancel (and wait for termination) of the thread */
-    virtual void StopThread();
 
   public:
 
-    ClodBuster(char* interface, ConfigFile* cf, int section);
+    ClodBuster( ConfigFile* cf, int section);
     virtual ~ClodBuster();
 
     /* the main thread */
     virtual void Main();
 
-    // we override these, because we will maintain our own subscription count
-    virtual int Subscribe(void *client);
-    virtual int Unsubscribe(void *client);
-
     virtual int Setup();
     virtual int Shutdown();
-
-    virtual void PutData(unsigned char *, size_t maxsize,
-                         uint32_t timestamp_sec, uint32_t timestamp_usec);
-size_t GetData(void* client, unsigned char *dest, size_t maxsize,
-                                 uint32_t* timestamp_sec, 
-			   uint32_t* timestamp_usec);
- void PutCommand(void* client, unsigned char *src, size_t size );
 
     unsigned char SetServo(unsigned char chan, int value);
     void SetServo(unsigned char chan, unsigned char cmd);

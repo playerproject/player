@@ -44,7 +44,7 @@
 #include <netinet/in.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -52,10 +52,10 @@
 
 
 // Incremental navigation driver
-class GzPtz : public CDevice
+class GzPtz : public Driver
 {
   // Constructor
-  public: GzPtz(char* interface, ConfigFile* cf, int section);
+  public: GzPtz(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzPtz();
@@ -69,10 +69,10 @@ class GzPtz : public CDevice
                                  uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len);
 
   // Request/reply
-  // public: virtual int PutConfig(player_device_id_t* device, void* client,
+  // public: virtual int PutConfig(player_device_id_t id, player_device_id_t* device, void* client,
   //                                void* req, size_t reqlen);
 
   // Handle geometry requests.
@@ -90,34 +90,30 @@ class GzPtz : public CDevice
 
 
 // Initialization function
-CDevice* GzPtz_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzPtz_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_PTZ_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_ptz\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzPtz(interface, cf, section)));
+  return ((Driver*) (new GzPtz(cf, section)));
 }
 
 
 // a driver registration function
 void GzPtz_Register(DriverTable* table)
 {
-  table->AddDriver("gz_ptz", PLAYER_ALL_MODE, GzPtz_Init);
+  table->AddDriver("gz_ptz", GzPtz_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzPtz::GzPtz(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_ptz_data_t), sizeof(player_ptz_cmd_t), 10, 10)
+GzPtz::GzPtz(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
+             sizeof(player_ptz_data_t), sizeof(player_ptz_cmd_t), 10, 10)
 {
   // Get the id of the device in Gazebo.
   // TODO: fix potential buffer overflow
@@ -192,7 +188,7 @@ size_t GzPtz::GetData(void* client, unsigned char* dest, size_t len,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzPtz::PutCommand(void* client, unsigned char* src, size_t len)
+void GzPtz::PutCommand(player_device_id_t id, void* client, unsigned char* src, size_t len)
 {
   player_ptz_cmd_t *cmd;
 
@@ -210,7 +206,7 @@ void GzPtz::PutCommand(void* client, unsigned char* src, size_t len)
 /*
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzPtz::PutConfig(player_device_id_t* device, void* client, void* req, size_t req_len)
+int GzPtz::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* req, size_t req_len)
 {
   switch (((char*) req)[0])
   {

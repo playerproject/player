@@ -51,7 +51,7 @@
 #include <netinet/in.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -59,10 +59,10 @@
 
 
 // Gazebo Sonars driver
-class GzSonars : public CDevice
+class GzSonars : public Driver
 {
   // Constructor
-  public: GzSonars(char* interface, ConfigFile* cf, int section);
+  public: GzSonars(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzSonars();
@@ -75,11 +75,14 @@ class GzSonars : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client,
-                                void* req, size_t reqlen);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Handle geometry requests
   private: void HandleGetGeom(void *client, void *req, int reqlen);
@@ -102,7 +105,7 @@ class GzSonars : public CDevice
 
 
 // Initialization function
-CDevice* GzSonars_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzSonars_Init(ConfigFile* cf, int section)
 {
   //printf("GzSonars_Init\n");
   if (GzClient::client == NULL)
@@ -110,12 +113,7 @@ CDevice* GzSonars_Init(char* interface, ConfigFile* cf, int section)
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_SONAR_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_sonars\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzSonars(interface, cf, section)));
+  return ((Driver*) (new GzSonars(cf, section)));
 }
 
 
@@ -123,15 +121,16 @@ CDevice* GzSonars_Init(char* interface, ConfigFile* cf, int section)
 void GzSonars_Register(DriverTable* table)
 {
   //printf("GzSonars_Register\n");
-  table->AddDriver("gz_sonars", PLAYER_ALL_MODE, GzSonars_Init);
+  table->AddDriver("gz_sonars", GzSonars_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzSonars::GzSonars(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_sonar_data_t), 0, 10, 10)
+GzSonars::GzSonars(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_SONAR_CODE, PLAYER_ALL_MODE,
+             sizeof(player_sonar_data_t), 0, 10, 10)
 {
   //printf("GzSonars::GzSonars\n");
     // Get the globally defined Gazebo client (one per instance of Player)
@@ -192,7 +191,7 @@ void GzSonars::Update()
 {
   //printf("GzSonars::Update\n");
   player_sonar_data_t data;
-  uint32_t tsec, tusec;
+  struct timeval ts;
 
   gz_sonars_lock(this->iface, 1);
 
@@ -200,8 +199,8 @@ void GzSonars::Update()
   {
     this->datatime = this->iface->data->time;
 
-    tsec = (int) (this->iface->data->time);
-    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
     //Modify by Victor Tran
     //---> Add
@@ -214,7 +213,7 @@ void GzSonars::Update()
       data.ranges[i] = htons(this->iface->data->ranges[i]);
     }
     // <--- end Add
-    this->PutData(&data, sizeof(data), tsec, tusec);
+    this->PutData(&data, sizeof(data), &ts);
   }
 
   gz_sonars_unlock(this->iface);
@@ -225,7 +224,9 @@ void GzSonars::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzSonars::PutCommand(void* client, unsigned char* src, size_t len)
+void GzSonars::PutCommand(player_device_id_t id,
+                          void* src, size_t len,
+                          struct timeval* timestamp)
 {
   //printf("GzSonars::PutCommand\n");
   return;
@@ -234,21 +235,23 @@ void GzSonars::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzSonars::PutConfig(player_device_id_t* device, void* client, void* req, size_t req_len)
+int GzSonars::PutConfig(player_device_id_t id, void *client, 
+                        void* src, size_t len,
+                        struct timeval* timestamp)
 {
   //printf("GzSonars::PutConfig\n");
-  switch (((char*) req)[0])
+  switch (((char*) src)[0])
   {
     case PLAYER_SONAR_GET_GEOM_REQ:
-      HandleGetGeom(client, req, req_len);
+      HandleGetGeom(client, src, len);
       break;
 
     case PLAYER_SONAR_POWER_REQ:
-      HandleSonarsPower(client, req, req_len);
+      HandleSonarsPower(client, src, len);
       break;
 
     default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }
@@ -280,7 +283,7 @@ void GzSonars::HandleGetGeom(void *client, void *req, int reqlen)
   }
   gz_sonars_unlock(this->iface);
   //<--- end Add
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -301,7 +304,7 @@ void GzSonars::HandleSonarsPower(void *client, void *req, int reqlen)
   //this->iface->data->cmd_enable_motors = power->value;
   gz_sonars_unlock(this->iface);
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
   
   return;
