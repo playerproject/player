@@ -360,7 +360,7 @@ int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
 
 
 /***************************************************************************
- * proxy : bps (beacon positioning system) device
+ * proxy : bps (beacon positioning system) device (deprecated)
  **************************************************************************/
 
 // BPS device data
@@ -441,9 +441,6 @@ int playerc_comms_unsubscribe(playerc_comms_t *device);
 
 // Send a comms message.
 int playerc_comms_send(playerc_comms_t *device, void *msg, int len);
-
-// Read the next comms message.
-//REMOVE int playerc_comms_recv(playerc_comms_t *device, void *msg, int len);
 
 
 /***************************************************************************
