@@ -26,13 +26,12 @@ clean:
 # Install
 ###########################################################################
 install:
-	$(MKDIR) -p $(INSTALL_UTILS)/tkplayerv
-	$(INSTALL) viewer.tk $(INSTALL_UTILS)/tkplayerv
-	$(INSTALL) README $(INSTALL_UTILS)/tkplayerv
+	$(MKDIR) -p $(INSTALL_UTILS)
+	$(INSTALL) -m 755 viewer.tk $(INSTALL_UTILS)
+	$(INSTALL) -m 644 README $(INSTALL_UTILS)/README.tkplayerv
 
 uninstall:
-	$(RM) -f $(INSTALL_UTILS)/tkplayerv/viewer.tk
-	$(RM) -f $(INSTALL_UTILS)/tkplayerv/README
-	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_UTILS)/tkplayerv
+	$(RM) -f $(INSTALL_UTILS)/viewer.tk
+	$(RM) -f $(INSTALL_UTILS)/README.tkplayerv
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_UTILS)
 

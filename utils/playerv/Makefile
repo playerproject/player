@@ -41,12 +41,11 @@ $(EXE) : $(OBS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 install: all
-	$(MKDIR) -p $(INSTALL_UTILS)/playerv
-	$(INSTALL) playerv $(INSTALL_UTILS)/playerv
+	$(MKDIR) -p $(INSTALL_UTILS)
+	$(INSTALL) -m 755 playerv $(INSTALL_UTILS)
 
 uninstall:
-	$(RM) -f $(INSTALL_UTILS)/playerv/playerv
-	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_UTILS)/playerv
+	$(RM) -f $(INSTALL_UTILS)/playerv
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_UTILS)
 
 dep:
