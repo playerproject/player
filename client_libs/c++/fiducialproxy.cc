@@ -30,6 +30,7 @@
 #include <netinet/in.h>
 #include <string.h>
 
+#include "playerpacket.h"
 
 void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
@@ -72,3 +73,124 @@ void FiducialProxy::Print()
 	   beacons[i].upose[0], beacons[i].upose[1], beacons[i].upose[2]);
 }
 
+
+int FiducialProxy::PrintFOV()
+{
+  int res = this->GetFOV();  
+  if( res < 0 ) return res;
+
+  printf("#Fiducial(%d:%d:%d) - %c\n", m_device_id.robot,
+         m_device_id.code, m_device_id.index, access);
+  printf( "#FOV\tmin_range\tmax_range\tview_angle\n"
+	  "\t%.2f\t\t%.2f\t\t%.2f\n", 
+	  this->min_range, this->max_range, this->view_angle );
+}
+
+int FiducialProxy::PrintGeometry()
+{
+  printf("#Fiducial(%d:%d:%d) - %c\n", m_device_id.robot,
+         m_device_id.code, m_device_id.index, access);
+
+  int res = this->GetConfigure();  
+  if( res < 0 ) return res;
+  
+  printf( "#geometry:\n  pose [%.2f %.2f %.2f]  size [%.2f %.2f]"
+	  "   target size [%.2f %.2f]\n",
+	  pose[0], pose[1], pose[2], size[0], size[1], 
+	  fiducial_size[0], fiducial_size[1] );
+  
+  return res;
+}
+
+
+
+// Get the fiducial geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int FiducialProxy::GetConfigure()
+{
+  int len;
+  player_fiducial_geom_t config;
+  player_msghdr_t hdr;
+
+  config.subtype = PLAYER_FIDUCIAL_GET_GEOM;
+
+  len = client->Request(m_device_id,
+			(const char*)&config, sizeof(config.subtype),
+			&hdr, (char*)&config, sizeof(config) );
+
+  if( len == -1 )
+    {
+      puts( "fiducial config geometry request failed" );
+      return(-1);
+    }
+  
+  this->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
+  this->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
+  this->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
+  this->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
+  this->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
+  
+  this->fiducial_size[0] = 
+    ((int16_t) ntohs(config.fiducial_size[0])) / 1000.0;
+  this->fiducial_size[1] = 
+    ((int16_t) ntohs(config.fiducial_size[1])) / 1000.0;
+  
+  return 0; // OK
+}
+
+// Get the fiducial geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int FiducialProxy::GetFOV()
+{
+  int len;
+  player_fiducial_fov_t fov;
+  player_msghdr_t hdr;
+
+  fov.subtype = PLAYER_FIDUCIAL_GET_FOV;
+  
+  len = client->Request(m_device_id,
+			(const char*)&fov, sizeof(fov.subtype),
+			&hdr, (char*)&fov, sizeof(fov) );
+  
+  if( len == -1 )
+    {
+      puts( "fiducial config FOV request failed" );
+      return(-1);
+    }
+
+  
+  FiducialFovUnpack( &fov, 
+		     &this->min_range, &this->max_range, &this->view_angle );
+
+  return 0; // OK
+}
+
+
+
+// Set the fiducial geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int FiducialProxy::SetFOV( double min_range, 
+			   double max_range, 
+			   double view_angle)
+{
+  int len;
+  player_fiducial_fov_t fov;
+  player_msghdr_t hdr;
+  
+  FiducialFovPack( &fov, 1, min_range, max_range, view_angle );
+    
+  len = client->Request(m_device_id,
+			(const char*)&fov, sizeof(fov),
+			&hdr, (char*)&fov, sizeof(fov) );
+  
+  if( len == -1 )
+    {
+      puts( "fiducial config FOV request failed" );
+      return(-1);
+    }
+
+  FiducialFovUnpack( &fov, 
+		     &this->min_range, &this->max_range, &this->view_angle );
+  
+  return 0; // OK
+}

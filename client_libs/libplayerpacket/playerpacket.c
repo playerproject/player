@@ -8,9 +8,9 @@
 #define MM_U16(A) (htons((uint16_t)(A * 1000.0)))
 
 // convert mm of various sizes in NBO to local meters
-#define M_32(A)  ((int)ntohl((int32_t)A) / 1000.0)
-#define M_16(A)  ((int)ntohs((int16_t)A) / 1000.0)
-#define M_U16(A) ((unsigned short)ntohs((uint16_t)A) / 1000.0)
+#define M_32(A)  ((int32_t)ntohl((int32_t)A) / 1000.0)
+#define M_16(A)  ((int16_t)ntohs((int16_t)A) / 1000.0)
+#define M_U16(A) ((uint16_t)ntohs((uint16_t)A) / 1000.0)
 
 // convert local radians to Player degrees in various sizes
 #define Deg_32(A) (htonl((int32_t)(RTOD(A))))
@@ -312,6 +312,43 @@ void FiducialGeomUnpack(  player_fiducial_geom_t* geom,
   
   if(target_width) *target_width = M_U16( geom->fiducial_size[0] ); 
   if(target_height) *target_height = M_U16( geom->fiducial_size[1] ); 
+}
+
+
+void FiducialFovPack( player_fiducial_fov_t* fov, int setflag,
+		      double min_range, double max_range, double view_angle )
+{
+  assert( fov );
+  
+  if( setflag ) // if we want a SET operation
+    fov->subtype = PLAYER_FIDUCIAL_SET_FOV;
+  else
+    fov->subtype = PLAYER_FIDUCIAL_GET_FOV;
+  
+  fov->min_range = MM_U16( min_range );
+  fov->max_range = MM_U16( max_range );
+  fov->view_angle = Deg_U16( view_angle );
+
+  /*  printf( "packed %.2f %.2f %.2f  as %u %u %u\n",
+	  min_range, max_range, view_angle,
+	  fov->min_range, fov->max_range, fov->view_angle );
+  */
+}
+
+void FiducialFovUnpack( player_fiducial_fov_t* fov,
+			double* min_range, double* max_range, 
+			double* view_angle )
+{
+  assert( fov );
+
+  if( min_range ) *min_range = M_U16( fov->min_range );
+  if( max_range ) *max_range = M_U16( fov->max_range );
+  if( view_angle ) *view_angle = Rad_U16( fov->view_angle );
+
+  /*printf( "unpacked %u %u %u as %.2f %.2f %.2f\n",
+	  fov->min_range, fov->max_range, fov->view_angle,
+	  *min_range, *max_range, *view_angle );
+	  */
 }
 
 

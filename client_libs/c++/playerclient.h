@@ -711,6 +711,30 @@ class FiducialProxy : public ClientProxy
    */
   unsigned short count;
 
+  /** The pose of the sensor [x,y,theta]
+   */
+  double pose[3];
+
+  /** The size of the sensor [x,y]
+   */
+  double size[2];
+
+  /** The size of the most recently detected fiducial
+  */
+  double fiducial_size[2];
+
+  /** the minimum range of the sensor in meters (partially defines the FOV)
+   */
+  double min_range;
+  
+  /** the maximum range of the sensor in meters (partially defines the FOV)
+   */
+  double max_range;
+
+  /** the receptive angle of the sensor in degrees (partially defines the FOV)
+   */
+  double view_angle;
+
   /** The latest laser beacon data.  Each beacon has the following
       information: 
       \begin{itemize} 
@@ -737,6 +761,28 @@ class FiducialProxy : public ClientProxy
     
   /// Print out latest beacon data.
   void Print();
+
+  /// Print the latest FOV configuration
+  int PrintFOV();
+
+  /// Print the latest geometry configuration
+  int PrintGeometry();
+
+  /// Get the sensor's geometry configuration
+  int GetConfigure();
+ 
+  /// Get the field of view 
+  int GetFOV();
+
+  /** Set the field of view, updating the proxy with the actual values
+      achieved. Params are: minimum range in meters, maximum range in
+      meters, view angle in radians 
+  */
+  
+  int SetFOV( double min_range, 
+	      double max_range, 
+	      double view_angle);
+
 };
 
 /*****************************************************************************
