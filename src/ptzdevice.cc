@@ -586,7 +586,7 @@ void *RunPtzThread(void *ptzdevice)
   player_ptz_cmd_t command;
   short pan,tilt,zoom;
   //int cnt;
-  short pandemand, tiltdemand, zoomdemand;
+  short pandemand=0, tiltdemand=0, zoomdemand=0;
   bool newpantilt=true, newzoom=true;
 
 

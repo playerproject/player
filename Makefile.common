@@ -119,10 +119,12 @@ INCLUDE_SPEECH = -DINCLUDE_SPEECH
 #######################################
 # Debug / Optimized
 #
-# normally, use the following line for best performance:
-CFLAGS = -O2 -Wall $(PLAYER_PLATFORM) $(INCLUDE_SELFTEST)
+# always start with the following line:
+CFLAGS = -Wall $(PLAYER_PLATFORM) $(INCLUDE_SELFTEST)
+# normally, add the following line for best performance:
+#CFLAGS += -O2
 # for debug, use the following instead:
-#CFLAGS = -g3 -Wall $(PLAYER_PLATFORM) $(INCLUDE_SELFTEST)
+CFLAGS += -g3
 
 
 ############## You shouldn't need to change below here ############## 

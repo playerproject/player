@@ -66,14 +66,8 @@ CVisionDevice::CVisionDevice(int argc, char** argv)
   data = new player_internal_vision_data_t;
 
   strncpy(configfilepath,DEFAULT_ACTS_CONFIGFILE,sizeof(configfilepath));
-  
-  // default is to give no path; in this case, use execvp() and user's PATH
-  bzero(binarypath,sizeof(binarypath));
-
-  // default is to use older ACTS (until we change our robots)
-  acts_version = ACTS_VERSION_1_0;
-  //acts_version = ACTS_VERSION_1_2;
-
+  strncpy(binarypath,DEFAULT_ACTS_PATH,sizeof(binarypath));
+  acts_version = DEFAULT_ACTS_VERSION;
   portnum=DEFAULT_ACTS_PORT;
 
   for(int i=0;i<argc;i++)

@@ -36,10 +36,6 @@
 
 #define AUDIO_SLEEP_TIME_USEC 100000
 
-#define MAX_AUDIO_PACKET_LENGTH 16
-#define MAX_AUDIO_MESSAGE_LENGTH 14
-#define MAX_AUDIO_REPLY_LENGTH 11
-
 #define LENGTH 1    /* how many tenth of seconds of samplig max */
 #define RATE 8000   /* the sampling rate */
 #define SIZE 8      /* sample size: 8 or 16 bits */
@@ -49,10 +45,6 @@
 #define heardHistoryN 5
 #define nHighestPeaks 5
 #define MIN_FREQUENCY 800
-
-// possibly to "offsets.h"
-#define AUDIO_DATA_BUFFER_SIZE 20
-#define AUDIO_COMMAND_BUFFER_SIZE 3*sizeof(short)
 
 class CAudioDevice:public CDevice 
 {

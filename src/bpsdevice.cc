@@ -616,9 +616,11 @@ double CBpsDevice::ComputeForce(CBpsObs *obs)
     double dax_dgx, dax_dgy, dax_dga;
     double day_dgx, day_dgy, day_dga;
     double daa_dgx, daa_dgy, daa_dga;
-    double dbx_dgx, dbx_dgy, dbx_dga;
-    double dby_dgx, dby_dgy, dby_dga;
-    double dba_dgx, dba_dgy, dba_dga;
+    // i added the following initializations to quash the compiler warnings
+    //       - BPG
+    double dbx_dgx=0, dbx_dgy=0, dbx_dga=0;
+    double dby_dgx=0, dby_dgy=0, dby_dga=0;
+    double dba_dgx=0, dba_dgy=0, dba_dga=0;
     double fax, fay, faa;
     double fbx, fby, fba;
     

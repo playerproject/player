@@ -46,6 +46,8 @@
 #include <netdb.h> /* for gethostbyaddr(3) */
 #include <pubsub_util.h> /* for create_and_bind_socket() */
 
+#include <defaults.h>
+
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
 #endif
@@ -238,7 +240,8 @@ int MatchDeviceName( const struct dirent* ent )
 #ifdef INCLUDE_STAGE
 // looks int the directory for device entries, creates the devices
 // and fills an array with unique port numbers
-stage_clock_t* CreateStageDevices( char* directory, int** ports, int* num_ports )
+stage_clock_t* CreateStageDevices( char* directory, int** ports, 
+                                   int* num_ports )
 {
 #ifdef VERBOSE
   printf( "Searching for Stage devices\n" );
@@ -686,10 +689,15 @@ parse_device_string(char* str1, char* str2)
   return(0);
 }
 
+int
+parse_config_file(char* fname)
+{
+  return(-1);
+}
+
 int main( int argc, char *argv[] )
 {
   bool special_config = false;
-  bool already_sane = false;
   bool use_stage = false;
   struct sockaddr_in listener;
   char auth_key[PLAYER_KEYLEN] = "";
@@ -786,6 +794,20 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
+    else if(!strcmp(new_argv[i], "-config"))
+    {
+      if(++i<argc)
+      {
+        if(parse_config_file(argv[i])<0)
+          exit(-1);
+        special_config = true;
+      }
+      else
+      {
+        Usage();
+        exit(-1);
+      }
+    }
     else if(!strcmp(new_argv[i], "-sane"))
     {
       for(int i=0;i<ARRAYSIZE(sane_spec);i++)
@@ -796,7 +818,7 @@ int main( int argc, char *argv[] )
                   "device \"%s\"\n", sane_spec[i]);
         }
       }
-      already_sane = true;
+      special_config = true;
     }
     else if((i+1)<argc && new_argv[i+1][0] != '-')
     {
@@ -818,45 +840,27 @@ int main( int argc, char *argv[] )
       special_config = true;
     }
   }
+  for(int i=0;i<argc;i++)
+    free(new_argv[i]);
 
-  // default behavior is to use the sane spec
-  if(!already_sane && !special_config && !use_stage)
+  // default behavior is to try to use the global config file; if that 
+  // doesn't work use the sane spec
+  if(!special_config && !use_stage)
   {
-    for(int i=0;i<ARRAYSIZE(sane_spec);i++)
+    if(parse_config_file(DEFAULT_PLAYER_CONFIGFILE)<0)
     {
-      if(parse_device_string(sane_spec[i],NULL) < 0)
+      for(int i=0;i<ARRAYSIZE(sane_spec);i++)
       {
-        fprintf(stderr, "Warning: got error while creating sane "
-                "device \"%s\"\n", sane_spec[i]);
+        if(parse_device_string(sane_spec[i],NULL) < 0)
+        {
+          fprintf(stderr, "Warning: got error while creating sane "
+                  "device \"%s\"\n", sane_spec[i]);
+        }
       }
     }
   }
 
-  // This argv shit apparently segfaults on Linux 2.2. Fuck it.
-  //
-  /*
-    // get rid of our argv copy
-    for(int i = 0;i<argc;i++)
-    free(new_argv[i]);
-
-    // pretty up our entry in the process table (and also hide the auth_key)
-    char buffer[32];
-    if(!use_stage)
-    sprintf(buffer,"Player [Port %d]",global_playerport);
-    else
-    sprintf(buffer,"Player [Port %d] [Stage]",global_playerport);
-    int len = 0;
-    for(int i=0;i<argc;i++)
-    len += strlen(argv[i])+1;
-    len--;
-    bzero(argv[0],len);
-    if(len<(int)sizeof(buffer))
-    argv[0] = (char*)realloc(argv[0],sizeof(buffer));
-    strcpy(argv[0],buffer);
-  */
-
   puts( "" ); // newline, flush
-
 
   /* set up to handle SIGPIPE (happens when the client dies) */
   if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
