@@ -180,6 +180,10 @@ void PlayerMultiClient::RemoveClient(PlayerClient* client)
 //
 int PlayerMultiClient::Read()
 {
+  // clear the fresh flags in the client objects
+  for( int c=0; c<num_clients; c++ )
+    clients[c]->fresh = false;
+  
   int num_to_read,retval;
   // let's try this poll(2) thing (with no timeout)
   if((num_to_read = poll(ufds,num_ufds,-1)) == -1)
@@ -196,6 +200,9 @@ int PlayerMultiClient::Read()
     // is this one ready to read?
     if(ufds[i].revents & POLLIN)
     {
+      // set the fresh flag
+      clients[i]->fresh = true;
+
       //printf("reading from: %d 0x%x\n", i,ufds[i].events);
       if((retval = clients[i]->Read()) == -1)
         return(retval);

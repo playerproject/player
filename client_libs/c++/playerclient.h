@@ -87,6 +87,13 @@ class PlayerClient
     void SetReserved(int res) { reserved = res; }
     int GetReserved() { return(reserved); }
 
+    // flag set if data has just been read into this device
+    bool fresh; 
+
+    // store the name and port of the connected host
+    char hostname[256]; 
+    int port;
+
     // constructors
     // 
     // make a client and connect it as indicated.

@@ -44,6 +44,9 @@ PlayerClient::PlayerClient(char* hostname = NULL, int port=PLAYER_PORTNUM)
   proxies = (ClientProxyNode*)NULL;
   num_proxies = 0;
 
+  memset( this->hostname, 0, 256 );
+  this->port = 0;
+
   reserved = 0;
 
   if(hostname)
@@ -66,6 +69,10 @@ PlayerClient::~PlayerClient()
 
 int PlayerClient::Connect(char* hostname, int port)
 {
+  // store the hostname and port
+  strncpy( this->hostname, hostname, 255 );
+  this->port = port;
+
   Disconnect();
   return(player_connect(&conn, hostname, port));
 }
@@ -101,6 +108,9 @@ int PlayerClient::Read()
   {
     if(player_read(&conn, &hdr, buffer, sizeof(buffer)))
     {
+      // mark this client as having fresh data
+      fresh = true;
+
       if(player_debug_level(-1) >= 2)
         fputs("WARNING: player_read() errored\n", stderr);
       return(-1);
@@ -346,4 +356,5 @@ ClientProxy* PlayerClient::GetProxy(unsigned short device, unsigned short index)
 
   return((ClientProxy*)NULL);
 }
+
 
