@@ -73,6 +73,10 @@ player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
 
+// Gazebo stuff
+#include "gz_client.h"
+#include "gz_time.h"
+
 //#define VERBOSE
 //#define DEBUG
 
@@ -262,8 +266,8 @@ MatchDeviceName( const struct dirent* ent )
 
 // looks in the directory for device entries, creates the devices
 // and fills an array with unique port numbers
-stage_clock_t* 
-CreateStageDevices( char* directory, int** ports, int* num_ports )
+void
+CreateStageDevices( char *directory, int **ports, struct pollfd **ufds, int *num_ufds )
 {
 #ifdef VERBOSE
   printf( "Searching for Stage devices\n" );
@@ -292,7 +296,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   {
     printf( "PLAYER: opening lock file %s (%d)\n", lockfile, lockfd );
     perror("Failed to create lock device" );
-    return NULL;
+    exit(-1);
   } 
  
   // open all the files in the IO directory
@@ -494,7 +498,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
                                      (char*)(deviceIO->robotname),
                                      PLAYER_ALL_MODE, 
                                      (*(entry->initfunc))(PLAYER_MCOM_STRING,
-                                                   &configFile, section));
+                                                          &configFile, section));
  
               // add this port to our listening list
               StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
@@ -542,36 +546,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           }
           break;
 
-
-          /*
-            case PLAYER_BPS_CODE:   
-            // Create broadcast device as per normal
-          
-            // FIXME: apparently deviceIO->local is *not* currently being set
-            // by Stage...
-            if(deviceIO->local || !deviceIO->local)
-            {
-            // find the bps device in the available device table
-            DriverEntry* entry;
-            if(!(entry = driverTable->GetDriverEntry("bps")))
-            {
-            puts("WARNING: Player support for bps device unavailable.");
-            }
-            else
-            {
-            // add it to the instantiated device table
-            deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
-            (*(entry->initfunc))(PLAYER_BPS_STRING,
-            &configFile,0));
- 
-            // add this port to our listening list
-            StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
-            }
-            }
-            break;
-          */
-
-          // devices not implemented
+        // devices not implemented
         case PLAYER_AUDIO_CODE:   
         case PLAYER_AIO_CODE:
         case PLAYER_DIO_CODE:
@@ -602,67 +577,110 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   }
   
 
+  // set the number of ports detected
+  *num_ufds = portcount;
+
   // we've discovered all thew ports now, so allocate memory for the
   // required port numbers at the return pointer
-  assert( *ports = new int[ portcount ] );
+  assert( *ports = new int[ *num_ufds ] );
   
   // copy the port numbers in
-  memcpy( *ports, portstmp, portcount * sizeof(int) );
-  
-  // set the number of ports detected
-  *num_ports = portcount;
+  memcpy( *ports, portstmp, *num_ufds * sizeof(int) );
 
   // clean up
   delete[] portstmp;
 
-  // open and map the stage clock
-  char clockname[MAX_FILENAME_SIZE];
-  snprintf( clockname, MAX_FILENAME_SIZE-1, "%s/%s", 
-            directory, STAGE_CLOCK_NAME );
+  struct sockaddr_in listener;
   
-#ifdef DEBUG
-  printf("Opening %s\n", clockname );
-#endif
-  
-  if( (tfd = open( clockname, O_RDWR )) < 0 )
-  {
-    perror( "Failed to open clock file" );
-    printf("Tried to open file \"%s\"\n", clockname );
-    exit( -1 );
-  }
-  
+  //printf( "created %d ports (1: %d 2: %d...)\n",
+  //    num_ufds, ports[0], ports[1] );
     
-  //struct timeval * stage_tv = 0;    
- 
-  stage_clock_t *clock = 0;
+  // allocate storage for poll structures
+  assert( *ufds = new struct pollfd[*num_ufds] );
 
-  if( (clock = (stage_clock_t*)mmap( NULL, sizeof(struct timeval),
-                                     PROT_READ | PROT_WRITE, 
-                                     MAP_SHARED, tfd, (off_t)0 ) )
-      == MAP_FAILED )
-  {
-    perror( "Failed to map clock memory" );
-    exit( -1 );
-  }
-  
-  //close( tfd ); // can close fd once mapped
-
-  
-#ifdef DEBUG  
-  printf( "finished creating stage devices\n" );
-  fflush( stdout );
+#ifdef VERBOSE
+  printf( "[Port ");
 #endif
-  
-  // set up the stagetime object
-  assert( clock );
-  
-  // GlobalTime is initialized in Main(), so we'll delete and reassign it here
-  if(GlobalTime)
-    delete GlobalTime;
-  assert(GlobalTime = (PlayerTime*)(new StageTime(clock, tfd)));
 
-  return( clock );
+  if(!autoassign_ports)
+  {
+    // bind a socket on each port
+    for(int i=0;i<*num_ufds;i++)
+    {
+#ifdef VERBOSE
+      printf( " %d", ports[i] ); fflush( stdout );
+#endif      
+      // setup the socket to listen on
+      if((ufds[i]->fd = create_and_bind_socket(&listener,1, *ports[i], 
+                                               SOCK_STREAM,200)) == -1)
+      {
+        fputs("create_and_bind_socket() failed; quitting", stderr);
+        exit(-1);
+      }
+
+      ufds[i]->events = POLLIN;
+    }
+  }
+  else
+  {
+    // we're supposed to auto-assign ports.  first, we must get the
+    // baseport.  then we'll get whichever other ports we can.
+    int curr_ufd = 0;
+    int curr_port = global_playerport;
+    CDeviceEntry* entry;
+
+    puts("  Auto-assigning ports; Player is listening on the following ports:");
+    printf("    [ ");
+    fflush(stdout);
+    while((curr_port < 65536) && (curr_ufd < *num_ufds))
+    {
+      if((ufds[curr_ufd]->fd = 
+          create_and_bind_socket(&listener,1,curr_port,
+                                 SOCK_STREAM,200)) == -1)
+      {
+        if(!curr_ufd)
+        {
+          PLAYER_ERROR1("couldn't get base port %d", global_playerport);
+          exit(-1);
+        }
+      }
+      else
+      {
+        printf("%d ", curr_port);
+        fflush(stdout);
+        ufds[curr_ufd]->events = POLLIN;
+        // now, go through the device table and change all references to
+        // this port.
+        for(entry = deviceTable->GetFirstEntry();
+            entry;
+            entry = deviceTable->GetNextEntry(entry))
+        {
+          if(entry->id.port == *ports[curr_ufd])
+            entry->id.port = curr_port;
+        }
+        // also have to fix the port list
+        *ports[curr_ufd] = curr_port;
+        curr_ufd++;
+      }
+      curr_port++;
+    }
+
+    if(curr_port == 65536)
+    {
+      PLAYER_ERROR("couldn't find enough free ports");
+      exit(-1);
+    }
+
+    puts("]");
+  }
+    
+#ifdef VERBOSE
+  puts( "]" );
+#endif
+
+  return;
 }
+
 #endif
 
 bool
@@ -766,12 +784,13 @@ parse_config_file(char* fname)
 
 int main( int argc, char *argv[] )
 {
-  struct sockaddr_in listener;
   char auth_key[PLAYER_KEYLEN] = "";
-
-  // setup the clock;  if we end up using Stage, we'll delete this one
-  // and reassign it
-  assert(GlobalTime = (PlayerTime*)(new WallclockTime()));
+  char *configfile = NULL;
+  char* gz_serverid = NULL;
+  
+  int *ports = NULL;
+  struct pollfd *ufds = NULL;
+  int num_ufds = 0;
 
   // Register the available drivers in the driverTable.  
   //
@@ -780,11 +799,7 @@ int main( int argc, char *argv[] )
   // this function.
   register_devices();
   
-  // use these to keep track of many sockets in stage mode
-  struct pollfd* ufds = 0;
-  int* ports = 0;
-  int num_ufds = 0;
-
+  // Trap ^C
   SetupSignalHandlers();
 
   printf("** Player v%s ** ", playerversion);
@@ -821,6 +836,18 @@ int main( int argc, char *argv[] )
       PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
       exit(-1);
 #endif
+    }
+    else if(!strcmp(argv[i], "-g"))
+    {
+      if(++i<argc)
+      {
+        gz_serverid = argv[i];
+      }
+      else
+      {
+        Usage();
+        exit(-1);
+      }
     }
     else if(!strcmp(argv[i], "-k"))
     {
@@ -887,8 +914,7 @@ int main( int argc, char *argv[] )
     else if(i == (argc-1))
     {
       // assume that this is a config file
-      if(!parse_config_file(argv[i]))
-        exit(-1);
+      configfile = argv[i];
     }
     else
     {
@@ -899,121 +925,60 @@ int main( int argc, char *argv[] )
 
   puts( "" ); // newline, flush
 
+#ifdef INCLUDE_STAGE
+  if (use_stage)
+  {
+    PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
+    exit(-1);
+  }
+#endif
+
+  // Initialize gazebo client
+  if (gz_serverid)
+  {
+    if (GzClient::Init(gz_serverid) != 0)
+      exit(-1);
+  }
   
-  if( use_stage )
+  // Create an appropriate clock for the server
+  if (use_stage)
+  {
+#if INCLUDE_STAGE
+    // Use the clock from State
+    GlobalTime = new StageTime(stage_io_directory);
+    assert(GlobalTime);
+#endif
+  }
+  else if (gz_serverid != NULL)
+  {
+    // Use the clock from Gazebo
+    GlobalTime = new GzTime();
+    assert(GlobalTime);
+  }
+  else
+  {
+    // Use the system clock
+    GlobalTime = new WallclockTime();
+    assert(GlobalTime);
+  }
+
+  // Instantiate devices
+  if (use_stage)
   {
 #if INCLUDE_STAGE
     // create the shared memory connection to Stage
     // returns pointer to the timeval struct
     // and creates the ports array and array length with the port numbers
     // deduced from the stageIO filenames
-    stage_clock_t * sclock = CreateStageDevices( stage_io_directory, 
-						 &ports, &num_ufds );
-    assert( sclock ); 
-    //printf( "created %d ports (1: %d 2: %d...)\n",
-    //    num_ufds, ports[0], ports[1] );
-    
-    // allocate storage for poll structures
-    assert( ufds = new struct pollfd[num_ufds] );
-
-#ifdef VERBOSE
-    printf( "[Port ");
+    CreateStageDevices( stage_io_directory, &ports, &ufds, &num_ufds);
 #endif
-
-    if(!autoassign_ports)
-    {
-      // bind a socket on each port
-      for(int i=0;i<num_ufds;i++)
-      {
-#ifdef VERBOSE
-        printf( " %d", ports[i] ); fflush( stdout );
-#endif      
-        // setup the socket to listen on
-        if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
-                                                SOCK_STREAM,200)) == -1)
-        {
-          fputs("create_and_bind_socket() failed; quitting", stderr);
-          exit(-1);
-        }
-
-        ufds[i].events = POLLIN;
-      }
-    }
-    else
-    {
-      // we're supposed to auto-assign ports.  first, we must get the
-      // baseport.  then we'll get whichever other ports we can.
-      int curr_ufd = 0;
-      int curr_port = global_playerport;
-      CDeviceEntry* entry;
-
-      puts("  Auto-assigning ports; Player is listening on the following ports:");
-      printf("    [ ");
-      fflush(stdout);
-      while((curr_port < 65536) && (curr_ufd < num_ufds))
-      {
-        if((ufds[curr_ufd].fd = 
-            create_and_bind_socket(&listener,1,curr_port,
-                                   SOCK_STREAM,200)) == -1)
-        {
-          if(!curr_ufd)
-          {
-            PLAYER_ERROR1("couldn't get base port %d", global_playerport);
-            exit(-1);
-          }
-        }
-        else
-        {
-          printf("%d ", curr_port);
-          fflush(stdout);
-          ufds[curr_ufd].events = POLLIN;
-          // now, go through the device table and change all references to
-          // this port.
-          for(entry = deviceTable->GetFirstEntry();
-              entry;
-              entry = deviceTable->GetNextEntry(entry))
-          {
-            if(entry->id.port == ports[curr_ufd])
-              entry->id.port = curr_port;
-          }
-          // also have to fix the port list
-          ports[curr_ufd] = curr_port;
-          curr_ufd++;
-        }
-        curr_port++;
-      }
-
-      if(curr_port == 65536)
-      {
-        PLAYER_ERROR("couldn't find enough free ports");
-        exit(-1);
-      }
-
-      puts("]");
-    }
-    
-#ifdef VERBOSE
-    puts( "]" );
-#endif
-
-#else
-    PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
-    exit(-1);
-#endif
-  }  
-
-  // check for empty device table
-  if(!(deviceTable->Size()))
-  {
-    if( use_stage )
-      PLAYER_WARN("No devices instantiated; no valid Player devices in worldfile?");
-    else
-      PLAYER_WARN("No devices instantiated; perhaps you should supply " 
-		  "a configuration file?");
   }
-
-  if(!use_stage)
+  else
   {
+    // Parse the config file and instantiate drivers
+    if (!parse_config_file(configfile))
+      exit(-1);
+
     num_ufds = 1;
     if(!(ufds = new struct pollfd[num_ufds]) || !(ports = new int[num_ufds]))
     {
@@ -1021,9 +986,10 @@ int main( int argc, char *argv[] )
       exit(-1);
     }
 
+    struct sockaddr_in listener;
+
     // setup the socket to listen on
-    if((ufds[0].fd = create_and_bind_socket(&listener,1,
-                                            global_playerport,
+    if((ufds[0].fd = create_and_bind_socket(&listener,1,global_playerport,
                                             SOCK_STREAM,200)) == -1)
     {
       fputs("create_and_bind_socket() failed; quitting", stderr);
@@ -1034,8 +1000,18 @@ int main( int argc, char *argv[] )
     ports[0] = global_playerport;
   }
 
+  // check for empty device table
+  if(!(deviceTable->Size()))
+  {
+    if( use_stage )
+      PLAYER_WARN("No devices instantiated; no valid Player devices in worldfile?");
+    else
+      PLAYER_WARN("No devices instantiated; perhaps you should supply " 
+                  "a configuration file?");
+  }
+
   // create the client manager object.
-  clientmanager = new ClientManager(ufds,ports,num_ufds,auth_key);
+  clientmanager = new ClientManager(ufds, ports, num_ufds, auth_key);
 
   // main loop: sleep the shortest amount possible, periodically updating
   // the clientmanager.
@@ -1048,7 +1024,12 @@ int main( int argc, char *argv[] )
       exit(-1);
     }
   }
-
+  
+  // Finalize gazebo client
+  // AH: I know we never get here, but we should, dammit!
+  if (gz_serverid)
+    GzClient::Fini();
+  
   /* don't get here */
   return(0);
 }
