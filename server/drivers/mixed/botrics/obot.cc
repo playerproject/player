@@ -23,7 +23,7 @@
 /*
  * $Id$
  *
- * Driver for the so-called "Trogdor" robots, made by Botrics.  They're
+ * Driver for the so-called "Obot" robots, made by Botrics.  They're
  * small, very fast robots that carry SICK lasers (talk to the laser over a
  * normal serial port using the sicklms200 driver).  
  *
@@ -51,11 +51,11 @@
 #include <drivertable.h>
 #include <player.h>
 
-#include "trogdor_constants.h"
+#include "obot_constants.h"
 
-static void StopRobot(void* trogdordev);
+static void StopRobot(void* obotdev);
 
-class Trogdor : public Driver 
+class Obot : public Driver 
 {
   private:
     // this function will be run in a separate thread
@@ -89,7 +89,7 @@ class Trogdor : public Driver
     // public, so that it can be called from pthread cleanup function
     int SetVelocity(int lvel, int rvel);
 
-    Trogdor( ConfigFile* cf, int section);
+    Obot( ConfigFile* cf, int section);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -97,36 +97,36 @@ class Trogdor : public Driver
 
 
 // initialization function
-Driver* Trogdor_Init( ConfigFile* cf, int section)
+Driver* Obot_Init( ConfigFile* cf, int section)
 {
-  return((Driver*)(new Trogdor( cf, section)));
+  return((Driver*)(new Obot( cf, section)));
 }
 
 // a driver registration function
 void 
-Trogdor_Register(DriverTable* table)
+Obot_Register(DriverTable* table)
 {
-  table->AddDriver("trogdor",  Trogdor_Init);
+  table->AddDriver("obot",  Obot_Init);
 }
 
-Trogdor::Trogdor( ConfigFile* cf, int section) :
+Obot::Obot( ConfigFile* cf, int section) :
   Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
          sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
 {
   this->fd = -1;
-  this->serial_port = cf->ReadString(section, "port", TROGDOR_DEFAULT_PORT);
+  this->serial_port = cf->ReadString(section, "port", OBOT_DEFAULT_PORT);
 }
 
 int
-Trogdor::InitRobot()
+Obot::InitRobot()
 {
   // initialize the robot
   unsigned char initstr[3];
-  initstr[0] = TROGDOR_INIT1;
-  initstr[1] = TROGDOR_INIT2;
-  initstr[2] = TROGDOR_INIT3;
+  initstr[0] = OBOT_INIT1;
+  initstr[1] = OBOT_INIT2;
+  initstr[2] = OBOT_INIT3;
   unsigned char deinitstr[1];
-  deinitstr[0] = TROGDOR_DEINIT;
+  deinitstr[0] = OBOT_DEINIT;
 
   if(tcflush(this->fd, TCIOFLUSH) < 0 )
   {
@@ -154,7 +154,7 @@ Trogdor::InitRobot()
 }
 
 int 
-Trogdor::Setup()
+Obot::Setup()
 {
   struct termios term;
   int flags;
@@ -170,7 +170,7 @@ Trogdor::Setup()
   this->px = this->py = this->pa = 0.0;
   this->odom_initialized = false;
 
-  printf("Botrics Trogdor connection initializing (%s)...", serial_port);
+  printf("Botrics Obot connection initializing (%s)...", serial_port);
   fflush(stdout);
 
   // open it.  non-blocking at first, in case there's no robot
@@ -241,7 +241,7 @@ Trogdor::Setup()
   fd_blocking = true;
   puts("Done.");
 
-  if(SendCommand(TROGDOR_SET_ACCELERATIONS,10,10) < 0)
+  if(SendCommand(OBOT_SET_ACCELERATIONS,10,10) < 0)
   {
     PLAYER_ERROR("failed to set accelerations on setup");
     close(this->fd);
@@ -260,7 +260,7 @@ Trogdor::Setup()
 }
 
 int
-Trogdor::Shutdown()
+Obot::Shutdown()
 {
   unsigned char deinitstr[1];
 
@@ -276,23 +276,23 @@ Trogdor::Shutdown()
     PLAYER_ERROR("failed to stop robot while shutting down");
    */
 
-  usleep(TROGDOR_DELAY_US);
+  usleep(OBOT_DELAY_US);
   //if(ChangeMotorState(0) < 0)
     //PLAYER_ERROR("failed to limp motors on shutdown");
 
-  deinitstr[0] = TROGDOR_DEINIT;
+  deinitstr[0] = OBOT_DEINIT;
   if(WriteBuf(deinitstr,sizeof(deinitstr)) < 0)
     PLAYER_ERROR("failed to deinitialize connection to robot");
 
   if(close(this->fd))
     PLAYER_ERROR1("close() failed:%s",strerror(errno));
   this->fd = -1;
-  puts("Botrics Trogdor has been shutdown");
+  puts("Botrics Obot has been shutdown");
   return(0);
 }
 
 void 
-Trogdor::Main()
+Obot::Main()
 {
   player_position_cmd_t command;
   player_position_data_t data;
@@ -322,58 +322,58 @@ Trogdor::Main()
     command.xspeed = ntohl(command.xspeed);
 
     // convert (tv,rv) to (lv,rv) and send to robot
-    rotational_term = DTOR(command.yawspeed) * TROGDOR_AXLE_LENGTH / 2.0;
+    rotational_term = DTOR(command.yawspeed) * OBOT_AXLE_LENGTH / 2.0;
     command_rvel = (command.xspeed/1e3) + rotational_term;
     command_lvel = (command.xspeed/1e3) - rotational_term;
 
     // sanity check on per-wheel speeds
-    if(fabs(command_lvel) > TROGDOR_MAX_WHEELSPEED)
+    if(fabs(command_lvel) > OBOT_MAX_WHEELSPEED)
     {
       if(command_lvel > 0)
       {
-        command_lvel = TROGDOR_MAX_WHEELSPEED;
-        command_rvel *= TROGDOR_MAX_WHEELSPEED/command_lvel;
+        command_lvel = OBOT_MAX_WHEELSPEED;
+        command_rvel *= OBOT_MAX_WHEELSPEED/command_lvel;
       }
       else
       {
-        command_lvel = - TROGDOR_MAX_WHEELSPEED;
-        command_rvel *= -TROGDOR_MAX_WHEELSPEED/command_lvel;
+        command_lvel = - OBOT_MAX_WHEELSPEED;
+        command_rvel *= -OBOT_MAX_WHEELSPEED/command_lvel;
       }
     }
-    if(fabs(command_rvel) > TROGDOR_MAX_WHEELSPEED)
+    if(fabs(command_rvel) > OBOT_MAX_WHEELSPEED)
     {
       if(command_rvel > 0)
       {
-        command_rvel = TROGDOR_MAX_WHEELSPEED;
-        command_lvel *= TROGDOR_MAX_WHEELSPEED/command_rvel;
+        command_rvel = OBOT_MAX_WHEELSPEED;
+        command_lvel *= OBOT_MAX_WHEELSPEED/command_rvel;
       }
       else
       {
-        command_rvel = - TROGDOR_MAX_WHEELSPEED;
-        command_lvel *= -TROGDOR_MAX_WHEELSPEED/command_rvel;
+        command_rvel = - OBOT_MAX_WHEELSPEED;
+        command_lvel *= -OBOT_MAX_WHEELSPEED/command_rvel;
       }
     }
 
-    final_lvel = (int)rint(command_lvel / TROGDOR_MPS_PER_TICK);
-    final_rvel = (int)rint(command_rvel / TROGDOR_MPS_PER_TICK);
+    final_lvel = (int)rint(command_lvel / OBOT_MPS_PER_TICK);
+    final_rvel = (int)rint(command_rvel / OBOT_MPS_PER_TICK);
 
     // TODO: do this min threshold smarter, to preserve desired travel 
     // direction
 
     /* to account for our bad low-level PID motor controller */
-    if(abs(final_rvel) > 0 && abs(final_rvel) < TROGDOR_MIN_WHEELSPEED_TICKS)
+    if(abs(final_rvel) > 0 && abs(final_rvel) < OBOT_MIN_WHEELSPEED_TICKS)
     {
       if(final_rvel > 0)
-        final_rvel = TROGDOR_MIN_WHEELSPEED_TICKS;
+        final_rvel = OBOT_MIN_WHEELSPEED_TICKS;
       else
-        final_rvel = -TROGDOR_MIN_WHEELSPEED_TICKS;
+        final_rvel = -OBOT_MIN_WHEELSPEED_TICKS;
     }
-    if(abs(final_lvel) > 0 && abs(final_lvel) < TROGDOR_MIN_WHEELSPEED_TICKS)
+    if(abs(final_lvel) > 0 && abs(final_lvel) < OBOT_MIN_WHEELSPEED_TICKS)
     {
       if(final_lvel > 0)
-        final_lvel = TROGDOR_MIN_WHEELSPEED_TICKS;
+        final_lvel = OBOT_MIN_WHEELSPEED_TICKS;
       else
-        final_lvel = -TROGDOR_MIN_WHEELSPEED_TICKS;
+        final_lvel = -OBOT_MIN_WHEELSPEED_TICKS;
     }
 
     if((final_lvel != last_final_lvel) ||
@@ -415,11 +415,11 @@ Trogdor::Main()
     data.yaw = htonl((int32_t)floor(RTOD(tmp_angle)));
 
     data.yspeed = 0;
-    lvel_mps = lvel * TROGDOR_MPS_PER_TICK;
-    rvel_mps = rvel * TROGDOR_MPS_PER_TICK;
+    lvel_mps = lvel * OBOT_MPS_PER_TICK;
+    rvel_mps = rvel * OBOT_MPS_PER_TICK;
     data.xspeed = htonl((int32_t)rint(1e3 * (lvel_mps + rvel_mps) / 2.0));
     data.yawspeed = htonl((int32_t)rint(RTOD((rvel_mps-lvel_mps) / 
-                                             TROGDOR_AXLE_LENGTH)));
+                                             OBOT_AXLE_LENGTH)));
 
     PutData((unsigned char*)&data,sizeof(data),NULL);
 
@@ -483,13 +483,13 @@ Trogdor::Main()
       }
     }
     
-    usleep(TROGDOR_DELAY_US);
+    usleep(OBOT_DELAY_US);
   }
   pthread_cleanup_pop(1);
 }
 
 int
-Trogdor::ReadBuf(unsigned char* s, size_t len)
+Obot::ReadBuf(unsigned char* s, size_t len)
 {
   int thisnumread;
   size_t numread = 0;
@@ -506,7 +506,7 @@ Trogdor::ReadBuf(unsigned char* s, size_t len)
     {
       if(!this->fd_blocking && errno == EAGAIN && ++loop < maxloops)
       {
-        usleep(TROGDOR_DELAY_US);
+        usleep(OBOT_DELAY_US);
         continue;
       }
       PLAYER_ERROR1("read() failed: %s", strerror(errno));
@@ -526,7 +526,7 @@ Trogdor::ReadBuf(unsigned char* s, size_t len)
 }
 
 int
-Trogdor::WriteBuf(unsigned char* s, size_t len)
+Obot::WriteBuf(unsigned char* s, size_t len)
 {
   size_t numwritten;
   int thisnumwritten;
@@ -541,7 +541,7 @@ Trogdor::WriteBuf(unsigned char* s, size_t len)
       {
         if(!this->fd_blocking && errno == EAGAIN)
         {
-          usleep(TROGDOR_DELAY_US);
+          usleep(OBOT_DELAY_US);
           continue;
         }
         PLAYER_ERROR1("write() failed: %s", strerror(errno));
@@ -561,9 +561,9 @@ Trogdor::WriteBuf(unsigned char* s, size_t len)
     // problem
     switch(ack[0])
     {
-      case TROGDOR_ACK:
+      case OBOT_ACK:
         return(0);
-      case TROGDOR_NACK:
+      case OBOT_NACK:
         PLAYER_WARN("got NACK; reinitializing connection");
         return(-1);
         /*
@@ -582,7 +582,7 @@ Trogdor::WriteBuf(unsigned char* s, size_t len)
 }
 
 int 
-Trogdor::BytesToInt32(unsigned char *ptr)
+Obot::BytesToInt32(unsigned char *ptr)
 {
   unsigned char char0,char1,char2,char3;
   int data = 0;
@@ -601,10 +601,10 @@ Trogdor::BytesToInt32(unsigned char *ptr)
 }
 
 int
-Trogdor::GetBatteryVoltage(int* voltage)
+Obot::GetBatteryVoltage(int* voltage)
 {
   unsigned char buf[5];
-  buf[0] = TROGDOR_GET_VOLTAGE;
+  buf[0] = OBOT_GET_VOLTAGE;
 
   puts("sending for voltage");
   if(WriteBuf(buf,1) < 0)
@@ -631,7 +631,7 @@ Trogdor::GetBatteryVoltage(int* voltage)
 }
 
 void
-Trogdor::Int32ToBytes(unsigned char* buf, int i)
+Obot::Int32ToBytes(unsigned char* buf, int i)
 {
   buf[0] = (i >> 0)  & 0xFF;
   buf[1] = (i >> 8)  & 0xFF;
@@ -640,18 +640,18 @@ Trogdor::Int32ToBytes(unsigned char* buf, int i)
 }
 
 int
-Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
+Obot::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
 {
   unsigned char buf[20];
   int index;
 
-  buf[0] = TROGDOR_GET_ODOM;
+  buf[0] = OBOT_GET_ODOM;
   if(WriteBuf(buf,1) < 0)
   {
     PLAYER_ERROR("failed to send command to retrieve odometry");
     return(-1);
   }
-  //usleep(TROGDOR_DELAY_US);
+  //usleep(OBOT_DELAY_US);
   
   // read 4 int32's, 1 error byte, and 1 checksum
   if(ReadBuf(buf, 18) < 0)
@@ -688,7 +688,7 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
 }
 
 int 
-Trogdor::ComputeTickDiff(int from, int to) 
+Obot::ComputeTickDiff(int from, int to) 
 {
   int diff1, diff2;
 
@@ -696,12 +696,12 @@ Trogdor::ComputeTickDiff(int from, int to)
   if(to > from) 
   {
     diff1 = to - from;
-    diff2 = (-TROGDOR_MAX_TICS - from) + (to - TROGDOR_MAX_TICS);
+    diff2 = (-OBOT_MAX_TICS - from) + (to - OBOT_MAX_TICS);
   }
   else 
   {
     diff1 = to - from;
-    diff2 = (from - TROGDOR_MAX_TICS) + (-TROGDOR_MAX_TICS - to);
+    diff2 = (from - OBOT_MAX_TICS) + (-OBOT_MAX_TICS - to);
   }
 
   if(abs(diff1) < abs(diff2)) 
@@ -711,7 +711,7 @@ Trogdor::ComputeTickDiff(int from, int to)
 }
 
 void
-Trogdor::UpdateOdom(int ltics, int rtics)
+Obot::UpdateOdom(int ltics, int rtics)
 {
   int ltics_delta, rtics_delta;
   double l_delta, r_delta, a_delta, d_delta;
@@ -759,7 +759,7 @@ Trogdor::UpdateOdom(int ltics, int rtics)
   gettimeofday(&currtime,NULL);
   timediff = (currtime.tv_sec + currtime.tv_usec/1e6)-
              (lasttime.tv_sec + lasttime.tv_usec/1e6);
-  max_tics = (int)rint(TROGDOR_MAX_WHEELSPEED / TROGDOR_M_PER_TICK / timediff);
+  max_tics = (int)rint(OBOT_MAX_WHEELSPEED / OBOT_M_PER_TICK / timediff);
   lasttime = currtime;
 
   //printf("ltics: %d\trtics: %d\n", ltics,rtics);
@@ -772,14 +772,14 @@ Trogdor::UpdateOdom(int ltics, int rtics)
     return;
   }
 
-  l_delta = ltics_delta * TROGDOR_M_PER_TICK;
-  r_delta = rtics_delta * TROGDOR_M_PER_TICK;
+  l_delta = ltics_delta * OBOT_M_PER_TICK;
+  r_delta = rtics_delta * OBOT_M_PER_TICK;
 
   //printf("Left speed: %f\n", l_delta / timediff);
   //printf("Right speed: %f\n", r_delta / timediff);
 
 
-  a_delta = (r_delta - l_delta) / TROGDOR_AXLE_LENGTH;
+  a_delta = (r_delta - l_delta) / OBOT_AXLE_LENGTH;
   d_delta = (l_delta + r_delta) / 2.0;
 
 
@@ -788,7 +788,7 @@ Trogdor::UpdateOdom(int ltics, int rtics)
   this->pa += a_delta;
   this->pa = NORMALIZE(this->pa);
   
-  //printf("trogdor: pose: %f,%f,%f\n", this->px,this->py,RTOD(this->pa));
+  //printf("obot: pose: %f,%f,%f\n", this->px,this->py,RTOD(this->pa));
 
   this->last_ltics = ltics;
   this->last_rtics = rtics;
@@ -796,7 +796,7 @@ Trogdor::UpdateOdom(int ltics, int rtics)
 
 // Validate XOR checksum
 int
-Trogdor::ValidateChecksum(unsigned char *ptr, size_t len)
+Obot::ValidateChecksum(unsigned char *ptr, size_t len)
 {
   size_t i;
   unsigned char checksum = 0;
@@ -812,7 +812,7 @@ Trogdor::ValidateChecksum(unsigned char *ptr, size_t len)
 
 // Compute XOR checksum
 unsigned char
-Trogdor::ComputeChecksum(unsigned char *ptr, size_t len)
+Obot::ComputeChecksum(unsigned char *ptr, size_t len)
 {
   size_t i;
   unsigned char chksum = 0;
@@ -824,7 +824,7 @@ Trogdor::ComputeChecksum(unsigned char *ptr, size_t len)
 }
 
 int
-Trogdor::SendCommand(unsigned char cmd, int val1, int val2)
+Obot::SendCommand(unsigned char cmd, int val1, int val2)
 {
   unsigned char buf[10];
   int i;
@@ -849,10 +849,10 @@ Trogdor::SendCommand(unsigned char cmd, int val1, int val2)
 }
 
 int
-Trogdor::SetVelocity(int lvel, int rvel)
+Obot::SetVelocity(int lvel, int rvel)
 {
   //printf("sending %d:%d\n", lvel,rvel);
-  if(SendCommand(TROGDOR_SET_VELOCITIES,lvel,rvel) < 0)
+  if(SendCommand(OBOT_SET_VELOCITIES,lvel,rvel) < 0)
   {
     PLAYER_ERROR("failed to set velocities");
     return(-1);
@@ -861,20 +861,20 @@ Trogdor::SetVelocity(int lvel, int rvel)
 }
 
 int 
-Trogdor::ChangeMotorState(int state)
+Obot::ChangeMotorState(int state)
 {
   unsigned char buf[1];
   if(state)
-    buf[0] = TROGDOR_ENABLE_VEL_CONTROL;
+    buf[0] = OBOT_ENABLE_VEL_CONTROL;
   else
-    buf[0] = TROGDOR_DISABLE_VEL_CONTROL;
+    buf[0] = OBOT_DISABLE_VEL_CONTROL;
   return(WriteBuf(buf,sizeof(buf)));
 }
 
 static void
-StopRobot(void* trogdordev)
+StopRobot(void* obotdev)
 {
-  Trogdor* td = (Trogdor*)trogdordev;
+  Obot* td = (Obot*)obotdev;
 
   if(td->SetVelocity(0,0) < 0)
     PLAYER_ERROR("failed to stop robot on thread exit");

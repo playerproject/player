@@ -70,8 +70,8 @@ void AmtecPowerCube_Register(DriverTable* table);
 void ClodBuster_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_TROGDOR
-void Trogdor_Register(DriverTable* table);
+#ifdef INCLUDE_OBOT
+void Obot_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_ER
@@ -507,8 +507,8 @@ register_devices()
   ClodBuster_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_TROGDOR
-  Trogdor_Register(driverTable);
+#ifdef INCLUDE_OBOT
+  Obot_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ER
