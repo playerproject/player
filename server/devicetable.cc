@@ -26,13 +26,6 @@
  *   class to keep track of available devices.  
  */
 #include <devicetable.h>
-
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
 #include <string.h> // for strncpy(3)
 
 
@@ -43,8 +36,8 @@ CDeviceEntry::CDeviceEntry()
 { 
   devicep = NULL; 
   next = NULL;
-  bzero(drivername, sizeof(drivername));
-  bzero(robotname, sizeof(robotname));
+  memset(drivername, 0, sizeof(drivername));
+  memset(robotname, 0, sizeof(robotname));
 }
 
 

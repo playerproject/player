@@ -259,7 +259,7 @@ REB::Setup()
   write_pfd.fd = reb_fd;
   read_pfd.fd = reb_fd;
   
-  bzero(&params, sizeof(params));  
+  memset(&params, 0, sizeof(params));  
   tcgetattr(this->reb_fd, &oldtio); /* save current serial port settings */
   params.c_cflag = REB_BAUDRATE | CS8 | CLOCAL | CREAD | CSTOPB;
   params.c_iflag = 0; 

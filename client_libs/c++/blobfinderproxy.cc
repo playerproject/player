@@ -48,14 +48,15 @@
 
 #include <playerclient.h>
 #include <netinet/in.h>
+#include <string.h> // for memset(3)
 
 BlobfinderProxy::BlobfinderProxy(PlayerClient* pc, unsigned short index, 
             unsigned char access):
             ClientProxy(pc,PLAYER_BLOBFINDER_CODE,index,access)
 {
   // zero everything
-  bzero(num_blobs,sizeof(num_blobs));
-  bzero(blobs,sizeof(blobs)); 
+  memset(num_blobs,0,sizeof(num_blobs));
+  memset(blobs,0,sizeof(blobs)); 
 }
 
 BlobfinderProxy::~BlobfinderProxy()
@@ -74,8 +75,8 @@ void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
 
   if(firsttime)
   {
-    bzero(num_blobs,sizeof(num_blobs));
-    bzero(blobs,sizeof(blobs));
+    memset(num_blobs,0,sizeof(num_blobs));
+    memset(blobs,0,sizeof(blobs));
     firsttime = false;
   }
 

@@ -48,6 +48,7 @@
 
 #include <playerclient.h>
 #include <netinet/in.h>
+#include <string.h> // for memset
     
 // enable/disable the sonars
 //
@@ -107,7 +108,7 @@ void SonarProxy::FillData(player_msghdr_t hdr, const char* buffer)
   }
 
   range_count = ntohs(((player_sonar_data_t*)buffer)->range_count);
-  bzero(ranges,sizeof(ranges));
+  memset(ranges,0,sizeof(ranges));
   for(size_t i=0;i<range_count;i++)
   {
     ranges[i] = ntohs(((player_sonar_data_t*)buffer)->ranges[i]);

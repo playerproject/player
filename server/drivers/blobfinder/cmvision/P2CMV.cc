@@ -30,10 +30,6 @@
   #include <config.h>
 #endif
 
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
-
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
@@ -191,7 +187,7 @@ CMVisionBF::Setup()
   //vision->enable(CMV_DENSITY_MERGE);
 
   player_blobfinder_data_t dummy;
-  bzero(&dummy,sizeof(dummy));
+  memset(&dummy,0,sizeof(dummy));
   // zero the data buffer
   PutData((unsigned char*)&dummy,
           sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
@@ -237,7 +233,7 @@ CMVisionBF::Main()
   for(;;)
     {
       // clean our buffers
-      bzero(&local_data,sizeof(local_data));
+      memset(&local_data,0,sizeof(local_data));
       
       // put in some stuff that doesnt change
       local_data.width = htons(this->width);

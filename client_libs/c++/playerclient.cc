@@ -61,7 +61,7 @@ PlayerClient::PlayerClient(const char* hostname,
   destroyed = false;
   // so we know we're not connected
   conn.sock = -1;
-  bzero(conn.banner,sizeof(conn.banner));
+  memset(conn.banner,0,sizeof(conn.banner));
   proxies = (ClientProxyNode*)NULL;
   num_proxies = 0;
   fresh = false;
@@ -96,7 +96,7 @@ PlayerClient::PlayerClient(const struct in_addr* hostaddr,
   destroyed = false;
   // so we know we're not connected
   conn.sock = -1;
-  bzero(conn.banner,sizeof(conn.banner));
+  memset(conn.banner,0,sizeof(conn.banner));
   proxies = (ClientProxyNode*)NULL;
   num_proxies = 0;
   fresh = false;
@@ -475,8 +475,8 @@ PlayerClient::LookupPort(const char* name)
   player_device_id_t id;
   player_device_nameservice_req_t req, rep;
   player_msghdr_t hdr;
-  bzero(&req,sizeof(req));
-  bzero(&rep,sizeof(rep));
+  memset(&req,0,sizeof(req));
+  memset(&rep,0,sizeof(rep));
 
   req.subtype = htons(PLAYER_PLAYER_NAMESERVICE_REQ);
   strncpy((char*)req.name,name,sizeof(req.name));

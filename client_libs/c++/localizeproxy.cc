@@ -50,6 +50,7 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h> // for memset
 
 #ifndef MIN
   #define MIN(a,b) (a < b) ? a : b
@@ -69,7 +70,7 @@ void LocalizeProxy::FillData(player_msghdr_t hdr, const char* buffer)
   // Byte-swapping goodness
   pending_count = ntohs(buf->pending_count);
   hypoth_count = ntohl(buf->hypoth_count);
-  bzero(hypoths,sizeof(hypoths));
+  memset(hypoths,0,sizeof(hypoths));
   for(int i=0;i<hypoth_count;i++)
   {
     for(int j=0;j<3;j++)

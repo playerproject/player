@@ -39,7 +39,7 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <errno.h>
-#include <string.h> // for bzero()
+#include <string.h> 
 #include <stdlib.h>  /* free(3),exit(3) */
 #include <signal.h>
 #include <unistd.h>  /* for close(2) */

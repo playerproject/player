@@ -28,14 +28,6 @@
  *   from ACTS, which this device spawns and then talks to.
  */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
-
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
@@ -208,34 +200,34 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
   height = cf->ReadInt(section, "height", DEFAULT_ACTS_HEIGHT);
   
   // now, get the optionals
-  bzero(minarea,sizeof(minarea));
+  memset(minarea,0,sizeof(minarea));
   if((tmpint = cf->ReadInt(section, "pixels", -1)) >= 0)
     snprintf(minarea,sizeof(minarea),"%d",tmpint);
   portnum = cf->ReadInt(section, "port", DEFAULT_ACTS_PORT);
-  bzero(fps,sizeof(fps));
+  memset(fps,0,sizeof(fps));
   if((tmpint = cf->ReadInt(section, "fps", -1)) >= 0)
     snprintf(fps,sizeof(fps),"%d",tmpint);
-  bzero(drivertype,sizeof(drivertype));
+  memset(drivertype,0,sizeof(drivertype));
   if(cf->ReadString(section, "drivertype", NULL))
     strncpy(drivertype, cf->ReadString(section, "drivertype", NULL), 
             sizeof(drivertype)-1);
   invertp = cf->ReadInt(section, "invert", -1);
-  bzero(devicepath,sizeof(devicepath));
+  memset(devicepath,0,sizeof(devicepath));
   if(cf->ReadString(section, "devicepath", NULL))
     strncpy(devicepath, cf->ReadString(section, "devicepath", NULL), 
             sizeof(devicepath)-1);
-  bzero(channel,sizeof(channel));
+  memset(channel,0,sizeof(channel));
   if((tmpint = cf->ReadInt(section, "channel", -1)) >= 0)
     snprintf(channel,sizeof(channel),"%d",tmpint);
-  bzero(norm,sizeof(norm));
+  memset(norm,0,sizeof(norm));
   if(cf->ReadString(section, "norm", NULL))
     strncpy(norm, cf->ReadString(section, "norm", NULL), 
             sizeof(norm)-1);
   pxc200p = cf->ReadInt(section, "pxc200", -1);
-  bzero(brightness,sizeof(brightness));
+  memset(brightness,0,sizeof(brightness));
   if((tmpfloat = cf->ReadFloat(section, "brightness", -1)) >= 0)
     snprintf(brightness,sizeof(brightness),"%.3f",tmpfloat);
-  bzero(contrast,sizeof(contrast));
+  memset(contrast,0,sizeof(contrast));
   if((tmpfloat = cf->ReadFloat(section, "contrast", -1)) >= 0)
     snprintf(contrast,sizeof(brightness),"%.3f",tmpfloat);
 
@@ -256,13 +248,13 @@ Acts::Acts(char* interface, ConfigFile* cf, int section)
       break;
   }
   header_elt_len = header_len / PLAYER_BLOBFINDER_MAX_CHANNELS;
-  bzero(portnumstring, sizeof(portnumstring));
+  memset(portnumstring, 0, sizeof(portnumstring));
   snprintf(portnumstring,sizeof(portnumstring),"%d",portnum);
   
-  bzero(widthstring, sizeof(widthstring));
+  memset(widthstring, 0, sizeof(widthstring));
   snprintf(widthstring,sizeof(widthstring),"%d",width);
 
-  bzero(heightstring, sizeof(heightstring));
+  memset(heightstring, 0, sizeof(heightstring));
   snprintf(heightstring,sizeof(heightstring),"%d",height);
 
 
@@ -333,7 +325,7 @@ Acts::Setup()
   fflush(stdout);
 
   player_blobfinder_data_t dummy;
-  bzero(&dummy,sizeof(dummy));
+  memset(&dummy,0,sizeof(dummy));
   // zero the data buffer
   PutData((unsigned char*)&dummy,
           sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
@@ -605,7 +597,7 @@ Acts::Main()
   for(;;)
   {
     // clean our buffers
-    bzero(&local_data,sizeof(local_data));
+    memset(&local_data,0,sizeof(local_data));
     
     // put in some stuff that doesnt change
     local_data.width = htons(this->width);

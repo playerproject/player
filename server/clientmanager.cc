@@ -29,9 +29,6 @@
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
 
 #include <errno.h>
 #include <string.h>  // for memcpy(3)
@@ -99,9 +96,9 @@ ClientManager::ClientManager(struct pollfd* listen_ufds, int* ports,
   num_accept_ufds = numfds;
 
   assert(clients = new ClientData*[initial_size]);
-  bzero((char*)clients,sizeof(ClientData*)*initial_size);
+  memset((char*)clients,0,sizeof(ClientData*)*initial_size);
   assert(ufds = new struct pollfd[initial_size]);
-  bzero((char*)ufds,sizeof(struct pollfd)*initial_size);
+  memset((char*)ufds,0,sizeof(struct pollfd)*initial_size);
   size_clients = initial_size;
   num_clients = 0;
 }
@@ -153,7 +150,7 @@ void ClientManager::AddClient(ClientData* client)
     }
 
     // zero it
-    bzero((char*)tmp_clients,sizeof(ClientData*)*2*size_clients);
+    memset((char*)tmp_clients,0,sizeof(ClientData*)*2*size_clients);
 
     // copy existing data
     memcpy(tmp_clients,clients,sizeof(ClientData*)*num_clients);
@@ -176,7 +173,7 @@ void ClientManager::AddClient(ClientData* client)
     }
     
     // zero it
-    bzero((char*)tmp_ufds,sizeof(struct pollfd)*2*size_clients);
+    memset((char*)tmp_ufds,0,sizeof(struct pollfd)*2*size_clients);
 
     // copy existing data
     memcpy(tmp_ufds,ufds,sizeof(struct pollfd)*num_clients);
@@ -205,7 +202,7 @@ void ClientManager::AddClient(ClientData* client)
     sprintf((char*)data, "%s%s (stage)", PLAYER_IDENT_STRING, playerversion);
   else
     sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
-  bzero(((char*)data)+strlen((char*)data),
+  memset(((char*)data)+strlen((char*)data),0,
         PLAYER_IDENT_STRLEN-strlen((char*)data));
 
   client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);
@@ -468,7 +465,7 @@ ClientManagerTCP::Write()
       int replysize;
       struct timeval ts;
       player_device_id_t id;
-      bzero(&id,sizeof(id));
+      memset(&id,0,sizeof(id));
 
       // if this client has built up leftover outgoing data as a result of a
       // previous reply not getting sent, don't add any more replies.
@@ -745,7 +742,7 @@ ClientManagerUDP::Write()
       int replysize;
       struct timeval ts;
       player_device_id_t id;
-      bzero(&id,sizeof(id));
+      memset(&id,0,sizeof(id));
 
       // is this a valid device
       if(thisub->devicep)

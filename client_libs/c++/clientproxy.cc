@@ -47,6 +47,7 @@
  */
 
 #include <playerclient.h>
+#include <string.h> // for memset
 
 // constructor will try to get access to the device
 ClientProxy::ClientProxy(PlayerClient* pc, 
@@ -68,8 +69,8 @@ ClientProxy::ClientProxy(PlayerClient* pc,
   receivedtime.tv_usec = 0;
   valid = false;
 
-  bzero(&last_data,sizeof(last_data));
-  bzero(&last_header,sizeof(last_header));
+  memset(&last_data,0,sizeof(last_data));
+  memset(&last_header,0,sizeof(last_header));
 
   // start out with no access
   unsigned char grant_access = 'e';

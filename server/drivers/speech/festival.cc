@@ -36,10 +36,6 @@
   #include <config.h>
 #endif
 
-#if HAVE_STRINGS_H
-  #include <strings.h>
-#endif
-
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execlp(3),fork(2)*/
@@ -343,7 +339,7 @@ Festival::PutCommand(unsigned char* src, size_t maxsize)
           stderr);
   }
   else
-    bzero((((player_speech_cmd_t*)device_command)->string)+maxsize,
+    memset((((player_speech_cmd_t*)device_command)->string)+maxsize,0,
           sizeof(player_speech_cmd_t)-maxsize);
   
   // make ABSOLUTELY sure we've got one NULL
@@ -377,7 +373,7 @@ Festival::Main()
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
-    bzero(&cmd,sizeof(cmd));
+    memset(&cmd,0,sizeof(cmd));
     /* did we get a new command? */
     if(GetCommand((unsigned char*)&cmd,sizeof(cmd)))
     {

@@ -21,10 +21,6 @@
  *
  */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 #include <sys/soundcard.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>

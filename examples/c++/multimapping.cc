@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 
   char* occ_grid = new char[IMG_WIDTH*IMG_HEIGHT];
 
-  bzero(occ_grid,IMG_HEIGHT*IMG_WIDTH);
+  memset(occ_grid,0,IMG_HEIGHT*IMG_WIDTH);
   
   // to flush logs
   signal(SIGINT,sig_int);
@@ -112,9 +112,9 @@ int main(int argc, char** argv)
   int* avoidcounts = new int[numclients];
   int* modes = new int[numclients];
 
-  bzero(randcounts,sizeof(int)*numclients);
-  bzero(avoidcounts,sizeof(int)*numclients);
-  bzero(modes,sizeof(int)*numclients);
+  memset(randcounts,0,sizeof(int)*numclients);
+  memset(avoidcounts,0,sizeof(int)*numclients);
+  memset(modes,0,sizeof(int)*numclients);
 
   for(int i=0;i<numclients;i++)
   {

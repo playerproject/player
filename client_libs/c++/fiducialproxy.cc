@@ -65,7 +65,7 @@ void FiducialProxy::FillData(player_msghdr_t hdr, const char* buffer)
   }
 
   count = ntohs(data->count);
-  bzero(beacons,sizeof(beacons));
+  memset(beacons,0,sizeof(beacons));
   for(unsigned short i = 0; i < count && i < PLAYER_FIDUCIAL_MAX_SAMPLES; i++)
   {
     beacons[i].id = ntohs(data->fiducials[i].id);
