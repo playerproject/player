@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 
 #include "rflex-info.h"
 #include "rflex-io.h"
