@@ -59,6 +59,8 @@
 #include <time.h>
 #include <sys/time.h>
 
+#define PLAYER_ENABLE_TRACE 1
+
 #include <playercommon.h>
 #include <laserdevice.h>
 
@@ -453,7 +455,7 @@ int CLaserDevice::SetLaserMode()
 
     len = ReadFromLaser(packet, sizeof(packet), true, 200);
     if (len < 0)
-        return 1;
+        RETURN_ERROR(1, "error reading from laser")
     else if (len < 1)
         RETURN_ERROR(1, "no reply from laser")
     else if (packet[0] == NACK)
