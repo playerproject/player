@@ -76,7 +76,7 @@ void* RunSpeechThread(void* speechdevice);
 void QuitFestival(void* speechdevice);
 
 CSpeechDevice::CSpeechDevice(int argc, char** argv) :
-  CDevice(0,sizeof(player_speech_cmd_t),1,1)
+  CDevice(0,sizeof(player_speech_cmd_t),0,0)
 {
   int queuelen = SPEECH_MAX_QUEUE_LEN;
   sock = -1;

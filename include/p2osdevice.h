@@ -48,14 +48,6 @@
 
 /* data for the p2-dx robot from p2 operation manual */
 #define P2OS_CYCLETIME_USEC 100000
-//#define AngleConvFactor 0.001534
-//#define DistConvFactor 0.826
-//#define VelConvFactor 1.0
-//#define RobotRadius 250.0
-//#define RobotDiagonal 120.0
-//#define Holonomic 1
-//#define RangeConvFactor 0.268
-//#define RobotAxleLength 320.0
 
 /* p2os constants */
 #define SYNC0 0
@@ -127,6 +119,9 @@ class CP2OSDevice:public CDevice
     // likewise, we need one P2OS-wide subscription count to manage calls to
     // Setup() and Shutdown()
     static int p2os_subscriptions;
+
+    static player_p2os_data_t* data;
+    static player_p2os_cmd_t* command;
 
   protected:
     void Lock();

@@ -71,7 +71,6 @@ class CDevice
 
     virtual ~CDevice() {};
 
-    CDevice() {};
 
     // this is the main constructor, used by most non-Stage devices.
     // storage will be allocated by this constructor
@@ -79,11 +78,14 @@ class CDevice
             int reqqueuelen, int repqueuelen);
     
     // this is the other constructor, used mostly by Stage devices.
-    // storage must be pre-allocated
-    CDevice(unsigned char* data, size_t datasize, 
-            unsigned char* command, size_t commandsize, 
-            unsigned char* reqqueue, int reqqueuelen, 
-            unsigned char* repqueue, int repqueuelen);
+    // if any of the default Put/Get methods are to be used, then storage for 
+    // the buffers must allocated, and SetupBuffers() called.
+    CDevice();
+
+    void SetupBuffers(unsigned char* data, size_t datasize, 
+                      unsigned char* command, size_t commandsize, 
+                      unsigned char* reqqueue, int reqqueuelen, 
+                      unsigned char* repqueue, int repqueuelen);
 
     // these are used to control subscriptions to the device; a device MAY
     // override them, but usually won't (P2OS being the main exception).

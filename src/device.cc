@@ -81,24 +81,33 @@ CDevice::CDevice(size_t datasize, size_t commandsize,
 }
     
 // this is the other constructor, used mostly by Stage devices.
-// storage must be pre-allocated
-CDevice::CDevice(unsigned char* data, size_t datasize, 
-        unsigned char* command, size_t commandsize, 
-        unsigned char* reqqueue, int reqqueuelen, 
-        unsigned char* repqueue, int repqueuelen)
+// if any of the default Put/Get methods are to be used, then storage for 
+// the buffers must allocated, and SetupBuffers() called.
+CDevice::CDevice()
 {
-  //printf("CDevice non-allocating constructor:%d:%d:%d:%d\n",
-         //datasize, commandsize, reqqueuelen, repqueuelen);
+  // ensure immediate segfault in case any of these are used without
+  // SetupBuffers() having been called
+  device_datasize = device_commandsize = 0;
+  device_data = device_command = NULL;
+  device_reqqueue = device_repqueue = NULL;
+ 
+  // this may be unnecessary, but what the hell...
+  pthread_mutex_init(&accessMutex,NULL);
+}
 
+// this method is used by devices that allocate their own storage, but wish to
+// use the default Put/Get methods
+void CDevice::SetupBuffers(unsigned char* data, size_t datasize, 
+                           unsigned char* command, size_t commandsize, 
+                           unsigned char* reqqueue, int reqqueuelen, 
+                           unsigned char* repqueue, int repqueuelen)
+{
   device_data = data;
   device_datasize = datasize;
   device_command = command;
   device_commandsize = commandsize;
   device_reqqueue = new PlayerQueue(reqqueue, reqqueuelen);
   device_repqueue = new PlayerQueue(repqueue, repqueuelen);
-
-  // this isn't really needed, but what the hell...
-  pthread_mutex_init(&accessMutex,NULL);
 }
 
 size_t CDevice::GetReply(unsigned char *, size_t)

@@ -47,7 +47,7 @@
 void *RunPtzThread(void *ptzdevice);
 
 CPtzDevice::CPtzDevice(int argc, char** argv) :
-  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),0,0)
 {
   //data = new player_ptz_data_t;
   //command = new player_ptz_cmd_t;
