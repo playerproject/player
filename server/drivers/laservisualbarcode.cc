@@ -233,9 +233,9 @@ LaserVisualBarcode::LaserVisualBarcode(char* interface, ConfigFile* cf, int sect
   this->max_dist = cf->ReadFloat(section, "max_dist", 0.2);
   
   // Default fiducial properties.
-  this->barcount = cf->ReadInt(section, "barcount", 3);
-  this->barwidth = cf->ReadLength(section, "barwidth", 0.08);
-  this->barheight = cf->ReadLength(section, "barheight", 0.02);
+  this->barcount = cf->ReadInt(section, "bit_count", 3);
+  this->barwidth = cf->ReadLength(section, "bit_width", 0.08);
+  this->barheight = cf->ReadLength(section, "bit_height", 0.02);
 
   // Reset fiducial list.
   this->fiducial_count = 0;
