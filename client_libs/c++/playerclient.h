@@ -2400,4 +2400,68 @@ private:
  *****************************************************************************/
 
 
+
+
+/*****************************************************************************
+ ** begin section PlannerProxy
+ *****************************************************************************/
+
+/** [Synopsis] The {\tt PlannerProxy} proxy provides an interface to a
+ * 2D motion planner. */
+
+/** [Data] */
+
+class PlannerProxy : public ClientProxy
+{
+
+  // Constructor.  Leave the access field empty to start unconnected.
+  public: PlannerProxy (PlayerClient *pc, unsigned short index,
+              unsigned char access='c');
+
+  // Destructor
+  public: virtual ~PlannerProxy();
+
+  /** Set the goal pose (gx, gy, ga) */
+  public: int SetCmdPose( double gx, double gy, double ga, int state);
+
+  /** Get the list of waypoints. Writes the result into the proxy
+      rather than returning it to the caller. */
+  public: int GetWaypoints();
+
+  // interface that all proxies must provide
+  public: void FillData( player_msghdr_t hdr, const char *buffer);
+
+  /** Did the planner find a valid path? */
+  public: char pathValid;
+
+  /** Have we arrived at the goal? */
+  public: char pathDone;
+
+  /** Current pose (m, m, radians). */
+  public: double px, py, pa;
+
+  /** Goal location (m, m, radians) */
+  public: double gx, gy, ga;
+
+  /** Current waypoint location (m, m, radians) */
+  public: double wx, wy, wa;
+
+  /** Current waypoint index (handy if you already have the list
+      of waypoints). May be negative if there's no plan, or if 
+      the plan is done */
+  public: int currWaypoint;
+
+  /** Number of waypoints in the plan */
+  public: int waypointCount;
+
+  /** List of waypoints in the current plan (m,m,radians).*/
+  public: double waypoints[PLAYER_PLANNER_MAX_WAYPOINTS][3];
+
+};
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+
 #endif
