@@ -62,8 +62,11 @@ P2OSPosition_Register(DriverTable* table)
 
 P2OSPosition::~P2OSPosition()
 {
-  ((player_p2os_cmd_t*)device_command)->position.xspeed = 0;
-  ((player_p2os_cmd_t*)device_command)->position.yawspeed = 0;
+  if(command)
+  {
+    command->position.xspeed = 0;
+    command->position.yawspeed = 0;
+  }
 }
 
 size_t P2OSPosition::GetData(void* client, unsigned char *dest, size_t maxsize,

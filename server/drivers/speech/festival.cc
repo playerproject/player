@@ -157,6 +157,11 @@ Festival::~Festival()
   Shutdown();
   if(sock != -1)
     QuitFestival(this);
+  if(queue)
+  {
+    delete queue;
+    queue = NULL;
+  }
 }
 
 int

@@ -56,6 +56,7 @@ class CDeviceSubscription
       devicep = NULL; 
       next = NULL; 
       access = PLAYER_ERROR_MODE; 
+      last_sec = last_usec = 0;
     }
 };
 

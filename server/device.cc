@@ -71,6 +71,8 @@ CDevice::CDevice(size_t datasize, size_t commandsize,
   assert(device_reqqueue);
   assert(device_repqueue);
 
+  data_timestamp_sec = data_timestamp_usec = 0;
+
   // don't forget to make changes to both constructors!
   // it took me a few hours to figure out that the subscription
   // counter needs to be zeroed in the other constuctor - it produced
@@ -105,6 +107,8 @@ CDevice::CDevice()
   // this may be unnecessary, but what the hell...
   pthread_mutex_init(&accessMutex,NULL);
   pthread_mutex_init(&setupMutex,NULL);
+
+  data_timestamp_sec = data_timestamp_usec = 0;
   
   // remember that we allocated the memory, so we can later free it
   allocp = false;
@@ -127,16 +131,18 @@ CDevice::~CDevice()
       delete[] device_command;
       device_command=NULL;
     }
-    if(device_reqqueue)
-    {
-      delete device_reqqueue;
-      device_reqqueue=NULL;
-    }
-    if(device_repqueue)
-    {
-      delete device_repqueue;
-      device_repqueue=NULL;
-    }
+  }
+  // delete these regardless, cause the queue objects will know whether or
+  // not to free their internal storage.
+  if(device_reqqueue)
+  {
+    delete device_reqqueue;
+    device_reqqueue=NULL;
+  }
+  if(device_repqueue)
+  {
+    delete device_repqueue;
+    device_repqueue=NULL;
   }
 }
 

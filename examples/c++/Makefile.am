@@ -18,6 +18,7 @@ noinst_PROGRAMS = rsn \
 		  audioread \
 		  audiowrite \
                   waveformread \
+                  audiodspread \
 		  lookupport
 
 waveformread_SOURCES = waveformread.cc
@@ -38,4 +39,4 @@ multilogger_SOURCES = multilogger.cc
 stress_SOURCES = stress.cc
 pherobot_SOURCES = pherobot.cc
 lookupport_SOURCES = lookupport.cc
-
+audiodspread_SOURCES = audiodspread.cc

@@ -61,8 +61,11 @@ P2OSGripper_Register(DriverTable* table)
 
 P2OSGripper::~P2OSGripper()
 {
-  ((player_p2os_cmd_t*)device_command)->gripper.cmd = GRIPstore;
-  ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
+  if(command)
+  {
+    command->gripper.cmd = GRIPstore;
+    command->gripper.arg = 0x00;
+  }
 }
 
 size_t P2OSGripper::GetData(void* client,unsigned char *dest, size_t maxsize,
