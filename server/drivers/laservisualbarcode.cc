@@ -550,15 +550,10 @@ void LaserVisualBarcode::FitLaserFiducial(player_laser_data_t *data,
 void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3])
 {
   int i;
-  double k;
   double dx, dy, dr;
   double mindr;
   fiducial_t *fiducial;
   fiducial_t *minfiducial;
-
-  // TODO get from config
-  // Low-pass filter gain.
-  k = 1.0;
   
   // Observations must be at least this close to the existing
   // fiducial.
@@ -600,9 +595,9 @@ void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3])
   // Otherwise, update the existing fiducial.
   else
   {
-    minfiducial->pose[0] = (1 - k) * minfiducial->pose[0] + k * pose[0];
-    minfiducial->pose[1] = (1 - k) * minfiducial->pose[1] + k * pose[1];
-    minfiducial->pose[2] = (1 - k) * minfiducial->pose[2] + k * pose[2];
+    minfiducial->pose[0] = pose[0];
+    minfiducial->pose[1] = pose[1];
+    minfiducial->pose[2] = pose[2];
     minfiducial->laser_time = time;
   }
 
@@ -627,7 +622,6 @@ void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3])
 // Update the PTZ to point at one of the laser reflectors.
 int LaserVisualBarcode::UpdatePtz()
 {
-  int i;
   player_ptz_data_t data;
   size_t size;
   uint32_t timesec, timeusec;
@@ -652,6 +646,8 @@ int LaserVisualBarcode::UpdatePtz()
 
   // Point the fiducial
   this->ServoPtz(time, &data);
+
+  return 1;
 }
 
 
@@ -660,7 +656,7 @@ int LaserVisualBarcode::UpdatePtz()
 // This algorithm picks the one that we havent looked at for a long time.
 void LaserVisualBarcode::SelectPtzTarget(double time, player_ptz_data_t *data)
 {
-  int i, maxi;
+  int i;
   double t, maxt;
   fiducial_t *fiducial;
 
@@ -704,7 +700,7 @@ void LaserVisualBarcode::SelectPtzTarget(double time, player_ptz_data_t *data)
 // Servo the PTZ to a target fiducial.
 void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
 {
-  double dx, dy, r, b, e;
+  double dx, dy, r, b, tilt, zoom;
   fiducial_t *fiducial;
   player_ptz_cmd_t cmd;
   double maxtime, maxtilt;
@@ -720,7 +716,8 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
   {
     r = 0;
     b = 0;
-    e = 0;
+    tilt = 0;
+    zoom = M_PI;
   }
   else
   {
@@ -730,9 +727,8 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
     dy = fiducial->pose[1];
     r = sqrt(dx * dx + dy * dy);
     b = atan2(dy, dx);
-    e = maxtilt * sin((time - this->ptz_fiducial_time) / maxtime * 2 * M_PI);
-
-    // TODO: compute zoom value.
+    tilt = maxtilt * sin((time - this->ptz_fiducial_time) / maxtime * 2 * M_PI);
+    zoom = 8 * atan2(this->width / 2, r);
   }
 
   // Compute the dimensions of the image at the range of the target fiducial.
@@ -741,9 +737,9 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
 
   // Compose the command packet to send to the PTZ device.
   cmd.pan = htons(((int16_t) (b * 180 / M_PI)));
-  cmd.tilt = htons(((int16_t) (e * 180 / M_PI)));
-  cmd.zoom = htons(20);
-  //TESTING this->ptz->PutCommand((unsigned char*) &cmd, sizeof(cmd));
+  cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
+  cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
+  this->ptz->PutCommand((unsigned char*) &cmd, sizeof(cmd));
 
   return;
 }
@@ -856,7 +852,7 @@ void LaserVisualBarcode::FindBlobs(double time, player_blobfinder_data_t *data)
         continue;
       if ((blob->bottom - blob->top) < minheight || (blob->bottom - blob->top) > maxheight)
         continue;
-      if (blob->area < minarea || blob->area > maxarea)
+      if ((int) blob->area < minarea || (int) blob->area > maxarea)
         continue;
 
       printf("%d %d : %d %d : %d\n", blob->x, blob->y,
@@ -882,7 +878,6 @@ void LaserVisualBarcode::FindBlobs(double time, player_blobfinder_data_t *data)
 void LaserVisualBarcode::UpdateData()
 {
   int i;
-  int id;
   double r, b, o;
   uint32_t timesec, timeusec;
   fiducial_t *fiducial;
@@ -893,15 +888,10 @@ void LaserVisualBarcode::UpdateData()
   {
     fiducial = this->fiducials + i;
 
-    r = sqrt(fiducial->pose[0] * fiducial->pose[0] + fiducial->pose[1] * fiducial->pose[1]);
+    r = sqrt(fiducial->pose[0] * fiducial->pose[0] +
+             fiducial->pose[1] * fiducial->pose[1]);
     b = atan2(fiducial->pose[1], fiducial->pose[0]);
     o = fiducial->pose[2];
-    
-    /* REMOVE
-    r = fiducial->pose[0];
-    b = fiducial->pose[1];    
-    o = fiducial->pose[2];
-    */
     
     data.fiducials[i].id = htons(((int16_t) fiducial->id));
     data.fiducials[i].pose[0] = htons(((int16_t) (1000 * r)));
