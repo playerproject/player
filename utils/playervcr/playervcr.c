@@ -71,6 +71,7 @@ void update_status_label(gui_data_t* gui_data);
 int
 main(int argc, char** argv)
 {
+  int peek_result;
   gui_data_t gui_data;
 
   if(parse_args(&gui_data, argc, argv) < 0)
@@ -93,7 +94,12 @@ main(int argc, char** argv)
     while(gtk_events_pending())
       gtk_main_iteration_do(0);
 
-    if(playerc_client_read(gui_data.client) < 0)
+    if((peek_result = playerc_client_peek(gui_data.client,10)) < 0)
+    {
+      fprintf(stderr, "Error: Failed to peek at Player socket\n");
+      exit(-1);
+    }
+    if(peek_result && (playerc_client_read(gui_data.client) < 0))
     {
       fprintf(stderr, "Error: Failed to read from Player\n");
       exit(-1);
@@ -145,11 +151,15 @@ parse_args(gui_data_t* gui_data, int argc, char** argv)
 void
 init_gui(gui_data_t* gui_data, int argc, char** argv)
 {
+  char titlebuf[2*MAX_HOSTNAME_LEN];
   g_type_init();
   gtk_init(&argc, &argv);
 
   g_assert((gui_data->main_window = 
             (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL)));
+  sprintf(titlebuf,"playervcr -- %s:%d", 
+          gui_data->hostname, gui_data->port);
+  gtk_window_set_title(gui_data->main_window, titlebuf);
 
   /* boxes to hold everything else */
   g_assert((gui_data->vbox = (GtkBox*)gtk_vbox_new(FALSE, 15)));

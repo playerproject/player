@@ -239,6 +239,7 @@ void ReadLogManager::Main()
       usleep(10000);
       continue;
     }
+    else
 
     // Read a line from the file
     if (gzgets(this->file, line, sizeof(line)) == NULL)
