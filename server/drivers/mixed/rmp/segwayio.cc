@@ -59,7 +59,22 @@ rmp_frame_t::AddPacket(const can_packet_t &pkt)
     ready |= (1 << (pkt.id & 0xF));
   }
 }
-    
+
+/* create an instance of SegwayIO, enforces only one
+ * instantiation (since only one instance may access bus)
+ *
+ * returns: pointer to SegwayIO object.
+ */
+SegwayIO *
+SegwayIO::Instance()
+{
+  if (!instance) {
+    instance = new SegwayIO();
+  }
+
+  return instance;
+}
+
 SegwayIO::SegwayIO() 
 {
   canio = new DualCANIO();
@@ -230,7 +245,7 @@ SegwayIO::ReadWriteLoop()
 }
 
 /* Marshals the feedback info from the RMP into a player
- * position data format.
+ * position data format, in a network ready format too
  *
  * returns: 
  */
@@ -249,21 +264,43 @@ SegwayIO::GetData(player_position_data_t *data)
   assert(rmp_data.IsReady());
 
   // xpos is fore/aft integrated position?
-  data->xpos = (int32_t) rint((double)rmp_data.foreaft / 
-		    ((double)RMP_COUNT_PER_M/1000.0));
-
+  data->xpos = htonl( (int32_t) rint((double)rmp_data.foreaft / 
+				     ((double)RMP_COUNT_PER_M/1000.0)) );
+  
+  
   // ypos is going to be pitch for now...
-  data->ypos = (int32_t) rint((double)rmp_data.pitch / 
-		    (double)RMP_COUNT_PER_DEG);
+  data->ypos = htonl( (int32_t) rint((double)rmp_data.pitch / 
+				     (double)RMP_COUNT_PER_DEG) );
 
   // yaw is integrated yaw
-  data->yaw = rmp_data.yaw / 360;
+  data->yaw = htonl( rmp_data.yaw / 360 );
   
   // don't know the conversion yet...
-  data->xspeed = (int32_t) rmp_data.left_dot / RMP_COUNT_PER_M_PER_S;
-  data->yspeed = (int32_t) rmp_data.right_dot / RMP_COUNT_PER_M_PER_S;
+  data->xspeed = htonl( (int32_t) rmp_data.left_dot / 
+			RMP_COUNT_PER_M_PER_S );
+    data->yspeed = htonl( (int32_t) rmp_data.right_dot / 
+			  RMP_COUNT_PER_M_PER_S );
 
-  data->yawspeed = (int32_t) rint(rmp_data.yaw_dot/ (double)RMP_COUNT_PER_DEG_PER_S);
+  data->yawspeed = htonl( (int32_t) rint(rmp_data.yaw_dot / 
+					 (double)RMP_COUNT_PER_DEG_PER_S) );
+}
+  
+/* marshals power related data into player format
+ *
+ * returns: 
+ */
+void
+SegwayIO::GetData(player_power_data_t *data)
+{
+  rmp_frame_t rmp_data;
+
+  pthread_mutex_lock(&latestData_mutex);
+  rmp_data = latestData;
+  pthread_mutex_unlock(&latestData_mutex);
+
+  assert(rmp_data.IsReady());
+
+  data->charge = htons(rmp_data.battery);
 }
   
   
@@ -288,6 +325,12 @@ SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
 
   int16_t trans = (int16_t) rint((double)cmd.xspeed * RMP_COUNT_PER_MM_PER_S);
 
+  if (trans > RMP_MAX_TRANS_VEL_COUNT) {
+    trans = RMP_MAX_TRANS_VEL_COUNT;
+  } else if (trans < -RMP_MAX_TRANS_VEL_COUNT) {
+    trans = -RMP_MAX_TRANS_VEL_COUNT;
+  }
+
   // these may not be necessary since the read/write loop will just
   // read these values, not write to them... 
   pthread_mutex_lock(&trans_command_mutex);
@@ -298,6 +341,12 @@ SegwayIO::VelocityCommand(const player_position_cmd_t &cmd)
   // this is ripped from rmi_demo... to go from deg/s^2 to counts
   // deg/s^2 -> count = 1/0.013805056
   int16_t rot = (int16_t) rint((double)cmd.yawspeed * RMP_COUNT_PER_DEG_PER_SS);
+
+  if (rot > RMP_MAX_ROT_VEL_COUNT) {
+    rot = RMP_MAX_ROT_VEL_COUNT;
+  } else if (rot < -RMP_MAX_ROT_VEL_COUNT) {
+    rot = -RMP_MAX_ROT_VEL_COUNT;
+  }
 
   pthread_mutex_lock(&rot_command_mutex);
   rot_command = rot;

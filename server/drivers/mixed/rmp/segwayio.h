@@ -44,6 +44,8 @@ using namespace std;
 #define RMP_MAX_TRANS_VEL_MM_S		3576
 #define RMP_MAX_ROT_VEL_DEG_S		18	// from rmi_demo: 1300*0.013805056
 #define RMP_READ_WRITE_PERIOD		10	// 100Hz = 10 ms period
+#define RMP_MAX_TRANS_VEL_COUNT		1176
+#define RMP_MAX_ROT_VEL_COUNT		1024
 
 // this holds all the RMP data it gives us
 struct rmp_frame_t
@@ -88,7 +90,9 @@ struct rmp_frame_t
 class SegwayIO 
 {
 public:
-  SegwayIO();
+  // use this instead of constructor to force one instance
+  static SegwayIO *Instance();
+
   ~SegwayIO();
 
   int Init();
@@ -97,6 +101,7 @@ public:
 
   // return RMP data into data
   void GetData(player_position_data_t *data);
+  void GetData(player_power_data_t *data);
 
   // use cmd as new position command
   int VelocityCommand(const player_position_cmd_t &cmd);
@@ -106,6 +111,7 @@ public:
   // implement all the configs as methods here... they just create
   // a CAN packet and put it on the queue
 protected:
+  SegwayIO();
   static void * DummyMain(void *);
 
   void ReadWriteLoop();
@@ -126,6 +132,9 @@ protected:
   
   rmp_frame_t latestData;
   pthread_mutex_t latestData_mutex;
+
+private:
+  static SegwayIO *instance = NULL;
 };
 
 
