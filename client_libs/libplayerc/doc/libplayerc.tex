@@ -2,13 +2,13 @@
 \usepackage{fullpage}
 \usepackage{graphics}
 
-%\usepackage{times}
+\usepackage{times}
 \usepackage{listings}
 \lstset{language=C,basicstyle=\footnotesize,frame=tb}
 
 \usepackage{tabularx}
 
-\def\VERSION {1.3.1}
+\def\VERSION {1.3.2}
 \def\DEFAULTPORT {6665}
 \def\HOMEPAGE {{\tt http://playerstage.sourceforge.net}}
 \def\libplayerc {{\tt libplayerc} }
@@ -483,6 +483,23 @@ Note that the intensity values will only be filled if intensity information
 is enabled (using the {\tt set\_config} function).
 
 
+\newpage
+\section{The {\tt localize} proxy}
+
+The {\tt localize} proxy provides an interface to localization drivers
+such as the Adaptive Monte-Carlo Localization driver ({\tt adaptive\_mcl}).
+The proxy supports the following functions:
+\begin{quote}
+\lstinputlisting{localize.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_localize\_t}
+structure, which has the following elements:
+\begin{quote}
+\lstinputlisting{localize.t.tex}
+\end{quote}
+
+TODO: more documentation please....
+
 
 \newpage
 \section{The {\tt position} proxy}
@@ -549,7 +566,6 @@ structure, which has the following elements:
 \begin{quote}
 \lstinputlisting{truth.t.tex}
 \end{quote}
-
 
 
 \appendix
