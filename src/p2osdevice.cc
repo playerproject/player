@@ -752,7 +752,8 @@ CP2OSDevice::Main()
             PLAYER_ERROR("failed to PutReply");
           break;
 
-        case PLAYER_SONAR_GET_GEOM:
+        case PLAYER_SONAR_GET_GEOM_REQ:
+        {
           /* Return the sonar geometry. */
           if(config_size != 1)
           {
@@ -763,7 +764,7 @@ CP2OSDevice::Main()
           }
 
           player_sonar_geom_t geom;
-          geom.subtype = PLAYER_SONAR_GET_GEOM;
+          geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
           for (int i = 0; i < PLAYER_NUM_SONAR_SAMPLES; i++)
           {
             double *pose = PlayerRobotParams[param_idx].Sonar.pose[i];
@@ -775,6 +776,7 @@ CP2OSDevice::Main()
           if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)))
             PLAYER_ERROR("failed to PutReply");
           break;
+        }
           
         case PLAYER_POSITION_MOTOR_POWER_REQ:
           /* motor state change request 
@@ -798,6 +800,7 @@ CP2OSDevice::Main()
           if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
             PLAYER_ERROR("failed to PutReply");
           break;
+
         case PLAYER_POSITION_VELOCITY_CONTROL_REQ:
           /* velocity control mode:
            *   0 = direct wheel velocity control (default)
@@ -819,6 +822,7 @@ CP2OSDevice::Main()
           if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
             PLAYER_ERROR("failed to PutReply");
           break;
+
         case PLAYER_POSITION_RESET_ODOM_REQ:
           /* reset position to 0,0,0: no args */
           if(config_size-1 != 0)
@@ -833,6 +837,32 @@ CP2OSDevice::Main()
           if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
             PLAYER_ERROR("failed to PutReply");
           break;
+
+        case PLAYER_POSITION_GET_GEOM_REQ:
+        {
+          /* Return the robot geometry. */
+          if(config_size != 1)
+          {
+            puts("Arg get robot geom is wrong size; ignoring");
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+              PLAYER_ERROR("failed to PutReply");
+            break;
+          }
+
+          // TODO : get values from somewhere.
+          player_position_geom_t geom;
+          geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+          geom.pose[0] = htons((short) (-100));
+          geom.pose[1] = htons((short) (0));
+          geom.pose[2] = htons((short) (0));
+          geom.size[0] = htons((short) (2 * 250));
+          geom.size[1] = htons((short) (2 * 225));
+          
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)))
+            PLAYER_ERROR("failed to PutReply");
+          break;
+        }
+          
         default:
           printf("RunPsosThread: got unknown config request \"%c\"\n",
                  config[0]);

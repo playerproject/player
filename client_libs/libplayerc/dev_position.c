@@ -105,6 +105,35 @@ int playerc_position_enable(playerc_position_t *device, int enable)
 }
 
 
+// Get the position geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int playerc_position_get_geom(playerc_position_t *device)
+{
+  int len;
+  player_position_geom_t config;
+
+  config.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+
+  len = playerc_client_request(device->info.client, &device->info,
+                               &config, sizeof(config.subtype), &config, sizeof(config));
+  if (len < 0)
+    return -1;
+  if (len != sizeof(config))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
+    return -1;
+  }
+
+  device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
+  device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
+  device->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
+  device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
+  device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
+
+  return 0;
+}
+
+
 // Set the robot speed
 int playerc_position_set_speed(playerc_position_t *device, double vx, double vy, double va)
 {

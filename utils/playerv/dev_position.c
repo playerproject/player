@@ -47,7 +47,6 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   char section[64];
   position_t *position;
   int subscribe;
-  double sizex, sizey, orgx, orgy;
   
   position = malloc(sizeof(position_t));
 
@@ -55,14 +54,6 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   position->datatime = 0;
   
   snprintf(section, sizeof(section), "position:%d", index);
-  
-  // Get the robot geometry
-  sizex = 0.45;
-  sizey = 0.40;
-  opt_get_double2(opt, "robot", "size", &sizex, &sizey);
-  orgx = 0.08;
-  orgy = 0.0;
-  opt_get_double2(opt, "robot", "origin", &orgx, &orgy);
   
   // Construct the menu
   snprintf(label, sizeof(label), "position %d", index);
@@ -78,9 +69,6 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   
   // Create a figure representing the robot
   position->robot_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
-  rtk_fig_show(position->robot_fig, 0);
-  rtk_fig_color_rgb32(position->robot_fig, COLOR_POSITION_ROBOT);
-  rtk_fig_rectangle(position->robot_fig, -orgx, -orgy, 0, sizex, sizey, 0);
 
   // Create a figure representing the robot's control speed.
   position->control_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 10);
@@ -121,8 +109,19 @@ void position_update(position_t *position)
   if (rtk_menuitem_ischecked(position->subscribe_item))
   {
     if (!position->proxy->info.subscribed)
+    {
       if (playerc_position_subscribe(position->proxy, PLAYER_ALL_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+
+      // Get the robot geometry
+      if (playerc_position_get_geom(position->proxy) != 0)
+        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+      
+      rtk_fig_color_rgb32(position->robot_fig, COLOR_POSITION_ROBOT);
+      rtk_fig_rectangle(position->robot_fig, position->proxy->pose[0],
+                        position->proxy->pose[1], position->proxy->pose[2],
+                        position->proxy->size[0], position->proxy->size[1], 0);
+    }
   }
   else
   {

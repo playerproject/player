@@ -382,7 +382,7 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle,
 int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle,
                               double *max_angle, int *resolution, int *intensity);
 
-// Get the sonar geometry.  The writes the result into the proxy
+// Get the laser geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
 int playerc_laser_get_geom(playerc_laser_t *device);
 
@@ -450,7 +450,13 @@ typedef struct
 {
   // Device info; must be at the start of all device structures.
   playerc_device_t info;
-    
+
+  // Robot geometry in robot cs: pose gives the position and
+  // orientation, size gives the extent.  These values are filled in by
+  // playerc_position_get_geom().
+  double pose[3];
+  double size[2];
+  
   // Odometric pose (m, m, radians)
   double px, py, pa;
 
@@ -477,6 +483,10 @@ int playerc_position_unsubscribe(playerc_position_t *device);
 
 // Enable/disable the motors
 int playerc_position_enable(playerc_position_t *device, int enable);
+
+// Get the position geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int playerc_position_get_geom(playerc_position_t *device);
 
 // Set the robot speed.
 // vx : forward speed (m/s).

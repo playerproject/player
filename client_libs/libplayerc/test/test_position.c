@@ -28,6 +28,14 @@ int test_position(playerc_client_t *client, int index)
   }
   PASS();
 
+  TEST("getting geometry");
+  if (playerc_position_get_geom(device) == 0)
+    PASS();
+  else
+    FAIL();
+  printf("position geom: [%6.3f %6.3f %6.3f] [%6.3f %6.3f]\n",
+         device->pose[0], device->pose[1], device->pose[2], device->size[0], device->size[1]);
+
   for (t = 0; t < 3; t++)
   {
     TEST1("reading data (attempt %d)", t);
