@@ -308,6 +308,9 @@ AC_CHECK_LIB(ltdl, lt_dlopenext)
 AC_CHECK_LIB(c_r, pthread_create, 
              [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 
+dnl AC_CHECK_LIB(jpeg, jpeg_create_compress, 
+dnl		   [], [echo "Warning: JPEG support will not be included"] )
+
 dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile
           replace/Makefile 

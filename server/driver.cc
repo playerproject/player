@@ -630,6 +630,14 @@ Driver::DataAvailable(void)
   clientmanager->DataAvailable();
 }
 
+// a static version that can be used as a callback from libraries that
+// don't know about Player (e.g. Stage). - rtv
+void 
+Driver::DataAvailableStatic( Driver* driver )
+{
+  driver->DataAvailable();
+}
+
 // Waits on the condition variable associated with this device.
 void 
 Driver::Wait(void)

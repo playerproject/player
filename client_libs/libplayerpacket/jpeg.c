@@ -3,6 +3,9 @@
  * $Id$
  * $Source$
  * $Log$
+ * Revision 1.2  2004/09/25 23:51:41  rtv
+ * added static DataAvailable method to device class
+ *
  * Revision 1.1  2004/09/17 18:09:05  inspectorg
  * *** empty log message ***
  *
@@ -13,6 +16,9 @@
  * Helicopter deployment with firewire camera
  *
  */
+
+//#include "config.h" // to see if libjpeg was found
+//#if HAVE_LIBJPEG
 
 #include <assert.h>
 #include <stdio.h>
@@ -265,4 +271,4 @@ jpeg_decompress_from_file(unsigned char *dst, char *file, int size, int *w, int 
 }
 
 
-
+//#endif // HAVE_LIBJPEG
