@@ -47,6 +47,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -508,7 +509,8 @@ int SickLMS200::OpenTerm()
   this->laser_fd = ::open(this->device_name, O_RDWR | O_SYNC , S_IRUSR | S_IWUSR );
   if (this->laser_fd < 0)
   {
-    PLAYER_ERROR1("unable to open serial port [%s]", (char*) this->device_name);
+    PLAYER_ERROR2("unable to open serial port [%s]; [%s]",
+                  (char*) this->device_name, strerror(errno));
     return 1;
   }
 
