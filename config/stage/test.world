@@ -35,16 +35,30 @@ model(
 define laserpioneer pioneer2dx
 (
   laser( 
-    # laser-specific properties
-    range_min 0.0
-    range_max 8.0
-    fov 180.0
-    samples 180
+    laser.range_min 0.0
+    laser.range_max 8.0
+    laser.fov 180.0
+    laser.samples 180
   )
 )
 
-laserpioneer( pose [1 4 45] name "yoo" )
+#laserpioneer( pose [1 4 45] name "yoo" )
 
+pioneer2dx
+(
+  name "pioneer"
+  pose [1 4 0]
+  laser( name "pioneer_laser" laser.fov 90 ) 
+)
+
+laser
+(
+  name "scanner"
+  pose [11 11 -120]
+  velocity [0 0 60]
+)
 
 #basic( name "nested" origin [0.2 0 0 ] size [1 1] pose [4 4 0] basic( size [0.5 0.5] basic( size [0.2 0.2] basic( size [0.1 0.1] ))))
 	
+# TODO
+# laser non-zero origin not implemented
