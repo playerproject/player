@@ -180,7 +180,10 @@ typedef struct _playerc_device_t
  **************************************************************************/
 
 // Errors get written here
-extern char playerc_errorstr[];
+extern char playerc_errorstr[1024];
+
+// Get the error stringg
+extern const char *playerc_error_str();
 
 
 /***************************************************************************

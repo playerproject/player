@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>  // for atoi(3)
 #include <playerclient.h>  // for player client stuff
-#include <values.h>  // for MAXINT
+#include <limits.h>  // for INT_MAX
 #include <string.h> /* for strcmp() */
 #include <unistd.h> /* for usleep() */
 
@@ -93,8 +93,8 @@ int main(int argc, char **argv)
      * laser avoid (stolen from esben's java example)
      */
     // Do obstackle avoidance for 400 time steps
-    minL=MAXINT; 
-    minR=MAXINT;
+    minL=INT_MAX; 
+    minR=INT_MAX;
     for (int j=0; j<180; j++) {
       //printf("laser(%d):%d\n", j,robot.laser.ranges[j] & 0x1FFF);
       if (minR>lp[j])

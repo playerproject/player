@@ -156,7 +156,7 @@ dnl ************************************************************************
 
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h)
+AC_CHECK_HEADERS(stdint.h strings.h values.h sys/soundcard.h)
 
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t 
@@ -183,7 +183,6 @@ AC_TRY_COMPILE(
         [AC_MSG_RESULT(yes)],
          [AC_MSG_RESULT(no)
           AC_DEFINE(O_SYNC, 0, must define this on some non-Linux platforms)])
-
 
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(scandir poll dirname)
