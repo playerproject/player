@@ -9,9 +9,9 @@ include ../../../Makefile.common
 TEST = test
 OBS = test.o test_gps.o test_position.o test_sonar.o test_misc.o \
       test_laser.o test_ptz.o test_speech.o test_vision.o test_bps.o \
-      test_lbd.o test_broadcast.o
+      test_lbd.o test_broadcast.o test_gripper.o
 
-INCLUDES = -I. -I.. -I../../../include
+INCLUDES = -I. -I.. -I../../c -I../../../include
 CFLAGS = -g3 -Wall $(INCLUDES)
 LFLAGS = -L.. -lplayerclient -lm
 LIB = ../libplayerclient.a
