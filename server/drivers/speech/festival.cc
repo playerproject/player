@@ -22,15 +22,67 @@
 
 /*
  * $Id$
- *
- *   The speech device.  This one interfaces to the Festival speech
- *   synthesis system (see http://www.cstr.ed.ac.uk/projects/festival/).
- *   It runs Festival in server mode and feeds it text strings to say.
- *
- *   Takes variable length commands which are just ASCII strings to say.
- *   Shouldn't return any data, but returns a single dummy byte right now
- *   Accepts no configuration (for now)
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_festival festival
+
+The festival driver provides access to the
+Festival speech synthesis system.  Festival is <a
+href=http://www.cstr.ed.ac.uk/projects/festival/>available separately</a>
+(also under the GNU GPL).  Unlike most drivers, the festival driver queues
+incoming commands, rather than overwriting them.  When the queue is full,
+new commands are discarded.
+
+You must install Festival, but you don't need to run it yourself; Player
+will handle starting and stopping the Festival server.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_speech
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- port (integer)
+  - Default: 1314
+  - The TCP port on which the festival driver should talk to Festival.
+- libdir (string)
+  - Default: "/usr/local/festival/lib"
+  - The path to Festival's library of phonemes and such.
+- queuelen (integer)
+  - Default: 4
+  - Length of incoming command queue.  If the queue fills, new commands 
+    are discarded.
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "festival"
+  provides ["speech:0"]
+)
+@endverbatim
+
+@par Authors
+
+Brian Gerkey
+
+*/
+/** @} */
 
 #if HAVE_CONFIG_H
   #include <config.h>
@@ -59,6 +111,7 @@
 #define DEFAULT_FESTIVAL_PORTNUM 1314
 /* change this if Festival is installed somewhere else*/
 #define DEFAULT_FESTIVAL_LIBDIR "/usr/local/festival/lib"
+#define DEFAULT_QUEUE_LEN 4
 
 class Festival:public Driver 
 {
@@ -139,7 +192,7 @@ Festival::Festival( ConfigFile* cf, int section) :
   strncpy(festival_libdir_value,
           cf->ReadString(section, "libdir", DEFAULT_FESTIVAL_LIBDIR),
           sizeof(festival_libdir_value));
-  queuelen = cf->ReadInt(section, "queuelen", PLAYER_SPEECH_MAX_QUEUE_LEN);
+  queuelen = cf->ReadInt(section, "queuelen", DEFAULT_QUEUE_LEN);
 
   queue = new PlayerQueue(queuelen);
   assert(queue);

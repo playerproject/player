@@ -28,6 +28,53 @@
  *
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_linuxjoystick linuxjoystick
+
+The linuxjoystick driver reads data from a standard Linux joystick and
+provides the data via the @ref player_interface_joystick interface.
+
+@par Compile-time dependencies
+
+- &lt;linux/joystick.h&gt;
+
+@par Provides
+
+- @ref player_interface_joystick
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- PLAYER_PTZ_GENERIC_CONFIG_REQ
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/js0"
+  - The joystick to be used.
+
+@par Example 
+
+@verbatim
+driver
+(
+  name "linuxjoystick"
+  provides ["joystick:0"]
+  port "/dev/js0"
+)
+@endverbatim
+
+@par Authors
+
+Andrew Howard
+
+*/
+/** @} */
+
 #include <linux/joystick.h>
 #include <netinet/in.h>
 #include <string.h>

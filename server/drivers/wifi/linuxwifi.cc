@@ -25,10 +25,56 @@
  *
  * $Id$
  *
- * LinuxWiFi driver.  Reads the wireless info found in /proc/net/wireless.
- * sort of ad hoc right now, as I've only tested on our own orinoco
- * cards.  
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_linuxwifi linuxwifi
+
+The linuxwifi driver provides access to information about wireless
+Ethernet cards in Linux.  It reads the wireless info found in
+/proc/net/wireless.  Sort of ad hoc right now, as I've only tested on
+our own orinoco cards.
+
+@par Compile-time dependencies
+
+- &lt;linux/wireless.h&gt;
+
+@par Provides
+
+- @ref player_interface_wifi
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- PLAYER_WIFI_MAC_REQ
+
+@par Configuration file options
+
+- interval (integer)
+  - Default: 1000
+  - Update interval; i.e., time between reading /proc/net/wireless
+    (milliseconds)
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "linuxwifi"
+  provides ["wifi:0"]
+)
+@endverbatim
+
+@par Authors
+
+John Sweeney
+
+*/
+/** @} */
 
 #include <ctype.h>
 #include <pthread.h>

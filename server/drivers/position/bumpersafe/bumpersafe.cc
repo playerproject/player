@@ -1,3 +1,62 @@
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_bumpersafe bumpersafe
+
+This is a low level safety 'driver' that temporarily disables
+velocity commands if a bumper is pressed. It sits on top of @ref
+player_interface_bumper and @ref player_interface_position devices.
+
+The general concept of this device is to not do much, but to provide
+a last line of defense in the case that higher level drivers or client
+software fails in its object avoidance.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_position
+
+@par Requires
+
+- @ref player_interface_position : the underlying robot to be controlled
+- @ref player_interface_bumper : the bumper to read from
+
+@par Configuration requests
+
+- PLAYER_POSITION_MOTOR_POWER_REQ : if motor is switched on then we
+  reset the 'safe state' so robot can move with a bump panel active
+- all other requests are just passed on to the underlying @ref
+  player_interface_position device
+
+@par Configuration file options
+
+- none
+
+@par Example 
+
+@verbatim
+driver
+(
+  name "p2os"
+  provides ["odometry::position:1" "bumper:0"]
+)
+driver
+(
+  name "bumpersafe"
+  provides ["position:0"]
+  requires ["position:1" "bumper:0"]
+)
+@endverbatim
+
+@par Authors
+
+Toby Collett
+
+*/
+/** @} */
+
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -61,7 +120,6 @@ class BumperSafe : public Driver
     // Position device info
     Driver *position;
     player_device_id_t position_id;
-    int position_index;
     int speed,turnrate;
     player_position_cmd_t cmd;
     player_position_data_t data;
@@ -70,7 +128,6 @@ class BumperSafe : public Driver
     // Bumper device info
     Driver *bumper;
     player_device_id_t bumper_id;
-    int bumper_index;
     double bumper_time;
     player_bumper_geom_t bumper_geom;
 		
@@ -131,12 +188,6 @@ int BumperSafe::Shutdown() {
 // Set up the underlying position device.
 int BumperSafe::SetupPosition() 
 {
-// EDIT?
-//  id.robot = this->device_id.robot;
-  this->position_id.port = this->device_id.port;
-  this->position_id.code = PLAYER_POSITION_CODE;
-  this->position_id.index = this->position_index;
-
   this->position = deviceTable->GetDriver(this->position_id);
   if (!this->position)
   {
@@ -171,12 +222,6 @@ int BumperSafe::ShutdownPosition()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the bumper
 int BumperSafe::SetupBumper() {
-
-// EDIT ?
-//  id.robot = this->device_id.robot;
-  this->bumper_id.port = this->device_id.port;
-  this->bumper_id.code = PLAYER_BUMPER_CODE;
-  this->bumper_id.index = this->bumper_index;
 
   this->bumper = deviceTable->GetDriver(this->bumper_id);
   if (!this->bumper)
@@ -401,11 +446,23 @@ BumperSafe::BumperSafe( ConfigFile* cf, int section)
 	Blocked = false;
 
   this->position = NULL;
-  this->position_index = cf->ReadInt(section, "position_index", 0);
+  // Must have a position device
+  if (cf->ReadDeviceId(&this->position_id, section, "requires",
+                       PLAYER_POSITION_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
   this->position_time = 0.0;
   
   this->bumper = NULL;
-  this->bumper_index = cf->ReadInt(section, "bumper_index", 0);
+  // Must have a bumper device
+  if (cf->ReadDeviceId(&this->bumper_id, section, "requires",
+                       PLAYER_BUMPER_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
   this->bumper_time = 0.0;
 
   return;

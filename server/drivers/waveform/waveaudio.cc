@@ -21,6 +21,52 @@
  *
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_waveaudio waveaudio
+
+The waveaudio driver captures audio from /dev/dsp on systems which
+support the OSS sound driver. The data is exported using the @ref
+player_interface_waveform generic sample data interface. Currently data
+is captured at 8bit, mono, 16KHz.
+
+@par Compile-time dependencies
+
+- &lt;sys/soundcard.h&gt;
+
+@par Provides
+
+- @ref player_interface_waveform
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- none
+
+@par Configuration file options
+
+- none
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "waveaudio"
+  provides ["waveform:0"]
+)
+@endverbatim
+
+@par Authors
+
+Richard Vaughan
+
+*/
+/** @} */
+
 #include <string.h>
 #include <sys/stat.h>
 #include <termios.h>

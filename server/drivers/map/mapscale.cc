@@ -25,6 +25,64 @@
  * scale it to produce a map with a different given resolution.
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_mapscale mapscale
+
+The mapscale driver reads a occupancy grid map from another @ref
+player_interface_map device and scales it to produce a new map
+with a different resolution.  The scaling is accomplished with the
+gdk_pixbuf_scale_simple() function, using the GDK_INTERP_HYPER algorithm.
+
+@par Compile-time dependencies
+
+- gdk-pixbuf-2.0 (usually installed as part of GTK)
+
+@par Provides
+
+- @ref player_interface_map : the resulting scaled map
+
+@par Requires
+
+- @ref player_interface_map : the raw map, to be scaled
+
+@par Configuration requests
+
+- PLAYER_MAP_GET_INFO_REQ
+- PLAYER_MAP_GET_DATA_REQ
+
+@par Configuration file options
+
+- resolution (length)
+  - Default: -1.0
+  - The new scale (length / pixel).
+ 
+@par Example 
+
+@verbatim
+driver
+(
+  name "mapfile"
+  provides ["map:0"]
+  filename "mymap.pgm"
+  resolution 0.1  # 10cm per pixel
+)
+driver
+(
+  name "mapscale"
+  requires ["map:0"]  # read from map:0
+  provides ["map:1"]  # output scaled map on map:1
+  resolution 0.5 # scale to 50cm per pixel
+)
+@endverbatim
+
+@par Authors
+
+Brian Gerkey
+
+*/
+/** @} */
+
 
 #include <sys/types.h> // required by Darwin
 #include <netinet/in.h>
@@ -56,7 +114,7 @@ class MapScale : public Driver
     double resolution;
     int size_x, size_y;
     char* mapdata;
-    int map_index;
+    player_device_id_t map_id;
 
     double new_resolution;
     int new_size_x, new_size_y;
@@ -73,7 +131,7 @@ class MapScale : public Driver
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapScale(ConfigFile* cf, int section, int index, double new_resolution);
+    MapScale(ConfigFile* cf, int section, player_device_id_t id, double new_resolution);
     ~MapScale();
     int Setup();
     int Shutdown();
@@ -85,12 +143,14 @@ class MapScale : public Driver
 Driver*
 MapScale_Init(ConfigFile* cf, int section)
 {
-  int index;
+  player_device_id_t map_id;
   double resolution;
 
-  if((index = cf->ReadInt(section,"map_index",-1)) < 0)
+  // Must have an input map
+  if (cf->ReadDeviceId(&map_id, section, "requires",
+                       PLAYER_MAP_CODE, -1, NULL) != 0)
   {
-    PLAYER_ERROR("must specify positive map index");
+    PLAYER_ERROR("must specify input map");
     return(NULL);
   }
   if((resolution = cf->ReadLength(section,"resolution",-1.0)) < 0)
@@ -99,7 +159,7 @@ MapScale_Init(ConfigFile* cf, int section)
     return(NULL);
   }
 
-  return((Driver*)(new MapScale(cf, section, index, resolution)));
+  return((Driver*)(new MapScale(cf, section, map_id, resolution)));
 }
 
 // a driver registration function
@@ -111,14 +171,14 @@ MapScale_Register(DriverTable* table)
 
 
 // this one has no data or commands, just configs
-MapScale::MapScale(ConfigFile* cf, int section, int index, double res) :
+MapScale::MapScale(ConfigFile* cf, int section, player_device_id_t id, double res) :
   Driver(cf, section, PLAYER_MAP_CODE, PLAYER_READ_MODE,
          0,0,100,100)
 {
   this->mapdata = this->new_mapdata = NULL;
   this->size_x = this->size_y = 0;
   this->new_size_x = this->new_size_y = 0;
-  this->map_index = index;
+  this->map_id = id;
   this->new_resolution = res;
 }
 
@@ -142,14 +202,9 @@ MapScale::Setup()
 int
 MapScale::GetMap()
 {
-  player_device_id_t map_id;
   Driver* mapdevice;
 
   // Subscribe to the map device
-  map_id.port = global_playerport;
-  map_id.code = PLAYER_MAP_CODE;
-  map_id.index = this->map_index;
-
   if(!(mapdevice = deviceTable->GetDriver(map_id)))
   {
     PLAYER_ERROR("unable to locate suitable map device");
@@ -166,7 +221,7 @@ MapScale::GetMap()
     return(-1);
   }
 
-  printf("MapScale: Loading map from map:%d...\n", this->map_index);
+  printf("MapScale: Loading map from map:%d...\n", this->map_id.index);
   fflush(NULL);
 
   // Fill in the map structure

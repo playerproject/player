@@ -2366,7 +2366,6 @@ The {\tt speech} interface provides access to a speech synthesis system. */
 /** [Constants] */
 /** incoming command queue parameters */
 #define PLAYER_SPEECH_MAX_STRING_LEN 256
-#define PLAYER_SPEECH_MAX_QUEUE_LEN 4
 
 /** [Data] The {\tt speech} interface returns no data. */
 

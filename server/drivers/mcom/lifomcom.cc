@@ -24,6 +24,61 @@
  *
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_lifomcom lifomcom
+
+The lifomcom driver provides a last-in-first-out (LIFO) multi-stack
+communication system with which clients can exchange data through an
+instance of Player.
+
+If Pop is called, the last piece of data that was Pushed to the named
+channel is returned and then deleted.  If Read is called the last piece
+of data added is returned, and left there.  Since this is a LIFO stack,
+if we're reading drive commands, for example, we can be sure to get a
+"STOP" and interrupt a "FWD" before it's been read.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_mcom
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- PLAYER_MCOM_PUSH_REQ
+- PLAYER_MCOM_POP_REQ
+- PLAYER_MCOM_READ_REQ
+- PLAYER_MCOM_CLEAR_REQ
+- PLAYER_MCOM_SET_CAPACITY_REQ
+
+@par Configuration file options
+
+- none
+
+@par Example 
+
+@verbatim
+driver
+(
+  name "lifomcom"
+  provides ["mcom:0"]
+)
+@endverbatim
+
+@par Authors
+
+- Matthew Brewer, Reed Hedges
+
+*/
+/** @} */
+
 #include <string.h> 
 #include <sys/types.h>
 #include <netinet/in.h>

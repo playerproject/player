@@ -60,7 +60,7 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
 
 - rate (integer)
   - Default: 38400
-  - Baud rate.  Valid values are 38400 (RS232 or RS422) and
+  - Baud rate.  Valid values are 9600, 38400 (RS232 or RS422) and
     500000 (RS422 only).
   
 - delay (integer)
@@ -81,6 +81,16 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
     - range_res 1 : 1mm precision, 8.192m max range.
     - range_res 10 : 10mm precision, 81.92m max range.
     - range_res 100 : 100mm precision, 819.2m max range.
+
+- invert (integer)
+  - Default: 0
+  - Is the laser physically inverted (i.e., upside-down)?  Is so, scan data 
+    will be reversed accordingly.
+
+- pose (length tuple)
+  - Default: [0.0 0.0 0.0]
+  - Pose (x,y,theta) of the laser, relative to its parent object (e.g.,
+    the robot to which the laser is attached).
       
 @par Example 
 
@@ -98,6 +108,7 @@ driver
 @par Authors
 
 Andrew Howard, Richard Vaughan, Kasper Stoy
+
 */
 /** @} */
   
