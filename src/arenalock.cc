@@ -106,12 +106,17 @@ inline int CArenaLock::Unlock( void )
 }
 
 
-size_t CArenaLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize)
+size_t CArenaLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize,
+                uint64_t* timestamp)
 {
   int size;
   Lock();
   //puts( "AL: get data" );
+  // the GetData call also copies the data timestamp from shared memory
+  // to the 'data_timestamp' field in the device object.
   size = obj->GetData(dest, maxsize);
+  if(timestamp)
+    *timestamp = obj->data_timestamp;
   Unlock();
   return(size);
 }

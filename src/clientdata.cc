@@ -148,7 +148,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             if(datamode.mode)
             {
               /* changet to request/reply */
-              puts("changing to REQUESTREPLY");
+              //puts("changing to REQUESTREPLY");
               mode = REQUESTREPLY;
               pthread_mutex_unlock(&datarequested);
               pthread_mutex_lock(&datarequested);
@@ -156,7 +156,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             else
             {
               /* change to continuous mode */
-              puts("changing to CONTINUOUS");
+              //puts("changing to CONTINUOUS");
               mode = CONTINUOUS;
               pthread_mutex_unlock(&datarequested);
             }
@@ -265,8 +265,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     }
 
     gettimeofday(&curr,NULL);
-    reply_hdr.time=
-          htonll((uint64_t)((curr.tv_sec * 1000.0)+(curr.tv_usec / 1000.0)));
+    reply_hdr.time= htonll((uint64_t)((((uint64_t)curr.tv_sec) * 1000000) + 
+                                        (uint64_t)curr.tv_usec));
     reply_hdr.timestamp=reply_hdr.time;
     memcpy(reply,&reply_hdr,sizeof(player_msghdr_t));
 
@@ -530,13 +530,14 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
         {
           hdr.device = thisub->code;
           hdr.device_index = thisub->index;
-          // FIXME: get timestamp from device somehow...
-          hdr.timestamp = 0;
           hdr.reserved = 0;
           
+          //puts("CClientData::BuildMsg() calling GetData");
           size = devicep->GetLock()->GetData(devicep, 
                                              data+totalsize+sizeof(hdr),
-                                             maxsize-totalsize-sizeof(hdr));
+                                             maxsize-totalsize-sizeof(hdr),
+                                             &(hdr.timestamp));
+          //puts("CClientData::BuildMsg() called GetData");
 
           // *** HACK -- ahoward
           // Skip this data if it is zero length
@@ -549,8 +550,8 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
           
           hdr.size = htonl(size);
           gettimeofday(&curr,NULL);
-          hdr.time=
-             htonll((uint64_t)((curr.tv_sec * 1000.0)+(curr.tv_usec / 1000.0)));
+          hdr.time= htonll((uint64_t)((((uint64_t)curr.tv_sec) * 1000000) + 
+                                        (uint64_t)curr.tv_usec));
           memcpy(data+totalsize,&hdr,sizeof(hdr));
           totalsize += sizeof(hdr) + size;
         }

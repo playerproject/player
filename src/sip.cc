@@ -45,14 +45,14 @@ void CSIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   
   /* time and position */
   //data->position.time = htonl((unsigned int)timeNow);
-  data->position.x = htonl((unsigned int)xpos); 
-  data->position.y = htonl((unsigned int)ypos); 
+  data->position.xpos = htonl((unsigned int)xpos); 
+  data->position.ypos = htonl((unsigned int)ypos); 
   data->position.theta = htons((unsigned short)angle);
   data->position.speed = htons((unsigned short) (((lvel) + (rvel) ) / 2));
   data->position.turnrate = htons((unsigned short)
                   (180*((double)(rvel - lvel)/(double)RobotAxleLength)/ M_PI));
   data->position.compass = htons(compass);
-  data->position.stall = (unsigned char)(lwstall || rwstall);
+  data->position.stalls = (unsigned char)(lwstall || rwstall);
   
   for(int i=0;i<(int)sizeof(sonars);i++)
     data->sonar.ranges[i] = htons((unsigned short)sonars[i]);

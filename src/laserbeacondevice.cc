@@ -57,8 +57,8 @@
 #include "laserbeacondevice.hh"
 
  // *** TESTING -- remove this later
-#define ENABLE_TRACE 0
-#include "rtk-types.hh"
+//#define ENABLE_TRACE 0
+//#include "rtk-types.hh"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +98,7 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
     // Get the laser data
     //
     player_laser_data_t laser_data;
-    m_laser->GetLock()->GetData(m_laser, (BYTE*) &laser_data, sizeof(laser_data));
+    m_laser->GetLock()->GetData(m_laser, (BYTE*) &laser_data, sizeof(laser_data),&data_timestamp);
     
     // Analyse the laser data
     //
