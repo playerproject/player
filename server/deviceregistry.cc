@@ -764,10 +764,10 @@ register_devices()
 #ifdef INCLUDE_STAGECLIENT
   StgSimulation_Register(driverTable);
   StgLaser_Register(driverTable);
-  StgPosition_Register(driverTable);
-  StgSonar_Register(driverTable);
-  StgFiducial_Register(driverTable);
-  StgBlobfinder_Register(driverTable);
+  //StgPosition_Register(driverTable);
+  //StgSonar_Register(driverTable);
+  //StgFiducial_Register(driverTable);
+  //StgBlobfinder_Register(driverTable);
 
   //StgEnergy_Register(driverTable);
   //StgBlinkenlight_Register(driverTable);

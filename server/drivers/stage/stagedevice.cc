@@ -155,14 +155,14 @@ size_t StageDevice::GetData(player_device_id_t id,
   {
     printf( "Available data (%d bytes) is larger than Player's"
             " maximum message size (%d bytes)\n", 
-            data_avail, PLAYER_MAX_MESSAGE_SIZE );
+            (int)data_avail, PLAYER_MAX_MESSAGE_SIZE );
   }
 
   // Check for overflows 2
   //
   if (data_avail > this->device->data_size )
   {
-    printf("warning: available data (%d bytes) > buffer size (%d bytes); ignoring data\n", data_avail, this->device->data_size );
+    printf("warning: available data (%d bytes) > buffer size (%d bytes); ignoring data\n", (int)data_avail, (int)this->device->data_size );
     Unlock();
     return 0;
     //data_avail = m_data_len;
@@ -172,7 +172,7 @@ size_t StageDevice::GetData(player_device_id_t id,
   //
   if( data_avail > size)
   {
-    printf("warning data available (%d bytes) > space in Player packet (%d bytes); ignoring data\n", data_avail, size );
+    printf("warning data available (%d bytes) > space in Player packet (%d bytes); ignoring data\n", (int)data_avail, (int)size );
     Unlock();
     return 0;
   }

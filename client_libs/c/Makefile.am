@@ -1,5 +1,9 @@
 AM_CPPFLAGS = -I$(top_srcdir)/server
 
+# create the pkg-config entry
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = playercclient.pc
+
 lib_LIBRARIES = libplayercclient.a
 #lib_LTLIBRARIES = libplayercclient.la
 

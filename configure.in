@@ -48,7 +48,7 @@ if test "x$have_pkg_config" = "xno"; then
   AC_MSG_WARN([You should really install pkg-config])
   AC_MSG_WARN([Some components of Player will not be built])
 else
-  dnl add prefix to the pkg-config path in case RTK, Stage, or Gazebo was
+  dnl add prefix to the pkg-config path in case RTK or Gazebo was
   dnl installed there and the user didn't add it manually 
   export PKG_CONFIG_PATH=$prefix/lib/pkgconfig:$PKG_CONFIG_PATH
 fi
@@ -315,6 +315,7 @@ dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile
           replace/Makefile 
           server/Makefile 
+	  server/player.pc
           server/drivers/Makefile 
           server/drivers/gps/Makefile 
           server/drivers/shell/Makefile 
@@ -349,7 +350,6 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/evolution/Makefile
           server/drivers/mixed/evolution/er1/Makefile
           server/drivers/stage/Makefile 
-          server/drivers/stageclient/Makefile 
           server/drivers/gazebo/Makefile 
           server/drivers/planner/Makefile 
           server/drivers/planner/wavefront/Makefile 
@@ -370,9 +370,12 @@ AC_OUTPUT(Makefile
           server/drivers/joystick/Makefile 
           client_libs/Makefile 
           client_libs/c/Makefile
+          client_libs/c/playercclient.pc
           client_libs/c++/Makefile
+          client_libs/c++/playerclient.pc
           client_libs/c++/test/Makefile
           client_libs/libplayerc/Makefile
+          client_libs/libplayerc/libplayerc.pc
           client_libs/libplayerc/test/Makefile
           client_libs/libplayerc/bindings/Makefile
           client_libs/libplayerc/bindings/python/Makefile
