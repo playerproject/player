@@ -1293,6 +1293,9 @@ void ConfigFile::ClearFields()
   {
     field = this->fields + i;
     free(field->values);
+    free(field->useds);
+    field->values = NULL;
+    field->useds = NULL;
   }
   free(this->fields);
   this->fields = NULL;
@@ -1355,6 +1358,7 @@ void ConfigFile::AddFieldValue(int field, int index, int value_token)
     pfield->value_count = index + 1;
     pfield->values = (int*) realloc(pfield->values, pfield->value_count * sizeof(int));
     pfield->useds = (bool*) realloc(pfield->useds, pfield->value_count * sizeof(bool));
+    pfield->useds[pfield->value_count-1] = false;
   }
 
   // Set the relevant value

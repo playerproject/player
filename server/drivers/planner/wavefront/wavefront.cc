@@ -404,15 +404,11 @@ Wavefront::Setup()
   this->position_x = this->position_y = this->position_a = 0.0;
   this->localize_x = this->localize_y = this->localize_a = 0.0;
   this->waypoint_x = this->waypoint_y = this->waypoint_a = 0.0;
+  this->waypoint_odom_x = this->waypoint_odom_y = this->waypoint_odom_a = 0.0;
   this->curr_waypoint = -1;
 
   this->newData = false;
 
-  /*
-  this->position_xspeed_be = 
-          this->position_yspeed_be = 
-          this->position_aspeed_be = 0;
-          */
   this->localize_x_be = this->localize_y_be = this->localize_a_be = 0;
   this->localize_timesec = this->localize_timeusec = 0;
   this->position_timesec = this->position_timeusec = 0;
