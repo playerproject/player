@@ -47,7 +47,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_TRACE 1
 #define PLAYER_ENABLE_MSG 1
 
 #include "player.h"
@@ -65,6 +65,11 @@
 #ifdef INCLUDE_RTKGUI
 #include "rtk.h"
 #endif
+
+// TESTING
+#include "playertime.h"
+#define INCLUDE_OUTFILE 1
+extern PlayerTime* GlobalTime;
 
 
 // Wifi beacon data
@@ -326,6 +331,10 @@ class AdaptiveMCL : public CDevice
   private: rtk_fig_t *laser_fig;
   private: rtk_fig_t *wifi_fig;
 #endif
+
+#ifdef INCLUDE_OUTFILE
+  private: FILE *outfile;
+#endif
 };
 
 
@@ -355,6 +364,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
     : CDevice(sizeof(player_localize_data_t), 0, 100, 100)
 {
   int i;
+  char key[64];
   double u[3];
   amcl_wifi_beacon_t *beacon;
 
@@ -391,9 +401,10 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   for (i = 0; i < PLAYER_WIFI_MAX_LINKS; i++)
   {
     beacon = this->wifi_beacons + i;
-    beacon->hostname = cf->ReadTupleString(section, "wifi_beacons", i * 2 + 0, NULL);
-    beacon->filename = cf->ReadTupleString(section, "wifi_beacons", i * 2 + 1, NULL);
-    if (beacon->hostname == NULL)
+    snprintf(key, sizeof(key), "wifi_beacon_%d", i);
+    beacon->hostname = cf->ReadTupleString(section, key, 0, NULL);
+    beacon->filename = cf->ReadTupleString(section, key, 1, NULL);
+    if (beacon->hostname == NULL || beacon->filename == NULL)
       break;
     this->wifi_beacon_count++;
   }
@@ -428,7 +439,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Create the sensor queue
   this->q_len = 0;
-  this->q_size = 1000;
+  this->q_size = 2000;
   this->q_data = new amcl_sensor_data_t[this->q_size];
 
 #ifdef INCLUDE_RTKGUI
@@ -548,6 +559,8 @@ int AdaptiveMCL::Setup(void)
 // Shutdown the device (called by server thread).
 int AdaptiveMCL::Shutdown(void)
 {
+  PLAYER_TRACE0("shutting down");
+    
   // Stop the driver thread.
   this->StopThread();
 
@@ -587,7 +600,7 @@ int AdaptiveMCL::Shutdown(void)
   map_free(this->map);
   this->map = NULL;
 
-  PLAYER_TRACE0("shutdown");
+  PLAYER_TRACE0("shutdown done");
   return 0;
 }
 
@@ -909,14 +922,15 @@ void AdaptiveMCL::GetWifiData(amcl_sensor_data_t *data)
   // If there is no wifi device...
   if (this->wifi_index < 0)
   {
-    data->laser_range_count = 0;
+    data->wifi_level_count = 0;
     return;
   }
 
   // Get the wifi device data.
   size = this->wifi->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
 
-  data->wifi_level_count = 0;
+  data->wifi_level_count = this->wifi_beacon_count;
+  
   for (i = 0; i < this->wifi_beacon_count; i++)
   {
     beacon = this->wifi_beacons + i;
@@ -927,11 +941,12 @@ void AdaptiveMCL::GetWifiData(amcl_sensor_data_t *data)
       link = ndata.links + j;
       
       if (strcmp(link->ip, beacon->hostname) == 0)
+      {
         data->wifi_levels[i] = (int16_t) ntohs(link->level);
-
-      printf("[%d] [%s] [%s] [%d]\n", i, beacon->hostname, link->ip, data->wifi_levels[i]);
+        //printf("[%d] [%s %s] [%d %d]\n", i, beacon->hostname,
+        //       link->ip, (int) (int16_t) ntohs(link->level), data->wifi_levels[i]);
+      }
     }
-    data->wifi_level_count++;
   }
   
   return;
@@ -1253,6 +1268,11 @@ void AdaptiveMCL::Main(void)
     this->SetupGUI();
 #endif
 
+#ifdef INCLUDE_OUTFILE
+  // Open file for logging results
+  this->outfile = fopen("amcl.out", "w+");
+#endif
+  
   // Initialize the filter
   this->InitFilter(this->pf_init_pose_mean, this->pf_init_pose_cov);
   
@@ -1285,7 +1305,23 @@ void AdaptiveMCL::Main(void)
 
     // Process any queued data
     if (this->Pop(&data))
+    {
       this->UpdateFilter(&data);
+
+#ifdef INCLUDE_OUTFILE
+      // Save the error values
+      pf_vector_t mean;
+      double var;
+
+      pf_get_cep_stats(pf, &mean, &var);
+      
+      fprintf(this->outfile, "%d.%03d unknown 6665 localize 01 %d.%03d ",
+              0, 0, data.odom_time_sec, data.odom_time_usec / 1000);
+      fprintf(this->outfile, "1.0 %e %e %e %e 0 0 0 0 0 0 0 0 \n",
+              mean.v[0], mean.v[1], mean.v[2], var);
+      fflush(this->outfile);
+#endif
+    }
   }
   return;
 }
@@ -1301,6 +1337,11 @@ void AdaptiveMCL::MainQuit()
     this->ShutdownGUI();
 #endif
 
+#ifdef INCLUDE_OUTFILE
+  // Close the log file
+  fclose(this->outfile);
+#endif
+  
   return;
 }
 
@@ -1337,7 +1378,7 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
   }
 
   this->Unlock();
-
+  
 #ifdef INCLUDE_RTKGUI
   // Draw the samples
   if (this->enable_gui)
@@ -1347,8 +1388,8 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
     rtk_fig_clear(this->pf_fig);
     rtk_fig_color(this->pf_fig, 0, 0, 1);
     pf_draw_samples(this->pf, this->pf_fig, 1000);
+    pf_draw_cep_stats(this->pf, this->pf_fig);
     //rtk_fig_color(this->pf_fig, 0, 1, 0);
-    //pf_draw_stats(this->pf, this->pf_fig);
     //pf_draw_hist(this->pf, this->pf_fig);
   }
 #endif
@@ -1402,8 +1443,7 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   }
 
   // Update the wifi sensor model with the latest wifi measurements
-  for (i = 0; i < data->wifi_level_count; i++)
-    wifi_set_level(this->wifi_model, i, data->wifi_levels[i]);
+  wifi_set_levels(this->wifi_model, data->wifi_level_count, data->wifi_levels);
 
   // Apply the wifi sensor model
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) wifi_sensor_model, this->wifi_model);  
@@ -1431,8 +1471,7 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   }
 
   this->Unlock();
-
-
+  
 #ifdef INCLUDE_RTKGUI
   // Draw the samples
   if (this->enable_gui)
@@ -1445,6 +1484,7 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
     rtk_fig_clear(this->pf_fig);
     rtk_fig_color(this->pf_fig, 0, 0, 1);
     pf_draw_samples(this->pf, this->pf_fig, 1000);
+    pf_draw_cep_stats(this->pf, this->pf_fig);
     //rtk_fig_color(this->pf_fig, 0, 1, 0);
     //pf_draw_stats(this->pf, this->pf_fig);
     //pf_draw_hist(this->pf, this->pf_fig);
@@ -1689,17 +1729,21 @@ void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
       rtk_fig_color_rgb32(this->laser_fig, 0xFF0000);
       rtk_fig_line(this->laser_fig, ax, ay, bx, by);
 
+      /* REMOVE
       bx = ax + m * cos(b);
       by = ay + m * sin(b);
       rtk_fig_color_rgb32(this->laser_fig, 0x00FF00);
       rtk_fig_line(this->laser_fig, ax, ay, bx, by);
+      */
     }
 
     // TESTING
+    /* REMOVE
     laser_clear_ranges(this->laser_model);
     for (i = 0; i < data->laser_range_count; i += step)
       laser_add_range(this->laser_model, data->laser_ranges[i][0], data->laser_ranges[i][1]);
     //printf("prob = %f\n", laser_sensor_model(this->laser_model, pose));
+    */
   }
 
   return;
@@ -1712,16 +1756,25 @@ void AdaptiveMCL::DrawWifiData(amcl_sensor_data_t *data)
 {
   int i;
   const char *hostname;
-  int level;
+  pf_vector_t pose;
+  map_cell_t *cell;
+  int olevel, mlevel;
   char ntext[128], text[1024];
 
+  // Get the robot figure pose
+  rtk_fig_get_origin(this->robot_fig, pose.v + 0, pose.v + 1, pose.v + 2);
+
+  // Get the cell at this pose
+  cell = map_get_cell(this->map, pose.v[0], pose.v[1], pose.v[2]);
+    
   text[0] = 0;
   for (i = 0; i < data->wifi_level_count; i++)
   {
     hostname = this->wifi_beacons[i].hostname;
-    level = data->wifi_levels[i];
+    olevel = data->wifi_levels[i];
+    mlevel = cell->wifi_levels[i];
     
-    snprintf(ntext, sizeof(ntext), "%s %02d\n", hostname, level);
+    snprintf(ntext, sizeof(ntext), "%s %02d [%02d]\n", hostname, olevel, mlevel);
     strcat(text, ntext);
   }
 

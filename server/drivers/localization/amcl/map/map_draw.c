@@ -97,7 +97,7 @@ void map_draw_cspace(map_t *map, rtk_fig_t *fig)
 void map_draw_wifi(map_t *map, rtk_fig_t *fig, int index)
 {
   int i, j;
-  int col;
+  int level, col;
   map_cell_t *cell;
   uint16_t *image, *mask;
   uint16_t *ipix, *mpix;
@@ -114,10 +114,11 @@ void map_draw_wifi(map_t *map, rtk_fig_t *fig, int index)
       ipix = image + (j * map->size_x + i);
       mpix = mask + (j * map->size_x + i);
 
-      col = 100 + cell->wifi_levels[index];
+      level = cell->wifi_levels[index];
 
-      if (cell->occ_state == -1)
+      if (cell->occ_state == -1 && level != 0)
       {
+        col = 255 * (100 + level) / 100;
         *ipix = RTK_RGB16(col, col, col);
         *mpix = 1;
       }

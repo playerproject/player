@@ -72,8 +72,24 @@ void pf_draw_hist(pf_t *pf, rtk_fig_t *fig)
 }
 
 
-// Draw the statistics
-void pf_draw_stats(pf_t *pf, rtk_fig_t *fig)
+// Draw the CEP statistics
+void pf_draw_cep_stats(pf_t *pf, rtk_fig_t *fig)
+{
+  pf_vector_t mean;
+  double var;
+
+  pf_get_cep_stats(pf, &mean, &var);
+  var = sqrt(var);
+  
+  rtk_fig_color(fig, 0, 0, 1);
+  rtk_fig_ellipse(fig, mean.v[0], mean.v[1], mean.v[2], 3 * var, 3 * var, 0);
+  
+  return;
+}
+
+
+// Draw the cluster statistics
+void pf_draw_cluster_stats(pf_t *pf, rtk_fig_t *fig)
 {
   int i;
   pf_cluster_t *cluster;

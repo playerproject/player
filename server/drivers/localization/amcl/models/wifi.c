@@ -40,6 +40,7 @@ wifi_t *wifi_alloc(map_t *map)
   self = calloc(1, sizeof(wifi_t));
 
   self->map = map;
+  self->level_count = 0;
   
   return self;
 }
@@ -53,24 +54,15 @@ void wifi_free(wifi_t *self)
 }
 
 
-// Set the wifi level readings that will be used.
-void wifi_set_level(wifi_t *sensor, int index, int level)
+// Set the observed wifi levels
+void wifi_set_levels(wifi_t *self, int level_count, int levels[])
 {
-  // TODO
-  return; 
-}
-
-
-// Prepare to update the distribution using the sensor model.
-void wifi_sensor_init(wifi_t *self)
-{
-  return;
-}
-
-
-// Finish updating the distribution using the sensor model.
-void wifi_sensor_term(wifi_t *self)
-{
+  int i;
+  
+  self->level_count = level_count;
+  for (i = 0; i < level_count; i++)
+    self->levels[i] = levels[i];
+  
   return;
 }
 
@@ -78,15 +70,35 @@ void wifi_sensor_term(wifi_t *self)
 // The sensor model function
 double wifi_sensor_model(wifi_t *self, pf_vector_t pose)
 {  
-  double p;
+  double p, z, a, c;
+  int i;
+  int mlevel, olevel;
   map_cell_t *cell;  
-  
+
   cell = map_get_cell(self->map, pose.v[0], pose.v[1], pose.v[2]);
   if (!cell)
     return 0;
 
-  // TODO
+  // ** HACK
+  a = 0.10;
+  c = 10; 
+  
   p = 1.0;
+
+  for (i = 0; i < self->level_count; i++)
+  {
+    mlevel = cell->wifi_levels[i];
+    olevel = self->levels[i];
+
+    z = (olevel - mlevel);
+
+    if (olevel == 0)
+      p *= 1.0;
+    else if (mlevel == 0)
+      p *= 0.0;
+    else
+      p *= a + (1 - a) * exp(-(z * z) / (2 * c));
+  }
   
   return p;
 }
