@@ -271,7 +271,7 @@ void LinuxJoystick::ReadJoy()
 ////////////////////////////////////////////////////////////////////////////////
 // Send new data to server
 void LinuxJoystick::RefreshData()
-{
+{ 
   //printf("%d %d\n", this->xpos, this->ypos);
   
   // Do byte reordering
