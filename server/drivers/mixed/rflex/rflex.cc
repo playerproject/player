@@ -371,20 +371,24 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
                         sonar_id))
 	{
 		assert(hdr->size == sizeof(player_sonar_power_config));
+		Lock();
 		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
 			rflex_sonars_off(rflex_fd);
 		else
 			rflex_sonars_on(rflex_fd);
+		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
 	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_POWER, 
                         sonar_id_2))
 	{
 		assert(hdr->size == sizeof(player_sonar_power_config));
+		Lock();
 		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
 			rflex_sonars_off(rflex_fd);
 		else
 			rflex_sonars_on(rflex_fd);
+		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
 	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 
@@ -394,6 +398,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 
 		player_sonar_geom_t geom;
 //		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+		Lock();
 		geom.pose_count = htons((short) rflex_configs.sonar_1st_bank_end);
 		for (int i = 0; i < rflex_configs.sonar_1st_bank_end; i++)
 		{
@@ -401,6 +406,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 			geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i].y);
 			geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i].t));
 		}
+		Unlock();
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
 		return PLAYER_MSGTYPE_RESP_ACK;
@@ -412,6 +418,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 
 		player_sonar_geom_t geom;
 //		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+		Lock();
 		geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
 		for (int i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
 		{
@@ -419,6 +426,8 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 			geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].y);
 			geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].t));
 		}
+		Unlock();	
+	
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
 		return PLAYER_MSGTYPE_RESP_ACK;
@@ -429,7 +438,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		assert(hdr->size == 0);
 
 		player_bumper_geom_t geom;
-//		geom.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
+		Lock();
 		geom.bumper_count = htons((short) rflex_configs.bumper_count);
 		for (int i = 0; i < rflex_configs.bumper_count; i++)
 		{ 
@@ -439,7 +448,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 			geom.bumper_def[i].length = htons((short) rflex_configs.bumper_def[i].length); //mm
 			geom.bumper_def[i].radius = htons((short) rflex_configs.bumper_def[i].radius); //mm
 		}
-
+		Unlock();
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
 		return PLAYER_MSGTYPE_RESP_ACK;
@@ -450,14 +459,14 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 
 		// Assemble geometry structure for sending
 		player_ir_pose_t geom;
-//		geom.subtype = PLAYER_IR_POSE_REQ;
+		Lock();
 		geom.pose_count = htons((short) rflex_configs.ir_poses.pose_count);
 		for (int i = 0; i < rflex_configs.ir_poses.pose_count; i++){
 			geom.poses[i][0] = htons((short) rflex_configs.ir_poses.poses[i][0]); //mm
 			geom.poses[i][1] = htons((short) rflex_configs.ir_poses.poses[i][1]); //mm
 			geom.poses[i][2] = htons((short) rflex_configs.ir_poses.poses[i][2]); //deg
 		}
-
+		Unlock();
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
 		return PLAYER_MSGTYPE_RESP_ACK;
@@ -465,11 +474,12 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, ir_id))
 	{
 		assert(hdr->size == 1);
-
+		Lock();
 		if (data[0] == 0)
 			rflex_ir_off(rflex_fd);
 		else
 			rflex_ir_on(rflex_fd);	
+		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
 	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, position_id))
@@ -477,17 +487,21 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		assert(hdr->size == sizeof(player_position_set_odom_req_t));
 
 		player_position_set_odom_req_t * set_odom_req = ((player_position_set_odom_req_t*)data);;
+		Lock();
 		set_odometry((long) ntohl(set_odom_req->x),(long) ntohl(set_odom_req->y),(short) ntohs(set_odom_req->theta));	
+		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
 	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, position_id))
 	{
 		assert(hdr->size == sizeof(player_position_power_config_t));
-
+		
+		Lock();
 		if(((player_position_power_config_t*)data)->value==0)
 			rflex_brake_on(rflex_fd);
 		else
 			rflex_brake_off(rflex_fd);
+		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
 	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, position_id))
@@ -499,25 +513,26 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, position_id))
 	{
 		assert(hdr->size == sizeof(player_position_resetodom_config_t));
-
+		Lock();
 		reset_odometry();
+		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
 	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, position_id))
 	{
 		assert(hdr->size == 0);
 
-		// TODO : get values from somewhere.
 		player_position_geom_t geom;
-//		geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 		//mm
 		geom.pose[0] = htons((short) (0));
 		geom.pose[1] = htons((short) (0));
 		//radians
 		geom.pose[2] = htons((short) (0));
 		//mm
+		Lock();
 		geom.size[0] = htons((short) (rflex_configs.mm_length));
 		geom.size[1] = htons((short) (rflex_configs.mm_width));
+		Unlock();
 
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
@@ -526,8 +541,9 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, position_id))
 	{
 		assert(hdr->size == sizeof(player_position_cmd_t));
-
+		Lock();
 		command = *reinterpret_cast<player_position_cmd_t *> (data);
+		Unlock();
 		return 0;
 	}
 
@@ -891,7 +907,9 @@ RFLEX::Main()
     fprintf(stderr,"ERROR, no connection to RFLEX established\n");
     exit(1);
   }
+  Lock();
   reset_odometry();
+  Unlock();
 
 
   //unsigned char config[RFLEX_CONFIG_BUFFER_SIZE];
@@ -910,17 +928,33 @@ RFLEX::Main()
     // we want to turn on the sonars if someone just subscribed, and turn
     // them off if the last subscriber just unsubscribed.
     if(!last_sonar_subscrcount && this->sonar_subscriptions)
+    {
+    	Lock();
         rflex_sonars_on(rflex_fd);
+        Unlock();
+    }
     else if(last_sonar_subscrcount && !(this->sonar_subscriptions))
-      rflex_sonars_off(rflex_fd);
+    {
+    	Lock();
+		rflex_sonars_off(rflex_fd);
+		Unlock();
+    }
     last_sonar_subscrcount = this->sonar_subscriptions;
 
     // we want to turn on the ir if someone just subscribed, and turn
     // it off if the last subscriber just unsubscribed.
     if(!last_ir_subscrcount && this->ir_subscriptions)
-      rflex_ir_on(rflex_fd);
+    {
+    	Lock();
+		rflex_ir_on(rflex_fd);
+		Unlock();
+    }
     else if(last_ir_subscrcount && !(this->ir_subscriptions))
-      rflex_ir_off(rflex_fd);
+    {
+    	Lock();
+		rflex_ir_off(rflex_fd);
+		Unlock();
+    }
     last_ir_subscrcount = this->ir_subscriptions;
 
     // we want to reset the odometry and enable the motors if the first 
@@ -930,25 +964,24 @@ RFLEX::Main()
     //first user logged in
     if(!last_position_subscrcount && this->position_subscriptions)
     {
+    	Lock();
       //set drive defaults
       rflex_motion_set_defaults(rflex_fd);
 
       //make sure robot doesn't go anywhere
       rflex_stop_robot(rflex_fd,(int) (MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration)));
 
-      //clear the buffers
-//      player_position_cmd_t position_cmd;
-//      memset(&position_cmd,0,sizeof(player_position_cmd_t));
-//      PutCommand(this->position_id,(unsigned char*)(&position_cmd), 
-//                 sizeof(position_cmd), NULL);
+		Unlock();
     }
     //last user logged out
     else if(last_position_subscrcount && !(this->position_subscriptions))
     {
+    	Lock();
       //make sure robot doesn't go anywhere
       rflex_stop_robot(rflex_fd,(int) (MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration)));
       // disable motor power
       rflex_brake_on(rflex_fd);
+      Unlock();
     }
     last_position_subscrcount = this->position_subscriptions;
     
@@ -956,56 +989,60 @@ RFLEX::Main()
 
     if(this->position_subscriptions || rflex_configs.use_joystick || rflex_configs.home_on_start)
     {
-				 
-      newmotorspeed = false;
-      newmotorturn = false;
+		Lock();				 
+		newmotorspeed = false;
+		newmotorturn = false;
 
-	  if (rflex_configs.home_on_start)
-	  {
-	  	command.yawspeed = htonl(10);
-		command.type=0;
-		newmotorturn=true;
-	  }
+		if (rflex_configs.home_on_start)
+		{
+			command.yawspeed = htonl(10);
+			command.type=0;
+			newmotorturn=true;
+		}
 
-      //the long casts are necicary (ntohl returns unsigned - we need signed)
-      if(mmPsec_speedDemand != (long) ntohl(command.xspeed))
-      {
-        newmotorspeed = true;
-        mmPsec_speedDemand = (long) ntohl(command.xspeed);
-      }
-      if(radPsec_turnRateDemand != DEG2RAD_CONV((long) ntohl(command.yawspeed)))
-      {
-        newmotorturn = true;
-        radPsec_turnRateDemand = DEG2RAD_CONV((long) ntohl(command.yawspeed));
-      }
-      /* NEXT, write commands */
-      // rflex has a built in failsafe mode where if no move command is recieved in a 
-      // certain interval the robot stops.
-      // this is a good thing given teh size of the robot...
-      // if network goes down or some such and the user looses control then the robot stops
-      // if the robot is running in an autonomous mdoe it is easy enough to simply 
-      // resend the command repeatedly
+		//the long casts are necicary (ntohl returns unsigned - we need signed)
+		if(mmPsec_speedDemand != (long) ntohl(command.xspeed))
+		{
+        	newmotorspeed = true;
+        	mmPsec_speedDemand = (long) ntohl(command.xspeed);
+      	}
+      	if(radPsec_turnRateDemand != DEG2RAD_CONV((long) ntohl(command.yawspeed)))
+      	{
+        	newmotorturn = true;
+        	radPsec_turnRateDemand = DEG2RAD_CONV((long) ntohl(command.yawspeed));
+      	}
+      	/* NEXT, write commands */
+      	// rflex has a built in failsafe mode where if no move command is recieved in a 
+      	// certain interval the robot stops.
+      	// this is a good thing given teh size of the robot...
+      	// if network goes down or some such and the user looses control then the robot stops
+      	// if the robot is running in an autonomous mdoe it is easy enough to simply 
+      	// resend the command repeatedly
 
-      // allow rflex joystick to overide the player command
-      if (joy_control > 0)
-        --joy_control;
-      // only set new command if type is valid and their is a new command
-      else if (command.type == 0)
-      {
-        rflex_set_velocity(rflex_fd,(long) MM2ARB_ODO_CONV(mmPsec_speedDemand),(long) RAD2ARB_ODO_CONV(radPsec_turnRateDemand),(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
-        command.type = 255;
-//        PutCommand(this->position_id,(unsigned char *)&command, 
-//                   sizeof(command), NULL);
-      }
+      	// allow rflex joystick to overide the player command
+      	if (joy_control > 0)
+        	--joy_control;
+      	// only set new command if type is valid and their is a new command
+      	else if (command.type == 0)
+      	{
+       		rflex_set_velocity(rflex_fd,(long) MM2ARB_ODO_CONV(mmPsec_speedDemand),(long) RAD2ARB_ODO_CONV(radPsec_turnRateDemand),(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
+        	command.type = 255;
+      	}
+      	Unlock();
     }
     else
-      rflex_stop_robot(rflex_fd,(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));
-
+    {
+    	Lock();
+		rflex_stop_robot(rflex_fd,(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));
+		Unlock();
+    }
+    
     /* Get data from robot */
 	static long LastYaw = 0;
-    player_rflex_data_t rflex_data;
-    memset(&rflex_data,0,sizeof(player_rflex_data_t));
+    player_rflex_data_t rflex_data = {0};
+	Lock();
     update_everything(&rflex_data);
+    Unlock();
     pthread_testcancel();
 
     PutMsg(this->position_id,NULL,PLAYER_MSGTYPE_DATA,0,
@@ -1024,7 +1061,7 @@ RFLEX::Main()
 		double NewGeom[3];
 	
         player_sonar_geom_t geom;
-//        geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+		Lock();
         geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
         for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
         {
@@ -1033,6 +1070,7 @@ RFLEX::Main()
           geom.poses[i][1] = htons((short) NewGeom[1]);
           geom.poses[i][2] = htons((short) RAD2DEG_CONV(NewGeom[2]));
         }
+        Unlock();
 		PutMsg(this->sonar_id_2, NULL, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_GEOM,
 			(unsigned char*)&geom, sizeof(player_sonar_geom_t),
 			NULL);

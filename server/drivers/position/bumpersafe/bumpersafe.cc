@@ -157,10 +157,15 @@ int BumperSafe::Setup()
 		
   // Initialise the underlying device s.
   if (this->SetupPosition() != 0)
+  {
+  	PLAYER_ERROR2("Bumber safe failed to connect to undelying position device %d:%d\n",position_id.code, position_id.index);
     return -1;
+  }
   if (this->SetupBumper() != 0)
+  {
+  	PLAYER_ERROR2("Bumber safe failed to connect to undelying bumper device %d:%d\n",bumper_id.code, bumper_id.index);
     return -1;
-
+  }
   // Start the driver thread.
   this->StartThread();
 
@@ -194,6 +199,8 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	assert(resp_len);
 	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
 
+	printf("Bumbersafe process message called\n");
+
 	if (hdr->type==PLAYER_MSGTYPE_SYNCH)
 	{	
 		*resp_len = 0;
@@ -208,6 +215,8 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	{
 		// we got bumper data, we need to deal with this
 		double time = (double) hdr->timestamp_sec + ((double) hdr->timestamp_usec) * 1e-6;
+
+		Lock();
 
 		// Dont do anything if this is old data.
 		if (time - bumper_time < 0.001)
@@ -230,6 +239,7 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 			SafeState = CurrentState;
 		}
 		PutPositionCommand();
+		Unlock();
 		return 0;
 	}
 	
@@ -239,11 +249,13 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 		// if motor is switched on then we reset the 'safe state' so robot can move with a bump panel active
   		if (((player_position_power_config_t *) data)->value == 1)
 		{
+			Lock();
 			SafeState = CurrentState;
 			Blocked = false;
 			cmd.xspeed = 0;
 			cmd.yspeed = 0;
 			cmd.yawspeed = 0;
+			Unlock();
 		}
 		*resp_len = 0;
 		return PLAYER_MSGTYPE_RESP_ACK;
@@ -252,9 +264,11 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	// set reply to value so the reply for this message goes straight to the given client
 	if(hdr->device==device_id.code && hdr->device_index==device_id.index && hdr->type == PLAYER_MSGTYPE_REQ)
 	{
+		Lock();
 		hdr->device_index = position_id.index;
 		int ret = position->ProcessMessage(&BaseClient, hdr, data, resp_data, resp_len);
 		hdr->device_index = device_id.index;
+		Unlock();
 		return ret;
 	}
 	
@@ -275,14 +289,17 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
 	{
 		assert(hdr->size == sizeof(player_position_cmd_t));
+		Lock();
 		cmd = *reinterpret_cast<player_position_cmd_t *> (data);
 		if (!Blocked)
 		{
 			hdr->device_index = position_id.index;
 			int ret = position->ProcessMessage(&BaseClient, hdr, data, resp_data, resp_len);
 			hdr->device_index = device_id.index;
+			Unlock();
 			return ret;
 		}
+		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
 
@@ -374,6 +391,8 @@ void BumperSafe::Main()
   
   while (true)
   {
+  	printf("bumpersafe thread started\n");
+  	
 	// check base client for messages
 	BaseClient.Read();	  
 	  

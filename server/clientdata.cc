@@ -342,6 +342,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       {
         PLAYER_WARN2("No permissions to configure %x:%x",
                      id.code,id.index);
+        assert(false);
         requesttype = PLAYER_MSGTYPE_RESP_ERR;
       }
     }

@@ -607,7 +607,8 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
   }
 
   /* byte-swap as necessary */
-  hdr->type = ntohs(hdr->type);
+  hdr->type = (hdr->type);
+  hdr->subtype = (hdr->subtype);
   hdr->device = ntohs(hdr->device);
   hdr->device_index = ntohs(hdr->device_index);
   hdr->time_sec = ntohl(hdr->time_sec);
@@ -621,37 +622,39 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
   //printf("hdr->size %d, payloadlen %d\n",hdr->size,payloadlen);
   
   /* get the payload */
-  if(hdr->size > payloadlen)
-    if(player_debug_level(-1) >= 2)
-      fprintf(stderr,"WARNING: server's message is too big (%d bytes > %d). "
-              "Truncating data.\n", hdr->size, payloadlen);
-
-  mincnt = MIN(hdr->size, payloadlen);
-
-  readcnt = 0;
-  while(readcnt < mincnt)
+  if (hdr->size > 0 && payloadlen > 0)
   {
-    if((thisreadcnt = read((*conn).sock,payload+readcnt,mincnt-readcnt)) <= 0)
-    {
+    if(hdr->size > payloadlen)
       if(player_debug_level(-1) >= 2)
-        perror("player_read(): read() errored while reading payload.");
-      return(-1);
-    }
-    readcnt += thisreadcnt;
-  }
+        fprintf(stderr,"WARNING: server's message is too big (%d bytes > %d). "
+                "Truncating data.\n", hdr->size, payloadlen);
 
-  while(readcnt < hdr->size)
-  {
-    if((thisreadcnt = read((*conn).sock,dummy,
+    mincnt = MIN(hdr->size, payloadlen);
+
+    readcnt = 0;
+    while(readcnt < mincnt)
+    {
+      if((thisreadcnt = read((*conn).sock,payload+readcnt,mincnt-readcnt)) <= 0)
+      {
+        if(player_debug_level(-1) >= 2)
+          perror("player_read(): read() errored while reading payload.");
+        return(-1);
+      }
+      readcnt += thisreadcnt;
+    }
+
+    while(readcnt < hdr->size)
+    {
+      if((thisreadcnt = read((*conn).sock,dummy,
                            MIN(PLAYER_MAX_MESSAGE_SIZE,hdr->size-readcnt))) <= 0)
-    {
-      if(player_debug_level(-1) >= 2)
-        perror("player_read(): read() errored while reading excess bytes.");
-      return(-1);
+      {
+        if(player_debug_level(-1) >= 2)
+          perror("player_read(): read() errored while reading excess bytes.");
+        return(-1);
+      }
+      readcnt += thisreadcnt;
     }
-    readcnt += thisreadcnt;
   }
-
   free(dummy);
   return(0);
 }

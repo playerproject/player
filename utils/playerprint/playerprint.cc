@@ -200,7 +200,6 @@ int main(int argc, char **argv)
   double last = -1.0;
   for(;;)
   {
-  	printf("Executing read\n");
     /* this blocks until new data comes; 10Hz by default */
     if(pclient.Read())
       exit(1);

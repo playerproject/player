@@ -437,7 +437,7 @@ int PlayerClient::Request(player_device_id_t device_id, uint8_t reqtype,
 {
   if(!Connected())
     return(-1);
-  return(player_request(&conn, device_id.code,device_id.index, reqtype, payload, payloadlen,
+  return(player_request(&conn, reqtype, device_id.code,device_id.index, payload, payloadlen,
                         replyhdr, reply, replylen));
 }
     
