@@ -875,7 +875,7 @@ REB::ReadConfig()
 
 	player_ir_pose_t irpose;
 	uint16_t numir = PlayerUBotRobotParams[param_index].NumberIRSensors;
-	irpose.pose_count = htons(numir);
+	//irpose.pose_count = htons(numir);
 	for (int i =0; i < numir; i++) {
 	  int16_t *irp = PlayerUBotRobotParams[param_index].ir_pose[i];
 	  for (int j =0; j < 3; j++) {
@@ -1810,7 +1810,7 @@ REB::ReadAllIR(uint16_t *ir)
   for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
     // find the first comma
     while (buf[p++] != ',') {
-      if (p >= (int) strlen(buf)) {
+      if (p >=  strlen(buf)) {
 	return;
       }
     }
