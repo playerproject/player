@@ -4,7 +4,7 @@ else
 BUILDTEST =
 endif
 
-AM_CPPFLAGS = -I$(srcdir)/.. -I$(srcdir)/../../c -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(srcdir)/.. -I$(srcdir)/../../c -I$(top_srcdir)/server
 LDADD = -L$(top_builddir)/client_libs/c++ -lplayerclient
 
 noinst_PROGRAMS = $(BUILDTEST)
