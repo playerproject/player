@@ -41,14 +41,13 @@ class ClientProxy
   friend class PlayerClient; // ANSI C++ syntax?
   // friend PlayerClient; // syntax deprecated
 
-  protected:
-    unsigned short device; // the name by which we identify this kind of device
-    unsigned short index;  // which device we mean
-    unsigned char access;   // 'r', 'w', or 'a' (others?)
-
+  public:         
     PlayerClient* client;  // our controlling client object
 
-  public: 
+    unsigned char access;   // 'r', 'w', or 'a' (others?)
+    unsigned short device; // the name by which we identify this kind of device
+    unsigned short index;  // which device we mean
+
     struct timeval timestamp;  // time at which this data was sensed
     struct timeval senttime;   // time at which this data was sent
     struct timeval receivedtime; // time at which this data was received

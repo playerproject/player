@@ -52,6 +52,22 @@ class PlayerMultiClient
     // destructor
     ~PlayerMultiClient();
 
+    // how many clients are we managing?
+    int GetNumClients( void ){ return num_clients; };
+
+    // return a client pointer from a host and port, zero if not connected 
+    // to that address
+    PlayerClient* GetClient( char* host, int port )
+      {
+	for( int c=0; c<num_clients; c++ )
+	  if( (strcmp(clients[c]->hostname, host) == 0 ) 
+	      && clients[c]->port == port )
+	    return clients[c];
+	
+	return 0;
+      };
+    
+    
     // add a client to our watch list
     void AddClient(PlayerClient* client);
     

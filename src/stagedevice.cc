@@ -104,7 +104,7 @@ size_t CStageDevice::GetData(unsigned char *data, size_t size)
 	  m_info->player_id.port, 
 	  m_info->player_id.type, 
 	  m_info->player_id.index, 
-	    m_info, m_data_buffer,
+	  m_info, m_data_buffer,
 	  m_info->data_len,
 	  m_info->data_avail,
 	  size );

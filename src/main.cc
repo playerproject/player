@@ -262,7 +262,8 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
 	  break;	  
 
 	  // unknown device 
-	  default: printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   info->player_id.type, 
+	  default: printf( "Unknown device type %d for object ID (%d,%d,%d)\n", 			   
+			   info->player_id.type, 
 			   info->player_id.port, 
 			   info->player_id.type, 
 			   info->player_id.index ); 
