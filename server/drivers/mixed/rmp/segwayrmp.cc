@@ -171,7 +171,7 @@ class SegwayRMP : public CDevice
 {
   public: 
     // Constructor	  
-    SegwayRMP(char* interface, ConfigFile* cf, int section);
+    SegwayRMP(uint16_t code, ConfigFile* cf, int section);
     ~SegwayRMP();
 
     // Setup/shutdown routines.
@@ -179,6 +179,7 @@ class SegwayRMP : public CDevice
     virtual int Shutdown();
 
   protected:
+    player_position3d_data_t position3d_data;
     player_position_data_t position_data;
     player_power_data_t power_data;
 
@@ -190,6 +191,8 @@ class SegwayRMP : public CDevice
     bool motor_enabled;
 
     const char* caniotype;
+
+    uint16_t interface_code;
 
     // helper to handle config requests
     int HandleConfig(void* client, unsigned char* buffer, size_t len);
@@ -215,14 +218,20 @@ class SegwayRMP : public CDevice
 // Initialization function
 CDevice* SegwayRMP_Init(char* interface, ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_POSITION_STRING) != 0)
+  uint16_t code;
+
+  if(!strcmp(interface, PLAYER_POSITION_STRING))
+    code = PLAYER_POSITION_CODE;
+  else if(!strcmp(interface, PLAYER_POSITION3D_STRING))
+    code = PLAYER_POSITION3D_CODE;
+  else
   {
     PLAYER_ERROR1("driver \"segwayrmp\" does not support interface \"%s\"\n",
                   interface);
     return (NULL);
   }
 
-  return ((CDevice*) (new SegwayRMP(interface, cf, section)));
+  return ((CDevice*) (new SegwayRMP(code, cf, section)));
 }
 
 
@@ -232,13 +241,14 @@ void SegwayRMP_Register(DriverTable* table)
   table->AddDriver("segwayrmp", PLAYER_ALL_MODE, SegwayRMP_Init);
 }
 
-SegwayRMP::SegwayRMP(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position_data_t), 
-              sizeof(player_position_cmd_t), 10, 10)
+SegwayRMP::SegwayRMP(uint16_t code, ConfigFile* cf, int section)
+    : CDevice(sizeof(player_position3d_data_t), 
+              sizeof(player_position3d_cmd_t), 10, 10)
 {
   last_xspeed = last_yawspeed = 0;
   canio = NULL;
   motor_enabled = false;
+  interface_code = code;
 
   caniotype = cf->ReadString(section, "canio", "kvaser");
 }
@@ -330,7 +340,12 @@ SegwayRMP::Main()
     // TODO: report better timestamps, possibly using time info from the RMP
     //
     // now give this data to clients
-    PutData((unsigned char *)&position_data, sizeof(position_data), 0, 0);
+    if(interface_code == PLAYER_POSITION_CODE)
+      PutData((unsigned char *)&position_data, sizeof(position_data), 0, 0);
+    else if(interface_code == PLAYER_POSITION3D_CODE)
+      PutData((unsigned char *)&position3d_data, sizeof(position3d_data), 0, 0);
+    else
+      PLAYER_ERROR1("can't format data into interface %d", interface_code);
     
     // check for config requests
     if((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer))) > 0)
@@ -608,49 +623,119 @@ SegwayRMP::Read()
         // from channel 1.
         if(channel == 1)
         {
-          // xpos is fore/aft integrated position?
-          // change from counts to mm
-          position_data.xpos = 
-                  htonl((uint32_t)rint((double)data_frame[channel].foreaft / 
-                                       ((double)RMP_COUNT_PER_M/1000.0)));
+          // Are we presenting 2D or 3D info?
+          if(interface_code == PLAYER_POSITION_CODE)
+          {
+            //
+            // xpos is fore/aft integrated position?
+            // change from counts to mm
+            position_data.xpos = 
+                    htonl((uint32_t)rint((double)data_frame[channel].foreaft / 
+                                         ((double)RMP_COUNT_PER_M/1000.0)));
 
-          // ypos is going to be pitch for now...
-          // change from counts to milli-degrees
-          position_data.ypos = 
-                  htonl((uint32_t)rint(((double)data_frame[channel].pitch / 
-                                        (double)RMP_COUNT_PER_DEG) 
-                                       * 1000.0));
+            // ypos is going to be pitch for now...
+            // change from counts to milli-degrees
+            position_data.ypos = 
+                    htonl((uint32_t)rint(((double)data_frame[channel].pitch / 
+                                          (double)RMP_COUNT_PER_DEG) 
+                                         * 1000.0));
 
-          // yaw is integrated yaw
-          // not sure about this one..
-          // from counts to degrees.
-          // TODO: handle rollover of yaw counter.
-          position_data.yaw = 
-                  htonl(((uint32_t) rint(((double)data_frame[channel].yaw /
-                                         (double)RMP_COUNT_PER_REV) * 360.0))
-                        % 360);
+            // yaw is integrated yaw
+            // not sure about this one..
+            // from counts to degrees.
+            // TODO: handle rollover of yaw counter.
+            position_data.yaw = 
+                    htonl(((uint32_t) rint(((double)data_frame[channel].yaw /
+                                            (double)RMP_COUNT_PER_REV) * 360.0))
+                          % 360);
 
-          // combine left and right wheel velocity to get foreward velocity
-          // change from counts/s into mm/s
-          position_data.xspeed = 
-                  htonl((uint32_t)rint(((double)data_frame[channel].left_dot +
-                                        (double)data_frame[channel].right_dot) /
-                                       (double)RMP_COUNT_PER_M_PER_S 
-                                       * 1000.0 / 2.0));
+            // combine left and right wheel velocity to get foreward velocity
+            // change from counts/s into mm/s
+            position_data.xspeed = 
+                    htonl((uint32_t)rint(((double)data_frame[channel].left_dot +
+                                          (double)data_frame[channel].right_dot) /
+                                         (double)RMP_COUNT_PER_M_PER_S 
+                                         * 1000.0 / 2.0));
 
-          // no side speeds for this bot
-          position_data.yspeed = 0;
+            // no side speeds for this bot
+            position_data.yspeed = 0;
 
-          // from counts/sec into deg/sec.  also, take the additive
-          // inverse, since the RMP reports clockwise angular velocity as
-          // positive.
-          position_data.yawspeed = 
-                  htonl((uint32_t)(-rint((double)data_frame[channel].yaw_dot / 
-                                         (double)RMP_COUNT_PER_DEG_PER_S)));
+            // from counts/sec into deg/sec.  also, take the additive
+            // inverse, since the RMP reports clockwise angular velocity as
+            // positive.
+            position_data.yawspeed = 
+                    htonl((uint32_t)(-rint((double)data_frame[channel].yaw_dot / 
+                                           (double)RMP_COUNT_PER_DEG_PER_S)));
 
-          position_data.stall = 0;
+            position_data.stall = 0;
 
-          // TODO: fill in power_data
+            // TODO: fill in power_data
+          }
+          else if(interface_code == PLAYER_POSITION3D_CODE)
+          {
+            //
+            // xpos is fore/aft integrated position?
+            // change from counts to mm
+            position3d_data.xpos = 
+                    htonl((uint32_t)rint((double)data_frame[channel].foreaft / 
+                                         ((double)RMP_COUNT_PER_M/1000.0)));
+
+            // ypos is going to be pitch for now...
+            // change from counts to milli-degrees
+            position3d_data.ypos = 
+                    htonl((uint32_t)rint(((double)data_frame[channel].pitch / 
+                                          (double)RMP_COUNT_PER_DEG) 
+                                         * 1000.0));
+
+            position3d_data.zpos = 0;
+            
+            // TODO: fill this in
+            position3d_data.roll = 0;
+            
+            // TODO: fill this in
+            position3d_data.pitch = 0;
+
+            // yaw is integrated yaw
+            // not sure about this one..
+            // from counts to degrees.
+            // TODO: handle rollover of yaw counter.
+            position3d_data.yaw = 
+                    htonl(((uint32_t) rint(((double)data_frame[channel].yaw /
+                                            (double)RMP_COUNT_PER_REV) * 360.0))
+                          % 360);
+
+            // combine left and right wheel velocity to get foreward velocity
+            // change from counts/s into mm/s
+            position3d_data.xspeed = 
+                    htonl((uint32_t)rint(((double)data_frame[channel].left_dot +
+                                          (double)data_frame[channel].right_dot) /
+                                         (double)RMP_COUNT_PER_M_PER_S 
+                                         * 1000.0 / 2.0));
+
+            // no side or vertical speeds for this bot
+            position3d_data.yspeed = 0;
+            position3d_data.zspeed = 0;
+            
+            // TODO: fill this in
+            position3d_data.rollspeed = 0;
+            
+            // TODO: fill this in
+            position3d_data.pitchspeed = 0;
+
+            // from counts/sec into deg/sec.  also, take the additive
+            // inverse, since the RMP reports clockwise angular velocity as
+            // positive.
+            position3d_data.yawspeed = 
+                    htonl((uint32_t)(-rint((double)data_frame[channel].yaw_dot / 
+                                           (double)RMP_COUNT_PER_DEG_PER_S)));
+
+            position3d_data.stall = 0;
+
+            // TODO: fill in power_data
+          }
+          else
+            PLAYER_ERROR1("can't format data into interface %d", 
+                          interface_code);
         }
 
         data_frame[channel].ready = 0;

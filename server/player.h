@@ -78,11 +78,12 @@
 #define PLAYER_IR_CODE             ((uint16_t)22)  // IR array
 #define PLAYER_WIFI_CODE	   ((uint16_t)23)  // wifi card status
 #define PLAYER_WAVEFORM_CODE	   ((uint16_t)24)  // fetch raw waveforms
-#define PLAYER_LOCALIZE_CODE   ((uint16_t)25)  // localization
+#define PLAYER_LOCALIZE_CODE       ((uint16_t)25)  // localization
 #define PLAYER_MCOM_CODE           ((uint16_t)26)  // multicoms
-#define PLAYER_SOUND_CODE	   ((uint16_t)27) // sound file playback
-#define PLAYER_AUDIODSP_CODE          ((uint16_t)28)   // audio dsp I/O
-#define PLAYER_AUDIOMIXER_CODE          ((uint16_t)29)   // audio I/O
+#define PLAYER_SOUND_CODE	   ((uint16_t)27)  // sound file playback
+#define PLAYER_AUDIODSP_CODE       ((uint16_t)28)  // audio dsp I/O
+#define PLAYER_AUDIOMIXER_CODE     ((uint16_t)29)  // audio I/O
+#define PLAYER_POSITION3D_CODE     ((uint16_t)30)  // 3-D position
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -115,6 +116,7 @@
 #define PLAYER_SOUND_STRING	    "sound"
 #define PLAYER_AUDIODSP_STRING      "audiodsp"
 #define PLAYER_AUDIOMIXER_STRING    "audiomixer"
+#define PLAYER_POSITION3D_STRING    "position3d"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -730,6 +732,58 @@ typedef struct player_rmp_config
       See the "Status" command in the Segway manual. */
   uint16_t value;
 } __attribute__ ((packed)) player_rmp_config_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section position3d
+ *************************************************************************/
+
+/** [Synopsis] The {\tt position3d} interface is used to control a 3-D
+ mobile robot base. */
+
+/** [Constants] */
+/** yet to be defined */
+
+/** [Data] */
+/**
+The {\tt position3d} interface returns data regarding the odometric pose and
+velocity of the robot, as well as motor stall information; the format is: */
+typedef struct player_position3d_data
+{
+  /** X, Y, and Z position, in mm */
+  int32_t xpos, ypos, zpos;
+  /** Roll, pitch, and yaw, in degrees */
+  uint32_t roll, pitch, yaw;
+  /** X, Y, and Z translational velocities, in mm/sec */
+  int32_t xspeed, yspeed, zspeed;
+  /** Angular velocities, in degrees/sec */
+  int32_t rollspeed, pitchspeed, yawspeed;
+  /** Are the motors stalled? */
+  uint8_t stall;
+} __attribute__ ((packed)) player_position3d_data_t;
+
+/** [Commands] */
+/**
+The {\tt position} interface accepts new positions and/or velocities
+for the robot's motors (drivers may support position control, speed control,
+or both); the format is */
+typedef struct player_position3d_cmd
+{
+  /** X, Y, and Z position, in mm */
+  int32_t xpos, ypos, zpos;
+  /** Roll, pitch, and yaw, in degrees */
+  int32_t roll, pitch, yaw;
+  /** X, Y, and Z translational velocities, in mm/sec */
+  int32_t xspeed, yspeed, zspeed;
+  /** Angular velocities, in degrees/sec */
+  int32_t rollspeed, pitchspeed, yawspeed;
+} __attribute__ ((packed)) player_position3d_cmd_t;
+
+/** [Configuration: Query geometry] */
+/** Yet to be defined. */
 
 /*************************************************************************
  ** end section

@@ -1197,6 +1197,60 @@ class PositionProxy : public ClientProxy
  *****************************************************************************/
 
 /*****************************************************************************
+ ** begin section Position3DProxy
+ *****************************************************************************/
+
+/** The {\tt Position3DProxy} class is used to control a {\tt position3d} 
+    device.  The latest position data is contained in the attributes 
+    {\tt xpos, ypos}, etc.
+ */
+class Position3DProxy : public ClientProxy
+{
+
+  public:
+  /// Robot pose (according to odometry) in mm, degrees.
+  int xpos,ypos,zpos;
+  unsigned int roll,pitch,yaw;
+
+  /// Robot speeds in mm/sec;
+  int xspeed, yspeed, zspeed;
+  int rollspeed, pitchspeed, yawspeed;
+
+  /// Stall flag: 1 if the robot is stalled and 0 otherwise.
+  unsigned char stall;
+   
+  /** Constructor.
+      Leave the access field empty to start unconnected. */
+  Position3DProxy(PlayerClient* pc, unsigned short index,
+                  unsigned char access ='c') :
+    ClientProxy(pc,PLAYER_POSITION3D_CODE,index,access) {}
+
+  // these methods are the user's interface to this device
+
+  /** Send a motor command for a planar robot.
+      Specify the forward, sideways, and angular speeds in mm/s, mm/s,
+      and degrees/sec, respectively.  Returns: 0 if everything's ok, 
+      -1 otherwise.
+  */
+  int SetSpeed(int xspeed, int yspeed, int yawspeed);
+
+  /** Same as the previous SetSpeed(), but doesn't take the sideways speed 
+      (so use this one for non-holonomic robots). */
+  int SetSpeed(int xspeed, int yawspeed)
+      { return(SetSpeed(xspeed,0,yawspeed));}
+
+  // interface that all proxies must provide
+  void FillData(player_msghdr_t hdr, const char* buffer);
+    
+  /// Print current position device state.
+  void Print();
+};
+
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+/*****************************************************************************
  ** begin section PtzProxy
  *****************************************************************************/
 
