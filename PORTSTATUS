@@ -1,0 +1,31 @@
+#
+# Status of P/S on various platforms
+#
+
+# Y = YES
+# N = NO
+# U = UNTESTED
+
+-------------------------------------------------------------------------------
+Machine       |   OS           |  Clients?  | Hardware?  |  Stage? |  GUI? 
+-------------------------------------------------------------------------------
+x86            Linux 2.[24]         Y           Y           Y           Y
+Sparc          SunOS 5.8            Y           U           Y           Y
+Sparc64        Linux 2.4 
+SA110          Linux ??
+SA1110 (iPAQ)  Linux ??
+Alpha          Linux 2.2            Y           U           Y           U
+PowerPC        OS X.2
+x86            FreeBSD 4.7
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+Notes
+-------------------------------------------------------------------------------
+Sparc/SunOS:
+   - udpbroadcast driver causes Player to hang.
+
+Alpha/Linux:
+   - Stage lbddevice segfaults in an STL list iteration.
+-------------------------------------------------------------------------------

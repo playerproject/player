@@ -1,5 +1,9 @@
-if WITH_GUI
+if WITH_RTK_GUI
+if HAVE_GTK
 PLAYERV = playerv
+else
+PLAYERV =
+endif
 else
 PLAYERV =
 endif

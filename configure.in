@@ -45,18 +45,7 @@ AC_SUBST(TCLSH)
 dnl Change default installation prefix from /usr/local to user's home
 AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
 
-
-
-
-dnl should we include the RTK GUI?
-AC_ARG_WITH(gui,    [  --without-gui           Don't include the GUI],,
-with_gui=yes)
-if test "x$with_gui" = "xyes"; then
-  AC_DEFINE(INCLUDE_RTK2,1,[include the RTK GUI])
-fi
-AM_CONDITIONAL(WITH_GUI, test x$with_gui = xyes)
-
-dnl client tests are not compiled unless the user asks for them
+dnl client tests are compiled by default
 AC_ARG_WITH(tests, [  --with-tests            Build tests],,
 with_tests=yes)
 AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
@@ -74,6 +63,8 @@ CXX_SERVER=$CXX
 CXXFLAGS_SERVER=$CXXFLAGS
 AR_SERVER="ar"
 RANLIB_SERVER=$RANLIB
+
+RTK2_TESTS
 
 AC_ARG_WITH(server-arch,
 [  --with-server-arch=arm     Make the server for ARM (using LART)],
@@ -273,12 +264,6 @@ AC_SUBST(ISENSE_LIB)
 AC_SUBST(ISENSE_LIBPATH)
 AC_SUBST(ISENSE_EXTRA_LIB)
 
-dnl RTK2 uses libjpeg to export images.
-AC_CHECK_HEADER(jpeglib.h,
-  AC_DEFINE(HAVE_JPEGLIB_H,1,[include jpeg support])
-  LIBJPEG="-ljpeg",,)
-AC_SUBST(LIBJPEG)
-
 dnl Optionally build the python client.
 PYTHON_VERSION=2.2
 AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,
@@ -322,6 +307,8 @@ AC_OUTPUT(Makefile
           server/drivers/isense/Makefile 
           server/drivers/stage/Makefile 
           server/drivers/reb/Makefile 
+          rtk2/Makefile
+          rtk2/test/Makefile
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile
@@ -333,8 +320,6 @@ AC_OUTPUT(Makefile
           examples/Makefile
           examples/c++/Makefile
           examples/libplayerc/Makefile
-          rtk2/Makefile
-          rtk2/test/Makefile
           utils/Makefile
           utils/playerv/Makefile
           utils/tkviewer/Makefile
