@@ -94,7 +94,7 @@ parse_args(int argc, char** argv)
     }
     else if(!strcmp(argv[i], "-t"))
     { 
-      minfrontdistance = atof(argv[++i]);
+      turnrate = DTOR(atof(argv[++i]));
     } 
     else
     {
