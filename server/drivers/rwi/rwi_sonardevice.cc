@@ -42,7 +42,7 @@ RWISonar_Register(DriverTable* table)
 	
 CRWISonarDevice::CRWISonarDevice(char* interface, ConfigFile* cf, int section)
     : CRWIDevice(interface, cf, section,
-                 sizeof(player_frf_data_t),
+                 sizeof(player_sonar_data_t),
                  0 /* no commands for sonar */,
 		         1,1)
 {
@@ -76,7 +76,7 @@ CRWISonarDevice::Setup()
 #endif			// USE_MOBILITY
 	
 	// Zero the common buffer
-	player_frf_data_t data;
+	player_sonar_data_t data;
 	memset(&data, 0, sizeof(data));
 	PutData((unsigned char *) &data, sizeof(data), 0, 0);	
 	
@@ -105,7 +105,7 @@ CRWISonarDevice::Main()
 
 	// Working buffer space
 	player_rwi_config_t cfg;
-	player_frf_data_t data;
+	player_sonar_data_t data;
 	
 	void *client;
 	
@@ -136,7 +136,7 @@ CRWISonarDevice::Main()
 		    			             "rwi_sonardevice.\n");
 		    		}
 					break;
-				case PLAYER_FRF_GET_GEOM_REQ:
+				case PLAYER_SONAR_GET_GEOM_REQ:
 					// FIXME: not yet implemented
 					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
 		    		             NULL, NULL, 0)) {

@@ -80,7 +80,7 @@ CRWIPositionDevice::Setup()
 	// Zero the common buffers
 	player_position_cmd_t cmd;
 	memset(&cmd, 0, sizeof(cmd));
-	PutCommand((unsigned char *) &cmd, sizeof(cmd));
+	PutCommand(this,(unsigned char *) &cmd, sizeof(cmd));
 	
 	player_position_data_t data;
 	memset(&data, 0, sizeof(data));

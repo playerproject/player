@@ -690,7 +690,8 @@ P2OS::Main()
         player_position_cmd_t position_cmd;
         position_cmd.xspeed = 0;
         position_cmd.yawspeed = 0;
-        positionp->PutCommand((unsigned char*)(&position_cmd), 
+        // TODO: who should really be the client here?
+        positionp->PutCommand(this,(unsigned char*)(&position_cmd), 
                               sizeof(position_cmd));
       
         // disable motor power

@@ -207,7 +207,7 @@ int CDevice::PutConfig(player_device_id_t* device, void* client,
   return(0);
 }
 
-size_t CDevice::GetData(unsigned char* dest, size_t len,
+size_t CDevice::GetData(void* client, unsigned char* dest, size_t len,
                         uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   int size;
@@ -258,7 +258,7 @@ size_t CDevice::GetCommand( unsigned char* dest, size_t len)
   return(size);
 }
 
-void CDevice::PutCommand( unsigned char* src, size_t len)
+void CDevice::PutCommand(void* client, unsigned char* src, size_t len)
 {
   Lock();
   assert(len <= device_commandsize);

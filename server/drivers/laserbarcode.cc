@@ -63,7 +63,7 @@ class LaserBarcode : public CDevice
   public: virtual int Shutdown();
 
   // Client interface
-  public: virtual size_t GetData(unsigned char *, size_t maxsize,
+  public: virtual size_t GetData(void*, unsigned char *, size_t maxsize,
                                  uint32_t* timestamp_sec,
                                  uint32_t* timestamp_usec);
   public: virtual int PutConfig(player_device_id_t* device, void *client, 
@@ -192,9 +192,9 @@ int LaserBarcode::Shutdown()
 ////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by client thread)
 //
-size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
-                                   uint32_t* timestamp_sec,
-                                   uint32_t* timestamp_usec)
+size_t LaserBarcode::GetData(void* client, unsigned char *dest, size_t maxsize,
+                             uint32_t* timestamp_sec,
+                             uint32_t* timestamp_usec)
 {
   Lock();
 
@@ -211,7 +211,7 @@ size_t LaserBarcode::GetData(unsigned char *dest, size_t maxsize,
 
   // Get the laser data
   player_laser_data_t laser_data;
-  this->laser->GetData((unsigned char*) &laser_data, sizeof(laser_data), NULL, NULL);
+  this->laser->GetData(this,(unsigned char*) &laser_data, sizeof(laser_data), NULL, NULL);
 
   // Do some byte swapping
   laser_data.resolution = ntohs(laser_data.resolution);

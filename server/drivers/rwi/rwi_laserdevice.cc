@@ -58,7 +58,7 @@ CRWILaserDevice::Setup()
 	#endif			// USE_MOBILITY
 		
 	// Zero the common buffer
-	player_srf_data_t data;
+	player_laser_data_t data;
 	memset(&data, 0, sizeof(data));
 	PutData((unsigned char *) &data, sizeof(data), 0, 0);	
 	
@@ -87,7 +87,7 @@ CRWILaserDevice::Main()
 	
 	// Working buffer space
 	player_rwi_config_t cfg;
-	player_srf_data_t data;
+	player_laser_data_t data;
 	
 	void *client;
 	
@@ -104,7 +104,7 @@ CRWILaserDevice::Main()
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
 		    switch (cfg.request) {
-				case PLAYER_SRF_GET_GEOM:
+				case PLAYER_LASER_GET_GEOM:
 					// FIXME: not yet implemented
 					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
 		    		             NULL, NULL, 0)) {

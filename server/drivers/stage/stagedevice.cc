@@ -116,7 +116,7 @@ int StageDevice::Shutdown()
 ///////////////////////////////////////////////////////////////////////////
 // Read data from the device
 //
-size_t StageDevice::GetData(unsigned char *data, size_t size,
+size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
                         uint32_t* timestamp_sec, 
                         uint32_t* timestamp_usec)
 {
@@ -195,7 +195,7 @@ size_t StageDevice::GetData(unsigned char *data, size_t size,
 ///////////////////////////////////////////////////////////////////////////
 // Write a command to the device
 //
-void StageDevice::PutCommand(unsigned char *command, size_t len)
+void StageDevice::PutCommand(void* client,unsigned char *command, size_t len)
 {
   Lock();
 

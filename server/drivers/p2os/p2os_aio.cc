@@ -32,7 +32,7 @@ class P2OSaio: public P2OS
 
    P2OSaio(char* interface, ConfigFile* cf, int section) : 
            P2OS(interface, cf, section){}
-   size_t GetData( unsigned char *, size_t maxsize, 
+   size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
@@ -55,7 +55,7 @@ P2OSaio_Register(DriverTable* table)
   table->AddDriver("p2os_aio", PLAYER_READ_MODE, P2OSaio_Init);
 }
 
-size_t P2OSaio::GetData(unsigned char *dest, size_t maxsize,
+size_t P2OSaio::GetData(void* client,unsigned char *dest, size_t maxsize,
                             uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   Lock();

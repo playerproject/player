@@ -36,9 +36,9 @@ class P2OSPosition: public P2OS
    ~P2OSPosition();
    P2OSPosition(char* interface, ConfigFile* cf, int section) :
            P2OS(interface, cf, section){}
-   virtual size_t GetData(unsigned char *, size_t maxsize,
+   virtual size_t GetData(void*,unsigned char *, size_t maxsize,
                           uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-   void PutCommand( unsigned char *, size_t maxsize);
+   void PutCommand(void*, unsigned char *, size_t maxsize);
 };
 
 CDevice* P2OSPosition_Init(char* interface, ConfigFile* cf, int section)
@@ -66,7 +66,7 @@ P2OSPosition::~P2OSPosition()
   ((player_p2os_cmd_t*)device_command)->position.yawspeed = 0;
 }
 
-size_t P2OSPosition::GetData( unsigned char *dest, size_t maxsize,
+size_t P2OSPosition::GetData(void* client, unsigned char *dest, size_t maxsize,
                                  uint32_t* timestamp_sec, 
                                  uint32_t* timestamp_usec)
 {
@@ -79,7 +79,7 @@ size_t P2OSPosition::GetData( unsigned char *dest, size_t maxsize,
   return( sizeof( player_position_data_t) );
 }
 
-void P2OSPosition::PutCommand( unsigned char *src, size_t size ) 
+void P2OSPosition::PutCommand(void* client, unsigned char *src, size_t size ) 
 {
   if(size != sizeof( player_position_cmd_t ) )
   {

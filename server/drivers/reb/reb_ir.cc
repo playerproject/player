@@ -40,7 +40,7 @@ public:
     REB(interface, cf, section) {}
 
 
-  virtual size_t GetData(unsigned char *dest, size_t maxsize,
+  virtual size_t GetData(void*, unsigned char *dest, size_t maxsize,
 			 uint32_t *timestamp_sec, uint32_t *timestamp_usec);
 };
 
@@ -76,7 +76,7 @@ REBIR_Register(DriverTable *table)
  * returns: number of bytes copied
  */
 size_t
-REBIR::GetData(unsigned char *dest, size_t maxsize,
+REBIR::GetData(void* client,unsigned char *dest, size_t maxsize,
 		      uint32_t *timestamp_sec, uint32_t *timestamp_usec)
 {
   Lock();

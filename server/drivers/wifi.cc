@@ -56,7 +56,7 @@ public:
 
   //  virtual void Main();
 
-  virtual size_t GetData(unsigned char *, size_t maxsize,
+  virtual size_t GetData(void*,unsigned char *, size_t maxsize,
 			 uint32_t *timestamp_sec,
 			 uint32_t *timestamp_usec);
 
@@ -143,7 +143,8 @@ WiFi::Shutdown()
  * returns: 
  */
 size_t
-WiFi::GetData(unsigned char *dest, size_t maxsize, uint32_t *timestamp_sec,
+WiFi::GetData(void* client,unsigned char *dest, size_t maxsize, 
+              uint32_t *timestamp_sec,
 	      uint32_t *timestamp_usec)
 {
   player_wifi_data_t data;

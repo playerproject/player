@@ -83,13 +83,13 @@ class StageDevice : public CDevice
     
   // Read data from the device
   //
-  public: virtual size_t GetData(unsigned char* dest, size_t len,
+  public: virtual size_t GetData(void* client,unsigned char* dest, size_t len,
                                  uint32_t* timestamp_sec,
                                  uint32_t* timestamp_usec);
 
   // Write a command to the device
   //
-  public: virtual void PutCommand( unsigned char * , size_t maxsize);
+  public: virtual void PutCommand(void* client, unsigned char * , size_t maxsize);
 
   // Write configuration to the device
   //

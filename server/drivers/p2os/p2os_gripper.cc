@@ -35,9 +35,9 @@ class P2OSGripper: public P2OS
    ~P2OSGripper();
    P2OSGripper(char* interface, ConfigFile* cf, int section) :
            P2OS(interface, cf, section){}
-   size_t GetData(unsigned char *, size_t maxsize,
+   size_t GetData(void*,unsigned char *, size_t maxsize,
                   uint32_t* timestamp_sec, uint32_t* timestamp_usec );
-   void PutCommand( unsigned char *, size_t maxsize);
+   void PutCommand(void*, unsigned char *, size_t maxsize);
 };
 
 CDevice* P2OSGripper_Init(char* interface, ConfigFile* cf, int section)
@@ -65,7 +65,7 @@ P2OSGripper::~P2OSGripper()
   ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
 }
 
-size_t P2OSGripper::GetData(unsigned char *dest, size_t maxsize,
+size_t P2OSGripper::GetData(void* client,unsigned char *dest, size_t maxsize,
                  uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   Lock();
@@ -78,7 +78,7 @@ size_t P2OSGripper::GetData(unsigned char *dest, size_t maxsize,
   return(sizeof( player_gripper_data_t));
 }
 
-void P2OSGripper::PutCommand(unsigned char *src, size_t size) 
+void P2OSGripper::PutCommand(void* client, unsigned char *src, size_t size) 
 {
   if(size != sizeof( player_gripper_cmd_t ) )
     puts("P2OSGripper::PutCommand(): command wrong size. ignoring.");

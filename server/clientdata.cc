@@ -374,7 +374,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           {
             // make sure we've got a non-NULL pointer
             if((devicep = deviceTable->GetDevice(id)))
-              devicep->PutCommand(payload,payload_size);
+              devicep->PutCommand(this,payload,payload_size);
             else
               printf("HandleRequests(): found NULL pointer for device %x:%x\n",
                      id.code,id.index);
@@ -532,7 +532,7 @@ void CClientData::MotorStop()
 
   if((devicep = deviceTable->GetDevice(id)))
   {
-    devicep->PutCommand((unsigned char*)&command, sizeof(command));
+    devicep->PutCommand(this,(unsigned char*)&command, sizeof(command));
   }
 }
 
@@ -759,7 +759,7 @@ int CClientData::BuildMsg()
           hdr.device_index = htons(thisub->id.index);
           hdr.reserved = 0;
 
-          size = devicep->GetData(writebuffer+sizeof(hdr),
+          size = devicep->GetData(this, writebuffer+sizeof(hdr),
                                   PLAYER_MAX_MESSAGE_SIZE-sizeof(hdr),
                                   &(hdr.timestamp_sec), 
                                   &(hdr.timestamp_usec));
